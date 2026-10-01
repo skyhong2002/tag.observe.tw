@@ -19,13 +19,6 @@
 - **議題表**是跨媒體合併成一個列表，不分媒體卡片。
 - **公開 API** 以 `/api/v1` 發布（不使用 `/api/v2`）。
 
-## 已移除的遷移證據
+## 早期歷史
 
-遷移期間的逐路由改寫紀錄、parity／rollback／snapshot JSON（約 230 個檔案）、議題草稿、交接紀錄，在 2026-10-01 從 `docs/` 移除；最後一個包含它們的 commit 是 `e61babf`：
-
-```sh
-git show e61babf:docs/<檔名>
-git ls-tree --name-only e61babf docs/
-```
-
-舊站 PHP 原始碼與比對工具的私有副本在 `~/tag-analysis-private/`（不在 Git）。待辦事項以 GitHub issues 為準。
+本 repo 自 2026-10-01 公開前以單一 commit 重新開始。完整開發歷史，包括遷移期間的逐路由改寫紀錄、parity／rollback／snapshot JSON、議題草稿、交接紀錄，以及舊站 PHP 副本，保存在私有的 `skyhong2002/tag.observe.tw-archive`（`docs/` 精簡前的最後狀態為該 repo 的 `e61babf`）。待辦事項以 GitHub issues 為準。
