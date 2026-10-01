@@ -25,7 +25,7 @@ const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> 
       { href: '/api/', label: 'API 文件' },
       { href: '#method', label: '資料來源與計算方式' },
       { href: 'https://github.com/skyhong2002/tag.observe.tw', label: 'GitHub 原始碼', external: true },
-      { href: 'https://skyhong.tw', label: '開發者：Sky Hong', external: true },
+      { href: 'https://tag.analysis.tw', label: '母站 tag.analysis.tw', external: true },
     ],
   },
   {
