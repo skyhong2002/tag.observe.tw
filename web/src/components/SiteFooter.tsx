@@ -109,7 +109,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
             <Wordmark className="h-8 w-auto" />
           </Link>
           <p className="max-w-md text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-            同一件事，各家怎麼說。追蹤台灣新聞媒體的標籤、事件與議題，並排比較各家標題。前身為 tag.analysis.tw。
+            同一件事，各家怎麼說。追蹤台灣新聞媒體的標籤、事件與議題，並排比較各家標題。
           </p>
         </div>
         <div className="grid grid-cols-2 gap-x-10 gap-y-8 text-sm sm:grid-cols-3 sm:gap-x-16">
