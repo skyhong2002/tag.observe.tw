@@ -1,0 +1,5 @@
+[Unit]
+Description=tag.observe.tw daily database backup
+[Service]
+Type=oneshot
+ExecStart=/home/deck/Projects/tag.analysis.tw/scripts/backup-db.sh

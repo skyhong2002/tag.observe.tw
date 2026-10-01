@@ -1,0 +1,95 @@
+# Grafana expressions must return 0 when healthy and 1 when failing.
+evaluation_interval: 1m
+tests:
+- name: healthy without failure counters
+  interval: 1m
+  input_series:
+  - series: up{job="tag-observe-app"}
+    values: 1+0x120
+  - series: up{job="tag-observe-worker"}
+    values: 1+0x120
+  - series: tag_job_runs_total{job="tag-observe-worker",exported_job="ranking",status="ok"}
+    values: 0+1x120
+  - series: tag_job_runs_total{job="tag-observe-worker",exported_job="crawl-index",status="ok"}
+    values: 0+1x120
+  promql_expr_test:
+  - expr: up{job="tag-observe-app"} == bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{job="tag-observe-app"}'
+      value: 0
+  - expr: up{job="tag-observe-worker"} == bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{job="tag-observe-worker"}'
+      value: 0
+  - expr: increase(tag_job_runs_total{job="tag-observe-worker",exported_job="ranking",status="ok"}[30m])
+      == bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{job="tag-observe-worker",exported_job="ranking",status="ok"}'
+      value: 0
+  - expr: (sum by (exported_job) (increase(tag_job_runs_total{job="tag-observe-worker",status="failed"}[1h]))
+      or sum by (exported_job) (0 * tag_job_runs_total{job="tag-observe-worker"}))
+      > bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{exported_job="ranking"}'
+      value: 0
+    - labels: '{exported_job="crawl-index"}'
+      value: 0
+  - expr: (sum(increase(tag_job_runs_total{job="tag-observe-worker",exported_job=~"crawl.*",status="failed"}[2h]))
+      or sum(0 * tag_job_runs_total{job="tag-observe-worker",exported_job=~"crawl.*"}))
+      > bool 3
+    eval_time: 2h
+    exp_samples:
+    - labels: '{}'
+      value: 0
+- name: failing
+  interval: 1m
+  input_series:
+  - series: up{job="tag-observe-app"}
+    values: 0+0x120
+  - series: up{job="tag-observe-worker"}
+    values: 0+0x120
+  - series: tag_job_runs_total{job="tag-observe-worker",exported_job="ranking",status="ok"}
+    values: 0+0x120
+  - series: tag_job_runs_total{job="tag-observe-worker",exported_job="crawl-index",status="ok"}
+    values: 0+1x120
+  - series: tag_job_runs_total{job="tag-observe-worker",exported_job="ranking",status="failed"}
+    values: 0+1x120
+  - series: tag_job_runs_total{job="tag-observe-worker",exported_job="crawl-index",status="failed"}
+    values: 0+1x120
+  promql_expr_test:
+  - expr: up{job="tag-observe-app"} == bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{job="tag-observe-app"}'
+      value: 1
+  - expr: up{job="tag-observe-worker"} == bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{job="tag-observe-worker"}'
+      value: 1
+  - expr: increase(tag_job_runs_total{job="tag-observe-worker",exported_job="ranking",status="ok"}[30m])
+      == bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{job="tag-observe-worker",exported_job="ranking",status="ok"}'
+      value: 1
+  - expr: (sum by (exported_job) (increase(tag_job_runs_total{job="tag-observe-worker",status="failed"}[1h]))
+      or sum by (exported_job) (0 * tag_job_runs_total{job="tag-observe-worker"}))
+      > bool 0
+    eval_time: 2h
+    exp_samples:
+    - labels: '{exported_job="ranking"}'
+      value: 1
+    - labels: '{exported_job="crawl-index"}'
+      value: 1
+  - expr: (sum(increase(tag_job_runs_total{job="tag-observe-worker",exported_job=~"crawl.*",status="failed"}[2h]))
+      or sum(0 * tag_job_runs_total{job="tag-observe-worker",exported_job=~"crawl.*"}))
+      > bool 3
+    eval_time: 2h
+    exp_samples:
+    - labels: '{}'
+      value: 1

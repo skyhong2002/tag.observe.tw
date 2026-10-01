@@ -1,0 +1,31 @@
+# 沿革
+
+## 時間線
+
+| 日期 | 事件 |
+| --- | --- |
+| 2026-09-26〜27 | 以 Fastify 在 tag.observe.tw 前置舊站；17 條 `/api/*.php` 與主要頁面逐路由改寫為 Node，每條都與舊站逐 byte 比對（PHP 5.4／MySQL 5.6 本機 oracle、正式站快照），並保留逐路由回退到 PHP |
+| 2026-09-28 | 解除「介面不變」限制：自家 MariaDB＋Drizzle、BullMQ worker、Next.js SSR 新介面、ECharts、Prometheus／Loki／Grafana、CI。190 支 PHP 爬蟲以 Node 重寫；事件分群、議題、標籤統計移植到 worker |
+| 2026-09-29 | 切斷舊站依賴：移除 SSH tunnel、舊資料庫憑證與反向代理；舊網址 301、舊 API 410。安全修正（圖片代理白名單、metrics、SSRF、速率限制） |
+| 2026-09-30〜10-01 | 品牌定為「新文易數」；藍綠標題對照、事件封存與趨勢；公開 API（`/api/v1`）、RSS、sitemap、Web App |
+
+舊站 tag.analysis.tw 與其資料庫全程未更動，仍在原網域獨立運作。
+
+## 仍有效的決定
+
+- **不移植** merge.php（`articles` 本身就是全媒體合併表）、make_series.php／tag_hour.php（由 `ranking_snapshots` 取代）、social.php（來源已無資料）、內文抓取歷史表（`articles.fetched_at`／`fetch_status` 只記最後一次）。
+- **排行正規化**（2026-09-29）：分數除以該 24 小時內實際有發稿的媒體數，不再用 2015 年的固定常數（`all` 為 14）。舊快照依其記錄的媒體數比較（`effectiveWeight()`）。
+- **Yahoo 只收自製內容**；不收 LINE TODAY（全是合作媒體）。
+- **議題表**是跨媒體合併成一個列表，不分媒體卡片。
+- **公開 API** 以 `/api/v1` 發布（不使用 `/api/v2`）。
+
+## 已移除的遷移證據
+
+遷移期間的逐路由改寫紀錄、parity／rollback／snapshot JSON（約 230 個檔案）、議題草稿、交接紀錄，在 2026-10-01 從 `docs/` 移除；最後一個包含它們的 commit 是 `e61babf`：
+
+```sh
+git show e61babf:docs/<檔名>
+git ls-tree --name-only e61babf docs/
+```
+
+舊站 PHP 原始碼與比對工具的私有副本在 `~/tag-analysis-private/`（不在 Git）。待辦事項以 GitHub issues 為準。

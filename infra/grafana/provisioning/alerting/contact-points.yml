@@ -1,0 +1,40 @@
+# Alert delivery. GRAFANA_ALERT_WEBHOOK in infra/.env is a Discord webhook.
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: tag-observe-discord
+    receivers:
+      - uid: tag-observe-discord
+        type: discord
+        settings:
+          url: ${GRAFANA_ALERT_WEBHOOK}
+          use_discord_username: true
+          title: >-
+            tag.observe.tw｜告警 {{ len .Alerts.Firing }}・已結束 {{ len .Alerts.Resolved }}
+          # Keep Discord notifications readable on mobile; details remain in Grafana.
+          # Escape Go template variables as $$ to survive provisioning env expansion.
+          message: |-
+            {{- range $$i, $$alert := .Alerts -}}
+              {{- if lt $$i 5 -}}
+                {{- if eq .Status "resolved" -}}⚪
+                {{- else if eq .Labels.severity "critical" -}}🔴
+                {{- else -}}⚠️{{- end }} {{ or .Labels.rulename .Labels.alertname }}
+                {{- with .Labels.exported_job }} ({{ . }}){{ end -}}：
+                {{- if eq .Status "resolved" -}}
+                  {{- if eq .Annotations.grafana_state_reason "Updated" -}}規則更新後結束
+                  {{- else -}}已結束{{ with .Annotations.grafana_state_reason }} ({{ . }}){{ end }}
+                  {{- end -}}
+                {{- else if eq .Labels.alertname "DatasourceNoData" -}}無監控資料
+                {{- else if eq .Labels.alertname "DatasourceError" -}}資料來源查詢失敗
+                {{- else -}}{{ printf "%.100s" (or .Annotations.summary .Labels.alertname) }}
+                {{- end }}{{ "\n" }}
+              {{- end -}}
+            {{- end -}}
+            {{- if gt (len .Alerts) 5 -}}共 {{ len .Alerts }} 筆，僅列前 5 筆{{- end -}}
+policies:
+  - orgId: 1
+    receiver: tag-observe-discord
+    group_by: [alertname]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h

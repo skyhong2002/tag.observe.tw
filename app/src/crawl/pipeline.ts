@@ -1,0 +1,366 @@
+import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
+import pLimit from 'p-limit';
+import type { Db } from '../db/client.ts';
+import { articles, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
+import { extractArticle } from './article.ts';
+import { type FeedItem, parseFeed } from './feed.ts';
+import { fetchText, fetchViaCurl } from './fetch.ts';
+import { discoverLinks, parseMarkerList } from './html-list.ts';
+import type { SourceSpec } from './sources.ts';
+import { normalizeTag, stripTitleSuffix, urlKey } from './text.ts';
+import { type TitleVocab, tagsFromTitle } from './title-tags.ts';
+
+export interface Logger {
+  info: (o: object, m: string) => void;
+  warn: (o: object, m: string) => void;
+}
+const noop: Logger = { info() {}, warn() {} };
+const trunc = (s: string | null | undefined, n: number) => (s == null ? null : s.slice(0, n));
+const PLAIN_SITEMAP_WINDOW_MS = 2 * 86400e3;
+const PLAIN_SITEMAP_MAX = 300;
+
+export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{ items: FeedItem[]; errors: string[] }> {
+  const oldest = Date.now() - 14 * 86400e3; // drop listing items older than this
+  const items: FeedItem[] = [];
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  const queue = spec.list.urls.map((u) => ({ ...u, depth: 0 }));
+  const include = spec.list.include ? new RegExp(spec.list.include) : null;
+  const titleInclude = spec.list.titleInclude ? new RegExp(spec.list.titleInclude) : null;
+  let fetched = 0;
+  while (queue.length && fetched < 12) {
+    const { cat, url, depth } = queue.shift() as { cat: string; url: string; depth: number };
+    fetched++;
+    try {
+      const res = spec.list.curl
+        ? await fetchViaCurl(url, { userAgent: spec.list.userAgent })
+        : await fetch(url, { userAgent: spec.list.userAgent });
+      if (res.status >= 400) {
+        errors.push(`${url} -> ${res.status}`);
+        continue;
+      }
+      if (spec.list.discover) {
+        for (const item of discoverLinks(res.body, res.url || url, new RegExp(spec.list.discover.pattern), spec.list.discover.minTitle))
+          push(item, cat);
+        continue;
+      }
+      if (spec.list.marker) {
+        for (const item of parseMarkerList(res.body, url, spec.list.marker)) push(item, cat);
+        continue;
+      }
+      const parsed = parseFeed(res.body);
+      if (parsed.kind === 'sitemapindex') {
+        // Follow the newest few child sitemaps (index lists are usually chronological).
+        if (depth < 1) for (const child of (parsed.children ?? []).slice(0, 4)) queue.push({ cat, url: child, depth: depth + 1 });
+        continue;
+      }
+      if (!parsed.items.length) errors.push(`${url} -> 0 items`);
+      if (parsed.kind === 'sitemap' && !parsed.items.some((i) => i.publishedAt)) {
+        // Plain (non-news) sitemap: only <lastmod>, which is a modification
+        // time. Take entries modified in the last 2 days, newest first, capped;
+        // their real publish time comes from the page in runArticles.
+        const recent = parsed.items
+          .filter((i) => i.modifiedAt && Date.now() - i.modifiedAt.getTime() < PLAIN_SITEMAP_WINDOW_MS)
+          .sort((a, b) => (b.modifiedAt as Date).getTime() - (a.modifiedAt as Date).getTime());
+        let added = 0;
+        for (const item of recent) {
+          if (added >= PLAIN_SITEMAP_MAX) break;
+          if (push(item, cat)) added++;
+        }
+        continue;
+      }
+      for (const item of parsed.items) push(item, cat);
+    } catch (error) {
+      errors.push(`${url} -> ${(error as Error).message}`);
+    }
+  }
+  function push(item: FeedItem, cat: string): boolean {
+    if (item.publishedAt && item.publishedAt.getTime() < oldest) return false;
+    if (titleInclude && !titleInclude.test(item.title ?? '')) return false;
+    // Homepages and section roots sometimes appear in sitemaps.
+    try {
+      const u = new URL(item.url);
+      // (WordPress permalinks like /?p=123 are articles, not the homepage.)
+      if (u.pathname.replace(/\/+$/, '') === '' && !u.search) return false;
+      if (include && !include.test(u.pathname + u.search)) return false;
+    } catch {
+      return false;
+    }
+    const key = urlKey(item.url, spec.list.articleId);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    items.push({ ...item, category: item.category ?? (cat || undefined) });
+    return true;
+  }
+  return { items, errors };
+}
+
+export async function runIndex(db: Db, spec: SourceSpec, { fetch = fetchText, log = noop, now = () => new Date() } = {}) {
+  const started = now();
+  const [run] = await db
+    .insert(crawlRuns)
+    .values({ media: spec.media, stage: 'index', startedAt: started, status: 'running' })
+    .$returningId();
+  try {
+    const { items, errors } = await listSource(spec, fetch);
+    let inserted = 0;
+    for (let i = 0; i < items.length; i += 100) {
+      // Titleless items (plain sitemaps) get their title from the page in runArticles.
+      let batch = items.slice(i, i + 100).filter((it) => it.url.length <= 512);
+      if (spec.article.provider && batch.length) {
+        const rejected = new Set(
+          (
+            await db
+              .select({ urlKey: rejectedUrls.urlKey })
+              .from(rejectedUrls)
+              .where(
+                and(
+                  eq(rejectedUrls.media, spec.media),
+                  inArray(
+                    rejectedUrls.urlKey,
+                    batch.map((it) => urlKey(it.url, spec.list.articleId)),
+                  ),
+                ),
+              )
+          ).map((r) => r.urlKey),
+        );
+        batch = batch.filter((it) => !rejected.has(urlKey(it.url, spec.list.articleId)));
+      }
+      if (!batch.length) continue;
+      const result = await db
+        .insert(articles)
+        .ignore()
+        .values(
+          batch.map((it) => ({
+            media: spec.media,
+            publishedAt: it.publishedAt ?? started,
+            crawledAt: started,
+            url: it.url,
+            urlKey: urlKey(it.url, spec.list.articleId),
+            title: trunc(stripTitleSuffix(it.title ?? '', spec.titleSuffix), 512) as string,
+            image: trunc(it.image, 512),
+            category: trunc(it.category, 64),
+            creator: trunc(it.creator, 256),
+            description: trunc(it.description, 4000),
+            tags: (it.tags ?? []).map(normalizeTag).filter(Boolean),
+            fetchedAt: null,
+            fetchStatus: null,
+            source: 'own',
+          })),
+        );
+      inserted += (result as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+      // Feed-provided tags are usable immediately for ranking.
+      const withTags = batch.filter((it) => it.tags?.length);
+      if (withTags.length)
+        await indexTags(
+          db,
+          spec.media,
+          withTags.map((it) => ({ url: it.url, tags: it.tags as string[], publishedAt: it.publishedAt ?? started })),
+        );
+    }
+    await db
+      .update(crawlRuns)
+      .set({
+        finishedAt: now(),
+        status: errors.length && !items.length ? 'failed' : 'ok',
+        fetched: items.length,
+        inserted,
+        detail: errors.length ? errors.join('\n').slice(0, 4000) : null,
+      })
+      .where(eq(crawlRuns.id, run.id));
+    log.info({ media: spec.media, items: items.length, inserted, errors: errors.length }, 'crawl index');
+    return { items: items.length, inserted, errors };
+  } catch (error) {
+    await db
+      .update(crawlRuns)
+      .set({ finishedAt: now(), status: 'failed', detail: String((error as Error).message) })
+      .where(eq(crawlRuns.id, run.id));
+    throw error;
+  }
+}
+
+async function indexTags(db: Db, media: string, rows: Array<{ url: string; tags: string[]; publishedAt: Date }>) {
+  const ids = await db
+    .select({ id: articles.id, url: articles.url })
+    .from(articles)
+    .where(
+      and(
+        eq(articles.media, media),
+        sql`${articles.url} IN (${sql.join(
+          rows.map((r) => sql`${r.url}`),
+          sql`, `,
+        )})`,
+      ),
+    );
+  const byUrl = new Map(ids.map((r) => [r.url, r.id]));
+  const values = rows.flatMap((r) => {
+    const id = byUrl.get(r.url);
+    return id
+      ? [...new Set(r.tags.map(normalizeTag).filter((t) => Buffer.byteLength(t) > 1))].map((tag) => ({
+          articleId: id,
+          tag: tag.slice(0, 60),
+          publishedAt: r.publishedAt,
+        }))
+      : [];
+  });
+  for (let i = 0; i < values.length; i += 500)
+    await db
+      .insert(articleTags)
+      .values(values.slice(i, i + 500))
+      .onDuplicateKeyUpdate({ set: { publishedAt: sql`VALUES(published_at)` } });
+}
+
+export async function runArticles(
+  db: Db,
+  spec: SourceSpec,
+  {
+    fetch = fetchText,
+    log = noop,
+    now = () => new Date(),
+    limit = spec.article.batch,
+    concurrency = 2,
+    vocab = null as TitleVocab | null,
+  } = {},
+) {
+  const started = now();
+  // Sources that had a legacy *_tag.php fetch every article; the rest only
+  // fetch articles their listing left untagged. Untagged ones go first.
+  const pending = await db
+    .select({
+      id: articles.id,
+      url: articles.url,
+      publishedAt: articles.publishedAt,
+      crawledAt: articles.crawledAt,
+      title: articles.title,
+      fetchStatus: articles.fetchStatus,
+      urlKey: articles.urlKey,
+    })
+    .from(articles)
+    .where(
+      and(
+        eq(articles.media, spec.media),
+        // A failed fetch is retried once, an hour later; the second failure is final.
+        or(isNull(articles.fetchedAt), and(eq(articles.fetchStatus, 'error'), lt(articles.fetchedAt, new Date(now().getTime() - 3600e3)))),
+        gte(articles.publishedAt, new Date(now().getTime() - 72 * 3600e3)),
+        // ...plus any whose publish time is still the crawl time (the page has it).
+        spec.article.enabled ? sql`TRUE` : sql`(JSON_LENGTH(${articles.tags}) = 0 OR ${articles.publishedAt} = ${articles.crawledAt})`,
+      ),
+    )
+    .orderBy(sql`JSON_LENGTH(${articles.tags}) = 0 DESC`, desc(articles.id))
+    .limit(limit);
+  if (!pending.length) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
+  const [run] = await db
+    .insert(crawlRuns)
+    .values({ media: spec.media, stage: 'article', startedAt: started, status: 'running' })
+    .$returningId();
+  const gate = pLimit(concurrency);
+  let updated = 0,
+    failed = 0,
+    rejected = 0;
+  const provider = spec.article.provider ? new RegExp(spec.article.provider) : null;
+  const errors: string[] = [];
+  // HTTP 429: stop this batch and leave the rest (and this row) for the next run.
+  let throttled = false;
+  await Promise.all(
+    pending.map((row, i) =>
+      gate(async () => {
+        if (i) await new Promise((r) => setTimeout(r, Math.min(spec.article.delayMs, 3000) * (i % concurrency)));
+        if (throttled) return;
+        try {
+          const res = await fetch(row.url, { userAgent: spec.article.userAgent });
+          if (res.status === 429) {
+            throttled = true;
+            errors.push(`${row.url} -> HTTP 429 (batch stopped)`);
+            return;
+          }
+          if (res.status >= 400) throw Error('HTTP ' + res.status);
+          const detail = extractArticle(res.body, row.url, spec.article);
+          if (provider && !provider.test(detail.provider ?? '')) {
+            await db
+              .insert(rejectedUrls)
+              .ignore()
+              .values({
+                media: spec.media,
+                urlKey: row.urlKey ?? urlKey(row.url, spec.list.articleId),
+                reason: `provider:${detail.provider ?? 'none'}`.slice(0, 64),
+                createdAt: now(),
+              });
+            await db.delete(articleTags).where(eq(articleTags.articleId, row.id));
+            await db.delete(articles).where(eq(articles.id, row.id));
+            rejected++;
+            return;
+          }
+          const titleTags = !detail.tags.length && vocab ? tagsFromTitle(row.title || detail.title || '', vocab) : [];
+          const tags = detail.tags.length ? detail.tags : titleTags;
+          // Discovered links have no listing time; adopt the page's published
+          // time unless it is in the future or implausibly old.
+          const metaTime =
+            detail.publishedAt && detail.publishedAt.getTime() < Date.now() + 86400e3 && detail.publishedAt.getFullYear() >= 2000
+              ? detail.publishedAt
+              : null;
+          const publishedAt = metaTime && row.publishedAt.getTime() === row.crawledAt.getTime() ? metaTime : row.publishedAt;
+          await db
+            .update(articles)
+            .set({
+              fetchedAt: now(),
+              fetchStatus: detail.tags.length ? 'ok' : titleTags.length ? 'title' : 'notags',
+              ...(Buffer.byteLength(row.title ?? '') < 2 && detail.title
+                ? { title: trunc(stripTitleSuffix(detail.title, spec.titleSuffix), 512) as string }
+                : {}),
+              ...(publishedAt !== row.publishedAt ? { publishedAt } : {}),
+              canonical: trunc(detail.canonical, 512),
+              image: detail.image ? trunc(detail.image, 512) : undefined,
+              description: detail.description ? trunc(detail.description, 4000) : undefined,
+              tags: sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(tags)}, tags)`,
+            })
+            .where(eq(articles.id, row.id));
+          // Tags written at index time carry the listing time; move them with the article.
+          if (publishedAt !== row.publishedAt) await db.update(articleTags).set({ publishedAt }).where(eq(articleTags.articleId, row.id));
+          if (tags.length) {
+            const values = [...new Set(tags)].map((tag) => ({
+              articleId: row.id,
+              tag: tag.slice(0, 60),
+              publishedAt,
+            }));
+            await db
+              .insert(articleTags)
+              .values(values)
+              .onDuplicateKeyUpdate({ set: { publishedAt: sql`VALUES(published_at)` } });
+          }
+          updated++;
+        } catch (error) {
+          failed++;
+          errors.push(`${row.url} -> ${(error as Error).message}`);
+          // Unreachable page: still tag from the title so the article counts.
+          const titleTags = vocab ? tagsFromTitle(row.title ?? '', vocab) : [];
+          await db
+            .update(articles)
+            .set({
+              fetchedAt: now(),
+              fetchStatus: row.fetchStatus === 'error' ? 'failed' : 'error',
+              ...(titleTags.length ? { tags: sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(titleTags)}, tags)` } : {}),
+            })
+            .where(eq(articles.id, row.id));
+          if (titleTags.length)
+            await db
+              .insert(articleTags)
+              .values(titleTags.map((tag) => ({ articleId: row.id, tag: tag.slice(0, 60), publishedAt: row.publishedAt })))
+              .onDuplicateKeyUpdate({ set: { publishedAt: sql`VALUES(published_at)` } });
+        }
+      }),
+    ),
+  );
+  await db
+    .update(crawlRuns)
+    .set({
+      finishedAt: now(),
+      status: failed && failed === pending.length ? 'failed' : 'ok',
+      fetched: pending.length,
+      updated,
+      failed,
+      detail: errors.length ? errors.join('\n').slice(0, 4000) : null,
+    })
+    .where(eq(crawlRuns.id, run.id));
+  log.info({ media: spec.media, fetched: pending.length, updated, failed, rejected }, 'crawl articles');
+  return { fetched: pending.length, updated, failed, rejected };
+}

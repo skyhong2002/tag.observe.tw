@@ -1,0 +1,39 @@
+{
+ "reason": "Upstream feed gone (404/403/DNS/empty) on 2026-09-28 and the legacy crawler also produced no rows in 36h. Re-enable individually after finding a new source.",
+ "media": [
+  "agriharvest",
+  "asiatatler",
+  "babyou",
+  "buzzorange",
+  "bw",
+  "cheers",
+  "cti",
+  "daman",
+  "digitimes",
+  "dongtw",
+  "dramaqueen",
+  "eventsinfocus",
+  "gq",
+  "gv",
+  "housefun",
+  "hypesphere",
+  "kairos",
+  "ldope",
+  "lihpao",
+  "mplus",
+  "musou",
+  "newsmarket",
+  "nom",
+  "overdope",
+  "pantravel",
+  "punchline",
+  "tsna",
+  "viewpointtaiwan",
+  "voicettank",
+  "wyc"
+ ],
+ "note": "cti duplicates ctitv; lihpao/ldope/daman only old content; hypesphere was an rss.app proxy (gone; elle/hbr/ngm re-enabled from their own sites 2026-09-29); agriharvest 429, gq/newsmarket/buzzorange 403 even via curl; housefun 202 empty; dongtw/babyou/bw/kairos/musou/tsna/voicettank/asiatatler DNS or fetch failures; digitimes/wyc/eventsinfocus no article listing; lihpao homepage links are monthly archives, not articles. 2026-09-29 (sampled article dates): pantravel/mplus last posted 2022, viewpointtaiwan 2024-02, punchline 2024-06, nom 2025-03; gv feed stopped 2025-06 and the site posts a few times a year; cheers sitemap/RSS behind a Cloudflare JS challenge. 2026-10-01: overdope's domain now serves Indonesian slot-gambling spam (every one of 2,394 rows, /gacor1/, /gacor2/); dramaqueen's last post is 2026-06-17.",
+ "duplicates": {
+  "cti": "ctitv"
+ }
+}

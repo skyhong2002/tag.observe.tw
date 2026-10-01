@@ -1,0 +1,20 @@
+[Unit]
+Description=tag.observe.tw gateway (Fastify: API, legacy redirects, UI proxy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/deck/.local/share/tag-analysis/current
+ExecStart=/home/deck/.local/bin/node app/src/server.js
+Environment=NODE_ENV=production
+Environment=PORT=18130
+Environment=UI_ORIGIN=http://127.0.0.1:18132
+EnvironmentFile=-/home/deck/Projects/tag.analysis.tw/.env
+Restart=always
+RestartSec=3
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

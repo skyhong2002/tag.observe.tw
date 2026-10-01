@@ -1,0 +1,510 @@
+{
+  "ettoday": {
+    "icon": "http://www.ettoday.net/favicon.ico",
+    "title": "東森新聞雲"
+  },
+  "setn": {
+    "icon": "http://www.setn.com/favicon.ico",
+    "title": "三立新聞網"
+  },
+  "chinatimes": {
+    "icon": "https://static.chinatimes.com/images/2019/favicon.ico",
+    "title": "中時電子報"
+  },
+  "nownews": {
+    "icon": "https://www.nownews.com/icon/logo-144x144.png",
+    "title": "NOWnews"
+  },
+  "tvbs": {
+    "icon": "https://cc.tvbs.com.tw/2017news/prd/images/favicon.ico?v=010",
+    "title": "TVBS"
+  },
+  "cts": {
+    "icon": "http://www.cts.com.tw/favicon.ico",
+    "title": "華視新聞"
+  },
+  "ttv": {
+    "icon": "http://www.ttv.com.tw/favicon.ico",
+    "title": "台視新聞"
+  },
+  "ctee": {
+    "icon": "https://cteecors.azureedge.net/wp-content/uploads/2018/09/logo_16_16.ico",
+    "title": "工商時報"
+  },
+  "newtalk": {
+    "icon": "http://newtalk.tw/sys_images/favicon.ico",
+    "title": "新頭殼"
+  },
+  "tnl": {
+    "icon": "https://www.thenewslens.com/assets/images/logo/favicon/favicon-32x32.png",
+    "title": "關鍵評論網"
+  },
+  "storm": {
+    "icon": "https://www.storm.mg/img/favicon.ico",
+    "title": "風傳媒"
+  },
+  "ltn": {
+    "icon": "http://news.ltn.com.tw/assets/images/all/favicon.ico",
+    "title": "自由時報"
+  },
+  "udn": {
+    "icon": "http://udn.com/favicon.ico",
+    "title": "聯合新聞網"
+  },
+  "upmedia": {
+    "icon": "http://www.upmedia.mg/images/favicon.png",
+    "title": "上報"
+  },
+  "mirror": {
+    "icon": "https://www.mirrormedia.mg/assets/mirrormedia/favicon-48x48.png",
+    "title": "鏡傳媒"
+  },
+  "cmmedia": {
+    "icon": "https://www.cmmedia.com.tw/favicon.png",
+    "title": "信傳媒"
+  },
+  "rti": {
+    "icon": "https://www.rti.org.tw/favicon.ico",
+    "title": "中央廣播電台"
+  },
+  "ebc": {
+    "icon": "https://news.ebc.net.tw/img/favicon/favicon.ico",
+    "title": "東森新聞"
+  },
+  "rfi": {
+    "icon": "http://www.rfi.fr/favicon.ico",
+    "title": "法國國際廣播電台"
+  },
+  "bbc": {
+    "icon": "https://www.bbc.com/favicon.ico",
+    "title": "英國公共廣播電台"
+  },
+  "nikkei": {
+    "icon": "https://zh.cn.nikkei.com/templates/nikkeisite/favicon.ico",
+    "title": "日本經濟新聞中文版"
+  },
+  "taro": {
+    "icon": "https://cdn.taronews.tw/files/2018/02/favicon-taronews-16.png",
+    "title": "芋傳媒"
+  },
+  "epochtimes": {
+    "icon": "https://www.epochtimes.com/favicon.ico",
+    "title": "大紀元"
+  },
+  "cna": {
+    "icon": "https://imgcdn.cna.com.tw/www/website/img/fav-icon.png?v=20200825v1",
+    "title": "中央社"
+  },
+  "apple": {
+    "icon": "https://img.appledaily.com.tw/appledaily/pinsite/64x64.ico",
+    "title": "蘋果日報"
+  },
+  "ctwant": {
+    "icon": "https://static.ctwant.com/images/dist/apple-touch-icon.png",
+    "title": "時報周刊/周刊王"
+  },
+  "ftv": {
+    "icon": "https://cdn.ftvnews.com.tw/client/images/favicons/favicon.ico",
+    "title": "民視"
+  },
+  "nextapple": {
+    "icon": "https://static.nextapple.tw/web/layout/img/favicon.ico",
+    "title": "壹蘋新聞網"
+  },
+  "cti": {
+    "icon": "https://ctinews.com/favicon.ico",
+    "title": "中天新聞"
+  },
+  "bccnews": {
+    "icon": "https://bccnews.com.tw/favicon.ico",
+    "title": "中廣新聞"
+  },
+  "cnews": {
+    "icon": "https://cnews.com.tw/wp-content/themes/cnews-theme/img/favicon-32x32.png",
+    "title": "匯流新聞"
+  },
+  "ftnn": {
+    "icon": "https://static.ftnn.com.tw/www/images/ftnn-icon-64.jpg",
+    "title": "鋒燦傳媒"
+  },
+  "taiwandom": {
+    "icon": "https://i0.wp.com/taiwandomnews.com/wp-content/uploads/2021/11/cropped-domLogo-3.png?fit=32%2C32&ssl=1",
+    "title": "洞傳媒"
+  },
+  "nius": {
+    "icon": "http://www.niusnews.com/favicon.ico",
+    "title": "妞新聞"
+  },
+  "vogue": {
+    "icon": "http://www.vogue.com.tw/favicon.ico",
+    "title": "Vogue"
+  },
+  "womany": {
+    "icon": "http://womany.net/favicon.ico",
+    "title": "女人迷"
+  },
+  "babyou": {
+    "icon": "https://babyou.nownews.com/wp-content/uploads/2019/09/0917_3-02-1.png",
+    "title": "姊妹淘"
+  },
+  "marieclaire": {
+    "icon": "https://www.marieclaire.com.tw/favicon.ico",
+    "title": "美麗佳人"
+  },
+  "beauty321": {
+    "icon": "https://www.beauty321.com/images/favicon.ico",
+    "title": "美人圈"
+  },
+  "elle": {
+    "icon": "https://www.elle.com/sites/elle/assets/images/favicon.ico",
+    "title": "ELLE"
+  },
+  "femin": {
+    "icon": "https://graph.facebook.com/827029560647015/picture",
+    "title": "the FEMIN"
+  },
+  "tvbswoman": {
+    "icon": "https://cc.tvbs.com.tw/2017program/woman/images/apple-touch-icon/icon_180x180.png",
+    "title": "女人我最大"
+  },
+  "bazaar": {
+    "icon": "https://www.harpersbazaar.com/sites/harpersbazaar/assets/images/favicon.ico",
+    "title": "哈潑時尚"
+  },
+  "cosmopolitan": {
+    "icon": "https://www.cosmopolitan.com/sites/cosmopolitan/assets/images/favicon.ico",
+    "title": "柯夢波丹"
+  },
+  "cool3c": {
+    "icon": "https://www.cool3c.com/favicon.ico",
+    "title": "癮科技"
+  },
+  "technews": {
+    "icon": "http://technews.tw/favicon.ico?v=2",
+    "title": "科技新報"
+  },
+  "soft4fun": {
+    "icon": "http://www.soft4fun.net/wp-content/themes/arthemia/images/favicon.ico",
+    "title": "硬是要學"
+  },
+  "kocpc": {
+    "icon": "https://www.kocpc.com.tw/favicon.ico",
+    "title": "點子王阿達"
+  },
+  "saydigi": {
+    "icon": "http://www.saydigi.com/favicon.ico",
+    "title": "點子生活"
+  },
+  "bnext": {
+    "icon": "https://cdn.bnext.info/bn/images/bn-logo1024x1024.png",
+    "title": "數位時代"
+  },
+  "ithome": {
+    "icon": "https://www.ithome.com.tw/favicon.ico",
+    "title": "itHome"
+  },
+  "inside": {
+    "icon": "https://www.inside.com.tw/favicon.ico",
+    "title": "InSide"
+  },
+  "techorange": {
+    "icon": "https://buzzorange.com/icon/TO_180.png",
+    "title": "科技報橘"
+  },
+  "techbang": {
+    "icon": "http://www.techbang.com/favicon.ico",
+    "title": "T客邦"
+  },
+  "dacota": {
+    "icon": "https://images.zi.org.tw/dacota/2017/09/1504802621-4265a788ecc74a4ea0967fbcf0a43f6e-192x192.png",
+    "title": "雲爸的私處"
+  },
+  "applealmond": {
+    "icon": "https://img.applealmond.com/2021/07/1627455091-2f1138deb69f22a0fcbdff8a3f26365f-32x32.png",
+    "title": "蘋果仁"
+  },
+  "mrmad": {
+    "icon": "https://mrmad.com.tw/wp-content/uploads/2016/07/iconmrmad.png",
+    "title": "瘋先生"
+  },
+  "newmobilelife": {
+    "icon": "https://www.newmobilelife.com/favicon.ico",
+    "title": "流動日報"
+  },
+  "gamme": {
+    "icon": "http://news.gamme.com.tw/favicon.ico",
+    "title": "宅宅新聞卡卡洛普"
+  },
+  "newsmarket": {
+    "icon": "http://www.newsmarket.com.tw/files/favicon.ico",
+    "title": "上下游"
+  },
+  "wyc": {
+    "icon": "http://world.yam.com/favicon.ico",
+    "title": "地球圖輯隊"
+  },
+  "punchline": {
+    "icon": "http://punchline.asia/wp-content/uploads/2014/09/favicon.ico",
+    "title": "娛樂重擊"
+  },
+  "pansci": {
+    "icon": "https://pansci.asia/wp-content/themes/pansci-bootstrap-child//src/imgs/logo/pansci_logo_only.png",
+    "title": "泛科學"
+  },
+  "housefun": {
+    "icon": "http://s1-news.hfcdn.com/s1-news/system/i/icon/favicon_48x48.ico",
+    "title": "好房新聞"
+  },
+  "cw": {
+    "icon": "http://www.cw.com.tw/assets_new/img/favicon.ico",
+    "title": "天下"
+  },
+  "einfo": {
+    "icon": "http://e-info.org.tw/favicon.ico",
+    "title": "環境資訊中心"
+  },
+  "coolloud": {
+    "icon": "http://www.coolloud.org.tw/sites/all/themes/coolloud/favicon.ico",
+    "title": "苦勞網"
+  },
+  "civilmedia": {
+    "icon": "http://www.civilmedia.tw/wp-content/uploads/2013/09/civilfavicon.png",
+    "title": "公庫報導"
+  },
+  "cheers": {
+    "icon": "http://cw1.tw/CC/images/common/logo.png",
+    "title": "快樂工作人"
+  },
+  "newcongress": {
+    "icon": "http://newcongress.tw/wp-content/themes/fundesigner/images/logo.png",
+    "title": "新公民議會"
+  },
+  "viewpointtaiwan": {
+    "icon": "http://www.viewpointtaiwan.com/wp-content/uploads/2016/04/12968152_1072604752805959_3945141395663096721_o.png",
+    "title": "觀策站"
+  },
+  "buzzorange": {
+    "icon": "https://buzzorange.com/icon/BO_180.png",
+    "title": "報橘"
+  },
+  "agriharvest": {
+    "icon": "https://agriharvest.tw/wp-content/uploads/2019/05/farm_fav_green.png",
+    "title": "農傳媒"
+  },
+  "taisounds": {
+    "icon": "https://www.taisounds.com/favicon.ico",
+    "title": "太報"
+  },
+  "pourquoi": {
+    "icon": "https://storage.googleapis.com/stateless-34-84-11-249/2019/11/fa075704-cropped-08296cac-author1-150x150.jpg",
+    "title": "報呱"
+  },
+  "foodnext": {
+    "icon": "https://www.foodnext.net/favicon.ico",
+    "title": "食力"
+  },
+  "gvm": {
+    "icon": "https://www.gvm.com.tw/public/images/apple-touch-icon.png",
+    "title": "遠見"
+  },
+  "cnyes": {
+    "icon": "http://news.cnyes.com/favicon.ico",
+    "title": "鉅亨網"
+  },
+  "businesstoday": {
+    "icon": "https://www.businesstoday.com.tw/lazyweb/web/img/favicon.ico",
+    "title": "今週刊"
+  },
+  "ustv": {
+    "icon": "https://cdn.ustv.com.tw/favicon.ico",
+    "title": "非凡新聞"
+  },
+  "daman": {
+    "icon": "http://www.damanwoo.com/sites/all/themes/coolthemes/damanx/apple-touch-icon-57.png",
+    "title": "大人物"
+  },
+  "nom": {
+    "icon": "http://nommagazine.com/wp-content/uploads/2016/03/Icon-NOM.png",
+    "title": "NOM Magazine"
+  },
+  "overdope": {
+    "icon": "http://overdope.com/wp-content/uploads/2015/04/2015-04-18_075856.png",
+    "title": "overdope"
+  },
+  "ldope": {
+    "icon": "https://graph.facebook.com/LDopeCom/picture",
+    "title": "L.Dope"
+  },
+  "eld": {
+    "icon": "https://everylittled.com/assets/images/logo-b.png",
+    "title": "Every Little D"
+  },
+  "gq": {
+    "icon": "https://www.gq.com.tw/images/brands/gq/favicons/apple-touch-icon.png",
+    "title": "GQ Taiwan"
+  },
+  "flipermag": {
+    "icon": "https://flipermag.com/wp-content/themes/flipermag/assets/images/favicon.png",
+    "title": "FLiPER"
+  },
+  "livio": {
+    "icon": "https://www.livio.com.tw/favicon.ico",
+    "title": "Livio"
+  },
+  "hypebeast": {
+    "icon": "https://static.hypebeast.com/dist/hypebeast/favicon/apple-touch-icon-57x57.png",
+    "title": "HYPEBEAST"
+  },
+  "shoppingdesign": {
+    "icon": "https://cdn.bnextmedia.com.tw/sd/images/sd-64x64.png",
+    "title": "Shopping Design"
+  },
+  "everydayobject": {
+    "icon": "https://s3-ap-northeast-1.amazonaws.com/everydayobject/wp-content/uploads/2018/10/everydayfinal2small.png",
+    "title": "Everyday Object"
+  },
+  "asiatatler": {
+    "icon": "https://cdn.asiatatler.com/common/layout/bumblebee/icons/asiatatler/favicon.ico?1612671050",
+    "title": "Taiwan Tatler"
+  },
+  "hypesphere": {
+    "icon": "https://www.hypesphere.com/images/favicon.png",
+    "title": "HypeSphere"
+  },
+  "agentm": {
+    "icon": "https://news.agentm.tw/wp-content/uploads/2017/10/favicon.ico",
+    "title": "電影神搜"
+  },
+  "dramaqueen": {
+    "icon": "https://www.dramaqueen.com.tw/img/logo.png",
+    "title": "電視迷"
+  },
+  "top1health": {
+    "icon": "https://www.top1health.com/favicon.ico",
+    "title": "華人健康網"
+  },
+  "tvbshealth": {
+    "icon": "https://cc.tvbs.com.tw/2017program/health/images/apple-touch-icon/icon_180x180.png",
+    "title": "健康2.0"
+  },
+  "edh": {
+    "icon": "http://www.everydayhealth.com.tw/resources/front/images/favicon.ico",
+    "title": "早安健康"
+  },
+  "commonhealth": {
+    "icon": "https://www.commonhealth.com.tw/assets/images/favicon.ico",
+    "title": "康健"
+  },
+  "heho": {
+    "icon": "https://heho.com.tw/wp-content/uploads/2020/12/1607933330.5821-32x32.png",
+    "title": "HEHO"
+  },
+  "healthnews": {
+    "icon": "http://www.healthnews.com.tw/favicon.ico",
+    "title": "健康醫療網"
+  },
+  "sportsv": {
+    "icon": "https://www.sportsv.net/favicon.ico",
+    "title": "運動視界"
+  },
+  "pantravel": {
+    "icon": "http://pantravel.life/wp-content/uploads/2015/08/%E6%97%85%E9%A3%AFfavicon_30x30.jpg",
+    "title": "旅飯"
+  },
+  "supertaste": {
+    "icon": "https://cc.tvbs.com.tw/2017program/supertaste/images/apple-touch-icon/icon_180x180.png",
+    "title": "食尚玩家"
+  },
+  "ngm": {
+    "icon": "http://www.natgeomedia.com/wp-content/uploads/2015/11/favicon.ico",
+    "title": "國家地理雜誌"
+  },
+  "reporter": {
+    "icon": "https://www.twreporter.org/asset/favicon.png",
+    "title": "報導者"
+  },
+  "people": {
+    "icon": "http://www.peoplenews.tw/images/favicon.ico",
+    "title": "民報"
+  },
+  "yahoo": {
+    "icon": "https://tw.news.yahoo.com/favicon.ico",
+    "title": "雅虎新聞"
+  },
+  "bw": {
+    "icon": "http://ibw.bwnet.com.tw/theme/v1/i/favicon.ico",
+    "title": "商業週刊"
+  },
+  "theinitium": {
+    "icon": "https://d3jl5c1btygfur.cloudfront.net/static/img/favicon.ico",
+    "title": "端傳媒"
+  },
+  "hbr": {
+    "icon": "https://www.hbrtaiwan.com/images/favicon.ico",
+    "title": "哈佛商業評論"
+  },
+  "eventsinfocus": {
+    "icon": "http://www.eventsinfocus.org/sites/default/files/smalleye2_4.png",
+    "title": "焦點事件"
+  },
+  "pts": {
+    "icon": "https://news.pts.org.tw/favicon.ico",
+    "title": "公視新聞"
+  },
+  "mplus": {
+    "icon": "https://www.mplus.com.tw/favicon.ico",
+    "title": "MPlus"
+  },
+  "gamebase": {
+    "icon": "https://news.gamebase.com.tw/favicon32.ico",
+    "title": "遊戲基地"
+  },
+  "4gamers": {
+    "icon": "https://www.4gamers.com.tw/site/server/img/favicon-20180629.ico",
+    "title": "4GAMERS"
+  },
+  "gamer": {
+    "icon": "https://i2.bahamut.com.tw/apple-touch-icon.png",
+    "title": "巴哈姆特"
+  },
+  "ctit": {
+    "icon": null,
+    "title": null
+  },
+  "want": {
+    "icon": "https://static.chinatimes.com/images/2019/favicon.ico",
+    "title": "旺報"
+  },
+  "1111": {
+    "icon": "https://www.1111.com.tw/favicon.ico",
+    "title": "1111人力銀行"
+  },
+  "ctitv": {
+    "icon": "https://ctinews.com/favicon.ico",
+    "title": "中天新聞"
+  },
+  "ctv": {
+    "icon": "https://www.ctv.com.tw/Cms_Data/Sites/CTV4/Files/images/favicon-32x32.ico",
+    "title": "中視新聞"
+  },
+  "taipeitimes": {
+    "icon": "https://www.taipeitimes.com/assets/images/taipeitimes.ico",
+    "title": "Taipei Times"
+  },
+  "udnmoney": {
+    "icon": "https://money.udn.com/favicon.ico",
+    "title": "經濟日報"
+  },
+  "moneydj": {
+    "icon": "https://www.moneydj.com/favicon.ico",
+    "title": "MoneyDJ理財網"
+  },
+  "peopo": {
+    "icon": "https://www.peopo.org/files/public/favicon.png",
+    "title": "PeoPo 公民新聞"
+  },
+  "mamaclub": {
+    "icon": "https://mamaclub.com/favicon.ico",
+    "title": "媽媽經"
+  }
+}

@@ -1,0 +1,41 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env: { MARIADB_ROOT_PASSWORD: root, MARIADB_DATABASE: tag_test }
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      TEST_DB_URL: mysql://root:root@127.0.0.1:3306/tag_test
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx biome ci .
+      - run: npx tsc -p tsconfig.json
+      - run: npx vitest run
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.json
+      # Pages must build with the API unreachable (data is fetched at request time).
+      - run: npx next build
+        env: { TAG_API_ORIGIN: 'http://127.0.0.1:1', NEXT_TELEMETRY_DISABLED: '1' }

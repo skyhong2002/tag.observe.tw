@@ -1,0 +1,20 @@
+[Unit]
+Description=tag.observe.tw SSR frontend (Next.js)
+After=network-online.target tag-analysis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/deck/.local/share/tag-analysis/current/web/.next/standalone/web
+ExecStart=/home/deck/.local/bin/node server.js
+Environment=NODE_ENV=production
+Environment=PORT=18132
+Environment=HOSTNAME=127.0.0.1
+Environment=TAG_API_ORIGIN=http://127.0.0.1:18130
+Restart=always
+RestartSec=3
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

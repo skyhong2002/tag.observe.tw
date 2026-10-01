@@ -1,0 +1,60 @@
+name: tag-observe
+services:
+  db:
+    image: mariadb:11.4
+    container_name: tag-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${TAG_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: tag_observe
+      MARIADB_USER: tag_observe
+      MARIADB_PASSWORD: ${TAG_DB_PASSWORD}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--innodb-buffer-pool-size=1G", "--max-allowed-packet=64M"]
+    ports: ["127.0.0.1:13306:3306"]
+    volumes: ["./data/mariadb:/var/lib/mysql", "./db:/docker-entrypoint-initdb.d:ro"]
+    healthcheck: { test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"], interval: 10s, timeout: 5s, retries: 10 }
+  redis:
+    image: redis:7-alpine
+    container_name: tag-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    ports: ["127.0.0.1:16379:6379"]
+    volumes: ["./data/redis:/data"]
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: tag-prometheus
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=30d", "--web.listen-address=127.0.0.1:19090"]
+    network_mode: host
+    volumes: ["./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro", "./prometheus/rules:/etc/prometheus/rules:ro", "./data/prometheus:/prometheus"]
+  loki:
+    image: grafana/loki:3.5.3
+    container_name: tag-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    network_mode: host
+    volumes: ["./loki/loki.yml:/etc/loki/local-config.yaml:ro", "./data/loki:/loki"]
+  alloy:
+    image: grafana/alloy:v1.10.2
+    container_name: tag-alloy
+    restart: unless-stopped
+    command: ["run", "--server.http.listen-addr=127.0.0.1:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
+    network_mode: host
+    volumes: ["./alloy/config.alloy:/etc/alloy/config.alloy:ro", "/var/log/journal:/var/log/journal:ro", "/run/log/journal:/run/log/journal:ro", "/etc/machine-id:/etc/machine-id:ro", "./data/alloy:/var/lib/alloy/data"]
+    depends_on: [loki]
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: tag-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_ROOT_URL: http://127.0.0.1:13000/
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GRAFANA_ALERT_WEBHOOK: ${GRAFANA_ALERT_WEBHOOK:-http://127.0.0.1:9/unset}
+      GF_SERVER_HTTP_ADDR: 127.0.0.1
+      GF_SERVER_HTTP_PORT: "13000"
+    network_mode: host
+    volumes: ["./grafana/provisioning:/etc/grafana/provisioning:ro", "./grafana/dashboards:/var/lib/grafana/dashboards:ro", "./data/grafana:/var/lib/grafana"]
+    depends_on: [prometheus, loki]

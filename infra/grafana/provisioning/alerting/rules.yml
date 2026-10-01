@@ -1,0 +1,82 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: tag-observe
+    folder: tag.observe.tw
+    interval: 1m
+    rules:
+      - uid: tag-tagappdown
+        title: TagAppDown
+        condition: C
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "tag.observe.tw app metrics endpoint down" }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prom
+            model: { refId: A, expr: "up{job=\"tag-observe-app\"} == bool 0", instant: true }
+          - refId: C
+            datasourceUid: __expr__
+            model: { refId: C, type: threshold, expression: A, conditions: [ { evaluator: { type: gt, params: [0] } } ] }
+      - uid: tag-tagworkerdown
+        title: TagWorkerDown
+        condition: C
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "tag worker metrics endpoint down" }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prom
+            model: { refId: A, expr: "up{job=\"tag-observe-worker\"} == bool 0", instant: true }
+          - refId: C
+            datasourceUid: __expr__
+            model: { refId: C, type: threshold, expression: A, conditions: [ { evaluator: { type: gt, params: [0] } } ] }
+      - uid: tag-tagrankingstale
+        title: TagRankingStale
+        condition: C
+        for: 30m
+        labels: { severity: critical }
+        annotations: { summary: "No successful ranking job in 30 minutes" }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prom
+            model: { refId: A, expr: "increase(tag_job_runs_total{job=\"tag-observe-worker\",exported_job=\"ranking\",status=\"ok\"}[30m]) == bool 0", instant: true }
+          - refId: C
+            datasourceUid: __expr__
+            model: { refId: C, type: threshold, expression: A, conditions: [ { evaluator: { type: gt, params: [0] } } ] }
+      - uid: tag-tagjobfailures
+        title: TagJobFailures
+        condition: C
+        noDataState: OK
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Background job failed in the last hour" }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prom
+            model: { refId: A, expr: "(sum by (exported_job) (increase(tag_job_runs_total{job=\"tag-observe-worker\",status=\"failed\"}[1h])) or sum by (exported_job) (0 * tag_job_runs_total{job=\"tag-observe-worker\"})) > bool 0", instant: true }
+          - refId: C
+            datasourceUid: __expr__
+            model: { refId: C, type: threshold, expression: A, conditions: [ { evaluator: { type: gt, params: [0] } } ] }
+      - uid: tag-tagcrawlmostlyfailing
+        title: TagCrawlMostlyFailing
+        condition: C
+        noDataState: OK
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Crawl jobs failing repeatedly" }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prom
+            model: { refId: A, expr: "(sum(increase(tag_job_runs_total{job=\"tag-observe-worker\",exported_job=~\"crawl.*\",status=\"failed\"}[2h])) or sum(0 * tag_job_runs_total{job=\"tag-observe-worker\",exported_job=~\"crawl.*\"})) > bool 3", instant: true }
+          - refId: C
+            datasourceUid: __expr__
+            model: { refId: C, type: threshold, expression: A, conditions: [ { evaluator: { type: gt, params: [0] } } ] }
+deleteRules:
+  - orgId: 1
+    uid: tag-taglegacyfallbackhigh
