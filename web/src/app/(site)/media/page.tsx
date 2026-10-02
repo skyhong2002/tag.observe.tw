@@ -199,29 +199,29 @@ export default async function MediaStatsPage({
         <Tile label="有標籤的文章" value={pct(t.taggedShare24h)} note="24 小時內" />
       </div>
       <div className="flex flex-wrap items-center gap-1.5 text-sm">
-        <Link href={link({ status: null })} className={chip(!status)}>
+        <Link href={link({ status: null })} scroll={false} className={chip(!status)}>
           全部狀態
         </Link>
         {(Object.keys(STATUS) as Status[]).map((s) => (
-          <Link key={s} href={link({ status: s })} className={chip(status === s)}>
+          <Link key={s} href={link({ status: s })} scroll={false} className={chip(status === s)}>
             {STATUS[s].label} {t.statusCounts[s] ?? 0}
           </Link>
         ))}
         <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-        <Link href={link({ category: null })} className={chip(!category)}>
+        <Link href={link({ category: null })} scroll={false} className={chip(!category)}>
           全部分類
         </Link>
         {categories.map(([key, label]) => (
-          <Link key={key} href={link({ category: key })} className={chip(category === key)}>
+          <Link key={key} href={link({ category: key })} scroll={false} className={chip(category === key)}>
             {label}
           </Link>
         ))}
         <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-        <Link href={link({ camp: null })} className={chip(!camp)}>
+        <Link href={link({ camp: null })} scroll={false} className={chip(!camp)}>
           全部傾向
         </Link>
         {(Object.keys(CAMPS) as Array<keyof typeof CAMPS>).map((c) => (
-          <Link key={c} href={link({ camp: c })} className={chip(camp === c)}>
+          <Link key={c} href={link({ camp: c })} scroll={false} className={chip(camp === c)}>
             {CAMPS[c].label} {data.media.filter((m) => m.camp === c).length}
           </Link>
         ))}

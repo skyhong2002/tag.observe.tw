@@ -38,12 +38,12 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
       </div>
       <nav className="flex flex-wrap items-center gap-1 text-sm">
         {prev && (
-          <Link href={`/event/archive/?day=${prev}`} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
+          <Link href={`/event/archive/?day=${prev}`} scroll={false} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
             ← 前一天
           </Link>
         )}
         {next && (
-          <Link href={`/event/archive/?day=${next}`} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
+          <Link href={`/event/archive/?day=${next}`} scroll={false} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
             後一天 →
           </Link>
         )}
@@ -52,6 +52,7 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
             <Link
               key={d}
               href={`/event/archive/?day=${d}`}
+              scroll={false}
               className={`rounded px-1.5 py-0.5 text-xs tabular-nums ${d === data.day ? 'bg-sky-600 text-white' : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
             >
               {d.slice(5).replace('-', '/')}

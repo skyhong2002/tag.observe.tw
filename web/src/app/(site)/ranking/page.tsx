@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MediaIcons from '@/components/MediaIcons';
+import PendingLabel from '@/components/PendingLabel';
 import Sparkline from '@/components/Sparkline';
 import { fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
 
@@ -96,6 +97,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           <Link
             key={c.key}
             href={link({ category: c.key })}
+            scroll={false}
             className={`whitespace-nowrap rounded-full px-3 py-1 ${c.key === category ? 'bg-brand-700 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
           >
             {c.label}
@@ -152,8 +154,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           </div>
           {ranking.entries.length >= limit && (
             <div className="border-t border-zinc-300 p-3 text-center text-sm dark:border-zinc-800">
-              <Link href={link({ limit: String(limit + 50) })} className="text-brand-700 hover:underline dark:text-brand-400">
-                顯示更多
+              <Link
+                href={link({ limit: String(limit + 50) })}
+                scroll={false}
+                className="text-brand-700 hover:underline dark:text-brand-400"
+              >
+                <PendingLabel>顯示更多</PendingLabel>
               </Link>
             </div>
           )}

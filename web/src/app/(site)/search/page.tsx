@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import PendingLabel from '@/components/PendingLabel';
 import SafeImage from '@/components/SafeImage';
 import { API_ORIGIN, fetchMedia, type MediaInfo, taipei } from '@/lib/api';
 import { selectEventLead } from '@/lib/event-presentation.mts';
@@ -160,6 +161,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               <Link
                 key={r.days}
                 href={link({ days: r.days === 31 ? null : String(r.days) })}
+                scroll={false}
                 className={`whitespace-nowrap rounded-full px-3 py-1 ${r.days === days ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`}
               >
                 {r.label}
@@ -189,6 +191,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                     <Link
                       key={c.key}
                       href={link({ camp: camp === c.key ? null : c.key, cursor: null })}
+                      scroll={false}
                       title={`${c.label} ${n.toLocaleString()} 篇（${pct}%）`}
                       className={`flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap ${c.bar} ${camp && camp !== c.key ? 'opacity-40' : ''}`}
                       style={{ flexGrow: n, flexBasis: 0 }}
@@ -201,6 +204,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               <div className="flex flex-wrap items-center gap-1.5 text-sm">
                 <Link
                   href={link({ camp: null, cursor: null })}
+                  scroll={false}
                   className={`rounded-full px-3 py-1 ${!camp ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`}
                 >
                   全部 {facets.total.toLocaleString()}
@@ -209,6 +213,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                   <Link
                     key={c.key}
                     href={link({ camp: c.key, cursor: null })}
+                    scroll={false}
                     className={`rounded-full px-3 py-1 ${camp === c.key ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`}
                   >
                     {c.label} {facets.camps[c.key].toLocaleString()}
@@ -305,15 +310,15 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
           <div className="flex justify-between text-sm">
             {cursor ? (
-              <Link href={link({ cursor: null })} className="text-brand-700 hover:underline dark:text-brand-400">
+              <Link href={link({ cursor: null })} scroll={false} className="text-brand-700 hover:underline dark:text-brand-400">
                 ← 回到最新
               </Link>
             ) : (
               <span />
             )}
             {page.nextCursor && (
-              <Link href={link({ cursor: page.nextCursor })} className="text-brand-700 hover:underline dark:text-brand-400">
-                更早的結果 →
+              <Link href={link({ cursor: page.nextCursor })} scroll={false} className="text-brand-700 hover:underline dark:text-brand-400">
+                <PendingLabel>更早的結果 →</PendingLabel>
               </Link>
             )}
           </div>
