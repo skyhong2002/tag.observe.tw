@@ -1,12 +1,14 @@
 'use client';
 
 import { GraphChart } from 'echarts/charts';
+import { TooltipComponent } from 'echarts/components';
 import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
 import { type GraphSelection, highlightedRelationship, sameGraphSelection } from '@/lib/graph-evidence.mts';
 import { bindGraphNavigation, GRAPH_ZOOM_MAX, GRAPH_ZOOM_MIN } from '@/lib/graph-navigation.mts';
+import { createGraphTooltip } from '@/lib/graph-tooltip.mts';
 import {
   displayedGraphEdges,
   edgeWeightWidth,
@@ -20,7 +22,7 @@ import {
 import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
 import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 
-echarts.use([GraphChart, CanvasRenderer, LabelLayout]);
+echarts.use([GraphChart, TooltipComponent, CanvasRenderer, LabelLayout]);
 
 export type { GraphSelection } from '@/lib/graph-evidence.mts';
 
@@ -87,15 +89,16 @@ export default function SimilarityGraph({
     let visibleEdges = displayedGraphEdges(edges, overview, density.current, null);
     const symbols = new Map(nodes.map((n) => [n.id, fallbackIcon(n)]));
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
+    const tooltipContent = createGraphTooltip(data, nodes, camps);
     const ink = dark ? '#d4d4d8' : '#52525b';
     let width = chart.getWidth(),
       height = chart.getHeight();
-    let positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58));
+    let positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58), true);
     const layoutBounds = () => ({
-      left: Math.min(...positions.map((p) => p.x)),
-      right: chart.getWidth() - Math.max(...positions.map((p) => p.x)),
-      top: Math.min(...positions.map((p) => p.y)),
-      bottom: chart.getHeight() - Math.max(...positions.map((p) => p.y)),
+      left: Math.min(...positions.map((p) => p.x)) - (nodes.length === 1 ? 1 : 0),
+      right: chart.getWidth() - Math.max(...positions.map((p) => p.x)) - (nodes.length === 1 ? 1 : 0),
+      top: Math.min(...positions.map((p) => p.y)) - (nodes.length === 1 ? 1 : 0),
+      bottom: chart.getHeight() - Math.max(...positions.map((p) => p.y)) - (nodes.length === 1 ? 1 : 0),
     });
     const cameraKey = nodes.map((node) => node.id).join('|');
     const savedCamera = camera.current?.key === cameraKey ? camera.current : null;
@@ -105,6 +108,21 @@ export default function SimilarityGraph({
     };
     let zoom = savedCamera?.zoom ?? 1;
     let navigating = false;
+    let tooltipSuppressed = false;
+    const hideTooltip = () => {
+      tooltipSuppressed = true;
+      // setOption can restore ECharts' last tooltip after a click. Keep content
+      // disabled until a real mouse/pen movement, not a chart redraw, resumes it.
+      chart.setOption({ tooltip: { showContent: false } });
+      chart.dispatchAction({ type: 'hideTip' });
+    };
+    const resumeTooltip = (event: PointerEvent) => {
+      if (!tooltipSuppressed || navigating || event.buttons || event.pointerType === 'touch') return;
+      tooltipSuppressed = false;
+      chart.setOption({ tooltip: { showContent: true } });
+    };
+    const element = ref.current;
+    element.addEventListener('pointermove', resumeTooltip, true);
     const nodeData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
       const labels = mediaVisibleLabels(nodes, positions, sizes, chart.getWidth(), zoom);
@@ -157,6 +175,7 @@ export default function SimilarityGraph({
     refresh.current = () => {
       edges = activeEdges.current;
       overview = mainGraphEdges(edges);
+      hideTooltip();
       updateFocus(pinned.current, true);
     };
     const render = () => {
@@ -164,6 +183,29 @@ export default function SimilarityGraph({
       const small = chart.getWidth() < 600;
       chart.setOption({
         animation: false,
+        tooltip: {
+          trigger: 'item',
+          triggerOn: 'mousemove',
+          confine: true,
+          enterable: false,
+          showDelay: 80,
+          hideDelay: 100,
+          transitionDuration: 0,
+          borderWidth: 0,
+          padding: 12,
+          backgroundColor: dark ? '#18181b' : '#fff',
+          textStyle: { color: ink, fontSize: 12 },
+          extraCssText:
+            'max-width:320px;white-space:normal;overflow-wrap:anywhere;line-height:1.7;box-shadow:0 4px 20px #0003;border-radius:10px;pointer-events:none;',
+          formatter: (item: { dataType: string; dataIndex: number; data?: { relationship?: SimilarityEdge } }) => {
+            if (item.dataType === 'edge') {
+              const edge = item.data?.relationship ?? visibleEdges[item.dataIndex];
+              return edge ? tooltipContent({ edge }, edges) : '';
+            }
+            const node = nodes[item.dataIndex];
+            return node ? tooltipContent({ node: node.id }, edges) : '';
+          },
+        },
         series: [
           {
             id: 'media-network',
@@ -214,6 +256,7 @@ export default function SimilarityGraph({
       },
       moving: (value) => {
         if (value && !navigating) {
+          hideTooltip();
           updateFocus(pinned.current);
         }
         navigating = value;
@@ -257,6 +300,7 @@ export default function SimilarityGraph({
       updateFocus(pinned.current);
     });
     chart.on('click', (event) => {
+      hideTooltip();
       if (navigating || event.dataIndex === undefined) return;
       if (event.dataType === 'edge') {
         const edge = (event.data as { relationship?: SimilarityEdge } | null)?.relationship ?? visibleEdges[event.dataIndex];
@@ -279,7 +323,7 @@ export default function SimilarityGraph({
           const center = series.center ? [(series.center[0] * nextWidth) / width, (series.center[1] * nextHeight) / height] : null;
           width = nextWidth;
           height = nextHeight;
-          positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58));
+          positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58), true);
           chart.setOption({
             series: [
               {
@@ -297,6 +341,7 @@ export default function SimilarityGraph({
     });
     observer.observe(ref.current);
     return () => {
+      element.removeEventListener('pointermove', resumeTooltip, true);
       gestures.dispose();
       rememberCamera();
       disposed = true;
@@ -308,14 +353,21 @@ export default function SimilarityGraph({
       chart.dispose();
     };
   }, [nodes, layoutEdges, camps, data, dark]);
-  return nodes.length ? (
+  return (
     <div className="relative h-full w-full">
-      <div
-        ref={ref}
-        className="h-full w-full touch-none cursor-grab active:cursor-grabbing"
-        role="img"
-        aria-label={`媒體關係圖，${nodes.length} 家媒體。可拖曳整張圖、滾輪或雙指縮放；媒體相對位置固定。點選圖示固定高亮相關連線，文章可在圖表下方瀏覽。`}
-      />
+      {nodes.length ? (
+        <div
+          key="graph-canvas"
+          ref={ref}
+          className="h-full w-full touch-none cursor-grab active:cursor-grabbing"
+          role="img"
+          aria-label={`媒體關係圖，${nodes.length} 家媒體。可拖曳整張圖、滾輪或雙指縮放；媒體相對位置固定。點選圖示固定高亮相關連線，文章可在圖表下方瀏覽。`}
+        />
+      ) : (
+        <div key="graph-empty" className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500">
+          目前沒有符合媒體篩選的資料，請調整上方藍綠分類或媒體 tag。
+        </div>
+      )}
       <fieldset
         aria-label="圖表視野"
         className="absolute right-3 bottom-3 flex overflow-hidden rounded-lg border border-zinc-200 bg-white/95 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/95"
@@ -332,8 +384,9 @@ export default function SimilarityGraph({
             type="button"
             aria-label={label}
             title={label}
+            disabled={!nodes.length}
             onClick={() => navigate.current?.(action)}
-            className="min-h-11 min-w-11 px-3 text-sm hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-zinc-800"
+            className="min-h-11 min-w-11 px-3 text-sm hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-40 dark:hover:bg-zinc-800"
           >
             {text}
           </button>
@@ -361,10 +414,6 @@ export default function SimilarityGraph({
           </svg>
         </button>
       </fieldset>
-    </div>
-  ) : (
-    <div className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500">
-      目前樣本沒有這類關係，可切換其他關係或期間查看。
     </div>
   );
 }

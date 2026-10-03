@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { fetchCategories } from '@/lib/api';
 import type { MediaCamps } from '@/lib/media-graph.mts';
 import { fetchSimilarity } from '@/lib/similarity';
 import catalog from '../../../../../app/data/media-catalog.json';
@@ -10,14 +11,17 @@ export default async function SimilarityPage({ searchParams }: { searchParams: P
   const hours = [24, 48, 72, 168].includes(Number(query.hours)) ? Number(query.hours) : 48;
   const requested = Number(query.threshold ?? 0.65);
   const threshold = Number.isFinite(requested) ? Math.min(1, Math.max(0.5, requested)) : 0.65;
-  const data = await fetchSimilarity(hours, threshold).catch(() => null);
+  const [data, categories] = await Promise.all([fetchSimilarity(hours, threshold).catch(() => null), fetchCategories().catch(() => [])]);
   if (data) {
     const camps: MediaCamps = {};
     for (const node of data.nodes) {
       if (catalog.categories.blue.includes(node.id)) camps[node.id] = 'blue';
       else if (catalog.categories.green.includes(node.id)) camps[node.id] = 'green';
     }
-    return <SimilarityExplorer key={`${hours}-${threshold}-${data.generatedAt}`} data={data} camps={camps} />;
+    const tags = Object.entries(catalog.categories)
+      .filter(([id]) => id !== 'blue' && id !== 'green')
+      .map(([id, media]) => ({ id, media, label: categories.find((category) => category.key === id)?.label ?? id }));
+    return <SimilarityExplorer key={`${hours}-${threshold}-${data.generatedAt}`} data={data} camps={camps} tags={tags} />;
   }
   return (
     <div role="status" className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">

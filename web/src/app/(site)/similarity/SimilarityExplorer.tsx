@@ -4,7 +4,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
-import { type MediaCamps, mainGraphEdges, nodeArticleCounts, selectGraphMedia } from '@/lib/media-graph.mts';
+import { filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
+import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
@@ -62,7 +63,8 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
   );
 }
 
-export default function SimilarityExplorer({ data, camps }: { data: SimilarityData; camps: MediaCamps }) {
+export default function SimilarityExplorer({ data, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
+  const [filters, setFilters] = useState<GraphFilters>({ limit: 30, camp: 'all', tag: '' });
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
   const dashboard = useRef<HTMLDivElement>(null);
@@ -113,8 +115,17 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
   const [page, setPage] = useState(0);
   const browser = useRef<HTMLElement>(null);
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
-  const counts = useMemo(() => nodeArticleCounts(data), [data]);
-  const graph = useMemo(() => selectGraphMedia(data.nodes, data.edges), [data.nodes, data.edges]);
+  const graph = useMemo(
+    () => filterGraphMedia(data.nodes, data.edges, camps, tags, filters),
+    [data.nodes, data.edges, camps, tags, filters],
+  );
+  const scopedData = useMemo(() => graphEvidenceScope(data, graph.nodes), [data, graph.nodes]);
+  const counts = useMemo(() => nodeArticleCounts(scopedData), [scopedData]);
+  const updateFilters = (next: Partial<GraphFilters>) => {
+    setFilters((current) => ({ ...current, ...next }));
+    setSelection(null);
+    setPage(0);
+  };
   const nodes = graph.nodes;
   const edges = useMemo(() => graph.edges.filter((e) => mode === 'all' || e.kind === mode), [graph.edges, mode]);
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
@@ -123,23 +134,26 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
     setPage(0);
     setView('evidence');
   };
-  const evidence = useMemo(() => graphEvidence(data, selection, mode, query, direction), [data, selection, mode, query, direction]);
+  const evidence = useMemo(
+    () => graphEvidence(scopedData, selection, mode, query, direction),
+    [scopedData, selection, mode, query, direction],
+  );
   const pageCount = Math.max(1, Math.ceil(evidence.length / 20));
   const currentPage = Math.min(page, pageCount - 1);
   const visibleEvidence = evidence.slice(currentPage * 20, (currentPage + 1) * 20);
   const media = useMemo(
     () =>
-      [...data.nodes]
+      [...graph.nodes]
         .filter((node) => `${node.name} ${node.id} ${node.country}`.toLocaleLowerCase().includes(mediaQuery.trim().toLocaleLowerCase()))
         .sort((a, b) => a.name.localeCompare(b.name, 'zh-TW')),
-    [data.nodes, mediaQuery],
+    [graph.nodes, mediaQuery],
   );
   const selectedTitle =
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
       : selection && 'edge' in selection
         ? `${byId.get(selection.edge.source)?.name} ${selection.edge.kind === 'citation' ? '→' : '↔'} ${byId.get(selection.edge.target)?.name}`
-        : '全部媒體';
+        : '圖上全部媒體';
   const highlightedCount = selection ? edges.filter((edge) => highlightedRelationship(edge, selection)).length : 0;
   const openBrowser = () => browser.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
   const selectedCounts = selection && 'node' in selection ? counts.get(selection.node) : null;
@@ -158,8 +172,8 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
           <div>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
             <p className="mt-1 text-xs text-zinc-500">
-              {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length} 家媒體 · {number(data.sample.analyzed)}{' '}
-              篇分析樣本
+              {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length}／{graph.available} 家媒體 ·{' '}
+              {number(data.sample.analyzed)} 篇分析樣本
             </p>
           </div>
         </header>
@@ -167,6 +181,46 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
           aria-label="媒體關係儀表板"
           className={`${panel} flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-zinc-50/60 to-white dark:from-zinc-900 dark:to-zinc-950`}
         >
+          <fieldset
+            aria-label="圖上媒體篩選"
+            className="grid shrink-0 grid-cols-3 gap-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800 sm:flex sm:items-end sm:gap-3"
+          >
+            <label className="min-w-0 sm:w-32">
+              顯示媒體數
+              <select value={filters.limit} onChange={(event) => updateFilters({ limit: Number(event.target.value) })} className={control}>
+                {[10, 20, 30, 50, 100, 0].map((limit) => (
+                  <option key={limit} value={limit}>
+                    {limit ? `前 ${limit} 家` : '全部媒體'}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="min-w-0 sm:w-32">
+              藍綠分類
+              <select
+                value={filters.camp}
+                onChange={(event) => updateFilters({ camp: event.target.value as GraphFilters['camp'] })}
+                className={control}
+              >
+                <option value="all">全部</option>
+                <option value="blue">只看藍</option>
+                <option value="green">只看綠</option>
+                <option value="other">未列藍綠</option>
+              </select>
+            </label>
+            <label className="min-w-0 sm:w-44">
+              媒體 tag
+              <select value={filters.tag} onChange={(event) => updateFilters({ tag: event.target.value })} className={control}>
+                <option value="">全部 tag</option>
+                {tags.map((tag) => (
+                  <option key={tag.id} value={tag.id}>
+                    {tag.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="col-span-3 text-[11px] text-zinc-500 sm:pb-2">依本期納入分析篇數排序 · 分類沿用本站標註</p>
+          </fieldset>
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
             <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
               {(
@@ -324,7 +378,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
                 />
               </label>
               <p className="text-xs leading-6 text-zinc-500">
-                {media.length} 家媒體 · 選取媒體可固定圖上連線，並瀏覽文章；篇數依本期證據文章去重。
+                {media.length} 家圖上媒體 · 選取媒體可固定圖上連線，並瀏覽文章；篇數依本期證據文章去重。
               </p>
               <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {media.map((node) => (
@@ -359,9 +413,9 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
                     onChange={(event) => select(event.target.value ? { node: event.target.value } : null)}
                     className={control}
                   >
-                    <option value="">全部媒體</option>
+                    <option value="">圖上全部媒體</option>
                     {selection && 'edge' in selection && <option value="__edge__">{selectedTitle}</option>}
-                    {data.nodes.map((node) => (
+                    {graph.nodes.map((node) => (
                       <option key={node.id} value={node.id}>
                         {node.name}
                       </option>
@@ -431,7 +485,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
               {selection && 'node' in selection && (
                 <div className="space-y-3">
                   <p className="text-xs text-zinc-500">
-                    {byId.get(selection.node)?.country} · 本期樣本，依文章去重計數 ·{' '}
+                    {byId.get(selection.node)?.country} · 目前圖上媒體之間的關係，依文章去重計數 ·{' '}
                     {byId.get(selection.node)?.external
                       ? '僅作為引用來源，未收錄本期內文'
                       : `納入分析 ${number(byId.get(selection.node)?.articles ?? 0)} 篇（圖示大小依據）`}
@@ -461,7 +515,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
               </p>
               {!evidence.length && (
                 <p className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:bg-zinc-950">
-                  目前篩選沒有符合的文章，可更換關係類型或清除篩選。這不代表媒體沒有其他新聞。
+                  目前篩選沒有符合的文章，可調整圖上媒體數、分類或文章篩選。這不代表媒體沒有其他新聞。
                 </p>
               )}
               <div className="grid items-start gap-4 lg:grid-cols-2" data-testid="graph-evidence-results">
@@ -533,7 +587,8 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
                 圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。下方的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                一律顯示本期所有有連線的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。固定後仍可移入其他媒體，暫時預覽它的相關媒體與連線；移入線條則高亮該連線與兩端媒體，移開後回到固定的選取。預覽不會變更下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。篇數與文章證據仍使用完整分析樣本。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
+                預設顯示本期納入分析篇數最多的 30 家媒體，可選前 10／20／50／100 家或全部，再搭配藍綠與媒體 tag
+                篩選。先套用分類，再依篇數取前幾家；下方文章僅列出圖上媒體之間的關係。篩選後沒有彼此連線的媒體仍保留圖示，不代表沒有其他新聞。圖表顯示符合篩選的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。本期完全沒有關係的媒體不放入圖中。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。固定後仍可移入其他媒體，暫時預覽它的相關媒體、連線與摘要；移入線條則高亮該連線與兩端媒體，移開後回到固定的選取。預覽不會變更下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。統計以本期分析樣本為限，圖上與下方只呈現目前篩選的媒體關係。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
               </p>
               <p>
                 <span className="text-blue-700 dark:text-blue-400">藍字</span>／

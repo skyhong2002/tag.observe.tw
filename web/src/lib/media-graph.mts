@@ -212,9 +212,16 @@ export function mediaCommunities(nodes: SimilarityNode[], edges: SimilarityEdge[
 
 /** Seed by relationship community, then fit and separate in actual screen pixels.
  * Only viewport/data changes affect geometry; relationship tabs share this layout. */
-export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
-  const visible = connectedMedia(nodes, edges);
+export function mediaGraphPositions(
+  nodes: SimilarityNode[],
+  edges: SimilarityEdge[],
+  width: number,
+  height: number,
+  includeIsolated = false,
+) {
+  const visible = includeIsolated ? nodes : connectedMedia(nodes, edges);
   if (!visible.length) return [];
+  if (visible.length === 1) return [{ id: visible[0].id, x: width / 2, y: height / 2 }];
   const labels = mediaCommunities(visible, edges);
   // The same sizes are used by the renderer and the collision solver.
   const sizes = mediaIconSizes(visible, width);
