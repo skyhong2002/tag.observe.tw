@@ -31,6 +31,18 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         <MediaTabs current="sources" />
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與收錄</h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">各家媒體的本站收錄篇數與 Similarweb 流量，一起查看。</p>
+        <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+          <a
+            href={traffic.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="開啟原始流量表單（外部連結，由 Gene Hong 維護）"
+            className="inline-flex items-center gap-1 text-brand-700 underline underline-offset-4 dark:text-brand-400"
+          >
+            原始流量表單 <span aria-hidden="true">↗</span>
+          </a>
+          <span>由 Gene Hong 維護</span>
+        </p>
       </header>
       <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl)} initial={params} />
       <details
@@ -47,15 +59,6 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
             本站文章數依真實發布月份（台北時間）統計目前已收錄紀錄，並非該媒體完整發稿量。本月資料持續累積中，抓取也可能不完整。流量與篇數是不同指標，不能推算成每篇文章的實際閱讀量。發現來源以關聯計數，不改文章的原媒體歸屬。
           </p>
           <p>此頁不呈現政治分類評分；原始整理表的分類屬人工標記，不是 Similarweb 的政治傾向評分。</p>
-          <a
-            href={traffic.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="開啟流量資料原表（外部連結）"
-            className="inline-flex items-center gap-1 underline underline-offset-4"
-          >
-            檢視流量原表 <span aria-hidden="true">↗</span>
-          </a>
         </div>
       </details>
     </div>
