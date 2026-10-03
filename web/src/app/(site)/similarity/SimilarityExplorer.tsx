@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
@@ -11,6 +12,14 @@ import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 import { type StoryOrigin, withStoryOrigins } from '@/lib/story-origins.mts';
 import MediaComparison from './MediaComparison';
+
+const views = [
+  ['media', '媒體總覽'],
+  ['evidence', '新聞對照'],
+  ['settings', '分析設定'],
+  ['info', '資料說明'],
+] as const;
+type View = (typeof views)[number][0];
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
   ssr: false,
@@ -194,7 +203,17 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
     }
   };
   const [selection, setSelection] = useState<GraphSelection>(null);
-  const [view, setView] = useState<'settings' | 'info' | 'media' | 'evidence'>('media');
+  // Keep the tab in the URL so the browser's back button steps between tabs.
+  const searchParams = useSearchParams();
+  const view: View = views.find(([value]) => value === searchParams.get('view'))?.[0] ?? 'media';
+  const setView = (next: View) => {
+    if (next === view) return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === 'media') params.delete('view');
+    else params.set('view', next);
+    const search = params.toString();
+    window.history.pushState(null, '', search ? `?${search}` : window.location.pathname);
+  };
   const [query, setQuery] = useState('');
   const [direction, setDirection] = useState<CitationDirection>('all');
   const [page, setPage] = useState(0);
@@ -428,14 +447,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
             aria-label="瀏覽內容"
             className="grid w-full grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-1 text-sm dark:bg-zinc-800 sm:flex sm:w-auto"
           >
-            {(
-              [
-                ['media', '媒體總覽'],
-                ['evidence', '新聞對照'],
-                ['settings', '分析設定'],
-                ['info', '資料說明'],
-              ] as const
-            ).map(([value, label]) => (
+            {views.map(([value, label]) => (
               <button
                 key={value}
                 type="button"
