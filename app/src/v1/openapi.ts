@@ -199,32 +199,129 @@ schemas.SimilarityCoverage = obj({
   total: int(),
   fetched: int(),
   usable: int(),
+  indexed: int('可用內文中已由相似度索引比對的篇數'),
   withAuthors: int(),
   missing: int(),
   pending: int(),
   enabled: bool(),
   excludedFromStatistics: bool(),
 });
+const similarityPeriod = {
+  hours: nullable(int('回溯小時；以日期區間查詢時為 null')),
+  days: nullable(obj({ from: str('台北日期 YYYY-MM-DD'), to: str('台北日期 YYYY-MM-DD（含）') }, '日期區間；以小時查詢時為 null')),
+  from: time('期間起點'),
+  to: time('期間終點'),
+};
 schemas.Similarity = obj({
   generatedAt: time(),
-  hours: int(),
+  ...similarityPeriod,
   threshold: num(),
   method: str(),
   coverage: arr(ref('SimilarityCoverage')),
-  sample: obj({
-    available: int(),
-    analyzed: int(),
-    limit: int(),
-    truncated: bool(),
-    pairLimit: int(),
-    pairsTruncated: bool(),
-    from: nullable(time('樣本中最早的刊登時間；截斷時早於此的文章不在樣本內')),
-  }),
-  pairs: arr(ref('SimilarityPair')),
-  citations: arr(obj({ article: ref('SimilarityArticle'), source: ref('Attribution') })),
-  nodes: arr(obj({ id: str(), name: str(), country: str(), countryCode: str(), articles: int(), external: bool() })),
+  index: obj(
+    {
+      available: int('期間內可用內文篇數（不含「內容」聯播來源）'),
+      analyzed: int('期間內已比對、內文夠長可比對的篇數'),
+      pending: int('等待下一次索引的可用內文篇數'),
+      pairs: int('門檻以上、兩篇都在期間內的相似配對數'),
+      groups: int('同題報導組數（相似配對的連通群組）'),
+      citations: int('明示引用則數'),
+      windowDays: int('每篇與前後幾天內的他家文章比對'),
+    },
+    '全量索引的涵蓋：沒有抽樣或篇數上限',
+  ),
+  nodes: arr(
+    obj({
+      id: str(),
+      name: str(),
+      country: str(),
+      countryCode: str(),
+      articles: int('期間內已比對篇數'),
+      external: bool('只被引用、沒有收錄內文的媒體'),
+      similar: int('屬於同題報導組的文章數'),
+      earliest: int('其中為同組最早刊登的篇數'),
+      later: int('其中同組已有更早刊登的篇數'),
+      outgoing: int('引用其他媒體的篇數'),
+      incoming: int('被其他媒體引用的篇數'),
+    }),
+  ),
   edges: arr(
-    obj({ source: str(), target: str(), kind: str(undefined, { enum: ['similarity', 'citation'] }), count: int(), score: nullable(num()) }),
+    obj(
+      { source: str(), target: str(), kind: str(undefined, { enum: ['similarity', 'citation'] }), count: int(), score: nullable(num()) },
+      'similarity：同組較晚刊登的媒體 → 同組最早刊登的媒體；citation：刊登媒體 → 明示引用的媒體',
+    ),
+  ),
+});
+schemas.StoryGroup = obj({
+  id: str(),
+  sourceId: nullable(int('同組最早刊登的文章 id')),
+  articleIds: arr(int(), '同組文章，刊登時間先後排序'),
+  tiedFirst: int('同時最早刊登的篇數'),
+  pairCount: int('同組相似配對總數'),
+  pairs: arr(ref('SimilarityPair'), '分數最高的最多 100 組'),
+});
+schemas.SimilarityEvidence = obj({
+  total: int('符合條件的證據總數'),
+  page: int(),
+  pageSize: int(),
+  hiddenSources: int('scope 內媒體的同組來源在 scope 外的則數'),
+  items: arr(
+    obj(
+      {
+        kind: str(undefined, { enum: ['origin', 'citation'] }),
+        key: str(),
+        publishedAt: time(),
+        articleId: int(),
+        sourceId: int('origin：同組最早刊登的文章 id'),
+        groupId: str('origin：同題報導組 id'),
+        directPair: nullable(ref('SimilarityPair')),
+        source: ref('Attribution'),
+      },
+      'origin 有 sourceId／groupId／directPair；citation 有 source',
+      ['sourceId', 'groupId', 'directPair', 'source'],
+    ),
+  ),
+  articles: map(ref('SimilarityArticle'), '以 id 為鍵，本頁用到的文章'),
+  groups: map(ref('StoryGroup'), '以 id 為鍵，本頁用到的同題報導組'),
+});
+schemas.SimilarityDaily = obj({
+  from: str(),
+  to: str(),
+  threshold: num(),
+  days: arr(str(), '台北日期'),
+  totals: obj({
+    articles: arr(int(), '每日已比對篇數'),
+    pairs: arr(int(), '每日相似配對數（以較晚刊登者的日期計）'),
+    identical: arr(int(), '其中內文相同'),
+    citations: arr(int(), '每日明示引用則數'),
+  }),
+  media: arr(
+    obj({
+      media: str(),
+      name: str(),
+      articles: arr(int()),
+      pairs: arr(int(), '一端為此媒體的配對數'),
+      citing: arr(int(), '此媒體引用他媒的則數'),
+      cited: arr(int(), '他媒引用此媒體的則數'),
+    }),
+    '各陣列與 days 一一對應',
+  ),
+});
+schemas.ArticleSimilarity = obj({
+  articleId: int(),
+  threshold: num(),
+  indexedAt: nullable(time('索引比對時間；null 表示等待中')),
+  chars: nullable(int('正規化內文長度；null 表示內文太短或不可比對')),
+  windowDays: int(),
+  matches: arr(
+    obj({
+      article: ref('SimilarityArticle'),
+      score: num(),
+      containment: num(),
+      kind: str(undefined, { enum: ['identical', 'high'] }),
+      evidence: str('最多 100 字的連續相同片段'),
+    }),
+    '相似度高者在前',
   ),
 });
 schemas.JournalistOutlet = obj({ media: ref('MediaKey'), name: str('媒體名稱'), count: int('期間內署名篇數') });
@@ -243,7 +340,7 @@ schemas.JournalistSummary = obj({
   withBody: int('有可比對正文的篇數'),
   cited: int('內文明示引用其他媒體的篇數'),
   latest: time('最近一篇刊登時間'),
-  inSample: int('落在相似度樣本內的可比對篇數'),
+  compared: int('相似度索引已比對的篇數'),
   similar: ref('JournalistSimilarity'),
 });
 schemas.JournalistPair = obj({
@@ -274,8 +371,8 @@ schemas.JournalistArticle = obj({
   byline: arr(str(), '站方原始署名欄位，未經整理'),
   coauthors: arr(str(), '同篇其他具名作者'),
   attributions: arr(ref('Attribution'), '內文明示引用的媒體'),
-  matches: int('這篇在針對性比對中找到的他站相似文章數'),
-  compared: bool('是否納入針對性比對（需有可用正文，且不超過比對上限）'),
+  matches: int('這篇與他站的相似配對數'),
+  compared: bool('相似度索引是否已比對這篇'),
 });
 schemas.JournalistDetail = obj({
   name: str(),
@@ -294,13 +391,10 @@ schemas.JournalistDetail = obj({
   media: arr(ref('JournalistOutlet')),
   articles: arr(ref('JournalistArticle'), '期間內署名文章，最新在前，最多 1000 篇'),
   pairs: arr(ref('JournalistPair'), '相似度高者在前'),
-  sample: obj({
-    focus: int('納入比對的自家文章數'),
-    focusLimit: int(),
-    focusTruncated: bool(),
-    candidates: int('依共同標籤挑出的他站候選文章數'),
-    candidateLimit: int(),
-    candidatesTruncated: bool(),
+  index: obj({
+    compared: int('已比對的自家文章數'),
+    pending: int('有可用正文、等待索引的自家文章數'),
+    windowDays: int('每篇與前後幾天內的他家文章比對'),
   }),
 });
 schemas.DiscoverySource = obj({
@@ -396,21 +490,81 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'articles',
     summary: '內文相似與明確引用關係',
     description:
-      '僅比較可用內文，排除「內容」聯播來源。取期間內最新最多 10000 篇，最多回傳 2000 對；sample 揭露截斷。相似連線無方向；citation 由刊登媒體指向明確提及來源，並不保證最初作者。',
+      '讀取全量相似度索引：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，配對永久保存，每 10 分鐘更新；排除「內容」聯播來源。index 揭露期間內的比對篇數與尚待比對篇數。相似連線由同組較晚刊登的媒體指向同組最早刊登的媒體（早刊登不等於原創）；citation 由刊登媒體指向明確提及來源，並不保證最初作者。文章證據另由 /api/v1/similarity/evidence 分頁取得。',
     params: [
-      q('hours', '回溯小時', intIn(1, 168, 48)),
+      q('hours', '回溯小時；與 from／to 擇一', intIn(1, 168, 48)),
+      q('from', '起始台北日期 YYYY-MM-DD（與 to 一起使用，最多 31 天）', str()),
+      q('to', '結束台北日期 YYYY-MM-DD（含）', str()),
       q('threshold', '最低 Dice 相似度', { type: 'number', minimum: 0.5, maximum: 1, default: 0.65 }),
     ],
     response: ref('Similarity'),
     errors: { '400': '參數無效' },
-    cache: '1 分鐘',
+    cache: '小時查詢 1 分鐘；日期區間 10 分鐘',
+  },
+  {
+    path: '/api/v1/similarity/evidence',
+    tag: 'articles',
+    summary: '相似與引用證據（分頁）',
+    description:
+      '與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為同題報導：文章連回同組最早刊登的文章；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選。',
+    params: [
+      q('hours', '回溯小時；與 from／to 擇一', intIn(1, 168, 48)),
+      q('from', '起始台北日期 YYYY-MM-DD（與 to 一起使用，最多 31 天）', str()),
+      q('to', '結束台北日期 YYYY-MM-DD（含）', str()),
+      q('threshold', '最低 Dice 相似度', { type: 'number', minimum: 0.5, maximum: 1, default: 0.65 }),
+      q('mode', '關係類型', { type: 'string', enum: ['all', 'similarity', 'citation'], default: 'all' }),
+      q('node', '只看與此媒體有關的證據', str()),
+      q('edgeKind', '只看一條連線：類型（需同時給 source、target）', { type: 'string', enum: ['similarity', 'citation'] }),
+      q('source', '連線起點媒體', str()),
+      q('target', '連線終點媒體', str()),
+      q('direction', '引用：outgoing 引用他媒、incoming 被引用；相似：outgoing 較晚刊登、incoming 同組最早', {
+        type: 'string',
+        enum: ['all', 'outgoing', 'incoming'],
+        default: 'all',
+      }),
+      q('scope', '逗號分隔的媒體；兩端都要在內', str()),
+      q('focus', '逗號分隔的媒體；至少一端在內', str()),
+      q('q', '關鍵字（最多 100 字元）', str()),
+      q('page', '頁碼，從 0 開始', { type: 'integer', minimum: 0, default: 0 }),
+    ],
+    response: ref('SimilarityEvidence'),
+    errors: { '400': '參數無效' },
+    cache: '小時查詢 1 分鐘；日期區間 10 分鐘',
+    example: '/api/v1/similarity/evidence?hours=48&node=cna&mode=similarity',
+  },
+  {
+    path: '/api/v1/similarity/daily',
+    tag: 'articles',
+    summary: '每日相似配對與引用統計',
+    description: '每日已比對篇數、相似配對、內文相同與明示引用，並分列各媒體。資料自 2026 年 9 月開始累積並永久保存。',
+    params: [
+      q('from', '起始台北日期 YYYY-MM-DD；預設 to 前 29 天', str()),
+      q('to', '結束台北日期（含）；預設今天', str()),
+      q('threshold', '最低 Dice 相似度', { type: 'number', minimum: 0.5, maximum: 1, default: 0.65 }),
+    ],
+    response: ref('SimilarityDaily'),
+    errors: { '400': '參數無效（最多 366 天）' },
+    cache: '含今天 5 分鐘；過去日期 1 小時',
+  },
+  {
+    path: '/api/v1/articles/{id}/similarity',
+    tag: 'articles',
+    summary: '單篇文章的他站相似報導',
+    description: '索引為這篇保存的全部相似配對：與前後 7 天內其他媒體文章比對的結果，刊登多久之後仍可查詢。',
+    params: [
+      p('id', '文章 id', { type: 'integer', minimum: 1 }, 1),
+      q('threshold', '最低 Dice 相似度', { type: 'number', minimum: 0.5, maximum: 1, default: 0.65 }),
+    ],
+    response: ref('ArticleSimilarity'),
+    errors: { '400': '參數無效', '404': '文章不存在' },
+    cache: '5 分鐘',
   },
   {
     path: '/api/v1/journalists',
     tag: 'journalists',
     summary: '期間內具名記者一覽',
     description:
-      '從文章署名整理出人名或筆名（排除媒體、部門、通訊社、職稱、電頭與責任編輯），列出各自的刊登媒體與篇數。相似統計取自同期間、同門檻的 similarity 樣本；樣本有篇數上限，inSample 與 sample.from 揭露實際涵蓋。同名不同人不會分開；較晚刊登只是閱讀線索，不是抄襲判定。',
+      '從文章署名整理出人名或筆名（排除媒體、部門、通訊社、職稱、電頭與責任編輯），列出各自的刊登媒體與篇數。相似統計取自同期間、同門檻的全量相似度索引；compared 為已比對篇數。同名不同人不會分開；較晚刊登只是閱讀線索，不是抄襲判定。',
     params: [
       q('hours', '回溯小時', intIn(1, 168, 48)),
       q('threshold', '最低 Dice 相似度', { type: 'number', minimum: 0.5, maximum: 1, default: 0.65 }),
@@ -421,14 +575,11 @@ export const ENDPOINTS: Endpoint[] = [
       hours: int(),
       threshold: num(),
       method: str(),
-      sample: obj({
-        available: int(),
-        analyzed: int(),
-        limit: int(),
-        truncated: bool(),
-        pairLimit: int(),
-        pairsTruncated: bool(),
-        from: nullable(time()),
+      index: obj({
+        analyzed: int('期間內已比對篇數'),
+        pairs: int('期間內門檻以上的相似配對數'),
+        windowDays: int(),
+        from: time('期間起點'),
       }),
       totals: obj({ journalists: int('具名人數'), articles: int('有人名署名的文章數'), credited: int('有任何署名欄位的文章數') }),
       limit: int(),
@@ -441,9 +592,9 @@ export const ENDPOINTS: Endpoint[] = [
   {
     path: '/api/v1/journalists/{name}',
     tag: 'journalists',
-    summary: '單一記者的文章、刊登媒體與針對性相似比對',
+    summary: '單一記者的文章、刊登媒體與他站相似配對',
     description:
-      '列出期間內署此名字的文章（以站方署名欄位比對，再以同一套人名整理規則確認）。相似比對只拿此人有正文的文章（最多 100 篇）與前後 48 小時內、至少共用一個標籤的他站文章（每篇最多 40 篇候選、合計 3000 篇）比對，排除「內容」聯播來源；沒有標籤的文章不會有候選。同署名的跨站版本另計為 sameAuthor。',
+      '列出期間內署此名字的文章（以站方署名欄位比對，再以同一套人名整理規則確認）。相似配對來自全量相似度索引：每篇已比對的文章都與前後 7 天內其他媒體的全部文章比對，排除「內容」聯播來源。同署名的跨站版本另計為 sameAuthor。',
     params: [
       p('name', '人名或筆名（2–40 字）', str(), '彭巧蓁'),
       q('hours', '回溯小時', intIn(1, 720, 168)),

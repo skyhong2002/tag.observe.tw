@@ -1,0 +1,1 @@
+ALTER TABLE `article_citations` MODIFY COLUMN `source` varchar(255) NOT NULL;

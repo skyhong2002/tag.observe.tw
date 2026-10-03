@@ -318,10 +318,7 @@ function GraphPanel({ graph, media }: { graph: GraphSummary | null; media: Media
                   <span style={{ width: percent(r.share) }} />
                 </span>
               </span>
-              <span className={styles.pairCount}>
-                {graph.pairsTruncated && r.share < 1 && '≥'}
-                {percent(r.share)}
-              </span>
+              <span className={styles.pairCount}>{percent(r.share)}</span>
             </li>
           ))}
           {graph.similar.length === 0 && <li className={styles.muted}>目前沒有達到門檻的相近文章。</li>}
@@ -351,7 +348,6 @@ function GraphPanel({ graph, media }: { graph: GraphSummary | null; media: Media
       <p className={styles.panelFoot}>
         過去 {graph.hours} 小時比對 {graph.analyzed.toLocaleString()} 篇正文。左欄是各媒體自己的文章中，內文與其他媒體相近的比例（至少 20
         篇才列入）；右欄是 {graph.citations.toLocaleString()} 筆明示引用中，各來源所占比例。
-        {graph.pairsTruncated && ` 相近文章只計入最相近的 ${graph.pairs.toLocaleString()} 組，實際比例可能更高。`}
       </p>
     </div>
   );
@@ -501,9 +497,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </div>
             <JournalistPanel brief={data.journalists} />
             <p className={styles.panelNote}>
-              {data.journalists
-                ? `過去 ${data.journalists.hours} 小時署名文章最多的記者。`
-                : '以署名統計記者的發稿量與跨媒體相近情形。'}
+              {data.journalists ? `過去 ${data.journalists.hours} 小時署名文章最多的記者。` : '以署名統計記者的發稿量與跨媒體相近情形。'}
             </p>
           </aside>
 

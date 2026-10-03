@@ -13,33 +13,21 @@ import {
   nodeArticleCounts,
   selectGraphMedia,
 } from '../../web/src/lib/media-graph.mts';
-import type { SimilarityArticle, SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
+import type { SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
 
-const article = (id: number, media: string): SimilarityArticle => ({
+const node = (id: string): SimilarityNode => ({
   id,
-  media,
-  mediaTitle: media,
+  name: id,
   country: '台灣',
   countryCode: 'TW',
-  title: '新聞',
-  url: 'https://example.com',
-  publishedAt: '2026-10-03T00:00:00Z',
-  authors: [],
-  bodyLength: 500,
-  attributions: [],
+  articles: 1,
+  external: false,
+  similar: 0,
+  earliest: 0,
+  later: 0,
+  outgoing: 0,
+  incoming: 0,
 });
-const source = (media: string) => ({ media, name: media, country: '台灣', countryCode: 'TW', kind: 'explicit' as const, evidence: '引用' });
-const pair = (a: SimilarityArticle, b: SimilarityArticle): SimilarityData['pairs'][number] => ({
-  id: `${a.id}:${b.id}`,
-  a,
-  b,
-  score: 0.9,
-  containment: 0.9,
-  sharedShingles: 200,
-  kind: 'high',
-  evidence: '內文',
-});
-const node = (id: string): SimilarityNode => ({ id, name: id, country: '台灣', countryCode: 'TW', articles: 1, external: false });
 
 describe('complete media selection', () => {
   const nodes = [
@@ -76,25 +64,17 @@ describe('complete media selection', () => {
 });
 
 describe('media dashboard article counts', () => {
-  it('counts distinct articles rather than citations or similar pairs, preserving direction', () => {
-    const a = article(1, 'a'),
-      b = article(2, 'b'),
-      c = article(3, 'c');
-    const counts = nodeArticleCounts({
-      citations: [
-        { article: a, source: source('b') },
-        { article: a, source: source('c') },
-        { article: a, source: source('b') },
-        { article: c, source: source('b') },
-      ],
-      pairs: [pair(a, b), pair(a, c)],
-    });
-    expect(counts.get('a')).toEqual({ outgoing: 1, incoming: 0, similar: 1, earliest: 0, later: 0 });
-    expect(counts.get('b')).toEqual({ outgoing: 0, incoming: 2, similar: 1, earliest: 0, later: 0 });
-    expect(counts.get('c')).toEqual({ outgoing: 1, incoming: 1, similar: 1, earliest: 0, later: 0 });
+  it('reads the index counts of every outlet, including citation-only sources', () => {
+    const counts = nodeArticleCounts([
+      { ...node('a'), similar: 3, earliest: 1, later: 2, outgoing: 4, incoming: 0 },
+      { ...node('agency'), articles: 0, external: true, incoming: 7 },
+    ]);
+    expect(counts.get('a')).toEqual({ outgoing: 4, incoming: 0, similar: 3, earliest: 1, later: 2 });
+    expect(counts.get('agency')).toEqual({ outgoing: 0, incoming: 7, similar: 0, earliest: 0, later: 0 });
+    expect(counts.get('missing')).toBeUndefined();
   });
-  it('handles a sample without relationships', () => {
-    expect(nodeArticleCounts({ citations: [], pairs: [] }).size).toBe(0);
+  it('handles a period without outlets', () => {
+    expect(nodeArticleCounts([]).size).toBe(0);
   });
 });
 

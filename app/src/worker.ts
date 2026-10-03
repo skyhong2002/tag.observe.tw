@@ -9,6 +9,7 @@ import { runEventsJob } from './jobs/events-job.ts';
 import { runProbeJob } from './jobs/probe-job.ts';
 import { runRankingJob } from './jobs/ranking-job.ts';
 import { runRetentionJob } from './jobs/retention-job.ts';
+import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
 import { jobDuration, jobRuns as jobRunsMetric, metricsContentType, metricsText, snapshotAge, snapshotArticles } from './metrics.ts';
@@ -60,6 +61,12 @@ await queue.upsertJobScheduler(
   { pattern: process.env.TAG_STATS_CRON || '53 * * * *' },
   { name: 'tag-stats', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
 );
+// Compare newly fetched bodies with every other outlet's articles (jobs/similarity-job.ts).
+await queue.upsertJobScheduler(
+  'similarity-index',
+  { every: Number(process.env.SIMILARITY_INDEX_MINUTES || 10) * 60e3 },
+  { name: 'similarity', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
+);
 await queue.upsertJobScheduler(
   'crawl-health',
   { every: 15 * 60e3 },
@@ -87,6 +94,7 @@ for (const job of [
   'crawl-health',
   'topics',
   'tag-stats',
+  'similarity',
   'crawl-index',
   'crawl-articles',
 ])
@@ -130,6 +138,11 @@ const worker = new Worker(
       }
       if (job.name === 'tag-stats') {
         const r = await runTagStatsJob(db, { log: (o, m) => log.info(o, m) });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'similarity') {
+        const r = await runSimilarityJob(db, { log: (o, m) => log.info(o, m) });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

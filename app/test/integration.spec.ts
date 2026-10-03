@@ -14,7 +14,9 @@ import { createDb, type Db } from '../src/db/client.ts';
 import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots } from '../src/db/schema.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
-import { loadSimilarity } from '../src/v1/similarity.ts';
+import { runSimilarityJob } from '../src/jobs/similarity-job.ts';
+import { loadEvidence } from '../src/similarity/store.ts';
+import { cachedIndexView, loadSimilarity, similarityParams } from '../src/v1/similarity.ts';
 
 const url = process.env.TEST_DB_URL;
 const TABLES = [
@@ -31,6 +33,9 @@ const TABLES = [
   'tag_stats',
   'source_probes',
   'rejected_urls',
+  'article_sketches',
+  'similarity_pairs',
+  'article_citations',
 ];
 const res = (u: string, body: string, status = 200): FetchResult => ({ url: u, status, body, contentType: 'text/html', ms: 1 });
 const now = new Date();
@@ -372,10 +377,34 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       expect(listing.json().articles).toHaveLength(1);
       expect(listing.json().articles[0]).not.toHaveProperty('body');
       expect(listing.json().nextCursor).toBeTruthy();
-      const data = await loadSimilarity(db, 48, 0.65);
-      expect(data.pairs.some((pair) => pair.kind === 'identical' && [pair.a.id, pair.b.id].includes(copy.id))).toBe(true);
+      const indexed = await runSimilarityJob(db);
+      expect(indexed.pairs).toBeGreaterThan(0);
+      expect(indexed.pending).toBe(0);
+      // A second run finds nothing new: each pair is scored once.
+      expect((await runSimilarityJob(db)).articles).toBe(0);
+      const params = similarityParams({ hours: '48', threshold: '0.65' })!;
+      const data = await loadSimilarity(db, params);
+      expect(data.edges.some((edge) => edge.kind === 'similarity' && [edge.source, edge.target].includes('cna'))).toBe(true);
       expect(data.edges.some((edge) => edge.kind === 'citation' && edge.target === 'reuters')).toBe(true);
       expect(data.coverage.find((c) => c.media === 'yam')?.excludedFromStatistics).toBe(true);
+      expect(data.index).toMatchObject({ pending: 0, windowDays: 7 });
+      const evidence = await loadEvidence(db, await cachedIndexView(db, params), {
+        mode: 'similarity',
+        node: 'cna',
+        direction: 'all',
+        query: '',
+        page: 0,
+      });
+      expect(evidence.items.some((item) => item.kind === 'origin' && [item.articleId, item.sourceId].includes(copy.id))).toBe(true);
+      expect(evidence.articles[copy.id]).not.toHaveProperty('body');
+      const similar = await app.inject(`/api/v1/articles/${copy.id}/similarity`);
+      const match = similar.json().matches.find((m: { article: { id: number } }) => m.article.id === original.id);
+      expect(match).toMatchObject({ kind: 'identical', score: 1 });
+      expect(match.evidence.length).toBeLessThanOrEqual(100);
+      const daily = await app.inject('/api/v1/similarity/daily');
+      expect(daily.statusCode).toBe(200);
+      expect(daily.json().totals.pairs.reduce((a: number, b: number) => a + b, 0)).toBeGreaterThan(0);
+      expect((await app.inject('/api/v1/similarity?from=2026-01-01&to=2026-03-01')).statusCode).toBe(400);
       expect((await app.inject('/api/v1/similarity?threshold=NaN')).statusCode).toBe(400);
       expect((await app.inject('/api/v1/articles/999999999/content')).statusCode).toBe(404);
     } finally {

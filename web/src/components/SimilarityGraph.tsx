@@ -24,8 +24,6 @@ import {
 import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
 import type { SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 
-import type { OriginData } from '@/lib/story-origins.mts';
-
 echarts.use([GraphChart, TooltipComponent, CanvasRenderer, LabelLayout]);
 
 export type { GraphSelection } from '@/lib/graph-evidence.mts';
@@ -53,7 +51,8 @@ export default function SimilarityGraph({
   edges: SimilarityEdge[];
   layoutEdges: SimilarityEdge[];
   camps: MediaCamps;
-  data: OriginData;
+  /** Period-wide edges: line widths share one scale across filters and modes. */
+  data: { edges: SimilarityEdge[] };
   showAll: boolean;
   onSelect: (selection: GraphSelection) => void;
   selection: GraphSelection;
@@ -104,7 +103,7 @@ export default function SimilarityGraph({
       return url;
     };
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
-    const tooltipContent = createGraphTooltip(data, nodes, camps);
+    const tooltipContent = createGraphTooltip(nodes, camps);
     const ink = dark ? '#d4d4d8' : '#52525b';
     let width = chart.getWidth(),
       height = chart.getHeight();

@@ -85,8 +85,9 @@ function SimilarSection({ data }: { data: JournalistDetail }) {
         </span>
       </h2>
       <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-        只拿此人有正文的文章，與前後 48 小時內至少共用一個標籤的他站文章比對（Dice ≥ {percent(data.threshold)}）。
-        標籤只用來挑候選，相似與否由內文決定；沒有標籤的文章不會有候選。
+        相似度索引把此人每篇有正文的文章，與前後 {data.index.windowDays} 天內其他媒體的所有文章逐篇比對內文（Dice ≥{' '}
+        {percent(data.threshold)}）；這裡列出索引存下的全部配對。
+        {data.index.pending > 0 && ` 另有 ${number(data.index.pending)} 篇尚待比對，索引每 10 分鐘更新。`}
       </p>
       <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">{SIMILARITY_CAVEAT}</p>
       {!ordered.length && <p className="py-6 text-sm text-zinc-500 dark:text-zinc-400">這段期間內沒有找到與他站內文相近的文章。</p>}
@@ -223,14 +224,12 @@ export default async function JournalistPage({
           <section aria-label="比對範圍" className="rounded-lg border border-zinc-200 p-3 text-xs leading-5 dark:border-zinc-800">
             <h2 className="mb-2 text-sm font-semibold">比對範圍</h2>
             <dl className="grid grid-cols-[6rem_minmax(0,1fr)] gap-y-1.5">
-              <dt className="text-zinc-500 dark:text-zinc-400">納入比對</dt>
-              <dd>
-                {number(data.sample.focus)} 篇{data.sample.focusTruncated ? `（上限 ${data.sample.focusLimit}，只取最新）` : ''}
-              </dd>
-              <dt className="text-zinc-500 dark:text-zinc-400">他站候選</dt>
-              <dd>
-                {number(data.sample.candidates)} 篇{data.sample.candidatesTruncated ? `（上限 ${data.sample.candidateLimit}）` : ''}
-              </dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">已比對</dt>
+              <dd>{number(data.index.compared)} 篇</dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">尚待比對</dt>
+              <dd>{number(data.index.pending)} 篇</dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">比對對象</dt>
+              <dd>前後 {data.index.windowDays} 天內其他媒體的所有文章</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">同署名跨站</dt>
               <dd>{number(stats.similar.sameAuthor)} 組</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">方法</dt>

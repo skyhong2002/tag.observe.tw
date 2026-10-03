@@ -20,6 +20,7 @@ describe('archived article retention', () => {
       }),
       select: () => empty,
       delete: () => ({ where: async () => [{ affectedRows: 0 }] }),
+      execute: async () => [{ affectedRows: 0 }],
     } as unknown as Db;
     await runRetentionJob(db, { now: () => new Date('2026-10-03T12:00:00Z') });
     const body = updates.find((entry) => entry.values.bodyStatus === 'expired')!;

@@ -1,4 +1,19 @@
-import { bigint, datetime, index, int, json, longtext, mysqlTable, text, uniqueIndex, varchar } from 'drizzle-orm/mysql-core';
+import {
+  bigint,
+  customType,
+  date,
+  datetime,
+  double,
+  index,
+  int,
+  json,
+  longtext,
+  mysqlTable,
+  primaryKey,
+  text,
+  uniqueIndex,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import type { Attribution } from '../similarity/attribution.ts';
 
 // Derived data owned by the new site. Raw crawl tables stay in the legacy DB
@@ -61,6 +76,8 @@ export const articles = mysqlTable(
     fetchedAt: datetime('fetched_at'),
     fetchStatus: varchar('fetch_status', { length: 16 }),
     source: varchar('source', { length: 8 }).notNull().default('own'),
+    // When the similarity index took this article's body; null = not yet.
+    similarityAt: datetime('similarity_at'),
   },
   (t) => [
     uniqueIndex('articles_media_url').on(t.media, t.url),
@@ -70,6 +87,72 @@ export const articles = mysqlTable(
     index('articles_media_published').on(t.media, t.publishedAt),
     index('articles_media_fetch').on(t.media, t.fetchedAt),
     index('articles_media_content').on(t.media, t.id),
+    index('articles_similarity').on(t.similarityAt, t.bodyStatus, t.publishedAt),
+  ],
+);
+
+const sketchBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'varbinary(512)' });
+
+// One row per indexed article with a comparable body, kept permanently as the
+// record that it was analysed. The MinHash sketch (similarity/minhash.ts) is
+// cleared with the body; until then later articles are compared with it.
+export const articleSketches = mysqlTable(
+  'article_sketches',
+  {
+    articleId: bigint('article_id', { mode: 'number' }).primaryKey(),
+    media: varchar('media', { length: 32 }).notNull(),
+    publishedAt: datetime('published_at').notNull(),
+    // Normalized body length, shown with each compared article.
+    chars: int('chars').notNull(),
+    sketch: sketchBytes('sketch'),
+  },
+  (t) => [index('sketches_published').on(t.publishedAt)],
+);
+
+// Every cross-media body pair at Dice ≥ 0.5, kept permanently. a_id < b_id;
+// `day` is the Taipei date of the later publication.
+export const similarityPairs = mysqlTable(
+  'similarity_pairs',
+  {
+    aId: bigint('a_id', { mode: 'number' }).notNull(),
+    bId: bigint('b_id', { mode: 'number' }).notNull(),
+    aMedia: varchar('a_media', { length: 32 }).notNull(),
+    bMedia: varchar('b_media', { length: 32 }).notNull(),
+    aPublished: datetime('a_published').notNull(),
+    bPublished: datetime('b_published').notNull(),
+    firstPublished: datetime('first_published').notNull(),
+    lastPublished: datetime('last_published').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    score: double('score').notNull(),
+    containment: double('containment').notNull(),
+    shared: int('shared').notNull(),
+    kind: varchar('kind', { length: 10 }).notNull(),
+    evidence: varchar('evidence', { length: 100 }).notNull(),
+    computedAt: datetime('computed_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ name: 'similarity_pairs_pk', columns: [t.aId, t.bId] }),
+    index('pairs_b').on(t.bId),
+    index('pairs_last').on(t.lastPublished, t.firstPublished),
+    index('pairs_day').on(t.day, t.score),
+  ],
+);
+
+// Explicit citations of other outlets from indexed articles, one row per
+// cited outlet, so daily counts do not have to parse article JSON.
+export const articleCitations = mysqlTable(
+  'article_citations',
+  {
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    source: varchar('source', { length: 255 }).notNull(),
+    media: varchar('media', { length: 32 }).notNull(),
+    publishedAt: datetime('published_at').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+  },
+  (t) => [
+    primaryKey({ name: 'article_citations_pk', columns: [t.articleId, t.source] }),
+    index('citations_published').on(t.publishedAt),
+    index('citations_day').on(t.day, t.media),
   ],
 );
 

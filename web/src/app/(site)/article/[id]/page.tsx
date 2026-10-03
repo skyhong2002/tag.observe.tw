@@ -9,6 +9,8 @@ import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import { CONTENT_STATUS, type StoredContent } from '@/lib/article-content';
 import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
+import { fetchArticleSimilarity } from '@/lib/similarity';
+import ArticleSimilar from './ArticleSimilar';
 
 export const revalidate = 60;
 export default async function ArticleContentPage({
@@ -21,13 +23,15 @@ export default async function ArticleContentPage({
   const { id } = await params;
   if (!/^[1-9]\d{0,15}$/.test(id) || !Number.isSafeInteger(Number(id))) notFound();
   const query = readingQuery(await searchParams) ?? new URLSearchParams();
+  // Started alongside the content request; it resolves to null on failure.
+  const similarRequest = fetchArticleSimilarity(Number(id));
   const res = await fetch(`${API_ORIGIN}/api/v1/articles/${id}/content`, {
     next: { revalidate },
     signal: AbortSignal.timeout(6000),
   }).catch(() => null);
   if (res?.status === 404 || res?.status === 400) notFound();
   if (!res?.ok) return <p className="py-12 text-zinc-600 dark:text-zinc-400">暫時無法取得文章內容，請稍後重新整理。</p>;
-  const { article, content } = (await res.json()) as StoredContent;
+  const [{ article, content }, similar] = await Promise.all([res.json() as Promise<StoredContent>, similarRequest]);
   const state =
     content.source === 'publisher:excerpt' && content.status !== 'expired'
       ? { label: '原站僅提供摘要', detail: '這個來源提供的是節錄內容，本站未將其收錄為完整正文。' }
@@ -146,6 +150,7 @@ export default async function ArticleContentPage({
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">文章提及的來源，不代表原始作者。</p>
           </section>
         )}
+        <ArticleSimilar data={similar} publishedAt={article.publishedAt} />
         <details className="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
           <summary className="cursor-pointer py-2 hover:text-zinc-900 dark:hover:text-zinc-200">內文資訊與閱讀說明</summary>
           <div className="mt-2 space-y-1">

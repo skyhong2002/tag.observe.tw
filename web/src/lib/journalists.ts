@@ -1,5 +1,5 @@
 import type { Attribution } from '../../../app/src/similarity/attribution';
-import type { SimilarityData } from '../../../app/src/similarity/types';
+import type { SimilarityIndexStats } from '../../../app/src/similarity/types';
 import { API_ORIGIN } from './api';
 import type { ContentStatus } from './article-content';
 
@@ -12,7 +12,8 @@ export interface JournalistIndex {
   hours: number;
   threshold: number;
   method: string;
-  sample: SimilarityData['sample'];
+  /** Similarity index coverage of the period. */
+  index: Pick<SimilarityIndexStats, 'analyzed' | 'pairs' | 'windowDays'> & { from: string };
   totals: { journalists: number; articles: number; credited: number };
   limit: number;
   journalists: JournalistSummary[];
@@ -51,13 +52,12 @@ export interface JournalistDetail {
   media: JournalistOutlet[];
   articles: JournalistArticle[];
   pairs: JournalistPair[];
-  sample: {
-    focus: number;
-    focusLimit: number;
-    focusTruncated: boolean;
-    candidates: number;
-    candidateLimit: number;
-    candidatesTruncated: boolean;
+  index: {
+    /** Own stories the index compared with every other outlet. */
+    compared: number;
+    /** Own stories with a usable body still waiting for the index. */
+    pending: number;
+    windowDays: number;
   };
 }
 

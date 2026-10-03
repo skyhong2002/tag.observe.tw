@@ -1,8 +1,6 @@
 import type { SimilarityEdge, SimilarityNode } from '../../../app/src/similarity/types.ts';
 import { connectedMedia, type MediaCamps } from './media-graph.mts';
 
-import type { OriginData } from './story-origins.mts';
-
 export type MediaTag = { id: string; label: string; media: string[] };
 export type GraphFilters = { limit: number; camp: 'all' | 'blue' | 'green' | 'other'; tag: string };
 
@@ -62,16 +60,18 @@ export function availableGraphTags(
   );
 }
 
-export function graphEvidenceScope(data: OriginData, nodes: SimilarityNode[], focus: ReadonlySet<string> | null = null) {
+/** Relationships with both ends on screen and, under a category focus, one end inside it. */
+export function graphEvidenceScope<T extends { edges: SimilarityEdge[] }>(
+  data: T,
+  nodes: SimilarityNode[],
+  focus: ReadonlySet<string> | null = null,
+): T & { nodes: SimilarityNode[] } {
   const ids = new Set(nodes.map((node) => node.id));
-  const includes = (source: string, target: string) =>
-    ids.has(source) && ids.has(target) && (!focus || focus.has(source) || focus.has(target));
   return {
     ...data,
     nodes,
-    edges: data.edges.filter((edge) => includes(edge.source, edge.target)),
-    origins: data.origins?.filter((origin) => includes(origin.article.media, origin.source.media)),
-    pairs: data.pairs.filter((pair) => includes(pair.a.media, pair.b.media)),
-    citations: data.citations.filter((citation) => includes(citation.article.media, citation.source.media)),
+    edges: data.edges.filter(
+      (edge) => ids.has(edge.source) && ids.has(edge.target) && (!focus || focus.has(edge.source) || focus.has(edge.target)),
+    ),
   };
 }

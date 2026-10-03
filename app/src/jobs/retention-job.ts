@@ -1,13 +1,24 @@
 // Daily data retention (agreed 2026-09-29):
 // - descriptions: dropped 90 days after publication
-// - bodies: dropped 90 days after acquisition, including archived publications
+// - bodies: dropped 90 days after acquisition, including archived publications;
+//   their similarity sketches go with them (pairs and citations are kept)
 // - never-fetched, untagged articles older than 14 days deleted (old sitemap noise)
 // - ranking snapshots older than 2 years: chart and entries trimmed to top 100
 // - crawl_runs / job_runs / source_probes older than 30 days deleted
 import { and, eq, gt, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { BODY_RETENTION_MS } from '../article-retention.ts';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, crawlRuns, jobRuns, rankingEntries, rankingSnapshots, rejectedUrls, sourceProbes } from '../db/schema.ts';
+import {
+  articleSketches,
+  articles,
+  articleTags,
+  crawlRuns,
+  jobRuns,
+  rankingEntries,
+  rankingSnapshots,
+  rejectedUrls,
+  sourceProbes,
+} from '../db/schema.ts';
 import type { RankingChart } from './ranking-compute.ts';
 
 const DAY = 86400e3;
@@ -32,6 +43,12 @@ export async function runRetentionJob(db: Db, { now = () => new Date(), log = (_
           sql`${articles.body} IS NOT NULL`,
         ),
       ),
+  );
+  // The sketch row stays as the record that the article was compared.
+  out.sketchesCleared = affected(
+    await db.execute(
+      sql`UPDATE ${articleSketches} s JOIN ${articles} a ON a.id = s.article_id SET s.sketch = NULL WHERE s.sketch IS NOT NULL AND a.body IS NULL`,
+    ),
   );
   const stale = await db
     .select({ id: articles.id })

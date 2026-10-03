@@ -5,13 +5,13 @@ import { useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
 
-type SortKey = 'name' | 'media' | 'articles' | 'inSample' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'cited';
+type SortKey = 'name' | 'media' | 'articles' | 'compared' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'cited';
 // Click a heading to sort, click again to flip, like the media tables.
 const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
   { key: 'name', label: '記者', numeric: false },
   { key: 'media', label: '刊登媒體', title: '依刊登媒體數排序', numeric: false },
   { key: 'articles', label: '篇數', numeric: true },
-  { key: 'inSample', label: '樣本內', title: '有可比對正文且落在相似度樣本內的篇數', numeric: true },
+  { key: 'compared', label: '已比對', title: '相似度索引已比對的篇數', numeric: true },
   { key: 'pairs', label: '內文相近', title: '至少一端是此人文章的相近配對；同一新聞稿、通訊社稿、授權轉載與引用都會相近', numeric: true },
   {
     key: 'later',
@@ -28,8 +28,8 @@ const sortValue = (row: JournalistSummary, key: SortKey): number =>
     ? row.media.length
     : key === 'articles'
       ? row.articles
-      : key === 'inSample'
-        ? row.inSample
+      : key === 'compared'
+        ? row.compared
         : key === 'pairs'
           ? row.similar.pairs
           : key === 'later'
@@ -163,7 +163,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
                   </ul>
                 </td>
                 <td className={cell}>{number(row.articles)}</td>
-                <td className={`${cell} text-zinc-500 dark:text-zinc-400`}>{number(row.inSample)}</td>
+                <td className={`${cell} text-zinc-500 dark:text-zinc-400`}>{number(row.compared)}</td>
                 <td className={cell}>
                   {row.similar.pairs ? number(row.similar.pairs) : <span className="text-zinc-300 dark:text-zinc-700">0</span>}
                 </td>

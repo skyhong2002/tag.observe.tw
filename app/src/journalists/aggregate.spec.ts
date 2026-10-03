@@ -40,6 +40,7 @@ const row = (id: number, media: string, publishedAt: string, authors: string[], 
   creator: null,
   bodyStatus: 'ok',
   hasBody: true,
+  indexed: true,
   attributions: null,
   ...extra,
 });
@@ -78,10 +79,10 @@ describe('summarizeJournalists', () => {
       }),
       row(2, 'ebc', '2026-10-01T03:00:00Z', ['王小明、陳大文']),
       row(3, 'ltn', '2026-09-30T00:00:00Z', ['自由時報電子報']),
-      row(4, 'cna', '2026-10-01T01:30:00Z', ['中央社'], { bodyStatus: 'short', hasBody: true }),
+      row(4, 'cna', '2026-10-01T01:30:00Z', ['中央社'], { bodyStatus: 'short', hasBody: true, indexed: false }),
     ];
     const pairs = [pair(article(4, 'cna', '2026-10-01T01:30:00Z', ['中央社']), article(1, 'setn', '2026-10-01T02:00:00Z', ['記者王小明']))];
-    const result = summarizeJournalists(rows, pairs, new Date('2026-10-01T00:00:00Z'), (m) => m.toUpperCase());
+    const result = summarizeJournalists(rows, pairs, (m) => m.toUpperCase());
     expect(result.map((j) => j.name)).toEqual(['王小明', '陳大文']);
     const [wang] = result;
     expect(wang.articles).toBe(2);
@@ -90,7 +91,7 @@ describe('summarizeJournalists', () => {
       { media: 'setn', name: 'SETN', count: 1 },
     ]);
     expect(wang.cited).toBe(1);
-    expect(wang.inSample).toBe(2);
+    expect(wang.compared).toBe(2);
     expect(wang.latest).toBe('2026-10-01T03:00:00.000Z');
     expect(wang.similar).toEqual({ pairs: 1, articles: 1, later: 1, earlier: 0, sameAuthor: 0, identical: 0 });
   });

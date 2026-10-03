@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
 import type { CitationDirection, GraphSelection, RelationshipMode } from '@/lib/graph-evidence.mts';
 import { nodeArticleCounts } from '@/lib/media-graph.mts';
-import type { OriginData } from '@/lib/story-origins.mts';
+import type { SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 
 type SortKey = 'name' | 'articles' | 'earliest' | 'later' | 'outgoing' | 'incoming';
 const columns: { key: SortKey; label: string }[] = [
@@ -21,21 +21,18 @@ export default function MediaComparison({
   data,
   onSelect,
 }: {
-  data: OriginData;
+  /** Media on screen and the relationships between them. */
+  data: { nodes: SimilarityNode[]; edges: SimilarityEdge[] };
   onSelect: (selection: GraphSelection, mode: RelationshipMode, direction: CitationDirection) => void;
 }) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
   const rows = useMemo(() => {
-    const counts = nodeArticleCounts(data);
+    const counts = nodeArticleCounts(data.nodes);
     return data.nodes.map((node) => ({
       ...node,
-      similar: counts.get(node.id)?.similar ?? 0,
-      earliest: counts.get(node.id)?.earliest ?? 0,
-      later: counts.get(node.id)?.later ?? 0,
-      outgoing: counts.get(node.id)?.outgoing ?? 0,
-      incoming: counts.get(node.id)?.incoming ?? 0,
+      ...counts.get(node.id),
       relationships: data.edges
         .filter((edge) => edge.source === node.id || edge.target === node.id)
         .sort(
@@ -90,7 +87,7 @@ export default function MediaComparison({
         </label>
       </div>
       <p role="status" className="text-xs text-zinc-500">
-        符合 {filtered.length} 家 · 沿用圖上媒體篩選 · 各欄涵蓋全部關係類型
+        符合 {filtered.length} 家 · 沿用圖上媒體篩選 · 篇數涵蓋本期全部關係
       </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1040px] border-collapse text-sm">
@@ -199,7 +196,7 @@ export default function MediaComparison({
       </div>
       {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>}
       <p className="text-xs leading-6 text-zinc-500">
-        分析篇數為本期納入樣本的內文；同組最早、同組較晚、引用與被引用皆依各欄文章去重。同組指內文相近的同一組報導：同組最早是該組最早刊出的那篇，同組較晚是同組已有更早刊出的報導。主要關係對象依關係篇數列出前三項，箭頭指向同組最早或被引用的一方，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創；相近內文也可能來自通訊社稿或授權轉載。
+        分析篇數為本期已完成比對的內文；同組最早、同組較晚、引用與被引用皆依各欄文章去重，涵蓋本期與所有媒體的關係，不隨圖上篩選改變；主要關係對象只列圖上媒體。同組指內文相近的同一組報導：同組最早是該組最早刊出的那篇，同組較晚是同組已有更早刊出的報導。主要關係對象依關係篇數列出前三項，箭頭指向同組最早或被引用的一方，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創；相近內文也可能來自通訊社稿或授權轉載。
       </p>
     </div>
   );

@@ -2,20 +2,32 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
+import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
-import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
-import { type StoryOrigin, withStoryOrigins } from '@/lib/story-origins.mts';
+import {
+  type EvidenceQuery,
+  fetchEvidence,
+  MAX_RANGE_DAYS,
+  PERIOD_HOURS,
+  periodQuery,
+  type SimilarityArticle,
+  type SimilarityData,
+  type SimilarityEvidence,
+  type SimilarityPeriod,
+} from '@/lib/similarity';
+import { evidenceItems, type StoryOrigin } from '@/lib/story-origins.mts';
+import DailyTrend from './DailyTrend';
 import MediaComparison from './MediaComparison';
 
 const views = [
   ['media', '媒體總覽'],
   ['evidence', '新聞對照'],
+  ['daily', '每日趨勢'],
   ['settings', '分析設定'],
   ['info', '資料說明'],
 ] as const;
@@ -35,6 +47,14 @@ const taipei = (iso: string) => {
   const two = (value: number) => String(value).padStart(2, '0');
   return `${date.getUTCFullYear()}/${two(date.getUTCMonth() + 1)}/${two(date.getUTCDate())} ${two(date.getUTCHours())}:${two(date.getUTCMinutes())}`;
 };
+const taipeiDay = (iso: string) => new Date(Date.parse(iso) + 8 * 3600_000).toISOString().slice(0, 10);
+const hoursLabel = (hours: number) => (hours === 168 ? '7 天' : `${hours} 小時`);
+function periodLabel(data: SimilarityData) {
+  if (!data.days) return `最近 ${hoursLabel(data.hours ?? 48)}`;
+  const { from, to } = data.days;
+  return from === to ? from.replaceAll('-', '/') : `${from.replaceAll('-', '/')}–${to.replaceAll('-', '/')}`;
+}
+const rangeDays = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86400e3) + 1;
 
 function ArticleCard({ article, label }: { article: SimilarityArticle; label?: string }) {
   return (
@@ -132,9 +152,14 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
         )}
       </details>
       <details className="text-xs" onToggle={(event) => setShowPairs(event.currentTarget.open)}>
-        <summary className="cursor-pointer py-2">查看分組依據 · {group.pairs.length} 組相似配對</summary>
+        <summary className="cursor-pointer py-2">查看分組依據 · {number(group.pairCount)} 組相似配對</summary>
         {showPairs && (
           <div className="max-h-80 space-y-4 overflow-y-auto rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
+            {group.pairCount > group.pairs.length && (
+              <p className="text-zinc-500">
+                共 {number(group.pairCount)} 組，顯示分數最高的 {number(group.pairs.length)} 組。
+              </p>
+            )}
             {group.pairs.map((pair) => (
               <div key={pair.id} className="space-y-1">
                 <p>
@@ -157,8 +182,98 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
   );
 }
 
-export default function SimilarityExplorer({ data: sample, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
-  const data = useMemo(() => withStoryOrigins(sample), [sample]);
+function SettingsForm({ data }: { data: SimilarityData }) {
+  const router = useRouter();
+  const [period, setPeriod] = useState(data.days ? 'range' : String(data.hours ?? 48));
+  const [from, setFrom] = useState(data.days?.from ?? taipeiDay(data.from));
+  const [to, setTo] = useState(data.days?.to ?? taipeiDay(data.to));
+  const [threshold, setThreshold] = useState(String(data.threshold));
+  const range = period === 'range';
+  const rangeError = !range
+    ? ''
+    : !from || !to
+      ? '請選擇開始與結束日期。'
+      : from > to
+        ? '開始日期不能晚於結束日期。'
+        : rangeDays(from, to) > MAX_RANGE_DAYS
+          ? `日期範圍最多 ${MAX_RANGE_DAYS} 天。`
+          : '';
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (rangeError) return;
+    const selected: SimilarityPeriod = range ? { from, to } : { hours: Number(period) };
+    router.push(`/similarity/?${periodQuery(selected, Number(threshold))}`);
+  };
+  return (
+    <form onSubmit={submit} className="grid max-w-3xl items-end gap-5 sm:grid-cols-3">
+      <label className="block text-sm">
+        比較期間
+        <select value={period} onChange={(event) => setPeriod(event.target.value)} className={control}>
+          {PERIOD_HOURS.map((hours) => (
+            <option key={hours} value={hours}>
+              最近 {hoursLabel(hours)}
+            </option>
+          ))}
+          <option value="range">自訂日期範圍</option>
+        </select>
+      </label>
+      <label className="block text-sm">
+        內文相似度門檻
+        <input
+          type="number"
+          min="0.5"
+          max="1"
+          step="0.01"
+          value={threshold}
+          onChange={(event) => setThreshold(event.target.value)}
+          required
+          className={control}
+        />
+      </label>
+      <button type="submit" disabled={!!rangeError} className="rounded-lg bg-brand-700 px-4 py-2 text-sm text-white disabled:opacity-40">
+        更新關係圖
+      </button>
+      {range && (
+        <fieldset className="grid gap-5 sm:col-span-3 sm:grid-cols-3">
+          <legend className="sr-only">自訂日期範圍（台北時間）</legend>
+          <label className="block text-sm">
+            開始日期
+            <input
+              type="date"
+              value={from}
+              max={to || undefined}
+              onChange={(event) => setFrom(event.target.value)}
+              required
+              className={control}
+            />
+          </label>
+          <label className="block text-sm">
+            結束日期
+            <input
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(event) => setTo(event.target.value)}
+              required
+              className={control}
+            />
+          </label>
+          <p
+            className={`self-center text-xs leading-5 ${rangeError ? 'text-red-600 dark:text-red-400' : 'text-zinc-500'}`}
+            role={rangeError ? 'alert' : undefined}
+          >
+            {rangeError || `依台北時間整日計算，共 ${rangeDays(from, to)} 天，最多 ${MAX_RANGE_DAYS} 天。`}
+          </p>
+        </fieldset>
+      )}
+    </form>
+  );
+}
+
+type EvidenceState = { key: string; data: SimilarityEvidence | null; error: boolean };
+const emptyEvidence: SimilarityEvidence = { total: 0, page: 0, pageSize: 20, hiddenSources: 0, items: [], articles: {}, groups: {} };
+
+export default function SimilarityExplorer({ data, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
   const [filters, setFilters] = useState<GraphFilters>({ limit: 30, camp: 'all', tag: '' });
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
@@ -215,6 +330,18 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
     window.history.pushState(null, '', search ? `?${search}` : window.location.pathname);
   };
   const [query, setQuery] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const applied = useRef('');
+  // Search after typing pauses; the page resets together with the applied text.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (applied.current === query) return;
+      applied.current = query;
+      setSearchText(query);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
   const [direction, setDirection] = useState<CitationDirection>('all');
   const [page, setPage] = useState(0);
   const browser = useRef<HTMLElement>(null);
@@ -228,9 +355,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
     [data.nodes, data.edges, camps, tags, filters],
   );
   const scopedData = useMemo(() => graphEvidenceScope(data, graph.nodes, graph.focus), [data, graph.nodes, graph.focus]);
-  // Keep the sample-wide line weight scale while scoping hover evidence to the tag.
-  const graphData = useMemo(() => ({ ...scopedData, edges: data.edges }), [scopedData, data.edges]);
-  const counts = useMemo(() => nodeArticleCounts(scopedData), [scopedData]);
+  const counts = useMemo(() => nodeArticleCounts(data.nodes), [data.nodes]);
   const updateFilters = (next: Partial<GraphFilters>, nextMode = mode) => {
     setFilters((current) => {
       const updated = { ...current, ...next };
@@ -253,10 +378,6 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
     setPage(0);
   };
   const nodes = graph.nodes;
-  const hiddenSources = useMemo(() => {
-    const ids = new Set(graph.nodes.map((node) => node.id));
-    return data.origins.filter((origin) => ids.has(origin.article.media) && !ids.has(origin.source.media)).length;
-  }, [data.origins, graph.nodes]);
   const edges = useMemo(() => graph.edges.filter((e) => mode === 'all' || e.kind === mode), [graph.edges, mode]);
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
   const select = (value: GraphSelection) => {
@@ -264,13 +385,56 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
     setPage(0);
     setView('evidence');
   };
-  const evidence = useMemo(
-    () => graphEvidence(scopedData, selection, mode, query, direction),
-    [scopedData, selection, mode, query, direction],
-  );
-  const pageCount = Math.max(1, Math.ceil(evidence.length / 20));
-  const currentPage = Math.min(page, pageCount - 1);
-  const visibleEvidence = evidence.slice(currentPage * 20, (currentPage + 1) * 20);
+  // One page of evidence from the full index for the media on screen; refetched when any filter changes.
+  const [retry, setRetry] = useState(0);
+  const requestKey = JSON.stringify({
+    period: periodQuery(data.days ? data.days : { hours: data.hours ?? 48 }, data.threshold).toString(),
+    query: {
+      mode,
+      node: selection && 'node' in selection ? selection.node : undefined,
+      edge:
+        selection && 'edge' in selection
+          ? { kind: selection.edge.kind, source: selection.edge.source, target: selection.edge.target }
+          : undefined,
+      direction: selection && 'node' in selection ? direction : 'all',
+      scope: graph.nodes.map((node) => node.id),
+      focus: graph.focus ? [...graph.focus] : undefined,
+      q: searchText.trim(),
+      page,
+    } satisfies EvidenceQuery,
+    retry,
+  });
+  const [evidenceState, setEvidenceState] = useState<EvidenceState>({ key: '', data: null, error: false });
+  useEffect(() => {
+    if (view !== 'evidence') return;
+    const { period, query } = JSON.parse(requestKey) as { period: string; query: EvidenceQuery };
+    // An empty graph has nothing to compare; an empty scope would mean "no limit" to the API.
+    if (!query.scope?.length) {
+      setEvidenceState({ key: requestKey, data: { ...emptyEvidence }, error: false });
+      return;
+    }
+    const params = new URLSearchParams(period);
+    const evidencePeriod: SimilarityPeriod = params.has('hours')
+      ? { hours: Number(params.get('hours')) }
+      : { from: params.get('from') ?? '', to: params.get('to') ?? '' };
+    const controller = new AbortController();
+    fetchEvidence(evidencePeriod, Number(params.get('threshold')), query, controller.signal).then(
+      (result) => setEvidenceState({ key: requestKey, data: result, error: false }),
+      () => {
+        if (!controller.signal.aborted) setEvidenceState((current) => ({ key: requestKey, data: current.data, error: true }));
+      },
+    );
+    return () => controller.abort();
+  }, [view, requestKey]);
+  const evidence = evidenceState.data;
+  const evidenceLoading = evidenceState.key !== requestKey;
+  const evidenceError = !evidenceLoading && evidenceState.error;
+  const evidenceList = useMemo(() => (evidence ? evidenceItems(evidence) : []), [evidence]);
+  const total = evidence?.total ?? 0;
+  const pageSize = evidence?.pageSize ?? 20;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const currentPage = evidence?.page ?? 0;
+  const hiddenSources = evidence?.hiddenSources ?? 0;
   const selectedTitle =
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
@@ -295,8 +459,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
           <div>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
             <p className="mt-1 text-xs text-zinc-500">
-              {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length}／{graph.available} 家媒體 ·{' '}
-              {number(data.sample.analyzed)} 篇分析樣本
+              {periodLabel(data)} · {nodes.length}／{graph.available} 家媒體 · {number(data.index.analyzed)} 篇全部比對
             </p>
           </div>
         </header>
@@ -396,7 +559,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
               edges={edges}
               layoutEdges={graph.edges}
               camps={camps}
-              data={graphData}
+              data={data}
               showAll={showAll}
               onSelect={select}
               selection={selection}
@@ -425,9 +588,8 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
           </div>
         </section>
         <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
-          僅呈現本期已擷取樣本{data.sample.truncated ? `中的最新 ${number(data.sample.limit)} 篇` : ''}
-          ；橘色箭頭統一指向同組最早刊登的來源。
-          {data.sample.pairsTruncated ? `相似配對顯示前 ${number(data.sample.pairLimit ?? 200)} 組。` : ''}
+          涵蓋期間內全部已比對文章：{number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則明示引用
+          {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''}；橘色箭頭統一指向同組最早刊登的來源。
         </p>
       </div>
       <section
@@ -461,36 +623,8 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
           </fieldset>
         </header>
         <div className="space-y-5 p-4 sm:p-6">
-          {view === 'settings' && (
-            <form action="/similarity/" method="get" className="grid max-w-3xl items-end gap-5 sm:grid-cols-3">
-              <label className="block text-sm">
-                比較期間
-                <select name="hours" defaultValue={data.hours} className={control}>
-                  {[24, 48, 72, 168].map((hours) => (
-                    <option key={hours} value={hours}>
-                      最近 {hours === 168 ? '7 天' : `${hours} 小時`}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm">
-                內文相似度門檻
-                <input
-                  name="threshold"
-                  type="number"
-                  min="0.5"
-                  max="1"
-                  step="0.01"
-                  defaultValue={data.threshold}
-                  required
-                  className={control}
-                />
-              </label>
-              <button type="submit" className="rounded-lg bg-brand-700 px-4 py-2 text-sm text-white">
-                更新關係圖
-              </button>
-            </form>
-          )}
+          {view === 'settings' && <SettingsForm data={data} />}
+          {view === 'daily' && <DailyTrend threshold={data.threshold} />}
           {view === 'media' && (
             <MediaComparison
               data={scopedData}
@@ -534,10 +668,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                   <input
                     type="search"
                     value={query}
-                    onChange={(event) => {
-                      setQuery(event.target.value);
-                      setPage(0);
-                    }}
+                    onChange={(event) => setQuery(event.target.value)}
                     className={control}
                     placeholder="標題、媒體、作者或共同段落"
                   />
@@ -577,10 +708,10 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
               {selection && 'node' in selection && (
                 <div className="space-y-3">
                   <p className="text-xs text-zinc-500">
-                    {byId.get(selection.node)?.country} · 目前圖上媒體之間的關係，依文章去重計數 ·{' '}
+                    {byId.get(selection.node)?.country} · 本期與所有媒體的關係，依文章去重計數 ·{' '}
                     {byId.get(selection.node)?.external
                       ? '僅作為引用來源，未收錄本期內文'
-                      : `納入分析 ${number(byId.get(selection.node)?.articles ?? 0)} 篇（圖示大小依據）`}
+                      : `已比對 ${number(byId.get(selection.node)?.articles ?? 0)} 篇（圖示大小依據）`}
                   </p>
                   <div className="grid max-w-3xl grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
                     {[
@@ -590,7 +721,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                       [selectedCounts?.later ?? 0, '同組較晚'],
                     ].map(([n, label]) => (
                       <div key={label} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
-                        <p className="mb-1 text-xl font-semibold">{n}</p>
+                        <p className="mb-1 text-xl font-semibold">{number(Number(n))}</p>
                         {label}
                       </div>
                     ))}
@@ -603,7 +734,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                 </div>
               )}
               <p className="text-xs leading-6 text-zinc-500">
-                相似新聞依配對分組，每組以最早刊登的一篇作為來源；其他報導全部直接指向它。來源依本期已收錄的相似配對與刊登時間指定。
+                相似新聞依配對分組，每組以最早刊登的一篇作為來源；其他報導全部直接指向它。來源依本期全部相似配對與刊登時間指定；下方只列圖上媒體之間的關係。
               </p>
               {hiddenSources > 0 && (
                 <p className="text-xs leading-6 text-zinc-500">
@@ -617,22 +748,32 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                   </button>
                 </p>
               )}
-              {data.groups.some((group) => !group.source) && (
-                <p className="text-xs text-zinc-500">
-                  有 {data.groups.filter((group) => !group.source).length} 組完全缺少刊登時間，暫未指定來源。
+              <p role="status" aria-live="polite" className={`text-sm text-zinc-500 ${evidenceError ? 'sr-only' : ''}`}>
+                {evidenceError
+                  ? '新聞對照資料載入失敗'
+                  : evidenceLoading && !evidence
+                    ? '載入關係證據中…'
+                    : `${number(total)} 筆關係證據 · 最新在前${total ? ` · 顯示 ${number(currentPage * pageSize + 1)}–${number(Math.min(total, (currentPage + 1) * pageSize))}` : ''}${evidenceLoading ? ' · 更新中…' : ''}`}
+              </p>
+              {evidenceError && (
+                <p role="alert" className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:bg-zinc-950">
+                  暫時無法取得新聞對照資料，請稍後再試。這不代表沒有相關文章。
+                  <button type="button" onClick={() => setRetry((n) => n + 1)} className={`${linkStyle} ml-2 underline`}>
+                    重新載入
+                  </button>
                 </p>
               )}
-              <p role="status" className="text-sm text-zinc-500">
-                {number(evidence.length)} 筆關係證據 · 最新在前
-                {evidence.length ? ` · 顯示 ${currentPage * 20 + 1}–${Math.min(evidence.length, (currentPage + 1) * 20)}` : ''}
-              </p>
-              {!evidence.length && (
+              {!evidenceLoading && !evidenceError && evidence && !total && (
                 <p className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:bg-zinc-950">
                   目前篩選沒有符合的文章，可調整圖上媒體數、分類或文章篩選。這不代表媒體沒有其他新聞。
                 </p>
               )}
-              <div className="grid items-start gap-4 lg:grid-cols-2" data-testid="graph-evidence-results">
-                {visibleEvidence.map((item) =>
+              <div
+                className={`grid items-start gap-4 lg:grid-cols-2 ${evidenceLoading || evidenceError ? 'opacity-50' : ''}`}
+                aria-busy={evidenceLoading}
+                data-testid="graph-evidence-results"
+              >
+                {evidenceList.map((item) =>
                   item.kind === 'citation' ? (
                     <article key={item.key} className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
                       <p className="text-xs text-violet-600 dark:text-violet-400">
@@ -643,16 +784,16 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                         {item.citation.source.evidence}
                       </blockquote>
                     </article>
-                  ) : item.kind === 'origin' ? (
+                  ) : (
                     <OriginEvidence key={item.key} origin={item.origin} />
-                  ) : null,
+                  ),
                 )}
               </div>
               {pageCount > 1 && (
                 <nav aria-label="文章證據分頁" className="flex items-center justify-center gap-4 text-sm">
                   <button
                     type="button"
-                    disabled={currentPage === 0}
+                    disabled={currentPage === 0 || evidenceLoading}
                     onClick={() => {
                       setPage(currentPage - 1);
                       openBrowser();
@@ -666,7 +807,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                   </span>
                   <button
                     type="button"
-                    disabled={currentPage === pageCount - 1}
+                    disabled={currentPage >= pageCount - 1 || evidenceLoading}
                     onClick={() => {
                       setPage(currentPage + 1);
                       openBrowser();
@@ -682,18 +823,20 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
           {view === 'info' && (
             <div className="space-y-5 text-sm leading-7">
               <p>
-                更新於 {taipei(data.generatedAt)}（台北）。期間內有 {number(data.sample.available)} 篇可用內文，本圖分析{' '}
-                {number(data.sample.analyzed)} 篇，上限 {number(data.sample.limit)} 篇。相似配對最多呈現{' '}
-                {number(data.sample.pairLimit ?? 200)} 組；引用篇數也僅涵蓋這批樣本。
+                更新於 {taipei(data.generatedAt)}（台北）。{periodLabel(data)}期間內有 {number(data.index.available)} 篇可用內文，已比對{' '}
+                {number(data.index.analyzed)} 篇{data.index.pending > 0 ? `（尚待比對 ${number(data.index.pending)} 篇）` : ''}
+                。每篇與前後 {data.index.windowDays} 天內其他媒體的全部文章比對，期間內共 {number(data.index.pairs)} 組相似配對、
+                {number(data.index.groups)} 組同題報導、{number(data.index.citations)}{' '}
+                則明示引用；相似配對只計入兩篇都在期間內刊登的組合。資料每 10 分鐘更新，配對永久保存。
               </p>
               <p>
-                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或歸源文章數計算，越粗代表關係越多。橘色箭頭由同組報導指向最早刊登文章的媒體；紫色箭頭指向文中明示引用的媒體。端點停在
+                圖示大小依各媒體本期已比對的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或歸源文章數計算，越粗代表關係越多。橘色箭頭由同組報導指向最早刊登文章的媒體；紫色箭頭指向文中明示引用的媒體。端點停在
                 Logo
                 外圍。縮小後沒有足夠空間的短連線暫時隱藏，放大即可查看。下方的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                預設顯示本期納入分析篇數最多的 30 家媒體，可選前 10／20／50／100 家或全部，再搭配藍綠與媒體 tag
-                篩選。先套用分類，再依篇數取前幾家；下方文章僅列出圖上媒體之間的關係。篩選後沒有彼此連線的媒體仍保留圖示，不代表沒有其他新聞。圖表顯示符合篩選的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。本期完全沒有關係的媒體不放入圖中。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。尚未固定時，移入媒體或連線會預覽相關高亮。固定後移入其他媒體或連線只顯示摘要圖卡，保留已選取的高亮與下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。統計以本期分析樣本為限，圖上與下方只呈現目前篩選的媒體關係。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。符合目前相似度門檻的配對會連成同一組新聞，採單一來源規則：全組最早刊登的一篇作為來源，其他文章都直接指向它。例如
+                預設顯示本期已比對篇數最多的 30 家媒體，可選前 10／20／50／100 家或全部，再搭配藍綠與媒體 tag
+                篩選。先套用分類，再依篇數取前幾家；下方文章僅列出圖上媒體之間的關係。篩選後沒有彼此連線的媒體仍保留圖示，不代表沒有其他新聞。圖表顯示符合篩選的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。本期完全沒有關係的媒體不放入圖中。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。尚未固定時，移入媒體或連線會預覽相關高亮。固定後移入其他媒體或連線只顯示摘要圖卡，保留已選取的高亮與下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。統計涵蓋本期全部已比對文章；各媒體的引用與同組篇數涵蓋與所有媒體的關係，不隨篩選改變，圖上連線與下方文章只呈現目前篩選的媒體關係。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。符合目前相似度門檻的配對會連成同一組新聞，採單一來源規則：全組最早刊登的一篇作為來源，其他文章都直接指向它。例如
                 A 最早，B、C 都連回 A，即使 C 是透過 B
                 的配對加入分組。只有實際比對過的文章才顯示直接相似度。分組與來源在媒體篩選前決定，隱藏來源不會改認其他文章。最早時間相同時以文章編號固定選一篇，完全沒有時間則不指定來源。這是本站依時間歸源的規則，不等於查證原創或抄襲。國別是媒體所屬地區，不是事件發生地。
               </p>

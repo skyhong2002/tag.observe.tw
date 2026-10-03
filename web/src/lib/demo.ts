@@ -157,8 +157,6 @@ export interface GraphSummary {
   similarityEdges: number;
   citationEdges: number;
   pairs: number;
-  /** The API keeps only the most similar pairs, so shares below are floors. */
-  pairsTruncated: boolean;
   citations: number;
   analyzed: number;
   /** Outlets with the largest share of their own articles closely matching another outlet's. */
@@ -182,30 +180,27 @@ export function graphSummary(data: SimilarityData | null): GraphSummary | null {
   const name = (id: string) => nodes.get(id)?.name ?? id;
   const similarity = data.edges.filter((e) => e.kind === 'similarity');
   const citation = data.edges.filter((e) => e.kind === 'citation');
-  const matched = new Map<string, Set<number>>();
+  // Story links in either direction: later article → the group's earliest.
   const partners = new Map<string, Map<string, number>>();
-  for (const p of data.pairs) {
-    if (p.a.media === p.b.media) continue;
+  for (const e of similarity)
     for (const [self, other] of [
-      [p.a, p.b],
-      [p.b, p.a],
+      [e.source, e.target],
+      [e.target, e.source],
     ]) {
-      if (!matched.has(self.media)) matched.set(self.media, new Set());
-      matched.get(self.media)?.add(self.id);
-      const counts = partners.get(self.media) ?? new Map<string, number>();
-      counts.set(other.media, (counts.get(other.media) ?? 0) + 1);
-      partners.set(self.media, counts);
+      const counts = partners.get(self) ?? new Map<string, number>();
+      counts.set(other, (counts.get(other) ?? 0) + e.count);
+      partners.set(self, counts);
     }
-  }
-  const similar = [...matched]
-    .map(([media, ids]) => {
+  const similar = data.nodes
+    .filter((n) => n.similar > 0)
+    .map(({ id: media, similar: matched }) => {
       const articles = nodes.get(media)?.articles ?? 0;
       const top = [...(partners.get(media) ?? [])].sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
       return {
         media,
         name: name(media),
-        share: articles ? Math.min(1, ids.size / articles) : 0,
-        matched: ids.size,
+        share: articles ? Math.min(1, matched / articles) : 0,
+        matched,
         articles,
         partner: top,
         partnerName: top ? name(top) : null,
@@ -222,14 +217,13 @@ export function graphSummary(data: SimilarityData | null): GraphSummary | null {
     .slice(0, 5)
     .map(([media, count]) => ({ media, name: name(media), share: totalCited ? count / totalCited : 0, count }));
   return {
-    hours: data.hours,
+    hours: data.hours ?? 24,
     outlets: data.nodes.filter((n) => !n.external).length,
     similarityEdges: similarity.length,
     citationEdges: citation.length,
-    pairs: data.pairs.length,
-    pairsTruncated: data.sample.pairsTruncated,
-    citations: data.citations.length,
-    analyzed: data.sample.analyzed,
+    pairs: data.index.pairs,
+    citations: data.index.citations,
+    analyzed: data.index.analyzed,
     similar,
     cited,
   };
@@ -237,7 +231,7 @@ export function graphSummary(data: SimilarityData | null): GraphSummary | null {
 
 async function similarity(): Promise<SimilarityData | null> {
   try {
-    return await fetchSimilarity(24, 0.65);
+    return await fetchSimilarity({ hours: 24 }, 0.65);
   } catch {
     return null;
   }

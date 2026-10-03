@@ -14,6 +14,8 @@ export interface BylineRow {
   creator: string | null;
   bodyStatus: string | null;
   hasBody: boolean;
+  /** Compared by the similarity index. */
+  indexed: boolean;
   attributions: Attribution[] | null;
 }
 export interface JournalistOutlet {
@@ -40,7 +42,8 @@ export interface JournalistSummary {
   withBody: number;
   cited: number;
   latest: string;
-  inSample: number;
+  /** Articles the similarity index compared with other outlets. */
+  compared: number;
   similar: JournalistSimilarity;
 }
 export type PairRelation = 'later' | 'earlier' | 'same';
@@ -104,7 +107,6 @@ export function countSimilarity(pairs: JournalistPair[]): JournalistSimilarity {
 export function summarizeJournalists(
   rows: BylineRow[],
   pairs: SimilarityPair[],
-  sampleFrom: Date | null,
   mediaTitle: (media: string) => string,
 ): JournalistSummary[] {
   const byName = new Map<string, { rows: BylineRow[]; media: Map<string, number> }>();
@@ -137,7 +139,7 @@ export function summarizeJournalists(
       withBody: entry.rows.filter((row) => row.bodyStatus === 'ok' && row.hasBody).length,
       cited: entry.rows.filter((row) => (row.attributions?.length ?? 0) > 0).length,
       latest: new Date(Math.max(...entry.rows.map((row) => row.publishedAt.getTime()))).toISOString(),
-      inSample: sampleFrom ? entry.rows.filter((row) => row.bodyStatus === 'ok' && row.hasBody && row.publishedAt >= sampleFrom).length : 0,
+      compared: entry.rows.filter((row) => row.indexed).length,
       similar: countSimilarity(pairsOf.get(name) ?? []),
     }))
     .sort((a, b) => b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant'));

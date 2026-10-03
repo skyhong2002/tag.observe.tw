@@ -44,6 +44,7 @@ Cloudflare Tunnel → tag.observe.tw
 | 事件分群 `events` | 每小時 :04、:34 |
 | 議題 `topics` | 每小時 :50 |
 | 標籤統計 `tag-stats` | 每小時 :53 |
+| 相似度索引 `similarity` | 每 10 分鐘（`SIMILARITY_INDEX_MINUTES`） |
 | 爬蟲健康 `crawl-health` | 每 15 分鐘 |
 | 資料保留 `retention` | 每日 04:15 |
 | 停用來源探測 `source-probe` | 每週一 05:30 |
@@ -83,6 +84,7 @@ node --env-file=.env tools/topics-once.ts --apply
 ## 資料保留（每日 04:15，`jobs/retention-job.ts`）
 
 - 文章 `description` 於發佈 90 天後清空；全文則自 `content_fetched_at` 起保存 90 天（缺值時用 `crawled_at`）。對外只提供刊登後 7 天內的全文（`article-retention.ts` 的 `PUBLIC_BODY_WINDOW_MS`），其餘時間只供後端相似度比對使用，見 similarity.md。舊文章保留原始發佈日期，標題、網址、標籤保留供排行。
+- 全文清除時一併清空該篇的相似度 sketch；`similarity_pairs`、`article_citations` 與 `article_sketches` 的列永久保留，供每日統計與單篇查詢（見 similarity.md）。
 - 從未抓取且無標籤、超過 14 天的文章刪除。
 - 超過兩年的排行快照只留前 100 名。
 - `crawl_runs`、`job_runs`、`source_probes`、`rejected_urls` 保留 30 天；Prometheus、Loki 各 30 天。

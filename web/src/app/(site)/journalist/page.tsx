@@ -70,12 +70,11 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
               </dd>
             </div>
             <div>
-              <dt>相似度樣本</dt>
+              <dt>相似度索引已比對</dt>
               <dd className="mt-0.5 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                {number(data.sample.analyzed)}
+                {number(data.index.analyzed)}
                 <span className="ml-1 text-[11px] font-normal">
-                  篇{data.sample.from ? `，涵蓋 ${taipei(data.sample.from)} 之後` : ''}
-                  {data.sample.truncated ? '（已達樣本上限，更早的文章不在相似統計內）' : ''}
+                  篇，{taipei(data.index.from)} 之後刊登；每篇與前後 {data.index.windowDays} 天內其他媒體的文章逐篇比對
                 </span>
               </dd>
             </div>

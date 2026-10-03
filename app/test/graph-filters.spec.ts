@@ -2,19 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope } from '../../web/src/lib/graph-filters.mts';
 import { createGraphTooltip } from '../../web/src/lib/graph-tooltip.mts';
 import { mediaGraphPositions } from '../../web/src/lib/media-graph.mts';
-import { withStoryOrigins } from '../../web/src/lib/story-origins.mts';
-import type { SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
+import type { SimilarityEdge, SimilarityNode } from '../src/similarity/types.ts';
 
-const node = (id: string, articles: number): SimilarityNode => ({
+const node = (id: string, articles: number, counts: Partial<SimilarityNode> = {}): SimilarityNode => ({
   id,
   articles,
   name: id,
   country: '台灣',
   countryCode: 'TW',
   external: false,
+  similar: 0,
+  earliest: 0,
+  later: 0,
+  outgoing: 0,
+  incoming: 0,
+  ...counts,
 });
-const nodes = [node('large', 1000), node('blue', 100), node('green', 500), node('small', 1), node('isolated', 9999)];
-const edges: SimilarityData['edges'] = [
+const nodes = [
+  node('large', 1000, { similar: 1, earliest: 1, outgoing: 3 }),
+  node('blue', 100, { incoming: 2 }),
+  node('green', 500, { similar: 1, later: 1, incoming: 1 }),
+  node('small', 1, { outgoing: 1 }),
+  node('isolated', 9999),
+];
+const edges: SimilarityEdge[] = [
   { source: 'large', target: 'blue', kind: 'citation', count: 2, score: null },
   { source: 'large', target: 'green', kind: 'similarity', count: 1, score: 0.95 },
   { source: 'small', target: 'green', kind: 'citation', count: 1, score: null },
@@ -84,78 +95,44 @@ describe('graph media filters', () => {
   });
 });
 
-const article = (id: number, media: string) => ({
-  id,
-  media,
-  mediaTitle: media,
-  country: '台灣',
-  countryCode: 'TW',
-  title: '<script>新聞</script>',
-  url: 'https://example.com',
-  publishedAt: '2026-10-04T00:00:00Z',
-  authors: [],
-  bodyLength: 500,
-  attributions: [],
-});
-const a = article(1, 'large'),
-  b = article(2, 'green');
-const data: SimilarityData = {
-  nodes,
-  edges,
-  hours: 48,
-  threshold: 0.65,
-  generatedAt: '2026-10-04T00:00:00Z',
-  method: 'test',
-  coverage: [],
-  sample: { analyzed: 2, available: 2, limit: 10000, truncated: false, pairLimit: 2000, pairsTruncated: false, from: null },
-  pairs: [{ id: '1:2', a, b, score: 0.95, containment: 1, sharedShingles: 300, kind: 'high', evidence: '共同段落' }],
-  citations: [
-    { article: a, source: { media: 'blue', name: 'blue', country: '台灣', countryCode: 'TW', kind: 'explicit', evidence: '引用 blue' } },
-  ],
-};
+// Similarity edges arrive from the index already pointing at the group's earliest outlet.
+const storyEdge: SimilarityEdge = { source: 'green', target: 'large', kind: 'similarity', count: 1, score: 0.95 };
 
-describe('filtered evidence and hover summaries', () => {
-  it('scopes both ends of evidence to the graph without mutating the original sample', () => {
+describe('filtered relationships and hover summaries', () => {
+  it('scopes both ends of relationships to the graph without mutating the original data', () => {
+    const data = { edges, threshold: 0.65 };
     const scope = graphEvidenceScope(data, filter({ limit: 2 }).nodes);
-    expect(scope.pairs).toHaveLength(1);
-    expect(scope.citations).toEqual([]);
+    expect(scope.nodes.map((n) => n.id)).toEqual(['large', 'green']);
     expect(scope.edges).toEqual([edges[1]]);
-    expect(data.citations).toHaveLength(1);
+    expect(scope.threshold).toBe(0.65);
+    expect(data.edges).toHaveLength(3);
   });
-  it('keeps cross-category evidence while excluding relationships between context outlets', () => {
-    const related = { article: b, source: data.citations[0].source };
-    const view = withStoryOrigins({ ...data, citations: [...data.citations, related] });
-    const scope = graphEvidenceScope(view, nodes, new Set(['green']));
-    expect(scope.citations).toEqual([related]);
-    expect(scope.pairs).toEqual(data.pairs);
-    expect(scope.origins).toHaveLength(1);
-    expect(scope.edges).not.toContainEqual(edges[0]);
-    const unrelatedOrigins = graphEvidenceScope(view, nodes, new Set(['blue']));
-    expect(unrelatedOrigins.origins).toEqual([]);
-    expect(unrelatedOrigins.pairs).toEqual([]);
-    expect(view.citations).toHaveLength(2);
+  it('keeps cross-category relationships while excluding relationships between context outlets', () => {
+    expect(graphEvidenceScope({ edges }, nodes, new Set(['green'])).edges).toEqual([edges[1], edges[2]]);
+    expect(graphEvidenceScope({ edges }, nodes, new Set(['blue'])).edges).toEqual([edges[0]]);
+    expect(graphEvidenceScope({ edges }, nodes, new Set(['isolated'])).edges).toEqual([]);
   });
-  it('shows citation direction, relationship volume and escaped article titles', () => {
-    const view = withStoryOrigins(data);
-    const tooltip = createGraphTooltip(view, nodes, camps);
+  it('shows citation direction, relationship volume and escaped outlet names', () => {
+    const tooltip = createGraphTooltip([...nodes, node('<b>x</b>', 1)], camps);
     const citation = tooltip({ edge: edges[0] }, edges);
     expect(citation).toContain('large → blue');
     expect(citation).toContain('2 篇文章明示引用');
-    expect(citation).toContain('&lt;script&gt;新聞&lt;/script&gt;');
-    expect(citation).not.toContain('<script>');
-    const similar = tooltip({ edge: view.edges.find((edge) => edge.kind === 'similarity')! }, view.edges);
+    const similar = tooltip({ edge: storyEdge }, [storyEdge]);
     expect(similar).toContain('green → large');
     expect(similar).toContain('95.0%');
+    expect(tooltip({ edge: { ...storyEdge, score: null } }, [])).toContain('經同組配對歸源');
+    const escaped = tooltip({ node: '<b>x</b>' }, []);
+    expect(escaped).toContain('&lt;b&gt;x&lt;/b&gt;');
+    expect(escaped).not.toContain('<b>x</b>');
   });
-  it('shows scoped counts for media and explains an outlet with no remaining links', () => {
-    const view = withStoryOrigins(data);
-    const tooltip = createGraphTooltip(view, nodes, camps);
-    expect(tooltip({ node: 'large' }, edges)).toContain('引用 1 篇');
+  it('shows period-wide counts for media and explains an outlet with no remaining links', () => {
+    const tooltip = createGraphTooltip(nodes, camps);
+    expect(tooltip({ node: 'large' }, edges)).toContain('引用 3 篇');
     expect(tooltip({ node: 'large' }, edges)).toContain('同組最早 1 篇 · 同組較晚 0 篇');
     expect(tooltip({ node: 'green' }, edges)).toContain('綠營傾向');
-    const isolated = createGraphTooltip(data, filter({ camp: 'blue' }).nodes, camps)({ node: 'blue' }, []);
+    const isolated = createGraphTooltip(filter({ camp: 'blue' }).nodes, camps)({ node: 'blue' }, []);
     expect(isolated).toContain('目前篩選與關係模式下沒有連線');
-    expect(isolated).toContain('被引用 0 篇');
+    expect(isolated).toContain('被引用 2 篇');
     expect(tooltip({ node: 'unknown' }, [])).toBe('');
   });
 });
