@@ -200,11 +200,11 @@ function Distribution({ coverage, compact = false }: { coverage: EventCoverage |
 function StoryMeta({ story }: { story: DemoStory }) {
   return (
     <p className={styles.source}>
-      標題來源：
+      <span>標題來源：</span>
       <MediaHoverLink media={story.media} className="hover:underline">
         {story.source}
       </MediaHoverLink>
-      {story.event.firstTime && ` · ${taipei(story.event.firstTime)} 上榜`}
+      {story.event.firstTime && <span>· {taipei(story.event.firstTime)} 上榜</span>}
     </p>
   );
 }
