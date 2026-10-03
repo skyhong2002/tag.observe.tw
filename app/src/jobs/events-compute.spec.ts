@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ArticleRow, CoOccurrence, clusterEvents, matchThread, threadUpdate } from './events-compute.ts';
+import { type ArticleRow, CoOccurrence, clusterEvents, hubTags, matchThread, threadUpdate } from './events-compute.ts';
 import { computeBurst, computeRanking } from './ranking-compute.ts';
 
 const t0 = new Date('2026-09-28T08:00:00Z');
@@ -81,6 +81,36 @@ describe('clusterEvents', () => {
     expect(nuclear.majorNews.length).toBeGreaterThan(0);
     expect(new Set(nuclear.news.map((n) => n.url)).size).toBe(nuclear.news.length);
   });
+  it('keeps two stories apart when only an umbrella tag links them', () => {
+    // Golf and a tennis row both mostly carry 亞運, but are never reported together.
+    const articles = [
+      ...[1, 2, 3, 4].map((i) => art(i, 'a', ['曾雅妮', '高爾夫', '亞運'])),
+      ...[5, 6, 7, 8].map((i) => art(i, 'b', ['握手', '謝淑薇', '亞運'])),
+      ...[9, 10].map((i) => art(i, 'c', ['亞運', '金牌'])),
+    ];
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const burst = computeBurst(chart, new Map());
+    const groups = (hubs: boolean) => clusterEvents(burst, articles, [], { now: t0, hubs }).map((e) => e.tags.map(([t]) => t).sort());
+    expect(groups(false)).toHaveLength(1);
+    const split = groups(true);
+    expect(split).toHaveLength(2);
+    expect(split.find((g) => g.includes('曾雅妮'))).not.toContain('握手');
+    // The umbrella stays with one story instead of disappearing.
+    expect(split.filter((g) => g.includes('亞運'))).toHaveLength(1);
+  });
+  it('flags a tag as a hub only when the tags reaching it are unrelated', () => {
+    // 握手 and 網球 both lean on 謝淑薇 and are also reported together.
+    const articles = [
+      ...[1, 2, 3, 4].map((i) => art(i, 'a', ['握手', '謝淑薇'])),
+      ...[5, 6].map((i) => art(i, 'b', ['網球', '謝淑薇', '握手'])),
+    ];
+    const co = new CoOccurrence(articles);
+    const order = ['握手', '網球'];
+    expect(hubTags(co, order, new Map(order.map((t) => [t, co.closure(t, new Set())]))).size).toBe(0);
+  });
   it('honours the no-equal list', () => {
     const ranking = computeRanking(
       rows.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
@@ -111,5 +141,13 @@ describe('threads', () => {
     expect(u.maxScore).toBe(12);
     expect(u.allTags).toEqual(['核電', '經濟部', '公投']);
     expect(u.majorTags[0]).toBe('核電');
+  });
+  it('picks the thread sharing the most major tags, then the most recent', () => {
+    const at = (h: number) => new Date(t0.getTime() + h * 3600e3);
+    const golf = { id: 1, lastTime: at(-1), allTags: ['曾雅妮', '徐薇淩', '高爾夫'], history: {} };
+    const tennis = { id: 2, lastTime: at(-2), allTags: ['握手', '曾雅妮', '徐薇淩', '網球'], history: {} };
+    expect(matchThread(['握手', '曾雅妮', '網球'], [golf, tennis])?.id).toBe(2);
+    expect(matchThread(['曾雅妮', '徐薇淩'], [tennis, golf])?.id).toBe(1);
+    expect(matchThread(['曾雅妮', '金牌'], [golf, tennis])).toBeNull();
   });
 });

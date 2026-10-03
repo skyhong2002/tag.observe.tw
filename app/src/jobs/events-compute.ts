@@ -46,6 +46,20 @@ export class CoOccurrence {
   count(tag: string) {
     return this.byTag.get(tag)?.size ?? 0;
   }
+  /** Whether two tags are written about together on their own: `minShare`
+   *  of the rarer tag's articles carry both. */
+  together(a: string, b: string, minShare = HUB_MIN_SHARE) {
+    const n = this.shared(a, b);
+    return n > 0 && n >= minShare * Math.min(this.count(a), this.count(b));
+  }
+  /** Articles carrying both tags. */
+  shared(a: string, b: string) {
+    const [small, large] = [this.byTag.get(a), this.byTag.get(b)].sort((x, y) => (x?.size ?? 0) - (y?.size ?? 0));
+    if (!small || !large) return 0;
+    let n = 0;
+    for (const id of small) if (large.has(id)) n++;
+    return n;
+  }
   relation(tag: string, limit = 100): Map<string, number> {
     const ids = this.byTag.get(tag);
     const c = new Map<string, number>();
@@ -84,11 +98,44 @@ export class CoOccurrence {
   }
 }
 
+// A tag that several unrelated stories each call "equal" is an umbrella
+// (亞運, 川普, 台股) rather than part of one story: through it, golf and a
+// tennis row became one event on 2026-10-03. Each hour, the ranked tags that
+// reach a tag through their closure are grouped by whether they co-occur on
+// their own. With two or more groups, the tag stays with the group it is
+// written about most with, and is cut from the others' closures, so it can
+// no longer bridge them.
+const HUB_MIN_SHARE = 0.2;
+/** Hub tag → the ranked tags still allowed to reach it. */
+export function hubTags(
+  co: CoOccurrence,
+  order: readonly string[],
+  closures: ReadonlyMap<string, ReadonlyMap<string, number>>,
+): Map<string, Set<string>> {
+  const callers = new Map<string, string[]>();
+  for (const t of order) for (const u of closures.get(t)?.keys() ?? []) callers.set(u, [...(callers.get(u) ?? []), t]);
+  const hubs = new Map<string, Set<string>>();
+  for (const [u, kids] of callers) {
+    if (kids.length < 2) continue;
+    const groups: string[][] = [];
+    for (const k of kids) {
+      const linked = groups.filter((g) => g.some((x) => co.together(x, k)));
+      for (const g of linked) groups.splice(groups.indexOf(g), 1);
+      groups.push([k, ...linked.flat()]);
+    }
+    if (groups.length < 2) continue;
+    const weight = (g: string[]) => g.reduce((n, k) => n + co.shared(k, u), 0);
+    const home = groups.reduce((best, g) => (weight(g) > weight(best) ? g : best));
+    hubs.set(u, new Set(home));
+  }
+  return hubs;
+}
+
 export function clusterEvents(
   entries: BurstEntry[],
   rows: ArticleRow[],
   noEqualList: readonly string[],
-  { maxTags = 300, now = new Date() } = {},
+  { maxTags = 300, now = new Date(), hubs: detectHubs = true } = {},
 ): EventCluster[] {
   const noEqual = new Set(noEqualList);
   const co = new CoOccurrence(rows);
@@ -96,9 +143,18 @@ export function clusterEvents(
     .filter((e) => !isTagNoise(e.tag))
     .slice(0, maxTags)
     .map((e) => e.tag);
+  // Each ranked tag's closure skips the hubs whose home group it is not in.
+  const ranked = order.filter((t) => !noEqual.has(t));
+  const hubs = detectHubs ? hubTags(co, ranked, new Map(ranked.map((t) => [t, co.closure(t, noEqual)]))) : new Map<string, Set<string>>();
+  const blockedFor = (t: string) => {
+    const out = new Set(noEqual);
+    for (const [u, home] of hubs) if (u !== t && !home.has(t)) out.add(u);
+    return out;
+  };
+  const blocked = new Map(order.map((t) => [t, blockedFor(t)]));
   // With insufficient history, use current score for grouping, not a fabricated burst.
   const burst = new Map(entries.map((e) => [e.tag, e.burst ?? e.normalized]));
-  const closures = new Map(order.map((t) => [t, co.closure(t, noEqual)]));
+  const closures = new Map(order.map((t) => [t, co.closure(t, blocked.get(t) as Set<string>)]));
   // tagmap: for each tag, the highest-ranked earlier tag it is equal to.
   const position = new Map(order.map((t, i) => [t, i]));
   const tagmap = new Map<string, number>();
@@ -200,12 +256,21 @@ export interface ThreadState {
   allTags: string[];
   history: Record<string, Record<string, number>>;
 }
+/** The thread sharing the most major tags (at least two). Ties go to the
+ *  thread active most recently, then the older one: taking the first match
+ *  by id let a mixed event hop between two threads hour to hour. */
 export function matchThread(major: string[], threads: ThreadState[]): ThreadState | null {
+  let best: ThreadState | null = null,
+    bestHits = 1;
   for (const th of threads) {
-    const hits = major.filter((m) => th.allTags.map(clean).includes(clean(m))).length;
-    if (hits >= 2) return th;
+    const all = th.allTags.map(clean);
+    const hits = major.filter((m) => all.includes(clean(m))).length;
+    if (hits > bestHits || (hits === bestHits && best && th.lastTime > best.lastTime)) {
+      best = th;
+      bestHits = hits;
+    }
   }
-  return null;
+  return best;
 }
 export function threadUpdate(
   th: { history: Record<string, Record<string, number>> },
