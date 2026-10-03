@@ -1,4 +1,5 @@
 import manifest from '../../../app/data/favicon-local.json';
+import { graphBoundaryDiameter } from './graph-edge-boundary.mts';
 
 export const mediaIcons = manifest as Record<string, { revision?: string; dark?: 'invert' | 'outline' }>;
 
@@ -15,19 +16,23 @@ export function mediaIconClass(id: string): string {
   return appearance === 'invert' ? 'dark:invert' : appearance === 'outline' ? 'dark:drop-shadow-[0_0_1px_#fff]' : '';
 }
 
-export function graphMediaIcon(image: HTMLImageElement, id: string, dark: boolean): string {
+export function graphMediaIcon(image: HTMLImageElement, id: string, dark: boolean, logoSize?: number): string {
   const appearance = mediaIcons[id]?.dark;
-  if (!dark || !appearance) return image.src;
+  if (!logoSize && (!dark || !appearance)) return image.src;
   const canvas = document.createElement('canvas');
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
+  const padding = logoSize ? (graphBoundaryDiameter(logoSize) / logoSize - 1) / 2 : 0;
+  const size = Math.max(image.naturalWidth, image.naturalHeight);
+  canvas.width = canvas.height = Math.ceil(size * (1 + 2 * padding));
   const context = canvas.getContext('2d');
   if (!context) return image.src;
-  if (appearance === 'invert') context.filter = 'invert(1)';
-  else {
+  if (dark && appearance === 'invert') context.filter = 'invert(1)';
+  else if (dark && appearance === 'outline') {
     context.shadowColor = '#fff';
     context.shadowBlur = 3;
   }
-  context.drawImage(image, 0, 0);
+  const scale = canvas.width / (size * (1 + 2 * padding));
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+  context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
   return canvas.toDataURL('image/png');
 }

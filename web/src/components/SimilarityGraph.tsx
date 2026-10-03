@@ -6,6 +6,7 @@ import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
+import { graphBoundaryDiameter, graphEdgeHasRoom } from '@/lib/graph-edge-boundary.mts';
 import { type GraphSelection, highlightedRelationship, sameGraphSelection } from '@/lib/graph-evidence.mts';
 import { bindGraphNavigation, GRAPH_ZOOM_MAX, GRAPH_ZOOM_MIN } from '@/lib/graph-navigation.mts';
 import { createGraphTooltip } from '@/lib/graph-tooltip.mts';
@@ -28,9 +29,10 @@ export type { GraphSelection } from '@/lib/graph-evidence.mts';
 
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-function fallbackIcon(node: SimilarityNode) {
+function fallbackIcon(node: SimilarityNode, logoSize: number) {
+  const pad = ((graphBoundaryDiameter(logoSize) / logoSize - 1) * 64) / 2;
   const label = escapeHtml(/^[a-z]/i.test(node.name) ? node.name.slice(0, 3).toUpperCase() : node.name.slice(0, 2));
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect x="1" y="1" width="62" height="62" rx="14" fill="#fff" stroke="#d4d4d8"/><text x="32" y="39" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="bold" fill="#3f3f46">${label}</text></svg>`)}`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="${-pad} ${-pad} ${64 + 2 * pad} ${64 + 2 * pad}"><rect x="1" y="1" width="62" height="62" rx="14" fill="#fff" stroke="#d4d4d8"/><text x="32" y="39" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="bold" fill="#3f3f46">${label}</text></svg>`)}`;
 }
 export default function SimilarityGraph({
   nodes,
@@ -87,7 +89,16 @@ export default function SimilarityGraph({
     let focused: GraphSelection = null;
     let neighbors = new Set<string>();
     let visibleEdges = displayedGraphEdges(edges, overview, density.current, null);
-    const symbols = new Map(nodes.map((n) => [n.id, fallbackIcon(n)]));
+    const images = new Map<string, HTMLImageElement>();
+    const symbols = new Map<string, { size: number; url: string }>();
+    const nodeSymbol = (node: SimilarityNode, size: number) => {
+      const cached = symbols.get(node.id);
+      if (cached?.size === size) return cached.url;
+      const image = images.get(node.id);
+      const url = image ? graphMediaIcon(image, node.id, dark, size) : fallbackIcon(node, size);
+      symbols.set(node.id, { size, url });
+      return url;
+    };
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
     const tooltipContent = createGraphTooltip(data, nodes, camps);
     const ink = dark ? '#d4d4d8' : '#52525b';
@@ -130,11 +141,12 @@ export default function SimilarityGraph({
         ...positions[i],
         id: n.id,
         name: n.name,
-        symbol: `image://${symbols.get(n.id)}`,
-        symbolSize: sizes.get(n.id),
+        symbol: `image://${nodeSymbol(n, sizes.get(n.id)!)}`,
+        symbolSize: graphBoundaryDiameter(sizes.get(n.id)!),
         symbolKeepAspect: true,
         itemStyle: { opacity: !focused || neighbors.has(n.id) ? 1 : 0.12 },
         label: {
+          distance: 7 - (graphBoundaryDiameter(sizes.get(n.id)!) - sizes.get(n.id)!) / 2,
           show:
             (!!focused && ('node' in focused ? focused.node === n.id : focused.edge.source === n.id || focused.edge.target === n.id)) ||
             labels.has(n.id),
@@ -143,21 +155,36 @@ export default function SimilarityGraph({
         },
       }));
     };
-    const linkData = () =>
-      visibleEdges.map((e) => ({
-        source: e.source,
-        target: e.target,
-        relationship: e,
-        symbol: e.kind === 'citation' ? ['none', 'arrow'] : ['none', 'none'],
-        symbolSize: 6,
-        lineStyle: {
-          width: edgeWeightWidth(e.count, maxWeight),
-          color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
-          type: e.kind === 'citation' ? 'dashed' : 'solid',
-          opacity: focused ? (highlightedRelationship(e, focused) ? 0.95 : 0.035) : 0.26,
-          curveness: e.kind === 'citation' ? 0.1 : -0.05,
-        },
-      }));
+    const linkData = () => {
+      const sizes = mediaIconSizes(nodes, chart.getWidth());
+      const points = new Map(nodes.map((node, i) => [node.id, positions[i]]));
+      return visibleEdges
+        .filter((edge) => {
+          const a = points.get(edge.source)!,
+            b = points.get(edge.target)!;
+          return graphEdgeHasRoom(
+            Math.hypot(a.x - b.x, a.y - b.y),
+            zoom,
+            sizes.get(edge.source)!,
+            sizes.get(edge.target)!,
+            edge.kind === 'citation' ? 14 : 0,
+          );
+        })
+        .map((e) => ({
+          source: e.source,
+          target: e.target,
+          relationship: e,
+          symbol: e.kind === 'citation' ? ['circle', 'arrow'] : ['circle', 'circle'],
+          symbolSize: [0, e.kind === 'citation' ? 14 : 0],
+          lineStyle: {
+            width: edgeWeightWidth(e.count, maxWeight),
+            color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
+            type: e.kind === 'citation' ? 'dashed' : 'solid',
+            opacity: focused ? (highlightedRelationship(e, focused) ? 0.95 : 0.035) : e.kind === 'citation' ? 0.5 : 0.26,
+            curveness: e.kind === 'citation' ? 0.1 : -0.05,
+          },
+        }));
+    };
     const updateFocus = (value: GraphSelection, force = false) => {
       if (disposed || (!force && sameGraphSelection(focused, value))) return;
       focused = value;
@@ -214,8 +241,13 @@ export default function SimilarityGraph({
             // Pixel bounds match the layout: fitting must not shrink collision gaps.
             preserveAspect: 'contain',
             roam: false,
-            // Like map markers, keep logos readable as the camera zooms.
-            nodeScaleRatio: 0,
+            // Keep logos fixed in pixels. ECharts 6 treats exactly zero as a
+            // missing value (ratio 1); epsilon avoids that fallback.
+            nodeScaleRatio: Number.EPSILON,
+            // Non-'none' endpoint symbols activate ECharts' circle clipping.
+            // Zero-size circles are invisible; padded images keep logos unchanged.
+            edgeSymbol: ['circle', 'circle'],
+            edgeSymbolSize: [0, 0],
             draggable: false,
             scaleLimit: { min: GRAPH_ZOOM_MIN, max: GRAPH_ZOOM_MAX },
             zoom: savedCamera?.zoom ?? 1,
@@ -248,11 +280,12 @@ export default function SimilarityGraph({
       scale: (next, origin) => {
         chart.dispatchAction({ type: 'graphRoam', seriesId: 'media-network', zoom: next / zoom, originX: origin.x, originY: origin.y });
         zoom = next;
+        chart.setOption({ series: [{ id: 'media-network', links: linkData() }] });
       },
       pan: (dx, dy) => chart.dispatchAction({ type: 'graphRoam', seriesId: 'media-network', dx, dy }),
       reset: () => {
         zoom = 1;
-        chart.setOption({ series: [{ id: 'media-network', zoom: 1, center: null }] });
+        chart.setOption({ series: [{ id: 'media-network', zoom: 1, center: null, links: linkData() }] });
       },
       moving: (value) => {
         if (value && !navigating) {
@@ -275,7 +308,8 @@ export default function SimilarityGraph({
       const img = new Image();
       img.onload = () => {
         if (disposed) return;
-        symbols.set(node.id, graphMediaIcon(img, node.id, dark));
+        images.set(node.id, img);
+        symbols.delete(node.id);
         chart.setOption({ series: [{ id: 'media-network', data: nodeData() }] });
       };
       img.src = src;
@@ -331,6 +365,7 @@ export default function SimilarityGraph({
                 ...layoutBounds(),
                 center,
                 data: nodeData(),
+                links: linkData(),
                 label: { fontSize: width < 600 ? 9 : 11, width: width < 600 ? 70 : 100 },
               },
             ],

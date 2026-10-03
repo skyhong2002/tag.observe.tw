@@ -2,6 +2,7 @@ import type { SimilarityData, SimilarityEdge, SimilarityNode } from '../../../ap
 import { type GraphSelection, graphEvidence } from './graph-evidence.mts';
 import { graphEvidenceScope } from './graph-filters.mts';
 import { type MediaCamps, nodeArticleCounts } from './media-graph.mts';
+import { chronologySummary } from './similarity-trace.mts';
 
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -45,7 +46,7 @@ export function createGraphTooltip(data: SimilarityData, nodes: SimilarityNode[]
       .map((item) =>
         item.kind === 'citation'
           ? `${item.citation.article.mediaTitle}：${item.citation.article.title}`
-          : `${item.pair.a.mediaTitle} ↔ ${item.pair.b.mediaTitle}：${item.pair.a.title}`,
+          : `${item.pair.a.mediaTitle} ↔ ${item.pair.b.mediaTitle}：${item.pair.a.title} · ${chronologySummary(item.pair)}`,
       );
     return `<div role="tooltip">${heading}<div style="margin-top:6px">${summary}</div>${articles.length ? `<div style="margin-top:8px">${articles.map((title) => `<div style="margin-top:4px">• ${escapeHtml(title)}</div>`).join('')}</div>` : ''}<div style="margin-top:8px;opacity:.65">點選固定高亮，詳細文章在圖下方</div></div>`;
   };

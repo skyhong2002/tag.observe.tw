@@ -3,10 +3,12 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import SimilarityTrace from '@/components/SimilarityTrace';
 import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
-import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
+import type { SimilarityArticle, SimilarityData, SimilarityPair } from '@/lib/similarity';
+import { buildSimilarityTraceIndex, chronologySummary, pairChronology } from '@/lib/similarity-trace.mts';
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
   ssr: false,
@@ -63,7 +65,36 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
   );
 }
 
+function SimilarityEvidence({ pair, index }: { pair: SimilarityPair; index: ReturnType<typeof buildSimilarityTraceIndex> }) {
+  const order = pairChronology(pair);
+  const [tracing, setTracing] = useState(false);
+  return (
+    <article className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+      <p className="text-xs font-medium text-brand-700 dark:text-brand-400">
+        {pair.kind === 'identical' ? '內文相同' : '高度相似'} · {(pair.score * 100).toFixed(1)}%
+      </p>
+      <p className="text-xs leading-6 text-zinc-500">{chronologySummary(pair)}</p>
+      <ArticleCard article={order.status === 'ordered' ? order.earlier : pair.a} earlier={order.status === 'ordered'} />
+      <ArticleCard article={order.status === 'ordered' ? order.later : pair.b} />
+      <details className="text-xs">
+        <summary className="cursor-pointer py-2">查看共同段落</summary>
+        <p className="break-all leading-6 text-zinc-500">{pair.evidence}</p>
+      </details>
+      <button
+        type="button"
+        aria-expanded={tracing}
+        onClick={() => setTracing(!tracing)}
+        className="rounded-lg border border-orange-300 px-3 py-2 text-xs text-brand-700 dark:text-brand-400"
+      >
+        {tracing ? '收起來源追查' : '追查較早的相似報導'}
+      </button>
+      {tracing && <SimilarityTrace pair={pair} index={index} />}
+    </article>
+  );
+}
+
 export default function SimilarityExplorer({ data, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
+  const traceIndex = useMemo(() => buildSimilarityTraceIndex(data.pairs), [data.pairs]);
   const [filters, setFilters] = useState<GraphFilters>({ limit: 30, camp: 'all', tag: '' });
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
@@ -531,17 +562,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                       </blockquote>
                     </article>
                   ) : (
-                    <article key={item.key} className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                      <p className="text-xs font-medium text-brand-700 dark:text-brand-400">
-                        {item.pair.kind === 'identical' ? '內文相同' : '高度相似'} · {(item.pair.score * 100).toFixed(1)}%
-                      </p>
-                      <ArticleCard article={item.pair.a} />
-                      <ArticleCard article={item.pair.b} />
-                      <details className="text-xs">
-                        <summary className="cursor-pointer py-2">查看共同段落</summary>
-                        <p className="break-all leading-6 text-zinc-500">{item.pair.evidence}</p>
-                      </details>
-                    </article>
+                    <SimilarityEvidence key={item.key} pair={item.pair} index={traceIndex} />
                   ),
                 )}
               </div>
@@ -584,11 +605,13 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 {number(data.sample.pairLimit ?? 200)} 組；引用篇數也僅涵蓋這批樣本。
               </p>
               <p>
-                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。下方的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
+                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源，端點停在
+                Logo
+                外圍。縮小後沒有足夠空間的短連線暫時隱藏，放大即可查看。下方的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
                 預設顯示本期納入分析篇數最多的 30 家媒體，可選前 10／20／50／100 家或全部，再搭配藍綠與媒體 tag
-                篩選。先套用分類，再依篇數取前幾家；下方文章僅列出圖上媒體之間的關係。篩選後沒有彼此連線的媒體仍保留圖示，不代表沒有其他新聞。圖表顯示符合篩選的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。本期完全沒有關係的媒體不放入圖中。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。固定後仍可移入其他媒體，暫時預覽它的相關媒體、連線與摘要；移入線條則高亮該連線與兩端媒體，移開後回到固定的選取。預覽不會變更下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。統計以本期分析樣本為限，圖上與下方只呈現目前篩選的媒體關係。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
+                篩選。先套用分類，再依篇數取前幾家；下方文章僅列出圖上媒體之間的關係。篩選後沒有彼此連線的媒體仍保留圖示，不代表沒有其他新聞。圖表顯示符合篩選的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。本期完全沒有關係的媒體不放入圖中。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。固定後仍可移入其他媒體，暫時預覽它的相關媒體、連線與摘要；移入線條則高亮該連線與兩端媒體，移開後回到固定的選取。預覽不會變更下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。統計以本期分析樣本為限，圖上與下方只呈現目前篩選的媒體關係。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不加上引用箭頭；下方可依發布時間追查較早報導，每一步保留配對相似度與共同段落。時間順序不是引用方向，最早的已收錄報導也不一定是原始作者，不能據此認定抄襲。國別是媒體所屬地區，不是事件發生地。
               </p>
               <p>
                 <span className="text-blue-700 dark:text-blue-400">藍字</span>／
