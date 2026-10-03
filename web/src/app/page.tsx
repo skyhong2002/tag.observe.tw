@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { permanentRedirect, redirect } from 'next/navigation';
-import { Suspense } from 'react';
-import SafeImage from '@/components/SafeImage';
+import { type CSSProperties, Suspense } from 'react';
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
 import { taipei } from '@/lib/api';
 import { type CampShare, DEMO_CAMPS, type DemoCoverage, type DemoStory, loadDemo } from '@/lib/demo';
+import CampOutletIcon from './_home/CampOutletIcon';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import styles from './_home/home.module.css';
 import NewsImage from './_home/NewsImage';
@@ -59,7 +59,16 @@ function CampShareBar({ share }: { share: CampShare }) {
         分類方式 ⓘ
       </a>
       {share.camps.some((c) => c.outlets.length > 0) && (
-        <div className={styles.campOutlets}>
+        <div
+          className={styles.campOutlets}
+          style={
+            {
+              '--outlet-columns': DEMO_CAMPS.map(
+                (c) => `minmax(128px, ${Math.max(1, share.camps.find((v) => v.camp === c.key)?.outlets.length ?? 0)}fr)`,
+              ).join(' '),
+            } as CSSProperties
+          }
+        >
           {DEMO_CAMPS.map((c) => {
             const outlets = share.camps.find((v) => v.camp === c.key)?.outlets ?? [];
             return (
@@ -69,18 +78,11 @@ function CampShareBar({ share }: { share: CampShare }) {
                   {c.label} <span>{outlets.length} 家</span>
                 </p>
                 <ul>
-                  {outlets.map((o) => {
-                    const label = o.active
-                      ? `${o.title}（過去 24 小時 ${o.last24h.toLocaleString()} 篇）`
-                      : `${o.title}（過去 24 小時沒有文章）`;
-                    return (
-                      <li key={o.media} className={o.active ? undefined : styles.campOutletIdle}>
-                        <Link href={`/media/${o.media}/`} title={label} aria-label={label}>
-                          {o.icon ? <SafeImage src={o.icon} alt="" width={18} height={18} /> : <span>{o.title.slice(0, 1)}</span>}
-                        </Link>
-                      </li>
-                    );
-                  })}
+                  {outlets.map((o) => (
+                    <li key={o.media}>
+                      <CampOutletIcon outlet={o} camp={c.key} campLabel={c.label} />
+                    </li>
+                  ))}
                 </ul>
               </div>
             );

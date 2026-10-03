@@ -76,16 +76,26 @@
 .campShareLabel > span { margin-left: 8px; font-size: 12px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .campShareMethod { flex-shrink: 0; font-size: 12px; color: var(--accent); }
 .campShare { flex-wrap: wrap; }
-.campOutlets { flex-basis: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding-top: 12px; border-top: 1px solid var(--soft-line); }
+.campOutlets { flex-basis: 100%; min-width: 0; display: grid; grid-template-columns: var(--outlet-columns); gap: 20px; padding-top: 12px; border-top: 1px solid var(--soft-line); }
+.campOutletGroup { min-width: 0; }
 .campOutletGroup > p { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; margin-bottom: 8px; }
 .campOutletGroup > p > i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; }
 .campOutletGroup > p > span { color: var(--muted); font-weight: 400; }
-.campOutletGroup ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; }
-.campOutletGroup li a { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid var(--soft-line); border-radius: 6px; background: #fff; }
-.campOutletGroup li a:hover { border-color: var(--accent); }
-.campOutletGroup li a img { border-radius: 3px; }
-.campOutletGroup li a > span { font-size: 11px; color: var(--color-zinc-700); }
-.campOutletIdle { opacity: .35; }
+.campOutletGroup ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, 26px); gap: 6px; padding: 0; margin: 0; }
+.campOutletLink { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid var(--soft-line); border-radius: 6px; background: #fff; }
+.campOutletLink:hover, .campOutletLink:focus-visible { border-color: var(--accent); }
+.campOutletIcon { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-zinc-700); }
+.campOutletIcon img { border-radius: 3px; }
+.campOutletIdle > .campOutletIcon { opacity: .35; }
+.campOutletIdle:hover > .campOutletIcon, .campOutletIdle:focus-visible > .campOutletIcon { opacity: 1; }
+.campOutletTooltip { position: fixed; z-index: 60; width: 240px; max-width: calc(100vw - 24px); padding-block: 8px; cursor: pointer; }
+.campOutletCard { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); box-shadow: 0 8px 28px rgb(0 0 0 / .16); font-size: 12px; line-height: 1.5; }
+.campOutletCard > strong { font-size: 14px; overflow-wrap: anywhere; }
+.campOutletCategory { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.campOutletCategory > i { width: 8px; height: 8px; border-radius: 2px; }
+.campOutletActivity { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
+.campOutletActivity > b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+.campOutletHint { padding-top: 8px; border-top: 1px solid var(--soft-line); color: var(--accent); font-size: 11px; }
 .heroFoot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 11px; color: var(--muted); }
 .heroFoot > span:last-child { color: var(--accent); }
 .legend { display: flex; align-items: center; gap: 12px; padding: 12px 0 18px; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
