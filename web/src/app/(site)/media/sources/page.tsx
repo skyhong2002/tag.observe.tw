@@ -6,8 +6,8 @@ import traffic from '../../../../../../app/data/media-traffic.json';
 import catalog from '../../../../../../app/data/news-source-catalog.json';
 
 export const metadata = {
-  title: '媒體流量與收錄比較',
-  description: '跨月比較 Similarweb 流量與本站爬蟲收錄量，查看媒體趨勢、月份差異與收錄排名。',
+  title: '媒體流量與收錄',
+  description: '查看各家媒體的本站收錄篇數與 Similarweb 流量。',
 };
 export const revalidate = 300;
 
@@ -29,10 +29,8 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
     <div className="space-y-5">
       <header>
         <MediaTabs current="sources" />
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與收錄比較</h1>
-        <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          對照 Similarweb 歷月流量與本站已收錄文章，查看各家媒體的變化。
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與收錄</h1>
+        <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">各家媒體的本站收錄篇數與 Similarweb 流量，一起查看。</p>
       </header>
       <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl)} initial={params} />
       <details
@@ -43,10 +41,10 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         <div className="mt-2 max-w-4xl space-y-2">
           <p>
             Similarweb 資料來自人工整理表，匯入日期 {traffic.retrievedAt.slice(0, 10)}
-            。單位未在新聞欄明示，顯示原表值，不推算造訪人數。人工調整過的數值不納入趨勢與排名；缺值不補零。品牌全站與新聞子頻道可能重疊，每家媒體採主來源，不相加，也不推算全台市占。
+            。單位未在新聞欄明示，顯示原表值，不推算造訪人數。人工調整過的數值另行標示；缺值不補零。品牌全站與新聞子頻道可能重疊，每家媒體採主來源，不相加，也不推算全台市占。
           </p>
           <p>
-            本站文章數依真實發布月份（台北時間）統計目前已收錄紀錄，並非該媒體完整發稿量。開始收錄前的月份僅有歷史補收；開始當月與本月均為部分期間。流量與篇數是不同指標，不能推算成每篇文章的實際閱讀量。發現來源以關聯計數，不改文章的原媒體歸屬。
+            本站文章數依真實發布月份（台北時間）統計目前已收錄紀錄，並非該媒體完整發稿量。本月資料持續累積中，抓取也可能不完整。流量與篇數是不同指標，不能推算成每篇文章的實際閱讀量。發現來源以關聯計數，不改文章的原媒體歸屬。
           </p>
           <p>此頁不呈現政治分類評分；原始整理表的分類屬人工標記，不是 Similarweb 的政治傾向評分。</p>
           <a
