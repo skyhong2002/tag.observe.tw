@@ -9,8 +9,8 @@ export const revalidate = 60;
 export const metadata = { title: '新聞關鍵字排行榜' };
 type Search = { category?: string; order?: string; limit?: string; sort?: string; dir?: string };
 type Col = 'tag' | 'change' | 'burst' | 'score' | 'count' | 'trend' | 'media';
-const COLS: Col[] = ['tag', 'change', 'burst', 'score', 'count', 'trend', 'media'];
-const RELATED_SHOWN = 4;
+const COLS: Col[] = ['tag', 'burst', 'change', 'score', 'count', 'trend', 'media'];
+const RELATED_SHOWN = 5;
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
@@ -118,9 +118,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       {ranking && <RankingBasisNote basis={ranking.snapshot.basis} media={media} />}
       {ranking && !ranking.snapshot.available && <p className="text-sm text-zinc-600">這個時段的基準媒體收錄資料不足，暫不提供排行。</p>}
       <p className="text-xs text-zinc-600">
-        變動：依分數的名次與 24 小時前相比，<span className="font-semibold text-rose-600">新</span>
-        表示昨天這個時候還不在榜上。一起出現：同一篇報導最常同時掛的其他關鍵字，可看出哪幾個關鍵字其實在講同一件事。趨勢：每小時新聞篇數的
-        24 小時移動平均，顯示最近 48 小時的變化；點關鍵字可查看完整時間圖。
+        趨勢：每小時新聞篇數的 24 小時移動平均，顯示最近 48
+        小時的變化；點關鍵字可查看完整時間圖。變動與一起出現的定義見頁尾「資料來源與計算方式」。
       </p>
       {!ranking ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">這個分類目前沒有資料。</p>
@@ -132,8 +131,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <tr>
                   <th className="w-10 px-3 py-2 text-right">#</th>
                   <Th col="tag" label="關鍵字" className="sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-950" />
-                  <Th col="change" label="變動" className="w-16 text-right" title="依分數的名次與 24 小時前相比" />
                   <Th col="burst" label="爆發力" className="w-24 text-right" title="相對 3／6／12／24／48 小時前的變化" />
+                  <Th col="change" label="變動" className="w-16 text-right" title="依分數的名次與 24 小時前相比" />
                   <Th col="score" label="分數" className="w-20 text-right" title="媒體加權分數" />
                   <Th col="count" label="篇數" className="w-16 text-right" />
                   <Th col="trend" label="趨勢" className="w-28" title="24 小時平均篇數與 48 小時前的差值（篇／小時）" />
@@ -160,6 +159,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                         </Link>
                       </td>
                       <td
+                        title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
+                        className={`px-3 py-2 text-right tabular-nums ${e.burst !== null && e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}
+                      >
+                        {e.burst?.toFixed(1) ?? '—'}
+                      </td>
+                      <td
                         className="px-3 py-2 text-right text-xs tabular-nums"
                         title={
                           e.new
@@ -183,36 +188,36 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                           <span className="text-zinc-400">＝</span>
                         )}
                       </td>
-                      <td
-                        title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
-                        className={`px-3 py-2 text-right tabular-nums ${e.burst !== null && e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}
-                      >
-                        {e.burst?.toFixed(1) ?? '—'}
-                      </td>
                       <td className="px-3 py-2 text-right tabular-nums">{e.normalized.toFixed(1)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-zinc-600">{e.count}</td>
                       <td className="px-3 py-1">
                         <Sparkline values={trend.map((p) => p.average24h)} />
                       </td>
-                      <td className="px-3 py-2 text-xs">
+                      <td
+                        className="w-[17rem] max-w-0 truncate whitespace-nowrap px-3 py-2 text-xs"
+                        title={
+                          related.length
+                            ? related.map((r) => `${r.tag} ${r.count} 篇（${Math.round(r.share * 100)}%）`).join('\n')
+                            : undefined
+                        }
+                      >
                         {related.length ? (
-                          <span className="flex flex-wrap gap-x-2 gap-y-0.5">
-                            {related.map((r) => (
+                          related.map((r, i) => (
+                            <span key={r.tag}>
+                              {i > 0 && <span className="text-zinc-400">、</span>}
                               <Link
-                                key={r.tag}
                                 href={`/tag/${encodeURIComponent(r.tag)}`}
-                                title={`${r.count} 篇同時提到「${e.tag}」與「${r.tag}」（${Math.round(r.share * 100)}%）`}
-                                className="whitespace-nowrap text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
+                                className="text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
                               >
                                 {r.tag}
                               </Link>
-                            ))}
-                          </span>
+                            </span>
+                          ))
                         ) : (
                           <span className="text-zinc-400">—</span>
                         )}
                       </td>
-                      <td className="w-2/5 max-w-0 px-3 py-2">
+                      <td className="w-1/3 max-w-0 px-3 py-2">
                         <MediaIcons media={e.media} info={media} />
                       </td>
                     </tr>
