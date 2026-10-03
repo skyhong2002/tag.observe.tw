@@ -22,4 +22,8 @@ describe('reviewed media icons', () => {
     expect(iconUrl('toString')).toBeNull();
     expect(iconUrl('unknown-outlet')).toBeNull();
   });
+
+  it('uses the name fallback for the unavailable Apple Daily icon instead of a broken remote image', () => {
+    expect(iconUrl('apple')).toBeNull();
+  });
 });
