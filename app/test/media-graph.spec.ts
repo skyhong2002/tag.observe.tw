@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { edgeWeightWidth, forcePositions, mediaGraphPositions, mediaIconSizes, nodeArticleCounts } from '../../web/src/lib/media-graph.mts';
+import {
+  connectedMedia,
+  displayedGraphEdges,
+  edgeWeightWidth,
+  forcePositions,
+  mainGraphEdges,
+  mediaCommunities,
+  mediaGraphPositions,
+  mediaIconSizes,
+  nodeArticleCounts,
+} from '../../web/src/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
 
 const article = (id: number, media: string): SimilarityArticle => ({
@@ -86,38 +96,6 @@ describe('edge weights', () => {
   });
 });
 
-describe('isolated outlets on the perimeter', () => {
-  const edge = { source: 'a', target: 'b', kind: 'citation' as const, count: 2, score: null };
-  it('keeps every outlet visible and separates unconnected outlets from the force layout', () => {
-    const nodes = [node('reporter'), node('a'), node('b'), node('isolated')];
-    for (const [width, height] of [
-      [356, 455],
-      [1118, 607],
-    ]) {
-      const points = mediaGraphPositions(nodes, [edge], width, height);
-      expect(points.map((p) => p.id)).toEqual(nodes.map((n) => n.id));
-      for (const point of points.filter((p) => ['reporter', 'isolated'].includes(p.id))) {
-        expect(Math.max(Math.abs(point.x) / width, Math.abs(point.y) / height)).toBeCloseTo(0.45);
-      }
-      for (const point of points.filter((p) => ['a', 'b'].includes(p.id))) {
-        expect(Math.abs(point.x)).toBeLessThan(width * 0.4);
-        expect(Math.abs(point.y)).toBeLessThan(height * 0.4);
-      }
-      const added = mediaGraphPositions([...nodes, node('extra')], [edge], width, height);
-      expect(added.filter((p) => ['a', 'b'].includes(p.id))).toEqual(points.filter((p) => ['a', 'b'].includes(p.id)));
-    }
-  });
-  it('moves outlets to the outside when a relationship mode hides their edges, without inventing links', () => {
-    const nodes = [node('a'), node('b'), node('reporter')];
-    const points = mediaGraphPositions(nodes, [], 400, 500);
-    expect(points).toHaveLength(nodes.length);
-    expect(points.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
-    expect(mediaGraphPositions([], [], 400, 500)).toEqual([]);
-    expect(mediaGraphPositions([node('reporter')], [], 400, 500)).toHaveLength(1);
-    expect(mediaGraphPositions(nodes, [{ ...edge, target: 'missing' }], 400, 500)).toEqual(points);
-  });
-});
-
 describe('media icon volume', () => {
   it('encodes article volume with increasing bounded areas on desktop and mobile', () => {
     const nodes = [0, 1, 10, 100, 1000].map((n) => ({ ...node(String(n)), articles: n }));
@@ -125,7 +103,7 @@ describe('media icon volume', () => {
       const sizes = [...mediaIconSizes(nodes, width).values()];
       expect(sizes.every((size, i) => i === 0 || size > sizes[i - 1])).toBe(true);
       expect(sizes[0]).toBe(width < 600 ? 16 : 20);
-      expect(sizes.at(-1)).toBe(width < 600 ? 34 : 64);
+      expect(sizes.at(-1)).toBe(width < 600 ? 28 : 46);
       const area = (i: number) => sizes[i] ** 2 - sizes[0] ** 2;
       expect(area(3) / area(2)).toBeCloseTo(10);
     }
@@ -143,5 +121,77 @@ describe('media icon volume', () => {
     ).toEqual(sizes);
     expect(mediaIconSizes([], 356).size).toBe(0);
     expect(mediaIconSizes([{ ...node('bad'), articles: Number.NaN }], 1118).get('bad')).toBe(20);
+  });
+});
+
+describe('readable relationship overview', () => {
+  const edge = (source: string, target: string, count: number) => ({ source, target, count, kind: 'citation' as const, score: null });
+  const nodes = ['a', 'b', 'c', 'd', 'e', 'isolated'].map(node);
+  const edges = [
+    edge('a', 'b', 10),
+    edge('a', 'c', 9),
+    edge('b', 'c', 8),
+    edge('b', 'd', 7),
+    edge('c', 'd', 6),
+    edge('d', 'e', 5),
+    edge('a', 'e', 1),
+  ];
+  it('hides genuinely unconnected media while retaining endpoints of weak links', () => {
+    expect(connectedMedia(nodes, edges).map((n) => n.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(connectedMedia(nodes, [edge('a', 'unknown', 2)])).toEqual([]);
+    expect(connectedMedia(nodes, [])).toEqual([]);
+  });
+  it('thins the overview without mutating evidence, and expands every incident link on hover', () => {
+    const dense = ['a', 'b', 'c', 'd', 'e'].flatMap((a, i, ids) => ids.slice(i + 1).map((b, j) => edge(a, b, 20 - i - j)));
+    const overview = mainGraphEdges(dense);
+    expect(overview.length).toBeLessThan(dense.length);
+    expect(connectedMedia(nodes, overview).map((n) => n.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(displayedGraphEdges(dense, overview, true, null)).toEqual(dense);
+    const hidden = dense.find((e) => !overview.includes(e))!;
+    const focused = displayedGraphEdges(dense, overview, false, hidden.source);
+    expect(focused).toContain(hidden);
+    expect(focused.filter((e) => e.source === hidden.source || e.target === hidden.source)).toEqual(
+      dense.filter((e) => e.source === hidden.source || e.target === hidden.source),
+    );
+    expect(displayedGraphEdges(dense, overview, false, null)).toEqual(overview);
+    expect(dense).toHaveLength(10);
+    expect(
+      mainGraphEdges([...dense].reverse())
+        .map((e) => `${e.source}:${e.target}`)
+        .sort(),
+    ).toEqual(overview.map((e) => `${e.source}:${e.target}`).sort());
+  });
+  it('separates strongly related communities joined by a weak bridge', () => {
+    const groupedNodes = ['a', 'b', 'c', 'd', 'e', 'f'].map(node);
+    const groupedEdges = [
+      edge('a', 'b', 20),
+      edge('a', 'c', 20),
+      edge('b', 'c', 20),
+      edge('d', 'e', 20),
+      edge('d', 'f', 20),
+      edge('e', 'f', 20),
+      edge('c', 'd', 1),
+    ];
+    const labels = mediaCommunities(groupedNodes, groupedEdges);
+    expect(labels.get('a')).toBe(labels.get('c'));
+    expect(labels.get('d')).toBe(labels.get('f'));
+    expect(labels.get('a')).not.toBe(labels.get('d'));
+    expect(mediaCommunities([...groupedNodes].reverse(), [...groupedEdges].reverse())).toEqual(labels);
+    for (const [width, height] of [
+      [356, 450],
+      [1100, 650],
+    ]) {
+      const positions = mediaGraphPositions([...groupedNodes, node('isolated')], groupedEdges, width, height);
+      expect(positions).toHaveLength(6);
+      expect(positions.every((p) => p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height)).toBe(true);
+      expect(positions).toEqual(mediaGraphPositions(groupedNodes, groupedEdges, width, height));
+      const first = positions.filter((p) => ['a', 'b', 'c'].includes(p.id)),
+        second = positions.filter((p) => ['d', 'e', 'f'].includes(p.id));
+      expect(
+        Math.max(...first.map((p) => p.x)) < Math.min(...second.map((p) => p.x)) ||
+          Math.max(...first.map((p) => p.y)) < Math.min(...second.map((p) => p.y)),
+      ).toBe(true);
+    }
+    expect(mediaGraphPositions(nodes, [], 356, 450)).toEqual([]);
   });
 });

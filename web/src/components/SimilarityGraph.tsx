@@ -6,7 +6,14 @@ import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
-import { edgeWeightWidth, mediaGraphPositions, mediaIconSizes, nodeArticleCounts } from '@/lib/media-graph.mts';
+import {
+  displayedGraphEdges,
+  edgeWeightWidth,
+  mainGraphEdges,
+  mediaGraphPositions,
+  mediaIconSizes,
+  nodeArticleCounts,
+} from '@/lib/media-graph.mts';
 import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
 import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 
@@ -22,15 +29,23 @@ export default function SimilarityGraph({
   nodes,
   edges,
   data,
+  showAll,
   onSelect,
 }: {
   nodes: SimilarityNode[];
   edges: SimilarityEdge[];
   data: SimilarityData;
+  showAll: boolean;
   onSelect: (selection: GraphSelection) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const callback = useRef(onSelect);
+  const density = useRef(showAll);
+  const refresh = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    density.current = showAll;
+    refresh.current?.();
+  }, [showAll]);
   callback.current = onSelect;
   const [dark, setDark] = useState(false);
   useEffect(() => {
@@ -46,6 +61,10 @@ export default function SimilarityGraph({
     const chart = echarts.init(ref.current);
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const counts = nodeArticleCounts(data);
+    const overview = mainGraphEdges(edges);
+    let focused: string | null = null;
+    let neighbors = new Set<string>();
+    let visibleEdges = displayedGraphEdges(edges, overview, density.current, focused);
     const connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
     const symbols = new Map(nodes.map((n) => [n.id, fallbackIcon(n)]));
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
@@ -60,6 +79,12 @@ export default function SimilarityGraph({
     let positions = mediaGraphPositions(nodes, edges, chart.getWidth(), chart.getHeight());
     const nodeData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
+      const mainLabels = new Set(
+        [...nodes]
+          .sort((a, b) => b.articles - a.articles || a.id.localeCompare(b.id))
+          .slice(0, chart.getWidth() < 600 ? 3 : 6)
+          .map((node) => node.id),
+      );
       return nodes.map((n, i) => ({
         ...positions[i],
         id: n.id,
@@ -67,8 +92,33 @@ export default function SimilarityGraph({
         symbol: `image://${symbols.get(n.id)}`,
         symbolSize: sizes.get(n.id),
         symbolKeepAspect: true,
+        itemStyle: { opacity: !focused || neighbors.has(n.id) ? 1 : 0.12 },
+        label: { show: focused ? neighbors.has(n.id) : mainLabels.has(n.id) },
       }));
     };
+    const linkData = () =>
+      visibleEdges.map((e) => ({
+        source: e.source,
+        target: e.target,
+        relationship: e,
+        symbol: e.kind === 'citation' ? ['none', 'arrow'] : ['none', 'none'],
+        symbolSize: 6,
+        lineStyle: {
+          width: edgeWeightWidth(e.count, maxWeight),
+          color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
+          type: e.kind === 'citation' ? 'dashed' : 'solid',
+          opacity: focused ? (e.source === focused || e.target === focused ? 0.85 : 0.035) : 0.26,
+          curveness: e.kind === 'citation' ? 0.1 : -0.05,
+        },
+      }));
+    const updateFocus = (id: string | null, force = false) => {
+      if (disposed || (!force && focused === id)) return;
+      focused = id;
+      neighbors = new Set(id ? [id, ...edges.filter((e) => e.source === id || e.target === id).flatMap((e) => [e.source, e.target])] : []);
+      visibleEdges = displayedGraphEdges(edges, overview, density.current, focused);
+      chart.setOption({ series: [{ id: 'media-network', data: nodeData(), links: linkData() }] });
+    };
+    refresh.current = () => updateFocus(null, true);
     const render = () => {
       if (disposed) return;
       const small = chart.getWidth() < 600;
@@ -82,9 +132,10 @@ export default function SimilarityGraph({
           backgroundColor: dark ? '#18181b' : '#fff',
           textStyle: { color: ink, fontSize: 12 },
           extraCssText: 'max-width:280px;white-space:normal;line-height:1.8;box-shadow:0 8px 30px #0002;border-radius:12px;',
-          formatter: (item: { dataType: string; dataIndex: number }) => {
+          formatter: (item: { dataType: string; dataIndex: number; data?: { relationship?: SimilarityEdge } }) => {
             if (item.dataType === 'edge') {
-              const e = edges[item.dataIndex];
+              const e = item.data?.relationship ?? visibleEdges[item.dataIndex];
+              if (!e) return '';
               return `${escapeHtml(byId.get(e.source)?.name ?? e.source)} ${e.kind === 'citation' ? '→' : '↔'} ${escapeHtml(byId.get(e.target)?.name ?? e.target)}<br/><b>${e.count} ${e.kind === 'citation' ? '篇文章明示引用' : '組相似內文'}</b><br/>點選查看文章`;
             }
             const node = nodes[item.dataIndex],
@@ -105,31 +156,24 @@ export default function SimilarityGraph({
             right: small ? 28 : 65,
             top: 40,
             bottom: small ? 45 : 55,
-            emphasis: { focus: 'adjacency', scale: 1.15, lineStyle: { opacity: 1 }, label: { show: true } },
+            emphasis: { disabled: true },
             blur: { itemStyle: { opacity: 0.18 }, lineStyle: { opacity: 0.04 }, label: { opacity: 0.2 } },
             label: {
-              show: !small || nodes.length <= 40,
+              show: false,
               color: ink,
               position: 'bottom',
               distance: 7,
               fontSize: small ? 9 : 11,
               formatter: '{b}',
+              width: small ? 70 : 100,
+              overflow: 'truncate',
+              backgroundColor: dark ? '#18181be6' : '#ffffffe6',
+              padding: [2, 3],
+              borderRadius: 3,
             },
             labelLayout: { hideOverlap: true },
             data: nodeData(),
-            links: edges.map((e) => ({
-              source: e.source,
-              target: e.target,
-              symbol: e.kind === 'citation' ? ['none', 'arrow'] : ['none', 'none'],
-              symbolSize: 7,
-              lineStyle: {
-                width: edgeWeightWidth(e.count, maxWeight),
-                color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
-                type: e.kind === 'citation' ? 'dashed' : 'solid',
-                opacity: 0.3,
-                curveness: e.kind === 'citation' ? 0.1 : -0.05,
-              },
-            })),
+            links: linkData(),
           },
         ],
       });
@@ -148,10 +192,24 @@ export default function SimilarityGraph({
       };
       img.src = src;
     }
-    chart.on('click', (event: { dataType?: string; dataIndex?: number }) => {
+    let leaveTimer: ReturnType<typeof setTimeout>;
+    chart.on('mouseover', (event: { dataType?: string; dataIndex?: number }) => {
+      clearTimeout(leaveTimer);
+      if (event.dataType === 'node' && event.dataIndex !== undefined) updateFocus(nodes[event.dataIndex].id);
+    });
+    chart.on('mouseout', () => {
+      leaveTimer = setTimeout(() => updateFocus(null), 180);
+    });
+    chart.getZr().on('globalout', () => {
+      clearTimeout(leaveTimer);
+      updateFocus(null);
+    });
+    chart.on('click', (event) => {
       if (event.dataIndex === undefined) return;
-      if (event.dataType === 'edge') callback.current({ edge: edges[event.dataIndex] });
-      else if (event.dataType === 'node') callback.current({ node: nodes[event.dataIndex].id });
+      if (event.dataType === 'edge') {
+        const edge = (event.data as { relationship?: SimilarityEdge } | null)?.relationship ?? visibleEdges[event.dataIndex];
+        if (edge) callback.current({ edge });
+      } else if (event.dataType === 'node') callback.current({ node: nodes[event.dataIndex].id });
     });
     let frame = 0;
     const observer = new ResizeObserver(() => {
@@ -166,6 +224,8 @@ export default function SimilarityGraph({
     observer.observe(ref.current);
     return () => {
       disposed = true;
+      clearTimeout(leaveTimer);
+      refresh.current = null;
       cancelAnimationFrame(frame);
       observer.disconnect();
       chart.dispose();
@@ -176,7 +236,7 @@ export default function SimilarityGraph({
       ref={ref}
       className="h-full w-full"
       role="img"
-      aria-label={`力導向媒體關係圖，${nodes.length} 家媒體。移到媒體圖示查看引用篇數；點選查看文章。`}
+      aria-label={`力導向媒體關係圖，${nodes.length} 家媒體。移到媒體圖示展開完整關係與引用篇數；點選查看文章。`}
     />
   ) : (
     <div className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500">

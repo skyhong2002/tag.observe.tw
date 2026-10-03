@@ -116,46 +116,138 @@ export function edgeWeightWidth(count: number, maximum: number) {
   return 1 + (7 * Math.log(safeCount)) / Math.log(safeMax);
 }
 
-/** Keep outlets with no visible edges in a separate perimeter, outside the
- * spring simulation. They stay visible without compressing connected hubs. */
-export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
-  const sizes = mediaIconSizes(nodes, width);
-  const ids = new Set(nodes.map((node) => node.id));
-  const validEdges = edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target));
-  const connected = new Set(validEdges.flatMap((edge) => [edge.source, edge.target]));
-  const outer = nodes.filter((node) => !connected.has(node.id)).sort((a, b) => a.id.localeCompare(b.id));
-  if (!outer.length) return forcePositions(nodes, validEdges, width, height, sizes);
-  const band = width < 600 ? 52 : 68;
-  const inner = forcePositions(
-    nodes.filter((node) => connected.has(node.id)),
-    validEdges,
-    Math.max(1, width - band * 2),
-    Math.max(1, height - band * 2),
-    sizes,
+/** Nodes remain eligible based on all edges in the chosen relationship mode,
+ * never on the thinned overview. Real isolated outlets are hidden. */
+export function connectedMedia(nodes: SimilarityNode[], edges: SimilarityEdge[]) {
+  const known = new Set(nodes.map((node) => node.id));
+  const connected = new Set(
+    edges.filter((edge) => known.has(edge.source) && known.has(edge.target)).flatMap((edge) => [edge.source, edge.target]),
   );
-  const positions = new Map(inner.map((point) => [point.id, point]));
-  const w = width * 0.9,
-    h = height * 0.9;
-  const perimeter = 2 * (w + h);
-  outer.forEach((node, i) => {
-    const distance = (perimeter * i) / outer.length;
-    let x: number, y: number;
-    if (distance < w) {
-      x = -w / 2 + distance;
-      y = -h / 2;
-    } else if (distance < w + h) {
-      x = w / 2;
-      y = -h / 2 + distance - w;
-    } else if (distance < 2 * w + h) {
-      x = w / 2 - (distance - w - h);
-      y = h / 2;
-    } else {
-      x = -w / 2;
-      y = h / 2 - (distance - 2 * w - h);
+  return nodes.filter((node) => connected.has(node.id));
+}
+const edgeKey = (edge: SimilarityEdge) => `${edge.kind}:${edge.source}:${edge.target}`;
+
+/** Union of each outlet's strongest two links. A hub may have more than two
+ * visible links because other outlets also select it. No relationship is lost. */
+export function mainGraphEdges(edges: SimilarityEdge[], perMedia = 2) {
+  const ranked = [...edges].sort((a, b) => b.count - a.count || edgeKey(a).localeCompare(edgeKey(b)));
+  const chosen = new Set<string>();
+  const counts = new Map<string, number>();
+  for (const edge of ranked) {
+    for (const id of [edge.source, edge.target]) {
+      const count = counts.get(id) ?? 0;
+      if (count < perMedia) chosen.add(edgeKey(edge));
+      counts.set(id, count + 1);
     }
-    positions.set(node.id, { id: node.id, x, y });
-  });
-  return nodes.map((node) => positions.get(node.id)!);
+  }
+  return edges.filter((edge) => chosen.has(edgeKey(edge)));
+}
+export function displayedGraphEdges(edges: SimilarityEdge[], overview: SimilarityEdge[], all: boolean, focused: string | null) {
+  if (all) return edges;
+  const keys = new Set(overview.map(edgeKey));
+  return edges.filter((edge) => keys.has(edgeKey(edge)) || edge.source === focused || edge.target === focused);
+}
+
+/** Deterministic weighted modularity communities. Direction is ignored only
+ * for placement; citation arrows and evidence retain their original direction. */
+export function mediaCommunities(nodes: SimilarityNode[], edges: SimilarityEdge[]) {
+  const ids = nodes.map((node) => node.id).sort();
+  const adjacency = new Map(ids.map((id) => [id, new Map<string, number>()]));
+  for (const edge of [...edges].sort((a, b) => edgeKey(a).localeCompare(edgeKey(b)))) {
+    if (edge.source === edge.target || !adjacency.has(edge.source) || !adjacency.has(edge.target)) continue;
+    const weight = Math.log1p(Math.max(1, edge.count));
+    for (const [a, b] of [
+      [edge.source, edge.target],
+      [edge.target, edge.source],
+    ]) {
+      adjacency.get(a)!.set(b, (adjacency.get(a)!.get(b) ?? 0) + weight);
+    }
+  }
+  const degree = new Map(ids.map((id) => [id, [...adjacency.get(id)!.values()].reduce((a, b) => a + b, 0)]));
+  const total = [...degree.values()].reduce((a, b) => a + b, 0) || 1;
+  const labels = new Map(ids.map((id) => [id, id]));
+  const volumes = new Map(degree);
+  for (let pass = 0; pass < 30; pass++) {
+    let changed = false;
+    for (const id of ids) {
+      const own = labels.get(id)!,
+        d = degree.get(id)!;
+      volumes.set(own, volumes.get(own)! - d);
+      const weights = new Map<string, number>([[own, 0]]);
+      for (const [neighbor, weight] of adjacency.get(id)!) {
+        const label = labels.get(neighbor)!;
+        weights.set(label, (weights.get(label) ?? 0) + weight);
+      }
+      let best = own,
+        gain = (weights.get(own) ?? 0) - (d * (volumes.get(own) ?? 0)) / total;
+      for (const [label, weight] of [...weights].sort(([a], [b]) => a.localeCompare(b))) {
+        const candidate = weight - (d * (volumes.get(label) ?? 0)) / total;
+        if (candidate > gain + 1e-9) {
+          best = label;
+          gain = candidate;
+        }
+      }
+      labels.set(id, best);
+      volumes.set(best, (volumes.get(best) ?? 0) + d);
+      if (best !== own) changed = true;
+    }
+    if (!changed) break;
+  }
+  // Canonical membership labels, independent of the seed that won a move.
+  const members = new Map<string, string[]>();
+  for (const id of ids) {
+    const label = labels.get(id)!;
+    members.set(label, [...(members.get(label) ?? []), id]);
+  }
+  return new Map([...members.values()].flatMap((group) => group.map((id) => [id, group[0]] as const)));
+}
+
+/** Pack communities in separate regions, then settle a force layout inside
+ * each region. Hover and line-density changes reuse these exact positions. */
+export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
+  const visible = connectedMedia(nodes, edges);
+  const labels = mediaCommunities(visible, edges);
+  const sizes = mediaIconSizes(nodes, width);
+  const groups = [...new Set(labels.values())]
+    .map((id) => ({ id, nodes: visible.filter((node) => labels.get(node.id) === id).sort((a, b) => a.id.localeCompare(b.id)) }))
+    .sort((a, b) => b.nodes.length - a.nodes.length || a.id.localeCompare(b.id));
+  const points = new Map<string, { id: string; x: number; y: number }>();
+  type Group = (typeof groups)[number];
+  const weight = (group: Group) => group.nodes.length + 2;
+  const place = (items: Group[], x: number, y: number, w: number, h: number) => {
+    if (!items.length) return;
+    if (items.length === 1) {
+      const group = items[0];
+      const ids = new Set(group.nodes.map((node) => node.id));
+      const inset = width < 600 ? 12 : 22;
+      const innerW = Math.max(1, w - inset * 2),
+        innerH = Math.max(1, h - inset * 2);
+      const local = forcePositions(
+        group.nodes,
+        edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)),
+        innerW,
+        innerH,
+        sizes,
+      );
+      for (const point of local) points.set(point.id, { id: point.id, x: x + w / 2 + point.x, y: y + h / 2 + point.y });
+      return;
+    }
+    const total = items.reduce((sum, item) => sum + weight(item), 0);
+    let split = 1,
+      first = weight(items[0]);
+    while (split < items.length - 1 && Math.abs(first + weight(items[split]) - total / 2) < Math.abs(first - total / 2))
+      first += weight(items[split++]);
+    const ratio = first / total;
+    if (w >= h) {
+      place(items.slice(0, split), x, y, w * ratio, h);
+      place(items.slice(split), x + w * ratio, y, w * (1 - ratio), h);
+    } else {
+      place(items.slice(0, split), x, y, w, h * ratio);
+      place(items.slice(split), x, y + h * ratio, w, h * (1 - ratio));
+    }
+  };
+  place(groups, 0, 0, width, height);
+  return visible.map((node) => points.get(node.id)!);
 }
 
 /** Icon area encodes sampled article volume, with a legible minimum and a
@@ -163,7 +255,7 @@ export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEd
 export function mediaIconSizes(nodes: SimilarityNode[], width: number): Map<string, number> {
   const small = width < 600;
   const min = small ? 16 : 20,
-    max = small ? 34 : 64;
+    max = small ? 28 : 46;
   const count = (node: SimilarityNode) => (Number.isFinite(node.articles) ? Math.max(0, node.articles) : 0);
   const maximum = Math.max(1, ...nodes.filter((node) => !node.external).map(count));
   return new Map(

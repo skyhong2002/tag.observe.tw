@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GraphSelection } from '@/components/SimilarityGraph';
-import { nodeArticleCounts } from '@/lib/media-graph.mts';
+import { connectedMedia, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
@@ -64,13 +64,15 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
 
 export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
+  const [showAll, setShowAll] = useState(false);
   const [selection, setSelection] = useState<GraphSelection>(null);
   const [drawer, setDrawer] = useState<'settings' | 'info' | 'media' | 'evidence' | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
   const counts = useMemo(() => nodeArticleCounts(data), [data]);
   const edges = useMemo(() => data.edges.filter((e) => mode === 'all' || e.kind === mode), [data.edges, mode]);
-  const nodes = data.nodes;
+  const nodes = useMemo(() => connectedMedia(data.nodes, edges), [data.nodes, edges]);
+  const overview = useMemo(() => mainGraphEdges(edges), [edges]);
   const select = (value: GraphSelection) => {
     setSelection(value);
     if (value) setDrawer('evidence');
@@ -119,7 +121,7 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
         <div>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
           <p className="mt-1 text-xs text-zinc-500">
-            {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length} 家媒體 · {number(data.sample.analyzed)}{' '}
+            {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length} 家有關係媒體 · {number(data.sample.analyzed)}{' '}
             篇分析樣本
           </p>
         </div>
@@ -160,25 +162,37 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
               </button>
             ))}
           </fieldset>
-          <button
-            type="button"
-            onClick={() => setDrawer('media')}
-            className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700"
-          >
-            媒體列表 ↗
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-pressed={showAll}
+              onClick={() => setShowAll((value) => !value)}
+              className="rounded-md border border-zinc-200 px-2 py-1.5 text-xs dark:border-zinc-700"
+            >
+              {showAll ? '回到主要連線' : '顯示全部連線'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDrawer('media')}
+              className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700"
+            >
+              媒體列表 ↗
+            </button>
+          </div>
         </div>
         <div className="relative min-h-0 flex-1" data-testid="media-graph-frame">
-          <SimilarityGraph nodes={nodes} edges={edges} data={data} onSelect={select} />
+          <SimilarityGraph nodes={nodes} edges={edges} data={data} showAll={showAll} onSelect={select} />
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800">
           <p>
             <span className="text-orange-600 dark:text-orange-400">━ 內文相似</span>
             <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
-            <span className="ml-3">外圍：未偵測到連線</span>
+            <span className="ml-3">
+              總覽 {showAll ? edges.length : overview.length}／{edges.length} 條
+            </span>
           </p>
-          <p className="hidden sm:block">圖示越大，樣本越多 · 線越粗，關係越多</p>
-          <p className="sm:hidden">圖示大小依樣本篇數 · 點選看文章</p>
+          <p className="hidden sm:block">移到媒體展開完整關係 · 點選看文章</p>
+          <p className="sm:hidden">無連線媒體已隱藏 · 點選圖示看文章</p>
         </div>
       </section>
       <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
@@ -330,7 +344,8 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                外圍媒體在目前顯示條件下未偵測到連線，仍可點選查看樣本與內文。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
+                目前關係類型沒有連線的媒體已隱藏，仍可從媒體列表查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
+                展開該媒體在目前關係類型的所有連線；「顯示全部連線」可查看全貌。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
               </p>
               <details>
                 <summary className="cursor-pointer font-medium">相似度如何計算</summary>
