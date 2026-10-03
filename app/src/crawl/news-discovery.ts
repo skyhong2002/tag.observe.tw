@@ -3,7 +3,7 @@ import { extractArticle, parsePublished } from './article.ts';
 import type { FeedItem } from './feed.ts';
 import { parseFeed } from './feed.ts';
 import type { FetchResult } from './fetch.ts';
-import { fetchText } from './fetch.ts';
+import { fetchText, fetchViaCurl } from './fetch.ts';
 import { parsePublicJson, publicArticleHtml } from './news-public-html.ts';
 import { newsSiteEvidence } from './news-site-rules.ts';
 import { decodeEntities } from './text.ts';
@@ -19,6 +19,18 @@ export interface NewsDiscoveryConfig {
   apiUrls?: string[];
   articlePattern?: string;
   maxArticles?: number;
+  /** Reviewed low-frequency publishers: keep actual dates of latest older posts. */
+  includeArchive?: boolean;
+  /** Restrict discovery to reviewed feeds (e.g. one publisher's news section). */
+  feedOnly?: boolean;
+  /** Explicit transport for publishers whose public TLS endpoint rejects Node. */
+  transport?: 'curl';
+  /** Per-request allowance for reviewed slow publishers, capped at 20 seconds. */
+  requestTimeoutMs?: number;
+  /** Article-level provider credit required for reviewed syndication sources. */
+  provider?: string;
+  /** Reviewed archive permalinks when a discontinued publisher has no listing. */
+  articleUrls?: string[];
 }
 export interface NewsDiscoveryOptions {
   fetch?: typeof fetchText;
@@ -200,12 +212,13 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     if (/^[a-z0-9.-]+$/i.test(host)) allowedHosts.add(host.toLowerCase().replace(/^www\./, ''));
   }
   const belongs = (url: string) => allowedHosts.has(hostKey(new URL(url)));
-  const fetcher = options.fetch ?? fetchText;
+  const fetcher = options.fetch && options.fetch !== fetchText ? options.fetch : config.transport === 'curl' ? fetchViaCurl : fetchText;
   const maxRequests = Math.max(1, Math.min(options.maxRequests ?? 18, 60));
   const maxArticles = Math.max(1, Math.min(config.maxArticles ?? 10, 30));
   const deadline = Date.now() + Math.max(1, options.timeoutMs ?? 45000);
   const now = (options.now?.() ?? new Date()).getTime();
-  const recent = (date: Date | null) => date && date.getTime() >= now - 14 * 86400000 && date.getTime() <= now + 3600000;
+  const recent = (date: Date | null) =>
+    date && date.getTime() >= (config.includeArchive ? 0 : now - 14 * 86400000) && date.getTime() <= now + 3600000;
   const fetched = new Map<string, FetchResult | null>();
   const validated = new Set<string>();
   const accepted = new Set<string>();
@@ -216,6 +229,12 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     rejected.set(reason, { count: (prior?.count ?? 0) + 1, url: prior?.url ?? url });
   };
   let stopped = false;
+  let provider: RegExp | undefined;
+  try {
+    provider = config.provider ? new RegExp(config.provider, 'i') : undefined;
+  } catch {
+    return { ...result, errors: ['Invalid provider pattern'] };
+  }
   let pattern: RegExp | undefined;
   try {
     pattern = config.articlePattern ? new RegExp(config.articlePattern) : undefined;
@@ -234,7 +253,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     fetched.set(url, null);
     try {
       const response = await fetcher(url, {
-        timeout: Math.max(1, Math.min(8000, deadline - Date.now())),
+        timeout: Math.max(1, Math.min(Math.max(1000, Math.min(config.requestTimeoutMs ?? 8000, 20000)), deadline - Date.now())),
         retries: 0,
         maxBytes: 8 * 1024 * 1024,
       });
@@ -263,6 +282,10 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     bodySource = detail.bodySource,
   ) => {
     if (accepted.has(url) || !detail.body || detail.bodyStatus !== 'ok') return;
+    if (provider && !provider.test(detail.provider ?? '')) {
+      reject('article provider does not match source', url);
+      return;
+    }
     accepted.add(url);
     result.items.push({
       ...candidate,
@@ -327,6 +350,10 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     }
     const articleHtml = publicArticleHtml(response.body, response.url);
     const $ = cheerio.load(articleHtml);
+    if (hostKey(new URL(response.url)) === 'nommagazine.com' && /本文為精彩摘要[，,]\s*欲下載完整/.test($('.zh-content').text())) {
+      reject('publisher labels body as excerpt', url);
+      return;
+    }
     const detail = extractArticle(articleHtml, response.url);
     const evidence = pageEvidence($, response.url, articleHtml);
     let canonical = detail.canonical ? absolute(detail.canonical, response.url) : response.url;
@@ -345,6 +372,19 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     // a route that redirects away or loses the article.
     // Repair only this observed shape when both URLs name the same news ID.
     const fetchedUrl = new URL(response.url);
+    if (
+      hostKey(fetchedUrl) === 'tnews.cc' &&
+      /^\/[\w]+\/News\/View\/\d+$/i.test(fetchedUrl.pathname) &&
+      evidence.isArticle &&
+      !$('link[rel="canonical"]').length &&
+      canonical &&
+      new URL(canonical).origin === fetchedUrl.origin &&
+      new URL(canonical).pathname === '/' &&
+      $('meta[property="og:url"]')
+        .toArray()
+        .some((node) => absolute($(node).attr('content') ?? '', response.url) === response.url)
+    )
+      canonical = response.url;
     if (
       ['biao-news.com', 'lai-media.net', 'nvns.net'].includes(hostKey(fetchedUrl)) &&
       evidence.isArticle &&
@@ -422,6 +462,21 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     }
     return (parsed.children ?? []).filter((child) => belongs(child));
   };
+
+  if (config.feedOnly) {
+    for (const raw of config.feedUrls ?? []) {
+      const url = absolute(raw, home);
+      if (url && budget()) await scanFeed(url, maxRequests);
+    }
+    if (!result.items.length) result.errors.push('No verified article in configured feeds');
+    return result;
+  }
+
+  if (config.articleUrls?.length) {
+    for (const url of config.articleUrls) await validate({ url, title: '', publishedAt: null }, 'html', home);
+    if (!result.items.length) result.errors.push('No verified article at configured archive URLs');
+    return result;
+  }
 
   // WordPress's public REST posts expose the publisher's full rendered body.
   // Only explicitly configured endpoints are read; protected/password posts and
@@ -650,6 +705,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     if (url) feedUrls.add(url);
   }
   const htmlCandidates = new Map<string, FeedItem & { score: number }>();
+  const listingDates = new Map<string, number>();
   if (homepage) {
     base = homepage.url;
     allowedHosts.add(hostKey(new URL(base)));
@@ -685,6 +741,10 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
       if (title.length < 8 || anchor.closest('nav, footer, [role="navigation"]').length) return;
       const path = new URL(url).pathname;
       if (pattern && !pattern.test(path + new URL(url).search)) return;
+      if (hostKey(new URL(base)) === 'graphics.thomsonreuters.com') {
+        const date = parsePublished(anchor.find('small').text().trim());
+        if (date) listingDates.set(url, date.getTime());
+      }
       let score = /\/(?:news|article|story|post|realtime|archives)\b/i.test(path) ? 5 : 0;
       score += /\d{4,}/.test(url) ? 4 : 0;
       score += /[-_]/.test(path) ? 1 : 0;
@@ -731,11 +791,17 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
   const serialHomeHost = hostKey(new URL(home));
   const articleSerial = (url: string): number | null => {
     const parsed = new URL(url);
+    if (serialHomeHost === 'readr.tw' && hostKey(parsed) === serialHomeHost) {
+      const id = /^\/post\/(\d+)$/.exec(parsed.pathname)?.[1];
+      return id ? Number(id) : null;
+    }
     if (!serialHosts.has(serialHomeHost) || hostKey(parsed) !== serialHomeHost || parsed.pathname !== '/news_view.php') return null;
     const id = parsed.searchParams.get('new_sn') ?? '';
     return /^\d{1,12}$/.test(id) ? Number(id) : null;
   };
   const htmlItems = [...htmlCandidates.values()].sort((a, b) => {
+    if (serialHomeHost === 'graphics.thomsonreuters.com')
+      return (listingDates.get(b.url) ?? 0) - (listingDates.get(a.url) ?? 0) || b.score - a.score;
     const aId = articleSerial(a.url);
     const bId = articleSerial(b.url);
     if (aId !== null && bId !== null) return bId - aId || b.score - a.score;

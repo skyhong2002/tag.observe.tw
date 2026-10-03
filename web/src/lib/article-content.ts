@@ -45,5 +45,5 @@ export const CONTENT_STATUS: Record<ContentStatus, { label: string; detail: stri
   blocked: { label: '原站限制讀取', detail: '原站的存取限制使本站無法取得正文。' },
   error: { label: '讀取失敗', detail: '取得原站正文時發生錯誤，目前沒有可閱讀的完整正文。' },
   not_fetched: { label: '尚未取得正文', detail: '這篇文章已收錄，正文尚未擷取。' },
-  expired: { label: '全文保存期已到', detail: '這篇文章的正文已依 90 天保存期限清除；仍保留文章資料與來源連結。' },
+  expired: { label: '全文保存期已到', detail: '這篇文章的正文已依取得全文起算的 90 天保存期限清除；仍保留文章資料與來源連結。' },
 };

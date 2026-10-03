@@ -155,7 +155,9 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     canonical: canonicalRaw ? resolveUrl(canonicalRaw, url) : null,
     title: siteEvidence.title ?? ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null),
     publishedAt,
-    provider: site?.providerSelector ? meta(site.providerSelector) : providerName(html),
+    provider: site?.providerSelector
+      ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
+      : providerName(html),
     keywordSource,
     ...extractArticleContent($, url, rules),
   };

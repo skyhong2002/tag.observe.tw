@@ -16,6 +16,12 @@ export interface NewsSource {
   articleHosts?: string[];
   feedBody?: 'full-text';
   apiUrls?: string[];
+  includeArchive?: boolean;
+  feedOnly?: boolean;
+  transport?: 'curl';
+  requestTimeoutMs?: number;
+  provider?: string;
+  articleUrls?: string[];
 }
 
 export interface NewsCrawlAudit {
@@ -60,12 +66,18 @@ export function addNewsSources(
                   ...(source.articleHosts ? { articleHosts: source.articleHosts } : {}),
                   ...(source.feedBody ? { feedBody: source.feedBody } : {}),
                   ...(source.apiUrls ? { apiUrls: source.apiUrls } : {}),
+                  ...(source.includeArchive ? { includeArchive: true } : {}),
+                  ...(source.feedOnly ? { feedOnly: true } : {}),
+                  ...(source.transport ? { transport: source.transport } : {}),
+                  ...(source.requestTimeoutMs ? { requestTimeoutMs: source.requestTimeoutMs } : {}),
+                  ...(source.provider ? { provider: source.provider } : {}),
+                  ...(source.articleUrls ? { articleUrls: source.articleUrls } : {}),
                   maxArticles: 12,
                 },
               }
             : {}),
         },
-        article: { enabled: !!source.websiteUrl, batch: 12, delayMs: 1500 },
+        article: { enabled: !!source.websiteUrl, batch: 12, delayMs: 1500, ...(source.provider ? { provider: source.provider } : {}) },
       };
     });
   return [...existing, ...additions];

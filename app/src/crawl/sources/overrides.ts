@@ -2,6 +2,147 @@ import type { SourceOverride } from '../sources.ts';
 // Hand-ported adjustments for media whose legacy PHP relied on page-specific
 // markers or whose feeds moved. Keep entries small and commented.
 export const overrides: Record<string, SourceOverride> = {
+  dongtw: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://www.dongtw.com/',
+        articleHosts: ['tw.sports.yahoo.com', 'tw.news.yahoo.com'],
+        provider: '^動網DONG$',
+        articleUrls: [
+          'https://tw.sports.yahoo.com/news/超暖心偶像吹楊花-13-薪水為-590-人償還醫療債務-1-人激動哭了整整-5-分鐘-075035380.html',
+          'https://tw.sports.yahoo.com/news/書豪明星賽奇怪計分法轟41分關鍵上籃放槍遭絕殺丟失mvp-影-101043877.html',
+        ],
+        includeArchive: true,
+        maxArticles: 2,
+      },
+    },
+    article: { enabled: true, provider: '^動網DONG$' },
+  },
+  kairos: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://kairos.news/',
+        articleHosts: ['tw.news.yahoo.com'],
+        provider: '^風向新聞$',
+        articleUrls: [
+          'https://tw.news.yahoo.com/曾獻瑩登記大安文山市議員初選-賴趙郝齊推薦-133249931.html',
+          'https://tw.news.yahoo.com/300億租金補貼政策來了-專家-領補助者應學習家庭教育讓彼此更相愛-101620411.html',
+          'https://tw.news.yahoo.com/北市結婚送千萬救人口-專家-緊扣婚姻教育是關鍵-060003180.html',
+        ],
+        includeArchive: true,
+        maxArticles: 3,
+      },
+    },
+    article: { enabled: true, provider: '^風向新聞$' },
+  },
+  // Restored archive publishers retain original publication dates.
+  punchline: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://punchline.asia/',
+        articlePattern: '^/archives/\\d+/?$',
+        includeArchive: true,
+        maxArticles: 12,
+        feedUrls: ['https://punchline.asia/feed'],
+      },
+    },
+    article: { enabled: true },
+  },
+  gv: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://zht.globalvoices.org/',
+        articlePattern: '^/\\d{4}/\\d{2}/\\d{2}/\\d+/$',
+        includeArchive: true,
+        maxArticles: 12,
+        feedUrls: ['https://zht.globalvoices.org/feed/'],
+      },
+    },
+    article: { enabled: true },
+  },
+  dramaqueen: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://www.dramaqueen.com.tw/',
+        articlePattern: '^/news/\\d{8}/\\d+\\.html$',
+        includeArchive: true,
+        maxArticles: 12,
+      },
+    },
+    article: { enabled: true },
+  },
+  viewpointtaiwan: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'http://www.viewpointtaiwan.com/',
+        feedUrls: ['http://www.viewpointtaiwan.com/feed/'],
+        includeArchive: true,
+        maxArticles: 12,
+      },
+    },
+    article: { enabled: true },
+  },
+  nom: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://nommagazine.com/',
+        includeArchive: true,
+        maxArticles: 12,
+        feedUrls: ['https://nommagazine.com/feed/'],
+      },
+    },
+    article: { enabled: true },
+  },
+  pantravel: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://pantravel.life/',
+        includeArchive: true,
+        maxArticles: 12,
+        feedUrls: ['https://pantravel.life/feed'],
+      },
+    },
+    article: { enabled: true },
+  },
+  mplus: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://www.mplus.com.tw/', includeArchive: true, maxArticles: 12 } },
+    article: { enabled: true },
+  },
+  digitimes: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://www.digitimes.com.tw/',
+        articlePattern: '/col/article/\\?id=\\d+',
+        includeArchive: true,
+        maxArticles: 12,
+      },
+    },
+    article: { enabled: true },
+  },
+  bw: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://www.businessweekly.com.tw/Channel/business/0000000319',
+        requestTimeoutMs: 15000,
+        articlePattern: '^/[a-z]+/(?:blog|indep)/\\d+$',
+        maxArticles: 12,
+        transport: 'curl',
+        includeArchive: true,
+      },
+    },
+    article: { enabled: true },
+  },
   // Restored 2026-10-03 from current publisher pages; each source passed
   // recent-publication and complete-body checks before scheduling.
   wyc: {
@@ -169,7 +310,6 @@ export const overrides: Record<string, SourceOverride> = {
     group: 'hourly',
     list: { urls: [{ cat: 'news', url: 'https://hk.on.cc/tw/news/index.html' }], discover: { pattern: '/bkn/cnt/news/\\d{8}/' } },
   },
-  dramaqueen: { list: { urls: [{ cat: 'news', url: 'https://www.dramaqueen.com.tw/' }], discover: { pattern: '^/news/\\d{8}/' } } },
   // Legacy parsed the HTML listing with '<item' markers; the site has a real feed.
   nius: { list: { urls: [{ cat: 'feed', url: 'https://www.niusnews.com/feed' }] } },
   // Restored sources (issue #4): feeds found via robots.txt on 2026-09-28.

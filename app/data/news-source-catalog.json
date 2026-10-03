@@ -830,10 +830,10 @@
       "websiteEvidence": "https://www.voachinese.com/rssfeeds",
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
       "feedUrls": [
-        "https://www.voachinese.com/api/zm_yql-vomx-tpeybti",
-        "https://www.voachinese.com/api/zgrqqyl-vomx-tpe-tiqt",
-        "https://www.voachinese.com/api/zj_yql-vomx-tpebbtq"
-      ]
+        "https://www.voachinese.com/api/"
+      ],
+      "articlePattern": "/a/[^/]+/\\d+\\.html$",
+      "includeArchive": true
     },
     {
       "media": "civilmedia",
@@ -939,7 +939,7 @@
     {
       "media": "thepaper",
       "name": "澎湃新聞 /80",
-      "websiteUrl": "https://www.thepaper.cn/",
+      "websiteUrl": "https://www.thepaper.cn/channel_25950",
       "referenceNames": [
         "澎湃新聞 /80"
       ],
@@ -948,7 +948,9 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.thepaper.cn/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "/newsDetail_forward_\\d+$",
+      "includeArchive": true
     },
     {
       "media": "winnews",
@@ -1322,7 +1324,7 @@
     {
       "media": "tnews",
       "name": "tnews 大台灣新聞",
-      "websiteUrl": "https://tnews.cc/",
+      "websiteUrl": "https://tnews.cc/06",
       "referenceNames": [
         "tnews 大台灣新聞"
       ],
@@ -1331,7 +1333,10 @@
       ],
       "existing": false,
       "websiteEvidence": "https://tnews.cc/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 首頁與 /Main 可讀，但只是地區入口及採訪通知；官方地圖連結的 /02、/03 與 /nz 多次逾時，尚未確認近期完整報導。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 首頁與 /Main 可讀，但只是地區入口及採訪通知；官方地圖連結的 /02、/03 與 /nz 多次逾時，尚未確認近期完整報導。",
+      "articlePattern": "/06/News/View/\\d+$",
+      "includeArchive": true,
+      "requestTimeoutMs": 15000
     },
     {
       "media": "taro",
@@ -1447,7 +1452,11 @@
       ],
       "existing": false,
       "websiteEvidence": "https://globalnewstv.com.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "apiUrls": [
+        "https://globalnewstv.com.tw/wp-json/wp/v2/posts?per_page=100"
+      ],
+      "includeArchive": true
     },
     {
       "media": "pronews",
@@ -1689,7 +1698,7 @@
     {
       "media": "tristarnews",
       "name": "三星傳媒",
-      "websiteUrl": "https://www.tristarnews.com.tw/",
+      "websiteUrl": "https://n.yam.com/realtime/tristarnews",
       "referenceNames": [
         "三星傳媒"
       ],
@@ -1698,7 +1707,10 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.tristarnews.com.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 原站403；改由蕃新聞三星傳媒專屬聯播頁，逐篇核對三星傳媒供稿署名，保留聯播網址與日期。",
+      "articlePattern": "^/Article/\\d+$",
+      "includeArchive": true,
+      "provider": "^三星傳媒$"
     },
     {
       "media": "wujie",
@@ -1849,7 +1861,9 @@
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 舊 hiilan.com.tw 無法 TLS 連線；同公司官方品牌連結 reurl.cc/6Kxvbd 指向宜蘭痴的「Hi宜蘭新聞」頻道，只抓此頻道。可見文章時間較舊，未確認近期更新，保留停用直到抓取審核通過。",
       "feedUrls": [
         "https://www.crushonyilan.com.tw/category/hi-yilan-news/feed/"
-      ]
+      ],
+      "includeArchive": true,
+      "feedOnly": true
     },
     {
       "media": "tpnews",
@@ -1885,7 +1899,7 @@
     {
       "media": "rwnews",
       "name": "菱傳媒",
-      "websiteUrl": "https://rwnews.tw/",
+      "websiteUrl": "https://www.ftvnews.com.tw/tag/%E8%8F%B1%E5%82%B3%E5%AA%92/2",
       "referenceNames": [
         "菱傳媒"
       ],
@@ -1894,7 +1908,10 @@
       ],
       "existing": false,
       "websiteEvidence": "https://rwnews.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/news/detail/[A-Za-z0-9]+$",
+      "includeArchive": true,
+      "provider": "^圖、文／菱傳媒$"
     },
     {
       "media": "bbc",
@@ -2081,7 +2098,7 @@
     {
       "media": "reuters",
       "name": "路透社 /200",
-      "websiteUrl": "https://www.reuters.com/",
+      "websiteUrl": "https://graphics.thomsonreuters.com/",
       "referenceNames": [
         "路透社 /200"
       ],
@@ -2090,7 +2107,12 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.reuters.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/graphics/[A-Z][^?]+/$",
+      "includeArchive": true,
+      "articleHosts": [
+        "www.reuters.com"
+      ]
     },
     {
       "media": "news_qq",
@@ -2563,7 +2585,7 @@
     {
       "media": "taiwanenews",
       "name": "台灣e新聞",
-      "websiteUrl": "http://taiwanenews.com",
+      "websiteUrl": "https://www.taiwanenews.com/",
       "referenceNames": [
         "台灣e新聞"
       ],
@@ -2572,7 +2594,9 @@
       ],
       "existing": false,
       "websiteEvidence": "http://taiwanenews.com",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 可讀首頁所列最新文章為 2025 年，未確認符合近期時限的新文章。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 可讀首頁所列最新文章為 2025 年，未確認符合近期時限的新文章。",
+      "articlePattern": "^/docs?/\\d{11}\\.php$",
+      "includeArchive": true
     },
     {
       "media": "ksnews",
@@ -2770,7 +2794,9 @@
       ],
       "existing": false,
       "websiteEvidence": "http://jdanews.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/\\d{2}_\\d{6}\\.php$",
+      "includeArchive": true
     },
     {
       "media": "my_formosa",
@@ -3016,7 +3042,9 @@
       "referenceRows": [],
       "existing": false,
       "websiteEvidence": "https://www.readr.tw/",
-      "notes": "曾出現在來源試算表歷史月份的新聞類別，保留來源；最新月份沒有獨立列。"
+      "notes": "曾出現在來源試算表歷史月份的新聞類別，保留來源；最新月份沒有獨立列。",
+      "articlePattern": "^/post/\\d+$",
+      "includeArchive": true
     },
     {
       "media": "newsmarket",

@@ -1,5 +1,6 @@
 // Daily data retention (agreed 2026-09-29):
-// - articles: description/body dropped after 90 days (title/url/tags kept for rankings)
+// - descriptions: dropped 90 days after publication
+// - bodies: dropped 90 days after acquisition, including archived publications
 // - never-fetched, untagged articles older than 14 days deleted (old sitemap noise)
 // - ranking snapshots older than 2 years: chart and entries trimmed to top 100
 // - crawl_runs / job_runs / source_probes older than 30 days deleted
@@ -24,7 +25,12 @@ export async function runRetentionJob(db: Db, { now = () => new Date(), log = (_
     await db
       .update(articles)
       .set({ body: null, bodyStatus: 'expired' })
-      .where(and(lt(articles.publishedAt, new Date(t - 90 * DAY)), sql`${articles.body} IS NOT NULL`)),
+      .where(
+        and(
+          lt(sql`COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt})`, new Date(t - 90 * DAY)),
+          sql`${articles.body} IS NOT NULL`,
+        ),
+      ),
   );
   const stale = await db
     .select({ id: articles.id })

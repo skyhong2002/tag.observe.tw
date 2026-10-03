@@ -1,6 +1,6 @@
 // Run the normal index/body pipeline for every enabled catalog crawler.
 import { parseArgs } from 'node:util';
-import { and, count, eq, gte, inArray, isNull, or } from 'drizzle-orm';
+import { and, count, eq, gte, inArray, isNull, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import catalog from '../app/data/news-source-catalog.json' with { type: 'json' };
 import { runArticles, runIndex } from '../app/src/crawl/pipeline.ts';
@@ -61,16 +61,18 @@ try {
           const index = await runIndex(db, spec);
           const bodies = await runArticles(db, spec, { limit });
           const [stored] = await db
-            .select({ complete: count() })
+            .select({ complete: count(), recent: sql<number>`SUM(${articles.publishedAt} >= ${new Date(Date.now() - 14 * 86400e3)})` })
             .from(articles)
-            .where(
-              and(
-                eq(articles.media, source.media),
-                eq(articles.bodyStatus, 'ok'),
-                gte(articles.publishedAt, new Date(Date.now() - 14 * 86400e3)),
-              ),
-            );
-          console.log(JSON.stringify({ media: source.media, index, bodies, completeRecentArticles: stored.complete }));
+            .where(and(eq(articles.media, source.media), eq(articles.bodyStatus, 'ok')));
+          console.log(
+            JSON.stringify({
+              media: source.media,
+              index,
+              bodies,
+              completeArticles: stored.complete,
+              completeRecentArticles: Number(stored.recent ?? 0),
+            }),
+          );
         } catch (error) {
           failures++;
           console.error(JSON.stringify({ media: source.media, error: (error as Error).message }));

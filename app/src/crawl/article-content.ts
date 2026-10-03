@@ -120,7 +120,9 @@ function excludedContainer(element: cheerio.Cheerio<AnyNode>): boolean {
     .filter(
       (name) => !/^(?:(?:no|with|has)[-_]share(?:[-_]float)?|has-banner|social-(?:before|after)-title|comments-(?:on|off))$/.test(name),
     )
-    .filter((name) => !(element.is('.hentry, article.type-post') && /^(?:tag|category|byline)-/.test(name)))
+    .filter(
+      (name) => !(element.is('.hentry, article.type-post') && (/^(?:tag|category|byline)-/.test(name) || name === 'post-style-banner')),
+    )
     .join(' ');
   return EXCLUDED_CLASS.test(`${classes} ${element.attr('id') ?? ''}`);
 }

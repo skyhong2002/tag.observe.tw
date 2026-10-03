@@ -145,7 +145,7 @@ export default async function MediaPage({
               流量資料與分類依據 →
             </Link>
             <p className="mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-              收錄量為本站抓取的報導，非媒體全部發稿量。正文保存至刊登後 90 天。
+              收錄量為本站抓取的報導，非媒體全部發稿量。正文從取得全文起保存 90 天。
             </p>
           </section>
         </MediaSidebar>

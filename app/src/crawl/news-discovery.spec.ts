@@ -31,6 +31,34 @@ function fixture(pages: Record<string, string | Partial<FetchResult> | Error>) {
 }
 
 describe('discoverNews', () => {
+  it('does not cross from a reviewed news-section feed into unrelated homepage or global feeds', async () => {
+    const url = `${home}news/12345`;
+    const f = fixture({ [home]: link(`${home}other/56789`), [`${home}news/feed`]: rss(url), [url]: article() });
+    const result = await discoverNews({ homeUrl: home, feedUrls: [`${home}news/feed`], feedOnly: true }, f.options);
+    expect(result.items.map((item) => item.url)).toEqual([url]);
+    expect(f.calls).toEqual([`${home}news/feed`, url]);
+  });
+
+  it('keeps original old publication dates only for explicitly enabled archive discovery', async () => {
+    const date = '2021-03-02T02:00:00Z';
+    const url = `${home}news/12345`;
+    const f = fixture({
+      [home]: '<link rel="alternate" type="application/rss+xml" href="/rss">',
+      [`${home}rss`]: rss(url, date),
+      [url]: article(`<meta property="article:published_time" content="${date}">`),
+    });
+    expect((await discoverNews({ homeUrl: home }, f.options)).items).toEqual([]);
+    const result = await discoverNews({ homeUrl: home, includeArchive: true, maxArticles: 1 }, f.options);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].publishedAt?.toISOString()).toBe(date.replace('Z', '.000Z'));
+    expect(result.items[0].verifiedContent?.body).toBe(body);
+    const future = fixture({
+      [home]: link(url),
+      [url]: article('<meta property="article:published_time" content="2030-01-01T00:00:00Z">'),
+    });
+    expect((await discoverNews({ homeUrl: home, includeArchive: true }, future.options)).items).toEqual([]);
+  });
+
   it('applies the reviewed article scope to feeds, redirects and canonical URLs too', async () => {
     const f = fixture({
       [home]: '',
@@ -599,5 +627,78 @@ describe('discoverNews', () => {
     });
     const result = await discoverNews({ homeUrl: site, maxArticles: 1 }, f.options);
     expect(result.items[0].publishedAt?.toISOString()).toBe('2026-10-02T23:00:00.000Z');
+  });
+
+  it('requires reviewed archive seeds to supply their own date, full text and matching provider', async () => {
+    const publisher = 'https://archive.test/';
+    const base = 'https://syndication.test/news/';
+    const date = '2020-01-15T07:50:35Z';
+    const metadata = `<meta property="article:published_time" content="${date}">`;
+    const credit = (name: string) => `<script>${JSON.stringify(JSON.stringify({ provider: { name } }))}</script>`;
+    const seeds = ['no-date', 'excerpt', 'wrong-provider', 'no-provider', 'complete'].map((slug) => `${base}${slug}-12345`);
+    const f = fixture({
+      [seeds[0]]: article('') + credit('原始媒體'),
+      [seeds[1]]: article(metadata, '僅有短篇摘要') + credit('原始媒體'),
+      // A matching recommendation's credit must not override the main provider.
+      [seeds[2]]: article(metadata) + credit('其他媒體') + credit('原始媒體'),
+      [seeds[3]]: article(metadata),
+      [seeds[4]]: article(metadata) + credit('原始媒體'),
+    });
+    const result = await discoverNews(
+      { homeUrl: publisher, articleHosts: ['syndication.test'], articleUrls: seeds, includeArchive: true, provider: '^原始媒體$' },
+      f.options,
+    );
+    expect(result.items.map((item) => item.url)).toEqual([seeds[4]]);
+    expect(result.items[0].publishedAt?.toISOString()).toBe('2020-01-15T07:50:35.000Z');
+    expect(result.items[0].verifiedContent?.body).toBe(body);
+    expect(f.calls).toEqual(seeds);
+  });
+
+  it('does not follow reviewed archive seeds outside the allowed host or article path', async () => {
+    const outOfScope = 'https://unreviewed.test/news/12345';
+    const f = fixture({ [outOfScope]: article(), [home]: article() });
+    expect((await discoverNews({ homeUrl: home, articleUrls: [outOfScope, home], includeArchive: true }, f.options)).items).toEqual([]);
+    expect(f.calls).toEqual([]);
+  });
+
+  it('repairs Tnews duplicate homepage OG metadata only with matching article identity', async () => {
+    const site = 'https://tnews.cc/';
+    const url = `${site}Taipei/News/View/12345`;
+    const og = `<meta property="og:url" content="${site}"><meta property="og:url" content="${url}">`;
+    const metadata = `<meta property="og:type" content="article"><meta property="article:published_time" content="${today}">`;
+    const f = fixture({ [url]: article(og + metadata) });
+    const result = await discoverNews({ homeUrl: site, articleUrls: [url], maxArticles: 1 }, f.options);
+    expect(result.items[0]?.url).toBe(url);
+  });
+
+  it.each(['different-id', 'explicit-canonical', 'no-article-evidence', 'different-host'])(
+    'does not repair Tnews root OG metadata when %s invalidates the reviewed exception',
+    async (scenario) => {
+      const site = scenario === 'different-host' ? home : 'https://tnews.cc/';
+      const url = `${site}Taipei/News/View/12345`;
+      const matching = scenario === 'different-id' ? `${site}Taipei/News/View/99999` : url;
+      const canonical = scenario === 'explicit-canonical' ? `<link rel="canonical" href="${site}">` : '';
+      const kind = scenario === 'no-article-evidence' ? '' : '<meta property="og:type" content="article">';
+      const f = fixture({
+        [url]: article(
+          `${canonical}<meta property="og:url" content="${site}"><meta property="og:url" content="${matching}">${kind}<meta property="article:published_time" content="${today}">`,
+        ),
+      });
+      expect((await discoverNews({ homeUrl: site, articleUrls: [url] }, f.options)).items).toEqual([]);
+    },
+  );
+
+  it('prioritizes Reuters graphics printed listing dates without treating them as article publication evidence', async () => {
+    const site = 'https://graphics.thomsonreuters.com/';
+    const oldUrl = `${site}news/pinned-12345`;
+    const newUrl = `${site}graphics/latest-67890`;
+    const listing = `${link(oldUrl).replace('</a>', '<small>2020-01-01</small></a>')}<a href="${newUrl}">最新公共政策深入圖解報導<small>2026-10-02</small></a>`;
+    const f = fixture({ [site]: listing, [oldUrl]: article(), [newUrl]: article() });
+    const result = await discoverNews({ homeUrl: site, maxArticles: 1 }, { ...f.options, maxRequests: 2 });
+    expect(result.items.map((item) => item.url)).toEqual([newUrl]);
+    expect(f.calls).toEqual([site, newUrl]);
+    const missingDate = fixture({ [site]: listing, [newUrl]: article('') });
+    expect((await discoverNews({ homeUrl: site, maxArticles: 1 }, { ...missingDate.options, maxRequests: 2 })).items).toEqual([]);
+    expect(missingDate.calls).toEqual([site, newUrl]);
   });
 });

@@ -58,7 +58,7 @@ Cloudflare Tunnel → tag.observe.tw
 
 ## 資料保留（每日 04:15，`jobs/retention-job.ts`）
 
-- 文章 `description` 90 天後清空（標題、網址、標籤保留供排行）。
+- 文章 `description` 於發佈 90 天後清空；全文則自 `content_fetched_at` 起保存 90 天（缺值時用 `crawled_at`）。舊文章保留原始發佈日期，標題、網址、標籤保留供排行。
 - 從未抓取且無標籤、超過 14 天的文章刪除。
 - 超過兩年的排行快照只留前 100 名。
 - `crawl_runs`、`job_runs`、`source_probes`、`rejected_urls` 保留 30 天；Prometheus、Loki 各 30 天。

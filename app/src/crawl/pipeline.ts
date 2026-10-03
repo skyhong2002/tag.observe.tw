@@ -183,7 +183,7 @@ export async function runIndex(db: Db, spec: SourceSpec, { fetch = fetchText, lo
           const repairable = and(
             eq(articles.media, spec.media),
             eq(articles.urlKey, urlKey(item.url, spec.list.articleId)),
-            or(isNull(articles.bodyStatus), inArray(articles.bodyStatus, ['missing', 'short', 'blocked', 'error'])),
+            or(isNull(articles.bodyStatus), inArray(articles.bodyStatus, ['missing', 'short', 'blocked', 'error', 'expired'])),
           );
           // Keep repaired publication metadata and ranking dates consistent.
           // Lock the row so another worker cannot replace a valid body or race
@@ -323,7 +323,7 @@ export async function runArticles(
               lt(articles.contentFetchedAt, new Date(now().getTime() - 6 * 3600e3)),
             ),
           ),
-          gte(articles.publishedAt, new Date(now().getTime() - hours * 3600e3)),
+          gte(articles.crawledAt, new Date(now().getTime() - hours * 3600e3)),
         ),
       );
   // Reserve part of each batch for the oldest pending rows, so a busy outlet

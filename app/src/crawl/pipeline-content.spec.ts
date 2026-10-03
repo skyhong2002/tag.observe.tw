@@ -54,6 +54,7 @@ function memoryDb(seed: Row[] = [], tagSeed: Array<{ articleId: number; tag: str
     content_attempts: 'contentAttempts',
     fetch_status: 'fetchStatus',
     published_at: 'publishedAt',
+    crawled_at: 'crawledAt',
     url: 'url',
   };
   const value = (v: unknown): string | number | null =>
@@ -173,6 +174,27 @@ function discover(items: FeedItem[]) {
 describe('discovered full content persistence', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('restores a newly acquired archive body without changing its historical publication date', async () => {
+    const historical = new Date('2011-06-18T04:50:00Z');
+    discover([{ ...item, publishedAt: historical }]);
+    const { db, rows } = memoryDb([
+      {
+        id: 1,
+        media: spec.media,
+        urlKey: urlKey(item.url),
+        title: item.title,
+        publishedAt: historical,
+        crawledAt: new Date('2020-01-01T00:00:00Z'),
+        bodyStatus: 'expired',
+        body: null,
+        contentFetchedAt: new Date('2020-01-01T00:00:00Z'),
+        contentAttempts: 1,
+      },
+    ]);
+    await runIndex(db, spec, { now: () => now });
+    expect(rows[0]).toMatchObject({ ...item.verifiedContent, publishedAt: historical, contentFetchedAt: now });
+  });
+
   it('persists verified body, author, provenance and timestamps at index time', async () => {
     discover([item]);
     const { db, rows } = memoryDb();
@@ -245,7 +267,7 @@ describe('discovered full content persistence', () => {
     const repair = writes.find((write) => write.table === articles);
     expect(repair).toBeDefined();
     const query = new MySqlDialect().sqlToQuery(repair!.condition);
-    expect(query.params).toEqual([spec.media, urlKey(item.url), 'missing', 'short', 'blocked', 'error']);
+    expect(query.params).toEqual([spec.media, urlKey(item.url), 'missing', 'short', 'blocked', 'error', 'expired']);
   });
 
   it('does not fetch the article again after index persisted valid body timestamps', async () => {
