@@ -18,7 +18,6 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   const [query, setQuery] = useState(initial.q ?? '');
   const [sort, setSort] = useState<Sort>(['traffic', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic');
   const [ascending, setAscending] = useState(initial.dir === 'asc');
-  const [page, setPage] = useState(0);
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
@@ -31,16 +30,12 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     if (x == null || y == null) return x == null && y == null ? a.name.localeCompare(b.name, 'zh-Hant') : x == null ? 1 : -1;
     return (ascending ? 1 : -1) * (typeof x === 'string' ? x.localeCompare(y as string, 'zh-Hant') : x - (y as number));
   });
-  const pageCount = Math.max(1, Math.ceil(filtered.length / 40));
-  const currentPage = Math.min(page, pageCount - 1);
-  const shown = filtered.slice(currentPage * 40, (currentPage + 1) * 40);
   useEffect(() => {
     const params = new URLSearchParams({ month: trafficMonth, sort, dir: ascending ? 'asc' : 'desc' });
     if (query) params.set('q', query);
     window.history.replaceState(null, '', `/media/sources/?${params}`);
   }, [trafficMonth, sort, ascending, query]);
   const chooseSort = (value: Sort) => {
-    setPage(0);
     setAscending(sort === value ? !ascending : value === 'name');
     setSort(value);
   };
@@ -54,7 +49,6 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setPage(0);
           }}
           placeholder="搜尋媒體或網域"
           className={`${control} w-44 max-w-full`}
@@ -67,7 +61,6 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             value={trafficMonth}
             onChange={(e) => {
               setTrafficMonth(e.target.value);
-              setPage(0);
             }}
           >
             {data.trafficMonths.toReversed().map((month) => (
@@ -108,7 +101,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             </tr>
           </thead>
           <tbody>
-            {shown.map((outlet) => {
+            {filtered.map((outlet) => {
               const point = trafficAt(outlet),
                 count = articlesAt(outlet);
               const icon = outlet.media ? localMediaIcon(outlet.media) : null;
@@ -175,31 +168,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             })}
           </tbody>
         </table>
-        {!shown.length && <p className="p-8 text-center text-sm text-zinc-500">沒有符合條件的媒體。</p>}
-      </div>
-      <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
-        <span>{filtered.length} 家 · 每頁 40 家</span>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            disabled={currentPage === 0}
-            onClick={() => setPage(currentPage - 1)}
-            className="min-h-9 disabled:opacity-30"
-          >
-            上一頁
-          </button>
-          <span>
-            {currentPage + 1} / {pageCount}
-          </span>
-          <button
-            type="button"
-            disabled={currentPage >= pageCount - 1}
-            onClick={() => setPage(currentPage + 1)}
-            className="min-h-9 disabled:opacity-30"
-          >
-            下一頁
-          </button>
-        </div>
+        {!filtered.length && <p className="p-8 text-center text-sm text-zinc-500">沒有符合條件的媒體。</p>}
       </div>
     </section>
   );
