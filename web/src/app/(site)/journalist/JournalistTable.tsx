@@ -12,9 +12,14 @@ const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boo
   { key: 'media', label: '刊登媒體', title: '依刊登媒體數排序', numeric: false },
   { key: 'articles', label: '篇數', numeric: true },
   { key: 'inSample', label: '樣本內', title: '有可比對正文且落在相似度樣本內的篇數', numeric: true },
-  { key: 'pairs', label: '相似配對', title: '至少一端是此人文章的相似配對', numeric: true },
-  { key: 'later', label: '較晚', title: '自家文章比他站相似文章晚至少一分鐘刊登的配對；不含同署名跨站', numeric: true },
-  { key: 'earlier', label: '較早', title: '自家文章比他站相似文章早至少一分鐘刊登的配對', numeric: true },
+  { key: 'pairs', label: '內文相近', title: '至少一端是此人文章的相近配對；同一新聞稿、通訊社稿、授權轉載與引用都會相近', numeric: true },
+  {
+    key: 'later',
+    label: '對方較早',
+    title: '他站相近文章比此人文章早至少一分鐘刊登的配對；刊登時間以各站標示為準，不含同署名跨站',
+    numeric: true,
+  },
+  { key: 'earlier', label: '本篇較早', title: '此人文章比他站相近文章早至少一分鐘刊登的配對', numeric: true },
   { key: 'sameAuthor', label: '同署名', title: '對方文章也署同一名字：同一人把稿件刊在不同媒體', numeric: true },
   { key: 'cited', label: '引用', title: '內文明示引用其他媒體的篇數', numeric: true },
 ];
@@ -151,7 +156,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
                       <li key={outlet.media} className="flex items-center gap-1">
                         <MediaIcon media={outlet.media} title={outlet.name} size={14} />
                         <span>{outlet.name}</span>
-                        {row.media.length > 1 && <span className="tabular-nums text-zinc-400">{outlet.count}</span>}
+                        <span className="tabular-nums text-zinc-400">{outlet.count}</span>
                       </li>
                     ))}
                     {row.media.length > 4 && <li className="text-zinc-400">+{row.media.length - 4}</li>}
@@ -162,16 +167,8 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
                 <td className={cell}>
                   {row.similar.pairs ? number(row.similar.pairs) : <span className="text-zinc-300 dark:text-zinc-700">0</span>}
                 </td>
-                <td
-                  className={`${cell} ${row.similar.later ? 'font-medium text-amber-700 dark:text-amber-400' : 'text-zinc-300 dark:text-zinc-700'}`}
-                >
-                  {row.similar.later}
-                </td>
-                <td
-                  className={`${cell} ${row.similar.earlier ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-300 dark:text-zinc-700'}`}
-                >
-                  {row.similar.earlier}
-                </td>
+                <td className={`${cell} ${row.similar.later ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.later}</td>
+                <td className={`${cell} ${row.similar.earlier ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.earlier}</td>
                 <td className={`${cell} ${row.similar.sameAuthor ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.sameAuthor}</td>
                 <td className={`${cell} ${row.cited ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.cited}</td>
               </tr>
