@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import { type MediaInfo, type RankingBasis, taipei } from '@/lib/api';
 
 export default function RankingBasisNote({ basis, media }: { basis: RankingBasis; media: MediaInfo }) {
@@ -13,9 +13,9 @@ export default function RankingBasisNote({ basis, media }: { basis: RankingBasis
       <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
         {basis.media.map((m) => (
           <li key={m}>
-            <Link href={`/media/${encodeURIComponent(m)}/`} className="hover:underline">
+            <MediaHoverLink media={m} className="hover:underline">
               {media[m]?.title ?? m}
-            </Link>
+            </MediaHoverLink>
           </li>
         ))}
       </ul>

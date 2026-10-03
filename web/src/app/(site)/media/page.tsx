@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CountryFlag from '@/components/CountryFlag';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaTabs from '@/components/MediaTabs';
 import SafeImage from '@/components/SafeImage';
 import { API_ORIGIN, taipei } from '@/lib/api';
@@ -259,7 +260,7 @@ export default async function MediaStatsPage({
             {rows.map((r) => (
               <tr key={r.media} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
                 <td className="sticky left-0 z-10 bg-white px-3 py-2 group-hover:bg-brand-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800">
-                  <Link href={`/media/${r.media}/`} className="flex items-center gap-2 font-medium hover:underline">
+                  <MediaHoverLink media={r.media} className="flex items-center gap-2 font-medium hover:underline">
                     <SafeImage src={r.icon} alt="" width={16} height={16} className="rounded-sm" />
                     <span className="whitespace-nowrap">{r.title}</span>
                     <CountryFlag code={r.countryCode} country={r.country} />
@@ -275,7 +276,7 @@ export default async function MediaStatsPage({
                         {campBadge(r)?.short}
                       </span>
                     )}
-                  </Link>
+                  </MediaHoverLink>
                   <div className="text-xs text-zinc-600">
                     {r.categoryLabel ?? '—'} · {r.schedule === 'off' ? '未啟用' : r.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
                   </div>

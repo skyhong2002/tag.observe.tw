@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import EventChart, { type EventSeriesPoint } from '@/components/EventChart';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei, taipeiHour } from '@/lib/api';
@@ -77,9 +78,9 @@ function OutletBlock({ o }: { o: Outlet }) {
         ) : (
           <span className="inline-block h-4 w-4 rounded-sm bg-zinc-300" />
         )}
-        <Link href={`/media/${encodeURIComponent(o.media)}/`} className="hover:underline">
+        <MediaHoverLink media={o.media} className="hover:underline">
           {o.title}
-        </Link>
+        </MediaHoverLink>
         <span className="ml-auto text-xs text-zinc-600">{o.articles.length} 篇</span>
       </div>
       <ul className="space-y-2">
@@ -162,9 +163,9 @@ function Timeline({ cov, hours }: { cov: Coverage; hours: Hour[] }) {
                       {a.outlet.icon && (
                         <SafeImage src={a.outlet.icon} alt="" width={12} height={12} className="rounded-sm" loading="lazy" />
                       )}
-                      <Link href={`/media/${encodeURIComponent(a.outlet.media)}/`} className="hover:underline">
+                      <MediaHoverLink media={a.outlet.media} className="hover:underline">
                         {a.outlet.title}
-                      </Link>
+                      </MediaHoverLink>
                     </p>
                   </div>
                 </li>

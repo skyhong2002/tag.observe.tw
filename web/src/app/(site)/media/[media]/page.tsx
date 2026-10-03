@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import ArticleThumbnail from '@/components/ArticleThumbnail';
 import CompactArticleList from '@/components/CompactArticleList';
 import DiscoverySources from '@/components/DiscoverySources';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaSidebar from '@/components/MediaSidebar';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import SafeImage from '@/components/SafeImage';
@@ -275,12 +276,12 @@ export default async function MediaPage({
                         )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
                           {discovery && (
-                            <Link
-                              href={`/media/${encodeURIComponent(article.media)}/`}
+                            <MediaHoverLink
+                              media={article.media}
                               className="font-medium text-brand-700 hover:underline dark:text-brand-400"
                             >
                               {article.mediaTitle}
-                            </Link>
+                            </MediaHoverLink>
                           )}
                           <time dateTime={article.publishedDate ?? article.publishedAt}>
                             {article.publishedDate ?? taipei(article.publishedAt)}

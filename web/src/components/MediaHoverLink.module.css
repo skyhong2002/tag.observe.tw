@@ -1,0 +1,25 @@
+.card { position: fixed; z-index: 100; box-sizing: border-box; width: 288px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding: 16px; border: 1px solid #e4e4e7; border-radius: 12px; background: #fff; color: #18181b; box-shadow: 0 8px 28px rgb(0 0 0 / .16); font-size: 12px; line-height: 1.5; text-align: left; }
+.title { font-size: 16px; overflow-wrap: anywhere; }
+.muted, .note { color: #71717a; }
+.muted { display: flex; align-items: center; gap: 6px; }
+.muted i { width: 8px; height: 8px; border-radius: 2px; }
+.green { background: #008660; }
+.blue { background: #2474bb; }
+.other { background: #a1a1aa; }
+.counts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.counts > span { display: flex; flex-direction: column; gap: 3px; color: #71717a; }
+.counts b { font-size: 18px; font-weight: 600; color: #18181b; font-variant-numeric: tabular-nums; }
+.keywords { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #e4e4e7; padding-top: 10px; }
+.terms { display: flex; flex-direction: column; gap: 2px; }
+.terms a { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; text-decoration: none; }
+.terms a span:first-child { overflow-wrap: anywhere; }
+.terms a span:last-child { flex-shrink: 0; color: #71717a; font-variant-numeric: tabular-nums; }
+.terms a:hover, .more:hover { text-decoration: underline; }
+.note { font-size: 11px; margin: 0; }
+.more { border-top: 1px solid #e4e4e7; padding-top: 9px; color: #b45309; }
+.card a:focus-visible { outline: 2px solid #d97706; outline-offset: 2px; border-radius: 2px; }
+:global([data-theme="dark"]) .card { background: #18181b; color: #f4f4f5; border-color: #3f3f46; }
+:global([data-theme="dark"]) .muted, :global([data-theme="dark"]) .note, :global([data-theme="dark"]) .counts > span, :global([data-theme="dark"]) .terms a span:last-child { color: #a1a1aa; }
+:global([data-theme="dark"]) .counts b { color: #f4f4f5; }
+:global([data-theme="dark"]) .keywords, :global([data-theme="dark"]) .more { border-color: #3f3f46; }
+:global([data-theme="dark"]) .more { color: #fbbf24; }

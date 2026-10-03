@@ -80,7 +80,7 @@ function CampShareBar({ share }: { share: CampShare }) {
                 <ul>
                   {outlets.map((o) => (
                     <li key={o.media}>
-                      <CampOutletIcon outlet={o} camp={c.key} campLabel={c.label} />
+                      <CampOutletIcon outlet={o} />
                     </li>
                   ))}
                 </ul>
@@ -206,6 +206,23 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               <p className={styles.briefSub}>
                 過去 24 小時 · {ranking ? `固定基準 ${ranking.snapshot.basis.media.length} 家新聞媒體` : '資料暫時無法取得'}
               </p>
+              {ranking && (
+                <details className={styles.basisNote}>
+                  <summary>這 {ranking.snapshot.basis.media.length} 家媒體如何選定？</summary>
+                  <p>
+                    這是「新聞」類別中符合收錄條件的固定名單，並非預先設定家數，也不是依媒體品質或公信力評選。
+                  </p>
+                  <p>
+                    本版名單選取已啟用、非僅供探索的來源：在名單凍結前至少 72 小時已成功取得非空新聞列表，且凍結前最近 3 小時內也有成功紀錄。
+                  </p>
+                  <p>
+                    固定同一批媒體，讓不同時間的議題熱度能在相同範圍內比較。當天未發稿的媒體仍保留，新來源待下一版基準再納入。
+                  </p>
+                  <p>
+                    上方篇數只計算這批媒體過去 24 小時已收錄的報導，不是全站總量；抓取失敗或補抓仍可能影響數字。
+                  </p>
+                </details>
+              )}
               <Link href="/media/" className={styles.textLink}>
                 查看媒體來源 <Arrow />
               </Link>

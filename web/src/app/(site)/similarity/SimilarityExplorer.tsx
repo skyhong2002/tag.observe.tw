@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
@@ -28,9 +29,9 @@ function ArticleCard({ article, label }: { article: SimilarityArticle; label?: s
   return (
     <div className="min-w-0 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-950/60">
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-        <Link href={`/media/${encodeURIComponent(article.media)}/`} className={`${linkStyle} font-medium`}>
+        <MediaHoverLink media={article.media} className={`${linkStyle} font-medium`}>
           {article.mediaTitle}
-        </Link>
+        </MediaHoverLink>
         <span className="text-zinc-500">
           {article.country} · {article.countryCode}
         </span>
@@ -591,9 +592,9 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                     ))}
                   </div>
                   {!byId.get(selection.node)?.external && (
-                    <Link href={`/media/${encodeURIComponent(selection.node)}/`} className={`${linkStyle} inline-block text-xs`}>
+                    <MediaHoverLink media={selection.node} className={`${linkStyle} inline-block text-xs`}>
                       查看這家媒體的已保存內文 →
-                    </Link>
+                    </MediaHoverLink>
                   )}
                 </div>
               )}
@@ -710,10 +711,10 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                   key={row.media}
                   className="flex items-start justify-between gap-3 border-b border-zinc-100 pb-2 text-xs dark:border-zinc-800"
                 >
-                  <Link href={`/media/${encodeURIComponent(row.media)}/`} className={linkStyle}>
+                  <MediaHoverLink media={row.media} className={linkStyle}>
                     {row.name}
                     {row.excludedFromStatistics ? '（排除統計）' : ''}
-                  </Link>
+                  </MediaHoverLink>
                   <span className="text-right text-zinc-500">
                     可比較 {number(row.usable)}／{number(row.total)} 篇<br />
                     缺漏 {number(row.missing)} · 待抓 {number(row.pending)}

@@ -1,8 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
 import { mediaNames } from '@/lib/media-names.mts';
 import { trafficNumber } from '@/lib/media-traffic.mts';
@@ -146,13 +146,9 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                 >
                   <td className="px-2 py-2 sm:px-4">
                     {outlet.media ? (
-                      <Link
-                        href={`/media/${encodeURIComponent(outlet.media)}/`}
-                        title={outlet.name}
-                        className="flex items-center gap-2 hover:underline"
-                      >
+                      <MediaHoverLink media={outlet.media} title={outlet.name} className="flex items-center gap-2 hover:underline">
                         {identity}
-                      </Link>
+                      </MediaHoverLink>
                     ) : (
                       <div className="flex items-center gap-2" title={outlet.name}>
                         {identity}

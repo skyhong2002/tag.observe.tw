@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
@@ -155,9 +156,9 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
                         {media[n.media]?.icon && (
                           <SafeImage src={media[n.media].icon} alt="" width={12} height={12} className="rounded-sm" loading="lazy" />
                         )}
-                        <Link href={`/media/${encodeURIComponent(n.media)}/`} className="hover:underline">
+                        <MediaHoverLink media={n.media} className="hover:underline">
                           {media[n.media]?.title ?? n.media}
-                        </Link>
+                        </MediaHoverLink>
                       </p>
                     </div>
                   </li>

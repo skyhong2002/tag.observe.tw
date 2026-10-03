@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CountryFlag from '@/components/CountryFlag';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaTabs from '@/components/MediaTabs';
 import { API_ORIGIN } from '@/lib/api';
 
@@ -81,10 +82,10 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
                 {rows.map((row) => (
                   <tr key={row.media}>
                     <td className="px-3 py-3 align-top">
-                      <Link href={`/media/${row.media}/`} className="flex items-center gap-2 whitespace-nowrap font-medium hover:underline">
+                      <MediaHoverLink media={row.media} className="flex items-center gap-2 whitespace-nowrap font-medium hover:underline">
                         <CountryFlag code={row.countryCode} country={row.country} />
                         {row.title}
-                      </Link>
+                      </MediaHoverLink>
                       <div className="mt-1 text-xs text-zinc-500">
                         {row.schedule === 'off' ? '未啟用' : row.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
                       </div>

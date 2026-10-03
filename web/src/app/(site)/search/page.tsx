@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import PendingLabel from '@/components/PendingLabel';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
@@ -269,9 +270,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                   <li key={a.id} className="p-3">
                     <p className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-600">
                       <SafeImage src={media[a.media]?.icon} alt="" width={14} height={14} className="rounded-sm" />
-                      <Link href={`/media/${a.media}/`} className="hover:underline">
+                      <MediaHoverLink media={a.media} className="hover:underline">
                         {a.mediaTitle}
-                      </Link>
+                      </MediaHoverLink>
                       {badge?.badge && (
                         <span className={`rounded px-1 text-[10px] font-medium ring-1 ring-inset ${badge.badge}`}>
                           {a.camp === 'blue' ? '偏藍' : '偏綠'}

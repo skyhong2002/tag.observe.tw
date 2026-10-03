@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import type { DiscoverySource } from '@/lib/article-content';
 import SourceLink from './SourceLink';
 
@@ -9,9 +9,9 @@ export default function DiscoverySources({ sources }: { sources?: DiscoverySourc
       {sources.map((source) => (
         <span key={source.media} className="inline-flex items-center gap-1">
           由{' '}
-          <Link href={`/media/${encodeURIComponent(source.media)}/`} className="text-brand-700 hover:underline dark:text-brand-400">
+          <MediaHoverLink media={source.media} className="text-brand-700 hover:underline dark:text-brand-400">
             {source.title}
-          </Link>{' '}
+          </MediaHoverLink>{' '}
           發現
           <SourceLink url={source.url} label={`${source.title}發現頁`} iconOnly className="!min-h-6 px-1" />
         </span>
