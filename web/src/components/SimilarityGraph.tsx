@@ -350,11 +350,24 @@ export default function SimilarityGraph({
         <button
           type="button"
           aria-label={fullscreen ? '退出全螢幕' : '全螢幕'}
+          title={fullscreen ? '退出全螢幕' : '全螢幕'}
           aria-pressed={fullscreen}
           onClick={onToggleFullscreen}
           className="min-h-11 min-w-11 border-l border-zinc-200 px-3 text-sm hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:hover:bg-zinc-800"
         >
-          {fullscreen ? '退出全螢幕' : '全螢幕'}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d={fullscreen ? 'M3 9h6V3m6 0v6h6M3 15h6v6m6 0v-6h6' : 'M9 3H3v6m12-6h6v6M3 15v6h6m6 0h6v-6'} />
+          </svg>
         </button>
       </fieldset>
     </div>

@@ -178,14 +178,6 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
         <div className="flex gap-1 text-xs text-zinc-600 dark:text-zinc-400">
           <button
             type="button"
-            onClick={toggleFullscreen}
-            aria-pressed={fullscreen}
-            className="rounded-lg px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-          >
-            {fullscreen ? '退出全螢幕' : '全螢幕'}
-          </button>
-          <button
-            type="button"
             onClick={() => setDrawer('settings')}
             className="rounded-lg px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
           >
