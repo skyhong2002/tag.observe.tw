@@ -205,6 +205,8 @@ export default async function EventThreadPage({
   const cov = covRes.ok ? ((await covRes.json()) as Coverage) : null;
   const series = seriesRes.ok ? ((await seriesRes.json()) as { tags: string[]; points: EventSeriesPoint[] }) : null;
   const t = data.thread;
+  // Snapshot hours and series points share the same UTC hour keys.
+  const rankByHour = new Map(data.hours.map((h) => [new Date(h.hourStart).toISOString(), h.rank]));
   const seen = new Set<string>();
   const news: News[] = [];
   for (const h of data.hours)
@@ -285,9 +287,15 @@ export default async function EventThreadPage({
       {series && series.points.length > 1 && (
         <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="text-sm font-medium text-zinc-600">時間變化</h2>
-          <EventChart points={series.points} tags={series.tags} active={{ from: t.firstTime, to: t.lastTime }} />
+          <EventChart
+            points={series.points}
+            tags={series.tags}
+            active={{ from: t.firstTime, to: t.lastTime }}
+            ranks={series.points.map((p) => rankByHour.get(p.t) ?? null)}
+          />
           <p className="mt-1 text-xs text-zinc-600">
-            上：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白）；下：所有媒體帶有任一主要標籤的報導篇數。只顯示完整小時。灰底為這則事件出現在事件表上的時段，前後各多顯示
+            上：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白），虛線為這則事件在事件表上的名次（右軸，第 1
+            名在最上面，未上榜的小時留空）；下：所有媒體帶有任一主要標籤的報導篇數。只顯示完整小時。灰底為這則事件出現在事件表上的時段，前後各多顯示
             12 小時。
           </p>
         </section>

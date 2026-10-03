@@ -47,11 +47,14 @@ export default function EventChart({
   points,
   tags,
   active,
+  ranks,
 }: {
   points: EventSeriesPoint[];
   tags: string[];
   /** The event's own span, shaded on both panels. */
   active: { from: string; to: string };
+  /** Event-table rank per point (same order as `points`); null off the table. */
+  ranks?: Array<number | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const dark = useDark();
@@ -61,7 +64,17 @@ export default function EventChart({
     const ink = dark ? '#a1a1aa' : '#71717a',
       grid = dark ? '#27272a' : '#f4f4f5';
     const labels = points.map((p) => label(p.t));
-    const band = [[{ xAxis: label(active.from) }, { xAxis: label(active.to) }]];
+    const rankData = ranks ?? points.map(() => null);
+    const hasRank = rankData.some((r) => r !== null);
+    const rankColor = dark ? '#38bdf8' : '#0369a1';
+    // The axis stops at the last complete hour, so a thread still on the table
+    // ends past it; ECharts misplaces an area whose edge is not a category.
+    // Clamp both edges onto the axis, and drop the band if it falls outside.
+    const first = Date.parse(points[0]?.t ?? ''),
+      last = Date.parse(points.at(-1)?.t ?? '');
+    const from = Math.max(Date.parse(active.from), first),
+      to = Math.min(Date.parse(active.to), last);
+    const band = from <= to ? [[{ xAxis: label(new Date(from).toISOString()) }, { xAxis: label(new Date(to).toISOString()) }]] : [];
     const markArea = { silent: true, itemStyle: { color: dark ? 'rgba(250,250,250,0.06)' : 'rgba(24,24,27,0.05)' }, data: band };
     const axis = (i: number) => ({
       type: 'category',
@@ -83,7 +96,7 @@ export default function EventChart({
       minInterval: i === 1 ? 1 : undefined,
     });
     // Room for the direct labels at the end of each tag line.
-    const right = tags.length <= 4 ? Math.min(110, 16 + 11 * Math.max(0, ...tags.map((t) => t.length))) : 16;
+    const right = (tags.length <= 4 ? Math.min(110, 16 + 11 * Math.max(0, ...tags.map((t) => t.length))) : 16) + (hasRank ? 40 : 0);
     const colors = TAG_COLORS[dark ? 'dark' : 'light'];
     chart.setOption({
       animation: false,
@@ -93,6 +106,7 @@ export default function EventChart({
         formatter: (items: Array<{ seriesName: string; value: number; marker: string; dataIndex: number; seriesIndex: number }>) => {
           const p = points[items[0]?.dataIndex ?? 0];
           const lines = items.map((it) => {
+            if (it.seriesName === '事件表名次') return `${it.marker}事件表名次　${it.value == null ? '未上榜' : `第 ${it.value} 名`}`;
             const rank = it.seriesIndex < tags.length ? p.tags?.[it.seriesName]?.rank : null;
             return `${it.marker}${it.seriesName}　${it.value}${rank ? `（第 ${rank} 名）` : ''}`;
           });
@@ -105,7 +119,28 @@ export default function EventChart({
         { left: 44, right: right, top: '66%', bottom: 28 },
       ],
       xAxis: [axis(0), axis(1)],
-      yAxis: [yAxis(0, '標籤分數'), yAxis(1, '報導篇數')],
+      yAxis: [
+        yAxis(0, '標籤分數'),
+        yAxis(1, '報導篇數'),
+        // Event-table rank on the top panel, #1 at the top; hidden when the
+        // thread never charted in this window.
+        {
+          type: 'value',
+          gridIndex: 0,
+          position: 'right',
+          inverse: true,
+          min: 1,
+          max: Math.max(10, ...rankData.filter((r): r is number => r !== null)),
+          minInterval: 1,
+          show: hasRank,
+          name: hasRank ? '名次' : undefined,
+          nameLocation: 'start',
+          nameTextStyle: { color: rankColor, align: 'right' },
+          axisLabel: { color: rankColor },
+          axisLine: { show: false },
+          splitLine: { show: false },
+        },
+      ],
       series: [
         ...tags.map((tag, i) => ({
           name: tag,
@@ -119,6 +154,23 @@ export default function EventChart({
           endLabel: { show: tags.length <= 4, formatter: tag, color: ink, fontSize: 11 },
           markArea: i === 0 ? markArea : undefined,
         })),
+        ...(hasRank
+          ? [
+              {
+                name: '事件表名次',
+                type: 'line',
+                xAxisIndex: 0,
+                yAxisIndex: 2,
+                symbol: 'circle',
+                symbolSize: 4,
+                connectNulls: false,
+                lineStyle: { width: 1.5, color: rankColor, type: 'dashed' },
+                itemStyle: { color: rankColor },
+                color: rankColor,
+                data: rankData,
+              },
+            ]
+          : []),
         ...CAMPS.map((c, i) => ({
           name: c.name,
           type: 'bar',
@@ -139,6 +191,6 @@ export default function EventChart({
       window.removeEventListener('resize', onResize);
       chart.dispose();
     };
-  }, [points, tags, active, dark]);
+  }, [points, tags, active, dark, ranks]);
   return <div ref={ref} className="h-96 w-full" role="img" aria-label="事件主要標籤分數與每小時報導篇數" />;
 }
