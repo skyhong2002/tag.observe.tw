@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import RankingBasisNote from '@/components/RankingBasisNote';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
@@ -27,8 +28,8 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     fetchTagArticles(tag, Math.max(48, hours)),
     fetchMedia(),
   ]);
-  const byMedia = new Map<string, number>();
-  for (const a of list.articles) byMedia.set(a.mediaTitle, (byMedia.get(a.mediaTitle) ?? 0) + 1);
+  const byMedia = new Map<string, { title: string; count: number }>();
+  for (const a of list.articles) byMedia.set(a.media, { title: a.mediaTitle, count: (byMedia.get(a.media)?.count ?? 0) + 1 });
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -94,14 +95,18 @@ export default async function TagPage({ params, searchParams }: { params: Promis
                   </Link>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
-                    <Link href={articleHref(a)} className="min-w-0 line-clamp-2 font-medium hover:underline">
-                      {a.title}
-                    </Link>
-                    <SourceLink url={a.url} className="!min-h-6 shrink-0" />
-                  </div>
-                  <p className="mt-1 text-xs text-zinc-600">
-                    {a.mediaTitle} · {taipei(a.publishedAt)}
+                  <Link href={articleHref(a)} className="line-clamp-2 font-medium hover:underline">
+                    {a.title}
+                  </Link>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-600">
+                    <span className="inline-flex max-w-full items-center gap-1">
+                      <MediaHoverLink media={a.media} icon={12} className="min-w-0 hover:underline">
+                        {a.mediaTitle}
+                      </MediaHoverLink>
+                      <SourceLink url={a.url} className="ml-1 !min-h-5 shrink-0" />
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span>{taipei(a.publishedAt)}</span>
                   </p>
                   <p className="mt-1 line-clamp-1 text-xs text-zinc-500">
                     {a.tags
@@ -122,11 +127,15 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           <h2 className="text-sm font-medium text-zinc-600">媒體分布</h2>
           <ul className="rounded-xl border border-zinc-300 bg-white text-sm dark:border-zinc-800 dark:bg-zinc-900">
             {[...byMedia.entries()]
-              .sort((a, b) => b[1] - a[1])
-              .map(([m, n]) => (
-                <li key={m} className="flex justify-between px-3 py-1.5">
-                  <span>{m}</span>
-                  <span className="tabular-nums text-zinc-600">{n}</span>
+              .sort((a, b) => b[1].count - a[1].count)
+              .map(([m, { title, count }]) => (
+                <li key={m} className="flex justify-between gap-2 px-3 py-1.5">
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                    <MediaHoverLink media={m} className="hover:underline">
+                      {title}
+                    </MediaHoverLink>
+                  </span>
+                  <span className="shrink-0 tabular-nums text-zinc-600">{count}</span>
                 </li>
               ))}
           </ul>

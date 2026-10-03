@@ -1,9 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
+import MediaIcon from '@/components/MediaIcon';
 import { mediaNames } from '@/lib/media-names.mts';
 import { trafficNumber } from '@/lib/media-traffic.mts';
 import { type ComparisonData, type ComparisonOutlet, collectionPoint, shortMonth } from '@/lib/traffic-comparison.mts';
@@ -108,18 +107,10 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             {filtered.map((outlet) => {
               const point = trafficAt(outlet),
                 count = articlesAt(outlet);
-              const icon = outlet.media ? localMediaIcon(outlet.media) : null;
               const identity = (
                 <>
-                  {icon ? (
-                    <Image
-                      src={icon}
-                      alt=""
-                      width={24}
-                      height={24}
-                      unoptimized
-                      className={`h-6 w-6 shrink-0 rounded-sm object-contain ${mediaIconClass(outlet.media!)}`}
-                    />
+                  {outlet.media ? (
+                    <MediaIcon media={outlet.media} title={outlet.name} size={24} />
                   ) : (
                     <span
                       aria-hidden="true"
@@ -146,7 +137,12 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                 >
                   <td className="px-2 py-2 sm:px-4">
                     {outlet.media ? (
-                      <MediaHoverLink media={outlet.media} title={outlet.name} className="flex items-center gap-2 hover:underline">
+                      <MediaHoverLink
+                        media={outlet.media}
+                        title={outlet.name}
+                        icon={false}
+                        className="flex items-center gap-2 hover:underline"
+                      >
                         {identity}
                       </MediaHoverLink>
                     ) : (

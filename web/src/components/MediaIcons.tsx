@@ -1,4 +1,4 @@
-import SafeImage from '@/components/SafeImage';
+import MediaIcon from '@/components/MediaIcon';
 import type { MediaInfo } from '@/lib/api';
 
 export default function MediaIcons({ media, info, max = 8 }: { media: Record<string, number>; info: MediaInfo; max?: number }) {
@@ -12,11 +12,7 @@ export default function MediaIcons({ media, info, max = 8 }: { media: Record<str
           title={`${info[key]?.title ?? key}：${n} 篇`}
           className="flex items-center gap-0.5 rounded bg-zinc-100 px-1 py-0.5 text-[11px] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
         >
-          {info[key]?.icon ? (
-            <SafeImage src={info[key].icon} alt="" width={14} height={14} className="rounded-sm" loading="lazy" />
-          ) : (
-            <span className="inline-block h-3.5 w-3.5 rounded-sm bg-zinc-300" />
-          )}
+          <MediaIcon media={key} title={info[key]?.title} />
           <span>{n}</span>
         </li>
       ))}

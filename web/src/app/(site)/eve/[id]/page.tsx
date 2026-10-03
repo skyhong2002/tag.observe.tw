@@ -73,12 +73,7 @@ function OutletBlock({ o }: { o: Outlet }) {
   return (
     <li className="rounded-lg border border-zinc-300 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
       <div className="mb-2 flex items-center gap-1.5 text-sm font-medium">
-        {o.icon ? (
-          <SafeImage src={o.icon} alt="" width={16} height={16} className="rounded-sm" loading="lazy" />
-        ) : (
-          <span className="inline-block h-4 w-4 rounded-sm bg-zinc-300" />
-        )}
-        <MediaHoverLink media={o.media} className="hover:underline">
+        <MediaHoverLink media={o.media} icon={16} className="hover:underline">
           {o.title}
         </MediaHoverLink>
         <span className="ml-auto text-xs text-zinc-600">{o.articles.length} 篇</span>
@@ -160,10 +155,7 @@ function Timeline({ cov, hours }: { cov: Coverage; hours: Hour[] }) {
                         className={`inline-block h-2 w-2 rounded-full ${CAMP_STYLE[a.outlet.camp].dot}`}
                         title={CAMP_STYLE[a.outlet.camp].label}
                       />
-                      {a.outlet.icon && (
-                        <SafeImage src={a.outlet.icon} alt="" width={12} height={12} className="rounded-sm" loading="lazy" />
-                      )}
-                      <MediaHoverLink media={a.outlet.media} className="hover:underline">
+                      <MediaHoverLink media={a.outlet.media} icon={12} className="hover:underline">
                         {a.outlet.title}
                       </MediaHoverLink>
                     </p>

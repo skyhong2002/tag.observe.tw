@@ -4,9 +4,9 @@ import ArticleThumbnail from '@/components/ArticleThumbnail';
 import CompactArticleList from '@/components/CompactArticleList';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MediaIcon from '@/components/MediaIcon';
 import MediaSidebar from '@/components/MediaSidebar';
 import MediaWordCloud from '@/components/MediaWordCloud';
-import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import { CONTENT_STATUS, type MediaContent } from '@/lib/article-content';
@@ -73,7 +73,7 @@ export default async function MediaPage({
       <header className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-zinc-300 pb-4 dark:border-zinc-700">
         <div>
           <div className="flex items-center gap-2.5">
-            {profile?.icon && <SafeImage src={profile.icon} alt="" width={28} height={28} className="rounded" />}
+            <MediaIcon media={data.media} title={data.title} size={28} className="rounded" />
             <h1 className="text-2xl font-semibold tracking-tight">{data.title}</h1>
           </div>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">

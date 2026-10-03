@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import ArticleBody from '@/components/ArticleBody';
 import ArticleImage from '@/components/ArticleImage';
 import DiscoverySources from '@/components/DiscoverySources';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import { CONTENT_STATUS, type StoredContent } from '@/lib/article-content';
@@ -46,9 +47,9 @@ export default async function ArticleContentPage({
       </nav>
       <header className="mb-7">
         <p className="mb-4 flex flex-wrap items-center gap-3 text-xs font-medium tracking-wide text-brand-700 dark:text-brand-400">
-          <Link href={mediaHref} className="hover:underline">
+          <MediaHoverLink media={article.media} className="hover:underline">
             {article.mediaTitle}
-          </Link>
+          </MediaHoverLink>
           {headline.section && (
             <>
               <span aria-hidden="true">/</span>

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MediaIcon from '@/components/MediaIcon';
 import PendingLabel from '@/components/PendingLabel';
-import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, fetchMedia, type MediaInfo, taipei } from '@/lib/api';
 import { selectEventLead } from '@/lib/event-presentation.mts';
@@ -226,7 +226,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               <ul className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-zinc-600">
                 {facets.media.slice(0, 16).map((m) => (
                   <li key={m.media} className="flex items-center gap-1">
-                    <SafeImage src={media[m.media]?.icon} alt="" width={14} height={14} className="rounded-sm" />
+                    <MediaIcon media={m.media} title={media[m.media]?.title} />
                     {media[m.media]?.title ?? m.media}
                     <span className="tabular-nums text-zinc-500">{m.count.toLocaleString()}</span>
                   </li>
@@ -269,7 +269,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                 return (
                   <li key={a.id} className="p-3">
                     <p className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-600">
-                      <SafeImage src={media[a.media]?.icon} alt="" width={14} height={14} className="rounded-sm" />
                       <MediaHoverLink media={a.media} className="hover:underline">
                         {a.mediaTitle}
                       </MediaHoverLink>

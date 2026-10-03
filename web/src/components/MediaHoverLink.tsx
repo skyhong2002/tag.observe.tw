@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './MediaHoverLink.module.css';
+import MediaIcon from './MediaIcon';
 import type { MediaKeywords } from './MediaWordCloud';
 
 type Profile = {
@@ -39,11 +40,15 @@ export default function MediaHoverLink({
   children,
   className,
   title,
+  icon = 14,
 }: {
   media: string;
   children: ReactNode;
   className?: string;
   title?: string;
+  /** Logo size in px shown before the children; `false` when the caller renders its own mark.
+   *  Callers that already lay the link out with flex keep their own gap. */
+  icon?: number | false;
 }) {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<Profile | null | undefined>();
@@ -148,7 +153,7 @@ export default function MediaHoverLink({
       <Link
         ref={anchor}
         href={href}
-        className={className}
+        className={icon === false || /\bflex\b/.test(className ?? '') ? className : `inline-flex items-center gap-1 ${className ?? ''}`}
         aria-label={title}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -179,6 +184,7 @@ export default function MediaHoverLink({
           } else setOpen(false);
         }}
       >
+        {icon !== false && <MediaIcon media={media} title={label} size={icon} />}
         {children}
       </Link>
       {open &&

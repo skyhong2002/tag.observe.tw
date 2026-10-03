@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
@@ -39,7 +40,7 @@ export default async function TopicPage() {
                   href={`/topic/${m.media}`}
                   className="flex items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-3 py-1 text-sm hover:border-brand-400 dark:border-zinc-800 dark:bg-zinc-900"
                 >
-                  {m.icon && <SafeImage src={m.icon} alt="" width={14} height={14} className="rounded-sm" />}
+                  <MediaIcon media={m.media} title={m.title} />
                   {m.title}
                 </Link>
               ))}
