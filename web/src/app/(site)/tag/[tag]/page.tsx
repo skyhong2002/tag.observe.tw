@@ -59,8 +59,11 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </div>
       </div>
       <section className="rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-2 text-sm font-medium text-zinc-600">分數與篇數（每小時，所有媒體）</h2>
+        <h2 className="mb-2 text-sm font-medium text-zinc-600">每小時新聞數量與 24 小時移動平均（所有媒體）</h2>
         <TagChart points={series.points} />
+        <p className="mt-2 text-xs text-zinc-500">
+          平均線＝當小時及前 23 小時收錄篇數總和 ÷ 24；沒有收錄報導的小時以 0 計。只顯示完整小時，避免尚未結束的小時造成假性下滑。
+        </p>
       </section>
       <section className="grid gap-6 md:grid-cols-[1fr_16rem]">
         <div className="space-y-2">

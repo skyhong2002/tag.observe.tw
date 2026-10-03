@@ -36,6 +36,23 @@ describe('CoOccurrence', () => {
 });
 
 describe('clusterEvents', () => {
+  it('does not merge unrelated subjects through a category or year tag', () => {
+    const articles = [
+      art(1, 'a', ['彭佳慧', '許富凱', '地方生活', '115年']),
+      art(2, 'b', ['彭佳慧', '許富凱', '地方生活', '115年']),
+      art(3, 'a', ['核電', '公投', '地方生活', '115年']),
+      art(4, 'b', ['核電', '公投', '地方生活', '115年']),
+    ];
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const events = clusterEvents(computeBurst(chart, new Map()), articles, [], { now: t0 });
+    expect(events.map((e) => e.tags.map(([tag]) => tag))).toEqual([
+      ['彭佳慧', '許富凱'],
+      ['核電', '公投'],
+    ]);
+  });
   it('groups equal tags into events, picks major tags and news like events.php', () => {
     const ranking = computeRanking(
       rows.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),

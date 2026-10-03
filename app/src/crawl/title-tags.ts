@@ -2,6 +2,7 @@ import { gte, sql } from 'drizzle-orm';
 import noEqual from '../../data/no-equal-tags.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articleTags } from '../db/schema.ts';
+import { isTagNoise } from '../tag-noise.ts';
 
 // Fallback tagging for articles whose page exposes no keywords: match the
 // title against tags the other media already use (seen in >= minArticles
@@ -25,7 +26,7 @@ export function buildVocab(entries: Array<{ tag: string; n: number }>, { minShor
   for (const { tag, n } of entries) {
     const t = tag.trim();
     const chars = [...t];
-    if (chars.length < 2 || chars.length > 15 || GENERIC.has(t) || /^\d+$/.test(t)) continue;
+    if (chars.length < 2 || chars.length > 15 || GENERIC.has(t) || isTagNoise(t) || /^\d+$/.test(t)) continue;
     if (LATIN.test(t) && t.length < 2) continue;
     if (chars.length === 2 && !LATIN.test(t) && n < minShort) continue;
     freq.set(t, n);

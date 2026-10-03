@@ -166,6 +166,7 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `order` | query | "burst" \| "score" | 排序：burst 爆發力／score 分數，預設 `burst`，例：`score` |
 | `limit` | query | integer | 筆數，1–500，預設 `50`，例：`20` |
 | `at` | query | string (ISO 時間) | 取這個時間（ISO 8601）以前最新的快照，例：`2026-09-30T12:00:00+08:00` |
+| `trend` | query | "0" \| "1" | 1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時，例：`1` |
 
 範例：
 
@@ -197,6 +198,10 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].normalized` | number | 以發文媒體數正規化後的分數 |
 | `entries[].burst` | number | 爆發力：與 3/6/12/24/48 小時前正規化分數比較的加權差（權重 0.92/0.84/0.7/0.5/0.25） |
 | `entries[].history` | {鍵: number \| null} | N 小時前的正規化分數（鍵為 3、6、12、24、48；當時沒有快照為 null） |
+| `entries[].trend` | object[] | trend=1 時回傳 49 個等距小時點，涵蓋 48 小時變化 |
+| `entries[].trend[].t` | string (ISO 時間) |  |
+| `entries[].trend[].hourlyCount` | integer | 該完整小時收錄篇數 |
+| `entries[].trend[].average24h` | number | 當小時及前 23 小時篇數總和 ÷ 24（篇／小時） |
 
 錯誤：`400` `at` 格式錯誤；`404` 未知分類，或該時間以前沒有快照。
 
@@ -505,7 +510,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/articles
 
 **標籤每小時的分數與文章數**
 
-取自每小時的排行快照；該小時沒進排行時 score 與 count 為 0、rank 為 null。
+每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。score/count 保留排行快照的 24 小時加權分數／累計篇數；未上榜為 0、沒有快照為 null。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -527,10 +532,12 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 | `category` | string |  |
 | `hours` | integer |  |
 | `points` | object[] |  |
-| `points[].t` | string (ISO 時間) | 小時（UTC） |
-| `points[].score` | number | 正規化分數 |
-| `points[].count` | integer | 文章數 |
+| `points[].t` | string (ISO 時間) | 完整小時起點（UTC） |
+| `points[].score` | number \| null | 24 小時正規化分數 |
+| `points[].count` | integer \| null | 排行快照的 24 小時累計篇數，非單小時篇數 |
 | `points[].rank` | integer \| null | 名次 |
+| `points[].hourlyCount` | integer | 該小時收錄篇數 |
+| `points[].average24h` | number | 24 小時移動平均（篇／小時） |
 
 錯誤：`404` 未知分類。
 

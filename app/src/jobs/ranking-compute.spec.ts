@@ -11,6 +11,27 @@ describe('splitLegacyTags', () => {
 });
 
 describe('computeRanking', () => {
+  it('filters noise before the rank limit and when reading old snapshots without changing denominators', () => {
+    const chart = computeRanking(
+      [
+        { media: 'a', tags: '[地方][生活][115年][2015][2026][0050][日本]' },
+        { media: 'b', tags: '[生活]' },
+      ],
+      { hours: 24, limit: 2 },
+    );
+    expect(chart.entries.map((e) => e.tag)).toEqual(['0050', '日本']);
+    expect(chart.mediaCount).toBe(2);
+    expect(chart.articleCount).toBe(2);
+    const old = {
+      ...chart,
+      entries: [
+        { ...chart.entries[0], tag: '地方', rank: 1 },
+        { ...chart.entries[1], rank: 2 },
+      ],
+    };
+    expect(computeBurst(old, new Map()).map((e) => [e.tag, e.rank])).toEqual([['日本', 1]]);
+    expect(old.entries).toHaveLength(2);
+  });
   it('applies the per-media 0.5^n decay and counts every mention', () => {
     const rows = [
       { media: 'setn', tags: '[核能][台電]' },

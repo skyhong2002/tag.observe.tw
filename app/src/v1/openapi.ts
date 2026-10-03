@@ -60,17 +60,25 @@ const schemas: Record<string, Schema> = {
     },
     '文章',
   ),
-  RankingEntry: obj({
-    rank: int('依原始分數的名次'),
-    position: int('在本次回應排序中的位置（從 1 起）'),
-    tag: str('標籤'),
-    score: num('原始分數：每篇文章 +1，同一媒體的第 2、3… 篇遞減為 0.5、0.25…'),
-    count: int('過去 24 小時帶這個標籤的文章數'),
-    media: map(int(), '各媒體的文章數'),
-    normalized: num('以發文媒體數正規化後的分數'),
-    burst: num('爆發力：與 3/6/12/24/48 小時前正規化分數比較的加權差（權重 0.92/0.84/0.7/0.5/0.25）'),
-    history: map(nullable(num()), 'N 小時前的正規化分數（鍵為 3、6、12、24、48；當時沒有快照為 null）'),
-  }),
+  RankingEntry: obj(
+    {
+      rank: int('依原始分數的名次'),
+      position: int('在本次回應排序中的位置（從 1 起）'),
+      tag: str('標籤'),
+      score: num('原始分數：每篇文章 +1，同一媒體的第 2、3… 篇遞減為 0.5、0.25…'),
+      count: int('過去 24 小時帶這個標籤的文章數'),
+      media: map(int(), '各媒體的文章數'),
+      normalized: num('以發文媒體數正規化後的分數'),
+      burst: num('爆發力：與 3/6/12/24/48 小時前正規化分數比較的加權差（權重 0.92/0.84/0.7/0.5/0.25）'),
+      history: map(nullable(num()), 'N 小時前的正規化分數（鍵為 3、6、12、24、48；當時沒有快照為 null）'),
+      trend: arr(
+        obj({ t: time(), hourlyCount: int('該完整小時收錄篇數'), average24h: num('當小時及前 23 小時篇數總和 ÷ 24（篇／小時）') }),
+        'trend=1 時回傳 49 個等距小時點，涵蓋 48 小時變化',
+      ),
+    },
+    undefined,
+    ['trend'],
+  ),
   CoverageArticle: obj({
     id: int(),
     title: str(),
@@ -349,6 +357,7 @@ export const ENDPOINTS: Endpoint[] = [
       q('order', '排序：burst 爆發力／score 分數', { ...str(), enum: ['burst', 'score'], default: 'burst' }, 'score'),
       q('limit', '筆數', intIn(1, 500, 50), 20),
       q('at', '取這個時間（ISO 8601）以前最新的快照', time(), '2026-09-30T12:00:00+08:00'),
+      q('trend', '1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時', str('', { enum: ['0', '1'] }), '1'),
     ],
     response: obj({
       snapshot: obj({
@@ -450,13 +459,23 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/tags/{tag}/series',
     tag: 'tags',
     summary: '標籤每小時的分數與文章數',
-    description: '取自每小時的排行快照；該小時沒進排行時 score 與 count 為 0、rank 為 null。',
+    description:
+      '每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。score/count 保留排行快照的 24 小時加權分數／累計篇數；未上榜為 0、沒有快照為 null。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。',
     params: [p('tag', '標籤（URL 編碼）', str(), '賴清德'), categoryParam, q('hours', '往前幾小時', intIn(1, 336, 72), 168)],
     response: obj({
       tag: str(),
       category: str(),
       hours: int(),
-      points: arr(obj({ t: time('小時（UTC）'), score: num('正規化分數'), count: int('文章數'), rank: nullable(int('名次')) })),
+      points: arr(
+        obj({
+          t: time('完整小時起點（UTC）'),
+          score: nullable(num('24 小時正規化分數')),
+          count: nullable(int('排行快照的 24 小時累計篇數，非單小時篇數')),
+          rank: nullable(int('名次')),
+          hourlyCount: int('該小時收錄篇數'),
+          average24h: num('24 小時移動平均（篇／小時）'),
+        }),
+      ),
     }),
     errors: { '404': '未知分類' },
     example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?hours=168',

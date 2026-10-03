@@ -1,5 +1,7 @@
 // Port of legacy maint/events.php (clustering) + api/relation24.php (equal=1).
 // Pure functions over in-memory article rows; no DB access.
+
+import { isTagNoise } from '../tag-noise.ts';
 import type { BurstEntry } from './ranking-compute.ts';
 
 export interface ArticleRow {
@@ -29,7 +31,7 @@ export class CoOccurrence {
   private byArticle = new Map<number, string[]>();
   constructor(rows: ArticleRow[]) {
     for (const r of rows) {
-      const tags = [...new Set(r.tags.map(clean).filter((t) => Buffer.byteLength(t) > 1))];
+      const tags = [...new Set(r.tags.map(clean).filter((t) => Buffer.byteLength(t) > 1 && !isTagNoise(t)))];
       this.byArticle.set(r.id, tags);
       for (const t of tags) {
         let s = this.byTag.get(t);
@@ -90,7 +92,10 @@ export function clusterEvents(
 ): EventCluster[] {
   const noEqual = new Set(noEqualList);
   const co = new CoOccurrence(rows);
-  const order = entries.slice(0, maxTags).map((e) => e.tag);
+  const order = entries
+    .filter((e) => !isTagNoise(e.tag))
+    .slice(0, maxTags)
+    .map((e) => e.tag);
   const burst = new Map(entries.map((e) => [e.tag, e.burst]));
   const closures = new Map(order.map((t) => [t, co.closure(t, noEqual)]));
   // tagmap: for each tag, the highest-ranked earlier tag it is equal to.

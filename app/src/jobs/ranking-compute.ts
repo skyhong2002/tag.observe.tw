@@ -3,6 +3,7 @@
 // score: 1 for the first article of a media, 0.5 for the second, 0.25 ...
 // Sorting is a stable descending sort (PHP 5.4's arsort tie order is not
 // reproduced; the legacy-compatible routes still read PHP's own cache).
+import { isTagNoise } from '../tag-noise.ts';
 export interface TagSource {
   media: string;
   tags: string;
@@ -43,6 +44,7 @@ export function computeRanking(
     articles++;
     mediaSeen.add(row.media);
     for (const tag of splitLegacyTags(row.tags)) {
+      if (isTagNoise(tag)) continue;
       count.set(tag, (count.get(tag) ?? 0) + 1);
       let media = perMedia.get(tag);
       if (!media) {
@@ -96,16 +98,19 @@ export function computeBurst(current: RankingChart, history: ReadonlyMap<number,
     const chart = history.get(step) ?? null;
     lookup.set(step, new Map(chart ? chart.entries.map((e) => [e.tag, norm(chart, e.score)]) : []));
   }
-  const out: BurstEntry[] = current.entries.map((e) => {
-    const normalized = norm(current, e.score);
-    let burst = normalized;
-    const hist: Record<number, number | null> = {};
-    for (const [step, w] of BURST_STEPS) {
-      const old = lookup.get(step)?.get(e.tag);
-      hist[step] = old ?? null;
-      burst += (normalized - (old ?? 0)) * w;
-    }
-    return { ...e, normalized, burst, history: hist };
-  });
+  // Also filter stored snapshots so old noise does not return before a rebuild.
+  const out: BurstEntry[] = current.entries
+    .filter((e) => !isTagNoise(e.tag))
+    .map((e, i) => {
+      const normalized = norm(current, e.score);
+      let burst = normalized;
+      const hist: Record<number, number | null> = {};
+      for (const [step, w] of BURST_STEPS) {
+        const old = lookup.get(step)?.get(e.tag);
+        hist[step] = old ?? null;
+        burst += (normalized - (old ?? 0)) * w;
+      }
+      return { ...e, rank: i + 1, normalized, burst, history: hist };
+    });
   return out.sort((a, b) => b.burst - a.burst);
 }

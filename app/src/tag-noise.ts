@@ -1,0 +1,54 @@
+// Display/analysis noise is narrower than no_equal: people, places and parties
+// can be useful ranking terms even when they must not connect event clusters.
+const CATEGORIES = new Set([
+  '地方',
+  '生活',
+  '地方生活',
+  '生活消費',
+  '生活新聞',
+  '地方新聞',
+  '新聞',
+  '即時',
+  '即時新聞',
+  '即時新聞網',
+  '熱門新聞',
+  '焦點',
+  '要聞',
+  '國際',
+  '國際要聞',
+  '政治',
+  '社會',
+  '財經',
+  '財經總覽',
+  '娛樂',
+  '娛樂專題',
+  '科技',
+  '科技前線',
+  '體育',
+  '運動',
+  '運動總覽',
+  '健康',
+  '旅遊',
+  '未分類',
+  '其他',
+  '其它',
+  '首頁',
+  '綜合',
+  '精選',
+  '推薦',
+  'google編輯嚴選',
+  'headline',
+  'notag',
+  'notags',
+  'no tag',
+  'no_tag',
+]);
+
+export function isTagNoise(tag: string): boolean {
+  const t = tag.normalize('NFKC').trim().toLowerCase();
+  if (!t || CATEGORIES.has(t)) return true;
+  // Whole terms only: keep 0050, 0056, 3C, 2026大選 and named historical events.
+  return /^(?:(?:西元|公元)?(?:19|20|21)\d{2}(?:年(?:度)?)?|(?:民國)?[1-9]\d{1,2}年(?:度)?|民國[1-9]\d{1,2}|(?:民國|西元|公元)?[〇零○一二三四五六七八九]{2,4}年(?:度)?)$/.test(
+    t,
+  );
+}

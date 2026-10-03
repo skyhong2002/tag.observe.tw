@@ -13,37 +13,59 @@ export default function TagChart({ points }: { points: SeriesPoint[] }) {
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
-    const labels = points.map((p) =>
-      new Date(p.t).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit' }),
-    );
+    const labels = points.map((p) => {
+      const d = new Date(Date.parse(p.t) + 8 * 3600e3);
+      return `${d.getUTCMonth() + 1}/${d.getUTCDate()}\n${String(d.getUTCHours()).padStart(2, '0')}:00`;
+    });
+    const interval = () => Math.max(0, Math.ceil(points.length / Math.max(2, Math.floor((ref.current?.clientWidth ?? 300) / 110))) - 1);
     chart.setOption({
+      animation: false,
       tooltip: { trigger: 'axis' },
-      legend: { data: ['分數', '篇數'], top: 0 },
-      grid: { left: 40, right: 40, top: 30, bottom: 30 },
-      xAxis: { type: 'category', data: labels, axisLabel: { interval: Math.max(0, Math.floor(points.length / 8) - 1) } },
+      legend: {
+        type: 'scroll',
+        left: 0,
+        right: 0,
+        data: ['每小時篇數', '24 小時移動平均', '24 小時加權分數'],
+        selected: { '24 小時加權分數': false },
+        top: 0,
+      },
+      grid: { left: 40, right: 36, top: 55, bottom: 40 },
+      xAxis: { type: 'category', data: labels, axisLabel: { interval: interval(), hideOverlap: true } },
       yAxis: [
-        { type: 'value', name: '分數', min: 0 },
-        { type: 'value', name: '篇數', min: 0 },
+        { type: 'value', name: '篇／小時', min: 0 },
+        { type: 'value', min: 0 },
       ],
       series: [
         {
-          name: '分數',
+          name: '24 小時移動平均',
           type: 'line',
-          smooth: true,
+          smooth: false,
           symbol: 'none',
-          data: points.map((p) => Number(p.score.toFixed(2))),
+          data: points.map((p) => Number(p.average24h.toFixed(2))),
           lineStyle: { width: 2, color: '#c2410c' },
+          itemStyle: { color: '#c2410c' },
           areaStyle: { color: '#c2410c', opacity: 0.1 },
         },
-        { name: '篇數', type: 'bar', yAxisIndex: 1, data: points.map((p) => p.count), itemStyle: { color: '#a1a1aa', opacity: 0.6 } },
+        { name: '每小時篇數', type: 'bar', data: points.map((p) => p.hourlyCount), itemStyle: { color: '#a1a1aa', opacity: 0.6 } },
+        {
+          name: '24 小時加權分數',
+          type: 'line',
+          yAxisIndex: 1,
+          symbol: 'none',
+          data: points.map((p) => (p.score === null ? null : Number(p.score.toFixed(2)))),
+          lineStyle: { color: '#7c3aed', width: 1 },
+        },
       ],
     });
-    const onResize = () => chart.resize();
+    const onResize = () => {
+      chart.resize();
+      chart.setOption({ xAxis: { axisLabel: { interval: interval() } } });
+    };
     window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('resize', onResize);
       chart.dispose();
     };
   }, [points]);
-  return <div ref={ref} className="h-72 w-full" role="img" aria-label="標籤分數與篇數趨勢" />;
+  return <div ref={ref} className="h-72 w-full" role="img" aria-label="每小時新聞篇數與 24 小時移動平均" />;
 }

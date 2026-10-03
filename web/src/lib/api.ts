@@ -15,6 +15,7 @@ export interface RankingEntry {
   normalized: number;
   burst: number;
   history: Record<string, number | null>;
+  trend?: Array<{ t: string; hourlyCount: number; average24h: number }>;
 }
 export interface Ranking {
   snapshot: {
@@ -42,8 +43,10 @@ export interface Article {
 }
 export interface SeriesPoint {
   t: string;
-  score: number;
-  count: number;
+  score: number | null;
+  count: number | null;
+  hourlyCount: number;
+  average24h: number;
   rank: number | null;
 }
 export type MediaInfo = Record<string, { title: string | null; icon: string | null }>;
@@ -55,8 +58,8 @@ async function get<T>(path: string, revalidate = 60): Promise<T> {
 }
 export const fetchCategories = () => get<Category[]>('/api/v1/categories', 3600);
 export const fetchMedia = () => get<MediaInfo>('/api/v1/media', 3600);
-export const fetchRanking = (category: string, order: 'burst' | 'score', limit = 50) =>
-  get<Ranking>(`/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}`);
+export const fetchRanking = (category: string, order: 'burst' | 'score', limit = 50, trend = false) =>
+  get<Ranking>(`/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}${trend ? '&trend=1' : ''}`);
 export const fetchTagArticles = (tag: string, hours = 48) =>
   get<{ tag: string; articles: Article[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/articles?hours=${hours}&limit=80`);
 export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>

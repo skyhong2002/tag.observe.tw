@@ -22,7 +22,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const [categories, media, ranking] = await Promise.all([
     fetchCategories(),
     fetchMedia(),
-    fetchRanking(category, order, limit).catch(() => null),
+    fetchRanking(category, order, limit, true).catch(() => null),
   ]);
   const current = categories.find((c) => c.key === category);
   // Keeps the header sort across category / "more" links; sortLink clears it
@@ -45,7 +45,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     burst: (e) => e.burst,
     score: (e) => e.normalized,
     count: (e) => e.count,
-    trend: (e) => e.normalized - (e.history['48'] ?? 0),
+    trend: (e) => (e.trend?.at(-1)?.average24h ?? 0) - (e.trend?.[0]?.average24h ?? 0),
     media: (e) => Object.keys(e.media).length,
   };
   const rows = ranking
@@ -104,6 +104,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           </Link>
         ))}
       </nav>
+      <p className="text-xs text-zinc-600">趨勢：每小時新聞篇數的 24 小時移動平均，顯示最近 48 小時的變化；點關鍵字可查看完整時間圖。</p>
       {!ranking ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">這個分類目前沒有資料。</p>
       ) : (
@@ -117,13 +118,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   <Th col="burst" label="爆發力" className="w-24 text-right" title="相對 3／6／12／24／48 小時前的變化" />
                   <Th col="score" label="分數" className="w-20 text-right" title="媒體加權分數" />
                   <Th col="count" label="篇數" className="w-16 text-right" />
-                  <Th col="trend" label="趨勢" className="w-28" title="和 48 小時前相比的分數變化" />
+                  <Th col="trend" label="趨勢" className="w-28" title="24 小時平均篇數與 48 小時前的差值（篇／小時）" />
                   <Th col="media" label="媒體" className="" title="報導的媒體家數" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {rows.map((e) => {
-                  const hist = [48, 24, 12, 6, 3].map((h) => e.history[String(h)]);
+                  const trend = e.trend ?? [];
                   return (
                     <tr key={e.tag} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
                       <td className="px-3 py-2 text-right tabular-nums text-zinc-500">{e.position}</td>
@@ -141,7 +142,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       <td className="px-3 py-2 text-right tabular-nums">{e.normalized.toFixed(1)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-zinc-600">{e.count}</td>
                       <td className="px-3 py-1">
-                        <Sparkline values={[...hist, e.normalized]} />
+                        <Sparkline values={trend.map((p) => p.average24h)} />
                       </td>
                       <td className="px-3 py-2">
                         <MediaIcons media={e.media} info={media} />

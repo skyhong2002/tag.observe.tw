@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
@@ -8,6 +8,7 @@ import { RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
 import { loadThreadCoverage } from './coverage.ts';
 import { taipeiDay, threadSeries, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
+import { completedHourWindow, loadHourlyTrends } from './tag-series.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -72,7 +73,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
   app.get('/api/v1/media', async () =>
     Object.fromEntries(Object.entries(mediaInfo).map(([k, v]) => [k, { title: v.title, icon: iconUrl(k) }])),
   );
-  app.get<{ Querystring: { category?: string; order?: string; limit?: string; at?: string } }>(
+  app.get<{ Querystring: { category?: string; order?: string; limit?: string; at?: string; trend?: string } }>(
     '/api/v1/ranking',
     async (request, reply) => {
       const category = request.query.category ?? 'all';
@@ -84,8 +85,24 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       const result = await loadRanking(db, category, { at });
       if (!result) return reply.code(404).send({ error: 'no snapshot' });
       const entries = order === 'score' ? [...result.entries].sort((a, b) => b.normalized - a.normalized) : result.entries;
+      const selected = entries.slice(0, limit);
+      const window = completedHourWindow(new Date(result.snapshot.computedAt), 49);
+      const trends =
+        request.query.trend === '1'
+          ? await loadHourlyTrends(
+              db,
+              selected.map((e) => e.tag),
+              RANKING_CATEGORIES[category].media,
+              window.from,
+              window.to,
+            )
+          : null;
       reply.header('cache-control', 'public, max-age=60');
-      return { ...result, order, entries: entries.slice(0, limit).map((e, i) => ({ ...e, position: i + 1 })) };
+      return {
+        ...result,
+        order,
+        entries: selected.map((e, i) => ({ ...e, position: i + 1, ...(trends ? { trend: trends.get(e.tag) } : {}) })),
+      };
     },
   );
   app.get<{ Params: { tag: string }; Querystring: { hours?: string; limit?: string } }>(
@@ -120,18 +137,25 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       const tag = request.params.tag.slice(0, 60),
         category = request.query.category ?? 'all';
       if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
-      const hours = Math.min(24 * 14, Math.max(1, Number(request.query.hours) || 72));
-      const since = new Date(Date.now() - hours * 3600e3);
+      const hours = Math.min(24 * 14, Math.max(1, Math.floor(Number(request.query.hours) || 72)));
+      const { from, to } = completedHourWindow(new Date(), hours);
       const rows = await db
         .select({ hourStart: rankingSnapshots.hourStart, weight: rankingSnapshots.weight, chart: rankingSnapshots.chart })
         .from(rankingSnapshots)
-        .where(and(eq(rankingSnapshots.category, category), gte(rankingSnapshots.hourStart, since)))
+        .where(and(eq(rankingSnapshots.category, category), gte(rankingSnapshots.hourStart, from), lt(rankingSnapshots.hourStart, to)))
         .orderBy(rankingSnapshots.hourStart);
-      const points = rows.map((r) => {
-        const chart = JSON.parse(r.chart) as RankingChart;
-        const e = chart.entries.find((x) => x.tag === tag);
-        return { t: r.hourStart, score: e ? normalizedScore(chart, e.score) : 0, count: e?.count ?? 0, rank: e?.rank ?? null };
-      });
+      const scores = new Map(
+        rows.map((r) => {
+          const chart = JSON.parse(r.chart) as RankingChart;
+          const e = chart.entries.find((x) => x.tag === tag);
+          return [
+            r.hourStart.toISOString(),
+            { score: e ? normalizedScore(chart, e.score) : 0, count: e?.count ?? 0, rank: e?.rank ?? null },
+          ] as const;
+        }),
+      );
+      const trends = await loadHourlyTrends(db, [tag], RANKING_CATEGORIES[category].media, from, to);
+      const points = (trends.get(tag) ?? []).map((p) => ({ ...p, ...(scores.get(p.t) ?? { score: null, count: null, rank: null }) }));
       reply.header('cache-control', 'public, max-age=300');
       return { tag, category, hours, points };
     },

@@ -5,6 +5,7 @@ import noEqual from '../../data/no-equal-tags.json' with { type: 'json' };
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
+import { isTagNoise } from '../tag-noise.ts';
 import { parseContentId } from './article-content.ts';
 
 export const KEYWORD_SAMPLE_LIMIT = 2000;
@@ -15,7 +16,7 @@ export function mediaKeywordTerms(rows: Array<{ title: string; tags: string[] }>
   for (const row of rows) {
     const terms = new Set([...row.tags, ...tagsFromTitle(row.title, vocab, 12)].map((tag) => tag.trim()));
     for (const term of terms) {
-      if (term.length < 2 || term.length > 30 || excluded.has(term) || /^\d+(?:年|月|日)?$/.test(term)) continue;
+      if (term.length < 2 || term.length > 30 || excluded.has(term) || isTagNoise(term) || /^\d+(?:年|月|日)?$/.test(term)) continue;
       counts.set(term, (counts.get(term) ?? 0) + 1);
     }
   }

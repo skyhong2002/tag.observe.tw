@@ -20,8 +20,8 @@ export default function Sparkline({ values, color = '#c2410c' }: { values: (numb
       series: [
         {
           type: 'line',
-          data: values.map((v) => v ?? 0),
-          smooth: true,
+          data: values,
+          smooth: false,
           symbol: 'none',
           lineStyle: { width: 1.5, color },
           areaStyle: { color, opacity: 0.12 },
