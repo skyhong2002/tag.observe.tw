@@ -1,5 +1,6 @@
 import type { CheerioAPI } from 'cheerio';
 import { BLOCKED_NEWS_SITES } from './news-blocked-sites.ts';
+import { ENN_NEWS_SITES } from './news-enn.ts';
 import { EXTRA_NEWS_SITES } from './news-extra-site-rules.ts';
 import { LEGACY_NEWS_SITES } from './news-legacy-sites.ts';
 import { PLATFORM_NEWS_SITES } from './news-platform-sites.ts';
@@ -27,6 +28,7 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 const SITES: Site[] = [
   ...BLOCKED_NEWS_SITES,
   ...EXTRA_NEWS_SITES,
+  ...ENN_NEWS_SITES,
   ...LEGACY_NEWS_SITES,
   ...PLATFORM_NEWS_SITES,
   ...ROUND3_LEGACY_NEWS_SITES,

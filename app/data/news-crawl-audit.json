@@ -2156,14 +2156,33 @@
     },
     {
       "media": "enn",
-      "websiteUrl": "https://enn.tw/",
-      "checkedAt": "2026-10-03T11:07:10.953Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 4 次請求未驗證到近期完整文章。https://enn.tw/sitemap.xml: HTTP 403；https://enn.tw/feed/: HTTP 403；No recent article with verified title, publication date and body found"
+      "websiteUrl": "https://17news.net/?s=%E5%8F%B0%E7%81%A3%E9%9B%BB%E5%A0%B1%E8%A8%98%E8%80%85",
+      "checkedAt": "2026-10-03T13:36:01.579235+00:00",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://17news.net/archives/340971",
+          "title": "真鍋大度首度海外大型個展落腳臺中 3展間打造沉浸式聲光體驗",
+          "publishedAt": "2026-10-03T10:44:07.000Z",
+          "bodyLength": 971
+        },
+        {
+          "url": "https://17news.net/archives/340961",
+          "title": "臺中女孩行動中！臺灣女孩日活動登場 圓夢團隊分享實踐歷程",
+          "publishedAt": "2026-10-03T09:56:28.000Z",
+          "bodyLength": 603
+        },
+        {
+          "url": "https://17news.net/archives/340955",
+          "title": "市長候選人競總成立大會 中六警公布周邊交管措施",
+          "publishedAt": "2026-10-03T09:40:36.000Z",
+          "bodyLength": 437
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://17news.net/feed",
+      "detail": "官方同集團公開聯播逐篇比對首段台灣電報記者署名；完整當日文章已核實，正式入庫與站內閱讀見crawl-restoration.md。"
     },
     {
       "media": "kingtop",
@@ -3373,13 +3392,20 @@
     {
       "media": "cn_wsj",
       "websiteUrl": "https://cn.wsj.com/",
-      "checkedAt": "2026-10-03T11:07:44.290Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 22 次請求未驗證到近期完整文章。https://cn.wsj.com/articles/%E7%BE%8E%E8%82%A1%E7%8D%B2%E5%A4%A7%E5%9E%8B%E7%A7%91%E6%8A%80%E8%82%A1%E6%89%98%E8%88%89-%E4%BD%86%E7%AC%AC%E5%9B%9B%E5%AD%A3%E5%BA%A6%E6%81%90%E6%AD%A5%E5%B1%A5%E7%B6%AD%E8%89%B1-2e03afce: HTTP 401；https://cn.wsj.com/feed/: HTTP 400；No recent article with verified title, publication date and body found"
+      "checkedAt": "2026-10-03T13:43:54.780934+00:00",
+      "articleCount": 1,
+      "samples": [
+        {
+          "url": "https://china.createsend1.com/t/j-e-ydlrkkiy-hynykddkd-r/",
+          "title": "别再轻信：美国商界提出对华新策略",
+          "publishedAt": "2025-10-08T00:00:00.000Z",
+          "bodyLength": 1312
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://china.createsend1.com/",
+      "detail": "官方公開中文電子報主文完整1312字；官方貼文明確2025-10-08刊，僅日精度，時間正規化供排序，API另提供publishedDate與precision。詳见reviewed-publications.json與crawl-restoration.md。"
     },
     {
       "media": "life",

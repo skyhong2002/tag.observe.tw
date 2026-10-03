@@ -148,19 +148,25 @@ schemas.Similarity = obj({
     obj({ source: str(), target: str(), kind: str(undefined, { enum: ['similarity', 'citation'] }), count: int(), score: nullable(num()) }),
   ),
 });
-schemas.ContentArticle = obj({
-  id: int(),
-  media: str(),
-  mediaTitle: str(),
-  title: str(),
-  url: str(),
-  image: nullable(str()),
-  publishedAt: time(),
-  tags: arr(str()),
-  description: nullable(str()),
-  authors: arr(str()),
-  publisher: ref('OutletIdentity'),
-});
+schemas.ContentArticle = obj(
+  {
+    id: int(),
+    media: str(),
+    mediaTitle: str(),
+    title: str(),
+    url: str(),
+    image: nullable(str()),
+    publishedAt: time('排序用時間；若另有 publishedDate，刊期只有日精度，不代表確知時分'),
+    publishedDate: str('經官方證據核實的日期；原站未公開發刊時分', { format: 'date' }),
+    publishedDatePrecision: str(undefined, { enum: ['day'] }),
+    tags: arr(str()),
+    description: nullable(str()),
+    authors: arr(str()),
+    publisher: ref('OutletIdentity'),
+  },
+  undefined,
+  ['publishedDate', 'publishedDatePrecision'],
+);
 schemas.CachedContent = obj({
   status: str(undefined, { enum: ['ok', 'short', 'missing', 'blocked', 'error', 'not_fetched', 'expired'] }),
   body: nullable(str('保留期間內已抓取的文字；不保證原站目前仍存在')),

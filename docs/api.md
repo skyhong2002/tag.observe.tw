@@ -360,7 +360,9 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `article.title` | string |  |
 | `article.url` | string |  |
 | `article.image` | string \| null |  |
-| `article.publishedAt` | string (ISO 時間) |  |
+| `article.publishedAt` | string (ISO 時間) | 排序用時間；若另有 publishedDate，刊期只有日精度，不代表確知時分 |
+| `article.publishedDate` | string | 經官方證據核實的日期；原站未公開發刊時分 |
+| `article.publishedDatePrecision` | "day" |  |
 | `article.tags` | string[] |  |
 | `article.description` | string \| null |  |
 | `article.authors` | string[] |  |
@@ -958,7 +960,9 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
 | `articles[].title` | string |  |
 | `articles[].url` | string |  |
 | `articles[].image` | string \| null |  |
-| `articles[].publishedAt` | string (ISO 時間) |  |
+| `articles[].publishedAt` | string (ISO 時間) | 排序用時間；若另有 publishedDate，刊期只有日精度，不代表確知時分 |
+| `articles[].publishedDate` | string | 經官方證據核實的日期；原站未公開發刊時分 |
+| `articles[].publishedDatePrecision` | "day" |  |
 | `articles[].tags` | string[] |  |
 | `articles[].description` | string \| null |  |
 | `articles[].authors` | string[] |  |

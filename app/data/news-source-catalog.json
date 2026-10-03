@@ -1377,7 +1377,7 @@
     {
       "media": "enn",
       "name": "enn台灣電報",
-      "websiteUrl": "https://enn.tw/",
+      "websiteUrl": "https://17news.net/?s=%E5%8F%B0%E7%81%A3%E9%9B%BB%E5%A0%B1%E8%A8%98%E8%80%85",
       "referenceNames": [
         "enn台灣電報"
       ],
@@ -1386,7 +1386,10 @@
       ],
       "existing": false,
       "websiteEvidence": "https://enn.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 同集團17news公開文章首段必須署名台灣電報記者；保存其原始刊登網址與日期。",
+      "articlePattern": "^/archives/\\d+$",
+      "provider": "^【台灣電報記者[^】]{1,60}報導】$",
+      "includeArchive": true
     },
     {
       "media": "kingtop",
@@ -2251,7 +2254,15 @@
       ],
       "existing": false,
       "websiteEvidence": "https://cn.wsj.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03: 官方公開分享之2025-10-08中國洞察完整主文；刊期由官方明示發刊日期及電子報可見日期交叉核實，只有日精度，不借用公告時分。非付費正文繞過。",
+      "articleUrls": [
+        "https://china.createsend1.com/t/j-e-ydlrkkiy-hynykddkd-r/"
+      ],
+      "includeArchive": true,
+      "articleHosts": [
+        "china.createsend1.com",
+        "china.cmail19.com"
+      ]
     },
     {
       "media": "life",

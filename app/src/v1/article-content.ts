@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lt, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
+import reviewedPublications from '../../data/reviewed-publications.json' with { type: 'json' };
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
@@ -15,6 +16,8 @@ export interface ContentArticle {
   url: string;
   image: string | null;
   publishedAt: Date;
+  publishedDate?: string;
+  publishedDatePrecision?: 'day';
   tags: string[];
   description: string | null;
   authors: string[];
@@ -98,6 +101,8 @@ type MetadataRow = {
   creator: string | null;
 };
 export function contentArticle(row: MetadataRow): ContentArticle {
+  const publication = (reviewedPublications as Record<string, { publishedDate: string; datePrecision: string }>)[row.url];
+  const dateOnly = publication?.datePrecision === 'day' && row.publishedAt.toISOString().slice(0, 10) === publication.publishedDate;
   const authors = row.authors?.map((a) => a.trim()).filter(Boolean) ?? [];
   return {
     id: row.id,
@@ -107,6 +112,7 @@ export function contentArticle(row: MetadataRow): ContentArticle {
     url: row.url,
     image: row.image,
     publishedAt: row.publishedAt,
+    ...(dateOnly ? { publishedDate: publication.publishedDate, publishedDatePrecision: 'day' as const } : {}),
     tags: row.tags,
     description: row.description,
     authors: normalizeAuthorCredits(authors.length ? authors : row.creator?.trim() ? [row.creator.trim()] : []),

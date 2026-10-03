@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { renderWsjNewsletter } from './news-wsj-newsletter.ts';
 
 const hostKey = (url: URL) => url.hostname.toLowerCase().replace(/^www\./, '');
 
@@ -60,6 +61,10 @@ function assignedObject(source: string, marker: RegExp): Record<string, unknown>
 
 export function publicArticleHtml(html: string, url: string): string {
   const host = hostKey(new URL(url));
+  if (['china.createsend1.com', 'china.cmail19.com'].includes(host)) {
+    if (cheerio.load(html)('script[data-news-public="wsj-newsletter"]').length) return html;
+    return renderWsjNewsletter(html, url) ?? '';
+  }
   if (!['taiwannews.com.tw', 'readr.tw', 'news.qq.com'].includes(host)) return html;
   const $ = cheerio.load(html);
   if ($('script[data-news-public]').length) return html;

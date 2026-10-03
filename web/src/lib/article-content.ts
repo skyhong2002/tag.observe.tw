@@ -13,6 +13,8 @@ export interface StoredArticle {
   url: string;
   image: string | null;
   publishedAt: string;
+  publishedDate?: string;
+  publishedDatePrecision?: 'day';
   tags: string[];
   description: string | null;
   authors: string[];

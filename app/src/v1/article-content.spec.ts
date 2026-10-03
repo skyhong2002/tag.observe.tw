@@ -70,6 +70,17 @@ describe('stored article content', () => {
     expect(contentArticle(row)).toMatchObject({ authors: ['王記者'], publisher: { media: 'cna', country: '台灣' } });
     expect(contentArticle({ ...row, authors: null })).toMatchObject({ authors: ['舊署名'] });
   });
+  it('exposes verified date-only publications without inventing a publication clock time', () => {
+    const article = contentArticle({
+      ...row,
+      media: 'cn_wsj',
+      url: 'https://china.createsend1.com/t/j-e-ydlrkkiy-hynykddkd-r/',
+      publishedAt: new Date('2025-10-08T00:00:00Z'),
+    });
+    expect(article).toMatchObject({ publishedDate: '2025-10-08', publishedDatePrecision: 'day' });
+    expect(contentArticle({ ...row, url: article.url })).not.toHaveProperty('publishedDate');
+    expect(contentArticle(row)).not.toHaveProperty('publishedDatePrecision');
+  });
   it('pages with one lookahead row and selects character counts without selecting bodies', async () => {
     const { db, select, chain } = fakeDb([
       { ...row, id: 9 },

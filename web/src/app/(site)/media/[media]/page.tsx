@@ -134,7 +134,9 @@ export default async function MediaPage({
               <dt className="text-zinc-500 dark:text-zinc-400">開始收錄</dt>
               <dd>{since ?? '暫無資料'}</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">最新報導</dt>
-              <dd>{profile?.lastArticle ? taipei(profile.lastArticle) : '暫無資料'}</dd>
+              <dd>
+                {profile?.lastArticle ? new Date(profile.lastArticle).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' }) : '暫無資料'}
+              </dd>
               <dt className="text-zinc-500 dark:text-zinc-400">最近更新</dt>
               <dd>{profile?.lastCrawlOk ? taipei(profile.lastCrawlOk) : '暫無資料'}</dd>
             </dl>
@@ -238,7 +240,9 @@ export default async function MediaPage({
                           </p>
                         )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-                          <time dateTime={article.publishedAt}>{taipei(article.publishedAt)}</time>
+                          <time dateTime={article.publishedDate ?? article.publishedAt}>
+                            {article.publishedDate ?? taipei(article.publishedAt)}
+                          </time>
                           {article.authors.length > 0 && <span className="max-w-40 truncate">{article.authors.join('、')}</span>}
                           <span className={readable ? 'text-zinc-500 dark:text-zinc-400' : 'text-amber-700 dark:text-amber-400'}>
                             {readable ? '可讀內文' : CONTENT_STATUS[article.bodyStatus].label}
