@@ -100,3 +100,10 @@ export function forcePositions(nodes: SimilarityNode[], edges: SimilarityEdge[],
   }
   return points;
 }
+
+/** Log scaling keeps low counts visible without flattening heavily cited links. */
+export function edgeWeightWidth(count: number, maximum: number) {
+  const safeCount = Math.max(1, Number.isFinite(count) ? count : 1);
+  const safeMax = Math.max(2, safeCount, Number.isFinite(maximum) ? maximum : 2);
+  return 1 + (7 * Math.log(safeCount)) / Math.log(safeMax);
+}

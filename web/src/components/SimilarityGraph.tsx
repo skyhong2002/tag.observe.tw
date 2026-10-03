@@ -6,7 +6,7 @@ import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
-import { forcePositions, nodeArticleCounts } from '@/lib/media-graph.mts';
+import { edgeWeightWidth, forcePositions, nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 import storedIcons from '../../../app/data/favicon-local.json';
 
@@ -47,6 +47,7 @@ export default function SimilarityGraph({
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const counts = nodeArticleCounts(data);
     const symbols = new Map(nodes.map((n) => [n.id, fallbackIcon(n)]));
+    const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
     const ink = dark ? '#d4d4d8' : '#52525b';
     const relationships = (id: string, incoming: boolean) =>
       data.edges
@@ -100,9 +101,16 @@ export default function SimilarityGraph({
             right: small ? 28 : 65,
             top: 40,
             bottom: small ? 45 : 55,
-            emphasis: { focus: 'adjacency', scale: 1.15, lineStyle: { opacity: 1, width: 3 } },
+            emphasis: { focus: 'adjacency', scale: 1.15, lineStyle: { opacity: 1 }, label: { show: true } },
             blur: { itemStyle: { opacity: 0.18 }, lineStyle: { opacity: 0.04 }, label: { opacity: 0.2 } },
-            label: { show: true, color: ink, position: 'bottom', distance: 7, fontSize: small ? 9 : 11, formatter: '{b}' },
+            label: {
+              show: !small || nodes.length <= 40,
+              color: ink,
+              position: 'bottom',
+              distance: 7,
+              fontSize: small ? 9 : 11,
+              formatter: '{b}',
+            },
             labelLayout: { hideOverlap: true },
             data: nodeData(),
             links: edges.map((e) => ({
@@ -111,7 +119,7 @@ export default function SimilarityGraph({
               symbol: e.kind === 'citation' ? ['none', 'arrow'] : ['none', 'none'],
               symbolSize: 7,
               lineStyle: {
-                width: Math.min(4, 1 + Math.log2(e.count + 1) * 0.55),
+                width: edgeWeightWidth(e.count, maxWeight),
                 color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
                 type: e.kind === 'citation' ? 'dashed' : 'solid',
                 opacity: 0.3,

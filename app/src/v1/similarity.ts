@@ -5,7 +5,8 @@ import { sourcesInGroup } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
-import { buildGraph, computeSimilarity, MAX_ARTICLES, METHOD } from '../similarity/compute.ts';
+import { MAX_ARTICLES, MAX_PAIRS, METHOD } from '../similarity/compute.ts';
+import { computeSimilarityAsync } from '../similarity/compute-async.ts';
 import type { SimilarityData } from '../similarity/types.ts';
 
 export function similarityParams(query: { hours?: string; threshold?: string }) {
@@ -81,7 +82,7 @@ export async function loadSimilarity(db: Db, hours: number, threshold: number, n
     )
     .orderBy(desc(articles.publishedAt), desc(articles.id))
     .limit(MAX_ARTICLES);
-  const result = computeSimilarity(rows, threshold);
+  const result = await computeSimilarityAsync(rows, threshold);
   const available = coverage.filter((c) => !c.excludedFromStatistics).reduce((sum, c) => sum + c.usable, 0);
   return {
     generatedAt: now.toISOString(),
@@ -95,9 +96,12 @@ export async function loadSimilarity(db: Db, hours: number, threshold: number, n
       limit: MAX_ARTICLES,
       truncated: available > rows.length,
       pairsTruncated: result.pairsTruncated,
+      pairLimit: MAX_PAIRS,
     },
     pairs: result.pairs,
-    ...buildGraph(rows, result.pairs),
+    nodes: result.nodes,
+    edges: result.edges,
+    citations: result.citations,
   };
 }
 export function registerSimilarity(app: FastifyInstance, db: Db) {

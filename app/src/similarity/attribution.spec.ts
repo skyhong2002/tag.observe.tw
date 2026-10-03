@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
-import { extractAttributions, outletIdentity } from './attribution.ts';
+import { extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
 
 describe('explicit media attribution', () => {
   it('recognizes reporting and credit cues with outlet countries', () => {
@@ -45,6 +45,36 @@ describe('explicit media attribution', () => {
   it('preserves explicit providers and unknown countries', () => {
     expect(extractAttributions('', 'udn', 'Reuters')[0]).toMatchObject({ media: 'reuters', countryCode: 'GB' });
     expect(extractAttributions('', 'udn', 'Example News')[0]).toMatchObject({ media: 'Example News', country: '未知', countryCode: 'ZZ' });
+  });
+
+  it('separates Yahoo reporters and internal desks from external media', () => {
+    for (const provider of [
+      '潘鈺楨｜Yahoo名人娛樂特派記者',
+      '許瑞麟｜Yahoo名人娛樂特派記者',
+      'Yahoo新聞編輯室',
+      'Yahoo股市',
+      'Yahoo名人娛樂特派記者',
+    ]) {
+      expect(extractAttributions('', 'yahoo', provider)).toEqual([]);
+    }
+    expect(extractAttributions('', 'yahoo', '王小明')).toEqual([]);
+    expect(extractAttributions('路透社報導指出，消息獲得證實。', 'yahoo', '潘鈺楨｜Yahoo名人娛樂特派記者').map((a) => a.media)).toEqual([
+      'reuters',
+    ]);
+    expect(extractAttributions('', 'udn', 'Yahoo新聞編輯室')[0]).toMatchObject({ media: 'yahoo', countryCode: 'TW' });
+  });
+
+  it('repairs stored provider labels without deleting valid foreign citations', () => {
+    const fake = {
+      media: '潘鈺楨｜Yahoo名人娛樂特派記者',
+      name: '潘鈺楨｜Yahoo名人娛樂特派記者',
+      country: '未知',
+      countryCode: 'ZZ',
+      kind: 'explicit' as const,
+      evidence: '內容提供者：潘鈺楨｜Yahoo名人娛樂特派記者',
+    };
+    const reuters = extractAttributions('路透社報導，消息獲得證實。', 'yahoo');
+    expect(normalizeAttributions([fake, ...reuters], 'yahoo')).toEqual(reuters);
   });
 
   it('bounds evidence and retains the explicit cue', () => {

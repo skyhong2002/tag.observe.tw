@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
+import { normalizeAuthorCredits } from './byline.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
 export interface ArticleContent {
@@ -234,13 +235,13 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string): string[]
 
 function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: ContentRules): string[] {
   const finish = (names: string[]) =>
-    [
+    normalizeAuthorCredits([
       ...new Set(
         names
           .flatMap((name) => (reporterNames(name).length ? reporterNames(name) : [normalize(name)]))
           .filter((name) => name && name.length <= 120 && !/^https?:\/\//i.test(name)),
       ),
-    ].slice(0, 30);
+    ]).slice(0, 30);
   if (rules.authorSelector) {
     const configured = finish(scopedAuthorElements($, rules.authorSelector));
     if (configured.length) return configured;

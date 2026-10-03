@@ -1,11 +1,12 @@
+import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import type { Attribution } from './attribution.ts';
-import { outletIdentity } from './attribution.ts';
+import { normalizeAttributions, outletIdentity } from './attribution.ts';
 import type { SimilarityArticle, SimilarityEdge, SimilarityNode, SimilarityPair } from './types.ts';
 
 export const METHOD = 'body-shingle-v1';
 export const MIN_BODY = 200;
-export const MAX_ARTICLES = 1200;
-export const MAX_PAIRS = 200;
+export const MAX_ARTICLES = 10_000;
+export const MAX_PAIRS = 2_000;
 export interface ContentRow {
   id: number;
   media: string;
@@ -40,9 +41,9 @@ export function publicArticle(row: ContentRow): SimilarityArticle {
     title: row.title,
     url: row.url,
     publishedAt: row.publishedAt.toISOString(),
-    authors: row.authors?.length ? row.authors : row.creator ? [row.creator] : [],
+    authors: normalizeAuthorCredits(row.authors?.length ? row.authors : row.creator ? [row.creator] : []),
     bodyLength: normalizeBody(row.body ?? '').length,
-    attributions: row.attributions ?? [],
+    attributions: normalizeAttributions(row.attributions ?? [], row.media),
   };
 }
 // A bounded excerpt, never the whole article. Only consecutive matching text
@@ -57,50 +58,69 @@ function sharedPassage(a: string, b: string): string {
   return '';
 }
 export function computeSimilarity(rows: ContentRow[], threshold = 0.65) {
-  const usable = rows
-    .filter((r) => r.bodyStatus === 'ok' && normalizeBody(r.body ?? '').length >= MIN_BODY)
-    .map((row) => {
-      const text = normalizeBody(row.body ?? '');
-      return { row, text, grams: shingles(text) };
-    })
-    .filter((r) => r.grams.size >= 100);
-  const index = new Map<string, number[]>();
+  const usable: Array<{ row: ContentRow; text: string; size: number }> = [];
+  // Keep only the current article's shingle set. Single-document postings are
+  // inline numbers, avoiding millions of one-element arrays for larger samples.
+  const index = new Map<string, number | number[]>();
   const pairs: SimilarityPair[] = [];
-  for (let i = 0; i < usable.length; i++) {
-    const current = usable[i];
+  let matches = 0;
+  const rankPairs = (a: SimilarityPair, b: SimilarityPair) =>
+    b.score - a.score || b.sharedShingles - a.sharedShingles || a.id.localeCompare(b.id);
+  const publicArticles = new Map<number, SimilarityArticle>();
+  const article = (row: ContentRow) => {
+    if (!publicArticles.has(row.id)) publicArticles.set(row.id, publicArticle(row));
+    return publicArticles.get(row.id)!;
+  };
+  for (const row of rows) {
+    if (row.bodyStatus !== 'ok') continue;
+    const text = normalizeBody(row.body ?? '');
+    if (text.length < MIN_BODY) continue;
+    const grams = shingles(text);
+    if (grams.size < 100) continue;
+    const current = { row, text, size: grams.size };
+    const i = usable.length;
+    usable.push(current);
     const candidates = new Map<number, number>();
-    for (const gram of current.grams) {
-      for (const j of index.get(gram) ?? []) {
+    for (const gram of grams) {
+      const posting = index.get(gram);
+      if (posting === undefined) continue;
+      for (const j of typeof posting === 'number' ? [posting] : posting) {
         if (current.row.media !== usable[j].row.media) candidates.set(j, (candidates.get(j) ?? 0) + 1);
       }
     }
     for (const [j, shared] of candidates) {
       if (shared < 100) continue;
       const other = usable[j];
-      const score = (2 * shared) / (current.grams.size + other.grams.size);
+      const score = (2 * shared) / (current.size + other.size);
       if (score < threshold) continue;
       const evidence = sharedPassage(current.text, other.text);
       if (!evidence) continue;
       const [a, b] = [current.row, other.row].sort((x, y) => x.id - y.id);
+      matches++;
       pairs.push({
         id: `${a.id}-${b.id}`,
-        a: publicArticle(a),
-        b: publicArticle(b),
+        a: article(a),
+        b: article(b),
         score,
-        containment: shared / Math.min(current.grams.size, other.grams.size),
+        containment: shared / Math.min(current.size, other.size),
         sharedShingles: shared,
         kind: current.text === other.text ? 'identical' : 'high',
         evidence,
       });
+      if (pairs.length >= MAX_PAIRS * 2) {
+        pairs.sort(rankPairs);
+        pairs.length = MAX_PAIRS;
+      }
     }
-    for (const gram of current.grams) {
+    for (const gram of grams) {
       const posting = index.get(gram);
-      if (posting) posting.push(i);
-      else index.set(gram, [i]);
+      if (posting === undefined) index.set(gram, i);
+      else if (typeof posting === 'number') index.set(gram, [posting, i]);
+      else posting.push(i);
     }
   }
-  pairs.sort((a, b) => b.score - a.score || b.sharedShingles - a.sharedShingles || a.id.localeCompare(b.id));
-  return { pairs: pairs.slice(0, MAX_PAIRS), pairsTruncated: pairs.length > MAX_PAIRS, analyzed: usable.length };
+  pairs.sort(rankPairs);
+  return { pairs: pairs.slice(0, MAX_PAIRS), pairsTruncated: matches > MAX_PAIRS, analyzed: usable.length };
 }
 export function buildGraph(rows: ContentRow[], pairs: SimilarityPair[]) {
   const nodes = new Map<string, SimilarityNode>();
@@ -125,11 +145,12 @@ export function buildGraph(rows: ContentRow[], pairs: SimilarityPair[]) {
   }
   for (const row of rows) {
     const seen = new Set<string>();
-    for (const source of row.attributions ?? []) {
+    const article = publicArticle(row);
+    for (const source of article.attributions) {
       if (source.media === row.media || seen.has(source.media)) continue;
       seen.add(source.media);
       node(source.media, true);
-      citations.push({ article: publicArticle(row), source });
+      citations.push({ article, source });
       const key = `citation:${row.media}:${source.media}`;
       const edge = edges.get(key) ?? { source: row.media, target: source.media, kind: 'citation', count: 0, score: null };
       edge.count++;

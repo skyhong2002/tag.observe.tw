@@ -1,9 +1,10 @@
 import { and, desc, eq, lt, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
+import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
-import { type Attribution, type OutletIdentity, outletIdentity } from '../similarity/attribution.ts';
+import { type Attribution, normalizeAttributions, type OutletIdentity, outletIdentity } from '../similarity/attribution.ts';
 
 export type ContentStatus = 'ok' | 'short' | 'missing' | 'blocked' | 'error' | 'not_fetched' | 'expired';
 export interface ContentArticle {
@@ -92,7 +93,7 @@ export function contentArticle(row: MetadataRow): ContentArticle {
     publishedAt: row.publishedAt,
     tags: row.tags,
     description: row.description,
-    authors: [...new Set(authors.length ? authors : row.creator?.trim() ? [row.creator.trim()] : [])],
+    authors: normalizeAuthorCredits(authors.length ? authors : row.creator?.trim() ? [row.creator.trim()] : []),
     publisher: outletIdentity(row.media),
   };
 }
@@ -120,7 +121,7 @@ export async function loadArticleContent(db: Db, id: number): Promise<ArticleCon
       chars,
       source: row.bodySource,
       fetchedAt: row.contentFetchedAt,
-      attributions: row.attributions ?? [],
+      attributions: normalizeAttributions(row.attributions ?? [], row.media),
     },
   };
 }

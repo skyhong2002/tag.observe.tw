@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forcePositions, nodeArticleCounts } from '../../web/src/lib/media-graph.mts';
+import { edgeWeightWidth, forcePositions, nodeArticleCounts } from '../../web/src/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
 
 const article = (id: number, media: string): SimilarityArticle => ({
@@ -72,5 +72,16 @@ describe('settled force layout', () => {
   it('handles empty and single outlet graphs', () => {
     expect(forcePositions([], [], 350, 480)).toEqual([]);
     expect(forcePositions([node('a')], [], 350, 480)).toHaveLength(1);
+  });
+});
+
+describe('edge weights', () => {
+  it('keeps count differences visible over a wide range and uses the same scale across modes', () => {
+    const widths = [1, 2, 10, 100, 1000].map((count) => edgeWeightWidth(count, 1000));
+    expect(widths[0]).toBe(1);
+    expect(widths.at(-1)).toBe(8);
+    expect(widths.every((width, i) => i === 0 || width > widths[i - 1])).toBe(true);
+    expect(edgeWeightWidth(0, 0)).toBe(1);
+    expect(edgeWeightWidth(Number.NaN, Number.NaN)).toBe(1);
   });
 });

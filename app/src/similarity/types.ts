@@ -56,7 +56,7 @@ export interface SimilarityData {
   threshold: number;
   method: string;
   coverage: SimilarityCoverage[];
-  sample: { available: number; analyzed: number; limit: number; truncated: boolean; pairsTruncated: boolean };
+  sample: { available: number; analyzed: number; limit: number; truncated: boolean; pairLimit: number; pairsTruncated: boolean };
   pairs: SimilarityPair[];
   citations: Array<{ article: SimilarityArticle; source: Attribution }>;
   nodes: SimilarityNode[];

@@ -179,13 +179,13 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
             <span className="text-orange-600 dark:text-orange-400">━ 內文相似</span>
             <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
           </p>
-          <p className="hidden sm:block">移到圖示查看篇數 · 點選閱讀文章</p>
+          <p className="hidden sm:block">線越粗，篇數／配對越多 · 移到圖示查看篇數</p>
           <p className="sm:hidden">點選媒體圖示查看引用篇數與文章</p>
         </div>
       </section>
       <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
         僅呈現本期已擷取樣本{data.sample.truncated ? `中的最新 ${number(data.sample.limit)} 篇` : ''}；相似不代表引用。
-        {data.sample.pairsTruncated ? '相似配對顯示前 200 組。' : ''}
+        {data.sample.pairsTruncated ? `相似配對顯示前 ${number(data.sample.pairLimit ?? 200)} 組。` : ''}
       </p>
 
       <dialog
@@ -324,10 +324,11 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
             <div className="space-y-5 text-sm leading-7">
               <p>
                 更新於 {taipei(data.generatedAt)}（台北）。期間內有 {number(data.sample.available)} 篇可用內文，本圖分析{' '}
-                {number(data.sample.analyzed)} 篇，上限 {number(data.sample.limit)} 篇。相似配對最多呈現 200 組；引用篇數也僅涵蓋這批樣本。
+                {number(data.sample.analyzed)} 篇，上限 {number(data.sample.limit)} 篇。相似配對最多呈現{' '}
+                {number(data.sample.pairLimit ?? 200)} 組；引用篇數也僅涵蓋這批樣本。
               </p>
               <p>
-                箭頭由刊登媒體指向文中明示引用的來源。Hover
+                線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。Hover
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。</p>

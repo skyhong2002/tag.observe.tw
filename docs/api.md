@@ -206,7 +206,7 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 
 **內文相似與明確引用關係**
 
-僅比較可用內文，排除「內容」聯播來源。取期間內最新最多 1200 篇，最多回傳 200 對；sample 揭露截斷。相似連線無方向；citation 由刊登媒體指向明確提及來源，並不保證最初作者。
+僅比較可用內文，排除「內容」聯播來源。取期間內最新最多 10000 篇，最多回傳 2000 對；sample 揭露截斷。相似連線無方向；citation 由刊登媒體指向明確提及來源，並不保證最初作者。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -243,6 +243,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 | `sample.analyzed` | integer |  |
 | `sample.limit` | integer |  |
 | `sample.truncated` | boolean |  |
+| `sample.pairLimit` | integer |  |
 | `sample.pairsTruncated` | boolean |  |
 | `pairs` | object[] |  |
 | `pairs[].id` | string |  |

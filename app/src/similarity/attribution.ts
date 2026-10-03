@@ -1,4 +1,5 @@
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
+import { reporterCredit } from '../crawl/byline.ts';
 
 export type OutletIdentity = { media: string; name: string; country: string; countryCode: string };
 export type Attribution = OutletIdentity & { evidence: string; kind: 'explicit' };
@@ -26,6 +27,7 @@ const outlet = (media: string, name: string, countryCode: string, aliases: strin
 // Country describes the outlet's home jurisdiction, not the place where a story
 // happened, its reporter's nationality, ownership, or an article's original author.
 const outlets: Outlet[] = [
+  outlet('yahoo', 'Yahoo奇摩新聞', 'TW', ['Yahoo', 'Yahoo新聞', 'Yahoo News']),
   outlet('reuters', '路透社', 'GB', ['Reuters', '路透']),
   outlet('afp', '法新社', 'FR', ['AFP', 'Agence France-Presse']),
   outlet('ap', '美聯社', 'US', ['AP', 'Associated Press', '美联社']),
@@ -111,6 +113,33 @@ function explicitContext(before: string, after: string): boolean {
   return report.test(after) || credit.test(before) || authorization.test(after);
 }
 
+/** A provider field can be a byline, desk, or publisher. Do not invent media from people. */
+export function providerOutlet(provider: string): OutletIdentity | null {
+  const value = provider.trim();
+  if (!value || reporterCredit(value) || /(?:記者|记者|撰稿人|特約作者|\breporter\b|\bcorrespondent\b)/iu.test(value)) return null;
+  // Yahoo's own desks/channels belong to the publisher, not external outlets.
+  if (/^Yahoo(?:奇摩)?(?:新聞|即時新聞|名人娛樂|電影戲劇|股市|財經|遊戲|房地產|特別企劃)/i.test(value)) return outletIdentity('yahoo');
+  const identity = outletIdentity(value);
+  if (identity.countryCode !== 'ZZ' || Object.hasOwn(titles, identity.media)) return identity;
+  // Unknown organizations may retain their label, but a bare person's name
+  // supplies no evidence that a new media organization exists.
+  return /(?:新聞|傳媒|媒體|通訊社|日報|時報|週刊|周刊|雜誌|電視|廣播|\bnews\b|\bmedia\b|\bpress\b|\btimes\b)/iu.test(value)
+    ? identity
+    : null;
+}
+
+export function normalizeAttributions(values: Attribution[], publisher: string): Attribution[] {
+  const own = outletIdentity(publisher).media;
+  const result = new Map<string, Attribution>();
+  for (const value of values) {
+    const provider = /^內容提供者[：:]\s*(.*)$/u.exec(value.evidence);
+    const identity = provider ? providerOutlet(provider[1]) : outletIdentity(value.media);
+    if (!identity || identity.media === own || reporterCredit(identity.media)) continue;
+    if (!result.has(identity.media)) result.set(identity.media, { ...value, ...identity });
+  }
+  return [...result.values()];
+}
+
 /** Return only cited outlets. A match is evidence of citation, never original authorship. */
 export function extractAttributions(body: string, publisher: string, provider?: string | null): Attribution[] {
   const own = outletIdentity(publisher).media;
@@ -120,9 +149,8 @@ export function extractAttributions(body: string, publisher: string, provider?: 
       found.set(identity.media, { ...identity, evidence: evidence.replace(/\s+/g, ' ').trim().slice(0, 160), kind: 'explicit' });
     }
   };
-  // A dedicated provider field is an explicit publisher declaration. Unlike an
-  // outlet mentioned in prose, an unfamiliar provider can retain its own label.
-  if (provider?.trim()) add(outletIdentity(provider), `內容提供者：${provider.trim()}`);
+  const providerIdentity = provider ? providerOutlet(provider) : null;
+  if (providerIdentity) add(providerIdentity, `內容提供者：${provider?.trim()}`);
   // CNA syndicated copy commonly starts with its agency dispatch byline.
   // Require the enclosing dateline and date/electric-dispatch suffix so a
   // news story merely mentioning a CNA reporter cannot become a citation.

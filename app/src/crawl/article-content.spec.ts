@@ -7,6 +7,18 @@ const body = [paragraph.repeat(3), paragraph.repeat(3)].join('\n\n');
 const ld = (value: unknown) => `<script type="application/ld+json">${JSON.stringify(value)}</script>`;
 
 describe('article body and byline extraction', () => {
+  it('extracts a Yahoo reporter name without turning the desk affiliation into a person', () => {
+    expect(
+      extractArticle(
+        ld({ '@type': 'NewsArticle', articleBody: body, author: { '@type': 'Person', name: '潘鈺楨｜Yahoo名人娛樂特派記者' } }),
+        URL,
+      ).authors,
+    ).toEqual(['潘鈺楨']);
+    expect(
+      extractArticle(ld({ '@type': 'NewsArticle', articleBody: body, author: { '@type': 'Organization', name: 'Yahoo新聞編輯室' } }), URL)
+        .authors,
+    ).toEqual(['Yahoo新聞編輯室']);
+  });
   it('extracts nested article JSON-LD and multiple author names without treating descriptions as content', () => {
     const html =
       '<meta name="description" content="摘要"><meta name="keywords" content="公共運輸,政策">' +

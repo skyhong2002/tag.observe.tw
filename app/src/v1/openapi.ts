@@ -140,7 +140,7 @@ schemas.Similarity = obj({
   threshold: num(),
   method: str(),
   coverage: arr(ref('SimilarityCoverage')),
-  sample: obj({ available: int(), analyzed: int(), limit: int(), truncated: bool(), pairsTruncated: bool() }),
+  sample: obj({ available: int(), analyzed: int(), limit: int(), truncated: bool(), pairLimit: int(), pairsTruncated: bool() }),
   pairs: arr(ref('SimilarityPair')),
   citations: arr(obj({ article: ref('SimilarityArticle'), source: ref('Attribution') })),
   nodes: arr(obj({ id: str(), name: str(), country: str(), countryCode: str(), articles: int(), external: bool() })),
@@ -225,7 +225,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'articles',
     summary: '內文相似與明確引用關係',
     description:
-      '僅比較可用內文，排除「內容」聯播來源。取期間內最新最多 1200 篇，最多回傳 200 對；sample 揭露截斷。相似連線無方向；citation 由刊登媒體指向明確提及來源，並不保證最初作者。',
+      '僅比較可用內文，排除「內容」聯播來源。取期間內最新最多 10000 篇，最多回傳 2000 對；sample 揭露截斷。相似連線無方向；citation 由刊登媒體指向明確提及來源，並不保證最初作者。',
     params: [
       q('hours', '回溯小時', intIn(1, 168, 48)),
       q('threshold', '最低 Dice 相似度', { type: 'number', minimum: 0.5, maximum: 1, default: 0.65 }),

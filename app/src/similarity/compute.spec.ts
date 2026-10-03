@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { similarityParams } from '../v1/similarity.ts';
 import { extractAttributions } from './attribution.ts';
-import { buildGraph, type ContentRow, computeSimilarity } from './compute.ts';
+import { buildGraph, type ContentRow, computeSimilarity, MAX_PAIRS } from './compute.ts';
 
 // Unique prose-like strings exercise overlap, not a repeated single sentence.
 const text = Array.from({ length: 90 }, (_, i) => `第${i}項採訪紀錄指出地方建設需要公開審查與居民參與討論`).join('。');
@@ -49,6 +49,15 @@ describe('body similarity', () => {
     const graph = buildGraph([row(1, 'udn', text, { attributions })], []);
     expect(graph.edges).toEqual([{ source: 'udn', target: 'reuters', kind: 'citation', count: 1, score: null }]);
     expect(graph.nodes.find((n) => n.id === 'reuters')).toMatchObject({ countryCode: 'GB', external: true });
+  });
+  it('caps pair evidence while retaining the highest-ranked matches and reporting truncation', () => {
+    const rows = Array.from({ length: 94 }, (_, i) => row(i + 1, `outlet${i}`, text));
+    const result = computeSimilarity(rows);
+    expect(result.pairs).toHaveLength(MAX_PAIRS);
+    expect(result.pairsTruncated).toBe(true);
+    expect(result.analyzed).toBe(94);
+    expect(new Set(result.pairs.map((pair) => pair.id)).size).toBe(MAX_PAIRS);
+    expect(result.pairs.every((pair) => pair.score === 1)).toBe(true);
   });
   it('validates finite and bounded query values', () => {
     for (const hours of ['NaN', 'Infinity', '0', '169', '1.5']) expect(similarityParams({ hours })).toBeNull();
