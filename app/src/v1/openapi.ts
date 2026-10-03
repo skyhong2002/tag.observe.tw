@@ -697,7 +697,8 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/media-stats',
     tag: 'media',
     summary: '各媒體收錄量與爬蟲狀態',
-    description: 'today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 已停用。',
+    description:
+      '列出已登錄媒體，包含未啟用抓取與僅作為引用來源者，排除重複代碼。today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 未啟用定期抓取（含停用）。',
     response: obj({
       generatedAt: time(),
       todayStart: time(),
@@ -719,7 +720,7 @@ export const ENDPOINTS: Endpoint[] = [
           category: nullable(str()),
           categoryLabel: nullable(str()),
           camp,
-          schedule: str('爬取頻率'),
+          schedule: str('爬取頻率；未啟用時為 off'),
           today: int(),
           last24h: int(),
           last7d: int(),

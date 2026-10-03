@@ -1122,5 +1122,29 @@
   "ntdtv_tw": {
     "title": "新唐人亞太 ntdtv.com.tw",
     "icon": null
+  },
+  "afp": {
+    "title": "法新社",
+    "icon": null
+  },
+  "ap": {
+    "title": "美聯社",
+    "icon": null
+  },
+  "nhk": {
+    "title": "NHK",
+    "icon": null
+  },
+  "kyodo": {
+    "title": "共同社",
+    "icon": null
+  },
+  "yonhap": {
+    "title": "韓聯社",
+    "icon": null
+  },
+  "xinhua": {
+    "title": "新華社",
+    "icon": null
   }
 }

@@ -201,7 +201,13 @@
       "videoland",
       "funnews",
       "people_cn",
-      "ntdtv_tw"
+      "ntdtv_tw",
+      "afp",
+      "ap",
+      "nhk",
+      "kyodo",
+      "yonhap",
+      "xinhua"
     ],
     "women": [
       "nius",

@@ -59,7 +59,7 @@ const STATUS: Record<Status, { label: string; color: string; path: string }> = {
   ok: { label: '正常', color: '#0ca30c', path: 'M5 10.5l3 3 7-7' },
   stale: { label: '無近期文章', color: '#b7860b', path: 'M10 5v5l3 2' },
   failing: { label: '抓取失敗', color: '#d03b3b', path: 'M6 6l8 8M14 6l-8 8' },
-  disabled: { label: '停用', color: '#71717a', path: 'M6 10h8' },
+  disabled: { label: '未啟用', color: '#71717a', path: 'M6 10h8' },
 };
 const STATUS_ORDER: Status[] = ['ok', 'stale', 'failing', 'disabled'];
 // Every column header sorts; numbers start descending, text ascending.
@@ -189,7 +189,7 @@ export default async function MediaStatsPage({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">媒體與文章數</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          各媒體抓到的文章數與抓取狀態。「今日」從台北時間 00:00 起算。更新於 {taipei(data.generatedAt)}。
+          列出所有已登錄媒體，包含尚未啟用抓取與僅作為引用來源的媒體。「今日」從台北時間 00:00 起算。更新於 {taipei(data.generatedAt)}。
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -202,7 +202,7 @@ export default async function MediaStatsPage({
         <Tile
           label="24 小時有發稿的媒體"
           value={`${t.publishingMedia24h}`}
-          note={`追蹤中 ${t.activeSources} 家，停用 ${t.disabledSources} 家`}
+          note={`追蹤中 ${t.activeSources} 家，未啟用 ${t.disabledSources} 家`}
         />
         <Tile label="有標籤的文章" value={pct(t.taggedShare24h)} note="24 小時內" />
       </div>
@@ -299,8 +299,8 @@ export default async function MediaStatsPage({
       </div>
       <p className="text-xs text-zinc-600">
         狀態：正常＝最近有新文章；無近期文章＝新聞類 6 小時、其他 24 小時內沒有新文章（來源可能暫停發稿）；抓取失敗＝近 3
-        小時的抓取全部失敗；停用＝上游已無可抓的列表。文章數以發布時間計；列表沒有提供發布時間的文章，會在抓取內文後才計入。7 天欄標「只有 N
-        天」的媒體，是新系統開始抓它還不滿一週，數字只涵蓋那幾天，不能和其他媒體直接比較。
+        小時的抓取全部失敗；未啟用＝尚未啟用定期抓取、已停用或僅作為引用來源。文章數以發布時間計；列表沒有提供發布時間的文章，會在抓取內文後才計入。7
+        天欄標「只有 N 天」的媒體，是新系統開始抓它還不滿一週，數字只涵蓋那幾天，不能和其他媒體直接比較。
       </p>
     </div>
   );

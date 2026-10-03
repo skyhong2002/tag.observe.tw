@@ -17,6 +17,18 @@ const SKIP_CATEGORY = new Set(['blue', 'green', 'adct']); // overlays, not a med
 const categoryOf = (m: string) => Object.entries(categories).find(([c, list]) => !SKIP_CATEGORY.has(c) && list.includes(m))?.[0] ?? null;
 const HOUR = 3600e3;
 
+type ListedSource = { media: string; group: 'news' | 'hourly' | 'off' };
+export function listedMediaSources(sources: ListedSource[]): ListedSource[] {
+  const duplicates = (disabledSpec as { duplicates?: Record<string, string> }).duplicates ?? {};
+  const listed = new Map(sources.map(({ media, group }) => [media, { media, group }]));
+  // Registration and scheduling are independent: an unverified, paused or
+  // citation-only outlet still belongs in the directory, even with no articles.
+  for (const [media, entry] of Object.entries(info)) {
+    if (entry.title && !listed.has(media)) listed.set(media, { media, group: 'off' });
+  }
+  return [...listed.values()].filter((s) => !duplicates[s.media] && (s.group !== 'off' || info[s.media]?.title));
+}
+
 export type MediaStatus = 'ok' | 'stale' | 'failing' | 'disabled';
 export function statusFor(
   s: { disabled: boolean; group: string; lastArticle: Date | null; runs3h: number; failed3h: number },
@@ -76,19 +88,17 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     const byCount = new Map(counts.map((c) => [c.media, c]));
     const byRun = new Map(runs.map((r) => [r.media, r]));
     const off = disabled();
-    const duplicates = (disabledSpec as { duplicates?: Record<string, string> }).duplicates ?? {};
     // Aggregates come back as 'YYYY-MM-DD HH:MM:SS' strings; the DB stores UTC
     // (client timezone 'Z'), so parse as UTC rather than host-local time.
     const toDate = (v: unknown) => (v instanceof Date ? v : typeof v === 'string' && v ? new Date(`${v.replace(' ', 'T')}Z`) : null);
-    const rows = allSources()
-      .filter((s) => s.group !== 'off' && !duplicates[s.media])
+    const rows = listedMediaSources(allSources())
       .map((s) => {
         const c = byCount.get(s.media),
           r = byRun.get(s.media);
         const last24h = Number(c?.last24h ?? 0);
         const lastArticle = toDate(c?.lastArticle);
         const base = {
-          disabled: off.has(s.media),
+          disabled: s.group === 'off' || off.has(s.media),
           group: s.group,
           lastArticle,
           runs3h: Number(r?.runs3h ?? 0),
@@ -102,7 +112,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           category,
           categoryLabel: category ? (CATEGORY_LABELS[category] ?? category) : null,
           camp: campOf(s.media),
-          schedule: s.group === 'news' ? 'every 9 min' : 'hourly',
+          schedule: base.disabled ? 'off' : s.group === 'news' ? 'every 9 min' : 'hourly',
           today: Number(c?.today ?? 0),
           last24h,
           last7d: Number(c?.last7d ?? 0),
