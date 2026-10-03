@@ -23,6 +23,20 @@ export function filterGraphMedia(
   return { nodes: retained, edges: edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)), available: matches.length };
 }
 
+/** Offer only tags that retain a visible relationship under the other controls. */
+export function availableGraphTags(
+  nodes: SimilarityNode[],
+  edges: SimilarityEdge[],
+  camps: MediaCamps,
+  tags: MediaTag[],
+  filters: GraphFilters,
+  mode: 'all' | SimilarityEdge['kind'] = 'all',
+) {
+  return tags.filter((tag) =>
+    filterGraphMedia(nodes, edges, camps, tags, { ...filters, tag: tag.id }).edges.some((edge) => mode === 'all' || edge.kind === mode),
+  );
+}
+
 export function graphEvidenceScope(data: OriginData, nodes: SimilarityNode[]) {
   const ids = new Set(nodes.map((node) => node.id));
   return {

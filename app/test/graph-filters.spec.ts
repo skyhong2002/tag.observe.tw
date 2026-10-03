@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterGraphMedia, type GraphFilters, graphEvidenceScope } from '../../web/src/lib/graph-filters.mts';
+import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope } from '../../web/src/lib/graph-filters.mts';
 import { createGraphTooltip } from '../../web/src/lib/graph-tooltip.mts';
 import { mediaGraphPositions } from '../../web/src/lib/media-graph.mts';
 import { withStoryOrigins } from '../../web/src/lib/story-origins.mts';
@@ -53,6 +53,22 @@ describe('graph media filters', () => {
     expect(islands).toHaveLength(4);
     expect(islands.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
     expect(mediaGraphPositions([], [], 900, 600, true)).toEqual([]);
+  });
+  it('hides empty tags and tags whose outlets have relationships only outside the category', () => {
+    const categories = [...tags, { id: 'empty', label: '空分類', media: [] }, { id: 'isolated', label: '無連線', media: ['isolated'] }];
+    expect(availableGraphTags(nodes, edges, camps, categories, defaults)).toEqual([tags[0]]);
+    expect(availableGraphTags(nodes, [], camps, categories, defaults)).toEqual([]);
+  });
+  it('checks camp, media limit and relationship mode before offering a tag', () => {
+    const categories = [...tags, { id: 'green-pair', label: '綠營配對', media: ['green', 'small'] }];
+    const available = (options: Partial<GraphFilters>, mode: 'all' | 'similarity' | 'citation' = 'all') =>
+      availableGraphTags(nodes, edges, camps, categories, { ...defaults, ...options }, mode).map((tag) => tag.id);
+    expect(available({ camp: 'green' })).toEqual(['green-pair']);
+    expect(available({ camp: 'blue' })).toEqual([]);
+    expect(available({ limit: 1 })).toEqual([]);
+    expect(available({}, 'similarity')).toEqual([]);
+    expect(available({}, 'citation')).toEqual(['news', 'green-pair']);
+    expect(available({ tag: 'finance' })).toEqual(['news', 'green-pair']);
   });
 });
 

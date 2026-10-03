@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
-import { filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
+import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 import { type StoryOrigin, withStoryOrigins } from '@/lib/story-origins.mts';
@@ -199,15 +199,35 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
   const [page, setPage] = useState(0);
   const browser = useRef<HTMLElement>(null);
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
+  const availableTags = useMemo(
+    () => availableGraphTags(data.nodes, data.edges, camps, tags, filters, mode),
+    [data.nodes, data.edges, camps, tags, filters, mode],
+  );
   const graph = useMemo(
     () => filterGraphMedia(data.nodes, data.edges, camps, tags, filters),
     [data.nodes, data.edges, camps, tags, filters],
   );
   const scopedData = useMemo(() => graphEvidenceScope(data, graph.nodes), [data, graph.nodes]);
   const counts = useMemo(() => nodeArticleCounts(scopedData), [scopedData]);
-  const updateFilters = (next: Partial<GraphFilters>) => {
-    setFilters((current) => ({ ...current, ...next }));
+  const updateFilters = (next: Partial<GraphFilters>, nextMode = mode) => {
+    setFilters((current) => {
+      const updated = { ...current, ...next };
+      if (
+        updated.tag &&
+        !availableGraphTags(data.nodes, data.edges, camps, tags, updated, nextMode).some((tag) => tag.id === updated.tag)
+      ) {
+        updated.tag = '';
+      }
+      return updated;
+    });
     setSelection(null);
+    setPage(0);
+  };
+  const updateMode = (next: typeof mode) => {
+    if (filters.tag && !availableGraphTags(data.nodes, data.edges, camps, tags, filters, next).some((tag) => tag.id === filters.tag)) {
+      updateFilters({}, next);
+    }
+    setMode(next);
     setPage(0);
   };
   const nodes = graph.nodes;
@@ -300,14 +320,14 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
               媒體 tag
               <select value={filters.tag} onChange={(event) => updateFilters({ tag: event.target.value })} className={control}>
                 <option value="">全部 tag</option>
-                {tags.map((tag) => (
+                {availableTags.map((tag) => (
                   <option key={tag.id} value={tag.id}>
                     {tag.label}
                   </option>
                 ))}
               </select>
             </label>
-            <p className="col-span-3 text-[11px] text-zinc-500 sm:pb-2">依本期納入分析篇數排序 · 分類沿用本站標註</p>
+            <p className="col-span-3 text-[11px] text-zinc-500 sm:pb-2">依本期納入分析篇數排序 · 只列出目前有關係資料的 tag</p>
           </fieldset>
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
             <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
@@ -322,10 +342,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                   key={value}
                   type="button"
                   aria-pressed={mode === value}
-                  onClick={() => {
-                    setMode(value);
-                    setPage(0);
-                  }}
+                  onClick={() => updateMode(value)}
                   className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
                 >
                   {label}
@@ -513,14 +530,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                 </label>
                 <label className="block text-sm">
                   關係類型
-                  <select
-                    value={mode}
-                    onChange={(event) => {
-                      setMode(event.target.value as typeof mode);
-                      setPage(0);
-                    }}
-                    className={control}
-                  >
+                  <select value={mode} onChange={(event) => updateMode(event.target.value as typeof mode)} className={control}>
                     <option value="all">全部關係</option>
                     <option value="similarity">內文相似</option>
                     <option value="citation">明示引用</option>
@@ -562,7 +572,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                   type="button"
                   onClick={() => {
                     select(null);
-                    setMode('all');
+                    updateMode('all');
                     setQuery('');
                     setDirection('all');
                   }}
