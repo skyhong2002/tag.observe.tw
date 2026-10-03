@@ -548,6 +548,7 @@ export const ENDPOINTS: Endpoint[] = [
       prev: nullable(time('上一個有快照的小時')),
       next: nullable(time('下一個有快照的小時；最新時為 null')),
       dayHours: arr(time(), '同一台北日內所有有快照的小時'),
+      dayStats: arr(obj({ hour: time(), top: num('該小時第 1 名的爆發力'), count: int('該小時事件數') }), '同一台北日內每個快照小時的概況'),
       events: arr(
         obj({
           rank: int(),
@@ -557,6 +558,15 @@ export const ENDPOINTS: Endpoint[] = [
           news: arr(ref('Headline'), '代表新聞（最多 6 則）'),
           relatedEventPk: nullable(str('= threadId 的字串形式（相容舊版）')),
           threadId: nullable(int('事件串 id，可查 /api/v1/events/threads/{id}')),
+          prevRank: nullable(int('前一個快照的名次（依事件串或主要標籤比對）；null 表示本小時新上榜')),
+          hours: nullable(int('事件串到這個小時為止已出現的小時數')),
+          firstTime: nullable(time('事件串第一次上榜的小時')),
+          coverage: obj({
+            outlets: arr(obj({ media: str(), camp: str('blue／green／other') }), '過去 24 小時寫過此事件主要標籤的媒體，依篇數排序'),
+            articles: int('報導篇數'),
+            camps: obj({ blue: int(), green: int(), other: int() }, '各陣營媒體家數'),
+            blindspot: arr(str(), '完全沒報導的陣營（只在另一陣營有報時標記）'),
+          }),
         }),
       ),
     }),

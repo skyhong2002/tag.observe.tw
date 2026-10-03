@@ -5,6 +5,7 @@ import type { Db } from '../db/client.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
 import { topicCoverage } from '../jobs/topic-related.ts';
 import { firstRunPerMedia, latestTopicPerMedia, latestTopics, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
+import { eventsAt, feedCoverage, hourStats, hoursSoFar, matchPrevRank, threadInfo } from './event-feed.ts';
 import { iconUrl } from './icons.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -22,28 +23,50 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     if (at && Number.isNaN(at.getTime())) return reply.code(400).send({ error: 'bad at' });
     const latest = await latestEvents(db, 'news', limit, at);
     if (!latest) return reply.code(at ? 404 : 503).send({ error: 'no event snapshot' });
-    const nav = await eventHours(db, 'news', latest.snapshot.hourStart);
+    const hour = latest.snapshot.hourStart;
+    const nav = await eventHours(db, 'news', hour);
+    const threadIds = latest.events.flatMap((e) => (e.threadId ? [e.threadId] : []));
+    const [coverage, prevEvents, threads, hours, dayStats] = await Promise.all([
+      feedCoverage(
+        db,
+        hour,
+        latest.events.map((e) => e.major),
+      ),
+      eventsAt(db, 'news', nav.prev),
+      threadInfo(db, threadIds),
+      hoursSoFar(db, 'news', threadIds, hour),
+      hourStats(db, 'news', nav.day),
+    ]);
     // An archived hour is not stale, just old.
-    const stale = !nav.next && Date.now() - latest.snapshot.hourStart.getTime() > EVENTS_FRESH_MS;
+    const stale = !nav.next && Date.now() - hour.getTime() > EVENTS_FRESH_MS;
     reply.header('cache-control', stale || !nav.next ? 'public, max-age=60' : 'public, max-age=600');
     return {
-      hour: latest.snapshot.hourStart.toISOString(),
+      hour: hour.toISOString(),
       builtAt: latest.snapshot.computedAt.toISOString(),
       stale,
       prev: nav.prev?.toISOString() ?? null,
       next: nav.next?.toISOString() ?? null,
       dayHours: nav.day.map((d) => d.toISOString()),
-      events: latest.events.map((e) => ({
-        rank: e.rank,
-        score: e.score / 1e6,
-        major: e.major,
-        tags: e.tags.slice(0, 12).map(([tag, burst]) => ({ tag, burst })),
-        news: (e.majorNews.length ? e.majorNews : e.news)
-          .slice(0, 6)
-          .map((n) => ({ id: n.id ?? null, media: n.media, title: n.title, url: n.url, image: n.image })),
-        relatedEventPk: e.threadId ? String(e.threadId) : null,
-        threadId: e.threadId,
-      })),
+      dayStats,
+      events: latest.events.map((e, i) => {
+        const thread = e.threadId ? threads.get(e.threadId) : undefined;
+        return {
+          rank: e.rank,
+          score: e.score / 1e6,
+          major: e.major,
+          tags: e.tags.slice(0, 12).map(([tag, burst]) => ({ tag, burst })),
+          news: (e.majorNews.length ? e.majorNews : e.news)
+            .slice(0, 6)
+            .map((n) => ({ id: n.id ?? null, media: n.media, title: n.title, url: n.url, image: n.image })),
+          relatedEventPk: e.threadId ? String(e.threadId) : null,
+          threadId: e.threadId,
+          // null when the story was not on the previous snapshot (new this hour).
+          prevRank: matchPrevRank(e, prevEvents),
+          hours: e.threadId ? (hours.get(e.threadId) ?? null) : null,
+          firstTime: thread?.firstTime.toISOString() ?? null,
+          coverage: coverage[i],
+        };
+      }),
     };
   });
 

@@ -34,3 +34,19 @@ export function headlineTags(title: string, candidates: readonly string[]): stri
     return false;
   });
 }
+
+// Outlet-wide share images (a logo where the photo should be) look broken as
+// an event cover. They are recognisable two ways: a known filename, or the
+// same URL on several of the event's reports.
+const GENERIC_IMAGE = /UDN_BABY|pic_fb\.|sitelogo|\/logo[^/]*\.(png|jpg|svg)$|default[-_]?(og|share)/i;
+export function selectEventCover<T extends { image: string | null }>(
+  news: readonly T[],
+  lead: T | null,
+  allowed: (url: string | null | undefined) => boolean,
+): T | null {
+  const seen = new Map<string, number>();
+  for (const n of news) if (n.image) seen.set(n.image, (seen.get(n.image) ?? 0) + 1);
+  const ok = (n: T) => allowed(n.image) && !GENERIC_IMAGE.test(n.image as string) && seen.get(n.image as string) === 1;
+  if (lead && ok(lead)) return lead;
+  return news.find(ok) ?? null;
+}

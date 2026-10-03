@@ -618,6 +618,10 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 | `prev` | string (ISO 時間) \| null | 上一個有快照的小時 |
 | `next` | string (ISO 時間) \| null | 下一個有快照的小時；最新時為 null |
 | `dayHours` | string (ISO 時間)[] | 同一台北日內所有有快照的小時 |
+| `dayStats` | object[] | 同一台北日內每個快照小時的概況 |
+| `dayStats[].hour` | string (ISO 時間) |  |
+| `dayStats[].top` | number | 該小時第 1 名的爆發力 |
+| `dayStats[].count` | integer | 該小時事件數 |
 | `events` | object[] |  |
 | `events[].rank` | integer |  |
 | `events[].score` | number |  |
@@ -633,6 +637,19 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 | `events[].news[].image` | string \| null | 代表圖網址 |
 | `events[].relatedEventPk` | string \| null | = threadId 的字串形式（相容舊版） |
 | `events[].threadId` | integer \| null | 事件串 id，可查 /api/v1/events/threads/{id} |
+| `events[].prevRank` | integer \| null | 前一個快照的名次（依事件串或主要標籤比對）；null 表示本小時新上榜 |
+| `events[].hours` | integer \| null | 事件串到這個小時為止已出現的小時數 |
+| `events[].firstTime` | string (ISO 時間) \| null | 事件串第一次上榜的小時 |
+| `events[].coverage` | object |  |
+| `events[].coverage.outlets` | object[] | 過去 24 小時寫過此事件主要標籤的媒體，依篇數排序 |
+| `events[].coverage.outlets[].media` | string |  |
+| `events[].coverage.outlets[].camp` | string | blue／green／other |
+| `events[].coverage.articles` | integer | 報導篇數 |
+| `events[].coverage.camps` | object | 各陣營媒體家數 |
+| `events[].coverage.camps.blue` | integer |  |
+| `events[].coverage.camps.green` | integer |  |
+| `events[].coverage.camps.other` | integer |  |
+| `events[].coverage.blindspot` | string[] | 完全沒報導的陣營（只在另一陣營有報時標記） |
 
 錯誤：`400` `at` 格式錯誤；`404` 該時間以前沒有快照；`503` 尚無任何快照。
 

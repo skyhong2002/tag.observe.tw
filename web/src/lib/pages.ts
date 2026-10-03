@@ -6,6 +6,15 @@ export interface EventNews {
   url: string;
   image: string | null;
 }
+export type Camp = 'blue' | 'green' | 'other';
+export interface EventCoverage {
+  /** Outlets that wrote about the event's major tags in the past 24h, busiest first. */
+  outlets: Array<{ media: string; camp: Camp }>;
+  articles: number;
+  camps: Record<Camp, number>;
+  /** Camps with no report at all while the opposite camp has some. */
+  blindspot: Camp[];
+}
 export interface EventItem {
   rank: number;
   score: number;
@@ -13,6 +22,12 @@ export interface EventItem {
   tags: { tag: string; burst: number | null }[];
   news: EventNews[];
   relatedEventPk: string | null;
+  /** Rank in the previous snapshot; null when the thread is new this hour. */
+  prevRank?: number | null;
+  /** Hours the thread has been on the table so far. */
+  hours?: number | null;
+  firstTime?: string | null;
+  coverage?: EventCoverage;
 }
 export interface Topic {
   id: string;
@@ -74,6 +89,8 @@ export interface EventsSnapshot {
   prev?: string | null;
   next?: string | null;
   dayHours?: string[];
+  /** Top score and event count per snapshot hour of the day. */
+  dayStats?: Array<{ hour: string; top: number; count: number }>;
   events: EventItem[];
 }
 export const fetchEvents = (limit = 30, at?: string) =>
