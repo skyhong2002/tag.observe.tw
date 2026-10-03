@@ -5,30 +5,44 @@ import { useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
 
-type SortKey = 'articles' | 'later' | 'pairs' | 'media' | 'cited';
-const sorts: Array<{ key: SortKey; label: string }> = [
-  { key: 'articles', label: '篇數' },
-  { key: 'later', label: '相似且較晚刊登' },
-  { key: 'pairs', label: '相似配對' },
-  { key: 'media', label: '跨媒體數' },
-  { key: 'cited', label: '明示引用' },
+type SortKey = 'name' | 'media' | 'articles' | 'inSample' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'cited';
+// Click a heading to sort, click again to flip, like the media tables.
+const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
+  { key: 'name', label: '記者', numeric: false },
+  { key: 'media', label: '刊登媒體', title: '依刊登媒體數排序', numeric: false },
+  { key: 'articles', label: '篇數', numeric: true },
+  { key: 'inSample', label: '樣本內', title: '有可比對正文且落在相似度樣本內的篇數', numeric: true },
+  { key: 'pairs', label: '相似配對', title: '至少一端是此人文章的相似配對', numeric: true },
+  { key: 'later', label: '較晚', title: '自家文章比他站相似文章晚至少一分鐘刊登的配對；不含同署名跨站', numeric: true },
+  { key: 'earlier', label: '較早', title: '自家文章比他站相似文章早至少一分鐘刊登的配對', numeric: true },
+  { key: 'sameAuthor', label: '同署名', title: '對方文章也署同一名字：同一人把稿件刊在不同媒體', numeric: true },
+  { key: 'cited', label: '引用', title: '內文明示引用其他媒體的篇數', numeric: true },
 ];
-const sortValue = (row: JournalistSummary, key: SortKey) =>
-  key === 'articles'
-    ? row.articles
-    : key === 'later'
-      ? row.similar.later
-      : key === 'pairs'
-        ? row.similar.pairs
-        : key === 'media'
-          ? row.media.length
-          : row.cited;
+const sortValue = (row: JournalistSummary, key: SortKey): number =>
+  key === 'media'
+    ? row.media.length
+    : key === 'articles'
+      ? row.articles
+      : key === 'inSample'
+        ? row.inSample
+        : key === 'pairs'
+          ? row.similar.pairs
+          : key === 'later'
+            ? row.similar.later
+            : key === 'earlier'
+              ? row.similar.earlier
+              : key === 'sameAuthor'
+                ? row.similar.sameAuthor
+                : key === 'cited'
+                  ? row.cited
+                  : 0;
 const PAGE = 150;
 const number = (value: number) => value.toLocaleString('zh-TW');
 
 export default function JournalistTable({ rows }: { rows: JournalistSummary[] }) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('articles');
+  const [descending, setDescending] = useState(true);
   const [media, setMedia] = useState('');
   const [shown, setShown] = useState(PAGE);
   const outlets = useMemo(() => {
@@ -43,8 +57,19 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
       .filter(
         (row) => (!needle || row.name.toLowerCase().includes(needle)) && (!media || row.media.some((outlet) => outlet.media === media)),
       )
-      .sort((a, b) => sortValue(b, sort) - sortValue(a, sort) || b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant'));
-  }, [rows, query, sort, media]);
+      .sort((a, b) => {
+        const order = sort === 'name' ? a.name.localeCompare(b.name, 'zh-Hant') : sortValue(a, sort) - sortValue(b, sort);
+        return (descending ? -order : order) || b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant');
+      });
+  }, [rows, query, sort, descending, media]);
+  const sortBy = (key: SortKey) => {
+    if (sort === key) setDescending(!descending);
+    else {
+      setSort(key);
+      setDescending(key !== 'name');
+    }
+    setShown(PAGE);
+  };
   const visible = filtered.slice(0, shown);
   const cell = 'px-2 py-2 text-right tabular-nums';
   return (
@@ -62,20 +87,6 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             placeholder="例如 周辰陽"
             className="w-44 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-zinc-500 dark:text-zinc-400">排序</span>
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value as SortKey)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-          >
-            {sorts.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-zinc-500 dark:text-zinc-400">媒體</span>
@@ -101,27 +112,26 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
         <table className="w-full min-w-[44rem] border-collapse text-sm">
           <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              <th className="px-2 py-2 font-medium">記者</th>
-              <th className="px-2 py-2 font-medium">刊登媒體</th>
-              <th className={`${cell} font-medium`}>篇數</th>
-              <th className={`${cell} font-medium`} title="有可比對正文且落在相似度樣本內的篇數">
-                樣本內
-              </th>
-              <th className={`${cell} font-medium`} title="至少一端是此人文章的相似配對">
-                相似配對
-              </th>
-              <th className={`${cell} font-medium`} title="自家文章比他站相似文章晚至少一分鐘刊登的配對；不含同署名跨站">
-                較晚
-              </th>
-              <th className={`${cell} font-medium`} title="自家文章比他站相似文章早至少一分鐘刊登的配對">
-                較早
-              </th>
-              <th className={`${cell} font-medium`} title="對方文章也署同一名字：同一人把稿件刊在不同媒體">
-                同署名
-              </th>
-              <th className={`${cell} font-medium`} title="內文明示引用其他媒體的篇數">
-                引用
-              </th>
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  scope="col"
+                  aria-sort={sort === column.key ? (descending ? 'descending' : 'ascending') : 'none'}
+                  className={`${column.numeric ? cell : 'px-2 py-2'} font-medium`}
+                >
+                  <button
+                    type="button"
+                    title={column.title}
+                    onClick={() => sortBy(column.key)}
+                    className={`inline-flex items-center gap-1 whitespace-nowrap hover:text-brand-700 dark:hover:text-brand-400 ${
+                      column.numeric ? 'w-full justify-end' : ''
+                    } ${sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''}`}
+                  >
+                    {column.label}
+                    <span aria-hidden="true">{sort === column.key ? (descending ? '↓' : '↑') : '↕'}</span>
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
