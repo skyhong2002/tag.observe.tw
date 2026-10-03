@@ -124,9 +124,20 @@ function Tags({ e, limit, size = 'text-xs' }: { e: EventItem; limit: number; siz
   );
 }
 
-/** Headlines from other outlets, without the repeated press photo. */
-function Headlines({ e, media, limit, skip }: { e: EventItem; media: MediaInfo; limit: number; skip?: EventNews | null }) {
-  const list = e.news.filter((n) => n !== skip).slice(0, limit);
+/** Headlines from other outlets, without the repeated press photo. `skip`
+ *  holds what the card already shows (cover, camp comparison). */
+function Headlines({
+  e,
+  media,
+  limit,
+  skip = [],
+}: {
+  e: EventItem;
+  media: MediaInfo;
+  limit: number;
+  skip?: Array<EventNews | null | undefined>;
+}) {
+  const list = e.news.filter((n) => !skip.includes(n)).slice(0, limit);
   if (list.length === 0) return null;
   return (
     <ul className="space-y-1 text-sm">
@@ -153,11 +164,15 @@ function CampDot({ camp }: { camp?: Camp }) {
 
 /** Same story, one headline from each camp, differing words underlined: the
  *  home page's 同題不同標 inside the lead card. */
-function CampHeadlines({ e, media }: { e: EventItem; media: MediaInfo }) {
+/** The headline pair for CampHeadlines: first report from each camp, if both exist. */
+function campPair(e: EventItem): { blue: EventNews; green: EventNews } | null {
   const pick = (camp: Camp) => e.news.find((n) => n.camp === camp);
   const blue = pick('blue'),
     green = pick('green');
-  if (!blue || !green) return null;
+  return blue && green ? { blue, green } : null;
+}
+
+function CampHeadlines({ pair: { blue, green }, media }: { pair: { blue: EventNews; green: EventNews }; media: MediaInfo }) {
   const [b, g] = headlineDiff(blue.title, green.title);
   const side = (n: EventNews, parts: typeof b, camp: Camp) => (
     <div className="min-w-0 space-y-0.5">
@@ -225,6 +240,7 @@ export default function EventCard({
   baseline?: CampBaseline | null;
 }) {
   const img = cover(e);
+  const pair = tier === 'hero' ? campPair(e) : null;
   const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
   if (tier === 'row') {
     return (
@@ -285,8 +301,8 @@ export default function EventCard({
               </div>
             </div>
           )}
-          <CampHeadlines e={e} media={media} />
-          <Headlines e={e} media={media} limit={3} skip={img} />
+          {pair && <CampHeadlines pair={pair} media={media} />}
+          <Headlines e={e} media={media} limit={3} skip={[img, pair?.blue, pair?.green]} />
         </div>
       </li>
     );
@@ -320,7 +336,7 @@ export default function EventCard({
         </div>
       </div>
       {e.coverage && <OutletStrip c={e.coverage} media={media} max={8} />}
-      <Headlines e={e} media={media} limit={3} skip={img} />
+      <Headlines e={e} media={media} limit={3} skip={[img]} />
     </li>
   );
 }
