@@ -1,9 +1,9 @@
 export default function Loading() {
   return (
-    <div role="status" className="space-y-4 py-6">
-      <h1 className="text-2xl font-semibold">新聞相似度與引用關係</h1>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">正在讀取擷取覆蓋率、內文配對與引用關係…</p>
-      <div aria-hidden="true" className="h-64 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
+    <div role="status" className="flex h-[calc(100svh-172px)] min-h-[420px] flex-col gap-3 sm:h-[calc(100svh-112px)]">
+      <h1 className="text-xl font-semibold sm:text-2xl">新聞關係圖</h1>
+      <p className="text-xs text-zinc-500">正在載入媒體關係圖…</p>
+      <div aria-hidden="true" className="flex-1 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
     </div>
   );
 }

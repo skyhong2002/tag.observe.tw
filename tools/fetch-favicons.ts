@@ -149,6 +149,16 @@ async function declaredIcons(origin: string): Promise<string[]> {
 // Outlets whose crawl index lives on another site (rss.app feeds, China
 // Times syndication pages, APIs) or whose catalog icon host moved.
 const HOME: Record<string, string> = {
+  reuters: 'https://www.reuters.com',
+  afp: 'https://www.afp.com',
+  ap: 'https://apnews.com',
+  cnn: 'https://www.cnn.com',
+  nhk: 'https://www3.nhk.or.jp',
+  kyodo: 'https://english.kyodonews.net',
+  yonhap: 'https://en.yna.co.kr',
+  xinhua: 'https://english.news.cn',
+  dw: 'https://www.dw.com',
+  nikkei: 'https://asia.nikkei.com',
   '1111': 'https://www.1111.com.tw',
   asiatatler: 'https://www.tatlerasia.com',
   babyou: 'https://babyou.nownews.com',
@@ -233,7 +243,7 @@ const exists = (m: string) =>
   );
 const todo: string[] = [];
 // Every catalogued outlet plus crawled outlets the old catalog never listed.
-for (const m of [...Object.keys(catalog), ...Object.keys(sources)])
+for (const m of [...Object.keys(catalog), ...Object.keys(sources), ...Object.keys(HOME)])
   if ((only.length ? only.includes(m) : all || !(await exists(m))) && !todo.includes(m)) todo.push(m);
 
 const failed: string[] = [];

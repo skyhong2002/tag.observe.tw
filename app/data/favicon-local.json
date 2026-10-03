@@ -11,6 +11,10 @@
     "source": "https://adayimg.com/wp-content/uploads/2017/04/3d2cd9e4496057638a60144845e8d2c8-180x180.png",
     "fetchedAt": "2026-10-01"
   },
+  "afp": {
+    "source": "https://www.afp.com/themes/custom/afp9/assets/images/favicon_afp.com_201120.ico",
+    "fetchedAt": "2026-10-03"
+  },
   "agentm": {
     "source": "https://news.agentm.tw/wp-content/uploads/cropped-cropped-logo-%E9%BB%91-180x180.png",
     "fetchedAt": "2026-10-01"
@@ -18,6 +22,10 @@
   "agriharvest": {
     "source": "https://www.google.com/s2/favicons?domain=www.agriharvest.tw&sz=64",
     "fetchedAt": "2026-10-01"
+  },
+  "ap": {
+    "source": "https://www.google.com/s2/favicons?domain=apnews.com&sz=64",
+    "fetchedAt": "2026-10-03"
   },
   "applealmond": {
     "source": "https://img.applealmond.com/2021/07/1627455091-2f1138deb69f22a0fcbdff8a3f26365f-32x32.png",
@@ -83,6 +91,10 @@
     "source": "https://cnews.com.tw/wp-content/themes/cnews-theme/img/apple-touch-icon.png",
     "fetchedAt": "2026-10-01"
   },
+  "cnn": {
+    "source": "https://www.cnn.com/favicon.ico",
+    "fetchedAt": "2026-10-03"
+  },
   "cnyes": {
     "source": "https://www.cnyes.com/static/favicon.png",
     "fetchedAt": "2026-10-01"
@@ -146,6 +158,10 @@
   "dramaqueen": {
     "source": "https://www.dramaqueen.com.tw/img/logo.png",
     "fetchedAt": "2026-10-01"
+  },
+  "dw": {
+    "source": "https://www.dw.com/images/icons/favicon-96x96.png",
+    "fetchedAt": "2026-10-03"
   },
   "ebc": {
     "source": "https://news.ebc.net.tw/img/favicon/favicon-128x128.png",
@@ -267,6 +283,10 @@
     "source": "https://www.kocpc.com.tw/wp-content/uploads/2026/01/20260114153818_0_751714-350x350.jpeg",
     "fetchedAt": "2026-10-01"
   },
+  "kyodo": {
+    "source": "https://english-kyodo.ismcdn.jp/common/images/apple-touch-icon-180x180.png",
+    "fetchedAt": "2026-10-03"
+  },
   "ldope": {
     "source": "https://ldope.com/wp-content/uploads/2019/05/bd3da199f2bc3749fdca9c4c87eaf72a-180x180.jpg",
     "fetchedAt": "2026-10-01"
@@ -339,9 +359,13 @@
     "source": "https://www.natgeomedia.com/img/touch-icon-ipad.png",
     "fetchedAt": "2026-10-01"
   },
+  "nhk": {
+    "source": "https://news.web.nhk/apple-touch-icon.png",
+    "fetchedAt": "2026-10-03"
+  },
   "nikkei": {
-    "source": "https://zh.cn.nikkei.com/templates/nikkeisite/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://asia.nikkei.com/images/frontend/favicons/144x144.png",
+    "fetchedAt": "2026-10-03"
   },
   "nius": {
     "source": "https://www.niusnews.com/favicon.ico",
@@ -394,6 +418,10 @@
   "reporter": {
     "source": "https://www.twreporter.org/images/apple-touch-icon-152x152.png",
     "fetchedAt": "2026-10-01"
+  },
+  "reuters": {
+    "source": "https://www.reuters.com/favicon.ico",
+    "fetchedAt": "2026-10-03"
   },
   "rfi": {
     "source": "https://www.rfi.fr/apple-touch-icon.png",
@@ -527,8 +555,16 @@
     "source": "https://dq.yam.com/apple-touch-icon.png",
     "fetchedAt": "2026-10-01"
   },
+  "xinhua": {
+    "source": "https://english.news.cn/favicon.ico",
+    "fetchedAt": "2026-10-03"
+  },
   "yahoo": {
     "source": "https://s.yimg.com/cv/apiv2/twapp/apple-touch-icon@80x80.png",
     "fetchedAt": "2026-10-01"
+  },
+  "yonhap": {
+    "source": "https://r.yna.co.kr/global/favicon.ico",
+    "fetchedAt": "2026-10-03"
   }
 }
