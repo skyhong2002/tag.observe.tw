@@ -727,6 +727,33 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/media/cna',
   },
   {
+    path: '/api/v1/media-traffic-comparison',
+    tag: 'media',
+    summary: '本站爬蟲跨月收錄量',
+    description:
+      '依台北時間發布月份統計本站自行抓取（source=own）的文章，排除發布日期待定與未來文章，不限正文狀態。包含新聞來源清單與媒體目錄的所有來源，供介面對照原始 Similarweb 月份資料；本端點不提供流量數字。月份升冪排列，從參考表最舊月份延續至當月；連續區間最多保留近 24 個月，另保留較早的原表月份。當月只統計截至 generatedAt 的資料。早於首次收錄月份的正數是補收舊文章，並非完整歷史月；零筆也不代表當時沒有發稿。發現來源透過關聯統計原媒體文章，不改變文章歸屬，跨來源加總時應排除 discovery 避免重複計算。',
+    response: obj({
+      generatedAt: time('統計產生時間；所有月份均為此時間點的已收錄資料'),
+      collectionStartedAt: nullable(time('本站自行抓取文章的最早收錄時間；不含 legacy 匯入，沒有紀錄時為 null')),
+      months: arr(str('台北發布月份，格式 YYYYMM', { pattern: '^\\d{4}(?:0[1-9]|1[0-2])$' }), '可用比較月份，升冪排列'),
+      media: arr(
+        obj({
+          media: ref('MediaKey'),
+          sourceKind: str('publisher 為原刊登媒體；discovery 為文章發現來源', { enum: ['publisher', 'discovery'] }),
+          firstAcquiredAt: nullable(time('刊登媒體為首次自行抓取時間，發現來源為首次發現時間；不受月份範圍限制，從未收錄為 null')),
+          monthly: arr(
+            obj({
+              month: str('對應 months 的台北發布月份', { pattern: '^\\d{4}(?:0[1-9]|1[0-2])$' }),
+              articles: { ...int('目前資料庫中該來源、該發布月的文章數；0 表示零筆已收錄文章，不保證歷史收錄完整'), minimum: 0 },
+            }),
+            '每個可用月份皆有一筆；無文章時回傳 0，不以 null 取代已知筆數',
+          ),
+        }),
+      ),
+    }),
+    cache: '5 分鐘',
+  },
+  {
     path: '/api/v1/media-stats',
     tag: 'media',
     summary: '各媒體收錄量與爬蟲狀態',

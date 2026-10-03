@@ -16,7 +16,7 @@ const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> 
       { href: '/event/', label: '事件表' },
       { href: '/topic/', label: '議題表' },
       { href: '/media/', label: '媒體來源' },
-      { href: '/media/sources/', label: '媒體來源與流量' },
+      { href: '/media/sources/', label: '媒體流量與收錄比較' },
     ],
   },
   {
@@ -102,7 +102,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
             本站基準名單的 29
             家媒體依來源試算表人工分類，其他既有媒體沿用原設定，新加入來源未另行標記政治傾向。全部新聞來源、抓取狀態與分類依據可於
             <Link href="/media/sources/#classification-method" className={inlineLink}>
-              「媒體來源與流量」
+              「媒體流量與收錄比較」
             </Link>
             查看；「未列藍綠」不代表中立。
           </p>

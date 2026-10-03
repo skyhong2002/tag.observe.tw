@@ -5,7 +5,7 @@ export default function MediaTabs({ current }: { current: 'media' | 'sources' })
     <nav aria-label="媒體資料" className="mb-5 inline-flex max-w-full gap-1 rounded-lg bg-zinc-100 p-1 text-sm dark:bg-zinc-900">
       {[
         { key: 'media', href: '/media/', label: '收錄概況' },
-        { key: 'sources', href: '/media/sources/', label: '來源與流量' },
+        { key: 'sources', href: '/media/sources/', label: '流量與收錄比較' },
       ].map((tab) => (
         <Link
           key={tab.key}

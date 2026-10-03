@@ -164,10 +164,10 @@ export default async function MediaPage({
               <dd>{profile?.lastCrawlOk ? taipei(profile.lastCrawlOk) : '暫無資料'}</dd>
             </dl>
             <Link
-              href={`/media/sources/?${new URLSearchParams({ q: reference?.domain ?? data.title })}`}
+              href={`/media/sources/?${new URLSearchParams({ q: data.media, media: data.media, scope: 'all' })}`}
               className="mt-3 block border-t border-zinc-200 pt-2.5 text-brand-700 hover:underline dark:border-zinc-800 dark:text-brand-400"
             >
-              流量資料與分類依據 →
+              流量與收錄比較 →
             </Link>
             <p className="mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
               {discovery ? '發現來源協助找到文章；文章與全文仍歸屬各原媒體。' : '收錄量為本站抓取的報導，非媒體全部發稿量。'}
