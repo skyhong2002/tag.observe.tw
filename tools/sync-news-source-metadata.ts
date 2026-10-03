@@ -1,19 +1,26 @@
 // Register every catalog identity in the API without inferring political labels.
 import { readFile, writeFile } from 'node:fs/promises';
+import names from '../app/data/media-names.json' with { type: 'json' };
 import catalog from '../app/data/news-source-catalog.json' with { type: 'json' };
 
 const iconsUrl = new URL('../app/data/favicon-catalog.json', import.meta.url);
 const categoriesUrl = new URL('../app/data/media-catalog.json', import.meta.url);
-const icons = JSON.parse(await readFile(iconsUrl, 'utf8')) as Record<string, { title: string; icon: string | null }>;
+const icons = JSON.parse(await readFile(iconsUrl, 'utf8')) as Record<string, { title: string | null; icon: string | null }>;
 const categories = JSON.parse(await readFile(categoriesUrl, 'utf8')) as { categories: Record<string, string[]> };
 const news = new Set(categories.categories.news);
+const reviewed = names.media as Record<string, { name: string | null }>;
+const missing = catalog.sources.filter((source) => !reviewed[source.media]?.name);
+if (missing.length) throw new Error(`Review new media names before syncing: ${missing.map((source) => source.media).join(', ')}`);
 let added = 0;
 for (const source of catalog.sources) {
   if (!icons[source.media]) {
-    icons[source.media] = { title: source.name, icon: null };
+    icons[source.media] = { title: reviewed[source.media].name, icon: null };
     added++;
   }
   news.add(source.media);
+}
+for (const [media, entry] of Object.entries(reviewed)) {
+  if (icons[media]) icons[media].title = entry.name;
 }
 categories.categories.news = [...news];
 await writeFile(iconsUrl, JSON.stringify(icons, null, 2) + '\n');

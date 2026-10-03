@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import MediaTabs from '@/components/MediaTabs';
 import { API_ORIGIN } from '@/lib/api';
+import { mediaNames, selectNamedTrafficSources, trafficDisplayName } from '@/lib/media-names.mts';
 import {
   type CrawlStatus,
   crawlLabels,
@@ -10,7 +11,6 @@ import {
   referenceFor,
   resolveCatalogSource,
   safeWebsiteUrl,
-  selectTrafficSources,
   type TrafficSort,
   type TrafficSource,
   trafficGrowth,
@@ -67,9 +67,14 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
   const query = params.q ?? '';
   const sort: TrafficSort = trafficSorts.includes(params.sort as TrafficSort) ? (params.sort as TrafficSort) : 'traffic';
   const ascending = params.dir === 'asc';
-  const rows = selectTrafficSources(snapshot.sources, baseline.sources, { scope, classification, query, sort, ascending }).filter(
-    (row) => !crawl || sourceCrawlStatus(row) === crawl,
-  );
+  const displayName = (row: TrafficSource) => trafficDisplayName(row, newsCatalog.sources);
+  const rows = selectNamedTrafficSources(snapshot.sources, baseline.sources, newsCatalog.sources, {
+    scope,
+    classification,
+    query,
+    sort,
+    ascending,
+  }).filter((row) => !crawl || sourceCrawlStatus(row) === crawl);
   const uniqueSources = new Set(snapshot.sources.map((row) => matchedSource(row)?.media ?? `row:${row.row}`));
   const verifiedSources = new Set(
     snapshot.sources.filter((row) => sourceCrawlStatus(row) === 'verified').map((row) => matchedSource(row)?.media),
@@ -222,8 +227,8 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
                 key={row.row}
                 className="grid grid-cols-[7rem_minmax(0,1fr)_5.5rem] items-center gap-3 text-xs sm:grid-cols-[10rem_minmax(0,1fr)_7rem] sm:text-sm"
               >
-                <span className="truncate" title={row.name}>
-                  {row.name}
+                <span className="truncate" title={displayName(row)}>
+                  {displayName(row)}
                   <span className="ml-1 text-xs text-zinc-500">{row.classification ?? '未標記'}</span>
                 </span>
                 <div className="h-3 overflow-hidden rounded-sm bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
@@ -320,12 +325,15 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
                     <th scope="row" className="px-4 py-4 font-medium">
                       {sourceId && (media || source?.existing || reference) ? (
                         <Link href={`/media/${sourceId}/`} className={linkClass}>
-                          {row.name}
+                          {displayName(row)}
                         </Link>
                       ) : (
-                        row.name
+                        displayName(row)
                       )}
                       <div className="mt-1 text-xs font-normal text-zinc-500">{row.domain ?? '原表未填網域'}</div>
+                      {sourceId && mediaNames[sourceId]?.status === 'unresolved' && (
+                        <div className="mt-1 text-xs font-normal text-zinc-500">名稱待確認</div>
+                      )}
                       {websiteUrl && (
                         <a href={websiteUrl} className={`mt-1 block text-xs font-normal ${linkClass}`} target="_blank" rel="noreferrer">
                           {row.domain ? '官方網站' : '補充網址'}：{new URL(websiteUrl).hostname} ↗
@@ -415,6 +423,12 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
                       <a href={sourceLink(row.row)} className={linkClass} target="_blank" rel="noreferrer">
                         原表第 {row.row} 列 ↗
                       </a>
+                      {row.name !== displayName(row) && (
+                        <details className="mt-2 text-zinc-500">
+                          <summary className="cursor-pointer">原表名稱</summary>
+                          <p className="mt-1 break-words">{row.name}</p>
+                        </details>
+                      )}
                       {source?.notes && <p className="mt-2 leading-5 text-zinc-500">{source.notes}</p>}
                       {row.notes.length > 0 && (
                         <details className="mt-2 text-zinc-500">

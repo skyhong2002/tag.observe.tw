@@ -5,7 +5,7 @@
   },
   "ettoday": {
     "icon": "http://www.ettoday.net/favicon.ico",
-    "title": "東森新聞雲"
+    "title": "ETtoday新聞雲"
   },
   "setn": {
     "icon": "http://www.setn.com/favicon.ico",
@@ -13,23 +13,23 @@
   },
   "chinatimes": {
     "icon": "https://static.chinatimes.com/images/2019/favicon.ico",
-    "title": "中時電子報"
+    "title": "中時新聞網"
   },
   "nownews": {
     "icon": "https://www.nownews.com/icon/logo-144x144.png",
-    "title": "NOWnews"
+    "title": "NOWnews今日新聞"
   },
   "tvbs": {
     "icon": "https://cc.tvbs.com.tw/2017news/prd/images/favicon.ico?v=010",
-    "title": "TVBS"
+    "title": "TVBS新聞網"
   },
   "cts": {
     "icon": "http://www.cts.com.tw/favicon.ico",
-    "title": "華視新聞"
+    "title": "華視新聞網"
   },
   "ttv": {
     "icon": "http://www.ttv.com.tw/favicon.ico",
-    "title": "台視新聞"
+    "title": "台視新聞網"
   },
   "ctee": {
     "icon": "https://cteecors.azureedge.net/wp-content/uploads/2018/09/logo_16_16.ico",
@@ -37,7 +37,7 @@
   },
   "newtalk": {
     "icon": "http://newtalk.tw/sys_images/favicon.ico",
-    "title": "新頭殼"
+    "title": "Newtalk新聞"
   },
   "tnl": {
     "icon": "https://www.thenewslens.com/assets/images/logo/favicon/favicon-32x32.png",
@@ -53,7 +53,7 @@
   },
   "udn": {
     "icon": "http://udn.com/favicon.ico",
-    "title": "UDN 聯合新聞網"
+    "title": "聯合新聞網"
   },
   "upmedia": {
     "icon": "http://www.upmedia.mg/images/favicon.png",
@@ -61,7 +61,7 @@
   },
   "mirror": {
     "icon": "https://www.mirrormedia.mg/assets/mirrormedia/favicon-48x48.png",
-    "title": "鏡傳媒"
+    "title": "鏡週刊"
   },
   "cmmedia": {
     "icon": "https://www.cmmedia.com.tw/favicon.png",
@@ -69,7 +69,7 @@
   },
   "rti": {
     "icon": "https://www.rti.org.tw/favicon.ico",
-    "title": "中央廣播電台"
+    "title": "中央廣播電臺"
   },
   "ebc": {
     "icon": "https://news.ebc.net.tw/img/favicon/favicon.ico",
@@ -81,11 +81,11 @@
   },
   "bbc": {
     "icon": "https://www.bbc.com/favicon.ico",
-    "title": "英國公共廣播電台"
+    "title": "BBC News 中文"
   },
   "nikkei": {
     "icon": "https://zh.cn.nikkei.com/templates/nikkeisite/favicon.ico",
-    "title": "日本經濟新聞中文版"
+    "title": "日經中文網"
   },
   "taro": {
     "icon": "https://cdn.taronews.tw/files/2018/02/favicon-taronews-16.png",
@@ -105,11 +105,11 @@
   },
   "ctwant": {
     "icon": "https://static.ctwant.com/images/dist/apple-touch-icon.png",
-    "title": "時報周刊/周刊王"
+    "title": "CTWANT"
   },
   "ftv": {
     "icon": "https://cdn.ftvnews.com.tw/client/images/favicons/favicon.ico",
-    "title": "民視"
+    "title": "民視新聞網"
   },
   "nextapple": {
     "icon": "https://static.nextapple.tw/web/layout/img/favicon.ico",
@@ -117,19 +117,19 @@
   },
   "cti": {
     "icon": "https://ctinews.com/favicon.ico",
-    "title": "中天新聞"
+    "title": "中天新聞網"
   },
   "bccnews": {
     "icon": "https://bccnews.com.tw/favicon.ico",
-    "title": "中廣新聞"
+    "title": "中廣新聞網"
   },
   "cnews": {
     "icon": "https://cnews.com.tw/wp-content/themes/cnews-theme/img/favicon-32x32.png",
-    "title": "匯流新聞"
+    "title": "匯流新聞網"
   },
   "ftnn": {
     "icon": "https://static.ftnn.com.tw/www/images/ftnn-icon-64.jpg",
-    "title": "鋒燦傳媒"
+    "title": "FTNN新聞網"
   },
   "taiwandom": {
     "icon": "https://i0.wp.com/taiwandomnews.com/wp-content/uploads/2021/11/cropped-domLogo-3.png?fit=32%2C32&ssl=1",
@@ -141,7 +141,7 @@
   },
   "vogue": {
     "icon": "http://www.vogue.com.tw/favicon.ico",
-    "title": "Vogue"
+    "title": "Vogue Taiwan"
   },
   "womany": {
     "icon": "http://womany.net/favicon.ico",
@@ -153,11 +153,11 @@
   },
   "marieclaire": {
     "icon": "https://www.marieclaire.com.tw/favicon.ico",
-    "title": "美麗佳人"
+    "title": "Marie Claire 美麗佳人"
   },
   "beauty321": {
     "icon": "https://www.beauty321.com/images/favicon.ico",
-    "title": "美人圈"
+    "title": "BEAUTY美人圈"
   },
   "elle": {
     "icon": "https://www.elle.com/sites/elle/assets/images/favicon.ico",
@@ -165,7 +165,7 @@
   },
   "femin": {
     "icon": "https://graph.facebook.com/827029560647015/picture",
-    "title": "the FEMIN"
+    "title": "The Femin"
   },
   "tvbswoman": {
     "icon": "https://cc.tvbs.com.tw/2017program/woman/images/apple-touch-icon/icon_180x180.png",
@@ -181,7 +181,7 @@
   },
   "cool3c": {
     "icon": "https://www.cool3c.com/favicon.ico",
-    "title": "癮科技"
+    "title": "Cool3c 癮科技"
   },
   "technews": {
     "icon": "http://technews.tw/favicon.ico?v=2",
@@ -193,7 +193,7 @@
   },
   "kocpc": {
     "icon": "https://www.kocpc.com.tw/favicon.ico",
-    "title": "點子王阿達"
+    "title": "電腦王阿達"
   },
   "saydigi": {
     "icon": "http://www.saydigi.com/favicon.ico",
@@ -205,15 +205,15 @@
   },
   "ithome": {
     "icon": "https://www.ithome.com.tw/favicon.ico",
-    "title": "itHome"
+    "title": "iThome"
   },
   "inside": {
     "icon": "https://www.inside.com.tw/favicon.ico",
-    "title": "InSide"
+    "title": "INSIDE"
   },
   "techorange": {
     "icon": "https://buzzorange.com/icon/TO_180.png",
-    "title": "科技報橘"
+    "title": "TechOrange 科技報橘"
   },
   "techbang": {
     "icon": "http://www.techbang.com/favicon.ico",
@@ -241,7 +241,7 @@
   },
   "newsmarket": {
     "icon": "http://www.newsmarket.com.tw/files/favicon.ico",
-    "title": "上下游"
+    "title": "上下游新聞"
   },
   "wyc": {
     "icon": "http://world.yam.com/favicon.ico",
@@ -257,11 +257,11 @@
   },
   "housefun": {
     "icon": "http://s1-news.hfcdn.com/s1-news/system/i/icon/favicon_48x48.ico",
-    "title": "好房新聞"
+    "title": "好房網News"
   },
   "cw": {
     "icon": "http://www.cw.com.tw/assets_new/img/favicon.ico",
-    "title": "天下"
+    "title": "天下雜誌"
   },
   "einfo": {
     "icon": "http://e-info.org.tw/favicon.ico",
@@ -273,11 +273,11 @@
   },
   "civilmedia": {
     "icon": "http://www.civilmedia.tw/wp-content/uploads/2013/09/civilfavicon.png",
-    "title": "公庫報導"
+    "title": "公民行動影音紀錄資料庫"
   },
   "cheers": {
     "icon": "http://cw1.tw/CC/images/common/logo.png",
-    "title": "快樂工作人"
+    "title": "Cheers快樂工作人"
   },
   "newcongress": {
     "icon": "http://newcongress.tw/wp-content/themes/fundesigner/images/logo.png",
@@ -309,7 +309,7 @@
   },
   "gvm": {
     "icon": "https://www.gvm.com.tw/public/images/apple-touch-icon.png",
-    "title": "遠見"
+    "title": "遠見雜誌"
   },
   "cnyes": {
     "icon": "http://news.cnyes.com/favicon.ico",
@@ -317,7 +317,7 @@
   },
   "businesstoday": {
     "icon": "https://www.businesstoday.com.tw/lazyweb/web/img/favicon.ico",
-    "title": "今週刊"
+    "title": "今周刊"
   },
   "ustv": {
     "icon": "https://cdn.ustv.com.tw/favicon.ico",
@@ -337,11 +337,11 @@
   },
   "ldope": {
     "icon": "https://graph.facebook.com/LDopeCom/picture",
-    "title": "L.Dope"
+    "title": "L.DOPE"
   },
   "eld": {
     "icon": "https://everylittled.com/assets/images/logo-b.png",
-    "title": "Every Little D"
+    "title": "every little d"
   },
   "gq": {
     "icon": "https://www.gq.com.tw/images/brands/gq/favicons/apple-touch-icon.png",
@@ -353,7 +353,7 @@
   },
   "livio": {
     "icon": "https://www.livio.com.tw/favicon.ico",
-    "title": "Livio"
+    "title": "Livio生活網"
   },
   "hypebeast": {
     "icon": "https://static.hypebeast.com/dist/hypebeast/favicon/apple-touch-icon-57x57.png",
@@ -361,19 +361,19 @@
   },
   "shoppingdesign": {
     "icon": "https://cdn.bnextmedia.com.tw/sd/images/sd-64x64.png",
-    "title": "Shopping Design"
+    "title": "ShoppingDesign"
   },
   "everydayobject": {
     "icon": "https://s3-ap-northeast-1.amazonaws.com/everydayobject/wp-content/uploads/2018/10/everydayfinal2small.png",
-    "title": "Everyday Object"
+    "title": "EVERYDAY OBJECT"
   },
   "asiatatler": {
     "icon": "https://cdn.asiatatler.com/common/layout/bumblebee/icons/asiatatler/favicon.ico?1612671050",
-    "title": "Taiwan Tatler"
+    "title": "Tatler Taiwan"
   },
   "hypesphere": {
     "icon": "https://www.hypesphere.com/images/favicon.png",
-    "title": "HypeSphere"
+    "title": "Hypesphere狂熱球電影資訊網"
   },
   "agentm": {
     "icon": "https://news.agentm.tw/wp-content/uploads/2017/10/favicon.ico",
@@ -381,7 +381,7 @@
   },
   "dramaqueen": {
     "icon": "https://www.dramaqueen.com.tw/img/logo.png",
-    "title": "電視迷"
+    "title": "DramaQueen電視迷"
   },
   "top1health": {
     "icon": "https://www.top1health.com/favicon.ico",
@@ -401,7 +401,7 @@
   },
   "heho": {
     "icon": "https://heho.com.tw/wp-content/uploads/2020/12/1607933330.5821-32x32.png",
-    "title": "HEHO"
+    "title": "Heho健康"
   },
   "healthnews": {
     "icon": "http://www.healthnews.com.tw/favicon.ico",
@@ -433,11 +433,11 @@
   },
   "yahoo": {
     "icon": "https://tw.news.yahoo.com/favicon.ico",
-    "title": "雅虎新聞"
+    "title": "Yahoo新聞"
   },
   "bw": {
     "icon": "http://ibw.bwnet.com.tw/theme/v1/i/favicon.ico",
-    "title": "商業週刊"
+    "title": "商業周刊"
   },
   "theinitium": {
     "icon": "https://d3jl5c1btygfur.cloudfront.net/static/img/favicon.ico",
@@ -457,7 +457,7 @@
   },
   "mplus": {
     "icon": "https://www.mplus.com.tw/favicon.ico",
-    "title": "MPlus"
+    "title": "MPlus云閱讀"
   },
   "gamebase": {
     "icon": "https://news.gamebase.com.tw/favicon32.ico",
@@ -465,7 +465,7 @@
   },
   "4gamers": {
     "icon": "https://www.4gamers.com.tw/site/server/img/favicon-20180629.ico",
-    "title": "4GAMERS"
+    "title": "4Gamers"
   },
   "gamer": {
     "icon": "https://i2.bahamut.com.tw/apple-touch-icon.png",
@@ -481,7 +481,7 @@
   },
   "ctitv": {
     "icon": "https://ctinews.com/favicon.ico",
-    "title": "中天新聞"
+    "title": "中天新聞網"
   },
   "ctv": {
     "icon": "https://www.ctv.com.tw/Cms_Data/Sites/CTV4/Files/images/favicon-32x32.ico",
@@ -520,31 +520,31 @@
     "title": "知新聞"
   },
   "google_news": {
-    "title": "Google News",
+    "title": "Google 新聞",
     "icon": null
   },
   "msn": {
-    "title": "MSN 新聞 zh-tw",
+    "title": "MSN新聞",
     "icon": null
   },
   "hk01": {
-    "title": "HK01 /8",
+    "title": "香港01",
     "icon": null
   },
   "bbc_global": {
-    "title": "BBC /200",
+    "title": "BBC News",
     "icon": null
   },
   "oncc": {
-    "title": "東網 /20",
+    "title": "on.cc東網",
     "icon": null
   },
   "taiwannet": {
-    "title": "台灣產經新聞 taiwannet.com.tw",
+    "title": "台灣產經新聞網",
     "icon": null
   },
   "soundofhope": {
-    "title": "希望之聲 /3",
+    "title": "希望之聲",
     "icon": null
   },
   "tyenews": {
@@ -552,7 +552,7 @@
     "icon": null
   },
   "dongtaiwang": {
-    "title": "動態網 /15",
+    "title": "動態網",
     "icon": null
   },
   "mdnkids": {
@@ -564,7 +564,7 @@
     "icon": null
   },
   "aboluowang": {
-    "title": "阿波羅網 / 8",
+    "title": "阿波羅新聞網",
     "icon": null
   },
   "i_meihua": {
@@ -576,23 +576,23 @@
     "icon": null
   },
   "voachinese": {
-    "title": "美國之音 voachinese /10",
+    "title": "美國之音中文網",
     "icon": null
   },
   "ct": {
-    "title": "論壇報",
+    "title": "基督教論壇報",
     "icon": null
   },
   "guancha": {
-    "title": "觀察者網 /50",
+    "title": "觀察者網",
     "icon": null
   },
   "lai_media": {
-    "title": "賴傳媒",
+    "title": "Lai傳媒",
     "icon": null
   },
   "thehubnews": {
-    "title": "新頭條hubnews",
+    "title": "新頭條",
     "icon": null
   },
   "ydn": {
@@ -600,7 +600,7 @@
     "icon": null
   },
   "thepaper": {
-    "title": "澎湃新聞 /80",
+    "title": "澎湃新聞",
     "icon": null
   },
   "winnews": {
@@ -608,7 +608,7 @@
     "icon": null
   },
   "secretchina": {
-    "title": "中國secretchina.com /5",
+    "title": "看中國",
     "icon": null
   },
   "hsnews": {
@@ -616,11 +616,11 @@
     "icon": null
   },
   "watchmedia01": {
-    "title": "觀傳媒 watchmedia01",
+    "title": "觀傳媒",
     "icon": null
   },
   "bannedbook": {
-    "title": "禁聞網/6",
+    "title": "禁聞網",
     "icon": null
   },
   "singular": {
@@ -628,35 +628,35 @@
     "icon": null
   },
   "lihpao": {
-    "title": "立報",
+    "title": "立報傳媒",
     "icon": null
   },
   "hakkatv": {
-    "title": "客家電視",
+    "title": "客家電視台",
     "icon": null
   },
   "grinews": {
-    "title": "草根 grinews",
+    "title": "草根影響力新視野",
     "icon": null
   },
   "newspie": {
-    "title": "新聞派 newspie",
+    "title": "News Pie",
     "icon": null
   },
   "daai": {
-    "title": "大愛 (電視)",
+    "title": "大愛電視",
     "icon": null
   },
   "nvns": {
-    "title": "視傳媒 nvns",
+    "title": "視傳媒",
     "icon": null
   },
   "bigmedia": {
-    "title": "BigMedia 鉅聞",
+    "title": "鉅聞天下",
     "icon": null
   },
   "i_media": {
-    "title": "愛傳媒 i-media",
+    "title": "愛傳媒",
     "icon": null
   },
   "policenews": {
@@ -664,23 +664,23 @@
     "icon": null
   },
   "news886": {
-    "title": "886.news",
+    "title": "台灣新聞雲",
     "icon": null
   },
   "anntw": {
-    "title": "醒報 anntw",
+    "title": "台灣醒報",
     "icon": null
   },
   "yesmedia": {
-    "title": "是新聞 yesmedia",
+    "title": "是新聞",
     "icon": null
   },
   "miin": {
-    "title": "台灣miin迷因",
+    "title": "Miin",
     "icon": null
   },
   "tcnews": {
-    "title": "慈善新聞tcnews",
+    "title": "TCnews慈善新聞網",
     "icon": null
   },
   "new_report": {
@@ -688,43 +688,43 @@
     "icon": null
   },
   "owlting": {
-    "title": "Owlnews 奧丁丁新聞",
+    "title": "奧丁丁新聞",
     "icon": null
   },
   "innews": {
-    "title": "引新聞 innews",
+    "title": "引新聞",
     "icon": null
   },
   "newstaiwan": {
-    "title": "好報 newstaiwan",
+    "title": "台灣好報",
     "icon": null
   },
   "tnews": {
-    "title": "tnews 大台灣新聞",
+    "title": "大台灣新聞網",
     "icon": null
   },
   "taiwandaily": {
-    "title": "美洲台灣日報 /2",
+    "title": "美洲台灣日報",
     "icon": null
   },
   "enn": {
-    "title": "enn台灣電報",
+    "title": "ENN台灣電報",
     "icon": null
   },
   "kingtop": {
-    "title": "台灣華報 kingtop",
+    "title": "台灣華報",
     "icon": null
   },
   "greatnews": {
-    "title": "大成報 greatnews",
+    "title": "大成報",
     "icon": null
   },
   "kamalan_news": {
-    "title": "葛瑪蘭新聞",
+    "title": "葛瑪蘭新聞網",
     "icon": null
   },
   "fclnews": {
-    "title": "台灣新聞雲報 fclnews.com",
+    "title": "台灣新聞雲報",
     "icon": null
   },
   "globalnewstv": {
@@ -732,35 +732,35 @@
     "icon": null
   },
   "pronews": {
-    "title": "創新聞pronews",
+    "title": "創新聞",
     "icon": null
   },
   "bo6s": {
-    "title": "波新聞 bo6s",
+    "title": "波新聞",
     "icon": null
   },
   "taidaily": {
-    "title": "很角色傳媒taidaily",
+    "title": "很角色傳媒",
     "icon": null
   },
   "travelnews": {
-    "title": "宜蘭新聞網travelnews",
+    "title": "宜蘭新聞網",
     "icon": null
   },
   "focusnews": {
-    "title": "今傳媒Focusnews",
+    "title": "今傳媒",
     "icon": null
   },
   "macaodaily": {
-    "title": "澳門日報 /5",
+    "title": "澳門日報",
     "icon": null
   },
   "taiwanus": {
-    "title": "台灣海外網 / 20",
+    "title": "台灣海外網",
     "icon": null
   },
   "rise_mediacorp": {
-    "title": "崛起新傳媒 rise-mediacorp.com",
+    "title": "崛起新傳媒",
     "icon": null
   },
   "pnn": {
@@ -768,27 +768,27 @@
     "icon": null
   },
   "st_media": {
-    "title": "台灣生活新聞 st-media",
+    "title": "台灣生活新聞",
     "icon": null
   },
   "nchn": {
-    "title": "全國大小事 nchn.news",
+    "title": "全國大小事新聞網",
     "icon": null
   },
   "homeplus": {
-    "title": "中嘉 (新聞)",
+    "title": "中嘉新聞網",
     "icon": null
   },
   "j_media": {
-    "title": "j-media 聚",
+    "title": "聚傳媒",
     "icon": null
   },
   "taiwanpost": {
-    "title": "taiwanpost 台灣郵時",
+    "title": "臺灣郵報",
     "icon": null
   },
   "right_media": {
-    "title": "睿 right-media.news",
+    "title": "睿傳媒",
     "icon": null
   },
   "tristarnews": {
@@ -796,47 +796,47 @@
     "icon": null
   },
   "wujie": {
-    "title": "無界 /5",
+    "title": "無界",
     "icon": null
   },
   "firenews": {
-    "title": "火報 firenews",
+    "title": "火報",
     "icon": null
   },
   "lifenews": {
-    "title": "民生電子報 lifenews",
+    "title": "民生電子報",
     "icon": null
   },
   "news586": {
-    "title": "586 傳媒 (台中彰化)",
+    "title": "NEWS586",
     "icon": null
   },
   "ccsn0405": {
-    "title": "中華鱻傳媒 ccsn0405",
+    "title": "中華鱻傳媒",
     "icon": null
   },
   "chengpou": {
-    "title": "正報 /3",
+    "title": "正報",
     "icon": null
   },
   "yaya_news": {
-    "title": "鴉鴉新聞",
+    "title": "鴨鴨新聞",
     "icon": null
   },
   "taipeipost": {
-    "title": "台北郵報 taipeipost",
+    "title": "台北郵報",
     "icon": null
   },
   "hiilan": {
-    "title": "Hi宜蘭",
+    "title": "Hi宜蘭新聞",
     "icon": null
   },
   "tpnews": {
-    "title": "台灣商務新聞網  tpnews.org",
+    "title": "台灣商務新聞網",
     "icon": null
   },
   "twline365": {
-    "title": "台灣線報 twline365.com",
+    "title": "台灣線報",
     "icon": null
   },
   "rwnews": {
@@ -844,7 +844,7 @@
     "icon": null
   },
   "news_yahoo": {
-    "title": "Yahoo 新聞日本 /1000",
+    "title": "Yahoo!ニュース",
     "icon": null
   },
   "yam": {
@@ -852,67 +852,67 @@
     "icon": null
   },
   "cnn": {
-    "title": "CNN /400",
+    "title": "CNN",
     "icon": null
   },
   "stheadline": {
-    "title": "星島頭條 /20",
+    "title": "星島頭條",
     "icon": null
   },
   "cn_nytimes": {
-    "title": "紐時中文 /5",
+    "title": "紐約時報中文網",
     "icon": null
   },
   "cdn_news": {
-    "title": "基都教今日報",
+    "title": "基督教今日報",
     "icon": null
   },
   "ifeng": {
-    "title": "鳳凰網 /100",
+    "title": "鳳凰網",
     "icon": null
   },
   "taiwannews": {
-    "title": "Taiwannews 台灣英文新聞 /2",
+    "title": "Taiwan News",
     "icon": null
   },
   "news_pchome": {
-    "title": "PCHome 新聞",
+    "title": "PChome Online新聞",
     "icon": null
   },
   "reuters": {
-    "title": "路透社 /200",
+    "title": "路透社",
     "icon": null
   },
   "news_qq": {
-    "title": "騰訊新聞 /30",
+    "title": "騰訊新聞",
     "icon": null
   },
   "ntdtv": {
-    "title": "新唐人/3",
+    "title": "新唐人電視台",
     "icon": null
   },
   "cdns": {
-    "title": "中華新聞雲/中華日報",
+    "title": "中華新聞雲",
     "icon": null
   },
   "cctv": {
-    "title": "央視 cctv.com /150",
+    "title": "央視網",
     "icon": null
   },
   "dw": {
-    "title": "DW 德廣 /100",
+    "title": "德國之聲",
     "icon": null
   },
   "focustaiwan": {
-    "title": "focustaiwan.tw /3",
+    "title": "Focus Taiwan",
     "icon": null
   },
   "cn_wsj": {
-    "title": "華爾街日報中文 /5",
+    "title": "華爾街日報中文網",
     "icon": null
   },
   "life": {
-    "title": "life生活網",
+    "title": "LIFE生活網",
     "icon": null
   },
   "merit_times": {
@@ -920,7 +920,7 @@
     "icon": null
   },
   "scmp": {
-    "title": "南華早報 /50",
+    "title": "南華早報",
     "icon": null
   },
   "nexttv": {
@@ -936,27 +936,27 @@
     "icon": null
   },
   "matsu_idv": {
-    "title": "馬祖資訊",
+    "title": "馬祖資訊網",
     "icon": null
   },
   "worldjournal": {
-    "title": "世界新聞 /10",
+    "title": "世界新聞網",
     "icon": null
   },
   "today_line_me": {
-    "title": "Line Today/2",
+    "title": "LINE TODAY",
     "icon": null
   },
   "zaobao": {
-    "title": "聯合早報 /20",
+    "title": "聯合早報",
     "icon": null
   },
   "mingpao": {
-    "title": "明報 /25",
+    "title": "明報新聞網",
     "icon": null
   },
   "leho": {
-    "title": "樂聯網 leho.com.tw",
+    "title": "樂聯網",
     "icon": null
   },
   "matsu_news": {
@@ -964,11 +964,11 @@
     "icon": null
   },
   "news_sina": {
-    "title": "新浪新聞 /80",
+    "title": "新浪新聞",
     "icon": null
   },
   "taiwan": {
-    "title": "中國台灣網 taiwan.cn /8",
+    "title": "中國台灣網",
     "icon": null
   },
   "sunmedia": {
@@ -976,19 +976,19 @@
     "icon": null
   },
   "eracom": {
-    "title": "年代",
+    "title": "年代新聞",
     "icon": null
   },
   "sinchew": {
-    "title": "星洲網 /100",
+    "title": "星洲網",
     "icon": null
   },
   "taiwanplus": {
-    "title": "Taiwan + /2",
+    "title": "TaiwanPlus",
     "icon": null
   },
   "vigormedia": {
-    "title": "銳傳媒 vigor",
+    "title": "銳傳媒",
     "icon": null
   },
   "zmedia": {
@@ -1000,127 +1000,127 @@
     "icon": null
   },
   "ksnews": {
-    "title": "更生 ksnews.com.tw",
+    "title": "更生新聞網",
     "icon": null
   },
   "wenweipo": {
-    "title": "文匯報 wenweipo.com /8",
+    "title": "香港文匯報",
     "icon": null
   },
   "more_news": {
-    "title": "墨新聞 more-news.tw",
+    "title": "墨新聞",
     "icon": null
   },
   "news_163": {
-    "title": "網易 news.163.com /50",
+    "title": "網易新聞",
     "icon": null
   },
   "contentplatform_info": {
-    "title": "報新聞 contentplatform.info/",
+    "title": "報新聞",
     "icon": null
   },
   "xinhuanet": {
-    "title": "新華網 xinhuanet.com /100",
+    "title": "新華網",
     "icon": null
   },
   "hk_crntt": {
-    "title": "中評 hk.crntt.com /2",
+    "title": "中國評論新聞",
     "icon": null
   },
   "tkww": {
-    "title": "大公文匯 tkww.hk /15",
+    "title": "大公文匯網",
     "icon": null
   },
   "rfa": {
-    "title": "rfa.org /30",
+    "title": "自由亞洲電台",
     "icon": null
   },
   "huanqiu": {
-    "title": "環球網 huanqiu.com /50",
+    "title": "環球網",
     "icon": null
   },
   "enews": {
-    "title": "enews.tw",
+    "title": "ENews新聞網",
     "icon": null
   },
   "jdanews": {
-    "title": "恆春半島 jdanews.com",
+    "title": "恆春半島在地新聞網",
     "icon": null
   },
   "my_formosa": {
-    "title": "美麗島電子報 my-formosa.com.tw",
+    "title": "美麗島電子報",
     "icon": null
   },
   "biao_news": {
-    "title": "彪網媒 biao-news.com",
+    "title": "彪網媒",
     "icon": null
   },
   "newday": {
-    "title": "好視新聞 newday.tw",
+    "title": "好視新聞網",
     "icon": null
   },
   "lifetoutiao_news": {
-    "title": "民生頭條 lifetoutiao.news",
+    "title": "民生頭條",
     "icon": null
   },
   "yimedia": {
-    "title": "壹傳媒 (毅傳媒) yimedia.com.tw",
+    "title": "壹傳媒",
     "icon": null
   },
   "idn": {
-    "title": "自立晚報 idn.com.tw",
+    "title": "自立晚報",
     "icon": null
   },
   "mknews": {
-    "title": "天天上新聞 mknews.com.tw",
+    "title": "天天上新聞",
     "icon": null
   },
   "17news": {
-    "title": "民生好報 17news.net",
+    "title": "民生好報",
     "icon": null
   },
   "peponews": {
-    "title": "台灣人民報 peponews.tw",
+    "title": "臺灣人民報",
     "icon": null
   },
   "ltvnews": {
-    "title": "在地人 ltvnews.net",
+    "title": "在地人新聞",
     "icon": null
   },
   "i_news": {
-    "title": "享新聞 i-news.com.tw",
+    "title": "享新聞",
     "icon": null
   },
   "iw_times": {
-    "title": "國際環宇時報 iw-times.com",
+    "title": "國際環宇時報",
     "icon": null
   },
   "ammtw": {
-    "title": "amm新聞 ammtw.com",
+    "title": "AMM娛樂新聞",
     "icon": null
   },
   "tmnu": {
-    "title": "台灣多媒體 tmnu.org.tw",
+    "title": "台灣多媒體新聞聯合網",
     "icon": null
   },
   "readr": {
-    "title": "Readr+",
+    "title": "READr 讀+",
     "icon": null
   },
   "videoland": {
-    "title": "緯來 (新聞)",
+    "title": "緯來新聞網",
     "icon": null
   },
   "funnews": {
-    "title": "花花日報 funnews.tw",
+    "title": "花花日報",
     "icon": null
   },
   "people_cn": {
-    "title": "人民網 /30",
+    "title": "人民網",
     "icon": null
   },
   "ntdtv_tw": {
-    "title": "新唐人亞太 ntdtv.com.tw",
+    "title": "新唐人亞太電視台",
     "icon": null
   },
   "afp": {
@@ -1145,6 +1145,34 @@
   },
   "xinhua": {
     "title": "新華社",
+    "icon": null
+  },
+  "digitimes": {
+    "title": "DIGITIMES電子時報",
+    "icon": null
+  },
+  "dongtw": {
+    "title": "動網",
+    "icon": null
+  },
+  "gv": {
+    "title": "Global Voices 繁體中文",
+    "icon": null
+  },
+  "kairos": {
+    "title": "風向新聞",
+    "icon": null
+  },
+  "musou": {
+    "title": "沃草",
+    "icon": null
+  },
+  "tsna": {
+    "title": "TSNA體育新聞團隊",
+    "icon": null
+  },
+  "voicettank": {
+    "title": "思想坦克",
     "icon": null
   }
 }

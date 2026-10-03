@@ -78,7 +78,12 @@ const outlets: Outlet[] = [
   outlet('taipeitimes', 'Taipei Times', 'TW', ['台北時報']),
 ];
 
-const identityOnly = ({ media, name, country, countryCode }: OutletIdentity): OutletIdentity => ({ media, name, country, countryCode });
+const identityOnly = ({ media, name, country, countryCode }: OutletIdentity): OutletIdentity => ({
+  media,
+  name: titles[media]?.title ?? name,
+  country,
+  countryCode,
+});
 
 /** Resolve known local keys or exact outlet names; unknown countries stay unknown. */
 export function outletIdentity(mediaOrName: string): OutletIdentity {

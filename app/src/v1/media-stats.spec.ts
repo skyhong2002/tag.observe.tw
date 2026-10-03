@@ -59,7 +59,7 @@ describe('media stats', () => {
         if (entry.title && media !== 'cti') expect(ids).toContain(media);
       }
       expect(result.media.find((row: { media: string }) => row.media === 'bigmedia')).toMatchObject({
-        title: 'BigMedia 鉅聞',
+        title: '鉅聞天下',
         status: 'disabled',
         schedule: 'off',
         last24h: 0,
