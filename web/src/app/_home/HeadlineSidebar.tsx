@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { loadComparisons } from '@/lib/compare-data';
@@ -34,7 +35,10 @@ export default async function HeadlineSidebar({ query }: { query: string }) {
                   <div className={styles.headlineByline}>
                     <span>
                       <i className={styles[article.camp]} aria-hidden="true" />
-                      {article.camp === 'blue' ? '偏藍' : '偏綠'} · {article.mediaTitle}
+                      {article.camp === 'blue' ? '偏藍' : '偏綠'} ·
+                      <MediaHoverLink media={article.media} icon={12} className="hover:underline">
+                        {article.mediaTitle}
+                      </MediaHoverLink>
                     </span>
                     <time dateTime={article.publishedAt}>{taipei(article.publishedAt)}</time>
                   </div>

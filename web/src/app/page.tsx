@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { permanentRedirect, redirect } from 'next/navigation';
 import { type CSSProperties, Suspense } from 'react';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
 import { taipei } from '@/lib/api';
@@ -125,7 +126,10 @@ function Distribution({ coverage, compact = false }: { coverage: DemoCoverage | 
 function StoryMeta({ story }: { story: DemoStory }) {
   return (
     <p className={styles.source}>
-      標題來源：{story.source}
+      標題來源：
+      <MediaHoverLink media={story.media} className="hover:underline">
+        {story.source}
+      </MediaHoverLink>
       {story.publishedAt && ` · ${taipei(story.publishedAt)}`}
     </p>
   );
@@ -209,18 +213,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               {ranking && (
                 <details className={styles.basisNote}>
                   <summary>這 {ranking.snapshot.basis.media.length} 家媒體如何選定？</summary>
+                  <p>這是「新聞」類別中符合收錄條件的固定名單，並非預先設定家數，也不是依媒體品質或公信力評選。</p>
                   <p>
-                    這是「新聞」類別中符合收錄條件的固定名單，並非預先設定家數，也不是依媒體品質或公信力評選。
+                    本版名單選取已啟用、非僅供探索的來源：在名單凍結前至少 72 小時已成功取得非空新聞列表，且凍結前最近 3
+                    小時內也有成功紀錄。
                   </p>
-                  <p>
-                    本版名單選取已啟用、非僅供探索的來源：在名單凍結前至少 72 小時已成功取得非空新聞列表，且凍結前最近 3 小時內也有成功紀錄。
-                  </p>
-                  <p>
-                    固定同一批媒體，讓不同時間的議題熱度能在相同範圍內比較。當天未發稿的媒體仍保留，新來源待下一版基準再納入。
-                  </p>
-                  <p>
-                    上方篇數只計算這批媒體過去 24 小時已收錄的報導，不是全站總量；抓取失敗或補抓仍可能影響數字。
-                  </p>
+                  <p>固定同一批媒體，讓不同時間的議題熱度能在相同範圍內比較。當天未發稿的媒體仍保留，新來源待下一版基準再納入。</p>
+                  <p>上方篇數只計算這批媒體過去 24 小時已收錄的報導，不是全站總量；抓取失敗或補抓仍可能影響數字。</p>
                 </details>
               )}
               <Link href="/media/" className={styles.textLink}>

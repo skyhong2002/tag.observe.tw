@@ -117,7 +117,7 @@
 .headlineSource { padding: 14px; }
 .headlineSource + .headlineSource { border-top: 1px solid var(--soft-line); }
 .headlineByline { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; color: var(--muted); font-size: 10px; line-height: 1.7; }
-.headlineByline > span { display: flex; align-items: baseline; gap: 5px; font-size: 11px; }
+.headlineByline > span { display: flex; align-items: center; gap: 5px; font-size: 11px; }
 .headlineByline i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .comparedTitle { font-size: 15px; line-height: 1.9; font-weight: 500; overflow-wrap: anywhere; }
 .differentWords { text-decoration: underline; text-decoration-color: var(--muted); text-decoration-thickness: 1px; text-underline-offset: 4px; }

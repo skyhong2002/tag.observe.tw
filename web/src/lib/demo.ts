@@ -25,6 +25,7 @@ export interface DemoStory {
   title: string;
   tags: string[];
   image: string | null;
+  media: string;
   source: string;
   publishedAt: string | null;
   coverage: DemoCoverage | null;
@@ -68,6 +69,7 @@ function story(event: EventItem, media: MediaInfo, cov: CoverageResponse | null)
     title: lead.title,
     tags,
     image: isAllowedImage(lead.image) ? lead.image : null,
+    media: lead.media,
     source: media[lead.media]?.title ?? lead.media,
     publishedAt: article?.publishedAt ?? null,
     coverage: cov ? { from: cov.from, to: cov.to, outlets: cov.outlets, articles: cov.articles, camps: cov.camps } : null,
