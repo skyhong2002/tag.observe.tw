@@ -151,7 +151,6 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
                       <Link href={articleHref(n)} className="line-clamp-2 text-sm hover:underline">
                         {n.title}
                       </Link>
-                      <SourceLink url={n.url} className="ml-2" />
                       <p className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-600">
                         {media[n.media]?.icon && (
                           <SafeImage src={media[n.media].icon} alt="" width={12} height={12} className="rounded-sm" loading="lazy" />
@@ -159,6 +158,7 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
                         <MediaHoverLink media={n.media} className="hover:underline">
                           {media[n.media]?.title ?? n.media}
                         </MediaHoverLink>
+                        <SourceLink url={n.url} className="ml-1 !min-h-5 shrink-0 !text-[11px]" />
                       </p>
                     </div>
                   </li>

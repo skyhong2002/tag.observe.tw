@@ -43,8 +43,10 @@ export default async function TopicMediaPage({ params }: { params: Promise<{ med
                 className="aspect-video w-full rounded-lg object-cover"
               />
               <h2 className="font-medium">{t.title}</h2>
-              <span className="text-xs text-zinc-600">{t.time && !t.backlog ? `首次發現 ${taipei(t.time)}` : '開始追蹤前已上架'}</span>
-              <SourceLink url={t.url} label="原站專題" />
+              <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-600">
+                {t.time && !t.backlog ? `首次發現 ${taipei(t.time)}` : '開始追蹤前已上架'}
+                <SourceLink url={t.url} label="原站專題" className="!min-h-5 shrink-0" />
+              </span>
             </div>
           </li>
         ))}

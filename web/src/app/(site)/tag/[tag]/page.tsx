@@ -94,10 +94,12 @@ export default async function TagPage({ params, searchParams }: { params: Promis
                   </Link>
                 )}
                 <div className="min-w-0 flex-1">
-                  <Link href={articleHref(a)} className="line-clamp-2 font-medium hover:underline">
-                    {a.title}
-                  </Link>
-                  <SourceLink url={a.url} className="ml-2" />
+                  <div className="flex items-start gap-2">
+                    <Link href={articleHref(a)} className="min-w-0 line-clamp-2 font-medium hover:underline">
+                      {a.title}
+                    </Link>
+                    <SourceLink url={a.url} className="!min-h-6 shrink-0" />
+                  </div>
                   <p className="mt-1 text-xs text-zinc-600">
                     {a.mediaTitle} · {taipei(a.publishedAt)}
                   </p>
