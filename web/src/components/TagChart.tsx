@@ -39,6 +39,7 @@ export default function TagChart({ points }: { points: SeriesPoint[] }) {
         {
           type: 'value',
           name: hasRank ? '名次' : undefined,
+          nameLocation: 'start',
           inverse: true,
           min: 1,
           minInterval: 1,
