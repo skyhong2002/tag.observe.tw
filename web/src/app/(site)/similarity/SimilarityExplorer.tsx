@@ -199,7 +199,24 @@ export default function SimilarityExplorer({
               </button>
             ))}
           </fieldset>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+              媒體數量
+              <select
+                aria-label="顯示媒體數量"
+                value={mediaLimit}
+                onChange={(event) => setMediaLimit(event.target.value)}
+                className="w-24 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              >
+                <option value="auto">自動</option>
+                {[10, 20, 40, 60, 80].map((count) => (
+                  <option key={count} value={count}>
+                    {count} 家
+                  </option>
+                ))}
+                <option value="all">全部</option>
+              </select>
+            </label>
             <button
               type="button"
               aria-pressed={showAll}
@@ -239,7 +256,7 @@ export default function SimilarityExplorer({
           <p className="hidden sm:block">
             {mediaLimit === 'auto' ? '媒體數量依畫布調整' : '媒體數量依設定'} · 移到媒體展開連線 · 點選看文章
           </p>
-          <p className="sm:hidden">設定可調整媒體數量 · 點選圖示看文章</p>
+          <p className="sm:hidden">上方可調整媒體數量 · 點選圖示看文章</p>
         </div>
       </section>
       <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
@@ -269,21 +286,7 @@ export default function SimilarityExplorer({
         <div className="space-y-5 p-4">
           {drawer === 'settings' && (
             <form action="/similarity/" method="get" className="space-y-5">
-              <label className="block text-sm">
-                顯示媒體數量
-                <select name="mediaCount" value={mediaLimit} onChange={(event) => setMediaLimit(event.target.value)} className={control}>
-                  <option value="auto">自動（依畫布大小）</option>
-                  {[20, 40, 60, 80].map((count) => (
-                    <option key={count} value={count}>
-                      最多 {count} 家
-                    </option>
-                  ))}
-                  <option value="all">全部有連線的媒體</option>
-                </select>
-                <span className="mt-2 block text-xs leading-5 text-zinc-500">
-                  立即套用；優先顯示樣本較多的媒體與相關來源。未顯示的媒體仍可從媒體列表查看。
-                </span>
-              </label>
+              <input type="hidden" name="mediaCount" value={mediaLimit} />
               <label className="block text-sm">
                 比較期間
                 <select name="hours" defaultValue={data.hours} className={control}>
@@ -406,7 +409,7 @@ export default function SimilarityExplorer({
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                數量預設依畫布大小調整，可在設定中手動選擇；優先顯示樣本較多的媒體及其相關來源。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
+                數量預設依畫布大小調整，可在圖表上方手動選擇；優先顯示樣本較多的媒體及其相關來源。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
                 展開目前畫面內該媒體的全部連線；「顯示全部連線」可還原目前媒體之間的全部關係。篇數與文章證據仍使用完整分析樣本。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
               </p>
               <p>

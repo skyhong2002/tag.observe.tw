@@ -151,9 +151,11 @@ export default function SimilarityGraph({
             id: 'media-network',
             type: 'graph',
             layout: 'none',
+            // The view transform also scales images; keep both axes uniform.
+            preserveAspect: 'contain',
             roam: false,
-            left: small ? 28 : 55,
-            right: small ? 28 : 65,
+            left: small ? 44 : 55,
+            right: small ? 44 : 65,
             top: 40,
             bottom: small ? 45 : 55,
             emphasis: { disabled: true },
