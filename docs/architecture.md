@@ -85,4 +85,6 @@ npm test && npm run typecheck && npm run lint
 3. push 到 `origin/main`。
 4. `scripts/install-service.sh`：工作目錄必須乾淨且等於 `origin/main`；以 commit 建立固定 release（`~/.local/share/tag-analysis/releases/<commit>`）、建置 Next、切換並重啟服務。
 
+其他 session 有未提交修改時，可在同一個 repository 建立乾淨的 detached worktree，從該 worktree 執行部署腳本。仍需先掃描並 push 該 commit，且部署版本必須等於 `origin/main`。腳本會檢查 standalone 目錄內每個媒體 PNG 是否與 manifest 的版本相符；切換失敗時會將網頁、爬蟲與 API 一起切回前一版本。
+
 回退：重新部署前一個 commit（release 目錄保留）；`systemctl --user stop tag-worker.service` 停止所有排程，既有資料仍可讀。

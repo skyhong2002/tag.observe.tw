@@ -3,7 +3,8 @@ set -euo pipefail
 umask 077
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 node_binary=$(command -v node)
-if [[ "$project_dir" != /home/deck/Projects/tag.analysis.tw || "$node_binary" != /home/deck/.local/bin/node ]]; then
+repository_dir=$(git -C "$project_dir" rev-parse --path-format=absolute --git-common-dir)
+if [[ "$repository_dir" != /home/deck/Projects/tag.analysis.tw/.git || "$node_binary" != /home/deck/.local/bin/node ]]; then
   echo 'This service unit targets skyhong-SM. Adjust the runtime paths for another host.' >&2
   exit 1
 fi
@@ -73,7 +74,7 @@ rollback() {
     if [[ "$had_unit" -eq 1 ]]; then
       install -m 644 "$unit_backup" "$unit_path"
       systemctl --user daemon-reload
-      systemctl --user restart tag-analysis.service
+      systemctl --user restart tag-web.service tag-worker.service tag-analysis.service
     else
       systemctl --user stop tag-analysis.service || true
       rm -f -- "$unit_path"
