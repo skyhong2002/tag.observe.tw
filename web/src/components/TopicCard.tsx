@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import MediaIcon from '@/components/MediaIcon';
-import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
+import TopicCover from '@/components/TopicCover';
 import { taipei } from '@/lib/api';
 import { isAllowedImage } from '@/lib/images';
 import type { Topic, TopicCoverage } from '@/lib/pages';
@@ -41,16 +41,7 @@ export default function TopicCard({
       id={`topic-${topic.id}`}
       className="flex scroll-mt-20 gap-3 rounded-lg border border-transparent py-3 target:-mx-3 target:border-brand-400 target:bg-brand-50 target:px-3 dark:target:border-brand-700 dark:target:bg-brand-950/40"
     >
-      {image && (
-        <Link
-          href={href ?? topic.url ?? '#'}
-          className="aspect-video w-28 shrink-0 self-start overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800"
-          tabIndex={-1}
-          aria-hidden
-        >
-          <SafeImage src={image} alt="" width={224} height={126} className="h-full w-full object-cover" />
-        </Link>
-      )}
+      <TopicCover src={image} href={href ?? topic.url ?? '#'} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="font-medium leading-snug">{titleNode}</h3>
         <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-600 dark:text-zinc-400">
