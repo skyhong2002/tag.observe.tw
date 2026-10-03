@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { looksLikeStories, sharedTag, topicPageGroups } from './topic-page.ts';
+import { looksLikeStories, sharedTag, topicPageGroups, topicPageImage } from './topic-page.ts';
 
 describe('topicPageGroups', () => {
   it('groups same-site links by container and drops nav, footer and other sites', () => {
@@ -54,5 +54,23 @@ describe('sharedTag', () => {
   });
   it('ignores tags outside the vocabulary', () => {
     expect(sharedTag([['冷門詞'], ['冷門詞']], freq)).toBeNull();
+  });
+});
+
+describe('topicPageImage', () => {
+  it('resolves the share image against the page and unwraps css url()', () => {
+    expect(topicPageImage('<meta property="og:image" content="//cdn.example.com/a.jpg">', 'https://www.example.com/topic/1')).toBe(
+      'https://cdn.example.com/a.jpg',
+    );
+    expect(topicPageImage('<meta property="og:image" content="url(https://cdn.example.com/b.jpg">', 'https://www.example.com/')).toBe(
+      'https://cdn.example.com/b.jpg',
+    );
+    expect(topicPageImage('<meta property="og:image" content="image/FB.jpg">', 'https://topic.example.com/book/')).toBe(
+      'https://topic.example.com/book/image/FB.jpg',
+    );
+  });
+  it('returns null without a usable image', () => {
+    expect(topicPageImage('<meta property="og:image" content="data:image/png;base64,AAAA">', 'https://www.example.com/')).toBeNull();
+    expect(topicPageImage('<title>x</title>', 'https://www.example.com/')).toBeNull();
   });
 });

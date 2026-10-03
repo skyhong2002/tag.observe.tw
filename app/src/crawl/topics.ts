@@ -51,6 +51,8 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://newtalk.tw/images/ogimage.jpg',
     url: 'https://newtalk.tw/news/topics/list',
     pattern: /\/news\/topics\/view\/\d+/,
+    // The title link sits beside the block's lazy-loaded cover.
+    card: '.news_block',
     title: (a) => {
       try {
         return decodeURIComponent((a.attr('href') ?? '').split('/').pop() ?? '');
@@ -124,7 +126,15 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://topic.udn.com/issue/index',
     pattern: /topic\.udn\.com\/(issue\/cards|newstopic|event)\/[\w-]+/,
     title: heading,
-    listings: [{ url: 'https://udn.com/topic/index', pattern: /topic\.udn\.com\/(issue\/cards|newstopic|event)\/[\w-]+/, title: heading }],
+    listings: [
+      {
+        url: 'https://udn.com/topic/index',
+        pattern: /topic\.udn\.com\/(issue\/cards|newstopic|event)\/[\w-]+/,
+        // Image link and <h3> link are separate; the card joins them.
+        card: '.story-list__news',
+        title: heading,
+      },
+    ],
   },
   // The homepage keyword bar (.h_kw) is LTN's curated list of running topics;
   // other /topic/ links on the page are per-article tags that churn hourly.
@@ -287,6 +297,8 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://news.ttv.com.tw/Projs/',
     fallbackImage: '/favicons/ttv.png',
     pattern: /^\/Proj\/(?!index\.html)[^/?#]+$/,
+    // Heading link above the project's story thumbnails: the first one is the cover.
+    card: '.project-list > li',
     title: heading,
   },
   {
@@ -364,6 +376,9 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://www.coolloud.org.tw/topics',
     fallbackImage: '/favicons/coolloud.png',
     pattern: /^\/topic\/style\d+\/\d+$/,
+    // The cover sits next to the title overlay, not inside it.
+    card: '.views-row',
+    title: textOf,
     scope: '.cover-title',
   },
   {

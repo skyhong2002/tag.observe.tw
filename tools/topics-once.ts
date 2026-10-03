@@ -2,7 +2,7 @@
 import pLimit from 'p-limit';
 import { fetchTopicListings, TOPIC_RULES } from '../app/src/crawl/topics.ts';
 import { createDb } from '../app/src/db/client.ts';
-import { runTopicsJob } from '../app/src/jobs/topics-job.ts';
+import { refreshTopicPages, runTopicsJob } from '../app/src/jobs/topics-job.ts';
 
 const requested = process.argv
   .find((s) => s.startsWith('--media='))
@@ -10,7 +10,18 @@ const requested = process.argv
   .split(',');
 const rules = TOPIC_RULES.filter((r) => !requested || requested.includes(r.media));
 if (!rules.length || requested?.some((id) => !rules.some((r) => r.media === id))) throw Error('Unknown topic source');
-if (process.argv.includes('--apply')) {
+if (process.argv.includes('--pages')) {
+  // Re-read listed topic pages now (story lists and missing covers) instead of
+  // waiting for the hourly job's 60-page budget.
+  const { db, close } = createDb();
+  try {
+    console.log(
+      JSON.stringify(await refreshTopicPages(db, { limit: Number(process.argv.find((s) => s.startsWith('--limit='))?.slice(8)) || 300 })),
+    );
+  } finally {
+    await close();
+  }
+} else if (process.argv.includes('--apply')) {
   const { db, close } = createDb();
   try {
     const results = await runTopicsJob(db, { rules, refreshPages: false });

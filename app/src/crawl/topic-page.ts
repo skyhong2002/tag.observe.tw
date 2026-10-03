@@ -22,6 +22,29 @@ export function registrable(host: string): string {
   return parts.length > 2 && TWO_LEVEL.has(last2) ? parts.slice(-3).join('.') : last2;
 }
 
+/** The topic page's share image, for listings that give no cover (navigation
+ *  bars, client-rendered cards). Outlet-wide logos are filtered by the caller. */
+export function topicPageImage(html: string, pageUrl: string): string | null {
+  const $ = cheerio.load(html);
+  const raw = $('meta[property="og:image"], meta[name="og:image"], meta[name="twitter:image"], meta[itemprop="image"]')
+    .map((_, el) => $(el).attr('content') ?? '')
+    .get()
+    .map((v) =>
+      v
+        .trim()
+        .replace(/^url\((.*?)\)?$/s, '$1')
+        .trim(),
+    )
+    .find((v) => v && !/^data:/i.test(v));
+  if (!raw) return null;
+  try {
+    const u = new URL(raw, pageUrl);
+    return /^https?:$/.test(u.protocol) ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Link groups on a topic page (same registrable domain), keyed by container signature, largest first. */
 export function topicPageGroups(html: string, pageUrl: string, articleId?: string): TopicStory[][] {
   const $ = cheerio.load(html);

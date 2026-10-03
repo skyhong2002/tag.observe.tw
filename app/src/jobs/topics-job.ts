@@ -2,7 +2,7 @@ import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
-import { looksLikeStories, type TopicStory, topicPageGroups } from '../crawl/topic-page.ts';
+import { looksLikeStories, type TopicStory, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
 import { fetchTopicListings, TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articles, crawlRuns, topics } from '../db/schema.ts';
@@ -103,8 +103,9 @@ export async function refreshTopicPages(
   { now = () => new Date(), limit = 60, fetch = fetchText }: { now?: () => Date; limit?: number; fetch?: typeof fetchText } = {},
 ) {
   const t = now().getTime();
+  // Topics still without a cover go first: the page's share image fills it.
   const due = await db
-    .select({ id: topics.id, media: topics.media, url: topics.url })
+    .select({ id: topics.id, media: topics.media, url: topics.url, image: topics.image })
     .from(topics)
     .where(
       and(
@@ -112,7 +113,7 @@ export async function refreshTopicPages(
         or(isNull(topics.pageCheckedAt), lt(topics.pageCheckedAt, new Date(t - 6 * 3600e3))),
       ),
     )
-    .orderBy(sql`${topics.pageCheckedAt} IS NOT NULL`, topics.pageCheckedAt, desc(topics.lastSeen))
+    .orderBy(sql`${topics.image} IS NOT NULL`, sql`${topics.pageCheckedAt} IS NOT NULL`, topics.pageCheckedAt, desc(topics.lastSeen))
     .limit(limit);
   const gate = pLimit(2);
   const pages = await Promise.all(
@@ -121,9 +122,14 @@ export async function refreshTopicPages(
         const articleId = sourceByMedia(articleMediaOf(row.media))?.list.articleId;
         try {
           const res = await fetch(row.url, { timeout: 20000 });
-          return { row, groups: res.status < 400 ? topicPageGroups(res.body, res.url || row.url, articleId) : [] };
+          const ok = res.status < 400;
+          return {
+            row,
+            groups: ok ? topicPageGroups(res.body, res.url || row.url, articleId) : [],
+            image: ok && !row.image ? topicPageImage(res.body, res.url || row.url) : null,
+          };
         } catch {
-          return { row, groups: [] as TopicStory[][] }; // unreachable: try again in 6 hours
+          return { row, groups: [] as TopicStory[][], image: null }; // unreachable: try again in 6 hours
         }
       }),
     ),
@@ -135,6 +141,38 @@ export async function refreshTopicPages(
       const k = `${row.media} ${key}`;
       seenOn.set(k, (seenOn.get(k) ?? new Set()).add(row.id));
     }
+  // A share image that several of the outlet's topics (or its listing's
+  // fallback) use is the site logo, not a cover.
+  const fallbackOf = new Map(TOPIC_RULES.map((r) => [r.media, r.fallbackImage]));
+  const candidates = pages.filter((p): p is typeof p & { image: string } => !!p.image && p.image !== fallbackOf.get(p.row.media));
+  const shared = new Set<string>();
+  const seenImage = new Map<string, number>();
+  for (const p of candidates) {
+    const k = `${p.row.media} ${p.image}`;
+    seenImage.set(k, (seenImage.get(k) ?? 0) + 1);
+    if ((seenImage.get(k) ?? 0) > 1) shared.add(k);
+  }
+  if (candidates.length) {
+    const stored = await db
+      .select({ media: topics.media, image: topics.image })
+      .from(topics)
+      .where(
+        inArray(
+          topics.image,
+          candidates.map((p) => p.image),
+        ),
+      );
+    for (const r of stored) shared.add(`${r.media} ${r.image}`);
+  }
+  let covers = 0;
+  for (const p of candidates) {
+    if (shared.has(`${p.row.media} ${p.image}`)) continue;
+    await db
+      .update(topics)
+      .set({ image: p.image.slice(0, 512) })
+      .where(and(eq(topics.id, p.row.id), isNull(topics.image)));
+    covers++;
+  }
   let found = 0;
   for (const { row, groups } of pages) {
     const own = groups.filter((g) => g.filter((s) => (seenOn.get(`${row.media} ${s.key}`)?.size ?? 0) > 1).length / g.length <= 0.5);
@@ -165,7 +203,7 @@ export async function refreshTopicPages(
       .set({ pageStories: stories.slice(0, 200), pageCheckedAt: now() })
       .where(eq(topics.id, row.id));
   }
-  return { checked: due.length, found };
+  return { checked: due.length, found, covers };
 }
 
 export async function latestTopics(db: Db, media: string, limit = 30) {
