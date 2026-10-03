@@ -78,6 +78,12 @@ export default async function MediaPage({
       <p className="text-sm text-zinc-600">
         近 {hours % 24 === 0 ? `${hours / 24} 天` : `${hours} 小時`}收錄 {data.articleCount} 篇
       </p>
+      <Link
+        href={`/media/${encodeURIComponent(media)}/articles/`}
+        className="inline-block text-sm text-brand-700 hover:underline dark:text-brand-400"
+      >
+        查看全文資料庫：保存正文、署名與引用來源 →
+      </Link>
       {expanded && (
         <p className="rounded-lg border border-zinc-300 bg-zinc-100/60 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
           最近 24 小時沒有收錄到文章，已顯示近 7 天的報導。

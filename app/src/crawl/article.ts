@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
+import { type ArticleContent, extractArticleContent } from './article-content.ts';
 import { between, decodeEntities, normalizeTag, resolveUrl } from './text.ts';
 
-export interface ArticleDetail {
+export interface ArticleDetail extends ArticleContent {
   tags: string[];
   image: string | null;
   description: string | null;
@@ -12,6 +13,8 @@ export interface ArticleDetail {
   keywordSource: string;
 }
 export interface ArticleRules {
+  bodySelector?: string;
+  authorSelector?: string;
   keywordMarkers?: Array<{ start: string; end: string }>;
   split?: string;
   tagSelector?: string;
@@ -138,6 +141,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     publishedAt,
     provider: providerName(html),
     keywordSource,
+    ...extractArticleContent($, url, rules),
   };
 }
 

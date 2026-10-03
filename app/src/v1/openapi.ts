@@ -89,6 +89,86 @@ const schemas: Record<string, Schema> = {
   }),
 };
 
+// Body comparison and retained article content are separate from headline search.
+schemas.OutletIdentity = obj({ media: str(), name: str(), country: str(), countryCode: str() });
+schemas.Attribution = obj({
+  media: str(),
+  name: str(),
+  country: str(),
+  countryCode: str(),
+  evidence: str(),
+  kind: str(undefined, { enum: ['explicit'] }),
+});
+schemas.SimilarityArticle = obj({
+  id: int(),
+  media: str(),
+  mediaTitle: str(),
+  country: str(),
+  countryCode: str(),
+  title: str(),
+  url: str(),
+  publishedAt: time(),
+  authors: arr(str()),
+  bodyLength: int(),
+  attributions: arr(ref('Attribution')),
+});
+schemas.SimilarityPair = obj({
+  id: str(),
+  a: ref('SimilarityArticle'),
+  b: ref('SimilarityArticle'),
+  score: num('正規化內文五字片段的 Dice 相似度'),
+  containment: num('共同片段占較短文章片段的比例'),
+  sharedShingles: int(),
+  kind: str(undefined, { enum: ['identical', 'high'] }),
+  evidence: str('最多 100 字的連續相同片段'),
+});
+schemas.SimilarityCoverage = obj({
+  media: str(),
+  name: str(),
+  total: int(),
+  fetched: int(),
+  usable: int(),
+  withAuthors: int(),
+  missing: int(),
+  pending: int(),
+  enabled: bool(),
+  excludedFromStatistics: bool(),
+});
+schemas.Similarity = obj({
+  generatedAt: time(),
+  hours: int(),
+  threshold: num(),
+  method: str(),
+  coverage: arr(ref('SimilarityCoverage')),
+  sample: obj({ available: int(), analyzed: int(), limit: int(), truncated: bool(), pairsTruncated: bool() }),
+  pairs: arr(ref('SimilarityPair')),
+  citations: arr(obj({ article: ref('SimilarityArticle'), source: ref('Attribution') })),
+  nodes: arr(obj({ id: str(), name: str(), country: str(), countryCode: str(), articles: int(), external: bool() })),
+  edges: arr(
+    obj({ source: str(), target: str(), kind: str(undefined, { enum: ['similarity', 'citation'] }), count: int(), score: nullable(num()) }),
+  ),
+});
+schemas.ContentArticle = obj({
+  id: int(),
+  media: str(),
+  mediaTitle: str(),
+  title: str(),
+  url: str(),
+  publishedAt: time(),
+  tags: arr(str()),
+  description: nullable(str()),
+  authors: arr(str()),
+  publisher: ref('OutletIdentity'),
+});
+schemas.CachedContent = obj({
+  status: str(undefined, { enum: ['ok', 'short', 'missing', 'blocked', 'error', 'not_fetched', 'expired'] }),
+  body: nullable(str('保留期間內已抓取的文字；不保證原站目前仍存在')),
+  chars: int(),
+  source: nullable(str('擷取方式')),
+  fetchedAt: nullable(time()),
+  attributions: arr(ref('Attribution')),
+});
+
 interface Param {
   name: string;
   in: 'query' | 'path';
@@ -140,6 +220,47 @@ export const API_TAGS = [
 ];
 
 export const ENDPOINTS: Endpoint[] = [
+  {
+    path: '/api/v1/similarity',
+    tag: 'articles',
+    summary: '內文相似與明確引用關係',
+    description:
+      '僅比較可用內文，排除「內容」聯播來源。取期間內最新最多 1200 篇，最多回傳 200 對；sample 揭露截斷。相似連線無方向；citation 由刊登媒體指向明確提及來源，並不保證最初作者。',
+    params: [
+      q('hours', '回溯小時', intIn(1, 168, 48)),
+      q('threshold', '最低 Dice 相似度', { type: 'number', minimum: 0.5, maximum: 1, default: 0.65 }),
+    ],
+    response: ref('Similarity'),
+    errors: { '400': '參數無效' },
+    cache: '1 分鐘',
+  },
+  {
+    path: '/api/v1/articles/{id}/content',
+    tag: 'articles',
+    summary: '單篇已保存內文',
+    params: [p('id', '文章 id', { type: 'integer', minimum: 1 }, 1)],
+    response: obj({ article: ref('ContentArticle'), content: ref('CachedContent') }),
+    errors: { '400': '文章 id 無效', '404': '文章不存在' },
+    cache: '1 分鐘',
+  },
+  {
+    path: '/api/v1/media/{media}/content',
+    tag: 'media',
+    summary: '媒體內文庫列表',
+    description: '以文章 id 遞減分頁；僅回傳內文狀態與長度，單篇內文另由 content API 取得。',
+    params: [p('media', '媒體代碼', str(), 'cna'), q('limit', '每頁筆數', intIn(1, 100, 40)), q('cursor', '上一頁 nextCursor', str())],
+    response: obj({
+      media: str(),
+      title: str(),
+      publisher: ref('OutletIdentity'),
+      limit: int(),
+      count: int(),
+      nextCursor: nullable(str()),
+      articles: arr({ allOf: [ref('ContentArticle'), obj({ bodyStatus: str(), bodyChars: int(), contentFetchedAt: nullable(time()) })] }),
+    }),
+    errors: { '400': '參數無效', '404': '媒體不存在' },
+    cache: '1 分鐘',
+  },
   {
     path: '/api/v1',
     tag: 'meta',
@@ -603,7 +724,7 @@ export const API_INTRO = {
     '錯誤回 `{"error": "..."}`，搭配 HTTP 狀態碼：`400` 參數錯誤、`404` 找不到、`405` 非 GET、`429` 太頻繁、`5xx` 伺服器問題。',
     '路徑參數（標籤、媒體代碼）請 URL 編碼，例如 `/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/articles`。路徑結尾不要加 `/`。',
     '`v1` 內只做向後相容的變更（新增欄位、新增端點）；移除或改名會先在本文件公告。',
-    '標題、圖片與內文著作權屬原媒體；本 API 只提供標題、連結與統計。使用資料請註明「資料來源：新文易數 tag.observe.tw」。',
+    '標題、圖片與內文著作權屬原媒體；本 API 提供標題、連結、統計及保存期間內的擷取文字。使用資料請註明「資料來源：新文易數 tag.observe.tw」。',
     '舊站 tag.analysis.tw 的 `/api/*.php` 在本站回 `410`，JSON 內 `replacement` 指向對應的 v1 端點。',
     '不寫程式也能追：RSS `/feeds/events.xml`（新事件）與 `/feeds/tag/<標籤>.xml`（某標籤的最新報導，標籤需 URL 編碼）；全站網址清單在 `/sitemap.xml`。',
   ],

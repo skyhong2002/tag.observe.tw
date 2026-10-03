@@ -21,6 +21,8 @@
     "images:hosts": "node --env-file=.env tools/gen-image-hosts.ts",
     "crawl:once": "node --env-file=.env tools/crawl-once.ts",
     "crawl:coverage": "node --env-file=.env tools/traffic-coverage.ts",
+    "similarity:audit": "node tools/similarity-audit.ts",
+    "similarity:backfill": "node --env-file=.env tools/similarity-backfill.ts",
     "events:once": "node --env-file=.env tools/events-once.ts"
   },
   "dependencies": {

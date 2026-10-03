@@ -4,6 +4,7 @@
 import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { buildApp } from '../src/app.js';
 import type { FetchResult } from '../src/crawl/fetch.ts';
 import { runArticles, runIndex } from '../src/crawl/pipeline.ts';
 import type { SourceSpec } from '../src/crawl/sources.ts';
@@ -13,6 +14,7 @@ import { createDb, type Db } from '../src/db/client.ts';
 import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots } from '../src/db/schema.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
+import { loadSimilarity } from '../src/v1/similarity.ts';
 
 const url = process.env.TEST_DB_URL;
 const TABLES = [
@@ -73,16 +75,38 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
 
   it('fetches untagged articles and tags them from the title when the page has no keywords', async () => {
     const vocab = await loadTitleVocab(db, { minArticles: 1, minShort: 1 });
-    const page = '<html><head><meta property="og:image" content="https://attach.setn.com/x.jpg"></head><body>no keywords</body></html>';
+    const body = Array.from({ length: 50 }, (_, i) => `第${i}項地方採訪報導指出公共建設應公開招標並邀請居民討論。`).join('');
+    const page = `<html><head><meta property="og:image" content="https://attach.setn.com/x.jpg"><meta name="author" content="王記者"></head><body><article><p>根據路透社報導，當局公布新政策。</p><p>${body}</p></article></body></html>`;
     const r = await runArticles(db, spec, { fetch: async (u: string) => res(u, page), vocab, limit: 10 });
-    expect(r.fetched).toBe(1); // only the untagged one (source has no legacy tag script)
+    expect(r.fetched).toBe(4); // body extraction includes already-tagged feed articles
     const [row] = await db
-      .select({ tags: articles.tags, status: articles.fetchStatus, image: articles.image })
+      .select({
+        tags: articles.tags,
+        status: articles.fetchStatus,
+        image: articles.image,
+        body: articles.body,
+        authors: articles.authors,
+        bodyStatus: articles.bodyStatus,
+        attributions: articles.attributions,
+      })
       .from(articles)
       .where(sql`${articles.title} = '沒有標籤的川普關稅新聞'`);
     expect(row.status).toBe('title');
     expect(row.tags).toEqual(expect.arrayContaining(['川普', '關稅']));
     expect(row.image).toBe('https://attach.setn.com/x.jpg');
+    expect(row.body).toContain(body);
+    expect(row.bodyStatus).toBe('ok');
+    expect(row.authors).toEqual(['王記者']);
+    expect(row.attributions).toEqual([expect.objectContaining({ media: 'reuters', countryCode: 'GB' })]);
+    expect(
+      (
+        await runArticles(db, spec, {
+          fetch: async () => {
+            throw Error('already stored: must not refetch');
+          },
+        })
+      ).fetched,
+    ).toBe(0);
   });
 
   it('computes a ranking snapshot from own articles', async () => {
@@ -130,7 +154,7 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     expect(tagTimes).toEqual([{ publishedAt: new Date('2026-09-20T00:00:00Z') }]);
   });
 
-  it('stops a batch on HTTP 429, retries a failed fetch once an hour later, then gives up', async () => {
+  it('stops on HTTP 429 and bounds HTTP/content retries to three attempts', async () => {
     const ch: SourceSpec = {
       media: 'commonhealth',
       group: 'hourly',
@@ -177,6 +201,12 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     await runArticles(db, ch, { fetch: async (u: string) => res(u, '', 500), now: later });
     expect(await status()).toEqual(['failed', 'failed', 'failed']);
     expect((await runArticles(db, ch, { fetch: async (u: string) => res(u, '', 500), now: later })).fetched).toBe(0);
+    // One final body retry is allowed after six hours, then attempts stay bounded.
+    const finalRetry = () => new Date(Date.now() + 9 * 3600e3);
+    expect((await runArticles(db, ch, { fetch: async (u: string) => res(u, '', 500), now: finalRetry })).fetched).toBe(3);
+    expect(
+      (await runArticles(db, ch, { fetch: async (u: string) => res(u, '', 500), now: () => new Date(Date.now() + 20 * 3600e3) })).fetched,
+    ).toBe(0);
     await db.delete(articles).where(sql`${articles.media} = 'commonhealth'`);
   });
 
@@ -242,6 +272,9 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
         crawledAt: now,
         tags: ['舊'],
         description: '保留標題與標籤',
+        body: '過期內文',
+        bodyStatus: 'ok',
+        contentFetchedAt: now,
         source: 'own',
       },
       {
@@ -257,8 +290,97 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     ]);
     await db.insert(jobRuns).values({ name: 'x', startedAt: new Date(now.getTime() - 40 * day), status: 'ok' });
     const out = await runRetentionJob(db);
-    expect(out).toMatchObject({ descriptionsCleared: 1, staleArticlesDeleted: 1, jobRunsDeleted: 1 });
+    expect(out).toMatchObject({ descriptionsCleared: 1, bodiesCleared: 1, staleArticlesDeleted: 1, jobRunsDeleted: 1 });
     const [{ n }] = await db.select({ n: sql<number>`COUNT(*)` }).from(articles);
     expect(Number(n)).toBe(6);
+  });
+  it('reserves backlog capacity and retries missing bodies on a bounded schedule', async () => {
+    const media = 'content_queue_test';
+    const queueSpec = { ...spec, media };
+    const ids = await db
+      .insert(articles)
+      .values(
+        Array.from({ length: 8 }, (_, i) => ({
+          media,
+          title: `正文排程測試${i}`,
+          url: `https://example.com/queue/${i}`,
+          tags: ['已有標籤'],
+          publishedAt: new Date(now.getTime() - (8 - i) * 3600e3),
+          crawledAt: now,
+        })),
+      )
+      .$returningId();
+    try {
+      await runArticles(db, queueSpec, { limit: 5, fetch: async (u) => res(u, '<html></html>') });
+      const attempted = await db
+        .select({ id: articles.id, attempts: articles.contentAttempts })
+        .from(articles)
+        .where(sql`${articles.media} = ${media} AND ${articles.contentFetchedAt} IS NOT NULL`);
+      expect(attempted.map((r) => r.id)).toContain(ids[0].id);
+      expect(attempted.map((r) => r.id)).toContain(ids.at(-1)!.id);
+      expect(attempted).toHaveLength(5);
+      await runArticles(db, queueSpec, { limit: 10, fetch: async (u) => res(u, '<html></html>') });
+      expect((await runArticles(db, queueSpec, { limit: 10, fetch: async (u) => res(u, '<html></html>') })).fetched).toBe(0);
+      for (const elapsed of [7, 14]) {
+        expect(
+          (
+            await runArticles(db, queueSpec, {
+              limit: 10,
+              now: () => new Date(now.getTime() + elapsed * 3600e3),
+              fetch: async (u) => res(u, '<html></html>'),
+            })
+          ).fetched,
+        ).toBe(8);
+      }
+      expect(
+        (
+          await runArticles(db, queueSpec, {
+            limit: 10,
+            now: () => new Date(now.getTime() + 21 * 3600e3),
+            fetch: async (u) => res(u, '<html></html>'),
+          })
+        ).fetched,
+      ).toBe(0);
+    } finally {
+      await db.delete(articles).where(sql`${articles.media} = ${media}`);
+    }
+  });
+
+  it('serves cached full bodies and computes real cross-media similarity without contacting upstream', async () => {
+    const [original] = await db.select().from(articles).where(sql`${articles.media} = 'setn' AND ${articles.bodyStatus} = 'ok'`).limit(1);
+    const [copy] = await db
+      .insert(articles)
+      .values({
+        media: 'cna',
+        title: '相同內文，不同標題',
+        url: 'https://cna.com.tw/test-copy',
+        publishedAt: now,
+        crawledAt: now,
+        tags: [],
+        body: original.body,
+        bodyStatus: 'ok',
+        authors: ['另一記者'],
+        contentFetchedAt: now,
+      })
+      .$returningId();
+    const app = await buildApp({ tagDbUrl: null, uiOrigin: 'http://127.0.0.1:1', rateLimit: false }, { db });
+    try {
+      const response = await app.inject(`/api/v1/articles/${original.id}/content`);
+      expect(response.statusCode).toBe(200);
+      expect(response.json().content.body).toBe(original.body);
+      const listing = await app.inject('/api/v1/media/setn/content?limit=1');
+      expect(listing.json().articles).toHaveLength(1);
+      expect(listing.json().articles[0]).not.toHaveProperty('body');
+      expect(listing.json().nextCursor).toBeTruthy();
+      const data = await loadSimilarity(db, 48, 0.65);
+      expect(data.pairs.some((pair) => pair.kind === 'identical' && [pair.a.id, pair.b.id].includes(copy.id))).toBe(true);
+      expect(data.edges.some((edge) => edge.kind === 'citation' && edge.target === 'reuters')).toBe(true);
+      expect(data.coverage.find((c) => c.media === 'yam')?.excludedFromStatistics).toBe(true);
+      expect((await app.inject('/api/v1/similarity?threshold=NaN')).statusCode).toBe(400);
+      expect((await app.inject('/api/v1/articles/999999999/content')).statusCode).toBe(404);
+    } finally {
+      await app.close();
+      await db.delete(articles).where(sql`${articles.id} = ${copy.id}`);
+    }
   });
 });

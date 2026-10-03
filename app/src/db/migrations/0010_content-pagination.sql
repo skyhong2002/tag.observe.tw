@@ -1,0 +1,1 @@
+CREATE INDEX `articles_media_content` ON `articles` (`media`,`id`);

@@ -1,4 +1,5 @@
 import { bigint, datetime, index, int, json, longtext, mysqlTable, text, uniqueIndex, varchar } from 'drizzle-orm/mysql-core';
+import type { Attribution } from '../similarity/attribution.ts';
 
 // Derived data owned by the new site. Raw crawl tables stay in the legacy DB
 // until the crawlers move; nothing here is ever written to the old database.
@@ -50,6 +51,13 @@ export const articles = mysqlTable(
     creator: varchar('creator', { length: 256 }),
     tags: json('tags').$type<string[]>().notNull(),
     description: text('description'),
+    body: longtext('body'),
+    authors: json('authors').$type<string[]>(),
+    bodyStatus: varchar('body_status', { length: 16 }),
+    bodySource: varchar('body_source', { length: 128 }),
+    contentFetchedAt: datetime('content_fetched_at'),
+    contentAttempts: int('content_attempts').notNull().default(0),
+    attributions: json('attributions').$type<Attribution[]>(),
     fetchedAt: datetime('fetched_at'),
     fetchStatus: varchar('fetch_status', { length: 16 }),
     source: varchar('source', { length: 8 }).notNull().default('own'),
@@ -61,6 +69,7 @@ export const articles = mysqlTable(
     index('articles_published').on(t.publishedAt),
     index('articles_media_published').on(t.media, t.publishedAt),
     index('articles_media_fetch').on(t.media, t.fetchedAt),
+    index('articles_media_content').on(t.media, t.id),
   ],
 );
 

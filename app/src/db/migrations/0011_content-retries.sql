@@ -1,0 +1,1 @@
+ALTER TABLE `articles` ADD `content_attempts` int DEFAULT 0 NOT NULL;

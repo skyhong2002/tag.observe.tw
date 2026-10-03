@@ -14,7 +14,7 @@
 - 錯誤回 `{"error": "..."}`，搭配 HTTP 狀態碼：`400` 參數錯誤、`404` 找不到、`405` 非 GET、`429` 太頻繁、`5xx` 伺服器問題。
 - 路徑參數（標籤、媒體代碼）請 URL 編碼，例如 `/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/articles`。路徑結尾不要加 `/`。
 - `v1` 內只做向後相容的變更（新增欄位、新增端點）；移除或改名會先在本文件公告。
-- 標題、圖片與內文著作權屬原媒體；本 API 只提供標題、連結與統計。使用資料請註明「資料來源：新文易數 tag.observe.tw」。
+- 標題、圖片與內文著作權屬原媒體；本 API 提供標題、連結、統計及保存期間內的擷取文字。使用資料請註明「資料來源：新文易數 tag.observe.tw」。
 - 舊站 tag.analysis.tw 的 `/api/*.php` 在本站回 `410`，JSON 內 `replacement` 指向對應的 v1 端點。
 - 不寫程式也能追：RSS `/feeds/events.xml`（新事件）與 `/feeds/tag/<標籤>.xml`（某標籤的最新報導，標籤需 URL 編碼）；全站網址清單在 `/sitemap.xml`。
 
@@ -57,6 +57,9 @@ for a in r.json()["articles"]:
 
 | 端點 | 說明 |
 | --- | --- |
+| [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
+| [`GET /api/v1/articles/{id}/content`](#api-v1-articles-id-content) | 單篇已保存內文 |
+| [`GET /api/v1/media/{media}/content`](#api-v1-media-media-content) | 媒體內文庫列表 |
 | [`GET /api/v1`](#api-v1) | API 索引 |
 | [`GET /api/v1/openapi.json`](#api-v1-openapi-json) | OpenAPI 3.1 規格 |
 | [`GET /api/v1/categories`](#api-v1-categories) | 排行分類 |
@@ -196,6 +199,190 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 錯誤：`400` `at` 格式錯誤；`404` 未知分類，或該時間以前沒有快照。
 
 ## 文章搜尋
+
+<a id="api-v1-similarity"></a>
+
+### `GET /api/v1/similarity`
+
+**內文相似與明確引用關係**
+
+僅比較可用內文，排除「內容」聯播來源。取期間內最新最多 1200 篇，最多回傳 200 對；sample 揭露截斷。相似連線無方向；citation 由刊登媒體指向明確提及來源，並不保證最初作者。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `hours` | query | integer | 回溯小時，1–168，預設 `48` |
+| `threshold` | query | number | 最低 Dice 相似度，0.5–1，預設 `0.65` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/similarity'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `hours` | integer |  |
+| `threshold` | number |  |
+| `method` | string |  |
+| `coverage` | object[] |  |
+| `coverage[].media` | string |  |
+| `coverage[].name` | string |  |
+| `coverage[].total` | integer |  |
+| `coverage[].fetched` | integer |  |
+| `coverage[].usable` | integer |  |
+| `coverage[].withAuthors` | integer |  |
+| `coverage[].missing` | integer |  |
+| `coverage[].pending` | integer |  |
+| `coverage[].enabled` | boolean |  |
+| `coverage[].excludedFromStatistics` | boolean |  |
+| `sample` | object |  |
+| `sample.available` | integer |  |
+| `sample.analyzed` | integer |  |
+| `sample.limit` | integer |  |
+| `sample.truncated` | boolean |  |
+| `sample.pairsTruncated` | boolean |  |
+| `pairs` | object[] |  |
+| `pairs[].id` | string |  |
+| `pairs[].a` | object |  |
+| `pairs[].a.id` | integer |  |
+| `pairs[].a.media` | string |  |
+| `pairs[].a.mediaTitle` | string |  |
+| `pairs[].a.country` | string |  |
+| `pairs[].a.countryCode` | string |  |
+| `pairs[].a.title` | string |  |
+| `pairs[].a.url` | string |  |
+| `pairs[].a.publishedAt` | string (ISO 時間) |  |
+| `pairs[].a.authors` | string[] |  |
+| `pairs[].a.bodyLength` | integer |  |
+| `pairs[].a.attributions` | object[] |  |
+| `pairs[].a.attributions[].media` | string |  |
+| `pairs[].a.attributions[].name` | string |  |
+| `pairs[].a.attributions[].country` | string |  |
+| `pairs[].a.attributions[].countryCode` | string |  |
+| `pairs[].a.attributions[].evidence` | string |  |
+| `pairs[].a.attributions[].kind` | "explicit" |  |
+| `pairs[].b` | object |  |
+| `pairs[].b.id` | integer |  |
+| `pairs[].b.media` | string |  |
+| `pairs[].b.mediaTitle` | string |  |
+| `pairs[].b.country` | string |  |
+| `pairs[].b.countryCode` | string |  |
+| `pairs[].b.title` | string |  |
+| `pairs[].b.url` | string |  |
+| `pairs[].b.publishedAt` | string (ISO 時間) |  |
+| `pairs[].b.authors` | string[] |  |
+| `pairs[].b.bodyLength` | integer |  |
+| `pairs[].b.attributions` | object[] |  |
+| `pairs[].b.attributions[].media` | string |  |
+| `pairs[].b.attributions[].name` | string |  |
+| `pairs[].b.attributions[].country` | string |  |
+| `pairs[].b.attributions[].countryCode` | string |  |
+| `pairs[].b.attributions[].evidence` | string |  |
+| `pairs[].b.attributions[].kind` | "explicit" |  |
+| `pairs[].score` | number | 正規化內文五字片段的 Dice 相似度 |
+| `pairs[].containment` | number | 共同片段占較短文章片段的比例 |
+| `pairs[].sharedShingles` | integer |  |
+| `pairs[].kind` | "identical" \| "high" |  |
+| `pairs[].evidence` | string | 最多 100 字的連續相同片段 |
+| `citations` | object[] |  |
+| `citations[].article` | object |  |
+| `citations[].article.id` | integer |  |
+| `citations[].article.media` | string |  |
+| `citations[].article.mediaTitle` | string |  |
+| `citations[].article.country` | string |  |
+| `citations[].article.countryCode` | string |  |
+| `citations[].article.title` | string |  |
+| `citations[].article.url` | string |  |
+| `citations[].article.publishedAt` | string (ISO 時間) |  |
+| `citations[].article.authors` | string[] |  |
+| `citations[].article.bodyLength` | integer |  |
+| `citations[].article.attributions` | object[] |  |
+| `citations[].article.attributions[].media` | string |  |
+| `citations[].article.attributions[].name` | string |  |
+| `citations[].article.attributions[].country` | string |  |
+| `citations[].article.attributions[].countryCode` | string |  |
+| `citations[].article.attributions[].evidence` | string |  |
+| `citations[].article.attributions[].kind` | "explicit" |  |
+| `citations[].source` | object |  |
+| `citations[].source.media` | string |  |
+| `citations[].source.name` | string |  |
+| `citations[].source.country` | string |  |
+| `citations[].source.countryCode` | string |  |
+| `citations[].source.evidence` | string |  |
+| `citations[].source.kind` | "explicit" |  |
+| `nodes` | object[] |  |
+| `nodes[].id` | string |  |
+| `nodes[].name` | string |  |
+| `nodes[].country` | string |  |
+| `nodes[].countryCode` | string |  |
+| `nodes[].articles` | integer |  |
+| `nodes[].external` | boolean |  |
+| `edges` | object[] |  |
+| `edges[].source` | string |  |
+| `edges[].target` | string |  |
+| `edges[].kind` | "similarity" \| "citation" |  |
+| `edges[].count` | integer |  |
+| `edges[].score` | number \| null |  |
+
+錯誤：`400` 參數無效。
+
+快取：1 分鐘。
+
+<a id="api-v1-articles-id-content"></a>
+
+### `GET /api/v1/articles/{id}/content`
+
+**單篇已保存內文**
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | integer | 文章 id，例：`1` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `article` | object |  |
+| `article.id` | integer |  |
+| `article.media` | string |  |
+| `article.mediaTitle` | string |  |
+| `article.title` | string |  |
+| `article.url` | string |  |
+| `article.publishedAt` | string (ISO 時間) |  |
+| `article.tags` | string[] |  |
+| `article.description` | string \| null |  |
+| `article.authors` | string[] |  |
+| `article.publisher` | object |  |
+| `article.publisher.media` | string |  |
+| `article.publisher.name` | string |  |
+| `article.publisher.country` | string |  |
+| `article.publisher.countryCode` | string |  |
+| `content` | object |  |
+| `content.status` | "ok" \| "short" \| "missing" \| "blocked" \| "error" \| "not_fetched" \| "expired" |  |
+| `content.body` | string \| null | 保留期間內已抓取的文字；不保證原站目前仍存在 |
+| `content.chars` | integer |  |
+| `content.source` | string \| null | 擷取方式 |
+| `content.fetchedAt` | string (ISO 時間) \| null |  |
+| `content.attributions` | object[] |  |
+| `content.attributions[].media` | string |  |
+| `content.attributions[].name` | string |  |
+| `content.attributions[].country` | string |  |
+| `content.attributions[].countryCode` | string |  |
+| `content.attributions[].evidence` | string |  |
+| `content.attributions[].kind` | "explicit" |  |
+
+錯誤：`400` 文章 id 無效；`404` 文章不存在。
+
+快取：1 分鐘。
 
 <a id="api-v1-articles"></a>
 
@@ -686,6 +873,63 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 錯誤：`404` 該媒體沒有追蹤議題。
 
 ## 媒體與爬蟲狀態
+
+<a id="api-v1-media-media-content"></a>
+
+### `GET /api/v1/media/{media}/content`
+
+**媒體內文庫列表**
+
+以文章 id 遞減分頁；僅回傳內文狀態與長度，單篇內文另由 content API 取得。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `media` | 路徑 | string | 媒體代碼，例：`cna` |
+| `limit` | query | integer | 每頁筆數，1–100，預設 `40` |
+| `cursor` | query | string | 上一頁 nextCursor |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `media` | string |  |
+| `title` | string |  |
+| `publisher` | object |  |
+| `publisher.media` | string |  |
+| `publisher.name` | string |  |
+| `publisher.country` | string |  |
+| `publisher.countryCode` | string |  |
+| `limit` | integer |  |
+| `count` | integer |  |
+| `nextCursor` | string \| null |  |
+| `articles` | object[] |  |
+| `articles[].id` | integer |  |
+| `articles[].media` | string |  |
+| `articles[].mediaTitle` | string |  |
+| `articles[].title` | string |  |
+| `articles[].url` | string |  |
+| `articles[].publishedAt` | string (ISO 時間) |  |
+| `articles[].tags` | string[] |  |
+| `articles[].description` | string \| null |  |
+| `articles[].authors` | string[] |  |
+| `articles[].publisher` | object |  |
+| `articles[].publisher.media` | string |  |
+| `articles[].publisher.name` | string |  |
+| `articles[].publisher.country` | string |  |
+| `articles[].publisher.countryCode` | string |  |
+| `articles[].bodyStatus` | string |  |
+| `articles[].bodyChars` | integer |  |
+| `articles[].contentFetchedAt` | string (ISO 時間) \| null |  |
+
+錯誤：`400` 參數無效；`404` 媒體不存在。
+
+快取：1 分鐘。
 
 <a id="api-v1-media"></a>
 

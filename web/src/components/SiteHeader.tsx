@@ -19,6 +19,9 @@ export default function SiteHeader() {
           <Link href="/ranking/" className="rounded-md px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
             排行榜
           </Link>
+          <Link href="/similarity/" className="rounded-md px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            內文相似度
+          </Link>
           <a href="/event/" className="rounded-md px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
             事件表
           </a>

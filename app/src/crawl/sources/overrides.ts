@@ -42,12 +42,16 @@ export const overrides: Record<string, SourceOverride> = {
   // /<section>/<id>: a story filed under two sections appears twice.
   tvbs: {
     list: { urls: [{ cat: 'news', url: 'https://news.tvbs.com.tw/sitemap/news-sitemap' }], articleId: String.raw`^/[a-z-]+/(\d+)$` },
+    article: { bodySelector: '.article-editor-content' },
   },
   ctitv: {
     list: { urls: [{ cat: 'news', url: 'https://ctinews.com/rss/sitemap-news.xml' }] },
     titleSuffix: String.raw`\s*\|\s*中天新聞網`,
   },
-  upmedia: { list: { urls: [{ cat: 'news', url: 'https://www.upmedia.mg/sitemapnews' }] } },
+  upmedia: {
+    list: { urls: [{ cat: 'news', url: 'https://www.upmedia.mg/sitemapnews' }] },
+    article: { bodySelector: '.news-box-text' },
+  },
   epochtimes: { list: { urls: [{ cat: 'news', url: 'https://www.epochtimes.com/feed' }] } },
   udn: {
     // Weekly archive sitemaps give every article the same lastmod. The plain
@@ -60,6 +64,9 @@ export const overrides: Record<string, SourceOverride> = {
       ],
     },
     titleSuffix: String.raw`\s*\|\s*聯合新聞網`,
+    // JSON-LD may put only the dateline in Person.name. Keep the full visible
+    // byline, including agency credit when no reporter is named.
+    article: { bodySelector: '.article-content__editor', authorSelector: '.article-content__author' },
   },
   // Second batch probed 2026-09-28 (sitemap indexes: newest 4 children followed).
   // The full sitemap also lists channels, magazine issues and account pages.
@@ -117,6 +124,7 @@ export const overrides: Record<string, SourceOverride> = {
   // topic pages link the same id as /specialtopic/content/<topic>/<id>.
   taisounds: {
     list: { articleId: String.raw`^/(?:news|specialtopic)/content/\d+/(\d+)` },
+    article: { bodySelector: '.news-box-text' },
     titleSuffix: String.raw`\s*\|[^|]*-\s*太報 TaiSounds`,
   },
   // "<title> | 綜合 | 運動 | NOWnews今日新聞": up to three short section names.
@@ -210,11 +218,18 @@ export const overrides: Record<string, SourceOverride> = {
   },
   // news.ltn.com.tw/news/<section>/<breakingnews|paper>/<id>: a story is listed
   // under every section (politics, life, the city…). Other LTN hosts are unaffected.
-  ltn: { list: { articleId: String.raw`^/news/[^/]+/((?:breakingnews|paper)/\d+)$` } },
+  ltn: {
+    list: { articleId: String.raw`^/news/[^/]+/((?:breakingnews|paper)/\d+)$` },
+    // iStyle lacks articleBody and has malformed structured URL identities.
+    article: { bodySelector: '.content940 .text', authorSelector: '.content940 .time .auther' },
+  },
   // 2026-10-01 audit. GNN tags are #hashtag links; the legacy Firefox 31 UA is dropped.
   gamer: { article: { userAgent: undefined, tagSelector: 'a[href*="search_tag.php"]' } },
   // 報導者 pages have no keyword meta; the post's tags are the first "tags" array in the page state.
-  reporter: { article: { jsonTags: 'tags' } },
+  reporter: { article: { jsonTags: 'tags', authorSelector: 'a[href^="/authors/"]' } },
+  // Verified public-page body containers, 2026-10-03 similarity audit.
+  ftnn: { article: { bodySelector: '.news-body' } },
+  rti: { article: { bodySelector: '.text.ivu-mt', authorSelector: 'a[href*="newsauthorlist"]' } },
   // 2026-10-03 traffic coverage: latest lists, with dates and tags from articles.
   mirrordaily: {
     group: 'news',

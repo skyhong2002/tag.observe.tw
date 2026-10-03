@@ -1,7 +1,8 @@
-import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
+import { extractAttributions } from '../similarity/attribution.ts';
 import { extractArticle } from './article.ts';
 import { type FeedItem, parseFeed } from './feed.ts';
 import { fetchText, fetchViaCurl } from './fetch.ts';
@@ -225,35 +226,55 @@ export async function runArticles(
     now = () => new Date(),
     limit = spec.article.batch,
     concurrency = 2,
+    hours = 90 * 24,
     vocab = null as TitleVocab | null,
   } = {},
 ) {
   const started = now();
-  // Sources that had a legacy *_tag.php fetch every article; the rest only
-  // fetch articles their listing left untagged. Untagged ones go first.
-  const pending = await db
-    .select({
-      id: articles.id,
-      url: articles.url,
-      publishedAt: articles.publishedAt,
-      crawledAt: articles.crawledAt,
-      title: articles.title,
-      fetchStatus: articles.fetchStatus,
-      urlKey: articles.urlKey,
-    })
-    .from(articles)
-    .where(
-      and(
-        eq(articles.media, spec.media),
-        // A failed fetch is retried once, an hour later; the second failure is final.
-        or(isNull(articles.fetchedAt), and(eq(articles.fetchStatus, 'error'), lt(articles.fetchedAt, new Date(now().getTime() - 3600e3)))),
-        gte(articles.publishedAt, new Date(now().getTime() - 72 * 3600e3)),
-        // ...plus any whose publish time is still the crawl time (the page has it).
-        spec.article.enabled ? sql`TRUE` : sql`(JSON_LENGTH(${articles.tags}) = 0 OR ${articles.publishedAt} = ${articles.crawledAt})`,
-      ),
-    )
-    .orderBy(sql`JSON_LENGTH(${articles.tags}) = 0 DESC`, desc(articles.id))
-    .limit(limit);
+  // Every article needs body extraction, including previously tagged feeds.
+  // Recent items go first, then the retained 90-day backlog is filled gradually.
+  const pendingQuery = () =>
+    db
+      .select({
+        id: articles.id,
+        url: articles.url,
+        publishedAt: articles.publishedAt,
+        crawledAt: articles.crawledAt,
+        title: articles.title,
+        fetchStatus: articles.fetchStatus,
+        urlKey: articles.urlKey,
+      })
+      .from(articles)
+      .where(
+        and(
+          eq(articles.media, spec.media),
+          // HTTP errors retry after an hour; missing/blocked bodies retry after six hours, up to three attempts.
+          or(
+            isNull(articles.fetchedAt),
+            isNull(articles.contentFetchedAt),
+            and(
+              eq(articles.fetchStatus, 'error'),
+              lt(articles.contentAttempts, 3),
+              lt(articles.fetchedAt, new Date(now().getTime() - 3600e3)),
+            ),
+            and(
+              inArray(articles.bodyStatus, ['missing', 'blocked', 'error']),
+              lt(articles.contentAttempts, 3),
+              lt(articles.contentFetchedAt, new Date(now().getTime() - 6 * 3600e3)),
+            ),
+          ),
+          gte(articles.publishedAt, new Date(now().getTime() - hours * 3600e3)),
+        ),
+      );
+  // Reserve part of each batch for the oldest pending rows, so a busy outlet
+  // cannot starve its retained backlog with a continuous stream of new links.
+  const [recent, backlog] = await Promise.all([
+    pendingQuery().orderBy(desc(articles.publishedAt), desc(articles.id)).limit(limit),
+    pendingQuery()
+      .orderBy(asc(articles.publishedAt), asc(articles.id))
+      .limit(Math.max(1, Math.floor(limit / 5))),
+  ]);
+  const pending = [...new Map([...backlog, ...recent].map((row) => [row.id, row])).values()].slice(0, limit);
   if (!pending.length) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
   const [run] = await db
     .insert(crawlRuns)
@@ -317,6 +338,14 @@ export async function runArticles(
               canonical: trunc(detail.canonical, 512),
               image: detail.image ? trunc(detail.image, 512) : undefined,
               description: detail.description ? trunc(detail.description, 4000) : undefined,
+              body: detail.body,
+              authors: detail.authors,
+              creator: detail.authors.length ? detail.authors.join('、').slice(0, 256) : undefined,
+              bodyStatus: detail.bodyStatus,
+              bodySource: detail.bodySource.slice(0, 128),
+              contentFetchedAt: now(),
+              contentAttempts: sql`${articles.contentAttempts} + 1`,
+              attributions: extractAttributions(detail.body ?? '', spec.media, detail.provider),
               tags: sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(tags)}, tags)`,
             })
             .where(eq(articles.id, row.id));
@@ -344,6 +373,9 @@ export async function runArticles(
             .set({
               fetchedAt: now(),
               fetchStatus: row.fetchStatus === 'error' ? 'failed' : 'error',
+              contentFetchedAt: now(),
+              contentAttempts: sql`${articles.contentAttempts} + 1`,
+              bodyStatus: 'error',
               ...(titleTags.length ? { tags: sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(titleTags)}, tags)` } : {}),
             })
             .where(eq(articles.id, row.id));

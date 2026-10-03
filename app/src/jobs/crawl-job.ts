@@ -38,8 +38,8 @@ export async function crawlArticles(
   { log, concurrency = 6, perMedia = 80 }: { log: Logger; concurrency?: number; perMedia?: number },
 ) {
   const gate = pLimit(concurrency);
-  // Every active source: those without a legacy tag script only fetch
-  // articles their listing left untagged (see runArticles).
+  // Fetch bodies for every active source, including articles already tagged by
+  // their feed. runArticles gradually fills the retained 90-day backlog too.
   const specs = [...sourcesInGroup('news'), ...sourcesInGroup('hourly')];
   const vocab = await loadTitleVocab(db).catch((error) => {
     log.warn({ err: (error as Error).message }, 'title vocabulary unavailable');

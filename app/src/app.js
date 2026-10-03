@@ -5,13 +5,15 @@ import { registerFeeds } from './feeds.ts';
 import { legacyRoute } from './legacy-redirects.js';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
 import { createUiProxy } from './ui-proxy.js';
+import { registerArticleContent } from './v1/article-content.ts';
 import { registerArticleSearch } from './v1/articles.ts';
 import { registerMediaStats } from './v1/media-stats.ts';
 import { registerApiMeta } from './v1/openapi.ts';
 import { registerPageApis } from './v1/pages.ts';
 import { registerV1Routes } from './v1/routes.ts';
+import { registerSimilarity } from './v1/similarity.ts';
 
-export async function buildApp(config, { logger = false, db = null } = {}) {
+export async function buildApp(config, { logger = false, db = /** @type {import('./db/client.ts').Db | null} */ (null) } = {}) {
   const app = Fastify({
     logger,
     logController: new LogController({ disableRequestLogging: true }),
@@ -65,6 +67,8 @@ export async function buildApp(config, { logger = false, db = null } = {}) {
     registerPageApis(app, own.db);
     registerMediaStats(app, own.db);
     registerArticleSearch(app, own.db);
+    registerSimilarity(app, own.db);
+    registerArticleContent(app, own.db);
   }
   registerApiMeta(app);
   registerFeeds(app, own?.db ?? null);
