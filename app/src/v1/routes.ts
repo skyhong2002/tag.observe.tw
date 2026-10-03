@@ -5,10 +5,12 @@ import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads, rankingSnapshots, tagStats } from '../db/schema.ts';
 import { applyRankingBasis, rankingBasis } from '../jobs/ranking-basis.ts';
 import { BURST_STEPS, computeBurst, effectiveWeight, type RankingChart } from '../jobs/ranking-compute.ts';
-import { RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
+import { HOURS, RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
+import { isTagNoise } from '../tag-noise.ts';
 import { loadThreadCoverage } from './coverage.ts';
 import { taipeiDay, threadSeries, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
+import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyTrends } from './tag-series.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -50,6 +52,17 @@ export async function loadRanking(db: Db, category: string, { at }: { at?: Date 
   }
   const stored = JSON.parse(current.chart) as RankingChart;
   const chart = applyRankingBasis(stored, basis, current.computedAt);
+  const entries = chart.available ? computeBurst(chart, history) : [];
+  // Score rank a day earlier on the same basis, so the page can flag what is
+  // new today versus what merely moved. Unknown when the old chart is missing,
+  // on another basis, or truncated below this tag.
+  const dayAgo = history.get(24);
+  const comparable = dayAgo && dayAgo.available !== false && dayAgo.basis?.id === chart.basis?.id;
+  const ranks = new Map(comparable ? dayAgo.entries.filter((e) => !isTagNoise(e.tag)).map((e, i) => [e.tag, i + 1]) : []);
+  const compared = entries.map((e) => {
+    const rank24h = ranks.get(e.tag) ?? null;
+    return { ...e, rank24h, new: Boolean(comparable && dayAgo.truncated === false && rank24h === null) };
+  });
   return {
     snapshot: {
       id: current.id,
@@ -63,7 +76,7 @@ export async function loadRanking(db: Db, category: string, { at }: { at?: Date 
       mediaCount: stored.basis?.id === basis.id ? current.mediaCount : null,
       historyAvailable: [...history].filter(([, v]) => v?.available).map(([h]) => h),
     },
-    entries: chart.available ? computeBurst(chart, history) : [],
+    entries: compared,
   };
 }
 
@@ -78,7 +91,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
   app.get('/api/v1/media', async () =>
     Object.fromEntries(Object.entries(mediaInfo).map(([k, v]) => [k, { title: v.title, icon: iconUrl(k) }])),
   );
-  app.get<{ Querystring: { category?: string; order?: string; limit?: string; at?: string; trend?: string } }>(
+  app.get<{ Querystring: { category?: string; order?: string; limit?: string; at?: string; trend?: string; related?: string } }>(
     '/api/v1/ranking',
     async (request, reply) => {
       const category = request.query.category ?? 'all';
@@ -103,11 +116,26 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
               result.snapshot.basis,
             )
           : null;
+      const related =
+        request.query.related === '1'
+          ? await loadRelatedTags(
+              db,
+              selected.map((e) => e.tag),
+              result.snapshot.basis.media,
+              new Date(new Date(result.snapshot.computedAt).getTime() - HOURS * 3600e3),
+              new Date(result.snapshot.computedAt),
+            )
+          : null;
       reply.header('cache-control', 'public, max-age=60');
       return {
         ...result,
         order,
-        entries: selected.map((e, i) => ({ ...e, position: i + 1, ...(trends ? { trend: trends.get(e.tag) } : {}) })),
+        entries: selected.map((e, i) => ({
+          ...e,
+          position: i + 1,
+          ...(trends ? { trend: trends.get(e.tag) } : {}),
+          ...(related ? { related: related.get(e.tag) ?? [] } : {}),
+        })),
       };
     },
   );

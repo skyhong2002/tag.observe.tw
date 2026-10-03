@@ -44,9 +44,10 @@ const schemas: Record<string, Schema> = {
       title: str('標題'),
       url: str('原文網址'),
       image: nullable(str('代表圖網址')),
+      camp: str('媒體陣營 blue／green／other（只在 /api/v1/events 回傳）'),
     },
     '事件代表新聞',
-    ['id'],
+    ['id', 'camp'],
   ),
   Article: obj(
     {
@@ -77,6 +78,16 @@ const schemas: Record<string, Schema> = {
       normalized: num('原始分數 ÷ 固定基準媒體數 × 50'),
       burst: nullable(num('爆發力：與同一基準 3/6/12/24/48 小時前分數比較的加權差；缺值、舊榜截斷或基準不相容為 null')),
       history: map(nullable(num()), 'N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料為 null）'),
+      rank24h: nullable(int('24 小時前依原始分數的名次；沒有可比較快照、基準不同或當時不在榜上為 null')),
+      new: bool('24 小時前的完整快照中沒有這個標籤'),
+      related: arr(
+        obj({
+          tag: str('一起出現的標籤'),
+          count: int('視窗內同時帶兩個標籤的文章數'),
+          share: num('佔這個標籤文章數的比例（0–1）'),
+        }),
+        'related=1 時回傳：同一視窗、同一基準媒體中最常與這個標籤同時出現的標籤，最多 5 個，依共同文章數排序',
+      ),
       trend: arr(
         obj({
           t: time(),
@@ -89,7 +100,7 @@ const schemas: Record<string, Schema> = {
       ),
     },
     undefined,
-    ['trend'],
+    ['trend', 'related'],
   ),
   CoverageArticle: obj({
     id: int(),
@@ -386,6 +397,7 @@ export const ENDPOINTS: Endpoint[] = [
       q('limit', '筆數', intIn(1, 500, 50), 20),
       q('at', '取這個時間（ISO 8601）以前最新的快照', time(), '2026-09-30T12:00:00+08:00'),
       q('trend', '1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時', str('', { enum: ['0', '1'] }), '1'),
+      q('related', '1 表示附上每個標籤最常一起出現的標籤', str('', { enum: ['0', '1'] }), '1'),
     ],
     response: obj({
       snapshot: obj({
@@ -549,13 +561,20 @@ export const ENDPOINTS: Endpoint[] = [
       next: nullable(time('下一個有快照的小時；最新時為 null')),
       dayHours: arr(time(), '同一台北日內所有有快照的小時'),
       dayStats: arr(obj({ hour: time(), top: num('該小時第 1 名的爆發力'), count: int('該小時事件數') }), '同一台北日內每個快照小時的概況'),
+      baseline: obj(
+        {
+          outlets: obj({ blue: int(), green: int(), other: int() }, '事件窗口（過去 24 小時）內有發稿的媒體家數'),
+          articles: obj({ blue: int(), green: int(), other: int() }, '同窗口內各陣營文章數'),
+        },
+        '各陣營的整體基準，用來判斷單一事件的藍綠比例是否異常；其他只計排行榜用的新聞媒體',
+      ),
       events: arr(
         obj({
           rank: int(),
           score: num(),
           major: arr(str(), '主要標籤'),
           tags: arr(obj({ tag: str(), burst: num() }), '事件內所有標籤與爆發力'),
-          news: arr(ref('Headline'), '代表新聞（最多 6 則）'),
+          news: arr(ref('Headline'), '代表新聞（最多 6 則），各附媒體陣營 camp'),
           relatedEventPk: nullable(str('= threadId 的字串形式（相容舊版）')),
           threadId: nullable(int('事件串 id，可查 /api/v1/events/threads/{id}')),
           prevRank: nullable(int('前一個快照的名次（依事件串或主要標籤比對）；null 表示本小時新上榜')),
@@ -565,7 +584,10 @@ export const ENDPOINTS: Endpoint[] = [
             outlets: arr(obj({ media: str(), camp: str('blue／green／other') }), '過去 24 小時寫過此事件主要標籤的媒體，依篇數排序'),
             articles: int('報導篇數'),
             camps: obj({ blue: int(), green: int(), other: int() }, '各陣營媒體家數'),
-            blindspot: arr(str(), '完全沒報導的陣營（只在另一陣營有報時標記）'),
+            share: nullable(obj({ blue: int(), green: int() }, '藍綠之間的家數百分比（不含其他）')),
+            lean: nullable(num('藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠')),
+            tilt: nullable(str('明顯偏向的陣營（|lean| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家）')),
+            blindspot: arr(str(), '盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事'),
           }),
         }),
       ),

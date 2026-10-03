@@ -8,8 +8,9 @@ import { fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@
 export const revalidate = 60;
 export const metadata = { title: '新聞關鍵字排行榜' };
 type Search = { category?: string; order?: string; limit?: string; sort?: string; dir?: string };
-type Col = 'tag' | 'burst' | 'score' | 'count' | 'trend' | 'media';
-const COLS: Col[] = ['tag', 'burst', 'score', 'count', 'trend', 'media'];
+type Col = 'tag' | 'change' | 'burst' | 'score' | 'count' | 'trend' | 'media';
+const COLS: Col[] = ['tag', 'change', 'burst', 'score', 'count', 'trend', 'media'];
+const RELATED_SHOWN = 4;
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
@@ -23,7 +24,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const [categories, media, ranking] = await Promise.all([
     fetchCategories(),
     fetchMedia(),
-    fetchRanking(category, order, limit, true).catch(() => null),
+    fetchRanking(category, order, limit, true, true).catch(() => null),
   ]);
   const current = categories.find((c) => c.key === category);
   // Keeps the header sort across category / "more" links; sortLink clears it
@@ -43,6 +44,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const collator = new Intl.Collator('zh-Hant-TW-u-co-stroke');
   const key: Record<Col, (e: NonNullable<typeof ranking>['entries'][number]) => number | string> = {
     tag: (e) => e.tag,
+    // New entries sort as the biggest climb; unknowns go last either way.
+    change: (e) => (e.new ? Infinity : e.rank24h === null ? -Infinity : e.rank24h - e.rank),
     burst: (e) => e.burst ?? -Infinity,
     score: (e) => e.normalized,
     count: (e) => e.count,
@@ -57,6 +60,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         const x = key[sort](a),
           y = key[sort](b);
         if (x === -Infinity || y === -Infinity) return x === y ? a.position - b.position : x === -Infinity ? 1 : -1;
+        if (x === Infinity || y === Infinity)
+          return x === y ? a.position - b.position : (x === Infinity ? -1 : 1) * (dir === 'asc' ? -1 : 1);
         const c = typeof x === 'string' ? collator.compare(x, y as string) : x - (y as number);
         return (dir === 'asc' ? c : -c) || a.position - b.position;
       })
@@ -112,27 +117,37 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       </nav>
       {ranking && <RankingBasisNote basis={ranking.snapshot.basis} media={media} />}
       {ranking && !ranking.snapshot.available && <p className="text-sm text-zinc-600">這個時段的基準媒體收錄資料不足，暫不提供排行。</p>}
-      <p className="text-xs text-zinc-600">趨勢：每小時新聞篇數的 24 小時移動平均，顯示最近 48 小時的變化；點關鍵字可查看完整時間圖。</p>
+      <p className="text-xs text-zinc-600">
+        變動：依分數的名次與 24 小時前相比，<span className="font-semibold text-rose-600">新</span>
+        表示昨天這個時候還不在榜上。一起出現：同一篇報導最常同時掛的其他關鍵字，可看出哪幾個關鍵字其實在講同一件事。趨勢：每小時新聞篇數的
+        24 小時移動平均，顯示最近 48 小時的變化；點關鍵字可查看完整時間圖。
+      </p>
       {!ranking ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">這個分類目前沒有資料。</p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[44rem] text-sm">
+            <table className="w-full min-w-[56rem] text-sm">
               <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950">
                 <tr>
                   <th className="w-10 px-3 py-2 text-right">#</th>
                   <Th col="tag" label="關鍵字" className="sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-950" />
+                  <Th col="change" label="變動" className="w-16 text-right" title="依分數的名次與 24 小時前相比" />
                   <Th col="burst" label="爆發力" className="w-24 text-right" title="相對 3／6／12／24／48 小時前的變化" />
                   <Th col="score" label="分數" className="w-20 text-right" title="媒體加權分數" />
                   <Th col="count" label="篇數" className="w-16 text-right" />
                   <Th col="trend" label="趨勢" className="w-28" title="24 小時平均篇數與 48 小時前的差值（篇／小時）" />
+                  <th className="px-3 py-2" title="同一篇報導最常同時出現的其他關鍵字">
+                    一起出現
+                  </th>
                   <Th col="media" label="媒體" className="" title="報導的媒體家數" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {rows.map((e) => {
                   const trend = e.trend ?? [];
+                  const delta = e.rank24h === null ? null : e.rank24h - e.rank;
+                  const related = (e.related ?? []).slice(0, RELATED_SHOWN);
                   return (
                     <tr key={e.tag} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
                       <td className="px-3 py-2 text-right tabular-nums text-zinc-500">{e.position}</td>
@@ -145,6 +160,30 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                         </Link>
                       </td>
                       <td
+                        className="px-3 py-2 text-right text-xs tabular-nums"
+                        title={
+                          e.new
+                            ? '24 小時前不在榜上'
+                            : delta === null
+                              ? '沒有可比較的 24 小時前快照'
+                              : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`
+                        }
+                      >
+                        {e.new ? (
+                          <span className="rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                            新
+                          </span>
+                        ) : delta === null ? (
+                          <span className="text-zinc-400">—</span>
+                        ) : delta > 0 ? (
+                          <span className="text-rose-600">▲{delta}</span>
+                        ) : delta < 0 ? (
+                          <span className="text-sky-600">▼{-delta}</span>
+                        ) : (
+                          <span className="text-zinc-400">＝</span>
+                        )}
+                      </td>
+                      <td
                         title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
                         className={`px-3 py-2 text-right tabular-nums ${e.burst !== null && e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}
                       >
@@ -155,7 +194,25 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       <td className="px-3 py-1">
                         <Sparkline values={trend.map((p) => p.average24h)} />
                       </td>
-                      <td className="w-1/2 max-w-0 px-3 py-2">
+                      <td className="px-3 py-2 text-xs">
+                        {related.length ? (
+                          <span className="flex flex-wrap gap-x-2 gap-y-0.5">
+                            {related.map((r) => (
+                              <Link
+                                key={r.tag}
+                                href={`/tag/${encodeURIComponent(r.tag)}`}
+                                title={`${r.count} 篇同時提到「${e.tag}」與「${r.tag}」（${Math.round(r.share * 100)}%）`}
+                                className="whitespace-nowrap text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
+                              >
+                                {r.tag}
+                              </Link>
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
+                      </td>
+                      <td className="w-2/5 max-w-0 px-3 py-2">
                         <MediaIcons media={e.media} info={media} />
                       </td>
                     </tr>
