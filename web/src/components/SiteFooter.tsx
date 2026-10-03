@@ -16,6 +16,7 @@ const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> 
       { href: '/event/', label: '事件表' },
       { href: '/topic/', label: '議題表' },
       { href: '/media/', label: '媒體來源' },
+      { href: '/media/sources/', label: '媒體來源與流量' },
     ],
   },
   {
@@ -97,7 +98,13 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
 
           <h3 className={methodHeading}>事件、議題與藍綠</h3>
           <p>事件每半小時依標籤共現分群，標題取自註明的媒體；議題表每小時收錄各媒體新推出的專題頁。</p>
-          <p>藍綠沿用本站媒體分類（承襲舊站設定），可在媒體頁依傾向篩選；「未列藍綠」不代表中立。</p>
+          <p>
+            本站已對照的 29 家媒體依來源試算表人工分類，其餘沿用既有設定。分類依據與更新日期可於
+            <Link href="/media/sources/#classification-method" className={inlineLink}>
+              「媒體來源與流量」
+            </Link>
+            查看；「未列藍綠」不代表中立。
+          </p>
           {notes}
           <p>新聞內容著作權屬原媒體。本站提供報導索引、統計與保留期間內的文章文字；標示 ↗ 的連結會開啟外部網站。</p>
         </div>

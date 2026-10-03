@@ -209,6 +209,7 @@ export async function sitemapUrls(db: Db, now = new Date()): Promise<SitemapUrl[
     { loc: '/event/archive/', changefreq: 'hourly', priority: 0.6 },
     { loc: '/topic/', changefreq: 'hourly', priority: 0.7 },
     { loc: '/media/', changefreq: 'daily', priority: 0.5 },
+    { loc: '/media/sources/', changefreq: 'weekly', priority: 0.5 },
     { loc: '/api/', changefreq: 'weekly', priority: 0.3 },
     ...threads.map((t): SitemapUrl => ({ loc: `/eve/${t.id}/`, lastmod: t.lastTime, priority: 0.7 })),
     ...tags.map((t): SitemapUrl => ({ loc: `/tag/${encodeURIComponent(t.tag)}/`, lastmod: t.lastHour, priority: 0.6 })),
