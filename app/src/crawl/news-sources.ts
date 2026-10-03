@@ -13,6 +13,9 @@ export interface NewsSource {
   notes: string;
   feedUrls?: string[];
   articlePattern?: string;
+  articleHosts?: string[];
+  feedBody?: 'full-text';
+  apiUrls?: string[];
 }
 
 export interface NewsCrawlAudit {
@@ -20,7 +23,7 @@ export interface NewsCrawlAudit {
   websiteUrl: string | null;
   checkedAt: string;
   status: 'verified' | 'unavailable' | 'unresolved' | 'existing';
-  strategy: 'rss' | 'sitemap' | 'html' | 'existing' | 'none';
+  strategy: 'rss' | 'sitemap' | 'html' | 'api' | 'existing' | 'none';
   listingUrl: string | null;
   articleCount: number;
   detail: string;
@@ -29,7 +32,7 @@ export interface NewsCrawlAudit {
 
 export function addNewsSources(
   existing: SourceSpec[],
-  sources: NewsSource[] = catalog.sources,
+  sources: NewsSource[] = catalog.sources as NewsSource[],
   results: NewsCrawlAudit[] = audit.results as NewsCrawlAudit[],
 ): SourceSpec[] {
   const ids = new Set(existing.map((source) => source.media));
@@ -54,6 +57,9 @@ export function addNewsSources(
                   homeUrl: source.websiteUrl,
                   feedUrls: [...new Set(feeds)],
                   ...(source.articlePattern ? { articlePattern: source.articlePattern } : {}),
+                  ...(source.articleHosts ? { articleHosts: source.articleHosts } : {}),
+                  ...(source.feedBody ? { feedBody: source.feedBody } : {}),
+                  ...(source.apiUrls ? { apiUrls: source.apiUrls } : {}),
                   maxArticles: 12,
                 },
               }

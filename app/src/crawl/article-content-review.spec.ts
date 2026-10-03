@@ -8,6 +8,16 @@ const ld = (data: Record<string, unknown>) =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, ...data })}</script>`;
 
 describe('article extraction review regressions', () => {
+  it.each(['comments-off', 'with-share', 'has-share-float', 'social-after-title', 'has-banner'])(
+    'keeps article prose inside the observed %s layout wrapper while excluding actual widgets',
+    (layout) => {
+      const html = `<article class="post type-post tag-123 category-news ${layout}"><div class="entry-content">${`<p>${lead}</p>`}<div class="share"><p>分享介面</p></div><div class="comments"><p>讀者留言</p></div><div class="banner"><p>廣告內容</p></div></div></article>`;
+      const article = extractArticle(html, url);
+      expect(article.body).toBe(lead);
+      expect(article.bodyStatus).toBe('ok');
+    },
+  );
+
   it('uses a verified body selector before a long structured teaser', () => {
     const html = ld({ articleBody: lead }) + `<div id="verified"><p>${ending}</p></div>`;
     expect(extractArticle(html, url, { bodySelector: '#verified' })).toMatchObject({ body: ending, bodySource: 'selector' });

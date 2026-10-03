@@ -612,7 +612,8 @@
       ],
       "existing": false,
       "websiteEvidence": "https://news.taiwannet.com.tw/",
-      "notes": "原表 taiwannet.com.tw；抓取入口使用官方新聞子網域 news.taiwannet.com.tw。"
+      "notes": "原表 taiwannet.com.tw；抓取入口使用官方新聞子網域 news.taiwannet.com.tw。",
+      "articlePattern": "^/news/\\d+/"
     },
     {
       "media": "peopo",
@@ -787,7 +788,7 @@
     {
       "media": "i_meihua",
       "name": "梅花新聞網",
-      "websiteUrl": "https://i-meihua.com/",
+      "websiteUrl": "https://www.i-meihua.com/",
       "referenceNames": [
         "梅花新聞網"
       ],
@@ -795,8 +796,9 @@
         562
       ],
       "existing": false,
-      "websiteEvidence": "https://i-meihua.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.i-meihua.com/Article/Detail/57033",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 www 與裸網域文章均可讀，官方 canonical 指向 www；限定 /Article/Detail/ 文章路徑，排除會回首頁的分類或過期列表連結。",
+      "articlePattern": "^/Article/Detail/\\d+"
     },
     {
       "media": "pinview",
@@ -825,11 +827,12 @@
         586
       ],
       "existing": false,
-      "websiteEvidence": "https://www.voachinese.com/",
+      "websiteEvidence": "https://www.voachinese.com/rssfeeds",
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
       "feedUrls": [
-        "https://www.voachinese.com/api/",
-        "https://www.voachinese.com/sitemap.xml"
+        "https://www.voachinese.com/api/zm_yql-vomx-tpeybti",
+        "https://www.voachinese.com/api/zgrqqyl-vomx-tpe-tiqt",
+        "https://www.voachinese.com/api/zj_yql-vomx-tpebbtq"
       ]
     },
     {
@@ -959,10 +962,11 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.winnews.com.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
       "feedUrls": [
         "https://www.winnews.com.tw/feed/"
-      ]
+      ],
+      "feedBody": "full-text"
     },
     {
       "media": "secretchina",
@@ -1046,7 +1050,7 @@
     {
       "media": "lihpao",
       "name": "立報",
-      "websiteUrl": "https://www.lihpao.com/",
+      "websiteUrl": "https://www.limedia.tw/",
       "referenceNames": [
         "立報"
       ],
@@ -1054,8 +1058,11 @@
         685
       ],
       "existing": true,
-      "websiteEvidence": "https://www.lihpao.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.limedia.tw/comm/652/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 原 lihpao.com 已變更為無關英文內容；依現行立報傳媒官方復刊詞及頁尾「前身為《台灣立報》」改用 limedia.tw，保留原表名稱。",
+      "feedUrls": [
+        "https://www.limedia.tw/feed/"
+      ]
     },
     {
       "media": "hakkatv",
@@ -1128,7 +1135,8 @@
       ],
       "existing": false,
       "websiteEvidence": "https://nvns.net/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/news_view\\.php\\?"
     },
     {
       "media": "bigmedia",
@@ -1323,7 +1331,7 @@
       ],
       "existing": false,
       "websiteEvidence": "https://tnews.cc/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 首頁與 /Main 可讀，但只是地區入口及採訪通知；官方地圖連結的 /02、/03 與 /nz 多次逾時，尚未確認近期完整報導。"
     },
     {
       "media": "taro",
@@ -1537,7 +1545,7 @@
     {
       "media": "taiwanus",
       "name": "台灣海外網 / 20",
-      "websiteUrl": "https://www.taiwanus.net/",
+      "websiteUrl": "https://www.taiwanus.net/news/default.php",
       "referenceNames": [
         "台灣海外網 / 20",
         "台灣海外網"
@@ -1546,8 +1554,8 @@
         747
       ],
       "existing": false,
-      "websiteEvidence": "https://www.taiwanus.net/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.taiwanus.net/news/default.php",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 本次改由官方新聞列表探索，排除首頁置頂舊文或非新聞看板。"
     },
     {
       "media": "rise_mediacorp",
@@ -1561,7 +1569,14 @@
       ],
       "existing": false,
       "websiteEvidence": "https://rise-mediacorp.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
+      "feedUrls": [
+        "https://rise-mediacorp.com/feed/"
+      ],
+      "feedBody": "full-text",
+      "apiUrls": [
+        "https://rise-mediacorp.com/wp-json/wp/v2/posts?per_page=12"
+      ]
     },
     {
       "media": "pnn",
@@ -1603,10 +1618,11 @@
       ],
       "existing": false,
       "websiteEvidence": "https://nchn.news/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
       "feedUrls": [
         "https://nchn.news/feed"
-      ]
+      ],
+      "feedBody": "full-text"
     },
     {
       "media": "homeplus",
@@ -1697,7 +1713,7 @@
       ],
       "existing": false,
       "websiteEvidence": null,
-      "notes": "原表僅列「無界」，未附網址；存在已停運的無界新聞與同名無界網路資訊入口，無法唯一確認身份，保留待人工核對。"
+      "notes": "原表只有「無界」名稱且未附網址；2026-10-03 使用者明確指示略過此來源，不建立爬蟲。保留原始對照列。"
     },
     {
       "media": "firenews",
@@ -1746,10 +1762,11 @@
       ],
       "existing": false,
       "websiteEvidence": "https://news.586.com.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
       "feedUrls": [
         "https://news.586.com.tw/feed/"
-      ]
+      ],
+      "feedBody": "full-text"
     },
     {
       "media": "ccsn0405",
@@ -1820,7 +1837,7 @@
     {
       "media": "hiilan",
       "name": "Hi宜蘭",
-      "websiteUrl": "https://www.hiilan.com.tw/",
+      "websiteUrl": "https://www.crushonyilan.com.tw/category/hi-yilan-news/",
       "referenceNames": [
         "Hi宜蘭"
       ],
@@ -1828,8 +1845,11 @@
         777
       ],
       "existing": false,
-      "websiteEvidence": "https://www.hiilan.com.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.crushonyilan.com.tw/category/hi-yilan-news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 舊 hiilan.com.tw 無法 TLS 連線；同公司官方品牌連結 reurl.cc/6Kxvbd 指向宜蘭痴的「Hi宜蘭新聞」頻道，只抓此頻道。可見文章時間較舊，未確認近期更新，保留停用直到抓取審核通過。",
+      "feedUrls": [
+        "https://www.crushonyilan.com.tw/category/hi-yilan-news/feed/"
+      ]
     },
     {
       "media": "tpnews",
@@ -1998,7 +2018,34 @@
       ],
       "existing": false,
       "websiteEvidence": "http://ifeng.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articleHosts": [
+        "news.ifeng.com",
+        "original.ifeng.com",
+        "gs.ifeng.com",
+        "jx.ifeng.com",
+        "finance.ifeng.com",
+        "mil.ifeng.com",
+        "tech.ifeng.com",
+        "travel.ifeng.com",
+        "auto.ifeng.com",
+        "sports.ifeng.com",
+        "ent.ifeng.com",
+        "fashion.ifeng.com",
+        "ecresearch.ifeng.com",
+        "i.ifeng.com",
+        "jiu.ifeng.com",
+        "pingce.ifeng.com",
+        "culture.ifeng.com",
+        "feng.ifeng.com",
+        "gov.ifeng.com",
+        "gongyi.ifeng.com",
+        "sz.ifeng.com",
+        "sd.ifeng.com",
+        "hb.ifeng.com",
+        "js.ifeng.com",
+        "edu.ifeng.com"
+      ]
     },
     {
       "media": "taiwannews",
@@ -2105,7 +2152,22 @@
       ],
       "existing": false,
       "websiteEvidence": "http://cctv.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articleHosts": [
+        "news.cctv.com",
+        "military.cctv.com",
+        "www.cctv.com",
+        "sports.cctv.com",
+        "yangbo.cctv.com",
+        "xwzs.cctv.com",
+        "finance.cctv.com",
+        "edu.cctv.com",
+        "xczx.cctv.com",
+        "culture-travel.cctv.com",
+        "jiankang.cctv.com",
+        "ocean.cctv.com",
+        "help.cctv.com"
+      ]
     },
     {
       "media": "dw",
@@ -2174,7 +2236,7 @@
     {
       "media": "merit_times",
       "name": "人間福報",
-      "websiteUrl": "http://merit-times.com.tw",
+      "websiteUrl": "https://www.merit-times.com.tw/",
       "referenceNames": [
         "人間福報"
       ],
@@ -2182,8 +2244,9 @@
         339
       ],
       "existing": false,
-      "websiteEvidence": "http://merit-times.com.tw",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.merit-times.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/NewsPage\\.aspx\\?unid=\\d+"
     },
     {
       "media": "scmp",
@@ -2258,7 +2321,7 @@
     {
       "media": "matsu_idv",
       "name": "馬祖資訊",
-      "websiteUrl": "http://matsu.idv.tw/",
+      "websiteUrl": "http://matsu.idv.tw/topiclist.php?f=1",
       "referenceNames": [
         "馬祖資訊",
         "馬祖資訊 matsu.idv.tw"
@@ -2267,8 +2330,8 @@
         350
       ],
       "existing": false,
-      "websiteEvidence": "http://matsu.idv.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "http://matsu.idv.tw/topiclist.php?f=1",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 本次改由官方新聞列表探索，排除首頁置頂舊文或非新聞看板。"
     },
     {
       "media": "worldjournal",
@@ -2318,7 +2381,7 @@
     {
       "media": "mingpao",
       "name": "明報 /25",
-      "websiteUrl": "http://mingpao.com",
+      "websiteUrl": "https://news.mingpao.com/ins/",
       "referenceNames": [
         "明報 /25",
         "明報 (mingpao.com) /25"
@@ -2327,8 +2390,11 @@
         365
       ],
       "existing": false,
-      "websiteEvidence": "http://mingpao.com",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://news.mingpao.com/rss/ins/all.xml",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 改用官方即時新聞入口；已讀取官方 RSS 並核對當日文章網址與日期。",
+      "feedUrls": [
+        "https://news.mingpao.com/rss/ins/all.xml"
+      ]
     },
     {
       "media": "leho",
@@ -2366,7 +2432,7 @@
     {
       "media": "news_sina",
       "name": "新浪新聞 /80",
-      "websiteUrl": "http://news.sina.cn/",
+      "websiteUrl": "https://news.sina.com.cn/",
       "referenceNames": [
         "新浪新聞 /80",
         "新浪 /80"
@@ -2375,8 +2441,14 @@
         400
       ],
       "existing": false,
-      "websiteEvidence": "http://news.sina.cn/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://news.sina.com.cn/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 原行動版入口只呈現舊文，改用官方桌面新聞首頁及其直接連結的新聞主機。 官方桌面文章 canonical 直接指向 news.sina.cn 對應行動版，已核對並允許同來源文章主機。",
+      "articleHosts": [
+        "news.sina.com.cn",
+        "k.sina.com.cn",
+        "finance.sina.cn",
+        "news.sina.cn"
+      ]
     },
     {
       "media": "taiwan",
@@ -2405,7 +2477,7 @@
       ],
       "existing": false,
       "websiteEvidence": "https://sunmedia.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
       "feedUrls": [
         "https://sunmedia.tw/rss/sunmedia",
         "https://sunmedia.tw/rss/sunmedia/CEO",
@@ -2415,7 +2487,8 @@
         "https://sunmedia.tw/rss/sunmedia/lifehealth",
         "https://sunmedia.tw/rss/sunmedia/realestate",
         "https://sunmedia.tw/rss/sunmedia/technology"
-      ]
+      ],
+      "feedBody": "full-text"
     },
     {
       "media": "eracom",
@@ -2499,7 +2572,7 @@
       ],
       "existing": false,
       "websiteEvidence": "http://taiwanenews.com",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 可讀首頁所列最新文章為 2025 年，未確認符合近期時限的新文章。"
     },
     {
       "media": "ksnews",
@@ -2559,7 +2632,10 @@
       ],
       "existing": false,
       "websiteEvidence": "http://news.163.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articleHosts": [
+        "www.163.com"
+      ]
     },
     {
       "media": "contentplatform_info",
@@ -2581,7 +2657,7 @@
     {
       "media": "xinhuanet",
       "name": "新華網 xinhuanet.com /100",
-      "websiteUrl": "http://xinhuanet.com/",
+      "websiteUrl": "https://www.xinhuanet.com/",
       "referenceNames": [
         "新華網 xinhuanet.com /100"
       ],
@@ -2589,8 +2665,11 @@
         698
       ],
       "existing": false,
-      "websiteEvidence": "http://xinhuanet.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.xinhuanet.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 裸網域 HTTP 逾時；官方 HTTPS 首頁可讀，文章直接連結至同品牌 www.news.cn。",
+      "articleHosts": [
+        "www.news.cn"
+      ]
     },
     {
       "media": "hk_crntt",
@@ -2652,7 +2731,18 @@
       ],
       "existing": false,
       "websiteEvidence": "http://huanqiu.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articleHosts": [
+        "china.huanqiu.com",
+        "opinion.huanqiu.com",
+        "world.huanqiu.com",
+        "sports.huanqiu.com",
+        "hqtime.huanqiu.com",
+        "finance.huanqiu.com",
+        "health.huanqiu.com",
+        "lx.huanqiu.com",
+        "go.huanqiu.com"
+      ]
     },
     {
       "media": "enews",
@@ -2708,7 +2798,8 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.biao-news.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/news_view\\.php\\?"
     },
     {
       "media": "newday",
@@ -2736,10 +2827,11 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.lifetoutiao.news/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
       "feedUrls": [
         "https://www.lifetoutiao.news/feed/"
-      ]
+      ],
+      "feedBody": "full-text"
     },
     {
       "media": "yimedia",
@@ -2763,7 +2855,7 @@
     {
       "media": "idn",
       "name": "自立晚報 idn.com.tw",
-      "websiteUrl": "https://www.idn.com.tw/",
+      "websiteUrl": "https://www.idn.com.tw/news/news_list.aspx?catid=1&catsid=2",
       "referenceNames": [
         "自立晚報 idn.com.tw"
       ],
@@ -2771,8 +2863,8 @@
         740
       ],
       "existing": false,
-      "websiteEvidence": "https://www.idn.com.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.idn.com.tw/news/news_list.aspx?catid=1&catsid=2",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 本次改由官方新聞列表探索，排除首頁置頂舊文或非新聞看板。"
     },
     {
       "media": "mknews",
@@ -2840,11 +2932,12 @@
       ],
       "existing": false,
       "websiteEvidence": "http://ltvnews.net/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
       "feedUrls": [
         "https://www.ltvnews.net/feed",
         "https://www.ltvnews.net/home/feed"
-      ]
+      ],
+      "feedBody": "full-text"
     },
     {
       "media": "i_news",
@@ -2858,12 +2951,19 @@
       ],
       "existing": false,
       "websiteEvidence": "http://i-news.com.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 抽查官方 RSS 三篇 content:encoded，包含完整多段正文與文章結尾，可作為公開全文來源。",
+      "feedUrls": [
+        "http://i-news.com.tw/feed/"
+      ],
+      "feedBody": "full-text",
+      "apiUrls": [
+        "https://i-news.com.tw/wp-json/wp/v2/posts?per_page=12"
+      ]
     },
     {
       "media": "iw_times",
       "name": "國際環宇時報 iw-times.com",
-      "websiteUrl": "http://iw-times.com/",
+      "websiteUrl": "https://www.iw-times.com/",
       "referenceNames": [
         "國際環宇時報 iw-times.com"
       ],
@@ -2871,8 +2971,9 @@
         773
       ],
       "existing": false,
-      "websiteEvidence": "http://iw-times.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "websiteEvidence": "https://www.iw-times.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 裸網域 HTTP 逾時，官方 HTTPS www 首頁及當日 news_view.php 文章已回應 200。",
+      "articlePattern": "^/news_view\\.php\\?"
     },
     {
       "media": "ammtw",
@@ -2969,7 +3070,41 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.people.com.cn/",
-      "notes": "同名或同集團的不同網域新聞站獨立保留，避免與其他來源混併。"
+      "notes": "同名或同集團的不同網域新聞站獨立保留，避免與其他來源混併。",
+      "articleHosts": [
+        "politics.people.com.cn",
+        "world.people.com.cn",
+        "pic.people.com.cn",
+        "opinion.people.com.cn",
+        "unn.people.com.cn",
+        "sh.people.com.cn",
+        "cpc.people.com.cn",
+        "env.people.com.cn",
+        "society.people.com.cn",
+        "henan.people.com.cn",
+        "finance.people.com.cn",
+        "ent.people.com.cn",
+        "xj.people.com.cn",
+        "theory.people.com.cn",
+        "dangjian.people.com.cn",
+        "edu.people.com.cn",
+        "sn.people.com.cn",
+        "nx.people.com.cn",
+        "leaders.people.com.cn",
+        "scitech.people.com.cn",
+        "kpzg.people.com.cn",
+        "military.people.com.cn",
+        "gz.people.com.cn",
+        "nm.people.com.cn",
+        "fj.people.com.cn",
+        "hb.people.com.cn",
+        "bj.people.com.cn",
+        "cq.people.com.cn",
+        "health.people.com.cn",
+        "yn.people.com.cn",
+        "art.people.com.cn",
+        "www.people.com.cn"
+      ]
     },
     {
       "media": "ntdtv_tw",

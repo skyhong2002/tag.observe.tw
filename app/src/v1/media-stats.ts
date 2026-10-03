@@ -20,13 +20,14 @@ const HOUR = 3600e3;
 type ListedSource = { media: string; group: 'news' | 'hourly' | 'off' };
 export function listedMediaSources(sources: ListedSource[]): ListedSource[] {
   const duplicates = (disabledSpec as { duplicates?: Record<string, string> }).duplicates ?? {};
+  const excluded = new Set((disabledSpec as { excludedMedia?: string[] }).excludedMedia ?? []);
   const listed = new Map(sources.map(({ media, group }) => [media, { media, group }]));
   // Registration and scheduling are independent: an unverified, paused or
   // citation-only outlet still belongs in the directory, even with no articles.
   for (const [media, entry] of Object.entries(info)) {
     if (entry.title && !listed.has(media)) listed.set(media, { media, group: 'off' });
   }
-  return [...listed.values()].filter((s) => !duplicates[s.media] && (s.group !== 'off' || info[s.media]?.title));
+  return [...listed.values()].filter((s) => !excluded.has(s.media) && !duplicates[s.media] && (s.group !== 'off' || info[s.media]?.title));
 }
 
 export type MediaStatus = 'ok' | 'stale' | 'failing' | 'disabled';

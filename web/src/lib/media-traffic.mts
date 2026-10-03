@@ -31,7 +31,7 @@ export interface NewsCrawlAudit {
   media: string;
   websiteUrl: string | null;
   status: 'verified' | 'unavailable' | 'unresolved' | 'existing';
-  strategy: 'rss' | 'sitemap' | 'html' | 'existing' | 'none';
+  strategy: 'rss' | 'sitemap' | 'html' | 'api' | 'existing' | 'none';
   listingUrl: string | null;
   articleCount: number;
   detail: string;

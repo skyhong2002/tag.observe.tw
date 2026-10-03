@@ -15,14 +15,11 @@
   "eventsinfocus",
   "gq",
   "gv",
-  "housefun",
   "hypesphere",
   "kairos",
   "ldope",
-  "lihpao",
   "mplus",
   "musou",
-  "newsmarket",
   "nom",
   "overdope",
   "pantravel",
@@ -30,9 +27,14 @@
   "tsna",
   "viewpointtaiwan",
   "voicettank",
+  "want",
   "wyc"
  ],
- "note": "cti duplicates ctitv; lihpao/ldope/daman only old content; hypesphere was an rss.app proxy (gone; elle/hbr/ngm re-enabled from their own sites 2026-09-29); agriharvest 429, gq/newsmarket/buzzorange 403 even via curl; housefun 202 empty; dongtw/babyou/bw/kairos/musou/tsna/voicettank/asiatatler DNS or fetch failures; digitimes/wyc/eventsinfocus no article listing; lihpao homepage links are monthly archives, not articles. 2026-09-29 (sampled article dates): pantravel/mplus last posted 2022, viewpointtaiwan 2024-02, punchline 2024-06, nom 2025-03; gv feed stopped 2025-06 and the site posts a few times a year; cheers sitemap/RSS behind a Cloudflare JS challenge. 2026-10-01: overdope's domain now serves Indonesian slot-gambling spam (every one of 2,394 rows, /gacor1/, /gacor2/); dramaqueen's last post is 2026-06-17.",
+ "note": "cti duplicates ctitv; lihpao/ldope/daman only old content; hypesphere was an rss.app proxy (gone; elle/hbr/ngm re-enabled from their own sites 2026-09-29); agriharvest 429, gq/newsmarket/buzzorange 403 even via curl; dongtw/babyou/bw/kairos/musou/tsna/voicettank/asiatatler DNS or fetch failures; digitimes/wyc/eventsinfocus no article listing; lihpao homepage links are monthly archives, not articles. 2026-09-29 (sampled article dates): pantravel/mplus last posted 2022, viewpointtaiwan 2024-02, punchline 2024-06, nom 2025-03; gv feed stopped 2025-06 and the site posts a few times a year; cheers sitemap/RSS behind a Cloudflare JS challenge. 2026-10-01: overdope's domain now serves Indonesian slot-gambling spam (every one of 2,394 rows, /gacor1/, /gacor2/); dramaqueen's last post is 2026-06-17. 2026-10-03: newsmarket restored using its public WordPress full-content API; lihpao restored from the official successor limedia.tw feed, both verified against recent article bodies. The old lihpao.com domain now carries unrelated content and is not used. 2026-10-03: housefun restored from MyHousing’s dedicated Housefun byline feed; each article must identify 好房網News as its own provider. Direct Housefun endpoints still return AWS WAF challenges. Stored URLs and publication times belong to the MyHousing publication, not an inferred original URL or date.",
+ "excludedMedia": [
+  "want"
+ ],
+ "excludedMediaReason": "2026-10-03: user requested removal of 旺報 (want) from crawling and the public media directory; historical articles remain unchanged.",
  "duplicates": {
   "cti": "ctitv"
  }

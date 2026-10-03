@@ -26,7 +26,7 @@ const samples = Number(values.samples);
 if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 12 || !Number.isInteger(samples) || samples < 1 || samples > 12) {
   throw new Error('concurrency must be 1–12; samples must be 1–12');
 }
-const sources: NewsSource[] = catalog.sources;
+const sources = catalog.sources as NewsSource[];
 const selected = sources.filter(
   (source) => (!values.media || values.media.includes(source.media)) && (!values['only-new'] || !source.existing),
 );
@@ -43,10 +43,20 @@ async function inspect(source: NewsSource): Promise<NewsCrawlAudit> {
   const checkedAt = new Date().toISOString();
   const base = { media: source.media, websiteUrl: source.websiteUrl, checkedAt, articleCount: 0, samples: [] };
   if (!source.websiteUrl)
-    return { ...base, status: 'unresolved', strategy: 'none', listingUrl: null, detail: '尚未確認官方網址，保留來源列，不猜測網域。' };
+    return {
+      ...base,
+      status: 'unresolved',
+      strategy: 'none',
+      listingUrl: null,
+      detail:
+        source.media === 'wujie'
+          ? '依使用者指示略過「無界」；保留原始來源列，不猜測品牌或網域。'
+          : '尚未確認官方網址，保留來源列，不猜測網域。',
+    };
   try {
-    if (source.existing) {
-      const spec = sourceByMedia(source.media);
+    const configured = sourceByMedia(source.media);
+    if (source.existing && !configured?.list.autoDiscover) {
+      const spec = configured;
       if (!spec) throw new Error('Catalog references an unknown existing crawler');
       const started = Date.now();
       let attempted = 0;
@@ -55,7 +65,7 @@ async function inspect(source: NewsSource): Promise<NewsCrawlAudit> {
         if (throttled) throw new Error('HTTP 429; source requests stopped');
         const remaining = 55000 - (Date.now() - started);
         if (++attempted > 24 || remaining <= 0) throw new Error('Audit request/time budget reached');
-        const result = await fetchText(url, { ...options, timeout: Math.min(6000, remaining), retries: 0, maxBytes: 4 * 1024 * 1024 });
+        const result = await fetchText(url, { ...options, timeout: Math.min(8000, remaining), retries: 0, maxBytes: 8 * 1024 * 1024 });
         if (result.status === 429) throttled = true;
         return result;
       };
@@ -68,7 +78,11 @@ async function inspect(source: NewsSource): Promise<NewsCrawlAudit> {
         .sort(
           (a, b) => (b.publishedAt?.getTime() ?? b.modifiedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? a.modifiedAt?.getTime() ?? 0),
         );
-      for (const item of candidates.slice(0, samples * 3)) {
+      const rejected: Record<string, number> = {};
+      const reject = (reason: string) => {
+        rejected[reason] = (rejected[reason] ?? 0) + 1;
+      };
+      for (const item of candidates.slice(0, samples * 8)) {
         if (verified.length >= samples || throttled) break;
         try {
           const response = await fetch(item.url);
@@ -78,9 +92,21 @@ async function inspect(source: NewsSource): Promise<NewsCrawlAudit> {
           }
           const detail = extractArticle(response.body, response.url || item.url, spec.article);
           if (spec.article.provider && !new RegExp(spec.article.provider, 'i').test(detail.provider ?? '')) continue;
-          const published = detail.publishedAt ?? item.publishedAt;
-          if (!published || published.getTime() < oldest || published.getTime() > Date.now() + 3600e3) continue;
-          if (detail.bodyStatus !== 'ok' || (detail.body?.length ?? 0) < 120 || !(detail.title || item.title)) continue;
+          // Match indexing: an explicit feed publication date wins over page
+          // metadata (SETN incorrectly labels Taiwan wall time with UTC Z).
+          const published = item.publishedAt ?? detail.publishedAt;
+          if (!published || published.getTime() < oldest || published.getTime() > Date.now() + 3600e3) {
+            reject('無有效近期發布日期');
+            continue;
+          }
+          if (detail.bodyStatus !== 'ok' || (detail.body?.length ?? 0) < 120) {
+            reject(`內文${detail.bodyStatus}`);
+            continue;
+          }
+          if (!(detail.title || item.title)) {
+            reject('無標題');
+            continue;
+          }
           verified.push({
             url: item.url,
             title: detail.title || item.title,
@@ -100,11 +126,26 @@ async function inspect(source: NewsSource): Promise<NewsCrawlAudit> {
         samples: verified,
         detail: verified.length
           ? `沿用既有爬蟲；本次驗證 ${verified.length} 篇近期文章的標題、日期與內文。`
-          : `既有爬蟲列出 ${listing.items.length} 筆，尚未驗證到近期完整文章。${errors.slice(-3).join('；')}`.slice(0, 1200),
+          : `既有爬蟲列出 ${listing.items.length} 筆，尚未驗證到近期完整文章。${Object.entries(rejected)
+              .map(([reason, count]) => `${reason} ${count} 筆`)
+              .join('；')}。${errors.slice(-3).join('；')}`.slice(0, 1200),
       };
     }
     const discovery = await discoverNews(
-      { homeUrl: source.websiteUrl, feedUrls: source.feedUrls, articlePattern: source.articlePattern, maxArticles: samples },
+      {
+        ...(source.existing
+          ? configured?.list.autoDiscover
+          : {
+              homeUrl: source.websiteUrl,
+              feedUrls: source.feedUrls,
+              articlePattern: source.articlePattern,
+              articleHosts: source.articleHosts,
+              feedBody: source.feedBody,
+              apiUrls: source.apiUrls,
+            }),
+        homeUrl: source.websiteUrl,
+        maxArticles: samples,
+      },
       { timeoutMs: 55000, maxRequests: 24 },
     );
     return {

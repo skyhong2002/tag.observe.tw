@@ -1,5 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type ArticleContent, extractArticleContent } from './article-content.ts';
+import { publicArticleHtml } from './news-public-html.ts';
+import { newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 import { between, decodeEntities, normalizeTag, resolveUrl } from './text.ts';
 
 export interface ArticleDetail extends ArticleContent {
@@ -14,6 +16,8 @@ export interface ArticleDetail extends ArticleContent {
 }
 export interface ArticleRules {
   bodySelector?: string;
+  bodyHtmlSelector?: string;
+  bodyExcludeSelector?: string;
   authorSelector?: string;
   keywordMarkers?: Array<{ start: string; end: string }>;
   split?: string;
@@ -41,7 +45,16 @@ const splitKeywords = (s: string, sep: string | null) => {
 // Generic article extraction shared by every media; site rules add fallbacks
 // where the legacy PHP relied on page-specific markers.
 export function extractArticle(html: string, url: string, rules: ArticleRules = {}): ArticleDetail {
+  html = publicArticleHtml(html, url);
   const $ = cheerio.load(html);
+  const site = newsSiteRules(url);
+  const siteEvidence = newsSiteEvidence($, url);
+  rules = {
+    ...(site
+      ? { bodySelector: site.bodySelector, bodyHtmlSelector: site.bodyHtmlSelector, bodyExcludeSelector: site.bodyExcludeSelector }
+      : {}),
+    ...rules,
+  };
   const meta = (sel: string) => $(sel).first().attr('content')?.trim() || null;
   let tags: string[] = [];
   let keywordSource = 'none';
@@ -130,16 +143,19 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     meta('meta[property="og:image"], meta[name="og:image"], meta[itemprop="image"], meta[name="twitter:image"]') ??
     (rules.imageMarker ? between(html, rules.imageMarker.start, rules.imageMarker.end, 0, 1000) : null);
   const canonicalRaw = $('link[rel="canonical"]').first().attr('href')?.trim() || meta('meta[property="og:url"]');
-  const publishedAt = publishedTime($, html);
+  const printedTime = parsePublished(siteEvidence.publishedRaw);
+  const publishedAt = siteEvidence.preferPrintedPublication
+    ? (printedTime ?? publishedTime($, html))
+    : (publishedTime($, html) ?? printedTime);
   return {
     tags: [...new Set(tags)].slice(0, 100),
     image: imageRaw ? resolveUrl(imageRaw, url) : null,
     description:
       (meta('meta[property="og:description"], meta[name="description"], meta[itemprop="description"]') ?? '').slice(0, 2000) || null,
     canonical: canonicalRaw ? resolveUrl(canonicalRaw, url) : null,
-    title: (meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null,
+    title: siteEvidence.title ?? ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null),
     publishedAt,
-    provider: providerName(html),
+    provider: site?.providerSelector ? meta(site.providerSelector) : providerName(html),
     keywordSource,
     ...extractArticleContent($, url, rules),
   };
@@ -156,7 +172,9 @@ const PUBLISHED_META = [
   'meta[name="pubdate"]',
 ];
 export function parsePublished(raw: string | null | undefined): Date | null {
-  const value = decodeEntities(raw ?? '').trim();
+  const value = decodeEntities(raw ?? '')
+    .trim()
+    .replace(/\bHKT\b/g, 'GMT+0800');
   if (!value) return null;
   const compact = /^(\d{4})(\d{2})(\d{2})$/.exec(value);
   const zoneless = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(value);

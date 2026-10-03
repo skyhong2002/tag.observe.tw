@@ -1,6 +1,6 @@
 # 媒體名稱核對紀錄
 
-核對日期：2026-10-03。範圍：全站 294 個來源紀錄（含 1 筆排除的解析殘留）（含非新聞分類、未排程與引文通訊社），以及 8 個月份試算表的所有新聞列。共修正 175 個既有顯示名稱，另補齊 7 個原本只顯示英文代碼的舊來源名稱。
+核對日期：2026-10-03。範圍：全站 294 個來源紀錄（含 1 筆排除的解析殘留）（含非新聞分類、未排程與引文通訊社），以及 8 個月份試算表的所有新聞列。首次核對修正 175 個既有顯示名稱，另補齊 7 個原本只顯示英文代碼的舊來源名稱。
 
 ## 顯示與匯入規則
 
@@ -26,7 +26,7 @@
 | 識別 | 原顯示名稱 | 核對後名稱 | 狀態 | 名稱依據 |
 |---|---|---|---|---|
 | 1111 | 1111人力銀行 | 1111人力銀行 | 官方名稱已核對 | [1111人力銀行-找工作、找人才，最用心服務的求職徵才網站！](https://www.1111.com.tw/) |
-| ettoday | 東森新聞雲 | ETtoday新聞雲 | 官方名稱已核對 | [ETtoday新聞雲](https://www.ettoday.net/) |
+| ettoday | 東森新聞雲 | ETtoday 新聞雲 | 官方名稱已核對 | [ETtoday新聞雲](https://www.ettoday.net/) |
 | setn | 三立新聞網 | 三立新聞網 | 官方名稱已核對 | [三立新聞網 SETN.com ／ 讓世界看見台灣的美好](https://www.setn.com/) |
 | chinatimes | 中時電子報 | 中時新聞網 | 官方名稱已核對 | [中時新聞網](https://www.chinatimes.com/) |
 | nownews | NOWnews | NOWnews今日新聞 | 官方名稱已核對 | [NOWnews今日新聞](https://www.nownews.com/) |
@@ -89,7 +89,7 @@
 | wyc | 地球圖輯隊 | 地球圖輯隊 | 官方名稱已核對 | [DQ 地球圖輯隊](https://dq.yam.com/) |
 | punchline | 娛樂重擊 | 娛樂重擊 | 官方名稱已核對 | [Punchline 娛樂重擊 — Punchline](https://punchline.asia/) |
 | pansci | 泛科學 | 泛科學 | 官方名稱已核對 | [PanSci 泛科學](https://pansci.asia/) |
-| housefun | 好房新聞 | 好房網News | 官方名稱已核對 | [好房網News](https://news.housefun.com.tw/) |
+| housefun | 好房新聞 | 好房新聞 | 官方名稱已核對 | [好房網News](https://news.housefun.com.tw/) |
 | cw | 天下 | 天下雜誌 | 官方名稱已核對 | [天下雜誌](https://www.cw.com.tw/) |
 | einfo | 環境資訊中心 | 環境資訊中心 | 官方名稱已核對 | [環境資訊中心](https://e-info.org.tw/) |
 | coolloud | 苦勞網 | 苦勞網 | 官方名稱已核對 | [苦勞網](https://www.coolloud.org.tw/) |
@@ -142,7 +142,7 @@
 | mplus | MPlus | MPlus云閱讀 | 官方名稱已核對 | [MPlus｜云閱讀](http://www.mplus.com.tw/) |
 | gamebase | 遊戲基地 | 遊戲基地 | 官方名稱已核對 | [首頁 ／ 遊戲基地 Gamebase](https://news.gamebase.com.tw/) |
 | 4gamers | 4GAMERS | 4Gamers | 官方名稱已核對 | [4Gamers 官方網站](https://www.4gamers.com.tw/) |
-| gamer | 巴哈姆特 | 巴哈姆特 | 官方名稱已核對 | [巴哈姆特電玩資訊站](https://gnn.gamer.com.tw/) |
+| gamer | 巴哈姆特 | 巴哈姆特 GNN | 官方名稱已核對 | [巴哈姆特電玩資訊站](https://gnn.gamer.com.tw/) |
 | ctit | （未設定） | （維持空白） | 排除 | 舊解析器殘留，沒有來源設定；不建立同名媒體。 |
 | want | 旺報 | 旺報 | 官方名稱已核對 | [中時新聞網](https://www.chinatimes.com/newspapers/2603) |
 | ctitv | 中天新聞 | 中天新聞網 | 官方名稱已核對 | [中天新聞網](https://ctinews.com/) |
@@ -319,3 +319,5 @@
 | musou | musou（未登記名稱） | 沃草 | 官方名稱已核對 | [沃草官方報導；既有 musou 來源保留識別](https://watchout.tw/reports/V4KMK7s5sp9qhadabgc5) |
 | tsna | tsna（未登記名稱） | TSNA體育新聞團隊 | 官方名稱已核對 | [首頁 - TSNA體育新聞團隊](https://tsna.com/) |
 | voicettank | voicettank（未登記名稱） | 思想坦克 | 官方名稱已核對 | [思想坦克｜Voicettank](https://voicettank.org/) |
+
+2026-10-03 使用者指定顯示名稱：`ettoday` 使用「ETtoday 新聞雲」、`gamer` 使用「巴哈姆特 GNN」、`housefun` 使用「好房新聞」；官方品牌名稱仍保留為別名及核對證據。旺報停止排程與列表顯示，保留歷史文章。

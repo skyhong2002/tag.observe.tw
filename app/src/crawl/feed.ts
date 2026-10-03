@@ -12,6 +12,10 @@ export interface FeedItem {
   tags?: string[];
   description?: string;
   creator?: string;
+  /** Publisher's explicit full-content element; never synthesized from description. */
+  contentHtml?: string;
+  /** Body already validated by discovery; safe to persist without fetching twice. */
+  verifiedContent?: { body: string; authors: string[]; bodySource: string; bodyStatus: 'ok' };
 }
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -107,6 +111,7 @@ function rssItem(i: Record<string, unknown>): FeedItem | null {
         .trim()
         .slice(0, 2000) || undefined,
     creator: text(i['dc:creator']).trim() || undefined,
+    contentHtml: text(i['content:encoded']).trim() || undefined,
   };
 }
 function sitemapItem(u: Record<string, unknown>): FeedItem | null {

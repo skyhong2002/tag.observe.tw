@@ -135,10 +135,10 @@ describe('complete newspaper source catalog', () => {
       expect(id).toMatch(/^[a-z0-9][a-z0-9_-]*$/);
       expect(id.length).toBeLessThanOrEqual(32);
     }
-    const first = addNewsSources([], newsCatalog.sources, [])
+    const first = addNewsSources([], newsCatalog.sources as NewsSource[], [])
       .map((source) => source.media)
       .sort();
-    const reordered = addNewsSources([], newsCatalog.sources.toReversed(), [])
+    const reordered = addNewsSources([], newsCatalog.sources.toReversed() as NewsSource[], [])
       .map((source) => source.media)
       .sort();
     expect(reordered).toEqual(first);

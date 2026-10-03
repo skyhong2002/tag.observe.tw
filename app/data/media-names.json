@@ -10,14 +10,16 @@
       "evidence": "1111人力銀行-找工作、找人才，最用心服務的求職徵才網站！"
     },
     "ettoday": {
-      "name": "ETtoday新聞雲",
+      "name": "ETtoday 新聞雲",
       "aliases": [
         "東森新聞雲",
-        "ETToday"
+        "ETToday",
+        "ETtoday新聞雲"
       ],
       "status": "verified",
       "sourceUrl": "https://www.ettoday.net/",
-      "evidence": "ETtoday新聞雲"
+      "evidence": "ETtoday新聞雲",
+      "displayNote": "2026-10-03 依使用者指定顯示名稱。"
     },
     "setn": {
       "name": "三立新聞網",
@@ -544,13 +546,14 @@
       "evidence": "PanSci 泛科學"
     },
     "housefun": {
-      "name": "好房網News",
+      "name": "好房新聞",
       "aliases": [
-        "好房新聞"
+        "好房網News"
       ],
       "status": "verified",
       "sourceUrl": "https://news.housefun.com.tw/",
-      "evidence": "好房網News"
+      "evidence": "好房網News",
+      "displayNote": "2026-10-03 依使用者指定顯示名稱。"
     },
     "cw": {
       "name": "天下雜誌",
@@ -962,11 +965,14 @@
       "evidence": "4Gamers 官方網站"
     },
     "gamer": {
-      "name": "巴哈姆特",
-      "aliases": [],
+      "name": "巴哈姆特 GNN",
+      "aliases": [
+        "巴哈姆特"
+      ],
       "status": "verified",
       "sourceUrl": "https://gnn.gamer.com.tw/",
-      "evidence": "巴哈姆特電玩資訊站"
+      "evidence": "巴哈姆特電玩資訊站",
+      "displayNote": "2026-10-03 依使用者指定顯示名稱。"
     },
     "ctit": {
       "name": null,

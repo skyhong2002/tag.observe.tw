@@ -95,6 +95,7 @@ export async function runProbeJob(
   db: Db,
   { log = (_o: object, _m: string) => {}, warn = (_o: object, _m: string) => {}, fetch = fetchText } = {},
 ) {
+  const excluded = new Set((disabled as { excludedMedia?: string[] }).excludedMedia ?? []);
   const media = [
     ...new Set([
       ...(disabled as { media: string[] }).media,
@@ -106,7 +107,7 @@ export async function runProbeJob(
         .map((s) => s.trim())
         .filter(Boolean),
     ]),
-  ];
+  ].filter((media) => !excluded.has(media));
   const results: ProbeResult[] = [];
   for (const m of media) {
     const r = await probeSource(m, fetch);

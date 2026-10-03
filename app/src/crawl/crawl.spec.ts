@@ -5,6 +5,14 @@ import { parseMarkerList } from './html-list.ts';
 import { between, decodeEntities, normalizeTag } from './text.ts';
 
 describe('parseFeed', () => {
+  it('keeps explicit full RSS content separate from the summary', () => {
+    const parsed = parseFeed(
+      '<rss><channel><item><link>https://news.example/a</link><description>摘要</description><content:encoded><![CDATA[<p>完整內容</p>]]></content:encoded></item><item><link>https://news.example/b</link><description>只有摘要</description></item></channel></rss>',
+    );
+    expect(parsed.items[0]).toMatchObject({ description: '摘要', contentHtml: '<p>完整內容</p>' });
+    expect(parsed.items[1].contentHtml).toBeUndefined();
+    expect(parsed.items[0].verifiedContent).toBeUndefined();
+  });
   it('parses RSS with categories, media image and CDATA', () => {
     const xml = `<?xml version="1.0"?><rss><channel><item><title><![CDATA[標題 &amp; A]]></title><link>https://x.tw/a?x=1</link><pubDate>Mon, 28 Sep 2026 08:00:00 +0800</pubDate><category>政治</category><category>選舉,台北</category><media:content url="https://x.tw/a.jpg"/><dc:creator>記者</dc:creator><description><![CDATA[<p>摘要</p>]]></description></item></channel></rss>`;
     const { kind, items } = parseFeed(xml);

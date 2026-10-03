@@ -38,12 +38,13 @@ describe('media stats', () => {
       { media: 'bigmedia', group: 'off' },
       { media: 'cti', group: 'hourly' },
       { media: 'ctitv', group: 'news' },
+      { media: 'want', group: 'hourly' },
       { media: 'social.php', group: 'off' },
     ]);
     expect(rows).toContainEqual({ media: 'bigmedia', group: 'off' });
     expect(rows).toContainEqual({ media: 'afp', group: 'off' });
     expect(rows).toContainEqual({ media: 'ctitv', group: 'news' });
-    expect(rows.some((row) => ['cti', 'ctit', 'social.php'].includes(row.media))).toBe(false);
+    expect(rows.some((row) => ['cti', 'ctit', 'want', 'social.php'].includes(row.media))).toBe(false);
   });
 
   it('returns the complete directory even when there are no articles or crawl runs', async () => {
@@ -56,7 +57,7 @@ describe('media stats', () => {
       const result = response.json();
       const ids = result.media.map((row: { media: string }) => row.media);
       for (const [media, entry] of Object.entries(catalog)) {
-        if (entry.title && media !== 'cti') expect(ids).toContain(media);
+        if (entry.title && !['cti', 'want'].includes(media)) expect(ids).toContain(media);
       }
       expect(result.media.find((row: { media: string }) => row.media === 'bigmedia')).toMatchObject({
         title: '鉅聞天下',

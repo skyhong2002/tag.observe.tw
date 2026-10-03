@@ -1,6 +1,7 @@
 import specs from '../../data/crawl-sources.json' with { type: 'json' };
 import type { ArticleRules } from './article.ts';
 import type { MarkerListSpec } from './html-list.ts';
+import type { NewsDiscoveryConfig } from './news-discovery.ts';
 
 export interface DiscoverSpec {
   pattern: string;
@@ -19,7 +20,7 @@ export interface SourceSpec {
     urls: Array<{ cat: string; url: string }>;
     // New reference sites share feed/sitemap/HTML discovery; only pages whose
     // title, body and recent publication date have been verified are indexed.
-    autoDiscover?: { homeUrl: string; feedUrls?: string[]; articlePattern?: string; maxArticles?: number };
+    autoDiscover?: NewsDiscoveryConfig;
     userAgent?: string;
     marker?: MarkerListSpec;
     discover?: DiscoverSpec;

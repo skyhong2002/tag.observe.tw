@@ -143,24 +143,79 @@ export async function runIndex(db: Db, spec: SourceSpec, { fetch = fetchText, lo
         .insert(articles)
         .ignore()
         .values(
-          batch.map((it) => ({
-            media: spec.media,
-            publishedAt: it.publishedAt ?? started,
-            crawledAt: started,
-            url: it.url,
-            urlKey: urlKey(it.url, spec.list.articleId),
-            title: trunc(stripTitleSuffix(it.title ?? '', spec.titleSuffix), 512) as string,
-            image: trunc(it.image, 512),
-            category: trunc(it.category, 64),
-            creator: trunc(it.creator, 256),
-            description: trunc(it.description, 4000),
-            tags: (it.tags ?? []).map(normalizeTag).filter(Boolean),
-            fetchedAt: null,
-            fetchStatus: null,
-            source: 'own',
-          })),
+          batch.map((it) => {
+            // Provider-restricted sources must still pass runArticles attribution checks.
+            const content = spec.article.provider ? undefined : it.verifiedContent;
+            return {
+              media: spec.media,
+              publishedAt: it.publishedAt ?? started,
+              crawledAt: started,
+              url: it.url,
+              urlKey: urlKey(it.url, spec.list.articleId),
+              title: trunc(stripTitleSuffix(it.title ?? '', spec.titleSuffix), 512) as string,
+              image: trunc(it.image, 512),
+              category: trunc(it.category, 64),
+              creator: trunc(it.creator, 256),
+              description: trunc(it.description, 4000),
+              tags: (it.tags ?? []).map(normalizeTag).filter(Boolean),
+              fetchedAt: content ? started : null,
+              fetchStatus: content ? (it.tags?.length ? 'ok' : 'notags') : null,
+              ...(content
+                ? {
+                    ...content,
+                    contentFetchedAt: started,
+                    contentAttempts: 1,
+                    attributions: extractAttributions(content.body, spec.media, null),
+                  }
+                : {}),
+              source: 'own',
+            };
+          }),
         );
       inserted += (result as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+      // A previously indexed URL can acquire its first usable body through a
+      // repaired page rule or an explicitly trusted full-text publisher feed.
+      // INSERT IGNORE alone would leave those existing blocked/empty rows stuck.
+      if (!spec.article.provider)
+        for (const item of batch) {
+          const content = item.verifiedContent;
+          if (!content) continue;
+          const repairable = and(
+            eq(articles.media, spec.media),
+            eq(articles.urlKey, urlKey(item.url, spec.list.articleId)),
+            or(isNull(articles.bodyStatus), inArray(articles.bodyStatus, ['missing', 'short', 'blocked', 'error'])),
+          );
+          // Keep repaired publication metadata and ranking dates consistent.
+          // Lock the row so another worker cannot replace a valid body or race
+          // the decision about whether its timestamp is only an index fallback.
+          await db.transaction(async (tx) => {
+            const [existing] = await tx
+              .select({ id: articles.id, title: articles.title, publishedAt: articles.publishedAt, crawledAt: articles.crawledAt })
+              .from(articles)
+              .where(repairable)
+              .limit(1)
+              .for('update');
+            if (!existing) return;
+            const correctedDate =
+              item.publishedAt && existing.publishedAt.getTime() === existing.crawledAt.getTime() ? item.publishedAt : null;
+            const correctedTitle = !existing.title.trim() && item.title ? stripTitleSuffix(item.title, spec.titleSuffix) : null;
+            await tx
+              .update(articles)
+              .set({
+                ...content,
+                ...(correctedDate ? { publishedAt: correctedDate } : {}),
+                ...(correctedTitle ? { title: trunc(correctedTitle, 512) as string } : {}),
+                fetchedAt: started,
+                contentFetchedAt: started,
+                contentAttempts: sql`${articles.contentAttempts} + 1`,
+                fetchStatus: item.tags?.length ? 'ok' : 'notags',
+                attributions: extractAttributions(content.body, spec.media, null),
+              })
+              .where(repairable);
+            if (correctedDate)
+              await tx.update(articleTags).set({ publishedAt: correctedDate }).where(eq(articleTags.articleId, existing.id));
+          });
+        }
       // Feed-provided tags are usable immediately for ranking.
       const withTags = batch.filter((it) => it.tags?.length);
       if (withTags.length)
@@ -193,7 +248,7 @@ export async function runIndex(db: Db, spec: SourceSpec, { fetch = fetchText, lo
 
 async function indexTags(db: Db, media: string, rows: Array<{ url: string; tags: string[]; publishedAt: Date }>) {
   const ids = await db
-    .select({ id: articles.id, url: articles.url })
+    .select({ id: articles.id, url: articles.url, publishedAt: articles.publishedAt })
     .from(articles)
     .where(
       and(
@@ -204,14 +259,14 @@ async function indexTags(db: Db, media: string, rows: Array<{ url: string; tags:
         )})`,
       ),
     );
-  const byUrl = new Map(ids.map((r) => [r.url, r.id]));
+  const byUrl = new Map(ids.map((r) => [r.url, r]));
   const values = rows.flatMap((r) => {
-    const id = byUrl.get(r.url);
-    return id
+    const article = byUrl.get(r.url);
+    return article
       ? [...new Set(r.tags.map(normalizeTag).filter((t) => Buffer.byteLength(t) > 1))].map((tag) => ({
-          articleId: id,
+          articleId: article.id,
           tag: tag.slice(0, 60),
-          publishedAt: r.publishedAt,
+          publishedAt: article.publishedAt,
         }))
       : [];
   });

@@ -10,7 +10,7 @@ export interface ArticleContent {
   bodyStatus: 'ok' | 'missing' | 'short' | 'blocked';
 }
 
-type ContentRules = { bodySelector?: string; authorSelector?: string };
+type ContentRules = { bodySelector?: string; bodyHtmlSelector?: string; bodyExcludeSelector?: string; authorSelector?: string };
 type JsonNode = Record<string, unknown>;
 type Candidate = { body: string; source: string };
 
@@ -117,8 +117,10 @@ function excludedContainer(element: cheerio.Cheerio<AnyNode>): boolean {
   if (element.is('body, html')) return false;
   const classes = (element.attr('class') ?? '')
     .split(/\s+/)
-    .filter((name) => !/^no[-_]share$/.test(name))
-    .filter((name) => !(element.is('.hentry') && /^(?:tag|category)-/.test(name)))
+    .filter(
+      (name) => !/^(?:(?:no|with|has)[-_]share(?:[-_]float)?|has-banner|social-(?:before|after)-title|comments-(?:on|off))$/.test(name),
+    )
+    .filter((name) => !(element.is('.hentry, article.type-post') && /^(?:tag|category|byline)-/.test(name)))
     .join(' ');
   return EXCLUDED_CLASS.test(`${classes} ${element.attr('id') ?? ''}`);
 }
@@ -154,7 +156,7 @@ function domBody($: cheerio.CheerioAPI, node: AnyNode, allowPlainText: boolean):
     return '';
   const root = cleanedRoot($, node);
   const paragraphs = root.is('p') ? root : root.find('p');
-  if (!paragraphs.length && allowPlainText) {
+  if (!paragraphs.toArray().some((paragraph) => normalize($(paragraph).text())) && allowPlainText) {
     root.find('h1, h2, h3, header').remove();
     root.find('div, section, blockquote, li').append('\n\n');
     return root
@@ -294,11 +296,18 @@ function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: Content
 }
 
 export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules: ContentRules): ArticleContent {
+  if (rules.bodyExcludeSelector) $(rules.bodyExcludeSelector).remove();
   const nodes = articleNodes($, url);
   const authors = extractAuthors($, nodes, rules);
   const candidates: Candidate[] = nodes
     .map((node) => ({ body: structuredBody(node['articleBody']), source: 'ld+json' }))
     .filter((candidate) => candidate.body);
+  if (rules.bodyHtmlSelector) {
+    for (const node of $(rules.bodyHtmlSelector).toArray()) {
+      const body = structuredBody($(node).text());
+      if (body) candidates.unshift({ body, source: 'selector' });
+    }
+  }
   const challenge =
     $('#challenge-form, #cf-challenge-running, #challenge-running, .cf-challenge').length > 0 || BLOCK_TEXT.test($('title').text());
   if (challenge) return { body: null, authors, bodySource: 'none', bodyStatus: 'blocked' };

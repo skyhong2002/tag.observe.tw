@@ -2,6 +2,71 @@ import type { SourceOverride } from '../sources.ts';
 // Hand-ported adjustments for media whose legacy PHP relied on page-specific
 // markers or whose feeds moved. Keep entries small and commented.
 export const overrides: Record<string, SourceOverride> = {
+  // Direct Housefun endpoints currently return AWS WAF challenges. This
+  // publisher-specific feed carries Housefun articles published by MyHousing;
+  // retain the actual partner URL and require the article's own provider credit.
+  housefun: {
+    list: {
+      urls: [{ cat: 'news', url: 'https://www.myhousing.com.tw/byline/%e5%a5%bd%e6%88%bf%e7%b6%b2news/feed/' }],
+      include: '^/(?:n|p)/(?:[^/?]+/)*\\d+/$',
+    },
+    titleSuffix: ' | 住展雜誌',
+    article: { enabled: true, provider: '^好房網News$' },
+  },
+  // The RSS contains only 150 stories; the publisher's own news sitemap
+  // exposes 700 with publication dates. Externals are partner syndication.
+  mirror: {
+    list: {
+      urls: [
+        { cat: 'news', url: 'https://www.mirrormedia.mg/rss/posts-news.xml' },
+        { cat: 'news', url: 'https://www.mirrormedia.mg/rss/rss.xml' },
+      ],
+      include: '^/story/[^/?]+/?$',
+    },
+  },
+  // robots.txt advertises this current news sitemap; the legacy endpoint
+  // lags behind. Keep it as a supplement for its longer publication window.
+  storm: {
+    list: {
+      urls: [
+        { cat: 'news', url: 'https://www.storm.mg/sitemaps/1/article-news-1.xml' },
+        { cat: 'news', url: 'https://www.storm.mg/sitemap/news' },
+      ],
+      include: String.raw`^/(?:article|lifestyle)/\d+/?$`,
+    },
+  },
+  // Public pages use outlet-specific body wrappers rather than <article>.
+  bbc: { article: { enabled: true, bodySelector: 'main' } },
+  nikkei: { article: { enabled: true, bodySelector: '#contentDiv .newsText' } },
+  // Current official successor explicitly identifies its Taiwan Lihpao history.
+  // The previous lihpao.com domain now serves unrelated English SEO content.
+  lihpao: {
+    list: { urls: [{ cat: 'news', url: 'https://www.limedia.tw/feed/' }] },
+    article: { enabled: true },
+  },
+  // The publisher exposes full text in content:encoded on its official RSS.
+  // Article pages challenge automated readers; summaries are never substituted.
+  bccnews: {
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://bccnews.com.tw/',
+        feedUrls: ['https://bccnews.com.tw/feed'],
+        feedBody: 'full-text',
+        maxArticles: 12,
+      },
+    },
+    article: { enabled: true },
+  },
+  newsmarket: {
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://www.newsmarket.com.tw/',
+        apiUrls: ['https://www.newsmarket.com.tw/wp-json/wp/v2/posts?per_page=12'],
+        maxArticles: 12,
+      },
+    },
+    article: { enabled: true },
+  },
   // ETtoday's news sitemaps stopped updating on 2026-07-21; Feedburner is live.
   ettoday: {
     list: {
@@ -96,7 +161,6 @@ export const overrides: Record<string, SourceOverride> = {
     },
   },
   ldope: { list: { urls: [{ cat: 'news', url: 'https://ldope.com/sitemap_index.xml' }] } },
-  lihpao: { list: { urls: [{ cat: 'news', url: 'https://www.lihpao.com/sitemap.xml' }] } },
   marieclaire: { list: { urls: [{ cat: 'news', url: 'https://www.marieclaire.com.tw/sitemap.xml' }] } },
   shoppingdesign: { list: { urls: [{ cat: 'news', url: 'https://www.shoppingdesign.com.tw/rss' }] } },
   supertaste: {
@@ -201,7 +265,7 @@ export const overrides: Record<string, SourceOverride> = {
   taipeitimes: {
     group: 'hourly',
     list: { urls: [{ cat: 'news', url: 'https://www.taipeitimes.com/xml/index.rss' }] },
-    article: { enabled: false, batch: 20, delayMs: 3000, skipMeta: true },
+    article: { enabled: true, batch: 20, delayMs: 3000, skipMeta: true, bodySelector: '#left_blake .archives' },
   },
   // 經濟日報: Google News sitemap covering every channel.
   udnmoney: {

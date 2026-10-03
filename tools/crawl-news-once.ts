@@ -1,6 +1,6 @@
 // Run the normal index/body pipeline for every enabled catalog crawler.
 import { parseArgs } from 'node:util';
-import { and, count, eq, gte } from 'drizzle-orm';
+import { and, count, eq, gte, inArray, isNull, or } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import catalog from '../app/data/news-source-catalog.json' with { type: 'json' };
 import { runArticles, runIndex } from '../app/src/crawl/pipeline.ts';
@@ -13,6 +13,7 @@ const { values } = parseArgs({
     media: { type: 'string', multiple: true },
     limit: { type: 'string', default: '3' },
     concurrency: { type: 'string', default: '3' },
+    'retry-incomplete': { type: 'boolean', default: false },
   },
 });
 const limit = Number(values.limit);
@@ -24,13 +25,13 @@ const known = new Set(catalog.sources.map((source) => source.media));
 const blocked = disabled();
 const sources = allSources().filter(
   (source) =>
-    known.has(source.media) &&
-    source.list.autoDiscover &&
+    (known.has(source.media) || values.media?.includes(source.media)) &&
+    (source.list.autoDiscover || values.media?.includes(source.media)) &&
     source.group !== 'off' &&
     !blocked.has(source.media) &&
     (!values.media || values.media.includes(source.media)),
 );
-if (!sources.length) throw new Error('No enabled automatic news crawlers match');
+if (!sources.length) throw new Error('No enabled news crawlers match');
 const { db, close } = createDb();
 const gate = pLimit(concurrency);
 let failures = 0;
@@ -39,7 +40,24 @@ try {
     sources.map((source) =>
       gate(async () => {
         try {
-          const spec = { ...source, list: { ...source.list, autoDiscover: { ...source.list.autoDiscover!, maxArticles: limit } } };
+          // A parser repair can recover rows whose previous three attempts
+          // exhausted normal retries. Retain existing text while requesting a
+          // fresh extraction, only for recent non-ok bodies in selected media.
+          if (values['retry-incomplete']) {
+            await db
+              .update(articles)
+              .set({ contentFetchedAt: null, contentAttempts: 0 })
+              .where(
+                and(
+                  eq(articles.media, source.media),
+                  gte(articles.publishedAt, new Date(Date.now() - 14 * 86400e3)),
+                  or(isNull(articles.bodyStatus), inArray(articles.bodyStatus, ['missing', 'short', 'blocked', 'error'])),
+                ),
+              );
+          }
+          const spec = source.list.autoDiscover
+            ? { ...source, list: { ...source.list, autoDiscover: { ...source.list.autoDiscover, maxArticles: limit } } }
+            : source;
           const index = await runIndex(db, spec);
           const bodies = await runArticles(db, spec, { limit });
           const [stored] = await db
