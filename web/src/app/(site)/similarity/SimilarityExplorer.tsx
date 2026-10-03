@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GraphSelection } from '@/components/SimilarityGraph';
+import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts, selectGraphMedia } from '@/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 
@@ -78,7 +78,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const closeFullscreen = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.fullscreenElement && !document.querySelector('dialog[open]')) {
+      if (event.key === 'Escape' && !document.fullscreenElement) {
         setFullscreen(false);
         fullscreenButton.current?.focus();
       }
@@ -106,8 +106,12 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
     }
   };
   const [selection, setSelection] = useState<GraphSelection>(null);
-  const [drawer, setDrawer] = useState<'settings' | 'info' | 'media' | 'evidence' | null>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
+  const [view, setView] = useState<'settings' | 'info' | 'media' | 'evidence'>('evidence');
+  const [query, setQuery] = useState('');
+  const [mediaQuery, setMediaQuery] = useState('');
+  const [direction, setDirection] = useState<CitationDirection>('all');
+  const [page, setPage] = useState(0);
+  const browser = useRef<HTMLElement>(null);
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
   const counts = useMemo(() => nodeArticleCounts(data), [data]);
   const graph = useMemo(() => selectGraphMedia(data.nodes, data.edges), [data.nodes, data.edges]);
@@ -116,44 +120,28 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
   const select = (value: GraphSelection) => {
     setSelection(value);
-    if (value) setDrawer('evidence');
+    setPage(0);
+    setView('evidence');
   };
-  useEffect(() => {
-    if (drawer) dialog.current?.showModal();
-    else dialog.current?.close();
-  }, [drawer]);
-  const pairs = useMemo(
+  const evidence = useMemo(() => graphEvidence(data, selection, mode, query, direction), [data, selection, mode, query, direction]);
+  const pageCount = Math.max(1, Math.ceil(evidence.length / 20));
+  const currentPage = Math.min(page, pageCount - 1);
+  const visibleEvidence = evidence.slice(currentPage * 20, (currentPage + 1) * 20);
+  const media = useMemo(
     () =>
-      data.pairs.filter((pair) => {
-        if (!selection) return false;
-        if ('node' in selection) return pair.a.media === selection.node || pair.b.media === selection.node;
-        const e = selection.edge;
-        if (e.kind === 'citation') return false;
-        return [pair.a.media, pair.b.media].includes(e.source) && [pair.a.media, pair.b.media].includes(e.target);
-      }),
-    [data.pairs, selection],
+      [...data.nodes]
+        .filter((node) => `${node.name} ${node.id} ${node.country}`.toLocaleLowerCase().includes(mediaQuery.trim().toLocaleLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name, 'zh-TW')),
+    [data.nodes, mediaQuery],
   );
-  const citations = useMemo(
-    () =>
-      data.citations.filter((c) => {
-        if (!selection) return false;
-        if ('node' in selection) return c.article.media === selection.node || c.source.media === selection.node;
-        return selection.edge.kind === 'citation' && c.article.media === selection.edge.source && c.source.media === selection.edge.target;
-      }),
-    [data.citations, selection],
-  );
-  const title =
-    drawer === 'settings'
-      ? '分析設定'
-      : drawer === 'info'
-        ? '資料與判讀方式'
-        : drawer === 'media'
-          ? '媒體列表'
-          : selection && 'node' in selection
-            ? byId.get(selection.node)?.name
-            : selection && 'edge' in selection
-              ? `${byId.get(selection.edge.source)?.name} ${selection.edge.kind === 'citation' ? '→' : '↔'} ${byId.get(selection.edge.target)?.name}`
-              : '文章證據';
+  const selectedTitle =
+    selection && 'node' in selection
+      ? byId.get(selection.node)?.name
+      : selection && 'edge' in selection
+        ? `${byId.get(selection.edge.source)?.name} ${selection.edge.kind === 'citation' ? '→' : '↔'} ${byId.get(selection.edge.target)?.name}`
+        : '全部媒體';
+  const highlightedCount = selection ? edges.filter((edge) => highlightedRelationship(edge, selection)).length : 0;
+  const openBrowser = () => browser.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
   const selectedCounts = selection && 'node' in selection ? counts.get(selection.node) : null;
 
   return (
@@ -162,126 +150,139 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
       data-similarity-dashboard
       data-fullscreen={fullscreen}
       className={
-        fullscreen
-          ? 'fixed inset-0 z-50 flex h-dvh min-h-0 w-full flex-col gap-3 bg-white p-3 dark:bg-zinc-950 sm:p-4'
-          : 'flex h-[calc(100svh-112px)] min-h-[420px] flex-col gap-3'
+        fullscreen ? 'fixed inset-0 z-50 h-dvh w-full space-y-6 overflow-y-auto bg-white p-3 dark:bg-zinc-950 sm:p-4' : 'space-y-6'
       }
     >
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
-          <p className="mt-1 text-xs text-zinc-500">
-            {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length} 家媒體 · {number(data.sample.analyzed)}{' '}
-            篇分析樣本
-          </p>
-        </div>
-        <div className="flex gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-          <button
-            type="button"
-            onClick={() => setDrawer('settings')}
-            className="rounded-lg px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-          >
-            設定
-          </button>
-          <button type="button" onClick={() => setDrawer('info')} className="rounded-lg px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900">
-            資料說明
-          </button>
-        </div>
-      </header>
+      <div className={`flex min-h-[420px] flex-col gap-3 ${fullscreen ? 'h-[calc(100dvh-2rem)]' : 'h-[calc(100svh-112px)]'}`}>
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
+            <p className="mt-1 text-xs text-zinc-500">
+              {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length} 家媒體 · {number(data.sample.analyzed)}{' '}
+              篇分析樣本
+            </p>
+          </div>
+        </header>
+        <section
+          aria-label="媒體關係儀表板"
+          className={`${panel} flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-zinc-50/60 to-white dark:from-zinc-900 dark:to-zinc-950`}
+        >
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
+            <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
+              {(
+                [
+                  ['all', '全部關係'],
+                  ['similarity', '內文相似'],
+                  ['citation', '明示引用'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={mode === value}
+                  onClick={() => {
+                    setMode(value);
+                    setPage(0);
+                  }}
+                  className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </fieldset>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={showAll}
+                onClick={() => setShowAll((value) => !value)}
+                className="rounded-md border border-zinc-200 px-2 py-1.5 text-xs dark:border-zinc-700"
+              >
+                {showAll ? '回到主要連線' : '顯示全部連線'}
+              </button>
+              <button type="button" onClick={openBrowser} className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700">
+                篩選與瀏覽 ↓
+              </button>
+            </div>
+          </div>
+          <div className="relative min-h-0 flex-1" data-testid="media-graph-frame">
+            <SimilarityGraph
+              nodes={nodes}
+              edges={edges}
+              layoutEdges={graph.edges}
+              camps={camps}
+              data={data}
+              showAll={showAll}
+              onSelect={select}
+              selection={selection}
+              fullscreen={fullscreen}
+              onToggleFullscreen={toggleFullscreen}
+            />
+          </div>
+          <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
+            <p>
+              <span className="text-orange-600 dark:text-orange-400">━ 內文相似</span>
+              <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
+              <span className="ml-3">
+                {selection
+                  ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`
+                  : `總覽 ${showAll ? edges.length : overview.length}／${edges.length} 條`}
+              </span>
+            </p>
+            <div className="flex items-center gap-3">
+              {selection && (
+                <button type="button" onClick={() => select(null)} className="underline">
+                  清除選取
+                </button>
+              )}
+              <span>點選固定連線 · 下方瀏覽文章</span>
+            </div>
+          </div>
+        </section>
+        <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
+          僅呈現本期已擷取樣本{data.sample.truncated ? `中的最新 ${number(data.sample.limit)} 篇` : ''}；相似不代表引用。
+          {data.sample.pairsTruncated ? `相似配對顯示前 ${number(data.sample.pairLimit ?? 200)} 組。` : ''}
+        </p>
+      </div>
       <section
-        aria-label="媒體關係儀表板"
-        className={`${panel} flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-zinc-50/60 to-white dark:from-zinc-900 dark:to-zinc-950`}
+        ref={browser}
+        id="graph-browser"
+        aria-labelledby="graph-browser-title"
+        className={`${panel} ${fullscreen ? 'scroll-mt-4' : 'scroll-mt-20'}`}
       >
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
-          <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-zinc-800">
+          <div>
+            <h2 id="graph-browser-title" className="text-lg font-semibold">
+              篩選與瀏覽
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">選取圖示可固定相關連線；文章與分析資料都在這裡查看。</p>
+          </div>
+          <fieldset
+            aria-label="瀏覽內容"
+            className="grid w-full grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-1 text-sm dark:bg-zinc-800 sm:flex sm:w-auto"
+          >
             {(
               [
-                ['all', '全部關係'],
-                ['similarity', '內文相似'],
-                ['citation', '明示引用'],
+                ['evidence', '文章證據'],
+                ['media', '媒體列表'],
+                ['settings', '分析設定'],
+                ['info', '資料說明'],
               ] as const
             ).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
-                aria-pressed={mode === value}
-                onClick={() => setMode(value)}
-                className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                aria-pressed={view === value}
+                onClick={() => setView(value)}
+                className={`rounded-md px-3 py-2 ${view === value ? 'bg-white font-medium shadow-sm dark:bg-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}
               >
                 {label}
               </button>
             ))}
           </fieldset>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              aria-pressed={showAll}
-              onClick={() => setShowAll((value) => !value)}
-              className="rounded-md border border-zinc-200 px-2 py-1.5 text-xs dark:border-zinc-700"
-            >
-              {showAll ? '回到主要連線' : '顯示全部連線'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDrawer('media')}
-              className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700"
-            >
-              媒體列表 ↗
-            </button>
-          </div>
-        </div>
-        <div className="relative min-h-0 flex-1" data-testid="media-graph-frame">
-          <SimilarityGraph
-            nodes={nodes}
-            edges={edges}
-            layoutEdges={graph.edges}
-            camps={camps}
-            data={data}
-            showAll={showAll}
-            onSelect={select}
-            fullscreen={fullscreen}
-            onToggleFullscreen={toggleFullscreen}
-          />
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800">
-          <p>
-            <span className="text-orange-600 dark:text-orange-400">━ 內文相似</span>
-            <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
-            <span className="ml-3">
-              總覽 {showAll ? edges.length : overview.length}／{edges.length} 條
-            </span>
-          </p>
-          <p className="hidden sm:block">拖曳平移 · 滾輪縮放 · 點選看文章</p>
-          <p className="sm:hidden">拖曳平移 · 雙指縮放 · 點選看文章</p>
-        </div>
-      </section>
-      <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
-        僅呈現本期已擷取樣本{data.sample.truncated ? `中的最新 ${number(data.sample.limit)} 篇` : ''}；相似不代表引用。
-        {data.sample.pairsTruncated ? `相似配對顯示前 ${number(data.sample.pairLimit ?? 200)} 組。` : ''}
-      </p>
-
-      <dialog
-        ref={dialog}
-        onClose={() => setDrawer(null)}
-        aria-labelledby="graph-drawer-title"
-        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-dvh w-full max-w-lg border-l border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/20 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-      >
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 id="graph-drawer-title" className="font-semibold">
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={() => setDrawer(null)}
-            className="shrink-0 rounded-md px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            aria-label="關閉側欄"
-          >
-            關閉 ✕
-          </button>
-        </div>
-        <div className="space-y-5 p-4">
-          {drawer === 'settings' && (
-            <form action="/similarity/" method="get" className="space-y-5">
+        </header>
+        <div className="space-y-5 p-4 sm:p-6">
+          {view === 'settings' && (
+            <form action="/similarity/" method="get" className="grid max-w-3xl items-end gap-5 sm:grid-cols-3">
               <label className="block text-sm">
                 比較期間
                 <select name="hours" defaultValue={data.hours} className={control}>
@@ -310,40 +311,138 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
               </button>
             </form>
           )}
-          {drawer === 'media' && (
+          {view === 'media' && (
             <div className="space-y-2">
-              <p className="text-xs leading-6 text-zinc-500">可用鍵盤選取媒體；篇數皆依本期證據文章去重。</p>
-              {data.nodes.map((node) => (
-                <button
-                  key={node.id}
-                  type="button"
-                  onClick={() => select({ node: node.id })}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg bg-zinc-50 p-3 text-left hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                >
-                  <span className="text-sm">
-                    {node.name}
-                    <span className="ml-2 text-xs text-zinc-500">{node.country}</span>
-                  </span>
-                  <span className="shrink-0 text-right text-xs leading-5 text-zinc-500">
-                    引用 {counts.get(node.id)?.outgoing ?? 0} 篇<br />
-                    被引用 {counts.get(node.id)?.incoming ?? 0} 篇
-                  </span>
-                </button>
-              ))}
+              <label className="block max-w-md text-sm">
+                搜尋媒體
+                <input
+                  type="search"
+                  value={mediaQuery}
+                  onChange={(event) => setMediaQuery(event.target.value)}
+                  className={control}
+                  placeholder="媒體名稱或國別"
+                />
+              </label>
+              <p className="text-xs leading-6 text-zinc-500">
+                {media.length} 家媒體 · 選取媒體可固定圖上連線，並瀏覽文章；篇數依本期證據文章去重。
+              </p>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {media.map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    onClick={() => select({ node: node.id })}
+                    aria-pressed={!!selection && 'node' in selection && selection.node === node.id}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg bg-zinc-50 p-3 text-left hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                  >
+                    <span className="text-sm">
+                      {node.name}
+                      <span className="ml-2 text-xs text-zinc-500">{node.country}</span>
+                    </span>
+                    <span className="shrink-0 text-right text-xs leading-5 text-zinc-500">
+                      引用 {counts.get(node.id)?.outgoing ?? 0} 篇<br />
+                      被引用 {counts.get(node.id)?.incoming ?? 0} 篇
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {!media.length && <p className="text-sm text-zinc-500">沒有符合搜尋的媒體。</p>}
             </div>
           )}
-          {drawer === 'evidence' && (
+          {view === 'evidence' && (
             <>
+              <div className="grid grid-cols-2 items-end gap-4 xl:grid-cols-4">
+                <label className="block text-sm">
+                  媒體
+                  <select
+                    value={selection && 'node' in selection ? selection.node : selection ? '__edge__' : ''}
+                    onChange={(event) => select(event.target.value ? { node: event.target.value } : null)}
+                    className={control}
+                  >
+                    <option value="">全部媒體</option>
+                    {selection && 'edge' in selection && <option value="__edge__">{selectedTitle}</option>}
+                    {data.nodes.map((node) => (
+                      <option key={node.id} value={node.id}>
+                        {node.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm">
+                  關係類型
+                  <select
+                    value={mode}
+                    onChange={(event) => {
+                      setMode(event.target.value as typeof mode);
+                      setPage(0);
+                    }}
+                    className={control}
+                  >
+                    <option value="all">全部關係</option>
+                    <option value="similarity">內文相似</option>
+                    <option value="citation">明示引用</option>
+                  </select>
+                </label>
+                <label className="block text-sm">
+                  搜尋文章
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      setPage(0);
+                    }}
+                    className={control}
+                    placeholder="標題、媒體、作者或共同段落"
+                  />
+                </label>
+                <label className="block text-sm">
+                  引用方向
+                  <select
+                    value={direction}
+                    disabled={!selection || !('node' in selection) || mode === 'similarity'}
+                    onChange={(event) => {
+                      setDirection(event.target.value as CitationDirection);
+                      setPage(0);
+                    }}
+                    className={`${control} disabled:opacity-40`}
+                  >
+                    <option value="all">所有引用方向</option>
+                    <option value="outgoing">引用其他媒體</option>
+                    <option value="incoming">被其他媒體引用</option>
+                  </select>
+                </label>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="font-semibold">{selectedTitle}</h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    select(null);
+                    setMode('all');
+                    setQuery('');
+                    setDirection('all');
+                  }}
+                  className="text-sm text-brand-700 underline dark:text-brand-400"
+                >
+                  清除篩選
+                </button>
+              </div>
               {selection && 'node' in selection && (
                 <div className="space-y-3">
-                  <p className="text-xs text-zinc-500">{byId.get(selection.node)?.country} · 本期樣本，依文章去重計數</p>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <p className="text-xs text-zinc-500">
+                    {byId.get(selection.node)?.country} · 本期樣本，依文章去重計數 ·{' '}
+                    {byId.get(selection.node)?.external
+                      ? '僅作為引用來源，未收錄本期內文'
+                      : `納入分析 ${number(byId.get(selection.node)?.articles ?? 0)} 篇（圖示大小依據）`}
+                  </p>
+                  <div className="grid max-w-3xl grid-cols-3 gap-2 text-center text-xs">
                     {[
                       [selectedCounts?.outgoing ?? 0, '引用其他媒體'],
                       [selectedCounts?.incoming ?? 0, '被其他媒體引用'],
                       [selectedCounts?.similar ?? 0, '內文相近'],
                     ].map(([n, label]) => (
-                      <div key={label} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-900">
+                      <div key={label} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
                         <p className="mb-1 text-xl font-semibold">{n}</p>
                         {label}
                       </div>
@@ -356,43 +455,74 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
                   )}
                 </div>
               )}
-              <h3 className="text-sm font-semibold">明示引用 · {citations.length} 筆關係</h3>
-              {!citations.length && <p className="text-xs text-zinc-500">本期樣本未辨識到明示引用，原始來源仍未知。</p>}
-              {citations.map((c) => (
-                <article
-                  key={`${c.article.id}:${c.source.media}`}
-                  className="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
-                >
-                  <p className="text-xs text-violet-600 dark:text-violet-400">
-                    {c.article.mediaTitle} → {c.source.name} · {c.source.country}
-                  </p>
-                  <Link href={`/article/${c.article.id}/`} className="block text-sm font-medium leading-6 hover:underline">
-                    {c.article.title}
-                  </Link>
-                  <p className="text-xs text-zinc-500">
-                    {c.article.authors.join('、') || '未取得署名'} · {taipei(c.article.publishedAt)}
-                  </p>
-                  <blockquote className="border-l-2 border-violet-300 pl-3 text-xs leading-6 text-zinc-500">{c.source.evidence}</blockquote>
-                </article>
-              ))}
-              <h3 className="text-sm font-semibold">相似內文 · {pairs.length} 組</h3>
-              {!pairs.length && <p className="text-xs text-zinc-500">本期樣本沒有符合門檻的內文配對。</p>}
-              {pairs.map((pair) => (
-                <article key={pair.id} className="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-                  <p className="text-xs font-medium text-brand-700 dark:text-brand-400">
-                    {pair.kind === 'identical' ? '內文相同' : '高度相似'} · {(pair.score * 100).toFixed(1)}%
-                  </p>
-                  <ArticleCard article={pair.a} />
-                  <ArticleCard article={pair.b} />
-                  <details className="text-xs">
-                    <summary className="cursor-pointer py-2">查看共同段落</summary>
-                    <p className="break-all leading-6 text-zinc-500">{pair.evidence}</p>
-                  </details>
-                </article>
-              ))}
+              <p role="status" className="text-sm text-zinc-500">
+                {number(evidence.length)} 筆關係證據 · 最新在前
+                {evidence.length ? ` · 顯示 ${currentPage * 20 + 1}–${Math.min(evidence.length, (currentPage + 1) * 20)}` : ''}
+              </p>
+              {!evidence.length && (
+                <p className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:bg-zinc-950">
+                  目前篩選沒有符合的文章，可更換關係類型或清除篩選。這不代表媒體沒有其他新聞。
+                </p>
+              )}
+              <div className="grid items-start gap-4 lg:grid-cols-2" data-testid="graph-evidence-results">
+                {visibleEvidence.map((item) =>
+                  item.kind === 'citation' ? (
+                    <article key={item.key} className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                      <p className="text-xs text-violet-600 dark:text-violet-400">
+                        明示引用 · {item.citation.article.mediaTitle} → {item.citation.source.name} · {item.citation.source.country}
+                      </p>
+                      <ArticleCard article={item.citation.article} />
+                      <blockquote className="break-words border-l-2 border-violet-300 pl-3 text-xs leading-6 text-zinc-500">
+                        {item.citation.source.evidence}
+                      </blockquote>
+                    </article>
+                  ) : (
+                    <article key={item.key} className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                      <p className="text-xs font-medium text-brand-700 dark:text-brand-400">
+                        {item.pair.kind === 'identical' ? '內文相同' : '高度相似'} · {(item.pair.score * 100).toFixed(1)}%
+                      </p>
+                      <ArticleCard article={item.pair.a} />
+                      <ArticleCard article={item.pair.b} />
+                      <details className="text-xs">
+                        <summary className="cursor-pointer py-2">查看共同段落</summary>
+                        <p className="break-all leading-6 text-zinc-500">{item.pair.evidence}</p>
+                      </details>
+                    </article>
+                  ),
+                )}
+              </div>
+              {pageCount > 1 && (
+                <nav aria-label="文章證據分頁" className="flex items-center justify-center gap-4 text-sm">
+                  <button
+                    type="button"
+                    disabled={currentPage === 0}
+                    onClick={() => {
+                      setPage(currentPage - 1);
+                      openBrowser();
+                    }}
+                    className="rounded-lg border border-zinc-200 px-4 py-2 disabled:opacity-40 dark:border-zinc-700"
+                  >
+                    上一頁
+                  </button>
+                  <span>
+                    {currentPage + 1}／{pageCount}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentPage === pageCount - 1}
+                    onClick={() => {
+                      setPage(currentPage + 1);
+                      openBrowser();
+                    }}
+                    className="rounded-lg border border-zinc-200 px-4 py-2 disabled:opacity-40 dark:border-zinc-700"
+                  >
+                    下一頁
+                  </button>
+                </nav>
+              )}
             </>
           )}
-          {drawer === 'info' && (
+          {view === 'info' && (
             <div className="space-y-5 text-sm leading-7">
               <p>
                 更新於 {taipei(data.generatedAt)}（台北）。期間內有 {number(data.sample.available)} 篇可用內文，本圖分析{' '}
@@ -400,12 +530,10 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
                 {number(data.sample.pairLimit ?? 200)} 組；引用篇數也僅涵蓋這批樣本。
               </p>
               <p>
-                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。Hover
-                的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
+                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。下方的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                一律顯示本期所有有連線的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或指向圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
-                展開目前畫面內該媒體的全部連線；「顯示全部連線」可還原目前媒體之間的全部關係。篇數與文章證據仍使用完整分析樣本。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
+                一律顯示本期所有有連線的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。移動游標、平移或縮放不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。篇數與文章證據仍使用完整分析樣本。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
               </p>
               <p>
                 <span className="text-blue-700 dark:text-blue-400">藍字</span>／
@@ -438,7 +566,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
             </div>
           )}
         </div>
-      </dialog>
+      </section>
     </div>
   );
 }

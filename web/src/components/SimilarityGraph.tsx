@@ -1,11 +1,11 @@
 'use client';
 
 import { GraphChart } from 'echarts/charts';
-import { TooltipComponent } from 'echarts/components';
 import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
+import { type GraphSelection, highlightedRelationship, sameGraphSelection } from '@/lib/graph-evidence.mts';
 import { bindGraphNavigation, GRAPH_ZOOM_MAX, GRAPH_ZOOM_MIN } from '@/lib/graph-navigation.mts';
 import {
   displayedGraphEdges,
@@ -16,13 +16,14 @@ import {
   mediaIconSizes,
   mediaLabelColor,
   mediaVisibleLabels,
-  nodeArticleCounts,
 } from '@/lib/media-graph.mts';
 import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
 import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 
-echarts.use([GraphChart, TooltipComponent, CanvasRenderer, LabelLayout]);
-export type GraphSelection = { node: string } | { edge: SimilarityEdge } | null;
+echarts.use([GraphChart, CanvasRenderer, LabelLayout]);
+
+export type { GraphSelection } from '@/lib/graph-evidence.mts';
+
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 function fallbackIcon(node: SimilarityNode) {
@@ -37,6 +38,7 @@ export default function SimilarityGraph({
   data,
   showAll,
   onSelect,
+  selection,
   fullscreen,
   onToggleFullscreen,
 }: {
@@ -47,6 +49,7 @@ export default function SimilarityGraph({
   data: SimilarityData;
   showAll: boolean;
   onSelect: (selection: GraphSelection) => void;
+  selection: GraphSelection;
   fullscreen: boolean;
   onToggleFullscreen: () => void;
 }) {
@@ -54,14 +57,16 @@ export default function SimilarityGraph({
   const callback = useRef(onSelect);
   const density = useRef(showAll);
   const activeEdges = useRef(edges);
+  const pinned = useRef(selection);
   const refresh = useRef<(() => void) | null>(null);
   const navigate = useRef<((action: 'in' | 'out' | 'reset') => void) | null>(null);
   const camera = useRef<{ key: string; zoom: number; center: number[] | null } | null>(null);
   useEffect(() => {
+    pinned.current = selection;
     activeEdges.current = edges;
     density.current = showAll;
     refresh.current?.();
-  }, [edges, showAll]);
+  }, [edges, showAll, selection]);
   callback.current = onSelect;
   const [dark, setDark] = useState(false);
   useEffect(() => {
@@ -75,24 +80,14 @@ export default function SimilarityGraph({
     if (!ref.current || !nodes.length) return;
     let disposed = false;
     const chart = echarts.init(ref.current);
-    const byId = new Map(nodes.map((n) => [n.id, n]));
-    const counts = nodeArticleCounts(data);
     let edges = activeEdges.current;
     let overview = mainGraphEdges(edges);
-    let focused: string | null = null;
+    let focused: GraphSelection = null;
     let neighbors = new Set<string>();
-    let visibleEdges = displayedGraphEdges(edges, overview, density.current, focused);
-    let connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
+    let visibleEdges = displayedGraphEdges(edges, overview, density.current, null);
     const symbols = new Map(nodes.map((n) => [n.id, fallbackIcon(n)]));
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
     const ink = dark ? '#d4d4d8' : '#52525b';
-    const relationships = (id: string, incoming: boolean) =>
-      data.edges
-        .filter((e) => e.kind === 'citation' && (incoming ? e.target : e.source) === id)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 4)
-        .map((e) => `${escapeHtml(data.nodes.find((n) => n.id === (incoming ? e.source : e.target))?.name ?? '')} ${e.count} 篇`)
-        .join('、');
     let width = chart.getWidth(),
       height = chart.getHeight();
     let positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58));
@@ -122,7 +117,7 @@ export default function SimilarityGraph({
         symbolKeepAspect: true,
         itemStyle: { opacity: !focused || neighbors.has(n.id) ? 1 : 0.12 },
         label: {
-          show: focused === n.id || labels.has(n.id),
+          show: (!!focused && 'node' in focused && focused.node === n.id) || labels.has(n.id),
           color: mediaLabelColor(camps[n.id], dark),
           opacity: !focused || neighbors.has(n.id) ? 1 : 0.4,
         },
@@ -139,50 +134,34 @@ export default function SimilarityGraph({
           width: edgeWeightWidth(e.count, maxWeight),
           color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
           type: e.kind === 'citation' ? 'dashed' : 'solid',
-          opacity: focused ? (e.source === focused || e.target === focused ? 0.85 : 0.035) : 0.26,
+          opacity: focused ? (highlightedRelationship(e, focused) ? 0.95 : 0.035) : 0.26,
           curveness: e.kind === 'citation' ? 0.1 : -0.05,
         },
       }));
-    const updateFocus = (id: string | null, force = false) => {
-      if (disposed || (!force && focused === id)) return;
-      focused = id;
-      neighbors = new Set(id ? [id, ...edges.filter((e) => e.source === id || e.target === id).flatMap((e) => [e.source, e.target])] : []);
-      visibleEdges = displayedGraphEdges(edges, overview, density.current, focused);
+    const updateFocus = (value: GraphSelection, force = false) => {
+      if (disposed || (!force && sameGraphSelection(focused, value))) return;
+      focused = value;
+      neighbors = new Set(value && 'node' in value ? [value.node] : []);
+      for (const edge of edges)
+        if (highlightedRelationship(edge, focused)) {
+          neighbors.add(edge.source);
+          neighbors.add(edge.target);
+        }
+      visibleEdges = displayedGraphEdges(edges, overview, density.current, value && 'node' in value ? value.node : null);
+      if (value && 'edge' in value)
+        visibleEdges = edges.filter((edge) => visibleEdges.includes(edge) || highlightedRelationship(edge, value));
       chart.setOption({ series: [{ id: 'media-network', data: nodeData(), links: linkData() }] });
     };
     refresh.current = () => {
       edges = activeEdges.current;
       overview = mainGraphEdges(edges);
-      connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
-      chart.dispatchAction({ type: 'hideTip' });
-      updateFocus(null, true);
+      updateFocus(pinned.current, true);
     };
     const render = () => {
       if (disposed) return;
       const small = chart.getWidth() < 600;
       chart.setOption({
         animation: false,
-        tooltip: {
-          confine: true,
-          borderWidth: 0,
-          padding: 14,
-          backgroundColor: dark ? '#18181b' : '#fff',
-          textStyle: { color: ink, fontSize: 12 },
-          extraCssText: 'max-width:280px;white-space:normal;line-height:1.8;box-shadow:0 8px 30px #0002;border-radius:12px;',
-          formatter: (item: { dataType: string; dataIndex: number; data?: { relationship?: SimilarityEdge } }) => {
-            if (item.dataType === 'edge') {
-              const e = item.data?.relationship ?? visibleEdges[item.dataIndex];
-              if (!e) return '';
-              return `${escapeHtml(byId.get(e.source)?.name ?? e.source)} ${e.kind === 'citation' ? '→' : '↔'} ${escapeHtml(byId.get(e.target)?.name ?? e.target)}<br/><b>${e.count} ${e.kind === 'citation' ? '篇文章明示引用' : '組相似內文'}</b><br/>點選查看文章`;
-            }
-            const node = nodes[item.dataIndex],
-              c = counts.get(node.id);
-            const outgoing = relationships(node.id, false),
-              incoming = relationships(node.id, true);
-            const status = connected.has(node.id) ? '' : '<br/><span style="opacity:.7">本期樣本未偵測到目前顯示的關係</span>';
-            return `<b>${escapeHtml(node.name)}</b> · ${escapeHtml(node.country)}${status}${!node.external ? `<br/>納入樣本：<b>${node.articles} 篇</b>（圖示大小依據）` : '<br/>僅作為引用來源，未收錄本期內文<br/>圖示採固定大小'}<br/>引用其他媒體：<b>${c?.outgoing ?? 0} 篇</b>${outgoing ? `<br/><span style="opacity:.7">→ ${outgoing}</span>` : ''}<br/>被其他媒體引用：<b>${c?.incoming ?? 0} 篇</b>${incoming ? `<br/><span style="opacity:.7">← ${incoming}</span>` : ''}<br/>內文相近：${c?.similar ?? 0} 篇<br/><span style="opacity:.6">本期樣本，文章去重計數 · 點選看證據</span>`;
-          },
-        },
         series: [
           {
             id: 'media-network',
@@ -219,6 +198,7 @@ export default function SimilarityGraph({
       });
     };
     render();
+    updateFocus(pinned.current, true);
     const gestures = bindGraphNavigation(ref.current, {
       zoom: () => zoom,
       scale: (next, origin) => {
@@ -232,8 +212,7 @@ export default function SimilarityGraph({
       },
       moving: (value) => {
         if (value && !navigating) {
-          updateFocus(null);
-          chart.dispatchAction({ type: 'hideTip' });
+          updateFocus(pinned.current);
         }
         navigating = value;
       },
@@ -259,21 +238,25 @@ export default function SimilarityGraph({
     let leaveTimer: ReturnType<typeof setTimeout>;
     chart.on('mouseover', (event: { dataType?: string; dataIndex?: number }) => {
       clearTimeout(leaveTimer);
-      if (!navigating && event.dataType === 'node' && event.dataIndex !== undefined) updateFocus(nodes[event.dataIndex].id);
+      if (!navigating && !pinned.current && event.dataType === 'node' && event.dataIndex !== undefined)
+        updateFocus({ node: nodes[event.dataIndex].id });
     });
     chart.on('mouseout', () => {
-      leaveTimer = setTimeout(() => updateFocus(null), 180);
+      leaveTimer = setTimeout(() => updateFocus(pinned.current), 180);
     });
     chart.getZr().on('globalout', () => {
       clearTimeout(leaveTimer);
-      updateFocus(null);
+      updateFocus(pinned.current);
     });
     chart.on('click', (event) => {
       if (navigating || event.dataIndex === undefined) return;
       if (event.dataType === 'edge') {
         const edge = (event.data as { relationship?: SimilarityEdge } | null)?.relationship ?? visibleEdges[event.dataIndex];
-        if (edge) callback.current({ edge });
-      } else if (event.dataType === 'node') callback.current({ node: nodes[event.dataIndex].id });
+        if (edge) callback.current(sameGraphSelection(pinned.current, { edge }) ? null : { edge });
+      } else if (event.dataType === 'node') {
+        const value = { node: nodes[event.dataIndex].id };
+        callback.current(sameGraphSelection(pinned.current, value) ? null : value);
+      }
     });
     let frame = 0;
     const observer = new ResizeObserver(() => {
@@ -323,7 +306,7 @@ export default function SimilarityGraph({
         ref={ref}
         className="h-full w-full touch-none cursor-grab active:cursor-grabbing"
         role="img"
-        aria-label={`媒體關係圖，${nodes.length} 家媒體。可拖曳整張圖、滾輪或雙指縮放；媒體相對位置固定。點選圖示查看文章。`}
+        aria-label={`媒體關係圖，${nodes.length} 家媒體。可拖曳整張圖、滾輪或雙指縮放；媒體相對位置固定。點選圖示固定高亮相關連線，文章可在圖表下方瀏覽。`}
       />
       <fieldset
         aria-label="圖表視野"

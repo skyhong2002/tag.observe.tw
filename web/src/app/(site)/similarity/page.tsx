@@ -4,7 +4,7 @@ import { fetchSimilarity } from '@/lib/similarity';
 import catalog from '../../../../../app/data/media-catalog.json';
 import SimilarityExplorer from './SimilarityExplorer';
 
-export const metadata = { title: '新聞關係圖', description: '以媒體圖示查看新聞內文相似與引用關係，移到圖示查看引用篇數。' };
+export const metadata = { title: '新聞關係圖', description: '點選媒體圖示固定高亮新聞內文相似與引用關係，在圖表下方篩選與瀏覽文章證據。' };
 export default async function SimilarityPage({ searchParams }: { searchParams: Promise<{ hours?: string; threshold?: string }> }) {
   const query = await searchParams;
   const hours = [24, 48, 72, 168].includes(Number(query.hours)) ? Number(query.hours) : 48;
