@@ -4,6 +4,7 @@ import type { OriginData, StoryOrigin } from './story-origins.mts';
 
 export type GraphSelection = { node: string } | { edge: SimilarityEdge } | null;
 export type RelationshipMode = 'all' | 'similarity' | 'citation';
+/** Citations: outgoing cites another outlet. Similarity: outgoing published later, incoming was the group's earliest. */
 export type CitationDirection = 'all' | 'outgoing' | 'incoming';
 export type EvidenceItem =
   | { kind: 'origin'; key: string; publishedAt: string; origin: StoryOrigin }
@@ -56,7 +57,10 @@ export function graphEvidence(
         if (
           selection &&
           ('node' in selection
-            ? article.media !== selection.node && source.media !== selection.node
+            ? !(
+                (article.media === selection.node && (mode !== 'similarity' || direction !== 'incoming')) ||
+                (source.media === selection.node && (mode !== 'similarity' || direction !== 'outgoing'))
+              )
             : article.media !== selection.edge.source || source.media !== selection.edge.target)
         )
           continue;

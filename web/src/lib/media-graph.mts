@@ -3,9 +3,13 @@ import type { SimilarityEdge, SimilarityNode } from '../../../app/src/similarity
 import type { OriginData } from './story-origins.mts';
 
 export function nodeArticleCounts(data: Pick<OriginData, 'citations' | 'pairs' | 'origins'>) {
-  const counts = new Map<string, { outgoing: Set<number>; incoming: Set<number>; similar: Set<number> }>();
+  const counts = new Map<
+    string,
+    { outgoing: Set<number>; incoming: Set<number>; similar: Set<number>; earliest: Set<number>; later: Set<number> }
+  >();
   const get = (id: string) => {
-    if (!counts.has(id)) counts.set(id, { outgoing: new Set(), incoming: new Set(), similar: new Set() });
+    if (!counts.has(id))
+      counts.set(id, { outgoing: new Set(), incoming: new Set(), similar: new Set(), earliest: new Set(), later: new Set() });
     return counts.get(id)!;
   };
   for (const { article, source } of data.citations) {
@@ -15,7 +19,9 @@ export function nodeArticleCounts(data: Pick<OriginData, 'citations' | 'pairs' |
   if (data.origins)
     for (const { article, source } of data.origins) {
       get(article.media).similar.add(article.id);
+      get(article.media).later.add(article.id);
       get(source.media).similar.add(source.id);
+      get(source.media).earliest.add(source.id);
     }
   else
     for (const { a, b } of data.pairs) {
@@ -29,6 +35,9 @@ export function nodeArticleCounts(data: Pick<OriginData, 'citations' | 'pairs' |
         outgoing: count.outgoing.size,
         incoming: count.incoming.size,
         similar: count.similar.size,
+        // Origins only: which side of a similar story group this outlet published on.
+        earliest: count.earliest.size,
+        later: count.later.size,
       },
     ]),
   );

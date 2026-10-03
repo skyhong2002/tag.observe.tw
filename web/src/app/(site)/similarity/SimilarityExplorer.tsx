@@ -543,19 +543,19 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                   />
                 </label>
                 <label className="block text-sm">
-                  引用方向
+                  {mode === 'similarity' ? '刊出先後' : '引用方向'}
                   <select
                     value={direction}
-                    disabled={!selection || !('node' in selection) || mode === 'similarity'}
+                    disabled={!selection || !('node' in selection)}
                     onChange={(event) => {
                       setDirection(event.target.value as CitationDirection);
                       setPage(0);
                     }}
                     className={`${control} disabled:opacity-40`}
                   >
-                    <option value="all">所有引用方向</option>
-                    <option value="outgoing">引用其他媒體</option>
-                    <option value="incoming">被其他媒體引用</option>
+                    <option value="all">{mode === 'similarity' ? '不分先後' : '所有引用方向'}</option>
+                    <option value="outgoing">{mode === 'similarity' ? '同組較晚' : '引用其他媒體'}</option>
+                    <option value="incoming">{mode === 'similarity' ? '同組最早' : '被其他媒體引用'}</option>
                   </select>
                 </label>
               </div>
@@ -582,11 +582,12 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                       ? '僅作為引用來源，未收錄本期內文'
                       : `納入分析 ${number(byId.get(selection.node)?.articles ?? 0)} 篇（圖示大小依據）`}
                   </p>
-                  <div className="grid max-w-3xl grid-cols-3 gap-2 text-center text-xs">
+                  <div className="grid max-w-3xl grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
                     {[
                       [selectedCounts?.outgoing ?? 0, '引用其他媒體'],
                       [selectedCounts?.incoming ?? 0, '被其他媒體引用'],
-                      [selectedCounts?.similar ?? 0, '同組報導'],
+                      [selectedCounts?.earliest ?? 0, '同組最早'],
+                      [selectedCounts?.later ?? 0, '同組較晚'],
                     ].map(([n, label]) => (
                       <div key={label} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
                         <p className="mb-1 text-xl font-semibold">{n}</p>

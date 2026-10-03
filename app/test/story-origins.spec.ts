@@ -122,6 +122,14 @@ describe('single earliest source per similar story', () => {
     expect(html).not.toContain('90.0%');
     expect(nodeArticleCounts(view).get('A')?.similar).toBe(1);
     expect(nodeArticleCounts(view).get('C')?.similar).toBe(1);
+    expect(nodeArticleCounts(view).get('A')).toMatchObject({ earliest: 1, later: 0 });
+    expect(nodeArticleCounts(view).get('C')).toMatchObject({ earliest: 0, later: 1 });
+    expect(graphEvidence(view, { node: 'A' }, 'similarity', '', 'incoming')).toHaveLength(2);
+    expect(graphEvidence(view, { node: 'A' }, 'similarity', '', 'outgoing')).toEqual([]);
+    expect(graphEvidence(view, { node: 'C' }, 'similarity', '', 'outgoing')).toMatchObject([{ origin: { article: { id: 3 } } }]);
+    expect(graphEvidence(view, { node: 'C' }, 'similarity', '', 'incoming')).toEqual([]);
+    // Outside similarity mode the direction only narrows citations.
+    expect(graphEvidence(view, { node: 'A' }, 'all', '', 'outgoing')).toHaveLength(2);
   });
   it('counts articles only once, omits media self-loops, and keeps reverse flows for different stories', () => {
     const extra = { ...c, id: 4, media: 'B' },

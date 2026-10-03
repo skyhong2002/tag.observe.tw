@@ -89,9 +89,9 @@ describe('media dashboard article counts', () => {
       ],
       pairs: [pair(a, b), pair(a, c)],
     });
-    expect(counts.get('a')).toEqual({ outgoing: 1, incoming: 0, similar: 1 });
-    expect(counts.get('b')).toEqual({ outgoing: 0, incoming: 2, similar: 1 });
-    expect(counts.get('c')).toEqual({ outgoing: 1, incoming: 1, similar: 1 });
+    expect(counts.get('a')).toEqual({ outgoing: 1, incoming: 0, similar: 1, earliest: 0, later: 0 });
+    expect(counts.get('b')).toEqual({ outgoing: 0, incoming: 2, similar: 1, earliest: 0, later: 0 });
+    expect(counts.get('c')).toEqual({ outgoing: 1, incoming: 1, similar: 1, earliest: 0, later: 0 });
   });
   it('handles a sample without relationships', () => {
     expect(nodeArticleCounts({ citations: [], pairs: [] }).size).toBe(0);

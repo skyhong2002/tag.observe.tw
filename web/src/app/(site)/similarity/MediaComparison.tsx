@@ -6,11 +6,12 @@ import type { CitationDirection, GraphSelection, RelationshipMode } from '@/lib/
 import { nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { OriginData } from '@/lib/story-origins.mts';
 
-type SortKey = 'name' | 'articles' | 'similar' | 'outgoing' | 'incoming';
+type SortKey = 'name' | 'articles' | 'earliest' | 'later' | 'outgoing' | 'incoming';
 const columns: { key: SortKey; label: string }[] = [
   { key: 'name', label: '媒體' },
   { key: 'articles', label: '分析篇數' },
-  { key: 'similar', label: '內文相近' },
+  { key: 'earliest', label: '同組最早' },
+  { key: 'later', label: '同組較晚' },
   { key: 'outgoing', label: '引用他媒' },
   { key: 'incoming', label: '被他媒引用' },
 ];
@@ -31,6 +32,8 @@ export default function MediaComparison({
     return data.nodes.map((node) => ({
       ...node,
       similar: counts.get(node.id)?.similar ?? 0,
+      earliest: counts.get(node.id)?.earliest ?? 0,
+      later: counts.get(node.id)?.later ?? 0,
       outgoing: counts.get(node.id)?.outgoing ?? 0,
       incoming: counts.get(node.id)?.incoming ?? 0,
       relationships: data.edges
@@ -90,7 +93,7 @@ export default function MediaComparison({
         符合 {filtered.length} 家 · 沿用圖上媒體篩選 · 各欄涵蓋全部關係類型
       </p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] border-collapse text-sm">
+        <table className="w-full min-w-[1040px] border-collapse text-sm">
           <thead className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800">
             <tr>
               {columns.map((column) => (
@@ -138,24 +141,31 @@ export default function MediaComparison({
                 <td className="px-3 py-2.5 text-right tabular-nums">
                   {row.external ? <span title="未收錄本期內文">—</span> : number(row.articles)}
                 </td>
-                {(['similar', 'outgoing', 'incoming'] as const).map((key) => (
-                  <td key={key} className="px-3 py-2.5 text-right tabular-nums">
-                    {row[key] ? (
-                      <button
-                        type="button"
-                        aria-label={`${row.name}：${columns.find((column) => column.key === key)?.label} ${row[key]} 篇，查看報導`}
-                        onClick={() =>
-                          onSelect({ node: row.id }, key === 'similar' ? 'similarity' : 'citation', key === 'similar' ? 'all' : key)
-                        }
-                        className={`underline decoration-dotted underline-offset-4 ${key === 'similar' ? 'text-amber-700 dark:text-amber-400' : 'text-violet-700 dark:text-violet-400'}`}
-                      >
-                        {number(row[key])}
-                      </button>
-                    ) : (
-                      <span className="text-zinc-400">0</span>
-                    )}
-                  </td>
-                ))}
+                {(['earliest', 'later', 'outgoing', 'incoming'] as const).map((key) => {
+                  const similar = key === 'earliest' || key === 'later';
+                  return (
+                    <td key={key} className="px-3 py-2.5 text-right tabular-nums">
+                      {row[key] ? (
+                        <button
+                          type="button"
+                          aria-label={`${row.name}：${columns.find((column) => column.key === key)?.label} ${row[key]} 篇，查看報導`}
+                          onClick={() =>
+                            onSelect(
+                              { node: row.id },
+                              similar ? 'similarity' : 'citation',
+                              key === 'earliest' ? 'incoming' : key === 'later' ? 'outgoing' : key,
+                            )
+                          }
+                          className={`underline decoration-dotted underline-offset-4 ${similar ? 'text-amber-700 dark:text-amber-400' : 'text-violet-700 dark:text-violet-400'}`}
+                        >
+                          {number(row[key])}
+                        </button>
+                      ) : (
+                        <span className="text-zinc-400">0</span>
+                      )}
+                    </td>
+                  );
+                })}
                 <td className="px-3 py-2.5">
                   <div className="flex gap-1.5 whitespace-nowrap">
                     {row.relationships.slice(0, 3).map((edge) => {
@@ -189,7 +199,7 @@ export default function MediaComparison({
       </div>
       {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>}
       <p className="text-xs leading-6 text-zinc-500">
-        分析篇數為本期納入樣本的內文；內文相近、引用與被引用皆依各欄文章去重。主要關係對象依關係篇數列出前三項，箭頭指向同組最早或被引用的一方，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創；相近內文也可能來自通訊社稿或授權轉載。
+        分析篇數為本期納入樣本的內文；同組最早、同組較晚、引用與被引用皆依各欄文章去重。同組指內文相近的同一組報導：同組最早是該組最早刊出的那篇，同組較晚是同組已有更早刊出的報導。主要關係對象依關係篇數列出前三項，箭頭指向同組最早或被引用的一方，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創；相近內文也可能來自通訊社稿或授權轉載。
       </p>
     </div>
   );

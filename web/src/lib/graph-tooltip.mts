@@ -24,7 +24,7 @@ export function createGraphTooltip(data: OriginData, nodes: SimilarityNode[], ca
       const count = counts.get(node.id);
       const camp = camps[node.id] === 'blue' ? ' · 藍營傾向' : camps[node.id] === 'green' ? ' · 綠營傾向' : '';
       heading = `<b>${name(node.id)}</b> · ${escapeHtml(node.country)}${camp}`;
-      summary = `${node.external ? '僅作為引用來源，未收錄本期內文' : `本期納入分析：<b>${number(node.articles)} 篇</b>`}<br/>圖上媒體間：引用 ${number(count?.outgoing ?? 0)} 篇 · 被引用 ${number(count?.incoming ?? 0)} 篇 · 同組報導 ${number(count?.similar ?? 0)} 篇`;
+      summary = `${node.external ? '僅作為引用來源，未收錄本期內文' : `本期納入分析：<b>${number(node.articles)} 篇</b>`}<br/>圖上媒體間：引用 ${number(count?.outgoing ?? 0)} 篇 · 被引用 ${number(count?.incoming ?? 0)} 篇 · 同組最早 ${number(count?.earliest ?? 0)} 篇 · 同組較晚 ${number(count?.later ?? 0)} 篇`;
       const related = edges
         .filter((edge) => edge.source === node.id || edge.target === node.id)
         .sort((a, b) => b.count - a.count)

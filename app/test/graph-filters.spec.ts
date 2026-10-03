@@ -151,7 +151,7 @@ describe('filtered evidence and hover summaries', () => {
     const view = withStoryOrigins(data);
     const tooltip = createGraphTooltip(view, nodes, camps);
     expect(tooltip({ node: 'large' }, edges)).toContain('引用 1 篇');
-    expect(tooltip({ node: 'large' }, edges)).toContain('同組報導 1 篇');
+    expect(tooltip({ node: 'large' }, edges)).toContain('同組最早 1 篇 · 同組較晚 0 篇');
     expect(tooltip({ node: 'green' }, edges)).toContain('綠營傾向');
     const isolated = createGraphTooltip(data, filter({ camp: 'blue' }).nodes, camps)({ node: 'blue' }, []);
     expect(isolated).toContain('目前篩選與關係模式下沒有連線');
