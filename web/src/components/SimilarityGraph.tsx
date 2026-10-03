@@ -6,6 +6,7 @@ import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
+import { bindGraphNavigation, GRAPH_ZOOM_MAX, GRAPH_ZOOM_MIN } from '@/lib/graph-navigation.mts';
 import {
   displayedGraphEdges,
   edgeWeightWidth,
@@ -91,19 +92,8 @@ export default function SimilarityGraph({
       const series = (chart.getOption().series as { zoom: number; center: number[] | null }[])[0];
       camera.current = { key: cameraKey, zoom: series.zoom, center: series.center };
     };
-    navigate.current = (action) => {
-      if (action === 'reset') chart.setOption({ series: [{ id: 'media-network', zoom: 1, center: null }] });
-      else
-        chart.dispatchAction({
-          type: 'graphRoam',
-          seriesId: 'media-network',
-          zoom: action === 'in' ? 1.3 : 1 / 1.3,
-          originX: chart.getWidth() / 2,
-          originY: chart.getHeight() / 2,
-        });
-      rememberCamera();
-    };
-    chart.on('graphroam', rememberCamera);
+    let zoom = savedCamera?.zoom ?? 1;
+    let navigating = false;
     const nodeData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
       return nodes.map((n, i) => ({
@@ -173,9 +163,11 @@ export default function SimilarityGraph({
             layout: 'none',
             // The view transform also scales images; keep both axes uniform.
             preserveAspect: 'contain',
-            roam: true,
+            roam: false,
+            // Like map markers, keep logos readable as the camera zooms.
+            nodeScaleRatio: 0,
             draggable: false,
-            scaleLimit: { min: 0.4, max: 5 },
+            scaleLimit: { min: GRAPH_ZOOM_MIN, max: GRAPH_ZOOM_MAX },
             zoom: savedCamera?.zoom ?? 1,
             center: savedCamera?.center ?? null,
             left: small ? 44 : 55,
@@ -203,6 +195,27 @@ export default function SimilarityGraph({
       });
     };
     render();
+    const gestures = bindGraphNavigation(ref.current, {
+      zoom: () => zoom,
+      scale: (next, origin) => {
+        chart.dispatchAction({ type: 'graphRoam', seriesId: 'media-network', zoom: next / zoom, originX: origin.x, originY: origin.y });
+        zoom = next;
+      },
+      pan: (dx, dy) => chart.dispatchAction({ type: 'graphRoam', seriesId: 'media-network', dx, dy }),
+      reset: () => {
+        zoom = 1;
+        chart.setOption({ series: [{ id: 'media-network', zoom: 1, center: null }] });
+      },
+      moving: (value) => {
+        if (value && !navigating) {
+          updateFocus(null);
+          chart.dispatchAction({ type: 'hideTip' });
+        }
+        navigating = value;
+      },
+      settled: rememberCamera,
+    });
+    navigate.current = gestures.navigate;
     // All icons are same-origin cached assets; an unavailable image keeps its
     // letter tile, never an invisible node or a circular placeholder.
     for (const node of nodes) {
@@ -219,7 +232,7 @@ export default function SimilarityGraph({
     let leaveTimer: ReturnType<typeof setTimeout>;
     chart.on('mouseover', (event: { dataType?: string; dataIndex?: number }) => {
       clearTimeout(leaveTimer);
-      if (event.dataType === 'node' && event.dataIndex !== undefined) updateFocus(nodes[event.dataIndex].id);
+      if (!navigating && event.dataType === 'node' && event.dataIndex !== undefined) updateFocus(nodes[event.dataIndex].id);
     });
     chart.on('mouseout', () => {
       leaveTimer = setTimeout(() => updateFocus(null), 180);
@@ -228,20 +241,8 @@ export default function SimilarityGraph({
       clearTimeout(leaveTimer);
       updateFocus(null);
     });
-    let pressedAt: { x: number; y: number } | null = null;
-    let dragged = false;
-    chart.getZr().on('mousedown', (event) => {
-      pressedAt = { x: event.offsetX, y: event.offsetY };
-      dragged = false;
-    });
-    chart.getZr().on('mousemove', (event) => {
-      if (pressedAt && Math.hypot(event.offsetX - pressedAt.x, event.offsetY - pressedAt.y) > 5) dragged = true;
-    });
-    chart.getZr().on('mouseup', () => {
-      pressedAt = null;
-    });
     chart.on('click', (event) => {
-      if (dragged || event.dataIndex === undefined) return;
+      if (navigating || event.dataIndex === undefined) return;
       if (event.dataType === 'edge') {
         const edge = (event.data as { relationship?: SimilarityEdge } | null)?.relationship ?? visibleEdges[event.dataIndex];
         if (edge) callback.current({ edge });
@@ -258,6 +259,7 @@ export default function SimilarityGraph({
     });
     observer.observe(ref.current);
     return () => {
+      gestures.dispose();
       rememberCamera();
       disposed = true;
       navigate.current = null;

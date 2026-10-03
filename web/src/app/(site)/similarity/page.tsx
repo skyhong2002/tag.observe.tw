@@ -5,16 +5,11 @@ import catalog from '../../../../../app/data/media-catalog.json';
 import SimilarityExplorer from './SimilarityExplorer';
 
 export const metadata = { title: '新聞關係圖', description: '以媒體圖示查看新聞內文相似與引用關係，移到圖示查看引用篇數。' };
-export default async function SimilarityPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ hours?: string; threshold?: string; mediaCount?: string }>;
-}) {
+export default async function SimilarityPage({ searchParams }: { searchParams: Promise<{ hours?: string; threshold?: string }> }) {
   const query = await searchParams;
   const hours = [24, 48, 72, 168].includes(Number(query.hours)) ? Number(query.hours) : 48;
   const requested = Number(query.threshold ?? 0.65);
   const threshold = Number.isFinite(requested) ? Math.min(1, Math.max(0.5, requested)) : 0.65;
-  const mediaCount = ['10', '20', '40', '60', '80', 'all'].includes(query.mediaCount ?? '') ? query.mediaCount! : 'auto';
   const data = await fetchSimilarity(hours, threshold).catch(() => null);
   if (data) {
     const camps: MediaCamps = {};
@@ -22,14 +17,7 @@ export default async function SimilarityPage({
       if (catalog.categories.blue.includes(node.id)) camps[node.id] = 'blue';
       else if (catalog.categories.green.includes(node.id)) camps[node.id] = 'green';
     }
-    return (
-      <SimilarityExplorer
-        key={`${hours}-${threshold}-${mediaCount}-${data.generatedAt}`}
-        data={data}
-        camps={camps}
-        initialMediaLimit={mediaCount}
-      />
-    );
+    return <SimilarityExplorer key={`${hours}-${threshold}-${data.generatedAt}`} data={data} camps={camps} />;
   }
   return (
     <div role="status" className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">

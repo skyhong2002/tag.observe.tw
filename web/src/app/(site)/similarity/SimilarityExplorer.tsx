@@ -4,14 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GraphSelection } from '@/components/SimilarityGraph';
-import {
-  connectedMedia,
-  type MediaCamps,
-  mainGraphEdges,
-  mediaViewportLimit,
-  nodeArticleCounts,
-  selectGraphMedia,
-} from '@/lib/media-graph.mts';
+import { type MediaCamps, mainGraphEdges, nodeArticleCounts, selectGraphMedia } from '@/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
@@ -69,47 +62,57 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
   );
 }
 
-export default function SimilarityExplorer({
-  data,
-  camps,
-  initialMediaLimit,
-}: {
-  data: SimilarityData;
-  camps: MediaCamps;
-  initialMediaLimit: string;
-}) {
+export default function SimilarityExplorer({ data, camps }: { data: SimilarityData; camps: MediaCamps }) {
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
-  const [mediaLimit, setMediaLimit] = useState(initialMediaLimit);
-  const [autoLimit, setAutoLimit] = useState(8);
-  const graphFrame = useRef<HTMLDivElement>(null);
+  const dashboard = useRef<HTMLDivElement>(null);
+  const fullscreenButton = useRef<HTMLButtonElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const changed = () => setFullscreen(document.fullscreenElement === dashboard.current);
+    document.addEventListener('fullscreenchange', changed);
+    return () => document.removeEventListener('fullscreenchange', changed);
+  }, []);
+  useEffect(() => {
+    if (!fullscreen) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeFullscreen = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.fullscreenElement && !document.querySelector('dialog[open]')) {
+        setFullscreen(false);
+        fullscreenButton.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', closeFullscreen);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener('keydown', closeFullscreen);
+    };
+  }, [fullscreen]);
+  const toggleFullscreen = async () => {
+    if (fullscreen) {
+      if (document.fullscreenElement === dashboard.current) await document.exitFullscreen();
+      else setFullscreen(false);
+      fullscreenButton.current?.focus();
+    } else {
+      // iPhone and embedded browsers may not support native element fullscreen.
+      try {
+        await dashboard.current?.requestFullscreen();
+      } catch {
+        /* Use the full-window view below. */
+      }
+      setFullscreen(true);
+    }
+  };
   const [selection, setSelection] = useState<GraphSelection>(null);
   const [drawer, setDrawer] = useState<'settings' | 'info' | 'media' | 'evidence' | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
   const counts = useMemo(() => nodeArticleCounts(data), [data]);
-  const eligible = useMemo(() => connectedMedia(data.nodes, data.edges), [data.nodes, data.edges]);
-  const limit = mediaLimit === 'auto' ? autoLimit : mediaLimit === 'all' ? eligible.length : Number(mediaLimit);
-  const graph = useMemo(() => selectGraphMedia(data.nodes, data.edges, limit), [data.nodes, data.edges, limit]);
+  const graph = useMemo(() => selectGraphMedia(data.nodes, data.edges), [data.nodes, data.edges]);
   const nodes = graph.nodes;
   const edges = useMemo(() => graph.edges.filter((e) => mode === 'all' || e.kind === mode), [graph.edges, mode]);
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
-  useEffect(() => {
-    if (!graphFrame.current) return;
-    const frame = graphFrame.current;
-    let pending = 0;
-    const measure = () => setAutoLimit(mediaViewportLimit(frame.clientWidth, frame.clientHeight));
-    measure();
-    const observer = new ResizeObserver(() => {
-      clearTimeout(pending);
-      pending = window.setTimeout(measure, 150);
-    });
-    observer.observe(frame);
-    return () => {
-      clearTimeout(pending);
-      observer.disconnect();
-    };
-  }, []);
   const select = (value: GraphSelection) => {
     setSelection(value);
     if (value) setDrawer('evidence');
@@ -153,16 +156,34 @@ export default function SimilarityExplorer({
   const selectedCounts = selection && 'node' in selection ? counts.get(selection.node) : null;
 
   return (
-    <div data-similarity-dashboard className="flex h-[calc(100svh-112px)] min-h-[420px] flex-col gap-3">
+    <div
+      ref={dashboard}
+      data-similarity-dashboard
+      data-fullscreen={fullscreen}
+      className={
+        fullscreen
+          ? 'fixed inset-0 z-50 flex h-dvh min-h-0 w-full flex-col gap-3 bg-white p-3 dark:bg-zinc-950 sm:p-4'
+          : 'flex h-[calc(100svh-112px)] min-h-[420px] flex-col gap-3'
+      }
+    >
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
           <p className="mt-1 text-xs text-zinc-500">
-            {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · 顯示 {nodes.length}／{eligible.length} 家媒體 ·{' '}
-            {number(data.sample.analyzed)} 篇分析樣本
+            {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length} 家媒體 · {number(data.sample.analyzed)}{' '}
+            篇分析樣本
           </p>
         </div>
         <div className="flex gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <button
+            ref={fullscreenButton}
+            type="button"
+            onClick={toggleFullscreen}
+            aria-pressed={fullscreen}
+            className="rounded-lg px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          >
+            {fullscreen ? '退出全螢幕' : '全螢幕'}
+          </button>
           <button
             type="button"
             onClick={() => setDrawer('settings')}
@@ -200,23 +221,6 @@ export default function SimilarityExplorer({
             ))}
           </fieldset>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-              媒體數量
-              <select
-                aria-label="顯示媒體數量"
-                value={mediaLimit}
-                onChange={(event) => setMediaLimit(event.target.value)}
-                className="w-24 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-              >
-                <option value="auto">自動</option>
-                {[10, 20, 40, 60, 80].map((count) => (
-                  <option key={count} value={count}>
-                    {count} 家
-                  </option>
-                ))}
-                <option value="all">全部</option>
-              </select>
-            </label>
             <button
               type="button"
               aria-pressed={showAll}
@@ -234,7 +238,7 @@ export default function SimilarityExplorer({
             </button>
           </div>
         </div>
-        <div ref={graphFrame} className="relative min-h-0 flex-1" data-testid="media-graph-frame">
+        <div className="relative min-h-0 flex-1" data-testid="media-graph-frame">
           <SimilarityGraph
             nodes={nodes}
             edges={edges}
@@ -284,7 +288,6 @@ export default function SimilarityExplorer({
         <div className="space-y-5 p-4">
           {drawer === 'settings' && (
             <form action="/similarity/" method="get" className="space-y-5">
-              <input type="hidden" name="mediaCount" value={mediaLimit} />
               <label className="block text-sm">
                 比較期間
                 <select name="hours" defaultValue={data.hours} className={control}>
@@ -407,7 +410,7 @@ export default function SimilarityExplorer({
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                數量預設依畫布大小調整，可在圖表上方手動選擇；優先顯示樣本較多的媒體及其相關來源。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
+                一律顯示本期所有有連線的媒體，初始視野自動容納整張圖；可放大、縮小或拖曳查看細節，重設視野可回到總覽。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
                 展開目前畫面內該媒體的全部連線；「顯示全部連線」可還原目前媒體之間的全部關係。篇數與文章證據仍使用完整分析樣本。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
               </p>
               <p>

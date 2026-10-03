@@ -9,7 +9,6 @@ import {
   mediaGraphPositions,
   mediaIconSizes,
   mediaLabelColor,
-  mediaViewportLimit,
   nodeArticleCounts,
   selectGraphMedia,
 } from '../../web/src/lib/media-graph.mts';
@@ -41,7 +40,7 @@ const pair = (a: SimilarityArticle, b: SimilarityArticle): SimilarityData['pairs
 });
 const node = (id: string): SimilarityNode => ({ id, name: id, country: '台灣', countryCode: 'TW', articles: 1, external: false });
 
-describe('responsive media selection', () => {
+describe('complete media selection', () => {
   const nodes = [
     { ...node('large'), articles: 100 },
     { ...node('small'), articles: 10 },
@@ -54,30 +53,17 @@ describe('responsive media selection', () => {
     { source: 'small', target: 'partner', kind: 'similarity', count: 2, score: 0.8 },
     { source: 'missing', target: 'isolated', kind: 'citation', count: 100, score: null },
   ];
-  it('reserves more room per medium on small or short canvases', () => {
-    const phone = mediaViewportLimit(356, 381);
-    const laptop = mediaViewportLimit(1406, 607);
-    const wide = mediaViewportLimit(2526, 1100);
-    expect(phone).toBeLessThan(laptop);
-    expect(laptop).toBeLessThan(wide);
-    expect(mediaViewportLimit(1406, 350)).toBeLessThan(laptop);
-  });
-  it('keeps strong citation-only partners and never creates dangling links or isolated nodes', () => {
-    const graph = selectGraphMedia(nodes, edges, 2);
-    expect(graph.nodes.map((node) => node.id)).toEqual(['large', 'agency']);
-    expect(graph.edges).toEqual([edges[0]]);
-    for (const budget of [0, 1, 2, 3, 4, 99]) {
-      const selected = selectGraphMedia(nodes, edges, budget);
-      expect(selected.nodes.length).toBeLessThanOrEqual(budget);
-      expect(connectedMedia(selected.nodes, selected.edges)).toEqual(selected.nodes);
-      expect(selected.nodes.some((node) => node.id === 'isolated')).toBe(false);
-    }
-    expect(selectGraphMedia(nodes, edges, 99).nodes).toHaveLength(4);
+  it('retains every connected outlet including low-volume and citation-only sources', () => {
+    const graph = selectGraphMedia(nodes, edges);
+    expect(graph.nodes.map((n) => n.id)).toEqual(['large', 'small', 'agency', 'partner']);
+    expect(graph.edges).toEqual(edges.slice(0, 2));
+    expect(connectedMedia(graph.nodes, graph.edges)).toEqual(graph.nodes);
+    expect(selectGraphMedia(nodes, []).nodes).toEqual([]);
     expect(
-      selectGraphMedia([...nodes].reverse(), [...edges].reverse(), 2)
-        .nodes.map((node) => node.id)
+      selectGraphMedia([...nodes].reverse(), [...edges].reverse())
+        .nodes.map((n) => n.id)
         .sort(),
-    ).toEqual(graph.nodes.map((node) => node.id).sort());
+    ).toEqual(graph.nodes.map((n) => n.id).sort());
   });
   it('colors only explicitly classified labels and supports both themes', () => {
     expect(mediaLabelColor('blue', false)).toBe('#1d4ed8');
