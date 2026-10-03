@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { taipei } from '@/lib/api';
-import { fetchJournalists, INDEX_HOURS } from '@/lib/journalists';
+import { fetchJournalists, INDEX_HOURS, REPOSITORY_URL, SIMILARITY_CAVEAT } from '@/lib/journalists';
 import JournalistTable from './JournalistTable';
 
 export const revalidate = 120;
 export const metadata = {
   title: '記者',
-  description: '從各媒體文章署名整理出的記者與筆名：各自在哪些媒體刊登、寫了幾篇，以及文章與他站內文相似、刊登先後的線索。',
+  description: '從各媒體文章署名整理出的記者與筆名：各自在哪些媒體刊登、寫了幾篇，以及文章與他站內文相近的對照。',
 };
 const number = (value: number) => value.toLocaleString('zh-TW');
 
@@ -21,8 +21,19 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
         <h1 className="text-2xl font-semibold tracking-tight">記者</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           從文章署名整理出的人名與筆名，不含媒體、部門、通訊社、職稱與責任編輯。可看每個人在哪些媒體刊登、寫了幾篇，
-          以及文章與其他媒體內文高度相似時誰先誰後。較晚刊登只是閱讀線索：共同新聞稿、通訊社稿與授權轉載都會造成重疊，不是抄襲判定。
-          同名不同人不會分開。
+          以及文章與其他媒體內文相近時的刊登先後。{SIMILARITY_CAVEAT}
+        </p>
+        <p className="mt-2 max-w-3xl text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+          這些頁面由公開署名自動整理，不是本人建立的檔案。本人不希望出現在記者頁，可在
+          <a
+            href={`${REPOSITORY_URL}/issues/new?title=${encodeURIComponent('記者頁移除請求')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-700 hover:underline dark:text-brand-400"
+          >
+            GitHub 提出移除請求
+          </a>
+          ，或由個人頁的「關於這一頁」直接送出。
         </p>
         <nav aria-label="期間" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-zinc-500 dark:text-zinc-400">期間</span>

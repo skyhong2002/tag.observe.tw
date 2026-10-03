@@ -102,5 +102,18 @@ export function describeGap(minutes: number): string {
 export function relationLabel(pair: Pick<JournalistPair, 'relation' | 'minutes' | 'sameAuthor'>): string {
   if (pair.sameAuthor) return '同署名跨站刊登';
   if (pair.relation === 'same') return '一分鐘內同時刊登';
-  return pair.relation === 'later' ? `晚對方 ${describeGap(pair.minutes)} 刊登` : `早對方 ${describeGap(pair.minutes)} 刊登`;
+  return pair.relation === 'later' ? `對方早 ${describeGap(pair.minutes)} 刊登` : `本篇早 ${describeGap(pair.minutes)} 刊登`;
+}
+
+export const REPOSITORY_URL = 'https://github.com/skyhong2002/tag.observe.tw';
+/** Why similarity on these pages is not a plagiarism finding; shown wherever pairs are listed. */
+export const SIMILARITY_CAVEAT =
+  '相似不等於抄襲：同一份新聞稿、通訊社稿、授權轉載與註明引用都會讓內文相近；刊登時間以各站標示為準，與寫稿先後無關。同名不同人不會分開。';
+/** A pre-filled GitHub issue asking to take this person's page down. */
+export function removalRequestHref(name: string): string {
+  const params = new URLSearchParams({
+    title: `記者頁移除請求：${name}`,
+    body: `請將「${name}」自記者頁移除。\n\n頁面：https://tag.observe.tw${journalistHref(name)}\n\n（請說明您是本人或其代理人；我們不會公開這則回報的內容。）`,
+  });
+  return `${REPOSITORY_URL}/issues/new?${params}`;
 }

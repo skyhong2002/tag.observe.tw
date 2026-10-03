@@ -1,4 +1,5 @@
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
+import exclusions from '../../data/journalist-exclusions.json' with { type: 'json' };
 import { knownOutletNames } from '../similarity/attribution.ts';
 
 // Bylines are stored as the publisher wrote them: a reporter, a desk, an
@@ -424,12 +425,30 @@ function namesInPiece(piece: string): string[] {
   return isName(tokens.join(' ')) ? [tokens.join(' ')] : [];
 }
 
+// People who asked not to have a page. Their bylines stay in the database as
+// published; only the journalist pages and API stop deriving a person from them.
+const EXCLUDED = new Set(exclusions.names.map((name) => normalize(name)));
+// Requests that arrived as GitHub issues (removal-requests.ts) since the process started.
+let requested = new Set<string>();
+/** Replace the issue-driven list; returns true when membership changed. */
+export function setRequestedExclusions(names: readonly string[]): boolean {
+  const next = new Set(names.map((name) => normalize(name)));
+  const changed = next.size !== requested.size || [...next].some((name) => !requested.has(name));
+  requested = next;
+  return changed;
+}
+/** True when the person asked to be left off the journalist pages. */
+export function isExcludedJournalist(name: string): boolean {
+  const key = normalize(name);
+  return EXCLUDED.has(key) || requested.has(key);
+}
+
 /** People (or consistent pen names) credited in one stored byline value. */
 export function personNames(raw: string): string[] {
   if (!raw || raw.length > 200) return [];
   const result: string[] = [];
   for (const piece of piecesOf(raw)) {
-    for (const name of namesInPiece(piece)) if (!result.includes(name)) result.push(name);
+    for (const name of namesInPiece(piece)) if (!result.includes(name) && !isExcludedJournalist(name)) result.push(name);
   }
   return result;
 }

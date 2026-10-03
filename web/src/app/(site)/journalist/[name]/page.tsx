@@ -14,6 +14,8 @@ import {
   type JournalistPair,
   journalistHref,
   relationLabel,
+  removalRequestHref,
+  SIMILARITY_CAVEAT,
 } from '@/lib/journalists';
 import { readingTitle } from '@/lib/reading.mts';
 
@@ -27,22 +29,18 @@ const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
 export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
   const { name } = await params;
   const decoded = decodeURIComponent(name);
-  return { title: `${decoded} 的報導`, description: `${decoded} 署名的文章：刊登媒體、常寫主題，以及與其他媒體內文相似、刊登先後的對照。` };
+  return { title: `${decoded} 的報導`, description: `${decoded} 署名的文章：刊登媒體、常寫主題，以及與其他媒體內文相近的文章對照。` };
 }
 
-function relationTone(pair: JournalistPair) {
-  if (pair.sameAuthor) return 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
-  if (pair.relation === 'later') return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
-  if (pair.relation === 'earlier') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
-  return 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
-}
+// One neutral tone for every relation: order of publication is context, not a verdict.
+const relationTone = 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
 
 function PairRow({ pair }: { pair: JournalistPair }) {
   const other = readingTitle(pair.other.title);
   return (
     <li className="py-2.5">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        <span className={`rounded-full px-2 py-0.5 ${relationTone(pair)}`}>{relationLabel(pair)}</span>
+        <span className={`rounded-full px-2 py-0.5 ${relationTone}`}>{relationLabel(pair)}</span>
         <span className="tabular-nums text-zinc-500 dark:text-zinc-400">
           相似 {percent(pair.score)}
           {pair.kind === 'identical' ? '，內文相同' : ''}
@@ -76,29 +74,26 @@ function PairRow({ pair }: { pair: JournalistPair }) {
 function SimilarSection({ data }: { data: JournalistDetail }) {
   const groups = new Map<number, JournalistPair[]>();
   for (const pair of data.pairs) (groups.get(pair.own.id) ?? groups.set(pair.own.id, []).get(pair.own.id)!).push(pair);
-  const ordered = [...groups.values()].sort(
-    (a, b) =>
-      b.filter((p) => p.relation === 'later' && !p.sameAuthor).length - a.filter((p) => p.relation === 'later' && !p.sameAuthor).length ||
-      Date.parse(b[0].own.publishedAt) - Date.parse(a[0].own.publishedAt),
-  );
+  // Newest first. Ranking by how many counterparts were earlier would read as a suspicion score.
+  const ordered = [...groups.values()].sort((a, b) => Date.parse(b[0].own.publishedAt) - Date.parse(a[0].own.publishedAt));
   return (
     <section aria-labelledby="similar-heading" className="mb-6">
       <h2 id="similar-heading" className="text-base font-semibold">
-        與其他媒體內文相似的文章
+        與其他媒體內文相近的文章
         <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
-          {number(data.stats.similar.articles)} 篇有相似文章，共 {number(data.stats.similar.pairs)} 組
+          {number(data.stats.similar.articles)} 篇有相近文章，共 {number(data.stats.similar.pairs)} 組
         </span>
       </h2>
       <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
         只拿此人有正文的文章，與前後 48 小時內至少共用一個標籤的他站文章比對（Dice ≥ {percent(data.threshold)}）。
         標籤只用來挑候選，相似與否由內文決定；沒有標籤的文章不會有候選。
       </p>
-      {!ordered.length && <p className="py-6 text-sm text-zinc-500 dark:text-zinc-400">這段期間內沒有找到與他站高度相似的文章。</p>}
+      <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">{SIMILARITY_CAVEAT}</p>
+      {!ordered.length && <p className="py-6 text-sm text-zinc-500 dark:text-zinc-400">這段期間內沒有找到與他站內文相近的文章。</p>}
       <ul className="mt-3 space-y-4">
         {ordered.map((pairs) => {
           const own = pairs[0].own;
           const headline = readingTitle(own.title);
-          const later = pairs.filter((p) => p.relation === 'later' && !p.sameAuthor).length;
           return (
             <li key={own.id} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
               <p className="flex flex-wrap items-center gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
@@ -106,9 +101,7 @@ function SimilarSection({ data }: { data: JournalistDetail }) {
                   {own.mediaTitle}
                 </MediaHoverLink>
                 <time dateTime={own.publishedAt}>{taipei(own.publishedAt)}</time>
-                <span>
-                  {pairs.length} 篇相似{later ? `，其中 ${later} 篇比本篇早刊登` : ''}
-                </span>
+                <span>{pairs.length} 篇內文相近</span>
               </p>
               <h3 className="mt-1 text-[15px] font-medium leading-6">
                 <Link href={`/article/${own.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
@@ -148,8 +141,8 @@ export default async function JournalistPage({
     { label: '有正文', value: number(stats.withBody), unit: '篇' },
     { label: '平均字元', value: stats.averageChars === null ? '—' : number(stats.averageChars), unit: '' },
     { label: '明示引用', value: number(stats.cited), unit: '篇' },
-    { label: '相似且較晚', value: number(stats.similar.later), unit: '組' },
-    { label: '相似且較早', value: number(stats.similar.earlier), unit: '組' },
+    { label: '相近，對方較早', value: number(stats.similar.later), unit: '組' },
+    { label: '相近，本篇較早', value: number(stats.similar.earlier), unit: '組' },
   ];
   return (
     <div className="pb-4">
@@ -245,8 +238,16 @@ export default async function JournalistPage({
                 {data.method}，門檻 {percent(data.threshold)}
               </dd>
             </dl>
-            <p className="mt-2 text-zinc-500 dark:text-zinc-400">
-              較晚刊登是閱讀線索，不是抄襲判定：共同新聞稿、通訊社稿與授權轉載都會造成重疊；刊登時間以各站標示為準。 同名不同人不會分開。
+            <p className="mt-2 text-zinc-500 dark:text-zinc-400">{SIMILARITY_CAVEAT}</p>
+          </section>
+          <section aria-label="關於這一頁" className="rounded-lg border border-zinc-200 p-3 text-xs leading-5 dark:border-zinc-800">
+            <h2 className="mb-2 text-sm font-semibold">關於這一頁</h2>
+            <p className="text-zinc-500 dark:text-zinc-400">
+              這一頁由各媒體公開刊出的署名自動整理，不是本人建立或認可的個人檔案。若您是本人，不希望出現在記者頁，請
+              <a href={removalRequestHref(data.name)} target="_blank" rel="noopener noreferrer" className={linkStyle}>
+                提出移除請求
+              </a>
+              ，我們會將名字加入排除名單，之後不再從署名產生這一頁；原文與原站連結不受影響。
             </p>
           </section>
         </MediaSidebar>
@@ -301,8 +302,8 @@ export default async function JournalistPage({
                         </span>
                       )}
                       {article.matches > 0 && (
-                        <a href="#similar-heading" className="text-amber-700 hover:underline dark:text-amber-400">
-                          {article.matches} 篇他站相似
+                        <a href="#similar-heading" className="hover:underline">
+                          {article.matches} 篇他站內文相近
                         </a>
                       )}
                       {!article.compared && readable && <span>未納入比對</span>}

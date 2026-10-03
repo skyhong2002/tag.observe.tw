@@ -30,6 +30,7 @@ const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> 
       { href: '/api/', label: 'API 文件' },
       { href: '#method', label: '資料來源與計算方式' },
       { href: 'https://github.com/skyhong2002/tag.observe.tw', label: 'GitHub 原始碼', external: true },
+      { href: 'https://github.com/skyhong2002/tag.observe.tw/issues/new', label: '聯絡與移除請求', external: true },
       { href: 'https://tag.analysis.tw', label: '母站 tag.analysis.tw', external: true },
     ],
   },

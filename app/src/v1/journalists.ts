@@ -16,6 +16,7 @@ import {
   summarizeJournalists,
 } from '../journalists/aggregate.ts';
 import { journalistKey } from '../journalists/names.ts';
+import { startRemovalRequestSync } from '../journalists/removal-requests.ts';
 import { type Attribution, normalizeAttributions, outletIdentity } from '../similarity/attribution.ts';
 import { METHOD } from '../similarity/compute.ts';
 import { computeSimilarityAsync } from '../similarity/compute-async.ts';
@@ -329,6 +330,18 @@ export async function loadJournalist(
 export function registerJournalists(app: FastifyInstance, db: Db) {
   const indexCache = new Map<string, { at: number; value: Promise<JournalistIndex> }>();
   const detailCache = new Map<string, { at: number; value: Promise<JournalistDetail | null> }>();
+  // Removal requests filed on GitHub take effect without a deploy; tests and
+  // JOURNALIST_REMOVAL_SYNC=0 skip the network.
+  if (process.env.JOURNALIST_REMOVAL_SYNC !== '0' && !process.env.VITEST) {
+    const sync = startRemovalRequestSync({
+      log: app.log,
+      onChange: () => {
+        indexCache.clear();
+        detailCache.clear();
+      },
+    });
+    app.addHook('onClose', async () => sync.stop());
+  }
   const remember = <T>(
     cache: Map<string, { at: number; value: Promise<T> }>,
     key: string,

@@ -1,0 +1,4 @@
+{
+  "note": "Names listed here never appear on /journalist/ pages, in coauthor links or in the journalists API, even when a byline still names them. GitHub issues titled 「記者頁移除請求：<名字>」 are applied automatically at runtime (src/journalists/removal-requests.ts); list a name here only to make it permanent without relying on GitHub. Keep the stored byline text untouched. Matching uses journalistKey (NFKC, single spaces, case-sensitive).",
+  "names": []
+}
