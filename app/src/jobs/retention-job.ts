@@ -5,6 +5,7 @@
 // - ranking snapshots older than 2 years: chart and entries trimmed to top 100
 // - crawl_runs / job_runs / source_probes older than 30 days deleted
 import { and, eq, gt, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { BODY_RETENTION_MS } from '../article-retention.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, crawlRuns, jobRuns, rankingEntries, rankingSnapshots, rejectedUrls, sourceProbes } from '../db/schema.ts';
 import type { RankingChart } from './ranking-compute.ts';
@@ -27,7 +28,7 @@ export async function runRetentionJob(db: Db, { now = () => new Date(), log = (_
       .set({ body: null, bodyStatus: 'expired' })
       .where(
         and(
-          lt(sql`COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt})`, new Date(t - 90 * DAY)),
+          lt(sql`COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt})`, new Date(t - BODY_RETENTION_MS)),
           sql`${articles.body} IS NOT NULL`,
         ),
       ),

@@ -35,6 +35,7 @@ export interface StoredContent {
     chars: number;
     source: string | null;
     fetchedAt: string | null;
+    expiresAt: string | null;
     attributions: Array<Publisher & { evidence: string; kind: 'explicit' }>;
   };
 }

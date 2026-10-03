@@ -396,6 +396,7 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `content.chars` | integer |  |
 | `content.source` | string \| null | 擷取方式 |
 | `content.fetchedAt` | string (ISO 時間) \| null |  |
+| `content.expiresAt` | string (ISO 時間) \| null | 正文取得後 90 天的保存期限；舊資料以首次收錄時間起算，到期後由每日清理作業移除。未取得正文時為 null，已清除正文仍保留期限 |
 | `content.attributions` | object[] |  |
 | `content.attributions[].media` | string |  |
 | `content.attributions[].name` | string |  |

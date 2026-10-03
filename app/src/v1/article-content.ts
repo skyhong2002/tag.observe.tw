@@ -2,6 +2,7 @@ import { and, desc, eq, exists, gte, inArray, lt, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import reviewedPublications from '../../data/reviewed-publications.json' with { type: 'json' };
+import { BODY_RETENTION_MS } from '../article-retention.ts';
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
@@ -38,6 +39,7 @@ export interface ArticleContentResponse {
     chars: number;
     source: string | null;
     fetchedAt: Date | null;
+    expiresAt: Date | null;
     attributions: Attribution[];
   };
 }
@@ -156,6 +158,7 @@ export async function loadArticleContent(db: Db, id: number): Promise<ArticleCon
       bodyStatus: articles.bodyStatus,
       bodySource: articles.bodySource,
       contentFetchedAt: articles.contentFetchedAt,
+      crawledAt: articles.crawledAt,
       attributions: articles.attributions,
     })
     .from(articles)
@@ -173,6 +176,8 @@ export async function loadArticleContent(db: Db, id: number): Promise<ArticleCon
       chars,
       source: row.bodySource,
       fetchedAt: row.contentFetchedAt,
+      expiresAt:
+        body || row.bodyStatus === 'expired' ? new Date((row.contentFetchedAt ?? row.crawledAt).getTime() + BODY_RETENTION_MS) : null,
       attributions: normalizeAttributions(row.attributions ?? [], row.media),
     },
   };

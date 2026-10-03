@@ -207,6 +207,9 @@ schemas.CachedContent = obj({
   chars: int(),
   source: nullable(str('擷取方式')),
   fetchedAt: nullable(time()),
+  expiresAt: nullable(
+    time('正文取得後 90 天的保存期限；舊資料以首次收錄時間起算，到期後由每日清理作業移除。未取得正文時為 null，已清除正文仍保留期限'),
+  ),
   attributions: arr(ref('Attribution')),
 });
 

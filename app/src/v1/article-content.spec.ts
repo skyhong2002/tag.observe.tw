@@ -28,6 +28,7 @@ const row = {
   bodyStatus: 'ok',
   bodySource: 'article',
   contentFetchedAt: fetched,
+  crawledAt: new Date('2026-10-01T00:00:00Z'),
   attributions: [],
   bodyChars: 33,
 };
@@ -43,6 +44,24 @@ function fakeDb(rows: unknown[], discoveries: unknown[] = []) {
   return { db: { select } as unknown as Db, select, chain, discoveryChain };
 }
 describe('stored article content', () => {
+  it('reports the 90-day body deadline from acquisition rather than publication or initial crawl', async () => {
+    const { db } = fakeDb([{ ...row, publishedAt: new Date('2011-01-01T00:00:00Z') }]);
+    const result = await loadArticleContent(db, row.id);
+    expect(result?.content.expiresAt?.toISOString()).toBe('2027-01-01T01:00:00.000Z');
+  });
+  it('uses the same crawl-time fallback as cleanup for legacy bodies', async () => {
+    const { db } = fakeDb([{ ...row, contentFetchedAt: null }]);
+    const result = await loadArticleContent(db, row.id);
+    expect(result?.content.expiresAt?.toISOString()).toBe('2026-12-30T00:00:00.000Z');
+  });
+  it('retains the deadline for cleared bodies without inventing one for never-acquired content', async () => {
+    const expired = fakeDb([{ ...row, body: null, bodyStatus: 'expired' }]);
+    expect((await loadArticleContent(expired.db, row.id))?.content.expiresAt?.toISOString()).toBe('2027-01-01T01:00:00.000Z');
+    for (const bodyStatus of [null, 'blocked', 'missing', 'error']) {
+      const absent = fakeDb([{ ...row, body: null, bodyStatus, contentFetchedAt: null }]);
+      expect((await loadArticleContent(absent.db, row.id))?.content.expiresAt).toBeNull();
+    }
+  });
   it('validates positive safe integer ids, cursors and bounded page sizes', () => {
     for (const value of ['0', '-1', '1.2', ' 1', '01', '1e2', '9007199254740992', '__proto__', ['1']]) {
       expect(parseContentId(value)).toBeNull();

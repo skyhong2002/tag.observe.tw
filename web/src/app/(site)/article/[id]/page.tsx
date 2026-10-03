@@ -28,10 +28,21 @@ export default async function ArticleContentPage({
   if (!res?.ok) return <p className="py-12 text-zinc-600 dark:text-zinc-400">暫時無法取得文章內容，請稍後重新整理。</p>;
   const { article, content } = (await res.json()) as StoredContent;
   const state =
-    content.source === 'publisher:excerpt'
+    content.source === 'publisher:excerpt' && content.status !== 'expired'
       ? { label: '原站僅提供摘要', detail: '這個來源提供的是節錄內容，本站未將其收錄為完整正文。' }
       : CONTENT_STATUS[content.status];
   const headline = readingTitle(article.title);
+  const expiresAt = content.expiresAt
+    ? new Intl.DateTimeFormat('zh-TW', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).format(new Date(content.expiresAt))
+    : null;
   const mediaHref = `/media/${encodeURIComponent(article.media)}/`;
   const backHref = `${withReadingQuery(mediaHref, query)}#article-${id}`;
   return (
@@ -66,6 +77,19 @@ export default async function ArticleContentPage({
         <div className="mt-3">
           <DiscoverySources sources={article.discoverySources} />
         </div>
+        {expiresAt && (content.body || content.status === 'expired') && (
+          <section aria-label="正文保存期限" className="mt-5 rounded-lg bg-zinc-100 px-4 py-3 text-sm leading-7 dark:bg-zinc-900">
+            <p className="font-medium">
+              {content.status === 'expired' ? '正文保存期限已於 ' : '正文預計於 '}
+              <time dateTime={content.expiresAt!}>{expiresAt}</time>
+              {content.status === 'expired' ? ' 到期' : ' 後清除'}
+              <span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">（台北時間）</span>
+            </p>
+            <p className="text-xs leading-6 text-zinc-600 dark:text-zinc-400">
+              正文自取得起保存 90 天，到期後由每日清理作業移除；標題、標籤與原站連結仍會保留。
+            </p>
+          </section>
+        )}
       </header>
       <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} sourceUrl={article.url} />
       {content.body ? (
