@@ -636,7 +636,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'tags',
     summary: '標籤每小時的分數與文章數',
     description:
-      '每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。整條曲線只使用 basis 的固定媒體，score/count 也從文章重算 24 小時加權分數／累計篇數，rank 固定為 null。coverageFrom 前的篇數、validFrom 前的平均與分數均為 null；收錄開始後的空小時以零計。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。',
+      '每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。整條曲線只使用 basis 的固定媒體，score/count 也從文章重算 24 小時加權分數／累計篇數。rank 是該小時排行快照中依原始分數的名次（同一分類）；該小時沒有快照或未進入儲存的榜單時為 null。coverageFrom 前的篇數、validFrom 前的平均與分數均為 null；收錄開始後的空小時以零計。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。',
     params: [p('tag', '標籤（URL 編碼）', str(), '賴清德'), categoryParam, q('hours', '往前幾小時', intIn(1, 336, 72), 168)],
     response: obj({
       tag: str(),
@@ -648,7 +648,7 @@ export const ENDPOINTS: Endpoint[] = [
           t: time('完整小時起點（UTC）'),
           score: nullable(num('24 小時正規化分數')),
           count: nullable(int('固定基準 24 小時累計篇數，非單小時篇數')),
-          rank: nullable(int('名次')),
+          rank: nullable(int('該小時快照中依原始分數的名次；沒有快照或未入榜為 null')),
           hourlyCount: nullable(int('該小時收錄篇數；收錄開始前為 null')),
           average24h: nullable(num('24 小時移動平均（篇／小時）；歷史不足為 null')),
         }),

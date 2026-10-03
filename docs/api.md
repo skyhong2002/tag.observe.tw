@@ -725,7 +725,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/articles
 
 **標籤每小時的分數與文章數**
 
-每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。整條曲線只使用 basis 的固定媒體，score/count 也從文章重算 24 小時加權分數／累計篇數，rank 固定為 null。coverageFrom 前的篇數、validFrom 前的平均與分數均為 null；收錄開始後的空小時以零計。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。
+每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。整條曲線只使用 basis 的固定媒體，score/count 也從文章重算 24 小時加權分數／累計篇數。rank 是該小時排行快照中依原始分數的名次（同一分類）；該小時沒有快照或未進入儲存的榜單時為 null。coverageFrom 前的篇數、validFrom 前的平均與分數均為 null；收錄開始後的空小時以零計。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -755,7 +755,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 | `points[].t` | string (ISO 時間) | 完整小時起點（UTC） |
 | `points[].score` | number \| null | 24 小時正規化分數 |
 | `points[].count` | integer \| null | 固定基準 24 小時累計篇數，非單小時篇數 |
-| `points[].rank` | integer \| null | 名次 |
+| `points[].rank` | integer \| null | 該小時快照中依原始分數的名次；沒有快照或未入榜為 null |
 | `points[].hourlyCount` | integer \| null | 該小時收錄篇數；收錄開始前為 null |
 | `points[].average24h` | number \| null | 24 小時移動平均（篇／小時）；歷史不足為 null |
 

@@ -1,7 +1,7 @@
 import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import { describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.ts';
-import { completedHourWindow, hourlyMovingAverage, loadHourlyTrends } from './tag-series.ts';
+import { completedHourWindow, hourlyMovingAverage, loadHourlyRanks, loadHourlyTrends } from './tag-series.ts';
 
 const HOUR = 3600e3;
 const start = new Date('2026-10-03T00:00:00Z');
@@ -72,5 +72,27 @@ describe('hourly moving average', () => {
     const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
     expect(query.params.slice(0, 4)).toEqual(['日本', 'cna', 'ltn', 'udn']);
     expect(query.params).not.toContain('new');
+  });
+});
+
+describe('hourly ranks', () => {
+  it('maps snapshot hours to the stored score rank and ignores collation variants', async () => {
+    const chain = {
+      from: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([
+        { tag: '日本', hourStart: start, rank: 3 },
+        { tag: '日本', hourStart: new Date(+start + HOUR), rank: 1 },
+        { tag: 'Japan variant', hourStart: new Date(+start + 2 * HOUR), rank: 9 },
+      ]),
+    };
+    const db = { select: vi.fn().mockReturnValue(chain) } as unknown as Db;
+    const ranks = await loadHourlyRanks(db, '日本', 'news', start, new Date(+start + 3 * HOUR));
+    expect([...ranks]).toEqual([
+      [start.toISOString(), 3],
+      [new Date(+start + HOUR).toISOString(), 1],
+    ]);
+    const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
+    expect(query.params).toEqual(['日本', 'news', '2026-10-03 00:00:00.000', '2026-10-03 03:00:00.000']);
   });
 });

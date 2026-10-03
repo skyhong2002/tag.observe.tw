@@ -13,6 +13,7 @@ export default function TagChart({ points }: { points: SeriesPoint[] }) {
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
+    const hasRank = points.some((p) => p.rank !== null);
     const labels = points.map((p) => {
       const d = new Date(Date.parse(p.t) + 8 * 3600e3);
       return `${d.getUTCMonth() + 1}/${d.getUTCDate()}\n${String(d.getUTCHours()).padStart(2, '0')}:00`;
@@ -25,15 +26,25 @@ export default function TagChart({ points }: { points: SeriesPoint[] }) {
         type: 'scroll',
         left: 0,
         right: 0,
-        data: ['每小時篇數', '24 小時移動平均', '24 小時加權分數'],
-        selected: { '24 小時加權分數': false },
+        data: ['每小時篇數', '24 小時移動平均', '名次', '24 小時加權分數'],
+        selected: { '24 小時加權分數': false, 名次: hasRank },
         top: 0,
       },
-      grid: { left: 40, right: 36, top: 55, bottom: 40 },
+      grid: { left: 40, right: hasRank ? 44 : 36, top: 55, bottom: 40 },
       xAxis: { type: 'category', data: labels, axisLabel: { interval: interval(), hideOverlap: true } },
       yAxis: [
         { type: 'value', name: '篇／小時', min: 0 },
-        { type: 'value', min: 0 },
+        { type: 'value', min: 0, show: false },
+        // Rank reads top-down: #1 sits at the top of the chart.
+        {
+          type: 'value',
+          name: hasRank ? '名次' : undefined,
+          inverse: true,
+          min: 1,
+          minInterval: 1,
+          show: hasRank,
+          splitLine: { show: false },
+        },
       ],
       series: [
         {
@@ -47,6 +58,18 @@ export default function TagChart({ points }: { points: SeriesPoint[] }) {
           areaStyle: { color: '#c2410c', opacity: 0.1 },
         },
         { name: '每小時篇數', type: 'bar', data: points.map((p) => p.hourlyCount), itemStyle: { color: '#a1a1aa', opacity: 0.6 } },
+        {
+          name: '名次',
+          type: 'line',
+          yAxisIndex: 2,
+          symbol: 'circle',
+          symbolSize: 4,
+          connectNulls: false,
+          data: points.map((p) => p.rank),
+          lineStyle: { color: '#0369a1', width: 1.5 },
+          itemStyle: { color: '#0369a1' },
+          tooltip: { valueFormatter: (v: unknown) => (v == null ? '未入榜' : `#${v}`) },
+        },
         {
           name: '24 小時加權分數',
           type: 'line',

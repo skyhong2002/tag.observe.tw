@@ -1,6 +1,6 @@
 import { and, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags } from '../db/schema.ts';
+import { articles, articleTags, rankingEntries, rankingSnapshots } from '../db/schema.ts';
 import type { RankingBasis } from '../jobs/ranking-basis.ts';
 
 const HOUR = 3600e3;
@@ -87,4 +87,30 @@ export async function loadHourlyTrends(db: Db, tags: string[], media: string[], 
 export function completedHourWindow(now: Date, hours: number) {
   const to = new Date(Math.floor(now.getTime() / HOUR) * HOUR);
   return { from: new Date(to.getTime() - hours * HOUR), to };
+}
+
+/**
+ * Score rank per snapshot hour for one tag in one category, from the stored
+ * hourly charts. Hours where the tag was below the stored cut-off are absent.
+ */
+export async function loadHourlyRanks(db: Db, tag: string, category: string, from: Date, to: Date): Promise<Map<string, number>> {
+  const rows = await db
+    .select({
+      tag: sql<string>`${rankingEntries.tag} COLLATE utf8mb4_bin`,
+      hourStart: rankingSnapshots.hourStart,
+      rank: rankingEntries.rank,
+    })
+    .from(rankingEntries)
+    .innerJoin(rankingSnapshots, eq(rankingSnapshots.id, rankingEntries.snapshotId))
+    .where(
+      and(
+        eq(rankingEntries.tag, tag),
+        eq(rankingSnapshots.category, category),
+        gte(rankingSnapshots.hourStart, from),
+        lt(rankingSnapshots.hourStart, to),
+      ),
+    );
+  const out = new Map<string, number>();
+  for (const r of rows) if (r.tag === tag) out.set(r.hourStart.toISOString(), r.rank);
+  return out;
 }

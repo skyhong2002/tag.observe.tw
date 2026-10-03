@@ -11,7 +11,7 @@ import { campOf, loadThreadCoverage } from './coverage.ts';
 import { taipeiDay, threadSeries, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
 import { loadRelatedTags } from './tag-related.ts';
-import { completedHourWindow, loadHourlyTrends } from './tag-series.ts';
+import { completedHourWindow, loadHourlyRanks, loadHourlyTrends } from './tag-series.ts';
 import { loadTagStatus } from './tag-status.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -175,8 +175,11 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       const hours = Math.min(24 * 14, Math.max(1, Math.floor(Number(request.query.hours) || 72)));
       const { from, to } = completedHourWindow(new Date(), hours);
       const basis = rankingBasis(category);
-      const trends = await loadHourlyTrends(db, [tag], basis.media, from, to, basis);
-      const points = (trends.get(tag) ?? []).map((p) => ({ ...p, rank: null }));
+      const [trends, ranks] = await Promise.all([
+        loadHourlyTrends(db, [tag], basis.media, from, to, basis),
+        loadHourlyRanks(db, tag, category, from, to),
+      ]);
+      const points = (trends.get(tag) ?? []).map((p) => ({ ...p, rank: ranks.get(p.t) ?? null }));
       reply.header('cache-control', 'public, max-age=300');
       return { tag, category, hours, basis, points };
     },
