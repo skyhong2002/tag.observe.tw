@@ -297,10 +297,36 @@ function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: Content
   return structured.length ? structured : declared.length ? declared : bylines;
 }
 
+// These publishers explicitly label otherwise long article bodies as excerpts.
+// This belongs in the shared extractor so already-indexed runArticles rows and
+// structured-data fallbacks cannot bypass discovery's early rejection.
+function publisherExcerpt($: cheerio.CheerioAPI, value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  const host = url.hostname.toLowerCase().replace(/^www\./, '');
+  const mainText = (selector: string) =>
+    $(selector)
+      .filter((_, node) => !$(node).closest('aside, nav, footer, [role="complementary"]').length)
+      .map((_, node) => $(node).text())
+      .get()
+      .join('\n');
+  if (host === 'nommagazine.com' && /^\/(?!category\/|tag\/|page\/|author\/)[^/]+\/$/.test(url.pathname))
+    return /本文為精彩摘要[，,]\s*欲下載完整/.test(mainText('.zh-content'));
+  if (['tw.news.yahoo.com', 'tw.sports.yahoo.com'].includes(host) && /^\/(?:news\/)?[^/]+\.html$/.test(url.pathname))
+    return /全文未完[，,、：:]\s*完整內容請見/.test(mainText('.caas-body, .module-article-body article'));
+  return false;
+}
+
 export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules: ContentRules): ArticleContent {
+  const isExcerpt = publisherExcerpt($, url);
   if (rules.bodyExcludeSelector) $(rules.bodyExcludeSelector).remove();
   const nodes = articleNodes($, url);
   const authors = extractAuthors($, nodes, rules);
+  if (isExcerpt) return { body: null, authors, bodySource: 'publisher:excerpt', bodyStatus: 'short' };
   const candidates: Candidate[] = nodes
     .map((node) => ({ body: structuredBody(node['articleBody']), source: 'ld+json' }))
     .filter((candidate) => candidate.body);

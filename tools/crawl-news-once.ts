@@ -42,7 +42,8 @@ try {
         try {
           // A parser repair can recover rows whose previous three attempts
           // exhausted normal retries. Retain existing text while requesting a
-          // fresh extraction, only for recent non-ok bodies in selected media.
+          // fresh extraction for non-ok bodies in selected media. Archive
+          // sources use acquisition age, preserving their original publication.
           if (values['retry-incomplete']) {
             await db
               .update(articles)
@@ -50,7 +51,9 @@ try {
               .where(
                 and(
                   eq(articles.media, source.media),
-                  gte(articles.publishedAt, new Date(Date.now() - 14 * 86400e3)),
+                  source.list.autoDiscover?.includeArchive
+                    ? gte(articles.crawledAt, new Date(Date.now() - 90 * 86400e3))
+                    : gte(articles.publishedAt, new Date(Date.now() - 14 * 86400e3)),
                   or(isNull(articles.bodyStatus), inArray(articles.bodyStatus, ['missing', 'short', 'blocked', 'error'])),
                 ),
               );

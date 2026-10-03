@@ -329,13 +329,32 @@
     {
       "media": "msn",
       "websiteUrl": "https://www.msn.com/zh-tw/news",
-      "checkedAt": "2026-10-03T11:06:25.186Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 12 次請求未驗證到近期完整文章。https://www.msn.com/sitemaps/consumption/content-14.xml: response too large；missing publication date: 5 candidate(s), e.g. https://www.msn.com/ja-jp/channel/topic/%e9%87%8e%e7%90%83/tp-Y_00106ae0-7481-499d-a04a-7f2e54f59931；No recent article with verified title, publication date and body found"
+      "checkedAt": "2026-10-03T13:08:57.945087+00:00",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.msn.com/zh-tw/sports/%E4%B8%80%E8%88%AC/%E4%BA%9E%E9%81%8B-%E7%B6%B2%E7%90%83%E5%A5%B3%E9%9B%99-%E8%AC%9D%E8%A9%B9%E5%A4%A7%E6%88%B0-%E7%88%AD%E9%87%91-%E8%AC%9D%E6%B7%91%E8%96%87%E7%B5%84%E5%90%88%E9%A6%96%E7%9B%A4%E5%BE%8C%E4%BE%86%E5%B1%85%E4%B8%8A/ar-AA2dtw0I",
+          "title": "亞運》網球女雙「謝詹大戰」爭金 謝淑薇組合首盤後來居上",
+          "publishedAt": "2026-10-03T04:58:12.000Z",
+          "bodyLength": 264
+        },
+        {
+          "url": "https://www.msn.com/zh-tw/weather/%E6%B0%A3%E8%B1%A1%E5%AD%B8/4%E6%97%A5%E5%9F%BA%E9%9A%86%E5%8C%97%E6%B5%B7%E5%B2%B8-%E6%9D%B1%E5%8D%8A%E9%83%A8%E6%9C%89%E9%9B%A8-%E4%B8%8B%E9%80%B1%E6%9D%B1%E5%8C%97%E5%AD%A3%E9%A2%A8%E5%A2%9E%E5%BC%B7%E4%BD%8E%E6%BA%AB%E6%8E%A219%E5%BA%A6/ar-AA2dtkPt",
+          "title": "4日基隆北海岸、東半部有雨 下週東北季風增強低溫探19度",
+          "publishedAt": "2026-10-03T09:24:24.000Z",
+          "bodyLength": 809
+        },
+        {
+          "url": "https://www.msn.com/zh-tw/news/other/%E5%BF%AB%E8%A8%8A-%E8%8A%B1%E8%93%AE%E6%B0%91%E9%96%93%E6%95%91%E8%AD%B7%E8%BB%8A%E9%87%80%E7%A6%8D-%E7%96%91%E9%9B%A8%E5%A4%A9%E6%89%93%E6%BB%91%E6%92%9E%E5%85%A9%E8%BB%8A1%E6%AD%BB4%E5%82%B7-76%E6%AD%B2%E7%94%B7%E9%80%81%E5%91%BD/ar-AA2du6hm",
+          "title": "快訊／花蓮民間救護車釀禍! 疑雨天打滑撞兩車1死4傷 76歲男送命",
+          "publishedAt": "2026-10-03T10:53:57.000Z",
+          "bodyLength": 340
+        }
+      ],
+      "status": "verified",
+      "strategy": "api",
+      "listingUrl": "https://www.msn.com/zh-tw/news",
+      "detail": "官方匿名公開API完整正文及發佈時間已核實；拒絕受限文章及摘要，實際入庫見docs/crawl-restoration.md。"
     },
     {
       "media": "hk01",
@@ -1108,13 +1127,20 @@
     {
       "media": "agriharvest",
       "websiteUrl": "https://www.agriharvest.tw/",
-      "checkedAt": "2026-10-03T11:06:31.567Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "existing",
-      "listingUrl": "https://www.agriharvest.tw/RSS.php",
-      "detail": "既有爬蟲列出 0 筆，尚未驗證到近期完整文章。。https://www.agriharvest.tw/RSS.php -> 403；https://www.agriharvest.tw/?feed=rss2 -> 403"
+      "checkedAt": "2026-10-03T13:21:15.924084+00:00",
+      "articleCount": 1,
+      "samples": [
+        {
+          "url": "https://www.e-info.org.tw/node/220413",
+          "title": "海洋保育議題要深化 民間盼建立環境基礎資料庫",
+          "publishedAt": "2019-09-27T02:23:33.000Z",
+          "bodyLength": 977
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://e-info.org.tw/",
+      "detail": "完整授權聯播舊文，逐篇供稿署名核對；保留實際日期，入庫證據見docs/crawl-restoration.md。"
     },
     {
       "media": "dongtaiwang",
@@ -2112,14 +2138,21 @@
     },
     {
       "media": "taiwandaily",
-      "websiteUrl": "https://www.taiwandaily.net/",
-      "checkedAt": "2026-10-03T11:07:09.924Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.taiwandaily.net/sitemap.xml: HTTP 403；https://www.taiwandaily.net/feed/: HTTP 403；No recent article with verified title, publication date and body found"
+      "websiteUrl": "https://vigormedia.tw/",
+      "checkedAt": "2026-10-03T13:21:15.924104+00:00",
+      "articleCount": 1,
+      "samples": [
+        {
+          "url": "https://vigormedia.tw/%e5%b0%88%e6%ac%84-%e5%82%ac%e7%94%9f%e5%8f%b0%e7%81%a3%e5%9c%8b%e5%ae%b6%e5%8d%9a%e7%89%a9%e9%a4%a8-769787299ef4/",
+          "title": "【專欄】催生台灣國家博物館",
+          "publishedAt": "2021-10-13T01:50:00.000Z",
+          "bodyLength": 2065
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://vigormedia.tw/",
+      "detail": "完整授權聯播舊文，逐篇供稿署名核對；保留實際日期，入庫證據見docs/crawl-restoration.md。"
     },
     {
       "media": "enn",
@@ -2320,14 +2353,21 @@
     },
     {
       "media": "travelnews",
-      "websiteUrl": "https://www.travelnews.tw/news/",
-      "checkedAt": "2026-10-03T11:07:21.194Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.travelnews.tw/sitemap.xml: HTTP 403；https://www.travelnews.tw/feed/: HTTP 403；No recent article with verified title, publication date and body found"
+      "websiteUrl": "https://fearless.cool/",
+      "checkedAt": "2026-10-03T13:27:04.575197+00:00",
+      "articleCount": 1,
+      "samples": [
+        {
+          "url": "https://fearless.cool/mag/%e9%81%8a%e5%ae%a2%e6%9d%b1%e6%be%b3%e7%8d%a8%e6%9c%a8%e8%88%9f%e6%ad%b7%e9%9a%aa%e8%a8%98-%e6%b3%a2%e9%ba%97%e5%a3%ab%e8%a7%a3%e5%8d%b1-%e5%ae%9c%e8%98%ad%e6%96%b0%e8%81%9e%e7%b6%b2/",
+          "title": "遊客東澳獨木舟歷險記 波麗士解危! | 宜蘭新聞網",
+          "publishedAt": "2019-10-10T03:56:46.000Z",
+          "bodyLength": 338
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://fearless.cool/",
+      "detail": "完整授權聯播舊文，逐篇供稿署名核對；保留實際日期，入庫證據見docs/crawl-restoration.md。"
     },
     {
       "media": "focusnews",
@@ -2428,13 +2468,32 @@
     {
       "media": "pnn",
       "websiteUrl": "https://pnn.tw/",
-      "checkedAt": "2026-10-03T11:07:24.154Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 4 次請求未驗證到近期完整文章。https://pnn.tw/sitemap.xml: HTTP 404；https://pnn.tw/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+      "checkedAt": "2026-10-03T13:14:14.262353+00:00",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://pnn5.aotter.net/viewer/4317a6a5-5911-4dcf-8808-a2003b8e2e98",
+          "title": "台灣贈菲律賓「金門艦」正式服役　維護菲南航運安全 | 政治 | 中央社 CNA",
+          "publishedAt": "2026-10-02T14:08:00.000Z",
+          "bodyLength": 938
+        },
+        {
+          "url": "https://pnn5.aotter.net/viewer/ad66bc30-3b9a-4990-823d-dac930b6de7f",
+          "title": "佛陀故鄉弘法不易　佛光山印度沙彌學園新學期展開 | 國際 | 中央社 CNA",
+          "publishedAt": "2026-10-02T15:13:00.000Z",
+          "bodyLength": 766
+        },
+        {
+          "url": "https://pnn5.aotter.net/viewer/71c1ce28-c5c9-419f-8296-5acba0df65fc",
+          "title": "牛肉排疑有品質問題　北海道麥當勞91門市部分漢堡停售 | 國際 | 中央社 CNA",
+          "publishedAt": "2026-10-02T10:41:00.000Z",
+          "bodyLength": 506
+        }
+      ],
+      "status": "verified",
+      "strategy": "api",
+      "listingUrl": "https://pnn.tw/api/pnn/v4/posts/?show=12&page=1&categories=5d039be0ca1a4445124ee877",
+      "detail": "官方hosted完整正文與中央社原文、標題、末段及真實發布日期比對通過，不使用平台批次時間；實际入庫見docs/crawl-restoration.md。"
     },
     {
       "media": "st_media",
@@ -3654,14 +3713,33 @@
     },
     {
       "media": "taiwan",
-      "websiteUrl": "http://taiwan.cn/",
-      "checkedAt": "2026-10-03T11:07:51.218Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 4 次請求未驗證到近期完整文章。http://taiwan.cn/sitemap.xml: The operation was aborted due to timeout；http://taiwan.cn/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+      "websiteUrl": "https://k.sina.cn/media_m_1776346.html",
+      "checkedAt": "2026-10-03T13:22:45.048484+00:00",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://news.sina.cn/znl/2026-09-24/detail-inisxhnx5304571.d.html",
+          "title": "中秋月圆，两岸同胞共享融合发展红利",
+          "publishedAt": "2026-09-23T23:42:42.000Z",
+          "bodyLength": 1215
+        },
+        {
+          "url": "https://news.sina.cn/znl/2026-09-17/detail-iniscksh9230163.d.html",
+          "title": "台湾人也是中国人，台湾前途命运由且只能由14亿多中国人决定！",
+          "publishedAt": "2026-09-16T21:22:46.000Z",
+          "bodyLength": 1164
+        },
+        {
+          "url": "https://news.sina.cn/znl/2026-09-14/detail-inirtwih7355093.d.html",
+          "title": "“路走得越近，心就贴得越紧”——天山脚下，两岸同胞共话“携手圆梦”",
+          "publishedAt": "2026-09-13T16:14:36.000Z",
+          "bodyLength": 2334
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://k.sina.cn/aj/newmedia/list?source=js&muid=1776346&page=1",
+      "detail": "新浪官方帳號公開API定期取得新文，每篇核對日期、canonical與中國台灣網署名，不以列表日期替代正文日期。"
     },
     {
       "media": "sunmedia",

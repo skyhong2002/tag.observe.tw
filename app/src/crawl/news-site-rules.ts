@@ -3,6 +3,8 @@ import { BLOCKED_NEWS_SITES } from './news-blocked-sites.ts';
 import { EXTRA_NEWS_SITES } from './news-extra-site-rules.ts';
 import { LEGACY_NEWS_SITES } from './news-legacy-sites.ts';
 import { PLATFORM_NEWS_SITES } from './news-platform-sites.ts';
+import { ROUND3_LEGACY_NEWS_SITES } from './news-round3-legacy-sites.ts';
+import { ROUND3_NEWS_SITES } from './news-round3-sites.ts';
 
 export interface NewsSiteRules {
   bodySelector: string;
@@ -27,6 +29,8 @@ const SITES: Site[] = [
   ...EXTRA_NEWS_SITES,
   ...LEGACY_NEWS_SITES,
   ...PLATFORM_NEWS_SITES,
+  ...ROUND3_LEGACY_NEWS_SITES,
+  ...ROUND3_NEWS_SITES,
   {
     host: 'myhousing.com.tw',
     path: /^\/(?:n|p)\/(?:[^/?]+\/)*\d+\/$/,

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { extractArticle } from './article.ts';
+import type { fetchText } from './fetch.ts';
+import { discoverNews } from './news-discovery.ts';
 
 const URL = 'https://news.example/article/1';
 const paragraph = '城市議會今天討論公共運輸政策，居民希望增加班次，主管機關表示將參考調查結果並公布後續規畫。';
@@ -209,3 +211,61 @@ describe('article body and byline extraction', () => {
 });
 
 const normalizeBody = (value: string) => value.replace(/\s+/g, ' ').trim();
+
+describe('publisher-declared excerpts across all extraction entrypoints', () => {
+  const samples = [
+    {
+      url: 'https://nommagazine.com/reviewed-article/',
+      selector: 'zh-content',
+      marker: '本文為精彩摘要，欲下載完整圖解情報與詳細數據請前往圖解情報庫',
+    },
+    { url: 'https://tw.news.yahoo.com/news/reviewed-article-123456.html', selector: 'caas-body', marker: '全文未完，完整內容請見原站' },
+    { url: 'https://tw.sports.yahoo.com/news/reviewed-article-123456.html', selector: 'caas-body', marker: '全文未完，完整內容請見原站' },
+    {
+      url: 'https://tw.news.yahoo.com/阿滴：學習要主動出擊，別被動接收-031821645.html',
+      selector: 'module-article-body',
+      marker: '全文未完，完整內容請見原站',
+    },
+    {
+      url: 'https://tw.news.yahoo.com/吃飯也要潮，用故事激勵你大口吃肉-042947992.html',
+      selector: 'module-article-body',
+      marker: '全文未完，完整內容請見原站',
+    },
+  ];
+  const article = (sample: (typeof samples)[number], markerInside = true) => {
+    const container = (content: string) =>
+      sample.selector === 'module-article-body'
+        ? `<section class="module-article-body"><article><div class="atoms">${content}</div></article></section>`
+        : `<div class="${sample.selector}">${content}</div>`;
+    return `<title>真實文章標題</title>${ld({ '@type': 'NewsArticle', url: sample.url, datePublished: '2025-03-28T07:46:42Z', articleBody: body, author: { '@type': 'Person', name: '新聞記者' } })}${container(`<p>${body}</p>${markerInside ? `<p>${sample.marker}</p>` : ''}`)}${markerInside ? '' : `<aside>${container(`<p>${sample.marker}</p>`)}</aside>`}`;
+  };
+  it.each(samples)('does not mark a long excerpt as complete in shared runArticles extraction: $url', (sample) => {
+    expect(extractArticle(article(sample), sample.url)).toMatchObject({
+      body: null,
+      bodyStatus: 'short',
+      bodySource: 'publisher:excerpt',
+      authors: ['新聞記者'],
+    });
+  });
+  it.each(samples)('also rejects the excerpt through discovery and does not fall back to long JSON-LD: $url', async (sample) => {
+    const fetch: typeof fetchText = async (url) => ({
+      url,
+      status: url === sample.url ? 200 : 404,
+      body: url === sample.url ? article(sample) : '',
+      contentType: 'text/html',
+      ms: 1,
+    });
+    const result = await discoverNews(
+      { homeUrl: new globalThis.URL(sample.url).origin + '/', articleUrls: [sample.url], includeArchive: true },
+      { fetch, now: () => new Date('2026-10-03T00:00:00Z') },
+    );
+    expect(result.items).toEqual([]);
+  });
+  it.each(samples)('does not reject complete text because another article in a sidebar is an excerpt: $url', (sample) => {
+    expect(extractArticle(article(sample, false), sample.url).bodyStatus).toBe('ok');
+  });
+  it('does not apply reviewed publisher declarations to unrelated sites', () => {
+    const url = 'https://news.example/reviewed-article/';
+    expect(extractArticle(article({ ...samples[0], url }), url).bodyStatus).toBe('ok');
+  });
+});

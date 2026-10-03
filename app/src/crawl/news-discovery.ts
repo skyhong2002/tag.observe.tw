@@ -4,6 +4,8 @@ import type { FeedItem } from './feed.ts';
 import { parseFeed } from './feed.ts';
 import type { FetchResult } from './fetch.ts';
 import { fetchText, fetchViaCurl } from './fetch.ts';
+import { discoverMsn } from './news-msn.ts';
+import { discoverPnn } from './news-pnn.ts';
 import { parsePublicJson, publicArticleHtml } from './news-public-html.ts';
 import { newsSiteEvidence } from './news-site-rules.ts';
 import { decodeEntities } from './text.ts';
@@ -207,6 +209,8 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
   const result: NewsDiscoveryResult = { items: [], errors: [], strategy: 'none', listingUrl: null, attempted: 0, samples: [] };
   const home = absolute(config.homeUrl, config.homeUrl);
   if (!home) return { ...result, errors: ['Invalid home URL'] };
+  if (/^https:\/\/www\.msn\.com\/zh-tw\/news\/?(?:\?|$)/.test(home)) return discoverMsn(config, options);
+  if (/^https:\/\/pnn\.tw\/?$/.test(home)) return discoverPnn(config, options);
   const allowedHosts = new Set([hostKey(new URL(home))]);
   for (const host of config.articleHosts ?? []) {
     if (/^[a-z0-9.-]+$/i.test(host)) allowedHosts.add(host.toLowerCase().replace(/^www\./, ''));
@@ -463,18 +467,51 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     return (parsed.children ?? []).filter((child) => belongs(child));
   };
 
+  const reportNoArticles = (message: string) => {
+    for (const [reason, info] of rejected) result.errors.push(`${reason}: ${info.count} candidate(s), e.g. ${info.url}`);
+    if (result.attempted >= maxRequests) result.errors.push(`Request budget exhausted (${maxRequests})`);
+    if (Date.now() >= deadline) result.errors.push('Source time budget exhausted');
+    result.errors.push(message);
+  };
+
+  // Reviewed China Taiwan Net's official Sina account. Its public profile
+  // bundle uses this listing endpoint; feed timestamps never replace article dates.
+  if (home === 'https://k.sina.cn/media_m_1776346.html') {
+    const endpoint = 'https://k.sina.cn/aj/newmedia/list?source=js&muid=1776346&page=1';
+    const response = await get(endpoint);
+    if (response) {
+      try {
+        const data = JSON.parse(response.body);
+        if (data.status !== 0 || !Array.isArray(data.data)) throw new Error('Unexpected publisher feed');
+        for (const row of data.data) {
+          if (!budget()) break;
+          if (row.mediaTypes !== 'news' || typeof row.link !== 'string') continue;
+          const target = new URL(row.link);
+          if (!['news.sina.com.cn', 'news.sina.cn'].includes(target.hostname)) continue;
+          if (!/^https?:$/.test(target.protocol) || target.username || target.password) continue;
+          target.protocol = 'https:';
+          await validate({ url: target.href, title: typeof row.title === 'string' ? row.title : '', publishedAt: null }, 'html', endpoint);
+        }
+      } catch {
+        result.errors.push('Invalid official Sina account listing');
+      }
+    }
+    if (!result.items.length) reportNoArticles('No verified article from official Sina account');
+    return result;
+  }
+
   if (config.feedOnly) {
     for (const raw of config.feedUrls ?? []) {
       const url = absolute(raw, home);
       if (url && budget()) await scanFeed(url, maxRequests);
     }
-    if (!result.items.length) result.errors.push('No verified article in configured feeds');
+    if (!result.items.length) reportNoArticles('No verified article in configured feeds');
     return result;
   }
 
   if (config.articleUrls?.length) {
     for (const url of config.articleUrls) await validate({ url, title: '', publishedAt: null }, 'html', home);
-    if (!result.items.length) result.errors.push('No verified article at configured archive URLs');
+    if (!result.items.length) reportNoArticles('No verified article at configured archive URLs');
     return result;
   }
 
@@ -839,11 +876,6 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     await validate(item, 'html', base);
   }
   if (budget() && !feedUrls.size && result.items.length === 0) await scanFeed(new URL('/feed/', base).href, 5);
-  if (!result.items.length) {
-    for (const [reason, info] of rejected) result.errors.push(`${reason}: ${info.count} candidate(s), e.g. ${info.url}`);
-    if (result.attempted >= maxRequests) result.errors.push(`Request budget exhausted (${maxRequests})`);
-    if (Date.now() >= deadline) result.errors.push('Source time budget exhausted');
-    result.errors.push('No recent article with verified title, publication date and body found');
-  }
+  if (!result.items.length) reportNoArticles('No article with verified title, publication date and body found');
   return result;
 }

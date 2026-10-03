@@ -176,6 +176,7 @@ describe('discovered full content persistence', () => {
 
   it('restores a newly acquired archive body without changing its historical publication date', async () => {
     const historical = new Date('2011-06-18T04:50:00Z');
+    const acquired = new Date('2026-09-01T00:00:00Z');
     discover([{ ...item, publishedAt: historical }]);
     const { db, rows } = memoryDb([
       {
@@ -187,12 +188,57 @@ describe('discovered full content persistence', () => {
         crawledAt: new Date('2020-01-01T00:00:00Z'),
         bodyStatus: 'expired',
         body: null,
-        contentFetchedAt: new Date('2020-01-01T00:00:00Z'),
+        contentFetchedAt: acquired,
         contentAttempts: 1,
       },
     ]);
     await runIndex(db, spec, { now: () => now });
-    expect(rows[0]).toMatchObject({ ...item.verifiedContent, publishedAt: historical, contentFetchedAt: now });
+    expect(rows[0]).toMatchObject({ ...item.verifiedContent, publishedAt: historical, contentFetchedAt: acquired });
+  });
+
+  it.each([
+    { label: 'recent legacy crawl timestamp', contentFetchedAt: null, crawledAt: now, restored: true },
+    {
+      label: 'exactly 90 days since acquisition',
+      contentFetchedAt: new Date(now.getTime() - 90 * 86400e3),
+      crawledAt: now,
+      restored: true,
+    },
+    {
+      label: 'over 90 days since acquisition despite a recent crawl',
+      contentFetchedAt: new Date(now.getTime() - 90 * 86400e3 - 1),
+      crawledAt: now,
+      restored: false,
+    },
+    {
+      label: 'expired legacy crawl timestamp',
+      contentFetchedAt: null,
+      crawledAt: new Date(now.getTime() - 90 * 86400e3 - 1),
+      restored: false,
+    },
+  ])('honors the original archive lifetime: $label', async ({ contentFetchedAt, crawledAt, restored }) => {
+    discover([item]);
+    const original: Row = {
+      id: 1,
+      media: spec.media,
+      urlKey: urlKey(item.url),
+      title: item.title,
+      publishedAt,
+      crawledAt,
+      bodyStatus: 'expired',
+      body: null,
+      contentFetchedAt,
+      contentAttempts: 1,
+    };
+    const { db, rows, writes } = memoryDb([original]);
+    await runIndex(db, spec, { now: () => now });
+    if (restored) {
+      expect(rows[0]).toMatchObject({ ...item.verifiedContent, contentFetchedAt: contentFetchedAt ?? crawledAt, contentAttempts: 2 });
+      expect(writes.filter((write) => write.table === articles)).toHaveLength(1);
+    } else {
+      expect(rows[0]).toEqual(original);
+      expect(writes.filter((write) => write.table === articles)).toHaveLength(0);
+    }
   });
 
   it('persists verified body, author, provenance and timestamps at index time', async () => {
@@ -267,7 +313,16 @@ describe('discovered full content persistence', () => {
     const repair = writes.find((write) => write.table === articles);
     expect(repair).toBeDefined();
     const query = new MySqlDialect().sqlToQuery(repair!.condition);
-    expect(query.params).toEqual([spec.media, urlKey(item.url), 'missing', 'short', 'blocked', 'error', 'expired']);
+    expect(query.params).toEqual([
+      spec.media,
+      urlKey(item.url),
+      'missing',
+      'short',
+      'blocked',
+      'error',
+      'expired',
+      new Date(now.getTime() - 90 * 86400e3),
+    ]);
   });
 
   it('does not fetch the article again after index persisted valid body timestamps', async () => {

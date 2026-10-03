@@ -183,14 +183,30 @@ export async function runIndex(db: Db, spec: SourceSpec, { fetch = fetchText, lo
           const repairable = and(
             eq(articles.media, spec.media),
             eq(articles.urlKey, urlKey(item.url, spec.list.articleId)),
-            or(isNull(articles.bodyStatus), inArray(articles.bodyStatus, ['missing', 'short', 'blocked', 'error', 'expired'])),
+            or(
+              isNull(articles.bodyStatus),
+              inArray(articles.bodyStatus, ['missing', 'short', 'blocked', 'error']),
+              // Legacy publication-based retention may have cleared a recently
+              // acquired archive. Restore it only within its original lifetime.
+              and(
+                eq(articles.bodyStatus, 'expired'),
+                gte(sql`COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt})`, new Date(started.getTime() - 90 * 86400e3)),
+              ),
+            ),
           );
           // Keep repaired publication metadata and ranking dates consistent.
           // Lock the row so another worker cannot replace a valid body or race
           // the decision about whether its timestamp is only an index fallback.
           await db.transaction(async (tx) => {
             const [existing] = await tx
-              .select({ id: articles.id, title: articles.title, publishedAt: articles.publishedAt, crawledAt: articles.crawledAt })
+              .select({
+                id: articles.id,
+                title: articles.title,
+                publishedAt: articles.publishedAt,
+                crawledAt: articles.crawledAt,
+                bodyStatus: articles.bodyStatus,
+                contentFetchedAt: articles.contentFetchedAt,
+              })
               .from(articles)
               .where(repairable)
               .limit(1)
@@ -206,7 +222,7 @@ export async function runIndex(db: Db, spec: SourceSpec, { fetch = fetchText, lo
                 ...(correctedDate ? { publishedAt: correctedDate } : {}),
                 ...(correctedTitle ? { title: trunc(correctedTitle, 512) as string } : {}),
                 fetchedAt: started,
-                contentFetchedAt: started,
+                contentFetchedAt: existing.bodyStatus === 'expired' ? (existing.contentFetchedAt ?? existing.crawledAt) : started,
                 contentAttempts: sql`${articles.contentAttempts} + 1`,
                 fetchStatus: item.tags?.length ? 'ok' : 'notags',
                 attributions: extractAttributions(content.body, spec.media, null),

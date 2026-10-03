@@ -225,7 +225,8 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.msn.com/zh-tw/news",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03: 使用官方匿名公開新聞 feed 與 Detail 正文 API；核對 zh-tw、發佈日期與免費存取旗標，保留聯播供稿者。",
+      "includeArchive": true
     },
     {
       "media": "hk01",
@@ -1355,7 +1356,7 @@
     {
       "media": "taiwandaily",
       "name": "美洲台灣日報 /2",
-      "websiteUrl": "https://www.taiwandaily.net/",
+      "websiteUrl": "https://vigormedia.tw/",
       "referenceNames": [
         "美洲台灣日報 /2",
         "美洲台灣日報/2"
@@ -1365,7 +1366,13 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.taiwandaily.net/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "includeArchive": true,
+      "provider": "^美洲台灣日報$",
+      "articleUrls": [
+        "https://vigormedia.tw/%e5%b0%88%e6%ac%84-%e5%82%ac%e7%94%9f%e5%8f%b0%e7%81%a3%e5%9c%8b%e5%ae%b6%e5%8d%9a%e7%89%a9%e9%a4%a8-769787299ef4/"
+      ],
+      "requestTimeoutMs": 15000
     },
     {
       "media": "enn",
@@ -1509,7 +1516,7 @@
     {
       "media": "travelnews",
       "name": "宜蘭新聞網travelnews",
-      "websiteUrl": "https://www.travelnews.tw/news/",
+      "websiteUrl": "https://fearless.cool/",
       "referenceNames": [
         "宜蘭新聞網travelnews"
       ],
@@ -1518,7 +1525,12 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.travelnews.tw/news/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "includeArchive": true,
+      "provider": "^※本文版權為宜蘭新聞網所有，歡迎轉載，請務必註明出處※$",
+      "articleUrls": [
+        "https://fearless.cool/mag/%e9%81%8a%e5%ae%a2%e6%9d%b1%e6%be%b3%e7%8d%a8%e6%9c%a8%e8%88%9f%e6%ad%b7%e9%9a%aa%e8%a8%98-%e6%b3%a2%e9%ba%97%e5%a3%ab%e8%a7%a3%e5%8d%b1-%e5%ae%9c%e8%98%ad%e6%96%b0%e8%81%9e%e7%b6%b2/"
+      ]
     },
     {
       "media": "focusnews",
@@ -1599,7 +1611,8 @@
       ],
       "existing": false,
       "websiteEvidence": "https://pnn.tw/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03: 限官方 viewer 的中央社完整聯播正文，逐篇比對原文全文與發布日期，不採批次收錄時間。",
+      "includeArchive": true
     },
     {
       "media": "st_media",
@@ -2475,7 +2488,7 @@
     {
       "media": "taiwan",
       "name": "中國台灣網 taiwan.cn /8",
-      "websiteUrl": "http://taiwan.cn/",
+      "websiteUrl": "https://k.sina.cn/media_m_1776346.html",
       "referenceNames": [
         "中國台灣網 taiwan.cn /8"
       ],
@@ -2484,7 +2497,14 @@
       ],
       "existing": false,
       "websiteEvidence": "http://taiwan.cn/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03: 新浪中國台灣網官方帳號1776346公開列表，每篇核對供稿者；保存新浪刊登日期與canonical。",
+      "articleHosts": [
+        "news.sina.com.cn",
+        "news.sina.cn"
+      ],
+      "provider": "^中国台湾网$",
+      "articlePattern": "^/(?:zx/gj/\\d{4}-\\d{2}-\\d{2}/doc-[a-z0-9]+\\.shtml|znl/\\d{4}-\\d{2}-\\d{2}/detail-[a-z0-9]+\\.d\\.html)$",
+      "includeArchive": true
     },
     {
       "media": "sunmedia",

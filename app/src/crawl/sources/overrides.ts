@@ -2,6 +2,60 @@ import type { SourceOverride } from '../sources.ts';
 // Hand-ported adjustments for media whose legacy PHP relied on page-specific
 // markers or whose feeds moved. Keep entries small and commented.
 export const overrides: Record<string, SourceOverride> = {
+  buzzorange: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://grinews.com/news/author/bogri-tw/',
+        articleUrls: ['https://grinews.com/news/?p=147073', 'https://grinews.com/news/?p=147000'],
+        provider: '^CitiOrange 公民報橘$',
+        includeArchive: true,
+        maxArticles: 2,
+      },
+    },
+    article: { enabled: true, provider: '^CitiOrange 公民報橘$' },
+  },
+  gq: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://www.roomie.tw/posts/author/gq',
+        articlePattern: '^/posts/\\d+$',
+        provider: '^GQ$',
+        includeArchive: true,
+        maxArticles: 2,
+      },
+    },
+    article: { enabled: true, provider: '^GQ$' },
+  },
+  agriharvest: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://e-info.org.tw/',
+        articleUrls: ['https://e-info.org.tw/node/220413'],
+        includeArchive: true,
+        provider: '^轉載自農傳媒[；;]',
+        maxArticles: 1,
+      },
+    },
+    article: { enabled: true, provider: '^轉載自農傳媒[；;]' },
+  },
+  cheers: {
+    group: 'hourly',
+    list: {
+      autoDiscover: {
+        homeUrl: 'https://tw.news.yahoo.com/',
+        articleUrls: [
+          'https://tw.news.yahoo.com/%E5%88%A5%E5%86%8D%E5%9B%9E%E7%AD%94%E3%80%8C%E6%88%91%E4%B8%8D%E7%9F%A5%E9%81%93%E3%80%8D%EF%BC%81%E4%B8%80%E5%AE%9A%E8%A6%81%E8%A8%98%E4%B8%8B%E4%BE%86%E7%9A%842%E7%A8%AE%E8%A9%B1%E8%A1%93-083137829.html',
+        ],
+        provider: '^Cheers雜誌$',
+        includeArchive: true,
+        maxArticles: 1,
+      },
+    },
+    article: { enabled: true, provider: '^Cheers雜誌$' },
+  },
   dongtw: {
     group: 'hourly',
     list: {
