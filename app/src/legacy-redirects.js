@@ -73,6 +73,8 @@ export function legacyRoute(rawUrl) {
     const media = params.get('media');
     return { status: 301, location: media && /^[a-z]+$/.test(media) ? `/topic/${media}/` : '/topic/' };
   }
+  // The article archive is a current UI route, not a legacy media subpage.
+  if (/^\/media\/[^/]+\/articles\/?$/.test(path)) return null;
   if ((m = /^\/news\/([a-z0-9_]+)\/.*$/.exec(path)) || (m = /^\/media\/([a-z0-9_]+)\/.+$/.exec(path)))
     return { status: 301, location: `/media/${m[1]}/` };
   if (path === '/news_media.php' && params.get('media'))

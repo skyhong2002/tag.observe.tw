@@ -46,6 +46,11 @@ describe('legacyRoute', () => {
       '/topic/',
       '/topic/cna/',
       '/media/setn/',
+      '/media/rti/articles',
+      '/media/rti/articles/',
+      '/media/rti/articles/?cursor=123',
+      '/media/setn/articles/?cursor=456',
+      '/article/123/',
       '/_next/static/a.js',
       '/api/v1/ranking',
     ])
@@ -90,6 +95,21 @@ describe('gateway', () => {
     expect(g.statusCode).toBe(410);
     expect(g.json().error).toBe('gone');
     expect(hits).toHaveLength(0);
+  });
+  it('proxies article archive pages and pagination to the UI without legacy redirects', async () => {
+    hits = [];
+    const paths = ['/media/rti/', '/media/rti/articles', '/media/rti/articles/', '/media/rti/articles/?cursor=123', '/article/123/'];
+    for (const path of paths) {
+      const response = await app.inject(path);
+      expect(response.statusCode, path).toBe(200);
+      expect(response.headers.location, path).toBeUndefined();
+      expect(response.body, path).toBe(`<h1>next:${path}</h1>`);
+    }
+    expect(hits).toEqual(paths.map((path) => `GET ${path}`));
+    const head = await app.inject({ method: 'HEAD', url: '/media/rti/articles/' });
+    expect(head.statusCode).toBe(200);
+    expect(head.headers.location).toBeUndefined();
+    expect(head.body).toBe('');
   });
   it('rejects non-GET methods on pages', async () => {
     expect((await app.inject({ method: 'POST', url: '/' })).statusCode).toBe(405);
