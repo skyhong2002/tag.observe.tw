@@ -284,7 +284,7 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
               <FullBar c={e.coverage} />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                 <span>
-                  相對平常 <LeanText lean={e.coverage.lean} />
+                  藍綠差 <LeanText c={e.coverage} />
                 </span>
                 <CampBadge c={e.coverage} />
                 <OutletStrip c={e.coverage} media={media} max={12} />

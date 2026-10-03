@@ -114,7 +114,7 @@ function CampGap({ events }: { events: EventItem[] }) {
                       </a>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
                         {e.coverage && <CampBadge c={e.coverage} />}
-                        <LeanText lean={e.coverage?.lean ?? null} />
+                        {e.coverage && <LeanText c={e.coverage} />}
                         <span className="tabular-nums">
                           {CAMP_LABEL.blue} {e.coverage?.camps.blue} 家 · {CAMP_LABEL.green} {e.coverage?.camps.green} 家
                         </span>

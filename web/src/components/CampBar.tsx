@@ -24,33 +24,33 @@ export const baselineBlue = (b?: CampBaseline | null) => {
   return n ? Math.round(((b?.outlets.blue ?? 0) / n) * 100) : 50;
 };
 
-/** The over-represented camp and how far above its usual share it sits, in
- *  percent: +58% means that camp's outlet ratio is 1.58x the day's baseline. */
-export function leanDelta(lean: number | null): { camp: Camp; pct: number } | null {
-  if (lean === null) return null;
-  return { camp: lean >= 0 ? 'blue' : 'green', pct: Math.round((2 ** Math.abs(lean) - 1) * 100) };
+/** Blue minus green, as shares of all outlets on the story: 綠 30%、其他 25%、
+ *  藍 50% gives 藍營 +20. The sign names the camp ahead. */
+export function leanDelta(c: EventCoverage): { camp: Camp; pct: number; shares: Record<Camp, number> } | null {
+  const total = c.camps.blue + c.camps.green + c.camps.other;
+  if (!total) return null;
+  const share = (k: Camp) => Math.round((c.camps[k] / total) * 100);
+  const shares = { blue: share('blue'), green: share('green'), other: share('other') };
+  const delta = shares.blue - shares.green;
+  return { camp: delta >= 0 ? 'blue' : 'green', pct: Math.abs(delta), shares };
 }
 
-export function leanTitle(lean: number | null): string | undefined {
-  const d = leanDelta(lean);
-  return d ? `${CAMP_LABEL[d.camp]}媒體在這件事的家數比例，比過去 24 小時的整體比例高 ${d.pct}%` : undefined;
+export function leanTitle(c: EventCoverage): string | undefined {
+  const d = leanDelta(c);
+  if (!d) return undefined;
+  const order: Camp[] = ['green', 'other', 'blue'];
+  return `${order.map((k) => `${CAMP_LABEL[k]} ${d.shares[k]}%`).join('、')}；${CAMP_LABEL[d.camp]}比對方多 ${d.pct} 個百分點`;
 }
 
-/** Signed percent against the baseline, coloured by the camp it favours. */
-export function LeanText({ lean, className = '' }: { lean: number | null; className?: string }) {
-  const d = leanDelta(lean);
+/** Signed percentage-point gap, coloured by the camp ahead. */
+export function LeanText({ c, className = '' }: { c: EventCoverage; className?: string }) {
+  const d = leanDelta(c);
   if (!d) return null;
   return (
-    <span className={`font-medium tabular-nums ${CAMP_TEXT[d.camp]} ${className}`} title={leanTitle(lean)}>
+    <span className={`font-medium tabular-nums ${CAMP_TEXT[d.camp]} ${className}`} title={leanTitle(c)}>
       {CAMP_LABEL[d.camp]} +{d.pct}%
     </span>
   );
-}
-
-/** Plain-text form for places that cannot take an element. */
-export function leanText(lean: number | null): string | null {
-  const d = leanDelta(lean);
-  return d ? `${CAMP_LABEL[d.camp]} +${d.pct}%` : null;
 }
 
 /** The one badge worth showing, blind spot first since it is the stronger claim. */
@@ -76,7 +76,7 @@ export function CampBadge({ c, className = '' }: { c: EventCoverage; className?:
             ? 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200'
             : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
         } ${className}`}
-        title={leanTitle(c.lean)}
+        title={leanTitle(c)}
       >
         {CAMP_LABEL[c.tilt]}重點
       </span>
@@ -110,7 +110,7 @@ export function CampLine({ c, compact = false }: { c: EventCoverage; compact?: b
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
       <SplitBar c={c} width={compact ? 'w-14' : 'w-20'} />
-      <LeanText lean={c.lean} />
+      <LeanText c={c} />
       <span className="tabular-nums" title={order.map((k) => `${CAMP_LABEL[k]} ${c.camps[k]} 家`).join('、')}>
         {compact
           ? `${order.reduce((n, k) => n + c.camps[k], 0)} 家`
