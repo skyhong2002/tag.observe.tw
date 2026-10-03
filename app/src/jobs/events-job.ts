@@ -3,6 +3,7 @@ import noEqual from '../../data/no-equal-tags.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, eventSnapshots, events, eventThreads, jobRuns, rankingSnapshots } from '../db/schema.ts';
 import { type ArticleRow, clusterEvents, matchThread, threadUpdate } from './events-compute.ts';
+import { applyRankingBasis, rankingBasis } from './ranking-basis.ts';
 import { BURST_STEPS, computeBurst, type RankingChart } from './ranking-compute.ts';
 import { hourStart, RANKING_CATEGORIES } from './ranking-job.ts';
 
@@ -31,17 +32,19 @@ export async function runEventsJob({ db, now = () => new Date(), log = () => {} 
       .orderBy(desc(rankingSnapshots.hourStart))
       .limit(1);
     if (!current) throw Error('no ranking snapshot yet');
-    const chart = JSON.parse(current.chart) as RankingChart;
+    const basis = rankingBasis('all');
+    const chart = applyRankingBasis(JSON.parse(current.chart) as RankingChart, basis, current.computedAt);
+    if (!chart.available) throw Error('ranking snapshot is not available for the fixed media basis');
     const history = new Map<number, RankingChart | null>();
     for (const [h] of BURST_STEPS) {
       const [row] = await db
-        .select({ chart: rankingSnapshots.chart })
+        .select({ chart: rankingSnapshots.chart, computedAt: rankingSnapshots.computedAt })
         .from(rankingSnapshots)
         .where(
           and(eq(rankingSnapshots.category, 'all'), eq(rankingSnapshots.hourStart, new Date(current.hourStart.getTime() - h * 3600e3))),
         )
         .limit(1);
-      history.set(h, row ? (JSON.parse(row.chart) as RankingChart) : null);
+      history.set(h, row ? applyRankingBasis(JSON.parse(row.chart) as RankingChart, basis, row.computedAt) : null);
     }
     const burst = computeBurst(chart, history);
     const since = new Date(started.getTime() - 24 * 3600e3);

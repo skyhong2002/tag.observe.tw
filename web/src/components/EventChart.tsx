@@ -12,7 +12,7 @@ export interface EventSeriesPoint {
   blue: number;
   green: number;
   other: number;
-  tags: Record<string, { score: number; rank: number | null }> | null;
+  tags: Record<string, { score: number | null; rank: number | null }> | null;
 }
 // Tag lines skip the blue/green hues, which belong to the camps in the bars.
 const TAG_COLORS = {

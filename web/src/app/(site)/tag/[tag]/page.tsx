@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import RankingBasisNote from '@/components/RankingBasisNote';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import TagChart from '@/components/TagChart';
-import { fetchTagArticles, fetchTagSeries, taipei } from '@/lib/api';
+import { fetchMedia, fetchTagArticles, fetchTagSeries, taipei } from '@/lib/api';
 import { articleHref } from '@/lib/reading.mts';
 
 export const revalidate = 60;
@@ -21,7 +22,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 export default async function TagPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ hours?: string }> }) {
   const tag = decodeURIComponent((await params).tag);
   const hours = Math.min(336, Math.max(6, Number((await searchParams).hours) || 72));
-  const [series, list] = await Promise.all([fetchTagSeries(tag, 'all', hours), fetchTagArticles(tag, Math.max(48, hours))]);
+  const [series, list, media] = await Promise.all([
+    fetchTagSeries(tag, 'all', hours),
+    fetchTagArticles(tag, Math.max(48, hours)),
+    fetchMedia(),
+  ]);
   const byMedia = new Map<string, number>();
   for (const a of list.articles) byMedia.set(a.mediaTitle, (byMedia.get(a.mediaTitle) ?? 0) + 1);
   return (
@@ -59,10 +64,11 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </div>
       </div>
       <section className="rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-2 text-sm font-medium text-zinc-600">每小時新聞數量與 24 小時移動平均（所有媒體）</h2>
+        <h2 className="mb-2 text-sm font-medium text-zinc-600">每小時新聞數量與 24 小時移動平均（固定基準媒體）</h2>
+        <RankingBasisNote basis={series.basis} media={media} />
         <TagChart points={series.points} />
         <p className="mt-2 text-xs text-zinc-500">
-          平均線＝當小時及前 23 小時收錄篇數總和 ÷ 24；沒有收錄報導的小時以 0 計。只顯示完整小時，避免尚未結束的小時造成假性下滑。
+          平均線＝當小時及前 23 小時基準媒體收錄篇數總和 ÷ 24；收錄開始後沒有報導的小時以 0 計，開始前留白。只顯示完整小時。
         </p>
       </section>
       <section className="grid gap-6 md:grid-cols-[1fr_16rem]">

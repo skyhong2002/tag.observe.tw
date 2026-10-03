@@ -31,8 +31,9 @@ describe('hourly moving average', () => {
       innerJoin: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       groupBy: vi.fn().mockResolvedValue([
-        { tag: '日本', bucket: 0, count: '24' },
-        { tag: '日本', bucket: 23, count: '48' },
+        { tag: '日本', media: 'cna', bucket: 0, count: '24' },
+        { tag: '日本', media: 'cna', bucket: 23, count: '48' },
+        { tag: 'Unrequested SQL collation variant', media: 'cna', bucket: 23, count: '99' },
       ]),
     };
     const db = { select: vi.fn().mockReturnValue(chain) } as unknown as Db;
@@ -42,5 +43,34 @@ describe('hourly moving average', () => {
     const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
     expect(query.params).toEqual(['日本', '0050', 'cna', '2026-10-02 01:00:00.000', '2026-10-03 02:00:00.000']);
     expect(query.sql).toContain(' < ');
+    expect(new MySqlDialect().sqlToQuery(chain.groupBy.mock.calls[0][0]).sql).toContain('COLLATE utf8mb4_bin');
+  });
+  it('uses fixed media for the whole curve and leaves incomplete coverage blank', async () => {
+    const chain = {
+      from: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      groupBy: vi.fn().mockResolvedValue([
+        { tag: '日本', media: 'cna', bucket: 23, count: '2' },
+        { tag: '日本', media: 'ltn', bucket: 23, count: '1' },
+      ]),
+    };
+    const db = { select: vi.fn().mockReturnValue(chain) } as unknown as Db;
+    const basis = {
+      id: 'test',
+      media: ['cna', 'ltn', 'udn'],
+      coverageFrom: start.toISOString(),
+      validFrom: new Date(+start + 24 * HOUR).toISOString(),
+    };
+    const result = await loadHourlyTrends(db, ['日本'], ['new'], start, new Date(+start + 25 * HOUR), basis);
+    const points = result.get('日本')!;
+    expect(points[0]).toMatchObject({ hourlyCount: 3, average24h: null, count: null, score: null });
+    expect(points[22].score).toBeNull();
+    expect(points[23]).toMatchObject({ hourlyCount: 0, average24h: 3 / 24, count: 3 });
+    expect(points[23].score).toBeCloseTo(((1.5 + 1) / 3) * 50);
+    expect(points[24]).toMatchObject({ hourlyCount: 0, average24h: 0, count: 0, score: 0 });
+    const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
+    expect(query.params.slice(0, 4)).toEqual(['日本', 'cna', 'ltn', 'udn']);
+    expect(query.params).not.toContain('new');
   });
 });

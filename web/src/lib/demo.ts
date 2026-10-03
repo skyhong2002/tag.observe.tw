@@ -127,7 +127,14 @@ export function campShare(news: Ranking | null, blue: Ranking | null, green: Ran
   // 24h windows an hour apart are close enough, anything older is not.
   const hour = news.snapshot.hourStart;
   const apart = (r: Ranking) => Math.abs(Date.parse(r.snapshot.hourStart) - Date.parse(hour));
-  if (apart(blue) > 3600e3 || apart(green) > 3600e3 || news.snapshot.articleCount === 0) return null;
+  if (
+    apart(blue) > 3600e3 ||
+    apart(green) > 3600e3 ||
+    !news.snapshot.articleCount ||
+    blue.snapshot.articleCount === null ||
+    green.snapshot.articleCount === null
+  )
+    return null;
   const b = blue.snapshot.articleCount;
   const g = green.snapshot.articleCount;
   const other = Math.max(0, news.snapshot.articleCount - b - g);

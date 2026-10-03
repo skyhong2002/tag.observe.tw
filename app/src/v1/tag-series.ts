@@ -1,12 +1,15 @@
 import { and, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags } from '../db/schema.ts';
+import type { RankingBasis } from '../jobs/ranking-basis.ts';
 
 const HOUR = 3600e3;
 export interface HourlyCount {
   t: string;
-  hourlyCount: number;
-  average24h: number;
+  hourlyCount: number | null;
+  average24h: number | null;
+  score?: number | null;
+  count?: number | null;
 }
 
 // The legacy tag_series.php Day line: this hour plus the preceding 23,
@@ -24,12 +27,16 @@ export function hourlyMovingAverage(counts: ReadonlyMap<number, number>, from: D
 }
 
 /** Dense hourly counts, with an extra 23 hours for the first displayed mean. */
-export async function loadHourlyTrends(db: Db, tags: string[], media: string[], from: Date, to: Date) {
+export async function loadHourlyTrends(db: Db, tags: string[], media: string[], from: Date, to: Date, basis?: RankingBasis) {
+  if (basis) media = basis.media;
   if (!tags.length || !media.length) return new Map<string, HourlyCount[]>();
   const warmup = new Date(from.getTime() - 23 * HOUR);
   const bucket = sql<number>`FLOOR(TIMESTAMPDIFF(SECOND, ${warmup}, ${articleTags.publishedAt}) / 3600)`;
+  // The indexed lookup uses the DB's case-insensitive collation. Keep distinct
+  // stored spellings separate when aggregating, matching ranking's JS tag keys.
+  const exactTag = sql<string>`${articleTags.tag} COLLATE utf8mb4_bin`;
   const rows = await db
-    .select({ tag: articleTags.tag, bucket, count: sql<number>`COUNT(DISTINCT ${articleTags.articleId})` })
+    .select({ tag: exactTag, media: articles.media, bucket, count: sql<number>`COUNT(DISTINCT ${articleTags.articleId})` })
     .from(articleTags)
     .innerJoin(articles, eq(articles.id, articleTags.articleId))
     .where(
@@ -40,10 +47,40 @@ export async function loadHourlyTrends(db: Db, tags: string[], media: string[], 
         lt(articleTags.publishedAt, to),
       ),
     )
-    .groupBy(articleTags.tag, bucket);
+    .groupBy(exactTag, articles.media, bucket);
   const counts = new Map(tags.map((tag) => [tag, new Map<number, number>()]));
-  for (const r of rows) counts.get(r.tag)?.set(warmup.getTime() + Number(r.bucket) * HOUR, Number(r.count));
-  return new Map(tags.map((tag) => [tag, hourlyMovingAverage(counts.get(tag)!, from, to)]));
+  const outlets = new Map(tags.map((tag) => [tag, new Map<string, Map<number, number>>()]));
+  for (const r of rows) {
+    const t = warmup.getTime() + Number(r.bucket) * HOUR;
+    const total = counts.get(r.tag);
+    if (!total) continue; // SQL may also match unrequested case/accent variants.
+    total.set(t, (total.get(t) ?? 0) + Number(r.count));
+    const byMedia = outlets.get(r.tag)!;
+    if (!byMedia.has(r.media)) byMedia.set(r.media, new Map());
+    byMedia.get(r.media)!.set(t, Number(r.count));
+  }
+  return new Map(
+    tags.map((tag) => {
+      const points = hourlyMovingAverage(counts.get(tag)!, from, to);
+      const mediaAverages = [...outlets.get(tag)!.values()].map((c) => hourlyMovingAverage(c, from, to));
+      return [
+        tag,
+        points.map((p, i) => {
+          if (!basis) return p;
+          const available = Date.parse(p.t) + HOUR >= Date.parse(basis.validFrom);
+          const hourlyAvailable = Date.parse(p.t) >= Date.parse(basis.coverageFrom);
+          const raw = mediaAverages.reduce((s, a) => s + 2 * (1 - 0.5 ** ((a[i].average24h ?? 0) * 24)), 0);
+          return {
+            ...p,
+            hourlyCount: hourlyAvailable ? p.hourlyCount : null,
+            average24h: available ? p.average24h : null,
+            count: available ? Math.round((p.average24h ?? 0) * 24) : null,
+            score: available ? (raw / basis.media.length) * 50 : null,
+          };
+        }),
+      ];
+    }),
+  );
 }
 
 // Use completed hours: an unfinished hour would create a false drop at the end.

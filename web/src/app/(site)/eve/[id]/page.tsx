@@ -294,7 +294,7 @@ export default async function EventThreadPage({
           <h2 className="text-sm font-medium text-zinc-600">時間變化</h2>
           <EventChart points={series.points} tags={series.tags} active={{ from: t.firstTime, to: t.lastTime }} />
           <p className="mt-1 text-xs text-zinc-600">
-            上：各主要標籤每小時的分數（與標籤頁相同，所有媒體）；下：帶有任一主要標籤的報導篇數。灰底為這則事件出現在事件表上的時段，前後各多顯示
+            上：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白）；下：所有媒體帶有任一主要標籤的報導篇數。只顯示完整小時。灰底為這則事件出現在事件表上的時段，前後各多顯示
             12 小時。
           </p>
         </section>

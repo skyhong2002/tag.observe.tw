@@ -200,10 +200,12 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </div>
             <div className={styles.brief}>
               <p className={styles.briefCount}>
-                {ranking ? ranking.snapshot.articleCount.toLocaleString() : '—'}
+                {ranking?.snapshot.articleCount?.toLocaleString() ?? '—'}
                 <span>篇新聞</span>
               </p>
-              <p className={styles.briefSub}>過去 24 小時 · {ranking ? `${ranking.snapshot.mediaCount} 家新聞媒體` : '資料暫時無法取得'}</p>
+              <p className={styles.briefSub}>
+                過去 24 小時 · {ranking ? `固定基準 ${ranking.snapshot.basis.media.length} 家新聞媒體` : '資料暫時無法取得'}
+              </p>
               <Link href="/media/" className={styles.textLink}>
                 查看媒體來源 <Arrow />
               </Link>
@@ -223,7 +225,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                         {Object.keys(e.media).length} 家媒體 · {e.count} 篇
                       </small>
                     </span>
-                    <span className={styles.burst}>↗ {e.burst.toFixed(1)}</span>
+                    <span className={styles.burst}>{e.burst === null ? '歷史不足' : `↗ ${e.burst.toFixed(1)}`}</span>
                   </Link>
                 </li>
               ))}

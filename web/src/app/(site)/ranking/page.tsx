@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import MediaIcons from '@/components/MediaIcons';
 import PendingLabel from '@/components/PendingLabel';
+import RankingBasisNote from '@/components/RankingBasisNote';
 import Sparkline from '@/components/Sparkline';
 import { fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
 
@@ -42,16 +43,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const collator = new Intl.Collator('zh-Hant-TW-u-co-stroke');
   const key: Record<Col, (e: NonNullable<typeof ranking>['entries'][number]) => number | string> = {
     tag: (e) => e.tag,
-    burst: (e) => e.burst,
+    burst: (e) => e.burst ?? -Infinity,
     score: (e) => e.normalized,
     count: (e) => e.count,
-    trend: (e) => (e.trend?.at(-1)?.average24h ?? 0) - (e.trend?.[0]?.average24h ?? 0),
+    trend: (e) =>
+      e.trend?.at(-1)?.average24h != null && e.trend[0]?.average24h != null
+        ? e.trend.at(-1)!.average24h! - e.trend[0].average24h
+        : -Infinity,
     media: (e) => Object.keys(e.media).length,
   };
   const rows = ranking
     ? [...ranking.entries].sort((a, b) => {
         const x = key[sort](a),
           y = key[sort](b);
+        if (x === -Infinity || y === -Infinity) return x === y ? a.position - b.position : x === -Infinity ? 1 : -1;
         const c = typeof x === 'string' ? collator.compare(x, y as string) : x - (y as number);
         return (dir === 'asc' ? c : -c) || a.position - b.position;
       })
@@ -84,7 +89,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
             <p className="mt-1 text-sm text-zinc-600">
               {taipeiHour(ranking.snapshot.hourStart)} 時段 · {current?.label}{' '}
               {ranking.snapshot.mediaCount ? `${ranking.snapshot.mediaCount} 家媒體 · ` : ''}
-              {ranking.snapshot.articleCount.toLocaleString()} 篇 · 更新於 {taipei(ranking.snapshot.computedAt)}
+              {ranking.snapshot.articleCount !== null ? `${ranking.snapshot.articleCount.toLocaleString()} 篇 · ` : ''}更新於{' '}
+              {taipei(ranking.snapshot.computedAt)}
             </p>
           )}
         </div>
@@ -104,6 +110,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           </Link>
         ))}
       </nav>
+      {ranking && <RankingBasisNote basis={ranking.snapshot.basis} media={media} />}
+      {ranking && !ranking.snapshot.available && <p className="text-sm text-zinc-600">這個時段的基準媒體收錄資料不足，暫不提供排行。</p>}
       <p className="text-xs text-zinc-600">趨勢：每小時新聞篇數的 24 小時移動平均，顯示最近 48 小時的變化；點關鍵字可查看完整時間圖。</p>
       {!ranking ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">這個分類目前沒有資料。</p>
@@ -136,8 +144,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                           {e.tag}
                         </Link>
                       </td>
-                      <td className={`px-3 py-2 text-right tabular-nums ${e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}>
-                        {e.burst.toFixed(1)}
+                      <td
+                        title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
+                        className={`px-3 py-2 text-right tabular-nums ${e.burst !== null && e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}
+                      >
+                        {e.burst?.toFixed(1) ?? '—'}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{e.normalized.toFixed(1)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-zinc-600">{e.count}</td>

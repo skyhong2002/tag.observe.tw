@@ -41,7 +41,7 @@ export default function TagChart({ points }: { points: SeriesPoint[] }) {
           type: 'line',
           smooth: false,
           symbol: 'none',
-          data: points.map((p) => Number(p.average24h.toFixed(2))),
+          data: points.map((p) => (p.average24h === null ? null : Number(p.average24h.toFixed(2)))),
           lineStyle: { width: 2, color: '#c2410c' },
           itemStyle: { color: '#c2410c' },
           areaStyle: { color: '#c2410c', opacity: 0.1 },

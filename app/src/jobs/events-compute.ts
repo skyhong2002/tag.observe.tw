@@ -96,7 +96,8 @@ export function clusterEvents(
     .filter((e) => !isTagNoise(e.tag))
     .slice(0, maxTags)
     .map((e) => e.tag);
-  const burst = new Map(entries.map((e) => [e.tag, e.burst]));
+  // With insufficient history, use current score for grouping, not a fabricated burst.
+  const burst = new Map(entries.map((e) => [e.tag, e.burst ?? e.normalized]));
   const closures = new Map(order.map((t) => [t, co.closure(t, noEqual)]));
   // tagmap: for each tag, the highest-ranked earlier tag it is equal to.
   const position = new Map(order.map((t, i) => [t, i]));

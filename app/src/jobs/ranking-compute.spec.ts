@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeBurst, computeRanking, effectiveWeight, splitLegacyTags } from './ranking-compute.ts';
+import { BURST_STEPS, computeBurst, computeRanking, effectiveWeight, splitLegacyTags } from './ranking-compute.ts';
 
 describe('splitLegacyTags', () => {
   it('mirrors PHP explode/str_replace/strlen>1', () => {
@@ -75,38 +75,39 @@ describe('weights', () => {
 });
 
 describe('computeBurst', () => {
-  it('normalizes each chart by its own media count and applies the weighted history delta', () => {
-    // current: 2 media publishing, xx in both -> score 2 -> 2/2*50 = 50
-    const current = computeRanking(
-      [
-        { media: 'a', tags: '[xx]' },
-        { media: 'b', tags: '[xx][yy]' },
-      ],
-      { hours: 24 },
-    );
-    // 3h ago: 4 media publishing, xx in one -> 1/4*50 = 12.5 (a constant weight would hide this)
-    const older = computeRanking(
-      [
-        { media: 'a', tags: '[xx]' },
-        { media: 'c', tags: '[zz]' },
-        { media: 'd', tags: '[zz]' },
-        { media: 'e', tags: '[zz]' },
-      ],
-      { hours: 24 },
-    );
-    const history = new Map<number, ReturnType<typeof computeRanking> | null>([
-      [3, older],
-      [6, null],
-      [12, null],
-      [24, null],
-      [48, null],
-    ]);
-    const [x, y] = computeBurst(current, history);
-    const nx = 50,
-      ox = 12.5;
+  const basis = { id: 'test-v1', media: ['a', 'b', 'c', 'd'], coverageFrom: '2026-09-28T00:00:00Z', validFrom: '2026-09-29T00:00:00Z' };
+  const current = computeRanking(
+    [
+      { media: 'a', tags: '[xx]' },
+      { media: 'b', tags: '[xx][yy]' },
+    ],
+    { hours: 24, basis },
+  );
+  const older = computeRanking([{ media: 'a', tags: '[xx]' }], { hours: 24, basis });
+  const history = () => new Map(BURST_STEPS.map(([h]) => [h, older]));
+  it('uses the same fixed denominator even when more cohort outlets publish', () => {
+    const [x, y] = computeBurst(current, history());
     expect(x.tag).toBe('xx');
-    expect(x.normalized).toBeCloseTo(nx);
-    expect(x.burst).toBeCloseTo(nx + (nx - ox) * 0.92 + nx * (0.84 + 0.7 + 0.5 + 0.25));
-    expect(y.history[3]).toBeNull();
+    expect(x.normalized).toBe(25);
+    expect(x.burst).toBeCloseTo(25 + 12.5 * (0.92 + 0.84 + 0.7 + 0.5 + 0.25));
+    expect(y.history[3]).toBe(0); // known absent from an untruncated chart
+  });
+  it('keeps a missing snapshot unknown instead of inventing a rise from zero', () => {
+    const missing = history();
+    missing.delete(48);
+    expect(computeBurst(current, missing).every((e) => e.burst === null && e.history[48] === null)).toBe(true);
+  });
+  it('does not infer zero from top-500 omissions, incompatible cohorts, or warmup history', () => {
+    const truncated = history();
+    truncated.set(3, { ...older, truncated: true });
+    expect(computeBurst(current, truncated).find((e) => e.tag === 'yy')?.burst).toBeNull();
+    for (const old of [
+      { ...older, basis: { ...basis, id: 'other' } },
+      { ...older, available: false },
+    ]) {
+      const incompatible = history();
+      incompatible.set(3, old);
+      expect(computeBurst(current, incompatible).every((e) => e.burst === null)).toBe(true);
+    }
   });
 });

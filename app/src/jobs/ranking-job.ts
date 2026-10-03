@@ -1,12 +1,13 @@
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, jobRuns, rankingEntries, rankingSnapshots } from '../db/schema.ts';
+import { rankingBasis } from './ranking-basis.ts';
 import { computeRanking, type RankingChart } from './ranking-compute.ts';
 
 const categories = catalog.categories as Record<string, string[]>;
-// 'all' merges every media list; each category uses its own list. Scores are
-// normalized by the media that actually published (see computeRanking).
+// Live catalog for collection and category validation. Ranking uses the
+// separately versioned, frozen roster from ranking-basis.ts.
 export const RANKING_CATEGORIES: Record<string, { media: string[] }> = {
   all: { media: [...new Set(Object.values(categories).flat())] },
   ...Object.fromEntries(Object.entries(categories).map(([name, media]) => [name, { media }])),
@@ -31,7 +32,7 @@ export interface RankingJobDeps {
 
 // Rows produced by the Node crawlers. Tags are re-encoded to the legacy
 // "[a][b]" form so computeRanking runs the identical algorithm.
-export async function readOwnTagRows(db: Db, media: readonly string[], since: Date): Promise<TagRow[]> {
+export async function readOwnTagRows(db: Db, media: readonly string[], since: Date, until = new Date()): Promise<TagRow[]> {
   const rows = await db
     .select({
       id: articles.id,
@@ -46,6 +47,7 @@ export async function readOwnTagRows(db: Db, media: readonly string[], since: Da
     .where(
       and(
         gte(articles.publishedAt, since),
+        lt(articles.publishedAt, until),
         sql`${articles.media} IN (${sql.join(
           media.map((m) => sql`${m}`),
           sql`, `,
@@ -70,7 +72,7 @@ export async function runRankingJob({ db, now = () => new Date(), log = () => {}
   try {
     const since = new Date(started.getTime() - HOURS * 3600e3);
     const t0 = performance.now();
-    const rows = await readOwnTagRows(db, RANKING_CATEGORIES.all.media, since);
+    const rows = await readOwnTagRows(db, rankingBasis('all').media, since, started);
     const readMs = Math.round(performance.now() - t0);
     log({ rows: rows.length, readMs }, 'tag rows read');
     const byMedia = new Map<string, TagRow[]>();
@@ -81,11 +83,13 @@ export async function runRankingJob({ db, now = () => new Date(), log = () => {}
     }
     const hour = hourStart(started);
     const results: Record<string, { entries: number; articles: number }> = {};
-    for (const [category, spec] of Object.entries(RANKING_CATEGORIES)) {
+    for (const category of Object.keys(RANKING_CATEGORIES)) {
       if (only && !only.includes(category)) continue;
       const t1 = performance.now();
-      const source = spec.media.flatMap((m) => byMedia.get(m) ?? []);
-      const chart = computeRanking(source, { hours: HOURS });
+      const basis = rankingBasis(category);
+      const source = basis.media.flatMap((m) => byMedia.get(m) ?? []);
+      const chart = computeRanking(source, { hours: HOURS, basis });
+      chart.available = started >= new Date(basis.validFrom);
       await storeSnapshot(db, category, hour, started, chart, Math.round(performance.now() - t1) + readMs);
       results[category] = { entries: chart.entries.length, articles: chart.articleCount };
     }

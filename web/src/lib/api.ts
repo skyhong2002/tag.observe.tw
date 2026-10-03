@@ -5,6 +5,12 @@ export interface Category {
   label: string;
   media: number;
 }
+export interface RankingBasis {
+  id: string;
+  media: string[];
+  coverageFrom: string;
+  validFrom: string;
+}
 export interface RankingEntry {
   rank: number;
   position: number;
@@ -13,9 +19,9 @@ export interface RankingEntry {
   count: number;
   media: Record<string, number>;
   normalized: number;
-  burst: number;
+  burst: number | null;
   history: Record<string, number | null>;
-  trend?: Array<{ t: string; hourlyCount: number; average24h: number }>;
+  trend?: Array<{ t: string; hourlyCount: number | null; average24h: number | null }>;
 }
 export interface Ranking {
   snapshot: {
@@ -24,8 +30,10 @@ export interface Ranking {
     hourStart: string;
     computedAt: string;
     weight: number;
-    articleCount: number;
-    mediaCount: number;
+    articleCount: number | null;
+    mediaCount: number | null;
+    basis: RankingBasis;
+    available: boolean;
     historyAvailable: number[];
   };
   order: 'burst' | 'score';
@@ -45,8 +53,8 @@ export interface SeriesPoint {
   t: string;
   score: number | null;
   count: number | null;
-  hourlyCount: number;
-  average24h: number;
+  hourlyCount: number | null;
+  average24h: number | null;
   rank: number | null;
 }
 export type MediaInfo = Record<string, { title: string | null; icon: string | null }>;
@@ -63,7 +71,7 @@ export const fetchRanking = (category: string, order: 'burst' | 'score', limit =
 export const fetchTagArticles = (tag: string, hours = 48) =>
   get<{ tag: string; articles: Article[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/articles?hours=${hours}&limit=80`);
 export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
-  get<{ points: SeriesPoint[] }>(
+  get<{ points: SeriesPoint[]; basis: RankingBasis }>(
     `/api/v1/tags/${encodeURIComponent(tag)}/series?category=${encodeURIComponent(category)}&hours=${hours}`,
     300,
   );

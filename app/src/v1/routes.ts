@@ -1,9 +1,10 @@
-import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads, rankingSnapshots, tagStats } from '../db/schema.ts';
-import { BURST_STEPS, computeBurst, effectiveWeight, normalizedScore, type RankingChart } from '../jobs/ranking-compute.ts';
+import { applyRankingBasis, rankingBasis } from '../jobs/ranking-basis.ts';
+import { BURST_STEPS, computeBurst, effectiveWeight, type RankingChart } from '../jobs/ranking-compute.ts';
 import { RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
 import { loadThreadCoverage } from './coverage.ts';
 import { taipeiDay, threadSeries, threadsOnDay } from './event-archive.ts';
@@ -38,27 +39,31 @@ export async function loadRanking(db: Db, category: string, { at }: { at?: Date 
   if (!current) return null;
   const hours = BURST_STEPS.map(([h]) => new Date(current.hourStart.getTime() - h * 3600e3));
   const olders = await db
-    .select({ hourStart: rankingSnapshots.hourStart, chart: rankingSnapshots.chart })
+    .select({ hourStart: rankingSnapshots.hourStart, computedAt: rankingSnapshots.computedAt, chart: rankingSnapshots.chart })
     .from(rankingSnapshots)
     .where(and(eq(rankingSnapshots.category, category), inArray(rankingSnapshots.hourStart, hours)));
   const history = new Map<number, RankingChart | null>();
+  const basis = rankingBasis(category);
   for (const [h] of BURST_STEPS) {
     const row = olders.find((o) => o.hourStart.getTime() === current.hourStart.getTime() - h * 3600e3);
-    history.set(h, row ? (JSON.parse(row.chart) as RankingChart) : null);
+    history.set(h, row ? applyRankingBasis(JSON.parse(row.chart) as RankingChart, basis, row.computedAt) : null);
   }
-  const chart = JSON.parse(current.chart) as RankingChart;
+  const stored = JSON.parse(current.chart) as RankingChart;
+  const chart = applyRankingBasis(stored, basis, current.computedAt);
   return {
     snapshot: {
       id: current.id,
       category,
       hourStart: current.hourStart,
       computedAt: current.computedAt,
-      weight: effectiveWeight(JSON.parse(current.chart) as RankingChart),
-      articleCount: current.articleCount,
-      mediaCount: current.mediaCount,
-      historyAvailable: [...history].filter(([, v]) => v).map(([h]) => h),
+      weight: effectiveWeight(chart),
+      basis,
+      available: chart.available,
+      articleCount: stored.basis?.id === basis.id ? current.articleCount : null,
+      mediaCount: stored.basis?.id === basis.id ? current.mediaCount : null,
+      historyAvailable: [...history].filter(([, v]) => v?.available).map(([h]) => h),
     },
-    entries: computeBurst(chart, history),
+    entries: chart.available ? computeBurst(chart, history) : [],
   };
 }
 
@@ -95,6 +100,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
               RANKING_CATEGORIES[category].media,
               window.from,
               window.to,
+              result.snapshot.basis,
             )
           : null;
       reply.header('cache-control', 'public, max-age=60');
@@ -139,25 +145,11 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
       const hours = Math.min(24 * 14, Math.max(1, Math.floor(Number(request.query.hours) || 72)));
       const { from, to } = completedHourWindow(new Date(), hours);
-      const rows = await db
-        .select({ hourStart: rankingSnapshots.hourStart, weight: rankingSnapshots.weight, chart: rankingSnapshots.chart })
-        .from(rankingSnapshots)
-        .where(and(eq(rankingSnapshots.category, category), gte(rankingSnapshots.hourStart, from), lt(rankingSnapshots.hourStart, to)))
-        .orderBy(rankingSnapshots.hourStart);
-      const scores = new Map(
-        rows.map((r) => {
-          const chart = JSON.parse(r.chart) as RankingChart;
-          const e = chart.entries.find((x) => x.tag === tag);
-          return [
-            r.hourStart.toISOString(),
-            { score: e ? normalizedScore(chart, e.score) : 0, count: e?.count ?? 0, rank: e?.rank ?? null },
-          ] as const;
-        }),
-      );
-      const trends = await loadHourlyTrends(db, [tag], RANKING_CATEGORIES[category].media, from, to);
-      const points = (trends.get(tag) ?? []).map((p) => ({ ...p, ...(scores.get(p.t) ?? { score: null, count: null, rank: null }) }));
+      const basis = rankingBasis(category);
+      const trends = await loadHourlyTrends(db, [tag], basis.media, from, to, basis);
+      const points = (trends.get(tag) ?? []).map((p) => ({ ...p, rank: null }));
       reply.header('cache-control', 'public, max-age=300');
-      return { tag, category, hours, points };
+      return { tag, category, hours, basis, points };
     },
   );
 

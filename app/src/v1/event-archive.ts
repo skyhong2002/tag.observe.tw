@@ -1,11 +1,12 @@
-import { and, desc, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, eventSnapshots, events, eventThreads, rankingSnapshots } from '../db/schema.ts';
-import { normalizedScore, type RankingChart } from '../jobs/ranking-compute.ts';
+import { articles, articleTags, eventSnapshots, events, eventThreads } from '../db/schema.ts';
+import { rankingBasis } from '../jobs/ranking-basis.ts';
 import { type Camp, campOf } from './coverage.ts';
+import { loadHourlyTrends } from './tag-series.ts';
 
 // Event archive: every thread active on a Taipei day, and one thread's hourly
-// trend (major-tag scores from the ranking snapshots plus reports per camp).
+// trend (fixed-cohort major-tag scores plus all-source reports per camp).
 
 const HOUR = 3600e3,
   TPE = 8 * HOUR;
@@ -88,23 +89,17 @@ export async function threadsOnDay(db: Db, category: string, day: string) {
 
 export async function threadSeries(db: Db, thread: { majorTags: string[]; firstTime: Date; lastTime: Date }, now = new Date(), pad = 12) {
   const from = new Date(thread.firstTime.getTime() - pad * HOUR);
-  const to = new Date(Math.min(thread.lastTime.getTime() + (pad + 1) * HOUR, Math.floor(now.getTime() / HOUR) * HOUR + HOUR));
+  const to = new Date(Math.min(thread.lastTime.getTime() + (pad + 1) * HOUR, Math.floor(now.getTime() / HOUR) * HOUR));
   const tags = [...new Set(thread.majorTags.filter((t) => t.trim()))].slice(0, 6);
-  const snaps = await db
-    .select({ hourStart: rankingSnapshots.hourStart, chart: rankingSnapshots.chart })
-    .from(rankingSnapshots)
-    .where(and(eq(rankingSnapshots.category, 'all'), gte(rankingSnapshots.hourStart, from), lt(rankingSnapshots.hourStart, to)))
-    .orderBy(rankingSnapshots.hourStart);
-  const byHour = new Map<number, Record<string, { score: number; rank: number | null }>>();
-  for (const s of snaps) {
-    const chart = JSON.parse(s.chart) as RankingChart;
-    const at: Record<string, { score: number; rank: number | null }> = {};
-    for (const tag of tags) {
-      const e = chart.entries.find((x) => x.tag === tag);
-      at[tag] = { score: e ? Number(normalizedScore(chart, e.score).toFixed(2)) : 0, rank: e?.rank ?? null };
+  const basis = rankingBasis('all');
+  const trends = await loadHourlyTrends(db, tags, basis.media, from, to, basis);
+  const byHour = new Map<string, Record<string, { score: number | null; rank: null }>>();
+  for (const [tag, points] of trends)
+    for (const p of points) {
+      const at = byHour.get(p.t) ?? {};
+      at[tag] = { score: p.score == null ? null : Number(p.score.toFixed(2)), rank: null };
+      byHour.set(p.t, at);
     }
-    byHour.set(s.hourStart.getTime(), at);
-  }
   const rows =
     tags.length === 0
       ? []
@@ -112,13 +107,13 @@ export async function threadSeries(db: Db, thread: { majorTags: string[]; firstT
           .selectDistinct({ id: articles.id, media: articles.media, publishedAt: articles.publishedAt })
           .from(articleTags)
           .innerJoin(articles, eq(articles.id, articleTags.articleId))
-          .where(and(inArray(articleTags.tag, tags), gte(articleTags.publishedAt, from), lte(articleTags.publishedAt, to)))
-          .limit(5000);
+          .where(and(inArray(articleTags.tag, tags), gte(articleTags.publishedAt, from), lt(articleTags.publishedAt, to)));
   const counts = bucketByHour(rows, from, to);
   return {
     tags,
+    basis,
     from: from.toISOString(),
     to: to.toISOString(),
-    points: counts.map((c) => ({ ...c, tags: byHour.get(Date.parse(c.t)) ?? null })),
+    points: counts.map((c) => ({ ...c, tags: byHour.get(c.t) ?? null })),
   };
 }

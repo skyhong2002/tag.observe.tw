@@ -4,6 +4,7 @@
 // Sorting is a stable descending sort (PHP 5.4's arsort tie order is not
 // reproduced; the legacy-compatible routes still read PHP's own cache).
 import { isTagNoise } from '../tag-noise.ts';
+import type { RankingBasis } from './ranking-basis.ts';
 export interface TagSource {
   media: string;
   tags: string;
@@ -16,6 +17,9 @@ export interface RankingEntry {
   media: Record<string, number>;
 }
 export interface RankingChart {
+  basis?: RankingBasis;
+  available?: boolean;
+  truncated?: boolean;
   weight: number;
   hours: number;
   mediaCount: number;
@@ -33,14 +37,16 @@ export function splitLegacyTags(tags: string): string[] {
 
 export function computeRanking(
   rows: Iterable<TagSource>,
-  { weight, hours, limit = 500 }: { weight?: number; hours: number; limit?: number },
+  { weight, hours, limit = 500, basis }: { weight?: number; hours: number; limit?: number; basis?: RankingBasis },
 ): RankingChart {
   const count = new Map<string, number>();
   const score = new Map<string, number>();
   const perMedia = new Map<string, Map<string, number>>();
   let articles = 0;
   const mediaSeen = new Set<string>();
+  const allowed = basis ? new Set(basis.media) : null;
   for (const row of rows) {
+    if (allowed && !allowed.has(row.media)) continue;
     articles++;
     mediaSeen.add(row.media);
     for (const tag of splitLegacyTags(row.tags)) {
@@ -64,9 +70,17 @@ export function computeRanking(
     count: count.get(tag) ?? 0,
     media: Object.fromEntries([...(perMedia.get(tag) ?? new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1])),
   }));
-  // Default weight (2026-09-29): the number of media that actually published in
-  // the window, replacing the 2015 constants (14 for all, list length per category).
-  return { weight: weight ?? Math.max(1, mediaSeen.size), hours, mediaCount: mediaSeen.size, articleCount: articles, entries };
+  // Production ranking uses the fixed cohort, including outlets with no reports.
+  // Preserve the old default only for callers reading/computing unversioned data.
+  return {
+    weight: basis ? Math.max(1, basis.media.length) : (weight ?? Math.max(1, mediaSeen.size)),
+    hours,
+    mediaCount: mediaSeen.size,
+    articleCount: articles,
+    entries,
+    truncated: ordered.length > limit,
+    ...(basis ? { basis } : {}),
+  };
 }
 
 // Legacy burst: score normalised to 50/weight, then the change against the
@@ -80,22 +94,24 @@ export const BURST_STEPS: ReadonlyArray<[number, number]> = [
 ];
 export interface BurstEntry extends RankingEntry {
   normalized: number;
-  burst: number;
+  burst: number | null;
   history: Record<number, number | null>;
 }
-// Normalization divisor for any stored chart: the media that had data in its
-// window. Older charts kept a constant weight but record mediaCount, so every
-// chart in a burst comparison is normalized the same way.
-export function effectiveWeight(chart: Pick<RankingChart, 'weight' | 'mediaCount'>): number {
+// Versioned charts use the fixed roster. Legacy charts must first be projected
+// with applyRankingBasis before serving comparisons in the current API.
+export function effectiveWeight(chart: Pick<RankingChart, 'weight' | 'mediaCount' | 'basis'>): number {
+  if (chart.basis) return Math.max(1, chart.basis.media.length);
   return chart.mediaCount > 0 ? chart.mediaCount : Math.max(1, chart.weight);
 }
-export const normalizedScore = (chart: Pick<RankingChart, 'weight' | 'mediaCount'>, score: number) => (score / effectiveWeight(chart)) * 50;
+export const normalizedScore = (chart: Pick<RankingChart, 'weight' | 'mediaCount' | 'basis'>, score: number) =>
+  (score / effectiveWeight(chart)) * 50;
 
 export function computeBurst(current: RankingChart, history: ReadonlyMap<number, RankingChart | null>): BurstEntry[] {
   const norm = normalizedScore;
   const lookup = new Map<number, Map<string, number>>();
   for (const [step] of BURST_STEPS) {
-    const chart = history.get(step) ?? null;
+    const old = history.get(step) ?? null;
+    const chart = old?.available !== false && old?.basis?.id === current.basis?.id ? old : null;
     lookup.set(step, new Map(chart ? chart.entries.map((e) => [e.tag, norm(chart, e.score)]) : []));
   }
   // Also filter stored snapshots so old noise does not return before a rebuild.
@@ -104,13 +120,17 @@ export function computeBurst(current: RankingChart, history: ReadonlyMap<number,
     .map((e, i) => {
       const normalized = norm(current, e.score);
       let burst = normalized;
+      let complete = current.available !== false;
       const hist: Record<number, number | null> = {};
       for (const [step, w] of BURST_STEPS) {
-        const old = lookup.get(step)?.get(e.tag);
-        hist[step] = old ?? null;
-        burst += (normalized - (old ?? 0)) * w;
+        const chart = history.get(step);
+        const compatible = chart && chart.available !== false && chart.basis?.id === current.basis?.id;
+        const old = lookup.get(step)?.get(e.tag) ?? (compatible && chart.truncated === false ? 0 : null);
+        hist[step] = old;
+        if (old === null) complete = false;
+        else burst += (normalized - old) * w;
       }
-      return { ...e, rank: i + 1, normalized, burst, history: hist };
+      return { ...e, rank: i + 1, normalized, burst: complete ? burst : null, history: hist };
     });
-  return out.sort((a, b) => b.burst - a.burst);
+  return out.sort((a, b) => (b.burst ?? -Infinity) - (a.burst ?? -Infinity) || b.normalized - a.normalized);
 }

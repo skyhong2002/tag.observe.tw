@@ -183,9 +183,15 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `snapshot.category` | string |  |
 | `snapshot.hourStart` | string (ISO 時間) | 快照所屬小時（UTC） |
 | `snapshot.computedAt` | string (ISO 時間) | 計算時間 |
-| `snapshot.weight` | number | 正規化用的權重（有發文的媒體數） |
-| `snapshot.articleCount` | integer | 視窗內文章數 |
-| `snapshot.mediaCount` | integer | 視窗內有發文的媒體數 |
+| `snapshot.weight` | number | 固定基準名單的媒體數 |
+| `snapshot.basis` | object |  |
+| `snapshot.basis.id` | string | 固定媒體名單版本 |
+| `snapshot.basis.media` | string[] |  |
+| `snapshot.basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
+| `snapshot.basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
+| `snapshot.available` | boolean | 是否已滿足基準的 24 小時收錄範圍 |
+| `snapshot.articleCount` | integer \| null | 視窗內基準媒體文章數；舊快照無法完整重建時為 null |
+| `snapshot.mediaCount` | integer \| null | 視窗內基準媒體中有發文的家數；舊快照為 null |
 | `snapshot.historyAvailable` | integer[] | 有歷史快照可比較的小時數 |
 | `order` | "burst" \| "score" |  |
 | `entries` | object[] |  |
@@ -195,13 +201,15 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].score` | number | 原始分數：每篇文章 +1，同一媒體的第 2、3… 篇遞減為 0.5、0.25… |
 | `entries[].count` | integer | 過去 24 小時帶這個標籤的文章數 |
 | `entries[].media` | {鍵: integer} | 各媒體的文章數 |
-| `entries[].normalized` | number | 以發文媒體數正規化後的分數 |
-| `entries[].burst` | number | 爆發力：與 3/6/12/24/48 小時前正規化分數比較的加權差（權重 0.92/0.84/0.7/0.5/0.25） |
-| `entries[].history` | {鍵: number \| null} | N 小時前的正規化分數（鍵為 3、6、12、24、48；當時沒有快照為 null） |
+| `entries[].normalized` | number | 原始分數 ÷ 固定基準媒體數 × 50 |
+| `entries[].burst` | number \| null | 爆發力：與同一基準 3/6/12/24/48 小時前分數比較的加權差；缺值、舊榜截斷或基準不相容為 null |
+| `entries[].history` | {鍵: number \| null} | N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料為 null） |
 | `entries[].trend` | object[] | trend=1 時回傳 49 個等距小時點，涵蓋 48 小時變化 |
 | `entries[].trend[].t` | string (ISO 時間) |  |
-| `entries[].trend[].hourlyCount` | integer | 該完整小時收錄篇數 |
-| `entries[].trend[].average24h` | number | 當小時及前 23 小時篇數總和 ÷ 24（篇／小時） |
+| `entries[].trend[].hourlyCount` | integer \| null | 該完整小時收錄篇數 |
+| `entries[].trend[].average24h` | number \| null | 當小時及前 23 小時篇數總和 ÷ 24（篇／小時）；歷史不足為 null |
+| `entries[].trend[].score` | number \| null | 固定基準 24 小時分數 |
+| `entries[].trend[].count` | integer \| null | 固定基準 24 小時累計篇數 |
 
 錯誤：`400` `at` 格式錯誤；`404` 未知分類，或該時間以前沒有快照。
 
@@ -510,7 +518,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/articles
 
 **標籤每小時的分數與文章數**
 
-每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。score/count 保留排行快照的 24 小時加權分數／累計篇數；未上榜為 0、沒有快照為 null。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。
+每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。整條曲線只使用 basis 的固定媒體，score/count 也從文章重算 24 小時加權分數／累計篇數，rank 固定為 null。coverageFrom 前的篇數、validFrom 前的平均與分數均為 null；收錄開始後的空小時以零計。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -531,13 +539,18 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 | `tag` | string |  |
 | `category` | string |  |
 | `hours` | integer |  |
+| `basis` | object |  |
+| `basis.id` | string | 固定媒體名單版本 |
+| `basis.media` | string[] |  |
+| `basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
+| `basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
 | `points` | object[] |  |
 | `points[].t` | string (ISO 時間) | 完整小時起點（UTC） |
 | `points[].score` | number \| null | 24 小時正規化分數 |
-| `points[].count` | integer \| null | 排行快照的 24 小時累計篇數，非單小時篇數 |
+| `points[].count` | integer \| null | 固定基準 24 小時累計篇數，非單小時篇數 |
 | `points[].rank` | integer \| null | 名次 |
-| `points[].hourlyCount` | integer | 該小時收錄篇數 |
-| `points[].average24h` | number | 24 小時移動平均（篇／小時） |
+| `points[].hourlyCount` | integer \| null | 該小時收錄篇數；收錄開始前為 null |
+| `points[].average24h` | number \| null | 24 小時移動平均（篇／小時）；歷史不足為 null |
 
 錯誤：`404` 未知分類。
 
@@ -723,7 +736,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365'
 
 **事件串的每小時趨勢**
 
-事件主要標籤（最多 6 個）每小時的排行分數，以及藍／綠／其他媒體每小時的報導數；前後各多 12 小時。
+事件主要標籤（最多 6 個）以固定媒體基準重算每小時分數，歷史不足為 null；藍／綠／其他報導數則涵蓋所有媒體。前後各多 12 小時，只畫已完成小時。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -740,6 +753,11 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/series'
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `threadId` | integer |  |
+| `basis` | object |  |
+| `basis.id` | string | 固定媒體名單版本 |
+| `basis.media` | string[] |  |
+| `basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
+| `basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
 | `tags` | string[] |  |
 | `from` | string (ISO 時間) |  |
 | `to` | string (ISO 時間) |  |
@@ -749,8 +767,8 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/series'
 | `points[].green` | integer | 綠營傾向媒體文章數 |
 | `points[].other` | integer | 其他媒體文章數 |
 | `points[].tags` | {鍵: object} \| null |  |
-| `points[].tags.{鍵}.score` | number |  |
-| `points[].tags.{鍵}.rank` | integer \| null |  |
+| `points[].tags.{鍵}.score` | number \| null |  |
+| `points[].tags.{鍵}.rank` | integer \| null | 固定為 null |
 
 錯誤：`400` id 格式錯誤；`404` 找不到。
 
