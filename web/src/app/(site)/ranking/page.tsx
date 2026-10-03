@@ -68,7 +68,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     : [];
   const Th = ({ col, label, className = '', title }: { col: Col; label: string; className?: string; title?: string }) => (
     <th
-      className={`px-3 py-2 ${className}`}
+      className={`whitespace-nowrap px-3 py-2 ${className}`}
       title={title}
       aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}
     >
@@ -136,10 +136,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   <Th col="score" label="分數" className="w-20 text-right" title="媒體加權分數" />
                   <Th col="count" label="篇數" className="w-16 text-right" />
                   <Th col="trend" label="趨勢" className="w-28" title="24 小時平均篇數與 48 小時前的差值（篇／小時）" />
-                  <th className="px-3 py-2" title="同一篇報導最常同時出現的其他關鍵字">
+                  <th className="w-[17rem] whitespace-nowrap px-3 py-2" title="同一篇報導最常同時出現的其他關鍵字">
                     一起出現
                   </th>
-                  <Th col="media" label="媒體" className="" title="報導的媒體家數" />
+                  <Th col="media" label="媒體" className="w-[30%]" title="報導的媒體家數" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -194,7 +194,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                         <Sparkline values={trend.map((p) => p.average24h)} />
                       </td>
                       <td
-                        className="w-[17rem] max-w-0 truncate whitespace-nowrap px-3 py-2 text-xs"
+                        className="max-w-0 truncate whitespace-nowrap px-3 py-2 text-xs"
                         title={
                           related.length
                             ? related.map((r) => `${r.tag} ${r.count} 篇（${Math.round(r.share * 100)}%）`).join('\n')
@@ -217,7 +217,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                           <span className="text-zinc-400">—</span>
                         )}
                       </td>
-                      <td className="w-1/3 max-w-0 px-3 py-2">
+                      <td className="max-w-0 px-3 py-2">
                         <MediaIcons media={e.media} info={media} />
                       </td>
                     </tr>
