@@ -15,6 +15,7 @@ import {
   mediaGraphPositions,
   mediaIconSizes,
   mediaLabelColor,
+  mediaVisibleLabels,
   nodeArticleCounts,
 } from '@/lib/media-graph.mts';
 import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
@@ -36,6 +37,8 @@ export default function SimilarityGraph({
   data,
   showAll,
   onSelect,
+  fullscreen,
+  onToggleFullscreen,
 }: {
   nodes: SimilarityNode[];
   edges: SimilarityEdge[];
@@ -44,17 +47,21 @@ export default function SimilarityGraph({
   data: SimilarityData;
   showAll: boolean;
   onSelect: (selection: GraphSelection) => void;
+  fullscreen: boolean;
+  onToggleFullscreen: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const callback = useRef(onSelect);
   const density = useRef(showAll);
+  const activeEdges = useRef(edges);
   const refresh = useRef<(() => void) | null>(null);
   const navigate = useRef<((action: 'in' | 'out' | 'reset') => void) | null>(null);
   const camera = useRef<{ key: string; zoom: number; center: number[] | null } | null>(null);
   useEffect(() => {
+    activeEdges.current = edges;
     density.current = showAll;
     refresh.current?.();
-  }, [showAll]);
+  }, [edges, showAll]);
   callback.current = onSelect;
   const [dark, setDark] = useState(false);
   useEffect(() => {
@@ -70,11 +77,12 @@ export default function SimilarityGraph({
     const chart = echarts.init(ref.current);
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const counts = nodeArticleCounts(data);
-    const overview = mainGraphEdges(edges);
+    let edges = activeEdges.current;
+    let overview = mainGraphEdges(edges);
     let focused: string | null = null;
     let neighbors = new Set<string>();
     let visibleEdges = displayedGraphEdges(edges, overview, density.current, focused);
-    const connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
+    let connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
     const symbols = new Map(nodes.map((n) => [n.id, fallbackIcon(n)]));
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
     const ink = dark ? '#d4d4d8' : '#52525b';
@@ -85,7 +93,15 @@ export default function SimilarityGraph({
         .slice(0, 4)
         .map((e) => `${escapeHtml(data.nodes.find((n) => n.id === (incoming ? e.source : e.target))?.name ?? '')} ${e.count} 篇`)
         .join('、');
-    const positions = mediaGraphPositions(nodes, layoutEdges, 1000, 1000);
+    let width = chart.getWidth(),
+      height = chart.getHeight();
+    let positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58));
+    const layoutBounds = () => ({
+      left: Math.min(...positions.map((p) => p.x)),
+      right: chart.getWidth() - Math.max(...positions.map((p) => p.x)),
+      top: Math.min(...positions.map((p) => p.y)),
+      bottom: chart.getHeight() - Math.max(...positions.map((p) => p.y)),
+    });
     const cameraKey = nodes.map((node) => node.id).join('|');
     const savedCamera = camera.current?.key === cameraKey ? camera.current : null;
     const rememberCamera = () => {
@@ -96,6 +112,7 @@ export default function SimilarityGraph({
     let navigating = false;
     const nodeData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
+      const labels = mediaVisibleLabels(nodes, positions, sizes, chart.getWidth(), zoom);
       return nodes.map((n, i) => ({
         ...positions[i],
         id: n.id,
@@ -104,7 +121,11 @@ export default function SimilarityGraph({
         symbolSize: sizes.get(n.id),
         symbolKeepAspect: true,
         itemStyle: { opacity: !focused || neighbors.has(n.id) ? 1 : 0.12 },
-        label: { show: true, color: mediaLabelColor(camps[n.id], dark), opacity: !focused || neighbors.has(n.id) ? 1 : 0.4 },
+        label: {
+          show: focused === n.id || labels.has(n.id),
+          color: mediaLabelColor(camps[n.id], dark),
+          opacity: !focused || neighbors.has(n.id) ? 1 : 0.4,
+        },
       }));
     };
     const linkData = () =>
@@ -129,7 +150,13 @@ export default function SimilarityGraph({
       visibleEdges = displayedGraphEdges(edges, overview, density.current, focused);
       chart.setOption({ series: [{ id: 'media-network', data: nodeData(), links: linkData() }] });
     };
-    refresh.current = () => updateFocus(null, true);
+    refresh.current = () => {
+      edges = activeEdges.current;
+      overview = mainGraphEdges(edges);
+      connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
+      chart.dispatchAction({ type: 'hideTip' });
+      updateFocus(null, true);
+    };
     const render = () => {
       if (disposed) return;
       const small = chart.getWidth() < 600;
@@ -161,7 +188,7 @@ export default function SimilarityGraph({
             id: 'media-network',
             type: 'graph',
             layout: 'none',
-            // The view transform also scales images; keep both axes uniform.
+            // Pixel bounds match the layout: fitting must not shrink collision gaps.
             preserveAspect: 'contain',
             roam: false,
             // Like map markers, keep logos readable as the camera zooms.
@@ -170,10 +197,7 @@ export default function SimilarityGraph({
             scaleLimit: { min: GRAPH_ZOOM_MIN, max: GRAPH_ZOOM_MAX },
             zoom: savedCamera?.zoom ?? 1,
             center: savedCamera?.center ?? null,
-            left: small ? 44 : 55,
-            right: small ? 44 : 65,
-            top: 40,
-            bottom: small ? 45 : 55,
+            ...layoutBounds(),
             emphasis: { disabled: true },
             blur: { itemStyle: { opacity: 0.18 }, lineStyle: { opacity: 0.04 }, label: { opacity: 0.2 } },
             label: {
@@ -187,7 +211,7 @@ export default function SimilarityGraph({
               width: small ? 70 : 100,
               overflow: 'truncate',
             },
-            labelLayout: { hideOverlap: false },
+            labelLayout: { hideOverlap: true },
             data: nodeData(),
             links: linkData(),
           },
@@ -213,7 +237,10 @@ export default function SimilarityGraph({
         }
         navigating = value;
       },
-      settled: rememberCamera,
+      settled: () => {
+        rememberCamera();
+        chart.setOption({ series: [{ id: 'media-network', data: nodeData() }] });
+      },
     });
     navigate.current = gestures.navigate;
     // All icons are same-origin cached assets; an unavailable image keeps its
@@ -254,6 +281,26 @@ export default function SimilarityGraph({
       frame = requestAnimationFrame(() => {
         if (!disposed) {
           chart.resize();
+          const nextWidth = chart.getWidth(),
+            nextHeight = chart.getHeight();
+          if (width === nextWidth && height === nextHeight) return;
+          const series = (chart.getOption().series as { center: number[] | null }[])[0];
+          const center = series.center ? [(series.center[0] * nextWidth) / width, (series.center[1] * nextHeight) / height] : null;
+          width = nextWidth;
+          height = nextHeight;
+          positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58));
+          chart.setOption({
+            series: [
+              {
+                id: 'media-network',
+                ...layoutBounds(),
+                center,
+                data: nodeData(),
+                label: { fontSize: width < 600 ? 9 : 11, width: width < 600 ? 70 : 100 },
+              },
+            ],
+          });
+          rememberCamera();
         }
       });
     });
@@ -269,7 +316,7 @@ export default function SimilarityGraph({
       observer.disconnect();
       chart.dispose();
     };
-  }, [nodes, edges, layoutEdges, camps, data, dark]);
+  }, [nodes, layoutEdges, camps, data, dark]);
   return nodes.length ? (
     <div className="relative h-full w-full">
       <div
@@ -300,6 +347,15 @@ export default function SimilarityGraph({
             {text}
           </button>
         ))}
+        <button
+          type="button"
+          aria-label={fullscreen ? '退出全螢幕' : '全螢幕'}
+          aria-pressed={fullscreen}
+          onClick={onToggleFullscreen}
+          className="min-h-11 min-w-11 border-l border-zinc-200 px-3 text-sm hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        >
+          {fullscreen ? '退出全螢幕' : '全螢幕'}
+        </button>
       </fieldset>
     </div>
   ) : (

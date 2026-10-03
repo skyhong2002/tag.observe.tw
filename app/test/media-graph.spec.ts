@@ -9,6 +9,7 @@ import {
   mediaGraphPositions,
   mediaIconSizes,
   mediaLabelColor,
+  mediaVisibleLabels,
   nodeArticleCounts,
   selectGraphMedia,
 } from '../../web/src/lib/media-graph.mts';
@@ -139,7 +140,7 @@ describe('media icon volume', () => {
       const sizes = [...mediaIconSizes(nodes, width).values()];
       expect(sizes.every((size, i) => i === 0 || size > sizes[i - 1])).toBe(true);
       expect(sizes[0]).toBe(width < 600 ? 16 : 20);
-      expect(sizes.at(-1)).toBe(width < 600 ? 28 : 46);
+      expect(sizes.at(-1)).toBe(width < 600 ? 44 : 72);
       const area = (i: number) => sizes[i] ** 2 - sizes[0] ** 2;
       expect(area(3) / area(2)).toBeCloseTo(10);
     }
@@ -197,19 +198,59 @@ describe('readable relationship overview', () => {
         .sort(),
     ).toEqual(overview.map((e) => `${e.source}:${e.target}`).sort());
   });
-  it('preserves relative geometry across screen sizes and input order', () => {
-    const desktop = mediaGraphPositions(nodes, edges, 1100, 650);
-    const phone = mediaGraphPositions([...nodes].reverse(), [...edges].reverse(), 356, 450);
-    const byId = new Map(phone.map((p) => [p.id, p]));
-    const origin = desktop[0],
-      mobileOrigin = byId.get(origin.id)!;
-    const scale =
-      Math.hypot(phone[0].x - mobileOrigin.x, phone[0].y - mobileOrigin.y) /
-      Math.hypot(desktop.find((p) => p.id === phone[0].id)!.x - origin.x, desktop.find((p) => p.id === phone[0].id)!.y - origin.y);
-    for (const p of desktop) {
-      expect(byId.get(p.id)!.x - mobileOrigin.x).toBeCloseTo((p.x - origin.x) * scale);
-      expect(byId.get(p.id)!.y - mobileOrigin.y).toBeCloseTo((p.y - origin.y) * scale);
+  it('is deterministic for the same viewport regardless of input order', () => {
+    for (const [width, height] of [
+      [1100, 650],
+      [356, 450],
+    ]) {
+      const positions = mediaGraphPositions(nodes, edges, width, height);
+      const reversed = new Map(mediaGraphPositions([...nodes].reverse(), [...edges].reverse(), width, height).map((p) => [p.id, p]));
+      for (const p of positions) expect(reversed.get(p.id)).toEqual(p);
     }
+  });
+  it('fills both viewport axes and separates square logos in dense hubs', () => {
+    const many = Array.from({ length: 147 }, (_, i) => ({
+      ...node(`n${i}`),
+      name: `新聞媒體 ${i}`,
+      articles: i === 0 ? 3000 : 1 + ((i * 43) % 300),
+    }));
+    const links = many.slice(1).map((n, i) => edge(n.id, many[Math.floor(i / 20) * 20].id, 1 + (i % 20)));
+    for (const [width, height] of [
+      [2000, 900],
+      [1100, 650],
+      [356, 430],
+      [356, 600],
+    ]) {
+      const positions = mediaGraphPositions(many, links, width, height);
+      const sizes = mediaIconSizes(many, width);
+      expect(positions).toHaveLength(many.length);
+      expect(Math.max(...positions.map((p) => p.x)) - Math.min(...positions.map((p) => p.x))).toBeGreaterThan(width * 0.75);
+      expect(Math.max(...positions.map((p) => p.y)) - Math.min(...positions.map((p) => p.y))).toBeGreaterThan(height * 0.75);
+      for (const [i, a] of positions.entries()) {
+        const half = sizes.get(a.id)! / 2;
+        expect(a.x - half).toBeGreaterThanOrEqual(0);
+        expect(a.x + half).toBeLessThanOrEqual(width);
+        expect(a.y - half).toBeGreaterThanOrEqual(0);
+        expect(a.y + half).toBeLessThanOrEqual(height);
+        for (const b of positions.slice(i + 1)) {
+          const gap = half + sizes.get(b.id)! / 2 + 2;
+          expect(Math.abs(a.x - b.x) >= gap || Math.abs(a.y - b.y) >= gap, `${width}×${height}: ${a.id}/${b.id}`).toBe(true);
+        }
+      }
+    }
+  });
+  it('hides labels that would cover a logo and reveals them when zooming in', () => {
+    const outlets = [node('aa'), node('bb')];
+    const positions = [
+      { id: 'aa', x: 50, y: 50 },
+      { id: 'bb', x: 50, y: 80 },
+    ];
+    const sizes = new Map([
+      ['aa', 20],
+      ['bb', 20],
+    ]);
+    expect(mediaVisibleLabels(outlets, positions, sizes, 1000).has('aa')).toBe(false);
+    expect(mediaVisibleLabels(outlets, positions, sizes, 1000, 3).has('aa')).toBe(true);
   });
   it('separates strongly related communities joined by a weak bridge', () => {
     const groupedNodes = ['a', 'b', 'c', 'd', 'e', 'f'].map(node);

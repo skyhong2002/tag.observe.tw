@@ -66,7 +66,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
   const dashboard = useRef<HTMLDivElement>(null);
-  const fullscreenButton = useRef<HTMLButtonElement>(null);
+  const fullscreenButton = useRef<HTMLElement | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
     const changed = () => setFullscreen(document.fullscreenElement === dashboard.current);
@@ -95,6 +95,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
       else setFullscreen(false);
       fullscreenButton.current?.focus();
     } else {
+      fullscreenButton.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       // iPhone and embedded browsers may not support native element fullscreen.
       try {
         await dashboard.current?.requestFullscreen();
@@ -176,7 +177,6 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
         </div>
         <div className="flex gap-1 text-xs text-zinc-600 dark:text-zinc-400">
           <button
-            ref={fullscreenButton}
             type="button"
             onClick={toggleFullscreen}
             aria-pressed={fullscreen}
@@ -247,6 +247,8 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
             data={data}
             showAll={showAll}
             onSelect={select}
+            fullscreen={fullscreen}
+            onToggleFullscreen={toggleFullscreen}
           />
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800">
@@ -410,7 +412,7 @@ export default function SimilarityExplorer({ data, camps }: { data: SimilarityDa
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                一律顯示本期所有有連線的媒體，初始視野自動容納整張圖；可放大、縮小或拖曳查看細節，重設視野可回到總覽。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
+                一律顯示本期所有有連線的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或指向圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
                 展開目前畫面內該媒體的全部連線；「顯示全部連線」可還原目前媒體之間的全部關係。篇數與文章證據仍使用完整分析樣本。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
               </p>
               <p>

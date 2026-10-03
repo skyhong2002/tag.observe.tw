@@ -210,14 +210,14 @@ export function mediaCommunities(nodes: SimilarityNode[], edges: SimilarityEdge[
   return new Map([...members.values()].flatMap((group) => group.map((id) => [id, group[0]] as const)));
 }
 
-/** Settle communities without rectangular walls, then pack their circular
- * bounds. A uniform final fit preserves the same geometry on every screen. */
+/** Seed by relationship community, then fit and separate in actual screen pixels.
+ * Only viewport/data changes affect geometry; relationship tabs share this layout. */
 export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
   const visible = connectedMedia(nodes, edges);
   if (!visible.length) return [];
   const labels = mediaCommunities(visible, edges);
-  // Use a fixed world scale: resizing changes the camera, not relative positions.
-  const sizes = mediaIconSizes(visible, 1000);
+  // The same sizes are used by the renderer and the collision solver.
+  const sizes = mediaIconSizes(visible, width);
   const groups = [...new Set(labels.values())]
     .map((id) => ({ id, nodes: visible.filter((node) => labels.get(node.id) === id).sort((a, b) => a.id.localeCompare(b.id)) }))
     .sort((a, b) => b.nodes.length - a.nodes.length || a.id.localeCompare(b.id));
@@ -228,7 +228,7 @@ export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEd
     const span = Math.sqrt(group.nodes.length) * 110;
     const local = forcePositions(
       group.nodes,
-      edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)),
+      edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)).sort((a, b) => edgeKey(a).localeCompare(edgeKey(b))),
       span,
       span,
       sizes,
@@ -256,11 +256,103 @@ export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEd
     maxX = Math.max(...all.map((p) => p.x));
   const minY = Math.min(...all.map((p) => p.y)),
     maxY = Math.max(...all.map((p) => p.y));
-  const scale = Math.min(width / Math.max(1, maxX - minX), height / Math.max(1, maxY - minY)) * 0.9;
-  return visible.map((node) => {
-    const p = points.get(node.id)!;
-    return { id: p.id, x: width / 2 + (p.x - (minX + maxX) / 2) * scale, y: height / 2 + (p.y - (minY + maxY) / 2) * scale };
+  const small = width < 600;
+  const padding = 12;
+  // Reserve label boxes when they fit. On dense small screens labels may hide,
+  // but every logo still gets its complete square footprint plus a clear gap.
+  const footprints = visible.map((node) => {
+    const size = sizes.get(node.id)!;
+    const font = small ? 9 : 11;
+    const textWidth = Math.min(
+      small ? 70 : 100,
+      [...node.name].reduce((sum, char) => sum + (/[^\x00-\xff]/.test(char) ? font : font * 0.65), 0),
+    );
+    return { id: node.id, size, width: Math.max(size, textWidth) + 10, height: size + font + 17 };
   });
+  const roomForLabels = footprints.reduce((sum, box) => sum + box.width * box.height, 0) < width * height * 0.65;
+  const boxes = new Map(
+    footprints.map((box) => [
+      box.id,
+      {
+        width: roomForLabels ? box.width : box.size + 4,
+        height: roomForLabels ? box.height : box.size + 4,
+        offset: roomForLabels ? (box.height - box.size - 10) / 2 : 0,
+      },
+    ]),
+  );
+  const marginX = Math.max(...[...boxes.values()].map((box) => box.width / 2)) + padding;
+  const marginY = Math.max(...[...boxes.values()].map((box) => box.height / 2)) + padding;
+  const fitted = all
+    .map((p) => ({
+      id: p.id,
+      x: marginX + ((p.x - minX) / Math.max(1, maxX - minX)) * Math.max(1, width - 2 * marginX),
+      y: marginY + ((p.y - minY) / Math.max(1, maxY - minY)) * Math.max(1, height - 2 * marginY),
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const clamp = (p: { id: string; x: number; y: number }) => {
+    const box = boxes.get(p.id)!;
+    p.x = Math.max(padding + box.width / 2, Math.min(width - padding - box.width / 2, p.x));
+    p.y = Math.max(padding + box.height / 2, Math.min(height - padding - box.height / 2, p.y));
+  };
+  // Axis-aligned rectangles account for square logos and labels below them.
+  // Do not shrink the result afterwards: that would reintroduce collisions.
+  for (let pass = 0; pass < 600; pass++) {
+    let overlap = 0;
+    for (let i = 0; i < fitted.length; i++) {
+      for (let j = i + 1; j < fitted.length; j++) {
+        const a = fitted[i],
+          b = fitted[j],
+          ab = boxes.get(a.id)!,
+          bb = boxes.get(b.id)!;
+        const dx = b.x - a.x,
+          dy = b.y - a.y;
+        const ox = (ab.width + bb.width) / 2 - Math.abs(dx);
+        const oy = (ab.height + bb.height) / 2 - Math.abs(dy);
+        if (ox <= 0 || oy <= 0) continue;
+        overlap = Math.max(overlap, Math.min(ox, oy));
+        if (ox < oy) {
+          const push = ((ox + 0.1) / 2) * (dx < 0 ? -1 : 1);
+          a.x -= push;
+          b.x += push;
+        } else {
+          const push = ((oy + 0.1) / 2) * (dy < 0 ? -1 : 1);
+          a.y -= push;
+          b.y += push;
+        }
+        clamp(a);
+        clamp(b);
+      }
+    }
+    if (overlap < 0.1) break;
+  }
+  // Dense hubs can trap the relaxation between neighbours and the viewport.
+  // Place remaining collisions in the nearest free space, largest marks first.
+  const packed: typeof fitted = [];
+  for (const p of [...fitted].sort((a, b) => sizes.get(b.id)! - sizes.get(a.id)! || a.id.localeCompare(b.id))) {
+    const box = boxes.get(p.id)!;
+    const free = (x: number, y: number) =>
+      packed.every((other) => {
+        const ob = boxes.get(other.id)!;
+        return Math.abs(x - other.x) >= (box.width + ob.width) / 2 - 0.1 || Math.abs(y - other.y) >= (box.height + ob.height) / 2 - 0.1;
+      });
+    if (!free(p.x, p.y)) {
+      let best = Infinity,
+        target = null;
+      for (let y = padding + box.height / 2; y <= height - padding - box.height / 2; y += 3) {
+        for (let x = padding + box.width / 2; x <= width - padding - box.width / 2; x += 3) {
+          const distance = (x - p.x) ** 2 + (y - p.y) ** 2;
+          if (distance < best && free(x, y)) {
+            best = distance;
+            target = { x, y };
+          }
+        }
+      }
+      if (target) Object.assign(p, target);
+    }
+    packed.push(p);
+  }
+  const result = new Map(fitted.map((p) => [p.id, { ...p, y: p.y - boxes.get(p.id)!.offset }]));
+  return visible.map((node) => result.get(node.id)!);
 }
 
 /** Icon area encodes sampled article volume, with a legible minimum and a
@@ -268,7 +360,7 @@ export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEd
 export function mediaIconSizes(nodes: SimilarityNode[], width: number): Map<string, number> {
   const small = width < 600;
   const min = small ? 16 : 20,
-    max = small ? 28 : 46;
+    max = small ? 44 : 72;
   const count = (node: SimilarityNode) => (Number.isFinite(node.articles) ? Math.max(0, node.articles) : 0);
   const maximum = Math.max(1, ...nodes.filter((node) => !node.external).map(count));
   return new Map(
@@ -277,4 +369,37 @@ export function mediaIconSizes(nodes: SimilarityNode[], width: number): Map<stri
       node.external ? (small ? 18 : 24) : Math.sqrt(min * min + ((max * max - min * min) * count(node)) / maximum),
     ]),
   );
+}
+
+/** Labels must avoid logos too, not just other labels. Zoom reveals more names. */
+export function mediaVisibleLabels(
+  nodes: SimilarityNode[],
+  positions: { id: string; x: number; y: number }[],
+  sizes: Map<string, number>,
+  width: number,
+  zoom = 1,
+) {
+  const byId = new Map(positions.map((p) => [p.id, p]));
+  const font = width < 600 ? 9 : 11;
+  const logos = positions.map((p) => {
+    const half = sizes.get(p.id)! / 2 + 2;
+    return { left: p.x * zoom - half, right: p.x * zoom + half, top: p.y * zoom - half, bottom: p.y * zoom + half };
+  });
+  const placed: typeof logos = [];
+  const visible = new Set<string>();
+  const intersects = (a: (typeof logos)[number], b: (typeof logos)[number]) =>
+    a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  for (const node of [...nodes].sort((a, b) => sizes.get(b.id)! - sizes.get(a.id)! || a.id.localeCompare(b.id))) {
+    const p = byId.get(node.id)!;
+    const labelWidth = Math.min(
+      width < 600 ? 70 : 100,
+      [...node.name].reduce((sum, char) => sum + (/[^\x00-\xff]/.test(char) ? font : font * 0.65), 0),
+    );
+    const top = p.y * zoom + sizes.get(node.id)! / 2 + 7;
+    const label = { left: p.x * zoom - labelWidth / 2 - 2, right: p.x * zoom + labelWidth / 2 + 2, top, bottom: top + font + 2 };
+    if (logos.some((logo) => intersects(label, logo)) || placed.some((other) => intersects(label, other))) continue;
+    visible.add(node.id);
+    placed.push(label);
+  }
+  return visible;
 }
