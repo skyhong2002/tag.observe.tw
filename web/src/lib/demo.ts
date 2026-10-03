@@ -1,7 +1,9 @@
 import { API_ORIGIN, fetchMedia, fetchRanking, type MediaInfo, type Ranking } from './api';
 import { headlineTags, selectEventLead } from './event-presentation.mts';
 import { isAllowedImage } from './images';
-import { type EventItem, fetchEvents } from './pages';
+import { fetchJournalists, type JournalistSummary } from './journalists';
+import { type EventCoverage, type EventItem, type FeedTopic, fetchEvents, fetchTopics } from './pages';
+import { fetchSimilarity, type SimilarityData } from './similarity';
 
 export type DemoCamp = 'green' | 'other' | 'blue';
 export const DEMO_CAMPS: Array<{ key: DemoCamp; label: string; short: string }> = [
@@ -9,16 +11,6 @@ export const DEMO_CAMPS: Array<{ key: DemoCamp; label: string; short: string }> 
   { key: 'other', label: '未列藍綠', short: '其他' },
   { key: 'blue', label: '藍營傾向', short: '藍' },
 ];
-export interface DemoCoverage {
-  from: string;
-  to: string;
-  outlets: number;
-  articles: number;
-  camps: Array<{ camp: DemoCamp; outlets: number; articles: number }>;
-}
-interface CoverageResponse extends DemoCoverage {
-  byOutlet: Array<{ media: string; articles: Array<{ url: string; publishedAt: string }> }>;
-}
 export interface DemoStory {
   key: string;
   href: string;
@@ -27,10 +19,12 @@ export interface DemoStory {
   image: string | null;
   media: string;
   source: string;
-  publishedAt: string | null;
-  coverage: DemoCoverage | null;
+  /** Outlets and camps on the story, from the event snapshot. */
+  coverage: EventCoverage | null;
   sampleOutlets: number;
   score: number;
+  /** The event behind the story: movement, rank trail, hours on the table. */
+  event: EventItem;
 }
 
 async function mediaStats(): Promise<MediaStatRow[]> {
@@ -42,25 +36,12 @@ async function mediaStats(): Promise<MediaStatRow[]> {
   }
 }
 
-async function coverage(id: string): Promise<CoverageResponse | null> {
-  try {
-    const res = await fetch(`${API_ORIGIN}/api/v1/events/threads/${encodeURIComponent(id)}/coverage`, {
-      next: { revalidate: 120 },
-      signal: AbortSignal.timeout(6000),
-    });
-    return res.ok ? ((await res.json()) as CoverageResponse) : null;
-  } catch {
-    return null;
-  }
-}
-
-function story(event: EventItem, media: MediaInfo, cov: CoverageResponse | null): DemoStory | null {
+function story(event: EventItem, media: MediaInfo): DemoStory | null {
   const news = event.news.filter((n) => n.title.trim());
   const lead = selectEventLead(news, event.major);
   if (!lead) return null;
   // Keep the selected outlet's original title, image and credit together.
   const tags = headlineTags(lead.title, [...event.major, ...event.tags.map((t) => t.tag)]);
-  const article = cov?.byOutlet.find((o) => o.media === lead.media)?.articles.find((a) => a.url === lead.url);
   return {
     key: event.relatedEventPk ?? `rank-${event.rank}`,
     href: event.relatedEventPk
@@ -71,18 +52,11 @@ function story(event: EventItem, media: MediaInfo, cov: CoverageResponse | null)
     image: isAllowedImage(lead.image) ? lead.image : null,
     media: lead.media,
     source: media[lead.media]?.title ?? lead.media,
-    publishedAt: article?.publishedAt ?? null,
-    coverage: cov ? { from: cov.from, to: cov.to, outlets: cov.outlets, articles: cov.articles, camps: cov.camps } : null,
+    coverage: event.coverage ?? null,
     sampleOutlets: new Set(news.map((n) => n.media)).size,
     score: event.score,
+    event,
   };
-}
-
-/** Absolute difference in observed blue/green outlet counts, as a share of all observed outlets. */
-export function coverageGap(cov: DemoCoverage): number {
-  if (cov.outlets < 3) return 0;
-  const count = (camp: DemoCamp) => cov.camps.find((c) => c.camp === camp)?.outlets ?? 0;
-  return Math.abs(count('blue') - count('green')) / cov.outlets;
 }
 
 /** Share of the past 24h of tagged news articles by camp; the ranking snapshots already count them. */
@@ -152,23 +126,165 @@ export function campShare(news: Ranking | null, blue: Ranking | null, green: Ran
   };
 }
 
+/** The events one camp is barely on, or pushing far harder than usual:
+ *  the event table's 藍綠溫差 boiled down to a few lines per side. */
+export interface CampGap {
+  camp: 'blue' | 'green';
+  title: string;
+  items: EventItem[];
+}
+export function campGaps(events: EventItem[], perSide = 3): CampGap[] {
+  const pick = (camp: 'blue' | 'green') =>
+    events
+      .filter((e) => e.coverage && (e.coverage.blindspot.includes(camp === 'blue' ? 'green' : 'blue') || e.coverage.tilt === camp))
+      .sort((a, b) => {
+        const spot = (e: EventItem) => (e.coverage?.blindspot.length ? 1 : 0);
+        return spot(b) - spot(a) || Math.abs(b.coverage?.lean ?? 0) - Math.abs(a.coverage?.lean ?? 0);
+      })
+      .slice(0, perSide);
+  return [
+    { camp: 'blue', title: '藍營在推、綠營少報', items: pick('blue') },
+    { camp: 'green', title: '綠營在推、藍營少報', items: pick('green') },
+  ];
+}
+
+/** What the similarity graph says today, small enough for a home panel.
+ *  Shares rather than counts, so an outlet that simply publishes a lot (中央社)
+ *  does not top every list. */
+export interface GraphSummary {
+  hours: number;
+  outlets: number;
+  similarityEdges: number;
+  citationEdges: number;
+  pairs: number;
+  /** The API keeps only the most similar pairs, so shares below are floors. */
+  pairsTruncated: boolean;
+  citations: number;
+  analyzed: number;
+  /** Outlets with the largest share of their own articles closely matching another outlet's. */
+  similar: Array<{
+    media: string;
+    name: string;
+    share: number;
+    matched: number;
+    articles: number;
+    partner: string | null;
+    partnerName: string | null;
+  }>;
+  /** Outlets credited most often, as a share of every citation found. */
+  cited: Array<{ media: string; name: string; share: number; count: number }>;
+}
+/** Too few analysed articles make a share meaningless (1 of 2 is 50%). */
+const MIN_ARTICLES = 20;
+export function graphSummary(data: SimilarityData | null): GraphSummary | null {
+  if (!data) return null;
+  const nodes = new Map(data.nodes.map((n) => [n.id, n]));
+  const name = (id: string) => nodes.get(id)?.name ?? id;
+  const similarity = data.edges.filter((e) => e.kind === 'similarity');
+  const citation = data.edges.filter((e) => e.kind === 'citation');
+  const matched = new Map<string, Set<number>>();
+  const partners = new Map<string, Map<string, number>>();
+  for (const p of data.pairs) {
+    if (p.a.media === p.b.media) continue;
+    for (const [self, other] of [
+      [p.a, p.b],
+      [p.b, p.a],
+    ]) {
+      if (!matched.has(self.media)) matched.set(self.media, new Set());
+      matched.get(self.media)?.add(self.id);
+      const counts = partners.get(self.media) ?? new Map<string, number>();
+      counts.set(other.media, (counts.get(other.media) ?? 0) + 1);
+      partners.set(self.media, counts);
+    }
+  }
+  const similar = [...matched]
+    .map(([media, ids]) => {
+      const articles = nodes.get(media)?.articles ?? 0;
+      const top = [...(partners.get(media) ?? [])].sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
+      return {
+        media,
+        name: name(media),
+        share: articles ? Math.min(1, ids.size / articles) : 0,
+        matched: ids.size,
+        articles,
+        partner: top,
+        partnerName: top ? name(top) : null,
+      };
+    })
+    .filter((r) => r.articles >= MIN_ARTICLES && !nodes.get(r.media)?.external)
+    .sort((x, y) => y.share - x.share || y.matched - x.matched)
+    .slice(0, 5);
+  const credited = new Map<string, number>();
+  for (const e of citation) credited.set(e.target, (credited.get(e.target) ?? 0) + e.count);
+  const totalCited = [...credited.values()].reduce((n, v) => n + v, 0);
+  const cited = [...credited]
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 5)
+    .map(([media, count]) => ({ media, name: name(media), share: totalCited ? count / totalCited : 0, count }));
+  return {
+    hours: data.hours,
+    outlets: data.nodes.filter((n) => !n.external).length,
+    similarityEdges: similarity.length,
+    citationEdges: citation.length,
+    pairs: data.pairs.length,
+    pairsTruncated: data.sample.pairsTruncated,
+    citations: data.citations.length,
+    analyzed: data.sample.analyzed,
+    similar,
+    cited,
+  };
+}
+
+async function similarity(): Promise<SimilarityData | null> {
+  try {
+    return await fetchSimilarity(24, 0.65);
+  } catch {
+    return null;
+  }
+}
+
+export interface JournalistBrief {
+  hours: number;
+  totals: { journalists: number; articles: number; credited: number };
+  top: JournalistSummary[];
+}
+
 export async function loadDemo() {
-  const [events, ranking, media, blue, green, stats] = await Promise.all([
-    fetchEvents(12),
-    fetchRanking('news', 'burst', 16).catch(() => null),
+  const [events, ranking, media, blue, green, stats, journalists, topics, graph] = await Promise.all([
+    fetchEvents(24),
+    fetchRanking('news', 'burst', 16, true).catch(() => null),
     fetchMedia().catch((): MediaInfo => ({})),
     fetchRanking('blue', 'score', 1).catch(() => null),
     fetchRanking('green', 'score', 1).catch(() => null),
     mediaStats(),
+    fetchJournalists(48, 0.65, 6),
+    fetchTopics(120),
+    similarity(),
   ]);
   const unique = [...new Map((events?.events ?? []).map((e) => [e.relatedEventPk ?? `rank-${e.rank}`, e])).values()];
-  const stories: DemoStory[] = [];
-  // Bound concurrent coverage queries against the shared database.
-  for (let i = 0; i < unique.length; i += 3) {
-    const batch = await Promise.all(
-      unique.slice(i, i + 3).map(async (e) => story(e, media, e.relatedEventPk ? await coverage(e.relatedEventPk) : null)),
-    );
-    stories.push(...batch.filter((s): s is DemoStory => s !== null));
-  }
-  return { events, ranking, stories, campShare: campShare(ranking, blue, green, stats) };
+  const stories = unique
+    .slice(0, 12)
+    .map((e) => story(e, media))
+    .filter((s): s is DemoStory => s !== null);
+  const feed: FeedTopic[] = (topics?.feed ?? []).filter((t) => !t.backlog && t.title);
+  return {
+    events,
+    ranking,
+    media,
+    stories,
+    campShare: campShare(ranking, blue, green, stats),
+    gaps: campGaps(unique),
+    journalists: journalists
+      ? ({ hours: journalists.hours, totals: journalists.totals, top: journalists.journalists.slice(0, 6) } satisfies JournalistBrief)
+      : null,
+    topics: topics
+      ? {
+          outlets: topics.media.length,
+          // Topics first seen in the past day; the feed is newest first and long enough to cover one.
+          today: feed.filter((t) => t.time && Date.now() - Date.parse(t.time) < 86400e3).length,
+          latest: feed.slice(0, 6),
+        }
+      : null,
+    graph: graphSummary(graph),
+  };
 }
