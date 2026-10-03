@@ -4,7 +4,14 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GraphSelection } from '@/components/SimilarityGraph';
-import { connectedMedia, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
+import {
+  connectedMedia,
+  type MediaCamps,
+  mainGraphEdges,
+  mediaViewportLimit,
+  nodeArticleCounts,
+  selectGraphMedia,
+} from '@/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
@@ -62,17 +69,47 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
   );
 }
 
-export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
+export default function SimilarityExplorer({
+  data,
+  camps,
+  initialMediaLimit,
+}: {
+  data: SimilarityData;
+  camps: MediaCamps;
+  initialMediaLimit: string;
+}) {
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
+  const [mediaLimit, setMediaLimit] = useState(initialMediaLimit);
+  const [autoLimit, setAutoLimit] = useState(8);
+  const graphFrame = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<GraphSelection>(null);
   const [drawer, setDrawer] = useState<'settings' | 'info' | 'media' | 'evidence' | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
   const counts = useMemo(() => nodeArticleCounts(data), [data]);
-  const edges = useMemo(() => data.edges.filter((e) => mode === 'all' || e.kind === mode), [data.edges, mode]);
-  const nodes = useMemo(() => connectedMedia(data.nodes, edges), [data.nodes, edges]);
+  const eligible = useMemo(() => connectedMedia(data.nodes, data.edges), [data.nodes, data.edges]);
+  const limit = mediaLimit === 'auto' ? autoLimit : mediaLimit === 'all' ? eligible.length : Number(mediaLimit);
+  const graph = useMemo(() => selectGraphMedia(data.nodes, data.edges, limit), [data.nodes, data.edges, limit]);
+  const nodes = graph.nodes;
+  const edges = useMemo(() => graph.edges.filter((e) => mode === 'all' || e.kind === mode), [graph.edges, mode]);
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
+  useEffect(() => {
+    if (!graphFrame.current) return;
+    const frame = graphFrame.current;
+    let pending = 0;
+    const measure = () => setAutoLimit(mediaViewportLimit(frame.clientWidth, frame.clientHeight));
+    measure();
+    const observer = new ResizeObserver(() => {
+      clearTimeout(pending);
+      pending = window.setTimeout(measure, 150);
+    });
+    observer.observe(frame);
+    return () => {
+      clearTimeout(pending);
+      observer.disconnect();
+    };
+  }, []);
   const select = (value: GraphSelection) => {
     setSelection(value);
     if (value) setDrawer('evidence');
@@ -116,13 +153,13 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
   const selectedCounts = selection && 'node' in selection ? counts.get(selection.node) : null;
 
   return (
-    <div className="flex h-[calc(100svh-172px)] min-h-[420px] flex-col gap-3 sm:h-[calc(100svh-112px)]">
+    <div data-similarity-dashboard className="flex h-[calc(100svh-172px)] min-h-[420px] flex-col gap-3 sm:h-[calc(100svh-112px)]">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
           <p className="mt-1 text-xs text-zinc-500">
-            {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · {nodes.length} 家有關係媒體 · {number(data.sample.analyzed)}{' '}
-            篇分析樣本
+            {data.hours === 168 ? '最近 7 天' : `最近 ${data.hours} 小時`} · 顯示 {nodes.length}／{eligible.length} 家媒體 ·{' '}
+            {number(data.sample.analyzed)} 篇分析樣本
           </p>
         </div>
         <div className="flex gap-1 text-xs text-zinc-600 dark:text-zinc-400">
@@ -180,8 +217,16 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
             </button>
           </div>
         </div>
-        <div className="relative min-h-0 flex-1" data-testid="media-graph-frame">
-          <SimilarityGraph nodes={nodes} edges={edges} data={data} showAll={showAll} onSelect={select} />
+        <div ref={graphFrame} className="relative min-h-0 flex-1" data-testid="media-graph-frame">
+          <SimilarityGraph
+            nodes={nodes}
+            edges={edges}
+            layoutEdges={graph.edges}
+            camps={camps}
+            data={data}
+            showAll={showAll}
+            onSelect={select}
+          />
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800">
           <p>
@@ -191,8 +236,10 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
               總覽 {showAll ? edges.length : overview.length}／{edges.length} 條
             </span>
           </p>
-          <p className="hidden sm:block">移到媒體展開完整關係 · 點選看文章</p>
-          <p className="sm:hidden">無連線媒體已隱藏 · 點選圖示看文章</p>
+          <p className="hidden sm:block">
+            {mediaLimit === 'auto' ? '媒體數量依畫布調整' : '媒體數量依設定'} · 移到媒體展開連線 · 點選看文章
+          </p>
+          <p className="sm:hidden">設定可調整媒體數量 · 點選圖示看文章</p>
         </div>
       </section>
       <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
@@ -222,6 +269,21 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
         <div className="space-y-5 p-4">
           {drawer === 'settings' && (
             <form action="/similarity/" method="get" className="space-y-5">
+              <label className="block text-sm">
+                顯示媒體數量
+                <select name="mediaCount" value={mediaLimit} onChange={(event) => setMediaLimit(event.target.value)} className={control}>
+                  <option value="auto">自動（依畫布大小）</option>
+                  {[20, 40, 60, 80].map((count) => (
+                    <option key={count} value={count}>
+                      最多 {count} 家
+                    </option>
+                  ))}
+                  <option value="all">全部有連線的媒體</option>
+                </select>
+                <span className="mt-2 block text-xs leading-5 text-zinc-500">
+                  立即套用；優先顯示樣本較多的媒體與相關來源。未顯示的媒體仍可從媒體列表查看。
+                </span>
+              </label>
               <label className="block text-sm">
                 比較期間
                 <select name="hours" defaultValue={data.hours} className={control}>
@@ -344,8 +406,12 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
-                目前關係類型沒有連線的媒體已隱藏，仍可從媒體列表查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
-                展開該媒體在目前關係類型的所有連線；「顯示全部連線」可查看全貌。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
+                數量預設依畫布大小調整，可在設定中手動選擇；優先顯示樣本較多的媒體及其相關來源。完全沒有連線的媒體不放入圖中，仍可從媒體列表查看。三種關係模式共用同一批媒體與位置，只切換連線。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。Hover
+                展開目前畫面內該媒體的全部連線；「顯示全部連線」可還原目前媒體之間的全部關係。篇數與文章證據仍使用完整分析樣本。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
+              </p>
+              <p>
+                <span className="text-blue-700 dark:text-blue-400">藍字</span>／
+                <span className="text-green-700 dark:text-green-400">綠字</span>沿用網站媒體資料的既有藍／綠標註，未標註者使用一般字色。
               </p>
               <details>
                 <summary className="cursor-pointer font-medium">相似度如何計算</summary>

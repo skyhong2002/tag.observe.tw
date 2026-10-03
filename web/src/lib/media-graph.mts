@@ -125,6 +125,60 @@ export function connectedMedia(nodes: SimilarityNode[], edges: SimilarityEdge[])
   );
   return nodes.filter((node) => connected.has(node.id));
 }
+
+/** Reserve space for every icon and its always-visible name. */
+export function mediaViewportLimit(width: number, height: number) {
+  const inset = width < 600 ? 56 : 120;
+  return Math.max(8, Math.floor((Math.max(0, width - inset) * Math.max(0, height - 95)) / 11_000));
+}
+
+/** Choose a stable subset from ALL relationship types, never the active tab.
+ * Prefer larger sampled outlets, including a relationship partner for each;
+ * citation-only sources remain eligible through their connection strength. */
+export function selectGraphMedia(nodes: SimilarityNode[], edges: SimilarityEdge[], limit: number) {
+  const eligible = connectedMedia(nodes, edges);
+  const budget = Math.max(0, Math.floor(limit));
+  const byId = new Map(eligible.map((node) => [node.id, node]));
+  const valid = edges.filter((edge) => byId.has(edge.source) && byId.has(edge.target));
+  if (budget >= eligible.length) return { nodes: eligible, edges: valid };
+  const strength = new Map<string, number>();
+  const neighbors = new Map<string, Map<string, number>>();
+  for (const edge of valid) {
+    for (const [a, b] of [
+      [edge.source, edge.target],
+      [edge.target, edge.source],
+    ]) {
+      strength.set(a, (strength.get(a) ?? 0) + edge.count);
+      if (!neighbors.has(a)) neighbors.set(a, new Map());
+      neighbors.get(a)!.set(b, (neighbors.get(a)!.get(b) ?? 0) + edge.count);
+    }
+  }
+  const rank = (a: SimilarityNode, b: SimilarityNode) =>
+    b.articles - a.articles || (strength.get(b.id) ?? 0) - (strength.get(a.id) ?? 0) || a.id.localeCompare(b.id);
+  const selected = new Set<string>();
+  for (const node of [...eligible].sort(rank)) {
+    if (selected.size >= budget) break;
+    if (selected.has(node.id)) continue;
+    const partners = [...(neighbors.get(node.id) ?? [])].sort(
+      ([a, x], [b, y]) => Number(selected.has(b)) - Number(selected.has(a)) || y - x || rank(byId.get(a)!, byId.get(b)!),
+    );
+    const partner = partners[0]?.[0];
+    if (!partner || selected.size + (selected.has(partner) ? 1 : 2) > budget) continue;
+    selected.add(node.id);
+    selected.add(partner);
+  }
+  return {
+    nodes: eligible.filter((node) => selected.has(node.id)),
+    edges: valid.filter((edge) => selected.has(edge.source) && selected.has(edge.target)),
+  };
+}
+
+export type MediaCamps = Record<string, 'blue' | 'green'>;
+export function mediaLabelColor(camp: 'blue' | 'green' | undefined, dark: boolean) {
+  if (camp === 'blue') return dark ? '#60a5fa' : '#1d4ed8';
+  if (camp === 'green') return dark ? '#4ade80' : '#15803d';
+  return dark ? '#d4d4d8' : '#52525b';
+}
 const edgeKey = (edge: SimilarityEdge) => `${edge.kind}:${edge.source}:${edge.target}`;
 
 /** Union of each outlet's strongest two links. A hub may have more than two

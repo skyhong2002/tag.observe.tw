@@ -9,9 +9,11 @@ import { useEffect, useRef, useState } from 'react';
 import {
   displayedGraphEdges,
   edgeWeightWidth,
+  type MediaCamps,
   mainGraphEdges,
   mediaGraphPositions,
   mediaIconSizes,
+  mediaLabelColor,
   nodeArticleCounts,
 } from '@/lib/media-graph.mts';
 import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
@@ -28,12 +30,16 @@ function fallbackIcon(node: SimilarityNode) {
 export default function SimilarityGraph({
   nodes,
   edges,
+  layoutEdges,
+  camps,
   data,
   showAll,
   onSelect,
 }: {
   nodes: SimilarityNode[];
   edges: SimilarityEdge[];
+  layoutEdges: SimilarityEdge[];
+  camps: MediaCamps;
   data: SimilarityData;
   showAll: boolean;
   onSelect: (selection: GraphSelection) => void;
@@ -76,7 +82,7 @@ export default function SimilarityGraph({
         .slice(0, 4)
         .map((e) => `${escapeHtml(data.nodes.find((n) => n.id === (incoming ? e.source : e.target))?.name ?? '')} ${e.count} 篇`)
         .join('、');
-    let positions = mediaGraphPositions(nodes, edges, chart.getWidth(), chart.getHeight());
+    let positions = mediaGraphPositions(nodes, layoutEdges, chart.getWidth(), chart.getHeight());
     const nodeData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
       return nodes.map((n, i) => ({
@@ -87,7 +93,7 @@ export default function SimilarityGraph({
         symbolSize: sizes.get(n.id),
         symbolKeepAspect: true,
         itemStyle: { opacity: !focused || neighbors.has(n.id) ? 1 : 0.12 },
-        label: { show: true, opacity: !focused || neighbors.has(n.id) ? 1 : 0.4 },
+        label: { show: true, color: mediaLabelColor(camps[n.id], dark), opacity: !focused || neighbors.has(n.id) ? 1 : 0.4 },
       }));
     };
     const linkData = () =>
@@ -116,7 +122,7 @@ export default function SimilarityGraph({
     const render = () => {
       if (disposed) return;
       const small = chart.getWidth() < 600;
-      positions = mediaGraphPositions(nodes, edges, chart.getWidth(), chart.getHeight());
+      positions = mediaGraphPositions(nodes, layoutEdges, chart.getWidth(), chart.getHeight());
       chart.setOption({
         animation: false,
         tooltip: {
@@ -162,9 +168,6 @@ export default function SimilarityGraph({
               formatter: '{b}',
               width: small ? 70 : 100,
               overflow: 'truncate',
-              backgroundColor: dark ? '#18181be6' : '#ffffffe6',
-              padding: [2, 3],
-              borderRadius: 3,
             },
             labelLayout: { hideOverlap: false },
             data: nodeData(),
@@ -225,13 +228,13 @@ export default function SimilarityGraph({
       observer.disconnect();
       chart.dispose();
     };
-  }, [nodes, edges, data, dark]);
+  }, [nodes, edges, layoutEdges, camps, data, dark]);
   return nodes.length ? (
     <div
       ref={ref}
       className="h-full w-full"
       role="img"
-      aria-label={`力導向媒體關係圖，${nodes.length} 家媒體。移到媒體圖示展開完整關係與引用篇數；點選查看文章。`}
+      aria-label={`力導向媒體關係圖，${nodes.length} 家媒體。移到媒體圖示展開畫面內關係與引用篇數；點選查看文章。`}
     />
   ) : (
     <div className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500">
