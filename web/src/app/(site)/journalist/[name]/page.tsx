@@ -247,7 +247,8 @@ export default async function JournalistPage({
               <a href={removalRequestHref(data.name)} target="_blank" rel="noopener noreferrer" className={linkStyle}>
                 提出移除請求
               </a>
-              ，我們會將名字加入排除名單，之後不再從署名產生這一頁；原文與原站連結不受影響。
+              。這會開啟一則公開的 GitHub issue，請勿填寫名字以外的個資；送出後約 15
+              分鐘內這一頁下架，之後不再從署名產生，原文與原站連結不受影響。
             </p>
           </section>
         </MediaSidebar>

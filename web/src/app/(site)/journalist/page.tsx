@@ -33,7 +33,7 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
           >
             GitHub 提出移除請求
           </a>
-          ，或由個人頁的「關於這一頁」直接送出。
+          ，或由個人頁的「關於這一頁」直接送出。Issue 是公開的，請勿填寫名字以外的個資；送出後約 15 分鐘內下架。
         </p>
         <nav aria-label="期間" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-zinc-500 dark:text-zinc-400">期間</span>

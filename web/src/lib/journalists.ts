@@ -113,7 +113,7 @@ export const SIMILARITY_CAVEAT =
 export function removalRequestHref(name: string): string {
   const params = new URLSearchParams({
     title: `記者頁移除請求：${name}`,
-    body: `請將「${name}」自記者頁移除。\n\n頁面：https://tag.observe.tw${journalistHref(name)}\n\n（請說明您是本人或其代理人；我們不會公開這則回報的內容。）`,
+    body: `請將「${name}」自記者頁移除。\n\n頁面：https://tag.observe.tw${journalistHref(name)}\n\n這則 issue 是公開的，任何人都看得到。除了上面的名字，請不要填寫其他個人資料；不需要證明身分，送出後約 15 分鐘內頁面就會下架。`,
   });
   return `${REPOSITORY_URL}/issues/new?${params}`;
 }
