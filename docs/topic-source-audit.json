@@ -3,7 +3,7 @@
   "directoryCheckedAt": "2026-10-03T15:22:26.073Z",
   "scope": "Media directory homepages; candidates are not proof of a topic index; unconfirmed does not mean no topics exist.",
   "summary": {
-    "directoryEntries": 293,
+    "directoryEntries": 292,
     "configuredMedia": 55,
     "officialIndexes": 63,
     "topicLinks": 1571
@@ -5179,17 +5179,6 @@
       "checkedAt": "2026-10-03T15:21:56.965Z",
       "status": "unavailable",
       "reason": "HTTP 403",
-      "candidateCount": 0,
-      "candidateUrls": []
-    },
-    {
-      "media": "wujie",
-      "name": "無界",
-      "url": null,
-      "configuredIndexes": [],
-      "checkedAt": "2026-10-03T15:21:57.061Z",
-      "status": "unconfirmed",
-      "reason": "No reviewed official URL",
       "candidateCount": 0,
       "candidateUrls": []
     },

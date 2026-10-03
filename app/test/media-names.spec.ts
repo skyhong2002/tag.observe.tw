@@ -28,7 +28,6 @@ describe('reviewed media names', () => {
       expect(['verified', 'retained', 'historical', 'unresolved']).toContain(mediaNames[media].status);
       if (mediaNames[media].status === 'verified') expect(mediaNames[media].sourceUrl).toMatch(/^https?:\/\//);
     }
-    expect(mediaNames.wujie.status).toBe('unresolved');
     expect(mediaNames.apple.name).toBe('蘋果日報');
     expect(mediaNames.bbc.name).not.toBe(mediaNames.bbc_global.name);
   });

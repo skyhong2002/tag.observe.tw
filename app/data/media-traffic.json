@@ -2304,20 +2304,6 @@
           "notes": []
         },
         {
-          "row": 761,
-          "name": "無界 /5",
-          "domain": null,
-          "websiteUrl": null,
-          "classification": "非台灣",
-          "category": "新聞",
-          "rank": null,
-          "traffic": null,
-          "growth": null,
-          "notes": [
-            "名稱含人工調整倍數，流量依原表結果呈現，未還原。"
-          ]
-        },
-        {
           "row": 762,
           "name": "台灣人民報 peponews.tw",
           "domain": null,
@@ -5066,21 +5052,6 @@
           ]
         },
         {
-          "row": 707,
-          "name": "無界 /5",
-          "domain": null,
-          "websiteUrl": null,
-          "classification": "非台灣",
-          "category": "新聞",
-          "rank": null,
-          "traffic": 0.00482,
-          "growth": null,
-          "notes": [
-            "名稱含人工調整倍數，流量依原表結果呈現，未還原。",
-            "原表流量公式：=0.0241/5"
-          ]
-        },
-        {
           "row": 708,
           "name": "鴉鴉新聞",
           "domain": null,
@@ -6180,18 +6151,6 @@
           "domain": null,
           "websiteUrl": null,
           "classification": null,
-          "category": "新聞",
-          "rank": null,
-          "traffic": null,
-          "growth": null,
-          "notes": []
-        },
-        {
-          "row": 776,
-          "name": "無界",
-          "domain": null,
-          "websiteUrl": null,
-          "classification": "非台灣",
           "category": "新聞",
           "rank": null,
           "traffic": null,
@@ -8177,18 +8136,6 @@
           "notes": []
         },
         {
-          "row": 1045,
-          "name": "無界",
-          "domain": null,
-          "websiteUrl": null,
-          "classification": "非台灣",
-          "category": "新聞",
-          "rank": null,
-          "traffic": null,
-          "growth": null,
-          "notes": []
-        },
-        {
           "row": 1046,
           "name": "威傳媒",
           "domain": null,
@@ -9861,18 +9808,6 @@
           "category": "新聞",
           "rank": null,
           "traffic": 0.100598,
-          "growth": null,
-          "notes": []
-        },
-        {
-          "row": 990,
-          "name": "無界",
-          "domain": null,
-          "websiteUrl": null,
-          "classification": "非台灣",
-          "category": "新聞",
-          "rank": null,
-          "traffic": null,
           "growth": null,
           "notes": []
         },
@@ -11557,18 +11492,6 @@
           "category": "新聞",
           "rank": null,
           "traffic": 0.199642,
-          "growth": null,
-          "notes": []
-        },
-        {
-          "row": 851,
-          "name": "無界",
-          "domain": null,
-          "websiteUrl": null,
-          "classification": "非台灣",
-          "category": "新聞",
-          "rank": null,
-          "traffic": 0.0826,
           "growth": null,
           "notes": []
         },

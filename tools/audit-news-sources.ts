@@ -48,10 +48,7 @@ async function inspect(source: NewsSource): Promise<NewsCrawlAudit> {
       status: 'unresolved',
       strategy: 'none',
       listingUrl: null,
-      detail:
-        source.media === 'wujie'
-          ? '依使用者指示略過「無界」；保留原始來源列，不猜測品牌或網域。'
-          : '尚未確認官方網址，保留來源列，不猜測網域。',
+      detail: '尚未確認官方網址，保留來源列，不猜測網域。',
     };
   try {
     const configured = sourceByMedia(source.media);

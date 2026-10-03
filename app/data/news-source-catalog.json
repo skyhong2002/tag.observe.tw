@@ -1729,21 +1729,6 @@
       "provider": "^三星傳媒$"
     },
     {
-      "media": "wujie",
-      "name": "無界 /5",
-      "websiteUrl": null,
-      "referenceNames": [
-        "無界 /5",
-        "無界"
-      ],
-      "referenceRows": [
-        761
-      ],
-      "existing": false,
-      "websiteEvidence": null,
-      "notes": "原表只有「無界」名稱且未附網址；2026-10-03 使用者明確指示略過此來源，不建立爬蟲。保留原始對照列。"
-    },
-    {
       "media": "firenews",
       "name": "火報 firenews",
       "websiteUrl": "https://firenews.com.tw/",

@@ -111,9 +111,9 @@ describe('complete newspaper source catalog', () => {
     }
   });
 
-  it('covers all 198 latest spreadsheet rows exactly once while sharing crawlers for explicit aliases', () => {
+  it('covers all retained latest spreadsheet rows exactly once while sharing crawlers for explicit aliases', () => {
     const latest = traffic.snapshots.find((snapshot) => snapshot.month === newsCatalog.sourceMonth)!;
-    expect(latest.sources).toHaveLength(198);
+    expect(latest.sources).toHaveLength(197);
     const coveredRows = newsCatalog.sources.flatMap((source) => source.referenceRows);
     expect(new Set(coveredRows).size).toBe(coveredRows.length);
     expect(coveredRows.toSorted((a, b) => a - b)).toEqual(latest.sources.map((row) => row.row).toSorted((a, b) => a - b));

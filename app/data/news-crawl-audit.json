@@ -2689,17 +2689,6 @@
       "detail": "使用者已允許最新可得的舊文章；已核實原始發佈時間與完整公開正文，入庫結果見 docs/crawl-restoration.md。"
     },
     {
-      "media": "wujie",
-      "websiteUrl": null,
-      "checkedAt": "2026-10-03T11:12:24.516Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unresolved",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "依使用者指示略過「無界」；保留原始來源列，不猜測品牌或網域。"
-    },
-    {
       "media": "firenews",
       "websiteUrl": "https://firenews.com.tw/",
       "checkedAt": "2026-10-03T11:07:26.298Z",
