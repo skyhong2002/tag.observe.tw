@@ -183,11 +183,13 @@ export const overrides: Record<string, SourceOverride> = {
     list: { autoDiscover: { homeUrl: 'https://www.mplus.com.tw/', includeArchive: true, maxArticles: 12 } },
     article: { enabled: true },
   },
+  // News stories (/tech/dt/n/) are member-only; the column index lists the
+  // latest free /col/article pages, the homepage only links about three.
   digitimes: {
     group: 'hourly',
     list: {
       autoDiscover: {
-        homeUrl: 'https://www.digitimes.com.tw/',
+        homeUrl: 'https://www.digitimes.com.tw/col/',
         articlePattern: '/col/article/\\?id=\\d+',
         includeArchive: true,
         maxArticles: 12,
