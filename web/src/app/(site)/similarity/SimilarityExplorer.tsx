@@ -17,6 +17,7 @@ const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
 });
 const panel = 'rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900';
 const control = 'mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950';
+const inlineControl = 'rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-950';
 const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
 const number = (value: number) => value.toLocaleString('zh-TW');
 const taipei = (iso: string) => {
@@ -293,11 +294,15 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
         >
           <fieldset
             aria-label="圖上媒體篩選"
-            className="grid shrink-0 grid-cols-3 gap-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800 sm:flex sm:items-end sm:gap-3"
+            className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800"
           >
-            <label className="min-w-0 sm:w-32">
-              {filters.tag ? '分類媒體數' : '顯示媒體數'}
-              <select value={filters.limit} onChange={(event) => updateFilters({ limit: Number(event.target.value) })} className={control}>
+            <label className="flex items-center gap-2">
+              <span className="shrink-0">{filters.tag ? '分類媒體數' : '顯示媒體數'}</span>
+              <select
+                value={filters.limit}
+                onChange={(event) => updateFilters({ limit: Number(event.target.value) })}
+                className={`${inlineControl} w-28`}
+              >
                 {[10, 20, 30, 50, 100, 0].map((limit) => (
                   <option key={limit} value={limit}>
                     {limit ? `前 ${limit} 家` : '全部媒體'}
@@ -305,12 +310,12 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                 ))}
               </select>
             </label>
-            <label className="min-w-0 sm:w-32">
-              藍綠分類
+            <label className="flex items-center gap-2">
+              <span className="shrink-0">藍綠分類</span>
               <select
                 value={filters.camp}
                 onChange={(event) => updateFilters({ camp: event.target.value as GraphFilters['camp'] })}
-                className={control}
+                className={`${inlineControl} w-28`}
               >
                 <option value="all">全部</option>
                 <option value="blue">只看藍</option>
@@ -318,9 +323,13 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                 <option value="other">未列藍綠</option>
               </select>
             </label>
-            <label className="min-w-0 sm:w-44">
-              媒體 tag
-              <select value={filters.tag} onChange={(event) => updateFilters({ tag: event.target.value })} className={control}>
+            <label className="flex items-center gap-2">
+              <span className="shrink-0">媒體 tag</span>
+              <select
+                value={filters.tag}
+                onChange={(event) => updateFilters({ tag: event.target.value })}
+                className={`${inlineControl} w-40`}
+              >
                 <option value="">全部 tag</option>
                 {availableTags.map((tag) => (
                   <option key={tag.id} value={tag.id}>
@@ -329,7 +338,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                 ))}
               </select>
             </label>
-            <p className="col-span-3 text-[11px] text-zinc-500 sm:pb-2">
+            <p className="min-w-0 flex-1 basis-full text-[11px] text-zinc-500 lg:basis-auto">
               {filters.tag
                 ? '依本期納入分析篇數排序 · 包含所選分類的直接關係對象，對象不計入分類媒體數'
                 : '依本期納入分析篇數排序 · 只列出目前有關係資料的 tag'}

@@ -13,15 +13,19 @@ export default function Loading() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div
           aria-hidden="true"
-          className="grid shrink-0 grid-cols-3 gap-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800 sm:flex sm:items-end sm:gap-3"
+          className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800"
         >
-          {['顯示媒體數', '藍綠分類', '媒體 tag'].map((label) => (
-            <div key={label} className="min-w-0 text-zinc-400 sm:w-32">
+          {[
+            ['顯示媒體數', 'w-28'],
+            ['藍綠分類', 'w-28'],
+            ['媒體 tag', 'w-40'],
+          ].map(([label, width]) => (
+            <div key={label} className="flex items-center gap-2 text-zinc-400">
               {label}
-              <div className="mt-1 h-[38px] rounded-lg bg-zinc-100 motion-safe:animate-pulse dark:bg-zinc-800" />
+              <div className={`h-[34px] ${width} rounded-lg bg-zinc-100 motion-safe:animate-pulse dark:bg-zinc-800`} />
             </div>
           ))}
-          <div className="col-span-3 flex h-4 items-center sm:pb-2">
+          <div className="flex h-4 basis-full items-center lg:basis-auto">
             <span className="h-2 w-52 rounded bg-zinc-100 dark:bg-zinc-800" />
           </div>
         </div>
