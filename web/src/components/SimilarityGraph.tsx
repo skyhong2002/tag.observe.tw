@@ -117,7 +117,9 @@ export default function SimilarityGraph({
         symbolKeepAspect: true,
         itemStyle: { opacity: !focused || neighbors.has(n.id) ? 1 : 0.12 },
         label: {
-          show: (!!focused && 'node' in focused && focused.node === n.id) || labels.has(n.id),
+          show:
+            (!!focused && ('node' in focused ? focused.node === n.id : focused.edge.source === n.id || focused.edge.target === n.id)) ||
+            labels.has(n.id),
           color: mediaLabelColor(camps[n.id], dark),
           opacity: !focused || neighbors.has(n.id) ? 1 : 0.4,
         },
@@ -236,10 +238,16 @@ export default function SimilarityGraph({
       img.src = src;
     }
     let leaveTimer: ReturnType<typeof setTimeout>;
-    chart.on('mouseover', (event: { dataType?: string; dataIndex?: number }) => {
+    chart.on('mouseover', (event) => {
       clearTimeout(leaveTimer);
-      if (!navigating && !pinned.current && event.dataType === 'node' && event.dataIndex !== undefined)
-        updateFocus({ node: nodes[event.dataIndex].id });
+      if (navigating || event.dataIndex === undefined) return;
+      // Hover previews never replace the pinned selection or the evidence filter.
+      // Leaving the item restores the pinned relationships below.
+      if (event.dataType === 'node') updateFocus({ node: nodes[event.dataIndex].id });
+      else if (event.dataType === 'edge') {
+        const edge = (event.data as { relationship?: SimilarityEdge } | null)?.relationship ?? visibleEdges[event.dataIndex];
+        if (edge) updateFocus({ edge });
+      }
     });
     chart.on('mouseout', () => {
       leaveTimer = setTimeout(() => updateFocus(pinned.current), 180);
