@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bucketByHour, dayRange, taipeiDay } from './event-archive.ts';
+import { bucketByHour, coverageWindow, dayRange, taipeiDay } from './event-archive.ts';
 
 const cats = { blue: ['udn'], green: ['ltn'] };
 const t = (h: number, m = 0) => new Date(Date.UTC(2026, 8, 30, h, m));
@@ -9,6 +9,12 @@ describe('event archive', () => {
     expect(dayRange('2026-10-01')).toEqual({ from: t(16), to: new Date(Date.UTC(2026, 9, 1, 16)) });
     expect(taipeiDay(t(15, 59))).toBe('2026-09-30');
     expect(taipeiDay(t(16))).toBe('2026-10-01');
+  });
+  it('judges coverage over the finished day, or the last 24h for today', () => {
+    const day = dayRange('2026-10-01');
+    expect(coverageWindow('2026-10-01', new Date(Date.UTC(2026, 9, 5)))).toEqual({ start: day.from, end: day.to });
+    const now = new Date(Date.UTC(2026, 9, 1, 3, 20));
+    expect(coverageWindow('2026-10-01', now)).toEqual({ start: new Date(now.getTime() - 24 * 3600e3), end: now });
   });
   it('buckets articles per hour and camp, once per article, ignoring the outside', () => {
     const rows = [

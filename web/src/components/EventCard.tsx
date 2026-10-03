@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar, LeanText } from '@/components/CampBar';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
@@ -59,18 +60,20 @@ export function Movement({ e, className = '' }: { e: EventItem; className?: stri
   );
 }
 
-/** The thread's rank over the last 24 snapshot hours, #1 at the top. Only
- *  worth drawing once there are two hours to connect. */
-export function RankTrail({ e, className = 'h-6 w-20' }: { e: EventItem; className?: string }) {
+/** The thread's rank over the last 24 snapshot hours (or whatever `span` the
+ *  trail covers), #1 at the top. Only worth drawing once there are two hours
+ *  to connect. */
+export function RankTrail({ e, className = 'h-6 w-20', span = '最近 24 小時' }: { e: EventItem; className?: string; span?: string }) {
   const trail = e.rankTrail ?? [];
   const seen = trail.filter((r): r is number => r !== null);
   if (seen.length < 2) return null;
   const best = Math.min(...seen);
   return (
     <span
+      role="img"
       className="inline-flex items-center rounded bg-zinc-100 px-0.5 dark:bg-zinc-800"
-      title={`最近 24 小時名次：${trail.map((r) => (r === null ? '－' : r)).join(' ')}；最高第 ${best} 名`}
-      aria-label={`最近 24 小時名次走勢，最高第 ${best} 名`}
+      title={`${span}名次：${trail.map((r) => (r === null ? '－' : r)).join(' ')}；最高第 ${best} 名`}
+      aria-label={`${span}名次走勢，最高第 ${best} 名`}
     >
       <Sparkline values={trail} rank color="#0369a1" className={className} />
     </span>
@@ -245,7 +248,22 @@ function Title({ e, className }: { e: EventItem; className: string }) {
   );
 }
 
-export default function EventCard({ e, tier, max, media }: { e: EventItem; tier: EventTier; max: number; media: MediaInfo }) {
+export default function EventCard({
+  e,
+  tier,
+  max,
+  media,
+  meta,
+  trailSpan,
+}: {
+  e: EventItem;
+  tier: EventTier;
+  max: number;
+  media: MediaInfo;
+  /** Extra signals next to the movement badges (the archive's best rank and run). */
+  meta?: ReactNode;
+  trailSpan?: string;
+}) {
   const img = cover(e);
   const pair = tier === 'hero' ? campPair(e) : null;
   const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
@@ -260,7 +278,8 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <Title e={e} className="font-medium leading-snug" />
             <Movement e={e} />
-            <RankTrail e={e} className="h-5 w-16" />
+            {meta}
+            <RankTrail e={e} className="h-5 w-16" span={trailSpan} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <ScoreBar score={e.score} max={max} width="w-12" />
@@ -295,7 +314,8 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
             {rank}
             <ScoreBar score={e.score} max={max} width="w-24" />
             <Movement e={e} />
-            <RankTrail e={e} className="h-7 w-24" />
+            {meta}
+            <RankTrail e={e} className="h-7 w-24" span={trailSpan} />
             <Compare e={e} className="ml-auto" />
           </div>
           <Title e={e} className="text-xl font-semibold leading-snug" />
@@ -327,7 +347,8 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
         {rank}
         <ScoreBar score={e.score} max={max} width="w-16" />
         <Movement e={e} />
-        <RankTrail e={e} />
+        {meta}
+        <RankTrail e={e} span={trailSpan} />
         <Compare e={e} className="ml-auto" />
       </div>
       <div className="flex gap-3">

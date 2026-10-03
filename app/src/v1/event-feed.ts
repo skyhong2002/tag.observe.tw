@@ -105,6 +105,16 @@ const window = (hour: Date) => ({ from: new Date(hour.getTime() - 24 * HOUR), to
  *  is limited to the news outlets the rankings use, as on the home page. */
 export async function campBaseline(db: Db, hour: Date, cats: Record<string, string[]> = categories): Promise<CampBaseline> {
   const { from, to } = window(hour);
+  return campBaselineBetween(db, from, to, cats);
+}
+
+/** campBaseline over an arbitrary window, e.g. one archived day. */
+export async function campBaselineBetween(
+  db: Db,
+  from: Date,
+  to: Date,
+  cats: Record<string, string[]> = categories,
+): Promise<CampBaseline> {
   const rows = await db
     .select({ media: articles.media, n: sql<number>`count(*)` })
     .from(articles)
@@ -133,15 +143,27 @@ export async function feedCoverage(
   majors: ReadonlyArray<readonly string[]>,
   base: CampBaseline | null,
 ): Promise<EventFeedCoverage[]> {
+  const { from, to } = window(hour);
+  return coverageBetween(db, from, to, majors, base);
+}
+
+/** feedCoverage over an arbitrary window, e.g. one archived day. */
+export async function coverageBetween(
+  db: Db,
+  from: Date,
+  to: Date,
+  majors: ReadonlyArray<readonly string[]>,
+  base: CampBaseline | null,
+  limit = 20000,
+): Promise<EventFeedCoverage[]> {
   const tags = [...new Set(majors.flat().filter((t) => t.trim()))];
   if (tags.length === 0) return majors.map(() => EMPTY);
-  const { from, to } = window(hour);
   const rows = await db
     .select({ articleId: articleTags.articleId, media: articles.media, tag: articleTags.tag })
     .from(articleTags)
     .innerJoin(articles, eq(articles.id, articleTags.articleId))
     .where(and(inArray(articleTags.tag, tags), gte(articleTags.publishedAt, from), lte(articleTags.publishedAt, to)))
-    .limit(20000);
+    .limit(limit);
   return groupFeedCoverage(rows, majors, base);
 }
 

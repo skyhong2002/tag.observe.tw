@@ -1,12 +1,63 @@
 import Link from 'next/link';
+import { BaselineBar } from '@/components/CampBar';
+import EventCard, { type EventTier } from '@/components/EventCard';
+import { CampGap, EventIndex, HourTimeline } from '@/components/EventOverview';
+import MediaSidebar from '@/components/MediaSidebar';
 import { fetchMedia, type MediaInfo, taipeiHour } from '@/lib/api';
-import { cleanEventHeadline, selectEventLead } from '@/lib/event-presentation.mts';
-import { fetchEventDay } from '@/lib/pages';
+import { type ArchivedThread, type EventItem, fetchEventDay } from '@/lib/pages';
 
 export const revalidate = 300;
 export const metadata = { title: '事件存檔' };
 
+// One day of the event table, laid out like the hourly page: every thread that
+// was on the table that day, ranked by its best burst, in the same three
+// weights, with the camp blind spots and an hour strip back into the table.
+
 const weekday = (day: string) => '日一二三四五六'[new Date(`${day}T00:00:00Z`).getUTCDay()];
+const dayLink = (day: string) => `/event/archive/?day=${day}`;
+const atLink = (iso: string) => `/event/?at=${encodeURIComponent(iso)}`;
+const hh = (iso: string) => taipeiHour(iso).slice(-5);
+const taipeiDay = (iso: string) => new Date(Date.parse(iso) + 8 * 3600e3).toISOString().slice(0, 10);
+const mmdd = (day: string) => day.slice(5).replace('-', '/');
+/** Clock time, with the date when it falls on another day. */
+const when = (iso: string, day: string) => (taipeiDay(iso) === day ? hh(iso) : `${mmdd(taipeiDay(iso))} ${hh(iso)}`);
+
+const HERO = 3,
+  CARDS = 9;
+const tierOf = (rank: number): EventTier => (rank <= HERO ? 'hero' : rank <= CARDS ? 'card' : 'row');
+
+/** A thread in the shape of an hourly event, so the table's cards render it. */
+const asEvent = (t: ArchivedThread, rank: number): EventItem => ({
+  rank,
+  score: t.maxScore,
+  major: t.majorTags,
+  tags: t.majorTags.map((tag) => ({ tag, burst: null })),
+  news: t.news,
+  relatedEventPk: String(t.id),
+  hours: t.hours,
+  rankTrail: t.rankTrail,
+  firstTime: t.firstTime,
+  coverage: t.coverage,
+});
+
+/** Best rank and the span on the table: the archive's stand-in for movement. */
+function Run({ t, day }: { t: ArchivedThread; day: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs tabular-nums">
+      {t.bestRank === 1 ? (
+        <span className="rounded bg-brand-700 px-1 py-px text-white dark:bg-brand-500">登上第 1 名</span>
+      ) : (
+        t.bestRank && <span className="text-zinc-500">最高第 {t.bestRank} 名</span>
+      )}
+      <span className="text-zinc-500" title={`${taipeiHour(t.firstTime)} 至 ${taipeiHour(t.lastTime)}`}>
+        <Link href={atLink(t.firstTime)} className="hover:underline">
+          {when(t.firstTime, day)}
+        </Link>
+        {t.lastTime !== t.firstTime && ` 至 ${when(t.lastTime, day)}`}
+      </span>
+    </span>
+  );
+}
 
 export default async function EventArchivePage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
   const q = (await searchParams).day;
@@ -16,16 +67,37 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
     return (
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">事件存檔</h1>
-        <p className="text-sm text-zinc-600">事件資料暫時無法取得，請稍後重新整理。</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">事件資料暫時無法取得，請稍後重新整理。</p>
       </div>
     );
   const i = data.days.indexOf(data.day);
   const prev = i > 0 ? data.days[i - 1] : i === -1 ? data.days.filter((d) => d < data.day).at(-1) : undefined;
   const next = i >= 0 && i < data.days.length - 1 ? data.days[i + 1] : undefined;
+  // Today's camp split is the trailing 24h, as on the live table.
+  const today = data.day === taipeiDay(new Date().toISOString());
+  const basis = today ? '過去 24 小時' : '當天';
+  const threads = [...data.threads].sort((a, b) => b.maxScore - a.maxScore);
+  const events = threads.map((t, n) => asEvent(t, n + 1));
+  const max = Math.max(0, ...events.map((e) => e.score));
+  const tiers = (['hero', 'card', 'row'] as const).map((tier) => ({
+    tier,
+    items: events.filter((e) => tierOf(e.rank) === tier),
+  }));
+  const card = (e: EventItem, tier: EventTier) => (
+    <EventCard
+      key={e.rank}
+      e={e}
+      tier={tier}
+      max={max}
+      media={media}
+      meta={<Run t={threads[e.rank - 1]} day={data.day} />}
+      trailSpan="當天各小時"
+    />
+  );
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
           <Link href="/event/" className="hover:underline">
             事件表
           </Link>{' '}
@@ -34,65 +106,94 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
           {data.day}（{weekday(data.day)}）的事件
         </h1>
-        <p className="mt-1 text-sm text-zinc-600">這一天出現在事件表上的 {data.threads.length} 則事件，依最高爆發力排序。</p>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          這一天出現在事件表上的 {threads.length} 件事，依當天最高爆發力排序 · 依標籤共現分群
+        </p>
+        <p className="mt-1 text-xs text-zinc-500">
+          爆發力條以當天第 1 名為滿格；名次是在每小時事件表上的最佳名次，點時間可回到當時的事件表。每件事的藍綠比例是
+          {basis}寫過該事件主要標籤的媒體家數，不含未列藍綠的媒體。
+        </p>
+        {data.baseline && (
+          <div className="mt-2">
+            <BaselineBar b={data.baseline} label={`${basis}整體`} />
+          </div>
+        )}
       </div>
-      <nav className="flex flex-wrap items-center gap-1 text-sm">
-        {prev && (
-          <Link href={`/event/archive/?day=${prev}`} scroll={false} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
-            ← 前一天
-          </Link>
-        )}
-        {next && (
-          <Link href={`/event/archive/?day=${next}`} scroll={false} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
-            後一天 →
-          </Link>
-        )}
-        <span className="ml-2 flex flex-wrap gap-1">
-          {data.days.map((d) => (
-            <Link
-              key={d}
-              href={`/event/archive/?day=${d}`}
-              scroll={false}
-              className={`rounded px-1.5 py-0.5 text-xs tabular-nums ${d === data.day ? 'bg-sky-600 text-white' : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
-            >
-              {d.slice(5).replace('-', '/')}
+      <nav className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex flex-wrap items-center gap-2">
+          {prev ? (
+            <Link href={dayLink(prev)} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
+              ← 前一天
             </Link>
-          ))}
-        </span>
+          ) : (
+            <span className="rounded-md px-3 py-1 text-zinc-500">← 前一天</span>
+          )}
+          {next ? (
+            <Link href={dayLink(next)} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
+              後一天 →
+            </Link>
+          ) : (
+            <span className="rounded-md px-3 py-1 text-zinc-500">後一天 →</span>
+          )}
+          <span className="flex flex-wrap gap-1">
+            {data.days.map((d) => (
+              <Link
+                key={d}
+                href={dayLink(d)}
+                aria-current={d === data.day ? 'page' : undefined}
+                className={`rounded px-1.5 py-0.5 text-xs tabular-nums ${
+                  d === data.day
+                    ? 'bg-brand-700 text-white dark:bg-brand-600'
+                    : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                }`}
+              >
+                {mmdd(d)}（{weekday(d)}）
+              </Link>
+            ))}
+          </span>
+          <Link href="/event/" className="ml-auto text-sky-700 hover:underline dark:text-sky-400">
+            最新事件表 →
+          </Link>
+        </div>
+        <HourTimeline hours={data.dayHours ?? []} dayStats={data.dayStats} />
       </nav>
-      {data.threads.length === 0 ? (
-        <p className="text-sm text-zinc-600">這一天沒有事件資料。</p>
+      {threads.length === 0 ? (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">這一天沒有事件資料。</p>
       ) : (
-        <ol className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-          {data.threads.map((t) => {
-            const lead = selectEventLead(t.news, t.majorTags);
-            return (
-              <li key={t.id} className="px-4 py-3">
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <Link href={`/eve/${t.id}/`} className="font-semibold leading-snug hover:underline">
-                    {lead ? cleanEventHeadline(lead.title) : t.majorTags.join('、')}
-                  </Link>
-                  {lead && <span className="text-xs text-zinc-600">{media[lead.media]?.title ?? lead.media}</span>}
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-zinc-600">
-                  {t.majorTags.map((tag) => (
-                    <Link
-                      key={tag}
-                      href={`/tag/${encodeURIComponent(tag)}`}
-                      className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                    >
-                      {tag}
-                    </Link>
-                  ))}
-                  <span className="tabular-nums">
-                    {taipeiHour(t.firstTime)} 至 {taipeiHour(t.lastTime)} · {t.hours} 小時 · 最高分 {t.maxScore.toFixed(1)}
-                    {t.bestRank ? ` · 最高第 ${t.bestRank} 名` : ''}
-                  </span>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:gap-8">
+          <MediaSidebar label={`事件索引（${threads.length} 件）`}>
+            <div className="lg:sticky lg:top-4">
+              <EventIndex events={events} scope="這一天" />
+            </div>
+          </MediaSidebar>
+          <div className="mt-5 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
+            {events.some((e) => e.coverage) && <CampGap events={events} scope="這一天" basis={basis} />}
+            {tiers.map(({ tier, items }) =>
+              items.length === 0 ? null : tier === 'hero' ? (
+                <ol key={tier} className="space-y-4" aria-label="當天頭條">
+                  {items.map((e) => card(e, tier))}
+                </ol>
+              ) : tier === 'card' ? (
+                <ol key={tier} className="grid gap-4 md:grid-cols-2" aria-label="重要事件">
+                  {items.map((e) => card(e, tier))}
+                </ol>
+              ) : (
+                <section key={tier} aria-labelledby="more-heading">
+                  <h2
+                    id="more-heading"
+                    className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
+                  >
+                    其他事件
+                    <span className="text-xs font-normal text-zinc-500">
+                      第 {items[0].rank} 到 {items[items.length - 1].rank} 名
+                    </span>
+                  </h2>
+                  <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">{items.map((e) => card(e, tier))}</ol>
+                </section>
+              ),
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -119,13 +119,21 @@ export interface ArchivedThread {
   maxTag: string | null;
   maxScore: number;
   bestRank: number | null;
-  news: Array<{ title: string; url: string; image: string | null; media: string }>;
+  /** Rank in each snapshot hour of the day from midnight; null = off the table. */
+  rankTrail?: Array<number | null> | null;
+  /** Outlets on the story over the day (the last 24h, for today). */
+  coverage?: EventCoverage;
+  news: EventNews[];
 }
-export const fetchEventDay = (day?: string) =>
-  get<{ day: string; days: string[]; threads: ArchivedThread[] }>(
-    `/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`,
-    300,
-  );
+export interface EventDay {
+  day: string;
+  days: string[];
+  dayHours?: string[];
+  dayStats?: Array<{ hour: string; top: number; count: number }>;
+  baseline?: CampBaseline;
+  threads: ArchivedThread[];
+}
+export const fetchEventDay = (day?: string) => get<EventDay>(`/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`, 300);
 export const fetchTopics = (limit = 120) => get<{ media: TopicMedia[]; feed?: FeedTopic[] }>(`/api/v1/topics?limit=${limit}`, 300);
 export interface TopicMediaPage {
   media: string;

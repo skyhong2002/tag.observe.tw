@@ -34,6 +34,26 @@ const camp = str('政治傾向分組：blue 藍營傾向、green 綠營傾向、
   enum: ['blue', 'green', 'other'],
 });
 
+// Shared by the hourly table and the day archive; `span` names the window.
+const campBaseline = (span: string) =>
+  obj(
+    {
+      outlets: obj({ blue: int(), green: int(), other: int() }, `事件窗口（${span}）內有發稿的媒體家數`),
+      articles: obj({ blue: int(), green: int(), other: int() }, '同窗口內各陣營文章數'),
+    },
+    '各陣營的整體基準，用來判斷單一事件的藍綠比例是否異常；其他只計排行榜用的新聞媒體',
+  );
+const eventCoverage = (span: string) =>
+  obj({
+    outlets: arr(obj({ media: str(), camp: str('blue／green／other') }), `${span}寫過此事件主要標籤的媒體，依篇數排序`),
+    articles: int('報導篇數'),
+    camps: obj({ blue: int(), green: int(), other: int() }, '各陣營媒體家數'),
+    share: nullable(obj({ blue: int(), green: int() }, '藍綠之間的家數百分比（不含其他）')),
+    lean: nullable(num('藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠')),
+    tilt: nullable(str('明顯偏向的陣營（|lean| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家）')),
+    blindspot: arr(str(), '盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事'),
+  });
+
 const schemas: Record<string, Schema> = {
   Error: obj({ error: str('錯誤代碼或說明') }, '錯誤回應', []),
   MediaKey: str('媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media', { pattern: '^[a-z0-9_]+$' }),
@@ -749,13 +769,7 @@ export const ENDPOINTS: Endpoint[] = [
       next: nullable(time('下一個有快照的小時；最新時為 null')),
       dayHours: arr(time(), '同一台北日內所有有快照的小時'),
       dayStats: arr(obj({ hour: time(), top: num('該小時第 1 名的爆發力'), count: int('該小時事件數') }), '同一台北日內每個快照小時的概況'),
-      baseline: obj(
-        {
-          outlets: obj({ blue: int(), green: int(), other: int() }, '事件窗口（過去 24 小時）內有發稿的媒體家數'),
-          articles: obj({ blue: int(), green: int(), other: int() }, '同窗口內各陣營文章數'),
-        },
-        '各陣營的整體基準，用來判斷單一事件的藍綠比例是否異常；其他只計排行榜用的新聞媒體',
-      ),
+      baseline: campBaseline('過去 24 小時'),
       events: arr(
         obj({
           rank: int(),
@@ -769,15 +783,7 @@ export const ENDPOINTS: Endpoint[] = [
           hours: nullable(int('事件串到這個小時為止已出現的小時數')),
           rankTrail: nullable(arr(nullable(int()), '事件串在截至本小時的 24 個快照小時的名次（最舊在前）；不在榜上的小時為 null')),
           firstTime: nullable(time('事件串第一次上榜的小時')),
-          coverage: obj({
-            outlets: arr(obj({ media: str(), camp: str('blue／green／other') }), '過去 24 小時寫過此事件主要標籤的媒體，依篇數排序'),
-            articles: int('報導篇數'),
-            camps: obj({ blue: int(), green: int(), other: int() }, '各陣營媒體家數'),
-            share: nullable(obj({ blue: int(), green: int() }, '藍綠之間的家數百分比（不含其他）')),
-            lean: nullable(num('藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠')),
-            tilt: nullable(str('明顯偏向的陣營（|lean| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家）')),
-            blindspot: arr(str(), '盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事'),
-          }),
+          coverage: eventCoverage('過去 24 小時'),
         }),
       ),
     }),
@@ -788,11 +794,15 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/events/threads',
     tag: 'events',
     summary: '某一天的所有事件串',
-    description: '台北時間某一天內曾出現的事件串，依最高分排序（最多 300 個）。`days` 列出所有有資料的日期。',
+    description:
+      '台北時間某一天內曾出現的事件串，依最高分排序（最多 300 個）。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。',
     params: [q('day', '台北日期 YYYY-MM-DD，預設今天', str(undefined, { pattern: '^\\d{4}-\\d{2}-\\d{2}$' }), '2026-09-30')],
     response: obj({
       day: str(),
       days: arr(str()),
+      dayHours: arr(time(), '當天所有有快照的小時'),
+      dayStats: arr(obj({ hour: time(), top: num('該小時第 1 名的爆發力'), count: int('該小時事件數') }), '當天每個快照小時的概況'),
+      baseline: campBaseline('當天'),
       threads: arr(
         obj({
           id: int(),
@@ -803,7 +813,9 @@ export const ENDPOINTS: Endpoint[] = [
           maxTag: nullable(str('分數最高的標籤')),
           maxScore: num(),
           bestRank: nullable(int('最佳名次')),
-          news: arr(obj({ title: str(), url: str(), image: nullable(str()), media: ref('MediaKey') })),
+          rankTrail: nullable(arr(nullable(int()), '當天每個小時的名次（從 00:00 起，最舊在前）；不在榜上的小時為 null')),
+          coverage: eventCoverage('當天'),
+          news: arr(ref('Headline'), '最佳名次那一小時的代表新聞（最多 6 則），各附媒體陣營 camp'),
         }),
       ),
     }),

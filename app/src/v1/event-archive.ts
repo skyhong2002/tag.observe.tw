@@ -3,6 +3,7 @@ import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads } from '../db/schema.ts';
 import { rankingBasis } from '../jobs/ranking-basis.ts';
 import { type Camp, campOf } from './coverage.ts';
+import { campBaselineBetween, coverageBetween, hourStats, rankTrail } from './event-feed.ts';
 import { loadHourlyTrends } from './tag-series.ts';
 
 // Event archive: every thread active on a Taipei day, and one thread's hourly
@@ -14,6 +15,12 @@ export const taipeiDay = (d: Date) => new Date(d.getTime() + TPE).toISOString().
 export const dayRange = (day: string) => {
   const from = new Date(Date.parse(`${day}T00:00:00Z`) - TPE);
   return { from, to: new Date(from.getTime() + 24 * HOUR) };
+};
+/** Camp coverage window for a day: the 24h ending with it, or now for today,
+ *  so a finished day is its own window and today matches the live table. */
+export const coverageWindow = (day: string, now: Date) => {
+  const end = new Date(Math.min(dayRange(day).to.getTime(), now.getTime()));
+  return { start: new Date(end.getTime() - 24 * HOUR), end };
 };
 
 export interface CampCounts {
@@ -41,7 +48,11 @@ export function bucketByHour(
   return out;
 }
 
-export async function threadsOnDay(db: Db, category: string, day: string) {
+// Coverage over a whole day can join far more tagged articles than one hour's
+// table; cap generously so a busy day is not silently undercounted.
+const DAY_COVERAGE_ROWS = 100000;
+
+export async function threadsOnDay(db: Db, category: string, day: string, now = new Date()) {
   const { from, to } = dayRange(day);
   const threads = await db
     .select({
@@ -58,7 +69,10 @@ export async function threadsOnDay(db: Db, category: string, day: string) {
     .orderBy(desc(eventThreads.maxScore))
     .limit(300);
   // Each thread's best-ranked hour supplies its headlines.
-  const best = new Map<number, { rank: number; news: Array<{ title: string; url: string; image: string | null; media: string }> }>();
+  const best = new Map<
+    number,
+    { rank: number; news: Array<{ id?: number; title: string; url: string; image: string | null; media: string }> }
+  >();
   const ids = threads.map((t) => t.id);
   for (let i = 0; i < ids.length; i += 100) {
     const rows = await db
@@ -71,18 +85,58 @@ export async function threadsOnDay(db: Db, category: string, day: string) {
         best.set(r.threadId as number, { rank: r.rank, news: (r.majorNews.length ? r.majorNews : r.news).slice(0, 6) });
     }
   }
-  const days = await db
-    .selectDistinct({ d: sql<string>`DATE_FORMAT(${eventSnapshots.hourStart} + INTERVAL 8 HOUR, '%Y-%m-%d')` })
-    .from(eventSnapshots)
-    .where(eq(eventSnapshots.category, category));
+  // Who covered each thread, judged against the window's camp split exactly as
+  // the hourly table is.
+  const { start, end } = coverageWindow(day, now);
+  const [days, hours, baseline] = await Promise.all([
+    db
+      .selectDistinct({ d: sql<string>`DATE_FORMAT(${eventSnapshots.hourStart} + INTERVAL 8 HOUR, '%Y-%m-%d')` })
+      .from(eventSnapshots)
+      .where(eq(eventSnapshots.category, category)),
+    db
+      .select({ h: eventSnapshots.hourStart })
+      .from(eventSnapshots)
+      .where(and(eq(eventSnapshots.category, category), gte(eventSnapshots.hourStart, from), lt(eventSnapshots.hourStart, to)))
+      .orderBy(eventSnapshots.hourStart),
+    campBaselineBetween(db, start, end),
+  ]);
+  const dayHours = hours.map((r) => r.h);
+  const last = dayHours.at(-1);
+  const [coverage, dayStats, trails] = await Promise.all([
+    coverageBetween(
+      db,
+      start,
+      end,
+      threads.map((t) => t.majorTags),
+      baseline,
+      DAY_COVERAGE_ROWS,
+    ),
+    hourStats(db, category, dayHours),
+    // One slot per hour since midnight, so the line spans the day itself.
+    last
+      ? rankTrail(db, category, ids, last, Math.round((last.getTime() - from.getTime()) / HOUR) + 1)
+      : new Map<number, Array<number | null>>(),
+  ]);
   return {
     day,
     days: days.map((r) => r.d).sort(),
-    threads: threads.map((t) => ({
+    dayHours: dayHours.map((h) => h.toISOString()),
+    dayStats,
+    baseline,
+    threads: threads.map((t, i) => ({
       ...t,
       maxScore: t.maxScore / 1e6,
       bestRank: best.get(t.id)?.rank ?? null,
-      news: (best.get(t.id)?.news ?? []).map((n) => ({ title: n.title, url: n.url, image: n.image, media: n.media })),
+      rankTrail: trails.get(t.id) ?? null,
+      coverage: coverage[i],
+      news: (best.get(t.id)?.news ?? []).map((n) => ({
+        id: n.id ?? null,
+        media: n.media,
+        camp: campOf(n.media),
+        title: n.title,
+        url: n.url,
+        image: n.image,
+      })),
     })),
   };
 }

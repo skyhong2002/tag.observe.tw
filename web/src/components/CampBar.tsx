@@ -155,7 +155,7 @@ export function FullBar({ c }: { c: EventCoverage }) {
 }
 
 /** The hour's reference split, shown once above the table. */
-export function BaselineBar({ b }: { b: CampBaseline }) {
+export function BaselineBar({ b, label = '過去 24 小時整體' }: { b: CampBaseline; label?: string }) {
   const order: Camp[] = ['green', 'other', 'blue'];
   const total = order.reduce((n, k) => n + b.articles[k], 0);
   if (!total) return null;
@@ -163,7 +163,7 @@ export function BaselineBar({ b }: { b: CampBaseline }) {
   const text = order.map((k) => `${CAMP_LABEL[k]} ${pct(k)}%（${b.outlets[k]} 家、${b.articles[k].toLocaleString()} 篇）`).join('、');
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-      <span>過去 24 小時整體</span>
+      <span>{label}</span>
       <span className="flex h-2.5 w-40 overflow-hidden rounded-full" title={text}>
         <span className="sr-only">{text}</span>
         {order.map((k) => (

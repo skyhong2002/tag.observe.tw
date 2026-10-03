@@ -936,7 +936,7 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 
 **某一天的所有事件串**
 
-台北時間某一天內曾出現的事件串，依最高分排序（最多 300 個）。`days` 列出所有有資料的日期。
+台北時間某一天內曾出現的事件串，依最高分排序（最多 300 個）。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -954,6 +954,20 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | --- | --- | --- |
 | `day` | string |  |
 | `days` | string[] |  |
+| `dayHours` | string (ISO 時間)[] | 當天所有有快照的小時 |
+| `dayStats` | object[] | 當天每個快照小時的概況 |
+| `dayStats[].hour` | string (ISO 時間) |  |
+| `dayStats[].top` | number | 該小時第 1 名的爆發力 |
+| `dayStats[].count` | integer | 該小時事件數 |
+| `baseline` | object | 各陣營的整體基準，用來判斷單一事件的藍綠比例是否異常；其他只計排行榜用的新聞媒體 |
+| `baseline.outlets` | object | 事件窗口（當天）內有發稿的媒體家數 |
+| `baseline.outlets.blue` | integer |  |
+| `baseline.outlets.green` | integer |  |
+| `baseline.outlets.other` | integer |  |
+| `baseline.articles` | object | 同窗口內各陣營文章數 |
+| `baseline.articles.blue` | integer |  |
+| `baseline.articles.green` | integer |  |
+| `baseline.articles.other` | integer |  |
 | `threads` | object[] |  |
 | `threads[].id` | integer |  |
 | `threads[].firstTime` | string (ISO 時間) |  |
@@ -963,11 +977,29 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | `threads[].maxTag` | string \| null | 分數最高的標籤 |
 | `threads[].maxScore` | number |  |
 | `threads[].bestRank` | integer \| null | 最佳名次 |
-| `threads[].news` | object[] |  |
-| `threads[].news[].title` | string |  |
-| `threads[].news[].url` | string |  |
-| `threads[].news[].image` | string \| null |  |
+| `threads[].rankTrail` | integer \| null[] \| null | 當天每個小時的名次（從 00:00 起，最舊在前）；不在榜上的小時為 null |
+| `threads[].coverage` | object |  |
+| `threads[].coverage.outlets` | object[] | 當天寫過此事件主要標籤的媒體，依篇數排序 |
+| `threads[].coverage.outlets[].media` | string |  |
+| `threads[].coverage.outlets[].camp` | string | blue／green／other |
+| `threads[].coverage.articles` | integer | 報導篇數 |
+| `threads[].coverage.camps` | object | 各陣營媒體家數 |
+| `threads[].coverage.camps.blue` | integer |  |
+| `threads[].coverage.camps.green` | integer |  |
+| `threads[].coverage.camps.other` | integer |  |
+| `threads[].coverage.share` | object \| null | 藍綠之間的家數百分比（不含其他） |
+| `threads[].coverage.share.blue` | integer |  |
+| `threads[].coverage.share.green` | integer |  |
+| `threads[].coverage.lean` | number \| null | 藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠 |
+| `threads[].coverage.tilt` | string \| null | 明顯偏向的陣營（\|lean\| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家） |
+| `threads[].coverage.blindspot` | string[] | 盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事 |
+| `threads[].news` | object[] | 最佳名次那一小時的代表新聞（最多 6 則），各附媒體陣營 camp |
+| `threads[].news[].id` | integer \| null | 文章 id（舊資料可能為 null） |
 | `threads[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `threads[].news[].title` | string | 標題 |
+| `threads[].news[].url` | string | 原文網址 |
+| `threads[].news[].image` | string \| null | 代表圖網址 |
+| `threads[].news[].camp` | string | 媒體陣營 blue／green／other（只在 /api/v1/events 回傳） |
 
 錯誤：`400` 日期格式錯誤。
 
