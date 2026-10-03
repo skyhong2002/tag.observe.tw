@@ -64,30 +64,31 @@ export function CampBadge({ c, className = '' }: { c: EventCoverage; className?:
   return null;
 }
 
-/** Blue vs green only, with a tick at the day's usual split. */
-export function SplitBar({ c, baseline, width = 'w-20' }: { c: EventCoverage; baseline?: CampBaseline | null; width?: string }) {
-  if (!c.share) return null;
-  const tick = baselineBlue(baseline);
-  const text = `藍營 ${c.share.blue}%、綠營 ${c.share.green}%；平常約藍 ${tick}%`;
+/** Mini three-segment bar (綠、其他、藍) by outlet count, same order as FullBar. */
+export function SplitBar({ c, width = 'w-20' }: { c: EventCoverage; width?: string }) {
+  const order: Camp[] = ['green', 'other', 'blue'];
+  const total = order.reduce((n, k) => n + c.camps[k], 0);
+  if (!total) return null;
+  const text = order.map((k) => `${CAMP_LABEL[k]} ${c.camps[k]} 家`).join('、');
   return (
-    <span
-      className={`relative inline-block h-2 ${width} shrink-0 overflow-hidden rounded-full bg-emerald-600 dark:bg-emerald-500`}
-      title={text}
-    >
+    <span className={`inline-flex h-2 ${width} shrink-0 overflow-hidden rounded-full`} title={text}>
       <span className="sr-only">{text}</span>
-      <span className={`absolute inset-y-0 left-0 ${CAMP_FILL.blue}`} style={{ width: `${c.share.blue}%` }} aria-hidden />
-      <span className="absolute inset-y-0 w-0.5 bg-white/90 dark:bg-zinc-900/90" style={{ left: `calc(${tick}% - 1px)` }} aria-hidden />
+      {order
+        .filter((k) => c.camps[k] > 0)
+        .map((k) => (
+          <span key={k} className={CAMP_FILL[k]} style={{ flexGrow: c.camps[k] }} aria-hidden />
+        ))}
     </span>
   );
 }
 
 /** The card line: dominant camp share, outlet counts, badge. */
-export function CampLine({ c, baseline, compact = false }: { c: EventCoverage; baseline?: CampBaseline | null; compact?: boolean }) {
+export function CampLine({ c, compact = false }: { c: EventCoverage; compact?: boolean }) {
   if (!c.share) return null;
   const lead: Camp = c.share.blue >= c.share.green ? 'blue' : 'green';
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-      <SplitBar c={c} baseline={baseline} width={compact ? 'w-14' : 'w-20'} />
+      <SplitBar c={c} width={compact ? 'w-14' : 'w-20'} />
       <span className="tabular-nums">
         <span className={`font-medium ${CAMP_TEXT[lead]}`}>
           {CAMP_LABEL[lead]} {c.share[lead]}%

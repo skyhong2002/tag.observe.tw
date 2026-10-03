@@ -8,7 +8,7 @@ import type { MediaInfo } from '@/lib/api';
 import { cleanEventHeadline, selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { headlineDiff } from '@/lib/headline-compare.mts';
 import { isAllowedImage } from '@/lib/images';
-import type { Camp, CampBaseline, EventCoverage, EventItem, EventNews } from '@/lib/pages';
+import type { Camp, EventCoverage, EventItem, EventNews } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 
 // One event of the hourly table, in three weights: `hero` for the top of the
@@ -226,19 +226,7 @@ function Title({ e, className }: { e: EventItem; className: string }) {
   );
 }
 
-export default function EventCard({
-  e,
-  tier,
-  max,
-  media,
-  baseline,
-}: {
-  e: EventItem;
-  tier: EventTier;
-  max: number;
-  media: MediaInfo;
-  baseline?: CampBaseline | null;
-}) {
+export default function EventCard({ e, tier, max, media }: { e: EventItem; tier: EventTier; max: number; media: MediaInfo }) {
   const img = cover(e);
   const pair = tier === 'hero' ? campPair(e) : null;
   const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
@@ -260,7 +248,7 @@ export default function EventCard({
           </div>
         </div>
         <div className="col-start-2 flex flex-col gap-0.5 sm:col-start-3 sm:max-w-64 sm:items-end">
-          {e.coverage && <CampLine c={e.coverage} baseline={baseline} compact />}
+          {e.coverage && <CampLine c={e.coverage} compact />}
           <Compare e={e} />
         </div>
       </li>
@@ -332,7 +320,7 @@ export default function EventCard({
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <Title e={e} className="font-semibold leading-snug" />
           <Tags e={e} limit={5} />
-          {e.coverage && <CampLine c={e.coverage} baseline={baseline} />}
+          {e.coverage && <CampLine c={e.coverage} />}
         </div>
       </div>
       {e.coverage && <OutletStrip c={e.coverage} media={media} max={8} />}
