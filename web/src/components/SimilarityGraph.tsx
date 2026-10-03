@@ -79,12 +79,6 @@ export default function SimilarityGraph({
     let positions = mediaGraphPositions(nodes, edges, chart.getWidth(), chart.getHeight());
     const nodeData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
-      const mainLabels = new Set(
-        [...nodes]
-          .sort((a, b) => b.articles - a.articles || a.id.localeCompare(b.id))
-          .slice(0, chart.getWidth() < 600 ? 3 : 6)
-          .map((node) => node.id),
-      );
       return nodes.map((n, i) => ({
         ...positions[i],
         id: n.id,
@@ -93,7 +87,7 @@ export default function SimilarityGraph({
         symbolSize: sizes.get(n.id),
         symbolKeepAspect: true,
         itemStyle: { opacity: !focused || neighbors.has(n.id) ? 1 : 0.12 },
-        label: { show: focused ? neighbors.has(n.id) : mainLabels.has(n.id) },
+        label: { show: true, opacity: !focused || neighbors.has(n.id) ? 1 : 0.4 },
       }));
     };
     const linkData = () =>
@@ -159,7 +153,8 @@ export default function SimilarityGraph({
             emphasis: { disabled: true },
             blur: { itemStyle: { opacity: 0.18 }, lineStyle: { opacity: 0.04 }, label: { opacity: 0.2 } },
             label: {
-              show: false,
+              show: true,
+              silent: true,
               color: ink,
               position: 'bottom',
               distance: 7,
@@ -171,7 +166,7 @@ export default function SimilarityGraph({
               padding: [2, 3],
               borderRadius: 3,
             },
-            labelLayout: { hideOverlap: true },
+            labelLayout: { hideOverlap: false },
             data: nodeData(),
             links: linkData(),
           },
