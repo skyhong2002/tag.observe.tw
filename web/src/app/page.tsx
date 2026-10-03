@@ -502,7 +502,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <JournalistPanel brief={data.journalists} />
             <p className={styles.panelNote}>
               {data.journalists
-                ? `過去 ${data.journalists.hours} 小時署名文章最多的記者。「相近」是內文與其他媒體相近的篇數，不代表抄襲。`
+                ? `過去 ${data.journalists.hours} 小時署名文章最多的記者。`
                 : '以署名統計記者的發稿量與跨媒體相近情形。'}
             </p>
           </aside>
