@@ -197,3 +197,34 @@ describe('traffic comparison competition ranks', () => {
     expect(values.map((entry) => entry.key)).toEqual(originalOrder);
   });
 });
+
+describe('traffic list domain fallbacks', () => {
+  it('keeps a known spreadsheet domain even without traffic or a catalog match', () => {
+    const built = buildComparison([{ month: '202608', sources: [row({ traffic: null })] }], [], null);
+    expect(built.outlets[0].domain).toBe('local.example');
+    expect(built.outlets[0].traffic[0].traffic).toBeNull();
+  });
+
+  it('fills missing domains from reviewed catalog websites without modifying the historical snapshot', () => {
+    const original = row({ domain: null });
+    const built = buildComparison([{ month: '202608', sources: [original] }], [source], null);
+    expect(built.outlets[0].domain).toBe('local.example');
+    expect(original.domain).toBeNull();
+    expect(built.outlets[0].traffic[0].traffic).toBeNull();
+    expect(buildComparison([{ month: '202608', sources: [row({ domain: 'original.example' })] }], [source], null).outlets[0].domain).toBe(
+      'original.example',
+    );
+  });
+
+  it('uses the reviewed name registry for crawler-only outlets missing from the traffic catalog', () => {
+    const data = { ...crawl, media: [{ ...crawl.media[0], media: 'udnmoney' }] };
+    expect(buildComparison([], [], data).outlets[0].domain).toBe('money.udn.com');
+  });
+
+  it('leaves unverified or unsafe websites unknown rather than guessing or throwing', () => {
+    for (const websiteUrl of [null, 'not a URL', 'javascript:alert(1)', 'https://user:secret@local.example/']) {
+      const built = buildComparison([], [{ ...source, websiteUrl }], crawl);
+      expect(built.outlets[0].domain).toBeNull();
+    }
+  });
+});

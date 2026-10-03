@@ -1,5 +1,5 @@
 import { mediaNames } from './media-names.mts';
-import { type NewsSource, resolveCatalogSource, type TrafficSource } from './media-traffic.mts';
+import { type NewsSource, resolveCatalogSource, safeWebsiteUrl, type TrafficSource } from './media-traffic.mts';
 
 export interface CrawlComparison {
   generatedAt: string;
@@ -81,7 +81,8 @@ export function buildComparison(
         traffic: [],
         monthly: acquired?.monthly ?? (crawl && group.source ? [] : null),
       };
-      outlet.domain ??= row?.domain ?? null;
+      const domains = [...new Set(group.rows.map((r) => r.domain).filter((domain): domain is string => !!domain))];
+      outlet.domain ??= row?.domain ?? (domains.length === 1 ? domains[0] : null);
       const adjusted = !!row && (/\/\s*\d+(?:\.\d+)?\s*$/.test(row.name) || row.notes.some((n) => /^原表流量公式：/.test(n)));
       outlet.traffic.push({
         month: snapshot.month,
@@ -101,12 +102,20 @@ export function buildComparison(
       key: entry.media,
       media: entry.media,
       name: mediaNames[entry.media]?.name || source?.name || entry.media,
-      domain: source?.websiteUrl ? new URL(source.websiteUrl).hostname : null,
+      domain: null,
       sourceKind: entry.sourceKind,
       firstAcquiredAt: entry.firstAcquiredAt,
       monthly: entry.monthly,
       traffic: [],
     });
+  }
+  // Display fallback only: preserve the original spreadsheet domain and figures.
+  // Crawler-only outlets also have reviewed websites in the name registry.
+  for (const outlet of outlets.values()) {
+    if (outlet.domain || !outlet.media) continue;
+    const source = catalog.find((s) => s.media === outlet.media);
+    const website = safeWebsiteUrl(source?.websiteUrl) ?? safeWebsiteUrl(mediaNames[outlet.media]?.sourceUrl);
+    outlet.domain = website ? new URL(website).hostname.replace(/^www\./, '') : null;
   }
   const trafficMonths = snapshots.map((s) => s.month).sort();
   return {

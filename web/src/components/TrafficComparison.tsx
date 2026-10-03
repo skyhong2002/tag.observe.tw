@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
+import { mediaNames } from '@/lib/media-names.mts';
 import { trafficNumber } from '@/lib/media-traffic.mts';
 import { type ComparisonData, type ComparisonOutlet, collectionPoint, shortMonth } from '@/lib/traffic-comparison.mts';
 
@@ -16,7 +17,9 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   );
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
   const [query, setQuery] = useState(initial.q ?? '');
-  const [sort, setSort] = useState<Sort>(['traffic', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic');
+  const [sort, setSort] = useState<Sort>(
+    ['traffic', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'articles',
+  );
   const [ascending, setAscending] = useState(initial.dir === 'asc');
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
@@ -31,10 +34,11 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     return (ascending ? 1 : -1) * (typeof x === 'string' ? x.localeCompare(y as string, 'zh-Hant') : x - (y as number));
   });
   useEffect(() => {
-    const params = new URLSearchParams({ month: trafficMonth, sort, dir: ascending ? 'asc' : 'desc' });
+    const params = new URLSearchParams({ sort, dir: ascending ? 'asc' : 'desc' });
+    if (trafficMonth !== data.trafficMonths.at(-1)) params.set('month', trafficMonth);
     if (query) params.set('q', query);
     window.history.replaceState(null, '', `/media/sources/?${params}`);
-  }, [trafficMonth, sort, ascending, query]);
+  }, [trafficMonth, sort, ascending, query, data.trafficMonths]);
   const chooseSort = (value: Sort) => {
     setAscending(sort === value ? !ascending : value === 'name');
     setSort(value);
@@ -127,7 +131,9 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{outlet.name}</span>
                     <span className="block truncate text-[10px] text-zinc-500">
-                      {outlet.sourceKind === 'discovery' ? '文章發現來源' : outlet.domain}
+                      {outlet.domain ??
+                        (outlet.media && mediaNames[outlet.media]?.status === 'historical' ? '歷史來源・原網域已停用' : '網域待確認')}
+                      {outlet.sourceKind === 'discovery' && ' · 文章發現來源'}
                     </span>
                   </span>
                 </>
