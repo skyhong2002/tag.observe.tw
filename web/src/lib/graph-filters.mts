@@ -6,7 +6,7 @@ import type { OriginData } from './story-origins.mts';
 export type MediaTag = { id: string; label: string; media: string[] };
 export type GraphFilters = { limit: number; camp: 'all' | 'blue' | 'green' | 'other'; tag: string };
 
-/** Rank after applying camp/tag filters. Only relationships between retained outlets survive. */
+/** Limit matching outlets, then include their direct partners when a tag is selected. */
 export function filterGraphMedia(
   nodes: SimilarityNode[],
   edges: SimilarityEdge[],
@@ -15,12 +15,37 @@ export function filterGraphMedia(
   filters: GraphFilters,
 ) {
   const tagged = filters.tag ? new Set(tags.find((tag) => tag.id === filters.tag)?.media ?? []) : null;
-  const matches = connectedMedia(nodes, edges)
-    .filter((node) => (!tagged || tagged.has(node.id)) && (filters.camp === 'all' || (camps[node.id] ?? 'other') === filters.camp))
+  const eligible = connectedMedia(nodes, edges).filter((node) => filters.camp === 'all' || (camps[node.id] ?? 'other') === filters.camp);
+  const eligibleIds = new Set(eligible.map((node) => node.id));
+  const matches = eligible
+    .filter((node) => !tagged || tagged.has(node.id))
     .sort((a, b) => b.articles - a.articles || a.id.localeCompare(b.id));
   const retained = filters.limit > 0 ? matches.slice(0, filters.limit) : matches;
   const ids = new Set(retained.map((node) => node.id));
-  return { nodes: retained, edges: edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)), available: matches.length };
+  const focus = tagged ? new Set(ids) : null;
+  const directEdges = edges.filter((edge) => eligibleIds.has(edge.source) && eligibleIds.has(edge.target));
+  const expand = (selected: Set<string>) => {
+    const expanded = new Set(selected);
+    for (const edge of directEdges) {
+      if (selected.has(edge.source) || selected.has(edge.target)) {
+        expanded.add(edge.source);
+        expanded.add(edge.target);
+      }
+    }
+    return expanded;
+  };
+  const visibleIds = focus ? expand(focus) : ids;
+  const available = focus ? expand(new Set(matches.map((node) => node.id))).size : matches.length;
+  return {
+    nodes: focus
+      ? [...retained, ...eligible.filter((node) => visibleIds.has(node.id) && !ids.has(node.id)).sort((a, b) => a.id.localeCompare(b.id))]
+      : retained,
+    edges: directEdges.filter(
+      (edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target) && (!focus || focus.has(edge.source) || focus.has(edge.target)),
+    ),
+    available,
+    focus,
+  };
 }
 
 /** Offer only tags that retain a visible relationship under the other controls. */
@@ -37,14 +62,16 @@ export function availableGraphTags(
   );
 }
 
-export function graphEvidenceScope(data: OriginData, nodes: SimilarityNode[]) {
+export function graphEvidenceScope(data: OriginData, nodes: SimilarityNode[], focus: ReadonlySet<string> | null = null) {
   const ids = new Set(nodes.map((node) => node.id));
+  const includes = (source: string, target: string) =>
+    ids.has(source) && ids.has(target) && (!focus || focus.has(source) || focus.has(target));
   return {
     ...data,
     nodes,
-    edges: data.edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)),
-    origins: data.origins?.filter((origin) => ids.has(origin.article.media) && ids.has(origin.source.media)),
-    pairs: data.pairs.filter((pair) => ids.has(pair.a.media) && ids.has(pair.b.media)),
-    citations: data.citations.filter((citation) => ids.has(citation.article.media) && ids.has(citation.source.media)),
+    edges: data.edges.filter((edge) => includes(edge.source, edge.target)),
+    origins: data.origins?.filter((origin) => includes(origin.article.media, origin.source.media)),
+    pairs: data.pairs.filter((pair) => includes(pair.a.media, pair.b.media)),
+    citations: data.citations.filter((citation) => includes(citation.article.media, citation.source.media)),
   };
 }

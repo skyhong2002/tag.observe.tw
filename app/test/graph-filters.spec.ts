@@ -40,7 +40,7 @@ describe('graph media filters', () => {
   });
   it('applies camp and tag before the limit and does not introduce neighbours from other camps', () => {
     expect(filter({ camp: 'green', limit: 1 }).nodes.map((n) => n.id)).toEqual(['green']);
-    expect(filter({ camp: 'green', tag: 'news', limit: 1 }).nodes.map((n) => n.id)).toEqual(['small']);
+    expect(filter({ camp: 'green', tag: 'news', limit: 1 }).nodes.map((n) => n.id)).toEqual(['small', 'green']);
     expect(filter({ camp: 'blue' }).edges).toEqual([]);
     expect(filter({ camp: 'other' }).nodes.map((n) => n.id)).toEqual(['large']);
     expect(filter({ tag: 'missing' }).nodes).toEqual([]);
@@ -54,21 +54,33 @@ describe('graph media filters', () => {
     expect(islands.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
     expect(mediaGraphPositions([], [], 900, 600, true)).toEqual([]);
   });
-  it('hides empty tags and tags whose outlets have relationships only outside the category', () => {
+  it('keeps tags with cross-category relationships and hides tags without data', () => {
     const categories = [...tags, { id: 'empty', label: '空分類', media: [] }, { id: 'isolated', label: '無連線', media: ['isolated'] }];
-    expect(availableGraphTags(nodes, edges, camps, categories, defaults)).toEqual([tags[0]]);
+    expect(availableGraphTags(nodes, edges, camps, categories, defaults)).toEqual(tags);
     expect(availableGraphTags(nodes, [], camps, categories, defaults)).toEqual([]);
   });
   it('checks camp, media limit and relationship mode before offering a tag', () => {
     const categories = [...tags, { id: 'green-pair', label: '綠營配對', media: ['green', 'small'] }];
     const available = (options: Partial<GraphFilters>, mode: 'all' | 'similarity' | 'citation' = 'all') =>
       availableGraphTags(nodes, edges, camps, categories, { ...defaults, ...options }, mode).map((tag) => tag.id);
-    expect(available({ camp: 'green' })).toEqual(['green-pair']);
+    expect(available({ camp: 'green' })).toEqual(['news', 'finance', 'green-pair']);
     expect(available({ camp: 'blue' })).toEqual([]);
-    expect(available({ limit: 1 })).toEqual([]);
-    expect(available({}, 'similarity')).toEqual([]);
-    expect(available({}, 'citation')).toEqual(['news', 'green-pair']);
-    expect(available({ tag: 'finance' })).toEqual(['news', 'green-pair']);
+    expect(available({ limit: 1 })).toEqual(['news', 'finance', 'green-pair']);
+    expect(available({}, 'similarity')).toEqual(['news', 'finance', 'green-pair']);
+    expect(available({}, 'citation')).toEqual(['news', 'finance', 'green-pair']);
+    expect(available({ camp: 'green' }, 'similarity')).toEqual([]);
+    expect(available({ tag: 'finance' })).toEqual(['news', 'finance', 'green-pair']);
+  });
+  it('adds direct partners after limiting category outlets and excludes unrelated partner relationships', () => {
+    const result = filter({ tag: 'finance', limit: 1 });
+    expect(result.nodes.map((n) => n.id)).toEqual(['green', 'large', 'small']);
+    expect(result.focus).toEqual(new Set(['green']));
+    expect(result.edges).toEqual([edges[1], edges[2]]);
+    expect(result.nodes.some((n) => n.id === 'blue')).toBe(false);
+    const partnerEdge = { source: 'large', target: 'small', kind: 'citation', count: 1, score: null } as const;
+    const expanded = filterGraphMedia(nodes, [...edges, partnerEdge], camps, tags, { ...defaults, tag: 'finance', limit: 1 });
+    expect(expanded.edges).not.toContainEqual(partnerEdge);
+    expect(expanded.nodes).toEqual(result.nodes);
   });
 });
 
@@ -109,6 +121,19 @@ describe('filtered evidence and hover summaries', () => {
     expect(scope.citations).toEqual([]);
     expect(scope.edges).toEqual([edges[1]]);
     expect(data.citations).toHaveLength(1);
+  });
+  it('keeps cross-category evidence while excluding relationships between context outlets', () => {
+    const related = { article: b, source: data.citations[0].source };
+    const view = withStoryOrigins({ ...data, citations: [...data.citations, related] });
+    const scope = graphEvidenceScope(view, nodes, new Set(['green']));
+    expect(scope.citations).toEqual([related]);
+    expect(scope.pairs).toEqual(data.pairs);
+    expect(scope.origins).toHaveLength(1);
+    expect(scope.edges).not.toContainEqual(edges[0]);
+    const unrelatedOrigins = graphEvidenceScope(view, nodes, new Set(['blue']));
+    expect(unrelatedOrigins.origins).toEqual([]);
+    expect(unrelatedOrigins.pairs).toEqual([]);
+    expect(view.citations).toHaveLength(2);
   });
   it('shows citation direction, relationship volume and escaped article titles', () => {
     const view = withStoryOrigins(data);

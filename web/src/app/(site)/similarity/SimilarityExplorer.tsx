@@ -207,7 +207,9 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
     () => filterGraphMedia(data.nodes, data.edges, camps, tags, filters),
     [data.nodes, data.edges, camps, tags, filters],
   );
-  const scopedData = useMemo(() => graphEvidenceScope(data, graph.nodes), [data, graph.nodes]);
+  const scopedData = useMemo(() => graphEvidenceScope(data, graph.nodes, graph.focus), [data, graph.nodes, graph.focus]);
+  // Keep the sample-wide line weight scale while scoping hover evidence to the tag.
+  const graphData = useMemo(() => ({ ...scopedData, edges: data.edges }), [scopedData, data.edges]);
   const counts = useMemo(() => nodeArticleCounts(scopedData), [scopedData]);
   const updateFilters = (next: Partial<GraphFilters>, nextMode = mode) => {
     setFilters((current) => {
@@ -294,7 +296,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
             className="grid shrink-0 grid-cols-3 gap-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800 sm:flex sm:items-end sm:gap-3"
           >
             <label className="min-w-0 sm:w-32">
-              顯示媒體數
+              {filters.tag ? '分類媒體數' : '顯示媒體數'}
               <select value={filters.limit} onChange={(event) => updateFilters({ limit: Number(event.target.value) })} className={control}>
                 {[10, 20, 30, 50, 100, 0].map((limit) => (
                   <option key={limit} value={limit}>
@@ -327,7 +329,11 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                 ))}
               </select>
             </label>
-            <p className="col-span-3 text-[11px] text-zinc-500 sm:pb-2">依本期納入分析篇數排序 · 只列出目前有關係資料的 tag</p>
+            <p className="col-span-3 text-[11px] text-zinc-500 sm:pb-2">
+              {filters.tag
+                ? '依本期納入分析篇數排序 · 包含所選分類的直接關係對象，對象不計入分類媒體數'
+                : '依本期納入分析篇數排序 · 只列出目前有關係資料的 tag'}
+            </p>
           </fieldset>
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
             <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
@@ -369,7 +375,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
               edges={edges}
               layoutEdges={graph.edges}
               camps={camps}
-              data={data}
+              data={graphData}
               showAll={showAll}
               onSelect={select}
               selection={selection}
