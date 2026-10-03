@@ -36,6 +36,8 @@ export interface TopicMedia {
   title: string;
   icon: string | null;
   link: string;
+  /** Topics listed by the outlet so far (all time). */
+  count?: number;
   latest: Topic | null;
   recent?: Topic[];
 }
@@ -92,9 +94,15 @@ export const fetchEventDay = (day?: string) =>
     `/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`,
     300,
   );
-export const fetchTopics = () => get<{ media: TopicMedia[]; feed?: FeedTopic[] }>('/api/v1/topics?limit=60', 300);
+export const fetchTopics = (limit = 120) => get<{ media: TopicMedia[]; feed?: FeedTopic[] }>(`/api/v1/topics?limit=${limit}`, 300);
+export interface TopicMediaPage {
+  media: string;
+  title: string;
+  link: string;
+  mediaImage?: string;
+  check?: TopicCheck;
+  count?: number;
+  topics: Array<Topic & { coverage?: TopicCoverage | null }>;
+}
 export const fetchTopicMedia = (media: string, limit = 30) =>
-  get<{ media: string; title: string; link: string; mediaImage?: string; check?: TopicCheck; topics: Topic[] }>(
-    `/api/v1/topics?media=${media}&limit=${limit}`,
-    300,
-  );
+  get<TopicMediaPage>(`/api/v1/topics?media=${encodeURIComponent(media)}&limit=${limit}`, 300);

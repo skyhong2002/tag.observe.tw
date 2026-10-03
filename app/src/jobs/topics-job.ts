@@ -171,6 +171,14 @@ export async function refreshTopicPages(
 export async function latestTopics(db: Db, media: string, limit = 30) {
   return db.select().from(topics).where(eq(topics.media, media)).orderBy(desc(topics.firstSeen), topics.id).limit(limit);
 }
+/** How many topics each outlet has listed so far (all time). */
+export async function topicCountPerMedia(db: Db): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ media: topics.media, count: sql<number>`COUNT(*)`.mapWith(Number) })
+    .from(topics)
+    .groupBy(topics.media);
+  return Object.fromEntries(rows.map((r) => [r.media, r.count]));
+}
 export async function latestTopicPerMedia(db: Db, perMedia = 1) {
   const rows = await Promise.all(TOPIC_RULES.map((rule) => latestTopics(db, rule.media, perMedia)));
   return Object.fromEntries(TOPIC_RULES.map((rule, i) => [rule.media, rows[i]]));

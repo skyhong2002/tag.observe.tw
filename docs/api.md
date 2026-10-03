@@ -830,7 +830,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 
 **各媒體的議題／專題**
 
-不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。
+不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`）。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -859,6 +859,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `media[].check.status` | string | ok、partial、failed、running 或 pending |
 | `media[].check.fetched` | integer | 本次取得的去重專題數 |
 | `media[].check.stale` | boolean | 超過三小時未完整更新，或尚未成功 |
+| `media[].count` | integer | 該媒體累計追蹤到的議題數 |
 | `media[].latest` | object \| null |  |
 | `media[].latest.id` | string | 議題 id |
 | `media[].latest.time` | string (ISO 時間) | 首次看到的時間 |
@@ -884,7 +885,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `feed[].mediaTitle` | string |  |
 | `feed[].icon` | string \| null |  |
 | `feed[].mediaImage` | string \| null |  |
-| `feed[].coverage` | object \| null | 站內相關報導 |
+| `feed[].coverage` | object \| null | 站內相關報導；比對不到站內標籤時為 null |
 | `feed[].coverage.tags` | string[] | 議題對應到的站內標籤 |
 | `feed[].coverage.basis` | string | title＝從議題名稱比對到的標籤；page＝議題名稱比對不到時，該媒體專題頁所列自家文章共有的標籤 |
 | `feed[].coverage.count` | integer | 過去 3 天同時帶有這些標籤的文章數 |
@@ -912,6 +913,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `check.status` | string | ok、partial、failed、running 或 pending |
 | `check.fetched` | integer | 本次取得的去重專題數 |
 | `check.stale` | boolean | 超過三小時未完整更新，或尚未成功 |
+| `count` | integer | 該媒體累計追蹤到的議題數 |
 | `topics` | object[] |  |
 | `topics[].id` | string | 議題 id |
 | `topics[].time` | string (ISO 時間) | 首次看到的時間 |
@@ -919,6 +921,19 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `topics[].title` | string | 議題名稱 |
 | `topics[].url` | string | 媒體的專題頁網址 |
 | `topics[].image` | string \| null |  |
+| `topics[].coverage` | object \| null | 站內相關報導；比對不到站內標籤時為 null |
+| `topics[].coverage.tags` | string[] | 議題對應到的站內標籤 |
+| `topics[].coverage.basis` | string | title＝從議題名稱比對到的標籤；page＝議題名稱比對不到時，該媒體專題頁所列自家文章共有的標籤 |
+| `topics[].coverage.count` | integer | 過去 3 天同時帶有這些標籤的文章數 |
+| `topics[].coverage.capped` | boolean | count 達上限 500 |
+| `topics[].coverage.mediaCount` | integer |  |
+| `topics[].coverage.latest` | object[] |  |
+| `topics[].coverage.latest[].id` | integer |  |
+| `topics[].coverage.latest[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `topics[].coverage.latest[].mediaTitle` | string |  |
+| `topics[].coverage.latest[].title` | string |  |
+| `topics[].coverage.latest[].url` | string |  |
+| `topics[].coverage.latest[].time` | string (ISO 時間) |  |
 
 錯誤：`404` 該媒體沒有追蹤議題。
 

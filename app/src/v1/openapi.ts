@@ -114,6 +114,19 @@ const schemas: Record<string, Schema> = {
     url: str('媒體的專題頁網址'),
     image: nullable(str()),
   }),
+  TopicCoverage: nullable(
+    obj(
+      {
+        tags: arr(str(), '議題對應到的站內標籤'),
+        basis: str('title＝從議題名稱比對到的標籤；page＝議題名稱比對不到時，該媒體專題頁所列自家文章共有的標籤'),
+        count: int('過去 3 天同時帶有這些標籤的文章數'),
+        capped: bool('count 達上限 500'),
+        mediaCount: int(),
+        latest: arr(obj({ id: int(), media: ref('MediaKey'), mediaTitle: str(), title: str(), url: str(), time: time() })),
+      },
+      '站內相關報導；比對不到站內標籤時為 null',
+    ),
+  ),
 };
 
 // Body comparison and retained article content are separate from headline search.
@@ -669,7 +682,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'topics',
     summary: '各媒體的議題／專題',
     description:
-      '不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
+      '不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`）。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
     params: [
       q('media', '只取這家媒體（須為有追蹤議題的媒體）', ref('MediaKey'), 'pts'),
       q('limit', '筆數：有 media 時預設 20、最多 200；否則為 feed 筆數，預設 60、最多 120', { type: 'integer', minimum: 1 }, 20),
@@ -686,6 +699,7 @@ export const ENDPOINTS: Endpoint[] = [
                 icon: nullable(str()),
                 link: str('媒體議題列表頁'),
                 check: ref('TopicCheck'),
+                count: int('該媒體累計追蹤到的議題數'),
                 latest: nullable(ref('TopicItem')),
                 recent: arr(ref('TopicItem')),
               }),
@@ -698,19 +712,7 @@ export const ENDPOINTS: Endpoint[] = [
                   mediaTitle: str(),
                   icon: nullable(str()),
                   mediaImage: nullable(str()),
-                  coverage: nullable(
-                    obj(
-                      {
-                        tags: arr(str(), '議題對應到的站內標籤'),
-                        basis: str('title＝從議題名稱比對到的標籤；page＝議題名稱比對不到時，該媒體專題頁所列自家文章共有的標籤'),
-                        count: int('過去 3 天同時帶有這些標籤的文章數'),
-                        capped: bool('count 達上限 500'),
-                        mediaCount: int(),
-                        latest: arr(obj({ id: int(), media: ref('MediaKey'), mediaTitle: str(), title: str(), url: str(), time: time() })),
-                      },
-                      '站內相關報導',
-                    ),
-                  ),
+                  coverage: ref('TopicCoverage'),
                 }),
               ],
             }),
@@ -724,7 +726,8 @@ export const ENDPOINTS: Endpoint[] = [
             link: str(),
             mediaImage: nullable(str()),
             check: ref('TopicCheck'),
-            topics: arr(ref('TopicItem')),
+            count: int('該媒體累計追蹤到的議題數'),
+            topics: arr({ allOf: [ref('TopicItem'), obj({ coverage: ref('TopicCoverage') })] }),
           },
           '給 media',
         ),

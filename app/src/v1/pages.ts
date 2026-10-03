@@ -4,7 +4,7 @@ import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
 import { topicCoverage } from '../jobs/topic-related.ts';
-import { firstRunPerMedia, latestTopicPerMedia, latestTopics, topicSourceChecks } from '../jobs/topics-job.ts';
+import { firstRunPerMedia, latestTopicPerMedia, latestTopics, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
 import { iconUrl } from './icons.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -53,7 +53,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     // Topics stored in an outlet's first crawl run were already listed when
     // tracking began: their time is when we started watching, not a start date.
     const run = (d: Date) => Math.floor(+d / 900e3);
-    const [firstRun, checks] = await Promise.all([firstRunPerMedia(db), topicSourceChecks(db)]);
+    const [firstRun, checks, counts] = await Promise.all([firstRunPerMedia(db), topicSourceChecks(db), topicCountPerMedia(db)]);
     const fmt = (r: { id: number; media: string; firstSeen: Date; title: string; url: string; image: string | null }) => ({
       id: String(r.id),
       time: r.firstSeen.toISOString(),
@@ -62,6 +62,20 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       url: r.url,
       image: r.image,
     });
+    // Recent coverage of each topic across every crawled outlet.
+    const withCoverage = async <T extends { id: string; title: string }>(items: T[]) => {
+      const coverage = await topicCoverage(
+        db,
+        items.map((f) => ({ title: f.title, id: f.id })),
+      );
+      return items.map((f) => {
+        const c = coverage.get(f.title);
+        return {
+          ...f,
+          coverage: c ? { ...c, latest: c.latest.map((l) => ({ ...l, mediaTitle: mediaInfo[l.media]?.title ?? l.media })) } : null,
+        };
+      });
+    };
     reply.header('cache-control', 'public, max-age=300');
     if (media) {
       if (!TOPIC_MEDIA.includes(media)) return reply.code(404).send({ error: 'unknown media' });
@@ -72,7 +86,8 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
         link: TOPIC_LINKS[media],
         mediaImage: TOPIC_IMAGES[media],
         check: checks[media],
-        topics: rows.map(fmt),
+        count: counts[media] ?? 0,
+        topics: await withCoverage(rows.map(fmt)),
       };
     }
     const per = Math.min(10, Math.max(1, Number(request.query.per) || 4));
@@ -99,27 +114,16 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       .sort((a, b) => b.t - a.t || a.rank - b.rank || a.order - b.order)
       .slice(0, feedSize)
       .map(({ r, m }) => ({ ...fmt(r), media: m, mediaTitle: info(m).title, icon: info(m).icon, mediaImage: TOPIC_IMAGES[m] }));
-    // Recent coverage of each topic across every crawled outlet.
-    const coverage = await topicCoverage(
-      db,
-      feed.map((f) => ({ title: f.title, id: f.id })),
-    );
-    const feedWithCoverage = feed.map((f) => {
-      const c = coverage.get(f.title);
-      return {
-        ...f,
-        coverage: c ? { ...c, latest: c.latest.map((l) => ({ ...l, mediaTitle: mediaInfo[l.media]?.title ?? l.media })) } : null,
-      };
-    });
     return {
       media: TOPIC_MEDIA.map((m) => ({
         ...info(m),
         link: TOPIC_LINKS[m],
         check: checks[m],
+        count: counts[m] ?? 0,
         latest: recent[m][0] ? fmt(recent[m][0]) : null,
         recent: recent[m].slice(0, per).map(fmt),
       })),
-      feed: feedWithCoverage,
+      feed: await withCoverage(feed),
     };
   });
 }
