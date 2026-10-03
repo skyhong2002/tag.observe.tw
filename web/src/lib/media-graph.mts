@@ -76,8 +76,6 @@ export function forcePositions(
       const length = Math.max(1, Math.hypot(delta[i].x, delta[i].y));
       points[i].x += (delta[i].x / length) * Math.min(length, temperature);
       points[i].y += (delta[i].y / length) * Math.min(length, temperature);
-      points[i].x = Math.max(-width * 0.45, Math.min(width * 0.45, points[i].x));
-      points[i].y = Math.max(-height * 0.45, Math.min(height * 0.45, points[i].y));
     }
   }
   // Resolve icon collisions after the springs settle, including dense hubs.
@@ -100,10 +98,6 @@ export function forcePositions(
         points[j].x += ux * push;
         points[j].y += uy * push;
       }
-    }
-    for (const point of points) {
-      point.x = Math.max(-width * 0.45, Math.min(width * 0.45, point.x));
-      point.y = Math.max(-height * 0.45, Math.min(height * 0.45, point.y));
     }
   }
   return points;
@@ -256,52 +250,57 @@ export function mediaCommunities(nodes: SimilarityNode[], edges: SimilarityEdge[
   return new Map([...members.values()].flatMap((group) => group.map((id) => [id, group[0]] as const)));
 }
 
-/** Pack communities in separate regions, then settle a force layout inside
- * each region. Hover and line-density changes reuse these exact positions. */
+/** Settle communities without rectangular walls, then pack their circular
+ * bounds. A uniform final fit preserves the same geometry on every screen. */
 export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
   const visible = connectedMedia(nodes, edges);
+  if (!visible.length) return [];
   const labels = mediaCommunities(visible, edges);
-  const sizes = mediaIconSizes(nodes, width);
+  // Use a fixed world scale: resizing changes the camera, not relative positions.
+  const sizes = mediaIconSizes(visible, 1000);
   const groups = [...new Set(labels.values())]
     .map((id) => ({ id, nodes: visible.filter((node) => labels.get(node.id) === id).sort((a, b) => a.id.localeCompare(b.id)) }))
     .sort((a, b) => b.nodes.length - a.nodes.length || a.id.localeCompare(b.id));
+  const placed: { x: number; y: number; radius: number }[] = [];
   const points = new Map<string, { id: string; x: number; y: number }>();
-  type Group = (typeof groups)[number];
-  const weight = (group: Group) => group.nodes.length + 2;
-  const place = (items: Group[], x: number, y: number, w: number, h: number) => {
-    if (!items.length) return;
-    if (items.length === 1) {
-      const group = items[0];
-      const ids = new Set(group.nodes.map((node) => node.id));
-      const inset = width < 600 ? 12 : 22;
-      const innerW = Math.max(1, w - inset * 2),
-        innerH = Math.max(1, h - inset * 2);
-      const local = forcePositions(
-        group.nodes,
-        edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)),
-        innerW,
-        innerH,
-        sizes,
-      );
-      for (const point of local) points.set(point.id, { id: point.id, x: x + w / 2 + point.x, y: y + h / 2 + point.y });
-      return;
+  for (const group of groups) {
+    const ids = new Set(group.nodes.map((node) => node.id));
+    const span = Math.sqrt(group.nodes.length) * 110;
+    const local = forcePositions(
+      group.nodes,
+      edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)),
+      span,
+      span,
+      sizes,
+    );
+    const cx = local.reduce((sum, p) => sum + p.x, 0) / local.length;
+    const cy = local.reduce((sum, p) => sum + p.y, 0) / local.length;
+    const radius = Math.max(...local.map((p) => Math.hypot(p.x - cx, p.y - cy))) + 55;
+    let x = 0,
+      y = 0;
+    for (let step = 0; placed.some((p) => Math.hypot(x - p.x, y - p.y) < radius + p.radius + 30); step++) {
+      const angle = step * 2.399963229728653;
+      const distance = 24 * Math.sqrt(step + 1);
+      x = Math.cos(angle) * distance;
+      y = Math.sin(angle) * distance;
     }
-    const total = items.reduce((sum, item) => sum + weight(item), 0);
-    let split = 1,
-      first = weight(items[0]);
-    while (split < items.length - 1 && Math.abs(first + weight(items[split]) - total / 2) < Math.abs(first - total / 2))
-      first += weight(items[split++]);
-    const ratio = first / total;
-    if (w >= h) {
-      place(items.slice(0, split), x, y, w * ratio, h);
-      place(items.slice(split), x + w * ratio, y, w * (1 - ratio), h);
-    } else {
-      place(items.slice(0, split), x, y, w, h * ratio);
-      place(items.slice(split), x, y + h * ratio, w, h * (1 - ratio));
-    }
-  };
-  place(groups, 0, 0, width, height);
-  return visible.map((node) => points.get(node.id)!);
+    placed.push({ x, y, radius });
+    for (const p of local) points.set(p.id, { id: p.id, x: x + p.x - cx, y: y + p.y - cy });
+  }
+  const all = [...points.values()];
+  // Orient the settled world horizontally; keep this independent of viewport size.
+  const spreadX = Math.max(...all.map((p) => p.x)) - Math.min(...all.map((p) => p.x));
+  const spreadY = Math.max(...all.map((p) => p.y)) - Math.min(...all.map((p) => p.y));
+  if (spreadY > spreadX) for (const p of all) [p.x, p.y] = [p.y, -p.x];
+  const minX = Math.min(...all.map((p) => p.x)),
+    maxX = Math.max(...all.map((p) => p.x));
+  const minY = Math.min(...all.map((p) => p.y)),
+    maxY = Math.max(...all.map((p) => p.y));
+  const scale = Math.min(width / Math.max(1, maxX - minX), height / Math.max(1, maxY - minY)) * 0.9;
+  return visible.map((node) => {
+    const p = points.get(node.id)!;
+    return { id: p.id, x: width / 2 + (p.x - (minX + maxX) / 2) * scale, y: height / 2 + (p.y - (minY + maxY) / 2) * scale };
+  });
 }
 
 /** Icon area encodes sampled article volume, with a legible minimum and a

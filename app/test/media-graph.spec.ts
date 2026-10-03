@@ -211,6 +211,20 @@ describe('readable relationship overview', () => {
         .sort(),
     ).toEqual(overview.map((e) => `${e.source}:${e.target}`).sort());
   });
+  it('preserves relative geometry across screen sizes and input order', () => {
+    const desktop = mediaGraphPositions(nodes, edges, 1100, 650);
+    const phone = mediaGraphPositions([...nodes].reverse(), [...edges].reverse(), 356, 450);
+    const byId = new Map(phone.map((p) => [p.id, p]));
+    const origin = desktop[0],
+      mobileOrigin = byId.get(origin.id)!;
+    const scale =
+      Math.hypot(phone[0].x - mobileOrigin.x, phone[0].y - mobileOrigin.y) /
+      Math.hypot(desktop.find((p) => p.id === phone[0].id)!.x - origin.x, desktop.find((p) => p.id === phone[0].id)!.y - origin.y);
+    for (const p of desktop) {
+      expect(byId.get(p.id)!.x - mobileOrigin.x).toBeCloseTo((p.x - origin.x) * scale);
+      expect(byId.get(p.id)!.y - mobileOrigin.y).toBeCloseTo((p.y - origin.y) * scale);
+    }
+  });
   it('separates strongly related communities joined by a weak bridge', () => {
     const groupedNodes = ['a', 'b', 'c', 'd', 'e', 'f'].map(node);
     const groupedEdges = [

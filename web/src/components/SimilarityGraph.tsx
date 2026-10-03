@@ -48,6 +48,8 @@ export default function SimilarityGraph({
   const callback = useRef(onSelect);
   const density = useRef(showAll);
   const refresh = useRef<(() => void) | null>(null);
+  const navigate = useRef<((action: 'in' | 'out' | 'reset') => void) | null>(null);
+  const camera = useRef<{ key: string; zoom: number; center: number[] | null } | null>(null);
   useEffect(() => {
     density.current = showAll;
     refresh.current?.();
@@ -82,7 +84,26 @@ export default function SimilarityGraph({
         .slice(0, 4)
         .map((e) => `${escapeHtml(data.nodes.find((n) => n.id === (incoming ? e.source : e.target))?.name ?? '')} ${e.count} 篇`)
         .join('、');
-    let positions = mediaGraphPositions(nodes, layoutEdges, chart.getWidth(), chart.getHeight());
+    const positions = mediaGraphPositions(nodes, layoutEdges, 1000, 1000);
+    const cameraKey = nodes.map((node) => node.id).join('|');
+    const savedCamera = camera.current?.key === cameraKey ? camera.current : null;
+    const rememberCamera = () => {
+      const series = (chart.getOption().series as { zoom: number; center: number[] | null }[])[0];
+      camera.current = { key: cameraKey, zoom: series.zoom, center: series.center };
+    };
+    navigate.current = (action) => {
+      if (action === 'reset') chart.setOption({ series: [{ id: 'media-network', zoom: 1, center: null }] });
+      else
+        chart.dispatchAction({
+          type: 'graphRoam',
+          seriesId: 'media-network',
+          zoom: action === 'in' ? 1.3 : 1 / 1.3,
+          originX: chart.getWidth() / 2,
+          originY: chart.getHeight() / 2,
+        });
+      rememberCamera();
+    };
+    chart.on('graphroam', rememberCamera);
     const nodeData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
       return nodes.map((n, i) => ({
@@ -122,7 +143,6 @@ export default function SimilarityGraph({
     const render = () => {
       if (disposed) return;
       const small = chart.getWidth() < 600;
-      positions = mediaGraphPositions(nodes, layoutEdges, chart.getWidth(), chart.getHeight());
       chart.setOption({
         animation: false,
         tooltip: {
@@ -153,7 +173,11 @@ export default function SimilarityGraph({
             layout: 'none',
             // The view transform also scales images; keep both axes uniform.
             preserveAspect: 'contain',
-            roam: false,
+            roam: true,
+            draggable: false,
+            scaleLimit: { min: 0.4, max: 5 },
+            zoom: savedCamera?.zoom ?? 1,
+            center: savedCamera?.center ?? null,
             left: small ? 44 : 55,
             right: small ? 44 : 65,
             top: 40,
@@ -204,8 +228,20 @@ export default function SimilarityGraph({
       clearTimeout(leaveTimer);
       updateFocus(null);
     });
+    let pressedAt: { x: number; y: number } | null = null;
+    let dragged = false;
+    chart.getZr().on('mousedown', (event) => {
+      pressedAt = { x: event.offsetX, y: event.offsetY };
+      dragged = false;
+    });
+    chart.getZr().on('mousemove', (event) => {
+      if (pressedAt && Math.hypot(event.offsetX - pressedAt.x, event.offsetY - pressedAt.y) > 5) dragged = true;
+    });
+    chart.getZr().on('mouseup', () => {
+      pressedAt = null;
+    });
     chart.on('click', (event) => {
-      if (event.dataIndex === undefined) return;
+      if (dragged || event.dataIndex === undefined) return;
       if (event.dataType === 'edge') {
         const edge = (event.data as { relationship?: SimilarityEdge } | null)?.relationship ?? visibleEdges[event.dataIndex];
         if (edge) callback.current({ edge });
@@ -217,13 +253,14 @@ export default function SimilarityGraph({
       frame = requestAnimationFrame(() => {
         if (!disposed) {
           chart.resize();
-          render();
         }
       });
     });
     observer.observe(ref.current);
     return () => {
+      rememberCamera();
       disposed = true;
+      navigate.current = null;
       clearTimeout(leaveTimer);
       refresh.current = null;
       cancelAnimationFrame(frame);
@@ -232,12 +269,37 @@ export default function SimilarityGraph({
     };
   }, [nodes, edges, layoutEdges, camps, data, dark]);
   return nodes.length ? (
-    <div
-      ref={ref}
-      className="h-full w-full"
-      role="img"
-      aria-label={`力導向媒體關係圖，${nodes.length} 家媒體。移到媒體圖示展開畫面內關係與引用篇數；點選查看文章。`}
-    />
+    <div className="relative h-full w-full">
+      <div
+        ref={ref}
+        className="h-full w-full touch-none cursor-grab active:cursor-grabbing"
+        role="img"
+        aria-label={`媒體關係圖，${nodes.length} 家媒體。可拖曳整張圖、滾輪或雙指縮放；媒體相對位置固定。點選圖示查看文章。`}
+      />
+      <fieldset
+        aria-label="圖表視野"
+        className="absolute right-3 bottom-3 flex overflow-hidden rounded-lg border border-zinc-200 bg-white/95 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/95"
+      >
+        {(
+          [
+            ['out', '縮小', '−'],
+            ['in', '放大', '＋'],
+            ['reset', '重設視野', '重設'],
+          ] as const
+        ).map(([action, label, text]) => (
+          <button
+            key={action}
+            type="button"
+            aria-label={label}
+            title={label}
+            onClick={() => navigate.current?.(action)}
+            className="min-h-11 min-w-11 px-3 text-sm hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-brand-600 dark:hover:bg-zinc-800"
+          >
+            {text}
+          </button>
+        ))}
+      </fieldset>
+    </div>
   ) : (
     <div className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500">
       目前樣本沒有這類關係，可切換其他關係或期間查看。

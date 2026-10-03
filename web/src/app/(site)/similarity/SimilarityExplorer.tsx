@@ -153,7 +153,7 @@ export default function SimilarityExplorer({
   const selectedCounts = selection && 'node' in selection ? counts.get(selection.node) : null;
 
   return (
-    <div data-similarity-dashboard className="flex h-[calc(100svh-172px)] min-h-[420px] flex-col gap-3 sm:h-[calc(100svh-112px)]">
+    <div data-similarity-dashboard className="flex h-[calc(100svh-112px)] min-h-[420px] flex-col gap-3">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
@@ -253,10 +253,8 @@ export default function SimilarityExplorer({
               總覽 {showAll ? edges.length : overview.length}／{edges.length} 條
             </span>
           </p>
-          <p className="hidden sm:block">
-            {mediaLimit === 'auto' ? '媒體數量依畫布調整' : '媒體數量依設定'} · 移到媒體展開連線 · 點選看文章
-          </p>
-          <p className="sm:hidden">上方可調整媒體數量 · 點選圖示看文章</p>
+          <p className="hidden sm:block">拖曳平移 · 滾輪縮放 · 點選看文章</p>
+          <p className="sm:hidden">拖曳平移 · 雙指縮放 · 點選看文章</p>
         </div>
       </section>
       <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
