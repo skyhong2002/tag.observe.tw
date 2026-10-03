@@ -5,7 +5,8 @@ import type { Db } from '../db/client.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
 import { topicCoverage } from '../jobs/topic-related.ts';
 import { firstRunPerMedia, latestTopicPerMedia, latestTopics, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
-import { eventsAt, feedCoverage, hourStats, hoursSoFar, matchPrevRank, threadInfo } from './event-feed.ts';
+import { campOf } from './coverage.ts';
+import { campBaseline, eventsAt, feedCoverage, hourStats, hoursSoFar, matchPrevRank, threadInfo } from './event-feed.ts';
 import { iconUrl } from './icons.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -26,11 +27,13 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     const hour = latest.snapshot.hourStart;
     const nav = await eventHours(db, 'news', hour);
     const threadIds = latest.events.flatMap((e) => (e.threadId ? [e.threadId] : []));
+    const baseline = await campBaseline(db, hour);
     const [coverage, prevEvents, threads, hours, dayStats] = await Promise.all([
       feedCoverage(
         db,
         hour,
         latest.events.map((e) => e.major),
+        baseline,
       ),
       eventsAt(db, 'news', nav.prev),
       threadInfo(db, threadIds),
@@ -48,6 +51,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       next: nav.next?.toISOString() ?? null,
       dayHours: nav.day.map((d) => d.toISOString()),
       dayStats,
+      baseline,
       events: latest.events.map((e, i) => {
         const thread = e.threadId ? threads.get(e.threadId) : undefined;
         return {
@@ -57,7 +61,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
           tags: e.tags.slice(0, 12).map(([tag, burst]) => ({ tag, burst })),
           news: (e.majorNews.length ? e.majorNews : e.news)
             .slice(0, 6)
-            .map((n) => ({ id: n.id ?? null, media: n.media, title: n.title, url: n.url, image: n.image })),
+            .map((n) => ({ id: n.id ?? null, media: n.media, camp: campOf(n.media), title: n.title, url: n.url, image: n.image })),
           relatedEventPk: e.threadId ? String(e.threadId) : null,
           threadId: e.threadId,
           // null when the story was not on the previous snapshot (new this hour).

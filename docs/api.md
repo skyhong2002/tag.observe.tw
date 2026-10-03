@@ -167,6 +167,7 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `limit` | query | integer | 筆數，1–500，預設 `50`，例：`20` |
 | `at` | query | string (ISO 時間) | 取這個時間（ISO 8601）以前最新的快照，例：`2026-09-30T12:00:00+08:00` |
 | `trend` | query | "0" \| "1" | 1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時，例：`1` |
+| `related` | query | "0" \| "1" | 1 表示附上每個標籤最常一起出現的標籤，例：`1` |
 
 範例：
 
@@ -204,6 +205,12 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].normalized` | number | 原始分數 ÷ 固定基準媒體數 × 50 |
 | `entries[].burst` | number \| null | 爆發力：與同一基準 3/6/12/24/48 小時前分數比較的加權差；缺值、舊榜截斷或基準不相容為 null |
 | `entries[].history` | {鍵: number \| null} | N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料為 null） |
+| `entries[].rank24h` | integer \| null | 24 小時前依原始分數的名次；沒有可比較快照、基準不同或當時不在榜上為 null |
+| `entries[].new` | boolean | 24 小時前的完整快照中沒有這個標籤 |
+| `entries[].related` | object[] | related=1 時回傳：同一視窗、同一基準媒體中最常與這個標籤同時出現的標籤，最多 5 個，依共同文章數排序 |
+| `entries[].related[].tag` | string | 一起出現的標籤 |
+| `entries[].related[].count` | integer | 視窗內同時帶兩個標籤的文章數 |
+| `entries[].related[].share` | number | 佔這個標籤文章數的比例（0–1） |
 | `entries[].trend` | object[] | trend=1 時回傳 49 個等距小時點，涵蓋 48 小時變化 |
 | `entries[].trend[].t` | string (ISO 時間) |  |
 | `entries[].trend[].hourlyCount` | integer \| null | 該完整小時收錄篇數 |
@@ -622,6 +629,15 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 | `dayStats[].hour` | string (ISO 時間) |  |
 | `dayStats[].top` | number | 該小時第 1 名的爆發力 |
 | `dayStats[].count` | integer | 該小時事件數 |
+| `baseline` | object | 各陣營的整體基準，用來判斷單一事件的藍綠比例是否異常；其他只計排行榜用的新聞媒體 |
+| `baseline.outlets` | object | 事件窗口（過去 24 小時）內有發稿的媒體家數 |
+| `baseline.outlets.blue` | integer |  |
+| `baseline.outlets.green` | integer |  |
+| `baseline.outlets.other` | integer |  |
+| `baseline.articles` | object | 同窗口內各陣營文章數 |
+| `baseline.articles.blue` | integer |  |
+| `baseline.articles.green` | integer |  |
+| `baseline.articles.other` | integer |  |
 | `events` | object[] |  |
 | `events[].rank` | integer |  |
 | `events[].score` | number |  |
@@ -629,12 +645,13 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 | `events[].tags` | object[] | 事件內所有標籤與爆發力 |
 | `events[].tags[].tag` | string |  |
 | `events[].tags[].burst` | number |  |
-| `events[].news` | object[] | 代表新聞（最多 6 則） |
+| `events[].news` | object[] | 代表新聞（最多 6 則），各附媒體陣營 camp |
 | `events[].news[].id` | integer \| null | 文章 id（舊資料可能為 null） |
 | `events[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `events[].news[].title` | string | 標題 |
 | `events[].news[].url` | string | 原文網址 |
 | `events[].news[].image` | string \| null | 代表圖網址 |
+| `events[].news[].camp` | string | 媒體陣營 blue／green／other（只在 /api/v1/events 回傳） |
 | `events[].relatedEventPk` | string \| null | = threadId 的字串形式（相容舊版） |
 | `events[].threadId` | integer \| null | 事件串 id，可查 /api/v1/events/threads/{id} |
 | `events[].prevRank` | integer \| null | 前一個快照的名次（依事件串或主要標籤比對）；null 表示本小時新上榜 |
@@ -649,7 +666,12 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 | `events[].coverage.camps.blue` | integer |  |
 | `events[].coverage.camps.green` | integer |  |
 | `events[].coverage.camps.other` | integer |  |
-| `events[].coverage.blindspot` | string[] | 完全沒報導的陣營（只在另一陣營有報時標記） |
+| `events[].coverage.share` | object \| null | 藍綠之間的家數百分比（不含其他） |
+| `events[].coverage.share.blue` | integer |  |
+| `events[].coverage.share.green` | integer |  |
+| `events[].coverage.lean` | number \| null | 藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠 |
+| `events[].coverage.tilt` | string \| null | 明顯偏向的陣營（\|lean\| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家） |
+| `events[].coverage.blindspot` | string[] | 盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事 |
 
 錯誤：`400` `at` 格式錯誤；`404` 該時間以前沒有快照；`503` 尚無任何快照。
 
@@ -745,6 +767,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365'
 | `hours[].news[].title` | string | 標題 |
 | `hours[].news[].url` | string | 原文網址 |
 | `hours[].news[].image` | string \| null | 代表圖網址 |
+| `hours[].news[].camp` | string | 媒體陣營 blue／green／other（只在 /api/v1/events 回傳） |
 
 錯誤：`400` id 格式錯誤；`404` 找不到。
 

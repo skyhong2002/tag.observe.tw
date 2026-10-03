@@ -2,6 +2,7 @@ import { API_ORIGIN } from './api';
 export interface EventNews {
   id: number | null;
   media: string;
+  camp?: Camp;
   title: string;
   url: string;
   image: string | null;
@@ -12,8 +13,18 @@ export interface EventCoverage {
   outlets: Array<{ media: string; camp: Camp }>;
   articles: number;
   camps: Record<Camp, number>;
-  /** Camps with no report at all while the opposite camp has some. */
+  /** Blue/green split of the outlets on the story, 其他 excluded. */
+  share: { blue: number; green: number } | null;
+  /** log2 of the blue:green outlet ratio against the day's baseline; 0 is usual. */
+  lean: number | null;
+  /** Camp writing noticeably more than usual. */
+  tilt: Camp | null;
+  /** Camp that barely reported a story the other camp is on: its readers miss it. */
   blindspot: Camp[];
+}
+export interface CampBaseline {
+  outlets: Record<Camp, number>;
+  articles: Record<Camp, number>;
 }
 export interface EventItem {
   rank: number;
@@ -91,6 +102,8 @@ export interface EventsSnapshot {
   dayHours?: string[];
   /** Top score and event count per snapshot hour of the day. */
   dayStats?: Array<{ hour: string; top: number; count: number }>;
+  /** The day's camp split, the reference for each event's lean. */
+  baseline?: CampBaseline;
   events: EventItem[];
 }
 export const fetchEvents = (limit = 30, at?: string) =>

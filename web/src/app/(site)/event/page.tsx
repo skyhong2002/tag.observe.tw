@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BaselineBar, CAMP_LABEL, CampBadge, leanText } from '@/components/CampBar';
 import EventCard, { type EventTier, eventAnchor, eventHeadline } from '@/components/EventCard';
 import MediaSidebar from '@/components/MediaSidebar';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
@@ -61,6 +62,75 @@ function HourTimeline({ data }: { data: EventsSnapshot }) {
   );
 }
 
+/** Ground.news-style blind spot feed, folded into the hour: the events one
+ *  camp is barely on, then the ones a camp is pushing far harder than usual. */
+function CampGap({ events }: { events: EventItem[] }) {
+  const pick = (camp: 'blue' | 'green') =>
+    events
+      .filter((e) => e.coverage && (e.coverage.blindspot.includes(camp === 'blue' ? 'green' : 'blue') || e.coverage.tilt === camp))
+      .sort((a, b) => {
+        const spot = (e: EventItem) => (e.coverage?.blindspot.length ? 1 : 0);
+        return spot(b) - spot(a) || Math.abs(b.coverage?.lean ?? 0) - Math.abs(a.coverage?.lean ?? 0);
+      })
+      .slice(0, 4);
+  const cols = [
+    { camp: 'blue' as const, title: '藍營在推、綠營少報', items: pick('blue') },
+    { camp: 'green' as const, title: '綠營在推、藍營少報', items: pick('green') },
+  ];
+  if (cols.every((c) => c.items.length === 0))
+    return (
+      <p className="rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+        本小時 {events.length} 件事的藍綠報導比例都在平常範圍內，沒有盲點。
+      </p>
+    );
+  return (
+    <section
+      aria-labelledby="gap-heading"
+      className="rounded-xl border border-brand-200 bg-brand-50/40 p-4 dark:border-brand-900 dark:bg-brand-950/20"
+    >
+      <h2 id="gap-heading" className="font-semibold">
+        藍綠溫差
+      </h2>
+      <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
+        相對於過去 24 小時的整體比例，哪一邊的媒體特別在寫、哪一邊幾乎沒報。「盲點」表示那一營的讀者看不到這件事。
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {cols.map((col) => (
+          <div key={col.camp} className="rounded-lg bg-white p-3 text-sm dark:bg-zinc-900">
+            <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              <span className={`h-2 w-2 rounded-full ${col.camp === 'blue' ? 'bg-blue-600' : 'bg-emerald-600'}`} aria-hidden />
+              {col.title}
+            </h3>
+            {col.items.length === 0 ? (
+              <p className="text-xs text-zinc-500">本小時沒有。</p>
+            ) : (
+              <ol className="space-y-2">
+                {col.items.map((e) => (
+                  <li key={e.rank} className="flex items-start gap-2">
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500">{e.rank}</span>
+                    <div className="min-w-0 flex-1">
+                      <a href={`#${eventAnchor(e.rank)}`} className="line-clamp-1 hover:underline">
+                        {eventHeadline(e)}
+                      </a>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
+                        {e.coverage && <CampBadge c={e.coverage} />}
+                        <span>{leanText(e.coverage?.lean ?? null)}</span>
+                        <span className="tabular-nums">
+                          {CAMP_LABEL.blue} {e.coverage?.camps.blue} 家 · {CAMP_LABEL.green} {e.coverage?.camps.green} 家
+                        </span>
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Index({ events }: { events: EventItem[] }) {
   return (
     <nav aria-label="事件索引" className="rounded-xl border border-zinc-200 p-3 text-sm sm:col-span-2 dark:border-zinc-800">
@@ -112,8 +182,13 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
             : '事件資料暫時無法取得，請稍後重新整理。'}
         </p>
         <p className="mt-1 text-xs text-zinc-500">
-          爆發力條以本小時第 1 名為滿格。媒體列是過去 24 小時寫過該事件主要標籤的媒體，依藍、綠、其他陣營計家數。
+          爆發力條以本小時第 1 名為滿格。每件事的藍綠比例是過去 24 小時寫過該事件主要標籤的媒體家數，不含未列藍綠的媒體。
         </p>
+        {data?.baseline && (
+          <div className="mt-2">
+            <BaselineBar b={data.baseline} />
+          </div>
+        )}
       </div>
       {data && (
         <nav className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -152,17 +227,18 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
             </div>
           </MediaSidebar>
           <div className="mt-5 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
+            <CampGap events={data.events} />
             {tiers.map(({ tier, items }) =>
               items.length === 0 ? null : tier === 'hero' ? (
                 <ol key={tier} className="space-y-4" aria-label="頭條">
                   {items.map((e) => (
-                    <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} />
+                    <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} baseline={data.baseline} />
                   ))}
                 </ol>
               ) : tier === 'card' ? (
                 <ol key={tier} className="grid gap-4 md:grid-cols-2" aria-label="重要事件">
                   {items.map((e) => (
-                    <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} />
+                    <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} baseline={data.baseline} />
                   ))}
                 </ol>
               ) : (
@@ -178,7 +254,7 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
                   </h2>
                   <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
                     {items.map((e) => (
-                      <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} />
+                      <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} baseline={data.baseline} />
                     ))}
                   </ol>
                 </section>

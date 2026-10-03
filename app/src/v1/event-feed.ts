@@ -1,7 +1,10 @@
 import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads } from '../db/schema.ts';
 import { type Camp, campOf } from './coverage.ts';
+
+const categories = catalog.categories as Record<string, string[]>;
 
 // Extra signal for the hourly event table: how widely each event is being
 // reported (outlets and camps, with blind spots), how it moved since the
@@ -14,7 +17,39 @@ export interface EventFeedCoverage {
   outlets: Array<{ media: string; camp: Camp }>;
   articles: number;
   camps: Record<Camp, number>;
+  /** Blue/green split of the outlets on the story, 其他 excluded; null when neither wrote. */
+  share: { blue: number; green: number } | null;
+  /** log2 of blue-vs-green outlet ratio against the day's baseline: 0 is the
+   *  usual split, +1 is twice the usual blue weight, -1 twice the green. */
+  lean: number | null;
+  /** Camp that wrote noticeably more than usual (|lean| >= 1 with enough outlets). */
+  tilt: Camp | null;
+  /** Ground.news-style blind spot: the camp that barely reported a story the
+   *  other camp is on. "blue" means blue-leaning readers are not seeing it. */
   blindspot: Camp[];
+}
+
+/** The day's share of each camp, for judging whether an event's split is
+ *  unusual. Outlets are those that published anything in the window. */
+export interface CampBaseline {
+  outlets: Record<Camp, number>;
+  articles: Record<Camp, number>;
+}
+
+// Blind spot thresholds adapted from Ground.news (fewer than N sources on one
+// side while the other side is clearly on it), scaled to a two-camp landscape
+// with a dozen outlets each.
+const BLINDSPOT_MAX_OUTLETS = 1;
+const BLINDSPOT_MIN_OTHER_SIDE = 4;
+const TILT_MIN_OUTLETS = 5;
+const TILT_MIN_LEAN = 0.8;
+
+export function campLean(camps: Record<Camp, number>, base: CampBaseline | null): number | null {
+  if (camps.blue + camps.green === 0) return null;
+  const bb = base?.outlets.blue || 1,
+    bg = base?.outlets.green || 1;
+  // +0.5 smoothing keeps a zero on one side finite and small samples modest.
+  return Math.log2(((camps.blue + 0.5) / bb) * (bg / (camps.green + 0.5)));
 }
 
 /** Outlets that carry at least one of each event's major tags, from one
@@ -23,6 +58,7 @@ export interface EventFeedCoverage {
 export function groupFeedCoverage(
   rows: Array<{ articleId: number; media: string; tag: string }>,
   majors: ReadonlyArray<readonly string[]>,
+  base: CampBaseline | null = null,
   cats?: Record<string, string[]>,
 ): EventFeedCoverage[] {
   const byTag = new Map<string, Array<{ articleId: number; media: string }>>();
@@ -42,31 +78,71 @@ export function groupFeedCoverage(
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([media]) => ({ media, camp: campOf(media, cats) }));
     for (const o of outlets) camps[o.camp] += 1;
+    const sides = camps.blue + camps.green;
+    const share = sides ? { blue: Math.round((camps.blue / sides) * 100), green: Math.round((camps.green / sides) * 100) } : null;
+    const lean = campLean(camps, base);
+    const tilt: Camp | null =
+      lean !== null && sides >= TILT_MIN_OUTLETS && Math.abs(lean) >= TILT_MIN_LEAN ? (lean > 0 ? 'blue' : 'green') : null;
     const blindspot: Camp[] = [];
-    if (camps.blue > 0 && camps.green === 0) blindspot.push('green');
-    if (camps.green > 0 && camps.blue === 0) blindspot.push('blue');
-    return { outlets, articles: seen.size, camps, blindspot };
+    if (camps.blue <= BLINDSPOT_MAX_OUTLETS && camps.green >= BLINDSPOT_MIN_OTHER_SIDE) blindspot.push('blue');
+    if (camps.green <= BLINDSPOT_MAX_OUTLETS && camps.blue >= BLINDSPOT_MIN_OTHER_SIDE) blindspot.push('green');
+    return { outlets, articles: seen.size, camps, share, lean, tilt, blindspot };
   });
+}
+
+const EMPTY: EventFeedCoverage = {
+  outlets: [],
+  articles: 0,
+  camps: { blue: 0, green: 0, other: 0 },
+  share: null,
+  lean: null,
+  tilt: null,
+  blindspot: [],
+};
+const window = (hour: Date) => ({ from: new Date(hour.getTime() - 24 * HOUR), to: new Date(hour.getTime() + HOUR) });
+
+/** Every outlet's article count in the event window, folded into camps. 其他
+ *  is limited to the news outlets the rankings use, as on the home page. */
+export async function campBaseline(db: Db, hour: Date, cats: Record<string, string[]> = categories): Promise<CampBaseline> {
+  const { from, to } = window(hour);
+  const rows = await db
+    .select({ media: articles.media, n: sql<number>`count(*)` })
+    .from(articles)
+    .where(and(gte(articles.publishedAt, from), lte(articles.publishedAt, to)))
+    .groupBy(articles.media);
+  return foldBaseline(rows, cats);
+}
+
+export function foldBaseline(rows: Array<{ media: string; n: number }>, cats: Record<string, string[]> = categories): CampBaseline {
+  const out: CampBaseline = { outlets: { blue: 0, green: 0, other: 0 }, articles: { blue: 0, green: 0, other: 0 } };
+  const news = new Set(cats.news ?? []);
+  for (const r of rows) {
+    const camp = campOf(r.media, cats);
+    if (camp === 'other' && !news.has(r.media)) continue;
+    out.outlets[camp] += 1;
+    out.articles[camp] += Number(r.n);
+  }
+  return out;
 }
 
 /** Coverage for every event of one snapshot hour. Events cluster the previous
  *  24h of reports, so that is the window. */
-export async function feedCoverage(db: Db, hour: Date, majors: ReadonlyArray<readonly string[]>): Promise<EventFeedCoverage[]> {
+export async function feedCoverage(
+  db: Db,
+  hour: Date,
+  majors: ReadonlyArray<readonly string[]>,
+  base: CampBaseline | null,
+): Promise<EventFeedCoverage[]> {
   const tags = [...new Set(majors.flat().filter((t) => t.trim()))];
-  if (tags.length === 0) return majors.map(() => ({ outlets: [], articles: 0, camps: { blue: 0, green: 0, other: 0 }, blindspot: [] }));
+  if (tags.length === 0) return majors.map(() => EMPTY);
+  const { from, to } = window(hour);
   const rows = await db
     .select({ articleId: articleTags.articleId, media: articles.media, tag: articleTags.tag })
     .from(articleTags)
     .innerJoin(articles, eq(articles.id, articleTags.articleId))
-    .where(
-      and(
-        inArray(articleTags.tag, tags),
-        gte(articleTags.publishedAt, new Date(hour.getTime() - 24 * HOUR)),
-        lte(articleTags.publishedAt, new Date(hour.getTime() + HOUR)),
-      ),
-    )
+    .where(and(inArray(articleTags.tag, tags), gte(articleTags.publishedAt, from), lte(articleTags.publishedAt, to)))
     .limit(20000);
-  return groupFeedCoverage(rows, majors);
+  return groupFeedCoverage(rows, majors, base);
 }
 
 export interface PrevEvent {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupFeedCoverage, matchPrevRank } from './event-feed.ts';
+import { campLean, foldBaseline, groupFeedCoverage, matchPrevRank } from './event-feed.ts';
 
 const cats = { blue: ['udn', 'tvbs'], green: ['ltn', 'setn'] };
 
@@ -12,14 +12,18 @@ describe('groupFeedCoverage', () => {
       { articleId: 3, media: 'cna', tag: '核三' },
       { articleId: 4, media: 'ltn', tag: '大谷翔平' },
     ];
-    const [nuclear, ohtani, empty] = groupFeedCoverage(rows, [['核三', '黃國昌'], ['大谷翔平'], ['沒人寫']], cats);
+    const [nuclear, ohtani, empty] = groupFeedCoverage(rows, [['核三', '黃國昌'], ['大谷翔平'], ['沒人寫']], null, cats);
     expect(nuclear.articles).toBe(3);
     expect(nuclear.outlets.map((o) => o.media)).toEqual(['cna', 'tvbs', 'udn']);
     expect(nuclear.camps).toEqual({ blue: 2, green: 0, other: 1 });
-    expect(nuclear.blindspot).toEqual(['green']);
+    expect(nuclear.share).toEqual({ blue: 100, green: 0 });
+    // Two outlets is not enough to call a blind spot or a tilt.
+    expect(nuclear.blindspot).toEqual([]);
+    expect(nuclear.tilt).toBeNull();
     expect(ohtani.camps).toEqual({ blue: 0, green: 1, other: 0 });
-    expect(ohtani.blindspot).toEqual(['blue']);
-    expect(empty).toEqual({ outlets: [], articles: 0, camps: { blue: 0, green: 0, other: 0 }, blindspot: [] });
+    expect(ohtani.share).toEqual({ blue: 0, green: 100 });
+    expect(empty.share).toBeNull();
+    expect(empty.lean).toBeNull();
   });
   it('orders outlets by how much they wrote', () => {
     const rows = [
@@ -27,7 +31,46 @@ describe('groupFeedCoverage', () => {
       { articleId: 2, media: 'udn', tag: 'a' },
       { articleId: 3, media: 'udn', tag: 'a' },
     ];
-    expect(groupFeedCoverage(rows, [['a']], cats)[0].outlets.map((o) => o.media)).toEqual(['udn', 'cna']);
+    expect(groupFeedCoverage(rows, [['a']], null, cats)[0].outlets.map((o) => o.media)).toEqual(['udn', 'cna']);
+  });
+  it('flags a blind spot when one camp is barely there and the other clearly is', () => {
+    const wide = { blue: ['b1', 'b2', 'b3', 'b4', 'b5'], green: ['g1', 'g2', 'g3', 'g4', 'g5'] };
+    const rows = ['g1', 'g2', 'g3', 'g4', 'b1'].map((media, i) => ({ articleId: i, media, tag: 't' }));
+    const [c] = groupFeedCoverage(rows, [['t']], null, wide);
+    expect(c.blindspot).toEqual(['blue']);
+    expect(c.share).toEqual({ blue: 20, green: 80 });
+    expect(c.tilt).toBe('green');
+    const both = groupFeedCoverage([...rows, { articleId: 9, media: 'b2', tag: 't' }], [['t']], null, wide)[0];
+    expect(both.blindspot).toEqual([]);
+  });
+});
+
+describe('campLean', () => {
+  const base = { outlets: { blue: 10, green: 15, other: 100 }, articles: { blue: 0, green: 0, other: 0 } };
+  it('is near zero at the usual split and positive when blue is over-represented', () => {
+    expect(Math.abs(campLean({ blue: 4, green: 6, other: 3 }, base) as number)).toBeLessThan(0.2);
+    expect(campLean({ blue: 8, green: 3, other: 0 }, base) as number).toBeGreaterThan(1);
+    expect(campLean({ blue: 1, green: 9, other: 0 }, base) as number).toBeLessThan(-1);
+    expect(campLean({ blue: 0, green: 0, other: 4 }, base)).toBeNull();
+  });
+  it('falls back to a 1:1 baseline without one', () => {
+    expect(campLean({ blue: 5, green: 5, other: 0 }, null)).toBe(0);
+  });
+});
+
+describe('foldBaseline', () => {
+  it('counts outlets and articles per camp, limiting 其他 to news outlets', () => {
+    const cats = { blue: ['udn'], green: ['ltn'], news: ['udn', 'ltn', 'cna'] };
+    const b = foldBaseline(
+      [
+        { media: 'udn', n: 30 },
+        { media: 'ltn', n: 50 },
+        { media: 'cna', n: 20 },
+        { media: 'vogue', n: 99 },
+      ],
+      cats,
+    );
+    expect(b).toEqual({ outlets: { blue: 1, green: 1, other: 1 }, articles: { blue: 30, green: 50, other: 20 } });
   });
 });
 

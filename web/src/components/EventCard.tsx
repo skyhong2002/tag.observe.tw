@@ -1,12 +1,14 @@
 import Link from 'next/link';
+import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar, leanText } from '@/components/CampBar';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import type { MediaInfo } from '@/lib/api';
 import { cleanEventHeadline, selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
+import { headlineDiff } from '@/lib/headline-compare.mts';
 import { isAllowedImage } from '@/lib/images';
-import type { Camp, EventCoverage, EventItem, EventNews } from '@/lib/pages';
+import type { Camp, CampBaseline, EventCoverage, EventItem, EventNews } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 
 // One event of the hourly table, in three weights: `hero` for the top of the
@@ -16,13 +18,6 @@ import { articleHref } from '@/lib/reading.mts';
 // rather than thirty equal boxes.
 
 export type EventTier = 'hero' | 'card' | 'row';
-
-const CAMP: Record<Camp, { label: string; dot: string }> = {
-  blue: { label: '藍營傾向', dot: 'bg-blue-600 dark:bg-blue-500' },
-  green: { label: '綠營傾向', dot: 'bg-emerald-600 dark:bg-emerald-500' },
-  other: { label: '其他媒體', dot: 'bg-zinc-400 dark:bg-zinc-500' },
-};
-const CAMP_ORDER: Camp[] = ['blue', 'green', 'other'];
 
 export const eventAnchor = (rank: number) => `event-${rank}`;
 export const eventHref = (e: EventItem) => (e.relatedEventPk ? `/eve/${e.relatedEventPk}/` : null);
@@ -77,7 +72,7 @@ export function ScoreBar({ score, max, width = 'w-16' }: { score: number; max: n
   );
 }
 
-/** Who is on the story: outlet marks, camp counts, and the silent camp. */
+/** Who is on the story: outlet marks and counts. Camp numbers live in CampLine. */
 export function OutletStrip({
   c,
   media,
@@ -92,7 +87,6 @@ export function OutletStrip({
   if (!c || c.outlets.length === 0) return null;
   const shown = c.outlets.slice(0, max);
   const rest = c.outlets.length - shown.length;
-  const campText = CAMP_ORDER.map((k) => `${CAMP[k].label} ${c.camps[k]} 家`).join('、');
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
       <span className="flex items-center gap-0.5" title={shown.map((o) => media[o.media]?.title ?? o.media).join('、')}>
@@ -104,20 +98,6 @@ export function OutletStrip({
       <span className="tabular-nums">
         {c.outlets.length} 家{!compact && ` · ${c.articles} 篇`}
       </span>
-      <span className="sr-only">{campText}</span>
-      <span className="flex items-center gap-1 tabular-nums" title={campText} aria-hidden>
-        {CAMP_ORDER.map((k) => (
-          <span key={k} className="flex items-center gap-0.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${CAMP[k].dot}`} />
-            {c.camps[k]}
-          </span>
-        ))}
-      </span>
-      {c.blindspot.map((k) => (
-        <span key={k} className="rounded bg-amber-100 px-1.5 py-px text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-          {CAMP[k].label}媒體未報導
-        </span>
-      ))}
     </div>
   );
 }
@@ -152,6 +132,7 @@ function Headlines({ e, media, limit, skip }: { e: EventItem; media: MediaInfo; 
     <ul className="space-y-1 text-sm">
       {list.map((n, i) => (
         <li key={n.url + String(i)} className="flex items-start gap-1.5">
+          <CampDot camp={n.camp} />
           <MediaHoverLink media={n.media} icon={14} className="mt-0.5 shrink-0">
             <span className="sr-only">{media[n.media]?.title ?? n.media}</span>
           </MediaHoverLink>
@@ -162,6 +143,45 @@ function Headlines({ e, media, limit, skip }: { e: EventItem; media: MediaInfo; 
         </li>
       ))}
     </ul>
+  );
+}
+
+function CampDot({ camp }: { camp?: Camp }) {
+  if (!camp) return null;
+  return <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${CAMP_FILL[camp]}`} title={CAMP_LABEL[camp]} aria-hidden />;
+}
+
+/** Same story, one headline from each camp, differing words underlined: the
+ *  home page's 同題不同標 inside the lead card. */
+function CampHeadlines({ e, media }: { e: EventItem; media: MediaInfo }) {
+  const pick = (camp: Camp) => e.news.find((n) => n.camp === camp);
+  const blue = pick('blue'),
+    green = pick('green');
+  if (!blue || !green) return null;
+  const [b, g] = headlineDiff(blue.title, green.title);
+  const side = (n: EventNews, parts: typeof b, camp: Camp) => (
+    <div className="min-w-0 space-y-0.5">
+      <p className="flex items-center gap-1 text-[11px] text-zinc-500">
+        <span className={`h-1.5 w-1.5 rounded-full ${CAMP_FILL[camp]}`} aria-hidden />
+        {CAMP_LABEL[camp]}
+        <MediaHoverLink media={n.media} icon={12} className="hover:underline">
+          {media[n.media]?.title ?? n.media}
+        </MediaHoverLink>
+      </p>
+      <Link href={articleHref(n)} className="block text-sm leading-snug hover:underline">
+        {parts.map((part, i) => (
+          <span key={String(i)} className={part.different ? 'underline decoration-zinc-400 decoration-1 underline-offset-4' : undefined}>
+            {part.text}
+          </span>
+        ))}
+      </Link>
+    </div>
+  );
+  return (
+    <div className="grid gap-3 rounded-lg bg-zinc-50 p-3 sm:grid-cols-2 dark:bg-zinc-800/60">
+      {side(blue, b, 'blue')}
+      {side(green, g, 'green')}
+    </div>
   );
 }
 
@@ -191,7 +211,19 @@ function Title({ e, className }: { e: EventItem; className: string }) {
   );
 }
 
-export default function EventCard({ e, tier, max, media }: { e: EventItem; tier: EventTier; max: number; media: MediaInfo }) {
+export default function EventCard({
+  e,
+  tier,
+  max,
+  media,
+  baseline,
+}: {
+  e: EventItem;
+  tier: EventTier;
+  max: number;
+  media: MediaInfo;
+  baseline?: CampBaseline | null;
+}) {
   const img = cover(e);
   const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
   if (tier === 'row') {
@@ -211,9 +243,9 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
             <Tags e={e} limit={3} size="text-[11px]" />
           </div>
         </div>
-        <div className="col-start-2 sm:col-start-3 sm:max-w-56 sm:text-right">
-          {e.coverage && <OutletStrip c={e.coverage} media={media} max={6} compact />}
-          <Compare e={e} className="mt-0.5 inline-block" />
+        <div className="col-start-2 flex flex-col gap-0.5 sm:col-start-3 sm:max-w-64 sm:items-end">
+          {e.coverage && <CampLine c={e.coverage} baseline={baseline} compact />}
+          <Compare e={e} />
         </div>
       </li>
     );
@@ -243,8 +275,18 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
           </div>
           <Title e={e} className="text-xl font-semibold leading-snug" />
           <Tags e={e} limit={7} />
-          {e.coverage && <OutletStrip c={e.coverage} media={media} max={12} />}
-          <Headlines e={e} media={media} limit={4} skip={img} />
+          {e.coverage && (
+            <div className="space-y-1.5">
+              <FullBar c={e.coverage} />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                <span>{leanText(e.coverage.lean)}</span>
+                <CampBadge c={e.coverage} />
+                <OutletStrip c={e.coverage} media={media} max={12} />
+              </div>
+            </div>
+          )}
+          <CampHeadlines e={e} media={media} />
+          <Headlines e={e} media={media} limit={3} skip={img} />
         </div>
       </li>
     );
@@ -274,6 +316,7 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <Title e={e} className="font-semibold leading-snug" />
           <Tags e={e} limit={5} />
+          {e.coverage && <CampLine c={e.coverage} baseline={baseline} />}
         </div>
       </div>
       {e.coverage && <OutletStrip c={e.coverage} media={media} max={8} />}
