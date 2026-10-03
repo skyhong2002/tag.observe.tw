@@ -130,11 +130,9 @@ export default async function TagPage({ params, searchParams }: { params: Promis
               .sort((a, b) => b[1].count - a[1].count)
               .map(([m, { title, count }]) => (
                 <li key={m} className="flex justify-between gap-2 px-3 py-1.5">
-                  <span className="inline-flex min-w-0 items-center gap-1.5">
-                    <MediaHoverLink media={m} className="hover:underline">
-                      {title}
-                    </MediaHoverLink>
-                  </span>
+                  <MediaHoverLink media={m} icon={14} className="min-w-0 hover:underline">
+                    {title}
+                  </MediaHoverLink>
                   <span className="shrink-0 tabular-nums text-zinc-600">{count}</span>
                 </li>
               ))}
