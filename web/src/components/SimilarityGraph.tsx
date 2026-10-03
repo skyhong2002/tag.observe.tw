@@ -7,8 +7,8 @@ import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
 import { edgeWeightWidth, mediaGraphPositions, mediaIconSizes, nodeArticleCounts } from '@/lib/media-graph.mts';
+import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
 import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
-import storedIcons from '../../../app/data/favicon-local.json';
 
 echarts.use([GraphChart, TooltipComponent, CanvasRenderer, LabelLayout]);
 export type GraphSelection = { node: string } | { edge: SimilarityEdge } | null;
@@ -138,14 +138,15 @@ export default function SimilarityGraph({
     // All icons are same-origin cached assets; an unavailable image keeps its
     // letter tile, never an invisible node or a circular placeholder.
     for (const node of nodes) {
-      if (!Object.hasOwn(storedIcons, node.id)) continue;
+      const src = localMediaIcon(node.id);
+      if (!src) continue;
       const img = new Image();
       img.onload = () => {
         if (disposed) return;
-        symbols.set(node.id, img.src);
+        symbols.set(node.id, graphMediaIcon(img, node.id, dark));
         chart.setOption({ series: [{ id: 'media-network', data: nodeData() }] });
       };
-      img.src = `/favicons/${encodeURIComponent(node.id)}.png`;
+      img.src = src;
     }
     chart.on('click', (event: { dataType?: string; dataIndex?: number }) => {
       if (event.dataIndex === undefined) return;

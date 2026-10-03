@@ -1,570 +1,2655 @@
 {
   "1111": {
     "source": "https://www.1111.com.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "0f8ed33dde87",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "17news": {
+    "source": "https://17news.net/wp-content/uploads/2022/07/cropped-icon-1.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "03df76df6e96",
+    "curated": true
   },
   "4gamers": {
     "source": "https://img.4gamers.com.tw/puku-site-server-img/apple-touch-icon-180.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "e28a3a89de77"
+  },
+  "aboluowang": {
+    "source": "https://www.google.com/s2/favicons?domain=www.aboluowang.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "f3c4a50b07d7"
   },
   "adaymag": {
-    "source": "https://adayimg.com/wp-content/uploads/2017/04/3d2cd9e4496057638a60144845e8d2c8-180x180.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://adayimg.com/wp-content/uploads/2017/04/3d2cd9e4496057638a60144845e8d2c8-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "116b5f442a50",
+    "dark": "invert"
   },
   "afp": {
     "source": "https://www.afp.com/themes/custom/afp9/assets/images/favicon_afp.com_201120.ico",
-    "fetchedAt": "2026-10-03"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": true,
+    "revision": "4c26ac149a0d"
   },
   "agentm": {
     "source": "https://news.agentm.tw/wp-content/uploads/cropped-cropped-logo-%E9%BB%91-180x180.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "212b8fbb01f3"
   },
   "agriharvest": {
-    "source": "https://www.google.com/s2/favicons?domain=www.agriharvest.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.agriharvest.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "b933133cc281"
+  },
+  "anntw": {
+    "source": "https://www.anntw.com/favicon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 130,
+    "sourceHeight": 130,
+    "transparent": true,
+    "revision": "15ecb7711107",
+    "curated": true,
+    "dark": "invert"
   },
   "ap": {
-    "source": "https://www.google.com/s2/favicons?domain=apnews.com&sz=64",
-    "fetchedAt": "2026-10-03"
+    "source": "https://www.google.com/s2/favicons?domain=apnews.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "4e70642a69d2"
   },
   "applealmond": {
-    "source": "https://img.applealmond.com/2021/07/1627455091-2f1138deb69f22a0fcbdff8a3f26365f-32x32.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://img.applealmond.com/2021/07/1627455091-2f1138deb69f22a0fcbdff8a3f26365f.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": true,
+    "revision": "a3c56197ee46",
+    "note": "The publisher currently declares this profile symbol as its site icon; use its full-size original."
   },
   "asiatatler": {
-    "source": "https://assets.tatlerasia.com/common/favicons/favicon-96x96.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://assets.tatlerasia.com/common/favicons/icon-512.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": true,
+    "revision": "3134079f56a0",
+    "dark": "invert"
+  },
+  "babyou": {
+    "source": "https://www.google.com/s2/favicons?domain=www.babyou.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "9635bdb3950a"
+  },
+  "bannedbook": {
+    "source": "https://www.google.com/s2/favicons?domain=bannedbook.org&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "145ce485575d"
   },
   "bazaar": {
     "source": "https://www.harpersbazaar.com/_assets/design-tokens/harpersbazaar/static/images/apple-touch-icon.b5179c9.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "19e69d844795"
   },
   "bbc": {
-    "source": "https://www.bbc.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_Logo_2021.svg/250px-BBC_Logo_2021.svg.png?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 250,
+    "sourceHeight": 72,
+    "transparent": true,
+    "revision": "61e12bd5362c",
+    "dark": "invert",
+    "note": "Transparent BBC wordmark; avoids the three blank blocks in the small official favicon."
+  },
+  "bbc_global": {
+    "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_Logo_2021.svg/250px-BBC_Logo_2021.svg.png?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 250,
+    "sourceHeight": 72,
+    "transparent": true,
+    "revision": "61e12bd5362c",
+    "dark": "invert",
+    "note": "Same publisher identity as bbc."
   },
   "bccnews": {
     "source": "https://bccnews.com.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "081bcadaab67"
   },
   "beauty321": {
     "source": "https://www.beauty321.com/images/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "0ff9893d1cb8",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "biao_news": {
+    "source": "https://uploads.posu.tw/15/1597/thum/202503201359341175.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 1024,
+    "sourceHeight": 1024,
+    "transparent": true,
+    "revision": "1598adc74bbd",
+    "curated": true
+  },
+  "bigmedia": {
+    "source": "https://www.bigmedia.com.tw/blob/img/logo-small.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 600,
+    "sourceHeight": 600,
+    "transparent": true,
+    "revision": "870f3919d384",
+    "curated": true
   },
   "bnext": {
-    "source": "https://cdn.bnextmedia.com.tw/assets/bn/favicon-72x72.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://cdn.bnextmedia.com.tw/assets/bn/favicon-180x180.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "8695993bb133"
+  },
+  "bo6s": {
+    "source": "https://www.bo6s.com.tw/favicon.ico?20261003183654",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": true,
+    "revision": "66b4dd66ebe4",
+    "curated": true
   },
   "businesstoday": {
-    "source": "https://www.businesstoday.com.tw/lazyweb/web/img/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.businesstoday.com.tw/lazyweb/web/img/logo.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 200,
+    "sourceHeight": 90,
+    "transparent": false,
+    "revision": "d6411eb28607"
   },
   "buzzorange": {
     "source": "https://buzzorange.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "2b1bb61dad9a",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "bw": {
     "source": "https://www.google.com/s2/favicons?domain=bw.businessweekly.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "945e42117b65",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "cctv": {
+    "source": "http://cctv.com//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "bb627ead8d80",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited.",
+    "dark": "outline"
+  },
+  "cdn_news": {
+    "source": "https://cdn-news.org/img/CDN_logo_C.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 750,
+    "sourceHeight": 750,
+    "transparent": false,
+    "revision": "59da6e48b5b9",
+    "curated": true
+  },
+  "cdns": {
+    "source": "https://d1j71ui15yt4f9.cloudfront.net/wp-content/uploads/2018/12/02215017/cropped-iTunesArtwork%401x-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "50f1dca9fdaa",
+    "curated": true
   },
   "cheers": {
-    "source": "https://www.google.com/s2/favicons?domain=www.cheers.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.cheers.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "3d610a871acf"
+  },
+  "chengpou": {
+    "source": "http://www.chengpou.com.mo//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "0767af1eeebd",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "chinatimes": {
     "source": "https://www.chinatimes.com/images/2020/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "b230b74cb559"
   },
   "civilmedia": {
     "source": "https://www.civilmedia.tw/wp-content/uploads/2013/09/civilfavicon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 65,
+    "sourceHeight": 63,
+    "transparent": true,
+    "revision": "83cd4bdfd06b",
+    "dark": "invert"
   },
   "cmmedia": {
     "source": "https://www.cmmedia.com.tw/favicon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 67,
+    "sourceHeight": 67,
+    "transparent": true,
+    "revision": "7a1c3028c5af"
+  },
+  "cn_nytimes": {
+    "source": "https://www.google.com/s2/favicons?domain=cn.nytimes.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 144,
+    "sourceHeight": 144,
+    "transparent": false,
+    "revision": "4f0d99d9bde9"
+  },
+  "cn_wsj": {
+    "source": "https://www.google.com/s2/favicons?domain=www.cn.wsj.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "9635e7b6c856"
   },
   "cna": {
-    "source": "https://imgcdn.cna.com.tw/www/website/img/fav-icon.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/6/6a/Central_News_Agency_logo.svg/250px-Central_News_Agency_logo.svg.png?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 250,
+    "sourceHeight": 167,
+    "transparent": true,
+    "revision": "de607c73f2da",
+    "dark": "outline",
+    "note": "Transparent agency logo; the declared favicon is only 32px."
   },
   "cnews": {
-    "source": "https://cnews.com.tw/wp-content/themes/cnews-theme/img/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://cnews.com.tw/wp-content/uploads/2023/11/2023-11-21_14-20-17_096509-192x192.jpg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "65dc2b197169"
   },
   "cnn": {
-    "source": "https://www.cnn.com/favicon.ico",
-    "fetchedAt": "2026-10-03"
+    "source": "https://edition.cnn.com/media/sites/cnn/apple-touch-icon.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 76,
+    "sourceHeight": 76,
+    "transparent": true,
+    "revision": "87228ec8d311"
   },
   "cnyes": {
     "source": "https://www.cnyes.com/static/favicon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "63dff21b98f4",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "commonhealth": {
     "source": "https://www.google.com/s2/favicons?domain=www.commonhealth.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "16b602d772e4",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "contentplatform_info": {
+    "source": "https://d16ad5czovw3en.cloudfront.net/wp-content/uploads/2021/09/19021355/cropped-Logo-%E6%AD%A3%E6%96%B9-400x400-1-192x192.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "e1ac2944d25a",
+    "curated": true
   },
   "cool3c": {
     "source": "https://www.cool3c.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "75b24a5fa283",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "coolloud": {
-    "source": "https://www.coolloud.org.tw/sites/all/themes/coolloud/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.coolloud.org.tw/sites/default/files/favicon.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 294,
+    "sourceHeight": 257,
+    "transparent": true,
+    "revision": "402afc49d0ad",
+    "dark": "invert"
   },
   "cosmopolitan": {
     "source": "https://www.cosmopolitan.com/_assets/design-tokens/cosmopolitan/static/images/apple-touch-icon.b887080.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "e690fe88df7b"
+  },
+  "ct": {
+    "source": "https://media.ct.org.tw/upload/websetting/5ac840cf2b5e6.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 404,
+    "sourceHeight": 362,
+    "transparent": true,
+    "revision": "5bdcab2906a1",
+    "curated": true
   },
   "ctee": {
-    "source": "https://static.ctee.com.tw/img/favicon/favicon-96.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://static.ctee.com.tw/img/favicon/safari-pinned-tab.svg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "60b360f79831",
+    "note": "Publisher supplies this transparent version of its icon."
   },
   "cti": {
-    "source": "https://ctinews.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/4/48/CTI_News_Logo.jpg/250px-CTI_News_Logo.jpg?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 250,
+    "sourceHeight": 250,
+    "transparent": false,
+    "revision": "b1b6cb58b126",
+    "note": "Same publisher identity as ctitv."
+  },
+  "ctit": {
+    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/4/48/CTI_News_Logo.jpg/250px-CTI_News_Logo.jpg?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 250,
+    "sourceHeight": 250,
+    "transparent": false,
+    "revision": "b1b6cb58b126",
+    "note": "Same publisher identity as ctitv."
   },
   "ctitv": {
-    "source": "https://ctinews.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/4/48/CTI_News_Logo.jpg/250px-CTI_News_Logo.jpg?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 250,
+    "sourceHeight": 250,
+    "transparent": false,
+    "revision": "b1b6cb58b126"
   },
   "cts": {
-    "source": "https://news.cts.com.tw/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://news.cts.com.tw/assets/favicon-news.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": true,
+    "revision": "95a3ba8d7853",
+    "note": "Current transparent CTS News emblem from the publisher."
   },
   "ctv": {
-    "source": "https://www.ctv.com.tw/Cms_Data/Sites/CTV4/Files/images/favicon-32x32.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/6/67/CTV_News_logo.png/250px-CTV_News_logo.png?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 250,
+    "sourceHeight": 61,
+    "transparent": true,
+    "revision": "a8e7e5d207d0",
+    "dark": "outline"
   },
   "ctwant": {
     "source": "https://static.ctwant.com/images/dist/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "1378924f744d"
   },
   "cw": {
-    "source": "https://www.google.com/s2/favicons?domain=www.cw.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.cw.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "e45c42b7537a"
+  },
+  "daai": {
+    "source": "https://www.daai.tv/images/android-icon-300x300.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 300,
+    "sourceHeight": 300,
+    "transparent": false,
+    "revision": "4b8b7a13c300",
+    "curated": true
   },
   "dacota": {
     "source": "https://img.dacota.tw/2017/09/1504802621-4265a788ecc74a4ea0967fbcf0a43f6e.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "a4c8de3898d8"
   },
   "daman": {
-    "source": "https://www.damanwoo.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.damanwoo.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "141d1a0e6274",
+    "dark": "outline"
   },
   "digitimes": {
     "source": "https://img.digitimes.com/tw/x/img/favicon/favicon-2026.ico?v=2026623121357",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "2a7470160c85",
+    "dark": "outline",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "dongtaiwang": {
+    "source": "https://dongtaiwang.com//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "d6064d0ea049",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "dramaqueen": {
     "source": "https://www.dramaqueen.com.tw/img/logo.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 153,
+    "sourceHeight": 129,
+    "transparent": true,
+    "revision": "d882623b36a1"
   },
   "dw": {
-    "source": "https://www.dw.com/images/icons/favicon-96x96.png",
-    "fetchedAt": "2026-10-03"
+    "source": "https://www.dw.com/images/icons/favicon-180x180.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "73118aa20a2f"
   },
   "ebc": {
     "source": "https://news.ebc.net.tw/img/favicon/favicon-128x128.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": false,
+    "revision": "be94394e89e4"
   },
   "edh": {
     "source": "https://edh.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "5b1ad72e6401",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "einfo": {
-    "source": "https://e-info.org.tw/favicon-32x32.png?v2",
-    "fetchedAt": "2026-10-01"
+    "source": "https://e-info.org.tw/favicon.svg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 1000,
+    "sourceHeight": 1000,
+    "transparent": true,
+    "revision": "91034b604893"
   },
   "eld": {
     "source": "https://www.roomie.tw/wp-content/themes/roomie.tw/resources/images/favicons/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "2a7523fea6ea"
   },
   "elle": {
     "source": "https://www.elle.com/_assets/design-tokens/elle/static/images/apple-touch-icon.0dd915e.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "399dde32070a"
+  },
+  "enews": {
+    "source": "http://enews.tw//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "be7e6dc20f91",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "enn": {
+    "source": "https://www.google.com/s2/favicons?domain=www.enn.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "790b118726e6"
   },
   "epochtimes": {
-    "source": "https://www.epochtimes.com/apple-touch-icon-120.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.epochtimes.com/android-icon-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "2603bc659c35"
+  },
+  "eracom": {
+    "source": "https://www.eracom.com.tw/t/2/2/img/favicon-eranews.ico?v=20240329170939",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "e471d938b7b9",
+    "curated": true
   },
   "ettoday": {
-    "source": "https://cdn2.ettoday.net/style/ettoday2017/images/touch-icon-180.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://cdn2.ettoday.net/style/ettoday2017/images/touch-icon-192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "f5f5d77adcb5"
   },
   "eventsinfocus": {
     "source": "https://www.eventsinfocus.org/sites/default/files/smalleye2_4.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 40,
+    "sourceHeight": 40,
+    "transparent": true,
+    "revision": "dcc37ffab8fb",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "everydayobject": {
-    "source": "https://assets.everydayobject.us/wp-content/uploads/2016/05/cropped-black-180x180.jpg",
-    "fetchedAt": "2026-10-01"
+    "source": "https://assets.everydayobject.us/wp-content/uploads/2024/08/%E5%8F%B3%E5%81%B4banner-logo-200x200.jpg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 200,
+    "sourceHeight": 200,
+    "transparent": false,
+    "revision": "9e281f5b0f81",
+    "note": "Publisher sidebar EO monogram; its declared favicon is a solid black square."
+  },
+  "fclnews": {
+    "source": "https://img1.fclnews.com/wp-content/uploads/2025/09/20260922001934_78..jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "614668023e48",
+    "curated": true
   },
   "femin": {
     "source": "https://femin.adayimg.com/wp-content/uploads/2018/03/thefemin-the-femin-favicon-v2.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 200,
+    "sourceHeight": 200,
+    "transparent": true,
+    "revision": "e424595c41d4",
+    "dark": "invert"
+  },
+  "firenews": {
+    "source": "https://firenews.com.tw/wp-content/uploads/2023/11/cropped-512512-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "cb6403919f2c",
+    "curated": true
   },
   "flipermag": {
     "source": "https://flipermag.com/wp-content/themes/flipermag/assets/images/favicon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 300,
+    "sourceHeight": 300,
+    "transparent": true,
+    "revision": "28f5bd58c49c",
+    "dark": "invert"
+  },
+  "focusnews": {
+    "source": "https://focusnews.com.tw/wp-content/uploads/2025/07/cropped-%E4%BB%8A%E5%82%B3%E5%AA%92%E7%B6%B2%E9%A0%81-192x192.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "469708a85766",
+    "curated": true
+  },
+  "focustaiwan": {
+    "source": "https://focustaiwan.tw/img/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "8a8dfeaf2ef5",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "foodnext": {
     "source": "https://www.foodnext.net/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "48014a007798",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "fountmedia": {
+    "source": "https://www.fountmedia.io/images/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 371,
+    "sourceHeight": 371,
+    "transparent": true,
+    "revision": "c725be3b0c9f",
+    "curated": true
   },
   "ftnn": {
     "source": "https://static.ftnn.com.tw/www/images/ftnn-icon-64.jpg",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": false,
+    "revision": "395895398ec9"
   },
   "ftv": {
-    "source": "https://cdn.ftvnews.com.tw/client/images/favicons/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.ftvnews.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": true,
+    "revision": "8e9283a9bb02",
+    "dark": "outline"
+  },
+  "funnews": {
+    "source": "https://funnews-tw.b-cdn.net/favicon/x196.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 196,
+    "sourceHeight": 196,
+    "transparent": false,
+    "revision": "e9cf4bd1da48",
+    "curated": true
   },
   "gamebase": {
     "source": "https://news.gamebase.com.tw/favicon32.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "50dba8bac008",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "gamer": {
-    "source": "https://i2.bahamut.com.tw/apple-touch-icon-72x72.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://i2.bahamut.com.tw/favicon.svg?v=1689129528",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 144,
+    "sourceHeight": 144,
+    "transparent": true,
+    "revision": "eb8ea478307b"
   },
   "gamme": {
-    "source": "https://www.gamme.com.tw/blogico.ico?v1",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.news.gamme.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "036c5c959459"
+  },
+  "globalnewstv": {
+    "source": "https://globalnewstv.com.tw/wp-content/uploads/2018/01/20180121185121_81-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "4187be6025a2",
+    "curated": true
+  },
+  "google_news": {
+    "source": "https://www.gstatic.com/gnews/logo/google_news_192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "88257216c3a3",
+    "curated": true
   },
   "gq": {
     "source": "https://www.google.com/s2/favicons?domain=www.gq.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "e7dd78ecf11c",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "greatnews": {
+    "source": "https://greatnews.com.tw/Img/icons/favicon-32x32.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "900a18d4afad",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "grinews": {
+    "source": "https://grinews.com/news/wp-content/themes/grinews/css/img/favicon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 100,
+    "sourceHeight": 100,
+    "transparent": true,
+    "revision": "5cf843218e64",
+    "curated": true
+  },
+  "guancha": {
+    "source": "https://www.google.com/s2/favicons?domain=guancha.cn&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 114,
+    "sourceHeight": 114,
+    "transparent": true,
+    "revision": "49388bf4aa77"
   },
   "gv": {
-    "source": "https://globalvoices.org/wp-content/gv-static/img/tmpl/favicon-forestgreen/favicon-96x96.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://globalvoices.org/wp-content/gv-static/img/tmpl/favicon-forestgreen/favicon-196x196.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 196,
+    "sourceHeight": 196,
+    "transparent": true,
+    "revision": "f5d8e655c561"
   },
   "gvm": {
-    "source": "https://www.gvm.com.tw/public/images/touch-icon-120_120.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.gvm.com.tw/public/images/touch-icon-180_180.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "368c099cc000"
+  },
+  "hakkanews": {
+    "source": "https://gcs.hakkanews.tw/2026/08/2026-08-18-favicon.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "002a1bd6941d",
+    "curated": true
+  },
+  "hakkatv": {
+    "source": "https://www.hakkatv.org.tw/img/icons/apple-touch-icon-152x152.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 152,
+    "sourceHeight": 152,
+    "transparent": false,
+    "revision": "1aa97b23e909",
+    "curated": true
   },
   "hbr": {
-    "source": "https://www.hbrtaiwan.com/ico/favicon-96.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.hbrtaiwan.com/ico/favicon-180.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "94ebdfe7d95e",
+    "dark": "invert"
   },
   "healthnews": {
-    "source": "https://www.healthnews.com.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.healthnews.com.tw/2022_portal/resource/images/headLogoA_new.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 37,
+    "sourceHeight": 35,
+    "transparent": false,
+    "revision": "481fb04a584b",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "heho": {
-    "source": "https://heho.com.tw/wp-content/uploads/2020/12/1607933330.5821-180x180.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://heho.com.tw/wp-content/uploads/2020/12/1607933330.5821-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "145f73500223"
+  },
+  "hiilan": {
+    "source": "https://www.google.com/s2/favicons?domain=www.hiilan.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "a68765977837",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "hk_crntt": {
+    "source": "https://hk.crntt.com/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "e097103ec21c",
+    "curated": true
+  },
+  "hk01": {
+    "source": "https://www.hk01.com/apple-touch-icon.png?v=5AeznpzBEm",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "83b67329ba9e",
+    "curated": true
+  },
+  "homeplus": {
+    "source": "https://news.homeplus.net.tw/images/favicon_b.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 800,
+    "sourceHeight": 800,
+    "transparent": false,
+    "revision": "7595613224df",
+    "curated": true
   },
   "housefun": {
     "source": "https://www.housefun.com.tw/apple-touch-icon-114x114-precomposed.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 114,
+    "sourceHeight": 114,
+    "transparent": true,
+    "revision": "2cbc45ea03ea"
+  },
+  "hsnews": {
+    "source": "https://hsnews.com.tw//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "83180661dacf",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "huanqiu": {
+    "source": "http://huanqiu.com//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "febfce364fdf",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "hypebeast": {
     "source": "https://static.hypebeast.com/dist/hypebeast/favicon/apple-touch-icon-1024x1024.png?v8",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 800,
+    "sourceHeight": 800,
+    "transparent": false,
+    "revision": "86a506b14890"
   },
   "hypesphere": {
-    "source": "https://hypesphere.com/wp-content/uploads/2025/10/cropped-HS_LOGO_TAB-180x180.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://hypesphere.com/wp-content/uploads/2025/10/cropped-HS_LOGO_TAB-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "847d8327b4d8",
+    "dark": "invert"
+  },
+  "i_media": {
+    "source": "https://i-media.tw/Content/img/icon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "a3e9bbdf10a3",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "i_meihua": {
+    "source": "https://www.google.com/s2/favicons?domain=i-meihua.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 114,
+    "sourceHeight": 114,
+    "transparent": true,
+    "revision": "48f118b92a7a",
+    "dark": "outline"
+  },
+  "i_news": {
+    "source": "https://www.google.com/s2/favicons?domain=www.i-news.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": true,
+    "revision": "c31d25de454a",
+    "dark": "outline"
+  },
+  "ifeng": {
+    "source": "https://y1.ifengimg.com/index/72x72_2520ifeng.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 72,
+    "sourceHeight": 72,
+    "transparent": true,
+    "revision": "7b6523c87de1",
+    "curated": true
+  },
+  "innews": {
+    "source": "https://www.google.com/s2/favicons?domain=innews.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "60ed03fc4550"
   },
   "inside": {
     "source": "https://www.inside.com.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "249364bb9956",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "ithome": {
     "source": "https://www.ithome.com.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": false,
+    "revision": "42ffbb096e88",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "iw_times": {
+    "source": "https://uploads.posu.tw/20/2048/thum/202602241627090310.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 1024,
+    "sourceHeight": 1024,
+    "transparent": true,
+    "revision": "ad3b27323840",
+    "curated": true
+  },
+  "j_media": {
+    "source": "https://j-media.tw/Content/img/icon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "5a6c103a6008",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "kamalan_news": {
+    "source": "https://www.kamalan-news.com/archive/system/company/favicon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 40,
+    "sourceHeight": 40,
+    "transparent": true,
+    "revision": "0c40aa60da08",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "kingtop": {
+    "source": "https://www.kingtop.com.tw/assets/favicon/android-icon-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "46a93593e676",
+    "curated": true
   },
   "knews": {
-    "source": "https://static.kmedia.com.tw/prd/layout/img/favicon/favicon-32x32.png",
-    "fetchedAt": "2026-10-03"
+    "source": "https://static.kmedia.com.tw/prd/layout/img/favicon/android-chrome-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "237e1e9f8d76"
   },
   "kocpc": {
     "source": "https://www.kocpc.com.tw/wp-content/uploads/2026/01/20260114153818_0_751714-350x350.jpeg",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 350,
+    "sourceHeight": 350,
+    "transparent": false,
+    "revision": "87454760c8a1"
+  },
+  "ksnews": {
+    "source": "https://www.google.com/s2/favicons?domain=www.ksnews.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "20e9f3a10159"
   },
   "kyodo": {
     "source": "https://english-kyodo.ismcdn.jp/common/images/apple-touch-icon-180x180.png",
-    "fetchedAt": "2026-10-03"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "c9d999edac6a"
+  },
+  "lai_media": {
+    "source": "https://uploads.posu.tw/18/1894/thum/202604020846501388.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 1024,
+    "sourceHeight": 1017,
+    "transparent": true,
+    "revision": "150b6ef95dec",
+    "curated": true
   },
   "ldope": {
-    "source": "https://ldope.com/wp-content/uploads/2019/05/bd3da199f2bc3749fdca9c4c87eaf72a-180x180.jpg",
-    "fetchedAt": "2026-10-01"
+    "source": "https://ldope.com/wp-content/uploads/2019/05/bd3da199f2bc3749fdca9c4c87eaf72a-192x192.jpg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "1cbb8445a3b9"
+  },
+  "leho": {
+    "source": "https://leho.com.tw/wp-content/uploads/2021/11/cropped-leho-favicon-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "2cb9528fef6c",
+    "curated": true
+  },
+  "life": {
+    "source": "https://life.tw/static/images/icon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": false,
+    "revision": "3bce3d6b5ba0",
+    "curated": true
+  },
+  "lifenews": {
+    "source": "https://lifenews.com.tw/wp-content/uploads/2026/09/cropped-logo-2-1-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "ddce6d8c61b7",
+    "curated": true,
+    "dark": "outline"
+  },
+  "lifetoutiao_news": {
+    "source": "https://www.lifetoutiao.news/wp-content/uploads/2024/01/Group-7.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 185,
+    "sourceHeight": 160,
+    "transparent": true,
+    "revision": "39440ba4d99b",
+    "curated": true
   },
   "lihpao": {
     "source": "https://www.lihpao.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "385119c82355",
+    "dark": "outline",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "livio": {
-    "source": "https://images.livio.com.tw/uploads/cropped-Livio-Logo-%E6%A9%98%E9%BB%83-180x180.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://images.livio.com.tw/uploads/cropped-Livio-Logo-%E6%A9%98%E9%BB%83-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "4d6485a2cc6f"
   },
   "ltn": {
-    "source": "https://www.ltn.com.tw/assets/images/ltn.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.ltn.com.tw/assets/images/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "cfefb4cf0d29"
+  },
+  "ltvnews": {
+    "source": "https://i0.wp.com/www.ltvnews.net/wp-content/uploads/2021/07/cropped-LTV-logo-544X280.png?fit=142%2C142&#038;ssl=1",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 142,
+    "sourceHeight": 142,
+    "transparent": true,
+    "revision": "786b2f33fd0a",
+    "curated": true
+  },
+  "macaodaily": {
+    "source": "https://www.macaodaily.com//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "cb6d5cc72262",
+    "curated": true
   },
   "mamaclub": {
     "source": "https://mamaclub.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 57,
+    "sourceHeight": 57,
+    "transparent": true,
+    "revision": "bf4139be4b92",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "marieclaire": {
-    "source": "https://il.marieclaire.com.tw/images/icon/r72.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://il.marieclaire.com.tw/images/icon/r512.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "a2f4c58408e7"
+  },
+  "matsu_idv": {
+    "source": "http://matsu.idv.tw/img/favicon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 101,
+    "sourceHeight": 101,
+    "transparent": true,
+    "revision": "ac62196c85e5",
+    "curated": true
+  },
+  "matsu_news": {
+    "source": "https://www.matsu-news.gov.tw/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 50,
+    "sourceHeight": 40,
+    "transparent": false,
+    "revision": "fc6041892ab3",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "mdnkids": {
+    "source": "https://www.mdnkids.com/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "f329cde870d6",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "merit_times": {
+    "source": "https://merit-times.com.tw/images/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "88bab4935c02",
+    "curated": true
+  },
+  "miin": {
+    "source": "https://miin.cc/favicon/apple-touch-icon.png?v=2",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "6aedfc654aea",
+    "curated": true
+  },
+  "mingpao": {
+    "source": "https://www.google.com/s2/favicons?domain=www.mingpao.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "2cc50e90bbc1"
   },
   "mirror": {
     "source": "https://www.mirrormedia.mg/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "70386a36ac9d"
   },
   "mirrordaily": {
     "source": "https://www.mirrordaily.news/favicon.ico",
-    "fetchedAt": "2026-10-03"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 84,
+    "sourceHeight": 84,
+    "transparent": true,
+    "revision": "3a9c62a6c491"
+  },
+  "mknews": {
+    "source": "https://mknews.com.tw/wp-content/uploads/2024/04/cropped-%E7%B0%A1%E5%A0%B11-1-192x192.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "727a77585af6",
+    "curated": true
   },
   "mnews": {
     "source": "https://www.mnews.tw/favicon.ico",
-    "fetchedAt": "2026-10-03"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "aee4056e080f",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "moneydj": {
-    "source": "https://www.moneydj.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.moneydj.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 152,
+    "sourceHeight": 152,
+    "transparent": true,
+    "revision": "ac4ebecf5a2e"
+  },
+  "more_news": {
+    "source": "https://more-news.tw/wp-content/uploads/cropped-more-news-logo.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "889e80bd7499",
+    "curated": true
   },
   "mplus": {
-    "source": "https://www.google.com/s2/favicons?domain=www.mplus.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.mplus.com.tw/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": true,
+    "revision": "dbde81004abe"
   },
   "mrmad": {
     "source": "https://mrmad.com.tw/wp-content/uploads/2021/05/cropped-favicon-mrmad2021.jpg",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "20074ea46f5c"
+  },
+  "msn": {
+    "source": "https://www.msn.com/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "20bb4dc6c804",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "my_formosa": {
+    "source": "https://my-formosa.com.tw/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": false,
+    "revision": "f274e11534c4",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "nchn": {
+    "source": "https://nchn.news/wp-content/uploads/cropped-ico-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "dab972260085",
+    "curated": true
+  },
+  "new_report": {
+    "source": "https://new-reporter.com//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "54801fd4d62d",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "newcongress": {
     "source": "https://newcongress.tw/wp-content/themes/fundesigner/images/logo.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 300,
+    "sourceHeight": 74,
+    "transparent": true,
+    "revision": "dc80a521930e",
+    "dark": "invert"
+  },
+  "newday": {
+    "source": "https://www.google.com/s2/favicons?domain=www.newsday.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "d78481c9faf7"
   },
   "newmobilelife": {
-    "source": "https://www.newmobilelife.com/wp-content/uploads/2020/12/cropped-logo-nml-180x180.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.newmobilelife.com/wp-content/uploads/2020/12/cropped-logo-nml-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "145c28c81ccb"
+  },
+  "news_163": {
+    "source": "https://www.google.com/s2/favicons?domain=news.163.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 114,
+    "sourceHeight": 114,
+    "transparent": false,
+    "revision": "6d6f93f9489a"
+  },
+  "news_pchome": {
+    "source": "https://news.m.pchome.com.tw/img/apple-touch-icon-114x114.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 114,
+    "sourceHeight": 114,
+    "transparent": false,
+    "revision": "c0d7b0ed1085",
+    "curated": true
+  },
+  "news_qq": {
+    "source": "https://mat1.gtimg.com/qqcdn/qqindex2021/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 96,
+    "sourceHeight": 96,
+    "transparent": true,
+    "revision": "d7db269527d3",
+    "curated": true
+  },
+  "news_sina": {
+    "source": "https://mjs.sinaimg.cn/wap/online/public/images/addToHome/sina_114x114_v1.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 114,
+    "sourceHeight": 114,
+    "transparent": true,
+    "revision": "42ddeaf4d2b0",
+    "curated": true
+  },
+  "news_yahoo": {
+    "source": "https://s.yimg.jp/c/icon/s/bsc/2.0/news120.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 120,
+    "sourceHeight": 120,
+    "transparent": false,
+    "revision": "9fa0eecd0be3",
+    "curated": true
+  },
+  "news586": {
+    "source": "https://news.586.com.tw/wp-content/uploads/2021/09/cropped-News586-960-960-192x192.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "d1a172049cb5",
+    "curated": true
+  },
+  "news886": {
+    "source": "https://i0.wp.com/886.news/wp-content/uploads/2023/01/S__10731588.jpeg?fit=192%2C192&ssl=1",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "8135bf8674ca",
+    "curated": true
   },
   "newsmarket": {
-    "source": "https://www.google.com/s2/favicons?domain=www.newsmarket.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.newsmarket.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "d8edd27b7766"
+  },
+  "newspie": {
+    "source": "https://www.newspie.com.tw/wordpress/wp-content/uploads/2023/07/newspie_logo_ol-04-512.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 511,
+    "transparent": false,
+    "revision": "219b72095da5",
+    "curated": true
+  },
+  "newstaiwan": {
+    "source": "https://newstaiwan.net//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "9f2d910eb393",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "newtalk": {
     "source": "https://newtalk.tw/images/mobile_logo192.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "b55a94e1c893",
+    "dark": "outline"
   },
   "nextapple": {
-    "source": "https://static.nextapple.tw/web/layout/favicon/favicon-96x96.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://static.nextapple.tw/web/layout/favicon/android-icon-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "146185adf983"
+  },
+  "nexttv": {
+    "source": "https://www.nexttv.com.tw/t/1/5/image/favicon.ico?v=20251111150836",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "dcbd9fd9b8dc",
+    "curated": true,
+    "dark": "outline"
   },
   "ngm": {
-    "source": "https://www.natgeomedia.com/img/touch-icon-ipad.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.natgeomedia.com/img/app_icon.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 100,
+    "sourceHeight": 100,
+    "transparent": true,
+    "revision": "02cc71092df8",
+    "note": "Publisher transparent yellow frame remains legible at small sizes."
   },
   "nhk": {
     "source": "https://news.web.nhk/apple-touch-icon.png",
-    "fetchedAt": "2026-10-03"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "a59f8f735136"
   },
   "nikkei": {
-    "source": "https://asia.nikkei.com/images/frontend/favicons/144x144.png",
-    "fetchedAt": "2026-10-03"
+    "source": "https://asia.nikkei.com/images/frontend/favicons/288x288.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 288,
+    "sourceHeight": 288,
+    "transparent": false,
+    "revision": "4d488aa26976"
   },
   "nius": {
     "source": "https://www.niusnews.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "211a3492c762",
+    "dark": "invert",
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "nom": {
     "source": "https://nommagazine.com/wp-content/uploads/2016/03/Icon-NOM.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "22ebed0fe4be"
   },
   "nownews": {
     "source": "https://www.nownews.com/icon/logo-192x192.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "45abc4e47add"
+  },
+  "ntdtv": {
+    "source": "https://www.ntdtv.com/NTD192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "e92de90c7613",
+    "curated": true
+  },
+  "ntdtv_tw": {
+    "source": "https://www.ntdtv.com.tw/favicon-180x180.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "e6a13830b85a",
+    "curated": true
+  },
+  "nvns": {
+    "source": "https://www.google.com/s2/favicons?domain=www.nvns.net&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "021ed59c5a3b"
   },
   "oncc": {
-    "source": "https://on.cc/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://on.cc/img/oncc_logo_v2.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 120,
+    "sourceHeight": 112,
+    "transparent": true,
+    "revision": "f5b11ad3de32"
   },
   "overdope": {
     "source": "https://overdope.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": true,
+    "revision": "a92aa2df0e33"
+  },
+  "owlting": {
+    "source": "https://news.owlting.com/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "fabda7200361",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "pansci": {
     "source": "https://pansci.asia/wp-content/themes/pansci-bootstrap-child//src/imgs/logo/pansci_logo_only.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 261,
+    "sourceHeight": 260,
+    "transparent": true,
+    "revision": "dfe8c37fbfc4",
+    "dark": "outline"
   },
   "pantravel": {
-    "source": "https://pantravel.life/wp-content/uploads/2015/08/%E6%97%85%E9%A3%AFfavicon_30x30.jpg",
-    "fetchedAt": "2026-10-01"
+    "source": "https://pantravel.life//wp-content/uploads/2015/06/pantravel_logo.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 376,
+    "sourceHeight": 158,
+    "transparent": false,
+    "revision": "cc7d9a5e1c58"
   },
   "people": {
     "source": "https://www.peoplenews.tw/wp-content/uploads/2025/12/Gemini_Generated_Image_28t76z28t76z28t7.jpg",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 819,
+    "sourceHeight": 819,
+    "transparent": false,
+    "revision": "fdd1804c1cfb"
+  },
+  "people_cn": {
+    "source": "https://www.people.com.cn//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "e73196e32e48",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "peopo": {
     "source": "https://www.peopo.org/files/public/favicon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 77,
+    "sourceHeight": 77,
+    "transparent": true,
+    "revision": "8e1cdfc43fb3"
+  },
+  "peponews": {
+    "source": "https://www.peponews.tw/wp-content/uploads/2025/01/efbc3bc0880afda8651d78e5577768ce.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": true,
+    "revision": "966f2ddbc63b",
+    "curated": true
+  },
+  "pinview": {
+    "source": "https://www.pinview.com.tw//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "792956f453be",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "pnn": {
+    "source": "https://pnn.tw/public/images/favicon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "bcf785a2e3b4",
+    "curated": true
+  },
+  "policenews": {
+    "source": "https://www.tcpttw.com/wp-content/uploads/2025/11/ico.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 50,
+    "sourceHeight": 50,
+    "transparent": true,
+    "revision": "690023bbc792",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "pourquoi": {
     "source": "https://storage.googleapis.com/stateless-34-84-11-249/2019/11/fa075704-cropped-08296cac-author1-150x150.jpg",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 150,
+    "sourceHeight": 150,
+    "transparent": false,
+    "revision": "1be1a10fae36"
+  },
+  "pronews": {
+    "source": "https://image.pronews.tw/2025/10/8af3a74ede48e250ceb935c026242483.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "83d341310a0e",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "pts": {
     "source": "https://news.pts.org.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": false,
+    "revision": "294069012481"
   },
   "punchline": {
     "source": "https://punchline.asia/wp-content/uploads/2014/09/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 260,
+    "sourceHeight": 80,
+    "transparent": true,
+    "revision": "3ca2991e19e8"
+  },
+  "readr": {
+    "source": "https://www.readr.tw/apple-touch-icon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "a74925bc8aae",
+    "curated": true
   },
   "reporter": {
     "source": "https://www.twreporter.org/images/apple-touch-icon-152x152.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 152,
+    "sourceHeight": 152,
+    "transparent": false,
+    "revision": "2fe037b49c39"
   },
   "reuters": {
-    "source": "https://www.reuters.com/favicon.ico",
-    "fetchedAt": "2026-10-03"
+    "source": "https://www.google.com/s2/favicons?domain=www.reuters.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "e2fb5f56207c"
+  },
+  "rfa": {
+    "source": "https://www.rfa.org/pf/resources/icon/rfa/favicon.ico?d=164",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 34,
+    "sourceHeight": 34,
+    "transparent": true,
+    "revision": "8106f1d6233a",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "rfi": {
-    "source": "https://www.rfi.fr/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.rfi.fr/android-chrome-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "65fd791bbf53"
+  },
+  "right_media": {
+    "source": "https://i0.wp.com/www.right-media.news/wp-content/uploads/cropped-favicon-152.png?fit=192%2C192&#038;ssl=1",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "a1388a97299b",
+    "curated": true
+  },
+  "rise_mediacorp": {
+    "source": "https://rise-mediacorp.com/wp-content/uploads/2026/09/rise-favicon-mark-512.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "0dcff386c613",
+    "curated": true
   },
   "rti": {
-    "source": "https://www.rti.org.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.rti.org.tw/Static/tw/image/classifyLogo.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 235,
+    "sourceHeight": 58,
+    "transparent": true,
+    "revision": "0ad954f926c9",
+    "dark": "outline",
+    "note": "Publisher transparent wordmark; the favicon is only 16px."
+  },
+  "rwnews": {
+    "source": "https://www.google.com/s2/favicons?domain=www.rwnews.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "8f64984bdcb0",
+    "note": "Best verified publisher mark available; original resolution is limited.",
+    "dark": "outline"
   },
   "saydigi": {
     "source": "https://www.saydigi.com/wp-content/uploads/2015/09/fav.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "c2f2268da472",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "scmp": {
+    "source": "https://assets-v2.i-scmp.com/production/icons/scmp-icon-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "e898c1ce35d3",
+    "curated": true
+  },
+  "secretchina": {
+    "source": "https://www.secretchina.com/2018-07-10kzg-logo2-144x144.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 144,
+    "sourceHeight": 144,
+    "transparent": false,
+    "revision": "e6f4722af229",
+    "curated": true
   },
   "setn": {
-    "source": "https://www.setn.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://attach.setn.com/images/20260331152319_logo-blue2x.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 190,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "eb1bc9b680eb",
+    "dark": "outline",
+    "note": "Publisher transparent wordmark; the favicon is only 16px."
   },
   "shoppingdesign": {
-    "source": "https://cdn.bnextmedia.com.tw/sd/images/sd-64x64.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://cdn.bnextmedia.com.tw/sd/images/sd-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "277f680d8a15"
+  },
+  "sinchew": {
+    "source": "https://www.sinchew.com.my/public/images/favico.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 105,
+    "sourceHeight": 105,
+    "transparent": true,
+    "revision": "34ec62dfd2ca",
+    "curated": true
+  },
+  "singular": {
+    "source": "https://www.scooptw.com/wp-content/uploads/scoop_mimi.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 22,
+    "sourceHeight": 22,
+    "transparent": true,
+    "revision": "7a9a41ba97bd",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
   },
   "soft4fun": {
-    "source": "https://www.soft4fun.net/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://cf.img.soft4fun.net/2023/02/soft4fun_logo_1000pt_white-450x450.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 450,
+    "sourceHeight": 450,
+    "transparent": true,
+    "revision": "3885616a42f7",
+    "note": "Publisher transparent mark without the white favicon tile."
+  },
+  "soundofhope": {
+    "source": "https://www.soundofhope.org/favicon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 248,
+    "sourceHeight": 248,
+    "transparent": false,
+    "revision": "a9c4978c4ca6",
+    "curated": true
   },
   "sportsv": {
     "source": "https://www.google.com/s2/favicons?domain=www.sportsv.net&sz=64",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "02050ab242ac",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "st_media": {
+    "source": "https://news.st-media.com.tw//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "483a945fe535",
+    "curated": true
+  },
+  "stheadline": {
+    "source": "https://www.sthlstatic.com/sthl/assets/favicon/android-icon-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "04a58e4d6d51",
+    "curated": true
   },
   "storm": {
     "source": "https://www.storm.mg/img/touch-icon-retina.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "9205fe957c69"
+  },
+  "sunmedia": {
+    "source": "https://sunmedia.tw/favicon-96x96.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 96,
+    "sourceHeight": 96,
+    "transparent": true,
+    "revision": "df63722652d6",
+    "curated": true
   },
   "supertaste": {
-    "source": "https://supertaste.tvbs.com.tw/apple-icon.png?993d517d07cce5b9",
-    "fetchedAt": "2026-10-01"
+    "source": "https://supertaste.tvbs.com.tw/icon.svg?e0fda1c3d728f917",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 100,
+    "sourceHeight": 100,
+    "transparent": true,
+    "revision": "60099dee37bb"
+  },
+  "taidaily": {
+    "source": "https://taidaily.com/wp-content/uploads/2024/08/cropped-033ad57c455e50e02ad81cca94e44a21-192x192.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "ec0f5a027182",
+    "curated": true
+  },
+  "taipeipost": {
+    "source": "https://taipeipost.org/wp-content/uploads/2021/02/favicon-s-256x256.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "f68f722435de",
+    "curated": true
   },
   "taipeitimes": {
     "source": "https://www.taipeitimes.com/assets/images/TT_web_icon-mobile.jpg",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 144,
+    "sourceHeight": 144,
+    "transparent": false,
+    "revision": "02dbffb18958"
   },
   "taisounds": {
     "source": "https://www.taisounds.com/images/icon180.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "5fd710ccfa88"
+  },
+  "taiwan": {
+    "source": "https://www.google.com/s2/favicons?domain=www.taiwan.cn&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "7ff5e714f543",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "taiwandaily": {
+    "source": "https://www.google.com/s2/favicons?domain=www.taiwandaily.net&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 300,
+    "sourceHeight": 91,
+    "transparent": false,
+    "revision": "44c3fed9ad23"
   },
   "taiwandom": {
     "source": "https://i0.wp.com/taiwandomnews.com/wp-content/uploads/2021/11/cropped-domLogo-3.png?fit=180%2C180&#038;ssl=1",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "fca8690cdd86"
+  },
+  "taiwanenews": {
+    "source": "http://www.taiwanenews.com/picture/logo101.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 129,
+    "sourceHeight": 129,
+    "transparent": false,
+    "revision": "db891007ccad",
+    "curated": true
+  },
+  "taiwanhot": {
+    "source": "https://taiwanhot.net//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "90cd8f9c91f2",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "taiwannet": {
+    "source": "https://news.taiwannet.com.tw//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 152,
+    "sourceHeight": 152,
+    "transparent": true,
+    "revision": "7e738d7e6fdd",
+    "curated": true
+  },
+  "taiwannews": {
+    "source": "https://www.taiwannews.com.tw/assets/favicon-TN3.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 71,
+    "sourceHeight": 71,
+    "transparent": true,
+    "revision": "bcdb61eb2022",
+    "curated": true
+  },
+  "taiwanplus": {
+    "source": "http://taiwanplus.com/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "6ac1f5ff2584",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "taiwanpost": {
+    "source": "https://91postnews-media.s3.ap-northeast-1.amazonaws.com/wp-content/uploads/2025/07/5970315C-13F9-4178-9EA3-8DC876AA3EC3-1-1-scaled.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 2560,
+    "sourceHeight": 839,
+    "transparent": true,
+    "revision": "f7358bc3ef3e",
+    "dark": "outline"
   },
   "taro": {
     "source": "https://cdn.taronews.tw/files/2018/02/favicon-taronews-114.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 114,
+    "sourceHeight": 114,
+    "transparent": true,
+    "revision": "1d5a24c980ff"
+  },
+  "tcnews": {
+    "source": "https://www.google.com/s2/favicons?domain=tcnews.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 144,
+    "sourceHeight": 144,
+    "transparent": false,
+    "revision": "6566fcd6a803"
   },
   "techbang": {
     "source": "https://www.techbang.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "112dcb1f0304"
   },
   "techcrunch": {
-    "source": "https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=180",
-    "fetchedAt": "2026-10-01"
+    "source": "https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=192",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "0d2d9812f2ab"
   },
   "technews": {
     "source": "https://img.technews.tw/wp-content/themes/twentytwelve/images/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "6cd7d3c97f22"
   },
   "techorange": {
     "source": "https://buzzorange.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "2b1bb61dad9a",
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "thehubnews": {
+    "source": "https://www.thehubnews.net/wp-content/uploads/2020/03/cropped-%E6%9C%AA%E5%91%BD%E5%90%8D-2-1-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "e98a84262849",
+    "curated": true
   },
   "theinitium": {
     "source": "https://storage.ghost.io/c/bd/52/bd52a4c1-eed6-4103-b487-e9a77365f6b3/content/images/2025/10/profile_Initium_logo_for_social_media.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 300,
+    "sourceHeight": 300,
+    "transparent": true,
+    "revision": "481e73870496",
+    "dark": "outline"
+  },
+  "thepaper": {
+    "source": "https://www.thepaper.cn//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "48aeb6eb2042",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited.",
+    "dark": "outline"
+  },
+  "tkww": {
+    "source": "https://www.tkww.hk/images/202601/21/697028c1e4b0aa6cb371c706.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 132,
+    "sourceHeight": 132,
+    "transparent": true,
+    "revision": "ad2150234514",
+    "curated": true
+  },
+  "tmnu": {
+    "source": "https://www.tmnu.org.tw/apple-touch-icon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "ea9761e57e90",
+    "curated": true
   },
   "tnl": {
-    "source": "https://www.thenewslens.com/assets/images/logo/favicon/favicon-32x32.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.thenewslens.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 153,
+    "sourceHeight": 152,
+    "transparent": true,
+    "revision": "2d8e607d1ece"
+  },
+  "today_line_me": {
+    "source": "https://today.line.me/next/e059f232/_next/meta/icon192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "2074fa9f058e",
+    "curated": true
   },
   "top1health": {
     "source": "https://www.top1health.com/images/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "48fe5b9b43a6"
+  },
+  "tpnews": {
+    "source": "https://tpnews.org/wp-content/uploads/2026/07/cropped-TPNews_Icon_2-1-192x192.webp",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "de7e09d175fe",
+    "curated": true
+  },
+  "travelnews": {
+    "source": "https://www.travelnews.tw/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "fec79b0f9232",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "tristarnews": {
+    "source": "https://www.tristarnews.com.tw//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 500,
+    "sourceHeight": 500,
+    "transparent": true,
+    "revision": "b69ae2d9674f",
+    "curated": true
   },
   "ttv": {
-    "source": "https://www.ttv.com.tw/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.ttv.com.tw/group/15/images/TTV_logo.jpg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 117,
+    "sourceHeight": 115,
+    "transparent": false,
+    "revision": "a04c397f459f"
   },
   "tvbs": {
     "source": "https://news.tvbs.com.tw/assets/favicon_tvbs.JoWJDsyW.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "a8267bf05b07"
   },
   "tvbshealth": {
     "source": "https://health.tvbs.com.tw/images/logos/shortcut.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": true,
+    "revision": "c76c884b59c1"
   },
   "tvbswoman": {
     "source": "https://woman.tvbs.com.tw/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "a5ea0f9618f0"
+  },
+  "twline365": {
+    "source": "https://i0.wp.com/twline365.com/wp-content/uploads/2021/10/cropped-TLINENEWS-1.png?fit=192%2C192&#038;ssl=1",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "b625d56a047a",
+    "curated": true
+  },
+  "tyenews": {
+    "source": "https://i0.wp.com/tyenews.com/wp-content/uploads/2025/07/cropped-tyenews-logo-.png?fit=192%2C192&#038;ssl=1",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "92ce4a9802c8",
+    "curated": true
   },
   "udn": {
-    "source": "https://udn.com/static/img/icons/icon-128x128.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://udn.com/upf/news/2024/orange_logo_2024.svg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 66,
+    "sourceHeight": 82,
+    "transparent": true,
+    "revision": "ea04367fe843",
+    "note": "Publisher transparent udn face mark."
   },
   "udnmoney": {
     "source": "https://money.udn.com/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": true,
+    "revision": "7716c5e44d20"
   },
   "upmedia": {
-    "source": "https://www.upmedia.mg/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.upmedia.mg/images/dlogo.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 110,
+    "sourceHeight": 50,
+    "transparent": true,
+    "revision": "83ed92fbef16",
+    "dark": "outline",
+    "note": "Publisher transparent wordmark; the favicon is only 16px."
   },
   "ustv": {
-    "source": "https://cdn.ustv.com.tw/img/favicon-96x96.png",
-    "fetchedAt": "2026-10-01"
+    "source": "https://cdn.ustv.com.tw/img/favicon.svg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 300,
+    "sourceHeight": 300,
+    "transparent": true,
+    "revision": "6823084cc530"
+  },
+  "videoland": {
+    "source": "https://news.videoland.com.tw/assets/images/logo_small-BP4j8OzI.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 500,
+    "sourceHeight": 307,
+    "transparent": true,
+    "revision": "e6bc7109e14f",
+    "curated": true
   },
   "viewpointtaiwan": {
-    "source": "https://www.google.com/s2/favicons?domain=www.viewpointtaiwan.com&sz=64",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.google.com/s2/favicons?domain=www.viewpointtaiwan.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "41ffdfe4fa86"
+  },
+  "vigormedia": {
+    "source": "https://img.vigormedia.tw/2023/01/17424057854337.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 175,
+    "sourceHeight": 176,
+    "transparent": true,
+    "revision": "588722a0ea2e",
+    "curated": true
+  },
+  "voachinese": {
+    "source": "https://www.voachinese.com/Content/responsive/VOA/img/webApp/ico-192x192.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "48b6e72643ef",
+    "curated": true
   },
   "vogue": {
-    "source": "https://www.google.com/s2/favicons?domain=www.vogue.com.tw&sz=64",
-    "fetchedAt": "2026-10-01"
+    "source": "https://www.vogue.com.tw/verso/static/vogue-global/assets/tw/logo-header.svg",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 78,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "eea030393ccc",
+    "dark": "invert"
   },
   "want": {
     "source": "https://www.chinatimes.com/images/2020/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "b230b74cb559"
+  },
+  "watchmedia01": {
+    "source": "https://i0.wp.com/www.watchmedia01.com/wp-content/uploads/2024/09/20240925155948_0_2efe88.png?fit=192%2C192&#038;ssl=1",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": true,
+    "revision": "e5af85803be7",
+    "curated": true
+  },
+  "wenweipo": {
+    "source": "http://wenweipo.com//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "dd554e1b1372",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "winnews": {
+    "source": "https://www.google.com/s2/favicons?domain=www.winnews.com.tw&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": false,
+    "revision": "fa69acd8f143"
   },
   "womany": {
-    "source": "https://womany.net/favicon.ico",
-    "fetchedAt": "2026-10-01"
+    "source": "https://knight.womany.net/images/womany_logo_300x300_n.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 300,
+    "sourceHeight": 300,
+    "transparent": true,
+    "revision": "19cbc3db1aa0"
+  },
+  "worldjournal": {
+    "source": "https://www.google.com/s2/favicons?domain=worldjournal.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "7405042f90d8"
   },
   "wyc": {
     "source": "https://dq.yam.com/apple-touch-icon.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": true,
+    "revision": "5fb1484edf61"
   },
   "xinhua": {
-    "source": "https://english.news.cn/favicon.ico",
-    "fetchedAt": "2026-10-03"
+    "source": "https://www.news.cn/2023homepro/images/logo.png",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 115,
+    "sourceHeight": 72,
+    "transparent": true,
+    "revision": "7a705fa42d64"
+  },
+  "xinhuanet": {
+    "source": "https://www.google.com/s2/favicons?domain=www.xinhuanet.com&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 128,
+    "sourceHeight": 128,
+    "transparent": true,
+    "revision": "1aa0d6ae7580"
   },
   "yahoo": {
     "source": "https://s.yimg.com/cv/apiv2/twapp/apple-touch-icon@80x80.png",
-    "fetchedAt": "2026-10-01"
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 80,
+    "sourceHeight": 80,
+    "transparent": false,
+    "revision": "32b5313e7bce"
+  },
+  "yam": {
+    "source": "https://n.yam.com/Content/img/favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "ffdbc53a92c1",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "yaya_news": {
+    "source": "https://yayanews.com.tw/wp-content/uploads/2025/10/Yaya%E7%B6%B2%E7%AB%99_iocn_yellow-300x300-optimized.jpg",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 300,
+    "sourceHeight": 300,
+    "transparent": false,
+    "revision": "756c539e338d",
+    "curated": true
+  },
+  "ydn": {
+    "source": "https://www.ydn.com.tw//favicon.ico",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "114c773b81e7",
+    "curated": true,
+    "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "yesmedia": {
+    "source": "https://cdn.yesmedia.com.tw/wp-content/uploads/2025/08/20250806150729_38.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": true,
+    "revision": "88a2a03dca65",
+    "curated": true
+  },
+  "yimedia": {
+    "source": "https://d11utjnmpde5fv.cloudfront.net/2026/05/2026-05-06_15-24-16_138708.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 620,
+    "sourceHeight": 357,
+    "transparent": true,
+    "revision": "47b2a14be71a",
+    "curated": true
   },
   "yonhap": {
-    "source": "https://r.yna.co.kr/global/favicon.ico",
-    "fetchedAt": "2026-10-03"
+    "source": "https://www.google.com/s2/favicons?domain=en.yna.co.kr&sz=256",
+    "fetchedAt": "2026-10-03",
+    "curated": true,
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "95c5674fc7a5"
+  },
+  "zaobao": {
+    "source": "https://www.zaobao.com.sg/apple-touch-icon.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "6809d67721fc",
+    "curated": true
+  },
+  "zmedia": {
+    "source": "https://www.zmedia.com.tw/Content/img/favicon/icon96.png",
+    "fetchedAt": "2026-10-03",
+    "sourceWidth": 96,
+    "sourceHeight": 96,
+    "transparent": true,
+    "revision": "1eac07884e0e",
+    "curated": true
   }
 }

@@ -7,9 +7,12 @@ import local from '../../data/favicon-local.json' with { type: 'json' };
 // stored copy fall back to the catalog URL.
 export const FAVICON_BASE = 'https://tag.observe.tw/favicons/';
 const original = catalog as unknown as Record<string, { icon: string | null }>;
-const stored = local as Record<string, unknown>;
+const stored = local as Record<string, { revision?: string }>;
 
 export function iconUrl(media: string): string | null {
-  if (media in stored) return `${FAVICON_BASE}${media}.png`;
+  if (Object.hasOwn(stored, media)) {
+    const revision = stored[media].revision;
+    return `${FAVICON_BASE}${media}.png${revision ? `?v=${revision}` : ''}`;
+  }
   return original[media]?.icon?.replace(/^http:\/\//, 'https://') ?? null;
 }
