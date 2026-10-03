@@ -107,7 +107,16 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://news.pts.org.tw/hotTopic',
     pattern: /\/hotTopic\/\d+$/,
     extract: ldTopics,
-    listings: [{ url: 'https://news.pts.org.tw/curation', pattern: /\/curation\/\d+$/, title: heading }],
+    // Curation cards split into an image link and an <h3> title link; the
+    // card selector joins them so the cover is kept (featured, secondary, list).
+    listings: [
+      {
+        url: 'https://news.pts.org.tw/curation',
+        pattern: /\/curation\/\d+$/,
+        card: '.curation-main, .curation-secondary .col-lg-6, .project-card',
+        title: heading,
+      },
+    ],
   },
   {
     media: 'udn',

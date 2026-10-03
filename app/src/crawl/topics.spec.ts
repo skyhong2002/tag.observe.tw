@@ -22,6 +22,15 @@ describe('extractTopics', () => {
     expect(t.image).toBeNull();
   });
 
+  it('joins a separate image link and heading link through the card selector', () => {
+    // PTS curation: the cover anchor has no text, the <h3> anchor has no image.
+    const html = `<div class="card"><div class="col-5"><a href="/topic/134"><img src="/og.jpg" alt=""></a></div>
+      <div class="col-7"><time>2025/2/20</time><h3><a href="/topic/134">川普新政撼動全球經濟</a></h3></div></div>`;
+    expect(extractTopics(html, { ...base, card: '.card' })).toEqual([
+      { url: 'https://example.com/topic/134', title: '川普新政撼動全球經濟', image: 'https://example.com/og.jpg', category: null },
+    ]);
+  });
+
   it("keeps the topic link's own text over a 'more' link's guessed heading", () => {
     const html = `<ul><li><a href="/topic/7">新北少女遭虐</a></li></ul>
       <div class="block"><h3 class="title">三重父逼女兒掛看板遊街</h3><a href="/topic/7">更多</a></div>`;
