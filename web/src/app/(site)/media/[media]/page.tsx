@@ -144,7 +144,15 @@ export default async function MediaPage({
                 <>
                   <dt className="text-zinc-500 dark:text-zinc-400">來源網站</dt>
                   <dd>
-                    <SourceLink url={reference.websiteUrl} label={reference.domain} className="!min-h-0" />
+                    <SourceLink
+                      url={
+                        'websiteUrl' in reference && typeof reference.websiteUrl === 'string'
+                          ? reference.websiteUrl
+                          : `https://${reference.domain}`
+                      }
+                      label={reference.domain}
+                      className="!min-h-0"
+                    />
                   </dd>
                 </>
               )}
