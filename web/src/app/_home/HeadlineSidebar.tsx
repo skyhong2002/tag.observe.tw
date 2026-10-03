@@ -69,7 +69,6 @@ export default async function HeadlineSidebar({ query }: { query: string }) {
               : '目前沒有足夠的藍綠相近報導可供對照。'}
         </p>
       )}
-      <p className={styles.gapNote}>底線標示不同用字，不代表偏見程度。藍綠沿用本站媒體分類；點標題可在本站閱讀。</p>
     </>
   );
 }
