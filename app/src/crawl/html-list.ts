@@ -37,7 +37,7 @@ export function parseMarkerList(html: string, base: string, spec: MarkerListSpec
 // anchors whose path matches the article pattern; title from the anchor text.
 // publishedAt is unknown here and is filled in by the article stage.
 import * as cheerio from 'cheerio';
-export function discoverLinks(html: string, base: string, pattern: RegExp, minTitle = 8): FeedItem[] {
+export function discoverLinks(html: string, base: string, pattern: RegExp, minTitle = 8, titleSelector?: string): FeedItem[] {
   const $ = cheerio.load(html);
   const host = new URL(base).host.replace(/^www\./, '');
   const out = new Map<string, FeedItem>();
@@ -53,7 +53,10 @@ export function discoverLinks(html: string, base: string, pattern: RegExp, minTi
     if (abs.host.replace(/^www\./, '') !== host || !pattern.test(abs.pathname)) return;
     abs.hash = '';
     const url = abs.toString();
-    const title = decodeEntities((a.text().replace(/\s+/g, ' ').trim() || a.attr('title') || a.find('img').attr('alt') || '').trim());
+    const selectedTitle = titleSelector ? a.find(titleSelector).first().text().trim() : '';
+    const title = decodeEntities(
+      (selectedTitle || a.text().replace(/\s+/g, ' ').trim() || a.attr('title') || a.find('img').attr('alt') || '').trim(),
+    );
     if (title.length < minTitle) return;
     const img = a.find('img').first();
     const src = img.attr('data-src') || img.attr('data-original') || img.attr('src') || null;

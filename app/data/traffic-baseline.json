@@ -1,0 +1,213 @@
+{
+  "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit",
+  "retrievedAt": "2026-10-03",
+  "scope": "使用者截圖指定的 29 家媒體；分母為這 29 家的「流量」總和，非全台市占或文章收錄率。",
+  "trafficColumn": "流量",
+  "target": 0.95,
+  "windowHours": 48,
+  "sources": [
+    {
+      "media": "udn",
+      "name": "UDN",
+      "domain": "udn.com",
+      "traffic": 39.01,
+      "classification": "藍"
+    },
+    {
+      "media": "ettoday",
+      "name": "ETToday",
+      "domain": "ettoday.net",
+      "traffic": 30.87,
+      "classification": "藍"
+    },
+    {
+      "media": "ltn",
+      "name": "自由",
+      "domain": "ltn.com.tw",
+      "traffic": 30.23,
+      "classification": "綠"
+    },
+    {
+      "media": "setn",
+      "name": "三立",
+      "domain": "setn.com",
+      "traffic": 24.61,
+      "classification": "綠"
+    },
+    {
+      "media": "chinatimes",
+      "name": "中時",
+      "domain": "chinatimes.com",
+      "traffic": 21.91,
+      "classification": "藍"
+    },
+    {
+      "media": "tvbs",
+      "name": "TVBS",
+      "domain": "tvbs.com.tw",
+      "traffic": 19.5,
+      "classification": "藍"
+    },
+    {
+      "media": "mirror",
+      "name": "鏡周刊",
+      "domain": "mirrormedia.mg",
+      "traffic": 12.82,
+      "classification": "綠"
+    },
+    {
+      "media": "nownews",
+      "name": "Nownews",
+      "domain": "nownews.com",
+      "traffic": 12.21,
+      "classification": "多元"
+    },
+    {
+      "media": "storm",
+      "name": "風傳媒",
+      "domain": "storm.mg",
+      "traffic": 11.71,
+      "classification": "藍"
+    },
+    {
+      "media": "ebc",
+      "name": "東森",
+      "domain": "ebc.net.tw",
+      "traffic": 11.3,
+      "classification": "藍"
+    },
+    {
+      "media": "cna",
+      "name": "中央社",
+      "domain": "cna.com.tw",
+      "traffic": 5.909,
+      "classification": "綠"
+    },
+    {
+      "media": "nextapple",
+      "name": "壹蘋",
+      "domain": "nextapple.com",
+      "traffic": 5.817,
+      "classification": "多元"
+    },
+    {
+      "media": "ftv",
+      "name": "民視新聞",
+      "domain": "ftvnews.com.tw",
+      "traffic": 4.578,
+      "classification": "綠"
+    },
+    {
+      "media": "ctitv",
+      "name": "中天新聞",
+      "domain": "ctinews.com",
+      "traffic": 4.2,
+      "classification": "藍"
+    },
+    {
+      "media": "upmedia",
+      "name": "上報",
+      "domain": "upmedia.mg",
+      "traffic": 2.656,
+      "classification": "綠"
+    },
+    {
+      "media": "mirrordaily",
+      "name": "鏡報",
+      "domain": "mirrordaily.news",
+      "traffic": 2.5,
+      "classification": "綠"
+    },
+    {
+      "media": "ftnn",
+      "name": "鋒燦 FTNN",
+      "domain": "ftnn.com.tw",
+      "traffic": 1.863,
+      "classification": "綠"
+    },
+    {
+      "media": "ctwant",
+      "name": "CTWANT",
+      "domain": "ctwant.com",
+      "traffic": 1.85,
+      "classification": "藍"
+    },
+    {
+      "media": "newtalk",
+      "name": "新頭殼",
+      "domain": "newtalk.tw",
+      "traffic": 1.335,
+      "classification": "綠"
+    },
+    {
+      "media": "taisounds",
+      "name": "太報",
+      "domain": "taisounds.com",
+      "traffic": 1.331,
+      "classification": "綠"
+    },
+    {
+      "media": "tnl",
+      "name": "關鍵評論網",
+      "domain": "thenewslens.com",
+      "traffic": 1.293,
+      "classification": "多元"
+    },
+    {
+      "media": "mnews",
+      "name": "鏡電視/鏡新聞",
+      "domain": "mnews.tw",
+      "traffic": 1.253,
+      "classification": "綠"
+    },
+    {
+      "media": "pts",
+      "name": "公視 (新聞)",
+      "domain": "news.pts.org.tw",
+      "traffic": 1.1,
+      "classification": "多元"
+    },
+    {
+      "media": "yam",
+      "name": "蕃新聞",
+      "domain": "n.yam.com",
+      "traffic": 0.789,
+      "classification": "內容"
+    },
+    {
+      "media": "cts",
+      "name": "華視 (新聞)",
+      "domain": "news.cts.com.tw",
+      "traffic": 0.639,
+      "classification": "綠"
+    },
+    {
+      "media": "reporter",
+      "name": "報導者",
+      "domain": "twreporter.org",
+      "traffic": 0.57,
+      "classification": "多元"
+    },
+    {
+      "media": "ttv",
+      "name": "台視 (新聞)",
+      "domain": "news.ttv.com.tw",
+      "traffic": 0.547,
+      "classification": "多元"
+    },
+    {
+      "media": "rti",
+      "name": "央廣",
+      "domain": "rti.org.tw",
+      "traffic": 0.454,
+      "classification": "綠"
+    },
+    {
+      "media": "knews",
+      "name": "知新聞",
+      "domain": "knews.com.tw",
+      "traffic": 0.433,
+      "classification": "多元"
+    }
+  ]
+}

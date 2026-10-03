@@ -506,5 +506,17 @@
   "mamaclub": {
     "icon": "https://mamaclub.com/favicon.ico",
     "title": "媽媽經"
+  },
+  "mirrordaily": {
+    "icon": "https://www.mirrordaily.news/favicon.ico",
+    "title": "鏡報"
+  },
+  "mnews": {
+    "icon": "https://www.mnews.tw/favicon.ico",
+    "title": "鏡新聞"
+  },
+  "knews": {
+    "icon": "https://static.kmedia.com.tw/prd/layout/img/favicon/favicon-32x32.png",
+    "title": "知新聞"
   }
 }

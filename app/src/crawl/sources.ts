@@ -5,6 +5,8 @@ import type { MarkerListSpec } from './html-list.ts';
 export interface DiscoverSpec {
   pattern: string;
   minTitle?: number;
+  // A news card may wrap its date, category and summary in the same anchor.
+  titleSelector?: string;
 }
 export type SourceOverride = Omit<Partial<SourceSpec>, 'list' | 'article'> & {
   list?: Partial<SourceSpec['list']>;

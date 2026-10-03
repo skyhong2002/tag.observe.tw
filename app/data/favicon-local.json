@@ -259,6 +259,10 @@
     "source": "https://www.ithome.com.tw/favicon.ico",
     "fetchedAt": "2026-10-01"
   },
+  "knews": {
+    "source": "https://static.kmedia.com.tw/prd/layout/img/favicon/favicon-32x32.png",
+    "fetchedAt": "2026-10-03"
+  },
   "kocpc": {
     "source": "https://www.kocpc.com.tw/wp-content/uploads/2026/01/20260114153818_0_751714-350x350.jpeg",
     "fetchedAt": "2026-10-01"
@@ -290,6 +294,14 @@
   "mirror": {
     "source": "https://www.mirrormedia.mg/apple-touch-icon.png",
     "fetchedAt": "2026-10-01"
+  },
+  "mirrordaily": {
+    "source": "https://www.mirrordaily.news/favicon.ico",
+    "fetchedAt": "2026-10-03"
+  },
+  "mnews": {
+    "source": "https://www.mnews.tw/favicon.ico",
+    "fetchedAt": "2026-10-03"
   },
   "moneydj": {
     "source": "https://www.moneydj.com/favicon.ico",

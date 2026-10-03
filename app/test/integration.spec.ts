@@ -8,6 +8,7 @@ import type { FetchResult } from '../src/crawl/fetch.ts';
 import { runArticles, runIndex } from '../src/crawl/pipeline.ts';
 import type { SourceSpec } from '../src/crawl/sources.ts';
 import { loadTitleVocab } from '../src/crawl/title-tags.ts';
+import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots } from '../src/db/schema.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
@@ -204,6 +205,29 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     expect(rows.map((x) => x.url)).toEqual(['https://tw.news.yahoo.com/own-story-111111111.html']);
     await db.delete(articleTags).where(sql`${articleTags.articleId} IN (SELECT id FROM articles WHERE media = 'yahoo')`);
     await db.delete(articles).where(sql`${articles.media} = 'yahoo'`);
+  });
+
+  it('counts only collected, titled, dated, recent articles toward traffic coverage', async () => {
+    const before = await measureTrafficCoverage(db, now);
+    const recent = new Date(now.getTime() - 3600e3);
+    const old = new Date(now.getTime() - 72 * 3600e3);
+    const base = { title: '完整的測試新聞標題', tags: [], source: 'own', publishedAt: recent, crawledAt: now };
+    await db.insert(articles).values([
+      { ...base, media: 'udn', url: 'https://udn.com/coverage-valid' },
+      { ...base, media: 'ettoday', url: 'https://ettoday.net/coverage-titleless', title: '' },
+      { ...base, media: 'tvbs', url: 'https://news.tvbs.com.tw/coverage-pending', publishedAt: now },
+      { ...base, media: 'tvbs', url: 'https://news.tvbs.com.tw/coverage-dateless', publishedAt: now, fetchedAt: now },
+      { ...base, media: 'mirror', url: 'https://mirrormedia.mg/coverage-old', publishedAt: old },
+      { ...base, media: 'storm', url: 'https://storm.mg/coverage-future', publishedAt: new Date(now.getTime() + 3600e3) },
+      { ...base, media: 'nownews', url: 'https://nownews.com/coverage-old-crawl', crawledAt: old },
+    ]);
+    try {
+      const after = await measureTrafficCoverage(db, now);
+      expect(after.coveredTraffic - before.coveredTraffic).toBeCloseTo(39.01, 3);
+      expect(after.coveredSources - before.coveredSources).toBe(1);
+    } finally {
+      await db.delete(articles).where(sql`${articles.url} LIKE '%/coverage-%'`);
+    }
   });
 
   it('applies retention without touching recent data', async () => {

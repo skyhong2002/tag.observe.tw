@@ -3,6 +3,7 @@
 // rate. Exposed as Prometheus gauges for Grafana.
 import { and, gte, sql } from 'drizzle-orm';
 import { Gauge } from 'prom-client';
+import { measureTrafficCoverage } from '../crawl/traffic-coverage.ts';
 import type { Db } from '../db/client.ts';
 import { articles, crawlRuns } from '../db/schema.ts';
 import { registry } from '../metrics.ts';
@@ -26,6 +27,11 @@ export const crawlTagRate = new Gauge({
   registers: [registry],
 });
 export const crawlHealthy = new Gauge({ name: 'tag_crawl_sources_healthy', help: 'Sources with items in 24h', registers: [registry] });
+export const crawlTrafficCoverage = new Gauge({
+  name: 'tag_crawl_traffic_coverage_ratio',
+  help: 'Traffic share of the 29 reference outlets with dated articles collected in 48h (target 0.95)',
+  registers: [registry],
+});
 
 export async function runCrawlHealthJob(db: Db, { log = (_o: object, _m: string) => {} } = {}) {
   const since = new Date(Date.now() - 24 * 3600e3);
@@ -51,7 +57,14 @@ export async function runCrawlHealthJob(db: Db, { log = (_o: object, _m: string)
   }
   for (const r of tagged) crawlTagRate.set({ media: r.media }, Number(r.n) ? Number(r.t) / Number(r.n) : 0);
   crawlHealthy.set(healthy);
-  const summary = { sources: runs.length, healthy, failing: runs.filter((r) => Number(r.items) === 0).map((r) => r.media) };
+  const trafficCoverage = await measureTrafficCoverage(db);
+  crawlTrafficCoverage.set(trafficCoverage.coveredShare);
+  const summary = {
+    sources: runs.length,
+    healthy,
+    failing: runs.filter((r) => Number(r.items) === 0).map((r) => r.media),
+    trafficCoverage,
+  };
   log(summary, 'crawl health');
   return summary;
 }

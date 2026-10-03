@@ -36,7 +36,10 @@
       "taiwandom",
       "want",
       "ctv",
-      "taipeitimes"
+      "taipeitimes",
+      "mirrordaily",
+      "mnews",
+      "knews"
     ],
     "women": [
       "nius",
@@ -164,7 +167,8 @@
       "udn",
       "ctwant",
       "storm",
-      "ebc"
+      "ebc",
+      "ettoday"
     ],
     "green": [
       "setn",
@@ -173,7 +177,16 @@
       "ltn",
       "taipeitimes",
       "pourquoi",
-      "taro"
+      "taro",
+      "mirror",
+      "upmedia",
+      "mirrordaily",
+      "ftnn",
+      "newtalk",
+      "taisounds",
+      "mnews",
+      "cts",
+      "rti"
     ]
   },
   "defaultMedia": [
@@ -295,6 +308,9 @@
     "ngm",
     "sportsv",
     "peopo",
-    "mamaclub"
+    "mamaclub",
+    "mirrordaily",
+    "mnews",
+    "knews"
   ]
 }

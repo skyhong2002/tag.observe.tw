@@ -20,6 +20,7 @@
     "ranking:once": "node --env-file=.env tools/run-ranking-once.ts",
     "images:hosts": "node --env-file=.env tools/gen-image-hosts.ts",
     "crawl:once": "node --env-file=.env tools/crawl-once.ts",
+    "crawl:coverage": "node --env-file=.env tools/traffic-coverage.ts",
     "events:once": "node --env-file=.env tools/events-once.ts"
   },
   "dependencies": {

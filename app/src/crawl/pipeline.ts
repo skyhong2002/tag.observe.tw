@@ -40,7 +40,13 @@ export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{
         continue;
       }
       if (spec.list.discover) {
-        for (const item of discoverLinks(res.body, res.url || url, new RegExp(spec.list.discover.pattern), spec.list.discover.minTitle))
+        for (const item of discoverLinks(
+          res.body,
+          res.url || url,
+          new RegExp(spec.list.discover.pattern),
+          spec.list.discover.minTitle,
+          spec.list.discover.titleSelector,
+        ))
           push(item, cat);
         continue;
       }

@@ -207,4 +207,35 @@ export const overrides: Record<string, SourceOverride> = {
   gamer: { article: { userAgent: undefined, tagSelector: 'a[href*="search_tag.php"]' } },
   // 報導者 pages have no keyword meta; the post's tags are the first "tags" array in the page state.
   reporter: { article: { jsonTags: 'tags' } },
+  // 2026-10-03 traffic coverage: latest lists, with dates and tags from articles.
+  mirrordaily: {
+    group: 'news',
+    list: {
+      urls: [{ cat: 'news', url: 'https://www.mirrordaily.news/section/latest' }],
+      discover: { pattern: String.raw`^/story/\d+$`, titleSelector: 'figcaption' },
+    },
+    titleSuffix: String.raw`\s*-\s*鏡報`,
+    article: { enabled: true, batch: 40, delayMs: 3000 },
+  },
+  mnews: {
+    group: 'news',
+    list: {
+      urls: ['pol', 'int', 'fin', 'soc', 'lif', 'sport', 'ent', 'local'].map((cat) => ({
+        cat,
+        url: `https://www.mnews.tw/category/${cat}`,
+      })),
+      // mm-/md- are partner copies; static /story/privacy etc. are not articles.
+      discover: { pattern: String.raw`^/story/\d{8}[a-z]+\d+$`, titleSelector: '[class*="title" i]' },
+    },
+    article: { enabled: true, batch: 40, delayMs: 3000 },
+  },
+  knews: {
+    group: 'news',
+    list: {
+      urls: [{ cat: 'news', url: 'https://www.knews.com.tw/realtime/latest' }],
+      discover: { pattern: '^/news/[A-F0-9]{32}$', titleSelector: '.title' },
+    },
+    titleSuffix: String.raw`\s*｜\s*知新聞`,
+    article: { enabled: true, batch: 40, delayMs: 3000 },
+  },
 };

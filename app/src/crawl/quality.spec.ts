@@ -9,6 +9,39 @@ import { stripTitleSuffix, urlKey } from './text.ts';
 
 const spec = (media: string) => allSources().find((s) => s.media === media) as SourceSpec;
 
+describe('traffic coverage sources', () => {
+  const fetchHtml =
+    (body: string) =>
+    async (url: string): Promise<FetchResult> => ({
+      url,
+      status: 200,
+      body,
+      contentType: 'text/html',
+      ms: 1,
+    });
+  it('extracts only the headline from a mirror daily card, excluding its date and summary', async () => {
+    const body =
+      '<a href="/story/89425"><p>2026/10/03 15:45</p><figcaption>這是一則完整的新聞標題</figcaption><p>這是內文摘要，不可當成標題</p></a><a href="/topic/123">這是一個專題並非新聞</a>';
+    const { items } = await listSource(spec('mirrordaily'), fetchHtml(body));
+    expect(items.map((i) => i.title)).toEqual(['這是一則完整的新聞標題']);
+  });
+  it('keeps MNews original stories, excluding partner copies and static pages', async () => {
+    const card = (id: string) =>
+      `<a href="/story/${id}"><span class="ui-post-card_infoTitle__hash">鏡新聞自己的完整新聞標題</span><span>2026.10.03 15:00</span></a>`;
+    const { items } = await listSource(
+      spec('mnews'),
+      fetchHtml(card('20261003nm002') + card('mm-20261003edi016') + card('md-89425') + card('privacy')),
+    );
+    expect(items.map((i) => [i.url, i.title])).toEqual([['https://www.mnews.tw/story/20261003nm002', '鏡新聞自己的完整新聞標題']]);
+  });
+  it('keeps KNews article IDs and drops the card category from the headline', async () => {
+    const body =
+      '<a href="/news/A6E5314201ECAC7C8231C3C575A11136"><div class="title">知新聞完整的體育新聞標題</div><div class="category">體育</div></a><a href="/realtime/latest">即時新聞分類不應該被收錄</a>';
+    const { items } = await listSource(spec('knews'), fetchHtml(body));
+    expect(items.map((i) => i.title)).toEqual(['知新聞完整的體育新聞標題']);
+  });
+});
+
 describe('published time', () => {
   it('prefers a full timestamp over a bare pubdate', () => {
     const html = `<meta name="pubdate" content="20260929" /><meta name="article:published_time" content="2026-09-29T22:00:39+08:00" />`;
