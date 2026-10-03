@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import MediaGraphLoading from '@/components/MediaGraphLoading';
 import SimilarityTrace from '@/components/SimilarityTrace';
 import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
@@ -12,7 +13,7 @@ import { buildSimilarityTraceIndex, chronologySummary, pairChronology } from '@/
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
   ssr: false,
-  loading: () => <p className="p-12 text-center text-sm text-zinc-500">正在載入媒體關係圖…</p>,
+  loading: () => <MediaGraphLoading />,
 });
 const panel = 'rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900';
 const control = 'mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950';

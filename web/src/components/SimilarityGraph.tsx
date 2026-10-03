@@ -6,6 +6,7 @@ import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
+import MediaGraphLoading from '@/components/MediaGraphLoading';
 import { graphBoundaryDiameter, graphEdgeHasRoom } from '@/lib/graph-edge-boundary.mts';
 import { type GraphSelection, highlightedRelationship, sameGraphSelection } from '@/lib/graph-evidence.mts';
 import { bindGraphNavigation, GRAPH_ZOOM_MAX, GRAPH_ZOOM_MIN } from '@/lib/graph-navigation.mts';
@@ -58,6 +59,7 @@ export default function SimilarityGraph({
   onToggleFullscreen: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
   const callback = useRef(onSelect);
   const density = useRef(showAll);
   const activeEdges = useRef(edges);
@@ -275,6 +277,7 @@ export default function SimilarityGraph({
     };
     render();
     updateFocus(pinned.current, true);
+    setReady(true);
     const gestures = bindGraphNavigation(ref.current, {
       zoom: () => zoom,
       scale: (next, origin) => {
@@ -389,7 +392,7 @@ export default function SimilarityGraph({
     };
   }, [nodes, layoutEdges, camps, data, dark]);
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full" aria-busy={nodes.length > 0 && !ready}>
       {nodes.length ? (
         <div
           key="graph-canvas"
@@ -401,6 +404,11 @@ export default function SimilarityGraph({
       ) : (
         <div key="graph-empty" className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500">
           目前沒有符合媒體篩選的資料，請調整上方藍綠分類或媒體 tag。
+        </div>
+      )}
+      {!!nodes.length && !ready && (
+        <div className="absolute inset-0">
+          <MediaGraphLoading />
         </div>
       )}
       <fieldset
