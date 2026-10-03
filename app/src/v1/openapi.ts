@@ -245,6 +245,25 @@ export const ENDPOINTS: Endpoint[] = [
     cache: '1 分鐘',
   },
   {
+    path: '/api/v1/media/{media}/keywords',
+    tag: 'media',
+    summary: '媒體報導關鍵字',
+    description:
+      '統計期間內最新最多 2000 篇的標籤與標題關鍵詞，排除新聞分類與通用詞；每篇每詞計一次。標題詞彙沿用近 7 天跨媒體標籤字典。與文章列表分頁無關。',
+    params: [p('media', '媒體代碼', str(), 'rti'), q('hours', '回溯刊登小時', intIn(1, 168, 168))],
+    response: obj({
+      media: str(),
+      hours: int(),
+      from: time(),
+      to: time(),
+      sampledArticles: int('實際取樣文章數'),
+      capped: bool('期間文章超過 2000 篇，僅取最新文章'),
+      terms: arr(obj({ label: str(), count: int('包含此詞的文章數') })),
+    }),
+    errors: { '400': '參數無效', '404': '媒體不存在' },
+    cache: '2 分鐘',
+  },
+  {
     path: '/api/v1/media/{media}/content',
     tag: 'media',
     summary: '媒體內文庫列表',
@@ -253,6 +272,7 @@ export const ENDPOINTS: Endpoint[] = [
       p('media', '媒體代碼', str(), 'cna'),
       q('limit', '每頁筆數', intIn(1, 100, 40)),
       q('cursor', '上一頁 nextCursor', str()),
+      q('q', '標題、摘要或完整標籤關鍵字（最多 60 字元）', str()),
       q('hours', '僅列出近幾小時刊登的文章；省略則不限時間', { type: 'integer', minimum: 1, maximum: 168 }),
     ],
     response: obj({

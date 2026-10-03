@@ -1,4 +1,4 @@
-export type ReadingParams = { cursor?: string | string[]; hours?: string | string[] };
+export type ReadingParams = { cursor?: string | string[]; hours?: string | string[]; q?: string | string[] };
 
 // Older event snapshots may predate stored article IDs. Keep those links on
 // the site's search page instead of unexpectedly navigating to the publisher.
@@ -19,6 +19,9 @@ export function readingQuery(params: ReadingParams): URLSearchParams | null {
     if (key === 'hours' && Number(value) > 168) return null;
     query.set(key, value);
   }
+  const keyword = (Array.isArray(params.q) ? params.q[0] : params.q)?.trim();
+  if (keyword && keyword.length > 60) return null;
+  if (keyword) query.set('q', keyword);
   return query;
 }
 

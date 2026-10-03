@@ -46,6 +46,8 @@ describe('stored article content', () => {
       expect(parseContentId(value)).toBeNull();
     }
     expect(parseContentId('9007199254740991')).toBe(Number.MAX_SAFE_INTEGER);
+    expect(parseContentPage({ q: ' 台積電 ', hours: '72' })).toEqual({ cursor: null, limit: 40, hours: 72, q: '台積電' });
+    expect(parseContentPage({ q: 'x'.repeat(61) })).toBeNull();
     expect(parseContentPage({})).toEqual({ cursor: null, limit: 40 });
     expect(parseContentPage({ cursor: '9', limit: '100' })).toEqual({ cursor: 9, limit: 100 });
     expect(parseContentPage({ cursor: '9', hours: '72' })).toEqual({ cursor: 9, limit: 40, hours: 72 });
@@ -89,6 +91,13 @@ describe('stored article content', () => {
     expect(query.sql).toContain('`articles`.`id` < ?');
     expect(query.sql).toContain('`articles`.`published_at` >= ?');
     expect(query.params).toEqual(['rti', 99, '2026-10-02 01:00:00.000']);
+  });
+  it('combines keyword, media and cursor filters with escaped LIKE wildcards', async () => {
+    const { db, chain } = fakeDb([]);
+    await loadMediaContent(db, 'rti', { cursor: 99, limit: 40, q: 'AI_10%' });
+    const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
+    expect(query.sql).toContain('JSON_CONTAINS');
+    expect(query.params).toEqual(['rti', 99, '%AI\\_10\\%%', '%AI\\_10\\%%', 'AI_10%']);
   });
   it('serves preserved text with no source request and reports not found or invalid inputs', async () => {
     const { db, select } = fakeDb([row]);

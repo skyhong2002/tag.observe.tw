@@ -7,6 +7,7 @@ import { httpDuration, httpRequests, metricsContentType, metricsText } from './m
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
 import { registerArticleSearch } from './v1/articles.ts';
+import { registerMediaKeywords } from './v1/media-keywords.ts';
 import { registerMediaStats } from './v1/media-stats.ts';
 import { registerApiMeta } from './v1/openapi.ts';
 import { registerPageApis } from './v1/pages.ts';
@@ -66,6 +67,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     await registerV1Routes(app, own.db);
     registerPageApis(app, own.db);
     registerMediaStats(app, own.db);
+    registerMediaKeywords(app, own.db);
     registerArticleSearch(app, own.db);
     registerSimilarity(app, own.db);
     registerArticleContent(app, own.db);

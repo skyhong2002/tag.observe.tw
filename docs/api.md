@@ -59,6 +59,7 @@ for a in r.json()["articles"]:
 | --- | --- |
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
 | [`GET /api/v1/articles/{id}/content`](#api-v1-articles-id-content) | 單篇已保存內文 |
+| [`GET /api/v1/media/{media}/keywords`](#api-v1-media-media-keywords) | 媒體報導關鍵字 |
 | [`GET /api/v1/media/{media}/content`](#api-v1-media-media-content) | 媒體內文庫列表 |
 | [`GET /api/v1`](#api-v1) | API 索引 |
 | [`GET /api/v1/openapi.json`](#api-v1-openapi-json) | OpenAPI 3.1 規格 |
@@ -877,6 +878,43 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 
 ## 媒體與爬蟲狀態
 
+<a id="api-v1-media-media-keywords"></a>
+
+### `GET /api/v1/media/{media}/keywords`
+
+**媒體報導關鍵字**
+
+統計期間內最新最多 2000 篇的標籤與標題關鍵詞，排除新聞分類與通用詞；每篇每詞計一次。標題詞彙沿用近 7 天跨媒體標籤字典。與文章列表分頁無關。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `media` | 路徑 | string | 媒體代碼，例：`rti` |
+| `hours` | query | integer | 回溯刊登小時，1–168，預設 `168` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/media/rti/keywords'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `media` | string |  |
+| `hours` | integer |  |
+| `from` | string (ISO 時間) |  |
+| `to` | string (ISO 時間) |  |
+| `sampledArticles` | integer | 實際取樣文章數 |
+| `capped` | boolean | 期間文章超過 2000 篇，僅取最新文章 |
+| `terms` | object[] |  |
+| `terms[].label` | string |  |
+| `terms[].count` | integer | 包含此詞的文章數 |
+
+錯誤：`400` 參數無效；`404` 媒體不存在。
+
+快取：2 分鐘。
+
 <a id="api-v1-media-media-content"></a>
 
 ### `GET /api/v1/media/{media}/content`
@@ -890,6 +928,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `media` | 路徑 | string | 媒體代碼，例：`cna` |
 | `limit` | query | integer | 每頁筆數，1–100，預設 `40` |
 | `cursor` | query | string | 上一頁 nextCursor |
+| `q` | query | string | 標題、摘要或完整標籤關鍵字（最多 60 字元） |
 | `hours` | query | integer | 僅列出近幾小時刊登的文章；省略則不限時間，1–168 |
 
 範例：

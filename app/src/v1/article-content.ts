@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
@@ -47,21 +47,24 @@ export function parseContentId(value: unknown): number | null {
   const id = Number(value);
   return Number.isSafeInteger(id) ? id : null;
 }
-export function parseContentPage(query: { cursor?: string; limit?: string; hours?: string }): {
+export function parseContentPage(query: { cursor?: string; limit?: string; hours?: string; q?: string }): {
   cursor: number | null;
   limit: number;
   hours?: number;
+  q?: string;
 } | null {
   const cursor = query.cursor === undefined ? null : parseContentId(query.cursor);
   if (query.cursor !== undefined && cursor === null) return null;
   const limit = query.limit === undefined ? 40 : parseContentId(query.limit);
   if (limit === null || limit > CONTENT_PAGE_LIMIT) return null;
+  if (query.q !== undefined && (typeof query.q !== 'string' || query.q.trim().length > 60)) return null;
+  const keyword = query.q?.trim() ? { q: query.q.trim() } : {};
   if (query.hours !== undefined) {
     const hours = parseContentId(query.hours);
     if (hours === null || hours > 168) return null;
-    return { cursor, limit, hours };
+    return { cursor, limit, hours, ...keyword };
   }
-  return { cursor, limit };
+  return { cursor, limit, ...keyword };
 }
 export function contentStatus(status: string | null, chars: number, fetchedAt: Date | null): ContentStatus {
   if (status === 'expired' || status === 'blocked' || status === 'missing' || status === 'error' || status === 'short') return status;
@@ -141,9 +144,10 @@ export async function loadArticleContent(db: Db, id: number): Promise<ArticleCon
 export async function loadMediaContent(
   db: Db,
   media: string,
-  query: { cursor: number | null; limit: number; hours?: number },
+  query: { cursor: number | null; limit: number; hours?: number; q?: string },
   now = new Date(),
 ): Promise<MediaContentResponse> {
+  const keyword = query.q?.replace(/[\\%_]/g, '\\$&');
   // Select character counts, never full bodies, on this bounded listing. Reads
   // use existing stored records only and cannot trigger a fetch of the source.
   const rows = await db
@@ -159,6 +163,13 @@ export async function loadMediaContent(
         eq(articles.media, media),
         query.cursor ? lt(articles.id, query.cursor) : undefined,
         query.hours ? gte(articles.publishedAt, new Date(now.getTime() - query.hours * 3600e3)) : undefined,
+        keyword
+          ? or(
+              sql`${articles.title} LIKE ${`%${keyword}%`}`,
+              sql`${articles.description} LIKE ${`%${keyword}%`}`,
+              sql`JSON_CONTAINS(${articles.tags}, JSON_QUOTE(${query.q}))`,
+            )
+          : undefined,
       ),
     )
     .orderBy(desc(articles.id))
@@ -188,13 +199,16 @@ export function registerArticleContent(app: FastifyInstance, db: Db) {
     reply.header('cache-control', 'public, max-age=60');
     return result;
   });
-  app.get<{ Params: { media: string }; Querystring: { cursor?: string; limit?: string; hours?: string } }>(
+  app.get<{ Params: { media: string }; Querystring: { cursor?: string; limit?: string; hours?: string; q?: string } }>(
     '/api/v1/media/:media/content',
     async (request, reply) => {
       const { media } = request.params;
       if (!Object.hasOwn(titles, media)) return reply.code(404).send({ error: 'unknown media' });
       const query = parseContentPage(request.query);
-      if (!query) return reply.code(400).send({ error: 'bad cursor, limit or hours; limit must be 1–100 and hours 1–168' });
+      if (!query)
+        return reply
+          .code(400)
+          .send({ error: 'bad cursor, limit, hours or q; limit must be 1–100, hours 1–168 and q at most 60 characters' });
       reply.header('cache-control', 'public, max-age=60');
       return loadMediaContent(db, media, query);
     },

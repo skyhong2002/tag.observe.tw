@@ -7,6 +7,10 @@ describe('article reading navigation', () => {
     expect(articleHref({ id: null, title: '新聞' })).toBe('/search/?q=%E6%96%B0%E8%81%9E');
   });
   it('preserves the list filters without accepting arbitrary return destinations', () => {
+    expect(withReadingQuery('/media/rti/', readingQuery({ q: ' 台積電 ', hours: '72', cursor: '123' })!)).toBe(
+      '/media/rti/?hours=72&cursor=123&q=%E5%8F%B0%E7%A9%8D%E9%9B%BB',
+    );
+    expect(readingQuery({ q: 'x'.repeat(61) })).toBeNull();
     const query = readingQuery({ cursor: ['123', '999'], hours: '72' });
     expect(withReadingQuery('/media/rti/', query!)).toBe('/media/rti/?hours=72&cursor=123');
     expect(withReadingQuery('/media/rti/', readingQuery({})!)).toBe('/media/rti/');
