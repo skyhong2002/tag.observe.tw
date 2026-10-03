@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CountryFlag from '@/components/CountryFlag';
 import MediaTabs from '@/components/MediaTabs';
 import SafeImage from '@/components/SafeImage';
 import { API_ORIGIN, taipei } from '@/lib/api';
@@ -26,13 +27,6 @@ interface MediaRow {
   title: string;
   country: string;
   countryCode: string;
-  crawler?: {
-    methods: string[];
-    transport: string | null;
-    body: string;
-    lastVerifiedMethod: string | null;
-    links: Array<{ label: string; url: string }>;
-  };
   icon: string | null;
   category: string | null;
   categoryLabel: string | null;
@@ -76,8 +70,6 @@ const STATUS_ORDER: Status[] = ['ok', 'stale', 'failing', 'disabled'];
 const collator = new Intl.Collator('zh-Hant-TW-u-co-stroke');
 const SORTS = {
   name: (r: MediaRow) => r.title,
-  country: (r: MediaRow) => r.country ?? '待確認',
-  crawler: (r: MediaRow) => r.crawler?.methods.join('、') ?? '尚無資料',
   today: (r: MediaRow) => r.today,
   last24h: (r: MediaRow) => r.last24h,
   last7d: (r: MediaRow) => r.last7d,
@@ -86,7 +78,7 @@ const SORTS = {
   status: (r: MediaRow) => STATUS_ORDER.indexOf(r.status),
 } satisfies Record<string, (r: MediaRow) => number | string>;
 type SortKey = keyof typeof SORTS;
-const ASC_FIRST = new Set<SortKey>(['name', 'country', 'crawler', 'status']);
+const ASC_FIRST = new Set<SortKey>(['name', 'status']);
 
 // Tolerates a cached response from before the API returned `camp`.
 const campBadge = (r: MediaRow) => (r.camp === 'blue' || r.camp === 'green' ? CAMPS[r.camp] : null);
@@ -251,14 +243,12 @@ export default async function MediaStatsPage({
         藍綠標示沿用本站媒體分類，依媒體集團與一般認知歸類，用於首頁新聞量與事件頁的藍綠對照；未標示不代表中立。
       </p>
       <div className="overflow-x-auto rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <table className="w-full min-w-[68rem] text-sm">
+        <table className="w-full min-w-[48rem] text-sm">
           <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950">
             <tr>
               <Th col="name" label="媒體" className="sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-950" />
-              <Th col="country" label="國家／地區" />
-              <Th col="crawler" label="抓取方式與程式" />
               <Th col="today" label="今日" className="text-right" />
-              <Th col="last24h" label="24 小時" className="min-w-32" />
+              <Th col="last24h" label="24 小時" className="w-[32%] min-w-40" />
               <Th col="last7d" label="7 天" className="text-right" />
               <Th col="tagged" label="標籤率" className="text-right" />
               <Th col="latest" label="最新文章" />
@@ -272,6 +262,7 @@ export default async function MediaStatsPage({
                   <Link href={`/media/${r.media}/`} className="flex items-center gap-2 font-medium hover:underline">
                     <SafeImage src={r.icon} alt="" width={16} height={16} className="rounded-sm" />
                     <span className="whitespace-nowrap">{r.title}</span>
+                    <CountryFlag code={r.countryCode} country={r.country} />
                     {r.sourceKind === 'discovery' && (
                       <span className="shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800">
                         發現來源
@@ -288,34 +279,6 @@ export default async function MediaStatsPage({
                   <div className="text-xs text-zinc-600">
                     {r.categoryLabel ?? '—'} · {r.schedule === 'off' ? '未啟用' : r.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
                   </div>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs">{r.country ?? '待確認'}</td>
-                <td className="min-w-52 max-w-72 px-3 py-2 text-xs leading-5">
-                  <div>{r.crawler?.methods.join('、') ?? '尚無資料'}</div>
-                  {r.crawler && (
-                    <>
-                      <div className="text-zinc-500 dark:text-zinc-400">{r.crawler.body}</div>
-                      <details>
-                        <summary className="cursor-pointer text-zinc-600 dark:text-zinc-400">工具與驗證方式</summary>
-                        <div>{r.crawler.transport ?? '未設定下載工具'}</div>
-                        {r.crawler.lastVerifiedMethod && <div>最近驗證：{r.crawler.lastVerifiedMethod}</div>}
-                      </details>
-                      <div className="flex flex-wrap gap-x-3">
-                        {r.crawler.links.map((entry) => (
-                          <a
-                            key={entry.url}
-                            href={entry.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
-                            aria-label={`${r.title}：${entry.label}（GitHub，另開視窗）`}
-                          >
-                            {entry.label} ↗
-                          </a>
-                        ))}
-                      </div>
-                    </>
-                  )}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{r.today.toLocaleString()}</td>
                 <td
@@ -347,8 +310,6 @@ export default async function MediaStatsPage({
       </div>
       <p className="text-xs text-zinc-600">
         國家／地區依媒體營運或在地發行版本標示，不是新聞發生地或母公司國籍；跨國團隊與待確認項目另行標示。
-        抓取方式來自目前程式設定；「自動探索」會依站點選擇 RSS、Sitemap 或 HTML，最近驗證方式不代表每次都用同一路徑。HTML
-        解析是直接下載網頁後擷取內容；JSON 是讀取公開結構化資料。
         「發現來源」的篇數是經該平台發現的原媒體文章；上方全站文章總數只按原媒體計算，不重複加總。
         狀態：正常＝最近有新文章；無近期文章＝新聞類 6 小時、其他 24 小時內沒有新文章（來源可能暫停發稿）；抓取失敗＝近 3
         小時的抓取全部失敗；未啟用＝尚未啟用定期抓取、已停用或僅作為引用來源。文章數以發布時間計；列表沒有提供發布時間的文章，會在抓取內文後才計入。7

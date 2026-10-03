@@ -6,7 +6,7 @@ import traffic from '../../../../../../app/data/media-traffic.json';
 import catalog from '../../../../../../app/data/news-source-catalog.json';
 
 export const metadata = {
-  title: '媒體流量與收錄',
+  title: 'Similar Web',
   description: '查看各家媒體的本站收錄篇數與 Similarweb 流量。',
 };
 export const revalidate = 300;
@@ -29,7 +29,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
     <div className="space-y-5">
       <header>
         <MediaTabs current="sources" />
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與收錄</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Similar Web</h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">各家媒體的本站收錄篇數與 Similarweb 流量，一起查看。</p>
         <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           <a

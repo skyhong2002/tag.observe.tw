@@ -179,7 +179,7 @@ npm run crawl:news-once -- --media bbc --media nikkei --limit 2 --retry-incomple
 
 ### 媒體目錄的國家、抓取方式與程式連結（2026-10-04）
 
-`/media/` 與 `/api/v1/media-stats` 現在逐媒體回傳國家／地區及 `crawler` 描述。國家使用 `app/data/media-countries.json` 的明列清單，按媒體或在地版本的營運／發行地標示；不從文章語言、主機位置或報導地推定。Global Voices 按官方基金會所在地標荷蘭；禁聞網按其官方自述標跨國。台灣海外網及台灣 e 新聞仍待確認所在地。新加入但未核對的媒體不自動指定台灣。
+`/media/` 維持緊湊的收錄統計表，國家／地區以媒體名稱旁的國旗呈現，滑鼠提示及無障礙標籤保留國家名稱。抓取方式、工具、驗證方式與程式超連結移至第三個分頁 `/media/crawlers/`，支援搜尋媒體、國家及抓法；原「流量與收錄」分頁改名為「Similar Web」，網址仍為 `/media/sources/`。`/api/v1/media-stats` 持續提供完整國家／地區及 `crawler` 描述。國家使用 `app/data/media-countries.json` 的明列清單，按媒體或在地版本的營運／發行地標示；不從文章語言、主機位置或報導地推定。Global Voices 按官方基金會所在地標荷蘭；禁聞網按其官方自述標跨國。台灣海外網及台灣 e 新聞仍待確認所在地。新加入但未核對的媒體不自動指定台灣。
 
 抓取方式由 `app/src/crawl/source-info.ts` 讀取實際 registry 設定：RSS／Atom、XML Sitemap、JSON API、HTML 選擇器、HTML 字串標記、指定文章、Feed 全文、YouTube 影片列表及文章發現流程。自動探索同時列出可用流程與最近一次成功驗證的方式，避免把驗證樣本誤說成固定唯一抓法。下載工具明示 HTTP／Undici、curl，以及 Google 新聞解析轉址時的 Playwright／Chromium。正文欄分開表示擷取正文或只收錄標題摘要。
 
