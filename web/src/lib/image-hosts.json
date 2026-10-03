@@ -157,6 +157,7 @@
     "businesstoday.com.tw",
     "buzzorange.com",
     "bwnet.com.tw",
+    "cdn-news.org",
     "chdev.tw",
     "chinatimes.com",
     "civilmedia.tw",
@@ -198,6 +199,7 @@
     "everylittled.com",
     "flipermag.com",
     "foodnext.net",
+    "fountmedia.s3.ap-northeast-1.amazonaws.com",
     "ftnn.com.tw",
     "ftvnews.com.tw",
     "gamebase.com.tw",
@@ -240,6 +242,7 @@
     "natgeomedia.com",
     "newcongress.tw",
     "newmobilelife.com",
+    "news.pchome.com.tw",
     "newsmarket.com.tw",
     "newtalk.tw",
     "nextapple.tw",
@@ -285,12 +288,17 @@
     "vogue.com.tw",
     "womany.net",
     "www.flickr.com",
+    "www.ntdtv.com.tw",
     "www.youtube.com",
     "yahoo.com",
     "yam.com",
     "yimg.com",
     "zi.org.tw"
   ],
-  "http": ["**.mamaclub.com", "**.pansci.asia", "**.womany.net", "mamaclub.com", "pansci.asia", "womany.net"],
-  "pathBuckets": ["s3-ap-northeast-1.amazonaws.com/everydayobject", "storage.googleapis.com/stateless-34-84-11-249"]
+  "http": ["**.mamaclub.com", "**.pansci.asia", "**.womany.net", "mamaclub.com", "pansci.asia", "womany.net", "www.mplus.com.tw"],
+  "pathBuckets": [
+    "imagedelivery.net/UYQOTZcPn8gGeaNtnHVGeg",
+    "s3-ap-northeast-1.amazonaws.com/everydayobject",
+    "storage.googleapis.com/stateless-34-84-11-249"
+  ]
 }

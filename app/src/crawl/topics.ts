@@ -23,6 +23,10 @@ export interface TopicRule {
   pattern: RegExp;
   /** Only consider links inside this selector (skips nav/menu links). */
   scope?: string;
+  /** Card shared by a separate image link and heading link. */
+  card?: string;
+  /** Only these known short-link hosts may be resolved; final URL must be this outlet. */
+  redirectHosts?: string[];
   /** Replaces link scraping for pages whose topics live in embedded data. */
   extract?: (html: string, rule: TopicRule) => TopicItem[];
   /** Selector for the cover image when the first <img> is an overlay. */
@@ -33,12 +37,12 @@ export interface TopicRule {
   listings?: Omit<TopicRule, 'media' | 'name' | 'fallbackImage' | 'listings'>[];
 }
 
-const textOf = (a: cheerio.Cheerio<import('domhandler').Element>) =>
+const textOf = (a: cheerio.Cheerio<import('domhandler').AnyNode>) =>
   decodeEntities(a.text().replace(/\s+/g, ' ').trim()) ||
   decodeEntities(a.attr('title') ?? '') ||
   decodeEntities(a.find('img').attr('alt') ?? '');
 // Card links whose visible text mixes date, counters and summary: take the heading.
-const heading = (a: cheerio.Cheerio<import('domhandler').Element>) =>
+const heading = (a: cheerio.Cheerio<import('domhandler').AnyNode>) =>
   decodeEntities(a.find('h1,h2,h3,h4,h5').first().text().replace(/\s+/g, ' ').trim()) || textOf(a);
 export const TOPIC_RULES: TopicRule[] = [
   // newtalk anchors carry the latest article title; the topic name is the URL slug.
@@ -93,6 +97,7 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://news.tvbs.com.tw/assets/default_og_image.DD7eKhl_.png',
     url: 'https://news.tvbs.com.tw/pack/packnews',
     pattern: /\/(pack|topics)\/[a-z]*\/?\d+/,
+    listings: [{ url: 'https://news.tvbs.com.tw/topics', pattern: /\/topics\/[a-z]+\/\d+$/ }],
   },
   // Each card also links its articles as hotTopic/N#topic-link-M; the JSON-LD
   // ItemList carries the clean topic names.
@@ -102,6 +107,7 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://news.pts.org.tw/hotTopic',
     pattern: /\/hotTopic\/\d+$/,
     extract: ldTopics,
+    listings: [{ url: 'https://news.pts.org.tw/curation', pattern: /\/curation\/\d+$/, title: heading }],
   },
   {
     media: 'udn',
@@ -109,6 +115,7 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://topic.udn.com/issue/index',
     pattern: /topic\.udn\.com\/(issue\/cards|newstopic|event)\/[\w-]+/,
     title: heading,
+    listings: [{ url: 'https://udn.com/topic/index', pattern: /topic\.udn\.com\/(issue\/cards|newstopic|event)\/[\w-]+/, title: heading }],
   },
   // The homepage keyword bar (.h_kw) is LTN's curated list of running topics;
   // other /topic/ links on the page are per-article tags that churn hourly.
@@ -138,6 +145,7 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://static.nextapple.tw/web/layout/img/index.jpg',
     url: 'https://news.nextapple.com/collection/topic',
     pattern: /\/collection\/topic\/[^/?#]+/,
+    listings: [{ url: 'https://special.nextapple.com/', pattern: /^https:\/\/special\.nextapple\.com\/[^/?#]+\/?$/, title: heading }],
   },
   {
     media: 'ctwant',
@@ -159,7 +167,7 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'upmedia',
     fallbackImage: 'https://www.upmedia.mg/images/sitelogo.png',
     url: 'https://www.upmedia.mg/tw/project',
-    pattern: /\/tw\/project\/project-\d+/,
+    pattern: /\/tw\/project\/[^/?#]+\/?$/,
   },
   // /topic/ itself redirect-loops; the homepage lists the running topics, each
   // "more" link sitting next to its title (banners link to index2 pages).
@@ -194,6 +202,14 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /\/feature\/(?!index(?:[/?#]|$))[^/?#]+/,
     scope: '.part_pictxt_2, .part_pictxt_1',
     title: heading,
+    listings: [
+      {
+        // Public CSV linked by features.ettoday.net, also used by its browser UI.
+        url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSC8DHP42p7MvVh8FXxjEJwZejAS3lzw7hvNAU4zeVP82zZCmefGCLWXOqeqanUrbvokw3UxKn7uzDm/pub?output=csv',
+        pattern: /features\.ettoday\.net\/[^/?#]+|\/events\/depth-topic\//,
+        extract: ettodayDigitalTopics,
+      },
+    ],
   },
   {
     media: 'mirror',
@@ -247,8 +263,244 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'ctee',
     url: 'https://www.ctee.com.tw/',
     fallbackImage: 'https://static.ctee.com.tw/img/ctee-logo-main.png?20260825',
-    pattern: /ctee\.com\.tw\/topic\/[^/?#]+\/\d+-\d+/,
+    pattern: /ctee\.com\.tw\/topic\/[^/?#]+\/\d+-\d+|topic\.ctee\.com\.tw\/[^/?#]+\/?$/,
     title: heading,
+  },
+  {
+    media: 'chinatimes',
+    url: 'https://www.chinatimes.com/album/',
+    fallbackImage: '/favicons/chinatimes.png',
+    pattern: /\/album\/[^/?#]+\/\d+-\d+(?:\?chdtv)?$/,
+    title: heading,
+  },
+  {
+    media: 'ttv',
+    url: 'https://news.ttv.com.tw/Projs/',
+    fallbackImage: '/favicons/ttv.png',
+    pattern: /^\/Proj\/(?!index\.html)[^/?#]+$/,
+    title: heading,
+  },
+  {
+    media: 'tnl',
+    url: 'https://www.thenewslens.com/feature',
+    fallbackImage: '/favicons/tnl.png',
+    pattern: /\/feature\/[^/?#]+\/?$/,
+    scope: '.item-content',
+    card: '.item-content',
+    title: (a) => heading(a.closest('.item-content')),
+  },
+  {
+    media: 'ftnn',
+    url: 'https://www.ftnn.com.tw/topic_index',
+    fallbackImage: '/favicons/ftnn.png',
+    pattern: /^\/topic_page\/\d+$/,
+    title: heading,
+  },
+  {
+    media: 'mnews',
+    url: 'https://www.mnews.tw/topic',
+    fallbackImage: '/favicons/mnews.png',
+    pattern: /^\/topic\/[\w-]+$/,
+    title: heading,
+  },
+  {
+    media: 'knews',
+    url: 'https://www.knews.com.tw/realtime/topic',
+    fallbackImage: '/favicons/knews.png',
+    pattern: /\/realtime\/topic\/[^/?#]+$/,
+    title: (a) => decodeURIComponent((a.attr('href') ?? '').split('/').pop() ?? ''),
+  },
+  {
+    media: 'fountmedia',
+    url: 'https://www.fountmedia.io/topic',
+    fallbackImage: '/favicons/fountmedia.png',
+    pattern: /^\/topic\/[^/?#]+$/,
+    scope: 'article',
+    title: (a) => a.find('.intro-bl .content').text().trim() || heading(a),
+  },
+  {
+    media: 'technews',
+    url: 'https://technews.tw/topics/',
+    fallbackImage: '/favicons/technews.png',
+    pattern: /^\/[a-z][\w-]+\/$/,
+    scope: '#content .carousel-banner_item, #content .column_list_item_wrapper',
+    card: '.carousel-banner_item, .column_list_item_wrapper',
+  },
+  {
+    media: 'techorange',
+    url: 'https://techorange.com/',
+    fallbackImage: '/favicons/techorange.png',
+    pattern: /techorange\.com\/feature\/[^/?#]+\/?$/,
+    title: heading,
+  },
+  {
+    media: 'ithome',
+    url: 'https://www.ithome.com.tw/feature',
+    fallbackImage: '/favicons/ithome.png',
+    // These /article/ pages are the feature bundles; their constituent stories use /news/.
+    pattern: /^\/article\/\d+$/,
+    scope: '.view-content',
+    title: heading,
+  },
+  {
+    media: 'einfo',
+    url: 'https://e-info.org.tw/feature',
+    fallbackImage: '/favicons/einfo.png',
+    pattern: /^\/feature\/\d+$/,
+    scope: 'main',
+    card: 'article',
+  },
+  {
+    media: 'coolloud',
+    url: 'https://www.coolloud.org.tw/topics',
+    fallbackImage: '/favicons/coolloud.png',
+    pattern: /^\/topic\/style\d+\/\d+$/,
+    scope: '.cover-title',
+  },
+  {
+    media: 'foodnext',
+    url: 'https://www.foodnext.net/topic',
+    fallbackImage: '/favicons/foodnext.png',
+    pattern: /^\/issue\/\d+$/,
+    scope: '.article-list',
+    card: '.article-list',
+  },
+  {
+    media: 'cnyes',
+    url: 'https://news.cnyes.com/projects/cat/all',
+    fallbackImage: '/favicons/cnyes.png',
+    pattern: /^https:\/\/topics\.cnyes\.com\/[^/?#]+\/?$/,
+    title: heading,
+  },
+  {
+    media: 'shoppingdesign',
+    url: 'https://www.shoppingdesign.com.tw/topic',
+    fallbackImage: '/favicons/shoppingdesign.png',
+    pattern: /\/topic\/view\/\d+$/,
+    title: heading,
+  },
+  {
+    media: 'sportsv',
+    url: 'https://www.sportsv.net/feature',
+    fallbackImage: '/favicons/sportsv.png',
+    pattern: /\/feature\/[^/?#]+$/,
+    card: '.item',
+  },
+  {
+    media: 'tvbshealth',
+    url: 'https://health.tvbs.com.tw/topic',
+    fallbackImage: '/favicons/tvbshealth.png',
+    pattern: /health\.tvbs\.com\.tw\/exhibition\//,
+    scope: 'main',
+    title: heading,
+  },
+  {
+    media: 'supertaste',
+    url: 'https://supertaste.tvbs.com.tw/topic',
+    fallbackImage: '/favicons/supertaste.png',
+    pattern: /supertaste\.tvbs\.com\.tw\/exhibition\//,
+    card: '[class~="group/card"]',
+  },
+  {
+    media: 'womany',
+    url: 'https://womany.net/collections',
+    fallbackImage: '/favicons/womany.png',
+    pattern: /^\/collections\/[^/?#]+$/,
+    scope: '.collection-item',
+    title: heading,
+  },
+  {
+    media: 'wyc',
+    url: 'https://dq.yam.com/topic/list/1',
+    fallbackImage: '/favicons/wyc.png',
+    pattern: /^\/topic\/\d+\/1(?:\?redirect=1)?$/,
+    title: heading,
+  },
+  {
+    media: 'mplus',
+    url: 'http://www.mplus.com.tw/topic/all',
+    fallbackImage: '/favicons/mplus.png',
+    pattern: /\/topic\/\d+$/,
+    scope: '.theme',
+    title: heading,
+  },
+  {
+    media: 'news_pchome',
+    url: 'https://news.pchome.com.tw/features/',
+    fallbackImage: '/favicons/news_pchome.png',
+    pattern: /^\/features\/[a-z]+\/\d+$/,
+    title: heading,
+  },
+  {
+    media: 'ntdtv_tw',
+    url: 'https://www.ntdtv.com.tw/topic',
+    fallbackImage: '/favicons/ntdtv_tw.png',
+    pattern: /^\/topic\/category\/id\/\d+$/,
+    title: (a) => a.attr('title') || heading(a),
+  },
+  {
+    media: 'zaobao',
+    url: 'https://www.zaobao.com.sg/special',
+    fallbackImage: '/favicons/zaobao.png',
+    pattern: /^\/specials?\/[^/?#]+$/,
+    title: (a) => a.closest('h2').text().trim() || heading(a),
+  },
+  {
+    media: 'gv',
+    url: 'https://zht.globalvoices.org/specialcoverage/',
+    fallbackImage: '/favicons/gv.png',
+    pattern: /globalvoices\.org\/(special|specialcoverage)\/[^/?#]+\/$/,
+    card: '.gv-promo-card',
+  },
+  {
+    media: 'cdn_news',
+    url: 'https://cdn-news.org/TopicNewsMain.aspx',
+    fallbackImage: '/favicons/cdn_news.png',
+    pattern: /^TopicNews\.aspx\?EntityID=TopicNews&PK=\w+$/,
+    card: '.position-relative',
+  },
+  {
+    media: 'businesstoday',
+    url: 'https://www.businesstoday.com.tw/',
+    fallbackImage: '/favicons/businesstoday.png',
+    scope: '.latest__side-slider',
+    pattern: /^https:\/\//,
+    redirectHosts: ['btoday.cc', 'supr.link'],
+    title: (a) => a.find('h4').text().trim(),
+  },
+  {
+    media: 'theinitium',
+    url: 'https://theinitium.com/series/',
+    fallbackImage: '/favicons/theinitium.png',
+    // /issue/ is a general taxonomy; /series/ is the curated reporting series.
+    pattern: /theinitium\.com\/tag\/[^/?#]+\/$/,
+    scope: 'main',
+    card: '[class~="border"]',
+  },
+  {
+    media: 'heho',
+    url: 'https://heho.com.tw/medical-feature-stories',
+    fallbackImage: '/favicons/heho.png',
+    pattern: /heho\.com\.tw\/[a-z][\w-]+\/?$/,
+    scope: '#main .row-dashed',
+    card: '.col-inner',
+  },
+  {
+    media: 'edh',
+    url: 'https://edh.tw/special',
+    fallbackImage: '/favicons/edh.png',
+    pattern: /\/special\/[^/?#]+$|edh\.tw\/evt\/[^/?#]+\/?$/,
+    title: heading,
+  },
+  {
+    media: 'eld',
+    url: 'https://www.roomie.tw/special',
+    fallbackImage: '/favicons/eld.png',
+    pattern: /\/special\/[^/?#]+$/,
+    card: '[class~="first:pt-0"]',
+    image: '.taxonomy-header img',
+    title: (a) =>
+      (a.closest('[class~="first:pt-0"]').find('.taxonomy-header img').first().attr('alt') ?? '').replace(/ (Cover|Banner)$/, ''),
   },
 ];
 
@@ -260,9 +512,15 @@ export function extractTopics(html: string, rule: TopicRule): TopicItem[] {
     const href = a.attr('href') ?? '';
     if (!rule.pattern.test(href)) return;
     const resolved = resolveUrl(href, rule.url);
-    if (!resolved || registrable(new URL(resolved).hostname) !== registrable(new URL(rule.url).hostname)) return;
+    if (
+      !resolved ||
+      (registrable(new URL(resolved).hostname) !== registrable(new URL(rule.url).hostname) &&
+        !rule.redirectHosts?.includes(new URL(resolved).hostname))
+    )
+      return;
     const url = stripTracking(resolved);
-    let title = rule.title ? rule.title(a, $) : textOf(a);
+    const card = rule.card ? a.closest(rule.card) : a.closest('li, article, div');
+    let title = rule.title ? rule.title(a, $) : rule.card && card.length ? heading(card) : textOf(a);
     // Anchor text that is just a date/time or a generic label is not a topic
     // name; use the card heading instead.
     let guessed = false;
@@ -273,9 +531,9 @@ export function extractTopics(html: string, rule: TopicRule): TopicItem[] {
     }
     if (!title || title.length < 2 || /^(→\s*)?(看更多|more|更多|閱讀)/i.test(title)) return;
     const imgSel = rule.image ?? 'img';
-    const imgEl = a.find(imgSel).first().length ? a.find(imgSel).first() : a.closest('li, article, div').find(imgSel).first();
-    const imgSrc = imgEl.attr('data-src') || imgEl.attr('data-original') || imgEl.attr('src') || null;
-    const image = imgSrc && !/^data:|loading\.gif|imageholder|placeholder/i.test(imgSrc) ? resolveUrl(imgSrc, rule.url) : null;
+    const imgEl = a.find(imgSel).first().length ? a.find(imgSel).first() : card.find(imgSel).first();
+    const imgSrc = imgEl.attr('data-src') || imgEl.attr('data-original') || imgEl.attr('data-src-small') || imgEl.attr('src') || null;
+    const image = imgSrc && !/^data:|loading\.(gif|svg)|imageholder|placeholder/i.test(imgSrc) ? resolveUrl(imgSrc, rule.url) : null;
     // A "more" link's card heading can be an article inside the topic block
     // (EBC), so the topic link's own text wins over a guessed heading.
     const prev = out.get(url);
@@ -304,8 +562,33 @@ export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
       if (res.status < 200 || res.status >= 400) throw Error(`HTTP ${res.status}`);
       const found = (listing.extract ?? extractTopics)(res.body, { ...listing, url: res.url || listing.url });
       if (!found.length) throw Error('no topic links matched');
-      for (const item of found) if (!items.has(item.url)) items.set(item.url, item);
-      sources.push({ url: listing.url, items: found.length });
+      const errors: string[] = [];
+      let accepted = 0;
+      for (const item of found) {
+        if (listing.redirectHosts?.includes(new URL(item.url).hostname)) {
+          try {
+            let target = await fetch(item.url, { timeout: 10000, retries: 0 });
+            // Supr.link publishes a normal continuation link instead of an HTTP redirect.
+            if (target.status === 200 && new URL(target.url).hostname === 'supr.link') {
+              const href = cheerio.load(target.body)('a#user-click-link').attr('href');
+              const destination = href && resolveUrl(href, target.url);
+              if (!destination || registrable(new URL(destination).hostname) !== registrable(new URL(listing.url).hostname))
+                throw Error('short link left official outlet');
+              target = await fetch(destination, { timeout: 10000, retries: 0 });
+            }
+            if (target.status < 200 || target.status >= 400) throw Error(`HTTP ${target.status}`);
+            if (registrable(new URL(target.url).hostname) !== registrable(new URL(listing.url).hostname))
+              throw Error('redirect left official outlet');
+            item.url = stripTracking(target.url);
+          } catch (error) {
+            errors.push(`${item.url}: ${(error as Error).message}`);
+            continue;
+          }
+        }
+        if (!items.has(item.url)) items.set(item.url, item);
+        accepted++;
+      }
+      sources.push({ url: listing.url, items: accepted, ...(errors.length ? { error: errors.join('; ') } : {}) });
     } catch (error) {
       sources.push({ url: listing.url, items: 0, error: (error as Error).message });
     }
@@ -336,6 +619,58 @@ export function cnaDigitalTopics(json: string, rule: TopicRule): TopicItem[] {
       },
     ];
   });
+}
+
+/** ETtoday's published sheet includes quoted commas, escaped quotes and newlines. */
+export function ettodayDigitalTopics(csv: string, rule: TopicRule): TopicItem[] {
+  const rows: string[][] = [];
+  let row: string[] = [],
+    field = '',
+    quoted = false;
+  for (let i = 0; i < csv.length; i++) {
+    const char = csv[i];
+    if (char === '"') {
+      if (quoted && csv[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else quoted = !quoted;
+    } else if (!quoted && (char === ',' || char === '\n')) {
+      row.push(field.replace(/\r$/, ''));
+      field = '';
+      if (char === '\n') {
+        rows.push(row);
+        row = [];
+      }
+    } else field += char;
+  }
+  if (quoted) throw Error('Unterminated CSV field');
+  if (field || row.length) rows.push([...row, field.replace(/\r$/, '')]);
+  const header = (rows.shift() ?? []).map((s) => s.replace(/^\uFEFF/, '').trim());
+  const at = (r: string[], name: string) => r[header.indexOf(name)]?.trim() ?? '';
+  if (!['專題名稱', '網址', '年度', '序號'].every((key) => header.includes(key))) throw Error('Unexpected ETtoday sheet columns');
+  return rows
+    .sort((a, b) => Number(at(b, '序號')) - Number(at(a, '序號')))
+    .flatMap((r) => {
+      const title = at(r, '專題名稱');
+      const url = resolveUrl(at(r, '網址'), 'https://features.ettoday.net/');
+      if (
+        !title ||
+        !/^\d{4}$/.test(at(r, '年度')) ||
+        !url ||
+        registrable(new URL(url).hostname) !== 'ettoday.net' ||
+        !rule.pattern.test(url)
+      )
+        return [];
+      const cover = at(r, '大圖');
+      return [
+        {
+          url: stripTracking(url),
+          title: title.slice(0, 512),
+          image: !cover || /\.(mp4|webm)(\?|$)/i.test(cover) ? null : resolveUrl(cover, url),
+          category: null,
+        },
+      ];
+    });
 }
 
 export function nownewsTopics(html: string, rule: TopicRule): TopicItem[] {

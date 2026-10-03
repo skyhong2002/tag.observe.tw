@@ -19,24 +19,32 @@ export default async function TopicPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">議題表</h1>
-        <p className="mt-1 text-sm text-zinc-600">追蹤媒體官方專題／議題入口，每小時檢查更新。</p>
+        <p className="mt-1 text-sm text-zinc-600">
+          {data
+            ? `目前已接入 ${data.media.length} 家媒體的官方專題／議題入口，每小時檢查更新。`
+            : '追蹤媒體官方專題／議題入口，每小時檢查更新。'}
+        </p>
+        <p className="mt-1 text-xs text-zinc-500">來源持續擴充中；未列出的媒體不代表沒有專題。</p>
       </div>
       {!data ? (
         <p className="text-zinc-600">議題資料目前無法取得。</p>
       ) : (
         <>
-          <nav className="flex flex-wrap gap-2" aria-label="依媒體瀏覽">
-            {data.media.map((m) => (
-              <Link
-                key={m.media}
-                href={`/topic/${m.media}`}
-                className="flex items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-3 py-1 text-sm hover:border-brand-400 dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                {m.icon && <SafeImage src={m.icon} alt="" width={14} height={14} className="rounded-sm" />}
-                {m.title}
-              </Link>
-            ))}
-          </nav>
+          <details className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <summary className="cursor-pointer text-sm">依媒體瀏覽（{data.media.length} 家）</summary>
+            <nav className="mt-3 flex flex-wrap gap-2" aria-label="依媒體瀏覽">
+              {data.media.map((m) => (
+                <Link
+                  key={m.media}
+                  href={`/topic/${m.media}`}
+                  className="flex items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-3 py-1 text-sm hover:border-brand-400 dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  {m.icon && <SafeImage src={m.icon} alt="" width={14} height={14} className="rounded-sm" />}
+                  {m.title}
+                </Link>
+              ))}
+            </nav>
+          </details>
           <details className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
             <summary className="cursor-pointer">來源更新狀態（{data.media.length} 家媒體）</summary>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
