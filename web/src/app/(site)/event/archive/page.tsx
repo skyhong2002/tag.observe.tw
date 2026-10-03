@@ -22,6 +22,9 @@ const mmdd = (day: string) => day.slice(5).replace('-', '/');
 /** Clock time, with the date when it falls on another day. */
 const when = (iso: string, day: string) => (taipeiDay(iso) === day ? hh(iso) : `${mmdd(taipeiDay(iso))} ${hh(iso)}`);
 
+/** What the rank line covers: the 24 hours up to the thread's last hour that day. */
+const trailSpan = (t: ArchivedThread, day: string) => (t.trailEnd ? `到 ${when(t.trailEnd, day)} 為止 24 小時` : '最近 24 小時');
+
 const HERO = 3,
   CARDS = 9;
 const tierOf = (rank: number): EventTier => (rank <= HERO ? 'hero' : rank <= CARDS ? 'card' : 'row');
@@ -91,7 +94,7 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
       max={max}
       media={media}
       meta={<Run t={threads[e.rank - 1]} day={data.day} />}
-      trailSpan="當天各小時"
+      trailSpan={trailSpan(threads[e.rank - 1], data.day)}
     />
   );
   return (

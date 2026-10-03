@@ -119,8 +119,10 @@ export interface ArchivedThread {
   maxTag: string | null;
   maxScore: number;
   bestRank: number | null;
-  /** Rank in each snapshot hour of the day from midnight; null = off the table. */
+  /** Rank over the 24 snapshot hours ending at `trailEnd`; null = off the table. */
   rankTrail?: Array<number | null> | null;
+  /** The thread's last hour on the table that day. */
+  trailEnd?: string | null;
   /** Outlets on the story over the day (the last 24h, for today). */
   coverage?: EventCoverage;
   news: EventNews[];

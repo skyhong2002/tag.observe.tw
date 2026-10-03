@@ -3,7 +3,7 @@ import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads } from '../db/schema.ts';
 import { rankingBasis } from '../jobs/ranking-basis.ts';
 import { type Camp, campOf } from './coverage.ts';
-import { campBaselineBetween, coverageBetween, hourStats, rankTrail } from './event-feed.ts';
+import { campBaselineBetween, coverageBetween, hourStats } from './event-feed.ts';
 import { loadHourlyTrends } from './tag-series.ts';
 
 // Event archive: every thread active on a Taipei day, and one thread's hourly
@@ -51,6 +51,33 @@ export function bucketByHour(
 // Coverage over a whole day can join far more tagged articles than one hour's
 // table; cap generously so a busy day is not silently undercounted.
 const DAY_COVERAGE_ROWS = 100000;
+const TRAIL_SPAN = 24;
+
+/** Each thread's rank over the `span` snapshot hours ending at its own `end`
+ *  (oldest first), null where it was off the table. A thread that peaked the
+ *  evening before still shows that run on the next day's archive. */
+export function trailsEnding(
+  rows: Array<{ threadId: number | null; hourStart: Date; rank: number }>,
+  ends: ReadonlyMap<number, Date>,
+  span = 24,
+): Map<number, Array<number | null>> {
+  const out = new Map<number, Array<number | null>>();
+  for (const id of ends.keys())
+    out.set(
+      id,
+      Array.from({ length: span }, () => null),
+    );
+  for (const r of rows) {
+    const end = r.threadId == null ? undefined : ends.get(r.threadId);
+    const trail = r.threadId == null ? undefined : out.get(r.threadId);
+    if (!end || !trail) continue;
+    const i = span - 1 - Math.round((end.getTime() - r.hourStart.getTime()) / HOUR);
+    if (i < 0 || i >= span) continue;
+    // A thread can split into several events in one hour; keep its best rank.
+    trail[i] = trail[i] === null ? r.rank : Math.min(trail[i], r.rank);
+  }
+  return out;
+}
 
 export async function threadsOnDay(db: Db, category: string, day: string, now = new Date()) {
   const { from, to } = dayRange(day);
@@ -101,7 +128,11 @@ export async function threadsOnDay(db: Db, category: string, day: string, now = 
     campBaselineBetween(db, start, end),
   ]);
   const dayHours = hours.map((r) => r.h);
+  // Trails end at each thread's last hour on the table that day.
   const last = dayHours.at(-1);
+  const ends = new Map(threads.map((t) => [t.id, last && t.lastTime > last ? last : t.lastTime]));
+  const endTimes = [...ends.values()].map((d) => d.getTime());
+  const trailFrom = new Date(Math.min(...endTimes, from.getTime()) - (TRAIL_SPAN - 1) * HOUR);
   const [coverage, dayStats, trails] = await Promise.all([
     coverageBetween(
       db,
@@ -112,11 +143,21 @@ export async function threadsOnDay(db: Db, category: string, day: string, now = 
       DAY_COVERAGE_ROWS,
     ),
     hourStats(db, category, dayHours),
-    // One slot per hour since midnight, so the line spans the day itself.
-    last
-      ? rankTrail(db, category, ids, last, Math.round((last.getTime() - from.getTime()) / HOUR) + 1)
-      : new Map<number, Array<number | null>>(),
-  ]);
+    ids.length === 0
+      ? []
+      : db
+          .select({ threadId: events.threadId, hourStart: eventSnapshots.hourStart, rank: events.rank })
+          .from(events)
+          .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
+          .where(
+            and(
+              eq(eventSnapshots.category, category),
+              inArray(events.threadId, ids),
+              gte(eventSnapshots.hourStart, trailFrom),
+              lt(eventSnapshots.hourStart, to),
+            ),
+          ),
+  ]).then(([c, s, rows]) => [c, s, trailsEnding(rows, ends, TRAIL_SPAN)] as const);
   return {
     day,
     days: days.map((r) => r.d).sort(),
@@ -128,6 +169,7 @@ export async function threadsOnDay(db: Db, category: string, day: string, now = 
       maxScore: t.maxScore / 1e6,
       bestRank: best.get(t.id)?.rank ?? null,
       rankTrail: trails.get(t.id) ?? null,
+      trailEnd: ends.get(t.id)?.toISOString() ?? null,
       coverage: coverage[i],
       news: (best.get(t.id)?.news ?? []).map((n) => ({
         id: n.id ?? null,

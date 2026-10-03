@@ -977,7 +977,8 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | `threads[].maxTag` | string \| null | 分數最高的標籤 |
 | `threads[].maxScore` | number |  |
 | `threads[].bestRank` | integer \| null | 最佳名次 |
-| `threads[].rankTrail` | integer \| null[] \| null | 當天每個小時的名次（從 00:00 起，最舊在前）；不在榜上的小時為 null |
+| `threads[].rankTrail` | integer \| null[] \| null | 到 trailEnd 為止 24 個快照小時的名次（最舊在前）；不在榜上的小時為 null |
+| `threads[].trailEnd` | string (ISO 時間) \| null | 名次走勢的最後一小時：事件串當天最後在榜的小時 |
 | `threads[].coverage` | object |  |
 | `threads[].coverage.outlets` | object[] | 當天寫過此事件主要標籤的媒體，依篇數排序 |
 | `threads[].coverage.outlets[].media` | string |  |
