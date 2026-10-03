@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { edgeWeightWidth, forcePositions, mediaGraphPositions, nodeArticleCounts } from '../../web/src/lib/media-graph.mts';
+import { edgeWeightWidth, forcePositions, mediaGraphPositions, mediaIconSizes, nodeArticleCounts } from '../../web/src/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
 
 const article = (id: number, media: string): SimilarityArticle => ({
@@ -115,5 +115,33 @@ describe('isolated outlets on the perimeter', () => {
     expect(mediaGraphPositions([], [], 400, 500)).toEqual([]);
     expect(mediaGraphPositions([node('reporter')], [], 400, 500)).toHaveLength(1);
     expect(mediaGraphPositions(nodes, [{ ...edge, target: 'missing' }], 400, 500)).toEqual(points);
+  });
+});
+
+describe('media icon volume', () => {
+  it('encodes article volume with increasing bounded areas on desktop and mobile', () => {
+    const nodes = [0, 1, 10, 100, 1000].map((n) => ({ ...node(String(n)), articles: n }));
+    for (const width of [356, 1118]) {
+      const sizes = [...mediaIconSizes(nodes, width).values()];
+      expect(sizes.every((size, i) => i === 0 || size > sizes[i - 1])).toBe(true);
+      expect(sizes[0]).toBe(width < 600 ? 16 : 20);
+      expect(sizes.at(-1)).toBe(width < 600 ? 34 : 64);
+      const area = (i: number) => sizes[i] ** 2 - sizes[0] ** 2;
+      expect(area(3) / area(2)).toBeCloseTo(10);
+    }
+  });
+  it('does not use citation-only outlets as a proxy for their uncollected article volume', () => {
+    const nodes = [node('small'), { ...node('large'), articles: 100 }, { ...node('reuters'), external: true, articles: 0 }];
+    const sizes = mediaIconSizes(nodes, 1118);
+    expect(sizes.get('reuters')).toBe(24);
+    expect(mediaIconSizes(nodes, 356).get('reuters')).toBe(18);
+    expect(
+      mediaIconSizes(
+        nodes.map((n) => (n.external ? { ...n, articles: 100000 } : n)),
+        1118,
+      ),
+    ).toEqual(sizes);
+    expect(mediaIconSizes([], 356).size).toBe(0);
+    expect(mediaIconSizes([{ ...node('bad'), articles: Number.NaN }], 1118).get('bad')).toBe(20);
   });
 });

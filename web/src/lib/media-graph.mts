@@ -28,7 +28,13 @@ export function nodeArticleCounts(data: Pick<SimilarityData, 'citations' | 'pair
 
 // Settle a deterministic spring/repulsion layout before painting. This keeps
 // the whole graph in frame and prevents selections/theme changes from moving it.
-export function forcePositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
+export function forcePositions(
+  nodes: SimilarityNode[],
+  edges: SimilarityEdge[],
+  width: number,
+  height: number,
+  sizes?: Map<string, number>,
+) {
   const byId = new Map(nodes.map((node, i) => [node.id, i]));
   const points = nodes.map((node, i) => {
     const angle = i * 2.399963229728653;
@@ -83,8 +89,10 @@ export function forcePositions(nodes: SimilarityNode[], edges: SimilarityEdge[],
         const dx = points[j].x - points[i].x,
           dy = points[j].y - points[i].y;
         const distance = Math.max(0.001, Math.hypot(dx, dy));
-        if (distance >= gap) continue;
-        const push = (gap - distance) / 2;
+        const iconGap = sizes ? ((sizes.get(points[i].id)! + sizes.get(points[j].id)!) / 2 + 6) * 1.12 : 0;
+        const separation = Math.max(gap, iconGap);
+        if (distance >= separation) continue;
+        const push = (separation - distance) / 2;
         const ux = distance === 0.001 ? 1 : dx / distance,
           uy = dy / distance;
         points[i].x -= ux * push;
@@ -111,17 +119,19 @@ export function edgeWeightWidth(count: number, maximum: number) {
 /** Keep outlets with no visible edges in a separate perimeter, outside the
  * spring simulation. They stay visible without compressing connected hubs. */
 export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
+  const sizes = mediaIconSizes(nodes, width);
   const ids = new Set(nodes.map((node) => node.id));
   const validEdges = edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target));
   const connected = new Set(validEdges.flatMap((edge) => [edge.source, edge.target]));
   const outer = nodes.filter((node) => !connected.has(node.id)).sort((a, b) => a.id.localeCompare(b.id));
-  if (!outer.length) return forcePositions(nodes, validEdges, width, height);
+  if (!outer.length) return forcePositions(nodes, validEdges, width, height, sizes);
   const band = width < 600 ? 52 : 68;
   const inner = forcePositions(
     nodes.filter((node) => connected.has(node.id)),
     validEdges,
     Math.max(1, width - band * 2),
     Math.max(1, height - band * 2),
+    sizes,
   );
   const positions = new Map(inner.map((point) => [point.id, point]));
   const w = width * 0.9,
@@ -146,4 +156,20 @@ export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEd
     positions.set(node.id, { id: node.id, x, y });
   });
   return nodes.map((node) => positions.get(node.id)!);
+}
+
+/** Icon area encodes sampled article volume, with a legible minimum and a
+ * bounded maximum. Citation-only sources have unknown volume, not zero output. */
+export function mediaIconSizes(nodes: SimilarityNode[], width: number): Map<string, number> {
+  const small = width < 600;
+  const min = small ? 16 : 20,
+    max = small ? 34 : 64;
+  const count = (node: SimilarityNode) => (Number.isFinite(node.articles) ? Math.max(0, node.articles) : 0);
+  const maximum = Math.max(1, ...nodes.filter((node) => !node.external).map(count));
+  return new Map(
+    nodes.map((node) => [
+      node.id,
+      node.external ? (small ? 18 : 24) : Math.sqrt(min * min + ((max * max - min * min) * count(node)) / maximum),
+    ]),
+  );
 }

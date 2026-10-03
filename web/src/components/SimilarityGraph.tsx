@@ -6,7 +6,7 @@ import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
-import { edgeWeightWidth, mediaGraphPositions, nodeArticleCounts } from '@/lib/media-graph.mts';
+import { edgeWeightWidth, mediaGraphPositions, mediaIconSizes, nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 import storedIcons from '../../../app/data/favicon-local.json';
 
@@ -58,15 +58,17 @@ export default function SimilarityGraph({
         .map((e) => `${escapeHtml(data.nodes.find((n) => n.id === (incoming ? e.source : e.target))?.name ?? '')} ${e.count} 篇`)
         .join('、');
     let positions = mediaGraphPositions(nodes, edges, chart.getWidth(), chart.getHeight());
-    const nodeData = () =>
-      nodes.map((n, i) => ({
+    const nodeData = () => {
+      const sizes = mediaIconSizes(nodes, chart.getWidth());
+      return nodes.map((n, i) => ({
         ...positions[i],
         id: n.id,
         name: n.name,
         symbol: `image://${symbols.get(n.id)}`,
-        symbolSize: chart.getWidth() < 600 ? (nodes.length > 70 ? 21 : 27) : nodes.length > 70 ? 32 : 36,
+        symbolSize: sizes.get(n.id),
         symbolKeepAspect: true,
       }));
+    };
     const render = () => {
       if (disposed) return;
       const small = chart.getWidth() < 600;
@@ -90,7 +92,7 @@ export default function SimilarityGraph({
             const outgoing = relationships(node.id, false),
               incoming = relationships(node.id, true);
             const status = connected.has(node.id) ? '' : '<br/><span style="opacity:.7">本期樣本未偵測到目前顯示的關係</span>';
-            return `<b>${escapeHtml(node.name)}</b> · ${escapeHtml(node.country)}${status}${!node.external ? `<br/>納入樣本：${node.articles} 篇` : ''}<br/>引用其他媒體：<b>${c?.outgoing ?? 0} 篇</b>${outgoing ? `<br/><span style="opacity:.7">→ ${outgoing}</span>` : ''}<br/>被其他媒體引用：<b>${c?.incoming ?? 0} 篇</b>${incoming ? `<br/><span style="opacity:.7">← ${incoming}</span>` : ''}<br/>內文相近：${c?.similar ?? 0} 篇<br/><span style="opacity:.6">本期樣本，文章去重計數 · 點選看證據</span>`;
+            return `<b>${escapeHtml(node.name)}</b> · ${escapeHtml(node.country)}${status}${!node.external ? `<br/>納入樣本：<b>${node.articles} 篇</b>（圖示大小依據）` : '<br/>僅作為引用來源，未收錄本期內文<br/>圖示採固定大小'}<br/>引用其他媒體：<b>${c?.outgoing ?? 0} 篇</b>${outgoing ? `<br/><span style="opacity:.7">→ ${outgoing}</span>` : ''}<br/>被其他媒體引用：<b>${c?.incoming ?? 0} 篇</b>${incoming ? `<br/><span style="opacity:.7">← ${incoming}</span>` : ''}<br/>內文相近：${c?.similar ?? 0} 篇<br/><span style="opacity:.6">本期樣本，文章去重計數 · 點選看證據</span>`;
           },
         },
         series: [

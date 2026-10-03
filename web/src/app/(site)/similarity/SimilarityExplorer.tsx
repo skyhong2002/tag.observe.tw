@@ -177,8 +177,8 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
             <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
             <span className="ml-3">外圍：未偵測到連線</span>
           </p>
-          <p className="hidden sm:block">線越粗，篇數／配對越多 · 移到圖示查看篇數</p>
-          <p className="sm:hidden">點選媒體圖示查看引用篇數與文章</p>
+          <p className="hidden sm:block">圖示越大，樣本越多 · 線越粗，關係越多</p>
+          <p className="sm:hidden">圖示大小依樣本篇數 · 點選看文章</p>
         </div>
       </section>
       <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
@@ -326,7 +326,7 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
                 {number(data.sample.pairLimit ?? 200)} 組；引用篇數也僅涵蓋這批樣本。
               </p>
               <p>
-                線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。Hover
+                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。Hover
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
