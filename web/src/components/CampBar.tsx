@@ -24,26 +24,47 @@ export const baselineBlue = (b?: CampBaseline | null) => {
   return n ? Math.round(((b?.outlets.blue ?? 0) / n) * 100) : 50;
 };
 
-/** "藍營多寫 2.1 倍" from the lean exponent. */
-export function leanText(lean: number | null): string | null {
+/** The over-represented camp and how far above its usual share it sits, in
+ *  percent: +58% means that camp's outlet ratio is 1.58x the day's baseline. */
+export function leanDelta(lean: number | null): { camp: Camp; pct: number } | null {
   if (lean === null) return null;
-  const times = 2 ** Math.abs(lean);
-  if (times < 1.25) return '藍綠比例如常';
-  return `${lean > 0 ? '藍營' : '綠營'}多寫 ${times.toFixed(1)} 倍`;
+  return { camp: lean >= 0 ? 'blue' : 'green', pct: Math.round((2 ** Math.abs(lean) - 1) * 100) };
+}
+
+export function leanTitle(lean: number | null): string | undefined {
+  const d = leanDelta(lean);
+  return d ? `${CAMP_LABEL[d.camp]}媒體在這件事的家數比例，比過去 24 小時的整體比例高 ${d.pct}%` : undefined;
+}
+
+/** Signed percent against the baseline, coloured by the camp it favours. */
+export function LeanText({ lean, className = '' }: { lean: number | null; className?: string }) {
+  const d = leanDelta(lean);
+  if (!d) return null;
+  return (
+    <span className={`font-medium tabular-nums ${CAMP_TEXT[d.camp]} ${className}`} title={leanTitle(lean)}>
+      {CAMP_LABEL[d.camp]} +{d.pct}%
+    </span>
+  );
+}
+
+/** Plain-text form for places that cannot take an element. */
+export function leanText(lean: number | null): string | null {
+  const d = leanDelta(lean);
+  return d ? `${CAMP_LABEL[d.camp]} +${d.pct}%` : null;
 }
 
 /** The one badge worth showing, blind spot first since it is the stronger claim. */
 export function CampBadge({ c, className = '' }: { c: EventCoverage; className?: string }) {
   const spot = c.blindspot[0];
-  if (spot && c.share) {
-    const pct = c.share[spot === 'other' ? 'blue' : spot];
+  if (spot) {
+    const n = c.camps[spot];
     return (
       <span
         className={`inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-px text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200 ${className}`}
         title={`${CAMP_LABEL[spot]}媒體幾乎沒報導，${CAMP_LABEL[spot]}讀者看不到這件事`}
       >
         盲點：{CAMP_LABEL[spot]}
-        {pct === 0 ? ' 0%' : `只佔 ${pct}%`}
+        {n === 0 ? '沒有報導' : `只有 ${n} 家`}
       </span>
     );
   }
@@ -55,7 +76,7 @@ export function CampBadge({ c, className = '' }: { c: EventCoverage; className?:
             ? 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200'
             : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
         } ${className}`}
-        title={leanText(c.lean) ?? undefined}
+        title={leanTitle(c.lean)}
       >
         {CAMP_LABEL[c.tilt]}重點
       </span>
@@ -82,19 +103,26 @@ export function SplitBar({ c, width = 'w-20' }: { c: EventCoverage; width?: stri
   );
 }
 
-/** The card line: dominant camp share, outlet counts, badge. */
+/** The card line: the bar, outlet counts per camp in the bar's order, badge. */
 export function CampLine({ c, compact = false }: { c: EventCoverage; compact?: boolean }) {
-  if (!c.share) return null;
-  const lead: Camp = c.share.blue >= c.share.green ? 'blue' : 'green';
+  const order: Camp[] = ['green', 'other', 'blue'];
+  if (!order.some((k) => c.camps[k] > 0)) return null;
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
       <SplitBar c={c} width={compact ? 'w-14' : 'w-20'} />
-      <span className="tabular-nums">
-        <span className={`font-medium ${CAMP_TEXT[lead]}`}>
-          {CAMP_LABEL[lead]} {c.share[lead]}%
-        </span>
-        {' · '}
-        {c.camps.blue + c.camps.green} 家{!compact && c.camps.other > 0 && ` · 其他 ${c.camps.other} 家`}
+      <LeanText lean={c.lean} />
+      <span className="tabular-nums" title={order.map((k) => `${CAMP_LABEL[k]} ${c.camps[k]} 家`).join('、')}>
+        {compact
+          ? `${order.reduce((n, k) => n + c.camps[k], 0)} 家`
+          : order.map((k, i) => (
+              <span key={k}>
+                {i > 0 && ' · '}
+                <span className={CAMP_TEXT[k]}>
+                  {CAMP_LABEL[k]} {c.camps[k]}
+                </span>
+              </span>
+            ))}
+        {!compact && ' 家'}
       </span>
       <CampBadge c={c} />
     </span>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar, leanText } from '@/components/CampBar';
+import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar, LeanText } from '@/components/CampBar';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
@@ -283,7 +283,9 @@ export default function EventCard({ e, tier, max, media }: { e: EventItem; tier:
             <div className="space-y-1.5">
               <FullBar c={e.coverage} />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-                <span>{leanText(e.coverage.lean)}</span>
+                <span>
+                  相對平常 <LeanText lean={e.coverage.lean} />
+                </span>
                 <CampBadge c={e.coverage} />
                 <OutletStrip c={e.coverage} media={media} max={12} />
               </div>

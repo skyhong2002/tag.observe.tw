@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BaselineBar, CAMP_LABEL, CampBadge, leanText } from '@/components/CampBar';
+import { BaselineBar, CAMP_LABEL, CampBadge, LeanText } from '@/components/CampBar';
 import EventCard, { type EventTier, eventAnchor, eventHeadline } from '@/components/EventCard';
 import MediaSidebar from '@/components/MediaSidebar';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
@@ -114,7 +114,7 @@ function CampGap({ events }: { events: EventItem[] }) {
                       </a>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
                         {e.coverage && <CampBadge c={e.coverage} />}
-                        <span>{leanText(e.coverage?.lean ?? null)}</span>
+                        <LeanText lean={e.coverage?.lean ?? null} />
                         <span className="tabular-nums">
                           {CAMP_LABEL.blue} {e.coverage?.camps.blue} 家 · {CAMP_LABEL.green} {e.coverage?.camps.green} 家
                         </span>
