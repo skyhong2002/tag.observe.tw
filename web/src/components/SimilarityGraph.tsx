@@ -316,9 +316,9 @@ export default function SimilarityGraph({
     let leaveTimer: ReturnType<typeof setTimeout>;
     chart.on('mouseover', (event) => {
       clearTimeout(leaveTimer);
-      if (navigating || event.dataIndex === undefined) return;
-      // Hover previews never replace the pinned selection or the evidence filter.
-      // Leaving the item restores the pinned relationships below.
+      if (navigating || event.dataIndex === undefined || pinned.current) return;
+      // A pinned selection owns the highlights. ECharts still shows hover
+      // cards for other nodes/edges without changing the graph or evidence.
       if (event.dataType === 'node') updateFocus({ node: nodes[event.dataIndex].id });
       else if (event.dataType === 'edge') {
         const edge = (event.data as { relationship?: SimilarityEdge } | null)?.relationship ?? visibleEdges[event.dataIndex];

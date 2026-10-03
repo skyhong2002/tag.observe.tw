@@ -50,6 +50,6 @@ export function createGraphTooltip(data: OriginData, nodes: SimilarityNode[], ca
             ? `${item.origin.article.mediaTitle} → ${item.origin.source.mediaTitle}：${item.origin.source.title}（同組來源）`
             : `${item.pair.a.mediaTitle} ↔ ${item.pair.b.mediaTitle}：${item.pair.a.title}`,
       );
-    return `<div role="tooltip">${heading}<div style="margin-top:6px">${summary}</div>${articles.length ? `<div style="margin-top:8px">${articles.map((title) => `<div style="margin-top:4px">• ${escapeHtml(title)}</div>`).join('')}</div>` : ''}<div style="margin-top:8px;opacity:.65">點選固定高亮，詳細文章在圖下方</div></div>`;
+    return `<div role="tooltip">${heading}<div style="margin-top:6px">${summary}</div>${articles.length ? `<div style="margin-top:8px">${articles.map((title) => `<div style="margin-top:4px">• ${escapeHtml(title)}</div>`).join('')}</div>` : ''}</div>`;
   };
 }
