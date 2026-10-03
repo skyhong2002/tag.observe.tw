@@ -164,9 +164,12 @@ export async function refreshTopicPages(
       );
     for (const r of stored) shared.add(`${r.media} ${r.image}`);
   }
+  // Outlets publish dead share images too (403 from a bucket, 404 on a
+  // microsite): only a URL that actually serves an image is a cover.
   let covers = 0;
   for (const p of candidates) {
     if (shared.has(`${p.row.media} ${p.image}`)) continue;
+    if (!(await servesImage(p.image, fetch))) continue;
     await db
       .update(topics)
       .set({ image: p.image.slice(0, 512) })
@@ -261,4 +264,14 @@ export async function topicSourceChecks(db: Db, now = new Date()) {
     }),
   );
   return Object.fromEntries(entries);
+}
+
+/** 2xx and not a page or API document; CDNs label images octet-stream or "png". */
+async function servesImage(url: string, fetch: typeof fetchText): Promise<boolean> {
+  try {
+    const res = await fetch(url, { timeout: 10000, retries: 0 });
+    return res.status >= 200 && res.status < 300 && !/^(text\/|application\/(xml|json|xhtml))/i.test(res.contentType);
+  } catch {
+    return false;
+  }
 }
