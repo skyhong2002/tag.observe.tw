@@ -190,8 +190,8 @@ npm run crawl:news-once -- --media bbc --media nikkei --limit 2 --retry-incomple
 Issue 列的 17 個「可再嘗試」來源已在 10-03 全數移出 `crawl-disabled.json`，這次逐站看實際入庫與現況：
 
 - **DIGITIMES**：新聞 `/tech/dt/n/` 只有會員看得到全文；免費的是專欄 `/col/article/?id=`。首頁只連 3 篇，改從 `/col/` 探索，新增 8 篇，正文 11/11 成功。
-- 有持續新文章、正文 ≥ 80%：商業週刊、地球圖輯隊、姊妹淘、TSNA、思想坦克、Taiwan Tatler、上下游（WP API）、好房新聞（住展 byline）、焦點事件（RSS `/feed` 只有 12 則，首頁已涵蓋）、報導者（首頁約 8 篇，目前入庫 2 篇）。
-- 只剩當時釘選的舊文章，之後不會再插入：
+- 正文 ≥ 80%，但 10-03 恢復後還沒有新插入，待排程連續 3 次入庫驗收：商業週刊、地球圖輯隊、姊妹淘、TSNA、思想坦克、Taiwan Tatler、上下游（WP API）、好房新聞（住展 byline）、焦點事件（RSS `/feed` 只有 12 則，首頁已涵蓋）、沃草（首頁約 8 篇，目前入庫 2 篇）。
+- 只剩當時釘選的舊文章，之後不會再插入，已移回 `crawl-disabled.json`（舊文章保留，每週 `source-probe` 照常探測）：
   - **Cheers**、**GQ**、**報橘**：官網 RSS／sitemap／首頁都是 Cloudflare JS 挑戰（403）；Yahoo 搜尋沒有 Cheers 來源，roomie GQ 作者頁最新 2017、grinews 報橘作者頁最新 2022。GQ 另有 20 篇 gq.com.tw、Cheers 17 篇 2021 年 Yahoo 項目，正文都失敗且已達 3 次重試上限。
   - **農傳媒**：所有路徑回 Vercel Security Checkpoint（429）；近 60 天資料庫沒有「轉載自農傳媒」的轉載。
   - **動網**：`www.dongtw.com` 301 轉回自己（無限轉址），`dongtw.com` 無 DNS。
