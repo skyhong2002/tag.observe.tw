@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import {
   type CrawlerGroup,
@@ -10,6 +11,7 @@ import {
   type MediaCrawler,
   selectCrawlers,
 } from '@/lib/media-crawlers.mts';
+import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
 import MediaHoverLink from './MediaHoverLink';
 
 const columns: Array<{ key: CrawlerSort; label: string }> = [
@@ -134,6 +136,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {rows.map((row) => {
+              const icon = localMediaIcon(row.media);
               const tags = crawlerTags(row);
               const schedule = row.schedule === 'off' ? '未啟用' : row.schedule === 'hourly' ? '每小時' : '每 9 分鐘';
               return (
@@ -143,9 +146,26 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                       <MediaHoverLink
                         media={row.media}
                         title={row.title}
-                        icon={16}
+                        {...{ icon: false }}
                         className="inline-flex items-center gap-2 font-medium hover:underline"
                       >
+                        {icon ? (
+                          <Image
+                            src={icon}
+                            alt=""
+                            width={16}
+                            height={16}
+                            unoptimized
+                            className={`size-4 shrink-0 object-contain ${mediaIconClass(row.media)}`}
+                          />
+                        ) : (
+                          <span
+                            aria-hidden="true"
+                            className="inline-flex size-4 items-center justify-center rounded bg-zinc-200 text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
+                          >
+                            {row.title.slice(0, 1)}
+                          </span>
+                        )}
                         <span className="max-w-40 truncate" title={`${row.title} · ${row.country}`}>
                           {row.title}
                         </span>
