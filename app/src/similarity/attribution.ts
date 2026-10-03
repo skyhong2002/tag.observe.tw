@@ -1,4 +1,5 @@
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
+import countryRegistry from '../../data/media-countries.json' with { type: 'json' };
 import { reporterCredit } from '../crawl/byline.ts';
 
 export type OutletIdentity = { media: string; name: string; country: string; countryCode: string };
@@ -90,6 +91,14 @@ export function outletIdentity(mediaOrName: string): OutletIdentity {
   const value = mediaOrName.trim();
   const known = outlets.find((o) => o.media === value.toLowerCase() || o.aliases.some((a) => a.toLowerCase() === value.toLowerCase()));
   if (known) return identityOnly(known);
+  const entry = (countryRegistry.media as Record<string, { countryCode: string }>)[value];
+  if (entry)
+    return {
+      media: value,
+      name: titles[value]?.title ?? value,
+      countryCode: entry.countryCode,
+      country: (countryRegistry.countries as Record<string, string>)[entry.countryCode] ?? '待確認',
+    };
   return { media: value, name: titles[value]?.title ?? value, country: '未知', countryCode: 'ZZ' };
 }
 

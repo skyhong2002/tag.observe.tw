@@ -236,8 +236,8 @@
       "name": "蘋果日報",
       "aliases": [],
       "status": "historical",
-      "sourceUrl": "https://tw.appledaily.com/",
-      "evidence": "既有歷史來源；目前舊網域轉至不同內容站，保留蘋果日報，不採用轉址後名稱。"
+      "sourceUrl": null,
+      "evidence": "2026-10-04 原網域已非原新聞品牌；停止提供原網域連結，不以新網站內容冒充原媒體。"
     },
     "ctwant": {
       "name": "CTWANT",
@@ -695,9 +695,9 @@
     "overdope": {
       "name": "overdope",
       "aliases": [],
-      "status": "verified",
-      "sourceUrl": "https://overdope.com/",
-      "evidence": "overdope.com"
+      "status": "historical",
+      "sourceUrl": null,
+      "evidence": "2026-10-04 原網域已非原新聞品牌；停止提供原網域連結，不以新網站內容冒充原媒體。"
     },
     "ldope": {
       "name": "L.DOPE",
@@ -1908,8 +1908,8 @@
         "DW 德廣"
       ],
       "status": "verified",
-      "sourceUrl": "https://www.youtube.com/watch?v=pvAQtTh5Hpg",
-      "evidence": "DW Chinese 官方頻道：歡迎收看DW中文-德國之聲"
+      "sourceUrl": "https://www.dw.com/zh/",
+      "evidence": "2026-10-04 德國之聲官方中文頁；原 YouTube 單支影片僅是名稱核對證據，已改為官方中文入口。"
     },
     "focustaiwan": {
       "name": "Focus Taiwan",
@@ -2448,7 +2448,7 @@
       "name": "韓聯社",
       "aliases": [],
       "status": "verified",
-      "sourceUrl": "https://cb.yna.co.kr/",
+      "sourceUrl": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/",
       "evidence": "韓聯社（南韓聯合通訊社）"
     },
     "xinhua": {

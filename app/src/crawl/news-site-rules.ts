@@ -12,8 +12,9 @@ export interface NewsSiteRules {
   bodyHtmlSelector?: string;
   titleSelector?: string;
   publishedSelector?: string;
+  publishedAttribute?: string;
   publicationPattern?: RegExp;
-  publicationFormat?: 'epoch-ms' | 'day-first' | 'utc';
+  publicationFormat?: 'epoch-ms' | 'epoch-seconds' | 'day-first' | 'utc';
   preferPrintedPublication?: boolean;
   providerSelector?: string;
   bodyExcludeSelector?: string;
@@ -57,6 +58,19 @@ const SITES: Site[] = [
     bodySelector: '.itembox_intro.editor',
     titleSelector: 'h1.heading_view',
     publishedSelector: '.itembox-left > .info_view_date',
+  },
+  {
+    host: 'factcheck.afp.com',
+    path: /^\/doc\.afp\.com\.[A-Z0-9]+$/,
+    bodySelector: 'article .wrapper-body',
+    publishedSelector: 'article .date-full-format[data-type="created"]',
+    publishedAttribute: 'data-utc-time',
+    publicationFormat: 'epoch-seconds',
+  },
+  {
+    host: 'ap.org',
+    path: /^\/news-highlights\/(?:elections|spotlights)\/\d{4}\/[^/]+\/$/,
+    bodySelector: 'article .content-container__inner',
   },
   {
     host: 'news.cn',
@@ -293,7 +307,12 @@ export function newsSiteEvidence($: CheerioAPI, url: string) {
   if (rules.publishedSelector) {
     for (const node of $(rules.publishedSelector).toArray()) {
       const element = $(node);
-      let raw = element.attr('datetime') ?? element.text().trim();
+      let raw =
+        (rules.publishedAttribute ? element.attr(rules.publishedAttribute) : (element.attr('datetime') ?? element.text().trim())) ?? '';
+      if (rules.publicationFormat === 'epoch-seconds' && /^\d{10}$/.test(raw)) {
+        publishedRaw = new Date(Number(raw) * 1000).toISOString();
+        break;
+      }
       if (rules.publicationPattern) raw = rules.publicationPattern.exec(raw)?.[1] ?? '';
       if (rules.publicationFormat === 'day-first') raw = raw.replace(/^(\d{2})-(\d{2})-(\d{4})$/, '$3-$2-$1');
       if (rules.publicationFormat === 'utc') raw += 'Z';

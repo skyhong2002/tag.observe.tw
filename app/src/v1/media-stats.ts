@@ -4,8 +4,10 @@ import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import { allSources, disabled } from '../crawl/registry.ts';
+import { crawlerInfo } from '../crawl/source-info.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles, crawlRuns } from '../db/schema.ts';
+import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
 import { iconUrl } from './icons.ts';
@@ -111,7 +113,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     // Aggregates come back as 'YYYY-MM-DD HH:MM:SS' strings; the DB stores UTC
     // (client timezone 'Z'), so parse as UTC rather than host-local time.
     const toDate = (v: unknown) => (v instanceof Date ? v : typeof v === 'string' && v ? new Date(`${v.replace(' ', 'T')}Z`) : null);
-    const rows = listedMediaSources(allSources())
+    const specs = allSources();
+    const rows = listedMediaSources(specs)
       .map((s) => {
         const c = byCount.get(s.media),
           r = byRun.get(s.media);
@@ -129,6 +132,12 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           media: s.media,
           sourceKind: isDiscoverySource(s.media) ? 'discovery' : 'publisher',
           title: info[s.media]?.title ?? s.media,
+          country: outletIdentity(s.media).country,
+          countryCode: outletIdentity(s.media).countryCode,
+          crawler: crawlerInfo(
+            s.media,
+            specs.find((source) => source.media === s.media),
+          ),
           icon: iconUrl(s.media),
           category,
           categoryLabel: category ? (CATEGORY_LABELS[category] ?? category) : null,

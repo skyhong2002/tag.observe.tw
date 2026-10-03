@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-03T11:27:34.242Z",
+  "checkedAt": "2026-10-03T18:20:36.309Z",
   "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing",
   "sourceMonth": "202608",
   "results": [
@@ -4703,6 +4703,150 @@
       "strategy": "html",
       "listingUrl": "https://www.ntdtv.com.tw/?refresh=1",
       "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "yonhap",
+      "websiteUrl": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/",
+      "checkedAt": "2026-10-03T18:11:54.839Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/view/ACK20261003000100881",
+          "title": "朝鮮向半島東部海域發射1枚彈道導彈 飛行約700公里 | 韓聯社",
+          "publishedAt": "2026-10-03T03:46:35.000Z",
+          "bodyLength": 809
+        },
+        {
+          "url": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/view/ACK20261002003200881",
+          "title": "南韓隊奪得亞運射箭反曲弓男團金牌 | 韓聯社",
+          "publishedAt": "2026-10-02T07:27:11.000Z",
+          "bodyLength": 221
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "xinhua",
+      "websiteUrl": "https://www.news.cn/",
+      "checkedAt": "2026-10-03T18:11:54.845Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "http://www.news.cn/sci-tech/20260922/a5b3411743f44f368b657f669cc6d38a/c.html",
+          "title": "降低皮质醇能养生？-新华网",
+          "publishedAt": "2026-09-22T02:21:56.000Z",
+          "bodyLength": 881
+        },
+        {
+          "url": "http://www.news.cn/sci-tech/20260922/32f0a66920384ace9b6e8481ce2a7163/c.html",
+          "title": "年轻人“养砖头”须防健康隐患-新华网",
+          "publishedAt": "2026-09-22T02:26:58.000Z",
+          "bodyLength": 1098
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.news.cn/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "kyodo",
+      "websiteUrl": "https://tchina.kyodonews.net/",
+      "checkedAt": "2026-10-03T18:14:17.279Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://tchina.kyodonews.net/articles/-/14406",
+          "title": "日本公明黨大會批准岡本三成擔任新黨首",
+          "publishedAt": "2026-10-03T12:15:33.000Z",
+          "bodyLength": 304
+        },
+        {
+          "url": "https://tchina.kyodonews.net/articles/-/14405",
+          "title": "日本與哈薩克定期直飛航線11月起開通",
+          "publishedAt": "2026-10-03T11:15:30.000Z",
+          "bodyLength": 417
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://tchina.kyodonews.net/list/feed/rss4news",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "afp",
+      "websiteUrl": "https://factcheck.afp.com/",
+      "checkedAt": "2026-10-03T18:17:39.550Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://factcheck.afp.com/doc.afp.com.C9962NR",
+          "title": "Video of vandalism in Bangladesh misrepresented as mosque torn down in India",
+          "publishedAt": "2026-09-30T04:41:51.000Z",
+          "bodyLength": 2560
+        },
+        {
+          "url": "https://factcheck.afp.com/doc.afp.com.C9887P4",
+          "title": "Video of Israeli strike on Lebanon falsely shared as aftermath from Houthi attack in Riyadh",
+          "publishedAt": "2026-09-25T04:03:26.000Z",
+          "bodyLength": 2186
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://factcheck.afp.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ap",
+      "websiteUrl": "https://www.ap.org/news-highlights/",
+      "checkedAt": "2026-10-03T18:20:33.970Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ap.org/news-highlights/elections/2026/most-americans-blame-trump-for-high-prices-as-midterms-approach-a-new-ap-norc-poll-finds/",
+          "title": "Most Americans blame Trump for high prices as midterms approach, a new AP-NORC poll finds | The Associated Press",
+          "publishedAt": "2026-10-01T10:24:00.000Z",
+          "bodyLength": 5617
+        },
+        {
+          "url": "https://www.ap.org/news-highlights/spotlights/2026/as-top-talent-slowly-leaks-from-sec-territory-the-league-looks-to-stop-a-three-year-title-slide/",
+          "title": "As top talent slowly leaks from SEC territory, the league looks to stop a three-year title slide | The Associated Press",
+          "publishedAt": "2026-09-29T12:06:10.000Z",
+          "bodyLength": 6143
+        }
+      ],
+      "status": "verified",
+      "strategy": "sitemap",
+      "listingUrl": "https://www.ap.org/post-sitemap7.xml",
+      "detail": "以 sitemap 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "nhk",
+      "websiteUrl": "https://www3.nhk.or.jp/nhkworld/zh/news/",
+      "checkedAt": "2026-10-03T18:17:39.555Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www3.nhk.or.jp/nhkworld/zh/news/20261003de54017/",
+          "title": "G7拟4个月内释放1亿桶石油储备应对油价飙升",
+          "publishedAt": "2026-10-03T05:35:57.000Z",
+          "bodyLength": 360
+        },
+        {
+          "url": "https://www3.nhk.or.jp/nhkworld/zh/news/nd-20261002de53957/",
+          "title": "美国向台湾出售的两架新型F16V抵台",
+          "publishedAt": "2026-10-03T05:35:57.000Z",
+          "bodyLength": 431
+        }
+      ],
+      "status": "verified",
+      "strategy": "api",
+      "listingUrl": "https://www3.nhk.or.jp/nhkworld/data/zh/news/all.json",
+      "detail": "以 api 驗證 2 篇近期文章的標題、日期與內文。"
     }
   ]
 }

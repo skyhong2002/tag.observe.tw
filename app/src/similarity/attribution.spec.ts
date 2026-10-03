@@ -113,7 +113,7 @@ describe('outlet identity', () => {
   });
 
   it('uses local display metadata without guessing an unknown country', () => {
-    expect(outletIdentity('hypebeast')).toMatchObject({ media: 'hypebeast', country: '未知', countryCode: 'ZZ' });
+    expect(outletIdentity('hypebeast')).toMatchObject({ media: 'hypebeast', country: '香港', countryCode: 'HK' });
     expect(outletIdentity('unlisted')).toEqual({ media: 'unlisted', name: 'unlisted', country: '未知', countryCode: 'ZZ' });
   });
 });

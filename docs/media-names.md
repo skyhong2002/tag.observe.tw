@@ -19,7 +19,7 @@
 - 名稱待確認：1 筆。
 - 解析器殘留空白項目：1 筆（ctit），維持排除，不當成媒體。
 
-蘋果日報與 every little d 保留歷史來源身份。遇到停站、轉手或異常頁面，不使用新頁面標題覆蓋舊品牌。「無界」沒有足夠資料識別是哪個媒體，因此只移除 `/5` 附註，並在來源表標示名稱待確認。
+蘋果日報與 every little d 保留歷史來源身份。遇到停站、轉手或異常頁面，不使用新頁面標題覆蓋舊品牌。
 
 ## 全部名稱
 
@@ -50,7 +50,7 @@
 | taro | 芋傳媒 | 芋傳媒 | 官方名稱已核對 | [芋傳媒 TaroNews](https://taronews.tw/) |
 | epochtimes | 大紀元 | 大紀元 | 官方名稱已核對 | [大紀元 www.epochtimes.com](https://www.epochtimes.com/) |
 | cna | 中央社 | 中央社 | 官方名稱已核對 | [中央社 CNA](https://www.cna.com.tw/) |
-| apple | 蘋果日報 | 蘋果日報 | 歷史品牌 | [既有歷史來源；目前舊網域轉至不同內容站，保留蘋果日報，不採用轉址後名稱。](https://tw.appledaily.com/) |
+| apple | 蘋果日報 | 蘋果日報 | 歷史品牌 | 舊網域已轉至不同內容站，撤下連結並保留歷史名稱。 |
 | ctwant | 時報周刊/周刊王 | CTWANT | 官方名稱已核對 | [CTWANT](https://www.ctwant.com/) |
 | ftv | 民視 | 民視新聞網 | 官方名稱已核對 | [民視新聞網](https://www.ftvnews.com.tw/) |
 | nextapple | 壹蘋新聞網 | 壹蘋新聞網 | 官方名稱已核對 | [壹蘋新聞網](https://news.nextapple.com/) |
@@ -108,7 +108,7 @@
 | ustv | 非凡新聞 | 非凡新聞 | 官方名稱已核對 | [非凡新聞台](https://news.ustv.com.tw/) |
 | daman | 大人物 | 大人物 | 官方名稱已核對 | [大人物](https://www.damanwoo.com/) |
 | nom | NOM Magazine | NOM Magazine | 官方名稱已核對 | [NOM Magazine](https://nommagazine.com/) |
-| overdope | overdope | overdope | 官方名稱已核對 | [overdope.com](https://overdope.com/) |
+| overdope | overdope | overdope | 歷史品牌 | 原網域已變質為文件下載站，撤下連結。 |
 | ldope | L.Dope | L.DOPE | 官方名稱已核對 | [L.DOPE](https://ldope.com/) |
 | eld | Every Little D | every little d | 歷史品牌 | [官方公告 every little d 整併至 Roomie；原品牌仍列為作者。保留歷史來源名稱，不合併文章歸屬。](https://www.roomie.tw/posts/50784) |
 | gq | GQ Taiwan | GQ Taiwan | 官方名稱已核對 | [GQ Taiwan](https://www.gq.com.tw/) |
@@ -224,7 +224,6 @@
 | taiwanpost | taiwanpost 台灣郵時 | 臺灣郵報 | 官方名稱已核對 | [臺灣郵報](https://taiwanpost.net/) |
 | right_media | 睿 right-media.news | 睿傳媒 | 官方名稱已核對 | [睿傳媒 Rightmedia - 睿智新聞深得你心! 我們自許為獨立客觀的新媒體，以獨特觀點帶給讀者全新閱聽體驗!](https://www.right-media.news/) |
 | tristarnews | 三星傳媒 | 三星傳媒 | 官方名稱已核對 | [關於我們 - 三星傳媒](https://www.tristarnews.com.tw/about.html) |
-| wujie | 無界 /5 | 無界 | 名稱待確認 | 原表無可確認的網址；僅去除 /5，暫不推測是同名的哪一個媒體。 |
 | firenews | 火報 firenews | 火報 | 官方名稱已核對 | [火報](https://firenews.com.tw/) |
 | lifenews | 民生電子報 lifenews | 民生電子報 | 官方名稱已核對 | [民生電子報](https://lifenews.com.tw/) |
 | news586 | 586 傳媒 (台中彰化) | NEWS586 | 官方名稱已核對 | [NEWS586](https://news.586.com.tw/) |
@@ -250,7 +249,7 @@
 | ntdtv | 新唐人/3 | 新唐人電視台 | 官方名稱已核對 | [NTDChinese](https://www.ntdtv.com/) |
 | cdns | 中華新聞雲/中華日報 | 中華新聞雲 | 官方名稱已核對 | [中華新聞雲 / China Daily News](https://www.cdns.com.tw/) |
 | cctv | 央視 cctv.com /150 | 央視網 | 官方名稱已核對 | [央视网_世界就在眼前](https://www.cctv.com/) |
-| dw | DW 德廣 /100 | 德國之聲 | 官方名稱已核對 | [DW Chinese 官方頻道：歡迎收看DW中文-德國之聲](https://www.youtube.com/watch?v=pvAQtTh5Hpg) |
+| dw | DW 德廣 /100 | 德國之聲 | 官方名稱已核對 | [德國之聲官方中文首頁](https://www.dw.com/zh/) |
 | focustaiwan | focustaiwan.tw /3 | Focus Taiwan | 官方名稱已核對 | [Focus Taiwan - CNA English News](https://focustaiwan.tw:443/) |
 | cn_wsj | 華爾街日報中文 /5 | 華爾街日報中文網 | 保留既有名稱，官網待複核 | [官網未能提供可核對的名稱；保留既有品牌並清除原表附註。](https://cn.wsj.com/) |
 | life | life生活網 | LIFE生活網 | 官方名稱已核對 | [LIFE 生活網](https://life.tw/) |
@@ -310,7 +309,7 @@
 | ap | 美聯社 | 美聯社 | 官方名稱已核對 | [The Associated Press 官方網站；通訊社識別使用美聯社](https://www.ap.org/) |
 | nhk | NHK | NHK | 保留既有名稱，官網待複核 | [NHK；官網存取受限，保留既有名稱](https://www3.nhk.or.jp/nhkworld/zh/) |
 | kyodo | 共同社 | 共同社 | 保留既有名稱，官網待複核 | [共同社；官網存取受限，保留既有名稱](https://tchina.kyodonews.net/) |
-| yonhap | 韓聯社 | 韓聯社 | 官方名稱已核對 | [韓聯社（南韓聯合通訊社）](https://cb.yna.co.kr/) |
+| yonhap | 韓聯社 | 韓聯社 | 官方名稱已核對 | [韓聯社（南韓聯合通訊社）](https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/) |
 | xinhua | 新華社 | 新華社 | 官方名稱已核對 | [新華社官方新華網；保留通訊社識別，與 xinhuanet 網站來源分開](https://www.news.cn/) |
 | digitimes | digitimes（未登記名稱） | DIGITIMES電子時報 | 官方名稱已核對 | [DIGITIMES 官方常見問題提及 DIGITIMES電子時報](https://www.digitimes.com.tw/svc/faq/faq.asp) |
 | dongtw | dongtw（未登記名稱） | 動網 | 官方名稱已核對 | [Dongtw 官方頻道介紹使用「動網 DONG」](https://www.dailymotion.com/user/Dongnews) |
@@ -321,3 +320,5 @@
 | voicettank | voicettank（未登記名稱） | 思想坦克 | 官方名稱已核對 | [思想坦克｜Voicettank](https://voicettank.org/) |
 
 2026-10-03 使用者指定顯示名稱：`ettoday` 使用「ETtoday 新聞雲」、`gamer` 使用「巴哈姆特 GNN」、`housefun` 使用「好房新聞」；官方品牌名稱仍保留為別名及核對證據。旺報停止排程與列表顯示，保留歷史文章。
+
+2026-10-04：韓聯社改用完整繁體中文入口；DW 改用官方中文首頁。蘋果日報與 overdope 舊網域已不再代表原新聞品牌，撤下連結並保留歷史名稱。詳見 [全媒體來源核對](news-source-references.md#2026-10-04全媒體收錄盤點與國際來源補齊)。

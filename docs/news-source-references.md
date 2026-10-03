@@ -1,8 +1,8 @@
 # Similarweb 新聞來源對照
 
-`app/data/news-source-catalog.json` 以 [來源試算表](https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing) 已匯入快照的「新聞」類別為範圍，並非只收錄 29 家流量基準媒體。202608 的 198 列對應 193 個來源，加上歷史月份獨有的 READr、上下游、緯來新聞及花花日報，共 197 個來源。來源名單與爬蟲實際成功狀態分開保存；列入名單不代表已成功取得文章。
+`app/data/news-source-catalog.json` 以 [來源試算表](https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing) 已匯入快照的「新聞」類別為範圍，並非只收錄 29 家流量基準媒體。202608 保留的 197 列對應 192 個來源，加上歷史月份獨有的 READr、上下游、緯來新聞及花花日報，共 196 個來源；2026-10-04 另補入 6 個國際媒體，合計 202 個來源。來源名單與爬蟲實際成功狀態分開保存；列入名單不代表已成功取得文章。
 
-- `referenceRows` 僅指 202608 工作表列號；198 列各出現一次。
+- `referenceRows` 僅指 202608 工作表列號；197 列各出現一次。
 - `referenceNames` 保留各月份原始名稱與別名；歷史獨有來源的 `referenceRows` 為空。
 - `existing` 代表擴充前的爬蟲 registry 已有同一來源 ID，不代表本次驗證成功。
 - `websiteUrl` 為實際抓取入口，可以是新聞子網域或內容頻道；`websiteEvidence` 保存原表連結或官方核對頁。
@@ -23,7 +23,6 @@
 | 台灣 miin 迷因 | 對應 [Miin 迷音](https://miin.cc/)，名稱拼法依原表保留。 |
 | 獨家報導 | 依[官方聲明](https://www.scooptw.com/disclaimer/)確認 scooptw.com。 |
 | 警政時報 | 依[官方關於頁](https://www.tcpttw.com/aboutus/)確認 tcpttw.com。 |
-| 無界 | 無網址且名稱無法唯一辨識。已有停止營運的同名新聞品牌與無界網路入口，2026-10-03 使用者明確要求略過，保留 `websiteUrl: null` 與原始對照列，不建立爬蟲。 |
 
 馬祖日報、彪網媒、自立晚報、中華鱻傳媒等網站需保留 `www` 主機名稱；裸網域在核對時可能沒有 DNS 記錄。Google 新聞、MSN、LINE TODAY、Miin 等聚合服務須另外辨識文章與入口頁；有 feed 或首頁可開啟不等於完整文章可抓取。
 
@@ -56,3 +55,23 @@
 持續回傳 HTTP 401／403、付費或登入阻擋的來源保留原始來源身分及實際失敗原因，不改用來源不明的鏡像。檢查時包含華爾街日報中文、澎湃、台灣電報、三星傳媒、菱傳媒、美洲台灣日報等；逾時、TLS 或 DNS 失敗與權限阻擋分開處理，不能據此斷言網站已停止營運。正文短、影片摘要、分類頁及歷史文章也不冒充近期完整報導。
 
 馬祖資訊、自立晚報與台灣海外網改由官方新聞列表探索；網站全域顯示的「今天」不能當作文章發表日期。大台灣新聞的地區入口與採訪通告可讀，但核對時新聞地區頁逾時，採訪行程不作為完整報導。Google 新聞、MSN、鄉民晚報等平台即使提供聚合連結，仍需確認原始發布者及完整正文，不能直接把入口卡片摘要存成報導。
+
+
+## 2026-10-04：全媒體收錄盤點與國際來源補齊
+
+此次從完整媒體目錄及資料庫盤點，涵蓋 292 個來源，並非只檢查新聞試算表。290 個已有收錄，其中 273 個已有完整內文，17 個只有標題／摘要或影片資料。Google 新聞與動態網依發現關聯統計，不冒充原發布者。逐媒體數量、設定、入口及檢查時間見 [收錄盤點](media-collection-audit.json)。有文章不等於近期持續發稿，也不等於所有文章都有全文。
+
+| 媒體 | 官方入口與不同網址的判定 | 本次收錄驗證 |
+| --- | --- | --- |
+| 韓聯社 | [繁體中文首頁](https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/)；`cb.yna.co.kr` 轉到此繁體轉換入口，`cn.yna.co.kr` 是簡體版。保留完整路徑。 | HTML 實測並入庫 2 篇全文。 |
+| 新華社 | [news.cn](https://www.news.cn/)；[xinhuanet.com](https://www.xinhuanet.com/) 也是真實官方新華網入口，會連至 news.cn 正文，並非真假網站之別。保留既有新華網與通訊社名稱識別；兩個來源有內容重疊，不代表兩家獨立發稿。 | HTML 實測並入庫 2 篇全文。 |
+| 共同社 | [共同網繁體版](https://tchina.kyodonews.net/)；簡體 `china.kyodonews.net`、英文 `english.kyodonews.net` 是官網互相連結的語言版。官方 RSS 為 `/list/feed/rss4news`。 | RSS 實測並入庫 2 篇全文。 |
+| NHK | [NHK WORLD 中文新聞](https://www3.nhk.or.jp/nhkworld/zh/news/)；頁面透過官方 `/nhkworld/data/zh/news/all.json` 及逐篇 JSON 顯示全文。 | 新增公開 JSON 解析，核對文章 id、路徑及 `public_at` 原始刊登時間，入庫 2 篇全文。 |
+| 法新社 | [AFP 官方機構網站](https://www.afp.com/)與 [AFP Fact Check](https://factcheck.afp.com/) 都是真的。後者是本次可公開抓取的英文查核報導，範圍不等於整條通訊社新聞線。 | 依正文容器及 created 時間戳擷取，排除相關文章日期，入庫 2 篇全文。 |
+| 美聯社 | [AP 官方機構網站](https://www.ap.org/)直接連至 APNews.com；APNews 本次 HTTP 403，改用同一機構 [News Highlights](https://www.ap.org/news-highlights/) 的公開 Elections／Spotlights 新聞報導。排除 Best of AP 採訪成果介紹與圖集。 | 正文限 `.content-container__inner`，排除頁尾、相關服務與圖集說明；入庫 2 篇全文。 |
+
+本次另確認德國之聲 [官方中文入口](https://www.dw.com/zh/)並取代原名稱核對用的單支 YouTube 影片連結。各媒體頁的來源連結改讀完整來源清單，未列入試算表者使用已核對的名稱來源連結，不再限於 29 家流量基準。
+
+兩個無法恢復為原品牌的例外：台灣蘋果日報已停更，2026-10-04 舊網址實測轉至其他內容的 appledaily.com；overdope.com 同日回應文件下載站。已撤下這兩個原網域的公開來源連結，保留歷史名稱及停用狀態，不把新站內容當成原媒體新聞。
+
+有些官網與爬蟲入口不同是既有公開供稿設定：好房網→MyHousing、Cheers→Yahoo、報橘→寰宇新聞網、農傳媒→環境資訊中心、GQ→ROOMIE、美洲台灣日報→銳傳媒、宜蘭新聞網→觀傳媒、三星傳媒→蕃新聞、菱傳媒→民視、台灣網→新浪。這些入口的原發布者限制與逐篇核對證據沿用 [抓取修復紀錄](crawl-restoration.md)，不能將代刊平台網址覆蓋原品牌。ETtoday、關鍵評論網、癮科技、女人迷、T客邦、苦勞網的 FeedBurner feed，以及新聞子網域／靜態 sitemap 主機，也不因主機不同而另建媒體。

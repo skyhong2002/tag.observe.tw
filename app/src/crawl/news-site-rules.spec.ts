@@ -147,6 +147,11 @@ const fixtures = [
     html: `<h1 class="heading_view">地方新聞測試標題</h1><div class="itembox-left"><div class="info info_view_date">2026-10-03</div></div><div class="itembox_intro editor">${paragraph}</div>`,
     published: '2026-10-02T16:00:00.000Z',
   },
+  {
+    url: 'https://factcheck.afp.com/doc.afp.com.C8EL4NQ',
+    html: `<article><li class="date-full-format" data-type="created" data-utc-time="1790272347">Published on September 24, 2026 at 19:52</li><li class="date-full-format" data-type="updated" data-utc-time="1790975952">Updated</li><div class="wrapper-body">${paragraph}</div><div class="date-short-format" data-utc-time="1790975952">Related article</div></article>`,
+    published: '2026-09-24T17:52:27.000Z',
+  },
 ];
 
 describe('verified news site article templates', () => {
@@ -280,4 +285,14 @@ describe('verified news site article templates', () => {
     const article = extractArticle(title + fixtures[5].html.replace(body, '短篇摘要'), fixtures[5].url);
     expect(article.bodyStatus).toBe('short');
   });
+});
+
+it('extracts AP report text without related services or gallery page furniture', () => {
+  const url = 'https://www.ap.org/news-highlights/elections/2026/example-report/';
+  const article = extractArticle(
+    `${title}<article><section class="entry-content"><div class="content-container__inner">${paragraph}</div><aside>Explore related services ${'advertisement '.repeat(30)}</aside></section></article>`,
+    url,
+  );
+  expect(article.body).toBe(body);
+  expect(article.body).not.toContain('Explore related services');
 });

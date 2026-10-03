@@ -1155,6 +1155,16 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].categoryLabel` | string \| null |  |
 | `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
 | `media[].schedule` | string | 爬取頻率；未啟用時為 off |
+| `media[].country` | string | 媒體營運／在地發行版本的國家或地區，不是報導發生地 |
+| `media[].countryCode` | string | 國家或地區代碼；INT 跨國、ZZ 待確認 |
+| `media[].crawler` | object |  |
+| `media[].crawler.methods` | string[] |  |
+| `media[].crawler.transport` | string \| null | HTTP、curl 或瀏覽器工具 |
+| `media[].crawler.body` | string | 正文或標題摘要收錄方式 |
+| `media[].crawler.lastVerifiedMethod` | string \| null | 最近匹配目前入口的成功驗證方式 |
+| `media[].crawler.links` | object[] |  |
+| `media[].crawler.links[].label` | string |  |
+| `media[].crawler.links[].url` | string | GitHub 設定或解析程式連結 |
 | `media[].today` | integer |  |
 | `media[].last24h` | integer |  |
 | `media[].last7d` | integer |  |

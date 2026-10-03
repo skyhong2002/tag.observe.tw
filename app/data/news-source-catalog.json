@@ -3163,6 +3163,90 @@
       "existing": false,
       "websiteEvidence": "https://www.ntdtv.com.tw/",
       "notes": "同名或同集團的不同網域新聞站獨立保留，避免與其他來源混併。"
+    },
+    {
+      "media": "yonhap",
+      "name": "韓聯社",
+      "websiteUrl": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/",
+      "referenceNames": [
+        "韓聯社"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/",
+      "notes": "2026-10-04 依使用者指定補入官方中文新聞來源。",
+      "articlePattern": "/view/ACK\\d+"
+    },
+    {
+      "media": "xinhua",
+      "name": "新華社",
+      "websiteUrl": "https://www.news.cn/",
+      "referenceNames": [
+        "新華社"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.news.cn/",
+      "notes": "2026-10-04 依使用者指定補入官方中文新聞來源。",
+      "articlePattern": "/\\d{8}/[a-f0-9]+/c\\.html"
+    },
+    {
+      "media": "kyodo",
+      "name": "共同社",
+      "websiteUrl": "https://tchina.kyodonews.net/",
+      "referenceNames": [
+        "共同社"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://tchina.kyodonews.net/",
+      "notes": "2026-10-04 全媒體收錄盤點補入官方公開新聞入口。",
+      "articlePattern": "/articles/-/\\d+",
+      "feedUrls": [
+        "https://tchina.kyodonews.net/list/feed/rss4news"
+      ]
+    },
+    {
+      "media": "afp",
+      "name": "法新社",
+      "websiteUrl": "https://factcheck.afp.com/",
+      "referenceNames": [
+        "法新社"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://factcheck.afp.com/",
+      "notes": "2026-10-04 AFP 官方公開英文事實查核報導；不代表完整通訊社新聞線。",
+      "articlePattern": "/doc\\.afp\\.com\\.",
+      "feedUrls": []
+    },
+    {
+      "media": "ap",
+      "name": "美聯社",
+      "websiteUrl": "https://www.ap.org/news-highlights/",
+      "referenceNames": [
+        "美聯社"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.ap.org/",
+      "notes": "2026-10-04 AP 官網直接連結 APNews.com；APNews 本次回應 403，改抓 AP 官方 News Highlights 的 Elections／Spotlights 公開報導，排除 Best of AP 採訪成果介紹。",
+      "articlePattern": "/news-highlights/(?:elections|spotlights)/\\d{4}/(?![^/]*(?:photos|pictures))[^/]+/",
+      "feedUrls": []
+    },
+    {
+      "media": "nhk",
+      "name": "NHK",
+      "websiteUrl": "https://www3.nhk.or.jp/nhkworld/zh/news/",
+      "referenceNames": [
+        "NHK"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www3.nhk.or.jp/nhkworld/zh/news/",
+      "notes": "2026-10-04 全媒體收錄盤點補入官方公開新聞入口。",
+      "articlePattern": "/nhkworld/zh/news/\\d+",
+      "feedUrls": []
     }
   ]
 }

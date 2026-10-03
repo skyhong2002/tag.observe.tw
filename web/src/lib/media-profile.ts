@@ -1,6 +1,9 @@
 import type { MediaKeywords } from '@/components/MediaWordCloud';
+import catalog from '../../../app/data/news-source-catalog.json';
 import baseline from '../../../app/data/traffic-baseline.json';
 import { API_ORIGIN } from './api';
+import { mediaNames } from './media-names.mts';
+import { safeWebsiteUrl } from './media-traffic.mts';
 
 export interface MediaProfile {
   media: string;
@@ -33,4 +36,12 @@ export async function loadMediaProfile(media: string) {
 }
 export const loadMediaKeywords = (media: string, hours: number) =>
   get<MediaKeywords>(`/api/v1/media/${encodeURIComponent(media)}/keywords?hours=${hours}`);
-export const mediaReference = (media: string) => baseline.sources.find((item) => item.media === media);
+export function mediaReference(media: string) {
+  const source = catalog.sources.find((item) => item.media === media);
+  const baselineSource = baseline.sources.find((item) => item.media === media);
+  const websiteUrl =
+    safeWebsiteUrl(source?.websiteUrl) ??
+    safeWebsiteUrl(mediaNames[media]?.sourceUrl) ??
+    safeWebsiteUrl(baselineSource ? `https://${baselineSource.domain}` : null);
+  return websiteUrl ? { websiteUrl, domain: new URL(websiteUrl).hostname } : undefined;
+}

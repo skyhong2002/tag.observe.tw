@@ -1,0 +1,932 @@
+{
+  "reviewedAt": "2026-10-04",
+  "policy": "國家／地區指收錄媒體或在地版本的營運／發行地，不是報導發生地、伺服器位置、語言或股東國籍。台灣在地版本標示台灣；跨國且未公布單一所在地者明示跨國；證據不足者待確認。新增 ID 不自動推定台灣。",
+  "countries": {
+    "TW": "台灣",
+    "GB": "英國",
+    "FR": "法國",
+    "US": "美國",
+    "JP": "日本",
+    "KR": "韓國",
+    "CN": "中國",
+    "DE": "德國",
+    "HK": "香港",
+    "MO": "澳門",
+    "SG": "新加坡",
+    "MY": "馬來西亞",
+    "NL": "荷蘭",
+    "INT": "跨國",
+    "ZZ": "待確認"
+  },
+  "media": {
+    "1111": {
+      "countryCode": "TW"
+    },
+    "ettoday": {
+      "countryCode": "TW"
+    },
+    "setn": {
+      "countryCode": "TW"
+    },
+    "chinatimes": {
+      "countryCode": "TW"
+    },
+    "nownews": {
+      "countryCode": "TW"
+    },
+    "tvbs": {
+      "countryCode": "TW"
+    },
+    "cts": {
+      "countryCode": "TW"
+    },
+    "ttv": {
+      "countryCode": "TW"
+    },
+    "ctee": {
+      "countryCode": "TW"
+    },
+    "newtalk": {
+      "countryCode": "TW"
+    },
+    "tnl": {
+      "countryCode": "TW"
+    },
+    "storm": {
+      "countryCode": "TW"
+    },
+    "ltn": {
+      "countryCode": "TW"
+    },
+    "udn": {
+      "countryCode": "TW"
+    },
+    "upmedia": {
+      "countryCode": "TW"
+    },
+    "mirror": {
+      "countryCode": "TW"
+    },
+    "cmmedia": {
+      "countryCode": "TW"
+    },
+    "rti": {
+      "countryCode": "TW"
+    },
+    "ebc": {
+      "countryCode": "TW"
+    },
+    "rfi": {
+      "countryCode": "FR"
+    },
+    "bbc": {
+      "countryCode": "GB"
+    },
+    "nikkei": {
+      "countryCode": "JP"
+    },
+    "taro": {
+      "countryCode": "TW"
+    },
+    "epochtimes": {
+      "countryCode": "US"
+    },
+    "cna": {
+      "countryCode": "TW"
+    },
+    "apple": {
+      "countryCode": "TW"
+    },
+    "ctwant": {
+      "countryCode": "TW"
+    },
+    "ftv": {
+      "countryCode": "TW"
+    },
+    "nextapple": {
+      "countryCode": "TW"
+    },
+    "cti": {
+      "countryCode": "TW"
+    },
+    "bccnews": {
+      "countryCode": "TW"
+    },
+    "cnews": {
+      "countryCode": "TW"
+    },
+    "ftnn": {
+      "countryCode": "TW"
+    },
+    "taiwandom": {
+      "countryCode": "TW"
+    },
+    "nius": {
+      "countryCode": "TW"
+    },
+    "vogue": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "womany": {
+      "countryCode": "TW"
+    },
+    "babyou": {
+      "countryCode": "TW"
+    },
+    "marieclaire": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "beauty321": {
+      "countryCode": "TW"
+    },
+    "elle": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "femin": {
+      "countryCode": "HK"
+    },
+    "tvbswoman": {
+      "countryCode": "TW"
+    },
+    "bazaar": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "cosmopolitan": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "cool3c": {
+      "countryCode": "TW"
+    },
+    "technews": {
+      "countryCode": "TW"
+    },
+    "soft4fun": {
+      "countryCode": "TW"
+    },
+    "kocpc": {
+      "countryCode": "TW"
+    },
+    "saydigi": {
+      "countryCode": "TW"
+    },
+    "bnext": {
+      "countryCode": "TW"
+    },
+    "ithome": {
+      "countryCode": "TW"
+    },
+    "inside": {
+      "countryCode": "TW"
+    },
+    "techorange": {
+      "countryCode": "TW"
+    },
+    "techbang": {
+      "countryCode": "TW"
+    },
+    "dacota": {
+      "countryCode": "TW"
+    },
+    "applealmond": {
+      "countryCode": "TW"
+    },
+    "mrmad": {
+      "countryCode": "TW"
+    },
+    "newmobilelife": {
+      "countryCode": "HK"
+    },
+    "gamme": {
+      "countryCode": "TW"
+    },
+    "newsmarket": {
+      "countryCode": "TW"
+    },
+    "wyc": {
+      "countryCode": "TW"
+    },
+    "punchline": {
+      "countryCode": "TW"
+    },
+    "pansci": {
+      "countryCode": "TW"
+    },
+    "housefun": {
+      "countryCode": "TW"
+    },
+    "cw": {
+      "countryCode": "TW"
+    },
+    "einfo": {
+      "countryCode": "TW"
+    },
+    "coolloud": {
+      "countryCode": "TW"
+    },
+    "civilmedia": {
+      "countryCode": "TW"
+    },
+    "cheers": {
+      "countryCode": "TW"
+    },
+    "newcongress": {
+      "countryCode": "TW"
+    },
+    "viewpointtaiwan": {
+      "countryCode": "TW"
+    },
+    "buzzorange": {
+      "countryCode": "TW"
+    },
+    "agriharvest": {
+      "countryCode": "TW"
+    },
+    "taisounds": {
+      "countryCode": "TW"
+    },
+    "pourquoi": {
+      "countryCode": "TW"
+    },
+    "foodnext": {
+      "countryCode": "TW"
+    },
+    "gvm": {
+      "countryCode": "TW"
+    },
+    "cnyes": {
+      "countryCode": "TW"
+    },
+    "businesstoday": {
+      "countryCode": "TW"
+    },
+    "ustv": {
+      "countryCode": "TW"
+    },
+    "daman": {
+      "countryCode": "TW"
+    },
+    "nom": {
+      "countryCode": "TW"
+    },
+    "overdope": {
+      "countryCode": "TW"
+    },
+    "ldope": {
+      "countryCode": "TW"
+    },
+    "eld": {
+      "countryCode": "TW"
+    },
+    "gq": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "flipermag": {
+      "countryCode": "TW"
+    },
+    "livio": {
+      "countryCode": "TW"
+    },
+    "hypebeast": {
+      "countryCode": "HK"
+    },
+    "shoppingdesign": {
+      "countryCode": "TW"
+    },
+    "everydayobject": {
+      "countryCode": "TW"
+    },
+    "asiatatler": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "hypesphere": {
+      "countryCode": "TW"
+    },
+    "agentm": {
+      "countryCode": "TW"
+    },
+    "dramaqueen": {
+      "countryCode": "TW"
+    },
+    "top1health": {
+      "countryCode": "TW"
+    },
+    "tvbshealth": {
+      "countryCode": "TW"
+    },
+    "edh": {
+      "countryCode": "TW"
+    },
+    "commonhealth": {
+      "countryCode": "TW"
+    },
+    "heho": {
+      "countryCode": "TW"
+    },
+    "healthnews": {
+      "countryCode": "TW"
+    },
+    "sportsv": {
+      "countryCode": "TW"
+    },
+    "pantravel": {
+      "countryCode": "TW"
+    },
+    "supertaste": {
+      "countryCode": "TW"
+    },
+    "ngm": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "reporter": {
+      "countryCode": "TW"
+    },
+    "people": {
+      "countryCode": "TW"
+    },
+    "yahoo": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "bw": {
+      "countryCode": "TW"
+    },
+    "theinitium": {
+      "countryCode": "SG",
+      "evidenceUrl": "https://sg.linkedin.com/company/initium-media",
+      "note": "官方機構頁所在地新加坡；香港創立。"
+    },
+    "hbr": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "eventsinfocus": {
+      "countryCode": "TW"
+    },
+    "pts": {
+      "countryCode": "TW"
+    },
+    "mplus": {
+      "countryCode": "TW"
+    },
+    "gamebase": {
+      "countryCode": "TW"
+    },
+    "4gamers": {
+      "countryCode": "TW"
+    },
+    "gamer": {
+      "countryCode": "TW"
+    },
+    "want": {
+      "countryCode": "TW"
+    },
+    "ctitv": {
+      "countryCode": "TW"
+    },
+    "ctv": {
+      "countryCode": "TW"
+    },
+    "taipeitimes": {
+      "countryCode": "TW"
+    },
+    "udnmoney": {
+      "countryCode": "TW"
+    },
+    "moneydj": {
+      "countryCode": "TW"
+    },
+    "peopo": {
+      "countryCode": "TW"
+    },
+    "mamaclub": {
+      "countryCode": "TW"
+    },
+    "mirrordaily": {
+      "countryCode": "TW"
+    },
+    "mnews": {
+      "countryCode": "TW"
+    },
+    "knews": {
+      "countryCode": "TW"
+    },
+    "google_news": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "msn": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "hk01": {
+      "countryCode": "HK"
+    },
+    "bbc_global": {
+      "countryCode": "GB"
+    },
+    "oncc": {
+      "countryCode": "HK"
+    },
+    "taiwannet": {
+      "countryCode": "TW"
+    },
+    "soundofhope": {
+      "countryCode": "US"
+    },
+    "tyenews": {
+      "countryCode": "TW"
+    },
+    "dongtaiwang": {
+      "countryCode": "US"
+    },
+    "mdnkids": {
+      "countryCode": "TW"
+    },
+    "hakkanews": {
+      "countryCode": "TW"
+    },
+    "aboluowang": {
+      "countryCode": "US",
+      "evidenceUrl": "https://www.aboluowang.com/about/aboutus/",
+      "note": "官方關於頁自述美國中文新聞網。"
+    },
+    "i_meihua": {
+      "countryCode": "TW"
+    },
+    "pinview": {
+      "countryCode": "TW"
+    },
+    "voachinese": {
+      "countryCode": "US"
+    },
+    "ct": {
+      "countryCode": "TW"
+    },
+    "guancha": {
+      "countryCode": "CN"
+    },
+    "lai_media": {
+      "countryCode": "TW"
+    },
+    "thehubnews": {
+      "countryCode": "TW"
+    },
+    "ydn": {
+      "countryCode": "TW"
+    },
+    "thepaper": {
+      "countryCode": "CN"
+    },
+    "winnews": {
+      "countryCode": "TW"
+    },
+    "secretchina": {
+      "countryCode": "US"
+    },
+    "hsnews": {
+      "countryCode": "TW"
+    },
+    "watchmedia01": {
+      "countryCode": "TW"
+    },
+    "bannedbook": {
+      "countryCode": "INT",
+      "evidenceUrl": "https://www.bannedbook.org/bnews/zh-tw/aboutus/",
+      "note": "官方明示全球匿名志願團隊，未公布單一所在地。"
+    },
+    "singular": {
+      "countryCode": "TW"
+    },
+    "lihpao": {
+      "countryCode": "TW"
+    },
+    "hakkatv": {
+      "countryCode": "TW"
+    },
+    "grinews": {
+      "countryCode": "TW"
+    },
+    "newspie": {
+      "countryCode": "TW"
+    },
+    "daai": {
+      "countryCode": "TW"
+    },
+    "nvns": {
+      "countryCode": "TW"
+    },
+    "bigmedia": {
+      "countryCode": "TW"
+    },
+    "i_media": {
+      "countryCode": "TW"
+    },
+    "policenews": {
+      "countryCode": "TW"
+    },
+    "news886": {
+      "countryCode": "TW"
+    },
+    "anntw": {
+      "countryCode": "TW"
+    },
+    "yesmedia": {
+      "countryCode": "TW"
+    },
+    "miin": {
+      "countryCode": "TW"
+    },
+    "tcnews": {
+      "countryCode": "TW"
+    },
+    "new_report": {
+      "countryCode": "TW"
+    },
+    "owlting": {
+      "countryCode": "TW"
+    },
+    "innews": {
+      "countryCode": "TW"
+    },
+    "newstaiwan": {
+      "countryCode": "TW"
+    },
+    "tnews": {
+      "countryCode": "TW"
+    },
+    "taiwandaily": {
+      "countryCode": "US"
+    },
+    "enn": {
+      "countryCode": "TW"
+    },
+    "kingtop": {
+      "countryCode": "TW"
+    },
+    "greatnews": {
+      "countryCode": "TW"
+    },
+    "kamalan_news": {
+      "countryCode": "TW"
+    },
+    "fclnews": {
+      "countryCode": "TW"
+    },
+    "globalnewstv": {
+      "countryCode": "TW"
+    },
+    "pronews": {
+      "countryCode": "TW"
+    },
+    "bo6s": {
+      "countryCode": "TW"
+    },
+    "taidaily": {
+      "countryCode": "TW"
+    },
+    "travelnews": {
+      "countryCode": "TW"
+    },
+    "focusnews": {
+      "countryCode": "TW"
+    },
+    "macaodaily": {
+      "countryCode": "MO"
+    },
+    "taiwanus": {
+      "countryCode": "ZZ",
+      "evidenceUrl": "https://www.taiwanus.net/",
+      "note": "海外媒體，尚未取得可核對的單一營運地證據。"
+    },
+    "rise_mediacorp": {
+      "countryCode": "TW"
+    },
+    "pnn": {
+      "countryCode": "TW"
+    },
+    "st_media": {
+      "countryCode": "TW"
+    },
+    "nchn": {
+      "countryCode": "TW"
+    },
+    "homeplus": {
+      "countryCode": "TW"
+    },
+    "j_media": {
+      "countryCode": "TW"
+    },
+    "taiwanpost": {
+      "countryCode": "TW"
+    },
+    "right_media": {
+      "countryCode": "TW"
+    },
+    "tristarnews": {
+      "countryCode": "TW"
+    },
+    "firenews": {
+      "countryCode": "TW"
+    },
+    "lifenews": {
+      "countryCode": "TW"
+    },
+    "news586": {
+      "countryCode": "TW"
+    },
+    "ccsn0405": {
+      "countryCode": "TW"
+    },
+    "chengpou": {
+      "countryCode": "MO"
+    },
+    "yaya_news": {
+      "countryCode": "TW"
+    },
+    "taipeipost": {
+      "countryCode": "TW"
+    },
+    "hiilan": {
+      "countryCode": "TW"
+    },
+    "tpnews": {
+      "countryCode": "TW"
+    },
+    "twline365": {
+      "countryCode": "TW"
+    },
+    "rwnews": {
+      "countryCode": "TW"
+    },
+    "news_yahoo": {
+      "countryCode": "JP"
+    },
+    "yam": {
+      "countryCode": "TW"
+    },
+    "cnn": {
+      "countryCode": "US"
+    },
+    "stheadline": {
+      "countryCode": "HK"
+    },
+    "cn_nytimes": {
+      "countryCode": "US"
+    },
+    "cdn_news": {
+      "countryCode": "TW"
+    },
+    "ifeng": {
+      "countryCode": "CN"
+    },
+    "taiwannews": {
+      "countryCode": "TW"
+    },
+    "news_pchome": {
+      "countryCode": "TW"
+    },
+    "reuters": {
+      "countryCode": "GB"
+    },
+    "news_qq": {
+      "countryCode": "CN"
+    },
+    "ntdtv": {
+      "countryCode": "US"
+    },
+    "cdns": {
+      "countryCode": "TW"
+    },
+    "cctv": {
+      "countryCode": "CN"
+    },
+    "dw": {
+      "countryCode": "DE"
+    },
+    "focustaiwan": {
+      "countryCode": "TW"
+    },
+    "cn_wsj": {
+      "countryCode": "US"
+    },
+    "life": {
+      "countryCode": "TW"
+    },
+    "merit_times": {
+      "countryCode": "TW"
+    },
+    "scmp": {
+      "countryCode": "HK"
+    },
+    "nexttv": {
+      "countryCode": "TW"
+    },
+    "taiwanhot": {
+      "countryCode": "TW"
+    },
+    "fountmedia": {
+      "countryCode": "TW"
+    },
+    "matsu_idv": {
+      "countryCode": "TW"
+    },
+    "worldjournal": {
+      "countryCode": "US"
+    },
+    "today_line_me": {
+      "countryCode": "TW",
+      "note": "依本站收錄的台灣版／在地服務標示，不代表國際母公司總部。"
+    },
+    "zaobao": {
+      "countryCode": "SG"
+    },
+    "mingpao": {
+      "countryCode": "HK"
+    },
+    "leho": {
+      "countryCode": "TW"
+    },
+    "matsu_news": {
+      "countryCode": "TW"
+    },
+    "news_sina": {
+      "countryCode": "CN"
+    },
+    "taiwan": {
+      "countryCode": "CN"
+    },
+    "sunmedia": {
+      "countryCode": "TW"
+    },
+    "eracom": {
+      "countryCode": "TW"
+    },
+    "sinchew": {
+      "countryCode": "MY"
+    },
+    "taiwanplus": {
+      "countryCode": "TW"
+    },
+    "vigormedia": {
+      "countryCode": "TW"
+    },
+    "zmedia": {
+      "countryCode": "TW"
+    },
+    "taiwanenews": {
+      "countryCode": "ZZ",
+      "evidenceUrl": "https://taiwanenews.com/",
+      "note": "尚未取得可核對的營運地證據；不依名稱猜測。"
+    },
+    "ksnews": {
+      "countryCode": "TW"
+    },
+    "wenweipo": {
+      "countryCode": "HK"
+    },
+    "more_news": {
+      "countryCode": "TW"
+    },
+    "news_163": {
+      "countryCode": "CN"
+    },
+    "contentplatform_info": {
+      "countryCode": "TW"
+    },
+    "xinhuanet": {
+      "countryCode": "CN"
+    },
+    "hk_crntt": {
+      "countryCode": "HK"
+    },
+    "tkww": {
+      "countryCode": "HK"
+    },
+    "rfa": {
+      "countryCode": "US"
+    },
+    "huanqiu": {
+      "countryCode": "CN"
+    },
+    "enews": {
+      "countryCode": "TW"
+    },
+    "jdanews": {
+      "countryCode": "TW"
+    },
+    "my_formosa": {
+      "countryCode": "TW"
+    },
+    "biao_news": {
+      "countryCode": "TW"
+    },
+    "newday": {
+      "countryCode": "TW"
+    },
+    "lifetoutiao_news": {
+      "countryCode": "TW"
+    },
+    "yimedia": {
+      "countryCode": "TW"
+    },
+    "idn": {
+      "countryCode": "TW"
+    },
+    "mknews": {
+      "countryCode": "TW"
+    },
+    "17news": {
+      "countryCode": "TW"
+    },
+    "peponews": {
+      "countryCode": "TW"
+    },
+    "ltvnews": {
+      "countryCode": "TW"
+    },
+    "i_news": {
+      "countryCode": "TW"
+    },
+    "iw_times": {
+      "countryCode": "TW"
+    },
+    "ammtw": {
+      "countryCode": "TW"
+    },
+    "tmnu": {
+      "countryCode": "TW"
+    },
+    "readr": {
+      "countryCode": "TW"
+    },
+    "videoland": {
+      "countryCode": "TW"
+    },
+    "funnews": {
+      "countryCode": "TW"
+    },
+    "people_cn": {
+      "countryCode": "CN"
+    },
+    "ntdtv_tw": {
+      "countryCode": "TW"
+    },
+    "afp": {
+      "countryCode": "FR"
+    },
+    "ap": {
+      "countryCode": "US"
+    },
+    "nhk": {
+      "countryCode": "JP"
+    },
+    "kyodo": {
+      "countryCode": "JP"
+    },
+    "yonhap": {
+      "countryCode": "KR"
+    },
+    "xinhua": {
+      "countryCode": "CN"
+    },
+    "digitimes": {
+      "countryCode": "TW"
+    },
+    "dongtw": {
+      "countryCode": "TW"
+    },
+    "gv": {
+      "countryCode": "NL",
+      "evidenceUrl": "https://globalvoices.org/about/",
+      "note": "官方關於頁列荷蘭基金會登記與地址；編輯團隊跨國。"
+    },
+    "kairos": {
+      "countryCode": "TW"
+    },
+    "musou": {
+      "countryCode": "TW"
+    },
+    "tsna": {
+      "countryCode": "TW"
+    },
+    "voicettank": {
+      "countryCode": "TW"
+    },
+    "techcrunch": {
+      "countryCode": "US"
+    },
+    "adaymag": {
+      "countryCode": "HK",
+      "evidenceUrl": "https://www.adaymag.com/about-us",
+      "note": "官方關於頁明示香港成立。"
+    }
+  }
+}
