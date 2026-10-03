@@ -1,0 +1,10 @@
+[Unit]
+Description=Resume the news crawler restoration T3 thread when idle
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Projects/tag.analysis.tw
+Environment=NEWS_WATCH_CONFIG=%h/Projects/tag.analysis.tw/artifacts/news-thread-watchdog/config.json
+ExecStart=%h/.local/bin/node tools/watch-news-thread.mjs
+TimeoutStartSec=45
+UMask=0077
