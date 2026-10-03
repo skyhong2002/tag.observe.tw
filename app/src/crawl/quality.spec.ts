@@ -93,6 +93,32 @@ describe('title suffixes', () => {
 });
 
 describe('listing include filter', () => {
+  it('follows UDN news sitemap pages with dates and tags, without the 300-item archive cap', async () => {
+    const now = new Date().toISOString();
+    const item = (id: number) =>
+      `<url><loc>https://udn.com/news/story/6656/${id}</loc><news:news><news:title>聯合新聞標題 ${id}</news:title><news:publication_date>${now}</news:publication_date><news:keywords>預算,台電</news:keywords></news:news></url>`;
+    const pages: Record<string, string> = {
+      'https://udn.com/sitemap/gnews/2':
+        '<sitemapindex><sitemap><loc>https://udn.com/sitemap/gnews_contents/2/1</loc></sitemap><sitemap><loc>https://udn.com/sitemap/gnews_contents/2/2</loc></sitemap></sitemapindex>',
+      'https://udn.com/sitemap/gnews/1015':
+        '<sitemapindex><sitemap><loc>https://udn.com/sitemap/gnews_contents/1015/1</loc></sitemap></sitemapindex>',
+      'https://udn.com/sitemap/gnews_contents/2/1': `<urlset>${Array.from({ length: 301 }, (_, i) => item(i + 1)).join('')}</urlset>`,
+      'https://udn.com/sitemap/gnews_contents/2/2': `<urlset>${item(302)}</urlset>`,
+      'https://udn.com/sitemap/gnews_contents/1015/1': `<urlset>${item(303)}</urlset>`,
+    };
+    const fetch = async (url: string): Promise<FetchResult> => {
+      if (!pages[url]) throw Error(`Unexpected UDN listing: ${url}`);
+      return { url, status: 200, body: pages[url], contentType: 'application/xml', ms: 1 };
+    };
+    const { items, errors } = await listSource(spec('udn'), fetch);
+    expect(errors).toEqual([]);
+    expect(items).toHaveLength(303);
+    expect(items.find((i) => i.url.endsWith('/302'))).toMatchObject({
+      title: '聯合新聞標題 302',
+      publishedAt: new Date(now),
+      tags: ['預算', '台電'],
+    });
+  });
   it('keeps only article URLs from a plain sitemap', async () => {
     const now = new Date().toISOString();
     const body = `<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[

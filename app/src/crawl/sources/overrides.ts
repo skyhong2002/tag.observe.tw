@@ -50,7 +50,15 @@ export const overrides: Record<string, SourceOverride> = {
   upmedia: { list: { urls: [{ cat: 'news', url: 'https://www.upmedia.mg/sitemapnews' }] } },
   epochtimes: { list: { urls: [{ cat: 'news', url: 'https://www.epochtimes.com/feed' }] } },
   udn: {
-    list: { urls: [{ cat: 'news', url: 'https://udn.com/sitemapxml/news/mapindex.xml' }] },
+    // Weekly archive sitemaps give every article the same lastmod. The plain
+    // sitemap cap kept returning the same 300 old stories. Google News maps
+    // include actual publication dates, headlines and tags across all pages.
+    list: {
+      urls: [
+        { cat: 'news', url: 'https://udn.com/sitemap/gnews/2' },
+        { cat: 'magazine', url: 'https://udn.com/sitemap/gnews/1015' },
+      ],
+    },
     titleSuffix: String.raw`\s*\|\s*聯合新聞網`,
   },
   // Second batch probed 2026-09-28 (sitemap indexes: newest 4 children followed).
