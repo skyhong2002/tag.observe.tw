@@ -465,7 +465,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <div className={styles.columns}>
           <aside className={styles.left} aria-label="關鍵字排行與記者">
             <div className={styles.sectionHeading}>
-              <h2>議題升溫榜</h2>
+              <h2>關鍵字升溫榜</h2>
               <Link href="/ranking/?category=news">
                 完整排行 <Arrow />
               </Link>
