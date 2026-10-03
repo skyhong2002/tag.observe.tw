@@ -22,7 +22,9 @@ import {
   mediaVisibleLabels,
 } from '@/lib/media-graph.mts';
 import { graphMediaIcon, localMediaIcon } from '@/lib/media-icons';
-import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
+import type { SimilarityEdge, SimilarityNode } from '@/lib/similarity';
+
+import type { OriginData } from '@/lib/story-origins.mts';
 
 echarts.use([GraphChart, TooltipComponent, CanvasRenderer, LabelLayout]);
 
@@ -51,7 +53,7 @@ export default function SimilarityGraph({
   edges: SimilarityEdge[];
   layoutEdges: SimilarityEdge[];
   camps: MediaCamps;
-  data: SimilarityData;
+  data: OriginData;
   showAll: boolean;
   onSelect: (selection: GraphSelection) => void;
   selection: GraphSelection;
@@ -164,25 +166,19 @@ export default function SimilarityGraph({
         .filter((edge) => {
           const a = points.get(edge.source)!,
             b = points.get(edge.target)!;
-          return graphEdgeHasRoom(
-            Math.hypot(a.x - b.x, a.y - b.y),
-            zoom,
-            sizes.get(edge.source)!,
-            sizes.get(edge.target)!,
-            edge.kind === 'citation' ? 14 : 0,
-          );
+          return graphEdgeHasRoom(Math.hypot(a.x - b.x, a.y - b.y), zoom, sizes.get(edge.source)!, sizes.get(edge.target)!, 14);
         })
         .map((e) => ({
           source: e.source,
           target: e.target,
           relationship: e,
-          symbol: e.kind === 'citation' ? ['circle', 'arrow'] : ['circle', 'circle'],
-          symbolSize: [0, e.kind === 'citation' ? 14 : 0],
+          symbol: ['circle', 'arrow'],
+          symbolSize: [0, 14],
           lineStyle: {
             width: edgeWeightWidth(e.count, maxWeight),
             color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
-            type: e.kind === 'citation' ? 'dashed' : 'solid',
-            opacity: focused ? (highlightedRelationship(e, focused) ? 0.95 : 0.035) : e.kind === 'citation' ? 0.5 : 0.26,
+            type: 'solid',
+            opacity: focused ? (highlightedRelationship(e, focused) ? 0.95 : 0.035) : 0.5,
             curveness: e.kind === 'citation' ? 0.1 : -0.05,
           },
         }));

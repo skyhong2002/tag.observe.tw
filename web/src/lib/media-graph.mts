@@ -1,6 +1,8 @@
-import type { SimilarityData, SimilarityEdge, SimilarityNode } from '../../../app/src/similarity/types.ts';
+import type { SimilarityEdge, SimilarityNode } from '../../../app/src/similarity/types.ts';
 
-export function nodeArticleCounts(data: Pick<SimilarityData, 'citations' | 'pairs'>) {
+import type { OriginData } from './story-origins.mts';
+
+export function nodeArticleCounts(data: Pick<OriginData, 'citations' | 'pairs' | 'origins'>) {
   const counts = new Map<string, { outgoing: Set<number>; incoming: Set<number>; similar: Set<number> }>();
   const get = (id: string) => {
     if (!counts.has(id)) counts.set(id, { outgoing: new Set(), incoming: new Set(), similar: new Set() });
@@ -10,10 +12,16 @@ export function nodeArticleCounts(data: Pick<SimilarityData, 'citations' | 'pair
     get(article.media).outgoing.add(article.id);
     get(source.media).incoming.add(article.id);
   }
-  for (const { a, b } of data.pairs) {
-    get(a.media).similar.add(a.id);
-    get(b.media).similar.add(b.id);
-  }
+  if (data.origins)
+    for (const { article, source } of data.origins) {
+      get(article.media).similar.add(article.id);
+      get(source.media).similar.add(source.id);
+    }
+  else
+    for (const { a, b } of data.pairs) {
+      get(a.media).similar.add(a.id);
+      get(b.media).similar.add(b.id);
+    }
   return new Map(
     [...counts].map(([id, count]) => [
       id,

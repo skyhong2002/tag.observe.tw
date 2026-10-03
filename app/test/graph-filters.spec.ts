@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { filterGraphMedia, type GraphFilters, graphEvidenceScope } from '../../web/src/lib/graph-filters.mts';
 import { createGraphTooltip } from '../../web/src/lib/graph-tooltip.mts';
 import { mediaGraphPositions } from '../../web/src/lib/media-graph.mts';
+import { withStoryOrigins } from '../../web/src/lib/story-origins.mts';
 import type { SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
 
 const node = (id: string, articles: number): SimilarityNode => ({
@@ -94,20 +95,22 @@ describe('filtered evidence and hover summaries', () => {
     expect(data.citations).toHaveLength(1);
   });
   it('shows citation direction, relationship volume and escaped article titles', () => {
-    const tooltip = createGraphTooltip(data, nodes, camps);
+    const view = withStoryOrigins(data);
+    const tooltip = createGraphTooltip(view, nodes, camps);
     const citation = tooltip({ edge: edges[0] }, edges);
     expect(citation).toContain('large → blue');
     expect(citation).toContain('2 篇文章明示引用');
     expect(citation).toContain('&lt;script&gt;新聞&lt;/script&gt;');
     expect(citation).not.toContain('<script>');
-    const similar = tooltip({ edge: edges[1] }, edges);
-    expect(similar).toContain('large ↔ green');
+    const similar = tooltip({ edge: view.edges.find((edge) => edge.kind === 'similarity')! }, view.edges);
+    expect(similar).toContain('green → large');
     expect(similar).toContain('95.0%');
   });
   it('shows scoped counts for media and explains an outlet with no remaining links', () => {
-    const tooltip = createGraphTooltip(data, nodes, camps);
+    const view = withStoryOrigins(data);
+    const tooltip = createGraphTooltip(view, nodes, camps);
     expect(tooltip({ node: 'large' }, edges)).toContain('引用 1 篇');
-    expect(tooltip({ node: 'large' }, edges)).toContain('內文相近 1 篇');
+    expect(tooltip({ node: 'large' }, edges)).toContain('同組報導 1 篇');
     expect(tooltip({ node: 'green' }, edges)).toContain('綠營傾向');
     const isolated = createGraphTooltip(data, filter({ camp: 'blue' }).nodes, camps)({ node: 'blue' }, []);
     expect(isolated).toContain('目前篩選與關係模式下沒有連線');

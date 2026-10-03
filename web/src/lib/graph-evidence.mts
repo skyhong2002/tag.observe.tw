@@ -1,9 +1,12 @@
 import type { SimilarityData, SimilarityEdge } from '../../../app/src/similarity/types.ts';
 
+import type { OriginData, StoryOrigin } from './story-origins.mts';
+
 export type GraphSelection = { node: string } | { edge: SimilarityEdge } | null;
 export type RelationshipMode = 'all' | 'similarity' | 'citation';
 export type CitationDirection = 'all' | 'outgoing' | 'incoming';
 export type EvidenceItem =
+  | { kind: 'origin'; key: string; publishedAt: string; origin: StoryOrigin }
   | { kind: 'citation'; key: string; publishedAt: string; citation: SimilarityData['citations'][number] }
   | { kind: 'similarity'; key: string; publishedAt: string; pair: SimilarityData['pairs'][number] };
 
@@ -20,7 +23,7 @@ export function highlightedRelationship(edge: SimilarityEdge, selection: GraphSe
 
 /** Browse the complete evidence by default; selection narrows it without changing the graph layout. */
 export function graphEvidence(
-  data: Pick<SimilarityData, 'pairs' | 'citations'>,
+  data: Pick<OriginData, 'pairs' | 'citations' | 'origins'>,
   selection: GraphSelection,
   mode: RelationshipMode,
   query: string,
@@ -47,22 +50,49 @@ export function graphEvidence(
     }
   }
   if (mode !== 'citation' && (!selection || 'node' in selection || selection.edge.kind === 'similarity')) {
-    for (const pair of data.pairs) {
-      const ids = [pair.a.media, pair.b.media];
-      if (
-        selection &&
-        ('node' in selection ? !ids.includes(selection.node) : !ids.includes(selection.edge.source) || !ids.includes(selection.edge.target))
-      )
-        continue;
-      if (!matches(pair.a.title, pair.b.title, pair.a.mediaTitle, pair.b.mediaTitle, ...pair.a.authors, ...pair.b.authors, pair.evidence))
-        continue;
-      items.push({
-        kind: 'similarity',
-        key: `similarity:${pair.id}`,
-        publishedAt: pair.a.publishedAt > pair.b.publishedAt ? pair.a.publishedAt : pair.b.publishedAt,
-        pair,
-      });
-    }
+    if (data.origins)
+      for (const origin of data.origins) {
+        const { article, source } = origin;
+        if (
+          selection &&
+          ('node' in selection
+            ? article.media !== selection.node && source.media !== selection.node
+            : article.media !== selection.edge.source || source.media !== selection.edge.target)
+        )
+          continue;
+        if (
+          !matches(
+            article.title,
+            source.title,
+            article.mediaTitle,
+            source.mediaTitle,
+            ...article.authors,
+            ...source.authors,
+            ...origin.group.pairs.map((pair) => pair.evidence),
+          )
+        )
+          continue;
+        items.push({ kind: 'origin', key: `origin:${origin.id}`, publishedAt: article.publishedAt, origin });
+      }
+    else
+      for (const pair of data.pairs) {
+        const ids = [pair.a.media, pair.b.media];
+        if (
+          selection &&
+          ('node' in selection
+            ? !ids.includes(selection.node)
+            : !ids.includes(selection.edge.source) || !ids.includes(selection.edge.target))
+        )
+          continue;
+        if (!matches(pair.a.title, pair.b.title, pair.a.mediaTitle, pair.b.mediaTitle, ...pair.a.authors, ...pair.b.authors, pair.evidence))
+          continue;
+        items.push({
+          kind: 'similarity',
+          key: `similarity:${pair.id}`,
+          publishedAt: pair.a.publishedAt > pair.b.publishedAt ? pair.a.publishedAt : pair.b.publishedAt,
+          pair,
+        });
+      }
   }
   return items.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.key.localeCompare(b.key));
 }

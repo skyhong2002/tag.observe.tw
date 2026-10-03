@@ -4,12 +4,11 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
-import SimilarityTrace from '@/components/SimilarityTrace';
 import { type CitationDirection, type GraphSelection, graphEvidence, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
-import type { SimilarityArticle, SimilarityData, SimilarityPair } from '@/lib/similarity';
-import { buildSimilarityTraceIndex, chronologySummary, pairChronology } from '@/lib/similarity-trace.mts';
+import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
+import { type StoryOrigin, withStoryOrigins } from '@/lib/story-origins.mts';
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
   ssr: false,
@@ -25,7 +24,7 @@ const taipei = (iso: string) => {
   return `${date.getUTCFullYear()}/${two(date.getUTCMonth() + 1)}/${two(date.getUTCDate())} ${two(date.getUTCHours())}:${two(date.getUTCMinutes())}`;
 };
 
-function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier?: boolean }) {
+function ArticleCard({ article, label }: { article: SimilarityArticle; label?: string }) {
   return (
     <div className="min-w-0 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-950/60">
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
@@ -35,9 +34,7 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
         <span className="text-zinc-500">
           {article.country} · {article.countryCode}
         </span>
-        {earlier && (
-          <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">較早刊登</span>
-        )}
+        {label && <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{label}</span>}
       </div>
       <h3 className="text-sm font-medium leading-6">
         <Link href={`/article/${article.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
@@ -47,7 +44,10 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
       <p className="mt-3 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
         署名：{article.authors.length ? article.authors.join('、') : '未取得'}
         <br />
-        <time dateTime={article.publishedAt}>{taipei(article.publishedAt)}</time>（台北） · 正規化 {number(article.bodyLength)} 字元
+        <time dateTime={article.publishedAt}>
+          {Number.isFinite(Date.parse(article.publishedAt)) ? taipei(article.publishedAt) : '刊登時間未取得'}
+        </time>
+        （台北） · 正規化 {number(article.bodyLength)} 字元
       </p>
       {article.attributions.length > 0 && (
         <p className="mt-2 text-xs leading-5 text-violet-700 dark:text-violet-400">
@@ -66,36 +66,87 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
   );
 }
 
-function SimilarityEvidence({ pair, index }: { pair: SimilarityPair; index: ReturnType<typeof buildSimilarityTraceIndex> }) {
-  const order = pairChronology(pair);
-  const [tracing, setTracing] = useState(false);
+function OriginEvidence({ origin }: { origin: StoryOrigin }) {
+  const { article, source, group, directPair } = origin;
+  const [showGroup, setShowGroup] = useState(false);
+  const [showPairs, setShowPairs] = useState(false);
   return (
-    <article className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+    <article
+      className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+      data-testid="story-origin"
+      data-source-id={source.id}
+      data-article-id={article.id}
+    >
       <p className="text-xs font-medium text-brand-700 dark:text-brand-400">
-        {pair.kind === 'identical' ? '內文相同' : '高度相似'} · {(pair.score * 100).toFixed(1)}%
+        相似新聞來源 · {article.mediaTitle} → {source.mediaTitle}
       </p>
-      <p className="text-xs leading-6 text-zinc-500">{chronologySummary(pair)}</p>
-      <ArticleCard article={order.status === 'ordered' ? order.earlier : pair.a} earlier={order.status === 'ordered'} />
-      <ArticleCard article={order.status === 'ordered' ? order.later : pair.b} />
-      <details className="text-xs">
-        <summary className="cursor-pointer py-2">查看共同段落</summary>
-        <p className="break-all leading-6 text-zinc-500">{pair.evidence}</p>
+      <p className="text-xs leading-6 text-zinc-500">同組 {group.articles.length} 篇新聞，統一連回最早刊登的這篇來源。</p>
+      {group.tiedFirst > 1 && (
+        <p className="text-xs text-zinc-500">有 {group.tiedFirst} 篇同時最早刊登；依固定規則選定此篇作為共同來源。</p>
+      )}
+      <ArticleCard article={source} label="來源 · 同組最早刊登" />
+      <ArticleCard article={article} label="同組報導 → 上方來源" />
+      {directPair ? (
+        <details className="text-xs">
+          <summary className="cursor-pointer py-2">與來源直接比對 {(directPair.score * 100).toFixed(1)}% · 查看共同段落</summary>
+          <p className="break-words leading-6 text-zinc-500">{directPair.evidence}</p>
+        </details>
+      ) : (
+        <p className="text-xs leading-6 text-zinc-500">由相似配對歸入同組，直接連回共同來源；這兩篇沒有直接比對分數。</p>
+      )}
+      <details className="text-xs" onToggle={(event) => setShowGroup(event.currentTarget.open)}>
+        <summary className="cursor-pointer py-2 font-medium text-brand-700 dark:text-brand-400">
+          查看同組全部 {group.articles.length} 篇新聞
+        </summary>
+        {showGroup && (
+          <div className="space-y-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
+            <p className="text-zinc-500">完整分組包含未顯示在圖上的媒體；其他報導的箭頭都指向 {source.mediaTitle}。</p>
+            <ol className="max-h-80 space-y-3 overflow-y-auto">
+              {group.articles.map((member) => (
+                <li key={member.id} className="space-y-1 border-b border-zinc-200 pb-3 last:border-0 dark:border-zinc-800">
+                  <p className="font-medium">
+                    {member.id === source.id ? `來源：${source.mediaTitle}` : `${member.mediaTitle} → ${source.mediaTitle}`}
+                  </p>
+                  <Link href={`/article/${member.id}/`} className={linkStyle}>
+                    {member.title}
+                  </Link>
+                  <p className="text-zinc-500">
+                    {Number.isFinite(Date.parse(member.publishedAt)) ? `${taipei(member.publishedAt)}（台北）` : '刊登時間未取得'}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
       </details>
-      <button
-        type="button"
-        aria-expanded={tracing}
-        onClick={() => setTracing(!tracing)}
-        className="rounded-lg border border-orange-300 px-3 py-2 text-xs text-brand-700 dark:text-brand-400"
-      >
-        {tracing ? '收起來源追查' : '追查較早的相似報導'}
-      </button>
-      {tracing && <SimilarityTrace pair={pair} index={index} />}
+      <details className="text-xs" onToggle={(event) => setShowPairs(event.currentTarget.open)}>
+        <summary className="cursor-pointer py-2">查看分組依據 · {group.pairs.length} 組相似配對</summary>
+        {showPairs && (
+          <div className="max-h-80 space-y-4 overflow-y-auto rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
+            {group.pairs.map((pair) => (
+              <div key={pair.id} className="space-y-1">
+                <p>
+                  <Link href={`/article/${pair.a.id}/`} className={linkStyle}>
+                    {pair.a.mediaTitle}
+                  </Link>{' '}
+                  ↔{' '}
+                  <Link href={`/article/${pair.b.id}/`} className={linkStyle}>
+                    {pair.b.mediaTitle}
+                  </Link>{' '}
+                  · {(pair.score * 100).toFixed(1)}%
+                </p>
+                <p className="break-words leading-6 text-zinc-500">{pair.evidence}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </details>
     </article>
   );
 }
 
-export default function SimilarityExplorer({ data, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
-  const traceIndex = useMemo(() => buildSimilarityTraceIndex(data.pairs), [data.pairs]);
+export default function SimilarityExplorer({ data: sample, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
+  const data = useMemo(() => withStoryOrigins(sample), [sample]);
   const [filters, setFilters] = useState<GraphFilters>({ limit: 30, camp: 'all', tag: '' });
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
@@ -159,6 +210,10 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     setPage(0);
   };
   const nodes = graph.nodes;
+  const hiddenSources = useMemo(() => {
+    const ids = new Set(graph.nodes.map((node) => node.id));
+    return data.origins.filter((origin) => ids.has(origin.article.media) && !ids.has(origin.source.media)).length;
+  }, [data.origins, graph.nodes]);
   const edges = useMemo(() => graph.edges.filter((e) => mode === 'all' || e.kind === mode), [graph.edges, mode]);
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
   const select = (value: GraphSelection) => {
@@ -184,7 +239,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
       : selection && 'edge' in selection
-        ? `${byId.get(selection.edge.source)?.name} ${selection.edge.kind === 'citation' ? '→' : '↔'} ${byId.get(selection.edge.target)?.name}`
+        ? `${byId.get(selection.edge.source)?.name} → ${byId.get(selection.edge.target)?.name}`
         : '圖上全部媒體';
   const highlightedCount = selection ? edges.filter((edge) => highlightedRelationship(edge, selection)).length : 0;
   const openBrowser = () => browser.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
@@ -306,7 +361,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
           </div>
           <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
             <p>
-              <span className="text-orange-600 dark:text-orange-400">━ 內文相似</span>
+              <span className="text-orange-600 dark:text-orange-400">→ 同組來源</span>
               <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
               <span className="ml-3">
                 {selection
@@ -325,7 +380,8 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
           </div>
         </section>
         <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
-          僅呈現本期已擷取樣本{data.sample.truncated ? `中的最新 ${number(data.sample.limit)} 篇` : ''}；相似不代表引用。
+          僅呈現本期已擷取樣本{data.sample.truncated ? `中的最新 ${number(data.sample.limit)} 篇` : ''}
+          ；橘色箭頭統一指向同組最早刊登的來源。
           {data.sample.pairsTruncated ? `相似配對顯示前 ${number(data.sample.pairLimit ?? 200)} 組。` : ''}
         </p>
       </div>
@@ -526,7 +582,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                     {[
                       [selectedCounts?.outgoing ?? 0, '引用其他媒體'],
                       [selectedCounts?.incoming ?? 0, '被其他媒體引用'],
-                      [selectedCounts?.similar ?? 0, '內文相近'],
+                      [selectedCounts?.similar ?? 0, '同組報導'],
                     ].map(([n, label]) => (
                       <div key={label} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
                         <p className="mb-1 text-xl font-semibold">{n}</p>
@@ -540,6 +596,26 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                     </Link>
                   )}
                 </div>
+              )}
+              <p className="text-xs leading-6 text-zinc-500">
+                相似新聞依配對分組，每組以最早刊登的一篇作為來源；其他報導全部直接指向它。來源依本期已收錄的相似配對與刊登時間指定。
+              </p>
+              {hiddenSources > 0 && (
+                <p className="text-xs leading-6 text-zinc-500">
+                  有 {hiddenSources} 篇報導的來源媒體未顯示，來源仍保持不變。
+                  <button
+                    type="button"
+                    onClick={() => updateFilters({ limit: 0, camp: 'all', tag: '' })}
+                    className={`${linkStyle} ml-2 underline`}
+                  >
+                    顯示全部媒體與來源
+                  </button>
+                </p>
+              )}
+              {data.groups.some((group) => !group.source) && (
+                <p className="text-xs text-zinc-500">
+                  有 {data.groups.filter((group) => !group.source).length} 組完全缺少刊登時間，暫未指定來源。
+                </p>
               )}
               <p role="status" className="text-sm text-zinc-500">
                 {number(evidence.length)} 筆關係證據 · 最新在前
@@ -562,9 +638,9 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                         {item.citation.source.evidence}
                       </blockquote>
                     </article>
-                  ) : (
-                    <SimilarityEvidence key={item.key} pair={item.pair} index={traceIndex} />
-                  ),
+                  ) : item.kind === 'origin' ? (
+                    <OriginEvidence key={item.key} origin={item.origin} />
+                  ) : null,
                 )}
               </div>
               {pageCount > 1 && (
@@ -606,13 +682,15 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 {number(data.sample.pairLimit ?? 200)} 組；引用篇數也僅涵蓋這批樣本。
               </p>
               <p>
-                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源，端點停在
+                圖示大小依各媒體本期納入分析的新聞篇數調整，並非網站流量或總發稿量；僅被引用而未收錄內文的媒體採固定大小。線條粗細依引用文章數或歸源文章數計算，越粗代表關係越多。橘色箭頭由同組報導指向最早刊登文章的媒體；紫色箭頭指向文中明示引用的媒體。端點停在
                 Logo
                 外圍。縮小後沒有足夠空間的短連線暫時隱藏，放大即可查看。下方的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
               <p>
                 預設顯示本期納入分析篇數最多的 30 家媒體，可選前 10／20／50／100 家或全部，再搭配藍綠與媒體 tag
-                篩選。先套用分類，再依篇數取前幾家；下方文章僅列出圖上媒體之間的關係。篩選後沒有彼此連線的媒體仍保留圖示，不代表沒有其他新聞。圖表顯示符合篩選的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。本期完全沒有關係的媒體不放入圖中。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。固定後仍可移入其他媒體，暫時預覽它的相關媒體、連線與摘要；移入線條則高亮該連線與兩端媒體，移開後回到固定的選取。預覽不會變更下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。統計以本期分析樣本為限，圖上與下方只呈現目前篩選的媒體關係。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。相似線表示正文文字重疊，不加上引用箭頭；下方可依發布時間追查較早報導，每一步保留配對相似度與共同段落。時間順序不是引用方向，最早的已收錄報導也不一定是原始作者，不能據此認定抄襲。國別是媒體所屬地區，不是事件發生地。
+                篩選。先套用分類，再依篇數取前幾家；下方文章僅列出圖上媒體之間的關係。篩選後沒有彼此連線的媒體仍保留圖示，不代表沒有其他新聞。圖表顯示符合篩選的媒體，初始排版依畫面比例與圖示大小保留間距；可放大、縮小或拖曳查看細節，重設視野可回到總覽。本期完全沒有關係的媒體不放入圖中。三種關係模式共用同一批媒體與位置，只切換連線並保留視野。畫面較密時會隱藏重疊名稱，放大或選取圖示即可查看。總覽由每家媒體挑選最強的兩條連線合併而成；媒體也可能被其他家選中，因此顯示的連線可超過兩條。點選圖示可固定高亮目前模式內該媒體的全部相關連線；再次點選或按「清除選取」即可解除。固定後仍可移入其他媒體，暫時預覽它的相關媒體、連線與摘要；移入線條則高亮該連線與兩端媒體，移開後回到固定的選取。預覽不會變更下方文章篩選；平移或縮放也不會解除固定。文章、媒體列表與設定皆在圖下方瀏覽，全螢幕時也可向下捲動；「顯示全部連線」可還原目前媒體之間的全部關係。統計以本期分析樣本為限，圖上與下方只呈現目前篩選的媒體關係。媒體按連線強度自動分群排列，分群不代表媒體立場、所有權或原創來源。符合目前相似度門檻的配對會連成同一組新聞，採單一來源規則：全組最早刊登的一篇作為來源，其他文章都直接指向它。例如
+                A 最早，B、C 都連回 A，即使 C 是透過 B
+                的配對加入分組。只有實際比對過的文章才顯示直接相似度。分組與來源在媒體篩選前決定，隱藏來源不會改認其他文章。最早時間相同時以文章編號固定選一篇，完全沒有時間則不指定來源。這是本站依時間歸源的規則，不等於查證原創或抄襲。國別是媒體所屬地區，不是事件發生地。
               </p>
               <p>
                 <span className="text-blue-700 dark:text-blue-400">藍字</span>／
@@ -622,7 +700,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 <summary className="cursor-pointer font-medium">相似度如何計算</summary>
                 <p className="mt-2">
                   內文做 NFKC 正規化並移除標點、空白，以五字片段計算 Dice 相似度。至少 200 個字元、100
-                  個共同片段及連續相同文字才列為候選。正規化全文相等才標為內文相同；不以標題或刊登先後推論來源。
+                  個共同片段及連續相同文字才列為候選。正規化全文相等才標為內文相同；相似度不使用標題或刊登時間；完成分組後才以最早刊登時間指定同組來源。
                 </p>
               </details>
               <h3 className="font-semibold">各媒體擷取狀態</h3>
