@@ -79,6 +79,11 @@ const outlets: Outlet[] = [
   outlet('taipeitimes', 'Taipei Times', 'TW', ['台北時報']),
 ];
 
+/** Every outlet name and alias known to attribution, for byline filtering. */
+export function knownOutletNames(): string[] {
+  return [...new Set(outlets.flatMap((o) => [o.media, ...o.aliases]))];
+}
+
 const identityOnly = ({ media, name, country, countryCode }: OutletIdentity): OutletIdentity => ({
   media,
   name: titles[media]?.title ?? name,

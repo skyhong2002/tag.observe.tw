@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ArticleThumbnail from '@/components/ArticleThumbnail';
+import AuthorCredits from '@/components/AuthorCredits';
 import CompactArticleList from '@/components/CompactArticleList';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
@@ -286,7 +287,7 @@ export default async function MediaPage({
                           <time dateTime={article.publishedDate ?? article.publishedAt}>
                             {article.publishedDate ?? taipei(article.publishedAt)}
                           </time>
-                          {article.authors.length > 0 && <span className="max-w-40 truncate">{article.authors.join('、')}</span>}
+                          <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
                           <span className={readable ? 'text-zinc-500 dark:text-zinc-400' : 'text-amber-700 dark:text-amber-400'}>
                             {readable ? '可讀內文' : CONTENT_STATUS[article.bodyStatus].label}
                           </span>

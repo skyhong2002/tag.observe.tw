@@ -107,7 +107,7 @@ const data: SimilarityData = {
   generatedAt: '2026-10-04T00:00:00Z',
   method: 'test',
   coverage: [],
-  sample: { analyzed: 2, available: 2, limit: 10000, truncated: false, pairLimit: 2000, pairsTruncated: false },
+  sample: { analyzed: 2, available: 2, limit: 10000, truncated: false, pairLimit: 2000, pairsTruncated: false, from: null },
   pairs: [{ id: '1:2', a, b, score: 0.95, containment: 1, sharedShingles: 300, kind: 'high', evidence: '共同段落' }],
   citations: [
     { article: a, source: { media: 'blue', name: 'blue', country: '台灣', countryCode: 'TW', kind: 'explicit', evidence: '引用 blue' } },

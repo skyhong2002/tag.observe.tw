@@ -7,14 +7,14 @@ let pending = 0;
 
 // One calculation at a time, outside Fastify's event loop. Terminating the
 // worker releases its temporary index, rather than retaining it in API memory.
-export function computeSimilarityAsync(rows: ContentRow[], threshold: number): Promise<Result> {
+export function computeSimilarityAsync(rows: ContentRow[], threshold: number, focus?: number[]): Promise<Result> {
   if (pending >= 8) return Promise.reject(Object.assign(new Error('Similarity is busy; retry shortly'), { statusCode: 503 }));
   pending++;
   const job = tail.then(
     () =>
       new Promise<Result>((resolve, reject) => {
         const worker = new Worker(new URL('./compute-worker.ts', import.meta.url), {
-          workerData: { rows, threshold },
+          workerData: { rows, threshold, ...(focus ? { focus } : {}) },
           execArgv: process.execArgv.filter((arg) => !arg.startsWith('--input-type')),
           resourceLimits: { maxOldGenerationSizeMb: 1536 },
         });

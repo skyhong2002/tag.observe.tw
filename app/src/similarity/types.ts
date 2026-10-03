@@ -56,7 +56,16 @@ export interface SimilarityData {
   threshold: number;
   method: string;
   coverage: SimilarityCoverage[];
-  sample: { available: number; analyzed: number; limit: number; truncated: boolean; pairLimit: number; pairsTruncated: boolean };
+  sample: {
+    available: number;
+    analyzed: number;
+    limit: number;
+    truncated: boolean;
+    pairLimit: number;
+    pairsTruncated: boolean;
+    /** Oldest publish time among the analysed articles; null when nothing was analysed. */
+    from: string | null;
+  };
   pairs: SimilarityPair[];
   citations: Array<{ article: SimilarityArticle; source: Attribution }>;
   nodes: SimilarityNode[];

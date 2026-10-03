@@ -1,0 +1,106 @@
+import type { Attribution } from '../../../app/src/similarity/attribution';
+import type { SimilarityData } from '../../../app/src/similarity/types';
+import { API_ORIGIN } from './api';
+import type { ContentStatus } from './article-content';
+
+export type { JournalistOutlet, JournalistPair, JournalistSimilarity, JournalistSummary } from '../../../app/src/journalists/aggregate';
+
+import type { JournalistOutlet, JournalistPair, JournalistSimilarity, JournalistSummary } from '../../../app/src/journalists/aggregate';
+
+export interface JournalistIndex {
+  generatedAt: string;
+  hours: number;
+  threshold: number;
+  method: string;
+  sample: SimilarityData['sample'];
+  totals: { journalists: number; articles: number; credited: number };
+  limit: number;
+  journalists: JournalistSummary[];
+}
+export interface JournalistArticle {
+  id: number;
+  media: string;
+  mediaTitle: string;
+  title: string;
+  url: string;
+  image: string | null;
+  publishedAt: string;
+  tags: string[];
+  bodyStatus: ContentStatus;
+  bodyChars: number;
+  byline: string[];
+  coauthors: string[];
+  attributions: Attribution[];
+  matches: number;
+  compared: boolean;
+}
+export interface JournalistDetail {
+  name: string;
+  generatedAt: string;
+  hours: number;
+  threshold: number;
+  method: string;
+  stats: {
+    articles: number;
+    withBody: number;
+    averageChars: number | null;
+    cited: number;
+    tags: Array<{ tag: string; count: number }>;
+    similar: JournalistSimilarity;
+  };
+  media: JournalistOutlet[];
+  articles: JournalistArticle[];
+  pairs: JournalistPair[];
+  sample: {
+    focus: number;
+    focusLimit: number;
+    focusTruncated: boolean;
+    candidates: number;
+    candidateLimit: number;
+    candidatesTruncated: boolean;
+  };
+}
+
+export const INDEX_HOURS = [24, 48, 72, 168] as const;
+export const DETAIL_HOURS = [24, 72, 168, 720] as const;
+export const journalistHref = (name: string) => `/journalist/${encodeURIComponent(name)}/`;
+
+export async function fetchJournalists(hours: number, threshold = 0.65, limit = 3000): Promise<JournalistIndex | null> {
+  try {
+    const response = await fetch(`${API_ORIGIN}/api/v1/journalists?hours=${hours}&threshold=${threshold}&limit=${limit}`, {
+      next: { revalidate: 120 },
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(30_000),
+    });
+    return response.ok ? ((await response.json()) as JournalistIndex) : null;
+  } catch {
+    return null;
+  }
+}
+/** `missing` distinguishes "nobody by that name" from a failed request. */
+export async function fetchJournalist(name: string, hours: number, threshold = 0.65): Promise<JournalistDetail | 'missing' | null> {
+  try {
+    const response = await fetch(`${API_ORIGIN}/api/v1/journalists/${encodeURIComponent(name)}?hours=${hours}&threshold=${threshold}`, {
+      next: { revalidate: 300 },
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (response.status === 404 || response.status === 400) return 'missing';
+    return response.ok ? ((await response.json()) as JournalistDetail) : null;
+  } catch {
+    return null;
+  }
+}
+/** "晚 3 小時 20 分" style gap for a pair, from the signed minute difference. */
+export function describeGap(minutes: number): string {
+  const abs = Math.abs(minutes);
+  if (abs < 1) return '一分鐘內';
+  if (abs < 60) return `${abs} 分鐘`;
+  if (abs < 48 * 60) return `${Math.floor(abs / 60)} 小時${abs % 60 ? ` ${abs % 60} 分` : ''}`;
+  return `${Math.floor(abs / 1440)} 天`;
+}
+export function relationLabel(pair: Pick<JournalistPair, 'relation' | 'minutes' | 'sameAuthor'>): string {
+  if (pair.sameAuthor) return '同署名跨站刊登';
+  if (pair.relation === 'same') return '一分鐘內同時刊登';
+  return pair.relation === 'later' ? `晚對方 ${describeGap(pair.minutes)} 刊登` : `早對方 ${describeGap(pair.minutes)} 刊登`;
+}

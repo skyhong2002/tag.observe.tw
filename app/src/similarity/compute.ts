@@ -57,7 +57,12 @@ function sharedPassage(a: string, b: string): string {
   }
   return '';
 }
-export function computeSimilarity(rows: ContentRow[], threshold = 0.65) {
+/**
+ * With `focus`, only focus rows enter the index: every row is compared against
+ * the focus articles, but candidates are never compared with each other. Pass
+ * focus rows first so later candidates can see them.
+ */
+export function computeSimilarity(rows: ContentRow[], threshold = 0.65, focus?: Set<number>) {
   const usable: Array<{ row: ContentRow; text: string; size: number }> = [];
   // Keep only the current article's shingle set. Single-document postings are
   // inline numbers, avoiding millions of one-element arrays for larger samples.
@@ -112,6 +117,7 @@ export function computeSimilarity(rows: ContentRow[], threshold = 0.65) {
         pairs.length = MAX_PAIRS;
       }
     }
+    if (focus && !focus.has(row.id)) continue;
     for (const gram of grams) {
       const posting = index.get(gram);
       if (posting === undefined) index.set(gram, i);

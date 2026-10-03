@@ -44,7 +44,7 @@ const sample = (pairs: SimilarityPair[]): SimilarityData => ({
   generatedAt: c.publishedAt,
   method: 'test',
   coverage: [],
-  sample: { analyzed: 3, available: 3, limit: 10000, truncated: false, pairLimit: 2000, pairsTruncated: false },
+  sample: { analyzed: 3, available: 3, limit: 10000, truncated: false, pairLimit: 2000, pairsTruncated: false, from: null },
 });
 
 describe('single earliest source per similar story', () => {

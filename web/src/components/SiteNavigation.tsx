@@ -8,6 +8,7 @@ const links = [
   { href: '/', label: '首頁' },
   { href: '/ranking/', label: '關鍵字' },
   { href: '/similarity/', label: '新聞關係圖' },
+  { href: '/journalist/', label: '記者' },
   { href: '/event/', label: '事件表' },
   { href: '/topic/', label: '議題表' },
   { href: '/media/', label: '媒體' },

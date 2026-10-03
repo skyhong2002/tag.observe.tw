@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ArticleBody from '@/components/ArticleBody';
 import ArticleImage from '@/components/ArticleImage';
+import AuthorCredits from '@/components/AuthorCredits';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import SourceLink from '@/components/SourceLink';
@@ -70,7 +71,7 @@ export default async function ArticleContentPage({
         </p>
         <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">{headline.title}</h1>
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-          {article.authors.length > 0 && <span>{article.authors.join('、')}</span>}
+          <AuthorCredits credits={article.authors} />
           <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>
           {content.body && <span className="text-xs">約 {Math.max(1, Math.ceil(content.chars / 500))} 分鐘閱讀</span>}
         </div>

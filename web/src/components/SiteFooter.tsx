@@ -10,9 +10,13 @@ type FooterLink = { href: string; label: string; external?: boolean };
 const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> = [
   {
     label: '網站導覽',
+    // Same pages in the same order as the header (SiteNavigation), plus the
+    // media comparison page that only lives here.
     links: [
       { href: '/', label: '首頁' },
       { href: '/ranking/', label: '關鍵字排行' },
+      { href: '/similarity/', label: '新聞關係圖' },
+      { href: '/journalist/', label: '記者' },
       { href: '/event/', label: '事件表' },
       { href: '/topic/', label: '議題表' },
       { href: '/media/', label: '媒體來源' },
@@ -64,7 +68,8 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
         <div id="method" className="max-w-3xl scroll-mt-32 space-y-2.5 pb-5 leading-[1.9]">
           <h3 className={methodHeading}>資料來源</h3>
           <p>
-            新聞媒體每 9 分鐘、其他媒體每小時抓取一次新文章，只保存標題、摘要、連結、圖片網址與標籤，不保存內文；收錄的媒體與抓取狀態見
+            新聞媒體每 9 分鐘、其他媒體每小時抓取一次新文章，保存標題、摘要、連結、圖片網址、標籤與署名；正文自取得起保留 90
+            天後清除。收錄的媒體與抓取狀態見
             <Link href="/media/" className={inlineLink}>
               媒體來源
             </Link>
@@ -108,6 +113,18 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
               小時前的平均值；點關鍵字可看每小時篇數與平均線。爆發力仍依上面的加權分數計算。
             </dd>
           </dl>
+
+          <h3 className={methodHeading}>新聞關係圖與記者</h3>
+          <p>
+            <Link href="/similarity/" className={inlineLink}>
+              新聞關係圖
+            </Link>
+            以正規化內文的五字片段比對不同媒體的文章，相似連線無方向，引用箭頭只反映內文明示提到的來源。
+            <Link href="/journalist/" className={inlineLink}>
+              記者
+            </Link>
+            頁從署名整理出人名與筆名（排除媒體、部門、職稱與責任編輯），列出各自的刊登媒體，並對照與他站相似的文章誰先誰後；較晚刊登只是閱讀線索，不是抄襲判定，同名不同人不會分開。
+          </p>
 
           <h3 className={methodHeading}>事件、議題與藍綠</h3>
           <p>事件每半小時依標籤共現分群，標題取自註明的媒體；議題表每小時收錄各媒體新推出的專題頁。</p>

@@ -58,6 +58,8 @@ for a in r.json()["articles"]:
 | 端點 | 說明 |
 | --- | --- |
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
+| [`GET /api/v1/journalists`](#api-v1-journalists) | 期間內具名記者一覽 |
+| [`GET /api/v1/journalists/{name}`](#api-v1-journalists-name) | 單一記者的文章、刊登媒體與針對性相似比對 |
 | [`GET /api/v1/articles/{id}/content`](#api-v1-articles-id-content) | 單篇已保存內文 |
 | [`GET /api/v1/media/{media}/keywords`](#api-v1-media-media-keywords) | 媒體報導關鍵字 |
 | [`GET /api/v1/media/{media}/content`](#api-v1-media-media-content) | 媒體內文庫列表 |
@@ -267,6 +269,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 | `sample.truncated` | boolean |  |
 | `sample.pairLimit` | integer |  |
 | `sample.pairsTruncated` | boolean |  |
+| `sample.from` | string (ISO 時間) \| null | 樣本中最早的刊登時間；截斷時早於此的文章不在樣本內 |
 | `pairs` | object[] |  |
 | `pairs[].id` | string |  |
 | `pairs[].a` | object |  |
@@ -483,6 +486,201 @@ curl -s 'https://tag.observe.tw/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&li
 | `articles[].tags` | string[] |  |
 
 錯誤：`400` 參數錯誤（未知媒體、分類或政治傾向、時間格式、時間窗超過上限、cursor 無效）。
+
+## 記者署名與跨媒體相似
+
+<a id="api-v1-journalists"></a>
+
+### `GET /api/v1/journalists`
+
+**期間內具名記者一覽**
+
+從文章署名整理出人名或筆名（排除媒體、部門、通訊社、職稱、電頭與責任編輯），列出各自的刊登媒體與篇數。相似統計取自同期間、同門檻的 similarity 樣本；樣本有篇數上限，inSample 與 sample.from 揭露實際涵蓋。同名不同人不會分開；較晚刊登只是閱讀線索，不是抄襲判定。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `hours` | query | integer | 回溯小時，1–168，預設 `48` |
+| `threshold` | query | number | 最低 Dice 相似度，0.5–1，預設 `0.65` |
+| `limit` | query | integer | 最多回傳人數（依篇數排序），1–3000，預設 `500` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/journalists?hours=48&limit=50'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `hours` | integer |  |
+| `threshold` | number |  |
+| `method` | string |  |
+| `sample` | object |  |
+| `sample.available` | integer |  |
+| `sample.analyzed` | integer |  |
+| `sample.limit` | integer |  |
+| `sample.truncated` | boolean |  |
+| `sample.pairLimit` | integer |  |
+| `sample.pairsTruncated` | boolean |  |
+| `sample.from` | string (ISO 時間) \| null |  |
+| `totals` | object |  |
+| `totals.journalists` | integer | 具名人數 |
+| `totals.articles` | integer | 有人名署名的文章數 |
+| `totals.credited` | integer | 有任何署名欄位的文章數 |
+| `limit` | integer |  |
+| `journalists` | object[] |  |
+| `journalists[].name` | string | 署名整理出的人名或筆名 |
+| `journalists[].articles` | integer | 期間內署名文章數 |
+| `journalists[].media` | object[] | 刊登媒體，篇數多者在前 |
+| `journalists[].media[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `journalists[].media[].name` | string | 媒體名稱 |
+| `journalists[].media[].count` | integer | 期間內署名篇數 |
+| `journalists[].withBody` | integer | 有可比對正文的篇數 |
+| `journalists[].cited` | integer | 內文明示引用其他媒體的篇數 |
+| `journalists[].latest` | string (ISO 時間) | 最近一篇刊登時間 |
+| `journalists[].inSample` | integer | 落在相似度樣本內的可比對篇數 |
+| `journalists[].similar` | object |  |
+| `journalists[].similar.pairs` | integer | 至少一端是此記者文章的相似配對數 |
+| `journalists[].similar.articles` | integer | 有相似配對的自家文章數（去重） |
+| `journalists[].similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站 |
+| `journalists[].similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站 |
+| `journalists[].similar.sameAuthor` | integer | 對方文章也署同一名字的配對數（同一人跨媒體刊登） |
+| `journalists[].similar.identical` | integer | 正規化內文完全相同的配對數 |
+
+錯誤：`400` 參數無效。
+
+快取：2 分鐘。
+
+<a id="api-v1-journalists-name"></a>
+
+### `GET /api/v1/journalists/{name}`
+
+**單一記者的文章、刊登媒體與針對性相似比對**
+
+列出期間內署此名字的文章（以站方署名欄位比對，再以同一套人名整理規則確認）。相似比對只拿此人有正文的文章（最多 100 篇）與前後 48 小時內、至少共用一個標籤的他站文章（每篇最多 40 篇候選、合計 3000 篇）比對，排除「內容」聯播來源；沒有標籤的文章不會有候選。同署名的跨站版本另計為 sameAuthor。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `name` | 路徑 | string | 人名或筆名（2–40 字），例：`彭巧蓁` |
+| `hours` | query | integer | 回溯小時，1–720，預設 `168` |
+| `threshold` | query | number | 最低 Dice 相似度，0.5–1，預設 `0.65` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?hours=168'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `name` | string |  |
+| `generatedAt` | string (ISO 時間) |  |
+| `hours` | integer |  |
+| `threshold` | number |  |
+| `method` | string |  |
+| `stats` | object |  |
+| `stats.articles` | integer |  |
+| `stats.withBody` | integer |  |
+| `stats.averageChars` | integer \| null | 可讀正文的平均字元數 |
+| `stats.cited` | integer |  |
+| `stats.tags` | object[] | 最多 30 個常見標籤 |
+| `stats.tags[].tag` | string |  |
+| `stats.tags[].count` | integer |  |
+| `stats.similar` | object |  |
+| `stats.similar.pairs` | integer | 至少一端是此記者文章的相似配對數 |
+| `stats.similar.articles` | integer | 有相似配對的自家文章數（去重） |
+| `stats.similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站 |
+| `stats.similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站 |
+| `stats.similar.sameAuthor` | integer | 對方文章也署同一名字的配對數（同一人跨媒體刊登） |
+| `stats.similar.identical` | integer | 正規化內文完全相同的配對數 |
+| `media` | object[] |  |
+| `media[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `media[].name` | string | 媒體名稱 |
+| `media[].count` | integer | 期間內署名篇數 |
+| `articles` | object[] | 期間內署名文章，最新在前，最多 1000 篇 |
+| `articles[].id` | integer |  |
+| `articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `articles[].mediaTitle` | string |  |
+| `articles[].title` | string |  |
+| `articles[].url` | string |  |
+| `articles[].image` | string \| null |  |
+| `articles[].publishedAt` | string (ISO 時間) |  |
+| `articles[].tags` | string[] |  |
+| `articles[].bodyStatus` | "ok" \| "short" \| "missing" \| "blocked" \| "error" \| "not_fetched" \| "expired" |  |
+| `articles[].bodyChars` | integer | 保存正文字元數 |
+| `articles[].byline` | string[] | 站方原始署名欄位，未經整理 |
+| `articles[].coauthors` | string[] | 同篇其他具名作者 |
+| `articles[].attributions` | object[] | 內文明示引用的媒體 |
+| `articles[].attributions[].media` | string |  |
+| `articles[].attributions[].name` | string |  |
+| `articles[].attributions[].country` | string |  |
+| `articles[].attributions[].countryCode` | string |  |
+| `articles[].attributions[].evidence` | string |  |
+| `articles[].attributions[].kind` | "explicit" |  |
+| `articles[].matches` | integer | 這篇在針對性比對中找到的他站相似文章數 |
+| `articles[].compared` | boolean | 是否納入針對性比對（需有可用正文，且不超過比對上限） |
+| `pairs` | object[] | 相似度高者在前 |
+| `pairs[].own` | object |  |
+| `pairs[].own.id` | integer |  |
+| `pairs[].own.media` | string |  |
+| `pairs[].own.mediaTitle` | string |  |
+| `pairs[].own.country` | string |  |
+| `pairs[].own.countryCode` | string |  |
+| `pairs[].own.title` | string |  |
+| `pairs[].own.url` | string |  |
+| `pairs[].own.publishedAt` | string (ISO 時間) |  |
+| `pairs[].own.authors` | string[] |  |
+| `pairs[].own.bodyLength` | integer |  |
+| `pairs[].own.attributions` | object[] |  |
+| `pairs[].own.attributions[].media` | string |  |
+| `pairs[].own.attributions[].name` | string |  |
+| `pairs[].own.attributions[].country` | string |  |
+| `pairs[].own.attributions[].countryCode` | string |  |
+| `pairs[].own.attributions[].evidence` | string |  |
+| `pairs[].own.attributions[].kind` | "explicit" |  |
+| `pairs[].other` | object |  |
+| `pairs[].other.id` | integer |  |
+| `pairs[].other.media` | string |  |
+| `pairs[].other.mediaTitle` | string |  |
+| `pairs[].other.country` | string |  |
+| `pairs[].other.countryCode` | string |  |
+| `pairs[].other.title` | string |  |
+| `pairs[].other.url` | string |  |
+| `pairs[].other.publishedAt` | string (ISO 時間) |  |
+| `pairs[].other.authors` | string[] |  |
+| `pairs[].other.bodyLength` | integer |  |
+| `pairs[].other.attributions` | object[] |  |
+| `pairs[].other.attributions[].media` | string |  |
+| `pairs[].other.attributions[].name` | string |  |
+| `pairs[].other.attributions[].country` | string |  |
+| `pairs[].other.attributions[].countryCode` | string |  |
+| `pairs[].other.attributions[].evidence` | string |  |
+| `pairs[].other.attributions[].kind` | "explicit" |  |
+| `pairs[].score` | number | 正規化內文五字片段的 Dice 相似度 |
+| `pairs[].containment` | number |  |
+| `pairs[].sharedShingles` | integer |  |
+| `pairs[].kind` | "identical" \| "high" |  |
+| `pairs[].evidence` | string | 最多 100 字的連續相同片段 |
+| `pairs[].minutes` | integer | 對方刊登時間減自家刊登時間（分鐘）；正值表示自家較早 |
+| `pairs[].relation` | "later" \| "earlier" \| "same" | later 自家較晚、earlier 自家較早、same 一分鐘內 |
+| `pairs[].sameAuthor` | boolean | 對方文章署同一名字 |
+| `pairs[].ownCitesOther` | boolean | 自家文章明示引用對方媒體 |
+| `pairs[].otherCitesOwn` | boolean | 對方文章明示引用自家媒體 |
+| `sample` | object |  |
+| `sample.focus` | integer | 納入比對的自家文章數 |
+| `sample.focusLimit` | integer |  |
+| `sample.focusTruncated` | boolean |  |
+| `sample.candidates` | integer | 依共同標籤挑出的他站候選文章數 |
+| `sample.candidateLimit` | integer |  |
+| `sample.candidatesTruncated` | boolean |  |
+
+錯誤：`400` 參數無效；`404` 期間內沒有文章署此名字。
+
+快取：5 分鐘。
 
 ## 單一標籤
 

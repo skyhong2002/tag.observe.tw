@@ -97,6 +97,7 @@ export async function loadSimilarity(db: Db, hours: number, threshold: number, n
       truncated: available > rows.length,
       pairsTruncated: result.pairsTruncated,
       pairLimit: MAX_PAIRS,
+      from: rows.length ? rows[rows.length - 1].publishedAt.toISOString() : null,
     },
     pairs: result.pairs,
     nodes: result.nodes,
@@ -104,26 +105,26 @@ export async function loadSimilarity(db: Db, hours: number, threshold: number, n
     citations: result.citations,
   };
 }
+// Share pending requests, cap cache variants, and expire after one minute.
+// The journalist index reads the same sample, so one calculation serves both.
+const cache = new Map<string, { at: number; value: Promise<SimilarityData> }>();
+export function cachedSimilarity(db: Db, hours: number, threshold: number): Promise<SimilarityData> {
+  const key = `${hours}:${threshold}`;
+  let entry = cache.get(key);
+  if (!entry || Date.now() - entry.at > 60000) {
+    if (cache.size >= 8) cache.delete(cache.keys().next().value as string);
+    entry = { at: Date.now(), value: loadSimilarity(db, hours, threshold) };
+    cache.set(key, entry);
+    entry.value.catch(() => cache.delete(key));
+  }
+  return entry.value;
+}
 export function registerSimilarity(app: FastifyInstance, db: Db) {
-  // Share pending requests, cap cache variants, and expire after one minute.
-  const cache = new Map<string, { at: number; value: Promise<SimilarityData> }>();
   app.get<{ Querystring: { hours?: string; threshold?: string } }>('/api/v1/similarity', async (request, reply) => {
     const params = similarityParams(request.query);
     if (!params) return reply.code(400).send({ error: 'hours must be an integer 1–168; threshold must be 0.5–1' });
-    const key = `${params.hours}:${params.threshold}`;
-    let entry = cache.get(key);
-    if (!entry || Date.now() - entry.at > 60000) {
-      if (cache.size >= 8) cache.delete(cache.keys().next().value as string);
-      entry = { at: Date.now(), value: loadSimilarity(db, params.hours, params.threshold) };
-      cache.set(key, entry);
-    }
-    try {
-      const data = await entry.value;
-      reply.header('cache-control', 'public, max-age=60');
-      return data;
-    } catch (error) {
-      cache.delete(key);
-      throw error;
-    }
+    const data = await cachedSimilarity(db, params.hours, params.threshold);
+    reply.header('cache-control', 'public, max-age=60');
+    return data;
   });
 }

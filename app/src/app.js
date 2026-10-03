@@ -7,6 +7,7 @@ import { httpDuration, httpRequests, metricsContentType, metricsText } from './m
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
 import { registerArticleSearch } from './v1/articles.ts';
+import { registerJournalists } from './v1/journalists.ts';
 import { registerMediaKeywords } from './v1/media-keywords.ts';
 import { registerMediaStats } from './v1/media-stats.ts';
 import { registerMediaTrafficComparison } from './v1/media-traffic-comparison.ts';
@@ -72,6 +73,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerMediaKeywords(app, own.db);
     registerArticleSearch(app, own.db);
     registerSimilarity(app, own.db);
+    registerJournalists(app, own.db);
     registerArticleContent(app, own.db);
   }
   registerApiMeta(app);
