@@ -10,6 +10,7 @@ import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceS
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData } from '@/lib/similarity';
 import { type StoryOrigin, withStoryOrigins } from '@/lib/story-origins.mts';
+import MediaComparison from './MediaComparison';
 
 const SimilarityGraph = dynamic(() => import('@/components/SimilarityGraph'), {
   ssr: false,
@@ -80,7 +81,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
       data-article-id={article.id}
     >
       <p className="text-xs font-medium text-brand-700 dark:text-brand-400">
-        相似新聞來源 · {article.mediaTitle} → {source.mediaTitle}
+        同題報導對照 · {article.mediaTitle} ↔ {source.mediaTitle}
       </p>
       <p className="text-xs leading-6 text-zinc-500">同組 {group.articles.length} 篇新聞，統一連回最早刊登的這篇來源。</p>
       {group.tiedFirst > 1 && (
@@ -193,9 +194,8 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
     }
   };
   const [selection, setSelection] = useState<GraphSelection>(null);
-  const [view, setView] = useState<'settings' | 'info' | 'media' | 'evidence'>('evidence');
+  const [view, setView] = useState<'settings' | 'info' | 'media' | 'evidence'>('media');
   const [query, setQuery] = useState('');
-  const [mediaQuery, setMediaQuery] = useState('');
   const [direction, setDirection] = useState<CitationDirection>('all');
   const [page, setPage] = useState(0);
   const browser = useRef<HTMLElement>(null);
@@ -252,13 +252,6 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
   const pageCount = Math.max(1, Math.ceil(evidence.length / 20));
   const currentPage = Math.min(page, pageCount - 1);
   const visibleEvidence = evidence.slice(currentPage * 20, (currentPage + 1) * 20);
-  const media = useMemo(
-    () =>
-      [...graph.nodes]
-        .filter((node) => `${node.name} ${node.id} ${node.country}`.toLocaleLowerCase().includes(mediaQuery.trim().toLocaleLowerCase()))
-        .sort((a, b) => a.name.localeCompare(b.name, 'zh-TW')),
-    [graph.nodes, mediaQuery],
-  );
   const selectedTitle =
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
@@ -374,7 +367,7 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
                 {showAll ? '回到主要連線' : '顯示全部連線'}
               </button>
               <button type="button" onClick={openBrowser} className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700">
-                篩選與瀏覽 ↓
+                媒體比較 ↓
               </button>
             </div>
           </div>
@@ -427,9 +420,9 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-zinc-800">
           <div>
             <h2 id="graph-browser-title" className="text-lg font-semibold">
-              篩選與瀏覽
+              媒體比較
             </h2>
-            <p className="mt-1 text-xs text-zinc-500">選取圖示可固定相關連線；文章與分析資料都在這裡查看。</p>
+            <p className="mt-1 text-xs text-zinc-500">從各家媒體出發，比較相近報導、引用往來與實際新聞。</p>
           </div>
           <fieldset
             aria-label="瀏覽內容"
@@ -437,8 +430,8 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
           >
             {(
               [
-                ['evidence', '文章證據'],
-                ['media', '媒體列表'],
+                ['media', '媒體總覽'],
+                ['evidence', '新聞對照'],
                 ['settings', '分析設定'],
                 ['info', '資料說明'],
               ] as const
@@ -487,42 +480,15 @@ export default function SimilarityExplorer({ data: sample, camps, tags }: { data
             </form>
           )}
           {view === 'media' && (
-            <div className="space-y-2">
-              <label className="block max-w-md text-sm">
-                搜尋媒體
-                <input
-                  type="search"
-                  value={mediaQuery}
-                  onChange={(event) => setMediaQuery(event.target.value)}
-                  className={control}
-                  placeholder="媒體名稱或國別"
-                />
-              </label>
-              <p className="text-xs leading-6 text-zinc-500">
-                {media.length} 家圖上媒體 · 選取媒體可固定圖上連線，並瀏覽文章；篇數依本期證據文章去重。
-              </p>
-              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {media.map((node) => (
-                  <button
-                    key={node.id}
-                    type="button"
-                    onClick={() => select({ node: node.id })}
-                    aria-pressed={!!selection && 'node' in selection && selection.node === node.id}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg bg-zinc-50 p-3 text-left hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                  >
-                    <span className="text-sm">
-                      {node.name}
-                      <span className="ml-2 text-xs text-zinc-500">{node.country}</span>
-                    </span>
-                    <span className="shrink-0 text-right text-xs leading-5 text-zinc-500">
-                      引用 {counts.get(node.id)?.outgoing ?? 0} 篇<br />
-                      被引用 {counts.get(node.id)?.incoming ?? 0} 篇
-                    </span>
-                  </button>
-                ))}
-              </div>
-              {!media.length && <p className="text-sm text-zinc-500">沒有符合搜尋的媒體。</p>}
-            </div>
+            <MediaComparison
+              data={scopedData}
+              onSelect={(value, nextMode, nextDirection) => {
+                updateMode(nextMode);
+                setQuery('');
+                setDirection(nextDirection);
+                select(value);
+              }}
+            />
           )}
           {view === 'evidence' && (
             <>
