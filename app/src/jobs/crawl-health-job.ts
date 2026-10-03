@@ -29,7 +29,7 @@ export const crawlTagRate = new Gauge({
 export const crawlHealthy = new Gauge({ name: 'tag_crawl_sources_healthy', help: 'Sources with items in 24h', registers: [registry] });
 export const crawlTrafficCoverage = new Gauge({
   name: 'tag_crawl_traffic_coverage_ratio',
-  help: 'Traffic share of the 29 reference outlets with dated articles collected in 48h (target 0.95)',
+  help: 'Traffic share of eligible reference outlets with dated articles collected in 48h, excluding untraced syndication (target 0.95)',
   registers: [registry],
 });
 

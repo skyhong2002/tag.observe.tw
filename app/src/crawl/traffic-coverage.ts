@@ -7,13 +7,21 @@ import { sourcesInGroup } from './registry.ts';
 export { baseline as trafficBaseline };
 
 // Each outlet's weight is counted once, regardless of its article volume.
-// Keep the denominator fixed, including missing and disabled outlets.
+// Missing/disabled eligible outlets stay in the denominator. The user's
+// explicit syndication exclusions affect both numerator and denominator,
+// regardless of whether those sources have been crawled.
 export function calculateTrafficCoverage(active: ReadonlySet<string>, collected: ReadonlySet<string>) {
-  const sources = baseline.sources.map((s) => ({
-    ...s,
-    active: active.has(s.media),
-    covered: active.has(s.media) && collected.has(s.media),
-  }));
+  const excluded = baseline.sources
+    .filter((s) => baseline.excludedClassifications.includes(s.classification))
+    .map((s) => ({ ...s, reason: baseline.exclusionReason }));
+  const excludedMedia = new Set(excluded.map((s) => s.media));
+  const sources = baseline.sources
+    .filter((s) => !excludedMedia.has(s.media))
+    .map((s) => ({
+      ...s,
+      active: active.has(s.media),
+      covered: active.has(s.media) && collected.has(s.media),
+    }));
   // The spreadsheet has three decimal places. Sum integers to avoid rounding
   // a coverage just below the target up to a passing result.
   const weight = (s: { traffic: number }) => Math.round(s.traffic * 1000);
@@ -26,6 +34,10 @@ export function calculateTrafficCoverage(active: ReadonlySet<string>, collected:
     scope: baseline.scope,
     windowHours: baseline.windowHours,
     target: baseline.target,
+    referenceSources: baseline.sources.length,
+    referenceTraffic: baseline.sources.reduce((sum, s) => sum + weight(s), 0) / 1000,
+    excludedTraffic: excluded.reduce((sum, s) => sum + weight(s), 0) / 1000,
+    excluded,
     totalTraffic: total / 1000,
     coveredTraffic: covered / 1000,
     configuredShare: configured / total,

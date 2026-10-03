@@ -1,7 +1,9 @@
 {
   "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit",
   "retrievedAt": "2026-10-03",
-  "scope": "使用者截圖指定的 29 家媒體；分母為這 29 家的「流量」總和，非全台市占或文章收錄率。",
+  "scope": "使用者截圖指定的 29 家媒體，扣除標為「內容」且尚未溯源的文章串聯來源；以其餘媒體的流量總和為分母，非全台市占或文章收錄率。",
+  "excludedClassifications": ["內容"],
+  "exclusionReason": "文章串聯來源尚未溯源，不納入統計；「內容」不代表內容農場。",
   "trafficColumn": "流量",
   "target": 0.95,
   "windowHours": 48,
