@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ArticleBody from '@/components/ArticleBody';
+import ArticleImage from '@/components/ArticleImage';
 import DiscoverySources from '@/components/DiscoverySources';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
@@ -65,6 +66,7 @@ export default async function ArticleContentPage({
           <DiscoverySources sources={article.discoverySources} />
         </div>
       </header>
+      <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} sourceUrl={article.url} />
       {content.body ? (
         <>
           {content.status !== 'ok' && (
@@ -126,7 +128,7 @@ export default async function ArticleContentPage({
               {content.body ? ` · ${content.chars.toLocaleString('zh-TW')} 字` : ''} · 刊登媒體所在地：{article.publisher.country}
             </p>
             {content.fetchedAt && <p>內文擷取：{taipei(content.fetchedAt)}</p>}
-            <p>本站呈現已擷取的文字，圖片與影音請見原站。正文從取得全文起保存 90 天。</p>
+            <p>本站呈現已擷取的文字與收錄配圖，其他圖片與影音請見原站。正文從取得全文起保存 90 天。</p>
           </div>
         </details>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-5 text-sm dark:border-zinc-800">
