@@ -69,8 +69,8 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
         <div id="method" className="max-w-3xl scroll-mt-32 space-y-2.5 pb-5 leading-[1.9]">
           <h3 className={methodHeading}>資料來源</h3>
           <p>
-            新聞媒體每 9 分鐘、其他媒體每小時抓取一次新文章，保存標題、摘要、連結、圖片網址、標籤與署名；正文自取得起保留 90
-            天後清除。收錄的媒體與抓取狀態見
+            新聞媒體每 9 分鐘、其他媒體每小時抓取一次新文章，保存標題、摘要、連結、圖片網址、標籤與署名；正文在刊登後 7
+            天內可於站內閱讀。收錄的媒體與抓取狀態見
             <Link href="/media/" className={inlineLink}>
               媒體來源
             </Link>
@@ -138,7 +138,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
             查看；「未列藍綠」不代表中立。
           </p>
           {notes}
-          <p>新聞內容著作權屬原媒體。本站提供報導索引、統計與保留期間內的文章文字；標示 ↗ 的連結會開啟外部網站。</p>
+          <p>新聞內容著作權屬原媒體。本站提供報導索引、統計與刊登 7 天內的文章文字；標示 ↗ 的連結會開啟外部網站。</p>
         </div>
       </details>
 

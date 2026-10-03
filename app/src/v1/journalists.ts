@@ -21,7 +21,7 @@ import { type Attribution, normalizeAttributions, outletIdentity } from '../simi
 import { METHOD } from '../similarity/compute.ts';
 import { computeSimilarityAsync } from '../similarity/compute-async.ts';
 import type { SimilarityData } from '../similarity/types.ts';
-import { type ContentStatus, contentStatus } from './article-content.ts';
+import { type ContentStatus, contentStatus, publicContentState } from './article-content.ts';
 import { cachedSimilarity, similarityParams } from './similarity.ts';
 
 // Journalist pages: who is credited, where they publish, and which of their
@@ -272,9 +272,17 @@ export async function loadJournalist(
     media.set(row.media, (media.get(row.media) ?? 0) + 1);
     for (const tag of new Set(row.tags)) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
   }
-  const readable = own.filter((row) => row.bodyStatus === 'ok' && Number(row.bodyChars) > 0);
+  // Comparisons above use every stored body; what readers see about each body
+  // (status, length, counts) follows the public reading window.
+  const shown = new Map(
+    own.map((row) => {
+      const chars = Number(row.bodyChars);
+      return [row.id, publicContentState(contentStatus(row.bodyStatus, chars, row.contentFetchedAt), chars, row.publishedAt, now)];
+    }),
+  );
+  const readable = own.filter((row) => shown.get(row.id)!.status === 'ok' && shown.get(row.id)!.chars > 0);
   const list: JournalistArticle[] = own.map((row) => {
-    const chars = Number(row.bodyChars);
+    const state = shown.get(row.id)!;
     const byline = row.authors?.length ? row.authors : row.creator?.trim() ? [row.creator.trim()] : [];
     return {
       id: row.id,
@@ -285,8 +293,8 @@ export async function loadJournalist(
       image: row.image,
       publishedAt: row.publishedAt,
       tags: row.tags,
-      bodyStatus: contentStatus(row.bodyStatus, chars, row.contentFetchedAt),
-      bodyChars: chars,
+      bodyStatus: state.status,
+      bodyChars: state.chars,
       byline,
       coauthors: rowJournalists(row).filter((other) => other !== name),
       attributions: normalizeAttributions(row.attributions ?? [], row.media),
@@ -303,7 +311,7 @@ export async function loadJournalist(
     stats: {
       articles: own.length,
       withBody: readable.length,
-      averageChars: readable.length ? Math.round(readable.reduce((sum, row) => sum + Number(row.bodyChars), 0) / readable.length) : null,
+      averageChars: readable.length ? Math.round(readable.reduce((sum, row) => sum + shown.get(row.id)!.chars, 0) / readable.length) : null,
       cited: list.filter((row) => row.attributions.length > 0).length,
       tags: [...tagCount]
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant'))

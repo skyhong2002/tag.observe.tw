@@ -82,7 +82,7 @@ node --env-file=.env tools/topics-once.ts --apply
 
 ## 資料保留（每日 04:15，`jobs/retention-job.ts`）
 
-- 文章 `description` 於發佈 90 天後清空；全文則自 `content_fetched_at` 起保存 90 天（缺值時用 `crawled_at`）。舊文章保留原始發佈日期，標題、網址、標籤保留供排行。
+- 文章 `description` 於發佈 90 天後清空；全文則自 `content_fetched_at` 起保存 90 天（缺值時用 `crawled_at`）。對外只提供刊登後 7 天內的全文（`article-retention.ts` 的 `PUBLIC_BODY_WINDOW_MS`），其餘時間只供後端相似度比對使用，見 similarity.md。舊文章保留原始發佈日期，標題、網址、標籤保留供排行。
 - 從未抓取且無標籤、超過 14 天的文章刪除。
 - 超過兩年的排行快照只留前 100 名。
 - `crawl_runs`、`job_runs`、`source_probes`、`rejected_urls` 保留 30 天；Prometheus、Loki 各 30 天。

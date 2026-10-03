@@ -2,7 +2,7 @@ import { and, desc, eq, exists, gte, inArray, lt, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import reviewedPublications from '../../data/reviewed-publications.json' with { type: 'json' };
-import { BODY_RETENTION_MS } from '../article-retention.ts';
+import { BODY_RETENTION_MS, bodyIsPublic, publicBodyUntil } from '../article-retention.ts';
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
@@ -87,6 +87,21 @@ export function contentStatus(status: string | null, chars: number, fetchedAt: D
   if (chars > 0) return 'short';
   return fetchedAt ? 'missing' : 'not_fetched';
 }
+/**
+ * What readers may know about a body. Outside the public window the body is
+ * reported exactly like a deleted one: no text, zero length, status expired.
+ * Reasons that say nothing about storage (blocked, missing, error) stay as they are.
+ */
+export function publicContentState(
+  status: ContentStatus,
+  chars: number,
+  publishedAt: Date,
+  now = new Date(),
+): { status: ContentStatus; chars: number; visible: boolean } {
+  if (bodyIsPublic(publishedAt, now)) return { status, chars, visible: true };
+  const kept = status === 'blocked' || status === 'missing' || status === 'error';
+  return { status: kept ? status : 'expired', chars: 0, visible: false };
+}
 const metadata = {
   id: articles.id,
   media: articles.media,
@@ -150,7 +165,7 @@ async function loadDiscoverySources(db: Db, ids: number[]): Promise<Map<number, 
   }
   return result;
 }
-export async function loadArticleContent(db: Db, id: number): Promise<ArticleContentResponse | null> {
+export async function loadArticleContent(db: Db, id: number, now = new Date()): Promise<ArticleContentResponse | null> {
   const [row] = await db
     .select({
       ...metadata,
@@ -166,18 +181,23 @@ export async function loadArticleContent(db: Db, id: number): Promise<ArticleCon
     .limit(1);
   if (!row) return null;
   const discoveries = await loadDiscoverySources(db, [id]);
-  const body = row.body?.trim() ? row.body : null;
-  const chars = body ? Array.from(body).length : 0;
+  const stored = row.body?.trim() ? row.body : null;
+  const storedChars = stored ? Array.from(stored).length : 0;
+  const state = publicContentState(contentStatus(row.bodyStatus, storedChars, row.contentFetchedAt), storedChars, row.publishedAt, now);
+  // The reader-facing deadline: the end of the public window, or the storage
+  // deadline if that somehow comes first. Never reveals storage beyond it.
+  const storageUntil = new Date((row.contentFetchedAt ?? row.crawledAt).getTime() + BODY_RETENTION_MS);
+  const publicUntil = publicBodyUntil(row.publishedAt);
+  const deadline = storageUntil < publicUntil ? storageUntil : publicUntil;
   return {
     article: { ...contentArticle(row), discoverySources: discoveries.get(id) ?? [] },
     content: {
-      status: contentStatus(row.bodyStatus, chars, row.contentFetchedAt),
-      body,
-      chars,
-      source: row.bodySource,
+      status: state.status,
+      body: state.visible ? stored : null,
+      chars: state.chars,
+      source: state.visible ? row.bodySource : null,
       fetchedAt: row.contentFetchedAt,
-      expiresAt:
-        body || row.bodyStatus === 'expired' ? new Date((row.contentFetchedAt ?? row.crawledAt).getTime() + BODY_RETENTION_MS) : null,
+      expiresAt: stored || state.status === 'expired' ? deadline : null,
       attributions: normalizeAttributions(row.attributions ?? [], row.media),
     },
   };
@@ -233,13 +253,17 @@ export async function loadMediaContent(
     limit: query.limit,
     count: page.length,
     nextCursor: rows.length > query.limit ? String(page.at(-1)!.id) : null,
-    articles: page.map((row) => ({
-      ...contentArticle(row),
-      discoverySources: discoveries.get(row.id) ?? [],
-      bodyStatus: contentStatus(row.bodyStatus, Number(row.bodyChars), row.contentFetchedAt),
-      bodyChars: Number(row.bodyChars),
-      contentFetchedAt: row.contentFetchedAt,
-    })),
+    articles: page.map((row) => {
+      const chars = Number(row.bodyChars);
+      const state = publicContentState(contentStatus(row.bodyStatus, chars, row.contentFetchedAt), chars, row.publishedAt, now);
+      return {
+        ...contentArticle(row),
+        discoverySources: discoveries.get(row.id) ?? [],
+        bodyStatus: state.status,
+        bodyChars: state.chars,
+        contentFetchedAt: row.contentFetchedAt,
+      };
+    }),
   };
 }
 export function registerArticleContent(app: FastifyInstance, db: Db) {

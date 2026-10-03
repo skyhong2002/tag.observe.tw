@@ -79,15 +79,15 @@ export default async function ArticleContentPage({
           <DiscoverySources sources={article.discoverySources} />
         </div>
         {expiresAt && (content.body || content.status === 'expired') && (
-          <section aria-label="正文保存期限" className="mt-5 rounded-lg bg-zinc-100 px-4 py-3 text-sm leading-7 dark:bg-zinc-900">
+          <section aria-label="站內閱讀期限" className="mt-5 rounded-lg bg-zinc-100 px-4 py-3 text-sm leading-7 dark:bg-zinc-900">
             <p className="font-medium">
-              {content.status === 'expired' ? '正文保存期限已於 ' : '正文預計於 '}
+              {content.status === 'expired' ? '站內閱讀期限已於 ' : '站內可閱讀至 '}
               <time dateTime={content.expiresAt!}>{expiresAt}</time>
-              {content.status === 'expired' ? ' 到期' : ' 後清除'}
+              {content.status === 'expired' ? ' 結束' : ''}
               <span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">（台北時間）</span>
             </p>
             <p className="text-xs leading-6 text-zinc-600 dark:text-zinc-400">
-              正文自取得起保存 90 天，到期後由每日清理作業移除；標題、標籤與原站連結仍會保留。
+              本站只提供刊登後 7 天內的正文；之後標題、標籤與原站連結仍會保留，全文請至原站閱讀。
             </p>
           </section>
         )}
@@ -147,14 +147,14 @@ export default async function ArticleContentPage({
           </section>
         )}
         <details className="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-          <summary className="cursor-pointer py-2 hover:text-zinc-900 dark:hover:text-zinc-200">保存資訊與閱讀說明</summary>
+          <summary className="cursor-pointer py-2 hover:text-zinc-900 dark:hover:text-zinc-200">內文資訊與閱讀說明</summary>
           <div className="mt-2 space-y-1">
             <p>
               {state.label}
               {content.body ? ` · ${content.chars.toLocaleString('zh-TW')} 字` : ''} · 刊登媒體所在地：{article.publisher.country}
             </p>
             {content.fetchedAt && <p>內文擷取：{taipei(content.fetchedAt)}</p>}
-            <p>本站呈現已擷取的文字與收錄配圖，其他圖片與影音請見原站。正文從取得全文起保存 90 天。</p>
+            <p>本站呈現已擷取的文字與收錄配圖，其他圖片與影音請見原站。正文在刊登後 7 天內提供。</p>
           </div>
         </details>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-5 text-sm dark:border-zinc-800">

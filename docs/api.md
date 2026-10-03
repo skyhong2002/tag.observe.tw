@@ -14,7 +14,7 @@
 - 錯誤回 `{"error": "..."}`，搭配 HTTP 狀態碼：`400` 參數錯誤、`404` 找不到、`405` 非 GET、`429` 太頻繁、`5xx` 伺服器問題。
 - 路徑參數（標籤、媒體代碼）請 URL 編碼，例如 `/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/articles`。路徑結尾不要加 `/`。
 - `v1` 內只做向後相容的變更（新增欄位、新增端點）；移除或改名會先在本文件公告。
-- 標題、圖片與內文著作權屬原媒體；本 API 提供標題、連結、統計及保存期間內的擷取文字。使用資料請註明「資料來源：新文易數 tag.observe.tw」。
+- 標題、圖片與內文著作權屬原媒體；本 API 提供標題、連結、統計及刊登 7 天內的擷取文字。使用資料請註明「資料來源：新文易數 tag.observe.tw」。
 - 舊站 tag.analysis.tw 的 `/api/*.php` 在本站回 `410`，JSON 內 `replacement` 指向對應的 v1 端點。
 - 不寫程式也能追：RSS `/feeds/events.xml`（新事件）與 `/feeds/tag/<標籤>.xml`（某標籤的最新報導，標籤需 URL 編碼）；全站網址清單在 `/sitemap.xml`。
 
@@ -60,7 +60,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
 | [`GET /api/v1/journalists`](#api-v1-journalists) | 期間內具名記者一覽 |
 | [`GET /api/v1/journalists/{name}`](#api-v1-journalists-name) | 單一記者的文章、刊登媒體與針對性相似比對 |
-| [`GET /api/v1/articles/{id}/content`](#api-v1-articles-id-content) | 單篇已保存內文 |
+| [`GET /api/v1/articles/{id}/content`](#api-v1-articles-id-content) | 單篇內文（刊登 7 天內） |
 | [`GET /api/v1/media/{media}/keywords`](#api-v1-media-media-keywords) | 媒體報導關鍵字 |
 | [`GET /api/v1/media/{media}/content`](#api-v1-media-media-content) | 媒體內文庫列表 |
 | [`GET /api/v1`](#api-v1) | API 索引 |
@@ -362,7 +362,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 
 ### `GET /api/v1/articles/{id}/content`
 
-**單篇已保存內文**
+**單篇內文（刊登 7 天內）**
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -403,11 +403,11 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `article.discoverySources[].discoveredAt` | string (ISO 時間) | 首次經此來源發現文章的時間，不取代刊登時間 |
 | `content` | object |  |
 | `content.status` | "ok" \| "short" \| "missing" \| "blocked" \| "error" \| "not_fetched" \| "expired" |  |
-| `content.body` | string \| null | 保留期間內已抓取的文字；不保證原站目前仍存在 |
+| `content.body` | string \| null | 刊登 7 天內已抓取的文字；之後為 null。不保證原站目前仍存在 |
 | `content.chars` | integer |  |
 | `content.source` | string \| null | 擷取方式 |
 | `content.fetchedAt` | string (ISO 時間) \| null |  |
-| `content.expiresAt` | string (ISO 時間) \| null | 正文取得後 90 天的保存期限；舊資料以首次收錄時間起算，到期後由每日清理作業移除。未取得正文時為 null，已清除正文仍保留期限 |
+| `content.expiresAt` | string (ISO 時間) \| null | 站內提供正文的期限：刊登後 7 天。之後 body 為 null、chars 為 0、status 為 expired。未取得正文時為 null |
 | `content.attributions` | object[] |  |
 | `content.attributions[].media` | string |  |
 | `content.attributions[].name` | string |  |
@@ -612,7 +612,7 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `articles[].publishedAt` | string (ISO 時間) |  |
 | `articles[].tags` | string[] |  |
 | `articles[].bodyStatus` | "ok" \| "short" \| "missing" \| "blocked" \| "error" \| "not_fetched" \| "expired" |  |
-| `articles[].bodyChars` | integer | 保存正文字元數 |
+| `articles[].bodyChars` | integer | 站內可讀的正文字元數；超過刊登後 7 天為 0 |
 | `articles[].byline` | string[] | 站方原始署名欄位，未經整理 |
 | `articles[].coauthors` | string[] | 同篇其他具名作者 |
 | `articles[].attributions` | object[] | 內文明示引用的媒體 |

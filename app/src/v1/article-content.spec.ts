@@ -9,6 +9,7 @@ import {
   loadMediaContent,
   parseContentId,
   parseContentPage,
+  publicContentState,
   registerArticleContent,
 } from './article-content.ts';
 
@@ -44,23 +45,38 @@ function fakeDb(rows: unknown[], discoveries: unknown[] = []) {
   return { db: { select } as unknown as Db, select, chain, discoveryChain };
 }
 describe('stored article content', () => {
-  it('reports the 90-day body deadline from acquisition rather than publication or initial crawl', async () => {
+  const soon = new Date('2026-10-05T00:00:00Z');
+  it('shows the body only within seven days of publication and gives that as the deadline', async () => {
+    const { db } = fakeDb([row]);
+    const result = await loadArticleContent(db, row.id, soon);
+    expect(result?.content).toMatchObject({ status: 'ok', body: row.body, chars: Array.from(row.body).length, source: 'article' });
+    expect(result?.content.expiresAt?.toISOString()).toBe('2026-10-10T01:00:00.000Z');
+  });
+  it('reports a body past the reading window exactly like a deleted one', async () => {
+    const later = new Date('2026-10-10T01:00:00Z');
+    const hidden = (await loadArticleContent(fakeDb([row]).db, row.id, later))!.content;
+    const deleted = (await loadArticleContent(fakeDb([{ ...row, body: null, bodyStatus: 'expired' }]).db, row.id, later))!.content;
+    expect(hidden).toMatchObject({ status: 'expired', body: null, chars: 0, source: null });
+    expect(hidden.expiresAt?.toISOString()).toBe('2026-10-10T01:00:00.000Z');
+    expect({ ...hidden, source: null }).toEqual({ ...deleted, source: null });
+  });
+  it('never opens a fresh window for old articles fetched recently', async () => {
     const { db } = fakeDb([{ ...row, publishedAt: new Date('2011-01-01T00:00:00Z') }]);
-    const result = await loadArticleContent(db, row.id);
-    expect(result?.content.expiresAt?.toISOString()).toBe('2027-01-01T01:00:00.000Z');
+    const result = await loadArticleContent(db, row.id, soon);
+    expect(result?.content).toMatchObject({ status: 'expired', body: null, chars: 0 });
+    expect(result?.content.expiresAt?.toISOString()).toBe('2011-01-08T00:00:00.000Z');
   });
-  it('uses the same crawl-time fallback as cleanup for legacy bodies', async () => {
-    const { db } = fakeDb([{ ...row, contentFetchedAt: null }]);
-    const result = await loadArticleContent(db, row.id);
-    expect(result?.content.expiresAt?.toISOString()).toBe('2026-12-30T00:00:00.000Z');
-  });
-  it('retains the deadline for cleared bodies without inventing one for never-acquired content', async () => {
-    const expired = fakeDb([{ ...row, body: null, bodyStatus: 'expired' }]);
-    expect((await loadArticleContent(expired.db, row.id))?.content.expiresAt?.toISOString()).toBe('2027-01-01T01:00:00.000Z');
+  it('keeps reasons unrelated to storage and invents no deadline for never-acquired content', async () => {
     for (const bodyStatus of [null, 'blocked', 'missing', 'error']) {
       const absent = fakeDb([{ ...row, body: null, bodyStatus, contentFetchedAt: null }]);
-      expect((await loadArticleContent(absent.db, row.id))?.content.expiresAt).toBeNull();
+      expect((await loadArticleContent(absent.db, row.id, soon))?.content.expiresAt).toBeNull();
     }
+    expect(publicContentState('blocked', 0, new Date('2011-01-01T00:00:00Z'), soon).status).toBe('blocked');
+    expect(publicContentState('short', 40, new Date('2011-01-01T00:00:00Z'), soon)).toEqual({
+      status: 'expired',
+      chars: 0,
+      visible: false,
+    });
   });
   it('validates positive safe integer ids, cursors and bounded page sizes', () => {
     for (const value of ['0', '-1', '1.2', ' 1', '01', '1e2', '9007199254740992', '__proto__', ['1']]) {
@@ -101,6 +117,15 @@ describe('stored article content', () => {
     expect(article).toMatchObject({ publishedDate: '2025-10-08', publishedDatePrecision: 'day' });
     expect(contentArticle({ ...row, url: article.url })).not.toHaveProperty('publishedDate');
     expect(contentArticle(row)).not.toHaveProperty('publishedDatePrecision');
+  });
+  it('hides the length and status of bodies past the reading window in media listings', async () => {
+    const old = { ...row, id: 5, publishedAt: new Date('2026-09-01T00:00:00Z') };
+    const { db } = fakeDb([{ ...row, id: 6 }, old]);
+    const result = await loadMediaContent(db, 'cna', { cursor: null, limit: 40 }, new Date('2026-10-05T00:00:00Z'));
+    expect(result.articles.map((a) => [a.id, a.bodyStatus, a.bodyChars])).toEqual([
+      [6, 'ok', 33],
+      [5, 'expired', 0],
+    ]);
   });
   it('pages with one lookahead row and selects character counts without selecting bodies', async () => {
     const { db, select, chain } = fakeDb([

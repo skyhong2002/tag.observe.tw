@@ -181,7 +181,7 @@ export default async function MediaPage({
             </Link>
             <p className="mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
               {discovery ? '發現來源協助找到文章；文章與全文仍歸屬各原媒體。' : '收錄量為本站抓取的報導，非媒體全部發稿量。'}
-              正文從取得全文起保存 90 天。
+              正文在刊登後 7 天內可於站內閱讀。
             </p>
           </section>
         </MediaSidebar>
