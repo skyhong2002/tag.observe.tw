@@ -7,6 +7,16 @@ const article = `<p>${body}</p>`;
 const head = '<title>真實新聞文章標題</title>';
 const samples = [
   {
+    url: 'https://watchout.tw/reports/cfQ1ORe7lYAGkaX0Oqpr',
+    html: `<h1>真實新聞文章標題</h1><div class="dates"><div><span>發佈時間</span><span>2026/10/1 06:47:33</span></div><div><span>最後更新</span><span>2026/10/2 09:00:00</span></div></div><div class="content paragraphs">${article}</div><div class="after-article"><div class="date">2026/12/31</div>其他新聞</div>`,
+    iso: '2026-10-01T06:47:33.000Z',
+  },
+  {
+    url: 'https://eventsinfocus.org/news/7148462',
+    html: `<main id="content"><h1>真實新聞文章標題</h1><div class="node__content"><div class="field--name-field-time"><time datetime="2026-09-29T12:00:00Z">2026-09-29</time></div><div class="field--name-body">${article}</div></div></main><aside><div class="node__content"><time>2026-12-31</time><div class="field--name-body">不屬於這篇新聞的募款報告</div></div></aside>`,
+    iso: '2026-09-29T12:00:00.000Z',
+  },
+  {
     url: 'https://news.taiwannet.com.tw/news/222118/article.html?categoryId=Academic',
     html: `<div class="news-date-box"><span class="news-time"><time>2026/10/2</time></span></div><div class="news-date-txt-box">${article}</div><footer><time>2026/12/31</time></footer>`,
     iso: '2026-10-01T16:00:00.000Z',
@@ -39,10 +49,20 @@ const samples = [
 ];
 
 describe('additional publisher article templates', () => {
+  it('keeps every Tatler text block without gallery controls or the read-more button', () => {
+    const html = `${head}<div class="article-height"><div class="article-content"><button>閱讀全文</button></div><div><div class="article-content"><div class="rich-text">${article}</div></div><div class="article-content">1 / 1 arrow left arrow right</div><div class="article-content"><div class="rich-text"><p>文章最後一段完整保留。</p></div></div></div></div>`;
+    const result = extractArticle(html, 'https://www.tatlerasia.com/style/beauty/example-zh-hant');
+    expect(result.body).toContain(body);
+    expect(result.body).toContain('文章最後一段完整保留。');
+    expect(result.body).not.toMatch(/arrow|閱讀全文/);
+    expect(result.bodyStatus).toBe('ok');
+  });
+
   it.each(samples)('extracts main article evidence at $url without unrelated headings/dates', ({ url, html, iso }) => {
     const result = extractArticle(head + html, url);
     expect(result.bodyStatus).toBe('ok');
     expect(result.body).toContain(body);
+    expect(result.body).not.toContain('不屬於這篇新聞的募款報告');
     expect(result.title).toBe('真實新聞文章標題');
     expect(result.publishedAt?.toISOString()).toBe(iso);
   });

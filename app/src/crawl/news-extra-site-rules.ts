@@ -3,6 +3,30 @@ import type { NewsSiteRules } from './news-site-rules.ts';
 // Additional publisher templates verified against live article HTML.
 export const EXTRA_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegExp }> = [
   {
+    host: 'tatlerasia.com',
+    path: /^\/(?!list\/).*(?:zh-hant|zh-[^/]+-hant)$/,
+    // Text is split across sibling .article-content blocks, interleaved with
+    // image galleries. Selecting one block silently truncates the story.
+    bodySelector: '.article-height',
+    bodyExcludeSelector: '.article-content:not(:has(.rich-text))',
+  },
+  {
+    host: 'watchout.tw',
+    path: /^\/(?:reports|forum)\/[a-zA-Z0-9]+$/,
+    bodySelector: '.content.paragraphs',
+    titleSelector: 'h1',
+    publishedSelector: '.dates > div:first-child > span:last-child',
+    // SSR prints UTC; verified against this article's publishedAt.seconds.
+    publicationFormat: 'utc',
+  },
+  {
+    host: 'eventsinfocus.org',
+    path: /^\/news\/\d+$/,
+    bodySelector: 'main#content .node__content > .field--name-body',
+    titleSelector: 'main#content h1',
+    publishedSelector: 'main#content .field--name-field-time > time[datetime]',
+  },
+  {
     host: 'news.taiwannet.com.tw',
     path: /^\/news\/\d+\//,
     bodySelector: '.news-date-txt-box',

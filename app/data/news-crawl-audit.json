@@ -1715,13 +1715,26 @@
     {
       "media": "nvns",
       "websiteUrl": "https://nvns.net/",
-      "checkedAt": "2026-10-03T11:26:17.970Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 4 次請求未驗證到近期完整文章。https://nvns.net/sitemap.xml: The operation was aborted due to timeout；https://nvns.net/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+      "checkedAt": "2026-10-03T11:55:26.787Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://nvns.net/news_view.php?new_sn=144960&new_csn=1977",
+          "title": "成軍10年助新銳吸金破千萬！ 勞動部「衣啟飛翔」116年將升級轉型微型創業育成基地",
+          "publishedAt": "2026-10-03T11:09:55.000Z",
+          "bodyLength": 1677
+        },
+        {
+          "url": "https://nvns.net/news_view.php?new_sn=144955&new_csn=1467",
+          "title": "把「健康」藏進博物館名作裡 奇美醫院攜手嘉大、奇博館，邀大南迴孩子「健康藝術之旅」",
+          "publishedAt": "2026-10-03T09:49:09.000Z",
+          "bodyLength": 1758
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://nvns.net/",
+      "detail": "2026-10-03 重新連線成功；已驗證近期原站文章日期與全文。"
     },
     {
       "media": "bigmedia",
@@ -3973,13 +3986,32 @@
     {
       "media": "biao_news",
       "websiteUrl": "https://www.biao-news.com/",
-      "checkedAt": "2026-10-03T11:27:00.599Z",
-      "articleCount": 0,
-      "samples": [],
-      "status": "unavailable",
-      "strategy": "none",
-      "listingUrl": null,
-      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.biao-news.com/sitemap.xml: The operation was aborted due to timeout；https://www.biao-news.com/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+      "checkedAt": "2026-10-03T11:57:49.184Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.biao-news.com/news_view.php?new_sn=144926&new_csn=2713",
+          "title": "健走GO健康！台南新樓醫院健走嘉年華 帶動社區健康新生活",
+          "publishedAt": "2026-10-02T16:00:00.000Z",
+          "bodyLength": 923
+        },
+        {
+          "url": "https://www.biao-news.com/news_view.php?new_sn=144924&new_csn=2713",
+          "title": "健康也能很有藝思！奇美醫院攜手嘉大、奇美博物館翻轉偏鄉衛教",
+          "publishedAt": "2026-10-02T16:00:00.000Z",
+          "bodyLength": 1788
+        },
+        {
+          "url": "https://www.biao-news.com/news_view.php?new_sn=144922&new_csn=2713",
+          "title": "2026田邊有牛・柳營牛奶節登場 乳香飄揚展現臺南乳業新活力",
+          "publishedAt": "2026-10-02T16:00:00.000Z",
+          "bodyLength": 762
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.biao-news.com/",
+      "detail": "2026-10-03 重新連線成功；已驗證近期原站文章日期與全文。"
     },
     {
       "media": "newday",

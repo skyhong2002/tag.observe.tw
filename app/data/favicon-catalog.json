@@ -1174,5 +1174,13 @@
   "voicettank": {
     "title": "思想坦克",
     "icon": null
+  },
+  "techcrunch": {
+    "icon": "https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=192",
+    "title": "TechCrunch"
+  },
+  "adaymag": {
+    "icon": "https://adayimg.com/wp-content/uploads/2017/04/3d2cd9e4496057638a60144845e8d2c8-192x192.png",
+    "title": "A Day Magazine"
   }
 }

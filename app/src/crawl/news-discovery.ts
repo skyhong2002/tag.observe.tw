@@ -223,6 +223,10 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     result.errors.push('Invalid articlePattern; using generic discovery');
   }
   const budget = () => !stopped && result.attempted < maxRequests && Date.now() < deadline && result.items.length < maxArticles;
+  const inArticleScope = (url: string) => {
+    const parsed = new URL(url);
+    return belongs(url) && articlePath(url) && (!pattern || pattern.test(parsed.pathname + parsed.search));
+  };
   const get = async (url: string) => {
     if (fetched.has(url)) return fetched.get(url) ?? null;
     if (!budget()) return null;
@@ -283,7 +287,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
   const validate = async (candidate: FeedItem, strategy: 'rss' | 'sitemap' | 'html', listingUrl: string) => {
     const url = absolute(candidate.url, listingUrl);
     const validationKey = `${url}\t${candidate.publishedAt?.getTime() ?? ''}`;
-    if (!url || !belongs(url) || !articlePath(url) || validated.has(validationKey) || !budget()) return;
+    if (!url || !inArticleScope(url) || validated.has(validationKey) || !budget()) return;
     validated.add(validationKey);
     if (candidate.publishedAt && !recent(candidate.publishedAt)) {
       reject('feed publication outside14days', url);
@@ -317,7 +321,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
       }
       return;
     }
-    if (!belongs(response.url) || !articlePath(response.url)) {
+    if (!inArticleScope(response.url)) {
       reject('redirect outside source article scope', response.url);
       return;
     }
@@ -358,7 +362,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
         canonical = response.url;
       }
     }
-    if (!canonical || !belongs(canonical) || !articlePath(canonical)) {
+    if (!canonical || !inArticleScope(canonical)) {
       reject('canonical outside source article scope', response.url);
       return;
     }
@@ -437,7 +441,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
       for (const row of records) {
         if (result.items.length >= maxArticles || stopped) break;
         const url = typeof row.link === 'string' ? absolute(row.link, home) : null;
-        if (!url || !belongs(url) || !articlePath(url) || accepted.has(url)) continue;
+        if (!url || !inArticleScope(url) || accepted.has(url)) continue;
         const content = row.content;
         const date = typeof row.date_gmt === 'string' ? row.date_gmt : '';
         const publishedAt = parsePublished(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(date) ? `${date}Z` : date);

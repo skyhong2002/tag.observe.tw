@@ -2,6 +2,72 @@ import type { SourceOverride } from '../sources.ts';
 // Hand-ported adjustments for media whose legacy PHP relied on page-specific
 // markers or whose feeds moved. Keep entries small and commented.
 export const overrides: Record<string, SourceOverride> = {
+  // Restored 2026-10-03 from current publisher pages; each source passed
+  // recent-publication and complete-body checks before scheduling.
+  wyc: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://dq.yam.com/', maxArticles: 12, articlePattern: '^/post/\\d+$' } },
+    article: { enabled: true },
+  },
+  daman: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://www.damanwoo.com/', maxArticles: 12, articlePattern: '^/node/\\d+$' } },
+    article: { enabled: true },
+  },
+  babyou: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://babyou.me/', maxArticles: 12, feedUrls: ['https://babyou.me/feed'] } },
+    article: { enabled: true },
+  },
+  techcrunch: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://techcrunch.com/', maxArticles: 12, feedUrls: ['https://techcrunch.com/feed/'] } },
+    article: { enabled: true },
+  },
+  tsna: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://tsna.com/', maxArticles: 12, articlePattern: '^/article/\\d+$' } },
+    article: { enabled: true },
+  },
+  musou: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://watchout.tw/', maxArticles: 12, articlePattern: '^/(?:reports|forum)/[a-zA-Z0-9]+$' } },
+    article: { enabled: true },
+  },
+  hypesphere: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://hypesphere.com/', maxArticles: 12, feedUrls: ['https://hypesphere.com/feed/'] } },
+    article: { enabled: true },
+  },
+  ldope: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://ldope.com/', maxArticles: 12, articlePattern: '^/news/' } },
+    article: { enabled: true },
+  },
+  eventsinfocus: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://eventsinfocus.org/', maxArticles: 12, articlePattern: '^/news/\\d+$' } },
+    article: { enabled: true },
+  },
+  voicettank: {
+    group: 'hourly',
+    list: { autoDiscover: { homeUrl: 'https://voicettank.org/', maxArticles: 12, feedUrls: ['https://voicettank.org/feed/'] } },
+    article: { enabled: true },
+  },
+  asiatatler: {
+    group: 'hourly',
+    list: {
+      autoDiscover: { homeUrl: 'https://www.tatlerasia.com/', maxArticles: 12, articlePattern: '^/(?!list/).*(?:zh-hant|zh-[^/]+-hant)$' },
+    },
+    article: { enabled: true },
+  },
+  adaymag: {
+    group: 'hourly',
+    list: {
+      autoDiscover: { homeUrl: 'https://www.adaymag.com/', maxArticles: 12, articlePattern: '^/20\\d{2}/\\d{2}/\\d{2}/[^/]+\\.html$' },
+    },
+    article: { enabled: true },
+  },
   // Direct Housefun endpoints currently return AWS WAF challenges. This
   // publisher-specific feed carries Housefun articles published by MyHousing;
   // retain the actual partner URL and require the article's own provider credit.
@@ -99,7 +165,10 @@ export const overrides: Record<string, SourceOverride> = {
   },
   vogue: { list: { urls: [{ cat: 'news', url: 'https://www.vogue.com.tw/' }], discover: { pattern: '^/(article|galerie)/' } } },
   eld: { list: { urls: [{ cat: 'news', url: 'https://www.roomie.tw/' }], discover: { pattern: '^/posts/\\d+' } } },
-  oncc: { list: { urls: [{ cat: 'news', url: 'https://hk.on.cc/tw/news/index.html' }], discover: { pattern: '/bkn/cnt/news/\\d{8}/' } } },
+  oncc: {
+    group: 'hourly',
+    list: { urls: [{ cat: 'news', url: 'https://hk.on.cc/tw/news/index.html' }], discover: { pattern: '/bkn/cnt/news/\\d{8}/' } },
+  },
   dramaqueen: { list: { urls: [{ cat: 'news', url: 'https://www.dramaqueen.com.tw/' }], discover: { pattern: '^/news/\\d{8}/' } } },
   // Legacy parsed the HTML listing with '<item' markers; the site has a real feed.
   nius: { list: { urls: [{ cat: 'feed', url: 'https://www.niusnews.com/feed' }] } },
@@ -140,7 +209,6 @@ export const overrides: Record<string, SourceOverride> = {
     titleSuffix: String.raw`\s*-\s*康健雜誌`,
   },
   cti: { list: { urls: [{ cat: 'news', url: 'https://ctinews.com/rss/sitemap.xml' }] } },
-  daman: { list: { urls: [{ cat: 'news', url: 'http://feeds.feedburner.com/feed' }] } },
   // RSS is gone (404) and the sitemap lists only static pages; the news and
   // column sections link recent /node/<id> articles (dated on the page).
   einfo: {
@@ -160,7 +228,6 @@ export const overrides: Record<string, SourceOverride> = {
       discover: { pattern: String.raw`^/news/newsnow/paper/\d+$` },
     },
   },
-  ldope: { list: { urls: [{ cat: 'news', url: 'https://ldope.com/sitemap_index.xml' }] } },
   marieclaire: { list: { urls: [{ cat: 'news', url: 'https://www.marieclaire.com.tw/sitemap.xml' }] } },
   shoppingdesign: { list: { urls: [{ cat: 'news', url: 'https://www.shoppingdesign.com.tw/rss' }] } },
   supertaste: {

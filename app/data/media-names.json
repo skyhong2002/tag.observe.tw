@@ -2529,6 +2529,20 @@
       "status": "verified",
       "sourceUrl": "https://voicettank.org/",
       "evidence": "思想坦克｜Voicettank"
+    },
+    "techcrunch": {
+      "name": "TechCrunch",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://techcrunch.com/",
+      "evidence": "官方首頁與近期文章的品牌署名；2026-10-03 恢復既有爬蟲。"
+    },
+    "adaymag": {
+      "name": "A Day Magazine",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.adaymag.com/",
+      "evidence": "官方首頁與近期文章的品牌署名；2026-10-03 恢復既有爬蟲。"
     }
   }
 }

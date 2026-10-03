@@ -31,6 +31,26 @@ function fixture(pages: Record<string, string | Partial<FetchResult> | Error>) {
 }
 
 describe('discoverNews', () => {
+  it('applies the reviewed article scope to feeds, redirects and canonical URLs too', async () => {
+    const f = fixture({
+      [home]: '',
+      [`${home}rss`]: `<rss><channel>${['english', 'redirect-zh-hant', 'canonical-zh-hant', 'good-zh-hant']
+        .map((slug) => `<item><link>${home}story/${slug}</link><title>公共政策最新進展與專家分析</title><pubDate>${today}</pubDate></item>`)
+        .join('')}</channel></rss>`,
+      [`${home}story/redirect-zh-hant`]: { url: `${home}story/english`, body: article() },
+      [`${home}story/canonical-zh-hant`]: article(
+        `<link rel="canonical" href="${home}story/english"><meta property="article:published_time" content="${today}">`,
+      ),
+      [`${home}story/good-zh-hant`]: article(),
+    });
+    const result = await discoverNews(
+      { homeUrl: home, feedUrls: [`${home}rss`], articlePattern: '^/story/.*-zh-hant$', maxArticles: 1 },
+      f.options,
+    );
+    expect(result.items.map((item) => item.url)).toEqual([`${home}story/good-zh-hant`]);
+    expect(f.calls).not.toContain(`${home}story/english`);
+  });
+
   it('autodiscovers RSS and validates an actual recent article body', async () => {
     const f = fixture({
       [home]: '<link rel="alternate" type="application/rss+xml" href="/rss">',

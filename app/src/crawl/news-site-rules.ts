@@ -7,7 +7,7 @@ export interface NewsSiteRules {
   titleSelector?: string;
   publishedSelector?: string;
   publicationPattern?: RegExp;
-  publicationFormat?: 'epoch-ms' | 'day-first';
+  publicationFormat?: 'epoch-ms' | 'day-first' | 'utc';
   preferPrintedPublication?: boolean;
   providerSelector?: string;
   bodyExcludeSelector?: string;
@@ -260,11 +260,12 @@ function printedPublication(raw: string): string | null {
   const date = /^(\d{4})\s*[-/.年]\s*(\d{1,2})\s*[-/.月]\s*(\d{1,2})(?:\s*日)?(?:[T\s]*(\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(normalized);
   if (!date) return null;
   const [, year, month, day, hour = '00', minute = '00', second = '00'] = date;
-  const iso = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute}:${second}+08:00`;
+  const zone = normalized.match(/(?:Z|[+-]\d{2}:\d{2})$/)?.[0] ?? '+08:00';
+  const local = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute}:${second}`;
+  const iso = local + zone;
   const parsed = new Date(iso);
   // Reject rolling dates such as February 31, rather than repairing evidence.
-  if (Number.isNaN(parsed.getTime()) || new Date(parsed.getTime() + 8 * 3600000).toISOString().slice(0, 10) !== iso.slice(0, 10))
-    return null;
+  if (Number.isNaN(parsed.getTime()) || new Date(`${local}Z`).toISOString().slice(0, 10) !== iso.slice(0, 10)) return null;
   return iso;
 }
 
@@ -283,6 +284,7 @@ export function newsSiteEvidence($: CheerioAPI, url: string) {
       let raw = element.attr('datetime') ?? element.text().trim();
       if (rules.publicationPattern) raw = rules.publicationPattern.exec(raw)?.[1] ?? '';
       if (rules.publicationFormat === 'day-first') raw = raw.replace(/^(\d{2})-(\d{2})-(\d{4})$/, '$3-$2-$1');
+      if (rules.publicationFormat === 'utc') raw += 'Z';
       publishedRaw =
         rules.publicationFormat === 'epoch-ms'
           ? /^\d{13}$/.test(raw)
