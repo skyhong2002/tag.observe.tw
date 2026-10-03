@@ -389,13 +389,15 @@
     "note": "Best verified publisher mark available; original resolution is limited."
   },
   "contentplatform_info": {
-    "source": "https://d16ad5czovw3en.cloudfront.net/wp-content/uploads/2021/09/19021355/cropped-Logo-%E6%AD%A3%E6%96%B9-400x400-1-192x192.jpg",
+    "source": "https://d16ad5czovw3en.cloudfront.net/wp-content/uploads/2021/06/06000819/Logo-%E9%95%B7-1200x1200-1.png",
     "fetchedAt": "2026-10-03",
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "e1ac2944d25a",
-    "curated": true
+    "curated": true,
+    "sourceWidth": 1200,
+    "sourceHeight": 1200,
+    "transparent": true,
+    "revision": "4a5d0a14e8b8",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "cool3c": {
     "source": "https://www.cool3c.com/favicon.ico",
@@ -446,33 +448,34 @@
     "note": "Publisher supplies this transparent version of its icon."
   },
   "cti": {
-    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/4/48/CTI_News_Logo.jpg/250px-CTI_News_Logo.jpg?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "source": "https://ctinews.com/_nuxt/logo.B9td3QbG.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 250,
-    "sourceHeight": 250,
-    "transparent": false,
-    "revision": "b1b6cb58b126",
-    "note": "Same publisher identity as ctitv."
+    "sourceWidth": 426,
+    "sourceHeight": 90,
+    "transparent": true,
+    "revision": "69415bb20272",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "ctit": {
-    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/4/48/CTI_News_Logo.jpg/250px-CTI_News_Logo.jpg?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "source": "https://ctinews.com/_nuxt/logo.B9td3QbG.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 250,
-    "sourceHeight": 250,
-    "transparent": false,
-    "revision": "b1b6cb58b126",
-    "note": "Same publisher identity as ctitv."
+    "sourceWidth": 426,
+    "sourceHeight": 90,
+    "transparent": true,
+    "revision": "69415bb20272",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "ctitv": {
-    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/4/48/CTI_News_Logo.jpg/250px-CTI_News_Logo.jpg?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+    "source": "https://ctinews.com/_nuxt/logo.B9td3QbG.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 250,
-    "sourceHeight": 250,
-    "transparent": false,
-    "revision": "b1b6cb58b126"
+    "sourceWidth": 426,
+    "sourceHeight": 90,
+    "transparent": true,
+    "revision": "69415bb20272",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "cts": {
     "source": "https://news.cts.com.tw/assets/favicon-news.png",
@@ -495,13 +498,15 @@
     "dark": "outline"
   },
   "ctwant": {
-    "source": "https://static.ctwant.com/images/dist/apple-touch-icon.png",
+    "source": "https://static.ctwant.com/images/dist/logo.svg",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "1378924f744d"
+    "sourceWidth": 143,
+    "sourceHeight": 26,
+    "transparent": true,
+    "revision": "b8e0f5f2bfdc",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
   },
   "cw": {
     "source": "https://www.google.com/s2/favicons?domain=www.cw.com.tw&sz=256",
@@ -513,13 +518,15 @@
     "revision": "e45c42b7537a"
   },
   "daai": {
-    "source": "https://www.daai.tv/images/android-icon-300x300.png",
+    "source": "https://www.daai.tv/images/logo.png",
     "fetchedAt": "2026-10-03",
-    "sourceWidth": 300,
-    "sourceHeight": 300,
-    "transparent": false,
-    "revision": "4b8b7a13c300",
-    "curated": true
+    "curated": true,
+    "sourceWidth": 358,
+    "sourceHeight": 80,
+    "transparent": true,
+    "revision": "62b75343ad42",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved.",
+    "dark": "outline"
   },
   "dacota": {
     "source": "https://img.dacota.tw/2017/09/1504802621-4265a788ecc74a4ea0967fbcf0a43f6e.png",
@@ -645,13 +652,15 @@
     "revision": "790b118726e6"
   },
   "epochtimes": {
-    "source": "https://www.epochtimes.com/android-icon-192x192.png",
+    "source": "https://www.epochtimes.com/assets/themes/djy/images/djy_logo2.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "2603bc659c35"
+    "sourceWidth": 149,
+    "sourceHeight": 67,
+    "transparent": true,
+    "revision": "49dfd744e4cf",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "eracom": {
     "source": "https://www.eracom.com.tw/t/2/2/img/favicon-eranews.ico?v=20240329170939",
@@ -768,13 +777,15 @@
     "curated": true
   },
   "ftnn": {
-    "source": "https://static.ftnn.com.tw/www/images/ftnn-icon-64.jpg",
+    "source": "https://static.ftnn.com.tw/www/images/ftnn-logo-rtop-2.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 64,
-    "sourceHeight": 64,
-    "transparent": false,
-    "revision": "395895398ec9"
+    "sourceWidth": 112,
+    "sourceHeight": 46,
+    "transparent": true,
+    "revision": "cfccbe05c805",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "ftv": {
     "source": "https://www.google.com/s2/favicons?domain=www.ftvnews.com.tw&sz=256",
@@ -889,13 +900,15 @@
     "revision": "f5d8e655c561"
   },
   "gvm": {
-    "source": "https://www.gvm.com.tw/public/images/touch-icon-180_180.png",
+    "source": "https://www.gvm.com.tw/public/images/header/logo.svg",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 180,
-    "sourceHeight": 180,
-    "transparent": false,
-    "revision": "368c099cc000"
+    "sourceWidth": 63,
+    "sourceHeight": 45,
+    "transparent": true,
+    "revision": "7116ffe9e3a8",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
   },
   "hakkanews": {
     "source": "https://gcs.hakkanews.tw/2026/08/2026-08-18-favicon.jpg",
@@ -1145,13 +1158,15 @@
     "revision": "237e1e9f8d76"
   },
   "kocpc": {
-    "source": "https://www.kocpc.com.tw/wp-content/uploads/2026/01/20260114153818_0_751714-350x350.jpeg",
+    "source": "https://www.kocpc.com.tw/wp-content/uploads/2021/12/1640845671-3a3728f68b5052648131103dbc04be26.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 350,
-    "sourceHeight": 350,
-    "transparent": false,
-    "revision": "87454760c8a1"
+    "sourceWidth": 376,
+    "sourceHeight": 84,
+    "transparent": true,
+    "revision": "8f1f51ae6786",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "ksnews": {
     "source": "https://www.google.com/s2/favicons?domain=www.ksnews.com.tw&sz=256",
@@ -1181,13 +1196,15 @@
     "curated": true
   },
   "ldope": {
-    "source": "https://ldope.com/wp-content/uploads/2019/05/bd3da199f2bc3749fdca9c4c87eaf72a-192x192.jpg",
+    "source": "https://ldope.com/wp-content/uploads/2018/10/LDope_logo2018_313x75.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "1cbb8445a3b9"
+    "sourceWidth": 313,
+    "sourceHeight": 75,
+    "transparent": true,
+    "revision": "6b896818368f",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "leho": {
     "source": "https://leho.com.tw/wp-content/uploads/2021/11/cropped-leho-favicon-192x192.png",
@@ -1284,13 +1301,14 @@
     "note": "Best verified publisher mark available; original resolution is limited."
   },
   "marieclaire": {
-    "source": "https://il.marieclaire.com.tw/images/icon/r512.png",
+    "source": "https://il.marieclaire.com.tw/images/product/logoRed.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 512,
-    "sourceHeight": 512,
-    "transparent": false,
-    "revision": "a2f4c58408e7"
+    "sourceWidth": 351,
+    "sourceHeight": 60,
+    "transparent": true,
+    "revision": "b3a42df81894",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "matsu_idv": {
     "source": "http://matsu.idv.tw/img/favicon.png",
@@ -1349,13 +1367,15 @@
     "revision": "2cc50e90bbc1"
   },
   "mirror": {
-    "source": "https://www.mirrormedia.mg/apple-touch-icon.png",
+    "source": "https://www.mirrormedia.mg/images-next/mirror-media-logo.svg",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 180,
-    "sourceHeight": 180,
-    "transparent": false,
-    "revision": "70386a36ac9d"
+    "sourceWidth": 108,
+    "sourceHeight": 46,
+    "transparent": true,
+    "revision": "7bd1edc94944",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
   },
   "mirrordaily": {
     "source": "https://www.mirrordaily.news/favicon.ico",
@@ -1395,13 +1415,15 @@
     "revision": "ac4ebecf5a2e"
   },
   "more_news": {
-    "source": "https://more-news.tw/wp-content/uploads/cropped-more-news-logo.jpg",
+    "source": "https://more-news.tw/more-news-media/logo.webp",
     "fetchedAt": "2026-10-03",
-    "sourceWidth": 512,
-    "sourceHeight": 512,
-    "transparent": false,
-    "revision": "889e80bd7499",
-    "curated": true
+    "curated": true,
+    "sourceWidth": 300,
+    "sourceHeight": 113,
+    "transparent": true,
+    "revision": "f7afe2915b67",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "mplus": {
     "source": "https://www.mplus.com.tw/favicon.ico",
@@ -1413,13 +1435,15 @@
     "revision": "dbde81004abe"
   },
   "mrmad": {
-    "source": "https://mrmad.com.tw/wp-content/uploads/2021/05/cropped-favicon-mrmad2021.jpg",
+    "source": "https://mrmad.com.tw/wp-content/uploads/2021/05/sticky_logo-142x32.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 512,
-    "sourceHeight": 512,
-    "transparent": false,
-    "revision": "20074ea46f5c"
+    "sourceWidth": 142,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "947e11fef026",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "msn": {
     "source": "https://www.msn.com/favicon.ico",
@@ -1580,14 +1604,15 @@
     "note": "Best verified publisher mark available; original resolution is limited."
   },
   "newtalk": {
-    "source": "https://newtalk.tw/images/mobile_logo192.png",
+    "source": "https://newtalk.tw/_nuxt/logo-header-light-mobile.DdikG_4q.svg",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "b55a94e1c893",
-    "dark": "outline"
+    "sourceWidth": 160,
+    "sourceHeight": 44,
+    "transparent": true,
+    "revision": "43c726c110dc",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
   },
   "nextapple": {
     "source": "https://static.nextapple.tw/web/layout/favicon/android-icon-192x192.png",
@@ -1740,13 +1765,14 @@
     "revision": "cc7d9a5e1c58"
   },
   "people": {
-    "source": "https://www.peoplenews.tw/wp-content/uploads/2025/12/Gemini_Generated_Image_28t76z28t76z28t7.jpg",
+    "source": "https://www.peoplenews.tw/wp-content/uploads/2025/12/peoplenews.png",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 819,
-    "sourceHeight": 819,
-    "transparent": false,
-    "revision": "fdd1804c1cfb"
+    "sourceWidth": 1488,
+    "sourceHeight": 552,
+    "transparent": true,
+    "revision": "f4eee2c3834f",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "people_cn": {
     "source": "https://www.people.com.cn//favicon.ico",
@@ -2043,13 +2069,15 @@
     "curated": true
   },
   "storm": {
-    "source": "https://www.storm.mg/img/touch-icon-retina.png",
+    "source": "https://www.storm.mg/img/logo-storm.svg",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 180,
-    "sourceHeight": 180,
-    "transparent": false,
-    "revision": "9205fe957c69"
+    "sourceWidth": 156,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "56e5f8677d92",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
   },
   "sunmedia": {
     "source": "https://sunmedia.tw/favicon-96x96.png",
@@ -2070,13 +2098,15 @@
     "revision": "60099dee37bb"
   },
   "taidaily": {
-    "source": "https://taidaily.com/wp-content/uploads/2024/08/cropped-033ad57c455e50e02ad81cca94e44a21-192x192.jpg",
+    "source": "https://img.taidaily.com/2026/07/b648e3d69dd0a39be485dc30a0daed4b.png",
     "fetchedAt": "2026-10-03",
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "ec0f5a027182",
-    "curated": true
+    "curated": true,
+    "sourceWidth": 1050,
+    "sourceHeight": 312,
+    "transparent": true,
+    "revision": "c51bdbe14f66",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "taipeipost": {
     "source": "https://taipeipost.org/wp-content/uploads/2021/02/favicon-s-256x256.jpg",
@@ -2200,13 +2230,15 @@
     "revision": "1d5a24c980ff"
   },
   "tcnews": {
-    "source": "https://www.google.com/s2/favicons?domain=tcnews.com.tw&sz=256",
+    "source": "https://www.tcnews.com.tw/images/logo.webp",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 144,
-    "sourceHeight": 144,
-    "transparent": false,
-    "revision": "6566fcd6a803"
+    "sourceWidth": 1040,
+    "sourceHeight": 434,
+    "transparent": true,
+    "revision": "16337dee4f2c",
+    "dark": "outline",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "techbang": {
     "source": "https://www.techbang.com/favicon.ico",
@@ -2218,13 +2250,14 @@
     "revision": "112dcb1f0304"
   },
   "techcrunch": {
-    "source": "https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=192",
+    "source": "https://techcrunch.com/wp-content/themes/tc-24/dist/svg/tc-logo.svg",
     "fetchedAt": "2026-10-03",
     "curated": true,
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "0d2d9812f2ab"
+    "sourceWidth": 94,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "d76cb443c8b7",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
   },
   "technews": {
     "source": "https://img.technews.tw/wp-content/themes/twentytwelve/images/favicon.ico",
@@ -2469,13 +2502,14 @@
     "curated": true
   },
   "voachinese": {
-    "source": "https://www.voachinese.com/Content/responsive/VOA/img/webApp/ico-192x192.png",
+    "source": "https://www.voachinese.com/Content/responsive/VOA/zh-CN/img/logo.svg?cb=323",
     "fetchedAt": "2026-10-03",
-    "sourceWidth": 192,
-    "sourceHeight": 192,
-    "transparent": false,
-    "revision": "48b6e72643ef",
-    "curated": true
+    "curated": true,
+    "sourceWidth": 201,
+    "sourceHeight": 80,
+    "transparent": true,
+    "revision": "b004d6f1754f",
+    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
   },
   "vogue": {
     "source": "https://www.vogue.com.tw/verso/static/vogue-global/assets/tw/logo-header.svg",

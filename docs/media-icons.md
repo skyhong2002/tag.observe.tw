@@ -19,9 +19,8 @@
 - [BBC Logo 2021](https://commons.wikimedia.org/wiki/File:BBC_Logo_2021.svg)
 - [中央通訊社](https://zh.wikipedia.org/wiki/File:Central_News_Agency_logo.svg)
 - [中視新聞](https://zh.wikipedia.org/wiki/File:CTV_News_logo.png)
-- [中天新聞](https://zh.wikipedia.org/wiki/File:CTI_News_Logo.jpg)
 
-部分網站封鎖自動下載或沒有發布較大的獨立標誌。目前仍有 57 個來源小於 64px，已在 `note` 標示；日後取得更佳素材時更新來源再重新下載。新增但尚未人工檢查的媒體仍使用既有的圖示 fallback。
+部分網站封鎖自動下載或沒有發布較大的獨立標誌。目前仍有 57 個點陣來源小於 64px，已在 `note` 標示；日後取得更佳素材時更新來源再重新下載。SVG 的原始 viewport 尺寸不代表點陣解析度限制。新增但尚未人工檢查的媒體仍使用既有的圖示 fallback。
 
 ```sh
 node tools/fetch-favicons.ts bbc cts udn  # 更新指定來源
@@ -33,7 +32,18 @@ npx vitest run app/test/media-icons.spec.ts
 
 ## 本次覆蓋與缺漏
 
-共 283 個本地圖示，其中 173 個來源具有原生透明度。含原有 142 個圖示的品質整理，以及新增媒體來源的 141 個圖示。
+共 283 個本地圖示，其中 195 個來源具有原生透明度。含原有 142 個圖示的品質整理，以及新增媒體來源的 141 個圖示。
+
+### 2026-10-03 透明背景續整
+
+檢查前一批仍不透明的 110 個來源，這次將其中 22 個圖示換成官網提供的原生透明標誌：
+
+- 中天新聞：`cti`、`ctit`、`ctitv`，三個來源共用相同圖檔。
+- 報新聞、CTWANT、大愛、大紀元、鋒燦傳媒、遠見、電腦王阿達、L.DOPE、Marie Claire、鏡週刊、墨新聞、瘋先生、Newtalk、民報、風傳媒、很角色傳媒、慈善新聞網、TechCrunch、VOA 中文。
+
+來源網址、原始尺寸、更新日期與新快取版本均記錄於 `app/data/favicon-local.json`，沿用 `curated` 固定來源機制。這批直接使用官方 PNG、WebP 或 SVG，未重繪商標；採用橫式標誌的圖示保留完整字樣與原始比例。已檢視 24px、64px 在白底與深色底的效果，含深色筆畫的彩色標誌使用 `outline`；L.DOPE 保留紅點，不套用整張反色。
+
+剩餘 88 個來源尚未改為透明版，其中包含品牌原有色塊、僅提供白字版、找不到合適透明素材或網站無法下載的情形。官網內的空白延遲載入佔位圖、活動與合作方標誌均不採用；只含透明邊角的圖片也不能據此認定已去除底色。
 
 下列 8 個已登錄來源尚未取得可確認的品牌圖示，保留既有文字備援；不以其他媒體或平台圖示代替。
 
