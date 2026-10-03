@@ -22,7 +22,69 @@
 - 新唐人簡體模板與繁體一樣把北京時間誤標為 JSON-LD 的 Z，現在以正文標示北京時間為準。節目簡介、完整影片導流與大紀元每日摘要目錄在共用正文抽取層拒收，不能再從 JSON-LD 兜回全文。試抓中 5 筆不完整正文（8264173、8264174、8107641、8264176、8264177）已備份、撤下正文、標 short 並移除發現關聯；不計成功。新唐人 8264177 的 metadata 日期亦同步校正。
 - 本輪開始時，原 50 個範圍內來源逐站 DB／正式 API／閱讀頁核驗為 48 通過、2 無全文；完整快照 `artifacts/crawl-round5/audit.json`。新入庫證據 `stored-discovery.json`，原站與逐段核驗分別在 `google/stored-evidence.json`、`dongtaiwang/`，UI 桌機／390px 手機預覽在 `artifacts/discovery-ui/`（此預覽不取代正式入庫證據）。
 
-總排程 284 / 289；旺報、無界、重複 cti、解析雜項 social.php、已變質 overdope 仍未排程。最終部署驗證前，監督器保持未停止。
+總排程 284 / 289；旺報、無界、重複 cti、解析雜項 social.php、已變質 overdope 仍未排程。
+
+### 第五輪正式站驗證與完成條件
+
+- 抓取與閱讀功能提交 `f226241c9fe0cc1a062bcefe06b25f993b542a04` 已部署；本次獨立版本全套 **544 passed、10 skipped**，前後端 TypeScript、Biome、gitleaks、Chromium／Next／服務 smoke 均通過。
+- 媒體總目錄補上發現來源的關聯篇數與型態，聚合列不再誤顯零篇；全站文章量與發稿媒體數只計原媒體，避免重複加總。此補充由同工作區平行提交 `80b832771277f18f5ce86edf4131424f00c93900` 收錄；該整合版本全套 **550 passed、10 skipped**。
+- 正式站 2 個列表 × 桌機／390px 手機、7 篇閱讀頁 × 2 尺寸全部通過。正文與 API 相同、原媒體正確、標題實際點擊仍留站內、發現來源標記連站內、外連圖示連原發現頁；沒有橫向溢出或 JavaScript 錯誤。證據 `artifacts/crawl-round5/deployed-ui/result.json`，共 18 張截圖。
+- 最終版本 `80b8327` 的正常 `/media/` URL 亦通過桌機／手機驗證：兩來源均顯示「發現來源」與正常狀態，近七天 2／5 篇；全站總數與僅加總原媒體的獨立計算完全一致。證據 `artifacts/crawl-round5/deployed-ui/directory-final.json`。
+- 原停用 55 個項目，扣除 5 個既有排除，**50 / 50** 個範圍內來源均有已入庫完整正文及正式站閱讀證據，剩餘 **0**。其中 48 個為原媒體／公開授權正文來源，2 個依最新授權為文章發現來源。這是每站已成功收錄的證據，不代表抓完各站歷史全集。
+- 最終逐站 DB／API／reader／日期／發現歸屬驗證於 2026-10-03T14:18:23.480Z 完成，正式版本為 `80b8327`，結果保存於 `artifacts/crawl-round5/audit-final.json`；各站正文 SHA-256、取得時間、文章網址及排除狀態均有記錄。報告提交後，將監督器 `stopped` 設為 true，逐站結果寫入 `completionEvidence`；這只停止本次補抓監督，正常每小時爬蟲繼續運作。
+
+| 來源代碼 | 收錄方式 | 完整正文篇數 | 真實發布日期（UTC／日精度） | 站內閱讀證據 |
+|---|---|---:|---|---|
+| `adaymag` | 原媒體／公開全文 | 1 | 2026-09-23T10:13:34.000Z | [文章 8117299](https://tag.observe.tw/article/8117299/) |
+| `agriharvest` | 原媒體／公開全文 | 1 | 2019-09-27T02:23:33.000Z | [文章 8209815](https://tag.observe.tw/article/8209815/) |
+| `asiatatler` | 原媒體／公開全文 | 11 | 2026-10-02T02:45:57.000Z | [文章 8117305](https://tag.observe.tw/article/8117305/) |
+| `babyou` | 原媒體／公開全文 | 12 | 2026-10-03T08:00:40.000Z | [文章 8117173](https://tag.observe.tw/article/8117173/) |
+| `biao_news` | 原媒體／公開全文 | 7 | 2026-10-02T16:00:00.000Z | [文章 8190926](https://tag.observe.tw/article/8190926/) |
+| `buzzorange` | 原媒體／公開全文 | 2 | 2022-12-01T09:38:50.000Z | [文章 8219254](https://tag.observe.tw/article/8219254/) |
+| `bw` | 原媒體／公開全文 | 3 | 2026-10-02T04:00:00.000Z | [文章 8190941](https://tag.observe.tw/article/8190941/) |
+| `cheers` | 原媒體／公開全文 | 1 | 2018-09-27T08:31:37.000Z | [文章 8209814](https://tag.observe.tw/article/8209814/) |
+| `cn_wsj` | 原媒體／公開全文 | 1 | 2025-10-08（日精度） | [文章 8239222](https://tag.observe.tw/article/8239222/) |
+| `daman` | 原媒體／公開全文 | 20 | 2026-10-02T20:44:57.000Z | [文章 8117157](https://tag.observe.tw/article/8117157/) |
+| `digitimes` | 原媒體／公開全文 | 3 | 2026-10-01T16:00:00.000Z | [文章 8186632](https://tag.observe.tw/article/8186632/) |
+| `dongtaiwang` | 發現 → ntdtv | 5 | 2026-10-03T07:42:00.000Z | [文章 8265549](https://tag.observe.tw/article/8265549/) |
+| `dongtw` | 原媒體／公開全文 | 2 | 2020-01-15T07:50:35.000Z | [文章 8190461](https://tag.observe.tw/article/8190461/) |
+| `dramaqueen` | 原媒體／公開全文 | 16 | 2026-06-17T16:00:00.000Z | [文章 580928](https://tag.observe.tw/article/580928/) |
+| `enn` | 原媒體／公開全文 | 7 | 2026-10-03T10:44:07.000Z | [文章 8228680](https://tag.observe.tw/article/8228680/) |
+| `eventsinfocus` | 原媒體／公開全文 | 6 | 2026-10-02T12:00:00.000Z | [文章 8117201](https://tag.observe.tw/article/8117201/) |
+| `globalnewstv` | 原媒體／公開全文 | 1 | 2026-09-22T08:04:37.000Z | [文章 8186672](https://tag.observe.tw/article/8186672/) |
+| `google_news` | 發現 → udn | 2 | 2026-10-03T05:46:57.000Z | [文章 7878471](https://tag.observe.tw/article/7878471/) |
+| `gq` | 原媒體／公開全文 | 2 | 2017-11-12T04:30:00.000Z | [文章 8219256](https://tag.observe.tw/article/8219256/) |
+| `gv` | 原媒體／公開全文 | 12 | 2026-05-15T06:14:35.000Z | [文章 134137](https://tag.observe.tw/article/134137/) |
+| `hiilan` | 原媒體／公開全文 | 6 | 2025-06-12T09:54:22.000Z | [文章 8186666](https://tag.observe.tw/article/8186666/) |
+| `hypesphere` | 原媒體／公開全文 | 7 | 2026-10-03T05:30:25.000Z | [文章 8117278](https://tag.observe.tw/article/8117278/) |
+| `jdanews` | 原媒體／公開全文 | 9 | 2011-06-16T16:00:00.000Z | [文章 8186674](https://tag.observe.tw/article/8186674/) |
+| `kairos` | 原媒體／公開全文 | 3 | 2022-04-08T13:32:49.000Z | [文章 8190463](https://tag.observe.tw/article/8190463/) |
+| `ldope` | 原媒體／公開全文 | 3 | 2026-09-25T06:30:18.000Z | [文章 1018788](https://tag.observe.tw/article/1018788/) |
+| `mplus` | 原媒體／公開全文 | 12 | 2023-01-04T02:00:00.000Z | [文章 8186640](https://tag.observe.tw/article/8186640/) |
+| `msn` | 原媒體／公開全文 | 16 | 2026-10-03T12:59:17.000Z | [文章 8241172](https://tag.observe.tw/article/8241172/) |
+| `musou` | 原媒體／公開全文 | 2 | 2026-10-01T06:47:33.000Z | [文章 8117285](https://tag.observe.tw/article/8117285/) |
+| `nom` | 原媒體／公開全文 | 6 | 2025-03-26T09:54:31.000Z | [文章 134247](https://tag.observe.tw/article/134247/) |
+| `nvns` | 原媒體／公開全文 | 11 | 2026-10-03T11:09:55.000Z | [文章 8190106](https://tag.observe.tw/article/8190106/) |
+| `oncc` | 原媒體／公開全文 | 60 | 2026-10-03T13:01:58.000Z | [文章 8239143](https://tag.observe.tw/article/8239143/) |
+| `pantravel` | 原媒體／公開全文 | 12 | 2024-01-02T06:12:12.000Z | [文章 134147](https://tag.observe.tw/article/134147/) |
+| `pnn` | 原媒體／公開全文 | 4 | 2026-10-02T15:13:00.000Z | [文章 8209811](https://tag.observe.tw/article/8209811/) |
+| `punchline` | 原媒體／公開全文 | 12 | 2024-06-26T06:58:51.000Z | [文章 133687](https://tag.observe.tw/article/133687/) |
+| `readr` | 原媒體／公開全文 | 12 | 2026-03-16T12:00:00.000Z | [文章 8186679](https://tag.observe.tw/article/8186679/) |
+| `reuters` | 原媒體／公開全文 | 12 | 2024-10-16T02:00:00.000Z | [文章 8190527](https://tag.observe.tw/article/8190527/) |
+| `rwnews` | 原媒體／公開全文 | 3 | 2025-09-29T08:48:28.000Z | [文章 8190557](https://tag.observe.tw/article/8190557/) |
+| `taiwan` | 原媒體／公開全文 | 10 | 2026-09-23T23:42:42.000Z | [文章 8219251](https://tag.observe.tw/article/8219251/) |
+| `taiwandaily` | 原媒體／公開全文 | 1 | 2021-10-13T01:50:00.000Z | [文章 8209816](https://tag.observe.tw/article/8209816/) |
+| `taiwanenews` | 原媒體／公開全文 | 1 | 2026-09-28T16:00:00.000Z | [文章 8186685](https://tag.observe.tw/article/8186685/) |
+| `techcrunch` | 原媒體／公開全文 | 12 | 2026-10-03T00:45:39.000Z | [文章 8117161](https://tag.observe.tw/article/8117161/) |
+| `thepaper` | 原媒體／公開全文 | 12 | 2026-10-03T13:18:00.000Z | [文章 8241358](https://tag.observe.tw/article/8241358/) |
+| `tnews` | 原媒體／公開全文 | 3 | 2026-10-03T09:19:00.000Z | [文章 8190692](https://tag.observe.tw/article/8190692/) |
+| `travelnews` | 原媒體／公開全文 | 1 | 2019-10-10T03:56:46.000Z | [文章 8219258](https://tag.observe.tw/article/8219258/) |
+| `tristarnews` | 原媒體／公開全文 | 12 | 2026-10-03T13:14:00.000Z | [文章 8241762](https://tag.observe.tw/article/8241762/) |
+| `tsna` | 原媒體／公開全文 | 22 | 2026-10-03T13:33:05.000Z | [文章 8238872](https://tag.observe.tw/article/8238872/) |
+| `viewpointtaiwan` | 原媒體／公開全文 | 8 | 2024-02-26T01:15:53.000Z | [文章 8186648](https://tag.observe.tw/article/8186648/) |
+| `voachinese` | 原媒體／公開全文 | 11 | 2026-10-02T22:14:46.000Z | [文章 8186642](https://tag.observe.tw/article/8186642/) |
+| `voicettank` | 原媒體／公開全文 | 12 | 2026-10-02T07:37:52.000Z | [文章 8117287](https://tag.observe.tw/article/8117287/) |
+| `wyc` | 原媒體／公開全文 | 11 | 2026-10-02T07:29:21.000Z | [文章 8117138](https://tag.observe.tw/article/8117138/) |
 
 ## 第四輪：ENN 當日報導與 WSJ 中文公開電子報（2026-10-03）
 
