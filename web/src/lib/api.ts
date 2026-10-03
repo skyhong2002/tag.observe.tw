@@ -60,7 +60,35 @@ export interface SeriesPoint {
   average24h: number | null;
   rank: number | null;
 }
-export type MediaInfo = Record<string, { title: string | null; icon: string | null }>;
+export type Camp = 'blue' | 'green' | 'other';
+export type MediaInfo = Record<string, { title: string | null; icon: string | null; camp?: Camp }>;
+export interface TagStatus {
+  tag: string;
+  ranking: {
+    category: string;
+    hourStart: string;
+    position: number;
+    rank: number;
+    normalized: number;
+    burst: number | null;
+    count: number;
+    mediaCount: number;
+    basisMediaCount: number;
+    rank24h: number | null;
+    new: boolean;
+  } | null;
+  related: Array<{ tag: string; count: number; share: number }>;
+  threads: Array<{
+    id: number;
+    maxTag: string | null;
+    majorTags: string[];
+    firstTime: string;
+    lastTime: string;
+    hours: number;
+    maxScore: number;
+  }>;
+  history: { level: number; firstHour: string; lastHour: string; hoursCount: number; maxHour: string; maxCount: number } | null;
+}
 
 async function get<T>(path: string, revalidate = 60): Promise<T> {
   const res = await fetch(API_ORIGIN + path, { next: { revalidate }, headers: { accept: 'application/json' } });
@@ -75,6 +103,7 @@ export const fetchRanking = (category: string, order: 'burst' | 'score', limit =
   );
 export const fetchTagArticles = (tag: string, hours = 48) =>
   get<{ tag: string; articles: Article[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/articles?hours=${hours}&limit=80`);
+export const fetchTagStatus = (tag: string) => get<TagStatus>(`/api/v1/tags/${encodeURIComponent(tag)}/status`);
 export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
   get<{ points: SeriesPoint[]; basis: RankingBasis }>(
     `/api/v1/tags/${encodeURIComponent(tag)}/series?category=${encodeURIComponent(category)}&hours=${hours}`,

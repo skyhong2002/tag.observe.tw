@@ -5,7 +5,8 @@ import RankingBasisNote from '@/components/RankingBasisNote';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import TagChart from '@/components/TagChart';
-import { fetchMedia, fetchTagArticles, fetchTagSeries, taipei } from '@/lib/api';
+import TagStatusPanel from '@/components/TagStatusPanel';
+import { type Camp, fetchMedia, fetchTagArticles, fetchTagSeries, fetchTagStatus, taipei } from '@/lib/api';
 import { articleHref } from '@/lib/reading.mts';
 
 export const revalidate = 60;
@@ -23,13 +24,19 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 export default async function TagPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ hours?: string }> }) {
   const tag = decodeURIComponent((await params).tag);
   const hours = Math.min(336, Math.max(6, Number((await searchParams).hours) || 72));
-  const [series, list, media] = await Promise.all([
+  const [series, list, media, status] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     fetchTagArticles(tag, Math.max(48, hours)),
     fetchMedia(),
+    fetchTagStatus(tag).catch(() => null),
   ]);
-  const byMedia = new Map<string, { title: string; count: number }>();
-  for (const a of list.articles) byMedia.set(a.media, { title: a.mediaTitle, count: (byMedia.get(a.media)?.count ?? 0) + 1 });
+  const byMedia = new Map<string, { title: string; count: number; camp: Camp }>();
+  for (const a of list.articles)
+    byMedia.set(a.media, { title: a.mediaTitle, camp: media[a.media]?.camp ?? 'other', count: (byMedia.get(a.media)?.count ?? 0) + 1 });
+  const campTotals = { blue: 0, green: 0, other: 0 };
+  for (const { count, camp } of byMedia.values()) campTotals[camp] += count;
+  const campDot = { blue: 'bg-blue-600', green: 'bg-emerald-600', other: 'bg-zinc-400' } as const;
+  const campLabel = { blue: '藍營傾向', green: '綠營傾向', other: '其他' } as const;
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -64,6 +71,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           </a>
         </div>
       </div>
+      {status && <TagStatusPanel status={status} />}
       <section className="rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="mb-2 text-sm font-medium text-zinc-600">每小時新聞數量與 24 小時移動平均（固定基準媒體）</h2>
         <RankingBasisNote basis={series.basis} media={media} />
@@ -123,20 +131,67 @@ export default async function TagPage({ params, searchParams }: { params: Promis
             ))}
           </ul>
         </div>
-        <aside className="space-y-2">
-          <h2 className="text-sm font-medium text-zinc-600">媒體分布</h2>
-          <ul className="rounded-xl border border-zinc-300 bg-white text-sm dark:border-zinc-800 dark:bg-zinc-900">
-            {[...byMedia.entries()]
-              .sort((a, b) => b[1].count - a[1].count)
-              .map(([m, { title, count }]) => (
-                <li key={m} className="flex justify-between gap-2 px-3 py-1.5">
-                  <MediaHoverLink media={m} icon={14} className="min-w-0 hover:underline">
-                    {title}
-                  </MediaHoverLink>
-                  <span className="shrink-0 tabular-nums text-zinc-600">{count}</span>
-                </li>
-              ))}
-          </ul>
+        <aside className="space-y-4">
+          {status && status.threads.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-medium text-zinc-600">相關事件</h2>
+              <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white text-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+                {status.threads.map((t) => (
+                  <li key={t.id} className="px-3 py-2">
+                    <Link href={`/eve/${t.id}/`} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
+                      {t.maxTag ?? t.majorTags[0] ?? `事件 ${t.id}`}
+                    </Link>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
+                      {t.majorTags
+                        .filter((x) => x !== t.maxTag)
+                        .slice(0, 4)
+                        .join('、')}
+                    </p>
+                    <p className="text-xs text-zinc-500">
+                      {taipei(t.firstTime)} 起 · 在榜 {t.hours} 小時
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium text-zinc-600">媒體分布</h2>
+            {list.articles.length > 0 && (
+              <div className="space-y-1 text-xs text-zinc-600">
+                <div className="flex h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden>
+                  {(['blue', 'green', 'other'] as const).map((c) =>
+                    campTotals[c] ? (
+                      <span key={c} className={campDot[c]} style={{ width: `${(campTotals[c] / list.articles.length) * 100}%` }} />
+                    ) : null,
+                  )}
+                </div>
+                <p className="flex flex-wrap gap-x-3">
+                  {(['blue', 'green', 'other'] as const).map((c) => (
+                    <span key={c} className="inline-flex items-center gap-1">
+                      <span className={`h-2 w-2 rounded-full ${campDot[c]}`} aria-hidden />
+                      {campLabel[c]} {campTotals[c]}
+                    </span>
+                  ))}
+                </p>
+              </div>
+            )}
+            <ul className="rounded-xl border border-zinc-300 bg-white text-sm dark:border-zinc-800 dark:bg-zinc-900">
+              {[...byMedia.entries()]
+                .sort((a, b) => b[1].count - a[1].count)
+                .map(([m, { title, count, camp }]) => (
+                  <li key={m} className="flex items-center justify-between gap-2 px-3 py-1.5">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${campDot[camp]}`} title={campLabel[camp]} aria-hidden />
+                      <MediaHoverLink media={m} icon={14} className="min-w-0 hover:underline">
+                        {title}
+                      </MediaHoverLink>
+                    </span>
+                    <span className="shrink-0 tabular-nums text-zinc-600">{count}</span>
+                  </li>
+                ))}
+            </ul>
+          </div>
         </aside>
       </section>
     </div>

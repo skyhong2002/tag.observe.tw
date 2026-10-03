@@ -7,11 +7,12 @@ import { applyRankingBasis, rankingBasis } from '../jobs/ranking-basis.ts';
 import { BURST_STEPS, computeBurst, effectiveWeight, type RankingChart } from '../jobs/ranking-compute.ts';
 import { HOURS, RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
 import { isTagNoise } from '../tag-noise.ts';
-import { loadThreadCoverage } from './coverage.ts';
+import { campOf, loadThreadCoverage } from './coverage.ts';
 import { taipeiDay, threadSeries, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
 import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyTrends } from './tag-series.ts';
+import { loadTagStatus } from './tag-status.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -89,7 +90,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     })),
   );
   app.get('/api/v1/media', async () =>
-    Object.fromEntries(Object.entries(mediaInfo).map(([k, v]) => [k, { title: v.title, icon: iconUrl(k) }])),
+    Object.fromEntries(Object.entries(mediaInfo).map(([k, v]) => [k, { title: v.title, icon: iconUrl(k), camp: campOf(k) }])),
   );
   app.get<{ Querystring: { category?: string; order?: string; limit?: string; at?: string; trend?: string; related?: string } }>(
     '/api/v1/ranking',
@@ -180,6 +181,14 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       return { tag, category, hours, basis, points };
     },
   );
+
+  app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/status', async (request, reply) => {
+    const tag = request.params.tag.slice(0, 60);
+    const ranking = await loadRanking(db, 'news');
+    // Ranking entries are already burst-ordered, so the index is the position.
+    reply.header('cache-control', 'public, max-age=60');
+    return loadTagStatus(db, tag, ranking);
+  });
 
   app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/stats', async (request, reply) => {
     const tag = request.params.tag.slice(0, 60);

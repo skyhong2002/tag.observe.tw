@@ -658,6 +658,62 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?hours=168',
   },
   {
+    path: '/api/v1/tags/{tag}/status',
+    tag: 'tags',
+    summary: '標籤目前狀態',
+    description:
+      '關鍵字頁的摘要：這個標籤在新聞媒體排行榜上的名次、分數、爆發力、24 小時變動與報導媒體家數（不在榜上為 null）、最常一起出現的標籤、最近 72 小時含這個標籤的事件串，以及長期統計的首次上榜與高峰。',
+    params: [p('tag', '標籤（URL 編碼）', str(), '賴清德')],
+    response: obj({
+      tag: str(),
+      ranking: nullable(
+        obj({
+          category: str('排行分類；目前固定為 news'),
+          hourStart: time('快照所屬小時'),
+          position: int('依爆發力的名次'),
+          rank: int('依原始分數的名次'),
+          normalized: num('正規化分數'),
+          burst: nullable(num('爆發力')),
+          count: int('過去 24 小時文章數'),
+          mediaCount: int('報導的基準媒體家數'),
+          basisMediaCount: int('基準媒體總數'),
+          rank24h: nullable(int('24 小時前依分數的名次')),
+          new: bool('24 小時前不在完整榜單上'),
+        }),
+      ),
+      related: arr(
+        obj({ tag: str(), count: int('共同文章數'), share: num('佔這個標籤文章數的比例（0–1）') }),
+        '最多 8 個，依共同文章數排序',
+      ),
+      threads: arr(
+        obj({
+          id: int('事件串 id；頁面為 /eve/{id}/'),
+          maxTag: nullable(str('事件串的代表標籤')),
+          majorTags: arr(str()),
+          firstTime: time(),
+          lastTime: time(),
+          hours: int('出現在事件榜的小時數'),
+          maxScore: num('最高分'),
+        }),
+        '最近 72 小時內含這個標籤的 news 事件串，最多 6 個，最近活動的在前',
+      ),
+      history: nullable(
+        obj(
+          {
+            level: int('2 或 3；優先回傳 3'),
+            firstHour: time('首次上榜小時'),
+            lastHour: time('最近上榜小時'),
+            hoursCount: int('上榜小時數'),
+            maxHour: time('文章數最多的小時'),
+            maxCount: int('該小時文章數'),
+          },
+          'news 分類的長期統計',
+        ),
+      ),
+    }),
+    example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/status',
+  },
+  {
     path: '/api/v1/tags/{tag}/stats',
     tag: 'tags',
     summary: '標籤長期統計',
@@ -910,8 +966,9 @@ export const ENDPOINTS: Endpoint[] = [
       obj({
         title: nullable(str('媒體名稱')),
         icon: nullable(str('favicon 網址；已存放在本站的為 https://tag.observe.tw/favicons/<媒體代碼>.png（64×64 PNG）')),
+        camp,
       }),
-      '媒體代碼 → 名稱與圖示',
+      '媒體代碼 → 名稱、圖示與政治傾向分組',
     ),
   },
   {

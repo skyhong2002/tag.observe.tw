@@ -70,6 +70,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/articles`](#api-v1-articles) | 文章搜尋 |
 | [`GET /api/v1/tags/{tag}/articles`](#api-v1-tags-tag-articles) | 帶有某標籤的最新文章 |
 | [`GET /api/v1/tags/{tag}/series`](#api-v1-tags-tag-series) | 標籤每小時的分數與文章數 |
+| [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
 | [`GET /api/v1/events/threads`](#api-v1-events-threads) | 某一天的所有事件串 |
@@ -760,6 +761,61 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 
 錯誤：`404` 未知分類。
 
+<a id="api-v1-tags-tag-status"></a>
+
+### `GET /api/v1/tags/{tag}/status`
+
+**標籤目前狀態**
+
+關鍵字頁的摘要：這個標籤在新聞媒體排行榜上的名次、分數、爆發力、24 小時變動與報導媒體家數（不在榜上為 null）、最常一起出現的標籤、最近 72 小時含這個標籤的事件串，以及長期統計的首次上榜與高峰。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`賴清德` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/status'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `ranking` | object \| null |  |
+| `ranking.category` | string | 排行分類；目前固定為 news |
+| `ranking.hourStart` | string (ISO 時間) | 快照所屬小時 |
+| `ranking.position` | integer | 依爆發力的名次 |
+| `ranking.rank` | integer | 依原始分數的名次 |
+| `ranking.normalized` | number | 正規化分數 |
+| `ranking.burst` | number \| null | 爆發力 |
+| `ranking.count` | integer | 過去 24 小時文章數 |
+| `ranking.mediaCount` | integer | 報導的基準媒體家數 |
+| `ranking.basisMediaCount` | integer | 基準媒體總數 |
+| `ranking.rank24h` | integer \| null | 24 小時前依分數的名次 |
+| `ranking.new` | boolean | 24 小時前不在完整榜單上 |
+| `related` | object[] | 最多 8 個，依共同文章數排序 |
+| `related[].tag` | string |  |
+| `related[].count` | integer | 共同文章數 |
+| `related[].share` | number | 佔這個標籤文章數的比例（0–1） |
+| `threads` | object[] | 最近 72 小時內含這個標籤的 news 事件串，最多 6 個，最近活動的在前 |
+| `threads[].id` | integer | 事件串 id；頁面為 /eve/{id}/ |
+| `threads[].maxTag` | string \| null | 事件串的代表標籤 |
+| `threads[].majorTags` | string[] |  |
+| `threads[].firstTime` | string (ISO 時間) |  |
+| `threads[].lastTime` | string (ISO 時間) |  |
+| `threads[].hours` | integer | 出現在事件榜的小時數 |
+| `threads[].maxScore` | number | 最高分 |
+| `history` | object \| null | news 分類的長期統計 |
+| `history.level` | integer | 2 或 3；優先回傳 3 |
+| `history.firstHour` | string (ISO 時間) | 首次上榜小時 |
+| `history.lastHour` | string (ISO 時間) | 最近上榜小時 |
+| `history.hoursCount` | integer | 上榜小時數 |
+| `history.maxHour` | string (ISO 時間) | 文章數最多的小時 |
+| `history.maxCount` | integer | 該小時文章數 |
+
 <a id="api-v1-tags-tag-stats"></a>
 
 ### `GET /api/v1/tags/{tag}/stats`
@@ -1300,6 +1356,7 @@ curl -s 'https://tag.observe.tw/api/v1/media'
 | --- | --- | --- |
 | `{鍵}.title` | string \| null | 媒體名稱 |
 | `{鍵}.icon` | string \| null | favicon 網址；已存放在本站的為 https://tag.observe.tw/favicons/<媒體代碼>.png（64×64 PNG） |
+| `{鍵}.camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
 
 <a id="api-v1-media-media"></a>
 
