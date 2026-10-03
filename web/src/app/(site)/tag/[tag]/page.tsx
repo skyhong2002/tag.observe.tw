@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import RankingBasisNote from '@/components/RankingBasisNote';
 import SafeImage from '@/components/SafeImage';
@@ -30,6 +31,17 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     fetchMedia(),
     fetchTagStatus(tag).catch(() => null),
   ]);
+  // A tag the site has never recorded: no articles, no counts, no ranking, history or events.
+  if (
+    status &&
+    !status.ranking &&
+    !status.history &&
+    status.threads.length === 0 &&
+    status.related.length === 0 &&
+    list.articles.length === 0 &&
+    !series.points.some((p) => p.count || p.hourlyCount)
+  )
+    notFound();
   const byMedia = new Map<string, { title: string; count: number; camp: Camp }>();
   for (const a of list.articles)
     byMedia.set(a.media, { title: a.mediaTitle, camp: media[a.media]?.camp ?? 'other', count: (byMedia.get(a.media)?.count ?? 0) + 1 });
