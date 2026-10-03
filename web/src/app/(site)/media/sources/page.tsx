@@ -2,16 +2,25 @@ import Link from 'next/link';
 import MediaTabs from '@/components/MediaTabs';
 import { API_ORIGIN } from '@/lib/api';
 import {
+  type CrawlStatus,
+  crawlLabels,
+  crawlStatusFor,
   monthLabel,
+  type NewsCrawlAudit,
   referenceFor,
+  resolveCatalogSource,
+  safeWebsiteUrl,
   selectTrafficSources,
   type TrafficSort,
+  type TrafficSource,
   trafficGrowth,
   trafficNumber,
   trafficSorts,
 } from '@/lib/media-traffic.mts';
 import catalog from '../../../../../../app/data/media-catalog.json';
 import traffic from '../../../../../../app/data/media-traffic.json';
+import crawlAudit from '../../../../../../app/data/news-crawl-audit.json';
+import newsCatalog from '../../../../../../app/data/news-source-catalog.json';
 import baseline from '../../../../../../app/data/traffic-baseline.json';
 
 export const metadata = {
@@ -19,7 +28,7 @@ export const metadata = {
   description: '依人工整理的來源試算表，查看各月份新聞媒體流量、原始分類及本站採用的分類依據。',
 };
 
-type Params = { month?: string; scope?: string; classification?: string; q?: string; sort?: string; dir?: string };
+type Params = { month?: string; scope?: string; classification?: string; q?: string; sort?: string; dir?: string; crawl?: string };
 type RawParams = { [Key in keyof Params]?: string | string[] };
 type MediaStatus = { media: string; status: 'ok' | 'stale' | 'failing' | 'disabled'; last24h: number };
 const statusLabels = { ok: '近期有更新', stale: '無近期文章', failing: '抓取失敗', disabled: '停用' };
@@ -46,12 +55,25 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
     Object.entries(await searchParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
   );
   const snapshot = traffic.snapshots.find((item) => item.month === params.month) ?? traffic.snapshots[0];
-  const scope = params.scope === 'all' ? 'all' : 'reference';
+  const scope = params.scope === 'reference' ? 'reference' : 'all';
+  const crawl = params.crawl && Object.hasOwn(crawlLabels, params.crawl) ? (params.crawl as CrawlStatus) : '';
+  const audits = new Map((crawlAudit.results as NewsCrawlAudit[]).map((row) => [row.media, row]));
+  const matchedSource = (row: TrafficSource) => resolveCatalogSource(row, newsCatalog.sources);
+  const sourceCrawlStatus = (row: TrafficSource) => {
+    const source = matchedSource(row);
+    return crawlStatusFor(source, source ? audits.get(source.media) : undefined);
+  };
   const classification = params.classification ?? '';
   const query = params.q ?? '';
   const sort: TrafficSort = trafficSorts.includes(params.sort as TrafficSort) ? (params.sort as TrafficSort) : 'traffic';
   const ascending = params.dir === 'asc';
-  const rows = selectTrafficSources(snapshot.sources, baseline.sources, { scope, classification, query, sort, ascending });
+  const rows = selectTrafficSources(snapshot.sources, baseline.sources, { scope, classification, query, sort, ascending }).filter(
+    (row) => !crawl || sourceCrawlStatus(row) === crawl,
+  );
+  const uniqueSources = new Set(snapshot.sources.map((row) => matchedSource(row)?.media ?? `row:${row.row}`));
+  const verifiedSources = new Set(
+    snapshot.sources.filter((row) => sourceCrawlStatus(row) === 'verified').map((row) => matchedSource(row)?.media),
+  );
   const chartRows = [...rows]
     .filter((row) => row.traffic != null)
     .sort((a, b) => (b.traffic ?? 0) - (a.traffic ?? 0))
@@ -66,7 +88,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
   const sourceLink = (row: number) =>
     `${traffic.sourceUrl}#range=${encodeURIComponent(`'${snapshot.month}'!A${row}:${snapshot.trafficColumn}${row}`)}`;
   const sortLink = (key: TrafficSort) => {
-    const next = new URLSearchParams({ month: snapshot.month, scope, classification, q: query, sort: key });
+    const next = new URLSearchParams({ month: snapshot.month, scope, classification, q: query, sort: key, crawl });
     next.set('dir', sort === key ? (ascending ? 'desc' : 'asc') : key === 'name' || key === 'rank' ? 'asc' : 'desc');
     return `/media/sources/?${next}`;
   };
@@ -79,6 +101,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         <h1 className="text-3xl font-semibold tracking-tight">媒體來源與流量</h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
           查看人工整理的 Similarweb 流量與媒體分類。流量依來源試算表呈現；藍綠是表內人工分類，不是 Similarweb 的政治傾向評分。
+          預設列出全部新聞來源，包含暫無法抓取與尚待確認網址的平台。
         </p>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-zinc-500">
           <span>本站匯入：{updated}</span>
@@ -94,7 +117,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
       <form
         action="/media/sources/"
         method="get"
-        className="grid gap-4 rounded-xl border border-zinc-300 bg-zinc-50 p-5 sm:grid-cols-2 lg:grid-cols-5 dark:border-zinc-700 dark:bg-zinc-900/40"
+        className="grid gap-4 rounded-xl border border-zinc-300 bg-zinc-50 p-5 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700 dark:bg-zinc-900/40"
       >
         <div>
           <label htmlFor="traffic-month" className="text-xs font-medium">
@@ -113,8 +136,8 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
             比較範圍
           </label>
           <select id="traffic-scope" name="scope" defaultValue={scope} className={fieldClass}>
-            <option value="reference">本站基準 29 家</option>
             <option value="all">原表全部新聞來源</option>
+            <option value="reference">歷史流量基準 {baseline.sources.length} 家</option>
           </select>
         </div>
         <div>
@@ -134,6 +157,19 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
           </label>
           <input id="traffic-query" name="q" type="search" defaultValue={query} placeholder="例如：UDN、udn.com" className={fieldClass} />
         </div>
+        <div>
+          <label htmlFor="traffic-crawl" className="text-xs font-medium">
+            爬蟲驗證狀態
+          </label>
+          <select id="traffic-crawl" name="crawl" defaultValue={crawl} className={fieldClass}>
+            <option value="">全部狀態</option>
+            {Object.entries(crawlLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
         <input type="hidden" name="sort" value={sort} />
         <input type="hidden" name="dir" value={ascending ? 'asc' : 'desc'} />
         <div className="flex items-end gap-3">
@@ -149,15 +185,20 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         </div>
       </form>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: '資料月份', value: monthLabel(snapshot.month), note: `原始工作表：${snapshot.month}` },
           {
             label: '目前篩選',
-            value: `${rows.length} 家`,
-            note: scope === 'reference' ? '固定以目前 29 家名單對照歷月資料' : '原表主題欄包含「新聞」的來源',
+            value: `${rows.length} 列`,
+            note: scope === 'reference' ? `固定以歷史 ${baseline.sources.length} 家名單對照歷月資料` : '原表主題欄包含「新聞」的全部來源',
           },
-          { label: '有流量數值', value: `${rows.filter((row) => row.traffic != null).length} 家`, note: '缺值顯示 —，不以零補值' },
+          { label: '有流量數值', value: `${rows.filter((row) => row.traffic != null).length} 列`, note: '缺值顯示 —，不以零補值' },
+          {
+            label: '已驗證可抓取／當月全部新聞來源',
+            value: `${verifiedSources.size} / ${uniqueSources.size}`,
+            note: '同一來源合併計數；驗證結果與即時收錄狀態分開呈現',
+          },
         ].map((item) => (
           <div key={item.label} className="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
             <p className="text-xs text-zinc-500">{item.label}</p>
@@ -203,7 +244,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
       <section aria-labelledby="traffic-table-heading">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
           <h2 id="traffic-table-heading" className="text-lg font-semibold">
-            來源明細 <span className="text-sm font-normal text-zinc-500">{rows.length} 家</span>
+            來源明細 <span className="text-sm font-normal text-zinc-500">{rows.length} 列</span>
           </h2>
           <p className="text-xs text-zinc-500">點欄位名稱排序；本站分類與收錄狀態為目前設定。</p>
         </div>
@@ -254,6 +295,9 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
                   本站目前分類
                 </th>
                 <th scope="col" className="px-4 py-3">
+                  爬蟲驗證狀態
+                </th>
+                <th scope="col" className="px-4 py-3">
                   本站收錄狀態
                 </th>
                 <th scope="col" className="px-4 py-3">
@@ -264,19 +308,29 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {rows.map((row) => {
                 const reference = referenceFor(row, baseline.sources);
-                const media = reference ? statuses.get(reference.media) : null;
+                const source = matchedSource(row);
+                const sourceId = source?.media ?? reference?.media;
+                const media = sourceId ? statuses.get(sourceId) : undefined;
+                const audit = sourceId ? audits.get(sourceId) : undefined;
+                const websiteUrl = safeWebsiteUrl(source?.websiteUrl);
+                const crawlState = sourceCrawlStatus(row);
                 return (
                   <tr key={row.row} className="align-top hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                     <td className="px-4 py-4 tabular-nums text-zinc-500">{trafficNumber(row.rank)}</td>
                     <th scope="row" className="px-4 py-4 font-medium">
-                      {reference ? (
-                        <Link href={`/media/${reference.media}/`} className={linkClass}>
+                      {sourceId && (media || source?.existing || reference) ? (
+                        <Link href={`/media/${sourceId}/`} className={linkClass}>
                           {row.name}
                         </Link>
                       ) : (
                         row.name
                       )}
                       <div className="mt-1 text-xs font-normal text-zinc-500">{row.domain ?? '原表未填網域'}</div>
+                      {websiteUrl && (
+                        <a href={websiteUrl} className={`mt-1 block text-xs font-normal ${linkClass}`} target="_blank" rel="noreferrer">
+                          {row.domain ? '官方網站' : '補充網址'}：{new URL(websiteUrl).hostname} ↗
+                        </a>
+                      )}
                     </th>
                     <td className="px-4 py-4">
                       <span
@@ -288,13 +342,57 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
                     <td className="px-4 py-4 text-right tabular-nums">{trafficNumber(row.traffic)}</td>
                     <td className="px-4 py-4 text-right tabular-nums">{trafficGrowth(row.growth)}</td>
                     <td className="px-4 py-4 text-xs">
-                      {reference ? (
+                      {sourceId ? (
                         <>
-                          {currentCamp(reference.media)}
-                          <div className="mt-1 text-zinc-500">依 {baseline.retrievedAt} 採用的試算表分類</div>
+                          {currentCamp(sourceId)}
+                          <div className="mt-1 text-zinc-500">
+                            {reference
+                              ? `依 ${baseline.retrievedAt} 採用的試算表分類`
+                              : source?.existing
+                                ? '沿用既有設定'
+                                : '未另行標記政治傾向'}
+                          </div>
                         </>
                       ) : (
                         '未對應本站來源'
+                      )}
+                    </td>
+                    <td className="max-w-64 px-4 py-4 text-xs">
+                      <span className={crawlState === 'verified' ? 'text-emerald-700 dark:text-emerald-400' : ''}>
+                        {crawlLabels[crawlState]}
+                      </span>
+                      {audit ? (
+                        <>
+                          <div className="mt-1 leading-5 text-zinc-500">
+                            {crawlState === 'pending'
+                              ? '來源網址已更新，尚待重新驗證。'
+                              : audit.status === 'verified' && crawlState !== 'verified'
+                                ? '驗證紀錄未附有效文章樣本，尚未確認可抓取。'
+                                : audit.detail}
+                          </div>
+                          <div className="mt-1 text-zinc-500">檢查：{audit.checkedAt.slice(0, 10)}</div>
+                          {crawlState === 'verified' && audit.samples.length > 0 && (
+                            <details className="mt-2 text-zinc-500">
+                              <summary className="cursor-pointer">驗證樣本 {audit.samples.length} 篇</summary>
+                              <ul className="mt-2 space-y-2 break-words">
+                                {audit.samples.map((sample) => {
+                                  const url = safeWebsiteUrl(sample.url);
+                                  return url ? (
+                                    <li key={sample.url}>
+                                      <a href={url} className={linkClass} target="_blank" rel="noreferrer">
+                                        {sample.title || '文章樣本'} ↗
+                                      </a>
+                                    </li>
+                                  ) : null;
+                                })}
+                              </ul>
+                            </details>
+                          )}
+                        </>
+                      ) : (
+                        <div className="mt-1 text-zinc-500">
+                          {source?.websiteUrl ? '尚無此來源的驗證紀錄' : '保留原表來源，待確認可用的官方網址'}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-4 text-xs">
@@ -303,7 +401,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
                           {statusLabels[media.status]}
                           <div className="mt-1 text-zinc-500">近 24 小時 {media.last24h.toLocaleString('zh-TW')} 篇</div>
                         </>
-                      ) : reference ? (
+                      ) : sourceId ? (
                         status ? (
                           '未列入收錄清單'
                         ) : (
@@ -317,6 +415,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
                       <a href={sourceLink(row.row)} className={linkClass} target="_blank" rel="noreferrer">
                         原表第 {row.row} 列 ↗
                       </a>
+                      {source?.notes && <p className="mt-2 leading-5 text-zinc-500">{source.notes}</p>}
                       {row.notes.length > 0 && (
                         <details className="mt-2 text-zinc-500">
                           <summary className="cursor-pointer">原表註記</summary>
@@ -333,7 +432,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
               })}
               {!rows.length && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">
                     沒有符合條件的來源，請調整分類或搜尋字詞。
                   </td>
                 </tr>
@@ -363,18 +462,22 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         </p>
         <p>
           本站於 {baseline.retrievedAt} 依試算表更新基準名單的 {baseline.sources.length}{' '}
-          家媒體；其餘媒體沿用既有設定。「未列藍綠」不代表中立。歷月原表分類與本站目前分類分欄呈現，切換月份不會改變全站採用的分類。
+          家媒體；其他既有媒體沿用原設定，新加入來源未另行標記政治傾向。「未列藍綠」不代表中立。歷月原表分類與本站目前分類分欄呈現，切換月份不會改變全站採用的分類。
         </p>
         <p>
-          第一版收錄 2026 年 1–8 月的新聞來源。原表的空白、公式錯誤與未提供數值都顯示為
-          —；月增減沿用原表「成長」欄。原表名次不會因本站篩選而重排。未對應本站來源只表示尚未建立對照，不代表本站沒有收錄。
+          預設列出所選月份原表主題欄包含「新聞」的全部來源，不以基準名單限制爬蟲來源。原表的空白、公式錯誤與未提供數值都顯示為
+          —；月增減沿用原表「成長」欄。原表名次不會因本站篩選而重排。原表缺少網域時另列核對後的「補充網址」，保留歷史欄位原貌。
         </p>
         <p>
           流量保留原表結果，部分列含人工倍數調整，請展開「原表註記」查看。原表「流量」欄未明示單位，因此本頁不推定為人數或瀏覽次數。網域、子網域與新聞平台可能重疊，數值不可直接視為全台市占或去重訪客。
         </p>
         <p>
-          「本站基準 29 家」是比較名單，並非 29
-          家都已收錄。爬蟲流量覆蓋率另有固定範圍、精度與排除規則；本頁呈現試算表原始精度，不更換既有覆蓋率分母。試算表由人工維護，本站經匯入與核對後更新快照，並非即時同步。
+          「歷史流量基準 {baseline.sources.length}{' '}
+          家」僅用於歷月比較與既有覆蓋率計算。爬蟲流量覆蓋率另有固定範圍、精度與排除規則；本頁呈現試算表原始精度，不更換既有覆蓋率分母。試算表由人工維護，本站經匯入與核對後更新快照，並非即時同步。
+        </p>
+        <p>
+          爬蟲驗證狀態是檢查當時的結果，「已驗證可抓取」表示取得可辨識的新聞文章；「既有爬蟲，待驗證」僅表示已有抓取程式。是否正在收錄請看「本站收錄狀態」與近
+          24 小時篇數。暫無法抓取、尚待確認網址的來源仍完整列出；歷月切換顯示的都是目前驗證結果。
         </p>
       </section>
     </div>

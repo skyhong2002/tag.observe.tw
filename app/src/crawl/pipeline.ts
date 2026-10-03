@@ -7,6 +7,7 @@ import { extractArticle } from './article.ts';
 import { type FeedItem, parseFeed } from './feed.ts';
 import { fetchText, fetchViaCurl } from './fetch.ts';
 import { discoverLinks, parseMarkerList } from './html-list.ts';
+import { discoverNews } from './news-discovery.ts';
 import type { SourceSpec } from './sources.ts';
 import { normalizeTag, stripTitleSuffix, urlKey } from './text.ts';
 import { type TitleVocab, tagsFromTitle } from './title-tags.ts';
@@ -21,6 +22,10 @@ const PLAIN_SITEMAP_WINDOW_MS = 2 * 86400e3;
 const PLAIN_SITEMAP_MAX = 300;
 
 export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{ items: FeedItem[]; errors: string[] }> {
+  if (spec.list.autoDiscover) {
+    const result = await discoverNews(spec.list.autoDiscover, { fetch });
+    return { items: result.items, errors: result.errors };
+  }
   const oldest = Date.now() - 14 * 86400e3; // drop listing items older than this
   const items: FeedItem[] = [];
   const errors: string[] = [];

@@ -39,6 +39,13 @@ const BODY_SELECTORS = [
   '.news_content',
   '#newsContent',
   '.caas-body',
+  '.entry-content',
+  '.post-content',
+  '.td-post-content',
+  '.elementor-widget-theme-post-content',
+  'founder-content',
+  '.PrimarySide > .paragraph',
+  '.article-main',
   'article',
 ];
 const REMOVE_ELEMENTS =
@@ -105,13 +112,24 @@ function articleNodes($: cheerio.CheerioAPI, url: string): JsonNode[] {
   return matching.length ? matching : found.filter((node) => identity(node).length === 0);
 }
 
+function excludedContainer(element: cheerio.Cheerio<AnyNode>): boolean {
+  // Theme and taxonomy classes describe the page/article, not removable UI.
+  if (element.is('body, html')) return false;
+  const classes = (element.attr('class') ?? '')
+    .split(/\s+/)
+    .filter((name) => !/^no[-_]share$/.test(name))
+    .filter((name) => !(element.is('.hentry') && /^(?:tag|category)-/.test(name)))
+    .join(' ');
+  return EXCLUDED_CLASS.test(`${classes} ${element.attr('id') ?? ''}`);
+}
+
 function cleanedRoot($: cheerio.CheerioAPI, node: AnyNode) {
   const root = $(node).clone();
   root.find(REMOVE_ELEMENTS).remove();
   root.find('*').each((_, child) => {
     const element = $(child);
     if (
-      EXCLUDED_CLASS.test(`${element.attr('class') ?? ''} ${element.attr('id') ?? ''}`) ||
+      excludedContainer(element) ||
       /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\s*(?:!important\s*)?(?:;|$)/i.test(element.attr('style') ?? '')
     )
       element.remove();
@@ -130,10 +148,7 @@ function domBody($: cheerio.CheerioAPI, node: AnyNode, allowPlainText: boolean):
       .some((ancestor) => {
         const element = $(ancestor);
         // ASP.NET sites wrap the entire article in their page form.
-        return (
-          (element.is(REMOVE_ELEMENTS) && !element.is('form')) ||
-          EXCLUDED_CLASS.test(`${element.attr('class') ?? ''} ${element.attr('id') ?? ''}`)
-        );
+        return (element.is(REMOVE_ELEMENTS) && !element.is('form')) || excludedContainer(element);
       })
   )
     return '';

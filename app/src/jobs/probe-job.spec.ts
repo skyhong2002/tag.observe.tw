@@ -29,4 +29,14 @@ describe('probeSource', () => {
     expect((await probeSource('cw', fetch as never)).kind).toBe('none');
     expect((await probeSource('no-such-media', fetch as never)).detail).toBe('no known origin');
   });
+  it('requires a complete article for catalog probes rather than accepting a feed alone', async () => {
+    const fetch = async (url: string) =>
+      url.includes('feed')
+        ? res(
+            url,
+            `<rss><channel><item><title>近期文章但沒有內文</title><link>https://www.winnews.com.tw/123456/</link><pubDate>${recent}</pubDate></item></channel></rss>`,
+          )
+        : res(url, '<html><h1>沒有新聞內文</h1></html>');
+    expect(await probeSource('winnews', fetch as never)).toMatchObject({ kind: 'none', recentItems: 0 });
+  });
 });

@@ -17,6 +17,9 @@ export interface SourceSpec {
   group: 'news' | 'hourly' | 'off';
   list: {
     urls: Array<{ cat: string; url: string }>;
+    // New reference sites share feed/sitemap/HTML discovery; only pages whose
+    // title, body and recent publication date have been verified are indexed.
+    autoDiscover?: { homeUrl: string; feedUrls?: string[]; articlePattern?: string; maxArticles?: number };
     userAgent?: string;
     marker?: MarkerListSpec;
     discover?: DiscoverSpec;

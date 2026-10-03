@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { referenceFor, selectTrafficSources, type TrafficSource } from '../../web/src/lib/media-traffic.mts';
+import {
+  crawlStatusFor,
+  type NewsCrawlAudit,
+  type NewsSource,
+  referenceFor,
+  resolveCatalogSource,
+  safeWebsiteUrl,
+  selectTrafficSources,
+  type TrafficSource,
+} from '../../web/src/lib/media-traffic.mts';
 import traffic from '../data/media-traffic.json' with { type: 'json' };
 import baseline from '../data/traffic-baseline.json' with { type: 'json' };
 
@@ -15,6 +24,77 @@ const row = (patch: Partial<TrafficSource>): TrafficSource => ({
   growth: null,
   notes: [],
   ...patch,
+});
+
+describe('all-news source identity and crawl availability', () => {
+  const source: NewsSource = {
+    media: 'local-news',
+    name: '地方新聞',
+    websiteUrl: 'https://local.example/',
+    referenceNames: ['地方新聞網', '舊站名'],
+    referenceRows: [200],
+    existing: false,
+    websiteEvidence: 'https://local.example/about',
+    notes: '',
+  };
+
+  it('includes every news row in all scope, including sources without a website', () => {
+    const selected = selectTrafficSources(traffic.snapshots[0].sources, baseline.sources, { ...options, scope: 'all' });
+    expect(selected).toHaveLength(traffic.snapshots[0].sources.length);
+    expect(selected.length).toBeGreaterThan(29);
+    expect(selected.some((entry) => entry.domain === null)).toBe(true);
+  });
+
+  it('maps explicit aliases without replacing historical blank domains', () => {
+    const historical = row({ name: ' 舊站名 ', domain: null });
+    expect(resolveCatalogSource(historical, [source])).toBe(source);
+    expect(historical.domain).toBeNull();
+    expect(resolveCatalogSource(row({ name: '未識別名稱', domain: 'www.local.example' }), [source])).toBe(source);
+    expect(resolveCatalogSource(row({ name: '未識別名稱', domain: 'different.example' }), [source])).toBeUndefined();
+  });
+
+  it('does not confuse brands sharing a domain or different subdomains', () => {
+    const other = { ...source, media: 'another-brand', name: '另一品牌', referenceNames: [] };
+    expect(resolveCatalogSource(row({ name: '未知品牌', domain: 'local.example' }), [source, other])).toBeUndefined();
+    expect(resolveCatalogSource(row({ name: '地方新聞網' }), [source, other])).toBe(source);
+    expect(resolveCatalogSource(row({ name: '未知品牌', domain: 'other.local.example' }), [source])).toBeUndefined();
+  });
+
+  it('never treats a source registration or existing adapter as a successful audit', () => {
+    expect(crawlStatusFor({ ...source, existing: true }, undefined)).toBe('pending');
+    expect(crawlStatusFor({ ...source, websiteUrl: null }, undefined)).toBe('unresolved');
+    expect(crawlStatusFor(undefined, undefined)).toBe('unresolved');
+    const audit: NewsCrawlAudit = {
+      media: source.media,
+      websiteUrl: source.websiteUrl,
+      status: 'unavailable',
+      strategy: 'html',
+      listingUrl: source.websiteUrl,
+      articleCount: 0,
+      detail: '網站暫無法連線',
+      samples: [],
+      checkedAt: '2026-10-03T00:00:00.000Z',
+    };
+    expect(crawlStatusFor(source, audit)).toBe('unavailable');
+    expect(crawlStatusFor(source, { ...audit, status: 'existing' })).toBe('existing');
+    expect(crawlStatusFor(source, { ...audit, status: 'verified' })).toBe('unavailable');
+    const verified: NewsCrawlAudit = {
+      ...audit,
+      status: 'verified',
+      samples: [{ url: 'https://local.example/news/123', title: '新聞文章', publishedAt: '2026-10-02', bodyLength: 500 }],
+    };
+    expect(crawlStatusFor(source, verified)).toBe('verified');
+    expect(crawlStatusFor(source, { ...verified, websiteUrl: 'https://old.example/' })).toBe('pending');
+    expect(crawlStatusFor(source, { ...verified, websiteUrl: null })).toBe('pending');
+    expect(crawlStatusFor({ ...source, websiteUrl: null }, verified)).toBe('unresolved');
+  });
+
+  it('allows only credential-free HTTP links from the source and audit data', () => {
+    expect(safeWebsiteUrl('https://local.example/article/123')).toBe('https://local.example/article/123');
+    for (const value of ['javascript:alert(1)', 'file:///etc/passwd', 'https://user:secret@local.example/', 'not a URL', null]) {
+      expect(safeWebsiteUrl(value)).toBeNull();
+    }
+  });
 });
 
 describe('media traffic reference snapshots', () => {

@@ -7,6 +7,8 @@ import specs from '../../data/crawl-sources.json' with { type: 'json' };
 import { parseFeed } from '../crawl/feed.ts';
 import { fetchText } from '../crawl/fetch.ts';
 import { discoverLinks } from '../crawl/html-list.ts';
+import { discoverNews } from '../crawl/news-discovery.ts';
+import { allSources, sourceByMedia } from '../crawl/registry.ts';
 import { overrides } from '../crawl/sources/overrides.ts';
 import type { Db } from '../db/client.ts';
 import { sourceProbes } from '../db/schema.ts';
@@ -23,6 +25,7 @@ export interface ProbeResult {
 
 export function originFor(media: string): string | null {
   const url =
+    sourceByMedia(media)?.list.autoDiscover?.homeUrl ??
     overrides[media]?.list?.urls?.[0]?.url ??
     (specs as unknown as Record<string, { index?: { urls?: Array<{ url: string }> } }>)[media]?.index?.urls?.[0]?.url;
   try {
@@ -33,6 +36,19 @@ export function originFor(media: string): string | null {
 }
 
 export async function probeSource(media: string, fetch = fetchText): Promise<ProbeResult> {
+  const automatic = sourceByMedia(media)?.list.autoDiscover;
+  if (automatic) {
+    const result = await discoverNews({ ...automatic, maxArticles: 2 }, { fetch, timeoutMs: 30000, maxRequests: 16 });
+    return {
+      media,
+      kind: result.items.length ? (result.strategy === 'html' ? 'discover' : 'feed') : 'none',
+      url: result.listingUrl,
+      recentItems: result.items.length,
+      detail: result.items.length
+        ? 'Recent article title, publication date and body verified; refresh news audit before enabling.'
+        : result.errors.slice(-3).join('; ').slice(0, 1200) || 'No complete recent article verified',
+    };
+  }
   const origin = originFor(media);
   if (!origin) return { media, kind: 'none', url: null, recentItems: 0, detail: 'no known origin' };
   const candidates = new Set<string>();
@@ -82,6 +98,9 @@ export async function runProbeJob(
   const media = [
     ...new Set([
       ...(disabled as { media: string[] }).media,
+      ...allSources()
+        .filter((source) => source.group === 'off' && source.list.autoDiscover)
+        .map((source) => source.media),
       ...(process.env.CRAWL_DISABLED ?? '')
         .split(',')
         .map((s) => s.trim())

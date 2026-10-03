@@ -99,7 +99,8 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
           <h3 className={methodHeading}>事件、議題與藍綠</h3>
           <p>事件每半小時依標籤共現分群，標題取自註明的媒體；議題表每小時收錄各媒體新推出的專題頁。</p>
           <p>
-            本站已對照的 29 家媒體依來源試算表人工分類，其餘沿用既有設定。分類依據與更新日期可於
+            本站基準名單的 29
+            家媒體依來源試算表人工分類，其他既有媒體沿用原設定，新加入來源未另行標記政治傾向。全部新聞來源、抓取狀態與分類依據可於
             <Link href="/media/sources/#classification-method" className={inlineLink}>
               「媒體來源與流量」
             </Link>

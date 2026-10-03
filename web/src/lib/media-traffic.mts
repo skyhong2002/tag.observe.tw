@@ -16,6 +16,74 @@ export interface ReferenceSource {
   domain: string;
 }
 
+export interface NewsSource {
+  media: string;
+  name: string;
+  websiteUrl: string | null;
+  referenceNames: string[];
+  referenceRows: number[];
+  existing: boolean;
+  websiteEvidence: string | null;
+  notes: string;
+}
+
+export interface NewsCrawlAudit {
+  media: string;
+  websiteUrl: string | null;
+  status: 'verified' | 'unavailable' | 'unresolved' | 'existing';
+  strategy: 'rss' | 'sitemap' | 'html' | 'existing' | 'none';
+  listingUrl: string | null;
+  articleCount: number;
+  detail: string;
+  samples: { url: string; title: string; publishedAt: string | null; bodyLength: number }[];
+  checkedAt: string;
+}
+
+export const crawlLabels = {
+  verified: '已驗證可抓取',
+  unavailable: '暫無法抓取',
+  unresolved: '尚待確認網址',
+  existing: '既有爬蟲，待驗證',
+  pending: '尚未驗證',
+};
+export type CrawlStatus = keyof typeof crawlLabels;
+
+export function safeWebsiteUrl(value: string | null | undefined) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+// The catalog records source-name aliases explicitly, including entries whose
+// historical spreadsheet rows lack a domain. Never fill the historical field.
+export function resolveCatalogSource(source: TrafficSource, sources: NewsSource[]) {
+  const byName = sources.find((entry) =>
+    [entry.name, ...entry.referenceNames, ...(historicalNames[entry.media] ?? [])].some(
+      (name) => normalizeName(name) === normalizeName(source.name),
+    ),
+  );
+  if (byName || !source.domain) return byName;
+  const domain = safeWebsiteUrl(source.domain.includes('://') ? source.domain : `https://${source.domain}`);
+  if (!domain) return undefined;
+  const identity = (value: string) => normalizeDomain(new URL(value).hostname) + new URL(value).pathname.replace(/\/$/, '');
+  const matches = sources.filter((entry) => {
+    const url = safeWebsiteUrl(entry.websiteUrl);
+    return url && identity(url) === identity(domain);
+  });
+  // Several brands can share one domain; do not guess between them.
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+export function crawlStatusFor(source: NewsSource | undefined, audit: NewsCrawlAudit | undefined): CrawlStatus {
+  if (!source?.websiteUrl) return 'unresolved';
+  if (!audit || audit.websiteUrl !== source.websiteUrl) return 'pending';
+  return audit.status === 'verified' && !audit.samples.length ? 'unavailable' : audit.status;
+}
+
 export const trafficSorts = ['traffic', 'growth', 'name', 'rank'] as const;
 export type TrafficSort = (typeof trafficSorts)[number];
 const normalizeName = (name: string) => name.replaceAll(/\s/g, '').toLowerCase();

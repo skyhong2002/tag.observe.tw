@@ -1,0 +1,2989 @@
+{
+  "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing",
+  "sourceMonth": "202608",
+  "retrievedAt": "2026-10-03T10:14:28.740380+00:00",
+  "sources": [
+    {
+      "media": "udn",
+      "name": "UDN",
+      "websiteUrl": "https://udn.com/news/",
+      "referenceNames": [
+        "UDN"
+      ],
+      "referenceRows": [
+        8
+      ],
+      "existing": true,
+      "websiteEvidence": "https://udn.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ettoday",
+      "name": "ETToday",
+      "websiteUrl": "https://www.ettoday.net/",
+      "referenceNames": [
+        "ETToday"
+      ],
+      "referenceRows": [
+        13
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.ettoday.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ltn",
+      "name": "自由",
+      "websiteUrl": "https://news.ltn.com.tw/",
+      "referenceNames": [
+        "自由",
+        "自由 (新聞)"
+      ],
+      "referenceRows": [
+        15,
+        29
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.ltn.com.tw/",
+      "notes": "原表品牌與新聞頻道列對應同一新聞來源；保留各列以供核對，不重複建立爬蟲。"
+    },
+    {
+      "media": "setn",
+      "name": "三立",
+      "websiteUrl": "https://www.setn.com/",
+      "referenceNames": [
+        "三立",
+        "三立 iNews",
+        "三立 (新聞)"
+      ],
+      "referenceRows": [
+        16,
+        1243,
+        1244
+      ],
+      "existing": true,
+      "websiteEvidence": "http://setn.com/",
+      "notes": "原表品牌與新聞頻道列對應同一新聞來源；保留各列以供核對，不重複建立爬蟲。"
+    },
+    {
+      "media": "chinatimes",
+      "name": "中時",
+      "websiteUrl": "https://www.chinatimes.com/",
+      "referenceNames": [
+        "中時"
+      ],
+      "referenceRows": [
+        19
+      ],
+      "existing": true,
+      "websiteEvidence": "http://chinatimes.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "tvbs",
+      "name": "TVBS",
+      "websiteUrl": "https://news.tvbs.com.tw/",
+      "referenceNames": [
+        "TVBS",
+        "TVBS (新聞)"
+      ],
+      "referenceRows": [
+        21,
+        470
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.tvbs.com.tw/",
+      "notes": "原表品牌與新聞頻道列對應同一新聞來源；保留各列以供核對，不重複建立爬蟲。"
+    },
+    {
+      "media": "mirror",
+      "name": "鏡周刊",
+      "websiteUrl": "https://www.mirrormedia.mg/",
+      "referenceNames": [
+        "鏡周刊"
+      ],
+      "referenceRows": [
+        30
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.mirrormedia.mg/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "nownews",
+      "name": "Nownews",
+      "websiteUrl": "https://www.nownews.com/",
+      "referenceNames": [
+        "Nownews"
+      ],
+      "referenceRows": [
+        32
+      ],
+      "existing": true,
+      "websiteEvidence": "http://nownews.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "storm",
+      "name": "風傳媒",
+      "websiteUrl": "https://www.storm.mg/",
+      "referenceNames": [
+        "風傳媒"
+      ],
+      "referenceRows": [
+        34
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.storm.mg/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ebc",
+      "name": "東森",
+      "websiteUrl": "https://news.ebc.net.tw/",
+      "referenceNames": [
+        "東森",
+        "東森 (新聞)"
+      ],
+      "referenceRows": [
+        36,
+        471
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.ebc.net.tw/",
+      "notes": "原表品牌與新聞頻道列對應同一新聞來源；保留各列以供核對，不重複建立爬蟲。"
+    },
+    {
+      "media": "google_news",
+      "name": "Google News",
+      "websiteUrl": "https://news.google.com/home?hl=zh-TW&gl=TW&ceid=TW:zh-Hant",
+      "referenceNames": [
+        "Google News"
+      ],
+      "referenceRows": [
+        49
+      ],
+      "existing": false,
+      "websiteEvidence": "https://news.google.com/home?hl=zh-TW&gl=TW&ceid=TW:zh-Hant",
+      "notes": "Google 新聞是聚合入口；官方 RSS 為包裝連結，必須解析實際來源文章才算成功，不把入口頁當新聞全文。",
+      "feedUrls": [
+        "https://news.google.com/rss?hl=zh-TW&gl=TW&ceid=TW:zh-Hant"
+      ]
+    },
+    {
+      "media": "cna",
+      "name": "中央社",
+      "websiteUrl": "https://www.cna.com.tw/",
+      "referenceNames": [
+        "中央社"
+      ],
+      "referenceRows": [
+        50
+      ],
+      "existing": true,
+      "websiteEvidence": "http://cna.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "nextapple",
+      "name": "壹蘋",
+      "websiteUrl": "https://tw.nextapple.com/",
+      "referenceNames": [
+        "壹蘋"
+      ],
+      "referenceRows": [
+        51
+      ],
+      "existing": true,
+      "websiteEvidence": "http://nextapple.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ftv",
+      "name": "民視新聞",
+      "websiteUrl": "https://www.ftvnews.com.tw/",
+      "referenceNames": [
+        "民視新聞",
+        "民視"
+      ],
+      "referenceRows": [
+        63
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.ftvnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "msn",
+      "name": "MSN 新聞 zh-tw",
+      "websiteUrl": "https://www.msn.com/zh-tw/news",
+      "referenceNames": [
+        "MSN 新聞 zh-tw"
+      ],
+      "referenceRows": [
+        64
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.msn.com/zh-tw/news",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "hk01",
+      "name": "HK01 /8",
+      "websiteUrl": "https://www.hk01.com/",
+      "referenceNames": [
+        "HK01 /8"
+      ],
+      "referenceRows": [
+        66
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.hk01.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ctitv",
+      "name": "中天新聞",
+      "websiteUrl": "https://ctinews.com/",
+      "referenceNames": [
+        "中天新聞",
+        "中天"
+      ],
+      "referenceRows": [
+        69
+      ],
+      "existing": true,
+      "websiteEvidence": "https://ctinews.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "upmedia",
+      "name": "上報",
+      "websiteUrl": "https://www.upmedia.mg/",
+      "referenceNames": [
+        "上報"
+      ],
+      "referenceRows": [
+        100
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.upmedia.mg/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "bbc_global",
+      "name": "BBC /200",
+      "websiteUrl": "https://www.bbc.com/news",
+      "referenceNames": [
+        "BBC /200"
+      ],
+      "referenceRows": [
+        108
+      ],
+      "existing": false,
+      "websiteEvidence": "http://bbc.co.uk/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。BBC 全站列獨立於 BBC 中文列。",
+      "feedUrls": [
+        "https://feeds.bbci.co.uk/news/rss.xml"
+      ]
+    },
+    {
+      "media": "mirrordaily",
+      "name": "鏡報",
+      "websiteUrl": "https://www.mirrordaily.news/",
+      "referenceNames": [
+        "鏡報"
+      ],
+      "referenceRows": [
+        109
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.mirrordaily.news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ftnn",
+      "name": "鋒燦 FTNN",
+      "websiteUrl": "https://www.ftnn.com.tw/",
+      "referenceNames": [
+        "鋒燦 FTNN"
+      ],
+      "referenceRows": [
+        130
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.ftnn.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ctwant",
+      "name": "CTWANT",
+      "websiteUrl": "https://www.ctwant.com/",
+      "referenceNames": [
+        "CTWANT"
+      ],
+      "referenceRows": [
+        132
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.ctwant.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "newtalk",
+      "name": "新頭殼",
+      "websiteUrl": "https://newtalk.tw/",
+      "referenceNames": [
+        "新頭殼"
+      ],
+      "referenceRows": [
+        162
+      ],
+      "existing": true,
+      "websiteEvidence": "https://newtalk.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taisounds",
+      "name": "太報",
+      "websiteUrl": "https://www.taisounds.com/",
+      "referenceNames": [
+        "太報"
+      ],
+      "referenceRows": [
+        163
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.taisounds.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "tnl",
+      "name": "關鍵評論網",
+      "websiteUrl": "https://www.thenewslens.com/",
+      "referenceNames": [
+        "關鍵評論網"
+      ],
+      "referenceRows": [
+        168
+      ],
+      "existing": true,
+      "websiteEvidence": "http://thenewslens.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "mnews",
+      "name": "鏡電視/鏡新聞",
+      "websiteUrl": "https://www.mnews.tw/",
+      "referenceNames": [
+        "鏡電視/鏡新聞"
+      ],
+      "referenceRows": [
+        172
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.mnews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "pts",
+      "name": "公視 (新聞)",
+      "websiteUrl": "https://news.pts.org.tw/",
+      "referenceNames": [
+        "公視 (新聞)"
+      ],
+      "referenceRows": [
+        190
+      ],
+      "existing": true,
+      "websiteEvidence": "https://news.pts.org.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "cts",
+      "name": "華視 (新聞)",
+      "websiteUrl": "https://news.cts.com.tw/",
+      "referenceNames": [
+        "華視 (新聞)"
+      ],
+      "referenceRows": [
+        253
+      ],
+      "existing": true,
+      "websiteEvidence": "https://news.cts.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "reporter",
+      "name": "報導者",
+      "websiteUrl": "https://www.twreporter.org/",
+      "referenceNames": [
+        "報導者"
+      ],
+      "referenceRows": [
+        260
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.twreporter.org/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ttv",
+      "name": "台視 (新聞)",
+      "websiteUrl": "https://news.ttv.com.tw/",
+      "referenceNames": [
+        "台視 (新聞)"
+      ],
+      "referenceRows": [
+        262
+      ],
+      "existing": true,
+      "websiteEvidence": "https://news.ttv.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "nikkei",
+      "name": "日經 /150",
+      "websiteUrl": "https://zh.cn.nikkei.com/",
+      "referenceNames": [
+        "日經 /150"
+      ],
+      "referenceRows": [
+        265
+      ],
+      "existing": true,
+      "websiteEvidence": "http://nikkei.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。沿用本站中文新聞來源；原表流量可能涵蓋全站，不等同本站收錄語言範圍。"
+    },
+    {
+      "media": "rti",
+      "name": "央廣",
+      "websiteUrl": "https://www.rti.org.tw/",
+      "referenceNames": [
+        "央廣"
+      ],
+      "referenceRows": [
+        273
+      ],
+      "existing": true,
+      "websiteEvidence": "http://rti.org.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "knews",
+      "name": "知新聞",
+      "websiteUrl": "https://www.knews.com.tw/",
+      "referenceNames": [
+        "知新聞"
+      ],
+      "referenceRows": [
+        278
+      ],
+      "existing": true,
+      "websiteEvidence": "http://knews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "rfi",
+      "name": "RFI 法網 /25",
+      "websiteUrl": "https://www.rfi.fr/tw/",
+      "referenceNames": [
+        "RFI 法網 /25",
+        "RFI 法網 /30"
+      ],
+      "referenceRows": [
+        289
+      ],
+      "existing": true,
+      "websiteEvidence": "http://rfi.fr/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。沿用本站中文新聞來源；原表流量可能涵蓋全站，不等同本站收錄語言範圍。"
+    },
+    {
+      "media": "taipeitimes",
+      "name": "TaipeiTimes /3",
+      "websiteUrl": "https://www.taipeitimes.com/",
+      "referenceNames": [
+        "TaipeiTimes /3",
+        "TaipeiTimes/3",
+        "TaipeiTimes/5"
+      ],
+      "referenceRows": [
+        311
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.taipeitimes.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ustv",
+      "name": "非凡新聞",
+      "websiteUrl": "https://news.ustv.com.tw/",
+      "referenceNames": [
+        "非凡新聞"
+      ],
+      "referenceRows": [
+        315
+      ],
+      "existing": true,
+      "websiteEvidence": "https://news.ustv.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "people",
+      "name": "民報",
+      "websiteUrl": "https://www.peoplenews.tw/",
+      "referenceNames": [
+        "民報"
+      ],
+      "referenceRows": [
+        328
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.peoplenews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "epochtimes",
+      "name": "大紀元/3",
+      "websiteUrl": "https://www.epochtimes.com/b5/",
+      "referenceNames": [
+        "大紀元/3",
+        "大紀元/2"
+      ],
+      "referenceRows": [
+        351
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.epochtimes.com/b5/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "yahoo",
+      "name": "Yahoo 新聞",
+      "websiteUrl": "https://tw.news.yahoo.com/",
+      "referenceNames": [
+        "Yahoo 新聞"
+      ],
+      "referenceRows": [
+        353
+      ],
+      "existing": true,
+      "websiteEvidence": "https://tw.news.yahoo.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "oncc",
+      "name": "東網 /20",
+      "websiteUrl": "https://hk.on.cc/",
+      "referenceNames": [
+        "東網 /20",
+        "東網 /15"
+      ],
+      "referenceRows": [
+        379
+      ],
+      "existing": true,
+      "websiteEvidence": "http://on.cc/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "bccnews",
+      "name": "中廣新聞",
+      "websiteUrl": "https://bccnews.com.tw/",
+      "referenceNames": [
+        "中廣新聞"
+      ],
+      "referenceRows": [
+        435
+      ],
+      "existing": true,
+      "websiteEvidence": "http://bccnews.com.tw",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwannet",
+      "name": "台灣產經新聞 taiwannet.com.tw",
+      "websiteUrl": "https://news.taiwannet.com.tw/",
+      "referenceNames": [
+        "台灣產經新聞 taiwannet.com.tw"
+      ],
+      "referenceRows": [
+        457
+      ],
+      "existing": false,
+      "websiteEvidence": "https://news.taiwannet.com.tw/",
+      "notes": "原表 taiwannet.com.tw；抓取入口使用官方新聞子網域 news.taiwannet.com.tw。"
+    },
+    {
+      "media": "peopo",
+      "name": "公民新聞 peopo",
+      "websiteUrl": "https://www.peopo.org/",
+      "referenceNames": [
+        "公民新聞 peopo"
+      ],
+      "referenceRows": [
+        517
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.peopo.org/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "soundofhope",
+      "name": "希望之聲 /3",
+      "websiteUrl": "https://www.soundofhope.org/",
+      "referenceNames": [
+        "希望之聲 /3",
+        "希望之聲 /2"
+      ],
+      "referenceRows": [
+        522
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.soundofhope.org/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "cmmedia",
+      "name": "信傳媒",
+      "websiteUrl": "https://www.cmmedia.com.tw/",
+      "referenceNames": [
+        "信傳媒"
+      ],
+      "referenceRows": [
+        534
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.cmmedia.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "tyenews",
+      "name": "桃園電子報",
+      "websiteUrl": "https://tyenews.com/",
+      "referenceNames": [
+        "桃園電子報"
+      ],
+      "referenceRows": [
+        536
+      ],
+      "existing": false,
+      "websiteEvidence": "https://tyenews.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://tyenews.com/feed/"
+      ]
+    },
+    {
+      "media": "cnews",
+      "name": "匯流",
+      "websiteUrl": "https://cnews.com.tw/",
+      "referenceNames": [
+        "匯流"
+      ],
+      "referenceRows": [
+        537
+      ],
+      "existing": true,
+      "websiteEvidence": "https://cnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "agriharvest",
+      "name": "農傳媒",
+      "websiteUrl": "https://www.agriharvest.tw/",
+      "referenceNames": [
+        "農傳媒"
+      ],
+      "referenceRows": [
+        539
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.agriharvest.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "dongtaiwang",
+      "name": "動態網 /15",
+      "websiteUrl": "https://dongtaiwang.com/",
+      "referenceNames": [
+        "動態網 /15",
+        "動態網/10"
+      ],
+      "referenceRows": [
+        546
+      ],
+      "existing": false,
+      "websiteEvidence": "https://dongtaiwang.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "mdnkids",
+      "name": "國語日報",
+      "websiteUrl": "https://www.mdnkids.com/",
+      "referenceNames": [
+        "國語日報"
+      ],
+      "referenceRows": [
+        549
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.mdnkids.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.mdnkids.com/rss/"
+      ],
+      "articlePattern": "^/content\\.asp\\?Link_String_="
+    },
+    {
+      "media": "hakkanews",
+      "name": "客新聞",
+      "websiteUrl": "https://hakkanews.tw/",
+      "referenceNames": [
+        "客新聞",
+        "客家新聞"
+      ],
+      "referenceRows": [
+        552
+      ],
+      "existing": false,
+      "websiteEvidence": "https://hakkanews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://hakkanews.tw/feed/"
+      ]
+    },
+    {
+      "media": "theinitium",
+      "name": "端傳媒 /2",
+      "websiteUrl": "https://theinitium.com/",
+      "referenceNames": [
+        "端傳媒 /2",
+        "端傳媒/2",
+        "端傳媒/3"
+      ],
+      "referenceRows": [
+        554
+      ],
+      "existing": true,
+      "websiteEvidence": "https://theinitium.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "aboluowang",
+      "name": "阿波羅網 / 8",
+      "websiteUrl": "https://tw.aboluowang.com/",
+      "referenceNames": [
+        "阿波羅網 / 8",
+        "阿波羅網 (tw) /8"
+      ],
+      "referenceRows": [
+        558
+      ],
+      "existing": false,
+      "websiteEvidence": "https://tw.aboluowang.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "i_meihua",
+      "name": "梅花新聞網",
+      "websiteUrl": "https://i-meihua.com/",
+      "referenceNames": [
+        "梅花新聞網"
+      ],
+      "referenceRows": [
+        562
+      ],
+      "existing": false,
+      "websiteEvidence": "https://i-meihua.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "pinview",
+      "name": "品觀點",
+      "websiteUrl": "https://www.pinview.com.tw/",
+      "referenceNames": [
+        "品觀點"
+      ],
+      "referenceRows": [
+        583
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.pinview.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/News/\\d+\\.html"
+    },
+    {
+      "media": "voachinese",
+      "name": "美國之音 voachinese /10",
+      "websiteUrl": "https://www.voachinese.com/",
+      "referenceNames": [
+        "美國之音 voachinese /10",
+        "美國之聲 voachinese /10"
+      ],
+      "referenceRows": [
+        586
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.voachinese.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.voachinese.com/api/",
+        "https://www.voachinese.com/sitemap.xml"
+      ]
+    },
+    {
+      "media": "civilmedia",
+      "name": "公庫 civilmedia",
+      "websiteUrl": "https://www.civilmedia.tw/",
+      "referenceNames": [
+        "公庫 civilmedia"
+      ],
+      "referenceRows": [
+        598
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.civilmedia.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwandom",
+      "name": "洞傳媒 taiwandomnews",
+      "websiteUrl": "https://taiwandomnews.com/",
+      "referenceNames": [
+        "洞傳媒 taiwandomnews"
+      ],
+      "referenceRows": [
+        628
+      ],
+      "existing": true,
+      "websiteEvidence": "https://taiwandomnews.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ct",
+      "name": "論壇報",
+      "websiteUrl": "https://ct.org.tw/",
+      "referenceNames": [
+        "論壇報"
+      ],
+      "referenceRows": [
+        657
+      ],
+      "existing": false,
+      "websiteEvidence": "https://ct.org.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "guancha",
+      "name": "觀察者網 /50",
+      "websiteUrl": "https://www.guancha.cn/",
+      "referenceNames": [
+        "觀察者網 /50"
+      ],
+      "referenceRows": [
+        661
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.guancha.cn/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "lai_media",
+      "name": "賴傳媒",
+      "websiteUrl": "https://lai-media.net/",
+      "referenceNames": [
+        "賴傳媒"
+      ],
+      "referenceRows": [
+        663
+      ],
+      "existing": false,
+      "websiteEvidence": "https://lai-media.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "thehubnews",
+      "name": "新頭條hubnews",
+      "websiteUrl": "https://www.thehubnews.net/",
+      "referenceNames": [
+        "新頭條hubnews"
+      ],
+      "referenceRows": [
+        670
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.thehubnews.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.thehubnews.net/feed"
+      ]
+    },
+    {
+      "media": "ydn",
+      "name": "青年日報",
+      "websiteUrl": "https://www.ydn.com.tw/",
+      "referenceNames": [
+        "青年日報"
+      ],
+      "referenceRows": [
+        673
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.ydn.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "thepaper",
+      "name": "澎湃新聞 /80",
+      "websiteUrl": "https://www.thepaper.cn/",
+      "referenceNames": [
+        "澎湃新聞 /80"
+      ],
+      "referenceRows": [
+        675
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.thepaper.cn/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "winnews",
+      "name": "威傳媒",
+      "websiteUrl": "https://www.winnews.com.tw/",
+      "referenceNames": [
+        "威傳媒"
+      ],
+      "referenceRows": [
+        676
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.winnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.winnews.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "secretchina",
+      "name": "中國secretchina.com /5",
+      "websiteUrl": "https://www.secretchina.com/",
+      "referenceNames": [
+        "中國secretchina.com /5",
+        "中國secretchina.com/2"
+      ],
+      "referenceRows": [
+        678
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.secretchina.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.secretchina.com/news/gb/news.xml",
+        "https://www.secretchina.com/news/gb/index.xml"
+      ]
+    },
+    {
+      "media": "hsnews",
+      "name": "花蓮最速報",
+      "websiteUrl": "https://hsnews.com.tw/",
+      "referenceNames": [
+        "花蓮最速報"
+      ],
+      "referenceRows": [
+        679
+      ],
+      "existing": false,
+      "websiteEvidence": "https://hsnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "watchmedia01",
+      "name": "觀傳媒 watchmedia01",
+      "websiteUrl": "https://www.watchmedia01.com/",
+      "referenceNames": [
+        "觀傳媒 watchmedia01"
+      ],
+      "referenceRows": [
+        682
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.watchmedia01.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "bannedbook",
+      "name": "禁聞網/6",
+      "websiteUrl": "https://www.bannedbook.org/bnews/zh-tw/",
+      "referenceNames": [
+        "禁聞網/6",
+        "禁聞網/8"
+      ],
+      "referenceRows": [
+        683
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.bannedbook.org/bnews/zh-tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "singular",
+      "name": "獨家報導",
+      "websiteUrl": "https://www.scooptw.com/",
+      "referenceNames": [
+        "獨家報導"
+      ],
+      "referenceRows": [
+        684
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.scooptw.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.scooptw.com/feed/"
+      ]
+    },
+    {
+      "media": "lihpao",
+      "name": "立報",
+      "websiteUrl": "https://www.lihpao.com/",
+      "referenceNames": [
+        "立報"
+      ],
+      "referenceRows": [
+        685
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.lihpao.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "hakkatv",
+      "name": "客家電視",
+      "websiteUrl": "https://www.hakkatv.org.tw/",
+      "referenceNames": [
+        "客家電視"
+      ],
+      "referenceRows": [
+        687
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.hakkatv.org.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "grinews",
+      "name": "草根 grinews",
+      "websiteUrl": "https://grinews.com/news/",
+      "referenceNames": [
+        "草根 grinews"
+      ],
+      "referenceRows": [
+        688
+      ],
+      "existing": false,
+      "websiteEvidence": "https://grinews.com/news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "newspie",
+      "name": "新聞派 newspie",
+      "websiteUrl": "https://newspie.com.tw/",
+      "referenceNames": [
+        "新聞派 newspie"
+      ],
+      "referenceRows": [
+        690
+      ],
+      "existing": false,
+      "websiteEvidence": "https://newspie.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.newspie.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "daai",
+      "name": "大愛 (電視)",
+      "websiteUrl": "https://www.daai.tv/news/",
+      "referenceNames": [
+        "大愛 (電視)"
+      ],
+      "referenceRows": [
+        691
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.daai.tv/news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "nvns",
+      "name": "視傳媒 nvns",
+      "websiteUrl": "https://nvns.net/",
+      "referenceNames": [
+        "視傳媒 nvns"
+      ],
+      "referenceRows": [
+        692
+      ],
+      "existing": false,
+      "websiteEvidence": "https://nvns.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "bigmedia",
+      "name": "BigMedia 鉅聞",
+      "websiteUrl": "https://bigmedia.com.tw/",
+      "referenceNames": [
+        "BigMedia 鉅聞"
+      ],
+      "referenceRows": [
+        694
+      ],
+      "existing": false,
+      "websiteEvidence": "https://bigmedia.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "i_media",
+      "name": "愛傳媒 i-media",
+      "websiteUrl": "https://i-media.tw/",
+      "referenceNames": [
+        "愛傳媒 i-media"
+      ],
+      "referenceRows": [
+        697
+      ],
+      "existing": false,
+      "websiteEvidence": "https://i-media.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/Article/Detail/\\d+"
+    },
+    {
+      "media": "policenews",
+      "name": "警政時報",
+      "websiteUrl": "https://www.tcpttw.com/",
+      "referenceNames": [
+        "警政時報"
+      ],
+      "referenceRows": [
+        700
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.tcpttw.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "news886",
+      "name": "886.news",
+      "websiteUrl": "https://886.news/",
+      "referenceNames": [
+        "886.news"
+      ],
+      "referenceRows": [
+        703
+      ],
+      "existing": false,
+      "websiteEvidence": "https://886.news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://886.news/feed"
+      ],
+      "articlePattern": "^/archives/\\d+"
+    },
+    {
+      "media": "anntw",
+      "name": "醒報 anntw",
+      "websiteUrl": "https://anntw.com/",
+      "referenceNames": [
+        "醒報 anntw"
+      ],
+      "referenceRows": [
+        705
+      ],
+      "existing": false,
+      "websiteEvidence": "https://anntw.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "yesmedia",
+      "name": "是新聞 yesmedia",
+      "websiteUrl": "https://www.yesmedia.com.tw/",
+      "referenceNames": [
+        "是新聞 yesmedia",
+        "YesMedia"
+      ],
+      "referenceRows": [
+        707
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.yesmedia.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "miin",
+      "name": "台灣miin迷因",
+      "websiteUrl": "https://miin.cc/",
+      "referenceNames": [
+        "台灣miin迷因"
+      ],
+      "referenceRows": [
+        709
+      ],
+      "existing": false,
+      "websiteEvidence": "https://miin.cc/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "tcnews",
+      "name": "慈善新聞tcnews",
+      "websiteUrl": "https://www.tcnews.com.tw/",
+      "referenceNames": [
+        "慈善新聞tcnews"
+      ],
+      "referenceRows": [
+        710
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.tcnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/[a-z-]+/item/\\d+\\.html"
+    },
+    {
+      "media": "new_report",
+      "name": "記者爆料網",
+      "websiteUrl": "https://new-reporter.com/",
+      "referenceNames": [
+        "記者爆料網"
+      ],
+      "referenceRows": [
+        712
+      ],
+      "existing": false,
+      "websiteEvidence": "https://new-reporter.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "owlting",
+      "name": "Owlnews 奧丁丁新聞",
+      "websiteUrl": "https://news.owlting.com/",
+      "referenceNames": [
+        "Owlnews 奧丁丁新聞"
+      ],
+      "referenceRows": [
+        713
+      ],
+      "existing": false,
+      "websiteEvidence": "https://news.owlting.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "innews",
+      "name": "引新聞 innews",
+      "websiteUrl": "https://innews.com.tw/",
+      "referenceNames": [
+        "引新聞 innews"
+      ],
+      "referenceRows": [
+        714
+      ],
+      "existing": false,
+      "websiteEvidence": "https://innews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://innews.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "newstaiwan",
+      "name": "好報 newstaiwan",
+      "websiteUrl": "https://newstaiwan.net/",
+      "referenceNames": [
+        "好報 newstaiwan"
+      ],
+      "referenceRows": [
+        715
+      ],
+      "existing": false,
+      "websiteEvidence": "https://newstaiwan.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://newstaiwan.net/feed/"
+      ]
+    },
+    {
+      "media": "tnews",
+      "name": "tnews 大台灣新聞",
+      "websiteUrl": "https://tnews.cc/",
+      "referenceNames": [
+        "tnews 大台灣新聞"
+      ],
+      "referenceRows": [
+        717
+      ],
+      "existing": false,
+      "websiteEvidence": "https://tnews.cc/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taro",
+      "name": "芋傳媒 taro",
+      "websiteUrl": "https://taronews.tw/",
+      "referenceNames": [
+        "芋傳媒 taro"
+      ],
+      "referenceRows": [
+        718
+      ],
+      "existing": true,
+      "websiteEvidence": "https://taronews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwandaily",
+      "name": "美洲台灣日報 /2",
+      "websiteUrl": "https://www.taiwandaily.net/",
+      "referenceNames": [
+        "美洲台灣日報 /2",
+        "美洲台灣日報/2"
+      ],
+      "referenceRows": [
+        721
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.taiwandaily.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "enn",
+      "name": "enn台灣電報",
+      "websiteUrl": "https://enn.tw/",
+      "referenceNames": [
+        "enn台灣電報"
+      ],
+      "referenceRows": [
+        723
+      ],
+      "existing": false,
+      "websiteEvidence": "https://enn.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "kingtop",
+      "name": "台灣華報 kingtop",
+      "websiteUrl": "https://www.kingtop.com.tw/",
+      "referenceNames": [
+        "台灣華報 kingtop"
+      ],
+      "referenceRows": [
+        725
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.kingtop.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "greatnews",
+      "name": "大成報 greatnews",
+      "websiteUrl": "https://greatnews.com.tw/",
+      "referenceNames": [
+        "大成報 greatnews"
+      ],
+      "referenceRows": [
+        728
+      ],
+      "existing": false,
+      "websiteEvidence": "https://greatnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/news_pagein\\.php\\?.*n_id=\\d+"
+    },
+    {
+      "media": "kamalan_news",
+      "name": "葛瑪蘭新聞",
+      "websiteUrl": "https://www.kamalan-news.com/",
+      "referenceNames": [
+        "葛瑪蘭新聞",
+        "葛瑪蘭"
+      ],
+      "referenceRows": [
+        729
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.kamalan-news.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "articlePattern": "^/[a-z-]+/\\d+/\\d+$"
+    },
+    {
+      "media": "fclnews",
+      "name": "台灣新聞雲報 fclnews.com",
+      "websiteUrl": "https://fclnews.com/",
+      "referenceNames": [
+        "台灣新聞雲報 fclnews.com"
+      ],
+      "referenceRows": [
+        730
+      ],
+      "existing": false,
+      "websiteEvidence": "https://fclnews.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "globalnewstv",
+      "name": "寰宇新聞網",
+      "websiteUrl": "https://globalnewstv.com.tw/",
+      "referenceNames": [
+        "寰宇新聞網"
+      ],
+      "referenceRows": [
+        732
+      ],
+      "existing": false,
+      "websiteEvidence": "https://globalnewstv.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "pronews",
+      "name": "創新聞pronews",
+      "websiteUrl": "https://pronews.tw/",
+      "referenceNames": [
+        "創新聞pronews"
+      ],
+      "referenceRows": [
+        733
+      ],
+      "existing": false,
+      "websiteEvidence": "https://pronews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://pronews.tw/feed/"
+      ]
+    },
+    {
+      "media": "bo6s",
+      "name": "波新聞 bo6s",
+      "websiteUrl": "https://www.bo6s.com.tw/",
+      "referenceNames": [
+        "波新聞 bo6s"
+      ],
+      "referenceRows": [
+        734
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.bo6s.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taidaily",
+      "name": "很角色傳媒taidaily",
+      "websiteUrl": "https://taidaily.com/",
+      "referenceNames": [
+        "很角色傳媒taidaily"
+      ],
+      "referenceRows": [
+        736
+      ],
+      "existing": false,
+      "websiteEvidence": "https://taidaily.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://taidaily.com/feed/"
+      ]
+    },
+    {
+      "media": "travelnews",
+      "name": "宜蘭新聞網travelnews",
+      "websiteUrl": "https://www.travelnews.tw/news/",
+      "referenceNames": [
+        "宜蘭新聞網travelnews"
+      ],
+      "referenceRows": [
+        738
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.travelnews.tw/news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "focusnews",
+      "name": "今傳媒Focusnews",
+      "websiteUrl": "https://focusnews.com.tw/",
+      "referenceNames": [
+        "今傳媒Focusnews"
+      ],
+      "referenceRows": [
+        741
+      ],
+      "existing": false,
+      "websiteEvidence": "https://focusnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://focusnews.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "macaodaily",
+      "name": "澳門日報 /5",
+      "websiteUrl": "https://www.macaodaily.com/",
+      "referenceNames": [
+        "澳門日報 /5"
+      ],
+      "referenceRows": [
+        744
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.macaodaily.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwanus",
+      "name": "台灣海外網 / 20",
+      "websiteUrl": "https://www.taiwanus.net/",
+      "referenceNames": [
+        "台灣海外網 / 20",
+        "台灣海外網"
+      ],
+      "referenceRows": [
+        747
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.taiwanus.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "rise_mediacorp",
+      "name": "崛起新傳媒 rise-mediacorp.com",
+      "websiteUrl": "https://rise-mediacorp.com/",
+      "referenceNames": [
+        "崛起新傳媒 rise-mediacorp.com"
+      ],
+      "referenceRows": [
+        748
+      ],
+      "existing": false,
+      "websiteEvidence": "https://rise-mediacorp.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "pnn",
+      "name": "鄉民晚報",
+      "websiteUrl": "https://pnn.tw/",
+      "referenceNames": [
+        "鄉民晚報"
+      ],
+      "referenceRows": [
+        749
+      ],
+      "existing": false,
+      "websiteEvidence": "https://pnn.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "st_media",
+      "name": "台灣生活新聞 st-media",
+      "websiteUrl": "https://news.st-media.com.tw/",
+      "referenceNames": [
+        "台灣生活新聞 st-media"
+      ],
+      "referenceRows": [
+        752
+      ],
+      "existing": false,
+      "websiteEvidence": "https://news.st-media.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "nchn",
+      "name": "全國大小事 nchn.news",
+      "websiteUrl": "https://nchn.news/",
+      "referenceNames": [
+        "全國大小事 nchn.news"
+      ],
+      "referenceRows": [
+        753
+      ],
+      "existing": false,
+      "websiteEvidence": "https://nchn.news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://nchn.news/feed"
+      ]
+    },
+    {
+      "media": "homeplus",
+      "name": "中嘉 (新聞)",
+      "websiteUrl": "https://news.homeplus.net.tw/",
+      "referenceNames": [
+        "中嘉 (新聞)"
+      ],
+      "referenceRows": [
+        754
+      ],
+      "existing": false,
+      "websiteEvidence": "https://news.homeplus.net.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "j_media",
+      "name": "j-media 聚",
+      "websiteUrl": "https://j-media.tw/",
+      "referenceNames": [
+        "j-media 聚"
+      ],
+      "referenceRows": [
+        757
+      ],
+      "existing": false,
+      "websiteEvidence": "https://j-media.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwanpost",
+      "name": "taiwanpost 台灣郵時",
+      "websiteUrl": "https://taiwanpost.net/",
+      "referenceNames": [
+        "taiwanpost 台灣郵時"
+      ],
+      "referenceRows": [
+        758
+      ],
+      "existing": false,
+      "websiteEvidence": "https://taiwanpost.net/",
+      "notes": "原表名稱「台灣郵時」疑為「臺灣郵報」誤植；依原表英文識別 taiwanpost 對應官方 taiwanpost.net，保留原名稱供核對。",
+      "feedUrls": [
+        "https://taiwanpost.net/feed/"
+      ]
+    },
+    {
+      "media": "right_media",
+      "name": "睿 right-media.news",
+      "websiteUrl": "https://www.right-media.news/",
+      "referenceNames": [
+        "睿 right-media.news"
+      ],
+      "referenceRows": [
+        759
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.right-media.news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.right-media.news/feed"
+      ]
+    },
+    {
+      "media": "tristarnews",
+      "name": "三星傳媒",
+      "websiteUrl": "https://www.tristarnews.com.tw/",
+      "referenceNames": [
+        "三星傳媒"
+      ],
+      "referenceRows": [
+        760
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.tristarnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "wujie",
+      "name": "無界 /5",
+      "websiteUrl": null,
+      "referenceNames": [
+        "無界 /5",
+        "無界"
+      ],
+      "referenceRows": [
+        761
+      ],
+      "existing": false,
+      "websiteEvidence": null,
+      "notes": "原表僅列「無界」，未附網址；存在已停運的無界新聞與同名無界網路資訊入口，無法唯一確認身份，保留待人工核對。"
+    },
+    {
+      "media": "firenews",
+      "name": "火報 firenews",
+      "websiteUrl": "https://firenews.com.tw/",
+      "referenceNames": [
+        "火報 firenews"
+      ],
+      "referenceRows": [
+        763
+      ],
+      "existing": false,
+      "websiteEvidence": "https://firenews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://firenews.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "lifenews",
+      "name": "民生電子報 lifenews",
+      "websiteUrl": "https://lifenews.com.tw/",
+      "referenceNames": [
+        "民生電子報 lifenews",
+        "民生電子報"
+      ],
+      "referenceRows": [
+        764
+      ],
+      "existing": false,
+      "websiteEvidence": "https://lifenews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://lifenews.com.tw/feed"
+      ]
+    },
+    {
+      "media": "news586",
+      "name": "586 傳媒 (台中彰化)",
+      "websiteUrl": "https://news.586.com.tw/",
+      "referenceNames": [
+        "586 傳媒 (台中彰化)"
+      ],
+      "referenceRows": [
+        765
+      ],
+      "existing": false,
+      "websiteEvidence": "https://news.586.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://news.586.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "ccsn0405",
+      "name": "中華鱻傳媒 ccsn0405",
+      "websiteUrl": "https://www.ccsn0405.com/",
+      "referenceNames": [
+        "中華鱻傳媒 ccsn0405",
+        "中華 ccsn0405"
+      ],
+      "referenceRows": [
+        768
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.ccsn0405.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.ccsn0405.com/feeds/posts/default?alt=rss"
+      ]
+    },
+    {
+      "media": "chengpou",
+      "name": "正報 /3",
+      "websiteUrl": "http://www.chengpou.com.mo/",
+      "referenceNames": [
+        "正報 /3"
+      ],
+      "referenceRows": [
+        769
+      ],
+      "existing": false,
+      "websiteEvidence": "http://www.chengpou.com.mo/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "yaya_news",
+      "name": "鴉鴉新聞",
+      "websiteUrl": "https://yayanews.com.tw/",
+      "referenceNames": [
+        "鴉鴉新聞"
+      ],
+      "referenceRows": [
+        770
+      ],
+      "existing": false,
+      "websiteEvidence": "https://yayanews.com.tw/",
+      "notes": "原表「鴉鴉新聞」疑為「鴨鴨新聞」誤植；依唯一近似新聞品牌與官方關於頁對應，保留原名稱供核對。",
+      "feedUrls": [
+        "https://yayanews.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "taipeipost",
+      "name": "台北郵報 taipeipost",
+      "websiteUrl": "https://taipeipost.org/",
+      "referenceNames": [
+        "台北郵報 taipeipost"
+      ],
+      "referenceRows": [
+        775
+      ],
+      "existing": false,
+      "websiteEvidence": "https://taipeipost.org/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://taipeipost.org/feed/"
+      ]
+    },
+    {
+      "media": "hiilan",
+      "name": "Hi宜蘭",
+      "websiteUrl": "https://www.hiilan.com.tw/",
+      "referenceNames": [
+        "Hi宜蘭"
+      ],
+      "referenceRows": [
+        777
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.hiilan.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "tpnews",
+      "name": "台灣商務新聞網  tpnews.org",
+      "websiteUrl": "https://tpnews.org/",
+      "referenceNames": [
+        "台灣商務新聞網  tpnews.org"
+      ],
+      "referenceRows": [
+        778
+      ],
+      "existing": false,
+      "websiteEvidence": "https://tpnews.org/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "twline365",
+      "name": "台灣線報 twline365.com",
+      "websiteUrl": "https://twline365.com/",
+      "referenceNames": [
+        "台灣線報 twline365.com"
+      ],
+      "referenceRows": [
+        779
+      ],
+      "existing": false,
+      "websiteEvidence": "https://twline365.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://twline365.com/feed/"
+      ]
+    },
+    {
+      "media": "rwnews",
+      "name": "菱傳媒",
+      "websiteUrl": "https://rwnews.tw/",
+      "referenceNames": [
+        "菱傳媒"
+      ],
+      "referenceRows": [
+        874
+      ],
+      "existing": false,
+      "websiteEvidence": "https://rwnews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "bbc",
+      "name": "BBC 中文",
+      "websiteUrl": "https://www.bbc.com/zhongwen/trad",
+      "referenceNames": [
+        "BBC 中文"
+      ],
+      "referenceRows": [
+        1245
+      ],
+      "existing": true,
+      "websiteEvidence": "https://www.bbc.com/zhongwen/trad",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "news_yahoo",
+      "name": "Yahoo 新聞日本 /1000",
+      "websiteUrl": "http://news.yahoo.co.jp",
+      "referenceNames": [
+        "Yahoo 新聞日本 /1000"
+      ],
+      "referenceRows": [
+        230
+      ],
+      "existing": false,
+      "websiteEvidence": "http://news.yahoo.co.jp",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://news.yahoo.co.jp/rss/topics/top-picks.xml"
+      ]
+    },
+    {
+      "media": "yam",
+      "name": "蕃新聞",
+      "websiteUrl": "https://n.yam.com/",
+      "referenceNames": [
+        "蕃新聞"
+      ],
+      "referenceRows": [
+        232
+      ],
+      "existing": false,
+      "websiteEvidence": "https://n.yam.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "cnn",
+      "name": "CNN /400",
+      "websiteUrl": "http://cnn.com",
+      "referenceNames": [
+        "CNN /400"
+      ],
+      "referenceRows": [
+        235
+      ],
+      "existing": false,
+      "websiteEvidence": "http://cnn.com",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "stheadline",
+      "name": "星島頭條 /20",
+      "websiteUrl": "http://stheadline.com/",
+      "referenceNames": [
+        "星島頭條 /20"
+      ],
+      "referenceRows": [
+        267
+      ],
+      "existing": false,
+      "websiteEvidence": "http://stheadline.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.stheadline.com/rss"
+      ]
+    },
+    {
+      "media": "cn_nytimes",
+      "name": "紐時中文 /5",
+      "websiteUrl": "http://cn.nytimes.com/",
+      "referenceNames": [
+        "紐時中文 /5",
+        "紐時中文/5"
+      ],
+      "referenceRows": [
+        268
+      ],
+      "existing": false,
+      "websiteEvidence": "http://cn.nytimes.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://cn.nytimes.com/rss/",
+        "https://cn.nytimes.com/rss/zh-hant/"
+      ]
+    },
+    {
+      "media": "cdn_news",
+      "name": "基都教今日報",
+      "websiteUrl": "https://cdn-news.org/",
+      "referenceNames": [
+        "基都教今日報"
+      ],
+      "referenceRows": [
+        279
+      ],
+      "existing": false,
+      "websiteEvidence": "https://cdn-news.org/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ifeng",
+      "name": "鳳凰網 /100",
+      "websiteUrl": "http://ifeng.com/",
+      "referenceNames": [
+        "鳳凰網 /100",
+        "鳳凰網 ifeng.com /100"
+      ],
+      "referenceRows": [
+        282
+      ],
+      "existing": false,
+      "websiteEvidence": "http://ifeng.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwannews",
+      "name": "Taiwannews 台灣英文新聞 /2",
+      "websiteUrl": "http://taiwannews.com.tw/",
+      "referenceNames": [
+        "Taiwannews 台灣英文新聞 /2"
+      ],
+      "referenceRows": [
+        284
+      ],
+      "existing": false,
+      "websiteEvidence": "http://taiwannews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "news_pchome",
+      "name": "PCHome 新聞",
+      "websiteUrl": "https://news.pchome.com.tw/",
+      "referenceNames": [
+        "PCHome 新聞"
+      ],
+      "referenceRows": [
+        301
+      ],
+      "existing": false,
+      "websiteEvidence": "https://news.pchome.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://news.pchome.com.tw/articles/Feed-Google"
+      ]
+    },
+    {
+      "media": "reuters",
+      "name": "路透社 /200",
+      "websiteUrl": "https://www.reuters.com/",
+      "referenceNames": [
+        "路透社 /200"
+      ],
+      "referenceRows": [
+        303
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.reuters.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "news_qq",
+      "name": "騰訊新聞 /30",
+      "websiteUrl": "http://news.qq.com/",
+      "referenceNames": [
+        "騰訊新聞 /30",
+        "騰訊新聞 news.qq.com /30"
+      ],
+      "referenceRows": [
+        306
+      ],
+      "existing": false,
+      "websiteEvidence": "http://news.qq.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ntdtv",
+      "name": "新唐人/3",
+      "websiteUrl": "https://www.ntdtv.com/",
+      "referenceNames": [
+        "新唐人/3",
+        "新唐人/2"
+      ],
+      "referenceRows": [
+        318
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.ntdtv.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "cdns",
+      "name": "中華新聞雲/中華日報",
+      "websiteUrl": "https://www.cdns.com.tw/",
+      "referenceNames": [
+        "中華新聞雲/中華日報",
+        "中華新聞雲 cdns.com.tw"
+      ],
+      "referenceRows": [
+        320
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.cdns.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.cdns.com.tw/feed"
+      ]
+    },
+    {
+      "media": "cctv",
+      "name": "央視 cctv.com /150",
+      "websiteUrl": "http://cctv.com/",
+      "referenceNames": [
+        "央視 cctv.com /150"
+      ],
+      "referenceRows": [
+        325
+      ],
+      "existing": false,
+      "websiteEvidence": "http://cctv.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "dw",
+      "name": "DW 德廣 /100",
+      "websiteUrl": "https://www.dw.com/zh/",
+      "referenceNames": [
+        "DW 德廣 /100",
+        "DW 德廣"
+      ],
+      "referenceRows": [
+        326
+      ],
+      "existing": false,
+      "websiteEvidence": "http://dw.com/",
+      "notes": "原表 DW 全站流量；本站以官方中文新聞及 RDF RSS 為內容範圍。",
+      "feedUrls": [
+        "https://rss.dw.com/rdf/rss-chi-all"
+      ]
+    },
+    {
+      "media": "focustaiwan",
+      "name": "focustaiwan.tw /3",
+      "websiteUrl": "http://focustaiwan.tw/",
+      "referenceNames": [
+        "focustaiwan.tw /3",
+        "FoucusTaiwan",
+        "focustaiwan.tw / 8"
+      ],
+      "referenceRows": [
+        330
+      ],
+      "existing": false,
+      "websiteEvidence": "http://focustaiwan.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "cn_wsj",
+      "name": "華爾街日報中文 /5",
+      "websiteUrl": "https://cn.wsj.com/",
+      "referenceNames": [
+        "華爾街日報中文 /5",
+        "華爾街日報中文 /8"
+      ],
+      "referenceRows": [
+        332
+      ],
+      "existing": false,
+      "websiteEvidence": "https://cn.wsj.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "life",
+      "name": "life生活網",
+      "websiteUrl": "https://life.tw/",
+      "referenceNames": [
+        "life生活網",
+        "life.tw生活網"
+      ],
+      "referenceRows": [
+        333
+      ],
+      "existing": false,
+      "websiteEvidence": "https://life.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "merit_times",
+      "name": "人間福報",
+      "websiteUrl": "http://merit-times.com.tw",
+      "referenceNames": [
+        "人間福報"
+      ],
+      "referenceRows": [
+        339
+      ],
+      "existing": false,
+      "websiteEvidence": "http://merit-times.com.tw",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "scmp",
+      "name": "南華早報 /50",
+      "websiteUrl": "http://scmp.com",
+      "referenceNames": [
+        "南華早報 /50",
+        "南華早報 (SCMP) /50"
+      ],
+      "referenceRows": [
+        343
+      ],
+      "existing": false,
+      "websiteEvidence": "http://scmp.com",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.scmp.com/rss/91/feed/",
+        "https://www.scmp.com/rss/feed"
+      ]
+    },
+    {
+      "media": "nexttv",
+      "name": "壹電視",
+      "websiteUrl": "https://www.nexttv.com.tw/NextTV/News/",
+      "referenceNames": [
+        "壹電視",
+        "壹電視 next",
+        "壹電視新聞"
+      ],
+      "referenceRows": [
+        347
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.nexttv.com.tw/NextTV/News/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.nexttv.com.tw/nRSS.xml"
+      ]
+    },
+    {
+      "media": "taiwanhot",
+      "name": "台灣好新聞",
+      "websiteUrl": "https://taiwanhot.net/",
+      "referenceNames": [
+        "台灣好新聞",
+        "taiwanhot 台灣好生活"
+      ],
+      "referenceRows": [
+        348
+      ],
+      "existing": false,
+      "websiteEvidence": "https://taiwanhot.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "fountmedia",
+      "name": "放言",
+      "websiteUrl": "http://fountmedia.io",
+      "referenceNames": [
+        "放言"
+      ],
+      "referenceRows": [
+        349
+      ],
+      "existing": false,
+      "websiteEvidence": "http://fountmedia.io",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.fountmedia.io:443/rss.xml"
+      ]
+    },
+    {
+      "media": "matsu_idv",
+      "name": "馬祖資訊",
+      "websiteUrl": "http://matsu.idv.tw/",
+      "referenceNames": [
+        "馬祖資訊",
+        "馬祖資訊 matsu.idv.tw"
+      ],
+      "referenceRows": [
+        350
+      ],
+      "existing": false,
+      "websiteEvidence": "http://matsu.idv.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "worldjournal",
+      "name": "世界新聞 /10",
+      "websiteUrl": "http://worldjournal.com",
+      "referenceNames": [
+        "世界新聞 /10",
+        "世界新聞 /2",
+        "世界新聞/2"
+      ],
+      "referenceRows": [
+        352
+      ],
+      "existing": false,
+      "websiteEvidence": "http://worldjournal.com",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "today_line_me",
+      "name": "Line Today/2",
+      "websiteUrl": "https://today.line.me/tw/v3",
+      "referenceNames": [
+        "Line Today/2"
+      ],
+      "referenceRows": [
+        354
+      ],
+      "existing": false,
+      "websiteEvidence": "http://today.line.me",
+      "notes": "原表 LINE TODAY 全站流量；本站以台灣新聞內容頻道為抓取入口。"
+    },
+    {
+      "media": "zaobao",
+      "name": "聯合早報 /20",
+      "websiteUrl": "http://zaobao.com.sg",
+      "referenceNames": [
+        "聯合早報 /20",
+        "聯合早報 /15"
+      ],
+      "referenceRows": [
+        357
+      ],
+      "existing": false,
+      "websiteEvidence": "http://zaobao.com.sg",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "mingpao",
+      "name": "明報 /25",
+      "websiteUrl": "http://mingpao.com",
+      "referenceNames": [
+        "明報 /25",
+        "明報 (mingpao.com) /25"
+      ],
+      "referenceRows": [
+        365
+      ],
+      "existing": false,
+      "websiteEvidence": "http://mingpao.com",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "leho",
+      "name": "樂聯網 leho.com.tw",
+      "websiteUrl": "http://leho.com.tw",
+      "referenceNames": [
+        "樂聯網 leho.com.tw"
+      ],
+      "referenceRows": [
+        376
+      ],
+      "existing": false,
+      "websiteEvidence": "http://leho.com.tw",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://leho.com.tw/feed",
+        "https://leho.com.tw/homepage/feed"
+      ]
+    },
+    {
+      "media": "matsu_news",
+      "name": "馬祖日報",
+      "websiteUrl": "https://www.matsu-news.gov.tw/",
+      "referenceNames": [
+        "馬祖日報",
+        "馬祖日報 matsu-news.gov.tw"
+      ],
+      "referenceRows": [
+        377
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.matsu-news.gov.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "news_sina",
+      "name": "新浪新聞 /80",
+      "websiteUrl": "http://news.sina.cn/",
+      "referenceNames": [
+        "新浪新聞 /80",
+        "新浪 /80"
+      ],
+      "referenceRows": [
+        400
+      ],
+      "existing": false,
+      "websiteEvidence": "http://news.sina.cn/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwan",
+      "name": "中國台灣網 taiwan.cn /8",
+      "websiteUrl": "http://taiwan.cn/",
+      "referenceNames": [
+        "中國台灣網 taiwan.cn /8"
+      ],
+      "referenceRows": [
+        401
+      ],
+      "existing": false,
+      "websiteEvidence": "http://taiwan.cn/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "sunmedia",
+      "name": "商傳媒",
+      "websiteUrl": "https://sunmedia.tw/",
+      "referenceNames": [
+        "商傳媒",
+        "商傳媒 (sunmedia)"
+      ],
+      "referenceRows": [
+        407
+      ],
+      "existing": false,
+      "websiteEvidence": "https://sunmedia.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://sunmedia.tw/rss/sunmedia",
+        "https://sunmedia.tw/rss/sunmedia/CEO",
+        "https://sunmedia.tw/rss/sunmedia/Industry-information",
+        "https://sunmedia.tw/rss/sunmedia/finance",
+        "https://sunmedia.tw/rss/sunmedia/health",
+        "https://sunmedia.tw/rss/sunmedia/lifehealth",
+        "https://sunmedia.tw/rss/sunmedia/realestate",
+        "https://sunmedia.tw/rss/sunmedia/technology"
+      ]
+    },
+    {
+      "media": "eracom",
+      "name": "年代",
+      "websiteUrl": "https://www.eracom.com.tw/EraNews/",
+      "referenceNames": [
+        "年代"
+      ],
+      "referenceRows": [
+        417
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.eracom.com.tw/EraNews/",
+      "notes": "原表年代電視全站；抓取入口使用官方 EraNews 新聞頻道。"
+    },
+    {
+      "media": "sinchew",
+      "name": "星洲網 /100",
+      "websiteUrl": "http://sinchew.com.my/",
+      "referenceNames": [
+        "星洲網 /100"
+      ],
+      "referenceRows": [
+        429
+      ],
+      "existing": false,
+      "websiteEvidence": "http://sinchew.com.my/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwanplus",
+      "name": "Taiwan + /2",
+      "websiteUrl": "http://taiwanplus.com",
+      "referenceNames": [
+        "Taiwan + /2"
+      ],
+      "referenceRows": [
+        434
+      ],
+      "existing": false,
+      "websiteEvidence": "http://taiwanplus.com",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "vigormedia",
+      "name": "銳傳媒 vigor",
+      "websiteUrl": "https://vigormedia.tw/",
+      "referenceNames": [
+        "銳傳媒 vigor"
+      ],
+      "referenceRows": [
+        444
+      ],
+      "existing": false,
+      "websiteEvidence": "https://vigormedia.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "zmedia",
+      "name": "震傳媒",
+      "websiteUrl": "https://www.zmedia.com.tw/",
+      "referenceNames": [
+        "震傳媒"
+      ],
+      "referenceRows": [
+        445
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.zmedia.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "taiwanenews",
+      "name": "台灣e新聞",
+      "websiteUrl": "http://taiwanenews.com",
+      "referenceNames": [
+        "台灣e新聞"
+      ],
+      "referenceRows": [
+        466
+      ],
+      "existing": false,
+      "websiteEvidence": "http://taiwanenews.com",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ksnews",
+      "name": "更生 ksnews.com.tw",
+      "websiteUrl": "http://ksnews.com.tw/",
+      "referenceNames": [
+        "更生 ksnews.com.tw",
+        "更生"
+      ],
+      "referenceRows": [
+        664
+      ],
+      "existing": false,
+      "websiteEvidence": "http://ksnews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "wenweipo",
+      "name": "文匯報 wenweipo.com /8",
+      "websiteUrl": "http://wenweipo.com/",
+      "referenceNames": [
+        "文匯報 wenweipo.com /8"
+      ],
+      "referenceRows": [
+        667
+      ],
+      "existing": false,
+      "websiteEvidence": "http://wenweipo.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "more_news",
+      "name": "墨新聞 more-news.tw",
+      "websiteUrl": "http://more-news.tw/",
+      "referenceNames": [
+        "墨新聞 more-news.tw"
+      ],
+      "referenceRows": [
+        672
+      ],
+      "existing": false,
+      "websiteEvidence": "http://more-news.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://more-news.tw/feed/"
+      ]
+    },
+    {
+      "media": "news_163",
+      "name": "網易 news.163.com /50",
+      "websiteUrl": "http://news.163.com/",
+      "referenceNames": [
+        "網易 news.163.com /50"
+      ],
+      "referenceRows": [
+        680
+      ],
+      "existing": false,
+      "websiteEvidence": "http://news.163.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "contentplatform_info",
+      "name": "報新聞 contentplatform.info/",
+      "websiteUrl": "http://contentplatform.info/",
+      "referenceNames": [
+        "報新聞 contentplatform.info/"
+      ],
+      "referenceRows": [
+        696
+      ],
+      "existing": false,
+      "websiteEvidence": "http://contentplatform.info/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.contentplatform.info/feed/"
+      ]
+    },
+    {
+      "media": "xinhuanet",
+      "name": "新華網 xinhuanet.com /100",
+      "websiteUrl": "http://xinhuanet.com/",
+      "referenceNames": [
+        "新華網 xinhuanet.com /100"
+      ],
+      "referenceRows": [
+        698
+      ],
+      "existing": false,
+      "websiteEvidence": "http://xinhuanet.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "hk_crntt",
+      "name": "中評 hk.crntt.com /2",
+      "websiteUrl": "http://hk.crntt.com/",
+      "referenceNames": [
+        "中評 hk.crntt.com /2"
+      ],
+      "referenceRows": [
+        702
+      ],
+      "existing": false,
+      "websiteEvidence": "http://hk.crntt.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://hk.crntt.com/crn-webapp/rss/rss_msg.jsp?coluid=7&kindid=0&v=rss_2.0"
+      ]
+    },
+    {
+      "media": "tkww",
+      "name": "大公文匯 tkww.hk /15",
+      "websiteUrl": "https://www.tkww.hk/",
+      "referenceNames": [
+        "大公文匯 tkww.hk /15"
+      ],
+      "referenceRows": [
+        706
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.tkww.hk/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "rfa",
+      "name": "rfa.org /30",
+      "websiteUrl": "https://www.rfa.org/mandarin/",
+      "referenceNames": [
+        "rfa.org /30"
+      ],
+      "referenceRows": [
+        708
+      ],
+      "existing": false,
+      "websiteEvidence": "http://rfa.org/",
+      "notes": "原表 RFA 全站流量；本站以華語新聞內容及官方 RSS 為抓取範圍。",
+      "feedUrls": [
+        "https://www.rfa.org/mandarin/RSS"
+      ]
+    },
+    {
+      "media": "huanqiu",
+      "name": "環球網 huanqiu.com /50",
+      "websiteUrl": "http://huanqiu.com/",
+      "referenceNames": [
+        "環球網 huanqiu.com /50"
+      ],
+      "referenceRows": [
+        711
+      ],
+      "existing": false,
+      "websiteEvidence": "http://huanqiu.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "enews",
+      "name": "enews.tw",
+      "websiteUrl": "http://enews.tw/",
+      "referenceNames": [
+        "enews.tw"
+      ],
+      "referenceRows": [
+        716
+      ],
+      "existing": false,
+      "websiteEvidence": "http://enews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "jdanews",
+      "name": "恆春半島 jdanews.com",
+      "websiteUrl": "http://jdanews.com/",
+      "referenceNames": [
+        "恆春半島 jdanews.com"
+      ],
+      "referenceRows": [
+        719
+      ],
+      "existing": false,
+      "websiteEvidence": "http://jdanews.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "my_formosa",
+      "name": "美麗島電子報 my-formosa.com.tw",
+      "websiteUrl": "http://my-formosa.com.tw/",
+      "referenceNames": [
+        "美麗島電子報 my-formosa.com.tw"
+      ],
+      "referenceRows": [
+        720
+      ],
+      "existing": false,
+      "websiteEvidence": "http://my-formosa.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "biao_news",
+      "name": "彪網媒 biao-news.com",
+      "websiteUrl": "https://www.biao-news.com/",
+      "referenceNames": [
+        "彪網媒 biao-news.com"
+      ],
+      "referenceRows": [
+        722
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.biao-news.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "newday",
+      "name": "好視新聞 newday.tw",
+      "websiteUrl": "https://newsday.tw/",
+      "referenceNames": [
+        "好視新聞 newday.tw"
+      ],
+      "referenceRows": [
+        724
+      ],
+      "existing": false,
+      "websiteEvidence": "https://newsday.tw/",
+      "notes": "原表網址 newday.tw 疑漏字；依「好視新聞」官方網站對應 newsday.tw，保留原表名稱供核對。"
+    },
+    {
+      "media": "lifetoutiao_news",
+      "name": "民生頭條 lifetoutiao.news",
+      "websiteUrl": "https://www.lifetoutiao.news/",
+      "referenceNames": [
+        "民生頭條 lifetoutiao.news"
+      ],
+      "referenceRows": [
+        727
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.lifetoutiao.news/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.lifetoutiao.news/feed/"
+      ]
+    },
+    {
+      "media": "yimedia",
+      "name": "壹傳媒 (毅傳媒) yimedia.com.tw",
+      "websiteUrl": "http://yimedia.com.tw/",
+      "referenceNames": [
+        "壹傳媒 (毅傳媒) yimedia.com.tw",
+        "毅傳媒 Yi"
+      ],
+      "referenceRows": [
+        731
+      ],
+      "existing": false,
+      "websiteEvidence": "http://yimedia.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://yimedia.com.tw/feed/",
+        "https://yimedia.com.tw/feed/atom/"
+      ]
+    },
+    {
+      "media": "idn",
+      "name": "自立晚報 idn.com.tw",
+      "websiteUrl": "https://www.idn.com.tw/",
+      "referenceNames": [
+        "自立晚報 idn.com.tw"
+      ],
+      "referenceRows": [
+        740
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.idn.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "mknews",
+      "name": "天天上新聞 mknews.com.tw",
+      "websiteUrl": "http://mknews.com.tw/",
+      "referenceNames": [
+        "天天上新聞 mknews.com.tw"
+      ],
+      "referenceRows": [
+        750
+      ],
+      "existing": false,
+      "websiteEvidence": "http://mknews.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://MKnews.com.tw/feed/"
+      ]
+    },
+    {
+      "media": "17news",
+      "name": "民生好報 17news.net",
+      "websiteUrl": "https://17news.net/",
+      "referenceNames": [
+        "民生好報 17news.net",
+        "民生好報 https://17news.net"
+      ],
+      "referenceRows": [
+        756
+      ],
+      "existing": false,
+      "websiteEvidence": "https://17news.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://17news.net/feed"
+      ]
+    },
+    {
+      "media": "peponews",
+      "name": "台灣人民報 peponews.tw",
+      "websiteUrl": "http://peponews.tw/",
+      "referenceNames": [
+        "台灣人民報 peponews.tw",
+        "台灣民報 pepo",
+        "台灣民報 peponews.tw"
+      ],
+      "referenceRows": [
+        762
+      ],
+      "existing": false,
+      "websiteEvidence": "http://peponews.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.peponews.tw/feed/"
+      ]
+    },
+    {
+      "media": "ltvnews",
+      "name": "在地人 ltvnews.net",
+      "websiteUrl": "http://ltvnews.net/",
+      "referenceNames": [
+        "在地人 ltvnews.net"
+      ],
+      "referenceRows": [
+        766
+      ],
+      "existing": false,
+      "websiteEvidence": "http://ltvnews.net/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://www.ltvnews.net/feed",
+        "https://www.ltvnews.net/home/feed"
+      ]
+    },
+    {
+      "media": "i_news",
+      "name": "享新聞 i-news.com.tw",
+      "websiteUrl": "http://i-news.com.tw/",
+      "referenceNames": [
+        "享新聞 i-news.com.tw"
+      ],
+      "referenceRows": [
+        772
+      ],
+      "existing": false,
+      "websiteEvidence": "http://i-news.com.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "iw_times",
+      "name": "國際環宇時報 iw-times.com",
+      "websiteUrl": "http://iw-times.com/",
+      "referenceNames": [
+        "國際環宇時報 iw-times.com"
+      ],
+      "referenceRows": [
+        773
+      ],
+      "existing": false,
+      "websiteEvidence": "http://iw-times.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "ammtw",
+      "name": "amm新聞 ammtw.com",
+      "websiteUrl": "https://ammtw.com/",
+      "referenceNames": [
+        "amm新聞 ammtw.com"
+      ],
+      "referenceRows": [
+        774
+      ],
+      "existing": false,
+      "websiteEvidence": "https://ammtw.com/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "feedUrls": [
+        "https://ammtw.com/feed"
+      ]
+    },
+    {
+      "media": "tmnu",
+      "name": "台灣多媒體 tmnu.org.tw",
+      "websiteUrl": "http://tmnu.org.tw/",
+      "referenceNames": [
+        "台灣多媒體 tmnu.org.tw"
+      ],
+      "referenceRows": [
+        776
+      ],
+      "existing": false,
+      "websiteEvidence": "http://tmnu.org.tw/",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+    },
+    {
+      "media": "readr",
+      "name": "Readr+",
+      "websiteUrl": "https://www.readr.tw/",
+      "referenceNames": [
+        "Readr+"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.readr.tw/",
+      "notes": "曾出現在來源試算表歷史月份的新聞類別，保留來源；最新月份沒有獨立列。"
+    },
+    {
+      "media": "newsmarket",
+      "name": "上下游",
+      "websiteUrl": "https://www.newsmarket.com.tw/",
+      "referenceNames": [
+        "上下游"
+      ],
+      "referenceRows": [],
+      "existing": true,
+      "websiteEvidence": "https://www.newsmarket.com.tw/",
+      "notes": "曾出現在來源試算表歷史月份的新聞類別，保留來源；最新月份沒有獨立列。"
+    },
+    {
+      "media": "videoland",
+      "name": "緯來 (新聞)",
+      "websiteUrl": "https://news.videoland.com.tw/",
+      "referenceNames": [
+        "緯來 (新聞)"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://news.videoland.com.tw/",
+      "notes": "曾出現在來源試算表歷史月份的新聞類別，保留來源；最新月份沒有獨立列。",
+      "feedUrls": [
+        "https://news.videoland.com.tw/vlnews_pub.aspx"
+      ]
+    },
+    {
+      "media": "funnews",
+      "name": "花花日報 funnews.tw",
+      "websiteUrl": "https://funnews.tw/",
+      "referenceNames": [
+        "花花日報 funnews.tw"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://funnews.tw/",
+      "notes": "曾出現在來源試算表歷史月份的新聞類別，保留來源；最新月份沒有獨立列。"
+    },
+    {
+      "media": "people_cn",
+      "name": "人民網 /30",
+      "websiteUrl": "https://www.people.com.cn/",
+      "referenceNames": [
+        "人民網 /30",
+        "人民網 people.com.cn /30"
+      ],
+      "referenceRows": [
+        345
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.people.com.cn/",
+      "notes": "同名或同集團的不同網域新聞站獨立保留，避免與其他來源混併。"
+    },
+    {
+      "media": "ntdtv_tw",
+      "name": "新唐人亞太 ntdtv.com.tw",
+      "websiteUrl": "https://www.ntdtv.com.tw/",
+      "referenceNames": [
+        "新唐人亞太 ntdtv.com.tw"
+      ],
+      "referenceRows": [
+        677
+      ],
+      "existing": false,
+      "websiteEvidence": "https://www.ntdtv.com.tw/",
+      "notes": "同名或同集團的不同網域新聞站獨立保留，避免與其他來源混併。"
+    }
+  ]
+}

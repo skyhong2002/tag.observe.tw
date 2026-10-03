@@ -7,6 +7,53 @@ const body = [paragraph.repeat(3), paragraph.repeat(3)].join('\n\n');
 const ld = (value: unknown) => `<script type="application/ld+json">${JSON.stringify(value)}</script>`;
 
 describe('article body and byline extraction', () => {
+  it.each(['entry-content', 'post-content', 'td-post-content', 'elementor-widget-theme-post-content', 'article-main'])(
+    'extracts WordPress body from %s while excluding related widgets',
+    (className) => {
+      const html = `<div class="${className}">${body
+        .split('\n\n')
+        .map((p) => `<p>${p}</p>`)
+        .join('')}<aside><p>無關新聞內容</p></aside><div class="related-news"><p>推薦其他新聞</p></div></div>`;
+      expect(extractArticle(html, URL)).toMatchObject({ body, bodyStatus: 'ok', bodySource: `.${className}` });
+    },
+  );
+
+  it('does not mistake global WordPress theme classes for an author container', () => {
+    const html = `<html class="hide-author"><body class="ta-hide-date-author-in-list"><article>${body
+      .split('\n\n')
+      .map((p) => `<p>${p}</p>`)
+      .join('')}</article><aside><article><p>其他新聞內容${body}</p></article></aside></body></html>`;
+    expect(extractArticle(html, URL)).toMatchObject({ body, bodyStatus: 'ok' });
+    expect(
+      extractArticle(
+        `<body class="hide-author"><div class="author"><article>${body
+          .split('\n\n')
+          .map((p) => `<p>${p}</p>`)
+          .join('')}</article></div></body>`,
+        URL,
+      ),
+    ).toMatchObject({ body: null, bodyStatus: 'missing' });
+  });
+
+  it('keeps WordPress taxonomy-tagged article bodies while removing actual tag widgets', () => {
+    const html = `<article class="post hentry category-news tag-ai tag-123"><div class="entry-content"><p>${paragraph.repeat(6)}</p><div class="tags"><p>不應出現的標籤</p></div></div></article>`;
+    expect(extractArticle(html, URL)).toMatchObject({ body: paragraph.repeat(6), bodyStatus: 'ok' });
+  });
+
+  it('retains a no-share article container while excluding positive share widgets', () => {
+    const html = `<div class="entry-content no-share"><div class="content-inner"><p>${paragraph.repeat(6)}</p><div class="share"><p>分享工具文字</p></div></div></div>`;
+    expect(extractArticle(html, URL)).toMatchObject({ body: paragraph.repeat(6), bodyStatus: 'ok' });
+  });
+
+  it('extracts a Focus Taiwan primary paragraph without unrelated sidebars', () => {
+    const html = `<div class="PrimarySide"><div class="paragraph"><p>${paragraph.repeat(6)}</p></div></div><aside><div class="paragraph"><p>無關側欄</p></div></aside>`;
+    expect(extractArticle(html, URL)).toMatchObject({
+      body: paragraph.repeat(6),
+      bodyStatus: 'ok',
+      bodySource: '.PrimarySide > .paragraph',
+    });
+  });
+
   it('extracts a Yahoo reporter name without turning the desk affiliation into a person', () => {
     expect(
       extractArticle(

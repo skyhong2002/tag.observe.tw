@@ -13,6 +13,7 @@ import math
 import posixpath
 import re
 import urllib.request
+from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 import zipfile
 from datetime import datetime, timezone
@@ -61,7 +62,16 @@ def parse_workbook(payload, months):
             sheet = sheets[month]
             target = relationships[sheet.get(f"{{{REL}}}id")]
             path = target.lstrip("/") if target.startswith("/") else posixpath.normpath("xl/" + target)
-            rows = ET.fromstring(archive.read(path)).findall("s:sheetData/s:row", NS)
+            worksheet = ET.fromstring(archive.read(path))
+            rows = worksheet.findall("s:sheetData/s:row", NS)
+            rel_path = posixpath.join(posixpath.dirname(path), "_rels", posixpath.basename(path) + ".rels")
+            link_targets = {}
+            if rel_path in archive.namelist():
+                link_targets = {item.get("Id"): item.get("Target") for item in ET.fromstring(archive.read(rel_path))}
+            links = {
+                item.get("ref"): link_targets.get(item.get(f"{{{REL}}}id"))
+                for item in worksheet.findall("s:hyperlinks/s:hyperlink", NS)
+            }
             header = {re.sub(r"\d", "", c.get("r")): cell_text(c, strings).strip() for c in rows[0]}
 
             def column(label):
@@ -89,10 +99,14 @@ def parse_workbook(payload, months):
                             notes.append(f"原表{label}：{values[key]}")
                 if re.search(r"/\s*\d", name):
                     notes.insert(0, "名稱含人工調整倍數，流量依原表結果呈現，未還原。")
+                website = links.get(f"{domain_col}{row.get('r')}") or links.get(f"{name_col}{row.get('r')}")
+                if website and urlparse(website).scheme not in ("http", "https"):
+                    website = None
                 sources.append({
                     "row": int(row.get("r")),
                     "name": name,
                     "domain": values.get(domain_col) or None,
+                    "websiteUrl": website,
                     "classification": values.get("A") or None,
                     "category": category,
                     "rank": number(values.get(column("名次"))),

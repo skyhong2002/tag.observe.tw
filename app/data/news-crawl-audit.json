@@ -1,0 +1,3559 @@
+{
+  "checkedAt": "2026-10-03T10:31:26.390Z",
+  "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing",
+  "sourceMonth": "202608",
+  "results": [
+    {
+      "media": "udn",
+      "websiteUrl": "https://udn.com/news/",
+      "checkedAt": "2026-10-03T10:25:31.645Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://udn.com/news/story/7327/9792789",
+          "title": "屏縣府連續4年表揚優良駕駛 陳世傑任職10年獲「特殊貢獻獎」 | 聯合新聞網",
+          "publishedAt": "2026-10-03T10:20:06.000Z",
+          "bodyLength": 563
+        },
+        {
+          "url": "https://udn.com/news/story/7325/9792788",
+          "title": "飄香28年…台中七期「瓊恩咖啡」年初吹熄燈號 理和辦展重塑家的風景 | 聯合新聞網",
+          "publishedAt": "2026-10-03T10:19:41.000Z",
+          "bodyLength": 618
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://udn.com/sitemap/gnews/2",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ettoday",
+      "websiteUrl": "https://www.ettoday.net/",
+      "checkedAt": "2026-10-03T10:25:31.650Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ettoday.net/news/20261003/3248494.htm",
+          "title": "快訊／雨彈升級　8縣市豪大雨特報 | ETtoday生活新聞 | ETtoday新聞雲",
+          "publishedAt": "2026-10-03T10:08:00.000Z",
+          "bodyLength": 527
+        },
+        {
+          "url": "https://www.ettoday.net/news/20261003/3248415.htm",
+          "title": "關山警走進蝴蝶谷　交通防詐宣導打造高齡友善安全社區 | ETtoday地方新聞 | ETtoday新聞雲",
+          "publishedAt": "2026-10-03T10:06:00.000Z",
+          "bodyLength": 646
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://feeds.feedburner.com/ettoday/realtime",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ltn",
+      "websiteUrl": "https://news.ltn.com.tw/",
+      "checkedAt": "2026-10-03T10:25:31.650Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.ltn.com.tw/news/Pingtung/breakingnews/5594465",
+          "title": "屏縣表揚15位優良駕駛長 肯定公共運輸服務第一線專業付出 - 屏東縣 - 自由時報電子報",
+          "publishedAt": "2026-10-03T10:23:04.000Z",
+          "bodyLength": 614
+        },
+        {
+          "url": "https://news.ltn.com.tw/news/society/breakingnews/5594429",
+          "title": "前高院法官、主任檢察官轉戰律師開事務所 政商法界大咖全來相挺 - 社會 - 自由時報電子報",
+          "publishedAt": "2026-10-03T10:21:41.000Z",
+          "bodyLength": 889
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://news.ltn.com.tw/rss/all.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "setn",
+      "websiteUrl": "https://www.setn.com/",
+      "checkedAt": "2026-10-03T10:25:31.650Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://www.setn.com/sitemapGoogleNews.xml",
+      "detail": "既有爬蟲列出 500 筆，尚未驗證到近期完整文章。"
+    },
+    {
+      "media": "chinatimes",
+      "websiteUrl": "https://www.chinatimes.com/",
+      "checkedAt": "2026-10-03T10:25:31.650Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.chinatimes.com/realtimenews/20261003002689-260405",
+          "title": "台北市學生健康系統停擺 教育部：自建系統與中央無關 - 生活",
+          "publishedAt": "2026-10-03T09:57:19.000Z",
+          "bodyLength": 1004
+        },
+        {
+          "url": "https://www.chinatimes.com/realtimenews/20261003002655-260418",
+          "title": "坐著就能練肌肉！心臟名醫自創「懶人阻力運動」 百歲人瑞也在做　 - 健康",
+          "publishedAt": "2026-10-03T09:55:06.000Z",
+          "bodyLength": 578
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.chinatimes.com/sitemaps/sitemap_todaynews.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "tvbs",
+      "websiteUrl": "https://news.tvbs.com.tw/",
+      "checkedAt": "2026-10-03T10:25:31.650Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.tvbs.com.tw/cars/4031202",
+          "title": "GR嘉年華台南封街登場！旗艦超跑GR　GT首度登台亮相",
+          "publishedAt": "2026-10-03T10:20:04.000Z",
+          "bodyLength": 628
+        },
+        {
+          "url": "https://news.tvbs.com.tw/life/4027963",
+          "title": "彰化羊肉節「百元吃烤全羊」！免費米糕、羊肉湯大排長龍",
+          "publishedAt": "2026-10-03T10:06:38.000Z",
+          "bodyLength": 511
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://news.tvbs.com.tw/sitemap/news-sitemap",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mirror",
+      "websiteUrl": "https://www.mirrormedia.mg/",
+      "checkedAt": "2026-10-03T10:25:31.650Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.mirrormedia.mg/story/20261003web004",
+          "title": "有片／「最美女師」掀網友論戰！31歲副教授上課影片外流遭吐槽：準備帶貨？ - 鏡週刊 Mirror Media",
+          "publishedAt": "2026-10-03T08:58:00.000Z",
+          "bodyLength": 286
+        },
+        {
+          "url": "https://www.mirrormedia.mg/story/20261003edi023",
+          "title": "名古屋亞運／謝淑薇奪金後沒握詹皓晴的手　回應曝光：對手不尊重我就沒什麼好說的 - 鏡週刊 Mirror Media",
+          "publishedAt": "2026-10-03T08:54:00.000Z",
+          "bodyLength": 424
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.mirrormedia.mg/rss/rss.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "nownews",
+      "websiteUrl": "https://www.nownews.com/",
+      "checkedAt": "2026-10-03T10:25:31.650Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.nownews.com/news/6880354",
+          "title": "蔡天鳳是誰？身價達3.9億 與郭富城老婆是閨密、死前同框甄子丹 | 綜藝 | 娛樂 | NOWnews今日新聞",
+          "publishedAt": "2026-10-03T10:11:03.000Z",
+          "bodyLength": 1036
+        },
+        {
+          "url": "https://www.nownews.com/news/6880353",
+          "title": "男團FEniX全員回歸！狂操到凌晨3點 寵粉抽10人「陪吃慶功宴」 | 音樂 | 娛樂 | NOWnews今日新聞",
+          "publishedAt": "2026-10-03T10:06:18.000Z",
+          "bodyLength": 862
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.nownews.com/newsSitemap-daily.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "storm",
+      "websiteUrl": "https://www.storm.mg/",
+      "checkedAt": "2026-10-03T10:25:32.101Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.storm.mg/lifestyle/11158678",
+          "title": "一年內贈與子女800萬元，贈與稅完全不必繳！國稅局教1招，突破244萬免稅額 | 陳得馥 | 風生活",
+          "publishedAt": "2026-10-02T23:40:00.000Z",
+          "bodyLength": 1993
+        },
+        {
+          "url": "https://www.storm.mg/lifestyle/11164209",
+          "title": "老公有勞保年金，過世後妻子能繼續領嗎？可以領多久？遺屬年金請領資格、金額計算與差額金一次看 | 陳得馥 | 風生活",
+          "publishedAt": "2026-10-02T23:25:00.000Z",
+          "bodyLength": 3204
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.storm.mg/sitemap/news",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ebc",
+      "websiteUrl": "https://news.ebc.net.tw/",
+      "checkedAt": "2026-10-03T10:25:32.260Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.ebc.net.tw/news/business/574071",
+          "title": "綠能大廠違規了！遭開罰3萬元｜東森新聞",
+          "publishedAt": "2026-10-03T10:13:00.000Z",
+          "bodyLength": 334
+        },
+        {
+          "url": "https://news.ebc.net.tw/news/business/574072",
+          "title": "提款注意！新制上路 到ATM「有錢恐領不出」｜東森新聞",
+          "publishedAt": "2026-10-03T10:08:00.000Z",
+          "bodyLength": 871
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://img.news.ebc.net.tw/EbcNews/Rss/sitemap.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "google_news",
+      "websiteUrl": "https://news.google.com/home?hl=zh-TW&gl=TW&ceid=TW:zh-Hant",
+      "checkedAt": "2026-10-03T10:25:32.580Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 23 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "cna",
+      "websiteUrl": "https://www.cna.com.tw/",
+      "checkedAt": "2026-10-03T10:25:32.750Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.cna.com.tw/news/aopl/202610030161.aspx",
+          "title": "東京池袋街頭棄置行李箱頻傳　豐島區與業者合作因應 | 國際 | 中央社 CNA",
+          "publishedAt": "2026-10-03T10:23:00.000Z",
+          "bodyLength": 1429
+        },
+        {
+          "url": "https://www.cna.com.tw/news/ait/202610030135.aspx",
+          "title": "台英簽署科技合作協議　國科會副主委：促進戰略整合【專訪】 | 科技 | 中央社 CNA",
+          "publishedAt": "2026-10-03T09:09:00.000Z",
+          "bodyLength": 1734
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.cna.com.tw/atomfeed_cfp.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "nextapple",
+      "websiteUrl": "https://tw.nextapple.com/",
+      "checkedAt": "2026-10-03T10:25:32.811Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.nextapple.com/international/20261003/E6027490223878CAB368434270C65E32",
+          "title": "網紅社群宣布新業務　網嚇壞「他8月就去世了」｜壹蘋新聞網",
+          "publishedAt": "2026-10-03T10:20:00.000Z",
+          "bodyLength": 476
+        },
+        {
+          "url": "https://news.nextapple.com/local/20261003/4B4C887E739FECE68C4EDED293B7748C",
+          "title": "桃園住都中心鐵腕查辦社宅違規轉租　移送地檢署落實居住正義｜壹蘋新聞網",
+          "publishedAt": "2026-10-03T10:12:00.000Z",
+          "bodyLength": 550
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://tw.nextapple.com/api/xml/site-map/news",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ftv",
+      "websiteUrl": "https://www.ftvnews.com.tw/",
+      "checkedAt": "2026-10-03T10:25:32.882Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ftvnews.com.tw/news/detail/2026A03W0365",
+          "title": "NHL荒野隊主場迎戰棕熊隊　新援首戰發威盼延續開季氣勢 - 民視新聞網",
+          "publishedAt": "2026-10-03T10:09:28.000Z",
+          "bodyLength": 540
+        },
+        {
+          "url": "https://www.ftvnews.com.tw/news/detail/2026A03W0364",
+          "title": "官方頻道突槌提前外流！2032布里斯本奧運會徽意外曝光 - 民視新聞網",
+          "publishedAt": "2026-10-03T10:04:27.000Z",
+          "bodyLength": 417
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.ftvnews.com.tw/sitemap/sitemap.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "msn",
+      "websiteUrl": "https://www.msn.com/zh-tw/news",
+      "checkedAt": "2026-10-03T10:25:33.096Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 7 次請求未驗證到近期完整文章。https://www.msn.com/sitemaps/casualgames/sitemap-es-us.xml: response too large；https://www.msn.com/sitemaps/casualgames/sitemap-zh-tw.xml: response too large；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "hk01",
+      "websiteUrl": "https://www.hk01.com/",
+      "checkedAt": "2026-10-03T10:25:33.105Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.hk01.com/%E5%8D%B3%E6%99%82%E9%AB%94%E8%82%B2/60395873/%E5%9C%8B%E9%9A%9B%E8%B3%BD%E5%87%BA%E6%93%8A-%E4%BA%9E%E9%81%8B%E7%94%B7%E8%B6%B3%E6%B1%BA%E8%B3%BD-%E5%8D%97%E9%9F%93%E8%AA%93%E8%B4%8F%E6%97%A5%E6%9C%AC%E5%9B%9B%E9%80%A3%E9%9C%B8",
+          "title": "國際賽出擊｜亞運男足決賽 南韓誓贏日本四連霸",
+          "publishedAt": "2026-10-02T11:32:40.000Z",
+          "bodyLength": 429
+        },
+        {
+          "url": "https://www.hk01.com/%E7%A4%BE%E6%9C%83%E6%96%B0%E8%81%9E/60396079/%E6%B5%81%E6%84%9F-9%E6%AD%B2%E7%AB%A5%E6%9F%93%E4%B9%99%E6%B5%81%E4%BD%B5%E7%99%BC%E6%95%97%E8%A1%80%E6%80%A7%E4%BC%91%E5%85%8B%E5%8F%8A%E5%9A%B4%E9%87%8D%E8%82%BA%E7%82%8E-%E7%95%99%E9%86%ABpicu%E6%83%85%E6%B3%81%E5%8D%B1%E6%AE%86",
+          "title": "流感｜9歲童染乙流併發敗血性休克及嚴重肺炎 留醫PICU情況危殆",
+          "publishedAt": "2026-10-03T10:15:57.000Z",
+          "bodyLength": 807
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.hk01.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ctitv",
+      "websiteUrl": "https://ctinews.com/",
+      "checkedAt": "2026-10-03T10:25:33.347Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://ctinews.com/news/items/GVxoRv0Xa8",
+          "title": "影/吊車大王想上大巨蛋開唱圓夢　喊話周董、五月天串場做公益 | 中天新聞網",
+          "publishedAt": "2026-10-03T10:08:23.000Z",
+          "bodyLength": 344
+        },
+        {
+          "url": "https://ctinews.com/news/items/9pWzXjLpxv",
+          "title": "國家警報響起！大雷雨轟炸18鄉鎮　溪水暴漲恐釀災 | 中天新聞網",
+          "publishedAt": "2026-10-03T10:04:02.000Z",
+          "bodyLength": 474
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://ctinews.com/rss/sitemap-news.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "upmedia",
+      "websiteUrl": "https://www.upmedia.mg/",
+      "checkedAt": "2026-10-03T10:25:33.363Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.upmedia.mg/tw/focus/politics/270444",
+          "title": "粉絲冒名私自募款觸法　沈伯洋籲：捐款應透過官方管道 -- 上報",
+          "publishedAt": "2026-10-03T08:37:00.000Z",
+          "bodyLength": 520
+        },
+        {
+          "url": "https://www.upmedia.mg/tw/international/headlines/270443",
+          "title": "日本企業撤出中國數量創歷史新高　這三大因素造成且趨勢可能持續 -- 上報",
+          "publishedAt": "2026-10-03T08:34:00.000Z",
+          "bodyLength": 1307
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.upmedia.mg/sitemapnews",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "bbc_global",
+      "websiteUrl": "https://www.bbc.com/news",
+      "checkedAt": "2026-10-03T10:25:33.532Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.bbc.com/news/articles/c5398kkx27ewo",
+          "title": "K-pop giants Stray Kids join BTS in boycotting the 2027 Grammy Awards",
+          "publishedAt": "2026-10-02T12:28:59.621Z",
+          "bodyLength": 3985
+        },
+        {
+          "url": "https://www.bbc.com/news/articles/czxe30796xno",
+          "title": "Celebrity Traitors: First victim claimed as Richard E Grant tries to save his skin",
+          "publishedAt": "2026-10-02T23:31:37.300Z",
+          "bodyLength": 5814
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.bbc.com/news",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mirrordaily",
+      "websiteUrl": "https://www.mirrordaily.news/",
+      "checkedAt": "2026-10-03T10:25:33.591Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.mirrordaily.news/story/89450",
+          "title": "雨中失控3車撞一團！花蓮民間救護車連撞2車　傳4、5人受傷「1人無生命跡象」 - 鏡報",
+          "publishedAt": "2026-10-03T10:23:00.000Z",
+          "bodyLength": 235
+        },
+        {
+          "url": "https://www.mirrordaily.news/story/89445",
+          "title": "直播刮刮樂真的中了！2PM玉澤演興奮反應全曝光　難忘台灣味先喝「這1家」 - 鏡報",
+          "publishedAt": "2026-10-03T10:18:00.000Z",
+          "bodyLength": 309
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.mirrordaily.news/section/latest",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ftnn",
+      "websiteUrl": "https://www.ftnn.com.tw/",
+      "checkedAt": "2026-10-03T10:25:33.619Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ftnn.com.tw/news/584279",
+          "title": "名古屋亞運／謝淑薇奪金後沒握詹皓晴的手　回應曝光：對手不尊重我就沒什麼好說的 | FTNN 新聞網",
+          "publishedAt": "2026-10-03T10:19:00.000Z",
+          "bodyLength": 505
+        },
+        {
+          "url": "https://www.ftnn.com.tw/news/584262",
+          "title": "警察公務電腦竟成查個資工具　台中偵查佐涉洩密遭起訴 | FTNN 新聞網",
+          "publishedAt": "2026-10-03T10:19:00.000Z",
+          "bodyLength": 521
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.ftnn.com.tw/category/0",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ctwant",
+      "websiteUrl": "https://www.ctwant.com/",
+      "checkedAt": "2026-10-03T10:25:34.078Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ctwant.com/article/500732/",
+          "title": "薔薔身世比八點檔扯！「爸媽雙劈」生下她　父砸200萬改戶口 | 娛樂 | CTWANT",
+          "publishedAt": "2026-10-03T10:13:04.000Z",
+          "bodyLength": 955
+        },
+        {
+          "url": "https://www.ctwant.com/article/500724/",
+          "title": "亞運／謝淑薇賽後拒握手！詹皓晴：可能她真的很討厭我們家　爆謝政瀛1動作不中立 | 生活 | CTWANT",
+          "publishedAt": "2026-10-03T10:02:31.000Z",
+          "bodyLength": 590
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://static.ctwant.com/sitemaps/news.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "newtalk",
+      "websiteUrl": "https://newtalk.tw/",
+      "checkedAt": "2026-10-03T10:25:34.130Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://newtalk.tw/news/view/2026-10-03/1063419",
+          "title": "亞運詹皓晴釋出善意未獲回應　搭檔笑稱：金牌的手不好握 | 體育 | Newtalk新聞",
+          "publishedAt": "2026-10-03T10:25:05.000Z",
+          "bodyLength": 627
+        },
+        {
+          "url": "https://newtalk.tw/news/view/2026-10-03/1063417",
+          "title": "快訊》熱浪襲3縣市！氣象署示警：防熱傷害上身 | 生活 | Newtalk新聞",
+          "publishedAt": "2026-10-03T10:24:01.000Z",
+          "bodyLength": 258
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://newtalk.tw/rss/all",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taisounds",
+      "websiteUrl": "https://www.taisounds.com/",
+      "checkedAt": "2026-10-03T10:25:34.402Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.taisounds.com/news/content/71/292009",
+          "title": "南投茶博登場！名間自救會抗議蓋焚化爐　許淑華籲勿汙名化、温世政示警縣府謹慎處理 | 政治焦點 - 太報 TaiSounds",
+          "publishedAt": "2026-10-03T09:51:40.000Z",
+          "bodyLength": 916
+        },
+        {
+          "url": "https://www.taisounds.com/news/content/70/292012",
+          "title": "洋流慧聚3000人湧進三峽老街 蘇巧慧向沈伯洋下戰帖：要讓台北人假日都來新北玩 | 政治 - 太報 TaiSounds",
+          "publishedAt": "2026-10-03T09:50:32.000Z",
+          "bodyLength": 1347
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.taisounds.com/Sitemap.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "tnl",
+      "websiteUrl": "https://www.thenewslens.com/",
+      "checkedAt": "2026-10-03T10:25:34.475Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.thenewslens.com/article/270359",
+          "title": "一座基地都沒有，也能建立海外軍事存在？從雲壤到班根看中國布局 - TNL The News Lens 關鍵評論網",
+          "publishedAt": "2026-10-03T08:00:00.000Z",
+          "bodyLength": 3438
+        },
+        {
+          "url": "https://www.thenewslens.com/article/270371",
+          "title": "看對公司，不等於看對交易：談「放空交易」的四大陷阱與風險結構 - TNL The News Lens 關鍵評論網",
+          "publishedAt": "2026-10-03T04:00:00.000Z",
+          "bodyLength": 3848
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://feeds.feedburner.com/TheNewsLens",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mnews",
+      "websiteUrl": "https://www.mnews.tw/",
+      "checkedAt": "2026-10-03T10:25:34.588Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.mnews.tw/story/20261003nm004",
+          "title": "林智堅不起訴確定！莊競程籲高虹安道歉　竹市府：工程責任仍須釐清",
+          "publishedAt": "2026-10-03T10:02:00.000Z",
+          "bodyLength": 379
+        },
+        {
+          "url": "https://www.mnews.tw/story/20261001mkt00005",
+          "title": "【生活特輯】台酒115年國慶紀念酒限量登場　穀蘊威士忌、玉山大曲以臺灣風土迎盛典",
+          "publishedAt": "2026-10-01T07:00:00.000Z",
+          "bodyLength": 887
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.mnews.tw/category/pol",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "pts",
+      "websiteUrl": "https://news.pts.org.tw/",
+      "checkedAt": "2026-10-03T10:25:34.662Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.pts.org.tw/article/829786",
+          "title": "亞運網球女雙台灣內戰拚到搶十 謝淑薇、梁恩碩勝出奪金 ｜ 公視新聞網 PNN",
+          "publishedAt": "2026-10-03T06:30:13.000Z",
+          "bodyLength": 556
+        },
+        {
+          "url": "https://news.pts.org.tw/article/829784",
+          "title": "輕艇「越野激流」摘銀 張筑涵連四屆亞運奪牌 ｜ 公視新聞網 PNN",
+          "publishedAt": "2026-10-03T05:17:34.000Z",
+          "bodyLength": 675
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://about.pts.org.tw/rss/XML/newsfeed.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cts",
+      "websiteUrl": "https://news.cts.com.tw/",
+      "checkedAt": "2026-10-03T10:25:34.744Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.cts.com.tw/cts/general/202610/202610033085849.html",
+          "title": "彰化蔬食節　「佛系大蔬」冠軍抱走萬元獎金 - 綜合 - 華視新聞網",
+          "publishedAt": "2026-10-03T09:50:00.000Z",
+          "bodyLength": 564
+        },
+        {
+          "url": "https://news.cts.com.tw/cts/sports/202610/202610033085804.html",
+          "title": "網球女雙「台灣內戰」　謝淑薇.梁恩碩「搶十」摘金 - 運動 - 華視新聞網",
+          "publishedAt": "2026-10-03T06:45:00.000Z",
+          "bodyLength": 218
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://news.cts.com.tw/sitemap_cts_google.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "reporter",
+      "websiteUrl": "https://www.twreporter.org/",
+      "checkedAt": "2026-10-03T10:25:34.772Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.twreporter.org/a/podcast-2026-10-02",
+          "title": "【Podcast】她獨老圍爐吐心酸、他中風倒地沒人知，盤點死亡尋親公告並走入社區，看見一個血緣變薄的時代 - 報導者 The Reporter",
+          "publishedAt": "2026-10-01T16:00:00.000Z",
+          "bodyLength": 832
+        },
+        {
+          "url": "https://www.twreporter.org/a/interview-david-borenstei-mr-nobdy-against-putin",
+          "title": "專訪《反對普丁的無名先生》導演：小學老師如何用800天記錄校園裡重製「戰鬥民族」的荒謬真實 - 報導者 The Reporter",
+          "publishedAt": "2026-10-01T16:00:00.000Z",
+          "bodyLength": 8029
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.twreporter.org/a/rss2.xml",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ttv",
+      "websiteUrl": "https://news.ttv.com.tw/",
+      "checkedAt": "2026-10-03T10:25:34.888Z",
+      "articleCount": 1,
+      "samples": [
+        {
+          "url": "https://news.ttv.com.tw/news/11510030001800W",
+          "title": "美國女死囚行刑挨2針未死 川普：這應該不難啊-台視新聞網",
+          "publishedAt": "2026-10-03T08:50:29.000Z",
+          "bodyLength": 448
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://www.ttv.com.tw/rss/RSSHandler.ashx?d=news",
+      "detail": "沿用既有爬蟲；本次驗證 1 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "nikkei",
+      "websiteUrl": "https://zh.cn.nikkei.com/",
+      "checkedAt": "2026-10-03T10:25:34.951Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://zh.cn.nikkei.com/rss.html",
+      "detail": "既有爬蟲列出 10 筆，尚未驗證到近期完整文章。"
+    },
+    {
+      "media": "rti",
+      "websiteUrl": "https://www.rti.org.tw/",
+      "checkedAt": "2026-10-03T10:25:35.038Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.rti.org.tw/news?uid=3&pid=235545",
+          "title": "蕭副總統：國家生存需要新住民及下一世代投入 - Rti央廣",
+          "publishedAt": "2026-10-03T09:53:56.000Z",
+          "bodyLength": 649
+        },
+        {
+          "url": "https://www.rti.org.tw/news?uid=3&pid=235544",
+          "title": "中油：汽柴油價格不調整 累計吸收逾253億元 - Rti央廣",
+          "publishedAt": "2026-10-03T09:45:23.000Z",
+          "bodyLength": 434
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.rti.org.tw/rss",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "knews",
+      "websiteUrl": "https://www.knews.com.tw/",
+      "checkedAt": "2026-10-03T10:25:35.203Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.knews.com.tw/news/143C66748E1853748F22503AA9B75964",
+          "title": "油價持續凍漲！中油今宣布下周一汽柴油價格維持不變｜知新聞",
+          "publishedAt": "2026-10-03T09:18:00.000Z",
+          "bodyLength": 385
+        },
+        {
+          "url": "https://www.knews.com.tw/news/6AAC00BF34B04652CB638BE9EA5CDA43",
+          "title": "有片｜藍營翻沈伯洋舊文批「毒品除罪化」　李四川質問蘇巧慧：妳同意嗎｜知新聞",
+          "publishedAt": "2026-10-03T09:16:00.000Z",
+          "bodyLength": 565
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.knews.com.tw/realtime/latest",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "rfi",
+      "websiteUrl": "https://www.rfi.fr/tw/",
+      "checkedAt": "2026-10-03T10:25:35.311Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.rfi.fr/tw/%E4%BA%9E%E6%B4%B2/20261003-%E6%9C%9D%E9%9F%93%E9%9D%9E%E8%BB%8D%E4%BA%8B%E5%8D%80%E5%9C%B0%E9%9B%B7%E4%BA%8B%E4%BB%B6%E9%97%9C%E4%BF%82%E7%B7%8A%E5%BC%B5%E4%B9%8B%E9%9A%9B-%E6%9C%9D%E9%AE%AE%E5%86%8D%E5%B0%84%E5%BD%88%E9%81%93%E5%B0%8E%E5%BD%88",
+          "title": "朝韓非軍事區地雷事件關係緊張之際 朝鮮再射彈道導彈",
+          "publishedAt": "2026-10-03T08:28:50.000Z",
+          "bodyLength": 616
+        },
+        {
+          "url": "https://www.rfi.fr/tw/%E4%B8%AD%E5%9C%8B/20261002-%E6%B3%95%E5%9C%8B%E7%B8%BD%E7%B5%B1%E5%A4%A7%E9%81%B8%E6%B0%91%E8%AA%BF%E4%B8%80%E8%B7%AF%E9%A0%98%E8%B7%91%E7%9A%84%E6%A5%B5%E5%8F%B3%E7%BF%BC%E9%81%AD%E9%81%87%E9%80%86%E9%A2%A8",
+          "title": "法國總統大選民調一路領跑的極右翼遭遇逆風",
+          "publishedAt": "2026-10-02T22:36:47.000Z",
+          "bodyLength": 1850
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://www.rfi.fr/tw/rss",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taipeitimes",
+      "websiteUrl": "https://www.taipeitimes.com/",
+      "checkedAt": "2026-10-03T10:25:35.355Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://www.taipeitimes.com/xml/index.rss",
+      "detail": "既有爬蟲列出 50 筆，尚未驗證到近期完整文章。"
+    },
+    {
+      "media": "ustv",
+      "websiteUrl": "https://news.ustv.com.tw/",
+      "checkedAt": "2026-10-03T10:25:35.445Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.ustv.com.tw/newsdetail/20261003A016",
+          "title": "機器人利空來襲? 馬斯克曝Optimus量產難關\n | 科技 | 非凡新聞",
+          "publishedAt": "2026-10-03T07:02:06.000Z",
+          "bodyLength": 709
+        },
+        {
+          "url": "https://news.ustv.com.tw/newsdetail/20261002A098",
+          "title": "企業總部搶進! 高鐵新竹站前科技聚落成形\n | 科技 | 非凡新聞",
+          "publishedAt": "2026-10-02T10:04:39.000Z",
+          "bodyLength": 727
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://news.ustv.com.tw/feed",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "people",
+      "websiteUrl": "https://www.peoplenews.tw/",
+      "checkedAt": "2026-10-03T10:25:35.538Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.peoplenews.tw/articles/sports-recreation/59060",
+          "title": "亞運》謝淑薇、梁恩碩擊退詹皓晴、吳芳嫺奪金　「沒握手」雙方續交鋒",
+          "publishedAt": "2026-10-03T08:58:46.000Z",
+          "bodyLength": 1032
+        },
+        {
+          "url": "https://www.peoplenews.tw/articles/sports-recreation/59050",
+          "title": "MLB》鄧愷威結束賽季返台　感性發文：故事還在繼續寫！",
+          "publishedAt": "2026-10-03T05:51:15.000Z",
+          "bodyLength": 860
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://www.peoplenews.tw/rss/%E7%B8%BD%E8%A6%BD",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "epochtimes",
+      "websiteUrl": "https://www.epochtimes.com/b5/",
+      "checkedAt": "2026-10-03T10:25:35.555Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.epochtimes.com/b5/26/10/3/n14862686.htm",
+          "title": "台菲海巡艦現蹤呂宋海峽 監視中共海洋調查船",
+          "publishedAt": "2026-10-03T10:20:45.000Z",
+          "bodyLength": 1174
+        },
+        {
+          "url": "https://www.epochtimes.com/b5/26/10/3/n14862679.htm",
+          "title": "首批F-16V抵台 賴清德：提升空防戰力重要進展",
+          "publishedAt": "2026-10-03T10:14:10.000Z",
+          "bodyLength": 838
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.epochtimes.com/feed",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "yahoo",
+      "websiteUrl": "https://tw.news.yahoo.com/",
+      "checkedAt": "2026-10-03T10:25:35.916Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://tw.news.yahoo.com/%E8%A2%AB%E9%A6%AC%E6%96%AF%E5%85%8B%E7%84%A1%E9%A0%90%E8%AD%A6%E5%88%86%E6%89%8B%EF%BC%81-%E4%BC%B4%E4%BE%B6%E8%AD%89%E5%AF%A6%E6%83%85%E6%96%B7%E6%9B%AC%E5%B0%8D%E8%A9%B1%E3%80%8C%E4%B8%80%E5%91%A8%E5%89%8D%E9%82%84%E8%AA%AA%E6%84%9B%E6%88%91%E3%80%8D-094255027.html",
+          "title": "被馬斯克無預警分手！ 伴侶證實情斷曬對話「一周前還說愛我」",
+          "publishedAt": "2026-10-03T09:42:55.000Z",
+          "bodyLength": 1414
+        },
+        {
+          "url": "https://tw.news.yahoo.com/%E3%80%8A%E9%96%8B%E7%81%AB%E9%96%8B%E4%BC%99%E3%80%8B%E7%88%86%E8%A1%9D%E7%AA%81%EF%BC%81%E4%B8%BB%E5%BB%9A%E9%84%AD%E6%99%BA%E5%96%84%E9%A6%96%E5%BA%A6%E5%90%91%E8%A3%BD%E4%BD%9C%E5%96%AE%E4%BD%8D%E5%8B%95%E6%80%92%EF%BC%9A%E5%A4%AA%E9%81%8E%E5%88%86%E4%BA%86-064140628.html",
+          "title": "《開火開伙》爆衝突！主廚鄭智善首度向製作單位動怒：太過分了",
+          "publishedAt": "2026-10-03T06:41:40.000Z",
+          "bodyLength": 616
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://tw.news.yahoo.com/yahoo-reporter/",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "oncc",
+      "websiteUrl": "https://hk.on.cc/",
+      "checkedAt": "2026-10-03T10:25:36.039Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://hk.on.cc/hk/bkn/cnt/news/20261003/bkn-20261003180019859-1003_00822_001.html",
+          "title": "9歲長期病女童染乙流危殆　併發敗血性休克及嚴重肺炎",
+          "publishedAt": "2026-10-03T10:00:19.000Z",
+          "bodyLength": 447
+        },
+        {
+          "url": "https://hk.on.cc/hk/bkn/cnt/news/20261003/bkn-20261003180124100-1003_00822_001.html",
+          "title": "台船製高緯度遠洋巡護船　海上巡弋可逾30天",
+          "publishedAt": "2026-10-03T10:01:24.000Z",
+          "bodyLength": 463
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://hk.on.cc/tw/news/index.html",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "bccnews",
+      "websiteUrl": "https://bccnews.com.tw/",
+      "checkedAt": "2026-10-03T10:25:36.740Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://bccnews.com.tw/feed",
+      "detail": "既有爬蟲列出 10 筆，尚未驗證到近期完整文章。HTTP 403；HTTP 403；HTTP 403"
+    },
+    {
+      "media": "taiwannet",
+      "websiteUrl": "https://news.taiwannet.com.tw/",
+      "checkedAt": "2026-10-03T10:25:36.850Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "peopo",
+      "websiteUrl": "https://www.peopo.org/",
+      "checkedAt": "2026-10-03T10:25:37.280Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.peopo.org/news/859267",
+          "title": "2026番路鄉柿子節人潮湧現柿香引爆秋日買氣",
+          "publishedAt": "2026-10-03T10:06:36.000Z",
+          "bodyLength": 718
+        },
+        {
+          "url": "https://www.peopo.org/news/859277",
+          "title": "平安一起走 幸福跟著有",
+          "publishedAt": "2026-10-03T08:40:07.000Z",
+          "bodyLength": 857
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://www.peopo.org/rss-news",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "soundofhope",
+      "websiteUrl": "https://www.soundofhope.org/",
+      "checkedAt": "2026-10-03T10:25:37.438Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.soundofhope.org/post/945672",
+          "title": "马尔巴传（上）：暴烈少年被父亲的一个决定，改变了命运。他向父母索要家产，翻越喜马拉雅雪山，只为把珍贵的教法带回西藏！",
+          "publishedAt": "2026-09-30T06:30:59.000Z",
+          "bodyLength": 567
+        },
+        {
+          "url": "https://www.soundofhope.org/post/945669",
+          "title": "元朝帝师八思巴，到底有多厉害？三岁背诵万字经文，忽必烈跪地受戒，意大利教堂壁画藏著他创制的文字",
+          "publishedAt": "2026-09-30T06:25:56.000Z",
+          "bodyLength": 516
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.soundofhope.org/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cmmedia",
+      "websiteUrl": "https://www.cmmedia.com.tw/",
+      "checkedAt": "2026-10-03T10:25:37.990Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.cmmedia.com.tw/home/articles/63139",
+          "title": "英飛凌捐贈能外掛於消防機器人等設備的AI感知模組",
+          "publishedAt": "2026-10-03T07:00:19.000Z",
+          "bodyLength": 1933
+        },
+        {
+          "url": "https://www.cmmedia.com.tw/home/articles/63106",
+          "title": "香港旅客九份突發「人生最痛頭痛」　腦動脈瘤破裂昏迷，基隆長庚跨團隊搶回生機",
+          "publishedAt": "2026-10-03T06:00:26.000Z",
+          "bodyLength": 1631
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://www.cmmedia.com.tw/rss/yahoo/article",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "tyenews",
+      "websiteUrl": "https://tyenews.com/",
+      "checkedAt": "2026-10-03T10:25:38.186Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://tyenews.com/2026/10/1413850/",
+          "title": "國慶連假首日南下恐湧車潮 避塞攻略看這裡",
+          "publishedAt": "2026-10-03T09:30:02.000Z",
+          "bodyLength": 1122
+        },
+        {
+          "url": "https://tyenews.com/2026/10/1414164/",
+          "title": "桃市年終關懷餐會送暖！獅子會捐50萬助弱勢",
+          "publishedAt": "2026-10-03T09:17:51.000Z",
+          "bodyLength": 359
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://tyenews.com/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cnews",
+      "websiteUrl": "https://cnews.com.tw/",
+      "checkedAt": "2026-10-03T10:25:38.519Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://cnews.com.tw/224261003a01/",
+          "title": "「脆」貼文造謠假民調　檢察官訊後10萬交保 - 匯流新聞網",
+          "publishedAt": "2026-10-03T08:43:23.000Z",
+          "bodyLength": 612
+        },
+        {
+          "url": "https://cnews.com.tw/224261003a02/",
+          "title": "易服社會勞動執行小組暨執行座談會　澎檢跨域交流精進社勞執行成效 - 匯流新聞網",
+          "publishedAt": "2026-10-03T08:43:20.000Z",
+          "bodyLength": 821
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://cnews.com.tw/feed",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "agriharvest",
+      "websiteUrl": "https://www.agriharvest.tw/",
+      "checkedAt": "2026-10-03T10:25:39.551Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://www.agriharvest.tw/RSS.php",
+      "detail": "既有爬蟲列出 0 筆，尚未驗證到近期完整文章。https://www.agriharvest.tw/RSS.php -> 403；https://www.agriharvest.tw/?feed=rss2 -> 403"
+    },
+    {
+      "media": "dongtaiwang",
+      "websiteUrl": "https://dongtaiwang.com/",
+      "checkedAt": "2026-10-03T10:25:39.734Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 17 次請求未驗證到近期完整文章。https://dongtaiwang.com/sitemap.xml: HTTP 404；https://dongtaiwang.com/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "mdnkids",
+      "websiteUrl": "https://www.mdnkids.com/",
+      "checkedAt": "2026-10-03T10:31:11.680Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 19 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "hakkanews",
+      "websiteUrl": "https://hakkanews.tw/",
+      "checkedAt": "2026-10-03T10:25:40.160Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://hakkanews.tw/2026/10/03/305648/",
+          "title": "【寫客文】竻瓜个百變滋味 - 客新聞 HakkaNews",
+          "publishedAt": "2026-10-03T00:32:44.000Z",
+          "bodyLength": 1711
+        },
+        {
+          "url": "https://hakkanews.tw/2026/10/03/305904/",
+          "title": "【誤導】影片：全支付驚爆39人慘遭盜刷340萬？別綁銀行帳戶？實為釣魚網站詐騙與誇大描述 - 客新聞 HakkaNews",
+          "publishedAt": "2026-10-02T20:02:28.000Z",
+          "bodyLength": 1457
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://hakkanews.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "theinitium",
+      "websiteUrl": "https://theinitium.com/",
+      "checkedAt": "2026-10-03T10:25:40.420Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://theinitium.com/20261003-strangers-transnational-left-behind-children/",
+          "title": "國際留守兒童「團聚」之後，在父母身邊當異鄉人",
+          "publishedAt": "2026-10-03T07:00:04.000Z",
+          "bodyLength": 7020
+        },
+        {
+          "url": "https://theinitium.com/20261002-international-mr-nobody-against-putin/",
+          "title": "專訪《反對普丁的無名先生》導演博倫斯坦：荒謬的宣傳，與被洗腦的人",
+          "publishedAt": "2026-10-03T06:58:00.000Z",
+          "bodyLength": 6796
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "https://theinitium.com/rss/",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "aboluowang",
+      "websiteUrl": "https://tw.aboluowang.com/",
+      "checkedAt": "2026-10-03T10:25:40.639Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://tw.aboluowang.com/2026/1003/2441170.html",
+          "title": "中共建政77年！紐約時代廣場喊出：十一不是國慶，是國殤",
+          "publishedAt": "2026-10-03T10:24:59.000Z",
+          "bodyLength": 1049
+        },
+        {
+          "url": "https://tw.aboluowang.com/2026/1003/2441168.html",
+          "title": "圖集：十一國殤日 全球多地抗議中共",
+          "publishedAt": "2026-10-03T10:23:05.000Z",
+          "bodyLength": 2523
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://tw.aboluowang.com/rss.xml",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "i_meihua",
+      "websiteUrl": "https://i-meihua.com/",
+      "checkedAt": "2026-10-03T10:25:41.517Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.i-meihua.com/Article/Detail/57031",
+          "title": "青鳥為非法募資道歉 凌濤質疑：沈伯洋何時要提告 |梅花新聞網 洪子苓/綜合報導| 梅花新聞網",
+          "publishedAt": "2026-10-03T09:33:00.000Z",
+          "bodyLength": 996
+        },
+        {
+          "url": "https://www.i-meihua.com/Article/Detail/57029",
+          "title": "AI定製旅遊擄獲大陸年輕人 攜程AI規劃用戶年增270% |梅花新聞網 陳素貞/綜合報導| 梅花新聞網",
+          "publishedAt": "2026-10-03T09:08:00.000Z",
+          "bodyLength": 1618
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://i-meihua.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "pinview",
+      "websiteUrl": "https://www.pinview.com.tw/",
+      "checkedAt": "2026-10-03T10:25:42.530Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.pinview.com.tw/robots.txt: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "voachinese",
+      "websiteUrl": "https://www.voachinese.com/",
+      "checkedAt": "2026-10-03T10:25:42.685Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "civilmedia",
+      "websiteUrl": "https://www.civilmedia.tw/",
+      "checkedAt": "2026-10-03T10:25:43.009Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.civilmedia.tw/archives/141377",
+          "title": "【新聞稿】乖乖工會澄清：三地集團謊話連篇，協商實情大公開",
+          "publishedAt": "2026-10-02T14:53:08.000Z",
+          "bodyLength": 429
+        },
+        {
+          "url": "https://www.civilmedia.tw/archives/141373",
+          "title": "【新聞稿】外送平台併購審查中 首長竟公然站台！台灣外送產業權益協進聯盟痛批違反中立",
+          "publishedAt": "2026-10-02T10:14:35.000Z",
+          "bodyLength": 1277
+        }
+      ],
+      "status": "verified",
+      "strategy": "existing",
+      "listingUrl": "http://www.civilmedia.tw/feed",
+      "detail": "沿用既有爬蟲；本次驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taiwandom",
+      "websiteUrl": "https://taiwandomnews.com/",
+      "checkedAt": "2026-10-03T10:25:43.449Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://taiwandomnews.com/feed",
+      "detail": "既有爬蟲列出 0 筆，尚未驗證到近期完整文章。https://taiwandomnews.com/feed -> 403"
+    },
+    {
+      "media": "ct",
+      "websiteUrl": "https://ct.org.tw/",
+      "checkedAt": "2026-10-03T10:25:43.973Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://ct.org.tw/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "guancha",
+      "websiteUrl": "https://www.guancha.cn/",
+      "checkedAt": "2026-10-03T10:25:44.015Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.guancha.cn/: The operation was aborted due to timeout；https://www.guancha.cn/sitemap.xml: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "lai_media",
+      "websiteUrl": "https://lai-media.net/",
+      "checkedAt": "2026-10-03T10:25:44.917Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 13 次請求未驗證到近期完整文章。https://lai-media.net/contribution.php: The operation was aborted due to timeout；https://lai-media.net/news_view.php?new_sn=144954&new_csn=3094: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "thehubnews",
+      "websiteUrl": "https://www.thehubnews.net/",
+      "checkedAt": "2026-10-03T10:25:46.057Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.thehubnews.net/archives/671497",
+          "title": "郵件一個名字露餡！社宅月租3000元轉手出租出事了 - 新頭條-TheHubNews",
+          "publishedAt": "2026-10-03T09:40:00.000Z",
+          "bodyLength": 746
+        },
+        {
+          "url": "https://www.thehubnews.net/archives/671495",
+          "title": "蔬食嘉年華彰化市登場 千人齊聚品嘗彰化精選蔬食 - 新頭條-TheHubNews",
+          "publishedAt": "2026-10-03T09:39:00.000Z",
+          "bodyLength": 712
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.thehubnews.net/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ydn",
+      "websiteUrl": "https://www.ydn.com.tw/",
+      "checkedAt": "2026-10-03T10:25:47.119Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ydn.com.tw/tw/News/ugC_News_Detail.aspx?ID=646983",
+          "title": "金獎導演林君陽等12人當選輔大傑出校友",
+          "publishedAt": "2026-10-03T10:04:00.000Z",
+          "bodyLength": 311
+        },
+        {
+          "url": "https://www.ydn.com.tw/tw/News/ugC_News_Detail.aspx?ID=646982",
+          "title": "最萌「毛英雄」出任務 警犬及消防搜救犬將參與國慶遊行",
+          "publishedAt": "2026-10-03T10:04:00.000Z",
+          "bodyLength": 663
+        }
+      ],
+      "status": "verified",
+      "strategy": "sitemap",
+      "listingUrl": "https://www.ydn.com.tw/rss/google.aspx",
+      "detail": "以 sitemap 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "thepaper",
+      "websiteUrl": "https://www.thepaper.cn/",
+      "checkedAt": "2026-10-03T10:25:48.708Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 17 次請求未驗證到近期完整文章。http://www.thepaper.cn/newsDetail_forward_1866313: HTTP 404；https://www.thepaper.cn/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "winnews",
+      "websiteUrl": "https://www.winnews.com.tw/",
+      "checkedAt": "2026-10-03T10:25:49.181Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 11 次請求未驗證到近期完整文章。https://www.winnews.com.tw/robots.txt: HTTP 403；https://www.winnews.com.tw/sitemap.xml: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "secretchina",
+      "websiteUrl": "https://www.secretchina.com/",
+      "checkedAt": "2026-10-03T10:25:49.376Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.secretchina.com/news/gb/2026/10/03/1105627.html",
+          "title": "煎锅湖 绝对不能泡的巨型温泉湖泊(图) - 自然现象 -",
+          "publishedAt": "2026-10-03T09:45:00.000Z",
+          "bodyLength": 1368
+        },
+        {
+          "url": "https://www.secretchina.com/news/gb/2026/10/03/1105625.html",
+          "title": "沈伯洋提教育政策4面向(图) - 社会民生 -",
+          "publishedAt": "2026-10-03T09:24:16.000Z",
+          "bodyLength": 1853
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.secretchina.com/news/gb/news.xml",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "hsnews",
+      "websiteUrl": "https://hsnews.com.tw/",
+      "checkedAt": "2026-10-03T10:31:11.684Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://hsnews.com.tw/lifestyle-and-community/wan-jian-qi-fa-ge-wu-tong-qing-2026tai-ping-yang-yuan-zhu-min-chuan-tong-she-jian-xun-hui-sai-feng-lin-zhan-xi-yin-chao-guo400ming-she-shou.html",
+          "title": "萬箭齊發、歌舞同慶！2026太平洋原住民傳統射箭巡迴賽鳳林站吸引超過400名射手",
+          "publishedAt": "2026-10-03T10:16:04.000Z",
+          "bodyLength": 1245
+        },
+        {
+          "url": "https://hsnews.com.tw/lifestyle-and-community/hua-lian-xian-zheng-fu-yi-yuan-min-wen-hua-chuan-lian-feng-bin-shan-hai-guan-guang-2026-makotaay-yi-shu-ji-zhong-qiu-man-yue-kai-mu.html",
+          "title": "花蓮縣政府以原民文化串聯豐濱山海觀光 2026 Makotaay 藝術季中秋滿月開幕",
+          "publishedAt": "2026-10-03T00:40:05.000Z",
+          "bodyLength": 2018
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://hsnews.com.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "watchmedia01",
+      "websiteUrl": "https://www.watchmedia01.com/",
+      "checkedAt": "2026-10-03T10:25:50.771Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.watchmedia01.com/archives/554984",
+          "title": "振興國旅 1111攜手立委、業者共商觀光轉型 - 觀傳媒",
+          "publishedAt": "2026-10-02T09:48:39.000Z",
+          "bodyLength": 2787
+        },
+        {
+          "url": "https://www.watchmedia01.com/archives/555028",
+          "title": "美光財報超狂，「反指標女神」也打不穿！00409A重押，記憶體多頭再起？ - 觀傳媒",
+          "publishedAt": "2026-10-02T10:34:23.000Z",
+          "bodyLength": 868
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.watchmedia01.com/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "bannedbook",
+      "websiteUrl": "https://www.bannedbook.org/bnews/zh-tw/",
+      "checkedAt": "2026-10-03T10:25:51.884Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.bannedbook.org/bnews/zh-tw/bannedvideo/20261003/2366155.html",
+          "title": "《 洋流 發酵! 萬安 拉警報! 北市 選戰五五波!市政連環爆! 蔣萬安 原形畢露?!》【2026.10.03『年代向錢看』周末精選】 - 禁聞網",
+          "publishedAt": "2026-10-03T09:19:18.000Z",
+          "bodyLength": 670
+        },
+        {
+          "url": "https://www.bannedbook.org/bnews/zh-tw/itnews/20261003/2366154.html",
+          "title": "🤖 谷歌調整 Gemini 模型許可權，免費用戶將僅可使用 Flash-Lite - 禁聞網",
+          "publishedAt": "2026-10-03T09:00:28.000Z",
+          "bodyLength": 313
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.bannedbook.org/bnews/zh-tw/xml/latest.xml",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "singular",
+      "websiteUrl": "https://www.scooptw.com/",
+      "checkedAt": "2026-10-03T10:25:52.588Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.scooptw.com/sunmedia/535345/anthropic-%E9%9A%AA%E6%8B%92%E6%95%99%E5%AE%97-ai-%E9%80%9A%E8%AB%AD-%E8%89%AF%E5%8D%81%E5%9B%9B%E4%B8%96%E5%A0%85%E7%A8%B1-ai-%E7%84%A1%E6%84%8F%E8%AD%98/",
+          "title": "Anthropic 險拒教宗 AI 通諭 良十四世堅稱 AI 無意識 - 獨家報導",
+          "publishedAt": "2026-10-03T10:21:42.000Z",
+          "bodyLength": 937
+        },
+        {
+          "url": "https://www.scooptw.com/healthnews/535328/%E8%81%9A%E9%A4%90%E7%83%A4%E8%82%89%E6%B3%A8%E6%84%8F%E3%80%8C%E7%81%AB%E8%88%87%E7%97%9B%E9%A2%A8%E3%80%8D%EF%BC%81%E9%86%AB%E6%8F%90%E9%86%92%E7%87%92%E7%87%99%E5%82%B7%E6%80%A5%E6%95%91%E3%80%81/",
+          "title": "聚餐烤肉注意「火與痛風」！醫提醒燒燙傷急救、飲食地雷一次看 - 獨家報導",
+          "publishedAt": "2026-10-03T10:00:00.000Z",
+          "bodyLength": 1079
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.scooptw.com/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "lihpao",
+      "websiteUrl": "https://www.lihpao.com/",
+      "checkedAt": "2026-10-03T10:25:54.433Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://www.lihpao.com/sitemap.xml",
+      "detail": "既有爬蟲列出 0 筆，尚未驗證到近期完整文章。https://www.lihpao.com/sitemap.xml -> The operation was aborted due to timeout"
+    },
+    {
+      "media": "hakkatv",
+      "websiteUrl": "https://www.hakkatv.org.tw/",
+      "checkedAt": "2026-10-03T10:25:55.666Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 17 次請求未驗證到近期完整文章。https://www.hakkatv.org.tw/sitemap-news-1.xml: response too large；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "grinews",
+      "websiteUrl": "https://grinews.com/news/",
+      "checkedAt": "2026-10-03T10:25:56.773Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://grinews.com/news/%e6%b0%91%e4%b8%bb%e6%b3%95%e6%b2%bb%e6%ad%aa%e6%a8%93%e6%a1%88%e4%be%8b%e4%b8%89%e5%89%87/",
+          "title": "民主法治歪樓案例三則 | 草根影響力新視野",
+          "publishedAt": "2026-10-02T13:50:53.000Z",
+          "bodyLength": 4328
+        },
+        {
+          "url": "https://grinews.com/news/%e8%80%81%e5%b1%8b%e9%83%bd%e6%9b%b4%e8%a6%81%e5%a4%9a%e5%b0%91%e4%ba%ba%e9%bb%9e%e9%a0%ad%ef%bc%9f%e6%96%b0%e5%8c%97%e5%8a%a0%e9%80%9f%e6%8e%a8%e5%8b%95%e3%80%805%e6%88%90%e5%b0%b1%e8%83%bd%e9%80%b2/",
+          "title": "老屋都更要多少人點頭？新北加速推動 5成就能進場評估、8成拚公辦 | 草根影響力新視野",
+          "publishedAt": "2026-10-01T14:00:08.000Z",
+          "bodyLength": 1094
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://grinews.com/news/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "newspie",
+      "websiteUrl": "https://newspie.com.tw/",
+      "checkedAt": "2026-10-03T10:25:59.820Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.newspie.com.tw/motocycle-202609-20261002/",
+          "title": "2026 年 9 月台灣機車銷量重回 7 萬輛！K1 E 帶動 K1 家族衝 6,851 輛、光陽月增 24.9% 高於整體市場 - News Pie",
+          "publishedAt": "2026-10-02T13:44:31.000Z",
+          "bodyLength": 2880
+        },
+        {
+          "url": "https://www.newspie.com.tw/bridgestone-20261002/",
+          "title": "Formula E 換上普利司通輪胎！GEN4 馬力上看 815 匹，POTENZA GEN4 同步登場 - News Pie",
+          "publishedAt": "2026-10-02T10:50:18.000Z",
+          "bodyLength": 1275
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.newspie.com.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "daai",
+      "websiteUrl": "https://www.daai.tv/news/",
+      "checkedAt": "2026-10-03T10:26:00.436Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 17 次請求未驗證到近期完整文章。https://daai.tv/news/topic: HTTP 404；https://www.daai.tv/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "nvns",
+      "websiteUrl": "https://nvns.net/",
+      "checkedAt": "2026-10-03T10:26:01.091Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 15 次請求未驗證到近期完整文章。https://nvns.net/robots.txt: HTTP 404；https://nvns.net/news_view.php?new_sn=144944&new_csn=1467: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "bigmedia",
+      "websiteUrl": "https://bigmedia.com.tw/",
+      "checkedAt": "2026-10-03T10:26:02.610Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.bigmedia.com.tw/article/1790922361133",
+          "title": "BIGBANG前成員T.O.P爆戀情！與NANA約會照曝光「雙方公司認愛」",
+          "publishedAt": "2026-10-02T06:20:00.000Z",
+          "bodyLength": 873
+        },
+        {
+          "url": "https://www.bigmedia.com.tw/article/1790920726577",
+          "title": "田馥甄年底攻蛋6場！「要去什麼地方」台北開唱堵黃牛全面實名抽選",
+          "publishedAt": "2026-10-02T05:54:00.000Z",
+          "bodyLength": 584
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.bigmedia.com.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "i_media",
+      "websiteUrl": "https://i-media.tw/",
+      "checkedAt": "2026-10-03T10:26:03.206Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://i-media.tw/robots.txt: HTTP 404；https://i-media.tw/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "policenews",
+      "websiteUrl": "https://www.tcpttw.com/",
+      "checkedAt": "2026-10-03T10:31:11.684Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.tcpttw.com/ipc/2026/10/03/316781/",
+          "title": "【耿繼文/專欄】從統萬城到北伐柔然：「拓跋燾」的決斷與領導啟示 - 警政時報",
+          "publishedAt": "2026-10-03T07:13:56.000Z",
+          "bodyLength": 1525
+        },
+        {
+          "url": "https://www.tcpttw.com/police/2026/10/03/316774/",
+          "title": "昆明街「按喇叭引糾紛」！雙方不提告 萬華分局仍依法辦理 - 警政時報",
+          "publishedAt": "2026-10-03T06:43:42.000Z",
+          "bodyLength": 345
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.tcpttw.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "news886",
+      "websiteUrl": "https://886.news/",
+      "checkedAt": "2026-10-03T10:26:07.082Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "anntw",
+      "websiteUrl": "https://anntw.com/",
+      "checkedAt": "2026-10-03T10:26:08.804Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.anntw.com/articles/20261001-BSy0",
+          "title": "阮經天《狂忘警探》入圍金馬11獎 舒淇挑戰新導演獎 - 台灣醒報 Awakening News Networks",
+          "publishedAt": "2026-10-01T10:19:17.000Z",
+          "bodyLength": 905
+        },
+        {
+          "url": "https://www.anntw.com/articles/20261001-cOis",
+          "title": "普發現金1萬何時領？ 政院：目標明年過年前 - 台灣醒報 Awakening News Networks",
+          "publishedAt": "2026-10-01T08:27:58.000Z",
+          "bodyLength": 684
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.anntw.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "yesmedia",
+      "websiteUrl": "https://www.yesmedia.com.tw/",
+      "checkedAt": "2026-10-03T10:26:09.778Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "miin",
+      "websiteUrl": "https://miin.cc/",
+      "checkedAt": "2026-10-03T10:26:10.473Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://miin.cc/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "tcnews",
+      "websiteUrl": "https://www.tcnews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:10.865Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 21 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "new_report",
+      "websiteUrl": "https://new-reporter.com/",
+      "checkedAt": "2026-10-03T10:26:11.073Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "owlting",
+      "websiteUrl": "https://news.owlting.com/",
+      "checkedAt": "2026-10-03T10:26:15.794Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.owlting.com/articles/1465126",
+          "title": "迎向淨零與智慧製造新浪潮！「智慧機器人產業系列研討會」第四場聚焦綠色科技與循環經濟 引領產業從實體試錯邁向虛擬決策 - OwlNews",
+          "publishedAt": "2026-10-03T02:13:54.000Z",
+          "bodyLength": 991
+        },
+        {
+          "url": "https://news.owlting.com/articles/1465169",
+          "title": "Cloudflare推Clef模型 AI Agent可自主決策無需人類介入 - OwlNews",
+          "publishedAt": "2026-10-03T03:50:36.000Z",
+          "bodyLength": 1112
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://news.owlting.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "innews",
+      "websiteUrl": "https://innews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:16.430Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://innews.com.tw/%e3%80%8c2026%e6%96%b0%e7%ab%b9%e5%b8%82%e8%8d%89%e5%9c%b0%e6%95%85%e4%ba%8b%e7%af%80%e3%80%8d%e9%96%8b%e8%b7%91%ef%bc%81%e5%8c%97%e5%a4%a7%e5%85%ac%e5%9c%92%e5%8c%96%e8%ba%ab%e3%80%8c%e9%96%b1/",
+          "title": "「2026新竹市草地故事節」開跑！北大公園化身「閱讀群島」高虹安市長邀親子走進大繪本",
+          "publishedAt": "2026-10-03T09:57:27.000Z",
+          "bodyLength": 1163
+        },
+        {
+          "url": "https://innews.com.tw/%e6%9c%b4%e5%ad%90%e8%b7%91%e8%8b%a5%e9%a3%9b%e5%a4%a9%e5%85%ac%e7%9b%83%e7%86%b1%e9%ac%a7%e7%99%bb%e5%a0%b4-%e5%90%b3%e5%93%81%e5%8f%a1%ef%bc%9a%e4%b8%8d%e8%83%bd%e5%8f%aa%e6%98%af%e9%81%b8/",
+          "title": "朴子跑若飛天公盃熱鬧登場 吳品叡：地方發展不能只是選舉口號",
+          "publishedAt": "2026-10-03T05:24:07.000Z",
+          "bodyLength": 1073
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://innews.com.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "newstaiwan",
+      "websiteUrl": "https://newstaiwan.net/",
+      "checkedAt": "2026-10-03T10:26:17.416Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://newstaiwan.net/?p=485719",
+          "title": "台灣好報 - 嘉縣舉辦南區生命線志工大會師 8縣市400志工齊聚共學交流",
+          "publishedAt": "2026-10-03T10:20:23.000Z",
+          "bodyLength": 1084
+        },
+        {
+          "url": "https://newstaiwan.net/?p=485697",
+          "title": "台灣好報 - 清完又被丟！雲林嚴查亂倒垃圾 監控加檢舉開罰69件、追繳18萬",
+          "publishedAt": "2026-10-03T10:02:43.000Z",
+          "bodyLength": 1402
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://newstaiwan.net/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "tnews",
+      "websiteUrl": "https://tnews.cc/",
+      "checkedAt": "2026-10-03T10:26:17.467Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 10 次請求未驗證到近期完整文章。https://tnews.cc/nz/News/View/1198087: The operation was aborted due to timeout；https://tnews.cc/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "taro",
+      "websiteUrl": "https://taronews.tw/",
+      "checkedAt": "2026-10-03T10:26:18.092Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "https://taronews.tw/feed/",
+      "detail": "既有爬蟲列出 10 筆，尚未驗證到近期完整文章。"
+    },
+    {
+      "media": "taiwandaily",
+      "websiteUrl": "https://www.taiwandaily.net/",
+      "checkedAt": "2026-10-03T10:26:18.389Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.taiwandaily.net/sitemap.xml: HTTP 403；https://www.taiwandaily.net/feed/: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "enn",
+      "websiteUrl": "https://enn.tw/",
+      "checkedAt": "2026-10-03T10:26:18.751Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://enn.tw/sitemap.xml: HTTP 403；https://enn.tw/feed/: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "kingtop",
+      "websiteUrl": "https://www.kingtop.com.tw/",
+      "checkedAt": "2026-10-03T10:26:19.144Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.kingtop.com.tw/robots.txt: HTTP 404；https://www.kingtop.com.tw/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "greatnews",
+      "websiteUrl": "https://greatnews.com.tw/",
+      "checkedAt": "2026-10-03T10:31:11.684Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://greatnews.com.tw/robots.txt: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "kamalan_news",
+      "websiteUrl": "https://www.kamalan-news.com/",
+      "checkedAt": "2026-10-03T10:26:20.846Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "fclnews",
+      "websiteUrl": "https://fclnews.com/",
+      "checkedAt": "2026-10-03T10:26:21.141Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.fclnews.com/229512/",
+          "title": "排灣族人同聚歡慶小米收穫祭 蘇俊賓:在都會中持續與原鄉連結 展現最傳統的Masaliutj歲時祭儀 - 台灣新聞雲報",
+          "publishedAt": "2026-10-03T07:09:34.000Z",
+          "bodyLength": 606
+        },
+        {
+          "url": "https://www.fclnews.com/229500/",
+          "title": "龍壽國小賀校慶 蘇俊賓讚小型學校經營出全國特色！ - 台灣新聞雲報",
+          "publishedAt": "2026-10-03T07:06:51.000Z",
+          "bodyLength": 563
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.fclnews.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "globalnewstv",
+      "websiteUrl": "https://globalnewstv.com.tw/",
+      "checkedAt": "2026-10-03T10:31:11.684Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "pronews",
+      "websiteUrl": "https://pronews.tw/",
+      "checkedAt": "2026-10-03T10:26:21.887Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://pronews.tw/2026/10/03/317304/",
+          "title": "人氣IP AH!Q穿機甲登百年州廳「創意台中」開展 – 地方 – 創新聞",
+          "publishedAt": "2026-10-03T10:24:56.000Z",
+          "bodyLength": 756
+        },
+        {
+          "url": "https://pronews.tw/2026/10/03/317295/",
+          "title": "歷經14年等待！台灣本島最高媽祖像落成 – 地方 – 創新聞",
+          "publishedAt": "2026-10-03T10:19:22.000Z",
+          "bodyLength": 748
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://pronews.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "bo6s",
+      "websiteUrl": "https://www.bo6s.com.tw/",
+      "checkedAt": "2026-10-03T10:26:22.529Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "taidaily",
+      "websiteUrl": "https://taidaily.com/",
+      "checkedAt": "2026-10-03T10:26:22.666Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://taidaily.com/2026/10/03/583457/",
+          "title": "2026田邊有牛 柳營牛奶節熱鬧登場！展現臺南乳業新活力",
+          "publishedAt": "2026-10-03T07:15:51.000Z",
+          "bodyLength": 744
+        },
+        {
+          "url": "https://taidaily.com/2026/10/03/583452/",
+          "title": "見證旗山醫院健保復健病房啟動 陳其邁肯定落實醫療平權創造典範",
+          "publishedAt": "2026-10-03T07:05:00.000Z",
+          "bodyLength": 704
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://taidaily.com/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "travelnews",
+      "websiteUrl": "https://www.travelnews.tw/news/",
+      "checkedAt": "2026-10-03T10:26:23.729Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.travelnews.tw/sitemap.xml: HTTP 403；https://www.travelnews.tw/feed/: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "focusnews",
+      "websiteUrl": "https://focusnews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:24.316Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://focusnews.com.tw/2026/10/724090/",
+          "title": "台南甜蜜節10/24登場！ | 今傳媒 JNEWS",
+          "publishedAt": "2026-10-03T10:21:01.000Z",
+          "bodyLength": 1197
+        },
+        {
+          "url": "https://focusnews.com.tw/2026/10/724084/",
+          "title": "從臺韓交流到釜山快閃 釜山車站快閃成功讓韓國民眾感受屏東的南國風情 | 今傳媒 JNEWS",
+          "publishedAt": "2026-10-03T10:10:27.000Z",
+          "bodyLength": 1133
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://focusnews.com.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "macaodaily",
+      "websiteUrl": "https://www.macaodaily.com/",
+      "checkedAt": "2026-10-03T10:31:11.684Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.macaodaily.com/html/2026-10/03/content_1937722.htm",
+          "title": "舍監涉性侵五男童被捕",
+          "publishedAt": "2026-10-02T16:00:00.000Z",
+          "bodyLength": 578
+        },
+        {
+          "url": "https://www.macaodaily.com/html/2026-10/03/content_1937723.htm",
+          "title": "婦聯：檢視院舍聘用監督機制",
+          "publishedAt": "2026-10-02T16:00:00.000Z",
+          "bodyLength": 806
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.macaodaily.com/html/2026-10/03/node_2.htm",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taiwanus",
+      "websiteUrl": "https://www.taiwanus.net/",
+      "checkedAt": "2026-10-03T10:26:26.321Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "rise_mediacorp",
+      "websiteUrl": "https://rise-mediacorp.com/",
+      "checkedAt": "2026-10-03T10:26:29.139Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://rise-mediacorp.com/archives/120415: HTTP 403；https://rise-mediacorp.com/archives/120419: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "pnn",
+      "websiteUrl": "https://pnn.tw/",
+      "checkedAt": "2026-10-03T10:26:32.998Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://pnn.tw/sitemap.xml: HTTP 404；https://pnn.tw/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "st_media",
+      "websiteUrl": "https://news.st-media.com.tw/",
+      "checkedAt": "2026-10-03T10:26:33.725Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://news.st-media.com.tw/sitemap.xml: HTTP 500；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "nchn",
+      "websiteUrl": "https://nchn.news/",
+      "checkedAt": "2026-10-03T10:26:36.585Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "homeplus",
+      "websiteUrl": "https://news.homeplus.net.tw/",
+      "checkedAt": "2026-10-03T10:26:37.518Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 22 次請求未驗證到近期完整文章。https://news.homeplus.net.tw/sitemap.xml: HTTP 404；https://news.homeplus.net.tw/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "j_media",
+      "websiteUrl": "https://j-media.tw/",
+      "checkedAt": "2026-10-03T10:26:38.494Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://j-media.tw/Article/Detail/38650",
+          "title": "范振家》鞭刑治詐，被騙的錢能回來？ | J-media 聚傳媒",
+          "publishedAt": "2026-10-02T22:30:00.000Z",
+          "bodyLength": 2437
+        },
+        {
+          "url": "https://j-media.tw/Article/Detail/38655",
+          "title": "慈濟第十屆慈悲科技創新競賽決賽頒獎 | J-media 聚傳媒",
+          "publishedAt": "2026-10-03T05:59:00.000Z",
+          "bodyLength": 1725
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://j-media.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taiwanpost",
+      "websiteUrl": "https://taiwanpost.net/",
+      "checkedAt": "2026-10-03T10:26:39.523Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://taiwanpost.net/2026/prnasia/173261/",
+          "title": "MetaOptics宣佈戰略性拓展進入馬來西亞市場，註冊成立全資子公司 - 臺灣郵報",
+          "publishedAt": "2026-10-03T10:00:25.000Z",
+          "bodyLength": 2169
+        },
+        {
+          "url": "https://taiwanpost.net/2026/local/173254/",
+          "title": "泰山獅王文化節盛大舉行 侯友宜：推廣地方獨特技藝文化 - 臺灣郵報",
+          "publishedAt": "2026-10-03T09:45:36.000Z",
+          "bodyLength": 489
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://taiwanpost.net/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "right_media",
+      "websiteUrl": "https://www.right-media.news/",
+      "checkedAt": "2026-10-03T10:26:39.880Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.right-media.news/archives/237111",
+          "title": "把「健康」藏進博物館名作裡 奇美醫院攜手嘉大、奇博館，邀大南迴孩子「健康藝術之旅」 - 睿傳媒 Rightmedia",
+          "publishedAt": "2026-10-03T09:48:20.000Z",
+          "bodyLength": 1716
+        },
+        {
+          "url": "https://www.right-media.news/archives/237109",
+          "title": "穩定民生物價 台灣中油宣布：下週汽柴油價不調整 - 睿傳媒 Rightmedia",
+          "publishedAt": "2026-10-03T09:45:50.000Z",
+          "bodyLength": 324
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.right-media.news/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "tristarnews",
+      "websiteUrl": "https://www.tristarnews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:39.996Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.tristarnews.com.tw/sitemap.xml: HTTP 404；https://www.tristarnews.com.tw/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "wujie",
+      "websiteUrl": null,
+      "checkedAt": "2026-10-03T10:26:40.197Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unresolved",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "尚未確認官方網址，保留來源列，不猜測網域。"
+    },
+    {
+      "media": "firenews",
+      "websiteUrl": "https://firenews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:40.199Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://firenews.com.tw/2026/10/03/%E5%85%A8%E7%90%83%E4%BD%9B%E5%85%89%E4%BA%BA%E9%A6%96%E5%BA%A6%E9%BD%8A%E8%81%9A%E5%A4%A7%E5%B7%A8%E8%9B%8B%E3%80%8098%E5%8D%94%E6%9C%83%E5%85%B1%E5%AF%AB%E4%BA%BA%E9%96%93%E4%BD%9B%E6%95%99%E6%96%B0/",
+          "title": "全球佛光人首度齊聚大巨蛋 98協會共寫人間佛教新頁 - 火報",
+          "publishedAt": "2026-10-03T10:22:12.000Z",
+          "bodyLength": 2330
+        },
+        {
+          "url": "https://firenews.com.tw/2026/10/03/%E6%A1%83%E5%9C%92%E5%85%AB%E5%BE%B7%E9%A9%9A%E5%82%B3%E9%9B%A2%E8%AD%9C%E8%BB%8A%E7%A6%8D%EF%BC%81%E5%A9%A6%E4%BA%BA%E5%96%AE%E6%89%8B%E9%A8%8E%E8%BB%8A%E9%80%86%E5%90%91%E6%92%9E%E8%BD%8E%E8%BB%8A/",
+          "title": "桃園八德驚傳離譜車禍！婦人單手騎車逆向撞轎車 網友傻眼：龍頭都不握 - 火報",
+          "publishedAt": "2026-10-03T10:20:12.000Z",
+          "bodyLength": 408
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://firenews.com.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "lifenews",
+      "websiteUrl": "https://lifenews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:40.310Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://lifenews.com.tw/591483",
+          "title": "黃孟玲「一起來畫畫」師生聯展",
+          "publishedAt": "2026-10-03T09:51:20.000Z",
+          "bodyLength": 798
+        },
+        {
+          "url": "https://lifenews.com.tw/591481",
+          "title": "公私協力匯聚公益力量 桃園市115年年終關懷餐會暨公益捐贈表揚",
+          "publishedAt": "2026-10-03T09:51:13.000Z",
+          "bodyLength": 439
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://lifenews.com.tw/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "news586",
+      "websiteUrl": "https://news.586.com.tw/",
+      "checkedAt": "2026-10-03T10:26:40.429Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "ccsn0405",
+      "websiteUrl": "https://www.ccsn0405.com/",
+      "checkedAt": "2026-10-03T10:26:40.680Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ccsn0405.com/2026/10/blog-post_752.html",
+          "title": "柳營牛奶節熱鬧登場！展現臺南乳業新活力",
+          "publishedAt": "2026-10-03T10:06:15.000Z",
+          "bodyLength": 559
+        },
+        {
+          "url": "https://www.ccsn0405.com/2026/10/34_01205675905.html",
+          "title": "雲嘉南34品牌齊聚藍晒圖市集 把地方故事端上桌",
+          "publishedAt": "2026-10-03T09:12:21.000Z",
+          "bodyLength": 958
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.ccsn0405.com/feeds/posts/default?alt=rss",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "chengpou",
+      "websiteUrl": "http://www.chengpou.com.mo/",
+      "checkedAt": "2026-10-03T10:26:40.712Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 10 次請求未驗證到近期完整文章。https://www.chengpou.com.mo/sitemap.xml: HTTP 404；https://www.chengpou.com.mo/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "yaya_news",
+      "websiteUrl": "https://yayanews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:41.063Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://yayanews.com.tw/33855/",
+          "title": "斥資逾42.6億！崇德殯儀館迎57年最大改建 10/6起停車管制、周邊配套同步上路 | 鴨鴨新聞 Yaya News",
+          "publishedAt": "2026-10-03T08:17:01.000Z",
+          "bodyLength": 1038
+        },
+        {
+          "url": "https://yayanews.com.tw/33849/",
+          "title": "「情緒不硬撐！」中市響應心理健康月 相約Lalaport找回生活節奏 | 鴨鴨新聞 Yaya News",
+          "publishedAt": "2026-10-03T08:02:51.000Z",
+          "bodyLength": 1066
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://yayanews.com.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taipeipost",
+      "websiteUrl": "https://taipeipost.org/",
+      "checkedAt": "2026-10-03T10:26:41.145Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://taipeipost.org/feed/: HTTP 410；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "hiilan",
+      "websiteUrl": "https://www.hiilan.com.tw/",
+      "checkedAt": "2026-10-03T10:26:42.247Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://www.hiilan.com.tw/sitemap.xml: fetch failed；https://www.hiilan.com.tw/feed/: fetch failed；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "tpnews",
+      "websiteUrl": "https://tpnews.org/",
+      "checkedAt": "2026-10-03T10:26:42.692Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://tpnews.org/tpnews-international-news-collection/%e5%9c%8b%e9%9a%9b%e6%96%b0%e8%81%9e%e4%be%86%e6%ba%90rss/prn/2026/10/03/122252/%e6%8a%80%e5%98%89-ai-top-atom-64gb-%e7%b5%b1%e4%b8%80%e8%a8%98%e6%86%b6%e9%ab%94%e7%89%88%e6%9c%ac%e7%99%bb%e5%a0%b4%ef%bc%8c%e6%8b%93%e5%b1%95%e6%a1%8c%e4%b8%8a%e5%9e%8b-ai-%e9%96%8b%e7%99%bc/",
+          "title": "技嘉 AI TOP ATOM 64GB 統一記憶體版本登場，拓展桌上型 AI 開發新可能 – TPNews台灣商務新聞網",
+          "publishedAt": "2026-10-03T06:00:33.000Z",
+          "bodyLength": 1062
+        },
+        {
+          "url": "https://tpnews.org/tpnews-international-news-collection/%e5%9c%8b%e9%9a%9b%e6%96%b0%e8%81%9e%e4%be%86%e6%ba%90rss/prn/2026/10/03/122250/gunvor-%e6%98%93%e5%90%8d%e7%82%ba-centalion/",
+          "title": "Gunvor 易名為 Centalion – TPNews台灣商務新聞網",
+          "publishedAt": "2026-10-03T06:00:32.000Z",
+          "bodyLength": 1612
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://tpnews.org/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "twline365",
+      "websiteUrl": "https://twline365.com/",
+      "checkedAt": "2026-10-03T10:26:42.839Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://twline365.com/2026/10/1240961/",
+          "title": "把「健康」藏進博物館名作裡 奇美醫院攜手嘉大、奇博館，邀大南迴孩子「健康藝術之旅」 | 台灣線報",
+          "publishedAt": "2026-10-03T09:48:20.000Z",
+          "bodyLength": 1716
+        },
+        {
+          "url": "https://twline365.com/2026/10/1240963/",
+          "title": "穩定民生物價 台灣中油宣布：下週汽柴油價不調整 | 台灣線報",
+          "publishedAt": "2026-10-03T09:45:50.000Z",
+          "bodyLength": 324
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://twline365.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "rwnews",
+      "websiteUrl": "https://rwnews.tw/",
+      "checkedAt": "2026-10-03T10:26:43.319Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://rwnews.tw/sitemap.xml: HTTP 403；https://rwnews.tw/feed/: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "bbc",
+      "websiteUrl": "https://www.bbc.com/zhongwen/trad",
+      "checkedAt": "2026-10-03T10:26:44.154Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "http://feeds.bbci.co.uk/zhongwen/trad/rss.xml",
+      "detail": "既有爬蟲列出 35 筆，尚未驗證到近期完整文章。"
+    },
+    {
+      "media": "news_yahoo",
+      "websiteUrl": "http://news.yahoo.co.jp",
+      "checkedAt": "2026-10-03T10:26:44.939Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.yahoo.co.jp/pickup/6597422",
+          "title": "伊東四朗 報道陣40人に「驚いた」 - Yahoo!ニュース",
+          "publishedAt": "2026-10-03T09:28:36.000Z",
+          "bodyLength": 364
+        },
+        {
+          "url": "https://news.yahoo.co.jp/pickup/6597420",
+          "title": "福原遥と結婚 久保が取材に応じる - Yahoo!ニュース",
+          "publishedAt": "2026-10-03T09:21:06.000Z",
+          "bodyLength": 505
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://news.yahoo.co.jp/rss/topics/top-picks.xml",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "yam",
+      "websiteUrl": "https://n.yam.com/",
+      "checkedAt": "2026-10-03T10:26:46.155Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 12 次請求未驗證到近期完整文章。https://n.yam.com/Article/20261003798118: HTTP 429；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "cnn",
+      "websiteUrl": "http://cnn.com",
+      "checkedAt": "2026-10-03T10:26:46.535Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 22 次請求未驗證到近期完整文章。https://www.cnn.com/cnn-underscored/deals/best-amazon-prime-day-laptop-computer-deals-2026-09-30: response too large；http://cnn.com/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "stheadline",
+      "websiteUrl": "http://stheadline.com/",
+      "checkedAt": "2026-10-03T10:26:46.981Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.stheadline.com/breaking-news/3622089/%E5%85%A9%E5%91%A8%E9%8C%8414%E5%AE%97%E6%8A%95%E8%B3%87%E9%A8%99%E6%A1%88-%E5%8F%97%E5%AE%B3%E4%BA%BA%E5%85%A8%E7%82%BA%E5%B9%B4%E9%9D%92%E4%BA%BA-25%E6%AD%B2%E5%A5%B3%E8%AA%A4%E4%BF%A1%E6%8A%95%E8%B3%87%E5%B0%88%E5%AE%B6%E5%A4%B1140%E8%90%AC%E7%A9%8D%E8%93%84",
+          "title": "兩周錄14宗投資騙案 受害人全為年青人 25歲女誤信「投資專家」失140萬積蓄",
+          "publishedAt": "2026-10-03T10:20:42.000Z",
+          "bodyLength": 377
+        },
+        {
+          "url": "https://www.stheadline.com/film-drama/3622087/Dear-Jane%E9%A6%96%E6%AC%A1%E6%A9%9F%E5%A0%B4%E6%BC%94%E5%87%BA%E8%A1%A8%E7%8F%BE%E8%88%88%E5%A5%AE-Tim%E8%87%AA%E9%A7%95%E7%BE%8E%E5%9C%8B%E6%AD%BB%E4%BA%A1%E8%B0%B7%E6%80%95%E5%88%B0%E5%8F%AB%E5%90%8C%E4%BA%8B%E5%B9%AB%E6%89%8B%E6%94%B6%E5%B1%8D-%E9%A0%90%E5%91%8A%E6%9C%88%E4%BA%AE%E8%88%9E%E5%8F%B0%E6%98%8E%E5%B9%B4%E7%99%BB%E9%99%B8%E9%A6%99%E6%B8%AF",
+          "title": "Dear Jane首次機場演出表現興奮 Tim自駕美國「死亡谷」怕到叫同事幫手收屍 預告「月亮舞台」明年登陸香港",
+          "publishedAt": "2026-10-03T10:15:50.000Z",
+          "bodyLength": 805
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.stheadline.com/rss",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cn_nytimes",
+      "websiteUrl": "http://cn.nytimes.com/",
+      "checkedAt": "2026-10-03T10:26:47.160Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://cn.nytimes.com/china/20260929/china-zion-church-pastor-detained-family/",
+          "title": "一名锡安教会被捕牧师妻子的流亡、煎熬与信仰",
+          "publishedAt": "2026-09-30T12:17:33.000Z",
+          "bodyLength": 5240
+        },
+        {
+          "url": "https://cn.nytimes.com/usa/20260930/ai-trump-meta-microsoft-openai/",
+          "title": "特朗普要求人工智能巨头自我监管",
+          "publishedAt": "2026-09-30T11:09:29.000Z",
+          "bodyLength": 2713
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://cn.nytimes.com/rss/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cdn_news",
+      "websiteUrl": "https://cdn-news.org/",
+      "checkedAt": "2026-10-03T10:26:47.374Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://cdn-news.org/robots.txt: HTTP 404；https://cdn-news.org/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "ifeng",
+      "websiteUrl": "http://ifeng.com/",
+      "checkedAt": "2026-10-03T10:26:47.709Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 7 次請求未驗證到近期完整文章。https://www.ifeng.com/sitemap/news/recent.xml: response too large；https://www.ifeng.com/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "taiwannews",
+      "websiteUrl": "http://taiwannews.com.tw/",
+      "checkedAt": "2026-10-03T10:26:47.738Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "news_pchome",
+      "websiteUrl": "https://news.pchome.com.tw/",
+      "checkedAt": "2026-10-03T10:26:47.844Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.pchome.com.tw/entertainment/cna/20261003/index-17910196695308918006.html",
+          "title": "FEniX全員合體開唱 大方抽10粉絲共吃慶功宴 - 娛樂新聞 - PChome Online 新聞",
+          "publishedAt": "2026-10-03T09:27:49.000Z",
+          "bodyLength": 410
+        },
+        {
+          "url": "https://news.pchome.com.tw/entertainment/cna/20261003/index-17910210623871218006.html",
+          "title": "亞太傳統藝術節開幕 亞洲水故事宜蘭交會 - 娛樂新聞 - PChome Online 新聞",
+          "publishedAt": "2026-10-03T09:51:02.000Z",
+          "bodyLength": 538
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://news.pchome.com.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "reuters",
+      "websiteUrl": "https://www.reuters.com/",
+      "checkedAt": "2026-10-03T10:26:48.419Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "news_qq",
+      "websiteUrl": "http://news.qq.com/",
+      "checkedAt": "2026-10-03T10:26:50.524Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 22 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "ntdtv",
+      "websiteUrl": "https://www.ntdtv.com/",
+      "checkedAt": "2026-10-03T10:26:52.878Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ntdtv.com/b5/2026/10/03/a104138543.html",
+          "title": "美升級施壓伊朗：增派航母 加大經濟制裁 | 伊朗局勢 | 美軍增兵 | 航母打擊群 | 新唐人电视台",
+          "publishedAt": "2026-10-03T10:57:55.000Z",
+          "bodyLength": 439
+        },
+        {
+          "url": "https://www.ntdtv.com/b5/2026/10/03/a104138551.html",
+          "title": "羚羊礁變樣 專家：中共10年來南海最大軍事擴張 | 南海北部 | 主權爭議地區 | 海上軍事基地 | 新唐人电视台",
+          "publishedAt": "2026-10-03T11:12:57.000Z",
+          "bodyLength": 540
+        }
+      ],
+      "status": "verified",
+      "strategy": "sitemap",
+      "listingUrl": "https://www.ntdtv.com/assets/uploads/sitemap/sitemap_2026_10-videos_b5.xml.gz",
+      "detail": "以 sitemap 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cdns",
+      "websiteUrl": "https://www.cdns.com.tw/",
+      "checkedAt": "2026-10-03T10:26:54.685Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.cdns.com.tw/articles/1469317",
+          "title": "淡水中野宅完工開館 侯友宜邀民眾探古蹟 | 中華日報|中華新聞雲",
+          "publishedAt": "2026-10-03T10:15:56.000Z",
+          "bodyLength": 654
+        },
+        {
+          "url": "https://www.cdns.com.tw/articles/1469318",
+          "title": "平溪山藥茶品競賽頒獎 李周秀琴、周育成獲殊榮 | 中華日報|中華新聞雲",
+          "publishedAt": "2026-10-03T10:15:00.000Z",
+          "bodyLength": 683
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.cdns.com.tw/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cctv",
+      "websiteUrl": "http://cctv.com/",
+      "checkedAt": "2026-10-03T10:26:55.215Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 8 次請求未驗證到近期完整文章。https://www.cctv.com/sitemap.xml: The operation was aborted due to timeout；https://www.cctv.com/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "dw",
+      "websiteUrl": "https://www.dw.com/zh/",
+      "checkedAt": "2026-10-03T10:26:55.574Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.dw.com/zh/g20%E8%B4%B8%E6%98%93%E9%83%A8%E9%95%BF%E4%BC%9A%E8%AE%AE%E4%BA%A7%E8%83%BD%E8%BF%87%E5%89%A9%E5%A3%B0%E6%98%8E%E9%81%AD%E6%8B%92%E5%BC%BA%E8%BF%AB%E5%8A%B3%E5%8A%A8%E5%A3%B0%E6%98%8E%E5%8F%97%E9%98%BB/a-79529292",
+          "title": "G20贸易部长会议：产能过剩声明遭拒，强迫劳动声明受阻",
+          "publishedAt": "2026-10-03T09:46:00.000Z",
+          "bodyLength": 1530
+        },
+        {
+          "url": "https://www.dw.com/zh/%E6%8B%92%E7%BB%9D%E5%B0%B1%E5%9C%B0%E9%9B%B7%E7%88%86%E7%82%B8%E9%81%93%E6%AD%89-%E6%9C%9D%E9%B2%9C%E5%86%8D%E5%B0%84%E5%BC%B9%E9%81%93%E5%AF%BC%E5%BC%B9/a-79529316",
+          "title": "拒绝就地雷爆炸道歉 朝鲜再射弹道导弹",
+          "publishedAt": "2026-10-03T09:36:00.000Z",
+          "bodyLength": 1037
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://rss.dw.com/rdf/rss-chi-all",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "focustaiwan",
+      "websiteUrl": "http://focustaiwan.tw/",
+      "checkedAt": "2026-10-03T10:31:13.356Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://focustaiwan.tw/sci-tech/202610030013",
+          "title": "Taiwan, U.K. sign science, technology deal covering 3 areas - Focus Taiwan",
+          "publishedAt": "2026-10-03T08:26:00.000Z",
+          "bodyLength": 1884
+        },
+        {
+          "url": "https://focustaiwan.tw/sci-tech/202609280010",
+          "title": "Taiwan wins 3 golds, 3 silvers, 7 bronzes at WorldSkills Competition - Focus Taiwan",
+          "publishedAt": "2026-09-28T06:58:00.000Z",
+          "bodyLength": 1750
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://focustaiwan.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "cn_wsj",
+      "websiteUrl": "https://cn.wsj.com/",
+      "checkedAt": "2026-10-03T10:26:56.345Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 22 次請求未驗證到近期完整文章。https://cn.wsj.com/articles/%E7%BE%8E%E8%82%A1%E8%8E%B7%E5%A4%A7%E5%9E%8B%E7%A7%91%E6%8A%80%E8%82%A1%E6%89%98%E4%B8%BE-%E4%BD%86%E7%AC%AC%E5%9B%9B%E5%AD%A3%E5%BA%A6%E6%81%90%E6%AD%A5%E5%B1%A5%E7%BB%B4%E8%89%B0-884e00c7: HTTP 401；https://cn.wsj.com/feed/: HTTP 400；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "life",
+      "websiteUrl": "https://life.tw/",
+      "checkedAt": "2026-10-03T10:26:56.737Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://life.tw/article/%E6%96%B0%E7%AB%B9%E6%B0%91%E5%AE%85%E7%96%91%E4%BC%BC%E6%B0%A3%E7%88%86%E5%BC%95%E7%99%BC%E7%81%AB%E8%AD%A6-1%E5%90%8D%E7%94%B7%E5%AD%90%E5%8F%97%E5%9B%B0%E6%B6%88%E9%98%B2%E9%9A%8A%E5%93%A1%E6%95%91%E5%87%BA-3168184",
+          "title": "新竹民宅疑似氣爆引發火警！ 1名男子受困消防隊員救出 | LIFE生活網",
+          "publishedAt": "2026-10-03T06:22:00.000Z",
+          "bodyLength": 270
+        },
+        {
+          "url": "https://life.tw/article/%E8%96%94%E8%96%94%E8%BA%AB%E4%B8%96%E6%AF%94%E5%85%AB%E9%BB%9E%E6%AA%94%E6%89%AF-%E7%88%B8%E5%AA%BD%E9%9B%99%E5%8A%88-%E7%94%9F%E4%B8%8B%E5%A5%B9-%E7%88%B6%E7%A0%B8200%E8%90%AC%E6%94%B9%E6%88%B6%E5%8F%A3-3168432",
+          "title": "薔薔身世比八點檔扯！「爸媽雙劈」生下她 父砸200萬改戶口 | LIFE生活網",
+          "publishedAt": "2026-10-03T10:13:04.000Z",
+          "bodyLength": 955
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://life.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "merit_times",
+      "websiteUrl": "http://merit-times.com.tw",
+      "checkedAt": "2026-10-03T10:31:13.483Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。http://merit-times.com.tw/sitemap.xml: HTTP 404；http://merit-times.com.tw/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "scmp",
+      "websiteUrl": "http://scmp.com",
+      "checkedAt": "2026-10-03T10:26:58.704Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.scmp.com/news/hong-kong/society/article/3369661/cancer-saved-me-hong-kong-survivor-finds-new-purpose-ahead-canoe-challenge",
+          "title": "‘Cancer saved me’: Hong Kong survivor finds new purpose ahead of canoe challenge",
+          "publishedAt": "2026-10-03T10:01:23.000Z",
+          "bodyLength": 4094
+        },
+        {
+          "url": "https://www.scmp.com/news/china/science/article/3369652/us-china-botanists-sign-landmark-proposal-cooperation-global-issues-and-projects",
+          "title": "US, China botanists sign landmark proposal on cooperation and projects",
+          "publishedAt": "2026-10-03T10:00:13.000Z",
+          "bodyLength": 4237
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.scmp.com/rss/91/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "nexttv",
+      "websiteUrl": "https://www.nexttv.com.tw/NextTV/News/",
+      "checkedAt": "2026-10-03T10:31:15.260Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.nexttv.com.tw/NextTV/News/Home/Life/2026-10-03/2484975.html",
+          "title": "南投茶博開幕！ 自救會抗議「茶鄉建焚化爐」 許淑華：不要污名化",
+          "publishedAt": "2026-10-03T10:20:58.000Z",
+          "bodyLength": 258
+        },
+        {
+          "url": "https://www.nexttv.com.tw/NextTV/News/Home/Society/2026-10-03/2484990.html",
+          "title": "PO文稱民調電話「偏蘇巧慧」 男遭約談10萬元交保",
+          "publishedAt": "2026-10-03T10:07:54.000Z",
+          "bodyLength": 262
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.nexttv.com.tw/nRSS.xml",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taiwanhot",
+      "websiteUrl": "https://taiwanhot.net/",
+      "checkedAt": "2026-10-03T10:31:17.538Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://taiwanhot.net/news/focus/1149826/%E6%B8%85%E5%A2%83%E8%BE%B2%E5%A0%B4%E8%BF%8E%E5%9C%8B%E6%85%B6+%E7%B5%90%E5%90%88%E7%89%A7%E5%A0%B4%E6%B7%B1%E5%BA%A6%E9%AB%94%E9%A9%97+10-10%E5%85%A8%E7%A5%A8%E4%BA%AB210%E5%85%83%E5%84%AA%E5%BE%85%E5%83%B9+/69/%E6%97%85%E9%81%8A",
+          "title": "清境農場迎國慶 結合牧場深度體驗 10/10全票享210元優待價",
+          "publishedAt": "2026-10-02T00:20:00.000Z",
+          "bodyLength": 592
+        },
+        {
+          "url": "https://taiwanhot.net/news/focus/1149731/%E8%87%BA%E5%8D%97%E5%9C%9F%E5%9C%B0%E7%8F%BE%E5%80%BC%E8%AA%BF%E6%95%B4%E6%98%8E%E5%B9%B4%E5%85%83%E6%97%A6%E5%85%AC%E5%91%8A+%E5%9C%B0%E6%94%BF%E6%89%8010-5%E8%B5%B7%E8%88%89%E8%BE%A610%E5%A0%B4%E8%AA%AA%E6%98%8E%E6%9C%83/26/%E6%88%BF%E7%94%A2",
+          "title": "臺南土地現值調整明年元旦公告 地政所10/5起舉辦10場說明會",
+          "publishedAt": "2026-10-01T04:45:00.000Z",
+          "bodyLength": 1053
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://taiwanhot.net/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "fountmedia",
+      "websiteUrl": "http://fountmedia.io",
+      "checkedAt": "2026-10-03T10:27:02.063Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.fountmedia.io/rss.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "matsu_idv",
+      "websiteUrl": "http://matsu.idv.tw/",
+      "checkedAt": "2026-10-03T10:27:02.483Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。http://matsu.idv.tw/robots.txt: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "worldjournal",
+      "websiteUrl": "http://worldjournal.com",
+      "checkedAt": "2026-10-03T10:27:03.229Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.worldjournal.com/wj/story/121474/9791783",
+          "title": "下個月「美中AI對話」將討論什麼？玉淵譚天拋3個方向 | 世界新聞網",
+          "publishedAt": "2026-10-02T15:50:51.000Z",
+          "bodyLength": 1313
+        },
+        {
+          "url": "https://www.worldjournal.com/wj/story/121469/9791743",
+          "title": "康乃爾大學校園性侵疑遭吃案 州長責成特檢介入 | 世界新聞網",
+          "publishedAt": "2026-10-02T15:40:13.000Z",
+          "bodyLength": 2324
+        }
+      ],
+      "status": "verified",
+      "strategy": "sitemap",
+      "listingUrl": "https://www.worldjournal.com/sitemapxml/wj/8877T202610W1.xml",
+      "detail": "以 sitemap 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "today_line_me",
+      "websiteUrl": "https://today.line.me/tw/v3",
+      "checkedAt": "2026-10-03T10:27:05.534Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://today.line.me/tw/v3/article/vXLlGXj",
+          "title": "WSJ：習近平訪美罕見要求白宮專屬休息室 行程依「站多久、走多遠」量身安排 | 太報 | LINE TODAY",
+          "publishedAt": "2026-10-03T06:44:00.000Z",
+          "bodyLength": 1501
+        },
+        {
+          "url": "https://today.line.me/tw/v3/article/BEmn70Q",
+          "title": "社宅違規轉租 桃園住都中心鐵腕查辦落實居住正義 | 台灣好新聞 | LINE TODAY",
+          "publishedAt": "2026-10-03T06:09:48.673Z",
+          "bodyLength": 418
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://today.line.me/tw/v3/tab",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "zaobao",
+      "websiteUrl": "http://zaobao.com.sg",
+      "checkedAt": "2026-10-03T10:27:05.534Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.zaobao.com.sg/news/world/story20261003-9778339",
+          "title": "金与正呛辣谈话隔天 朝鲜再射弹道导弹",
+          "publishedAt": "2026-10-03T10:07:45.000Z",
+          "bodyLength": 945
+        },
+        {
+          "url": "https://www.zaobao.com.sg/news/singapore/story20261003-9778007",
+          "title": "大学生开发语音助手助视障者维权 法律意识周推动司法可及性",
+          "publishedAt": "2026-10-03T09:54:06.000Z",
+          "bodyLength": 1112
+        }
+      ],
+      "status": "verified",
+      "strategy": "sitemap",
+      "listingUrl": "https://www.zaobao.com.sg/googlenews.xml",
+      "detail": "以 sitemap 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mingpao",
+      "websiteUrl": "http://mingpao.com",
+      "checkedAt": "2026-10-03T10:27:06.099Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。http://mingpao.com/sitemap.xml: The operation was aborted due to timeout；http://mingpao.com/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "leho",
+      "websiteUrl": "http://leho.com.tw",
+      "checkedAt": "2026-10-03T10:27:07.454Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://leho.com.tw/archives/395690",
+          "title": "全球 5 萬佛光人齊聚台北大巨蛋 「傳燈 60」見證人間佛教一甲子 - 樂聯網",
+          "publishedAt": "2026-10-03T10:26:22.000Z",
+          "bodyLength": 701
+        },
+        {
+          "url": "https://leho.com.tw/archives/395693",
+          "title": "穩定民生物價 台灣中油宣布：下週汽柴油價不調整 - 樂聯網",
+          "publishedAt": "2026-10-03T10:15:27.000Z",
+          "bodyLength": 324
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://leho.com.tw/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "matsu_news",
+      "websiteUrl": "https://www.matsu-news.gov.tw/",
+      "checkedAt": "2026-10-03T10:27:08.575Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.matsu-news.gov.tw/sitemap.xml: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "news_sina",
+      "websiteUrl": "http://news.sina.cn/",
+      "checkedAt": "2026-10-03T10:27:09.126Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。https://news.sina.cn/robots.txt: HTTP 404；https://news.sina.cn/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "taiwan",
+      "websiteUrl": "http://taiwan.cn/",
+      "checkedAt": "2026-10-03T10:27:09.214Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。http://taiwan.cn/sitemap.xml: The operation was aborted due to timeout；http://taiwan.cn/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "sunmedia",
+      "websiteUrl": "https://sunmedia.tw/",
+      "checkedAt": "2026-10-03T10:27:11.320Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "eracom",
+      "websiteUrl": "https://www.eracom.com.tw/EraNews/",
+      "checkedAt": "2026-10-03T10:27:12.230Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "sinchew",
+      "websiteUrl": "http://sinchew.com.my/",
+      "checkedAt": "2026-10-03T10:27:12.630Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.sinchew.com.my/news/20261003/international/7907564",
+          "title": "遭高薪诱骗偷渡缅甸园区 泰警跨国营救2日本大学生 - 国际 - 即时国际",
+          "publishedAt": "2026-10-03T10:26:09.000Z",
+          "bodyLength": 559
+        },
+        {
+          "url": "https://www.sinchew.com.my/news/20261003/nation/7907515",
+          "title": "校园无线网络提升计划完成76% 张念群：408个校园完成建设 - 国内 - 即时国内",
+          "publishedAt": "2026-10-03T10:17:43.000Z",
+          "bodyLength": 675
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.sinchew.com.my/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taiwanplus",
+      "websiteUrl": "http://taiwanplus.com",
+      "checkedAt": "2026-10-03T10:27:13.648Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.taiwanplus.com/news/taiwan-news/sports/261003009/hsieh-and-liang-take-gold-in-asian-games-all-taiwan-tennis-doubles-final",
+          "title": "Hsieh and Liang Take Gold in Asian Games All-Taiwan Tennis Doubles Final – TaiwanPlus",
+          "publishedAt": "2026-10-03T09:37:45.000Z",
+          "bodyLength": 954
+        },
+        {
+          "url": "https://www.taiwanplus.com/news/taiwan-news/diplomacy/261003003/taiwan-fm-to-attend-opening-of-new-taiwan-office-in-phoenix-reports",
+          "title": "Taiwan FM To Attend Opening of New Taiwan Office in Phoenix: Reports – TaiwanPlus",
+          "publishedAt": "2026-10-03T07:24:23.000Z",
+          "bodyLength": 1589
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.taiwanplus.com/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "vigormedia",
+      "websiteUrl": "https://vigormedia.tw/",
+      "checkedAt": "2026-10-03T10:27:14.056Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://vigormedia.tw/%e6%8e%a8%e5%8b%95%e7%b6%a0%e8%89%b2%e6%97%85%e9%81%8a%e5%89%b5%e8%a8%ad%e3%80%8c%e9%ab%98%e9%9b%84%e6%b0%b8%e7%ba%8c%e8%aa%8d%e8%ad%89%e6%a8%99%e7%ab%a0%e3%80%8d%e3%80%80%e9%ab%98%e9%9b%84%e8%a7%80/",
+          "title": "推動綠色旅遊創設「高雄永續認證標章」 高雄觀光局成功輔導38家旅宿在地共好接軌國際",
+          "publishedAt": "2026-10-03T10:08:10.000Z",
+          "bodyLength": 2040
+        },
+        {
+          "url": "https://vigormedia.tw/%e4%bd%b3%e9%87%8c%e4%ba%ba%e8%a1%8c%e7%92%b0%e5%a2%83%e5%8d%87%e7%b4%9a%ef%bc%81%e6%b0%b4%e7%b6%a0%e5%bf%83%e5%b7%9d%e5%bb%8a%e5%b7%a5%e7%a8%8b%e8%aa%aa%e6%98%8e%e6%9c%83%e5%9c%93%e6%bb%bf%e8%90%bd/",
+          "title": "佳里人行環境升級！水綠心川廊工程說明會圓滿落幕 居民建議融入設計",
+          "publishedAt": "2026-10-03T09:38:11.000Z",
+          "bodyLength": 525
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://vigormedia.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "zmedia",
+      "websiteUrl": "https://www.zmedia.com.tw/",
+      "checkedAt": "2026-10-03T10:27:14.347Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.zmedia.com.tw/robots.txt: HTTP 404；https://www.zmedia.com.tw/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "taiwanenews",
+      "websiteUrl": "http://taiwanenews.com",
+      "checkedAt": "2026-10-03T10:27:15.360Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://taiwanenews.com/robots.txt: HTTP 404；https://taiwanenews.com/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "ksnews",
+      "websiteUrl": "http://ksnews.com.tw/",
+      "checkedAt": "2026-10-03T10:27:16.523Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.ksnews.com.tw/e/146440",
+          "title": "天使頌讚遇見大地洄翔 花蓮美術館展現音樂與雕塑交融之美",
+          "publishedAt": "2026-10-03T10:13:49.000Z",
+          "bodyLength": 516
+        },
+        {
+          "url": "https://www.ksnews.com.tw/e/146443",
+          "title": "聲樂交織雕塑在午後 17位音樂家齊聚美術館唱響天使頌讚",
+          "publishedAt": "2026-10-03T10:12:30.000Z",
+          "bodyLength": 1221
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.ksnews.com.tw/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "wenweipo",
+      "websiteUrl": "http://wenweipo.com/",
+      "checkedAt": "2026-10-03T10:27:17.842Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.wenweipo.com/sitemapIndex_wenweipo.xml: HTTP 404；https://www.wenweipo.com/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "more_news",
+      "websiteUrl": "http://more-news.tw/",
+      "checkedAt": "2026-10-03T10:27:18.601Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://more-news.tw/734246/",
+          "title": "「馬上好韻」茶香迎賓 南投世界茶業博覽會10/3盛大登場 35主題展館邀全民品茶遊南投",
+          "publishedAt": "2026-10-03T10:20:41.000Z",
+          "bodyLength": 1644
+        },
+        {
+          "url": "https://more-news.tw/734338/",
+          "title": "極西點燈塔自行車活動熱鬧啟程 近2000車友看見「臺灣騎時很美麗」",
+          "publishedAt": "2026-10-03T10:16:38.000Z",
+          "bodyLength": 1045
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://more-news.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "news_163",
+      "websiteUrl": "http://news.163.com/",
+      "checkedAt": "2026-10-03T10:27:18.781Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 23 次請求未驗證到近期完整文章。https://news.163.com/21/0725/00/GFN9UK6K00018AOQ.html: HTTP 404；http://news.163.com/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "contentplatform_info",
+      "websiteUrl": "http://contentplatform.info/",
+      "checkedAt": "2026-10-03T10:27:20.805Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.contentplatform.info/articles/524277/%e7%b9%9e%e8%91%97%e5%9c%b0%e7%90%83%e7%9c%8b%e5%a4%96%e6%98%9f%e4%ba%ba%e7%9a%84%e6%95%85%e4%ba%8b%e9%80%9a%e5%91%8a%e8%a8%88%e5%8a%83project-sign/",
+          "title": "繞著地球看外星人的故事:通告計劃Project Sign | 報新聞 Mega News",
+          "publishedAt": "2026-10-03T10:09:18.000Z",
+          "bodyLength": 1287
+        },
+        {
+          "url": "https://www.contentplatform.info/articles/524230/%e5%8f%b0%e5%8c%97%e5%b8%82%e9%8a%80%e9%ab%ae%e9%81%8b%e5%8b%95%e6%9c%83%e7%99%bb%e5%a0%b4%e3%80%80%e9%80%be600%e4%bd%8d%e9%95%b7%e8%bc%a9%e5%8f%83%e8%b3%bd%e3%80%81%e6%9c%80%e9%ab%98%e9%bd%a199/",
+          "title": "台北市銀髮運動會登場 逾600位長輩參賽、最高齡99歲 | 報新聞 Mega News",
+          "publishedAt": "2026-10-03T10:07:36.000Z",
+          "bodyLength": 875
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.contentplatform.info/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "xinhuanet",
+      "websiteUrl": "http://xinhuanet.com/",
+      "checkedAt": "2026-10-03T10:27:23.078Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 4 次請求未驗證到近期完整文章。http://xinhuanet.com/sitemap.xml: The operation was aborted due to timeout；http://xinhuanet.com/feed/: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "hk_crntt",
+      "websiteUrl": "http://hk.crntt.com/",
+      "checkedAt": "2026-10-03T10:27:24.949Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://hk.crntt.com/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "tkww",
+      "websiteUrl": "https://www.tkww.hk/",
+      "checkedAt": "2026-10-03T10:27:26.531Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.tkww.hk/sitemap_tkww_lastest.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "rfa",
+      "websiteUrl": "https://www.rfa.org/mandarin/",
+      "checkedAt": "2026-10-03T10:27:28.571Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.rfa.org/mandarin/yataibaodao/2026/10/02/taiwandongshacross-straitchinese-fishing-vessel/",
+          "title": "中国渔船东沙拒离 海巡水炮驱离后救援",
+          "publishedAt": "2026-10-02T13:02:58.860Z",
+          "bodyLength": 389
+        },
+        {
+          "url": "https://www.rfa.org/mandarin/yataibaodao/2026/10/02/f16v-deliver-taiwan/",
+          "title": "台湾新购F-16战机 首批两架飞抵台东",
+          "publishedAt": "2026-10-02T10:10:40.740Z",
+          "bodyLength": 494
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.rfa.org/arc/outboundfeeds/mandarin/rss/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "huanqiu",
+      "websiteUrl": "http://huanqiu.com/",
+      "checkedAt": "2026-10-03T10:27:31.077Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 12 次請求未驗證到近期完整文章。https://huanqiu.com/sitemap.xml: HTTP 404；https://huanqiu.com/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "enews",
+      "websiteUrl": "http://enews.tw/",
+      "checkedAt": "2026-10-03T10:27:32.107Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://enews.tw/article/1265522",
+          "title": "名古屋亞運／林郁婷升60公斤級再奪金！巴黎奧運後苦等出賽 咬牙苦練「想看見不一樣的自己」 - ENews新聞網",
+          "publishedAt": "2026-10-03T05:00:03.000Z",
+          "bodyLength": 911
+        },
+        {
+          "url": "https://enews.tw/article/1265521",
+          "title": "何超儀化身拾荒法師！《拾荒法師》撿垃圾超渡亡魂取材真實法師 暴雨拍打戲笑喊「自己超臭」 - ENews新聞網",
+          "publishedAt": "2026-10-03T04:50:02.000Z",
+          "bodyLength": 1175
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://enews.tw/sitemap/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "jdanews",
+      "websiteUrl": "http://jdanews.com/",
+      "checkedAt": "2026-10-03T10:27:32.902Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 19 次請求未驗證到近期完整文章。http://jdanews.com/phpbb/viewforum.php?f=47: HTTP 404；http://jdanews.com/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "my_formosa",
+      "websiteUrl": "http://my-formosa.com.tw/",
+      "checkedAt": "2026-10-03T10:27:33.915Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "biao_news",
+      "websiteUrl": "https://www.biao-news.com/",
+      "checkedAt": "2026-10-03T10:27:34.302Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 16 次請求未驗證到近期完整文章。https://www.biao-news.com/sitemap.xml: HTTP 404；https://www.biao-news.com/news_view.php?new_sn=144902&new_csn=2713: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "newday",
+      "websiteUrl": "https://newsday.tw/",
+      "checkedAt": "2026-10-03T10:27:36.107Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://newsday.tw/news/585068",
+          "title": "出席臺北市銀髮族運動會開幕典禮 蔣萬安細數敬老福利政策、廣設第二運動中心 鼓勵長者多運動顧健康 - 好視新聞網",
+          "publishedAt": "2026-10-03T02:23:00.000Z",
+          "bodyLength": 952
+        },
+        {
+          "url": "https://newsday.tw/news/585070",
+          "title": "松河街堤防美化再添新作 藍鵲帶路穿梭古今！ - 好視新聞網",
+          "publishedAt": "2026-10-03T02:00:00.000Z",
+          "bodyLength": 728
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://newsday.tw/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "lifetoutiao_news",
+      "websiteUrl": "https://www.lifetoutiao.news/",
+      "checkedAt": "2026-10-03T10:27:36.496Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "yimedia",
+      "websiteUrl": "http://yimedia.com.tw/",
+      "checkedAt": "2026-10-03T10:27:37.188Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://yimedia.com.tw/lifestyle/1079079/",
+          "title": "亞運戰報！張正韋複合弓男單奪銀 - 壹傳媒",
+          "publishedAt": "2026-10-02T09:44:57.000Z",
+          "bodyLength": 638
+        },
+        {
+          "url": "https://yimedia.com.tw/lifestyle/1079547/",
+          "title": "亞運戰報！張筑涵輕艇越野激流摘銀 - 壹傳媒",
+          "publishedAt": "2026-10-02T09:43:16.000Z",
+          "bodyLength": 1086
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://yimedia.com.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "idn",
+      "websiteUrl": "https://www.idn.com.tw/",
+      "checkedAt": "2026-10-03T10:27:37.839Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.idn.com.tw/robots.txt: HTTP 404；https://www.idn.com.tw/productimage/2005/1817.html: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "mknews",
+      "websiteUrl": "http://mknews.com.tw/",
+      "checkedAt": "2026-10-03T10:27:42.412Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://mknews.com.tw/2026/10/1001031/",
+          "title": "公私協力匯聚公益力量 桃園市115年年終關懷餐會暨公益捐贈表揚 | 天天上新聞",
+          "publishedAt": "2026-10-03T10:24:40.000Z",
+          "bodyLength": 452
+        },
+        {
+          "url": "https://mknews.com.tw/2026/10/1001029/",
+          "title": "防災久久慶重陽！衛武營敬老活動結合CPR、AED宣導 守護長輩安全 | 天天上新聞",
+          "publishedAt": "2026-10-03T10:09:47.000Z",
+          "bodyLength": 493
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://mknews.com.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "17news",
+      "websiteUrl": "https://17news.net/",
+      "checkedAt": "2026-10-03T10:27:42.758Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://17news.net/archives/340961",
+          "title": "臺中女孩行動中！臺灣女孩日活動登場 圓夢團隊分享實踐歷程 - 17news民生好報",
+          "publishedAt": "2026-10-03T09:56:28.000Z",
+          "bodyLength": 603
+        },
+        {
+          "url": "https://17news.net/archives/340955",
+          "title": "市長候選人競總成立大會 中六警公布周邊交管措施 - 17news民生好報",
+          "publishedAt": "2026-10-03T09:40:36.000Z",
+          "bodyLength": 437
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://17news.net/feed",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "peponews",
+      "websiteUrl": "http://peponews.tw/",
+      "checkedAt": "2026-10-03T10:27:44.989Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.peponews.tw/2026/10/03/287020/",
+          "title": "中市世貿就博會吸引逾5,000名求職者 初步媒合率達6成 讓求才企業找到優質人才",
+          "publishedAt": "2026-10-03T09:51:07.000Z",
+          "bodyLength": 1173
+        },
+        {
+          "url": "https://www.peponews.tw/2026/10/03/287013/",
+          "title": "勵馨「阮卵子運動會」熱血登場 特頒感謝狀向台灣省國際蘭馨交流協會等贊助單位致謝",
+          "publishedAt": "2026-10-03T09:42:18.000Z",
+          "bodyLength": 1243
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.peponews.tw/feed/",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ltvnews",
+      "websiteUrl": "http://ltvnews.net/",
+      "checkedAt": "2026-10-03T10:27:46.169Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "i_news",
+      "websiteUrl": "http://i-news.com.tw/",
+      "checkedAt": "2026-10-03T10:27:48.136Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 22 次請求未驗證到近期完整文章。https://i-news.com.tw/2026/10/459797/: HTTP 403；https://i-news.com.tw/2026/10/459803/: HTTP 403；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "iw_times",
+      "websiteUrl": "http://iw-times.com/",
+      "checkedAt": "2026-10-03T10:27:48.447Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 10 次請求未驗證到近期完整文章。https://iw-times.com/contribution.php: The operation was aborted due to timeout；https://iw-times.com/news.php?new_csn=hot3: The operation was aborted due to timeout；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "ammtw",
+      "websiteUrl": "https://ammtw.com/",
+      "checkedAt": "2026-10-03T10:27:51.130Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://ammtw.com/172868",
+          "title": "疫苗辯論引導醫學研究倫理討論 歷史教訓強調知情同意重要 - AMM 娛樂新聞",
+          "publishedAt": "2026-10-03T10:19:54.000Z",
+          "bodyLength": 790
+        },
+        {
+          "url": "https://ammtw.com/172866",
+          "title": "AI內容收益誰受惠？FuzeBox AI高層將登TEDx談數據回饋 - AMM 娛樂新聞",
+          "publishedAt": "2026-10-03T10:17:20.000Z",
+          "bodyLength": 499
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://ammtw.com/feed?doing_wp_cron=1791023271.3758289813995361328125",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "tmnu",
+      "websiteUrl": "http://tmnu.org.tw/",
+      "checkedAt": "2026-10-03T10:27:51.992Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://www.tmnu.org.tw/news/4840",
+          "title": "歷經14年等待 台灣本島最高媽祖像落成 盧秀燕：兌現海線最後拼圖承諾_宗教文化 | 文化藝術",
+          "publishedAt": "2026-10-03T00:00:00.000Z",
+          "bodyLength": 1161
+        },
+        {
+          "url": "https://www.tmnu.org.tw/news/4824",
+          "title": "賴清德赴顯安巖顯應祖師廟參香祈福 談民生照顧與經濟發展_總統府 | 府院新聞",
+          "publishedAt": "2026-10-03T00:00:00.000Z",
+          "bodyLength": 754
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.tmnu.org.tw/",
+      "detail": "以 html 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "readr",
+      "websiteUrl": "https://www.readr.tw/",
+      "checkedAt": "2026-10-03T10:27:52.256Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。https://www.readr.tw/sitemap.xml: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "newsmarket",
+      "websiteUrl": "https://www.newsmarket.com.tw/",
+      "checkedAt": "2026-10-03T10:27:52.733Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "existing",
+      "listingUrl": "http://www.newsmarket.com.tw/feed/",
+      "detail": "既有爬蟲列出 0 筆，尚未驗證到近期完整文章。http://www.newsmarket.com.tw/feed/ -> 403"
+    },
+    {
+      "media": "videoland",
+      "websiteUrl": "https://news.videoland.com.tw/",
+      "checkedAt": "2026-10-03T10:27:52.951Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://news.videoland.com.tw/article/da0f703e-fec1-42dc-b569-353966334fa0.html",
+          "title": "「FANATICS」尹到怡勇闖台灣鄉鎮 初嘗苦頭直呼：受不了",
+          "publishedAt": "2026-10-03T10:03:00.000Z",
+          "bodyLength": 600
+        },
+        {
+          "url": "https://news.videoland.com.tw/article/30785afe-b67a-4bf3-9ccf-4ed925512214.html",
+          "title": "林柏宏讚柯煒林「最帥金馬主持」！ 接棒陳柏霖揭節目幕後",
+          "publishedAt": "2026-10-03T09:59:00.000Z",
+          "bodyLength": 439
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://news.videoland.com.tw/vlnews_pub.aspx",
+      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "funnews",
+      "websiteUrl": "https://funnews.tw/",
+      "checkedAt": "2026-10-03T10:27:53.494Z",
+      "articleCount": 2,
+      "samples": [
+        {
+          "url": "https://funnews.tw/n/serv/art/02c52894b2164e17bb7513d0ce204165",
+          "title": "新北雨天去哪？ 2座觀光工廠帶你看麵包、鳳梨酥怎麼做",
+          "publishedAt": "2026-10-03T00:32:00.000Z",
+          "bodyLength": 1403
+        },
+        {
+          "url": "https://funnews.tw/n/serv/art/016c268212b84cf0b6dbf7a6c6f869fe",
+          "title": "百年月台倒數！ 臺南車站國慶連假推鐵道小旅行、限量椪餅",
+          "publishedAt": "2026-10-02T09:24:00.000Z",
+          "bodyLength": 1410
+        }
+      ],
+      "status": "verified",
+      "strategy": "sitemap",
+      "listingUrl": "https://funnews.tw/spi/funnews/sitemap",
+      "detail": "以 sitemap 驗證 2 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "people_cn",
+      "websiteUrl": "https://www.people.com.cn/",
+      "checkedAt": "2026-10-03T10:27:53.553Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 11 次請求未驗證到近期完整文章。https://www.people.com.cn/sitemap.xml: HTTP 404；https://www.people.com.cn/feed/: HTTP 404；No recent article with verified title, publication date and body found"
+    },
+    {
+      "media": "ntdtv_tw",
+      "websiteUrl": "https://www.ntdtv.com.tw/",
+      "checkedAt": "2026-10-03T10:27:54.037Z",
+      "articleCount": 0,
+      "samples": [],
+      "status": "unavailable",
+      "strategy": "none",
+      "listingUrl": null,
+      "detail": "本次 24 次請求未驗證到近期完整文章。No recent article with verified title, publication date and body found"
+    }
+  ]
+}

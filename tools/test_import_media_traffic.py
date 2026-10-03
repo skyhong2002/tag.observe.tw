@@ -10,14 +10,16 @@ importer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(importer)
 
 
-def workbook(header, rows):
+def workbook(header, rows, hyperlinks="", relationships=""):
     """Small XLSX fixture with a non-sequential relationship target."""
     ns = importer.NS["s"]
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w") as archive:
         archive.writestr("xl/workbook.xml", f'<workbook xmlns="{ns}" xmlns:r="{importer.REL}"><sheets><sheet name="202608" sheetId="3" r:id="rId7"/></sheets></workbook>')
         archive.writestr("xl/_rels/workbook.xml.rels", '<Relationships><Relationship Id="rId7" Target="worksheets/sheet42.xml"/></Relationships>')
-        archive.writestr("xl/worksheets/sheet42.xml", f'<worksheet xmlns="{ns}"><sheetData><row r="1">{header}</row>{rows}</sheetData></worksheet>')
+        archive.writestr("xl/worksheets/sheet42.xml", f'<worksheet xmlns="{ns}" xmlns:r="{importer.REL}"><sheetData><row r="1">{header}</row>{rows}</sheetData>{hyperlinks}</worksheet>')
+        if relationships:
+            archive.writestr("xl/worksheets/_rels/sheet42.xml.rels", relationships)
     return output.getvalue()
 
 
@@ -26,6 +28,16 @@ def text_cell(ref, value):
 
 
 class ImportMediaTrafficTest(unittest.TestCase):
+    def test_hyperlinks_supply_website_without_fabricating_original_domain(self):
+        header = ''.join(text_cell(ref, value) for ref, value in [("D1", "網站名"), ("E1", "流量"), ("F1", "成長")])
+        rows = ''.join('<row r="%d">%s%s</row>' % (i, text_cell(f"B{i}", "新聞"), text_cell(f"D{i}", "媒體")) for i in [2, 3])
+        hyperlinks = '<hyperlinks><hyperlink ref="D2" r:id="news"/><hyperlink ref="D3" r:id="unsafe"/></hyperlinks>'
+        relationships = '<Relationships><Relationship Id="news" Target="https://news.example/section"/><Relationship Id="unsafe" Target="javascript:alert(1)"/></Relationships>'
+        sources = importer.parse_workbook(workbook(header, rows, hyperlinks, relationships), ["202608"])[0]["sources"]
+        self.assertEqual(sources[0]["websiteUrl"], "https://news.example/section")
+        self.assertIsNone(sources[0]["domain"])
+        self.assertIsNone(sources[1]["websiteUrl"])
+
     def test_header_mapping_cached_formulas_missing_zero_and_news_scope(self):
         header = ''.join(text_cell(ref, value) for ref, value in [
             ("D1", "網站名"), ("E1", "網址"), ("F1", "流量"), ("G1", "成長"),

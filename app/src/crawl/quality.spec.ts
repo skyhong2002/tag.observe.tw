@@ -9,6 +9,40 @@ import { stripTitleSuffix, urlKey } from './text.ts';
 
 const spec = (media: string) => allSources().find((s) => s.media === media) as SourceSpec;
 
+describe('automatic news pipeline', () => {
+  it('passes only verified recent full articles from automatic discovery to indexing', async () => {
+    const current = new Date(Date.now() - 3600e3).toISOString();
+    const home = 'https://automatic.example/';
+    const source: SourceSpec = {
+      media: 'automatic',
+      group: 'hourly',
+      list: {
+        urls: [{ cat: 'news', url: home }],
+        autoDiscover: { homeUrl: home, feedUrls: [home + 'feed'], maxArticles: 2 },
+      },
+      article: { enabled: true, batch: 2, delayMs: 0 },
+    };
+    const story = `<meta property="og:type" content="article"><meta property="og:title" content="完整且有日期的新聞報導"><meta property="article:published_time" content="${current}"><article><p>${'市政府今天公布公共運輸改善計畫，居民提出增加班次及服務範圍的意見。'.repeat(8)}</p></article>`;
+    const pages: Record<string, string> = {
+      [home]: '<html></html>',
+      [home + 'feed']:
+        `<rss><channel>${['story/1', 'story/2'].map((path) => `<item><title>新聞標題夠長</title><link>${home}${path}</link><pubDate>${current}</pubDate></item>`).join('')}</channel></rss>`,
+      [home + 'story/1']: story,
+      [home + 'story/2']: '<article><p>只有一句摘要</p></article>',
+    };
+    const fetch = async (url: string): Promise<FetchResult> => ({
+      url,
+      status: pages[url] ? 200 : 404,
+      body: pages[url] ?? '',
+      contentType: 'text/html',
+      ms: 1,
+    });
+    const result = await listSource(source, fetch);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({ url: home + 'story/1', title: '完整且有日期的新聞報導', publishedAt: new Date(current) });
+  });
+});
+
 describe('traffic coverage sources', () => {
   const fetchHtml =
     (body: string) =>

@@ -12,6 +12,7 @@
 | `article.ts` | 內文：news_keywords → keywords → article:tag → JSON-LD → 站別標記；發布時間、og:image、canonical |
 | `title-tags.ts` | 頁面沒有關鍵字時，用其他媒體常用的標籤比對標題 |
 | `sources.ts`、`sources/overrides.ts` | 由舊 PHP 規格產生的 `app/data/crawl-sources.json`；手動修正只放 overrides |
+| `news-discovery.ts`、`news-sources.ts` | 全部新聞來源的 RSS／sitemap／首頁探索、近期完整文章驗證與啟用證據 |
 | `registry.ts` | 啟用來源；停用清單 `app/data/crawl-disabled.json`（附原因）＋ `CRAWL_DISABLED` |
 | `pipeline.ts` | `runIndex`（列表 → upsert，feed 自帶標籤立即寫入）、`runArticles`（抓未抓過的文章，429 時停止該批） |
 | `topics.ts`、`topic-page.ts` | 議題表：各媒體專題頁 |
@@ -123,3 +124,26 @@
 - **戲劇女王停用**：網站最後一篇 2026-06-17。
 - 低頻但正常：報導者（連假）、苦勞網、女人迷、Pourquoi（約月更）。日經中文網、PeoPo 頁面沒有標籤，只能靠標題比對（日經是簡體，對中率低）。
 - 清理：`tools/cleanup-2026-10-01.ts`＋再跑一次 `tools/cleanup-crawl-quality.ts`。
+
+
+### 2026-10-03：Similarweb 全部新聞來源
+
+- 名單採 `news-source-catalog.json`，最新月 198 列合併為 193 個來源，加上 4 個歷史獨有來源，共 197 個。每個可確認網址都有既有解析器或自動探索設定；無法確認網址的「無界」保留待核對。原有 29 家流量覆蓋率基準維持獨立。
+- 自動探索優先讀官方 feed，再探索同站新聞 sitemap／首頁文章；支援 WordPress、Elementor、Founder 報紙版型與同站 meta refresh。只接受近 14 天、非未來、具有真實發布時間、標題和至少 120 個非空白字元內文的文章。摘要、分類頁、產品頁、付費牆與不可確認日期的頁面不算成功，sitemap lastmod 不能代替發布時間。
+- 所有下載沿用 DNS／轉址檢查、大小及逾時限制；429 停止該站。每輪有請求與文章數上限以控制負載，但來源名單沒有 29 家或前 N 名限制。舊 Yahoo 自製稿件 provider 限制保留。
+- `news-crawl-audit.json` 保存逐站時間、策略、失敗原因、真實標題／日期／內文字數樣本。新增來源僅在同網址實測成功後加入 hourly 排程；找得到 feed 或只建立設定都不會啟用。既有來源沿用原規則及停用名單。
+- 未成功的新來源每週隨 probe job 重新探索，完整文章驗證結果記入 `source_probes`。probe 不直接改啟用狀態；重跑 audit、核對 diff 並更新部署後才採用新證據。更新 JSON 後需要重啟 worker，registry 不會在同一程序熱載入。
+- `crawl:sync-news` 將全部來源註冊進 API 名稱與新聞分類，保留既有名稱、圖示及藍綠設定；新來源不自動推論政治傾向。
+
+```sh
+npm run crawl:sync-news
+npm run crawl:audit-news -- --concurrency 6 --samples 2
+# 單站修正後重測；--resume 可續跑同一份報告未完成的來源
+npm run crawl:audit-news -- --media focusnews --samples 2
+# 真正經 runIndex + runArticles 入庫；預設全部已啟用的新自動探索來源
+npm run crawl:news-once -- --limit 3 --concurrency 3
+```
+
+評估過 [RSSHub 官方路由](https://github.com/DIYgod/RSSHub/tree/master/lib/routes)、[Crawlee](https://crawlee.dev/js/docs/introduction) 和 [Trafilatura](https://trafilatura.readthedocs.io/en/latest/usage-cli.html)。本次沿用既有 Cheerio／feed 解析器與排程，擴充共同探索引擎；不新增外部 RSS 服務或瀏覽器依賴。需要 JavaScript 渲染、反爬阻擋、停止更新或未找到完整內文的站仍會明確顯示未成功，後續可據逐站證據加專用解析器。
+
+本次驗證快照（2026-10-03）：197 個來源中 107 個驗證到近期完整文章、89 個未成功、1 個官方網址未確定。成功者包含 38 個既有爬蟲及 69 個新增自動探索來源。新增 69 個來源逐一經正常列表／內文流程實際入庫，每站 2 篇，共 138 篇，資料庫均確認 `body_status=ok`。這是一次性實測結果，不保證來源日後持續可用；後續狀態以排程記錄與頁面驗證時間為準。

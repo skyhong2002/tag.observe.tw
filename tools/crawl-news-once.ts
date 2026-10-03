@@ -1,0 +1,67 @@
+// Run the normal index/body pipeline for every enabled catalog crawler.
+import { parseArgs } from 'node:util';
+import { and, count, eq, gte } from 'drizzle-orm';
+import pLimit from 'p-limit';
+import catalog from '../app/data/news-source-catalog.json' with { type: 'json' };
+import { runArticles, runIndex } from '../app/src/crawl/pipeline.ts';
+import { allSources, disabled } from '../app/src/crawl/registry.ts';
+import { createDb } from '../app/src/db/client.ts';
+import { articles } from '../app/src/db/schema.ts';
+
+const { values } = parseArgs({
+  options: {
+    media: { type: 'string', multiple: true },
+    limit: { type: 'string', default: '3' },
+    concurrency: { type: 'string', default: '3' },
+  },
+});
+const limit = Number(values.limit);
+const concurrency = Number(values.concurrency);
+if (!Number.isInteger(limit) || limit < 1 || limit > 12 || !Number.isInteger(concurrency) || concurrency < 1 || concurrency > 6) {
+  throw new Error('limit must be 1–12; concurrency must be 1–6');
+}
+const known = new Set(catalog.sources.map((source) => source.media));
+const blocked = disabled();
+const sources = allSources().filter(
+  (source) =>
+    known.has(source.media) &&
+    source.list.autoDiscover &&
+    source.group !== 'off' &&
+    !blocked.has(source.media) &&
+    (!values.media || values.media.includes(source.media)),
+);
+if (!sources.length) throw new Error('No enabled automatic news crawlers match');
+const { db, close } = createDb();
+const gate = pLimit(concurrency);
+let failures = 0;
+try {
+  await Promise.all(
+    sources.map((source) =>
+      gate(async () => {
+        try {
+          const spec = { ...source, list: { ...source.list, autoDiscover: { ...source.list.autoDiscover!, maxArticles: limit } } };
+          const index = await runIndex(db, spec);
+          const bodies = await runArticles(db, spec, { limit });
+          const [stored] = await db
+            .select({ complete: count() })
+            .from(articles)
+            .where(
+              and(
+                eq(articles.media, source.media),
+                eq(articles.bodyStatus, 'ok'),
+                gte(articles.publishedAt, new Date(Date.now() - 14 * 86400e3)),
+              ),
+            );
+          console.log(JSON.stringify({ media: source.media, index, bodies, completeRecentArticles: stored.complete }));
+        } catch (error) {
+          failures++;
+          console.error(JSON.stringify({ media: source.media, error: (error as Error).message }));
+        }
+      }),
+    ),
+  );
+} finally {
+  await close();
+}
+console.log(JSON.stringify({ sources: sources.length, failures }));
+if (failures) process.exitCode = 1;
