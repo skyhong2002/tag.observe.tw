@@ -371,6 +371,11 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `article.publisher.name` | string |  |
 | `article.publisher.country` | string |  |
 | `article.publisher.countryCode` | string |  |
+| `article.discoverySources` | object[] |  |
+| `article.discoverySources[].media` | string | 文章發現來源代碼，非刊登媒體 |
+| `article.discoverySources[].title` | string | 發現來源名稱 |
+| `article.discoverySources[].url` | string | 實際發現文章的公開頁面網址 |
+| `article.discoverySources[].discoveredAt` | string (ISO 時間) | 首次經此來源發現文章的時間，不取代刊登時間 |
 | `content` | object |  |
 | `content.status` | "ok" \| "short" \| "missing" \| "blocked" \| "error" \| "not_fetched" \| "expired" |  |
 | `content.body` | string \| null | 保留期間內已抓取的文字；不保證原站目前仍存在 |
@@ -923,7 +928,7 @@ curl -s 'https://tag.observe.tw/api/v1/media/rti/keywords'
 
 **媒體內文庫列表**
 
-以文章 id 遞減分頁；僅回傳內文狀態與長度，單篇內文另由 content API 取得。
+以文章 id 遞減分頁；僅回傳內文狀態與長度，單篇內文另由 content API 取得。google_news 與 dongtaiwang 列出經該來源發現的文章；sourceKind 為 discovery、publisher 為 null，每篇文章仍歸屬原刊登媒體。discoverySources 記錄發現來源及網址。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -945,7 +950,8 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
 | --- | --- | --- |
 | `media` | string |  |
 | `title` | string |  |
-| `publisher` | object |  |
+| `sourceKind` | "discovery" \| "publisher" | discovery 為文章發現來源；publisher 為刊登媒體 |
+| `publisher` | object \| null |  |
 | `publisher.media` | string |  |
 | `publisher.name` | string |  |
 | `publisher.country` | string |  |
@@ -971,6 +977,11 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
 | `articles[].publisher.name` | string |  |
 | `articles[].publisher.country` | string |  |
 | `articles[].publisher.countryCode` | string |  |
+| `articles[].discoverySources` | object[] |  |
+| `articles[].discoverySources[].media` | string | 文章發現來源代碼，非刊登媒體 |
+| `articles[].discoverySources[].title` | string | 發現來源名稱 |
+| `articles[].discoverySources[].url` | string | 實際發現文章的公開頁面網址 |
+| `articles[].discoverySources[].discoveredAt` | string (ISO 時間) | 首次經此來源發現文章的時間，不取代刊登時間 |
 | `articles[].bodyStatus` | string |  |
 | `articles[].bodyChars` | integer |  |
 | `articles[].contentFetchedAt` | string (ISO 時間) \| null |  |

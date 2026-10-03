@@ -148,6 +148,12 @@ schemas.Similarity = obj({
     obj({ source: str(), target: str(), kind: str(undefined, { enum: ['similarity', 'citation'] }), count: int(), score: nullable(num()) }),
   ),
 });
+schemas.DiscoverySource = obj({
+  media: str('文章發現來源代碼，非刊登媒體'),
+  title: str('發現來源名稱'),
+  url: str('實際發現文章的公開頁面網址'),
+  discoveredAt: time('首次經此來源發現文章的時間，不取代刊登時間'),
+});
 schemas.ContentArticle = obj(
   {
     id: int(),
@@ -163,9 +169,10 @@ schemas.ContentArticle = obj(
     description: nullable(str()),
     authors: arr(str()),
     publisher: ref('OutletIdentity'),
+    discoverySources: arr(ref('DiscoverySource')),
   },
   undefined,
-  ['publishedDate', 'publishedDatePrecision'],
+  ['publishedDate', 'publishedDatePrecision', 'discoverySources'],
 );
 schemas.CachedContent = obj({
   status: str(undefined, { enum: ['ok', 'short', 'missing', 'blocked', 'error', 'not_fetched', 'expired'] }),
@@ -273,7 +280,8 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/media/{media}/content',
     tag: 'media',
     summary: '媒體內文庫列表',
-    description: '以文章 id 遞減分頁；僅回傳內文狀態與長度，單篇內文另由 content API 取得。',
+    description:
+      '以文章 id 遞減分頁；僅回傳內文狀態與長度，單篇內文另由 content API 取得。google_news 與 dongtaiwang 列出經該來源發現的文章；sourceKind 為 discovery、publisher 為 null，每篇文章仍歸屬原刊登媒體。discoverySources 記錄發現來源及網址。',
     params: [
       p('media', '媒體代碼', str(), 'cna'),
       q('limit', '每頁筆數', intIn(1, 100, 40)),
@@ -284,7 +292,8 @@ export const ENDPOINTS: Endpoint[] = [
     response: obj({
       media: str(),
       title: str(),
-      publisher: ref('OutletIdentity'),
+      sourceKind: str('discovery 為文章發現來源；publisher 為刊登媒體', { enum: ['discovery', 'publisher'] }),
+      publisher: nullable(ref('OutletIdentity')),
       limit: int(),
       count: int(),
       nextCursor: nullable(str()),

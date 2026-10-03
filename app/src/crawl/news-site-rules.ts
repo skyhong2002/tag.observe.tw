@@ -42,11 +42,11 @@ const SITES: Site[] = [
   },
   {
     host: 'ntdtv.com',
-    path: /^\/b5\/\d{4}\/\d{2}\/\d{2}\/a\d+\.html$/,
+    path: /^\/(?:b5|gb)\/\d{4}\/\d{2}\/\d{2}\/a\d+\.html$/,
     bodySelector: '.article_content',
     titleSelector: '.article_title > h1',
     publishedSelector: '.article_info > .time',
-    publicationPattern: /^北京時間[：:]\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})$/,
+    publicationPattern: /^北京(?:時間|时间)[：:]\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})$/,
     // This template appends Z to its local clock in JSON-LD. The article
     // header explicitly identifies Beijing time and supplies the correct zone.
     preferPrintedPublication: true,

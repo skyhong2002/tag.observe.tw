@@ -9,6 +9,49 @@ const body = [paragraph.repeat(3), paragraph.repeat(3)].join('\n\n');
 const ld = (value: unknown) => `<script type="application/ld+json">${JSON.stringify(value)}</script>`;
 
 describe('article body and byline extraction', () => {
+  it('retains linked keywords inside prose while excluding independent tag and recommendation widgets', () => {
+    const prose = `空軍說明<a class="tag" href="/search/tagging/2/F-16">F-16</a>缺項交機，<a class="tag" href="/search/tagging/2/戰機">戰機</a>交付安排。${body}`;
+    const html = `<div class="article-content__editor"><p>${prose}</p><div class="tags"><p><a class="tag" href="/tag/other">獨立標籤不可納入</a></p></div><aside><p>相關推薦不可納入</p></aside><div class="related"><p><a class="tag" href="/search/tagging/2/other">推薦標題不可納入</a></p></div><p><a class="tag author" href="/author/1">作者介面不可納入</a></p><p><a class="tag" href="/tag/list">獨立連結導覽</a></p></div>`;
+    const article = extractArticle(html, 'https://udn.com/news/story/7331/9827995', { bodySelector: '.article-content__editor' });
+    expect(article.bodyStatus).toBe('ok');
+    expect(article.body).toBe(`空軍說明F-16缺項交機，戰機交付安排。${body.replace(/\n\n/g, ' ')}`);
+  });
+  it('rejects reviewed programme previews before structured data can disguise them as full text', () => {
+    const ntd = 'https://www.ntdtv.com/gb/2026/10/02/a104138452.html';
+    const preview = `<div class="featured_video"></div><div itemprop="articleBody"><p>${paragraph.repeat(5)}</p><p>《新闻大家谈》制作组</p><p>（责任编辑：编辑）</p></div>`;
+    expect(extractArticle(ld({ '@type': 'NewsArticle', articleBody: body }) + preview, ntd)).toMatchObject({
+      body: null,
+      bodyStatus: 'short',
+      bodySource: 'publisher:excerpt',
+    });
+    for (const host of ['www.ntdtv.com/gb/2026/10/02/a123.html', 'www.soundofhope.org/post/945618']) {
+      const html = `<div itemprop="articleBody"><p>${body}</p><h2><a href="https://www.ganjingworld.com/video/example"><strong>【点击观看完整视频】</strong></a></h2></div>`;
+      expect(extractArticle(html, `https://${host}`)).toMatchObject({ body: null, bodyStatus: 'short' });
+    }
+    const teaser = `<div itemprop="articleBody"><p>${body}本期节目带你深入了解。</p><p>【<a href="https://www.ganjingworld.com/video/example">点击观看更多内容</a>】</p></div>`;
+    expect(extractArticle(teaser, 'https://www.soundofhope.org/post/945795').bodyStatus).toBe('short');
+  });
+
+  it('retains complete reports with embedded video and ignores preview labels outside the main body', () => {
+    const html = `<div class="featured_video"></div><div itemprop="articleBody"><iframe src="https://www.youtube.com/embed/test"></iframe><p>${paragraph.repeat(5)}</p><p>${paragraph.repeat(5)}</p><p>${paragraph.repeat(5)}</p><p>《新闻大家谈》制作组</p></div><aside><a href="https://video.example/">点击观看完整视频</a></aside>`;
+    expect(extractArticle(html, 'https://www.ntdtv.com/gb/2026/10/02/a123.html').bodyStatus).toBe('ok');
+    expect(extractArticle(html, 'https://www.soundofhope.org/post/123').bodyStatus).toBe('ok');
+    const unrelated = `<div itemprop="articleBody"><p>${body}</p><a href="https://video.example/">点击观看完整视频</a></div>`;
+    expect(extractArticle(unrelated, URL).bodyStatus).toBe('ok');
+  });
+
+  it('rejects Epoch daily headline-and-excerpt digests but keeps regular numbered reporting', () => {
+    const paragraphs = [1, 2, 3]
+      .map((number) => `<p>${number}.<a href="/gb/26/10/2/n123.htm">新聞標題</a>${paragraph.repeat(2)}</p>`)
+      .join('');
+    const intro = '<p>【大纪元2026年10月02日讯】大纪元每天为读者梳理翻墙必看的文章：</p>';
+    const url = 'https://www.epochtimes.com/gb/26/10/2/n14862126.htm';
+    expect(
+      extractArticle(ld({ '@type': 'NewsArticle', articleBody: body }) + `<div class="article-main">${intro}${paragraphs}</div>`, url),
+    ).toMatchObject({ body: null, bodyStatus: 'short' });
+    expect(extractArticle(`<div class="article-main">${paragraphs}</div><aside>${intro}</aside>`, url).bodyStatus).toBe('ok');
+    expect(extractArticle(`<div class="article-main">${intro}${paragraphs}</div>`, URL).bodyStatus).toBe('ok');
+  });
   it.each(['entry-content', 'post-content', 'td-post-content', 'elementor-widget-theme-post-content', 'article-main'])(
     'extracts WordPress body from %s while excluding related widgets',
     (className) => {

@@ -4,10 +4,18 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile, realpath } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const directory = await realpath(process.argv[2]);
+// Google News uses its ordinary browser redirect. Check both the production
+// dependency and local Chromium before activating a release.
+const requireFromRelease = createRequire(join(directory, 'package.json'));
+const { chromium } = requireFromRelease('playwright');
+const browser = await chromium.launch({ headless: true, timeout: 10000 });
+await browser.close();
+console.log('Candidate discovery browser passed: Chromium starts and closes.');
 // The graph bundles the icon manifest at build time. The standalone server
 // must ship the matching PNGs, not just a healthy gateway and an older UI.
 const icons = JSON.parse(await readFile(join(directory, 'app/data/favicon-local.json'), 'utf8'));

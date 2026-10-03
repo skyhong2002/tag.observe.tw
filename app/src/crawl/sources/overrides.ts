@@ -2,6 +2,18 @@ import type { SourceOverride } from '../sources.ts';
 // Hand-ported adjustments for media whose legacy PHP relied on page-specific
 // markers or whose feeds moved. Keep entries small and commented.
 export const overrides: Record<string, SourceOverride> = {
+  google_news: {
+    group: 'hourly',
+    discovery: 'google_news',
+    list: { urls: [{ cat: 'news', url: 'https://news.google.com/rss?hl=zh-TW&gl=TW&ceid=TW:zh-Hant' }] },
+    article: { enabled: false, batch: 0, delayMs: 0 },
+  },
+  dongtaiwang: {
+    group: 'hourly',
+    discovery: 'dongtaiwang',
+    list: { urls: [{ cat: 'news', url: 'https://dongtaiwang.com/loc/phome.php?v=0' }] },
+    article: { enabled: false, batch: 0, delayMs: 0 },
+  },
   buzzorange: {
     group: 'hourly',
     list: {

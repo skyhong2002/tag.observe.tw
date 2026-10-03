@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { describe, expect, it } from 'vitest';
 import { extractArticle, parsePublished } from './article.ts';
+import { discoverNews } from './news-discovery.ts';
 import { newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 
 const body = '地方政府公布交通改善計畫，將增加公車班次，並公開工程預算與施工進度，邀請居民參與討論。'.repeat(7);
@@ -149,6 +150,23 @@ const fixtures = [
 ];
 
 describe('verified news site article templates', () => {
+  it('uses the simplified NTD Beijing publication clock through discovery and ignores later modification time', async () => {
+    const url = 'https://www.ntdtv.com/gb/2026/10/03/a104138561.html';
+    const html = `<script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2026-10-03T10:35:43Z","dateModified":"2026-10-03T13:06:40Z"}</script><link rel="canonical" href="${url}"><div class="article_title"><h1>朝鲜向东海发射弹道导弹</h1></div><div class="article_info"><span class="time">北京时间：2026-10-03 10:35</span></div><div class="article_content">${paragraph}</div>`;
+    const result = await discoverNews(
+      { homeUrl: 'https://www.ntdtv.com/', articleUrls: [url], includeArchive: true, maxArticles: 1 },
+      {
+        now: () => new Date('2026-10-03T12:00:00Z'),
+        fetch: async () => ({ url, body: html, status: 200, contentType: 'text/html', ms: 1 }),
+      },
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.samples).toEqual([
+      expect.objectContaining({ url, title: '朝鲜向东海发射弹道导弹', publishedAt: '2026-10-03T02:35:00.000Z' }),
+    ]);
+    expect(extractArticle(html, url).publishedAt?.toISOString()).toBe('2026-10-03T02:35:00.000Z');
+    expect(newsSiteEvidence(cheerio.load(html.replace('北京时间', '更新时间')), url).publishedRaw).toBeNull();
+  });
   it('prefers explicitly zoned NTDTV article header over its incorrectly Z-suffixed JSON-LD', () => {
     const html = `${title}<script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2026-10-03T18:53:57Z"}</script><div class="article_title"><h1>地方新聞測試標題</h1></div><div class="article_info"><div class="time">北京時間：2026-10-03 18:53</div></div><div class="article_content">${paragraph}</div>`;
     const url = 'https://www.ntdtv.com/b5/2026/10/03/a104138636.html';

@@ -5,6 +5,7 @@ import type { Db } from '../db/client.ts';
 import {
   contentArticle,
   contentStatus,
+  loadArticleContent,
   loadMediaContent,
   parseContentId,
   parseContentPage,
@@ -30,15 +31,16 @@ const row = {
   attributions: [],
   bodyChars: 33,
 };
-function fakeDb(rows: unknown[]) {
+function fakeDb(rows: unknown[], discoveries: unknown[] = []) {
   const chain = {
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue(rows),
   };
-  const select = vi.fn().mockReturnValue(chain);
-  return { db: { select } as unknown as Db, select, chain };
+  const discoveryChain = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue(discoveries) };
+  const select = vi.fn().mockReturnValueOnce(chain).mockReturnValue(discoveryChain);
+  return { db: { select } as unknown as Db, select, chain, discoveryChain };
 }
 describe('stored article content', () => {
   it('validates positive safe integer ids, cursors and bounded page sizes', () => {
@@ -110,6 +112,66 @@ describe('stored article content', () => {
     expect(query.sql).toContain('JSON_CONTAINS');
     expect(query.params).toEqual(['rti', 99, '%AI\\_10\\%%', '%AI\\_10\\%%', 'AI_10%']);
   });
+  it('loads discovery labels once per page while preserving the original publisher and article IDs', async () => {
+    const sources = [
+      { articleId: 9, media: 'google_news', url: 'https://news.google.com/articles/test', discoveredAt: fetched },
+      { articleId: 9, media: 'dongtaiwang', url: 'https://dongtaiwang.com/news/test', discoveredAt: fetched },
+      { articleId: 8, media: 'google_news', url: 'https://news.google.com/articles/test2', discoveredAt: fetched },
+    ];
+    const { db, select, discoveryChain } = fakeDb(
+      [
+        { ...row, id: 9 },
+        { ...row, id: 8 },
+        { ...row, id: 7 },
+      ],
+      sources,
+    );
+    const result = await loadMediaContent(db, 'cna', { cursor: null, limit: 2 });
+    expect(select).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ sourceKind: 'publisher', publisher: { media: 'cna' } });
+    expect(result.articles[0]).toMatchObject({ id: 9, media: 'cna', publisher: { media: 'cna' } });
+    expect(result.articles[0].discoverySources).toHaveLength(2);
+    expect(result.articles[1].discoverySources).toEqual([expect.objectContaining({ media: 'google_news', discoveredAt: fetched })]);
+    const query = new MySqlDialect().sqlToQuery(discoveryChain.where.mock.calls[0][0]);
+    expect(query.params).toEqual([9, 8]);
+  });
+  it.each(['google_news', 'dongtaiwang'])('uses the discovery relation for %s without reassigning publisher identity', async (media) => {
+    const { db, chain } = fakeDb([row], [{ articleId: 9, media, url: 'https://example.com/discovery', discoveredAt: fetched }]);
+    const result = await loadMediaContent(db, media, { cursor: 10, limit: 2, hours: 24 }, fetched);
+    expect(result).toMatchObject({ sourceKind: 'discovery', publisher: null, count: 1 });
+    expect(result.articles[0]).toMatchObject({
+      id: 9,
+      media: 'cna',
+      publisher: { media: 'cna' },
+      discoverySources: [expect.objectContaining({ media })],
+    });
+    const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
+    expect(query.sql).toMatch(/exists\s*\(SELECT 1 FROM/);
+    expect(query.sql).toContain('`article_discoveries`.`article_id` = `articles`.`id`');
+    expect(query.sql).not.toContain('`articles`.`media` =');
+    expect(query.params).toEqual([media, 10, '2026-10-02 01:00:00.000']);
+  });
+  it('returns no publisher for an empty discovery page and avoids a redundant relation query', async () => {
+    const { db, select } = fakeDb([]);
+    expect(await loadMediaContent(db, 'google_news', { cursor: null, limit: 40 })).toMatchObject({
+      sourceKind: 'discovery',
+      publisher: null,
+      count: 0,
+      articles: [],
+    });
+    expect(select).toHaveBeenCalledTimes(1);
+  });
+  it('includes actual discovery URLs and dates on the reader without replacing original publication data', async () => {
+    const discoveredAt = new Date('2026-10-03T05:00:00Z');
+    const { db } = fakeDb([row], [{ articleId: 9, media: 'google_news', url: 'https://news.google.com/articles/test', discoveredAt }]);
+    const result = await loadArticleContent(db, 9);
+    expect(result?.article).toMatchObject({
+      media: 'cna',
+      url: row.url,
+      publishedAt: fetched,
+      discoverySources: [{ media: 'google_news', title: 'Google 新聞', url: 'https://news.google.com/articles/test', discoveredAt }],
+    });
+  });
   it('serves preserved text with no source request and reports not found or invalid inputs', async () => {
     const { db, select } = fakeDb([row]);
     const app = Fastify();
@@ -131,7 +193,7 @@ describe('stored article content', () => {
       for (const path of ['/api/v1/media/unknown-content-outlet/content', '/api/v1/media/__proto__/content']) {
         expect((await app.inject(path)).statusCode).toBe(404);
       }
-      expect(select).toHaveBeenCalledTimes(1);
+      expect(select).toHaveBeenCalledTimes(2);
       select.mockReturnValue({ from: () => ({ where: () => ({ limit: async () => [] }) }) });
       expect((await app.inject('/api/v1/articles/12/content')).statusCode).toBe(404);
     } finally {

@@ -4,6 +4,7 @@ import type { Db } from '../db/client.ts';
 import { articles, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
 import { extractAttributions } from '../similarity/attribution.ts';
 import { extractArticle } from './article.ts';
+import { runDiscoveryIndex } from './discovery-index.ts';
 import { type FeedItem, parseFeed } from './feed.ts';
 import { fetchText, fetchViaCurl } from './fetch.ts';
 import { discoverLinks, parseMarkerList } from './html-list.ts';
@@ -107,14 +108,30 @@ export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{
   return { items, errors };
 }
 
-export async function runIndex(db: Db, spec: SourceSpec, { fetch = fetchText, log = noop, now = () => new Date() } = {}) {
+export async function runIndex(
+  db: Db,
+  spec: SourceSpec,
+  {
+    fetch = fetchText,
+    log = noop,
+    now = () => new Date(),
+    listed,
+  }: {
+    fetch?: typeof fetchText;
+    log?: Logger;
+    now?: () => Date;
+    /** Already validated original-publisher items from an aggregator. */
+    listed?: { items: FeedItem[]; errors: string[] };
+  } = {},
+): Promise<{ items: number; inserted: number; errors: string[] }> {
+  if (spec.discovery) return runDiscoveryIndex(db, spec, { fetch, log, now });
   const started = now();
   const [run] = await db
     .insert(crawlRuns)
     .values({ media: spec.media, stage: 'index', startedAt: started, status: 'running' })
     .$returningId();
   try {
-    const { items, errors } = await listSource(spec, fetch);
+    const { items, errors } = listed ?? (await listSource(spec, fetch));
     let inserted = 0;
     for (let i = 0; i < items.length; i += 100) {
       // Titleless items (plain sitemaps) get their title from the page in runArticles.
@@ -306,6 +323,7 @@ export async function runArticles(
     vocab = null as TitleVocab | null,
   } = {},
 ) {
+  if (spec.discovery) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
   const started = now();
   // Every article needs body extraction, including previously tagged feeds.
   // Recent items go first, then the retained 90-day backlog is filled gradually.

@@ -123,6 +123,9 @@ function excludedContainer(element: cheerio.Cheerio<AnyNode>): boolean {
     .filter(
       (name) => !(element.is('.hentry, article.type-post') && (/^(?:tag|category|byline)-/.test(name) || name === 'post-style-banner')),
     )
+    // UDN marks keywords inside prose with a.tag. They are words in the
+    // sentence, not the separate tag navigation removed by its parent widget.
+    .filter((name) => !(name === 'tag' && element.is('a') && element.closest('p').length > 0))
     .join(' ');
   return EXCLUDED_CLASS.test(`${classes} ${element.attr('id') ?? ''}`);
 }
@@ -318,6 +321,41 @@ function publisherExcerpt($: cheerio.CheerioAPI, value: string): boolean {
     return /本文為精彩摘要[，,]\s*欲下載完整/.test(mainText('.zh-content'));
   if (['tw.news.yahoo.com', 'tw.sports.yahoo.com'].includes(host) && /^\/(?:news\/)?[^/]+\.html$/.test(url.pathname))
     return /全文未完[，,、：:]\s*完整內容請見/.test(mainText('.caas-body, .module-article-body article'));
+  if (host === 'epochtimes.com' && /^\/(?:gb|b5)\/\d{2,4}\/\d{1,2}\/\d{1,2}\/n\d+\.htm$/.test(url.pathname)) {
+    const article = $('.article-main').first();
+    const digest = /大[纪紀]元每天[为為][读讀]者梳理翻[墙牆]必看的文章/.test(article.text());
+    const numberedLinks = article
+      .find('p')
+      .filter((_, node) => /^\s*\d+[.．、]/.test($(node).text()) && $(node).find('a[href]').length > 0);
+    if (digest && numberedLinks.length >= 3) return true;
+  }
+  if (['ntdtv.com', 'soundofhope.org'].includes(host)) {
+    const articlePath = host === 'ntdtv.com' ? /^\/(?:gb|b5)\/\d{4}\/\d{2}\/\d{2}\/a\d+\.html$/ : /^\/post\/\d+\/?$/;
+    if (!articlePath.test(url.pathname)) return false;
+    const article = $('[itemprop="articleBody"]').first();
+    const text = normalize(article.text());
+    const links = article
+      .find('a[href]')
+      .map((_, node) => normalize($(node).text()).replace(/^[【[]|[】\]]$/g, ''))
+      .get();
+    // These templates end a partial script with a link to the complete video.
+    // Check before removing headings/links, which would erase the disclosure.
+    if (links.some((label) => /^(?:[点點][击擊])?(?:[观觀]看|播放)完整(?:[视視][频頻]|影片)$/.test(label))) return true;
+    if (
+      host === 'soundofhope.org' &&
+      /本期[节節]目[带帶]你/.test(text) &&
+      links.some((label) => /^[点點][击擊][观觀]看更多[内內]容$/.test(label))
+    )
+      return true;
+    if (host === 'ntdtv.com' && $('.featured_video').length && /《新[闻聞]大家[谈談]》[制製]作[组組]/.test(text)) {
+      const prose = article
+        .find('p')
+        .map((_, node) => normalize($(node).text()))
+        .get()
+        .filter((line) => line && !/^《新[闻聞]大家[谈談]》[制製]作[组組]|^[（(]?[责責]任[编編][辑輯]/.test(line));
+      if (prose.length <= 2 && contentLength(prose.join('')) < 600) return true;
+    }
+  }
   return false;
 }
 

@@ -5,6 +5,12 @@ export interface Publisher {
   country: string;
   countryCode: string;
 }
+export interface DiscoverySource {
+  media: string;
+  title: string;
+  url: string;
+  discoveredAt: string;
+}
 export interface StoredArticle {
   id: number;
   media: string;
@@ -19,6 +25,7 @@ export interface StoredArticle {
   description: string | null;
   authors: string[];
   publisher: Publisher;
+  discoverySources?: DiscoverySource[];
 }
 export interface StoredContent {
   article: StoredArticle;
@@ -34,7 +41,8 @@ export interface StoredContent {
 export interface MediaContent {
   media: string;
   title: string;
-  publisher: Publisher;
+  sourceKind: 'discovery' | 'publisher';
+  publisher: Publisher | null;
   limit: number;
   count: number;
   nextCursor: string | null;

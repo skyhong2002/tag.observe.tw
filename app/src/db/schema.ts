@@ -73,6 +73,19 @@ export const articles = mysqlTable(
   ],
 );
 
+// Discovery attribution is independent of the article's publishing outlet.
+export const articleDiscoveries = mysqlTable(
+  'article_discoveries',
+  {
+    id: bigint('id', { mode: 'number' }).autoincrement().primaryKey(),
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    media: varchar('media', { length: 32 }).notNull(),
+    discoveryUrl: text('discovery_url').notNull(),
+    discoveredAt: datetime('discovered_at').notNull(),
+  },
+  (t) => [uniqueIndex('discovery_article_media').on(t.articleId, t.media), index('discovery_media_article').on(t.media, t.articleId)],
+);
+
 export const articleTags = mysqlTable(
   'article_tags',
   {

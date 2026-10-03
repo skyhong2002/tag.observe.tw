@@ -1,13 +1,19 @@
-import { and, desc, eq, gte, lt, or, sql } from 'drizzle-orm';
+import { and, desc, eq, exists, gte, inArray, lt, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import reviewedPublications from '../../data/reviewed-publications.json' with { type: 'json' };
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import type { Db } from '../db/client.ts';
-import { articles } from '../db/schema.ts';
+import { articleDiscoveries, articles } from '../db/schema.ts';
 import { type Attribution, normalizeAttributions, type OutletIdentity, outletIdentity } from '../similarity/attribution.ts';
 
 export type ContentStatus = 'ok' | 'short' | 'missing' | 'blocked' | 'error' | 'not_fetched' | 'expired';
+export interface DiscoverySource {
+  media: string;
+  title: string;
+  url: string;
+  discoveredAt: Date;
+}
 export interface ContentArticle {
   id: number;
   media: string;
@@ -22,6 +28,7 @@ export interface ContentArticle {
   description: string | null;
   authors: string[];
   publisher: OutletIdentity;
+  discoverySources?: DiscoverySource[];
 }
 export interface ArticleContentResponse {
   article: ContentArticle;
@@ -37,7 +44,8 @@ export interface ArticleContentResponse {
 export interface MediaContentResponse {
   media: string;
   title: string;
-  publisher: OutletIdentity;
+  sourceKind: 'discovery' | 'publisher';
+  publisher: OutletIdentity | null;
   limit: number;
   count: number;
   nextCursor: string | null;
@@ -45,6 +53,7 @@ export interface MediaContentResponse {
 }
 const titles = catalog as Record<string, { title: string | null }>;
 export const CONTENT_PAGE_LIMIT = 100;
+export const isDiscoverySource = (media: string) => media === 'google_news' || media === 'dongtaiwang';
 export function parseContentId(value: unknown): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d{0,15}$/.test(value)) return null;
   const id = Number(value);
@@ -119,6 +128,26 @@ export function contentArticle(row: MetadataRow): ContentArticle {
     publisher: outletIdentity(row.media),
   };
 }
+async function loadDiscoverySources(db: Db, ids: number[]): Promise<Map<number, DiscoverySource[]>> {
+  const result = new Map<number, DiscoverySource[]>();
+  if (!ids.length) return result;
+  const rows = await db
+    .select({
+      articleId: articleDiscoveries.articleId,
+      media: articleDiscoveries.media,
+      url: articleDiscoveries.discoveryUrl,
+      discoveredAt: articleDiscoveries.discoveredAt,
+    })
+    .from(articleDiscoveries)
+    .where(inArray(articleDiscoveries.articleId, ids));
+  rows.sort((a, b) => a.discoveredAt.getTime() - b.discoveredAt.getTime() || a.media.localeCompare(b.media));
+  for (const row of rows) {
+    const sources = result.get(row.articleId) ?? [];
+    sources.push({ media: row.media, title: titles[row.media]?.title ?? row.media, url: row.url, discoveredAt: row.discoveredAt });
+    result.set(row.articleId, sources);
+  }
+  return result;
+}
 export async function loadArticleContent(db: Db, id: number): Promise<ArticleContentResponse | null> {
   const [row] = await db
     .select({
@@ -133,10 +162,11 @@ export async function loadArticleContent(db: Db, id: number): Promise<ArticleCon
     .where(eq(articles.id, id))
     .limit(1);
   if (!row) return null;
+  const discoveries = await loadDiscoverySources(db, [id]);
   const body = row.body?.trim() ? row.body : null;
   const chars = body ? Array.from(body).length : 0;
   return {
-    article: contentArticle(row),
+    article: { ...contentArticle(row), discoverySources: discoveries.get(id) ?? [] },
     content: {
       status: contentStatus(row.bodyStatus, chars, row.contentFetchedAt),
       body,
@@ -153,6 +183,7 @@ export async function loadMediaContent(
   query: { cursor: number | null; limit: number; hours?: number; q?: string },
   now = new Date(),
 ): Promise<MediaContentResponse> {
+  const discovery = isDiscoverySource(media);
   const keyword = query.q?.replace(/[\\%_]/g, '\\$&');
   // Select character counts, never full bodies, on this bounded listing. Reads
   // use existing stored records only and cannot trigger a fetch of the source.
@@ -166,7 +197,11 @@ export async function loadMediaContent(
     .from(articles)
     .where(
       and(
-        eq(articles.media, media),
+        discovery
+          ? exists(
+              sql`(SELECT 1 FROM ${articleDiscoveries} WHERE ${articleDiscoveries.articleId} = ${articles.id} AND ${articleDiscoveries.media} = ${media})`,
+            )
+          : eq(articles.media, media),
         query.cursor ? lt(articles.id, query.cursor) : undefined,
         query.hours ? gte(articles.publishedAt, new Date(now.getTime() - query.hours * 3600e3)) : undefined,
         keyword
@@ -181,15 +216,21 @@ export async function loadMediaContent(
     .orderBy(desc(articles.id))
     .limit(query.limit + 1);
   const page = rows.slice(0, query.limit);
+  const discoveries = await loadDiscoverySources(
+    db,
+    page.map((row) => row.id),
+  );
   return {
     media,
     title: titles[media]?.title ?? media,
-    publisher: outletIdentity(media),
+    sourceKind: discovery ? 'discovery' : 'publisher',
+    publisher: discovery ? null : outletIdentity(media),
     limit: query.limit,
     count: page.length,
     nextCursor: rows.length > query.limit ? String(page.at(-1)!.id) : null,
     articles: page.map((row) => ({
       ...contentArticle(row),
+      discoverySources: discoveries.get(row.id) ?? [],
       bodyStatus: contentStatus(row.bodyStatus, Number(row.bodyChars), row.contentFetchedAt),
       bodyChars: Number(row.bodyChars),
       contentFetchedAt: row.contentFetchedAt,

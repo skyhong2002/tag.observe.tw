@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ArticleBody from '@/components/ArticleBody';
+import DiscoverySources from '@/components/DiscoverySources';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import { CONTENT_STATUS, type StoredContent } from '@/lib/article-content';
@@ -59,6 +60,9 @@ export default async function ArticleContentPage({
           {article.authors.length > 0 && <span>{article.authors.join('、')}</span>}
           <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>
           {content.body && <span className="text-xs">約 {Math.max(1, Math.ceil(content.chars / 500))} 分鐘閱讀</span>}
+        </div>
+        <div className="mt-3">
+          <DiscoverySources sources={article.discoverySources} />
         </div>
       </header>
       {content.body ? (

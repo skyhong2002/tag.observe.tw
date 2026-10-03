@@ -1,12 +1,12 @@
 // Run the normal index/body pipeline for every enabled catalog crawler.
 import { parseArgs } from 'node:util';
-import { and, count, eq, gte, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, count, eq, exists, gte, inArray, isNull, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import catalog from '../app/data/news-source-catalog.json' with { type: 'json' };
 import { runArticles, runIndex } from '../app/src/crawl/pipeline.ts';
 import { allSources, disabled } from '../app/src/crawl/registry.ts';
 import { createDb } from '../app/src/db/client.ts';
-import { articles } from '../app/src/db/schema.ts';
+import { articleDiscoveries, articles } from '../app/src/db/schema.ts';
 
 const { values } = parseArgs({
   options: {
@@ -26,7 +26,7 @@ const blocked = disabled();
 const sources = allSources().filter(
   (source) =>
     (known.has(source.media) || values.media?.includes(source.media)) &&
-    (source.list.autoDiscover || values.media?.includes(source.media)) &&
+    (source.discovery || source.list.autoDiscover || values.media?.includes(source.media)) &&
     source.group !== 'off' &&
     !blocked.has(source.media) &&
     (!values.media || values.media.includes(source.media)),
@@ -66,7 +66,20 @@ try {
           const [stored] = await db
             .select({ complete: count(), recent: sql<number>`SUM(${articles.publishedAt} >= ${new Date(Date.now() - 14 * 86400e3)})` })
             .from(articles)
-            .where(and(eq(articles.media, source.media), eq(articles.bodyStatus, 'ok')));
+            .where(
+              and(
+                source.discovery
+                  ? exists(
+                      db
+                        .select({ id: articleDiscoveries.id })
+                        .from(articleDiscoveries)
+                        .where(and(eq(articleDiscoveries.articleId, articles.id), eq(articleDiscoveries.media, source.media))),
+                    )
+                  : eq(articles.media, source.media),
+                eq(articles.bodyStatus, 'ok'),
+                sql`CHAR_LENGTH(${articles.body}) > 0`,
+              ),
+            );
           console.log(
             JSON.stringify({
               media: source.media,
