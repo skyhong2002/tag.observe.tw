@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { edgeWeightWidth, forcePositions, nodeArticleCounts } from '../../web/src/lib/media-graph.mts';
+import { edgeWeightWidth, forcePositions, mediaGraphPositions, nodeArticleCounts } from '../../web/src/lib/media-graph.mts';
 import type { SimilarityArticle, SimilarityData, SimilarityNode } from '../src/similarity/types.ts';
 
 const article = (id: number, media: string): SimilarityArticle => ({
@@ -83,5 +83,37 @@ describe('edge weights', () => {
     expect(widths.every((width, i) => i === 0 || width > widths[i - 1])).toBe(true);
     expect(edgeWeightWidth(0, 0)).toBe(1);
     expect(edgeWeightWidth(Number.NaN, Number.NaN)).toBe(1);
+  });
+});
+
+describe('isolated outlets on the perimeter', () => {
+  const edge = { source: 'a', target: 'b', kind: 'citation' as const, count: 2, score: null };
+  it('keeps every outlet visible and separates unconnected outlets from the force layout', () => {
+    const nodes = [node('reporter'), node('a'), node('b'), node('isolated')];
+    for (const [width, height] of [
+      [356, 455],
+      [1118, 607],
+    ]) {
+      const points = mediaGraphPositions(nodes, [edge], width, height);
+      expect(points.map((p) => p.id)).toEqual(nodes.map((n) => n.id));
+      for (const point of points.filter((p) => ['reporter', 'isolated'].includes(p.id))) {
+        expect(Math.max(Math.abs(point.x) / width, Math.abs(point.y) / height)).toBeCloseTo(0.45);
+      }
+      for (const point of points.filter((p) => ['a', 'b'].includes(p.id))) {
+        expect(Math.abs(point.x)).toBeLessThan(width * 0.4);
+        expect(Math.abs(point.y)).toBeLessThan(height * 0.4);
+      }
+      const added = mediaGraphPositions([...nodes, node('extra')], [edge], width, height);
+      expect(added.filter((p) => ['a', 'b'].includes(p.id))).toEqual(points.filter((p) => ['a', 'b'].includes(p.id)));
+    }
+  });
+  it('moves outlets to the outside when a relationship mode hides their edges, without inventing links', () => {
+    const nodes = [node('a'), node('b'), node('reporter')];
+    const points = mediaGraphPositions(nodes, [], 400, 500);
+    expect(points).toHaveLength(nodes.length);
+    expect(points.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
+    expect(mediaGraphPositions([], [], 400, 500)).toEqual([]);
+    expect(mediaGraphPositions([node('reporter')], [], 400, 500)).toHaveLength(1);
+    expect(mediaGraphPositions(nodes, [{ ...edge, target: 'missing' }], 400, 500)).toEqual(points);
   });
 });

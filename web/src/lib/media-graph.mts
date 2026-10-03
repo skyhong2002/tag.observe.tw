@@ -107,3 +107,43 @@ export function edgeWeightWidth(count: number, maximum: number) {
   const safeMax = Math.max(2, safeCount, Number.isFinite(maximum) ? maximum : 2);
   return 1 + (7 * Math.log(safeCount)) / Math.log(safeMax);
 }
+
+/** Keep outlets with no visible edges in a separate perimeter, outside the
+ * spring simulation. They stay visible without compressing connected hubs. */
+export function mediaGraphPositions(nodes: SimilarityNode[], edges: SimilarityEdge[], width: number, height: number) {
+  const ids = new Set(nodes.map((node) => node.id));
+  const validEdges = edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target));
+  const connected = new Set(validEdges.flatMap((edge) => [edge.source, edge.target]));
+  const outer = nodes.filter((node) => !connected.has(node.id)).sort((a, b) => a.id.localeCompare(b.id));
+  if (!outer.length) return forcePositions(nodes, validEdges, width, height);
+  const band = width < 600 ? 52 : 68;
+  const inner = forcePositions(
+    nodes.filter((node) => connected.has(node.id)),
+    validEdges,
+    Math.max(1, width - band * 2),
+    Math.max(1, height - band * 2),
+  );
+  const positions = new Map(inner.map((point) => [point.id, point]));
+  const w = width * 0.9,
+    h = height * 0.9;
+  const perimeter = 2 * (w + h);
+  outer.forEach((node, i) => {
+    const distance = (perimeter * i) / outer.length;
+    let x: number, y: number;
+    if (distance < w) {
+      x = -w / 2 + distance;
+      y = -h / 2;
+    } else if (distance < w + h) {
+      x = w / 2;
+      y = -h / 2 + distance - w;
+    } else if (distance < 2 * w + h) {
+      x = w / 2 - (distance - w - h);
+      y = h / 2;
+    } else {
+      x = -w / 2;
+      y = h / 2 - (distance - 2 * w - h);
+    }
+    positions.set(node.id, { id: node.id, x, y });
+  });
+  return nodes.map((node) => positions.get(node.id)!);
+}

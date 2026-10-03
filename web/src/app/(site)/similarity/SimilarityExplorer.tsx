@@ -70,10 +70,7 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
   const counts = useMemo(() => nodeArticleCounts(data), [data]);
   const edges = useMemo(() => data.edges.filter((e) => mode === 'all' || e.kind === mode), [data.edges, mode]);
-  const nodes = useMemo(() => {
-    const ids = new Set(edges.flatMap((e) => [e.source, e.target]));
-    return data.nodes.filter((n) => ids.has(n.id));
-  }, [data.nodes, edges]);
+  const nodes = data.nodes;
   const select = (value: GraphSelection) => {
     setSelection(value);
     if (value) setDrawer('evidence');
@@ -178,6 +175,7 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
           <p>
             <span className="text-orange-600 dark:text-orange-400">━ 內文相似</span>
             <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
+            <span className="ml-3">外圍：未偵測到連線</span>
           </p>
           <p className="hidden sm:block">線越粗，篇數／配對越多 · 移到圖示查看篇數</p>
           <p className="sm:hidden">點選媒體圖示查看引用篇數與文章</p>
@@ -331,7 +329,9 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
                 線條粗細依引用文章數或相似配對數計算，越粗代表關係越多。箭頭由刊登媒體指向文中明示引用的來源。Hover
                 的引用與被引用篇數分別依文章去重，同篇引用多家不會重複加總；各來源分項可能相加大於總篇數。
               </p>
-              <p>相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。</p>
+              <p>
+                外圍媒體在目前顯示條件下未偵測到連線，仍可點選查看樣本與內文。相似線表示正文文字重疊，不能推論引用方向或原始作者。國別是媒體所屬地區，不是事件發生地。
+              </p>
               <details>
                 <summary className="cursor-pointer font-medium">相似度如何計算</summary>
                 <p className="mt-2">

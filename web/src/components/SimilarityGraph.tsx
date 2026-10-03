@@ -6,7 +6,7 @@ import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef, useState } from 'react';
-import { edgeWeightWidth, forcePositions, nodeArticleCounts } from '@/lib/media-graph.mts';
+import { edgeWeightWidth, mediaGraphPositions, nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityData, SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 import storedIcons from '../../../app/data/favicon-local.json';
 
@@ -46,6 +46,7 @@ export default function SimilarityGraph({
     const chart = echarts.init(ref.current);
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const counts = nodeArticleCounts(data);
+    const connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
     const symbols = new Map(nodes.map((n) => [n.id, fallbackIcon(n)]));
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
     const ink = dark ? '#d4d4d8' : '#52525b';
@@ -56,20 +57,20 @@ export default function SimilarityGraph({
         .slice(0, 4)
         .map((e) => `${escapeHtml(data.nodes.find((n) => n.id === (incoming ? e.source : e.target))?.name ?? '')} ${e.count} 篇`)
         .join('、');
-    let positions = forcePositions(nodes, edges, chart.getWidth(), chart.getHeight());
+    let positions = mediaGraphPositions(nodes, edges, chart.getWidth(), chart.getHeight());
     const nodeData = () =>
       nodes.map((n, i) => ({
         ...positions[i],
         id: n.id,
         name: n.name,
         symbol: `image://${symbols.get(n.id)}`,
-        symbolSize: chart.getWidth() < 600 ? 27 : 36,
+        symbolSize: chart.getWidth() < 600 ? (nodes.length > 70 ? 21 : 27) : nodes.length > 70 ? 32 : 36,
         symbolKeepAspect: true,
       }));
     const render = () => {
       if (disposed) return;
       const small = chart.getWidth() < 600;
-      positions = forcePositions(nodes, edges, chart.getWidth(), chart.getHeight());
+      positions = mediaGraphPositions(nodes, edges, chart.getWidth(), chart.getHeight());
       chart.setOption({
         animation: false,
         tooltip: {
@@ -88,7 +89,8 @@ export default function SimilarityGraph({
               c = counts.get(node.id);
             const outgoing = relationships(node.id, false),
               incoming = relationships(node.id, true);
-            return `<b>${escapeHtml(node.name)}</b> · ${escapeHtml(node.country)}<br/>引用其他媒體：<b>${c?.outgoing ?? 0} 篇</b>${outgoing ? `<br/><span style="opacity:.7">→ ${outgoing}</span>` : ''}<br/>被其他媒體引用：<b>${c?.incoming ?? 0} 篇</b>${incoming ? `<br/><span style="opacity:.7">← ${incoming}</span>` : ''}<br/>內文相近：${c?.similar ?? 0} 篇<br/><span style="opacity:.6">本期樣本，文章去重計數 · 點選看證據</span>`;
+            const status = connected.has(node.id) ? '' : '<br/><span style="opacity:.7">本期樣本未偵測到目前顯示的關係</span>';
+            return `<b>${escapeHtml(node.name)}</b> · ${escapeHtml(node.country)}${status}${!node.external ? `<br/>納入樣本：${node.articles} 篇` : ''}<br/>引用其他媒體：<b>${c?.outgoing ?? 0} 篇</b>${outgoing ? `<br/><span style="opacity:.7">→ ${outgoing}</span>` : ''}<br/>被其他媒體引用：<b>${c?.incoming ?? 0} 篇</b>${incoming ? `<br/><span style="opacity:.7">← ${incoming}</span>` : ''}<br/>內文相近：${c?.similar ?? 0} 篇<br/><span style="opacity:.6">本期樣本，文章去重計數 · 點選看證據</span>`;
           },
         },
         series: [
