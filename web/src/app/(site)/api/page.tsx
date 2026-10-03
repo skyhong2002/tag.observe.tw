@@ -215,7 +215,7 @@ export default async function ApiDocsPage() {
           </a>
           ，或見{' '}
           <a href={GITHUB_DOC} className={linkClass}>
-            docs/api.md
+            docs/api.md ↗
           </a>
           。
         </p>

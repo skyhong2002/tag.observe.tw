@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import SafeImage from '@/components/SafeImage';
+import SourceLink from '@/components/SourceLink';
 import TagChart from '@/components/TagChart';
 import { fetchTagArticles, fetchTagSeries, taipei } from '@/lib/api';
+import { articleHref } from '@/lib/reading.mts';
 
 export const revalidate = 60;
 type Params = { tag: string };
@@ -42,9 +44,10 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           <a
             href={`https://www.google.com/search?tbm=nws&q=${encodeURIComponent(tag)}`}
             className="rounded-md bg-zinc-100 px-3 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-            rel="noopener"
+            rel="noopener noreferrer"
+            target="_blank"
           >
-            Google 新聞
+            Google 新聞 ↗
           </a>
           <a
             href={`/feeds/tag/${encodeURIComponent(tag)}.xml`}
@@ -69,20 +72,23 @@ export default async function TagPage({ params, searchParams }: { params: Promis
             {list.articles.map((a) => (
               <li key={a.id} className="flex gap-3 p-3">
                 {a.image && /^https?:\/\//.test(a.image) && (
-                  <SafeImage
-                    src={a.image}
-                    alt=""
-                    width={96}
-                    height={64}
-                    className="h-16 w-24 flex-none rounded-md object-cover"
-                    loading="lazy"
-                    unoptimized={false}
-                  />
+                  <Link href={articleHref(a)} tabIndex={-1} aria-label={`閱讀：${a.title}`} className="flex-none">
+                    <SafeImage
+                      src={a.image}
+                      alt=""
+                      width={96}
+                      height={64}
+                      className="h-16 w-24 flex-none rounded-md object-cover"
+                      loading="lazy"
+                      unoptimized={false}
+                    />
+                  </Link>
                 )}
                 <div className="min-w-0 flex-1">
-                  <a href={a.url} target="_blank" rel="noopener" className="line-clamp-2 font-medium hover:underline">
+                  <Link href={articleHref(a)} className="line-clamp-2 font-medium hover:underline">
                     {a.title}
-                  </a>
+                  </Link>
+                  <SourceLink url={a.url} className="ml-2" />
                   <p className="mt-1 text-xs text-zinc-600">
                     {a.mediaTitle} · {taipei(a.publishedAt)}
                   </p>

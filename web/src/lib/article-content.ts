@@ -11,6 +11,7 @@ export interface StoredArticle {
   mediaTitle: string;
   title: string;
   url: string;
+  image: string | null;
   publishedAt: string;
   tags: string[];
   description: string | null;

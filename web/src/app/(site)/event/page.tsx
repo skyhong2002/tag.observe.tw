@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import SafeImage from '@/components/SafeImage';
+import SourceLink from '@/components/SourceLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
 import { cleanEventHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import { type EventNews, fetchEvents } from '@/lib/pages';
+import { articleHref } from '@/lib/reading.mts';
 
 function eventHeadline(news: EventNews[], major: string[]): string | null {
   const lead = selectEventLead(news, major);
@@ -133,19 +135,22 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
                 {e.news.map((n, i) => (
                   <li key={n.url + String(i)} className="flex gap-3">
                     {n.image && /^https?:\/\//.test(n.image) && (
-                      <SafeImage
-                        src={n.image}
-                        alt=""
-                        width={80}
-                        height={54}
-                        className="h-14 w-20 flex-none rounded-md object-cover"
-                        loading="lazy"
-                      />
+                      <Link href={articleHref(n)} tabIndex={-1} aria-label={`閱讀：${n.title}`} className="flex-none">
+                        <SafeImage
+                          src={n.image}
+                          alt=""
+                          width={80}
+                          height={54}
+                          className="h-14 w-20 flex-none rounded-md object-cover"
+                          loading="lazy"
+                        />
+                      </Link>
                     )}
                     <div className="min-w-0">
-                      <a href={n.url} target="_blank" rel="noopener" className="line-clamp-2 text-sm hover:underline">
+                      <Link href={articleHref(n)} className="line-clamp-2 text-sm hover:underline">
                         {n.title}
-                      </a>
+                      </Link>
+                      <SourceLink url={n.url} className="ml-2" />
                       <p className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-600">
                         {media[n.media]?.icon && (
                           <SafeImage src={media[n.media].icon} alt="" width={12} height={12} className="rounded-sm" loading="lazy" />

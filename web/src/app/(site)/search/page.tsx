@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import PendingLabel from '@/components/PendingLabel';
 import SafeImage from '@/components/SafeImage';
+import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, fetchMedia, type MediaInfo, taipei } from '@/lib/api';
 import { selectEventLead } from '@/lib/event-presentation.mts';
 import { fetchEvents } from '@/lib/pages';
+import { articleHref } from '@/lib/reading.mts';
 
 // Site search over every stored article: title, summary and exact tag (we do
-// not keep article bodies), via /api/v1/articles.
+// not search article bodies), via /api/v1/articles.
 
 type Camp = 'green' | 'other' | 'blue';
 const CAMPS: Array<{ key: Camp; label: string; bar: string; badge: string | null }> = [
@@ -149,7 +151,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             搜尋
           </button>
         </form>
-        <p className="text-xs text-zinc-600">搜尋本站收錄的所有媒體文章，比對標題、摘要與標籤（本站不保存內文），最多往前 31 天。</p>
+        <p className="text-xs text-zinc-600">搜尋本站收錄的所有媒體文章，比對標題、摘要與標籤，最多往前 31 天。</p>
       </div>
 
       {!q ? null : !page ? (
@@ -281,9 +283,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         {a.datePending && ' *'}
                       </span>
                     </p>
-                    <a href={a.url} target="_blank" rel="noopener" className="mt-1 block font-medium hover:underline">
+                    <Link href={articleHref(a)} className="mt-1 block font-medium hover:underline">
                       <Highlight text={a.title} q={q} />
-                    </a>
+                    </Link>
+                    <SourceLink url={a.url} className="ml-2" />
                     {a.description && (
                       <p className="mt-1 line-clamp-2 text-sm text-zinc-600">
                         <Highlight text={a.description} q={q} />

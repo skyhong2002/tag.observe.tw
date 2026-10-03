@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import SafeImage from '@/components/SafeImage';
+import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { isAllowedImage } from '@/lib/images';
 import { type FeedTopic, fetchTopics, type TopicCoverage } from '@/lib/pages';
+import { articleHref } from '@/lib/reading.mts';
 export const revalidate = 300;
 export const metadata = { title: '議題表' };
 
@@ -37,10 +39,8 @@ export default async function TopicPage() {
           <ul className="grid gap-x-6 lg:grid-cols-2">
             {feed.map((t) => (
               <li key={t.id} className="flex gap-3 border-b border-zinc-300 py-3 dark:border-zinc-800">
-                <a
-                  href={t.url ?? '#'}
-                  target="_blank"
-                  rel="noopener"
+                <Link
+                  href={`/topic/${encodeURIComponent(t.media)}/#topic-${t.id}`}
                   className="flex aspect-video w-28 shrink-0 items-center justify-center self-start overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800"
                 >
                   <SafeImage
@@ -50,16 +50,17 @@ export default async function TopicPage() {
                     height={126}
                     className="h-full w-full object-cover"
                   />
-                </a>
+                </Link>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <a href={t.url ?? '#'} target="_blank" rel="noopener" className="line-clamp-2 font-medium hover:underline">
+                  <Link href={`/topic/${encodeURIComponent(t.media)}/#topic-${t.id}`} className="line-clamp-2 font-medium hover:underline">
                     {t.title}
-                  </a>
+                  </Link>
                   <span className="flex items-center gap-1.5 text-xs text-zinc-600">
                     {t.mediaTitle}
                     <span aria-hidden>·</span>
                     {t.time && !t.backlog ? taipei(t.time) : '開始追蹤前已上架'}
                   </span>
+                  <SourceLink url={t.url} label="原站專題" />
                   {t.coverage && <Coverage c={t.coverage} />}
                 </div>
               </li>
@@ -92,9 +93,9 @@ function Coverage({ c }: { c: TopicCoverage }) {
       <ul className="space-y-0.5">
         {c.latest.slice(0, 2).map((a) => (
           <li key={a.url} className="flex gap-1.5">
-            <a href={a.url} target="_blank" rel="noopener" className="line-clamp-1 flex-1 text-zinc-700 hover:underline dark:text-zinc-400">
+            <Link href={articleHref(a)} className="line-clamp-1 flex-1 text-zinc-700 hover:underline dark:text-zinc-400">
               {a.title}
-            </a>
+            </Link>
             <span className="shrink-0 text-zinc-500">{a.mediaTitle}</span>
           </li>
         ))}

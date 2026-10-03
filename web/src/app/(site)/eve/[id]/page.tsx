@@ -2,9 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import EventChart, { type EventSeriesPoint } from '@/components/EventChart';
 import SafeImage from '@/components/SafeImage';
+import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei, taipeiHour } from '@/lib/api';
+import { articleHref } from '@/lib/reading.mts';
 export const revalidate = 120;
 interface News {
+  id?: number | null;
   title: string;
   url: string;
   image: string | null;
@@ -83,12 +86,22 @@ function OutletBlock({ o }: { o: Outlet }) {
         {o.articles.map((a) => (
           <li key={a.id} className="flex gap-2">
             {a.image && /^https?:\/\//.test(a.image) && (
-              <SafeImage src={a.image} alt="" width={64} height={44} className="h-11 w-16 flex-none rounded object-cover" loading="lazy" />
+              <Link href={articleHref(a)} tabIndex={-1} aria-label={`閱讀：${a.title}`} className="flex-none">
+                <SafeImage
+                  src={a.image}
+                  alt=""
+                  width={64}
+                  height={44}
+                  className="h-11 w-16 flex-none rounded object-cover"
+                  loading="lazy"
+                />
+              </Link>
             )}
             <div className="min-w-0">
-              <a href={a.url} target="_blank" rel="noopener" className="text-sm hover:underline">
+              <Link href={articleHref(a)} className="text-sm hover:underline">
                 {a.title}
-              </a>
+              </Link>
+              <SourceLink url={a.url} className="ml-2" />
               <p className="text-[11px] text-zinc-600">{taipei(a.publishedAt)}</p>
             </div>
           </li>
@@ -137,9 +150,10 @@ function Timeline({ cov, hours }: { cov: Coverage; hours: Hour[] }) {
                 <li key={a.id} className="flex gap-3 px-3 py-2">
                   <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-600">{clock(a.publishedAt)}</span>
                   <div className="min-w-0 flex-1">
-                    <a href={a.url} target="_blank" rel="noopener" className="font-medium leading-snug hover:underline">
+                    <Link href={articleHref(a)} className="font-medium leading-snug hover:underline">
                       {a.title}
-                    </a>
+                    </Link>
+                    <SourceLink url={a.url} className="ml-2" />
                     <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-600">
                       <span
                         className={`inline-block h-2 w-2 rounded-full ${CAMP_STYLE[a.outlet.camp].dot}`}
@@ -340,19 +354,22 @@ export default async function EventThreadPage({
               {news.map((n) => (
                 <li key={n.url} className="flex gap-3 p-3">
                   {n.image && /^https?:\/\//.test(n.image) && (
-                    <SafeImage
-                      src={n.image}
-                      alt=""
-                      width={96}
-                      height={64}
-                      className="h-16 w-24 flex-none rounded-md object-cover"
-                      loading="lazy"
-                    />
+                    <Link href={articleHref(n)} tabIndex={-1} aria-label={`閱讀：${n.title}`} className="flex-none">
+                      <SafeImage
+                        src={n.image}
+                        alt=""
+                        width={96}
+                        height={64}
+                        className="h-16 w-24 flex-none rounded-md object-cover"
+                        loading="lazy"
+                      />
+                    </Link>
                   )}
                   <div className="min-w-0">
-                    <a href={n.url} target="_blank" rel="noopener" className="line-clamp-2 font-medium hover:underline">
+                    <Link href={articleHref(n)} className="line-clamp-2 font-medium hover:underline">
                       {n.title}
-                    </a>
+                    </Link>
+                    <SourceLink url={n.url} className="ml-2" />
                     <p className="mt-1 text-xs text-zinc-600">{n.media}</p>
                   </div>
                 </li>

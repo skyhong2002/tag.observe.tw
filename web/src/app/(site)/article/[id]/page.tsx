@@ -1,92 +1,134 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import ArticleBody from '@/components/ArticleBody';
+import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import { CONTENT_STATUS, type StoredContent } from '@/lib/article-content';
+import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
 
 export const revalidate = 60;
-export default async function ArticleContentPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ArticleContentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<ReadingParams>;
+}) {
   const { id } = await params;
   if (!/^[1-9]\d{0,15}$/.test(id) || !Number.isSafeInteger(Number(id))) notFound();
+  const query = readingQuery(await searchParams) ?? new URLSearchParams();
   const res = await fetch(`${API_ORIGIN}/api/v1/articles/${id}/content`, {
     next: { revalidate },
     signal: AbortSignal.timeout(6000),
   }).catch(() => null);
   if (res?.status === 404 || res?.status === 400) notFound();
-  if (!res?.ok) return <p className="text-zinc-600">暫時無法取得文章內容，請稍後再試。</p>;
+  if (!res?.ok) return <p className="py-12 text-zinc-600 dark:text-zinc-400">暫時無法取得文章內容，請稍後重新整理。</p>;
   const { article, content } = (await res.json()) as StoredContent;
   const state = CONTENT_STATUS[content.status];
+  const headline = readingTitle(article.title);
+  const mediaHref = `/media/${encodeURIComponent(article.media)}/`;
+  const backHref = `${withReadingQuery(mediaHref, query)}#article-${id}`;
   return (
-    <article className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href={`/media/${encodeURIComponent(article.media)}/articles/`}
-        className="text-sm text-brand-700 hover:underline dark:text-brand-400"
-      >
-        ← {article.mediaTitle}全文資料庫
-      </Link>
-      <header className="space-y-3">
-        <h1 className="text-2xl font-semibold leading-relaxed tracking-tight sm:text-3xl">{article.title}</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          刊登媒體：
-          <Link href={`/media/${encodeURIComponent(article.media)}/`} className="hover:underline">
-            {article.publisher.name}
-          </Link>{' '}
-          ・所屬地區：{article.publisher.country}・{taipei(article.publishedAt)}
+    <article className="mx-auto max-w-[44rem] pb-10 pt-1 sm:pt-4">
+      <nav aria-label="文章導覽" className="mb-8 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <Link
+          href={backHref}
+          className="inline-flex min-h-9 items-center text-zinc-600 hover:text-brand-700 dark:text-zinc-400 dark:hover:text-brand-400"
+        >
+          ← {article.mediaTitle}報導
+        </Link>
+        <SourceLink url={article.url} label="原站文章" />
+      </nav>
+      <header className="mb-7">
+        <p className="mb-4 flex flex-wrap items-center gap-3 text-xs font-medium tracking-wide text-brand-700 dark:text-brand-400">
+          <Link href={mediaHref} className="hover:underline">
+            {article.mediaTitle}
+          </Link>
+          {headline.section && (
+            <>
+              <span aria-hidden="true">/</span>
+              <span>{headline.section}</span>
+            </>
+          )}
         </p>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          原站署名：{article.authors.length ? article.authors.join('、') : '未提供'}
-        </p>
-        {/^https?:\/\//i.test(article.url) && (
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block text-sm text-brand-700 hover:underline dark:text-brand-400"
-          >
-            查看原站文章 ↗
-          </a>
-        )}
+        <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">{headline.title}</h1>
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
+          {article.authors.length > 0 && <span>{article.authors.join('、')}</span>}
+          <time dateTime={article.publishedAt}>{taipei(article.publishedAt)}</time>
+          {content.body && <span className="text-xs">約 {Math.max(1, Math.ceil(content.chars / 500))} 分鐘閱讀</span>}
+        </div>
       </header>
-      <div className="space-y-2 rounded-xl border border-zinc-300 bg-zinc-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="font-medium">
-          {state.label}
-          {content.body ? `・${content.chars.toLocaleString('zh-TW')} 字` : ''}
-        </p>
-        <p className="text-zinc-600 dark:text-zinc-400">{state.detail}</p>
-        {content.fetchedAt && <p className="text-zinc-600 dark:text-zinc-400">正文擷取時間：{taipei(content.fetchedAt)}</p>}
-        <p className="text-zinc-600 dark:text-zinc-400">正文保存至刊登後 90 天；此頁閱讀本站保存內容。</p>
-      </div>
-      {content.body && (
-        <div className="whitespace-pre-wrap break-words text-base leading-8 text-zinc-800 dark:text-zinc-200">{content.body}</div>
-      )}
-      {content.attributions.length > 0 && (
-        <section className="space-y-3 border-t border-zinc-300 pt-5 dark:border-zinc-800">
-          <h2 className="font-semibold">文中明示引用的媒體</h2>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">引用證據表示文中提及來源，不等同原始作者；地區指媒體所屬地區。</p>
-          <ul className="space-y-3 text-sm">
-            {content.attributions.map((source) => (
-              <li key={source.media} className="rounded-lg bg-zinc-100 p-3 dark:bg-zinc-900">
-                <p className="font-medium">
-                  {source.name}・{source.country}
-                </p>
-                <p className="mt-1 break-words text-zinc-600 dark:text-zinc-400">引用證據：{source.evidence}</p>
-              </li>
-            ))}
-          </ul>
+      {content.body ? (
+        <>
+          {content.status !== 'ok' && (
+            <p className="mb-6 border-l-2 border-amber-500 pl-4 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
+          )}
+          <ArticleBody body={content.body} />
+        </>
+      ) : (
+        <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
+          <h2 className="font-medium">{state.label}</h2>
+          <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
+          {article.description && (
+            <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+              <h3 className="mb-2 text-xs text-zinc-500">文章摘要</h3>
+              <p className="text-base leading-8">{article.description}</p>
+            </div>
+          )}
+          <div className="mt-4">
+            <SourceLink url={article.url} label="前往原站閱讀" />
+          </div>
         </section>
       )}
-      {article.tags.length > 0 && (
-        <nav aria-label="文章標籤" className="flex flex-wrap gap-2 text-sm">
-          {article.tags.map((tag) => (
-            <Link
-              key={tag}
-              href={`/tag/${encodeURIComponent(tag)}/`}
-              className="rounded-md bg-zinc-100 px-2 py-1 hover:underline dark:bg-zinc-800"
-            >
-              #{tag}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <footer className="mt-12 space-y-7 border-t border-zinc-200 pt-7 dark:border-zinc-800">
+        {article.tags.length > 0 && (
+          <nav aria-label="文章標籤" className="flex flex-wrap gap-2 text-sm">
+            {article.tags.map((tag) => (
+              <Link
+                key={tag}
+                href={`/tag/${encodeURIComponent(tag)}/`}
+                className="rounded-full bg-zinc-100 px-3 py-1.5 text-zinc-600 hover:text-brand-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-brand-400"
+              >
+                #{tag}
+              </Link>
+            ))}
+          </nav>
+        )}
+        {content.attributions.length > 0 && (
+          <section>
+            <h2 className="mb-3 text-sm font-medium">文中引用來源</h2>
+            <ul className="space-y-3 text-sm">
+              {content.attributions.map((source) => (
+                <li key={source.media} className="border-l-2 border-zinc-200 pl-4 dark:border-zinc-700">
+                  <p className="font-medium">
+                    {source.name}
+                    <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{source.country}</span>
+                  </p>
+                  <p className="mt-1 break-words leading-7 text-zinc-600 dark:text-zinc-400">{source.evidence}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">文章提及的來源，不代表原始作者。</p>
+          </section>
+        )}
+        <details className="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
+          <summary className="cursor-pointer py-2 hover:text-zinc-900 dark:hover:text-zinc-200">保存資訊與閱讀說明</summary>
+          <div className="mt-2 space-y-1">
+            <p>
+              {state.label}
+              {content.body ? ` · ${content.chars.toLocaleString('zh-TW')} 字` : ''} · 刊登媒體所在地：{article.publisher.country}
+            </p>
+            {content.fetchedAt && <p>內文擷取：{taipei(content.fetchedAt)}</p>}
+            <p>本站呈現已擷取的文字，圖片與影音請見原站。正文保存至刊登後 90 天。</p>
+          </div>
+        </details>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-5 text-sm dark:border-zinc-800">
+          <Link href={backHref} className="py-2 hover:text-brand-700 dark:hover:text-brand-400">
+            ← 繼續瀏覽{article.mediaTitle}
+          </Link>
+          <SourceLink url={article.url} label="原站文章" />
+        </div>
+      </footer>
     </article>
   );
 }

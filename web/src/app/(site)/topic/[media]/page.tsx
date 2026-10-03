@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import SafeImage from '@/components/SafeImage';
+import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { isAllowedImage } from '@/lib/images';
 import { fetchTopicMedia } from '@/lib/pages';
@@ -8,7 +9,7 @@ export const revalidate = 300;
 
 export default async function TopicMediaPage({ params }: { params: Promise<{ media: string }> }) {
   const { media } = await params;
-  const data = await fetchTopicMedia(media, 40);
+  const data = await fetchTopicMedia(media, 200);
   if (!data) notFound();
   return (
     <div className="space-y-5">
@@ -24,8 +25,12 @@ export default async function TopicMediaPage({ params }: { params: Promise<{ med
       </div>
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.topics.map((t) => (
-          <li key={t.id} className="rounded-xl border border-zinc-300 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-            <a href={t.url ?? '#'} target="_blank" rel="noopener" className="group flex flex-col gap-2">
+          <li
+            key={t.id}
+            id={`topic-${t.id}`}
+            className="scroll-mt-32 rounded-xl border border-zinc-300 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <div className="flex flex-col gap-2">
               <SafeImage
                 src={isAllowedImage(t.image) ? t.image : data.mediaImage}
                 alt=""
@@ -33,9 +38,10 @@ export default async function TopicMediaPage({ params }: { params: Promise<{ med
                 height={270}
                 className="aspect-video w-full rounded-lg object-cover"
               />
-              <span className="line-clamp-2 font-medium group-hover:underline">{t.title}</span>
+              <h2 className="font-medium">{t.title}</h2>
               <span className="text-xs text-zinc-600">{t.time && !t.backlog ? taipei(t.time) : '開始追蹤前已上架'}</span>
-            </a>
+              <SourceLink url={t.url} label="原站專題" />
+            </div>
           </li>
         ))}
       </ul>

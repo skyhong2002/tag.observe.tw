@@ -99,7 +99,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
           <p>事件每半小時依標籤共現分群，標題取自註明的媒體；議題表每小時收錄各媒體新推出的專題頁。</p>
           <p>藍綠沿用本站媒體分類（承襲舊站設定），可在媒體頁依傾向篩選；「未列藍綠」不代表中立。</p>
           {notes}
-          <p>標題與圖片著作權屬原媒體，本站只提供標題、連結與統計。</p>
+          <p>新聞內容著作權屬原媒體。本站提供報導索引、統計與保留期間內的文章文字；標示 ↗ 的連結會開啟外部網站。</p>
         </div>
       </details>
 
@@ -125,6 +125,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
                     ) : (
                       <a href={l.href} className={linkClass} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                         {l.label}
+                        {l.external && <span aria-hidden="true"> ↗</span>}
                       </a>
                     )}
                   </li>

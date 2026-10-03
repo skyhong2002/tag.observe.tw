@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { loadComparisons } from '@/lib/compare-data';
 import { headlineDiff } from '@/lib/headline-compare.mts';
+import { articleHref } from '@/lib/reading.mts';
 import styles from './home.module.css';
 
 export default async function HeadlineSidebar({ query }: { query: string }) {
@@ -36,18 +38,15 @@ export default async function HeadlineSidebar({ query }: { query: string }) {
                     </span>
                     <time dateTime={article.publishedAt}>{taipei(article.publishedAt)}</time>
                   </div>
-                  <a href={article.url} target="_blank" rel="noopener noreferrer" className={styles.comparedTitle}>
+                  <Link href={articleHref(article)} className={styles.comparedTitle}>
                     {parts[index].map((part, position) => (
                       // biome-ignore lint/suspicious/noArrayIndexKey: These stateless text runs are rendered together from a single immutable headline.
                       <span key={position} className={part.different ? styles.differentWords : undefined}>
                         {part.text}
                       </span>
                     ))}
-                    <span className={styles.sourceArrow} aria-hidden="true">
-                      {' '}
-                      ↗
-                    </span>
-                  </a>
+                  </Link>
+                  <SourceLink url={article.url} className="ml-2" />
                 </div>
               ))}
               <Link href={`/eve/${encodeURIComponent(event.id)}/`} className={styles.headlineMore}>
@@ -66,7 +65,7 @@ export default async function HeadlineSidebar({ query }: { query: string }) {
               : '目前沒有足夠的藍綠相近報導可供對照。'}
         </p>
       )}
-      <p className={styles.gapNote}>底線標示不同用字，不代表偏見程度。藍綠沿用本站媒體分類；點標題可讀原文。</p>
+      <p className={styles.gapNote}>底線標示不同用字，不代表偏見程度。藍綠沿用本站媒體分類；點標題可在本站閱讀。</p>
     </>
   );
 }

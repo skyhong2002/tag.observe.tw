@@ -17,7 +17,7 @@ export interface TopicCoverage {
   count: number;
   capped: boolean;
   mediaCount: number;
-  latest: Array<{ media: string; title: string; url: string; time: string }>;
+  latest: Array<{ id: number; media: string; title: string; url: string; time: string }>;
 }
 
 const WINDOW_DAYS = 3;
@@ -66,7 +66,7 @@ export async function topicCoverage(
   const out = new Map<string, TopicCoverage>();
   const recent = (set: string[]) =>
     db
-      .select({ media: articles.media, title: articles.title, url: articles.url, at: articles.publishedAt })
+      .select({ id: articles.id, media: articles.media, title: articles.title, url: articles.url, at: articles.publishedAt })
       .from(articleTags)
       .innerJoin(articles, eq(articles.id, articleTags.articleId))
       .where(and(inArray(articleTags.tag, set), gte(articleTags.publishedAt, since), lte(articleTags.publishedAt, now)))
@@ -99,7 +99,7 @@ export async function topicCoverage(
     const latest = rows
       .filter((r) => !seen.has(r.media) && seen.add(r.media))
       .slice(0, 3)
-      .map((r) => ({ media: r.media, title: r.title, url: r.url, time: r.at.toISOString() }));
+      .map((r) => ({ id: r.id, media: r.media, title: r.title, url: r.url, time: r.at.toISOString() }));
     out.set(title, {
       tags,
       basis,

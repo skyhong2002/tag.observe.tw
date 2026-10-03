@@ -36,7 +36,7 @@ export interface TopicCoverage {
   count: number;
   capped: boolean;
   mediaCount: number;
-  latest: Array<{ media: string; mediaTitle: string; title: string; url: string; time: string }>;
+  latest: Array<{ id?: number; media: string; mediaTitle: string; title: string; url: string; time: string }>;
 }
 export interface FeedTopic extends Topic {
   media: string;

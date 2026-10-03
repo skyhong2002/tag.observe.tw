@@ -1,3 +1,4 @@
+import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.ts';
@@ -16,6 +17,7 @@ const row = {
   media: 'cna',
   title: '保存的報導',
   url: 'https://offline.example/news',
+  image: 'https://offline.example/photo.jpg',
   publishedAt: fetched,
   tags: ['報導'],
   description: null,
@@ -46,6 +48,8 @@ describe('stored article content', () => {
     expect(parseContentId('9007199254740991')).toBe(Number.MAX_SAFE_INTEGER);
     expect(parseContentPage({})).toEqual({ cursor: null, limit: 40 });
     expect(parseContentPage({ cursor: '9', limit: '100' })).toEqual({ cursor: 9, limit: 100 });
+    expect(parseContentPage({ cursor: '9', hours: '72' })).toEqual({ cursor: 9, limit: 40, hours: 72 });
+    for (const hours of ['0', '169', '2.5', 'all', '']) expect(parseContentPage({ hours })).toBeNull();
     for (const query of [{ cursor: '' }, { cursor: 'x' }, { limit: '101' }, { limit: '0' }, { limit: '2.5' }]) {
       expect(parseContentPage(query)).toBeNull();
     }
@@ -76,6 +80,15 @@ describe('stored article content', () => {
     expect(chain.limit).toHaveBeenCalledWith(3);
     expect(select.mock.calls[0][0]).not.toHaveProperty('body');
     expect(result.articles[0]).not.toHaveProperty('body');
+    expect(result.articles[0].image).toBe(row.image);
+  });
+  it('applies the publication window alongside the archive cursor', async () => {
+    const { db, chain } = fakeDb([]);
+    await loadMediaContent(db, 'rti', { cursor: 99, limit: 40, hours: 24 }, fetched);
+    const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
+    expect(query.sql).toContain('`articles`.`id` < ?');
+    expect(query.sql).toContain('`articles`.`published_at` >= ?');
+    expect(query.params).toEqual(['rti', 99, '2026-10-02 01:00:00.000']);
   });
   it('serves preserved text with no source request and reports not found or invalid inputs', async () => {
     const { db, select } = fakeDb([row]);
@@ -87,7 +100,12 @@ describe('stored article content', () => {
       expect(response.statusCode).toBe(200);
       expect(response.json().content.body).toBe(row.body);
       expect(fetchSpy).not.toHaveBeenCalled();
-      for (const path of ['/api/v1/articles/0/content', '/api/v1/media/cna/content?cursor=1.5', '/api/v1/media/cna/content?limit=101']) {
+      for (const path of [
+        '/api/v1/articles/0/content',
+        '/api/v1/media/cna/content?cursor=1.5',
+        '/api/v1/media/cna/content?limit=101',
+        '/api/v1/media/cna/content?hours=169',
+      ]) {
         expect((await app.inject(path)).statusCode).toBe(400);
       }
       for (const path of ['/api/v1/media/unknown-content-outlet/content', '/api/v1/media/__proto__/content']) {

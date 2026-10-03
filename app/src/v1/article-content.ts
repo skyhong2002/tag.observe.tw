@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
@@ -13,6 +13,7 @@ export interface ContentArticle {
   mediaTitle: string;
   title: string;
   url: string;
+  image: string | null;
   publishedAt: Date;
   tags: string[];
   description: string | null;
@@ -46,11 +47,20 @@ export function parseContentId(value: unknown): number | null {
   const id = Number(value);
   return Number.isSafeInteger(id) ? id : null;
 }
-export function parseContentPage(query: { cursor?: string; limit?: string }): { cursor: number | null; limit: number } | null {
+export function parseContentPage(query: { cursor?: string; limit?: string; hours?: string }): {
+  cursor: number | null;
+  limit: number;
+  hours?: number;
+} | null {
   const cursor = query.cursor === undefined ? null : parseContentId(query.cursor);
   if (query.cursor !== undefined && cursor === null) return null;
   const limit = query.limit === undefined ? 40 : parseContentId(query.limit);
   if (limit === null || limit > CONTENT_PAGE_LIMIT) return null;
+  if (query.hours !== undefined) {
+    const hours = parseContentId(query.hours);
+    if (hours === null || hours > 168) return null;
+    return { cursor, limit, hours };
+  }
   return { cursor, limit };
 }
 export function contentStatus(status: string | null, chars: number, fetchedAt: Date | null): ContentStatus {
@@ -65,6 +75,7 @@ const metadata = {
   media: articles.media,
   title: articles.title,
   url: articles.url,
+  image: articles.image,
   publishedAt: articles.publishedAt,
   tags: articles.tags,
   description: articles.description,
@@ -76,6 +87,7 @@ type MetadataRow = {
   media: string;
   title: string;
   url: string;
+  image: string | null;
   publishedAt: Date;
   tags: string[];
   description: string | null;
@@ -90,6 +102,7 @@ export function contentArticle(row: MetadataRow): ContentArticle {
     mediaTitle: titles[row.media]?.title ?? row.media,
     title: row.title,
     url: row.url,
+    image: row.image,
     publishedAt: row.publishedAt,
     tags: row.tags,
     description: row.description,
@@ -128,7 +141,8 @@ export async function loadArticleContent(db: Db, id: number): Promise<ArticleCon
 export async function loadMediaContent(
   db: Db,
   media: string,
-  query: { cursor: number | null; limit: number },
+  query: { cursor: number | null; limit: number; hours?: number },
+  now = new Date(),
 ): Promise<MediaContentResponse> {
   // Select character counts, never full bodies, on this bounded listing. Reads
   // use existing stored records only and cannot trigger a fetch of the source.
@@ -140,7 +154,13 @@ export async function loadMediaContent(
       bodyChars: sql<number>`COALESCE(CHAR_LENGTH(${articles.body}), 0)`,
     })
     .from(articles)
-    .where(and(eq(articles.media, media), query.cursor ? lt(articles.id, query.cursor) : undefined))
+    .where(
+      and(
+        eq(articles.media, media),
+        query.cursor ? lt(articles.id, query.cursor) : undefined,
+        query.hours ? gte(articles.publishedAt, new Date(now.getTime() - query.hours * 3600e3)) : undefined,
+      ),
+    )
     .orderBy(desc(articles.id))
     .limit(query.limit + 1);
   const page = rows.slice(0, query.limit);
@@ -168,13 +188,13 @@ export function registerArticleContent(app: FastifyInstance, db: Db) {
     reply.header('cache-control', 'public, max-age=60');
     return result;
   });
-  app.get<{ Params: { media: string }; Querystring: { cursor?: string; limit?: string } }>(
+  app.get<{ Params: { media: string }; Querystring: { cursor?: string; limit?: string; hours?: string } }>(
     '/api/v1/media/:media/content',
     async (request, reply) => {
       const { media } = request.params;
       if (!Object.hasOwn(titles, media)) return reply.code(404).send({ error: 'unknown media' });
       const query = parseContentPage(request.query);
-      if (!query) return reply.code(400).send({ error: 'bad cursor or limit; limit must be 1–100' });
+      if (!query) return reply.code(400).send({ error: 'bad cursor, limit or hours; limit must be 1–100 and hours 1–168' });
       reply.header('cache-control', 'public, max-age=60');
       return loadMediaContent(db, media, query);
     },

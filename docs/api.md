@@ -358,6 +358,7 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `article.mediaTitle` | string |  |
 | `article.title` | string |  |
 | `article.url` | string |  |
+| `article.image` | string \| null |  |
 | `article.publishedAt` | string (ISO 時間) |  |
 | `article.tags` | string[] |  |
 | `article.description` | string \| null |  |
@@ -849,6 +850,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `feed[].coverage.capped` | boolean | count 達上限 500 |
 | `feed[].coverage.mediaCount` | integer |  |
 | `feed[].coverage.latest` | object[] |  |
+| `feed[].coverage.latest[].id` | integer |  |
 | `feed[].coverage.latest[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `feed[].coverage.latest[].mediaTitle` | string |  |
 | `feed[].coverage.latest[].title` | string |  |
@@ -888,6 +890,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `media` | 路徑 | string | 媒體代碼，例：`cna` |
 | `limit` | query | integer | 每頁筆數，1–100，預設 `40` |
 | `cursor` | query | string | 上一頁 nextCursor |
+| `hours` | query | integer | 僅列出近幾小時刊登的文章；省略則不限時間，1–168 |
 
 範例：
 
@@ -915,6 +918,7 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
 | `articles[].mediaTitle` | string |  |
 | `articles[].title` | string |  |
 | `articles[].url` | string |  |
+| `articles[].image` | string \| null |  |
 | `articles[].publishedAt` | string (ISO 時間) |  |
 | `articles[].tags` | string[] |  |
 | `articles[].description` | string \| null |  |

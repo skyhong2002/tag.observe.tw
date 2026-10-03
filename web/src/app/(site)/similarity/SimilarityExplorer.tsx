@@ -25,7 +25,7 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
   return (
     <div className="min-w-0 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-950/60">
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-        <Link href={`/media/${encodeURIComponent(article.media)}/articles/`} className={`${linkStyle} font-medium`}>
+        <Link href={`/media/${encodeURIComponent(article.media)}/`} className={`${linkStyle} font-medium`}>
           {article.mediaTitle}
         </Link>
         <span className="text-zinc-500">
@@ -52,7 +52,7 @@ function ArticleCard({ article, earlier }: { article: SimilarityArticle; earlier
       )}
       <div className="mt-3 flex flex-wrap gap-4 text-xs">
         <Link href={`/article/${article.id}/`} className={linkStyle}>
-          查看已保存內文
+          站內閱讀
         </Link>
         <a href={article.url} target="_blank" rel="noopener noreferrer" className={linkStyle}>
           媒體原文 ↗
@@ -276,7 +276,7 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
                     ))}
                   </div>
                   {!byId.get(selection.node)?.external && (
-                    <Link href={`/media/${encodeURIComponent(selection.node)}/articles/`} className={`${linkStyle} inline-block text-xs`}>
+                    <Link href={`/media/${encodeURIComponent(selection.node)}/`} className={`${linkStyle} inline-block text-xs`}>
                       查看這家媒體的已保存內文 →
                     </Link>
                   )}
@@ -346,7 +346,7 @@ export default function SimilarityExplorer({ data }: { data: SimilarityData }) {
                   key={row.media}
                   className="flex items-start justify-between gap-3 border-b border-zinc-100 pb-2 text-xs dark:border-zinc-800"
                 >
-                  <Link href={`/media/${encodeURIComponent(row.media)}/articles/`} className={linkStyle}>
+                  <Link href={`/media/${encodeURIComponent(row.media)}/`} className={linkStyle}>
                     {row.name}
                     {row.excludedFromStatistics ? '（排除統計）' : ''}
                   </Link>
