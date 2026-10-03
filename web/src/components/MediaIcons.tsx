@@ -6,11 +6,11 @@ import styles from './MediaIcons.module.css';
 export default function MediaIcons({ media, info }: { media: Record<string, number>; info: MediaInfo }) {
   const entries = Object.entries(media);
   return (
-    <ul className="flex flex-wrap items-center gap-1.5">
+    <ul aria-label="媒體（可左右滑動）" className={`flex items-center gap-1.5 overflow-x-auto ${styles.list}`}>
       {entries.map(([key, n]) => {
         const camp = catalog.categories.blue.includes(key) ? 'blue' : catalog.categories.green.includes(key) ? 'green' : 'other';
         return (
-          <li key={key}>
+          <li key={key} className="shrink-0">
             <MediaHoverLink
               media={key}
               title={info[key]?.title ?? key}

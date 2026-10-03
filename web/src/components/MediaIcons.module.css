@@ -8,3 +8,5 @@
 :global([data-theme="dark"]) .other { background: #27272a; }
 :global([data-theme="dark"]) .green { background: #263c32; }
 :global([data-theme="dark"]) .blue { background: #29374b; }
+.list { padding: 2px; margin: -2px; scrollbar-width: none; }
+.list::-webkit-scrollbar { display: none; }

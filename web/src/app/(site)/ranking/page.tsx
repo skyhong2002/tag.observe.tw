@@ -155,7 +155,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       <td className="px-3 py-1">
                         <Sparkline values={trend.map((p) => p.average24h)} />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="w-1/2 max-w-0 px-3 py-2">
                         <MediaIcons media={e.media} info={media} />
                       </td>
                     </tr>
