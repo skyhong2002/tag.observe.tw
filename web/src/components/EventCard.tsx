@@ -75,7 +75,7 @@ export function RankTrail({ e, className = 'h-6 w-20', span = '最近 24 小時'
       title={`${span}名次：${trail.map((r) => (r === null ? '－' : r)).join(' ')}；最高第 ${best} 名`}
       aria-label={`${span}名次走勢，最高第 ${best} 名`}
     >
-      <Sparkline values={trail} rank color="#0369a1" className={className} />
+      <Sparkline values={trail} rank color="#0284c7" className={className} />
     </span>
   );
 }

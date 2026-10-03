@@ -25,7 +25,8 @@ export default function Sparkline({
     const chart = echarts.init(ref.current, undefined, { renderer: 'canvas' });
     chart.setOption({
       animation: false,
-      grid: { left: 2, right: 2, top: 4, bottom: 2 },
+      // Rank 1 sits on the top edge; leave room for its marker.
+      grid: { left: 2, right: 2, top: rank ? 5 : 4, bottom: rank ? 3 : 2 },
       xAxis: { type: 'category', show: false, data: values.map((_, i) => i) },
       yAxis: rank
         ? { type: 'value', show: false, inverse: true, min: 1, max: Math.max(10, ...values.filter((v): v is number => v !== null)) }

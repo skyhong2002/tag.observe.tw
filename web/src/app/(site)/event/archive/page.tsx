@@ -22,8 +22,19 @@ const mmdd = (day: string) => day.slice(5).replace('-', '/');
 /** Clock time, with the date when it falls on another day. */
 const when = (iso: string, day: string) => (taipeiDay(iso) === day ? hh(iso) : `${mmdd(taipeiDay(iso))} ${hh(iso)}`);
 
-/** What the rank line covers: the 24 hours up to the thread's last hour that day. */
-const trailSpan = (t: ArchivedThread, day: string) => (t.trailEnd ? `到 ${when(t.trailEnd, day)} 為止 24 小時` : '最近 24 小時');
+/** The rank line from the thread's first hour on the table, so a run that
+ *  began late in the 24h window fills the chart instead of hugging one end. */
+const trimTrail = (trail: Array<number | null> | null | undefined) => {
+  const start = trail?.findIndex((r) => r !== null) ?? -1;
+  return trail && start > 0 ? trail.slice(start) : trail;
+};
+/** What the rank line covers, as clock times. */
+function trailSpan(t: ArchivedThread, day: string) {
+  const trail = trimTrail(t.rankTrail);
+  if (!t.trailEnd || !trail?.length) return '最近 24 小時';
+  const start = new Date(Date.parse(t.trailEnd) - (trail.length - 1) * 3600e3).toISOString();
+  return `${when(start, day)} 至 ${when(t.trailEnd, day)} `;
+}
 
 const HERO = 3,
   CARDS = 9;
@@ -38,7 +49,7 @@ const asEvent = (t: ArchivedThread, rank: number): EventItem => ({
   news: t.news,
   relatedEventPk: String(t.id),
   hours: t.hours,
-  rankTrail: t.rankTrail,
+  rankTrail: trimTrail(t.rankTrail),
   firstTime: t.firstTime,
   coverage: t.coverage,
 });
