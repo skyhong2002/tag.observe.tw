@@ -3,9 +3,8 @@ import type { MediaInfo } from '@/lib/api';
 import catalog from '../../../app/data/media-catalog.json';
 import styles from './MediaIcons.module.css';
 
-export default function MediaIcons({ media, info, max = 8 }: { media: Record<string, number>; info: MediaInfo; max?: number }) {
-  const entries = Object.entries(media).slice(0, max);
-  const rest = Object.keys(media).length - entries.length;
+export default function MediaIcons({ media, info }: { media: Record<string, number>; info: MediaInfo }) {
+  const entries = Object.entries(media);
   return (
     <ul className="flex flex-wrap items-center gap-1.5">
       {entries.map(([key, n]) => {
@@ -25,7 +24,6 @@ export default function MediaIcons({ media, info, max = 8 }: { media: Record<str
           </li>
         );
       })}
-      {rest > 0 && <li className="text-[11px] text-zinc-500">+{rest}</li>}
     </ul>
   );
 }
