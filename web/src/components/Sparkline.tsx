@@ -7,7 +7,18 @@ import { useEffect, useRef } from 'react';
 
 echarts.use([LineChart, GridComponent, CanvasRenderer]);
 
-export default function Sparkline({ values, color = '#c2410c' }: { values: (number | null)[]; color?: string }) {
+export default function Sparkline({
+  values,
+  color = '#c2410c',
+  rank = false,
+  className = 'h-8 w-24',
+}: {
+  values: (number | null)[];
+  color?: string;
+  /** Plot as a rank: 1 at the top, gaps where the value is null. */
+  rank?: boolean;
+  className?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current) return;
@@ -16,19 +27,25 @@ export default function Sparkline({ values, color = '#c2410c' }: { values: (numb
       animation: false,
       grid: { left: 2, right: 2, top: 4, bottom: 2 },
       xAxis: { type: 'category', show: false, data: values.map((_, i) => i) },
-      yAxis: { type: 'value', show: false, min: 0 },
+      yAxis: rank
+        ? { type: 'value', show: false, inverse: true, min: 1, max: Math.max(10, ...values.filter((v): v is number => v !== null)) }
+        : { type: 'value', show: false, min: 0 },
       series: [
         {
           type: 'line',
           data: values,
           smooth: false,
-          symbol: 'none',
-          lineStyle: { width: 1.5, color },
-          areaStyle: { color, opacity: 0.12 },
+          symbol: rank ? 'circle' : 'none',
+          symbolSize: 4,
+          showSymbol: rank,
+          connectNulls: false,
+          lineStyle: { width: rank ? 2 : 1.5, color },
+          itemStyle: { color },
+          ...(rank ? {} : { areaStyle: { color, opacity: 0.12 } }),
         },
       ],
     });
     return () => chart.dispose();
-  }, [values, color]);
-  return <div ref={ref} className="h-8 w-24" aria-hidden />;
+  }, [values, color, rank]);
+  return <div ref={ref} className={className} aria-hidden />;
 }

@@ -769,6 +769,7 @@ export const ENDPOINTS: Endpoint[] = [
           threadId: nullable(int('事件串 id，可查 /api/v1/events/threads/{id}')),
           prevRank: nullable(int('前一個快照的名次（依事件串或主要標籤比對）；null 表示本小時新上榜')),
           hours: nullable(int('事件串到這個小時為止已出現的小時數')),
+          rankTrail: nullable(arr(nullable(int()), '事件串在截至本小時的 24 個快照小時的名次（最舊在前）；不在榜上的小時為 null')),
           firstTime: nullable(time('事件串第一次上榜的小時')),
           coverage: obj({
             outlets: arr(obj({ media: str(), camp: str('blue／green／other') }), '過去 24 小時寫過此事件主要標籤的媒體，依篇數排序'),

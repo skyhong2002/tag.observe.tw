@@ -37,6 +37,8 @@ export interface EventItem {
   prevRank?: number | null;
   /** Hours the thread has been on the table so far. */
   hours?: number | null;
+  /** Rank in each of the last 24 snapshot hours (oldest first); null = off the table. */
+  rankTrail?: Array<number | null> | null;
   firstTime?: string | null;
   coverage?: EventCoverage;
 }

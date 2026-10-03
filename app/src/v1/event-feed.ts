@@ -197,6 +197,46 @@ export async function hoursSoFar(db: Db, category: string, ids: number[], hour: 
   return out;
 }
 
+/** Rank of each thread in every snapshot of the `span` hours ending at
+ *  `hour` (oldest first), null where it was off the table. Lets a card show
+ *  the run as a line instead of just the last step. */
+export async function rankTrail(
+  db: Db,
+  category: string,
+  ids: number[],
+  hour: Date,
+  span = 24,
+): Promise<Map<number, Array<number | null>>> {
+  const out = new Map<number, Array<number | null>>();
+  if (ids.length === 0) return out;
+  const from = new Date(hour.getTime() - (span - 1) * HOUR);
+  const rows = await db
+    .select({ threadId: events.threadId, hourStart: eventSnapshots.hourStart, rank: events.rank })
+    .from(events)
+    .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
+    .where(
+      and(
+        eq(eventSnapshots.category, category),
+        inArray(events.threadId, ids),
+        gte(eventSnapshots.hourStart, from),
+        lte(eventSnapshots.hourStart, hour),
+      ),
+    );
+  for (const id of ids)
+    out.set(
+      id,
+      Array.from({ length: span }, () => null),
+    );
+  for (const r of rows) {
+    const trail = r.threadId == null ? undefined : out.get(r.threadId);
+    const i = Math.round((r.hourStart.getTime() - from.getTime()) / HOUR);
+    if (!trail || i < 0 || i >= span) continue;
+    // A thread can split into several events in one hour; keep its best rank.
+    trail[i] = trail[i] === null ? r.rank : Math.min(trail[i], r.rank);
+  }
+  return out;
+}
+
 export async function threadInfo(db: Db, ids: number[]): Promise<Map<number, { hours: number; firstTime: Date }>> {
   const out = new Map<number, { hours: number; firstTime: Date }>();
   if (ids.length === 0) return out;

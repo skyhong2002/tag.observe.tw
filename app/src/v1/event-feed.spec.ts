@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { campLean, foldBaseline, groupFeedCoverage, matchPrevRank } from './event-feed.ts';
+import { describe, expect, it, vi } from 'vitest';
+import type { Db } from '../db/client.ts';
+import { campLean, foldBaseline, groupFeedCoverage, matchPrevRank, rankTrail } from './event-feed.ts';
 
 const cats = { blue: ['udn', 'tvbs'], green: ['ltn', 'setn'] };
 
@@ -93,5 +94,33 @@ describe('matchPrevRank', () => {
   it('needs at least half of the smaller major set in common', () => {
     expect(matchPrevRank({ threadId: 901, major: ['反毒', '校園', '教育部', '毒品'] }, prev)).toBeNull();
     expect(matchPrevRank({ threadId: 902, major: [] }, prev)).toBeNull();
+  });
+});
+
+describe('rankTrail', () => {
+  it('lays ranks on a dense 24-hour grid ending at the hour, keeping the best rank per hour', async () => {
+    const hour = new Date('2026-10-04T06:00:00Z');
+    const H = 3600e3;
+    const chain = {
+      from: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([
+        { threadId: 7, hourStart: new Date(+hour - 23 * H), rank: 12 },
+        { threadId: 7, hourStart: hour, rank: 3 },
+        { threadId: 7, hourStart: hour, rank: 9 },
+        { threadId: 7, hourStart: new Date(+hour + H), rank: 1 },
+        { threadId: 8, hourStart: new Date(+hour - H), rank: 30 },
+      ]),
+    };
+    const db = { select: vi.fn().mockReturnValue(chain) } as unknown as Db;
+    const trails = await rankTrail(db, 'news', [7, 8, 9], hour);
+    const seven = trails.get(7)!;
+    expect(seven).toHaveLength(24);
+    expect(seven[0]).toBe(12);
+    expect(seven[23]).toBe(3);
+    expect(seven.filter((r) => r !== null)).toHaveLength(2);
+    expect(trails.get(8)![22]).toBe(30);
+    expect(trails.get(9)!.every((r) => r === null)).toBe(true);
+    expect(await rankTrail(db, 'news', [], hour)).toEqual(new Map());
   });
 });

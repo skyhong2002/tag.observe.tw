@@ -6,7 +6,7 @@ import { eventHours, latestEvents } from '../jobs/events-job.ts';
 import { topicCoverage } from '../jobs/topic-related.ts';
 import { firstRunPerMedia, latestTopicPerMedia, latestTopics, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
 import { campOf } from './coverage.ts';
-import { campBaseline, eventsAt, feedCoverage, hourStats, hoursSoFar, matchPrevRank, threadInfo } from './event-feed.ts';
+import { campBaseline, eventsAt, feedCoverage, hourStats, hoursSoFar, matchPrevRank, rankTrail, threadInfo } from './event-feed.ts';
 import { iconUrl } from './icons.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -28,7 +28,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     const nav = await eventHours(db, 'news', hour);
     const threadIds = latest.events.flatMap((e) => (e.threadId ? [e.threadId] : []));
     const baseline = await campBaseline(db, hour);
-    const [coverage, prevEvents, threads, hours, dayStats] = await Promise.all([
+    const [coverage, prevEvents, threads, hours, dayStats, trails] = await Promise.all([
       feedCoverage(
         db,
         hour,
@@ -39,6 +39,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       threadInfo(db, threadIds),
       hoursSoFar(db, 'news', threadIds, hour),
       hourStats(db, 'news', nav.day),
+      rankTrail(db, 'news', threadIds, hour),
     ]);
     // An archived hour is not stale, just old.
     const stale = !nav.next && Date.now() - hour.getTime() > EVENTS_FRESH_MS;
@@ -67,6 +68,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
           // null when the story was not on the previous snapshot (new this hour).
           prevRank: matchPrevRank(e, prevEvents),
           hours: e.threadId ? (hours.get(e.threadId) ?? null) : null,
+          rankTrail: e.threadId ? (trails.get(e.threadId) ?? null) : null,
           firstTime: thread?.firstTime.toISOString() ?? null,
           coverage: coverage[i],
         };
