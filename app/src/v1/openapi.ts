@@ -79,6 +79,13 @@ const schemas: Record<string, Schema> = {
     publishedAt: time(),
     hits: int('這篇文章帶了幾個事件主要標籤'),
   }),
+  TopicCheck: obj({
+    checkedAt: nullable(time('最近一次完成檢查時間')),
+    lastSuccessAt: nullable(time('最近一次所有入口成功的時間')),
+    status: str('ok、partial、failed、running 或 pending'),
+    fetched: int('本次取得的去重專題數'),
+    stale: bool('超過三小時未完整更新，或尚未成功'),
+  }),
   TopicItem: obj({
     id: str('議題 id'),
     time: time('首次看到的時間'),
@@ -623,7 +630,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'topics',
     summary: '各媒體的議題／專題',
     description:
-      '不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題。每小時 :50 更新。',
+      '不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
     params: [
       q('media', '只取這家媒體（須為有追蹤議題的媒體）', ref('MediaKey'), 'pts'),
       q('limit', '筆數：有 media 時預設 20、最多 200；否則為 feed 筆數，預設 60、最多 120', { type: 'integer', minimum: 1 }, 20),
@@ -639,6 +646,7 @@ export const ENDPOINTS: Endpoint[] = [
                 title: str(),
                 icon: nullable(str()),
                 link: str('媒體議題列表頁'),
+                check: ref('TopicCheck'),
                 latest: nullable(ref('TopicItem')),
                 recent: arr(ref('TopicItem')),
               }),
@@ -670,7 +678,17 @@ export const ENDPOINTS: Endpoint[] = [
           },
           '不給 media',
         ),
-        obj({ media: ref('MediaKey'), title: str(), link: str(), mediaImage: nullable(str()), topics: arr(ref('TopicItem')) }, '給 media'),
+        obj(
+          {
+            media: ref('MediaKey'),
+            title: str(),
+            link: str(),
+            mediaImage: nullable(str()),
+            check: ref('TopicCheck'),
+            topics: arr(ref('TopicItem')),
+          },
+          '給 media',
+        ),
       ],
     },
     errors: { '404': '該媒體沒有追蹤議題' },
@@ -713,7 +731,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'media',
     summary: '各媒體收錄量與爬蟲狀態',
     description:
-      '列出已登錄媒體，包含未啟用抓取與僅作為引用來源者，排除重複代碼。today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 未啟用定期抓取（含停用）。',
+      '列出已登錄媒體，包含未啟用抓取與僅作為引用來源者，排除重複代碼。發現來源的個別列依文章關聯計量；全站文章總數僅計原刊登媒體，避免重複計算。today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 未啟用定期抓取（含停用）。',
     response: obj({
       generatedAt: time(),
       todayStart: time(),
@@ -732,6 +750,9 @@ export const ENDPOINTS: Endpoint[] = [
           media: ref('MediaKey'),
           title: str(),
           icon: nullable(str()),
+          sourceKind: str('discovery 為文章發現來源，篇數透過關聯計算；publisher 為刊登媒體，全站文章總數不重複計入發現來源', {
+            enum: ['discovery', 'publisher'],
+          }),
           category: nullable(str()),
           categoryLabel: nullable(str()),
           camp,

@@ -803,7 +803,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 
 **各媒體的議題／專題**
 
-不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題。每小時 :50 更新。
+不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -826,6 +826,12 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `media[].title` | string |  |
 | `media[].icon` | string \| null |  |
 | `media[].link` | string | 媒體議題列表頁 |
+| `media[].check` | object |  |
+| `media[].check.checkedAt` | string (ISO 時間) \| null | 最近一次完成檢查時間 |
+| `media[].check.lastSuccessAt` | string (ISO 時間) \| null | 最近一次所有入口成功的時間 |
+| `media[].check.status` | string | ok、partial、failed、running 或 pending |
+| `media[].check.fetched` | integer | 本次取得的去重專題數 |
+| `media[].check.stale` | boolean | 超過三小時未完整更新，或尚未成功 |
 | `media[].latest` | object \| null |  |
 | `media[].latest.id` | string | 議題 id |
 | `media[].latest.time` | string (ISO 時間) | 首次看到的時間 |
@@ -873,6 +879,12 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `title` | string |  |
 | `link` | string |  |
 | `mediaImage` | string \| null |  |
+| `check` | object |  |
+| `check.checkedAt` | string (ISO 時間) \| null | 最近一次完成檢查時間 |
+| `check.lastSuccessAt` | string (ISO 時間) \| null | 最近一次所有入口成功的時間 |
+| `check.status` | string | ok、partial、failed、running 或 pending |
+| `check.fetched` | integer | 本次取得的去重專題數 |
+| `check.stale` | boolean | 超過三小時未完整更新，或尚未成功 |
 | `topics` | object[] |  |
 | `topics[].id` | string | 議題 id |
 | `topics[].time` | string (ISO 時間) | 首次看到的時間 |
@@ -1054,7 +1066,7 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna'
 
 **各媒體收錄量與爬蟲狀態**
 
-列出已登錄媒體，包含未啟用抓取與僅作為引用來源者，排除重複代碼。today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 未啟用定期抓取（含停用）。
+列出已登錄媒體，包含未啟用抓取與僅作為引用來源者，排除重複代碼。發現來源的個別列依文章關聯計量；全站文章總數僅計原刊登媒體，避免重複計算。today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 未啟用定期抓取（含停用）。
 
 範例：
 
@@ -1081,6 +1093,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `media[].title` | string |  |
 | `media[].icon` | string \| null |  |
+| `media[].sourceKind` | "discovery" \| "publisher" | discovery 為文章發現來源，篇數透過關聯計算；publisher 為刊登媒體，全站文章總數不重複計入發現來源 |
 | `media[].category` | string \| null |  |
 | `media[].categoryLabel` | string \| null |  |
 | `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |

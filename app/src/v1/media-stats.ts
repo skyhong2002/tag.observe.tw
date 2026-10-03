@@ -1,11 +1,12 @@
-import { and, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import { allSources, disabled } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
-import { articles, crawlRuns } from '../db/schema.ts';
+import { articleDiscoveries, articles, crawlRuns } from '../db/schema.ts';
+import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
 import { iconUrl } from './icons.ts';
 import { CATEGORY_LABELS } from './routes.ts';
@@ -76,6 +77,24 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .where(sql`${articles.source} = 'own'`)
       .groupBy(articles.media);
     const firstBy = new Map(firsts.map((f) => [f.media, f.first]));
+    // Aggregators expose discoveries under the original article identity. Their
+    // row counts are useful, but must never inflate site-wide publication totals.
+    const discoveries = await db
+      .select({
+        media: articleDiscoveries.media,
+        pendingDate: sql<number>`0`,
+        today: sql<number>`SUM(${articles.publishedAt} >= ${today})`,
+        last24h: sql<number>`SUM(${articles.publishedAt} >= ${day})`,
+        last7d: sql<number>`SUM(${articles.publishedAt} >= ${week})`,
+        tagged24h: sql<number>`SUM(${articles.publishedAt} >= ${day} AND JSON_LENGTH(${articles.tags}) > 0)`,
+        lastArticle: sql<Date | string | null>`MAX(${articles.publishedAt})`,
+        first: sql<Date | string | null>`MIN(${articleDiscoveries.discoveredAt})`,
+      })
+      .from(articleDiscoveries)
+      .innerJoin(articles, eq(articles.id, articleDiscoveries.articleId))
+      .where(lte(articles.publishedAt, future))
+      .groupBy(articleDiscoveries.media);
+    for (const row of discoveries) firstBy.set(row.media, row.first);
     const runs = await db
       .select({
         media: crawlRuns.media,
@@ -86,7 +105,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .from(crawlRuns)
       .where(and(gte(crawlRuns.startedAt, day), sql`${crawlRuns.stage} = 'index'`))
       .groupBy(crawlRuns.media);
-    const byCount = new Map(counts.map((c) => [c.media, c]));
+    const byCount = new Map([...counts, ...discoveries].map((c) => [c.media, c]));
     const byRun = new Map(runs.map((r) => [r.media, r]));
     const off = disabled();
     // Aggregates come back as 'YYYY-MM-DD HH:MM:SS' strings; the DB stores UTC
@@ -108,6 +127,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
         const category = categoryOf(s.media);
         return {
           media: s.media,
+          sourceKind: isDiscoverySource(s.media) ? 'discovery' : 'publisher',
           title: info[s.media]?.title ?? s.media,
           icon: iconUrl(s.media),
           category,
@@ -127,8 +147,9 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       })
       .sort((a, b) => b.last24h - a.last24h || b.last7d - a.last7d || a.media.localeCompare(b.media));
     const active = rows.filter((r) => r.status !== 'disabled');
-    const sum = (k: 'today' | 'last24h') => rows.reduce((s, r) => s + r[k], 0);
-    const tagged = rows.reduce((s, r) => s + (r.taggedShare24h ?? 0) * r.last24h, 0);
+    const publishers = rows.filter((r) => r.sourceKind === 'publisher');
+    const sum = (k: 'today' | 'last24h') => publishers.reduce((s, r) => s + r[k], 0);
+    const tagged = publishers.reduce((s, r) => s + (r.taggedShare24h ?? 0) * r.last24h, 0);
     reply.header('cache-control', 'public, max-age=120');
     return {
       generatedAt: new Date(now).toISOString(),
@@ -136,7 +157,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       totals: {
         today: sum('today'),
         last24h: sum('last24h'),
-        publishingMedia24h: rows.filter((r) => r.last24h > 0).length,
+        publishingMedia24h: publishers.filter((r) => r.last24h > 0).length,
         pendingDate: rows.reduce((s, r) => s + r.pendingDate, 0),
         activeSources: active.length,
         disabledSources: rows.length - active.length,

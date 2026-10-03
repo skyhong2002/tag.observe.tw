@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
+import TopicCheckStatus from '@/components/TopicCheckStatus';
 import { taipei } from '@/lib/api';
 import { isAllowedImage } from '@/lib/images';
 import { type FeedTopic, fetchTopics, type TopicCoverage } from '@/lib/pages';
@@ -18,7 +19,7 @@ export default async function TopicPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">議題表</h1>
-        <p className="mt-1 text-sm text-zinc-600">各媒體最新推出的專題／議題頁</p>
+        <p className="mt-1 text-sm text-zinc-600">追蹤媒體官方專題／議題入口，每小時檢查更新。</p>
       </div>
       {!data ? (
         <p className="text-zinc-600">議題資料目前無法取得。</p>
@@ -36,6 +37,20 @@ export default async function TopicPage() {
               </Link>
             ))}
           </nav>
+          <details className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
+            <summary className="cursor-pointer">來源更新狀態（{data.media.length} 家媒體）</summary>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {data.media.map((m) => (
+                <li key={m.media} className="flex flex-wrap gap-x-2 gap-y-1">
+                  <a href={m.link} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline">
+                    {m.title} ↗
+                  </a>
+                  <TopicCheckStatus check={m.check} />
+                </li>
+              ))}
+            </ul>
+          </details>
+          <p className="text-xs text-zinc-500">依本站首次發現時間排序，不等於媒體上架時間；首次納入的既有專題會另行標示。</p>
           <ul className="grid gap-x-6 lg:grid-cols-2">
             {feed.map((t) => (
               <li key={t.id} className="flex gap-3 border-b border-zinc-300 py-3 dark:border-zinc-800">
@@ -58,7 +73,7 @@ export default async function TopicPage() {
                   <span className="flex items-center gap-1.5 text-xs text-zinc-600">
                     {t.mediaTitle}
                     <span aria-hidden>·</span>
-                    {t.time && !t.backlog ? taipei(t.time) : '開始追蹤前已上架'}
+                    {t.time && !t.backlog ? `首次發現 ${taipei(t.time)}` : '開始追蹤前已上架'}
                   </span>
                   <SourceLink url={t.url} label="原站專題" />
                   {t.coverage && <Coverage c={t.coverage} />}

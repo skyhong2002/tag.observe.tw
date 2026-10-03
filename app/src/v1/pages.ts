@@ -4,7 +4,7 @@ import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
 import { topicCoverage } from '../jobs/topic-related.ts';
-import { firstRunPerMedia, latestTopicPerMedia, latestTopics } from '../jobs/topics-job.ts';
+import { firstRunPerMedia, latestTopicPerMedia, latestTopics, topicSourceChecks } from '../jobs/topics-job.ts';
 import { iconUrl } from './icons.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -53,7 +53,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     // Topics stored in an outlet's first crawl run were already listed when
     // tracking began: their time is when we started watching, not a start date.
     const run = (d: Date) => Math.floor(+d / 900e3);
-    const firstRun = await firstRunPerMedia(db);
+    const [firstRun, checks] = await Promise.all([firstRunPerMedia(db), topicSourceChecks(db)]);
     const fmt = (r: { id: number; media: string; firstSeen: Date; title: string; url: string; image: string | null }) => ({
       id: String(r.id),
       time: r.firstSeen.toISOString(),
@@ -71,6 +71,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
         title: mediaInfo[media]?.title ?? TOPIC_NAMES[media] ?? media,
         link: TOPIC_LINKS[media],
         mediaImage: TOPIC_IMAGES[media],
+        check: checks[media],
         topics: rows.map(fmt),
       };
     }
@@ -114,6 +115,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       media: TOPIC_MEDIA.map((m) => ({
         ...info(m),
         link: TOPIC_LINKS[m],
+        check: checks[m],
         latest: recent[m][0] ? fmt(recent[m][0]) : null,
         recent: recent[m].slice(0, per).map(fmt),
       })),

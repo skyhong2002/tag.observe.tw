@@ -48,7 +48,8 @@ describe('media stats', () => {
   });
 
   it('returns the complete directory even when there are no articles or crawl runs', async () => {
-    const db = { select: () => ({ from: () => ({ where: () => ({ groupBy: async () => [] }) }) }) } as unknown as Db;
+    const chain = { innerJoin: () => chain, where: () => chain, groupBy: async () => [] };
+    const db = { select: () => ({ from: () => chain }) } as unknown as Db;
     const app = Fastify();
     registerMediaStats(app, db);
     try {
@@ -72,6 +73,42 @@ describe('media stats', () => {
       });
       expect(result.totals.activeSources).toBe(2);
       expect(result.totals.disabledSources).toBe(result.media.length - 2);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('counts discovery rows without double-counting original publications in site totals', async () => {
+    const recent = new Date().toISOString().replace('T', ' ').replace('Z', '');
+    const counts = { pendingDate: 0, today: 2, last24h: 2, last7d: 2, tagged24h: 1, lastArticle: recent };
+    const batches = [
+      [{ media: 'cna', ...counts }],
+      [{ media: 'cna', first: recent }],
+      [{ media: 'google_news', ...counts, first: recent }],
+      [],
+    ];
+    let query = 0;
+    const db = {
+      select: () => {
+        const values = batches[query++];
+        const chain = { innerJoin: () => chain, where: () => chain, groupBy: async () => values };
+        return { from: () => chain };
+      },
+    } as unknown as Db;
+    const app = Fastify();
+    registerMediaStats(app, db);
+    try {
+      const response = await app.inject('/api/v1/media-stats');
+      expect(response.statusCode).toBe(200);
+      const result = response.json();
+      expect(result.media.find((row: { media: string }) => row.media === 'google_news')).toMatchObject({
+        sourceKind: 'discovery',
+        today: 2,
+        last24h: 2,
+        last7d: 2,
+      });
+      expect(result.media.find((row: { media: string }) => row.media === 'cna')).toMatchObject({ sourceKind: 'publisher', today: 2 });
+      expect(result.totals).toMatchObject({ today: 2, last24h: 2, publishingMedia24h: 1, taggedShare24h: 0.5 });
     } finally {
       await app.close();
     }

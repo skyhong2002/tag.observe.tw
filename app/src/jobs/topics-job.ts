@@ -3,20 +3,24 @@ import pLimit from 'p-limit';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
 import { looksLikeStories, type TopicStory, topicPageGroups } from '../crawl/topic-page.ts';
-import { fetchTopics, TOPIC_RULES } from '../crawl/topics.ts';
+import { fetchTopicListings, TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articles, crawlRuns, topics } from '../db/schema.ts';
 
-export async function runTopicsJob(db: Db, { log = (_o: object, _m: string) => {}, now = () => new Date() } = {}) {
+export async function runTopicsJob(
+  db: Db,
+  { log = (_o: object, _m: string) => {}, now = () => new Date(), rules = TOPIC_RULES, refreshPages = true } = {},
+) {
   const results: Record<string, { items: number; inserted: number; error?: string }> = {};
-  for (const rule of TOPIC_RULES) {
+  for (const rule of rules) {
     const started = now();
     const [run] = await db
       .insert(crawlRuns)
       .values({ media: rule.media, stage: 'topic', startedAt: started, status: 'running' })
       .$returningId();
     try {
-      const items = await fetchTopics(rule);
+      const { items, sources } = await fetchTopicListings(rule);
+      const failures = sources.filter((source) => source.error);
       let inserted = 0;
       if (items.length) {
         const r = await db
@@ -42,26 +46,34 @@ export async function runTopicsJob(db: Db, { log = (_o: object, _m: string) => {
           )})`,
         );
         await db.update(topics).set({ lastSeen: started }).where(seen);
-        // Backfill covers for rows first stored without one (VALUES() is NULL
-        // outside ON DUPLICATE KEY UPDATE, so this can't be one statement).
+        // Publishers rename living topics and replace covers; retain the
+        // original discovery date, but refresh the editorial metadata.
         for (const t of items)
-          if (t.image)
-            await db
-              .update(topics)
-              .set({ image: t.image })
-              .where(and(eq(topics.media, rule.media), eq(topics.url, t.url), isNull(topics.image)));
+          await db
+            .update(topics)
+            .set({
+              title: t.title,
+              image: t.image ?? sql`${topics.image}`,
+              category: t.category ?? sql`${topics.category}`,
+            })
+            .where(and(eq(topics.media, rule.media), eq(topics.url, t.url)));
       }
       await db
         .update(crawlRuns)
         .set({
           finishedAt: now(),
-          status: items.length ? 'ok' : 'failed',
+          status: items.length ? (failures.length ? 'partial' : 'ok') : 'failed',
           fetched: items.length,
           inserted,
-          detail: items.length ? null : 'no topic links matched',
+          failed: failures.length,
+          detail: JSON.stringify({ sources }),
         })
         .where(eq(crawlRuns.id, run.id));
-      results[rule.media] = { items: items.length, inserted };
+      results[rule.media] = {
+        items: items.length,
+        inserted,
+        ...(failures.length ? { error: failures.map((s) => `${s.url}: ${s.error}`).join('; ') } : {}),
+      };
     } catch (error) {
       await db
         .update(crawlRuns)
@@ -70,7 +82,7 @@ export async function runTopicsJob(db: Db, { log = (_o: object, _m: string) => {
       results[rule.media] = { items: 0, inserted: 0, error: (error as Error).message };
     }
   }
-  const pages = await refreshTopicPages(db, { now }).catch((error) => ({ error: (error as Error).message }));
+  const pages = refreshPages ? await refreshTopicPages(db, { now }).catch((error) => ({ error: (error as Error).message })) : null;
   log({ ...results, pages }, 'topics job finished');
   return results;
 }
@@ -171,4 +183,36 @@ export async function firstRunPerMedia(db: Db) {
     .from(topics)
     .groupBy(topics.media);
   return Object.fromEntries(rows.map((r) => [r.media, r.first]));
+}
+
+/** Latest attempt and last fully successful check are separate: failures must
+ * not silently look fresh merely because old topics are still in storage. */
+export async function topicSourceChecks(db: Db, now = new Date()) {
+  const entries = await Promise.all(
+    TOPIC_RULES.map(async (rule) => {
+      const [latest] = await db
+        .select()
+        .from(crawlRuns)
+        .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic')))
+        .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
+        .limit(1);
+      const [success] = await db
+        .select({ at: crawlRuns.finishedAt })
+        .from(crawlRuns)
+        .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic'), eq(crawlRuns.status, 'ok')))
+        .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
+        .limit(1);
+      return [
+        rule.media,
+        {
+          checkedAt: latest?.finishedAt?.toISOString() ?? null,
+          lastSuccessAt: success?.at?.toISOString() ?? null,
+          status: latest?.status ?? 'pending',
+          fetched: latest?.fetched ?? 0,
+          stale: !success?.at || +now - +success.at > 3 * 3600e3,
+        },
+      ] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
 }

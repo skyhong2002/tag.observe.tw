@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
+import TopicCheckStatus from '@/components/TopicCheckStatus';
 import { taipei } from '@/lib/api';
 import { isAllowedImage } from '@/lib/images';
 import { fetchTopicMedia } from '@/lib/pages';
@@ -23,6 +24,9 @@ export default async function TopicMediaPage({ params }: { params: Promise<{ med
           來源 ↗
         </a>
       </div>
+      <p className="text-xs">
+        <TopicCheckStatus check={data.check} />
+      </p>
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.topics.map((t) => (
           <li
@@ -39,7 +43,7 @@ export default async function TopicMediaPage({ params }: { params: Promise<{ med
                 className="aspect-video w-full rounded-lg object-cover"
               />
               <h2 className="font-medium">{t.title}</h2>
-              <span className="text-xs text-zinc-600">{t.time && !t.backlog ? taipei(t.time) : '開始追蹤前已上架'}</span>
+              <span className="text-xs text-zinc-600">{t.time && !t.backlog ? `首次發現 ${taipei(t.time)}` : '開始追蹤前已上架'}</span>
               <SourceLink url={t.url} label="原站專題" />
             </div>
           </li>

@@ -23,7 +23,15 @@ export interface Topic {
   url: string | null;
   image: string | null;
 }
+export interface TopicCheck {
+  checkedAt: string | null;
+  lastSuccessAt: string | null;
+  status: string;
+  fetched: number;
+  stale: boolean;
+}
 export interface TopicMedia {
+  check?: TopicCheck;
   media: string;
   title: string;
   icon: string | null;
@@ -86,7 +94,7 @@ export const fetchEventDay = (day?: string) =>
   );
 export const fetchTopics = () => get<{ media: TopicMedia[]; feed?: FeedTopic[] }>('/api/v1/topics?limit=60', 300);
 export const fetchTopicMedia = (media: string, limit = 30) =>
-  get<{ media: string; title: string; link: string; mediaImage?: string; topics: Topic[] }>(
+  get<{ media: string; title: string; link: string; mediaImage?: string; check?: TopicCheck; topics: Topic[] }>(
     `/api/v1/topics?media=${media}&limit=${limit}`,
     300,
   );

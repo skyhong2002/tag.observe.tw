@@ -22,6 +22,7 @@ const CAMPS: Record<Exclude<Camp, 'other'>, { label: string; short: string; badg
 };
 interface MediaRow {
   media: string;
+  sourceKind?: 'discovery' | 'publisher';
   title: string;
   icon: string | null;
   category: string | null;
@@ -189,7 +190,8 @@ export default async function MediaStatsPage({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">媒體與文章數</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          列出所有已登錄媒體，包含尚未啟用抓取與僅作為引用來源的媒體。「今日」從台北時間 00:00 起算。更新於 {taipei(data.generatedAt)}。
+          列出所有已登錄媒體與文章發現來源，包含尚未啟用抓取與僅作為引用來源的媒體。「今日」從台北時間 00:00 起算。更新於{' '}
+          {taipei(data.generatedAt)}。
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -257,6 +259,11 @@ export default async function MediaStatsPage({
                   <Link href={`/media/${r.media}/`} className="flex items-center gap-2 font-medium hover:underline">
                     <SafeImage src={r.icon} alt="" width={16} height={16} className="rounded-sm" />
                     <span className="whitespace-nowrap">{r.title}</span>
+                    {r.sourceKind === 'discovery' && (
+                      <span className="shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800">
+                        發現來源
+                      </span>
+                    )}
                     {campBadge(r) && (
                       <span
                         className={`shrink-0 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset ${campBadge(r)?.badge}`}
@@ -266,7 +273,7 @@ export default async function MediaStatsPage({
                     )}
                   </Link>
                   <div className="text-xs text-zinc-600">
-                    {r.categoryLabel ?? '—'} · {r.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
+                    {r.categoryLabel ?? '—'} · {r.schedule === 'off' ? '未啟用' : r.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
                   </div>
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{r.today.toLocaleString()}</td>
@@ -298,6 +305,7 @@ export default async function MediaStatsPage({
         </table>
       </div>
       <p className="text-xs text-zinc-600">
+        「發現來源」的篇數是經該平台發現的原媒體文章；上方全站文章總數只按原媒體計算，不重複加總。
         狀態：正常＝最近有新文章；無近期文章＝新聞類 6 小時、其他 24 小時內沒有新文章（來源可能暫停發稿）；抓取失敗＝近 3
         小時的抓取全部失敗；未啟用＝尚未啟用定期抓取、已停用或僅作為引用來源。文章數以發布時間計；列表沒有提供發布時間的文章，會在抓取內文後才計入。7
         天欄標「只有 N 天」的媒體，是新系統開始抓它還不滿一週，數字只涵蓋那幾天，不能和其他媒體直接比較。

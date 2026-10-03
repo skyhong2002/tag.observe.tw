@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking } from './text.ts';
+import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
 // literal markers that have since drifted for most sites; these rules match
@@ -28,6 +29,8 @@ export interface TopicRule {
   image?: string;
   title?: (a: cheerio.Cheerio<import('domhandler').Element>, $: cheerio.CheerioAPI) => string;
   userAgent?: string;
+  /** Additional official indexes; each has independent extraction and health. */
+  listings?: Omit<TopicRule, 'media' | 'name' | 'fallbackImage' | 'listings'>[];
 }
 
 const textOf = (a: cheerio.Cheerio<import('domhandler').Element>) =>
@@ -57,6 +60,7 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://attach.setn.com/images/setn_1200x676_20250103.png',
     url: 'https://www.setn.com/Plist.aspx',
     pattern: /\/(klist|project)\/\d+/i,
+    title: (a) => a.find('.title').first().text().trim() || heading(a),
   },
   {
     media: 'cts',
@@ -76,6 +80,13 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://imgcdn.cna.com.tw/www/images/pic_fb.jpg',
     url: 'https://www.cna.com.tw/list/newstopic.aspx',
     pattern: /\/topic\/newstopic\/\d+\.aspx/,
+    listings: [
+      {
+        url: 'https://www.cna.com.tw/project/project_list/api/specialfeature.json',
+        pattern: /\/(project|cards|story)\//,
+        extract: cnaDigitalTopics,
+      },
+    ],
   },
   {
     media: 'tvbs',
@@ -107,6 +118,20 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://news.ltn.com.tw/',
     pattern: /news\.ltn\.com\.tw\/topic\/[^/?#]+/,
     scope: '.h_kw',
+    listings: [
+      {
+        url: 'https://features.ltn.com.tw/',
+        pattern: /ltn\.com\.tw\//,
+        scope: '.project',
+        title: (a) => decodeEntities(a.find('img').attr('alt') ?? '') || heading(a),
+      },
+      {
+        url: 'https://features.ltn.com.tw/special_topic',
+        pattern: /features\.ltn\.com\.tw\/[^/?#]+/,
+        scope: '.project',
+        title: (a) => decodeEntities(a.find('img').attr('alt') ?? '') || heading(a),
+      },
+    ],
   },
   {
     media: 'nextapple',
@@ -162,6 +187,69 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/topic\/\w+$/,
     title: (a) => decodeEntities(a.find('p.font-bold').first().text().trim()) || textOf(a),
   },
+  {
+    media: 'ettoday',
+    url: 'https://www.ettoday.net/feature/index',
+    fallbackImage: 'https://cdn2.ettoday.net/style/ettoday2017/images/push.jpg',
+    pattern: /\/feature\/(?!index(?:[/?#]|$))[^/?#]+/,
+    scope: '.part_pictxt_2, .part_pictxt_1',
+    title: heading,
+  },
+  {
+    media: 'mirror',
+    url: 'https://www.mirrormedia.mg/section/topic',
+    fallbackImage: 'https://www.mirrormedia.mg/images-next/default-og-img.png',
+    pattern: /^\/topic\/[^/?#]+$/,
+    scope: 'main',
+    title: (a) => a.find('[class*="ItemTitle"]').first().text().trim() || heading(a),
+  },
+  {
+    media: 'gvm',
+    url: 'https://www.gvm.com.tw/topic',
+    fallbackImage: 'https://www.gvm.com.tw/public/images/og-img.jpg',
+    pattern: /\/topic\/\d+$/,
+    scope: '.info-cards',
+    title: (a) => a.find('.info-cards_title').text().trim() || heading(a),
+  },
+  {
+    media: 'cw',
+    url: 'https://www.cw.com.tw/special',
+    fallbackImage: 'https://www.cw.com.tw/assets_new/img/fbshare.jpg',
+    pattern: /cw\.com\.tw\/feature\/[^/?#]+\/[^/?#]+/,
+    scope: '.articleGroup',
+    title: (a) => a.closest('section.article').find('h3').first().text().trim() || textOf(a),
+  },
+  {
+    media: 'bnext',
+    url: 'https://www.bnext.com.tw/topics',
+    fallbackImage: '/favicons/bnext.png',
+    pattern: /\/topic\/view\/\d+$/,
+    title: (a) => heading(a.parent()),
+  },
+  {
+    media: 'inside',
+    url: 'https://www.inside.com.tw/features',
+    fallbackImage: 'https://bucket-image.inkmaginecms.com/version/hd/1/image/2024/09/6E1YHpoonTPnJJLNMbuiSwIji7p44zz384wR6Ips.jpg',
+    pattern: /\/feature\/[^/?#]+$/,
+    scope: '.post_list',
+    title: (a) => a.closest('.post_list_item').find('.post_title').text().trim() || textOf(a),
+  },
+  {
+    media: 'nownews',
+    url: 'https://www.nownews.com/topics/',
+    fallbackImage: 'https://www.nownews.com/icon/banner.jpg',
+    pattern: /nownews\.com\//,
+    extract: nownewsTopics,
+  },
+  // The dedicated /topic index currently returns a challenge; the public
+  // homepage also carries the editor-selected topic links (not article tags).
+  {
+    media: 'ctee',
+    url: 'https://www.ctee.com.tw/',
+    fallbackImage: 'https://static.ctee.com.tw/img/ctee-logo-main.png?20260825',
+    pattern: /ctee\.com\.tw\/topic\/[^/?#]+\/\d+-\d+/,
+    title: heading,
+  },
 ];
 
 export function extractTopics(html: string, rule: TopicRule): TopicItem[] {
@@ -172,7 +260,7 @@ export function extractTopics(html: string, rule: TopicRule): TopicItem[] {
     const href = a.attr('href') ?? '';
     if (!rule.pattern.test(href)) return;
     const resolved = resolveUrl(href, rule.url);
-    if (!resolved) return;
+    if (!resolved || registrable(new URL(resolved).hostname) !== registrable(new URL(rule.url).hostname)) return;
     const url = stripTracking(resolved);
     let title = rule.title ? rule.title(a, $) : textOf(a);
     // Anchor text that is just a date/time or a generic label is not a topic
@@ -203,10 +291,66 @@ export function extractTopics(html: string, rule: TopicRule): TopicItem[] {
   return [...out.values()].map(({ url, title, image }) => ({ url, title, image, category: null }));
 }
 
+export function topicListings(rule: TopicRule): TopicRule[] {
+  return [rule, ...(rule.listings ?? []).map((listing) => ({ media: rule.media, fallbackImage: rule.fallbackImage, ...listing }))];
+}
+
+export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
+  const items = new Map<string, TopicItem>();
+  const sources: { url: string; items: number; error?: string }[] = [];
+  for (const listing of topicListings(rule)) {
+    try {
+      const res = await fetch(listing.url, { userAgent: listing.userAgent });
+      if (res.status < 200 || res.status >= 400) throw Error(`HTTP ${res.status}`);
+      const found = (listing.extract ?? extractTopics)(res.body, { ...listing, url: res.url || listing.url });
+      if (!found.length) throw Error('no topic links matched');
+      for (const item of found) if (!items.has(item.url)) items.set(item.url, item);
+      sources.push({ url: listing.url, items: found.length });
+    } catch (error) {
+      sources.push({ url: listing.url, items: 0, error: (error as Error).message });
+    }
+  }
+  return { items: [...items.values()], sources };
+}
+
 export async function fetchTopics(rule: TopicRule, fetch = fetchText): Promise<TopicItem[]> {
-  const res = await fetch(rule.url, { userAgent: rule.userAgent });
-  if (res.status >= 400) throw Error(`${rule.url} -> ${res.status}`);
-  return (rule.extract ?? extractTopics)(res.body, rule);
+  const result = await fetchTopicListings(rule, fetch);
+  if (!result.items.length) throw Error(result.sources.map((s) => `${s.url}: ${s.error}`).join('; '));
+  return result.items;
+}
+
+export function cnaDigitalTopics(json: string, rule: TopicRule): TopicItem[] {
+  const data = JSON.parse(json) as {
+    NewsItems?: { PageUrl?: string; HeadLine?: string; Source?: string; ClassName?: string; IsAd?: string }[];
+  };
+  return (data.NewsItems ?? []).flatMap((item) => {
+    const url = item.PageUrl && resolveUrl(item.PageUrl, rule.url);
+    const title = decodeEntities(item.HeadLine?.trim() ?? '');
+    if (!url || !title || item.IsAd === 'Y' || registrable(new URL(url).hostname) !== 'cna.com.tw' || !rule.pattern.test(url)) return [];
+    return [
+      {
+        url: stripTracking(url),
+        title: title.slice(0, 512),
+        image: item.Source ? resolveUrl(item.Source, rule.url) : null,
+        category: item.ClassName ?? null,
+      },
+    ];
+  });
+}
+
+export function nownewsTopics(html: string, rule: TopicRule): TopicItem[] {
+  const $ = cheerio.load(html);
+  return $('a[data-sec="topics"][data-tracetype="brand"]')
+    .toArray()
+    .flatMap((el) => {
+      const a = $(el),
+        card = a.closest('.list-item');
+      const url = resolveUrl(a.attr('href') ?? '', rule.url);
+      const title = decodeEntities(card.find('.topic-title').text().trim());
+      if (!url || !title || registrable(new URL(url).hostname) !== 'nownews.com') return [];
+      const image = card.find('img').attr('src');
+      return [{ url: stripTracking(url), title, image: image ? resolveUrl(image, rule.url) : null, category: null }];
+    });
 }
 
 // Topic names from a JSON-LD ItemList, covers from the page's links.
