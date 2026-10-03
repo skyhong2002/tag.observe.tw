@@ -1039,7 +1039,7 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna'
 
 **各媒體收錄量與爬蟲狀態**
 
-today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 已停用。
+列出已登錄媒體，包含未啟用抓取與僅作為引用來源者，排除重複代碼。today 為台北時間今天 0 點起。status：ok 正常、stale 太久沒有新文章、failing 近 3 小時爬取全部失敗、disabled 未啟用定期抓取（含停用）。
 
 範例：
 
@@ -1069,7 +1069,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].category` | string \| null |  |
 | `media[].categoryLabel` | string \| null |  |
 | `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
-| `media[].schedule` | string | 爬取頻率 |
+| `media[].schedule` | string | 爬取頻率；未啟用時為 off |
 | `media[].today` | integer |  |
 | `media[].last24h` | integer |  |
 | `media[].last7d` | integer |  |
