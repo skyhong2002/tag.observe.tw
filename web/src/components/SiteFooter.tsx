@@ -84,9 +84,6 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
           ))}
         </div>
       </div>
-      <p className="mt-10 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-        新聞內容著作權屬原媒體。本站提供報導索引與統計，文章只顯示刊登 7 天內的開頭節錄；標示 ↗ 的連結會開啟外部網站。
-      </p>
     </footer>
   );
 }
