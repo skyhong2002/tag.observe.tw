@@ -1,8 +1,8 @@
 import type { Camp, CampBaseline, EventCoverage } from '@/lib/pages';
 
 // Ground.news-style camp presentation for one event: a single coverage line
-// on cards ("藍營 62% · 13 家"), a split bar with the day's baseline marked so
-// the eye reads deviation rather than the raw ratio, and the two badges a
+// on cards ("藍營 62% · 13 家"), a split bar, the window's baseline shown once
+// above the table (BaselineBar), and the two badges a
 // reader needs to know about: a tilt (one camp writing far more than usual)
 // and a blind spot (one camp barely there at all).
 
@@ -24,23 +24,8 @@ export const baselineBlue = (b?: CampBaseline | null) => {
   return n ? Math.round(((b?.outlets.blue ?? 0) / n) * 100) : 50;
 };
 
-/** Blue minus green, as shares of all outlets on the story: 綠 30%、其他 25%、
- *  藍 50% gives 藍營 +20. The sign names the camp ahead. */
-export function leanDelta(c: EventCoverage): { camp: Camp; pct: number; shares: Record<Camp, number> } | null {
-  const total = c.camps.blue + c.camps.green + c.camps.other;
-  if (!total) return null;
-  const share = (k: Camp) => Math.round((c.camps[k] / total) * 100);
-  const shares = { blue: share('blue'), green: share('green'), other: share('other') };
-  const delta = shares.blue - shares.green;
-  return { camp: delta >= 0 ? 'blue' : 'green', pct: Math.abs(delta), shares };
-}
-
-export function leanTitle(c: EventCoverage): string | undefined {
-  const d = leanDelta(c);
-  if (!d) return undefined;
-  const order: Camp[] = ['green', 'other', 'blue'];
-  return `${order.map((k) => `${CAMP_LABEL[k]} ${d.shares[k]}%`).join('、')}；${CAMP_LABEL[d.camp]}比對方多 ${d.pct} 個百分點`;
-}
+/** The camps' outlet counts, as a badge's hover text; the rules are in the footer notes. */
+const campCounts = (c: EventCoverage) => (['blue', 'green', 'other'] as const).map((k) => `${CAMP_LABEL[k]} ${c.camps[k]} 家`).join('、');
 
 /** The one badge worth showing, blind spot first since it is the stronger claim. */
 export function CampBadge({ c, className = '' }: { c: EventCoverage; className?: string }) {
@@ -50,7 +35,7 @@ export function CampBadge({ c, className = '' }: { c: EventCoverage; className?:
     return (
       <span
         className={`inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-px text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200 ${className}`}
-        title={`${CAMP_LABEL[spot]}媒體幾乎沒報導，${CAMP_LABEL[spot]}讀者看不到這件事`}
+        title={campCounts(c)}
       >
         盲點：{CAMP_LABEL[spot]}
         {n === 0 ? '沒有報導' : `只有 ${n} 家`}
@@ -65,7 +50,7 @@ export function CampBadge({ c, className = '' }: { c: EventCoverage; className?:
             ? 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200'
             : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
         } ${className}`}
-        title={leanTitle(c)}
+        title={campCounts(c)}
       >
         {CAMP_LABEL[c.tilt]}重點
       </span>
@@ -153,7 +138,7 @@ export function BaselineBar({ b, label = '過去 24 小時整體' }: { b: CampBa
         ))}
       </span>
       <span>
-        藍綠家數比約 {baselineBlue(b)}：{100 - baselineBlue(b)}，下方每條的白線就是這個位置。
+        藍綠家數比約 {baselineBlue(b)}：{100 - baselineBlue(b)}
       </span>
     </div>
   );

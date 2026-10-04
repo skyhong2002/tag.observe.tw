@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
+import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
@@ -10,21 +11,17 @@ import { table } from '@/lib/table-styles';
 
 type SortKey = 'name' | 'media' | 'articles' | 'compared' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'cited';
 // Click a heading to sort, click again to flip, like the media tables.
+// Column meanings are in the footer notes (JournalistMethod); titles only hint at sorting.
 const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
   { key: 'name', label: '記者', numeric: false },
   { key: 'media', label: '刊登媒體', title: '依刊登媒體數排序', numeric: false },
   { key: 'articles', label: '篇數', numeric: true },
-  { key: 'compared', label: '已比對', title: '相似度索引已比對的篇數', numeric: true },
-  { key: 'pairs', label: '內文相近', title: '至少一端是此人文章的相近配對；同一新聞稿、通訊社稿、授權轉載與引用都會相近', numeric: true },
-  {
-    key: 'later',
-    label: '對方較早',
-    title: '他站相近文章比此人文章早至少一分鐘刊登的配對；刊登時間以各站標示為準，不含同署名跨站',
-    numeric: true,
-  },
-  { key: 'earlier', label: '本篇較早', title: '此人文章比他站相近文章早至少一分鐘刊登的配對', numeric: true },
-  { key: 'sameAuthor', label: '同署名', title: '對方文章也署同一名字：同一人把稿件刊在不同媒體', numeric: true },
-  { key: 'cited', label: '引用', title: '內文明示引用其他媒體的篇數', numeric: true },
+  { key: 'compared', label: '已比對', numeric: true },
+  { key: 'pairs', label: '內文相近', numeric: true },
+  { key: 'later', label: '對方較早', numeric: true },
+  { key: 'earlier', label: '本篇較早', numeric: true },
+  { key: 'sameAuthor', label: '同署名', numeric: true },
+  { key: 'cited', label: '引用', numeric: true },
 ];
 const sortValue = (row: JournalistSummary, key: SortKey): number =>
   key === 'media'
@@ -115,6 +112,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
           </select>
         </label>
         <p className="py-2 text-zinc-500 dark:text-zinc-400">符合 {number(filtered.length)} 人</p>
+        <MethodLink className="py-2" />
       </div>
       <TableScroller label="記者表格，可左右捲動">
         <table className="w-full min-w-[44rem] border-collapse text-sm">

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import AuthorCredits from '@/components/AuthorCredits';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaSidebar from '@/components/MediaSidebar';
+import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { CONTENT_STATUS } from '@/lib/article-content';
@@ -15,7 +16,6 @@ import {
   journalistHref,
   relationLabel,
   removalRequestHref,
-  SIMILARITY_CAVEAT,
 } from '@/lib/journalists';
 import { readingTitle } from '@/lib/reading.mts';
 
@@ -84,12 +84,12 @@ function SimilarSection({ data }: { data: JournalistDetail }) {
           {number(data.stats.similar.articles)} 篇有相近文章，共 {number(data.stats.similar.pairs)} 組
         </span>
       </h2>
-      <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-        相似度索引把此人每篇有正文的文章，與前後 {data.index.windowDays} 天內其他媒體的所有文章逐篇比對內文（Dice ≥{' '}
-        {percent(data.threshold)}）；這裡列出索引存下的全部配對。
-        {data.index.pending > 0 && ` 另有 ${number(data.index.pending)} 篇尚待比對，索引每 10 分鐘更新。`}
+      <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+        {data.index.pending > 0 && (
+          <span className="mr-3 text-zinc-500 dark:text-zinc-400">另有 {number(data.index.pending)} 篇尚待比對</span>
+        )}
+        <MethodLink>相似不等於抄襲</MethodLink>
       </p>
-      <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">{SIMILARITY_CAVEAT}</p>
       {!ordered.length && <p className="py-6 text-sm text-zinc-500 dark:text-zinc-400">這段期間內沒有找到與他站內文相近的文章。</p>}
       <ul className="mt-3 space-y-4">
         {ordered.map((pairs) => {
@@ -200,7 +200,7 @@ export default async function JournalistPage({
         </dl>
       </header>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
-        <MediaSidebar label="主題與比對範圍">
+        <MediaSidebar label="主題與比對篇數">
           <section aria-label="常寫主題" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
             <h2 className="mb-2 text-sm font-semibold">常寫主題</h2>
             {stats.tags.length ? (
@@ -221,23 +221,19 @@ export default async function JournalistPage({
               <p className="text-zinc-500 dark:text-zinc-400">這段期間的文章沒有標籤。</p>
             )}
           </section>
-          <section aria-label="比對範圍" className="rounded-lg border border-zinc-200 p-3 text-xs leading-5 dark:border-zinc-800">
-            <h2 className="mb-2 text-sm font-semibold">比對範圍</h2>
+          <section aria-label="比對篇數" className="rounded-lg border border-zinc-200 p-3 text-xs leading-5 dark:border-zinc-800">
+            <h2 className="mb-2 text-sm font-semibold">比對篇數</h2>
             <dl className="grid grid-cols-[6rem_minmax(0,1fr)] gap-y-1.5">
               <dt className="text-zinc-500 dark:text-zinc-400">已比對</dt>
               <dd>{number(data.index.compared)} 篇</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">尚待比對</dt>
               <dd>{number(data.index.pending)} 篇</dd>
-              <dt className="text-zinc-500 dark:text-zinc-400">比對對象</dt>
-              <dd>前後 {data.index.windowDays} 天內其他媒體的所有文章</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">同署名跨站</dt>
               <dd>{number(stats.similar.sameAuthor)} 組</dd>
-              <dt className="text-zinc-500 dark:text-zinc-400">方法</dt>
-              <dd>
-                {data.method}，門檻 {percent(data.threshold)}
-              </dd>
             </dl>
-            <p className="mt-2 text-zinc-500 dark:text-zinc-400">{SIMILARITY_CAVEAT}</p>
+            <p className="mt-2">
+              <MethodLink />
+            </p>
           </section>
           <section aria-label="關於這一頁" className="rounded-lg border border-zinc-200 p-3 text-xs leading-5 dark:border-zinc-800">
             <h2 className="mb-2 text-sm font-semibold">關於這一頁</h2>

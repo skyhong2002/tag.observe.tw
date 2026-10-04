@@ -47,7 +47,7 @@ export function Movement({ e, className = '' }: { e: EventItem; className?: stri
       label: `較前一小時${up ? '上升' : '下降'} ${n} 名`,
     });
   }
-  if (e.hours && e.hours >= 2) parts.push({ text: `持續 ${e.hours} 小時`, tone: 'text-zinc-500', label: `已連續 ${e.hours} 小時上榜` });
+  if (e.hours && e.hours >= 2) parts.push({ text: `上榜 ${e.hours} 小時`, tone: 'text-zinc-500', label: `累計上榜 ${e.hours} 小時` });
   if (parts.length === 0) return null;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs tabular-nums ${className}`}>

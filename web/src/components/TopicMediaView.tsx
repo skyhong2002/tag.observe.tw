@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import MediaIcon from '@/components/MediaIcon';
+import MethodLink from '@/components/MethodLink';
 import TopicCard, { kindNoun } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
 import { fetchTopicMedia, kindCount, type MediaTopic, ofKind, type TopicKind } from '@/lib/pages';
@@ -23,21 +24,12 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
   // 已停更 is a 議題 state; a 專題 never "stops".
   const ended = kind === 'topic' ? topics.filter((t) => t.status === 'ended') : [];
   const live = topics.filter((t) => !ended.includes(t));
-  // The API sends them most recently updated first, unknown last.
+  // The API sends them most recently updated first, unknown last. What each
+  // section means is in the footer notes (TopicMethod outlet).
   const sections = [
-    {
-      key: 'recent',
-      label: kind === 'topic' ? '近期更新' : '依最後更新',
-      note: kind === 'topic' ? '90 天內有新報導' : '',
-      items: live.filter((t) => updatedAtOf(t)),
-    },
-    { key: 'ended', label: '已停更', note: '超過 90 天沒有新報導', items: ended },
-    {
-      key: 'unknown',
-      label: '更新時間不明',
-      note: `本站開始追蹤前就已上架，${noun}頁上也沒有報導日期可查`,
-      items: live.filter((t) => !updatedAtOf(t)),
-    },
+    { key: 'recent', label: kind === 'topic' ? '近期更新' : '依最後更新', items: live.filter((t) => updatedAtOf(t)) },
+    { key: 'ended', label: '已停更', items: ended },
+    { key: 'unknown', label: '更新時間不明', items: live.filter((t) => !updatedAtOf(t)) },
   ].filter((s) => s.items.length);
   const covered = all.filter((t) => t.coverage).length;
   const count = kindCount(data, kind);
@@ -81,19 +73,17 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
           </a>
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          {data.title}官方入口上的{noun}，依最後更新排列（{noun}頁上最新一則報導的時間；沒有報導日期的用本站首次發現時間）。每個{noun}
-          下方是本站近 3 天從各家媒體抓到的相關報導：這家媒體把什麼做成
-          {noun}，其他家又怎麼報。
+          {data.title}官方入口上的{noun}
+          {kind === 'feature' && (
+            <>
+              ，另見
+              <Link href={`/topic/${encodeURIComponent(data.media)}/`} className="underline underline-offset-2">
+                {data.title}的議題
+              </Link>
+            </>
+          )}
+          <MethodLink className="ml-2 text-xs" />
         </p>
-        {kind === 'feature' && (
-          <p className="mt-1 text-xs text-zinc-500">
-            專題：一次性的新聞包；持續更新的新聞串請見
-            <Link href={`/topic/${encodeURIComponent(data.media)}/`} className="underline underline-offset-2">
-              {data.title}的議題
-            </Link>
-            。
-          </p>
-        )}
         <p className="mt-1 text-xs">
           <TopicCheckStatus check={data.check} />
           {count != null && (
@@ -112,9 +102,7 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
             className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
           >
             {s.label}
-            <span className="text-xs font-normal text-zinc-500">
-              {s.items.length} 個{s.note && ` · ${s.note}`}
-            </span>
+            <span className="text-xs font-normal text-zinc-500">{s.items.length} 個</span>
           </h2>
           <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">{s.items.map(card)}</ul>
         </section>

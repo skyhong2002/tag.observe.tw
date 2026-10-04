@@ -1,6 +1,7 @@
 import Link from 'next/link';
+import MethodLink from '@/components/MethodLink';
 import { taipei } from '@/lib/api';
-import { fetchJournalists, INDEX_HOURS, REPOSITORY_URL, SIMILARITY_CAVEAT } from '@/lib/journalists';
+import { fetchJournalists, INDEX_HOURS, REPOSITORY_URL } from '@/lib/journalists';
 import JournalistTable from './JournalistTable';
 
 export const revalidate = 120;
@@ -20,8 +21,7 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
       <header className="mb-4 border-b border-zinc-300 pb-4 dark:border-zinc-700">
         <h1 className="text-2xl font-semibold tracking-tight">記者</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          從文章署名整理出的人名與筆名，不含媒體、部門、通訊社、職稱與責任編輯。可看每個人在哪些媒體刊登、寫了幾篇，
-          以及文章與其他媒體內文相近時的刊登先後。{SIMILARITY_CAVEAT}
+          <MethodLink>相似不等於抄襲</MethodLink>
         </p>
         <p className="mt-2 max-w-3xl text-xs leading-5 text-zinc-500 dark:text-zinc-400">
           這些頁面由公開署名自動整理，不是本人建立的檔案。本人不希望出現在記者頁，可在
@@ -73,9 +73,7 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
               <dt>相似度索引已比對</dt>
               <dd className="mt-0.5 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
                 {number(data.index.analyzed)}
-                <span className="ml-1 text-[11px] font-normal">
-                  篇，{taipei(data.index.from)} 之後刊登；每篇與前後 {data.index.windowDays} 天內其他媒體的文章逐篇比對
-                </span>
+                <span className="ml-1 text-[11px] font-normal">篇，{taipei(data.index.from)} 之後刊登</span>
               </dd>
             </div>
           </dl>

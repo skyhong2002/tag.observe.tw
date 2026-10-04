@@ -15,8 +15,8 @@ export default function EventTagCloud({ stats, hours }: { stats: TagStat[]; hour
       <WordCloud
         compact={compact}
         wide={wide}
-        label="事件標籤文字雲，字越大最高分越高"
-        title="事件標籤文字雲；字越大，該標籤在這件事裡的最高分越高"
+        label="事件標籤文字雲"
+        title="事件標籤文字雲"
         words={stats.map((s) => ({
           label: s.tag,
           // A major tag that never made an hour's top list still belongs in the cloud, at the smallest size.

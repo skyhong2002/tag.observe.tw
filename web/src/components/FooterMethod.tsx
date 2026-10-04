@@ -3,15 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { METHOD_HREF } from '@/lib/site-nav';
-import { EventMethod, MediaMethod, RankingMethod, SimilarityMethod, SourceMethod, TopicMethod } from './MethodNotes';
+import { EventMethod, JournalistMethod, MediaMethod, RankingMethod, SimilarityMethod, SourceMethod, TopicMethod } from './MethodNotes';
 
 const inlineLink = 'text-brand-700 underline underline-offset-2 dark:text-brand-400';
 
 // Which method blocks explain which pages; anything unlisted gets 資料來源.
 function sectionsFor(pathname: string) {
-  if (pathname === '/') return <EventMethod />;
+  if (pathname === '/') return <EventMethod page="table" />;
   if (/^\/(ranking|tag)\//.test(pathname)) return <RankingMethod />;
-  if (/^\/(similarity|journalist)\//.test(pathname)) return <SimilarityMethod />;
+  if (/^\/journalist(\/|$)/.test(pathname)) return <JournalistMethod />;
+  if (/^\/similarity(\/|$)/.test(pathname)) return <SimilarityMethod />;
   if (pathname.startsWith('/media/')) {
     return (
       <>
@@ -22,9 +23,12 @@ function sectionsFor(pathname: string) {
   }
   // The /topic/ and /feature/ indexes get TopicMethod with their counts from @notes.
   if (pathname === '/topic' || pathname === '/feature' || pathname === '/topic/' || pathname === '/feature/') return null;
-  if (pathname.startsWith('/topic/')) return <TopicMethod kind="topic" />;
-  if (pathname.startsWith('/feature/')) return <TopicMethod kind="feature" />;
-  if (/^\/(event|eve)\//.test(pathname)) return <EventMethod />;
+  if (pathname.startsWith('/topic/')) return <TopicMethod kind="topic" outlet />;
+  if (pathname.startsWith('/feature/')) return <TopicMethod kind="feature" outlet />;
+  if (/^\/event\/archive(\/|$)/.test(pathname)) return <EventMethod page="archive" />;
+  if (/^\/event(\/|$)/.test(pathname)) return <EventMethod page="table" />;
+  // One event's page: @notes/eve/[id] renders its blocks with the event's own tags.
+  if (/^\/eve(\/|$)/.test(pathname)) return null;
   return <SourceMethod />;
 }
 

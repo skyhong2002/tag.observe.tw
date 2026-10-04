@@ -4,9 +4,10 @@ import { notFound } from 'next/navigation';
 import { CAMP_LABEL, FullBar } from '@/components/CampBar';
 import EventChart, { type EventSeriesPoint } from '@/components/EventChart';
 import EventTagCloud from '@/components/EventTagCloud';
+import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
-import { API_ORIGIN, taipei, taipeiHour } from '@/lib/api';
+import { taipei, taipeiHour } from '@/lib/api';
 import { cleanEventHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import {
   bestRank,
@@ -23,6 +24,7 @@ import {
   type ThreadHour,
   tagStats,
 } from '@/lib/event-thread.mts';
+import { fetchThreadPart } from '@/lib/event-thread-api';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import OutletTable from './OutletTable';
@@ -69,12 +71,7 @@ const VIEWS: Array<[View, string]> = [
   ['outlets', '依媒體'],
 ];
 
-const method = 'font-medium text-zinc-800 dark:text-zinc-200';
-const threadUrl = (id: string) => `${API_ORIGIN}/api/v1/events/threads/${encodeURIComponent(id)}`;
-const fetchThread = async (id: string): Promise<ThreadData | null> => {
-  const res = await fetch(threadUrl(id), { next: { revalidate } });
-  return res.ok ? ((await res.json()) as ThreadData) : null;
-};
+const fetchThread = (id: string) => fetchThreadPart<ThreadData>(id, '');
 /** The event is named by its latest hour's lead headline, as the table and
  *  home page do: the thread's major tags pile up every story it absorbed. */
 const headlineOf = (data: ThreadData) => {
@@ -117,16 +114,13 @@ export default async function EventThreadPage({
   const dir: 'asc' | 'desc' = sp.dir === 'asc' || sp.dir === 'desc' ? sp.dir : defaultDir(sort);
   // Headlines run newest first unless the reader asks for the story in order.
   const order: 'asc' | 'desc' = sp.order === 'asc' ? 'asc' : 'desc';
-  const base = threadUrl(id);
-  const [data, covRes, seriesRes] = await Promise.all([
+  // Coverage and series are separate, heavier queries; the page still renders without them.
+  const [data, cov, series] = await Promise.all([
     fetchThread(id),
-    fetch(`${base}/coverage`, { next: { revalidate } }),
-    fetch(`${base}/series`, { next: { revalidate: 300 } }),
+    fetchThreadPart<Coverage>(id, '/coverage'),
+    fetchThreadPart<{ tags: string[]; points: EventSeriesPoint[] }>(id, '/series'),
   ]);
   if (!data) notFound();
-  // Coverage and series are separate, heavier queries; the page still renders without them.
-  const cov = covRes.ok ? ((await covRes.json()) as Coverage) : null;
-  const series = seriesRes.ok ? ((await seriesRes.json()) as { tags: string[]; points: EventSeriesPoint[] }) : null;
   const t = data.thread;
   const headline = headlineOf(data);
   const stats = tagStats(data.hours, t.majorTags);
@@ -333,6 +327,9 @@ export default async function EventThreadPage({
                 盲點：{blindspotText}。
               </p>
             )}
+            <p className="text-xs md:col-span-2">
+              <MethodLink />
+            </p>
           </div>
         )}
         {rows.length > 0 ? (
@@ -416,46 +413,6 @@ export default async function EventThreadPage({
           </ul>
         )}
       </section>
-
-      <details className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-        <summary className="cursor-pointer py-1.5 text-sm hover:text-brand-700 dark:hover:text-brand-400">資料來源與計算方式</summary>
-        <dl className="mt-1 space-y-2 border-l-2 border-zinc-200 pl-3 dark:border-zinc-800">
-          <div>
-            <dt className={method}>事件與標籤</dt>
-            <dd>
-              事件表每小時依標籤共現分群，每件事列出前 12
-              個標籤與分數；標籤雲合併這則事件整段期間的標籤，字越大最高分越高，移到字上可看最高分、出現時間與出現小時數。
-              <span className="text-brand-700 dark:text-brand-400">橘色</span>是分群時認定的主要標籤（{t.majorTags.join('、')}
-              ），報導分布與標題對照都依主要標籤計算，其餘標籤只出現在標籤雲與每小時列表。「最高分」取各小時最高分與事件紀錄中的較大者。
-            </dd>
-          </div>
-          <div>
-            <dt className={method}>時間變化</dt>
-            <dd>
-              上圖：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白），虛線為這則事件在事件表上的名次（右軸，第 1
-              名在最上面，未上榜的小時留空）；下圖：所有媒體帶有任一主要標籤的報導篇數。灰底為這則事件出現在事件表上的時段，前後各多顯示 12
-              小時。每小時列表點時間可看當時整張事件表，標籤後的數字是該小時分數。
-            </dd>
-          </div>
-          <div>
-            <dt className={method}>各媒體報導量</dt>
-            <dd>
-              {cov
-                ? `以主要標籤在 ${taipeiHour(cov.from)} 至 ${taipeiHour(cov.to)} 之間的報導計算，比事件上榜時段前後各多取幾小時；`
-                : '以主要標籤在事件期間的報導計算；'}
-              同一家媒體同標題只算一次。藍綠傾向依本站媒體分類，僅供對照標題角度；盲點指一方陣營完全沒有報導。表格點欄名可排序，預設顯示前 5
-              家。
-            </dd>
-          </div>
-          <div>
-            <dt className={method}>標題對照</dt>
-            <dd>
-              同一件事，各家怎麼下標。依時間看事件如何展開；藍綠對照把同一小時三類媒體的標題並排；依媒體看每家的完整報導。圖片為各媒體提供的報導圖片，沒有提供者不顯示。
-              {!(cov && cov.articles > 0) && '這則事件沒有報導分布資料時，只保留事件表每小時挑出的代表標題。'}
-            </dd>
-          </div>
-        </dl>
-      </details>
     </div>
   );
 }

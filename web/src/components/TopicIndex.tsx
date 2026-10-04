@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import MediaIcon from '@/components/MediaIcon';
 import MediaSidebar from '@/components/MediaSidebar';
+import MethodLink from '@/components/MethodLink';
 import { TopicMethod } from '@/components/MethodNotes';
 import TopicCard, { kindNoun, topicHref, topicMediaHref } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
@@ -57,14 +58,14 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{kind === 'feature' ? '專題' : '議題表'}</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          {kind === 'feature' ? '一次性的新聞包；持續更新的新聞串請見' : '持續新增報導的新聞串；一次性的新聞包請見'}
+          另見
           <Link
             href={kind === 'feature' ? '/topic/' : '/feature/'}
             className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
           >
             {kind === 'feature' ? '議題表' : '專題'}
           </Link>
-          。
+          <MethodLink className="ml-3 text-xs" />
         </p>
       </div>
       {!data && !found ? (
@@ -383,7 +384,6 @@ function MediaList({ media, kind }: { media: TopicMedia[]; kind: TopicKind }) {
   return (
     <nav aria-label="依媒體瀏覽" className="rounded-xl border border-zinc-200 p-3 text-sm sm:col-span-2 dark:border-zinc-800">
       <h2 className="font-semibold">依媒體瀏覽</h2>
-      <p className="mt-0.5 text-xs text-zinc-500">累計追蹤到的{kindNoun(kind)}數與來源更新狀態。</p>
       <ul className="mt-2 max-h-[70vh] divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
         {media.map((m) => {
           const problem = !m.check || m.check.stale || m.check.status === 'failed' || m.check.status === 'partial';

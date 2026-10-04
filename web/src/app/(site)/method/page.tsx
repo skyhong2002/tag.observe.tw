@@ -1,4 +1,12 @@
-import { EventMethod, MediaMethod, RankingMethod, SimilarityMethod, SourceMethod, TopicMethod } from '@/components/MethodNotes';
+import {
+  EventMethod,
+  JournalistMethod,
+  MediaMethod,
+  RankingMethod,
+  SimilarityMethod,
+  SourceMethod,
+  TopicMethod,
+} from '@/components/MethodNotes';
 
 // Every method block in one place; the footer shows only the ones for the page at hand.
 
@@ -15,9 +23,11 @@ export default function MethodPage() {
         <SourceMethod />
         <RankingMethod />
         <SimilarityMethod />
+        <JournalistMethod />
         <MediaMethod />
         <EventMethod />
         <TopicMethod />
+        <TopicMethod outlet />
       </div>
     </article>
   );
