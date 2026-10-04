@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import { fetchSimilarity, periodQuery } from '@/lib/similarity';
+import { fetchSimilarity, periodQuery, type SimilarityData } from '@/lib/similarity';
 import { number, periodLabel, taipei } from '../format';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../query';
 import SimilarityTabs from '../SimilarityTabs';
@@ -59,29 +59,107 @@ export default async function SimilarityAboutPage({ searchParams }: { searchPara
           {threshold}，可在關係圖的「進階」調整。
         </p>
       </section>
-      {data && (
-        <section className="max-w-3xl space-y-2" aria-labelledby="coverage-title">
-          <h2 id="coverage-title" className="text-base font-semibold">
-            各媒體擷取狀態
-          </h2>
-          <p className="text-xs text-zinc-500">短文、擷取失敗及未處理文章會影響結果；蕃新聞的聯播內容不納入統計。</p>
-          {data.coverage.map((row) => (
-            <div
-              key={row.media}
-              className="flex items-start justify-between gap-3 border-b border-zinc-100 pb-2 text-xs dark:border-zinc-800"
-            >
-              <MediaHoverLink media={row.media} className={linkStyle}>
-                {row.name}
-                {row.excludedFromStatistics ? '（排除統計）' : ''}
-              </MediaHoverLink>
-              <span className="text-right text-zinc-500">
-                可比較 {number(row.usable)}／{number(row.total)} 篇<br />
-                缺漏 {number(row.missing)} · 待抓 {number(row.pending)}
-              </span>
-            </div>
-          ))}
-        </section>
-      )}
+      {data && <CoverageTable rows={data.coverage} />}
     </div>
+  );
+}
+
+const cell = 'px-3 py-1.5 text-right tabular-nums';
+const count = (value: number) => <span className={value ? '' : 'text-zinc-300 dark:text-zinc-700'}>{number(value)}</span>;
+
+function CoverageTable({ rows }: { rows: SimilarityData['coverage'] }) {
+  const sum = (key: 'total' | 'usable' | 'indexed' | 'missing' | 'pending') =>
+    rows.filter((row) => !row.excludedFromStatistics).reduce((total, row) => total + row[key], 0);
+  return (
+    <section className="max-w-4xl space-y-2" aria-labelledby="coverage-title">
+      <h2 id="coverage-title" className="text-base font-semibold">
+        各媒體擷取狀態
+      </h2>
+      <p className="text-xs text-zinc-500">
+        可比較是取得完整內文、長度足以比對的文章；缺漏是抓取失敗或內文過短，待抓是尚未處理。蕃新聞的聯播內容不納入統計。
+      </p>
+      <div className="overflow-x-auto rounded-xl border border-zinc-300 dark:border-zinc-800">
+        <table className="w-full whitespace-nowrap text-xs">
+          <thead className="bg-zinc-50 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
+            <tr>
+              <th scope="col" className="px-3 py-2 text-left font-medium">
+                媒體
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                本期文章
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                可比較
+              </th>
+              <th scope="col" className="w-40 px-3 py-2 text-left font-medium">
+                可比較比例
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                已比對
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                缺漏
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                待抓
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {rows.map((row) => {
+              const share = row.total ? row.usable / row.total : 0;
+              return (
+                <tr
+                  key={row.media}
+                  className={`hover:bg-zinc-50 dark:hover:bg-zinc-900/50 ${row.excludedFromStatistics ? 'text-zinc-400' : ''}`}
+                >
+                  <th scope="row" className="px-3 py-1.5 text-left font-normal">
+                    <MediaHoverLink media={row.media} className={linkStyle}>
+                      {row.name}
+                    </MediaHoverLink>
+                    {row.excludedFromStatistics && (
+                      <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800">排除統計</span>
+                    )}
+                  </th>
+                  <td className={cell}>{count(row.total)}</td>
+                  <td className={cell}>{count(row.usable)}</td>
+                  <td className="px-3 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
+                        <div
+                          className={`h-full rounded-full ${share < 0.8 ? 'bg-amber-500' : 'bg-brand-600 dark:bg-brand-500'}`}
+                          style={{ width: `${Math.round(share * 100)}%` }}
+                        />
+                      </div>
+                      <span
+                        className={`w-9 text-right tabular-nums ${share < 0.8 && row.total ? 'text-amber-700 dark:text-amber-400' : ''}`}
+                      >
+                        {row.total ? `${Math.round(share * 100)}%` : '—'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className={cell}>{count(row.indexed)}</td>
+                  <td className={cell}>{count(row.missing)}</td>
+                  <td className={cell}>{count(row.pending)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot className="border-t border-zinc-300 bg-zinc-50 font-medium dark:border-zinc-700 dark:bg-zinc-950">
+            <tr>
+              <th scope="row" className="px-3 py-2 text-left font-medium">
+                合計（不含排除統計）
+              </th>
+              <td className={cell}>{number(sum('total'))}</td>
+              <td className={cell}>{number(sum('usable'))}</td>
+              <td className="px-3 py-2 tabular-nums">{sum('total') ? `${Math.round((sum('usable') / sum('total')) * 100)}%` : '—'}</td>
+              <td className={cell}>{number(sum('indexed'))}</td>
+              <td className={cell}>{number(sum('missing'))}</td>
+              <td className={cell}>{number(sum('pending'))}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
   );
 }

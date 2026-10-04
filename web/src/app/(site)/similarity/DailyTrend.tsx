@@ -14,7 +14,6 @@ const DAY = 24 * 3600e3;
 const number = (value: number) => value.toLocaleString('zh-TW');
 const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
 const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
-const CAVEAT = '相似不等於抄襲：同一份新聞稿、通訊社稿、授權轉載與註明引用都會讓內文相近；刊登時間以各站標示為準，與寫稿先後無關。';
 // Orange = similarity and violet = citation, as on the graph; teal for the identical subset (validated for CVD in both modes).
 const SERIES = [
   { key: 'pairs', name: '相似配對', color: '#ea580c', dashed: false },
@@ -280,7 +279,6 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
           {from} 至 {to}（台北時間），門檻 {Math.round(threshold * 100)}%
         </span>
       </div>
-      <p className="text-xs leading-5 text-zinc-600 dark:text-zinc-300">{CAVEAT}</p>
       {!current ? (
         <p role="status" className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
           載入每日統計中…
