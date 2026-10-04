@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ArticleRow, CoOccurrence, clusterEvents, hubTags, matchThread, threadUpdate } from './events-compute.ts';
+import { type ArticleRow, CoOccurrence, clusterEvents, hubTags, matchThread, siteTags, threadUpdate } from './events-compute.ts';
 import { computeBurst, computeRanking } from './ranking-compute.ts';
 
 const t0 = new Date('2026-09-28T08:00:00Z');
@@ -110,6 +110,52 @@ describe('clusterEvents', () => {
     const co = new CoOccurrence(articles);
     const order = ['握手', '網球'];
     expect(hubTags(co, order, new Map(order.map((t) => [t, co.closure(t, new Set())]))).size).toBe(0);
+  });
+  it('attaches only articles carrying two of the event tags, one outlet first', () => {
+    const articles = [
+      ...[1, 2, 3].map((i) => art(i, 'a', ['沈伯洋', '競選總部', '蔡英文'], i)),
+      art(4, 'b', ['沈伯洋', '競選總部'], 1),
+      art(5, 'c', ['沈伯洋', '蔡英文'], 1),
+      // Carries one event tag each: a church visit and another candidate's HQ.
+      art(6, 'd', ['蔡英文', '安樂教會'], 0),
+      art(7, 'e', ['競選總部', '彰化'], 0),
+    ];
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const [ev] = clusterEvents(computeBurst(chart, new Map()), articles, [], { now: t0 });
+    expect(ev.tags.map(([t]) => t).sort()).toEqual(['競選總部', '沈伯洋', '蔡英文'].sort());
+    expect(ev.articles).toBe(5);
+    const ids = ev.news.map((n) => n.id);
+    expect(ids).not.toContain(6);
+    expect(ids).not.toContain(7);
+    // Three outlets before a second article from outlet a.
+    expect(
+      ev.news
+        .slice(0, 3)
+        .map((n) => n.media)
+        .sort(),
+    ).toEqual(['a', 'b', 'c']);
+    expect(ev.majorNews.map((n) => n.id)).not.toContain(6);
+  });
+  it('ignores outlet section tags that every article of one outlet carries', () => {
+    const articles = [
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((i) => art(i, 'oncc', ['東網', '產經新聞', i < 5 ? '天氣' : '台股'])),
+      ...[9, 10].map((i) => art(i, 'cna', ['天氣', '東北季風'])),
+      ...[11, 12].map((i) => art(i, 'cna', ['台股', '台指期'])),
+    ];
+    expect([...siteTags(articles)].sort()).toEqual(['東網', '產經新聞']);
+    const co = new CoOccurrence(articles);
+    expect(co.count('東網')).toBe(0);
+    expect(co.closure('天氣', new Set()).has('東網')).toBe(false);
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const groups = clusterEvents(computeBurst(chart, new Map()), articles, [], { now: t0 }).map((e) => e.tags.map(([t]) => t).sort());
+    expect(groups).toHaveLength(2);
+    for (const g of groups) expect(g).not.toContain('東網');
   });
   it('honours the no-equal list', () => {
     const ranking = computeRanking(

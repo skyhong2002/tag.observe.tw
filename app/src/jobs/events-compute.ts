@@ -20,18 +20,41 @@ export interface EventCluster {
   major: string[];
   news: ArticleRow[];
   majorNews: ArticleRow[];
+  /** Articles in the window carrying at least two of the event's tags. */
+  articles: number;
 }
 
 const clean = (t: string) => t.trim();
+
+/** A tag carried by at least `min` articles, all from the same outlet. */
+export const SITE_TAG_MIN = 8;
+export function siteTags(rows: ArticleRow[], min = SITE_TAG_MIN): Set<string> {
+  const media = new Map<string, { n: number; media: string | null }>();
+  for (const r of rows)
+    for (const t of new Set(r.tags.map(clean))) {
+      const m = media.get(t);
+      if (!m) media.set(t, { n: 1, media: r.media });
+      else {
+        m.n++;
+        if (m.media !== r.media) m.media = null;
+      }
+    }
+  return new Set([...media].filter(([, m]) => m.media !== null && m.n >= min).map(([t]) => t));
+}
 
 // relation24.php: co-occurring tags in the last 24h. A tag T' is "equal" to T
 // when it appears in > 50% of T's articles (both counts over the same window).
 export class CoOccurrence {
   private byTag = new Map<string, Set<number>>();
   private byArticle = new Map<number, string[]>();
-  constructor(rows: ArticleRow[]) {
+  /** Outlet brand and section labels (東網, Rti, 盤中速報): every article
+   *  carrying the tag comes from one outlet. They co-occur 100% with
+   *  whatever that outlet writes about, so they must not join a cluster. */
+  readonly siteTags: Set<string>;
+  constructor(rows: ArticleRow[], { siteTagMin = SITE_TAG_MIN } = {}) {
+    this.siteTags = siteTags(rows, siteTagMin);
     for (const r of rows) {
-      const tags = [...new Set(r.tags.map(clean).filter((t) => Buffer.byteLength(t) > 1 && !isTagNoise(t)))];
+      const tags = [...new Set(r.tags.map(clean).filter((t) => Buffer.byteLength(t) > 1 && !isTagNoise(t) && !this.siteTags.has(t)))];
       this.byArticle.set(r.id, tags);
       for (const t of tags) {
         let s = this.byTag.get(t);
@@ -106,6 +129,10 @@ export class CoOccurrence {
 // written about most with, and is cut from the others' closures, so it can
 // no longer bridge them.
 const HUB_MIN_SHARE = 0.2;
+/** Tags of the event an article must carry to count as part of it. */
+export const MIN_SHARED_TAGS = 2;
+/** Headlines kept per event. */
+export const NEWS_LIMIT = 6;
 /** Hub tag → the ranked tags still allowed to reach it. */
 export function hubTags(
   co: CoOccurrence,
@@ -135,10 +162,17 @@ export function clusterEvents(
   entries: BurstEntry[],
   rows: ArticleRow[],
   noEqualList: readonly string[],
-  { maxTags = 300, now = new Date(), hubs: detectHubs = true } = {},
+  {
+    maxTags = 300,
+    now = new Date(),
+    hubs: detectHubs = true,
+    minShared = MIN_SHARED_TAGS,
+    newsLimit = NEWS_LIMIT,
+    siteTagMin = SITE_TAG_MIN,
+  } = {},
 ): EventCluster[] {
   const noEqual = new Set(noEqualList);
-  const co = new CoOccurrence(rows);
+  const co = new CoOccurrence(rows, { siteTagMin });
   const order = entries
     .filter((e) => !isTagNoise(e.tag))
     .slice(0, maxTags)
@@ -197,18 +231,45 @@ export function clusterEvents(
   for (const ev of clusters) {
     if (ev.length <= 1) continue;
     const tags = ev.map((t) => [t, burst.get(t) ?? 0] as [string, number]).sort((a, b) => b[1] - a[1]);
-    // news: for the top 5 tags, newest 6 articles per tag, first unseen URL each.
+    // An article belongs to the event when it carries at least `minShared` of
+    // its tags. One tag was enough before, and 蕭美琴's church visit, 彰化's
+    // 競選總部 and 劉喬安's 毒品 case all sat in the 沈伯洋 rally on 2026-10-05.
+    const evTags = new Set(ev);
+    const members: Array<{ row: ArticleRow; hits: number; weight: number }> = [];
+    const seenId = new Set<number>();
+    for (const t of ev)
+      for (const r of byTag.get(t) ?? []) {
+        if (seenId.has(r.id) || r.publishedAt < dayAgo) continue;
+        seenId.add(r.id);
+        const carried = [...new Set(r.tags.map(clean))].filter((x) => evTags.has(x));
+        if (carried.length < minShared) continue;
+        members.push({ row: r, hits: carried.length, weight: carried.reduce((n, x) => n + Math.max(0, burst.get(x) ?? 0), 0) });
+      }
+    // news: the articles most about the event (burst mass of the tags they
+    // carry, then recency), one per outlet first so the list reads like a
+    // press review rather than six copies of one wire story.
+    const byWeight = (a: (typeof members)[number], b: (typeof members)[number]) =>
+      b.weight - a.weight || b.row.publishedAt.getTime() - a.row.publishedAt.getTime();
+    const ranked = members.slice().sort(byWeight);
     const news: ArticleRow[] = [];
     const seenUrl = new Set<string>();
-    for (const [t] of tags.slice(0, 5)) {
-      for (const r of (byTag.get(t) ?? [])
-        .slice()
-        .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
-        .slice(0, 6)) {
-        if (!seenUrl.has(r.url)) {
+    const seenMedia = new Set<string>();
+    for (const pass of [true, false])
+      for (const { row: r } of ranked) {
+        if (news.length >= newsLimit) break;
+        if (seenUrl.has(r.url) || (pass && seenMedia.has(r.media))) continue;
+        seenUrl.add(r.url);
+        seenMedia.add(r.media);
+        news.push(r);
+      }
+    if (news.length === 0) {
+      // Nothing carries two tags (only possible with a tiny window): fall back
+      // to the newest article of each leading tag, as events.php did.
+      for (const [t] of tags.slice(0, 5)) {
+        const r = (byTag.get(t) ?? []).slice().sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())[0];
+        if (r && !seenUrl.has(r.url)) {
           seenUrl.add(r.url);
           news.push(r);
-          break;
         }
       }
     }
@@ -226,19 +287,14 @@ export function clusterEvents(
         if (major.length >= 3) break;
         if (!major.includes(t) && tier(t, b)) major.push(t);
       }
-    // major_news: articles in the last 24h matching any major tag, scored hits/log(tagCount+2), top 5.
-    const scored = new Map<number, { row: ArticleRow; s: number }>();
-    for (const m of major)
-      for (const r of byTag.get(m) ?? []) {
-        if (r.publishedAt < dayAgo) continue;
-        const hits = major.filter((x) => r.tags.includes(x)).length;
-        scored.set(r.id, { row: r, s: hits / Math.log(r.tags.length + 2) });
-      }
-    const majorNews = [...scored.values()]
-      .sort((a, b) => b.s - a.s)
+    // major_news: members matching any major tag, scored hits/log(tagCount+2), top 5.
+    const majorNews = members
+      .map(({ row }) => ({ row, s: major.filter((x) => row.tags.includes(x)).length / Math.log(row.tags.length + 2) }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s || b.row.publishedAt.getTime() - a.row.publishedAt.getTime())
       .slice(0, 5)
       .map((x) => x.row);
-    out.push({ rank: 0, score: tags[0]?.[1] ?? 0, tags, major, news, majorNews });
+    out.push({ rank: 0, score: tags[0]?.[1] ?? 0, tags, major, news, majorNews, articles: members.length });
   }
   out.sort((a, b) => b.score - a.score);
   out.forEach((e, i) => {

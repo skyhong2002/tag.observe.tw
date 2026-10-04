@@ -16,52 +16,59 @@ export interface EventsJobDeps {
   log?: (o: object, m: string) => void;
 }
 
-export async function runEventsJob({ db, now = () => new Date(), log = () => {} }: EventsJobDeps, category = 'news') {
-  const started = now();
+/** The clustering inputs for one run: the burst-ranked tags of the fixed media
+ *  basis and every tagged article of the last 24 hours. Shared by the job and
+ *  by tools/events-compare.ts, which replays clustering offline. */
+export async function loadEventInputs(db: Db, now: Date, category = 'news') {
   const spec = RANKING_CATEGORIES[category];
   if (!spec) throw Error('unknown category ' + category);
+  // Legacy events.php computes on the "all" media list with weight 14 (type=news
+  // is only used for the show_events row); mirror that by using the 'all' chart.
+  const [current] = await db
+    .select()
+    .from(rankingSnapshots)
+    .where(eq(rankingSnapshots.category, 'all'))
+    .orderBy(desc(rankingSnapshots.hourStart))
+    .limit(1);
+  if (!current) throw Error('no ranking snapshot yet');
+  const basis = rankingBasis('all');
+  const chart = applyRankingBasis(JSON.parse(current.chart) as RankingChart, basis, current.computedAt);
+  if (!chart.available) throw Error('ranking snapshot is not available for the fixed media basis');
+  const history = new Map<number, RankingChart | null>();
+  for (const [h] of BURST_STEPS) {
+    const [row] = await db
+      .select({ chart: rankingSnapshots.chart, computedAt: rankingSnapshots.computedAt })
+      .from(rankingSnapshots)
+      .where(and(eq(rankingSnapshots.category, 'all'), eq(rankingSnapshots.hourStart, new Date(current.hourStart.getTime() - h * 3600e3))))
+      .limit(1);
+    history.set(h, row ? applyRankingBasis(JSON.parse(row.chart) as RankingChart, basis, row.computedAt) : null);
+  }
+  const burst = computeBurst(chart, history);
+  const since = new Date(now.getTime() - 24 * 3600e3);
+  const rows: ArticleRow[] = (
+    await db
+      .select({
+        id: articles.id,
+        media: articles.media,
+        publishedAt: articles.publishedAt,
+        url: articles.url,
+        title: articles.title,
+        image: articles.image,
+        tags: articles.tags,
+      })
+      .from(articles)
+      .where(and(gte(articles.publishedAt, since), sql`JSON_LENGTH(${articles.tags}) > 0`))
+  ).filter((r) => spec.media.includes(r.media) || category === 'all');
+  return { current, burst, rows };
+}
+
+export async function runEventsJob({ db, now = () => new Date(), log = () => {} }: EventsJobDeps, category = 'news') {
+  const started = now();
+  if (!RANKING_CATEGORIES[category]) throw Error('unknown category ' + category);
   const [run] = await db.insert(jobRuns).values({ name: 'events', startedAt: started, status: 'running' }).$returningId();
   try {
     const t0 = performance.now();
-    // Legacy events.php computes on the "all" media list with weight 14 (type=news
-    // is only used for the show_events row); mirror that by using the 'all' chart.
-    const [current] = await db
-      .select()
-      .from(rankingSnapshots)
-      .where(eq(rankingSnapshots.category, 'all'))
-      .orderBy(desc(rankingSnapshots.hourStart))
-      .limit(1);
-    if (!current) throw Error('no ranking snapshot yet');
-    const basis = rankingBasis('all');
-    const chart = applyRankingBasis(JSON.parse(current.chart) as RankingChart, basis, current.computedAt);
-    if (!chart.available) throw Error('ranking snapshot is not available for the fixed media basis');
-    const history = new Map<number, RankingChart | null>();
-    for (const [h] of BURST_STEPS) {
-      const [row] = await db
-        .select({ chart: rankingSnapshots.chart, computedAt: rankingSnapshots.computedAt })
-        .from(rankingSnapshots)
-        .where(
-          and(eq(rankingSnapshots.category, 'all'), eq(rankingSnapshots.hourStart, new Date(current.hourStart.getTime() - h * 3600e3))),
-        )
-        .limit(1);
-      history.set(h, row ? applyRankingBasis(JSON.parse(row.chart) as RankingChart, basis, row.computedAt) : null);
-    }
-    const burst = computeBurst(chart, history);
-    const since = new Date(started.getTime() - 24 * 3600e3);
-    const rows: ArticleRow[] = (
-      await db
-        .select({
-          id: articles.id,
-          media: articles.media,
-          publishedAt: articles.publishedAt,
-          url: articles.url,
-          title: articles.title,
-          image: articles.image,
-          tags: articles.tags,
-        })
-        .from(articles)
-        .where(and(gte(articles.publishedAt, since), sql`JSON_LENGTH(${articles.tags}) > 0`))
-    ).filter((r) => spec.media.includes(r.media) || category === 'all');
+    const { current, burst, rows } = await loadEventInputs(db, started, category);
     const clusters = clusterEvents(burst, rows, (noEqual as { tags: string[] }).tags, { now: started });
     const hour = hourStart(started);
     const hourKey = taipeiHour(hour);
