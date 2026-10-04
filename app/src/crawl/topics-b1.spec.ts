@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FetchRequest } from './fetch.ts';
-import { cwNavTopics, insideFeatures, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { cwNavTopics, insideFeatures, mirrorTopics, nownewsTopicGroups, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
@@ -208,6 +208,18 @@ describe('Inside', () => {
       ['side-chat', 'topic', false, '自製專題'],
       ['ntpc2025', undefined, true, '贊助專題 Supported By'],
       ['energy-crisis', undefined, false, '自製專題'],
+    ]);
+  });
+});
+
+describe('NOWnews', () => {
+  it('reads each 重磅追蹤 series with its first story as the link', () => {
+    const html = `<div class="listBlk heavy-topics" id="tg1"><header class="header"><h3 class="title">月餅風暴</h3></header>
+      <div class="first"><a href="https://www.nownews.com/news/6874691"><img src="https://media.nownews.com/a.webp"><h3 class="title">月餅風暴1／…</h3></a></div>
+      <div class="card"><a href="https://www.nownews.com/news/6874698"><h3 class="title">月餅風暴2／…</h3></a></div></div>
+      <div class="listBlk heavy-topics" id="tg2"><header class="header"><h3 class="title">外站</h3></header><a href="https://evil.example/news/1">x</a></div>`;
+    expect(nownewsTopicGroups(html, listing('nownews', 'https://www.nownews.com/topicgroup/'))).toEqual([
+      { url: 'https://www.nownews.com/news/6874691', title: '月餅風暴', image: 'https://media.nownews.com/a.webp', category: null },
     ]);
   });
 });

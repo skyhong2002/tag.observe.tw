@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { cwNavTopics, insideFeatures, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { cwNavTopics, insideFeatures, mirrorTopics, nownewsTopicGroups, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -399,6 +399,18 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://www.nownews.com/icon/banner.jpg',
     pattern: /nownews\.com\//,
     extract: nownewsTopics,
+    // Brand microsites (跨世代, 心理假).
+    kind: 'feature',
+    listings: [
+      {
+        // 重磅追蹤: monthly numbered series, 5 to a page.
+        url: 'https://www.nownews.com/topicgroup/',
+        pattern: /nownews\.com\/news\/\d+/,
+        extract: nownewsTopicGroups,
+        kind: 'feature',
+        paginate: { url: (n) => `https://www.nownews.com/topicgroup/${n}/`, max: 8 },
+      },
+    ],
   },
   // The dedicated /topic index currently returns a challenge; the public
   // homepage also carries the editor-selected topic links (not article tags).

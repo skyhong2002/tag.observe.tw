@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { decodeEntities, resolveUrl, stripTracking } from './text.ts';
+import { registrable } from './topic-page.ts';
 import { cleanTopicHref, extractTopics, type TopicItem, type TopicRule } from './topics.ts';
 
 // Topic listing extractors for outlets whose pages need more than link scraping.
@@ -76,6 +77,27 @@ export function insideFeatures(html: string, rule: TopicRule): TopicItem[] {
         ...(/podcast/i.test(title) ? { kind: 'topic' as const } : {}),
       });
     });
+  return [...out.values()];
+}
+
+/**
+ * NOWnews 重磅追蹤 (/topicgroup/): each block is a numbered series with no page
+ * of its own (#tgN anchors shift as series are added), so its first story
+ * stands for the series.
+ */
+export function nownewsTopicGroups(html: string, rule: TopicRule): TopicItem[] {
+  const $ = cheerio.load(html);
+  const out = new Map<string, TopicItem>();
+  $('.heavy-topics').each((_, el) => {
+    const block = $(el);
+    const title = clip(block.find('header .title').first().text());
+    const first = block.find('a[href*="/news/"]').first();
+    const url = resolveUrl(first.attr('href') ?? '', rule.url);
+    if (!url || title.length < 2 || registrable(new URL(url).hostname) !== 'nownews.com') return;
+    const img = first.find('img').attr('src');
+    const key = stripTracking(url);
+    if (!out.has(key)) out.set(key, { url: key, title, image: img ? resolveUrl(img, rule.url) : null, category: null });
+  });
   return [...out.values()];
 }
 
