@@ -74,6 +74,9 @@ const textOf = (a: cheerio.Cheerio<import('domhandler').AnyNode>) =>
 // Card links whose visible text mixes date, counters and summary: take the heading.
 const heading = (a: cheerio.Cheerio<import('domhandler').AnyNode>) =>
   decodeEntities(a.find('h1,h2,h3,h4,h5').first().text().replace(/\s+/g, ' ').trim()) || textOf(a);
+// 中時 albums carry no 廣告 label; these are the brand/campaign packages it
+// links from every album page (永慶房屋, the 寶島旺旺行/旺旺福來報 promos).
+const chinatimesSponsored = (item: TopicItem) => /\/album\/(yungching|ctnewyear[AB])\//.test(item.url);
 export const TOPIC_RULES: TopicRule[] = [
   // newtalk anchors carry the latest article title; the topic name is the URL slug.
   {
@@ -364,8 +367,20 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'chinatimes',
     url: 'https://www.chinatimes.com/album/',
     fallbackImage: '/favicons/chinatimes.png',
-    pattern: /\/album\/[^/?#]+\/\d+-\d+(?:\?chdtv)?$/,
+    // 專輯 mix running stories (美伊, 會員文章) with monthly one-offs: auto.
+    pattern: /\/album\/[^/?#]+\/\d+-\d+$/,
     title: heading,
+    // The full index spans two pages (data-count on its pagination).
+    paginate: { url: (n) => `https://www.chinatimes.com/album/total?page=${n}`, max: 3 },
+    sponsored: chinatimesSponsored,
+    // Section indexes reach albums the main one has dropped; the homepage is a
+    // fallback should the album pages be challenged again (they were once).
+    listings: ['global/', 'album-star/', 'album-focus', 'album-sports', 'album-military/', 'album-technology/', ''].map((path) => ({
+      url: path ? `https://www.chinatimes.com/album/${path}` : 'https://www.chinatimes.com/',
+      pattern: /\/album\/[^/?#]+\/\d+-\d+$/,
+      title: heading,
+      sponsored: chinatimesSponsored,
+    })),
   },
   {
     media: 'ttv',
@@ -607,8 +622,8 @@ export const TOPIC_RULES: TopicRule[] = [
   },
 ];
 
-// Tracking keys outlets append to topic links (中時 ?ctrack=) on top of the generic ones.
-const TOPIC_TRACKING = /^ctrack$/i;
+// Tracking keys outlets append to topic links (中時 ?ctrack=, ?chdtv) on top of the generic ones.
+const TOPIC_TRACKING = /^(ctrack|chdtv)$/i;
 /** A raw href without surrounding space or tracking query, so anchored patterns
  *  still match; hrefs with inner whitespace are template junk (鏡週刊). */
 export function cleanTopicHref(raw: string): string | null {

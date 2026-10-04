@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractTopics, TOPIC_RULES, type TopicRule, topicListings } from './topics.ts';
+import { extractTopics, fetchTopicListings, TOPIC_RULES, type TopicRule, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
 const listing = (media: string, url: string): TopicRule => topicListings(rule(media)).find((l) => l.url === url)!;
@@ -93,6 +93,21 @@ describe('batch a2 topic rules', () => {
     expect(run(rule('ttv'), html).map((t) => [t.url, t.title])).toEqual([
       ['https://news.ttv.com.tw/Proj/%E5%8F%B0%E8%A6%9660%20%20%E7%92%80%E7%92%A8%E5%B9%B4%E4%BB%A3', '台視60 璀璨非凡'],
       ['https://news.ttv.com.tw/Proj/%E7%86%B1%E7%B7%9A%E8%BF%BD%E8%B9%A4', '【熱線追蹤】'],
+    ]);
+  });
+
+  it('中時: album links lose ?ctrack/?chdtv and the space-padded duplicate; brand packages are 合作', async () => {
+    const html = `<a href="https://www.chinatimes.com/album/Blackie/20260916003318-262207?chdtv"><h3>黑人</h3></a>
+      <a href="https://www.chinatimes.com/album/MemberArticles2026/20260623002017-262201?ctrack=mo_main_search_p01">會員文章專區</a>
+      <a href="https://www.chinatimes.com/album/ Trump-Xi-Washington/20260923004085-262203">川習</a>
+      <a href="//www.chinatimes.com/album/ctnewyearA/20221220002148-262211">寶島旺旺行</a>
+      <a href="//www.chinatimes.com/album/album-star/">專輯</a>`;
+    const fetch = async (url: string) => ({ url, status: url.includes('album') ? 200 : 404, body: html, contentType: 'text/html', ms: 1 });
+    const { items } = await fetchTopicListings({ ...rule('chinatimes'), paginate: undefined, listings: [] }, fetch);
+    expect(items.map((t) => [t.url, !!t.sponsored])).toEqual([
+      ['https://www.chinatimes.com/album/Blackie/20260916003318-262207', false],
+      ['https://www.chinatimes.com/album/MemberArticles2026/20260623002017-262201', false],
+      ['https://www.chinatimes.com/album/ctnewyearA/20221220002148-262211', true],
     ]);
   });
 });
