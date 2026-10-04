@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
+import { cnaNewsTopics } from './topic-extractors-a1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -113,8 +114,29 @@ export const TOPIC_RULES: TopicRule[] = [
   {
     media: 'cna',
     fallbackImage: 'https://imgcdn.cna.com.tw/www/images/pic_fb.jpg',
+    // The HTML list shows 20 of ~100; its "more" button pages through the
+    // WNewsList API. Microsites (netzero.cna.com.tw) sit in the same list and
+    // keep publishing, so they stay 議題 too.
     url: 'https://www.cna.com.tw/list/newstopic.aspx',
-    pattern: /\/topic\/newstopic\/\d+\.aspx/,
+    pattern: /\/topic\/newstopic\/\d+\.aspx$|^https:\/\/[\w-]+\.cna\.com\.tw\/?$/,
+    scope: '#jsMainList',
+    extract: cnaNewsTopics,
+    kind: 'topic',
+    paginate: {
+      url: () => 'https://www.cna.com.tw/cna2018api/api/WNewsList',
+      max: 10,
+      request: (n) =>
+        n === 1
+          ? {}
+          : {
+              method: 'POST',
+              body: JSON.stringify({ action: '0', category: 'newstopic', pagesize: '20', pageidx: n }),
+              // The default Accept prefers XML, which this API answers with a 500.
+              headers: { 'content-type': 'application/json', accept: 'application/json' },
+            },
+    },
+    // Parent topics (5056 縣市長選舉) link their sub-topics as section headings.
+    children: '.definKind h2 a',
     listings: [
       {
         url: 'https://www.cna.com.tw/project/project_list/api/specialfeature.json',
