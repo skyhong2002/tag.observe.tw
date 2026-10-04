@@ -124,24 +124,25 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
   return <div ref={ref} className="h-96 w-full" role="img" aria-label="每日相似配對、內文相同、明示引用與比對篇數" />;
 }
 
-type SortKey = 'name' | 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
-const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
-  { key: 'name', label: '媒體', numeric: false },
-  { key: 'articles', label: '比對篇數', title: '期間內相似度索引已比對的文章數', numeric: true },
+type Metric = 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
+type SortKey = 'name' | Metric | `${Metric}Share`;
+const columns: Array<{ key: 'name' | Metric; label: string; title?: string; share?: boolean }> = [
+  { key: 'name', label: '媒體' },
+  { key: 'articles', label: '比對篇數', title: '期間內相似度索引已比對的文章數' },
   {
     key: 'copied',
-    label: '被抄',
-    title: '這家媒體的文章之後有其他媒體刊出相似內容的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
-    numeric: true,
+    label: '被跟進',
+    title: '這家媒體先刊出，之後有其他媒體刊出相似內容的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
+    share: true,
   },
   {
     key: 'copying',
-    label: '抄別人',
-    title: '這家媒體的文章刊出時已有其他媒體相似文章的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
-    numeric: true,
+    label: '跟進他媒',
+    title: '這家媒體刊出時已有其他媒體相似文章的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
+    share: true,
   },
-  { key: 'citing', label: '引用他媒', title: '這家媒體文章內文明示引用其他媒體的次數；百分比為佔比對篇數的比例', numeric: true },
-  { key: 'cited', label: '被引用', title: '其他媒體文章內文明示引用這家媒體的次數', numeric: true },
+  { key: 'citing', label: '引用他媒', title: '這家媒體文章內文明示引用其他媒體的次數；百分比為佔比對篇數的比例', share: true },
+  { key: 'cited', label: '被引用', title: '其他媒體文章內文明示引用這家媒體的次數' },
 ];
 interface Row {
   media: string;
@@ -152,14 +153,18 @@ interface Row {
   citing: number;
   cited: number;
 }
+/** Share of the outlet's compared articles; null without any. */
+const share = (row: Row, key: Metric) => (row.articles > 0 ? row[key] / row.articles : null);
 
 /** A count with its share of the outlet's compared articles. */
-function Share({ value, of }: { value: number; of: number }) {
+function Share({ row, metric }: { row: Row; metric: Metric }) {
+  const value = row[metric],
+    ratio = share(row, metric);
   if (!value) return <span className="text-zinc-300 dark:text-zinc-700">0</span>;
   return (
     <>
       {number(value)}
-      {of > 0 && <span className="ml-1.5 text-xs text-zinc-500 dark:text-zinc-400">{Math.round((value / of) * 100)}%</span>}
+      {ratio !== null && <span className="ml-1.5 text-xs text-zinc-500 dark:text-zinc-400">{Math.round(ratio * 100)}%</span>}
     </>
   );
 }
@@ -177,7 +182,11 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
       citing: sum(m.citing),
       cited: sum(m.cited),
     }));
-    const value = (row: Row) => (sort === 'name' ? 0 : row[sort]);
+    const value = (row: Row): number => {
+      if (sort === 'name') return 0;
+      if (sort.endsWith('Share')) return share(row, sort.slice(0, -5) as Metric) ?? -1;
+      return row[sort as Metric];
+    };
     return list.sort((a, b) => {
       const order = sort === 'name' ? a.name.localeCompare(b.name, 'zh-Hant') : value(a) - value(b);
       return (descending ? -order : order) || b.articles - a.articles || a.media.localeCompare(b.media);
@@ -195,29 +204,50 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
   return (
     <TableScroller label="各媒體每日比對表格，可左右捲動">
       <table className="w-full min-w-[40rem] border-collapse text-sm">
-        <caption className="sr-only">期間內各媒體的比對篇數、被抄與抄別人的篇數、引用與被引用</caption>
+        <caption className="sr-only">期間內各媒體的比對篇數、被跟進與跟進他媒的篇數、引用與被引用</caption>
         <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
           <tr className="border-b border-zinc-200 dark:border-zinc-800">
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                aria-sort={sort === column.key ? (descending ? 'descending' : 'ascending') : 'none'}
-                className={`${column.numeric ? cell : column.key === 'name' ? table.leadHead : table.cell} font-medium`}
-              >
-                <button
-                  type="button"
-                  title={column.title}
-                  onClick={() => sortBy(column.key)}
-                  className={`inline-flex items-center gap-1 whitespace-nowrap hover:text-brand-700 dark:hover:text-brand-400 ${
-                    column.numeric ? 'w-full justify-end' : ''
-                  } ${sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''}`}
+            {columns.map((column) => {
+              const shareKey = `${column.key}Share` as SortKey;
+              const active = sort === column.key || (column.share && sort === shareKey);
+              const numeric = column.key !== 'name';
+              return (
+                <th
+                  key={column.key}
+                  scope="col"
+                  aria-sort={active ? (descending ? 'descending' : 'ascending') : 'none'}
+                  className={`${numeric ? cell : table.leadHead} font-medium`}
                 >
-                  {column.label}
-                  <SortIndicator active={sort === column.key} descending={descending} />
-                </button>
-              </th>
-            ))}
+                  <span className={`inline-flex items-center gap-1 whitespace-nowrap ${numeric ? 'w-full justify-end' : ''}`}>
+                    <button
+                      type="button"
+                      title={column.share ? `${column.title}。依篇數排序` : column.title}
+                      onClick={() => sortBy(column.key)}
+                      className={`inline-flex items-center gap-1 hover:text-brand-700 dark:hover:text-brand-400 ${
+                        sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''
+                      }`}
+                    >
+                      {column.label}
+                      <SortIndicator active={sort === column.key} descending={descending} />
+                    </button>
+                    {column.share && (
+                      <button
+                        type="button"
+                        title={`${column.label}佔比對篇數的比例。依比例排序`}
+                        aria-label={`${column.label}比例排序`}
+                        onClick={() => sortBy(shareKey)}
+                        className={`inline-flex items-center gap-0.5 rounded px-1 hover:text-brand-700 dark:hover:text-brand-400 ${
+                          sort === shareKey ? 'text-brand-800 dark:text-brand-300' : 'text-zinc-400 dark:text-zinc-500'
+                        }`}
+                      >
+                        %
+                        <SortIndicator active={sort === shareKey} descending={descending} />
+                      </button>
+                    )}
+                  </span>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
@@ -231,15 +261,11 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                 </div>
               </th>
               <td className={`${cell} ${muted(row.articles)}`}>{number(row.articles)}</td>
-              <td className={cell}>
-                <Share value={row.copied} of={row.articles} />
-              </td>
-              <td className={cell}>
-                <Share value={row.copying} of={row.articles} />
-              </td>
-              <td className={cell}>
-                <Share value={row.citing} of={row.articles} />
-              </td>
+              {(['copied', 'copying', 'citing'] as const).map((metric) => (
+                <td key={metric} className={cell}>
+                  <Share row={row} metric={metric} />
+                </td>
+              ))}
               <td className={`${cell} ${muted(row.cited)}`}>{number(row.cited)}</td>
             </tr>
           ))}
@@ -334,8 +360,8 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
               各媒體
             </h3>
             <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              期間合計，依文章去重。被抄：這家媒體的文章之後有其他媒體刊出相似內容；抄別人：刊出時已有其他媒體的相似文章。百分比是佔比對篇數的比例；同時刊登的配對不計方向。只被引用、沒有收錄內文的媒體比對篇數為
-              0。
+              期間合計，依文章去重。被跟進：這家媒體先刊出，之後有其他媒體刊出相似內容；跟進他媒：刊出時已有其他媒體的相似文章。百分比是佔比對篇數的比例，點欄名依篇數排序、點
+              % 依比例排序；同時刊登的配對不計方向。只被引用、沒有收錄內文的媒體比對篇數為 0。
             </p>
             <OutletTable data={data} />
           </section>

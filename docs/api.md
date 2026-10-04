@@ -512,8 +512,8 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/daily'
 | `media[].name` | string |  |
 | `media[].articles` | integer[] |  |
 | `media[].pairs` | integer[] | 一端為此媒體的配對數 |
-| `media[].copied` | integer[] | 被抄：此媒體文章之後有他媒刊出相似內容的篇數（文章去重，以自身刊登日計；同時刊登不計） |
-| `media[].copying` | integer[] | 抄別人：此媒體文章刊出時已有他媒相似文章的篇數（文章去重，以自身刊登日計；同時刊登不計） |
+| `media[].copied` | integer[] | 被跟進：此媒體先刊出、之後有他媒刊出相似內容的篇數（文章去重，以自身刊登日計；同時刊登不計） |
+| `media[].copying` | integer[] | 跟進他媒：此媒體刊出時已有他媒相似文章的篇數（文章去重，以自身刊登日計；同時刊登不計） |
 | `media[].citing` | integer[] | 此媒體引用他媒的則數 |
 | `media[].cited` | integer[] | 他媒引用此媒體的則數 |
 
