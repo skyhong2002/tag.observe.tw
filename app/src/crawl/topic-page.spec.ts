@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { looksLikeStories, sharedTag, topicPageGroups, topicPageImage } from './topic-page.ts';
+import { looksLikeStories, sharedTag, topicPageDate, topicPageGroups, topicPageImage } from './topic-page.ts';
 
 describe('topicPageGroups', () => {
   it('groups same-site links by container and drops nav, footer and other sites', () => {
@@ -21,6 +21,85 @@ describe('topicPageGroups', () => {
     const html =
       '<ul class="topic-article-grid"><li><h3>鈔錢部署／高股息ETF配息大戰</h3><a href="/cts/money/202609/202609043075126.html">2026-09-04 16:57</a></li></ul>';
     expect(topicPageGroups(html, 'https://news.cts.com.tw/topic/x')[0][0].title).toBe('鈔錢部署／高股息ETF配息大戰2026-09-04 16:57');
+  });
+});
+
+describe('topicPageGroups story dates', () => {
+  const now = new Date('2026-10-04T04:00:00Z'); // 12:00 in Taiwan
+  const page = 'https://news.example.com.tw/topic/1';
+  const dates = (html: string) =>
+    Object.fromEntries(topicPageGroups(html, page, undefined, { now })[0].map((s) => [s.key.replace(/^.*\//, ''), s.date]));
+
+  it("takes each story's date from its own item, not the page's update time", () => {
+    // 自由's topic pages print the page's 更新時間 above the list; 東森's first dates are header dates.
+    const html = `<div class="topic-head">更新時間 2026/10/04 11:00</div>
+      <div class="list">
+        <div class="box"><div class="pic"><a href="/news/1"><img></a></div><div class="txt"><h3><a href="/news/1">賴清德出訪友邦行程曝光</a></h3><span class="time">2026/09/30 18:00</span></div></div>
+        <div class="box"><div class="pic"><a href="/news/2"><img></a></div><div class="txt"><h3><a href="/news/2">外交部說明出訪細節</a></h3><span class="time">2026/09/29 09:15</span></div></div>
+        <div class="box"><div class="pic"><a href="/news/3"><img></a></div><div class="txt"><h3><a href="/news/3">一則沒有日期的報導</a></h3></div></div>
+      </div>`;
+    expect(dates(html)).toEqual({ '1': '2026-09-30T10:00:00.000Z', '2': '2026-09-29T01:15:00.000Z', '3': undefined });
+  });
+  it('reads <time datetime> and relative dates against now', () => {
+    const html = `<ul class="l">
+      <li><a href="/n/1">颱風最新動態整理</a><time datetime="2026-10-01T08:30:00+08:00">10/1</time></li>
+      <li><a href="/n/2">颱風停班停課一覽</a><span>3小時前</span></li>
+      <li><a href="/n/3">颱風災情持續更新</a><span>昨天</span></li></ul>`;
+    expect(dates(html)).toEqual({ '1': '2026-10-01T00:30:00.000Z', '2': '2026-10-04T01:00:00.000Z', '3': '2026-10-02T16:00:00.000Z' });
+  });
+  it('does not take a date from a summary', () => {
+    const html = `<ul class="l">
+      <li><a href="/n/1">賈伯斯逝世十週年回顧</a><p>2011年10月5日，賈伯斯與世長辭。十年過後，我們再次整理賈伯斯生前的歷史與產品。</p></li>
+      <li><a href="/n/2">蘋果產品設計語言的演變</a><p>2021/10/05</p></li></ul>`;
+    expect(dates(html)).toEqual({ '1': undefined, '2': '2021-10-04T16:00:00.000Z' });
+  });
+  it('bounds items by stories, not by a label link repeated on every card (iThome 新聞)', () => {
+    const card = (n: number, d: string) =>
+      `<div class="card"><div class="t"><a href="/tags/news">新聞</a></div><div class="t"><a href="/news/${n}">資安新聞標題第${n}則</a></div><div class="m"><span>${d}</span></div></div>`;
+    const html = `<div class="cards">${card(1, '2025-02-07')}${card(2, '2025-02-08')}${card(3, '2025-02-09')}</div>`;
+    const stories = topicPageGroups(html, page, undefined, { now }).find((g) => g.some((s) => s.key.endsWith('/news/1'))) ?? [];
+    expect(stories.find((s) => s.key.endsWith('/news/2'))?.date).toBe('2025-02-07T16:00:00.000Z');
+  });
+  it('dates stories from the JSON-LD item list', () => {
+    const ld = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          item: { '@type': 'NewsArticle', url: 'https://news.example.com.tw/n/1', datePublished: '2024-04-22T15:43:00+08:00' },
+        },
+        { '@type': 'ListItem', position: 2, url: 'https://news.example.com.tw/n/2', datePublished: '2024-04-11T13:05:00+08:00' },
+      ],
+    };
+    const html = `<script type="application/ld+json">${JSON.stringify(ld)}</script>
+      <ul class="l"><li><a href="/n/1">馬習二會後各方反應</a></li><li><a href="/n/2">馬英九返台談話全文</a></li></ul>`;
+    expect(dates(html)).toEqual({ '1': '2024-04-22T07:43:00.000Z', '2': '2024-04-11T05:05:00.000Z' });
+  });
+});
+
+describe('topicPageDate', () => {
+  const now = new Date('2026-10-04T04:00:00Z');
+  it('dates a single-article page by its own publish time', () => {
+    expect(
+      topicPageDate(
+        '<meta property="article:published_time" content="2025-03-01T10:00:00+08:00">',
+        'https://x.example.com/a',
+        now,
+      )?.toISOString(),
+    ).toBe('2025-03-01T02:00:00.000Z');
+    const ld = { '@type': 'NewsArticle', mainEntityOfPage: 'https://x.example.com/a', datePublished: '2025-03-02' };
+    expect(
+      topicPageDate(`<script type="application/ld+json">${JSON.stringify(ld)}</script>`, 'https://x.example.com/a', now)?.toISOString(),
+    ).toBe('2025-03-01T16:00:00.000Z');
+  });
+  it("ignores other pages' articles and non-articles", () => {
+    const ld = [
+      { '@type': 'NewsArticle', url: 'https://x.example.com/other', datePublished: '2025-03-02' },
+      { '@type': 'WebPage', datePublished: '2025-03-02' },
+    ];
+    expect(topicPageDate(`<script type="application/ld+json">${JSON.stringify(ld)}</script>`, 'https://x.example.com/a', now)).toBeNull();
   });
 });
 

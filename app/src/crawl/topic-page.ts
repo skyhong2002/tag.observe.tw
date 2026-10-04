@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { dateFromAttr, dateFromText } from './story-date.ts';
 import { urlKey } from './text.ts';
 
 // A topic page (an outlet's 專題 page) lists the outlet's own stories on the
@@ -11,6 +12,7 @@ import { urlKey } from './text.ts';
 export interface TopicStory {
   key: string; // url_key, comparable with articles.url_key
   title: string; // text of the story's list item, for stories we never crawled
+  date?: string; // ISO publish date the topic page shows for the story, if any
 }
 
 const DEPTH = 4;
@@ -45,13 +47,144 @@ export function topicPageImage(html: string, pageUrl: string): string | null {
   }
 }
 
-/** Link groups on a topic page (same registrable domain), keyed by container signature, largest first. */
-export function topicPageGroups(html: string, pageUrl: string, articleId?: string): TopicStory[][] {
+type Node = ReturnType<cheerio.CheerioAPI>[number];
+const DATE_ATTRS = ['datetime', 'data-time', 'data-date', 'data-published', 'data-timestamp'];
+const DATED = 'time, [datetime], [data-time], [data-date], [data-published], [data-timestamp], [content]';
+const DATE_PROP = /date|time|publish/i;
+
+// A byline or date line; longer text is a headline or summary, whose dates
+// ("2011年10月5日，賈伯斯與世長辭") are not the story's.
+const SHORT = 40;
+const short = (s: string) => {
+  const t = s.replace(/\s+/g, ' ').trim();
+  return t.length <= SHORT ? t : '';
+};
+
+/** A date shown in or on an element: date attributes first, then short text. */
+function dateIn($: cheerio.CheerioAPI, el: cheerio.Cheerio<Node>, now: Date): Date | null {
+  for (const e of [...el.toArray(), ...el.find(DATED).toArray()]) {
+    const $e = $(e);
+    for (const attr of DATE_ATTRS) {
+      const d = dateFromAttr($e.attr(attr), now);
+      if (d) return d;
+    }
+    const prop = `${$e.attr('itemprop') ?? ''} ${$e.attr('property') ?? ''} ${$e.attr('name') ?? ''}`;
+    if ($e.attr('content') && DATE_PROP.test(prop)) {
+      const d = dateFromAttr($e.attr('content'), now);
+      if (d) return d;
+    }
+  }
+  for (const e of [...el.toArray(), ...el.find('*').toArray()]) {
+    const text = short($(e).text());
+    const d = text && dateFromText(text, now);
+    if (d) return d;
+  }
+  // A date line beside a headline in one element: its own text node.
+  for (const e of [...el.toArray(), ...el.find('*').toArray()])
+    for (const c of (e as { children?: Node[] }).children ?? []) {
+      const text = c.type === 'text' && short((c as { data?: string }).data ?? '');
+      const d = text && dateFromText(text, now);
+      if (d) return d;
+    }
+  return null;
+}
+
+type Ld = Record<string, unknown>;
+function ldNodes($: cheerio.CheerioAPI): Ld[] {
+  const out: Ld[] = [];
+  const visit = (v: unknown) => {
+    if (Array.isArray(v)) for (const x of v) visit(x);
+    else if (v && typeof v === 'object') {
+      out.push(v as Ld);
+      for (const x of Object.values(v)) visit(x);
+    }
+  };
+  $('script[type="application/ld+json"]').each((_, s) => {
+    try {
+      visit(JSON.parse($(s).text()));
+    } catch {
+      // Malformed JSON-LD is common; skip it.
+    }
+  });
+  return out;
+}
+function ldUrl(n: Ld): string | undefined {
+  const main = n.mainEntityOfPage;
+  for (const v of [n.url, n['@id'], n.item, main && typeof main === 'object' ? (main as Ld)['@id'] : main])
+    if (typeof v === 'string' && v) return v;
+}
+function ldDate(n: Ld, now: Date): Date | null {
+  const item = n.item && typeof n.item === 'object' ? (n.item as Ld) : undefined;
+  for (const v of [n.datePublished, n.dateCreated, n.dateModified, item?.datePublished, item?.dateModified])
+    if (typeof v === 'string') {
+      const d = dateFromAttr(v, now);
+      if (d) return d;
+    }
+  return null;
+}
+function keyOf(url: string, base: URL | string, articleId?: string): string | null {
+  try {
+    return urlKey(new URL(url, base).href, articleId);
+  } catch {
+    return null;
+  }
+}
+
+/** Story dates from the page's JSON-LD (ItemList / CollectionPage entries
+ *  with a url and datePublished), by url_key. */
+function ldStoryDates($: cheerio.CheerioAPI, base: URL, articleId: string | undefined, now: Date): Map<string, Date> {
+  const out = new Map<string, Date>();
+  for (const n of ldNodes($)) {
+    const url = ldUrl(n);
+    const key = url && keyOf(url, base, articleId);
+    const date = key && ldDate(n, now);
+    if (key && date && !out.has(key)) out.set(key, date);
+  }
+  return out;
+}
+
+/**
+ * The publish date of a topic page that is itself one article (a long-form
+ * 專題 without a story list): article:published_time, or the datePublished of
+ * the page's own Article in JSON-LD. Null when the page is not an article.
+ */
+export function topicPageDate(html: string, pageUrl: string, now = new Date()): Date | null {
   const $ = cheerio.load(html);
-  $('header, footer, nav, aside, script, style').remove();
+  const meta = $('meta[property="article:published_time"], meta[name="article:published_time"], meta[itemprop="datePublished"]')
+    .first()
+    .attr('content');
+  const fromMeta = dateFromAttr(meta, now);
+  if (fromMeta) return fromMeta;
+  const page = keyOf(pageUrl, pageUrl);
+  for (const n of ldNodes($)) {
+    if (!/Article|BlogPosting|Report/.test([n['@type']].flat().join(' '))) continue;
+    const url = ldUrl(n);
+    if (url && keyOf(url, pageUrl) !== page) continue;
+    const d = ldDate(n, now);
+    if (d) return d;
+  }
+  return null;
+}
+
+/**
+ * Link groups on a topic page (same registrable domain), keyed by container
+ * signature, largest first. A story carries the date the page shows for it,
+ * if any: from JSON-LD, the link itself, or the story's item — the largest
+ * ancestor holding no other story of its group — and never from outside the
+ * item, such as the page's own 更新時間 header.
+ */
+export function topicPageGroups(
+  html: string,
+  pageUrl: string,
+  articleId?: string,
+  { now = new Date() }: { now?: Date } = {},
+): TopicStory[][] {
+  const $ = cheerio.load(html);
   const base = new URL(pageUrl);
+  const ld = ldStoryDates($, base, articleId, now);
+  $('header, footer, nav, aside, script, style').remove();
   const site = registrable(base.hostname);
-  const groups = new Map<string, Map<string, string>>();
+  const links: Array<{ a: Node; sig: string; key: string; title: string }> = [];
   $('a[href]').each((_, a) => {
     let u: URL;
     try {
@@ -71,12 +204,64 @@ export function topicPageGroups(html: string, pageUrl: string, articleId?: strin
     // image or a date (華視's topic grid links its dates).
     const item = $(a).closest('li, article');
     const title = (item.length ? item.text() : $(a).text()).replace(/\s+/g, ' ').trim().slice(0, 160);
-    const group = groups.get(sig) ?? new Map<string, string>();
-    const key = urlKey(u.href, articleId);
-    if ((group.get(key)?.length ?? 0) < title.length) group.set(key, title);
-    groups.set(sig, group);
+    links.push({ a, sig, key: urlKey(u.href, articleId), title });
   });
-  return [...groups.values()].map((g) => [...g].map(([key, title]) => ({ key, title }))).sort((a, b) => b.length - a.length);
+  const bySig = new Map<string, typeof links>();
+  for (const l of links) {
+    const list = bySig.get(l.sig) ?? [];
+    list.push(l);
+    bySig.set(l.sig, list);
+  }
+  const groups: TopicStory[][] = [];
+  for (const group of bySig.values()) {
+    const chains = new Map(group.map((l) => [l, $(l.a).parents().toArray()]));
+    // Which of the group's links each ancestor holds (up to three keys).
+    const holdsKeys = (ls: typeof group) => {
+      const holds = new Map<Node, Set<string>>();
+      for (const l of ls)
+        for (const p of chains.get(l) ?? []) {
+          const keys = holds.get(p) ?? new Set<string>();
+          if (keys.size < 3) keys.add(l.key);
+          holds.set(p, keys);
+        }
+      return holds;
+    };
+    const all = holdsKeys(group);
+    // A link repeated across items (a 新聞 label on every card) is not a story
+    // of its own: its links' closest common ancestor holds other stories.
+    const spread = new Set<string>();
+    for (const key of new Set(group.map((l) => l.key))) {
+      const ls = group.filter((l) => l.key === key);
+      if (ls.length < 2) continue;
+      const others = new Set(ls.slice(1).map((l) => chains.get(l)));
+      const common = chains.get(ls[0])?.find((p) => [...others].every((c) => c?.includes(p)));
+      if (common && (all.get(common)?.size ?? 0) >= 3) spread.add(key);
+    }
+    const holds = spread.size ? holdsKeys(group.filter((l) => !spread.has(l.key))) : all;
+    // A lone story has no siblings to bound its item by: only its list item.
+    const lone = new Set(group.map((l) => l.key).filter((k) => !spread.has(k))).size <= 1;
+    const stories = new Map<string, TopicStory>();
+    for (const l of group) {
+      const story = stories.get(l.key) ?? { key: l.key, title: '' };
+      if (story.title.length < l.title.length) story.title = l.title;
+      if (!story.date) {
+        let date = ld.get(l.key) ?? dateIn($, $(l.a), now);
+        if (!date && !spread.has(l.key)) {
+          let item: Node | undefined = lone ? $(l.a).closest('li, article')[0] : undefined;
+          if (!lone)
+            for (const p of $(l.a).parents().toArray()) {
+              if ((holds.get(p)?.size ?? 0) > 1 || (p as { tagName?: string }).tagName === 'body') break;
+              item = p;
+            }
+          if (item) date = dateIn($, $(item), now);
+        }
+        if (date) story.date = date.toISOString();
+      }
+      stories.set(l.key, story);
+    }
+    groups.push([...stories.values()]);
+  }
+  return groups.sort((a, b) => b.length - a.length);
 }
 
 /** A group reads like a story list when most items have headline-length text. */
