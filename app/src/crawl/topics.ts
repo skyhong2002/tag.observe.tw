@@ -121,8 +121,10 @@ export const TOPIC_RULES: TopicRule[] = [
   {
     media: 'ebc',
     fallbackImage: 'https://news.ebc.net.tw/img/ebc_news.jpg',
-    url: 'https://news.ebc.net.tw/topic',
-    pattern: /\/topic\/\d+/,
+    // /topic now 301s to the homepage, whose topic bar is the whole set (no archive).
+    url: 'https://news.ebc.net.tw/',
+    pattern: /\/topic\/\d+$/,
+    kind: 'topic',
   },
   {
     media: 'cna',
