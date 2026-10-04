@@ -22,6 +22,7 @@ export interface EventCluster {
   majorNews: ArticleRow[];
   /** Articles in the window carrying at least two of the event's tags. */
   articles: number;
+  memberIds: number[];
 }
 
 const clean = (t: string) => t.trim();
@@ -133,6 +134,8 @@ const HUB_MIN_SHARE = 0.2;
 export const MIN_SHARED_TAGS = 2;
 /** Headlines kept per event. */
 export const NEWS_LIMIT = 6;
+/** Share of an event's articles already in higher-ranked events that makes it a duplicate. */
+export const DUPLICATE_SHARE = 0.5;
 /** Hub tag → the ranked tags still allowed to reach it. */
 export function hubTags(
   co: CoOccurrence,
@@ -169,6 +172,7 @@ export function clusterEvents(
     minShared = MIN_SHARED_TAGS,
     newsLimit = NEWS_LIMIT,
     siteTagMin = SITE_TAG_MIN,
+    duplicateShare = DUPLICATE_SHARE,
   } = {},
 ): EventCluster[] {
   const noEqual = new Set(noEqualList);
@@ -303,13 +307,32 @@ export function clusterEvents(
         seenMajorMedia.add(r.media);
         majorNews.push(r);
       }
-    out.push({ rank: 0, score: tags[0]?.[1] ?? 0, tags, major, news, majorNews, articles: members.length });
+    out.push({
+      rank: 0,
+      score: tags[0]?.[1] ?? 0,
+      tags,
+      major,
+      news,
+      majorNews,
+      articles: members.length,
+      memberIds: members.map((m) => m.row.id),
+    });
   }
   out.sort((a, b) => b.score - a.score);
-  out.forEach((e, i) => {
+  // A cluster whose articles mostly sit in higher-ranked events is the same
+  // day seen through other names: 韓國瑜/侯友宜 on 2026-10-05 was the 李四川
+  // and 江啟臣 rallies they both attended, 59% already listed above.
+  const listed = new Set<number>();
+  const kept = out.filter((e) => {
+    const inside = e.memberIds.filter((id) => listed.has(id)).length;
+    if (e.memberIds.length > 0 && inside / e.memberIds.length >= duplicateShare) return false;
+    for (const id of e.memberIds) listed.add(id);
+    return true;
+  });
+  kept.forEach((e, i) => {
     e.rank = i + 1;
   });
-  return out;
+  return kept;
 }
 
 // events_history.php: attach each event (>=2 major) to a thread active within

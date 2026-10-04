@@ -157,6 +157,28 @@ describe('clusterEvents', () => {
     expect(groups).toHaveLength(2);
     for (const g of groups) expect(g).not.toContain('東網');
   });
+  it('drops an event whose articles are mostly already listed under higher-ranked events', () => {
+    // 韓國瑜 and 侯友宜 appear at two rallies; each rally is its own story.
+    const articles = [
+      ...['c', 'd', 'e', 'f'].map((m, i) => art(i + 1, m, ['李四川', '板橋'])),
+      ...[5, 6].map((i) => art(i, 'a', ['李四川', '板橋', '韓國瑜', '侯友宜'])),
+      ...['c', 'd', 'e', 'f'].map((m, i) => art(i + 7, m, ['江啟臣', '盧秀燕'])),
+      ...[11, 12].map((i) => art(i, 'b', ['江啟臣', '盧秀燕', '韓國瑜', '侯友宜'])),
+      art(13, 'a', ['韓國瑜', '侯友宜']),
+    ];
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const burst = computeBurst(chart, new Map());
+    const groups = (duplicateShare: number) =>
+      clusterEvents(burst, articles, [], { now: t0, duplicateShare }).map((e) => e.tags.map(([t]) => t).sort());
+    const all = groups(2);
+    expect(all.some((g) => g.join() === ['韓國瑜', '侯友宜'].sort().join())).toBe(true);
+    const deduped = groups(0.5);
+    expect(deduped).toHaveLength(all.length - 1);
+    expect(deduped.some((g) => g.join() === ['韓國瑜', '侯友宜'].sort().join())).toBe(false);
+  });
   it('honours the no-equal list', () => {
     const ranking = computeRanking(
       rows.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
