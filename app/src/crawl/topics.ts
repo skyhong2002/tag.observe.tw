@@ -625,9 +625,13 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'heho',
     url: 'https://heho.com.tw/medical-feature-stories',
     fallbackImage: '/favicons/heho.png',
-    pattern: /heho\.com\.tw\/[a-z][\w-]+\/?$/,
+    // Single-slug landing pages on the main and section hosts; not the
+    // tools.* / npower.* lookup tools or WordPress archive paths.
+    pattern: /^https:\/\/(?:(?:www|sport|kids)\.)?heho\.com\.tw\/(?!(?:tag|category|archives|author|page)\/?$)[a-z0-9][\w-]+\/?$/,
     scope: '#main .row-dashed',
     card: '.col-inner',
+    // 醫療專題: one-off packages and campaign hubs.
+    kind: 'feature',
   },
   {
     media: 'edh',

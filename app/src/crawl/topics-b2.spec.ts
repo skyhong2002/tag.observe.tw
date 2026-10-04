@@ -105,3 +105,19 @@ describe('wyc', () => {
     ]);
   });
 });
+
+describe('heho', () => {
+  it('takes landing pages on heho hosts but not the lookup tools', () => {
+    const { pattern } = rule('heho');
+    for (const url of ['https://heho.com.tw/healthy-aging', 'https://heho.com.tw/2019-ncov', 'https://kids.heho.com.tw/covid-19-kids', 'https://sport.heho.com.tw/sports-tech-2025'])
+      expect(pattern.test(url)).toBe(true);
+    for (const url of [
+      'https://tools.heho.com.tw/bmi',
+      'https://npower.heho.com.tw/search-nutrition',
+      'https://heho.com.tw/archives/12345',
+      'https://heho.com.tw/tag',
+      'https://evil.example/heho.com.tw/x',
+    ])
+      expect(pattern.test(url)).toBe(false);
+  });
+});
