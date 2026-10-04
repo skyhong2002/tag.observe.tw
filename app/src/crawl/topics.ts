@@ -380,6 +380,7 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/bnext.png',
     pattern: /\/topic\/view\/\d+$/,
     title: (a) => heading(a.parent()),
+    kind: 'feature',
   },
   {
     media: 'inside',
