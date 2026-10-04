@@ -1,6 +1,7 @@
 import Link from 'next/link';
+import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
-import { EventIndex, HourTimeline } from '@/components/EventOverview';
+import { CampGap, EventIndex, HourTimeline } from '@/components/EventOverview';
 import MediaSidebar from '@/components/MediaSidebar';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
 import { fetchEvents } from '@/lib/pages';
@@ -46,8 +47,13 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
             : '事件資料暫時無法取得，請稍後重新整理。'}
         </p>
         <p className="mt-1 text-xs text-zinc-500">
-          爆發力條以本小時第 1 名為滿格。來源圖示與篇數涵蓋過去 24 小時寫過該事件主要標籤的相關報導，點圖示可查看媒體。
+          爆發力條以本小時第 1 名為滿格。每件事的藍綠比例是過去 24 小時寫過該事件主要標籤的媒體家數，不含未列藍綠的媒體。
         </p>
+        {data?.baseline && (
+          <div className="mt-2">
+            <BaselineBar b={data.baseline} />
+          </div>
+        )}
       </div>
       {data && (
         <nav className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -86,6 +92,7 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
             </div>
           </MediaSidebar>
           <div className="mt-5 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
+            <CampGap events={data.events} />
             {tiers.map(({ tier, items }) =>
               items.length === 0 ? null : tier === 'hero' ? (
                 <ol key={tier} className="space-y-4" aria-label="頭條">
