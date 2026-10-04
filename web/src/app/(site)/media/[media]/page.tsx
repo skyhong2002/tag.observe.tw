@@ -11,7 +11,7 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
-import { CONTENT_STATUS, type MediaContent } from '@/lib/article-content';
+import type { MediaContent } from '@/lib/article-content';
 import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
 import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
 import type { SimilarityData } from '@/lib/similarity';
@@ -271,8 +271,7 @@ export default async function MediaPage({
               <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {data.articles.map((article) => {
                   const headline = readingTitle(article.title),
-                    href = withReadingQuery(`/article/${article.id}/`, query),
-                    readable = article.bodyChars > 0;
+                    href = withReadingQuery(`/article/${article.id}/`, query);
                   return (
                     <li key={article.id} id={`article-${article.id}`} className="scroll-mt-32 py-2.5">
                       <article className="flex items-start gap-3">
@@ -303,17 +302,22 @@ export default async function MediaPage({
                               {article.publishedDate ?? taipei(article.publishedAt)}
                             </time>
                             <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
-                            <span
-                              className={
-                                readable || article.bodyStatus === 'expired'
-                                  ? 'text-zinc-500 dark:text-zinc-400'
-                                  : 'text-amber-700 dark:text-amber-400'
-                              }
-                            >
-                              {readable ? '可讀內文' : CONTENT_STATUS[article.bodyStatus].label}
-                            </span>
                             <SourceLink url={article.url} className="!min-h-5 !text-[11px]" />
                           </div>
+                          {article.tags.length > 0 && (
+                            <ul aria-label="關鍵字" className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-5">
+                              {article.tags.slice(0, 6).map((tag) => (
+                                <li key={tag}>
+                                  <Link
+                                    href={`/tag/${encodeURIComponent(tag)}/`}
+                                    className="text-zinc-500 hover:text-brand-700 hover:underline dark:text-zinc-400 dark:hover:text-brand-400"
+                                  >
+                                    #{tag}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                           <DiscoverySources sources={article.discoverySources} />
                         </div>
                         <ArticleThumbnail src={article.image} href={href} title={headline.title} />
