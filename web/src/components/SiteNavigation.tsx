@@ -11,6 +11,7 @@ const links = [
   { href: '/journalist/', label: '記者' },
   { href: '/event/', label: '事件表' },
   { href: '/topic/', label: '議題表' },
+  { href: '/feature/', label: '專題' },
   { href: '/media/', label: '媒體' },
 ];
 

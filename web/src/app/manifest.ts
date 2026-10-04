@@ -24,6 +24,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { name: '事件表', url: '/event/' },
       { name: '關鍵字排行', url: '/ranking/' },
       { name: '議題表', url: '/topic/' },
+      { name: '專題', url: '/feature/' },
     ],
   };
 }
