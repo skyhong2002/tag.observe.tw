@@ -163,8 +163,12 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /\/hotTopic\/\d+$/,
     extract: ldTopics,
     kind: 'topic',
+    // 15 a page, most recently updated first; ~49 pages reach back to 2021
+    // (later pages are 已停更 topics) and page 50+ is a 404.
+    paginate: { url: (n) => `https://news.pts.org.tw/hotTopic?page=${n}`, max: 50 },
     // /curation is 專題: one-off long-form features. Cards split into an image
-    // link and an <h3> title link; the card selector joins them.
+    // link and an <h3> title link; the card selector joins them. ~8 pages; the
+    // same 5 highlights head every page.
     listings: [
       {
         url: 'https://news.pts.org.tw/curation',
@@ -172,6 +176,18 @@ export const TOPIC_RULES: TopicRule[] = [
         pattern: /\/curation\/\d+$/,
         card: '.curation-main, .curation-secondary .col-lg-6, .project-card',
         title: heading,
+        paginate: { url: (n) => `https://news.pts.org.tw/curation?page=${n}`, max: 12 },
+      },
+      // 新聞實驗室「數位敘事」: interactive projects and microsites across pts.org.tw.
+      {
+        url: 'https://newslab.pts.org.tw/topic',
+        kind: 'feature',
+        pattern:
+          /^https:\/\/(news\.pts\.org\.tw\/(projects?|presentation|live)\/[^?#]+|newmedia\.pts\.org\.tw\/[^/?#]+|(?!(news|newslab|www)\.)[\w-]+\.pts\.org\.tw\/)/,
+        // Cover and title are separate links. A row can hold two stories, so the
+        // card only lends a cover; titles come from the link itself.
+        card: '.md\\:flex, .border',
+        title: (a) => textOf(a),
       },
     ],
   },

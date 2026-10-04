@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { childSelectorFor, fetchTopicListings, TOPIC_RULES } from './topics.ts';
+import { childSelectorFor, extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const ruleOf = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
 const response = (url: string, body: string, status = 200) => ({ url, body, status, contentType: 'text/html', ms: 1 });
@@ -48,5 +48,39 @@ describe('CNA 新聞專題', () => {
   it('reads sub-topics on its topic pages', () => {
     expect(childSelectorFor('cna', 'https://www.cna.com.tw/topic/newstopic/5056.aspx')).toBe('.definKind h2 a');
     expect(childSelectorFor('cna', 'https://www.cna.com.tw/project/20260430-danjiang-bridge/')).toBeUndefined();
+  });
+});
+
+describe('PTS', () => {
+  it('pages through hotTopic and curation', () => {
+    const [hot, curation] = topicListings(ruleOf('pts'));
+    expect(hot.paginate?.url(2)).toBe('https://news.pts.org.tw/hotTopic?page=2');
+    expect(hot.paginate?.max).toBeGreaterThanOrEqual(49);
+    expect(curation.paginate?.url(3)).toBe('https://news.pts.org.tw/curation?page=3');
+  });
+
+  it('reads 新聞實驗室 projects and microsites as features, covers from the card', () => {
+    const newslab = topicListings(ruleOf('pts'))[2];
+    const html = `<nav><a href="/topic">數位敘事</a><a href="https://news.pts.org.tw/member/question/be_a_reporter">成為記者</a></nav>
+      <div class="block md:flex"><div><a href="https://news.pts.org.tw/presentation/a"><img src="https://img/a.jpg" alt="甲專題"></a>
+        <a href="https://news.pts.org.tw/presentation/a"><h2>甲專題</h2></a></div>
+        <div><a href="https://news.pts.org.tw/presentation/b"><img src="https://img/b.jpg" alt="乙專題"></a>
+        <a href="https://news.pts.org.tw/presentation/b"><h2>乙專題</h2></a></div></div>
+      <div class="border"><div><a href="https://news.pts.org.tw/projects/x/?utm_source=ptsnews"><img src="https://img/x.jpg" alt></a></div>
+        <div><a href="https://news.pts.org.tw/projects/x/?utm_source=ptsnews"><h3>丙專題</h3></a></div></div>
+      <div class="border"><a href="https://newmedia.pts.org.tw/strike/"><h3>罷工</h3></a></div>
+      <div class="border"><a href="https://drunk-drive.pts.org.tw/"><h3>酒駕</h3></a></div>
+      <div class="border"><a href="https://news.pts.org.tw/live/62c7a68b"><h3>安倍晉三遇刺</h3></a></div>
+      <a href="https://www.youtube.com/@x">YouTube</a><a href="https://news.pts.org.tw/article/1">一則新聞</a>`;
+    const items = extractTopics(html, { ...newslab, media: 'pts', fallbackImage: '' });
+    expect(items.map((t) => [t.title, t.url, t.image])).toEqual([
+      ['甲專題', 'https://news.pts.org.tw/presentation/a', 'https://img/a.jpg'],
+      ['乙專題', 'https://news.pts.org.tw/presentation/b', 'https://img/b.jpg'],
+      ['丙專題', 'https://news.pts.org.tw/projects/x/', 'https://img/x.jpg'],
+      ['罷工', 'https://newmedia.pts.org.tw/strike/', null],
+      ['酒駕', 'https://drunk-drive.pts.org.tw/', null],
+      ['安倍晉三遇刺', 'https://news.pts.org.tw/live/62c7a68b', null],
+    ]);
+    expect(newslab.kind).toBe('feature');
   });
 });
