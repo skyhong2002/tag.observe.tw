@@ -1,39 +1,16 @@
 import Link from 'next/link';
 import { fetchCategories } from '@/lib/api';
 import type { MediaCamps } from '@/lib/media-graph.mts';
-import { fetchSimilarity, MAX_RANGE_DAYS, PERIOD_HOURS, periodQuery, type SimilarityPeriod } from '@/lib/similarity';
+import { fetchSimilarity, periodQuery } from '@/lib/similarity';
 import catalog from '../../../../../app/data/media-catalog.json';
+import { type SimilarityQuery, similarityPeriod, similarityThreshold } from './query';
 import SimilarityExplorer from './SimilarityExplorer';
 
 export const metadata = { title: '新聞關係圖', description: '點選媒體圖示固定高亮新聞內文相似與引用關係，在圖表下方篩選與瀏覽文章證據。' };
-const isDay = (value: string | undefined): value is string => {
-  const time = Date.parse(`${value}T00:00:00Z`);
-  return (
-    !!value &&
-    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    value >= '2000-01-01' &&
-    Number.isFinite(time) &&
-    new Date(time).toISOString().startsWith(value)
-  );
-};
-
-/** Taipei dates `from`–`to` (inclusive, at most 31 days), else one of the rolling windows; 48 hours by default. */
-function similarityPeriod(query: { hours?: string; from?: string; to?: string }): SimilarityPeriod {
-  const { from, to } = query;
-  if (isDay(from) && isDay(to) && from <= to && (Date.parse(to) - Date.parse(from)) / 86400e3 < MAX_RANGE_DAYS) return { from, to };
-  const hours = Number(query.hours);
-  return { hours: (PERIOD_HOURS as readonly number[]).includes(hours) ? hours : 48 };
-}
-
-export default async function SimilarityPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ hours?: string; from?: string; to?: string; threshold?: string }>;
-}) {
+export default async function SimilarityPage({ searchParams }: { searchParams: Promise<SimilarityQuery> }) {
   const query = await searchParams;
   const period = similarityPeriod(query);
-  const requested = Number(query.threshold ?? 0.65);
-  const threshold = Number.isFinite(requested) ? Math.min(1, Math.max(0.5, requested)) : 0.65;
+  const threshold = similarityThreshold(query);
   const params = periodQuery(period, threshold);
   const [data, categories] = await Promise.all([fetchSimilarity(period, threshold).catch(() => null), fetchCategories().catch(() => [])]);
   if (data) {

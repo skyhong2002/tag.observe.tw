@@ -16,6 +16,7 @@ export default function Loading() {
           className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800"
         >
           {[
+            ['期間', 'w-36'],
             ['顯示媒體數', 'w-28'],
             ['藍綠分類', 'w-28'],
             ['媒體 tag', 'w-40'],

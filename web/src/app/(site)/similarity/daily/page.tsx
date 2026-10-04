@@ -1,0 +1,25 @@
+import { periodQuery } from '@/lib/similarity';
+import DailyTrend from '../DailyTrend';
+import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../query';
+import SimilarityTabs from '../SimilarityTabs';
+
+export const metadata = { title: '每日趨勢 · 新聞關係圖', description: '每天的比對篇數、相似配對與明示引用。' };
+
+export default async function SimilarityDailyPage({ searchParams }: { searchParams: Promise<SimilarityQuery> }) {
+  const query = await searchParams;
+  const threshold = similarityThreshold(query);
+  return (
+    <div className="space-y-5">
+      <header className="space-y-4">
+        <SimilarityTabs current="daily" query={periodQuery(similarityPeriod(query), threshold).toString()} />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">每日趨勢</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            每天的比對篇數、相似配對與明示引用，依相似度門檻 {threshold} 計算。
+          </p>
+        </div>
+      </header>
+      <DailyTrend threshold={threshold} />
+    </div>
+  );
+}
