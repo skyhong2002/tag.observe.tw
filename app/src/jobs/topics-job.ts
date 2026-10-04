@@ -73,17 +73,18 @@ export async function runTopicsJob(
               category: t.category ?? sql`${topics.category}`,
               ...(t.kind ? { kind: t.kind, kindSource: 'rule' } : {}),
               ...(t.sponsored !== undefined ? { sponsored: t.sponsored } : {}),
-              ...storyDateFields(t.storyDates),
             })
             .where(and(eq(topics.media, rule.media), eq(topics.url, t.url)));
-        // Listings that carry story dates classify their auto items right away.
+        // Listings that carry story dates classify their new auto items right
+        // away. They only show the latest few stories, so once the topic page
+        // has been read (fuller list) its classification and dates stand.
         for (const t of items) {
           if (t.kind || !t.storyDates?.length) continue;
           const { kind } = classifyTopic({ storyDates: t.storyDates, grew: false, now: started });
           await db
             .update(topics)
             .set({ kind: sql`IF(${topics.storyGrewAt} IS NULL, ${kind}, 'topic')`, kindSource: 'auto' })
-            .where(and(eq(topics.media, rule.media), eq(topics.url, t.url), or(isNull(topics.kindSource), ne(topics.kindSource, 'rule'))));
+            .where(and(eq(topics.media, rule.media), eq(topics.url, t.url), isNull(topics.kindSource)));
         }
       }
       await db

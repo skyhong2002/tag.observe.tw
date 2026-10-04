@@ -12,6 +12,7 @@ import {
   twreporterTopics,
 } from './topic-extractors-b1.ts';
 import { womanyCollections, wycTopics, zaobaoSpecials } from './topic-extractors-b2.ts';
+import { ctsTopics, ettodayFeatureIndex, ftvTopics, nextappleSpecial, setnTopics, ttvProjects } from './topic-extractors-a2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -84,13 +85,25 @@ const textOf = (a: cheerio.Cheerio<import('domhandler').AnyNode>) =>
 // Card links whose visible text mixes date, counters and summary: take the heading.
 const heading = (a: cheerio.Cheerio<import('domhandler').AnyNode>) =>
   decodeEntities(a.find('h1,h2,h3,h4,h5').first().text().replace(/\s+/g, ' ').trim()) || textOf(a);
+// 中時 albums carry no 廣告 label; these are the brand/campaign packages it
+// links from every album page (永慶房屋, the 寶島旺旺行/旺旺福來報 promos).
+const chinatimesSponsored = (item: TopicItem) => /\/album\/(yungching|ctnewyear[AB])\//.test(item.url);
 export const TOPIC_RULES: TopicRule[] = [
   // newtalk anchors carry the latest article title; the topic name is the URL slug.
   {
     media: 'newtalk',
     fallbackImage: 'https://newtalk.tw/images/ogimage.jpg',
-    url: 'https://newtalk.tw/news/topics/list',
+    // /news/topics/list redirects here. A canary serves two layouts at random
+    // (20 or 10 topics a page, numbered differently), which breaks paging; the
+    // cookie pins the new one: ~15 pages, ~150 topics.
+    url: 'https://newtalk.tw/news/topics',
     pattern: /\/news\/topics\/view\/\d+/,
+    kind: 'topic',
+    paginate: {
+      url: (n) => `https://newtalk.tw/news/topics/${n}`,
+      max: 30,
+      request: () => ({ headers: { cookie: 'canary_id=0; canary_version=new' } }),
+    },
     // The title link sits beside the block's lazy-loaded cover.
     card: '.news_block',
     title: (a) => {
@@ -106,20 +119,37 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://attach.setn.com/images/setn_1200x676_20250103.png',
     url: 'https://www.setn.com/Plist.aspx',
     pattern: /\/(klist|project)\/\d+/i,
-    title: (a) => a.find('.title').first().text().trim() || heading(a),
+    // Carousel slides put the name in .feature_title beside a long description.
+    title: (a) => a.find('.title, .feature_title').first().text().trim() || heading(a),
+    extract: setnTopics,
+    // ~5 pages; past the last one the site repeats it, which stops pagination.
+    paginate: { url: (n) => `https://www.setn.com/Plist.aspx?p=${n}`, max: 10 },
+    listings: [
+      // The homepage features a few running ones (好康搜查線 /project/162) the index lacks.
+      {
+        url: 'https://www.setn.com/',
+        pattern: /\/(klist|project)\/\d+/i,
+        title: (a) => a.find('.title, .feature_title').first().text().trim() || heading(a),
+        extract: setnTopics,
+      },
+    ],
   },
   {
     media: 'cts',
     fallbackImage: 'https://news.cts.com.tw/assets/fb_img.jpg',
     url: 'https://news.cts.com.tw/topic/',
-    pattern: /\/topic\/[0-9a-f-]{36}/,
-    extract: nuxtTopics,
+    // Also the event microsites it banners (event.cts.com.tw/2026asiangames/).
+    pattern: /\/topic\/[0-9a-f-]{36}|^https:\/\/event\.cts\.com\.tw\/[\w-]+\/?$/,
+    // Story dates come with the listing, so auto classifies on insert.
+    extract: ctsTopics,
   },
   {
     media: 'ebc',
     fallbackImage: 'https://news.ebc.net.tw/img/ebc_news.jpg',
-    url: 'https://news.ebc.net.tw/topic',
-    pattern: /\/topic\/\d+/,
+    // /topic now 301s to the homepage, whose topic bar is the whole set (no archive).
+    url: 'https://news.ebc.net.tw/',
+    pattern: /\/topic\/\d+$/,
+    kind: 'topic',
   },
   {
     media: 'cna',
@@ -160,9 +190,22 @@ export const TOPIC_RULES: TopicRule[] = [
   {
     media: 'tvbs',
     fallbackImage: 'https://news.tvbs.com.tw/assets/default_og_image.DD7eKhl_.png',
-    url: 'https://news.tvbs.com.tw/pack/packnews',
-    pattern: /\/(pack|topics)\/[a-z]*\/?\d+/,
-    listings: [{ url: 'https://news.tvbs.com.tw/topics', pattern: /\/topics\/[a-z]+\/\d+$/ }],
+    // /pack/packnews now redirects here. The index shows ~36 picks; each
+    // category page lists all of its topics (~111 in total), dormant ones too.
+    url: 'https://news.tvbs.com.tw/topics',
+    pattern: /\/topics\/[a-z]+\/\d+$/,
+    kind: 'topic',
+    listings: [
+      ...['politics', 'world', 'life', 'local', 'money', 'entertainment', 'sports', 'china', 'health', 'tech', 'esg', 'travel', 'cars'].map(
+        (cat) => ({ url: `https://news.tvbs.com.tw/topics/${cat}`, pattern: /\/topics\/[a-z]+\/\d+$/, kind: 'topic' as const }),
+      ),
+      // Event microsites are only linked from the homepage's topic chip bar.
+      {
+        url: 'https://news.tvbs.com.tw/',
+        pattern: /^https:\/\/news\.tvbs\.com\.tw\/(events|exhibition)\/[\w-]+(\/(index\.html)?)?$/,
+        kind: 'feature',
+      },
+    ],
   },
   // Each card also links its articles as hotTopic/N#topic-link-M; the JSON-LD
   // ItemList carries the clean topic names.
@@ -263,7 +306,10 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://static.nextapple.tw/web/layout/img/index.jpg',
     url: 'https://news.nextapple.com/collection/topic',
     pattern: /\/collection\/topic\/[^/?#]+/,
-    listings: [{ url: 'https://special.nextapple.com/', pattern: /^https:\/\/special\.nextapple\.com\/[^/?#]+\/?$/, title: heading }],
+    // Topic collections are short news bursts or running stories: auto.
+    listings: [
+      { url: 'https://special.nextapple.com/', pattern: /^https:\/\/special\.nextapple\.com\/[^/?#]+\/?$/, extract: nextappleSpecial },
+    ],
   },
   {
     media: 'ctwant',
@@ -339,6 +385,7 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://www.ftvnews.com.tw/',
     pattern: /^\/topic\/[\w-]+\/?$|topic\.ftvnews\.com\.tw\/[\w-]+\/?$/,
     title: (a) => decodeEntities(a.parent().find('.tw-font-bold').first().text().trim()) || textOf(a),
+    extract: ftvTopics,
   },
   {
     media: 'twreporter',
@@ -374,14 +421,24 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://www.ettoday.net/feature/index',
     fallbackImage: 'https://cdn2.ettoday.net/style/ettoday2017/images/push.jpg',
     pattern: /\/feature\/(?!index(?:[/?#]|$))[^/?#]+/,
-    scope: '.part_pictxt_2, .part_pictxt_1',
     title: heading,
+    extract: ettodayFeatureIndex,
+    // Mixed: running keyword pages (地震, podcast) and one-off packages. Deep
+    // pages are thousands of stale celebrity tags, so only the first few.
+    paginate: { url: (n) => `https://www.ettoday.net/feature/index/0/${n}`, max: 5 },
     listings: [
       {
         // Public CSV linked by features.ettoday.net, also used by its browser UI.
         url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSC8DHP42p7MvVh8FXxjEJwZejAS3lzw7hvNAU4zeVP82zZCmefGCLWXOqeqanUrbvokw3UxKn7uzDm/pub?output=csv',
         pattern: /features\.ettoday\.net\/[^/?#]+|\/events\/depth-topic\//,
         extract: ettodayDigitalTopics,
+        kind: 'feature',
+      },
+      // The nav's highlighted buttons link the current event microsites (2026大選, 亞運).
+      {
+        url: 'https://www.ettoday.net/',
+        scope: '.nav_1_v4 .piece > li.style_1',
+        pattern: /^https:\/\/(www\.ettoday\.net\/events|events\.ettoday\.net)\/[\w-]+\/[\w-]+\.php7?$/,
       },
     ],
   },
@@ -493,8 +550,20 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'chinatimes',
     url: 'https://www.chinatimes.com/album/',
     fallbackImage: '/favicons/chinatimes.png',
-    pattern: /\/album\/[^/?#]+\/\d+-\d+(?:\?chdtv)?$/,
+    // 專輯 mix running stories (美伊, 會員文章) with monthly one-offs: auto.
+    pattern: /\/album\/[^/?#]+\/\d+-\d+$/,
     title: heading,
+    // The full index spans two pages (data-count on its pagination).
+    paginate: { url: (n) => `https://www.chinatimes.com/album/total?page=${n}`, max: 3 },
+    sponsored: chinatimesSponsored,
+    // Section indexes reach albums the main one has dropped; the homepage is a
+    // fallback should the album pages be challenged again (they were once).
+    listings: ['global/', 'album-star/', 'album-focus', 'album-sports', 'album-military/', 'album-technology/', ''].map((path) => ({
+      url: path ? `https://www.chinatimes.com/album/${path}` : 'https://www.chinatimes.com/',
+      pattern: /\/album\/[^/?#]+\/\d+-\d+$/,
+      title: heading,
+      sponsored: chinatimesSponsored,
+    })),
   },
   {
     media: 'ttv',
@@ -504,6 +573,10 @@ export const TOPIC_RULES: TopicRule[] = [
     // Heading link above the project's story thumbnails: the first one is the cover.
     card: '.project-list > li',
     title: heading,
+    extract: ttvProjects,
+    // Programme series: some still air weekly (益起看世界), others stopped
+    // (熱線追蹤, 2024), so auto; story IDs carry ROC dates (dateFromStoryUrl).
+    kind: 'auto',
   },
   {
     media: 'tnl',
@@ -846,8 +919,8 @@ export const TOPIC_RULES: TopicRule[] = [
   },
 ];
 
-// Tracking keys outlets append to topic links (中時 ?ctrack=) on top of the generic ones.
-const TOPIC_TRACKING = /^ctrack$/i;
+// Tracking keys outlets append to topic links (中時 ?ctrack=, ?chdtv) on top of the generic ones.
+const TOPIC_TRACKING = /^(ctrack|chdtv)$/i;
 /** A raw href without surrounding space or tracking query, so anchored patterns
  *  still match; hrefs with inner whitespace are template junk (鏡週刊). */
 export function cleanTopicHref(raw: string): string | null {
