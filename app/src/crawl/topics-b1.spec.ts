@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { mirrorTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import type { FetchRequest } from './fetch.ts';
+import { mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
@@ -100,5 +101,35 @@ describe('CTWANT', () => {
       <div class="p-topic__list"><a href="/topic/287/">陳幸妤驚傳婚變</a></div>`;
     expect(extractTopics(html, nav)).toEqual([{ url: 'https://www.ctwant.com/topic/42/', title: '永續論壇', image: null, category: null }]);
     expect(nav.kind).toBe('feature');
+  });
+});
+
+describe('太報', () => {
+  it('reads the HTML first page and the JSON "more" pages, POSTing for the latter', async () => {
+    const requests: [string, FetchRequest][] = [];
+    const card = (id: number, title: string) => `<li><a href="/special/plan/${id}"><img src="/p${id}.jpg"><h4>${title}</h4></a></li>`;
+    const plan = listing('taisounds', 'https://www.taisounds.com/special/planlist');
+    const result = await fetchTopicListings({ ...rule('taisounds'), ...plan, listings: [] }, async (url, opts = {}) => {
+      requests.push([url, { method: opts.method }]);
+      if (url.endsWith('/planlist')) return response(url, `<ul id="ulnewslist">${card(195, '決戰九合一大選')}</ul>`);
+      const n = Number(new URL(url).searchParams.get('page'));
+      return response(url, JSON.stringify({ htmlString: n === 2 ? card(116, '舊企劃') : '', NomoreData: n > 2 }));
+    });
+    expect(result.items.map((t) => [t.title, t.kind, t.page])).toEqual([
+      ['決戰九合一大選', 'topic', 1],
+      ['舊企劃', 'topic', 2],
+    ]);
+    expect(requests).toEqual([
+      ['https://www.taisounds.com/special/planlist', { method: undefined }],
+      ['https://www.taisounds.com/more/infinateplan?page=2', { method: 'POST' }],
+      ['https://www.taisounds.com/more/infinateplan?page=3', { method: 'POST' }],
+    ]);
+  });
+
+  it('declares 主題報導 專題', () => {
+    expect(rule('taisounds').kind).toBe('feature');
+    expect(taisoundsTopics('{"htmlString":"<a href=\\"/special/topic/9\\"><h4>主題</h4></a>"}', rule('taisounds'))[0].url).toBe(
+      'https://www.taisounds.com/special/topic/9',
+    );
   });
 });

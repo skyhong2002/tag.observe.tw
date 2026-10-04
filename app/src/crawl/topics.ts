@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { mirrorTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -232,6 +232,29 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://www.taisounds.com/special/topiclist',
     pattern: /\/special\/topic\/\d+/,
     title: heading,
+    // 主題報導: one-off reports. "More" is a POST returning the next 10 cards.
+    extract: taisoundsTopics,
+    kind: 'feature',
+    paginate: {
+      url: (n) => `https://www.taisounds.com/more/infinatetopic?page=${n}`,
+      max: 20,
+      request: (n) => (n > 1 ? { method: 'POST' } : {}),
+    },
+    listings: [
+      {
+        // 特別企劃: running coverage (九合一大選) that keeps gaining stories.
+        url: 'https://www.taisounds.com/special/planlist',
+        pattern: /\/special\/plan\/\d+/,
+        title: heading,
+        extract: taisoundsTopics,
+        kind: 'topic',
+        paginate: {
+          url: (n) => `https://www.taisounds.com/more/infinateplan?page=${n}`,
+          max: 10,
+          request: (n) => (n > 1 ? { method: 'POST' } : {}),
+        },
+      },
+    ],
   },
   {
     media: 'upmedia',

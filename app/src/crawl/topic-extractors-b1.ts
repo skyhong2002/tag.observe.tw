@@ -44,3 +44,10 @@ export function twreporterTopics(json: string, rule: TopicRule): TopicItem[] {
     return [{ url, title, image: t?.mobile?.url || t?.desktop?.url || null, category: null }];
   });
 }
+
+/** 太報 lists: page 1 is HTML, "more" pages are JSON wrapping the next cards' HTML. */
+export function taisoundsTopics(body: string, rule: TopicRule): TopicItem[] {
+  let html = body;
+  if (/^\s*\{/.test(body)) html = (JSON.parse(body) as { htmlString?: string }).htmlString ?? '';
+  return extractTopics(html, rule);
+}
