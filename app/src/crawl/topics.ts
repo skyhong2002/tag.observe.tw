@@ -402,6 +402,10 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/article\/\d+$/,
     scope: '.view-content',
     title: heading,
+    // One-off packages (cover stories, surveys), 12 a page back to 2015; the
+    // Drupal pager is 0-based. Five pages cover roughly the last 18 months.
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.ithome.com.tw/feature?page=${n - 1}`, max: 5 },
   },
   {
     media: 'einfo',
