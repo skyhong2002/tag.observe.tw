@@ -135,3 +135,12 @@ describe('edh', () => {
     ]);
   });
 });
+
+describe('techorange', () => {
+  it('names index cards by their heading, not the cover link’s noscript markup', () => {
+    const html = `<div class="e-loop-item"><a href="https://techorange.com/feature/ai-agent/"><noscript><img src="/a.jpg" alt=""></noscript><img data-src="/a.jpg" alt=""></a>
+      <h2 class="elementor-heading-title"><a href="https://techorange.com/feature/ai-agent/">AI Agent 上工中</a></h2></div>
+      <a href="https://techorange.com/feature/2/">2</a>`;
+    expect(extractTopics(html, rule('techorange')).map((t) => [t.title, t.url])).toEqual([['AI Agent 上工中', 'https://techorange.com/feature/ai-agent/']]);
+  });
+});

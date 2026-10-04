@@ -390,10 +390,19 @@ export const TOPIC_RULES: TopicRule[] = [
   },
   {
     media: 'techorange',
-    url: 'https://techorange.com/',
+    // 特展: the full index on one page (/feature/2/ redirects back to it).
+    url: 'https://techorange.com/feature/',
     fallbackImage: '/favicons/techorange.png',
-    pattern: /techorange\.com\/feature\/[^/?#]+\/?$/,
-    title: heading,
+    pattern: /techorange\.com\/feature\/(?!\d+\/)[^/?#]+\/?$/,
+    card: '.e-loop-item',
+    // The cover link's only text is its <noscript> image markup.
+    title: (a) => {
+      const card = a.closest('.e-loop-item');
+      return card.find('.elementor-heading-title').first().text().trim() || (card.find('img[alt]').attr('alt') ?? '').trim();
+    },
+    kind: 'feature',
+    // The homepage names the newest packages, some of which the index leaves untitled.
+    listings: [{ url: 'https://techorange.com/', pattern: /techorange\.com\/feature\/(?!\d+\/)[^/?#]+\/?$/, title: heading, kind: 'feature' }],
   },
   {
     media: 'ithome',
