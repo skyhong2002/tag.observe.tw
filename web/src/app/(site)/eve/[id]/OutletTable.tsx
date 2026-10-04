@@ -1,8 +1,6 @@
-'use client';
-
 import Link from 'next/link';
-import { useState } from 'react';
 import { CAMP_FILL, CAMP_LABEL } from '@/components/CampBar';
+import ExpandRows from '@/components/ExpandRows';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import { taipei } from '@/lib/api';
 import { CAMP_ORDER, type OutletRow, type OutletSort, sortOutletRows } from '@/lib/event-thread.mts';
@@ -26,11 +24,10 @@ export default function OutletTable({
   hrefs: Record<OutletSort, string>;
   initial?: number;
 }) {
-  const [open, setOpen] = useState(false);
   const collator = new Intl.Collator('zh-Hant-TW-u-co-stroke');
   const sorted = sortOutletRows(rows, sort, dir, collator);
-  const shown = open ? sorted : sorted.slice(0, initial);
-  const hidden = sorted.length - shown.length;
+  const shown = sorted.slice(0, initial);
+  const rest = sorted.slice(initial);
   const max = Math.max(1, ...rows.map((r) => r.articles));
   const total = rows.reduce((n, r) => n + r.articles, 0);
   const Th = ({ col, label, className = '' }: { col: OutletSort; label: string; className?: string }) => (
@@ -50,6 +47,36 @@ export default function OutletTable({
       </Link>
     </th>
   );
+  const row = (r: OutletRow) => (
+    <tr key={r.media} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
+      <td className="sticky left-0 z-10 bg-white px-3 py-2 group-hover:bg-brand-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800">
+        <MediaHoverLink media={r.media} icon={16} className="flex items-center gap-2 font-medium hover:underline">
+          <span className="whitespace-nowrap">{r.title}</span>
+        </MediaHoverLink>
+      </td>
+      <td className={`whitespace-nowrap px-3 py-2 text-xs ${CAMP_TEXT[r.camp]}`}>
+        <span className="inline-flex items-center gap-1">
+          <CampDot camp={r.camp} />
+          {CAMP_LABEL[r.camp]}
+        </span>
+      </td>
+      <td className="px-3 py-2" title={`${r.title}：${r.articles} 篇，佔 ${Math.round((r.articles / Math.max(total, 1)) * 100)}%`}>
+        <div className="flex items-center gap-2">
+          <div className="h-2 flex-1" aria-hidden>
+            <div className={`h-2 rounded-r ${CAMP_FILL[r.camp]}`} style={{ width: `${Math.max(1.5, (r.articles / max) * 100)}%` }} />
+          </div>
+          <span className="w-8 text-right tabular-nums">{r.articles}</span>
+        </div>
+      </td>
+      <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{taipei(r.first)}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{taipei(r.last)}</td>
+      <td className="max-w-[24rem] px-3 py-2">
+        <Link href={articleHref(r.latest)} className="line-clamp-1 hover:underline" title={r.latest.title}>
+          {r.latest.title}
+        </Link>
+      </td>
+    </tr>
+  );
   return (
     <div className={`${card} overflow-x-auto`}>
       <table className="w-full min-w-[44rem] text-sm">
@@ -64,56 +91,9 @@ export default function OutletTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          {shown.map((r) => (
-            <tr key={r.media} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
-              <td className="sticky left-0 z-10 bg-white px-3 py-2 group-hover:bg-brand-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800">
-                <MediaHoverLink media={r.media} icon={16} className="flex items-center gap-2 font-medium hover:underline">
-                  <span className="whitespace-nowrap">{r.title}</span>
-                </MediaHoverLink>
-              </td>
-              <td className={`whitespace-nowrap px-3 py-2 text-xs ${CAMP_TEXT[r.camp]}`}>
-                <span className="inline-flex items-center gap-1">
-                  <CampDot camp={r.camp} />
-                  {CAMP_LABEL[r.camp]}
-                </span>
-              </td>
-              <td className="px-3 py-2" title={`${r.title}：${r.articles} 篇，佔 ${Math.round((r.articles / Math.max(total, 1)) * 100)}%`}>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 flex-1" aria-hidden>
-                    <div
-                      className={`h-2 rounded-r ${CAMP_FILL[r.camp]}`}
-                      style={{ width: `${Math.max(1.5, (r.articles / max) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="w-8 text-right tabular-nums">{r.articles}</span>
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{taipei(r.first)}</td>
-              <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{taipei(r.last)}</td>
-              <td className="max-w-[24rem] px-3 py-2">
-                <Link href={articleHref(r.latest)} className="line-clamp-1 hover:underline" title={r.latest.title}>
-                  {r.latest.title}
-                </Link>
-              </td>
-            </tr>
-          ))}
+          {shown.map(row)}
+          {rest.length > 0 && <ExpandRows rest={rest.map(row)} hidden={rest.length} shown={initial} colSpan={6} />}
         </tbody>
-        {sorted.length > initial && (
-          <tbody>
-            <tr>
-              <td colSpan={6} className="px-3 py-1.5 text-center">
-                <button
-                  type="button"
-                  onClick={() => setOpen((v) => !v)}
-                  aria-expanded={open}
-                  className="rounded-md px-3 py-1 text-xs text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-zinc-800"
-                >
-                  {open ? `只顯示前 ${initial} 家 ▲` : `展開其餘 ${hidden} 家 ▼`}
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        )}
         <tfoot className="border-t border-zinc-300 bg-zinc-50 font-medium dark:border-zinc-700 dark:bg-zinc-950">
           <tr>
             <th scope="row" className="sticky left-0 z-10 bg-zinc-50 px-3 py-2 text-left font-medium dark:bg-zinc-950">
