@@ -278,6 +278,7 @@ describe('topic kinds, pagination and sub-topics', () => {
     expect(pts.map((l) => [l.url, l.kind])).toEqual([
       ['https://news.pts.org.tw/hotTopic', 'topic'],
       ['https://news.pts.org.tw/curation', 'feature'],
+      ['https://newslab.pts.org.tw/topic', 'feature'],
     ]);
   });
 

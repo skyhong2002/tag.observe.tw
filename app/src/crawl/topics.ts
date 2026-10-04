@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
+import { cnaNewsTopics, ltnSpecialTopics, udnTopicIndex } from './topic-extractors-a1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -113,8 +114,29 @@ export const TOPIC_RULES: TopicRule[] = [
   {
     media: 'cna',
     fallbackImage: 'https://imgcdn.cna.com.tw/www/images/pic_fb.jpg',
+    // The HTML list shows 20 of ~100; its "more" button pages through the
+    // WNewsList API. Microsites (netzero.cna.com.tw) sit in the same list and
+    // keep publishing, so they stay 議題 too.
     url: 'https://www.cna.com.tw/list/newstopic.aspx',
-    pattern: /\/topic\/newstopic\/\d+\.aspx/,
+    pattern: /\/topic\/newstopic\/\d+\.aspx$|^https:\/\/[\w-]+\.cna\.com\.tw\/?$/,
+    scope: '#jsMainList',
+    extract: cnaNewsTopics,
+    kind: 'topic',
+    paginate: {
+      url: () => 'https://www.cna.com.tw/cna2018api/api/WNewsList',
+      max: 10,
+      request: (n) =>
+        n === 1
+          ? {}
+          : {
+              method: 'POST',
+              body: JSON.stringify({ action: '0', category: 'newstopic', pagesize: '20', pageidx: n }),
+              // The default Accept prefers XML, which this API answers with a 500.
+              headers: { 'content-type': 'application/json', accept: 'application/json' },
+            },
+    },
+    // Parent topics (5056 縣市長選舉) link their sub-topics as section headings.
+    children: '.definKind h2 a',
     listings: [
       {
         url: 'https://www.cna.com.tw/project/project_list/api/specialfeature.json',
@@ -141,8 +163,12 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /\/hotTopic\/\d+$/,
     extract: ldTopics,
     kind: 'topic',
+    // 15 a page, most recently updated first; ~49 pages reach back to 2021
+    // (later pages are 已停更 topics) and page 50+ is a 404.
+    paginate: { url: (n) => `https://news.pts.org.tw/hotTopic?page=${n}`, max: 50 },
     // /curation is 專題: one-off long-form features. Cards split into an image
-    // link and an <h3> title link; the card selector joins them.
+    // link and an <h3> title link; the card selector joins them. ~8 pages; the
+    // same 5 highlights head every page.
     listings: [
       {
         url: 'https://news.pts.org.tw/curation',
@@ -150,6 +176,18 @@ export const TOPIC_RULES: TopicRule[] = [
         pattern: /\/curation\/\d+$/,
         card: '.curation-main, .curation-secondary .col-lg-6, .project-card',
         title: heading,
+        paginate: { url: (n) => `https://news.pts.org.tw/curation?page=${n}`, max: 12 },
+      },
+      // 新聞實驗室「數位敘事」: interactive projects and microsites across pts.org.tw.
+      {
+        url: 'https://newslab.pts.org.tw/topic',
+        kind: 'feature',
+        pattern:
+          /^https:\/\/(news\.pts\.org\.tw\/(projects?|presentation|live)\/[^?#]+|newmedia\.pts\.org\.tw\/[^/?#]+|(?!(news|newslab|www)\.)[\w-]+\.pts\.org\.tw\/)/,
+        // Cover and title are separate links. A row can hold two stories, so the
+        // card only lends a cover; titles come from the link itself.
+        card: '.md\\:flex, .border',
+        title: (a) => textOf(a),
       },
     ],
   },
@@ -166,7 +204,20 @@ export const TOPIC_RULES: TopicRule[] = [
         // Image link and <h3> link are separate; the card joins them.
         card: '.story-list__news',
         title: heading,
+        extract: udnTopicIndex,
       },
+      // 新媒體中心: one-off multimedia/data/interactive packages on vip.udn.com,
+      // udn.com/newmedia and the older udn.com/upf/newmedia. udn.com/newmedia/
+      // itself only shows the latest few; these are its full category pages.
+      ...['issue', 'data', 'interaction'].map((category) => ({
+        url: `https://udn.com/newmedia/office/${category}/`,
+        kind: 'feature' as const,
+        pattern:
+          /udn\.com\/(newmedia\/(?!office\b)(\d{4}\/|election\d{4}\/)?[\w-]+|event\/newmedia_[\w-]+|upf\/newmedia\/\d{4}_data\/[\w-]+)/,
+        scope: '.page-posts',
+        // Each post links its cover, title and summary; all carry the title attribute.
+        title: (a: cheerio.Cheerio<import('domhandler').Element>) => decodeEntities(a.attr('title') ?? '') || textOf(a),
+      })),
     ],
   },
   // The homepage keyword bar (.h_kw) is LTN's curated list of running topics;
@@ -177,18 +228,23 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://news.ltn.com.tw/',
     pattern: /news\.ltn\.com\.tw\/topic\/[^/?#]+/,
     scope: '.h_kw',
+    kind: 'topic',
     listings: [
+      // 新聞事件簿: /topic/ tag pages for past events, mostly dormant 議題 (auto).
       {
         url: 'https://features.ltn.com.tw/',
         pattern: /ltn\.com\.tw\//,
         scope: '.project',
         title: (a) => decodeEntities(a.find('img').attr('alt') ?? '') || heading(a),
       },
+      // 專題專區: yearly microsites on features./election./sports.ltn.com.tw.
       {
         url: 'https://features.ltn.com.tw/special_topic',
-        pattern: /features\.ltn\.com\.tw\/[^/?#]+/,
+        pattern: /(features|election|sports)\.ltn\.com\.tw\/[^/?#]+/,
         scope: '.project',
         title: (a) => decodeEntities(a.find('img').attr('alt') ?? '') || heading(a),
+        extract: ltnSpecialTopics,
+        kind: 'feature',
       },
     ],
   },
