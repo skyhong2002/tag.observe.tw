@@ -88,6 +88,22 @@ describe('topicPageGroups story dates', () => {
       <ul class="l"><li><a href="/n/1">馬習二會後各方反應</a></li><li><a href="/n/2">馬英九返台談話全文</a></li></ul>`;
     expect(dates(html)).toEqual({ '1': '2024-04-22T07:43:00.000Z', '2': '2024-04-11T05:05:00.000Z' });
   });
+  it('shifts JSON-LD dates back when the page writes Taipei time as UTC', () => {
+    // 鏡報: a story from 16:31 Taipei on the day of `now` is written 16:31Z.
+    const t = new Date(+now - 30 * 60e3);
+    const z = (d: Date) => `${new Date(+d + 8 * 3600e3).toISOString().slice(0, 19)}.000Z`;
+    const earlier = new Date(+now - 26 * 3600e3);
+    const ld = {
+      '@type': 'ItemList',
+      itemListElement: [
+        { '@type': 'ListItem', item: { url: 'https://news.example.com.tw/n/1', dateCreated: z(t) } },
+        { '@type': 'ListItem', item: { url: 'https://news.example.com.tw/n/2', dateCreated: z(earlier) } },
+      ],
+    };
+    const html = `<script type="application/ld+json">${JSON.stringify(ld)}</script>
+      <ul class="l"><li><a href="/n/1">沈伯洋競總成立</a></li><li><a href="/n/2">蔡英文現身造勢</a></li></ul>`;
+    expect(dates(html)).toEqual({ '1': t.toISOString(), '2': earlier.toISOString() });
+  });
 });
 
 describe('topicPageDate', () => {

@@ -134,11 +134,21 @@ function keyOf(url: string, base: URL | string, articleId?: string): string | nu
  *  with a url and datePublished), by url_key. */
 function ldStoryDates($: cheerio.CheerioAPI, base: URL, articleId: string | undefined, now: Date): Map<string, Date> {
   const out = new Map<string, Date>();
+  // Parse with room for dates up to 9 hours ahead: some CMSs (鏡報) write Taipei
+  // time with a Z suffix, which puts recent stories in the future.
+  const ahead = new Date(+now + 9 * 3600e3);
   for (const n of ldNodes($)) {
     const url = ldUrl(n);
     const key = url && keyOf(url, base, articleId);
-    const date = key && ldDate(n, now);
+    const date = key && ldDate(n, ahead);
     if (key && date && !out.has(key)) out.set(key, date);
+  }
+  // A future date means the page's zone is mislabelled: shift the whole page back.
+  const shift = [...out.values()].some((d) => +d > +now + 300e3) ? 8 * 3600e3 : 0;
+  for (const [key, d] of out) {
+    const t = +d - shift;
+    if (t > +now + 3600e3) out.delete(key);
+    else if (shift) out.set(key, new Date(t));
   }
   return out;
 }

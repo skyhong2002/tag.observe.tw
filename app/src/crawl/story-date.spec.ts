@@ -26,6 +26,14 @@ describe('dateFromText', () => {
     expect(dateFromText('1990/01/01', now)).toBeNull();
     expect(dateFromText('2026/10/09', now)).toBeNull();
     expect(dateFromText('2026年世足賽', now)).toBeNull();
+    // Later today in Taipei has not happened yet.
+    expect(dateFromText('2026-10-04 18:30', now)).toBeNull();
+  });
+  it('reads 剛剛／昨天 only as standalone words, not inside a title', () => {
+    expect(dateFromText('芯菲 作家 用剛剛好的愛，成為更好的自己', now)).toBeNull();
+    expect(dateFromText('昨天的我', now)).toBeNull();
+    expect(iso(dateFromText('剛剛', now))).toBe(now.toISOString());
+    expect(iso(dateFromText('昨天下午', now))).toBe('2026-10-02T16:00:00.000Z');
   });
 });
 

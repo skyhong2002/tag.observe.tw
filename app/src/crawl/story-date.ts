@@ -9,9 +9,10 @@ const DAY = 86400e3;
 const TAIPEI = 8 * HOUR;
 const EARLIEST = Date.UTC(1995, 0, 1);
 
-/** A plausible story date: from 1995 up to a day from now. */
+/** A plausible story date: from 1995 up to an hour from now (stories are not
+ *  published in the future; an hour absorbs clock skew). */
 function plausible(t: number, now: Date): Date | null {
-  return Number.isFinite(t) && t >= EARLIEST && t <= +now + DAY ? new Date(t) : null;
+  return Number.isFinite(t) && t >= EARLIEST && t <= +now + HOUR ? new Date(t) : null;
 }
 
 function taipei(y: number, mo: number, d: number, h = 0, mi = 0, now = new Date()): Date | null {
@@ -71,7 +72,11 @@ export function dateFromText(text: string, now = new Date()): Date | null {
     const date = taipei(y, mo, d, h, mm ? +mm : 0, now);
     if (date) best = { at: m.index, date };
   }
-  const rel = /(?<!\d)(\d{1,3})\s*(分鐘|分钟|小時|小时|天|日)前|(剛剛|昨天|前天)/.exec(text);
+  // 剛剛／昨天／前天 only as a standalone word: 「用剛剛好的愛」 is a title, not a time.
+  const rel =
+    /(?<!\d)(\d{1,3})\s*(分鐘|分钟|小時|小时|天|日)前|(?<![\u4e00-\u9fff])(剛剛|昨天|前天)(?!(?![上下]午|晚上|凌晨|早上)[\u4e00-\u9fff])/.exec(
+      text,
+    );
   if (rel && (!best || rel.index < best.at)) {
     if (rel[3]) {
       if (rel[3] === '剛剛') return now;
