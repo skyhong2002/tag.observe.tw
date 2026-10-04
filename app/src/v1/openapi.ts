@@ -168,6 +168,13 @@ const schemas: Record<string, Schema> = {
     parentId: nullable(int('上層議題 id（子議題）；與 id 不同，為數字')),
     storyLastAt: nullable(time('專題頁所列新聞中最新一則的日期')),
     storyCount: nullable(int('專題頁所列新聞數')),
+    tags: arr(str(), '從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列）'),
+  }),
+  TopicTagCount: obj({
+    tag: str(),
+    media: int('有議題或專題帶這個標籤的媒體家數'),
+    topic: int('帶這個標籤的議題數'),
+    feature: int('帶這個標籤的專題數'),
   }),
   TopicCoverage: nullable(
     obj(
@@ -1128,12 +1135,14 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'topics',
     summary: '各媒體的議題／專題',
     description:
-      '`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`，不含 backlog 與已停更）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`），子議題列在上層議題的 `children`。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
+      '`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`，不含 backlog 與已停更）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`），子議題列在上層議題的 `children`。給 `tag` 或 `q`（且不給 `media`）：不分 kind，回所有媒體帶這個標籤／名稱含這段文字的上層議題與專題（含已停更，不附 coverage），依媒體分組：符合數多的媒體在前，同一媒體新到舊、backlog 在後。不給 `media` 時都附 `tags`：所有未停更上層議題與專題名稱中最常見的站內標籤（依媒體家數，前 40 個）。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
     params: [
       q('kind', 'topic 議題（預設）或 feature 專題', str(undefined, { enum: ['topic', 'feature'] }), 'feature'),
       q('media', '只取這家媒體（須為有追蹤議題的媒體）', ref('MediaKey'), 'pts'),
       q('limit', '筆數：有 media 時預設 20、最多 200；否則為 feed 筆數，預設 60、最多 120', { type: 'integer', minimum: 1 }, 20),
       q('per', '沒給 media 時，每家媒體附幾則最近議題', intIn(1, 10, 4), 2),
+      q('tag', '只取名稱對應到這個站內標籤的議題與專題（不分 kind，跨媒體）', str(), '核電'),
+      q('q', '只取名稱含這段文字的議題與專題（不分大小寫，最多 50 字；不分 kind，跨媒體）', str(), '選舉'),
     ],
     response: {
       oneOf: [
@@ -1165,8 +1174,26 @@ export const ENDPOINTS: Endpoint[] = [
                 }),
               ],
             }),
+            tags: arr(ref('TopicTagCount'), '議題與專題最常見的標籤'),
           },
           '不給 media',
+        ),
+        obj(
+          {
+            tag: nullable(str()),
+            q: nullable(str()),
+            total: int('符合的項目數'),
+            mediaCount: int('符合的媒體家數'),
+            counts: obj({ topic: int('符合的議題數'), feature: int('符合的專題數') }),
+            topics: arr(
+              {
+                allOf: [ref('TopicItem'), obj({ media: ref('MediaKey'), mediaTitle: str(), icon: nullable(str()) })],
+              },
+              '依媒體分組；limit 預設 300、最多 500',
+            ),
+            tags: arr(ref('TopicTagCount'), '議題與專題最常見的標籤'),
+          },
+          '給 tag 或 q（不給 media）',
         ),
         obj(
           {

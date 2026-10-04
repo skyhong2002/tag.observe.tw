@@ -4,8 +4,9 @@ import { topicStatus } from '../crawl/topic-kind.ts';
 import { TOPIC_RULES, type TopicKind } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
-import { topicCoverage } from '../jobs/topic-related.ts';
+import { matchTopics, topicCoverage, topicTagger, topicTagSummary } from '../jobs/topic-related.ts';
 import {
+  allTopLevelTopics,
   firstRunPerMedia,
   latestTopicPerMedia,
   latestTopics,
@@ -24,6 +25,8 @@ const TOPIC_NAMES = Object.fromEntries(TOPIC_RULES.map((r) => [r.media, r.name])
 const TOPIC_IMAGES = Object.fromEntries(TOPIC_RULES.map((r) => [r.media, r.fallbackImage]));
 // Events are recomputed at :04 and :34; older than this means the worker is behind.
 const EVENTS_FRESH_MS = 3 * 3600e3;
+
+type TopicsQuery = { media?: string; limit?: string; per?: string; kind?: string; tag?: string; q?: string };
 
 export function registerPageApis(app: FastifyInstance, db: Db) {
   app.get<{ Querystring: { limit?: string; at?: string } }>('/api/v1/events', async (request, reply) => {
@@ -84,9 +87,11 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     };
   });
 
-  app.get<{ Querystring: { media?: string; limit?: string; per?: string; kind?: string } }>('/api/v1/topics', async (request, reply) => {
+  app.get<{ Querystring: TopicsQuery }>('/api/v1/topics', async (request, reply) => {
     const limit = Math.min(200, Math.max(1, Number(request.query.limit) || 20));
     const media = request.query.media;
+    const tag = request.query.tag?.trim() || undefined;
+    const q = request.query.q?.trim().slice(0, 50) || undefined;
     // 議題 (topic, the default) and 專題 (feature) are separate lists.
     const kind = (request.query.kind ?? 'topic') as TopicKind;
     if (kind !== 'topic' && kind !== 'feature') return reply.code(400).send({ error: 'bad kind' });
@@ -95,7 +100,12 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     // Newer rows carry their own backlog flag (a newly added listing or page).
     const run = (d: Date) => Math.floor(+d / 900e3);
     const now = new Date();
-    const [firstRun, checks, allCounts] = await Promise.all([firstRunPerMedia(db), topicSourceChecks(db), topicCountPerMedia(db)]);
+    const [firstRun, checks, allCounts, tagsOf] = await Promise.all([
+      firstRunPerMedia(db),
+      topicSourceChecks(db),
+      topicCountPerMedia(db),
+      topicTagger(db),
+    ]);
     const counts = (m: string) => allCounts[m] ?? { topic: 0, feature: 0 };
     const fmt = (r: {
       id: number;
@@ -123,6 +133,8 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       parentId: r.parentId,
       storyLastAt: r.storyLastAt?.toISOString() ?? null,
       storyCount: r.storyCount,
+      // Keywords of the name itself, whether or not anything was published on it lately.
+      tags: tagsOf(r.title),
     });
     // Recent coverage of each topic across every crawled outlet.
     const withCoverage = async <T extends { id: string; title: string }>(items: T[]) => {
@@ -138,7 +150,33 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
         };
       });
     };
+    const info = (m: string) => ({
+      media: m,
+      title: mediaInfo[m]?.title ?? TOPIC_NAMES[m] ?? m,
+      icon: iconUrl(m),
+    });
+    // Every top-level 議題 and 專題 across outlets, both kinds: the keyword
+    // summary over the live ones, and the tag / title search.
+    const everything = async () =>
+      (await allTopLevelTopics(db))
+        .filter((r) => TOPIC_MEDIA.includes(r.media))
+        .map((r) => ({ ...fmt(r), media: r.media, firstSeen: r.firstSeen }));
+    const summary = (all: Awaited<ReturnType<typeof everything>>) => topicTagSummary(all.filter((t) => t.status !== 'ended'));
     reply.header('cache-control', 'public, max-age=300');
+    if (!media && (tag || q)) {
+      const all = await everything();
+      const hits = matchTopics(all, { tag, q }, TOPIC_MEDIA);
+      const max = Math.min(500, Math.max(1, Number(request.query.limit) || 300));
+      return {
+        tag: tag ?? null,
+        q: q ?? null,
+        total: hits.length,
+        mediaCount: new Set(hits.map((h) => h.media)).size,
+        counts: { topic: hits.filter((h) => h.kind === 'topic').length, feature: hits.filter((h) => h.kind === 'feature').length },
+        topics: hits.slice(0, max).map(({ firstSeen: _, ...t }) => ({ ...t, mediaTitle: info(t.media).title, icon: info(t.media).icon })),
+        tags: summary(all),
+      };
+    }
     if (media) {
       if (!TOPIC_MEDIA.includes(media)) return reply.code(404).send({ error: 'unknown media' });
       // Sub-topics are listed under their parent, not on their own.
@@ -162,12 +200,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     }
     const per = Math.min(10, Math.max(1, Number(request.query.per) || 4));
     const feedSize = Math.min(120, Math.max(1, Number(request.query.limit) || 60));
-    const recent = await latestTopicPerMedia(db, Math.max(per, 12), kind);
-    const info = (m: string) => ({
-      media: m,
-      title: mediaInfo[m]?.title ?? TOPIC_NAMES[m] ?? m,
-      icon: iconUrl(m),
-    });
+    const [recent, all] = await Promise.all([latestTopicPerMedia(db, Math.max(per, 12), kind), everything()]);
     // One list across outlets, newest first; backlog and 已停更 are left out. A crawl run stores
     // every outlet within a minute or two, so topics from the same run (same
     // 15-minute bucket) are interleaved by their position on each outlet's
@@ -200,6 +233,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
         recent: recent[m].slice(0, per).map(fmt),
       })),
       feed: await withCoverage(feed),
+      tags: summary(all),
     };
   });
 }

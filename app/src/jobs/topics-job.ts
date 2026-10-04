@@ -391,6 +391,27 @@ export async function latestTopics(db: Db, media: string, limit = 30, kind: Topi
     .orderBy(desc(topics.firstSeen), topics.id)
     .limit(limit);
 }
+/** Every top-level 議題 and 專題 of every outlet, without the stored page
+ *  stories (~4,500 rows, a few ms): the tag summary and tag/title search. */
+export async function allTopLevelTopics(db: Db) {
+  return db
+    .select({
+      id: topics.id,
+      media: topics.media,
+      firstSeen: topics.firstSeen,
+      title: topics.title,
+      url: topics.url,
+      image: topics.image,
+      kind: topics.kind,
+      backlog: topics.backlog,
+      sponsored: topics.sponsored,
+      parentId: topics.parentId,
+      storyLastAt: topics.storyLastAt,
+      storyCount: topics.storyCount,
+    })
+    .from(topics)
+    .where(isNull(topics.parentId));
+}
 /** Sub-topics of the given topics, of any kind. */
 export async function topicChildrenOf(db: Db, parentIds: number[]) {
   if (!parentIds.length) return [];

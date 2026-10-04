@@ -50,10 +50,104 @@ export function topicTagSets(title: string, vocab: TitleVocab): string[][] {
 }
 export const topicTags = (title: string, vocab: TitleVocab): string[] => topicTagSets(title, vocab)[0] ?? [];
 
+// Words about the package or its framing rather than its subject (CNA's
+// 懶人包, 入圍焦點; the 風暴 of 關稅風暴), useless as a shared keyword.
+const PACKAGE_WORDS = new Set([
+  '專題',
+  '專輯',
+  '策展',
+  '特輯',
+  '懶人包',
+  '論壇',
+  '趨勢',
+  '爭議',
+  '名人',
+  '評論',
+  '入圍',
+  '最新情勢',
+  '影音',
+  '直播',
+  '報導',
+  '風暴',
+]);
+
+/** Keywords a topic name is about, from its title alone (no article lookup):
+ *  every tag of the sets in topicTagSets, package words left out. Stable
+ *  whether or not anything was published on it lately. */
+export function topicTitleTags(title: string, vocab: TitleVocab): string[] {
+  return [...new Set(topicTagSets(title, vocab).flat())].filter((t) => !PACKAGE_WORDS.has(t));
+}
+
+export interface TopicTagCount {
+  tag: string;
+  /** Outlets with a 議題 or 專題 carrying the tag. */
+  media: number;
+  topic: number;
+  feature: number;
+}
+/** The most common keywords across 議題 and 專題: by outlets, then by items.
+ *  A tag on one item only says nothing about what outlets package. */
+export function topicTagSummary(items: Array<{ media: string; kind: string; tags: string[] }>, limit = 40): TopicTagCount[] {
+  const by = new Map<string, { media: Set<string>; topic: number; feature: number }>();
+  for (const it of items)
+    for (const tag of it.tags) {
+      const c = by.get(tag) ?? { media: new Set<string>(), topic: 0, feature: 0 };
+      c.media.add(it.media);
+      if (it.kind === 'feature') c.feature++;
+      else c.topic++;
+      by.set(tag, c);
+    }
+  return [...by]
+    .map(([tag, c]) => ({ tag, media: c.media.size, topic: c.topic, feature: c.feature }))
+    .filter((c) => c.topic + c.feature >= 2)
+    .sort((a, b) => b.media - a.media || b.topic + b.feature - (a.topic + a.feature) || a.tag.localeCompare(b.tag))
+    .slice(0, limit);
+}
+
+/** Items carrying `tag` (exact) whose title contains `q` (case-insensitive);
+ *  either may be omitted. Grouped by outlet, outlets with most matches first
+ *  (then `mediaOrder`), newest first within an outlet, backlog last. */
+export function matchTopics<T extends { media: string; title: string; tags: string[]; firstSeen: Date; backlog: boolean }>(
+  items: T[],
+  { tag, q }: { tag?: string; q?: string },
+  mediaOrder: string[] = [],
+): T[] {
+  const needle = q?.trim().toLowerCase();
+  const hits = items.filter((it) => (!tag || it.tags.includes(tag)) && (!needle || it.title.toLowerCase().includes(needle)));
+  const perMedia = new Map<string, number>();
+  for (const h of hits) perMedia.set(h.media, (perMedia.get(h.media) ?? 0) + 1);
+  const order = (m: string) => {
+    const i = mediaOrder.indexOf(m);
+    return i < 0 ? mediaOrder.length : i;
+  };
+  return hits.sort(
+    (a, b) =>
+      (perMedia.get(b.media) ?? 0) - (perMedia.get(a.media) ?? 0) ||
+      order(a.media) - order(b.media) ||
+      a.media.localeCompare(b.media) ||
+      Number(a.backlog) - Number(b.backlog) ||
+      +b.firstSeen - +a.firstSeen,
+  );
+}
+
 let cached: { vocab: TitleVocab; at: number } | null = null;
 async function vocab(db: Db) {
   if (!cached || Date.now() - cached.at > 3600e3) cached = { vocab: await loadTitleVocab(db, { days: 7 }), at: Date.now() };
   return cached.vocab;
+}
+
+/** topicTitleTags against the current vocabulary, memoised per title until the
+ *  vocabulary is reloaded (hourly): tagging all ~4,500 topics costs ~80 ms once. */
+let memo: { vocab: TitleVocab; tags: Map<string, string[]> } | null = null;
+export async function topicTagger(db: Db): Promise<(title: string) => string[]> {
+  const v = await vocab(db);
+  if (memo?.vocab !== v) memo = { vocab: v, tags: new Map() };
+  const tags = memo.tags;
+  return (title) => {
+    let t = tags.get(title);
+    if (!t) tags.set(title, (t = topicTitleTags(title, v)));
+    return t;
+  };
 }
 
 export async function topicCoverage(
