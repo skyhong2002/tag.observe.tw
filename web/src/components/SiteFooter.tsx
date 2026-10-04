@@ -135,7 +135,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
             <Link href="/media/sources/#classification-method" className={inlineLink}>
               「媒體流量與收錄比較」
             </Link>
-            查看；「未列藍綠」不代表中立。
+            查看；「其他」表示未列藍綠，不代表中立。
           </p>
           {notes}
           <p>新聞內容著作權屬原媒體。本站提供報導索引、統計與刊登 7 天內的文章文字；標示 ↗ 的連結會開啟外部網站。</p>

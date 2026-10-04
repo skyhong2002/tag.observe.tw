@@ -8,7 +8,7 @@ import { fetchSimilarity, type SimilarityData } from './similarity';
 export type DemoCamp = 'green' | 'other' | 'blue';
 export const DEMO_CAMPS: Array<{ key: DemoCamp; label: string; short: string }> = [
   { key: 'green', label: '綠營傾向', short: '綠' },
-  { key: 'other', label: '未列藍綠', short: '其他' },
+  { key: 'other', label: '其他', short: '其他' },
   { key: 'blue', label: '藍營傾向', short: '藍' },
 ];
 export interface DemoStory {

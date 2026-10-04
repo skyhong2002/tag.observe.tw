@@ -53,16 +53,24 @@ function CampShareBar({ share }: { share: CampShare }) {
         過去 24 小時新聞量
         <span>{share.articles.toLocaleString()} 篇</span>
       </p>
-      <div className={styles.bar} role="img" aria-label={description} title={description}>
-        {camps
-          .filter((c) => c.count > 0)
-          .map((c) => (
-            <span key={c.key} className={styles[c.key]} style={{ flexGrow: c.count }}>
+      <div className={styles.campShareChart}>
+        <div className={styles.bar} role="img" aria-label={description} title={description}>
+          {camps
+            .filter((c) => c.count > 0)
+            .map((c) => (
+              <span key={c.key} className={styles[c.key]} style={{ flexGrow: c.count }} />
+            ))}
+        </div>
+        <div className={styles.campShareLegend} aria-hidden="true">
+          {camps.map((c, i) => (
+            <span key={c.key}>
+              <i className={styles[c.key]} />
               <span>
-                {c.label} {percentages[camps.indexOf(c)]}%
+                {c.label} {percentages[i]}%
               </span>
             </span>
           ))}
+        </div>
       </div>
       <a href="#method" className={styles.campShareMethod}>
         分類方式 ⓘ
@@ -346,18 +354,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               {date} · {updated ? `${taipei(updated)} 更新` : '等待資料更新'}
             </p>
           </div>
-          <search className={styles.search}>
-            <form action="/search/" className={styles.searchForm}>
-              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="m16 16 5 5" />
-              </svg>
-              <input name="q" aria-label="搜尋所有新聞的標題、摘要與標籤" placeholder="搜尋新聞" maxLength={60} />
-              <button type="submit" aria-label="搜尋">
-                <Arrow />
-              </button>
-            </form>
-          </search>
         </div>
 
         {data.campShare && <CampShareBar share={data.campShare} />}

@@ -16,7 +16,7 @@ type Profile = {
   collectingSince: string | null;
   sourceKind: 'publisher' | 'discovery';
 };
-const camps = { green: '綠營傾向', blue: '藍營傾向', other: '未列藍綠' };
+const camps = { green: '綠營傾向', blue: '藍營傾向', other: '其他' };
 // Share in-flight requests across links, but let failed requests retry next time.
 const requests = new Map<string, { expires: number; value: Promise<unknown> }>();
 function get<T>(url: string): Promise<T> {
