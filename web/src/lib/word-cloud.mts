@@ -21,8 +21,15 @@ const widthOf = (label: string, size: number) =>
   ) *
     size +
   4;
-export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230): PlacedWord[] {
-  if (width < 40 || height < 30) return [];
+/** Font sizes in viewBox units for the rarest and the most frequent term; the spread between them is what a wide cloud buys. */
+export interface CloudSizes {
+  min: number;
+  max: number;
+  /** Share of the canvas the terms may ask for before every size is scaled down (0.55 by default). */
+  budget?: number;
+}
+export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, sizes: CloudSizes = { min: 12, max: 29 }): PlacedWord[] {
+  if (width < 40 || height < 30 || !(sizes.max >= sizes.min && sizes.min > 0)) return [];
   const unique = new Map<string, CloudTerm>();
   for (const term of terms) {
     const label = term.label.trim();
@@ -30,12 +37,12 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230): 
   }
   const sorted = [...unique.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'zh-TW')).slice(0, 50);
   const max = sorted[0]?.count ?? 1;
-  const naturalSize = (count: number) => 12 + 17 * Math.sqrt(count / max);
+  const naturalSize = (count: number) => sizes.min + (sizes.max - sizes.min) * Math.sqrt(count / max);
   const requestedArea = sorted.reduce((sum, term) => {
     const size = naturalSize(term.count);
     return sum + widthOf(term.label, size) * size * 1.6;
   }, 0);
-  const scale = Math.max(0.5, Math.min(1, Math.sqrt((width * height * 0.55) / Math.max(1, requestedArea))));
+  const scale = Math.max(0.5, Math.min(1, Math.sqrt((width * height * (sizes.budget ?? 0.55)) / Math.max(1, requestedArea))));
   const placed: PlacedWord[] = [];
   for (const term of sorted) {
     let done = false;

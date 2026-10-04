@@ -126,8 +126,7 @@ export default async function MediaPage({
         </dl>
       </header>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
-        <MediaSidebar label={discovery ? '發現來源資料' : undefined}>
-          {!discovery && <MediaWordCloud data={keywords} media={media} hours={cloudHours} />}
+        <MediaSidebar label={discovery ? '發現來源資料' : '媒體資料與媒體關係'}>
           {!discovery && <MediaRelations data={similarity} media={media} hours={cloudHours} />}
           <section
             aria-label={discovery ? '發現來源資料' : '媒體基本資料'}
@@ -199,150 +198,153 @@ export default async function MediaPage({
             </p>
           </section>
         </MediaSidebar>
-        <section aria-label="文章列表" className="min-w-0 lg:col-start-1 lg:row-start-1">
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
-            <h2 className="text-sm font-semibold">{cursor ? '較早收錄' : '最新收錄'}</h2>
-            <nav aria-label="刊登時間範圍" className="flex flex-wrap gap-1 text-xs">
-              {[
-                { value: null, label: '全部' },
-                { value: '24', label: '1 天' },
-                { value: '72', label: '3 天' },
-                { value: '168', label: '7 天' },
-              ].map(({ value, label }) => (
-                <Link
-                  key={label}
-                  href={periodHref(value)}
-                  aria-current={hours === value ? 'page' : undefined}
-                  className={`rounded px-2.5 py-1.5 ${hours === value ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <form action={base} className="mb-1 flex gap-2">
-            {hours && <input type="hidden" name="hours" value={hours} />}
-            <input
-              key={keyword ?? ''}
-              name="q"
-              defaultValue={keyword ?? ''}
-              maxLength={60}
-              aria-label={discovery ? '搜尋此來源發現的文章' : '搜尋這家媒體的報導'}
-              placeholder={discovery ? '搜尋此來源發現的文章' : '搜尋這家媒體的報導'}
-              className="min-w-0 flex-1 rounded border border-zinc-200 bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-600 dark:border-zinc-700"
-            />
-            <button
-              type="submit"
-              className="rounded border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
-              搜尋
-            </button>
-          </form>
-          {keyword && (
-            <p className="flex items-center justify-between gap-2 py-2 text-xs text-zinc-600 dark:text-zinc-400">
-              <span>篩選「{keyword}」</span>
-              <Link href={withReadingQuery(base, clearQuery)} className="hover:underline">
-                清除篩選 ×
-              </Link>
-            </p>
-          )}
-          <CompactArticleList count={data.count}>
-            {!data.articles.length && (
-              <div className="space-y-3 py-10 text-center text-sm text-zinc-600 dark:text-zinc-400">
-                <p>
-                  {keyword
-                    ? '沒有符合關鍵字的報導。'
-                    : cursor
-                      ? '已經沒有更早的文章。'
-                      : hours
-                        ? '這段時間沒有收錄報導。'
-                        : discovery
-                          ? '此來源尚無已收錄的文章。'
-                          : '這個媒體尚無收錄文章。'}
-                </p>
-                {(cursor || hours || keyword) && (
-                  <Link href={base} className="inline-block py-2 text-brand-700 hover:underline dark:text-brand-400">
-                    查看所有收錄 →
+        <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1">
+          {!discovery && <MediaWordCloud data={keywords} media={media} hours={cloudHours} layout="wide" />}
+          <section aria-label="文章列表" className="min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
+              <h2 className="text-sm font-semibold">{cursor ? '較早收錄' : '最新收錄'}</h2>
+              <nav aria-label="刊登時間範圍" className="flex flex-wrap gap-1 text-xs">
+                {[
+                  { value: null, label: '全部' },
+                  { value: '24', label: '1 天' },
+                  { value: '72', label: '3 天' },
+                  { value: '168', label: '7 天' },
+                ].map(({ value, label }) => (
+                  <Link
+                    key={label}
+                    href={periodHref(value)}
+                    aria-current={hours === value ? 'page' : undefined}
+                    className={`rounded px-2.5 py-1.5 ${hours === value ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
+                  >
+                    {label}
                   </Link>
-                )}
-              </div>
-            )}
-            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {data.articles.map((article) => {
-                const headline = readingTitle(article.title),
-                  href = withReadingQuery(`/article/${article.id}/`, query),
-                  readable = article.bodyChars > 0;
-                return (
-                  <li key={article.id} id={`article-${article.id}`} className="scroll-mt-32 py-2.5">
-                    <article className="flex items-start gap-3">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-[15px] font-medium leading-6">
-                          <Link href={href} className="hover:text-brand-700 dark:hover:text-brand-400">
-                            {headline.section && (
-                              <span className="mr-1.5 text-xs font-normal text-brand-700 dark:text-brand-400">{headline.section}</span>
-                            )}
-                            {headline.title}
-                          </Link>
-                        </h3>
-                        {article.description && (
-                          <p className="mt-1 hidden text-xs leading-5 text-zinc-500 group-data-[summaries=true]/list:line-clamp-2 dark:text-zinc-400">
-                            {article.description}
-                          </p>
-                        )}
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-                          {discovery && (
-                            <MediaHoverLink
-                              media={article.media}
-                              className="font-medium text-brand-700 hover:underline dark:text-brand-400"
-                            >
-                              {article.mediaTitle}
-                            </MediaHoverLink>
-                          )}
-                          <time dateTime={article.publishedDate ?? article.publishedAt}>
-                            {article.publishedDate ?? taipei(article.publishedAt)}
-                          </time>
-                          <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
-                          <span
-                            className={
-                              readable || article.bodyStatus === 'expired'
-                                ? 'text-zinc-500 dark:text-zinc-400'
-                                : 'text-amber-700 dark:text-amber-400'
-                            }
-                          >
-                            {readable ? '可讀內文' : CONTENT_STATUS[article.bodyStatus].label}
-                          </span>
-                          <SourceLink url={article.url} className="!min-h-5 !text-[11px]" />
-                        </div>
-                        <DiscoverySources sources={article.discoverySources} />
-                      </div>
-                      <ArticleThumbnail src={article.image} href={href} title={headline.title} />
-                    </article>
-                  </li>
-                );
-              })}
-            </ul>
-          </CompactArticleList>
-          <nav
-            aria-label="文章分頁"
-            className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-3 text-xs dark:border-zinc-800"
-          >
-            {cursor ? (
-              <Link href={withReadingQuery(base, firstQuery)} className="py-2 hover:underline">
-                ← 回到最新收錄
-              </Link>
-            ) : (
-              <span className="text-zinc-500 dark:text-zinc-400">每頁最多 60 篇</span>
-            )}
-            {data.nextCursor && (
-              <Link
-                href={withReadingQuery(base, nextQuery)}
-                className="rounded border border-zinc-300 px-4 py-2 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                ))}
+              </nav>
+            </div>
+            <form action={base} className="mb-1 flex gap-2">
+              {hours && <input type="hidden" name="hours" value={hours} />}
+              <input
+                key={keyword ?? ''}
+                name="q"
+                defaultValue={keyword ?? ''}
+                maxLength={60}
+                aria-label={discovery ? '搜尋此來源發現的文章' : '搜尋這家媒體的報導'}
+                placeholder={discovery ? '搜尋此來源發現的文章' : '搜尋這家媒體的報導'}
+                className="min-w-0 flex-1 rounded border border-zinc-200 bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-600 dark:border-zinc-700"
+              />
+              <button
+                type="submit"
+                className="rounded border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
               >
-                更早的文章 →
-              </Link>
+                搜尋
+              </button>
+            </form>
+            {keyword && (
+              <p className="flex items-center justify-between gap-2 py-2 text-xs text-zinc-600 dark:text-zinc-400">
+                <span>篩選「{keyword}」</span>
+                <Link href={withReadingQuery(base, clearQuery)} className="hover:underline">
+                  清除篩選 ×
+                </Link>
+              </p>
             )}
-          </nav>
-        </section>
+            <CompactArticleList count={data.count}>
+              {!data.articles.length && (
+                <div className="space-y-3 py-10 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                  <p>
+                    {keyword
+                      ? '沒有符合關鍵字的報導。'
+                      : cursor
+                        ? '已經沒有更早的文章。'
+                        : hours
+                          ? '這段時間沒有收錄報導。'
+                          : discovery
+                            ? '此來源尚無已收錄的文章。'
+                            : '這個媒體尚無收錄文章。'}
+                  </p>
+                  {(cursor || hours || keyword) && (
+                    <Link href={base} className="inline-block py-2 text-brand-700 hover:underline dark:text-brand-400">
+                      查看所有收錄 →
+                    </Link>
+                  )}
+                </div>
+              )}
+              <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {data.articles.map((article) => {
+                  const headline = readingTitle(article.title),
+                    href = withReadingQuery(`/article/${article.id}/`, query),
+                    readable = article.bodyChars > 0;
+                  return (
+                    <li key={article.id} id={`article-${article.id}`} className="scroll-mt-32 py-2.5">
+                      <article className="flex items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-[15px] font-medium leading-6">
+                            <Link href={href} className="hover:text-brand-700 dark:hover:text-brand-400">
+                              {headline.section && (
+                                <span className="mr-1.5 text-xs font-normal text-brand-700 dark:text-brand-400">{headline.section}</span>
+                              )}
+                              {headline.title}
+                            </Link>
+                          </h3>
+                          {article.description && (
+                            <p className="mt-1 hidden text-xs leading-5 text-zinc-500 group-data-[summaries=true]/list:line-clamp-2 dark:text-zinc-400">
+                              {article.description}
+                            </p>
+                          )}
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
+                            {discovery && (
+                              <MediaHoverLink
+                                media={article.media}
+                                className="font-medium text-brand-700 hover:underline dark:text-brand-400"
+                              >
+                                {article.mediaTitle}
+                              </MediaHoverLink>
+                            )}
+                            <time dateTime={article.publishedDate ?? article.publishedAt}>
+                              {article.publishedDate ?? taipei(article.publishedAt)}
+                            </time>
+                            <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
+                            <span
+                              className={
+                                readable || article.bodyStatus === 'expired'
+                                  ? 'text-zinc-500 dark:text-zinc-400'
+                                  : 'text-amber-700 dark:text-amber-400'
+                              }
+                            >
+                              {readable ? '可讀內文' : CONTENT_STATUS[article.bodyStatus].label}
+                            </span>
+                            <SourceLink url={article.url} className="!min-h-5 !text-[11px]" />
+                          </div>
+                          <DiscoverySources sources={article.discoverySources} />
+                        </div>
+                        <ArticleThumbnail src={article.image} href={href} title={headline.title} />
+                      </article>
+                    </li>
+                  );
+                })}
+              </ul>
+            </CompactArticleList>
+            <nav
+              aria-label="文章分頁"
+              className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-3 text-xs dark:border-zinc-800"
+            >
+              {cursor ? (
+                <Link href={withReadingQuery(base, firstQuery)} className="py-2 hover:underline">
+                  ← 回到最新收錄
+                </Link>
+              ) : (
+                <span className="text-zinc-500 dark:text-zinc-400">每頁最多 60 篇</span>
+              )}
+              {data.nextCursor && (
+                <Link
+                  href={withReadingQuery(base, nextQuery)}
+                  className="rounded border border-zinc-300 px-4 py-2 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                >
+                  更早的文章 →
+                </Link>
+              )}
+            </nav>
+          </section>
+        </div>
       </div>
     </div>
   );

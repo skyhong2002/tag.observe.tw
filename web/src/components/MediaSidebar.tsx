@@ -1,6 +1,6 @@
 'use client';
 import { type ReactNode, useId, useState } from 'react';
-export default function MediaSidebar({ children, label = '媒體資料與文字雲' }: { children: ReactNode; label?: string }) {
+export default function MediaSidebar({ children, label = '媒體資料與媒體關係' }: { children: ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (

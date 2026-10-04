@@ -37,3 +37,19 @@ describe('word-cloud packing', () => {
     expect(result[0].label).toBe('AI');
   });
 });
+
+describe('word-cloud size range', () => {
+  const terms = Array.from({ length: 30 }, (_, i) => ({ label: `詞${i}`, count: 30 - i }));
+  it('spreads a wide cloud between the requested sizes', () => {
+    const compact = layoutWordCloud(terms);
+    const wide = layoutWordCloud(terms, 760, 400, { min: 13, max: 76, budget: 0.7 });
+    expect(wide[0].fontSize).toBeGreaterThan(compact[0].fontSize * 1.5);
+    expect(wide[0].fontSize).toBeGreaterThanOrEqual(wide.at(-1)!.fontSize * 3);
+    expect(wide.every((word) => word.x + word.width <= 760 && word.y + word.height <= 400)).toBe(true);
+    expect(wide.length).toBeGreaterThanOrEqual(25);
+  });
+  it('rejects an inverted or empty size range', () => {
+    expect(layoutWordCloud(terms, 760, 330, { min: 40, max: 20 })).toEqual([]);
+    expect(layoutWordCloud(terms, 760, 330, { min: 0, max: 20 })).toEqual([]);
+  });
+});
