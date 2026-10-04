@@ -15,6 +15,7 @@ import {
   type TopicSearch,
   type TopicTagCount,
 } from '@/lib/pages';
+import { gapLabel, kindLine, raceRounds, raceSummary, statusLine } from '@/lib/topic-race.mts';
 
 const taipeiDay = (iso: string) => new Date(Date.parse(iso) + 8 * 3600e3).toISOString().slice(0, 10);
 const DAY = 86400e3;
@@ -40,26 +41,6 @@ function groupByDay(feed: FeedTopic[], now: Date): Group[] {
   return groups.filter((g) => g.items.length);
 }
 
-/** Keywords of a topic: from its name, else those of its recent coverage. */
-const tagsOf = (t: FeedTopic) => (t.tags?.length ? t.tags : (t.coverage?.tags ?? []));
-
-type Cluster = { tags: string[]; items: FeedTopic[]; mediaCount: number };
-/** Topics from different outlets that map to the same site tags: the same
- *  story being packaged by several newsrooms at once. */
-function clusters(feed: FeedTopic[]): Cluster[] {
-  const byTags = new Map<string, FeedTopic[]>();
-  for (const t of feed) {
-    if (!tagsOf(t).length) continue;
-    const key = [...tagsOf(t)].sort().join('\u0000');
-    byTags.set(key, [...(byTags.get(key) ?? []), t]);
-  }
-  return [...byTags.values()]
-    .map((items) => ({ tags: tagsOf(items[0]), items, mediaCount: new Set(items.map((i) => i.media)).size }))
-    .filter((c) => c.mediaCount >= 2)
-    .sort((a, b) => b.mediaCount - a.mediaCount || b.items.length - a.items.length)
-    .slice(0, 8);
-}
-
 export type TopicIndexParams = { tag?: string | string[]; q?: string | string[] };
 const param = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim().slice(0, 50) || undefined;
 
@@ -79,7 +60,6 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
     data?.feed ?? (data?.media ?? []).flatMap((m) => (m.latest ? [{ ...m.latest, media: m.media, mediaTitle: m.title, icon: m.icon }] : []))
   ).filter((t) => ofKind(t, kind) && t.status !== 'ended');
   const groups = groupByDay(feed, new Date());
-  const shared = clusters(feed);
   const tagCounts = data?.tags ?? found?.tags ?? [];
   const tagHref = (t: string) => `${base}?${new URLSearchParams({ tag: t })}`;
   return (
@@ -110,45 +90,6 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
               <SearchResults found={found} tag={tag} q={q} />
             ) : (
               <>
-                {shared.length > 0 && (
-                  <section
-                    aria-labelledby="shared-heading"
-                    className="rounded-xl border border-brand-200 bg-brand-50/40 p-4 dark:border-brand-900 dark:bg-brand-950/20"
-                  >
-                    <h2 id="shared-heading" className="font-semibold">
-                      多家媒體同時在做的{noun}
-                    </h2>
-                    <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">對應到相同站內標籤的{noun}，各家怎麼包裝同一件事。</p>
-                    <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {shared.map((c) => (
-                        <li key={c.tags.join('/')} className="rounded-lg bg-white p-3 text-sm dark:bg-zinc-900">
-                          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                            {c.tags.map((t) => (
-                              <Link
-                                key={t}
-                                href={tagHref(t)}
-                                className="rounded bg-brand-50 px-1.5 py-0.5 text-brand-700 hover:bg-brand-100 dark:bg-brand-950 dark:text-brand-300"
-                              >
-                                {t}
-                              </Link>
-                            ))}
-                            <span className="text-zinc-500">{c.mediaCount} 家媒體</span>
-                          </div>
-                          <ul className="mt-2 space-y-1">
-                            {c.items.map((t) => (
-                              <li key={t.id} className="flex items-start gap-1.5">
-                                <MediaIcon media={t.media} title={t.mediaTitle} className="mt-1" />
-                                <Link href={topicHref(t.media, t.id, kind)} className="line-clamp-1 hover:underline">
-                                  {t.title}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
                 {groups.length === 0 && <p className="text-sm text-zinc-600">目前沒有最近新增的{noun}。</p>}
                 {groups.map((g) => (
                   <section key={g.key} aria-labelledby={`group-${g.key}`}>
@@ -274,7 +215,8 @@ const KIND_BADGE: Record<TopicKind, string> = {
   feature: 'border-sky-300 text-sky-800 dark:border-sky-800 dark:text-sky-300',
 };
 
-/** Both kinds for a keyword or title filter, one block per outlet (the API sends them grouped). */
+/** Both kinds for a keyword or title filter: for a keyword, outlets in the order
+ *  they opened one (TagRace); for a title filter alone, one block per outlet (the API sends them grouped). */
 function SearchResults({ found, tag, q }: { found: TopicSearch | null; tag?: string; q?: string }) {
   if (!found) return <p className="text-sm text-zinc-600">篩選結果目前無法取得。</p>;
   const label = [tag && `「${tag}」`, q && `名稱含「${q}」`].filter(Boolean).join('、');
@@ -305,35 +247,144 @@ function SearchResults({ found, tag, q }: { found: TopicSearch | null; tag?: str
           )}
         </p>
       </div>
-      {outlets.map((o) => (
-        <section key={o.media} aria-label={o.title}>
-          <h3 className="flex items-center gap-1.5 border-b border-zinc-300 pb-1 text-sm font-semibold dark:border-zinc-800">
-            <MediaIcon media={o.media} title={o.title} />
-            {o.title}
-            <span className="text-xs font-normal text-zinc-500">{o.items.length} 個</span>
-          </h3>
-          <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
-            {o.items.map((t) => {
-              const k = t.kind ?? 'topic';
-              return (
-                <li key={t.id} className="flex items-baseline gap-2 py-1.5">
-                  <span className={`shrink-0 rounded border px-1 text-[10px] leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
-                  <span className="min-w-0 flex-1">
-                    <Link href={topicHref(t.media, t.id, k)} className="hover:underline">
-                      {t.title}
-                    </Link>
-                    <span className="ml-2 whitespace-nowrap text-xs text-zinc-500">
-                      {t.time && !t.backlog ? `首次發現 ${taipei(t.time)}` : '開始追蹤前已上架'}
-                      {t.status === 'ended' && ' · 已停更'}
+      {tag ? (
+        <TagRace topics={found.topics} />
+      ) : (
+        outlets.map((o) => (
+          <section key={o.media} aria-label={o.title}>
+            <h3 className="flex items-center gap-1.5 border-b border-zinc-300 pb-1 text-sm font-semibold dark:border-zinc-800">
+              <MediaIcon media={o.media} title={o.title} />
+              {o.title}
+              <span className="text-xs font-normal text-zinc-500">{o.items.length} 個</span>
+            </h3>
+            <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
+              {o.items.map((t) => {
+                const k = t.kind ?? 'topic';
+                return (
+                  <li key={t.id} className="flex items-baseline gap-2 py-1.5">
+                    <span className={`shrink-0 rounded border px-1 text-[10px] leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
+                    <span className="min-w-0 flex-1">
+                      <Link href={topicHref(t.media, t.id, k)} className="hover:underline">
+                        {t.title}
+                      </Link>
+                      <span className="ml-2 whitespace-nowrap text-xs text-zinc-500">
+                        {t.time && !t.backlog ? `首次發現 ${taipei(t.time)}` : '開始追蹤前已上架'}
+                        {t.status === 'ended' && ' · 已停更'}
+                      </span>
                     </span>
-                  </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))
+      )}
+    </section>
+  );
+}
+
+const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+const STATUS_BADGE = {
+  active: 'border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300',
+  ended: 'border-zinc-300 text-zinc-500 dark:border-zinc-700 dark:text-zinc-400',
+};
+
+/** A keyword across outlets: who opened a 議題/專題 for it first, which kind
+ *  each made, and whose 議題 is still updating. One row per outlet, its items
+ *  (and their names) under it. */
+function TagRace({ topics }: { topics: FeedTopic[] }) {
+  if (!topics.length) return null;
+  const rounds = raceRounds(topics);
+  const dated = rounds.filter((r) => r.start);
+  // Headings only when there is more than one list to tell apart.
+  const roundLabel = (r: (typeof rounds)[number]) =>
+    !r.start
+      ? '開始時間不明（追蹤前已上架）'
+      : dated.length === 1
+        ? `${taipeiDate(r.start)} 起`
+        : r === dated.at(-1)
+          ? `最近一輪（${taipeiDate(r.start)} 起）`
+          : `較早一輪（${taipeiDate(r.start)}–${taipeiDate(r.end ?? r.start)}）`;
+  const summary = raceSummary(topics);
+  const status = statusLine(summary);
+  return (
+    <div className="space-y-4">
+      <ul className="space-y-0.5 text-sm text-zinc-700 dark:text-zinc-300">
+        <li>{kindLine(summary)}</li>
+        {status && <li>{status}</li>}
+      </ul>
+      {rounds.map((r) => (
+        <section key={r.start ?? 'undated'} aria-label={rounds.length > 1 ? roundLabel(r) : undefined}>
+          {rounds.length > 1 && <h3 className="mb-1 text-xs font-semibold text-zinc-600 dark:text-zinc-400">{roundLabel(r)}</h3>}
+          <ol className="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {r.outlets.map((o, i) => {
+              const gap = r.outlets.length > 1 ? gapLabel(o.gapDays, i) : null;
+              return (
+                <li key={o.media} className="py-2.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-400" aria-hidden>
+                      {o.start ? i + 1 : ''}
+                    </span>
+                    <Link
+                      href={topicMediaHref(o.media, o.items[0].kind ?? 'topic')}
+                      className="flex min-w-0 items-center gap-1.5 font-semibold hover:underline"
+                    >
+                      <MediaIcon media={o.media} title={o.mediaTitle} />
+                      <span className="truncate">{o.mediaTitle}</span>
+                    </Link>
+                    <span className="ml-auto flex items-center gap-1.5 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">
+                      {o.start ? (
+                        <>
+                          <time dateTime={o.start}>{taipeiDate(o.start)} 開始</time>
+                          {gap && (
+                            <span
+                              className={`rounded px-1 leading-4 ${
+                                i === 0
+                                  ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+                                  : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                              }`}
+                            >
+                              {gap}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        '追蹤前已上架'
+                      )}
+                    </span>
+                  </div>
+                  <ul className="mt-1 space-y-1 pl-7 text-sm">
+                    {o.items.map((t) => {
+                      const k = t.kind ?? 'topic';
+                      const st = t.status === 'ended' ? 'ended' : 'active';
+                      return (
+                        <li key={t.id} className="flex items-baseline gap-2">
+                          <span className={`shrink-0 rounded border px-1 text-[10px] leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
+                          <span className="min-w-0 flex-1">
+                            <Link href={topicHref(t.media, t.id, k)} className="hover:underline">
+                              {t.title}
+                            </Link>
+                            <span className="ml-2 inline-flex flex-wrap items-baseline gap-x-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                              {o.items.length > 1 && t.start && <span>{taipeiDate(t.start)} 開始</span>}
+                              {k === 'topic' && (
+                                <span className={`rounded border px-1 text-[10px] leading-4 ${STATUS_BADGE[st]}`}>
+                                  {st === 'ended' ? '已停更' : '進行中'}
+                                </span>
+                              )}
+                              {k === 'topic' && t.storyLastAt && <span>最後更新 {taipeiDate(t.storyLastAt)}</span>}
+                            </span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </li>
               );
             })}
-          </ul>
+          </ol>
         </section>
       ))}
-    </section>
+    </div>
   );
 }
 
@@ -358,6 +409,10 @@ function MethodNotes({ kind, mediaCount, tagCount }: { kind: TopicKind; mediaCou
           天常用的標籤，標籤須構成名稱的主要部分（「懶人包」「專題」這類包裝用語不算）。上方列出未停更議題與專題中最常見的
           {tagCount ? ` ${tagCount} ` : ''}
           個，依帶有這個關鍵字的媒體家數排序；點選後列出各媒體帶這個關鍵字的議題與專題（含已停更），議題表與專題頁結果相同。
+        </li>
+        <li>
+          點選關鍵字後依各家開始做這個關鍵字的時間排序，最早的在前，並標出比最早一家晚幾天（以台灣日期計）。開始時間取媒體議題或專題頁上所列最早一則報導與本站首次發現兩者中較早的；本站開始追蹤前就已上架、又沒有報導日期可查的，標「追蹤前已上架」排在最後。一家有多個時以最早的為準，名稱全部列出。同一關鍵字隔年再出現（如每年的金馬）時，前面各家最後一則報導之後超過
+          90 天才開始的，另算一輪重新比較先後。 進行中／已停更與最後更新日期只適用於議題。
         </li>
       </ul>
     </details>
