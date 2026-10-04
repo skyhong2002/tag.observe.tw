@@ -84,3 +84,42 @@ describe('PTS', () => {
     expect(newslab.kind).toBe('feature');
   });
 });
+
+describe('UDN', () => {
+  it('marks topic.udn.com/event/ packages on udn.com/topic/index as features', () => {
+    const index = topicListings(ruleOf('udn'))[1];
+    const html = `<div class="story-list__news"><a href="https://topic.udn.com/event/2025_0331"><img src="https://img/1.jpg"></a>
+      <h3><a href="https://topic.udn.com/event/2025_0331">優人物／李依錫</a></h3></div>
+      <div class="story-list__news"><h3><a href="https://topic.udn.com/newstopic/2026AAA">2026 AAA</a></h3></div>`;
+    expect(index.extract!(html, { ...index, media: 'udn', fallbackImage: '' }).map((t) => [t.title, t.kind, t.image])).toEqual([
+      ['優人物／李依錫', 'feature', 'https://img/1.jpg'],
+      ['2026 AAA', undefined, null],
+    ]);
+  });
+
+  it('reads 新媒體中心 posts by their title attribute', () => {
+    const listings = topicListings(ruleOf('udn')).filter((l) => l.url.includes('/newmedia/'));
+    expect(listings.map((l) => [l.url, l.kind])).toEqual([
+      ['https://udn.com/newmedia/office/issue/', 'feature'],
+      ['https://udn.com/newmedia/office/data/', 'feature'],
+      ['https://udn.com/newmedia/office/interaction/', 'feature'],
+    ]);
+    const post = (url: string, title: string, img = url.split('/').filter(Boolean).pop()) => `<div class="page-post">
+      <a href="${url}" class="page-post-cover-image" title="${title}">${title}<img data-src="https://img/${img}.jpg" src="https://media.giphy.com/x.gif"></a>
+      <a class="page-post-topic" href="https://udn.com/newmedia/office/issue/">議題專題</a>
+      <a href="${url}" class="page-post-title" title="${title}">${title}</a>
+      <a href="${url}" class="page-post-desc" title="${title}">一段比標題長很多很多很多很多很多很多的摘要文字</a></div>`;
+    const html = `<a href="https://vip.udn.com/newmedia/2025/nav">導覽</a><div class="page-posts">
+      ${post('https://vip.udn.com/newmedia/2026/rage_on_threads/?utm_source=newmedia', '憤怒演算法', 'rage_on_threads')}
+      ${post('https://vip.udn.com/event/newmedia_gambling', '賭債爆炸')}
+      ${post('https://udn.com/upf/newmedia/2017_data/caregiver/index.html', '致照顧者')}
+      ${post('https://udn.com/newmedia/921/', '921二十年')}
+      <a href="https://udn.com/newmedia/office/tag/threads/">Threads</a></div>`;
+    expect(extractTopics(html, { ...listings[0], media: 'udn', fallbackImage: '' }).map((t) => [t.title, t.url, t.image])).toEqual([
+      ['憤怒演算法', 'https://vip.udn.com/newmedia/2026/rage_on_threads/', 'https://img/rage_on_threads.jpg'],
+      ['賭債爆炸', 'https://vip.udn.com/event/newmedia_gambling', 'https://img/newmedia_gambling.jpg'],
+      ['致照顧者', 'https://udn.com/upf/newmedia/2017_data/caregiver/index.html', 'https://img/index.html.jpg'],
+      ['921二十年', 'https://udn.com/newmedia/921/', 'https://img/921.jpg'],
+    ]);
+  });
+});

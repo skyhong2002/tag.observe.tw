@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { cnaNewsTopics } from './topic-extractors-a1.ts';
+import { cnaNewsTopics, udnTopicIndex } from './topic-extractors-a1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -204,7 +204,20 @@ export const TOPIC_RULES: TopicRule[] = [
         // Image link and <h3> link are separate; the card joins them.
         card: '.story-list__news',
         title: heading,
+        extract: udnTopicIndex,
       },
+      // 新媒體中心: one-off multimedia/data/interactive packages on vip.udn.com,
+      // udn.com/newmedia and the older udn.com/upf/newmedia. udn.com/newmedia/
+      // itself only shows the latest few; these are its full category pages.
+      ...['issue', 'data', 'interaction'].map((category) => ({
+        url: `https://udn.com/newmedia/office/${category}/`,
+        kind: 'feature' as const,
+        pattern:
+          /udn\.com\/(newmedia\/(?!office\b)(\d{4}\/|election\d{4}\/)?[\w-]+|event\/newmedia_[\w-]+|upf\/newmedia\/\d{4}_data\/[\w-]+)/,
+        scope: '.page-posts',
+        // Each post links its cover, title and summary; all carry the title attribute.
+        title: (a: cheerio.Cheerio<import('domhandler').Element>) => decodeEntities(a.attr('title') ?? '') || textOf(a),
+      })),
     ],
   },
   // The homepage keyword bar (.h_kw) is LTN's curated list of running topics;

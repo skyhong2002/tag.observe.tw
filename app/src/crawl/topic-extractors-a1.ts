@@ -20,3 +20,9 @@ export function cnaNewsTopics(body: string, rule: TopicRule): TopicItem[] {
     return [{ url: stripTracking(url), title: title.slice(0, 512), image: image ? resolveUrl(image, rule.url) : null, category: null }];
   });
 }
+
+/** udn.com/topic/index mixes topic.udn.com/event/ packages (one-off 專題, e.g.
+ *  優人物 profiles, health awareness pages) with running newstopic/cards pages. */
+export function udnTopicIndex(html: string, rule: TopicRule): TopicItem[] {
+  return extractTopics(html, rule).map((t) => (/topic\.udn\.com\/event\//.test(t.url) ? { ...t, kind: 'feature' as const } : t));
+}
