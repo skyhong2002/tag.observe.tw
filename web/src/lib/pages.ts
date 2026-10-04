@@ -57,6 +57,8 @@ export interface Topic {
   /** Marked by the outlet as advertising or a brand partnership. */
   sponsored?: boolean;
   parentId?: number | null;
+  /** Earliest story listed on the topic page. */
+  storyFirstAt?: string | null;
   storyLastAt?: string | null;
   storyCount?: number | null;
   /** Site tags found in the name itself (whether or not anything was published on it lately). */

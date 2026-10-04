@@ -118,6 +118,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       backlog: boolean;
       sponsored: boolean;
       parentId: number | null;
+      storyFirstAt: Date | null;
       storyLastAt: Date | null;
       storyCount: number | null;
     }) => ({
@@ -131,6 +132,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       status: topicStatus(r.kind, r.storyLastAt, now),
       sponsored: !!r.sponsored,
       parentId: r.parentId,
+      storyFirstAt: r.storyFirstAt?.toISOString() ?? null,
       storyLastAt: r.storyLastAt?.toISOString() ?? null,
       storyCount: r.storyCount,
       // Keywords of the name itself, whether or not anything was published on it lately.

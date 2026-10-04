@@ -406,6 +406,7 @@ export async function allTopLevelTopics(db: Db) {
       backlog: topics.backlog,
       sponsored: topics.sponsored,
       parentId: topics.parentId,
+      storyFirstAt: topics.storyFirstAt,
       storyLastAt: topics.storyLastAt,
       storyCount: topics.storyCount,
     })

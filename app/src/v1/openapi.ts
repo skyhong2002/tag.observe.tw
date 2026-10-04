@@ -166,6 +166,7 @@ const schemas: Record<string, Schema> = {
     status: str('active；ended＝已停更（議題最新一則新聞超過 90 天）', { enum: ['active', 'ended'] }),
     sponsored: bool('媒體標示為廣告／品牌合作'),
     parentId: nullable(int('上層議題 id（子議題）；與 id 不同，為數字')),
+    storyFirstAt: nullable(time('專題頁所列新聞中最早一則的日期')),
     storyLastAt: nullable(time('專題頁所列新聞中最新一則的日期')),
     storyCount: nullable(int('專題頁所列新聞數')),
     tags: arr(str(), '從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列）'),

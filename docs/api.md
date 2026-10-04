@@ -1479,6 +1479,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `media[].latest.status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
 | `media[].latest.sponsored` | boolean | 媒體標示為廣告／品牌合作 |
 | `media[].latest.parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `media[].latest.storyFirstAt` | string (ISO 時間) \| null | 專題頁所列新聞中最早一則的日期 |
 | `media[].latest.storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
 | `media[].latest.storyCount` | integer \| null | 專題頁所列新聞數 |
 | `media[].latest.tags` | string[] | 從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列） |
@@ -1493,6 +1494,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `media[].recent[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
 | `media[].recent[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
 | `media[].recent[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `media[].recent[].storyFirstAt` | string (ISO 時間) \| null | 專題頁所列新聞中最早一則的日期 |
 | `media[].recent[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
 | `media[].recent[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `media[].recent[].tags` | string[] | 從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列） |
@@ -1507,6 +1509,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `feed[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
 | `feed[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
 | `feed[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `feed[].storyFirstAt` | string (ISO 時間) \| null | 專題頁所列新聞中最早一則的日期 |
 | `feed[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
 | `feed[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `feed[].tags` | string[] | 從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列） |
@@ -1555,6 +1558,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `topics[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
 | `topics[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
 | `topics[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `topics[].storyFirstAt` | string (ISO 時間) \| null | 專題頁所列新聞中最早一則的日期 |
 | `topics[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
 | `topics[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `topics[].tags` | string[] | 從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列） |
@@ -1604,6 +1608,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `topics[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
 | `topics[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
 | `topics[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `topics[].storyFirstAt` | string (ISO 時間) \| null | 專題頁所列新聞中最早一則的日期 |
 | `topics[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
 | `topics[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `topics[].tags` | string[] | 從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列） |
@@ -1631,6 +1636,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `topics[].children[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
 | `topics[].children[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
 | `topics[].children[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `topics[].children[].storyFirstAt` | string (ISO 時間) \| null | 專題頁所列新聞中最早一則的日期 |
 | `topics[].children[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
 | `topics[].children[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `topics[].children[].tags` | string[] | 從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列） |
