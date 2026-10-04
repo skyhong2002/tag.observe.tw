@@ -41,7 +41,10 @@ function story(event: EventItem, media: MediaInfo): DemoStory | null {
   const lead = selectEventLead(news, event.major);
   if (!lead) return null;
   // Keep the selected outlet's original title, image and credit together.
-  const tags = headlineTags(lead.title, [...event.major, ...event.tags.map((t) => t.tag)]);
+  // Prefer tags the headline itself says; when it uses none of them verbatim
+  // (宜蘭 for 宜蘭縣), fall back to the event's major tags rather than none.
+  const matched = headlineTags(lead.title, [...event.major, ...event.tags.map((t) => t.tag)]);
+  const tags = matched.length > 0 ? matched : event.major;
   return {
     key: event.relatedEventPk ?? `rank-${event.rank}`,
     href: event.relatedEventPk
