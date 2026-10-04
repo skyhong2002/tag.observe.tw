@@ -8,7 +8,7 @@ import { articleHref } from '@/lib/reading.mts';
 import styles from './home.module.css';
 
 export default async function HeadlineSidebar({ query }: { query: string }) {
-  const data = await loadComparisons(false);
+  const data = await loadComparisons(false, 'outlets');
   const search = query.toLocaleLowerCase('zh-TW');
   const events = data.events
     .filter(
@@ -34,8 +34,6 @@ export default async function HeadlineSidebar({ query }: { query: string }) {
                 <div key={article.id} className={styles.headlineSource}>
                   <div className={styles.headlineByline}>
                     <span>
-                      <i className={styles[article.camp]} aria-hidden="true" />
-                      {article.camp === 'blue' ? '偏藍' : '偏綠'} ·
                       <MediaHoverLink media={article.media} icon={12} className="hover:underline">
                         {article.mediaTitle}
                       </MediaHoverLink>
@@ -65,8 +63,8 @@ export default async function HeadlineSidebar({ query }: { query: string }) {
           {data.unavailable || data.failed
             ? '標題對照暫時無法取得，請稍後再試。'
             : query
-              ? '目前沒有符合搜尋的政治標題對照。'
-              : '目前沒有足夠的藍綠相近報導可供對照。'}
+              ? '目前沒有符合搜尋的標題對照。'
+              : '目前沒有足夠的跨媒體相近報導可供對照。'}
         </p>
       )}
     </>

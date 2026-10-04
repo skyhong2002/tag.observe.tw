@@ -80,6 +80,31 @@ describe('headline comparisons', () => {
     expect(makeComparison(seed, coverage([], []))).toBeNull();
     expect(makeComparison({ ...seed, news: [] }, coverage([], []))).toBeNull();
   });
+  it('compares nonpolitical sources without requiring opposing camps', () => {
+    const event = { ...seed, major: ['網球'], tags: [], news: [{ title: '亞運網球女雙摘金 謝淑薇梁恩碩擊敗對手' }] };
+    const cov = coverage([article(1, event.news[0].title)], [article(2, '謝淑薇梁恩碩亞運網球女雙摘金 擊敗對手奪冠')]);
+    for (const outlet of cov.byOutlet) outlet.camp = 'other';
+    expect(makeComparison(event, cov)?.pair).toBeNull();
+    expect(makeComparison(event, cov, 'outlets')?.pair?.slice().sort()).toEqual([1, 2]);
+  });
+  it('does not present one outlet or identical syndicated headlines as different sources and wording', () => {
+    const first = article(1, seed.news[0].title);
+    const second = article(2, '國民黨團推鞭刑入法 四大重罪最高12下各界討論');
+    expect(makeComparison(seed, coverage([first, second], []), 'outlets')?.pair).toBeNull();
+    expect(makeComparison(seed, coverage([first], [article(3, first.title)]), 'outlets')?.pair).toBeNull();
+    expect(makeComparison(seed, coverage([first], [article(3, first.title + ' - OwlNews')]), 'outlets')?.pair).toBeNull();
+  });
+  it('keeps topic and time safeguards when comparing outlets', () => {
+    const result = makeComparison(
+      seed,
+      coverage(
+        [article(1, seed.news[0].title)],
+        [article(2, '洪孟楷談追加預算 新會期協商'), article(3, '國民黨團推鞭刑入法 四大重罪最高12下各界討論', '2026-09-28T06:00:00Z')],
+      ),
+      'outlets',
+    );
+    expect(result?.pair).toBeNull();
+  });
   it('identifies politics without treating all news as political', () => {
     expect(politicsPriority(seed)).toBe(2);
     expect(politicsPriority({ ...seed, major: ['選手'], tags: [], news: [{ title: '選手奪冠' }] })).toBe(0);

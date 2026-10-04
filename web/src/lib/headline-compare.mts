@@ -61,7 +61,11 @@ export function headlineSimilarity(a: string, b: string): number {
 const timestamp = (a: CompareArticle) => Date.parse(a.publishedAt);
 const hoursApart = (a: CompareArticle, b: CompareArticle) => Math.abs(timestamp(a) - timestamp(b)) / 3600e3;
 
-export function makeComparison(event: CompareEventInput, coverage: CompareCoverage): CompareEvent | null {
+export function makeComparison(
+  event: CompareEventInput,
+  coverage: CompareCoverage,
+  pairBy: 'camps' | 'outlets' = 'camps',
+): CompareEvent | null {
   const seedTitle = event.news.find((n) => n.title.trim())?.title;
   if (!event.relatedEventPk || !seedTitle) return null;
   const focusTags = [...new Set([...event.major, ...event.tags.map((t) => t.tag)])].filter((t) => seedTitle.includes(t)).slice(0, 4);
@@ -89,16 +93,21 @@ export function makeComparison(event: CompareEventInput, coverage: CompareCovera
     });
   let pair: [CompareArticle, CompareArticle] | null = null;
   let best = -1;
-  for (const blue of candidates.filter((a) => a.camp === 'blue')) {
-    for (const green of candidates.filter((a) => a.camp === 'green')) {
-      if (hoursApart(blue, green) > 12) continue;
-      const overlap = headlineSimilarity(blue.title, green.title);
-      if (overlap < 0.24 || contextOverlap(blue.title, green.title) < 2) continue;
+  for (const left of candidates.filter((a) => pairBy === 'outlets' || a.camp === 'blue')) {
+    for (const right of candidates.filter((a) => pairBy === 'outlets' || a.camp === 'green')) {
+      if (left.media === right.media || hoursApart(left, right) > 12) continue;
+      if (
+        pairBy === 'outlets' &&
+        (normalized(left.title).includes(normalized(right.title)) || normalized(right.title).includes(normalized(left.title)))
+      )
+        continue;
+      const overlap = headlineSimilarity(left.title, right.title);
+      if (overlap < 0.24 || contextOverlap(left.title, right.title) < 2) continue;
       // Prefer topical proximity to the seed, not politically divergent wording.
-      const score = overlap + headlineSimilarity(blue.title, seedTitle) + headlineSimilarity(green.title, seedTitle);
-      if (score > best || (score === best && timestamp(blue) > timestamp(pair![0]))) {
+      const score = overlap + headlineSimilarity(left.title, seedTitle) + headlineSimilarity(right.title, seedTitle);
+      if (score > best || (score === best && timestamp(left) > timestamp(pair![0]))) {
         best = score;
-        pair = [blue, green];
+        pair = [left, right];
       }
     }
   }

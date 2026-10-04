@@ -1,22 +1,19 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar, LeanText } from '@/components/CampBar';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import Sparkline from '@/components/Sparkline';
 import type { MediaInfo } from '@/lib/api';
 import { cleanEventHeadline, selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
-import { headlineDiff } from '@/lib/headline-compare.mts';
 import { isAllowedImage } from '@/lib/images';
-import type { Camp, EventCoverage, EventItem, EventNews } from '@/lib/pages';
+import type { EventCoverage, EventItem, EventNews } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 
 // One event of the hourly table, in three weights: `hero` for the top of the
 // page, `card` for the next tier, and `row` for the long tail. All three lead
 // with the same signals (score vs the top event, movement since last hour,
-// which outlets and camps are on it) so the page reads like a front page
+// which outlets are on it) so the page reads like a front page
 // rather than thirty equal boxes.
 
 export type EventTier = 'hero' | 'card' | 'row';
@@ -94,7 +91,7 @@ export function ScoreBar({ score, max, width = 'w-16' }: { score: number; max: n
   );
 }
 
-/** Who is on the story: outlet marks and counts. Camp numbers live in CampLine. */
+/** Sources in snapshot order, without grouping outlets by political classification. */
 export function OutletStrip({
   c,
   media,
@@ -109,16 +106,32 @@ export function OutletStrip({
   if (!c || c.outlets.length === 0) return null;
   const shown = c.outlets.slice(0, max);
   const rest = c.outlets.length - shown.length;
+  const outlet = (o: EventCoverage['outlets'][number]) => (
+    <MediaHoverLink
+      key={o.media}
+      media={o.media}
+      title={media[o.media]?.title ?? o.media}
+      icon={compact ? 16 : 20}
+      className="inline-flex min-h-7 min-w-7 items-center justify-center rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+    >
+      <span className="sr-only">{media[o.media]?.title ?? o.media}</span>
+    </MediaHoverLink>
+  );
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-      <span className="flex items-center gap-0.5" title={shown.map((o) => media[o.media]?.title ?? o.media).join('、')}>
-        {shown.map((o) => (
-          <MediaIcon key={o.media} media={o.media} title={media[o.media]?.title} size={compact ? 12 : 14} />
-        ))}
-        {rest > 0 && <span className="ml-0.5 tabular-nums">+{rest}</span>}
-      </span>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400" data-outlet-strip="">
+      <div className="flex flex-wrap items-center gap-0.5">{shown.map(outlet)}</div>
+      {rest > 0 && (
+        <details className="open:basis-full">
+          <summary className="cursor-pointer rounded px-1 py-1 tabular-nums hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            +其他 {rest} 家
+          </summary>
+          <div className="mt-1 flex max-w-full flex-wrap gap-1 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            {c.outlets.slice(max).map(outlet)}
+          </div>
+        </details>
+      )}
       <span className="tabular-nums">
-        {c.outlets.length} 家{!compact && ` · ${c.articles} 篇`}
+        {c.outlets.length} 家 · {c.articles} 篇
       </span>
     </div>
   );
@@ -147,7 +160,7 @@ function Tags({ e, limit, size = 'text-xs' }: { e: EventItem; limit: number; siz
 }
 
 /** Headlines from other outlets, without the repeated press photo. `skip`
- *  holds what the card already shows (cover, camp comparison). */
+ *  holds what the card already shows (cover). */
 function Headlines({
   e,
   media,
@@ -159,13 +172,15 @@ function Headlines({
   limit: number;
   skip?: Array<EventNews | null | undefined>;
 }) {
-  const list = e.news.filter((n) => !skip.includes(n)).slice(0, limit);
+  const list = e.news
+    .filter((n) => !skip.includes(n))
+    .filter((n, i, news) => news.findIndex((other) => other.media === n.media) === i)
+    .slice(0, limit);
   if (list.length === 0) return null;
   return (
     <ul className="space-y-1 text-sm">
       {list.map((n, i) => (
         <li key={n.url + String(i)} className="flex items-start gap-1.5">
-          <CampDot camp={n.camp} />
           <MediaHoverLink media={n.media} icon={14} className="mt-0.5 shrink-0">
             <span className="sr-only">{media[n.media]?.title ?? n.media}</span>
           </MediaHoverLink>
@@ -176,49 +191,6 @@ function Headlines({
         </li>
       ))}
     </ul>
-  );
-}
-
-function CampDot({ camp }: { camp?: Camp }) {
-  if (!camp) return null;
-  return <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${CAMP_FILL[camp]}`} title={CAMP_LABEL[camp]} aria-hidden />;
-}
-
-/** Same story, one headline from each camp, differing words underlined: the
- *  home page's 同題不同標 inside the lead card. */
-/** The headline pair for CampHeadlines: first report from each camp, if both exist. */
-function campPair(e: EventItem): { blue: EventNews; green: EventNews } | null {
-  const pick = (camp: Camp) => e.news.find((n) => n.camp === camp);
-  const blue = pick('blue'),
-    green = pick('green');
-  return blue && green ? { blue, green } : null;
-}
-
-function CampHeadlines({ pair: { blue, green }, media }: { pair: { blue: EventNews; green: EventNews }; media: MediaInfo }) {
-  const [b, g] = headlineDiff(blue.title, green.title);
-  const side = (n: EventNews, parts: typeof b, camp: Camp) => (
-    <div className="min-w-0 space-y-0.5">
-      <p className="flex items-center gap-1 text-[11px] text-zinc-500">
-        <span className={`h-1.5 w-1.5 rounded-full ${CAMP_FILL[camp]}`} aria-hidden />
-        {CAMP_LABEL[camp]}
-        <MediaHoverLink media={n.media} icon={12} className="hover:underline">
-          {media[n.media]?.title ?? n.media}
-        </MediaHoverLink>
-      </p>
-      <Link href={articleHref(n)} className="block text-sm leading-snug hover:underline">
-        {parts.map((part, i) => (
-          <span key={String(i)} className={part.different ? 'underline decoration-zinc-400 decoration-1 underline-offset-4' : undefined}>
-            {part.text}
-          </span>
-        ))}
-      </Link>
-    </div>
-  );
-  return (
-    <div className="grid gap-3 rounded-lg bg-zinc-50 p-3 sm:grid-cols-2 dark:bg-zinc-800/60">
-      {side(blue, b, 'blue')}
-      {side(green, g, 'green')}
-    </div>
   );
 }
 
@@ -265,7 +237,6 @@ export default function EventCard({
   trailSpan?: string;
 }) {
   const img = cover(e);
-  const pair = tier === 'hero' ? campPair(e) : null;
   const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
   if (tier === 'row') {
     return (
@@ -287,7 +258,7 @@ export default function EventCard({
           </div>
         </div>
         <div className="col-start-2 flex flex-col gap-0.5 sm:col-start-3 sm:max-w-64 sm:items-end">
-          {e.coverage && <CampLine c={e.coverage} compact />}
+          {e.coverage && <OutletStrip c={e.coverage} media={media} max={4} compact />}
           <Compare e={e} />
         </div>
       </li>
@@ -320,20 +291,8 @@ export default function EventCard({
           </div>
           <Title e={e} className="text-xl font-semibold leading-snug" />
           <Tags e={e} limit={7} />
-          {e.coverage && (
-            <div className="space-y-1.5">
-              <FullBar c={e.coverage} />
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-                <span>
-                  藍綠差 <LeanText c={e.coverage} />
-                </span>
-                <CampBadge c={e.coverage} />
-                <OutletStrip c={e.coverage} media={media} max={12} />
-              </div>
-            </div>
-          )}
-          {pair && <CampHeadlines pair={pair} media={media} />}
-          <Headlines e={e} media={media} limit={3} skip={[img, pair?.blue, pair?.green]} />
+          {e.coverage && <OutletStrip c={e.coverage} media={media} max={8} />}
+          <Headlines e={e} media={media} limit={3} skip={[img]} />
         </div>
       </li>
     );
@@ -365,7 +324,6 @@ export default function EventCard({
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <Title e={e} className="font-semibold leading-snug" />
           <Tags e={e} limit={5} />
-          {e.coverage && <CampLine c={e.coverage} />}
         </div>
       </div>
       {e.coverage && <OutletStrip c={e.coverage} media={media} max={8} />}

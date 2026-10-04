@@ -1,18 +1,17 @@
 import Link from 'next/link';
 import { permanentRedirect, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { CAMP_LABEL, CampBadge, FullBar, LeanText, SplitBar } from '@/components/CampBar';
-import { eventHeadline, eventHref, Movement, OutletStrip, RankTrail } from '@/components/EventCard';
+import { Movement, OutletStrip, RankTrail } from '@/components/EventCard';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
 import Sparkline from '@/components/Sparkline';
 import { type MediaInfo, type RankingEntry, taipei } from '@/lib/api';
-import { type CampGap, type CampShare, DEMO_CAMPS, type DemoStory, type GraphSummary, type JournalistBrief, loadDemo } from '@/lib/demo';
+import { type CampShare, type DemoStory, type GraphSummary, type JournalistBrief, loadDemo } from '@/lib/demo';
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
-import type { EventCoverage, EventItem, FeedTopic } from '@/lib/pages';
+import type { EventItem, FeedTopic } from '@/lib/pages';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
 import HeadlineSidebar from './_home/HeadlineSidebar';
@@ -26,94 +25,33 @@ function Arrow() {
   return <span aria-hidden="true">→</span>;
 }
 
-/** Whole percentages that still sum to 100 (largest remainders). */
-function wholePercentages(counts: number[]): number[] {
-  const total = counts.reduce((sum, n) => sum + n, 0);
-  if (!total) return counts.map(() => 0);
-  const exact = counts.map((n) => (n / total) * 100);
-  const percentages = exact.map(Math.floor);
-  const remaining = 100 - percentages.reduce((sum, n) => sum + n, 0);
-  exact
-    .map((n, i) => ({ i, remainder: n - percentages[i] }))
-    .sort((a, b) => b.remainder - a.remainder)
-    .slice(0, remaining)
-    .forEach(({ i }) => {
-      percentages[i]++;
-    });
-  return percentages;
-}
-
-function CampShareBar({ share }: { share: CampShare }) {
-  const camps = DEMO_CAMPS.map((c) => ({ ...c, count: share.camps.find((v) => v.camp === c.key)?.articles ?? 0 }));
-  const percentages = wholePercentages(camps.map((c) => c.count));
-  const description = camps.map((c, i) => `${c.label} ${percentages[i]}%（${c.count.toLocaleString()} 篇）`).join('、');
+function MediaSources({ share }: { share: CampShare }) {
+  const outlets = share.camps.flatMap((c) => c.outlets).sort((a, b) => b.last24h - a.last24h || a.media.localeCompare(b.media));
   return (
-    <section className={styles.campShare} aria-label="過去 24 小時新聞量藍綠分布">
+    <section className={styles.campShare} aria-label="新聞量與媒體來源">
       <p className={styles.campShareLabel}>
-        過去 24 小時新聞量
-        <span>{share.articles.toLocaleString()} 篇</span>
+        過去 24 小時新聞量<span>{share.articles.toLocaleString()} 篇</span>
       </p>
-      <div className={styles.campShareChart}>
-        <div className={styles.bar} role="img" aria-label={description} title={description}>
-          {camps
-            .filter((c) => c.count > 0)
-            .map((c) => (
-              <span key={c.key} className={styles[c.key]} style={{ flexGrow: c.count }}>
-                <span className={styles.campShareText}>
-                  <span>{c.label}</span>
-                  <span>{percentages[camps.indexOf(c)]}%</span>
-                </span>
-              </span>
-            ))}
-        </div>
-      </div>
-      <a href="#method" className={styles.campShareMethod}>
-        分類方式 ⓘ
-      </a>
-      {share.camps.some((c) => c.outlets.length > 0) && (
-        <CampOutlets
-          total={share.camps.reduce((n, c) => n + c.outlets.length, 0)}
-          columns={DEMO_CAMPS.map(
-            (c) => `minmax(128px, ${Math.max(1, share.camps.find((v) => v.camp === c.key)?.outlets.length ?? 0)}fr)`,
-          ).join(' ')}
-        >
-          {DEMO_CAMPS.map((c) => {
-            const outlets = share.camps.find((v) => v.camp === c.key)?.outlets ?? [];
-            return (
-              <div key={c.key} className={styles.campOutletGroup}>
-                <p>
-                  <i className={styles[c.key]} aria-hidden="true" />
-                  {c.label} <span>{outlets.length} 家</span>
-                </p>
-                <ul>
-                  {outlets.map((o) => (
-                    <li key={o.media}>
-                      <CampOutletIcon outlet={o} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
+      <Link href="/media/" className={styles.campShareMethod}>
+        媒體來源 →
+      </Link>
+      {outlets.length > 0 && (
+        <CampOutlets total={outlets.length} columns="minmax(0, 1fr)">
+          <div className={styles.campOutletGroup}>
+            <p>
+              收錄來源 <span>{outlets.length} 家</span>
+            </p>
+            <ul>
+              {outlets.map((o) => (
+                <li key={o.media}>
+                  <CampOutletIcon outlet={o} />
+                </li>
+              ))}
+            </ul>
+          </div>
         </CampOutlets>
       )}
     </section>
-  );
-}
-
-/** Outlet split for one story, drawn from the event snapshot's coverage. */
-function Distribution({ coverage, compact = false }: { coverage: EventCoverage | null; compact?: boolean }) {
-  if (!coverage || coverage.outlets.length === 0) return <span className={styles.muted}>報導分布暫無資料</span>;
-  if (!compact) return <FullBar c={coverage} />;
-  return (
-    <div className={styles.compactDistribution}>
-      <SplitBar c={coverage} width="w-16" />
-      <span>
-        {coverage.outlets.length} 家媒體 · {coverage.articles} 篇關聯報導
-      </span>
-      <LeanText c={coverage} />
-      <CampBadge c={coverage} />
-    </div>
   );
 }
 
@@ -149,45 +87,6 @@ function RankChange({ e }: { e: RankingEntry }) {
       {up ? '▲' : '▼'}
       {Math.abs(e.rank24h - e.rank)}
     </span>
-  );
-}
-
-function CampGaps({ gaps }: { gaps: CampGap[] }) {
-  if (gaps.every((g) => g.items.length === 0)) {
-    return <p className={styles.notice}>本小時各事件的藍綠報導比例都在平常範圍內，沒有盲點。</p>;
-  }
-  return (
-    <div className={styles.gapList}>
-      {gaps.map((col) => (
-        <div key={col.camp} className={styles.gapGroup}>
-          <p className={styles.gapGroupTitle}>
-            <i className={styles[col.camp]} aria-hidden="true" />
-            {col.title}
-          </p>
-          {col.items.length === 0 ? (
-            <p className={styles.muted}>本小時沒有。</p>
-          ) : (
-            <ol>
-              {col.items.map((e) => {
-                const href = eventHref(e) ?? `/event/#event-${e.rank}`;
-                return (
-                  <li key={e.rank}>
-                    <Link href={href}>{eventHeadline(e)}</Link>
-                    <p>
-                      {e.coverage && <CampBadge c={e.coverage} />}
-                      {e.coverage && <LeanText c={e.coverage} />}
-                      <span>
-                        {CAMP_LABEL.blue} {e.coverage?.camps.blue} 家 · {CAMP_LABEL.green} {e.coverage?.camps.green} 家
-                      </span>
-                    </p>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -351,7 +250,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </div>
         </div>
 
-        {data.campShare && <CampShareBar share={data.campShare} />}
+        {data.campShare && <MediaSources share={data.campShare} />}
 
         {data.events?.stale && <p className={styles.notice}>事件分群更新延遲，目前顯示最近一次的結果。</p>}
 
@@ -422,16 +321,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     </h3>
                     <StoryMeta story={lead} />
                     <Signals e={lead.event} trail="h-6 w-20" />
-                    <Distribution coverage={lead.coverage} />
-                    {lead.coverage && (
-                      <div className={styles.heroCamp}>
-                        <span>
-                          藍綠差 <LeanText c={lead.coverage} />
-                        </span>
-                        <CampBadge c={lead.coverage} />
-                        <OutletStrip c={lead.coverage} media={data.media} max={12} />
-                      </div>
-                    )}
+                    {lead.coverage && <OutletStrip c={lead.coverage} media={data.media} max={8} />}
                     <div className={styles.heroFoot}>
                       <span>{!lead.coverage && `精選報導來自 ${lead.sampleOutlets} 家媒體`}</span>
                       <Link href={lead.href}>
@@ -440,15 +330,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     </div>
                   </div>
                 </article>
-                <div className={styles.legend}>
-                  {DEMO_CAMPS.map((c) => (
-                    <span key={c.key}>
-                      <i className={styles[c.key]} />
-                      {c.label}
-                    </span>
-                  ))}
-                  <a href="#method">分布如何計算 ⓘ</a>
-                </div>
                 <div className={styles.storyList}>
                   {rest.map((s, i) => (
                     <article key={s.key} className={styles.story}>
@@ -462,7 +343,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                         </h3>
                         <StoryMeta story={s} />
                         <Signals e={s.event} />
-                        <Distribution coverage={s.coverage} compact />
+                        {s.coverage && <OutletStrip c={s.coverage} media={data.media} max={6} compact />}
                       </div>
                       <Link href={s.href} className={styles.thumbnail} aria-label={`查看事件：${s.title}`} tabIndex={-1}>
                         <NewsImage src={s.image} />
@@ -486,20 +367,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             )}
           </section>
 
-          <aside className={styles.right} aria-label="藍綠溫差與標題對照">
+          <aside className={styles.right} aria-label="各媒體標題對照">
             <div className={styles.sectionHeading}>
-              <h2>藍綠溫差</h2>
-              <Link href="/event/">
-                事件表 <Arrow />
-              </Link>
-            </div>
-            <p className={styles.gapIntro}>相對於過去 24 小時的整體比例，哪一邊的媒體特別在寫、哪一邊幾乎沒報。</p>
-            <CampGaps gaps={data.gaps} />
-
-            <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>同題不同標</h2>
             </div>
-            <p className={styles.gapIntro}>政治事件精選：同一件事，藍綠媒體怎麼下標？</p>
+            <p className={styles.gapIntro}>同一件事，各家媒體怎麼下標？</p>
             <Suspense fallback={<p className={styles.notice}>正在整理標題對照…</p>}>
               <HeadlineSidebar query="" />
             </Suspense>
@@ -532,13 +404,12 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <>
               <p>首頁卡片的標籤僅顯示與該標題相符的關鍵字。</p>
               <p>
-                藍綠分布以整個事件分群計算，並非單篇新聞的報導分布：數的是過去 24
-                小時寫過該事件主要關鍵字的媒體家數。「藍綠差」是藍營家數占比減綠營家數占比；「盲點」表示其中一營幾乎沒有報導。
+                事件來源列顯示過去 24
+                小時寫過該事件主要關鍵字的媒體與相關篇數，涵蓋整個事件分群，並非單篇新聞的來源數。點媒體圖示可查看來源資料，展開「其他」可看其餘媒體。
               </p>
               <p>
-                頁首的新聞量分布為過去 24
-                小時新聞類媒體有標籤的文章數，依媒體所屬陣營加總，並非逐篇判斷立場。展開後列出各段包含的媒體，淡色表示該媒體過去 24
-                小時沒有文章。
+                頁首新聞量為固定新聞基準名單過去 24 小時已收錄、有標籤的文章數；來源圖示則列出較廣的收錄名單，依近 24
+                小時篇數排序，淡色表示該來源期間內沒有文章。
               </p>
               {ranking && (
                 <>

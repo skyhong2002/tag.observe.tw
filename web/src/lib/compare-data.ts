@@ -2,12 +2,12 @@ import { API_ORIGIN } from './api';
 import { type CompareCoverage, type CompareEvent, makeComparison, politicsPriority } from './headline-compare.mts';
 import { fetchEvents } from './pages';
 
-export async function loadComparisons(all: boolean) {
+export async function loadComparisons(all: boolean, pairBy: 'camps' | 'outlets' = 'camps') {
   const data = await fetchEvents(30);
   const unique = [...new Map((data?.events ?? []).filter((e) => e.relatedEventPk).map((e) => [e.relatedEventPk, e])).values()];
   const candidates = unique
-    .filter((e) => all || politicsPriority(e) > 0)
-    .sort((a, b) => politicsPriority(b) - politicsPriority(a) || a.rank - b.rank)
+    .filter((e) => pairBy === 'outlets' || all || politicsPriority(e) > 0)
+    .sort((a, b) => (pairBy === 'camps' ? politicsPriority(b) - politicsPriority(a) : 0) || a.rank - b.rank)
     .slice(0, all ? 20 : 14);
   const events: CompareEvent[] = [];
   let failed = 0;
@@ -23,7 +23,7 @@ export async function loadComparisons(all: boolean) {
             failed++;
             return null;
           }
-          return makeComparison(e, (await res.json()) as CompareCoverage);
+          return makeComparison(e, (await res.json()) as CompareCoverage, pairBy);
         } catch {
           failed++;
           return null;
