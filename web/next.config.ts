@@ -9,6 +9,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  outputFileTracingIncludes: {
+    '/*': ['./assets/NotoSansTC-Share.woff'],
+  },
   poweredByHeader: false,
   reactStrictMode: true,
   trailingSlash: true,

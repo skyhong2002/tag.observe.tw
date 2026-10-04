@@ -15,16 +15,18 @@ import {
   TagMethod,
   TopicMethod,
 } from '@/components/MethodNotes';
+import { pageMetadata } from '@/lib/seo';
 import traffic from '../../../../../app/data/media-traffic.json';
 
 // Every method block in one place, grouped by the page it explains; the footer
 // shows only the blocks for the page at hand. The camp basis is stated once, in
 // the event group, so the other blocks leave it out here.
 
-export const metadata = {
-  title: '資料來源與計算方式',
-  description: '新文易數如何抓取新聞、取得標籤，以及各頁的關鍵字排行、事件分群、藍綠分類、新聞關係圖、記者、議題與媒體資料的計算方式。',
-};
+export const metadata = pageMetadata(
+  '/method/',
+  '資料來源與計算方式',
+  '了解新文易數的新聞來源、標籤排行、爆發力、事件分群、媒體分類與內文相似度計算方法。',
+);
 
 const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>; body: React.ReactNode }> = [
   { id: 'source', title: '資料來源（全站）', pages: [['/media/', '媒體']], body: <SourceMethod /> },

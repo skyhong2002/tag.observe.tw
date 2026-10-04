@@ -4,16 +4,18 @@ import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
+import { pageMetadata } from '@/lib/seo';
 import { fetchSimilarity, periodQuery, type SimilarityData } from '@/lib/similarity';
 import { table } from '@/lib/table-styles';
 import { number, periodLabel, taipei } from '../format';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../query';
 import SimilarityTabs from '../SimilarityTabs';
 
-export const metadata = {
-  title: '擷取狀態 · 新聞關係圖',
-  description: '新聞關係圖各媒體的內文擷取狀態：本期文章、可比較、已比對、缺漏與待抓篇數。',
-};
+export const metadata = pageMetadata(
+  '/similarity/about/',
+  '內文擷取狀態',
+  '查看新聞內文的擷取與比對狀態，了解相似度分析的資料涵蓋、更新情況與限制。',
+);
 
 const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
 

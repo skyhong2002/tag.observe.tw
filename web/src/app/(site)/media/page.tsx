@@ -7,10 +7,15 @@ import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { API_ORIGIN, taipei } from '@/lib/api';
+import { pageMetadata } from '@/lib/seo';
 import { table } from '@/lib/table-styles';
 
 export const revalidate = 120;
-export const metadata = { title: '媒體與文章數' };
+export const metadata = pageMetadata(
+  '/media/',
+  '媒體與文章數',
+  '查看本站追蹤的新聞媒體、近期收錄篇數與更新狀態，進入各媒體頁探索報導、關鍵字及媒體關係。',
+);
 
 type Status = 'ok' | 'stale' | 'failing' | 'disabled';
 type Camp = 'blue' | 'green' | 'other';

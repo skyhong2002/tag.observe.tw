@@ -6,9 +6,24 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipeiHour } from '@/lib/api';
 import { type ArchivedThread, type EventItem, fetchEventDay } from '@/lib/pages';
+import { canonicalQuery, pageMetadata } from '@/lib/seo';
 
 export const revalidate = 300;
-export const metadata = { title: '事件存檔' };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
+  const raw = (await searchParams).day;
+  const value =
+    typeof raw === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(raw) &&
+    !Number.isNaN(Date.parse(raw)) &&
+    new Date(raw).toISOString().slice(0, 10) === raw
+      ? raw
+      : undefined;
+  return pageMetadata(
+    canonicalQuery('/event/archive/', { day: value }),
+    value ? `${value} · 事件存檔` : '事件存檔',
+    '回顧曾登上事件表的新聞，查看事件發展、各媒體報導與當時熱門關鍵字。',
+  );
+}
 
 // One day of the event table, laid out like the hourly page: every thread that
 // was on the table that day, ranked by its best burst, in the same three

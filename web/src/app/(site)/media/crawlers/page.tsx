@@ -3,9 +3,14 @@ import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import { API_ORIGIN } from '@/lib/api';
 import type { MediaCrawler } from '@/lib/media-crawlers.mts';
+import { pageMetadata } from '@/lib/seo';
 
 export const revalidate = 120;
-export const metadata = { title: '爬蟲資訊' };
+export const metadata = pageMetadata(
+  '/media/crawlers/',
+  '爬蟲資訊',
+  '查看各新聞來源的擷取方式、最近收錄與爬取狀態，了解本站新聞資料的涵蓋範圍與更新限制。',
+);
 
 export default async function CrawlersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = '' } = await searchParams;

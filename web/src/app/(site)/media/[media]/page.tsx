@@ -11,14 +11,35 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
+import StructuredData from '@/components/StructuredData';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaContent } from '@/lib/article-content';
 import { clipHeadline } from '@/lib/event-presentation.mts';
+import { mediaNames } from '@/lib/media-names.mts';
 import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
 import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
+import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo';
 import type { SimilarityData } from '@/lib/similarity';
 
 export const revalidate = 60;
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ media: string }>;
+  searchParams: Promise<ReadingParams>;
+}) {
+  const { media } = await params;
+  const name = mediaNames[media]?.name;
+  if (!name) return { title: '找不到媒體', robots: { index: false } };
+  const query = readingQuery(await searchParams);
+  const path = canonicalQuery(`/media/${encodeURIComponent(media)}/`, { cursor: query?.get('cursor') ?? undefined });
+  return {
+    ...pageMetadata(path, `${name}新聞與媒體觀察`, `瀏覽本站收錄的${name}新聞、熱門關鍵字與更新狀態，對照與其他媒體的相似報導及引用關係。`),
+    ...(query?.has('q') ? { robots: { index: false, follow: true } } : {}),
+  };
+}
+
 export default async function MediaPage({
   params,
   searchParams,
@@ -77,6 +98,7 @@ export default async function MediaPage({
     : null;
   return (
     <div className="pb-4">
+      <StructuredData data={pageSchema(base, data.title, [['/media/', '媒體']])} />
       <nav aria-label="麵包屑" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
         <Link href="/media/" className="hover:text-brand-700 dark:hover:text-brand-400">
           媒體

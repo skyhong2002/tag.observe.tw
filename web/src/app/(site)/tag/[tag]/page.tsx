@@ -5,26 +5,34 @@ import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
+import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
 import TagStatusPanel from '@/components/TagStatusPanel';
 import { type Camp, fetchMedia, fetchTagArticles, fetchTagSeries, fetchTagStatus, taipei } from '@/lib/api';
 import { articleHref } from '@/lib/reading.mts';
+import { decodeRouteParam, pageMetadata, pageSchema } from '@/lib/seo';
 import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;
 type Params = { tag: string };
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const tag = decodeURIComponent((await params).tag);
+  const tag = decodeRouteParam((await params).tag);
   return {
-    title: tag,
+    ...pageMetadata(
+      `/tag/${encodeURIComponent(tag)}/`,
+      `${tag}新聞與趨勢`,
+      `追蹤「${tag}」相關新聞，對照各媒體報導、關鍵字熱度與逐時趨勢，探索相關事件。`,
+      true,
+    ),
     alternates: {
+      canonical: `https://tag.observe.tw/tag/${encodeURIComponent(tag)}/`,
       types: { 'application/rss+xml': [{ url: `/feeds/tag/${encodeURIComponent(tag)}.xml`, title: `新文易數｜${tag}` }] },
     },
   };
 }
 
 export default async function TagPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ hours?: string }> }) {
-  const tag = decodeURIComponent((await params).tag);
+  const tag = decodeRouteParam((await params).tag);
   // The footer's @notes/tag/[tag] makes the same series request for the basis list.
   const hours = tagHours(await searchParams);
   const [series, list, media, status] = await Promise.all([
@@ -53,6 +61,14 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   const campLabel = { blue: '藍營傾向', green: '綠營傾向', other: '其他' } as const;
   return (
     <div className="space-y-6">
+      <StructuredData
+        data={pageSchema(
+          `/tag/${encodeURIComponent(tag)}/`,
+          `${tag}新聞與趨勢`,
+          [['/ranking/', '關鍵字排行']],
+          list.articles.slice(0, 10).map((a) => ({ name: a.title, path: `/article/${a.id}/` })),
+        )}
+      />
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">
           <span className="text-zinc-500">#</span>

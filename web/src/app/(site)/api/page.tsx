@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
+import { pageMetadata } from '@/lib/seo';
 import { table } from '@/lib/table-styles';
 
 // Human-readable API docs, rendered from the gateway's own OpenAPI document
@@ -9,10 +10,11 @@ import { table } from '@/lib/table-styles';
 // Rendered per request (the spec fetch itself is cached for an hour): a build
 // prerender runs against the previous gateway, and a cached fallback would stick.
 const revalidate = 3600;
-export const metadata = {
-  title: 'API',
-  description: '新文易數公開 API：標籤排行、文章搜尋、事件分群、藍綠標題對照、議題追蹤。免金鑰、唯讀、JSON。',
-};
+export const metadata = pageMetadata(
+  '/api/',
+  '新文易數 API',
+  '免費取用新聞關鍵字、事件、議題、媒體與相似度資料，查閱 API 端點、參數與回傳格式。',
+);
 
 const ORIGIN = 'https://tag.observe.tw';
 const GITHUB_DOC = 'https://github.com/skyhong2002/tag.observe.tw/blob/main/docs/api.md';

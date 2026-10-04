@@ -19,6 +19,7 @@ import {
   removalRequestHref,
 } from '@/lib/journalists';
 import { readingTitle } from '@/lib/reading.mts';
+import { decodeRouteParam, pageMetadata } from '@/lib/seo';
 
 export const revalidate = 300;
 const number = (value: number) => value.toLocaleString('zh-TW');
@@ -29,8 +30,12 @@ const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
 
 export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
   const { name } = await params;
-  const decoded = decodeURIComponent(name);
-  return { title: `${decoded} 的報導`, description: `${decoded} 署名的文章：刊登媒體、常寫主題，以及與其他媒體內文相近的文章對照。` };
+  const decoded = decodeRouteParam(name);
+  return pageMetadata(
+    `/journalist/${encodeURIComponent(decoded)}/`,
+    `${decoded} 的報導`,
+    `${decoded} 署名的文章：刊登媒體、常寫主題，以及與其他媒體內文相近的文章對照。`,
+  );
 }
 
 // One neutral tone for every relation: order of publication is context, not a verdict.

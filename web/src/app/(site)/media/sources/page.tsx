@@ -2,6 +2,7 @@ import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
 import { API_ORIGIN } from '@/lib/api';
+import { pageMetadata } from '@/lib/seo';
 import { buildComparison, type CrawlComparison } from '@/lib/traffic-comparison.mts';
 import disabled from '../../../../../../app/data/crawl-disabled.json';
 import traffic from '../../../../../../app/data/media-traffic.json';
@@ -9,10 +10,11 @@ import catalog from '../../../../../../app/data/news-source-catalog.json';
 
 const hidden = new Set(disabled.excludedMedia);
 
-export const metadata = {
-  title: 'Similar Web',
-  description: '查看各家媒體的本站收錄篇數與 Similarweb 流量。',
-};
+export const metadata = pageMetadata(
+  '/media/sources/',
+  '媒體流量與收錄比較',
+  '對照媒體網站流量資料與本站新聞收錄範圍，查看媒體分類、來源與統計方法。',
+);
 export const revalidate = 300;
 
 export default async function MediaSourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

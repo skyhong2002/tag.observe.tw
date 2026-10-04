@@ -6,9 +6,19 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
 import { fetchEvents } from '@/lib/pages';
+import { canonicalQuery, pageMetadata } from '@/lib/seo';
 
 export const revalidate = 120;
-export const metadata = { title: '事件表' };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ at?: string }> }) {
+  const raw = (await searchParams).at;
+  const value =
+    typeof raw === 'string' && !Number.isNaN(Date.parse(raw)) && /^\d{4}-\d{2}-\d{2}T/.test(raw) ? new Date(raw).toISOString() : undefined;
+  return pageMetadata(
+    canonicalQuery('/event/', { at: value }),
+    value ? `${value} · 事件表` : '事件表',
+    '依新聞標籤共現整理熱門事件，並排比較各家媒體的報導標題與刊登時間。',
+  );
+}
 
 const atLink = (iso: string) => `/event/?at=${encodeURIComponent(iso)}`;
 const taipeiDay = (iso: string) => new Date(Date.parse(iso) + 8 * 3600e3).toISOString().slice(0, 10);

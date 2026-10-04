@@ -7,6 +7,7 @@ import EventTagCloud from '@/components/EventTagCloud';
 import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
+import StructuredData from '@/components/StructuredData';
 import { taipei, taipeiHour } from '@/lib/api';
 import { cleanEventHeadline, clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import {
@@ -27,6 +28,7 @@ import {
 import { fetchThreadPart } from '@/lib/event-thread-api';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
+import { pageMetadata, pageSchema } from '@/lib/seo';
 import OutletTable from './OutletTable';
 import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, HourTable, SectionTitle, StatTiles, Timeline } from './sections';
 
@@ -81,8 +83,11 @@ const headlineOf = (data: ThreadData) => {
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const data = await fetchThread((await params).id);
-  return { title: data ? headlineOf(data) : '事件' };
+  const { id } = await params;
+  const data = await fetchThread(id);
+  if (!data) return { title: '找不到事件', robots: { index: false } };
+  const title = headlineOf(data);
+  return pageMetadata(`/eve/${data.thread.id}/`, title, `比較「${title}」的各家媒體報導，查看標題對照、事件時間線與關鍵字趨勢。`, true);
 }
 
 /** Coverage in the shape the shared camp bars take; one copy counts outlets, one counts reports. */
@@ -172,6 +177,7 @@ export default async function EventThreadPage({
 
   return (
     <div className="space-y-8">
+      <StructuredData data={pageSchema(`/eve/${t.id}/`, headline, [['/event/', '事件表']])} />
       <header className="space-y-2">
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           <Link href="/event/" className="hover:underline">

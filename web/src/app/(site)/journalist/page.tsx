@@ -2,13 +2,15 @@ import Link from 'next/link';
 import MethodLink from '@/components/MethodLink';
 import { taipei } from '@/lib/api';
 import { fetchJournalists, INDEX_HOURS, REPOSITORY_URL } from '@/lib/journalists';
+import { pageMetadata } from '@/lib/seo';
 import JournalistTable from './JournalistTable';
 
 export const revalidate = 120;
-export const metadata = {
-  title: '記者',
-  description: '從各媒體文章署名整理出的記者與筆名：各自在哪些媒體刊登、寫了幾篇，以及文章與他站內文相近的對照。',
-};
+export const metadata = pageMetadata(
+  '/journalist/',
+  '記者',
+  '從新聞署名探索記者與作者，查看刊登媒體、報導篇數、常寫主題與跨媒體相似報導。',
+);
 const number = (value: number) => value.toLocaleString('zh-TW');
 
 export default async function JournalistIndexPage({ searchParams }: { searchParams: Promise<{ hours?: string }> }) {

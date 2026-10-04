@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import SiteAnalytics from '@/components/SiteAnalytics';
+import StructuredData from '@/components/StructuredData';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from '@/lib/seo';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -33,6 +35,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-full bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         {children}
+        <StructuredData
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            '@id': `${SITE_ORIGIN}/#website`,
+            url: `${SITE_ORIGIN}/`,
+            name: SITE_NAME,
+            description: SITE_DESCRIPTION,
+            inLanguage: 'zh-Hant',
+          }}
+        />
         <SiteAnalytics />
       </body>
     </html>

@@ -2,6 +2,7 @@ import { MediaCardMethod, RankingMethod, TagMethod } from '@/components/MethodNo
 import { RankingBasisText } from '@/components/RankingBasisNote';
 import { methodHeading } from '@/components/SiteFooter';
 import { fetchMedia, fetchTagSeries } from '@/lib/api';
+import { decodeRouteParam } from '@/lib/seo';
 import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;
@@ -14,7 +15,7 @@ export default async function TagNotes({
   params: Promise<{ tag: string }>;
   searchParams: Promise<{ hours?: string }>;
 }) {
-  const tag = decodeURIComponent((await params).tag);
+  const tag = decodeRouteParam((await params).tag);
   const hours = tagHours(await searchParams);
   const [series, media] = await Promise.all([fetchTagSeries(tag, 'all', hours).catch(() => null), fetchMedia().catch(() => null)]);
   return (

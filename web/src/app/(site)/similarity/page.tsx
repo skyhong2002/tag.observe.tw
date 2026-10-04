@@ -1,12 +1,17 @@
 import Link from 'next/link';
 import { fetchCategories } from '@/lib/api';
 import type { MediaCamps } from '@/lib/media-graph.mts';
+import { pageMetadata } from '@/lib/seo';
 import { fetchSimilarity, periodQuery } from '@/lib/similarity';
 import catalog from '../../../../../app/data/media-catalog.json';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from './query';
 import SimilarityExplorer from './SimilarityExplorer';
 
-export const metadata = { title: '新聞關係圖', description: '點選媒體圖示固定高亮新聞內文相似與引用關係，在圖表下方篩選與瀏覽文章證據。' };
+export const metadata = pageMetadata(
+  '/similarity/',
+  '新聞關係圖',
+  '探索新聞媒體間的內文相似與明示引用關係，點選連線查看文章證據、刊登先後與來源線索。',
+);
 export default async function SimilarityPage({ searchParams }: { searchParams: Promise<SimilarityQuery> }) {
   const query = await searchParams;
   const period = similarityPeriod(query);

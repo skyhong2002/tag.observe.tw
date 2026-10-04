@@ -14,6 +14,7 @@ import { type CampGap, type CampShare, DEMO_CAMPS, type DemoStory, type GraphSum
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
+import { pageMetadata } from '@/lib/seo';
 import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
@@ -22,7 +23,11 @@ import styles from './_home/home.module.css';
 import NewsImage from './_home/NewsImage';
 
 export const revalidate = 120;
-export const metadata = { alternates: { canonical: 'https://tag.observe.tw/' } };
+export const metadata = pageMetadata(
+  '/',
+  '新文易數',
+  '同一件事，各家怎麼說。比較台灣新聞媒體的報導標題，探索熱門事件、關鍵字排行與議題趨勢。',
+);
 
 function Arrow() {
   return <span aria-hidden="true">→</span>;
