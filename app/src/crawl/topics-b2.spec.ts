@@ -29,3 +29,19 @@ describe('businesstoday', () => {
     expect(result.sources[0].error).toMatch(/fell back to the listing/);
   });
 });
+
+describe('theinitium', () => {
+  it('lets the columns listing declare a series it shares with the auto archive', async () => {
+    const card = (slug: string, name: string) => `<article class="border"><h3><a href="/tag/${slug}/">${name}</a></h3></article>`;
+    const pages: Record<string, string> = {
+      'https://theinitium.com/series/': `<section id="series-latest">${card('2026-iran-war', '2026伊朗戰爭')}</section>`,
+      'https://theinitium.com/series/page/2/': `<main>${card('2026-iran-war', '2026伊朗戰爭')}${card('resident-columnist-program', '駐場評論人計劃')}</main>`,
+      'https://theinitium.com/column/': `<main>${card('resident-columnist-program', '駐場評論人計劃')}</main>`,
+    };
+    const result = await fetchTopicListings(rule('theinitium'), async (url) => ({ url, body: pages[url], status: 200, contentType: 'text/html', ms: 0 }));
+    expect(result.items.map((t) => [t.url.split('/tag/')[1], t.kind, t.source])).toEqual([
+      ['2026-iran-war/', undefined, 'https://theinitium.com/series/'],
+      ['resident-columnist-program/', 'topic', 'https://theinitium.com/series/page/2/'],
+    ]);
+  });
+});

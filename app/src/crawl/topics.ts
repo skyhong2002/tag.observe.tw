@@ -547,9 +547,31 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://theinitium.com/series/',
     fallbackImage: '/favicons/theinitium.png',
     // /issue/ is a general taxonomy; /series/ is the curated reporting series.
-    pattern: /theinitium\.com\/tag\/[^/?#]+\/$/,
-    scope: 'main',
+    // 最近更新 holds the new ones; the per-year sections below list every series.
+    pattern: /^(?:https:\/\/theinitium\.com)?\/tag\/[^/?#]+\/$/,
+    scope: '#series-latest',
     card: '[class~="border"]',
+    // Mixed: running series (wars, elections) and one-off packages.
+    kind: 'auto',
+    listings: [
+      {
+        // Ghost repeats the whole page here: the full archive (back to 2015)
+        // under its own source, so it is stored as backlog.
+        url: 'https://theinitium.com/series/page/2/',
+        pattern: /^(?:https:\/\/theinitium\.com)?\/tag\/[^/?#]+\/$/,
+        scope: 'main',
+        card: '[class~="border"]',
+        kind: 'auto',
+      },
+      {
+        // 欄目: columns, podcasts and newsletters keep publishing.
+        url: 'https://theinitium.com/column/',
+        pattern: /^(?:https:\/\/theinitium\.com)?\/tag\/[^/?#]+\/$/,
+        scope: 'main',
+        card: '[class~="border"]',
+        kind: 'topic',
+      },
+    ],
   },
   {
     media: 'heho',
@@ -725,7 +747,10 @@ export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
           }
           if (!item.kind && kind !== 'auto') item.kind = kind;
           if (listing.sponsored) item.sponsored = !!item.sponsored || listing.sponsored(item);
-          if (!items.has(item.url)) items.set(item.url, { ...item, source: listing.url, page: n });
+          const prev = items.get(item.url);
+          if (!prev) items.set(item.url, { ...item, source: listing.url, page: n });
+          // A listing that declares the kind beats an earlier 'auto' one (端 columns also appear under series).
+          else if (!prev.kind && item.kind) prev.kind = item.kind;
           accepted++;
         }
       }
