@@ -183,8 +183,12 @@ export default function SimilarityGraph({
             source: e.source,
             target: e.target,
             relationship: e,
-            symbol: ['circle', 'arrow'],
-            symbolSize: [0, 14],
+            // ECharts puts the built-in arrow's tip on the line end, so a thick
+            // line's square end pokes out beside the tip. A path symbol is
+            // centred on the line end instead: the line stops halfway into
+            // the head, where the head is at least as wide as the line.
+            symbol: ['circle', 'path://M5 0L10 10L5 8L0 10Z'],
+            symbolSize: [0, [Math.max(12, 2 * width + 6), 14]],
             lineStyle: {
               width,
               // ECharts draws the line and its arrowhead as two shapes sharing one
