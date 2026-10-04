@@ -50,7 +50,29 @@ export interface Topic {
   title: string | null;
   url: string | null;
   image: string | null;
+  /** 議題 keeps getting stories; 專題 is a one-off package. Absent on old API builds. */
+  kind?: TopicKind;
+  /** 'ended': a 議題 with no new story for 90 days (已停更). */
+  status?: 'active' | 'ended';
+  /** Marked by the outlet as advertising or a brand partnership. */
+  sponsored?: boolean;
+  parentId?: number | null;
+  storyLastAt?: string | null;
+  storyCount?: number | null;
+  /** Child topics, listed under their parent on the per-media page. */
+  children?: Topic[];
 }
+export type TopicKind = 'topic' | 'feature';
+export interface TopicCounts {
+  topic: number;
+  feature: number;
+}
+/** Old API builds send no kind: everything there is a 議題. */
+export const ofKind = (t: Pick<Topic, 'kind'>, kind: TopicKind) => (t.kind ?? 'topic') === kind;
+/** Per-kind count for an outlet; the all-time total only stands in for 議題 on old builds. */
+export const kindCount = (m: Pick<TopicMedia, 'count' | 'counts'>, kind: TopicKind) =>
+  m.counts ? m.counts[kind] : kind === 'topic' ? m.count : undefined;
+
 export interface TopicCheck {
   checkedAt: string | null;
   lastSuccessAt: string | null;
@@ -66,6 +88,7 @@ export interface TopicMedia {
   link: string;
   /** Topics listed by the outlet so far (all time). */
   count?: number;
+  counts?: TopicCounts;
   latest: Topic | null;
   recent?: Topic[];
 }
@@ -136,7 +159,8 @@ export interface EventDay {
   threads: ArchivedThread[];
 }
 export const fetchEventDay = (day?: string) => get<EventDay>(`/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`, 300);
-export const fetchTopics = (limit = 120) => get<{ media: TopicMedia[]; feed?: FeedTopic[] }>(`/api/v1/topics?limit=${limit}`, 300);
+export const fetchTopics = (limit = 120, kind: TopicKind = 'topic') =>
+  get<{ media: TopicMedia[]; feed?: FeedTopic[] }>(`/api/v1/topics?limit=${limit}&kind=${kind}`, 300);
 export interface TopicMediaPage {
   media: string;
   title: string;
@@ -144,7 +168,9 @@ export interface TopicMediaPage {
   mediaImage?: string;
   check?: TopicCheck;
   count?: number;
-  topics: Array<Topic & { coverage?: TopicCoverage | null }>;
+  counts?: TopicCounts;
+  topics: MediaTopic[];
 }
-export const fetchTopicMedia = (media: string, limit = 30) =>
-  get<TopicMediaPage>(`/api/v1/topics?media=${encodeURIComponent(media)}&limit=${limit}`, 300);
+export type MediaTopic = Topic & { coverage?: TopicCoverage | null; children?: MediaTopic[] };
+export const fetchTopicMedia = (media: string, limit = 30, kind: TopicKind = 'topic') =>
+  get<TopicMediaPage>(`/api/v1/topics?media=${encodeURIComponent(media)}&limit=${limit}&kind=${kind}`, 300);
