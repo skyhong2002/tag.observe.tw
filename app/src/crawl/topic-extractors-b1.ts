@@ -30,3 +30,17 @@ export function mirrorTopics(html: string, rule: TopicRule): TopicItem[] {
     return [{ url: stripTracking(url), title, image, category: null }];
   });
 }
+
+/** 報導者's topic API (go-api.twreporter.org), the data behind /topics?page=N. */
+export function twreporterTopics(json: string, rule: TopicRule): TopicItem[] {
+  const data = JSON.parse(json) as {
+    data?: { records?: { slug?: string; title?: string; og_image?: { resized_targets?: Record<string, { url?: string }> } }[] };
+  };
+  return (data.data?.records ?? []).flatMap((r) => {
+    const url = r.slug ? `https://www.twreporter.org/topics/${encodeURIComponent(r.slug)}` : null;
+    const title = clip(r.title ?? '');
+    if (!url || title.length < 2 || !rule.pattern.test(url)) return [];
+    const t = r.og_image?.resized_targets;
+    return [{ url, title, image: t?.mobile?.url || t?.desktop?.url || null, category: null }];
+  });
+}

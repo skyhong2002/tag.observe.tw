@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { mirrorTopics } from './topic-extractors-b1.ts';
-import { extractTopics, TOPIC_RULES, topicListings } from './topics.ts';
+import { mirrorTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
 const listing = (media: string, url: string) => topicListings(rule(media)).find((l) => l.url === url)!;
+const response = (url: string, body: string, status = 200) => ({ url, body, status, contentType: 'text/html', ms: 1 });
 
 describe('鏡週刊', () => {
   it('reads the 24 topics in the Next.js data, dropping slugs with stray spaces', () => {
@@ -41,5 +42,46 @@ describe('鏡報', () => {
       { url: 'https://www.mirrordaily.news/topic/kao', title: '柯文哲二審', image: null, category: null },
     ]);
     expect(home.kind).toBe('topic');
+  });
+});
+
+describe('報導者', () => {
+  it('reads topics from its API and pages by offset', async () => {
+    const page = (records: object[]) => JSON.stringify({ data: { meta: { total: 3 }, records } });
+    const urls: string[] = [];
+    const result = await fetchTopicListings(rule('twreporter'), async (url) => {
+      urls.push(url);
+      const offset = Number(new URL(url).searchParams.get('offset'));
+      if (offset === 0)
+        return response(
+          url,
+          page([
+            {
+              slug: 'age-of-disconnection',
+              title: '無人知曉的死亡',
+              og_image: { resized_targets: { mobile: { url: 'https://www.twreporter.org/images/a-mobile.jpg' } } },
+            },
+            { slug: 'english-version', title: 'The Reporter English Edition' },
+          ]),
+        );
+      return response(url, page(offset === 100 ? [{ slug: 'refinery-content', title: '高雄不可承受之「輕」' }] : []));
+    });
+    expect(urls).toEqual([
+      'https://go-api.twreporter.org/v2/topics?offset=0&limit=100',
+      'https://go-api.twreporter.org/v2/topics?offset=100&limit=100',
+      'https://go-api.twreporter.org/v2/topics?offset=200&limit=100',
+    ]);
+    expect(result.items.map((t) => [t.url, t.page])).toEqual([
+      ['https://www.twreporter.org/topics/age-of-disconnection', 1],
+      ['https://www.twreporter.org/topics/english-version', 1],
+      ['https://www.twreporter.org/topics/refinery-content', 2],
+    ]);
+    expect(result.items[0].image).toBe('https://www.twreporter.org/images/a-mobile.jpg');
+  });
+
+  it('skips records without a slug or title', () => {
+    expect(twreporterTopics(JSON.stringify({ data: { records: [{ slug: '', title: 'x' }, { slug: 'a' }] } }), rule('twreporter'))).toEqual(
+      [],
+    );
   });
 });

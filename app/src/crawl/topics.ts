@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { mirrorTopics } from './topic-extractors-b1.ts';
+import { mirrorTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -235,9 +235,11 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'twreporter',
     fallbackImage: 'https://www.twreporter.org/images/og-image-large.jpg',
     name: '報導者',
-    url: 'https://www.twreporter.org/topics',
-    pattern: /^\/topics\/[\w-]+$/,
-    title: heading,
+    // /topics shows 5 a page over ~46 pages; its API returns them all.
+    url: 'https://go-api.twreporter.org/v2/topics?offset=0&limit=100',
+    pattern: /^https:\/\/www\.twreporter\.org\/topics\/[\w%-]+$/,
+    extract: twreporterTopics,
+    paginate: { url: (n) => `https://go-api.twreporter.org/v2/topics?offset=${(n - 1) * 100}&limit=100`, max: 5 },
   },
   // Covers are only in the RSC payload (the <img> is a loading gif).
   {
