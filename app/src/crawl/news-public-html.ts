@@ -65,6 +65,17 @@ export function publicArticleHtml(html: string, url: string): string {
     if (cheerio.load(html)('script[data-news-public="wsj-newsletter"]').length) return html;
     return renderWsjNewsletter(html, url) ?? '';
   }
+  if (host === '4gamers.com.tw') {
+    // The app renders client-side; the article ships as escaped markup in a
+    // <noscript> block. Unwrap only the block that holds the article.
+    const $ = cheerio.load(html);
+    const copy = $('noscript')
+      .toArray()
+      .find((node) => /<article\b[^>]*\brender-content\b/.test($(node).text()));
+    if (!copy) return html;
+    $(copy).replaceWith($(copy).text());
+    return $.html();
+  }
   if (!['taiwannews.com.tw', 'readr.tw', 'news.qq.com'].includes(host)) return html;
   const $ = cheerio.load(html);
   if ($('script[data-news-public]').length) return html;

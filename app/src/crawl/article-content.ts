@@ -10,7 +10,17 @@ export interface ArticleContent {
   bodyStatus: 'ok' | 'missing' | 'short' | 'blocked';
 }
 
-type ContentRules = { bodySelector?: string; bodyHtmlSelector?: string; bodyExcludeSelector?: string; authorSelector?: string };
+type ContentRules = {
+  bodySelector?: string;
+  bodyHtmlSelector?: string;
+  bodyExcludeSelector?: string;
+  authorSelector?: string;
+  /** The site container counts even inside wrappers whose class names look like ads or share bars. */
+  trustContainer?: boolean;
+  /** Paragraphs are block elements and line breaks rather than <p>. */
+  plainTextBody?: boolean;
+};
+type BodyOptions = { trusted?: boolean; plainText?: boolean };
 type JsonNode = Record<string, unknown>;
 type Candidate = { body: string; source: string };
 
@@ -146,9 +156,10 @@ function cleanedRoot($: cheerio.CheerioAPI, node: AnyNode) {
   return root;
 }
 
-function domBody($: cheerio.CheerioAPI, node: AnyNode, allowPlainText: boolean): string {
+function domBody($: cheerio.CheerioAPI, node: AnyNode, allowPlainText: boolean, options: BodyOptions = {}): string {
   const original = $(node);
   if (
+    !options.trusted &&
     original
       .add(original.parents())
       .toArray()
@@ -161,8 +172,12 @@ function domBody($: cheerio.CheerioAPI, node: AnyNode, allowPlainText: boolean):
     return '';
   const root = cleanedRoot($, node);
   const paragraphs = root.is('p') ? root : root.find('p');
-  if (!paragraphs.toArray().some((paragraph) => normalize($(paragraph).text())) && allowPlainText) {
+  if (options.plainText || (!paragraphs.toArray().some((paragraph) => normalize($(paragraph).text())) && allowPlainText)) {
     root.find('h1, h2, h3, header').remove();
+    if (options.plainText) {
+      root.find('br').replaceWith('\n');
+      root.find('p').append('\n\n');
+    }
     root.find('div, section, blockquote, li').append('\n\n');
     return root
       .text()
@@ -185,6 +200,8 @@ function domBody($: cheerio.CheerioAPI, node: AnyNode, allowPlainText: boolean):
     })
     .join('\n\n');
 }
+
+const siteOptions = (rules: ContentRules): BodyOptions => ({ trusted: rules.trustContainer, plainText: rules.plainTextBody });
 
 function structuredBody(value: unknown): string {
   if (typeof value !== 'string') return '';
@@ -285,7 +302,7 @@ function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: Content
   // Some sites put the only reporter credit in their first body paragraph.
   for (const selector of [...(rules.bodySelector ? [rules.bodySelector] : []), ...BODY_SELECTORS]) {
     for (const node of $(selector).toArray()) {
-      const prefix = domBody($, node, selector !== 'article')
+      const prefix = domBody($, node, selector !== 'article', selector === rules.bodySelector ? siteOptions(rules) : {})
         .split('\n\n')
         .slice(0, 3);
       for (const paragraph of prefix) {
@@ -382,7 +399,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     // Multiple matches represent alternative containers, never concatenated
     // articles or related stories. Choose the first complete candidate below.
     for (const node of $(selector).toArray()) {
-      const body = domBody($, node, selector !== 'article');
+      const body = domBody($, node, selector !== 'article', selector === rules.bodySelector ? siteOptions(rules) : {});
       if (body) candidates.push({ body, source: selector === rules.bodySelector ? 'selector' : selector });
     }
   }

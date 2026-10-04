@@ -6,6 +6,7 @@ import { LEGACY_NEWS_SITES } from './news-legacy-sites.ts';
 import { PLATFORM_NEWS_SITES } from './news-platform-sites.ts';
 import { ROUND3_LEGACY_NEWS_SITES } from './news-round3-legacy-sites.ts';
 import { ROUND3_NEWS_SITES } from './news-round3-sites.ts';
+import { ROUND4_NEWS_SITES } from './news-round4-sites.ts';
 
 export interface NewsSiteRules {
   bodySelector: string;
@@ -18,6 +19,10 @@ export interface NewsSiteRules {
   preferPrintedPublication?: boolean;
   providerSelector?: string;
   bodyExcludeSelector?: string;
+  /** Keep the container even when a page wrapper's class looks like ads/share UI (#ad-root, under-ads). */
+  trustContainer?: boolean;
+  /** Paragraphs are <div>/<br> blocks; read the container as text. */
+  plainTextBody?: boolean;
 }
 
 type Site = NewsSiteRules & { host: string; path: RegExp };
@@ -34,6 +39,7 @@ const SITES: Site[] = [
   ...PLATFORM_NEWS_SITES,
   ...ROUND3_LEGACY_NEWS_SITES,
   ...ROUND3_NEWS_SITES,
+  ...ROUND4_NEWS_SITES,
   {
     host: 'myhousing.com.tw',
     path: /^\/(?:n|p)\/(?:[^/?]+\/)*\d+\/$/,

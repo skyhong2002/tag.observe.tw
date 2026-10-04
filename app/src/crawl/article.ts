@@ -51,7 +51,13 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   const siteEvidence = newsSiteEvidence($, url);
   rules = {
     ...(site
-      ? { bodySelector: site.bodySelector, bodyHtmlSelector: site.bodyHtmlSelector, bodyExcludeSelector: site.bodyExcludeSelector }
+      ? {
+          bodySelector: site.bodySelector,
+          bodyHtmlSelector: site.bodyHtmlSelector,
+          bodyExcludeSelector: site.bodyExcludeSelector,
+          trustContainer: site.trustContainer,
+          plainTextBody: site.plainTextBody,
+        }
       : {}),
     ...rules,
   };
