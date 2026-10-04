@@ -575,6 +575,8 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/cdn_news.png',
     pattern: /^TopicNews\.aspx\?EntityID=TopicNews&PK=\w+$/,
     card: '.position-relative',
+    // Running story collections; their story URLs carry no dates for auto.
+    kind: 'topic',
   },
   {
     media: 'businesstoday',
