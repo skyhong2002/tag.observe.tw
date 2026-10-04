@@ -55,7 +55,8 @@ describe('PTS', () => {
   it('pages through hotTopic and curation', () => {
     const [hot, curation] = topicListings(ruleOf('pts'));
     expect(hot.paginate?.url(2)).toBe('https://news.pts.org.tw/hotTopic?page=2');
-    expect(hot.paginate?.max).toBeGreaterThanOrEqual(49);
+    // The archive is stored; recent pages are enough to catch revived topics.
+    expect(hot.paginate?.max).toBeGreaterThanOrEqual(10);
     expect(curation.paginate?.url(3)).toBe('https://news.pts.org.tw/curation?page=3');
   });
 

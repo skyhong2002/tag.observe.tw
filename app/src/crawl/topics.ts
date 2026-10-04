@@ -218,7 +218,9 @@ export const TOPIC_RULES: TopicRule[] = [
     kind: 'topic',
     // 15 a page, most recently updated first; ~49 pages reach back to 2021
     // (later pages are 已停更 topics) and page 50+ is a 404.
-    paginate: { url: (n) => `https://news.pts.org.tw/hotTopic?page=${n}`, max: 50 },
+    // Ordered by last update: the 700-odd older topics are stored, and one that
+    // revives returns to the first pages.
+    paginate: { url: (n) => `https://news.pts.org.tw/hotTopic?page=${n}`, max: 10 },
     // /curation is 專題: one-off long-form features. Cards split into an image
     // link and an <h3> title link; the card selector joins them. ~8 pages; the
     // same 5 highlights head every page.

@@ -150,9 +150,9 @@ export function parseTopicDetail(detail: string | null): { sources: TopicSourceR
 export const TOPIC_ARTICLE_MEDIA: Record<string, string> = { twreporter: 'reporter' };
 export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicMedia] ?? topicMedia;
 
-// Re-read recently listed topic pages every 6 hours and keep each topic's own
-// story list. Blocks repeated on the outlet's other topic pages ("latest
-// news", "most read", other topics' picks) are site furniture: a group is
+// Re-read recently listed topic pages (active 議題 every 6 hours, the rest
+// every 3 days) and keep each topic's own story list. Blocks repeated on the
+// outlet's other topic pages ("latest news", "most read", other topics' picks) are site furniture: a group is
 // skipped when over half of its links also appear on another topic page of
 // the same outlet fetched in this run, or among the stories stored for two
 // other topics of the outlet (not the topic's parent or sub-topics). Of the
@@ -166,9 +166,12 @@ export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicM
 // Rows never classified are refreshed even when no longer listed.
 export async function refreshTopicPages(
   db: Db,
-  { now = () => new Date(), limit = 60, fetch = fetchText }: { now?: () => Date; limit?: number; fetch?: typeof fetchText } = {},
+  { now = () => new Date(), limit = 300, fetch = fetchText }: { now?: () => Date; limit?: number; fetch?: typeof fetchText } = {},
 ) {
   const t = now().getTime();
+  // 議題 still gaining stories are re-read every 6 hours so 最後更新 stays
+  // current; 專題, stopped 議題 and undated pages every 3 days.
+  const active = and(eq(topics.kind, 'topic'), gte(topics.storyLastAt, new Date(t - 90 * 86400e3)));
   // Topics still without a cover go first: the page's share image fills it.
   const due = await db
     .select({
@@ -189,10 +192,20 @@ export async function refreshTopicPages(
     .where(
       and(
         or(gte(topics.lastSeen, new Date(t - 3 * 86400e3)), isNull(topics.kindSource)),
-        or(isNull(topics.pageCheckedAt), lt(topics.pageCheckedAt, new Date(t - 6 * 3600e3))),
+        or(
+          isNull(topics.pageCheckedAt),
+          and(active, lt(topics.pageCheckedAt, new Date(t - 6 * 3600e3))),
+          lt(topics.pageCheckedAt, new Date(t - 3 * 86400e3)),
+        ),
       ),
     )
-    .orderBy(sql`${topics.image} IS NOT NULL`, sql`${topics.pageCheckedAt} IS NOT NULL`, topics.pageCheckedAt, desc(topics.lastSeen))
+    .orderBy(
+      sql`${topics.image} IS NOT NULL`,
+      sql`${topics.pageCheckedAt} IS NOT NULL`,
+      sql`NOT (${active})`,
+      topics.pageCheckedAt,
+      desc(topics.lastSeen),
+    )
     .limit(limit);
   const gate = pLimit(2);
   const pages = await Promise.all(
