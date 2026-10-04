@@ -60,6 +60,14 @@ export const ROUND4_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegE
     trustContainer: true,
   },
   {
+    host: 'thefemin.com',
+    path: /^\/\d{4}\/\d{2}\/[\w-]+\/?$/,
+    // The body sits inside .share-container; without trusting it the generic
+    // <article> fallback keeps only the 「所有內容嚴禁以任何方式轉載」 footer.
+    bodySelector: 'article.blog-post .post-content.entry-content',
+    trustContainer: true,
+  },
+  {
     host: 'twreporter.org',
     path: /^\/a\/[\w-]+\/?$/,
     bodySelector: '#article-body',

@@ -13,6 +13,13 @@ describe('round 4 article templates', () => {
     expect(detail.body).not.toContain('廣告文字');
   });
 
+  it('reads The Femin body from its share wrapper instead of the copyright footer', () => {
+    const html = `<article class="post blog-post"><div class="share-container"><div class="post-content-container"><div class="post-content entry-content"><p>${prose('The Femin')}</p></div></div></div><footer>© A Day Media Limited. 所有內容嚴禁以任何方式轉載</footer></article>`;
+    const detail = extractArticle(html, 'https://thefemin.com/2026/10/saint-laurent-2027-spring-summer/');
+    expect(detail.bodyStatus).toBe('ok');
+    expect(detail.body).toBe(prose('The Femin'));
+  });
+
   it('does not trust ad-like wrappers for sites without the opt-in', () => {
     const html = `<div class="under-ads"><div class="article-content"><p>${prose('一般網站')}</p></div></div>`;
     expect(extractArticle(html, 'https://example.com/news/1').bodyStatus).not.toBe('ok');
