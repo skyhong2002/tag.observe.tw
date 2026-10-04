@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MediaIcon from '@/components/MediaIcon';
+import SortIndicator from '@/components/SortIndicator';
+import TableScroller from '@/components/TableScroller';
 import { fetchSimilarity, periodQuery, type SimilarityData } from '@/lib/similarity';
+import { table } from '@/lib/table-styles';
 import { number, periodLabel, taipei } from '../format';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../query';
 import SimilarityTabs from '../SimilarityTabs';
@@ -82,7 +86,7 @@ const SORTS = {
   pending: (row: CoverageRow) => row.pending,
 } satisfies Record<string, (row: CoverageRow) => number | string>;
 type SortKey = keyof typeof SORTS;
-const cell = 'px-3 py-2 text-right tabular-nums';
+const cell = table.num;
 const count = (value: number) => <span className={value ? '' : 'text-zinc-400 dark:text-zinc-600'}>{number(value)}</span>;
 const percent = (value: number) => (value < 0 ? '—' : `${Math.round(value * 100)}%`);
 
@@ -107,16 +111,14 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
     return `/similarity/about/?${next}#coverage-title`;
   };
   const Th = ({ col, label, className = '' }: { col: SortKey; label: string; className?: string }) => (
-    <th className={`px-3 py-2 ${className}`} aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
+    <th className={`${table.cell} ${className}`} aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
       <Link
         href={sortLink(col)}
         scroll={false}
         className={`inline-flex items-center gap-0.5 whitespace-nowrap hover:text-brand-700 ${sort === col ? 'text-zinc-900 dark:text-zinc-100' : ''}`}
       >
         {label}
-        <span aria-hidden className={sort === col ? '' : 'invisible'}>
-          {dir === 'asc' ? '▲' : '▼'}
-        </span>
+        <SortIndicator active={sort === col} descending={dir === 'desc'} />
       </Link>
     </th>
   );
@@ -130,11 +132,11 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
           可比較是取得完整內文、長度足以比對的文章；缺漏是抓取失敗或內文過短，待抓是尚未處理。蕃新聞的聯播內容不納入統計。點欄名可排序。
         </p>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <TableScroller card label="各媒體擷取狀態表格，可左右捲動">
         <table className="w-full min-w-[48rem] text-sm">
           <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950">
             <tr>
-              <Th col="name" label="媒體" className="sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-950" />
+              <Th col="name" label="媒體" className={table.leadHead} />
               <Th col="total" label="本期文章" className="text-right" />
               <Th col="usable" label="可比較" className="text-right" />
               <Th col="share" label="可比較比例" className="w-[28%] min-w-40" />
@@ -148,15 +150,22 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
               const value = share(row);
               const low = value >= 0 && value < 0.8;
               return (
-                <tr
-                  key={row.media}
-                  className={`group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60 ${row.excludedFromStatistics ? 'text-zinc-500' : ''}`}
-                >
-                  <td className="sticky left-0 z-10 bg-white px-3 py-2 group-hover:bg-brand-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800">
-                    <MediaHoverLink media={row.media} icon={16} className="flex items-center gap-2 font-medium hover:underline">
-                      <span className="whitespace-nowrap">{row.name}</span>
+                <tr key={row.media} className={`${table.row} ${row.excludedFromStatistics ? 'text-zinc-500' : ''}`}>
+                  <td className={table.lead}>
+                    <MediaHoverLink
+                      media={row.media}
+                      icon={false}
+                      title={row.name}
+                      className={`${table.leadBox} flex flex-wrap items-center gap-x-2 gap-y-1 font-medium hover:underline`}
+                    >
+                      <span className="flex min-w-0 max-w-full items-center gap-2">
+                        <MediaIcon media={row.media} size={16} />
+                        <span className={table.leadText}>{row.name}</span>
+                      </span>
                       {row.excludedFromStatistics && (
-                        <span className="shrink-0 whitespace-nowrap rounded bg-zinc-100 px-1.5 py-px text-[11px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700">
+                        <span
+                          className={`${table.leadExtra} shrink-0 whitespace-nowrap rounded bg-zinc-100 px-1.5 py-px text-[11px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700`}
+                        >
                           排除統計
                         </span>
                       )}
@@ -164,7 +173,7 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
                   </td>
                   <td className={cell}>{count(row.total)}</td>
                   <td className={cell}>{count(row.usable)}</td>
-                  <td className="px-3 py-2" title={`${row.name}：可比較 ${number(row.usable)}／${number(row.total)} 篇`}>
+                  <td className={table.cell} title={`${row.name}：可比較 ${number(row.usable)}／${number(row.total)} 篇`}>
                     <div className="flex items-center gap-2">
                       <div className="h-2 flex-1" aria-hidden>
                         {value > 0 && (
@@ -188,19 +197,21 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
           </tbody>
           <tfoot className="border-t border-zinc-300 bg-zinc-50 font-medium dark:border-zinc-700 dark:bg-zinc-950">
             <tr>
-              <th scope="row" className="sticky left-0 z-10 bg-zinc-50 px-3 py-2 text-left font-medium dark:bg-zinc-950">
-                合計（不含排除統計）
+              <th scope="row" className={`${table.leadHead} text-left font-medium`}>
+                <div className={`${table.leadBox} truncate`} title="合計（不含排除統計）">
+                  合計（不含排除統計）
+                </div>
               </th>
               <td className={cell}>{number(sum('total'))}</td>
               <td className={cell}>{number(sum('usable'))}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{percent(sum('total') ? sum('usable') / sum('total') : -1)}</td>
+              <td className={table.num}>{percent(sum('total') ? sum('usable') / sum('total') : -1)}</td>
               <td className={cell}>{number(sum('indexed'))}</td>
               <td className={cell}>{number(sum('missing'))}</td>
               <td className={cell}>{number(sum('pending'))}</td>
             </tr>
           </tfoot>
         </table>
-      </div>
+      </TableScroller>
     </section>
   );
 }

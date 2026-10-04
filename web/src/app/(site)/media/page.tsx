@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import CountryFlag from '@/components/CountryFlag';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MediaIcon from '@/components/MediaIcon';
 import MediaTabs from '@/components/MediaTabs';
+import SortIndicator from '@/components/SortIndicator';
+import TableScroller from '@/components/TableScroller';
 import { API_ORIGIN, taipei } from '@/lib/api';
+import { table } from '@/lib/table-styles';
 
 export const revalidate = 120;
 export const metadata = { title: '媒體與文章數' };
@@ -104,11 +108,11 @@ function SevenDayCell({ value, since, partial }: { value: number; since: string 
     : null;
   return (
     <td
-      className={`px-3 py-2 text-right tabular-nums ${partial ? 'text-zinc-500 dark:text-zinc-500' : 'text-zinc-600'}`}
+      className={`${table.num} ${partial ? 'text-zinc-500 dark:text-zinc-500' : 'text-zinc-600'}`}
       title={partial && md ? `新系統 ${md} 才開始抓這家媒體，還不滿 7 天` : undefined}
     >
       {value.toLocaleString()}
-      {partial && md && <div className="text-[11px] leading-tight">{md} 起抓取</div>}
+      {partial && md && <div className="whitespace-nowrap text-[11px] leading-tight">{md} 起抓取</div>}
     </td>
   );
 }
@@ -171,16 +175,14 @@ export default async function MediaStatsPage({
   const sortLink = (col: SortKey) =>
     link({ sort: col, dir: sort === col ? (dir === 'asc' ? 'desc' : 'asc') : ASC_FIRST.has(col) ? 'asc' : 'desc' });
   const Th = ({ col, label, className = '' }: { col: SortKey; label: string; className?: string }) => (
-    <th className={`px-3 py-2 ${className}`} aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
+    <th className={`${table.cell} ${className}`} aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
       <Link
         href={sortLink(col)}
         scroll={false}
         className={`inline-flex items-center gap-0.5 whitespace-nowrap hover:text-brand-700 ${sort === col ? 'text-zinc-900 dark:text-zinc-100' : ''}`}
       >
         {label}
-        <span aria-hidden className={sort === col ? '' : 'invisible'}>
-          {dir === 'asc' ? '▲' : '▼'}
-        </span>
+        <SortIndicator active={sort === col} descending={dir === 'desc'} />
       </Link>
     </th>
   );
@@ -242,11 +244,11 @@ export default async function MediaStatsPage({
       <p className="text-xs text-zinc-600">
         藍綠標示沿用本站媒體分類，依媒體集團與一般認知歸類，用於首頁新聞量與事件頁的藍綠對照；未標示不代表中立。
       </p>
-      <div className="overflow-x-auto rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <TableScroller card label="媒體與文章數表格，可左右捲動">
         <table className="w-full min-w-[48rem] text-sm">
           <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950">
             <tr>
-              <Th col="name" label="媒體" className="sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-950" />
+              <Th col="name" label="媒體" className={table.leadHead} />
               <Th col="today" label="今日" className="text-right" />
               <Th col="last24h" label="24 小時" className="w-[32%] min-w-40" />
               <Th col="last7d" label="7 天" className="text-right" />
@@ -257,31 +259,43 @@ export default async function MediaStatsPage({
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {rows.map((r) => (
-              <tr key={r.media} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
-                <td className="sticky left-0 z-10 bg-white px-3 py-2 group-hover:bg-brand-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800">
-                  <MediaHoverLink media={r.media} icon={16} className="flex items-center gap-2 font-medium hover:underline">
-                    <span className="whitespace-nowrap">{r.title}</span>
-                    <CountryFlag code={r.countryCode} country={r.country} />
-                    {r.sourceKind === 'discovery' && (
-                      <span className="shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800">
-                        發現來源
+              <tr key={r.media} className={table.row}>
+                <td className={table.lead}>
+                  <div className={table.leadBox}>
+                    <MediaHoverLink
+                      media={r.media}
+                      icon={false}
+                      title={r.title}
+                      className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium hover:underline"
+                    >
+                      <span className="flex min-w-0 max-w-full items-center gap-2">
+                        <MediaIcon media={r.media} size={16} />
+                        <span className={table.leadText}>{r.title}</span>
                       </span>
-                    )}
-                    {campBadge(r) && (
-                      <span
-                        className={`shrink-0 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset ${campBadge(r)?.badge}`}
-                      >
-                        {campBadge(r)?.short}
+                      <span className={`${table.leadExtra} flex flex-wrap items-center gap-x-2 gap-y-1`}>
+                        <CountryFlag code={r.countryCode} country={r.country} />
+                        {r.sourceKind === 'discovery' && (
+                          <span className="shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800">
+                            發現來源
+                          </span>
+                        )}
+                        {campBadge(r) && (
+                          <span
+                            className={`shrink-0 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset ${campBadge(r)?.badge}`}
+                          >
+                            {campBadge(r)?.short}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </MediaHoverLink>
-                  <div className="text-xs text-zinc-600">
-                    {r.categoryLabel ?? '—'} · {r.schedule === 'off' ? '未啟用' : r.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
+                    </MediaHoverLink>
+                    <div className="hidden text-xs text-zinc-600 sm:block">
+                      {r.categoryLabel ?? '—'} · {r.schedule === 'off' ? '未啟用' : r.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
+                    </div>
                   </div>
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{r.today.toLocaleString()}</td>
+                <td className={table.num}>{r.today.toLocaleString()}</td>
                 <td
-                  className="px-3 py-2"
+                  className={table.cell}
                   title={`${r.title}：24 小時 ${r.last24h.toLocaleString()} 篇${r.pendingDate ? `，另 ${r.pendingDate} 篇發布時間待確認` : ''}`}
                 >
                   <div className="flex items-center gap-2">
@@ -297,16 +311,16 @@ export default async function MediaStatsPage({
                   </div>
                 </td>
                 <SevenDayCell value={r.last7d} since={r.collectingSince} partial={partialWeek(r)} />
-                <td className="px-3 py-2 text-right tabular-nums text-zinc-600">{pct(r.taggedShare24h)}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-zinc-600">{r.lastArticle ? taipei(r.lastArticle) : '—'}</td>
-                <td className="px-3 py-2">
+                <td className={`${table.num} text-zinc-600`}>{pct(r.taggedShare24h)}</td>
+                <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600`}>{r.lastArticle ? taipei(r.lastArticle) : '—'}</td>
+                <td className={table.cell}>
                   <StatusBadge status={r.status} />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
       <p className="text-xs text-zinc-600">
         國家／地區依媒體營運或在地發行版本標示，不是新聞發生地或母公司國籍；跨國團隊與待確認項目另行標示。
         「發現來源」的篇數是經該平台發現的原媒體文章；上方全站文章總數只按原媒體計算，不重複加總。

@@ -16,7 +16,10 @@ import {
   topicSourceKindLabels,
 } from '@/lib/media-crawlers.mts';
 import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
+import { table } from '@/lib/table-styles';
 import MediaHoverLink from './MediaHoverLink';
+import SortIndicator from './SortIndicator';
+import TableScroller from './TableScroller';
 
 const columns: Array<{ key: CrawlerSort; label: string }> = [
   { key: 'title', label: '媒體' },
@@ -121,13 +124,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
         ))}
         <p className="text-xs text-zinc-500">可多選；同組符合任一標籤，不同組交叉篩選。點欄名可切換升冪／降冪。</p>
       </section>
-      {/* Keyboard users can focus the overflow container to scroll horizontally. */}
-      <section
-        aria-label="爬蟲資訊表格，可左右捲動"
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable table region needs keyboard access.
-        tabIndex={0}
-        className="overflow-x-auto rounded-xl border border-zinc-300 dark:border-zinc-800"
-      >
+      <TableScroller card label="爬蟲資訊表格，可左右捲動">
         <table className="w-full whitespace-nowrap text-left text-xs">
           <thead className="bg-zinc-50 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
             <tr>
@@ -136,7 +133,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                   key={key}
                   scope="col"
                   aria-sort={sort === key ? (descending ? 'descending' : 'ascending') : 'none'}
-                  className="px-3 py-2"
+                  className={key === 'title' ? table.leadHead : table.cell}
                 >
                   <button
                     type="button"
@@ -147,7 +144,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                     }}
                   >
                     {label}
-                    <span aria-hidden="true">{sort === key ? (descending ? '↓' : '↑') : '↕'}</span>
+                    <SortIndicator active={sort === key} descending={descending} />
                   </button>
                 </th>
               ))}
@@ -160,14 +157,14 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
               const schedule = row.schedule === 'off' ? '未啟用' : row.schedule === 'hourly' ? '每小時' : '每 9 分鐘';
               return (
                 <Fragment key={row.media}>
-                  <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                    <td className="px-3 py-1.5">
-                      <div className="flex items-center gap-2">
+                  <tr className={table.row}>
+                    <td className={`${table.lead} py-1.5`}>
+                      <div className={`${table.leadBox} flex flex-wrap items-center gap-x-2 gap-y-0.5`}>
                         <MediaHoverLink
                           media={row.media}
                           title={row.title}
                           {...{ icon: false }}
-                          className="inline-flex items-center gap-2 font-medium hover:underline"
+                          className="flex min-w-0 max-w-full items-center gap-2 font-medium hover:underline"
                         >
                           {icon ? (
                             <Image
@@ -186,15 +183,15 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                               {row.title.slice(0, 1)}
                             </span>
                           )}
-                          <span className="max-w-40 truncate" title={`${row.title} · ${row.country}`}>
+                          <span className={`${table.leadText} sm:max-w-40`} title={`${row.title} · ${row.country}`}>
                             {row.title}
                           </span>
                         </MediaHoverLink>
-                        <span className="text-[10px] text-zinc-500">{schedule}</span>
+                        <span className={`${table.leadExtra} text-[10px] text-zinc-500`}>{schedule}</span>
                       </div>
                     </td>
                     {crawlerGroups.map(({ key, label }) => (
-                      <td key={key} className="px-3 py-1.5">
+                      <td key={key} className={`${table.cell} py-1.5`}>
                         <div
                           className="flex items-center gap-1"
                           title={
@@ -220,7 +217,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                         </div>
                       </td>
                     ))}
-                    <td className="px-3 py-1.5">
+                    <td className={`${table.cell} py-1.5`}>
                       <div className="flex items-center gap-3">
                         {row.crawler?.links.length ? (
                           row.crawler.links.map((link) => (
@@ -240,7 +237,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-1.5">
+                    <td className={`${table.cell} py-1.5`}>
                       {row.topics ? (
                         <button
                           type="button"
@@ -271,7 +268,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                   </tr>
                   {row.topics && expanded.includes(row.media) && (
                     <tr id={`topic-sources-${row.media}`} className="bg-zinc-50/60 dark:bg-zinc-900/40">
-                      <td colSpan={columns.length} className="whitespace-normal px-3 py-2">
+                      <td colSpan={columns.length} className={`${table.cell} whitespace-normal`}>
                         <TopicSources title={row.title} topics={row.topics} />
                       </td>
                     </tr>
@@ -281,14 +278,14 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
             })}
             {!rows.length && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-8 text-center text-zinc-500">
+                <td colSpan={columns.length} className="px-2 py-8 text-center text-zinc-500 sm:px-3">
                   沒有符合條件的媒體，請調整或清除篩選。
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </section>
+      </TableScroller>
     </div>
   );
 }

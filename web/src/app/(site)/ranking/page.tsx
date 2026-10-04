@@ -2,8 +2,11 @@ import Link from 'next/link';
 import MediaIcons from '@/components/MediaIcons';
 import PendingLabel from '@/components/PendingLabel';
 import RankingBasisNote from '@/components/RankingBasisNote';
+import SortIndicator from '@/components/SortIndicator';
 import Sparkline from '@/components/Sparkline';
+import TableScroller from '@/components/TableScroller';
 import { fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
+import { table } from '@/lib/table-styles';
 
 export const revalidate = 60;
 export const metadata = { title: '新聞關鍵字排行榜' };
@@ -68,7 +71,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     : [];
   const Th = ({ col, label, className = '', title }: { col: Col; label: string; className?: string; title?: string }) => (
     <th
-      className={`whitespace-nowrap px-3 py-2 ${className}`}
+      className={`whitespace-nowrap ${table.cell} ${className}`}
       title={title}
       aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}
     >
@@ -78,9 +81,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         className={`inline-flex items-center gap-0.5 hover:text-brand-700 ${sort === col ? 'text-zinc-900 dark:text-zinc-100' : ''}`}
       >
         {label}
-        <span aria-hidden className={sort === col ? '' : 'invisible'}>
-          {dir === 'asc' ? '▲' : '▼'}
-        </span>
+        <SortIndicator active={sort === col} descending={dir === 'desc'} />
       </Link>
     </th>
   );
@@ -124,120 +125,127 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       {!ranking ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">這個分類目前沒有資料。</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[56rem] text-sm">
-              <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950">
-                <tr>
-                  <th className="w-10 px-3 py-2 text-right">#</th>
-                  <Th col="tag" label="關鍵字" className="sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-950" />
-                  <Th col="burst" label="爆發力" className="w-24 text-right" title="相對 3／6／12／24／48 小時前的變化" />
-                  <Th col="change" label="變動" className="w-16 text-right" title="依分數的名次與 24 小時前相比" />
-                  <Th col="score" label="分數" className="w-20 text-right" title="媒體加權分數" />
-                  <Th col="count" label="篇數" className="w-16 text-right" />
-                  <Th col="trend" label="趨勢" className="w-28" title="24 小時平均篇數與 48 小時前的差值（篇／小時）" />
-                  <th className="w-[17rem] whitespace-nowrap px-3 py-2" title="同一篇報導最常同時出現的其他關鍵字">
-                    一起出現
-                  </th>
-                  <Th col="media" label="媒體" className="w-[30%]" title="報導的媒體家數" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {rows.map((e) => {
-                  const trend = e.trend ?? [];
-                  const delta = e.rank24h === null ? null : e.rank24h - e.rank;
-                  const related = (e.related ?? []).slice(0, RELATED_SHOWN);
-                  return (
-                    <tr key={e.tag} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
-                      <td className="px-3 py-2 text-right tabular-nums text-zinc-500">{e.position}</td>
-                      <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-3 py-2 group-hover:bg-brand-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800">
+        <TableScroller
+          card
+          label="關鍵字排行榜表格，可左右捲動"
+          footer={
+            ranking.entries.length >= limit && (
+              <div className="border-t border-zinc-300 p-3 text-center text-sm dark:border-zinc-800">
+                <Link
+                  href={link({ limit: String(limit + 50) })}
+                  scroll={false}
+                  className="text-brand-700 hover:underline dark:text-brand-400"
+                >
+                  <PendingLabel>顯示更多</PendingLabel>
+                </Link>
+              </div>
+            )
+          }
+        >
+          <table className="w-full min-w-[56rem] text-sm">
+            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950">
+              <tr>
+                {/* On phones the rank moves into the sticky keyword cell. */}
+                <th className={`hidden w-10 text-right sm:table-cell ${table.cell}`}>#</th>
+                <Th col="tag" label="關鍵字" className={table.leadHead} />
+                <Th col="burst" label="爆發力" className="w-24 text-right" title="相對 3／6／12／24／48 小時前的變化" />
+                <Th col="change" label="變動" className="w-16 text-right" title="依分數的名次與 24 小時前相比" />
+                <Th col="score" label="分數" className="w-20 text-right" title="媒體加權分數" />
+                <Th col="count" label="篇數" className="w-16 text-right" />
+                <Th col="trend" label="趨勢" className="w-28" title="24 小時平均篇數與 48 小時前的差值（篇／小時）" />
+                <th className={`w-[17rem] whitespace-nowrap ${table.cell}`} title="同一篇報導最常同時出現的其他關鍵字">
+                  一起出現
+                </th>
+                <Th col="media" label="媒體" className="w-[30%]" title="報導的媒體家數" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {rows.map((e) => {
+                const trend = e.trend ?? [];
+                const delta = e.rank24h === null ? null : e.rank24h - e.rank;
+                const related = (e.related ?? []).slice(0, RELATED_SHOWN);
+                return (
+                  <tr key={e.tag} className={table.row}>
+                    <td className={`hidden text-zinc-500 sm:table-cell ${table.num}`}>{e.position}</td>
+                    <td className={table.lead}>
+                      <div className={`${table.leadBox} flex items-center gap-2`}>
+                        <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 sm:hidden">{e.position}</span>
                         <Link
                           href={`/tag/${encodeURIComponent(e.tag)}`}
-                          className="font-medium text-brand-700 hover:underline dark:text-brand-400"
+                          className={`${table.leadText} font-medium text-brand-700 hover:underline dark:text-brand-400`}
                         >
                           {e.tag}
                         </Link>
-                      </td>
-                      <td
-                        title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
-                        className={`px-3 py-2 text-right tabular-nums ${e.burst !== null && e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}
-                      >
-                        {e.burst?.toFixed(1) ?? '—'}
-                      </td>
-                      <td
-                        className="px-3 py-2 text-right text-xs tabular-nums"
-                        title={
-                          e.new
-                            ? '24 小時前不在榜上'
-                            : delta === null
-                              ? '沒有可比較的 24 小時前快照'
-                              : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`
-                        }
-                      >
-                        {e.new ? (
-                          <span className="rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-                            新
+                      </div>
+                    </td>
+                    <td
+                      title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
+                      className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}
+                    >
+                      {e.burst?.toFixed(1) ?? '—'}
+                    </td>
+                    <td
+                      className={`${table.num} text-xs`}
+                      title={
+                        e.new
+                          ? '24 小時前不在榜上'
+                          : delta === null
+                            ? '沒有可比較的 24 小時前快照'
+                            : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`
+                      }
+                    >
+                      {e.new ? (
+                        <span className="rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                          新
+                        </span>
+                      ) : delta === null ? (
+                        <span className="text-zinc-400">—</span>
+                      ) : delta > 0 ? (
+                        <span className="text-rose-600">▲{delta}</span>
+                      ) : delta < 0 ? (
+                        <span className="text-sky-600">▼{-delta}</span>
+                      ) : (
+                        <span className="text-zinc-400">＝</span>
+                      )}
+                    </td>
+                    <td className={table.num}>{e.normalized.toFixed(1)}</td>
+                    <td className={`${table.num} text-zinc-600`}>{e.count}</td>
+                    <td className="px-2 py-1 sm:px-3">
+                      <Sparkline values={trend.map((p) => p.average24h)} />
+                    </td>
+                    <td
+                      className={`max-w-0 truncate whitespace-nowrap text-xs ${table.cell}`}
+                      title={
+                        related.length
+                          ? related.map((r) => `${r.tag} ${r.count} 篇（${Math.round(r.share * 100)}%）`).join('\n')
+                          : undefined
+                      }
+                    >
+                      {related.length ? (
+                        related.map((r, i) => (
+                          <span key={r.tag}>
+                            {i > 0 && <span className="text-zinc-400">、</span>}
+                            <Link
+                              href={`/tag/${encodeURIComponent(r.tag)}`}
+                              className="text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
+                            >
+                              {r.tag}
+                            </Link>
                           </span>
-                        ) : delta === null ? (
-                          <span className="text-zinc-400">—</span>
-                        ) : delta > 0 ? (
-                          <span className="text-rose-600">▲{delta}</span>
-                        ) : delta < 0 ? (
-                          <span className="text-sky-600">▼{-delta}</span>
-                        ) : (
-                          <span className="text-zinc-400">＝</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{e.normalized.toFixed(1)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-zinc-600">{e.count}</td>
-                      <td className="px-3 py-1">
-                        <Sparkline values={trend.map((p) => p.average24h)} />
-                      </td>
-                      <td
-                        className="max-w-0 truncate whitespace-nowrap px-3 py-2 text-xs"
-                        title={
-                          related.length
-                            ? related.map((r) => `${r.tag} ${r.count} 篇（${Math.round(r.share * 100)}%）`).join('\n')
-                            : undefined
-                        }
-                      >
-                        {related.length ? (
-                          related.map((r, i) => (
-                            <span key={r.tag}>
-                              {i > 0 && <span className="text-zinc-400">、</span>}
-                              <Link
-                                href={`/tag/${encodeURIComponent(r.tag)}`}
-                                className="text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
-                              >
-                                {r.tag}
-                              </Link>
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        )}
-                      </td>
-                      <td className="max-w-0 px-3 py-2">
-                        <MediaIcons media={e.media} info={media} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {ranking.entries.length >= limit && (
-            <div className="border-t border-zinc-300 p-3 text-center text-sm dark:border-zinc-800">
-              <Link
-                href={link({ limit: String(limit + 50) })}
-                scroll={false}
-                className="text-brand-700 hover:underline dark:text-brand-400"
-              >
-                <PendingLabel>顯示更多</PendingLabel>
-              </Link>
-            </div>
-          )}
-        </div>
+                        ))
+                      ) : (
+                        <span className="text-zinc-400">—</span>
+                      )}
+                    </td>
+                    <td className={`max-w-0 ${table.cell}`}>
+                      <MediaIcons media={e.media} info={media} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </TableScroller>
       )}
     </div>
   );

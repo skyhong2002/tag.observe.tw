@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
+import { table } from '@/lib/table-styles';
 
 // Human-readable API docs, rendered from the gateway's own OpenAPI document
 // (app/src/v1/openapi.ts) so this page never drifts from the endpoints.
@@ -120,7 +121,7 @@ function Endpoint({ path, op, example, tools }: { path: string; op: Operation; e
       )}
       {op.parameters.length > 0 && (
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-left text-sm">
+          <table className={`w-full text-left text-sm sm:min-w-[36rem] ${table.stack}`}>
             <thead className="text-xs text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className={cellClass}>參數</th>
@@ -133,12 +134,14 @@ function Endpoint({ path, op, example, tools }: { path: string; op: Operation; e
                 const s = p.schema;
                 return (
                   <tr key={`${p.in}:${p.name}`}>
-                    <td className={`${cellClass} whitespace-nowrap font-mono`}>
+                    <td className={`${cellClass} whitespace-nowrap font-mono`} data-label="參數">
                       {p.name}
                       {p.in === 'path' && <span className="ml-1 font-sans text-xs text-zinc-500">（路徑）</span>}
                     </td>
-                    <td className={`${cellClass} font-mono text-xs text-zinc-600 dark:text-zinc-400`}>{tools.typeLabel(s)}</td>
-                    <td className={cellClass}>
+                    <td className={`${cellClass} font-mono text-xs text-zinc-600 dark:text-zinc-400`} data-label="型別">
+                      {tools.typeLabel(s)}
+                    </td>
+                    <td className={cellClass} data-label="說明">
                       {p.description}
                       {s.minimum !== undefined && s.maximum !== undefined && `，${s.minimum}–${s.maximum}`}
                       {s.default !== undefined && (
@@ -171,7 +174,7 @@ function Endpoint({ path, op, example, tools }: { path: string; op: Operation; e
               <span className="ml-2 text-xs font-normal text-zinc-500">{rows.length} 個</span>
             </summary>
             <div className="overflow-x-auto px-3 pb-3">
-              <table className="w-full min-w-[36rem] text-left text-sm">
+              <table className={`w-full text-left text-sm sm:min-w-[36rem] ${table.stack}`}>
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.field}>

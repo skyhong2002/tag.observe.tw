@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
+import SortIndicator from '@/components/SortIndicator';
+import TableScroller from '@/components/TableScroller';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
+import { table } from '@/lib/table-styles';
 
 type SortKey = 'name' | 'media' | 'articles' | 'compared' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'cited';
 // Click a heading to sort, click again to flip, like the media tables.
@@ -76,7 +79,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
     setShown(PAGE);
   };
   const visible = filtered.slice(0, shown);
-  const cell = 'px-2 py-2 text-right tabular-nums';
+  const cell = table.num;
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
@@ -113,7 +116,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
         </label>
         <p className="py-2 text-zinc-500 dark:text-zinc-400">符合 {number(filtered.length)} 人</p>
       </div>
-      <div className="overflow-x-auto">
+      <TableScroller label="記者表格，可左右捲動">
         <table className="w-full min-w-[44rem] border-collapse text-sm">
           <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -122,7 +125,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
                   key={column.key}
                   scope="col"
                   aria-sort={sort === column.key ? (descending ? 'descending' : 'ascending') : 'none'}
-                  className={`${column.numeric ? cell : 'px-2 py-2'} font-medium`}
+                  className={`${column.numeric ? cell : column.key === 'name' ? table.leadHead : table.cell} font-medium`}
                 >
                   <button
                     type="button"
@@ -133,7 +136,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
                     } ${sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''}`}
                   >
                     {column.label}
-                    <span aria-hidden="true">{sort === column.key ? (descending ? '↓' : '↑') : '↕'}</span>
+                    <SortIndicator active={sort === column.key} descending={descending} />
                   </button>
                 </th>
               ))}
@@ -141,19 +144,22 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
             {visible.map((row) => (
-              <tr key={row.name} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/60">
-                <td className="px-2 py-2">
-                  <Link
-                    href={journalistHref(row.name)}
-                    className="font-medium hover:text-brand-700 hover:underline dark:hover:text-brand-400"
-                  >
-                    {row.name}
-                  </Link>
+              <tr key={row.name} className={table.row}>
+                <td className={table.lead}>
+                  <div className={table.leadBox}>
+                    <Link
+                      href={journalistHref(row.name)}
+                      className="block truncate font-medium hover:text-brand-700 hover:underline dark:hover:text-brand-400"
+                      title={row.name}
+                    >
+                      {row.name}
+                    </Link>
+                  </div>
                 </td>
-                <td className="px-2 py-2">
+                <td className={table.cell}>
                   <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                     {row.media.slice(0, 4).map((outlet) => (
-                      <li key={outlet.media} className="flex items-center gap-1">
+                      <li key={outlet.media} className="flex items-center gap-1 whitespace-nowrap">
                         <MediaIcon media={outlet.media} title={outlet.name} size={14} />
                         <span>{outlet.name}</span>
                         <span className="tabular-nums text-zinc-400">{outlet.count}</span>
@@ -175,7 +181,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
       {filtered.length > shown && (
         <div className="mt-3 text-center">
           <button

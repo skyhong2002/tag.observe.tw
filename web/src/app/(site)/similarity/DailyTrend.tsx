@@ -5,7 +5,10 @@ import * as echarts from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import SortIndicator from '@/components/SortIndicator';
+import TableScroller from '@/components/TableScroller';
 import { fetchDaily, type SimilarityDaily } from '@/lib/similarity';
+import { table } from '@/lib/table-styles';
 
 echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
 
@@ -170,10 +173,10 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
       setDescending(key !== 'name');
     }
   };
-  const cell = 'px-2 py-2 text-right tabular-nums';
+  const cell = table.num;
   const muted = (value: number) => (value ? '' : 'text-zinc-300 dark:text-zinc-700');
   return (
-    <div className="overflow-x-auto">
+    <TableScroller label="各媒體每日比對表格，可左右捲動">
       <table className="w-full min-w-[40rem] border-collapse text-sm">
         <caption className="sr-only">期間內各媒體的比對篇數、相似配對與引用</caption>
         <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
@@ -183,7 +186,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                 key={column.key}
                 scope="col"
                 aria-sort={sort === column.key ? (descending ? 'descending' : 'ascending') : 'none'}
-                className={`${column.numeric ? cell : 'px-2 py-2'} font-medium`}
+                className={`${column.numeric ? cell : column.key === 'name' ? table.leadHead : table.cell} font-medium`}
               >
                 <button
                   type="button"
@@ -194,7 +197,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                   } ${sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''}`}
                 >
                   {column.label}
-                  <span aria-hidden="true">{sort === column.key ? (descending ? '↓' : '↑') : '↕'}</span>
+                  <SortIndicator active={sort === column.key} descending={descending} />
                 </button>
               </th>
             ))}
@@ -202,11 +205,13 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
         </thead>
         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
           {rows.map((row) => (
-            <tr key={row.media} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/60">
-              <th scope="row" className="px-2 py-2 text-left font-normal">
-                <MediaHoverLink media={row.media} className={linkStyle}>
-                  {row.name}
-                </MediaHoverLink>
+            <tr key={row.media} className={table.row}>
+              <th scope="row" className={`${table.lead} text-left font-normal`}>
+                <div className={table.leadBox}>
+                  <MediaHoverLink media={row.media} title={row.name} className={`${linkStyle} flex items-center gap-1.5`}>
+                    <span className={table.leadText}>{row.name}</span>
+                  </MediaHoverLink>
+                </div>
               </th>
               <td className={`${cell} ${muted(row.articles)}`}>{number(row.articles)}</td>
               <td className={`${cell} ${muted(row.pairs)}`}>{number(row.pairs)}</td>
@@ -220,7 +225,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
         </tbody>
       </table>
       {!rows.length && <p className="py-8 text-center text-sm text-zinc-500">這段期間沒有媒體資料。</p>}
-    </div>
+    </TableScroller>
   );
 }
 

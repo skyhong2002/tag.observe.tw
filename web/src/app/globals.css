@@ -48,3 +48,80 @@ select:not([multiple]):not([size]) {
   background-size: 1rem 1rem;
   padding-right: 2.5rem;
 }
+
+/* Data tables: see lib/table-styles.ts. Colour tokens follow the frame's tone.
+   Kept outside the cascade layers so these rules win over per-cell utilities. */
+.table-frame {
+  --table-bg: var(--background);
+  --table-head-bg: var(--background);
+  --table-hover-bg: var(--color-zinc-50);
+}
+[data-theme="dark"] .table-frame {
+  --table-hover-bg: var(--color-zinc-900);
+}
+.table-frame.table-card {
+  --table-bg: #fff;
+  --table-head-bg: var(--color-zinc-50);
+  --table-hover-bg: var(--color-brand-50);
+}
+[data-theme="dark"] .table-frame.table-card {
+  --table-bg: var(--color-zinc-900);
+  --table-head-bg: var(--color-zinc-950);
+  --table-hover-bg: var(--color-zinc-800);
+}
+/* Once the table has been scrolled, the sticky lead column casts a shadow over what slides under it. */
+.table-scroller[data-scroll-x="middle"] .table-lead,
+.table-scroller[data-scroll-x="end"] .table-lead {
+  box-shadow: 6px 0 8px -6px rgb(0 0 0 / 0.25);
+}
+[data-theme="dark"] .table-scroller[data-scroll-x="middle"] .table-lead,
+[data-theme="dark"] .table-scroller[data-scroll-x="end"] .table-lead {
+  box-shadow: 6px 0 8px -6px rgb(0 0 0 / 0.7);
+}
+/* Phones: cap the sticky lead column, and collapse it further once the table is scrolled sideways. */
+@media (width < 40rem) {
+  .table-lead-box {
+    max-width: 9.5rem;
+    transition: max-width 0.2s ease;
+  }
+  .table-scroller[data-scroll-x="middle"] .table-lead-box,
+  .table-scroller[data-scroll-x="end"] .table-lead-box {
+    max-width: 5.5rem;
+  }
+  .table-scroller[data-scroll-x="middle"] .table-lead-extra,
+  .table-scroller[data-scroll-x="end"] .table-lead-extra {
+    display: none;
+  }
+}
+/* Narrow text tables stack each row on phones, printing the column heading before the cell. */
+@media (width < 40rem) {
+  .table-stack,
+  .table-stack tbody,
+  .table-stack tr,
+  .table-stack td {
+    display: block;
+  }
+  .table-stack thead {
+    display: none;
+  }
+  .table-stack tr {
+    padding-block: 0.5rem;
+    border-top: 1px solid var(--color-zinc-200);
+  }
+  [data-theme="dark"] .table-stack tr {
+    border-top-color: var(--color-zinc-800);
+  }
+  .table-stack td {
+    padding: 0.125rem 0;
+    white-space: normal;
+  }
+  .table-stack td[data-label]::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 3rem;
+    margin-right: 0.5rem;
+    font-size: 0.75rem;
+    font-family: var(--font-sans);
+    color: var(--color-zinc-500);
+  }
+}

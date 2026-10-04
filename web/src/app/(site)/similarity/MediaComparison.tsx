@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
+import SortIndicator from '@/components/SortIndicator';
+import TableScroller from '@/components/TableScroller';
 import type { CitationDirection, GraphSelection, RelationshipMode } from '@/lib/graph-evidence.mts';
 import { nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityEdge, SimilarityNode } from '@/lib/similarity';
+import { table } from '@/lib/table-styles';
 
 type SortKey = 'name' | 'articles' | 'earliest' | 'later' | 'outgoing' | 'incoming';
 const columns: { key: SortKey; label: string }[] = [
@@ -83,7 +86,7 @@ export default function MediaComparison({
       <p role="status" className="text-xs text-zinc-500">
         符合 {filtered.length} 家 · 沿用圖上媒體篩選 · 篇數涵蓋本期全部關係
       </p>
-      <div className="overflow-x-auto">
+      <TableScroller label="各家媒體關係表格，可左右捲動">
         <table className="w-full min-w-[1040px] border-collapse text-sm">
           <thead className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800">
             <tr>
@@ -92,7 +95,7 @@ export default function MediaComparison({
                   key={column.key}
                   scope="col"
                   aria-sort={sort === column.key ? (descending ? 'descending' : 'ascending') : 'none'}
-                  className={`px-3 py-3 font-medium ${column.key === 'name' ? 'text-left' : 'text-right'}`}
+                  className={`py-3 font-medium ${column.key === 'name' ? `${table.leadHead} text-left` : table.num}`}
                 >
                   <button
                     type="button"
@@ -102,11 +105,11 @@ export default function MediaComparison({
                     }}
                     className={`whitespace-nowrap hover:text-brand-700 ${sort === column.key ? 'text-brand-700 dark:text-brand-400' : ''}`}
                   >
-                    {column.label} <span aria-hidden="true">{sort === column.key ? (descending ? '↓' : '↑') : '↕'}</span>
+                    {column.label} <SortIndicator active={sort === column.key} descending={descending} />
                   </button>
                 </th>
               ))}
-              <th scope="col" className="px-3 py-3 text-left font-medium">
+              <th scope="col" className={`${table.cell} py-3 text-left font-medium`}>
                 主要關係對象
                 <span className="ml-2 font-normal">
                   {focus && <span className="text-zinc-700 dark:text-zinc-300">{focus.label} · </span>}
@@ -120,25 +123,25 @@ export default function MediaComparison({
             {filtered.map((row) => {
               const relationships = focus ? row.relationships.filter((edge) => focus.matches(edge, row.id)) : row.relationships;
               return (
-                <tr key={row.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/60">
-                  <th scope="row" className="px-3 py-2.5 text-left font-normal">
+                <tr key={row.id} className={table.row}>
+                  <th scope="row" className={`${table.lead} py-2.5 text-left font-normal`}>
                     <button
                       type="button"
                       onClick={() => onSelect({ node: row.id }, 'all', 'all')}
-                      className="flex items-center gap-2.5 whitespace-nowrap text-left hover:text-brand-700 dark:hover:text-brand-400"
+                      className={`${table.leadBox} flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-left hover:text-brand-700 dark:hover:text-brand-400`}
                     >
-                      <MediaIcon media={row.id} title={row.name} size={22} />
-                      <span className="font-medium">{row.name}</span>
-                      {row.external && <span className="text-[11px] text-zinc-500">僅引用來源</span>}
+                      <span className="flex min-w-0 max-w-full items-center gap-2.5">
+                        <MediaIcon media={row.id} title={row.name} size={22} />
+                        <span className={`${table.leadText} font-medium`}>{row.name}</span>
+                      </span>
+                      {row.external && <span className={`${table.leadExtra} whitespace-nowrap text-[11px] text-zinc-500`}>僅引用來源</span>}
                     </button>
                   </th>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {row.external ? <span title="未收錄本期內文">—</span> : number(row.articles)}
-                  </td>
+                  <td className={`${table.num} py-2.5`}>{row.external ? <span title="未收錄本期內文">—</span> : number(row.articles)}</td>
                   {(['earliest', 'later', 'outgoing', 'incoming'] as const).map((key) => {
                     const similar = key === 'earliest' || key === 'later';
                     return (
-                      <td key={key} className="px-3 py-2.5 text-right tabular-nums">
+                      <td key={key} className={`${table.num} py-2.5`}>
                         {row[key] ? (
                           <button
                             type="button"
@@ -160,7 +163,7 @@ export default function MediaComparison({
                       </td>
                     );
                   })}
-                  <td className="px-3 py-2.5">
+                  <td className={`${table.cell} py-2.5`}>
                     <div className="flex gap-1.5 whitespace-nowrap">
                       {relationships.slice(0, 3).map((edge) => {
                         const outgoing = edge.source === row.id;
@@ -194,7 +197,7 @@ export default function MediaComparison({
             })}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
       {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>}
       <p className="text-xs leading-6 text-zinc-500">
         分析篇數為本期已完成比對的內文；同組最早、同組較晚、引用與被引用皆依各欄文章去重，涵蓋本期與所有媒體的關係，不隨圖上篩選改變；主要關係對象只列圖上媒體。同組指內文相近的同一組報導：同組最早是該組最早刊出的那篇，同組較晚是同組已有更早刊出的報導。主要關係對象依關係篇數列出前三項；依同組最早、同組較晚、引用他媒或被他媒引用排序時，只列該類關係的對象。箭頭指向同組最早或被引用的一方，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創；相近內文也可能來自通訊社稿或授權轉載。
