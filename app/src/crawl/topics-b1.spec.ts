@@ -85,3 +85,20 @@ describe('報導者', () => {
     );
   });
 });
+
+describe('CTWANT', () => {
+  it('pages the 議題 list and reads the 永續 menu packages as 專題', () => {
+    const r = rule('ctwant');
+    expect(r.kind).toBe('topic');
+    expect(r.paginate?.url(3)).toBe('https://www.ctwant.com/topic/?page=3');
+    const nav = listing('ctwant', 'https://www.ctwant.com/');
+    const html = `<ul><li class="m-navbar__list__item">
+            永續
+            <div class="m-navbar__arrow"></div><ul class="m-navbar__subnav"><li><a href="/topic/42/" class="m-navbar__subnav__item"><span>
+                    論壇
+                  </span></a></li><li><a href="/category/x/">新聞</a></li></ul></li></ul>
+      <div class="p-topic__list"><a href="/topic/287/">陳幸妤驚傳婚變</a></div>`;
+    expect(extractTopics(html, nav)).toEqual([{ url: 'https://www.ctwant.com/topic/42/', title: '永續論壇', image: null, category: null }]);
+    expect(nav.kind).toBe('feature');
+  });
+});

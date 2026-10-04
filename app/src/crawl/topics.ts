@@ -208,6 +208,23 @@ export const TOPIC_RULES: TopicRule[] = [
     scope: '.p-topic__list',
     image: 'img.cover',
     title: heading,
+    // 議題 with an article count, newest update first (5 a page, ~58 pages);
+    // past page 12 they have been quiet for months.
+    kind: 'topic',
+    paginate: { url: (n) => `https://www.ctwant.com/topic/?page=${n}`, max: 12 },
+    listings: [
+      {
+        // The 永續 menu's 2023 論壇/新聞/影音 packages.
+        url: 'https://www.ctwant.com/',
+        pattern: /^\/topic\/\d+\/?$/,
+        scope: '.m-navbar__subnav',
+        kind: 'feature',
+        title: (a) => {
+          const section = a.closest('.m-navbar__list__item').contents().first().text().trim();
+          return `${section}${textOf(a)}`;
+        },
+      },
+    ],
   },
   {
     media: 'taisounds',
