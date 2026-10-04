@@ -420,6 +420,9 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://static.ctee.com.tw/img/ctee-logo-main.png?20260825',
     pattern: /ctee\.com\.tw\/topic\/[^/?#]+\/\d+-\d+|topic\.ctee\.com\.tw\/[^/?#]+\/?$/,
     title: heading,
+    // Annual and monthly packages (people2026, 上市櫃8月營收, 年度好書); www /topic/
+    // pages answer 403, so story dates could not classify them anyway.
+    kind: 'feature',
   },
   {
     media: 'chinatimes',
