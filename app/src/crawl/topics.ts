@@ -439,6 +439,9 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/cnyes.png',
     pattern: /^https:\/\/topics\.cnyes\.com\/[^/?#]+\/?$/,
     title: heading,
+    // Every topics.cnyes.com microsite is an advertiser's package (CME, funds, IPOs).
+    kind: 'feature',
+    sponsored: () => true,
   },
   {
     media: 'shoppingdesign',
