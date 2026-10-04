@@ -98,89 +98,6 @@ function CampShareBar({ share }: { share: CampShare }) {
   );
 }
 
-/** One linked number per section of the site, so the front page shows the
- *  whole thing at a glance and every tile is a way in. */
-function Overview({
-  articles,
-  outlets,
-  events,
-  fresh,
-  topTag,
-  journalists,
-  graph,
-  topics,
-}: {
-  articles: number | null;
-  outlets: number | null;
-  events: number;
-  fresh: number;
-  topTag: RankingEntry | null;
-  journalists: JournalistBrief | null;
-  graph: GraphSummary | null;
-  topics: { outlets: number; today: number; latest: FeedTopic[] } | null;
-}) {
-  const tiles: Array<{ href: string; label: string; value: string; unit: string; sub: string }> = [
-    {
-      href: '/media/',
-      label: '媒體',
-      value: articles?.toLocaleString() ?? '—',
-      unit: '篇新聞',
-      sub: outlets ? `24 小時 · 固定基準 ${outlets} 家` : '資料暫時無法取得',
-    },
-    {
-      href: '/event/',
-      label: '事件表',
-      value: events ? String(events) : '—',
-      unit: '件事',
-      sub: events ? (fresh ? `本小時 · ${fresh} 件新上榜` : '本小時 · 無新上榜') : '等待分群',
-    },
-    {
-      href: '/ranking/?category=news',
-      label: '關鍵字',
-      value: topTag?.tag ?? '—',
-      unit: '',
-      sub: topTag ? `升溫第一 · 爆發力 ${topTag.burst?.toFixed(1) ?? '—'}` : '排行更新中',
-    },
-    {
-      href: '/journalist/',
-      label: '記者',
-      value: journalists?.totals.journalists.toLocaleString() ?? '—',
-      unit: '位具名記者',
-      sub: journalists ? `${journalists.hours} 小時 · ${journalists.totals.articles.toLocaleString()} 篇署名` : '資料整理中',
-    },
-    {
-      href: '/similarity/',
-      label: '新聞關係圖',
-      value: graph ? graph.similarityEdges.toLocaleString() : '—',
-      unit: '條相似關係',
-      sub: graph ? `${graph.hours} 小時 · ${graph.outlets} 家媒體 · ${graph.citationEdges} 條引用` : '比對整理中',
-    },
-    {
-      href: '/topic/',
-      label: '議題表',
-      value: topics ? String(topics.today) : '—',
-      unit: '個新專題',
-      sub: topics ? `24 小時 · 追蹤 ${topics.outlets} 家媒體` : '資料整理中',
-    },
-  ];
-  return (
-    <nav className={styles.tiles} aria-label="各單元概況">
-      {tiles.map((t) => (
-        <Link key={t.href} href={t.href} className={styles.tile}>
-          <span className={styles.tileLabel}>
-            {t.label} <Arrow />
-          </span>
-          <span className={styles.tileValue}>
-            {t.value}
-            {t.unit && <span>{t.unit}</span>}
-          </span>
-          <span className={styles.tileSub}>{t.sub}</span>
-        </Link>
-      ))}
-    </nav>
-  );
-}
-
 /** Outlet split for one story, drawn from the event snapshot's coverage. */
 function Distribution({ coverage, compact = false }: { coverage: EventCoverage | null; compact?: boolean }) {
   if (!coverage || coverage.outlets.length === 0) return <span className={styles.muted}>報導分布暫無資料</span>;
@@ -442,17 +359,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </form>
           </search>
         </div>
-
-        <Overview
-          articles={ranking?.snapshot.articleCount ?? null}
-          outlets={ranking?.snapshot.basis.media.length ?? null}
-          events={events.length}
-          fresh={events.filter((e) => e.prevRank === null).length}
-          topTag={ranking?.entries[0] ?? null}
-          journalists={data.journalists}
-          graph={data.graph}
-          topics={data.topics}
-        />
 
         {data.campShare && <CampShareBar share={data.campShare} />}
 

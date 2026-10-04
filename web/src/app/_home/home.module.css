@@ -173,14 +173,6 @@
 .sectionHeading > a { font-size: 12px; color: var(--accent); white-space: nowrap; }
 .sectionHeadingLater { margin-top: 28px; }
 
-/* One tile per section of the site. */
-.tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-.tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
-.tile:hover { border-color: var(--accent); background: var(--tint); }
-.tileLabel { display: flex; justify-content: space-between; font-size: 12px; color: var(--accent); font-weight: 500; }
-.tileValue { font-size: 22px; font-weight: 600; letter-spacing: -.5px; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tileValue > span { font-size: 11px; font-weight: 400; letter-spacing: 0; margin-left: 4px; color: var(--muted); }
-.tileSub { font-size: 11px; line-height: 1.5; color: var(--muted); }
 
 /* Outlet icons folded away so the share bar stays one line. */
 /* Two rows of icons per camp until expanded (26px icons, 6px gaps). */
@@ -246,14 +238,11 @@
 .topicBody p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; color: var(--muted); }
 
 @media (max-width: 1000px) {
-  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .band { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
-  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .tileValue { font-size: 19px; }
   .graphBody { grid-template-columns: minmax(0, 1fr); }
 }
 .shareRow { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
