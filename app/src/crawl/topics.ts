@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { cwNavTopics, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { cwNavTopics, insideFeatures, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -389,6 +389,9 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /\/feature\/[^/?#]+$/,
     scope: '.post_list',
     title: (a) => a.closest('.post_list_item').find('.post_title').text().trim() || textOf(a),
+    extract: insideFeatures,
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.inside.com.tw/features?page=${n}`, max: 10 },
   },
   {
     media: 'nownews',

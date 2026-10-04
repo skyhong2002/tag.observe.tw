@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FetchRequest } from './fetch.ts';
-import { cwNavTopics, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { cwNavTopics, insideFeatures, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
@@ -188,6 +188,26 @@ describe('天下', () => {
     expect(cwNavTopics(html, nav).map((t) => [t.url, t.kind])).toEqual([
       ['https://www.cw.com.tw/feature/topic/CW-podcast', 'topic'],
       ['https://www.cw.com.tw/feature/topic/aging-special-jp', undefined],
+    ]);
+  });
+});
+
+describe('Inside', () => {
+  it('marks SPONSORED cards and reads the podcast as a 議題', () => {
+    const card = (slug: string, title: string, extra = '', label = '自製專題') =>
+      `<div class="post_list_item"><a class="post_cover" href="https://www.inside.com.tw/feature/${slug}"><img src="https://img.example/${slug}.jpg">${extra}</a>
+        <div class="post_list_item_content"><h3 class="post_title"><a href="https://www.inside.com.tw/feature/${slug}">${title}</a></h3><h4>${label}</h4></div></div>`;
+    const html = `<a class="primary_nav_child_item" href="https://www.inside.com.tw/feature/aws-tw">雲端服務趨勢</a>
+      <div class="post_list">${card('side-chat', '塞掐 Side Chat：最科技的Podcast節目')}${card(
+        'ntpc2025',
+        '新北青年進行式',
+        '<div class="sponsored_label left top">SPONSORED</div>',
+        '贊助專題 Supported By',
+      )}${card('energy-crisis', '能源焦慮')}</div>`;
+    expect(insideFeatures(html, rule('inside')).map((t) => [t.url.split('/').pop(), t.kind, t.sponsored, t.category])).toEqual([
+      ['side-chat', 'topic', false, '自製專題'],
+      ['ntpc2025', undefined, true, '贊助專題 Supported By'],
+      ['energy-crisis', undefined, false, '自製專題'],
     ]);
   });
 });

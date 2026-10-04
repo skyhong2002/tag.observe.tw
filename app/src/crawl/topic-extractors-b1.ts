@@ -52,6 +52,33 @@ export function taisoundsTopics(body: string, rule: TopicRule): TopicItem[] {
   return extractTopics(html, rule);
 }
 
+/** Inside cards label brand packages "SPONSORED" / 贊助專題; the podcast is a running 議題. */
+export function insideFeatures(html: string, rule: TopicRule): TopicItem[] {
+  const $ = cheerio.load(html);
+  const out = new Map<string, TopicItem>();
+  $(rule.scope ?? 'body')
+    .find('.post_list_item')
+    .each((_, el) => {
+      const card = $(el);
+      const a = card.find('.post_title a[href]').first();
+      const href = cleanTopicHref(a.attr('href') ?? '');
+      const url = href && rule.pattern.test(href) ? resolveUrl(href, rule.url) : null;
+      const title = clip(a.text() || a.attr('title') || '');
+      if (!url || title.length < 2 || out.has(url)) return;
+      const img = card.find('img').first().attr('src');
+      const label = clip(card.find('.post_list_item_content > h4').first().text());
+      out.set(url, {
+        url: stripTracking(url),
+        title,
+        image: img ? resolveUrl(img, rule.url) : null,
+        category: label || null,
+        sponsored: card.find('.sponsored_label').length > 0 || /贊助|Supported By/i.test(label),
+        ...(/podcast/i.test(title) ? { kind: 'topic' as const } : {}),
+      });
+    });
+  return [...out.values()];
+}
+
 /** 天下 navigation's /feature/topic/ pages: its podcast is a running column (議題); the rest are classified by their stories. */
 export function cwNavTopics(html: string, rule: TopicRule): TopicItem[] {
   return extractTopics(html, rule).map((t) => (/podcast/i.test(t.url) ? { ...t, kind: 'topic' as const } : t));
