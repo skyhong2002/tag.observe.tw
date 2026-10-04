@@ -61,6 +61,9 @@ export default function EventChart({
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
+    // On a phone the legend would wrap over the axis names; keep it one
+    // scrolling row, and show only as many hour labels as fit.
+    const width = ref.current.clientWidth;
     const ink = dark ? '#a1a1aa' : '#71717a',
       grid = dark ? '#27272a' : '#f4f4f5';
     const labels = points.map((p) => label(p.t));
@@ -83,7 +86,12 @@ export default function EventChart({
       boundaryGap: true,
       axisLine: { lineStyle: { color: grid } },
       axisTick: { show: false },
-      axisLabel: { show: i === 1, color: ink, interval: Math.max(0, Math.floor(points.length / 8) - 1) },
+      axisLabel: {
+        show: i === 1,
+        color: ink,
+        hideOverlap: true,
+        interval: Math.max(0, Math.ceil(points.length / Math.max(2, Math.min(8, Math.floor(width / 80)))) - 1),
+      },
     });
     const yAxis = (i: number, name: string) => ({
       type: 'value',
@@ -113,9 +121,9 @@ export default function EventChart({
           return [label(p.t), ...lines].join('<br/>');
         },
       },
-      legend: { top: 0, textStyle: { color: ink } },
+      legend: { type: 'scroll', top: 0, textStyle: { color: ink }, pageTextStyle: { color: ink } },
       grid: [
-        { left: 44, right: right, top: 36, height: '46%' },
+        { left: 44, right: right, top: 52, height: '42%' },
         { left: 44, right: right, top: '66%', bottom: 28 },
       ],
       xAxis: [axis(0), axis(1)],

@@ -5,6 +5,7 @@ import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei, taipeiHour } from '@/lib/api';
+import { cleanEventHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import { articleHref } from '@/lib/reading.mts';
 export const revalidate = 120;
 interface News {
@@ -205,6 +206,10 @@ export default async function EventThreadPage({
   const cov = covRes.ok ? ((await covRes.json()) as Coverage) : null;
   const series = seriesRes.ok ? ((await seriesRes.json()) as { tags: string[]; points: EventSeriesPoint[] }) : null;
   const t = data.thread;
+  // Name the event by its latest hour's lead headline, as the table and home
+  // page do: the thread's major tags pile up every story it ever absorbed.
+  const latest = data.hours[0];
+  const lead = latest ? selectEventLead(latest.news, latest.major) : null;
   // Snapshot hours and series points share the same UTC hour keys.
   const rankByHour = new Map(data.hours.map((h) => [new Date(h.hourStart).toISOString(), h.rank]));
   const seen = new Set<string>();
@@ -229,7 +234,8 @@ export default async function EventThreadPage({
           </Link>{' '}
           / 事件 #{t.id}
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t.majorTags.join('、')}</h1>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{lead ? cleanEventHeadline(lead.title) : t.majorTags.join('、')}</h1>
+        {lead && <p className="mt-1 text-sm text-zinc-600">主要標籤：{t.majorTags.join('、')}</p>}
         <p className="mt-1 text-sm text-zinc-600">
           {taipeiHour(t.firstTime)} 至 {taipeiHour(t.lastTime)} · 持續 {t.hours} 小時
           {t.hoursTotal && t.hoursTotal > t.hours ? `（含延續事件共 ${t.hoursTotal} 小時）` : ''} · 最高分 {t.maxScore.toFixed(1)}（
