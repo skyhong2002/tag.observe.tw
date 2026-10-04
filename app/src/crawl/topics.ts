@@ -246,7 +246,17 @@ export const TOPIC_RULES: TopicRule[] = [
     name: '鏡報',
     url: 'https://www.mirrordaily.news/topic',
     pattern: /^\/topic\/\w+$/,
-    title: (a) => decodeEntities(a.find('p.font-bold').first().text().trim()) || textOf(a),
+    title: (a) => decodeEntities(a.find('p.font-bold, span.font-bold').first().text().trim()) || textOf(a),
+    kind: 'topic',
+    // The homepage strip also carries topics missing from /topic (柯文哲二審 /topic/kao).
+    listings: [
+      {
+        url: 'https://www.mirrordaily.news/',
+        pattern: /^\/topic\/\w+$/,
+        title: (a) => decodeEntities(a.find('p.font-bold, span.font-bold').first().text().trim()) || textOf(a),
+        kind: 'topic',
+      },
+    ],
   },
   {
     media: 'ettoday',

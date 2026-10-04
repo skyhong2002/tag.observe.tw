@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { mirrorTopics } from './topic-extractors-b1.ts';
-import { TOPIC_RULES } from './topics.ts';
+import { extractTopics, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
+const listing = (media: string, url: string) => topicListings(rule(media)).find((l) => l.url === url)!;
 
 describe('鏡週刊', () => {
   it('reads the 24 topics in the Next.js data, dropping slugs with stray spaces', () => {
@@ -28,5 +29,17 @@ describe('鏡週刊', () => {
     const html =
       '<main><a href="/topic/recall"><div class="topic-list-item__ItemTitle-sc">大罷免全紀錄</div></a><a href="/topic/ x">壞連結</a></main>';
     expect(mirrorTopics(html, rule('mirror')).map((t) => t.title)).toEqual(['大罷免全紀錄']);
+  });
+});
+
+describe('鏡報', () => {
+  it('reads the homepage strip as a second 議題 listing', () => {
+    const home = listing('mirrordaily', 'https://www.mirrordaily.news/');
+    const html = `<a class="flex" href="/topic/kao"><img src="/images-next/loading.gif" alt="topic 首圖"><span class="font-bold">柯文哲二審</span></a>
+      <a href="/topic">看所有專題</a><a href="/story/1">新聞</a>`;
+    expect(extractTopics(html, home)).toEqual([
+      { url: 'https://www.mirrordaily.news/topic/kao', title: '柯文哲二審', image: null, category: null },
+    ]);
+    expect(home.kind).toBe('topic');
   });
 });
