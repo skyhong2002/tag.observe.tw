@@ -7,7 +7,7 @@ import type { SourceSpec } from './sources.ts';
 
 const repository = 'https://github.com/skyhong2002/tag.observe.tw/blob/main/';
 const sourceLines = new Map<string, string[]>();
-function codeLink(label: string, path: string, marker?: string) {
+export function codeLink(label: string, path: string, marker?: string) {
   let line = 0;
   if (marker) {
     try {

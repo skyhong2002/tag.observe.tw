@@ -1,5 +1,6 @@
 import {
   bigint,
+  boolean,
   customType,
   date,
   datetime,
@@ -282,8 +283,27 @@ export const topics = mysqlTable(
     // title }), used when the topic name maps to no tag (refreshTopicPages).
     pageStories: json('page_keys').$type<Array<{ key: string; title: string }>>(),
     pageCheckedAt: datetime('page_checked_at'),
+    // 'topic' (議題, keeps gaining stories) or 'feature' (專題, a one-off
+    // package). kind_source 'rule' = declared by the listing, never
+    // overwritten by the story-date classification ('auto'); NULL = unclassified.
+    kind: varchar('kind', { length: 16 }).notNull().default('topic'),
+    kindSource: varchar('kind_source', { length: 8 }),
+    sponsored: boolean('sponsored').notNull().default(false),
+    // Sub-topic listed on its parent topic's page (CNA 5056 → 5100–5106).
+    parentId: bigint('parent_id', { mode: 'number' }),
+    storyFirstAt: datetime('story_first_at'),
+    storyLastAt: datetime('story_last_at'),
+    storyCount: int('story_count'),
+    // Last time a page refresh found a story key not stored before.
+    storyGrewAt: datetime('story_grew_at'),
+    // Already listed when its source was first crawled: first_seen is not a start date.
+    backlog: boolean('backlog').notNull().default(false),
   },
-  (t) => [uniqueIndex('topics_media_url').on(t.media, t.url), index('topics_media_seen').on(t.media, t.firstSeen)],
+  (t) => [
+    uniqueIndex('topics_media_url').on(t.media, t.url),
+    index('topics_media_seen').on(t.media, t.firstSeen),
+    index('topics_kind_media_seen').on(t.kind, t.media, t.firstSeen),
+  ],
 );
 
 // Tag statistics (port of maint/chart.php `tags` table): per category/level.

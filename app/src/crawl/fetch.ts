@@ -209,9 +209,15 @@ export function cookieHeader(jar: Jar, host: string): string {
     .join('; ');
 }
 
+export interface FetchRequest {
+  method?: 'GET' | 'POST';
+  body?: string;
+  headers?: Record<string, string>;
+}
+
 async function fetchOnce(
   url: string,
-  { userAgent, timeout, maxBytes }: { userAgent: string; timeout: number; maxBytes: number },
+  { userAgent, timeout, maxBytes, method = 'GET', body, headers }: { userAgent: string; timeout: number; maxBytes: number } & FetchRequest,
 ): Promise<FetchResult> {
   const started = performance.now();
   const deadline = AbortSignal.timeout(timeout);
@@ -224,10 +230,11 @@ async function fetchOnce(
       const host = current.hostname.toLowerCase();
       const cookie = cookieHeader(jar, host);
       const res = await undiciFetch(current, {
-        method: 'GET',
+        method,
+        body: method === 'GET' ? undefined : body,
         redirect: 'manual',
         signal: deadline,
-        headers: { ...HEADERS(userAgent), ...(cookie ? { cookie } : {}) },
+        headers: { ...HEADERS(userAgent), ...headers, ...(cookie ? { cookie } : {}) },
         dispatcher,
       });
       storeCookies(jar, host, res.headers.getSetCookie());
@@ -235,6 +242,8 @@ async function fetchOnce(
       if (REDIRECTS.has(res.status) && location) {
         await res.body?.cancel();
         current = new URL(location, current);
+        // As browsers do: only 307/308 repeat a POST, the others turn into a GET.
+        if (res.status !== 307 && res.status !== 308) [method, body] = ['GET', undefined];
         continue;
       }
       const length = Number(res.headers.get('content-length') ?? 0);
@@ -266,13 +275,17 @@ export async function fetchText(
     timeout = 20000,
     maxBytes = 8 * 1024 * 1024,
     retries = 1,
-  }: { userAgent?: string; timeout?: number; maxBytes?: number; retries?: number } = {},
+    method,
+    body,
+    headers,
+  }: { userAgent?: string; timeout?: number; maxBytes?: number; retries?: number } & FetchRequest = {},
 ): Promise<FetchResult> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const result = await fetchOnce(url, { userAgent, timeout, maxBytes });
-      return looksChallenged(result) ? fetchViaCurl(url, { userAgent, timeout, maxBytes }) : result;
+      const result = await fetchOnce(url, { userAgent, timeout, maxBytes, method, body, headers });
+      // The curl fallback only replays plain GETs.
+      return looksChallenged(result) && (method ?? 'GET') === 'GET' ? fetchViaCurl(url, { userAgent, timeout, maxBytes }) : result;
     } catch (error) {
       // A blocked destination will not become public on retry.
       if (error instanceof BlockedUrlError) throw error;

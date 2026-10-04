@@ -48,7 +48,7 @@ describe('media stats', () => {
   });
 
   it('returns the complete directory even when there are no articles or crawl runs', async () => {
-    const chain = { innerJoin: () => chain, where: () => chain, groupBy: async () => [] };
+    const chain = { innerJoin: () => chain, where: () => chain, orderBy: () => chain, limit: async () => [], groupBy: async () => [] };
     const db = { select: () => ({ from: () => chain }) } as unknown as Db;
     const app = Fastify();
     registerMediaStats(app, db);
@@ -71,6 +71,14 @@ describe('media stats', () => {
         status: 'disabled',
         schedule: 'off',
       });
+      expect(result.media.find((row: { media: string }) => row.media === 'cna').topics).toMatchObject({
+        media: 'cna',
+        sources: [],
+        status: 'pending',
+        counts: { topic: 0, feature: 0 },
+        rulesUrl: expect.stringMatching(/app\/src\/crawl\/topics\.ts#L\d+$/),
+      });
+      expect(result.media.find((row: { media: string }) => row.media === 'afp').topics).toBeNull();
       expect(result.totals.activeSources).toBe(2);
       expect(result.totals.disabledSources).toBe(result.media.length - 2);
     } finally {
@@ -90,8 +98,14 @@ describe('media stats', () => {
     let query = 0;
     const db = {
       select: () => {
-        const values = batches[query++];
-        const chain = { innerJoin: () => chain, where: () => chain, groupBy: async () => values };
+        const values = batches[query++] ?? [];
+        const chain = {
+          innerJoin: () => chain,
+          where: () => chain,
+          orderBy: () => chain,
+          limit: async () => [],
+          groupBy: async () => values,
+        };
         return { from: () => chain };
       },
     } as unknown as Db;
@@ -109,6 +123,62 @@ describe('media stats', () => {
       });
       expect(result.media.find((row: { media: string }) => row.media === 'cna')).toMatchObject({ sourceKind: 'publisher', today: 2 });
       expect(result.totals).toMatchObject({ today: 2, last24h: 2, publishingMedia24h: 1, taggedShare24h: 0.5 });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("reports each topic listing's latest result, kind and the outlet's topic/feature counts", async () => {
+    const finished = new Date(Date.now() - 600e3);
+    const run = {
+      media: 'cna',
+      status: 'partial',
+      finishedAt: finished,
+      fetched: 20,
+      detail: JSON.stringify({
+        sources: [
+          { url: 'https://www.cna.com.tw/list/newstopic.aspx', kind: 'topic', items: 20, pages: 2 },
+          // Recorded before kinds existed: the listing's current declaration fills in.
+          { url: 'https://www.cna.com.tw/project/project_list/api/specialfeature.json', items: 0, error: 'HTTP 500' },
+        ],
+      }),
+    };
+    const db = {
+      select: (fields?: Record<string, unknown>) => {
+        const isCount = !!fields && 'kind' in fields && 'count' in fields;
+        const chain = {
+          innerJoin: () => chain,
+          where: () => chain,
+          orderBy: () => chain,
+          // topicSourceChecks: the latest run (all columns), then the last ok run ({ at }).
+          limit: async () => (!fields ? [run] : []),
+          groupBy: async () =>
+            isCount
+              ? [
+                  { media: 'cna', kind: 'topic', count: 20 },
+                  { media: 'cna', kind: 'feature', count: 7 },
+                ]
+              : [],
+        };
+        return { from: () => chain };
+      },
+    } as unknown as Db;
+    const app = Fastify();
+    registerMediaStats(app, db);
+    try {
+      const result = (await app.inject('/api/v1/media-stats')).json();
+      expect(result.media.find((row: { media: string }) => row.media === 'cna').topics).toEqual({
+        media: 'cna',
+        sources: [
+          { url: 'https://www.cna.com.tw/list/newstopic.aspx', kind: 'topic', items: 20, pages: 2 },
+          { url: 'https://www.cna.com.tw/project/project_list/api/specialfeature.json', kind: 'feature', items: 0, error: 'HTTP 500' },
+        ],
+        checkedAt: finished.toISOString(),
+        lastSuccessAt: null,
+        status: 'partial',
+        counts: { topic: 20, feature: 7 },
+        rulesUrl: expect.stringContaining('app/src/crawl/topics.ts#L'),
+      });
     } finally {
       await app.close();
     }
