@@ -415,6 +415,8 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/feature\/\d+$/,
     scope: 'main',
     card: 'article',
+    // 專題報導: one-off reporting packages, all on one page.
+    kind: 'feature',
   },
   {
     media: 'coolloud',
@@ -425,6 +427,9 @@ export const TOPIC_RULES: TopicRule[] = [
     card: '.views-row',
     title: textOf,
     scope: '.cover-title',
+    // One-off packages; three pages in all (the Drupal pager is 0-based).
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.coolloud.org.tw/topics?page=${n - 1}`, max: 5 },
   },
   {
     media: 'foodnext',
