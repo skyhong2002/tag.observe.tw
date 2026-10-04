@@ -48,4 +48,32 @@ describe('batch a2 topic rules', () => {
       <li class="btn"><a href="https://events.ettoday.net/yummy2023/index.php7">美食</a></li></ul></div>`;
     expect(run(home, nav).map((t) => t.url)).toEqual(['https://www.ettoday.net/events/election2026/index.php7']);
   });
+
+  it("華視: topics carry their listed articles' publish times as story dates", () => {
+    const data = [
+      { topic: 1, banner: 7 },
+      { title: 2, link: 3, thumbImageUrl: 4, articles: 5 },
+      '鈔錢部署',
+      '/topic/af8ba945-053d-4953-b533-d8af17ea5536',
+      'https://www.cts.com.tw/a.webp',
+      [6],
+      { title: 2, link: 9, publishTime: 10 },
+      { title: 8, imageUrl: 4, link: 11 },
+      '2026亞運看華視',
+      '/cts/money/202609/202609043075126.html',
+      '2026-09-04 16:57:00',
+      'https://event.cts.com.tw/2026asiangames/',
+    ];
+    const html = `<script id="__NUXT_DATA__" type="application/json">${JSON.stringify(data)}</script>`;
+    expect(run(rule('cts'), html)).toEqual([
+      {
+        url: 'https://news.cts.com.tw/topic/af8ba945-053d-4953-b533-d8af17ea5536',
+        title: '鈔錢部署',
+        image: 'https://www.cts.com.tw/a.webp',
+        category: null,
+        storyDates: [new Date('2026-09-04T08:57:00Z')],
+      },
+      { url: 'https://event.cts.com.tw/2026asiangames/', title: '2026亞運看華視', image: 'https://www.cts.com.tw/a.webp', category: null },
+    ]);
+  });
 });

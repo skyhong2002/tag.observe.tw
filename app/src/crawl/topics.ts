@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { ettodayFeatureIndex, setnTopics } from './topic-extractors-a2.ts';
+import { ctsTopics, ettodayFeatureIndex, setnTopics } from './topic-extractors-a2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -115,8 +115,10 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'cts',
     fallbackImage: 'https://news.cts.com.tw/assets/fb_img.jpg',
     url: 'https://news.cts.com.tw/topic/',
-    pattern: /\/topic\/[0-9a-f-]{36}/,
-    extract: nuxtTopics,
+    // Also the event microsites it banners (event.cts.com.tw/2026asiangames/).
+    pattern: /\/topic\/[0-9a-f-]{36}|^https:\/\/event\.cts\.com\.tw\/[\w-]+\/?$/,
+    // Story dates come with the listing, so auto classifies on insert.
+    extract: ctsTopics,
   },
   {
     media: 'ebc',
