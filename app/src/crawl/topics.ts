@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
+import { setnTopics } from './topic-extractors-a2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -95,7 +96,20 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://attach.setn.com/images/setn_1200x676_20250103.png',
     url: 'https://www.setn.com/Plist.aspx',
     pattern: /\/(klist|project)\/\d+/i,
-    title: (a) => a.find('.title').first().text().trim() || heading(a),
+    // Carousel slides put the name in .feature_title beside a long description.
+    title: (a) => a.find('.title, .feature_title').first().text().trim() || heading(a),
+    extract: setnTopics,
+    // ~5 pages; past the last one the site repeats it, which stops pagination.
+    paginate: { url: (n) => `https://www.setn.com/Plist.aspx?p=${n}`, max: 10 },
+    listings: [
+      // The homepage features a few running ones (好康搜查線 /project/162) the index lacks.
+      {
+        url: 'https://www.setn.com/',
+        pattern: /\/(klist|project)\/\d+/i,
+        title: (a) => a.find('.title, .feature_title').first().text().trim() || heading(a),
+        extract: setnTopics,
+      },
+    ],
   },
   {
     media: 'cts',
