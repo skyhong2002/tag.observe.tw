@@ -60,6 +60,8 @@ export interface Topic {
   /** Earliest story listed on the topic page. */
   storyFirstAt?: string | null;
   storyLastAt?: string | null;
+  /** 最後更新: storyLastAt, else `time` unless backlog; null = unknown. Absent on old API builds (see updatedAtOf). */
+  updatedAt?: string | null;
   storyCount?: number | null;
   /** Site tags found in the name itself (whether or not anything was published on it lately). */
   tags?: string[];

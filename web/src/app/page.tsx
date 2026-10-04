@@ -13,6 +13,7 @@ import { type CampGap, type CampShare, DEMO_CAMPS, type DemoStory, type GraphSum
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
+import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
 import HeadlineSidebar from './_home/HeadlineSidebar';
@@ -258,14 +259,18 @@ function GraphPanel({ graph, media }: { graph: GraphSummary | null; media: Media
   );
 }
 
+// Story dates can be old: date with the year, no time (as on TopicCard).
+const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+
 function TopicPanel({ topics }: { topics: { outlets: number; today: number; latest: FeedTopic[] } | null }) {
   if (!topics) return <p className={styles.notice}>議題資料整理中。</p>;
-  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有新發現的議題。</p>;
+  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有更新的議題。</p>;
   return (
     <ul className={styles.topicList}>
       {topics.latest.map((t) => {
         const image = isAllowedImage(t.image) ? t.image : null;
         const href = `/topic/${encodeURIComponent(t.media)}/#topic-${t.id}`;
+        const updated = updatedAtOf(t);
         return (
           <li key={`${t.media}-${t.id}`}>
             <Link href={href} className={styles.topicCover} tabIndex={-1} aria-hidden="true">
@@ -278,7 +283,7 @@ function TopicPanel({ topics }: { topics: { outlets: number; today: number; late
               <p>
                 <MediaIcon media={t.media} title={t.mediaTitle} size={12} />
                 {t.mediaTitle}
-                {t.time && ` · ${taipei(t.time)}`}
+                {updated && ` · 最後更新 ${taipeiDate(updated)}`}
                 {t.coverage && ` · 近 3 天 ${t.coverage.count}${t.coverage.capped ? '+' : ''} 篇相關`}
               </p>
             </div>
@@ -498,9 +503,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </div>
             <GraphPanel graph={data.graph} media={data.media} />
           </section>
-          <section className={styles.panel} aria-label="最新議題">
+          <section className={styles.panel} aria-label="最近更新的議題">
             <div className={styles.sectionHeading}>
-              <h2>媒體新議題</h2>
+              <h2>最近更新的議題</h2>
               <Link href="/topic/">
                 議題表 <Arrow />
               </Link>

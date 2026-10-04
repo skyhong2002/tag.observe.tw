@@ -3,7 +3,6 @@ import MediaIcon from '@/components/MediaIcon';
 import MediaSidebar from '@/components/MediaSidebar';
 import TopicCard, { kindNoun, topicHref, topicMediaHref } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
-import { taipei } from '@/lib/api';
 import {
   type FeedTopic,
   fetchTopicSearch,
@@ -16,30 +15,7 @@ import {
   type TopicTagCount,
 } from '@/lib/pages';
 import { gapLabel, kindLine, raceRounds, raceSummary, statusLine } from '@/lib/topic-race.mts';
-
-const taipeiDay = (iso: string) => new Date(Date.parse(iso) + 8 * 3600e3).toISOString().slice(0, 10);
-const DAY = 86400e3;
-
-type Group = { key: string; label: string; items: FeedTopic[] };
-/** Feed split by the day we first saw each topic, backlog last. */
-function groupByDay(feed: FeedTopic[], now: Date): Group[] {
-  const today = taipeiDay(now.toISOString());
-  const yesterday = taipeiDay(new Date(+now - DAY).toISOString());
-  const weekAgo = taipeiDay(new Date(+now - 7 * DAY).toISOString());
-  const groups: Group[] = [
-    { key: 'today', label: '今天新增', items: [] },
-    { key: 'yesterday', label: '昨天', items: [] },
-    { key: 'week', label: '過去 7 天', items: [] },
-    { key: 'older', label: '更早', items: [] },
-    { key: 'backlog', label: '開始追蹤前已上架', items: [] },
-  ];
-  for (const t of feed) {
-    const day = t.time && !t.backlog ? taipeiDay(t.time) : null;
-    const g = !day ? 'backlog' : day === today ? 'today' : day === yesterday ? 'yesterday' : day >= weekAgo ? 'week' : 'older';
-    groups.find((x) => x.key === g)?.items.push(t);
-  }
-  return groups.filter((g) => g.items.length);
-}
+import { groupByUpdate, updatedAtOf } from '@/lib/topic-update.mts';
 
 export type TopicIndexParams = { tag?: string | string[]; q?: string | string[] };
 const param = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim().slice(0, 50) || undefined;
@@ -59,7 +35,8 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
   const feed: FeedTopic[] = (
     data?.feed ?? (data?.media ?? []).flatMap((m) => (m.latest ? [{ ...m.latest, media: m.media, mediaTitle: m.title, icon: m.icon }] : []))
   ).filter((t) => ofKind(t, kind) && t.status !== 'ended');
-  const groups = groupByDay(feed, new Date());
+  // The API sends the feed most recently updated first.
+  const groups = groupByUpdate(feed, new Date());
   const tagCounts = data?.tags ?? found?.tags ?? [];
   const tagHref = (t: string) => `${base}?${new URLSearchParams({ tag: t })}`;
   return (
@@ -90,7 +67,7 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
               <SearchResults found={found} tag={tag} q={q} />
             ) : (
               <>
-                {groups.length === 0 && <p className="text-sm text-zinc-600">目前沒有最近新增的{noun}。</p>}
+                {groups.length === 0 && <p className="text-sm text-zinc-600">目前沒有最近更新的{noun}。</p>}
                 {groups.map((g) => (
                   <section key={g.key} aria-labelledby={`group-${g.key}`}>
                     <h2
@@ -260,6 +237,7 @@ function SearchResults({ found, tag, q }: { found: TopicSearch | null; tag?: str
             <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
               {o.items.map((t) => {
                 const k = t.kind ?? 'topic';
+                const updated = updatedAtOf(t);
                 return (
                   <li key={t.id} className="flex items-baseline gap-2 py-1.5">
                     <span className={`shrink-0 rounded border px-1 text-[10px] leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
@@ -268,7 +246,7 @@ function SearchResults({ found, tag, q }: { found: TopicSearch | null; tag?: str
                         {t.title}
                       </Link>
                       <span className="ml-2 whitespace-nowrap text-xs text-zinc-500">
-                        {t.time && !t.backlog ? `首次發現 ${taipei(t.time)}` : '開始追蹤前已上架'}
+                        {updated ? `最後更新 ${taipeiDate(updated)}` : '更新時間不明（追蹤前已上架）'}
                         {t.status === 'ended' && ' · 已停更'}
                       </span>
                     </span>
@@ -357,6 +335,7 @@ function TagRace({ topics }: { topics: FeedTopic[] }) {
                     {o.items.map((t) => {
                       const k = t.kind ?? 'topic';
                       const st = t.status === 'ended' ? 'ended' : 'active';
+                      const updated = updatedAtOf(t);
                       return (
                         <li key={t.id} className="flex items-baseline gap-2">
                           <span className={`shrink-0 rounded border px-1 text-[10px] leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
@@ -371,7 +350,7 @@ function TagRace({ topics }: { topics: FeedTopic[] }) {
                                   {st === 'ended' ? '已停更' : '進行中'}
                                 </span>
                               )}
-                              {k === 'topic' && t.storyLastAt && <span>最後更新 {taipeiDate(t.storyLastAt)}</span>}
+                              {k === 'topic' && updated && <span>最後更新 {taipeiDate(updated)}</span>}
                             </span>
                           </span>
                         </li>
@@ -399,7 +378,11 @@ function MethodNotes({ kind, mediaCount, tagCount }: { kind: TopicKind; mediaCou
           {mediaCount != null ? `${mediaCount} 家媒體官方${noun}入口的最新動態，` : `追蹤媒體官方${noun}入口，`}
           每小時檢查。每個{noun}下方列出本站近 3 天從各家媒體抓到的相關報導。來源持續擴充中，未列出的媒體不代表沒有{noun}。
         </li>
-        <li>依本站首次發現時間排序，不等於媒體上架時間；本站開始追蹤前就已上架的{noun}列在最後。</li>
+        <li>
+          依最後更新排序：最後更新是{noun}
+          頁上最新一則報導的時間；沒有報導日期的，用本站首次發現時間（不等於媒體上架時間）。本站開始追蹤前就已上架、又沒有報導日期可查的
+          {noun}，更新時間不明，不列入上方清單（各媒體頁列在最後）；已上架的{noun}有新報導時照樣排到前面。
+        </li>
         <li>
           各家用詞不一（專題、專輯、策展…），本站依有沒有持續新增報導來分類，不照媒體的命名：持續新增報導的是議題（90
           天沒有新報導標為已停更），一次性的新聞包是專題。

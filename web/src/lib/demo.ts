@@ -4,6 +4,7 @@ import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
 import { type EventCoverage, type EventItem, type FeedTopic, fetchEvents, fetchTopics } from './pages';
 import { fetchSimilarity, type SimilarityData } from './similarity';
+import { updatedAtOf } from './topic-update.mts';
 
 export type DemoCamp = 'green' | 'other' | 'blue';
 export const DEMO_CAMPS: Array<{ key: DemoCamp; label: string; short: string }> = [
@@ -263,7 +264,8 @@ export async function loadDemo() {
     .slice(0, 12)
     .map((e) => story(e, media))
     .filter((s): s is DemoStory => s !== null);
-  const feed: FeedTopic[] = (topics?.feed ?? []).filter((t) => !t.backlog && t.title);
+  // Most recently updated first, as on /topic/; a topic listed before tracking began counts once it has a dated story.
+  const feed: FeedTopic[] = (topics?.feed ?? []).filter((t) => updatedAtOf(t) && t.title);
   return {
     events,
     ranking,
@@ -277,8 +279,8 @@ export async function loadDemo() {
     topics: topics
       ? {
           outlets: topics.media.length,
-          // Topics first seen in the past day; the feed is newest first and long enough to cover one.
-          today: feed.filter((t) => t.time && Date.now() - Date.parse(t.time) < 86400e3).length,
+          // Topics updated in the past day; the feed is most recently updated first and long enough to cover one.
+          today: feed.filter((t) => Date.now() - Date.parse(updatedAtOf(t) ?? '') < 86400e3).length,
           latest: feed.slice(0, 6),
         }
       : null,

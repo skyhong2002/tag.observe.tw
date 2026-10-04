@@ -4,6 +4,7 @@ import MediaIcon from '@/components/MediaIcon';
 import TopicCard, { kindNoun } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
 import { fetchTopicMedia, kindCount, type MediaTopic, ofKind, type TopicKind } from '@/lib/pages';
+import { updatedAtOf } from '@/lib/topic-update.mts';
 
 export async function topicMediaTitle(media: string, kind: TopicKind) {
   const data = await fetchTopicMedia(media, 1, kind);
@@ -22,15 +23,21 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
   // 已停更 is a 議題 state; a 專題 never "stops".
   const ended = kind === 'topic' ? topics.filter((t) => t.status === 'ended') : [];
   const live = topics.filter((t) => !ended.includes(t));
+  // The API sends them most recently updated first, unknown last.
   const sections = [
-    { key: 'recent', label: '近期新增', note: '', items: live.filter((t) => !t.backlog) },
     {
-      key: 'backlog',
-      label: '開始追蹤前已上架',
-      note: kind === 'topic' ? '本站接入前就存在、仍在更新的議題' : '本站接入前就存在的專題',
-      items: live.filter((t) => t.backlog),
+      key: 'recent',
+      label: kind === 'topic' ? '近期更新' : '依最後更新',
+      note: kind === 'topic' ? '90 天內有新報導' : '',
+      items: live.filter((t) => updatedAtOf(t)),
     },
     { key: 'ended', label: '已停更', note: '超過 90 天沒有新報導', items: ended },
+    {
+      key: 'unknown',
+      label: '更新時間不明',
+      note: `本站開始追蹤前就已上架，${noun}頁上也沒有報導日期可查`,
+      items: live.filter((t) => !updatedAtOf(t)),
+    },
   ].filter((s) => s.items.length);
   const covered = all.filter((t) => t.coverage).length;
   const count = kindCount(data, kind);
@@ -74,7 +81,8 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
           </a>
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          {data.title}官方入口上的{noun}，依本站首次發現時間排列。每個{noun}下方是本站近 3 天從各家媒體抓到的相關報導：這家媒體把什麼做成
+          {data.title}官方入口上的{noun}，依最後更新排列（{noun}頁上最新一則報導的時間；沒有報導日期的用本站首次發現時間）。每個{noun}
+          下方是本站近 3 天從各家媒體抓到的相關報導：這家媒體把什麼做成
           {noun}，其他家又怎麼報。
         </p>
         {kind === 'feature' && (
