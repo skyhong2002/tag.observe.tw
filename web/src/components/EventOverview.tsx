@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CAMP_LABEL, CampBadge, LeanText } from '@/components/CampBar';
+import { CampBadge } from '@/components/CampBar';
 import { eventAnchor, eventHeadline } from '@/components/EventCard';
 import { taipeiHour } from '@/lib/api';
 import type { EventItem } from '@/lib/pages';
@@ -118,10 +118,6 @@ export function CampGap({ events, scope = '本小時', basis = '過去 24 小時
                       </a>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
                         {e.coverage && <CampBadge c={e.coverage} />}
-                        {e.coverage && <LeanText c={e.coverage} />}
-                        <span className="tabular-nums">
-                          {CAMP_LABEL.blue} {e.coverage?.camps.blue} 家 · {CAMP_LABEL.green} {e.coverage?.camps.green} 家
-                        </span>
                       </p>
                     </div>
                   </li>
