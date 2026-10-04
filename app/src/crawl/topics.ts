@@ -638,7 +638,12 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://edh.tw/special',
     fallbackImage: '/favicons/edh.png',
     pattern: /\/special\/[^/?#]+$|edh\.tw\/evt\/[^/?#]+\/?$/,
-    title: heading,
+    // Each card links a bold name and a longer summary to the same page.
+    title: (a) => a.closest('.group').find('a.font-bold').first().text().trim() || heading(a),
+    kind: 'feature',
+    // /evt/ are advertisers' campaign sites; /special/<id> are edh's own packages.
+    sponsored: (t) => /edh\.tw\/evt\//.test(t.url),
+    paginate: { url: (n) => `https://edh.tw/special?page=${n}`, max: 5 },
   },
   {
     media: 'eld',

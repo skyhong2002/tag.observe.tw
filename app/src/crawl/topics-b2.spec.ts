@@ -121,3 +121,17 @@ describe('heho', () => {
       expect(pattern.test(url)).toBe(false);
   });
 });
+
+describe('edh', () => {
+  it('names a card by its bold link and marks /evt/ campaigns sponsored', () => {
+    const card = (href: string, name: string) =>
+      `<div class="group block"><a href="${href}"><img alt="${name}" src="/c.jpg"></a><div><a href="${href}" class="line-clamp-1 font-bold">${name}</a><a href="${href}" class="line-clamp-3">很長的摘要文字，比名稱長得多，不該拿來當標題</a></div></div>`;
+    const html = card('https://edh.tw/evt/ADhealing/', '阿茲海默症 行動指南針') + card('/special/G6A3AU9', '名醫的呼吸術');
+    const r = rule('edh');
+    const items = extractTopics(html, r).map((t) => [t.title, r.sponsored?.(t)]);
+    expect(items).toEqual([
+      ['阿茲海默症 行動指南針', true],
+      ['名醫的呼吸術', false],
+    ]);
+  });
+});
