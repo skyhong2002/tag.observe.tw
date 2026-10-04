@@ -193,26 +193,6 @@ export default async function MediaPage({
             </Link>
           </section>
           {!discovery && <MediaRelations data={similarity} media={media} hours={cloudHours} />}
-          <details className="text-xs text-zinc-500 dark:text-zinc-400 sm:col-span-2 lg:col-span-1">
-            <summary className="cursor-pointer py-1.5 hover:text-brand-700 dark:hover:text-brand-400">資料來源與計算方式</summary>
-            <ul className="mt-1 space-y-1.5 border-l-2 border-zinc-200 pl-3 leading-5 dark:border-zinc-800">
-              <li>
-                {discovery ? '發現來源協助找到文章；文章與全文仍歸屬各原媒體。' : '收錄量為本站抓取的報導，非媒體全部發稿量。'}
-                正文在刊登後 7 天內可於站內閱讀。
-              </li>
-              {!discovery && (
-                <>
-                  <li>
-                    報導關鍵字：標籤與標題關鍵詞，排除新聞分類詞；每篇每詞計一次
-                    {keywords ? `，${keywords.capped ? '取最新' : '統計'} ${keywords.sampledArticles.toLocaleString('zh-TW')} 篇` : ''}。
-                  </li>
-                  <li>
-                    媒體關係：來自新聞關係圖的比對結果，依文章去重計數。同組指內文相近的報導，以最早刊登者為來源；引用指內文明示引用的媒體。
-                  </li>
-                </>
-              )}
-            </ul>
-          </details>
         </MediaSidebar>
         <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1">
           {!discovery && <MediaWordCloud data={keywords} media={media} hours={cloudHours} layout="wide" />}
