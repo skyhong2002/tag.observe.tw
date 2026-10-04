@@ -12,7 +12,7 @@ import { type MediaInfo, type RankingEntry, taipei } from '@/lib/api';
 import { type CampGap, type CampShare, DEMO_CAMPS, type DemoStory, type GraphSummary, type JournalistBrief, loadDemo } from '@/lib/demo';
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
-import type { EventCoverage, EventItem, FeedTopic } from '@/lib/pages';
+import type { EventCoverage, FeedTopic } from '@/lib/pages';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
 import HeadlineSidebar from './_home/HeadlineSidebar';
@@ -116,26 +116,18 @@ function Distribution({ coverage, compact = false }: { coverage: EventCoverage |
   );
 }
 
-function StoryMeta({ story }: { story: DemoStory }) {
+/** One line under the headline: source, when it charted, movement and the
+ *  day's rank trail. The rank itself is the card's number. */
+function StoryMeta({ story, trail = 'h-5 w-16' }: { story: DemoStory; trail?: string }) {
   return (
     <p className={styles.source}>
-      <span>標題來源：</span>
       <MediaHoverLink media={story.media} className="hover:underline">
         {story.source}
       </MediaHoverLink>
       {story.event.firstTime && <span>· {taipei(story.event.firstTime)} 上榜</span>}
+      <Movement e={story.event} />
+      <RankTrail e={story.event} className={trail} />
     </p>
-  );
-}
-
-/** Movement since the last hour and the day's rank trail, as on the event table. */
-function Signals({ e, trail = 'h-5 w-16' }: { e: EventItem; trail?: string }) {
-  return (
-    <span className={styles.signals}>
-      <span className={styles.signalRank}>第 {e.rank} 名</span>
-      <Movement e={e} />
-      <RankTrail e={e} className={trail} />
-    </span>
   );
 }
 
@@ -413,8 +405,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                         {lead.title}
                       </Link>
                     </h3>
-                    <StoryMeta story={lead} />
-                    <Signals e={lead.event} trail="h-6 w-20" />
+                    <StoryMeta story={lead} trail="h-6 w-20" />
                     <Distribution coverage={lead.coverage} />
                     {lead.coverage && (
                       <div className={styles.heroCamp}>
@@ -451,7 +442,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                           <Link href={s.href}>{s.title}</Link>
                         </h3>
                         <StoryMeta story={s} />
-                        <Signals e={s.event} />
                         <Distribution coverage={s.coverage} compact />
                       </div>
                       <Link href={s.href} className={styles.thumbnail} aria-label={`查看事件：${s.title}`} tabIndex={-1}>

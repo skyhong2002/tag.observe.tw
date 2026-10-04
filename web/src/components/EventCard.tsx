@@ -98,7 +98,7 @@ export function ScoreBar({ score, max, width = 'w-16' }: { score: number; max: n
 export function OutletStrip({ c, media, compact = false }: { c: EventCoverage; media: MediaInfo; compact?: boolean }) {
   if (!c || c.outlets.length === 0) return null;
   return (
-    <div className="flex min-w-0 flex-1 basis-40 items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+    <div className="flex w-full min-w-0 items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
       <FitRow label="報導媒體">
         {c.outlets.map((o) => (
           <MediaHoverLink
