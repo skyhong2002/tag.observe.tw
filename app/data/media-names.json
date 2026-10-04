@@ -2434,7 +2434,7 @@
       "name": "NHK",
       "aliases": [],
       "status": "retained",
-      "sourceUrl": "https://www3.nhk.or.jp/nhkworld/zh/",
+      "sourceUrl": "https://www3.nhk.or.jp/nhkworld/zt/",
       "evidence": "NHK；官網存取受限，保留既有名稱"
     },
     "kyodo": {

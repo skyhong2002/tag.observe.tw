@@ -5,7 +5,7 @@ const now = new Date('2026-10-04T00:00:00Z');
 const id = '20261003de54017';
 const row = {
   id,
-  page_url: `/nhkworld/zh/news/${id}/`,
+  page_url: `/nhkworld/zt/news/${id}/`,
   title: '日本新聞測試報導',
   public_at: String(Date.parse('2026-10-03T01:00:00Z')),
   updated_at: String(now.getTime()),
@@ -13,7 +13,7 @@ const row = {
   detail: '這是公共新聞完整內文，刊登日期應保留原始時間，並且不能被後來的更新時間取代。'.repeat(8),
 };
 
-describe('NHK public Chinese news', () => {
+describe('NHK public Traditional Chinese news', () => {
   it('uses full detail and publication time, preserving the public article URL', () => {
     const item = nhkArticle({ data: row }, id, now);
     expect(item?.publishedAt?.toISOString()).toBe('2026-10-03T01:00:00.000Z');
@@ -36,7 +36,7 @@ describe('NHK public Chinese news', () => {
   it('reads only official JSON and stops requests on rate limiting', async () => {
     const requested: string[] = [];
     const result = await discoverNhk(
-      { homeUrl: 'https://www3.nhk.or.jp/nhkworld/zh/news/' },
+      { homeUrl: 'https://www3.nhk.or.jp/nhkworld/zt/news/' },
       {
         now: () => now,
         fetch: async (url) => {
@@ -52,8 +52,8 @@ describe('NHK public Chinese news', () => {
       },
     );
     expect(requested).toEqual([
-      'https://www3.nhk.or.jp/nhkworld/data/zh/news/all.json',
-      `https://www3.nhk.or.jp/nhkworld/data/zh/news/${id}.json`,
+      'https://www3.nhk.or.jp/nhkworld/data/zt/news/all.json',
+      `https://www3.nhk.or.jp/nhkworld/data/zt/news/${id}.json`,
     ]);
     expect(result.samples).toHaveLength(0);
   });

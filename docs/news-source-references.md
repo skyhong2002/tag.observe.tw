@@ -66,7 +66,7 @@
 | 韓聯社 | [繁體中文首頁](https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/)；`cb.yna.co.kr` 轉到此繁體轉換入口，`cn.yna.co.kr` 是簡體版。保留完整路徑。 | HTML 實測並入庫 2 篇全文。 |
 | 新華社 | [news.cn](https://www.news.cn/)；[xinhuanet.com](https://www.xinhuanet.com/) 也是真實官方新華網入口，會連至 news.cn 正文，並非真假網站之別。保留既有新華網與通訊社名稱識別；兩個來源有內容重疊，不代表兩家獨立發稿。 | HTML 實測並入庫 2 篇全文。 |
 | 共同社 | [共同網繁體版](https://tchina.kyodonews.net/)；簡體 `china.kyodonews.net`、英文 `english.kyodonews.net` 是官網互相連結的語言版。官方 RSS 為 `/list/feed/rss4news`。 | RSS 實測並入庫 2 篇全文。 |
-| NHK | [NHK WORLD 中文新聞](https://www3.nhk.or.jp/nhkworld/zh/news/)；頁面透過官方 `/nhkworld/data/zh/news/all.json` 及逐篇 JSON 顯示全文。 | 新增公開 JSON 解析，核對文章 id、路徑及 `public_at` 原始刊登時間，入庫 2 篇全文。 |
+| NHK | [NHK WORLD 繁體中文新聞](https://www3.nhk.or.jp/nhkworld/zt/news/)；頁面透過官方 `/nhkworld/data/zt/news/all.json` 及逐篇 JSON 顯示全文。 | 新增公開 JSON 解析，核對文章 id、路徑及 `public_at` 原始刊登時間，入庫 2 篇全文。 |
 | 法新社 | [AFP 官方機構網站](https://www.afp.com/)與 [AFP Fact Check](https://factcheck.afp.com/) 都是真的。後者是本次可公開抓取的英文查核報導，範圍不等於整條通訊社新聞線。 | 依正文容器及 created 時間戳擷取，排除相關文章日期，入庫 2 篇全文。 |
 | 美聯社 | [AP 官方機構網站](https://www.ap.org/)直接連至 APNews.com；APNews 本次 HTTP 403，改用同一機構 [News Highlights](https://www.ap.org/news-highlights/) 的公開 Elections／Spotlights 新聞報導。排除 Best of AP 採訪成果介紹與圖集。 | 正文限 `.content-container__inner`，排除頁尾、相關服務與圖集說明；入庫 2 篇全文。 |
 

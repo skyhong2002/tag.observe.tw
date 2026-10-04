@@ -3241,15 +3241,15 @@
     {
       "media": "nhk",
       "name": "NHK",
-      "websiteUrl": "https://www3.nhk.or.jp/nhkworld/zh/news/",
+      "websiteUrl": "https://www3.nhk.or.jp/nhkworld/zt/news/",
       "referenceNames": [
         "NHK"
       ],
       "referenceRows": [],
       "existing": false,
-      "websiteEvidence": "https://www3.nhk.or.jp/nhkworld/zh/news/",
-      "notes": "2026-10-04 全媒體收錄盤點補入官方公開新聞入口。",
-      "articlePattern": "/nhkworld/zh/news/\\d+",
+      "websiteEvidence": "https://www3.nhk.or.jp/nhkworld/zt/news/",
+      "notes": "2026-10-04 全媒體收錄盤點補入官方公開新聞入口；改用 NHK WORLD 繁體中文版（zt）。",
+      "articlePattern": "/nhkworld/zt/news/\\d+",
       "feedUrls": []
     }
   ]

@@ -4,15 +4,15 @@ import { fetchText } from './fetch.ts';
 import type { NewsDiscoveryConfig, NewsDiscoveryOptions, NewsDiscoveryResult } from './news-discovery.ts';
 
 const origin = 'https://www3.nhk.or.jp';
-const listing = `${origin}/nhkworld/data/zh/news/all.json`;
+const listing = `${origin}/nhkworld/data/zt/news/all.json`;
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 
-// These are the public static JSON files used by NHK's own Chinese news page.
+// These are the public static JSON files used by NHK's own Traditional Chinese news page.
 // public_at is publication; updated_at must never stand in for it.
 export function nhkArticle(raw: unknown, id: string, now: Date): FeedItem | null {
   const row = record(record(raw).data);
-  if (!/^(?:nd-)?\d{8}[a-z0-9]+$/.test(id) || row.id !== id || row.page_url !== `/nhkworld/zh/news/${id}/`) return null;
+  if (!/^(?:nd-)?\d{8}[a-z0-9]+$/.test(id) || row.id !== id || row.page_url !== `/nhkworld/zt/news/${id}/`) return null;
   if (typeof row.title !== 'string' || typeof row.detail !== 'string' || !/^\d{13}$/.test(String(row.public_at))) return null;
   const publishedAt = new Date(Number(row.public_at));
   if (publishedAt.getTime() > now.getTime() + 3600000 || publishedAt.getTime() < now.getTime() - 14 * 86400000) return null;
@@ -31,7 +31,7 @@ export function nhkArticle(raw: unknown, id: string, now: Date): FeedItem | null
 
 export async function discoverNhk(config: NewsDiscoveryConfig, options: NewsDiscoveryOptions = {}): Promise<NewsDiscoveryResult> {
   const result: NewsDiscoveryResult = { items: [], errors: [], strategy: 'none', listingUrl: null, attempted: 0, samples: [] };
-  if (config.homeUrl !== `${origin}/nhkworld/zh/news/`) return result;
+  if (config.homeUrl !== `${origin}/nhkworld/zt/news/`) return result;
   const fetcher = options.fetch ?? fetchText;
   const now = options.now?.() ?? new Date();
   const deadline = Date.now() + (options.timeoutMs ?? 45000);
@@ -62,7 +62,7 @@ export async function discoverNhk(config: NewsDiscoveryConfig, options: NewsDisc
     const id = record(candidate).id;
     if (typeof id !== 'string' || !/^(?:nd-)?\d{8}[a-z0-9]+$/.test(id) || seen.has(id)) continue;
     seen.add(id);
-    const item = nhkArticle(await get(`${origin}/nhkworld/data/zh/news/${id}.json`), id, now);
+    const item = nhkArticle(await get(`${origin}/nhkworld/data/zt/news/${id}.json`), id, now);
     if (!item?.verifiedContent || !item.publishedAt) continue;
     result.items.push(item);
     result.samples.push({

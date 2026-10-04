@@ -307,7 +307,7 @@
 | ntdtv_tw | 新唐人亞太 ntdtv.com.tw | 新唐人亞太電視台 | 官方名稱已核對 | [新唐人亞太電視台](https://www.ntdtv.com.tw/) |
 | afp | 法新社 | 法新社 | 官方名稱已核對 | [AFP 官方網站；通訊社識別使用法新社](https://www.afp.com/) |
 | ap | 美聯社 | 美聯社 | 官方名稱已核對 | [The Associated Press 官方網站；通訊社識別使用美聯社](https://www.ap.org/) |
-| nhk | NHK | NHK | 保留既有名稱，官網待複核 | [NHK；官網存取受限，保留既有名稱](https://www3.nhk.or.jp/nhkworld/zh/) |
+| nhk | NHK | NHK | 保留既有名稱，官網待複核 | [NHK；官網存取受限，保留既有名稱](https://www3.nhk.or.jp/nhkworld/zt/) |
 | kyodo | 共同社 | 共同社 | 保留既有名稱，官網待複核 | [共同社；官網存取受限，保留既有名稱](https://tchina.kyodonews.net/) |
 | yonhap | 韓聯社 | 韓聯社 | 官方名稱已核對 | [韓聯社（南韓聯合通訊社）](https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/) |
 | xinhua | 新華社 | 新華社 | 官方名稱已核對 | [新華社官方新華網；保留通訊社識別，與 xinhuanet 網站來源分開](https://www.news.cn/) |

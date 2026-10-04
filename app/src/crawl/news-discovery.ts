@@ -212,7 +212,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
   if (!home) return { ...result, errors: ['Invalid home URL'] };
   if (/^https:\/\/www\.msn\.com\/zh-tw\/news\/?(?:\?|$)/.test(home)) return discoverMsn(config, options);
   if (/^https:\/\/pnn\.tw\/?$/.test(home)) return discoverPnn(config, options);
-  if (home === 'https://www3.nhk.or.jp/nhkworld/zh/news/') return discoverNhk(config, options);
+  if (home === 'https://www3.nhk.or.jp/nhkworld/zt/news/') return discoverNhk(config, options);
   const allowedHosts = new Set([hostKey(new URL(home))]);
   for (const host of config.articleHosts ?? []) {
     if (/^[a-z0-9.-]+$/i.test(host)) allowedHosts.add(host.toLowerCase().replace(/^www\./, ''));
