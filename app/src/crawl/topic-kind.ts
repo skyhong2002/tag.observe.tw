@@ -58,7 +58,9 @@ function taipeiDate(y: number, m: number, d: number, now: Date): Date | null {
   if (y < 2000 || m < 1 || m > 12 || d < 1 || d > 31) return null;
   const t = Date.UTC(y, m - 1, d) - 8 * 3600e3;
   const check = new Date(t + 8 * 3600e3);
-  if (check.getUTCMonth() !== m - 1 || t > +now + DAY) return null;
+  // A URL date is that day's midnight in Taipei: any later day has not begun
+  // (PChome files some stories under tomorrow's date).
+  if (check.getUTCMonth() !== m - 1 || t > +now) return null;
   return new Date(t);
 }
 

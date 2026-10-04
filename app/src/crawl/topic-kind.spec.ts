@@ -52,6 +52,12 @@ describe('dateFromStoryUrl', () => {
     expect(day('www.cna.com.tw#202411280123')).toBe(nov28);
   });
 
+  it('rejects a day that has not begun in Taipei', () => {
+    const at = new Date('2026-10-04T12:59:00Z'); // 20:59 on 10/4 in Taipei
+    expect(dateFromStoryUrl('news.pchome.com.tw/politics/idn/20261005/index-79113908610361224001.html', at)).toBeNull();
+    expect(dateFromStoryUrl('news.pchome.com.tw/living/focusnews/20261004/index-1.html', at)?.toISOString()).toBe('2026-10-03T16:00:00.000Z');
+  });
+
   it('reads ROC dates in 台視 story IDs', () => {
     expect(day('news.ttv.com.tw/news/11311280002400W')).toBe(nov28);
   });
