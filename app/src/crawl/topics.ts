@@ -336,9 +336,22 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'gvm',
     url: 'https://www.gvm.com.tw/topic',
     fallbackImage: 'https://www.gvm.com.tw/public/images/og-img.jpg',
-    pattern: /\/topic\/\d+$/,
+    // Four-digit IDs only: /topic/20251230-style links 404.
+    pattern: /\/topic\/\d{4}$/,
     scope: '.info-cards',
     title: (a) => a.find('.info-cards_title').text().trim() || heading(a),
+    kind: 'feature',
+    // ~8 a page over ~35 pages, newest first.
+    paginate: { url: (n) => `https://www.gvm.com.tw/topic?page=${n}`, max: 10 },
+    listings: [
+      {
+        // 特刊 (special issues) beside the regular issues on /magazine.
+        url: 'https://www.gvm.com.tw/magazine',
+        pattern: /\/magazine\/special\/\d+$/,
+        title: (a) => a.attr('title')?.trim() || heading(a),
+        kind: 'feature',
+      },
+    ],
   },
   {
     media: 'cw',

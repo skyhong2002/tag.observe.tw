@@ -146,3 +146,22 @@ describe('上報', () => {
     ]);
   });
 });
+
+describe('遠見', () => {
+  it('keeps four-digit topic IDs and reads 特刊 from /magazine', () => {
+    const html =
+      '<ul class="info-cards"><li><a href="/topic/2367"><p class="info-cards_title">友善職場</p></a></li><li><a href="/topic/20251230"><p class="info-cards_title">壞</p></a></li></ul>';
+    expect(extractTopics(html, rule('gvm')).map((t) => t.url)).toEqual(['https://www.gvm.com.tw/topic/2367']);
+    const mag = listing('gvm', 'https://www.gvm.com.tw/magazine');
+    const issues = `<a href="https://www.gvm.com.tw/magazine/published/1170" title="紅不讓經濟學"><p>477期</p></a>
+      <a href="https://www.gvm.com.tw/magazine/special/1172" title="星雲大師百年光輝"><img data-src="https://imgs.gvm.com.tw/a.jpg"><p>2026 年 03 月特刊</p></a>`;
+    expect(extractTopics(issues, mag)).toEqual([
+      {
+        url: 'https://www.gvm.com.tw/magazine/special/1172',
+        title: '星雲大師百年光輝',
+        image: 'https://imgs.gvm.com.tw/a.jpg',
+        category: null,
+      },
+    ]);
+  });
+});
