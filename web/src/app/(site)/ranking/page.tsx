@@ -1,33 +1,36 @@
 import Link from 'next/link';
 import MediaIcons from '@/components/MediaIcons';
 import PendingLabel from '@/components/PendingLabel';
-import RankingBasisNote from '@/components/RankingBasisNote';
+import RankingWordCloud from '@/components/RankingWordCloud';
 import SortIndicator from '@/components/SortIndicator';
 import Sparkline from '@/components/Sparkline';
 import TableScroller from '@/components/TableScroller';
 import { fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
+import { type RankingSearch, rankingQuery } from '@/lib/ranking-query';
 import { table } from '@/lib/table-styles';
 
 export const revalidate = 60;
 export const metadata = { title: '新聞關鍵字排行榜' };
-type Search = { category?: string; order?: string; limit?: string; sort?: string; dir?: string };
+type Search = RankingSearch;
 type Col = 'tag' | 'change' | 'burst' | 'score' | 'count' | 'trend' | 'media';
 const COLS: Col[] = ['tag', 'burst', 'change', 'score', 'count', 'trend', 'media'];
 const RELATED_SHOWN = 5;
+const CLOUD_WORDS = 500;
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
-  const category = sp.category ?? 'all';
-  const order = sp.order === 'score' ? 'score' : 'burst';
-  const limit = Math.min(200, Math.max(10, Number(sp.limit) || 50));
+  // The footer's @notes/ranking makes the same request for the basis list.
+  const { category, order, limit } = rankingQuery(sp);
   // Header sort: 爆發力／分數 pick which ranking is fetched; the other columns
   // re-order the rows already shown. Numbers default to descending.
   const sort: Col = COLS.includes(sp.sort as Col) ? (sp.sort as Col) : order;
   const dir = sp.dir === 'asc' || sp.dir === 'desc' ? sp.dir : sort === 'tag' ? 'asc' : 'desc';
-  const [categories, media, ranking] = await Promise.all([
+  const [categories, media, ranking, cloud] = await Promise.all([
     fetchCategories(),
     fetchMedia(),
     fetchRanking(category, order, limit, true, true).catch(() => null),
+    // The word cloud takes more keywords than the table shows, always by score.
+    fetchRanking(category, 'score', CLOUD_WORDS).catch(() => null),
   ]);
   const current = categories.find((c) => c.key === category);
   // Keeps the header sort across category / "more" links; sortLink clears it
@@ -104,6 +107,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           分數與爆發力怎麼算 ⓘ
         </a>
       </div>
+      {cloud && (
+        <RankingWordCloud
+          terms={cloud.entries.map((e) => ({
+            tag: e.tag,
+            score: e.normalized,
+            burst: e.burst,
+            count: e.count,
+            media: Object.keys(e.media).length,
+            isNew: e.new,
+          }))}
+        />
+      )}
       <nav className="-mx-1 flex gap-1 overflow-x-auto pb-1 text-sm">
         {categories.map((c) => (
           <Link
@@ -116,12 +131,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           </Link>
         ))}
       </nav>
-      {ranking && <RankingBasisNote basis={ranking.snapshot.basis} media={media} />}
       {ranking && !ranking.snapshot.available && <p className="text-sm text-zinc-600">這個時段的基準媒體收錄資料不足，暫不提供排行。</p>}
-      <p className="text-xs text-zinc-600">
-        趨勢：每小時新聞篇數的 24 小時移動平均，顯示最近 48
-        小時的變化；點關鍵字可查看完整時間圖。變動與一起出現的定義見頁尾「資料來源與計算方式」。
-      </p>
       {!ranking ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">這個分類目前沒有資料。</p>
       ) : (
@@ -180,7 +190,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     </td>
                     <td
                       title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
-                      className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'text-rose-600' : 'text-zinc-600'}`}
+                      className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'font-medium text-brand-700 dark:text-brand-400' : 'text-zinc-600'}`}
                     >
                       {e.burst?.toFixed(1) ?? '—'}
                     </td>
@@ -195,7 +205,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       }
                     >
                       {e.new ? (
-                        <span className="rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                        <span className="rounded bg-brand-100 px-1.5 py-0.5 font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-300">
                           新
                         </span>
                       ) : delta === null ? (

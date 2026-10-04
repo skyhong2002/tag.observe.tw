@@ -48,6 +48,23 @@ describe('word-cloud size range', () => {
     expect(wide.every((word) => word.x + word.width <= 760 && word.y + word.height <= 400)).toBe(true);
     expect(wide.length).toBeGreaterThanOrEqual(25);
   });
+  it('places more than 50 terms on request and keeps the spread with a steeper curve and lower floor', () => {
+    const many = Array.from({ length: 160 }, (_, i) => ({ label: `詞${i}`, count: 160 - i }));
+    const wide = layoutWordCloud(many, 960, 520, { min: 11, max: 80, budget: 0.7, curve: 1.3, words: 160 });
+    expect(wide.length).toBeGreaterThan(50);
+    const phone = layoutWordCloud(many, 320, 600, { min: 9, max: 72, floor: 9, budget: 1.1, curve: 1.3, words: 160 });
+    expect(phone.at(-1)!.fontSize).toBeGreaterThanOrEqual(9);
+    expect(phone[0].fontSize).toBeGreaterThanOrEqual(phone.at(-1)!.fontSize * 3);
+    expect(phone.every((word) => word.x + word.width <= 320 && word.y + word.height <= 600)).toBe(true);
+  });
+  it('fills the gaps of a large canvas with a few hundred terms', () => {
+    const many = Array.from({ length: 500 }, (_, i) => ({ label: i % 4 === 0 ? `Tag${i}` : `關鍵字${i}`, count: 1000 / (i + 1) }));
+    const placed = layoutWordCloud(many, 1120, 640, { min: 10, max: 88, floor: 10, budget: 0.7, curve: 1.5, words: 500 });
+    expect(placed.length).toBeGreaterThan(300);
+    for (const [i, a] of placed.entries())
+      for (const b of placed.slice(i + 1))
+        expect(a.x + a.width + 3 <= b.x || b.x + b.width + 3 <= a.x || a.y + a.height + 3 <= b.y || b.y + b.height + 3 <= a.y).toBe(true);
+  });
   it('rejects an inverted or empty size range', () => {
     expect(layoutWordCloud(terms, 760, 330, { min: 40, max: 20 })).toEqual([]);
     expect(layoutWordCloud(terms, 760, 330, { min: 0, max: 20 })).toEqual([]);
