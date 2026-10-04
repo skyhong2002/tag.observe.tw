@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
 import { registrable } from './topic-page.ts';
+import { zaobaoSpecials } from './topic-extractors-b2.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
 // literal markers that have since drifted for most sites; these rules match
@@ -515,6 +516,16 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/zaobao.png',
     pattern: /^\/specials?\/[^/?#]+$/,
     title: (a) => a.closest('h2').text().trim() || heading(a),
+    extract: zaobaoSpecials,
+    listings: [
+      {
+        // 互动新闻: one-off interactive microsites; skip the quizzes inside them.
+        url: 'https://www.zaobao.com.sg/interactive-graphics',
+        pattern: /^https:\/\/interactive\.zaobao\.com\.sg\/(?![^?#]*quiz)[^?#]+\/$/,
+        card: '.card',
+        kind: 'feature',
+      },
+    ],
   },
   {
     media: 'gv',

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { fetchTopicListings, TOPIC_RULES } from './topics.ts';
+import { zaobaoSpecials } from './topic-extractors-b2.ts';
+import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
+const listing = (media: string, url: string) => topicListings(rule(media)).find((l) => l.url === url)!;
 
 describe('technews', () => {
   it('takes topic slugs but not feeds, portals or the index', () => {
@@ -42,6 +44,29 @@ describe('theinitium', () => {
     expect(result.items.map((t) => [t.url.split('/tag/')[1], t.kind, t.source])).toEqual([
       ['2026-iran-war/', undefined, 'https://theinitium.com/series/'],
       ['resident-columnist-program/', 'topic', 'https://theinitium.com/series/page/2/'],
+    ]);
+  });
+});
+
+describe('zaobao', () => {
+  it('declares the permanent /special/ beats 議題 and leaves /specials/ events to auto', () => {
+    const html = '<h2><a href="/special/taiwan">台海局势</a></h2><h2><a href="/specials/sgbudget2025">新加坡财政预算案2025</a></h2>';
+    expect(zaobaoSpecials(html, rule('zaobao')).map((t) => [t.title, t.kind])).toEqual([
+      ['台海局势', 'topic'],
+      ['新加坡财政预算案2025', undefined],
+    ]);
+  });
+
+  it('takes interactive microsites but not the quizzes inside them', () => {
+    const graphics = listing('zaobao', 'https://www.zaobao.com.sg/interactive-graphics');
+    const card = (href: string, name: string) =>
+      `<div class="card"><a class="content-image" aria-label="${name}" href="${href}"></a><div><a href="${href}"><h3>${name}</h3></a></div></div>`;
+    const html =
+      card('https://interactive.zaobao.com.sg/2026/rare-earth/', '争稀土，得天下？') +
+      card('https://interactive.zaobao.com.sg/2026/asian-games-2026/quiz/team-singapore-in-asian-games.html', '亚运知多少') +
+      card('https://interactive.zaobao.com.sg/sg-chinese-funfest/2026/quiz-challenge', '文字大比拼');
+    expect(extractTopics(html, graphics).map((t) => [t.title, t.url])).toEqual([
+      ['争稀土，得天下？', 'https://interactive.zaobao.com.sg/2026/rare-earth/'],
     ]);
   });
 });
