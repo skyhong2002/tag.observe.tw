@@ -324,6 +324,32 @@ schemas.ArticleSimilarity = obj({
     '相似度高者在前',
   ),
 });
+const relatedArticle = obj({
+  id: int(),
+  media: str(),
+  mediaTitle: str(),
+  title: str(),
+  image: nullable(str()),
+  publishedAt: time(),
+  sharedTags: arr(str(), '共同標籤，較少見的在前'),
+});
+schemas.ArticleRelated = obj({
+  articleId: int(),
+  windowDays: int('只找刊登時間前後幾天內的報導'),
+  tags: arr(obj({ tag: str(), articles: int('期間內用到此標籤的篇數'), media: int('期間內用到此標籤的媒體數') }), '本篇的關鍵字'),
+  events: arr(
+    obj({
+      id: int('事件 thread id，網頁在 /eve/{id}/'),
+      title: str('事件代表標題'),
+      firstTime: time(),
+      lastTime: time(),
+      sharedTags: arr(str()),
+    }),
+    '主要標籤與本篇重疊的事件，最多 3 個',
+  ),
+  otherMedia: arr(relatedArticle, '其他媒體的相關報導，最多 8 篇、每家最多 2 篇'),
+  sameMedia: arr(relatedArticle, '同一媒體的相關報導，最多 5 篇'),
+});
 schemas.JournalistOutlet = obj({ media: ref('MediaKey'), name: str('媒體名稱'), count: int('期間內署名篇數') });
 schemas.JournalistSimilarity = obj({
   pairs: int('至少一端是此記者文章的相似配對數'),
@@ -604,6 +630,17 @@ export const ENDPOINTS: Endpoint[] = [
     errors: { '400': '參數無效', '404': '期間內沒有文章署此名字' },
     cache: '5 分鐘',
     example: '/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?hours=168',
+  },
+  {
+    path: '/api/v1/articles/{id}/related',
+    tag: 'articles',
+    summary: '延伸閱讀：同題的其他報導、關鍵字與事件',
+    description:
+      '刊登前後 3 天內與本篇共用標籤的報導，依標籤稀有度（IDF）與標題相近程度排序：共用 3 個以上標籤即列入；只共用 1–2 個時需標題也相近。標題幾乎相同的轉載只列一篇；內文相似的文章另見 /api/v1/articles/{id}/similarity，這裡不重複。事件依主要標籤重疊判斷，單一常見標籤（如選舉）不足以歸入。',
+    params: [p('id', '文章 id', { type: 'integer', minimum: 1 }, 1)],
+    response: ref('ArticleRelated'),
+    errors: { '400': '文章 id 無效', '404': '文章不存在' },
+    cache: '5 分鐘',
   },
   {
     path: '/api/v1/articles/{id}/content',

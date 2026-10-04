@@ -6,6 +6,7 @@ import { legacyRoute } from './legacy-redirects.js';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
+import { registerArticleRelated } from './v1/article-related.ts';
 import { registerArticleSearch } from './v1/articles.ts';
 import { registerJournalists } from './v1/journalists.ts';
 import { registerMediaKeywords } from './v1/media-keywords.ts';
@@ -75,6 +76,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerSimilarity(app, own.db);
     registerJournalists(app, own.db);
     registerArticleContent(app, own.db);
+    registerArticleRelated(app, own.db);
   }
   registerApiMeta(app);
   registerFeeds(app, own?.db ?? null);

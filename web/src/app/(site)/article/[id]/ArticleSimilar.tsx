@@ -27,12 +27,12 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
   else if (!data.matches.length) status = `前後 ${windowDays} 天內沒有其他媒體的相似內文`;
   return (
     <section aria-labelledby="similar-heading">
-      <h2 id="similar-heading" className="mb-1 text-sm font-medium">
+      <h3 id="similar-heading" className="mb-1 text-sm font-medium">
         他站相似報導
         {data && data.matches.length > 0 && (
           <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{data.matches.length} 篇</span>
         )}
-      </h2>
+      </h3>
       <p className="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
         與前後 {windowDays} 天內其他媒體文章的內文比對，相似度 ≥ {percent(data?.threshold ?? 0.65)}
         。相似不等於抄襲：同一份新聞稿、通訊社稿、授權轉載與註明引用都會讓內文相近；刊登時間以各站標示為準，與寫稿先後無關。

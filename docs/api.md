@@ -63,6 +63,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/articles/{id}/similarity`](#api-v1-articles-id-similarity) | 單篇文章的他站相似報導 |
 | [`GET /api/v1/journalists`](#api-v1-journalists) | 期間內具名記者一覽 |
 | [`GET /api/v1/journalists/{name}`](#api-v1-journalists-name) | 單一記者的文章、刊登媒體與他站相似配對 |
+| [`GET /api/v1/articles/{id}/related`](#api-v1-articles-id-related) | 延伸閱讀：同題的其他報導、關鍵字與事件 |
 | [`GET /api/v1/articles/{id}/content`](#api-v1-articles-id-content) | 單篇內文（刊登 7 天內） |
 | [`GET /api/v1/media/{media}/keywords`](#api-v1-media-media-keywords) | 媒體報導關鍵字 |
 | [`GET /api/v1/media/{media}/content`](#api-v1-media-media-content) | 媒體內文庫列表 |
@@ -571,6 +572,61 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/similarity'
 | `matches[].evidence` | string | 最多 100 字的連續相同片段 |
 
 錯誤：`400` 參數無效；`404` 文章不存在。
+
+快取：5 分鐘。
+
+<a id="api-v1-articles-id-related"></a>
+
+### `GET /api/v1/articles/{id}/related`
+
+**延伸閱讀：同題的其他報導、關鍵字與事件**
+
+刊登前後 3 天內與本篇共用標籤的報導，依標籤稀有度（IDF）與標題相近程度排序：共用 3 個以上標籤即列入；只共用 1–2 個時需標題也相近。標題幾乎相同的轉載只列一篇；內文相似的文章另見 /api/v1/articles/{id}/similarity，這裡不重複。事件依主要標籤重疊判斷，單一常見標籤（如選舉）不足以歸入。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | integer | 文章 id，例：`1` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/articles/1/related'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `articleId` | integer |  |
+| `windowDays` | integer | 只找刊登時間前後幾天內的報導 |
+| `tags` | object[] | 本篇的關鍵字 |
+| `tags[].tag` | string |  |
+| `tags[].articles` | integer | 期間內用到此標籤的篇數 |
+| `tags[].media` | integer | 期間內用到此標籤的媒體數 |
+| `events` | object[] | 主要標籤與本篇重疊的事件，最多 3 個 |
+| `events[].id` | integer | 事件 thread id，網頁在 /eve/{id}/ |
+| `events[].title` | string | 事件代表標題 |
+| `events[].firstTime` | string (ISO 時間) |  |
+| `events[].lastTime` | string (ISO 時間) |  |
+| `events[].sharedTags` | string[] |  |
+| `otherMedia` | object[] | 其他媒體的相關報導，最多 8 篇、每家最多 2 篇 |
+| `otherMedia[].id` | integer |  |
+| `otherMedia[].media` | string |  |
+| `otherMedia[].mediaTitle` | string |  |
+| `otherMedia[].title` | string |  |
+| `otherMedia[].image` | string \| null |  |
+| `otherMedia[].publishedAt` | string (ISO 時間) |  |
+| `otherMedia[].sharedTags` | string[] | 共同標籤，較少見的在前 |
+| `sameMedia` | object[] | 同一媒體的相關報導，最多 5 篇 |
+| `sameMedia[].id` | integer |  |
+| `sameMedia[].media` | string |  |
+| `sameMedia[].mediaTitle` | string |  |
+| `sameMedia[].title` | string |  |
+| `sameMedia[].image` | string \| null |  |
+| `sameMedia[].publishedAt` | string (ISO 時間) |  |
+| `sameMedia[].sharedTags` | string[] | 共同標籤，較少見的在前 |
+
+錯誤：`400` 文章 id 無效；`404` 文章不存在。
 
 快取：5 分鐘。
 
