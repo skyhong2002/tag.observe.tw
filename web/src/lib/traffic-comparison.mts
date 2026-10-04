@@ -56,6 +56,8 @@ export function buildComparison(
   snapshots: Array<{ month: string; sources: TrafficSource[] }>,
   catalog: NewsSource[],
   crawl: CrawlComparison | null,
+  /** Outlets removed from the site on request; their spreadsheet rows are dropped too. */
+  hidden: ReadonlySet<string> = new Set(),
 ): ComparisonData {
   const outlets = new Map<string, ComparisonOutlet>();
   const collected = new Map(crawl?.media.map((m) => [m.media, m]) ?? []);
@@ -122,7 +124,7 @@ export function buildComparison(
     months: [...new Set([...trafficMonths, ...(crawl?.months ?? [])])].sort(),
     trafficMonths,
     crawlMonths: crawl?.months ?? [],
-    outlets: [...outlets.values()],
+    outlets: [...outlets.values()].filter((outlet) => !outlet.media || !hidden.has(outlet.media)),
     collectionStartedAt: crawl?.collectionStartedAt ?? null,
     generatedAt: crawl?.generatedAt ?? null,
   };

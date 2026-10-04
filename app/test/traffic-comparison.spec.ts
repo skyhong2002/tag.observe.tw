@@ -227,4 +227,9 @@ describe('traffic list domain fallbacks', () => {
       expect(built.outlets[0].domain).toBeNull();
     }
   });
+
+  it('drops outlets removed from the site, with their spreadsheet traffic', () => {
+    const built = buildComparison([{ month: '202608', sources: [row({ traffic: 1 })] }], [source], crawl, new Set([source.media]));
+    expect(built.outlets).toEqual([]);
+  });
 });

@@ -2,8 +2,11 @@ import MediaTabs from '@/components/MediaTabs';
 import TrafficComparison from '@/components/TrafficComparison';
 import { API_ORIGIN } from '@/lib/api';
 import { buildComparison, type CrawlComparison } from '@/lib/traffic-comparison.mts';
+import disabled from '../../../../../../app/data/crawl-disabled.json';
 import traffic from '../../../../../../app/data/media-traffic.json';
 import catalog from '../../../../../../app/data/news-source-catalog.json';
+
+const hidden = new Set(disabled.excludedMedia);
 
 export const metadata = {
   title: 'Similar Web',
@@ -44,7 +47,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
           <span>由 Gene Hong 維護</span>
         </p>
       </header>
-      <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl)} initial={params} />
+      <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden)} initial={params} />
       <details
         id="classification-method"
         className="scroll-mt-20 border-t border-zinc-200 pt-4 text-xs leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"
