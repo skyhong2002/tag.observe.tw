@@ -904,7 +904,8 @@
       ],
       "existing": false,
       "websiteEvidence": "https://lai-media.net/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "requestTimeoutMs": 15000
     },
     {
       "media": "thehubnews",
@@ -1139,7 +1140,8 @@
       "existing": false,
       "websiteEvidence": "https://nvns.net/",
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
-      "articlePattern": "^/news_view\\.php\\?"
+      "articlePattern": "^/news_view\\.php\\?",
+      "requestTimeoutMs": 15000
     },
     {
       "media": "bigmedia",
@@ -2841,7 +2843,8 @@
       "existing": false,
       "websiteEvidence": "https://www.biao-news.com/",
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
-      "articlePattern": "^/news_view\\.php\\?"
+      "articlePattern": "^/news_view\\.php\\?",
+      "requestTimeoutMs": 15000
     },
     {
       "media": "newday",
@@ -3032,7 +3035,8 @@
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
       "feedUrls": [
         "https://ammtw.com/feed"
-      ]
+      ],
+      "requestTimeoutMs": 15000
     },
     {
       "media": "tmnu",

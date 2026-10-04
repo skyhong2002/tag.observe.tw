@@ -21,6 +21,7 @@ const noop: Logger = { info() {}, warn() {} };
 const trunc = (s: string | null | undefined, n: number) => (s == null ? null : s.slice(0, n));
 const PLAIN_SITEMAP_WINDOW_MS = 2 * 86400e3;
 const PLAIN_SITEMAP_MAX = 300;
+const FEED_START = /^\s*(?:<\?xml[^>]*>\s*)?(?:<\?xml-stylesheet[^>]*>\s*)?<(?:urlset|sitemapindex|rss|feed|rdf:RDF)\b/;
 
 export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{ items: FeedItem[]; errors: string[] }> {
   if (spec.list.autoDiscover) {
@@ -46,7 +47,9 @@ export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{
         errors.push(`${url} -> ${res.status}`);
         continue;
       }
-      if (spec.list.discover) {
+      // A feed or news sitemap listed beside discovered HTML pages keeps its
+      // own dates and keywords (ftv: stalled sitemap + realtime page).
+      if (spec.list.discover && !FEED_START.test(res.body.slice(0, 1000))) {
         for (const item of discoverLinks(
           res.body,
           res.url || url,

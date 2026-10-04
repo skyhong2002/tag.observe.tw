@@ -79,3 +79,49 @@ describe('redirect cookies', () => {
     expect(cookieHeader(jar, 'example.com')).toBe('');
   });
 });
+
+describe('address pools', () => {
+  it('keeps every checked address and rejects the pool if one is private', async () => {
+    const { resolvePublicAll } = await import('./fetch.ts');
+    const pool = (async () => [
+      { address: '203.0.114.10', family: 4 },
+      { address: '203.0.114.11', family: 4 },
+    ]) as never;
+    await expect(resolvePublicAll(new URL('https://pool.example/'), pool)).resolves.toHaveLength(2);
+    const mixed = (async () => [
+      { address: '203.0.114.10', family: 4 },
+      { address: '10.0.0.5', family: 4 },
+    ]) as never;
+    await expect(resolvePublicAll(new URL('https://pool.example/'), mixed)).rejects.toBeInstanceOf(BlockedUrlError);
+  });
+
+  it('moves past an address that refuses the connection', async () => {
+    const { pinnedAgent } = await import('./fetch.ts');
+    const { fetch } = await import('undici');
+    const server = createServer((_req, res) => res.end('ok'));
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    const port = (server.address() as { port: number }).port;
+    const dispatcher = pinnedAgent([
+      { address: '127.0.0.2', family: 4 },
+      { address: '127.0.0.1', family: 4 },
+    ]);
+    try {
+      const res = await fetch(`http://pool.example:${port}/`, { dispatcher });
+      expect(await res.text()).toBe('ok');
+    } finally {
+      await dispatcher.close();
+      server.close();
+    }
+  });
+
+  it('fails over only on connect-phase errors', async () => {
+    const { isConnectFailure } = await import('./fetch.ts');
+    const failed = (cause: object) => Object.assign(new TypeError('fetch failed'), { cause });
+    expect(isConnectFailure(failed({ code: 'UND_ERR_CONNECT_TIMEOUT' }))).toBe(true);
+    expect(isConnectFailure(failed({ errors: [{ code: 'ETIMEDOUT' }, { code: 'ECONNREFUSED' }] }))).toBe(true);
+    expect(isConnectFailure(failed({ errors: [{ code: 'ETIMEDOUT' }, { code: 'ECONNRESET' }] }))).toBe(false);
+    expect(isConnectFailure(failed({ code: 'ECONNRESET' }))).toBe(false);
+    expect(isConnectFailure(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))).toBe(false);
+  });
+});

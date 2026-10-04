@@ -363,6 +363,18 @@ export const overrides: Record<string, SourceOverride> = {
     },
   },
   cw: { list: { urls: [{ cat: 'news', url: 'https://www.cw.com.tw/' }], discover: { pattern: '^/article/\\d+' } } },
+  // The news sitemap stopped updating at 2026-10-03 21:38 (+08) while the site
+  // kept publishing; /realtime/ lists the latest ~24 stories. The sitemap stays
+  // first so its dates and keywords apply whenever it moves again.
+  ftv: {
+    list: {
+      urls: [
+        { cat: 'news', url: 'https://www.ftvnews.com.tw/sitemap/sitemap.xml' },
+        { cat: 'news', url: 'https://www.ftvnews.com.tw/realtime/' },
+      ],
+      discover: { pattern: '^/news/detail/[A-Za-z0-9]+$', titleSelector: 'h2.title' },
+    },
+  },
   bnext: {
     list: {
       urls: [

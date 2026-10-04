@@ -6,7 +6,7 @@
 
 | 模組 | 用途 |
 | --- | --- |
-| `fetch.ts` | 下載：瀏覽器 UA、逾時、大小上限、charset 偵測（Big5 等）；Cloudflare 擋 Node TLS 時改用 curl；同一轉址鏈內保留 cookie；每一跳檢查 DNS 拒絕私有位址（SSRF） |
+| `fetch.ts` | 下載：瀏覽器 UA、逾時、大小上限、charset 偵測（Big5 等）；Cloudflare 擋 Node TLS 時改用 curl；同一轉址鏈內保留 cookie；每一跳檢查 DNS 拒絕私有位址（SSRF），釘住全部已檢查位址，連線失敗換下一個 |
 | `feed.ts` | RSS 2.0／RSS 1.0（RDF）／Atom／News sitemap／純 sitemap |
 | `html-list.ts` | 無 feed 媒體：標記式列表（舊規格）或 `list.discover` 同站連結探索 |
 | `article.ts` | 內文：news_keywords → keywords → article:tag → JSON-LD → 站別標記；發布時間、og:image、canonical |
@@ -203,3 +203,13 @@ Issue 列的 17 個「可再嘗試」來源已在 10-03 全數移出 `crawl-disa
 - **人民網**（`people_cn`）：站別規則只列 `politics.people.com.cn`，首頁其他頻道（finance、world、ent…）的文章抓不到日期。同一模板（`.rm_txt #newstime`、`#rm_txt_zw`）已逐一核對，擴到 15 個頻道；`pic.*` 圖集不同，`tw.*` 另有規則。正常索引新增 10 篇，正文 10/10 成功。
 - **中視**（`ctv`）：YouTube `feeds/videos.xml` 本身間歇回 404／500，其他頻道與外部抓取同樣失敗，uploads 播放清單 feed 也一樣；不是設定問題，失敗以外的輪次照常每天收 30 篇上下。官網 `hotNews.JSON` 最新只到 10-02，不能取代。維持現狀。
 - **洞傳媒**（`taiwandom`）：整站連 `robots.txt`、首頁、WP API 都回 Apache 403（ErrorDocument 也 403），外部抓取一樣；是站方伺服器設定壞掉，不是擋爬蟲。最後一篇 09-30。不能修，若持續兩週再移入 `crawl-disabled.json`。
+
+### 2026-10-04：12 小時高失敗率來源
+
+統計含部署重啟時遺留的 `running` 列。共同原因在下載層，不是探索流程：
+
+- **下載層（`fetch.ts`）**：SSRF 檢查後只釘第一個 DNS 位址。觀察者網 15 個 A 記錄中 2 個 TCP 不通、1 個 TCP 通但 TLS 卡住，DNS 輪替到它們就逾時（curl 會換位址，所以手動測都正常）。改為釘住全部已檢查的公開位址：TCP 2 秒換下一個，多位址時每輪連線（含 TLS）最多 4 秒、最多 3 輪，只在連線階段失敗時換位址，reset 不重試。另外 abort 不會中斷連線中的請求（undici 固定等 10 秒），連線逾時改以請求剩餘時間為上限。觀察者網同一篇連抓 30 次，修正前 3 次失敗，修正後 30 次全成功（最慢 4.7 秒）；正常索引 3 次都沒錯誤，11 篇已在庫，沒有新插入。
+- **民視**：新聞 sitemap 在 10-03 21:38（+08）後停更，之後 80 次索引都是 0 插入，正文階段只剩已刪除文章（404，3 次後停止重試）。加抓 `/realtime/`（約 24 則），sitemap 仍放第一，恢復後照用它的日期與關鍵字；`discover` 遇到 feed／sitemap 內容時改走 feed 解析。正常索引插入 34 篇，正文 34/34 成功，都有標籤和文章頁日期。21:38–07:00 的空窗即時頁已看不到，沒有補回。
+- **賴傳媒、視傳媒、彪網媒**：同一台主機 210.242.222.38，SYN 常丟（連線 1–4 秒）、首頁 TTFB 2–6 秒，單篇最慢 9 秒，8 秒逾時太緊。`requestTimeoutMs` 改 15000。重測：賴傳媒 7 篇通過（舊設定會有 1 篇逾時），各跑一次索引賴傳媒 +1、視傳媒 +1、彪網媒 0（6 篇都已在庫）。單篇逾時仍有，是主機本身慢。
+- **amm新聞**：同一 IP，平常 0.1 秒，但有時 TTFB 9–17 秒（實測 5 次裡 2 次超過 8 秒），`requestTimeoutMs` 改 15000。重測 12 篇，沒有錯誤（都已在庫）。
+- **銳傳媒**：失敗時 feed／sitemap 回 HTTP 500 或整站逾時，之後幾次都有入庫，排程已吸收，不改。重測 11 篇、+1。

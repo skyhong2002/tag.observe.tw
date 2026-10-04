@@ -68,6 +68,27 @@ describe('traffic coverage sources', () => {
     );
     expect(items.map((i) => [i.url, i.title])).toEqual([['https://www.mnews.tw/story/20261003nm002', '鏡新聞自己的完整新聞標題']]);
   });
+  it('merges the FTV news sitemap with its realtime page', async () => {
+    const published = new Date(Date.now() - 3600e3).toISOString();
+    const pages: Record<string, string> = {
+      'https://www.ftvnews.com.tw/sitemap/sitemap.xml': `﻿<?xml version="1.0" encoding="utf-8"?><urlset xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"><url><loc>https://www.ftvnews.com.tw/news/detail/2026A04W0001</loc><news:news><news:publication_date>${published}</news:publication_date><news:title>網站地圖裡的民視新聞標題</news:title><news:keywords>政治,選舉</news:keywords></news:news></url></urlset>`,
+      'https://www.ftvnews.com.tw/realtime/':
+        "<ul id='realtime'><li><a class='img-block' href='/news/detail/2026A04W0001'><img alt='網站地圖裡的民視新聞標題'></a></li><li><a class='img-block' href='/news/detail/2026A04W0215'><img alt='即時列表裡的新聞標題'></a><a href='/news/detail/2026A04W0215'><div class='time'>2026/10/04 14:11:17</div><h2 class='title'>即時列表裡的新聞標題</h2><div class='desc'>摘要不是標題</div></a></li></ul><a href='/realtime/'>即時新聞列表頁</a>",
+    };
+    const fetch = async (url: string): Promise<FetchResult> => ({
+      url,
+      status: 200,
+      body: pages[url] ?? '',
+      contentType: 'text/html',
+      ms: 1,
+    });
+    const { items } = await listSource(spec('ftv'), fetch);
+    expect(items.map((i) => [i.url.slice(-12), i.title, !!i.publishedAt])).toEqual([
+      ['2026A04W0001', '網站地圖裡的民視新聞標題', true],
+      ['2026A04W0215', '即時列表裡的新聞標題', false],
+    ]);
+    expect(items[0].tags).toEqual(['政治', '選舉']);
+  });
   it('keeps KNews article IDs and drops the card category from the headline', async () => {
     const body =
       '<a href="/news/A6E5314201ECAC7C8231C3C575A11136"><div class="title">知新聞完整的體育新聞標題</div><div class="category">體育</div></a><a href="/realtime/latest">即時新聞分類不應該被收錄</a>';

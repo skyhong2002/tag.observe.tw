@@ -63,14 +63,18 @@ export class BlockedUrlError extends Error {
   code = 'EBLOCKED';
 }
 
-export async function resolvePublic(url: URL, lookup = dnsLookup): Promise<{ address: string; family: number }> {
+type Address = { address: string; family: number };
+// Every address the name resolves to, all checked public. Multi-address
+// publishers (guancha.cn: 15 A records) can have dead members; pinning only
+// the first one turned DNS rotation into random timeouts.
+export async function resolvePublicAll(url: URL, lookup = dnsLookup): Promise<Address[]> {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new BlockedUrlError(`Blocked protocol ${url.protocol}`);
   if (url.username || url.password) throw new BlockedUrlError('Blocked credentials in URL');
   const host = url.hostname.replace(/^\[|\]$/g, '');
   const literal = isIP(host);
   if (literal) {
     if (!isPublicAddress(host)) throw new BlockedUrlError(`Blocked non-public address ${host}`);
-    return { address: host, family: literal };
+    return [{ address: host, family: literal }];
   }
   if (/(^|\.)(localhost|local|internal|localdomain|home\.arpa)$/i.test(host))
     throw new BlockedUrlError(`Blocked internal hostname ${host}`);
@@ -78,18 +82,64 @@ export async function resolvePublic(url: URL, lookup = dnsLookup): Promise<{ add
   if (!addresses.length) throw new BlockedUrlError(`No address for ${host}`);
   const bad = addresses.find((a) => !isPublicAddress(a.address));
   if (bad) throw new BlockedUrlError(`Blocked ${host} -> non-public ${bad.address}`);
-  return addresses[0];
+  return addresses;
+}
+export async function resolvePublic(url: URL, lookup = dnsLookup): Promise<Address> {
+  return (await resolvePublicAll(url, lookup))[0];
 }
 
-type LookupCallback = (err: Error | null, address: string | Array<{ address: string; family: number }>, family?: number) => void;
-function pinnedAgent({ address, family }: { address: string; family: number }) {
-  // TLS SNI and Host still use the URL hostname; only the socket target is pinned.
+type LookupCallback = (err: Error | null, address: string | Address[], family?: number) => void;
+export function pinnedAgent(targets: Address[], connectTimeout?: number) {
+  // TLS SNI and Host still use the URL hostname; only the socket targets are
+  // pinned. Node's autoSelectFamily walks the list, moving on from an address
+  // that has not connected within 2 s (one SYN retransmit), so a dead member
+  // costs one attempt instead of the whole request timeout.
+  const [first] = targets;
   return new Agent({
     connect: {
+      autoSelectFamily: true,
+      autoSelectFamilyAttemptTimeout: 2000,
+      ...(connectTimeout ? { timeout: connectTimeout } : {}),
       lookup: (_host: string, options: { all?: boolean }, callback: LookupCallback) =>
-        options?.all ? callback(null, [{ address, family }]) : callback(null, address, family),
+        options?.all ? callback(null, targets) : callback(null, first.address, first.family),
     },
   });
+}
+
+// Connect-phase failures, before any request bytes were sent: an unreachable
+// member of an address pool, or one that accepts TCP but stalls the TLS
+// handshake (both seen on guancha.cn). Resets are not here: they can mean
+// rate limiting and are not retried.
+const CONNECT_FAILURES = new Set(['UND_ERR_CONNECT_TIMEOUT', 'ETIMEDOUT', 'ECONNREFUSED', 'EHOSTUNREACH', 'ENETUNREACH']);
+export function isConnectFailure(error: unknown): boolean {
+  const cause = (error as { cause?: { code?: string; errors?: Array<{ code?: string }> } } | null)?.cause;
+  if (!cause) return false;
+  if (CONNECT_FAILURES.has(cause.code ?? '')) return true;
+  return !!cause.errors?.length && cause.errors.every((e) => CONNECT_FAILURES.has(e.code ?? ''));
+}
+
+// The abort signal does not interrupt a connect in progress (undici waits for
+// its own 10 s connect timeout), so the connect timeout is capped by the time
+// left. With several addresses, each pass gets at most 4 s to connect
+// (TCP + TLS) and the next pass starts from a later address; at most three
+// passes, all within the request's own deadline.
+async function openPinned(
+  url: URL,
+  targets: Address[],
+  { timeoutAt, ...init }: Parameters<typeof undiciFetch>[1] & { signal: AbortSignal; timeoutAt: number },
+) {
+  const passes = Math.min(targets.length, 3);
+  for (let pass = 0; ; pass++) {
+    const left = Math.max(1, Math.round(timeoutAt - performance.now()));
+    const dispatcher = pinnedAgent([...targets.slice(pass), ...targets.slice(0, pass)], targets.length > 1 ? Math.min(4000, left) : left);
+    try {
+      return { res: await undiciFetch(url, { ...init, dispatcher }), dispatcher };
+    } catch (error) {
+      await dispatcher.close().catch(() => {});
+      if (pass + 1 < passes && !init.signal.aborted && isConnectFailure(error)) continue;
+      throw error;
+    }
+  }
 }
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
@@ -126,9 +176,10 @@ export async function fetchViaCurl(
   try {
     let current = new URL(url);
     for (let hop = 0; hop <= MAX_HOPS; hop++) {
-      const { address } = await resolvePublic(current);
+      const targets = await resolvePublicAll(current);
       const port = current.port || (current.protocol === 'https:' ? '443' : '80');
-      const pinned = isIP(address) === 6 ? `[${address}]` : address;
+      // curl tries each pinned address in turn.
+      const pinned = targets.map(({ address }) => (isIP(address) === 6 ? `[${address}]` : address)).join(',');
       const { stdout } = await execFileAsync(
         'curl',
         [
@@ -224,19 +275,17 @@ async function fetchOnce(
   let current = new URL(url);
   const jar: Jar = [];
   for (let hop = 0; hop <= MAX_HOPS; hop++) {
-    const target = await resolvePublic(current);
-    const dispatcher = pinnedAgent(target);
+    const host = current.hostname.toLowerCase();
+    const cookie = cookieHeader(jar, host);
+    const { res, dispatcher } = await openPinned(current, await resolvePublicAll(current), {
+      method,
+      body: method === 'GET' ? undefined : body,
+      redirect: 'manual',
+      signal: deadline,
+      headers: { ...HEADERS(userAgent), ...headers, ...(cookie ? { cookie } : {}) },
+      timeoutAt: started + timeout,
+    });
     try {
-      const host = current.hostname.toLowerCase();
-      const cookie = cookieHeader(jar, host);
-      const res = await undiciFetch(current, {
-        method,
-        body: method === 'GET' ? undefined : body,
-        redirect: 'manual',
-        signal: deadline,
-        headers: { ...HEADERS(userAgent), ...headers, ...(cookie ? { cookie } : {}) },
-        dispatcher,
-      });
       storeCookies(jar, host, res.headers.getSetCookie());
       const location = res.headers.get('location');
       if (REDIRECTS.has(res.status) && location) {
