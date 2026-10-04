@@ -488,7 +488,8 @@ export const TOPIC_RULES: TopicRule[] = [
     kind: 'feature',
     // /feature/transformers/ is 天下's 廣告專輯 (brand packages).
     sponsored: (item) => /\/feature\/transformers\//.test(item.url),
-    paginate: { url: (n) => `https://www.cw.com.tw/special?page=${n}`, max: 10 },
+    // 2 pages: the archive is stored, and ten an hour drew 429s from Cloudflare.
+    paginate: { url: (n) => `https://www.cw.com.tw/special?page=${n}`, max: 2 },
     listings: [
       {
         // Menu-level /feature/topic/ pages: the podcast column and a few packages.

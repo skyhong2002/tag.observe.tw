@@ -106,17 +106,24 @@ export async function fetchStoryDates(
   return out;
 }
 
-/** The story pages to read this run: at most `cap`, 議題 (kind topic) first,
+/** The story pages to read this run: at most `cap`, and at most `perMedia`
+ *  from one outlet (天下 answered a burst with 429s), 議題 (kind topic) first,
  *  in the order the topics were given (the job's due order: active first). */
-export function storyFetchBudget(topics: Array<{ kind: string | null; stories: TopicStory[] }>, cap: number): TopicStory[] {
+export function storyFetchBudget(
+  topics: Array<{ kind: string | null; media?: string; stories: TopicStory[] }>,
+  cap: number,
+  perMedia = Number.POSITIVE_INFINITY,
+): TopicStory[] {
   const ordered = [...topics.filter((t) => t.kind === 'topic'), ...topics.filter((t) => t.kind !== 'topic')];
   const seen = new Set<string>();
+  const taken = new Map<string, number>();
   const out: TopicStory[] = [];
   for (const t of ordered)
     for (const s of t.stories) {
       if (out.length >= cap) return out;
-      if (seen.has(s.key)) continue;
+      if (seen.has(s.key) || (taken.get(t.media ?? '') ?? 0) >= perMedia) continue;
       seen.add(s.key);
+      taken.set(t.media ?? '', (taken.get(t.media ?? '') ?? 0) + 1);
       out.push(s);
     }
   return out;

@@ -388,7 +388,7 @@ export async function refreshTopicPages(
   }
   // 2. Stories still undated at either end of their list (storiesToDate): the
   // date stored for the same story on another topic of the outlet, else its
-  // own page — at most `storyFetches` per run, 議題 before 專題.
+  // own page — at most `storyFetches` per run (20 per outlet), 議題 before 專題.
   const dateOf = (p: (typeof plans)[number]) => (s: TopicStory) => storyDate(s, p.crawledAt.get(s.key), now());
   const wanted = plans.map((p) => (p.piece ? [] : storiesToDate(p.stories, dateOf(p))));
   const elsewhere = await storedStoryDates(
@@ -402,8 +402,9 @@ export async function refreshTopicPages(
     wanted[i] = storiesToDate(p.stories, dateOf(p));
   }
   const targets = storyFetchBudget(
-    plans.map((p, i) => ({ kind: p.row.kind, stories: wanted[i] })),
+    plans.map((p, i) => ({ kind: p.row.kind, media: p.row.media, stories: wanted[i] })),
     storyFetches,
+    20,
   );
   const read = await fetchStoryDates(targets, { fetch, now: now() });
   let storiesDated = 0;

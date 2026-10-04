@@ -90,6 +90,19 @@ describe('storyFetchBudget', () => {
     expect(storyFetchBudget([feature, topic1, topic2], 4).map((x) => x.key)).toEqual(['a.tw/t1', 'a.tw/shared', 'a.tw/t2', 'a.tw/f1']);
     expect(storyFetchBudget([feature, topic1], 0)).toEqual([]);
   });
+  it('takes at most perMedia pages from one outlet', () => {
+    const a = {
+      kind: 'topic',
+      media: 'cw',
+      stories: [
+        { key: 'cw.tw/1', title: '' },
+        { key: 'cw.tw/2', title: '' },
+        { key: 'cw.tw/3', title: '' },
+      ],
+    };
+    const b = { kind: 'topic', media: 'pts', stories: [{ key: 'pts.tw/1', title: '' }] };
+    expect(storyFetchBudget([a, b], 10, 2).map((x) => x.key)).toEqual(['cw.tw/1', 'cw.tw/2', 'pts.tw/1']);
+  });
 });
 
 describe('fetchStoryDates', () => {
