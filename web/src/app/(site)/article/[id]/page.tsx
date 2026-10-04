@@ -90,13 +90,12 @@ export default async function ArticleContentPage({
         <div className="mt-3">
           <DiscoverySources sources={article.discoverySources} />
         </div>
-        {expiresAt && (content.body || content.status === 'expired') && (
+        {/* While the excerpt is readable nothing announces its end date; the
+            notice appears only once it has expired. */}
+        {expiresAt && content.status === 'expired' && (
           <section aria-label="站內節錄期限" className="mt-5 rounded-lg bg-zinc-100 px-4 py-3 text-sm leading-7 dark:bg-zinc-900">
-            {/* The 7-day policy itself is in the footer's 資料來源與計算方式 (ArticleMethod). */}
             <p className="font-medium">
-              {content.status === 'expired' ? '站內節錄期限已於 ' : '站內節錄可閱讀至 '}
-              <time dateTime={content.expiresAt!}>{expiresAt}</time>
-              {content.status === 'expired' ? ' 結束' : ''}
+              站內節錄期限已於 <time dateTime={content.expiresAt!}>{expiresAt}</time> 結束
               <span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">（台北時間）</span>
             </p>
           </section>
