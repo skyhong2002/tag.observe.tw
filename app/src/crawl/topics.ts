@@ -379,8 +379,12 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'technews',
     url: 'https://technews.tw/topics/',
     fallbackImage: '/favicons/technews.png',
-    pattern: /^\/[a-z][\w-]+\/$/,
+    // Topic pages are bare slugs, as are the site's feeds, portals and static pages.
+    pattern:
+      /^\/(?!(?:feed|topics|tn-rss|event-portal|enterprise-portal|aboutus|contact|staff|copyright|privacy-policy|terms-of-use|content-exchange)\/)[a-z][\w-]+\/$/,
     scope: '#content .carousel-banner_item, #content .column_list_item_wrapper',
+    // Mixed: some keep gaining /YYYY/MM/DD/ stories, most were published once.
+    kind: 'auto',
     card: '.carousel-banner_item, .column_list_item_wrapper',
   },
   {
