@@ -51,3 +51,8 @@ export function taisoundsTopics(body: string, rule: TopicRule): TopicItem[] {
   if (/^\s*\{/.test(body)) html = (JSON.parse(body) as { htmlString?: string }).htmlString ?? '';
   return extractTopics(html, rule);
 }
+
+/** 天下 navigation's /feature/topic/ pages: its podcast is a running column (議題); the rest are classified by their stories. */
+export function cwNavTopics(html: string, rule: TopicRule): TopicItem[] {
+  return extractTopics(html, rule).map((t) => (/podcast/i.test(t.url) ? { ...t, kind: 'topic' as const } : t));
+}

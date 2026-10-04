@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FetchRequest } from './fetch.ts';
-import { mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { cwNavTopics, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
@@ -162,6 +162,32 @@ describe('遠見', () => {
         image: 'https://imgs.gvm.com.tw/a.jpg',
         category: null,
       },
+    ]);
+  });
+});
+
+describe('天下', () => {
+  it('reads old /special/ packages and marks 廣告專輯 sponsored', async () => {
+    const page1 = `<div class="articleGroup"><section class="article"><a href="https://www.cw.com.tw/feature/transformers/2026hoya"></a><h3>HOYA</h3></section>
+      <section class="article"><a href="https://www.cw.com.tw/feature/event/2026biomed"></a><h3>生醫</h3></section></div>`;
+    const page2 = `<div class="articleGroup"><section class="article"><a href="https://www.cw.com.tw/special/2521"></a><h3>2020要來了</h3></section></div>`;
+    const result = await fetchTopicListings({ ...rule('cw'), listings: [] }, async (url) =>
+      response(url, url.endsWith('page=2') ? page2 : url.includes('page=') ? '<div class="articleGroup"></div>' : page1),
+    );
+    expect(result.items.map((t) => [t.title, t.kind, !!t.sponsored])).toEqual([
+      ['HOYA', 'feature', true],
+      ['生醫', 'feature', false],
+      ['2020要來了', 'feature', false],
+    ]);
+  });
+
+  it('takes the podcast from the menu as a 議題', () => {
+    const nav = listing('cw', 'https://www.cw.com.tw/');
+    const html = `<a href="https://www.cw.com.tw/feature/topic/CW-podcast">天下Podcast</a>
+      <a href="https://www.cw.com.tw/feature/topic/aging-special-jp?utm_source=cw_web">開站專題</a>`;
+    expect(cwNavTopics(html, nav).map((t) => [t.url, t.kind])).toEqual([
+      ['https://www.cw.com.tw/feature/topic/CW-podcast', 'topic'],
+      ['https://www.cw.com.tw/feature/topic/aging-special-jp', undefined],
     ]);
   });
 });

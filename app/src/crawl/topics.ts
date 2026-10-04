@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import { cwNavTopics, mirrorTopics, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -357,9 +357,22 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'cw',
     url: 'https://www.cw.com.tw/special',
     fallbackImage: 'https://www.cw.com.tw/assets_new/img/fbshare.jpg',
-    pattern: /cw\.com\.tw\/feature\/[^/?#]+\/[^/?#]+/,
+    // Older pages link 2017–2019 packages as /special/NNNN.
+    pattern: /cw\.com\.tw\/(feature\/[^/?#]+\/[^/?#]+|special\/\d+)$/,
     scope: '.articleGroup',
     title: (a) => a.closest('section.article').find('h3').first().text().trim() || textOf(a),
+    kind: 'feature',
+    // /feature/transformers/ is 天下's 廣告專輯 (brand packages).
+    sponsored: (item) => /\/feature\/transformers\//.test(item.url),
+    paginate: { url: (n) => `https://www.cw.com.tw/special?page=${n}`, max: 10 },
+    listings: [
+      {
+        // Menu-level /feature/topic/ pages: the podcast column and a few packages.
+        url: 'https://www.cw.com.tw/',
+        pattern: /cw\.com\.tw\/feature\/topic\/[^/?#]+$/,
+        extract: cwNavTopics,
+      },
+    ],
   },
   {
     media: 'bnext',
