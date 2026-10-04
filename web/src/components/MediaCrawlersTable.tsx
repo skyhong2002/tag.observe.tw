@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
+import { taipei } from '@/lib/api';
 import {
   type CrawlerGroup,
   type CrawlerSort,
@@ -9,7 +10,10 @@ import {
   crawlerTags,
   emptyCrawlerFilters,
   type MediaCrawler,
+  type MediaTopicSources,
   selectCrawlers,
+  type TopicSourceKind,
+  topicSourceKindLabels,
 } from '@/lib/media-crawlers.mts';
 import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
 import MediaHoverLink from './MediaHoverLink';
@@ -18,6 +22,7 @@ const columns: Array<{ key: CrawlerSort; label: string }> = [
   { key: 'title', label: '媒體' },
   ...crawlerGroups,
   { key: 'code', label: '程式碼' },
+  { key: 'topics', label: '議題／專題' },
 ];
 const tagStyle = 'inline-flex shrink-0 items-center whitespace-nowrap rounded border px-1.5 py-0.5 text-xs leading-4';
 const tagColors: Record<CrawlerGroup, string> = {
@@ -25,12 +30,26 @@ const tagColors: Record<CrawlerGroup, string> = {
   tools: 'border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-200',
   content: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200',
 };
+const sourceKindColors: Record<TopicSourceKind, string> = {
+  topic: 'border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-900 dark:bg-brand-950 dark:text-brand-200',
+  feature: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200',
+  auto: 'border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+};
+const topicStatusLabels: Record<string, string> = {
+  ok: '更新正常',
+  partial: '部分入口未更新',
+  failed: '本次未能更新',
+  pending: '等待首次檢查',
+  running: '正在更新',
+};
+const topicProblem = (t: MediaTopicSources) => t.status === 'failed' || t.status === 'partial' || t.sources.some((s) => s.error);
 
 export default function MediaCrawlersTable({ media, initialQuery }: { media: MediaCrawler[]; initialQuery: string }) {
   const [query, setQuery] = useState(initialQuery);
   const [filters, setFilters] = useState(emptyCrawlerFilters);
   const [sort, setSort] = useState<CrawlerSort>('title');
   const [descending, setDescending] = useState(false);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const options = useMemo(
     () =>
       crawlerGroups.map((group) => ({
@@ -140,92 +159,129 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
               const tags = crawlerTags(row);
               const schedule = row.schedule === 'off' ? '未啟用' : row.schedule === 'hourly' ? '每小時' : '每 9 分鐘';
               return (
-                <tr key={row.media} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                  <td className="px-3 py-1.5">
-                    <div className="flex items-center gap-2">
-                      <MediaHoverLink
-                        media={row.media}
-                        title={row.title}
-                        {...{ icon: false }}
-                        className="inline-flex items-center gap-2 font-medium hover:underline"
-                      >
-                        {icon ? (
-                          <Image
-                            src={icon}
-                            alt=""
-                            width={16}
-                            height={16}
-                            unoptimized
-                            className={`size-4 shrink-0 object-contain ${mediaIconClass(row.media)}`}
-                          />
-                        ) : (
-                          <span
-                            aria-hidden="true"
-                            className="inline-flex size-4 items-center justify-center rounded bg-zinc-200 text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
-                          >
-                            {row.title.slice(0, 1)}
+                <Fragment key={row.media}>
+                  <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                    <td className="px-3 py-1.5">
+                      <div className="flex items-center gap-2">
+                        <MediaHoverLink
+                          media={row.media}
+                          title={row.title}
+                          {...{ icon: false }}
+                          className="inline-flex items-center gap-2 font-medium hover:underline"
+                        >
+                          {icon ? (
+                            <Image
+                              src={icon}
+                              alt=""
+                              width={16}
+                              height={16}
+                              unoptimized
+                              className={`size-4 shrink-0 object-contain ${mediaIconClass(row.media)}`}
+                            />
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              className="inline-flex size-4 items-center justify-center rounded bg-zinc-200 text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
+                            >
+                              {row.title.slice(0, 1)}
+                            </span>
+                          )}
+                          <span className="max-w-40 truncate" title={`${row.title} · ${row.country}`}>
+                            {row.title}
                           </span>
-                        )}
-                        <span className="max-w-40 truncate" title={`${row.title} · ${row.country}`}>
-                          {row.title}
-                        </span>
-                      </MediaHoverLink>
-                      <span className="text-[10px] text-zinc-500">{schedule}</span>
-                    </div>
-                  </td>
-                  {crawlerGroups.map(({ key, label }) => (
-                    <td key={key} className="px-3 py-1.5">
-                      <div
-                        className="flex items-center gap-1"
-                        title={
-                          key === 'methods'
-                            ? `${row.crawler?.methods.join('、') ?? '尚無資料'}${row.crawler?.lastVerifiedMethod ? `；最近驗證：${row.crawler.lastVerifiedMethod}` : ''}`
-                            : key === 'tools'
-                              ? (row.crawler?.transport ?? undefined)
-                              : row.crawler?.body
-                        }
-                      >
-                        {tags[key].map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            aria-label={`${label}：${tag}，切換篩選`}
-                            aria-pressed={filters[key].includes(tag)}
-                            onClick={() => toggle(key, tag)}
-                            className={`${tagStyle} ${tagColors[key]} ${filters[key].includes(tag) ? 'ring-1 ring-current' : ''}`}
-                          >
-                            {tag}
-                          </button>
-                        ))}
+                        </MediaHoverLink>
+                        <span className="text-[10px] text-zinc-500">{schedule}</span>
                       </div>
                     </td>
-                  ))}
-                  <td className="px-3 py-1.5">
-                    <div className="flex items-center gap-3">
-                      {row.crawler?.links.length ? (
-                        row.crawler.links.map((link) => (
-                          <a
-                            key={link.url}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`${row.title}：${link.label}（另開視窗）`}
-                            className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
-                          >
-                            {link.label} ↗
-                          </a>
-                        ))
+                    {crawlerGroups.map(({ key, label }) => (
+                      <td key={key} className="px-3 py-1.5">
+                        <div
+                          className="flex items-center gap-1"
+                          title={
+                            key === 'methods'
+                              ? `${row.crawler?.methods.join('、') ?? '尚無資料'}${row.crawler?.lastVerifiedMethod ? `；最近驗證：${row.crawler.lastVerifiedMethod}` : ''}`
+                              : key === 'tools'
+                                ? (row.crawler?.transport ?? undefined)
+                                : row.crawler?.body
+                          }
+                        >
+                          {tags[key].map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              aria-label={`${label}：${tag}，切換篩選`}
+                              aria-pressed={filters[key].includes(tag)}
+                              onClick={() => toggle(key, tag)}
+                              className={`${tagStyle} ${tagColors[key]} ${filters[key].includes(tag) ? 'ring-1 ring-current' : ''}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    ))}
+                    <td className="px-3 py-1.5">
+                      <div className="flex items-center gap-3">
+                        {row.crawler?.links.length ? (
+                          row.crawler.links.map((link) => (
+                            <a
+                              key={link.url}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${row.title}：${link.label}（另開視窗）`}
+                              className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                            >
+                              {link.label} ↗
+                            </a>
+                          ))
+                        ) : (
+                          <span className="text-zinc-500">未設定爬蟲</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-1.5">
+                      {row.topics ? (
+                        <button
+                          type="button"
+                          aria-expanded={expanded.includes(row.media)}
+                          aria-controls={`topic-sources-${row.media}`}
+                          aria-label={`${row.title}：議題 ${row.topics.counts.topic}、專題 ${row.topics.counts.feature}，${row.topics.sources.length} 個來源，${expanded.includes(row.media) ? '收合' : '展開'}來源`}
+                          title={`${topicStatusLabels[row.topics.status] ?? row.topics.status}${row.topics.checkedAt ? `；${taipei(row.topics.checkedAt)} 檢查` : ''}`}
+                          onClick={() =>
+                            setExpanded((previous) =>
+                              previous.includes(row.media) ? previous.filter((value) => value !== row.media) : [...previous, row.media],
+                            )
+                          }
+                          className="inline-flex items-center gap-1.5 hover:text-brand-700 dark:hover:text-brand-400"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={`size-1.5 shrink-0 rounded-full ${topicProblem(row.topics) ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          />
+                          議題 {row.topics.counts.topic}・專題 {row.topics.counts.feature}
+                          <span aria-hidden="true" className="text-zinc-400">
+                            {expanded.includes(row.media) ? '▾' : '▸'}
+                          </span>
+                        </button>
                       ) : (
-                        <span className="text-zinc-500">未設定爬蟲</span>
+                        <span className="text-zinc-400">—</span>
                       )}
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+                  {row.topics && expanded.includes(row.media) && (
+                    <tr id={`topic-sources-${row.media}`} className="bg-zinc-50/60 dark:bg-zinc-900/40">
+                      <td colSpan={columns.length} className="whitespace-normal px-3 py-2">
+                        <TopicSources title={row.title} topics={row.topics} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
             {!rows.length && (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+                <td colSpan={columns.length} className="px-3 py-8 text-center text-zinc-500">
                   沒有符合條件的媒體，請調整或清除篩選。
                 </td>
               </tr>
@@ -233,6 +289,63 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
           </tbody>
         </table>
       </section>
+    </div>
+  );
+}
+
+/** One outlet's 議題／專題 entry points: what each listing is declared as and how it last went. */
+function TopicSources({ title, topics }: { title: string; topics: MediaTopicSources }) {
+  return (
+    // Sticky so it stays in view when the table is scrolled to this far-right column.
+    <div className="sticky left-3 w-fit max-w-[calc(100vw-4rem)] space-y-1.5 lg:max-w-5xl">
+      <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-zinc-500">
+        <span className={topicProblem(topics) ? 'text-amber-700 dark:text-amber-400' : undefined}>
+          {topicStatusLabels[topics.status] ?? topics.status}
+        </span>
+        {topics.checkedAt && <span>{taipei(topics.checkedAt)} 檢查</span>}
+        {topics.lastSuccessAt && topics.lastSuccessAt !== topics.checkedAt && <span>最後成功 {taipei(topics.lastSuccessAt)}</span>}
+        <span>
+          累計議題 {topics.counts.topic}・專題 {topics.counts.feature}
+        </span>
+        {topics.rulesUrl && (
+          <a
+            href={topics.rulesUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${title}：議題／專題判定規則（另開視窗）`}
+            className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
+          >
+            判定規則 ↗
+          </a>
+        )}
+      </p>
+      {topics.sources.length ? (
+        <ul className="space-y-1">
+          {topics.sources.map((source) => (
+            <li key={source.url} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className={`${tagStyle} ${sourceKindColors[source.kind] ?? sourceKindColors.auto}`}>
+                {topicSourceKindLabels[source.kind] ?? source.kind}
+              </span>
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 max-w-full truncate underline-offset-2 hover:underline sm:max-w-md"
+              >
+                {source.url.replace(/^https?:\/\//, '')}
+              </a>
+              <span className="text-zinc-500">{source.items} 筆</span>
+              {source.error && (
+                <span className="min-w-0 max-w-full truncate text-amber-700 dark:text-amber-400 sm:max-w-sm" title={source.error}>
+                  {source.error}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-zinc-500">尚未設定議題／專題入口。</p>
+      )}
     </div>
   );
 }

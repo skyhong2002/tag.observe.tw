@@ -208,7 +208,7 @@ function GraphPanel({ graph, media }: { graph: GraphSummary | null; media: Media
 
 function TopicPanel({ topics }: { topics: { outlets: number; today: number; latest: FeedTopic[] } | null }) {
   if (!topics) return <p className={styles.notice}>議題資料整理中。</p>;
-  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有新發現的專題。</p>;
+  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有新發現的議題。</p>;
   return (
     <ul className={styles.topicList}>
       {topics.latest.map((t) => {
@@ -422,9 +422,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </div>
             <GraphPanel graph={data.graph} media={data.media} />
           </section>
-          <section className={styles.panel} aria-label="最新專題">
+          <section className={styles.panel} aria-label="最新議題">
             <div className={styles.sectionHeading}>
-              <h2>媒體新專題</h2>
+              <h2>媒體新議題</h2>
               <Link href="/topic/">
                 議題表 <Arrow />
               </Link>

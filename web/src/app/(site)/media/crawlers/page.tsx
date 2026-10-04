@@ -23,7 +23,8 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
       <p className="text-xs leading-6 text-zinc-500">
         HTML 解析是下載網頁後擷取內容；JSON 是讀取公開結構化資料。自動探索會依站點選用 RSS、Sitemap 或 HTML；
         最近驗證方式不代表每次都採用相同路徑。正文擷取仍需逐篇驗證；標題、摘要與影片資料依來源提供，並非每篇皆具備。
-        標籤提示保留完整抓取說明與最近驗證方式。
+        標籤提示保留完整抓取說明與最近驗證方式。「議題／專題」欄列出各家官方入口：議題是持續新增報導的新聞串，專題是一次性的新聞包；
+        各家用詞不一，入口未宣告類型時（自動判定）依報導是否持續增加來分類。
       </p>
     </div>
   );

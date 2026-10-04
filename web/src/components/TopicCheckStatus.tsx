@@ -19,7 +19,7 @@ export default function TopicCheckStatus({ check }: { check?: TopicCheck }) {
     <span className={problem ? 'text-amber-700 dark:text-amber-400' : 'text-zinc-500'}>
       {label}
       {check?.checkedAt ? ` · ${taipei(check.checkedAt)} 檢查` : ''}
-      {check?.status === 'ok' ? ` · ${check.fetched} 個專題` : ''}
+      {check?.status === 'ok' ? ` · 抓到 ${check.fetched} 筆` : ''}
     </span>
   );
 }

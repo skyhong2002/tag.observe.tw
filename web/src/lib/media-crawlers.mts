@@ -11,7 +11,20 @@ export interface MediaCrawler {
     lastVerifiedMethod: string | null;
     links: Array<{ label: string; url: string }>;
   };
+  /** Official 議題／專題 entry points; absent on older API builds. */
+  topics?: MediaTopicSources;
 }
+export type TopicSourceKind = 'topic' | 'feature' | 'auto';
+export interface MediaTopicSources {
+  sources: Array<{ url: string; kind: TopicSourceKind; items: number; error?: string }>;
+  checkedAt: string | null;
+  lastSuccessAt: string | null;
+  status: string;
+  counts: { topic: number; feature: number };
+  rulesUrl?: string;
+}
+export const topicSourceKindLabels: Record<TopicSourceKind, string> = { topic: '議題', feature: '專題', auto: '自動判定' };
+export const topicTotal = (row: MediaCrawler) => (row.topics ? row.topics.counts.topic + row.topics.counts.feature : -1);
 
 export const crawlerGroups = [
   { key: 'methods', label: '抓取方式' },
@@ -20,7 +33,7 @@ export const crawlerGroups = [
 ] as const;
 export type CrawlerGroup = (typeof crawlerGroups)[number]['key'];
 export type CrawlerFilters = Record<CrawlerGroup, string[]>;
-export type CrawlerSort = 'title' | CrawlerGroup | 'code';
+export type CrawlerSort = 'title' | CrawlerGroup | 'topics' | 'code';
 export const emptyCrawlerFilters = (): CrawlerFilters => ({ methods: [], tools: [], content: [] });
 
 const methodLabels: Record<string, string> = {
@@ -52,11 +65,13 @@ export function crawlerTags(row: MediaCrawler): Record<CrawlerGroup, string[]> {
 export function selectCrawlers(rows: MediaCrawler[], query: string, filters: CrawlerFilters, sort: CrawlerSort, descending: boolean) {
   const term = query.trim().toLocaleLowerCase();
   const value = (row: MediaCrawler) =>
-    sort === 'title'
-      ? row.title
-      : sort === 'code'
-        ? (row.crawler?.links.map((link) => link.label).join('、') ?? '')
-        : crawlerTags(row)[sort].join('、');
+    sort === 'topics'
+      ? String(topicTotal(row) + 1).padStart(6, '0')
+      : sort === 'title'
+        ? row.title
+        : sort === 'code'
+          ? (row.crawler?.links.map((link) => link.label).join('、') ?? '')
+          : crawlerTags(row)[sort].join('、');
   return rows
     .filter((row) => {
       const tags = crawlerTags(row);
@@ -68,6 +83,7 @@ export function selectCrawlers(rows: MediaCrawler[], query: string, filters: Cra
         row.crawler?.transport,
         row.crawler?.body,
         ...Object.values(tags).flat(),
+        ...(row.topics?.sources.map((s) => s.url) ?? []),
       ].join(' ');
       return (
         text.toLocaleLowerCase().includes(term) &&

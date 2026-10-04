@@ -19,6 +19,7 @@ const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> 
       { href: '/journalist/', label: '記者' },
       { href: '/event/', label: '事件表' },
       { href: '/topic/', label: '議題表' },
+      { href: '/feature/', label: '專題' },
       { href: '/media/', label: '媒體來源' },
       { href: '/media/sources/', label: '媒體流量與收錄比較' },
     ],
@@ -128,7 +129,10 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
           </p>
 
           <h3 className={methodHeading}>事件、議題與藍綠</h3>
-          <p>事件每半小時依標籤共現分群，標題取自註明的媒體；議題表每小時收錄各媒體新推出的專題頁。</p>
+          <p>
+            事件每半小時依標籤共現分群，標題取自註明的媒體；議題表與專題每小時檢查各媒體的官方入口：持續新增報導的是議題（90
+            天沒有新報導標為已停更），一次性的新聞包是專題，依行為分類而非媒體用詞。
+          </p>
           <p>
             本站基準名單的 29
             家媒體依來源試算表人工分類，其他既有媒體沿用原設定，新加入來源未另行標記政治傾向。全部新聞來源、抓取狀態與分類依據可於

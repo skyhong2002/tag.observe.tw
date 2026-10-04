@@ -1,13 +1,20 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import MediaIcon from '@/components/MediaIcon';
 import SourceLink from '@/components/SourceLink';
 import TopicCover from '@/components/TopicCover';
 import { taipei } from '@/lib/api';
 import { isAllowedImage } from '@/lib/images';
-import type { Topic, TopicCoverage } from '@/lib/pages';
+import type { Topic, TopicCoverage, TopicKind } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 
-export const topicHref = (media: string, id: string) => `/topic/${encodeURIComponent(media)}/#topic-${id}`;
+// Story dates can be years old, so with the year and without the time.
+const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+export const kindNoun = (kind: TopicKind) => (kind === 'feature' ? '專題' : '議題');
+/** The outlet's 議題 or 專題 page. */
+export const topicMediaHref = (media: string, kind: TopicKind = 'topic') =>
+  `/${kind === 'feature' ? 'feature' : 'topic'}/${encodeURIComponent(media)}/`;
+export const topicHref = (media: string, id: string, kind: TopicKind = 'topic') => `${topicMediaHref(media, kind)}#topic-${id}`;
 
 /** One outlet topic. Cover only when the outlet gave one: a logo in its place
  *  makes rows look broken, so those topics render as a compact text row. The
@@ -18,15 +25,21 @@ export default function TopicCard({
   mediaTitle,
   showMedia = false,
   href,
+  kind = 'topic',
+  nested,
 }: {
   topic: Topic & { coverage?: TopicCoverage | null };
   media: string;
   mediaTitle: string;
   showMedia?: boolean;
   href?: string;
+  kind?: TopicKind;
+  /** Child topics, indented under this one. */
+  nested?: ReactNode;
 }) {
   const image = isAllowedImage(topic.image) ? topic.image : null;
-  const title = topic.title ?? '（未命名專題）';
+  const noun = kindNoun(kind);
+  const title = topic.title ?? `（未命名${noun}）`;
   const titleNode = href ? (
     <Link href={href} className="hover:underline">
       {title}
@@ -43,19 +56,36 @@ export default function TopicCard({
     >
       <TopicCover src={image} href={href ?? topic.url ?? '#'} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h3 className="font-medium leading-snug">{titleNode}</h3>
+        <h3 className="font-medium leading-snug">
+          {titleNode}
+          {topic.sponsored && (
+            <span
+              title="媒體標示為廣告或品牌合作"
+              className="ml-1.5 inline-block rounded border border-zinc-300 px-1 align-[0.1em] text-[10px] font-normal leading-4 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
+            >
+              合作
+            </span>
+          )}
+        </h3>
         <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-600 dark:text-zinc-400">
           {showMedia && (
-            <Link href={`/topic/${encodeURIComponent(media)}/`} className="flex items-center gap-1 hover:underline">
+            <Link href={topicMediaHref(media, kind)} className="flex items-center gap-1 hover:underline">
               <MediaIcon media={media} title={mediaTitle} />
               {mediaTitle}
             </Link>
           )}
           {showMedia && <span aria-hidden>·</span>}
           {topic.time && !topic.backlog ? `首次發現 ${taipei(topic.time)}` : '開始追蹤前已上架'}
-          <SourceLink url={topic.url} label="原站專題" className="!min-h-5 shrink-0" />
+          {topic.storyLastAt && (
+            <>
+              <span aria-hidden>·</span>
+              {`最後更新 ${taipeiDate(topic.storyLastAt)}`}
+            </>
+          )}
+          <SourceLink url={topic.url} label={`原站${noun}`} className="!min-h-5 shrink-0" />
         </span>
         {topic.coverage && <Coverage c={topic.coverage} />}
+        {nested}
       </div>
     </li>
   );
