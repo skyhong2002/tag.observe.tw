@@ -70,7 +70,7 @@ const outlets: Outlet[] = [
   outlet('ctwant', 'CTWANT', 'TW', ['周刊王']),
   outlet('nextapple', '壹蘋新聞網', 'TW', ['壹蘋', '壹苹新闻网']),
   outlet('bccnews', '中廣新聞', 'TW', ['中廣', '中广']),
-  outlet('cnews', '匯流新聞網', 'TW', ['匯流新聞', '汇流新闻网']),
+  outlet('cnews', '匯流新聞網', 'TW', ['匯流新聞', '汇流新闻网', 'CNEWS', 'CNEWS匯流新聞網']),
   outlet('ftnn', 'FTNN新聞網', 'TW', ['FTNN', '鋒燦傳媒']),
   outlet('taisounds', '太報', 'TW', ['太报']),
   outlet('reporter', '報導者', 'TW', ['报道者', 'The Reporter']),
@@ -132,13 +132,45 @@ function explicitContext(before: string, after: string): boolean {
   return report.test(after) || credit.test(before) || authorization.test(after);
 }
 
+// Catalog display titles name outlets that attribution has no aliases for (菱傳媒 → rwnews).
+const titledMedia = new Map(
+  Object.entries(titles)
+    .filter(([, entry]) => entry.title)
+    .reverse()
+    .map(([media, entry]) => [entry.title as string, media]),
+);
+// Longest first, so 今周刊 never stops at a shorter alias that prefixes it.
+const knownNames = [...new Set([...titledMedia.keys(), ...outlets.flatMap((o) => o.aliases)])]
+  .filter((name) => name.length >= 2)
+  .sort((a, b) => b.length - a.length);
+const creditRole = /^(?:圖[、.．・]?文|文[、.．・]?圖|文|撰文|來源|供稿|提供)$/u;
+const newsDesk = /(?:中心|編輯部|編輯室|新聞部|採訪部|報導|报道)$/u;
+
+/** The organization in a credit line. Pages may put the whole lead paragraph in the credit
+ * slot: 圖、文／菱傳媒, 民視新聞／吳憲昌 綜合報導, 政治中心／李筱舲報導 2026年…. */
+function creditedOrganization(provider: string): string {
+  const rights = /本文版權(?:為|屬|归|歸)(.{2,30}?)所有/u.exec(provider);
+  if (rights) return rights[1].trim();
+  const [first, second] = provider.split(/\s*[／/]\s*/u);
+  if (second === undefined) return provider;
+  if (!creditRole.test(first)) return first;
+  // 文.圖／今周刊台股Q4上看… : the name runs into the lead without a space.
+  const named = knownNames.find((name) => second.startsWith(name));
+  return named ?? second.split(/\s/u)[0];
+}
+
 /** A provider field can be a byline, desk, or publisher. Do not invent media from people. */
 export function providerOutlet(provider: string): OutletIdentity | null {
-  const value = provider.trim();
-  if (!value || reporterCredit(value) || /(?:記者|记者|撰稿人|特約作者|\breporter\b|\bcorrespondent\b)/iu.test(value)) return null;
+  const raw = provider.trim();
+  if (!raw || reporterCredit(raw)) return null;
+  const value = creditedOrganization(raw);
   // Yahoo's own desks/channels belong to the publisher, not external outlets.
   if (/^Yahoo(?:奇摩)?(?:新聞|即時新聞|名人娛樂|電影戲劇|股市|財經|遊戲|房地產|特別企劃)/i.test(value)) return outletIdentity('yahoo');
-  const identity = outletIdentity(value);
+  // Newsroom desks belong to the publisher; a sentence is never an outlet name.
+  if (!value || value.length > 30 || newsDesk.test(value)) return null;
+  if (/(?:記者|记者|撰稿人|特約作者|\breporter\b|\bcorrespondent\b)/iu.test(value)) return null;
+  const titled = titledMedia.get(value);
+  const identity = outletIdentity(titled ?? value);
   if (identity.countryCode !== 'ZZ' || Object.hasOwn(titles, identity.media)) return identity;
   // Unknown organizations may retain their label, but a bare person's name
   // supplies no evidence that a new media organization exists.

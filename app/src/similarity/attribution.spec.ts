@@ -64,6 +64,24 @@ describe('explicit media attribution', () => {
     expect(extractAttributions('', 'udn', 'Yahoo新聞編輯室')[0]).toMatchObject({ media: 'yahoo', countryCode: 'TW' });
   });
 
+  it('reads the outlet from credit lines that run into the lead paragraph', () => {
+    // 民視 pages put the credit and the opening paragraph in one element.
+    for (const provider of [
+      '政治中心／李筱舲報導 2026年九合一選舉進入倒數階段，台北市長選戰持續升溫。《壹蘋新聞網》近日也發起網路投票調查。',
+      '娛樂中心／綜合報導前主播張宇離開新聞圈後成功轉型為藝人，經常在社群平台分享生活。',
+      '社會中心／新聞綜合報導',
+      '民視新聞／吳憲昌 綜合報導',
+      '民視新聞／綜合報導',
+    ]) {
+      expect(extractAttributions('', 'ftv', provider)).toEqual([]);
+    }
+    expect(extractAttributions('', 'ftv', '圖、文／CNEWS匯流新聞網')[0]).toMatchObject({ media: 'cnews' });
+    expect(extractAttributions('', 'ftv', '圖、文／菱傳媒')[0]).toMatchObject({ media: 'rwnews' });
+    expect(extractAttributions('', 'rwnews', '圖、文／菱傳媒')).toEqual([]);
+    expect(extractAttributions('', 'ftv', '文.圖／今周刊台股Q4上看5萬3，選舉年上漲機率8成！')[0]).toMatchObject({ media: 'businesstoday' });
+    expect(extractAttributions('', 'travelnews', '※本文版權為宜蘭新聞網所有，歡迎轉載，請務必註明出處※')).toEqual([]);
+  });
+
   it('repairs stored provider labels without deleting valid foreign citations', () => {
     const fake = {
       media: '潘鈺楨｜Yahoo名人娛樂特派記者',
