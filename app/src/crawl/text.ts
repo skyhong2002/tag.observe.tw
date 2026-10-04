@@ -48,7 +48,7 @@ export function resolveUrl(href: string, base: string): string | null {
 // Dedup key for article URLs: scheme-less, lowercase host, default port and
 // fragment dropped, tracking parameters removed, trailing slash ignored. Query
 // strings that identify the article (e.g. detail.php?sn=1) are kept.
-const TRACKING = /^(utm_[a-z0-9_]+|fbclid|gclid|dclid|yclid|igshid|mc_cid|mc_eid|_ga|spm|rec)$/i;
+export const TRACKING = /^(utm_[a-z0-9_]+|fbclid|gclid|dclid|yclid|igshid|mc_cid|mc_eid|_ga|spm|rec)$/i;
 export function urlKey(raw: string, articleId?: string): string {
   try {
     const u = new URL(raw);

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { extractTopics, ldTopics, nuxtTopics } from './topics.ts';
+import {
+  childSelectorFor,
+  cleanTopicHref,
+  extractTopics,
+  fetchTopicListings,
+  ldTopics,
+  nuxtTopics,
+  TOPIC_RULES,
+  type TopicItem,
+  topicChildren,
+  topicListings,
+} from './topics.ts';
 
 describe('extractTopics', () => {
   const base = { media: 'x', fallbackImage: '', url: 'https://example.com/topic/', pattern: /\/topic\/\d+/ };
@@ -165,5 +176,121 @@ describe('official topic indexes', () => {
     }));
     expect(result.items.map((t) => t.title)).toEqual(['同一專題', '數位專題']);
     expect(result.sources.every((s) => !s.error)).toBe(true);
+  });
+});
+
+describe('topic kinds, pagination and sub-topics', () => {
+  const response = (url: string, body: string, status = 200) => ({ url, body, status, contentType: 'text/html', ms: 1 });
+  const base = { media: 'x', fallbackImage: '', url: 'https://example.com/topics', pattern: /^\/topic\/\d+$/ };
+
+  it('cleans hrefs: trims, skips inner whitespace, drops tracking before matching', () => {
+    expect(cleanTopicHref('  /topic/1  ')).toBe('/topic/1');
+    expect(cleanTopicHref('/topic/{{ id }}')).toBeNull();
+    expect(cleanTopicHref('/topic/1?ctrack=home&utm_source=x')).toBe('/topic/1');
+    expect(cleanTopicHref('/topic/1?id=2&ctrack=a#x')).toBe('/topic/1?id=2#x');
+    const html = '<a href=" /topic/1?ctrack=h ">選舉</a><a href="/topic/ 2">壞連結</a><a href="/topic/3#topic-link-1">文章</a>';
+    expect(extractTopics(html, base).map((t) => t.url)).toEqual(['https://example.com/topic/1']);
+  });
+
+  it('pages until a page brings nothing new, tolerating later page errors', async () => {
+    const pages: Record<string, string> = {
+      'https://example.com/topics': '<a href="/topic/1">議題一</a><a href="/topic/2">議題二</a>',
+      'https://example.com/topics?page=2': '<a href="/topic/3">議題三</a>',
+      'https://example.com/topics?page=3': '<a href="/topic/3">議題三</a>',
+    };
+    const fetched: string[] = [];
+    const rule = { ...base, paginate: { url: (n: number) => `${base.url}?page=${n}`, max: 10 } };
+    const result = await fetchTopicListings(rule, async (url) => {
+      fetched.push(url);
+      return response(url, pages[url] ?? '');
+    });
+    expect(fetched).toEqual(Object.keys(pages));
+    expect(result.items.map((t) => [t.url.slice(-1), t.page, t.source])).toEqual([
+      ['1', 1, base.url],
+      ['2', 1, base.url],
+      ['3', 2, base.url],
+    ]);
+    expect(result.sources).toEqual([{ url: base.url, kind: 'auto', items: 3, pages: 2 }]);
+
+    const failing = await fetchTopicListings(rule, async (url) => {
+      if (url !== base.url) throw Error('timeout');
+      return response(url, pages[url]);
+    });
+    expect(failing.items).toHaveLength(2);
+    expect(failing.sources[0].error).toBeUndefined();
+  });
+
+  it('sends the page request (POST) for every page, the first included', async () => {
+    const bodies: unknown[] = [];
+    const rule = {
+      ...base,
+      paginate: {
+        url: () => base.url,
+        max: 2,
+        request: (n: number) => ({ method: 'POST' as const, body: JSON.stringify({ page: n }) }),
+      },
+    };
+    await fetchTopicListings(rule, async (url, opts) => {
+      bodies.push(opts?.body);
+      return response(url, `<a href="/topic/${bodies.length}">議題${bodies.length}</a>`);
+    });
+    expect(bodies).toEqual(['{"page":1}', '{"page":2}']);
+  });
+
+  it('applies declared kinds per listing and flags sponsored items', async () => {
+    const rule = {
+      ...base,
+      kind: 'topic' as const,
+      listings: [
+        {
+          url: 'https://example.com/features',
+          pattern: /^\/topic\/\d+$/,
+          kind: 'feature' as const,
+          sponsored: (item: TopicItem) => item.title.includes('合作'),
+        },
+        { url: 'https://example.com/more', pattern: /^\/topic\/\d+$/ },
+      ],
+    };
+    const result = await fetchTopicListings(rule, async (url) =>
+      response(
+        url,
+        url === base.url
+          ? '<a href="/topic/1">議題一</a>'
+          : url.endsWith('features')
+            ? '<a href="/topic/2">品牌合作專題</a><a href="/topic/3">深度專題</a>'
+            : '<a href="/topic/4">未宣告</a>',
+      ),
+    );
+    expect(result.items.map((t) => [t.title, t.kind, t.sponsored])).toEqual([
+      ['議題一', 'topic', undefined],
+      ['品牌合作專題', 'feature', true],
+      ['深度專題', 'feature', false],
+      ['未宣告', undefined, undefined],
+    ]);
+    expect(result.sources.map((s) => s.kind)).toEqual(['topic', 'feature', 'auto']);
+  });
+
+  it('declares CNA digital features (ads as sponsored) and PTS curation as features', () => {
+    const cna = topicListings(TOPIC_RULES.find((r) => r.media === 'cna')!)[1];
+    expect(cna.kind).toBe('feature');
+    expect(cna.sponsored?.({ url: '', title: '', image: null, category: '廣告' })).toBe(true);
+    const pts = topicListings(TOPIC_RULES.find((r) => r.media === 'pts')!);
+    expect(pts.map((l) => [l.url, l.kind])).toEqual([
+      ['https://news.pts.org.tw/hotTopic', 'topic'],
+      ['https://news.pts.org.tw/curation', 'feature'],
+    ]);
+  });
+
+  it('reads sub-topic links from a topic page', () => {
+    const html = `<div class="definKind"><h2><a href="/topic/newstopic/5101.aspx">子議題一</a></h2>
+      <h2><a href=" /topic/newstopic/5102.aspx?utm_source=x ">子議題二</a></h2>
+      <h2><a href="/topic/newstopic/5056.aspx">本頁</a></h2><h2><a href="https://other.com/x">外站</a></h2></div>`;
+    expect(topicChildren(html, 'https://www.cna.com.tw/topic/newstopic/5056.aspx', '.definKind h2 a')).toEqual([
+      { url: 'https://www.cna.com.tw/topic/newstopic/5101.aspx', title: '子議題一' },
+      { url: 'https://www.cna.com.tw/topic/newstopic/5102.aspx', title: '子議題二' },
+    ]);
+    const rules = [{ ...base, listings: [{ url: 'https://example.com/a', pattern: /\/topic\/newstopic\/\d+/, children: '.kids a' }] }];
+    expect(childSelectorFor('x', 'https://example.com/topic/newstopic/5', rules)).toBe('.kids a');
+    expect(childSelectorFor('x', 'https://example.com/topic/9', rules)).toBeUndefined();
   });
 });

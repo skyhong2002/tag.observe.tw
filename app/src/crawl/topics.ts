@@ -1,17 +1,35 @@
 import * as cheerio from 'cheerio';
-import { fetchText } from './fetch.ts';
-import { decodeEntities, resolveUrl, stripTracking } from './text.ts';
+import { type FetchRequest, fetchText } from './fetch.ts';
+import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
 // literal markers that have since drifted for most sites; these rules match
 // the current pages by link pattern instead. `TOPIC_LINKS` (app/src/topic-html.js)
 // keeps the public listing URLs for the UI.
+export type TopicKind = 'topic' | 'feature';
 export interface TopicItem {
   url: string;
   title: string;
   image: string | null;
   category: string | null;
+  /** Set by extractors that know the item's kind; otherwise the listing's declared kind. */
+  kind?: TopicKind;
+  sponsored?: boolean;
+  /** Story dates the listing payload already carries (CTS Nuxt publishTime). */
+  storyDates?: Date[];
+}
+/** A listed item with where it was found, for per-row backlog. */
+export interface ListedTopic extends TopicItem {
+  source: string;
+  page: number;
+}
+export interface TopicSourceResult {
+  url: string;
+  kind: TopicKind | 'auto';
+  items: number;
+  pages?: number;
+  error?: string;
 }
 export interface TopicRule {
   media: string;
@@ -33,6 +51,17 @@ export interface TopicRule {
   image?: string;
   title?: (a: cheerio.Cheerio<import('domhandler').Element>, $: cheerio.CheerioAPI) => string;
   userAgent?: string;
+  /** 議題 (keeps gaining stories) or 專題 (one-off package) for every item of
+   *  this listing; 'auto' (default) classifies each by its story dates.
+   *  Listings do not inherit the rule's kind. */
+  kind?: TopicKind | 'auto';
+  /** Page 1 is `url`, then pages 2..max; stops at the first page without new links.
+   *  `request` (also used for page 1) turns a page into a POST. */
+  paginate?: { url: (n: number) => string; max: number; request?: (n: number) => FetchRequest };
+  /** On this listing's topic pages, links to sub-topics (CNA `.definKind h2 a`). */
+  children?: string;
+  /** Marks advertiser/brand partnership packages (合作). */
+  sponsored?: (item: TopicItem) => boolean;
   /** Additional official indexes; each has independent extraction and health. */
   listings?: Omit<TopicRule, 'media' | 'name' | 'fallbackImage' | 'listings'>[];
 }
@@ -91,6 +120,8 @@ export const TOPIC_RULES: TopicRule[] = [
         url: 'https://www.cna.com.tw/project/project_list/api/specialfeature.json',
         pattern: /\/(project|cards|story)\//,
         extract: cnaDigitalTopics,
+        kind: 'feature',
+        sponsored: (item) => item.category === '廣告',
       },
     ],
   },
@@ -108,9 +139,19 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://news.pts.org.tw/images/ptsnews-banner.jpg',
     url: 'https://news.pts.org.tw/hotTopic',
     pattern: /\/hotTopic\/\d+$/,
-    // /curation is 專題 (long-form features, not refreshed since 2025), not
-    // the running topics, so it is deliberately not a listing.
     extract: ldTopics,
+    kind: 'topic',
+    // /curation is 專題: one-off long-form features. Cards split into an image
+    // link and an <h3> title link; the card selector joins them.
+    listings: [
+      {
+        url: 'https://news.pts.org.tw/curation',
+        kind: 'feature',
+        pattern: /\/curation\/\d+$/,
+        card: '.curation-main, .curation-secondary .col-lg-6, .project-card',
+        title: heading,
+      },
+    ],
   },
   {
     media: 'udn',
@@ -520,13 +561,29 @@ export const TOPIC_RULES: TopicRule[] = [
   },
 ];
 
+// Tracking keys outlets append to topic links (中時 ?ctrack=) on top of the generic ones.
+const TOPIC_TRACKING = /^ctrack$/i;
+/** A raw href without surrounding space or tracking query, so anchored patterns
+ *  still match; hrefs with inner whitespace are template junk (鏡週刊). */
+export function cleanTopicHref(raw: string): string | null {
+  const href = raw.trim();
+  if (!href || /\s/.test(href)) return null;
+  const m = /^([^?#]*)(?:\?([^#]*))?(#.*)?$/.exec(href);
+  if (!m?.[2]) return href;
+  const query = m[2].split('&').filter((p) => {
+    const key = p.split('=')[0];
+    return key && !TRACKING.test(key) && !TOPIC_TRACKING.test(key);
+  });
+  return m[1] + (query.length ? `?${query.join('&')}` : '') + (m[3] ?? '');
+}
+
 export function extractTopics(html: string, rule: TopicRule): TopicItem[] {
   const $ = cheerio.load(html);
   const out = new Map<string, { url: string; title: string; guessed: boolean; image: string | null }>();
   (rule.scope ? $(rule.scope).find('a[href]') : $('a[href]')).each((_, el) => {
     const a = $(el);
-    const href = a.attr('href') ?? '';
-    if (!rule.pattern.test(href)) return;
+    const href = cleanTopicHref(a.attr('href') ?? '');
+    if (!href || !rule.pattern.test(href)) return;
     const resolved = resolveUrl(href, rule.url);
     if (
       !resolved ||
@@ -569,44 +626,99 @@ export function topicListings(rule: TopicRule): TopicRule[] {
   return [rule, ...(rule.listings ?? []).map((listing) => ({ media: rule.media, fallbackImage: rule.fallbackImage, ...listing }))];
 }
 
+/** The listing whose topic pages carry sub-topic links, if any. */
+export function childSelectorFor(media: string, url: string, rules = TOPIC_RULES): string | undefined {
+  const rule = rules.find((r) => r.media === media);
+  if (!rule) return undefined;
+  let path = url;
+  try {
+    const u = new URL(url);
+    path = u.pathname + u.search;
+  } catch {}
+  return topicListings(rule).find((l) => l.children && (l.pattern.test(url) || l.pattern.test(path)))?.children;
+}
+
+/** Sub-topic links on a topic page: same outlet, not the page itself. */
+export function topicChildren(html: string, pageUrl: string, selector: string): { url: string; title: string }[] {
+  const $ = cheerio.load(html);
+  const site = registrable(new URL(pageUrl).hostname);
+  const self = stripTracking(pageUrl);
+  const out = new Map<string, string>();
+  $(selector).each((_, el) => {
+    const a = $(el).is('a') ? $(el) : $(el).find('a[href]').first();
+    const href = cleanTopicHref(a.attr('href') ?? '');
+    const resolved = href && resolveUrl(href, pageUrl);
+    if (!resolved || registrable(new URL(resolved).hostname) !== site) return;
+    const url = stripTracking(resolved);
+    const title = textOf(a).slice(0, 512);
+    if (url !== self && title.length >= 2 && !out.has(url)) out.set(url, title);
+  });
+  return [...out].map(([url, title]) => ({ url, title }));
+}
+
 export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
-  const items = new Map<string, TopicItem>();
-  const sources: { url: string; items: number; error?: string }[] = [];
+  const items = new Map<string, ListedTopic>();
+  const sources: TopicSourceResult[] = [];
   for (const listing of topicListings(rule)) {
+    const kind = listing.kind ?? 'auto';
     try {
-      const res = await fetch(listing.url, { userAgent: listing.userAgent });
-      if (res.status < 200 || res.status >= 400) throw Error(`HTTP ${res.status}`);
-      const found = (listing.extract ?? extractTopics)(res.body, { ...listing, url: res.url || listing.url });
-      if (!found.length) throw Error('no topic links matched');
       const errors: string[] = [];
+      const seen = new Set<string>();
       let accepted = 0;
-      for (const item of found) {
-        if (listing.redirectHosts?.includes(new URL(item.url).hostname)) {
-          try {
-            let target = await fetch(item.url, { timeout: 10000, retries: 0 });
-            // Supr.link publishes a normal continuation link instead of an HTTP redirect.
-            if (target.status === 200 && new URL(target.url).hostname === 'supr.link') {
-              const href = cheerio.load(target.body)('a#user-click-link').attr('href');
-              const destination = href && resolveUrl(href, target.url);
-              if (!destination || registrable(new URL(destination).hostname) !== registrable(new URL(listing.url).hostname))
-                throw Error('short link left official outlet');
-              target = await fetch(destination, { timeout: 10000, retries: 0 });
-            }
-            if (target.status < 200 || target.status >= 400) throw Error(`HTTP ${target.status}`);
-            if (registrable(new URL(target.url).hostname) !== registrable(new URL(listing.url).hostname))
-              throw Error('redirect left official outlet');
-            item.url = stripTracking(target.url);
-          } catch (error) {
-            errors.push(`${item.url}: ${(error as Error).message}`);
-            continue;
-          }
+      let pages = 0;
+      for (let n = 1; n <= (listing.paginate?.max ?? 1); n++) {
+        const pageUrl = n === 1 ? listing.url : listing.paginate!.url(n);
+        let found: TopicItem[];
+        try {
+          const res = await fetch(pageUrl, { userAgent: listing.userAgent, ...listing.paginate?.request?.(n) });
+          if (res.status < 200 || res.status >= 400) throw Error(`HTTP ${res.status}`);
+          found = (listing.extract ?? extractTopics)(res.body, { ...listing, url: res.url || pageUrl });
+          if (!found.length && n === 1) throw Error('no topic links matched');
+        } catch (error) {
+          // Later pages are a bonus: the first page alone keeps the source healthy.
+          if (n === 1) throw error;
+          break;
         }
-        if (!items.has(item.url)) items.set(item.url, item);
-        accepted++;
+        const fresh = found.filter((item) => !seen.has(item.url));
+        if (!fresh.length) break;
+        pages = n;
+        for (const item of fresh) {
+          seen.add(item.url);
+          if (listing.redirectHosts?.includes(new URL(item.url).hostname)) {
+            try {
+              let target = await fetch(item.url, { timeout: 10000, retries: 0 });
+              // Supr.link publishes a normal continuation link instead of an HTTP redirect.
+              if (target.status === 200 && new URL(target.url).hostname === 'supr.link') {
+                const href = cheerio.load(target.body)('a#user-click-link').attr('href');
+                const destination = href && resolveUrl(href, target.url);
+                if (!destination || registrable(new URL(destination).hostname) !== registrable(new URL(listing.url).hostname))
+                  throw Error('short link left official outlet');
+                target = await fetch(destination, { timeout: 10000, retries: 0 });
+              }
+              if (target.status < 200 || target.status >= 400) throw Error(`HTTP ${target.status}`);
+              if (registrable(new URL(target.url).hostname) !== registrable(new URL(listing.url).hostname))
+                throw Error('redirect left official outlet');
+              item.url = stripTracking(target.url);
+            } catch (error) {
+              errors.push(`${item.url}: ${(error as Error).message}`);
+              continue;
+            }
+          }
+          if (!item.kind && kind !== 'auto') item.kind = kind;
+          if (listing.sponsored) item.sponsored = !!item.sponsored || listing.sponsored(item);
+          if (!items.has(item.url)) items.set(item.url, { ...item, source: listing.url, page: n });
+          accepted++;
+        }
       }
-      sources.push({ url: listing.url, items: accepted, ...(errors.length ? { error: errors.join('; ') } : {}) });
+      sources.push({
+        url: listing.url,
+        kind,
+        items: accepted,
+        ...(pages > 1 ? { pages } : {}),
+        ...(errors.length ? { error: errors.join('; ') } : {}),
+      });
     } catch (error) {
-      sources.push({ url: listing.url, items: 0, error: (error as Error).message });
+      sources.push({ url: listing.url, kind, items: 0, error: (error as Error).message });
     }
   }
   return { items: [...items.values()], sources };
