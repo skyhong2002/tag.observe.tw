@@ -110,4 +110,21 @@ describe('batch a2 topic rules', () => {
       ['https://www.chinatimes.com/album/ctnewyearA/20221220002148-262211', true],
     ]);
   });
+
+  it('newtalk: every page, the first included, is requested with the layout cookie', async () => {
+    const seen: { url: string; cookie?: string }[] = [];
+    const fetch = async (url: string, opts: { headers?: Record<string, string> } = {}) => {
+      seen.push({ url, cookie: opts.headers?.cookie });
+      const n = Number(/\/(\d+)$/.exec(url)?.[1] ?? 1);
+      const body = n <= 2 ? `<a href="/news/topics/view/${n}/議題${n}">x</a>` : '';
+      return { url, status: n <= 2 ? 200 : 404, body, contentType: 'text/html', ms: 1 };
+    };
+    const { items, sources } = await fetchTopicListings(rule('newtalk'), fetch);
+    expect(items.map((t) => [t.title, t.kind, t.page])).toEqual([
+      ['議題1', 'topic', 1],
+      ['議題2', 'topic', 2],
+    ]);
+    expect(sources[0].pages).toBe(2);
+    expect(seen.map((s) => s.cookie)).toEqual(Array(3).fill('canary_id=0; canary_version=new'));
+  });
 });

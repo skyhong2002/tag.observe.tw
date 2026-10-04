@@ -82,8 +82,17 @@ export const TOPIC_RULES: TopicRule[] = [
   {
     media: 'newtalk',
     fallbackImage: 'https://newtalk.tw/images/ogimage.jpg',
-    url: 'https://newtalk.tw/news/topics/list',
+    // /news/topics/list redirects here. A canary serves two layouts at random
+    // (20 or 10 topics a page, numbered differently), which breaks paging; the
+    // cookie pins the new one: ~15 pages, ~150 topics.
+    url: 'https://newtalk.tw/news/topics',
     pattern: /\/news\/topics\/view\/\d+/,
+    kind: 'topic',
+    paginate: {
+      url: (n) => `https://newtalk.tw/news/topics/${n}`,
+      max: 30,
+      request: () => ({ headers: { cookie: 'canary_id=0; canary_version=new' } }),
+    },
     // The title link sits beside the block's lazy-loaded cover.
     card: '.news_block',
     title: (a) => {
