@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
@@ -40,6 +40,12 @@ const control = 'mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-
 const inlineControl = 'rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-950';
 const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
 const taipeiDay = (iso: string) => new Date(Date.parse(iso) + 8 * 3600_000).toISOString().slice(0, 10);
+const campOptions = [
+  ['all', '全部'],
+  ['blue', '只看藍'],
+  ['green', '只看綠'],
+  ['other', '未列藍綠'],
+] as const;
 const rangeDays = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86400e3) + 1;
 
 function ArticleCard({ article, label }: { article: SimilarityArticle; label?: string }) {
@@ -168,13 +174,12 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
   );
 }
 
-/** Period picker for the filter bar; the similarity threshold sits under 進階. */
+/** Period picker for the filter bar. */
 function PeriodControls({ data }: { data: SimilarityData }) {
   const router = useRouter();
   const [period, setPeriod] = useState(data.days ? 'range' : String(data.hours ?? 48));
   const [from, setFrom] = useState(data.days?.from ?? taipeiDay(data.from));
   const [to, setTo] = useState(data.days?.to ?? taipeiDay(data.to));
-  const [threshold, setThreshold] = useState(String(data.threshold));
   const range = period === 'range';
   const rangeError = !range
     ? ''
@@ -189,10 +194,6 @@ function PeriodControls({ data }: { data: SimilarityData }) {
   const submitRange = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!rangeError) go({ from, to }, data.threshold);
-  };
-  const submitThreshold = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    go(data.days ?? { hours: data.hours ?? 48 }, Number(threshold));
   };
   return (
     <>
@@ -243,34 +244,70 @@ function PeriodControls({ data }: { data: SimilarityData }) {
           </span>
         </form>
       )}
-      <details className="relative">
-        <summary className="cursor-pointer list-none rounded-md px-2 py-1.5 text-zinc-500 hover:text-brand-700 [&::-webkit-details-marker]:hidden">
-          進階 ▾
-        </summary>
-        <form
-          onSubmit={submitThreshold}
-          className="absolute left-0 z-20 mt-1 w-64 space-y-2 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
-        >
-          <label className="block">
-            內文相似度門檻
-            <input
-              type="number"
-              min="0.5"
-              max="1"
-              step="0.01"
-              value={threshold}
-              onChange={(event) => setThreshold(event.target.value)}
-              required
-              className={control}
-            />
-          </label>
-          <p className="text-[11px] leading-5 text-zinc-500">0.5–1，預設 0.65；門檻越高，只留下內文越接近的報導。</p>
-          <button type="submit" className="rounded-lg bg-brand-700 px-3 py-1.5 text-white">
-            套用
-          </button>
-        </form>
-      </details>
     </>
+  );
+}
+
+/** A small dropdown panel under a filter-bar button; closes on an outside click or Escape. */
+function Popover({ label, active = false, children }: { label: string; active?: boolean; children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const close = (event: Event) => {
+      const details = ref.current;
+      if (!details?.open) return;
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !details.contains(event.target as Node)) details.open = false;
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, []);
+  return (
+    <details ref={ref} className="relative">
+      <summary
+        className={`${inlineControl} flex cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden ${active ? 'border-brand-600 text-brand-800 dark:border-brand-500 dark:text-brand-300' : ''}`}
+      >
+        {label} <span aria-hidden="true">▾</span>
+      </summary>
+      <div className="absolute left-0 z-20 mt-1 w-72 space-y-3 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+        {children}
+      </div>
+    </details>
+  );
+}
+
+/** The similarity threshold, tucked under 進階. */
+function ThresholdControl({ data }: { data: SimilarityData }) {
+  const router = useRouter();
+  const [threshold, setThreshold] = useState(String(data.threshold));
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    router.push(`/similarity/?${periodQuery(data.days ?? { hours: data.hours ?? 48 }, Number(threshold))}`);
+  };
+  return (
+    <Popover label="進階" active={data.threshold !== 0.65}>
+      <form onSubmit={submit} className="space-y-2">
+        <label className="block">
+          內文相似度門檻
+          <input
+            type="number"
+            min="0.5"
+            max="1"
+            step="0.01"
+            value={threshold}
+            onChange={(event) => setThreshold(event.target.value)}
+            required
+            className={control}
+          />
+        </label>
+        <p className="text-[11px] leading-5 text-zinc-500">0.5–1，預設 0.65；門檻越高，只留下內文越接近的報導。</p>
+        <button type="submit" className="rounded-lg bg-brand-700 px-3 py-1.5 text-white">
+          套用
+        </button>
+      </form>
+    </Popover>
   );
 }
 
@@ -382,6 +419,13 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     setPage(0);
   };
   const nodes = graph.nodes;
+  const filterLabel =
+    [
+      filters.camp !== 'all' ? campOptions.find(([value]) => value === filters.camp)?.[1] : '',
+      availableTags.find((tag) => tag.id === filters.tag)?.label,
+    ]
+      .filter(Boolean)
+      .join(' · ') || '篩選';
   const edges = useMemo(() => graph.edges.filter((e) => mode === 'all' || e.kind === mode), [graph.edges, mode]);
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
   const select = (value: GraphSelection) => {
@@ -459,14 +503,14 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       }
     >
       <div className={`flex min-h-[420px] flex-col gap-3 ${fullscreen ? 'h-[calc(100dvh-2rem)]' : 'h-[calc(100svh-112px)]'}`}>
-        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <header className="shrink-0 space-y-3">
+          <SimilarityTabs current="graph" query={periodQuery(data.days ?? { hours: data.hours ?? 48 }, data.threshold).toString()} />
           <div>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
             <p className="mt-1 text-xs text-zinc-500">
               {periodLabel(data)} · {nodes.length}／{graph.available} 家媒體 · {number(data.index.analyzed)} 篇全部比對
             </p>
           </div>
-          <SimilarityTabs current="graph" query={periodQuery(data.days ?? { hours: data.hours ?? 48 }, data.threshold).toString()} />
         </header>
         <section
           aria-label="媒體關係儀表板"
@@ -491,39 +535,48 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-2">
-              <span className="shrink-0">藍綠分類</span>
-              <select
-                value={filters.camp}
-                onChange={(event) => updateFilters({ camp: event.target.value as GraphFilters['camp'] })}
-                className={`${inlineControl} w-28`}
-              >
-                <option value="all">全部</option>
-                <option value="blue">只看藍</option>
-                <option value="green">只看綠</option>
-                <option value="other">未列藍綠</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2">
-              <span className="shrink-0">媒體 tag</span>
-              <select
-                value={filters.tag}
-                onChange={(event) => updateFilters({ tag: event.target.value })}
-                className={`${inlineControl} w-40`}
-              >
-                <option value="">全部 tag</option>
-                {availableTags.map((tag) => (
-                  <option key={tag.id} value={tag.id}>
-                    {tag.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="min-w-0 flex-1 basis-full text-[11px] text-zinc-500 lg:basis-auto">
-              {filters.tag
-                ? '依本期納入分析篇數排序 · 包含所選分類的直接關係對象，對象不計入分類媒體數'
-                : '依本期納入分析篇數排序 · 只列出目前有關係資料的 tag'}
-            </p>
+            <Popover label={filterLabel} active={filters.camp !== 'all' || !!filters.tag}>
+              <label className="block">
+                藍綠分類
+                <select
+                  value={filters.camp}
+                  onChange={(event) => updateFilters({ camp: event.target.value as GraphFilters['camp'] })}
+                  className={control}
+                >
+                  {campOptions.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                媒體 tag
+                <select value={filters.tag} onChange={(event) => updateFilters({ tag: event.target.value })} className={control}>
+                  <option value="">全部 tag</option>
+                  {availableTags.map((tag) => (
+                    <option key={tag.id} value={tag.id}>
+                      {tag.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="text-[11px] leading-5 text-zinc-500">
+                {filters.tag
+                  ? '依本期納入分析篇數排序 · 包含所選分類的直接關係對象，對象不計入分類媒體數'
+                  : '依本期納入分析篇數排序 · 只列出目前有關係資料的 tag'}
+              </p>
+              {(filters.camp !== 'all' || filters.tag) && (
+                <button
+                  type="button"
+                  onClick={() => updateFilters({ camp: 'all', tag: '' })}
+                  className="text-brand-700 underline dark:text-brand-400"
+                >
+                  清除篩選
+                </button>
+              )}
+            </Popover>
+            <ThresholdControl data={data} />
           </fieldset>
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
             <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
