@@ -53,8 +53,8 @@ describe('expanded official topic indexes', () => {
 
   it('uses Initium curated series cards, not general tags in navigation or article links', () => {
     const html = `<nav><a href="https://theinitium.com/tag/politics/">政治</a></nav>
-      <main><div class="border"><a href="https://theinitium.com/tag/series/"><img src="/cover.jpg"></a>
-      <h4><a href="https://theinitium.com/tag/series/">調查系列</a></h4><a href="https://theinitium.com/tag/series/">所有文章</a></div>
+      <main><section id="series-latest"><div class="border"><a href="https://theinitium.com/tag/series/"><img src="/cover.jpg"></a>
+      <h4><a href="https://theinitium.com/tag/series/">調查系列</a></h4><a href="https://theinitium.com/tag/series/">所有文章</a></div></section>
       <a href="/20261003-story/">文章</a></main>`;
     expect(extractTopics(html, rule('theinitium')).map((t) => t.title)).toEqual(['調查系列']);
   });

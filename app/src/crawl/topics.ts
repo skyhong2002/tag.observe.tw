@@ -11,6 +11,7 @@ import {
   tnlFeatures,
   twreporterTopics,
 } from './topic-extractors-b1.ts';
+import { womanyCollections, wycTopics, zaobaoSpecials } from './topic-extractors-b2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -537,6 +538,9 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/knews.png',
     pattern: /\/realtime\/topic\/[^/?#]+$/,
     title: (a) => decodeURIComponent((a.attr('href') ?? '').split('/').pop() ?? ''),
+    // Running 議題, columns and programmes. Their pages render stories
+    // client-side, so auto would see no story list and call them features.
+    kind: 'topic',
   },
   {
     media: 'fountmedia',
@@ -545,21 +549,38 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/topic\/[^/?#]+$/,
     scope: 'article',
     title: (a) => a.find('.intro-bl .content').text().trim() || heading(a),
+    // 放．專題: one-off packages; the slider's /topic/<id> links alias these.
+    kind: 'feature',
   },
   {
     media: 'technews',
     url: 'https://technews.tw/topics/',
     fallbackImage: '/favicons/technews.png',
-    pattern: /^\/[a-z][\w-]+\/$/,
+    // Topic pages are bare slugs, as are the site's feeds, portals and static pages.
+    pattern:
+      /^\/(?!(?:feed|topics|tn-rss|event-portal|enterprise-portal|aboutus|contact|staff|copyright|privacy-policy|terms-of-use|content-exchange)\/)[a-z][\w-]+\/$/,
     scope: '#content .carousel-banner_item, #content .column_list_item_wrapper',
+    // Mixed: some keep gaining /YYYY/MM/DD/ stories, most were published once.
+    kind: 'auto',
     card: '.carousel-banner_item, .column_list_item_wrapper',
   },
   {
     media: 'techorange',
-    url: 'https://techorange.com/',
+    // 特展: the full index on one page (/feature/2/ redirects back to it).
+    url: 'https://techorange.com/feature/',
     fallbackImage: '/favicons/techorange.png',
-    pattern: /techorange\.com\/feature\/[^/?#]+\/?$/,
-    title: heading,
+    pattern: /techorange\.com\/feature\/(?!\d+\/)[^/?#]+\/?$/,
+    card: '.e-loop-item',
+    // The cover link's only text is its <noscript> image markup.
+    title: (a) => {
+      const card = a.closest('.e-loop-item');
+      return card.find('.elementor-heading-title').first().text().trim() || (card.find('img[alt]').attr('alt') ?? '').trim();
+    },
+    kind: 'feature',
+    // The homepage names the newest packages, some of which the index leaves untitled.
+    listings: [
+      { url: 'https://techorange.com/', pattern: /techorange\.com\/feature\/(?!\d+\/)[^/?#]+\/?$/, title: heading, kind: 'feature' },
+    ],
   },
   {
     media: 'ithome',
@@ -569,6 +590,10 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/article\/\d+$/,
     scope: '.view-content',
     title: heading,
+    // One-off packages (cover stories, surveys), 12 a page back to 2015; the
+    // Drupal pager is 0-based. Five pages cover roughly the last 18 months.
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.ithome.com.tw/feature?page=${n - 1}`, max: 5 },
   },
   {
     media: 'einfo',
@@ -577,6 +602,8 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/feature\/\d+$/,
     scope: 'main',
     card: 'article',
+    // 專題報導: one-off reporting packages, all on one page.
+    kind: 'feature',
   },
   {
     media: 'coolloud',
@@ -587,6 +614,9 @@ export const TOPIC_RULES: TopicRule[] = [
     card: '.views-row',
     title: textOf,
     scope: '.cover-title',
+    // One-off packages; three pages in all (the Drupal pager is 0-based).
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.coolloud.org.tw/topics?page=${n - 1}`, max: 5 },
   },
   {
     media: 'foodnext',
@@ -595,6 +625,8 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/issue\/\d+$/,
     scope: '.article-list',
     card: '.article-list',
+    // 食專題: single long-form pieces, the whole archive on one page.
+    kind: 'feature',
   },
   {
     media: 'cnyes',
@@ -602,6 +634,9 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/cnyes.png',
     pattern: /^https:\/\/topics\.cnyes\.com\/[^/?#]+\/?$/,
     title: heading,
+    // Every topics.cnyes.com microsite is an advertiser's package (CME, funds, IPOs).
+    kind: 'feature',
+    sponsored: () => true,
   },
   {
     media: 'shoppingdesign',
@@ -609,6 +644,10 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/shoppingdesign.png',
     pattern: /\/topic\/view\/\d+$/,
     title: heading,
+    // Magazine theme packages (some brand-made, unmarked). A bare-UA request
+    // is redirected away, which made the index look empty in audits.
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.shoppingdesign.com.tw/topic?page=${n}`, max: 6 },
   },
   {
     media: 'sportsv',
@@ -616,6 +655,10 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/sportsv.png',
     pattern: /\/feature\/[^/?#]+$/,
     card: '.item',
+    // Mixed: season-long hubs (playoffs, World Cup) and one-off packages.
+    // Newest first back to ~2010; five pages reach about two years back.
+    kind: 'auto',
+    paginate: { url: (n) => `https://www.sportsv.net/feature?page=${n}`, max: 5 },
   },
   {
     media: 'tvbshealth',
@@ -624,6 +667,11 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /health\.tvbs\.com\.tw\/exhibition\//,
     scope: 'main',
     title: heading,
+    // 專題企劃: advertiser-funded campaign microsites (/exhibition/<slug>/<year>/),
+    // except the editorial year-in-review (health-review).
+    kind: 'feature',
+    sponsored: (t) => !/\/exhibition\/[^/]*-review\b/.test(t.url),
+    paginate: { url: (n) => `https://health.tvbs.com.tw/topic?page=${n}`, max: 3 },
   },
   {
     media: 'supertaste',
@@ -631,6 +679,10 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/supertaste.png',
     pattern: /supertaste\.tvbs\.com\.tw\/exhibition\//,
     card: '[class~="group/card"]',
+    // 專題企劃: campaign microsites made with tourism boards and brands, all
+    // on one page; the year-in-review ones (supertaste-review) are editorial.
+    kind: 'feature',
+    sponsored: (t) => !/\/exhibition\/[^/]*-review\b/.test(t.url),
   },
   {
     media: 'womany',
@@ -639,13 +691,20 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/collections\/[^/?#]+$/,
     scope: '.collection-item',
     title: heading,
+    // 特別企劃: one-off packages, many of them brand campaigns (品牌贊助 badge).
+    extract: womanyCollections,
+    kind: 'feature',
   },
   {
     media: 'wyc',
     url: 'https://dq.yam.com/topic/list/1',
     fallbackImage: '/favicons/wyc.png',
-    pattern: /^\/topic\/\d+\/1(?:\?redirect=1)?$/,
+    pattern: /^\/topic\/\d+\/1(?:\?redirect=\d+)?$/,
     title: heading,
+    extract: wycTopics,
+    // 精選主題: packages of explainers around one event; four pages in all.
+    kind: 'feature',
+    paginate: { url: (n) => `https://dq.yam.com/topic/list/${n}`, max: 4 },
   },
   {
     media: 'mplus',
@@ -654,6 +713,8 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /\/topic\/\d+$/,
     scope: '.theme',
     title: heading,
+    // One-off packages; the site has not published one since 2022.
+    kind: 'feature',
   },
   {
     media: 'news_pchome',
@@ -668,6 +729,8 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/ntdtv_tw.png',
     pattern: /^\/topic\/category\/id\/\d+$/,
     title: (a) => a.attr('title') || heading(a),
+    // Running story categories, all on one page; most have gone quiet (已停更).
+    kind: 'topic',
   },
   {
     media: 'zaobao',
@@ -675,6 +738,16 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/zaobao.png',
     pattern: /^\/specials?\/[^/?#]+$/,
     title: (a) => a.closest('h2').text().trim() || heading(a),
+    extract: zaobaoSpecials,
+    listings: [
+      {
+        // 互动新闻: one-off interactive microsites; skip the quizzes inside them.
+        url: 'https://www.zaobao.com.sg/interactive-graphics',
+        pattern: /^https:\/\/interactive\.zaobao\.com\.sg\/(?![^?#]*quiz)[^?#]+\/$/,
+        card: '.card',
+        kind: 'feature',
+      },
+    ],
   },
   {
     media: 'gv',
@@ -689,6 +762,8 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/cdn_news.png',
     pattern: /^TopicNews\.aspx\?EntityID=TopicNews&PK=\w+$/,
     card: '.position-relative',
+    // Running story collections; their story URLs carry no dates for auto.
+    kind: 'topic',
   },
   {
     media: 'businesstoday',
@@ -698,30 +773,64 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^https:\/\//,
     redirectHosts: ['btoday.cc', 'supr.link'],
     title: (a) => a.find('h4').text().trim(),
+    // 數位專題 slides: mostly one-off microsites, but the election 戰情室 is a
+    // running hub; both list dated /post/YYYYMMDDnnnn stories.
+    kind: 'auto',
   },
   {
     media: 'theinitium',
     url: 'https://theinitium.com/series/',
     fallbackImage: '/favicons/theinitium.png',
     // /issue/ is a general taxonomy; /series/ is the curated reporting series.
-    pattern: /theinitium\.com\/tag\/[^/?#]+\/$/,
-    scope: 'main',
+    // 最近更新 holds the new ones; the per-year sections below list every series.
+    pattern: /^(?:https:\/\/theinitium\.com)?\/tag\/[^/?#]+\/$/,
+    scope: '#series-latest',
     card: '[class~="border"]',
+    // Mixed: running series (wars, elections) and one-off packages.
+    kind: 'auto',
+    listings: [
+      {
+        // Ghost repeats the whole page here: the full archive (back to 2015)
+        // under its own source, so it is stored as backlog.
+        url: 'https://theinitium.com/series/page/2/',
+        pattern: /^(?:https:\/\/theinitium\.com)?\/tag\/[^/?#]+\/$/,
+        scope: 'main',
+        card: '[class~="border"]',
+        kind: 'auto',
+      },
+      {
+        // 欄目: columns, podcasts and newsletters keep publishing.
+        url: 'https://theinitium.com/column/',
+        pattern: /^(?:https:\/\/theinitium\.com)?\/tag\/[^/?#]+\/$/,
+        scope: 'main',
+        card: '[class~="border"]',
+        kind: 'topic',
+      },
+    ],
   },
   {
     media: 'heho',
     url: 'https://heho.com.tw/medical-feature-stories',
     fallbackImage: '/favicons/heho.png',
-    pattern: /heho\.com\.tw\/[a-z][\w-]+\/?$/,
+    // Single-slug landing pages on the main and section hosts; not the
+    // tools.* / npower.* lookup tools or WordPress archive paths.
+    pattern: /^https:\/\/(?:(?:www|sport|kids)\.)?heho\.com\.tw\/(?!(?:tag|category|archives|author|page)\/?$)[a-z0-9][\w-]+\/?$/,
     scope: '#main .row-dashed',
     card: '.col-inner',
+    // 醫療專題: one-off packages and campaign hubs.
+    kind: 'feature',
   },
   {
     media: 'edh',
     url: 'https://edh.tw/special',
     fallbackImage: '/favicons/edh.png',
     pattern: /\/special\/[^/?#]+$|edh\.tw\/evt\/[^/?#]+\/?$/,
-    title: heading,
+    // Each card links a bold name and a longer summary to the same page.
+    title: (a) => a.closest('.group').find('a.font-bold').first().text().trim() || heading(a),
+    kind: 'feature',
+    // /evt/ are advertisers' campaign sites; /special/<id> are edh's own packages.
+    sponsored: (t) => /edh\.tw\/evt\//.test(t.url),
+    paginate: { url: (n) => `https://edh.tw/special?page=${n}`, max: 5 },
   },
   {
     media: 'eld',
@@ -732,6 +841,8 @@ export const TOPIC_RULES: TopicRule[] = [
     image: '.taxonomy-header img',
     title: (a) =>
       (a.closest('[class~="first:pt-0"]').find('.taxonomy-header img').first().attr('alt') ?? '').replace(/ (Cover|Banner)$/, ''),
+    // 特輯: one-off themed packages, all on one page.
+    kind: 'feature',
   },
 ];
 
@@ -872,6 +983,8 @@ export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
               if (target.status < 200 || target.status >= 400) throw Error(`HTTP ${target.status}`);
               if (registrable(new URL(target.url).hostname) !== registrable(new URL(listing.url).hostname))
                 throw Error('redirect left official outlet');
+              // Retired packages (今周刊 /catalog/N) bounce back to the listing page.
+              if (stripTracking(target.url) === stripTracking(listing.url)) throw Error('short link fell back to the listing');
               item.url = stripTracking(target.url);
             } catch (error) {
               errors.push(`${item.url}: ${(error as Error).message}`);
@@ -880,7 +993,10 @@ export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
           }
           if (!item.kind && kind !== 'auto') item.kind = kind;
           if (listing.sponsored) item.sponsored = !!item.sponsored || listing.sponsored(item);
-          if (!items.has(item.url)) items.set(item.url, { ...item, source: listing.url, page: n });
+          const prev = items.get(item.url);
+          if (!prev) items.set(item.url, { ...item, source: listing.url, page: n });
+          // A listing that declares the kind beats an earlier 'auto' one (端 columns also appear under series).
+          else if (!prev.kind && item.kind) prev.kind = item.kind;
           accepted++;
         }
       }
