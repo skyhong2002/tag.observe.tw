@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { setnTopics } from './topic-extractors-a2.ts';
+import { ettodayFeatureIndex, setnTopics } from './topic-extractors-a2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -279,14 +279,24 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://www.ettoday.net/feature/index',
     fallbackImage: 'https://cdn2.ettoday.net/style/ettoday2017/images/push.jpg',
     pattern: /\/feature\/(?!index(?:[/?#]|$))[^/?#]+/,
-    scope: '.part_pictxt_2, .part_pictxt_1',
     title: heading,
+    extract: ettodayFeatureIndex,
+    // Mixed: running keyword pages (地震, podcast) and one-off packages. Deep
+    // pages are thousands of stale celebrity tags, so only the first few.
+    paginate: { url: (n) => `https://www.ettoday.net/feature/index/0/${n}`, max: 5 },
     listings: [
       {
         // Public CSV linked by features.ettoday.net, also used by its browser UI.
         url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSC8DHP42p7MvVh8FXxjEJwZejAS3lzw7hvNAU4zeVP82zZCmefGCLWXOqeqanUrbvokw3UxKn7uzDm/pub?output=csv',
         pattern: /features\.ettoday\.net\/[^/?#]+|\/events\/depth-topic\//,
         extract: ettodayDigitalTopics,
+        kind: 'feature',
+      },
+      // The nav's highlighted buttons link the current event microsites (2026大選, 亞運).
+      {
+        url: 'https://www.ettoday.net/',
+        scope: '.nav_1_v4 .piece > li.style_1',
+        pattern: /^https:\/\/(www\.ettoday\.net\/events|events\.ettoday\.net)\/[\w-]+\/[\w-]+\.php7?$/,
       },
     ],
   },

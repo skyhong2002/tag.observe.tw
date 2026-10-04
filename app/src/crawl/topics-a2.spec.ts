@@ -31,4 +31,21 @@ describe('batch a2 topic rules', () => {
     ]);
     expect(rule('setn').paginate?.url(2)).toBe('https://www.setn.com/Plist.aspx?p=2');
   });
+
+  it('ETtoday: main feature list plus sidebar promos as 合作; homepage nav microsites', () => {
+    const html = `<div class="part_pictxt_2"><div class="box_0"><h3><a href="//www.ettoday.net/feature/地震">地震新聞報導</a></h3></div></div>
+      <div id="hot-events"><div class="part_pictxt_1"><div class="box_0">
+        <h3><a ref="nofollow" href="https://star.ettoday.net/news/3235768">抽門票</a></h3></div>
+        <div class="box_0"><h3><a ref="nofollow" href="https://www.ettoday.net/feature/2021house">買房不踩雷</a></h3></div></div></div>`;
+    expect(run(rule('ettoday'), html).map((t) => [t.title, !!t.sponsored])).toEqual([
+      ['地震新聞報導', false],
+      ['買房不踩雷', true],
+    ]);
+    const home = listing('ettoday', 'https://www.ettoday.net/');
+    const nav = `<div class="nav_1_v4"><ul class="piece">
+      <li class="btn style_1"><a href="https://www.ettoday.net/events/election2026/index.php7?utm_source=ettoday_PC">2026大選</a></li>
+      <li class="btn style_1"><a href="https://www.ettoday.net/news/news-list.htm">最新</a></li>
+      <li class="btn"><a href="https://events.ettoday.net/yummy2023/index.php7">美食</a></li></ul></div>`;
+    expect(run(home, nav).map((t) => t.url)).toEqual(['https://www.ettoday.net/events/election2026/index.php7']);
+  });
 });

@@ -8,3 +8,11 @@ import { extractTopics, type TopicItem, type TopicRule } from './topics.ts';
 export function setnTopics(html: string, rule: TopicRule): TopicItem[] {
   return extractTopics(html, rule).map((item) => (/\/klist\//i.test(item.url) ? { ...item, kind: 'topic' } : item));
 }
+
+/** ETtoday /feature/index: the main list, plus the 熱門快報 sidebar whose
+ *  feature links are paid promos (nofollow, e.g. 2021house) — kept as 合作. */
+export function ettodayFeatureIndex(html: string, rule: TopicRule): TopicItem[] {
+  const promos = extractTopics(html, { ...rule, scope: '#hot-events' }).map((item) => ({ ...item, sponsored: true }));
+  const promoted = new Set(promos.map((item) => item.url));
+  return [...extractTopics(html, { ...rule, scope: '.part_pictxt_2' }).filter((item) => !promoted.has(item.url)), ...promos];
+}
