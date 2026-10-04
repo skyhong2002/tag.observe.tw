@@ -6,6 +6,7 @@ import {
   looksLikeStories,
   pickTopicStories,
   sharedTag,
+  storyPageDate,
   type TopicStory,
   topicPageDate,
   topicPageGroups,
@@ -256,5 +257,82 @@ describe('pickTopicStories', () => {
   it('skips groups of short labels and returns nothing without a story list', () => {
     const labels = ['政治', '社會', '國際', '財經'].map((t, i) => ({ key: `x.tw/s/${i}`, title: t }));
     expect(pickTopicStories([labels], { ...none, crawled: () => true })).toEqual([]);
+  });
+  it("falls back to a furniture-heavy group's own dated stories (食力: the issue's articles, then every other issue)", () => {
+    const own = [1, 2].map((i) => story(`www.foodnext.net/issue/paper/32345${i}`, '2015-10-07T16:00:00.000Z'));
+    const issues = [1, 2, 3, 4, 5, 6].map((i) => story(`www.foodnext.net/issue/61111${i}`));
+    const furniture = (k: string) => /issue\/\d+$/.test(k);
+    expect(pickTopicStories([[...own, ...issues]], { ...none, furniture })).toEqual(own);
+    // Undated leftovers are a sidebar's, not the topic's.
+    expect(pickTopicStories([[...own.map((s) => ({ ...s, date: undefined })), ...issues]], { ...none, furniture })).toEqual([]);
+  });
+});
+
+describe('topicPageDate on story pages', () => {
+  const now = new Date('2026-10-04T04:00:00Z');
+  const page = 'https://www.example.com.tw/article/5126139';
+  const ld = (o: object) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`;
+  it('reads publish-time metas of any CMS, never the modified time', () => {
+    expect(topicPageDate('<meta property="og:published_time" content="2024-02-01T08:00:00+08:00">', page, now)?.toISOString()).toBe(
+      '2024-02-01T00:00:00.000Z',
+    );
+    expect(topicPageDate('<meta name="my:publish_date" content="2017-06-28T20:00:00+08:00">', page, now)?.toISOString()).toBe(
+      '2017-06-28T12:00:00.000Z',
+    );
+    expect(topicPageDate('<meta name="parsely-pub-date" content="2021-01-02">', page, now)?.toISOString()).toBe('2021-01-01T16:00:00.000Z');
+    expect(
+      topicPageDate('<time itemprop="datePublished" datetime="2015-03-05T11:20:00+08:00">2015/03/05</time>', page, now)?.toISOString(),
+    ).toBe('2015-03-05T03:20:00.000Z');
+    expect(
+      topicPageDate(
+        '<meta property="article:modified_time" content="2026-10-01T00:00:00+08:00"><meta property="og:updated_time" content="2026-10-01T00:00:00+08:00"><meta name="publisher" content="2026-10-01">',
+        page,
+        now,
+      ),
+    ).toBeNull();
+  });
+  it("reads the page's own Article in JSON-LD (canonical URL too), published before modified", () => {
+    const html = `<link rel="canonical" href="https://www.example.com.tw/aging/article/5126139">${ld({
+      '@type': 'NewsArticle',
+      mainEntityOfPage: { '@id': 'https://www.example.com.tw/aging/article/5126139' },
+      datePublished: '2023-06-12T00:00:00+08:00',
+      dateModified: '2023-07-25T11:58:15+08:00',
+    })}`;
+    expect(topicPageDate(html, page, now)?.toISOString()).toBe('2023-06-11T16:00:00.000Z');
+    expect(topicPageDate(ld({ '@type': 'NewsArticle', url: page, dateModified: '2023-07-25' }), page, now)).toBeNull();
+  });
+  it('rejects future dates; a few hours ahead is Taipei time labelled UTC', () => {
+    expect(topicPageDate('<meta property="article:published_time" content="2027-01-01T00:00:00+08:00">', page, now)).toBeNull();
+    expect(topicPageDate(ld({ '@type': 'NewsArticle', url: page, datePublished: '2026-10-05T00:00:00+08:00' }), page, now)).toBeNull();
+    // 10:30 Taipei written as 10:30Z: 6.5 hours ahead of now (04:00Z) -> 02:30Z.
+    expect(topicPageDate(ld({ '@type': 'NewsArticle', url: page, datePublished: '2026-10-04T10:30:00Z' }), page, now)?.toISOString()).toBe(
+      '2026-10-04T02:30:00.000Z',
+    );
+  });
+});
+
+describe('storyPageDate', () => {
+  const now = new Date('2026-10-04T04:00:00Z');
+  const page = 'https://www.foodnext.net/issue/paper/3234563208';
+  it('falls back to the date line under the headline (食力)', () => {
+    const html = `<nav><span>2026/10/04</span></nav><main><h1>夜市裡的食安角落：肉羹湯、手搖飲料</h1><p class="date">2015/10/08</p><div class="share"></div><p>本文…2011年10月5日…</p></main>`;
+    expect(storyPageDate(html, page, now)?.toISOString()).toBe('2015-10-07T16:00:00.000Z');
+  });
+  it('reads datePublished from JSON-LD that is not valid JSON, rejecting future dates', () => {
+    const broken = (d: string) =>
+      `<script type="application/ld+json">{"@type": "NewsArticle", "headline": "a\nb", "datePublished": "${d}"}</script>`;
+    expect(storyPageDate(broken('2022-08-29T11:19:00&#x2B;08:00'), page, now)?.toISOString()).toBe('2022-08-29T03:19:00.000Z');
+    expect(storyPageDate(broken('2027-01-01T00:00:00+08:00'), page, now)).toBeNull();
+  });
+  it('prefers the publish meta and skips update lines', () => {
+    expect(
+      storyPageDate(
+        '<meta property="article:published_time" content="2020-01-01T00:00:00Z"><h1>T</h1><p>2015/10/08</p>',
+        page,
+        now,
+      )?.toISOString(),
+    ).toBe('2020-01-01T00:00:00.000Z');
+    expect(storyPageDate('<h1>標題</h1><p>更新時間：2026/10/01</p><p>內文</p>', page, now)).toBeNull();
+    expect(storyPageDate('<p>2015/10/08</p>', page, now)).toBeNull();
   });
 });

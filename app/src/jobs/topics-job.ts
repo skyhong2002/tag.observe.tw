@@ -2,6 +2,8 @@ import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from 'drizzle-or
 import pLimit from 'p-limit';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
+import { carryStoryDates, fetchStoryDates, type KnownStoryDate, storiesToDate, storyFetchBudget } from '../crawl/story-pages.ts';
+import { urlKey } from '../crawl/text.ts';
 import { classifyTopic, firstRunEnd, storyDate } from '../crawl/topic-kind.ts';
 import { articleShapes, pickTopicStories, type TopicStory, topicPageDate, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
 import {
@@ -152,21 +154,30 @@ export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicM
 
 // Re-read recently listed topic pages (active 議題 every 6 hours, the rest
 // every 3 days) and keep each topic's own story list. Blocks repeated on the
-// outlet's other topic pages ("latest news", "most read", other topics' picks) are site furniture: a group is
-// skipped when over half of its links also appear on another topic page of
-// the same outlet fetched in this run, or among the stories stored for two
-// other topics of the outlet (not the topic's parent or sub-topics). Of the
+// outlet's other topic pages ("latest news", "most read", other topics' picks)
+// are site furniture: a group is skipped when over half of its links also
+// appear on another topic page of the same outlet fetched in this run, among
+// the stories stored for two other topics of the outlet (not the topic's
+// parent or sub-topics), or are the outlet's topic pages themselves. Of the
 // rest, pickTopicStories takes the one with the most stories we crawled,
 // else the one that reads like headlines, leaving out tag, author and other
 // navigation links and preferring dated stories and links shaped like the
-// outlet's article URLs. The chosen stories' dates (storyDates) classify the
-// topic (議題/專題, classifyTopic) unless its listing declared the kind; a page
+// outlet's article URLs. A story is dated by our crawled copy, the topic
+// page, the date stored for it by an earlier check, its URL, and — for the
+// newest and oldest stories still undated — its own page (story-pages.ts,
+// at most `storyFetches` pages per run). These dates classify the topic
+// (議題/專題, classifyTopic) unless its listing declared the kind; a page
 // without stories that is itself one article is dated by its own publish time.
 // Sub-topic links (rule.children) become rows.
 // Rows never classified are refreshed even when no longer listed.
 export async function refreshTopicPages(
   db: Db,
-  { now = () => new Date(), limit = 300, fetch = fetchText }: { now?: () => Date; limit?: number; fetch?: typeof fetchText } = {},
+  {
+    now = () => new Date(),
+    limit = 300,
+    fetch = fetchText,
+    storyFetches = 150,
+  }: { now?: () => Date; limit?: number; fetch?: typeof fetchText; storyFetches?: number } = {},
 ) {
   const t = now().getTime();
   // 議題 still gaining stories are re-read every 6 hours so 最後更新 stays
@@ -333,6 +344,8 @@ export async function refreshTopicPages(
   );
   let found = 0;
   let classified = 0;
+  // 1. Each readable page's own stories, with the dates stored for them before.
+  const plans: Array<{ row: (typeof due)[number]; stories: TopicStory[]; piece: Date | null; crawledAt: Map<string, Date> }> = [];
   for (const { row, ok, groups, pageDate } of pages) {
     if (!ok) {
       // Keep the stored stories; only a page we could read may change them.
@@ -343,32 +356,73 @@ export async function refreshTopicPages(
       continue;
     }
     const keys = [...new Set(groups.flat().map((s) => s.key))];
-    const crawled = new Set(
+    const crawledAt = new Map(
       keys.length
         ? (
             await db
-              .select({ key: articles.urlKey })
+              .select({ key: articles.urlKey, at: articles.publishedAt })
               .from(articles)
               .where(and(eq(articles.media, articleMediaOf(row.media)), inArray(articles.urlKey, keys)))
-          ).map((r) => r.key)
+          ).flatMap((r) => (r.key ? [[r.key, r.at] as const] : []))
         : [],
     );
     const stored = storedOn.get(row.media);
     const family = (id: number) => id === row.id || id === row.parentId || stored?.parentOf.get(id) === row.id;
     let stories = pickTopicStories(groups, {
       furniture: (key) =>
-        (seenOn.get(`${row.media} ${key}`)?.size ?? 0) > 1 || [...(stored?.rowsOf.get(key) ?? [])].filter((id) => !family(id)).length >= 2,
-      crawled: (key) => crawled.has(key),
+        (seenOn.get(`${row.media} ${key}`)?.size ?? 0) > 1 ||
+        [...(stored?.rowsOf.get(key) ?? [])].filter((id) => !family(id)).length >= 2 ||
+        !!stored?.topicPages.has(key),
+      crawled: (key) => crawledAt.has(key),
       shapes: await shapesOf(row.media),
     });
     if (stories.length) found++;
-    stories = stories.slice(0, 200);
+    // Dates read earlier (on the topic page or the story's own) carry over.
+    stories = carryStoryDates(stories.slice(0, 200), new Map((row.pageStories ?? []).map((s) => [s.key, s])));
     // A page without a story list that is one article: a single-piece 專題,
     // dated by its publish time. Not a 議題 (its stories may load client-side)
     // unless it has no dates at all, which makes it a 專題 anyway (below).
     const feature = row.kind === 'feature' || (row.kindSource !== 'rule' && !row.storyLastAt);
     const piece = !stories.length && feature ? pageDate : null;
-    const dates = piece ? [piece] : await storyDates(db, articleMediaOf(row.media), stories);
+    plans.push({ row, stories, piece, crawledAt });
+  }
+  // 2. Stories still undated at either end of their list (storiesToDate): the
+  // date stored for the same story on another topic of the outlet, else its
+  // own page — at most `storyFetches` per run, 議題 before 專題.
+  const dateOf = (p: (typeof plans)[number]) => (s: TopicStory) => storyDate(s, p.crawledAt.get(s.key), now());
+  const wanted = plans.map((p) => (p.piece ? [] : storiesToDate(p.stories, dateOf(p))));
+  const elsewhere = await storedStoryDates(
+    db,
+    plans.flatMap((p, i) => wanted[i].map((s) => ({ media: p.row.media, key: s.key }))),
+  );
+  for (const [i, p] of plans.entries()) {
+    const other = elsewhere.get(p.row.media);
+    if (!other?.size || !wanted[i].length) continue;
+    p.stories = carryStoryDates(p.stories, other);
+    wanted[i] = storiesToDate(p.stories, dateOf(p));
+  }
+  const targets = storyFetchBudget(
+    plans.map((p, i) => ({ kind: p.row.kind, stories: wanted[i] })),
+    storyFetches,
+  );
+  const read = await fetchStoryDates(targets, { fetch, now: now() });
+  let storiesDated = 0;
+  for (const p of plans)
+    p.stories = p.stories.map((s) => {
+      if (s.date || !read.has(s.key)) return s;
+      const at = read.get(s.key);
+      if (!at) return { ...s, dateless: true };
+      storiesDated++;
+      return { ...s, date: at.toISOString() };
+    });
+  // 3. The topic's dates, kind and growth.
+  for (const { row, stories, piece, crawledAt } of plans) {
+    const dates = piece
+      ? [piece]
+      : stories.flatMap((s) => {
+          const at = storyDate(s, crawledAt.get(s.key), now());
+          return at ? [at] : [];
+        });
     // Dates are recomputed in full on every check, so a story list with no
     // datable story clears them (stale values would keep a wrong 最後更新);
     // a page without any list (stories loading client-side) keeps the old ones.
@@ -390,7 +444,8 @@ export async function refreshTopicPages(
     await db
       .update(topics)
       .set({
-        pageStories: stories,
+        // The link as found is not stored: the key identifies the story.
+        pageStories: stories.map(({ url: _url, ...s }) => s),
         pageCheckedAt: now(),
         storyCount: stories.length || sql`${topics.storyCount}`,
         storyFirstAt: first,
@@ -400,53 +455,52 @@ export async function refreshTopicPages(
       })
       .where(eq(topics.id, row.id));
   }
-  return { checked: due.length, found, covers, children, classified };
+  return { checked: due.length, found, covers, children, classified, storyFetches: targets.length, storiesDated };
 }
 
-/** Per outlet, which topic rows store each story key, and each row's parent. */
+/** Dates stored for these stories on any topic of their outlet, by outlet and key. */
+export async function storedStoryDates(db: Db, wanted: Array<{ media: string; key: string }>) {
+  const out = new Map<string, Map<string, KnownStoryDate>>();
+  const byMedia = new Map<string, Set<string>>();
+  for (const w of wanted) byMedia.set(w.media, (byMedia.get(w.media) ?? new Set()).add(w.key));
+  for (const [media, keys] of byMedia) {
+    const [rows] = (await db.execute(sql`
+      SELECT jt.k AS story, MIN(jt.d) AS published
+      FROM ${topics}, JSON_TABLE(${topics.pageStories}, '$[*]' COLUMNS (k VARCHAR(512) PATH '$.key', d VARCHAR(40) PATH '$.date')) AS jt
+      WHERE ${topics.media} = ${media} AND jt.d IS NOT NULL AND jt.k IN (${sql.join(
+        [...keys].map((k) => sql`${k}`),
+        sql`, `,
+      )})
+      GROUP BY jt.k`)) as unknown as [Array<{ story: string; published: string }>];
+    out.set(media, new Map(rows.map((r) => [r.story, { date: r.published }])));
+  }
+  return out;
+}
+
+/** Per outlet, which topic rows store each story key, each row's parent, and
+ *  the url_keys of its topic pages (a link to another topic is not a story). */
 export async function storedTopicKeys(db: Db, media: string[]) {
-  const out = new Map<string, { rowsOf: Map<string, Set<number>>; parentOf: Map<number, number | null> }>();
+  const out = new Map<string, { rowsOf: Map<string, Set<number>>; parentOf: Map<number, number | null>; topicPages: Set<string> }>();
   if (!media.length) return out;
   const rows = await db
     .select({
       id: topics.id,
       media: topics.media,
+      url: topics.url,
       parentId: topics.parentId,
       keys: sql<unknown>`JSON_EXTRACT(${topics.pageStories}, '$[*].key')`,
     })
     .from(topics)
-    .where(and(inArray(topics.media, media), sql`JSON_LENGTH(${topics.pageStories}) > 0`));
+    .where(inArray(topics.media, media));
   for (const r of rows) {
-    const m = out.get(r.media) ?? { rowsOf: new Map(), parentOf: new Map() };
+    const m = out.get(r.media) ?? { rowsOf: new Map(), parentOf: new Map(), topicPages: new Set() };
     out.set(r.media, m);
     m.parentOf.set(r.id, r.parentId);
+    m.topicPages.add(urlKey(r.url, sourceByMedia(articleMediaOf(r.media))?.list.articleId));
     const keys = typeof r.keys === 'string' ? (JSON.parse(r.keys) as unknown) : r.keys;
     if (Array.isArray(keys)) for (const k of keys) if (typeof k === 'string') m.rowsOf.set(k, (m.rowsOf.get(k) ?? new Set()).add(r.id));
   }
   return out;
-}
-
-/** Publish dates of a topic's stories: our crawled copy, else the date the
- *  topic page shows for it, else the date in the URL. */
-async function storyDates(db: Db, media: string, stories: TopicStory[]): Promise<Date[]> {
-  if (!stories.length) return [];
-  const rows = await db
-    .select({ key: articles.urlKey, at: articles.publishedAt })
-    .from(articles)
-    .where(
-      and(
-        eq(articles.media, media),
-        inArray(
-          articles.urlKey,
-          stories.map((s) => s.key),
-        ),
-      ),
-    );
-  const crawled = new Map(rows.map((r) => [r.key, r.at]));
-  return stories.flatMap((s) => {
-    const at = storyDate(s, crawled.get(s.key));
-    return at ? [at] : [];
-  });
 }
 
 /** 最後更新 (topicUpdatedAt) in SQL: the newest story, else first sighting

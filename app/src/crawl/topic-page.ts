@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { parsePublished } from './article.ts';
 import { dateFromAttr, dateFromText } from './story-date.ts';
 import { urlKey } from './text.ts';
 
@@ -12,7 +13,11 @@ import { urlKey } from './text.ts';
 export interface TopicStory {
   key: string; // url_key, comparable with articles.url_key
   title: string; // text of the story's list item, for stories we never crawled
-  date?: string; // ISO publish date the topic page shows for the story, if any
+  date?: string; // ISO publish date the topic page (or the story's own page) shows, if any
+  /** The story's own page was read and shows no publish date: not fetched again. */
+  dateless?: true;
+  /** The link as found on the topic page (not stored: the key is kept). */
+  url?: string;
 }
 
 const DEPTH = 4;
@@ -153,24 +158,75 @@ function ldStoryDates($: cheerio.CheerioAPI, base: URL, articleId: string | unde
   return out;
 }
 
+// Publish-time metas: article:/og:published_time, itemprop datePublished and
+// the CMS variants (pubdate, publish_date, my:publish_date, parsely-pub-date).
+// Never modified/updated times: a page refreshed today is not news of today.
+const PUBLISHED_META =
+  /^(?:[\w-]+[:-])?(?:published[_-]?time|publish(?:ed)?[_-]?date|pub[_-]?date|date[_-]?published|publication[_-]?date)$/i;
+
 /**
- * The publish date of a topic page that is itself one article (a long-form
- * 專題 without a story list): article:published_time, or the datePublished of
- * the page's own Article in JSON-LD. Null when the page is not an article.
+ * When a page that is one article was published: its publish-time meta (or
+ * <time itemprop="datePublished">), else the datePublished/dateCreated of the
+ * page's own Article in JSON-LD (its url is the page's, the canonical URL or
+ * absent). Null when the page is not an article. A time in the future means
+ * Taipei time labelled UTC (as on topic pages, ldStoryDates): it is shifted
+ * back 8 hours, and rejected if still ahead.
  */
 export function topicPageDate(html: string, pageUrl: string, now = new Date()): Date | null {
   const $ = cheerio.load(html);
-  const meta = $('meta[property="article:published_time"], meta[name="article:published_time"], meta[itemprop="datePublished"]')
-    .first()
-    .attr('content');
-  const fromMeta = dateFromAttr(meta, now);
-  if (fromMeta) return fromMeta;
-  const page = keyOf(pageUrl, pageUrl);
+  const ahead = new Date(+now + 9 * 3600e3);
+  const settle = (d: Date | null) => {
+    if (!d) return null;
+    const t = +d > +now + 300e3 ? +d - 8 * 3600e3 : +d;
+    return t > +now + 3600e3 ? null : new Date(t);
+  };
+  for (const el of $('meta[content], time[datetime], [itemprop][content]').toArray()) {
+    const $e = $(el);
+    const names = [$e.attr('property'), $e.attr('name'), $e.attr('itemprop')].filter(Boolean) as string[];
+    if (!names.some((n) => PUBLISHED_META.test(n.trim()))) continue;
+    const d = settle(dateFromAttr($e.attr('content') ?? $e.attr('datetime'), ahead));
+    if (d) return d;
+  }
+  const own = new Set([keyOf(pageUrl, pageUrl)]);
+  for (const sel of ['link[rel="canonical"]', 'meta[property="og:url"]']) {
+    const href = $(sel).first().attr('href') ?? $(sel).first().attr('content');
+    const key = href && keyOf(href, pageUrl);
+    if (key) own.add(key);
+  }
   for (const n of ldNodes($)) {
     if (!/Article|BlogPosting|Report/.test([n['@type']].flat().join(' '))) continue;
     const url = ldUrl(n);
-    if (url && keyOf(url, pageUrl) !== page) continue;
-    const d = ldDate(n, now);
+    if (url && !own.has(keyOf(url, pageUrl))) continue;
+    for (const v of [n.datePublished, n.dateCreated]) {
+      const d = typeof v === 'string' ? settle(dateFromAttr(v, ahead)) : null;
+      if (d) return d;
+    }
+  }
+  return null;
+}
+
+// How far after the headline a date line may sit (byline, share bar).
+const BYLINE_REACH = 25;
+/**
+ * When a story's own page was published: topicPageDate, else a datePublished
+ * in JSON-LD that does not parse as JSON (read as the article crawler does),
+ * else the date line printed just after its headline (食力: <h1>…</h1><p
+ * class="date">2015/10/08</p>) unless that line is an update time (更新/updated).
+ */
+export function storyPageDate(html: string, pageUrl: string, now = new Date()): Date | null {
+  const meta = topicPageDate(html, pageUrl, now);
+  if (meta) return meta;
+  const raw = parsePublished(/"datePublished"\s*:\s*"([^"]+)"/.exec(html)?.[1]);
+  if (raw && +raw <= +now + 3600e3 && raw.getUTCFullYear() >= 1995) return raw;
+  const $ = cheerio.load(html);
+  $('nav, aside, footer, script, style').remove();
+  const all = $('body *').toArray();
+  const h1 = all.indexOf($('h1').first()[0]);
+  if (h1 < 0) return null;
+  for (const el of all.slice(h1 + 1, h1 + 1 + BYLINE_REACH)) {
+    const text = short($(el).text());
+    if (!text || /更新|修改|update|modif/i.test(text)) continue;
+    const d = dateFromText(text, now);
     if (d) return d;
   }
   return null;
@@ -195,7 +251,7 @@ export function topicPageGroups(
   $('header, footer, nav, aside, script, style').remove();
   const site = registrable(base.hostname);
   const self = urlKey(base.href, articleId);
-  const links: Array<{ a: Node; sig: string; key: string; title: string }> = [];
+  const links: Array<{ a: Node; sig: string; key: string; title: string; url: string }> = [];
   $('a[href]').each((_, a) => {
     let u: URL;
     try {
@@ -218,7 +274,7 @@ export function topicPageGroups(
     // image or a date (華視's topic grid links its dates).
     const item = $(a).closest('li, article');
     const title = (item.length ? item.text() : $(a).text()).replace(/\s+/g, ' ').trim().slice(0, 160);
-    links.push({ a, sig, key, title });
+    links.push({ a, sig, key, title, url: u.href });
   });
   const bySig = new Map<string, typeof links>();
   for (const l of links) {
@@ -256,7 +312,7 @@ export function topicPageGroups(
     const lone = new Set(group.map((l) => l.key).filter((k) => !spread.has(k))).size <= 1;
     const stories = new Map<string, TopicStory>();
     for (const l of group) {
-      const story = stories.get(l.key) ?? { key: l.key, title: '' };
+      const story = stories.get(l.key) ?? { key: l.key, title: '', url: l.url };
       if (story.title.length < l.title.length) story.title = l.title;
       if (!story.date) {
         let date = ld.get(l.key) ?? dateIn($, $(l.a), now);
@@ -372,7 +428,17 @@ export function pickTopicStories(groups: TopicStory[][], ev: StoryEvidence): Top
   const [listed] = scored
     .filter((s) => looksLikeStories(s.all))
     .sort((a, b) => b.articles - a.articles || b.g.length - a.g.length || b.dated - a.dated);
-  return listed?.g ?? [];
+  if (listed) return listed.g;
+  // Last resort: a page laying out its own few stories and the outlet's whole
+  // catalogue in one container (食力's issue pages: the issue's articles, then
+  // every other issue) has only furniture-heavy groups. What is left of a
+  // group once the furniture is dropped is the topic's list when it is all
+  // dated headlines, unlike a sidebar's not-yet-seen leftovers.
+  const [rest] = groups
+    .map((all) => all.filter((s) => !isNavigationKey(s.key) && !ev.furniture(s.key)))
+    .filter((g) => g.length >= 2 && g.every((s) => s.date && headline(s.title)))
+    .sort((a, b) => b.length - a.length);
+  return rest ?? [];
 }
 
 /**
