@@ -69,6 +69,7 @@ const VIEWS: Array<[View, string]> = [
   ['outlets', '依媒體'],
 ];
 
+const method = 'font-medium text-zinc-800 dark:text-zinc-200';
 const threadUrl = (id: string) => `${API_ORIGIN}/api/v1/events/threads/${encodeURIComponent(id)}`;
 const fetchThread = async (id: string): Promise<ThreadData | null> => {
   const res = await fetch(threadUrl(id), { next: { revalidate } });
@@ -107,13 +108,15 @@ export default async function EventThreadPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ view?: string; sort?: string; dir?: string }>;
+  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
   const view: View = VIEWS.some(([v]) => v === sp.view) ? (sp.view as View) : 'timeline';
   const sort: OutletSort = OUTLET_SORTS.includes(sp.sort as OutletSort) ? (sp.sort as OutletSort) : 'articles';
   const dir: 'asc' | 'desc' = sp.dir === 'asc' || sp.dir === 'desc' ? sp.dir : defaultDir(sort);
+  // Headlines run newest first unless the reader asks for the story in order.
+  const order: 'asc' | 'desc' = sp.order === 'asc' ? 'asc' : 'desc';
   const base = threadUrl(id);
   const [data, covRes, seriesRes] = await Promise.all([
     fetchThread(id),
@@ -134,7 +137,7 @@ export default async function EventThreadPage({
   const rankAt = new Map(data.hours.map((h) => [hourKey(h.hourStart), h]));
   const hoursAsc = [...data.hours].sort((a, b) => a.hourStart.localeCompare(b.hourStart));
   const rows = cov ? outletRows(cov.byOutlet) : [];
-  const groups = cov ? groupByHour(flattenArticles(cov.byOutlet, 'asc')) : [];
+  const groups = cov ? groupByHour(flattenArticles(cov.byOutlet, order)) : [];
   const breaking = cov ? firstReports(cov.byOutlet) : [];
   const campCount = (camp: Camp, by: 'outlets' | 'articles') => cov?.camps.find((c) => c.camp === camp)?.[by] ?? 0;
   const blindspotText =
@@ -143,6 +146,7 @@ export default async function EventThreadPage({
     const next = new URLSearchParams();
     const merged = {
       view: view === 'timeline' ? undefined : view,
+      order: order === 'desc' ? undefined : order,
       sort: sort === 'articles' ? undefined : sort,
       dir: sort === 'articles' && dir === 'desc' ? undefined : dir,
       ...q,
@@ -271,12 +275,7 @@ export default async function EventThreadPage({
       />
 
       <section className="space-y-3">
-        <SectionTitle
-          id="trend"
-          note="上：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白），虛線為這則事件在事件表上的名次（右軸，第 1 名在最上面，未上榜的小時留空）；下：所有媒體帶有任一主要標籤的報導篇數。灰底為這則事件出現在事件表上的時段，前後各多顯示 12 小時。"
-        >
-          時間變化
-        </SectionTitle>
+        <SectionTitle id="trend">時間變化</SectionTitle>
         {series && series.points.length > 1 && (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <EventChart
@@ -287,39 +286,17 @@ export default async function EventThreadPage({
             />
           </div>
         )}
-        <h3 className="text-sm font-medium">
-          每小時名次與標籤{' '}
-          <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">點時間可看當時整張事件表；標籤後的數字是該小時分數。</span>
-        </h3>
+        <h3 className="text-sm font-medium">每小時名次與標籤</h3>
         <HourTable hours={hoursAsc} maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))} />
       </section>
 
       <section className="space-y-3">
-        <SectionTitle
-          id="tags"
-          note={
-            <>
-              每小時事件表會列出這件事的前 12
-              個標籤與分數；這裡合併整段期間，字越大最高分越高，移到字上可看分數與出現小時數，點選進入標籤頁。
-              <span className="text-brand-700 dark:text-brand-400">橘色</span>是分群時認定的主要標籤（{t.majorTags.join('、')}
-              ），報導分布與下方標題對照都依主要標籤計算，其餘標籤只出現在這裡與上方每小時列表。
-            </>
-          }
-        >
-          標籤（{stats.length}）
-        </SectionTitle>
+        <SectionTitle id="tags">標籤（{stats.length}）</SectionTitle>
         <EventTagCloud stats={stats} hours={data.hours.length} />
       </section>
 
       <section className="space-y-3">
-        <SectionTitle
-          id="outlets"
-          note={
-            cov
-              ? `以主要標籤在 ${taipeiHour(cov.from)} 至 ${taipeiHour(cov.to)} 之間的報導計算；同一家媒體同標題只算一次。藍綠傾向依本站媒體分類，僅供對照標題角度。點欄名可排序。`
-              : '報導分布暫時無法取得，請稍後重新整理。'
-          }
-        >
+        <SectionTitle id="outlets" note={cov ? undefined : '報導分布暫時無法取得，請稍後重新整理。'}>
           各媒體報導量{cov ? `（${cov.outlets} 家 · ${cov.articles} 篇）` : ''}
         </SectionTitle>
         {cov && cov.articles > 0 && (
@@ -367,18 +344,28 @@ export default async function EventThreadPage({
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <SectionTitle
-            id="headlines"
-            note={
-              cov && cov.articles > 0
-                ? '同一件事，各家怎麼下標。依時間看事件如何展開；藍綠對照把同一小時三類媒體的標題並排；依媒體看每家的完整報導。'
-                : '這裡只保留事件表每小時挑出的代表標題。'
-            }
-          >
+          <SectionTitle id="headlines">
             標題對照{cov && cov.articles > 0 ? `（${cov.articles} 篇）` : news.length ? `（${news.length} 篇）` : ''}
           </SectionTitle>
           {cov && cov.articles > 0 && (
-            <nav className="flex gap-1 text-sm" aria-label="標題排列方式">
+            <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="標題排列方式">
+              {(
+                [
+                  ['desc', '最新在前'],
+                  ['asc', '最舊在前'],
+                ] as const
+              ).map(([o, name]) => (
+                <Link
+                  key={o}
+                  href={href({ order: o === 'desc' ? undefined : o }, 'headlines')}
+                  scroll={false}
+                  aria-current={o === order ? 'page' : undefined}
+                  className={`rounded-md px-3 py-1 ${o === order ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
+                >
+                  {name}
+                </Link>
+              ))}
+              <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />
               {VIEWS.map(([v, name]) => (
                 <Link
                   key={v}
@@ -399,7 +386,7 @@ export default async function EventThreadPage({
           ) : view === 'camps' ? (
             <CampColumns groups={groups} rankAt={rankAt} />
           ) : (
-            <ByOutlet byOutlet={cov.byOutlet} />
+            <ByOutlet byOutlet={cov.byOutlet} order={order} />
           )
         ) : (
           <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
@@ -429,6 +416,46 @@ export default async function EventThreadPage({
           </ul>
         )}
       </section>
+
+      <details className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+        <summary className="cursor-pointer py-1.5 text-sm hover:text-brand-700 dark:hover:text-brand-400">資料來源與計算方式</summary>
+        <dl className="mt-1 space-y-2 border-l-2 border-zinc-200 pl-3 dark:border-zinc-800">
+          <div>
+            <dt className={method}>事件與標籤</dt>
+            <dd>
+              事件表每小時依標籤共現分群，每件事列出前 12
+              個標籤與分數；標籤雲合併這則事件整段期間的標籤，字越大最高分越高，移到字上可看最高分、出現時間與出現小時數。
+              <span className="text-brand-700 dark:text-brand-400">橘色</span>是分群時認定的主要標籤（{t.majorTags.join('、')}
+              ），報導分布與標題對照都依主要標籤計算，其餘標籤只出現在標籤雲與每小時列表。「最高分」取各小時最高分與事件紀錄中的較大者。
+            </dd>
+          </div>
+          <div>
+            <dt className={method}>時間變化</dt>
+            <dd>
+              上圖：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白），虛線為這則事件在事件表上的名次（右軸，第 1
+              名在最上面，未上榜的小時留空）；下圖：所有媒體帶有任一主要標籤的報導篇數。灰底為這則事件出現在事件表上的時段，前後各多顯示 12
+              小時。每小時列表點時間可看當時整張事件表，標籤後的數字是該小時分數。
+            </dd>
+          </div>
+          <div>
+            <dt className={method}>各媒體報導量</dt>
+            <dd>
+              {cov
+                ? `以主要標籤在 ${taipeiHour(cov.from)} 至 ${taipeiHour(cov.to)} 之間的報導計算，比事件上榜時段前後各多取幾小時；`
+                : '以主要標籤在事件期間的報導計算；'}
+              同一家媒體同標題只算一次。藍綠傾向依本站媒體分類，僅供對照標題角度；盲點指一方陣營完全沒有報導。表格點欄名可排序，預設顯示前 5
+              家。
+            </dd>
+          </div>
+          <div>
+            <dt className={method}>標題對照</dt>
+            <dd>
+              同一件事，各家怎麼下標。依時間看事件如何展開；藍綠對照把同一小時三類媒體的標題並排；依媒體看每家的完整報導。圖片為各媒體提供的報導圖片，沒有提供者不顯示。
+              {!(cov && cov.articles > 0) && '這則事件沒有報導分布資料時，只保留事件表每小時挑出的代表標題。'}
+            </dd>
+          </div>
+        </dl>
+      </details>
     </div>
   );
 }

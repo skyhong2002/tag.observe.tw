@@ -135,10 +135,20 @@ export function HourTable({ hours, maxScore }: { hours: ThreadHour[]; maxScore: 
   );
 }
 
+function Thumb({ a }: { a: { id: number; title: string; image: string | null } }) {
+  if (!a.image || !/^https?:\/\//.test(a.image)) return null;
+  return (
+    <Link href={articleHref(a)} tabIndex={-1} aria-label={`閱讀：${a.title}`} className="flex-none">
+      <SafeImage src={a.image} alt="" width={96} height={64} className="h-14 w-20 rounded object-cover" loading="lazy" />
+    </Link>
+  );
+}
+
 function HeadlineRow({ a, showCamp = true, time = true }: { a: TimedArticle; showCamp?: boolean; time?: boolean }) {
   return (
-    <li className="flex gap-2 py-1.5">
+    <li className="flex gap-2 py-2">
       {time && <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-500">{clock(a.publishedAt)}</span>}
+      <Thumb a={a} />
       <div className="min-w-0 flex-1">
         <Link href={articleHref(a)} className="leading-snug hover:underline">
           {a.title}
@@ -239,7 +249,7 @@ export function CampColumns({ groups, rankAt }: { groups: HourGroup[]; rankAt: M
 }
 
 /** Grouped by outlet, most prolific first, with each outlet's full run. */
-export function ByOutlet({ byOutlet }: { byOutlet: CoverageOutlet[] }) {
+export function ByOutlet({ byOutlet, order }: { byOutlet: CoverageOutlet[]; order: 'asc' | 'desc' }) {
   return (
     <ul className="grid gap-3 md:grid-cols-2">
       {byOutlet.map((o) => (
@@ -253,15 +263,11 @@ export function ByOutlet({ byOutlet }: { byOutlet: CoverageOutlet[] }) {
           </div>
           <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
             {[...o.articles]
-              .sort((a, b) => a.publishedAt.localeCompare(b.publishedAt))
+              .sort((a, b) => (order === 'asc' ? a.publishedAt.localeCompare(b.publishedAt) : b.publishedAt.localeCompare(a.publishedAt)))
               .map((a) => (
                 <li key={a.id} className="flex gap-2 py-1.5">
                   <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-500">{clock(a.publishedAt)}</span>
-                  {a.image && /^https?:\/\//.test(a.image) && (
-                    <Link href={articleHref(a)} tabIndex={-1} aria-label={`閱讀：${a.title}`} className="flex-none">
-                      <SafeImage src={a.image} alt="" width={64} height={44} className="h-11 w-16 rounded object-cover" loading="lazy" />
-                    </Link>
-                  )}
+                  <Thumb a={a} />
                   <div className="min-w-0 flex-1">
                     <Link href={articleHref(a)} className="leading-snug hover:underline">
                       {a.title}
