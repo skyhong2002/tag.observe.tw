@@ -15,7 +15,7 @@
 }
 .main a { text-decoration: none; }
 .main a:hover { color: var(--accent); }
-.home a:focus-visible, .home button:focus-visible, .home input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.home a:focus-visible, .home button:focus-visible, .main input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .skip { position: fixed; top: -80px; left: 16px; padding: 12px 20px; border-radius: 8px; background: var(--panel); color: var(--accent); z-index: 50; }
 .skip:focus { top: 12px; }
 .main { max-width: 1152px; margin: auto; padding: 24px 16px 0; }
