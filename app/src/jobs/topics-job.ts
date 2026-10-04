@@ -356,8 +356,12 @@ export async function refreshTopicPages(
     const feature = row.kind === 'feature' || (row.kindSource !== 'rule' && !row.storyLastAt);
     const piece = !stories.length && feature ? pageDate : null;
     const dates = piece ? [piece] : await storyDates(db, articleMediaOf(row.media), stories);
-    const first = dates.length ? new Date(Math.min(...dates.map(Number))) : row.storyFirstAt;
-    const last = dates.length ? new Date(Math.max(...dates.map(Number))) : row.storyLastAt;
+    // Dates are recomputed in full on every check, so a story list with no
+    // datable story clears them (stale values would keep a wrong 最後更新);
+    // a page without any list (stories loading client-side) keeps the old ones.
+    const keep = !stories.length;
+    const first = dates.length ? new Date(Math.min(...dates.map(Number))) : keep ? row.storyFirstAt : null;
+    const last = dates.length ? new Date(Math.max(...dates.map(Number))) : keep ? row.storyLastAt : null;
     // Growth: a story key we had not stored before, newer than the stored newest.
     const before = new Set((row.pageStories ?? []).map((s) => s.key));
     const grew = before.size > 0 && stories.some((s) => !before.has(s.key)) && (!row.storyLastAt || !last || +last > +row.storyLastAt);
