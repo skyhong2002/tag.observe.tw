@@ -133,3 +133,16 @@ describe('太報', () => {
     );
   });
 });
+
+describe('上報', () => {
+  it('skips hub pages and the menu label, keeping the card name', () => {
+    const html = `<a class="dropdown-item" href="/tw/project/project-0041" title="特別企劃">特別企劃</a>
+      <a class="nav-link" href="/tw/project/project-0077">名古屋亞運</a>
+      <a href="/tw/project/special-plan">特別企劃</a><a href="/tw/project/10th-anniversary-highlights">10週年精選回顧</a>
+      <div class="media"><h4><a href="/tw/project/project-0041" class="pic">2026房產價值藍圖</a></h4></div>`;
+    expect(extractTopics(html, rule('upmedia')).map((t) => [t.url.split('/').pop(), t.title])).toEqual([
+      ['project-0077', '名古屋亞運'],
+      ['project-0041', '2026房產價值藍圖'],
+    ]);
+  });
+});

@@ -260,7 +260,11 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'upmedia',
     fallbackImage: 'https://www.upmedia.mg/images/sitelogo.png',
     url: 'https://www.upmedia.mg/tw/project',
-    pattern: /\/tw\/project\/[^/?#]+\/?$/,
+    // special-plan and 10th-anniversary-highlights are hubs over these projects.
+    pattern: /\/tw\/project\/(?!special-plan\/?$|10th-anniversary-highlights\/?$)[^/?#]+\/?$/,
+    // The menu's "特別企劃" link points at a project whose card has the real name.
+    title: (a) => (a.is('.dropdown-item') ? '' : heading(a)),
+    paginate: { url: (n) => `https://www.upmedia.mg/tw/project?p=${n}`, max: 5 },
   },
   // /topic/ itself redirect-loops; the homepage lists the running topics, each
   // "more" link sitting next to its title (banners link to index2 pages).
