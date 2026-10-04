@@ -105,6 +105,10 @@ export default function SimilarityGraph({
     const maxWeight = Math.max(1, ...data.edges.map((edge) => edge.count));
     const tooltipContent = createGraphTooltip(nodes, camps);
     const ink = dark ? '#d4d4d8' : '#52525b';
+    // Midpoint of the panel's background gradient.
+    const paper = dark ? [17, 17, 19] : [254, 254, 254];
+    const flatten = (hex: string, opacity: number) =>
+      `rgb(${[1, 3, 5].map((i, c) => Math.round(parseInt(hex.slice(i, i + 2), 16) * opacity + paper[c] * (1 - opacity))).join(',')})`;
     let width = chart.getWidth(),
       height = chart.getHeight();
     let positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58), true);
@@ -161,26 +165,37 @@ export default function SimilarityGraph({
     const linkData = () => {
       const sizes = mediaIconSizes(nodes, chart.getWidth());
       const points = new Map(nodes.map((node, i) => [node.id, positions[i]]));
-      return visibleEdges
-        .filter((edge) => {
-          const a = points.get(edge.source)!,
-            b = points.get(edge.target)!;
-          return graphEdgeHasRoom(Math.hypot(a.x - b.x, a.y - b.y), zoom, sizes.get(edge.source)!, sizes.get(edge.target)!, 14);
-        })
-        .map((e) => ({
-          source: e.source,
-          target: e.target,
-          relationship: e,
-          symbol: ['circle', 'arrow'],
-          symbolSize: [0, 14],
-          lineStyle: {
-            width: edgeWeightWidth(e.count, maxWeight),
-            color: e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c',
-            type: 'solid',
+      return (
+        visibleEdges
+          .filter((edge) => {
+            const a = points.get(edge.source)!,
+              b = points.get(edge.target)!;
+            return graphEdgeHasRoom(Math.hypot(a.x - b.x, a.y - b.y), zoom, sizes.get(edge.source)!, sizes.get(edge.target)!, 14);
+          })
+          .map((e) => ({
+            e,
             opacity: focused ? (highlightedRelationship(e, focused) ? 0.95 : 0.035) : 0.5,
-            curveness: e.kind === 'citation' ? 0.1 : -0.05,
-          },
-        }));
+            width: edgeWeightWidth(e.count, maxWeight),
+          }))
+          // Opaque edges occlude each other: faded ones first, thin over thick.
+          .sort((a, b) => a.opacity - b.opacity || b.width - a.width)
+          .map(({ e, opacity, width }) => ({
+            source: e.source,
+            target: e.target,
+            relationship: e,
+            symbol: ['circle', 'arrow'],
+            symbolSize: [0, 14],
+            lineStyle: {
+              width,
+              // ECharts draws the line and its arrowhead as two shapes sharing one
+              // opacity; translucency would darken where they overlap.
+              color: flatten(e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c', opacity),
+              type: 'solid',
+              opacity: 1,
+              curveness: e.kind === 'citation' ? 0.1 : -0.05,
+            },
+          }))
+      );
     };
     const updateFocus = (value: GraphSelection, force = false) => {
       if (disposed || (!force && sameGraphSelection(focused, value))) return;
