@@ -6,6 +6,7 @@ import CompactArticleList from '@/components/CompactArticleList';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
+import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import SourceLink from '@/components/SourceLink';
@@ -13,6 +14,7 @@ import { API_ORIGIN, taipei } from '@/lib/api';
 import { CONTENT_STATUS, type MediaContent } from '@/lib/article-content';
 import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
 import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
+import type { SimilarityData } from '@/lib/similarity';
 
 export const revalidate = 60;
 export default async function MediaPage({
@@ -31,13 +33,24 @@ export default async function MediaPage({
     cursor = query.get('cursor'),
     keyword = query.get('q');
   const cloudHours = Number(hours ?? 168);
-  const [res, profile, keywords] = await Promise.all([
+  const discoverySource = media === 'google_news' || media === 'dongtaiwang';
+  const [res, profile, keywords, similarity] = await Promise.all([
     fetch(`${API_ORIGIN}/api/v1/media/${encodeURIComponent(media)}/content?${apiQuery}`, {
       next: { revalidate },
       signal: AbortSignal.timeout(6000),
     }).catch(() => null),
     loadMediaProfile(media),
-    media === 'google_news' || media === 'dongtaiwang' ? null : loadMediaKeywords(media, cloudHours),
+    discoverySource ? null : loadMediaKeywords(media, cloudHours),
+    // The same index as the news graph (/similarity); the API caches it per period.
+    discoverySource
+      ? null
+      : fetch(`${API_ORIGIN}/api/v1/similarity?${new URLSearchParams({ hours: String(cloudHours), threshold: '0.65' })}`, {
+          next: { revalidate },
+          headers: { accept: 'application/json' },
+          signal: AbortSignal.timeout(8000),
+        })
+          .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
+          .catch(() => null),
   ]);
   if (res?.status === 404 || res?.status === 400) notFound();
   if (!res?.ok) return <p className="py-8 text-zinc-600 dark:text-zinc-400">暫時無法取得文章，請稍後重新整理。</p>;
@@ -115,6 +128,7 @@ export default async function MediaPage({
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
         <MediaSidebar label={discovery ? '發現來源資料' : undefined}>
           {!discovery && <MediaWordCloud data={keywords} media={media} hours={cloudHours} />}
+          {!discovery && <MediaRelations data={similarity} media={media} hours={cloudHours} />}
           <section
             aria-label={discovery ? '發現來源資料' : '媒體基本資料'}
             className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800"
@@ -288,7 +302,13 @@ export default async function MediaPage({
                             {article.publishedDate ?? taipei(article.publishedAt)}
                           </time>
                           <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
-                          <span className={readable ? 'text-zinc-500 dark:text-zinc-400' : 'text-amber-700 dark:text-amber-400'}>
+                          <span
+                            className={
+                              readable || article.bodyStatus === 'expired'
+                                ? 'text-zinc-500 dark:text-zinc-400'
+                                : 'text-amber-700 dark:text-amber-400'
+                            }
+                          >
                             {readable ? '可讀內文' : CONTENT_STATUS[article.bodyStatus].label}
                           </span>
                           <SourceLink url={article.url} className="!min-h-5 !text-[11px]" />

@@ -315,7 +315,17 @@ type EvidenceState = { key: string; data: SimilarityEvidence | null; error: bool
 const emptyEvidence: SimilarityEvidence = { total: 0, page: 0, pageSize: 20, hiddenSources: 0, items: [], articles: {}, groups: {} };
 
 export default function SimilarityExplorer({ data, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
-  const [filters, setFilters] = useState<GraphFilters>({ limit: 30, camp: 'all', tag: '' });
+  // Keep the tab in the URL so the browser's back button steps between tabs.
+  const searchParams = useSearchParams();
+  // Media pages link here with `node` to open one outlet's relationships.
+  const linkedNode = searchParams.get('node');
+  const [filters, setFilters] = useState<GraphFilters>(() => {
+    const initial: GraphFilters = { limit: 30, camp: 'all', tag: '' };
+    // A linked outlet outside the 30 largest needs the full graph to stay in scope.
+    return linkedNode && !filterGraphMedia(data.nodes, data.edges, camps, tags, initial).nodes.some((node) => node.id === linkedNode)
+      ? { ...initial, limit: 0 }
+      : initial;
+  });
   const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
   const [showAll, setShowAll] = useState(false);
   const dashboard = useRef<HTMLDivElement>(null);
@@ -358,9 +368,9 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       setFullscreen(true);
     }
   };
-  const [selection, setSelection] = useState<GraphSelection>(null);
-  // Keep the tab in the URL so the browser's back button steps between tabs.
-  const searchParams = useSearchParams();
+  const [selection, setSelection] = useState<GraphSelection>(() =>
+    linkedNode && data.nodes.some((node) => node.id === linkedNode) ? { node: linkedNode } : null,
+  );
   const view: View = views.find(([value]) => value === searchParams.get('view'))?.[0] ?? 'media';
   const setView = (next: View) => {
     if (next === view) return;
