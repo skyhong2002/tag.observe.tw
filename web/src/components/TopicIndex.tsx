@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import MediaIcon from '@/components/MediaIcon';
 import MediaSidebar from '@/components/MediaSidebar';
+import { TopicMethod } from '@/components/MethodNotes';
 import TopicCard, { kindNoun, topicHref, topicMediaHref } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
 import {
@@ -23,21 +24,33 @@ const param = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 /** The 議題表 (/topic/) and 專題 (/feature/) index: one layout, two kinds.
  *  A keyword (?tag=) or title filter (?q=) lists both kinds across outlets,
  *  the same on either page. Old ?coverage= / ?backlog= links are ignored. */
-export default async function TopicIndex({ kind, searchParams }: { kind: TopicKind; searchParams: TopicIndexParams }) {
-  const noun = kindNoun(kind);
-  const base = kind === 'feature' ? '/feature/' : '/topic/';
+// The footer's method notes (@notes/topic, @notes/feature) quote these counts; the
+// requests match the page's own, so they are fetched once per render.
+async function topicData(kind: TopicKind, searchParams: TopicIndexParams) {
   const tag = param(searchParams.tag);
   const q = param(searchParams.q);
   const [data, found] = await Promise.all([fetchTopics(120, kind), tag || q ? fetchTopicSearch({ tag, q }) : null]);
   // Outlets with none of this kind yet (only known once the API sends counts).
   const media = (data?.media ?? []).filter((m) => kindCount(m, kind) !== 0);
+  const tagCounts = data?.tags ?? found?.tags ?? [];
+  return { tag, q, data, found, media, tagCounts };
+}
+
+export async function TopicNotes({ kind, searchParams }: { kind: TopicKind; searchParams: TopicIndexParams }) {
+  const { data, media, tagCounts } = await topicData(kind, searchParams);
+  return <TopicMethod kind={kind} mediaCount={data ? media.length : null} tagCount={tagCounts.length} />;
+}
+
+export default async function TopicIndex({ kind, searchParams }: { kind: TopicKind; searchParams: TopicIndexParams }) {
+  const noun = kindNoun(kind);
+  const base = kind === 'feature' ? '/feature/' : '/topic/';
+  const { tag, q, data, found, media, tagCounts } = await topicData(kind, searchParams);
   // Older API builds have no merged feed; fall back to each outlet's latest.
   const feed: FeedTopic[] = (
     data?.feed ?? (data?.media ?? []).flatMap((m) => (m.latest ? [{ ...m.latest, media: m.media, mediaTitle: m.title, icon: m.icon }] : []))
   ).filter((t) => ofKind(t, kind) && t.status !== 'ended');
   // The API sends the feed most recently updated first.
   const groups = groupByUpdate(feed, new Date());
-  const tagCounts = data?.tags ?? found?.tags ?? [];
   const tagHref = (t: string) => `${base}?${new URLSearchParams({ tag: t })}`;
   return (
     <div className="space-y-5">
@@ -97,7 +110,6 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
           </div>
         </div>
       )}
-      <MethodNotes kind={kind} mediaCount={data ? media.length : null} tagCount={tagCounts.length} />
     </div>
   );
 }
@@ -364,41 +376,6 @@ function TagRace({ topics }: { topics: FeedTopic[] }) {
         </section>
       ))}
     </div>
-  );
-}
-
-/** 資料來源與計算方式 at the foot of the page, as on /media/[media]. */
-function MethodNotes({ kind, mediaCount, tagCount }: { kind: TopicKind; mediaCount: number | null; tagCount: number }) {
-  const noun = kindNoun(kind);
-  return (
-    <details className="border-t border-zinc-200 pt-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-      <summary className="cursor-pointer py-1.5 hover:text-brand-700 dark:hover:text-brand-400">資料來源與計算方式</summary>
-      <ul className="mt-1 space-y-1.5 border-l-2 border-zinc-200 pl-3 leading-5 dark:border-zinc-800">
-        <li>
-          {mediaCount != null ? `${mediaCount} 家媒體官方${noun}入口的最新動態，` : `追蹤媒體官方${noun}入口，`}
-          每小時檢查。每個{noun}下方列出本站近 3 天從各家媒體抓到的相關報導。來源持續擴充中，未列出的媒體不代表沒有{noun}。
-        </li>
-        <li>
-          依最後更新排序：最後更新是{noun}
-          頁上最新一則報導的時間；沒有報導日期的，用本站首次發現時間（不等於媒體上架時間）。本站開始追蹤前就已上架、又沒有報導日期可查的
-          {noun}，更新時間不明，不列入上方清單（各媒體頁列在最後）；已上架的{noun}有新報導時照樣排到前面。
-        </li>
-        <li>
-          各家用詞不一（專題、專輯、策展…），本站依有沒有持續新增報導來分類，不照媒體的命名：持續新增報導的是議題（90
-          天沒有新報導標為已停更），一次性的新聞包是專題。
-        </li>
-        <li>
-          關鍵字：從議題與專題的名稱比對站內近 7
-          天常用的標籤，標籤須構成名稱的主要部分（「懶人包」「專題」這類包裝用語不算）。上方列出未停更議題與專題中最常見的
-          {tagCount ? ` ${tagCount} ` : ''}
-          個，依帶有這個關鍵字的媒體家數排序；點選後列出各媒體帶這個關鍵字的議題與專題（含已停更），議題表與專題頁結果相同。
-        </li>
-        <li>
-          點選關鍵字後依各家開始做這個關鍵字的時間排序，最早的在前，並標出比最早一家晚幾天（以台灣日期計）。開始時間取媒體議題或專題頁上所列最早一則報導與本站首次發現兩者中較早的；本站開始追蹤前就已上架、又沒有報導日期可查的，標「追蹤前已上架」排在最後。一家有多個時以最早的為準，名稱全部列出。同一關鍵字隔年再出現（如每年的金馬）時，前面各家最後一則報導之後超過
-          90 天才開始的，另算一輪重新比較先後。 進行中／已停更與最後更新日期只適用於議題。
-        </li>
-      </ul>
-    </details>
   );
 }
 

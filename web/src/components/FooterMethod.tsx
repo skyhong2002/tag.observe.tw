@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { METHOD_HREF } from '@/lib/site-nav';
-import { EventMethod, MediaMethod, RankingMethod, SimilarityMethod, SourceMethod } from './MethodNotes';
+import { EventMethod, MediaMethod, RankingMethod, SimilarityMethod, SourceMethod, TopicMethod } from './MethodNotes';
 
 const inlineLink = 'text-brand-700 underline underline-offset-2 dark:text-brand-400';
 
@@ -20,7 +20,11 @@ function sectionsFor(pathname: string) {
       </>
     );
   }
-  if (/^\/(event|eve|topic|feature)\//.test(pathname)) return <EventMethod />;
+  // The /topic/ and /feature/ indexes get TopicMethod with their counts from @notes.
+  if (pathname === '/topic' || pathname === '/feature' || pathname === '/topic/' || pathname === '/feature/') return null;
+  if (pathname.startsWith('/topic/')) return <TopicMethod kind="topic" />;
+  if (pathname.startsWith('/feature/')) return <TopicMethod kind="feature" />;
+  if (/^\/(event|eve)\//.test(pathname)) return <EventMethod />;
   return <SourceMethod />;
 }
 
