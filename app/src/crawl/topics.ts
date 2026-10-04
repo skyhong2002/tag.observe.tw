@@ -480,6 +480,11 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /health\.tvbs\.com\.tw\/exhibition\//,
     scope: 'main',
     title: heading,
+    // 專題企劃: advertiser-funded campaign microsites (/exhibition/<slug>/<year>/),
+    // except the editorial year-in-review (health-review).
+    kind: 'feature',
+    sponsored: (t) => !/\/exhibition\/[^/]*-review\b/.test(t.url),
+    paginate: { url: (n) => `https://health.tvbs.com.tw/topic?page=${n}`, max: 3 },
   },
   {
     media: 'supertaste',
@@ -487,6 +492,10 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/supertaste.png',
     pattern: /supertaste\.tvbs\.com\.tw\/exhibition\//,
     card: '[class~="group/card"]',
+    // 專題企劃: campaign microsites made with tourism boards and brands, all
+    // on one page; the year-in-review ones (supertaste-review) are editorial.
+    kind: 'feature',
+    sponsored: (t) => !/\/exhibition\/[^/]*-review\b/.test(t.url),
   },
   {
     media: 'womany',

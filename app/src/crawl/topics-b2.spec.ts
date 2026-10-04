@@ -82,3 +82,16 @@ describe('womany', () => {
     ]);
   });
 });
+
+describe('TVBS health and supertaste', () => {
+  it('marks campaign microsites sponsored but not the year-in-review', () => {
+    for (const media of ['tvbshealth', 'supertaste']) {
+      const { sponsored } = rule(media);
+      const host = media === 'tvbshealth' ? 'health' : 'supertaste';
+      const item = (path: string) => ({ url: `https://${host}.tvbs.com.tw/exhibition/${path}`, title: '', image: null, category: null });
+      expect(sponsored?.(item('insomnia/2026/index.html'))).toBe(true);
+      expect(sponsored?.(item(`${host === 'health' ? 'health' : 'supertaste'}-review/index.html`))).toBe(false);
+      expect(sponsored?.(item('supertaste-review-2021/index.html'))).toBe(false);
+    }
+  });
+});
