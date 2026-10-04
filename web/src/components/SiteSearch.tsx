@@ -1,4 +1,6 @@
-export default function SiteSearch() {
+import type { Ref } from 'react';
+
+export default function SiteSearch({ inputRef, onEscape }: { inputRef?: Ref<HTMLInputElement>; onEscape?: () => void }) {
   return (
     <search aria-label="新聞搜尋" className="w-full">
       <form
@@ -6,6 +8,10 @@ export default function SiteSearch() {
         className="flex min-w-0 items-center rounded-md border border-zinc-300 bg-zinc-50 focus-within:border-brand-600 dark:border-zinc-700 dark:bg-zinc-900"
       >
         <input
+          ref={inputRef}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') onEscape?.();
+          }}
           name="q"
           type="search"
           aria-label="搜尋所有新聞的標題、摘要與標籤"
