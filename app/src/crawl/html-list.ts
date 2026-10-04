@@ -54,8 +54,11 @@ export function discoverLinks(html: string, base: string, pattern: RegExp, minTi
     abs.hash = '';
     const url = abs.toString();
     const selectedTitle = titleSelector ? a.find(titleSelector).first().text().trim() : '';
+    // A card may link through an empty overlay anchor, with the headline in a
+    // sibling element (e-info): fall back to the enclosing card's .title.
+    const cardTitle = () => a.closest('article, li').find('.title').first().text().replace(/\s+/g, ' ').trim();
     const title = decodeEntities(
-      (selectedTitle || a.text().replace(/\s+/g, ' ').trim() || a.attr('title') || a.find('img').attr('alt') || '').trim(),
+      (selectedTitle || a.text().replace(/\s+/g, ' ').trim() || a.attr('title') || a.find('img').attr('alt') || cardTitle() || '').trim(),
     );
     if (title.length < minTitle) return;
     const img = a.find('img').first();

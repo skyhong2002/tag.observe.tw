@@ -187,6 +187,23 @@ describe('listing include filter', () => {
     const { items } = await listSource(spec('commonhealth'), fetch);
     expect(items.map((i) => i.url)).toEqual(['https://www.commonhealth.com.tw/article/94685']);
   });
+  it('takes the head of an undated newest-first sitemap (1111)', async () => {
+    const body = `<urlset>${Array.from({ length: 60 }, (_, i) => `<url><loc>https://www.1111.com.tw/news/jobns/${167700 - i}</loc></url>`).join('')}</urlset>`;
+    const fetch = async (url: string): Promise<FetchResult> => ({ url, status: 200, body, contentType: 'application/xml', ms: 1 });
+    const { items } = await listSource(spec('1111'), fetch);
+    expect(items).toHaveLength(40);
+    expect(items[0].url).toBe('https://www.1111.com.tw/news/jobns/167700');
+  });
+});
+
+describe('stale listings (2026-10-04)', () => {
+  it('titles an e-info card from its .title when the card link is an empty overlay', async () => {
+    const body =
+      '<article class="card"><a href="/node/243937"><span></span></a><time>2026年10月02日</time><div class="title"><p>電商推週三惜食日 減少剩食浪費</p></div></article>';
+    const fetch = async (url: string): Promise<FetchResult> => ({ url, status: 200, body, contentType: 'text/html', ms: 1 });
+    const { items } = await listSource({ ...spec('einfo'), list: { ...spec('einfo').list, urls: [spec('einfo').list.urls[0]] } }, fetch);
+    expect(items.map((i) => [i.url, i.title])).toEqual([['https://e-info.org.tw/node/243937', '電商推週三惜食日 減少剩食浪費']]);
+  });
 });
 
 describe('yahoo provider rule', () => {

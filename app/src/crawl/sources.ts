@@ -36,6 +36,9 @@ export interface SourceSpec {
     // Keep only listing items whose title matches (a YouTube channel feed mixes
     // news clips with shows and live streams).
     titleInclude?: string;
+    // Plain sitemap with neither dates nor lastmod, listed newest first (1111):
+    // take its first N entries; the article page supplies the publish time.
+    sitemapHead?: number;
   };
   // Site-name tail to drop from page titles, e.g. " | 聯合新聞網".
   titleSuffix?: string;

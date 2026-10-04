@@ -24,7 +24,8 @@ describe('public media country and crawler information', () => {
     expect(crawlerInfo('google_news', sourceByMedia('google_news')).transport).toContain('Playwright');
     expect(crawlerInfo('ctv', sourceByMedia('ctv')).methods).toContain('YouTube Atom 影片列表');
     expect(crawlerInfo('supertaste', sourceByMedia('supertaste')).methods).toContain('XML Sitemap');
-    expect(crawlerInfo('1111', sourceByMedia('1111')).methods).toContain('HTML 選擇器解析');
+    expect(crawlerInfo('healthnews', sourceByMedia('healthnews')).methods).toContain('HTML 選擇器解析');
+    expect(crawlerInfo('1111', sourceByMedia('1111')).methods).toContain('XML Sitemap');
     expect(crawlerInfo('apple').links).toEqual([]);
     expect(crawlerInfo('apple').methods).toEqual(['未設定爬蟲']);
   });

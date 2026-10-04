@@ -75,6 +75,11 @@ export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{
         // Plain (non-news) sitemap: only <lastmod>, which is a modification
         // time. Take entries modified in the last 2 days, newest first, capped;
         // their real publish time comes from the page in runArticles.
+        const head = spec.list.sitemapHead;
+        if (head && !parsed.items.some((i) => i.modifiedAt)) {
+          for (const item of parsed.items.slice(0, head)) push(item, cat);
+          continue;
+        }
         const recent = parsed.items
           .filter((i) => i.modifiedAt && Date.now() - i.modifiedAt.getTime() < PLAIN_SITEMAP_WINDOW_MS)
           .sort((a, b) => (b.modifiedAt as Date).getTime() - (a.modifiedAt as Date).getTime());

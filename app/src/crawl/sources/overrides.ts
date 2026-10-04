@@ -385,7 +385,9 @@ export const overrides: Record<string, SourceOverride> = {
     },
   },
   vogue: { list: { urls: [{ cat: 'news', url: 'https://www.vogue.com.tw/' }], discover: { pattern: '^/(article|galerie)/' } } },
-  eld: { list: { urls: [{ cat: 'news', url: 'https://www.roomie.tw/' }], discover: { pattern: '^/posts/\\d+' } } },
+  // The homepage stopped listing new posts after 2026-10-02; the WordPress
+  // feed (latest 20, dated) is current.
+  eld: { list: { urls: [{ cat: 'news', url: 'https://www.roomie.tw/feed' }] } },
   oncc: {
     group: 'hourly',
     list: { urls: [{ cat: 'news', url: 'https://hk.on.cc/tw/news/index.html' }], discover: { pattern: '/bkn/cnt/news/\\d{8}/' } },
@@ -430,7 +432,8 @@ export const overrides: Record<string, SourceOverride> = {
   },
   cti: { list: { urls: [{ cat: 'news', url: 'https://ctinews.com/rss/sitemap.xml' }] } },
   // RSS is gone (404) and the sitemap lists only static pages; the news and
-  // column sections link recent /node/<id> articles (dated on the page).
+  // column sections link recent /node/<id> articles (dated on the page). News
+  // cards use an empty overlay link; discoverLinks reads the card's .title.
   einfo: {
     list: {
       urls: [
@@ -498,9 +501,18 @@ export const overrides: Record<string, SourceOverride> = {
     },
     article: { enabled: true, batch: 60, delayMs: 2000, userAgent: undefined, provider: 'Yahoo' },
   },
-  // The sitemap has no dates at all; the news index links the latest stories.
+  // The news index became a curated set that stopped showing new stories
+  // (2026-10-04: newest linked 167613 while 167675 was out); section lists
+  // load by XHR. The news sitemap has no dates but lists newest first.
   '1111': {
-    list: { urls: [{ cat: 'news', url: 'https://www.1111.com.tw/news/' }], discover: { pattern: String.raw`^/news/jobns/\d+$` } },
+    list: {
+      urls: [{ cat: 'news', url: 'https://www.1111.com.tw/news/sitemap.xml' }],
+      include: String.raw`^/news/jobns/\d+$`,
+      sitemapHead: 40,
+    },
+    // The story sits in loose <div>s inside the yellow panel, after the
+    // headline, dateline and photo; topic buttons follow it.
+    article: { bodySelector: '.yellow-white-bg', bodyExcludeSelector: 'h1, time, center, a.btn' },
   },
   // 旺報 is now a China Times print section (2603xx); chinatimes' own listing
   // (today's realtime news) does not include it.
@@ -516,6 +528,11 @@ export const overrides: Record<string, SourceOverride> = {
   // RSS gone; the homepage links ~90 recent /article/<id> stories.
   healthnews: {
     list: { urls: [{ cat: 'news', url: 'https://www.healthnews.com.tw/' }], discover: { pattern: String.raw`^/article/\d+$` } },
+  },
+  // The RSS froze at 2026-09-23 (and often times out) while the site publishes
+  // daily; the homepage links ~50 recent /Article/<category>/<id> stories.
+  top1health: {
+    list: { urls: [{ cat: 'news', url: 'https://www.top1health.com/' }], discover: { pattern: String.raw`^/Article/\d+/\d+$` } },
   },
   // Issue #4 replacements (2026-09-29); the rss.app proxies these used are gone.
   elle: { list: { urls: [{ cat: 'news', url: 'https://www.elle.com/tw/sitemap_google_news.xml' }] } },
