@@ -8,7 +8,7 @@ import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
 import Sparkline from '@/components/Sparkline';
 import { type MediaInfo, type RankingEntry, taipei } from '@/lib/api';
-import { type CampShare, type DemoStory, type GraphSummary, type JournalistBrief, loadDemo } from '@/lib/demo';
+import { type CampShare, DEMO_CAMPS, type DemoStory, type GraphSummary, type JournalistBrief, loadDemo } from '@/lib/demo';
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventItem, FeedTopic } from '@/lib/pages';
@@ -25,13 +25,47 @@ function Arrow() {
   return <span aria-hidden="true">→</span>;
 }
 
+/** Whole percentages that still sum to 100 (largest remainders). */
+function wholePercentages(counts: number[]): number[] {
+  const total = counts.reduce((sum, n) => sum + n, 0);
+  if (!total) return counts.map(() => 0);
+  const exact = counts.map((n) => (n / total) * 100);
+  const percentages = exact.map(Math.floor);
+  const remaining = 100 - percentages.reduce((sum, n) => sum + n, 0);
+  exact
+    .map((n, i) => ({ i, remainder: n - percentages[i] }))
+    .sort((a, b) => b.remainder - a.remainder)
+    .slice(0, remaining)
+    .forEach(({ i }) => {
+      percentages[i]++;
+    });
+  return percentages;
+}
+
 function MediaSources({ share }: { share: CampShare }) {
+  const camps = DEMO_CAMPS.map((c) => ({ ...c, count: share.camps.find((v) => v.camp === c.key)?.articles ?? 0 }));
+  const percentages = wholePercentages(camps.map((c) => c.count));
+  const description = camps.map((c, i) => `${c.label} ${percentages[i]}%（${c.count.toLocaleString()} 篇）`).join('、');
   const outlets = share.camps.flatMap((c) => c.outlets).sort((a, b) => b.last24h - a.last24h || a.media.localeCompare(b.media));
   return (
     <section className={styles.campShare} aria-label="新聞量與媒體來源">
       <p className={styles.campShareLabel}>
         過去 24 小時新聞量<span>{share.articles.toLocaleString()} 篇</span>
       </p>
+      <div className={styles.campShareChart}>
+        <div className={styles.bar} role="img" aria-label={description} title={description}>
+          {camps
+            .filter((c) => c.count > 0)
+            .map((c) => (
+              <span key={c.key} className={styles[c.key]} style={{ flexGrow: c.count }}>
+                <span className={styles.campShareText}>
+                  <span>{c.label}</span>
+                  <span>{percentages[camps.indexOf(c)]}%</span>
+                </span>
+              </span>
+            ))}
+        </div>
+      </div>
       <Link href="/media/" className={styles.campShareMethod}>
         媒體來源 →
       </Link>
@@ -402,7 +436,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <SiteFooter
           notes={
             <>
-              <p>首頁卡片的標籤僅顯示與該標題相符的關鍵字。</p>
+              <p>
+                首頁卡片的標籤僅顯示與該標題相符的關鍵字。比例 bar 依序為綠營、其他、藍營；事件 bar 以媒體家數計算，頁首 bar
+                以新聞篇數計算，分類屬於媒體，不代表單篇立場。
+              </p>
               <p>
                 事件來源列顯示過去 24
                 小時寫過該事件主要關鍵字的媒體與相關篇數，涵蓋整個事件分群，並非單篇新聞的來源數。點媒體圖示可查看來源資料，展開「其他」可看其餘媒體。

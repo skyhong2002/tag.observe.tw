@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { FullBar, SplitBar } from '@/components/CampBar';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
@@ -119,6 +120,9 @@ export function OutletStrip({
   );
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400" data-outlet-strip="">
+      <div className="basis-full" data-coverage-bar="">
+        {compact ? <SplitBar c={c} width="w-full" /> : <FullBar c={c} />}
+      </div>
       <div className="flex flex-wrap items-center gap-0.5">{shown.map(outlet)}</div>
       {rest > 0 && (
         <details className="open:basis-full">
