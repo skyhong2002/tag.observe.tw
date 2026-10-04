@@ -223,3 +223,14 @@ Issue 列的 17 個「可再嘗試」來源已在 10-03 全數移出 `crawl-disa
 - **1111 產經新聞網**：`/news/` 改為固定精選（最新只連到 167613，實際已出到 167675），分類頁靠 XHR 載入。改讀 `news/sitemap.xml`（無日期、新到舊），新增 `list.sitemapHead` 只取前 40 筆，日期由文章頁補。插入 34 篇；另補 `bodySelector`，原本所有 1111 文章正文皆 `missing`，重抓後 32/34 成功（舊的 49 篇已用完重試次數）。
 - **Roomie（eld）**：首頁 10-02 後不再出現新文章，改用 `/feed`（20 篇、有日期）。插入 19 篇，正文 19/19。
 - 發布者本身沒有新文章（官方最新文章日期，皆已收錄）：womany 09-23、coolloud 09-24、pourquoi 08-06（之後只有 feed 不收的每週 podcast）、dacota 10-01、flipermag 10-01、reporter 10-01、agentm 10-02、gamebase 10-02（官網列表與 sitemap 也停在 10-02 18:35）、commonhealth 10-02、ngm 10-02、civilmedia 10-02、everydayobject 10-02、bnext 10-02、pansci 10-03。foodnext「即時新聞」最後 09-30；其他欄目 10-01、10-03 各有 1 篇，依原規則不收。
+
+### 2026-10-04：停用來源第二輪（找官方轉載管道）
+
+不碰 Cloudflare／Vercel 挑戰，只找官網以外的正當來源：
+
+- **Cheers**、**GQ**：已恢復。改抓官方 LINE TODAY 頻道（`today.line.me/tw/v3/publisher/100427`、`/100473`），文章頁是完整全文；新增 `today.line.me` 頁面規則，從 `<meta property="provider">` 讀合作媒體名稱，provider 不符就拒收（頁面的 `publisher` meta 一律是 LINE TODAY）。網址、發布時間都用 LINE TODAY 頁面本身的。各入庫 10 篇，正文 10/10 成功。robots.txt 允許文章與頻道頁。
+- **報橘**：仍停用。`/wp-json/` 404，`/citiorange/feed/` 仍是 Cloudflare 挑戰；LINE TODAY 的 CitiOrange 頻道沒有文章；Google 新聞 `site:buzzorange.com`（TechOrange 除外）最新 2022-10，品牌已停更。科技報橘另以 `techorange` 抓取。
+- **農傳媒**：仍停用。Google 新聞顯示官網仍每天更新，但找不到 LINE TODAY 頻道、MSN 轉載；udn 倡議家的農傳媒作者頁最新 2019。官網仍是 Vercel 429。
+- **動網**：判定已停止。`/`、`/feed/`、`/wp-json/`、`http://` 全部 301 轉回自己，沒有設 cookie；Google 新聞 `site:dongtw.com` 無結果。
+- **風向新聞**：判定已停止。`kairos.news` 仍無 DNS，搜尋找不到新網域，Google 新聞 `site:kairos.news` 無結果。
+- **商業周刊**：維持官網。LINE TODAY 頻道（100421）2026-09-03 後沒更新（9 月網站遭攻擊），`m.` 轉到活動頁，`api.`／`bw.` 連不上，沒有 `feeds.`。官網連線有一半在 TLS 握手後被重設或回 HTTP/0.9 垃圾回應，curl transport 現在只對這類連線中斷（exit 1/35/52/55/56）重試最多 2 次，逾時不重試。實測一輪取得 8 篇、1 篇仍失敗（之前每小時約一半整輪失敗）。

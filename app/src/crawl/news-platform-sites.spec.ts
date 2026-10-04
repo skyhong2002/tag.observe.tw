@@ -47,4 +47,12 @@ describe('platform public article templates', () => {
     ])
       expect(newsSiteRules(url)).toBeUndefined();
   });
+  it('reads the licensed partner from LINE TODAY provider meta, not its own publisher meta', () => {
+    const html = `<head><meta property="provider" content="Cheers 快樂工作人"/><meta property="publisher" content="LINE TODAY"/></head><body><h1>文字新聞標題</h1><article class="entityBodyModule">${p}<p>全文最後一段。</p></article></body>`;
+    const result = extractArticle(html, 'https://today.line.me/tw/v3/article/MLBmLRz');
+    expect(result.provider).toBe('Cheers 快樂工作人');
+    expect(result.bodyStatus).toBe('ok');
+    expect(result.body).toContain('全文最後一段。');
+    expect(newsSiteRules('https://today.line.me/tw/v3/publisher/100427')).toBeUndefined();
+  });
 });

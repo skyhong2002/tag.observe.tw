@@ -166,9 +166,27 @@ function decodeBody(input: Buffer, contentType: string): string {
 // Redirects are followed here hop by hop with the same public-address check,
 // and each hop is pinned with --resolve.
 const execFileAsync = promisify(execFile);
+// curl exits for a connection the server dropped or garbled before any HTTP
+// status (1: HTTP/0.9 reply, 35: TLS, 52: empty reply, 55/56: send/recv reset).
+// Timeouts (28), DNS and address-guard failures are never retried.
+const CURL_CONNECTION_FAILURES = new Set([1, 35, 52, 55, 56]);
 export async function fetchViaCurl(
   url: string,
-  { userAgent = DEFAULT_UA, timeout = 20000, maxBytes = 8 * 1024 * 1024 } = {},
+  { retries = 0, ...options }: { userAgent?: string; timeout?: number; maxBytes?: number; retries?: number } = {},
+): Promise<FetchResult> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await curlOnce(url, options);
+    } catch (error) {
+      const code = (error as { code?: unknown }).code;
+      if (attempt >= Math.min(retries, 2) || typeof code !== 'number' || !CURL_CONNECTION_FAILURES.has(code)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+  }
+}
+async function curlOnce(
+  url: string,
+  { userAgent = DEFAULT_UA, timeout = 20000, maxBytes = 8 * 1024 * 1024 }: { userAgent?: string; timeout?: number; maxBytes?: number },
 ): Promise<FetchResult> {
   const dir = await mkdtemp(join(tmpdir(), 'tag-crawl-'));
   const file = join(dir, 'body');

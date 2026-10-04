@@ -219,6 +219,9 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
   }
   const belongs = (url: string) => allowedHosts.has(hostKey(new URL(url)));
   const fetcher = options.fetch && options.fetch !== fetchText ? options.fetch : config.transport === 'curl' ? fetchViaCurl : fetchText;
+  // The reviewed curl publisher resets about half of its connections right
+  // after the TLS handshake; retry only those drops, at most twice.
+  const retries = fetcher === fetchViaCurl ? 2 : 0;
   const maxRequests = Math.max(1, Math.min(options.maxRequests ?? 18, 60));
   const maxArticles = Math.max(1, Math.min(config.maxArticles ?? 10, 30));
   const deadline = Date.now() + Math.max(1, options.timeoutMs ?? 45000);
@@ -260,7 +263,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     try {
       const response = await fetcher(url, {
         timeout: Math.max(1, Math.min(Math.max(1000, Math.min(config.requestTimeoutMs ?? 8000, 20000)), deadline - Date.now())),
-        retries: 0,
+        retries,
         maxBytes: 8 * 1024 * 1024,
       });
       if (response.status === 429) stopped = true;

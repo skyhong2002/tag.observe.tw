@@ -34,4 +34,13 @@ export const PLATFORM_NEWS_SITES: Array<NewsSiteRules & { host: string; path: Re
     publishedSelector: '.edit-area > .article-meta-container .article-meta > span:first-child',
     publicationPattern: /^發布時間[：:]\s*(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2})$/,
   },
+  {
+    // LINE TODAY names the licensed partner in <meta property="provider">;
+    // the page's own "publisher" meta is always LINE TODAY. The single
+    // <article> is the same container generic extraction already used.
+    host: 'today.line.me',
+    path: /^\/tw\/v3\/article\/[A-Za-z0-9]+$/,
+    bodySelector: 'article',
+    providerSelector: 'meta[property="provider"]',
+  },
 ];
