@@ -52,8 +52,14 @@ export function topicTagSets(title: string, vocab: TitleVocab): string[][] {
 export const topicTags = (title: string, vocab: TitleVocab): string[] => topicTagSets(title, vocab)[0] ?? [];
 
 // Words about the package or its framing rather than its subject (CNA's
-// 懶人包, 入圍焦點; the 風暴 of 關稅風暴), useless as a shared keyword.
+// 懶人包, 入圍焦點; the 風暴 of 關稅風暴), useless as a shared keyword. Kinds of
+// event (離婚, 修法…) too: they gather unrelated stories (three divorces,
+// seventeen bills), not one story several outlets packaged.
 const PACKAGE_WORDS = new Set([
+  '離婚',
+  '戰爭',
+  '修法',
+  '大火',
   '專題',
   '專輯',
   '策展',
