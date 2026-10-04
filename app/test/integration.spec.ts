@@ -20,6 +20,8 @@ import { cachedIndexView, loadSimilarity, similarityParams } from '../src/v1/sim
 
 const url = process.env.TEST_DB_URL;
 const TABLES = [
+  'article_archives',
+  'article_origins',
   'article_tags',
   'articles',
   'ranking_entries',
@@ -295,7 +297,12 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     ]);
     await db.insert(jobRuns).values({ name: 'x', startedAt: new Date(now.getTime() - 40 * day), status: 'ok' });
     const out = await runRetentionJob(db);
-    expect(out).toMatchObject({ descriptionsCleared: 1, bodiesCleared: 1, staleArticlesDeleted: 1, jobRunsDeleted: 1 });
+    expect(out).toMatchObject({ contentArchived: 0, contentEvicted: 0, archiveDisabled: 1, staleArticlesDeleted: 1, jobRunsDeleted: 1 });
+    const [preserved] = await db
+      .select({ body: articles.body, description: articles.description })
+      .from(articles)
+      .where(sql`${articles.urlKey} = 'www.setn.com/old-1'`);
+    expect(preserved).toEqual({ body: '過期內文', description: '保留標題與標籤' });
     const [{ n }] = await db.select({ n: sql<number>`COUNT(*)` }).from(articles);
     expect(Number(n)).toBe(6);
   });

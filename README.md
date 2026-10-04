@@ -52,6 +52,7 @@ npm test && npm run typecheck && npm run lint
 - [公開 API](docs/api.md)
 - [爬蟲](docs/crawlers.md)：引擎、來源規格與各來源的處理紀錄
 - [內文與相似度](docs/similarity.md)：保存期限、比對方法、引用證據與各媒體實測
+- [GA4 與 Search Console](docs/analytics.md)
 - [安全](docs/security.md)
 - [沿革](docs/history.md)
 

@@ -83,7 +83,7 @@ node --env-file=.env tools/topics-once.ts --apply
 
 ## 資料保留（每日 04:15，`jobs/retention-job.ts`）
 
-- 新版 nearline 保留規則（需先套用 0016 migration 並部署）：正文／摘要依最後使用或取得時間，平常閒置 90 天後先封存 NAS、讀回校驗、寫入版本索引，才釋放本機快取；容量壓力時可縮成閒置 7 天，仍保護公開閱讀期。未配置／無法驗證 NAS 時保留本機內容。對外全文仍只提供刊登後 7 天，標題、網址、日期、標籤與来源保留。詳見 [nearline 快取與啟用狀態](content-nearline-cache.md)。
+- nearline 保留規則（0016 migration 已於 2026-10-05 套用）：正文／摘要依最後使用或取得時間，平常閒置 90 天後先封存 NAS、讀回校驗、寫入版本索引，才釋放本機快取；容量壓力時可縮成閒置 7 天，仍保護公開閱讀期。未配置／無法驗證 NAS 時保留本機內容。對外全文仍只提供刊登後 7 天，標題、網址、日期、標籤與来源保留。詳見 [nearline 快取與啟用狀態](content-nearline-cache.md)。
 - 全文清除時一併清空該篇的相似度 sketch；`similarity_pairs`、`article_citations` 與 `article_sketches` 的列永久保留，供每日統計與單篇查詢（見 similarity.md）。
 - 新版只刪除 source=own、未抓取、無標籤、超過 14 天、沒有正文／摘要／封存版本／來源對照的文章；legacy 歷史文章保留。
 - 超過兩年的排行快照只留前 100 名。

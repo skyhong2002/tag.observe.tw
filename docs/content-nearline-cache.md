@@ -2,7 +2,7 @@
 
 ## 實作與上線狀態
 
-本次程式已實作並通過獨立 MariaDB + GGSS-NAS 實測，**尚未套用正式資料庫遷移、也尚未部署正式 worker**。既有母站 SQL 分包封存與 10 小時觀察持續獨立執行。
+2026-10-05 已完成正式資料庫備份與還原演練，並套用 0016 migration。此版本將近線快取與 GA4 一起納入正式 release；worker 的 NAS 設定已備妥。既有母站 SQL 分包封存仍獨立執行。
 
 本功能保存的是新站 `articles` 中當次封存讀到的正文、摘要與文章 metadata，包含 `source=own`。它補上母站 SQL 備份通常沒有新站全文的缺口。不是逐次更新的變更日誌，不能恢復上線之前已清除的內容，也不保證保留兩次封存之間所有修改版本。
 
@@ -49,7 +49,7 @@
 ## 啟用順序
 
 1. 用既有資料庫備份流程保存正式資料與 migration journal。
-2. 先套用 `npm run db:migrate`（目前只在 disposable `nearline_test` DB 驗證過）。新增欄位／表不移除既有欄位；正式 ALTER 的鎖與耗時仍需依實際資料量觀察。
+2. 先套用 `npm run db:migrate`（2026-10-05 已在正式資料庫套用）。新增欄位／表不移除既有欄位；正式 ALTER 的鎖與耗時仍需依實際資料量觀察。
 3. 在既有 `.env` 設定，憑證仍只放在現有 rclone 設定檔：
 
 ```dotenv
@@ -59,7 +59,7 @@ TAG_CONTENT_ARCHIVE_SPOOL=/home/deck/tag-analysis-private/content-archive-spool
 TAG_CONTENT_ARCHIVE_BATCH=5000
 ```
 
-4. 按現有 commit → scan → push → `scripts/install-service.sh` 流程部署。本次工作目錄有其他未提交工作，因此未合併它們發佈。worker unit 已補 rclone 所在的 PATH；schema 遷移必須先於新版程式。
+4. 按現有 commit → scan → push → `scripts/install-service.sh` 流程部署。此次已整合工作目錄與遠端 main 的修改。worker unit 已補 rclone 所在的 PATH；schema 遷移必須先於新版程式。
 5. 查看 retention job 日誌；未設定 NAS 時 `archiveDisabled=1` 且內容保留，不應把此狀態當成封存已啟用。
 
 回退時保留新增表、索引與 NAS 物件。**舊 worker 有原先直接刪除內容的規則**，不能一面回退、一面宣稱仍受新封存保護；必要時先停 worker，直到部署相容的保護版本。
@@ -83,3 +83,5 @@ node --env-file=.env tools/nearline/restore-content.ts --id 123
 - 報告在 `/home/deck/tag-analysis-private/content-nearline-check-20261004/report.json`，只使用合成文章，正式 DB 未修改。
 
 NAS package 含文章 metadata 與內容，可用於離線重建；日常快速取回依赖 MariaDB 索引，正式 DB（包含 article_archives 與 article_origins）仍須持續備份。這不是異地第二份副本，也不包含自動復原整個網站的程序。
+
+2026-10-05 再次以隔離 MariaDB 與 NAS validation 目錄通過完整封存／取回驗證，報告位於 `/home/deck/tag-analysis-private/content-nearline-check-20261005/report.json`。正式資料備份為 `tag_observe-20261005-041917.sql.zst`，還原演練確認 18 張表。
