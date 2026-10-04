@@ -2,7 +2,7 @@ import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import traffic from '../../data/media-traffic.json' with { type: 'json' };
 import catalog from '../../data/news-source-catalog.json' with { type: 'json' };
-import { allSources } from '../crawl/registry.ts';
+import { allSources, excludedMedia } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
 import { isDiscoverySource } from './article-content.ts';
@@ -116,7 +116,7 @@ export async function loadMediaTrafficComparison(db: Db, now = new Date()): Prom
   return assembleTrafficComparison(
     now,
     months,
-    [...catalog.sources, ...listedMediaSources(allSources())],
+    [...catalog.sources.filter((source) => !excludedMedia.has(source.media)), ...listedMediaSources(allSources())],
     publisherMonths,
     publisherFirsts,
     discoveryMonths,

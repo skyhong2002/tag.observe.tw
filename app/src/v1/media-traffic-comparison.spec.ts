@@ -1,6 +1,7 @@
 import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
+import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import catalog from '../../data/news-source-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import {
@@ -122,7 +123,13 @@ describe('monthly crawler and traffic comparison', () => {
     ]);
     const result = await loadMediaTrafficComparison(db, now);
     expect(select).toHaveBeenCalledTimes(4);
-    for (const source of catalog.sources) expect(result.media.some((r) => r.media === source.media)).toBe(true);
+    // Outlets removed on request stay out; every other catalog source is listed.
+    const excluded = new Set(disabledSpec.excludedMedia);
+    for (const source of catalog.sources)
+      expect(
+        result.media.some((r) => r.media === source.media),
+        source.media,
+      ).toBe(!excluded.has(source.media));
     expect(result.media.find((r) => r.media === 'google_news')?.monthly.at(-1)?.articles).toBe(2);
     expect(chains[2].innerJoin).toHaveBeenCalledOnce();
     const firstQuery = new MySqlDialect().sqlToQuery(chains[1].where.mock.calls[0][0]);
