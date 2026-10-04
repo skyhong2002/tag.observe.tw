@@ -81,3 +81,14 @@ export function dateFromStoryUrl(url: string, now = new Date()): Date | null {
   if (m) return taipeiDate(+m[1] + 1911, +m[2], +m[3], now);
   return null;
 }
+
+/**
+ * A topic story's publish date: our crawled copy, else the date the topic page
+ * shows for it (TopicStory.date), else the date in its URL.
+ */
+export function storyDate(story: { key: string; date?: string }, crawledAt?: Date | null, now = new Date()): Date | null {
+  if (crawledAt) return crawledAt;
+  const shown = story.date ? new Date(story.date) : null;
+  if (shown && Number.isFinite(+shown)) return shown;
+  return dateFromStoryUrl(story.key, now);
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byUpdate, classifyTopic, dateFromStoryUrl, firstRunEnd, topicStatus, topicUpdatedAt } from './topic-kind.ts';
+import { byUpdate, classifyTopic, dateFromStoryUrl, firstRunEnd, storyDate, topicStatus, topicUpdatedAt } from './topic-kind.ts';
 
 const now = new Date('2026-10-04T00:00:00Z');
 const daysAgo = (n: number) => new Date(+now - n * 86400e3);
@@ -93,5 +93,17 @@ describe('byUpdate', () => {
     const day = '2026-10-03T16:00:00Z';
     const items = [t('9', day, '2026-10-01T00:00:00Z'), t('7', day, '2026-10-02T00:00:00Z'), t('8', day, '2026-10-02T00:00:00Z')];
     expect(items.sort(byUpdate).map((i) => i.id)).toEqual(['7', '8', '9']);
+  });
+});
+
+describe('storyDate', () => {
+  const crawled = new Date('2026-09-30T01:00:00Z');
+  it('prefers our crawled copy, then the date the topic page shows, then the URL', () => {
+    const story = { key: 'www.ettoday.net/news/20260910/3235173.htm', date: '2026-09-11T02:00:00.000Z' };
+    expect(storyDate(story, crawled, now)).toBe(crawled);
+    expect(storyDate(story, undefined, now)?.toISOString()).toBe('2026-09-11T02:00:00.000Z');
+    expect(storyDate({ key: story.key }, null, now)?.toISOString()).toBe('2026-09-09T16:00:00.000Z');
+    expect(storyDate({ key: 'news.pts.org.tw/article/808692' }, null, now)).toBeNull();
+    expect(storyDate({ key: 'news.pts.org.tw/article/808692', date: 'garbage' }, null, now)).toBeNull();
   });
 });

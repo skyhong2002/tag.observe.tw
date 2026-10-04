@@ -2,8 +2,8 @@ import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from 'drizzle-or
 import pLimit from 'p-limit';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
-import { classifyTopic, dateFromStoryUrl, firstRunEnd } from '../crawl/topic-kind.ts';
-import { looksLikeStories, type TopicStory, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
+import { classifyTopic, firstRunEnd, storyDate } from '../crawl/topic-kind.ts';
+import { looksLikeStories, type TopicStory, topicPageDate, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
 import {
   childSelectorFor,
   fetchTopicListings,
@@ -157,8 +157,10 @@ export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicM
 // the same outlet fetched in this run. Of the rest, the group with the most
 // stories we crawled (at least 2) wins; failing that (older stories, outlets
 // we do not crawl such as 鏡報), the largest group that reads like headlines.
-// The chosen stories' dates classify the topic (議題/專題, classifyTopic) unless
-// its listing declared the kind; sub-topic links (rule.children) become rows.
+// The chosen stories' dates (storyDates) classify the topic (議題/專題,
+// classifyTopic) unless its listing declared the kind; a page without stories
+// that is itself one article is dated by its own publish time. Sub-topic links
+// (rule.children) become rows.
 // Rows never classified are refreshed even when no longer listed.
 export async function refreshTopicPages(
   db: Db,
@@ -202,13 +204,14 @@ export async function refreshTopicPages(
           return {
             row,
             ok,
-            groups: ok ? topicPageGroups(res.body, res.url || row.url, articleId) : [],
+            groups: ok ? topicPageGroups(res.body, res.url || row.url, articleId, { now: now() }) : [],
+            pageDate: ok ? topicPageDate(res.body, res.url || row.url, now()) : null,
             image: ok && !row.image ? topicPageImage(res.body, res.url || row.url) : null,
             children: ok && childSelector ? topicChildren(res.body, res.url || row.url, childSelector) : [],
           };
         } catch {
           // Unreachable: try again in 6 hours.
-          return { row, ok: false, groups: [] as TopicStory[][], image: null, children: [] };
+          return { row, ok: false, groups: [] as TopicStory[][], pageDate: null, image: null, children: [] };
         }
       }),
     ),
@@ -297,7 +300,7 @@ export async function refreshTopicPages(
   );
   let found = 0;
   let classified = 0;
-  for (const { row, ok, groups } of pages) {
+  for (const { row, ok, groups, pageDate } of pages) {
     if (!ok) {
       // Keep the stored stories; only a page we could read may change them.
       await db
@@ -330,7 +333,12 @@ export async function refreshTopicPages(
     if (!stories.length) stories = own.find(looksLikeStories) ?? [];
     if (stories.length) found++;
     stories = stories.slice(0, 200);
-    const dates = await storyDates(db, articleMediaOf(row.media), stories);
+    // A page without a story list that is one article: a single-piece 專題,
+    // dated by its publish time. Not a 議題 (its stories may load client-side)
+    // unless it has no dates at all, which makes it a 專題 anyway (below).
+    const feature = row.kind === 'feature' || (row.kindSource !== 'rule' && !row.storyLastAt);
+    const piece = !stories.length && feature ? pageDate : null;
+    const dates = piece ? [piece] : await storyDates(db, articleMediaOf(row.media), stories);
     const first = dates.length ? new Date(Math.min(...dates.map(Number))) : row.storyFirstAt;
     const last = dates.length ? new Date(Math.max(...dates.map(Number))) : row.storyLastAt;
     // Growth: a story key we had not stored before, newer than the stored newest.
@@ -339,6 +347,7 @@ export async function refreshTopicPages(
     let kind: TopicKind | null = null;
     if (row.kindSource !== 'rule') {
       if (row.parentId) kind = stories.length ? ((parentKind.get(row.parentId) as TopicKind | undefined) ?? 'topic') : 'feature';
+      else if (piece) kind = 'feature';
       else if (first && last) kind = classifyTopic({ storyDates: [first, last], grew: grew || !!row.storyGrewAt, now: now() }).kind;
       else if (!stories.length) kind = 'feature';
       // Stories without any known date: leave the kind as it is.
@@ -360,7 +369,8 @@ export async function refreshTopicPages(
   return { checked: due.length, found, covers, children, classified };
 }
 
-/** Publish dates of a topic's stories: our crawled copy, else the date in the URL. */
+/** Publish dates of a topic's stories: our crawled copy, else the date the
+ *  topic page shows for it, else the date in the URL. */
 async function storyDates(db: Db, media: string, stories: TopicStory[]): Promise<Date[]> {
   if (!stories.length) return [];
   const rows = await db
@@ -377,7 +387,7 @@ async function storyDates(db: Db, media: string, stories: TopicStory[]): Promise
     );
   const crawled = new Map(rows.map((r) => [r.key, r.at]));
   return stories.flatMap((s) => {
-    const at = crawled.get(s.key) ?? dateFromStoryUrl(s.key);
+    const at = storyDate(s, crawled.get(s.key));
     return at ? [at] : [];
   });
 }
