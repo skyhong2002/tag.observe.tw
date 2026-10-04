@@ -48,6 +48,7 @@ describe('round 4 article templates', () => {
   it('does not read a subscribe-to-our-channel line as a paywall', () => {
     const html = `<div id="article-content"><p>${prose('健康醫療網')}</p></div><footer>訂閱【健康愛樂活】影音頻道，閱讀健康知識更輕鬆</footer>`;
     expect(extractArticle(html, 'https://www.healthnews.com.tw/article/69867').bodyStatus).toBe('ok');
+    expect(extractArticle(html, 'https://www.healthnews.com.tw/readnews.php?id=52905').bodyStatus).toBe('ok');
   });
 
   it('drops the 報導者 donation appeal and category links from the body', () => {

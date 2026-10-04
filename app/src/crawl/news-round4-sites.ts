@@ -50,7 +50,8 @@ export const ROUND4_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegE
   },
   {
     host: 'healthnews.com.tw',
-    path: /^\/article\/\d+\/?$/,
+    // Older listings link readnews.php?id=N, which redirects to /article/N.
+    path: /^\/(?:article\/\d+\/?|readnews\.php\?id=\d+)$/,
     bodySelector: '#article-content',
   },
   {
