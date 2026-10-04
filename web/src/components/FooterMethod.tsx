@@ -3,24 +3,112 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { METHOD_HREF } from '@/lib/site-nav';
-import { EventMethod, MediaMethod, RankingMethod, SimilarityMethod, SourceMethod } from './MethodNotes';
+import {
+  ArticleMethod,
+  CrawlerMethod,
+  EventMethod,
+  JournalistMethod,
+  MediaCardMethod,
+  MediaMethod,
+  MediaOverviewMethod,
+  RankingMethod,
+  SearchMethod,
+  SimilarityMethod,
+  SourceMethod,
+  TopicMethod,
+} from './MethodNotes';
 
 const inlineLink = 'text-brand-700 underline underline-offset-2 dark:text-brand-400';
 
 // Which method blocks explain which pages; anything unlisted gets 資料來源.
 function sectionsFor(pathname: string) {
-  if (pathname === '/') return <EventMethod />;
-  if (/^\/(ranking|tag)\//.test(pathname)) return <RankingMethod />;
-  if (/^\/(similarity|journalist)\//.test(pathname)) return <SimilarityMethod />;
-  if (pathname.startsWith('/media/')) {
+  // The home page passes its blocks as notes, with its own counts.
+  if (pathname === '/') return null;
+  if (/^\/ranking(\/|$)/.test(pathname)) {
     return (
       <>
-        <SourceMethod />
-        <MediaMethod />
+        <RankingMethod />
+        <MediaCardMethod />
       </>
     );
   }
-  if (/^\/(event|eve|topic|feature)\//.test(pathname)) return <EventMethod />;
+  // One keyword's page: @notes/tag/[tag] renders its blocks with the chart's basis.
+  if (/^\/tag(\/|$)/.test(pathname)) return null;
+  if (/^\/search(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <SearchMethod />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  if (/^\/article(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <ArticleMethod />
+        <SourceMethod />
+      </>
+    );
+  }
+  // One person's page shows outlet names with the hover card; the index does not.
+  if (/^\/journalist\/[^/]+/.test(pathname)) {
+    return (
+      <>
+        <JournalistMethod />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  if (/^\/journalist(\/|$)/.test(pathname)) return <JournalistMethod />;
+  if (/^\/similarity(\/|$)/.test(pathname)) {
+    const page = /^\/similarity\/daily(\/|$)/.test(pathname) ? 'daily' : /^\/similarity\/about(\/|$)/.test(pathname) ? 'status' : 'graph';
+    return (
+      <>
+        <SimilarityMethod page={page} />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  if (pathname === '/media' || pathname === '/media/') {
+    return (
+      <>
+        <MediaOverviewMethod />
+        <SourceMethod />
+      </>
+    );
+  }
+  // Similar Web: @notes/media/sources renders its block with the traffic sheet's import date.
+  if (/^\/media\/sources(\/|$)/.test(pathname)) return null;
+  if (/^\/media\/crawlers(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <CrawlerMethod />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  if (pathname.startsWith('/media/')) {
+    return (
+      <>
+        <MediaMethod />
+        <SourceMethod />
+      </>
+    );
+  }
+  // The /topic/ and /feature/ indexes get TopicMethod with their counts from @notes.
+  if (pathname === '/topic' || pathname === '/feature' || pathname === '/topic/' || pathname === '/feature/') return null;
+  if (pathname.startsWith('/topic/')) return <TopicMethod kind="topic" outlet />;
+  if (pathname.startsWith('/feature/')) return <TopicMethod kind="feature" outlet />;
+  if (/^\/event(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <EventMethod page={/^\/event\/archive(\/|$)/.test(pathname) ? 'archive' : 'table'} />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  // One event's page: @notes/eve/[id] renders its blocks with the event's own tags.
+  if (/^\/eve(\/|$)/.test(pathname)) return null;
   return <SourceMethod />;
 }
 

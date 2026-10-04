@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MethodLink from '@/components/MethodLink';
 import { taipei } from '@/lib/api';
 import { readingTitle } from '@/lib/reading.mts';
 import type { ArticleRelated as Related, RelatedArticle } from '@/lib/related';
@@ -57,13 +58,12 @@ export default function ArticleRelated({
   const nothingRelated = data && !data.events.length && !data.otherMedia.length && !data.sameMedia.length;
   return (
     <section aria-labelledby="related-heading" className="space-y-7">
-      <div>
+      {/* How stories are picked and ranked is in the footer's 資料來源與計算方式 (ArticleMethod). */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <h2 id="related-heading" className="text-base font-semibold">
           延伸閱讀
         </h2>
-        <p className="mt-1 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-          刊登前後 {days} 天內同一題的其他報導：依共同關鍵字的稀有程度與標題相近程度排序，標題幾乎相同的轉載只列一篇。
-        </p>
+        <MethodLink className="text-xs" />
       </div>
       {data && data.events.length > 0 && (
         <section aria-labelledby="related-events">
@@ -116,9 +116,6 @@ export default function ArticleRelated({
               </li>
             ))}
           </ul>
-          {data && data.tags.some((entry) => entry.articles > 1) && (
-            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">數字為前後 {days} 天內使用這個關鍵字的媒體與報導數。</p>
-          )}
         </nav>
       )}
     </section>

@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import RankingBasisNote from '@/components/RankingBasisNote';
+import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import TagChart from '@/components/TagChart';
 import TagStatusPanel from '@/components/TagStatusPanel';
 import { type Camp, fetchMedia, fetchTagArticles, fetchTagSeries, fetchTagStatus, taipei } from '@/lib/api';
 import { articleHref } from '@/lib/reading.mts';
+import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;
 type Params = { tag: string };
@@ -24,7 +25,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function TagPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ hours?: string }> }) {
   const tag = decodeURIComponent((await params).tag);
-  const hours = Math.min(336, Math.max(6, Number((await searchParams).hours) || 72));
+  // The footer's @notes/tag/[tag] makes the same series request for the basis list.
+  const hours = tagHours(await searchParams);
   const [series, list, media, status] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     fetchTagArticles(tag, Math.max(48, hours)),
@@ -85,12 +87,11 @@ export default async function TagPage({ params, searchParams }: { params: Promis
       </div>
       {status && <TagStatusPanel status={status} />}
       <section className="rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-2 text-sm font-medium text-zinc-600">每小時新聞數量與 24 小時移動平均（固定基準媒體）</h2>
-        <RankingBasisNote basis={series.basis} media={media} />
+        <h2 className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 text-sm font-medium text-zinc-600">
+          每小時新聞數量與 24 小時移動平均（固定基準 {series.basis.media.length} 家媒體）
+          <MethodLink className="text-xs font-normal" />
+        </h2>
         <TagChart points={series.points} />
-        <p className="mt-2 text-xs text-zinc-500">
-          平均線＝當小時及前 23 小時基準媒體收錄篇數總和 ÷ 24；收錄開始後沒有報導的小時以 0 計，開始前留白。只顯示完整小時。
-        </p>
       </section>
       <section className="grid gap-6 md:grid-cols-[1fr_16rem]">
         <div className="space-y-2">

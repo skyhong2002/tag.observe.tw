@@ -36,7 +36,7 @@ export default function MediaWordCloud({
       wide={layout === 'wide' ? wide : undefined}
       compactClassName="mx-auto my-1 w-full max-w-[360px]"
       label="點選關鍵字篩選本站報導"
-      title="報導關鍵字文字雲；字越大，出現在越多篇報導"
+      title="報導關鍵字文字雲"
       words={terms.map((t, index) => ({
         label: t.label,
         count: t.count,

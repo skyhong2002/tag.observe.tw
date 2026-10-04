@@ -3,6 +3,7 @@ import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
 import { CampGap, EventIndex, HourTimeline } from '@/components/EventOverview';
 import MediaSidebar from '@/components/MediaSidebar';
+import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipeiHour } from '@/lib/api';
 import { type ArchivedThread, type EventItem, fetchEventDay } from '@/lib/pages';
 
@@ -121,12 +122,10 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
           {data.day}（{weekday(data.day)}）的事件
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          這一天出現在事件表上的 {threads.length} 件事，依當天最高爆發力排序 · 依標籤共現分群
+          這一天出現在事件表上的 {threads.length} 件事
+          <MethodLink className="ml-2 text-xs" />
         </p>
-        <p className="mt-1 text-xs text-zinc-500">
-          爆發力條以當天第 1 名為滿格；名次是在每小時事件表上的最佳名次，點時間可回到當時的事件表。每件事的藍綠比例是
-          {basis}寫過該事件主要標籤的媒體家數，不含未列藍綠的媒體。
-        </p>
+        <p className="mt-1 text-xs text-zinc-500">點時間可回到當時的事件表。</p>
         {data.baseline && (
           <div className="mt-2">
             <BaselineBar b={data.baseline} label={`${basis}整體`} />
@@ -181,7 +180,7 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
             </div>
           </MediaSidebar>
           <div className="mt-5 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
-            {events.some((e) => e.coverage) && <CampGap events={events} scope="這一天" basis={basis} />}
+            {events.some((e) => e.coverage) && <CampGap events={events} scope="這一天" />}
             {tiers.map(({ tier, items }) =>
               items.length === 0 ? null : tier === 'hero' ? (
                 <ol key={tier} className="space-y-4" aria-label="當天頭條">

@@ -3,6 +3,7 @@ import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
 import { CampGap, EventIndex, HourTimeline } from '@/components/EventOverview';
 import MediaSidebar from '@/components/MediaSidebar';
+import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
 import { fetchEvents } from '@/lib/pages';
 
@@ -43,11 +44,9 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
         </div>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           {data
-            ? `${taipeiHour(data.hour)} 時段最重要的 ${data.events.length} 件事 · 依標籤共現分群${data.stale ? '（分群排程延遲，顯示上次結果）' : ''}`
+            ? `${taipeiHour(data.hour)} 時段最重要的 ${data.events.length} 件事${data.stale ? '（分群排程延遲，顯示上次結果）' : ''}`
             : '事件資料暫時無法取得，請稍後重新整理。'}
-        </p>
-        <p className="mt-1 text-xs text-zinc-500">
-          爆發力條以本小時第 1 名為滿格。每件事的藍綠比例是過去 24 小時寫過該事件主要標籤的媒體家數，不含未列藍綠的媒體。
+          {data && <MethodLink className="ml-2 text-xs" />}
         </p>
         {data?.baseline && (
           <div className="mt-2">
@@ -128,11 +127,7 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
           </div>
         </div>
       )}
-      {data && (
-        <p className="text-xs text-zinc-600 dark:text-zinc-400">
-          計算時間 {data.builtAt ? taipei(data.builtAt) : '—'}。每半小時依標籤共現重新分群。
-        </p>
-      )}
+      {data && <p className="text-xs text-zinc-600 dark:text-zinc-400">計算時間 {data.builtAt ? taipei(data.builtAt) : '—'}</p>}
     </div>
   );
 }

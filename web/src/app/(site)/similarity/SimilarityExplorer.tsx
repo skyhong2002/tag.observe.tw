@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MethodLink from '@/components/MethodLink';
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
@@ -44,7 +45,7 @@ const campOptions = [
   ['all', '全部'],
   ['blue', '只看藍'],
   ['green', '只看綠'],
-  ['other', '未列藍綠'],
+  ['other', '其他'],
 ] as const;
 const rangeDays = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86400e3) + 1;
 
@@ -131,11 +132,14 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
           text={directPair.evidence}
         />
       ) : (
-        <p className="text-xs leading-5 text-zinc-500">由相似配對歸入同組，直接連回共同來源；這兩篇沒有直接比對分數。</p>
+        <p className="text-xs leading-5 text-zinc-500">
+          這兩篇沒有直接比對分數，經同組配對歸源。
+          <MethodLink />
+        </p>
       )}
       <p className="flex flex-wrap gap-x-3 text-xs leading-5 text-zinc-500">
         <span>
-          同組 {group.articles.length} 篇{group.tiedFirst > 1 && `（${group.tiedFirst} 篇同時最早刊登，依固定規則選定來源）`}
+          同組 {group.articles.length} 篇{group.tiedFirst > 1 && `（${group.tiedFirst} 篇同時最早刊登）`}
         </span>
         <button type="button" onClick={() => setShowGroup((value) => !value)} aria-expanded={showGroup} className={toggle}>
           {showGroup ? '收合同組' : '同組全部新聞'}
@@ -146,7 +150,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
       </p>
       {showGroup && (
         <div className="space-y-2 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
-          <p className="text-zinc-500">完整分組包含未顯示在圖上的媒體；其他報導的箭頭都指向 {source.mediaTitle}。</p>
+          <p className="text-zinc-500">完整分組，包含未顯示在圖上的媒體。</p>
           <ol className="max-h-80 space-y-1 overflow-y-auto">
             {group.articles.map((member) => (
               <li key={member.id}>
@@ -312,7 +316,7 @@ function ThresholdControl({ data }: { data: SimilarityData }) {
             className={control}
           />
         </label>
-        <p className="text-[11px] leading-5 text-zinc-500">0.5–1，預設 0.65；門檻越高，只留下內文越接近的報導。</p>
+        <p className="text-[11px] leading-5 text-zinc-500">0.5–1，預設 0.65</p>
         <button type="submit" className="rounded-lg bg-brand-700 px-3 py-1.5 text-white">
           套用
         </button>
@@ -507,7 +511,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
       : selection && 'edge' in selection
-        ? `${byId.get(selection.edge.source)?.name} → ${byId.get(selection.edge.target)?.name}`
+        ? `${byId.get(selection.edge.target)?.name} → ${byId.get(selection.edge.source)?.name}`
         : '圖上全部媒體';
   const highlightedCount = selection ? edges.filter((edge) => highlightedRelationship(edge, selection)).length : 0;
   const openBrowser = () => browser.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
@@ -581,11 +585,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   ))}
                 </select>
               </label>
-              <p className="text-[11px] leading-5 text-zinc-500">
-                {filters.tag
-                  ? '依本期納入分析篇數排序 · 包含所選分類的直接關係對象，對象不計入分類媒體數'
-                  : '依本期納入分析篇數排序 · 只列出目前有關係資料的 tag'}
-              </p>
+              <p className="text-[11px] leading-5 text-zinc-500">依本期納入分析篇數排序</p>
               {(filters.camp !== 'all' || filters.tag) && (
                 <button
                   type="button"
@@ -648,8 +648,8 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
           </div>
           <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
             <p>
-              <span className="text-orange-600 dark:text-orange-400">→ 同組來源</span>
-              <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
+              <span className="text-orange-600 dark:text-orange-400">同組：最早 → 較晚</span>
+              <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
               <span className="ml-3">
                 {selection
                   ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`
@@ -667,8 +667,8 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
           </div>
         </section>
         <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
-          涵蓋期間內全部已比對文章：{number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則明示引用
-          {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''}；橘色箭頭統一指向同組最早刊登的來源。
+          本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則明示引用
+          {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''} · <MethodLink />
         </p>
       </div>
       <section
@@ -682,7 +682,6 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
             <h2 id="graph-browser-title" className="text-lg font-semibold">
               媒體比較
             </h2>
-            <p className="mt-1 text-xs text-zinc-500">從各家媒體出發，比較相近報導、引用往來與實際新聞。</p>
           </div>
           <fieldset
             aria-label="瀏覽內容"
@@ -785,10 +784,10 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
               {selection && 'node' in selection && (
                 <div className="space-y-3">
                   <p className="text-xs text-zinc-500">
-                    {byId.get(selection.node)?.country} · 本期與所有媒體的關係，依文章去重計數 ·{' '}
+                    {byId.get(selection.node)?.country} ·{' '}
                     {byId.get(selection.node)?.external
                       ? '僅作為引用來源，未收錄本期內文'
-                      : `已比對 ${number(byId.get(selection.node)?.articles ?? 0)} 篇（圖示大小依據）`}
+                      : `已比對 ${number(byId.get(selection.node)?.articles ?? 0)} 篇`}
                   </p>
                   <div className="grid max-w-3xl grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
                     {[
@@ -811,7 +810,8 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 </div>
               )}
               <p className="text-xs leading-6 text-zinc-500">
-                相似新聞依配對分組，每組以最早刊登的一篇作為來源；其他報導全部直接指向它。來源依本期全部相似配對與刊登時間指定；下方只列圖上媒體之間的關係。
+                下方只列圖上媒體之間的關係。
+                <MethodLink />
               </p>
               {hiddenSources > 0 && (
                 <p className="text-xs leading-6 text-zinc-500">

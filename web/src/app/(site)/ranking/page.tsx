@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MediaIcons from '@/components/MediaIcons';
+import MethodLink from '@/components/MethodLink';
 import PendingLabel from '@/components/PendingLabel';
 import RankingWordCloud from '@/components/RankingWordCloud';
 import SortIndicator from '@/components/SortIndicator';
@@ -72,10 +73,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         return (dir === 'asc' ? c : -c) || a.position - b.position;
       })
     : [];
-  const Th = ({ col, label, className = '', title }: { col: Col; label: string; className?: string; title?: string }) => (
+  // Column definitions are in the footer's 資料來源與計算方式 (RankingMethod).
+  const Th = ({ col, label, className = '' }: { col: Col; label: string; className?: string }) => (
     <th
       className={`whitespace-nowrap ${table.cell} ${className}`}
-      title={title}
       aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}
     >
       <Link
@@ -103,9 +104,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
             </p>
           )}
         </div>
-        <a href="#method" className="text-sm text-brand-700 hover:underline dark:text-brand-400">
-          分數與爆發力怎麼算 ⓘ
-        </a>
+        <MethodLink className="text-sm" />
       </div>
       {cloud && (
         <RankingWordCloud
@@ -158,15 +157,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 {/* On phones the rank moves into the sticky keyword cell. */}
                 <th className={`hidden w-10 text-right sm:table-cell ${table.cell}`}>#</th>
                 <Th col="tag" label="關鍵字" className={table.leadHead} />
-                <Th col="burst" label="爆發力" className="w-24 text-right" title="相對 3／6／12／24／48 小時前的變化" />
-                <Th col="change" label="變動" className="w-16 text-right" title="依分數的名次與 24 小時前相比" />
-                <Th col="score" label="分數" className="w-20 text-right" title="媒體加權分數" />
+                <Th col="burst" label="爆發力" className="w-24 text-right" />
+                <Th col="change" label="變動" className="w-16 text-right" />
+                <Th col="score" label="分數" className="w-20 text-right" />
                 <Th col="count" label="篇數" className="w-16 text-right" />
-                <Th col="trend" label="趨勢" className="w-28" title="24 小時平均篇數與 48 小時前的差值（篇／小時）" />
-                <th className={`w-[17rem] whitespace-nowrap ${table.cell}`} title="同一篇報導最常同時出現的其他關鍵字">
-                  一起出現
-                </th>
-                <Th col="media" label="媒體" className="w-[30%]" title="報導的媒體家數" />
+                <Th col="trend" label="趨勢" className="w-28" />
+                <th className={`w-[17rem] whitespace-nowrap ${table.cell}`}>一起出現</th>
+                <Th col="media" label="媒體" className="w-[30%]" />
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -189,20 +186,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       </div>
                     </td>
                     <td
-                      title={e.burst === null ? '缺少相同基準的歷史資料，暫不計算爆發力' : undefined}
                       className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'font-medium text-brand-700 dark:text-brand-400' : 'text-zinc-600'}`}
                     >
                       {e.burst?.toFixed(1) ?? '—'}
                     </td>
                     <td
                       className={`${table.num} text-xs`}
-                      title={
-                        e.new
-                          ? '24 小時前不在榜上'
-                          : delta === null
-                            ? '沒有可比較的 24 小時前快照'
-                            : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`
-                      }
+                      title={delta === null || e.new ? undefined : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`}
                     >
                       {e.new ? (
                         <span className="rounded bg-brand-100 px-1.5 py-0.5 font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-300">

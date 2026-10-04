@@ -5,6 +5,7 @@ import { CampBadge, FullBar, SplitBar } from '@/components/CampBar';
 import { eventHeadline, eventHref, Movement, OutletStrip, RankTrail } from '@/components/EventCard';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
+import { EventMethod, HomeMethod, MediaCardMethod } from '@/components/MethodNotes';
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
 import Sparkline from '@/components/Sparkline';
@@ -13,6 +14,7 @@ import { type CampGap, type CampShare, DEMO_CAMPS, type DemoStory, type GraphSum
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
+import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
 import HeadlineSidebar from './_home/HeadlineSidebar';
@@ -68,7 +70,7 @@ function CampShareBar({ share }: { share: CampShare }) {
         </div>
       </div>
       <a href="#method" className={styles.campShareMethod}>
-        分類方式 ⓘ
+        怎麼算 ⓘ
       </a>
       {share.camps.some((c) => c.outlets.length > 0) && (
         <CampOutlets
@@ -145,7 +147,7 @@ function RankChange({ e }: { e: RankingEntry }) {
 
 function CampGaps({ gaps }: { gaps: CampGap[] }) {
   if (gaps.every((g) => g.items.length === 0)) {
-    return <p className={styles.notice}>目前事件表前 24 件的藍綠報導比例都在平常範圍內，沒有盲點。</p>;
+    return <p className={styles.notice}>目前沒有藍綠落差明顯的事件。</p>;
   }
   return (
     <div className={styles.gapList}>
@@ -191,7 +193,7 @@ function JournalistPanel({ brief }: { brief: JournalistBrief | null }) {
               {j.media.length > 3 && <small>+{j.media.length - 3}</small>}
             </span>
             <span className={styles.journalistCount}>
-              {j.articles} 篇{j.similar.articles > 0 && <small title="內文與其他媒體相近的篇數">相近 {j.similar.articles}</small>}
+              {j.articles} 篇{j.similar.articles > 0 && <small>相近 {j.similar.articles}</small>}
             </span>
           </Link>
         </li>
@@ -226,7 +228,7 @@ function GraphPanel({ graph, media }: { graph: GraphSummary | null; media: Media
               <span className={styles.pairCount}>{percent(r.share)}</span>
             </li>
           ))}
-          {graph.similar.length === 0 && <li className={styles.muted}>目前沒有達到門檻的相近文章。</li>}
+          {graph.similar.length === 0 && <li className={styles.muted}>目前沒有相近文章。</li>}
         </ol>
       </div>
       <div>
@@ -250,22 +252,29 @@ function GraphPanel({ graph, media }: { graph: GraphSummary | null; media: Media
           {graph.cited.length === 0 && <li className={styles.muted}>目前沒有明示引用的紀錄。</li>}
         </ol>
       </div>
+      {/* What the columns mean is in the footer's 資料來源與計算方式 (HomeMethod). */}
       <p className={styles.panelFoot}>
-        過去 {graph.hours} 小時比對 {graph.analyzed.toLocaleString()} 篇正文。左欄是各媒體自己的文章中，內文與其他媒體相近的比例（至少 20
-        篇才列入）；右欄是 {graph.citations.toLocaleString()} 筆明示引用中，各來源所占比例。
+        過去 {graph.hours} 小時比對 {graph.analyzed.toLocaleString()} 篇正文、{graph.citations.toLocaleString()} 筆明示引用 ·{' '}
+        <a href="#method" className={styles.campShareMethod}>
+          怎麼算 ⓘ
+        </a>
       </p>
     </div>
   );
 }
 
+// Story dates can be old: date with the year, no time (as on TopicCard).
+const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+
 function TopicPanel({ topics }: { topics: { outlets: number; today: number; latest: FeedTopic[] } | null }) {
   if (!topics) return <p className={styles.notice}>議題資料整理中。</p>;
-  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有新發現的議題。</p>;
+  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有更新的議題。</p>;
   return (
     <ul className={styles.topicList}>
       {topics.latest.map((t) => {
         const image = isAllowedImage(t.image) ? t.image : null;
         const href = `/topic/${encodeURIComponent(t.media)}/#topic-${t.id}`;
+        const updated = updatedAtOf(t);
         return (
           <li key={`${t.media}-${t.id}`}>
             <Link href={href} className={styles.topicCover} tabIndex={-1} aria-hidden="true">
@@ -278,7 +287,7 @@ function TopicPanel({ topics }: { topics: { outlets: number; today: number; late
               <p>
                 <MediaIcon media={t.media} title={t.mediaTitle} size={12} />
                 {t.mediaTitle}
-                {t.time && ` · ${taipei(t.time)}`}
+                {updated && ` · 最後更新 ${taipeiDate(updated)}`}
                 {t.coverage && ` · 近 3 天 ${t.coverage.count}${t.coverage.capped ? '+' : ''} 篇相關`}
               </p>
             </div>
@@ -378,9 +387,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               </Link>
             </div>
             <JournalistPanel brief={data.journalists} />
-            <p className={styles.panelNote}>
-              {data.journalists ? `過去 ${data.journalists.hours} 小時署名文章最多的記者。` : '以署名統計記者的發稿量與跨媒體相近情形。'}
-            </p>
+            {data.journalists && (
+              <p className={styles.panelNote}>
+                <a href="#method" className={styles.campShareMethod}>
+                  怎麼算 ⓘ
+                </a>
+              </p>
+            )}
           </aside>
 
           <section className={styles.center} aria-label="焦點事件">
@@ -428,7 +441,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                       {c.label}
                     </span>
                   ))}
-                  <a href="#method">分布如何計算 ⓘ</a>
+                  <a href="#method">怎麼算 ⓘ</a>
                 </div>
                 <div className={styles.storyList}>
                   {rest.map((s, i) => (
@@ -474,14 +487,20 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               </Link>
             </div>
             <p className={styles.gapIntro}>
-              目前事件表前 24 件、各自過去 24 小時的報導中，哪一邊的媒體特別在寫、哪一邊幾乎沒報（以同期藍綠各自的發稿家數為基準）。
+              <a href="#method" className={styles.campShareMethod}>
+                怎麼算 ⓘ
+              </a>
             </p>
             <CampGaps gaps={data.gaps} />
 
             <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>同題不同標</h2>
             </div>
-            <p className={styles.gapIntro}>政治事件精選：同一件事，藍綠媒體怎麼下標？</p>
+            <p className={styles.gapIntro}>
+              <a href="#method" className={styles.campShareMethod}>
+                怎麼算 ⓘ
+              </a>
+            </p>
             <Suspense fallback={<p className={styles.notice}>正在整理標題對照…</p>}>
               <HeadlineSidebar query="" />
             </Suspense>
@@ -498,9 +517,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </div>
             <GraphPanel graph={data.graph} media={data.media} />
           </section>
-          <section className={styles.panel} aria-label="最新議題">
+          <section className={styles.panel} aria-label="最近更新的議題">
             <div className={styles.sectionHeading}>
-              <h2>媒體新議題</h2>
+              <h2>最近更新的議題</h2>
               <Link href="/topic/">
                 議題表 <Arrow />
               </Link>
@@ -512,30 +531,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <SiteFooter
           notes={
             <>
-              <p>首頁卡片的標籤優先顯示該標題用到的關鍵字；標題一個都沒用到時，改顯示事件的主要關鍵字。</p>
-              <p>
-                藍綠分布以整個事件分群計算，並非單篇新聞的報導分布：數的是過去 24
-                小時寫過該事件主要關鍵字的媒體家數。只有差距明顯時才標示：「盲點」表示其中一營幾乎沒有報導，「重點」表示其中一營報導得比平常多很多。
-              </p>
-              <p>
-                頁首的新聞量分布為過去 24
-                小時新聞類媒體有標籤的文章數，依媒體所屬陣營加總，並非逐篇判斷立場。展開後列出各段包含的媒體，淡色表示該媒體過去 24
-                小時沒有文章。
-              </p>
-              {ranking && (
-                <>
-                  <p id="basis">
-                    升溫榜與「{ranking.snapshot.basis.media.length}{' '}
-                    家」篇數的媒體範圍：這是「新聞」類別中符合收錄條件的固定名單，並非預先設定家數，也不是依媒體品質或公信力評選。
-                  </p>
-                  <p>
-                    本版名單選取已啟用、非僅供探索的來源：在名單凍結前至少 72 小時已成功取得非空新聞列表，且凍結前最近 3
-                    小時內也有成功紀錄。固定同一批媒體，讓不同時間的議題熱度能在相同範圍內比較。當天未發稿的媒體仍保留，新來源待下一版基準再納入。
-                  </p>
-                  <p>篇數只計算這批媒體過去 24 小時已收錄的報導，不是全站總量；抓取失敗或補抓仍可能影響數字。</p>
-                </>
-              )}
-              <p>新聞關係圖的「相近」以正文片段重疊度計算，門檻 0.65；「引用」為文中明示引用其他媒體的紀錄。</p>
+              <HomeMethod
+                basisCount={ranking?.snapshot.basis.media.length}
+                journalistHours={data.journalists?.hours}
+                graphHours={data.graph?.hours}
+              />
+              <EventMethod page="table" />
+              <MediaCardMethod />
             </>
           }
         />

@@ -30,8 +30,8 @@ export default function RankingWordCloud({ terms }: { terms: RankingCloudTerm[] 
         compact={compact}
         wide={wide}
         compactClassName="mx-auto w-full max-w-[420px]"
-        label="關鍵字文字雲，字越大分數越高"
-        title="關鍵字文字雲；字越大，分數越高；橘字為正在升溫的關鍵字"
+        label="關鍵字文字雲"
+        title="關鍵字文字雲"
         words={terms.map((t) => ({
           label: t.tag,
           count: t.score,

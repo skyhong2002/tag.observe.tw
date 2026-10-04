@@ -311,8 +311,9 @@ export const topics = mysqlTable(
     firstSeen: datetime('first_seen').notNull(),
     lastSeen: datetime('last_seen').notNull(),
     // The outlet's own stories listed on the topic page ({ key: url_key,
-    // title }), used when the topic name maps to no tag (refreshTopicPages).
-    pageStories: json('page_keys').$type<Array<{ key: string; title: string }>>(),
+    // title, date? — ISO date the page shows for it }), used when the topic
+    // name maps to no tag and to date the topic (refreshTopicPages).
+    pageStories: json('page_keys').$type<Array<{ key: string; title: string; date?: string }>>(),
     pageCheckedAt: datetime('page_checked_at'),
     // 'topic' (議題, keeps gaining stories) or 'feature' (專題, a one-off
     // package). kind_source 'rule' = declared by the listing, never

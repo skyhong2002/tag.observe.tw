@@ -57,7 +57,11 @@ export interface Topic {
   /** Marked by the outlet as advertising or a brand partnership. */
   sponsored?: boolean;
   parentId?: number | null;
+  /** Earliest story listed on the topic page. */
+  storyFirstAt?: string | null;
   storyLastAt?: string | null;
+  /** 最後更新: storyLastAt, else `time` unless backlog; null = unknown. Absent on old API builds (see updatedAtOf). */
+  updatedAt?: string | null;
   storyCount?: number | null;
   /** Site tags found in the name itself (whether or not anything was published on it lately). */
   tags?: string[];
@@ -113,7 +117,10 @@ export interface FeedTopic extends Topic {
 async function get<T>(path: string, revalidate: number): Promise<T | null> {
   // null on any failure (API down during a build, 503 before the first snapshot).
   try {
-    const res = await fetch(API_ORIGIN + path, { next: { revalidate } });
+    let res = await fetch(API_ORIGIN + path, { next: { revalidate } });
+    // A 502/503 caught while the API restarts (every deploy) would otherwise be
+    // served from the data cache for the whole revalidate window.
+    if (!res.ok) res = await fetch(API_ORIGIN + path, { cache: 'no-store' });
     return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;

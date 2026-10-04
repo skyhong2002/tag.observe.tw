@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
+import MethodLink from '@/components/MethodLink';
 import PendingLabel from '@/components/PendingLabel';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, fetchMedia, type MediaInfo, taipei } from '@/lib/api';
@@ -10,7 +11,8 @@ import { fetchEvents } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 
 // Site search over every stored article: title, summary and exact tag (we do
-// not search article bodies), via /api/v1/articles.
+// not search article bodies), via /api/v1/articles. The scope and what the
+// camp bar counts are in the footer's 資料來源與計算方式 (SearchMethod).
 
 type Camp = 'green' | 'other' | 'blue';
 const CAMPS: Array<{ key: Camp; label: string; bar: string; badge: string | null }> = [
@@ -20,7 +22,7 @@ const CAMPS: Array<{ key: Camp; label: string; bar: string; badge: string | null
     bar: 'bg-emerald-700 text-white',
     badge: 'bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800',
   },
-  { key: 'other', label: '未列藍綠', bar: 'bg-zinc-200 text-zinc-800 dark:bg-zinc-400 dark:text-zinc-950', badge: null },
+  { key: 'other', label: '其他', bar: 'bg-zinc-200 text-zinc-800 dark:bg-zinc-400 dark:text-zinc-950', badge: null },
   {
     key: 'blue',
     label: '藍營傾向',
@@ -152,7 +154,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             搜尋
           </button>
         </form>
-        <p className="text-xs text-zinc-600">搜尋本站收錄的所有媒體文章，比對標題、摘要與標籤，最多往前 31 天。</p>
+        <p className="text-xs">
+          <MethodLink />
+        </p>
       </div>
 
       {!q ? null : !page ? (
@@ -278,7 +282,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         </span>
                       )}
                       <span>·</span>
-                      <span title={a.datePending ? '來源沒有提供發布時間，這是本站首次看到的時間' : undefined}>
+                      <span>
                         {taipei(a.publishedAt)}
                         {a.datePending && ' *'}
                       </span>

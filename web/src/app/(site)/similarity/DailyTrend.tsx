@@ -5,6 +5,7 @@ import * as echarts from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { fetchDaily, type SimilarityDaily } from '@/lib/similarity';
@@ -126,23 +127,13 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
 
 type Metric = 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
 type SortKey = 'name' | Metric | `${Metric}Share`;
-const columns: Array<{ key: 'name' | Metric; label: string; title?: string; share?: boolean }> = [
+const columns: Array<{ key: 'name' | Metric; label: string; share?: boolean }> = [
   { key: 'name', label: '媒體' },
-  { key: 'articles', label: '比對篇數', title: '期間內相似度索引已比對的文章數' },
-  {
-    key: 'copied',
-    label: '被跟進',
-    title: '這家媒體先刊出，之後有其他媒體刊出相似內容的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
-    share: true,
-  },
-  {
-    key: 'copying',
-    label: '跟進他媒',
-    title: '這家媒體刊出時已有其他媒體相似文章的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
-    share: true,
-  },
-  { key: 'citing', label: '引用他媒', title: '這家媒體文章內文明示引用其他媒體的次數；百分比為佔比對篇數的比例', share: true },
-  { key: 'cited', label: '被引用', title: '其他媒體文章內文明示引用這家媒體的次數' },
+  { key: 'articles', label: '比對篇數' },
+  { key: 'copied', label: '被跟進', share: true },
+  { key: 'copying', label: '跟進他媒', share: true },
+  { key: 'citing', label: '引用他媒', share: true },
+  { key: 'cited', label: '被引用' },
 ];
 interface Row {
   media: string;
@@ -221,7 +212,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                   <span className={`inline-flex items-center gap-1 whitespace-nowrap ${numeric ? 'w-full justify-end' : ''}`}>
                     <button
                       type="button"
-                      title={column.share ? `${column.title}。依篇數排序` : column.title}
+                      title={column.share ? '依篇數排序' : undefined}
                       onClick={() => sortBy(column.key)}
                       className={`inline-flex items-center gap-1 hover:text-brand-700 dark:hover:text-brand-400 ${
                         sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''
@@ -233,7 +224,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                     {column.share && (
                       <button
                         type="button"
-                        title={`${column.label}佔比對篇數的比例。依比例排序`}
+                        title="依比例排序"
                         aria-label={`${column.label}比例排序`}
                         onClick={() => sortBy(shareKey)}
                         className={`inline-flex items-center gap-0.5 rounded px-1 hover:text-brand-700 dark:hover:text-brand-400 ${
@@ -350,19 +341,14 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
             ))}
           </dl>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            {since ? `資料自 ${since} 起${sparse ? '（更早只有少數媒體的零星文章）' : ''}；` : '這段期間還沒有比對資料；'}
-            相似配對算在較晚刊登那篇的日期、引用算在引用文章的刊登日（台北時間）；每篇文章與前後 7 天內其他媒體的文章比對，索引每 10
-            分鐘更新，當天數字仍會增加。
+            {since ? `資料自 ${since} 起${sparse ? '（更早只有少數媒體的零星文章）' : ''}` : '這段期間還沒有比對資料'} · <MethodLink />
           </p>
           {start >= 0 && <TrendChart data={data} start={start} />}
           <section aria-labelledby="daily-outlets-heading">
             <h3 id="daily-outlets-heading" className="mb-1 text-sm font-semibold">
               各媒體
             </h3>
-            <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              期間合計，依文章去重。被跟進：這家媒體先刊出，之後有其他媒體刊出相似內容；跟進他媒：刊出時已有其他媒體的相似文章。百分比是佔比對篇數的比例，點欄名依篇數排序、點
-              % 依比例排序；同時刊登的配對不計方向。只被引用、沒有收錄內文的媒體比對篇數為 0。
-            </p>
+            <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">期間合計。點欄名依篇數排序、點 % 依比例排序。</p>
             <OutletTable data={data} />
           </section>
         </>

@@ -20,7 +20,7 @@ export interface MediaProfile {
   status: 'ok' | 'stale' | 'failing' | 'disabled';
 }
 export const profileStatus = { ok: '持續收錄', stale: '近期無新文章', failing: '暫時無法更新', disabled: '已停止收錄' };
-export const profileCamp = { blue: '藍營傾向', green: '綠營傾向', other: '未列藍綠' };
+export const profileCamp = { blue: '藍營傾向', green: '綠營傾向', other: '其他' };
 
 async function get<T>(path: string): Promise<T | null> {
   try {

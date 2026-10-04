@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CampBadge } from '@/components/CampBar';
 import { eventAnchor, eventHeadline } from '@/components/EventCard';
+import MethodLink from '@/components/MethodLink';
 import { taipeiHour } from '@/lib/api';
 import type { EventItem } from '@/lib/pages';
 
@@ -11,7 +12,7 @@ const atLink = (iso: string) => `/event/?at=${encodeURIComponent(iso)}`;
 const hh = (iso: string) => taipeiHour(iso).slice(-5);
 
 /** Hour picker with a bar per snapshot: taller when that hour's top event
- *  burst harder, so the busy part of the day stands out. */
+ *  burst harder, so the busy part of the day stands out (explained in EventMethod). */
 export function HourTimeline({
   hours,
   dayStats = [],
@@ -64,9 +65,9 @@ export function HourTimeline({
 
 /** Ground.news-style blind spot feed, folded into the hour (or day): the
  *  events one camp is barely on, then the ones a camp is pushing far harder
- *  than usual. `scope` names the period, `basis` the window the split is
- *  judged against. */
-export function CampGap({ events, scope = '本小時', basis = '過去 24 小時' }: { events: EventItem[]; scope?: string; basis?: string }) {
+ *  than usual. `scope` names the period; the rules and the window the split is
+ *  judged against are in the footer notes (EventMethod). */
+export function CampGap({ events, scope = '本小時' }: { events: EventItem[]; scope?: string }) {
   const pick = (camp: 'blue' | 'green') =>
     events
       .filter((e) => e.coverage && (e.coverage.blindspot.includes(camp === 'blue' ? 'green' : 'blue') || e.coverage.tilt === camp))
@@ -85,6 +86,7 @@ export function CampGap({ events, scope = '本小時', basis = '過去 24 小時
     return (
       <p className="rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
         {scope} {events.length} 件事的藍綠報導比例都在平常範圍內，沒有盲點。
+        <MethodLink className="ml-2 text-xs" />
       </p>
     );
   return (
@@ -92,12 +94,10 @@ export function CampGap({ events, scope = '本小時', basis = '過去 24 小時
       aria-labelledby="gap-heading"
       className="rounded-xl border border-brand-200 bg-brand-50/40 p-4 dark:border-brand-900 dark:bg-brand-950/20"
     >
-      <h2 id="gap-heading" className="font-semibold">
+      <h2 id="gap-heading" className="flex flex-wrap items-baseline gap-x-2 font-semibold">
         藍綠溫差
+        <MethodLink className="text-xs font-normal" />
       </h2>
-      <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-        相對於{basis}的整體比例，哪一邊的媒體特別在寫、哪一邊幾乎沒報。「盲點」表示那一營的讀者看不到這件事。
-      </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {cols.map((col) => (
           <div key={col.camp} className="rounded-lg bg-white p-3 text-sm dark:bg-zinc-900">

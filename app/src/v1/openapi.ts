@@ -166,7 +166,13 @@ const schemas: Record<string, Schema> = {
     status: str('active；ended＝已停更（議題最新一則新聞超過 90 天）', { enum: ['active', 'ended'] }),
     sponsored: bool('媒體標示為廣告／品牌合作'),
     parentId: nullable(int('上層議題 id（子議題）；與 id 不同，為數字')),
+    storyFirstAt: nullable(time('專題頁所列新聞中最早一則的日期')),
     storyLastAt: nullable(time('專題頁所列新聞中最新一則的日期')),
+    updatedAt: nullable(
+      time(
+        '最後更新：有 storyLastAt 用 storyLastAt，否則非 backlog 用 time（首次看到）；backlog 又沒有報導日期者為 null（更新時間不明）。所有列表依此新到舊排序，null 在最後',
+      ),
+    ),
     storyCount: nullable(int('專題頁所列新聞數')),
     tags: arr(str(), '從議題名稱比對到的站內標籤（只看名稱，不需近期有報導；比對不到為空陣列）'),
   }),
@@ -795,7 +801,7 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/articles',
     tag: 'articles',
     summary: '文章搜尋',
-    description: `依時間窗、關鍵字（標題、摘要或標籤）、媒體、分類、政治傾向、標籤篩選所有爬到的文章，新到舊排序。本站不儲存內文，關鍵字只比對標題、摘要與標籤。給 \`facets=1\` 會另外回傳整個查詢（不限本頁）依媒體與政治傾向的篇數。時間窗預設為過去 24 小時，最長 ${MAX_SPAN_DAYS} 天。還有下一頁時 \`nextCursor\` 不為 null，把它原樣放進 \`cursor\` 參數（其他參數不變）取下一頁。`,
+    description: `依時間窗、關鍵字（標題、摘要或標籤）、媒體、分類、政治傾向、標籤篩選所有爬到的文章，新到舊排序。關鍵字只比對標題、摘要與標籤，不搜尋內文（站內正文只保留刊登後 7 天）。給 \`facets=1\` 會另外回傳整個查詢（不限本頁）依媒體與政治傾向的篇數。時間窗預設為過去 24 小時，最長 ${MAX_SPAN_DAYS} 天。還有下一頁時 \`nextCursor\` 不為 null，把它原樣放進 \`cursor\` 參數（其他參數不變）取下一頁。`,
     params: [
       q('q', '標題或摘要包含這段文字，或文章帶有完全相同的標籤（最多 60 字）', str(), '颱風'),
       q('media', '媒體代碼，逗號分隔（最多 50 個）', str(), 'cna,pts'),
@@ -1137,7 +1143,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'topics',
     summary: '各媒體的議題／專題',
     description:
-      '`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`，不含 backlog 與已停更）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`），子議題列在上層議題的 `children`。給 `tag` 或 `q`（且不給 `media`）：不分 kind，回所有媒體帶這個標籤／名稱含這段文字的上層議題與專題（含已停更，不附 coverage），依媒體分組：符合數多的媒體在前，同一媒體新到舊、backlog 在後。不給 `media` 時都附 `tags`：所有未停更上層議題與專題名稱中最常見的站內標籤（依媒體家數，前 40 個）。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
+      '`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，依最後更新新到舊，附站內相關報導 `coverage`，不含已停更與更新時間不明者；開始追蹤前已上架的議題有新報導也會列入）與各媒體最近更新的議題（`media`）。給 `media`：只回該媒體最近更新的議題（同樣附 `coverage`），子議題列在上層議題的 `children`。給 `tag` 或 `q`（且不給 `media`）：不分 kind，回所有媒體帶這個標籤／名稱含這段文字的上層議題與專題（含已停更，不附 coverage），依媒體分組：符合數多的媒體在前，同一媒體依最後更新新到舊、更新時間不明者在後。不給 `media` 時都附 `tags`：所有未停更上層議題與專題名稱中最常見的站內標籤（依媒體家數，前 40 個）。所有列表依最後更新（`updatedAt`）排序：議題頁上最新一則報導的時間；沒有報導日期的用本站首次發現時間（backlog 則為不明，排最後）。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
     params: [
       q('kind', 'topic 議題（預設）或 feature 專題', str(undefined, { enum: ['topic', 'feature'] }), 'feature'),
       q('media', '只取這家媒體（須為有追蹤議題的媒體）', ref('MediaKey'), 'pts'),

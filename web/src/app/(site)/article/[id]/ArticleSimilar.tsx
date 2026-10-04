@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MethodLink from '@/components/MethodLink';
 import { taipei } from '@/lib/api';
 import { clipHeadline } from '@/lib/event-presentation.mts';
 import { describeGap } from '@/lib/journalists';
@@ -23,7 +24,7 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
   const windowDays = data?.windowDays ?? 7;
   let status: string | null = null;
   if (!data) status = '暫時無法取得相似報導，請稍後重新整理。';
-  else if (!data.indexedAt) status = '尚待比對（每 10 分鐘更新）';
+  else if (!data.indexedAt) status = '尚待比對';
   else if (data.chars === null) status = '內文太短，未納入比對';
   else if (!data.matches.length) status = `前後 ${windowDays} 天內沒有其他媒體的相似內文`;
   return (
@@ -34,9 +35,9 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
           <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{data.matches.length} 篇</span>
         )}
       </h3>
-      <p className="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-        與前後 {windowDays} 天內其他媒體文章的內文比對，相似度 ≥ {percent(data?.threshold ?? 0.65)}
-        。相似不等於抄襲：同一份新聞稿、通訊社稿、授權轉載與註明引用都會讓內文相近；刊登時間以各站標示為準，與寫稿先後無關。
+      {/* The window, threshold and full caveat are in the footer's 資料來源與計算方式 (ArticleMethod). */}
+      <p className="text-xs leading-6">
+        <MethodLink>相似不等於抄襲</MethodLink>
       </p>
       {status ? (
         <p role="status" className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">

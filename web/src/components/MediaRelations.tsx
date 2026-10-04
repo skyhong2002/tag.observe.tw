@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import MethodLink from '@/components/MethodLink';
 import { type MediaPartner, mediaRelations } from '@/lib/media-relations.mts';
 import type { SimilarityData } from '@/lib/similarity';
 
@@ -113,7 +114,8 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
             </>
           ) : (
             <p className="mt-3 leading-5 text-zinc-500 dark:text-zinc-400">
-              這段時間沒有與其他媒體內文相近或互相引用的報導。這不代表沒有相關新聞，只是比對未達門檻。
+              這段時間沒有與其他媒體內文相近或互相引用的報導。
+              <MethodLink />
             </p>
           )}
         </>

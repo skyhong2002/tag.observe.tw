@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
+import { byUpdate } from '../crawl/topic-kind.ts';
 import { sharedTag } from '../crawl/topic-page.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, topics } from '../db/schema.ts';
@@ -51,8 +52,14 @@ export function topicTagSets(title: string, vocab: TitleVocab): string[][] {
 export const topicTags = (title: string, vocab: TitleVocab): string[] => topicTagSets(title, vocab)[0] ?? [];
 
 // Words about the package or its framing rather than its subject (CNA's
-// 懶人包, 入圍焦點; the 風暴 of 關稅風暴), useless as a shared keyword.
+// 懶人包, 入圍焦點; the 風暴 of 關稅風暴), useless as a shared keyword. Kinds of
+// event (離婚, 修法…) too: they gather unrelated stories (three divorces,
+// seventeen bills), not one story several outlets packaged.
 const PACKAGE_WORDS = new Set([
+  '離婚',
+  '戰爭',
+  '修法',
+  '大火',
   '專題',
   '專輯',
   '策展',
@@ -106,8 +113,8 @@ export function topicTagSummary(items: Array<{ media: string; kind: string; tags
 
 /** Items carrying `tag` (exact) whose title contains `q` (case-insensitive);
  *  either may be omitted. Grouped by outlet, outlets with most matches first
- *  (then `mediaOrder`), newest first within an outlet, backlog last. */
-export function matchTopics<T extends { media: string; title: string; tags: string[]; firstSeen: Date; backlog: boolean }>(
+ *  (then `mediaOrder`), most recently updated first within an outlet (byUpdate). */
+export function matchTopics<T extends { id: string; media: string; title: string; tags: string[]; time: string; updatedAt: string | null }>(
   items: T[],
   { tag, q }: { tag?: string; q?: string },
   mediaOrder: string[] = [],
@@ -125,8 +132,7 @@ export function matchTopics<T extends { media: string; title: string; tags: stri
       (perMedia.get(b.media) ?? 0) - (perMedia.get(a.media) ?? 0) ||
       order(a.media) - order(b.media) ||
       a.media.localeCompare(b.media) ||
-      Number(a.backlog) - Number(b.backlog) ||
-      +b.firstSeen - +a.firstSeen,
+      byUpdate(a, b),
   );
 }
 

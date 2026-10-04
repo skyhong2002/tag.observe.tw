@@ -1,0 +1,51 @@
+import Link from 'next/link';
+import { SIMILARITY_CAVEAT } from '@/lib/journalists';
+import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
+
+// 記者 (/journalist/) and one person's page (/journalist/[name]/). The window
+// (7 days), the 200-character minimum and the Dice score are in
+// app/src/similarity/compute.ts; the pages ask for pairs at 0.65
+// (web/src/lib/journalists.ts); the index job runs every 10 minutes
+// (app/src/worker.ts); 早／晚 needs a gap of a minute (app/src/journalists/aggregate.ts).
+
+export function JournalistMethod() {
+  return (
+    <>
+      <h3 className={methodHeading}>記者</h3>
+      <p>
+        記者頁從文章署名整理出人名與筆名，不含媒體、部門、通訊社、職稱與責任編輯；可看每個人在哪些媒體刊登、寫了幾篇，以及文章與其他媒體內文相近時的刊登先後。較晚刊登只是閱讀線索，不是抄襲判定。
+      </p>
+      <p>{SIMILARITY_CAVEAT}</p>
+      <p>
+        內文相近取自
+        <Link href="/similarity/" className={inlineLink}>
+          新聞關係圖
+        </Link>
+        的相似度索引：每篇有正文的文章（正規化後至少 200 字元）與前後 7 天內其他媒體的文章逐篇比對，以不重複的五字片段計算 Dice
+        係數，記者頁列出索引中相似度 65% 以上的全部配對。索引每 10 分鐘處理新抓到的正文；標為「內容」的轉載站不列入比對。
+      </p>
+      <dl className={methodList}>
+        <dt className={methodTerm}>組</dt>
+        <dd>一組是此人的一篇文章與他站一篇內文相近的文章；同一篇文章可以和好幾家相近，算好幾組。</dd>
+        <dt className={methodTerm}>已比對</dt>
+        <dd>相似度索引已比對的篇數。</dd>
+        <dt className={methodTerm}>內文相近</dt>
+        <dd>至少一端是此人文章的相近配對；同一新聞稿、通訊社稿、授權轉載與引用都會相近。</dd>
+        <dt className={methodTerm}>對方較早</dt>
+        <dd>他站相近文章比此人文章早至少一分鐘刊登的配對；刊登時間以各站標示為準，不含同署名跨站。</dd>
+        <dt className={methodTerm}>本篇較早</dt>
+        <dd>此人文章比他站相近文章早至少一分鐘刊登的配對，同樣不含同署名跨站。相差不到一分鐘算同時刊登，兩欄都不計。</dd>
+        <dt className={methodTerm}>同署名</dt>
+        <dd>對方文章也署同一名字：同一人把稿件刊在不同媒體。</dd>
+        <dt className={methodTerm}>引用</dt>
+        <dd>內文明示引用其他媒體的篇數。</dd>
+        <dt className={methodTerm}>有正文</dt>
+        <dd>站內可閱讀正文的篇數（正文在刊登後 7 天內可於站內閱讀）；平均字元是這些正文的平均字元數。</dd>
+        <dt className={methodTerm}>未納入比對</dt>
+        <dd>有正文但不在相似度索引裡：還在等下一輪比對（即「尚待比對」），或刊登媒體是標為「內容」的轉載站。</dd>
+        <dt className={methodTerm}>常寫主題</dt>
+        <dd>這段期間此人文章最常帶的標籤，最多 30 個，數字為篇數。</dd>
+      </dl>
+    </>
+  );
+}

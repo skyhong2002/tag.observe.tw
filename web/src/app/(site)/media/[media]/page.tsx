@@ -9,6 +9,7 @@ import MediaIcon from '@/components/MediaIcon';
 import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
 import MediaWordCloud from '@/components/MediaWordCloud';
+import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaContent } from '@/lib/article-content';
@@ -132,12 +133,10 @@ export default async function MediaPage({
             aria-label={discovery ? '發現來源資料' : '媒體基本資料'}
             className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800"
           >
-            <h2 className="mb-3 text-sm font-semibold">{discovery ? '發現來源' : '媒體資料'}</h2>
-            {discovery && (
-              <p className="mb-3 leading-6 text-zinc-600 dark:text-zinc-400">
-                經{data.title}發現的文章，依原始刊登媒體收錄。點選標題可在本站閱讀，刊登時間保留原文日期。
-              </p>
-            )}
+            <h2 className="mb-3 flex items-baseline justify-between gap-2 text-sm font-semibold">
+              {discovery ? '發現來源' : '媒體資料'}
+              {discovery && <MethodLink className="text-xs font-normal" />}
+            </h2>
             <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-y-2.5 leading-5">
               <dt className="text-zinc-500 dark:text-zinc-400">{discovery ? '發現來源' : '刊登媒體'}</dt>
               <dd>{discovery ? data.title : data.publisher?.name}</dd>
