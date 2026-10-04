@@ -20,8 +20,9 @@ export default function SiteAnalytics() {
     const click = (event: MouseEvent) => {
       if (event.type === 'auxclick' && event.button !== 1) return;
       const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
-      if (!(anchor instanceof HTMLAnchorElement)) return;
-      const url = new URL(anchor.href);
+      // Word-cloud links live inside SVG, while lists use HTML anchors.
+      if (!(anchor instanceof HTMLAnchorElement || anchor instanceof SVGElement)) return;
+      const url = new URL(anchor.getAttribute('href')!, location.href);
       if (!['https:', 'http:'].includes(url.protocol)) return;
       const source_page_type = location.pathname.split('/')[1] || 'home';
       if (anchor.dataset.analytics === 'open_original' && url.origin !== location.origin) {
