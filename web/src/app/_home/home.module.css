@@ -68,11 +68,10 @@
 .blue { background: var(--color-blue-700); color: #fff; }
 .campShare { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
 .campShareChart { flex: 1; min-width: 0; }
-.campShareChart .bar { height: 12px; }
-.campShareLegend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; font-size: 11px; }
-.campShareLegend > span { display: flex; align-items: baseline; justify-content: center; gap: 4px; min-width: 0; }
-.campShareLegend i { flex-shrink: 0; width: 6px; height: 6px; border-radius: 2px; }
-.campShareLegend > span > span { overflow-wrap: anywhere; }
+.campShareChart .bar { height: 28px; }
+.campShareChart .bar > span { container-type: inline-size; }
+.campShareChart .campShareText { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 4px; max-width: 100%; font-size: min(11px, 23cqi); line-height: 1.2; }
+.campShareText > span { white-space: nowrap; }
 .campShareLabel { min-width: 0; font-size: 13px; font-weight: 600; }
 .campShareLabel > span { margin-left: 8px; font-size: 12px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .campShareMethod { flex-shrink: 0; font-size: 12px; color: var(--accent); }
@@ -150,6 +149,8 @@
   .pageHeading { align-items: stretch; flex-direction: column; gap: 14px; }
   .campShare { flex-wrap: wrap; gap: 10px; }
   .campShareChart { flex-basis: 100%; order: 1; }
+  .campShareChart .bar { height: 38px; }
+  .campShareChart .campShareText { flex-direction: column; gap: 2px; }
   .campOutlets { order: 2; grid-template-columns: 1fr; gap: 12px; }
   .campOutletsWrap { order: 2; }
   .columns { display: flex; flex-direction: column; gap: 28px; }

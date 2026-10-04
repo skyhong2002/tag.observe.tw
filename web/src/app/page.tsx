@@ -58,18 +58,13 @@ function CampShareBar({ share }: { share: CampShare }) {
           {camps
             .filter((c) => c.count > 0)
             .map((c) => (
-              <span key={c.key} className={styles[c.key]} style={{ flexGrow: c.count }} />
-            ))}
-        </div>
-        <div className={styles.campShareLegend} aria-hidden="true">
-          {camps.map((c, i) => (
-            <span key={c.key}>
-              <i className={styles[c.key]} />
-              <span>
-                {c.label} {percentages[i]}%
+              <span key={c.key} className={styles[c.key]} style={{ flexGrow: c.count }}>
+                <span className={styles.campShareText}>
+                  <span>{c.label}</span>
+                  <span>{percentages[camps.indexOf(c)]}%</span>
+                </span>
               </span>
-            </span>
-          ))}
+            ))}
         </div>
       </div>
       <a href="#method" className={styles.campShareMethod}>
