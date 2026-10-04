@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
+import { byUpdate } from '../crawl/topic-kind.ts';
 import { sharedTag } from '../crawl/topic-page.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, topics } from '../db/schema.ts';
@@ -106,8 +107,8 @@ export function topicTagSummary(items: Array<{ media: string; kind: string; tags
 
 /** Items carrying `tag` (exact) whose title contains `q` (case-insensitive);
  *  either may be omitted. Grouped by outlet, outlets with most matches first
- *  (then `mediaOrder`), newest first within an outlet, backlog last. */
-export function matchTopics<T extends { media: string; title: string; tags: string[]; firstSeen: Date; backlog: boolean }>(
+ *  (then `mediaOrder`), most recently updated first within an outlet (byUpdate). */
+export function matchTopics<T extends { id: string; media: string; title: string; tags: string[]; time: string; updatedAt: string | null }>(
   items: T[],
   { tag, q }: { tag?: string; q?: string },
   mediaOrder: string[] = [],
@@ -125,8 +126,7 @@ export function matchTopics<T extends { media: string; title: string; tags: stri
       (perMedia.get(b.media) ?? 0) - (perMedia.get(a.media) ?? 0) ||
       order(a.media) - order(b.media) ||
       a.media.localeCompare(b.media) ||
-      Number(a.backlog) - Number(b.backlog) ||
-      +b.firstSeen - +a.firstSeen,
+      byUpdate(a, b),
   );
 }
 

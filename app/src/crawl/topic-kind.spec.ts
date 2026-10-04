@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyTopic, dateFromStoryUrl, topicStatus } from './topic-kind.ts';
+import { byUpdate, classifyTopic, dateFromStoryUrl, firstRunEnd, topicStatus, topicUpdatedAt } from './topic-kind.ts';
 
 const now = new Date('2026-10-04T00:00:00Z');
 const daysAgo = (n: number) => new Date(+now - n * 86400e3);
@@ -61,5 +61,37 @@ describe('dateFromStoryUrl', () => {
     expect(day('udn.com/news/story/6656/83920112')).toBeNull();
     expect(day('www.setn.com/News.aspx?NewsID=1567890')).toBeNull();
     expect(day('example.com/news/20991231')).toBeNull();
+  });
+});
+
+describe('topicUpdatedAt', () => {
+  const seen = daysAgo(2);
+  it('is the newest story when known, backlog or not', () => {
+    expect(topicUpdatedAt({ storyLastAt: daysAgo(400), firstSeen: seen, backlog: false })).toEqual(daysAgo(400));
+    expect(topicUpdatedAt({ storyLastAt: daysAgo(1), firstSeen: seen, backlog: true })).toEqual(daysAgo(1));
+  });
+  it('falls back to the first sighting, unknown for backlog', () => {
+    expect(topicUpdatedAt({ storyLastAt: null, firstSeen: seen, backlog: false })).toEqual(seen);
+    expect(topicUpdatedAt({ storyLastAt: null, firstSeen: seen, backlog: true })).toBeNull();
+  });
+});
+
+describe('firstRunEnd', () => {
+  it('ends the 15-minute bucket of the first run', () => {
+    expect(firstRunEnd(new Date('2026-09-28T13:34:09Z'))).toEqual(new Date('2026-09-28T13:45:00Z'));
+    expect(firstRunEnd(new Date('2026-09-28T13:45:00Z'))).toEqual(new Date('2026-09-28T14:00:00Z'));
+  });
+});
+
+describe('byUpdate', () => {
+  const t = (id: string, updatedAt: string | null, time = '2026-10-01T00:00:00Z') => ({ id, updatedAt, time });
+  it('puts the most recently updated first and unknown last', () => {
+    const items = [t('1', null), t('2', '2026-09-01T00:00:00Z'), t('3', '2026-10-03T00:00:00Z'), t('4', null, '2026-10-02T00:00:00Z')];
+    expect(items.sort(byUpdate).map((i) => i.id)).toEqual(['3', '2', '4', '1']);
+  });
+  it('breaks ties by newest first sighting, then id', () => {
+    const day = '2026-10-03T16:00:00Z';
+    const items = [t('9', day, '2026-10-01T00:00:00Z'), t('7', day, '2026-10-02T00:00:00Z'), t('8', day, '2026-10-02T00:00:00Z')];
+    expect(items.sort(byUpdate).map((i) => i.id)).toEqual(['7', '8', '9']);
   });
 });

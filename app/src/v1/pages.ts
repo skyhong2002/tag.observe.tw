@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
-import { topicStatus } from '../crawl/topic-kind.ts';
+import { byUpdate, firstRunEnd, topicStatus, topicUpdatedAt } from '../crawl/topic-kind.ts';
 import { TOPIC_RULES, type TopicKind } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
@@ -98,7 +98,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     // Topics stored in an outlet's first crawl run were already listed when
     // tracking began: their time is when we started watching, not a start date.
     // Newer rows carry their own backlog flag (a newly added listing or page).
-    const run = (d: Date) => Math.floor(+d / 900e3);
+    // Every list is ordered by 最後更新 (topicUpdatedAt / byUpdate).
     const now = new Date();
     const [firstRun, checks, allCounts, tagsOf] = await Promise.all([
       firstRunPerMedia(db),
@@ -121,23 +121,27 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       storyFirstAt: Date | null;
       storyLastAt: Date | null;
       storyCount: number | null;
-    }) => ({
-      id: String(r.id),
-      time: r.firstSeen.toISOString(),
-      backlog: r.backlog || (!!firstRun[r.media] && run(r.firstSeen) === run(firstRun[r.media])),
-      title: r.title,
-      url: r.url,
-      image: r.image,
-      kind: r.kind as TopicKind,
-      status: topicStatus(r.kind, r.storyLastAt, now),
-      sponsored: !!r.sponsored,
-      parentId: r.parentId,
-      storyFirstAt: r.storyFirstAt?.toISOString() ?? null,
-      storyLastAt: r.storyLastAt?.toISOString() ?? null,
-      storyCount: r.storyCount,
-      // Keywords of the name itself, whether or not anything was published on it lately.
-      tags: tagsOf(r.title),
-    });
+    }) => {
+      const backlog = r.backlog || (!!firstRun[r.media] && +r.firstSeen < +firstRunEnd(firstRun[r.media]));
+      return {
+        id: String(r.id),
+        time: r.firstSeen.toISOString(),
+        backlog,
+        updatedAt: topicUpdatedAt({ ...r, backlog })?.toISOString() ?? null,
+        title: r.title,
+        url: r.url,
+        image: r.image,
+        kind: r.kind as TopicKind,
+        status: topicStatus(r.kind, r.storyLastAt, now),
+        sponsored: !!r.sponsored,
+        parentId: r.parentId,
+        storyFirstAt: r.storyFirstAt?.toISOString() ?? null,
+        storyLastAt: r.storyLastAt?.toISOString() ?? null,
+        storyCount: r.storyCount,
+        // Keywords of the name itself, whether or not anything was published on it lately.
+        tags: tagsOf(r.title),
+      };
+    };
     // Recent coverage of each topic across every crawled outlet.
     const withCoverage = async <T extends { id: string; title: string }>(items: T[]) => {
       const coverage = await topicCoverage(
@@ -160,9 +164,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     // Every top-level 議題 and 專題 across outlets, both kinds: the keyword
     // summary over the live ones, and the tag / title search.
     const everything = async () =>
-      (await allTopLevelTopics(db))
-        .filter((r) => TOPIC_MEDIA.includes(r.media))
-        .map((r) => ({ ...fmt(r), media: r.media, firstSeen: r.firstSeen }));
+      (await allTopLevelTopics(db)).filter((r) => TOPIC_MEDIA.includes(r.media)).map((r) => ({ ...fmt(r), media: r.media }));
     const summary = (all: Awaited<ReturnType<typeof everything>>) => topicTagSummary(all.filter((t) => t.status !== 'ended'));
     reply.header('cache-control', 'public, max-age=300');
     if (!media && (tag || q)) {
@@ -175,14 +177,15 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
         total: hits.length,
         mediaCount: new Set(hits.map((h) => h.media)).size,
         counts: { topic: hits.filter((h) => h.kind === 'topic').length, feature: hits.filter((h) => h.kind === 'feature').length },
-        topics: hits.slice(0, max).map(({ firstSeen: _, ...t }) => ({ ...t, mediaTitle: info(t.media).title, icon: info(t.media).icon })),
+        topics: hits.slice(0, max).map((t) => ({ ...t, mediaTitle: info(t.media).title, icon: info(t.media).icon })),
         tags: summary(all),
       };
     }
     if (media) {
       if (!TOPIC_MEDIA.includes(media)) return reply.code(404).send({ error: 'unknown media' });
       // Sub-topics are listed under their parent, not on their own.
-      const rows = await latestTopics(db, media, limit, kind, { topLevel: true });
+      const first = firstRun[media];
+      const rows = await latestTopics(db, media, limit, kind, { topLevel: true, firstRunEnd: first && firstRunEnd(first) });
       const children = await topicChildrenOf(
         db,
         rows.map((r) => r.id),
@@ -197,32 +200,28 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
         check: checks[media],
         count: counts(media)[kind],
         counts: counts(media),
-        topics: items.map((t) => ({ ...t, children: children.filter((c) => String(c.parentId) === t.id).map(fmt) })),
+        topics: items.map((t) => ({
+          ...t,
+          children: children
+            .filter((c) => String(c.parentId) === t.id)
+            .map(fmt)
+            .sort(byUpdate),
+        })),
       };
     }
     const per = Math.min(10, Math.max(1, Number(request.query.per) || 4));
     const feedSize = Math.min(120, Math.max(1, Number(request.query.limit) || 60));
-    const [recent, all] = await Promise.all([latestTopicPerMedia(db, Math.max(per, 12), kind), everything()]);
-    // One list across outlets, newest first; backlog and 已停更 are left out. A crawl run stores
-    // every outlet within a minute or two, so topics from the same run (same
-    // 15-minute bucket) are interleaved by their position on each outlet's
-    // listing (every outlet's 1st, then every 2nd…) instead of outlet by outlet.
-    const feed = TOPIC_MEDIA.flatMap((m, order) =>
-      recent[m].map((r, i) => ({
-        r,
-        m,
-        order,
-        t: run(r.firstSeen),
-        rank: i - recent[m].findIndex((x) => run(x.firstSeen) === run(r.firstSeen)),
-      })),
+    const [recent, all] = await Promise.all([latestTopicPerMedia(db, Math.max(per, 12), kind, firstRun), everything()]);
+    // One list across outlets (each outlet's 12 most recently updated at most),
+    // most recently updated first. A topic listed before tracking began that got
+    // a new story today belongs at the top; 已停更 and topics whose update time
+    // is unknown are left out.
+    const feed = TOPIC_MEDIA.flatMap((m) =>
+      recent[m].map((r) => ({ ...fmt(r), media: m, mediaTitle: info(m).title, icon: info(m).icon, mediaImage: TOPIC_IMAGES[m] })),
     )
-      .filter(({ r }) => {
-        const f = fmt(r);
-        return !f.backlog && f.status !== 'ended';
-      })
-      .sort((a, b) => b.t - a.t || a.rank - b.rank || a.order - b.order)
-      .slice(0, feedSize)
-      .map(({ r, m }) => ({ ...fmt(r), media: m, mediaTitle: info(m).title, icon: info(m).icon, mediaImage: TOPIC_IMAGES[m] }));
+      .filter((f) => f.updatedAt && f.status !== 'ended')
+      .sort(byUpdate)
+      .slice(0, feedSize);
     return {
       kind,
       media: TOPIC_MEDIA.map((m) => ({

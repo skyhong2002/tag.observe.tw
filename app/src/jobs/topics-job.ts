@@ -2,7 +2,7 @@ import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from 'drizzle-or
 import pLimit from 'p-limit';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
-import { classifyTopic, dateFromStoryUrl } from '../crawl/topic-kind.ts';
+import { classifyTopic, dateFromStoryUrl, firstRunEnd } from '../crawl/topic-kind.ts';
 import { looksLikeStories, type TopicStory, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
 import {
   childSelectorFor,
@@ -382,13 +382,30 @@ async function storyDates(db: Db, media: string, stories: TopicStory[]): Promise
   });
 }
 
-/** Newest first; `topLevel` leaves out sub-topics (they are listed under their parent). */
-export async function latestTopics(db: Db, media: string, limit = 30, kind: TopicKind = 'topic', { topLevel = false } = {}) {
+/** 最後更新 (topicUpdatedAt) in SQL: the newest story, else first sighting
+ *  unless backlog — stored backlog, or stored in the outlet's first crawl run
+ *  (before `firstRunEnd`, see firstRunPerMedia). NULL when unknown. */
+export function updatedAtSql(firstRunEnd?: Date) {
+  const fresh = firstRunEnd ? sql` AND ${topics.firstSeen} >= ${firstRunEnd}` : sql``;
+  return sql`COALESCE(${topics.storyLastAt}, CASE WHEN ${topics.backlog} = 0${fresh} THEN ${topics.firstSeen} END)`;
+}
+
+/** Most recently updated first (unknown last), then newest first sighting, so
+ *  the limit keeps the most recently updated; `topLevel` leaves out sub-topics
+ *  (they are listed under their parent). An outlet has at most ~1,000 rows:
+ *  sorting on the expression needs no index. */
+export async function latestTopics(
+  db: Db,
+  media: string,
+  limit = 30,
+  kind: TopicKind = 'topic',
+  { topLevel = false, firstRunEnd }: { topLevel?: boolean; firstRunEnd?: Date } = {},
+) {
   return db
     .select()
     .from(topics)
     .where(and(eq(topics.media, media), eq(topics.kind, kind), topLevel ? isNull(topics.parentId) : undefined))
-    .orderBy(desc(topics.firstSeen), topics.id)
+    .orderBy(sql`${updatedAtSql(firstRunEnd)} DESC`, desc(topics.firstSeen), topics.id)
     .limit(limit);
 }
 /** Every top-level 議題 and 專題 of every outlet, without the stored page
@@ -432,8 +449,14 @@ export async function topicCountPerMedia(db: Db): Promise<Record<string, TopicCo
   }
   return out;
 }
-export async function latestTopicPerMedia(db: Db, perMedia = 1, kind: TopicKind = 'topic') {
-  const rows = await Promise.all(TOPIC_RULES.map((rule) => latestTopics(db, rule.media, perMedia, kind)));
+/** Each outlet's most recently updated; `firstRun` from firstRunPerMedia. */
+export async function latestTopicPerMedia(db: Db, perMedia = 1, kind: TopicKind = 'topic', firstRun: Record<string, Date> = {}) {
+  const rows = await Promise.all(
+    TOPIC_RULES.map((rule) => {
+      const first = firstRun[rule.media];
+      return latestTopics(db, rule.media, perMedia, kind, { firstRunEnd: first && firstRunEnd(first) });
+    }),
+  );
   return Object.fromEntries(TOPIC_RULES.map((rule, i) => [rule.media, rows[i]]));
 }
 // When each outlet was first crawled: topics stored in that run were already

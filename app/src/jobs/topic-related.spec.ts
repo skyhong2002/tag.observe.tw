@@ -82,24 +82,26 @@ describe('topicTagSummary', () => {
 });
 
 describe('matchTopics', () => {
-  const at = (d: string) => new Date(`2026-0${d}T00:00:00Z`);
+  const at = (d: string) => `2026-0${d}T00:00:00.000Z`;
   const items = [
-    { id: 1, media: 'pts', title: '核電公投', tags: ['核電'], firstSeen: at('1-01'), backlog: false },
-    { id: 2, media: 'cna', title: '核電重啟', tags: ['核電'], firstSeen: at('2-01'), backlog: false },
-    { id: 3, media: 'cna', title: '核廢料', tags: ['核電'], firstSeen: at('1-01'), backlog: true },
-    { id: 4, media: 'cna', title: '核電之後', tags: ['核電'], firstSeen: at('3-01'), backlog: false },
-    { id: 5, media: 'udn', title: 'AI 浪潮', tags: ['AI'], firstSeen: at('3-01'), backlog: false },
+    { id: '1', media: 'pts', title: '核電公投', tags: ['核電'], time: at('1-01'), updatedAt: at('1-01') },
+    { id: '2', media: 'cna', title: '核電重啟', tags: ['核電'], time: at('2-01'), updatedAt: at('2-01') },
+    { id: '3', media: 'cna', title: '核廢料', tags: ['核電'], time: at('1-01'), updatedAt: null },
+    { id: '4', media: 'cna', title: '核電之後', tags: ['核電'], time: at('3-01'), updatedAt: at('3-01') },
+    { id: '5', media: 'udn', title: 'AI 浪潮', tags: ['AI'], time: at('3-01'), updatedAt: at('3-01') },
+    // First seen long ago, but a new story since: updated after 4.
+    { id: '6', media: 'cna', title: '核四', tags: ['核電'], time: at('1-01'), updatedAt: at('4-01') },
   ];
-  it('filters by tag, outlets with most matches first, newest first, backlog last', () => {
-    expect(matchTopics(items, { tag: '核電' }, ['pts', 'cna']).map((i) => i.id)).toEqual([4, 2, 3, 1]);
+  it('filters by tag, outlets with most matches first, most recently updated first, unknown last', () => {
+    expect(matchTopics(items, { tag: '核電' }, ['pts', 'cna']).map((i) => i.id)).toEqual(['6', '4', '2', '3', '1']);
   });
   it('filters titles case-insensitively and combines with the tag', () => {
-    expect(matchTopics(items, { q: 'ai' }).map((i) => i.id)).toEqual([5]);
-    expect(matchTopics(items, { tag: '核電', q: '重啟' }).map((i) => i.id)).toEqual([2]);
+    expect(matchTopics(items, { q: 'ai' }).map((i) => i.id)).toEqual(['5']);
+    expect(matchTopics(items, { tag: '核電', q: '重啟' }).map((i) => i.id)).toEqual(['2']);
     expect(matchTopics(items, { tag: 'AI', q: '核' })).toEqual([]);
   });
   it('breaks ties between outlets by the given order', () => {
     const two = [items[0], items[4]];
-    expect(matchTopics(two, {}, ['udn', 'pts']).map((i) => i.id)).toEqual([5, 1]);
+    expect(matchTopics(two, {}, ['udn', 'pts']).map((i) => i.id)).toEqual(['5', '1']);
   });
 });

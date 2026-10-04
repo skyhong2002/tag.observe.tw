@@ -29,6 +29,30 @@ export function topicStatus(kind: string, storyLastAt: Date | null, now: Date): 
   return kind === 'topic' && storyLastAt && +now - +storyLastAt > ENDED_DAYS * DAY ? 'ended' : 'active';
 }
 
+// Crawl runs store every outlet within a minute or two; topics stored in the
+// same 15-minute bucket as an outlet's very first row came from its first run.
+const RUN_MS = 900e3;
+/** End of the 15-minute bucket of an outlet's first crawl run: topics first seen
+ *  before it were already listed when tracking began (backlog). */
+export const firstRunEnd = (firstSeen: Date) => new Date((Math.floor(+firstSeen / RUN_MS) + 1) * RUN_MS);
+
+/**
+ * 最後更新: the newest story on the topic page when known; otherwise when we
+ * first saw the topic, unless it was already listed when tracking began
+ * (backlog), whose update time is unknown (null).
+ */
+export function topicUpdatedAt(t: { storyLastAt: Date | null; firstSeen: Date; backlog: boolean }): Date | null {
+  return t.storyLastAt ?? (t.backlog ? null : t.firstSeen);
+}
+
+type Ordered = { updatedAt: string | null; time: string; id: string };
+/** Most recently updated first, unknown update time last; then newest first sighting, then id. */
+export function byUpdate(a: Ordered, b: Ordered): number {
+  const ua = a.updatedAt ? Date.parse(a.updatedAt) : Number.NEGATIVE_INFINITY;
+  const ub = b.updatedAt ? Date.parse(b.updatedAt) : Number.NEGATIVE_INFINITY;
+  return ub - ua || Date.parse(b.time) - Date.parse(a.time) || Number(a.id) - Number(b.id);
+}
+
 // Taipei midnight of a calendar date, or null when it is not a real date.
 function taipeiDate(y: number, m: number, d: number, now: Date): Date | null {
   if (y < 2000 || m < 1 || m > 12 || d < 1 || d > 31) return null;
