@@ -4,6 +4,7 @@ import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import reviewedPublications from '../../data/reviewed-publications.json' with { type: 'json' };
 import { BODY_RETENTION_MS, bodyIsPublic, publicBodyUntil } from '../article-retention.ts';
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
+import { excludedMedia } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
 import { type Attribution, normalizeAttributions, type OutletIdentity, outletIdentity } from '../similarity/attribution.ts';
@@ -279,7 +280,7 @@ export function registerArticleContent(app: FastifyInstance, db: Db) {
     '/api/v1/media/:media/content',
     async (request, reply) => {
       const { media } = request.params;
-      if (!Object.hasOwn(titles, media)) return reply.code(404).send({ error: 'unknown media' });
+      if (!Object.hasOwn(titles, media) || excludedMedia.has(media)) return reply.code(404).send({ error: 'unknown media' });
       const query = parseContentPage(request.query);
       if (!query)
         return reply

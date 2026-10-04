@@ -234,3 +234,7 @@ Issue 列的 17 個「可再嘗試」來源已在 10-03 全數移出 `crawl-disa
 - **動網**：判定已停止。`/`、`/feed/`、`/wp-json/`、`http://` 全部 301 轉回自己，沒有設 cookie；Google 新聞 `site:dongtw.com` 無結果。
 - **風向新聞**：判定已停止。`kairos.news` 仍無 DNS，搜尋找不到新網域，Google 新聞 `site:kairos.news` 無結果。
 - **商業周刊**：維持官網。LINE TODAY 頻道（100421）2026-09-03 後沒更新（9 月網站遭攻擊），`m.` 轉到活動頁，`api.`／`bw.` 連不上，沒有 `feeds.`。官網連線有一半在 TLS 握手後被重設或回 HTTP/0.9 垃圾回應，curl transport 現在只對這類連線中斷（exit 1/35/52/55/56）重試最多 2 次，逾時不重試。實測一輪取得 8 篇、1 篇仍失敗（之前每小時約一半整輪失敗）。
+
+### 2026-10-04：移除報橘、農傳媒、動網、風向新聞
+
+依網站維護者要求，`buzzorange`、`agriharvest`、`dongtw`、`kairos` 列入 `excludedMedia`，從網站媒體目錄、爬蟲設定與圖示移除（`media-names.json`、`news-source-catalog.json` 保留歷史對照），資料庫內 8 篇舊文章一併刪除。理由見上方 10-04 複查：報橘自 2022 年後停更、農傳媒在 Vercel Security Checkpoint 後、動網無限轉址、風向新聞無 DNS。

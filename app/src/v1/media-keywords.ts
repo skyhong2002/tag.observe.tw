@@ -2,6 +2,7 @@ import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import noEqual from '../../data/no-equal-tags.json' with { type: 'json' };
+import { excludedMedia } from '../crawl/registry.ts';
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
@@ -62,7 +63,7 @@ export function registerMediaKeywords(app: FastifyInstance, db: Db) {
   };
   app.get<{ Params: { media: string }; Querystring: { hours?: string } }>('/api/v1/media/:media/keywords', async (request, reply) => {
     const { media } = request.params;
-    if (!Object.hasOwn(catalog, media)) return reply.code(404).send({ error: 'unknown media' });
+    if (!Object.hasOwn(catalog, media) || excludedMedia.has(media)) return reply.code(404).send({ error: 'unknown media' });
     const hours = request.query.hours === undefined ? 168 : parseContentId(request.query.hours);
     if (!hours || hours > 168) return reply.code(400).send({ error: 'hours must be 1–168' });
     const result = await loadMediaKeywords(db, media, hours, await vocab());

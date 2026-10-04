@@ -25,3 +25,7 @@ export const disabled = () =>
       .map((s) => s.trim())
       .filter(Boolean),
   ]);
+
+// Outlets removed from the site on request: no directory entry, media page or
+// media API, even though historical catalogs still name them.
+export const excludedMedia = new Set((disabledSpec as { excludedMedia?: string[] }).excludedMedia ?? []);

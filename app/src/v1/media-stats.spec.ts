@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
+import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { listedMediaSources, registerMediaStats, statusFor, taipeiMidnight } from './media-stats.ts';
@@ -57,8 +58,10 @@ describe('media stats', () => {
       expect(response.statusCode).toBe(200);
       const result = response.json();
       const ids = result.media.map((row: { media: string }) => row.media);
+      // Duplicates and outlets removed on request stay out of the directory.
+      const hidden = new Set([...Object.keys(disabledSpec.duplicates), ...disabledSpec.excludedMedia]);
       for (const [media, entry] of Object.entries(catalog)) {
-        if (entry.title && !['cti', 'want'].includes(media)) expect(ids).toContain(media);
+        if (entry.title && !hidden.has(media)) expect(ids).toContain(media);
       }
       expect(result.media.find((row: { media: string }) => row.media === 'bigmedia')).toMatchObject({
         title: '鉅聞天下',

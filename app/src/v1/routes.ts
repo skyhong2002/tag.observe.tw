@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
+import { excludedMedia } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads, rankingSnapshots, tagStats } from '../db/schema.ts';
 import { applyRankingBasis, rankingBasis } from '../jobs/ranking-basis.ts';
@@ -90,7 +91,11 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     })),
   );
   app.get('/api/v1/media', async () =>
-    Object.fromEntries(Object.entries(mediaInfo).map(([k, v]) => [k, { title: v.title, icon: iconUrl(k), camp: campOf(k) }])),
+    Object.fromEntries(
+      Object.entries(mediaInfo)
+        .filter(([k]) => !excludedMedia.has(k))
+        .map(([k, v]) => [k, { title: v.title, icon: iconUrl(k), camp: campOf(k) }]),
+    ),
   );
   app.get<{ Querystring: { category?: string; order?: string; limit?: string; at?: string; trend?: string; related?: string } }>(
     '/api/v1/ranking',
@@ -292,7 +297,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
   // 24h, its top tags by count, and where it sits in the global ranking.
   app.get<{ Params: { media: string }; Querystring: { hours?: string } }>('/api/v1/media/:media', async (request, reply) => {
     const media = request.params.media.slice(0, 32);
-    if (!mediaInfo[media]) return reply.code(404).send({ error: 'unknown media' });
+    if (!mediaInfo[media] || excludedMedia.has(media)) return reply.code(404).send({ error: 'unknown media' });
     const hours = Math.min(168, Math.max(1, Number(request.query.hours) || 24));
     const since = new Date(Date.now() - hours * 3600e3);
     const rows = await db

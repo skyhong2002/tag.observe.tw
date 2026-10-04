@@ -14,19 +14,6 @@ export const overrides: Record<string, SourceOverride> = {
     list: { urls: [{ cat: 'news', url: 'https://dongtaiwang.com/loc/phome.php?v=0' }] },
     article: { enabled: false, batch: 0, delayMs: 0 },
   },
-  buzzorange: {
-    group: 'hourly',
-    list: {
-      autoDiscover: {
-        homeUrl: 'https://grinews.com/news/author/bogri-tw/',
-        articleUrls: ['https://grinews.com/news/?p=147073', 'https://grinews.com/news/?p=147000'],
-        provider: '^CitiOrange 公民報橘$',
-        includeArchive: true,
-        maxArticles: 2,
-      },
-    },
-    article: { enabled: true, provider: '^CitiOrange 公民報橘$' },
-  },
   // gq.com.tw and cheers.com.tw sit behind Cloudflare JS challenges. Their
   // official LINE TODAY channels carry complete articles; every page must name
   // the outlet in LINE's provider meta. URLs and times are LINE TODAY's own.
@@ -43,19 +30,6 @@ export const overrides: Record<string, SourceOverride> = {
     titleSuffix: String.raw`\s*\|\s*GQ\s*\|\s*LINE TODAY`,
     article: { enabled: true, provider: '^GQ$' },
   },
-  agriharvest: {
-    group: 'hourly',
-    list: {
-      autoDiscover: {
-        homeUrl: 'https://e-info.org.tw/',
-        articleUrls: ['https://e-info.org.tw/node/220413'],
-        includeArchive: true,
-        provider: '^轉載自農傳媒[；;]',
-        maxArticles: 1,
-      },
-    },
-    article: { enabled: true, provider: '^轉載自農傳媒[；;]' },
-  },
   cheers: {
     group: 'hourly',
     list: {
@@ -68,41 +42,6 @@ export const overrides: Record<string, SourceOverride> = {
     },
     titleSuffix: String.raw`\s*\|\s*Cheers 快樂工作人\s*\|\s*LINE TODAY`,
     article: { enabled: true, provider: '^Cheers 快樂工作人$' },
-  },
-  dongtw: {
-    group: 'hourly',
-    list: {
-      autoDiscover: {
-        homeUrl: 'https://www.dongtw.com/',
-        articleHosts: ['tw.sports.yahoo.com', 'tw.news.yahoo.com'],
-        provider: '^動網DONG$',
-        articleUrls: [
-          'https://tw.sports.yahoo.com/news/超暖心偶像吹楊花-13-薪水為-590-人償還醫療債務-1-人激動哭了整整-5-分鐘-075035380.html',
-          'https://tw.sports.yahoo.com/news/書豪明星賽奇怪計分法轟41分關鍵上籃放槍遭絕殺丟失mvp-影-101043877.html',
-        ],
-        includeArchive: true,
-        maxArticles: 2,
-      },
-    },
-    article: { enabled: true, provider: '^動網DONG$' },
-  },
-  kairos: {
-    group: 'hourly',
-    list: {
-      autoDiscover: {
-        homeUrl: 'https://kairos.news/',
-        articleHosts: ['tw.news.yahoo.com'],
-        provider: '^風向新聞$',
-        articleUrls: [
-          'https://tw.news.yahoo.com/曾獻瑩登記大安文山市議員初選-賴趙郝齊推薦-133249931.html',
-          'https://tw.news.yahoo.com/300億租金補貼政策來了-專家-領補助者應學習家庭教育讓彼此更相愛-101620411.html',
-          'https://tw.news.yahoo.com/北市結婚送千萬救人口-專家-緊扣婚姻教育是關鍵-060003180.html',
-        ],
-        includeArchive: true,
-        maxArticles: 3,
-      },
-    },
-    article: { enabled: true, provider: '^風向新聞$' },
   },
   // Restored archive publishers retain original publication dates.
   punchline: {
