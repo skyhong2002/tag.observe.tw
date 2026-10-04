@@ -108,17 +108,9 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://news.pts.org.tw/images/ptsnews-banner.jpg',
     url: 'https://news.pts.org.tw/hotTopic',
     pattern: /\/hotTopic\/\d+$/,
+    // /curation is 專題 (long-form features, not refreshed since 2025), not
+    // the running topics, so it is deliberately not a listing.
     extract: ldTopics,
-    // Curation cards split into an image link and an <h3> title link; the
-    // card selector joins them so the cover is kept (featured, secondary, list).
-    listings: [
-      {
-        url: 'https://news.pts.org.tw/curation',
-        pattern: /\/curation\/\d+$/,
-        card: '.curation-main, .curation-secondary .col-lg-6, .project-card',
-        title: heading,
-      },
-    ],
   },
   {
     media: 'udn',
