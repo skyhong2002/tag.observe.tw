@@ -10,7 +10,7 @@ import { fetchText, fetchViaCurl } from './fetch.ts';
 import { discoverLinks, parseMarkerList } from './html-list.ts';
 import { discoverNews } from './news-discovery.ts';
 import type { SourceSpec } from './sources.ts';
-import { normalizeTag, stripTitleSuffix, urlKey } from './text.ts';
+import { headlineFromPage, normalizeTag, stripTitleSuffix, urlKey } from './text.ts';
 import { type TitleVocab, tagsFromTitle } from './title-tags.ts';
 
 export interface Logger {
@@ -419,7 +419,12 @@ export async function runArticles(
             rejected++;
             return;
           }
-          const titleTags = !detail.tags.length && vocab ? tagsFromTitle(row.title || detail.title || '', vocab) : [];
+          const pageTitle = detail.title ? stripTitleSuffix(detail.title, spec.titleSuffix) : null;
+          // Discovered titles are listing anchor text; the page headline wins
+          // when that text ran past the headline.
+          const title =
+            Buffer.byteLength(row.title ?? '') < 2 ? pageTitle : spec.list.discover ? headlineFromPage(row.title ?? '', pageTitle) : null;
+          const titleTags = !detail.tags.length && vocab ? tagsFromTitle(title || row.title || '', vocab) : [];
           const tags = detail.tags.length ? detail.tags : titleTags;
           // Discovered links have no listing time; adopt the page's published
           // time unless it is in the future or implausibly old.
@@ -433,9 +438,7 @@ export async function runArticles(
             .set({
               fetchedAt: now(),
               fetchStatus: detail.tags.length ? 'ok' : titleTags.length ? 'title' : 'notags',
-              ...(Buffer.byteLength(row.title ?? '') < 2 && detail.title
-                ? { title: trunc(stripTitleSuffix(detail.title, spec.titleSuffix), 512) as string }
-                : {}),
+              ...(title ? { title: trunc(title, 512) as string } : {}),
               ...(publishedAt !== row.publishedAt ? { publishedAt } : {}),
               canonical: trunc(detail.canonical, 512),
               image: detail.image ? trunc(detail.image, 512) : undefined,

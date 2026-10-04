@@ -6,7 +6,7 @@ import MethodLink from '@/components/MethodLink';
 import PendingLabel from '@/components/PendingLabel';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, fetchMedia, type MediaInfo, taipei } from '@/lib/api';
-import { selectEventLead } from '@/lib/event-presentation.mts';
+import { clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import { fetchEvents } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 
@@ -253,7 +253,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         className="block h-full rounded-xl border border-zinc-300 bg-white p-3 text-sm hover:border-brand-700 dark:border-zinc-800 dark:bg-zinc-900"
                       >
                         <span className="text-xs text-zinc-500">{e.major.slice(0, 3).join(' · ')}</span>
-                        <span className="mt-1 line-clamp-2 block font-medium">{lead?.title ?? e.major.join('、')}</span>
+                        <span className="mt-1 line-clamp-2 block font-medium">{lead ? clipHeadline(lead.title) : e.major.join('、')}</span>
                       </Link>
                     </li>
                   );
@@ -287,7 +287,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         {a.datePending && ' *'}
                       </span>
                     </p>
-                    <Link href={articleHref(a)} className="mt-1 block font-medium hover:underline">
+                    <Link href={articleHref(a)} className="mt-1 line-clamp-2 font-medium hover:underline">
                       <Highlight text={a.title} q={q} />
                     </Link>
                     <SourceLink url={a.url} className="ml-2" />

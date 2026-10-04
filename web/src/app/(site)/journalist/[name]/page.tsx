@@ -8,6 +8,7 @@ import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { CONTENT_STATUS } from '@/lib/article-content';
+import { clipHeadline } from '@/lib/event-presentation.mts';
 import {
   DETAIL_HOURS,
   fetchJournalist,
@@ -106,7 +107,7 @@ function SimilarSection({ data }: { data: JournalistDetail }) {
               </p>
               <h3 className="mt-1 text-[15px] font-medium leading-6">
                 <Link href={`/article/${own.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
-                  {headline.title}
+                  {clipHeadline(headline.title)}
                 </Link>
               </h3>
               <ul className="mt-1 divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
@@ -265,7 +266,7 @@ export default async function JournalistPage({
                         {headline.section && (
                           <span className="mr-1.5 text-xs font-normal text-brand-700 dark:text-brand-400">{headline.section}</span>
                         )}
-                        {headline.title}
+                        {clipHeadline(headline.title)}
                       </Link>
                     </h3>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">

@@ -8,7 +8,7 @@ import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import { taipei, taipeiHour } from '@/lib/api';
-import { cleanEventHeadline, selectEventLead } from '@/lib/event-presentation.mts';
+import { cleanEventHeadline, clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import {
   bestRank,
   type Camp,
@@ -77,7 +77,7 @@ const fetchThread = (id: string) => fetchThreadPart<ThreadData>(id, '');
 const headlineOf = (data: ThreadData) => {
   const latest = data.hours[0];
   const lead = latest ? selectEventLead(latest.news, latest.major) : null;
-  return lead ? cleanEventHeadline(lead.title) : data.thread.majorTags.join('、');
+  return lead ? clipHeadline(cleanEventHeadline(lead.title)) : data.thread.majorTags.join('、');
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {

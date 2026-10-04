@@ -2,6 +2,7 @@ import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import { taipei } from '@/lib/api';
+import { clipHeadline } from '@/lib/event-presentation.mts';
 import { describeGap } from '@/lib/journalists';
 import { readingTitle } from '@/lib/reading.mts';
 import type { ArticleSimilarity } from '@/lib/similarity';
@@ -60,7 +61,7 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
                 </div>
                 <p className="mt-1 break-words text-[15px] leading-7">
                   <Link href={`/article/${other.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
-                    {headline.title}
+                    {clipHeadline(headline.title)}
                   </Link>
                 </p>
                 {match.evidence && (

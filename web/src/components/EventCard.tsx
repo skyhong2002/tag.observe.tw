@@ -7,7 +7,7 @@ import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import Sparkline from '@/components/Sparkline';
 import type { MediaInfo } from '@/lib/api';
-import { cleanEventHeadline, selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
+import { cleanEventHeadline, clipHeadline, selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { headlineDiff } from '@/lib/headline-compare.mts';
 import { isAllowedImage } from '@/lib/images';
 import type { Camp, EventCoverage, EventItem, EventNews } from '@/lib/pages';
@@ -26,7 +26,7 @@ export const eventHref = (e: EventItem) => (e.relatedEventPk ? `/eve/${e.related
 
 export function eventHeadline(e: EventItem): string {
   const lead = selectEventLead(e.news, e.major);
-  return lead ? cleanEventHeadline(lead.title) : e.major.join('、');
+  return lead ? clipHeadline(cleanEventHeadline(lead.title)) : e.major.join('、');
 }
 
 /** The lead article's photo, else the first one any report offers. */
