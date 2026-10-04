@@ -375,6 +375,8 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/topic\/[^/?#]+$/,
     scope: 'article',
     title: (a) => a.find('.intro-bl .content').text().trim() || heading(a),
+    // 放．專題: one-off packages; the slider's /topic/<id> links alias these.
+    kind: 'feature',
   },
   {
     media: 'technews',
@@ -663,6 +665,8 @@ export const TOPIC_RULES: TopicRule[] = [
     image: '.taxonomy-header img',
     title: (a) =>
       (a.closest('[class~="first:pt-0"]').find('.taxonomy-header img').first().attr('alt') ?? '').replace(/ (Cover|Banner)$/, ''),
+    // 特輯: one-off themed packages, all on one page.
+    kind: 'feature',
   },
 ];
 
