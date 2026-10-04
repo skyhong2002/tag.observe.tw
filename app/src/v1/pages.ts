@@ -1,10 +1,18 @@
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
-import { TOPIC_RULES } from '../crawl/topics.ts';
+import { topicStatus } from '../crawl/topic-kind.ts';
+import { TOPIC_RULES, type TopicKind } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
 import { topicCoverage } from '../jobs/topic-related.ts';
-import { firstRunPerMedia, latestTopicPerMedia, latestTopics, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
+import {
+  firstRunPerMedia,
+  latestTopicPerMedia,
+  latestTopics,
+  topicChildrenOf,
+  topicCountPerMedia,
+  topicSourceChecks,
+} from '../jobs/topics-job.ts';
 import { campOf } from './coverage.ts';
 import { campBaseline, eventsAt, feedCoverage, hourStats, hoursSoFar, matchPrevRank, rankTrail, threadInfo } from './event-feed.ts';
 import { iconUrl } from './icons.ts';
@@ -76,20 +84,45 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     };
   });
 
-  app.get<{ Querystring: { media?: string; limit?: string; per?: string } }>('/api/v1/topics', async (request, reply) => {
+  app.get<{ Querystring: { media?: string; limit?: string; per?: string; kind?: string } }>('/api/v1/topics', async (request, reply) => {
     const limit = Math.min(200, Math.max(1, Number(request.query.limit) || 20));
     const media = request.query.media;
+    // 議題 (topic, the default) and 專題 (feature) are separate lists.
+    const kind = (request.query.kind ?? 'topic') as TopicKind;
+    if (kind !== 'topic' && kind !== 'feature') return reply.code(400).send({ error: 'bad kind' });
     // Topics stored in an outlet's first crawl run were already listed when
     // tracking began: their time is when we started watching, not a start date.
+    // Newer rows carry their own backlog flag (a newly added listing or page).
     const run = (d: Date) => Math.floor(+d / 900e3);
-    const [firstRun, checks, counts] = await Promise.all([firstRunPerMedia(db), topicSourceChecks(db), topicCountPerMedia(db)]);
-    const fmt = (r: { id: number; media: string; firstSeen: Date; title: string; url: string; image: string | null }) => ({
+    const now = new Date();
+    const [firstRun, checks, allCounts] = await Promise.all([firstRunPerMedia(db), topicSourceChecks(db), topicCountPerMedia(db)]);
+    const counts = (m: string) => allCounts[m] ?? { topic: 0, feature: 0 };
+    const fmt = (r: {
+      id: number;
+      media: string;
+      firstSeen: Date;
+      title: string;
+      url: string;
+      image: string | null;
+      kind: string;
+      backlog: boolean;
+      sponsored: boolean;
+      parentId: number | null;
+      storyLastAt: Date | null;
+      storyCount: number | null;
+    }) => ({
       id: String(r.id),
       time: r.firstSeen.toISOString(),
-      backlog: !!firstRun[r.media] && run(r.firstSeen) === run(firstRun[r.media]),
+      backlog: r.backlog || (!!firstRun[r.media] && run(r.firstSeen) === run(firstRun[r.media])),
       title: r.title,
       url: r.url,
       image: r.image,
+      kind: r.kind as TopicKind,
+      status: topicStatus(r.kind, r.storyLastAt, now),
+      sponsored: !!r.sponsored,
+      parentId: r.parentId,
+      storyLastAt: r.storyLastAt?.toISOString() ?? null,
+      storyCount: r.storyCount,
     });
     // Recent coverage of each topic across every crawled outlet.
     const withCoverage = async <T extends { id: string; title: string }>(items: T[]) => {
@@ -108,26 +141,34 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     reply.header('cache-control', 'public, max-age=300');
     if (media) {
       if (!TOPIC_MEDIA.includes(media)) return reply.code(404).send({ error: 'unknown media' });
-      const rows = await latestTopics(db, media, limit);
+      // Sub-topics are listed under their parent, not on their own.
+      const rows = await latestTopics(db, media, limit, kind, { topLevel: true });
+      const children = await topicChildrenOf(
+        db,
+        rows.map((r) => r.id),
+      );
+      const items = await withCoverage(rows.map(fmt));
       return {
         media,
+        kind,
         title: mediaInfo[media]?.title ?? TOPIC_NAMES[media] ?? media,
         link: TOPIC_LINKS[media],
         mediaImage: TOPIC_IMAGES[media],
         check: checks[media],
-        count: counts[media] ?? 0,
-        topics: await withCoverage(rows.map(fmt)),
+        count: counts(media)[kind],
+        counts: counts(media),
+        topics: items.map((t) => ({ ...t, children: children.filter((c) => String(c.parentId) === t.id).map(fmt) })),
       };
     }
     const per = Math.min(10, Math.max(1, Number(request.query.per) || 4));
     const feedSize = Math.min(120, Math.max(1, Number(request.query.limit) || 60));
-    const recent = await latestTopicPerMedia(db, Math.max(per, 12));
+    const recent = await latestTopicPerMedia(db, Math.max(per, 12), kind);
     const info = (m: string) => ({
       media: m,
       title: mediaInfo[m]?.title ?? TOPIC_NAMES[m] ?? m,
       icon: iconUrl(m),
     });
-    // One list across outlets, newest first, backlog last. A crawl run stores
+    // One list across outlets, newest first; backlog and 已停更 are left out. A crawl run stores
     // every outlet within a minute or two, so topics from the same run (same
     // 15-minute bucket) are interleaved by their position on each outlet's
     // listing (every outlet's 1st, then every 2nd…) instead of outlet by outlet.
@@ -136,19 +177,25 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
         r,
         m,
         order,
-        t: fmt(r).backlog ? 0 : run(r.firstSeen),
+        t: run(r.firstSeen),
         rank: i - recent[m].findIndex((x) => run(x.firstSeen) === run(r.firstSeen)),
       })),
     )
+      .filter(({ r }) => {
+        const f = fmt(r);
+        return !f.backlog && f.status !== 'ended';
+      })
       .sort((a, b) => b.t - a.t || a.rank - b.rank || a.order - b.order)
       .slice(0, feedSize)
       .map(({ r, m }) => ({ ...fmt(r), media: m, mediaTitle: info(m).title, icon: info(m).icon, mediaImage: TOPIC_IMAGES[m] }));
     return {
+      kind,
       media: TOPIC_MEDIA.map((m) => ({
         ...info(m),
         link: TOPIC_LINKS[m],
         check: checks[m],
-        count: counts[m] ?? 0,
+        count: counts(m)[kind],
+        counts: counts(m),
         latest: recent[m][0] ? fmt(recent[m][0]) : null,
         recent: recent[m].slice(0, per).map(fmt),
       })),

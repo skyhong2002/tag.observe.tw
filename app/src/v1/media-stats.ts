@@ -4,9 +4,11 @@ import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import { allSources, disabled } from '../crawl/registry.ts';
-import { crawlerInfo } from '../crawl/source-info.ts';
+import { codeLink, crawlerInfo } from '../crawl/source-info.ts';
+import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles, crawlRuns } from '../db/schema.ts';
+import { articleMediaOf, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
@@ -32,6 +34,11 @@ export function listedMediaSources(sources: ListedSource[]): ListedSource[] {
   }
   return [...listed.values()].filter((s) => !excluded.has(s.media) && !duplicates[s.media] && (s.group !== 'off' || info[s.media]?.title));
 }
+
+// Topic crawlers are keyed by the outlet's topic media (報導者 is twreporter
+// there, reporter for articles).
+const topicRuleOf = (media: string) =>
+  TOPIC_RULES.find((r) => r.media === media) ?? TOPIC_RULES.find((r) => articleMediaOf(r.media) === media);
 
 export type MediaStatus = 'ok' | 'stale' | 'failing' | 'disabled';
 export function statusFor(
@@ -107,6 +114,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .from(crawlRuns)
       .where(and(gte(crawlRuns.startedAt, day), sql`${crawlRuns.stage} = 'index'`))
       .groupBy(crawlRuns.media);
+    const [topicChecks, topicCounts] = await Promise.all([topicSourceChecks(db, new Date(now)), topicCountPerMedia(db)]);
     const byCount = new Map([...counts, ...discoveries].map((c) => [c.media, c]));
     const byRun = new Map(runs.map((r) => [r.media, r]));
     const off = disabled();
@@ -128,6 +136,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           failed3h: Number(r?.failed3h ?? 0),
         };
         const category = categoryOf(s.media);
+        const topicRule = topicRuleOf(s.media);
+        const topicCheck = topicRule && topicChecks[topicRule.media];
         return {
           media: s.media,
           sourceKind: isDiscoverySource(s.media) ? 'discovery' : 'publisher',
@@ -152,6 +162,18 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           lastArticle,
           lastCrawlOk: toDate(r?.lastOk),
           status: statusFor(base, now),
+          // The outlet's 議題／專題 listings: per-source result of the latest topic run.
+          topics: topicRule
+            ? {
+                media: topicRule.media,
+                sources: topicCheck?.sources ?? [],
+                checkedAt: topicCheck?.checkedAt ?? null,
+                lastSuccessAt: topicCheck?.lastSuccessAt ?? null,
+                status: topicCheck?.status ?? 'pending',
+                counts: topicCounts[topicRule.media] ?? { topic: 0, feature: 0 },
+                rulesUrl: codeLink('議題規則', 'app/src/crawl/topics.ts', `    media: '${topicRule.media}',`).url,
+              }
+            : null,
         };
       })
       .sort((a, b) => b.last24h - a.last24h || b.last7d - a.last7d || a.media.localeCompare(b.media));

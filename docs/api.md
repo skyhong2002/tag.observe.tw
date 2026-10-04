@@ -1424,10 +1424,11 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 
 **各媒體的議題／專題**
 
-不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`）。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。
+`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`，不含 backlog 與已停更）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`），子議題列在上層議題的 `children`。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
+| `kind` | query | "topic" \| "feature" | topic 議題（預設）或 feature 專題，例：`feature` |
 | `media` | query | string | 只取這家媒體（須為有追蹤議題的媒體），例：`pts` |
 | `limit` | query | integer | 筆數：有 media 時預設 20、最多 200；否則為 feed 筆數，預設 60、最多 120，例：`20` |
 | `per` | query | integer | 沒給 media 時，每家媒體附幾則最近議題，1–10，預設 `4`，例：`2` |
@@ -1442,6 +1443,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
+| `kind` | "topic" \| "feature" |  |
 | `media` | object[] |  |
 | `media[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `media[].title` | string |  |
@@ -1453,28 +1455,56 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `media[].check.status` | string | ok、partial、failed、running 或 pending |
 | `media[].check.fetched` | integer | 本次取得的去重專題數 |
 | `media[].check.stale` | boolean | 超過三小時未完整更新，或尚未成功 |
-| `media[].count` | integer | 該媒體累計追蹤到的議題數 |
+| `media[].check.sources` | object[] | 最近一次完成檢查的各入口結果 |
+| `media[].check.sources[].url` | string | 媒體官方的議題／專題列表入口 |
+| `media[].check.sources[].kind` | "topic" \| "feature" \| "auto" | 入口宣告的類型：topic 議題、feature 專題、auto 依新聞日期判定 |
+| `media[].check.sources[].items` | integer | 本次取得的項目數 |
+| `media[].check.sources[].pages` | integer | 有分頁時實際讀到第幾頁 |
+| `media[].check.sources[].error` | string | 入口失敗或部分項目失敗的原因 |
+| `media[].check.error` | string | 整次檢查失敗時的錯誤訊息 |
+| `media[].count` | integer | 該媒體累計追蹤到的 kind 類項目數 |
+| `media[].counts` | object | 該媒體累計追蹤到的議題與專題數 |
+| `media[].counts.topic` | integer | 累計議題數 |
+| `media[].counts.feature` | integer | 累計專題數 |
 | `media[].latest` | object \| null |  |
 | `media[].latest.id` | string | 議題 id |
 | `media[].latest.time` | string (ISO 時間) | 首次看到的時間 |
-| `media[].latest.backlog` | boolean | true 表示開始追蹤該媒體時就已上架，time 只是開始追蹤的時間 |
+| `media[].latest.backlog` | boolean | true 表示開始追蹤該入口時就已上架（或在列表第二頁之後），time 只是開始追蹤的時間 |
 | `media[].latest.title` | string | 議題名稱 |
 | `media[].latest.url` | string | 媒體的專題頁網址 |
 | `media[].latest.image` | string \| null |  |
+| `media[].latest.kind` | "topic" \| "feature" | topic 議題（持續增加新聞）、feature 專題（一次性的新聞包） |
+| `media[].latest.status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
+| `media[].latest.sponsored` | boolean | 媒體標示為廣告／品牌合作 |
+| `media[].latest.parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `media[].latest.storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
+| `media[].latest.storyCount` | integer \| null | 專題頁所列新聞數 |
 | `media[].recent` | object[] |  |
 | `media[].recent[].id` | string | 議題 id |
 | `media[].recent[].time` | string (ISO 時間) | 首次看到的時間 |
-| `media[].recent[].backlog` | boolean | true 表示開始追蹤該媒體時就已上架，time 只是開始追蹤的時間 |
+| `media[].recent[].backlog` | boolean | true 表示開始追蹤該入口時就已上架（或在列表第二頁之後），time 只是開始追蹤的時間 |
 | `media[].recent[].title` | string | 議題名稱 |
 | `media[].recent[].url` | string | 媒體的專題頁網址 |
 | `media[].recent[].image` | string \| null |  |
+| `media[].recent[].kind` | "topic" \| "feature" | topic 議題（持續增加新聞）、feature 專題（一次性的新聞包） |
+| `media[].recent[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
+| `media[].recent[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
+| `media[].recent[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `media[].recent[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
+| `media[].recent[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `feed` | object[] |  |
 | `feed[].id` | string | 議題 id |
 | `feed[].time` | string (ISO 時間) | 首次看到的時間 |
-| `feed[].backlog` | boolean | true 表示開始追蹤該媒體時就已上架，time 只是開始追蹤的時間 |
+| `feed[].backlog` | boolean | true 表示開始追蹤該入口時就已上架（或在列表第二頁之後），time 只是開始追蹤的時間 |
 | `feed[].title` | string | 議題名稱 |
 | `feed[].url` | string | 媒體的專題頁網址 |
 | `feed[].image` | string \| null |  |
+| `feed[].kind` | "topic" \| "feature" | topic 議題（持續增加新聞）、feature 專題（一次性的新聞包） |
+| `feed[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
+| `feed[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
+| `feed[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `feed[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
+| `feed[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `feed[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `feed[].mediaTitle` | string |  |
 | `feed[].icon` | string \| null |  |
@@ -1498,6 +1528,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `kind` | "topic" \| "feature" |  |
 | `title` | string |  |
 | `link` | string |  |
 | `mediaImage` | string \| null |  |
@@ -1507,14 +1538,30 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `check.status` | string | ok、partial、failed、running 或 pending |
 | `check.fetched` | integer | 本次取得的去重專題數 |
 | `check.stale` | boolean | 超過三小時未完整更新，或尚未成功 |
-| `count` | integer | 該媒體累計追蹤到的議題數 |
+| `check.sources` | object[] | 最近一次完成檢查的各入口結果 |
+| `check.sources[].url` | string | 媒體官方的議題／專題列表入口 |
+| `check.sources[].kind` | "topic" \| "feature" \| "auto" | 入口宣告的類型：topic 議題、feature 專題、auto 依新聞日期判定 |
+| `check.sources[].items` | integer | 本次取得的項目數 |
+| `check.sources[].pages` | integer | 有分頁時實際讀到第幾頁 |
+| `check.sources[].error` | string | 入口失敗或部分項目失敗的原因 |
+| `check.error` | string | 整次檢查失敗時的錯誤訊息 |
+| `count` | integer | 該媒體累計追蹤到的 kind 類項目數 |
+| `counts` | object | 該媒體累計追蹤到的議題與專題數 |
+| `counts.topic` | integer | 累計議題數 |
+| `counts.feature` | integer | 累計專題數 |
 | `topics` | object[] |  |
 | `topics[].id` | string | 議題 id |
 | `topics[].time` | string (ISO 時間) | 首次看到的時間 |
-| `topics[].backlog` | boolean | true 表示開始追蹤該媒體時就已上架，time 只是開始追蹤的時間 |
+| `topics[].backlog` | boolean | true 表示開始追蹤該入口時就已上架（或在列表第二頁之後），time 只是開始追蹤的時間 |
 | `topics[].title` | string | 議題名稱 |
 | `topics[].url` | string | 媒體的專題頁網址 |
 | `topics[].image` | string \| null |  |
+| `topics[].kind` | "topic" \| "feature" | topic 議題（持續增加新聞）、feature 專題（一次性的新聞包） |
+| `topics[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
+| `topics[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
+| `topics[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `topics[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
+| `topics[].storyCount` | integer \| null | 專題頁所列新聞數 |
 | `topics[].coverage` | object \| null | 站內相關報導；比對不到站內標籤時為 null |
 | `topics[].coverage.tags` | string[] | 議題對應到的站內標籤 |
 | `topics[].coverage.basis` | string | title＝從議題名稱比對到的標籤；page＝議題名稱比對不到時，該媒體專題頁所列自家文章共有的標籤 |
@@ -1528,8 +1575,21 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 | `topics[].coverage.latest[].title` | string |  |
 | `topics[].coverage.latest[].url` | string |  |
 | `topics[].coverage.latest[].time` | string (ISO 時間) |  |
+| `topics[].children` | object[] | 子議題（不分 kind，不附 coverage） |
+| `topics[].children[].id` | string | 議題 id |
+| `topics[].children[].time` | string (ISO 時間) | 首次看到的時間 |
+| `topics[].children[].backlog` | boolean | true 表示開始追蹤該入口時就已上架（或在列表第二頁之後），time 只是開始追蹤的時間 |
+| `topics[].children[].title` | string | 議題名稱 |
+| `topics[].children[].url` | string | 媒體的專題頁網址 |
+| `topics[].children[].image` | string \| null |  |
+| `topics[].children[].kind` | "topic" \| "feature" | topic 議題（持續增加新聞）、feature 專題（一次性的新聞包） |
+| `topics[].children[].status` | "active" \| "ended" | active；ended＝已停更（議題最新一則新聞超過 90 天） |
+| `topics[].children[].sponsored` | boolean | 媒體標示為廣告／品牌合作 |
+| `topics[].children[].parentId` | integer \| null | 上層議題 id（子議題）；與 id 不同，為數字 |
+| `topics[].children[].storyLastAt` | string (ISO 時間) \| null | 專題頁所列新聞中最新一則的日期 |
+| `topics[].children[].storyCount` | integer \| null | 專題頁所列新聞數 |
 
-錯誤：`404` 該媒體沒有追蹤議題。
+錯誤：`400` kind 不是 topic 或 feature；`404` 該媒體沒有追蹤議題。
 
 ## 媒體與爬蟲狀態
 
@@ -1785,6 +1845,21 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].lastArticle` | string (ISO 時間) \| null |  |
 | `media[].lastCrawlOk` | string (ISO 時間) \| null |  |
 | `media[].status` | "ok" \| "stale" \| "failing" \| "disabled" |  |
+| `media[].topics` | object \| null | 議題／專題爬蟲；沒有追蹤議題的媒體為 null |
+| `media[].topics.media` | string | 議題爬蟲使用的媒體代碼（報導者為 twreporter） |
+| `media[].topics.sources` | object[] | 最近一次完成檢查的各入口結果 |
+| `media[].topics.sources[].url` | string | 媒體官方的議題／專題列表入口 |
+| `media[].topics.sources[].kind` | "topic" \| "feature" \| "auto" | 入口宣告的類型：topic 議題、feature 專題、auto 依新聞日期判定 |
+| `media[].topics.sources[].items` | integer | 本次取得的項目數 |
+| `media[].topics.sources[].pages` | integer | 有分頁時實際讀到第幾頁 |
+| `media[].topics.sources[].error` | string | 入口失敗或部分項目失敗的原因 |
+| `media[].topics.checkedAt` | string (ISO 時間) \| null | 最近一次完成檢查時間 |
+| `media[].topics.lastSuccessAt` | string (ISO 時間) \| null | 最近一次所有入口成功的時間 |
+| `media[].topics.status` | string | ok、partial、failed、running 或 pending |
+| `media[].topics.counts` | object | 該媒體累計追蹤到的議題與專題數 |
+| `media[].topics.counts.topic` | integer | 累計議題數 |
+| `media[].topics.counts.feature` | integer | 累計專題數 |
+| `media[].topics.rulesUrl` | string | GitHub 上該媒體議題爬蟲規則的位置 |
 
 ## 舊站 API 對照
 

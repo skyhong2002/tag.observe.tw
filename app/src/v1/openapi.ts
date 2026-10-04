@@ -130,20 +130,44 @@ const schemas: Record<string, Schema> = {
     publishedAt: time(),
     hits: int('這篇文章帶了幾個事件主要標籤'),
   }),
-  TopicCheck: obj({
-    checkedAt: nullable(time('最近一次完成檢查時間')),
-    lastSuccessAt: nullable(time('最近一次所有入口成功的時間')),
-    status: str('ok、partial、failed、running 或 pending'),
-    fetched: int('本次取得的去重專題數'),
-    stale: bool('超過三小時未完整更新，或尚未成功'),
-  }),
+  TopicCheck: obj(
+    {
+      checkedAt: nullable(time('最近一次完成檢查時間')),
+      lastSuccessAt: nullable(time('最近一次所有入口成功的時間')),
+      status: str('ok、partial、failed、running 或 pending'),
+      fetched: int('本次取得的去重專題數'),
+      stale: bool('超過三小時未完整更新，或尚未成功'),
+      sources: arr(ref('TopicSource'), '最近一次完成檢查的各入口結果'),
+      error: str('整次檢查失敗時的錯誤訊息'),
+    },
+    undefined,
+    ['error'],
+  ),
+  TopicSource: obj(
+    {
+      url: str('媒體官方的議題／專題列表入口'),
+      kind: str('入口宣告的類型：topic 議題、feature 專題、auto 依新聞日期判定', { enum: ['topic', 'feature', 'auto'] }),
+      items: int('本次取得的項目數'),
+      pages: int('有分頁時實際讀到第幾頁'),
+      error: str('入口失敗或部分項目失敗的原因'),
+    },
+    undefined,
+    ['pages', 'error'],
+  ),
+  TopicCounts: obj({ topic: int('累計議題數'), feature: int('累計專題數') }, '該媒體累計追蹤到的議題與專題數'),
   TopicItem: obj({
     id: str('議題 id'),
     time: time('首次看到的時間'),
-    backlog: bool('true 表示開始追蹤該媒體時就已上架，time 只是開始追蹤的時間'),
+    backlog: bool('true 表示開始追蹤該入口時就已上架（或在列表第二頁之後），time 只是開始追蹤的時間'),
     title: str('議題名稱'),
     url: str('媒體的專題頁網址'),
     image: nullable(str()),
+    kind: str('topic 議題（持續增加新聞）、feature 專題（一次性的新聞包）', { enum: ['topic', 'feature'] }),
+    status: str('active；ended＝已停更（議題最新一則新聞超過 90 天）', { enum: ['active', 'ended'] }),
+    sponsored: bool('媒體標示為廣告／品牌合作'),
+    parentId: nullable(int('上層議題 id（子議題）；與 id 不同，為數字')),
+    storyLastAt: nullable(time('專題頁所列新聞中最新一則的日期')),
+    storyCount: nullable(int('專題頁所列新聞數')),
   }),
   TopicCoverage: nullable(
     obj(
@@ -1104,8 +1128,9 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'topics',
     summary: '各媒體的議題／專題',
     description:
-      '不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`）。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
+      '`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，新到舊，附站內相關報導 `coverage`，不含 backlog 與已停更）與各媒體最近議題（`media`）。給 `media`：只回該媒體最新議題（同樣附 `coverage`），子議題列在上層議題的 `children`。依首次發現時間排序，不代表原站發布時間。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
     params: [
+      q('kind', 'topic 議題（預設）或 feature 專題', str(undefined, { enum: ['topic', 'feature'] }), 'feature'),
       q('media', '只取這家媒體（須為有追蹤議題的媒體）', ref('MediaKey'), 'pts'),
       q('limit', '筆數：有 media 時預設 20、最多 200；否則為 feed 筆數，預設 60、最多 120', { type: 'integer', minimum: 1 }, 20),
       q('per', '沒給 media 時，每家媒體附幾則最近議題', intIn(1, 10, 4), 2),
@@ -1114,6 +1139,7 @@ export const ENDPOINTS: Endpoint[] = [
       oneOf: [
         obj(
           {
+            kind: str(undefined, { enum: ['topic', 'feature'] }),
             media: arr(
               obj({
                 media: ref('MediaKey'),
@@ -1121,7 +1147,8 @@ export const ENDPOINTS: Endpoint[] = [
                 icon: nullable(str()),
                 link: str('媒體議題列表頁'),
                 check: ref('TopicCheck'),
-                count: int('該媒體累計追蹤到的議題數'),
+                count: int('該媒體累計追蹤到的 kind 類項目數'),
+                counts: ref('TopicCounts'),
                 latest: nullable(ref('TopicItem')),
                 recent: arr(ref('TopicItem')),
               }),
@@ -1144,18 +1171,25 @@ export const ENDPOINTS: Endpoint[] = [
         obj(
           {
             media: ref('MediaKey'),
+            kind: str(undefined, { enum: ['topic', 'feature'] }),
             title: str(),
             link: str(),
             mediaImage: nullable(str()),
             check: ref('TopicCheck'),
-            count: int('該媒體累計追蹤到的議題數'),
-            topics: arr({ allOf: [ref('TopicItem'), obj({ coverage: ref('TopicCoverage') })] }),
+            count: int('該媒體累計追蹤到的 kind 類項目數'),
+            counts: ref('TopicCounts'),
+            topics: arr({
+              allOf: [
+                ref('TopicItem'),
+                obj({ coverage: ref('TopicCoverage'), children: arr(ref('TopicItem'), '子議題（不分 kind，不附 coverage）') }),
+              ],
+            }),
           },
           '給 media',
         ),
       ],
     },
-    errors: { '404': '該媒體沒有追蹤議題' },
+    errors: { '400': 'kind 不是 topic 或 feature', '404': '該媒體沒有追蹤議題' },
     example: '/api/v1/topics?limit=20',
   },
   {
@@ -1267,6 +1301,20 @@ export const ENDPOINTS: Endpoint[] = [
           lastArticle: nullable(time()),
           lastCrawlOk: nullable(time()),
           status: str(undefined, { enum: ['ok', 'stale', 'failing', 'disabled'] }),
+          topics: nullable(
+            obj(
+              {
+                media: str('議題爬蟲使用的媒體代碼（報導者為 twreporter）'),
+                sources: arr(ref('TopicSource'), '最近一次完成檢查的各入口結果'),
+                checkedAt: nullable(time('最近一次完成檢查時間')),
+                lastSuccessAt: nullable(time('最近一次所有入口成功的時間')),
+                status: str('ok、partial、failed、running 或 pending'),
+                counts: ref('TopicCounts'),
+                rulesUrl: str('GitHub 上該媒體議題爬蟲規則的位置'),
+              },
+              '議題／專題爬蟲；沒有追蹤議題的媒體為 null',
+            ),
+          ),
         }),
       ),
     }),
