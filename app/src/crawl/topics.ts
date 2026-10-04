@@ -438,6 +438,8 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/issue\/\d+$/,
     scope: '.article-list',
     card: '.article-list',
+    // 食專題: single long-form pieces, the whole archive on one page.
+    kind: 'feature',
   },
   {
     media: 'cnyes',
@@ -455,6 +457,10 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/shoppingdesign.png',
     pattern: /\/topic\/view\/\d+$/,
     title: heading,
+    // Magazine theme packages (some brand-made, unmarked). A bare-UA request
+    // is redirected away, which made the index look empty in audits.
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.shoppingdesign.com.tw/topic?page=${n}`, max: 6 },
   },
   {
     media: 'sportsv',
