@@ -305,7 +305,6 @@ export default function EventCard({
             <Movement e={e} />
             {meta}
             <RankTrail e={e} className="h-7 w-24" span={trailSpan} />
-            <Compare e={e} className="ml-auto" />
           </div>
           <Title e={e} className="text-xl font-semibold leading-snug" />
           <Tags e={e} limit={7} />
@@ -320,6 +319,7 @@ export default function EventCard({
           )}
           {pair && <CampHeadlines pair={pair} media={media} />}
           <Headlines e={e} media={media} limit={3} skip={[img, pair?.blue, pair?.green]} />
+          <Compare e={e} className="self-end" />
         </div>
       </li>
     );
@@ -335,7 +335,6 @@ export default function EventCard({
         <Movement e={e} />
         {meta}
         <RankTrail e={e} span={trailSpan} />
-        <Compare e={e} className="ml-auto" />
       </div>
       <div className="flex gap-3">
         {img && (
@@ -356,6 +355,7 @@ export default function EventCard({
       </div>
       {e.coverage && <OutletStrip c={e.coverage} media={media} />}
       <Headlines e={e} media={media} limit={3} skip={[img]} />
+      <Compare e={e} className="mt-auto self-end" />
     </li>
   );
 }
