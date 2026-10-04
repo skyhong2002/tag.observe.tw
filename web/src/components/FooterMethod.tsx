@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation';
 import { METHOD_HREF } from '@/lib/site-nav';
 import {
   ArticleMethod,
+  CrawlerMethod,
   EventMethod,
   JournalistMethod,
   MediaCardMethod,
   MediaMethod,
+  MediaOverviewMethod,
   RankingMethod,
   SearchMethod,
   SimilarityMethod,
@@ -48,13 +50,48 @@ function sectionsFor(pathname: string) {
       </>
     );
   }
+  // One person's page shows outlet names with the hover card; the index does not.
+  if (/^\/journalist\/[^/]+/.test(pathname)) {
+    return (
+      <>
+        <JournalistMethod />
+        <MediaCardMethod />
+      </>
+    );
+  }
   if (/^\/journalist(\/|$)/.test(pathname)) return <JournalistMethod />;
-  if (/^\/similarity(\/|$)/.test(pathname)) return <SimilarityMethod />;
+  if (/^\/similarity(\/|$)/.test(pathname)) {
+    const page = /^\/similarity\/daily(\/|$)/.test(pathname) ? 'daily' : /^\/similarity\/about(\/|$)/.test(pathname) ? 'status' : 'graph';
+    return (
+      <>
+        <SimilarityMethod page={page} />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  if (pathname === '/media' || pathname === '/media/') {
+    return (
+      <>
+        <MediaOverviewMethod />
+        <SourceMethod />
+      </>
+    );
+  }
+  // Similar Web: @notes/media/sources renders its block with the traffic sheet's import date.
+  if (/^\/media\/sources(\/|$)/.test(pathname)) return null;
+  if (/^\/media\/crawlers(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <CrawlerMethod />
+        <MediaCardMethod />
+      </>
+    );
+  }
   if (pathname.startsWith('/media/')) {
     return (
       <>
-        <SourceMethod />
         <MediaMethod />
+        <SourceMethod />
       </>
     );
   }
@@ -62,8 +99,14 @@ function sectionsFor(pathname: string) {
   if (pathname === '/topic' || pathname === '/feature' || pathname === '/topic/' || pathname === '/feature/') return null;
   if (pathname.startsWith('/topic/')) return <TopicMethod kind="topic" outlet />;
   if (pathname.startsWith('/feature/')) return <TopicMethod kind="feature" outlet />;
-  if (/^\/event\/archive(\/|$)/.test(pathname)) return <EventMethod page="archive" />;
-  if (/^\/event(\/|$)/.test(pathname)) return <EventMethod page="table" />;
+  if (/^\/event(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <EventMethod page={/^\/event\/archive(\/|$)/.test(pathname) ? 'archive' : 'table'} />
+        <MediaCardMethod />
+      </>
+    );
+  }
   // One event's page: @notes/eve/[id] renders its blocks with the event's own tags.
   if (/^\/eve(\/|$)/.test(pathname)) return null;
   return <SourceMethod />;

@@ -34,8 +34,8 @@ export function createGraphTooltip(nodes: SimilarityNode[], camps: MediaCamps) {
       heading = `<b>${name(edge.target)} → ${name(edge.source)}</b>`;
       summary =
         edge.kind === 'citation'
-          ? `${number(edge.count)} 篇文章明示引用 · 箭頭由被引用的來源指向引用的媒體`
-          : `${number(edge.count)} 篇同組報導 · 箭頭由同組最早刊登的媒體指向較晚刊登的媒體${edge.score === null ? ' · 經同組配對歸源' : ` · 最高直接比對相似度 ${(edge.score * 100).toFixed(1)}%`}`;
+          ? `${number(edge.count)} 篇文章明示引用`
+          : `${number(edge.count)} 篇同組報導${edge.score === null ? ' · 經同組配對歸源' : ` · 最高直接比對相似度 ${(edge.score * 100).toFixed(1)}%`}`;
     }
     return `<div role="tooltip">${heading}<div style="margin-top:6px">${summary}</div></div>`;
   };

@@ -1,4 +1,4 @@
-import { EventMethod, EventThreadMethod } from '@/components/MethodNotes';
+import { EventMethod, EventThreadMethod, MediaCardMethod } from '@/components/MethodNotes';
 import { fetchThreadPart } from '@/lib/event-thread-api';
 
 export const revalidate = 120;
@@ -14,6 +14,7 @@ export default async function EventThreadNotes({ params }: { params: Promise<{ i
     <>
       <EventThreadMethod majorTags={data?.thread.majorTags} coverage={cov} />
       <EventMethod page="thread" />
+      <MediaCardMethod />
     </>
   );
 }

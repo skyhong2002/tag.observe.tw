@@ -3,6 +3,7 @@ import CountryFlag from '@/components/CountryFlag';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import MediaTabs from '@/components/MediaTabs';
+import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { API_ORIGIN, taipei } from '@/lib/api';
@@ -195,8 +196,7 @@ export default async function MediaStatsPage({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">媒體與文章數</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          列出所有已登錄媒體與文章發現來源，包含尚未啟用抓取與僅作為引用來源的媒體。「今日」從台北時間 00:00 起算。更新於{' '}
-          {taipei(data.generatedAt)}。
+          更新於 {taipei(data.generatedAt)} · <MethodLink />
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -241,9 +241,6 @@ export default async function MediaStatsPage({
           </Link>
         ))}
       </div>
-      <p className="text-xs text-zinc-600">
-        藍綠標示沿用本站媒體分類，依媒體集團與一般認知歸類，用於首頁新聞量與事件頁的藍綠對照；未標示不代表中立。
-      </p>
       <TableScroller card label="媒體與文章數表格，可左右捲動">
         <table className="w-full min-w-[48rem] text-sm">
           <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950">
@@ -321,13 +318,6 @@ export default async function MediaStatsPage({
           </tbody>
         </table>
       </TableScroller>
-      <p className="text-xs text-zinc-600">
-        國家／地區依媒體營運或在地發行版本標示，不是新聞發生地或母公司國籍；跨國團隊與待確認項目另行標示。
-        「發現來源」的篇數是經該平台發現的原媒體文章；上方全站文章總數只按原媒體計算，不重複加總。
-        狀態：正常＝最近有新文章；無近期文章＝新聞類 6 小時、其他 24 小時內沒有新文章（來源可能暫停發稿）；抓取失敗＝近 3
-        小時的抓取全部失敗；未啟用＝尚未啟用定期抓取、已停用或僅作為引用來源。文章數以發布時間計；列表沒有提供發布時間的文章，會在抓取內文後才計入。7
-        天欄標「只有 N 天」的媒體，是新系統開始抓它還不滿一週，數字只涵蓋那幾天，不能和其他媒體直接比較。
-      </p>
     </div>
   );
 }

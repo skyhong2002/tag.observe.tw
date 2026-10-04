@@ -74,10 +74,11 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           </select>
         </label>
       </div>
-      <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-        {crawlMonth ? `本站收錄：${shortMonth(crawlMonth)} 發布、截至目前已抓取的文章，非媒體完整發稿量。` : '目前無法取得本站收錄量。'}{' '}
-        Similarweb：{shortMonth(trafficMonth)} 月流量原表值。缺資料顯示「—」。
-      </p>
+      {!crawlMonth && (
+        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
+          目前無法取得本站收錄量。
+        </p>
+      )}
       <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
         <table className="w-full table-fixed text-sm tabular-nums">
           <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
