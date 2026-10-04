@@ -68,7 +68,7 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
       ) : (
         <>
           <p className="mt-1 leading-5 text-zinc-500 dark:text-zinc-400">
-            {node ? `已比對 ${number(node.articles)} 篇內文` : '這段時間沒有已比對的內文'} · 依文章去重計數
+            {node ? `已比對 ${number(node.articles)} 篇內文` : '這段時間沒有已比對的內文'}
           </p>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-center">
             {stats.map((item) => (
@@ -124,9 +124,6 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
       >
         在新聞關係圖查看 →
       </Link>
-      <p className="mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-        同組：內文相近的報導以最早刊登者為來源。引用：內文明示引用的媒體。
-      </p>
     </section>
   );
 }

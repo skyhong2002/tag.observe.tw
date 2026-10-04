@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { type CloudTerm, layoutWordCloud } from '@/lib/word-cloud.mts';
 
 export interface MediaKeywords {
@@ -96,29 +95,6 @@ export default function MediaWordCloud({
         <p className="py-6 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
           {data ? '這段時間尚無足夠的關鍵字。' : '關鍵字暫時無法取得，文章仍可正常瀏覽。'}
         </p>
-      )}
-      {data && (
-        <p className="text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-          {data.capped ? '取最新 ' : '統計 '}
-          {data.sampledArticles.toLocaleString('zh-TW')} 篇 · 每篇每詞計一次
-          <br />
-          標籤＋標題關鍵詞，排除新聞分類詞。
-        </p>
-      )}
-      {!!data?.terms.length && (
-        <details className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <summary className="cursor-pointer py-1">查看詞頻列表</summary>
-          <ul className={`mt-2 grid gap-x-3 gap-y-1 ${layout === 'wide' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2'}`}>
-            {data.terms.map((term) => (
-              <li key={term.label}>
-                <Link href={href(term.label)} className="flex justify-between gap-2 py-1 hover:text-brand-700 dark:hover:text-brand-400">
-                  <span className="truncate">{term.label}</span>
-                  <span className="tabular-nums">{term.count}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </details>
       )}
     </section>
   );
