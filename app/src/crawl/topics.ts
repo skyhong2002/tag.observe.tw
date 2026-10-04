@@ -128,9 +128,22 @@ export const TOPIC_RULES: TopicRule[] = [
   {
     media: 'tvbs',
     fallbackImage: 'https://news.tvbs.com.tw/assets/default_og_image.DD7eKhl_.png',
-    url: 'https://news.tvbs.com.tw/pack/packnews',
-    pattern: /\/(pack|topics)\/[a-z]*\/?\d+/,
-    listings: [{ url: 'https://news.tvbs.com.tw/topics', pattern: /\/topics\/[a-z]+\/\d+$/ }],
+    // /pack/packnews now redirects here. The index shows ~36 picks; each
+    // category page lists all of its topics (~111 in total), dormant ones too.
+    url: 'https://news.tvbs.com.tw/topics',
+    pattern: /\/topics\/[a-z]+\/\d+$/,
+    kind: 'topic',
+    listings: [
+      ...['politics', 'world', 'life', 'local', 'money', 'entertainment', 'sports', 'china', 'health', 'tech', 'esg', 'travel', 'cars'].map(
+        (cat) => ({ url: `https://news.tvbs.com.tw/topics/${cat}`, pattern: /\/topics\/[a-z]+\/\d+$/, kind: 'topic' as const }),
+      ),
+      // Event microsites are only linked from the homepage's topic chip bar.
+      {
+        url: 'https://news.tvbs.com.tw/',
+        pattern: /^https:\/\/news\.tvbs\.com\.tw\/(events|exhibition)\/[\w-]+(\/(index\.html)?)?$/,
+        kind: 'feature',
+      },
+    ],
   },
   // Each card also links its articles as hotTopic/N#topic-link-M; the JSON-LD
   // ItemList carries the clean topic names.
