@@ -538,6 +538,9 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^https:\/\//,
     redirectHosts: ['btoday.cc', 'supr.link'],
     title: (a) => a.find('h4').text().trim(),
+    // 數位專題 slides: mostly one-off microsites, but the election 戰情室 is a
+    // running hub; both list dated /post/YYYYMMDDnnnn stories.
+    kind: 'auto',
   },
   {
     media: 'theinitium',
@@ -712,6 +715,8 @@ export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
               if (target.status < 200 || target.status >= 400) throw Error(`HTTP ${target.status}`);
               if (registrable(new URL(target.url).hostname) !== registrable(new URL(listing.url).hostname))
                 throw Error('redirect left official outlet');
+              // Retired packages (今周刊 /catalog/N) bounce back to the listing page.
+              if (stripTracking(target.url) === stripTracking(listing.url)) throw Error('short link fell back to the listing');
               item.url = stripTracking(target.url);
             } catch (error) {
               errors.push(`${item.url}: ${(error as Error).message}`);
