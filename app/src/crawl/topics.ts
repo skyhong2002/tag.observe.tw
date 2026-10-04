@@ -1,8 +1,8 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { registrable } from './topic-page.ts';
 import { womanyCollections, wycTopics, zaobaoSpecials } from './topic-extractors-b2.ts';
+import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
 // literal markers that have since drifted for most sites; these rules match
@@ -404,7 +404,9 @@ export const TOPIC_RULES: TopicRule[] = [
     },
     kind: 'feature',
     // The homepage names the newest packages, some of which the index leaves untitled.
-    listings: [{ url: 'https://techorange.com/', pattern: /techorange\.com\/feature\/(?!\d+\/)[^/?#]+\/?$/, title: heading, kind: 'feature' }],
+    listings: [
+      { url: 'https://techorange.com/', pattern: /techorange\.com\/feature\/(?!\d+\/)[^/?#]+\/?$/, title: heading, kind: 'feature' },
+    ],
   },
   {
     media: 'ithome',
