@@ -5,7 +5,7 @@ import type { FetchResult } from './fetch.ts';
 import { listSource } from './pipeline.ts';
 import { allSources } from './registry.ts';
 import type { SourceSpec } from './sources.ts';
-import { stripTitleSuffix, urlKey } from './text.ts';
+import { headlineFromPage, stripTitleSuffix, urlKey } from './text.ts';
 
 const spec = (media: string) => allSources().find((s) => s.media === media) as SourceSpec;
 
@@ -144,6 +144,35 @@ describe('title suffixes', () => {
   });
   it('leaves titles without the suffix alone', () => {
     expect(stripTitleSuffix('LIVE - 內湖洋流來襲', spec('nownews').titleSuffix)).toBe('LIVE - 內湖洋流來襲');
+  });
+});
+
+describe('discovered listing titles', () => {
+  it('takes the page headline when the anchor text wraps it with the lede', () => {
+    const listed =
+      '江啟臣競總成立！鄭麗文喊下架民進黨 禿子漢子燕子合體力挺 【記者陳力維／綜合報導】國民黨台中市長參選人江啟臣今（10/4）日在西屯區成立競選總部';
+    const page = '江啟臣競總成立！鄭麗文喊下架民進黨　禿子漢子燕子合體力挺';
+    expect(headlineFromPage(listed, page)).toBe(page);
+  });
+  it('takes the page headline when the anchor text is an overlong lede', () => {
+    const listed =
+      '尖沙咀有人墮海。今日(3日)清晨6時59分，有途人報案，指梳士巴利道18號K11 Musea對開10米海面有一具人形物體載浮載沉。救援船隻接報趕至撈起一名女子送回岸上';
+    expect(headlineFromPage(listed, '尖沙咀女子墮海　送院搶救終不治')).toBe('尖沙咀女子墮海　送院搶救終不治');
+  });
+  it('keeps a headline-sized anchor text and ignores short or missing page titles', () => {
+    expect(headlineFromPage('江啟臣競總成立　民眾黨台中隊突喊不出席：若造成困擾就不參加', '聯合新聞網新聞標題')).toBeNull();
+    expect(
+      headlineFromPage(
+        '尖沙咀有人墮海。今日(3日)清晨6時59分，有途人報案，指梳士巴利道18號K11 Musea對開10米海面有一具人形物體載浮載沉',
+        'on.cc東網',
+      ),
+    ).toBeNull();
+    expect(headlineFromPage('任意標題', null)).toBeNull();
+  });
+  it('strips the cw site suffix from page titles', () => {
+    expect(stripTitleSuffix('iPhone Duo登場！蘋果參戰摺疊機，是殺手鐧還是一場豪賭？｜天下雜誌', spec('cw').titleSuffix)).toBe(
+      'iPhone Duo登場！蘋果參戰摺疊機，是殺手鐧還是一場豪賭？',
+    );
   });
 });
 

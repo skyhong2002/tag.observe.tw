@@ -302,7 +302,10 @@ export const overrides: Record<string, SourceOverride> = {
       articleId: String.raw`^/news/(\d{14})-\d+$`,
     },
   },
-  cw: { list: { urls: [{ cat: 'news', url: 'https://www.cw.com.tw/' }], discover: { pattern: '^/article/\\d+' } } },
+  cw: {
+    list: { urls: [{ cat: 'news', url: 'https://www.cw.com.tw/' }], discover: { pattern: '^/article/\\d+' } },
+    titleSuffix: String.raw`\s*｜\s*天下雜誌`,
+  },
   // The news sitemap stopped updating at 2026-10-03 21:38 (+08) while the site
   // kept publishing; /realtime/ lists the latest ~24 stories. The sitemap stays
   // first so its dates and keywords apply whenever it moves again.

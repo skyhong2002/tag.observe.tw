@@ -12,6 +12,7 @@ import MediaWordCloud from '@/components/MediaWordCloud';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaContent } from '@/lib/article-content';
+import { clipHeadline } from '@/lib/event-presentation.mts';
 import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
 import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
 import type { SimilarityData } from '@/lib/similarity';
@@ -277,7 +278,7 @@ export default async function MediaPage({
                               {headline.section && (
                                 <span className="mr-1.5 text-xs font-normal text-brand-700 dark:text-brand-400">{headline.section}</span>
                               )}
-                              {headline.title}
+                              {clipHeadline(headline.title)}
                             </Link>
                           </h3>
                           {article.description && (

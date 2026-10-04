@@ -1,5 +1,5 @@
 import { API_ORIGIN, fetchMedia, fetchRanking, type MediaInfo, type Ranking } from './api';
-import { headlineTags, selectEventLead } from './event-presentation.mts';
+import { clipHeadline, headlineTags, selectEventLead } from './event-presentation.mts';
 import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
 import { type EventCoverage, type EventItem, type FeedTopic, fetchEvents, fetchTopics } from './pages';
@@ -43,14 +43,15 @@ function story(event: EventItem, media: MediaInfo): DemoStory | null {
   // Keep the selected outlet's original title, image and credit together.
   // Prefer tags the headline itself says; when it uses none of them verbatim
   // (宜蘭 for 宜蘭縣), fall back to the event's major tags rather than none.
-  const matched = headlineTags(lead.title, [...event.major, ...event.tags.map((t) => t.tag)]);
+  const title = clipHeadline(lead.title);
+  const matched = headlineTags(title, [...event.major, ...event.tags.map((t) => t.tag)]);
   const tags = matched.length > 0 ? matched : event.major;
   return {
     key: event.relatedEventPk ?? `rank-${event.rank}`,
     href: event.relatedEventPk
       ? `/eve/${event.relatedEventPk}/`
       : `/tag/${encodeURIComponent(tags[0] ?? event.major[0] ?? event.tags[0]?.tag ?? '')}/`,
-    title: lead.title,
+    title,
     tags,
     image: isAllowedImage(lead.image) ? lead.image : null,
     media: lead.media,

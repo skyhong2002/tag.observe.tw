@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanEventHeadline, headlineTags, selectEventLead } from '../../web/src/lib/event-presentation.mts';
+import { cleanEventHeadline, clipHeadline, HEADLINE_MAX, headlineTags, selectEventLead } from '../../web/src/lib/event-presentation.mts';
 
 const news = [
   { id: 1, media: 'taipeitimes', title: 'OpenAI cancels release of newest model', image: 'https://example.org/english.jpg' },
@@ -26,6 +26,19 @@ describe('shared event presentation', () => {
     expect(cleanEventHeadline(articles[1].title)).toBe('OpenAI與馬斯克的最新消息');
     expect(selectEventLead([{ title: ' ' }, { title: '短' }], major)).toBeNull();
     expect(selectEventLead([], major)).toBeNull();
+  });
+  it('does not let a title that runs into its lede win on tag hits', () => {
+    const runOn = { title: `OpenAI與馬斯克新消息 【記者／綜合報導】${'那對夫妻'.repeat(15)}` };
+    const headline = { title: 'OpenAI推出新中階AI模型' };
+    expect(selectEventLead([runOn, headline], major)).toBe(headline);
+    expect(selectEventLead([runOn], major)).toBe(runOn);
+  });
+  it('clips displayed headlines without touching short ones', () => {
+    expect(clipHeadline('短標題')).toBe('短標題');
+    const long = '字'.repeat(HEADLINE_MAX + 20);
+    expect([...clipHeadline(long)]).toHaveLength(HEADLINE_MAX);
+    expect(clipHeadline(long).endsWith('…')).toBe(true);
+    expect(clipHeadline('字'.repeat(HEADLINE_MAX))).toBe('字'.repeat(HEADLINE_MAX));
   });
   it('does not attach unrelated cluster names to the displayed headline', () => {
     expect(headlineTags(news[1].title, [...major, 'AI', '川普', 'OpenAI'])).toEqual(['OpenAI', 'AI']);

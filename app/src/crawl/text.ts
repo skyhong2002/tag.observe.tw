@@ -79,3 +79,16 @@ export function stripTracking(raw: string): string {
 export function stripTitleSuffix(title: string, suffix: string | undefined): string {
   return suffix ? title.replace(new RegExp(`(?:${suffix})\\s*$`), '').trim() : title;
 }
+
+// Anchor text from a listing card can wrap the section label and lede with
+// the headline (knews, cw), or be the lede alone (on.cc, foodnext). The
+// article page's own title replaces it when the anchor text wraps that title
+// or is longer than any headline would be.
+export const LISTING_TITLE_MAX = 60;
+export function headlineFromPage(listed: string, page: string | null | undefined): string | null {
+  const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
+  const a = squash(listed);
+  const b = squash(page ?? '');
+  if (b.length < 8 || b.length >= a.length) return null;
+  return a.includes(b) || a.length > LISTING_TITLE_MAX ? (page as string).trim() : null;
+}

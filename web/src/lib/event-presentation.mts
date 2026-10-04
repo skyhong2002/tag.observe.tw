@@ -4,6 +4,19 @@ const PREFIX = /^(快訊|快新聞|最新|影音?|影片|獨家|圖輯?|更新|�
 const SUFFIX = /\s*[｜|]\s*[^｜|]{1,12}$/;
 export const cleanEventHeadline = (title: string) => title.replace(PREFIX, '').replace(SUFFIX, '').trim();
 
+// Stored titles stay whole; a few outlets' titles run on into the lede, so
+// displayed headlines stop at this many characters.
+export const HEADLINE_MAX = 60;
+export function clipHeadline(title: string, max = HEADLINE_MAX): string {
+  const chars = [...title];
+  return chars.length > max
+    ? `${chars
+        .slice(0, max - 1)
+        .join('')
+        .trimEnd()}…`
+    : title;
+}
+
 export function selectEventLead<T extends { title: string }>(news: readonly T[], major: readonly string[]): T | null {
   return (
     news
@@ -13,7 +26,14 @@ export function selectEventLead<T extends { title: string }>(news: readonly T[],
         hits: major.filter((tag) => article.title.includes(tag)).length,
       }))
       .filter((item) => item.title.length >= 6)
-      .sort((a, b) => b.hits - a.hits || a.title.length - b.title.length)[0]?.article ?? null
+      // A title that runs into its lede names more tags; it only leads when
+      // no headline-sized title is left.
+      .sort(
+        (a, b) =>
+          Number(a.title.length > HEADLINE_MAX) - Number(b.title.length > HEADLINE_MAX) ||
+          b.hits - a.hits ||
+          a.title.length - b.title.length,
+      )[0]?.article ?? null
   );
 }
 
