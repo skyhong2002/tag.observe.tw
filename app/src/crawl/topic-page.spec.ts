@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { looksLikeStories, sharedTag, topicPageDate, topicPageGroups, topicPageImage } from './topic-page.ts';
+import {
+  articleShapes,
+  isNavigationKey,
+  keyShape,
+  looksLikeStories,
+  pickTopicStories,
+  sharedTag,
+  type TopicStory,
+  topicPageDate,
+  topicPageGroups,
+  topicPageImage,
+} from './topic-page.ts';
 
 describe('topicPageGroups', () => {
   it('groups same-site links by container and drops nav, footer and other sites', () => {
@@ -151,5 +162,83 @@ describe('topicPageImage', () => {
   it('returns null without a usable image', () => {
     expect(topicPageImage('<meta property="og:image" content="data:image/png;base64,AAAA">', 'https://www.example.com/')).toBeNull();
     expect(topicPageImage('<title>x</title>', 'https://www.example.com/')).toBeNull();
+  });
+});
+
+describe('isNavigationKey / keyShape', () => {
+  it('tells tag, author and sponsored links from stories', () => {
+    expect(isNavigationKey('www.inside.com.tw/tag/2-Apple')).toBe(true);
+    expect(isNavigationKey('newtalk.tw/plan/view/1183')).toBe(true);
+    expect(isNavigationKey('www.gvm.com.tw/author/317')).toBe(true);
+    expect(isNavigationKey('newtalk.tw/search?q=x')).toBe(true);
+    expect(isNavigationKey('newtalk.tw/news/view/2026-10-01/1063052')).toBe(false);
+    expect(isNavigationKey('www.inside.com.tw/feature/member-exclusive/37094-2025-rmn-white-paper')).toBe(false);
+    expect(isNavigationKey('news.ltn.com.tw#breakingnews/5594600')).toBe(false);
+  });
+  it('reduces a url_key to its URL pattern', () => {
+    expect(keyShape('newtalk.tw/news/view/2026-10-01/1063052')).toBe('newtalk.tw/news/_/9/#');
+    expect(keyShape('newtalk.tw/plan/view/1183')).toBe('newtalk.tw/plan/_/#');
+    expect(keyShape('udn.com/news/story/6885/9781?from=x')).toBe('udn.com/news/_/#/#');
+    expect(keyShape('news.tvbs.com.tw#4031364')).toBe('news.tvbs.com.tw#');
+    const keys = Array.from({ length: 50 }, (_, i) => `newtalk.tw/news/view/2026-09-${10 + (i % 20)}/${1060000 + i}`);
+    expect([...articleShapes([...keys, 'newtalk.tw/video/1'])]).toEqual(['newtalk.tw/news/_/9/#']);
+  });
+});
+
+describe('pickTopicStories', () => {
+  const story = (key: string, date?: string): TopicStory => ({ key, title: `一則關於${key}的新聞標題`, ...(date ? { date } : {}) });
+  const none = { furniture: () => false, crawled: () => false };
+
+  it('drops sponsored links mixed into the story list (newtalk /plan/view)', () => {
+    const news = [1, 2, 3, 4].map((i) => story(`newtalk.tw/news/view/2026-10-0${i}/10630${i}`, `2026-10-0${i}T00:00:00Z`));
+    const plan = [1181, 1182, 1183].map((i) => story(`newtalk.tw/plan/view/${i}`));
+    const picked = pickTopicStories([[...plan, ...news], news], { ...none, crawled: (k) => k.includes('/news/') });
+    expect(picked.map((s) => s.key)).toEqual(news.map((s) => s.key));
+  });
+  it("prefers the feature's articles to its cards' tag links (inside)", () => {
+    const card = (i: number) =>
+      `<article class="card"><h3 class="t"><a href="/feature/ai-war/3500${i}-chip">AI 晶片戰爭第${i}篇深度報導分析</a></h3><time datetime="2026-0${i}-01">x</time><ul class="tags">${[
+        'NPU',
+        'TPU',
+        'LPU',
+        'AI',
+      ]
+        .map((t, j) => `<li class="tag"><a href="/tag/${i}${j}-${t}">NPU 、 TPU 、 LPU 、 人工智慧</a></li>`)
+        .join('')}</ul></article>`;
+    const html = `<main><h1><a href="/feature/ai-war">AI 決勝 新晶片戰爭</a></h1><div class="list">${[1, 2, 3].map(card).join('')}</div></main>`;
+    const groups = topicPageGroups(html, 'https://www.inside.com.tw/feature/ai-war');
+    expect(groups[0][0].key).toContain('/tag/'); // the largest headline-like group, picked before
+    expect(groups.flat().map((s) => s.key)).not.toContain('www.inside.com.tw/feature/ai-war'); // the page's own link
+    const picked = pickTopicStories(groups, none);
+    expect(picked.map((s) => s.key)).toEqual([1, 2, 3].map((i) => `www.inside.com.tw/feature/ai-war/3500${i}-chip`));
+    expect(picked.every((s) => s.date)).toBe(true);
+  });
+  it('skips a block stored as stories of two other topics, even with more crawled stories', () => {
+    const own = ['a/1', 'a/2', 'a/3'].map((k) => story(`x.tw/${k}`));
+    const side = ['a/7', 'a/8', 'a/9', 'a/10'].map((k) => story(`x.tw/${k}`));
+    const stored = new Map([...side.map((s) => [s.key, 2] as const), [own[0].key, 1]]);
+    const picked = pickTopicStories([side, own], { furniture: (k) => (stored.get(k) ?? 0) >= 2, crawled: () => true });
+    expect(picked).toEqual(own);
+  });
+  it('breaks a tie in crawled stories by on-page dates, then by article-shaped links', () => {
+    const undated = ['n/1', 'n/2', 'n/3', 'n/4'].map((k) => story(`x.tw/${k}`));
+    const dated = ['n/5', 'n/6', 'n/7'].map((k) => story(`x.tw/${k}`, '2026-10-01T00:00:00Z'));
+    const crawled = (k: string) => /n\/[1256]$/.test(k);
+    expect(pickTopicStories([undated, dated], { ...none, crawled })).toEqual(dated);
+    const pages = ['p/a1', 'p/a2', 'p/a3', 'p/a4'].map((k) => story(`x.tw/${k}`));
+    const news = ['news/11', 'news/12', 'news/13'].map((k) => story(`x.tw/${k}`));
+    const shapes = new Set(['x.tw/news/#']);
+    expect(pickTopicStories([pages, news], { ...none, crawled: (k) => !k.endsWith('a4'), shapes })).toEqual(news);
+    // Without crawled stories: article-shaped headlines over a larger list.
+    expect(pickTopicStories([pages, news], { ...none, shapes })).toEqual(news);
+    expect(pickTopicStories([pages, news], none)).toEqual(pages);
+  });
+  it('keeps a two-story list whose cards carry a tag link (iThome)', () => {
+    const list = [story('www.ithome.com.tw/news/167237'), story('www.ithome.com.tw/tags/新聞'), story('www.ithome.com.tw/news/167238')];
+    expect(pickTopicStories([list], none).map((s) => s.key)).toEqual(['www.ithome.com.tw/news/167237', 'www.ithome.com.tw/news/167238']);
+  });
+  it('skips groups of short labels and returns nothing without a story list', () => {
+    const labels = ['政治', '社會', '國際', '財經'].map((t, i) => ({ key: `x.tw/s/${i}`, title: t }));
+    expect(pickTopicStories([labels], { ...none, crawled: () => true })).toEqual([]);
   });
 });

@@ -184,6 +184,7 @@ export function topicPageGroups(
   const ld = ldStoryDates($, base, articleId, now);
   $('header, footer, nav, aside, script, style').remove();
   const site = registrable(base.hostname);
+  const self = urlKey(base.href, articleId);
   const links: Array<{ a: Node; sig: string; key: string; title: string }> = [];
   $('a[href]').each((_, a) => {
     let u: URL;
@@ -194,6 +195,9 @@ export function topicPageGroups(
     }
     if (!/^https?:$/.test(u.protocol) || registrable(u.hostname) !== site) return;
     if (u.pathname.replace(/\/+$/, '') === '' && !u.search) return;
+    const key = urlKey(u.href, articleId);
+    // The page's own link (its title, a breadcrumb) is not one of its stories.
+    if (key === self) return;
     const sig = $(a)
       .parents()
       .slice(0, DEPTH)
@@ -204,7 +208,7 @@ export function topicPageGroups(
     // image or a date (華視's topic grid links its dates).
     const item = $(a).closest('li, article');
     const title = (item.length ? item.text() : $(a).text()).replace(/\s+/g, ' ').trim().slice(0, 160);
-    links.push({ a, sig, key: urlKey(u.href, articleId), title });
+    links.push({ a, sig, key, title });
   });
   const bySig = new Map<string, typeof links>();
   for (const l of links) {
@@ -266,8 +270,99 @@ export function topicPageGroups(
 
 /** A group reads like a story list when most items have headline-length text. */
 export function looksLikeStories(group: TopicStory[]): boolean {
-  const headlines = group.filter((s) => [...s.title.replace(/[\d\s\p{P}\p{S}]/gu, '')].length >= 8).length;
+  const headlines = group.filter((s) => headline(s.title)).length;
   return group.length >= 3 && headlines / group.length >= 0.6;
+}
+
+// Taxonomy and navigation pages: tag, category, author (womany /member/…),
+// search and sponsored (newtalk /plan/view/…) listings are never one of the
+// topic's stories.
+const NAV_SEGMENT =
+  /^(tags?|categor(y|ies)|cat|plans?|authors?|writers?|columnists?|search|keywords?|labels?|members?|login|signin|signup|register|subscribe|newsletter)$/i;
+/** A link to a taxonomy or navigation page rather than a story. */
+export function isNavigationKey(key: string): boolean {
+  const path = key.replace(/^[^/#?]*/, '');
+  if (path.startsWith('#')) return false; // host#articleId: an article
+  return path
+    .split('?')[0]
+    .split('/')
+    .some((seg) => NAV_SEGMENT.test(seg));
+}
+
+/**
+ * The URL pattern of a url_key, for comparing a link with the outlet's article
+ * URLs: host, the first path segment as is, later segments as # (digits only),
+ * 9 (with digits: dates, slugs with ids) or _ (words). Queries are left out
+ * (tracking and referral parameters vary):
+ * newtalk.tw/news/view/2026-10-01/1063052 -> newtalk.tw/news/_/9/#.
+ */
+export function keyShape(key: string): string {
+  const host = /^[^/#?]*/.exec(key)?.[0] ?? '';
+  const rest = key.slice(host.length);
+  if (rest.startsWith('#')) return `${host}#`;
+  const segs = rest.split('?')[0].split('/').filter(Boolean);
+  return `${host}/${segs.map((s, i) => (/^\d+$/.test(s) ? '#' : /\d/.test(s) ? '9' : i === 0 ? s.toLowerCase() : '_')).join('/')}`;
+}
+
+/** Shapes (keyShape) covering at least 2% of an outlet's article url_keys. */
+export function articleShapes(keys: string[]): Set<string> {
+  const count = new Map<string, number>();
+  for (const k of keys) count.set(keyShape(k), (count.get(keyShape(k)) ?? 0) + 1);
+  return new Set([...count].filter(([, n]) => n >= 2 && n >= keys.length * 0.02).map(([s]) => s));
+}
+
+/** What the outlet's other pages and our crawl say about a topic page's links. */
+export interface StoryEvidence {
+  /** Site furniture: the link is also on the outlet's other topic pages. */
+  furniture: (key: string) => boolean;
+  /** We crawled the story. */
+  crawled: (key: string) => boolean;
+  /** URL shapes of the outlet's articles (articleShapes); empty when unknown. */
+  shapes?: Set<string>;
+}
+
+// Links whose text is a short label (tag, section, author names) rather than
+// a headline. Untitled links (image-only cards) are not labels.
+function labelLinks(group: TopicStory[]): boolean {
+  const titles = group.map((s) => s.title).filter(Boolean);
+  return titles.length >= 3 && titles.filter((t) => headline(t)).length / titles.length < 0.3;
+}
+const headline = (title: string) => [...title.replace(/[\d\s\p{P}\p{S}]/gu, '')].length >= 8;
+
+/**
+ * The topic's own story list among a topic page's link groups. Navigation and
+ * taxonomy links (isNavigationKey) are dropped from every group; groups mostly
+ * of such links, of short labels or of site furniture are skipped. Of the rest,
+ * the group with the most stories we crawled (at least 2) wins, ties going to
+ * more stories with an on-page date, then to links shaped like the outlet's
+ * article URLs. Failing that (older stories, outlets we do not crawl), the
+ * group that reads like headlines (looksLikeStories), preferring links shaped
+ * like the outlet's articles, then the largest.
+ */
+export function pickTopicStories(groups: TopicStory[][], ev: StoryEvidence): TopicStory[] {
+  const shapes = ev.shapes ?? new Set<string>();
+  const share = (g: TopicStory[], f: (s: TopicStory) => boolean) => g.filter(f).length / g.length;
+  const scored = groups
+    .map((all) => ({ all, g: all.filter((s) => !isNavigationKey(s.key)) }))
+    // A group mostly of navigation links is a taxonomy block, not a list with
+    // a tag link on each card.
+    .filter(({ all, g }) => g.length > all.length / 2 && !labelLinks(g) && share(g, (s) => ev.furniture(s.key)) <= 0.5)
+    .map(({ all, g }) => ({
+      all,
+      g,
+      crawled: g.filter((s) => ev.crawled(s.key)).length,
+      dated: g.filter((s) => s.date).length,
+      articles: shapes.size && share(g, (s) => shapes.has(keyShape(s.key))) >= 0.5 ? 1 : 0,
+    }));
+  const [best] = scored
+    .filter((s) => s.crawled >= 2)
+    .sort((a, b) => b.crawled - a.crawled || b.dated - a.dated || b.articles - a.articles || b.g.length - a.g.length);
+  if (best) return best.g;
+  // The list as laid out (its cards' tag links included) reads like headlines.
+  const [listed] = scored
+    .filter((s) => looksLikeStories(s.all))
+    .sort((a, b) => b.articles - a.articles || b.g.length - a.g.length || b.dated - a.dated);
+  return listed?.g ?? [];
 }
 
 /**

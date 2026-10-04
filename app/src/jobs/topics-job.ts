@@ -3,7 +3,7 @@ import pLimit from 'p-limit';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
 import { classifyTopic, firstRunEnd, storyDate } from '../crawl/topic-kind.ts';
-import { looksLikeStories, type TopicStory, topicPageDate, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
+import { articleShapes, pickTopicStories, type TopicStory, topicPageDate, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
 import {
   childSelectorFor,
   fetchTopicListings,
@@ -154,13 +154,15 @@ export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicM
 // story list. Blocks repeated on the outlet's other topic pages ("latest
 // news", "most read", other topics' picks) are site furniture: a group is
 // skipped when over half of its links also appear on another topic page of
-// the same outlet fetched in this run. Of the rest, the group with the most
-// stories we crawled (at least 2) wins; failing that (older stories, outlets
-// we do not crawl such as 鏡報), the largest group that reads like headlines.
-// The chosen stories' dates (storyDates) classify the topic (議題/專題,
-// classifyTopic) unless its listing declared the kind; a page without stories
-// that is itself one article is dated by its own publish time. Sub-topic links
-// (rule.children) become rows.
+// the same outlet fetched in this run, or among the stories stored for two
+// other topics of the outlet (not the topic's parent or sub-topics). Of the
+// rest, pickTopicStories takes the one with the most stories we crawled,
+// else the one that reads like headlines, leaving out tag, author and other
+// navigation links and preferring dated stories and links shaped like the
+// outlet's article URLs. The chosen stories' dates (storyDates) classify the
+// topic (議題/專題, classifyTopic) unless its listing declared the kind; a page
+// without stories that is itself one article is dated by its own publish time.
+// Sub-topic links (rule.children) become rows.
 // Rows never classified are refreshed even when no longer listed.
 export async function refreshTopicPages(
   db: Db,
@@ -223,6 +225,24 @@ export async function refreshTopicPages(
       const k = `${row.media} ${key}`;
       seenOn.set(k, (seenOn.get(k) ?? new Set()).add(row.id));
     }
+  // Earlier runs: the stories stored for the outlet's other topics. A run
+  // reads few pages per outlet, so a sidebar is often on just one page here.
+  const storedOn = await storedTopicKeys(db, [...new Set(pages.filter((p) => p.ok).map((p) => p.row.media))]);
+  const shapes = new Map<string, Set<string>>();
+  const shapesOf = async (media: string) => {
+    let s = shapes.get(media);
+    if (!s) {
+      const rows = await db
+        .select({ key: articles.urlKey })
+        .from(articles)
+        .where(eq(articles.media, articleMediaOf(media)))
+        .orderBy(desc(articles.id))
+        .limit(1000);
+      s = articleShapes(rows.flatMap((r) => (r.key ? [r.key] : [])));
+      shapes.set(media, s);
+    }
+    return s;
+  };
   // A share image that several of the outlet's topics (or its listing's
   // fallback) use is the site logo, not a cover.
   const fallbackOf = new Map(TOPIC_RULES.map((r) => [r.media, r.fallbackImage]));
@@ -309,28 +329,25 @@ export async function refreshTopicPages(
         .where(eq(topics.id, row.id));
       continue;
     }
-    const own = groups.filter((g) => g.filter((s) => (seenOn.get(`${row.media} ${s.key}`)?.size ?? 0) > 1).length / g.length <= 0.5);
-    let stories: TopicStory[] = [];
-    let best = 0;
-    for (const group of own.slice(0, 8)) {
-      const [{ n }] = await db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(articles)
-        .where(
-          and(
-            eq(articles.media, articleMediaOf(row.media)),
-            inArray(
-              articles.urlKey,
-              group.map((s) => s.key),
-            ),
-          ),
-        );
-      if (Number(n) >= 2 && Number(n) > best) {
-        best = Number(n);
-        stories = group;
-      }
-    }
-    if (!stories.length) stories = own.find(looksLikeStories) ?? [];
+    const keys = [...new Set(groups.flat().map((s) => s.key))];
+    const crawled = new Set(
+      keys.length
+        ? (
+            await db
+              .select({ key: articles.urlKey })
+              .from(articles)
+              .where(and(eq(articles.media, articleMediaOf(row.media)), inArray(articles.urlKey, keys)))
+          ).map((r) => r.key)
+        : [],
+    );
+    const stored = storedOn.get(row.media);
+    const family = (id: number) => id === row.id || id === row.parentId || stored?.parentOf.get(id) === row.id;
+    let stories = pickTopicStories(groups, {
+      furniture: (key) =>
+        (seenOn.get(`${row.media} ${key}`)?.size ?? 0) > 1 || [...(stored?.rowsOf.get(key) ?? [])].filter((id) => !family(id)).length >= 2,
+      crawled: (key) => crawled.has(key),
+      shapes: await shapesOf(row.media),
+    });
     if (stories.length) found++;
     stories = stories.slice(0, 200);
     // A page without a story list that is one article: a single-piece 專題,
@@ -367,6 +384,29 @@ export async function refreshTopicPages(
       .where(eq(topics.id, row.id));
   }
   return { checked: due.length, found, covers, children, classified };
+}
+
+/** Per outlet, which topic rows store each story key, and each row's parent. */
+export async function storedTopicKeys(db: Db, media: string[]) {
+  const out = new Map<string, { rowsOf: Map<string, Set<number>>; parentOf: Map<number, number | null> }>();
+  if (!media.length) return out;
+  const rows = await db
+    .select({
+      id: topics.id,
+      media: topics.media,
+      parentId: topics.parentId,
+      keys: sql<unknown>`JSON_EXTRACT(${topics.pageStories}, '$[*].key')`,
+    })
+    .from(topics)
+    .where(and(inArray(topics.media, media), sql`JSON_LENGTH(${topics.pageStories}) > 0`));
+  for (const r of rows) {
+    const m = out.get(r.media) ?? { rowsOf: new Map(), parentOf: new Map() };
+    out.set(r.media, m);
+    m.parentOf.set(r.id, r.parentId);
+    const keys = typeof r.keys === 'string' ? (JSON.parse(r.keys) as unknown) : r.keys;
+    if (Array.isArray(keys)) for (const k of keys) if (typeof k === 'string') m.rowsOf.set(k, (m.rowsOf.get(k) ?? new Set()).add(r.id));
+  }
+  return out;
 }
 
 /** Publish dates of a topic's stories: our crawled copy, else the date the
