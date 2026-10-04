@@ -183,12 +183,15 @@ export default function SimilarityGraph({
             source: e.source,
             target: e.target,
             relationship: e,
+            // Edges run from the later or citing outlet to its source; the head
+            // sits on the source end so arrows follow the text's flow, source
+            // to follower. ECharts points a start symbol away from the line.
             // ECharts puts the built-in arrow's tip on the line end, so a thick
             // line's square end pokes out beside the tip. A path symbol is
             // centred on the line end instead: the line stops halfway into
             // the head, where the head is at least as wide as the line.
-            symbol: ['circle', 'path://M5 0L10 10L5 8L0 10Z'],
-            symbolSize: [0, [Math.max(12, 2 * width + 6), 14]],
+            symbol: ['path://M5 0L10 10L5 8L0 10Z', 'circle'],
+            symbolSize: [[Math.max(12, 2 * width + 6), 14], 0],
             lineStyle: {
               width,
               // ECharts draws the line and its arrowhead as two shapes sharing one

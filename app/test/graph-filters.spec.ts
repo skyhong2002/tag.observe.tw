@@ -115,10 +115,10 @@ describe('filtered relationships and hover summaries', () => {
   it('shows citation direction, relationship volume and escaped outlet names', () => {
     const tooltip = createGraphTooltip([...nodes, node('<b>x</b>', 1)], camps);
     const citation = tooltip({ edge: edges[0] }, edges);
-    expect(citation).toContain('large → blue');
+    expect(citation).toContain('blue → large');
     expect(citation).toContain('2 篇文章明示引用');
     const similar = tooltip({ edge: storyEdge }, [storyEdge]);
-    expect(similar).toContain('green → large');
+    expect(similar).toContain('large → green');
     expect(similar).toContain('95.0%');
     expect(tooltip({ edge: { ...storyEdge, score: null } }, [])).toContain('經同組配對歸源');
     const escaped = tooltip({ node: '<b>x</b>' }, []);

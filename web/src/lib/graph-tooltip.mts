@@ -27,15 +27,15 @@ export function createGraphTooltip(nodes: SimilarityNode[], camps: MediaCamps) {
         .sort((a, b) => b.count - a.count)
         .slice(0, 3);
       summary += related.length
-        ? `<br/>${related.map((edge) => `${name(edge.source)} → ${name(edge.target)}：${number(edge.count)} ${edge.kind === 'citation' ? '篇引用' : '篇歸源'}`).join('<br/>')}`
+        ? `<br/>${related.map((edge) => `${name(edge.target)} → ${name(edge.source)}：${number(edge.count)} ${edge.kind === 'citation' ? '篇引用' : '篇歸源'}`).join('<br/>')}`
         : '<br/>目前篩選與關係模式下沒有連線';
     } else {
       const edge = selection.edge;
-      heading = `<b>${name(edge.source)} → ${name(edge.target)}</b>`;
+      heading = `<b>${name(edge.target)} → ${name(edge.source)}</b>`;
       summary =
         edge.kind === 'citation'
-          ? `${number(edge.count)} 篇文章明示引用 · 箭頭指向引用來源`
-          : `${number(edge.count)} 篇同組報導 · 箭頭指向同組最早刊登來源${edge.score === null ? ' · 經同組配對歸源' : ` · 最高直接比對相似度 ${(edge.score * 100).toFixed(1)}%`}`;
+          ? `${number(edge.count)} 篇文章明示引用 · 箭頭由被引用的來源指向引用的媒體`
+          : `${number(edge.count)} 篇同組報導 · 箭頭由同組最早刊登的媒體指向較晚刊登的媒體${edge.score === null ? ' · 經同組配對歸源' : ` · 最高直接比對相似度 ${(edge.score * 100).toFixed(1)}%`}`;
     }
     return `<div role="tooltip">${heading}<div style="margin-top:6px">${summary}</div></div>`;
   };

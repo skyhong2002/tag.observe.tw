@@ -114,7 +114,7 @@ export default function MediaComparison({
                 <span className="ml-2 font-normal">
                   {focus && <span className="text-zinc-700 dark:text-zinc-300">{focus.label} · </span>}
                   <span className="text-amber-700 dark:text-amber-400">內文相近</span> ·{' '}
-                  <span className="text-violet-700 dark:text-violet-400">引用</span> · 箭頭指向來源
+                  <span className="text-violet-700 dark:text-violet-400">引用</span> · 箭頭由來源指向較晚或引用的一方
                 </span>
               </th>
             </tr>
@@ -180,7 +180,7 @@ export default function MediaComparison({
                             onClick={() => onSelect({ edge }, edge.kind, 'all')}
                             className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] ${edge.kind === 'citation' ? 'bg-violet-50 text-violet-800 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'}`}
                           >
-                            <span aria-hidden="true">{outgoing ? '→' : '←'}</span>
+                            <span aria-hidden="true">{outgoing ? '←' : '→'}</span>
                             <MediaIcon media={other} title={name} size={14} />
                             {name}
                             <span className="tabular-nums opacity-70">{number(edge.count)}</span>
@@ -200,7 +200,7 @@ export default function MediaComparison({
       </TableScroller>
       {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>}
       <p className="text-xs leading-6 text-zinc-500">
-        分析篇數為本期已完成比對的內文；同組最早、同組較晚、引用與被引用皆依各欄文章去重，涵蓋本期與所有媒體的關係，不隨圖上篩選改變；主要關係對象只列圖上媒體。同組指內文相近的同一組報導：同組最早是該組最早刊出的那篇，同組較晚是同組已有更早刊出的報導。主要關係對象依關係篇數列出前三項；依同組最早、同組較晚、引用他媒或被他媒引用排序時，只列該類關係的對象。箭頭指向同組最早或被引用的一方，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創；相近內文也可能來自通訊社稿或授權轉載。
+        分析篇數為本期已完成比對的內文；同組最早、同組較晚、引用與被引用皆依各欄文章去重，涵蓋本期與所有媒體的關係，不隨圖上篩選改變；主要關係對象只列圖上媒體。同組指內文相近的同一組報導：同組最早是該組最早刊出的那篇，同組較晚是同組已有更早刊出的報導。主要關係對象依關係篇數列出前三項；依同組最早、同組較晚、引用他媒或被他媒引用排序時，只列該類關係的對象。箭頭由同組最早或被引用的一方指向較晚或引用的一方，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創；相近內文也可能來自通訊社稿或授權轉載。
       </p>
     </div>
   );

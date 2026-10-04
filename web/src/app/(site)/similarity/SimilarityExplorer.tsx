@@ -146,7 +146,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
       </p>
       {showGroup && (
         <div className="space-y-2 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
-          <p className="text-zinc-500">完整分組包含未顯示在圖上的媒體；其他報導的箭頭都指向 {source.mediaTitle}。</p>
+          <p className="text-zinc-500">完整分組包含未顯示在圖上的媒體；箭頭都由 {source.mediaTitle} 指向其他報導。</p>
           <ol className="max-h-80 space-y-1 overflow-y-auto">
             {group.articles.map((member) => (
               <li key={member.id}>
@@ -507,7 +507,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
       : selection && 'edge' in selection
-        ? `${byId.get(selection.edge.source)?.name} → ${byId.get(selection.edge.target)?.name}`
+        ? `${byId.get(selection.edge.target)?.name} → ${byId.get(selection.edge.source)?.name}`
         : '圖上全部媒體';
   const highlightedCount = selection ? edges.filter((edge) => highlightedRelationship(edge, selection)).length : 0;
   const openBrowser = () => browser.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
@@ -648,8 +648,8 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
           </div>
           <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
             <p>
-              <span className="text-orange-600 dark:text-orange-400">→ 同組來源</span>
-              <span className="ml-3 text-violet-600 dark:text-violet-400">→ 引用來源</span>
+              <span className="text-orange-600 dark:text-orange-400">同組：最早 → 較晚</span>
+              <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
               <span className="ml-3">
                 {selection
                   ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`
@@ -668,7 +668,8 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
         </section>
         <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
           涵蓋期間內全部已比對文章：{number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則明示引用
-          {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''}；橘色箭頭統一指向同組最早刊登的來源。
+          {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''}
+          ；橘色箭頭統一由同組最早刊登的媒體指向較晚刊登的媒體。
         </p>
       </div>
       <section
@@ -811,7 +812,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 </div>
               )}
               <p className="text-xs leading-6 text-zinc-500">
-                相似新聞依配對分組，每組以最早刊登的一篇作為來源；其他報導全部直接指向它。來源依本期全部相似配對與刊登時間指定；下方只列圖上媒體之間的關係。
+                相似新聞依配對分組，每組以最早刊登的一篇作為來源，箭頭由它直接指向其他報導。來源依本期全部相似配對與刊登時間指定；下方只列圖上媒體之間的關係。
               </p>
               {hiddenSources > 0 && (
                 <p className="text-xs leading-6 text-zinc-500">
