@@ -40,3 +40,20 @@ export function readingParagraphs(body: string): string[] {
     .split(/\r?\n\s*\r?\n/)
     .filter(Boolean);
 }
+
+/**
+ * The opening of the body only — about three to four lines at reading width.
+ * Full texts belong to the publishers; the site never ships more than this.
+ */
+export function readingExcerpt(body: string, maxChars = 150): string {
+  const text = readingParagraphs(body)
+    .join('\n')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+  const characters = Array.from(text);
+  if (characters.length <= maxChars) return text;
+  const head = characters.slice(0, maxChars).join('');
+  const sentenceEnd = Math.max(head.lastIndexOf('。'), head.lastIndexOf('！'), head.lastIndexOf('？'));
+  const cut = sentenceEnd >= Math.floor(maxChars / 2) ? head.slice(0, sentenceEnd + 1) : head;
+  return `${cut.trimEnd()}……`;
+}

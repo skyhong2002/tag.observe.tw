@@ -804,7 +804,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   </div>
                   {!byId.get(selection.node)?.external && (
                     <MediaHoverLink media={selection.node} className={`${linkStyle} inline-block text-xs`}>
-                      查看這家媒體的站內內文 →
+                      查看這家媒體的站內報導 →
                     </MediaHoverLink>
                   )}
                 </div>

@@ -52,11 +52,11 @@ export interface MediaContent {
 // State sentences only; the 7-day policy and what is compared are in the
 // footer's 資料來源與計算方式 (components/method/article.tsx).
 export const CONTENT_STATUS: Record<ContentStatus, { label: string; detail: string }> = {
-  ok: { label: '站內內文', detail: '以下是本網站擷取的文章文字。' },
-  short: { label: '內文較短', detail: '已取得的文字較短，可能不完整。' },
+  ok: { label: '開頭節錄', detail: '以下是本網站擷取的文章開頭幾行；全文請至原站閱讀。' },
+  short: { label: '內文較短', detail: '已取得的文字較短，可能不完整；這裡同樣只顯示開頭幾行。' },
   missing: { label: '未取得正文', detail: '已讀取原站頁面，但沒有取得可保存的正文；標題與摘要不會代替全文。' },
   blocked: { label: '原站限制讀取', detail: '原站的存取限制使本站無法取得正文。' },
   error: { label: '讀取失敗', detail: '取得原站正文時發生錯誤，目前沒有可閱讀的完整正文。' },
   not_fetched: { label: '尚未取得正文', detail: '這篇文章已收錄，正文尚未擷取。' },
-  expired: { label: '超過站內閱讀期', detail: '這篇的站內閱讀期已過，標題、標籤與原站連結仍保留，全文請至原站閱讀。' },
+  expired: { label: '超過站內節錄期', detail: '這篇的站內節錄期已過，標題、標籤與原站連結仍保留，全文請至原站閱讀。' },
 };
