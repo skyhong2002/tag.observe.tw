@@ -419,7 +419,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     {lead.coverage && (
                       <div className={styles.heroCamp}>
                         <CampBadge c={lead.coverage} />
-                        <OutletStrip c={lead.coverage} media={data.media} max={12} />
+                        <OutletStrip c={lead.coverage} media={data.media} />
                       </div>
                     )}
                     <div className={styles.heroFoot}>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar } from '@/components/CampBar';
+import FitRow from '@/components/FitRow';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
@@ -93,44 +94,25 @@ export function ScoreBar({ score, max, width = 'w-16' }: { score: number; max: n
   );
 }
 
-/** Who is on the story: outlet marks and counts. Camp numbers live in CampLine. */
-export function OutletStrip({
-  c,
-  media,
-  max = 8,
-  compact = false,
-}: {
-  c: EventCoverage;
-  media: MediaInfo;
-  max?: number;
-  compact?: boolean;
-}) {
+/** Who is on the story: as many outlet marks as fit on one line, then counts. */
+export function OutletStrip({ c, media, compact = false }: { c: EventCoverage; media: MediaInfo; compact?: boolean }) {
   if (!c || c.outlets.length === 0) return null;
-  const shown = c.outlets.slice(0, max);
-  const rest = c.outlets.length - shown.length;
-  const outlet = (o: EventCoverage['outlets'][number]) => (
-    <MediaHoverLink
-      key={o.media}
-      media={o.media}
-      title={media[o.media]?.title ?? o.media}
-      icon={compact ? 12 : 14}
-      className="inline-flex items-center justify-center rounded p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-    >
-      <span className="sr-only">{media[o.media]?.title ?? o.media}</span>
-    </MediaHoverLink>
-  );
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-      <span className="flex flex-wrap items-center">{shown.map(outlet)}</span>
-      {rest > 0 && (
-        <details className="open:basis-full">
-          <summary className="cursor-pointer rounded px-1 tabular-nums hover:bg-zinc-100 dark:hover:bg-zinc-800">+{rest}</summary>
-          <div className="mt-1 flex max-w-full flex-wrap rounded-lg border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-            {c.outlets.slice(max).map(outlet)}
-          </div>
-        </details>
-      )}
-      <span className="tabular-nums">
+    <div className="flex min-w-0 flex-1 basis-40 items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+      <FitRow label="報導媒體">
+        {c.outlets.map((o) => (
+          <MediaHoverLink
+            key={o.media}
+            media={o.media}
+            title={media[o.media]?.title ?? o.media}
+            icon={compact ? 12 : 14}
+            className="inline-flex items-center justify-center rounded p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          >
+            <span className="sr-only">{media[o.media]?.title ?? o.media}</span>
+          </MediaHoverLink>
+        ))}
+      </FitRow>
+      <span className="shrink-0 tabular-nums">
         {c.outlets.length} 家{!compact && ` · ${c.articles} 篇`}
       </span>
     </div>
@@ -282,10 +264,7 @@ export default function EventCard({
   const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
   if (tier === 'row') {
     return (
-      <li
-        id={eventAnchor(e.rank)}
-        className="grid scroll-mt-20 grid-cols-[2rem_minmax(0,1fr)] gap-x-2 gap-y-1 py-2.5 sm:grid-cols-[2rem_minmax(0,1fr)_auto]"
-      >
+      <li id={eventAnchor(e.rank)} className="grid scroll-mt-20 grid-cols-[2rem_minmax(0,1fr)] gap-x-2 gap-y-1 py-2.5">
         <span className="text-base font-semibold tabular-nums text-zinc-500">{e.rank}</span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -297,11 +276,8 @@ export default function EventCard({
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <ScoreBar score={e.score} max={max} width="w-12" />
             <Tags e={e} limit={3} size="text-[11px]" />
+            {e.coverage && <CampLine c={e.coverage} compact />}
           </div>
-        </div>
-        <div className="col-start-2 flex flex-col gap-0.5 sm:col-start-3 sm:max-w-64 sm:items-end">
-          {e.coverage && <CampLine c={e.coverage} compact />}
-          <Compare e={e} />
         </div>
       </li>
     );
@@ -338,7 +314,7 @@ export default function EventCard({
               <FullBar c={e.coverage} />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                 <CampBadge c={e.coverage} />
-                <OutletStrip c={e.coverage} media={media} max={12} />
+                <OutletStrip c={e.coverage} media={media} />
               </div>
             </div>
           )}
@@ -378,7 +354,7 @@ export default function EventCard({
           {e.coverage && <CampLine c={e.coverage} />}
         </div>
       </div>
-      {e.coverage && <OutletStrip c={e.coverage} media={media} max={8} />}
+      {e.coverage && <OutletStrip c={e.coverage} media={media} />}
       <Headlines e={e} media={media} limit={3} skip={[img]} />
     </li>
   );
