@@ -145,7 +145,7 @@ function RankChange({ e }: { e: RankingEntry }) {
 
 function CampGaps({ gaps }: { gaps: CampGap[] }) {
   if (gaps.every((g) => g.items.length === 0)) {
-    return <p className={styles.notice}>本小時各事件的藍綠報導比例都在平常範圍內，沒有盲點。</p>;
+    return <p className={styles.notice}>目前事件表前 24 件的藍綠報導比例都在平常範圍內，沒有盲點。</p>;
   }
   return (
     <div className={styles.gapList}>
@@ -156,7 +156,7 @@ function CampGaps({ gaps }: { gaps: CampGap[] }) {
             {col.title}
           </p>
           {col.items.length === 0 ? (
-            <p className={styles.muted}>本小時沒有。</p>
+            <p className={styles.muted}>目前的事件裡沒有。</p>
           ) : (
             <ol>
               {col.items.map((e) => {
@@ -473,7 +473,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 事件表 <Arrow />
               </Link>
             </div>
-            <p className={styles.gapIntro}>相對於過去 24 小時的整體比例，哪一邊的媒體特別在寫、哪一邊幾乎沒報。</p>
+            <p className={styles.gapIntro}>
+              目前事件表前 24 件、各自過去 24 小時的報導中，哪一邊的媒體特別在寫、哪一邊幾乎沒報（以同期藍綠各自的發稿家數為基準）。
+            </p>
             <CampGaps gaps={data.gaps} />
 
             <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
