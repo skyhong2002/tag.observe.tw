@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CAMP_FILL, CAMP_LABEL } from '@/components/CampBar';
+import { CAMP_FILL } from '@/components/CampBar';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
@@ -8,13 +8,8 @@ import {
   CAMP_ORDER,
   type Camp,
   type CoverageOutlet,
-  defaultDir,
   type HourGroup,
   hourIso,
-  type OutletRow,
-  type OutletSort,
-  sortOutletRows,
-  type TagStat,
   type ThreadHour,
   type TimedArticle,
 } from '@/lib/event-thread.mts';
@@ -60,69 +55,6 @@ export function StatTiles({ tiles }: { tiles: Array<{ label: string; value: Reac
         </div>
       ))}
     </dl>
-  );
-}
-
-/** Every tag the thread carried, with its peak as a bar. Major tags are the
- *  ones the clustering named the event by; the rest are the context readers
- *  were missing on the old page. */
-export function TagRanking({ stats, limit = 24 }: { stats: TagStat[]; limit?: number }) {
-  const shown = stats.slice(0, limit);
-  const rest = stats.slice(limit);
-  const max = Math.max(1, ...shown.map((s) => s.peak));
-  return (
-    <div className={`${card} overflow-hidden`}>
-      <ol className="divide-y divide-zinc-100 dark:divide-zinc-800">
-        {shown.map((s) => (
-          <li
-            key={s.tag}
-            className="grid grid-cols-[minmax(0,10rem)_1fr_auto] items-center gap-x-3 px-3 py-1.5 text-sm sm:grid-cols-[minmax(0,12rem)_1fr_7rem_5rem]"
-          >
-            <Link
-              href={tagHref(s.tag)}
-              className={`truncate hover:underline ${s.major ? 'font-medium text-brand-700 dark:text-brand-400' : ''}`}
-              title={s.major ? `${s.tag}（主要標籤）` : s.tag}
-            >
-              {s.tag}
-            </Link>
-            <span className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800" aria-hidden>
-              <span
-                className={`block h-full rounded-full ${s.major ? 'bg-brand-600 dark:bg-brand-500' : 'bg-zinc-400 dark:bg-zinc-500'}`}
-                style={{ width: `${Math.max(1.5, (s.peak / max) * 100)}%` }}
-              />
-            </span>
-            <span
-              className="text-right text-xs tabular-nums text-zinc-600 dark:text-zinc-400"
-              title={s.peakAt ? `最高分出現在 ${taipeiHour(s.peakAt)}` : undefined}
-            >
-              {s.peak > 0 ? `最高 ${s.peak.toFixed(1)}` : '—'}
-            </span>
-            <span
-              className="hidden text-right text-xs tabular-nums text-zinc-600 sm:block dark:text-zinc-400"
-              title={s.hours ? undefined : '列為主要標籤，但未進入任何小時的前 12 名'}
-            >
-              {s.hours ? `${s.hours} 小時` : '—'}
-            </span>
-          </li>
-        ))}
-      </ol>
-      {rest.length > 0 && (
-        <details className="border-t border-zinc-200 px-3 py-2 text-xs dark:border-zinc-800">
-          <summary className="cursor-pointer text-zinc-600 dark:text-zinc-400">其餘 {rest.length} 個標籤</summary>
-          <p className="mt-2 flex flex-wrap gap-1">
-            {rest.map((s) => (
-              <Link
-                key={s.tag}
-                href={tagHref(s.tag)}
-                className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              >
-                {s.tag}
-              </Link>
-            ))}
-          </p>
-        </details>
-      )}
-    </div>
   );
 }
 
@@ -198,121 +130,6 @@ export function HourTable({ hours, maxScore }: { hours: ThreadHour[]; maxScore: 
             );
           })}
         </tbody>
-      </table>
-    </div>
-  );
-}
-
-/** Per-outlet counts, sortable through the URL like the /media tables. */
-export function OutletTable({
-  rows,
-  sort,
-  dir,
-  hrefFor,
-}: {
-  rows: OutletRow[];
-  sort: OutletSort;
-  dir: 'asc' | 'desc';
-  hrefFor: (sort: OutletSort, dir: 'asc' | 'desc') => string;
-}) {
-  const collator = new Intl.Collator('zh-Hant-TW-u-co-stroke');
-  const sorted = sortOutletRows(rows, sort, dir, collator);
-  const max = Math.max(1, ...rows.map((r) => r.articles));
-  const total = rows.reduce((n, r) => n + r.articles, 0);
-  const Th = ({ col, label, className = '' }: { col: OutletSort; label: string; className?: string }) => (
-    <th
-      className={`px-3 py-2 font-medium ${className}`}
-      aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}
-    >
-      <Link
-        href={hrefFor(col, sort === col ? (dir === 'asc' ? 'desc' : 'asc') : defaultDir(col))}
-        scroll={false}
-        className={`inline-flex items-center gap-0.5 whitespace-nowrap hover:text-brand-700 ${sort === col ? 'text-zinc-900 dark:text-zinc-100' : ''}`}
-      >
-        {label}
-        <span aria-hidden className={sort === col ? '' : 'invisible'}>
-          {dir === 'asc' ? '▲' : '▼'}
-        </span>
-      </Link>
-    </th>
-  );
-  return (
-    <div className={`${card} overflow-x-auto`}>
-      <table className="w-full min-w-[44rem] text-sm">
-        <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
-          <tr>
-            <Th col="title" label="媒體" className="sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-950" />
-            <Th col="camp" label="傾向" />
-            <Th col="articles" label="篇數" className="w-[26%] min-w-40" />
-            <Th col="first" label="最早報導" />
-            <Th col="last" label="最新報導" />
-            <th className="px-3 py-2 font-medium">最新標題</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          {sorted.map((r) => (
-            <tr key={r.media} className="group hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
-              <td className="sticky left-0 z-10 bg-white px-3 py-2 group-hover:bg-brand-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800">
-                <MediaHoverLink media={r.media} icon={16} className="flex items-center gap-2 font-medium hover:underline">
-                  <span className="whitespace-nowrap">{r.title}</span>
-                </MediaHoverLink>
-              </td>
-              <td className={`whitespace-nowrap px-3 py-2 text-xs ${CAMP_TEXT[r.camp]}`}>
-                <span className="inline-flex items-center gap-1">
-                  <CampDot camp={r.camp} />
-                  {CAMP_LABEL[r.camp]}
-                </span>
-              </td>
-              <td className="px-3 py-2" title={`${r.title}：${r.articles} 篇，佔 ${Math.round((r.articles / Math.max(total, 1)) * 100)}%`}>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 flex-1" aria-hidden>
-                    <div
-                      className={`h-2 rounded-r ${CAMP_FILL[r.camp]}`}
-                      style={{ width: `${Math.max(1.5, (r.articles / max) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="w-8 text-right tabular-nums">{r.articles}</span>
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{taipei(r.first)}</td>
-              <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{taipei(r.last)}</td>
-              <td className="max-w-[24rem] px-3 py-2">
-                <Link href={articleHref(r.latest)} className="line-clamp-1 hover:underline" title={r.latest.title}>
-                  {r.latest.title}
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot className="border-t border-zinc-300 bg-zinc-50 font-medium dark:border-zinc-700 dark:bg-zinc-950">
-          <tr>
-            <th scope="row" className="sticky left-0 z-10 bg-zinc-50 px-3 py-2 text-left font-medium dark:bg-zinc-950">
-              合計 {rows.length} 家
-            </th>
-            <td className="px-3 py-2 text-xs">
-              {CAMP_ORDER.map((c) => {
-                const n = rows.filter((r) => r.camp === c).length;
-                return n ? (
-                  <span key={c} className={`mr-2 whitespace-nowrap ${CAMP_TEXT[c]}`}>
-                    {CAMP_LABEL[c]} {n}
-                  </span>
-                ) : null;
-              })}
-            </td>
-            <td className="px-3 py-2 text-right tabular-nums">{total}</td>
-            <td className="px-3 py-2 text-xs">
-              {CAMP_ORDER.map((c) => {
-                const n = rows.filter((r) => r.camp === c).reduce((s, r) => s + r.articles, 0);
-                return n ? (
-                  <span key={c} className={`mr-2 whitespace-nowrap ${CAMP_TEXT[c]}`}>
-                    {CAMP_LABEL[c]} {n} 篇
-                  </span>
-                ) : null;
-              })}
-            </td>
-            <td colSpan={2} />
-          </tr>
-        </tfoot>
       </table>
     </div>
   );

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CAMP_LABEL, FullBar } from '@/components/CampBar';
 import EventChart, { type EventSeriesPoint } from '@/components/EventChart';
+import EventTagCloud from '@/components/EventTagCloud';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei, taipeiHour } from '@/lib/api';
@@ -24,18 +25,8 @@ import {
 } from '@/lib/event-thread.mts';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
-import {
-  ByOutlet,
-  CAMP_TEXT,
-  CampColumns,
-  CampDot,
-  HourTable,
-  OutletTable,
-  SectionTitle,
-  StatTiles,
-  TagRanking,
-  Timeline,
-} from './sections';
+import OutletTable from './OutletTable';
+import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, HourTable, SectionTitle, StatTiles, Timeline } from './sections';
 
 export const revalidate = 120;
 
@@ -159,8 +150,12 @@ export default async function EventThreadPage({
     for (const [k, v] of Object.entries(merged)) if (v) next.set(k, v);
     return `/eve/${t.id}/${next.size ? `?${next}` : ''}${hash ? `#${hash}` : ''}`;
   };
+  // Header links: the active column flips direction, any other starts at its default.
   const sortHref = (s: OutletSort, d: 'asc' | 'desc') =>
     href({ sort: s === 'articles' && d === 'desc' ? undefined : s, dir: s === 'articles' && d === 'desc' ? undefined : d }, 'outlets');
+  const sortHrefs = Object.fromEntries(
+    OUTLET_SORTS.map((s) => [s, sortHref(s, s === sort ? (dir === 'asc' ? 'desc' : 'asc') : defaultDir(s))]),
+  ) as Record<OutletSort, string>;
   // Headlines the snapshot kept, for threads whose coverage query is unavailable or empty.
   const seen = new Set<string>();
   const news: News[] = [];
@@ -171,9 +166,9 @@ export default async function EventThreadPage({
         news.push(n);
       }
   const jump = [
+    ['trend', '時間變化'],
     ['tags', '標籤'],
     ['outlets', '各媒體報導量'],
-    ['trend', '時間變化'],
     ['headlines', '標題對照'],
   ] as const;
 
@@ -277,18 +272,43 @@ export default async function EventThreadPage({
 
       <section className="space-y-3">
         <SectionTitle
+          id="trend"
+          note="上：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白），虛線為這則事件在事件表上的名次（右軸，第 1 名在最上面，未上榜的小時留空）；下：所有媒體帶有任一主要標籤的報導篇數。灰底為這則事件出現在事件表上的時段，前後各多顯示 12 小時。"
+        >
+          時間變化
+        </SectionTitle>
+        {series && series.points.length > 1 && (
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+            <EventChart
+              points={series.points}
+              tags={series.tags}
+              active={{ from: t.firstTime, to: t.lastTime }}
+              ranks={series.points.map((p) => rankByHour.get(p.t) ?? null)}
+            />
+          </div>
+        )}
+        <h3 className="text-sm font-medium">
+          每小時名次與標籤{' '}
+          <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">點時間可看當時整張事件表；標籤後的數字是該小時分數。</span>
+        </h3>
+        <HourTable hours={hoursAsc} maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))} />
+      </section>
+
+      <section className="space-y-3">
+        <SectionTitle
           id="tags"
           note={
             <>
-              每小時事件表會列出這件事的前 12 個標籤與分數；這裡合併整段期間，依最高分排序。
+              每小時事件表會列出這件事的前 12
+              個標籤與分數；這裡合併整段期間，字越大最高分越高，移到字上可看分數與出現小時數，點選進入標籤頁。
               <span className="text-brand-700 dark:text-brand-400">橘色</span>是分群時認定的主要標籤（{t.majorTags.join('、')}
-              ），報導分布與下方標題對照都依主要標籤計算，其餘標籤只顯示在這裡與每小時列表。
+              ），報導分布與下方標題對照都依主要標籤計算，其餘標籤只出現在這裡與上方每小時列表。
             </>
           }
         >
           標籤（{stats.length}）
         </SectionTitle>
-        <TagRanking stats={stats} />
+        <EventTagCloud stats={stats} hours={data.hours.length} />
       </section>
 
       <section className="space-y-3">
@@ -339,34 +359,10 @@ export default async function EventThreadPage({
           </div>
         )}
         {rows.length > 0 ? (
-          <OutletTable rows={rows} sort={sort} dir={dir} hrefFor={sortHref} />
+          <OutletTable rows={rows} sort={sort} dir={dir} hrefs={sortHrefs} />
         ) : (
           cov && <p className="text-sm text-zinc-600 dark:text-zinc-400">這段期間沒有帶主要標籤的報導。</p>
         )}
-      </section>
-
-      <section className="space-y-3">
-        <SectionTitle
-          id="trend"
-          note="上：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白），虛線為這則事件在事件表上的名次（右軸，第 1 名在最上面，未上榜的小時留空）；下：所有媒體帶有任一主要標籤的報導篇數。灰底為這則事件出現在事件表上的時段，前後各多顯示 12 小時。"
-        >
-          時間變化
-        </SectionTitle>
-        {series && series.points.length > 1 && (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-            <EventChart
-              points={series.points}
-              tags={series.tags}
-              active={{ from: t.firstTime, to: t.lastTime }}
-              ranks={series.points.map((p) => rankByHour.get(p.t) ?? null)}
-            />
-          </div>
-        )}
-        <h3 className="text-sm font-medium">
-          每小時名次與標籤{' '}
-          <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">點時間可看當時整張事件表；標籤後的數字是該小時分數。</span>
-        </h3>
-        <HourTable hours={hoursAsc} maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))} />
       </section>
 
       <section className="space-y-3">
