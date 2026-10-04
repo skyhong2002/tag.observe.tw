@@ -124,43 +124,60 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
   return <div ref={ref} className="h-96 w-full" role="img" aria-label="每日相似配對、內文相同、明示引用與比對篇數" />;
 }
 
-type SortKey = 'name' | 'articles' | 'pairs' | 'citing' | 'cited' | 'rate';
+type SortKey = 'name' | 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
 const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
   { key: 'name', label: '媒體', numeric: false },
   { key: 'articles', label: '比對篇數', title: '期間內相似度索引已比對的文章數', numeric: true },
-  { key: 'pairs', label: '相似配對', title: '至少一端是這家媒體文章的相似配對；一組配對會同時算進兩家媒體', numeric: true },
-  { key: 'citing', label: '引用他媒', title: '這家媒體文章內文明示引用其他媒體的次數', numeric: true },
+  {
+    key: 'copied',
+    label: '被抄',
+    title: '這家媒體的文章之後有其他媒體刊出相似內容的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
+    numeric: true,
+  },
+  {
+    key: 'copying',
+    label: '抄別人',
+    title: '這家媒體的文章刊出時已有其他媒體相似文章的篇數（文章去重）；百分比為佔比對篇數的比例；同時刊登的不計方向',
+    numeric: true,
+  },
+  { key: 'citing', label: '引用他媒', title: '這家媒體文章內文明示引用其他媒體的次數；百分比為佔比對篇數的比例', numeric: true },
   { key: 'cited', label: '被引用', title: '其他媒體文章內文明示引用這家媒體的次數', numeric: true },
-  { key: 'rate', label: '每百篇相似配對', title: '相似配對 ÷ 比對篇數 × 100；沒有比對篇數時不計算', numeric: true },
 ];
 interface Row {
   media: string;
   name: string;
   articles: number;
-  pairs: number;
+  copied: number;
+  copying: number;
   citing: number;
   cited: number;
-  rate: number | null;
+}
+
+/** A count with its share of the outlet's compared articles. */
+function Share({ value, of }: { value: number; of: number }) {
+  if (!value) return <span className="text-zinc-300 dark:text-zinc-700">0</span>;
+  return (
+    <>
+      {number(value)}
+      {of > 0 && <span className="ml-1.5 text-xs text-zinc-500 dark:text-zinc-400">{Math.round((value / of) * 100)}%</span>}
+    </>
+  );
 }
 
 function OutletTable({ data }: { data: SimilarityDaily }) {
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
   const rows = useMemo(() => {
-    const list: Row[] = data.media.map((m) => {
-      const articles = sum(m.articles),
-        pairs = sum(m.pairs);
-      return {
-        media: m.media,
-        name: m.name,
-        articles,
-        pairs,
-        citing: sum(m.citing),
-        cited: sum(m.cited),
-        rate: articles > 0 ? (pairs / articles) * 100 : null,
-      };
-    });
-    const value = (row: Row) => (sort === 'name' ? 0 : (row[sort] ?? -1));
+    const list: Row[] = data.media.map((m) => ({
+      media: m.media,
+      name: m.name,
+      articles: sum(m.articles),
+      copied: sum(m.copied),
+      copying: sum(m.copying),
+      citing: sum(m.citing),
+      cited: sum(m.cited),
+    }));
+    const value = (row: Row) => (sort === 'name' ? 0 : row[sort]);
     return list.sort((a, b) => {
       const order = sort === 'name' ? a.name.localeCompare(b.name, 'zh-Hant') : value(a) - value(b);
       return (descending ? -order : order) || b.articles - a.articles || a.media.localeCompare(b.media);
@@ -178,7 +195,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
   return (
     <TableScroller label="各媒體每日比對表格，可左右捲動">
       <table className="w-full min-w-[40rem] border-collapse text-sm">
-        <caption className="sr-only">期間內各媒體的比對篇數、相似配對與引用</caption>
+        <caption className="sr-only">期間內各媒體的比對篇數、被抄與抄別人的篇數、引用與被引用</caption>
         <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
           <tr className="border-b border-zinc-200 dark:border-zinc-800">
             {columns.map((column) => (
@@ -214,12 +231,16 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                 </div>
               </th>
               <td className={`${cell} ${muted(row.articles)}`}>{number(row.articles)}</td>
-              <td className={`${cell} ${muted(row.pairs)}`}>{number(row.pairs)}</td>
-              <td className={`${cell} ${muted(row.citing)}`}>{number(row.citing)}</td>
-              <td className={`${cell} ${muted(row.cited)}`}>{number(row.cited)}</td>
-              <td className={`${cell} ${row.rate === null ? 'text-zinc-300 dark:text-zinc-700' : ''}`}>
-                {row.rate === null ? '—' : row.rate.toFixed(1)}
+              <td className={cell}>
+                <Share value={row.copied} of={row.articles} />
               </td>
+              <td className={cell}>
+                <Share value={row.copying} of={row.articles} />
+              </td>
+              <td className={cell}>
+                <Share value={row.citing} of={row.articles} />
+              </td>
+              <td className={`${cell} ${muted(row.cited)}`}>{number(row.cited)}</td>
             </tr>
           ))}
         </tbody>
@@ -313,7 +334,8 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
               各媒體
             </h3>
             <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              期間合計。一組相似配對同時算進雙方媒體，所以各媒體加總是總配對數的兩倍；只被引用、沒有收錄內文的媒體比對篇數為 0。
+              期間合計，依文章去重。被抄：這家媒體的文章之後有其他媒體刊出相似內容；抄別人：刊出時已有其他媒體的相似文章。百分比是佔比對篇數的比例；同時刊登的配對不計方向。只被引用、沒有收錄內文的媒體比對篇數為
+              0。
             </p>
             <OutletTable data={data} />
           </section>

@@ -404,6 +404,10 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       const daily = await app.inject('/api/v1/similarity/daily');
       expect(daily.statusCode).toBe(200);
       expect(daily.json().totals.pairs.reduce((a: number, b: number) => a + b, 0)).toBeGreaterThan(0);
+      // The copy came after the original, so cna copied and setn was copied, each once per article.
+      const outlet = (id: string) => daily.json().media.find((m: { media: string }) => m.media === id);
+      expect(outlet('cna').copying.reduce((a: number, b: number) => a + b, 0)).toBeGreaterThan(0);
+      expect(outlet('cna').copied.length).toBe(daily.json().days.length);
       expect((await app.inject('/api/v1/similarity?from=2026-01-01&to=2026-03-01')).statusCode).toBe(400);
       expect((await app.inject('/api/v1/similarity?threshold=NaN')).statusCode).toBe(400);
       expect((await app.inject('/api/v1/articles/999999999/content')).statusCode).toBe(404);
