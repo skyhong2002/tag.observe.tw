@@ -235,7 +235,19 @@ export default async function EventThreadPage({
           / 事件 #{t.id}
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{lead ? cleanEventHeadline(lead.title) : t.majorTags.join('、')}</h1>
-        {lead && <p className="mt-1 text-sm text-zinc-600">主要標籤：{t.majorTags.join('、')}</p>}
+        {lead && (
+          <p className="mt-1 text-sm text-zinc-600">
+            主要標籤：
+            {t.majorTags.map((tag, i) => (
+              <span key={tag}>
+                {i > 0 && '、'}
+                <Link href={`/tag/${encodeURIComponent(tag)}`} className="text-brand-700 hover:underline dark:text-brand-400">
+                  {tag}
+                </Link>
+              </span>
+            ))}
+          </p>
+        )}
         <p className="mt-1 text-sm text-zinc-600">
           {taipeiHour(t.firstTime)} 至 {taipeiHour(t.lastTime)} · 持續 {t.hours} 小時
           {t.hoursTotal && t.hoursTotal > t.hours ? `（含延續事件共 ${t.hoursTotal} 小時）` : ''} · 最高分 {t.maxScore.toFixed(1)}（
