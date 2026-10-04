@@ -1,8 +1,10 @@
-// The API's displayed deadline and the daily body cleanup share this duration.
+// Normal SSD cache lifetime since acquisition, restore, or last use.
+// Disk pressure can shorten this to seven idle days, outside the public window.
+// Eviction additionally requires verified NAS archival; failure keeps the cache.
 export const BODY_RETENTION_MS = 90 * 86400e3;
 
 // Readers only get the body for this long after publication. Storage keeps it
-// for BODY_RETENTION_MS so similarity and journalist comparisons still work;
+// normally for BODY_RETENTION_MS so similarity and journalist comparisons still work;
 // every public response masks the body, its length and its status outside the
 // window, so the API cannot tell a hidden body from a deleted one.
 export const PUBLIC_BODY_WINDOW_MS = 7 * 86400e3;

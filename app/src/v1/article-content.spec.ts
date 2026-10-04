@@ -42,7 +42,9 @@ function fakeDb(rows: unknown[], discoveries: unknown[] = []) {
   };
   const discoveryChain = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue(discoveries) };
   const select = vi.fn().mockReturnValueOnce(chain).mockReturnValue(discoveryChain);
-  return { db: { select } as unknown as Db, select, chain, discoveryChain };
+  const touchWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
+  const update = vi.fn(() => ({ set: () => ({ where: touchWhere }) }));
+  return { db: { select, update } as unknown as Db, select, chain, discoveryChain, update, touchWhere };
 }
 describe('stored article content', () => {
   const soon = new Date('2026-10-05T00:00:00Z');

@@ -1,0 +1,15 @@
+[Unit]
+Description=Archive parent-site MySQL data into verified NAS nearline packages
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 /home/deck/.local/share/tag-legacy-nearline/pipeline.py --config /home/deck/.config/tag-legacy-nearline/config.json run
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=3h
+KillMode=control-group
+

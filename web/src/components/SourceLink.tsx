@@ -13,6 +13,7 @@ export default function SourceLink({
   return (
     <a
       href={url}
+      data-analytics="open_original"
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${label}（另開視窗）`}

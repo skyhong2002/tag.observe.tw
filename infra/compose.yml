@@ -13,6 +13,15 @@ services:
     ports: ["127.0.0.1:13306:3306"]
     volumes: ["./data/mariadb:/var/lib/mysql", "./db:/docker-entrypoint-initdb.d:ro"]
     healthcheck: { test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"], interval: 10s, timeout: 5s, retries: 10 }
+  # Web UI for the DB; local port only, exposed tailnet-only via `tailscale serve --https=11443`.
+  adminer:
+    image: adminer:4.8.1
+    container_name: tag-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports: ["127.0.0.1:18134:8080"]
+    depends_on: [db]
   redis:
     image: redis:7-alpine
     container_name: tag-redis

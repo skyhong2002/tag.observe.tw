@@ -48,45 +48,71 @@ const campOptions = [
 ] as const;
 const rangeDays = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86400e3) + 1;
 
-function ArticleCard({ article, label }: { article: SimilarityArticle; label?: string }) {
+/** One article on one line: outlet, headline, time and byline. */
+function ArticleLine({ article, badge, dim = false }: { article: SimilarityArticle; badge?: string; dim?: boolean }) {
+  const when = Number.isFinite(Date.parse(article.publishedAt)) ? taipei(article.publishedAt) : '刊登時間未取得';
   return (
-    <div className="min-w-0 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-950/60">
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+    <div className={`flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 ${dim ? 'text-zinc-600 dark:text-zinc-400' : ''}`}>
+      <span className="flex shrink-0 items-baseline gap-1.5 text-xs">
+        {badge && <span className="rounded bg-zinc-200 px-1 py-px text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{badge}</span>}
         <MediaHoverLink media={article.media} className={`${linkStyle} font-medium`}>
           {article.mediaTitle}
         </MediaHoverLink>
-        <span className="text-zinc-500">
-          {article.country} · {article.countryCode}
-        </span>
-        {label && <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{label}</span>}
-      </div>
-      <h3 className="text-sm font-medium leading-6">
-        <Link href={`/article/${article.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
-          {article.title}
-        </Link>
-      </h3>
-      <p className="mt-3 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-        署名：{article.authors.length ? article.authors.join('、') : '未取得'}
-        <br />
-        <time dateTime={article.publishedAt}>
-          {Number.isFinite(Date.parse(article.publishedAt)) ? taipei(article.publishedAt) : '刊登時間未取得'}
-        </time>
-        （台北） · 正規化 {number(article.bodyLength)} 字元
-      </p>
-      {article.attributions.length > 0 && (
-        <p className="mt-2 text-xs leading-5 text-violet-700 dark:text-violet-400">
-          明示引用：{article.attributions.map((source) => `${source.name}（${source.countryCode}）`).join('、')}
-        </p>
-      )}
-      <div className="mt-3 flex flex-wrap gap-4 text-xs">
-        <Link href={`/article/${article.id}/`} className={linkStyle}>
-          站內閱讀
-        </Link>
-        <a href={article.url} target="_blank" rel="noopener noreferrer" className={linkStyle}>
-          媒體原文 ↗
+        {article.countryCode !== 'TW' && <span className="text-zinc-500">{article.country}</span>}
+      </span>
+      <Link
+        href={`/article/${article.id}/`}
+        className="min-w-0 flex-1 basis-64 text-sm font-medium leading-6 hover:text-brand-700 dark:hover:text-brand-400"
+      >
+        {article.title}
+      </Link>
+      <span className="shrink-0 text-xs text-zinc-500 tabular-nums">
+        <time dateTime={article.publishedAt}>{when}</time>
+        {article.authors.length > 0 && ` · ${article.authors.join('、')}`}{' '}
+        <a href={article.url} target="_blank" rel="noopener noreferrer" className={linkStyle} title="媒體原文">
+          ↗<span className="sr-only">{article.mediaTitle} 原文</span>
         </a>
-      </div>
+      </span>
     </div>
+  );
+}
+
+/** A quoted passage clamped to two lines, with a toggle only when it actually overflows. */
+function Passage({ lead, text }: { lead: ReactNode; text: string }) {
+  const [full, setFull] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el && !full) setOverflows(el.scrollHeight > el.clientHeight + 1);
+  }, [full]);
+  return (
+    <div className="flex items-start gap-3 text-xs leading-5 text-zinc-500">
+      <p ref={ref} className={`min-w-0 flex-1 break-words ${full ? '' : 'line-clamp-2'}`}>
+        {lead} {text}
+      </p>
+      {(overflows || full) && (
+        <button type="button" onClick={() => setFull((value) => !value)} aria-expanded={full} className={`${linkStyle} shrink-0`}>
+          {full ? '收合' : '展開'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CitationEvidence({ article, source }: { article: SimilarityArticle; source: SimilarityArticle['attributions'][number] }) {
+  return (
+    <article className="min-w-0 space-y-1 py-3">
+      <ArticleLine article={article} />
+      <Passage
+        lead={
+          <span className="font-medium text-violet-700 dark:text-violet-400">
+            明示引用 {source.name}（{source.country}）
+          </span>
+        }
+        text={source.evidence}
+      />
+    </article>
   );
 }
 
@@ -94,82 +120,66 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
   const { article, source, group, directPair } = origin;
   const [showGroup, setShowGroup] = useState(false);
   const [showPairs, setShowPairs] = useState(false);
+  const toggle = `${linkStyle} underline-offset-2`;
   return (
-    <article
-      className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-      data-testid="story-origin"
-      data-source-id={source.id}
-      data-article-id={article.id}
-    >
-      <p className="text-xs font-medium text-brand-700 dark:text-brand-400">
-        同題報導對照 · {article.mediaTitle} ↔ {source.mediaTitle}
-      </p>
-      <p className="text-xs leading-6 text-zinc-500">同組 {group.articles.length} 篇新聞，統一連回最早刊登的這篇來源。</p>
-      {group.tiedFirst > 1 && (
-        <p className="text-xs text-zinc-500">有 {group.tiedFirst} 篇同時最早刊登；依固定規則選定此篇作為共同來源。</p>
-      )}
-      <ArticleCard article={source} label="來源 · 同組最早刊登" />
-      <ArticleCard article={article} label="同組報導 → 上方來源" />
+    <article className="min-w-0 space-y-1 py-3" data-testid="story-origin" data-source-id={source.id} data-article-id={article.id}>
+      <ArticleLine article={article} />
+      <ArticleLine article={source} badge="來源" dim />
       {directPair ? (
-        <details className="text-xs">
-          <summary className="cursor-pointer py-2">與來源直接比對 {(directPair.score * 100).toFixed(1)}% · 查看共同段落</summary>
-          <p className="break-words leading-6 text-zinc-500">{directPair.evidence}</p>
-        </details>
+        <Passage
+          lead={<span className="font-medium text-brand-700 dark:text-brand-400">與來源相似 {(directPair.score * 100).toFixed(1)}%</span>}
+          text={directPair.evidence}
+        />
       ) : (
-        <p className="text-xs leading-6 text-zinc-500">由相似配對歸入同組，直接連回共同來源；這兩篇沒有直接比對分數。</p>
+        <p className="text-xs leading-5 text-zinc-500">由相似配對歸入同組，直接連回共同來源；這兩篇沒有直接比對分數。</p>
       )}
-      <details className="text-xs" onToggle={(event) => setShowGroup(event.currentTarget.open)}>
-        <summary className="cursor-pointer py-2 font-medium text-brand-700 dark:text-brand-400">
-          查看同組全部 {group.articles.length} 篇新聞
-        </summary>
-        {showGroup && (
-          <div className="space-y-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
-            <p className="text-zinc-500">完整分組包含未顯示在圖上的媒體；其他報導的箭頭都指向 {source.mediaTitle}。</p>
-            <ol className="max-h-80 space-y-3 overflow-y-auto">
-              {group.articles.map((member) => (
-                <li key={member.id} className="space-y-1 border-b border-zinc-200 pb-3 last:border-0 dark:border-zinc-800">
-                  <p className="font-medium">
-                    {member.id === source.id ? `來源：${source.mediaTitle}` : `${member.mediaTitle} → ${source.mediaTitle}`}
-                  </p>
-                  <Link href={`/article/${member.id}/`} className={linkStyle}>
-                    {member.title}
-                  </Link>
-                  <p className="text-zinc-500">
-                    {Number.isFinite(Date.parse(member.publishedAt)) ? `${taipei(member.publishedAt)}（台北）` : '刊登時間未取得'}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-      </details>
-      <details className="text-xs" onToggle={(event) => setShowPairs(event.currentTarget.open)}>
-        <summary className="cursor-pointer py-2">查看分組依據 · {number(group.pairCount)} 組相似配對</summary>
-        {showPairs && (
-          <div className="max-h-80 space-y-4 overflow-y-auto rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
-            {group.pairCount > group.pairs.length && (
-              <p className="text-zinc-500">
-                共 {number(group.pairCount)} 組，顯示分數最高的 {number(group.pairs.length)} 組。
-              </p>
-            )}
-            {group.pairs.map((pair) => (
-              <div key={pair.id} className="space-y-1">
-                <p>
-                  <Link href={`/article/${pair.a.id}/`} className={linkStyle}>
-                    {pair.a.mediaTitle}
-                  </Link>{' '}
-                  ↔{' '}
-                  <Link href={`/article/${pair.b.id}/`} className={linkStyle}>
-                    {pair.b.mediaTitle}
-                  </Link>{' '}
-                  · {(pair.score * 100).toFixed(1)}%
-                </p>
-                <p className="break-words leading-6 text-zinc-500">{pair.evidence}</p>
-              </div>
+      <p className="flex flex-wrap gap-x-3 text-xs leading-5 text-zinc-500">
+        <span>
+          同組 {group.articles.length} 篇{group.tiedFirst > 1 && `（${group.tiedFirst} 篇同時最早刊登，依固定規則選定來源）`}
+        </span>
+        <button type="button" onClick={() => setShowGroup((value) => !value)} aria-expanded={showGroup} className={toggle}>
+          {showGroup ? '收合同組' : '同組全部新聞'}
+        </button>
+        <button type="button" onClick={() => setShowPairs((value) => !value)} aria-expanded={showPairs} className={toggle}>
+          {showPairs ? '收合配對' : `分組依據 · ${number(group.pairCount)} 組相似配對`}
+        </button>
+      </p>
+      {showGroup && (
+        <div className="space-y-2 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
+          <p className="text-zinc-500">完整分組包含未顯示在圖上的媒體；其他報導的箭頭都指向 {source.mediaTitle}。</p>
+          <ol className="max-h-80 space-y-1 overflow-y-auto">
+            {group.articles.map((member) => (
+              <li key={member.id}>
+                <ArticleLine article={member} badge={member.id === source.id ? '來源' : undefined} />
+              </li>
             ))}
-          </div>
-        )}
-      </details>
+          </ol>
+        </div>
+      )}
+      {showPairs && (
+        <div className="max-h-80 space-y-3 overflow-y-auto rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
+          {group.pairCount > group.pairs.length && (
+            <p className="text-zinc-500">
+              共 {number(group.pairCount)} 組，顯示分數最高的 {number(group.pairs.length)} 組。
+            </p>
+          )}
+          {group.pairs.map((pair) => (
+            <div key={pair.id} className="space-y-0.5">
+              <p>
+                <Link href={`/article/${pair.a.id}/`} className={linkStyle}>
+                  {pair.a.mediaTitle}
+                </Link>{' '}
+                ↔{' '}
+                <Link href={`/article/${pair.b.id}/`} className={linkStyle}>
+                  {pair.b.mediaTitle}
+                </Link>{' '}
+                · {(pair.score * 100).toFixed(1)}%
+              </p>
+              <p className="break-words leading-5 text-zinc-500">{pair.evidence}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </article>
   );
 }
@@ -795,7 +805,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   </div>
                   {!byId.get(selection.node)?.external && (
                     <MediaHoverLink media={selection.node} className={`${linkStyle} inline-block text-xs`}>
-                      查看這家媒體的站內內文 →
+                      查看這家媒體的站內報導 →
                     </MediaHoverLink>
                   )}
                 </div>
@@ -836,21 +846,13 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 </p>
               )}
               <div
-                className={`grid items-start gap-4 lg:grid-cols-2 ${evidenceLoading || evidenceError ? 'opacity-50' : ''}`}
+                className={`divide-y divide-zinc-200 dark:divide-zinc-800 ${evidenceLoading || evidenceError ? 'opacity-50' : ''}`}
                 aria-busy={evidenceLoading}
                 data-testid="graph-evidence-results"
               >
                 {evidenceList.map((item) =>
                   item.kind === 'citation' ? (
-                    <article key={item.key} className="min-w-0 space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                      <p className="text-xs text-violet-600 dark:text-violet-400">
-                        明示引用 · {item.citation.article.mediaTitle} → {item.citation.source.name} · {item.citation.source.country}
-                      </p>
-                      <ArticleCard article={item.citation.article} />
-                      <blockquote className="break-words border-l-2 border-violet-300 pl-3 text-xs leading-6 text-zinc-500">
-                        {item.citation.source.evidence}
-                      </blockquote>
-                    </article>
+                    <CitationEvidence key={item.key} article={item.citation.article} source={item.citation.source} />
                   ) : (
                     <OriginEvidence key={item.key} origin={item.origin} />
                   ),

@@ -8,6 +8,7 @@ Type=simple
 WorkingDirectory=/home/deck/.local/share/tag-analysis/current
 ExecStart=/home/deck/.local/bin/node app/src/worker.ts
 Environment=NODE_ENV=production
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
 Environment=WORKER_METRICS_PORT=18133
 Environment=RANKING_INTERVAL_MINUTES=10
 EnvironmentFile=-/home/deck/Projects/tag.analysis.tw/.env

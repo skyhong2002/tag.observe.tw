@@ -133,7 +133,18 @@ export interface SimilarityDaily {
   threshold: number;
   days: string[];
   totals: { articles: number[]; pairs: number[]; identical: number[]; citations: number[] };
-  media: Array<{ media: string; name: string; articles: number[]; pairs: number[]; citing: number[]; cited: number[] }>;
+  media: Array<{
+    media: string;
+    name: string;
+    articles: number[];
+    pairs: number[];
+    /** Articles of this outlet that another outlet later matched (distinct, by own publish day). */
+    copied: number[];
+    /** Articles of this outlet published after a matching article elsewhere. */
+    copying: number[];
+    citing: number[];
+    cited: number[];
+  }>;
 }
 
 export interface ArticleSimilarity {

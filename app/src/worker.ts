@@ -13,6 +13,7 @@ import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
 import { jobDuration, jobRuns as jobRunsMetric, metricsContentType, metricsText, snapshotAge, snapshotArticles } from './metrics.ts';
+import { archiveStoreFromEnv } from './nearline/store.ts';
 
 const log = pino({ level: process.env.LOG_LEVEL || 'info' });
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:16379';
@@ -121,7 +122,11 @@ const worker = new Worker(
         return r;
       }
       if (job.name === 'retention') {
-        const r = await runRetentionJob(db, { log: (o, m) => log.info(o, m) });
+        const r = await runRetentionJob(db, {
+          archiveStore: archiveStoreFromEnv(),
+          contentBatch: Number(process.env.TAG_CONTENT_ARCHIVE_BATCH ?? 5000),
+          log: (o, m) => log.info(o, m),
+        });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

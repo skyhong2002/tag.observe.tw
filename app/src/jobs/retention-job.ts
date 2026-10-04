@@ -1,14 +1,13 @@
-// Daily data retention (agreed 2026-09-29):
-// - descriptions: dropped 90 days after publication
-// - bodies: dropped 90 days after acquisition, including archived publications;
-//   their similarity sketches go with them (pairs and citations are kept)
-// - never-fetched, untagged articles older than 14 days deleted (old sitemap noise)
+// Content becomes a verified NAS-backed cache after 90 days without use.
+// Missing/unavailable archive storage must never cause local content deletion.
+// Only contentless, unarchived own-source sitemap noise can lose its index.
 // - ranking snapshots older than 2 years: chart and entries trimmed to top 100
 // - crawl_runs / job_runs / source_probes older than 30 days deleted
 import { and, eq, gt, inArray, isNull, lt, sql } from 'drizzle-orm';
-import { BODY_RETENTION_MS } from '../article-retention.ts';
 import type { Db } from '../db/client.ts';
 import {
+  articleArchives,
+  articleOrigins,
   articleSketches,
   articles,
   articleTags,
@@ -19,47 +18,77 @@ import {
   rejectedUrls,
   sourceProbes,
 } from '../db/schema.ts';
+import { archiveColdContent, cacheAgeForSpace } from '../nearline/content.ts';
+import type { ArchiveStore } from '../nearline/store.ts';
 import type { RankingChart } from './ranking-compute.ts';
 
 const DAY = 86400e3;
 const affected = (r: unknown) => (r as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
 
-export async function runRetentionJob(db: Db, { now = () => new Date(), log = (_o: object, _m: string) => {}, batch = 500 } = {}) {
+export async function runRetentionJob(
+  db: Db,
+  {
+    now = () => new Date(),
+    log = (_o: object, _m: string) => {},
+    batch = 500,
+    contentBatch = 5000,
+    archiveStore,
+  }: {
+    now?: () => Date;
+    log?: (o: object, m: string) => void;
+    batch?: number;
+    contentBatch?: number;
+    archiveStore?: ArchiveStore;
+  } = {},
+) {
+  if (!Number.isSafeInteger(contentBatch) || contentBatch < 1 || contentBatch > 50000)
+    throw new Error('Content archive batch must be 1–50000');
   const t = now().getTime();
   const out: Record<string, number> = {};
-  out.descriptionsCleared = affected(
-    await db
-      .update(articles)
-      .set({ description: null })
-      .where(and(lt(articles.publishedAt, new Date(t - 90 * DAY)), sql`${articles.description} IS NOT NULL`)),
-  );
-  out.bodiesCleared = affected(
-    await db
-      .update(articles)
-      .set({ body: null, bodyStatus: 'expired' })
-      .where(
-        and(
-          lt(sql`COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt})`, new Date(t - BODY_RETENTION_MS)),
-          sql`${articles.body} IS NOT NULL`,
-        ),
-      ),
-  );
+  out.contentArchived = 0;
+  out.contentEvicted = 0;
+  out.archiveDisabled = archiveStore ? 0 : 1;
+  out.cachePressurePages = 0;
+  for (let remaining = contentBatch; remaining > 0 && archiveStore; ) {
+    const free = await archiveStore.localFreeBytes?.();
+    const age = cacheAgeForSpace(free);
+    if (free !== undefined && free < 20 * 2 ** 30) out.cachePressurePages++;
+    const content = await archiveColdContent(db, archiveStore, new Date(t), Math.min(remaining, 25), age);
+    out.contentArchived += content.archived;
+    out.contentEvicted += content.evicted;
+    remaining -= content.archived;
+    if (!content.archived || !content.evicted) break;
+  }
   // The sketch row stays as the record that the article was compared.
   out.sketchesCleared = affected(
     await db.execute(
       sql`UPDATE ${articleSketches} s JOIN ${articles} a ON a.id = s.article_id SET s.sketch = NULL WHERE s.sketch IS NOT NULL AND a.body IS NULL`,
     ),
   );
-  const stale = await db
-    .select({ id: articles.id })
-    .from(articles)
-    .where(and(lt(articles.publishedAt, new Date(t - 14 * DAY)), isNull(articles.fetchedAt), sql`JSON_LENGTH(${articles.tags}) = 0`));
   out.staleArticlesDeleted = 0;
-  for (let i = 0; i < stale.length; i += batch) {
-    const ids = stale.slice(i, i + batch).map((r) => r.id);
-    await db.delete(articleTags).where(inArray(articleTags.articleId, ids));
-    out.staleArticlesDeleted += affected(await db.delete(articles).where(inArray(articles.id, ids)));
-  }
+  await db.transaction(async (tx) => {
+    const stale = await tx
+      .select({ id: articles.id })
+      .from(articles)
+      .where(
+        and(
+          eq(articles.source, 'own'),
+          lt(articles.publishedAt, new Date(t - 14 * DAY)),
+          isNull(articles.fetchedAt),
+          isNull(articles.body),
+          isNull(articles.description),
+          sql`JSON_LENGTH(${articles.tags}) = 0`,
+          sql`NOT EXISTS (SELECT 1 FROM ${articleArchives} WHERE ${articleArchives.articleId} = ${articles.id})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${articleOrigins} WHERE ${articleOrigins.articleId} = ${articles.id})`,
+        ),
+      )
+      .limit(batch)
+      .for('update');
+    if (!stale.length) return;
+    const ids = stale.map((r) => r.id);
+    await tx.delete(articleTags).where(inArray(articleTags.articleId, ids));
+    out.staleArticlesDeleted = affected(await tx.delete(articles).where(inArray(articles.id, ids)));
+  });
   const old = await db
     .select({ id: rankingSnapshots.id, chart: rankingSnapshots.chart })
     .from(rankingSnapshots)

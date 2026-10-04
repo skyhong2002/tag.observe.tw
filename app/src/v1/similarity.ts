@@ -155,7 +155,13 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
     days.push(new Date(t).toISOString().slice(0, 10));
   const position = new Map(days.map((day, i) => [day, i]));
   const localDay = sql<string>`DATE_FORMAT(${articleSketches.publishedAt} + INTERVAL 8 HOUR, '%Y-%m-%d')`;
-  const [analyzed, pairs, citations] = await Promise.all([
+  // Each pair once per side, keyed by that article's own publish day: the
+  // earlier side was copied, the later side copied. Ties count for neither.
+  const sides = (side: 'a' | 'b') => {
+    const other = side === 'a' ? 'b' : 'a';
+    return sql`SELECT ${sql.raw(`${side}_id`)} AS id, ${sql.raw(`${side}_media`)} AS media, ${sql.raw(`${side}_published`)} AS published, ${sql.raw(`${side}_published < ${other}_published`)} AS earlier FROM ${similarityPairs} WHERE ${sql.raw(`${side}_published`)} BETWEEN ${dayStart(from)} AND ${dayEnd(to)} AND ${sql.raw(`${side}_published <> ${other}_published`)} AND score >= ${threshold}`;
+  };
+  const [analyzed, pairs, citations, [directions]] = await Promise.all([
     db
       .select({ day: localDay, media: articleSketches.media, n: sql<number>`COUNT(*)` })
       .from(articleSketches)
@@ -177,13 +183,25 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
       .from(articleCitations)
       .where(between(articleCitations.day, from, to))
       .groupBy(articleCitations.day, articleCitations.media, articleCitations.source),
+    db.execute(
+      sql`SELECT DATE_FORMAT(published + INTERVAL 8 HOUR, '%Y-%m-%d') AS day, media, earlier, COUNT(DISTINCT id) AS n FROM (${sides('a')} UNION ALL ${sides('b')}) AS s GROUP BY day, media, earlier`,
+    ) as unknown as Promise<[Array<{ day: string; media: string; earlier: number; n: number }>, unknown]>,
   ]);
   const zeros = () => days.map(() => 0);
   const totals = { articles: zeros(), pairs: zeros(), identical: zeros(), citations: zeros() };
   const perMedia = new Map<string, SimilarityDaily['media'][number]>();
   const media = (id: string) => {
     if (!perMedia.has(id))
-      perMedia.set(id, { media: id, name: outletIdentity(id).name, articles: zeros(), pairs: zeros(), citing: zeros(), cited: zeros() });
+      perMedia.set(id, {
+        media: id,
+        name: outletIdentity(id).name,
+        articles: zeros(),
+        pairs: zeros(),
+        copied: zeros(),
+        copying: zeros(),
+        citing: zeros(),
+        cited: zeros(),
+      });
     return perMedia.get(id)!;
   };
   for (const row of analyzed) {
@@ -199,6 +217,11 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
     totals.identical[i] += Number(row.identical ?? 0);
     media(row.a).pairs[i] += Number(row.n);
     media(row.b).pairs[i] += Number(row.n);
+  }
+  for (const row of directions) {
+    const i = position.get(String(row.day));
+    if (i === undefined) continue;
+    media(row.media)[Number(row.earlier) ? 'copied' : 'copying'][i] += Number(row.n);
   }
   for (const row of citations) {
     const i = position.get(String(row.day));

@@ -125,3 +125,22 @@ select:not([multiple]):not([size]) {
     color: var(--color-zinc-500);
   }
 }
+
+/* Header loading bar shown by NavPending while a header link is navigating. */
+@keyframes nav-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.nav-progress {
+  animation: nav-progress 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress {
+    width: 100%;
+    animation: none;
+  }
+}

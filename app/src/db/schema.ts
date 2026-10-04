@@ -72,6 +72,8 @@ export const articles = mysqlTable(
     bodyStatus: varchar('body_status', { length: 16 }),
     bodySource: varchar('body_source', { length: 128 }),
     contentFetchedAt: datetime('content_fetched_at'),
+    contentAccessedAt: datetime('content_accessed_at'),
+    contentArchiveHash: varchar('content_archive_hash', { length: 64 }),
     contentAttempts: int('content_attempts').notNull().default(0),
     attributions: json('attributions').$type<Attribution[]>(),
     fetchedAt: datetime('fetched_at'),
@@ -90,6 +92,35 @@ export const articles = mysqlTable(
     index('articles_media_content').on(t.media, t.id),
     index('articles_similarity').on(t.similarityAt, t.bodyStatus, t.publishedAt),
   ],
+);
+
+// Permanent content-version index; deliberately no cascading FK to articles.
+export const articleArchives = mysqlTable(
+  'article_archives',
+  {
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    contentHash: varchar('content_hash', { length: 64 }).notNull(),
+    objectKey: varchar('object_key', { length: 160 }).notNull(),
+    objectHash: varchar('object_hash', { length: 64 }).notNull(),
+    archiveRemote: varchar('archive_remote', { length: 512 }).notNull(),
+    archivedAt: datetime('archived_at').notNull(),
+    verifiedAt: datetime('verified_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.articleId, t.contentHash] }), index('article_archives_verified').on(t.verifiedAt)],
+);
+
+export const articleOrigins = mysqlTable(
+  'article_origins',
+  {
+    sourceKey: varchar('source_key', { length: 512 }).notNull(),
+    rawHash: varchar('raw_hash', { length: 64 }).notNull(),
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    generation: varchar('generation', { length: 64 }).notNull(),
+    sourceObject: varchar('source_object', { length: 512 }).notNull(),
+    adapterVersion: varchar('adapter_version', { length: 64 }).notNull(),
+    linkedAt: datetime('linked_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sourceKey, t.rawHash] }), index('article_origins_article').on(t.articleId)],
 );
 
 const sketchBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'varbinary(512)' });

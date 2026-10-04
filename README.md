@@ -18,6 +18,7 @@
 - **公開 API**：<https://tag.observe.tw/api/>（免金鑰、CORS 開放、每 IP 每分鐘 240 次；[OpenAPI 規格](https://tag.observe.tw/api/v1/openapi.json)、[Markdown 版](docs/api.md)）
 - **RSS**：新聞事件 `https://tag.observe.tw/feeds/events.xml`；單一標籤 `https://tag.observe.tw/feeds/tag/<標籤>.xml`
 - **Web App**：網站頁尾「安裝 Web App」
+- **討論群**：[Telegram @tag_observe_tw](https://t.me/tag_observe_tw)，問題回報、功能建議與閒聊
 
 ## 架構
 

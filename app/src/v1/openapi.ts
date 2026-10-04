@@ -332,6 +332,8 @@ schemas.SimilarityDaily = obj({
       name: str(),
       articles: arr(int()),
       pairs: arr(int(), '一端為此媒體的配對數'),
+      copied: arr(int(), '被跟進：此媒體先刊出、之後有他媒刊出相似內容的篇數（文章去重，以自身刊登日計；同時刊登不計）'),
+      copying: arr(int(), '跟進他媒：此媒體刊出時已有他媒相似文章的篇數（文章去重，以自身刊登日計；同時刊登不計）'),
       citing: arr(int(), '此媒體引用他媒的則數'),
       cited: arr(int(), '他媒引用此媒體的則數'),
     }),

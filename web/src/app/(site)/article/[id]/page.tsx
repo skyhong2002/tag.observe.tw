@@ -84,21 +84,21 @@ export default async function ArticleContentPage({
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
           <AuthorCredits credits={article.authors} />
           <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>
-          {content.body && <span className="text-xs">約 {Math.max(1, Math.ceil(content.chars / 500))} 分鐘閱讀</span>}
+          {content.body && <span className="text-xs">全文約 {content.chars.toLocaleString('zh-TW')} 字</span>}
         </div>
         <div className="mt-3">
           <DiscoverySources sources={article.discoverySources} />
         </div>
         {expiresAt && (content.body || content.status === 'expired') && (
-          <section aria-label="站內閱讀期限" className="mt-5 rounded-lg bg-zinc-100 px-4 py-3 text-sm leading-7 dark:bg-zinc-900">
+          <section aria-label="站內節錄期限" className="mt-5 rounded-lg bg-zinc-100 px-4 py-3 text-sm leading-7 dark:bg-zinc-900">
             <p className="font-medium">
-              {content.status === 'expired' ? '站內閱讀期限已於 ' : '站內可閱讀至 '}
+              {content.status === 'expired' ? '站內節錄期限已於 ' : '站內節錄可閱讀至 '}
               <time dateTime={content.expiresAt!}>{expiresAt}</time>
               {content.status === 'expired' ? ' 結束' : ''}
               <span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">（台北時間）</span>
             </p>
             <p className="text-xs leading-6 text-zinc-600 dark:text-zinc-400">
-              本站只提供刊登後 7 天內的正文；之後標題、標籤與原站連結仍會保留，全文請至原站閱讀。
+              本站只在刊登後 7 天內顯示文章開頭幾行；之後標題、標籤與原站連結仍會保留。全文一律請至原站閱讀。
             </p>
           </section>
         )}
@@ -109,7 +109,7 @@ export default async function ArticleContentPage({
           {content.status !== 'ok' && (
             <p className="mb-6 border-l-2 border-amber-500 pl-4 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
           )}
-          <ArticleBody body={content.body} />
+          <ArticleBody body={content.body} sourceUrl={article.url} />
         </>
       ) : (
         <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
@@ -158,7 +158,10 @@ export default async function ArticleContentPage({
               {content.body ? ` · ${content.chars.toLocaleString('zh-TW')} 字` : ''} · 刊登媒體所在地：{article.publisher.country}
             </p>
             {content.fetchedAt && <p>內文擷取：{taipei(content.fetchedAt)}</p>}
-            <p>本站呈現已擷取的文字與收錄配圖，其他圖片與影音請見原站。正文在刊登後 7 天內提供。</p>
+            <p>
+              本站只顯示文章開頭節錄與收錄配圖；完整正文、其他圖片與影音請見原站。節錄在刊登後 7
+              天內提供，全文僅供站內相似度比對，不對外呈現。
+            </p>
           </div>
         </details>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-5 text-sm dark:border-zinc-800">

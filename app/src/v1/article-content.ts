@@ -7,6 +7,7 @@ import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import { excludedMedia } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
+import { touchArticleContent } from '../nearline/content.ts';
 import { type Attribution, normalizeAttributions, type OutletIdentity, outletIdentity } from '../similarity/attribution.ts';
 
 export type ContentStatus = 'ok' | 'short' | 'missing' | 'blocked' | 'error' | 'not_fetched' | 'expired';
@@ -273,6 +274,9 @@ export function registerArticleContent(app: FastifyInstance, db: Db) {
     if (id === null) return reply.code(400).send({ error: 'bad article id' });
     const result = await loadArticleContent(db, id);
     if (!result) return reply.code(404).send({ error: 'article not found' });
+    if (result.content.body || result.article.description) {
+      await touchArticleContent(db, id);
+    }
     reply.header('cache-control', 'public, max-age=60');
     return result;
   });

@@ -1,0 +1,11 @@
+[Unit]
+Description=Continue parent-site nearline archival after each bounded batch
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=5min
+AccuracySec=30s
+Unit=tag-legacy-nearline.service
+
+[Install]
+WantedBy=timers.target

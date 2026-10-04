@@ -3,17 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-
-const links = [
-  { href: '/', label: '首頁' },
-  { href: '/ranking/', label: '關鍵字' },
-  { href: '/similarity/', label: '新聞關係圖' },
-  { href: '/journalist/', label: '記者' },
-  { href: '/event/', label: '事件表' },
-  { href: '/topic/', label: '議題表' },
-  { href: '/feature/', label: '專題' },
-  { href: '/media/', label: '媒體' },
-];
+import { NAV_GROUPS } from '@/lib/site-nav';
+import NavPending from './NavPending';
 
 export default function SiteNavigation() {
   const pathname = usePathname();
@@ -68,30 +59,42 @@ export default function SiteNavigation() {
           <path d={open ? 'M6 6l12 12M6 18L18 6' : 'M4 6h16M4 12h16M4 18h16'} />
         </svg>
       </button>
+      {/* Desktop: one row with a thin rule between groups. Mobile menu: a titled block per group. */}
       <nav
         id="site-navigation"
-        className={`${open ? 'grid' : 'hidden'} absolute inset-x-0 top-full grid-cols-2 gap-1 border-b border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950 lg:static lg:flex lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:dark:bg-transparent`}
+        className={`${open ? 'flex' : 'hidden'} absolute inset-x-0 top-full flex-col gap-3 border-b border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950 lg:static lg:flex lg:flex-row lg:items-center lg:gap-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:dark:bg-transparent`}
         aria-label="主要導覽"
       >
-        {links.map(({ href, label }) => {
-          const exact = pathname === href || `${pathname}/` === href;
-          const current = exact || (href !== '/' && pathname.startsWith(href));
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setOpen(false)}
-              aria-current={current ? (exact ? 'page' : 'location') : undefined}
-              className={`flex min-h-10 items-center justify-center whitespace-nowrap rounded-md px-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                current
-                  ? 'bg-brand-50 font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-300'
-                  : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
-              }`}
-            >
-              {label}
-            </Link>
-          );
-        })}
+        {NAV_GROUPS.map((group) => (
+          <div
+            key={group.label}
+            className="lg:flex lg:items-center lg:border-l lg:border-zinc-200 lg:pl-1 lg:not-first:ml-1 lg:first:border-l-0 lg:first:pl-0 dark:lg:border-zinc-800"
+          >
+            <p className="px-1 pb-1 text-xs text-zinc-500 lg:hidden dark:text-zinc-400">{group.label}</p>
+            <div className="grid grid-cols-3 gap-1 lg:flex">
+              {group.links.map(({ href, short }) => {
+                const exact = pathname === href || `${pathname}/` === href;
+                const current = exact || pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    aria-current={current ? (exact ? 'page' : 'location') : undefined}
+                    className={`flex min-h-10 items-center justify-center whitespace-nowrap rounded-md px-3 transition-colors [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 active:bg-brand-100 has-data-pending:bg-brand-50 has-data-pending:text-brand-800 dark:active:bg-brand-900 dark:has-data-pending:bg-brand-950 dark:has-data-pending:text-brand-300 ${
+                      current
+                        ? 'bg-brand-50 font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-300'
+                        : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
+                    }`}
+                  >
+                    {short}
+                    <NavPending />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
     </div>
   );
