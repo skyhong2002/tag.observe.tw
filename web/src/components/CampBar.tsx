@@ -42,17 +42,6 @@ export function leanTitle(c: EventCoverage): string | undefined {
   return `${order.map((k) => `${CAMP_LABEL[k]} ${d.shares[k]}%`).join('、')}；${CAMP_LABEL[d.camp]}比對方多 ${d.pct} 個百分點`;
 }
 
-/** Signed percentage-point gap, coloured by the camp ahead. */
-export function LeanText({ c, className = '' }: { c: EventCoverage; className?: string }) {
-  const d = leanDelta(c);
-  if (!d) return null;
-  return (
-    <span className={`font-medium tabular-nums ${CAMP_TEXT[d.camp]} ${className}`} title={leanTitle(c)}>
-      {CAMP_LABEL[d.camp]} +{d.pct}%
-    </span>
-  );
-}
-
 /** The one badge worth showing, blind spot first since it is the stronger claim. */
 export function CampBadge({ c, className = '' }: { c: EventCoverage; className?: string }) {
   const spot = c.blindspot[0];
@@ -103,27 +92,13 @@ export function SplitBar({ c, width = 'w-20' }: { c: EventCoverage; width?: stri
   );
 }
 
-/** The card line: the bar, outlet counts per camp in the bar's order, badge. */
+/** The card line: the bar, plus a badge only when the gap is large. */
 export function CampLine({ c, compact = false }: { c: EventCoverage; compact?: boolean }) {
   const order: Camp[] = ['green', 'other', 'blue'];
   if (!order.some((k) => c.camps[k] > 0)) return null;
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
       <SplitBar c={c} width={compact ? 'w-14' : 'w-20'} />
-      <LeanText c={c} />
-      <span className="tabular-nums" title={order.map((k) => `${CAMP_LABEL[k]} ${c.camps[k]} 家`).join('、')}>
-        {compact
-          ? `${order.reduce((n, k) => n + c.camps[k], 0)} 家`
-          : order.map((k, i) => (
-              <span key={k}>
-                {i > 0 && ' · '}
-                <span className={CAMP_TEXT[k]}>
-                  {CAMP_LABEL[k]} {c.camps[k]}
-                </span>
-              </span>
-            ))}
-        {!compact && ' 家'}
-      </span>
       <CampBadge c={c} />
     </span>
   );

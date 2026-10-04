@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar, LeanText } from '@/components/CampBar';
+import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar } from '@/components/CampBar';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
@@ -337,9 +337,6 @@ export default function EventCard({
             <div className="space-y-1.5">
               <FullBar c={e.coverage} />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-                <span>
-                  藍綠差 <LeanText c={e.coverage} />
-                </span>
                 <CampBadge c={e.coverage} />
                 <OutletStrip c={e.coverage} media={media} max={12} />
               </div>

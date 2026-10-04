@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { permanentRedirect, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { CAMP_LABEL, CampBadge, FullBar, LeanText, SplitBar } from '@/components/CampBar';
+import { CampBadge, FullBar, SplitBar } from '@/components/CampBar';
 import { eventHeadline, eventHref, Movement, OutletStrip, RankTrail } from '@/components/EventCard';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
@@ -111,7 +111,6 @@ function Distribution({ coverage, compact = false }: { coverage: EventCoverage |
       <span>
         {coverage.outlets.length} 家媒體 · {coverage.articles} 篇關聯報導
       </span>
-      <LeanText c={coverage} />
       <CampBadge c={coverage} />
     </div>
   );
@@ -173,13 +172,7 @@ function CampGaps({ gaps }: { gaps: CampGap[] }) {
                 return (
                   <li key={e.rank}>
                     <Link href={href}>{eventHeadline(e)}</Link>
-                    <p>
-                      {e.coverage && <CampBadge c={e.coverage} />}
-                      {e.coverage && <LeanText c={e.coverage} />}
-                      <span>
-                        {CAMP_LABEL.blue} {e.coverage?.camps.blue} 家 · {CAMP_LABEL.green} {e.coverage?.camps.green} 家
-                      </span>
-                    </p>
+                    <p>{e.coverage && <CampBadge c={e.coverage} />}</p>
                   </li>
                 );
               })}
@@ -425,9 +418,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     <Distribution coverage={lead.coverage} />
                     {lead.coverage && (
                       <div className={styles.heroCamp}>
-                        <span>
-                          藍綠差 <LeanText c={lead.coverage} />
-                        </span>
                         <CampBadge c={lead.coverage} />
                         <OutletStrip c={lead.coverage} media={data.media} max={12} />
                       </div>
@@ -533,7 +523,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               <p>首頁卡片的標籤僅顯示與該標題相符的關鍵字。</p>
               <p>
                 藍綠分布以整個事件分群計算，並非單篇新聞的報導分布：數的是過去 24
-                小時寫過該事件主要關鍵字的媒體家數。「藍綠差」是藍營家數占比減綠營家數占比；「盲點」表示其中一營幾乎沒有報導。
+                小時寫過該事件主要關鍵字的媒體家數。只有差距明顯時才標示：「盲點」表示其中一營幾乎沒有報導，「重點」表示其中一營報導得比平常多很多。
               </p>
               <p>
                 頁首的新聞量分布為過去 24
