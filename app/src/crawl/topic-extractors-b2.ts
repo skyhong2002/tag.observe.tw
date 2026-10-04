@@ -21,3 +21,10 @@ export function womanyCollections(html: string, rule: TopicRule): TopicItem[] {
   );
   return extractTopics(html, rule).map((t) => ({ ...t, sponsored: sponsored.has(t.url) }));
 }
+
+// 地球圖輯隊 links each topic with ?redirect=<listing page> (its back link), so
+// a topic's URL would change as it moves down the list; keep the page-1 form
+// that existing rows were stored under.
+export function wycTopics(html: string, rule: TopicRule): TopicItem[] {
+  return extractTopics(html, rule).map((t) => ({ ...t, url: t.url.replace(/(\/topic\/\d+\/1)(?:\?redirect=\d+)?$/, '$1?redirect=1') }));
+}

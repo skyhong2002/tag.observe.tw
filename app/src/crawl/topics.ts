@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
 import { registrable } from './topic-page.ts';
-import { womanyCollections, zaobaoSpecials } from './topic-extractors-b2.ts';
+import { womanyCollections, wycTopics, zaobaoSpecials } from './topic-extractors-b2.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
 // literal markers that have since drifted for most sites; these rules match
@@ -512,8 +512,12 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'wyc',
     url: 'https://dq.yam.com/topic/list/1',
     fallbackImage: '/favicons/wyc.png',
-    pattern: /^\/topic\/\d+\/1(?:\?redirect=1)?$/,
+    pattern: /^\/topic\/\d+\/1(?:\?redirect=\d+)?$/,
     title: heading,
+    extract: wycTopics,
+    // 精選主題: packages of explainers around one event; four pages in all.
+    kind: 'feature',
+    paginate: { url: (n) => `https://dq.yam.com/topic/list/${n}`, max: 4 },
   },
   {
     media: 'mplus',
@@ -522,6 +526,8 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /\/topic\/\d+$/,
     scope: '.theme',
     title: heading,
+    // One-off packages; the site has not published one since 2022.
+    kind: 'feature',
   },
   {
     media: 'news_pchome',

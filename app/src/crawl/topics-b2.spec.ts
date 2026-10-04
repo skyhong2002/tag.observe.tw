@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { womanyCollections, zaobaoSpecials } from './topic-extractors-b2.ts';
+import { womanyCollections, wycTopics, zaobaoSpecials } from './topic-extractors-b2.ts';
 import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
@@ -93,5 +93,15 @@ describe('TVBS health and supertaste', () => {
       expect(sponsored?.(item(`${host === 'health' ? 'health' : 'supertaste'}-review/index.html`))).toBe(false);
       expect(sponsored?.(item('supertaste-review-2021/index.html'))).toBe(false);
     }
+  });
+});
+
+describe('wyc', () => {
+  it('keeps one URL per topic whichever listing page links it', () => {
+    const html = '<li><a href="/topic/218/1?redirect=2"><h3>南韓今年有點忙</h3></a></li><li><a href="/topic/219/1"><h3>青年生存報告</h3></a></li>';
+    expect(wycTopics(html, rule('wyc')).map((t) => t.url)).toEqual([
+      'https://dq.yam.com/topic/218/1?redirect=1',
+      'https://dq.yam.com/topic/219/1?redirect=1',
+    ]);
   });
 });
