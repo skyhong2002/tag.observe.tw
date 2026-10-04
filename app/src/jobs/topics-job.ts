@@ -1,9 +1,18 @@
-import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
+import { classifyTopic, dateFromStoryUrl } from '../crawl/topic-kind.ts';
 import { looksLikeStories, type TopicStory, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
-import { fetchTopicListings, TOPIC_RULES } from '../crawl/topics.ts';
+import {
+  childSelectorFor,
+  fetchTopicListings,
+  TOPIC_RULES,
+  type TopicKind,
+  type TopicSourceResult,
+  topicChildren,
+  topicListings,
+} from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articles, crawlRuns, topics } from '../db/schema.ts';
 
@@ -19,6 +28,7 @@ export async function runTopicsJob(
       .values({ media: rule.media, stage: 'topic', startedAt: started, status: 'running' })
       .$returningId();
     try {
+      const known = await knownTopicSources(db, rule.media);
       const { items, sources } = await fetchTopicListings(rule);
       const failures = sources.filter((source) => source.error);
       let inserted = 0;
@@ -35,6 +45,12 @@ export async function runTopicsJob(
               category: t.category,
               firstSeen: started,
               lastSeen: started,
+              ...(t.kind ? { kind: t.kind, kindSource: 'rule' } : {}),
+              sponsored: !!t.sponsored,
+              ...storyDateFields(t.storyDates),
+              // A source we never crawled before (or a page past the first)
+              // lists what the outlet already had: not new this run.
+              backlog: !known.has(t.source) || t.page > 1,
             })),
           );
         inserted = (r as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
@@ -55,8 +71,20 @@ export async function runTopicsJob(
               title: t.title,
               image: t.image ?? sql`${topics.image}`,
               category: t.category ?? sql`${topics.category}`,
+              ...(t.kind ? { kind: t.kind, kindSource: 'rule' } : {}),
+              ...(t.sponsored !== undefined ? { sponsored: t.sponsored } : {}),
+              ...storyDateFields(t.storyDates),
             })
             .where(and(eq(topics.media, rule.media), eq(topics.url, t.url)));
+        // Listings that carry story dates classify their auto items right away.
+        for (const t of items) {
+          if (t.kind || !t.storyDates?.length) continue;
+          const { kind } = classifyTopic({ storyDates: t.storyDates, grew: false, now: started });
+          await db
+            .update(topics)
+            .set({ kind: sql`IF(${topics.storyGrewAt} IS NULL, ${kind}, 'topic')`, kindSource: 'auto' })
+            .where(and(eq(topics.media, rule.media), eq(topics.url, t.url), or(isNull(topics.kindSource), ne(topics.kindSource, 'rule'))));
+        }
       }
       await db
         .update(crawlRuns)
@@ -87,6 +115,36 @@ export async function runTopicsJob(
   return results;
 }
 
+function storyDateFields(dates: Date[] | undefined) {
+  if (!dates?.length) return {};
+  const times = dates.map(Number);
+  return { storyFirstAt: new Date(Math.min(...times)), storyLastAt: new Date(Math.max(...times)), storyCount: dates.length };
+}
+
+/** Listing URLs that yielded items in an earlier topic run of this outlet. */
+export async function knownTopicSources(db: Db, media: string): Promise<Set<string>> {
+  const runs = await db
+    .select({ detail: crawlRuns.detail })
+    .from(crawlRuns)
+    .where(and(eq(crawlRuns.media, media), eq(crawlRuns.stage, 'topic'), inArray(crawlRuns.status, ['ok', 'partial'])))
+    .orderBy(desc(crawlRuns.startedAt))
+    .limit(200);
+  const known = new Set<string>();
+  for (const { sources } of runs.map((r) => parseTopicDetail(r.detail)))
+    for (const source of sources) if (source.items > 0) known.add(source.url);
+  return known;
+}
+/** crawl_runs.detail of a topic run: JSON { sources } or, for a crashed run, the error text. */
+export function parseTopicDetail(detail: string | null): { sources: TopicSourceResult[]; error?: string } {
+  if (!detail) return { sources: [] };
+  try {
+    const parsed = JSON.parse(detail) as { sources?: TopicSourceResult[] };
+    return { sources: Array.isArray(parsed?.sources) ? parsed.sources : [] };
+  } catch {
+    return { sources: [], error: detail };
+  }
+}
+
 // Topic outlets whose stories are stored under another media key.
 export const TOPIC_ARTICLE_MEDIA: Record<string, string> = { twreporter: 'reporter' };
 export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicMedia] ?? topicMedia;
@@ -98,6 +156,9 @@ export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicM
 // the same outlet fetched in this run. Of the rest, the group with the most
 // stories we crawled (at least 2) wins; failing that (older stories, outlets
 // we do not crawl such as 鏡報), the largest group that reads like headlines.
+// The chosen stories' dates classify the topic (議題/專題, classifyTopic) unless
+// its listing declared the kind; sub-topic links (rule.children) become rows.
+// Rows never classified are refreshed even when no longer listed.
 export async function refreshTopicPages(
   db: Db,
   { now = () => new Date(), limit = 60, fetch = fetchText }: { now?: () => Date; limit?: number; fetch?: typeof fetchText } = {},
@@ -105,11 +166,24 @@ export async function refreshTopicPages(
   const t = now().getTime();
   // Topics still without a cover go first: the page's share image fills it.
   const due = await db
-    .select({ id: topics.id, media: topics.media, url: topics.url, image: topics.image })
+    .select({
+      id: topics.id,
+      media: topics.media,
+      url: topics.url,
+      image: topics.image,
+      kind: topics.kind,
+      kindSource: topics.kindSource,
+      backlog: topics.backlog,
+      parentId: topics.parentId,
+      pageStories: topics.pageStories,
+      storyFirstAt: topics.storyFirstAt,
+      storyLastAt: topics.storyLastAt,
+      storyGrewAt: topics.storyGrewAt,
+    })
     .from(topics)
     .where(
       and(
-        gte(topics.lastSeen, new Date(t - 3 * 86400e3)),
+        or(gte(topics.lastSeen, new Date(t - 3 * 86400e3)), isNull(topics.kindSource)),
         or(isNull(topics.pageCheckedAt), lt(topics.pageCheckedAt, new Date(t - 6 * 3600e3))),
       ),
     )
@@ -120,16 +194,20 @@ export async function refreshTopicPages(
     due.map((row) =>
       gate(async () => {
         const articleId = sourceByMedia(articleMediaOf(row.media))?.list.articleId;
+        const childSelector = childSelectorFor(row.media, row.url);
         try {
           const res = await fetch(row.url, { timeout: 20000 });
           const ok = res.status < 400;
           return {
             row,
+            ok,
             groups: ok ? topicPageGroups(res.body, res.url || row.url, articleId) : [],
             image: ok && !row.image ? topicPageImage(res.body, res.url || row.url) : null,
+            children: ok && childSelector ? topicChildren(res.body, res.url || row.url, childSelector) : [],
           };
         } catch {
-          return { row, groups: [] as TopicStory[][], image: null }; // unreachable: try again in 6 hours
+          // Unreachable: try again in 6 hours.
+          return { row, ok: false, groups: [] as TopicStory[][], image: null, children: [] };
         }
       }),
     ),
@@ -176,8 +254,57 @@ export async function refreshTopicPages(
       .where(and(eq(topics.id, p.row.id), isNull(topics.image)));
     covers++;
   }
+  // Sub-topics listed on a parent's page: kept fresh as long as the parent is.
+  let children = 0;
+  for (const { row, children: links } of pages) {
+    if (!links.length) continue;
+    const r = await db
+      .insert(topics)
+      .ignore()
+      .values(
+        links.map((c) => ({
+          media: row.media,
+          url: c.url,
+          title: c.title,
+          firstSeen: now(),
+          lastSeen: now(),
+          parentId: row.id,
+          kind: row.kind,
+          backlog: row.backlog,
+        })),
+      );
+    children += (r as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+    await db
+      .update(topics)
+      .set({ lastSeen: now(), parentId: sql`COALESCE(${topics.parentId}, ${row.id})` })
+      .where(
+        and(
+          eq(topics.media, row.media),
+          ne(topics.id, row.id),
+          inArray(
+            topics.url,
+            links.map((c) => c.url),
+          ),
+        ),
+      );
+  }
+  const parentIds = [...new Set(due.flatMap((r) => (r.parentId ? [r.parentId] : [])))];
+  const parentKind = new Map(
+    parentIds.length
+      ? (await db.select({ id: topics.id, kind: topics.kind }).from(topics).where(inArray(topics.id, parentIds))).map((p) => [p.id, p.kind])
+      : [],
+  );
   let found = 0;
-  for (const { row, groups } of pages) {
+  let classified = 0;
+  for (const { row, ok, groups } of pages) {
+    if (!ok) {
+      // Keep the stored stories; only a page we could read may change them.
+      await db
+        .update(topics)
+        .set({ pageCheckedAt: now(), kindSource: row.kindSource ?? 'auto' })
+        .where(eq(topics.id, row.id));
+      continue;
+    }
     const own = groups.filter((g) => g.filter((s) => (seenOn.get(`${row.media} ${s.key}`)?.size ?? 0) > 1).length / g.length <= 0.5);
     let stories: TopicStory[] = [];
     let best = 0;
@@ -201,27 +328,89 @@ export async function refreshTopicPages(
     }
     if (!stories.length) stories = own.find(looksLikeStories) ?? [];
     if (stories.length) found++;
+    stories = stories.slice(0, 200);
+    const dates = await storyDates(db, articleMediaOf(row.media), stories);
+    const first = dates.length ? new Date(Math.min(...dates.map(Number))) : row.storyFirstAt;
+    const last = dates.length ? new Date(Math.max(...dates.map(Number))) : row.storyLastAt;
+    // Growth: a story key we had not stored before, newer than the stored newest.
+    const before = new Set((row.pageStories ?? []).map((s) => s.key));
+    const grew = before.size > 0 && stories.some((s) => !before.has(s.key)) && (!row.storyLastAt || !last || +last > +row.storyLastAt);
+    let kind: TopicKind | null = null;
+    if (row.kindSource !== 'rule') {
+      if (row.parentId) kind = stories.length ? ((parentKind.get(row.parentId) as TopicKind | undefined) ?? 'topic') : 'feature';
+      else if (first && last) kind = classifyTopic({ storyDates: [first, last], grew: grew || !!row.storyGrewAt, now: now() }).kind;
+      else if (!stories.length) kind = 'feature';
+      // Stories without any known date: leave the kind as it is.
+      if (kind) classified++;
+    }
     await db
       .update(topics)
-      .set({ pageStories: stories.slice(0, 200), pageCheckedAt: now() })
+      .set({
+        pageStories: stories,
+        pageCheckedAt: now(),
+        storyCount: stories.length || sql`${topics.storyCount}`,
+        storyFirstAt: first,
+        storyLastAt: last,
+        ...(grew ? { storyGrewAt: now() } : {}),
+        ...(row.kindSource !== 'rule' ? { kindSource: 'auto', ...(kind ? { kind } : {}) } : {}),
+      })
       .where(eq(topics.id, row.id));
   }
-  return { checked: due.length, found, covers };
+  return { checked: due.length, found, covers, children, classified };
 }
 
-export async function latestTopics(db: Db, media: string, limit = 30) {
-  return db.select().from(topics).where(eq(topics.media, media)).orderBy(desc(topics.firstSeen), topics.id).limit(limit);
-}
-/** How many topics each outlet has listed so far (all time). */
-export async function topicCountPerMedia(db: Db): Promise<Record<string, number>> {
+/** Publish dates of a topic's stories: our crawled copy, else the date in the URL. */
+async function storyDates(db: Db, media: string, stories: TopicStory[]): Promise<Date[]> {
+  if (!stories.length) return [];
   const rows = await db
-    .select({ media: topics.media, count: sql<number>`COUNT(*)`.mapWith(Number) })
-    .from(topics)
-    .groupBy(topics.media);
-  return Object.fromEntries(rows.map((r) => [r.media, r.count]));
+    .select({ key: articles.urlKey, at: articles.publishedAt })
+    .from(articles)
+    .where(
+      and(
+        eq(articles.media, media),
+        inArray(
+          articles.urlKey,
+          stories.map((s) => s.key),
+        ),
+      ),
+    );
+  const crawled = new Map(rows.map((r) => [r.key, r.at]));
+  return stories.flatMap((s) => {
+    const at = crawled.get(s.key) ?? dateFromStoryUrl(s.key);
+    return at ? [at] : [];
+  });
 }
-export async function latestTopicPerMedia(db: Db, perMedia = 1) {
-  const rows = await Promise.all(TOPIC_RULES.map((rule) => latestTopics(db, rule.media, perMedia)));
+
+/** Newest first; `topLevel` leaves out sub-topics (they are listed under their parent). */
+export async function latestTopics(db: Db, media: string, limit = 30, kind: TopicKind = 'topic', { topLevel = false } = {}) {
+  return db
+    .select()
+    .from(topics)
+    .where(and(eq(topics.media, media), eq(topics.kind, kind), topLevel ? isNull(topics.parentId) : undefined))
+    .orderBy(desc(topics.firstSeen), topics.id)
+    .limit(limit);
+}
+/** Sub-topics of the given topics, of any kind. */
+export async function topicChildrenOf(db: Db, parentIds: number[]) {
+  if (!parentIds.length) return [];
+  return db.select().from(topics).where(inArray(topics.parentId, parentIds)).orderBy(desc(topics.firstSeen), topics.id);
+}
+export type TopicCounts = Record<TopicKind, number>;
+/** How many topics and features each outlet has listed so far (all time). */
+export async function topicCountPerMedia(db: Db): Promise<Record<string, TopicCounts>> {
+  const rows = await db
+    .select({ media: topics.media, kind: topics.kind, count: sql<number>`COUNT(*)`.mapWith(Number) })
+    .from(topics)
+    .groupBy(topics.media, topics.kind);
+  const out: Record<string, TopicCounts> = {};
+  for (const r of rows) {
+    out[r.media] ??= { topic: 0, feature: 0 };
+    if (r.kind === 'topic' || r.kind === 'feature') out[r.media][r.kind] += r.count;
+  }
+  return out;
+}
+export async function latestTopicPerMedia(db: Db, perMedia = 1, kind: TopicKind = 'topic') {
+  const rows = await Promise.all(TOPIC_RULES.map((rule) => latestTopics(db, rule.media, perMedia, kind)));
   return Object.fromEntries(TOPIC_RULES.map((rule, i) => [rule.media, rows[i]]));
 }
 // When each outlet was first crawled: topics stored in that run were already
@@ -245,6 +434,17 @@ export async function topicSourceChecks(db: Db, now = new Date()) {
         .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic')))
         .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
         .limit(1);
+      // The run in progress has no per-source detail yet.
+      const [finished] =
+        latest && !latest.finishedAt
+          ? await db
+              .select()
+              .from(crawlRuns)
+              .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic'), sql`${crawlRuns.finishedAt} IS NOT NULL`))
+              .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
+              .limit(1)
+          : [latest];
+      const detail = parseTopicDetail(finished?.detail ?? null);
       const [success] = await db
         .select({ at: crawlRuns.finishedAt })
         .from(crawlRuns)
@@ -259,6 +459,15 @@ export async function topicSourceChecks(db: Db, now = new Date()) {
           status: latest?.status ?? 'pending',
           fetched: latest?.fetched ?? 0,
           stale: !success?.at || +now - +success.at > 3 * 3600e3,
+          sources: detail.sources.map((s) => ({
+            url: s.url,
+            // Runs before kinds existed: the listing's current declaration.
+            kind: s.kind ?? topicListings(rule).find((l) => l.url === s.url)?.kind ?? 'auto',
+            items: s.items,
+            ...(s.pages ? { pages: s.pages } : {}),
+            ...(s.error ? { error: s.error } : {}),
+          })),
+          ...(detail.error ? { error: detail.error } : {}),
         },
       ] as const;
     }),
