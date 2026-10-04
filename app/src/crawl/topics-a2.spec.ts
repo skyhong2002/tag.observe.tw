@@ -127,4 +127,19 @@ describe('batch a2 topic rules', () => {
     expect(sources[0].pages).toBe(2);
     expect(seen.map((s) => s.cookie)).toEqual(Array(3).fill('canary_id=0; canary_version=new'));
   });
+
+  it('壹蘋 Focus+: footer names, one URL per package, columns are 議題', () => {
+    const special = listing('nextapple', 'https://special.nextapple.com/');
+    const html = `<section id="columns"><a class="col-card" href="https://special.nextapple.com/luxury-watch"><h3>名錶誌</h3><p>精工之美</p></a></section>
+      <section id="board"><a class="card" href="https://special.nextapple.com/tax-2026"><span class="no">23</span><h3>2026 報稅懶人包</h3></a></section>
+      <div class="f-topics"><a href="https://special.nextapple.com/tax-2026">2026 報稅懶人包</a>
+        <a href="https://special.nextapple.com/cover-story">壹蘋10點強打</a>
+        <a href="https://special.nextapple.com/luxury-watch/">名錶誌</a><a href="https://special.nextapple.com/luxury-watch">名錶誌</a>
+        <a href="https://special.nextapple.com/">首頁</a></div>`;
+    expect(run(special, html).map((t) => [t.url, t.title, t.kind])).toEqual([
+      ['https://special.nextapple.com/tax-2026', '2026 報稅懶人包', undefined],
+      ['https://special.nextapple.com/cover-story', '壹蘋10點強打', 'topic'],
+      ['https://special.nextapple.com/luxury-watch', '名錶誌', 'topic'],
+    ]);
+  });
 });

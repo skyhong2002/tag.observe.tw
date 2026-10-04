@@ -78,3 +78,28 @@ export function ttvProjects(html: string, rule: TopicRule): TopicItem[] {
   });
   return extractTopics($.html(), rule);
 }
+
+// Focus+ packages that are recurring columns, not one-offs, besides the
+// #columns block: the daily cover story and the deals column.
+const NEXTAPPLE_COLUMNS = new Set(['cover-story', 'save-money']);
+/** 壹蘋 Focus+ (special.nextapple.com): the footer lists every package by its
+ *  plain name (cards prefix a rank and columns add a blurb). Columns are 議題;
+ *  the rest mixes one-offs with running files, so auto. */
+export function nextappleSpecial(html: string, rule: TopicRule): TopicItem[] {
+  const $ = cheerio.load(html);
+  const slug = (href: string) => /^https:\/\/special\.nextapple\.com\/([^/?#]+)/.exec(resolveUrl(href, rule.url) ?? '')?.[1];
+  const columns = new Set(NEXTAPPLE_COLUMNS);
+  $('#columns a[href]').each((_, el) => {
+    const s = slug($(el).attr('href') ?? '');
+    if (s) columns.add(s);
+  });
+  const out = new Map<string, TopicItem>();
+  for (const item of extractTopics(html, { ...rule, scope: '.f-topics' })) {
+    const s = slug(item.url);
+    if (!s) continue;
+    // The same package is linked with and without a trailing slash.
+    const url = `https://special.nextapple.com/${s}`;
+    if (!out.has(url)) out.set(url, { ...item, url, ...(columns.has(s) ? { kind: 'topic' as const } : {}) });
+  }
+  return [...out.values()];
+}
