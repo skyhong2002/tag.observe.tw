@@ -1,7 +1,15 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { cwNavTopics, insideFeatures, mirrorTopics, nownewsTopicGroups, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import {
+  cwNavTopics,
+  insideFeatures,
+  mirrorTopics,
+  nownewsTopicGroups,
+  taisoundsTopics,
+  tnlFeatures,
+  twreporterTopics,
+} from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -448,6 +456,10 @@ export const TOPIC_RULES: TopicRule[] = [
     scope: '.item-content',
     card: '.item-content',
     title: (a) => heading(a.closest('.item-content')),
+    extract: tnlFeatures,
+    kind: 'feature',
+    // 20 a page; deep pages reach back to 2020.
+    paginate: { url: (n) => `https://www.thenewslens.com/feature?page=${n}`, max: 10 },
   },
   {
     media: 'ftnn',

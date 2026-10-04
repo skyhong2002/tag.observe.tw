@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { FetchRequest } from './fetch.ts';
-import { cwNavTopics, insideFeatures, mirrorTopics, nownewsTopicGroups, taisoundsTopics, twreporterTopics } from './topic-extractors-b1.ts';
+import {
+  cwNavTopics,
+  insideFeatures,
+  mirrorTopics,
+  nownewsTopicGroups,
+  taisoundsTopics,
+  tnlFeatures,
+  twreporterTopics,
+} from './topic-extractors-b1.ts';
 import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
@@ -221,5 +229,41 @@ describe('NOWnews', () => {
     expect(nownewsTopicGroups(html, listing('nownews', 'https://www.nownews.com/topicgroup/'))).toEqual([
       { url: 'https://www.nownews.com/news/6874691', title: '月餅風暴', image: 'https://media.nownews.com/a.webp', category: null },
     ]);
+  });
+});
+
+describe('關鍵評論網', () => {
+  it('marks SPONSORED and Brand Studio packages, not the site menu', () => {
+    const card = (
+      slug: string,
+      label: string,
+    ) => `<div class="item-content"><a class="img-wrapper" href="https://www.thenewslens.com/feature/${slug}"><img src="/${slug}.jpg"></a>
+      <div class="item-info-wrapper main-item-info-wrapper">${label}<h3 class="h2 item-title"><a href="https://www.thenewslens.com/feature/${slug}">${slug} 專題</a></h3></div>
+      <div class="item-info"><h4><a href="https://www.thenewslens.com/feature/${slug}/1">單篇</a></h4><small class="sponsored">Sponsored</small></div></div>`;
+    const html = `<div class="item"><a class="item-link" href="https://www.thenewslens.com/interactive/1"><small class="sponsored"></small></a></div>
+      ${card('eden2026', '<span class="sponsored">SPONSORED</span>')}${card('brand', '<span class="sponsored">Brand Studio</span>')}${card(
+        'own',
+        '<span>The News Lens 自製專題</span>',
+      )}`;
+    expect(tnlFeatures(html, rule('tnl')).map((t) => [t.url.split('/').pop(), t.sponsored])).toEqual([
+      ['eden2026', true],
+      ['brand', true],
+      ['own', false],
+    ]);
+  });
+});
+
+describe('declared kinds', () => {
+  it('declares whole listings that are one kind', () => {
+    expect(['bnext', 'ctee', 'inside', 'tnl', 'nownews'].map((m) => [m, rule(m).kind])).toEqual([
+      ['bnext', 'feature'],
+      ['ctee', 'feature'],
+      ['inside', 'feature'],
+      ['tnl', 'feature'],
+      ['nownews', 'feature'],
+    ]);
+    expect(rule('mirror').kind).toBe('auto');
+    expect(rule('upmedia').kind ?? 'auto').toBe('auto');
+    expect(rule('ftnn').kind ?? 'auto').toBe('auto');
   });
 });

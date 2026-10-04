@@ -80,6 +80,21 @@ export function insideFeatures(html: string, rule: TopicRule): TopicItem[] {
   return [...out.values()];
 }
 
+/** 關鍵評論網 feature cards carry a SPONSORED tag beside the title of brand packages. */
+export function tnlFeatures(html: string, rule: TopicRule): TopicItem[] {
+  const $ = cheerio.load(html);
+  const sponsored = new Set<string>();
+  $('.item-content').each((_, el) => {
+    const card = $(el);
+    if (!card.find('.main-item-info-wrapper .sponsored').text().trim()) return;
+    for (const a of card.find('.main-item-info-wrapper a[href], a.img-wrapper[href]').toArray()) {
+      const url = resolveUrl($(a).attr('href') ?? '', rule.url);
+      if (url) sponsored.add(stripTracking(url));
+    }
+  });
+  return extractTopics(html, rule).map((t) => ({ ...t, sponsored: sponsored.has(t.url) }));
+}
+
 /**
  * NOWnews 重磅追蹤 (/topicgroup/): each block is a numbered series with no page
  * of its own (#tgN anchors shift as series are added), so its first story
