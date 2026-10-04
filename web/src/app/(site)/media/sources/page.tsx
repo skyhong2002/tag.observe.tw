@@ -2,7 +2,7 @@ import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
 import { API_ORIGIN } from '@/lib/api';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import { buildComparison, type CrawlComparison } from '@/lib/traffic-comparison.mts';
 import disabled from '../../../../../../app/data/crawl-disabled.json';
 import traffic from '../../../../../../app/data/media-traffic.json';

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import MethodLink from '@/components/MethodLink';
 import { taipei } from '@/lib/api';
 import { fetchJournalists, INDEX_HOURS, REPOSITORY_URL } from '@/lib/journalists';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import JournalistTable from './JournalistTable';
 
 export const revalidate = 120;

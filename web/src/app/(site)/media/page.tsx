@@ -7,7 +7,7 @@ import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { API_ORIGIN, taipei } from '@/lib/api';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
 
 export const revalidate = 120;

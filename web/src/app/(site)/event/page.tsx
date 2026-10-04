@@ -6,7 +6,7 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
 import { fetchEvents } from '@/lib/pages';
-import { canonicalQuery, pageMetadata } from '@/lib/seo';
+import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
 
 export const revalidate = 120;
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ at?: string }> }) {

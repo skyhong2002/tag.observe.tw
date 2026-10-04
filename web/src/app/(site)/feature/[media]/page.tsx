@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import TopicMediaView, { topicMediaTitle } from '@/components/TopicMediaView';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ media: string }> }): Promise<Metadata> {

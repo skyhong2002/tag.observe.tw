@@ -18,7 +18,7 @@ import { clipHeadline } from '@/lib/event-presentation.mts';
 import { mediaNames } from '@/lib/media-names.mts';
 import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
 import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
-import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo';
+import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import type { SimilarityData } from '@/lib/similarity';
 
 export const revalidate = 60;

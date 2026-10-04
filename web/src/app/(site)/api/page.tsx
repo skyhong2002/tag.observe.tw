@@ -1,7 +1,7 @@
 import { connection } from 'next/server';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
 
 // Human-readable API docs, rendered from the gateway's own OpenAPI document

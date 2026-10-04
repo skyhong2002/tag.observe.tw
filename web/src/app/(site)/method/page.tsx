@@ -15,7 +15,7 @@ import {
   TagMethod,
   TopicMethod,
 } from '@/components/MethodNotes';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import traffic from '../../../../../app/data/media-traffic.json';
 
 // Every method block in one place, grouped by the page it explains; the footer

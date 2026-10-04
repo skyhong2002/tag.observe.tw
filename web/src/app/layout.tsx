@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import SiteAnalytics from '@/components/SiteAnalytics';
 import StructuredData from '@/components/StructuredData';
-import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from '@/lib/seo';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from '@/lib/seo.mts';
 import './globals.css';
 
 export const metadata: Metadata = {

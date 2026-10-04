@@ -14,7 +14,7 @@ import { type CampGap, type CampShare, DEMO_CAMPS, type DemoStory, type GraphSum
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';

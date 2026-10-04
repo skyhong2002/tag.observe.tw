@@ -1,5 +1,5 @@
 import MethodLink from '@/components/MethodLink';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import { periodQuery } from '@/lib/similarity';
 import DailyTrend from '../DailyTrend';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../query';

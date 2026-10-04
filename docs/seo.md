@@ -1,6 +1,6 @@
 # 搜尋與分享預覽
 
-- `web/src/lib/seo.ts` 統一 canonical、Open Graph URL、標題與描述；主要索引頁與事件、標籤、媒體、記者、議題／專題媒體頁均有專屬 metadata。
+- `web/src/lib/seo.mts` 統一 canonical、Open Graph URL、標題與描述；主要索引頁與事件、標籤、媒體、記者、議題／專題媒體頁均有專屬 metadata。
 - Canonical 去除排序、顯示方式、UTM 等變體，保留排行榜分類、事件存檔日期／小時與媒體文章分頁游標。媒體站內搜尋變體與全站搜尋頁不建立索引。
 - 根 layout 提供 WebSite JSON-LD；事件、標籤及媒體頁提供麵包屑。標籤頁的 ItemList 對應畫面上前十篇報導，不宣稱本站為原始新聞出版者，也不把新聞事件誤標成可參加的 Event。
 - JSON-LD 使用 JSON 序列化並跳脫 `<`；頁面資料不直接拼接成 HTML。

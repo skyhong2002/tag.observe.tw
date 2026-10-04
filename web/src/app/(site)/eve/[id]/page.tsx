@@ -28,7 +28,7 @@ import {
 import { fetchThreadPart } from '@/lib/event-thread-api';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
-import { pageMetadata, pageSchema } from '@/lib/seo';
+import { pageMetadata, pageSchema } from '@/lib/seo.mts';
 import OutletTable from './OutletTable';
 import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, HourTable, SectionTitle, StatTiles, Timeline } from './sections';
 

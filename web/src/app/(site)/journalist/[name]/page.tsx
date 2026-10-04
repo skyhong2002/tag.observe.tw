@@ -19,7 +19,7 @@ import {
   removalRequestHref,
 } from '@/lib/journalists';
 import { readingTitle } from '@/lib/reading.mts';
-import { decodeRouteParam, pageMetadata } from '@/lib/seo';
+import { decodeRouteParam, pageMetadata } from '@/lib/seo.mts';
 
 export const revalidate = 300;
 const number = (value: number) => value.toLocaleString('zh-TW');

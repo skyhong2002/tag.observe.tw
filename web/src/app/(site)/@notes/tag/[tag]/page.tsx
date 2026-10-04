@@ -2,7 +2,7 @@ import { MediaCardMethod, RankingMethod, TagMethod } from '@/components/MethodNo
 import { RankingBasisText } from '@/components/RankingBasisNote';
 import { methodHeading } from '@/components/SiteFooter';
 import { fetchMedia, fetchTagSeries } from '@/lib/api';
-import { decodeRouteParam } from '@/lib/seo';
+import { decodeRouteParam } from '@/lib/seo.mts';
 import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;

@@ -10,7 +10,7 @@ import TagChart from '@/components/TagChart';
 import TagStatusPanel from '@/components/TagStatusPanel';
 import { type Camp, fetchMedia, fetchTagArticles, fetchTagSeries, fetchTagStatus, taipei } from '@/lib/api';
 import { articleHref } from '@/lib/reading.mts';
-import { decodeRouteParam, pageMetadata, pageSchema } from '@/lib/seo';
+import { decodeRouteParam, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;

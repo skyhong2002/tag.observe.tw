@@ -4,7 +4,7 @@ import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import { fetchSimilarity, periodQuery, type SimilarityData } from '@/lib/similarity';
 import { table } from '@/lib/table-styles';
 import { number, periodLabel, taipei } from '../format';

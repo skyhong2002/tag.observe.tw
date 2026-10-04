@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { fetchCategories } from '@/lib/api';
 import type { MediaCamps } from '@/lib/media-graph.mts';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 import { fetchSimilarity, periodQuery } from '@/lib/similarity';
 import catalog from '../../../../../app/data/media-catalog.json';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from './query';

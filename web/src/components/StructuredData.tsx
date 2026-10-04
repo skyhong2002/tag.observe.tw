@@ -1,4 +1,4 @@
-import { jsonLd } from '@/lib/seo';
+import { jsonLd } from '@/lib/seo.mts';
 
 export default function StructuredData({ data }: { data: unknown }) {
   // Escape '<' so article titles and tags cannot terminate the JSON script.

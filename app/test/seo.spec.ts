@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalQuery, decodeRouteParam, jsonLd, pageMetadata, pageSchema } from '../../web/src/lib/seo.ts';
+import { canonicalQuery, decodeRouteParam, jsonLd, pageMetadata, pageSchema } from '../../web/src/lib/seo.mts';
 
 describe('search and social metadata', () => {
   it('decodes page parameters once, including tags containing a percent sign', () => {

@@ -3,7 +3,7 @@ import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import { API_ORIGIN } from '@/lib/api';
 import type { MediaCrawler } from '@/lib/media-crawlers.mts';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 
 export const revalidate = 120;
 export const metadata = pageMetadata(

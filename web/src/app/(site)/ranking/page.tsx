@@ -8,7 +8,7 @@ import Sparkline from '@/components/Sparkline';
 import TableScroller from '@/components/TableScroller';
 import { fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
 import { type RankingSearch, rankingQuery } from '@/lib/ranking-query';
-import { canonicalQuery, pageMetadata } from '@/lib/seo';
+import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
 
 export const revalidate = 60;

@@ -1,5 +1,5 @@
 import TopicIndex, { type TopicIndexParams } from '@/components/TopicIndex';
-import { pageMetadata } from '@/lib/seo';
+import { pageMetadata } from '@/lib/seo.mts';
 export const revalidate = 300;
 export const metadata = pageMetadata(
   '/topic/',
