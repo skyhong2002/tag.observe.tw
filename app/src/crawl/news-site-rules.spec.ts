@@ -103,6 +103,16 @@ const fixtures = [
     published: '2026-10-02T21:36:00.000Z',
   },
   {
+    url: 'http://finance.people.com.cn/n1/2026/1004/c1004-40809312.html',
+    html: `<div class="layout rm_txt cf"><div class="col col-1 fl"><h1>地方新聞測試標題</h1><div class="channel cf"><div class="col-1-1 fl"><b id="newstime">2026年10月04日08:23</b> | 来源：经济日报</div></div><div class="rm_txt_con cf"><div id="rm_txt_zw">${paragraph}</div></div></div></div>`,
+    published: '2026-10-04T00:23:00.000Z',
+  },
+  {
+    url: 'http://theory.people.com.cn/n1/2026/1004/c40531-40809300.html',
+    html: `<div class="text_con text_con01 rm_txt"><div class="text_c col-1"><h1>地方新聞測試標題</h1><p class="sou"><b id="newstime">2026年10月04日08:16</b>&nbsp;来源：经济日报</p><div class="show_text" id="rm_txt_zw">${paragraph}</div></div></div>`,
+    published: '2026-10-04T00:16:00.000Z',
+  },
+  {
     url: 'https://nvns.net/news_view.php?new_sn=144955&new_csn=1467',
     html: `<div class="page-left"><div class="view-heading"><span class="title">地方新聞測試標題</span></div><div class="page-headline-flex"><div class="date-time"><span class="title">2026-10-03 17:49:09</span></div></div><div class="editor">${paragraph}</div></div>`,
     published: '2026-10-03T09:49:09.000Z',

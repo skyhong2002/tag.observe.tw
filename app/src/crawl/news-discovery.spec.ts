@@ -555,7 +555,7 @@ describe('discoverNews', () => {
       expect((await discoverNews({ homeUrl: home, feedUrls: [`${home}rss`], feedBody: 'full-text' }, f.options)).items).toEqual([]);
     }
   });
-  it.each(['www.biao-news.com', 'lai-media.net', 'nvns.net'])(
+  it.each(['www.biao-news.com', 'lai-media.net', 'nvns.net', 'www.iw-times.com'])(
     'repairs reviewed %s missing-php OG routes only for the same article ID',
     async (host) => {
       const site = `https://${host}/`;

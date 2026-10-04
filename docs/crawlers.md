@@ -196,3 +196,10 @@ Issue 列的 17 個「可再嘗試」來源已在 10-03 全數移出 `crawl-disa
   - **農傳媒**：所有路徑回 Vercel Security Checkpoint（429）；近 60 天資料庫沒有「轉載自農傳媒」的轉載。
   - **動網**：`www.dongtw.com` 301 轉回自己（無限轉址），`dongtw.com` 無 DNS。
   - **風向新聞**：`kairos.news` 無 DNS，網站已不存在。
+
+### 2026-10-04：四個失敗來源
+
+- **國際環宇時報**（`iw_times`）：og:url 少了 `.php`（`/news_view?new_sn=`），和彪網媒／萊媒體／新視界同一套模板，但先前的修補沒涵蓋 `iw-times.com`，所有候選都被判成「canonical 不在文章範圍」，14/14 失敗。加入同一修補（編號必須相同）後，正常索引新增 12 篇，正文 12/12 成功。
+- **人民網**（`people_cn`）：站別規則只列 `politics.people.com.cn`，首頁其他頻道（finance、world、ent…）的文章抓不到日期。同一模板（`.rm_txt #newstime`、`#rm_txt_zw`）已逐一核對，擴到 15 個頻道；`pic.*` 圖集不同，`tw.*` 另有規則。正常索引新增 10 篇，正文 10/10 成功。
+- **中視**（`ctv`）：YouTube `feeds/videos.xml` 本身間歇回 404／500，其他頻道與外部抓取同樣失敗，uploads 播放清單 feed 也一樣；不是設定問題，失敗以外的輪次照常每天收 30 篇上下。官網 `hotNews.JSON` 最新只到 10-02，不能取代。維持現狀。
+- **洞傳媒**（`taiwandom`）：整站連 `robots.txt`、首頁、WP API 都回 Apache 403（ErrorDocument 也 403），外部抓取一樣；是站方伺服器設定壞掉，不是擋爬蟲。最後一篇 09-30。不能修，若持續兩週再移入 `crawl-disabled.json`。

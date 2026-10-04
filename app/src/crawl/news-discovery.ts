@@ -392,7 +392,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     )
       canonical = response.url;
     if (
-      ['biao-news.com', 'lai-media.net', 'nvns.net'].includes(hostKey(fetchedUrl)) &&
+      ['biao-news.com', 'lai-media.net', 'nvns.net', 'iw-times.com'].includes(hostKey(fetchedUrl)) &&
       evidence.isArticle &&
       fetchedUrl.pathname === '/news_view.php' &&
       canonical &&

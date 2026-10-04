@@ -131,12 +131,32 @@ const SITES: Site[] = [
     bodySelector: '#text_area.text_area',
     publishedSelector: '.content_19568 > .title_area > .info > span',
   },
-  {
-    host: 'politics.people.com.cn',
-    path: /^\/n1\/\d{4}\/\d{4}\/c\d+-\d+\.html$/,
-    bodySelector: '#rm_txt_zw',
-    publishedSelector: '.rm_txt #newstime',
-  },
+  // 人民網 channels linked from the homepage share this article template
+  // (checked 2026-10-04); pic.* galleries and tw.* (own rule) differ.
+  ...[
+    'politics',
+    'world',
+    'finance',
+    'ent',
+    'society',
+    'opinion',
+    'military',
+    'edu',
+    'health',
+    'leaders',
+    'kpzg',
+    'theory',
+    'cpc',
+    'dangjian',
+    'art',
+  ].map(
+    (channel): Site => ({
+      host: `${channel}.people.com.cn`,
+      path: /^\/n1\/\d{4}\/\d{4}\/c\d+-\d+\.html$/,
+      bodySelector: '#rm_txt_zw',
+      publishedSelector: '.rm_txt #newstime',
+    }),
+  ),
   {
     host: '163.com',
     path: /^\/(?:news|dy|sports)\/article\/[A-Z0-9]+\.html$/i,
