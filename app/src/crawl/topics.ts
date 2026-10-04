@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
+import { mirrorTopics } from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -270,6 +271,10 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/topic\/[^/?#]+$/,
     scope: 'main',
     title: (a) => a.find('[class*="ItemTitle"]').first().text().trim() || heading(a),
+    // Running beats (房市熱話題) beside one-off packages: classified by stories.
+    // Advertorial-looking ones (台北畫刊, 魅力基隆) carry no 廣告/合作 mark on the page.
+    extract: mirrorTopics,
+    kind: 'auto',
   },
   {
     media: 'gvm',
