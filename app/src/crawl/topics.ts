@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { ctsTopics, ettodayFeatureIndex, ftvTopics, setnTopics } from './topic-extractors-a2.ts';
+import { ctsTopics, ettodayFeatureIndex, ftvTopics, setnTopics, ttvProjects } from './topic-extractors-a2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -375,6 +375,10 @@ export const TOPIC_RULES: TopicRule[] = [
     // Heading link above the project's story thumbnails: the first one is the cover.
     card: '.project-list > li',
     title: heading,
+    extract: ttvProjects,
+    // Programme series: some still air weekly (益起看世界), others stopped
+    // (熱線追蹤, 2024), so auto; story IDs carry ROC dates (dateFromStoryUrl).
+    kind: 'auto',
   },
   {
     media: 'tnl',

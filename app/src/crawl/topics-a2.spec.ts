@@ -86,4 +86,13 @@ describe('batch a2 topic rules', () => {
       ['https://www.ftvnews.com.tw/topic/yangliu2026/', '洋流拼萬安', 'topic'],
     ]);
   });
+
+  it('台視: series names with spaces are encoded instead of dropped', () => {
+    const html = `<ul class="project-list"><li><a href ='/Proj/台視60  璀璨年代'><h2>台視60  璀璨非凡</h2></a></li>
+      <li><a href='/Proj/熱線追蹤'><h2>【熱線追蹤】</h2></a></li></ul>`;
+    expect(run(rule('ttv'), html).map((t) => [t.url, t.title])).toEqual([
+      ['https://news.ttv.com.tw/Proj/%E5%8F%B0%E8%A6%9660%20%20%E7%92%80%E7%92%A8%E5%B9%B4%E4%BB%A3', '台視60 璀璨非凡'],
+      ['https://news.ttv.com.tw/Proj/%E7%86%B1%E7%B7%9A%E8%BF%BD%E8%B9%A4', '【熱線追蹤】'],
+    ]);
+  });
 });

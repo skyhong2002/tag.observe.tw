@@ -64,3 +64,17 @@ export function ftvTopics(html: string, rule: TopicRule): TopicItem[] {
     new URL(item.url).hostname === 'www.ftvnews.com.tw' ? { ...item, kind: 'topic' } : item,
   );
 }
+
+/** 台視 /Projs/: a series name can hold spaces (/Proj/台視60  璀璨年代), which
+ *  the generic href cleaner rejects as template junk; the encoded URL works. */
+export function ttvProjects(html: string, rule: TopicRule): TopicItem[] {
+  const $ = cheerio.load(html);
+  $('a[href*="/Proj/"]').each((_, el) => {
+    const a = $(el);
+    a.attr(
+      'href',
+      (a.attr('href') ?? '').trim().replace(/\s/g, (c) => encodeURIComponent(c)),
+    );
+  });
+  return extractTopics($.html(), rule);
+}
