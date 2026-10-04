@@ -3,14 +3,51 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { METHOD_HREF } from '@/lib/site-nav';
-import { EventMethod, JournalistMethod, MediaMethod, RankingMethod, SimilarityMethod, SourceMethod, TopicMethod } from './MethodNotes';
+import {
+  ArticleMethod,
+  EventMethod,
+  JournalistMethod,
+  MediaCardMethod,
+  MediaMethod,
+  RankingMethod,
+  SearchMethod,
+  SimilarityMethod,
+  SourceMethod,
+  TopicMethod,
+} from './MethodNotes';
 
 const inlineLink = 'text-brand-700 underline underline-offset-2 dark:text-brand-400';
 
 // Which method blocks explain which pages; anything unlisted gets 資料來源.
 function sectionsFor(pathname: string) {
-  if (pathname === '/') return <EventMethod page="table" />;
-  if (/^\/(ranking|tag)\//.test(pathname)) return <RankingMethod />;
+  // The home page passes its blocks as notes, with its own counts.
+  if (pathname === '/') return null;
+  if (/^\/ranking(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <RankingMethod />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  // One keyword's page: @notes/tag/[tag] renders its blocks with the chart's basis.
+  if (/^\/tag(\/|$)/.test(pathname)) return null;
+  if (/^\/search(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <SearchMethod />
+        <MediaCardMethod />
+      </>
+    );
+  }
+  if (/^\/article(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <ArticleMethod />
+        <SourceMethod />
+      </>
+    );
+  }
   if (/^\/journalist(\/|$)/.test(pathname)) return <JournalistMethod />;
   if (/^\/similarity(\/|$)/.test(pathname)) return <SimilarityMethod />;
   if (pathname.startsWith('/media/')) {

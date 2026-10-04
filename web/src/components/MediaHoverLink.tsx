@@ -256,10 +256,8 @@ export default function MediaHoverLink({
                         </Link>
                       ))}
                     </div>
-                    <span className={styles.note}>
-                      {keywords.capped ? `取最新 ${keywords.sampledArticles.toLocaleString('zh-TW')} 篇；` : ''}
-                      標籤與標題關鍵詞，每篇每詞計一次
-                    </span>
+                    {/* How the keywords are counted is in SourceMethod (資料來源與計算方式). */}
+                    {keywords.capped && <span className={styles.note}>取最新 {keywords.sampledArticles.toLocaleString('zh-TW')} 篇</span>}
                   </>
                 ) : (
                   <p className={styles.note}>這段時間尚無足夠的關鍵字</p>

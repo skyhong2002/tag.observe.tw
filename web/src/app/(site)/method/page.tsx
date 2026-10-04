@@ -1,10 +1,14 @@
 import {
+  ArticleMethod,
   EventMethod,
+  HomeMethod,
   JournalistMethod,
   MediaMethod,
   RankingMethod,
+  SearchMethod,
   SimilarityMethod,
   SourceMethod,
+  TagMethod,
   TopicMethod,
 } from '@/components/MethodNotes';
 
@@ -21,7 +25,11 @@ export default function MethodPage() {
       <h1 className="text-2xl font-semibold tracking-tight">資料來源與計算方式</h1>
       <div className="mt-6 space-y-3 text-sm leading-[1.9] text-zinc-700 dark:text-zinc-300 [&_h3]:pt-6 [&_h3]:text-base [&_h3]:first:pt-0">
         <SourceMethod />
+        <HomeMethod />
         <RankingMethod />
+        <TagMethod camp={false} />
+        <SearchMethod camp={false} />
+        <ArticleMethod />
         <SimilarityMethod />
         <JournalistMethod />
         <MediaMethod />

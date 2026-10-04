@@ -1,17 +1,21 @@
 import Link from 'next/link';
 import { type TagStatus, taipei, taipeiHour } from '@/lib/api';
+import MethodLink from './MethodLink';
 
 // The ranking row for this tag, expanded: what the 關鍵字 table shows in one
 // line, plus co-occurring tags and long-term history. Rendered above the chart.
+// Colours follow the ranking table: 新 and 爆發力 above 分數 in the brand
+// orange, ▲ rose, ▼ sky. What the numbers mean is in the footer (TagMethod).
+const rising = 'text-brand-700 dark:text-brand-400';
 export default function TagStatusPanel({ status }: { status: TagStatus }) {
   const r = status.ranking;
   const delta = r && r.rank24h !== null ? r.rank24h - r.rank : null;
   const change = !r
     ? null
     : r.new
-      ? { text: '新', tone: 'text-rose-600', title: '24 小時前不在榜上' }
+      ? { text: '新', tone: rising }
       : delta === null
-        ? { text: '—', tone: 'text-zinc-400', title: '沒有可比較的 24 小時前快照' }
+        ? { text: '—', tone: 'text-zinc-400' }
         : delta > 0
           ? { text: `▲${delta}`, tone: 'text-rose-600', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
           : delta < 0
@@ -19,17 +23,12 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
             : { text: '＝', tone: 'text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
   const tiles: Array<{ label: string; value: string; tone?: string; title?: string }> = r
     ? [
-        { label: '名次', value: `#${r.position}`, title: '新聞媒體排行榜，依爆發力' },
-        {
-          label: '爆發力',
-          value: r.burst?.toFixed(1) ?? '—',
-          tone: r.burst !== null && r.burst > r.normalized ? 'text-rose-600' : undefined,
-          title: '相對 3／6／12／24／48 小時前的變化',
-        },
-        { label: '分數', value: r.normalized.toFixed(1), title: '媒體加權分數' },
+        { label: '名次', value: `#${r.position}` },
+        { label: '爆發力', value: r.burst?.toFixed(1) ?? '—', tone: r.burst !== null && r.burst > r.normalized ? rising : undefined },
+        { label: '分數', value: r.normalized.toFixed(1) },
         { label: '變動', value: change!.text, tone: change!.tone, title: change!.title },
         { label: '24 小時篇數', value: r.count.toLocaleString('zh-TW') },
-        { label: '報導媒體', value: `${r.mediaCount}／${r.basisMediaCount} 家`, title: '基準媒體中有報導的家數' },
+        { label: '報導媒體', value: `${r.mediaCount}／${r.basisMediaCount} 家` },
       ]
     : [];
   return (
@@ -69,11 +68,9 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         {r && `${taipeiHour(r.hourStart)} 時段的新聞媒體排行榜`}
         {r && status.history && ' · '}
         {status.history &&
-          `首次上榜 ${taipei(status.history.firstHour)} · 高峰 ${taipei(status.history.maxHour)}（${status.history.maxCount} 篇／小時）`}
+          `首次上榜 ${taipei(status.history.firstHour)} · 高峰 ${taipei(status.history.maxHour)}（24 小時 ${status.history.maxCount} 篇）`}
         {(r || status.history) && ' · '}
-        <Link href="/ranking/?category=news#method" className="hover:underline">
-          指標定義
-        </Link>
+        <MethodLink />
       </p>
     </section>
   );
