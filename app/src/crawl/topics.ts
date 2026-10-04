@@ -363,6 +363,9 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/knews.png',
     pattern: /\/realtime\/topic\/[^/?#]+$/,
     title: (a) => decodeURIComponent((a.attr('href') ?? '').split('/').pop() ?? ''),
+    // Running 議題, columns and programmes. Their pages render stories
+    // client-side, so auto would see no story list and call them features.
+    kind: 'topic',
   },
   {
     media: 'fountmedia',
