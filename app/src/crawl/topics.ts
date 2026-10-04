@@ -457,6 +457,10 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/sportsv.png',
     pattern: /\/feature\/[^/?#]+$/,
     card: '.item',
+    // Mixed: season-long hubs (playoffs, World Cup) and one-off packages.
+    // Newest first back to ~2010; five pages reach about two years back.
+    kind: 'auto',
+    paginate: { url: (n) => `https://www.sportsv.net/feature?page=${n}`, max: 5 },
   },
   {
     media: 'tvbshealth',
