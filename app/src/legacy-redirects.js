@@ -34,6 +34,9 @@ export function legacyRoute(rawUrl) {
   const q = rawUrl.indexOf('?');
   const path = q < 0 ? rawUrl : rawUrl.slice(0, q);
   const params = new URLSearchParams(q < 0 ? '' : rawUrl.slice(q + 1));
+  // Next's generated share images are current routes, not old tag subpages.
+  // Route groups add a hash suffix; the query string is only a cache version.
+  if (/^\/(?:tag\/[^/]+|eve\/[1-9]\d*)\/opengraph-image(?:-[a-z0-9]+)?\/?$/.test(path)) return null;
   let m;
   if (path.startsWith('/api/') && path.endsWith('.php')) {
     const replacement = Object.hasOwn(API_REPLACEMENTS, path) ? API_REPLACEMENTS[path] : null;

@@ -1,5 +1,3 @@
-import type { Metadata } from 'next';
-
 export const SITE_ORIGIN = 'https://tag.observe.tw';
 export const SITE_NAME = '新文易數';
 export const SITE_DESCRIPTION = '同一件事，各家怎麼說。台灣新聞總覽、媒體標題對照與關鍵字排行，追蹤熱門事件與議題趨勢。';
@@ -14,7 +12,7 @@ export function decodeRouteParam(value: string) {
   }
 }
 
-export function pageMetadata(path: string, title: string, description: string, generatedImage = false): Metadata {
+export function pageMetadata(path: string, title: string, description: string, generatedImage = false) {
   const url = SITE_ORIGIN + path;
   const fullTitle = title === SITE_NAME ? '新文易數：同一件事，各家怎麼說' : `${title} · ${SITE_NAME}`;
   const images = [{ url: SITE_ORIGIN + '/opengraph-image.png', width: 1200, height: 630, alt: fullTitle }];
@@ -23,7 +21,7 @@ export function pageMetadata(path: string, title: string, description: string, g
     description,
     alternates: { canonical: url },
     openGraph: {
-      type: 'website',
+      type: 'website' as const,
       locale: 'zh_TW',
       siteName: SITE_NAME,
       title: fullTitle,
@@ -31,7 +29,7 @@ export function pageMetadata(path: string, title: string, description: string, g
       url,
       ...(!generatedImage ? { images } : {}),
     },
-    twitter: { card: 'summary_large_image', title: fullTitle, description, ...(!generatedImage ? { images } : {}) },
+    twitter: { card: 'summary_large_image' as const, title: fullTitle, description, ...(!generatedImage ? { images } : {}) },
   };
 }
 
