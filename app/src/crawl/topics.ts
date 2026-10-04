@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
 import { registrable } from './topic-page.ts';
-import { zaobaoSpecials } from './topic-extractors-b2.ts';
+import { womanyCollections, zaobaoSpecials } from './topic-extractors-b2.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
 // literal markers that have since drifted for most sites; these rules match
@@ -484,6 +484,9 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/collections\/[^/?#]+$/,
     scope: '.collection-item',
     title: heading,
+    // 特別企劃: one-off packages, many of them brand campaigns (品牌贊助 badge).
+    extract: womanyCollections,
+    kind: 'feature',
   },
   {
     media: 'wyc',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { zaobaoSpecials } from './topic-extractors-b2.ts';
+import { womanyCollections, zaobaoSpecials } from './topic-extractors-b2.ts';
 import { extractTopics, fetchTopicListings, TOPIC_RULES, topicListings } from './topics.ts';
 
 const rule = (media: string) => TOPIC_RULES.find((r) => r.media === media)!;
@@ -67,6 +67,18 @@ describe('zaobao', () => {
       card('https://interactive.zaobao.com.sg/sg-chinese-funfest/2026/quiz-challenge', '文字大比拼');
     expect(extractTopics(html, graphics).map((t) => [t.title, t.url])).toEqual([
       ['争稀土，得天下？', 'https://interactive.zaobao.com.sg/2026/rare-earth/'],
+    ]);
+  });
+});
+
+describe('womany', () => {
+  it('marks collections with the 品牌贊助 badge as sponsored', () => {
+    const html = `<section id="collection-list"><ul>
+      <li class="collection-item"><a href="/collections/unclelemon"><div class="info"><h4>與檸檬大叔，一起品嚐生活的酸甜</h4><span class="sponsorship">品牌贊助</span></div></a></li>
+      <li class="collection-item"><a href="/collections/voiceforher"><div class="info"><h4>挺女力公益開講</h4></div></a></li></ul></section>`;
+    expect(womanyCollections(html, rule('womany')).map((t) => [t.title, t.sponsored])).toEqual([
+      ['與檸檬大叔，一起品嚐生活的酸甜', true],
+      ['挺女力公益開講', false],
     ]);
   });
 });
