@@ -243,7 +243,13 @@ export function clusterEvents(
         seenId.add(r.id);
         const carried = [...new Set(r.tags.map(clean))].filter((x) => evTags.has(x));
         if (carried.length < minShared) continue;
-        members.push({ row: r, hits: carried.length, weight: carried.reduce((n, x) => n + Math.max(0, burst.get(x) ?? 0), 0) });
+        // Divided by log(tag count) as events.php scored major_news: a weekly
+        // digest tagged with thirty names is not the best headline for any of them.
+        members.push({
+          row: r,
+          hits: carried.length,
+          weight: carried.reduce((n, x) => n + Math.max(0, burst.get(x) ?? 0), 0) / Math.log(r.tags.length + 2),
+        });
       }
     // news: the articles most about the event (burst mass of the tags they
     // carry, then recency), one per outlet first so the list reads like a
@@ -273,27 +279,30 @@ export function clusterEvents(
         }
       }
     }
-    // major: up to 3 tags, preferring ones with >=3 equals, then 1-2, then 0, then non-positive burst.
-    const size = (t: string) => co.closure(t, noEqual).size;
-    const major: string[] = [];
-    const tiers: Array<(t: string, b: number) => boolean> = [
-      (t, b) => size(t) >= 3 && b > 0,
-      (t, b) => size(t) < 3 && size(t) > 0 && b > 0,
-      (t, b) => size(t) === 0 && b > 0,
-      (_t, b) => b <= 0,
-    ];
-    for (const tier of tiers)
-      for (const [t, b] of tags) {
-        if (major.length >= 3) break;
-        if (!major.includes(t) && tier(t, b)) major.push(t);
+    // major: the three tags carried by the most member articles. events.php
+    // preferred tags with three or more equals, which here picks the small
+    // tags swallowed by a big story (童子瑋, 陳以信 for the 沈伯洋 rally) over
+    // the story itself.
+    const coverage = new Map<string, number>();
+    for (const { row } of members)
+      for (const x of new Set(row.tags.map(clean))) if (evTags.has(x)) coverage.set(x, (coverage.get(x) ?? 0) + 1);
+    const major = tags
+      .map(([t, b]) => ({ t, b, n: coverage.get(t) ?? 0 }))
+      .sort((a, c) => c.n - a.n || c.b - a.b)
+      .slice(0, 3)
+      .map((x) => x.t);
+    // major_news: the same ranking, restricted to articles carrying a major tag.
+    const majorNews: ArticleRow[] = [];
+    const seenMajorUrl = new Set<string>();
+    const seenMajorMedia = new Set<string>();
+    for (const pass of [true, false])
+      for (const { row: r } of ranked) {
+        if (majorNews.length >= newsLimit) break;
+        if (seenMajorUrl.has(r.url) || (pass && seenMajorMedia.has(r.media)) || !r.tags.some((x) => major.includes(clean(x)))) continue;
+        seenMajorUrl.add(r.url);
+        seenMajorMedia.add(r.media);
+        majorNews.push(r);
       }
-    // major_news: members matching any major tag, scored hits/log(tagCount+2), top 5.
-    const majorNews = members
-      .map(({ row }) => ({ row, s: major.filter((x) => row.tags.includes(x)).length / Math.log(row.tags.length + 2) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s || b.row.publishedAt.getTime() - a.row.publishedAt.getTime())
-      .slice(0, 5)
-      .map((x) => x.row);
     out.push({ rank: 0, score: tags[0]?.[1] ?? 0, tags, major, news, majorNews, articles: members.length });
   }
   out.sort((a, b) => b.score - a.score);
