@@ -2,6 +2,15 @@ import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
 import { cnaNewsTopics, ltnSpecialTopics, udnTopicIndex } from './topic-extractors-a1.ts';
+import {
+  cwNavTopics,
+  insideFeatures,
+  mirrorTopics,
+  nownewsTopicGroups,
+  taisoundsTopics,
+  tnlFeatures,
+  twreporterTopics,
+} from './topic-extractors-b1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -263,6 +272,23 @@ export const TOPIC_RULES: TopicRule[] = [
     scope: '.p-topic__list',
     image: 'img.cover',
     title: heading,
+    // 議題 with an article count, newest update first (5 a page, ~58 pages);
+    // past page 12 they have been quiet for months.
+    kind: 'topic',
+    paginate: { url: (n) => `https://www.ctwant.com/topic/?page=${n}`, max: 12 },
+    listings: [
+      {
+        // The 永續 menu's 2023 論壇/新聞/影音 packages.
+        url: 'https://www.ctwant.com/',
+        pattern: /^\/topic\/\d+\/?$/,
+        scope: '.m-navbar__subnav',
+        kind: 'feature',
+        title: (a) => {
+          const section = a.closest('.m-navbar__list__item').contents().first().text().trim();
+          return `${section}${textOf(a)}`;
+        },
+      },
+    ],
   },
   {
     media: 'taisounds',
@@ -270,12 +296,39 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://www.taisounds.com/special/topiclist',
     pattern: /\/special\/topic\/\d+/,
     title: heading,
+    // 主題報導: one-off reports. "More" is a POST returning the next 10 cards.
+    extract: taisoundsTopics,
+    kind: 'feature',
+    paginate: {
+      url: (n) => `https://www.taisounds.com/more/infinatetopic?page=${n}`,
+      max: 20,
+      request: (n) => (n > 1 ? { method: 'POST' } : {}),
+    },
+    listings: [
+      {
+        // 特別企劃: running coverage (九合一大選) that keeps gaining stories.
+        url: 'https://www.taisounds.com/special/planlist',
+        pattern: /\/special\/plan\/\d+/,
+        title: heading,
+        extract: taisoundsTopics,
+        kind: 'topic',
+        paginate: {
+          url: (n) => `https://www.taisounds.com/more/infinateplan?page=${n}`,
+          max: 10,
+          request: (n) => (n > 1 ? { method: 'POST' } : {}),
+        },
+      },
+    ],
   },
   {
     media: 'upmedia',
     fallbackImage: 'https://www.upmedia.mg/images/sitelogo.png',
     url: 'https://www.upmedia.mg/tw/project',
-    pattern: /\/tw\/project\/[^/?#]+\/?$/,
+    // special-plan and 10th-anniversary-highlights are hubs over these projects.
+    pattern: /\/tw\/project\/(?!special-plan\/?$|10th-anniversary-highlights\/?$)[^/?#]+\/?$/,
+    // The menu's "特別企劃" link points at a project whose card has the real name.
+    title: (a) => (a.is('.dropdown-item') ? '' : heading(a)),
+    paginate: { url: (n) => `https://www.upmedia.mg/tw/project?p=${n}`, max: 5 },
   },
   // /topic/ itself redirect-loops; the homepage lists the running topics, each
   // "more" link sitting next to its title (banners link to index2 pages).
@@ -290,9 +343,11 @@ export const TOPIC_RULES: TopicRule[] = [
     media: 'twreporter',
     fallbackImage: 'https://www.twreporter.org/images/og-image-large.jpg',
     name: '報導者',
-    url: 'https://www.twreporter.org/topics',
-    pattern: /^\/topics\/[\w-]+$/,
-    title: heading,
+    // /topics shows 5 a page over ~46 pages; its API returns them all.
+    url: 'https://go-api.twreporter.org/v2/topics?offset=0&limit=100',
+    pattern: /^https:\/\/www\.twreporter\.org\/topics\/[\w%-]+$/,
+    extract: twreporterTopics,
+    paginate: { url: (n) => `https://go-api.twreporter.org/v2/topics?offset=${(n - 1) * 100}&limit=100`, max: 5 },
   },
   // Covers are only in the RSC payload (the <img> is a loading gif).
   {
@@ -301,7 +356,17 @@ export const TOPIC_RULES: TopicRule[] = [
     name: '鏡報',
     url: 'https://www.mirrordaily.news/topic',
     pattern: /^\/topic\/\w+$/,
-    title: (a) => decodeEntities(a.find('p.font-bold').first().text().trim()) || textOf(a),
+    title: (a) => decodeEntities(a.find('p.font-bold, span.font-bold').first().text().trim()) || textOf(a),
+    kind: 'topic',
+    // The homepage strip also carries topics missing from /topic (柯文哲二審 /topic/kao).
+    listings: [
+      {
+        url: 'https://www.mirrordaily.news/',
+        pattern: /^\/topic\/\w+$/,
+        title: (a) => decodeEntities(a.find('p.font-bold, span.font-bold').first().text().trim()) || textOf(a),
+        kind: 'topic',
+      },
+    ],
   },
   {
     media: 'ettoday',
@@ -326,22 +391,52 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /^\/topic\/[^/?#]+$/,
     scope: 'main',
     title: (a) => a.find('[class*="ItemTitle"]').first().text().trim() || heading(a),
+    // Running beats (房市熱話題) beside one-off packages: classified by stories.
+    // Advertorial-looking ones (台北畫刊, 魅力基隆) carry no 廣告/合作 mark on the page.
+    extract: mirrorTopics,
+    kind: 'auto',
   },
   {
     media: 'gvm',
     url: 'https://www.gvm.com.tw/topic',
     fallbackImage: 'https://www.gvm.com.tw/public/images/og-img.jpg',
-    pattern: /\/topic\/\d+$/,
+    // Four-digit IDs only: /topic/20251230-style links 404.
+    pattern: /\/topic\/\d{4}$/,
     scope: '.info-cards',
     title: (a) => a.find('.info-cards_title').text().trim() || heading(a),
+    kind: 'feature',
+    // ~8 a page over ~35 pages, newest first.
+    paginate: { url: (n) => `https://www.gvm.com.tw/topic?page=${n}`, max: 10 },
+    listings: [
+      {
+        // 特刊 (special issues) beside the regular issues on /magazine.
+        url: 'https://www.gvm.com.tw/magazine',
+        pattern: /\/magazine\/special\/\d+$/,
+        title: (a) => a.attr('title')?.trim() || heading(a),
+        kind: 'feature',
+      },
+    ],
   },
   {
     media: 'cw',
     url: 'https://www.cw.com.tw/special',
     fallbackImage: 'https://www.cw.com.tw/assets_new/img/fbshare.jpg',
-    pattern: /cw\.com\.tw\/feature\/[^/?#]+\/[^/?#]+/,
+    // Older pages link 2017–2019 packages as /special/NNNN.
+    pattern: /cw\.com\.tw\/(feature\/[^/?#]+\/[^/?#]+|special\/\d+)$/,
     scope: '.articleGroup',
     title: (a) => a.closest('section.article').find('h3').first().text().trim() || textOf(a),
+    kind: 'feature',
+    // /feature/transformers/ is 天下's 廣告專輯 (brand packages).
+    sponsored: (item) => /\/feature\/transformers\//.test(item.url),
+    paginate: { url: (n) => `https://www.cw.com.tw/special?page=${n}`, max: 10 },
+    listings: [
+      {
+        // Menu-level /feature/topic/ pages: the podcast column and a few packages.
+        url: 'https://www.cw.com.tw/',
+        pattern: /cw\.com\.tw\/feature\/topic\/[^/?#]+$/,
+        extract: cwNavTopics,
+      },
+    ],
   },
   {
     media: 'bnext',
@@ -349,6 +444,7 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/bnext.png',
     pattern: /\/topic\/view\/\d+$/,
     title: (a) => heading(a.parent()),
+    kind: 'feature',
   },
   {
     media: 'inside',
@@ -357,6 +453,9 @@ export const TOPIC_RULES: TopicRule[] = [
     pattern: /\/feature\/[^/?#]+$/,
     scope: '.post_list',
     title: (a) => a.closest('.post_list_item').find('.post_title').text().trim() || textOf(a),
+    extract: insideFeatures,
+    kind: 'feature',
+    paginate: { url: (n) => `https://www.inside.com.tw/features?page=${n}`, max: 10 },
   },
   {
     media: 'nownews',
@@ -364,6 +463,18 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://www.nownews.com/icon/banner.jpg',
     pattern: /nownews\.com\//,
     extract: nownewsTopics,
+    // Brand microsites (跨世代, 心理假).
+    kind: 'feature',
+    listings: [
+      {
+        // 重磅追蹤: monthly numbered series, 5 to a page.
+        url: 'https://www.nownews.com/topicgroup/',
+        pattern: /nownews\.com\/news\/\d+/,
+        extract: nownewsTopicGroups,
+        kind: 'feature',
+        paginate: { url: (n) => `https://www.nownews.com/topicgroup/${n}/`, max: 8 },
+      },
+    ],
   },
   // The dedicated /topic index currently returns a challenge; the public
   // homepage also carries the editor-selected topic links (not article tags).
@@ -373,6 +484,9 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: 'https://static.ctee.com.tw/img/ctee-logo-main.png?20260825',
     pattern: /ctee\.com\.tw\/topic\/[^/?#]+\/\d+-\d+|topic\.ctee\.com\.tw\/[^/?#]+\/?$/,
     title: heading,
+    // Annual and monthly packages (people2026, 上市櫃8月營收, 年度好書); www /topic/
+    // pages answer 403, so story dates could not classify them anyway.
+    kind: 'feature',
   },
   {
     media: 'chinatimes',
@@ -398,6 +512,10 @@ export const TOPIC_RULES: TopicRule[] = [
     scope: '.item-content',
     card: '.item-content',
     title: (a) => heading(a.closest('.item-content')),
+    extract: tnlFeatures,
+    kind: 'feature',
+    // 20 a page; deep pages reach back to 2020.
+    paginate: { url: (n) => `https://www.thenewslens.com/feature?page=${n}`, max: 10 },
   },
   {
     media: 'ftnn',
