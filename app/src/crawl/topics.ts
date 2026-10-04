@@ -509,6 +509,8 @@ export const TOPIC_RULES: TopicRule[] = [
     fallbackImage: '/favicons/ntdtv_tw.png',
     pattern: /^\/topic\/category\/id\/\d+$/,
     title: (a) => a.attr('title') || heading(a),
+    // Running story categories, all on one page; most have gone quiet (已停更).
+    kind: 'topic',
   },
   {
     media: 'zaobao',
