@@ -123,3 +123,27 @@ describe('UDN', () => {
     ]);
   });
 });
+
+describe('LTN', () => {
+  it('declares the homepage keyword bar as 議題 and 新聞事件簿 as auto', () => {
+    const [home, events] = topicListings(ruleOf('ltn'));
+    expect(home.kind).toBe('topic');
+    expect(events.kind).toBeUndefined();
+  });
+
+  it('reads 專題專區 microsites on election./sports. hosts; yearless columns stay 議題', () => {
+    const special = topicListings(ruleOf('ltn'))[2];
+    const card = (url: string, title: string) => `<a href="${url}"><img src="https://img/x.jpg" alt="${title}"></a>`;
+    const html = `<a href="https://sports.ltn.com.tw/">體育</a><div class="project">
+      ${card('https://election.ltn.com.tw/2026/', '2026九合一選舉')}${card('https://sports.ltn.com.tw/wbc2026', '2026世界棒球經典賽')}
+      ${card('https://features.ltn.com.tw/AST/2026', '115年大學分科測驗')}${card('https://features.ltn.com.tw/taiwanese', '每日一台語')}
+      ${card('https://ec.ltn.com.tw/list/2026', '財經')}</div>`;
+    expect(special.extract!(html, { ...special, media: 'ltn', fallbackImage: '' }).map((t) => [t.title, t.url, t.kind])).toEqual([
+      ['2026九合一選舉', 'https://election.ltn.com.tw/2026/', undefined],
+      ['2026世界棒球經典賽', 'https://sports.ltn.com.tw/wbc2026', undefined],
+      ['115年大學分科測驗', 'https://features.ltn.com.tw/AST/2026', undefined],
+      ['每日一台語', 'https://features.ltn.com.tw/taiwanese', 'topic'],
+    ]);
+    expect(special.kind).toBe('feature');
+  });
+});

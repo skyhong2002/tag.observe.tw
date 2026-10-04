@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { cnaNewsTopics, udnTopicIndex } from './topic-extractors-a1.ts';
+import { cnaNewsTopics, ltnSpecialTopics, udnTopicIndex } from './topic-extractors-a1.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -228,18 +228,23 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://news.ltn.com.tw/',
     pattern: /news\.ltn\.com\.tw\/topic\/[^/?#]+/,
     scope: '.h_kw',
+    kind: 'topic',
     listings: [
+      // 新聞事件簿: /topic/ tag pages for past events, mostly dormant 議題 (auto).
       {
         url: 'https://features.ltn.com.tw/',
         pattern: /ltn\.com\.tw\//,
         scope: '.project',
         title: (a) => decodeEntities(a.find('img').attr('alt') ?? '') || heading(a),
       },
+      // 專題專區: yearly microsites on features./election./sports.ltn.com.tw.
       {
         url: 'https://features.ltn.com.tw/special_topic',
-        pattern: /features\.ltn\.com\.tw\/[^/?#]+/,
+        pattern: /(features|election|sports)\.ltn\.com\.tw\/[^/?#]+/,
         scope: '.project',
         title: (a) => decodeEntities(a.find('img').attr('alt') ?? '') || heading(a),
+        extract: ltnSpecialTopics,
+        kind: 'feature',
       },
     ],
   },
