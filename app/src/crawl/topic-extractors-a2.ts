@@ -48,3 +48,19 @@ export function ctsTopics(html: string, rule: TopicRule): TopicItem[] {
   }
   return items.map((item) => (dates.has(item.url) ? { ...item, storyDates: dates.get(item.url) } : item));
 }
+
+/** 民視 homepage: /topic/<slug>/ blocks are running topics (議題); the
+ *  topic.ftvnews.com.tw microsites stay auto. Banners link a microsite's
+ *  /index2 page and carry only a filename-like alt ("9in1"), so they count
+ *  only once normalised and with a real name. */
+export function ftvTopics(html: string, rule: TopicRule): TopicItem[] {
+  const $ = cheerio.load(html);
+  $('a[href*="topic.ftvnews.com.tw/"]').each((_, el) => {
+    const a = $(el);
+    a.attr('href', (a.attr('href') ?? '').replace(/\/index2(?=[?#]|$)/, ''));
+    if (!a.text().trim() && !/[㐀-鿿]/.test(a.find('img').attr('alt') ?? '')) a.removeAttr('href');
+  });
+  return extractTopics($.html(), rule).map((item) =>
+    new URL(item.url).hostname === 'www.ftvnews.com.tw' ? { ...item, kind: 'topic' } : item,
+  );
+}

@@ -76,4 +76,14 @@ describe('batch a2 topic rules', () => {
       { url: 'https://event.cts.com.tw/2026asiangames/', title: '2026亞運看華視', image: 'https://www.cts.com.tw/a.webp', category: null },
     ]);
   });
+
+  it('民視: /index2 microsite links are normalised; filename-alt banners skipped; /topic/ blocks are 議題', () => {
+    const html = `<a href="https://topic.ftvnews.com.tw/2026election/index2?utm_source=ftvnews"><img src="/b.jpg" alt="9in1"></a>
+      <li><a href="https://topic.ftvnews.com.tw/FormosaTeamVictor2026/index2">名古屋亞運</a></li>
+      <div><div class="tw-font-bold">洋流拼萬安</div><a href="/topic/yangliu2026/">更多</a></div>`;
+    expect(run(rule('ftv'), html).map((t) => [t.url, t.title, t.kind])).toEqual([
+      ['https://topic.ftvnews.com.tw/FormosaTeamVictor2026', '名古屋亞運', undefined],
+      ['https://www.ftvnews.com.tw/topic/yangliu2026/', '洋流拼萬安', 'topic'],
+    ]);
+  });
 });

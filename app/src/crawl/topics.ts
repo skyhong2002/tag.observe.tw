@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
-import { ctsTopics, ettodayFeatureIndex, setnTopics } from './topic-extractors-a2.ts';
+import { ctsTopics, ettodayFeatureIndex, ftvTopics, setnTopics } from './topic-extractors-a2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
@@ -260,6 +260,7 @@ export const TOPIC_RULES: TopicRule[] = [
     url: 'https://www.ftvnews.com.tw/',
     pattern: /^\/topic\/[\w-]+\/?$|topic\.ftvnews\.com\.tw\/[\w-]+\/?$/,
     title: (a) => decodeEntities(a.parent().find('.tw-font-bold').first().text().trim()) || textOf(a),
+    extract: ftvTopics,
   },
   {
     media: 'twreporter',
