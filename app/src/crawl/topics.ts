@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { type FetchRequest, fetchText } from './fetch.ts';
 import { decodeEntities, resolveUrl, stripTracking, TRACKING } from './text.ts';
 import { cnaNewsTopics, ltnSpecialTopics, udnTopicIndex } from './topic-extractors-a1.ts';
+import { ctsTopics, ettodayFeatureIndex, ftvTopics, nextappleSpecial, setnTopics, ttvProjects } from './topic-extractors-a2.ts';
 import {
   cwNavTopics,
   insideFeatures,
@@ -12,7 +13,6 @@ import {
   twreporterTopics,
 } from './topic-extractors-b1.ts';
 import { womanyCollections, wycTopics, zaobaoSpecials } from './topic-extractors-b2.ts';
-import { ctsTopics, ettodayFeatureIndex, ftvTopics, nextappleSpecial, setnTopics, ttvProjects } from './topic-extractors-a2.ts';
 import { registrable } from './topic-page.ts';
 
 // Port of topic/maint/crawler/*_topic.php. The legacy scripts sliced HTML by
