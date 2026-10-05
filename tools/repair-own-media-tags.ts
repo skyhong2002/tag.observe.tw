@@ -1,6 +1,6 @@
 // Dry run by default. Example: node --env-file=.env tools/repair-own-media-tags.ts --media worldjournal --apply
 import { parseArgs } from 'node:util';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, sql } from 'drizzle-orm';
 import { sourceByMedia } from '../app/src/crawl/registry.ts';
 import { createDb } from '../app/src/db/client.ts';
 import { articles, articleTags } from '../app/src/db/schema.ts';
@@ -47,7 +47,24 @@ try {
       console.log(JSON.stringify({ id: row.id, media: row.media, removed }));
     }
   }
-  console.log(JSON.stringify({ applied: values.apply, media: source?.media ?? 'all', changed, byMedia }));
+  // Older crawls can leave index entries that are no longer in articles.tags.
+  // Audit the index independently so those terms cannot survive in tag search.
+  const indexed = await db
+    .select({ media: articles.media, tag: articleTags.tag, count: sql<number>`COUNT(*)` })
+    .from(articleTags)
+    .innerJoin(articles, eq(articles.id, articleTags.articleId))
+    .where(source ? eq(articles.media, source.media) : undefined)
+    .groupBy(articles.media, articleTags.tag);
+  let staleIndexEntries = 0;
+  for (const row of indexed) {
+    if (!isOwnMediaTag(row.tag, row.media)) continue;
+    if (values.apply)
+      await db.execute(
+        sql`DELETE t FROM article_tags t JOIN articles a ON a.id = t.article_id WHERE a.media = ${row.media} AND t.tag = ${row.tag}`,
+      );
+    staleIndexEntries += Number(row.count);
+  }
+  console.log(JSON.stringify({ applied: values.apply, media: source?.media ?? 'all', changed, byMedia, staleIndexEntries }));
 } finally {
   await close();
 }
