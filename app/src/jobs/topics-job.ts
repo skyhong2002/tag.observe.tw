@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
+import { extractFeatureArticle } from '../crawl/feature-article.ts';
 import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
 import { carryStoryDates, fetchStoryDates, type KnownStoryDate, storiesToDate, storyFetchBudget } from '../crawl/story-pages.ts';
@@ -17,6 +18,7 @@ import {
 } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articles, crawlRuns, topics } from '../db/schema.ts';
+import { indexFeatureArticle, indexMissingFeatureArticles } from './feature-article.ts';
 import { articleMediaOf, indexTopicStories, mergeTopicStories } from './topic-stories.ts';
 
 export { articleMediaOf, TOPIC_ARTICLE_MEDIA } from './topic-stories.ts';
@@ -116,8 +118,9 @@ export async function runTopicsJob(
       results[rule.media] = { items: 0, inserted: 0, error: (error as Error).message };
     }
   }
+  const featureIndexes = await indexMissingFeatureArticles(db);
   const pages = refreshPages ? await refreshTopicPages(db, { now }).catch((error) => ({ error: (error as Error).message })) : null;
-  log({ ...results, pages }, 'topics job finished');
+  log({ ...results, pages, featureIndexes }, 'topics job finished');
   return results;
 }
 
@@ -190,6 +193,7 @@ export async function refreshTopicPages(
       id: topics.id,
       media: topics.media,
       url: topics.url,
+      title: topics.title,
       image: topics.image,
       kind: topics.kind,
       kindSource: topics.kindSource,
@@ -232,6 +236,7 @@ export async function refreshTopicPages(
           return {
             row,
             ok,
+            article: ok ? extractFeatureArticle(res.body, row.url, sourceByMedia(articleMediaOf(row.media))?.article) : null,
             groups: ok ? topicPageGroups(res.body, res.url || row.url, articleId, { now: now() }) : [],
             pageDate: ok ? topicPageDate(res.body, res.url || row.url, now()) : null,
             image: ok && !row.image ? topicPageImage(res.body, res.url || row.url) : null,
@@ -239,7 +244,7 @@ export async function refreshTopicPages(
           };
         } catch {
           // Unreachable: try again in 6 hours.
-          return { row, ok: false, groups: [] as TopicStory[][], pageDate: null, image: null, children: [] };
+          return { row, ok: false, article: null, groups: [] as TopicStory[][], pageDate: null, image: null, children: [] };
         }
       }),
     ),
@@ -418,6 +423,8 @@ export async function refreshTopicPages(
       storiesDated++;
       return { ...s, date: at.toISOString() };
     });
+  const pageArticles = new Map(pages.map((p) => [p.row.id, p.article]));
+  let featureArticles = 0;
   // 3. The topic's dates, kind and growth.
   for (const { row, stories, piece, crawledAt } of plans) {
     const dates = piece
@@ -457,11 +464,13 @@ export async function refreshTopicPages(
         ...(row.kindSource !== 'rule' ? { kindSource: 'auto', ...(kind ? { kind } : {}) } : {}),
       })
       .where(eq(topics.id, row.id));
+    const detail = pageArticles.get(row.id);
+    if ((kind ?? row.kind) === 'feature' && detail) featureArticles += await indexFeatureArticle(db, row, detail);
   }
   let indexed = 0;
   for (const { row, stories } of plans)
     indexed += await indexTopicStories(db, row.media, mergeTopicStories(row.pageStories ?? [], stories));
-  return { checked: due.length, found, covers, children, classified, indexed, storyFetches: targets.length, storiesDated };
+  return { checked: due.length, found, covers, children, classified, indexed, featureArticles, storyFetches: targets.length, storiesDated };
 }
 
 /** Dates stored for these stories on any topic of their outlet, by outlet and key. */

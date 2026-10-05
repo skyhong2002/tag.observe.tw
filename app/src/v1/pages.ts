@@ -6,6 +6,7 @@ import { TOPIC_RULES, type TopicKind } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { topics } from '../db/schema.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
+import { featureArticleId } from '../jobs/feature-article.ts';
 import { matchTopics, topicCoverage, topicTagger, topicTagSummary } from '../jobs/topic-related.ts';
 import { resolveTopicStories } from '../jobs/topic-stories.ts';
 import {
@@ -46,6 +47,8 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       title: topic.title,
       kind: topic.kind,
       url: topic.url,
+      image: topic.image ?? null,
+      articleId: topic.kind === 'feature' ? await featureArticleId(db, topic.media, topic.url) : null,
       checkedAt: topic.pageCheckedAt?.toISOString() ?? null,
       total: stories.length,
       stories,

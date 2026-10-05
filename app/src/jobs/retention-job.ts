@@ -84,7 +84,7 @@ export async function runRetentionJob(
           // Topic members remain indexed even while their bodies await extraction.
           sql`NOT EXISTS (SELECT 1 FROM ${topics} WHERE
             (${topics.media} = ${articles.media} OR (${topics.media} = 'twreporter' AND ${articles.media} = 'reporter'))
-            AND JSON_CONTAINS(JSON_EXTRACT(${topics.pageStories}, '$[*].key'), JSON_QUOTE(${articles.urlKey})))`,
+            AND (${topics.url} = ${articles.url} OR JSON_CONTAINS(JSON_EXTRACT(${topics.pageStories}, '$[*].key'), JSON_QUOTE(${articles.urlKey}))))`,
         ),
       )
       .limit(batch)

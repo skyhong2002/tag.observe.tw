@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import { runIndex } from '../crawl/pipeline.ts';
 import { disabled, sourceByMedia } from '../crawl/registry.ts';
 import { TOPIC_RULES, type TopicKind } from '../crawl/topics.ts';
@@ -96,7 +96,7 @@ export interface ArticleCollection {
 }
 
 /** Reverse the publisher's saved membership, never infer it from title or tags. */
-export async function collectionsForArticle(db: Db, media: string, key: string): Promise<ArticleCollection[]> {
+export async function collectionsForArticle(db: Db, media: string, key: string, url?: string): Promise<ArticleCollection[]> {
   const outlets = TOPIC_RULES.filter((r) => articleMediaOf(r.media) === media).map((r) => r.media);
   if (!key || !outlets.length) return [];
   const rows = await db
@@ -106,7 +106,10 @@ export async function collectionsForArticle(db: Db, media: string, key: string):
       and(
         inArray(topics.media, outlets),
         inArray(topics.kind, ['topic', 'feature']),
-        sql`JSON_CONTAINS(JSON_EXTRACT(${topics.pageStories}, '$[*].key'), JSON_QUOTE(${key}))`,
+        or(
+          sql`JSON_CONTAINS(JSON_EXTRACT(${topics.pageStories}, '$[*].key'), JSON_QUOTE(${key}))`,
+          url ? and(eq(topics.kind, 'feature'), eq(topics.url, url)) : undefined,
+        ),
       ),
     );
   return rows.sort((a, b) => a.id - b.id).map((r) => ({ ...r, id: String(r.id), kind: r.kind as TopicKind }));

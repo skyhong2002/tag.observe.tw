@@ -15,7 +15,7 @@ export interface FeedItem {
   /** Publisher's explicit full-content element; never synthesized from description. */
   contentHtml?: string;
   /** Body already validated by discovery; safe to persist without fetching twice. */
-  verifiedContent?: { body: string; authors: string[]; bodySource: string; bodyStatus: 'ok' };
+  verifiedContent?: { body: string; authors: string[]; bodySource: string; bodyStatus: 'ok' | 'short' };
 }
 const parser = new XMLParser({
   ignoreAttributes: false,

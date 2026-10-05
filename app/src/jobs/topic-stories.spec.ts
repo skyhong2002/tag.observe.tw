@@ -80,6 +80,9 @@ describe('article collection backlinks', () => {
       [4, 'cna', 'topic', 'example.com#123'],
     ])
       insert.run(id, media, '相同標題', kind, JSON.stringify([{ key }]));
+    sqlite.exec(
+      "ALTER TABLE topics ADD COLUMN url TEXT; INSERT INTO topics VALUES (5, 'twreporter', '專題正文', 'feature', '[]', 'https://example.com/feature')",
+    );
     const db = {
       select: () => ({
         from: () => ({
@@ -96,6 +99,7 @@ describe('article collection backlinks', () => {
         ['2', 'feature'],
       ]);
       expect(await collectionsForArticle(db, 'reporter', 'missing')).toEqual([]);
+      expect((await collectionsForArticle(db, 'reporter', 'missing', 'https://example.com/feature')).map((c) => c.id)).toEqual(['5']);
     } finally {
       sqlite.close();
     }

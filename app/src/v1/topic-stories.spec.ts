@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.ts';
 import { registerPageApis } from './pages.ts';
 
+vi.mock('../jobs/feature-article.ts', () => ({ featureArticleId: async () => 99 }));
+
 vi.mock('../jobs/topic-stories.ts', async (original) => ({
   ...(await original<object>()),
   resolveTopicStories: async () => [
@@ -35,7 +37,13 @@ describe('topic story index endpoint', () => {
       try {
         const response = await app.inject('/api/v1/topics/1/stories');
         expect(response.statusCode).toBe(200);
-        expect(response.json()).toMatchObject({ id: '1', kind, total: 1, stories: [{ id: 42, date: '2001-01-01T00:00:00.000Z' }] });
+        expect(response.json()).toMatchObject({
+          id: '1',
+          kind,
+          articleId: kind === 'feature' ? 99 : null,
+          total: 1,
+          stories: [{ id: 42, date: '2001-01-01T00:00:00.000Z' }],
+        });
         for (const id of ['0', '-1', 'nope', '9007199254740992'])
           expect((await app.inject(`/api/v1/topics/${id}/stories`)).statusCode).toBe(400);
       } finally {

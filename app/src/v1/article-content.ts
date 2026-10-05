@@ -188,7 +188,7 @@ export async function loadArticleContent(db: Db, id: number, now = new Date()): 
   if (!row) return null;
   const [discoveries, collections] = await Promise.all([
     loadDiscoverySources(db, [id]),
-    collectionsForArticle(db, row.media, row.urlKey ?? urlKey(row.url, sourceByMedia(row.media)?.list.articleId)),
+    collectionsForArticle(db, row.media, row.urlKey ?? urlKey(row.url, sourceByMedia(row.media)?.list.articleId), row.url),
   ]);
   const stored = row.body?.trim() ? row.body : null;
   const storedChars = stored ? Array.from(stored).length : 0;

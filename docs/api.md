@@ -1454,6 +1454,8 @@ curl -s 'https://tag.observe.tw/api/v1/topics/1/stories'
 | `title` | string |  |
 | `kind` | "topic" \| "feature" |  |
 | `url` | string |  |
+| `image` | string \| null |  |
+| `articleId` | integer \| null | 專題頁本身的文章 ID；透過文章 content API 取得內文與圖片 |
 | `checkedAt` | string (ISO 時間) \| null |  |
 | `total` | integer |  |
 | `stories` | object[] |  |

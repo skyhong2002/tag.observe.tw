@@ -1,4 +1,5 @@
 import { API_ORIGIN } from './api';
+import type { StoredContent } from './article-content';
 export interface EventNews {
   id: number | null;
   media: string;
@@ -210,6 +211,8 @@ export const fetchTopicMedia = (media: string, limit = 30, kind: TopicKind = 'to
   get<TopicMediaPage>(`/api/v1/topics?media=${encodeURIComponent(media)}&limit=${limit}&kind=${kind}`, 300);
 
 export interface TopicStoryIndex {
+  image: string | null;
+  articleId: number | null;
   id: string;
   media: string;
   mediaTitle: string;
@@ -221,3 +224,5 @@ export interface TopicStoryIndex {
   stories: Array<{ key: string; title: string; url: string | null; id: number | null; date: string | null }>;
 }
 export const fetchTopicStories = (id: string) => get<TopicStoryIndex>(`/api/v1/topics/${encodeURIComponent(id)}/stories`, 300);
+
+export const fetchFeatureContent = (id: number) => get<StoredContent>(`/api/v1/articles/${id}/content`, 60);

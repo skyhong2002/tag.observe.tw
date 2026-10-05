@@ -1156,6 +1156,8 @@ export const ENDPOINTS: Endpoint[] = [
       title: str(),
       kind: str(undefined, { enum: ['topic', 'feature'] }),
       url: str(),
+      image: nullable(str()),
+      articleId: nullable(int('專題頁本身的文章 ID；透過文章 content API 取得內文與圖片')),
       checkedAt: nullable(time()),
       total: int(),
       stories: arr(obj({ key: str(), title: str(), url: nullable(str()), id: nullable(int()), date: nullable(time()) })),
