@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const data = await fetchTopicStories(id);
   return pageMetadata(
     `/feature/${encodeURIComponent(media)}/${encodeURIComponent(id)}/`,
-    `${data?.title ?? '新聞'}｜新聞索引`,
-    '查看媒體在此議題或專題頁列出的新聞。',
+    `${data?.title ?? '專題'}｜專題`,
+    '閱讀專題內容、圖片及相關新聞。',
   );
 }
 export default async function Page({ params }: Params) {

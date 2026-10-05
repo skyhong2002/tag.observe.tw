@@ -44,7 +44,7 @@ export async function indexFeatureArticle(
     await db
       .update(articles)
       .set({
-        ...(image ? { image: sql`COALESCE(${articles.image}, ${image.slice(0, 512)})` } : {}),
+        ...(image ? { image: detail.image ? detail.image.slice(0, 512) : sql`COALESCE(${articles.image}, ${image.slice(0, 512)})` } : {}),
         ...(detail.description ? { description: sql`COALESCE(${articles.description}, ${detail.description.slice(0, 4000)})` } : {}),
       })
       .where(and(eq(articles.media, spec.media), eq(articles.urlKey, urlKey(feature.url, spec.list.articleId))));
