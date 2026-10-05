@@ -5,6 +5,7 @@ import {
   extractTopics,
   fetchTopicListings,
   ldTopics,
+  listingBase,
   nuxtTopics,
   TOPIC_RULES,
   type TopicItem,
@@ -293,5 +294,15 @@ describe('topic kinds, pagination and sub-topics', () => {
     const rules = [{ ...base, listings: [{ url: 'https://example.com/a', pattern: /\/topic\/newstopic\/\d+/, children: '.kids a' }] }];
     expect(childSelectorFor('x', 'https://example.com/topic/newstopic/5', rules)).toBe('.kids a');
     expect(childSelectorFor('x', 'https://example.com/topic/9', rules)).toBeUndefined();
+  });
+});
+
+describe('listingBase', () => {
+  it('resolves links against the listing, not the mobile host it was redirected to', () => {
+    const page = 'https://news.pchome.com.tw/features/';
+    expect(listingBase('https://news.m.pchome.com.tw/features/', page)).toBe(page);
+    expect(listingBase('https://m.example.com/topic/', 'https://example.com/topic/')).toBe('https://example.com/topic/');
+    expect(listingBase('https://www.example.com/topics/', 'https://example.com/topic/')).toBe('https://www.example.com/topics/');
+    expect(listingBase(undefined, page)).toBe(page);
   });
 });

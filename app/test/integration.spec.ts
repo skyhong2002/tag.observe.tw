@@ -11,8 +11,9 @@ import type { SourceSpec } from '../src/crawl/sources.ts';
 import { loadTitleVocab } from '../src/crawl/title-tags.ts';
 import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots, siteMetrics } from '../src/db/schema.ts';
+import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots, siteMetrics, topics } from '../src/db/schema.ts';
 import { runAnalyticsJob, runRealtimeJob } from '../src/jobs/analytics-job.ts';
+import { dateFeatureArticles } from '../src/jobs/feature-article.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
 import { runSimilarityJob } from '../src/jobs/similarity-job.ts';
@@ -161,6 +162,49 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       .innerJoin(articles, sql`${articles.id} = ${articleTags.articleId}`)
       .where(sql`${articles.media} = 'edh'`);
     expect(tagTimes).toEqual([{ publishedAt: new Date('2026-09-20T00:00:00Z') }]);
+  });
+
+  it('takes the headline of undated topic links and dates feature pages by their earliest story', async () => {
+    const womany: SourceSpec = {
+      media: 'womany',
+      group: 'news',
+      list: { urls: [{ cat: 'news', url: 'https://womany.net/read/feed.atom' }] },
+      article: { enabled: false, batch: 20, delayMs: 0 },
+    };
+    const story = 'https://womany.net/read/article/21960';
+    const feature = 'https://womany.net/collections/x';
+    await runIndex(db, womany, {
+      listed: {
+        errors: [],
+        items: [
+          { url: story, title: '媽媽，妳是我的心臟 女人迷編輯 Shanni 11651 個互動', publishedAt: null },
+          { url: feature, title: '特別企劃', publishedAt: null },
+        ],
+      },
+    });
+    const pages: Record<string, string> = {
+      [story]:
+        '<html><head><meta property="og:title" content="媽媽，妳是我的心臟"><meta property="article:published_time" content="2019-11-07T08:00:00+08:00"></head></html>',
+      [feature]: '<html><head><meta property="og:title" content="特別企劃"></head></html>',
+    };
+    await runArticles(db, womany, { fetch: async (u: string) => res(u, pages[u]), limit: 10 });
+    const storyFirstAt = new Date('2021-03-01T00:00:00Z');
+    await db
+      .insert(topics)
+      .values({ media: 'womany', url: feature, title: '特別企劃', firstSeen: now, lastSeen: now, kind: 'feature', storyFirstAt });
+    expect(await dateFeatureArticles(db)).toBeGreaterThan(0);
+    const rows = await db
+      .select({ url: articles.url, title: articles.title, publishedAt: articles.publishedAt })
+      .from(articles)
+      .where(sql`${articles.media} = 'womany'`)
+      .orderBy(articles.url);
+    expect(rows).toEqual([
+      { url: feature, title: '特別企劃', publishedAt: storyFirstAt },
+      { url: story, title: '媽媽，妳是我的心臟', publishedAt: new Date('2019-11-07T00:00:00Z') },
+    ]);
+    // Later tests count every article.
+    await db.delete(articles).where(sql`${articles.media} = 'womany'`);
+    await db.delete(topics);
   });
 
   it('stops on HTTP 429 and bounds HTTP/content retries to three attempts', async () => {

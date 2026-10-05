@@ -38,3 +38,22 @@ it('indexes the feature itself with its own original date, body and tags, includ
     },
   });
 });
+
+it('dates a feature page that shows no date by its earliest story', async () => {
+  runIndex.mockClear();
+  const storyFirstAt = new Date('2021-03-01');
+  const feature = { media: 'womany', url: 'https://womany.net/collections/x', title: '特別企劃', image: null, storyFirstAt };
+  const detail = {
+    body: null,
+    bodyStatus: 'missing',
+    bodySource: '',
+    authors: [],
+    tags: [],
+    image: null,
+    description: null,
+  } as unknown as ArticleDetail;
+  await indexFeatureArticle({} as Db, feature, { ...detail, publishedAt: null });
+  expect((runIndex.mock.calls[0][2] as { listed: { items: Array<{ publishedAt: Date }> } }).listed.items[0].publishedAt).toEqual(
+    storyFirstAt,
+  );
+});

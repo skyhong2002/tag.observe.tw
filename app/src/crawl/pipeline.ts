@@ -421,10 +421,11 @@ export async function runArticles(
             return;
           }
           const pageTitle = detail.title ? stripTitleSuffix(detail.title, spec.titleSuffix) : null;
-          // Discovered titles are listing anchor text; the page headline wins
-          // when that text ran past the headline.
-          const title =
-            Buffer.byteLength(row.title ?? '') < 2 ? pageTitle : spec.list.discover ? headlineFromPage(row.title ?? '', pageTitle) : null;
+          // Discovered titles, and those of undated links taken from a topic
+          // page (womany cards add 「作者 N 個互動」), are listing anchor text;
+          // the page headline wins when that text ran past the headline.
+          const listed = spec.list.discover || row.publishedAt.getTime() === row.crawledAt.getTime();
+          const title = Buffer.byteLength(row.title ?? '') < 2 ? pageTitle : listed ? headlineFromPage(row.title ?? '', pageTitle) : null;
           const titleTags = !detail.tags.length && vocab ? tagsFromTitle(title || row.title || '', vocab) : [];
           const tags = (detail.tags.length ? detail.tags : titleTags).filter((tag) => !isOwnMediaTag(tag, spec.media));
           // Discovered links have no listing time; adopt the page's published

@@ -1017,6 +1017,16 @@ export function topicChildren(html: string, pageUrl: string, selector: string): 
   return [...out].map(([url, title]) => ({ url, title }));
 }
 
+/** The URL a listing's links resolve against: where the fetch landed, except
+ *  on the outlet's mobile host (PChome once answered with news.m.pchome.com.tw
+ *  and every topic and story was stored a second time under that host). */
+export function listingBase(landed: string | undefined, pageUrl: string): string {
+  if (!landed) return pageUrl;
+  const host = new URL(pageUrl).hostname;
+  const mobile = new URL(landed).hostname;
+  return mobile !== host && mobile.replace(/(^|\.)m\./, '$1') === host ? pageUrl : landed;
+}
+
 export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
   const items = new Map<string, ListedTopic>();
   const sources: TopicSourceResult[] = [];
@@ -1033,7 +1043,7 @@ export async function fetchTopicListings(rule: TopicRule, fetch = fetchText) {
         try {
           const res = await fetch(pageUrl, { userAgent: listing.userAgent, ...listing.paginate?.request?.(n) });
           if (res.status < 200 || res.status >= 400) throw Error(`HTTP ${res.status}`);
-          found = (listing.extract ?? extractTopics)(res.body, { ...listing, url: res.url || pageUrl });
+          found = (listing.extract ?? extractTopics)(res.body, { ...listing, url: listingBase(res.url, pageUrl) });
           if (!found.length && n === 1) throw Error('no topic links matched');
         } catch (error) {
           // Later pages are a bonus: the first page alone keeps the source healthy.
