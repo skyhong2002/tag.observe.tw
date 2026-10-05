@@ -9,7 +9,7 @@ import LiveBoard, { type MediaTotals } from './LiveBoard';
 // snapshot here, then LiveBoard polls /api/v1/liveboard and friends.
 export const revalidate = 30;
 export const metadata: Metadata = {
-  ...pageMetadata('/liveboard/', '即時看板', '新文易數的常駐即時看板：新進新聞、新事件、各家標題對照與轉載比對輪流顯示。'),
+  ...pageMetadata('/liveboard/', '即時看板', '新文易數的常駐即時看板：新進新聞、新事件、各家標題對照與轉載比對輪流顯示。', true),
   robots: { index: false, follow: false },
 };
 export const viewport: Viewport = { themeColor: '#09090b' };
