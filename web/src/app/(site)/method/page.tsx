@@ -28,6 +28,7 @@ export const metadata = pageMetadata(
   '/method/',
   '資料來源與計算方式',
   '了解新文易數的新聞來源、標籤排行、爆發力、事件分群、媒體分類與內文相似度計算方法。',
+  true,
 );
 
 const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>; body: React.ReactNode }> = [

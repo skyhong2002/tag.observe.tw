@@ -10,6 +10,7 @@ export const metadata = pageMetadata(
   '/journalist/',
   '記者',
   '從新聞署名探索記者與作者，查看刊登媒體、報導篇數、常寫主題與跨媒體相似報導。',
+  true,
 );
 const number = (value: number) => value.toLocaleString('zh-TW');
 

@@ -25,6 +25,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     canonicalQuery('/observe/', { days: days === 28 ? undefined : String(days) }),
     '網站觀測',
     '新文易數的公開流量：每日瀏覽、讀者關注的事件與議題、來源管道、Google 搜尋表現與真實使用體驗。',
+    true,
   );
 }
 

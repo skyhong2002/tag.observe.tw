@@ -23,7 +23,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const sp = await searchParams;
   const filtered = rangeDays(sp.days, DEFAULT_DAYS) !== DEFAULT_DAYS || isCamp(sp.camp) || validCursor(sp.cursor);
   return {
-    ...pageMetadata('/article/', '最新文章', '本站收錄的所有媒體文章，依刊登時間由新到舊，附各媒體與藍綠傾向的篇數分布。'),
+    ...pageMetadata('/article/', '最新文章', '本站收錄的所有媒體文章，依刊登時間由新到舊，附各媒體與藍綠傾向的篇數分布。', true),
     ...(filtered ? { robots: { index: false, follow: true } } : {}),
   };
 }

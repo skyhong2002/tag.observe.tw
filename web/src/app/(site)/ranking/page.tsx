@@ -21,6 +21,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     canonicalQuery('/ranking/', { category: key === 'all' ? undefined : key }),
     `${key === 'all' ? '' : selected?.label + ' · '}新聞關鍵字排行榜`,
     '追蹤新聞熱門關鍵字、分數、爆發力與排名變動；透過文字雲與逐時趨勢，了解各媒體共同關注的話題。',
+    true,
   );
 }
 type Search = RankingSearch;

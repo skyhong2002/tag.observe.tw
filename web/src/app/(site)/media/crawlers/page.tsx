@@ -10,6 +10,7 @@ export const metadata = pageMetadata(
   '/media/crawlers/',
   '爬蟲資訊',
   '查看各新聞來源的擷取方式、最近收錄與爬取狀態，了解本站新聞資料的涵蓋範圍與更新限制。',
+  true,
 );
 
 export default async function CrawlersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {

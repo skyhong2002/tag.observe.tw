@@ -17,6 +17,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     canonicalQuery('/event/', { at: value }),
     value ? `${value} · 事件表` : '事件表',
     '依新聞標籤共現整理熱門事件，並排比較各家媒體的報導標題與刊登時間。',
+    true,
   );
 }
 

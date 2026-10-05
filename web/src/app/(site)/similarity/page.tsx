@@ -11,6 +11,7 @@ export const metadata = pageMetadata(
   '/similarity/',
   '新聞關係圖',
   '探索新聞媒體間的內文相似與明示引用關係，點選連線查看文章證據、刊登先後與來源線索。',
+  true,
 );
 export default async function SimilarityPage({ searchParams }: { searchParams: Promise<SimilarityQuery> }) {
   const query = await searchParams;

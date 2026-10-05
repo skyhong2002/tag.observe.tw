@@ -15,6 +15,7 @@ export const metadata = pageMetadata(
   '/api/',
   '新文易數 API',
   '免費取用新聞關鍵字、事件、議題、媒體與相似度資料，查閱 API 端點、參數與回傳格式。',
+  true,
 );
 
 const ORIGIN = 'https://tag.observe.tw';

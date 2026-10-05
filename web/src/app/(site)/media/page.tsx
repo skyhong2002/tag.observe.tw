@@ -15,6 +15,7 @@ export const metadata = pageMetadata(
   '/media/',
   '媒體與文章數',
   '查看本站追蹤的新聞媒體、近期收錄篇數與更新狀態，進入各媒體頁探索報導、關鍵字及媒體關係。',
+  true,
 );
 
 type Status = 'ok' | 'stale' | 'failing' | 'disabled';

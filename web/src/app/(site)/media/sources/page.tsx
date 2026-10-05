@@ -14,6 +14,7 @@ export const metadata = pageMetadata(
   '/media/sources/',
   '媒體流量與收錄比較',
   '對照媒體網站流量資料與本站新聞收錄範圍，查看媒體分類、來源與統計方法。',
+  true,
 );
 export const revalidate = 300;
 

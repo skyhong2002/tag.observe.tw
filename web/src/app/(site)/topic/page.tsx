@@ -5,6 +5,7 @@ export const metadata = pageMetadata(
   '/topic/',
   '議題表',
   '整理各新聞媒體持續更新的議題入口與相關報導，依更新時間探索近期受到關注的新聞議題。',
+  true,
 );
 
 export default async function TopicPage({ searchParams }: { searchParams: Promise<TopicIndexParams> }) {
