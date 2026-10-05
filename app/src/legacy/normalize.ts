@@ -10,6 +10,9 @@ export type LegacyContext = {
   capturedAt: string;
   objects: string[];
   spec: SourceSpec;
+  publisherRoots?: string[];
+  mixedTable?: boolean;
+  sourceMedia?: string;
 };
 
 // This adapter intentionally supports the modern Taiwan UTC+08 period only.
@@ -35,7 +38,9 @@ export function normalizeLegacyArticle(row: LegacyRow, context: LegacyContext) {
   const reasons: string[] = [];
   const warnings: string[] = [];
   const media = context.spec.media;
-  if (context.table !== `tag_${media}` || context.spec.discovery) reasons.push('unreviewed_table_media_mapping');
+  const sourceMedia = context.sourceMedia ?? media;
+  const reviewedMixed = context.mixedTable && ['tag_news', 'tag_news_2024'].includes(context.table) && row.media === sourceMedia;
+  if ((!reviewedMixed && context.table !== `tag_${sourceMedia}`) || context.spec.discovery) reasons.push('unreviewed_table_media_mapping');
   const legacyId = row.newsid === null || row.newsid === undefined ? '' : String(row.newsid);
   if (!/^\d+$/.test(legacyId)) reasons.push('invalid_source_id');
   const sourceKey = `${context.source}/${context.table}/${legacyId}`;
@@ -50,8 +55,17 @@ export function normalizeLegacyArticle(row: LegacyRow, context: LegacyContext) {
     const parsed = new URL(url);
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Invalid URL');
     const host = (s: string) => new URL(s).hostname.toLowerCase().replace(/^www\./, '');
-    const hosts = new Set(context.spec.list.urls.map((item) => host(item.url)));
-    if (!hosts.has(host(url))) reasons.push('unreviewed_url_host');
+    const publisherHost = host(url);
+    const allowed = context.publisherRoots
+      ? context.publisherRoots.some((root) => publisherHost === root || publisherHost.endsWith(`.${root}`))
+      : context.spec.list.urls.some((item) => {
+          try {
+            return host(item.url) === publisherHost;
+          } catch {
+            return false;
+          }
+        });
+    if (!allowed) reasons.push('unreviewed_url_host');
     key = urlKey(url, context.spec.list.articleId);
   } catch {
     reasons.push('invalid_url');
@@ -74,6 +88,17 @@ export function normalizeLegacyArticle(row: LegacyRow, context: LegacyContext) {
     if (value != null && [...String(value)].length > limit) reasons.push(`${name}_too_long`);
   }
   if (tagFields.tags.tags.some((tag) => [...tag].length > 60)) reasons.push('tag_too_long');
+  let image: string | null = null;
+  if (row.image) {
+    try {
+      const parsedImage = new URL(String(row.image));
+      if (!['http:', 'https:'].includes(parsedImage.protocol) || parsedImage.username || parsedImage.password)
+        throw new Error('Invalid image URL');
+      image = String(row.image);
+    } catch {
+      warnings.push('invalid_image_preserved_only_in_raw');
+    }
+  }
   if (row.creator) warnings.push('creator_not_assumed_to_be_author');
   if (row.description) warnings.push('description_is_not_fulltext');
   if (publishedAt && Date.parse(context.capturedAt) - Date.parse(publishedAt) > 90 * 86400_000 && row.description) {
@@ -105,7 +130,7 @@ export function normalizeLegacyArticle(row: LegacyRow, context: LegacyContext) {
       url,
       urlKey: key,
       title,
-      image: row.image || null,
+      image,
       category: row.category || null,
       creator: row.creator || null,
       tags: tagFields.tags.tags,

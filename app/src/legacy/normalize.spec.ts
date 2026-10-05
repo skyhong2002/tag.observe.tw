@@ -51,6 +51,13 @@ describe('legacy staging normalization', () => {
     expect(result.article.publishedAt).toBeNull();
     expect(normalizeLegacyArticle(row, { ...context, table: 'tag_news' }).reasons).toContain('unreviewed_table_media_mapping');
   });
+  it('keeps malformed historical image HTML in raw provenance without exposing it as an image URL', () => {
+    const bad = { ...row, image: '<title>舊站 HTML</title>' };
+    const result = normalizeLegacyArticle(bad, context);
+    expect(result.article.image).toBeNull();
+    expect(result.raw.image).toBe(bad.image);
+    expect(result.warnings).toContain('invalid_image_preserved_only_in_raw');
+  });
   it('marks retention risk and rejects malformed tag strings instead of dropping their contents', () => {
     expect(legacyTags('[甲]lost')).toEqual({ tags: ['甲'], valid: false });
     expect(normalizeLegacyArticle({ ...row, tags: '' }, context).warnings).toContain('historical_untagged_article');

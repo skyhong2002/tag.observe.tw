@@ -2,19 +2,26 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { closeSync, createReadStream, existsSync, mkdirSync, openSync, readFileSync, renameSync, writeFileSync, writeSync } from 'node:fs';
 import { join } from 'node:path';
-import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
-import { excludedMedia, sourceByMedia } from '../../app/src/crawl/registry.ts';
+import type { SourceSpec } from '../../app/src/crawl/sources.ts';
+import { jsonLines } from '../../app/src/legacy/jsonl.ts';
+import { legacyMapping, legacyMappingVersion, legacyTableSupported, MIXED_ARTICLE_TABLES } from '../../app/src/legacy/mapping.ts';
 import { type LegacyRow, normalizeLegacyArticle } from '../../app/src/legacy/normalize.ts';
 
 const { values } = parseArgs({
   options: { input: { type: 'string' }, manifest: { type: 'string' }, media: { type: 'string' }, out: { type: 'string' } },
 });
 if (!values.input || !values.manifest || !values.media || !values.out) throw new Error('--input --manifest --media --out are required');
-const spec = sourceByMedia(values.media);
-if (!spec || excludedMedia.has(values.media)) throw new Error('Unknown or excluded media');
+const fallbackSpec: SourceSpec = {
+  media: 'unmapped',
+  group: 'news',
+  list: { urls: [] },
+  article: { enabled: false, batch: 1, delayMs: 0 },
+};
+const spec = legacyMapping(`tag_${values.media}`)?.spec ?? fallbackSpec;
 const manifest = JSON.parse(readFileSync(values.manifest, 'utf8'));
-if (manifest.table !== `tag_${values.media}`) throw new Error('Only reviewed per-media article tables are supported');
+if (!legacyTableSupported(manifest.table) || (!MIXED_ARTICLE_TABLES.has(manifest.table) && manifest.table !== `tag_${values.media}`))
+  throw new Error('Unreviewed source table');
 mkdirSync(values.out, { recursive: true, mode: 0o700 });
 const target = join(values.out, 'articles.jsonl');
 if ([target, `${target}.gz`, `${target}.partial`, join(values.out, 'report.json')].some(existsSync))
@@ -32,7 +39,11 @@ const context = {
 };
 if (!Number.isFinite(Date.parse(context.capturedAt))) throw new Error('Manifest has no valid capture time');
 const report = {
-  adapter: 'legacy-article-staging-v2',
+  adapter: 'legacy-article-staging-v3',
+  mappingVersion: legacyMappingVersion,
+  mappingSha256: createHash('sha256')
+    .update(readFileSync(new URL('../../app/data/legacy-media-mapping.json', import.meta.url)))
+    .digest('hex'),
   retentionPolicy: 'verified-nearline-v1 (requires migration and worker deployment)',
   source: manifest.source,
   table: manifest.table,
@@ -61,10 +72,21 @@ const seen = new Map<string, string>();
 const hash = createHash('sha256');
 const fd = openSync(`${target}.partial`, 'wx', 0o600);
 try {
-  for await (const line of createInterface({ input: createReadStream(values.input), crlfDelay: Infinity })) {
+  for await (const line of jsonLines(createReadStream(values.input))) {
     if (!line) continue;
     const raw = JSON.parse(line) as LegacyRow;
-    const record = normalizeLegacyArticle(raw, context);
+    const mapped = legacyMapping(manifest.table, raw);
+    const record = normalizeLegacyArticle(raw, {
+      ...context,
+      spec: mapped?.spec ?? fallbackSpec,
+      publisherRoots: mapped?.publisherRoots ?? [],
+      mixedTable: mapped?.mixed ?? false,
+      sourceMedia: mapped?.sourceMedia,
+    });
+    if (!mapped) {
+      record.disposition = 'quarantine';
+      record.reasons.push('unmapped_legacy_media');
+    }
     let duplicateOf: string | null = null;
     if (record.disposition === 'candidate') {
       const key = `${record.article.media}\0${record.article.urlKey}`;

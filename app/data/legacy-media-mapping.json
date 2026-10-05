@@ -1,0 +1,1967 @@
+{
+  "version": "legacy-media-mapping-v2",
+  "reviewedAt": "2026-10-05",
+  "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
+  "media": {
+    "1111": {
+      "publisherRoots": [
+        "1111.com.tw"
+      ],
+      "sourceUrl": "https://www.1111.com.tw/",
+      "evidence": "1111人力銀行-找工作、找人才，最用心服務的求職徵才網站！"
+    },
+    "ettoday": {
+      "publisherRoots": [
+        "ettoday.net"
+      ],
+      "sourceUrl": "https://www.ettoday.net/",
+      "evidence": "ETtoday新聞雲"
+    },
+    "setn": {
+      "publisherRoots": [
+        "setn.com"
+      ],
+      "sourceUrl": "https://www.setn.com/",
+      "evidence": "三立新聞網 SETN.com | 讓世界看見台灣的美好"
+    },
+    "chinatimes": {
+      "publisherRoots": [
+        "chinatimes.com"
+      ],
+      "sourceUrl": "https://www.chinatimes.com/",
+      "evidence": "中時新聞網"
+    },
+    "nownews": {
+      "publisherRoots": [
+        "nownews.com"
+      ],
+      "sourceUrl": "https://www.nownews.com/",
+      "evidence": "NOWnews今日新聞"
+    },
+    "cna": {
+      "publisherRoots": [
+        "cna.com.tw"
+      ],
+      "sourceUrl": "https://www.cna.com.tw/",
+      "evidence": "中央社 CNA"
+    },
+    "tvbs": {
+      "publisherRoots": [
+        "news.tvbs.com.tw",
+        "tvbs.com.tw"
+      ],
+      "sourceUrl": "https://news.tvbs.com.tw/",
+      "evidence": "TVBS新聞網"
+    },
+    "cts": {
+      "publisherRoots": [
+        "news.cts.com.tw"
+      ],
+      "sourceUrl": "https://news.cts.com.tw/",
+      "evidence": "華視新聞網 - 即時新聞、影音、專題、直播"
+    },
+    "udn": {
+      "publisherRoots": [
+        "udn.com"
+      ],
+      "sourceUrl": "https://udn.com/news/",
+      "evidence": "聯合新聞網"
+    },
+    "ltn": {
+      "publisherRoots": [
+        "news.ltn.com.tw",
+        "ltn.com.tw"
+      ],
+      "sourceUrl": "https://news.ltn.com.tw/",
+      "evidence": "自由時報電子報"
+    },
+    "nextapple": {
+      "publisherRoots": [
+        "news.nextapple.com",
+        "nextapple.com"
+      ],
+      "sourceUrl": "https://news.nextapple.com/",
+      "evidence": "壹蘋新聞網"
+    },
+    "people": {
+      "publisherRoots": [
+        "peoplenews.tw"
+      ],
+      "sourceUrl": "https://www.peoplenews.tw/",
+      "evidence": "民報"
+    },
+    "newtalk": {
+      "publisherRoots": [
+        "newtalk.tw"
+      ],
+      "sourceUrl": "https://newtalk.tw/",
+      "evidence": "Newtalk新聞"
+    },
+    "tnl": {
+      "publisherRoots": [
+        "thenewslens.com"
+      ],
+      "sourceUrl": "https://www.thenewslens.com/",
+      "evidence": "TNL The News Lens 關鍵評論網"
+    },
+    "storm": {
+      "publisherRoots": [
+        "storm.mg"
+      ],
+      "sourceUrl": "https://www.storm.mg/",
+      "evidence": "風傳媒｜Storm.mg"
+    },
+    "ttv": {
+      "publisherRoots": [
+        "news.ttv.com.tw"
+      ],
+      "sourceUrl": "https://news.ttv.com.tw/",
+      "evidence": "台視新聞網"
+    },
+    "housefun": {
+      "publisherRoots": [
+        "news.housefun.com.tw"
+      ],
+      "sourceUrl": "https://news.housefun.com.tw/",
+      "evidence": "好房網News"
+    },
+    "reporter": {
+      "publisherRoots": [
+        "twreporter.org"
+      ],
+      "sourceUrl": "https://www.twreporter.org/",
+      "evidence": "報導者 The Reporter"
+    },
+    "ebc": {
+      "publisherRoots": [
+        "news.ebc.net.tw",
+        "ebc.net.tw"
+      ],
+      "sourceUrl": "https://news.ebc.net.tw/",
+      "evidence": "東森新聞"
+    },
+    "rfi": {
+      "publisherRoots": [
+        "rfi.fr"
+      ],
+      "sourceUrl": "https://www.rfi.fr/tw/",
+      "evidence": "RFI - 法國國際廣播電台"
+    },
+    "cnyes": {
+      "publisherRoots": [
+        "cnyes.com"
+      ],
+      "sourceUrl": "https://www.cnyes.com/",
+      "evidence": "鉅亨網"
+    },
+    "pts": {
+      "publisherRoots": [
+        "news.pts.org.tw"
+      ],
+      "sourceUrl": "https://news.pts.org.tw/",
+      "evidence": "公視新聞 PNN"
+    },
+    "mirror": {
+      "publisherRoots": [
+        "mirrormedia.mg"
+      ],
+      "sourceUrl": "https://www.mirrormedia.mg/",
+      "evidence": "鏡週刊 Mirror Media"
+    },
+    "cmmedia": {
+      "publisherRoots": [
+        "cmmedia.com.tw"
+      ],
+      "sourceUrl": "https://www.cmmedia.com.tw/",
+      "evidence": "信傳媒"
+    },
+    "ftv": {
+      "publisherRoots": [
+        "ftvnews.com.tw"
+      ],
+      "sourceUrl": "https://www.ftvnews.com.tw/",
+      "evidence": "民視新聞網"
+    },
+    "epochtimes": {
+      "publisherRoots": [
+        "epochtimes.com"
+      ],
+      "sourceUrl": "https://www.epochtimes.com/",
+      "evidence": "大紀元 www.epochtimes.com"
+    },
+    "bbc": {
+      "publisherRoots": [
+        "bbc.com",
+        "bbc.co.uk"
+      ],
+      "sourceUrl": "https://www.bbc.com/zhongwen/trad",
+      "evidence": "BBC News 中文",
+      "historicalEvidence": [
+        "app/data/media-traffic.json: BBC /200 website http://bbc.co.uk/"
+      ]
+    },
+    "nikkei": {
+      "publisherRoots": [
+        "zh.cn.nikkei.com"
+      ],
+      "sourceUrl": "https://zh.cn.nikkei.com/",
+      "evidence": "日經中文網--日本經濟新聞中文版"
+    },
+    "ctitv": {
+      "publisherRoots": [
+        "ctinews.com"
+      ],
+      "sourceUrl": "https://ctinews.com/",
+      "evidence": "中天新聞網"
+    },
+    "ctwant": {
+      "publisherRoots": [
+        "ctwant.com"
+      ],
+      "sourceUrl": "https://www.ctwant.com/",
+      "evidence": "CTWANT"
+    },
+    "bccnews": {
+      "publisherRoots": [
+        "bccnews.com.tw"
+      ],
+      "sourceUrl": "https://bccnews.com.tw/",
+      "evidence": "BCCnews - 中廣新聞網"
+    },
+    "ustv": {
+      "publisherRoots": [
+        "news.ustv.com.tw"
+      ],
+      "sourceUrl": "https://news.ustv.com.tw/",
+      "evidence": "非凡新聞台"
+    },
+    "cnews": {
+      "publisherRoots": [
+        "cnews.com.tw"
+      ],
+      "sourceUrl": "https://cnews.com.tw/",
+      "evidence": "匯流新聞網"
+    },
+    "ftnn": {
+      "publisherRoots": [
+        "ftnn.com.tw"
+      ],
+      "sourceUrl": "https://www.ftnn.com.tw/",
+      "evidence": "FTNN 新聞網｜傾聽不同立場的聲音，開啟對話的正面力量"
+    },
+    "taiwandom": {
+      "publisherRoots": [
+        "taiwandomnews.com"
+      ],
+      "sourceUrl": "https://taiwandomnews.com/",
+      "evidence": "洞傳媒 官方首頁"
+    },
+    "nius": {
+      "publisherRoots": [
+        "niusnews.com"
+      ],
+      "sourceUrl": "https://www.niusnews.com/",
+      "evidence": "妞新聞 niusnews｜女孩的心動發現"
+    },
+    "cti": {
+      "publisherRoots": [
+        "ctinews.com"
+      ],
+      "sourceUrl": "https://ctinews.com/",
+      "evidence": "中天新聞網"
+    },
+    "cool3c": {
+      "publisherRoots": [
+        "cool3c.com"
+      ],
+      "sourceUrl": "https://www.cool3c.com/article/28631",
+      "evidence": "關於癮科技"
+    },
+    "sportsv": {
+      "publisherRoots": [
+        "sportsv.net"
+      ],
+      "sourceUrl": "https://www.sportsv.net/",
+      "evidence": "運動視界 Sports Vision"
+    },
+    "rti": {
+      "publisherRoots": [
+        "rti.org.tw"
+      ],
+      "sourceUrl": "https://www.rti.org.tw/",
+      "evidence": "Rti 中央廣播電臺"
+    },
+    "elle": {
+      "publisherRoots": [
+        "elle.com"
+      ],
+      "sourceUrl": "https://www.elle.com/tw/",
+      "evidence": "ELLE"
+    },
+    "vogue": {
+      "publisherRoots": [
+        "vogue.com.tw"
+      ],
+      "sourceUrl": "https://www.vogue.com.tw/",
+      "evidence": "Vogue Taiwan"
+    },
+    "womany": {
+      "publisherRoots": [
+        "womany.net"
+      ],
+      "sourceUrl": "https://womany.net/",
+      "evidence": "女人迷 Womany"
+    },
+    "babyou": {
+      "publisherRoots": [
+        "babyou.me",
+        "babyou.com",
+        "babyou.nownews.com"
+      ],
+      "sourceUrl": "https://babyou.me/",
+      "evidence": "Babyou 姊妹淘｜華人第一女性媒體",
+      "historicalEvidence": [
+        "app/data/crawl-sources.json: babyou.index.urls = https://babyou.nownews.com/feed/",
+        "app/data/favicon-local.json: babyou source www.babyou.com; archived babyou rows retain original URLs"
+      ]
+    },
+    "gamme": {
+      "publisherRoots": [
+        "news.gamme.com.tw"
+      ],
+      "sourceUrl": "http://news.gamme.com.tw/",
+      "evidence": "宅宅新聞 | 卡卡洛普"
+    },
+    "daman": {
+      "publisherRoots": [
+        "damanwoo.com"
+      ],
+      "sourceUrl": "https://www.damanwoo.com/",
+      "evidence": "大人物"
+    },
+    "technews": {
+      "publisherRoots": [
+        "technews.tw"
+      ],
+      "sourceUrl": "https://technews.tw/",
+      "evidence": "TechNews 科技新報"
+    },
+    "soft4fun": {
+      "publisherRoots": [
+        "soft4fun.net"
+      ],
+      "sourceUrl": "https://www.soft4fun.net/",
+      "evidence": "硬是要學"
+    },
+    "kocpc": {
+      "publisherRoots": [
+        "kocpc.com.tw"
+      ],
+      "sourceUrl": "https://www.kocpc.com.tw/",
+      "evidence": "電腦王阿達"
+    },
+    "saydigi": {
+      "publisherRoots": [
+        "saydigi.com"
+      ],
+      "sourceUrl": "https://www.saydigi.com/",
+      "evidence": "SayDigi | 點子科技生活"
+    },
+    "bnext": {
+      "publisherRoots": [
+        "bnext.com.tw"
+      ],
+      "sourceUrl": "https://www.bnext.com.tw:443/",
+      "evidence": "數位時代 BusinessNext|台灣最具影響力的科技財經媒體"
+    },
+    "newsmarket": {
+      "publisherRoots": [
+        "newsmarket.com.tw"
+      ],
+      "sourceUrl": "https://www.newsmarket.com.tw/",
+      "evidence": "上下游新聞"
+    },
+    "wyc": {
+      "publisherRoots": [
+        "dq.yam.com"
+      ],
+      "sourceUrl": "https://dq.yam.com/",
+      "evidence": "DQ 地球圖輯隊"
+    },
+    "gv": {
+      "publisherRoots": [
+        "zht.globalvoices.org"
+      ],
+      "sourceUrl": "https://zht.globalvoices.org/",
+      "evidence": "Global Voices 繁體中文；全球之聲"
+    },
+    "punchline": {
+      "publisherRoots": [
+        "punchline.asia"
+      ],
+      "sourceUrl": "https://punchline.asia/",
+      "evidence": "Punchline 娛樂重擊 — Punchline"
+    },
+    "pansci": {
+      "publisherRoots": [
+        "pansci.asia"
+      ],
+      "sourceUrl": "https://pansci.asia/",
+      "evidence": "PanSci 泛科學"
+    },
+    "ithome": {
+      "publisherRoots": [
+        "ithome.com.tw"
+      ],
+      "sourceUrl": "https://www.ithome.com.tw/",
+      "evidence": "iThome | iThome Online 是臺灣第一個網路原生報，提供IT產業即時新聞、企業IT產品報導與測試、技術專題、IT應用報導、IT書訊，以及面向豐富的名家專欄"
+    },
+    "peopo": {
+      "publisherRoots": [
+        "peopo.org"
+      ],
+      "sourceUrl": "https://www.peopo.org/",
+      "evidence": "首頁 | PeoPo 公民新聞"
+    },
+    "techbang": {
+      "publisherRoots": [
+        "techbang.com"
+      ],
+      "sourceUrl": "https://www.techbang.com/",
+      "evidence": "T客邦"
+    },
+    "lihpao": {
+      "publisherRoots": [
+        "limedia.tw"
+      ],
+      "sourceUrl": "https://www.limedia.tw/",
+      "evidence": "立報傳媒 | 教育．傳播．科技．影視文化新聞"
+    },
+    "edh": {
+      "publisherRoots": [
+        "edh.tw"
+      ],
+      "sourceUrl": "https://edh.tw:443/",
+      "evidence": "早安健康-每天都做得到的健康！"
+    },
+    "healthnews": {
+      "publisherRoots": [
+        "healthnews.com.tw"
+      ],
+      "sourceUrl": "http://healthnews.com.tw/",
+      "evidence": "健康醫療網 - 最關心大眾健康的醫藥網路媒體"
+    },
+    "top1health": {
+      "publisherRoots": [
+        "top1health.com"
+      ],
+      "sourceUrl": "https://www.top1health.com/",
+      "evidence": "華人健康網"
+    },
+    "inside": {
+      "publisherRoots": [
+        "inside.com.tw"
+      ],
+      "sourceUrl": "https://www.inside.com.tw/",
+      "evidence": "INSIDE"
+    },
+    "techorange": {
+      "publisherRoots": [
+        "techorange.com"
+      ],
+      "sourceUrl": "https://techorange.com/",
+      "evidence": "TechOrange 科技報橘"
+    },
+    "bw": {
+      "publisherRoots": [
+        "businessweekly.com.tw"
+      ],
+      "sourceUrl": "https://www.businessweekly.com.tw/",
+      "evidence": "商周 -商業周刊 - 商周｜先進觀念．輕鬆掌握"
+    },
+    "techcrunch": {
+      "publisherRoots": [
+        "techcrunch.com"
+      ],
+      "sourceUrl": "https://techcrunch.com/",
+      "evidence": "官方首頁與近期文章的品牌署名；2026-10-03 恢復既有爬蟲。"
+    },
+    "theinitium": {
+      "publisherRoots": [
+        "theinitium.com"
+      ],
+      "sourceUrl": "https://theinitium.com/",
+      "evidence": "端傳媒 Initium Media"
+    },
+    "cw": {
+      "publisherRoots": [
+        "cw.com.tw"
+      ],
+      "sourceUrl": "https://www.cw.com.tw/",
+      "evidence": "天下雜誌"
+    },
+    "einfo": {
+      "publisherRoots": [
+        "e-info.org.tw"
+      ],
+      "sourceUrl": "https://e-info.org.tw/",
+      "evidence": "環境資訊中心"
+    },
+    "pantravel": {
+      "publisherRoots": [
+        "pantravel.life"
+      ],
+      "sourceUrl": "https://pantravel.life/",
+      "evidence": "旅飯 - Pantravel"
+    },
+    "nom": {
+      "publisherRoots": [
+        "nommagazine.com"
+      ],
+      "sourceUrl": "https://nommagazine.com/",
+      "evidence": "NOM Magazine"
+    },
+    "coolloud": {
+      "publisherRoots": [
+        "coolloud.org.tw"
+      ],
+      "sourceUrl": "https://www.coolloud.org.tw/",
+      "evidence": "苦勞網"
+    },
+    "tsna": {
+      "publisherRoots": [
+        "tsna.com"
+      ],
+      "sourceUrl": "https://tsna.com/",
+      "evidence": "首頁 - TSNA體育新聞團隊"
+    },
+    "civilmedia": {
+      "publisherRoots": [
+        "civilmedia.tw"
+      ],
+      "sourceUrl": "https://www.civilmedia.tw/",
+      "evidence": "公民行動影音紀錄資料庫"
+    },
+    "musou": {
+      "publisherRoots": [
+        "watchout.tw"
+      ],
+      "sourceUrl": "https://watchout.tw/reports/V4KMK7s5sp9qhadabgc5",
+      "evidence": "沃草官方報導；既有 musou 來源保留識別"
+    },
+    "hbr": {
+      "publisherRoots": [
+        "hbrtaiwan.com"
+      ],
+      "sourceUrl": "https://www.hbrtaiwan.com/",
+      "evidence": "哈佛商業評論・與世界一流管理接軌"
+    },
+    "cheers": {
+      "publisherRoots": [
+        "cheers.com.tw"
+      ],
+      "sourceUrl": "https://www.cheers.com.tw/",
+      "evidence": "天下學習 Cheers快樂工作人"
+    },
+    "digitimes": {
+      "publisherRoots": [
+        "digitimes.com.tw"
+      ],
+      "sourceUrl": "https://www.digitimes.com.tw/svc/faq/faq.asp",
+      "evidence": "DIGITIMES 官方常見問題提及 DIGITIMES電子時報"
+    },
+    "upmedia": {
+      "publisherRoots": [
+        "upmedia.mg"
+      ],
+      "sourceUrl": "https://www.upmedia.mg/",
+      "evidence": "上報 Up Media - 上報 UpMedia"
+    },
+    "eventsinfocus": {
+      "publisherRoots": [
+        "eventsinfocus.org"
+      ],
+      "sourceUrl": "https://eventsinfocus.org/",
+      "evidence": "焦點事件"
+    },
+    "ldope": {
+      "publisherRoots": [
+        "ldope.com"
+      ],
+      "sourceUrl": "https://ldope.com/",
+      "evidence": "L.DOPE"
+    },
+    "hypesphere": {
+      "publisherRoots": [
+        "hypesphere.com"
+      ],
+      "sourceUrl": "https://hypesphere.com/",
+      "evidence": "hypesphere5"
+    },
+    "viewpointtaiwan": {
+      "publisherRoots": [
+        "viewpointtaiwan.com"
+      ],
+      "sourceUrl": "http://www.viewpointtaiwan.com/",
+      "evidence": "觀策站"
+    },
+    "oncc": {
+      "publisherRoots": [
+        "hk.on.cc"
+      ],
+      "sourceUrl": "https://hk.on.cc/hk/news/index.html",
+      "evidence": "on.cc東網"
+    },
+    "mplus": {
+      "publisherRoots": [
+        "mplus.com.tw"
+      ],
+      "sourceUrl": "http://www.mplus.com.tw/",
+      "evidence": "MPlus｜云閱讀"
+    },
+    "ngm": {
+      "publisherRoots": [
+        "natgeomedia.com"
+      ],
+      "sourceUrl": "https://www.natgeomedia.com/",
+      "evidence": "國家地理雜誌官方網站｜探索自然、科學與文化的最佳權"
+    },
+    "dacota": {
+      "publisherRoots": [
+        "dacota.tw"
+      ],
+      "sourceUrl": "https://dacota.tw/",
+      "evidence": "雲爸的私處"
+    },
+    "applealmond": {
+      "publisherRoots": [
+        "applealmond.com"
+      ],
+      "sourceUrl": "https://applealmond.com/",
+      "evidence": "蘋果仁 - 果仁 iPhone/iOS/好物推薦科技媒體"
+    },
+    "mrmad": {
+      "publisherRoots": [
+        "mrmad.com.tw"
+      ],
+      "sourceUrl": "https://mrmad.com.tw/",
+      "evidence": "瘋先生 - 蘋果iPhone、iOS技術科技媒體"
+    },
+    "newmobilelife": {
+      "publisherRoots": [
+        "newmobilelife.com"
+      ],
+      "sourceUrl": "https://www.newmobilelife.com/",
+      "evidence": "流動日報"
+    },
+    "ctee": {
+      "publisherRoots": [
+        "ctee.com.tw"
+      ],
+      "sourceUrl": "https://www.ctee.com.tw/",
+      "evidence": "工商時報"
+    },
+    "4gamers": {
+      "publisherRoots": [
+        "4gamers.com.tw"
+      ],
+      "sourceUrl": "https://www.4gamers.com.tw/",
+      "evidence": "4Gamers 官方網站"
+    },
+    "taro": {
+      "publisherRoots": [
+        "taronews.tw"
+      ],
+      "sourceUrl": "https://taronews.tw/",
+      "evidence": "芋傳媒 TaroNews"
+    },
+    "marieclaire": {
+      "publisherRoots": [
+        "marieclaire.com.tw"
+      ],
+      "sourceUrl": "https://www.marieclaire.com.tw/",
+      "evidence": "Marie Claire 美麗佳人"
+    },
+    "beauty321": {
+      "publisherRoots": [
+        "beauty321.com"
+      ],
+      "sourceUrl": "https://www.beauty321.com/",
+      "evidence": "beauty美人圈"
+    },
+    "taisounds": {
+      "publisherRoots": [
+        "taisounds.com"
+      ],
+      "sourceUrl": "https://www.taisounds.com/",
+      "evidence": "太報 TaiSounds"
+    },
+    "pourquoi": {
+      "publisherRoots": [
+        "pourquoi.tw"
+      ],
+      "sourceUrl": "https://pourquoi.tw/",
+      "evidence": "pourquoi 報呱"
+    },
+    "voicettank": {
+      "publisherRoots": [
+        "voicettank.org"
+      ],
+      "sourceUrl": "https://voicettank.org/",
+      "evidence": "思想坦克｜Voicettank"
+    },
+    "gq": {
+      "publisherRoots": [
+        "gq.com.tw"
+      ],
+      "sourceUrl": "https://www.gq.com.tw/",
+      "evidence": "GQ Taiwan"
+    },
+    "foodnext": {
+      "publisherRoots": [
+        "foodnext.net"
+      ],
+      "sourceUrl": "https://www.foodnext.net/",
+      "evidence": "食力 foodNEXT"
+    },
+    "adaymag": {
+      "publisherRoots": [
+        "adaymag.com"
+      ],
+      "sourceUrl": "https://www.adaymag.com/",
+      "evidence": "官方首頁與近期文章的品牌署名；2026-10-03 恢復既有爬蟲。"
+    },
+    "femin": {
+      "publisherRoots": [
+        "thefemin.com"
+      ],
+      "sourceUrl": "https://thefemin.com/tw",
+      "evidence": "The Femin"
+    },
+    "flipermag": {
+      "publisherRoots": [
+        "flipermag.com"
+      ],
+      "sourceUrl": "https://flipermag.com/",
+      "evidence": "FLiPER - 生活藝文誌"
+    },
+    "tvbswoman": {
+      "publisherRoots": [
+        "woman.tvbs.com.tw"
+      ],
+      "sourceUrl": "https://woman.tvbs.com.tw/",
+      "evidence": "女人我最大"
+    },
+    "tvbshealth": {
+      "publisherRoots": [
+        "health.tvbs.com.tw"
+      ],
+      "sourceUrl": "https://health.tvbs.com.tw/",
+      "evidence": "健康2.0"
+    },
+    "supertaste": {
+      "publisherRoots": [
+        "supertaste.tvbs.com.tw"
+      ],
+      "sourceUrl": "https://supertaste.tvbs.com.tw/",
+      "evidence": "食尚玩家"
+    },
+    "commonhealth": {
+      "publisherRoots": [
+        "commonhealth.com.tw"
+      ],
+      "sourceUrl": "https://www.commonhealth.com.tw/",
+      "evidence": "康健雜誌"
+    },
+    "heho": {
+      "publisherRoots": [
+        "heho.com.tw"
+      ],
+      "sourceUrl": "https://heho.com.tw/",
+      "evidence": "Heho健康"
+    },
+    "gamer": {
+      "publisherRoots": [
+        "gnn.gamer.com.tw"
+      ],
+      "sourceUrl": "https://gnn.gamer.com.tw/",
+      "evidence": "巴哈姆特電玩資訊站"
+    },
+    "gamebase": {
+      "publisherRoots": [
+        "news.gamebase.com.tw"
+      ],
+      "sourceUrl": "https://news.gamebase.com.tw/",
+      "evidence": "首頁 | 遊戲基地 Gamebase"
+    },
+    "businesstoday": {
+      "publisherRoots": [
+        "businesstoday.com.tw"
+      ],
+      "sourceUrl": "https://www.businesstoday.com.tw/",
+      "evidence": "今周刊 - 今周刊 - 在今天看見明天"
+    },
+    "gvm": {
+      "publisherRoots": [
+        "gvm.com.tw"
+      ],
+      "sourceUrl": "https://www.gvm.com.tw/",
+      "evidence": "遠見雜誌 - 40年來陪你前進的動力"
+    },
+    "mamaclub": {
+      "publisherRoots": [
+        "mamaclub.com"
+      ],
+      "sourceUrl": "https://mamaclub.com/",
+      "evidence": "媽媽經"
+    },
+    "livio": {
+      "publisherRoots": [
+        "livio.com.tw"
+      ],
+      "sourceUrl": "https://livio.com.tw/",
+      "evidence": "Livio 生活網 – 豐富每一個小日子"
+    },
+    "hypebeast": {
+      "publisherRoots": [
+        "hypebeast.com"
+      ],
+      "sourceUrl": "https://hypebeast.com/zh",
+      "evidence": "Hypebeast - 時尚、球鞋、藝術、設計與文化"
+    },
+    "agentm": {
+      "publisherRoots": [
+        "news.agentm.tw"
+      ],
+      "sourceUrl": "https://news.agentm.tw/",
+      "evidence": "電影神搜"
+    },
+    "shoppingdesign": {
+      "publisherRoots": [
+        "shoppingdesign.com.tw"
+      ],
+      "sourceUrl": "https://www.shoppingdesign.com.tw/",
+      "evidence": "ShoppingDesign"
+    },
+    "everydayobject": {
+      "publisherRoots": [
+        "everydayobject.us"
+      ],
+      "sourceUrl": "https://www.everydayobject.us/",
+      "evidence": "EVERYDAY OBJECT"
+    },
+    "bazaar": {
+      "publisherRoots": [
+        "harpersbazaar.com"
+      ],
+      "sourceUrl": "https://www.harpersbazaar.com/tw/",
+      "evidence": "Harper's BAZAAR"
+    },
+    "cosmopolitan": {
+      "publisherRoots": [
+        "cosmopolitan.com"
+      ],
+      "sourceUrl": "https://www.cosmopolitan.com/tw/",
+      "evidence": "Cosmopolitan"
+    },
+    "asiatatler": {
+      "publisherRoots": [
+        "tatlerasia.com",
+        "tw.asiatatler.com"
+      ],
+      "sourceUrl": "https://www.tatlerasia.com/",
+      "evidence": "Tatler Asia",
+      "historicalEvidence": [
+        "app/data/crawl-sources.json: asiatatler.index.urls = https://tw.asiatatler.com/feed"
+      ]
+    },
+    "dramaqueen": {
+      "publisherRoots": [
+        "dramaqueen.com.tw"
+      ],
+      "sourceUrl": "https://www.dramaqueen.com.tw/",
+      "evidence": "DramaQueen電視迷 - 歐美影集新聞、熱門影集推薦"
+    },
+    "yahoo": {
+      "publisherRoots": [
+        "tw.news.yahoo.com"
+      ],
+      "sourceUrl": "https://tw.news.yahoo.com/",
+      "evidence": "Yahoo新聞"
+    },
+    "ctv": {
+      "publisherRoots": [
+        "ctv.com.tw"
+      ],
+      "sourceUrl": "https://www.ctv.com.tw/News",
+      "evidence": "中視全球資訊網"
+    },
+    "taipeitimes": {
+      "publisherRoots": [
+        "taipeitimes.com"
+      ],
+      "sourceUrl": "https://www.taipeitimes.com/",
+      "evidence": "Taipei Times"
+    },
+    "udnmoney": {
+      "publisherRoots": [
+        "money.udn.com"
+      ],
+      "sourceUrl": "https://money.udn.com/",
+      "evidence": "經濟日報：不僅新聞速度 更有脈絡深度"
+    },
+    "moneydj": {
+      "publisherRoots": [
+        "moneydj.com"
+      ],
+      "sourceUrl": "https://www.moneydj.com/",
+      "evidence": "MoneyDJ理財網 - 理財、財經綜合資訊網"
+    },
+    "mirrordaily": {
+      "publisherRoots": [
+        "mirrordaily.news"
+      ],
+      "sourceUrl": "https://www.mirrordaily.news/",
+      "evidence": "鏡報"
+    },
+    "mnews": {
+      "publisherRoots": [
+        "mnews.tw"
+      ],
+      "sourceUrl": "https://www.mnews.tw/",
+      "evidence": "鏡新聞"
+    },
+    "knews": {
+      "publisherRoots": [
+        "knews.com.tw"
+      ],
+      "sourceUrl": "https://www.knews.com.tw/",
+      "evidence": "知新聞"
+    },
+    "msn": {
+      "publisherRoots": [
+        "msn.com"
+      ],
+      "sourceUrl": "https://www.msn.com/zh-tw/news",
+      "evidence": "MSN"
+    },
+    "hk01": {
+      "publisherRoots": [
+        "hk01.com"
+      ],
+      "sourceUrl": "https://www.hk01.com/",
+      "evidence": "香港01"
+    },
+    "bbc_global": {
+      "publisherRoots": [
+        "bbc.com"
+      ],
+      "sourceUrl": "https://www.bbc.com/news",
+      "evidence": "BBC News - Breaking news, video and the latest top stories from the U.S. and around the world"
+    },
+    "taiwannet": {
+      "publisherRoots": [
+        "news.taiwannet.com.tw"
+      ],
+      "sourceUrl": "https://news.taiwannet.com.tw/",
+      "evidence": "台灣產經新聞網 - Taiwan Business News"
+    },
+    "soundofhope": {
+      "publisherRoots": [
+        "soundofhope.org"
+      ],
+      "sourceUrl": "https://www.soundofhope.org/",
+      "evidence": "希望之声 www.soundofhope.org"
+    },
+    "tyenews": {
+      "publisherRoots": [
+        "tyenews.com"
+      ],
+      "sourceUrl": "https://tyenews.com/",
+      "evidence": "桃園電子報"
+    },
+    "mdnkids": {
+      "publisherRoots": [
+        "mdnkids.com"
+      ],
+      "sourceUrl": "https://www.mdnkids.com/",
+      "evidence": "財團法人國語日報社"
+    },
+    "hakkanews": {
+      "publisherRoots": [
+        "hakkanews.tw"
+      ],
+      "sourceUrl": "https://hakkanews.tw/",
+      "evidence": "客新聞 HakkaNews"
+    },
+    "aboluowang": {
+      "publisherRoots": [
+        "tw.aboluowang.com"
+      ],
+      "sourceUrl": "https://tw.aboluowang.com/index.html",
+      "evidence": "阿波羅新聞網"
+    },
+    "i_meihua": {
+      "publisherRoots": [
+        "i-meihua.com"
+      ],
+      "sourceUrl": "https://i-meihua.com/",
+      "evidence": "梅花新聞網"
+    },
+    "pinview": {
+      "publisherRoots": [
+        "pinview.com.tw"
+      ],
+      "sourceUrl": "https://www.pinview.com.tw/",
+      "evidence": "品觀點"
+    },
+    "voachinese": {
+      "publisherRoots": [
+        "voachinese.com"
+      ],
+      "sourceUrl": "https://www.voachinese.com/",
+      "evidence": "美国之音"
+    },
+    "ct": {
+      "publisherRoots": [
+        "ct.org.tw"
+      ],
+      "sourceUrl": "https://ct.org.tw/html/news/",
+      "evidence": "基督教論壇報"
+    },
+    "guancha": {
+      "publisherRoots": [
+        "guancha.cn"
+      ],
+      "sourceUrl": "https://www.guancha.cn/",
+      "evidence": "观察者网"
+    },
+    "lai_media": {
+      "publisherRoots": [
+        "lai-media.net"
+      ],
+      "sourceUrl": "https://lai-media.net/",
+      "evidence": "Lai傳媒"
+    },
+    "thehubnews": {
+      "publisherRoots": [
+        "thehubnews.net"
+      ],
+      "sourceUrl": "https://www.thehubnews.net/",
+      "evidence": "新頭條-TheHubNews"
+    },
+    "ydn": {
+      "publisherRoots": [
+        "ydn.com.tw"
+      ],
+      "sourceUrl": "https://www.ydn.com.tw/tw/home/",
+      "evidence": "青年日報"
+    },
+    "thepaper": {
+      "publisherRoots": [
+        "thepaper.cn"
+      ],
+      "sourceUrl": "https://www.thepaper.cn/",
+      "evidence": "澎湃新闻 官方首頁"
+    },
+    "winnews": {
+      "publisherRoots": [
+        "winnews.com.tw"
+      ],
+      "sourceUrl": "https://www.winnews.com.tw/",
+      "evidence": "威傳媒新聞-WinNews"
+    },
+    "secretchina": {
+      "publisherRoots": [
+        "secretchina.com"
+      ],
+      "sourceUrl": "https://www.secretchina.com/news/gb/index.html",
+      "evidence": "看中国"
+    },
+    "hsnews": {
+      "publisherRoots": [
+        "hsnews.com.tw"
+      ],
+      "sourceUrl": "https://hsnews.com.tw/",
+      "evidence": "花蓮最速報"
+    },
+    "watchmedia01": {
+      "publisherRoots": [
+        "watchmedia01.com"
+      ],
+      "sourceUrl": "https://www.watchmedia01.com/about",
+      "evidence": "關於我們 - 觀傳媒"
+    },
+    "bannedbook": {
+      "publisherRoots": [
+        "bannedbook.org"
+      ],
+      "sourceUrl": "https://www.bannedbook.org/bnews/zh-tw/",
+      "evidence": "禁聞網"
+    },
+    "singular": {
+      "publisherRoots": [
+        "scooptw.com"
+      ],
+      "sourceUrl": "https://www.scooptw.com/",
+      "evidence": "獨家報導"
+    },
+    "hakkatv": {
+      "publisherRoots": [
+        "hakkatv.org.tw"
+      ],
+      "sourceUrl": "https://www.hakkatv.org.tw/",
+      "evidence": "客家電視台"
+    },
+    "grinews": {
+      "publisherRoots": [
+        "grinews.com"
+      ],
+      "sourceUrl": "https://grinews.com/news/",
+      "evidence": "草根影響力新視野"
+    },
+    "newspie": {
+      "publisherRoots": [
+        "newspie.com.tw"
+      ],
+      "sourceUrl": "https://www.newspie.com.tw/",
+      "evidence": "News Pie"
+    },
+    "daai": {
+      "publisherRoots": [
+        "daai.tv"
+      ],
+      "sourceUrl": "https://www.daai.tv/news/",
+      "evidence": "大愛電視"
+    },
+    "nvns": {
+      "publisherRoots": [
+        "nvns.net"
+      ],
+      "sourceUrl": "https://nvns.net/",
+      "evidence": "視傳媒"
+    },
+    "bigmedia": {
+      "publisherRoots": [
+        "bigmedia.com.tw"
+      ],
+      "sourceUrl": "https://www.bigmedia.com.tw/",
+      "evidence": "鉅聞天下"
+    },
+    "i_media": {
+      "publisherRoots": [
+        "i-media.tw"
+      ],
+      "sourceUrl": "https://i-media.tw/",
+      "evidence": "i-media 愛傳媒"
+    },
+    "policenews": {
+      "publisherRoots": [
+        "tcpttw.com"
+      ],
+      "sourceUrl": "https://www.tcpttw.com/",
+      "evidence": "警政時報"
+    },
+    "news886": {
+      "publisherRoots": [
+        "886.news"
+      ],
+      "sourceUrl": "https://886.news/",
+      "evidence": "台灣新聞雲"
+    },
+    "anntw": {
+      "publisherRoots": [
+        "anntw.com"
+      ],
+      "sourceUrl": "https://www.anntw.com/",
+      "evidence": "台灣醒報 Awakening News Networks"
+    },
+    "yesmedia": {
+      "publisherRoots": [
+        "yesmedia.com.tw"
+      ],
+      "sourceUrl": "https://www.yesmedia.com.tw/",
+      "evidence": "是新聞 YesMedia | 網路原生即時新聞"
+    },
+    "miin": {
+      "publisherRoots": [
+        "miin.cc"
+      ],
+      "sourceUrl": "https://miin.cc/",
+      "evidence": "Miin"
+    },
+    "tcnews": {
+      "publisherRoots": [
+        "tcnews.com.tw"
+      ],
+      "sourceUrl": "https://www.tcnews.com.tw/",
+      "evidence": "TCnews慈善新聞網"
+    },
+    "new_report": {
+      "publisherRoots": [
+        "new-reporter.com"
+      ],
+      "sourceUrl": "https://new-reporter.com/",
+      "evidence": "記者爆料網"
+    },
+    "owlting": {
+      "publisherRoots": [
+        "news.owlting.com"
+      ],
+      "sourceUrl": "https://news.owlting.com/",
+      "evidence": "OwlNews"
+    },
+    "innews": {
+      "publisherRoots": [
+        "innews.com.tw"
+      ],
+      "sourceUrl": "https://innews.com.tw/",
+      "evidence": "引新聞"
+    },
+    "newstaiwan": {
+      "publisherRoots": [
+        "newstaiwan.net"
+      ],
+      "sourceUrl": "https://newstaiwan.net/",
+      "evidence": "台灣好報"
+    },
+    "tnews": {
+      "publisherRoots": [
+        "tnews.cc"
+      ],
+      "sourceUrl": "https://tnews.cc/Main",
+      "evidence": "新聞網"
+    },
+    "taiwandaily": {
+      "publisherRoots": [
+        "taiwandaily.net"
+      ],
+      "sourceUrl": "https://www.taiwandaily.net/",
+      "evidence": "美洲台灣日報"
+    },
+    "enn": {
+      "publisherRoots": [
+        "enn.tw"
+      ],
+      "sourceUrl": "https://enn.tw/",
+      "evidence": "ENN台灣電報"
+    },
+    "kingtop": {
+      "publisherRoots": [
+        "kingtop.com.tw"
+      ],
+      "sourceUrl": "https://www.kingtop.com.tw/",
+      "evidence": "台灣華報"
+    },
+    "greatnews": {
+      "publisherRoots": [
+        "greatnews.com.tw"
+      ],
+      "sourceUrl": "https://greatnews.com.tw/",
+      "evidence": "大成報"
+    },
+    "kamalan_news": {
+      "publisherRoots": [
+        "kamalan-news.com"
+      ],
+      "sourceUrl": "https://www.kamalan-news.com/",
+      "evidence": "葛瑪蘭新聞網"
+    },
+    "fclnews": {
+      "publisherRoots": [
+        "fclnews.com"
+      ],
+      "sourceUrl": "https://www.fclnews.com/",
+      "evidence": "台灣新聞雲報"
+    },
+    "globalnewstv": {
+      "publisherRoots": [
+        "globalnewstv.com.tw"
+      ],
+      "sourceUrl": "https://globalnewstv.com.tw/",
+      "evidence": "寰宇新聞網"
+    },
+    "pronews": {
+      "publisherRoots": [
+        "pronews.tw"
+      ],
+      "sourceUrl": "https://pronews.tw/",
+      "evidence": "創新聞"
+    },
+    "bo6s": {
+      "publisherRoots": [
+        "bo6s.com.tw"
+      ],
+      "sourceUrl": "https://www.bo6s.com.tw/",
+      "evidence": "波新聞"
+    },
+    "taidaily": {
+      "publisherRoots": [
+        "taidaily.com"
+      ],
+      "sourceUrl": "https://taidaily.com/",
+      "evidence": "很角色傳媒 Tough Guy Media"
+    },
+    "travelnews": {
+      "publisherRoots": [
+        "page.line.me"
+      ],
+      "sourceUrl": "https://page.line.me/sbc0424c",
+      "evidence": "宜蘭新聞網｜LINE 官方帳號，連回 travelnews.tw"
+    },
+    "focusnews": {
+      "publisherRoots": [
+        "focusnews.com.tw"
+      ],
+      "sourceUrl": "https://focusnews.com.tw/",
+      "evidence": "今傳媒 JNEWS"
+    },
+    "macaodaily": {
+      "publisherRoots": [
+        "macaodaily.com"
+      ],
+      "sourceUrl": "https://www.macaodaily.com/html/2026-10/03/node_1.htm",
+      "evidence": "澳門日報電子版"
+    },
+    "taiwanus": {
+      "publisherRoots": [
+        "taiwanus.net"
+      ],
+      "sourceUrl": "https://www.taiwanus.net/news/default.php",
+      "evidence": "台灣海外網"
+    },
+    "rise_mediacorp": {
+      "publisherRoots": [
+        "rise-mediacorp.com"
+      ],
+      "sourceUrl": "https://rise-mediacorp.com/",
+      "evidence": "崛起新傳媒"
+    },
+    "pnn": {
+      "publisherRoots": [
+        "pnn.tw"
+      ],
+      "sourceUrl": "https://pnn.tw/",
+      "evidence": "鄉民晚報"
+    },
+    "st_media": {
+      "publisherRoots": [
+        "news.st-media.com.tw"
+      ],
+      "sourceUrl": "https://news.st-media.com.tw/",
+      "evidence": "首頁 - 鑫傳國際多媒體科技股份有限公司 TDN台灣生活新聞"
+    },
+    "nchn": {
+      "publisherRoots": [
+        "nchn.news"
+      ],
+      "sourceUrl": "https://nchn.news/",
+      "evidence": "全國大小事新聞網 | NCHN"
+    },
+    "homeplus": {
+      "publisherRoots": [
+        "news.homeplus.net.tw"
+      ],
+      "sourceUrl": "https://news.homeplus.net.tw/",
+      "evidence": "中嘉 | 新聞網"
+    },
+    "j_media": {
+      "publisherRoots": [
+        "j-media.tw"
+      ],
+      "sourceUrl": "https://j-media.tw/",
+      "evidence": "J-media 聚傳媒"
+    },
+    "taiwanpost": {
+      "publisherRoots": [
+        "taiwanpost.net"
+      ],
+      "sourceUrl": "https://taiwanpost.net/",
+      "evidence": "臺灣郵報"
+    },
+    "right_media": {
+      "publisherRoots": [
+        "right-media.news"
+      ],
+      "sourceUrl": "https://www.right-media.news/",
+      "evidence": "睿傳媒 Rightmedia - 睿智新聞深得你心! 我們自許為獨立客觀的新媒體，以獨特觀點帶給讀者全新閱聽體驗!"
+    },
+    "tristarnews": {
+      "publisherRoots": [
+        "tristarnews.com.tw"
+      ],
+      "sourceUrl": "https://www.tristarnews.com.tw/about.html",
+      "evidence": "關於我們 - 三星傳媒"
+    },
+    "firenews": {
+      "publisherRoots": [
+        "firenews.com.tw"
+      ],
+      "sourceUrl": "https://firenews.com.tw/",
+      "evidence": "火報"
+    },
+    "lifenews": {
+      "publisherRoots": [
+        "lifenews.com.tw"
+      ],
+      "sourceUrl": "https://lifenews.com.tw/",
+      "evidence": "民生電子報"
+    },
+    "news586": {
+      "publisherRoots": [
+        "news.586.com.tw"
+      ],
+      "sourceUrl": "https://news.586.com.tw/",
+      "evidence": "NEWS586"
+    },
+    "ccsn0405": {
+      "publisherRoots": [
+        "ccsn0405.com"
+      ],
+      "sourceUrl": "https://www.ccsn0405.com/",
+      "evidence": "中華鱻傳媒"
+    },
+    "chengpou": {
+      "publisherRoots": [
+        "chengpou.com.mo"
+      ],
+      "sourceUrl": "https://www.chengpou.com.mo/",
+      "evidence": "正報新闻 - 第14408號"
+    },
+    "yaya_news": {
+      "publisherRoots": [
+        "yayanews.com.tw"
+      ],
+      "sourceUrl": "https://yayanews.com.tw/",
+      "evidence": "鴨鴨新聞 Yaya News"
+    },
+    "taipeipost": {
+      "publisherRoots": [
+        "taipeipost.org"
+      ],
+      "sourceUrl": "https://taipeipost.org/",
+      "evidence": "台北郵報 | The Taipei Post"
+    },
+    "hiilan": {
+      "publisherRoots": [
+        "crushonyilan.com.tw"
+      ],
+      "sourceUrl": "https://www.crushonyilan.com.tw/category/hi-yilan-news/",
+      "evidence": "宜蘭痴"
+    },
+    "tpnews": {
+      "publisherRoots": [
+        "tpnews.org"
+      ],
+      "sourceUrl": "https://tpnews.org/",
+      "evidence": "TPNEWS台灣商務新聞網｜產業、政策、地方、永續與國際新聞"
+    },
+    "twline365": {
+      "publisherRoots": [
+        "twline365.com"
+      ],
+      "sourceUrl": "https://twline365.com/",
+      "evidence": "台灣線報"
+    },
+    "news_yahoo": {
+      "publisherRoots": [
+        "news.yahoo.co.jp"
+      ],
+      "sourceUrl": "https://news.yahoo.co.jp:443/",
+      "evidence": "Yahoo!ニュース"
+    },
+    "yam": {
+      "publisherRoots": [
+        "n.yam.com"
+      ],
+      "sourceUrl": "https://n.yam.com/",
+      "evidence": "蕃新聞"
+    },
+    "cnn": {
+      "publisherRoots": [
+        "edition.cnn.com"
+      ],
+      "sourceUrl": "https://edition.cnn.com/",
+      "evidence": "CNN"
+    },
+    "stheadline": {
+      "publisherRoots": [
+        "stheadline.com"
+      ],
+      "sourceUrl": "https://www.stheadline.com/",
+      "evidence": "星島頭條｜最新最全面即時新聞平台，港聞突發，政情及專題報道"
+    },
+    "cn_nytimes": {
+      "publisherRoots": [
+        "cn.nytimes.com"
+      ],
+      "sourceUrl": "https://cn.nytimes.com/zh-hant/",
+      "evidence": "紐約時報中文網 國際縱覽"
+    },
+    "cdn_news": {
+      "publisherRoots": [
+        "cdn-news.org"
+      ],
+      "sourceUrl": "https://cdn-news.org/",
+      "evidence": "基督教今日報"
+    },
+    "ifeng": {
+      "publisherRoots": [
+        "ifeng.com"
+      ],
+      "sourceUrl": "https://www.ifeng.com/",
+      "evidence": "凤凰网"
+    },
+    "taiwannews": {
+      "publisherRoots": [
+        "taiwannews.com.tw"
+      ],
+      "sourceUrl": "https://www.taiwannews.com.tw/",
+      "evidence": "Taiwan News"
+    },
+    "news_pchome": {
+      "publisherRoots": [
+        "news.pchome.com.tw"
+      ],
+      "sourceUrl": "https://news.pchome.com.tw/",
+      "evidence": "PChome Online 新聞"
+    },
+    "news_qq": {
+      "publisherRoots": [
+        "news.qq.com"
+      ],
+      "sourceUrl": "https://news.qq.com/",
+      "evidence": "腾讯网"
+    },
+    "ntdtv": {
+      "publisherRoots": [
+        "ntdtv.com"
+      ],
+      "sourceUrl": "https://www.ntdtv.com/",
+      "evidence": "NTDChinese"
+    },
+    "cdns": {
+      "publisherRoots": [
+        "cdns.com.tw"
+      ],
+      "sourceUrl": "https://www.cdns.com.tw/",
+      "evidence": "中華新聞雲 / China Daily News"
+    },
+    "cctv": {
+      "publisherRoots": [
+        "cctv.com"
+      ],
+      "sourceUrl": "https://www.cctv.com/",
+      "evidence": "央视网_世界就在眼前"
+    },
+    "dw": {
+      "publisherRoots": [
+        "dw.com"
+      ],
+      "sourceUrl": "https://www.dw.com/zh/",
+      "evidence": "2026-10-04 德國之聲官方中文頁；原 YouTube 單支影片僅是名稱核對證據，已改為官方中文入口。"
+    },
+    "focustaiwan": {
+      "publisherRoots": [
+        "focustaiwan.tw"
+      ],
+      "sourceUrl": "https://focustaiwan.tw:443/",
+      "evidence": "Focus Taiwan - CNA English News"
+    },
+    "life": {
+      "publisherRoots": [
+        "life.tw"
+      ],
+      "sourceUrl": "https://life.tw/",
+      "evidence": "LIFE 生活網"
+    },
+    "merit_times": {
+      "publisherRoots": [
+        "merit-times.com.tw"
+      ],
+      "sourceUrl": "https://www.merit-times.com.tw/",
+      "evidence": "人間福報電子報"
+    },
+    "scmp": {
+      "publisherRoots": [
+        "scmp.com"
+      ],
+      "sourceUrl": "https://www.scmp.com/",
+      "evidence": "South China Morning Post"
+    },
+    "nexttv": {
+      "publisherRoots": [
+        "nexttv.com.tw"
+      ],
+      "sourceUrl": "https://www.nexttv.com.tw/NextTV/News/",
+      "evidence": "壹電視"
+    },
+    "taiwanhot": {
+      "publisherRoots": [
+        "taiwanhot.net"
+      ],
+      "sourceUrl": "https://taiwanhot.net/",
+      "evidence": "台灣好新聞 TaiwanHot"
+    },
+    "fountmedia": {
+      "publisherRoots": [
+        "fountmedia.io"
+      ],
+      "sourceUrl": "https://www.fountmedia.io:443/",
+      "evidence": "放言Fount Media"
+    },
+    "matsu_idv": {
+      "publisherRoots": [
+        "matsu.idv.tw"
+      ],
+      "sourceUrl": "http://matsu.idv.tw/topiclist.php?f=1",
+      "evidence": "馬祖資訊網 | 馬祖的入口網站"
+    },
+    "worldjournal": {
+      "publisherRoots": [
+        "worldjournal.com"
+      ],
+      "sourceUrl": "https://www.worldjournal.com:443/",
+      "evidence": "世界新聞網 : 一網帶您看遍世界"
+    },
+    "today_line_me": {
+      "publisherRoots": [
+        "today.line.me"
+      ],
+      "sourceUrl": "https://today.line.me/tw/v3/tab",
+      "evidence": "LINE TODAY"
+    },
+    "zaobao": {
+      "publisherRoots": [
+        "zaobao.com.sg"
+      ],
+      "sourceUrl": "https://www.zaobao.com.sg/",
+      "evidence": "首页 | 联合早报 - 享誉新加坡与国际的新闻媒体"
+    },
+    "mingpao": {
+      "publisherRoots": [
+        "news.mingpao.com"
+      ],
+      "sourceUrl": "https://news.mingpao.com/insindex.htm",
+      "evidence": "明報新聞網"
+    },
+    "leho": {
+      "publisherRoots": [
+        "leho.com.tw"
+      ],
+      "sourceUrl": "https://leho.com.tw/",
+      "evidence": "樂聯網"
+    },
+    "matsu_news": {
+      "publisherRoots": [
+        "matsu-news.gov.tw"
+      ],
+      "sourceUrl": "https://www.matsu-news.gov.tw/",
+      "evidence": "馬祖日報"
+    },
+    "news_sina": {
+      "publisherRoots": [
+        "news.sina.com.cn"
+      ],
+      "sourceUrl": "https://news.sina.com.cn/",
+      "evidence": "新闻中心首页_新浪网"
+    },
+    "taiwan": {
+      "publisherRoots": [
+        "taiwan.cn"
+      ],
+      "sourceUrl": "https://www.taiwan.cn/",
+      "evidence": "中国台湾网"
+    },
+    "sunmedia": {
+      "publisherRoots": [
+        "sunmedia.tw"
+      ],
+      "sourceUrl": "https://sunmedia.tw/",
+      "evidence": "商傳媒"
+    },
+    "eracom": {
+      "publisherRoots": [
+        "eracom.com.tw"
+      ],
+      "sourceUrl": "https://www.eracom.com.tw/EraNews/",
+      "evidence": "年代電視台"
+    },
+    "sinchew": {
+      "publisherRoots": [
+        "sinchew.com.my"
+      ],
+      "sourceUrl": "https://www.sinchew.com.my/",
+      "evidence": "星洲网 Sin Chew Daily Malaysia Latest News and Headlines"
+    },
+    "taiwanplus": {
+      "publisherRoots": [
+        "taiwanplus.com"
+      ],
+      "sourceUrl": "https://www.taiwanplus.com/",
+      "evidence": "TaiwanPlus – Bringing Taiwan to the World"
+    },
+    "vigormedia": {
+      "publisherRoots": [
+        "vigormedia.tw"
+      ],
+      "sourceUrl": "https://vigormedia.tw/",
+      "evidence": "銳傳媒 | VigorMedia"
+    },
+    "zmedia": {
+      "publisherRoots": [
+        "zmedia.com.tw"
+      ],
+      "sourceUrl": "https://www.zmedia.com.tw/",
+      "evidence": "震傳媒"
+    },
+    "taiwanenews": {
+      "publisherRoots": [
+        "taiwanenews.com"
+      ],
+      "sourceUrl": "https://taiwanenews.com/",
+      "evidence": "Taiwan eNews：台灣e新聞"
+    },
+    "ksnews": {
+      "publisherRoots": [
+        "ksnews.com.tw"
+      ],
+      "sourceUrl": "https://www.ksnews.com.tw/",
+      "evidence": "更生新聞網"
+    },
+    "wenweipo": {
+      "publisherRoots": [
+        "wenweipo.com"
+      ],
+      "sourceUrl": "https://www.wenweipo.com/",
+      "evidence": "香港文匯報"
+    },
+    "more_news": {
+      "publisherRoots": [
+        "more-news.tw"
+      ],
+      "sourceUrl": "https://more-news.tw/",
+      "evidence": "墨新聞 MORE News"
+    },
+    "news_163": {
+      "publisherRoots": [
+        "news.163.com"
+      ],
+      "sourceUrl": "http://news.163.com/",
+      "evidence": "网易新闻"
+    },
+    "contentplatform_info": {
+      "publisherRoots": [
+        "contentplatform.info"
+      ],
+      "sourceUrl": "https://www.contentplatform.info/",
+      "evidence": "報新聞 Mega News | 報新聞 Mega News：立足台灣、鏈結全球的數位影響力樞紐"
+    },
+    "xinhuanet": {
+      "publisherRoots": [
+        "xinhuanet.com"
+      ],
+      "sourceUrl": "https://www.xinhuanet.com/",
+      "evidence": "新华网_让新闻离你更近"
+    },
+    "hk_crntt": {
+      "publisherRoots": [
+        "hk.crntt.com"
+      ],
+      "sourceUrl": "https://hk.crntt.com/",
+      "evidence": "中國評論新聞"
+    },
+    "tkww": {
+      "publisherRoots": [
+        "tkww.hk"
+      ],
+      "sourceUrl": "https://www.tkww.hk/",
+      "evidence": "大公文匯網"
+    },
+    "rfa": {
+      "publisherRoots": [
+        "rfa.org"
+      ],
+      "sourceUrl": "https://www.rfa.org/cantonese/about/contact.html",
+      "evidence": "聯絡我們 - RFA 自由亞洲電台"
+    },
+    "huanqiu": {
+      "publisherRoots": [
+        "huanqiu.com"
+      ],
+      "sourceUrl": "https://huanqiu.com/",
+      "evidence": "环球网"
+    },
+    "enews": {
+      "publisherRoots": [
+        "enews.tw"
+      ],
+      "sourceUrl": "https://enews.tw/",
+      "evidence": "ENews新聞網"
+    },
+    "jdanews": {
+      "publisherRoots": [
+        "jdanews.com"
+      ],
+      "sourceUrl": "http://jdanews.com/",
+      "evidence": "恆春半島在地新聞網"
+    },
+    "my_formosa": {
+      "publisherRoots": [
+        "my-formosa.com.tw"
+      ],
+      "sourceUrl": "https://my-formosa.com.tw/",
+      "evidence": "美麗島電子報"
+    },
+    "biao_news": {
+      "publisherRoots": [
+        "biao-news.com"
+      ],
+      "sourceUrl": "https://www.biao-news.com/",
+      "evidence": "彪網媒"
+    },
+    "newday": {
+      "publisherRoots": [
+        "newsday.tw"
+      ],
+      "sourceUrl": "https://newsday.tw/",
+      "evidence": "好視新聞網 - 好視新聞網提供台灣在地新聞、生活消費、店家情報、產業觀察與影音內容，掌握最新焦點與實用資訊。"
+    },
+    "lifetoutiao_news": {
+      "publisherRoots": [
+        "lifetoutiao.news"
+      ],
+      "sourceUrl": "https://www.lifetoutiao.news/",
+      "evidence": "民生頭條"
+    },
+    "yimedia": {
+      "publisherRoots": [
+        "yimedia.com.tw"
+      ],
+      "sourceUrl": "https://yimedia.com.tw/",
+      "evidence": "壹傳媒"
+    },
+    "idn": {
+      "publisherRoots": [
+        "idn.com.tw"
+      ],
+      "sourceUrl": "https://www.idn.com.tw/news/news_list.aspx?catid=1&catsid=2",
+      "evidence": "自立晚報 -"
+    },
+    "mknews": {
+      "publisherRoots": [
+        "mknews.com.tw"
+      ],
+      "sourceUrl": "https://MKnews.com.tw/",
+      "evidence": "天天上新聞"
+    },
+    "17news": {
+      "publisherRoots": [
+        "17news.net"
+      ],
+      "sourceUrl": "https://17news.net/",
+      "evidence": "17news民生好報"
+    },
+    "peponews": {
+      "publisherRoots": [
+        "peponews.tw"
+      ],
+      "sourceUrl": "https://www.peponews.tw/",
+      "evidence": "臺灣人民報"
+    },
+    "ltvnews": {
+      "publisherRoots": [
+        "ltvnews.net"
+      ],
+      "sourceUrl": "https://www.ltvnews.net/",
+      "evidence": "在地人新聞 LTVNews"
+    },
+    "i_news": {
+      "publisherRoots": [
+        "i-news.com.tw"
+      ],
+      "sourceUrl": "https://i-news.com.tw/",
+      "evidence": "首頁 - 享新聞"
+    },
+    "iw_times": {
+      "publisherRoots": [
+        "iw-times.com"
+      ],
+      "sourceUrl": "https://www.iw-times.com/",
+      "evidence": "國際環宇時報"
+    },
+    "ammtw": {
+      "publisherRoots": [
+        "ammtw.com"
+      ],
+      "sourceUrl": "https://ammtw.com/",
+      "evidence": "AMM 娛樂新聞 - AMM娛樂新聞為亞視旗下OTT之娛樂影視新聞平台，主要範圍包括台灣.香港.新加坡.馬來西亞四大區域，跨國製作及代理音樂會.綜藝節目.戲劇.直播的多媒體網路影音平台"
+    },
+    "tmnu": {
+      "publisherRoots": [
+        "tmnu.org.tw"
+      ],
+      "sourceUrl": "https://www.tmnu.org.tw/",
+      "evidence": "TMNU台灣多媒體新聞聯合網"
+    },
+    "readr": {
+      "publisherRoots": [
+        "readr.tw"
+      ],
+      "sourceUrl": "https://www.readr.tw/",
+      "evidence": "READr 讀+"
+    },
+    "videoland": {
+      "publisherRoots": [
+        "news.videoland.com.tw"
+      ],
+      "sourceUrl": "https://news.videoland.com.tw/",
+      "evidence": "緯來新聞網"
+    },
+    "people_cn": {
+      "publisherRoots": [
+        "people.com.cn"
+      ],
+      "sourceUrl": "https://www.people.com.cn/",
+      "evidence": "人民网_网上的人民日报"
+    },
+    "ntdtv_tw": {
+      "publisherRoots": [
+        "ntdtv.com.tw"
+      ],
+      "sourceUrl": "https://www.ntdtv.com.tw/",
+      "evidence": "新唐人亞太電視台"
+    },
+    "yonhap": {
+      "publisherRoots": [
+        "cb.yna.co.kr"
+      ],
+      "sourceUrl": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/",
+      "evidence": "韓聯社（南韓聯合通訊社）"
+    },
+    "xinhua": {
+      "publisherRoots": [
+        "news.cn"
+      ],
+      "sourceUrl": "https://www.news.cn/",
+      "evidence": "新華社官方新華網；保留通訊社識別，與 xinhuanet 網站來源分開"
+    },
+    "afp": {
+      "publisherRoots": [
+        "afp.com"
+      ],
+      "sourceUrl": "https://www.afp.com/",
+      "evidence": "AFP 官方網站；通訊社識別使用法新社"
+    },
+    "ap": {
+      "publisherRoots": [
+        "ap.org"
+      ],
+      "sourceUrl": "https://www.ap.org/",
+      "evidence": "The Associated Press 官方網站；通訊社識別使用美聯社"
+    }
+  },
+  "aliases": {
+    "cti": "ctitv"
+  }
+}

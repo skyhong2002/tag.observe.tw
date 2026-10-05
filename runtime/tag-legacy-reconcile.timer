@@ -1,0 +1,11 @@
+[Unit]
+Description=Continue independent legacy integration reconciliation
+
+[Timer]
+OnBootSec=3min
+OnUnitInactiveSec=1min
+AccuracySec=10s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

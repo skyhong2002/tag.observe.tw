@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
@@ -21,6 +22,9 @@ def run(*args, **kwargs):
 
 def main():
     os.umask(0o077)
+    def interrupted(signum, frame):
+        raise KeyboardInterrupt('Staging interrupted')
+    signal.signal(signal.SIGTERM, interrupted)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--package', required=True)
     parser.add_argument('--media', required=True)
@@ -30,7 +34,7 @@ def main():
     out = Path(args.out).resolve()
     manifest = json.loads((package / 'manifest.json').read_text())
     table = manifest['table']
-    if not re.fullmatch(r'tag_[a-z0-9_]+', table) or table != 'tag_' + args.media:
+    if not re.fullmatch(r'tag_[a-z0-9_]+', table) or (table not in {'tag_news', 'tag_news_2024'} and table != 'tag_' + args.media):
         raise ValueError('Only explicitly mapped per-media article packages supported')
     files = [(package / 'schema.sql.gz', manifest['schema'])]
     data = sorted(package.glob('data-*.sql.gz'))
@@ -54,7 +58,7 @@ def main():
             '-e', 'MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1', '-e', 'MARIADB_DATABASE=staging',
             'mariadb:11.4', '--skip-log-bin', '--event-scheduler=OFF', '--max-allowed-packet=256M', stdout=subprocess.DEVNULL)
         for _ in range(60):
-            ready = subprocess.run(['docker', 'exec', name, 'mariadb-admin', '-uroot', 'ping'], capture_output=True, timeout=10)
+            ready = subprocess.run(['docker', 'exec', name, 'mariadb', '-h127.0.0.1', '-uroot', 'staging', '-e', 'SELECT 1'], capture_output=True, timeout=10)
             if ready.returncode == 0:
                 break
             time.sleep(1)
@@ -79,6 +83,11 @@ def main():
                  '--quick', '--default-character-set=utf8mb4', 'staging', '-e']
         columns = run(*mysql, 'SHOW COLUMNS FROM `' + table + '`', capture_output=True, text=True).stdout
         names = [line.split('\t')[0] for line in columns.splitlines()]
+        required = {'newsid', 'url', 'title', 'create_time', 'ctime', 'tags'}
+        if table in {'tag_news', 'tag_news_2024'}:
+            required.add('media')
+        if not required.issubset(names):
+            raise ValueError('Source article schema missing required columns: ' + str(sorted(required - set(names))))
         if any(not re.fullmatch(r'[a-zA-Z0-9_]+', column) for column in names):
             raise ValueError('Unsupported column identifier')
         fields = []

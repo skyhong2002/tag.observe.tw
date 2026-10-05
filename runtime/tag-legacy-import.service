@@ -1,0 +1,14 @@
+[Unit]
+Description=One-time verified parent database integration
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/share/tag-legacy-import/run.sh
+TimeoutStartSec=3600
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+MemoryMax=3G
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
