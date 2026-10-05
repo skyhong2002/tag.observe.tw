@@ -49,7 +49,12 @@ export function normalizeLegacyArticle(row: LegacyRow, context: LegacyContext) {
   if (!publishedAt) reasons.push('invalid_publication_time');
   if (!crawledAt) reasons.push('invalid_original_crawl_time');
   if (publishedAt && Date.parse(publishedAt) > Date.parse(context.capturedAt) + 86400_000) reasons.push('future_publication_time');
-  const url = String(row.url ?? '').trim();
+  const rawUrl = String(row.url ?? '').trim();
+  // A network-path reference supplies its own host; do not infer a host for relative paths.
+  // Keep the source spelling in raw provenance and record the chosen transport explicitly.
+  const networkPath = /^\/\/[^/\\]/.test(rawUrl) && !/[\\\u0000-\u0020]/.test(rawUrl);
+  const url = networkPath ? `https:${rawUrl}` : rawUrl;
+  if (networkPath) warnings.push('network_path_url_normalized_to_https');
   let key: string | null = null;
   try {
     const parsed = new URL(url);

@@ -120,11 +120,15 @@ class IntegrationTests(unittest.TestCase):
         self.assertFalse(needs_processing(dict(recent, allow_recent=True), True))
         self.assertFalse(needs_processing({'quarantine_reasons': {'invalid_url': 10}}, True))
 
-    def test_mapping_revision_retries_only_unreviewed_hosts_once(self):
+    def test_url_policy_revision_retries_host_and_invalid_url_quarantines_once(self):
         previous = {'mapping_sha256': 'old', 'quarantine_reasons': {'unreviewed_url_host,empty_title': 1}}
         self.assertTrue(needs_processing(previous, True, 'new'))
         self.assertFalse(needs_processing(previous, True, 'old'))
-        self.assertFalse(needs_processing({'mapping_sha256': 'old', 'quarantine_reasons': {'invalid_url': 1}}, True, 'new'))
+        invalid = {'mapping_sha256': 'old', 'quarantine_reasons': {'invalid_url,empty_title': 1}}
+        self.assertTrue(needs_processing(invalid, True, 'new'))
+        self.assertFalse(needs_processing(invalid, True, 'old'))
+        self.assertFalse(needs_processing({'mapping_sha256': 'old', 'quarantine_reasons': {'invalid_publication_time': 1}}, True, 'new'))
+        self.assertFalse(needs_processing({'mapping_sha256': 'old', 'quarantine_reasons': {'invalid_url': 0}}, True, 'new'))
 
     def test_summary_counts_quarantine_separately(self):
         state = {'completed': {'one': {'counts': {'inserted': 9, 'quarantine': 1}}, 'two': {'counts': {'already_imported': 2}}}}

@@ -1,5 +1,5 @@
 {
-  "version": "legacy-media-mapping-v6",
+  "version": "legacy-media-mapping-v7",
   "reviewedAt": "2026-10-05",
   "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
   "media": {
@@ -1988,5 +1988,6 @@
   },
   "aliases": {
     "cti": "ctitv"
-  }
+  },
+  "urlPolicy": "Network-path article URLs (//host/path) use HTTPS with original raw value and normalization warning preserved; relative paths remain quarantined and reviewed publisher hosts are still required."
 }

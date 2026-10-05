@@ -87,7 +87,8 @@ def needs_processing(previous, allow_recent, mapping_sha=None):
     return bool((allow_recent and not previous.get('allow_recent', False)
                  and reasons.get('recent_requires_separate_review', 0))
                 or (mapping_sha and previous.get('mapping_sha256') != mapping_sha
-                    and any('unreviewed_url_host' in reason and count for reason, count in reasons.items())))
+                    and any(count and {'unreviewed_url_host', 'invalid_url'}.intersection(reason.split(','))
+                            for reason, count in reasons.items())))
 
 
 def integrate(config):

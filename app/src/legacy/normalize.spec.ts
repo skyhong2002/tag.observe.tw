@@ -44,6 +44,31 @@ describe('legacy staging normalization', () => {
     expect(result.raw).toEqual(row);
     expect(result.warnings).toContain('historical_description_requires_verified_archive');
   });
+  it('resolves network-path URLs to HTTPS while retaining raw provenance and URL identity', () => {
+    const input = { ...row, url: '//www.cna.com.tw/news/123?utm_source=old' };
+    const result = normalizeLegacyArticle(input, context);
+    expect(result.disposition).toBe('candidate');
+    expect(result.article.url).toBe('https://www.cna.com.tw/news/123?utm_source=old');
+    expect(result.article.urlKey).toBe(normalizeLegacyArticle(row, context).article.urlKey);
+    expect(result.raw.url).toBe(input.url);
+    expect(result.warnings).toContain('network_path_url_normalized_to_https');
+    expect(result.article.publishedAt).toBe(normalizeLegacyArticle(row, context).article.publishedAt);
+  });
+  it('still rejects unknown network-path hosts, credentials and malformed or relative references', () => {
+    for (const url of ['//elsewhere.example/news/123', '//www.cna.com.tw.example.com/news/123']) {
+      expect(normalizeLegacyArticle({ ...row, url }, context).reasons).toContain('unreviewed_url_host');
+    }
+    for (const url of [
+      '/news/123',
+      '///www.cna.com.tw/news/123',
+      '//user@www.cna.com.tw/news/123',
+      '//www.cna.com.tw\\news/123',
+      '//www.cna.com.tw\n/news/123',
+      'javascript:alert(1)',
+    ]) {
+      expect(normalizeLegacyArticle({ ...row, url }, context).reasons).toContain('invalid_url');
+    }
+  });
   it('quarantines unmapped media, wrong domains and bad dates without substituting now', () => {
     const result = normalizeLegacyArticle({ ...row, create_time: '0000-00-00 00:00:00', url: 'https://elsewhere.example/a' }, context);
     expect(result.disposition).toBe('quarantine');
