@@ -4,8 +4,12 @@ export default function ThemeToggle() {
   function toggle() {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
+    // Only an override is saved: choosing what the browser already prefers goes
+    // back to following the browser, so a later system change is picked up.
     try {
-      localStorage.setItem('theme', next);
+      const system = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (next === system) localStorage.removeItem('theme');
+      else localStorage.setItem('theme', next);
     } catch {}
   }
 

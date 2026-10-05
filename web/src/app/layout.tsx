@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import SiteAnalytics from '@/components/SiteAnalytics';
 import StructuredData from '@/components/StructuredData';
+import ThemeSync from '@/components/ThemeSync';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from '@/lib/seo.mts';
 import './globals.css';
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+        <ThemeSync />
         {children}
         <StructuredData
           data={{
