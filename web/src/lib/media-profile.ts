@@ -11,6 +11,13 @@ export interface MediaProfile {
   icon: string | null;
   categoryLabel: string | null;
   camp: 'blue' | 'green' | 'other';
+  /** Edition the site collects, whom it serves and the outlet's role. */
+  scope: {
+    scopeLabel: string;
+    languageLabel: string;
+    roles: Array<{ role: string; label: string }>;
+    coverage: string | null;
+  } | null;
   today: number;
   last24h: number;
   last7d: number;

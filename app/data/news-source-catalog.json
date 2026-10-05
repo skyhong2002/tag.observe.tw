@@ -986,11 +986,13 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.secretchina.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）改收官方繁體版 /news/b5/（原為簡體 /news/gb/）；頁面標題「 - 欄目 - 作者」後綴不屬標題。",
       "feedUrls": [
-        "https://www.secretchina.com/news/gb/news.xml",
-        "https://www.secretchina.com/news/gb/index.xml"
-      ]
+        "https://www.secretchina.com/news/b5/news.xml",
+        "https://www.secretchina.com/news/b5/index.xml"
+      ],
+      "articlePattern": "^/news/b5/",
+      "titleSuffix": "\\s+-\\s+[^-]{1,12}\\s+-(?:\\s*[^-]{0,40})?$"
     },
     {
       "media": "hsnews",
@@ -1974,7 +1976,7 @@
       ],
       "existing": false,
       "websiteEvidence": "http://cnn.com",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）停止定期抓取：自動探索只找到 CNN Underscored 購物推薦，新聞頁帶付費牆標記；保留既有資料與引用身分。"
     },
     {
       "media": "stheadline",
@@ -1996,7 +1998,7 @@
     {
       "media": "cn_nytimes",
       "name": "紐時中文 /5",
-      "websiteUrl": "http://cn.nytimes.com/",
+      "websiteUrl": "https://cn.nytimes.com/zh-hant/",
       "referenceNames": [
         "紐時中文 /5",
         "紐時中文/5"
@@ -2006,11 +2008,11 @@
       ],
       "existing": false,
       "websiteEvidence": "http://cn.nytimes.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）只收繁體版 /zh-hant/；原本簡繁兩個 RSS 會把同一篇存成兩筆。",
       "feedUrls": [
-        "https://cn.nytimes.com/rss/",
         "https://cn.nytimes.com/rss/zh-hant/"
-      ]
+      ],
+      "articlePattern": "/zh-hant/$"
     },
     {
       "media": "cdn_news",
@@ -2102,7 +2104,7 @@
     {
       "media": "reuters",
       "name": "路透社 /200",
-      "websiteUrl": "https://graphics.thomsonreuters.com/",
+      "websiteUrl": "https://today.line.me/tw/v3/publisher/101170",
       "referenceNames": [
         "路透社 /200"
       ],
@@ -2111,12 +2113,11 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.reuters.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
-      "articlePattern": "^/graphics/[A-Z][^?]+/$",
-      "includeArchive": true,
-      "articleHosts": [
-        "www.reuters.com"
-      ]
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）改收 LINE TODAY 路透社頻道的繁體供稿（中央社翻譯／編譯）：頁面 provider 須為路透社，正文電頭須為路透；provider 標路透但電頭為法新社等的稿件不收。既有 Reuters Graphics 英文圖解保留為歷史資料。",
+      "articlePattern": "^/tw/v3/article/[A-Za-z0-9]+$",
+      "provider": "^路透社$",
+      "providerBody": "^\\s*[（(]路透",
+      "titleSuffix": "\\s*\\|\\s*路透社\\s*\\|\\s*LINE TODAY"
     },
     {
       "media": "news_qq",
@@ -2198,7 +2199,7 @@
     {
       "media": "dw",
       "name": "DW 德廣 /100",
-      "websiteUrl": "https://www.dw.com/zh/",
+      "websiteUrl": "https://www.dw.com/zh-hant/",
       "referenceNames": [
         "DW 德廣 /100",
         "DW 德廣"
@@ -2208,10 +2209,9 @@
       ],
       "existing": false,
       "websiteEvidence": "http://dw.com/",
-      "notes": "原表 DW 全站流量；本站以官方中文新聞及 RDF RSS 為內容範圍。",
-      "feedUrls": [
-        "https://rss.dw.com/rdf/rss-chi-all"
-      ]
+      "notes": "原表 DW 全站流量；本站以官方中文新聞及 RDF RSS 為內容範圍。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）改收官方繁體版 /zh-hant/；簡體 RDF RSS（rss-chi-all）不再使用，DW 沒有繁體 RSS。",
+      "feedUrls": [],
+      "articlePattern": "^/zh-hant/[^/]+/a-\\d+$"
     },
     {
       "media": "focustaiwan",
@@ -2710,7 +2710,7 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.xinhuanet.com/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 裸網域 HTTP 逾時；官方 HTTPS 首頁可讀，文章直接連結至同品牌 www.news.cn。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-03 裸網域 HTTP 逾時；官方 HTTPS 首頁可讀，文章直接連結至同品牌 www.news.cn。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）停止定期抓取：與 xinhua（新華社）抓到的是同一批 www.news.cn 文章；改由 xinhua 收錄，既有資料保留。",
       "articleHosts": [
         "www.news.cn"
       ]
@@ -3222,7 +3222,7 @@
       "referenceRows": [],
       "existing": false,
       "websiteEvidence": "https://factcheck.afp.com/",
-      "notes": "2026-10-04 AFP 官方公開英文事實查核報導；不代表完整通訊社新聞線。",
+      "notes": "2026-10-04 AFP 官方公開英文事實查核報導；不代表完整通訊社新聞線。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）：中文報導經中央社等刊登者收錄，AFP 身分以引用關係保存；本站尚未找到獨立、穩定的 AFP 繁體入口。",
       "articlePattern": "/doc\\.afp\\.com\\.",
       "feedUrls": []
     },
@@ -3236,7 +3236,7 @@
       "referenceRows": [],
       "existing": false,
       "websiteEvidence": "https://www.ap.org/",
-      "notes": "2026-10-04 AP 官網直接連結 APNews.com；APNews 本次回應 403，改抓 AP 官方 News Highlights 的 Elections／Spotlights 公開報導，排除 Best of AP 採訪成果介紹。",
+      "notes": "2026-10-04 AP 官網直接連結 APNews.com；APNews 本次回應 403，改抓 AP 官方 News Highlights 的 Elections／Spotlights 公開報導，排除 Best of AP 採訪成果介紹。 2026-10-06 依媒體收錄研究（docs/media-inclusion-research-2026-10-06.md）：中文報導經中央社等刊登者收錄，AP 身分以引用關係保存；本站未找到公開繁體原站。",
       "articlePattern": "/news-highlights/(?:elections|spotlights)/\\d{4}/(?![^/]*(?:photos|pictures))[^/]+/",
       "feedUrls": []
     },

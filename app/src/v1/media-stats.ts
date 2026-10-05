@@ -9,6 +9,7 @@ import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles, crawlRuns, topics } from '../db/schema.ts';
 import { articleMediaOf, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
+import { mediaScope } from '../media-scope.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
@@ -153,6 +154,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           title: info[s.media]?.title ?? s.media,
           country: outletIdentity(s.media).country,
           countryCode: outletIdentity(s.media).countryCode,
+          // Collected edition, readership and role; see data/media-scope.json.
+          scope: mediaScope(s.media),
           crawler: crawlerInfo(
             s.media,
             specs.find((source) => source.media === s.media),

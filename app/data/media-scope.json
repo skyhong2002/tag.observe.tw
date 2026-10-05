@@ -1,0 +1,381 @@
+{
+  "reviewedAt": "2026-10-06",
+  "policy": "收錄範圍描述本站實際收的版本，不是媒體品牌的全部，也不評價立場或可信度。scope 是主要服務的讀者與比較範圍，language 是收錄版本的文字，roles 標示通訊社、平台代刊等角色，coverage 說明實際收錄範圍與歷史差異。未列出的台灣媒體預設為台灣媒體、繁體中文；其他國家或地區的媒體必須明列。依據見 docs/media-inclusion-research-2026-10-06.md。",
+  "scopes": {
+    "tw": "台灣媒體",
+    "tw-foreign": "台灣外語",
+    "intl-zh": "國際中文",
+    "cn": "中國",
+    "hkmo": "港澳",
+    "sgmy": "新馬華文",
+    "overseas-zh": "海外華文",
+    "zh-special": "華文專業／生活",
+    "foreign": "其他外語"
+  },
+  "languages": {
+    "zh-Hant": "繁體中文",
+    "zh-Hans": "簡體中文",
+    "en": "英文",
+    "ja": "日文"
+  },
+  "roles": {
+    "wire": "通訊社",
+    "platform": "平台代刊",
+    "discovery": "發現來源",
+    "corporate": "企業內容"
+  },
+  "media": {
+    "1111": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "corporate"
+      ]
+    },
+    "aboluowang": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "adaymag": {
+      "scope": "zh-special",
+      "language": "zh-Hant"
+    },
+    "afp": {
+      "scope": "foreign",
+      "language": "en",
+      "roles": [
+        "wire"
+      ],
+      "coverage": "AFP Fact Check 英文事實查核，不是完整的法新社新聞線；中文報導經中央社等刊登者收錄，以引用關係連到法新社。"
+    },
+    "ap": {
+      "scope": "foreign",
+      "language": "en",
+      "roles": [
+        "wire"
+      ],
+      "coverage": "AP 官網 News Highlights 精選，不是完整的美聯社新聞線；中文報導經中央社等刊登者收錄，以引用關係連到美聯社。"
+    },
+    "bannedbook": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "bbc": {
+      "scope": "intl-zh",
+      "language": "zh-Hant"
+    },
+    "bbc_global": {
+      "scope": "foreign",
+      "language": "en"
+    },
+    "cctv": {
+      "scope": "cn",
+      "language": "zh-Hans"
+    },
+    "chengpou": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "cn_nytimes": {
+      "scope": "intl-zh",
+      "language": "zh-Hant",
+      "coverage": "官方繁體版（/zh-hant/）；2026-10-06 前同一篇的簡繁兩版各存一筆。"
+    },
+    "cn_wsj": {
+      "scope": "intl-zh",
+      "language": "zh-Hans",
+      "coverage": "公開的中文電子報，不是華爾街日報中文網全站。"
+    },
+    "cnn": {
+      "scope": "foreign",
+      "language": "en",
+      "coverage": "已停止定期抓取：自動探索只找到 CNN Underscored 購物推薦，新聞頁有付費牆。"
+    },
+    "dongtaiwang": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant",
+      "roles": [
+        "discovery"
+      ]
+    },
+    "dw": {
+      "scope": "intl-zh",
+      "language": "zh-Hant",
+      "coverage": "官方繁體版（/zh-hant/）；2026-10-06 前收的是簡體版。"
+    },
+    "epochtimes": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "femin": {
+      "scope": "zh-special",
+      "language": "zh-Hant"
+    },
+    "focustaiwan": {
+      "scope": "tw-foreign",
+      "language": "en"
+    },
+    "google_news": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "discovery"
+      ]
+    },
+    "guancha": {
+      "scope": "cn",
+      "language": "zh-Hans"
+    },
+    "gv": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "hk01": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "hk_crntt": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "huanqiu": {
+      "scope": "cn",
+      "language": "zh-Hans"
+    },
+    "hypebeast": {
+      "scope": "zh-special",
+      "language": "zh-Hant"
+    },
+    "ifeng": {
+      "scope": "cn",
+      "language": "zh-Hans"
+    },
+    "kyodo": {
+      "scope": "intl-zh",
+      "language": "zh-Hant"
+    },
+    "macaodaily": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "miin": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "platform"
+      ]
+    },
+    "mingpao": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "msn": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "platform"
+      ]
+    },
+    "newmobilelife": {
+      "scope": "zh-special",
+      "language": "zh-Hant"
+    },
+    "news_163": {
+      "scope": "cn",
+      "language": "zh-Hans",
+      "roles": [
+        "platform"
+      ]
+    },
+    "news_pchome": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "platform"
+      ]
+    },
+    "news_qq": {
+      "scope": "cn",
+      "language": "zh-Hans",
+      "roles": [
+        "platform"
+      ]
+    },
+    "news_sina": {
+      "scope": "cn",
+      "language": "zh-Hans",
+      "roles": [
+        "platform"
+      ]
+    },
+    "news_yahoo": {
+      "scope": "foreign",
+      "language": "ja",
+      "roles": [
+        "platform"
+      ]
+    },
+    "nhk": {
+      "scope": "intl-zh",
+      "language": "zh-Hant",
+      "coverage": "NHK WORLD 繁體中文版（/zt/）；2026-10-04 前收的是簡體版。"
+    },
+    "nikkei": {
+      "scope": "intl-zh",
+      "language": "zh-Hant"
+    },
+    "ntdtv": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "oncc": {
+      "scope": "hkmo",
+      "language": "zh-Hant",
+      "coverage": "香港版新聞；原本的台灣版（/tw/）已轉址到香港版。"
+    },
+    "people_cn": {
+      "scope": "cn",
+      "language": "zh-Hans"
+    },
+    "pnn": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "platform"
+      ]
+    },
+    "reuters": {
+      "scope": "intl-zh",
+      "language": "zh-Hant",
+      "roles": [
+        "wire"
+      ],
+      "coverage": "LINE TODAY 路透社頻道的繁體供稿（中央社翻譯／編譯），只收正文電頭為路透的稿件；2026-10-06 前收的是 Reuters Graphics 英文圖解。"
+    },
+    "rfa": {
+      "scope": "intl-zh",
+      "language": "zh-Hans"
+    },
+    "rfi": {
+      "scope": "intl-zh",
+      "language": "zh-Hant"
+    },
+    "scmp": {
+      "scope": "foreign",
+      "language": "en"
+    },
+    "secretchina": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant",
+      "coverage": "官方繁體版（/news/b5/）；2026-10-06 前收的是簡體版。"
+    },
+    "sinchew": {
+      "scope": "sgmy",
+      "language": "zh-Hans"
+    },
+    "soundofhope": {
+      "scope": "overseas-zh",
+      "language": "zh-Hans"
+    },
+    "stheadline": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "taipeitimes": {
+      "scope": "tw-foreign",
+      "language": "en",
+      "coverage": "英文為主，部分雙語學習文章。"
+    },
+    "taiwan": {
+      "scope": "cn",
+      "language": "zh-Hans"
+    },
+    "taiwandaily": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "taiwanenews": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "taiwannews": {
+      "scope": "tw-foreign",
+      "language": "en"
+    },
+    "taiwanplus": {
+      "scope": "tw-foreign",
+      "language": "en"
+    },
+    "taiwanus": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "techcrunch": {
+      "scope": "foreign",
+      "language": "en"
+    },
+    "theinitium": {
+      "scope": "intl-zh",
+      "language": "zh-Hant"
+    },
+    "thepaper": {
+      "scope": "cn",
+      "language": "zh-Hans"
+    },
+    "tkww": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "today_line_me": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "platform"
+      ]
+    },
+    "voachinese": {
+      "scope": "intl-zh",
+      "language": "zh-Hans"
+    },
+    "wenweipo": {
+      "scope": "hkmo",
+      "language": "zh-Hant"
+    },
+    "worldjournal": {
+      "scope": "overseas-zh",
+      "language": "zh-Hant"
+    },
+    "xinhua": {
+      "scope": "cn",
+      "language": "zh-Hans",
+      "roles": [
+        "wire"
+      ]
+    },
+    "xinhuanet": {
+      "scope": "cn",
+      "language": "zh-Hans",
+      "coverage": "已停止定期抓取：與新華社（xinhua）是同一批 news.cn 文章，改由新華社收錄。"
+    },
+    "yahoo": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "coverage": "只收 Yahoo 自家編輯稿；合作媒體轉載不收。"
+    },
+    "yam": {
+      "scope": "tw",
+      "language": "zh-Hant",
+      "roles": [
+        "platform"
+      ]
+    },
+    "yonhap": {
+      "scope": "intl-zh",
+      "language": "zh-Hant"
+    },
+    "zaobao": {
+      "scope": "sgmy",
+      "language": "zh-Hans"
+    }
+  }
+}

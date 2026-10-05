@@ -901,7 +901,14 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard'
 | `articles[].publishedAt` | string (ISO 時間) |  |
 | `articles[].datePending` | boolean | 發布時間仍只是首次看到的時間 |
 | `articles[].tags` | string[] | 前 8 個標籤 |
-| `articles[].authors` | string[] | 署名（多為記者，有時是媒體本身） |
+| `articles[].authors` | string[] | 原始作者署名（包含具名作者與機構） |
+| `articles[].attributions` | object[] | 原文明示的內容提供者或引用媒體及證據 |
+| `articles[].attributions[].media` | string |  |
+| `articles[].attributions[].name` | string |  |
+| `articles[].attributions[].country` | string |  |
+| `articles[].attributions[].countryCode` | string |  |
+| `articles[].attributions[].evidence` | string |  |
+| `articles[].attributions[].kind` | "explicit" |  |
 | `articles[].text` | string \| null | 內文開頭（新文章 600 字、轉載組的 lead 與前 3 篇跟稿 1500 字），沒有內文時為摘要 |
 | `stories` | object[] | 新算出的轉載組，最多 12 組 |
 | `stories[].key` | string | lead 文章 id |
@@ -2219,6 +2226,15 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].schedule` | string | 爬取頻率；未啟用時為 off |
 | `media[].country` | string | 媒體營運／在地發行版本的國家或地區，不是報導發生地 |
 | `media[].countryCode` | string | 國家或地區代碼；INT 跨國、ZZ 待確認 |
+| `media[].scope` | object \| null |  |
+| `media[].scope.scope` | "tw" \| "tw-foreign" \| "intl-zh" \| "cn" \| "hkmo" \| "sgmy" \| "overseas-zh" \| "zh-special" \| "foreign" | 本站實際收錄版本主要服務的讀者範圍 |
+| `media[].scope.scopeLabel` | string |  |
+| `media[].scope.language` | "zh-Hant" \| "zh-Hans" \| "en" \| "ja" | 收錄版本的文字 |
+| `media[].scope.languageLabel` | string |  |
+| `media[].scope.roles` | object[] |  |
+| `media[].scope.roles[].role` | "wire" \| "platform" \| "discovery" \| "corporate" |  |
+| `media[].scope.roles[].label` | string |  |
+| `media[].scope.coverage` | string \| null | 實際收錄範圍與歷史差異，例如只收某個頻道或版本 |
 | `media[].crawler` | object |  |
 | `media[].crawler.methods` | string[] |  |
 | `media[].crawler.transport` | string \| null | HTTP、curl 或瀏覽器工具 |

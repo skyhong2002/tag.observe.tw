@@ -1469,6 +1469,18 @@ export const ENDPOINTS: Endpoint[] = [
           schedule: str('爬取頻率；未啟用時為 off'),
           country: str('媒體營運／在地發行版本的國家或地區，不是報導發生地'),
           countryCode: str('國家或地區代碼；INT 跨國、ZZ 待確認'),
+          scope: nullable(
+            obj({
+              scope: str('本站實際收錄版本主要服務的讀者範圍', {
+                enum: ['tw', 'tw-foreign', 'intl-zh', 'cn', 'hkmo', 'sgmy', 'overseas-zh', 'zh-special', 'foreign'],
+              }),
+              scopeLabel: str(),
+              language: str('收錄版本的文字', { enum: ['zh-Hant', 'zh-Hans', 'en', 'ja'] }),
+              languageLabel: str(),
+              roles: arr(obj({ role: str(undefined, { enum: ['wire', 'platform', 'discovery', 'corporate'] }), label: str() })),
+              coverage: nullable(str('實際收錄範圍與歷史差異，例如只收某個頻道或版本')),
+            }),
+          ),
           crawler: obj({
             methods: arr(str('依實際設定呈現 RSS、Sitemap、JSON API、HTML 或文章發現流程')),
             transport: nullable(str('HTTP、curl 或瀏覽器工具')),

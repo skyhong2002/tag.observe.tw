@@ -32,6 +32,9 @@ export interface NewsDiscoveryConfig {
   requestTimeoutMs?: number;
   /** Article-level provider credit required for reviewed syndication sources. */
   provider?: string;
+  /** With provider: a body pattern that must also match. A wire channel's
+   * provider label alone does not prove the originating agency. */
+  providerBody?: string;
   /** Reviewed archive permalinks when a discontinued publisher has no listing. */
   articleUrls?: string[];
 }
@@ -239,8 +242,10 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
   };
   let stopped = false;
   let provider: RegExp | undefined;
+  let providerBody: RegExp | undefined;
   try {
     provider = config.provider ? new RegExp(config.provider, 'i') : undefined;
+    providerBody = config.providerBody ? new RegExp(config.providerBody) : undefined;
   } catch {
     return { ...result, errors: ['Invalid provider pattern'] };
   }
@@ -293,6 +298,10 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     if (accepted.has(url) || !detail.body || detail.bodyStatus !== 'ok') return;
     if (provider && !provider.test(detail.provider ?? '')) {
       reject('article provider does not match source', url);
+      return;
+    }
+    if (providerBody && !providerBody.test(detail.body)) {
+      reject('article body does not match provider', url);
       return;
     }
     accepted.add(url);

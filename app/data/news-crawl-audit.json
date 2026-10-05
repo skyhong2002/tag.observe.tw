@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-05T07:35:10.704Z",
+  "checkedAt": "2026-10-05T20:28:47.465Z",
   "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing",
   "sourceMonth": "202608",
   "results": [
@@ -1539,26 +1539,32 @@
     {
       "media": "secretchina",
       "websiteUrl": "https://www.secretchina.com/",
-      "checkedAt": "2026-10-03T11:06:49.461Z",
-      "articleCount": 2,
+      "checkedAt": "2026-10-05T20:28:40.849Z",
+      "articleCount": 3,
       "samples": [
         {
-          "url": "https://www.secretchina.com/news/gb/2026/10/03/1105627.html",
-          "title": "煎锅湖 绝对不能泡的巨型温泉湖泊(图) - 自然现象 -",
-          "publishedAt": "2026-10-03T09:45:00.000Z",
-          "bodyLength": 1368
+          "url": "https://www.secretchina.com/news/b5/2026/10/06/1105724.html",
+          "title": "媒體人驚爆：任志強還活著 身體狀況非常差(圖) - 動向 -",
+          "publishedAt": "2026-10-05T19:46:17.000Z",
+          "bodyLength": 2686
         },
         {
-          "url": "https://www.secretchina.com/news/gb/2026/10/03/1105625.html",
-          "title": "沈伯洋提教育政策4面向(图) - 社会民生 -",
-          "publishedAt": "2026-10-03T09:24:16.000Z",
-          "bodyLength": 1853
+          "url": "https://www.secretchina.com/news/b5/2026/10/06/1105721.html",
+          "title": "「中國共產黨你死哪去了？」中國女士絕望泣訴：政府吃人(圖) - 社會百態 -",
+          "publishedAt": "2026-10-05T16:59:59.000Z",
+          "bodyLength": 1919
+        },
+        {
+          "url": "https://www.secretchina.com/news/b5/2026/10/06/1105696.html",
+          "title": "睡多久才不容易老？近50萬人研究曝「這時數」最好(圖) - 療養保健 - 盧乙欣",
+          "publishedAt": "2026-10-05T16:06:10.000Z",
+          "bodyLength": 758
         }
       ],
       "status": "verified",
       "strategy": "rss",
-      "listingUrl": "https://www.secretchina.com/news/gb/news.xml",
-      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+      "listingUrl": "https://www.secretchina.com/news/b5/news.xml",
+      "detail": "以 rss 驗證 3 篇近期文章的標題、日期與內文。"
     },
     {
       "media": "hsnews",
@@ -3086,27 +3092,33 @@
     },
     {
       "media": "cn_nytimes",
-      "websiteUrl": "http://cn.nytimes.com/",
-      "checkedAt": "2026-10-03T11:07:32.319Z",
-      "articleCount": 2,
+      "websiteUrl": "https://cn.nytimes.com/zh-hant/",
+      "checkedAt": "2026-10-05T20:28:40.857Z",
+      "articleCount": 3,
       "samples": [
         {
-          "url": "https://cn.nytimes.com/china/20260929/china-zion-church-pastor-detained-family/",
-          "title": "一名锡安教会被捕牧师妻子的流亡、煎熬与信仰",
+          "url": "https://cn.nytimes.com/china/20260929/china-zion-church-pastor-detained-family/zh-hant/",
+          "title": "一名錫安教會被捕牧師妻子的流亡、煎熬與信仰",
           "publishedAt": "2026-09-30T12:17:33.000Z",
-          "bodyLength": 5240
+          "bodyLength": 5239
         },
         {
-          "url": "https://cn.nytimes.com/usa/20260930/ai-trump-meta-microsoft-openai/",
-          "title": "特朗普要求人工智能巨头自我监管",
+          "url": "https://cn.nytimes.com/usa/20260930/ai-trump-meta-microsoft-openai/zh-hant/",
+          "title": "川普要求人工智慧巨頭自我監管",
           "publishedAt": "2026-09-30T11:09:29.000Z",
-          "bodyLength": 2713
+          "bodyLength": 2685
+        },
+        {
+          "url": "https://cn.nytimes.com/technology/20260930/openai-warnings-security/zh-hant/",
+          "title": "OpenAI曾無視員工關於其人工智慧安全問題的警告",
+          "publishedAt": "2026-09-30T11:05:49.000Z",
+          "bodyLength": 2195
         }
       ],
       "status": "verified",
       "strategy": "rss",
-      "listingUrl": "https://cn.nytimes.com/rss/",
-      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+      "listingUrl": "https://cn.nytimes.com/rss/zh-hant/",
+      "detail": "以 rss 驗證 3 篇近期文章的標題、日期與內文。"
     },
     {
       "media": "cdn_news",
@@ -3206,33 +3218,33 @@
     },
     {
       "media": "reuters",
-      "websiteUrl": "https://graphics.thomsonreuters.com/",
-      "checkedAt": "2026-10-03T13:02:15.128738+00:00",
+      "websiteUrl": "https://today.line.me/tw/v3/publisher/101170",
+      "checkedAt": "2026-10-05T20:28:40.858Z",
       "articleCount": 3,
       "samples": [
         {
-          "url": "https://www.reuters.com/graphics/ISRAEL-PALESTINIANS/HEZBOLLAH-PAGERS/mopawkkwjpa/",
-          "title": "How Israel’s bulky pager fooled Hezbollah",
-          "publishedAt": "2024-10-16T02:00:00.000Z",
-          "bodyLength": 8921
+          "url": "https://today.line.me/tw/v3/article/5yvpMDr",
+          "title": "科技股回落 華爾街股市開平盤 | 路透社 | LINE TODAY",
+          "publishedAt": "2026-10-05T13:45:45.000Z",
+          "bodyLength": 200
         },
         {
-          "url": "https://www.reuters.com/graphics/ISRAEL-PALESTINIANS/ANNIVERSARY-GAZA-RUBBLE/akveegbnlvr/",
-          "title": "Gaza in rubble and ruin",
-          "publishedAt": "2024-10-06T06:30:00.000Z",
-          "bodyLength": 9114
+          "url": "https://today.line.me/tw/v3/article/EXwBp5Q",
+          "title": "挪威擬禁止在特定場所戴AI眼鏡 防民眾遭偷拍、錄影和錄音 | 路透社 | LINE TODAY",
+          "publishedAt": "2026-10-05T13:22:03.000Z",
+          "bodyLength": 362
         },
         {
-          "url": "https://www.reuters.com/graphics/USA-ELECTION/SWING-STATES/myvmadqlzvr/",
-          "title": "Behind the Battleground States",
-          "publishedAt": "2024-09-24T08:01:00.000Z",
-          "bodyLength": 4833
+          "url": "https://today.line.me/tw/v3/article/wJvqJMr",
+          "title": "俄空襲烏克蘭敖德薩州與哈爾科夫市 釀1死6傷 | 路透社 | LINE TODAY",
+          "publishedAt": "2026-10-05T11:09:24.000Z",
+          "bodyLength": 342
         }
       ],
       "status": "verified",
       "strategy": "html",
-      "listingUrl": "https://graphics.thomsonreuters.com/",
-      "detail": "已核實完整公開正文與真實日期；舊文及具名官方聯播入庫驗證見 docs/crawl-restoration.md。"
+      "listingUrl": "https://today.line.me/tw/v3/publisher/101170",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
     },
     {
       "media": "news_qq",
@@ -3332,27 +3344,33 @@
     },
     {
       "media": "dw",
-      "websiteUrl": "https://www.dw.com/zh/",
-      "checkedAt": "2026-10-03T11:07:43.087Z",
-      "articleCount": 2,
+      "websiteUrl": "https://www.dw.com/zh-hant/",
+      "checkedAt": "2026-10-05T20:28:40.858Z",
+      "articleCount": 3,
       "samples": [
         {
-          "url": "https://www.dw.com/zh/%E7%BB%9F%E4%B8%8036%E5%B9%B4%E4%B8%9C%E8%A5%BF%E5%BE%B7%E4%BB%8D%E6%9C%89%E9%9A%90%E5%BD%A2%E9%B8%BF%E6%B2%9F/a-79529462",
-          "title": "统一36年，东西德仍有“隐形鸿沟”？",
-          "publishedAt": "2026-10-03T10:10:00.000Z",
-          "bodyLength": 1886
+          "url": "https://www.dw.com/zh-hant/%E7%BE%8E%E5%9C%8B%E5%92%8C%E5%BE%B7%E5%9C%8B%E7%A7%91%E5%AD%B8%E5%AE%B6%E7%8D%B2%E5%BE%97%E4%BB%8A%E5%B9%B4%E5%BA%A6%E8%AB%BE%E8%B2%9D%E7%88%BE%E7%94%9F%E7%90%86%E5%AD%B8%E6%88%96%E9%86%AB%E5%AD%B8%E7%8D%8E/a-79547816",
+          "title": "美國和德國科學家獲得今年度諾貝爾生理學或醫學獎",
+          "publishedAt": "2026-10-05T10:20:38.500Z",
+          "bodyLength": 578
         },
         {
-          "url": "https://www.dw.com/zh/g20%E8%B4%B8%E6%98%93%E9%83%A8%E9%95%BF%E4%BC%9A%E8%AE%AE%E4%BA%A7%E8%83%BD%E8%BF%87%E5%89%A9%E5%A3%B0%E6%98%8E%E9%81%AD%E6%8B%92%E5%BC%BA%E8%BF%AB%E5%8A%B3%E5%8A%A8%E5%A3%B0%E6%98%8E%E5%8F%97%E9%98%BB/a-79529292",
-          "title": "G20贸易部长会议：产能过剩声明遭拒，强迫劳动声明受阻",
-          "publishedAt": "2026-10-03T09:46:00.000Z",
-          "bodyLength": 1530
+          "url": "https://www.dw.com/zh-hant/%E7%BE%8E%E8%BB%8D%E5%BE%9E%E8%8B%B1%E5%9C%8B%E5%9F%BA%E5%9C%B0%E6%92%A4%E8%B5%B0%E8%BD%9F%E7%82%B8%E6%A9%9F/a-79552460",
+          "title": "美軍從英國基地撤走轟炸機",
+          "publishedAt": "2026-10-05T13:58:54.091Z",
+          "bodyLength": 749
+        },
+        {
+          "url": "https://www.dw.com/zh-hant/%E5%8F%B0%E7%81%A3%E5%9C%A8%E7%BE%8E%E5%9C%8B%E6%96%B0%E8%A8%AD%E9%A7%90%E9%B3%B3%E5%87%B0%E5%9F%8E%E8%BE%A6%E4%BA%8B%E8%99%95-%E5%A4%96%E9%95%B7%E6%9E%97%E4%BD%B3%E9%BE%8D%E8%B5%B4%E7%BE%8E%E6%8F%AD%E5%B9%95/a-79551697",
+          "title": "台灣在美國新設駐鳳凰城辦事處",
+          "publishedAt": "2026-10-05T13:43:54.674Z",
+          "bodyLength": 827
         }
       ],
       "status": "verified",
-      "strategy": "rss",
-      "listingUrl": "https://rss.dw.com/rdf/rss-chi-all",
-      "detail": "以 rss 驗證 2 篇近期文章的標題、日期與內文。"
+      "strategy": "html",
+      "listingUrl": "https://www.dw.com/zh-hant/%E7%B7%9A%E4%B8%8A%E5%A0%B1%E5%B0%8E/s-9058",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
     },
     {
       "media": "focustaiwan",

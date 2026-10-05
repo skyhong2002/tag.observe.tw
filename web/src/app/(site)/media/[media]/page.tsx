@@ -164,6 +164,20 @@ export default async function MediaPage({
                   <dd>{data.publisher.country}</dd>
                 </>
               )}
+              {profile?.scope && (
+                <>
+                  <dt className="text-zinc-500 dark:text-zinc-400">收錄範圍</dt>
+                  <dd>
+                    {[profile.scope.scopeLabel, profile.scope.languageLabel, ...profile.scope.roles.map((role) => role.label)].join(' · ')}
+                  </dd>
+                </>
+              )}
+              {profile?.scope?.coverage && (
+                <>
+                  <dt className="text-zinc-500 dark:text-zinc-400">收錄說明</dt>
+                  <dd>{profile.scope.coverage}</dd>
+                </>
+              )}
               {!discovery && profile && (
                 <>
                   <dt className="text-zinc-500 dark:text-zinc-400">本站分類</dt>

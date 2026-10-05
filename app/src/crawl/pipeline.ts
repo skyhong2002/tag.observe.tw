@@ -408,6 +408,7 @@ export async function runArticles(
     failed = 0,
     rejected = 0;
   const provider = spec.article.provider ? new RegExp(spec.article.provider) : null;
+  const providerBody = spec.article.providerBody ? new RegExp(spec.article.providerBody) : null;
   const errors: string[] = [];
   // HTTP 429 or a worker shutdown: stop this batch and leave the rest (and this
   // row) for the next run.
@@ -426,14 +427,15 @@ export async function runArticles(
           }
           if (res.status >= 400) throw Error('HTTP ' + res.status);
           const detail = extractArticle(res.body, row.url, spec.article);
-          if (provider && !provider.test(detail.provider ?? '')) {
+          const providerMismatch = provider && !provider.test(detail.provider ?? '');
+          if (providerMismatch || (provider && providerBody && !providerBody.test(detail.body ?? ''))) {
             await db
               .insert(rejectedUrls)
               .ignore()
               .values({
                 media: spec.media,
                 urlKey: row.urlKey ?? urlKey(row.url, spec.list.articleId),
-                reason: `provider:${detail.provider ?? 'none'}`.slice(0, 64),
+                reason: (providerMismatch ? `provider:${detail.provider ?? 'none'}` : 'provider-body').slice(0, 64),
                 createdAt: now(),
               });
             await db.delete(articleTags).where(eq(articleTags.articleId, row.id));

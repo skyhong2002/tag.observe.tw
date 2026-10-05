@@ -337,9 +337,11 @@ export const overrides: Record<string, SourceOverride> = {
   // The homepage stopped listing new posts after 2026-10-02; the WordPress
   // feed (latest 20, dated) is current.
   eld: { list: { urls: [{ cat: 'news', url: 'https://www.roomie.tw/feed' }] } },
+  // The Taiwan edition (/tw/news/) now redirects to the Hong Kong one; list
+  // that directly so the source says what it collects.
   oncc: {
     group: 'hourly',
-    list: { urls: [{ cat: 'news', url: 'https://hk.on.cc/tw/news/index.html' }], discover: { pattern: '/bkn/cnt/news/\\d{8}/' } },
+    list: { urls: [{ cat: 'news', url: 'https://hk.on.cc/hk/news/index.html' }], discover: { pattern: '/bkn/cnt/news/\\d{8}/' } },
   },
   // Legacy parsed the HTML listing with '<item' markers; the site has a real feed.
   nius: { list: { urls: [{ cat: 'feed', url: 'https://www.niusnews.com/feed' }] } },

@@ -32,12 +32,26 @@ const CAMPS: Record<Exclude<Camp, 'other'>, { label: string; short: string; badg
     badge: 'bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800',
   },
 };
+// Readership of the collected edition (app/data/media-scope.json), in the
+// order the filter lists them.
+const SCOPE_ORDER = ['tw', 'tw-foreign', 'intl-zh', 'hkmo', 'sgmy', 'overseas-zh', 'zh-special', 'cn', 'foreign'];
+interface MediaScope {
+  scope: string;
+  scopeLabel: string;
+  language: string;
+  languageLabel: string;
+  roles: Array<{ role: string; label: string }>;
+  coverage: string | null;
+}
+const scopeBadge =
+  'shrink-0 whitespace-nowrap rounded bg-zinc-100 px-1.5 py-px text-[11px] font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700';
 interface MediaRow {
   media: string;
   sourceKind?: 'discovery' | 'publisher';
   title: string;
   country: string;
   countryCode: string;
+  scope?: MediaScope | null;
   icon: string | null;
   category: string | null;
   categoryLabel: string | null;
@@ -137,7 +151,7 @@ function Tile({ label, value, note }: { label: string; value: string; note?: str
 export default async function MediaStatsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; dir?: string; status?: string; category?: string; camp?: string }>;
+  searchParams: Promise<{ sort?: string; dir?: string; status?: string; category?: string; camp?: string; scope?: string }>;
 }) {
   const sp = await searchParams;
   const res = await fetch(`${API_ORIGIN}/api/v1/media-stats`, { next: { revalidate } }).catch(() => null);
@@ -154,11 +168,19 @@ export default async function MediaStatsPage({
   const status = sp.status && sp.status in STATUS ? (sp.status as Status) : null;
   const category = sp.category ?? null;
   const camp = sp.camp && sp.camp in CAMPS ? (sp.camp as keyof typeof CAMPS) : null;
+  const scopes = [...new Map(data.media.flatMap((m) => (m.scope ? [[m.scope.scope, m.scope.scopeLabel] as const] : []))).entries()].sort(
+    ([a], [b]) => SCOPE_ORDER.indexOf(a) - SCOPE_ORDER.indexOf(b),
+  );
+  const scope = scopes.some(([key]) => key === sp.scope) ? (sp.scope as string) : null;
   const categories = [
     ...new Map(data.media.filter((m) => m.category).map((m) => [m.category as string, m.categoryLabel ?? m.category])).entries(),
   ];
   let rows = data.media.filter(
-    (m) => (!status || m.status === status) && (!category || m.category === category) && (!camp || m.camp === camp),
+    (m) =>
+      (!status || m.status === status) &&
+      (!category || m.category === category) &&
+      (!camp || m.camp === camp) &&
+      (!scope || m.scope?.scope === scope),
   );
   rows = [...rows].sort((a, b) => {
     const x = SORTS[sort](a),
@@ -169,7 +191,7 @@ export default async function MediaStatsPage({
   const max = Math.max(1, ...rows.map((r) => r.last24h));
   const link = (patch: Record<string, string | null>) => {
     const q = new URLSearchParams();
-    const next = { sort, dir, status, category, camp, ...patch };
+    const next = { sort, dir, status, category, camp, scope, ...patch };
     const isDefault = next.sort === 'last24h' && next.dir === 'desc';
     for (const [k, v] of Object.entries(next)) if (v && !(isDefault && (k === 'sort' || k === 'dir'))) q.set(k, v);
     const s = q.toString();
@@ -246,6 +268,15 @@ export default async function MediaStatsPage({
             {CAMPS[c].label} {data.media.filter((m) => m.camp === c).length}
           </Link>
         ))}
+        <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
+        <Link href={link({ scope: null })} scroll={false} className={chip(!scope)}>
+          全部範圍
+        </Link>
+        {scopes.map(([key, label]) => (
+          <Link key={key} href={link({ scope: key })} scroll={false} className={chip(scope === key)}>
+            {label} {data.media.filter((m) => m.scope?.scope === key).length}
+          </Link>
+        ))}
       </div>
       <TableScroller card label="媒體與文章數表格，可左右捲動">
         <table className="w-full min-w-[48rem] text-sm">
@@ -277,6 +308,19 @@ export default async function MediaStatsPage({
                       </span>
                       <span className={`${table.leadExtra} flex flex-wrap items-center gap-x-2 gap-y-1`}>
                         <CountryFlag code={r.countryCode} country={r.country} />
+                        {r.scope && r.scope.scope !== 'tw' && (
+                          <span className={scopeBadge} title={r.scope.coverage ?? undefined}>
+                            {r.scope.scopeLabel}
+                          </span>
+                        )}
+                        {r.scope && r.scope.language !== 'zh-Hant' && <span className={scopeBadge}>{r.scope.languageLabel}</span>}
+                        {r.scope?.roles
+                          .filter(({ role }) => role !== 'discovery')
+                          .map(({ role, label }) => (
+                            <span key={role} className={scopeBadge}>
+                              {label}
+                            </span>
+                          ))}
                         {r.sourceKind === 'discovery' && (
                           <span className="shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800">
                             發現來源

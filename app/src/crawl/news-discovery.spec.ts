@@ -654,6 +654,23 @@ describe('discoverNews', () => {
     expect(f.calls).toEqual(seeds);
   });
 
+  it('requires a wire channel body to carry the agency dateline as well as its provider credit', async () => {
+    const publisher = 'https://wire.test/';
+    const metadata = `<meta property="article:published_time" content="${today}">`;
+    const credit = `<script>${JSON.stringify(JSON.stringify({ provider: { name: '路透社' } }))}</script>`;
+    const [reuters, afp] = ['reuters-12345', 'afp-12345'].map((slug) => `${publisher}article/${slug}`);
+    const f = fixture({
+      [reuters]: article(metadata, `（路透紐約5日電）${body}`) + credit,
+      // Labelled 路透社 by the channel, but the story itself is an AFP wire.
+      [afp]: article(metadata, `（法新社斯德哥爾摩3日電）${body}`) + credit,
+    });
+    const result = await discoverNews(
+      { homeUrl: publisher, articleUrls: [reuters, afp], provider: '^路透社$', providerBody: '^\\s*[（(]路透' },
+      f.options,
+    );
+    expect(result.items.map((item) => item.url)).toEqual([reuters]);
+  });
+
   it('does not follow reviewed archive seeds outside the allowed host or article path', async () => {
     const outOfScope = 'https://unreviewed.test/news/12345';
     const f = fixture({ [outOfScope]: article(), [home]: article() });

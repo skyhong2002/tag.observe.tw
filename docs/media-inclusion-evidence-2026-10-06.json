@@ -1,0 +1,189 @@
+{
+  "researchDate": "2026-10-06",
+  "timezone": "Asia/Taipei",
+  "method": "公開網頁由 T3 協作瀏覽器核對；另外標記的文章以本站公開 API 已存正文核對。搜尋摘要僅供找入口，不作為主要結論的唯一證據。所有 findings 是研究摘要，不是媒體自述的逐字引文。",
+  "references": [
+    {
+      "id": "E01",
+      "url": "https://www.cna.com.tw/about/product.aspx",
+      "title": "中央社產品與服務",
+      "verified": true,
+      "finding": "產品頁分列路透社網路中文即時新聞、法新社英文新聞及網路中文即時新聞、美聯社英文新聞；說明代理出售及國外新聞中心選譯外電。頁面包含歷史敘述，不能單憑此頁推定當下每條服務的合約與可取得端點。"
+    },
+    {
+      "id": "E02",
+      "url": "https://reutersagency.com/content/content-types/text/",
+      "title": "Reuters Text Newswires",
+      "verified": true,
+      "finding": "官方商業文字供稿產品列 12 種語言及 Language Text Newswires；公開頁未列出完整語言清單，不能從此頁直接確認繁體公共 feed。"
+    },
+    {
+      "id": "E03",
+      "url": "https://www.afp.com/en/about-us",
+      "title": "AFP About us",
+      "verified": true,
+      "finding": "官方一般供稿介紹列法英德西葡阿六種語言；另列查核網路 26 種語言。這不否定合作方製作的中文服務，也不證明存在公開中文綜合新聞 feed。"
+    },
+    {
+      "id": "E04",
+      "url": "https://www.ap.org/content/formats/newswires/",
+      "title": "AP Newswire Licensing",
+      "verified": true,
+      "finding": "官方提供商業文字新聞授權；本次未核實公開繁體綜合新聞入口。未找到不等於不存在。"
+    },
+    {
+      "id": "E05",
+      "url": "https://today.line.me/tw/v3/publisher/101170",
+      "title": "LINE TODAY 路透社頻道",
+      "verified": true,
+      "finding": "實見多篇 2026-10-05 更新的繁體新聞及路透社 provider；逐篇抽查下列三篇，皆有路透電頭及中央社翻譯或編譯署名。"
+    },
+    {
+      "id": "E06",
+      "url": "https://today.line.me/tw/v3/article/5yvpMDr",
+      "title": "科技股回落　華爾街股市開平盤 | 路透社 | LINE TODAY",
+      "verified": true,
+      "provider": "路透社",
+      "publishedAt": "2026-10-05T13:45:45.000Z",
+      "dateline": "（路透紐約5日電）",
+      "translationCredit": "中央社（編譯）",
+      "finding": "實際頁面正文可閱讀，繁體中文。JSON-LD articleBody 只是省略摘要，不能拿它當全文。"
+    },
+    {
+      "id": "E07",
+      "url": "https://today.line.me/tw/v3/article/EXwBp5Q",
+      "title": "挪威擬禁止在特定場所戴AI眼鏡　防民眾遭偷拍、錄影和錄音 | 路透社 | LINE TODAY",
+      "verified": true,
+      "provider": "路透社",
+      "publishedAt": "2026-10-05T13:22:03.000Z",
+      "dateline": "（路透哥本哈根5日電）",
+      "translationCredit": "中央社（翻譯）",
+      "finding": "實際頁面正文可閱讀，繁體中文。JSON-LD articleBody 只是省略摘要，不能拿它當全文。"
+    },
+    {
+      "id": "E08",
+      "url": "https://today.line.me/tw/v3/article/mWp090e",
+      "title": "法國海上救援移民船　2人宣告不治 | 路透社 | LINE TODAY",
+      "verified": true,
+      "provider": "路透社",
+      "publishedAt": "2026-10-05T12:29:06.000Z",
+      "dateline": "（路透巴黎5日電）",
+      "translationCredit": "中央社（翻譯）",
+      "finding": "實際頁面正文可閱讀，繁體中文。JSON-LD articleBody 只是省略摘要，不能拿它當全文。"
+    },
+    {
+      "id": "E09",
+      "url": "https://today.line.me/tw/v3/article/vXLN5EE",
+      "title": "路透社／OpenAI 募資報導",
+      "verified": true,
+      "finding": "額外核對的 2026-09-29 繁體稿，provider 路透社、路透電頭、中央社翻譯；本篇還引述彭博，顯示稿件可能有多層來源。"
+    },
+    {
+      "id": "E10",
+      "url": "https://today.line.me/tw/v3/article/DR9Bpao",
+      "title": "瑞典指控伊朗利用斯德哥爾摩清真寺從事間諜活動",
+      "verified": true,
+      "publishedAt": "2025-02-04T11:02:42.000Z",
+      "provider": "路透社",
+      "dateline": "（法新社斯德哥爾摩3日電）",
+      "translationCredit": "中央社（翻譯）",
+      "finding": "舊稿反例：頻道/provider 與正文電頭衝突；不能只根據頻道將所有文章當路透原稿。"
+    },
+    {
+      "id": "E11",
+      "url": "https://www.cna.com.tw/news/aopl/202610040006.aspx",
+      "apiUrl": "https://tag.observe.tw/api/v1/articles/8799875/content",
+      "title": "中央社近期引用法新社實例",
+      "verified": true,
+      "verificationMethod": "本站公開 API 已存正文及引用證據，未另宣稱本輪開啟 CNA 原頁",
+      "finding": "中央社綜合外電，正文有法新社報導及編譯署名；API 歸 cna 並有 afp 引用。可證明引用，不能由此單篇證明完整翻譯授權鏈。"
+    },
+    {
+      "id": "E12",
+      "url": "https://www.cna.com.tw/news/ait/202609300024.aspx",
+      "apiUrl": "https://tag.observe.tw/api/v1/articles/3048284/content",
+      "title": "中央社近期引用美聯社實例",
+      "verified": true,
+      "verificationMethod": "本站公開 API 已存正文及引用證據",
+      "finding": "中央社記者署名報導內明示引用 AP；非 AP 直接出版的繁體新聞。"
+    },
+    {
+      "id": "E13",
+      "url": "https://www.bbc.com/zhongwen/trad",
+      "title": "BBC News 中文繁體",
+      "verified": true,
+      "finding": "實見繁體頁、簡體切換及台灣分類、近期台灣新聞；不能等同英文 bbc_global。"
+    },
+    {
+      "id": "E14",
+      "url": "https://www.dw.com/zh-hant/",
+      "title": "DW 繁體入口",
+      "verified": true,
+      "finalUrl": "https://www.dw.com/zh-hant/%E7%B7%9A%E4%B8%8A%E5%A0%B1%E5%B0%8E/s-9058",
+      "finding": "繁體頁可讀並提供 zh-hant/zh alternate；目前本站 dw feed 與近期樣本是簡體，應先修版本選取。"
+    },
+    {
+      "id": "E15",
+      "url": "https://cn.nytimes.com/zh-hant/",
+      "title": "紐約時報中文網繁體",
+      "verified": true,
+      "finding": "頁面可讀，有簡繁切換與 hreflang；本站最新樣本同一故事簡繁各佔一筆。"
+    },
+    {
+      "id": "E16",
+      "url": "https://cn.nytimes.com/help/about-us/zh-hant/",
+      "title": "紐約時報中文網關於我們",
+      "verified": true,
+      "finding": "官方自述向中國讀者提供報導並將內容帶給全球中文讀者；繁體版不等於台灣專版。"
+    },
+    {
+      "id": "E17",
+      "url": "https://www3.nhk.or.jp/nhkworld/zt/news/",
+      "title": "NHK WORLD-JAPAN 繁體中文新聞",
+      "verified": true,
+      "finding": "頁面標題為中国語繁体字ニュース、html lang=zh-Hant；本站既有樣本混入 /zh/ 和 /zt/。"
+    },
+    {
+      "id": "E18",
+      "url": "https://tchina.kyodonews.net/",
+      "title": "共同網繁體版",
+      "verified": true,
+      "finding": "近期繁體新聞可讀；官方互鏈 china.kyodonews.net 簡體版；本站樣本為繁體。"
+    },
+    {
+      "id": "E19",
+      "url": "https://cb.yna.co.kr/gate/big5/cn.yna.co.kr/",
+      "title": "韓聯社繁體轉換入口",
+      "verified": true,
+      "finding": "近期繁體新聞可讀並互鏈簡體站；繁體轉換入口不是獨立台灣編輯版的證明。"
+    },
+    {
+      "id": "E20",
+      "url": "https://zh.cn.nikkei.com/",
+      "title": "日經中文網繁體入口",
+      "verified": true,
+      "finding": "頁面為繁體並有簡繁切換；html lang 仍是 zh-cn，說明不能單憑 lang 判定。本站最新五筆標題繁體，舊 audit 與部分摘要為簡體。"
+    },
+    {
+      "id": "E21",
+      "url": "https://www.zaobao.com.sg/",
+      "title": "聯合早報首頁",
+      "verified": true,
+      "finding": "首頁有簡繁切換及新加坡版、國際版、中國版；不能稱為僅有簡體。"
+    },
+    {
+      "id": "E22",
+      "url": "https://www.zaobao.com.sg/about-us",
+      "title": "聯合早報關於我們",
+      "verified": true,
+      "finding": "官方定位為新加坡和世界華人服務；受眾不宜絕對描述成沒有台灣人。"
+    },
+    {
+      "id": "E23",
+      "url": "https://www.sinchew.com.my/",
+      "title": "星洲網首頁",
+      "verified": true,
+      "finding": "本輪瀏覽器顯示繁體、可切簡體；本站 API 最新五筆標題是簡體。版面及內容聚焦馬來西亞，繁體與主要服務地區須分開判定。"
+    }
+  ]
+}

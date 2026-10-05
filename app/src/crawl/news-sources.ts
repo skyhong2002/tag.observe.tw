@@ -21,6 +21,7 @@ export interface NewsSource {
   transport?: 'curl';
   requestTimeoutMs?: number;
   provider?: string;
+  providerBody?: string;
   titleSuffix?: string;
   articleUrls?: string[];
   /** For pages without keyword meta: the elements whose text are the article's tags. */
@@ -75,6 +76,7 @@ export function addNewsSources(
                   ...(source.transport ? { transport: source.transport } : {}),
                   ...(source.requestTimeoutMs ? { requestTimeoutMs: source.requestTimeoutMs } : {}),
                   ...(source.provider ? { provider: source.provider } : {}),
+                  ...(source.providerBody ? { providerBody: source.providerBody } : {}),
                   ...(source.articleUrls ? { articleUrls: source.articleUrls } : {}),
                   maxArticles: 12,
                 },
@@ -86,6 +88,7 @@ export function addNewsSources(
           batch: 12,
           delayMs: 1500,
           ...(source.provider ? { provider: source.provider } : {}),
+          ...(source.providerBody ? { providerBody: source.providerBody } : {}),
           ...(source.tagSelector ? { tagSelector: source.tagSelector } : {}),
         },
       };

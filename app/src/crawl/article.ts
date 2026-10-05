@@ -33,6 +33,9 @@ export interface ArticleRules {
   // Keep only pages whose content provider matches (aggregators such as Yahoo
   // carry partner media; we want their own reporting only).
   provider?: string;
+  /** With provider: a body pattern that must also match. A wire channel's
+   * provider label alone does not prove the originating agency. */
+  providerBody?: string;
 }
 
 // A keyword list where any entry is sentence-length is prose in disguise
