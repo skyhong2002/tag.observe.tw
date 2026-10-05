@@ -95,7 +95,7 @@ class Pipeline:
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.state_path = self.root / 'state.json'
         self.rc = ['rclone', '--config', cfg['rclone_config'], '--bwlimit', cfg['bandwidth'],
-                   '--retries', '2', '--low-level-retries', '2', '--contimeout', '15s', '--timeout', '60s']
+                   '--retries', '4', '--retries-sleep', '2s', '--low-level-retries', '2', '--contimeout', '15s', '--timeout', '60s']
         self.state = json.loads(self.state_path.read_text()) if self.state_path.exists() else None
         if self.state:
             self.check_identity(self.state)
