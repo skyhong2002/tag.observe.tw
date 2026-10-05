@@ -251,10 +251,8 @@ export default async function EventThreadPage({
                   {leadReport?.outlet.title ?? mediaNames[lead.media]?.name ?? lead.media}
                 </MediaHoverLink>
                 {leadReport && <span className="tabular-nums">{taipei(leadReport.publishedAt)}</span>}
-                <Link href={articleHref(lead)} className="text-brand-700 hover:underline dark:text-brand-400">
-                  閱讀全文 →
-                </Link>
-                <SourceLink url={lead.url} />
+                {/* The article page only keeps an excerpt; the full text is on the outlet's site. */}
+                <SourceLink url={lead.url} label="原站全文" className="!min-h-0" />
               </p>
             </div>
           )}
@@ -316,7 +314,7 @@ export default async function EventThreadPage({
             id="leads"
             note={
               <>
-                帶到最多事件主要標籤的報導，每家媒體一則；點標題可讀全文。
+                帶到最多事件主要標籤的報導，每家媒體一則；點標題看本站節錄，全文請到原站。
                 <a href="#headlines" className="ml-1 text-brand-700 hover:underline dark:text-brand-400">
                   全部 {coreCount} 篇標題對照在頁尾 ↓
                 </a>

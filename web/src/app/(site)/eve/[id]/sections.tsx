@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CAMP_LONG, CAMP_TEXT, CampDot } from '@/components/EventCampDot';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import SafeImage from '@/components/SafeImage';
+import SourceLink from '@/components/SourceLink';
 import { taipei, taipeiHour } from '@/lib/api';
 import {
   CAMP_ORDER,
@@ -182,13 +183,8 @@ export function LeadStories({ items }: { items: TimedArticle[] }) {
                 {a.description}
               </p>
             )}
-            <Link
-              href={articleHref(a)}
-              aria-label={`閱讀全文：${a.title}`}
-              className="inline-block text-xs text-brand-700 hover:underline dark:text-brand-400"
-            >
-              閱讀全文 →
-            </Link>
+            {/* The article page only keeps an excerpt; the full text is on the outlet's site. */}
+            <SourceLink url={a.url} label="原站全文" className="!min-h-0" />
           </div>
           {a.image && /^https?:\/\//.test(a.image) && (
             <Link href={articleHref(a)} tabIndex={-1} aria-hidden="true" className="flex-none">
