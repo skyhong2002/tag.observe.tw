@@ -826,7 +826,7 @@ export default function LiveBoard({
                     {reading.mediaTitle}
                   </Go>
                   <CampDot camp={reading.camp} />
-                  <Reporters authors={reading.authors} className="text-sm text-zinc-400" />
+                  <Reporters article={reading} className="text-sm text-zinc-400" />
                   <span className="ml-auto shrink-0 tabular-nums text-zinc-500">{clock(reading.publishedAt)} 發布</span>
                 </div>
                 <div className="flex shrink-0 gap-3">

@@ -464,7 +464,11 @@ export const overrides: Record<string, SourceOverride> = {
     },
     // The story sits in loose <div>s inside the yellow panel, after the
     // headline, dateline and photo; topic buttons follow it.
-    article: { bodySelector: '.yellow-white-bg', bodyExcludeSelector: 'h1, time, center, a.btn' },
+    article: {
+      bodySelector: '.yellow-white-bg',
+      bodyExcludeSelector: 'h1, time, center, a.btn',
+      authorSelector: '.yellow-white-bg > time',
+    },
   },
   // 旺報 is now a China Times print section (2603xx); chinatimes' own listing
   // (today's realtime news) does not include it.

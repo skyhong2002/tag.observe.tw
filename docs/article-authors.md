@@ -46,3 +46,14 @@ node --env-file=.env tools/repair-article-authors.ts --stored-body --limit 1000 
 - 看板的 Reporters 元件改用中性「署名」標示，具名文字先依 personNames 正規化。公司、媒體、部門、匿名通訊社電頭仍保留原署名，不會一律標成「記者」。
 - 看板修正在 `/home/deck/.cache/tag-reporter-signatures` 的 `fix/reporter-signatures` 分支，基於正式 release 的版本建立並整合 origin/main；保留 main 中其他未提交工作。前端 production build、TypeScript 及相關測試通過。正式版本由 `scripts/install-service.sh` 建置、驗證並切換 release。
 - 追加截圖確認大紀元日期電頭後的「大紀元記者陸希休斯頓報導」。解析器新增日期電頭、休斯頓及複合地名處理；歷史資料回填另外保存為 epoch-date-original.jsonl／epoch-date-apply.jsonl。
+
+## 作者、機構及來源分開顯示
+
+看板使用「作者」標示具名作者（不推測其是否為記者），機構原始作者欄使用「機構署名」。已辨識的外部媒體作者欄顯示「來源」，不是引用判定。API 另外傳送既有 attributions 與證據；明示內容提供者顯示「來源」，其他明示引用顯示「引用」，點擊可開啟該媒體頁，滑鼠停留可讀取證據。沒有署名或證據不猜測。
+
+- MSN 30100922：作者高鈺婷、來源 TVBS新聞網。
+- PChome 30082925：來源中央社、引用法新社；無具名作者。
+- 世界新聞網 29701350：中央社台北5日電為來源中央社；無具名作者。
+- 民視 30606908：機構署名民間全民電視公司、引用法新社。
+- 波新聞 10864474：作者李至文；牧迪網頁設計是網站 metadata，排除為作者。波新聞保存正文 76 篇重新掃描、43 筆回填，備份 bo-lead-original.jsonl。
+- 1111 30082822：日期旁可見記者黃彩絹／綜合報導，優先於網站公司 metadata。指定作者欄在正文排除日期前保存。

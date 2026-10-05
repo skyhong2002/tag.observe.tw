@@ -249,6 +249,10 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string, configure
       )
         return [];
       let name = normalize(element.attr('content') ?? (element.find('[itemprop="name"]').first().text() || element.text()));
+      if (element.is('time')) {
+        const credit = name.replace(/^\d{4}-\d{2}-\d{2}\s+(?:(?:上午|下午|早上|晚上)\s*)?\d{1,2}:\d{2}\s*/u, '');
+        return reporterNames(credit);
+      }
       // A visible author declaration can distinguish the writer from a
       // responsible editor incorrectly included in structured author arrays.
       if (/^作者\s*[:：]/u.test(name)) {
@@ -261,16 +265,22 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string, configure
     });
 }
 
-function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: ContentRules, body = ''): string[] {
+function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: ContentRules, body = '', configuredValues?: string[]): string[] {
   const finish = (names: string[]) =>
     normalizeAuthorCredits([
       ...new Set(
         names
           .flatMap((name) => (reporterNames(name).length ? reporterNames(name) : [normalize(name)]))
-          .filter((name) => name && name.length <= 120 && !/^https?:\/\//i.test(name)),
+          .filter(
+            (name) =>
+              name &&
+              name.length <= 120 &&
+              !/^https?:\/\//i.test(name) &&
+              !/(?:網頁|網站|网页|网站)[\s:：]*(?:設計|设计)|\bweb(?:site)?\s+design\b/iu.test(name),
+          ),
       ),
     ]).slice(0, 30);
-  const configured = rules.authorSelector ? finish(scopedAuthorElements($, rules.authorSelector, true)) : [];
+  const configured = rules.authorSelector ? finish(configuredValues ?? scopedAuthorElements($, rules.authorSelector, true)) : [];
   if (configured.some((name) => !ORGANIZATION_CREDIT.test(name))) return configured;
   const structured = finish(nodes.flatMap((node) => authorNames(node['author'])));
   const declared = finish(scopedAuthorElements($, 'meta[name="author"], meta[property="article:author"]'));
@@ -361,6 +371,9 @@ function publisherExcerpt($: cheerio.CheerioAPI, value: string): boolean {
 
 export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules: ContentRules): ArticleContent {
   const isExcerpt = publisherExcerpt($, url);
+  // A header may hold both the dateline and the author; preserve its explicit
+  // credit before removing header elements from the selected article prose.
+  const configuredValues = rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : [];
   if (rules.bodyExcludeSelector) $(rules.bodyExcludeSelector).remove();
   const nodes = articleNodes($, url);
   const result = (body: string | null, bodySource: string, bodyStatus: ArticleContent['bodyStatus']): ArticleContent => {
@@ -379,7 +392,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       });
       if (matching) authorBody = matching.body;
     }
-    return { body, bodySource, bodyStatus, authors: extractAuthors($, nodes, rules, authorBody) };
+    return { body, bodySource, bodyStatus, authors: extractAuthors($, nodes, rules, authorBody, configuredValues) };
   };
   if (isExcerpt) return result(null, 'publisher:excerpt', 'short');
   const candidates: Candidate[] = nodes

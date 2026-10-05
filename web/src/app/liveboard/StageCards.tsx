@@ -6,7 +6,7 @@ import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
 import { topicHref } from '@/components/TopicCard';
 import type { MediaInfo } from '@/lib/api';
-import { authorDisplay } from '@/lib/author-display.mts';
+import { authorCreditParts } from '@/lib/author-display.mts';
 import { selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { type CompareArticle, headlineDiff, headlineSimilarity, type TextPart } from '@/lib/headline-compare.mts';
 import { isAllowedImage } from '@/lib/images';
@@ -103,11 +103,18 @@ export function TagChips({ tags, max = 3, className = '' }: { tags: readonly str
   );
 }
 
-/** Distinguish named reporters from organizational credits. */
-export function Reporters({ authors, className = '' }: { authors: readonly string[]; className?: string }) {
+/** Keep authors, source credits and explicit citations distinct. */
+export function Reporters({ article, className = '' }: { article: LiveArticle; className?: string }) {
+  const parts = authorCreditParts(article.authors, article);
   return (
-    <span className={`min-w-0 truncate ${className}`}>
-      {authors.length ? authorDisplay(authors) : <span className="text-zinc-600">未署名</span>}
+    <span className={`min-w-0 truncate ${className}`} title={parts.map((part) => part.evidence ?? `${part.label} ${part.text}`).join('\n')}>
+      {parts.map((part, index) => (
+        <span key={`${part.label}-${part.text}`}>
+          {index > 0 && <span className="text-zinc-600"> · </span>}
+          {part.label && `${part.label} `}
+          <Go href={part.media ? mediaHref(part.media) : null}>{part.text}</Go>
+        </span>
+      ))}
     </span>
   );
 }
@@ -369,7 +376,7 @@ function CopyColumn({ a, side, title, body }: { a: LiveArticle; side: string; ti
         {title ? <Diffed parts={title} /> : a.title}
       </Go>
       <div className="flex min-w-0 shrink-0 items-center gap-2 text-sm">
-        <Reporters authors={a.authors} className="shrink-0 font-medium text-zinc-300" />
+        <Reporters article={a} className="font-medium text-zinc-300" />
         <TagChips tags={a.tags} max={4} />
       </div>
       <p
@@ -510,7 +517,7 @@ function TopicStage({ card, now }: { card: Extract<Card, { kind: 'topic' }>; now
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex min-w-0 items-center gap-2 text-sm text-zinc-400">
                     {st.date && <span className="shrink-0 tabular-nums">{ago(st.date, now)}</span>}
-                    {a && <Reporters authors={a.authors} />}
+                    {a && <Reporters article={a} />}
                   </div>
                   <Go href={a ? articleHref(a) : href} className={`text-base font-semibold leading-snug ${styles.clamp2}`}>
                     {st.title}

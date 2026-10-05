@@ -4,6 +4,7 @@ import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, similarityPairs, topics } from '../db/schema.ts';
 import { articleMediaOf } from '../jobs/topics-job.ts';
+import { type Attribution, normalizeAttributions } from '../similarity/attribution.ts';
 import { type Camp, campOf } from './coverage.ts';
 import { loadActivity } from './liveboard-activity.ts';
 import { liveObservation } from './site-observation.ts';
@@ -46,6 +47,8 @@ export interface LiveArticle {
   text: string | null;
   /** Bylines as stored (often reporters, sometimes the outlet itself). */
   authors: string[];
+  /** Explicit source credits/citations, independent of author names. */
+  attributions?: Attribution[];
 }
 export interface LiveFollower {
   article: LiveArticle;
@@ -92,6 +95,7 @@ type ArticleRow = {
   textChars?: number;
   authors?: string[] | null;
   creator?: string | null;
+  attributions?: Attribution[] | null;
 };
 export type PairRow = {
   aId: number;
@@ -115,6 +119,7 @@ const articleCols = (textChars: number) => ({
   tags: articles.tags,
   authors: articles.authors,
   creator: articles.creator,
+  attributions: articles.attributions,
   // Twice the shown length, since readableText drops lines that are not prose.
   text: sql<string | null>`COALESCE(NULLIF(LEFT(${articles.body}, ${textChars * 2}), ''), NULLIF(${articles.description}, ''))`,
   textChars: sql<number>`${textChars}`,
@@ -153,6 +158,7 @@ export const liveArticle = (r: ArticleRow): LiveArticle => ({
   tags: r.tags.slice(0, 8),
   text: readableText(r.text, Number(r.textChars ?? 600)),
   authors: r.authors?.length ? r.authors.slice(0, 4) : r.creator?.trim() ? [r.creator.trim()] : [],
+  attributions: normalizeAttributions(r.attributions ?? [], r.media),
 });
 
 /**

@@ -314,6 +314,26 @@ describe('publisher reporter bylines', () => {
     expect(extractArticle(html, 'https://www.epochtimes.com/b5/26/10/6/n14864000.htm').authors).toEqual(['陸希']);
   });
 
+  it('reads the Bo News signature when its plain-text prose follows the location in the same paragraph', () => {
+    const html =
+      '<meta name="author" content="牧迪網頁設計"><article><p>波新聞─李至文／高雄 115年第二屆全國原住民族舉重錦標賽於高雄巿鼓山高中舉行。</p></article>';
+    expect(extractArticle(html, 'https://www.bo6s.com.tw/news_detail.php?NewsID=117270').authors).toEqual(['李至文']);
+  });
+
+  it('reads the 1111 header reporter before excluding its combined date and author from the article body', () => {
+    const html =
+      '<meta name="author" content="1111人力銀行 | 全球華人股份有限公司"><div class="yellow-white-bg"><h1>金山萬里溫泉季</h1>' +
+      '<time>2026-10-05 晚上 10:10&nbsp;記者黃彩絹／綜合報導</time><div><p>金山萬里溫泉季活動開跑，帶動北海岸秋冬觀光熱潮。</p></div></div>';
+    const detail = extractArticle(html, 'https://www.1111.com.tw/news/jobns/167694', overrides['1111'].article);
+    expect(detail.authors).toEqual(['黃彩絹']);
+    expect(detail.body).not.toContain('10:10');
+  });
+
+  it.each(['牧迪網頁設計', 'Web Design Studio'])('never treats site designer metadata %s as authorship', (designer) => {
+    const html = `<meta name="author" content="${designer}"><article><p>全國原住民族舉重錦標賽於高雄舉行。</p></article>`;
+    expect(extractArticle(html, 'https://www.bo6s.com.tw/news_detail.php?NewsID=117270').authors).toEqual([]);
+  });
+
   it('uses TVBS visible authorship without promoting its responsible editor from structured metadata', () => {
     const url = 'https://news.tvbs.com.tw/health/4030065';
     const html =

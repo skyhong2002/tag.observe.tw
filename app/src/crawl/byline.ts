@@ -280,10 +280,15 @@ export function reporterNames(value: string): string[] {
   if (suffix) return creditedNames(suffix[1]);
   const plum = /^梅花新聞網\s+([^/]+)\s*\/\s*綜合報導/u.exec(text);
   if (plum) return creditedNames(plum[1]);
+  // Bo News credits can share a plain-text paragraph with the entire report.
+  // Its explicit publisher prefix and a known location delimit the signature.
+  const bo = new RegExp(
+    `^(?:${OPEN}\\s*)?波新聞[─－—-]\\s*([^/|:：〕】)\\]]+)\\s*/\\s*${PLACE}(?:報導|報道|报道)?(?=\\s|$|${CLOSE})`,
+    'u',
+  ).exec(text);
+  if (bo) return creditedNames(bo[1]);
   const namedOutlet =
-    /^(?:[【〔([]\s*)?(?:Lai傳媒、記者爆料網(?:\s*\/\s*|\s+)|波新聞[─－—-])\s*([^/|:：〕】)\]]+)\s*\/\s*(?:[^/〕】)\]]{1,12})(?:[〕】)\]]|$)/u.exec(
-      text,
-    );
+    /^(?:[【〔([]\s*)?Lai傳媒、記者爆料網(?:\s*\/\s*|\s+)\s*([^/|:：〕】)\]]+)\s*\/\s*(?:[^/〕】)\]]{1,12})(?:[〕】)\]]|$)/u.exec(text);
   if (namedOutlet) return creditedNames(namedOutlet[1]);
   const english = /^By\s+([^|:：〕】)\]]+)(?:$|\s*\/)/iu.exec(text);
   if (english) return creditedNames(english[1]);

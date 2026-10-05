@@ -20,6 +20,7 @@ export interface LiveArticle {
   /** Start of the stored body, else the summary. */
   text: string | null;
   authors: string[];
+  attributions?: Array<{ media: string; name: string; evidence: string; kind: 'explicit' }>;
 }
 export interface LiveFollower {
   article: LiveArticle;

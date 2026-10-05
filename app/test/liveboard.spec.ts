@@ -30,6 +30,7 @@ import {
   bucketByCamp,
   groupStories,
   type LiveArticle,
+  liveArticle,
   type PairRow,
   parseLiveQuery,
   pickTopics,
@@ -65,6 +66,27 @@ const card = (kind: Card['kind'], key: string, at: number): Card =>
   kind === 'burst' ? { kind, key, at, articles: [], total: 0 } : ({ kind: 'event', key, at, reason: 'new', event: event(1, key) } as Card);
 
 describe('liveboard API shaping', () => {
+  it('keeps explicit citation evidence separate from stored author credits', () => {
+    const date = new Date('2026-10-06T00:00:00Z');
+    const result = liveArticle({
+      id: 1,
+      media: 'pchome',
+      title: '新聞',
+      url: 'https://example.com/',
+      image: null,
+      publishedAt: date,
+      crawledAt: date,
+      fetchedAt: date,
+      tags: [],
+      authors: ['中央社'],
+      attributions: [{ media: 'afp', name: '法新社', country: '法國', countryCode: 'FR', kind: 'explicit', evidence: '法新社報導' }],
+    });
+    expect(result.authors).toEqual(['中央社']);
+    expect(result.attributions).toEqual([expect.objectContaining({ media: 'afp', evidence: '法新社報導', kind: 'explicit' })]);
+    expect(liveArticle({ ...result, publishedAt: date, crawledAt: date, fetchedAt: date, attributions: undefined }).attributions).toEqual(
+      [],
+    );
+  });
   it('joins pairs into stories led by the earliest article', () => {
     const byId = new Map([article(1, 30), article(2, 0), article(3, 45), article(4, 50)].map((a) => [a.id, a]));
     const [story] = groupStories([pair(1, 2, 0.9), pair(1, 3, 0.6), pair(2, 4, 1, 5)], byId);
