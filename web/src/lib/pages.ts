@@ -168,6 +168,25 @@ export interface EventDay {
   baseline?: CampBaseline;
   threads: ArchivedThread[];
 }
+/** The rank line from the thread's first hour on the table, so a run that
+ *  began late in the 24h window fills the chart instead of hugging one end. */
+export const trimTrail = (trail: Array<number | null> | null | undefined) => {
+  const start = trail?.findIndex((r) => r !== null) ?? -1;
+  return trail && start > 0 ? trail.slice(start) : trail;
+};
+/** A day's thread in the shape of an hourly event, so the table's cards render it. */
+export const threadAsEvent = (t: ArchivedThread, rank: number): EventItem => ({
+  rank,
+  score: t.maxScore,
+  major: t.majorTags,
+  tags: t.majorTags.map((tag) => ({ tag, burst: null })),
+  news: t.news,
+  relatedEventPk: String(t.id),
+  hours: t.hours,
+  rankTrail: trimTrail(t.rankTrail),
+  firstTime: t.firstTime,
+  coverage: t.coverage,
+});
 export const fetchEventDay = (day?: string) => get<EventDay>(`/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`, 300);
 /** One of the main threads of a period (/api/v1/events/threads/period). */
 export interface PeriodThread {

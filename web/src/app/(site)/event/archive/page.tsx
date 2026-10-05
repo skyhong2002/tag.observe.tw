@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
-import { CampGap, EventIndex, HourTimeline } from '@/components/EventOverview';
+import { CampGap, EventIndex, HourTimeline, ViewSwitch } from '@/components/EventOverview';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipeiHour } from '@/lib/api';
-import { type ArchivedThread, type EventItem, fetchEventDay } from '@/lib/pages';
+import { type ArchivedThread, type EventItem, fetchEventDay, threadAsEvent, trimTrail } from '@/lib/pages';
 import { archiveDay, canonicalQuery, pageMetadata } from '@/lib/seo.mts';
 
 export const revalidate = 300;
@@ -37,12 +37,6 @@ const mmdd = (day: string) => day.slice(5).replace('-', '/');
 /** Clock time, with the date when it falls on another day. */
 const when = (iso: string, day: string) => (taipeiDay(iso) === day ? hh(iso) : `${mmdd(taipeiDay(iso))} ${hh(iso)}`);
 
-/** The rank line from the thread's first hour on the table, so a run that
- *  began late in the 24h window fills the chart instead of hugging one end. */
-const trimTrail = (trail: Array<number | null> | null | undefined) => {
-  const start = trail?.findIndex((r) => r !== null) ?? -1;
-  return trail && start > 0 ? trail.slice(start) : trail;
-};
 /** What the rank line covers, as clock times. */
 function trailSpan(t: ArchivedThread, day: string) {
   const trail = trimTrail(t.rankTrail);
@@ -54,20 +48,6 @@ function trailSpan(t: ArchivedThread, day: string) {
 const HERO = 3,
   CARDS = 9;
 const tierOf = (rank: number): EventTier => (rank <= HERO ? 'hero' : rank <= CARDS ? 'card' : 'row');
-
-/** A thread in the shape of an hourly event, so the table's cards render it. */
-const asEvent = (t: ArchivedThread, rank: number): EventItem => ({
-  rank,
-  score: t.maxScore,
-  major: t.majorTags,
-  tags: t.majorTags.map((tag) => ({ tag, burst: null })),
-  news: t.news,
-  relatedEventPk: String(t.id),
-  hours: t.hours,
-  rankTrail: trimTrail(t.rankTrail),
-  firstTime: t.firstTime,
-  coverage: t.coverage,
-});
 
 /** Best rank and the span on the table: the archive's stand-in for movement. */
 function Run({ t, day }: { t: ArchivedThread; day: string }) {
@@ -103,9 +83,11 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
   const next = i >= 0 && i < data.days.length - 1 ? data.days[i + 1] : undefined;
   // Today's camp split is the trailing 24h, as on the live table.
   const today = data.day === taipeiDay(new Date().toISOString());
+  // A past day's hourly view opens on its last snapshot hour.
+  const lastHour = data.dayHours?.at(-1);
   const basis = today ? '過去 24 小時' : '當天';
   const threads = [...data.threads].sort((a, b) => b.maxScore - a.maxScore);
-  const events = threads.map((t, n) => asEvent(t, n + 1));
+  const events = threads.map((t, n) => threadAsEvent(t, n + 1));
   const max = Math.max(0, ...events.map((e) => e.score));
   const tiers = (['hero', 'card', 'row'] as const).map((tier) => ({
     tier,
@@ -131,9 +113,12 @@ export default async function EventArchivePage({ searchParams }: { searchParams:
           </Link>{' '}
           / 存檔
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          {data.day}（{weekday(data.day)}）的事件
-        </h1>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {data.day}（{weekday(data.day)}）的事件
+          </h1>
+          <ViewSwitch view="day" hourHref={today || !lastHour ? '/event/' : atLink(lastHour)} dayHref={dayLink(data.day)} />
+        </div>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           這一天出現在事件表上的 {threads.length} 件事
           <MethodLink className="ml-2 text-xs" />

@@ -2,7 +2,7 @@ import { API_ORIGIN, fetchMedia, fetchRanking, type MediaInfo, type Ranking } fr
 import { clipHeadline, headlineTags, selectEventCover, selectEventLead } from './event-presentation.mts';
 import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
-import { type EventCoverage, type EventItem, type FeedTopic, fetchEvents, fetchTopics } from './pages';
+import { type EventCoverage, type EventItem, type FeedTopic, fetchEventDay, fetchEvents, fetchTopics, threadAsEvent } from './pages';
 import { fetchSimilarity, type SimilarityData, type SimilarityEdge } from './similarity';
 import { updatedAtOf } from './topic-update.mts';
 
@@ -135,7 +135,7 @@ export function campShare(news: Ranking | null, blue: Ranking | null, green: Ran
 }
 
 /** The events one camp is barely on, or pushing far harder than usual:
- *  the event table's 藍綠溫差 boiled down to a few lines per side. */
+ *  today's event archive's 藍綠溫差 boiled down to a few lines per side. */
 export interface CampGap {
   camp: 'blue' | 'green';
   title: string;
@@ -242,8 +242,9 @@ export interface JournalistBrief {
 }
 
 export async function loadDemo() {
-  const [events, ranking, media, blue, green, stats, journalists, topics, graph] = await Promise.all([
+  const [events, day, ranking, media, blue, green, stats, journalists, topics, graph] = await Promise.all([
     fetchEvents(24),
+    fetchEventDay(),
     fetchRanking('news', 'burst', 16, true).catch(() => null),
     fetchMedia().catch((): MediaInfo => ({})),
     fetchRanking('blue', 'score', 1).catch(() => null),
@@ -266,7 +267,13 @@ export async function loadDemo() {
     media,
     stories,
     campShare: campShare(ranking, blue, green, stats),
-    gaps: campGaps(unique),
+    // The whole day, not just this hour: a camp's blind spots show up over hours.
+    // This hour's events too, so the column is not empty just after midnight.
+    gaps: campGaps([
+      ...new Map(
+        [...(day?.threads ?? []).map((t, i) => threadAsEvent(t, i + 1)), ...unique].map((e) => [e.relatedEventPk ?? `rank-${e.rank}`, e]),
+      ).values(),
+    ]),
     journalists: journalists
       ? ({ hours: journalists.hours, totals: journalists.totals, top: journalists.journalists.slice(0, 6) } satisfies JournalistBrief)
       : null,

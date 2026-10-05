@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
 // 新聞總覽 (the home page, web/src/app/page.tsx). Its panels come from
-// web/src/lib/demo.ts: the event table's first 24 events (12 stories, 3 per
-// 藍綠溫差 column), the news ranking by 爆發力 (8 shown), journalists of the
+// web/src/lib/demo.ts: the event table's first 24 events (12 stories), today's
+// event archive (3 per 藍綠溫差 column), the news ranking by 爆發力 (8 shown), journalists of the
 // past 48 hours (6 shown) and the similarity graph of the past 24 hours at
 // 0.65 (outlets with at least 20 analysed articles, 5 per column). 同題不同標
 // pairs are chosen in lib/compare-data.ts and lib/headline-compare.mts;
@@ -59,7 +59,7 @@ export function HomeMethod({
         </dd>
         <dt className={methodTerm}>藍綠溫差</dt>
         <dd>
-          目前事件表前 24 件、各自過去 24
+          今天出現在事件表上的所有事件、各自過去 24
           小時的報導中，哪一邊的媒體特別在寫、哪一邊幾乎沒報（以同期藍綠各自的發稿家數為基準）。每欄列出該營重點或對方盲點的事件，盲點在前，其餘依偏離基準的程度排序，最多
           3 件。
         </dd>

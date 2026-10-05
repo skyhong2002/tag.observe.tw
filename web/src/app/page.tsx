@@ -163,7 +163,7 @@ function RankChange({ e }: { e: RankingEntry }) {
 
 function CampGaps({ gaps }: { gaps: CampGap[] }) {
   if (gaps.every((g) => g.items.length === 0)) {
-    return <p className={styles.notice}>目前沒有藍綠落差明顯的事件。</p>;
+    return <p className={styles.notice}>今天沒有藍綠落差明顯的事件。</p>;
   }
   return (
     <div className={styles.gapList}>
@@ -174,7 +174,7 @@ function CampGaps({ gaps }: { gaps: CampGap[] }) {
             {col.title}
           </p>
           {col.items.length === 0 ? (
-            <p className={styles.muted}>目前的事件裡沒有。</p>
+            <p className={styles.muted}>今天的事件裡沒有。</p>
           ) : (
             <ol>
               {col.items.map((e) => {
@@ -476,8 +476,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <aside className={styles.right} aria-label="藍綠溫差與標題對照">
             <div className={styles.sectionHeading}>
               <h2>藍綠溫差</h2>
-              <Link href="/event/">
-                事件表 <Arrow />
+              <Link href="/event/archive/">
+                今天全部事件 <Arrow />
               </Link>
             </div>
             <CampGaps gaps={data.gaps} />

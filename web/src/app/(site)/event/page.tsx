@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
-import { CampGap, EventIndex, HourTimeline } from '@/components/EventOverview';
+import { CampGap, EventIndex, HourTimeline, ViewSwitch } from '@/components/EventOverview';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
@@ -43,7 +43,16 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
     <div className="space-y-5">
       <div>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">事件表</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">事件表</h1>
+            {data && (
+              <ViewSwitch
+                view="hour"
+                hourHref={archived ? atLink(data.hour) : '/event/'}
+                dayHref={`/event/archive/?day=${taipeiDay(data.hour)}`}
+              />
+            )}
+          </div>
           <a
             href="/feeds/events.xml"
             className="rounded-md bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
