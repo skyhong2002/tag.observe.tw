@@ -24,10 +24,12 @@ def status(config):
                         if reconciled.get(key, {}).get('audit') == result['audit']}
     counts = {}
     reasons = {}
-    for result in completed.values():
+    for key, result in completed.items():
         for action, n in result['counts'].items():
             counts[action] = counts.get(action, 0) + n
         recorded = result.get('quarantine_reasons', {})
+        if not recorded and key in current_verified:
+            recorded = reconciled[key].get('quarantine_reasons', {})
         for reason, n in recorded.items():
             reasons[reason] = reasons.get(reason, 0) + n
         missing = result['counts'].get('quarantine', 0) - sum(recorded.values())
