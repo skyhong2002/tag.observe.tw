@@ -29,7 +29,7 @@ async function optional<T>(load: () => Promise<T>): Promise<T | null> {
 export default async function LiveboardPage() {
   const [events, ranking, media, feed, totals] = await Promise.all([
     optional(() => fetchEvents(12)),
-    optional(() => fetchRanking('all', 'burst', 20, true)),
+    optional(() => fetchRanking('all', 'burst', 20, false, false, true)),
     optional(fetchMedia),
     optional(async () => {
       const res = await fetch(`${API_ORIGIN}/api/v1/liveboard`, { cache: 'no-store', signal: AbortSignal.timeout(8000) });

@@ -263,6 +263,7 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `at` | query | string (ISO 時間) | 取這個時間（ISO 8601）以前最新的快照，例：`2026-09-30T12:00:00+08:00` |
 | `trend` | query | "0" \| "1" | 1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時，例：`1` |
 | `related` | query | "0" \| "1" | 1 表示附上每個標籤最常一起出現的標籤，例：`1` |
+| `ranks` | query | "0" \| "1" | 1 表示附上每個標籤最近 24 小時的爆發力名次（由每小時快照重算，只在 order=burst 時提供），例：`1` |
 
 範例：
 
@@ -312,6 +313,9 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].trend[].average24h` | number \| null | 當小時及前 23 小時篇數總和 ÷ 24（篇／小時）；歷史不足為 null |
 | `entries[].trend[].score` | number \| null | 固定基準 24 小時分數 |
 | `entries[].trend[].count` | integer \| null | 固定基準 24 小時累計篇數 |
+| `entries[].rankTrail` | object[] | ranks=1 且 order=burst 時回傳：最近 24 個整點快照的爆發力名次，舊到新，最後一點即目前快照 |
+| `entries[].rankTrail[].t` | string (ISO 時間) | 快照所屬小時（UTC） |
+| `entries[].rankTrail[].position` | integer \| null | 該小時依爆發力排序的名次；沒有快照、不在榜上或當時爆發力無法比較為 null |
 
 錯誤：`400` `at` 格式錯誤；`404` 未知分類，或該時間以前沒有快照。
 

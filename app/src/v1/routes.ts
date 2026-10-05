@@ -11,6 +11,7 @@ import { isTagNoise } from '../tag-noise.ts';
 import { campOf, loadThreadCoverage } from './coverage.ts';
 import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
+import { loadBurstTrails } from './ranking-history.ts';
 import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyRanks, loadHourlyTrends } from './tag-series.ts';
 import { loadTagStatus } from './tag-status.ts';
@@ -97,54 +98,70 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
         .map(([k, v]) => [k, { title: v.title, icon: iconUrl(k), camp: campOf(k) }]),
     ),
   );
-  app.get<{ Querystring: { category?: string; order?: string; limit?: string; at?: string; trend?: string; related?: string } }>(
-    '/api/v1/ranking',
-    async (request, reply) => {
-      const category = request.query.category ?? 'all';
-      if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
-      const order = request.query.order === 'score' ? 'score' : 'burst';
-      const limit = Math.min(500, Math.max(1, Number(request.query.limit) || 50));
-      const at = request.query.at ? new Date(request.query.at) : undefined;
-      if (at && Number.isNaN(at.getTime())) return reply.code(400).send({ error: 'bad at' });
-      const result = await loadRanking(db, category, { at });
-      if (!result) return reply.code(404).send({ error: 'no snapshot' });
-      const entries = order === 'score' ? [...result.entries].sort((a, b) => b.normalized - a.normalized) : result.entries;
-      const selected = entries.slice(0, limit);
-      const window = completedHourWindow(new Date(result.snapshot.computedAt), 49);
-      const trends =
-        request.query.trend === '1'
-          ? await loadHourlyTrends(
-              db,
-              selected.map((e) => e.tag),
-              RANKING_CATEGORIES[category].media,
-              window.from,
-              window.to,
-              result.snapshot.basis,
-            )
-          : null;
-      const related =
-        request.query.related === '1'
-          ? await loadRelatedTags(
-              db,
-              selected.map((e) => e.tag),
-              result.snapshot.basis.media,
-              new Date(new Date(result.snapshot.computedAt).getTime() - HOURS * 3600e3),
-              new Date(result.snapshot.computedAt),
-            )
-          : null;
-      reply.header('cache-control', 'public, max-age=60');
-      return {
-        ...result,
-        order,
-        entries: selected.map((e, i) => ({
-          ...e,
-          position: i + 1,
-          ...(trends ? { trend: trends.get(e.tag) } : {}),
-          ...(related ? { related: related.get(e.tag) ?? [] } : {}),
-        })),
-      };
-    },
-  );
+  app.get<{
+    Querystring: {
+      category?: string;
+      order?: string;
+      limit?: string;
+      at?: string;
+      trend?: string;
+      related?: string;
+      ranks?: string;
+    };
+  }>('/api/v1/ranking', async (request, reply) => {
+    const category = request.query.category ?? 'all';
+    if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
+    const order = request.query.order === 'score' ? 'score' : 'burst';
+    const limit = Math.min(500, Math.max(1, Number(request.query.limit) || 50));
+    const at = request.query.at ? new Date(request.query.at) : undefined;
+    if (at && Number.isNaN(at.getTime())) return reply.code(400).send({ error: 'bad at' });
+    const result = await loadRanking(db, category, { at });
+    if (!result) return reply.code(404).send({ error: 'no snapshot' });
+    const entries = order === 'score' ? [...result.entries].sort((a, b) => b.normalized - a.normalized) : result.entries;
+    const selected = entries.slice(0, limit);
+    const window = completedHourWindow(new Date(result.snapshot.computedAt), 49);
+    const trends =
+      request.query.trend === '1'
+        ? await loadHourlyTrends(
+            db,
+            selected.map((e) => e.tag),
+            RANKING_CATEGORIES[category].media,
+            window.from,
+            window.to,
+            result.snapshot.basis,
+          )
+        : null;
+    const related =
+      request.query.related === '1'
+        ? await loadRelatedTags(
+            db,
+            selected.map((e) => e.tag),
+            result.snapshot.basis.media,
+            new Date(new Date(result.snapshot.computedAt).getTime() - HOURS * 3600e3),
+            new Date(result.snapshot.computedAt),
+          )
+        : null;
+    // Burst positions are rebuilt from the stored hourly charts, so they follow the burst order only.
+    const trails =
+      request.query.ranks === '1' && order === 'burst'
+        ? await loadBurstTrails(db, category, {
+            hourStart: new Date(result.snapshot.hourStart),
+            computedAt: new Date(result.snapshot.computedAt),
+          })
+        : null;
+    reply.header('cache-control', 'public, max-age=60');
+    return {
+      ...result,
+      order,
+      entries: selected.map((e, i) => ({
+        ...e,
+        position: i + 1,
+        ...(trends ? { trend: trends.get(e.tag) } : {}),
+        ...(related ? { related: related.get(e.tag) ?? [] } : {}),
+        ...(trails ? { rankTrail: trails.get(e.tag) ?? [] } : {}),
+      })),
+    };
+  });
   app.get<{ Params: { tag: string }; Querystring: { hours?: string; limit?: string } }>(
     '/api/v1/tags/:tag/articles',
     async (request, reply) => {

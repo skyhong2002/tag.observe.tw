@@ -95,6 +95,8 @@ const PANE_LABEL: Record<(typeof PANES)[number], string> = {
   day: '發稿量',
 };
 const KEYWORDS = 20;
+// Rank trails draw places below this at the bottom, so one far-off hour does not flatten the rest.
+const TRAIL_FLOOR = 30;
 const PANE_EVERY = 10 * SECOND;
 const STAGE_LABEL: Record<string, string> = { index: '巡查', article: '內文', topic: '議題' };
 const HOUR = 3600 * SECOND;
@@ -538,7 +540,7 @@ export default function LiveBoard({
     void compare(cards.flatMap((c) => (c.kind === 'event' ? [c.event] : [])));
   });
   useEvery(RANKING_EVERY, async () => {
-    const next = await getJson<{ entries: RankingEntry[] }>(`/api/v1/ranking?category=all&order=burst&limit=${KEYWORDS}&trend=1`);
+    const next = await getJson<{ entries: RankingEntry[] }>(`/api/v1/ranking?category=all&order=burst&limit=${KEYWORDS}&ranks=1`);
     if (!next) return;
     setMoves(rankMoves(rankingRef.current, next.entries));
     rankingRef.current = next.entries;
@@ -682,7 +684,7 @@ export default function LiveBoard({
                   {PANE_LABEL[p]}
                 </span>
               ))}
-              {paneKey === 'keywords' && <span className="ml-auto">亮起：正在播的內容</span>}
+              {paneKey === 'keywords' && <span className="ml-auto">折線：近 24 小時名次，越高越前 · 亮起：正在播的內容</span>}
             </div>
             <div key={paneKey} className={`flex min-h-0 flex-1 ${styles.fade}`}>
               {paneKey === 'counter' && (
@@ -742,12 +744,19 @@ export default function LiveBoard({
                         ) : (
                           r.new && <span className="shrink-0 rounded bg-zinc-700 px-1 text-[0.625rem] text-zinc-200">新</span>
                         )}
-                        {r.trend && (
-                          <Sparkline
-                            values={r.trend.slice(-24).map((p) => p.hourlyCount)}
-                            color="#f97316"
-                            className="ml-auto h-4 w-12 shrink-0"
-                          />
+                        {r.rankTrail && (
+                          <span
+                            className="ml-auto shrink-0"
+                            title={`近 24 小時竄升名次：${r.rankTrail.map((p) => p.position ?? '—').join('、')}`}
+                          >
+                            <Sparkline
+                              values={r.rankTrail.map((p) => (p.position === null ? null : Math.min(p.position, TRAIL_FLOOR)))}
+                              rank
+                              dots={false}
+                              color="#f97316"
+                              className="h-4 w-12"
+                            />
+                          </span>
                         )}
                       </li>
                     );

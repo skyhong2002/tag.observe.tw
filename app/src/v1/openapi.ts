@@ -118,9 +118,16 @@ const schemas: Record<string, Schema> = {
         }),
         'trend=1 時回傳 49 個等距小時點，涵蓋 48 小時變化',
       ),
+      rankTrail: arr(
+        obj({
+          t: time('快照所屬小時（UTC）'),
+          position: nullable(int('該小時依爆發力排序的名次；沒有快照、不在榜上或當時爆發力無法比較為 null')),
+        }),
+        'ranks=1 且 order=burst 時回傳：最近 24 個整點快照的爆發力名次，舊到新，最後一點即目前快照',
+      ),
     },
     undefined,
-    ['trend', 'related'],
+    ['trend', 'related', 'rankTrail'],
   ),
   CoverageArticle: obj({
     id: int(),
@@ -846,6 +853,12 @@ export const ENDPOINTS: Endpoint[] = [
       q('at', '取這個時間（ISO 8601）以前最新的快照', time(), '2026-09-30T12:00:00+08:00'),
       q('trend', '1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時', str('', { enum: ['0', '1'] }), '1'),
       q('related', '1 表示附上每個標籤最常一起出現的標籤', str('', { enum: ['0', '1'] }), '1'),
+      q(
+        'ranks',
+        '1 表示附上每個標籤最近 24 小時的爆發力名次（由每小時快照重算，只在 order=burst 時提供）',
+        str('', { enum: ['0', '1'] }),
+        '1',
+      ),
     ],
     response: obj({
       snapshot: obj({
