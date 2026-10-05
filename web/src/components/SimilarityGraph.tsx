@@ -5,7 +5,7 @@ import { TooltipComponent } from 'echarts/components';
 import * as echarts from 'echarts/core';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import { graphBoundaryDiameter, graphEdgeHasRoom } from '@/lib/graph-edge-boundary.mts';
 import { type GraphSelection, highlightedRelationship, sameGraphSelection } from '@/lib/graph-evidence.mts';
@@ -68,6 +68,14 @@ export default function SimilarityGraph({
   const refresh = useRef<(() => void) | null>(null);
   const navigate = useRef<((action: 'in' | 'out' | 'reset') => void) | null>(null);
   const camera = useRef<{ key: string; zoom: number; center: number[] | null } | null>(null);
+  const refit = useRef(false);
+  const wasFullscreen = useRef(fullscreen);
+  // Entering or leaving fullscreen changes the frame size a lot; the next resize
+  // drops the old zoom/center so the whole graph fills the new frame.
+  useLayoutEffect(() => {
+    if (wasFullscreen.current !== fullscreen) refit.current = true;
+    wasFullscreen.current = fullscreen;
+  }, [fullscreen]);
   useEffect(() => {
     pinned.current = selection;
     activeEdges.current = edges;
@@ -374,7 +382,10 @@ export default function SimilarityGraph({
             nextHeight = chart.getHeight();
           if (width === nextWidth && height === nextHeight) return;
           const series = (chart.getOption().series as { center: number[] | null }[])[0];
-          const center = series.center ? [(series.center[0] * nextWidth) / width, (series.center[1] * nextHeight) / height] : null;
+          const fit = refit.current;
+          refit.current = false;
+          if (fit) zoom = 1;
+          const center = series.center && !fit ? [(series.center[0] * nextWidth) / width, (series.center[1] * nextHeight) / height] : null;
           width = nextWidth;
           height = nextHeight;
           positions = mediaGraphPositions(nodes, layoutEdges, width, Math.max(100, height - 58), true);
@@ -383,6 +394,7 @@ export default function SimilarityGraph({
               {
                 id: 'media-network',
                 ...layoutBounds(),
+                ...(fit ? { zoom: 1 } : {}),
                 center,
                 data: nodeData(),
                 links: linkData(),
