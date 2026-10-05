@@ -47,7 +47,6 @@
 .rankBody small { font-size: 11px; color: var(--muted); }
 .burst { font-size: 11px; color: var(--accent); margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .outlineLink, .more { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 12px; color: var(--accent); background: var(--panel); }
-.more { justify-content: center; gap: 6px; }
 .outlineLink:hover, .more:hover { background: var(--tint); }
 .hero { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
 .heroImage { display: block; }
@@ -109,7 +108,7 @@
 .compactDistribution { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
 .compactDistribution .bar { width: 64px; height: 6px; }
 .muted { font-size: 12px; color: var(--muted); }
-.more { justify-content: center; gap: 20px; padding: 14px; margin-top: 16px; font-size: 13px; }
+.more { justify-content: center; gap: 6px; padding: 14px; margin-top: 16px; font-size: 13px; }
 .gapIntro { color: var(--muted); font-size: 12px; line-height: 1.8; margin-bottom: 16px; }
 .headlineList { display: flex; flex-direction: column; gap: 16px; }
 .headlineCard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
