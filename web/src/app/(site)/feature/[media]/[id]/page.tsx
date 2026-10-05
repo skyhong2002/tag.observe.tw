@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound, permanentRedirect, redirect } from 'next/navigation';
 import ArticleView from '@/components/article/ArticleView';
 import FeatureStories from '@/components/article/FeatureStories';
-import { topicMediaHref } from '@/components/TopicCard';
+import { topicHref, topicMediaHref } from '@/components/TopicCard';
 import TopicStoriesView from '@/components/TopicStoriesView';
 import { articleIndexable, articleMetadata } from '@/lib/article-metadata';
 import { fetchFeatureContent, fetchTopicStories } from '@/lib/pages';
@@ -20,7 +20,8 @@ async function featureArticle(media: string, id: string) {
   const data = await fetchTopicStories(id);
   if (!data || data.media !== media) notFound();
   if (data.kind === 'article' && data.articleId) permanentRedirect(`/article/${data.articleId}/`);
-  if (data.kind !== 'feature') notFound();
+  // Classified by behaviour: a 專題 that keeps gaining stories becomes a 議題.
+  if (data.kind !== 'feature') redirect(topicHref(media, id, data.kind === 'topic' ? 'topic' : 'feature'));
   const content = data.articleId ? await fetchFeatureContent(data.articleId) : null;
   return { data, content };
 }

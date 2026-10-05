@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound, permanentRedirect, redirect } from 'next/navigation';
 import ArticleBody from '@/components/ArticleBody';
 import ArticleImage from '@/components/ArticleImage';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
 import SourceLink from '@/components/SourceLink';
-import { kindNoun, topicMediaHref } from '@/components/TopicCard';
+import { kindNoun, topicHref, topicMediaHref } from '@/components/TopicCard';
 import { CONTENT_STATUS } from '@/lib/article-content';
 import { fetchFeatureContent, fetchTopicStories, type TopicKind } from '@/lib/pages';
 
@@ -13,7 +13,9 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
   const data = await fetchTopicStories(id);
   if (!data || data.media !== media) notFound();
   if (data.kind === 'article' && data.articleId) permanentRedirect(`/article/${data.articleId}/`);
-  if (data.kind !== kind) notFound();
+  // 議題 and 專題 are told apart by behaviour, so a page can change kind; its
+  // other address still works.
+  if (data.kind !== kind) redirect(topicHref(media, id, data.kind === 'topic' ? 'topic' : 'feature'));
   const noun = kindNoun(kind);
   const content = kind === 'feature' && data.articleId ? await fetchFeatureContent(data.articleId) : null;
   return (
