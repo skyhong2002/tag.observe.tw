@@ -44,7 +44,7 @@
 - `article_archives`：以 article_id + content_hash 保留多版本，記錄 remote、object key/hash、驗證時間。
 - `article_origins`：以 source_key + raw_hash 保留來源版本，記錄新站 article_id、母站封存 generation/object、適配器版本。來源對照不隨文章刪除 cascade。
 
-`article_origins` 已有 schema 與清理保護，但這次沒有把母站候選自動匯入正式 articles。後續匯入器須在同一個匯入交易保存對照，並把新取回內容的 content_accessed_at 設為實際匯入時間，不偽造原本 crawled_at。舊 `legacy-article-staging-v1` 報告中的刪除風險是當時舊規則的觀察；新版 v2 改列為歷史無標籤／待驗證封存提示。
+母站的一次性歷史匯入已使用 `article_origins`，在同一個交易保存文章與來源對照；有摘要時把 content_accessed_at 設為實際匯入時間，保留原始發布／收錄日期，不偽造 fetched_at 或 content_fetched_at。原始日期缺漏、媒體歸屬未確認及身份衝突的列，仍保存在 NAS 隔離產物中。匯入進度及逐表核對方式見 [歷史文章匯入](legacy-article-import.md)，不能把已有排程或隔離列當成全部匯入完成。舊 `legacy-article-staging-v1` 報告中的刪除風險是當時舊規則的觀察；新版 v2 改列為歷史無標籤／待驗證封存提示。
 
 ## 啟用順序
 
