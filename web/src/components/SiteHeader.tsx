@@ -57,6 +57,10 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
     observer.observe(mark);
     return () => observer.disconnect();
   }, [mastheadId]);
+  // While the wordmark is hidden, phones show the search box in the space it
+  // would take instead of a bare bar; it folds back into an icon once the
+  // wordmark returns. An explicit open outlives that.
+  const autoSearch = !revealed && !searchOpen;
   const searchToggle = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -74,7 +78,7 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
           <div className="order-3 lg:order-none">
             <SiteNavigation />
           </div>
-          <div className={`ml-auto flex min-w-0 items-center gap-1 lg:w-44 lg:flex-none ${searchOpen ? 'flex-1' : ''}`}>
+          <div className={`ml-auto flex min-w-0 items-center gap-1 lg:w-44 lg:flex-none ${searchOpen || autoSearch ? 'flex-1' : ''}`}>
             <button
               ref={searchToggle}
               type="button"
@@ -82,7 +86,7 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
               aria-expanded={searchOpen}
               aria-controls="header-search"
               onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-              className="flex h-10 w-8 shrink-0 items-center justify-center rounded-md text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 lg:hidden"
+              className={`${autoSearch ? 'hidden' : 'flex'} h-10 w-8 shrink-0 items-center justify-center rounded-md text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 lg:hidden`}
             >
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                 {searchOpen ? (
@@ -95,7 +99,7 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
                 )}
               </svg>
             </button>
-            <div id="header-search" className={`${searchOpen ? 'block' : 'hidden'} min-w-0 flex-1 lg:block`}>
+            <div id="header-search" className={`${searchOpen || autoSearch ? 'block' : 'hidden'} min-w-0 flex-1 lg:block`}>
               <SiteSearch inputRef={searchInput} onEscape={closeSearch} />
             </div>
           </div>
