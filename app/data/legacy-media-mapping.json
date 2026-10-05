@@ -1,7 +1,7 @@
 {
-  "version": "legacy-media-mapping-v8",
-  "reviewedAt": "2026-10-05",
-  "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
+  "version": "legacy-media-mapping-v9",
+  "reviewedAt": "2026-10-06",
+  "policy": "Exact existing media code only. Publisher roots accept subdomains; publisherHosts accept exact hosts only. RSS proxy hosts are not publishers. Historical aliases require explicit reviewed additions.",
   "media": {
     "1111": {
       "publisherRoots": [
@@ -109,7 +109,14 @@
         "storm.mg"
       ],
       "sourceUrl": "https://www.storm.mg/",
-      "evidence": "風傳媒｜Storm.mg"
+      "evidence": "風傳媒｜Storm.mg",
+      "historicalEvidence": [
+        "Hash-verified tag_storm source package: 502 original www.stormmediagroup.com/opencms/news/detail/ article URLs, preserving original URL and timestamps.",
+        "https://zh.wikipedia.org/wiki/賴中強 explicitly labels www.stormmediagroup.com citations as 風傳媒 (2014-03-17 and 2014-06-25), retrieved 2026-10-06. Direct old official homepage timed out; blog.stormmediagroup.com remains unreviewed."
+      ],
+      "publisherHosts": [
+        "www.stormmediagroup.com"
+      ]
     },
     "ttv": {
       "publisherRoots": [

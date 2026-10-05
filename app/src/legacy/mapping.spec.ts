@@ -22,6 +22,7 @@ describe('reviewed legacy media mapping', () => {
       objects: ['a'.repeat(64)],
       spec: mapped.spec,
       publisherRoots: mapped.publisherRoots,
+      publisherHosts: mapped.publisherHosts,
       mixedTable: mapped.mixed,
     };
   };
@@ -65,6 +66,7 @@ describe('reviewed legacy media mapping', () => {
       ['lihpao', 'lihpao.com'],
       ['musou', 'musou.tw'],
       ['nikkei', 'cn.nikkei.com'],
+      ['storm', 'www.stormmediagroup.com'],
       ['oncc', 'tw.on.cc'],
       ['tsna', 'tsna.com.tw'],
       ['ttv', 'ttv.com.tw'],
@@ -86,6 +88,17 @@ describe('reviewed legacy media mapping', () => {
     for (const host of ['cn.nikkei.com.example.com', 'asia.nikkei.com', 'www.nikkei.com']) {
       const input = { ...raw, media: 'nikkei', url: `https://${host}/historical-article` };
       expect(normalizeLegacyArticle(input, context('tag_nikkei', input)).reasons).toContain('unreviewed_url_host');
+    }
+  });
+  it('keeps unreviewed historical Storm blogs and lookalikes quarantined', () => {
+    for (const host of [
+      'blog.stormmediagroup.com',
+      'unreviewed.www.stormmediagroup.com',
+      'stormmediagroup.com',
+      'www.stormmediagroup.com.example.com',
+    ]) {
+      const input = { ...raw, media: 'storm', url: `https://${host}/historical-article` };
+      expect(normalizeLegacyArticle(input, context('tag_storm', input)).reasons).toContain('unreviewed_url_host');
     }
   });
   it('keeps malformed historical TTV hosts quarantined', () => {

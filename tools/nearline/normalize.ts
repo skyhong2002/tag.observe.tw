@@ -80,6 +80,7 @@ try {
       ...context,
       spec: mapped?.spec ?? fallbackSpec,
       publisherRoots: mapped?.publisherRoots ?? [],
+      publisherHosts: mapped?.publisherHosts ?? [],
       mixedTable: mapped?.mixed ?? false,
       sourceMedia: mapped?.sourceMedia,
     });

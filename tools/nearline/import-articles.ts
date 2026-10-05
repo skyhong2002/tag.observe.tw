@@ -64,6 +64,7 @@ for await (const line of jsonLines(stream)) {
     ...context,
     spec: mapped?.spec ?? fallbackSpec,
     publisherRoots: mapped?.publisherRoots ?? [],
+    publisherHosts: mapped?.publisherHosts ?? [],
     mixedTable: mapped?.mixed ?? false,
     sourceMedia: mapped?.sourceMedia,
   });

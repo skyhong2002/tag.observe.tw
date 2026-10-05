@@ -4,7 +4,10 @@ import type { LegacyRow } from './normalize.ts';
 
 export const MIXED_ARTICLE_TABLES = new Set(['tag_news', 'tag_news_2024']);
 export const legacyMappingVersion = mapping.version;
-const policies = mapping.media as Record<string, { publisherRoots: string[]; sourceUrl: string; evidence: string }>;
+const policies = mapping.media as Record<
+  string,
+  { publisherRoots: string[]; publisherHosts?: string[]; sourceUrl: string; evidence: string }
+>;
 
 export function legacyMapping(table: string, row?: LegacyRow) {
   const mixed = MIXED_ARTICLE_TABLES.has(table);
@@ -13,7 +16,7 @@ export function legacyMapping(table: string, row?: LegacyRow) {
   const spec = sourceByMedia(canonical);
   const policy = policies[canonical];
   if (!spec || spec.discovery || excludedMedia.has(media) || excludedMedia.has(canonical) || !policy) return null;
-  return { spec, publisherRoots: policy.publisherRoots, mixed, sourceMedia: media };
+  return { spec, publisherRoots: policy.publisherRoots, publisherHosts: policy.publisherHosts ?? [], mixed, sourceMedia: media };
 }
 
 export function legacyTableSupported(table: string) {

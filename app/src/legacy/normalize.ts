@@ -11,6 +11,7 @@ export type LegacyContext = {
   objects: string[];
   spec: SourceSpec;
   publisherRoots?: string[];
+  publisherHosts?: string[];
   mixedTable?: boolean;
   sourceMedia?: string;
 };
@@ -61,15 +62,19 @@ export function normalizeLegacyArticle(row: LegacyRow, context: LegacyContext) {
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Invalid URL');
     const host = (s: string) => new URL(s).hostname.toLowerCase().replace(/^www\./, '');
     const publisherHost = host(url);
-    const allowed = context.publisherRoots
-      ? context.publisherRoots.some((root) => publisherHost === root || publisherHost.endsWith(`.${root}`))
-      : context.spec.list.urls.some((item) => {
-          try {
-            return host(item.url) === publisherHost;
-          } catch {
-            return false;
-          }
-        });
+    // Exact historical hosts do not approve sibling or nested subdomains.
+    const exactHostAllowed = context.publisherHosts?.includes(parsed.hostname.toLowerCase()) ?? false;
+    const allowed =
+      exactHostAllowed ||
+      (context.publisherRoots
+        ? context.publisherRoots.some((root) => publisherHost === root || publisherHost.endsWith(`.${root}`))
+        : context.spec.list.urls.some((item) => {
+            try {
+              return host(item.url) === publisherHost;
+            } catch {
+              return false;
+            }
+          }));
     if (!allowed) reasons.push('unreviewed_url_host');
     key = urlKey(url, context.spec.list.articleId);
   } catch {
