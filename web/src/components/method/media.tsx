@@ -17,7 +17,7 @@ export function MediaOverviewMethod({ camp = true }: { camp?: boolean }) {
       <h3 className={methodHeading}>媒體與文章數</h3>
       <p>
         「收錄概況」列出所有已登錄媒體與文章發現來源，包含尚未啟用抓取與僅作為引用來源的媒體；新聞類媒體每 9
-        分鐘、其他媒體每小時抓取一次。「今日」從台北時間 00:00
+        分鐘、其他媒體每小時抓取一次，每輪從最久沒抓的媒體開始，剛抓過的先跳過。「今日」從台北時間 00:00
         起算。文章數以發布時間計；列表沒有提供發布時間的文章，會在抓取內文後才計入，在那之前列為「發布時間待確認」。
       </p>
       <dl className={methodList}>
@@ -92,7 +92,8 @@ export function CrawlerMethod() {
         <Link href="/media/" className={inlineLink}>
           收錄概況
         </Link>
-        。新聞類媒體每 9 分鐘、其他媒體每小時抓取一次。
+        。新聞類媒體每 9
+        分鐘、其他媒體每小時抓取一次；每輪依上次抓取時間由舊到新排序，距上次不到週期八成的媒體跳過，所以抓取中斷後下一輪會接著沒輪到的媒體繼續。
       </p>
       <dl className={methodList}>
         <dt className={methodTerm}>抓取方式</dt>

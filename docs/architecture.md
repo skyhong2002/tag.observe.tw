@@ -51,6 +51,8 @@ Cloudflare Tunnel → tag.observe.tw
 
 時間都可用環境變數覆寫（`CRAWL_NEWS_MINUTES`、`EVENTS_CRON`…）。
 
+兩個 `crawl-index` 工作每輪不是照固定順序跑完整組：先從 `crawl_runs` 取每個來源最近一次完成的列表抓取時間，依由舊到新排序（沒抓過的最前面），距上次完成不到該組週期八成的來源（news 約 7 分鐘、hourly 約 48 分鐘）這輪跳過。部署重啟 worker 或一輪跑超過週期時，下一輪會從沒輪到的來源接著跑，不會有來源長期沒抓（`app/src/jobs/crawl-job.ts` 的 `orderDueSources`）。
+
 ## 議題來源與更新驗證
 
 議題表收官方編輯整理的專題／議題入口，不把一般新聞分類、每篇文章標籤或外站連結當作新專題。`app/src/crawl/topics.ts` 集中管理來源；2026-10-03 第二輪實測接入 55 家媒體、63 個入口，並不代表只有 55 家媒體有專題。盤點範圍改為完整媒體目錄，而非只測試既有爬蟲清單；檢查結果、尚待確認的來源與限制見 [議題來源盤點](topic-source-coverage.md)。

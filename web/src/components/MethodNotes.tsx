@@ -22,7 +22,8 @@ export function SourceMethod() {
     <>
       <h3 className={methodHeading}>資料來源</h3>
       <p>
-        新聞媒體每 9 分鐘、其他媒體每小時抓取一次新文章，保存標題、摘要、連結、圖片網址、標籤與署名；正文在刊登後 7
+        新聞媒體每 9
+        分鐘、其他媒體每小時抓取一次新文章（每輪從最久沒抓的媒體開始），保存標題、摘要、連結、圖片網址、標籤與署名；正文在刊登後 7
         天內可於站內閱讀。收錄的媒體與抓取狀態見
         <Link href="/media/" className={inlineLink}>
           媒體來源
