@@ -131,9 +131,29 @@ export default function FooterMethod({ notes }: { notes?: React.ReactNode }) {
   const pathname = usePathname();
   if (pathname === METHOD_HREF || `${pathname}/` === METHOD_HREF) return null;
   return (
-    <details className="group border-b border-zinc-200 dark:border-zinc-800">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[13px] hover:text-zinc-900 dark:hover:text-zinc-100 [&::-webkit-details-marker]:hidden">
-        本頁的資料來源與計算方式
+    <details className="group rounded-xl border border-zinc-300 bg-white open:shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 hover:text-zinc-900 dark:hover:text-zinc-100 [&::-webkit-details-marker]:hidden">
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-400"
+          aria-hidden="true"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 11v6M12 7.5v.01" />
+          </svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">本頁的資料來源與計算方式</span>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400">名詞定義、資料範圍與限制</span>
+        </span>
         <svg
           width="16"
           height="16"
@@ -148,14 +168,16 @@ export default function FooterMethod({ notes }: { notes?: React.ReactNode }) {
         </svg>
       </summary>
       {/* The anchor sits inside <details> so /#method opens it (browsers reveal fragment targets). */}
-      <div id="method" className="max-w-3xl scroll-mt-32 space-y-2.5 pb-5 leading-[1.9]">
-        {sectionsFor(pathname)}
-        {notes}
-        <p>
-          <Link href={METHOD_HREF} className={inlineLink}>
-            完整的資料來源與計算方式 →
-          </Link>
-        </p>
+      <div className="border-t border-zinc-200 px-4 pt-4 pb-5 dark:border-zinc-800">
+        <div id="method" className="max-w-3xl scroll-mt-32 space-y-2.5 text-xs leading-[1.9]">
+          {sectionsFor(pathname)}
+          {notes}
+          <p>
+            <Link href={METHOD_HREF} className={inlineLink}>
+              完整的資料來源與計算方式 →
+            </Link>
+          </p>
+        </div>
       </div>
     </details>
   );

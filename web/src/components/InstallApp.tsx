@@ -47,7 +47,7 @@ const STEPS: Record<Platform, { title: string; steps: string[] }> = {
   },
 };
 
-export default function InstallApp({ className }: { className?: string }) {
+export default function InstallApp({ className, children = '安裝 Web App' }: { className?: string; children?: React.ReactNode }) {
   const [installed, setInstalled] = useState(false);
   const [platform, setPlatform] = useState<Platform>('desktop');
   const dialog = useRef<HTMLDialogElement>(null);
@@ -90,7 +90,7 @@ export default function InstallApp({ className }: { className?: string }) {
   return (
     <>
       <button type="button" onClick={install} className={`cursor-pointer text-left ${className ?? ''}`}>
-        安裝 Web App
+        {children}
       </button>
       <dialog
         ref={dialog}

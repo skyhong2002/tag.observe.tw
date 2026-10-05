@@ -1,88 +1,180 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { API_ORIGIN } from '@/lib/api';
 import { METHOD_HREF, NAV_GROUPS } from '@/lib/site-nav';
+import BackToTop from './BackToTop';
 import FooterMethod from './FooterMethod';
 import InstallApp from './InstallApp';
 import Wordmark from './Wordmark';
 
-// The one footer for every page: this page's 資料來源與計算方式 first, then brand
-// and link columns, then the copyright line. Pages may add their own method notes
-// (`notes`) after the blocks FooterMethod picks for them.
+// The one footer for every page: this page's 資料來源與計算方式, then a full-width
+// band with the brand, live collection numbers, channels and the link columns,
+// then the rights line. Pages may add their own method notes (`notes`) after the
+// blocks FooterMethod picks for them.
 
 export { methodHeading } from './MethodNotes';
 
-// Four link columns: the header's sections (新聞 and 趨勢 share a column), then
-// tools and about.
 type FooterLink = { href: string; label: string; external?: boolean };
-const [news, trend, media] = NAV_GROUPS;
-const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> = [
-  { label: '新聞', links: [...news.links, ...trend.links] },
-  // The media comparison page only lives here.
-  { label: '媒體', links: [media.links[0], { href: '/media/sources/', label: '媒體流量與收錄比較' }, ...media.links.slice(1)] },
+const [news, trend, sources] = NAV_GROUPS;
+// The header's three groups, each with the pages that only the footer lists, then 關於本站.
+const COLUMNS: Array<{ label: string; links: FooterLink[] }> = [
+  { label: news.label, links: [...news.links, { href: '/search/', label: '搜尋報導' }] },
+  { label: trend.label, links: [...trend.links, { href: '/observe/', label: '網站觀測' }] },
   {
-    label: '工具',
+    label: sources.label,
     links: [
-      { href: '/search/', label: '搜尋報導' },
-      { href: '/observe/', label: '網站觀測' },
-      { href: '/api/', label: 'API 文件' },
-      { href: '/feeds/events.xml', label: '訂閱 RSS' },
+      sources.links[0],
+      { href: '/media/sources/', label: '流量與收錄比較' },
+      { href: '/media/crawlers/', label: '爬蟲資訊' },
+      ...sources.links.slice(1),
     ],
-    install: true,
   },
   {
-    label: '關於',
+    label: '關於本站',
     links: [
       { href: METHOD_HREF, label: '資料來源與計算方式' },
-      { href: 'https://t.me/tag_observe_tw', label: 'Telegram 討論群', external: true },
+      { href: '/api/', label: 'API 文件' },
       { href: 'https://github.com/skyhong2002/tag.observe.tw/issues/new', label: '聯絡與移除請求', external: true },
-      { href: 'https://github.com/skyhong2002/tag.observe.tw', label: 'GitHub 原始碼', external: true },
       { href: 'https://tag.analysis.tw', label: '母站 tag.analysis.tw', external: true },
     ],
   },
 ];
 
-const linkClass = 'hover:text-brand-700 hover:underline underline-offset-4 dark:hover:text-brand-400';
+const link = 'inline-flex min-h-8 items-center py-0.5 hover:text-brand-700 hover:underline underline-offset-4 dark:hover:text-brand-400';
+const pill =
+  'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-3 text-[13px] text-zinc-700 transition-colors hover:border-brand-600 hover:text-brand-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-brand-400 dark:hover:text-brand-400';
+// The band reaches the viewport edges from inside the centred column without
+// widening the page: a spread shadow in the band colour, clipped vertically.
+const band =
+  'bg-zinc-50 shadow-[0_0_0_100vmax_var(--color-zinc-50)] [clip-path:inset(0_-100vmax)] dark:bg-zinc-900 dark:shadow-[0_0_0_100vmax_var(--color-zinc-900)]';
+
+const Icon = ({ d, fill = false }: { d: string; fill?: boolean }) => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    className="shrink-0"
+    {...(fill ? { fill: 'currentColor' } : { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const })}
+  >
+    <path d={d} />
+  </svg>
+);
+const ICONS = {
+  telegram:
+    'M21.5 4.2 2.9 11.4c-1.3.5-1.3 1.2-.2 1.6l4.8 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8L22.9 5.6c.3-1.3-.5-1.9-1.4-1.4ZM8.3 14.2l9.9-6.2c.5-.3.9-.1.5.2l-8.5 7.7-.3 3.4-1.6-5.1Z',
+  rss: 'M5 11a8 8 0 0 1 8 8M5 5a14 14 0 0 1 14 14M6 19h.01',
+  github:
+    'M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 2.9.8.1-.7.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7c-.1-.3-.5-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .6 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2Z',
+  install: 'M12 4v11m0 0-4-4m4 4 4-4M5 20h14',
+};
+
+interface Totals {
+  today: number;
+  publishingMedia24h: number;
+}
+
+/** Today's collection, from the same numbers as 媒體來源; omitted when the API is slow or down. */
+async function FooterStats() {
+  const response = await fetch(`${API_ORIGIN}/api/v1/media-stats`, { next: { revalidate: 300 }, signal: AbortSignal.timeout(4000) }).catch(
+    () => null,
+  );
+  const totals: Totals | undefined = response?.ok ? (await response.json()).totals : undefined;
+  if (!totals?.today) return null;
+  return (
+    <Link href="/media/" className="group inline-flex items-center gap-2 text-[13px] text-zinc-600 dark:text-zinc-400">
+      <span className="relative flex h-2 w-2" aria-hidden="true">
+        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 motion-safe:animate-ping" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+      </span>
+      <span className="group-hover:text-brand-700 group-hover:underline underline-offset-4 dark:group-hover:text-brand-400">
+        今天已收錄 <span className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">{totals.today.toLocaleString('zh-TW')}</span>{' '}
+        篇 · 24 小時內 <span className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">{totals.publishingMedia24h}</span>{' '}
+        家媒體發稿
+      </span>
+    </Link>
+  );
+}
 
 export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
   return (
-    <footer className="mt-10 border-t border-zinc-300 pb-10 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+    <footer className="mt-14 text-sm text-zinc-600 dark:text-zinc-400">
       <FooterMethod notes={notes} />
 
-      <div className="grid gap-10 pt-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-16">
-        <div className="space-y-4">
-          <Link href="/" aria-label="新文易數 首頁" className="inline-block text-zinc-900 dark:text-zinc-100">
-            <Wordmark className="h-8 w-auto" />
-          </Link>
-          <p className="max-w-md text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-            同一件事，各家怎麼說。追蹤台灣新聞媒體的標籤、事件與議題，並排比較各家標題。
-          </p>
+      <div className={`${band} mt-10 pt-12 pb-6`}>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,8fr)] lg:gap-14">
+          <div className="space-y-5">
+            <Link href="/" aria-label="新文易數 首頁" className="inline-block text-zinc-900 dark:text-zinc-100">
+              <Wordmark className="h-9 w-auto" />
+            </Link>
+            <div className="space-y-1.5">
+              <p className="text-base font-medium text-zinc-900 dark:text-zinc-100">同一件事，各家怎麼說。</p>
+              <p className="max-w-sm leading-7">追蹤台灣新聞媒體的標籤、事件與議題，並排比較各家標題。</p>
+            </div>
+            <Suspense fallback={null}>
+              <FooterStats />
+            </Suspense>
+            <div className="flex flex-wrap gap-2">
+              <a href="https://t.me/tag_observe_tw" target="_blank" rel="noopener noreferrer" className={pill}>
+                <Icon d={ICONS.telegram} fill />
+                Telegram 討論群
+              </a>
+              <a href="/feeds/events.xml" className={pill}>
+                <Icon d={ICONS.rss} />
+                RSS
+              </a>
+              <a href="https://github.com/skyhong2002/tag.observe.tw" target="_blank" rel="noopener noreferrer" className={pill}>
+                <Icon d={ICONS.github} fill />
+                GitHub
+              </a>
+              <InstallApp className={pill}>
+                <Icon d={ICONS.install} />
+                安裝 App
+              </InstallApp>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,1.4fr)] sm:gap-x-8">
+            {COLUMNS.map((col) => (
+              <nav key={col.label} aria-label={col.label}>
+                <h2 className="mb-2.5 text-xs font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">{col.label}</h2>
+                <ul className="space-y-0.5">
+                  {col.links.map((l) => (
+                    <li key={l.href}>
+                      {l.external ? (
+                        <a href={l.href} target="_blank" rel="noopener noreferrer" className={link}>
+                          {l.label}
+                          <span aria-hidden="true" className="ml-0.5 text-zinc-400">
+                            ↗
+                          </span>
+                        </a>
+                      ) : (
+                        <Link href={l.href} className={link}>
+                          {l.label}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-x-10 gap-y-8 text-sm sm:grid-cols-4 sm:gap-x-12">
-          {COLUMNS.map((col) => (
-            <nav key={col.label} aria-label={col.label}>
-              <h2 className="mb-4 text-xs font-medium text-zinc-500 dark:text-zinc-500">{col.label}</h2>
-              <ul className="space-y-4">
-                {col.links.map((l) => (
-                  <li key={l.href}>
-                    {l.href.startsWith('/') && !l.href.startsWith('/feeds/') ? (
-                      <Link href={l.href} className={linkClass}>
-                        {l.label}
-                      </Link>
-                    ) : (
-                      <a href={l.href} className={linkClass} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
-                        {l.label}
-                        {l.external && <span aria-hidden="true"> ↗</span>}
-                      </a>
-                    )}
-                  </li>
-                ))}
-                {col.install && (
-                  <li>
-                    <InstallApp className={linkClass} />
-                  </li>
-                )}
-              </ul>
-            </nav>
-          ))}
+
+        <div className="mt-12 flex flex-col gap-3 border-t border-zinc-200 pt-5 text-xs leading-6 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+          <p>
+            © 2026 新文易數 · 程式碼以{' '}
+            <a
+              href="https://github.com/skyhong2002/tag.observe.tw/blob/main/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-4 hover:text-brand-700 hover:underline dark:hover:text-brand-400"
+            >
+              MIT 授權
+            </a>
+            開源 · 新聞標題、摘要與圖片著作權屬各媒體
+          </p>
+          <BackToTop />
         </div>
       </div>
     </footer>
