@@ -18,6 +18,7 @@ import {
 } from '@/components/MethodNotes';
 import { pageMetadata } from '@/lib/seo.mts';
 import traffic from '../../../../../app/data/media-traffic.json';
+import MethodToc from './MethodToc';
 
 // Every method block in one place, grouped by the page it explains; the footer
 // shows only the blocks for the page at hand. The camp basis is stated once, in
@@ -103,41 +104,49 @@ const link = 'text-brand-700 hover:underline dark:text-brand-400';
 
 export default function MethodPage() {
   return (
-    <article className="max-w-3xl">
-      <h1 className="text-2xl font-semibold tracking-tight">資料來源與計算方式</h1>
-      <nav aria-label="目錄" className="mt-5 rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800">
-        <h2 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">目錄</h2>
-        <ol className="mt-2 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
-          {GROUPS.map((group) => (
-            <li key={group.id}>
-              <a href={`#${group.id}`} className={link}>
+    <div className="lg:grid lg:grid-cols-[minmax(0,48rem)_13rem] lg:justify-between lg:gap-12">
+      <article className="min-w-0">
+        <h1 className="text-2xl font-semibold tracking-tight">資料來源與計算方式</h1>
+        {/* Narrow screens: the groups up top. Wide screens use the side outline instead. */}
+        <nav aria-label="目錄" className="mt-5 rounded-lg border border-zinc-200 p-4 text-sm lg:hidden dark:border-zinc-800">
+          <h2 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">目錄</h2>
+          <ol className="mt-2 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+            {GROUPS.map((group) => (
+              <li key={group.id}>
+                <a href={`#${group.id}`} className={link}>
+                  {group.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+        {GROUPS.map((group) => (
+          <section key={group.id} aria-labelledby={group.id} className="mt-10">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-zinc-200 pb-2 dark:border-zinc-800">
+              <h2 id={group.id} className="scroll-mt-24 text-lg font-semibold tracking-tight">
                 {group.title}
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
-      {GROUPS.map((group) => (
-        <section key={group.id} aria-labelledby={group.id} className="mt-10">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-zinc-200 pb-2 dark:border-zinc-800">
-            <h2 id={group.id} className="scroll-mt-24 text-lg font-semibold tracking-tight">
-              {group.title}
-            </h2>
-            {group.pages && (
-              <p className="flex flex-wrap gap-x-3 text-xs">
-                {group.pages.map(([href, label]) => (
-                  <Link key={href} href={href} className={link}>
-                    {label} →
-                  </Link>
-                ))}
-              </p>
-            )}
-          </div>
-          <div className="mt-4 space-y-3 text-sm leading-[1.9] text-zinc-700 dark:text-zinc-300 [&_h3]:pt-4 [&_h3]:text-[15px] [&_h3]:first:pt-0">
-            {group.body}
-          </div>
-        </section>
-      ))}
-    </article>
+              </h2>
+              {group.pages && (
+                <p className="flex flex-wrap gap-x-3 text-xs">
+                  {group.pages.map(([href, label]) => (
+                    <Link key={href} href={href} className={link}>
+                      {label} →
+                    </Link>
+                  ))}
+                </p>
+              )}
+            </div>
+            <div className="mt-4 space-y-3 text-sm leading-[1.9] text-zinc-700 dark:text-zinc-300 [&_h3]:scroll-mt-24 [&_h3]:pt-4 [&_h3]:text-[15px] [&_h3]:first:pt-0">
+              {group.body}
+            </div>
+          </section>
+        ))}
+      </article>
+      <aside className="hidden lg:block">
+        <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain pb-6">
+          <MethodToc groups={GROUPS.map(({ id, title }) => ({ id, title }))} />
+        </div>
+      </aside>
+    </div>
   );
 }
