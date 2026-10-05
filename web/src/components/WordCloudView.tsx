@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import styles from './WordCloudView.module.css';
 
 // Draws word clouds laid out on the server (WordCloud) and opens a card with a
 // word's numbers on hover or focus; clicking follows the word's link.
@@ -74,19 +75,12 @@ function Canvas({
               key={word.label}
               href={w.href}
               aria-label={w.ariaLabel}
-              className="group outline-none"
+              className={styles.word}
               onPointerEnter={() => setActive(word)}
               onFocus={() => setActive(word)}
               onBlur={() => setActive(null)}
             >
-              <rect
-                x={word.x - 1}
-                y={word.y - 1}
-                width={word.width + 2}
-                height={word.height + 2}
-                rx="3"
-                className="fill-transparent group-hover:fill-zinc-100 group-focus:fill-zinc-100 dark:group-hover:fill-zinc-800 dark:group-focus:fill-zinc-800"
-              />
+              <rect x={word.x - 1} y={word.y - 1} width={word.width + 2} height={word.height + 2} rx="3" />
               <text
                 x={word.x + 2}
                 y={word.y + word.fontSize * 1.25}

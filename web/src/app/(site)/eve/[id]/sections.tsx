@@ -1,9 +1,7 @@
 import Link from 'next/link';
-import { CAMP_FILL } from '@/components/CampBar';
+import { CAMP_LONG, CAMP_TEXT, CampDot } from '@/components/EventCampDot';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import SafeImage from '@/components/SafeImage';
-import SourceLink from '@/components/SourceLink';
-import { taipei, taipeiHour } from '@/lib/api';
+import { taipeiHour } from '@/lib/api';
 import {
   CAMP_ORDER,
   type Camp,
@@ -13,24 +11,15 @@ import {
   type ThreadHour,
   type TimedArticle,
 } from '@/lib/event-thread.mts';
-import { articleHref } from '@/lib/reading.mts';
+import HeadlineRowView from './HeadlineRowView';
 
 // Presentational pieces of the event thread page. Pure shaping lives in
 // lib/event-thread.mts so it can be unit-tested; this file only lays it out.
 
-export const CAMP_TEXT: Record<Camp, string> = {
-  blue: 'text-blue-700 dark:text-blue-300',
-  green: 'text-emerald-700 dark:text-emerald-300',
-  other: 'text-zinc-600 dark:text-zinc-400',
-};
-const CAMP_LONG: Record<Camp, string> = { blue: '藍營傾向媒體', green: '綠營傾向媒體', other: '其他媒體' };
-const clock = (iso: string) => taipei(iso).slice(-5);
+export { CAMP_TEXT, CampDot } from '@/components/EventCampDot';
+
 const tagHref = (tag: string) => `/tag/${encodeURIComponent(tag)}/`;
 const card = 'rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900';
-
-export function CampDot({ camp, size = 'h-2 w-2' }: { camp: Camp; size?: string }) {
-  return <span className={`inline-block shrink-0 rounded-full ${size} ${CAMP_FILL[camp]}`} title={CAMP_LONG[camp]} aria-hidden />;
-}
 
 export function SectionTitle({ id, children, note }: { id: string; children: React.ReactNode; note?: React.ReactNode }) {
   return (
@@ -135,34 +124,32 @@ export function HourTable({ hours, maxScore }: { hours: ThreadHour[]; maxScore: 
   );
 }
 
-function Thumb({ a }: { a: { id: number; title: string; image: string | null } }) {
-  if (!a.image || !/^https?:\/\//.test(a.image)) return null;
+/** Never pass TimedArticle.outlet here: it contains every article at that outlet. */
+function HeadlineRow({
+  a,
+  showCamp = true,
+  time = true,
+  showOutlet = true,
+}: {
+  a: TimedArticle;
+  showCamp?: boolean;
+  time?: boolean;
+  showOutlet?: boolean;
+}) {
   return (
-    <Link href={articleHref(a)} tabIndex={-1} aria-label={`閱讀：${a.title}`} className="flex-none">
-      <SafeImage src={a.image} alt="" width={96} height={64} className="h-14 w-20 rounded object-cover" loading="lazy" />
-    </Link>
-  );
-}
-
-function HeadlineRow({ a, showCamp = true, time = true }: { a: TimedArticle; showCamp?: boolean; time?: boolean }) {
-  return (
-    <li className="flex gap-2 py-2">
-      {time && <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-500">{clock(a.publishedAt)}</span>}
-      <Thumb a={a} />
-      <div className="min-w-0 flex-1">
-        <Link href={articleHref(a)} className="leading-snug hover:underline">
-          {a.title}
-        </Link>
-        <SourceLink url={a.url} iconOnly className="ml-1 !min-h-0 align-middle" />
-        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
-          {showCamp && <CampDot camp={a.outlet.camp} />}
-          <MediaHoverLink media={a.outlet.media} icon={12} className="hover:underline">
-            {a.outlet.title}
-          </MediaHoverLink>
-          {!time && <span className="tabular-nums">{clock(a.publishedAt)}</span>}
-        </p>
-      </div>
-    </li>
+    <HeadlineRowView
+      a={{
+        id: a.id,
+        title: a.title,
+        url: a.url,
+        image: a.image,
+        publishedAt: a.publishedAt,
+        outlet: { media: a.outlet.media, title: a.outlet.title, camp: a.outlet.camp },
+      }}
+      showCamp={showCamp}
+      time={time}
+      showOutlet={showOutlet}
+    />
   );
 }
 
@@ -265,16 +252,7 @@ export function ByOutlet({ byOutlet, order }: { byOutlet: CoverageOutlet[]; orde
             {[...o.articles]
               .sort((a, b) => (order === 'asc' ? a.publishedAt.localeCompare(b.publishedAt) : b.publishedAt.localeCompare(a.publishedAt)))
               .map((a) => (
-                <li key={a.id} className="flex gap-2 py-1.5">
-                  <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-500">{clock(a.publishedAt)}</span>
-                  <Thumb a={a} />
-                  <div className="min-w-0 flex-1">
-                    <Link href={articleHref(a)} className="leading-snug hover:underline">
-                      {a.title}
-                    </Link>
-                    <SourceLink url={a.url} iconOnly className="ml-1 !min-h-0 align-middle" />
-                  </div>
-                </li>
+                <HeadlineRow key={a.id} a={{ ...a, outlet: o }} showOutlet={false} />
               ))}
           </ul>
         </li>

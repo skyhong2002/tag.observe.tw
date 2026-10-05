@@ -1,29 +1,13 @@
-import MediaHoverLink from '@/components/MediaHoverLink';
 import type { MediaInfo } from '@/lib/api';
 import catalog from '../../../app/data/media-catalog.json';
-import styles from './MediaIcons.module.css';
+import MediaIconsView, { type MediaBadge } from './MediaIconsView';
 
 export default function MediaIcons({ media, info }: { media: Record<string, number>; info: MediaInfo }) {
-  const entries = Object.entries(media);
-  return (
-    <ul aria-label="媒體（可左右滑動）" className={`flex items-center gap-1.5 overflow-x-auto ${styles.list}`}>
-      {entries.map(([key, n]) => {
-        const camp = catalog.categories.blue.includes(key) ? 'blue' : catalog.categories.green.includes(key) ? 'green' : 'other';
-        return (
-          <li key={key} className="shrink-0">
-            <MediaHoverLink
-              media={key}
-              title={info[key]?.title ?? key}
-              className={`flex items-center gap-0.5 rounded px-1 py-0.5 text-[11px] ${styles.badge} ${styles[camp]}`}
-            >
-              <span>
-                {n}
-                <span className="sr-only"> 篇</span>
-              </span>
-            </MediaHoverLink>
-          </li>
-        );
-      })}
-    </ul>
-  );
+  const entries: MediaBadge[] = Object.entries(media).map(([key, count]) => ({
+    media: key,
+    title: info[key]?.title ?? key,
+    count,
+    camp: catalog.categories.blue.includes(key) ? 'blue' : catalog.categories.green.includes(key) ? 'green' : 'other',
+  }));
+  return <MediaIconsView entries={entries} />;
 }
