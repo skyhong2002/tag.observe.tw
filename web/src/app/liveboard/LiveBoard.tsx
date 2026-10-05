@@ -137,8 +137,8 @@ function Clock() {
       <span className="whitespace-nowrap text-base text-zinc-400 short:hidden portrait:hidden">
         {now.toLocaleDateString('zh-TW', { ...opts, month: 'numeric', day: 'numeric', weekday: 'short' })}
       </span>
-      <span className="text-4xl font-bold short:text-3xl portrait:text-3xl">
-        {now.toLocaleTimeString('zh-TW', { ...opts, hour12: false })}
+      <span className="w-[8ch] shrink-0 whitespace-nowrap text-right font-mono text-4xl font-bold short:text-3xl portrait:text-3xl">
+        {now.toLocaleTimeString('zh-TW', { ...opts, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </span>
     </div>
   );
