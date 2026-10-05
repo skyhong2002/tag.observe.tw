@@ -161,17 +161,14 @@ function KeywordBar({
     );
   };
   return (
-    <section aria-labelledby="keywords-heading" className="space-y-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 id="keywords-heading" className="text-sm font-semibold">
-          各家把哪些關鍵字做成{kindNoun(kind)}
-        </h2>
-        {(active || q) && (
+    <section aria-label={`${kindNoun(kind)}關鍵字與搜尋`} className="space-y-2">
+      {(active || q) && (
+        <div className="text-right">
           <Link href={base} className="text-xs text-zinc-600 hover:underline dark:text-zinc-400">
             清除篩選 ×
           </Link>
-        )}
-      </div>
+        </div>
+      )}
       {shown.length > 0 && <ul className="flex flex-wrap gap-1.5 text-xs">{shown.map(chip)}</ul>}
       {more.length > 0 && (
         <details open={more.some((t) => t.tag === active)} className="text-xs">
