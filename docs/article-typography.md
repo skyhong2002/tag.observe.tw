@@ -15,6 +15,6 @@ node --env-file=.env tools/repair-article-typography.ts --limit 1000
 node --env-file=.env tools/repair-article-typography.ts --apply --limit 100000 --backup /private/path/article-typography.jsonl
 ```
 
-可用 `--media ebc,moneydj` 篩選，或以輸出的 `lastId` 配合 `--after-id` 分批掃描。每個主機最多兩個請求，收到 429 便停止該主機本輪請求。失敗、受限、正文不完整或仍只有 JSON-LD 的文章保持原樣。
+可用 `--media ebc,moneydj` 篩選、`--ids 9664691,12345` 重試指定文章，或以輸出的 `lastId` 配合 `--after-id` 分批掃描。每個主機最多兩個請求，收到 429 便停止該主機本輪請求。失敗、受限、正文不完整或仍只有 JSON-LD 的文章保持原樣。
 
 每次更新前以 JSONL 保存原始資料列並同步寫入磁碟；更新使用正文與抓取時間的樂觀鎖，避免蓋過同期爬蟲修改。更新不改發布日期，也不延長公開節錄期。只變標點時保留相似度索引；正文有實質差異（如移除混入的標題）時，清除舊的相似配對、sketch 與引用，交由正常排程重建。

@@ -20,12 +20,15 @@ const { values } = parseArgs({
     apply: { type: 'boolean', default: false },
     backup: { type: 'string' },
     media: { type: 'string' },
+    ids: { type: 'string' },
     limit: { type: 'string', default: '1000' },
     'after-id': { type: 'string', default: '0' },
   },
 });
 const limit = Number(values.limit);
 const afterId = Number(values['after-id']);
+const ids = values.ids?.split(',').map(Number);
+if (ids?.some((id) => !Number.isSafeInteger(id) || id < 1)) throw Error('ids must be comma-separated positive integers');
 if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100000 || !Number.isSafeInteger(afterId) || afterId < 0)
   throw Error('limit must be 1–100000; after-id must be a nonnegative integer');
 if (values.apply && !values.backup) throw Error('--apply requires --backup /private/path/backup.jsonl');
@@ -48,6 +51,7 @@ try {
         sql`${articles.id} > ${afterId}`,
         gte(articles.crawledAt, new Date(Date.now() - BODY_RETENTION_MS)),
         selected?.length ? inArray(articles.media, selected) : undefined,
+        ids?.length ? inArray(articles.id, ids) : undefined,
       ),
     )
     .orderBy(asc(articles.id))
