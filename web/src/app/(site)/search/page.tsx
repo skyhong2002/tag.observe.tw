@@ -82,15 +82,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">搜尋暫時無法使用，請稍後再試。</p>
       ) : (
         <>
-          <RangeChips days={days} link={link}>
+          <RangeChips days={days} defaultDays={31} link={link}>
             {isTag && (
               <Link href={`/tag/${encodeURIComponent(q)}/`} className="ml-auto text-brand-700 hover:underline dark:text-brand-400">
                 #{q} 標籤頁 →
               </Link>
             )}
           </RangeChips>
-
-          {facets && <ArticleFacets facets={facets} subject={`「${q}」`} days={days} camp={camp} link={link} media={media} />}
 
           {relatedEvents.length > 0 && (
             <section className="space-y-2" aria-label="相關焦點事件">
@@ -114,8 +112,19 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             </section>
           )}
 
-          <ArticleList page={page} q={q} empty={`過去 ${days} 天沒有符合「${q}」的文章${camp ? '（目前只看單一傾向）' : ''}。`} />
-          <ArticlePager page={page} cursor={cursor} link={link} />
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            {facets && (
+              <aside className="lg:order-2">
+                <div className="lg:sticky lg:top-20">
+                  <ArticleFacets facets={facets} subject={`「${q}」`} days={days} camp={camp} link={link} media={media} />
+                </div>
+              </aside>
+            )}
+            <div className="min-w-0 space-y-4">
+              <ArticleList page={page} q={q} empty={`過去 ${days} 天沒有符合「${q}」的文章${camp ? '（目前只看單一傾向）' : ''}。`} />
+              <ArticlePager page={page} cursor={cursor} link={link} />
+            </div>
+          </div>
         </>
       )}
     </div>

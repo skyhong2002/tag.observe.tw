@@ -213,3 +213,126 @@ export async function threadSeries(db: Db, thread: { majorTags: string[]; firstT
     points: counts.map((c) => ({ ...c, tags: byHour.get(c.t) ?? null })),
   };
 }
+
+export const PERIOD_DAYS = [1, 7, 31] as const;
+
+/** Weigh each thread by its summed hourly score in the window (the best row
+ *  when a thread holds two ranks in one hour), so a story that led for days
+ *  outranks one that flared for an hour. Threads re-opened for the same story
+ *  show up under another id; skip one sharing at least half of the smaller
+ *  major set, or the leading tag, with a heavier pick. */
+export function pickPeriodThreads(
+  rows: ReadonlyArray<{ threadId: number | null; hourStart: Date; score: number; rank: number }>,
+  majors: ReadonlyMap<number, readonly string[]>,
+  limit: number,
+) {
+  const hourly = new Map<number, Map<number, { score: number; rank: number }>>();
+  for (const r of rows) {
+    if (r.threadId == null) continue;
+    const hours = hourly.get(r.threadId) ?? new Map();
+    const at = hours.get(r.hourStart.getTime());
+    if (!at || r.score > at.score) hours.set(r.hourStart.getTime(), { score: r.score, rank: Math.min(r.rank, at?.rank ?? r.rank) });
+    else at.rank = Math.min(at.rank, r.rank);
+    hourly.set(r.threadId, hours);
+  }
+  const ranked = [...hourly].map(([id, hours]) => {
+    const v = [...hours.values()];
+    return { id, weight: v.reduce((s, h) => s + h.score, 0), hours: v.length, bestRank: Math.min(...v.map((h) => h.rank)) };
+  });
+  ranked.sort((a, b) => b.weight - a.weight || a.id - b.id);
+  const picked: typeof ranked = [];
+  for (const t of ranked) {
+    if (picked.length >= limit) break;
+    const mine = majors.get(t.id) ?? [];
+    const same = picked.some((p) => {
+      const theirs = majors.get(p.id) ?? [];
+      const shared = mine.filter((tag) => theirs.includes(tag)).length;
+      return (
+        (mine[0] !== undefined && mine[0] === theirs[0]) || (shared > 0 && shared >= Math.ceil(Math.min(mine.length, theirs.length) / 2))
+      );
+    });
+    if (!same) picked.push(t);
+  }
+  return picked;
+}
+
+/** The main event threads of the last `days` days: who was on them over the
+ *  whole window, and the headlines of each thread's best hour in it. */
+export async function threadsInPeriod(db: Db, category: string, days: number, limit = 6, now = new Date()) {
+  const to = now;
+  const from = new Date(now.getTime() - days * 24 * HOUR);
+  const rows = await db
+    .select({ threadId: events.threadId, hourStart: eventSnapshots.hourStart, score: events.score, rank: events.rank })
+    .from(events)
+    .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
+    .where(and(eq(eventSnapshots.category, category), gte(eventSnapshots.hourStart, from), lt(eventSnapshots.hourStart, to)));
+  const ids = [...new Set(rows.map((r) => r.threadId).filter((id): id is number => id != null))];
+  const threads =
+    ids.length === 0
+      ? []
+      : await db
+          .select({
+            id: eventThreads.id,
+            firstTime: eventThreads.firstTime,
+            lastTime: eventThreads.lastTime,
+            majorTags: eventThreads.majorTags,
+            maxTag: eventThreads.maxTag,
+          })
+          .from(eventThreads)
+          .where(inArray(eventThreads.id, ids));
+  const byId = new Map(threads.map((t) => [t.id, t]));
+  const picked = pickPeriodThreads(rows, new Map(threads.map((t) => [t.id, t.majorTags])), limit).filter((p) => byId.has(p.id));
+  const best = new Map<number, Array<{ id?: number; title: string; url: string; image: string | null; media: string }>>();
+  if (picked.length) {
+    const news = await db
+      .select({ threadId: events.threadId, rank: events.rank, news: events.news, majorNews: events.majorNews })
+      .from(events)
+      .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
+      .where(
+        and(
+          inArray(
+            events.threadId,
+            picked.map((p) => p.id),
+          ),
+          gte(eventSnapshots.hourStart, from),
+          lt(eventSnapshots.hourStart, to),
+        ),
+      )
+      .orderBy(events.rank);
+    for (const r of news)
+      if (!best.has(r.threadId as number)) best.set(r.threadId as number, (r.majorNews.length ? r.majorNews : r.news).slice(0, 6));
+  }
+  const baseline = await campBaselineBetween(db, from, to);
+  const coverage = await coverageBetween(
+    db,
+    from,
+    to,
+    picked.map((p) => byId.get(p.id)?.majorTags ?? []),
+    baseline,
+    DAY_COVERAGE_ROWS,
+  );
+  return {
+    days,
+    from: from.toISOString(),
+    to: to.toISOString(),
+    baseline,
+    threads: picked.map((p, i) => {
+      const t = byId.get(p.id) as (typeof threads)[number];
+      return {
+        ...t,
+        weight: p.weight / 1e6,
+        hours: p.hours,
+        bestRank: p.bestRank,
+        coverage: coverage[i],
+        news: (best.get(p.id) ?? []).map((n) => ({
+          id: n.id ?? null,
+          media: n.media,
+          camp: campOf(n.media),
+          title: n.title,
+          url: n.url,
+          image: n.image,
+        })),
+      };
+    }),
+  };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bucketByHour, coverageWindow, dayRange, taipeiDay, trailsEnding } from './event-archive.ts';
+import { bucketByHour, coverageWindow, dayRange, pickPeriodThreads, taipeiDay, trailsEnding } from './event-archive.ts';
 
 const cats = { blue: ['udn'], green: ['ltn'] };
 const t = (h: number, m = 0) => new Date(Date.UTC(2026, 8, 30, h, m));
@@ -50,5 +50,29 @@ describe('event archive', () => {
     expect(b[0]).toMatchObject({ blue: 1, green: 1, other: 0 });
     expect(b[1]).toMatchObject({ blue: 0, green: 0, other: 0 });
     expect(b[2]).toMatchObject({ other: 1 });
+  });
+  it('weighs period threads by summed hourly score and drops re-opened duplicates', () => {
+    const rows = [
+      { threadId: 1, hourStart: t(5), score: 10, rank: 2 },
+      { threadId: 1, hourStart: t(5), score: 4, rank: 1 },
+      { threadId: 1, hourStart: t(6), score: 10, rank: 3 },
+      { threadId: 2, hourStart: t(5), score: 30, rank: 1 },
+      { threadId: 3, hourStart: t(5), score: 8, rank: 4 },
+      { threadId: 3, hourStart: t(6), score: 8, rank: 4 },
+      { threadId: 4, hourStart: t(6), score: 1, rank: 9 },
+      { threadId: null, hourStart: t(6), score: 99, rank: 1 },
+    ];
+    const majors = new Map<number, string[]>([
+      [1, ['台股', '台積電']],
+      [2, ['颱風']],
+      [3, ['台積電', '台股', '美股']],
+      [4, ['大罷免']],
+    ]);
+    expect(pickPeriodThreads(rows, majors, 5)).toEqual([
+      { id: 2, weight: 30, hours: 1, bestRank: 1 },
+      { id: 1, weight: 20, hours: 2, bestRank: 1 },
+      { id: 4, weight: 1, hours: 1, bestRank: 9 },
+    ]);
+    expect(pickPeriodThreads(rows, majors, 1).map((p) => p.id)).toEqual([2]);
   });
 });

@@ -169,6 +169,31 @@ export interface EventDay {
   threads: ArchivedThread[];
 }
 export const fetchEventDay = (day?: string) => get<EventDay>(`/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`, 300);
+/** One of the main threads of a period (/api/v1/events/threads/period). */
+export interface PeriodThread {
+  id: number;
+  firstTime: string;
+  lastTime: string;
+  majorTags: string[];
+  maxTag: string | null;
+  /** Summed hourly score over the period: how long and how high it ran. */
+  weight: number;
+  /** Hours on the event table within the period. */
+  hours: number;
+  bestRank: number;
+  /** Outlets on the story over the whole period. */
+  coverage?: EventCoverage;
+  news: EventNews[];
+}
+export interface EventPeriod {
+  days: number;
+  from: string;
+  to: string;
+  baseline: CampBaseline | null;
+  threads: PeriodThread[];
+}
+export const fetchEventPeriod = (days: number, limit = 6) =>
+  get<EventPeriod>(`/api/v1/events/threads/period?days=${days}&limit=${limit}`, days === 1 ? 300 : 1800);
 /** Counts for a keyword within the requested kind. The other kind is zero. */
 export interface TopicTagCount {
   tag: string;

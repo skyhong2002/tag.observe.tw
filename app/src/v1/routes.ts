@@ -9,7 +9,7 @@ import { BURST_STEPS, computeBurst, effectiveWeight, type RankingChart } from '.
 import { HOURS, RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
 import { isTagNoise } from '../tag-noise.ts';
 import { campOf, loadThreadCoverage } from './coverage.ts';
-import { taipeiDay, threadSeries, threadsOnDay } from './event-archive.ts';
+import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
 import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyRanks, loadHourlyTrends } from './tag-series.ts';
@@ -271,6 +271,15 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(day))) return reply.code(400).send({ error: 'bad day' });
     reply.header('cache-control', day === taipeiDay(new Date()) ? 'public, max-age=120' : 'public, max-age=1800');
     return threadsOnDay(db, 'news', day);
+  });
+
+  // The main threads of the last 1, 7 or 31 days, for the 最新文章 listing.
+  app.get<{ Querystring: { days?: string; limit?: string } }>('/api/v1/events/threads/period', async (request, reply) => {
+    const days = Number(request.query.days ?? 1);
+    if (!(PERIOD_DAYS as readonly number[]).includes(days)) return reply.code(400).send({ error: 'bad days' });
+    const limit = Math.min(12, Math.max(1, Math.floor(Number(request.query.limit) || 6)));
+    reply.header('cache-control', `public, max-age=${days === 1 ? 300 : 1800}`);
+    return threadsInPeriod(db, 'news', days, limit);
   });
 
   // Same event, different headlines: every report carrying the thread's major

@@ -23,13 +23,15 @@ export interface ArticleQuery {
   tag: string | null;
   camp: Camp | null;
   facets: boolean;
+  /** Skip articles whose publish time is still only when we first saw them. */
+  settled: boolean;
   since: Date;
   until: Date;
   limit: number;
   cursor: { at: Date; id: number } | null;
 }
 type Raw = Partial<
-  Record<'q' | 'media' | 'category' | 'camp' | 'tag' | 'since' | 'until' | 'hours' | 'limit' | 'cursor' | 'facets', string>
+  Record<'q' | 'media' | 'category' | 'camp' | 'tag' | 'since' | 'until' | 'hours' | 'limit' | 'cursor' | 'facets' | 'settled', string>
 >;
 
 export const encodeCursor = (at: Date, id: number) => `${at.getTime()}_${id}`;
@@ -66,6 +68,7 @@ export function parseArticleQuery(raw: Raw, now = new Date()): ArticleQuery | { 
   const camp = raw.camp || null;
   if (camp && camp !== 'blue' && camp !== 'green' && camp !== 'other') return { error: 'unknown camp' };
   const facets = raw.facets === '1' || raw.facets === 'true';
+  const settled = raw.settled === '1' || raw.settled === 'true';
   const untilArg = parseTime(raw.until);
   if (untilArg === null) return { error: 'bad until' };
   const until = untilArg ?? now;
@@ -79,7 +82,7 @@ export function parseArticleQuery(raw: Raw, now = new Date()): ArticleQuery | { 
   const limit = Math.min(MAX_LIMIT, Math.max(1, Math.floor(Number(raw.limit)) || 50));
   const cursor = raw.cursor ? decodeCursor(raw.cursor) : null;
   if (raw.cursor && !cursor) return { error: 'bad cursor' };
-  return { q, media, category, tag, camp: camp as Camp | null, facets, since, until, limit, cursor };
+  return { q, media, category, tag, camp: camp as Camp | null, facets, settled, since, until, limit, cursor };
 }
 
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -103,6 +106,8 @@ export async function searchArticles(db: Db, query: ArticleQuery) {
     gte(articles.publishedAt, query.since),
     lt(articles.publishedAt, query.until),
     sql`${articles.title} <> ''`,
+    // The negation of datePending below.
+    query.settled ? sql`(${articles.fetchedAt} IS NOT NULL OR ${articles.publishedAt} <> ${articles.crawledAt})` : undefined,
     media ? inArray(articles.media, media) : undefined,
     notInCamps?.length
       ? sql`${articles.media} NOT IN (${sql.join(

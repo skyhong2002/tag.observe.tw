@@ -34,6 +34,7 @@ export interface Hit {
   title: string;
   description: string | null;
   url: string;
+  image: string | null;
   publishedAt: string;
   datePending: boolean;
   tags: string[];
@@ -77,13 +78,16 @@ export async function fetchArticleListing({
   days,
   camp,
   cursor,
+  settled = false,
 }: {
   q?: string;
   days: number;
   camp: Camp | null;
   cursor: string | null;
+  /** Leave out articles whose publish time is still only when we found them. */
+  settled?: boolean;
 }): Promise<{ page: SearchResult | null; facets: Facets | undefined }> {
-  const base = { ...(q ? { q } : {}), hours: String(days * 24) };
+  const base = { ...(q ? { q } : {}), ...(settled ? { settled: '1' } : {}), hours: String(days * 24) };
   const [page, overall] = await Promise.all([
     searchArticles({
       ...base,

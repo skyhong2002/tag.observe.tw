@@ -79,6 +79,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
 | [`GET /api/v1/events/threads`](#api-v1-events-threads) | 某一天的所有事件串 |
+| [`GET /api/v1/events/threads/period`](#api-v1-events-threads-period) | 過去 1、7 或 31 天的主要事件串 |
 | [`GET /api/v1/events/threads/{id}`](#api-v1-events-threads-id) | 單一事件串 |
 | [`GET /api/v1/events/threads/{id}/series`](#api-v1-events-threads-id-series) | 事件串的每小時趨勢 |
 | [`GET /api/v1/events/threads/{id}/coverage`](#api-v1-events-threads-id-coverage) | 同一事件的各家標題對照 |
@@ -807,6 +808,7 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `limit` | query | integer | 每頁筆數，1–200，預設 `50`，例：`20` |
 | `cursor` | query | string | 上一頁回應的 nextCursor |
 | `facets` | query | "0" \| "1" | 1 表示回傳 facets（整個查詢的總數、各政治傾向與各媒體篇數），例：`1` |
+| `settled` | query | "0" \| "1" | 1 表示略過刊登時間還沒確認的文章（datePending 為 true 的那些），facets 也一併略過，例：`1` |
 
 範例：
 
@@ -1363,6 +1365,75 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | `threads[].news[].camp` | string | 媒體陣營 blue／green／other（只在 /api/v1/events 回傳） |
 
 錯誤：`400` 日期格式錯誤。
+
+<a id="api-v1-events-threads-period"></a>
+
+### `GET /api/v1/events/threads/period`
+
+**過去 1、7 或 31 天的主要事件串**
+
+依事件串在期間內每小時分數的總和排序，在榜越久、越前面的越重；同一則新聞被拆成不同事件串時（主要標籤過半重疊或第一個標籤相同）只留較重的一個。藍綠報導（`coverage`、`baseline`）的窗口是整段期間。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `days` | query | integer | 期間天數：1、7 或 31，預設 1，例：`7` |
+| `limit` | query | integer | 回傳幾個事件串，1 到 12，預設 6，例：`6` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/events/threads/period?days=7'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `days` | integer |  |
+| `from` | string (ISO 時間) |  |
+| `to` | string (ISO 時間) |  |
+| `baseline` | object | 各陣營的整體基準，用來判斷單一事件的藍綠比例是否異常；其他只計排行榜用的新聞媒體 |
+| `baseline.outlets` | object | 事件窗口（期間內）內有發稿的媒體家數 |
+| `baseline.outlets.blue` | integer |  |
+| `baseline.outlets.green` | integer |  |
+| `baseline.outlets.other` | integer |  |
+| `baseline.articles` | object | 同窗口內各陣營文章數 |
+| `baseline.articles.blue` | integer |  |
+| `baseline.articles.green` | integer |  |
+| `baseline.articles.other` | integer |  |
+| `threads` | object[] |  |
+| `threads[].id` | integer |  |
+| `threads[].firstTime` | string (ISO 時間) |  |
+| `threads[].lastTime` | string (ISO 時間) |  |
+| `threads[].majorTags` | string[] |  |
+| `threads[].maxTag` | string \| null | 分數最高的標籤 |
+| `threads[].weight` | number | 期間內每小時分數的總和 |
+| `threads[].hours` | integer | 期間內在榜的小時數 |
+| `threads[].bestRank` | integer | 期間內的最佳名次 |
+| `threads[].coverage` | object |  |
+| `threads[].coverage.outlets` | object[] | 期間內寫過此事件主要標籤的媒體，依篇數排序 |
+| `threads[].coverage.outlets[].media` | string |  |
+| `threads[].coverage.outlets[].camp` | string | blue／green／other |
+| `threads[].coverage.articles` | integer | 報導篇數 |
+| `threads[].coverage.camps` | object | 各陣營媒體家數 |
+| `threads[].coverage.camps.blue` | integer |  |
+| `threads[].coverage.camps.green` | integer |  |
+| `threads[].coverage.camps.other` | integer |  |
+| `threads[].coverage.share` | object \| null | 藍綠之間的家數百分比（不含其他） |
+| `threads[].coverage.share.blue` | integer |  |
+| `threads[].coverage.share.green` | integer |  |
+| `threads[].coverage.lean` | number \| null | 藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠 |
+| `threads[].coverage.tilt` | string \| null | 明顯偏向的陣營（\|lean\| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家） |
+| `threads[].coverage.blindspot` | string[] | 盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事 |
+| `threads[].news` | object[] | 期間內最佳名次那一小時的代表新聞（最多 6 則），各附媒體陣營 camp |
+| `threads[].news[].id` | integer \| null | 文章 id（舊資料可能為 null） |
+| `threads[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `threads[].news[].title` | string | 標題 |
+| `threads[].news[].url` | string | 原文網址 |
+| `threads[].news[].image` | string \| null | 代表圖網址 |
+| `threads[].news[].camp` | string | 媒體陣營 blue／green／other（只在 /api/v1/events 回傳） |
+
+錯誤：`400` `days` 不是 1、7 或 31。
 
 <a id="api-v1-events-threads-id"></a>
 

@@ -883,6 +883,7 @@ export const ENDPOINTS: Endpoint[] = [
       q('limit', '每頁筆數', intIn(1, MAX_LIMIT, 50), 20),
       q('cursor', '上一頁回應的 nextCursor', str()),
       q('facets', '1 表示回傳 facets（整個查詢的總數、各政治傾向與各媒體篇數）', str('', { enum: ['0', '1'] }), '1'),
+      q('settled', '1 表示略過刊登時間還沒確認的文章（datePending 為 true 的那些），facets 也一併略過', str('', { enum: ['0', '1'] }), '1'),
     ],
     response: obj(
       {
@@ -1118,6 +1119,36 @@ export const ENDPOINTS: Endpoint[] = [
     }),
     errors: { '400': '日期格式錯誤' },
     example: '/api/v1/events/threads?day=2026-09-30',
+  },
+  {
+    path: '/api/v1/events/threads/period',
+    tag: 'events',
+    summary: '過去 1、7 或 31 天的主要事件串',
+    description:
+      '依事件串在期間內每小時分數的總和排序，在榜越久、越前面的越重；同一則新聞被拆成不同事件串時（主要標籤過半重疊或第一個標籤相同）只留較重的一個。藍綠報導（`coverage`、`baseline`）的窗口是整段期間。',
+    params: [q('days', '期間天數：1、7 或 31，預設 1', int(), '7'), q('limit', '回傳幾個事件串，1 到 12，預設 6', int(), '6')],
+    response: obj({
+      days: int(),
+      from: time(),
+      to: time(),
+      baseline: campBaseline('期間內'),
+      threads: arr(
+        obj({
+          id: int(),
+          firstTime: time(),
+          lastTime: time(),
+          majorTags: arr(str()),
+          maxTag: nullable(str('分數最高的標籤')),
+          weight: num('期間內每小時分數的總和'),
+          hours: int('期間內在榜的小時數'),
+          bestRank: int('期間內的最佳名次'),
+          coverage: eventCoverage('期間內'),
+          news: arr(ref('Headline'), '期間內最佳名次那一小時的代表新聞（最多 6 則），各附媒體陣營 camp'),
+        }),
+      ),
+    }),
+    errors: { '400': '`days` 不是 1、7 或 31' },
+    example: '/api/v1/events/threads/period?days=7',
   },
   {
     path: '/api/v1/events/threads/{id}',
