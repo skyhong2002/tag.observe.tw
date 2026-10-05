@@ -131,26 +131,27 @@ function Diffed({ parts }: { parts: TextPart[] }) {
 function Byline({ media, title, camp, at, size = 26 }: { media: string; title: string; camp: Camp; at: string; size?: number }) {
   return (
     <div className="flex items-center gap-2 text-lg text-zinc-300">
-      <MediaIcon media={media} title={title} size={size} />
-      <Go href={mediaHref(media)} className="font-semibold text-zinc-100">
+      <MediaIcon rem media={media} title={title} size={size} />
+      <Go href={mediaHref(media)} className="min-w-0 truncate font-semibold text-zinc-100">
         {title}
       </Go>
       <CampDot camp={camp} size="h-2.5 w-2.5" />
       <span className="sr-only">{CAMP_LONG[camp]}</span>
-      <span className="ml-auto tabular-nums text-zinc-400">{clock(at)}</span>
+      <span className="ml-auto shrink-0 tabular-nums text-zinc-400">{clock(at)}</span>
     </div>
   );
 }
 
 /** One outlet's report on an event: photo, outlet, time, headline and summary. */
-// Rows of reports that fit: shorter screens drop the later pairs rather than squeeze them.
+// Rows of reports that fit: a shorter stage drops the later pairs rather than
+// squeeze them, and a narrow one (a single column) keeps the first two.
 const REPORT_FIT = [
   '',
   '',
-  '[@media(max-height:860px)]:hidden',
-  '[@media(max-height:860px)]:hidden',
-  '[@media(max-height:980px)]:hidden',
-  '[@media(max-height:980px)]:hidden',
+  '@max-xl:hidden [@container(max-height:32rem)]:hidden',
+  '@max-xl:hidden [@container(max-height:32rem)]:hidden',
+  '@max-xl:hidden [@container(max-height:38rem)]:hidden',
+  '@max-xl:hidden [@container(max-height:38rem)]:hidden',
 ];
 function ReportTile({ r, now, index }: { r: CoverageReport; now: number; index: number }) {
   return (
@@ -164,7 +165,7 @@ function ReportTile({ r, now, index }: { r: CoverageReport; now: number; index: 
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex min-w-0 items-center gap-1.5 text-sm text-zinc-400">
-          <MediaIcon media={r.media} title={r.mediaTitle} size={16} />
+          <MediaIcon rem media={r.media} title={r.mediaTitle} size={16} />
           <Go href={mediaHref(r.media)} className="truncate">
             {r.mediaTitle}
           </Go>
@@ -195,7 +196,7 @@ function EventStage({
   const cover = selectEventCover(e.news, selectEventLead(e.news, e.major), isAllowedImage);
   const kicker = card.reason === 'new' ? '新事件' : card.reason === 'climb' ? `排名竄升 → 第 ${e.rank} 名` : `熱門事件 第 ${e.rank} 名`;
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 xl:gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* Covers are landscape photos: keep them wide and short beside the headline, never a tall crop. */}
       <div className="flex shrink-0 gap-5">
         {cover?.image && (
@@ -209,7 +210,7 @@ function EventStage({
             <Movement e={e} className="text-base" />
             {e.firstTime && <span className="text-base text-zinc-400">{ago(e.firstTime, now)}開始</span>}
           </div>
-          <h2 className={`text-[clamp(1.3rem,2.1vw,2.1rem)] font-bold leading-tight ${styles.clamp3}`}>
+          <h2 className={`text-[1.7rem] font-bold leading-tight ${styles.clamp3}`}>
             <Go href={eventHref(e)}>{eventHeadline(e)}</Go>
           </h2>
           <div className="flex max-h-[4.75rem] flex-wrap gap-2 overflow-hidden">
@@ -236,7 +237,7 @@ function EventStage({
             <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
               {e.coverage.outlets.slice(0, 28).map((o) => (
                 <Go key={o.media} href={mediaHref(o.media)} className="shrink-0">
-                  <MediaIcon media={o.media} title={media[o.media]?.title} size={24} />
+                  <MediaIcon rem media={o.media} title={media[o.media]?.title} size={24} />
                 </Go>
               ))}
             </div>
@@ -246,27 +247,29 @@ function EventStage({
           </div>
         </div>
       )}
-      {reports.length ? (
-        <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-2 gap-2.5 overflow-hidden">
+      {reports.length > 0 && (
+        <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-2 gap-2.5 overflow-hidden @max-xl:grid-cols-1 [@container(max-height:23rem)]:hidden">
           {reports.map((r, i) => (
             <ReportTile key={r.id} r={r} now={now} index={i} />
           ))}
         </ul>
-      ) : (
-        <ul className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden border-t border-zinc-800 pt-3">
-          {e.news.slice(0, 7).map((n) => (
-            <li key={n.url} className="flex min-w-0 shrink-0 items-center gap-2 text-lg">
-              <MediaIcon media={n.media} title={media[n.media]?.title} size={20} />
-              <Go href={mediaHref(n.media)} className="shrink-0 text-zinc-400">
-                {media[n.media]?.title ?? n.media}
-              </Go>
-              <Go href={articleHref(n)} className="truncate">
-                {n.title}
-              </Go>
-            </li>
-          ))}
-        </ul>
       )}
+      {/* One line per report: shown without report tiles, or when the stage is too short for them (a landscape phone). */}
+      <ul
+        className={`min-h-0 flex-1 flex-col gap-2.5 overflow-hidden border-t border-zinc-800 pt-3 ${reports.length ? 'hidden [@container(max-height:23rem)]:flex' : 'flex'}`}
+      >
+        {e.news.slice(0, 7).map((n) => (
+          <li key={n.url} className="flex min-w-0 shrink-0 items-center gap-2 text-lg">
+            <MediaIcon rem media={n.media} title={media[n.media]?.title} size={20} />
+            <Go href={mediaHref(n.media)} className="shrink-0 text-zinc-400">
+              {media[n.media]?.title ?? n.media}
+            </Go>
+            <Go href={articleHref(n)} className="truncate">
+              {n.title}
+            </Go>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -274,12 +277,12 @@ function EventStage({
 function HeadlineTile({ a, parts, first }: { a: CompareArticle; parts: TextPart[]; first: boolean }) {
   return (
     <div
-      className={`flex min-h-0 min-w-0 flex-col gap-2 overflow-hidden rounded-xl border-t-4 bg-zinc-900 p-3 xl:p-4 ${CAMP_RULE[a.camp]}`}
+      className={`flex min-h-0 min-w-0 flex-col gap-2 overflow-hidden rounded-xl border-t-4 bg-zinc-900 p-4 [@container(max-height:26rem)]:gap-1 [@container(max-height:26rem)]:p-3 ${CAMP_RULE[a.camp]}`}
     >
       <Byline media={a.media} title={a.mediaTitle} camp={a.camp} at={a.publishedAt} size={22} />
       <Go
         href={articleHref(a)}
-        className={`text-[clamp(1rem,1.45vw,1.45rem)] font-bold leading-snug ${styles.clamp4} ${first ? '' : 'text-zinc-100'}`}
+        className={`text-[1.15rem] font-bold leading-snug [@container(max-height:26rem)]:text-[1.05rem] ${styles.clamp4} ${first ? '' : 'text-zinc-100'}`}
       >
         <Diffed parts={parts} />
       </Go>
@@ -300,16 +303,19 @@ function HeadlineStage({ card }: { card: Extract<Card, { kind: 'headline' }> }) 
         </Go>
         <span className="text-base text-zinc-500">標示處為與第一則不同的用字</span>
       </div>
-      <div className={`grid min-h-0 flex-1 auto-rows-fr gap-3 ${grid.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      {/* A short or narrow stage keeps the first six headlines. */}
+      <div
+        className={`grid min-h-0 flex-1 auto-rows-fr gap-3 ${grid.length > 4 ? 'grid-cols-3' : 'grid-cols-2'} @max-xl:grid-cols-2 @max-xl:[&>*:nth-child(n+7)]:hidden [@container(max-height:26rem)]:[&>*:nth-child(n+7)]:hidden`}
+      >
         {grid.map((g, i) => (
           <HeadlineTile key={g.article.id} a={g.article} parts={g.parts} first={i === 0} />
         ))}
       </div>
       {extras.length > 0 && (
-        <ul className="grid max-h-[30%] shrink-0 auto-rows-min grid-cols-2 gap-x-4 gap-y-1 overflow-hidden">
+        <ul className="grid max-h-[30%] shrink-0 auto-rows-min grid-cols-2 gap-x-4 gap-y-1 overflow-hidden @max-xl:grid-cols-1 [@container(max-height:26rem)]:hidden">
           {extras.map((a) => (
             <li key={a.id} className="flex min-w-0 shrink-0 items-center gap-2 text-base">
-              <MediaIcon media={a.media} title={a.mediaTitle} size={18} />
+              <MediaIcon rem media={a.media} title={a.mediaTitle} size={18} />
               <Go href={mediaHref(a.media)} className="shrink-0 text-zinc-400">
                 {a.mediaTitle}
               </Go>
@@ -346,14 +352,14 @@ function SharedBody({ parts }: { parts: TextPart[] }) {
 
 function CopyColumn({ a, side, title, body }: { a: LiveArticle; side: string; title: TextPart[] | null; body: TextPart[] | null }) {
   return (
-    <div className={`flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-2xl border-t-4 bg-zinc-900 p-3 xl:p-4 ${CAMP_RULE[a.camp]}`}>
+    <div className={`flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-2xl border-t-4 bg-zinc-900 p-4 ${CAMP_RULE[a.camp]}`}>
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-sm font-semibold tracking-widest text-zinc-500">{side}</span>
         <div className="min-w-0 flex-1">
           <Byline media={a.media} title={a.mediaTitle} camp={a.camp} at={a.publishedAt} size={22} />
         </div>
       </div>
-      <Go href={articleHref(a)} className={`shrink-0 text-[clamp(1.05rem,1.6vw,1.5rem)] font-bold leading-snug ${styles.clamp2}`}>
+      <Go href={articleHref(a)} className={`shrink-0 text-[1.3rem] font-bold leading-snug ${styles.clamp2}`}>
         {title ? <Diffed parts={title} /> : a.title}
       </Go>
       <div className="flex min-w-0 shrink-0 items-center gap-2 text-sm">
@@ -361,7 +367,7 @@ function CopyColumn({ a, side, title, body }: { a: LiveArticle; side: string; ti
         <TagChips tags={a.tags} max={4} />
       </div>
       <p
-        className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-[clamp(0.95rem,1.2vw,1.15rem)] leading-relaxed ${styles.fadeOut} ${styles.paragraphs}`}
+        className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-[0.95rem] leading-relaxed ${styles.fadeOut} ${styles.paragraphs}`}
       >
         {body ? <SharedBody parts={body} /> : <span className="text-zinc-400">{a.text ?? '（尚未取得內文）'}</span>}
       </p>
@@ -399,13 +405,13 @@ function CopyStage({ card }: { card: Extract<Card, { kind: 'copy' }> }) {
             另 {others.length + story.more} 篇
             {others.slice(0, 6).map((f) => (
               <Go key={f.article.id} href={articleHref(f.article)} className="shrink-0">
-                <MediaIcon media={f.article.media} title={f.article.mediaTitle} size={20} />
+                <MediaIcon rem media={f.article.media} title={f.article.mediaTitle} size={20} />
               </Go>
             ))}
           </span>
         )}
       </div>
-      <div className="flex min-h-0 flex-1 gap-3">
+      <div className="flex min-h-0 flex-1 gap-3 @max-xl:flex-col">
         <CopyColumn a={story.lead} side="先發" title={lt} body={bodies?.[0] ?? null} />
         <CopyColumn a={featured.article} side="跟稿" title={ft} body={bodies?.[1] ?? null} />
       </div>
@@ -421,19 +427,19 @@ function BurstStage({ card, now }: { card: Extract<Card, { kind: 'burst' }>; now
         <Kicker>剛讀完 {card.total} 篇內文</Kicker>
         <span className="text-lg text-zinc-400">{outlets} 家媒體的最新報導</span>
       </div>
-      <ul className="grid min-h-0 flex-1 grid-cols-4 grid-rows-2 gap-3">
+      <ul className="grid min-h-0 flex-1 grid-cols-4 grid-rows-2 gap-3 @max-xl:grid-cols-2 @max-xl:[&>li:nth-child(n+5)]:hidden">
         {card.articles.map((a) => (
           <li
             key={a.id}
             className={`flex min-h-0 flex-col gap-1.5 overflow-hidden rounded-xl border-t-4 bg-zinc-900 p-3 ${CAMP_RULE[a.camp]}`}
           >
             {isAllowedImage(a.image) && (
-              <div className="relative aspect-video shrink-0 overflow-hidden rounded-lg bg-zinc-800">
+              <div className="relative aspect-video shrink-0 overflow-hidden rounded-lg bg-zinc-800 [@container(max-height:26rem)]:hidden">
                 <SafeImage src={a.image} alt="" fill sizes={SIZES.tile} className="object-cover" loading="eager" />
               </div>
             )}
             <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-              <MediaIcon media={a.media} title={a.mediaTitle} size={18} />
+              <MediaIcon rem media={a.media} title={a.mediaTitle} size={18} />
               <Go href={mediaHref(a.media)} className="truncate">
                 {a.mediaTitle}
               </Go>
@@ -474,18 +480,18 @@ function TopicStage({ card, now }: { card: Extract<Card, { kind: 'topic' }>; now
             {t.storyCount !== null && <span className="text-base text-zinc-400">頁面上 {t.storyCount} 篇報導</span>}
           </div>
           <div className="flex items-center gap-2 text-lg text-zinc-300">
-            <MediaIcon media={t.media} title={t.mediaTitle} size={24} />
+            <MediaIcon rem media={t.media} title={t.mediaTitle} size={24} />
             <Go href={mediaHref(t.media)} className="font-semibold text-zinc-100">
               {t.mediaTitle}
             </Go>
           </div>
-          <h2 className={`text-[clamp(1.5rem,2.6vw,2.6rem)] font-bold leading-tight ${styles.clamp2}`}>
+          <h2 className={`text-[2.1rem] font-bold leading-tight ${styles.clamp2}`}>
             <Go href={href}>{t.title}</Go>
           </h2>
         </div>
       </div>
       {t.stories.length > 0 && (
-        <ul className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-3 overflow-hidden">
+        <ul className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-3 overflow-hidden @max-xl:grid-cols-1 @max-xl:[&>li:nth-child(n+3)]:hidden">
           {t.stories.map((st) => {
             const a = st.article;
             return (

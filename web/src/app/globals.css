@@ -2,6 +2,8 @@
 
 /* Theme comes from data-theme on <html>, set before paint by the script in layout.tsx. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+/* /liveboard/ on a landscape phone: too short for every panel, so it shows fewer. */
+@custom-variant short (@media (orientation: landscape) and (max-height: 540px));
 
 :root {
   --background: #ffffff;

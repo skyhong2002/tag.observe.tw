@@ -11,8 +11,12 @@ export const revalidate = 30;
 export const metadata: Metadata = {
   ...pageMetadata('/liveboard/', '即時看板', '新文易數的常駐即時看板：新進新聞、新事件、各家標題對照與轉載比對輪流顯示。', true),
   robots: { index: false, follow: false },
+  // Its own web app: installed, it opens the board full screen (see manifest.webmanifest/route.ts).
+  manifest: '/liveboard/manifest.webmanifest',
+  appleWebApp: { capable: true, title: '即時看板', statusBarStyle: 'black-translucent' },
 };
-export const viewport: Viewport = { themeColor: '#09090b' };
+// viewport-fit=cover lets the board reach under the notch; it pads by the safe-area insets.
+export const viewport: Viewport = { themeColor: '#09090b', viewportFit: 'cover' };
 
 async function optional<T>(load: () => Promise<T>): Promise<T | null> {
   try {

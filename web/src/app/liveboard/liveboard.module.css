@@ -1,3 +1,35 @@
+/*
+ * The board scales as one: every size is in rem, and the root font size
+ * follows the screen. 16px fits a 1280×800 tablet; other landscape screens
+ * scale by whichever of width or height runs out first. Landscape phones
+ * (see the `short` variant) and portrait screens drop panels instead of
+ * shrinking past legibility, so they get their own ratios.
+ */
+:global(html):has(.board) {
+  font-size: clamp(12px, min(2vh, 1.25vw), 26px);
+  font-size: clamp(12px, min(2dvh, 1.25dvw), 26px);
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  :global(html):has(.board) {
+    font-size: clamp(11px, min(3.3dvh, 1.6dvw), 16px);
+  }
+}
+@media (orientation: portrait) {
+  :global(html):has(.board) {
+    font-size: clamp(12px, min(3.4dvw, 1.6dvh), 20px);
+  }
+}
+
+/* Installed as a full-screen web app the board runs edge to edge; keep clear of notches and the home bar. */
+.board {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* The stage card's box: its views drop rows and columns by the room they get (@container variants). */
+.stageBox {
+  container-type: size;
+}
+
 /* Motion for the always-on board; everything stops under reduced motion. */
 .stage {
   animation: stage-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
