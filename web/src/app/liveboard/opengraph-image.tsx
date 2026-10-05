@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
+import Wordmark from '@/components/Wordmark';
 import { API_ORIGIN } from '@/lib/api';
 import { cleanEventHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import type { LiveFeed } from '@/lib/liveboard.mts';
@@ -59,23 +60,17 @@ function Stat({ label, value, unit }: { label: string; value: string; unit: stri
   );
 }
 
-// The site's own wordmark (public/brand/wordmark.svg, the same paths as
-// components/Wordmark.tsx), as an image so the glyphs and half-orange dot match
-// the header exactly; its ink is set for the dark card.
+// The header's wordmark component itself, so the glyphs and half-orange dot
+// match exactly; its ink follows the card's text colour. (Reading the SVG from
+// public/ would make Next trace that file into the standalone public/ folder,
+// which the release script's `cp -r public` then nests instead of merging.)
 const WORDMARK_HEIGHT = 52;
-let wordmark: Promise<string> | undefined;
-const loadWordmark = async () =>
-  `data:image/svg+xml;base64,${Buffer.from(
-    (await readFile(join(process.cwd(), 'public/brand/wordmark.svg'), 'utf8')).replaceAll('currentColor', C.text),
-  ).toString('base64')}`;
 
 let font: Promise<Buffer> | undefined;
 export default async function Image() {
   font ??= readFile(join(process.cwd(), 'assets/NotoSansTC-Share.woff'));
-  wordmark ??= loadWordmark();
-  const [data, logo, feed, events, ranking, media] = await Promise.all([
+  const [data, feed, events, ranking, media] = await Promise.all([
     font,
-    wordmark,
     json<LiveFeed>('/api/v1/liveboard'),
     json<EventsSnapshot>('/api/v1/events?limit=1'),
     json<{ entries: Array<{ tag: string }> }>('/api/v1/ranking?category=all&order=burst&limit=6'),
@@ -108,7 +103,9 @@ export default async function Image() {
       {/* Header: brand, LIVE, time */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <img src={logo} width={WORDMARK_HEIGHT * 4.36} height={WORDMARK_HEIGHT} alt="新文易數" />
+          <div style={{ display: 'flex', color: C.text }}>
+            <Wordmark height={WORDMARK_HEIGHT} />
+          </div>
           <span style={{ fontSize: 30, color: C.muted, marginLeft: 22 }}>即時看板</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
