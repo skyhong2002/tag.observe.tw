@@ -21,7 +21,6 @@ import HeadlineRowView from './HeadlineRowView';
 
 export { CAMP_TEXT, CampDot } from '@/components/EventCampDot';
 
-const tagHref = (tag: string) => `/tag/${encodeURIComponent(tag)}/`;
 const card = 'rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900';
 
 export function SectionTitle({ id, children, note }: { id: string; children: React.ReactNode; note?: React.ReactNode }) {
@@ -47,83 +46,6 @@ export function StatTiles({ tiles }: { tiles: Array<{ label: string; value: Reac
         </div>
       ))}
     </dl>
-  );
-}
-
-/** Hour by hour: rank, score, and the hour's own top tags, so a reader can see
- *  which angle carried the story at each point. */
-export function HourTable({ hours, maxScore }: { hours: ThreadHour[]; maxScore: number }) {
-  const atLink = (iso: string) => `/event/?at=${encodeURIComponent(iso)}`;
-  return (
-    <div className={`${card} overflow-x-auto`}>
-      <table className="w-full min-w-[40rem] text-sm">
-        <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
-          <tr>
-            <th className="px-3 py-2 font-medium">時間</th>
-            <th className="px-3 py-2 text-right font-medium">名次</th>
-            <th className="px-3 py-2 font-medium">分數</th>
-            <th className="px-3 py-2 font-medium">主要標籤</th>
-            <th className="px-3 py-2 font-medium">其他高分標籤</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-          {hours.map((h) => {
-            const others = h.tags.filter(([t]) => !h.major.includes(t)).slice(0, 6);
-            return (
-              <tr key={h.hourStart} className="align-top hover:bg-brand-50/60 dark:hover:bg-zinc-800/60">
-                <td className="whitespace-nowrap px-3 py-2 tabular-nums">
-                  <Link href={atLink(h.hourStart)} className="hover:underline" title="看這個小時的整張事件表">
-                    {taipeiHour(h.hourStart)}
-                  </Link>
-                </td>
-                <td className={`px-3 py-2 text-right font-medium tabular-nums ${h.rank === 1 ? 'text-brand-700 dark:text-brand-400' : ''}`}>
-                  {h.rank}
-                </td>
-                <td className="px-3 py-2">
-                  <span className="inline-flex items-center gap-1.5 tabular-nums text-xs text-zinc-600 dark:text-zinc-400">
-                    <span className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden>
-                      <span
-                        className="block h-full rounded-full bg-brand-600 dark:bg-brand-500"
-                        style={{ width: `${Math.max(3, (h.score / Math.max(maxScore, 1e-9)) * 100)}%` }}
-                      />
-                    </span>
-                    {h.score.toFixed(1)}
-                  </span>
-                </td>
-                <td className="px-3 py-2">
-                  <span className="flex flex-wrap gap-1">
-                    {h.major.map((m) => (
-                      <Link
-                        key={m}
-                        href={tagHref(m)}
-                        className="rounded-full bg-brand-700 px-2 py-0.5 text-xs font-medium text-white dark:bg-brand-600"
-                      >
-                        {m}
-                      </Link>
-                    ))}
-                  </span>
-                </td>
-                <td className="px-3 py-2">
-                  <span className="flex flex-wrap gap-1">
-                    {others.map(([t, s]) => (
-                      <Link
-                        key={t}
-                        href={tagHref(t)}
-                        className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                        title={`分數 ${s.toFixed(1)}`}
-                      >
-                        {t}
-                        <span className="ml-1 tabular-nums text-zinc-500">{s.toFixed(0)}</span>
-                      </Link>
-                    ))}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
   );
 }
 

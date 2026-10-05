@@ -35,19 +35,9 @@ import { mediaNames } from '@/lib/media-names.mts';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import { pageMetadata, pageSchema } from '@/lib/seo.mts';
+import HourTable from './HourTable';
 import OutletTable from './OutletTable';
-import {
-  ByOutlet,
-  CAMP_TEXT,
-  CampColumns,
-  CampDot,
-  HourTable,
-  LeadStories,
-  LooseReports,
-  SectionTitle,
-  StatTiles,
-  Timeline,
-} from './sections';
+import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, LeadStories, LooseReports, SectionTitle, StatTiles, Timeline } from './sections';
 
 export const revalidate = 120;
 
@@ -158,7 +148,6 @@ export default async function EventThreadPage({
   // Snapshot hours and series points share the same UTC hour keys.
   const rankByHour = new Map(data.hours.map((h) => [new Date(h.hourStart).toISOString(), h.rank]));
   const rankAt = new Map(data.hours.map((h) => [hourKey(h.hourStart), h]));
-  const hoursAsc = [...data.hours].sort((a, b) => a.hourStart.localeCompare(b.hourStart));
   const rows = cov ? outletRows(cov.byOutlet) : [];
   // Reports naming only one of several broad major tags are mostly other news;
   // the headline list leads with the rest and folds those away.
@@ -377,7 +366,10 @@ export default async function EventThreadPage({
           </div>
         )}
         <h3 className="text-sm font-medium">每小時名次與標籤</h3>
-        <HourTable hours={hoursAsc} maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))} />
+        <HourTable
+          hours={data.hours.map((h) => ({ ...h, label: taipeiHour(h.hourStart) }))}
+          maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))}
+        />
       </section>
 
       <section className="space-y-3">
