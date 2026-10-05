@@ -6,6 +6,7 @@ import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
 import { topicHref } from '@/components/TopicCard';
 import type { MediaInfo } from '@/lib/api';
+import { authorDisplay } from '@/lib/author-display.mts';
 import { selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { type CompareArticle, headlineDiff, headlineSimilarity, type TextPart } from '@/lib/headline-compare.mts';
 import { isAllowedImage } from '@/lib/images';
@@ -102,11 +103,11 @@ export function TagChips({ tags, max = 3, className = '' }: { tags: readonly str
   );
 }
 
-/** 記者 line; says so when the article carries no byline. */
+/** Distinguish named reporters from organizational credits. */
 export function Reporters({ authors, className = '' }: { authors: readonly string[]; className?: string }) {
   return (
     <span className={`min-w-0 truncate ${className}`}>
-      {authors.length ? `記者 ${authors.slice(0, 3).join('、')}` : <span className="text-zinc-600">未署名</span>}
+      {authors.length ? authorDisplay(authors) : <span className="text-zinc-600">未署名</span>}
     </span>
   );
 }

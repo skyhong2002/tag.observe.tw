@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
-import { normalizeAuthorCredits } from './byline.ts';
+import { extractClosingReporterNames, extractLeadReporterNames, normalizeAuthorCredits, reporterNames } from './byline.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
 export interface ArticleContent {
@@ -68,7 +68,7 @@ const REMOVE_ELEMENTS =
 const EXCLUDED_CLASS =
   /(?:^|[\s_-])(?:ads?|advertisement|advertorial-widget|banner|recommend(?:ed|ation|ations)?|related|recirculation|promo|social|share|sharing|caption|credit|byline|author|paywall|subscribe|subscription|newsletter|comments?|tags?|breadcrumb|toolbar|outbrain|taboola)(?:$|[\s_-])/i;
 const UI_TEXT =
-  /^(?:廣告(?:[：: ]|$)|Advertisement\b|延伸閱讀[：:]?|相關(?:新聞|文章|報導)[：:]?|推薦閱讀[：:]?|更多(?:新聞|報導)[：:]?|責任編輯[：:]?|圖片來源[：:]?|圖[／/:：]|照片[／/:：]|訂閱(?:電子報|即可|後|會員)|登入(?:後|會員)|請(?:先)?登入|加入會員(?:即可|閱讀)|立即訂閱|subscribe\s+(?:to|now)|sign\s+in\s+to\s+(?:read|continue)|continue\s+reading\s+(?:by|with))/i;
+  /^(?:廣告(?:[：: ]|$)|Advertisement\b|延伸閱讀[：:]?|相關(?:新聞|文章|報導)[：:]?|推薦閱讀[：:]?|更多(?:新聞|報導)[：:]?|責任編輯[：:]?|圖片來源[：:]?|圖[／/:：](?!\s*文[／/:：])|照片[／/:：]|訂閱(?:電子報|即可|後|會員)|登入(?:後|會員)|請(?:先)?登入|加入會員(?:即可|閱讀)|立即訂閱|subscribe\s+(?:to|now)|sign\s+in\s+to\s+(?:read|continue)|continue\s+reading\s+(?:by|with))/i;
 const BLOCK_TEXT =
   /(?:驗證您(?:是|是否為)|確認您(?:是|是否為)|請完成驗證|檢查您的瀏覽器|verify (?:that )?you are (?:a )?human|checking your browser|just a moment|access denied|enable javascript and cookies|complete the security check|請(?:先)?登入.{0,20}(?:閱讀|全文)|訂閱.{0,20}(?:閱讀|全文)|subscribe to (?:read|continue)|sign in to (?:read|continue))/i;
 
@@ -227,40 +227,20 @@ function authorNames(value: unknown): string[] {
 const ORGANIZATION_CREDIT =
   /(?:新聞(?:網|雲|台)?|電子報|報社|通訊社|編輯(?:部|室)|綜合報導|中央社|路透社|法新社|美聯社|共同社|自由時報|聯合報|中國時報|工商時報|CTWANT|NOWnews|TVBS|ETtoday)|^(?:責任)?編輯[\s：:]/i;
 
-function reporterNames(value: string): string[] {
-  // A reporter declaration at the start of the article/byline is evidence;
-  // a reporter mentioned later in the story is not its author.
-  const text = normalize(value);
-  const dispatch =
-    /^[(（]\s*(?:中央社)?(?:特派)?記者\s*([\p{Script=Han}]{2,4})(?:台北|臺北|新北|桃園|台中|臺中|台南|臺南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|台東|臺東|澎湖|金門|馬祖|東京|首爾|北京|上海|香港|曼谷|倫敦|巴黎|柏林|華盛頓|紐約|洛杉磯)\d{1,2}日電[)）]/u.exec(
-      text,
-    );
-  if (dispatch) return [dispatch[1]];
-  const match =
-    /^(?:(?:聯合報|聯合晚報|經濟日報|中央社)[／/]\s*)?(?:文[／/]\s*)?(?:[〔【（(]\s*)?(?:特派)?記者\s*([\p{L}·．]+(?:[、,，]\s*[\p{L}·．]+)*)(?:\s*[／/:：]|\s+圖(?:文)?[／/]|[〕】）)]|$)/u.exec(
-      text,
-    );
-  return match
-    ? match[1]
-        .split(/[、,，]/)
-        .map(normalize)
-        .filter((name) => name.length >= 2 && name.length <= 20)
-    : [];
-}
-
-function scopedAuthorElements($: cheerio.CheerioAPI, selector: string): string[] {
+function scopedAuthorElements($: cheerio.CheerioAPI, selector: string, configured = false): string[] {
   return $(selector)
     .toArray()
     .flatMap((node) => {
       const element = $(node);
       if (
         element
-          .parents()
+          .add(element.parents())
           .toArray()
           .some((parent) => {
             const ancestor = $(parent);
             return (
-              ancestor.is('aside, nav, footer, [hidden], [aria-hidden="true"]') ||
+              ancestor.is('nav, footer, [hidden], [aria-hidden="true"], .e-loop-item') ||
+              (!configured && ancestor.is('aside')) ||
               /(?:^|[\s_-])(?:related|recommend(?:ed|ation|ations)?|recirculation)(?:$|[\s_-])/i.test(
                 `${ancestor.attr('class') ?? ''} ${ancestor.attr('id') ?? ''}`,
               )
@@ -268,12 +248,20 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string): string[]
           })
       )
         return [];
-      const name = normalize(element.attr('content') ?? (element.find('[itemprop="name"]').first().text() || element.text()));
+      let name = normalize(element.attr('content') ?? (element.find('[itemprop="name"]').first().text() || element.text()));
+      // A visible author declaration can distinguish the writer from a
+      // responsible editor incorrectly included in structured author arrays.
+      if (/^作者\s*[:：]/u.test(name)) {
+        name = name
+          .replace(/^作者\s*[:：]\s*/u, '')
+          .split(/\s*[|｜]\s*責任編輯\s*[:：]/u)[0]
+          .trim();
+      }
       return name ? [name] : [];
     });
 }
 
-function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: ContentRules): string[] {
+function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: ContentRules, body = ''): string[] {
   const finish = (names: string[]) =>
     normalizeAuthorCredits([
       ...new Set(
@@ -282,10 +270,8 @@ function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: Content
           .filter((name) => name && name.length <= 120 && !/^https?:\/\//i.test(name)),
       ),
     ]).slice(0, 30);
-  if (rules.authorSelector) {
-    const configured = finish(scopedAuthorElements($, rules.authorSelector));
-    if (configured.length) return configured;
-  }
+  const configured = rules.authorSelector ? finish(scopedAuthorElements($, rules.authorSelector, true)) : [];
+  if (configured.some((name) => !ORGANIZATION_CREDIT.test(name))) return configured;
   const structured = finish(nodes.flatMap((node) => authorNames(node['author'])));
   const declared = finish(scopedAuthorElements($, 'meta[name="author"], meta[property="article:author"]'));
   const human = (names: string[]) => names.filter((name) => !ORGANIZATION_CREDIT.test(name));
@@ -296,22 +282,18 @@ function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: Content
       return authorNames(value);
     });
   });
+  const bylineValues = scopedAuthorElements($, 'article [itemprop="author"], [rel="author"], .byline, .article-author');
+  const bylines = finish(bylineValues);
+  const lead = finish(extractLeadReporterNames(body));
+  if (lead.length) return lead;
+  const closing = finish(extractClosingReporterNames(body));
+  if (closing.length) return closing;
+  if (configured.length) return configured;
   const people = human(finish(structuredPeople));
   if (people.length) return people;
-  const bylines = finish(scopedAuthorElements($, 'article [itemprop="author"], [rel="author"], .byline, .article-author'));
+  const explicitBylines = finish(bylineValues.flatMap(reporterNames));
+  if (explicitBylines.length) return explicitBylines;
   if (human(bylines).length) return human(bylines);
-  // Some sites put the only reporter credit in their first body paragraph.
-  for (const selector of [...(rules.bodySelector ? [rules.bodySelector] : []), ...BODY_SELECTORS]) {
-    for (const node of $(selector).toArray()) {
-      const prefix = domBody($, node, selector !== 'article', selector === rules.bodySelector ? siteOptions(rules) : {})
-        .split('\n\n')
-        .slice(0, 3);
-      for (const paragraph of prefix) {
-        const reporters = reporterNames(paragraph);
-        if (reporters.length) return finish(reporters);
-      }
-    }
-  }
   if (human(declared).length) return human(declared);
   // Preserve the publisher's declared organization/desk credit when no
   // reporter is given. A nonempty author credit does not establish a person.
@@ -381,8 +363,25 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const isExcerpt = publisherExcerpt($, url);
   if (rules.bodyExcludeSelector) $(rules.bodyExcludeSelector).remove();
   const nodes = articleNodes($, url);
-  const authors = extractAuthors($, nodes, rules);
-  if (isExcerpt) return { body: null, authors, bodySource: 'publisher:excerpt', bodyStatus: 'short' };
+  const result = (body: string | null, bodySource: string, bodyStatus: ArticleContent['bodyStatus']): ArticleContent => {
+    let authorBody = body ?? '';
+    if (body && bodySource === 'ld+json') {
+      // Structured prose sometimes omits the visible opening byline. Accept
+      // that DOM credit only when the rest is the same selected report.
+      const sameProse = (value: string) => value.normalize('NFKC').replace(/[^\p{L}\p{N}]/gu, '');
+      const matching = candidates.find((candidate) => {
+        if (candidate.source === 'ld+json') return false;
+        const first = candidate.body.split('\n\n')[0] ?? '';
+        if (!reporterNames(first).length) return false;
+        const dom = sameProse(candidate.body);
+        const selected = sameProse(body);
+        return dom.endsWith(selected) && dom.length - selected.length <= 100;
+      });
+      if (matching) authorBody = matching.body;
+    }
+    return { body, bodySource, bodyStatus, authors: extractAuthors($, nodes, rules, authorBody) };
+  };
+  if (isExcerpt) return result(null, 'publisher:excerpt', 'short');
   const candidates: Candidate[] = nodes
     .map((node) => ({ body: structuredBody(node['articleBody']), source: 'ld+json' }))
     .filter((candidate) => candidate.body);
@@ -394,7 +393,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   }
   const challenge =
     $('#challenge-form, #cf-challenge-running, #challenge-running, .cf-challenge').length > 0 || BLOCK_TEXT.test($('title').text());
-  if (challenge) return { body: null, authors, bodySource: 'none', bodyStatus: 'blocked' };
+  if (challenge) return result(null, 'none', 'blocked');
 
   for (const selector of [...(rules.bodySelector ? [rules.bodySelector] : []), ...BODY_SELECTORS]) {
     // Multiple matches represent alternative containers, never concatenated
@@ -444,14 +443,14 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     ? candidates.find((candidate) => candidate.source === 'selector' && contentLength(candidate.body) < 200)
     : undefined;
   const complete = preferredShort ? undefined : chooseBody(usable);
-  if (complete) return { body: complete.body, bodySource: complete.source, authors, bodyStatus: 'ok' };
+  if (complete) return result(complete.body, complete.source, 'ok');
 
   const blocked =
     $('[class*="paywall"], [id*="paywall"], [data-paywall], [data-testid*="paywall"]').length > 0 ||
     nodes.some((node) => node['isAccessibleForFree'] === false || node['isAccessibleForFree'] === 'false') ||
     BLOCK_TEXT.test(normalize($('body').text()));
-  if (blocked) return { body: null, authors, bodySource: 'none', bodyStatus: 'blocked' };
+  if (blocked) return result(null, 'none', 'blocked');
   const short = preferredShort ?? chooseBody(candidates.sort((a, b) => contentLength(b.body) - contentLength(a.body)));
-  if (short) return { body: short.body, authors, bodySource: short.source, bodyStatus: 'short' };
-  return { body: null, authors, bodySource: 'none', bodyStatus: 'missing' };
+  if (short) return result(short.body, short.source, 'short');
+  return result(null, 'none', 'missing');
 }

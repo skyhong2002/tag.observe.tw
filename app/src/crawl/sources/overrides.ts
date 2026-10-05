@@ -135,7 +135,7 @@ export const overrides: Record<string, SourceOverride> = {
         maxArticles: 12,
       },
     },
-    article: { enabled: true },
+    article: { enabled: true, authorSelector: '.author-caption h2 > span' },
   },
   bw: {
     group: 'hourly',
@@ -328,7 +328,12 @@ export const overrides: Record<string, SourceOverride> = {
       discover: { pattern: '^/article/\\d+' },
     },
   },
-  vogue: { list: { urls: [{ cat: 'news', url: 'https://www.vogue.com.tw/' }], discover: { pattern: '^/(article|galerie)/' } } },
+  vogue: {
+    list: { urls: [{ cat: 'news', url: 'https://www.vogue.com.tw/' }], discover: { pattern: '^/(article|galerie)/' } },
+    // Related embeds repeat .byline links throughout the page; only the
+    // headline's credit block identifies this article's reporting team.
+    article: { authorSelector: '.content-header-text .byline__name-link, .content-header__accreditation .byline__name-link' },
+  },
   // The homepage stopped listing new posts after 2026-10-02; the WordPress
   // feed (latest 20, dated) is current.
   eld: { list: { urls: [{ cat: 'news', url: 'https://www.roomie.tw/feed' }] } },
@@ -342,7 +347,7 @@ export const overrides: Record<string, SourceOverride> = {
   // /<section>/<id>: a story filed under two sections appears twice.
   tvbs: {
     list: { urls: [{ cat: 'news', url: 'https://news.tvbs.com.tw/sitemap/news-sitemap' }], articleId: String.raw`^/[a-z-]+/(\d+)$` },
-    article: { bodySelector: '.article-editor-content' },
+    article: { bodySelector: '.article-editor-content', authorSelector: '[data-section="article-contributors"]' },
   },
   ctitv: {
     list: { urls: [{ cat: 'news', url: 'https://ctinews.com/rss/sitemap-news.xml' }] },
@@ -427,7 +432,10 @@ export const overrides: Record<string, SourceOverride> = {
   },
   // "<title> | 綜合 | 運動 | NOWnews今日新聞": up to three short section names.
   nownews: { titleSuffix: String.raw`(?:\s\|\s[^|]{1,12}){0,3}\s*\|\s*NOWnews今日新聞` },
-  pts: { titleSuffix: String.raw`\s*[|｜]\s*公視新聞網 PNN` },
+  pts: {
+    titleSuffix: String.raw`\s*[|｜]\s*公視新聞網 PNN`,
+    article: { authorSelector: '.article_authors .reporter-container a[href*="/author/"]' },
+  },
   techbang: { titleSuffix: String.raw`\s*\|\s*T客邦` },
   // Yahoo's own reporting only (the user's call, 2026-09-29): its RSS is all
   // partner media. Section pages also link partner stories, so each page's
@@ -513,7 +521,14 @@ export const overrides: Record<string, SourceOverride> = {
   taipeitimes: {
     group: 'hourly',
     list: { urls: [{ cat: 'news', url: 'https://www.taipeitimes.com/xml/index.rss' }] },
-    article: { enabled: true, batch: 20, delayMs: 3000, skipMeta: true, bodySelector: '#left_blake .archives' },
+    article: {
+      enabled: true,
+      batch: 20,
+      delayMs: 3000,
+      skipMeta: true,
+      bodySelector: '#left_blake .archives',
+      authorSelector: '#left_blake .name',
+    },
   },
   // 經濟日報: Google News sitemap covering every channel.
   udnmoney: {
@@ -533,7 +548,12 @@ export const overrides: Record<string, SourceOverride> = {
   ltn: {
     list: { articleId: String.raw`^/news/[^/]+/((?:breakingnews|paper)/\d+)$` },
     // iStyle lacks articleBody and has malformed structured URL identities.
-    article: { bodySelector: '.content940 .text', authorSelector: '.content940 .time .auther' },
+    article: {
+      bodySelector: '.content940 .text',
+      // Current news pages put the reporter above the body; iStyle retains
+      // its older .auther field. Both are article credits, not image captions.
+      authorSelector: '.article_meta .article_edit, .content940 .time .auther',
+    },
   },
   // 2026-10-01 audit. GNN tags are #hashtag links; the legacy Firefox 31 UA is dropped.
   gamer: { article: { userAgent: undefined, tagSelector: 'a[href*="search_tag.php"]' } },
@@ -542,6 +562,16 @@ export const overrides: Record<string, SourceOverride> = {
   // Verified public-page body containers, 2026-10-03 similarity audit.
   ftnn: { article: { bodySelector: '.news-body' } },
   rti: { article: { bodySelector: '.text.ivu-mt', authorSelector: 'a[href*="newsauthorlist"]' } },
+  // Verified visible credits absent from NewsArticle.author, 2026-10-06.
+  cmmedia: { article: { authorSelector: '.article_author-bar .article_author a.author' } },
+  i_media: { article: { authorSelector: '.entry__meta-author a[href*="Author="]' } },
+  ithome: { article: { authorSelector: '.submitted .author a[href^="/users/"]' } },
+  coolloud: { article: { authorSelector: '.group-author .field-name-field-author a' } },
+  // The new Newtalk template wraps figure captions and recommendations in
+  // <article>; its own text container preserves the opening agency dispatch.
+  newtalk: { article: { bodySelector: '#newtalk-news-view-content' } },
+  // Elementor also emits <article> cards for related stories on this page.
+  watchmedia01: { article: { bodySelector: '.elementor-widget-theme-post-content' } },
   // 2026-10-03 traffic coverage: latest lists, with dates and tags from articles.
   mirrordaily: {
     group: 'news',
@@ -562,7 +592,9 @@ export const overrides: Record<string, SourceOverride> = {
       // mm-/md- are partner copies; static /story/privacy etc. are not articles.
       discover: { pattern: String.raw`^/story/\d{8}[a-z]+\d+$`, titleSelector: '[class*="title" i]' },
     },
-    article: { enabled: true, batch: 40, delayMs: 3000 },
+    // JSON-LD names only the first reporter; repeated author metas include
+    // the complete reporting team.
+    article: { enabled: true, batch: 40, delayMs: 3000, authorSelector: 'meta[name="author"]' },
   },
   knews: {
     group: 'news',

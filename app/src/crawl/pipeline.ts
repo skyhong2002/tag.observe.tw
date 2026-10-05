@@ -181,7 +181,7 @@ export async function runIndex(
               title: trunc(stripTitleSuffix(it.title ?? '', spec.titleSuffix), 512) as string,
               image: trunc(it.image, 512),
               category: trunc(it.category, 64),
-              creator: trunc(it.creator, 256),
+              creator: trunc(content?.authors.length ? content.authors.join('、') : it.creator, 256),
               description: trunc(it.description, 4000),
               tags: (it.tags ?? []).map(normalizeTag).filter((tag) => tag && !isOwnMediaTag(tag, spec.media)),
               fetchedAt: content ? started : null,
@@ -261,6 +261,8 @@ export async function runIndex(
               .update(articles)
               .set({
                 ...content,
+                authors: content.authors.length ? content.authors : undefined,
+                creator: content.authors.length ? content.authors.join('、').slice(0, 256) : undefined,
                 ...(correctedDate ? { publishedAt: correctedDate } : {}),
                 ...(correctedTitle ? { title: trunc(correctedTitle, 512) as string } : {}),
                 fetchedAt: started,
@@ -474,7 +476,7 @@ export async function runArticles(
               image: detail.image ? trunc(detail.image, 512) : undefined,
               description: detail.description ? trunc(detail.description, 4000) : undefined,
               body: detail.body,
-              authors: detail.authors,
+              authors: detail.authors.length ? detail.authors : undefined,
               creator: detail.authors.length ? detail.authors.join('、').slice(0, 256) : undefined,
               bodyStatus: detail.bodyStatus,
               bodySource: detail.bodySource.slice(0, 128),

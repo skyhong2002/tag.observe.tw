@@ -175,6 +175,81 @@ function discover(items: FeedItem[]) {
 describe('discovered full content persistence', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('preserves existing reporter credits when a retried page exposes no author', async () => {
+    const { db, writes } = memoryDb([
+      {
+        id: 1,
+        media: spec.media,
+        urlKey: urlKey(item.url),
+        url: item.url,
+        title: item.title,
+        publishedAt,
+        crawledAt: now,
+        fetchedAt: null,
+        contentFetchedAt: null,
+        authors: ['王小明'],
+        creator: '王小明',
+        tags: [],
+      },
+    ]);
+    const fetch = vi.fn(async () => ({
+      status: 200,
+      body: '<html><article><p>這篇新聞沒有可辨識的記者署名，但仍有可供擷取的正文內容。</p></article></html>',
+      url: item.url,
+      contentType: 'text/html',
+      ms: 1,
+    }));
+    expect(await runArticles(db, spec, { now: () => now, fetch })).toMatchObject({ updated: 1, failed: 0 });
+    const update = writes.find((write) => write.table === articles && write.values.fetchStatus !== undefined);
+    expect(update?.values.authors).toBeUndefined();
+    expect(update?.values.creator).toBeUndefined();
+  });
+
+  it('preserves existing reporter credits when repaired feed content has no author', async () => {
+    discover([{ ...item, verifiedContent: { ...item.verifiedContent!, authors: [] } }]);
+    const { db, writes } = memoryDb([
+      {
+        id: 1,
+        media: spec.media,
+        urlKey: urlKey(item.url),
+        title: item.title,
+        publishedAt,
+        crawledAt: now,
+        bodyStatus: 'blocked',
+        body: null,
+        authors: ['王小明'],
+        creator: '王小明',
+      },
+    ]);
+    await runIndex(db, spec, { now: () => now });
+    const repair = writes.find((write) => write.table === articles && write.values.body !== undefined);
+    expect(repair?.values.body).toBe(item.verifiedContent?.body);
+    expect(repair?.values.authors).toBeUndefined();
+    expect(repair?.values.creator).toBeUndefined();
+  });
+
+  it('synchronizes feed creator with verified reporters on insert and body repair', async () => {
+    discover([{ ...item, creator: '中央社' }]);
+    const inserted = memoryDb();
+    await runIndex(inserted.db, spec, { now: () => now });
+    expect(inserted.rows[0]).toMatchObject({ authors: ['來源記者'], creator: '來源記者' });
+    const repaired = memoryDb([
+      {
+        id: 1,
+        media: spec.media,
+        urlKey: urlKey(item.url),
+        title: item.title,
+        publishedAt,
+        crawledAt: now,
+        bodyStatus: 'blocked',
+        body: null,
+        creator: '中央社',
+      },
+    ]);
+    await runIndex(repaired.db, spec, { now: () => now });
+    expect(repaired.rows[0]).toMatchObject({ authors: ['來源記者'], creator: '來源記者' });
+  });
+
   it('restores a newly acquired archive body without changing its historical publication date', async () => {
     const historical = new Date('2011-06-18T04:50:00Z');
     const acquired = new Date('2026-09-01T00:00:00Z');
