@@ -146,8 +146,12 @@ def publish_restored(path, report_path, report, nas):
     report.pop('error', None)
     report['status'] = 'publishing'
     atomic_json(report_path, report)
-    capacity = json.loads(nas.command('about', nas.remote.split(':', 1)[0] + ':', '--json', capture_output=True, text=True).stdout)
-    if capacity.get('free', 0) < report['bytes'] + 100 * GIB:
+    backend, path_in_backend = nas.remote.split(':', 1)
+    share_root = backend + ':' + path_in_backend.split('/')[0]
+    capacity = json.loads(nas.command('about', share_root, '--json', capture_output=True, text=True).stdout)
+    if 'free' not in capacity:
+        raise RuntimeError('NAS share capacity unavailable; local backup preserved')
+    if capacity['free'] < report['bytes'] + 100 * GIB:
         raise RuntimeError('NAS reserve below 100 GiB; local backup preserved')
     report['object'] = nas.publish(path, 'objects/' + report['sha256'] + '.sql.zst')
     report.update(status='verified', finished_at=dt.datetime.now(dt.timezone.utc).isoformat())

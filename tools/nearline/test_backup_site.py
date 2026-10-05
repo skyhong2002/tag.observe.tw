@@ -46,6 +46,7 @@ class BackupTests(unittest.TestCase):
             self.assertEqual(report['status'], 'verified')
             self.assertTrue(nas.publish.call_args_list[0].args[1].startswith('objects/'))
             self.assertTrue(nas.publish.call_args_list[1].args[1].startswith('manifests/'))
+            nas.command.assert_called_once_with('about', 'nas:test', '--json', capture_output=True, text=True)
 
     def test_resume_reuses_restore_proof_but_rejects_changed_dump(self):
         with tempfile.TemporaryDirectory() as tmp:
