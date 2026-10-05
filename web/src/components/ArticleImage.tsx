@@ -14,7 +14,7 @@ export default function ArticleImage({
   src: string | null;
   title: string;
   mediaTitle: string;
-  sourceUrl: string;
+  sourceUrl?: string;
 }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   if (!isAllowedImage(src) || failedSrc === src) return null;
@@ -33,7 +33,7 @@ export default function ArticleImage({
       />
       <figcaption className="mt-2 flex flex-wrap items-center gap-x-3 text-xs text-zinc-500 dark:text-zinc-400">
         <span>配圖來源：{mediaTitle}</span>
-        <SourceLink url={sourceUrl} label="原站文章" />
+        {sourceUrl && <SourceLink url={sourceUrl} label="原站文章" />}
       </figcaption>
     </figure>
   );

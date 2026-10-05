@@ -46,17 +46,6 @@ export default async function ArticleContentPage({
       ? { label: '原站僅提供摘要', detail: '這個來源提供的是節錄內容，本站未將其收錄為完整正文。' }
       : CONTENT_STATUS[content.status];
   const headline = readingTitle(article.title);
-  const expiresAt = content.expiresAt
-    ? new Intl.DateTimeFormat('zh-TW', {
-        timeZone: 'Asia/Taipei',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-      }).format(new Date(content.expiresAt))
-    : null;
   const mediaHref = `/media/${encodeURIComponent(article.media)}/`;
   const backHref = `${withReadingQuery(mediaHref, query)}#article-${id}`;
   return (
@@ -68,7 +57,6 @@ export default async function ArticleContentPage({
         >
           ← {article.mediaTitle}報導
         </Link>
-        <SourceLink url={article.url} label="原站文章" />
       </nav>
       <header className="mb-7">
         <p className="mb-4 flex flex-wrap items-center gap-3 text-xs font-medium tracking-wide text-brand-700 dark:text-brand-400">
@@ -115,18 +103,8 @@ export default async function ArticleContentPage({
             })}
           </nav>
         )}
-        {/* While the excerpt is readable nothing announces its end date; the
-            notice appears only once it has expired. */}
-        {expiresAt && content.status === 'expired' && (
-          <section aria-label="站內節錄期限" className="mt-5 rounded-lg bg-zinc-100 px-4 py-3 text-sm leading-7 dark:bg-zinc-900">
-            <p className="font-medium">
-              站內節錄期限已於 <time dateTime={content.expiresAt!}>{expiresAt}</time> 結束
-              <span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">（台北時間）</span>
-            </p>
-          </section>
-        )}
       </header>
-      <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} sourceUrl={article.url} />
+      <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} />
       {content.body ? (
         <>
           {content.status !== 'ok' && (
@@ -134,18 +112,14 @@ export default async function ArticleContentPage({
           )}
           <ArticleBody body={content.body} sourceUrl={article.url} />
         </>
+      ) : article.description ? (
+        <ArticleBody body={article.description} sourceUrl={article.url} label="文章摘要" />
       ) : (
         <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
           <h2 className="font-medium">{state.label}</h2>
           <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
-          {article.description && (
-            <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-              <h3 className="mb-2 text-xs text-zinc-500">文章摘要</h3>
-              <p className="text-base leading-8">{article.description}</p>
-            </div>
-          )}
           <div className="mt-4">
-            <SourceLink url={article.url} label="前往原站閱讀" />
+            <SourceLink url={article.url} label="前往原站閱讀" iconOnly className="min-w-8 justify-center" />
           </div>
         </section>
       )}
@@ -185,12 +159,6 @@ export default async function ArticleContentPage({
             {content.fetchedAt && <p>內文擷取：{taipei(content.fetchedAt)}</p>}
           </div>
         </details>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-5 text-sm dark:border-zinc-800">
-          <Link href={backHref} className="py-2 hover:text-brand-700 dark:hover:text-brand-400">
-            ← 繼續瀏覽{article.mediaTitle}
-          </Link>
-          <SourceLink url={article.url} label="原站文章" />
-        </div>
       </footer>
     </article>
   );
