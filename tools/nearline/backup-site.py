@@ -80,7 +80,8 @@ def restore_drill(path, expected_tables):
     try:
         run([DOCKER, 'run', '-d', '--name', name, '--network', 'none', '--memory=2g', '--cpus=2',
              '-e', 'MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1', '-e', 'MARIADB_DATABASE=restore_check',
-             'mariadb:11.4', '--skip-networking', '--event-scheduler=OFF', '--local-infile=0'], capture_output=True)
+             'mariadb:11.4', '--skip-networking', '--event-scheduler=OFF', '--local-infile=0',
+             '--innodb-buffer-pool-size=512M'], capture_output=True)
         ready = False
         for _ in range(90):
             result = subprocess.run([DOCKER, 'exec', name, 'mariadb', '-uroot', 'restore_check', '-N', '-e', 'SELECT 1'],
