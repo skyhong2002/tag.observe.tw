@@ -121,7 +121,7 @@ export default async function ArticleContentPage({
           <h2 className="font-medium">{state.label}</h2>
           <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
           <div className="mt-4">
-            <SourceLink url={article.url} label="前往原站閱讀" iconOnly className="min-w-8 justify-center" />
+            <SourceLink url={article.url} label="原站文章" showUrl />
           </div>
         </section>
       )}

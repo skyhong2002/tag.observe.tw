@@ -14,9 +14,11 @@ export default function ArticleBody({
   return (
     <section aria-label={label}>
       <p className="whitespace-pre-wrap break-words text-[1.125rem] leading-[1.95] text-zinc-800 dark:text-zinc-200">
-        {readingExcerpt(body)}{' '}
-        <SourceLink url={sourceUrl} label="前往原站閱讀" iconOnly className="ml-1 min-w-8 justify-center align-middle" />
+        {readingExcerpt(body)}
       </p>
+      <div className="mt-3">
+        <SourceLink url={sourceUrl} label="原站文章" showUrl />
+      </div>
     </section>
   );
 }

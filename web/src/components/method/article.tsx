@@ -13,7 +13,7 @@ export function ArticleMethod() {
   return (
     <>
       <h3 className={methodHeading}>單篇文章</h3>
-      <p>文章頁只顯示內文或摘要的開頭約 150 字，以及收錄配圖。文字末尾的外連圖示可開啟原站文章，閱讀全文、其他圖片與影音。</p>
+      <p>文章頁只顯示內文或摘要的開頭約 150 字，以及收錄配圖。節錄下方顯示原站完整網址，可開啟原站文章，閱讀全文、其他圖片與影音。</p>
       <dl className={methodList}>
         <dt className={methodTerm}>內文狀態</dt>
         <dd>
