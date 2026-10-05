@@ -52,6 +52,28 @@ describe('publisher topic membership', () => {
     expect(query.params).toContain('reporter');
     expect(query.sql).not.toContain('published_at');
   });
+  it('returns original article summaries, images and tags for the shared news list', async () => {
+    const { db } = database([
+      {
+        key: old.key,
+        id: 42,
+        url: 'https://example.com/old',
+        title: '報導',
+        date: new Date(old.date),
+        crawledAt: new Date(),
+        description: '原文摘要',
+        image: 'https://example.com/image.jpg',
+        tags: ['原文標籤'],
+        authors: ['記者'],
+      },
+    ]);
+    expect((await resolveTopicStories(db, 'cna', [old]))[0]).toMatchObject({
+      description: '原文摘要',
+      image: 'https://example.com/image.jpg',
+      tags: ['原文標籤'],
+      authors: ['記者'],
+    });
+  });
   it('enqueues missing dated and undated members without adding collection tags', async () => {
     runIndex.mockClear();
     const { db } = database([]);

@@ -5,6 +5,7 @@ import { fetchText } from '../crawl/fetch.ts';
 import { sourceByMedia } from '../crawl/registry.ts';
 import { carryStoryDates, fetchStoryDates, type KnownStoryDate, storiesToDate, storyFetchBudget } from '../crawl/story-pages.ts';
 import { urlKey } from '../crawl/text.ts';
+import { standaloneTopicListing, standaloneTopicPage } from '../crawl/topic-article.ts';
 import { classifyTopic, firstRunEnd, storyDate } from '../crawl/topic-kind.ts';
 import { articleShapes, pickTopicStories, type TopicStory, topicPageDate, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
 import {
@@ -53,6 +54,7 @@ export async function runTopicsJob(
               firstSeen: started,
               lastSeen: started,
               ...(t.kind ? { kind: t.kind, kindSource: 'rule' } : {}),
+              ...(standaloneTopicListing(rule.media, t.url, t.title) ? { kind: 'article', kindSource: 'article' } : {}),
               sponsored: !!t.sponsored,
               ...storyDateFields(t.storyDates),
               // A source we never crawled before (or a page past the first)
@@ -78,7 +80,13 @@ export async function runTopicsJob(
               title: t.title,
               image: t.image ?? sql`${topics.image}`,
               category: t.category ?? sql`${topics.category}`,
-              ...(t.kind ? { kind: t.kind, kindSource: 'rule' } : {}),
+              ...(t.kind
+                ? {
+                    kind: sql`IF(${topics.kindSource} = 'article', 'article', ${t.kind})`,
+                    kindSource: sql`IF(${topics.kindSource} = 'article', 'article', 'rule')`,
+                  }
+                : {}),
+              ...(standaloneTopicListing(rule.media, t.url, t.title) ? { kind: 'article', kindSource: 'article' } : {}),
               ...(t.sponsored !== undefined ? { sponsored: t.sponsored } : {}),
             })
             .where(and(eq(topics.media, rule.media), eq(topics.url, t.url)));
@@ -236,6 +244,7 @@ export async function refreshTopicPages(
           return {
             row,
             ok,
+            standalone: ok && standaloneTopicPage(res.body, row.url, 0),
             article: ok ? extractFeatureArticle(res.body, row.url, sourceByMedia(articleMediaOf(row.media))?.article) : null,
             groups: ok ? topicPageGroups(res.body, res.url || row.url, articleId, { now: now() }) : [],
             pageDate: ok ? topicPageDate(res.body, res.url || row.url, now()) : null,
@@ -244,7 +253,16 @@ export async function refreshTopicPages(
           };
         } catch {
           // Unreachable: try again in 6 hours.
-          return { row, ok: false, article: null, groups: [] as TopicStory[][], pageDate: null, image: null, children: [] };
+          return {
+            row,
+            ok: false,
+            standalone: false,
+            article: null,
+            groups: [] as TopicStory[][],
+            pageDate: null,
+            image: null,
+            children: [],
+          };
         }
       }),
     ),
@@ -423,6 +441,7 @@ export async function refreshTopicPages(
       storiesDated++;
       return { ...s, date: at.toISOString() };
     });
+  const standalonePages = new Set(pages.filter((p) => p.standalone).map((p) => p.row.id));
   const pageArticles = new Map(pages.map((p) => [p.row.id, p.article]));
   let featureArticles = 0;
   // 3. The topic's dates, kind and growth.
@@ -442,8 +461,9 @@ export async function refreshTopicPages(
     // Growth: a story key we had not stored before, newer than the stored newest.
     const before = new Set((row.pageStories ?? []).map((s) => s.key));
     const grew = before.size > 0 && stories.some((s) => !before.has(s.key)) && (!row.storyLastAt || !last || +last > +row.storyLastAt);
-    let kind: TopicKind | null = null;
-    if (row.kindSource !== 'rule') {
+    let kind: TopicKind | 'article' | null =
+      row.kindSource === 'article' || (!stories.length && standalonePages.has(row.id)) ? 'article' : null;
+    if (row.kindSource !== 'rule' && kind !== 'article') {
       if (row.parentId) kind = stories.length ? ((parentKind.get(row.parentId) as TopicKind | undefined) ?? 'topic') : 'feature';
       else if (piece) kind = 'feature';
       else if (first && last) kind = classifyTopic({ storyDates: [first, last], grew: grew || !!row.storyGrewAt, now: now() }).kind;
@@ -461,11 +481,15 @@ export async function refreshTopicPages(
         storyFirstAt: first,
         storyLastAt: last,
         ...(grew ? { storyGrewAt: now() } : {}),
-        ...(row.kindSource !== 'rule' ? { kindSource: 'auto', ...(kind ? { kind } : {}) } : {}),
+        ...(kind === 'article'
+          ? { kind: 'article', kindSource: 'article' }
+          : row.kindSource !== 'rule'
+            ? { kindSource: 'auto', ...(kind ? { kind } : {}) }
+            : {}),
       })
       .where(eq(topics.id, row.id));
     const detail = pageArticles.get(row.id);
-    if ((kind ?? row.kind) === 'feature' && detail) featureArticles += await indexFeatureArticle(db, row, detail);
+    if (['feature', 'article'].includes(kind ?? row.kind) && detail) featureArticles += await indexFeatureArticle(db, row, detail);
   }
   let indexed = 0;
   for (const { row, stories } of plans)
@@ -569,7 +593,11 @@ export async function allTopLevelTopics(db: Db) {
 /** Sub-topics of the given topics, of any kind. */
 export async function topicChildrenOf(db: Db, parentIds: number[]) {
   if (!parentIds.length) return [];
-  return db.select().from(topics).where(inArray(topics.parentId, parentIds)).orderBy(desc(topics.firstSeen), topics.id);
+  return db
+    .select()
+    .from(topics)
+    .where(and(inArray(topics.parentId, parentIds), inArray(topics.kind, ['topic', 'feature'])))
+    .orderBy(desc(topics.firstSeen), topics.id);
 }
 export type TopicCounts = Record<TopicKind, number>;
 /** How many topics and features each outlet has listed so far (all time). */

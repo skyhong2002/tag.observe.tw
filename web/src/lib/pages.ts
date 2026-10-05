@@ -217,11 +217,21 @@ export interface TopicStoryIndex {
   media: string;
   mediaTitle: string;
   title: string;
-  kind: TopicKind;
+  kind: TopicKind | 'article';
   url: string;
   checkedAt: string | null;
   total: number;
-  stories: Array<{ key: string; title: string; url: string | null; id: number | null; date: string | null }>;
+  stories: Array<{
+    key: string;
+    title: string;
+    url: string | null;
+    id: number | null;
+    date: string | null;
+    description: string | null;
+    image: string | null;
+    tags: string[];
+    authors: string[];
+  }>;
 }
 export const fetchTopicStories = (id: string) => get<TopicStoryIndex>(`/api/v1/topics/${encodeURIComponent(id)}/stories`, 300);
 

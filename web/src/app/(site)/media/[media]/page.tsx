@@ -1,10 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import ArticleThumbnail from '@/components/ArticleThumbnail';
-import AuthorCredits from '@/components/AuthorCredits';
+import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
-import DiscoverySources from '@/components/DiscoverySources';
-import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
@@ -14,10 +11,9 @@ import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaContent } from '@/lib/article-content';
-import { clipHeadline } from '@/lib/event-presentation.mts';
 import { mediaNames } from '@/lib/media-names.mts';
 import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
-import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
+import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import type { SimilarityData } from '@/lib/similarity';
 
@@ -287,62 +283,14 @@ export default async function MediaPage({
                 </div>
               )}
               <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {data.articles.map((article) => {
-                  const headline = readingTitle(article.title),
-                    href = withReadingQuery(`/article/${article.id}/`, query);
-                  return (
-                    <li key={article.id} id={`article-${article.id}`} className="scroll-mt-32 py-2.5">
-                      <article className="flex items-start gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-[15px] font-medium leading-6">
-                            <Link href={href} className="hover:text-brand-700 dark:hover:text-brand-400">
-                              {headline.section && (
-                                <span className="mr-1.5 text-xs font-normal text-brand-700 dark:text-brand-400">{headline.section}</span>
-                              )}
-                              {clipHeadline(headline.title)}
-                            </Link>
-                          </h3>
-                          {article.description && (
-                            <p className="mt-1 hidden text-xs leading-5 text-zinc-500 group-data-[summaries=true]/list:line-clamp-2 dark:text-zinc-400">
-                              {article.description}
-                            </p>
-                          )}
-                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-                            {discovery && (
-                              <MediaHoverLink
-                                media={article.media}
-                                className="font-medium text-brand-700 hover:underline dark:text-brand-400"
-                              >
-                                {article.mediaTitle}
-                              </MediaHoverLink>
-                            )}
-                            <time dateTime={article.publishedDate ?? article.publishedAt}>
-                              {article.publishedDate ?? taipei(article.publishedAt)}
-                            </time>
-                            <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
-                            <SourceLink url={article.url} className="!min-h-5 !text-[11px]" />
-                          </div>
-                          {article.tags.length > 0 && (
-                            <ul aria-label="關鍵字" className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-5">
-                              {article.tags.slice(0, 6).map((tag) => (
-                                <li key={tag}>
-                                  <Link
-                                    href={`/tag/${encodeURIComponent(tag)}/`}
-                                    className="text-zinc-500 hover:text-brand-700 hover:underline dark:text-zinc-400 dark:hover:text-brand-400"
-                                  >
-                                    #{tag}
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          <DiscoverySources sources={article.discoverySources} />
-                        </div>
-                        <ArticleThumbnail src={article.image} href={href} title={headline.title} />
-                      </article>
-                    </li>
-                  );
-                })}
+                {data.articles.map((article) => (
+                  <ArticleListItem
+                    key={article.id}
+                    article={article}
+                    href={withReadingQuery(`/article/${article.id}/`, query)}
+                    showMedia={discovery}
+                  />
+                ))}
               </ul>
             </CompactArticleList>
             <nav

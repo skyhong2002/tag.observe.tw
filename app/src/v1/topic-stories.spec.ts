@@ -14,7 +14,7 @@ vi.mock('../jobs/topic-stories.ts', async (original) => ({
 
 describe('topic story index endpoint', () => {
   it('returns actual membership for either kind, including old articles', async () => {
-    for (const kind of ['topic', 'feature']) {
+    for (const kind of ['topic', 'feature', 'article']) {
       const app = Fastify();
       const db = {
         select: () => ({
@@ -40,7 +40,7 @@ describe('topic story index endpoint', () => {
         expect(response.json()).toMatchObject({
           id: '1',
           kind,
-          articleId: kind === 'feature' ? 99 : null,
+          articleId: kind !== 'topic' ? 99 : null,
           total: 1,
           stories: [{ id: 42, date: '2001-01-01T00:00:00.000Z' }],
         });

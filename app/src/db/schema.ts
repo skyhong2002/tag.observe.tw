@@ -316,7 +316,8 @@ export const topics = mysqlTable(
     pageStories: json('page_keys').$type<Array<{ key: string; title: string; date?: string; url?: string }>>(),
     pageCheckedAt: datetime('page_checked_at'),
     // 'topic' (議題, keeps gaining stories) or 'feature' (專題, a one-off
-    // package). kind_source 'rule' = declared by the listing, never
+    // package); 'article' is a confirmed single report retained only for redirects.
+    // kind_source 'article' preserves this classification across listing refreshes; 'rule' = declared by the listing, never
     // overwritten by the story-date classification ('auto'); NULL = unclassified.
     kind: varchar('kind', { length: 16 }).notNull().default('topic'),
     kindSource: varchar('kind_source', { length: 8 }),

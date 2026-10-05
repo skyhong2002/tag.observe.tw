@@ -14,6 +14,10 @@ export interface IndexedTopicStory {
   url: string | null;
   id: number | null;
   date: string | null;
+  description: string | null;
+  image: string | null;
+  tags: string[];
+  authors: string[];
 }
 
 /** Keep previously discovered members when an outlet rotates its first page. */
@@ -46,6 +50,10 @@ export async function resolveTopicStories(db: Db, media: string, stories: Stored
           title: articles.title,
           date: articles.publishedAt,
           crawledAt: articles.crawledAt,
+          description: articles.description,
+          image: articles.image,
+          tags: articles.tags,
+          authors: articles.authors,
         })
         .from(articles)
         .where(
@@ -67,6 +75,10 @@ export async function resolveTopicStories(db: Db, media: string, stories: Stored
         title: article?.title || s.title,
         url: article?.url ?? storyUrl(s),
         id: article?.id ?? null,
+        description: article?.description ?? null,
+        image: article?.image ?? null,
+        tags: article?.tags ?? [],
+        authors: article?.authors ?? [],
         date: s.date ?? (article && +article.date !== +article.crawledAt ? article.date.toISOString() : null),
       };
     })

@@ -1452,7 +1452,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics/1/stories'
 | `media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `mediaTitle` | string |  |
 | `title` | string |  |
-| `kind` | "topic" \| "feature" |  |
+| `kind` | "topic" \| "feature" \| "article" |  |
 | `url` | string |  |
 | `image` | string \| null |  |
 | `articleId` | integer \| null | 專題頁本身的文章 ID；透過文章 content API 取得內文與圖片 |
@@ -1464,6 +1464,10 @@ curl -s 'https://tag.observe.tw/api/v1/topics/1/stories'
 | `stories[].url` | string \| null |  |
 | `stories[].id` | integer \| null |  |
 | `stories[].date` | string (ISO 時間) \| null |  |
+| `stories[].description` | string \| null |  |
+| `stories[].image` | string \| null |  |
+| `stories[].tags` | string[] |  |
+| `stories[].authors` | string[] |  |
 
 錯誤：`400` id 格式錯誤；`404` 找不到。
 

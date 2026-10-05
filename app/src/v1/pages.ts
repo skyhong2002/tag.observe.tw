@@ -48,7 +48,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       kind: topic.kind,
       url: topic.url,
       image: topic.image ?? null,
-      articleId: topic.kind === 'feature' ? await featureArticleId(db, topic.media, topic.url) : null,
+      articleId: ['feature', 'article'].includes(topic.kind) ? await featureArticleId(db, topic.media, topic.url) : null,
       checkedAt: topic.pageCheckedAt?.toISOString() ?? null,
       total: stories.length,
       stories,

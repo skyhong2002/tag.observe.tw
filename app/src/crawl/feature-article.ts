@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { type ArticleRules, extractArticle } from './article.ts';
+import { dateFromStoryUrl } from './topic-kind.ts';
 
 interface ReporterTopic {
   slug: string;
@@ -17,6 +18,16 @@ export function extractFeatureArticle(html: string, url: string, rules: ArticleR
   if (u.hostname === 'topic.udn.com' && u.pathname.startsWith('/issue/cards/') && !detail.body) {
     const intro = extractArticle(html, url, { ...rules, bodySelector: '.container-content > p.content' });
     if (intro.body) Object.assign(detail, { body: intro.body, bodyStatus: intro.bodyStatus, bodySource: intro.bodySource });
+  }
+  if (u.hostname === 'topic.udn.com' && u.pathname.startsWith('/event/')) {
+    detail.publishedAt ??= dateFromStoryUrl(u.pathname.replace(/\/(\d{4})_(\d{2})(\d{2})$/, '/$1/$2/$3/'));
+    const report = extractArticle(html, url, {
+      ...rules,
+      bodySelector: '#mainbar.article-holder',
+      bodyExcludeSelector: '.related, .recommend, .photo-caption',
+    });
+    if (report.body && report.body.length > (detail.body?.length ?? 0))
+      Object.assign(detail, { body: report.body, bodyStatus: report.bodyStatus, bodySource: report.bodySource });
   }
   if (reporter) {
     // The normal news extractor can pick tags from related posts in this state.

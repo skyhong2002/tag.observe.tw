@@ -66,7 +66,7 @@ export async function indexMissingFeatureArticles(db: Db) {
   const rows = await db
     .select({ media: topics.media, url: topics.url, title: topics.title, image: topics.image })
     .from(topics)
-    .where(eq(topics.kind, 'feature'));
+    .where(inArray(topics.kind, ['feature', 'article']));
   let inserted = 0;
   for (const media of new Set(rows.map((r) => r.media))) {
     const spec = sourceByMedia(articleMediaOf(media));
