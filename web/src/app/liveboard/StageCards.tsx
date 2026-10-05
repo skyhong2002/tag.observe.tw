@@ -282,7 +282,7 @@ function HeadlineTile({ a, parts, first }: { a: CompareArticle; parts: TextPart[
       <Byline media={a.media} title={a.mediaTitle} camp={a.camp} at={a.publishedAt} size={22} />
       <Go
         href={articleHref(a)}
-        className={`text-[1.15rem] font-bold leading-snug [@container(max-height:26rem)]:text-[1.05rem] ${styles.clamp4} ${first ? '' : 'text-zinc-100'}`}
+        className={`text-[1.15rem] font-bold leading-snug [@container(max-height:26rem)]:text-[1.05rem] [@container(max-height:26rem)]:[-webkit-line-clamp:3]! ${styles.clamp4} ${first ? '' : 'text-zinc-100'}`}
       >
         <Diffed parts={parts} />
       </Go>
@@ -303,16 +303,22 @@ function HeadlineStage({ card }: { card: Extract<Card, { kind: 'headline' }> }) 
         </Go>
         <span className="text-base text-zinc-500">標示處為與第一則不同的用字</span>
       </div>
-      {/* A short or narrow stage keeps the first six headlines. */}
+      {/*
+        Every tile keeps room for its outlet and three lines of headline; a stage
+        too short for three rows keeps the first six, a narrow one the first four.
+        The one-line list below gets only what is left.
+      */}
       <div
-        className={`grid min-h-0 flex-1 auto-rows-fr gap-3 ${grid.length > 4 ? 'grid-cols-3' : 'grid-cols-2'} @max-xl:grid-cols-2 @max-xl:[&>*:nth-child(n+7)]:hidden [@container(max-height:26rem)]:[&>*:nth-child(n+7)]:hidden`}
+        className={`grid flex-1 auto-rows-[minmax(9.5rem,1fr)] gap-3 ${grid.length > 4 ? 'grid-cols-3' : 'grid-cols-2'} @max-xl:grid-cols-2 @max-xl:[&>*:nth-child(n+5)]:hidden [@container(max-height:40rem)]:[&>*:nth-child(n+7)]:hidden [@container(max-height:26rem)]:auto-rows-[minmax(7.5rem,1fr)]`}
       >
         {grid.map((g, i) => (
           <HeadlineTile key={g.article.id} a={g.article} parts={g.parts} first={i === 0} />
         ))}
       </div>
       {extras.length > 0 && (
-        <ul className="grid max-h-[30%] shrink-0 auto-rows-min grid-cols-2 gap-x-4 gap-y-1 overflow-hidden @max-xl:grid-cols-1 [@container(max-height:26rem)]:hidden">
+        <ul
+          className={`grid max-h-[30%] min-h-0 auto-rows-min grid-cols-2 gap-x-4 gap-y-1 overflow-hidden @max-xl:grid-cols-1 [@container(max-height:26rem)]:hidden ${styles.fadeOut}`}
+        >
           {extras.map((a) => (
             <li key={a.id} className="flex min-w-0 shrink-0 items-center gap-2 text-base">
               <MediaIcon rem media={a.media} title={a.mediaTitle} size={18} />
