@@ -113,6 +113,7 @@ export async function titleTagRecent(db: Db, vocab: TitleVocab, { hours = 72, li
     .from(articles)
     .where(
       and(
+        eq(articles.source, 'own'),
         isNotNull(articles.fetchedAt),
         gte(articles.publishedAt, new Date(Date.now() - hours * 3600e3)),
         sql`JSON_LENGTH(${articles.tags}) = 0`,

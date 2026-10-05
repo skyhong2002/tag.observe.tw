@@ -38,7 +38,7 @@ type Row = Record<string, unknown> & { id: number; media: string; urlKey: string
 // The fluent double records writes; SQLite evaluates Drizzle's actual predicates.
 // This catches guard regressions without duplicating their logic or opening a server DB.
 function memoryDb(seed: Row[] = [], tagSeed: Array<{ articleId: number; tag: string; publishedAt: Date }> = []) {
-  const rows = seed.map((row) => ({ ...row }));
+  const rows: Row[] = seed.map((row) => ({ source: 'own', ...row }));
   const tags = tagSeed.map((row) => ({ ...row }));
   const locks: string[] = [];
   let transactionDepth = 0;
@@ -46,6 +46,7 @@ function memoryDb(seed: Row[] = [], tagSeed: Array<{ articleId: number; tag: str
   const selected: SQL[] = [];
   const columns = {
     id: 'id',
+    source: 'source',
     media: 'media',
     url_key: 'urlKey',
     body_status: 'bodyStatus',
@@ -234,11 +235,47 @@ describe('discovered full content persistence', () => {
     await runIndex(db, spec, { now: () => now });
     if (restored) {
       expect(rows[0]).toMatchObject({ ...item.verifiedContent, contentFetchedAt: contentFetchedAt ?? crawledAt, contentAttempts: 2 });
-      expect(writes.filter((write) => write.table === articles)).toHaveLength(1);
+      expect(writes.filter((write) => write.table === articles && write.values.source === undefined)).toHaveLength(1);
     } else {
-      expect(rows[0]).toEqual(original);
-      expect(writes.filter((write) => write.table === articles)).toHaveLength(0);
+      expect(rows[0]).toEqual({ source: 'own', ...original });
+      expect(writes.filter((write) => write.table === articles && write.values.source === undefined)).toHaveLength(0);
     }
+  });
+
+  it('does not crawl recent legacy imports until the normal index rediscovers them', async () => {
+    const acquired = new Date(now.getTime() - 3600e3);
+    const { db, rows } = memoryDb([
+      {
+        id: 1,
+        media: spec.media,
+        urlKey: urlKey(item.url),
+        url: item.url,
+        title: 'Original legacy title',
+        source: 'legacy',
+        publishedAt,
+        crawledAt: acquired,
+        fetchedAt: null,
+        contentFetchedAt: null,
+        bodyStatus: null,
+        tags: [],
+        description: 'Legacy summary',
+      },
+    ]);
+    const fetch = vi.fn(async () => ({ status: 404, body: '', url: item.url, contentType: 'text/html', ms: 1 }));
+    expect(await runArticles(db, spec, { now: () => now, fetch })).toMatchObject({ fetched: 0 });
+    expect(fetch).not.toHaveBeenCalled();
+    discover([{ ...item, verifiedContent: undefined }]);
+    await runIndex(db, spec, { now: () => now });
+    expect(rows[0]).toMatchObject({
+      source: 'own',
+      crawledAt: now,
+      publishedAt,
+      title: 'Original legacy title',
+      description: 'Legacy summary',
+      fetchedAt: null,
+      contentFetchedAt: null,
+    });
+    expect(await runArticles(db, spec, { now: () => now, fetch })).toMatchObject({ fetched: 1 });
   });
 
   it('persists verified body, author, provenance and timestamps at index time', async () => {
@@ -266,7 +303,7 @@ describe('discovered full content persistence', () => {
     await runIndex(db, spec, { now: () => now });
     expect(rows[0]).toMatchObject({ description: item.description, fetchedAt: null, fetchStatus: null });
     expect(rows[0]).not.toHaveProperty('body');
-    expect(writes.filter((write) => write.table === articles)).toHaveLength(0);
+    expect(writes.filter((write) => write.table === articles && write.values.source === undefined)).toHaveLength(0);
     const fetch = vi.fn().mockResolvedValue({ url: item.url, status: 404, body: '', contentType: 'text/html', ms: 1 });
     expect(await runArticles(db, spec, { now: () => now, fetch })).toMatchObject({ fetched: 1, failed: 1 });
     expect(fetch).toHaveBeenCalledOnce();
@@ -280,7 +317,7 @@ describe('discovered full content persistence', () => {
     expect(rows[0]).toMatchObject({ creator: '來源記者', fetchedAt: null, fetchStatus: null });
     expect(rows[0]).not.toHaveProperty('body');
     expect(rows[0]).not.toHaveProperty('contentFetchedAt');
-    expect(writes.filter((write) => write.table === articles)).toHaveLength(0);
+    expect(writes.filter((write) => write.table === articles && write.values.source === undefined)).toHaveLength(0);
     const fetch = vi.fn().mockResolvedValue({ url: item.url, status: 403, body: '', contentType: 'text/html', ms: 1 });
     expect(await runArticles(db, restricted, { now: () => now, fetch })).toMatchObject({ fetched: 1, failed: 1 });
     expect(fetch).toHaveBeenCalledOnce();
@@ -310,7 +347,7 @@ describe('discovered full content persistence', () => {
     expect(rows[1]).toMatchObject({ bodyStatus: 'blocked', body: null, contentAttempts: 2 });
     expect(rows[2]).toMatchObject({ bodyStatus: 'blocked', body: null, contentAttempts: 2 });
     expect(rows[3]).toMatchObject({ bodyStatus: 'ok', body: 'Existing verified body', contentAttempts: 2 });
-    const repair = writes.find((write) => write.table === articles);
+    const repair = writes.find((write) => write.table === articles && write.values.source === undefined);
     expect(repair).toBeDefined();
     const query = new MySqlDialect().sqlToQuery(repair!.condition);
     expect(query.params).toEqual([

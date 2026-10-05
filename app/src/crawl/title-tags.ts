@@ -1,7 +1,7 @@
-import { gte, sql } from 'drizzle-orm';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import noEqual from '../../data/no-equal-tags.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
-import { articleTags } from '../db/schema.ts';
+import { articles, articleTags } from '../db/schema.ts';
 import { isTagNoise } from '../tag-noise.ts';
 
 // Fallback tagging for articles whose page exposes no keywords: match the
@@ -79,7 +79,8 @@ export async function loadTitleVocab(db: Db, { days = 30, minArticles = 3, minSh
   const rows = await db
     .select({ tag: articleTags.tag, n: sql<number>`COUNT(DISTINCT ${articleTags.articleId})` })
     .from(articleTags)
-    .where(gte(articleTags.publishedAt, new Date(Date.now() - days * 86400e3)))
+    .innerJoin(articles, eq(articles.id, articleTags.articleId))
+    .where(and(eq(articles.source, 'own'), gte(articleTags.publishedAt, new Date(Date.now() - days * 86400e3))))
     .groupBy(articleTags.tag)
     .having(sql`COUNT(DISTINCT ${articleTags.articleId}) >= ${minArticles}`);
   return buildVocab(

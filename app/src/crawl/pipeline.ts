@@ -199,6 +199,22 @@ export async function runIndex(
           }),
         );
       inserted += (result as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+      // A legacy import is not a crawl request. Once our normal index actually
+      // rediscovers it, it becomes an own collection with a real acquisition
+      // time. The original row/time remains immutable in its legacy origin.
+      await db
+        .update(articles)
+        .set({ source: 'own', crawledAt: started })
+        .where(
+          and(
+            eq(articles.media, spec.media),
+            eq(articles.source, 'legacy'),
+            inArray(
+              articles.urlKey,
+              batch.map((it) => urlKey(it.url, spec.list.articleId)),
+            ),
+          ),
+        );
       // A previously indexed URL can acquire its first usable body through a
       // repaired page rule or an explicitly trusted full-text publisher feed.
       // INSERT IGNORE alone would leave those existing blocked/empty rows stuck.
@@ -351,6 +367,7 @@ export async function runArticles(
       .where(
         and(
           eq(articles.media, spec.media),
+          eq(articles.source, 'own'),
           // HTTP errors retry after an hour; missing/blocked bodies retry after six hours, up to three attempts.
           or(
             isNull(articles.fetchedAt),

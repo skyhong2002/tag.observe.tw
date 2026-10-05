@@ -57,7 +57,7 @@ export async function loadEventInputs(db: Db, now: Date, category = 'news') {
         tags: articles.tags,
       })
       .from(articles)
-      .where(and(gte(articles.publishedAt, since), sql`JSON_LENGTH(${articles.tags}) > 0`))
+      .where(and(eq(articles.source, 'own'), gte(articles.publishedAt, since), sql`JSON_LENGTH(${articles.tags}) > 0`))
   ).filter((r) => spec.media.includes(r.media) || category === 'all');
   return { current, burst, rows };
 }

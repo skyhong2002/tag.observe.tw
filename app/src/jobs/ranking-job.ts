@@ -46,6 +46,7 @@ export async function readOwnTagRows(db: Db, media: readonly string[], since: Da
     .from(articles)
     .where(
       and(
+        eq(articles.source, 'own'),
         gte(articles.publishedAt, since),
         lt(articles.publishedAt, until),
         sql`${articles.media} IN (${sql.join(

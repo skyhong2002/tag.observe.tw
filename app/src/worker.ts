@@ -14,6 +14,7 @@ import { runRetentionJob } from './jobs/retention-job.ts';
 import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
+import { LEGACY_OWNERSHIP_POLICY } from './legacy/ownership-policy.ts';
 import { jobDuration, jobRuns as jobRunsMetric, metricsContentType, metricsText, snapshotAge, snapshotArticles } from './metrics.ts';
 import { archiveStoreFromEnv } from './nearline/store.ts';
 
@@ -218,7 +219,7 @@ const server = createServer(async (req, res) => {
   }
   if (req.url === '/health') {
     res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify({ status: 'ok' }));
+    res.end(JSON.stringify({ status: 'ok', legacyOwnershipPolicy: LEGACY_OWNERSHIP_POLICY }));
     return;
   }
   res.statusCode = 404;
