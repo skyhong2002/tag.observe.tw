@@ -11,6 +11,16 @@ export function normalizeAuthorCredits(values: string[]): string[] {
   return [...new Set(values.map((value) => reporterCredit(value) ?? value.trim()).filter(Boolean))];
 }
 
+/** Roles, placeholders and technical site credits do not identify authors. */
+export function isNonAuthorCredit(value: string): boolean {
+  const text = value.normalize('NFKC').trim();
+  return (
+    /^(?:友站新聞|社論|社论)$/u.test(text) ||
+    /^(?:責任編輯|责任编辑|責編|责编)/u.test(text) ||
+    /(?:網頁|網站|网页|网站)[\s:：]*(?:設計|设计|製作|制作)|\bweb(?:site)?\s+design\b/iu.test(text)
+  );
+}
+
 const PLACES = [
   '嘉縣',
   '嘉市',
@@ -207,7 +217,7 @@ const CLOSE = '[〕】)\\]]';
 const PREFIX = `^(?:${OPEN}\\s*)?(?:${OUTLET}\\s*(?:${CLOSE}\\s*)?[/|:]?\\s*)?(?:${PLACE}\\s*/\\s*)?`;
 const rolePrefix = new RegExp(`${PREFIX}(?:文\\s*/\\s*(?=(?:特派)?記者))?${ROLE}\\s*[/：:]?\\s*`, 'iu');
 const dateline = new RegExp(
-  `\\s*(?:${PLACE})(?:\\s*${PLACE})?(?:\\s*\\d{1,2}日(?:電|專電)|\\s*(?:報導|報道|报道|電|專電))(?=\\s*(?:${CLOSE}|$|[。；;]))`,
+  `\\s*(?:${PLACE})(?:\\s*${PLACE})?(?:\\s*\\d{1,2}日(?:電|專電)|\\s*(?:(?:綜合|综合)?(?:報導|報道|报道)|電|專電))(?=\\s*(?:${CLOSE}|$|[。；;]))`,
   'u',
 );
 const NON_PERSON =
@@ -265,7 +275,7 @@ export function reporterNames(value: string): string[] {
     // location. Strip the dateline before considering ordinary delimiters.
     const place = dateline.exec(rest);
     if (place) return creditedNames(rest.slice(0, place.index));
-    rest = rest.replace(/(?:報導|報道|报道)(?=\s*(?:[〕】)\]]|$))/, '');
+    rest = rest.replace(/(?:綜合|综合)?(?:報導|報道|报道)(?=\s*(?:[〕】)\]]|$))/, '');
     // A photo/editor credit belongs to a separate role, never to the writer.
     rest = rest.replace(/\s*[、,，;；]\s*(?:攝影|摄影|圖|圖文|編輯|编辑)[\s/:：].*$/u, '');
     const boundary = /[/|:：〕】)\]]|\s+(?:圖(?:文)?|攝影|摄影)[/:：]/u.exec(rest);
@@ -288,7 +298,9 @@ export function reporterNames(value: string): string[] {
   ).exec(text);
   if (bo) return creditedNames(bo[1]);
   const namedOutlet =
-    /^(?:[【〔([]\s*)?Lai傳媒、記者爆料網(?:\s*\/\s*|\s+)\s*([^/|:：〕】)\]]+)\s*\/\s*(?:[^/〕】)\]]{1,12})(?:[〕】)\]]|$)/u.exec(text);
+    /^(?:[【〔([]\s*)?(?:Lai|賴)傳媒、記者爆料網(?:\s*\/\s*|\s+)\s*([^/|:：〕】)\]]+)\s*\/\s*(?:[^/〕】)\]]{1,12})(?:[〕】)\]]|$)/u.exec(
+      text,
+    );
   if (namedOutlet) return creditedNames(namedOutlet[1]);
   const english = /^By\s+([^|:：〕】)\]]+)(?:$|\s*\/)/iu.exec(text);
   if (english) return creditedNames(english[1]);

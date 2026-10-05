@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { type ArticleRules, extractArticle } from './article.ts';
+import { reporterNames } from './byline.ts';
 import { dateFromStoryUrl } from './topic-kind.ts';
 
 interface ReporterTopic {
@@ -15,6 +16,20 @@ export function extractFeatureArticle(html: string, url: string, rules: ArticleR
   const u = new URL(url);
   const reporter = u.hostname === 'www.twreporter.org' && u.pathname.startsWith('/topics/');
   const detail = extractArticle(html, url, reporter ? { ...rules, jsonTags: undefined } : rules);
+  if (u.hostname.replace(/^www\./, '') === 'bannedbook.org' && /^\/bnews\/(?:zh-tw\/)?/.test(u.pathname)) {
+    // Reprinted articles start with the original credit and a disclaimer.
+    // The site's own "編輯團隊" metadata does not identify the article writer.
+    const lead = (detail.body ?? '').normalize('NFKC').trim();
+    const author = /^作者\s*[:：]\s*([^,，\n]{1,80}?)(?=\s*(?:來源|来源)\s*[:：]|\s*[,，]\s*文章)/u.exec(lead)?.[1].trim();
+    const source = /^(?:作者\s*[:：]\s*[^,，\n]{1,80}?)?(?:來源|来源)\s*[:：]\s*([^,，\n]{1,80})(?=\s*[,，]\s*文章)/u
+      .exec(lead)?.[1]
+      .trim();
+    const people = author ? reporterNames(`文／${author}`) : [];
+    if (people.length) detail.authors = people;
+    else detail.authors = detail.authors.filter((name) => name !== '編輯團隊' && name !== '编辑团队');
+    // An organizational author declaration is the content provider here.
+    if (source || (author && !people.length)) detail.provider = source ?? author ?? null;
+  }
   if (u.hostname === 'topic.udn.com' && u.pathname.startsWith('/issue/cards/') && !detail.body) {
     const intro = extractArticle(html, url, { ...rules, bodySelector: '.container-content > p.content' });
     if (intro.body) Object.assign(detail, { body: intro.body, bodyStatus: intro.bodyStatus, bodySource: intro.bodySource });

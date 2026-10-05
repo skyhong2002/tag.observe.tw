@@ -1,7 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { extractClosingReporterNames, extractLeadReporterNames, normalizeAuthorCredits, reporterCredit, reporterNames } from './byline.ts';
+import {
+  extractClosingReporterNames,
+  extractLeadReporterNames,
+  isNonAuthorCredit,
+  normalizeAuthorCredits,
+  reporterCredit,
+  reporterNames,
+} from './byline.ts';
 
 describe('explicit reporter credits', () => {
+  it.each(['友站新聞', '社論', '社论', '責任編輯 靳璦', '責任編輯靳璦', '牧迪網頁設計', 'Web Design Studio', '網站製作'])(
+    'excludes non-author credit %s',
+    (value) => {
+      expect(isNonAuthorCredit(value)).toBe(true);
+    },
+  );
+  it.each(['黃彩絹', '作者：王小明｜責任編輯：靳璦', '編輯部', '社論委員會', '中央社'])(
+    'preserves actual writer or institutional credit %s',
+    (value) => {
+      expect(isNonAuthorCredit(value)).toBe(false);
+    },
+  );
   it.each([
     ['記者林欣漢 陳政宇／台北報導', ['林欣漢', '陳政宇']],
     ['【陳靜文／綜合報導】政策今天公布。', ['陳靜文']],
@@ -30,6 +49,7 @@ describe('explicit reporter credits', () => {
     ['［台灣新聞雲］記者劉至程/花蓮報導', ['劉至程']],
     ['【Lai傳媒、記者爆料網／周庭慶／花蓮報導】政策今天公布。', ['周庭慶']],
     ['【Lai傳媒、記者爆料網 金東天 / 高雄報導】政策今天公布。', ['金東天']],
+    ['【賴傳媒、記者爆料網 王俊勝 / 台東報導】台東基地發生火警。', ['王俊勝']],
     ['【亞太新聞網／記者范文濱／桃園報導】政策今天公布。', ['范文濱']],
     ['【警政時報 薛秀蓮 / 台北報導】政策今天公布。', ['薛秀蓮']],
     ['經濟日報 / 編譯葉亭均 / 綜合外電', ['葉亭均']],
@@ -68,6 +88,12 @@ describe('explicit reporter credits', () => {
     ['（大紀元記者邱晨加拿大多倫多報道）社區舉辦活動。', ['邱晨']],
     ['（大紀元記者徐曼沅橙縣報導）社區舉辦活動。', ['徐曼沅']],
     ['（大紀元記者曹景哲灣區報導）社區舉辦活動。', ['曹景哲']],
+    ['【大紀元2026年10月05日訊】（大紀元記者呈工綜合報導）國際政策出現變化。', ['呈工']],
+    ['記者呈工綜合報導', ['呈工']],
+    ['（大紀元記者常學西雅圖綜合報導）航空和鐵路運輸能力同步擴充。', ['常學']],
+    ['（大紀元記者鍾元台灣綜合報導）陸委會召開座談會。', ['鍾元']],
+    ['（大紀元記者良克霖費城綜合報道）房屋淨值大幅提升。', ['良克霖']],
+    ['（大紀元記者田青渥太華綜合報導）地稅是選民關心議題。', ['田青']],
   ])('extracts %s', (value, expected) => {
     expect(reporterNames(value)).toEqual(expected);
   });

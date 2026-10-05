@@ -1,3 +1,4 @@
+import { isNonAuthorCredit } from '../crawl/byline.ts';
 import { attributionRole, providerOutlet } from '../similarity/attribution.ts';
 import { personNames } from './names.ts';
 
@@ -7,7 +8,6 @@ type Context = {
   attributions?: readonly { media: string; name: string; evidence: string }[];
 };
 const ORGANIZATION = /(?:公司|新聞|電視|傳媒|通訊社|編輯部|製作組|網路溫度計)/u;
-const TECHNICAL_CREDIT = /(?:網頁設計|網站設計|網站製作|網頁製作)/u;
 
 /** Author names, institutional bylines and explicit source evidence are separate roles. */
 export function authorCreditParts(credits: readonly string[], context: Context = {}): CreditPart[] {
@@ -26,7 +26,7 @@ export function authorCreditParts(credits: readonly string[], context: Context =
   }
   for (const credit of credits) {
     const text = credit.trim();
-    if (!text || TECHNICAL_CREDIT.test(text)) continue;
+    if (!text || isNonAuthorCredit(text)) continue;
     const names = personNames(text);
     if (names.length) {
       for (const name of names) people.add(name);

@@ -7,11 +7,16 @@ export type Attribution = OutletIdentity & { evidence: string; kind: 'explicit' 
 
 /** Supplying content differs from citing it; both roles require evidence. */
 export function attributionRole(source: { evidence: string }): '來源' | '引用' {
-  return /^內容提供者[：:]/u.test(source.evidence.trim()) ? '來源' : '引用';
+  const evidence = source.evidence.trim();
+  return /^(?:內容提供者|(?:新聞|文章|稿件)?來源|供稿(?:媒體)?)[：:]\s*\S/u.test(evidence) || cnaDispatch.test(evidence) ? '來源' : '引用';
 }
 
 /** Aggregate relationships include content providers and explicit citations. */
 export const ATTRIBUTION_RELATION_LABEL = '來源／引用';
+
+// An agency dispatch byline identifies supplied copy, including its named
+// writer; ordinary mentions of an agency reporter do not establish a source.
+const cnaDispatch = /^\s*[（(]\s*中央社(?:記者|记者)[\p{L}·．\s]{2,50}(?:\d{1,2}|[一二三四五六七八九十廿]{1,3})日(?:電|电)\s*[）)]/u;
 
 type Outlet = OutletIdentity & { aliases: string[] };
 const titles = favicons as Record<string, { title: string | null }>;
@@ -47,7 +52,10 @@ const outlets: Outlet[] = [
   outlet('yonhap', '韓聯社', 'KR', ['Yonhap', 'Yonhap News Agency', '韩联社']),
   outlet('xinhua', '新華社', 'CN', ['Xinhua', 'Xinhua News Agency', '新华社']),
   outlet('dw', '德國之聲', 'DE', ['DW', 'Deutsche Welle', '德国之声']),
-  outlet('rfi', '法國國際廣播電台', 'FR', ['RFI', '法廣', '法广']),
+  outlet('rfi', '法國國際廣播電台', 'FR', ['RFI', '法廣', '法广', 'RFI法廣', 'RFI法广']),
+  outlet('soundofhope', '希望之聲', 'US', ['希望之聲TV', '希望之声', '希望之声TV']),
+  outlet('voachinese', '美國之音中文網', 'US', ['美國之音', '美国之音', 'VOA']),
+  outlet('ntdtv', '新唐人電視台', 'US', ['新唐人電視台NTDTV', '新唐人电视台', 'NTDTV']),
   outlet('nikkei', '日本經濟新聞', 'JP', ['Nikkei', '日經', '日经', '日本经济新闻']),
   outlet('cna', '中央社', 'TW', ['CNA', '中央通訊社', '中央通讯社']),
   outlet('ltn', '自由時報', 'TW', ['自由时报', '自由時報電子報']),
@@ -215,9 +223,7 @@ export function extractAttributions(body: string, publisher: string, provider?: 
   // CNA syndicated copy commonly starts with its agency dispatch byline.
   // Require the enclosing dateline and date/electric-dispatch suffix so a
   // news story merely mentioning a CNA reporter cannot become a citation.
-  const dispatch = /^\s*[（(]\s*中央社(?:記者|记者)[\p{L}·．\s]{2,50}(?:\d{1,2}|[一二三四五六七八九十廿]{1,3})日(?:電|电)\s*[）)]/u.exec(
-    body,
-  );
+  const dispatch = cnaDispatch.exec(body);
   if (dispatch) add(outletIdentity('cna'), dispatch[0]);
   for (const sentence of body.split(/[。！？!?；;\n]+/)) {
     for (const { outlet: identity, pattern } of mentions) {

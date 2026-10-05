@@ -320,6 +320,26 @@ describe('publisher reporter bylines', () => {
     expect(extractArticle(html, 'https://www.bo6s.com.tw/news_detail.php?NewsID=117270').authors).toEqual(['李至文']);
   });
 
+  it('reads the traditional Lai publisher prefix instead of Taiwanline placeholder credits', () => {
+    const html =
+      '<meta name="author" content="友站新聞"><article><p>【賴傳媒、記者爆料網 王俊勝 / 台東報導】台東志航基地發生火警。</p></article>';
+    expect(extractArticle(html, 'https://twline365.com/2026/10/01/story').authors).toEqual(['王俊勝']);
+  });
+
+  it.each(['責任編輯 靳璦', '責任編輯：靳璦', '責任編輯靳璦', '友站新聞', '社論'])(
+    'excludes editorial role or placeholder metadata %s from authorship',
+    (credit) => {
+      const url = 'https://example.com/editor-credit';
+      const html =
+        '<meta name="author" content="' +
+        credit +
+        '"><script type="application/ld+json">' +
+        JSON.stringify({ '@type': 'NewsArticle', url, author: { '@type': 'Person', name: credit } }) +
+        '</script><article><p>陸委會發表聲明。</p></article>';
+      expect(extractArticle(html, url).authors).toEqual([]);
+    },
+  );
+
   it('reads the 1111 header reporter before excluding its combined date and author from the article body', () => {
     const html =
       '<meta name="author" content="1111人力銀行 | 全球華人股份有限公司"><div class="yellow-white-bg"><h1>金山萬里溫泉季</h1>' +

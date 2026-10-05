@@ -3,6 +3,24 @@ import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
 import { attributionRole, extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
 
 describe('explicit media attribution', () => {
+  it('resolves original organizational credits in reprinted bannedbook articles', () => {
+    expect(extractAttributions('', 'bannedbook', '希望之聲TV')).toEqual([
+      expect.objectContaining({ media: 'soundofhope', countryCode: 'US', evidence: '內容提供者：希望之聲TV' }),
+    ]);
+    expect(extractAttributions('', 'bannedbook', '美國之音')).toEqual([
+      expect.objectContaining({ media: 'voachinese', countryCode: 'US', evidence: '內容提供者：美國之音' }),
+    ]);
+    expect(extractAttributions('', 'bannedbook', 'RFI法廣')[0]?.media).toBe('rfi');
+    expect(extractAttributions('', 'bannedbook', '新唐人電視台NTDTV')[0]?.media).toBe('ntdtv');
+    expect(extractAttributions('', 'bannedbook', '古莉')).toEqual([]);
+  });
+  it('recognizes a supplied agency dispatch and explicit source field without relabeling cited reporting', () => {
+    const [dispatch] = extractAttributions('（中央社記者謝靜雯台北5日電）今天公布結果。', 'worldjournal');
+    expect(attributionRole(dispatch)).toBe('來源');
+    expect(attributionRole({ evidence: '來源：路透社' })).toBe('來源');
+    expect(attributionRole({ evidence: '中央社報導，今天公布結果。' })).toBe('引用');
+    expect(attributionRole({ evidence: '根據中央社記者謝靜雯的報導，今天公布結果。' })).toBe('引用');
+  });
   it('distinguishes a content provider from a cited outlet using preserved evidence', () => {
     const result = extractAttributions('法新社報導，事件已確認。', 'pchome', '中央社');
     expect(result.map((source) => [source.media, attributionRole(source)])).toEqual([

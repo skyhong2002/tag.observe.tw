@@ -4,6 +4,12 @@ import { publicArticle } from '../src/similarity/compute.ts';
 
 const source = (media: string, name: string, evidence: string) => ({ media, name, evidence });
 describe('liveboard author and source roles', () => {
+  it.each(['友站新聞', '社論', '責任編輯 靳璦', '責任編輯：靳璦'])('omits the non-author credit %s', (credit) => {
+    expect(authorDisplay([credit])).toBe('未署名');
+  });
+  it('keeps the named author when a separate credit names an editor', () => {
+    expect(authorDisplay(['王俊勝', '責任編輯 靳璦'])).toBe('作者 王俊勝');
+  });
   it('uses the same author/source grouping on similarity articles', () => {
     const article = publicArticle({
       id: 1,

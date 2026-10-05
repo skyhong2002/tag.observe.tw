@@ -2,6 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { extractFeatureArticle } from './feature-article.ts';
 
 describe('feature page content', () => {
+  it.each([
+    ['作者: 希望之聲TV , 文章內容謹代表作者個人觀點。節目介紹。', [], '希望之聲TV'],
+    ['來源：美國之音, 文章內容並不代表本網立場和觀點。葉門軍隊取得進展。', [], '美國之音'],
+    ['作者：古莉來源：RFI法廣，文章謹供參考，內容並不代表本網立場和觀點。葉門政府發表聲明。', ['古莉'], 'RFI法廣'],
+  ])('reads the original Bannedbook credit %s instead of site editor metadata', (lead, authors, provider) => {
+    const html = `<meta name="author" content="編輯團隊"><article><p>${lead}</p></article>`;
+    const detail = extractFeatureArticle(html, 'https://www.bannedbook.org/bnews/zh-tw/worldnews/20261006/2366890.html');
+    expect(detail.authors).toEqual(authors);
+    expect(detail.provider).toBe(provider);
+    expect(detail.body).toBe(lead);
+  });
+  it('does not infer a provider from an ordinary Bannedbook paragraph or suppress other publisher institutional credits', () => {
+    const html =
+      '<meta name="author" content="編輯團隊"><article><p>官方發表聲明。來源：美國之音, 文章內容並不代表本網立場和觀點。</p></article>';
+    expect(extractFeatureArticle(html, 'https://www.bannedbook.org/bnews/zh-tw/worldnews/20261006/2366890.html').provider).toBeNull();
+    expect(extractFeatureArticle(html, 'https://example.com/report').authors).toEqual(['編輯團隊']);
+  });
   it('reads only the matching reporter topic introduction, date and cover, not linked story text or tags', () => {
     const text = '這是專題導言，保留全形標點。'.repeat(20);
     const html = `<meta property="og:image" content="https://www.twreporter.org/cover.jpg"><script>window.__REDUX_STATE__=${JSON.stringify({

@@ -1,6 +1,12 @@
 import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
-import { extractClosingReporterNames, extractLeadReporterNames, normalizeAuthorCredits, reporterNames } from './byline.ts';
+import {
+  extractClosingReporterNames,
+  extractLeadReporterNames,
+  isNonAuthorCredit,
+  normalizeAuthorCredits,
+  reporterNames,
+} from './byline.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
 export interface ArticleContent {
@@ -271,13 +277,7 @@ function extractAuthors($: cheerio.CheerioAPI, nodes: JsonNode[], rules: Content
       ...new Set(
         names
           .flatMap((name) => (reporterNames(name).length ? reporterNames(name) : [normalize(name)]))
-          .filter(
-            (name) =>
-              name &&
-              name.length <= 120 &&
-              !/^https?:\/\//i.test(name) &&
-              !/(?:網頁|網站|网页|网站)[\s:：]*(?:設計|设计)|\bweb(?:site)?\s+design\b/iu.test(name),
-          ),
+          .filter((name) => name && name.length <= 120 && !/^https?:\/\//i.test(name) && !isNonAuthorCredit(name)),
       ),
     ]).slice(0, 30);
   const configured = rules.authorSelector ? finish(configuredValues ?? scopedAuthorElements($, rules.authorSelector, true)) : [];
