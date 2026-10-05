@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock
 
-from pipeline import Pipeline, plan_tables, schema_signature, validate_gzip, write_json
+from pipeline import Pipeline, apply_chunk_row_caps, plan_tables, schema_signature, validate_gzip, write_json
 
 
 class ArchiveTests(unittest.TestCase):
@@ -100,6 +100,32 @@ class ArchiveTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pipeline.fetch_object({'sha256': '../secret', 'object': '../secret'}, Path(self.tmp.name) / 'out')
         self.pipeline.rclone.assert_not_called()
+
+
+class ChunkPolicyTests(unittest.TestCase):
+    def test_auxiliary_caps_preserve_article_defaults_and_verified_cursor(self):
+        cfg = json.loads(Path(__file__).with_name('config.example.json').read_text())
+        cfg['table_chunk_row_caps'] = {'media_news': 250000}
+        inventory = {'tables': [['media_news', 'MyISAM', '10000000', '400000000', '0'], ['tag_cna', 'MyISAM', '10000000', '400000000', '0']], 'keys': [['media_news', 'id', 'bigint'], ['tag_cna', 'newsid', 'bigint']]}
+        planned = plan_tables(inventory, cfg)
+        self.assertEqual(planned['media_news']['chunk_rows'], 250000)
+        self.assertEqual(planned['tag_cna']['chunk_rows'], cfg['max_chunk_rows'])
+        row = planned['media_news']
+        row.update(status='running', after=50000, chunks=[{'sha256': 'verified'}], chunk_rows=125000)
+        self.assertFalse(apply_chunk_row_caps(planned, cfg))
+        self.assertEqual(row['chunk_rows'], 125000, 'oversize backoff must survive later batches')
+        self.assertEqual(row['after'], 50000)
+        self.assertEqual(row['chunks'], [{'sha256': 'verified'}])
+        row.pop('chunk_row_policy')
+        self.assertTrue(apply_chunk_row_caps(planned, cfg))
+        self.assertEqual(row['chunk_rows'], 250000)
+        self.assertEqual(row['after'], 50000)
+        self.assertEqual(row['chunks'], [{'sha256': 'verified'}])
+
+    def test_invalid_caps_are_rejected(self):
+        for cap in [0, -1, True, '250000', 500001]:
+            with self.assertRaisesRegex(ValueError, 'integer'):
+                apply_chunk_row_caps({}, {'table_chunk_row_caps': {'media_news': cap}})
 
 
 if __name__ == '__main__':

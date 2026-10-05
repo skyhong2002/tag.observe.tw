@@ -63,6 +63,27 @@ def schema_signature(path):
     return hashlib.sha256(re.sub(rb'\bAUTO_INCREMENT=\d+\b', b'AUTO_INCREMENT=0', sql)).hexdigest()
 
 
+def apply_chunk_row_caps(tables, cfg):
+    """Apply explicit per-table caps once; retain adaptive reductions on retries."""
+    changed = False
+    for name, cap in cfg.get('table_chunk_row_caps', {}).items():
+        if isinstance(cap, bool) or not isinstance(cap, int) or not 1 <= cap <= 500000:
+            raise ValueError('Table chunk row cap must be an integer from 1 to 500000')
+        if name not in tables:
+            raise ValueError('Unknown table chunk row cap: ' + name)
+        table = tables[name]
+        if table['status'] not in ('pending', 'running') or not table.get('pk'):
+            continue
+        policy = {'max_rows': cap, 'target_raw_bytes': cfg['target_raw_bytes']}
+        if table.get('chunk_row_policy') == policy:
+            continue
+        average = max(1, table['data_bytes'] / max(1, table['estimated_rows']))
+        table['chunk_rows'] = max(1, min(cap, int(cfg['target_raw_bytes'] / average)))
+        table['chunk_row_policy'] = policy
+        changed = True
+    return changed
+
+
 def plan_tables(inventory, cfg):
     keys = {}
     for table, col, kind in inventory['keys']:
@@ -85,6 +106,7 @@ def plan_tables(inventory, cfg):
     for name, reason in cfg['exclude'].items():
         tables.setdefault(name, {'status': 'excluded', 'error': reason, 'chunks': [], 'data_bytes': 0,
                                  'inventory_missing': True})
+    apply_chunk_row_caps(tables, cfg)
     return tables
 
 
@@ -274,6 +296,7 @@ class Pipeline:
             for name, reason in self.cfg['exclude'].items():
                 self.state['tables'].setdefault(name, {'status': 'excluded', 'error': reason, 'chunks': [],
                                                        'data_bytes': 0, 'inventory_missing': True})
+            apply_chunk_row_caps(self.state['tables'], self.cfg)
             self.checkpoint()  # Repair an interrupted publication before advancing.
         if not self.state['programs']:
             try:

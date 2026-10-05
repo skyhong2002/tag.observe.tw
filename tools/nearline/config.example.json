@@ -26,6 +26,7 @@
   "target_raw_bytes": 33554432,
   "max_raw_bytes": 268435456,
   "max_chunk_rows": 50000,
+  "table_chunk_row_caps": {},
   "max_unkeyed_bytes": 67108864,
   "local_free_min_bytes": 10737418240,
   "nas_free_min_bytes": 107374182400,
