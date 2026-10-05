@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { cleanEventHeadline, clipHeadline, HEADLINE_MAX, headlineTags, selectEventLead } from '../../web/src/lib/event-presentation.mts';
+import {
+  cleanEventHeadline,
+  clipHeadline,
+  eventThreadLead,
+  HEADLINE_MAX,
+  headlineTags,
+  selectEventLead,
+} from '../../web/src/lib/event-presentation.mts';
 
 const news = [
   { id: 1, media: 'taipeitimes', title: 'OpenAI cancels release of newest model', image: 'https://example.org/english.jpg' },
@@ -45,5 +52,10 @@ describe('shared event presentation', () => {
     expect(headlineTags('openai 發布消息', ['OpenAI', 'AI', '馬斯克', ''])).toEqual(['OpenAI']);
     expect(headlineTags('AIRBUS 航班消息', ['AI'])).toEqual([]);
     expect(headlineTags('新消息', major)).toEqual([]);
+  });
+  it('takes the thread lead from the latest hour, keeping the whole report for its link', () => {
+    const older = { news: [{ id: 9, media: 'udn', title: '舊的一小時標題', image: null }], major };
+    expect(eventThreadLead([{ news, major }, older])).toEqual(selectEventLead(news, major));
+    expect(eventThreadLead([])).toBeNull();
   });
 });

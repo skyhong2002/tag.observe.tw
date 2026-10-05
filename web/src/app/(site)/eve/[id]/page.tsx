@@ -4,12 +4,13 @@ import { notFound } from 'next/navigation';
 import { CAMP_LABEL, FullBar } from '@/components/CampBar';
 import EventChart, { type EventSeriesPoint } from '@/components/EventChart';
 import EventTagCloud from '@/components/EventTagCloud';
+import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
 import { taipei, taipeiHour } from '@/lib/api';
-import { eventThreadCover, eventThreadHeadline } from '@/lib/event-presentation.mts';
+import { eventThreadCover, eventThreadHeadline, eventThreadLead } from '@/lib/event-presentation.mts';
 import {
   bestRank,
   type Camp,
@@ -30,6 +31,7 @@ import {
 } from '@/lib/event-thread.mts';
 import { fetchThreadPart } from '@/lib/event-thread-api';
 import { isAllowedImage } from '@/lib/images';
+import { mediaNames } from '@/lib/media-names.mts';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import { pageMetadata, pageSchema } from '@/lib/seo.mts';
@@ -144,6 +146,11 @@ export default async function EventThreadPage({
   if (!data) notFound();
   const t = data.thread;
   const headline = headlineOf(data);
+  // The headline is a real report; its coverage row adds the outlet's summary.
+  const lead = eventThreadLead(data.hours);
+  const leadReport = lead?.id
+    ? cov?.byOutlet.flatMap((o) => o.articles.map((a) => ({ ...a, outlet: o }))).find((a) => a.id === lead.id)
+    : undefined;
   const cover = eventThreadCover(data.hours, isAllowedImage);
   const stats = tagStats(data.hours, t.majorTags);
   const best = bestRank(data.hours);
@@ -161,7 +168,8 @@ export default async function EventThreadPage({
   const coreCount = core.reduce((n, o) => n + o.articles.length, 0);
   const groups = groupByHour(flattenArticles(core, order));
   const loose = flattenArticles(fringe, order);
-  const leads = leadStories(core);
+  // The headline's own report already sits at the top of the page.
+  const leads = leadStories(core.map((o) => ({ ...o, articles: o.articles.filter((a) => a.id !== lead?.id) })));
   const breaking = firstReports(core);
   const campCount = (camp: Camp, by: 'outlets' | 'articles') => cov?.camps.find((c) => c.camp === camp)?.[by] ?? 0;
   const blindspotText =
@@ -223,7 +231,33 @@ export default async function EventThreadPage({
             </Link>{' '}
             / 事件 #{t.id}
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight">{headline}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {lead ? (
+              <Link href={articleHref(lead)} className="hover:underline">
+                {headline}
+              </Link>
+            ) : (
+              headline
+            )}
+          </h1>
+          {lead && (
+            <div className="space-y-1">
+              {leadReport?.description && (
+                <p className="line-clamp-3 leading-relaxed text-zinc-700 dark:text-zinc-300">{leadReport.description}</p>
+              )}
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                {leadReport && <CampDot camp={leadReport.outlet.camp} />}
+                <MediaHoverLink media={lead.media} icon={14} className="hover:underline">
+                  {leadReport?.outlet.title ?? mediaNames[lead.media]?.name ?? lead.media}
+                </MediaHoverLink>
+                {leadReport && <span className="tabular-nums">{taipei(leadReport.publishedAt)}</span>}
+                <Link href={articleHref(lead)} className="text-brand-700 hover:underline dark:text-brand-400">
+                  閱讀全文 →
+                </Link>
+                <SourceLink url={lead.url} />
+              </p>
+            </div>
+          )}
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
             <span className="text-zinc-600 dark:text-zinc-400">主要標籤</span>
             {t.majorTags.map((tag) => (

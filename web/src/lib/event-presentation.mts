@@ -71,13 +71,20 @@ export function selectEventCover<T extends { image: string | null }>(
   return news.find(ok) ?? null;
 }
 
+/** The report that names the event: the latest hour's lead. */
+export function eventThreadLead<T extends { title: string }>(
+  hours: ReadonlyArray<{ news: readonly T[]; major: readonly string[] }>,
+): T | null {
+  const latest = hours[0];
+  return latest ? selectEventLead(latest.news, latest.major) : null;
+}
+
 /** One headline selection for the page, metadata and share image. */
 export function eventThreadHeadline(data: {
   thread: { majorTags: string[] };
   hours: Array<{ news: Array<{ title: string }>; major: string[] }>;
 }) {
-  const latest = data.hours[0];
-  const lead = latest ? selectEventLead(latest.news, latest.major) : null;
+  const lead = eventThreadLead(data.hours);
   return lead ? clipHeadline(cleanEventHeadline(lead.title)) : data.thread.majorTags.join('、');
 }
 
