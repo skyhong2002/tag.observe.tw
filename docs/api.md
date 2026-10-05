@@ -81,6 +81,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/events/threads/{id}`](#api-v1-events-threads-id) | 單一事件串 |
 | [`GET /api/v1/events/threads/{id}/series`](#api-v1-events-threads-id-series) | 事件串的每小時趨勢 |
 | [`GET /api/v1/events/threads/{id}/coverage`](#api-v1-events-threads-id-coverage) | 同一事件的各家標題對照 |
+| [`GET /api/v1/topics/{id}/stories`](#api-v1-topics-id-stories) | 議題／專題實際收錄的新聞索引 |
 | [`GET /api/v1/topics`](#api-v1-topics) | 各媒體的議題／專題 |
 | [`GET /api/v1/media`](#api-v1-media) | 所有媒體代碼與名稱 |
 | [`GET /api/v1/media/{media}`](#api-v1-media-media) | 單一媒體最近的文章與熱門標籤 |
@@ -1419,6 +1420,45 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 錯誤：`400` id 格式錯誤；`404` 找不到。
 
 ## 各媒體的議題／專題
+
+<a id="api-v1-topics-id-stories"></a>
+
+### `GET /api/v1/topics/{id}/stories`
+
+**議題／專題實際收錄的新聞索引**
+
+累計原站議題／專題頁實際列出的文章，不限報導日期。依報導日期由新到舊排列，未知日期在後。已收錄文章提供本站 id；未收錄的提供原文 url。舊資料尚未還原的連結為 null。此清單不使用名稱或文章標籤推測成員，也不修改原文標籤。分頁或動態載入的文章可能尚未完整取得。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | integer | 議題／專題 ID |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/topics/1/stories'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `id` | string |  |
+| `media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `mediaTitle` | string |  |
+| `title` | string |  |
+| `kind` | "topic" \| "feature" |  |
+| `url` | string |  |
+| `checkedAt` | string (ISO 時間) \| null |  |
+| `total` | integer |  |
+| `stories` | object[] |  |
+| `stories[].key` | string |  |
+| `stories[].title` | string |  |
+| `stories[].url` | string \| null |  |
+| `stories[].id` | integer \| null |  |
+| `stories[].date` | string (ISO 時間) \| null |  |
+
+錯誤：`400` id 格式錯誤；`404` 找不到。
 
 <a id="api-v1-topics"></a>
 

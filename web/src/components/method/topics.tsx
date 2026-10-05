@@ -50,7 +50,8 @@ export function TopicMethod({
       <h3 className={methodHeading}>{noun}</h3>
       <p>
         {mediaCount != null ? `${mediaCount} 家媒體官方${noun}入口的最新動態，` : `追蹤媒體官方${noun}入口，`}
-        每小時檢查。每個{noun}下方列出本站近 3 天從各家媒體抓到的相關報導。來源持續擴充中，未列出的媒體不代表沒有{noun}。
+        每小時檢查。新聞索引累計原站頁面實際列出的文章，不限報導日期；原站以標籤自動彙整或人工編選都可收錄。下方另列近 3
+        天各家媒體的相關報導。來源持續擴充中，未列出的媒體不代表沒有{noun}。
       </p>
       <p>
         依最後更新排序：最後更新是{noun}

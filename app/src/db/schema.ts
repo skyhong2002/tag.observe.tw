@@ -313,7 +313,7 @@ export const topics = mysqlTable(
     // The outlet's own stories listed on the topic page ({ key: url_key,
     // title, date? — ISO date the page shows for it }), used when the topic
     // name maps to no tag and to date the topic (refreshTopicPages).
-    pageStories: json('page_keys').$type<Array<{ key: string; title: string; date?: string }>>(),
+    pageStories: json('page_keys').$type<Array<{ key: string; title: string; date?: string; url?: string }>>(),
     pageCheckedAt: datetime('page_checked_at'),
     // 'topic' (議題, keeps gaining stories) or 'feature' (專題, a one-off
     // package). kind_source 'rule' = declared by the listing, never

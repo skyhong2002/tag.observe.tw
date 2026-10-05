@@ -1139,6 +1139,27 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/events/threads/365/coverage',
   },
   {
+    path: '/api/v1/topics/{id}/stories',
+    tag: 'topics',
+    summary: '議題／專題實際收錄的新聞索引',
+    description:
+      '累計原站議題／專題頁實際列出的文章，不限報導日期。依報導日期由新到舊排列，未知日期在後。已收錄文章提供本站 id；未收錄的提供原文 url。舊資料尚未還原的連結為 null。此清單不使用名稱或文章標籤推測成員，也不修改原文標籤。分頁或動態載入的文章可能尚未完整取得。',
+    params: [{ name: 'id', in: 'path', required: true, description: '議題／專題 ID', schema: int() }],
+    response: obj({
+      id: str(),
+      media: ref('MediaKey'),
+      mediaTitle: str(),
+      title: str(),
+      kind: str(undefined, { enum: ['topic', 'feature'] }),
+      url: str(),
+      checkedAt: nullable(time()),
+      total: int(),
+      stories: arr(obj({ key: str(), title: str(), url: nullable(str()), id: nullable(int()), date: nullable(time()) })),
+    }),
+    errors: { '400': 'id 格式錯誤', '404': '找不到' },
+    example: '/api/v1/topics/1/stories',
+  },
+  {
     path: '/api/v1/topics',
     tag: 'topics',
     summary: '各媒體的議題／專題',

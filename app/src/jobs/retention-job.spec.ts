@@ -13,9 +13,10 @@ describe('nearline retention guards', () => {
   });
   it('without storage never clears content; only unlinked own-source empty noise can be deleted', async () => {
     const sqlite = new DatabaseSync(':memory:');
-    sqlite.exec(`CREATE TABLE articles(id INTEGER,source TEXT,published_at TEXT,fetched_at TEXT,tags TEXT,body TEXT,description TEXT);
+    sqlite.exec(`CREATE TABLE articles(id INTEGER,source TEXT,published_at TEXT,fetched_at TEXT,tags TEXT,body TEXT,description TEXT, media TEXT, url_key TEXT);
+      CREATE TABLE topics(media TEXT, page_keys TEXT);
       CREATE TABLE article_archives(article_id INTEGER); CREATE TABLE article_origins(article_id INTEGER);`);
-    const insert = sqlite.prepare('INSERT INTO articles VALUES (?,?,?,NULL,?,?,?)');
+    const insert = sqlite.prepare("INSERT INTO articles VALUES (?,?,?,NULL,?,?,?, 'cna', ?)");
     for (const [id, source, tags, body, description] of [
       [1, 'own', '[]', null, null],
       [2, 'legacy', '[]', null, null],
@@ -23,9 +24,20 @@ describe('nearline retention guards', () => {
       [4, 'own', '[]', null, 'summary'],
       [5, 'own', '[]', null, null],
       [6, 'own', '[]', null, null],
+      [7, 'own', '[]', null, null],
+      [8, 'own', '[]', null, null],
     ] as const)
-      insert.run(id, source, '2014-01-01', tags, body, description);
+      insert.run(id, source, '2014-01-01', tags, body, description, `example.com/${id}`);
     sqlite.exec('INSERT INTO article_archives VALUES (5); INSERT INTO article_origins VALUES (6)');
+    sqlite.prepare('INSERT INTO topics VALUES (?, ?)').run('cna', JSON.stringify([{ key: 'example.com/7' }]));
+    sqlite.prepare('INSERT INTO topics VALUES (?, ?)').run('twreporter', JSON.stringify([{ key: 'example.com/8' }]));
+    sqlite.exec("UPDATE articles SET media = 'reporter' WHERE id = 8");
+    sqlite.function('JSON_EXTRACT', (value, _path) =>
+      value == null ? null : JSON.stringify(JSON.parse(String(value)).map((s: { key: string }) => s.key)),
+    );
+    sqlite.function('JSON_CONTAINS', (value, key) =>
+      value == null ? 0 : Number(JSON.parse(String(value)).includes(JSON.parse(String(key)))),
+    );
     const deletes: unknown[] = [];
     let predicate: SQL;
     const empty = Object.assign(Promise.resolve([]), { from: () => empty, where: () => empty, limit: () => empty });

@@ -1,10 +1,13 @@
+import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import { byUpdate, firstRunEnd, topicStatus, topicUpdatedAt } from '../crawl/topic-kind.ts';
 import { TOPIC_RULES, type TopicKind } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
+import { topics } from '../db/schema.ts';
 import { eventHours, latestEvents } from '../jobs/events-job.ts';
 import { matchTopics, topicCoverage, topicTagger, topicTagSummary } from '../jobs/topic-related.ts';
+import { resolveTopicStories } from '../jobs/topic-stories.ts';
 import {
   allTopLevelTopics,
   firstRunPerMedia,
@@ -29,6 +32,26 @@ const EVENTS_FRESH_MS = 3 * 3600e3;
 type TopicsQuery = { media?: string; limit?: string; per?: string; kind?: string; tag?: string; q?: string };
 
 export function registerPageApis(app: FastifyInstance, db: Db) {
+  app.get<{ Params: { id: string } }>('/api/v1/topics/:id/stories', async (request, reply) => {
+    const id = Number(request.params.id);
+    if (!/^\d+$/.test(request.params.id) || !Number.isSafeInteger(id) || id < 1) return reply.code(400).send({ error: 'bad id' });
+    const [topic] = await db.select().from(topics).where(eq(topics.id, id));
+    if (!topic || !TOPIC_MEDIA.includes(topic.media)) return reply.code(404).send({ error: 'unknown topic' });
+    const stories = await resolveTopicStories(db, topic.media, topic.pageStories ?? []);
+    reply.header('cache-control', 'public, max-age=300');
+    return {
+      id: String(topic.id),
+      media: topic.media,
+      mediaTitle: mediaInfo[topic.media]?.title ?? TOPIC_NAMES[topic.media] ?? topic.media,
+      title: topic.title,
+      kind: topic.kind,
+      url: topic.url,
+      checkedAt: topic.pageCheckedAt?.toISOString() ?? null,
+      total: stories.length,
+      stories,
+    };
+  });
+
   app.get<{ Querystring: { limit?: string; at?: string } }>('/api/v1/events', async (request, reply) => {
     const limit = Math.min(30, Math.max(1, Number(request.query.limit) || 30));
     const at = request.query.at ? new Date(request.query.at) : undefined;

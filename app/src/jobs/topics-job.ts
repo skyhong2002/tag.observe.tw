@@ -17,6 +17,9 @@ import {
 } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articles, crawlRuns, topics } from '../db/schema.ts';
+import { articleMediaOf, indexTopicStories, mergeTopicStories } from './topic-stories.ts';
+
+export { articleMediaOf, TOPIC_ARTICLE_MEDIA } from './topic-stories.ts';
 
 export async function runTopicsJob(
   db: Db,
@@ -148,10 +151,6 @@ export function parseTopicDetail(detail: string | null): { sources: TopicSourceR
   }
 }
 
-// Topic outlets whose stories are stored under another media key.
-export const TOPIC_ARTICLE_MEDIA: Record<string, string> = { twreporter: 'reporter' };
-export const articleMediaOf = (topicMedia: string) => TOPIC_ARTICLE_MEDIA[topicMedia] ?? topicMedia;
-
 // Re-read recently listed topic pages (active 議題 every 6 hours, the rest
 // every 3 days) and keep each topic's own story list. Blocks repeated on the
 // outlet's other topic pages ("latest news", "most read", other topics' picks)
@@ -183,6 +182,8 @@ export async function refreshTopicPages(
   // 議題 still gaining stories are re-read every 6 hours so 最後更新 stays
   // current; 專題, stopped 議題 and undated pages every 3 days.
   const active = and(eq(topics.kind, 'topic'), gte(topics.storyLastAt, new Date(t - 90 * 86400e3)));
+  // Legacy ID-only story keys need a fresh publisher page to recover their URLs.
+  const missingUrls = sql`JSON_LENGTH(${topics.pageStories}) > COALESCE(JSON_LENGTH(JSON_EXTRACT(${topics.pageStories}, '$[*].url')), 0)`;
   // Topics still without a cover go first: the page's share image fills it.
   const due = await db
     .select({
@@ -202,7 +203,7 @@ export async function refreshTopicPages(
     .from(topics)
     .where(
       and(
-        or(gte(topics.lastSeen, new Date(t - 3 * 86400e3)), isNull(topics.kindSource)),
+        or(gte(topics.lastSeen, new Date(t - 3 * 86400e3)), isNull(topics.kindSource), missingUrls),
         or(
           isNull(topics.pageCheckedAt),
           and(active, lt(topics.pageCheckedAt, new Date(t - 6 * 3600e3))),
@@ -211,6 +212,7 @@ export async function refreshTopicPages(
       ),
     )
     .orderBy(
+      sql`NOT COALESCE(${missingUrls}, FALSE)`,
       sql`${topics.image} IS NOT NULL`,
       sql`${topics.pageCheckedAt} IS NOT NULL`,
       sql`NOT (${active})`,
@@ -445,8 +447,8 @@ export async function refreshTopicPages(
     await db
       .update(topics)
       .set({
-        // The link as found is not stored: the key identifies the story.
-        pageStories: stories.map(({ url: _url, ...s }) => s),
+        // Keep original URLs for articles the news crawler has not collected.
+        pageStories: mergeTopicStories(row.pageStories ?? [], stories),
         pageCheckedAt: now(),
         storyCount: stories.length || sql`${topics.storyCount}`,
         storyFirstAt: first,
@@ -456,7 +458,10 @@ export async function refreshTopicPages(
       })
       .where(eq(topics.id, row.id));
   }
-  return { checked: due.length, found, covers, children, classified, storyFetches: targets.length, storiesDated };
+  let indexed = 0;
+  for (const { row, stories } of plans)
+    indexed += await indexTopicStories(db, row.media, mergeTopicStories(row.pageStories ?? [], stories));
+  return { checked: due.length, found, covers, children, classified, indexed, storyFetches: targets.length, storiesDated };
 }
 
 /** Dates stored for these stories on any topic of their outlet, by outlet and key. */

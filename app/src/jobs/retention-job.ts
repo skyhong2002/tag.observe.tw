@@ -17,6 +17,7 @@ import {
   rankingSnapshots,
   rejectedUrls,
   sourceProbes,
+  topics,
 } from '../db/schema.ts';
 import { archiveColdContent, cacheAgeForSpace } from '../nearline/content.ts';
 import type { ArchiveStore } from '../nearline/store.ts';
@@ -80,6 +81,10 @@ export async function runRetentionJob(
           sql`JSON_LENGTH(${articles.tags}) = 0`,
           sql`NOT EXISTS (SELECT 1 FROM ${articleArchives} WHERE ${articleArchives.articleId} = ${articles.id})`,
           sql`NOT EXISTS (SELECT 1 FROM ${articleOrigins} WHERE ${articleOrigins.articleId} = ${articles.id})`,
+          // Topic members remain indexed even while their bodies await extraction.
+          sql`NOT EXISTS (SELECT 1 FROM ${topics} WHERE
+            (${topics.media} = ${articles.media} OR (${topics.media} = 'twreporter' AND ${articles.media} = 'reporter'))
+            AND JSON_CONTAINS(JSON_EXTRACT(${topics.pageStories}, '$[*].key'), JSON_QUOTE(${articles.urlKey})))`,
         ),
       )
       .limit(batch)

@@ -16,7 +16,7 @@ export interface TopicStory {
   date?: string; // ISO publish date the topic page (or the story's own page) shows, if any
   /** The story's own page was read and shows no publish date: not fetched again. */
   dateless?: true;
-  /** The link as found on the topic page (not stored: the key is kept). */
+  /** The original link as found on the topic page, retained for unindexed stories. */
   url?: string;
 }
 

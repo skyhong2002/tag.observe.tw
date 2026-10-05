@@ -15,7 +15,8 @@ export const kindNoun = (kind: TopicKind) => (kind === 'feature' ? '專題' : '�
 /** The outlet's 議題 or 專題 page. */
 export const topicMediaHref = (media: string, kind: TopicKind = 'topic') =>
   `/${kind === 'feature' ? 'feature' : 'topic'}/${encodeURIComponent(media)}/`;
-export const topicHref = (media: string, id: string, kind: TopicKind = 'topic') => `${topicMediaHref(media, kind)}#topic-${id}`;
+export const topicHref = (media: string, id: string, kind: TopicKind = 'topic') =>
+  `${topicMediaHref(media, kind)}${encodeURIComponent(id)}/`;
 
 /** One outlet topic. Cover only when the outlet gave one: a logo in its place
  *  makes rows look broken, so those topics render as a compact text row. The
@@ -82,6 +83,9 @@ export default function TopicCard({
           {topic.time && !topic.backlog ? `首次發現 ${taipei(topic.time)}` : '開始追蹤前已上架'}
           <SourceLink url={topic.url} label={`原站${noun}`} className="!min-h-5 shrink-0" />
         </span>
+        <Link href={topicHref(media, topic.id, kind)} className="w-fit text-sm text-brand-700 hover:underline dark:text-brand-300">
+          新聞索引 →
+        </Link>
         {topic.coverage && <Coverage c={topic.coverage} />}
         {nested}
       </div>
@@ -105,7 +109,7 @@ export function Coverage({ c }: { c: TopicCoverage }) {
           </Link>
         ))}
         <span>
-          近 3 天 {c.count}
+          其他相關報導：近 3 天 {c.count}
           {c.capped ? '+' : ''} 篇 · {c.mediaCount} 家媒體
         </span>
       </div>

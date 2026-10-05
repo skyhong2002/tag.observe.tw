@@ -208,3 +208,16 @@ export interface TopicMediaPage {
 export type MediaTopic = Topic & { coverage?: TopicCoverage | null; children?: MediaTopic[] };
 export const fetchTopicMedia = (media: string, limit = 30, kind: TopicKind = 'topic') =>
   get<TopicMediaPage>(`/api/v1/topics?media=${encodeURIComponent(media)}&limit=${limit}&kind=${kind}`, 300);
+
+export interface TopicStoryIndex {
+  id: string;
+  media: string;
+  mediaTitle: string;
+  title: string;
+  kind: TopicKind;
+  url: string;
+  checkedAt: string | null;
+  total: number;
+  stories: Array<{ key: string; title: string; url: string | null; id: number | null; date: string | null }>;
+}
+export const fetchTopicStories = (id: string) => get<TopicStoryIndex>(`/api/v1/topics/${encodeURIComponent(id)}/stories`, 300);
