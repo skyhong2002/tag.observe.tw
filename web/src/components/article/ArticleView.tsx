@@ -9,6 +9,7 @@ import SourceLink from '@/components/SourceLink';
 import { kindNoun, topicHref } from '@/components/TopicCard';
 import { taipei } from '@/lib/api';
 import { CONTENT_STATUS, type StoredContent } from '@/lib/article-content';
+import { attributionRole } from '@/lib/author-display.mts';
 import type { TopicKind } from '@/lib/pages';
 import { readingTitle } from '@/lib/reading.mts';
 import type { ArticleRelated as Related } from '@/lib/related';
@@ -75,7 +76,7 @@ export default function ArticleView({
         </p>
         <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">{headline.title}</h1>
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-          <AuthorCredits credits={article.authors} />
+          <AuthorCredits credits={article.authors} media={article.media} attributions={content.attributions} />
           <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>
           {content.body && <span className="text-xs">全文約 {content.chars.toLocaleString('zh-TW')} 字</span>}
         </div>
@@ -131,12 +132,12 @@ export default function ArticleView({
         {extra}
         {content.attributions.length > 0 && (
           <section>
-            <h2 className="mb-3 text-sm font-medium">文中引用來源</h2>
+            <h2 className="mb-3 text-sm font-medium">文章來源與引用</h2>
             <ul className="space-y-3 text-sm">
               {content.attributions.map((source) => (
                 <li key={source.media} className="border-l-2 border-zinc-200 pl-4 dark:border-zinc-700">
                   <p className="font-medium">
-                    {source.name}
+                    {attributionRole(source)} {source.name}
                     <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{source.country}</span>
                   </p>
                   <p className="mt-1 break-words leading-7 text-zinc-600 dark:text-zinc-400">{source.evidence}</p>

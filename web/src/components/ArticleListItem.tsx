@@ -70,7 +70,7 @@ export default function ArticleListItem({
             ) : (
               <span>報導日期不明</span>
             )}
-            <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
+            <AuthorCredits credits={article.authors} media={article.media} className="max-w-40 truncate" />
             <SourceLink url={article.url} showUrl className="!min-h-5 !text-[11px]" />
           </div>
           {article.tags.length > 0 && (
