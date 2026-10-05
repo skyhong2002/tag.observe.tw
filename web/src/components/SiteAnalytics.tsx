@@ -27,6 +27,7 @@ export default function SiteAnalytics() {
       webdriver: navigator.webdriver,
       userAgent: navigator.userAgent,
       optedOut: readOptOut(safeStorage()),
+      pathname: location.pathname,
     });
     // GA's documented kill switch, in case a tag was loaded some other way.
     const disable = window as unknown as Record<string, boolean>;

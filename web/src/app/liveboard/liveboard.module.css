@@ -1,0 +1,143 @@
+/* Motion for the always-on board; everything stops under reduced motion. */
+.stage {
+  animation: stage-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.progress {
+  transform-origin: left;
+  animation-name: progress;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+@keyframes progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.enter {
+  animation: row-in 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes row-in {
+  0% {
+    opacity: 0;
+    transform: translateX(28px);
+    background-color: rgb(234 88 12 / 0.35);
+  }
+  40% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.clamp2,
+.clamp3,
+.clamp4 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp2 {
+  -webkit-line-clamp: 2;
+}
+.clamp3 {
+  -webkit-line-clamp: 3;
+}
+.clamp4 {
+  -webkit-line-clamp: 4;
+}
+
+.fadeOut {
+  -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent);
+  mask-image: linear-gradient(to bottom, #000 80%, transparent);
+}
+
+.paragraphs {
+  /* Paragraph breaks from whitespace-pre-line read as a gap, not a cramped wrap. */
+  line-height: 1.75;
+}
+
+.flash {
+  /* No fill: once done, the row's own highlight background shows again. */
+  animation: flash 2.4s ease-out;
+}
+@keyframes flash {
+  0%,
+  30% {
+    background-color: rgb(234 88 12 / 0.4);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.pop {
+  animation: pop 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes pop {
+  0% {
+    transform: scale(1.18);
+    color: #fff;
+  }
+}
+
+.marquee {
+  animation-name: marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.fade {
+  animation: fade 900ms ease-out both;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage,
+  .enter,
+  .pulse,
+  .flash,
+  .marquee,
+  .pop,
+  .fade,
+  .progress {
+    animation: none;
+  }
+}

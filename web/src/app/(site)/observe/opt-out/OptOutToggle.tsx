@@ -7,6 +7,7 @@ const STATUS: Record<NonNullable<AnalyticsBlock> | 'counted', { label: string; n
   'opt-out': { label: '不計入統計', note: '已在這個瀏覽器關閉，Google Analytics 不會載入。' },
   automation: { label: '不計入統計', note: '偵測到自動化測試瀏覽器，預設不送統計。' },
   environment: { label: '不計入統計', note: '這不是正式網站（tag.observe.tw），本來就不送統計。' },
+  kiosk: { label: '不計入統計', note: '常駐看板頁面（/liveboard/）不送統計。' },
 };
 
 function current() {

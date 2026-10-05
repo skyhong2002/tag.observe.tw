@@ -137,9 +137,9 @@ export interface TextPart {
   different: boolean;
 }
 /** Character LCS, coalesced into readable runs; never rewrite a source headline. */
-export function headlineDiff(left: string, right: string): [TextPart[], TextPart[]] {
+export function headlineDiff(left: string, right: string, limit = 600): [TextPart[], TextPart[]] {
   // Limit work for malformed/unexpected upstream headlines while keeping full text.
-  if (left.length > 600 || right.length > 600) return [[{ text: left, different: false }], [{ text: right, different: false }]];
+  if (left.length > limit || right.length > limit) return [[{ text: left, different: false }], [{ text: right, different: false }]];
   const a = [...left],
     b = [...right];
   const rows = Array.from({ length: a.length + 1 }, () => new Uint16Array(b.length + 1));

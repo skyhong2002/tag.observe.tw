@@ -39,6 +39,8 @@ export const robotsTxt = () =>
     'Disallow: /api/v',
     'Disallow: /_migration/',
     'Disallow: /demo/',
+    // An always-on screen for a wall tablet, not a page for readers.
+    'Disallow: /liveboard/',
     '',
     `Sitemap: ${ORIGIN}/sitemap.xml`,
     '',

@@ -1490,6 +1490,120 @@ export const ENDPOINTS: Endpoint[] = [
       ),
     }),
   },
+  {
+    path: '/api/v1/liveboard',
+    tag: 'articles',
+    summary: '即時看板輪詢：新文章、轉載組與發稿量',
+    description:
+      '給 /liveboard/ 這類常駐畫面輪詢。不帶參數時回最近 3 小時內收錄的 40 篇本站爬取文章與最近的轉載組；之後把回應的 cursor 原樣帶回，只取新收錄的文章（依收錄順序，不是發布時間，晚抓到的也不會漏）與新算出的轉載組。轉載組是 3 小時內算出的正文相似配對連起來的一群文章，最早發布者為 lead，其餘依是否直接相似、相似度排序。stats 為依發布時間的各陣營發稿量。',
+    params: [
+      q('after', '上次回應的 cursor.after（文章 id）', { type: 'integer', minimum: 0 }, 23198458),
+      q('pairsAfter', '上次回應的 cursor.pairsAfter', time()),
+      q('readAfter', '上次回應的 cursor.readAfter', time()),
+    ],
+    errors: { '400': 'after、pairsAfter 或 readAfter 格式錯誤' },
+    cache: '15 秒（轉載組與 stats 每分鐘更新）',
+    response: obj({
+      generatedAt: time(),
+      cursor: obj({ after: nullable(int()), pairsAfter: nullable(time()), readAfter: nullable(time()) }, '下次輪詢原樣帶回'),
+      articles: arr(
+        obj({
+          id: int(),
+          media: ref('MediaKey'),
+          mediaTitle: str(),
+          camp,
+          title: str(),
+          url: str(),
+          image: nullable(str()),
+          publishedAt: time(),
+          datePending: bool('發布時間仍只是首次看到的時間'),
+          tags: arr(str(), '前 8 個標籤'),
+          authors: arr(str(), '署名（多為記者，有時是媒體本身）'),
+          text: nullable(str('內文開頭（新文章 600 字、轉載組的 lead 與前 3 篇跟稿 1500 字），沒有內文時為摘要')),
+        }),
+        '新收錄文章，新的在前，最多 40 篇',
+      ),
+      stories: arr(
+        obj({
+          key: str('lead 文章 id'),
+          computedAt: time('組內最新配對的計算時間'),
+          lead: obj({}, '最早發布的文章，欄位同 articles'),
+          followers: arr(
+            obj({
+              article: obj({}, '欄位同 articles'),
+              score: num('Dice 相似度（0.5–1）'),
+              containment: num(),
+              kind: str(undefined, { enum: ['identical', 'high'] }),
+              evidence: str('共同段落摘錄'),
+              direct: bool('false 表示只和組內其他跟稿相似'),
+              gapMinutes: int('比 lead 晚幾分鐘發布'),
+            }),
+          ),
+          more: int('未列出的跟稿數'),
+        }),
+        '新算出的轉載組，最多 12 組',
+      ),
+      activity: obj(
+        {
+          crawls: arr(
+            obj({
+              media: ref('MediaKey'),
+              mediaTitle: str(),
+              stage: str('index 來源巡查、article 抓取內文、topic 議題'),
+              at: time('結束時間，執行中為開始時間'),
+              running: bool(),
+              inserted: int('新增文章數'),
+              failed: bool(),
+            }),
+            '近 10 分鐘的爬取，新的在前，最多 40 筆',
+          ),
+          running: arr(obj({ job: str(), since: time() }), '執行中的排程工作'),
+          upcoming: arr(obj({ job: str(), label: str(), at: time() }), '接下來的 8 個排程工作'),
+        },
+        '爬蟲與排程工作動態；每 15 秒更新',
+      ),
+      topics: arr(
+        obj({
+          id: int(),
+          media: ref('MediaKey'),
+          mediaTitle: str(),
+          title: str(),
+          url: str(),
+          image: nullable(str()),
+          kind: str('topic 議題、feature 專題', { enum: ['topic', 'feature'] }),
+          isNew: bool('24 小時內新出現；否則為新增了報導'),
+          at: time('新出現或新增報導的時間'),
+          storyCount: nullable(int()),
+          stories: arr(
+            obj({
+              title: str(),
+              url: nullable(str()),
+              date: nullable(time()),
+              article: nullable(obj({}, '對應的已收錄文章，欄位同 articles，text 為內文前 160 字')),
+            }),
+            '頁面上最新的 4 則報導',
+          ),
+        }),
+        '6 小時內新增報導或 24 小時內新出現的議題／專題，每家媒體最多 2 個，最多 12 個',
+      ),
+      reading: arr(
+        obj({}, '欄位同 articles，text 為內文前 700 字'),
+        '6 小時內發布、最近取得內文的 20 篇中，晚於 readAfter 取得的；最新取得的在前，每分鐘更新',
+      ),
+      stats: obj({
+        last60m: arr(obj({ t: time(), blue: int(), green: int(), other: int() }), '近 60 分鐘每 5 分鐘'),
+        hourly24: arr(obj({ t: time(), blue: int(), green: int(), other: int() }), '近 24 小時逐時'),
+        total24h: int(),
+        activeMedia1h: int('近 1 小時有發稿的媒體數'),
+      }),
+      visitors: nullable(
+        obj(
+          { activeUsers: int(), views: int(), perMinute: arr(int(), '近 30 分鐘每分鐘瀏覽數，舊的在前') },
+          '本站 GA 即時資料；即時工作停擺時為 null',
+        ),
+      ),
+    }),
+  },
 ];
 
 const PUBLIC_ORIGIN = 'https://tag.observe.tw';

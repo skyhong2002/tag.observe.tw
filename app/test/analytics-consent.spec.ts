@@ -21,6 +21,8 @@ describe('who sends GA data', () => {
     expect(analyticsBlock({ ...reader, optedOut: true })).toBe('opt-out');
     expect(analyticsBlock({ ...reader, hostname: 'localhost' })).toBe('environment');
     expect(analyticsBlock({ ...reader, production: false })).toBe('environment');
+    expect(analyticsBlock({ ...reader, pathname: '/liveboard/' })).toBe('kiosk');
+    expect(analyticsBlock({ ...reader, pathname: '/liveboards/' })).toBeNull();
   });
   it('remembers and restores the opt-out, and treats unreadable storage as not opted out', () => {
     const data = new Map<string, string>();

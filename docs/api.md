@@ -89,6 +89,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media/{media}`](#api-v1-media-media) | 單一媒體最近的文章與熱門標籤 |
 | [`GET /api/v1/media-traffic-comparison`](#api-v1-media-traffic-comparison) | 本站爬蟲跨月收錄量 |
 | [`GET /api/v1/media-stats`](#api-v1-media-stats) | 各媒體收錄量與爬蟲狀態 |
+| [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、轉載組與發稿量 |
 
 ## API 本身
 
@@ -855,6 +856,116 @@ curl -s 'https://tag.observe.tw/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&li
 | `articles[].tags` | string[] |  |
 
 錯誤：`400` 參數錯誤（未知媒體、分類或政治傾向、時間格式、時間窗超過上限、cursor 無效）。
+
+<a id="api-v1-liveboard"></a>
+
+### `GET /api/v1/liveboard`
+
+**即時看板輪詢：新文章、轉載組與發稿量**
+
+給 /liveboard/ 這類常駐畫面輪詢。不帶參數時回最近 3 小時內收錄的 40 篇本站爬取文章與最近的轉載組；之後把回應的 cursor 原樣帶回，只取新收錄的文章（依收錄順序，不是發布時間，晚抓到的也不會漏）與新算出的轉載組。轉載組是 3 小時內算出的正文相似配對連起來的一群文章，最早發布者為 lead，其餘依是否直接相似、相似度排序。stats 為依發布時間的各陣營發稿量。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `after` | query | integer | 上次回應的 cursor.after（文章 id），例：`23198458` |
+| `pairsAfter` | query | string (ISO 時間) | 上次回應的 cursor.pairsAfter |
+| `readAfter` | query | string (ISO 時間) | 上次回應的 cursor.readAfter |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/liveboard'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `cursor` | object | 下次輪詢原樣帶回 |
+| `cursor.after` | integer \| null |  |
+| `cursor.pairsAfter` | string (ISO 時間) \| null |  |
+| `cursor.readAfter` | string (ISO 時間) \| null |  |
+| `articles` | object[] | 新收錄文章，新的在前，最多 40 篇 |
+| `articles[].id` | integer |  |
+| `articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `articles[].mediaTitle` | string |  |
+| `articles[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `articles[].title` | string |  |
+| `articles[].url` | string |  |
+| `articles[].image` | string \| null |  |
+| `articles[].publishedAt` | string (ISO 時間) |  |
+| `articles[].datePending` | boolean | 發布時間仍只是首次看到的時間 |
+| `articles[].tags` | string[] | 前 8 個標籤 |
+| `articles[].authors` | string[] | 署名（多為記者，有時是媒體本身） |
+| `articles[].text` | string \| null | 內文開頭（新文章 600 字、轉載組的 lead 與前 3 篇跟稿 1500 字），沒有內文時為摘要 |
+| `stories` | object[] | 新算出的轉載組，最多 12 組 |
+| `stories[].key` | string | lead 文章 id |
+| `stories[].computedAt` | string (ISO 時間) | 組內最新配對的計算時間 |
+| `stories[].lead` | object | 最早發布的文章，欄位同 articles |
+| `stories[].followers` | object[] |  |
+| `stories[].followers[].article` | object | 欄位同 articles |
+| `stories[].followers[].score` | number | Dice 相似度（0.5–1） |
+| `stories[].followers[].containment` | number |  |
+| `stories[].followers[].kind` | "identical" \| "high" |  |
+| `stories[].followers[].evidence` | string | 共同段落摘錄 |
+| `stories[].followers[].direct` | boolean | false 表示只和組內其他跟稿相似 |
+| `stories[].followers[].gapMinutes` | integer | 比 lead 晚幾分鐘發布 |
+| `stories[].more` | integer | 未列出的跟稿數 |
+| `activity` | object | 爬蟲與排程工作動態；每 15 秒更新 |
+| `activity.crawls` | object[] | 近 10 分鐘的爬取，新的在前，最多 40 筆 |
+| `activity.crawls[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `activity.crawls[].mediaTitle` | string |  |
+| `activity.crawls[].stage` | string | index 來源巡查、article 抓取內文、topic 議題 |
+| `activity.crawls[].at` | string (ISO 時間) | 結束時間，執行中為開始時間 |
+| `activity.crawls[].running` | boolean |  |
+| `activity.crawls[].inserted` | integer | 新增文章數 |
+| `activity.crawls[].failed` | boolean |  |
+| `activity.running` | object[] | 執行中的排程工作 |
+| `activity.running[].job` | string |  |
+| `activity.running[].since` | string (ISO 時間) |  |
+| `activity.upcoming` | object[] | 接下來的 8 個排程工作 |
+| `activity.upcoming[].job` | string |  |
+| `activity.upcoming[].label` | string |  |
+| `activity.upcoming[].at` | string (ISO 時間) |  |
+| `topics` | object[] | 6 小時內新增報導或 24 小時內新出現的議題／專題，每家媒體最多 2 個，最多 12 個 |
+| `topics[].id` | integer |  |
+| `topics[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `topics[].mediaTitle` | string |  |
+| `topics[].title` | string |  |
+| `topics[].url` | string |  |
+| `topics[].image` | string \| null |  |
+| `topics[].kind` | "topic" \| "feature" | topic 議題、feature 專題 |
+| `topics[].isNew` | boolean | 24 小時內新出現；否則為新增了報導 |
+| `topics[].at` | string (ISO 時間) | 新出現或新增報導的時間 |
+| `topics[].storyCount` | integer \| null |  |
+| `topics[].stories` | object[] | 頁面上最新的 4 則報導 |
+| `topics[].stories[].title` | string |  |
+| `topics[].stories[].url` | string \| null |  |
+| `topics[].stories[].date` | string (ISO 時間) \| null |  |
+| `topics[].stories[].article` | object \| null | 對應的已收錄文章，欄位同 articles，text 為內文前 160 字 |
+| `reading` | object[] | 6 小時內發布、最近取得內文的 20 篇中，晚於 readAfter 取得的；最新取得的在前，每分鐘更新 |
+| `stats` | object |  |
+| `stats.last60m` | object[] | 近 60 分鐘每 5 分鐘 |
+| `stats.last60m[].t` | string (ISO 時間) |  |
+| `stats.last60m[].blue` | integer |  |
+| `stats.last60m[].green` | integer |  |
+| `stats.last60m[].other` | integer |  |
+| `stats.hourly24` | object[] | 近 24 小時逐時 |
+| `stats.hourly24[].t` | string (ISO 時間) |  |
+| `stats.hourly24[].blue` | integer |  |
+| `stats.hourly24[].green` | integer |  |
+| `stats.hourly24[].other` | integer |  |
+| `stats.total24h` | integer |  |
+| `stats.activeMedia1h` | integer | 近 1 小時有發稿的媒體數 |
+| `visitors` | object \| null | 本站 GA 即時資料；即時工作停擺時為 null |
+| `visitors.activeUsers` | integer |  |
+| `visitors.views` | integer |  |
+| `visitors.perMinute` | integer[] | 近 30 分鐘每分鐘瀏覽數，舊的在前 |
+
+錯誤：`400` after、pairsAfter 或 readAfter 格式錯誤。
+
+快取：15 秒（轉載組與 stats 每分鐘更新）。
 
 ## 記者署名與跨媒體相似
 

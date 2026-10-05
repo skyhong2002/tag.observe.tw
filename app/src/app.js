@@ -9,6 +9,7 @@ import { registerArticleContent } from './v1/article-content.ts';
 import { registerArticleRelated } from './v1/article-related.ts';
 import { registerArticleSearch } from './v1/articles.ts';
 import { registerJournalists } from './v1/journalists.ts';
+import { registerLiveboard } from './v1/liveboard.ts';
 import { registerMediaKeywords } from './v1/media-keywords.ts';
 import { registerMediaStats } from './v1/media-stats.ts';
 import { registerMediaTrafficComparison } from './v1/media-traffic-comparison.ts';
@@ -79,6 +80,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerArticleContent(app, own.db);
     registerArticleRelated(app, own.db);
     registerSiteObservation(app, own.db);
+    registerLiveboard(app, own.db);
   }
   registerApiMeta(app);
   registerFeeds(app, own?.db ?? null);
