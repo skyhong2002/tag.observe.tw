@@ -20,6 +20,7 @@ import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import styles from './_home/home.module.css';
+import Masthead from './_home/Masthead';
 import NewsImage from './_home/NewsImage';
 
 export const revalidate = 120;
@@ -337,18 +338,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <a href="#news-main" className={styles.skip}>
         跳至新聞內容
       </a>
-      <SiteHeader />
+      <SiteHeader mastheadId="masthead" />
       <main id="news-main" className={styles.main}>
-        <div className={styles.pageHeading}>
-          <div>
-            <div className={styles.titleRow}>
-              <h1>新聞總覽</h1>
-            </div>
-            <p className={styles.edition}>
-              {date} · {updated ? `${taipei(updated)} 更新` : '等待資料更新'}
-            </p>
-          </div>
-        </div>
+        <Masthead date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
 
         {data.campShare && <CampShareBar share={data.campShare} />}
 
