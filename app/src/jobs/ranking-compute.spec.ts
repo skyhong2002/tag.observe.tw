@@ -11,6 +11,17 @@ describe('splitLegacyTags', () => {
 });
 
 describe('computeRanking', () => {
+  it('drops source aliases only for the originating outlet', () => {
+    const chart = computeRanking(
+      [
+        { media: 'ftnn', tags: '[FTNN 新聞網][台積電]' },
+        { media: 'udn', tags: '[FTNN 新聞網]' },
+      ],
+      { hours: 24 },
+    );
+    expect(chart.entries.find((entry) => entry.tag === 'FTNN 新聞網')).toMatchObject({ count: 1, media: { udn: 1 } });
+    expect(chart.articleCount).toBe(2);
+  });
   it('filters noise before the rank limit and when reading old snapshots without changing denominators', () => {
     const chart = computeRanking(
       [

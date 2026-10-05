@@ -11,6 +11,12 @@ const vocab = buildVocab([
   { tag: 'AI', n: 20 },
 ]);
 describe('media keyword cloud', () => {
+  it('excludes source aliases even when old title suffixes reintroduce them', () => {
+    const brands = buildVocab([{ tag: '自由時報電子報', n: 500 }]);
+    expect(mediaKeywordTerms([{ title: '台股上漲 | 自由時報電子報', tags: ['自由財經', '台積電'] }], brands, 'ltn')).toEqual([
+      { label: '台積電', count: 1 },
+    ]);
+  });
   it('excludes the outlet name from stored tags and title matches, while keeping other media', () => {
     const brands = buildVocab([
       { tag: '世界新聞網', n: 50 },

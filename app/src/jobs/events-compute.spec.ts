@@ -35,6 +35,11 @@ const rows: ArticleRow[] = [
 ];
 
 describe('CoOccurrence', () => {
+  it('does not connect reports using their own source aliases', () => {
+    const co = new CoOccurrence([art(1, 'ftnn', ['FTNN 新聞網', '台積電']), art(2, 'udn', ['FTNN 新聞網', '台積電'])]);
+    expect(co.count('FTNN 新聞網')).toBe(1);
+    expect(co.shared('FTNN 新聞網', '台積電')).toBe(1);
+  });
   it('finds equal tags at >50% co-occurrence, transitively', () => {
     const co = new CoOccurrence(rows);
     expect(co.count('核電')).toBe(4);

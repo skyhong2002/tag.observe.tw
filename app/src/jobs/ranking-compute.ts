@@ -3,6 +3,7 @@
 // score: 1 for the first article of a media, 0.5 for the second, 0.25 ...
 // Sorting is a stable descending sort (PHP 5.4's arsort tie order is not
 // reproduced; the legacy-compatible routes still read PHP's own cache).
+import { isOwnMediaTag } from '../media-tags.ts';
 import { isTagNoise } from '../tag-noise.ts';
 import type { RankingBasis } from './ranking-basis.ts';
 export interface TagSource {
@@ -50,7 +51,7 @@ export function computeRanking(
     articles++;
     mediaSeen.add(row.media);
     for (const tag of splitLegacyTags(row.tags)) {
-      if (isTagNoise(tag)) continue;
+      if (isTagNoise(tag) || isOwnMediaTag(tag, row.media)) continue;
       count.set(tag, (count.get(tag) ?? 0) + 1);
       let media = perMedia.get(tag);
       if (!media) {

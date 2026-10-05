@@ -1,6 +1,7 @@
 // Port of legacy maint/events.php (clustering) + api/relation24.php (equal=1).
 // Pure functions over in-memory article rows; no DB access.
 
+import { isOwnMediaTag } from '../media-tags.ts';
 import { isTagNoise } from '../tag-noise.ts';
 import type { BurstEntry } from './ranking-compute.ts';
 
@@ -116,7 +117,13 @@ export class CoOccurrence {
   constructor(rows: ArticleRow[], { siteTagMin = SITE_TAG_MIN } = {}) {
     this.siteTags = siteTags(rows, siteTagMin);
     for (const r of rows) {
-      const tags = [...new Set(r.tags.map(clean).filter((t) => Buffer.byteLength(t) > 1 && !isTagNoise(t) && !this.siteTags.has(t)))];
+      const tags = [
+        ...new Set(
+          r.tags
+            .map(clean)
+            .filter((t) => Buffer.byteLength(t) > 1 && !isTagNoise(t) && !isOwnMediaTag(t, r.media) && !this.siteTags.has(t)),
+        ),
+      ];
       this.byArticle.set(r.id, tags);
       for (const t of tags) {
         let s = this.byTag.get(t);
