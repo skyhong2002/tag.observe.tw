@@ -43,21 +43,18 @@ export default function TopicCard({
   const noun = kindNoun(kind);
   const title = topic.title ?? `（未命名${noun}）`;
   const updated = updatedAtOf(topic);
-  const titleNode = href ? (
-    <Link href={href} className="hover:underline">
+  const detailHref = href ?? topicHref(media, topic.id, kind);
+  const titleNode = (
+    <Link href={detailHref} className="hover:underline">
       {title}
     </Link>
-  ) : (
-    <a href={topic.url ?? undefined} target="_blank" rel="noopener noreferrer" className="hover:underline">
-      {title}
-    </a>
   );
   return (
     <li
       id={`topic-${topic.id}`}
       className="flex scroll-mt-20 gap-3 rounded-lg border border-transparent py-3 target:-mx-3 target:border-brand-400 target:bg-brand-50 target:px-3 dark:target:border-brand-700 dark:target:bg-brand-950/40"
     >
-      <TopicCover src={image} href={href ?? topic.url ?? '#'} />
+      <TopicCover src={image} href={detailHref} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="font-medium leading-snug">
           {titleNode}
@@ -83,9 +80,6 @@ export default function TopicCard({
           {topic.time && !topic.backlog ? `首次發現 ${taipei(topic.time)}` : '開始追蹤前已上架'}
           <SourceLink url={topic.url} label={`原站${noun}`} className="!min-h-5 shrink-0" />
         </span>
-        <Link href={topicHref(media, topic.id, kind)} className="w-fit text-sm text-brand-700 hover:underline dark:text-brand-300">
-          新聞索引 →
-        </Link>
         {topic.coverage && <Coverage c={topic.coverage} />}
         {nested}
       </div>

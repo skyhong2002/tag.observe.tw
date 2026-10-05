@@ -33,7 +33,7 @@ const row = {
   attributions: [],
   bodyChars: 33,
 };
-function fakeDb(rows: unknown[], discoveries: unknown[] = []) {
+function fakeDb(rows: unknown[], discoveries: unknown[] = [], collections: unknown[] = []) {
   const chain = {
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
@@ -41,7 +41,8 @@ function fakeDb(rows: unknown[], discoveries: unknown[] = []) {
     limit: vi.fn().mockResolvedValue(rows),
   };
   const discoveryChain = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue(discoveries) };
-  const select = vi.fn().mockReturnValueOnce(chain).mockReturnValue(discoveryChain);
+  const collectionChain = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue(collections) };
+  const select = vi.fn().mockReturnValueOnce(chain).mockReturnValueOnce(discoveryChain).mockReturnValue(collectionChain);
   const touchWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
   const update = vi.fn(() => ({ set: () => ({ where: touchWhere }) }));
   return { db: { select, update } as unknown as Db, select, chain, discoveryChain, update, touchWhere };
@@ -218,6 +219,22 @@ describe('stored article content', () => {
       discoverySources: [{ media: 'google_news', title: 'Google 新聞', url: 'https://news.google.com/articles/test', discoveredAt }],
     });
   });
+  it('includes all actual collection memberships without changing article tags', async () => {
+    const { db } = fakeDb(
+      [row],
+      [],
+      [
+        { id: 7, media: 'cna', title: '手動編選專題', kind: 'feature' },
+        { id: 3, media: 'cna', title: '持續追蹤議題', kind: 'topic' },
+      ],
+    );
+    const result = await loadArticleContent(db, 9);
+    expect(result?.article.collections).toEqual([
+      { id: '3', media: 'cna', title: '持續追蹤議題', kind: 'topic' },
+      { id: '7', media: 'cna', title: '手動編選專題', kind: 'feature' },
+    ]);
+    expect(result?.article.tags).toEqual(row.tags);
+  });
   it('serves preserved text with no source request and reports not found or invalid inputs', async () => {
     const { db, select } = fakeDb([row]);
     const app = Fastify();
@@ -239,7 +256,7 @@ describe('stored article content', () => {
       for (const path of ['/api/v1/media/unknown-content-outlet/content', '/api/v1/media/__proto__/content']) {
         expect((await app.inject(path)).statusCode).toBe(404);
       }
-      expect(select).toHaveBeenCalledTimes(2);
+      expect(select).toHaveBeenCalledTimes(3);
       select.mockReturnValue({ from: () => ({ where: () => ({ limit: async () => [] }) }) });
       expect((await app.inject('/api/v1/articles/12/content')).statusCode).toBe(404);
     } finally {

@@ -7,6 +7,7 @@ import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
+import { kindNoun, topicHref } from '@/components/TopicCard';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import { CONTENT_STATUS, type StoredContent } from '@/lib/article-content';
 import { type ReadingParams, readingQuery, readingTitle, withReadingQuery } from '@/lib/reading.mts';
@@ -90,6 +91,30 @@ export default async function ArticleContentPage({
         <div className="mt-3">
           <DiscoverySources sources={article.discoverySources} />
         </div>
+        {!!article.collections?.length && (
+          <nav aria-label="所屬議題與專題" className="mt-5 space-y-2 text-sm">
+            {(['topic', 'feature'] as const).map((kind) => {
+              const collections = article.collections!.filter((c) => c.kind === kind);
+              return collections.length ? (
+                <div key={kind} className="flex gap-3">
+                  <span className="shrink-0 text-zinc-500">{kindNoun(kind)}</span>
+                  <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                    {collections.map((collection) => (
+                      <li key={collection.id}>
+                        <Link
+                          href={topicHref(collection.media, collection.id, kind)}
+                          className="text-brand-700 hover:underline dark:text-brand-300"
+                        >
+                          {collection.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null;
+            })}
+          </nav>
+        )}
         {/* While the excerpt is readable nothing announces its end date; the
             notice appears only once it has expired. */}
         {expiresAt && content.status === 'expired' && (

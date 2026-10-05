@@ -4,9 +4,11 @@ import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import reviewedPublications from '../../data/reviewed-publications.json' with { type: 'json' };
 import { BODY_RETENTION_MS, bodyIsPublic, publicBodyUntil } from '../article-retention.ts';
 import { normalizeAuthorCredits } from '../crawl/byline.ts';
-import { excludedMedia } from '../crawl/registry.ts';
+import { excludedMedia, sourceByMedia } from '../crawl/registry.ts';
+import { urlKey } from '../crawl/text.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
+import { type ArticleCollection, collectionsForArticle } from '../jobs/topic-stories.ts';
 import { touchArticleContent } from '../nearline/content.ts';
 import { type Attribution, normalizeAttributions, type OutletIdentity, outletIdentity } from '../similarity/attribution.ts';
 
@@ -32,6 +34,7 @@ export interface ContentArticle {
   authors: string[];
   publisher: OutletIdentity;
   discoverySources?: DiscoverySource[];
+  collections?: ArticleCollection[];
 }
 export interface ArticleContentResponse {
   article: ContentArticle;
@@ -171,6 +174,7 @@ export async function loadArticleContent(db: Db, id: number, now = new Date()): 
   const [row] = await db
     .select({
       ...metadata,
+      urlKey: articles.urlKey,
       body: articles.body,
       bodyStatus: articles.bodyStatus,
       bodySource: articles.bodySource,
@@ -182,7 +186,10 @@ export async function loadArticleContent(db: Db, id: number, now = new Date()): 
     .where(eq(articles.id, id))
     .limit(1);
   if (!row) return null;
-  const discoveries = await loadDiscoverySources(db, [id]);
+  const [discoveries, collections] = await Promise.all([
+    loadDiscoverySources(db, [id]),
+    collectionsForArticle(db, row.media, row.urlKey ?? urlKey(row.url, sourceByMedia(row.media)?.list.articleId)),
+  ]);
   const stored = row.body?.trim() ? row.body : null;
   const storedChars = stored ? Array.from(stored).length : 0;
   const state = publicContentState(contentStatus(row.bodyStatus, storedChars, row.contentFetchedAt), storedChars, row.publishedAt, now);
@@ -192,7 +199,7 @@ export async function loadArticleContent(db: Db, id: number, now = new Date()): 
   const publicUntil = publicBodyUntil(row.publishedAt);
   const deadline = storageUntil < publicUntil ? storageUntil : publicUntil;
   return {
-    article: { ...contentArticle(row), discoverySources: discoveries.get(id) ?? [] },
+    article: { ...contentArticle(row), discoverySources: discoveries.get(id) ?? [], collections },
     content: {
       status: state.status,
       body: state.visible ? stored : null,

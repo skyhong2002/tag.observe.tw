@@ -1,8 +1,9 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { runIndex } from '../crawl/pipeline.ts';
 import { disabled, sourceByMedia } from '../crawl/registry.ts';
+import { TOPIC_RULES, type TopicKind } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
-import { articles, type topics } from '../db/schema.ts';
+import { articles, topics } from '../db/schema.ts';
 
 export const TOPIC_ARTICLE_MEDIA: Record<string, string> = { twreporter: 'reporter' };
 export const articleMediaOf = (media: string) => TOPIC_ARTICLE_MEDIA[media] ?? media;
@@ -85,4 +86,28 @@ export async function indexTopicStories(db: Db, media: string, stories: StoredSt
   if (!items.length) return 0;
   const result = await runIndex(db, spec, { listed: { items, errors: [] } });
   return result.inserted;
+}
+
+export interface ArticleCollection {
+  id: string;
+  media: string;
+  title: string;
+  kind: TopicKind;
+}
+
+/** Reverse the publisher's saved membership, never infer it from title or tags. */
+export async function collectionsForArticle(db: Db, media: string, key: string): Promise<ArticleCollection[]> {
+  const outlets = TOPIC_RULES.filter((r) => articleMediaOf(r.media) === media).map((r) => r.media);
+  if (!key || !outlets.length) return [];
+  const rows = await db
+    .select({ id: topics.id, media: topics.media, title: topics.title, kind: topics.kind })
+    .from(topics)
+    .where(
+      and(
+        inArray(topics.media, outlets),
+        inArray(topics.kind, ['topic', 'feature']),
+        sql`JSON_CONTAINS(JSON_EXTRACT(${topics.pageStories}, '$[*].key'), JSON_QUOTE(${key}))`,
+      ),
+    );
+  return rows.sort((a, b) => a.id - b.id).map((r) => ({ ...r, id: String(r.id), kind: r.kind as TopicKind }));
 }

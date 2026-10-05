@@ -63,3 +63,41 @@ describe('publisher topic membership', () => {
     ]);
   });
 });
+
+describe('article collection backlinks', () => {
+  it('matches exact publisher membership, supports aliases and multiple collections, and excludes tag-only matches', async () => {
+    const { DatabaseSync } = await import('node:sqlite');
+    const { collectionsForArticle } = await import('./topic-stories.ts');
+    const sqlite = new DatabaseSync(':memory:');
+    sqlite.exec('CREATE TABLE topics (id INTEGER, media TEXT, title TEXT, kind TEXT, page_keys TEXT)');
+    sqlite.function('JSON_EXTRACT', (value, _path) => JSON.stringify(JSON.parse(String(value)).map((s: { key: string }) => s.key)));
+    sqlite.function('JSON_CONTAINS', (value, key) => Number(JSON.parse(String(value)).includes(JSON.parse(String(key)))));
+    const insert = sqlite.prepare('INSERT INTO topics VALUES (?, ?, ?, ?, ?)');
+    for (const [id, media, kind, key] of [
+      [1, 'twreporter', 'topic', 'example.com#123'],
+      [2, 'twreporter', 'feature', 'example.com#123'],
+      [3, 'twreporter', 'topic', 'example.com#1234'],
+      [4, 'cna', 'topic', 'example.com#123'],
+    ])
+      insert.run(id, media, '相同標題', kind, JSON.stringify([{ key }]));
+    const db = {
+      select: () => ({
+        from: () => ({
+          where: async (predicate: SQL) => {
+            const compiled = new MySqlDialect().sqlToQuery(predicate);
+            return sqlite.prepare(`SELECT id, media, title, kind FROM topics WHERE ${compiled.sql}`).all(...(compiled.params as string[]));
+          },
+        }),
+      }),
+    } as unknown as Db;
+    try {
+      expect((await collectionsForArticle(db, 'reporter', 'example.com#123')).map((c) => [c.id, c.kind])).toEqual([
+        ['1', 'topic'],
+        ['2', 'feature'],
+      ]);
+      expect(await collectionsForArticle(db, 'reporter', 'missing')).toEqual([]);
+    } finally {
+      sqlite.close();
+    }
+  });
+});

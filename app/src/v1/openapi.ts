@@ -484,9 +484,13 @@ schemas.ContentArticle = obj(
     authors: arr(str()),
     publisher: ref('OutletIdentity'),
     discoverySources: arr(ref('DiscoverySource')),
+    collections: arr(
+      obj({ id: str(), media: str(), title: str(), kind: str(undefined, { enum: ['topic', 'feature'] }) }),
+      '單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期',
+    ),
   },
   undefined,
-  ['publishedDate', 'publishedDatePrecision', 'discoverySources'],
+  ['publishedDate', 'publishedDatePrecision', 'discoverySources', 'collections'],
 );
 schemas.CachedContent = obj({
   status: str(undefined, { enum: ['ok', 'short', 'missing', 'blocked', 'error', 'not_fetched', 'expired'] }),

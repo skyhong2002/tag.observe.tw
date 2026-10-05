@@ -676,6 +676,11 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `article.discoverySources[].title` | string | 發現來源名稱 |
 | `article.discoverySources[].url` | string | 實際發現文章的公開頁面網址 |
 | `article.discoverySources[].discoveredAt` | string (ISO 時間) | 首次經此來源發現文章的時間，不取代刊登時間 |
+| `article.collections` | object[] | 單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期 |
+| `article.collections[].id` | string |  |
+| `article.collections[].media` | string |  |
+| `article.collections[].title` | string |  |
+| `article.collections[].kind` | "topic" \| "feature" |  |
 | `content` | object |  |
 | `content.status` | "ok" \| "short" \| "missing" \| "blocked" \| "error" \| "not_fetched" \| "expired" |  |
 | `content.body` | string \| null | 刊登 7 天內已抓取的文字；之後為 null。不保證原站目前仍存在 |
@@ -1791,6 +1796,11 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
 | `articles[].discoverySources[].title` | string | 發現來源名稱 |
 | `articles[].discoverySources[].url` | string | 實際發現文章的公開頁面網址 |
 | `articles[].discoverySources[].discoveredAt` | string (ISO 時間) | 首次經此來源發現文章的時間，不取代刊登時間 |
+| `articles[].collections` | object[] | 單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期 |
+| `articles[].collections[].id` | string |  |
+| `articles[].collections[].media` | string |  |
+| `articles[].collections[].title` | string |  |
+| `articles[].collections[].kind` | "topic" \| "feature" |  |
 | `articles[].bodyStatus` | string |  |
 | `articles[].bodyChars` | integer |  |
 | `articles[].contentFetchedAt` | string (ISO 時間) \| null |  |
