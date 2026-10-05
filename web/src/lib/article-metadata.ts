@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import type { StoredContent } from '@/lib/article-content';
 import { isAllowedImage } from '@/lib/images';
-import { readingTitle } from '@/lib/reading.mts';
-import { articleIndexable, SITE_ORIGIN } from '@/lib/seo.mts';
+import { readingExcerpt, readingTitle } from '@/lib/reading.mts';
+import { articleIndexable, publicArticleContent, SITE_ORIGIN } from '@/lib/seo.mts';
 
 /**
  * Metadata for a page that shows one article: /article/[id]/ and the 專題
@@ -23,7 +23,9 @@ export function articleMetadata(
 ): Metadata {
   const headline = readingTitle(article.title).title;
   const title = `${headline}｜${titleSuffix}`;
-  const summary = article.description?.trim() || content.body?.trim() || title;
+  const visible = publicArticleContent(content);
+  const text = visible.body?.trim() || article.description?.trim();
+  const summary = text ? readingExcerpt(text) : title;
   const characters = Array.from(summary.replace(/\s+/g, ' '));
   const description = characters.slice(0, 160).join('') + (characters.length > 160 ? '…' : '');
   const url = SITE_ORIGIN + path;

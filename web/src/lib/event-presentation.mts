@@ -70,3 +70,13 @@ export function selectEventCover<T extends { image: string | null }>(
   if (lead && ok(lead)) return lead;
   return news.find(ok) ?? null;
 }
+
+/** One headline selection for the page, metadata and share image. */
+export function eventThreadHeadline(data: {
+  thread: { majorTags: string[] };
+  hours: Array<{ news: Array<{ title: string }>; major: string[] }>;
+}) {
+  const latest = data.hours[0];
+  const lead = latest ? selectEventLead(latest.news, latest.major) : null;
+  return lead ? clipHeadline(cleanEventHeadline(lead.title)) : data.thread.majorTags.join('、');
+}

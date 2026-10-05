@@ -24,3 +24,29 @@
 6. GA 管理 → 產品連結 → Search Console 連結，選擇 `https://tag.observe.tw/` 與此 Web 串流。
 
 GSC 的 sitemap 已成功讀取；即時測試通過代表可供索引，不等於已收錄。實際結果看 GOOGLE INDEX 與 Pages，搜尋成效看 Performance。
+
+## 真實使用者效能
+
+正式網域的 GA4 啟用後，`web-vitals` 回報 `web_vital` 事件：
+
+- `metric_name`：LCP、INP、CLS。
+- `metric_value`：LCP／INP 單位 ms；CLS 無單位，保留三位小數。
+- `metric_rating`：good、needs-improvement、poor。
+- `page_type`：本次文件載入的首頁／ranking／eve／tag 等類別，不含查詢字串或畫面文字。
+- `metric_id`、`navigation_type`：辨認樣本與導覽類型；不要把高基數的 metric_id 註冊成自訂維度。
+
+每個文件只註冊一次，採 web-vitals 預設的結算時機，沒有互動的頁面不會產生 INP；SPA 換頁不假裝是新的完整載入。數字送出通常要等第一次互動或頁面進入背景，並非開頁立刻全部到齊。開發環境不送 GA。
+
+GA4「自訂定義」可新增事件維度 metric_name、metric_rating、page_type，以及數值指標 metric_value（標準單位；報表必須先按 metric_name 篩選，不能混算 ms 和 CLS）。這項設定需要編輯者權限，可以由網站擁有人操作。探索報表用裝置類別、頁面類別、指標名稱及評級查看樣本量與良好比例。GA 的一般聚合平均值不是第 75 百分位；要算真實 p75，使用 BigQuery 原始事件匯出，或看有足夠樣本的 CrUX／GSC Core Web Vitals。
+
+## 授權讀取 GSC／GA 成效
+
+目前此開發環境沒有已登入的 Google 分析連接器。可以先提供兩個後台匯出的 CSV；不需要任何帳號權限。持續自動讀取可採 Google Cloud 服務帳戶：
+
+1. 在自己的 Cloud 專案啟用 Search Console API 與 Google Analytics Data API，建立專用服務帳戶。無需授予專案 Owner／Editor。
+2. GSC 的 `https://tag.observe.tw/` 資源，設定 → 使用者和權限 → 加入該服務帳戶電子郵件；讀取成效報表先給受限使用者。需要 URL Inspection 等額外功能時，再核對該功能所需權限。
+3. GA4 資源 `557297184` 的資源存取權管理，加入同一電子郵件，給「檢視者」。一般流量與事件報表不需要編輯者或管理員。
+4. 憑證放在主機上、Git 工作目錄以外的私人檔案（權限 0600），以 `GOOGLE_APPLICATION_CREDENTIALS` 指向；只提供服務帳戶電子郵件與檔案路徑，不把私鑰貼到聊天或提交 Git。也可使用工作負載身分／短期 OAuth，避免長期金鑰。
+5. 程式只要求 `https://www.googleapis.com/auth/webmasters.readonly` 與 `https://www.googleapis.com/auth/analytics.readonly`。取得憑證後先验证 GSC 資源列表與 GA4 測試報表，再排程匯出。
+
+GSC API 可讀搜尋查詢、頁面、裝置與點擊／曝光／CTR／平均排名，但沒有完整的「網頁索引」報表 API；該報表仍需後台匯出。GA Data API 可讀事件與來源成效，精確的使用者旅程／原始事件分析可能需 BigQuery。提供 GA/GSC 唯讀權限不等於啟用 BigQuery；後者另行設定，且可能有費用。

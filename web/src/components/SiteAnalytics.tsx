@@ -2,6 +2,7 @@
 
 import { GoogleAnalytics, sendGAEvent } from '@next/third-parties/google';
 import { useEffect, useState } from 'react';
+import WebVitals from './WebVitals';
 
 const GA_ID = 'G-D1E1CZSX7L';
 
@@ -47,5 +48,10 @@ export default function SiteAnalytics() {
     };
   }, []);
 
-  return enabled ? <GoogleAnalytics gaId={GA_ID} /> : null;
+  return enabled ? (
+    <>
+      <GoogleAnalytics gaId={GA_ID} />
+      <WebVitals />
+    </>
+  ) : null;
 }

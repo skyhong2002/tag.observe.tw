@@ -5,7 +5,7 @@ import { ImageResponse } from 'next/og';
 // The font stays on the server, never in the page's JS/downloads. No remote
 // fonts, publisher images, browser process or chart rendering is needed.
 let font: Promise<Buffer> | undefined;
-export async function shareCard(title: string, kind: string, description: string) {
+export async function shareCard(title: string, kind: string, description: string, cacheSeconds = 21600) {
   font ??= readFile(join(process.cwd(), 'assets/NotoSansTC-Share.woff'));
   const data = await font;
   const heading = Array.from(title).slice(0, 58).join('') + (Array.from(title).length > 58 ? '…' : '');
@@ -57,7 +57,7 @@ export async function shareCard(title: string, kind: string, description: string
       width: 1200,
       height: 630,
       fonts: [{ name: 'Noto Sans TC', data, weight: 700, style: 'normal' }],
-      headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=21600, stale-while-revalidate=86400' },
+      headers: { 'Cache-Control': `public, max-age=${Math.min(3600, cacheSeconds)}, s-maxage=${cacheSeconds}` },
     },
   );
 }

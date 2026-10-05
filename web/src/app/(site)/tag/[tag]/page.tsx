@@ -15,12 +15,19 @@ import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;
 type Params = { tag: string };
-export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>;
+  searchParams: Promise<{ hours?: string }>;
+}): Promise<Metadata> {
   const tag = decodeRouteParam((await params).tag);
-  const recent = await fetchTagArticles(tag, 72).catch(() => null);
+  const hours = Math.max(48, tagHours(await searchParams));
+  const recent = await fetchTagArticles(tag, hours).catch(() => null);
   const headline = recent?.articles[0]?.title;
   const description = headline
-    ? `「${tag}」新聞與媒體報導對照。近 72 小時收錄的報導包括：${Array.from(headline).slice(0, 70).join('')}。查看關鍵字熱度與逐時趨勢。`
+    ? `「${tag}」新聞與媒體報導對照。近 ${hours} 小時收錄的報導包括：${Array.from(headline).slice(0, 70).join('')}。查看關鍵字熱度與逐時趨勢。`
     : `追蹤「${tag}」相關新聞，對照各媒體報導、關鍵字熱度與逐時趨勢，探索相關事件。`;
   return {
     ...pageMetadata(`/tag/${encodeURIComponent(tag)}/`, `${tag}新聞與趨勢`, description, true),

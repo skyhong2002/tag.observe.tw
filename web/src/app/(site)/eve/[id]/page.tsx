@@ -9,7 +9,7 @@ import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
 import { taipei, taipeiHour } from '@/lib/api';
-import { cleanEventHeadline, clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
+import { eventThreadHeadline } from '@/lib/event-presentation.mts';
 import {
   bestRank,
   type Camp,
@@ -76,11 +76,7 @@ const VIEWS: Array<[View, string]> = [
 const fetchThread = (id: string) => fetchThreadPart<ThreadData>(id, '');
 /** The event is named by its latest hour's lead headline, as the table and
  *  home page do: the thread's major tags pile up every story it absorbed. */
-const headlineOf = (data: ThreadData) => {
-  const latest = data.hours[0];
-  const lead = latest ? selectEventLead(latest.news, latest.major) : null;
-  return lead ? clipHeadline(cleanEventHeadline(lead.title)) : data.thread.majorTags.join('、');
-};
+const headlineOf = eventThreadHeadline;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;

@@ -12,6 +12,7 @@ import { CONTENT_STATUS, type StoredContent } from '@/lib/article-content';
 import type { TopicKind } from '@/lib/pages';
 import { readingTitle } from '@/lib/reading.mts';
 import type { ArticleRelated as Related } from '@/lib/related';
+import { publicArticleContent } from '@/lib/seo.mts';
 import type { ArticleSimilarity } from '@/lib/similarity';
 import ArticleRelated from './ArticleRelated';
 import ArticleSimilar from './ArticleSimilar';
@@ -22,7 +23,7 @@ import ArticleTags from './ArticleTags';
  * is an article whose page lists other stories, so both render the same way.
  */
 export default function ArticleView({
-  content: { article, content },
+  content: { article, content: storedContent },
   related,
   similar,
   back,
@@ -42,6 +43,7 @@ export default function ArticleView({
   /** Page-specific sections placed before 延伸閱讀. */
   extra?: React.ReactNode;
 }) {
+  const content = publicArticleContent(storedContent);
   const state =
     content.source === 'publisher:excerpt' && content.status !== 'expired'
       ? { label: '原站僅提供摘要', detail: '這個來源提供的是節錄內容，本站未將其收錄為完整正文。' }

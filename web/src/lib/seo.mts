@@ -103,14 +103,23 @@ export function archiveDay(value: unknown): string | undefined {
 
 /** A source title/description alone is not a useful standalone search result. */
 export function articleIndexable(
-  content: { status: string; body: string | null },
+  content: { status: string; body: string | null; expiresAt?: string | null },
   related: { events: unknown[]; otherMedia: unknown[] } | null,
   similar: { indexedAt: string | null; chars: number | null; matches: unknown[] } | null,
 ) {
   return Boolean(
-    (content.status !== 'expired' && content.body?.trim()) ||
+    publicArticleContent(content).body?.trim() ||
       related?.events.length ||
       related?.otherMedia.length ||
       (similar?.indexedAt && similar.chars !== null && similar.matches.length),
   );
+}
+
+/** Enforce the public deadline even when an API response is still cached. */
+export function publicArticleContent<T extends { status: string; body: string | null; expiresAt?: string | null }>(
+  content: T,
+  now = Date.now(),
+): T {
+  const expired = content.status === 'expired' || (content.expiresAt && Date.parse(content.expiresAt) <= now);
+  return expired ? { ...content, status: 'expired', body: null, chars: 0 } : content;
 }
