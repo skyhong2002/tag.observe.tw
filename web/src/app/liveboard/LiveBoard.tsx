@@ -615,8 +615,12 @@ export default function LiveBoard({
           />
           <Stat label="24 小時發稿媒體" value={totals?.publishingMedia24h ?? '—'} unit="家" className="portrait:hidden" />
           <Stat label="爬蟲" value={status.ok ?? '—'} unit="正常" className="portrait:hidden">
-            {(status.stale ?? 0) > 0 && <span className="ml-1 text-sm font-normal text-amber-400">△ {status.stale} 延遲</span>}
-            {(status.failing ?? 0) > 0 && <span className="ml-1 text-sm font-normal text-rose-400">✕ {status.failing} 失敗</span>}
+            {((status.stale ?? 0) > 0 || (status.failing ?? 0) > 0) && (
+              <span className="ml-1 inline-flex flex-col self-center text-sm font-normal leading-4">
+                {(status.stale ?? 0) > 0 && <span className="text-amber-400">△ {status.stale} 無近期文章</span>}
+                {(status.failing ?? 0) > 0 && <span className="text-rose-400">✕ {status.failing} 失敗</span>}
+              </span>
+            )}
           </Stat>
           {feed?.visitors && (
             <Stat label="本站線上讀者" value={feed.visitors.activeUsers} unit="人" className="portrait:hidden">
