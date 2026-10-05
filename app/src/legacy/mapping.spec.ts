@@ -58,6 +58,7 @@ describe('reviewed legacy media mapping', () => {
       ['babyou', 'babyou.nownews.com'],
       ['asiatatler', 'tw.asiatatler.com'],
       ['bbc', 'www.bbc.co.uk'],
+      ['ctitv', 'gotv.ctitv.com.tw'],
     ]) {
       const input = { ...raw, media, url: `https://${host}/historical-article` };
       expect(normalizeLegacyArticle(input, context(`tag_${media}`, input)).disposition).toBe('candidate');

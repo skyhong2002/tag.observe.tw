@@ -1,5 +1,5 @@
 {
-  "version": "legacy-media-mapping-v3",
+  "version": "legacy-media-mapping-v4",
   "reviewedAt": "2026-10-05",
   "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
   "media": {
@@ -209,10 +209,11 @@
     },
     "ctitv": {
       "publisherRoots": [
-        "ctinews.com"
+        "ctinews.com",
+        "gotv.ctitv.com.tw"
       ],
       "sourceUrl": "https://ctinews.com/",
-      "evidence": "中天新聞網"
+      "evidence": "中天新聞網; Historical gotv.ctitv.com.tw publisher evidenced by ctitv index feed URLs in app/data/crawl-sources.json and verified tag_ctitv raw packages."
     },
     "ctwant": {
       "publisherRoots": [
