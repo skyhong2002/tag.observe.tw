@@ -129,7 +129,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
               </a>
               <InstallApp className={pill}>
                 <Icon d={ICONS.install} />
-                安裝 App
+                安裝 Web App
               </InstallApp>
             </div>
           </div>
