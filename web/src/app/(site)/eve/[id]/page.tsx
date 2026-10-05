@@ -9,7 +9,7 @@ import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
 import { taipei, taipeiHour } from '@/lib/api';
-import { eventThreadHeadline } from '@/lib/event-presentation.mts';
+import { eventThreadCover, eventThreadHeadline } from '@/lib/event-presentation.mts';
 import {
   bestRank,
   type Camp,
@@ -26,6 +26,7 @@ import {
   tagStats,
 } from '@/lib/event-thread.mts';
 import { fetchThreadPart } from '@/lib/event-thread-api';
+import { isAllowedImage } from '@/lib/images';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import { pageMetadata, pageSchema } from '@/lib/seo.mts';
@@ -129,6 +130,7 @@ export default async function EventThreadPage({
   if (!data) notFound();
   const t = data.thread;
   const headline = headlineOf(data);
+  const cover = eventThreadCover(data.hours, isAllowedImage);
   const stats = tagStats(data.hours, t.majorTags);
   const best = bestRank(data.hours);
   const peakHour = data.hours.reduce<Hour | null>((m, h) => (!m || h.score > m.score ? h : m), null);
@@ -179,63 +181,75 @@ export default async function EventThreadPage({
   return (
     <div className="space-y-8">
       <StructuredData data={pageSchema(`/eve/${t.id}/`, headline, [['/event/', '事件表']])} />
-      <header className="space-y-2">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          <Link href="/event/" className="hover:underline">
-            事件表
-          </Link>{' '}
-          / 事件 #{t.id}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">{headline}</h1>
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-          <span className="text-zinc-600 dark:text-zinc-400">主要標籤</span>
-          {t.majorTags.map((tag) => (
-            <Link
-              key={tag}
-              href={`/tag/${encodeURIComponent(tag)}/`}
-              className="rounded-full bg-brand-700 px-2 py-0.5 text-xs font-medium text-white dark:bg-brand-600"
-            >
-              {tag}
-            </Link>
-          ))}
-          {stats
-            .filter((s) => !s.major)
-            .slice(0, 6)
-            .map((s) => (
+      <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(240px,320px)] md:items-start">
+        {cover && (
+          <Link
+            href={articleHref(cover)}
+            tabIndex={-1}
+            aria-hidden="true"
+            className="relative block aspect-video overflow-hidden rounded-xl bg-zinc-100 md:order-last dark:bg-zinc-800"
+          >
+            <SafeImage src={cover.image} alt="" fill sizes="(max-width: 768px) 100vw, 320px" className="object-cover" priority />
+          </Link>
+        )}
+        <div className="space-y-2">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <Link href="/event/" className="hover:underline">
+              事件表
+            </Link>{' '}
+            / 事件 #{t.id}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{headline}</h1>
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <span className="text-zinc-600 dark:text-zinc-400">主要標籤</span>
+            {t.majorTags.map((tag) => (
               <Link
-                key={s.tag}
-                href={`/tag/${encodeURIComponent(s.tag)}/`}
-                className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                key={tag}
+                href={`/tag/${encodeURIComponent(tag)}/`}
+                className="rounded-full bg-brand-700 px-2 py-0.5 text-xs font-medium text-white dark:bg-brand-600"
               >
-                {s.tag}
+                {tag}
               </Link>
             ))}
-        </p>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {taipeiHour(t.firstTime)} 至 {taipeiHour(t.lastTime)} · 上榜 {t.hours} 小時
-          {t.hoursTotal && t.hoursTotal > t.hours ? `（含延續事件共 ${t.hoursTotal} 小時）` : ''}
-          {data.related.length > 0 && (
-            <>
-              {' · 相關事件 '}
-              {data.related.map((r) => (
-                <Link key={r} href={`/eve/${r}/`} className="mr-1 text-brand-700 hover:underline dark:text-brand-400">
-                  #{r}
+            {stats
+              .filter((s) => !s.major)
+              .slice(0, 6)
+              .map((s) => (
+                <Link
+                  key={s.tag}
+                  href={`/tag/${encodeURIComponent(s.tag)}/`}
+                  className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                >
+                  {s.tag}
                 </Link>
               ))}
-            </>
-          )}
-        </p>
-        <nav className="flex flex-wrap gap-1 text-xs" aria-label="頁內段落">
-          {jump.map(([anchor, label]) => (
-            <a
-              key={anchor}
-              href={`#${anchor}`}
-              className="rounded-md bg-zinc-100 px-2.5 py-1 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              {label}
-            </a>
-          ))}
-        </nav>
+          </p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            {taipeiHour(t.firstTime)} 至 {taipeiHour(t.lastTime)} · 上榜 {t.hours} 小時
+            {t.hoursTotal && t.hoursTotal > t.hours ? `（含延續事件共 ${t.hoursTotal} 小時）` : ''}
+            {data.related.length > 0 && (
+              <>
+                {' · 相關事件 '}
+                {data.related.map((r) => (
+                  <Link key={r} href={`/eve/${r}/`} className="mr-1 text-brand-700 hover:underline dark:text-brand-400">
+                    #{r}
+                  </Link>
+                ))}
+              </>
+            )}
+          </p>
+          <nav className="flex flex-wrap gap-1 text-xs" aria-label="頁內段落">
+            {jump.map(([anchor, label]) => (
+              <a
+                key={anchor}
+                href={`#${anchor}`}
+                className="rounded-md bg-zinc-100 px-2.5 py-1 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        </div>
       </header>
 
       <StatTiles

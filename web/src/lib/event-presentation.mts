@@ -80,3 +80,16 @@ export function eventThreadHeadline(data: {
   const lead = latest ? selectEventLead(latest.news, latest.major) : null;
   return lead ? clipHeadline(cleanEventHeadline(lead.title)) : data.thread.majorTags.join('、');
 }
+
+/** The photo for the thread page: the latest hour's lead when its picture is
+ *  usable, otherwise another report on the thread, newest hour first. */
+export function eventThreadCover<T extends { title: string; image: string | null }>(
+  hours: ReadonlyArray<{ news: readonly T[]; major: readonly string[] }>,
+  allowed: (url: string | null | undefined) => boolean,
+): T | null {
+  for (const h of hours) {
+    const cover = selectEventCover(h.news, selectEventLead(h.news, h.major), allowed);
+    if (cover) return cover;
+  }
+  return null;
+}
