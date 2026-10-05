@@ -312,3 +312,10 @@ describe('publisher-declared excerpts across all extraction entrypoints', () => 
     expect(extractArticle(article({ ...samples[0], url }), url).bodyStatus).toBe('ok');
   });
 });
+
+it('takes the headline element when a titleSelector is set', () => {
+  const html =
+    '<html><head><meta property="og:title" content="氣炸鍋食譜：半熟太陽蛋吐司｜回家吧 I’m home"></head><body><h1> 氣炸鍋食譜：半熟太陽蛋吐司 </h1></body></html>';
+  expect(extractArticle(html, 'https://womany.net/read/article/23185', { titleSelector: 'h1' }).title).toBe('氣炸鍋食譜：半熟太陽蛋吐司');
+  expect(extractArticle(html, 'https://womany.net/read/article/23185').title).toBe('氣炸鍋食譜：半熟太陽蛋吐司｜回家吧 I’m home');
+});

@@ -19,6 +19,9 @@ export interface ArticleRules {
   bodyHtmlSelector?: string;
   bodyExcludeSelector?: string;
   authorSelector?: string;
+  // The headline element, for sites whose og:title appends a section name
+  // that no fixed titleSuffix covers (womany: 「｜回家吧 I’m home」).
+  titleSelector?: string;
   keywordMarkers?: Array<{ start: string; end: string }>;
   split?: string;
   tagSelector?: string;
@@ -160,7 +163,9 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     description:
       (meta('meta[property="og:description"], meta[name="description"], meta[itemprop="description"]') ?? '').slice(0, 2000) || null,
     canonical: canonicalRaw ? resolveUrl(canonicalRaw, url) : null,
-    title: siteEvidence.title ?? ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null),
+    title:
+      (rules.titleSelector && $(rules.titleSelector).first().text().replace(/\s+/g, ' ').trim()) ||
+      (siteEvidence.title ?? ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null)),
     publishedAt,
     provider: site?.providerSelector
       ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
