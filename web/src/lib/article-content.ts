@@ -53,7 +53,7 @@ export interface MediaContent {
 // State sentences only; content presentation and what is compared are in the
 // footer's 資料來源與計算方式 (components/method/article.tsx).
 export const CONTENT_STATUS: Record<ContentStatus, { label: string; detail: string }> = {
-  ok: { label: '文章內文', detail: '以下是本站取得的文章內文。' },
+  ok: { label: '文章節錄', detail: '本站只顯示文章開頭，全文請至原站閱讀。' },
   short: { label: '內文較短', detail: '已取得的文字較短，可能不完整。' },
   missing: { label: '未取得正文', detail: '已讀取原站頁面，但沒有取得可保存的正文；標題與摘要不會代替全文。' },
   blocked: { label: '原站限制讀取', detail: '原站的存取限制使本站無法取得正文。' },

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { articleHref, readingParagraphs, readingQuery, readingTitle, withReadingQuery } from '../../web/src/lib/reading.mts';
+import {
+  articleHref,
+  readingExcerpt,
+  readingParagraphs,
+  readingQuery,
+  readingTitle,
+  withReadingQuery,
+} from '../../web/src/lib/reading.mts';
 
 describe('article reading navigation', () => {
   it('keeps current articles and older snapshots inside the site', () => {
@@ -25,5 +32,20 @@ describe('article reading navigation', () => {
   });
   it('preserves text and single line breaks while separating paragraphs', () => {
     expect(readingParagraphs(' 第一段\n續行\n\n第二段 <script>\r\n\r\n第三段 ')).toEqual(['第一段\n續行', '第二段 <script>', '第三段']);
+  });
+});
+
+describe('article previews', () => {
+  it('limits long text to 150 Unicode characters and an ellipsis', () => {
+    const opening = '新聞😀'.repeat(50);
+    expect(readingExcerpt(`${opening}不應顯示的後文`)).toBe(`${opening}...`);
+  });
+  it('prefers a complete sentence between 100 and 150 characters', () => {
+    const sentence = `${'文'.repeat(110)}。`;
+    expect(readingExcerpt(sentence + '後'.repeat(100))).toBe(`${sentence}...`);
+  });
+  it('keeps short summaries with the same continuation marker', () => {
+    expect(readingExcerpt(' 簡短摘要。 ')).toBe('簡短摘要。...');
+    expect(readingExcerpt('   ')).toBe('');
   });
 });

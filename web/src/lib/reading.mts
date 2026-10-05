@@ -43,7 +43,7 @@ export function readingParagraphs(body: string): string[] {
 
 /**
  * The opening of the body only — about three to four lines at reading width.
- * Full texts belong to the publishers; the site never ships more than this.
+ * Limit rendered article previews; full text is read at the original source.
  */
 export function readingExcerpt(body: string, maxChars = 150): string {
   const text = readingParagraphs(body)
@@ -51,9 +51,9 @@ export function readingExcerpt(body: string, maxChars = 150): string {
     .replace(/[ \t]+/g, ' ')
     .trim();
   const characters = Array.from(text);
-  if (characters.length <= maxChars) return text;
+  if (characters.length <= maxChars) return text ? `${text}...` : '';
   const head = characters.slice(0, maxChars).join('');
   const sentenceEnd = Math.max(head.lastIndexOf('。'), head.lastIndexOf('！'), head.lastIndexOf('？'));
-  const cut = sentenceEnd >= Math.floor(maxChars / 2) ? head.slice(0, sentenceEnd + 1) : head;
-  return `${cut.trimEnd()}……`;
+  const cut = sentenceEnd >= Math.floor((maxChars * 2) / 3) ? head.slice(0, sentenceEnd + 1) : head;
+  return `${cut.trimEnd()}...`;
 }
