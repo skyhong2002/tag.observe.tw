@@ -7,6 +7,7 @@ import pLimit from 'p-limit';
 import { BODY_RETENTION_MS } from '../app/src/article-retention.ts';
 import { extractArticle } from '../app/src/crawl/article.ts';
 import { fetchText } from '../app/src/crawl/fetch.ts';
+import { newsSiteRules } from '../app/src/crawl/news-site-rules.ts';
 import { sourceByMedia } from '../app/src/crawl/registry.ts';
 import { createDb } from '../app/src/db/client.ts';
 import { articleCitations, articleSketches, articles, similarityPairs } from '../app/src/db/schema.ts';
@@ -14,7 +15,8 @@ import { extractAttributions } from '../app/src/similarity/attribution.ts';
 import { normalizeBody } from '../app/src/similarity/compute.ts';
 
 // Re-fetch retained JSON-LD bodies; only a visible DOM replacement qualifies,
-// without downgrading an existing complete body to short. Dry-run by default.
+// without downgrading a complete body to short unless its full-report container
+// was explicitly verified to support short reports. Dry-run by default.
 // The backup is durable before each DB write.
 const { values } = parseArgs({
   options: {
@@ -76,7 +78,11 @@ try {
             if (result.status >= 400) throw Error(`HTTP ${result.status}`);
             const detail = extractArticle(result.body, row.url, spec?.article);
             if (spec?.article.provider && !new RegExp(spec.article.provider).test(detail.provider ?? '')) throw Error('provider changed');
-            if (!detail.body || (detail.bodyStatus !== 'ok' && !(row.bodyStatus === 'short' && detail.bodyStatus === 'short')))
+            const verifiedShort = detail.bodySource === 'selector' && newsSiteRules(row.url)?.preferShortBody;
+            if (
+              !detail.body ||
+              (detail.bodyStatus !== 'ok' && !((row.bodyStatus === 'short' || verifiedShort) && detail.bodyStatus === 'short'))
+            )
               throw Error(`body ${detail.bodyStatus}`);
             if (detail.bodySource === 'ld+json' || detail.body === row.body) {
               counts.unchanged++;

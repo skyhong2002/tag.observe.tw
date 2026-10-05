@@ -57,6 +57,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
           bodyExcludeSelector: site.bodyExcludeSelector,
           trustContainer: site.trustContainer,
           plainTextBody: site.plainTextBody,
+          preferShortBody: site.preferShortBody,
         }
       : {}),
     ...rules,

@@ -25,6 +25,14 @@ describe('article extraction review regressions', () => {
       bodyStatus: 'short',
     });
   });
+  it('keeps a verified EBC short report even when structured headlines and notices pad it beyond 200 characters', () => {
+    const prose = '國道車多！車流回堵，請小心駕駛。'.repeat(6);
+    const ebc = 'https://news.ebc.net.tw/news/living/574100';
+    const html =
+      ld({ url: ebc, articleBody: `新聞標題。${prose.normalize('NFKC')}${'授權轉載聲明。'.repeat(20)}` }) +
+      `<div class="article_main"><div class="article_content"><p>${prose}</p></div></div>`;
+    expect(extractArticle(html, ebc)).toMatchObject({ body: prose, bodySource: 'selector', bodyStatus: 'short' });
+  });
   it.each(['article', 'div.article-content', 'div[itemprop="articleBody"]'])(
     'preserves visible punctuation and paragraphs for equivalent prose in %s',
     (selector) => {

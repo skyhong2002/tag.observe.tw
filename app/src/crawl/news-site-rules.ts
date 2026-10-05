@@ -23,6 +23,8 @@ export interface NewsSiteRules {
   trustContainer?: boolean;
   /** Paragraphs are <div>/<br> blocks; read the container as text. */
   plainTextBody?: boolean;
+  /** The verified container is the whole report even below the 200-character threshold. */
+  preferShortBody?: boolean;
 }
 
 type Site = NewsSiteRules & { host: string; path: RegExp };
@@ -33,7 +35,7 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   // EBC's JSON-LD rewrites punctuation and merges headlines into the prose.
-  { host: 'news.ebc.net.tw', path: /^\/news\/[^/]+\/\d+\/?$/, bodySelector: '.article_main > .article_content' },
+  { host: 'news.ebc.net.tw', path: /^\/news\/[^/]+\/\d+\/?$/, bodySelector: '.article_main > .article_content', preferShortBody: true },
   ...BLOCKED_NEWS_SITES,
   ...EXTRA_NEWS_SITES,
   ...ENN_NEWS_SITES,

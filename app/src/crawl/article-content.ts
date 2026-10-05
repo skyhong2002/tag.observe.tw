@@ -19,6 +19,7 @@ type ContentRules = {
   trustContainer?: boolean;
   /** Paragraphs are block elements and line breaks rather than <p>. */
   plainTextBody?: boolean;
+  preferShortBody?: boolean;
 };
 type BodyOptions = { trusted?: boolean; plainText?: boolean };
 type JsonNode = Record<string, unknown>;
@@ -437,7 +438,12 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     }
     return complete;
   };
-  const complete = chooseBody(usable);
+  // Some publishers pad a short report past 200 characters with headlines and
+  // syndication notices in JSON-LD. A verified full-report container still wins.
+  const preferredShort = rules.preferShortBody
+    ? candidates.find((candidate) => candidate.source === 'selector' && contentLength(candidate.body) < 200)
+    : undefined;
+  const complete = preferredShort ? undefined : chooseBody(usable);
   if (complete) return { body: complete.body, bodySource: complete.source, authors, bodyStatus: 'ok' };
 
   const blocked =
@@ -445,7 +451,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     nodes.some((node) => node['isAccessibleForFree'] === false || node['isAccessibleForFree'] === 'false') ||
     BLOCK_TEXT.test(normalize($('body').text()));
   if (blocked) return { body: null, authors, bodySource: 'none', bodyStatus: 'blocked' };
-  const short = chooseBody(candidates.sort((a, b) => contentLength(b.body) - contentLength(a.body)));
+  const short = preferredShort ?? chooseBody(candidates.sort((a, b) => contentLength(b.body) - contentLength(a.body)));
   if (short) return { body: short.body, authors, bodySource: short.source, bodyStatus: 'short' };
   return { body: null, authors, bodySource: 'none', bodyStatus: 'missing' };
 }
