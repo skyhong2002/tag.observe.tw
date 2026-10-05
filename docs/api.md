@@ -57,7 +57,7 @@ for a in r.json()["articles"]:
 
 | 端點 | 說明 |
 | --- | --- |
-| [`GET /api/v1/site-observation`](#api-v1-site-observation) | 公開網站觀測快照 |
+| [`GET /api/v1/site-observation`](#api-v1-site-observation) | 網站觀測：GA4 與 Search Console 每日彙整 |
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
 | [`GET /api/v1/similarity/evidence`](#api-v1-similarity-evidence) | 相似與引用證據（分頁） |
 | [`GET /api/v1/similarity/daily`](#api-v1-similarity-daily) | 每日相似配對與引用統計 |
@@ -95,9 +95,13 @@ for a in r.json()["articles"]:
 
 ### `GET /api/v1/site-observation`
 
-**公開網站觀測快照**
+**網站觀測：GA4 與 Search Console 每日彙整**
 
-手動更新的 GA4／GSC 彙整；無可用快照時 snapshot 為 null。依 updatedAt 判斷新鮮度。GA 採台灣時間近 7 個完整日，GSC 採太平洋時間近 28 個完整日且只取 final 資料。排行至少 10 次瀏覽與 3 位活躍使用者，體驗指標至少 30 份樣本。不公開搜尋字詞或使用者識別資料。
+worker 每天自 GA4（台灣時間）與 Search Console（美國太平洋時間，含尚未定案的近日資料）讀取彙整數字，近幾天每次重抓覆蓋。只含 tag.observe.tw 的流量；不含搜尋字詞、站內搜尋內容或使用者識別資料。traffic／search 在尚無資料時為 null；traffic.daily 從開始追蹤日補零。content 為讀者造訪的內容頁（事件、標籤、議題、專題、文章、記者、媒體），pages 含首頁與索引頁。vitals 需 GA4 已登錄 metric_name／metric_rating 自訂維度，否則為 null。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `days` | query | 7 \| 28 \| 90 | 期間（含今天），預設 `28` |
 
 範例：
 
@@ -109,39 +113,62 @@ curl -s 'https://tag.observe.tw/api/v1/site-observation'
 
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
-| `snapshot` | object \| null |  |
-| `snapshot.version` | integer |  |
-| `snapshot.updatedAt` | string (ISO 時間) |  |
-| `snapshot.content` | object |  |
-| `snapshot.content.period` | object |  |
-| `snapshot.content.period.start` | string |  |
-| `snapshot.content.period.end` | string |  |
-| `snapshot.content.totals` | object \| null |  |
-| `snapshot.content.totals.views` | integer |  |
-| `snapshot.content.totals.sessions` | integer |  |
-| `snapshot.content.ranking` | object[] |  |
-| `snapshot.content.ranking[].path` | string |  |
-| `snapshot.content.ranking[].title` | string |  |
-| `snapshot.content.ranking[].views` | integer |  |
-| `snapshot.search` | object |  |
-| `snapshot.search.period` | object |  |
-| `snapshot.search.period.start` | string |  |
-| `snapshot.search.period.end` | string |  |
-| `snapshot.search.totals` | object \| null |  |
-| `snapshot.search.totals.clicks` | integer |  |
-| `snapshot.search.totals.impressions` | integer |  |
-| `snapshot.search.daily` | object[] |  |
-| `snapshot.search.daily[].date` | string |  |
-| `snapshot.search.daily[].clicks` | integer |  |
-| `snapshot.search.daily[].impressions` | integer |  |
-| `snapshot.experience` | object |  |
-| `snapshot.experience.status` | string | definitions_missing／insufficient／ready |
-| `snapshot.experience.metrics` | object[] |  |
-| `snapshot.experience.metrics[].name` | string | LCP／INP／CLS |
-| `snapshot.experience.metrics[].samples` | integer |  |
-| `snapshot.experience.metrics[].goodPercent` | number | 良好樣本百分比，非 p75 |
+| `updatedAt` | string (ISO 時間) \| null |  |
+| `days` | integer |  |
+| `start` | string | 台北日期 YYYY-MM-DD |
+| `end` | string | 今天（台北） |
+| `trackingSince` | string \| null | GA4 第一筆資料的日期 |
+| `traffic` | object \| null |  |
+| `traffic.daily` | object[] |  |
+| `traffic.daily[].date` | string |  |
+| `traffic.daily[].views` | integer |  |
+| `traffic.daily[].sessions` | integer |  |
+| `traffic.daily[].users` | integer | 當日活躍使用者 |
+| `traffic.views` | integer |  |
+| `traffic.sessions` | integer |  |
+| `traffic.channels` | object[] |  |
+| `traffic.channels[].name` | string | GA4 預設管道群組 |
+| `traffic.channels[].value` | integer | 工作階段 |
+| `traffic.devices` | object[] |  |
+| `traffic.devices[].name` | string | desktop／mobile／tablet |
+| `traffic.devices[].value` | integer | 工作階段 |
+| `traffic.events` | object[] |  |
+| `traffic.events[].name` | string | open_original／select_content／rss_click／app_installed |
+| `traffic.events[].value` | integer |  |
+| `pages` | object[] | 瀏覽最多的 20 頁 |
+| `pages[].path` | string | 本站路徑（未編碼） |
+| `pages[].kind` | string | event／tag／topic／feature／article／journalist／media／page |
+| `pages[].title` | string |  |
+| `pages[].views` | integer |  |
+| `content` | object[] | 瀏覽最多的 10 個內容頁 |
+| `content[].path` | string | 本站路徑（未編碼） |
+| `content[].kind` | string | event／tag／topic／feature／article／journalist／media／page |
+| `content[].title` | string |  |
+| `content[].views` | integer |  |
+| `search` | object \| null |  |
+| `search.daily` | object[] |  |
+| `search.daily[].date` | string |  |
+| `search.daily[].clicks` | integer |  |
+| `search.daily[].impressions` | integer |  |
+| `search.daily[].position` | number | 平均排名 |
+| `search.clicks` | integer |  |
+| `search.impressions` | integer |  |
+| `search.position` | number \| null | 以曝光加權的平均排名 |
+| `search.pages` | object[] | 搜尋點擊最多的 10 頁 |
+| `search.pages[].path` | string |  |
+| `search.pages[].kind` | string |  |
+| `search.pages[].title` | string |  |
+| `search.pages[].clicks` | integer |  |
+| `search.pages[].impressions` | integer |  |
+| `vitals` | object[] \| null | 各評級的樣本數 |
+| `vitals[].name` | string | LCP／INP／CLS |
+| `vitals[].good` | integer |  |
+| `vitals[].needsImprovement` | integer |  |
+| `vitals[].poor` | integer |  |
 
-快取：1 分鐘。
+錯誤：`400` days 不是 7、28 或 90。
+
+快取：5 分鐘。
 
 <a id="api-v1"></a>
 

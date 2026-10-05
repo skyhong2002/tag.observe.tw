@@ -87,6 +87,14 @@ export function HomeMethod({
           入口中最近更新的 5 則，每家媒體只取最新一則（最後更新的定義見議題表）。「近 3 天 N 篇相關」是本站近 3
           天從各家媒體收錄、帶有這個議題全部對應標籤的報導數，最多計 500 篇，達上限時標「+」。
         </dd>
+        <dt className={methodTerm}>讀者關注</dt>
+        <dd>
+          近 7 天本站讀者瀏覽最多的事件、標籤、議題、專題與文章頁，依 Google Analytics 每天更新；不是媒體報導量。定義見
+          <Link href="/observe/" className={inlineLink}>
+            網站觀測
+          </Link>
+          。
+        </dd>
       </dl>
       <p id="basis">
         {basisCount != null ? `升溫榜與「${basisCount} 家」篇數的媒體範圍：` : '升溫榜與篇數的媒體範圍：'}

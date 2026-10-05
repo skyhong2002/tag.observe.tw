@@ -1,165 +1,316 @@
 import Link from 'next/link';
+import MethodLink from '@/components/MethodLink';
+import { taipei } from '@/lib/api';
 import {
-  ObservationPeriodLabel,
-  ObservationStats,
-  ObservationStatus,
-  observationLink,
-  observationMuted,
-  observationPanel,
-  ReaderRanking,
-} from '@/components/Observation';
-import { fetchObservation } from '@/lib/observation-api';
-import { pageMetadata } from '@/lib/seo.mts';
+  fetchObservation,
+  KIND_LABELS,
+  OBSERVATION_DAYS,
+  type Observation,
+  type ObservationDays,
+  type ObservedPage,
+  pageHref,
+} from '@/lib/observation';
+import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
+import DailyBars from './DailyBars';
 
-export const metadata = pageMetadata(
-  '/observe/',
-  '網站觀測',
-  '公開呈現新文易數的 Google 搜尋表現、站內熱門內容與使用體驗，並說明資料期間、更新狀態與樣本限制。',
-);
-const tabs = [
-  { id: 'search', label: '搜尋表現' },
-  { id: 'content', label: '熱門內容' },
-  { id: 'experience', label: '使用體驗' },
-];
-const metricLabels = { LCP: '主要內容顯示速度', INP: '操作反應速度', CLS: '版面穩定度' };
-export default async function ObservePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const [params, data] = await Promise.all([searchParams, fetchObservation()]);
-  const tab = tabs.some((t) => t.id === params.tab) ? params.tab : 'search';
-  const search = data?.search;
+export const revalidate = 300;
+type Search = { days?: string };
+const daysOf = (sp: Search): ObservationDays =>
+  (OBSERVATION_DAYS as readonly number[]).includes(Number(sp.days)) ? (Number(sp.days) as ObservationDays) : 28;
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }) {
+  const days = daysOf(await searchParams);
+  return pageMetadata(
+    canonicalQuery('/observe/', { days: days === 28 ? undefined : String(days) }),
+    '網站觀測',
+    '新文易數的公開流量：每日瀏覽、讀者關注的事件與議題、來源管道、Google 搜尋表現與真實使用體驗。',
+  );
+}
+
+const CHANNELS: Record<string, string> = {
+  Direct: '直接造訪',
+  'Organic Search': 'Google 等搜尋',
+  'Organic Social': '社群網站',
+  Referral: '其他網站連結',
+  Unassigned: '未指派',
+  'Cross-network': '跨聯播網',
+  Email: '電子郵件',
+  'Organic Video': '影音平台',
+  'Paid Search': '付費搜尋',
+};
+const DEVICES: Record<string, string> = { desktop: '電腦', mobile: '手機', tablet: '平板' };
+const EVENTS: Record<string, string> = {
+  open_original: '點開原文',
+  select_content: '從列表點進事件或標籤',
+  rss_click: '點 RSS',
+  app_installed: '安裝成 App',
+};
+const VITALS: Record<string, string> = { LCP: '主要內容出現', INP: '操作反應', CLS: '版面穩定' };
+
+const n = (value: number) => value.toLocaleString('zh-TW');
+const card = 'rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900';
+const link = 'text-brand-700 hover:underline dark:text-brand-400';
+const shiftDay = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * 864e5).toISOString().slice(0, 10);
+
+function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="mx-auto max-w-4xl space-y-6 py-6">
-      <header>
-        <p className={observationMuted}>新文易數・公開觀測</p>
-        <h1 className="mt-2 text-3xl font-bold">網站觀測</h1>
-        <p className={`${observationMuted} mt-3`}>分享網站被找到、被閱讀與被使用的情況。所有人都能查看同一份彙整資料。</p>
-      </header>
-      <ObservationStatus data={data} />
-      <nav aria-label="觀測分類" className="flex gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-        {tabs.map((t) => (
+    <div className={card}>
+      <div className="text-xs text-zinc-600 dark:text-zinc-400">{label}</div>
+      <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
+      {note && <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{note}</div>}
+    </div>
+  );
+}
+
+function Section({ title, aside, children }: { title: string; aside?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className={card}>
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-semibold">{title}</h2>
+        {aside && <span className="text-xs text-zinc-600 dark:text-zinc-400">{aside}</span>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Label, value and a bar scaled to the largest row (one hue: these are shares of one total). */
+function Shares({ rows, labels, unit }: { rows: Array<{ name: string; value: number }>; labels: Record<string, string>; unit: string }) {
+  const total = rows.reduce((sum, r) => sum + r.value, 0);
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <ul className="space-y-2.5 text-sm">
+      {rows.map((r) => (
+        <li key={r.name}>
+          <div className="flex justify-between gap-3">
+            <span>{labels[r.name] ?? r.name}</span>
+            <span className="tabular-nums text-zinc-600 dark:text-zinc-400">
+              {n(r.value)} {unit} · {Math.round((r.value / total) * 100)}%
+            </span>
+          </div>
+          <div className="mt-1 h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800">
+            <div className="h-full rounded-full bg-brand-600 dark:bg-brand-400" style={{ width: `${(r.value / max) * 100}%` }} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function PageList({ pages, value }: { pages: Array<Omit<ObservedPage, 'views'>>; value: (i: number) => string }) {
+  return (
+    <ol className="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
+      {pages.map((p, i) => (
+        <li key={p.path} className="flex items-baseline gap-3 py-2">
+          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500">{i + 1}</span>
+          <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+            {KIND_LABELS[p.kind]}
+          </span>
+          <Link href={pageHref(p.path)} className={`min-w-0 flex-1 truncate ${link}`} title={p.title}>
+            {p.title}
+          </Link>
+          <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-400">{value(i)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+const Empty = ({ children }: { children: React.ReactNode }) => <p className="py-6 text-center text-sm text-zinc-500">{children}</p>;
+
+/** Every day of the period; days before tracking began have no bar. */
+function series(data: Observation, pick: (d: NonNullable<Observation['traffic']>['daily'][number]) => number) {
+  const days = Array.from({ length: data.days }, (_, i) => shiftDay(data.start, i));
+  const byDay = new Map(data.traffic?.daily.map((d) => [d.date, pick(d)]));
+  return { days, values: days.map((d) => byDay.get(d) ?? (data.trackingSince && d >= data.trackingSince ? 0 : null)) };
+}
+
+function Vitals({ vitals }: { vitals: NonNullable<Observation['vitals']> }) {
+  const parts = [
+    { key: 'good', label: '良好', className: 'bg-emerald-600 dark:bg-emerald-500' },
+    { key: 'needsImprovement', label: '需改善', className: 'bg-amber-500 dark:bg-amber-400' },
+    { key: 'poor', label: '不佳', className: 'bg-red-600 dark:bg-red-500' },
+  ] as const;
+  return (
+    <ul className="space-y-4 text-sm">
+      {vitals.map((v) => {
+        const total = v.good + v.needsImprovement + v.poor;
+        return (
+          <li key={v.name}>
+            <div className="flex justify-between gap-3">
+              <span>
+                <span className="font-medium">{v.name}</span> {VITALS[v.name]}
+              </span>
+              <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{n(total)} 份樣本</span>
+            </div>
+            {total > 0 && (
+              <>
+                <div className="mt-1.5 flex h-2 gap-0.5 overflow-hidden rounded-full">
+                  {parts.map((p) => v[p.key] > 0 && <div key={p.key} className={p.className} style={{ flexGrow: v[p.key] }} />)}
+                </div>
+                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  {parts.map((p) => `${p.label} ${Math.round((v[p.key] / total) * 100)}%`).join(' · ')}
+                </p>
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export default async function ObservePage({ searchParams }: { searchParams: Promise<Search> }) {
+  const days = daysOf(await searchParams);
+  const data = await fetchObservation(days);
+  const traffic = data?.traffic;
+  const search = data?.search;
+  const views = data && series(data, (d) => d.views);
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">網站觀測</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            本站的讀者從哪裡來、看了什麼
+            {data?.updatedAt && ` · 更新於 ${taipei(data.updatedAt)}`}
+            {data?.trackingSince && ` · ${data.trackingSince.replaceAll('-', '/')} 起`}
+          </p>
+        </div>
+        <MethodLink className="text-sm" />
+      </div>
+      <nav className="flex gap-1 text-sm" aria-label="期間">
+        {OBSERVATION_DAYS.map((d) => (
           <Link
-            key={t.id}
-            href={`/observe/?tab=${t.id}`}
-            aria-current={tab === t.id ? 'page' : undefined}
-            className={`rounded-lg px-3 py-2 text-sm font-medium ${tab === t.id ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+            key={d}
+            href={d === 28 ? '/observe/' : `/observe/?days=${d}`}
+            scroll={false}
+            aria-current={d === days ? 'page' : undefined}
+            className={`whitespace-nowrap rounded-full px-3 py-1 ${d === days ? 'bg-brand-700 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
           >
-            {t.label}
+            近 {d} 天
           </Link>
         ))}
       </nav>
-      {data && tab === 'search' && search && (
-        <section className={observationPanel} aria-labelledby="search-title">
-          <h2 id="search-title" className="text-xl font-semibold">
-            Google 搜尋表現
-          </h2>
-          <ObservationPeriodLabel period={search.period} zone="美國太平洋時間" />
-          {search.totals ? (
-            <>
-              <ObservationStats
-                items={[
-                  { label: '搜尋曝光', value: search.totals.impressions.toLocaleString('zh-TW') },
-                  { label: '搜尋點擊', value: search.totals.clicks.toLocaleString('zh-TW') },
-                  {
-                    label: '點閱率',
-                    value: search.totals.impressions ? `${((search.totals.clicks / search.totals.impressions) * 100).toFixed(1)}%` : '—',
-                  },
-                ]}
-              />
-              <div className="overflow-x-auto">
-                <table className="w-full text-right text-sm tabular-nums">
-                  <caption className="pb-3 text-left text-zinc-500">每日搜尋紀錄（有回傳資料的日期）</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col" className="py-3 text-left">
-                        日期
-                      </th>
-                      <th scope="col">曝光</th>
-                      <th scope="col">點擊</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {search.daily.map((row) => (
-                      <tr key={row.date} className="border-t border-zinc-200 dark:border-zinc-800">
-                        <th scope="row" className="py-3 text-left font-normal">
-                          {row.date}
-                        </th>
-                        <td>{row.impressions.toLocaleString('zh-TW')}</td>
-                        <td>{row.clicks.toLocaleString('zh-TW')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <p className="my-6 text-sm leading-7">Google 尚未回傳這段期間的搜尋紀錄。這不代表網站沒有被收錄，也不能解讀為零曝光。</p>
-          )}
-          <p className={`${observationMuted} mt-4`}>
-            來源：Google Search
-            Console，僅採用已完成處理的網頁搜尋資料，通常會延遲數日。沒有回傳的日期不補零；不公開個別搜尋字詞。這份報表不能判定每個網址的收錄狀態。
-          </p>
-        </section>
-      )}
-      {data && tab === 'content' && (
+
+      {!data ? (
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:border-zinc-700">
+          觀測資料暫時無法取得，請稍後再試。
+        </p>
+      ) : (
         <>
-          <section className={observationPanel}>
-            <h2 className="text-xl font-semibold">站內閱讀概況</h2>
-            <ObservationPeriodLabel period={data.content.period} zone="台灣時間" />
-            {data.content.totals ? (
-              <ObservationStats
-                items={[
-                  { label: '全站瀏覽次數', value: data.content.totals.views.toLocaleString('zh-TW') },
-                  { label: '工作階段', value: data.content.totals.sessions.toLocaleString('zh-TW') },
-                ]}
-              />
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Tile label="瀏覽" value={traffic ? n(traffic.views) : '—'} />
+            <Tile label="造訪" value={traffic ? n(traffic.sessions) : '—'} />
+            <Tile label="Google 搜尋點擊" value={search ? n(search.clicks) : '—'} note={search ? undefined : '尚無資料'} />
+            <Tile
+              label="Google 搜尋曝光"
+              value={search ? n(search.impressions) : '—'}
+              note={search?.position ? `平均排名 ${search.position}` : search ? undefined : '尚無資料'}
+            />
+          </div>
+
+          <Section title="每日瀏覽" aside="今天的長條較淡：仍在累計">
+            {views && traffic ? (
+              <DailyBars label="每日網頁瀏覽次數" name="瀏覽" days={views.days} values={views.values} partialLast />
             ) : (
-              <p className="mt-5 text-sm">這段期間尚無可用的閱讀統計。</p>
+              <Empty>還沒有瀏覽資料。</Empty>
             )}
-            <p className={observationMuted}>
-              來源：Google Analytics 4。全站瀏覽包含首頁及其他頁面，排行只列事件與標籤頁。工作階段表示一段造訪，不等於獨立讀者。
-            </p>
-          </section>
-          <ReaderRanking data={data} />
-          <Link href="/readers/" className={observationLink}>
-            開啟讀者關注專頁 →
-          </Link>
+          </Section>
+
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <section id="readers" className={card}>
+              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="font-semibold">讀者關注</h2>
+                <span className="text-xs text-zinc-600 dark:text-zinc-400">內容頁瀏覽次數</span>
+              </div>
+              {data.content.length ? (
+                <PageList pages={data.content} value={(i) => n(data.content[i].views)} />
+              ) : (
+                <Empty>這段期間還沒有內容頁的瀏覽。</Empty>
+              )}
+            </section>
+            <div className="space-y-5">
+              <Section title="從哪裡來" aside="造訪次數">
+                {traffic?.channels.length ? <Shares rows={traffic.channels} labels={CHANNELS} unit="次" /> : <Empty>尚無資料。</Empty>}
+              </Section>
+              <Section title="用什麼裝置" aside="造訪次數">
+                {traffic?.devices.length ? <Shares rows={traffic.devices} labels={DEVICES} unit="次" /> : <Empty>尚無資料。</Empty>}
+              </Section>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <Section title="熱門頁面" aside="含首頁與索引頁">
+              {data.pages.length ? (
+                <PageList pages={data.pages.slice(0, 10)} value={(i) => n(data.pages[i].views)} />
+              ) : (
+                <Empty>尚無資料。</Empty>
+              )}
+            </Section>
+            <Section title="讀者做了什麼">
+              {traffic?.events.length ? (
+                <dl className="grid grid-cols-2 gap-3">
+                  {traffic.events.map((e) => (
+                    <div key={e.name}>
+                      <dt className="text-xs text-zinc-600 dark:text-zinc-400">{EVENTS[e.name] ?? e.name}</dt>
+                      <dd className="text-xl font-semibold tabular-nums">{n(e.value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <Empty>尚無互動紀錄。</Empty>
+              )}
+            </Section>
+          </div>
+
+          <Section title="Google 搜尋" aside={search ? '美國太平洋時間，近 2–3 天可能仍會修正' : undefined}>
+            {search ? (
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div className="min-w-0">
+                  <h3 className="mb-1 text-xs text-zinc-600 dark:text-zinc-400">每日點擊</h3>
+                  <DailyBars
+                    className="h-44 w-full"
+                    label="每日 Google 搜尋點擊"
+                    name="點擊"
+                    days={search.daily.map((d) => d.date)}
+                    values={search.daily.map((d) => d.clicks)}
+                  />
+                  <h3 className="mt-4 mb-1 text-xs text-zinc-600 dark:text-zinc-400">每日曝光</h3>
+                  <DailyBars
+                    className="h-44 w-full"
+                    label="每日 Google 搜尋曝光"
+                    name="曝光"
+                    days={search.daily.map((d) => d.date)}
+                    values={search.daily.map((d) => d.impressions)}
+                  />
+                </div>
+                <div>
+                  <h3 className="mb-1 text-xs text-zinc-600 dark:text-zinc-400">搜尋帶來最多點擊的頁面</h3>
+                  {search.pages.length ? (
+                    <PageList
+                      pages={search.pages}
+                      value={(i) => `${n(search.pages[i].clicks)} 點擊 / ${n(search.pages[i].impressions)} 曝光`}
+                    />
+                  ) : (
+                    <Empty>還沒有頁面獲得搜尋點擊。</Empty>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <Empty>Search Console 還沒有回傳搜尋資料，通常在網站被收錄後幾天出現。</Empty>
+            )}
+          </Section>
+
+          <Section title="使用體驗" aside={data.vitals ? '讀者瀏覽器回報的樣本' : undefined}>
+            {data.vitals ? (
+              <Vitals vitals={data.vitals} />
+            ) : (
+              <Empty>使用體驗資料尚未開放：GA4 需先登錄 metric_name、metric_rating 兩個自訂維度。</Empty>
+            )}
+          </Section>
         </>
       )}
-      {data && tab === 'experience' && (
-        <section className={observationPanel} aria-labelledby="experience-title">
-          <h2 id="experience-title" className="text-xl font-semibold">
-            真實使用體驗
-          </h2>
-          <ObservationPeriodLabel period={data.content.period} zone="台灣時間" />
-          {data.experience.metrics.length ? (
-            <div className="my-6 grid gap-4 sm:grid-cols-3">
-              {data.experience.metrics.map((m) => (
-                <div key={m.name} className="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-900">
-                  <h3 className="font-semibold">
-                    {m.name}・{metricLabels[m.name]}
-                  </h3>
-                  <p className="my-3 text-2xl font-semibold">{m.goodPercent}% 良好</p>
-                  <p className={observationMuted}>{m.samples} 份有效樣本</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="my-6 text-sm leading-7">目前尚無足夠的分類統計可判讀使用體驗。每項指標至少累積 30 份有效樣本後才顯示結果。</p>
-          )}
-          <p className={observationMuted}>
-            LCP 觀察主要內容何時出現，INP 觀察互動回應，CLS 觀察版面位移。這裡呈現所有裝置回報樣本中的「良好」比例，不是第 75 百分位，也不是
-            Google 的 Core Web Vitals 通過判定。
-          </p>
-          <p className={`${observationMuted} mt-3`}>
-            資料來自同意或允許分析的瀏覽器；樣本是頁面載入紀錄，不是獨立使用者。沒有互動的頁面可能沒有 INP。尚未達門檻的指標暫不列出。
-          </p>
-        </section>
-      )}
-      <p className={observationMuted}>
-        此頁公開彙整數字，不公開使用者識別資料或個別瀏覽紀錄。
-        <Link href="/api/v1/site-observation" prefetch={false} className={observationLink}>
-          下載同一份公開資料
-        </Link>
-      </p>
     </div>
   );
 }

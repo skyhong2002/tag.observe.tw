@@ -2,7 +2,9 @@ import { createServer } from 'node:http';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import pino from 'pino';
+import { googleConfigFromEnv } from './analytics/google.ts';
 import { createDb } from './db/client.ts';
+import { runAnalyticsJob } from './jobs/analytics-job.ts';
 import { runCrawlHealthJob } from './jobs/crawl-health-job.ts';
 import { crawlArticles, crawlGroup } from './jobs/crawl-job.ts';
 import { runEventsJob } from './jobs/events-job.ts';
@@ -85,6 +87,17 @@ await queue.upsertJobScheduler(
   { name: 'source-probe', data: {}, opts: { removeOnComplete: 10, removeOnFail: 10 } },
 );
 
+// GA4 / Search Console aggregates for /observe/; skipped where the read-only
+// service account is not configured (docs/analytics.md).
+const google = googleConfigFromEnv();
+if (google)
+  await queue.upsertJobScheduler(
+    'analytics-daily',
+    { pattern: process.env.ANALYTICS_CRON || '20 6 * * *' },
+    { name: 'analytics', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+  );
+else await queue.removeJobScheduler('analytics-daily');
+
 // Export zero-valued series from startup so the alert queries have data after a restart,
 // instead of going NoData until the first job of each kind completes.
 for (const job of [
@@ -92,6 +105,7 @@ for (const job of [
   'events',
   'retention',
   'source-probe',
+  'analytics',
   'crawl-health',
   'topics',
   'tag-stats',
@@ -132,6 +146,12 @@ const worker = new Worker(
       }
       if (job.name === 'source-probe') {
         const r = await runProbeJob(db, { log: (o, m) => log.info(o, m), warn: (o, m) => log.warn(o, m) });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'analytics') {
+        if (!google) throw Error('Google analytics access is not configured');
+        const r = await runAnalyticsJob(db, google, { log: (o, m) => log.info(o, m) });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

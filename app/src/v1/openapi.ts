@@ -563,38 +563,51 @@ export const API_TAGS = [
   { name: 'media', description: '媒體與爬蟲狀態' },
 ];
 
-const observationPeriod = obj({ start: str(), end: str() });
-const observationSearchCounts = obj({ clicks: int(), impressions: int() });
+const observationPage = obj({
+  path: str('本站路徑（未編碼）'),
+  kind: str('event／tag／topic／feature／article／journalist／media／page'),
+  title: str(),
+  views: int(),
+});
 
 export const ENDPOINTS: Endpoint[] = [
   {
     path: '/api/v1/site-observation',
     tag: 'meta',
-    summary: '公開網站觀測快照',
+    summary: '網站觀測：GA4 與 Search Console 每日彙整',
     description:
-      '手動更新的 GA4／GSC 彙整；無可用快照時 snapshot 為 null。依 updatedAt 判斷新鮮度。GA 採台灣時間近 7 個完整日，GSC 採太平洋時間近 28 個完整日且只取 final 資料。排行至少 10 次瀏覽與 3 位活躍使用者，體驗指標至少 30 份樣本。不公開搜尋字詞或使用者識別資料。',
-    cache: '1 分鐘',
+      'worker 每天自 GA4（台灣時間）與 Search Console（美國太平洋時間，含尚未定案的近日資料）讀取彙整數字，近幾天每次重抓覆蓋。只含 tag.observe.tw 的流量；不含搜尋字詞、站內搜尋內容或使用者識別資料。traffic／search 在尚無資料時為 null；traffic.daily 從開始追蹤日補零。content 為讀者造訪的內容頁（事件、標籤、議題、專題、文章、記者、媒體），pages 含首頁與索引頁。vitals 需 GA4 已登錄 metric_name／metric_rating 自訂維度，否則為 null。',
+    params: [q('days', '期間（含今天）', { type: 'integer', enum: [7, 28, 90], default: 28 })],
+    cache: '5 分鐘',
+    errors: { '400': 'days 不是 7、28 或 90' },
     response: obj({
-      snapshot: nullable(
+      updatedAt: nullable(time()),
+      days: int(),
+      start: str('台北日期 YYYY-MM-DD'),
+      end: str('今天（台北）'),
+      trackingSince: nullable(str('GA4 第一筆資料的日期')),
+      traffic: nullable(
         obj({
-          version: int(),
-          updatedAt: time(),
-          content: obj({
-            period: observationPeriod,
-            totals: nullable(obj({ views: int(), sessions: int() })),
-            ranking: arr(obj({ path: str(), title: str(), views: int() })),
-          }),
-          search: obj({
-            period: observationPeriod,
-            totals: nullable(observationSearchCounts),
-            daily: arr(obj({ date: str(), clicks: int(), impressions: int() })),
-          }),
-          experience: obj({
-            status: str('definitions_missing／insufficient／ready'),
-            metrics: arr(obj({ name: str('LCP／INP／CLS'), samples: int(), goodPercent: num('良好樣本百分比，非 p75') })),
-          }),
+          daily: arr(obj({ date: str(), views: int(), sessions: int(), users: int('當日活躍使用者') })),
+          views: int(),
+          sessions: int(),
+          channels: arr(obj({ name: str('GA4 預設管道群組'), value: int('工作階段') })),
+          devices: arr(obj({ name: str('desktop／mobile／tablet'), value: int('工作階段') })),
+          events: arr(obj({ name: str('open_original／select_content／rss_click／app_installed'), value: int() })),
         }),
       ),
+      pages: arr(observationPage, '瀏覽最多的 20 頁'),
+      content: arr(observationPage, '瀏覽最多的 10 個內容頁'),
+      search: nullable(
+        obj({
+          daily: arr(obj({ date: str(), clicks: int(), impressions: int(), position: num('平均排名') })),
+          clicks: int(),
+          impressions: int(),
+          position: nullable(num('以曝光加權的平均排名')),
+          pages: arr(obj({ path: str(), kind: str(), title: str(), clicks: int(), impressions: int() }), '搜尋點擊最多的 10 頁'),
+        }),
+      ),
+      vitals: nullable(arr(obj({ name: str('LCP／INP／CLS'), good: int(), needsImprovement: int(), poor: int() }), '各評級的樣本數')),
     }),
   },
   {

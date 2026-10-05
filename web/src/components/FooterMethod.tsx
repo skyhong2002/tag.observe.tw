@@ -11,6 +11,7 @@ import {
   MediaCardMethod,
   MediaMethod,
   MediaOverviewMethod,
+  ObserveMethod,
   RankingMethod,
   SearchMethod,
   SimilarityMethod,
@@ -34,6 +35,7 @@ function sectionsFor(pathname: string) {
   }
   // One keyword's page: @notes/tag/[tag] renders its blocks with the chart's basis.
   if (/^\/tag(\/|$)/.test(pathname)) return null;
+  if (/^\/observe(\/|$)/.test(pathname)) return <ObserveMethod />;
   if (/^\/search(\/|$)/.test(pathname)) {
     return (
       <>

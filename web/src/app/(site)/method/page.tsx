@@ -8,6 +8,7 @@ import {
   MediaMethod,
   MediaOverviewMethod,
   MediaSourcesMethod,
+  ObserveMethod,
   RankingMethod,
   SearchMethod,
   SimilarityMethod,
@@ -52,6 +53,7 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     ),
   },
   { id: 'search', title: '搜尋', pages: [['/search/', '搜尋']], body: <SearchMethod camp={false} /> },
+  { id: 'observe', title: '網站觀測', pages: [['/observe/', '網站觀測']], body: <ObserveMethod /> },
   { id: 'article', title: '單篇文章', body: <ArticleMethod /> },
   {
     id: 'similarity',

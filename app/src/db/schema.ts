@@ -384,3 +384,19 @@ export const rejectedUrls = mysqlTable(
   },
   (t) => [uniqueIndex('rejected_media_key').on(t.media, t.urlKey), index('rejected_created').on(t.createdAt)],
 );
+
+// Daily GA4 / Search Console aggregates (jobs/analytics-job.ts). One row per
+// (day, source, metric, key); key is '' for site totals, else a channel,
+// device, event name, page path or 'LCP:good'. label keeps a page's title.
+export const siteMetrics = mysqlTable(
+  'site_metrics',
+  {
+    day: date('day', { mode: 'string' }).notNull(),
+    source: varchar('source', { length: 8 }).notNull(),
+    metric: varchar('metric', { length: 24 }).notNull(),
+    key: varchar('key', { length: 255 }).notNull().default(''),
+    value: double('value').notNull(),
+    label: varchar('label', { length: 255 }),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.source, t.metric, t.key] }), index('site_metrics_metric_day').on(t.source, t.metric, t.day)],
+);

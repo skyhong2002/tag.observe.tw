@@ -22,7 +22,6 @@ const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> 
     label: '工具',
     links: [
       { href: '/search/', label: '搜尋報導' },
-      { href: '/readers/', label: '讀者關注' },
       { href: '/observe/', label: '網站觀測' },
       { href: '/api/', label: 'API 文件' },
       { href: '/feeds/events.xml', label: '訂閱 RSS' },

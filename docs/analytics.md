@@ -53,32 +53,31 @@ GSC API 可讀搜尋查詢、頁面、裝置與點擊／曝光／CTR／平均排
 
 ## 公開網站觀測與讀者關注
 
-公開入口：`/observe/`（搜尋表現／熱門內容／使用體驗）、`/readers/`。
-資料端點：`GET /api/v1/site-observation`。網站只讀取本機彙整快照，不存取 Google 憑證。
+公開入口：`/observe/`（每日瀏覽、讀者關注、來源、裝置、熱門頁面、互動、Google 搜尋、使用體驗；`?days=7|28|90`），
+首頁左欄的「讀者關注」（近 7 天內容頁前 5 名，不足 3 筆時不顯示）。`/readers/` 永久轉址到 `/observe/#readers`。
+定義寫在頁尾「本頁的資料來源與計算方式」（`web/src/components/method/observe.tsx`）。
 
-手動更新（在 skyhong-SM 的 deck 執行，**沒有新增排程**）：
+資料流：`tag-worker` 的 `analytics` job（`app/src/jobs/analytics-job.ts`）每天 06:20（`ANALYTICS_CRON`）用服務帳戶
+唯讀讀取 GA4 Data API 與 Search Console，寫入 `site_metrics`（每日 × 來源 × 指標 × 鍵），API
+`GET /api/v1/site-observation`（`app/src/v1/site-observation.ts`）彙整給網頁。網站程序不碰 Google 憑證。
+
+- worker 從專案 `.env` 讀 `GOOGLE_APPLICATION_CREDENTIALS`（指向 Git 外 0600 的 service-account.json）、
+  `GA4_PROPERTY_ID`、`GSC_SITE_URL`；三者缺一則不排程。授權只用 analytics.readonly／webmasters.readonly，
+  簽 JWT 換 token（`app/src/analytics/google.ts`），不印出回應內容。
+- 首次執行回填 90 天；之後 GA 重抓近 7 天、GSC 近 10 天並整段覆蓋，晚到的資料與修正會補上。
+- GA：只計 hostname `tag.observe.tw`。逐頁存瀏覽數與 GA 的頁面標題（去掉「 · 新文易數」）；同一路徑不同編碼合併，
+  使用者取最大值不相加。`/search/` 一律只存路徑、不存標題，避免存到搜尋字詞。另存每日總瀏覽／工作階段／使用者、
+  預設管道、裝置與 `open_original` 等自訂事件次數。
+- GSC：`dataState=all`（含尚未定案的近日資料），存每日點擊／曝光／平均排名與逐頁點擊／曝光，**不讀搜尋字詞**。
+- Web Vitals 需 GA4 管理員建立事件範圍自訂維度 `metric_name`、`metric_rating`（Viewer 無法建立）；建立前 `vitals` 為 null，
+  頁面顯示一行說明。建立後新資料會在下一次 job 出現，不回補歷史。
+
+手動跑一次（例如剛部署或想立即更新）：
 
 ```bash
-set -a
-source /home/deck/.config/tag-observe-analytics/analytics.env
-set +a
-/home/deck/.config/tag-observe-analytics/venv/bin/python tools/refresh-observation.py
+set -a; . /home/deck/.config/tag-observe-analytics/analytics.env; set +a
+PATH=/home/deck/.local/bin:$PATH node --env-file=.env tools/analytics-once.ts
 ```
 
-預設快照位置為 `~/.local/share/tag-analysis/analytics/public.json`；可用 `TAG_ANALYTICS_SNAPSHOT`
-覆寫，但更新程式與網站 API 必須使用同一路徑。快照位於 Git 與 immutable release 之外；
-更新程式僅用 analytics.readonly／webmasters.readonly，Google 私鑰留在既有的 Git 外 0600 檔案。
-網站程序不用載入 Google 授權環境。
-
-- 所有必要 API 與合格頁面的標題查核完成後，原子替換快照。失敗保留前份成功資料；缺檔／格式不正確時 API 回傳 `snapshot: null`，不暴露錯誤內容。
-- 頁面顯示最後成功更新時間，超過 48 小時提示未更新。API 可快取 60 秒；頁面伺服器讀取不快取。這不是 uptime 監控。
-- GA4：台灣時間近 **7 個完整日**、只計 `tag.observe.tw` hostname。故今天剛建立的資料不會立即出現在排行；資料處理仍可能延遲。
-- 排行只取有效 canonical 的 `/eve/{id}/`、`/tag/{tag}/`，排除 noindex、重導與不存在的頁面。用公開頁的 OG 標題；查核 HTTP 不帶任何 Google 授權。最多 20 筆，每頁至少 10 views／3 activeUsers。不同 URL 編碼的 views 相加、users 取最大值作為下限，避免重複加總使用者；不公開逐頁 users。
-- 未能回溯剔除初期測試流量，頁面明示可能包含測試。門檻是減少小樣本誤導，並非保證匿名化或人氣可信度。
-- GSC：太平洋時間近 28 個完整日、type=web、dataState=final。提供整體 clicks／impressions／CTR 與每日序列，不提供個別搜尋 query、來源或個人紀錄。沒有 rows 代表沒有回傳可用資料，不能寫成零曝光；未回傳日期不補零。這不是逐 URL 收錄報告。
-- GA 遇到超過 10,000 rows、sampling 或 `(other)` 聚合資料遺失，拒絕發布不完整快照。
-- Web Vitals 需要 GA4 **事件範圍自訂維度** `metric_name`、`metric_rating`。現有 Viewer 不能建立，更新程式只查 metadata，不修改設定。管理員可在 GA4 管理 → 自訂定義建立，事件參數名稱填上述字串；不回補歷史，通常需等待 24–48 小時。不要將 metric_id 註冊為高基數維度。
-- 若維度尚不存在，`experience.status=definitions_missing`；存在但樣本不足則 `insufficient`。每項至少 30 份已知 rating 樣本才發布「良好比例」，所有裝置合計；未做裝置分層，**不是 p75，也不是 Google CWV 通過率**。計數為事件樣本而非使用者。沒有互動不一定有 INP。
-
-驗證：`python3 -m unittest discover -s tools -p 'test_refresh_observation.py'`、
-`npx vitest run app/src/v1/site-observation.spec.ts`。
+驗證：`npx vitest run app/src/jobs/analytics-job.spec.ts`；整合測試 `app/test/integration.spec.ts`（需 `TEST_DB_URL`）
+以假 Google 回應跑 job 兩次並檢查 API。

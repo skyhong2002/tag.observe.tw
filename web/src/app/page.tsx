@@ -31,6 +31,7 @@ import HeadlineSidebar from './_home/HeadlineSidebar';
 import styles from './_home/home.module.css';
 import Masthead from './_home/Masthead';
 import NewsImage from './_home/NewsImage';
+import ReadersPanel from './_home/ReadersPanel';
 
 export const revalidate = 120;
 export const metadata = pageMetadata(
@@ -347,7 +348,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         {data.events?.stale && <p className={styles.notice}>事件分群更新延遲，目前顯示最近一次的結果。</p>}
 
         <div className={styles.columns}>
-          <aside className={styles.left} aria-label="關鍵字排行與記者">
+          <aside className={styles.left} aria-label="關鍵字排行、記者與讀者關注">
             <div className={styles.sectionHeading}>
               <h2>關鍵字升溫榜</h2>
               <Link href="/ranking/?category=news">
@@ -384,6 +385,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               </Link>
             </div>
             <JournalistPanel brief={data.journalists} />
+            <Suspense fallback={null}>
+              <ReadersPanel />
+            </Suspense>
           </aside>
 
           <section className={styles.center} aria-label="焦點事件">

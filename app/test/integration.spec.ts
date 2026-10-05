@@ -12,6 +12,7 @@ import { loadTitleVocab } from '../src/crawl/title-tags.ts';
 import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots } from '../src/db/schema.ts';
+import { runAnalyticsJob } from '../src/jobs/analytics-job.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
 import { runSimilarityJob } from '../src/jobs/similarity-job.ts';
@@ -38,6 +39,7 @@ const TABLES = [
   'article_sketches',
   'similarity_pairs',
   'article_citations',
+  'site_metrics',
 ];
 const res = (u: string, body: string, status = 200): FetchResult => ({ url: u, status, body, contentType: 'text/html', ms: 1 });
 const now = new Date();
@@ -421,6 +423,61 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     } finally {
       await app.close();
       await db.delete(articles).where(sql`${articles.id} = ${copy.id}`);
+    }
+  });
+
+  it('stores GA4 / Search Console aggregates and serves them without search terms', async () => {
+    const day = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+    const ga = day.replaceAll('-', '');
+    const row = (dims: string[], values: number[]) => ({
+      dimensionValues: dims.map((value) => ({ value })),
+      metricValues: values.map((v) => ({ value: String(v) })),
+    });
+    const calls: string[] = [];
+    const google = async (u: string, payload?: object) => {
+      const body = payload as { dimensions: Array<string | { name: string }> };
+      calls.push(u.split('?')[0]);
+      if (u.endsWith('/metadata')) return { dimensions: [] };
+      if (u.includes('searchAnalytics')) {
+        if (body.dimensions.includes('query')) throw Error('queries must never be requested');
+        return body.dimensions.length === 1
+          ? { rows: [{ keys: [day], clicks: 2, impressions: 40, position: 8.5 }] }
+          : { rows: [{ keys: [day, 'https://tag.observe.tw/eve/9/'], clicks: 2, impressions: 30, position: 4 }] };
+      }
+      const dims = body.dimensions
+        .map((d) => (typeof d === 'string' ? d : d.name))
+        .slice(1)
+        .join(',');
+      if (dims === '') return { rows: [row([ga], [12, 5, 4])] };
+      if (dims === 'pagePath,pageTitle')
+        return {
+          rows: [row([ga, '/eve/9/', '颱風來襲 · 新文易數'], [5, 3]), row([ga, '/ranking/', '新聞關鍵字排行榜 · 新文易數'], [7, 4])],
+        };
+      if (dims === 'sessionDefaultChannelGroup') return { rows: [row([ga, 'Organic Search'], [3]), row([ga, 'Direct'], [2])] };
+      if (dims === 'deviceCategory') return { rows: [row([ga, 'mobile'], [5])] };
+      return { rows: [row([ga, 'open_original'], [1])] };
+    };
+    const config = { credentialsFile: '', propertyId: '1', siteUrl: 'https://tag.observe.tw/' };
+    await runAnalyticsJob(db, config, { google });
+    await runAnalyticsJob(db, config, { google }); // replaces the window, never duplicates
+    expect(calls.some((c) => c.includes('searchAnalytics'))).toBe(true);
+    const app = await buildApp({ tagDbUrl: null, uiOrigin: 'http://127.0.0.1:1', rateLimit: false }, { db });
+    try {
+      const r = await app.inject('/api/v1/site-observation?days=7');
+      expect(r.statusCode).toBe(200);
+      const body = r.json();
+      expect(body.updatedAt).not.toBeNull();
+      expect(body.traffic.views).toBe(12);
+      expect(body.traffic.daily.at(-1)).toEqual({ date: day, views: 12, sessions: 5, users: 4 });
+      expect(body.traffic.channels[0]).toEqual({ name: 'Organic Search', value: 3 });
+      expect(body.pages.map((p: { path: string }) => p.path)).toEqual(['/ranking/', '/eve/9/']);
+      expect(body.content).toEqual([{ path: '/eve/9/', kind: 'event', title: '颱風來襲', views: 5 }]);
+      expect(body.search).toMatchObject({ clicks: 2, impressions: 40, position: 8.5 });
+      expect(body.search.pages[0]).toMatchObject({ path: '/eve/9/', clicks: 2, impressions: 30 });
+      expect(body.vitals).toBeNull();
+      expect((await app.inject('/api/v1/site-observation?days=5')).statusCode).toBe(400);
+    } finally {
+      await app.close();
     }
   });
 });

@@ -78,9 +78,9 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerJournalists(app, own.db);
     registerArticleContent(app, own.db);
     registerArticleRelated(app, own.db);
+    registerSiteObservation(app, own.db);
   }
   registerApiMeta(app);
-  registerSiteObservation(app);
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {
     if (own) await own.close();
