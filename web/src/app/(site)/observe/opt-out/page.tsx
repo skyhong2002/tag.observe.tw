@@ -25,7 +25,7 @@ export default function OptOutPage() {
         <li>設定只存在這個瀏覽器的本站資料中。換瀏覽器、使用無痕視窗，或清除網站資料後，需要再設定一次。</li>
         <li>Safari 可能在 7 天沒有造訪本站後清除網站資料；測試用的 Safari 請定期確認狀態。</li>
         <li>自動化測試工具（Playwright、Puppeteer、Selenium、Lighthouse 等）預設不送統計，不需設定。</li>
-        <li>已經送出的紀錄無法從 Google Analytics 刪除。</li>
+        <li>此設定不會回溯排除已送出的紀錄。</li>
       </ul>
     </div>
   );
