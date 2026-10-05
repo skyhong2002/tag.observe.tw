@@ -5,9 +5,13 @@ import {
   firstReports,
   flattenArticles,
   groupByHour,
+  leadStories,
   outletRows,
+  relevanceFloor,
   sortOutletRows,
+  splitByRelevance,
   tagStats,
+  titleSimilarity,
 } from '../../web/src/lib/event-thread.mts';
 
 const hours = [
@@ -124,5 +128,55 @@ describe('headline grouping', () => {
       ['green', 3],
       ['other', 4],
     ]);
+  });
+});
+
+describe('reading order', () => {
+  const report = (id: number, hits: number, title: string, extra: { description?: string; publishedAt?: string } = {}) => ({
+    ...article(id, extra.publishedAt ?? '2026-10-05T05:00:00.000Z', title),
+    hits,
+    description: extra.description ?? null,
+  });
+  const outlet = (media: string, camp: 'blue' | 'green' | 'other', articles: ReturnType<typeof report>[]): CoverageOutlet => ({
+    media,
+    title: media,
+    icon: null,
+    camp,
+    articles,
+  });
+  it('folds away reports naming one of several major tags only when enough name two', () => {
+    const many = [
+      outlet(
+        'udn',
+        'blue',
+        [...Array(8)].map((_, i) => report(i + 1, 2, `台股台積電${i}`)),
+      ),
+      outlet('cna', 'other', [report(99, 1, '0050')]),
+    ];
+    expect(relevanceFloor(many, 5)).toBe(2);
+    expect(relevanceFloor(many, 1)).toBe(1);
+    expect(relevanceFloor(byOutlet, 5)).toBe(1);
+    const { core, fringe } = splitByRelevance(many, 2);
+    expect(core.map((o) => o.media)).toEqual(['udn']);
+    expect(fringe.map((o) => [o.media, o.articles.map((a) => a.id)])).toEqual([['cna', [99]]]);
+  });
+  it('scores reworded copies of one headline as near-identical', () => {
+    expect(titleSimilarity('台股狂飆千點 一舉突破49000大關', '台股狂飆千點！一舉突破49000大關')).toBe(1);
+    expect(titleSimilarity('台股狂飆千點 一舉突破49000大關', '颱風山陀兒逼近 明起海警')).toBe(0);
+  });
+  it('picks lead stories by tag hits, one per outlet, without duplicate headlines or one camp taking over', () => {
+    const leads = leadStories(
+      [
+        outlet('udn', 'blue', [report(1, 4, '台積電帶頭衝 台股狂飆千點'), report(2, 4, '台指期首度衝破五萬點')]),
+        outlet('chinatimes', 'blue', [report(3, 4, '台指期夜盤飆677點', { description: '費半漲2.4%' })]),
+        outlet('tvbs', 'blue', [report(4, 3, '外資買超台積電')]),
+        outlet('ltn', 'green', [report(5, 4, '台積電帶頭衝！台股狂飆千點'), report(6, 2, '台股收盤創高')]),
+        outlet('cna', 'other', [report(7, 1, '0050 怎麼買')]),
+      ],
+      4,
+    );
+    // chinatimes leads on its summary; udn's newest equal; ltn's copy of udn's headline gives way.
+    expect(leads.map((a) => a.id)).toEqual([3, 1, 6, 7]);
+    expect(leads.filter((a) => a.outlet.camp === 'blue')).toHaveLength(2);
   });
 });

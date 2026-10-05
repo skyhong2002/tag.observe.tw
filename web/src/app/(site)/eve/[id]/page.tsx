@@ -19,9 +19,12 @@ import {
   flattenArticles,
   groupByHour,
   hourKey,
+  leadStories,
   OUTLET_SORTS,
   type OutletSort,
   outletRows,
+  relevanceFloor,
+  splitByRelevance,
   type ThreadHour,
   tagStats,
 } from '@/lib/event-thread.mts';
@@ -31,7 +34,18 @@ import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import { pageMetadata, pageSchema } from '@/lib/seo.mts';
 import OutletTable from './OutletTable';
-import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, HourTable, SectionTitle, StatTiles, Timeline } from './sections';
+import {
+  ByOutlet,
+  CAMP_TEXT,
+  CampColumns,
+  CampDot,
+  HourTable,
+  LeadStories,
+  LooseReports,
+  SectionTitle,
+  StatTiles,
+  Timeline,
+} from './sections';
 
 export const revalidate = 120;
 
@@ -139,8 +153,16 @@ export default async function EventThreadPage({
   const rankAt = new Map(data.hours.map((h) => [hourKey(h.hourStart), h]));
   const hoursAsc = [...data.hours].sort((a, b) => a.hourStart.localeCompare(b.hourStart));
   const rows = cov ? outletRows(cov.byOutlet) : [];
-  const groups = cov ? groupByHour(flattenArticles(cov.byOutlet, order)) : [];
-  const breaking = cov ? firstReports(cov.byOutlet) : [];
+  // Reports naming only one of several broad major tags are mostly other news;
+  // the headline list leads with the rest and folds those away.
+  const { core, fringe } = cov
+    ? splitByRelevance(cov.byOutlet, relevanceFloor(cov.byOutlet, cov.majorTags.length))
+    : { core: [], fringe: [] };
+  const coreCount = core.reduce((n, o) => n + o.articles.length, 0);
+  const groups = groupByHour(flattenArticles(core, order));
+  const loose = flattenArticles(fringe, order);
+  const leads = leadStories(core);
+  const breaking = firstReports(core);
   const campCount = (camp: Camp, by: 'outlets' | 'articles') => cov?.camps.find((c) => c.camp === camp)?.[by] ?? 0;
   const blindspotText =
     cov && cov.blindspot.length > 0 ? `${cov.blindspot.map((c) => `${CAMP_LABEL[c]}傾向媒體`).join('與')}在這段期間沒有相關報導` : null;
@@ -172,10 +194,11 @@ export default async function EventThreadPage({
         news.push(n);
       }
   const jump = [
+    ...(leads.length > 0 ? ([['leads', '重點報導']] as const) : []),
+    ['headlines', '標題對照'],
     ['trend', '時間變化'],
     ['tags', '標籤'],
     ['outlets', '各媒體報導量'],
-    ['headlines', '標題對照'],
   ] as const;
 
   return (
@@ -251,6 +274,91 @@ export default async function EventThreadPage({
           </nav>
         </div>
       </header>
+
+      {leads.length > 0 && (
+        <section className="space-y-3">
+          <SectionTitle id="leads" note="帶到最多事件主要標籤的報導，每家媒體一則；點標題可讀全文。">
+            重點報導
+          </SectionTitle>
+          <LeadStories items={leads} />
+        </section>
+      )}
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <SectionTitle id="headlines" note={loose.length > 0 ? `另有 ${loose.length} 篇只帶到一個主要標籤，收在列表最後。` : undefined}>
+            標題對照{coreCount > 0 ? `（${coreCount} 篇）` : news.length ? `（${news.length} 篇）` : ''}
+          </SectionTitle>
+          {coreCount > 0 && (
+            <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="標題排列方式">
+              {(
+                [
+                  ['desc', '最新在前'],
+                  ['asc', '最舊在前'],
+                ] as const
+              ).map(([o, name]) => (
+                <Link
+                  key={o}
+                  href={href({ order: o === 'desc' ? undefined : o }, 'headlines')}
+                  scroll={false}
+                  aria-current={o === order ? 'page' : undefined}
+                  className={`rounded-md px-3 py-1 ${o === order ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
+                >
+                  {name}
+                </Link>
+              ))}
+              <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />
+              {VIEWS.map(([v, name]) => (
+                <Link
+                  key={v}
+                  href={href({ view: v === 'timeline' ? undefined : v }, 'headlines')}
+                  scroll={false}
+                  aria-current={v === view ? 'page' : undefined}
+                  className={`rounded-md px-3 py-1 ${v === view ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
+                >
+                  {name}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </div>
+        {coreCount > 0 ? (
+          view === 'timeline' ? (
+            <Timeline groups={groups} rankAt={rankAt} />
+          ) : view === 'camps' ? (
+            <CampColumns groups={groups} rankAt={rankAt} />
+          ) : (
+            <ByOutlet byOutlet={core} order={order} />
+          )
+        ) : (
+          <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+            {news.map((n) => (
+              <li key={n.url} className="flex gap-3 p-3">
+                {n.image && /^https?:\/\//.test(n.image) && (
+                  <Link href={articleHref(n)} tabIndex={-1} aria-label={`閱讀：${n.title}`} className="flex-none">
+                    <SafeImage
+                      src={n.image}
+                      alt=""
+                      width={96}
+                      height={64}
+                      className="h-16 w-24 flex-none rounded-md object-cover"
+                      loading="lazy"
+                    />
+                  </Link>
+                )}
+                <div className="min-w-0">
+                  <Link href={articleHref(n)} className="line-clamp-2 font-medium hover:underline">
+                    {n.title}
+                  </Link>
+                  <SourceLink url={n.url} className="ml-2" />
+                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{n.media}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {loose.length > 0 && <LooseReports items={loose} />}
+      </section>
 
       <StatTiles
         tiles={[
@@ -357,81 +465,6 @@ export default async function EventThreadPage({
           <OutletTable rows={rows} sort={sort} dir={dir} hrefs={sortHrefs} />
         ) : (
           cov && <p className="text-sm text-zinc-600 dark:text-zinc-400">這段期間沒有帶主要標籤的報導。</p>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <SectionTitle id="headlines">
-            標題對照{cov && cov.articles > 0 ? `（${cov.articles} 篇）` : news.length ? `（${news.length} 篇）` : ''}
-          </SectionTitle>
-          {cov && cov.articles > 0 && (
-            <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="標題排列方式">
-              {(
-                [
-                  ['desc', '最新在前'],
-                  ['asc', '最舊在前'],
-                ] as const
-              ).map(([o, name]) => (
-                <Link
-                  key={o}
-                  href={href({ order: o === 'desc' ? undefined : o }, 'headlines')}
-                  scroll={false}
-                  aria-current={o === order ? 'page' : undefined}
-                  className={`rounded-md px-3 py-1 ${o === order ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
-                >
-                  {name}
-                </Link>
-              ))}
-              <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />
-              {VIEWS.map(([v, name]) => (
-                <Link
-                  key={v}
-                  href={href({ view: v === 'timeline' ? undefined : v }, 'headlines')}
-                  scroll={false}
-                  aria-current={v === view ? 'page' : undefined}
-                  className={`rounded-md px-3 py-1 ${v === view ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
-                >
-                  {name}
-                </Link>
-              ))}
-            </nav>
-          )}
-        </div>
-        {cov && cov.articles > 0 ? (
-          view === 'timeline' ? (
-            <Timeline groups={groups} rankAt={rankAt} />
-          ) : view === 'camps' ? (
-            <CampColumns groups={groups} rankAt={rankAt} />
-          ) : (
-            <ByOutlet byOutlet={cov.byOutlet} order={order} />
-          )
-        ) : (
-          <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-            {news.map((n) => (
-              <li key={n.url} className="flex gap-3 p-3">
-                {n.image && /^https?:\/\//.test(n.image) && (
-                  <Link href={articleHref(n)} tabIndex={-1} aria-label={`閱讀：${n.title}`} className="flex-none">
-                    <SafeImage
-                      src={n.image}
-                      alt=""
-                      width={96}
-                      height={64}
-                      className="h-16 w-24 flex-none rounded-md object-cover"
-                      loading="lazy"
-                    />
-                  </Link>
-                )}
-                <div className="min-w-0">
-                  <Link href={articleHref(n)} className="line-clamp-2 font-medium hover:underline">
-                    {n.title}
-                  </Link>
-                  <SourceLink url={n.url} className="ml-2" />
-                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{n.media}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
         )}
       </section>
     </div>

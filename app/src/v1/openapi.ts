@@ -129,6 +129,7 @@ const schemas: Record<string, Schema> = {
     image: nullable(str()),
     publishedAt: time(),
     hits: int('這篇文章帶了幾個事件主要標籤'),
+    description: nullable(str('媒體提供的摘要，最多 160 字；沒有或與標題重複時為 null')),
   }),
   TopicCheck: obj(
     {

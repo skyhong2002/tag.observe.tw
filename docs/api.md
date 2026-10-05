@@ -1502,6 +1502,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 | `byOutlet[].articles[].image` | string \| null |  |
 | `byOutlet[].articles[].publishedAt` | string (ISO 時間) |  |
 | `byOutlet[].articles[].hits` | integer | 這篇文章帶了幾個事件主要標籤 |
+| `byOutlet[].articles[].description` | string \| null | 媒體提供的摘要，最多 160 字；沒有或與標題重複時為 null |
 
 錯誤：`400` id 格式錯誤；`404` 找不到。
 

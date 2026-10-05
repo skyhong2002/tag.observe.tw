@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { CAMP_LONG, CAMP_TEXT, CampDot } from '@/components/EventCampDot';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import { taipeiHour } from '@/lib/api';
+import SafeImage from '@/components/SafeImage';
+import { taipei, taipeiHour } from '@/lib/api';
 import {
   CAMP_ORDER,
   type Camp,
@@ -11,6 +12,7 @@ import {
   type ThreadHour,
   type TimedArticle,
 } from '@/lib/event-thread.mts';
+import { articleHref } from '@/lib/reading.mts';
 import HeadlineRowView from './HeadlineRowView';
 
 // Presentational pieces of the event thread page. Pure shaping lives in
@@ -130,11 +132,13 @@ function HeadlineRow({
   showCamp = true,
   time = true,
   showOutlet = true,
+  compact = false,
 }: {
   a: TimedArticle;
   showCamp?: boolean;
   time?: boolean;
   showOutlet?: boolean;
+  compact?: boolean;
 }) {
   return (
     <HeadlineRowView
@@ -144,12 +148,80 @@ function HeadlineRow({
         url: a.url,
         image: a.image,
         publishedAt: a.publishedAt,
+        description: a.description,
         outlet: { media: a.outlet.media, title: a.outlet.title, camp: a.outlet.camp },
       }}
       showCamp={showCamp}
       time={time}
       showOutlet={showOutlet}
+      compact={compact}
     />
+  );
+}
+
+/** The reports to read first, each with its outlet's summary; the first one
+ *  runs across the row. */
+export function LeadStories({ items }: { items: TimedArticle[] }) {
+  return (
+    <ul className="grid gap-3 md:grid-cols-2">
+      {items.map((a, i) => (
+        <li key={a.id} className={`${card} flex gap-3 p-3 ${i === 0 ? 'md:col-span-2 md:p-4' : ''}`}>
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-600 dark:text-zinc-400">
+              <CampDot camp={a.outlet.camp} />
+              <MediaHoverLink media={a.outlet.media} icon={14} className="hover:underline">
+                {a.outlet.title}
+              </MediaHoverLink>
+              <span className="tabular-nums">{taipei(a.publishedAt)}</span>
+            </p>
+            <Link href={articleHref(a)} className={`block font-semibold leading-snug hover:underline ${i === 0 ? 'text-lg' : ''}`}>
+              {a.title}
+            </Link>
+            {a.description && (
+              <p className={`text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 ${i === 0 ? 'line-clamp-4' : 'line-clamp-3'}`}>
+                {a.description}
+              </p>
+            )}
+            <Link
+              href={articleHref(a)}
+              aria-label={`閱讀全文：${a.title}`}
+              className="inline-block text-xs text-brand-700 hover:underline dark:text-brand-400"
+            >
+              閱讀全文 →
+            </Link>
+          </div>
+          {a.image && /^https?:\/\//.test(a.image) && (
+            <Link href={articleHref(a)} tabIndex={-1} aria-hidden="true" className="flex-none">
+              <SafeImage
+                src={a.image}
+                alt=""
+                width={208}
+                height={128}
+                className={`rounded-md object-cover ${i === 0 ? 'h-24 w-36 md:h-32 md:w-52' : 'h-20 w-28'}`}
+                loading="lazy"
+              />
+            </Link>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Reports that share only one broad tag with the event, folded away. */
+export function LooseReports({ items }: { items: TimedArticle[] }) {
+  return (
+    <details className={`${card} px-3 py-2 text-sm`}>
+      <summary className="cursor-pointer select-none py-1 text-zinc-700 dark:text-zinc-300">
+        只帶到一個主要標籤的報導（{items.length} 篇）
+        <span className="ml-2 text-xs text-zinc-500">多半是同一標籤下的其他新聞</span>
+      </summary>
+      <ul className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">
+        {items.map((a) => (
+          <HeadlineRow key={a.id} a={a} compact />
+        ))}
+      </ul>
+    </details>
   );
 }
 

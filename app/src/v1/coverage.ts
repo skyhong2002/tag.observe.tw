@@ -26,6 +26,7 @@ export interface CoverageRow {
   image: string | null;
   publishedAt: Date;
   tags: string[];
+  description?: string | null;
 }
 export interface CoverageArticle {
   id: number;
@@ -34,6 +35,9 @@ export interface CoverageArticle {
   image: string | null;
   publishedAt: string;
   hits: number; // how many of the thread's major tags this article carries
+  // The outlet's own summary, so the headline list can show a line of text;
+  // null when missing or only repeating the title.
+  description: string | null;
 }
 export interface OutletCoverage {
   media: string;
@@ -92,7 +96,15 @@ export function groupCoverage(
       };
       outlets.set(r.media, o);
     }
-    o.articles.push({ id: r.id, title: r.title, url: r.url, image: r.image, publishedAt: r.publishedAt.toISOString(), hits });
+    o.articles.push({
+      id: r.id,
+      title: r.title,
+      url: r.url,
+      image: r.image,
+      publishedAt: r.publishedAt.toISOString(),
+      hits,
+      description: coverageDescription(r.description, r.title),
+    });
   }
   const camps: Record<Camp, CampCoverage> = {
     blue: { camp: 'blue', label: CAMP_LABELS.blue, outlets: 0, articles: 0 },
@@ -125,6 +137,23 @@ export function groupCoverage(
 }
 
 const HOUR = 3600e3;
+// Enough for two or three lines under a headline; 400 rows stay small.
+const DESCRIPTION_MAX = 160;
+
+/** The outlet's summary as a short lede, or null when it adds nothing to the title. */
+export function coverageDescription(description: string | null | undefined, title: string): string | null {
+  const text = description?.replace(/\s+/g, ' ').trim();
+  if (!text || text.length < 12) return null;
+  const bare = (s: string) => s.replace(/[\s\p{P}]/gu, '');
+  if (bare(title).includes(bare(text)) || bare(text) === bare(title)) return null;
+  const chars = [...text];
+  return chars.length > DESCRIPTION_MAX
+    ? `${chars
+        .slice(0, DESCRIPTION_MAX - 1)
+        .join('')
+        .trimEnd()}…`
+    : text;
+}
 export async function loadThreadCoverage(
   db: Db,
   thread: { majorTags: string[]; firstTime: Date; lastTime: Date },
@@ -145,6 +174,7 @@ export async function loadThreadCoverage(
       image: articles.image,
       publishedAt: articles.publishedAt,
       tags: articles.tags,
+      description: articles.description,
     })
     .from(articleTags)
     .innerJoin(articles, eq(articles.id, articleTags.articleId))

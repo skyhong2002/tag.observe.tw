@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { campOf, groupCoverage } from './coverage.ts';
+import { campOf, coverageDescription, groupCoverage } from './coverage.ts';
 
 const cats = { blue: ['udn', 'tvbs'], green: ['ltn', 'setn'], news: ['udn', 'tvbs', 'ltn', 'setn', 'cna'] };
 const t = (h: number) => new Date(Date.UTC(2025, 7, 13, h));
@@ -72,5 +72,20 @@ describe('coverage', () => {
     const c = groupCoverage([row(1, 'udn', ['核三'], 3, ''), row(2, 'udn', ['別的'])], ['核三'], window, cats);
     expect(c.articles).toBe(0);
     expect(c.byOutlet).toEqual([]);
+  });
+  it('keeps the outlet summary as a short lede, not a repeat of the title', () => {
+    const c = groupCoverage(
+      [{ ...row(1, 'udn', ['核三']), description: '  核三廠再運轉評估報告今天出爐，\n台電表示將送核安會審查。 ' }],
+      ['核三'],
+      window,
+      cats,
+    );
+    expect(c.byOutlet[0].articles[0].description).toBe('核三廠再運轉評估報告今天出爐， 台電表示將送核安會審查。');
+    expect(coverageDescription('核三再運轉報告出爐！', '核三再運轉報告出爐')).toBeNull();
+    expect(coverageDescription('太短了', '標題')).toBeNull();
+    expect(coverageDescription(null, '標題')).toBeNull();
+    const long = coverageDescription('長'.repeat(300), '標題');
+    expect([...(long ?? '')].length).toBe(160);
+    expect(long?.endsWith('…')).toBe(true);
   });
 });

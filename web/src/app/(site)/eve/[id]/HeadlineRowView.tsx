@@ -15,6 +15,7 @@ export interface HeadlineArticle {
   url: string;
   image: string | null;
   publishedAt: string;
+  description?: string | null;
   outlet: { media: string; title: string; camp: Camp };
 }
 const clock = (iso: string) => taipei(iso).slice(-5);
@@ -33,21 +34,27 @@ export default function HeadlineRowView({
   showCamp = true,
   time = true,
   showOutlet = true,
+  compact = false,
 }: {
   a: HeadlineArticle;
   showCamp?: boolean;
   time?: boolean;
   showOutlet?: boolean;
+  /** Title and outlet only, for the folded list of loosely related reports. */
+  compact?: boolean;
 }) {
   return (
-    <li className={`flex gap-2 ${showOutlet ? 'py-2' : 'py-1.5'}`}>
+    <li className={`flex gap-2 ${showOutlet && !compact ? 'py-2' : 'py-1.5'}`}>
       {time && <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-500">{clock(a.publishedAt)}</span>}
-      <Thumb a={a} />
+      {!compact && <Thumb a={a} />}
       <div className="min-w-0 flex-1">
-        <Link href={articleHref(a)} className="leading-snug hover:underline">
+        <Link href={articleHref(a)} className={`leading-snug hover:underline ${compact ? '' : 'font-medium'}`}>
           {a.title}
         </Link>
         <SourceLink url={a.url} iconOnly className="ml-1 !min-h-0 align-middle" />
+        {!compact && a.description && (
+          <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-zinc-600 dark:text-zinc-400">{a.description}</p>
+        )}
         {showOutlet && (
           <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
             {showCamp && <CampDot camp={a.outlet.camp} />}
