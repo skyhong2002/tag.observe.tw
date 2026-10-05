@@ -523,116 +523,120 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       ref={dashboard}
       data-similarity-dashboard
       data-fullscreen={fullscreen}
-      className={
-        fullscreen ? 'fixed inset-0 z-50 h-dvh w-full space-y-6 overflow-y-auto bg-white p-3 dark:bg-zinc-950 sm:p-4' : 'space-y-6'
-      }
+      className={fullscreen ? 'fixed inset-0 z-50 h-dvh w-full overflow-hidden bg-white dark:bg-zinc-950' : 'space-y-6'}
     >
-      <div className={`flex min-h-[420px] flex-col gap-3 ${fullscreen ? 'h-[calc(100dvh-2rem)]' : 'h-[calc(100svh-112px)]'}`}>
-        <header className="shrink-0 space-y-3">
-          <SimilarityTabs current="graph" query={periodQuery(data.days ?? { hours: data.hours ?? 48 }, data.threshold).toString()} />
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
-            <p className="mt-1 text-xs text-zinc-500">
-              {periodLabel(data)} · {nodes.length}／{graph.available} 家媒體 · {number(data.index.analyzed)} 篇全部比對
-            </p>
-          </div>
-        </header>
+      <div className={`flex min-h-[420px] flex-col gap-3 ${fullscreen ? 'h-full' : 'h-[calc(100svh-112px)]'}`}>
+        {!fullscreen && (
+          <header className="shrink-0 space-y-3">
+            <SimilarityTabs current="graph" query={periodQuery(data.days ?? { hours: data.hours ?? 48 }, data.threshold).toString()} />
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
+              <p className="mt-1 text-xs text-zinc-500">
+                {periodLabel(data)} · {nodes.length}／{graph.available} 家媒體 · {number(data.index.analyzed)} 篇全部比對
+              </p>
+            </div>
+          </header>
+        )}
         <section
           aria-label="媒體關係儀表板"
-          className={`${panel} flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-zinc-50/60 to-white dark:from-zinc-900 dark:to-zinc-950`}
+          className={`${fullscreen ? '' : panel} flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-zinc-50/60 to-white dark:from-zinc-900 dark:to-zinc-950`}
         >
-          <fieldset
-            aria-label="圖表篩選"
-            className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800"
-          >
-            <PeriodControls data={data} />
-            <label className="flex items-center gap-2">
-              <span className="shrink-0">{filters.tag ? '分類媒體數' : '顯示媒體數'}</span>
-              <select
-                value={filters.limit}
-                onChange={(event) => updateFilters({ limit: Number(event.target.value) })}
-                className={`${inlineControl} w-28`}
-              >
-                {[10, 20, 30, 50, 100, 0].map((limit) => (
-                  <option key={limit} value={limit}>
-                    {limit ? `前 ${limit} 家` : '全部媒體'}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Popover label={filterLabel} active={filters.camp !== 'all' || !!filters.tag}>
-              <label className="block">
-                藍綠分類
+          {!fullscreen && (
+            <fieldset
+              aria-label="圖表篩選"
+              className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100 px-3 py-2 text-xs dark:border-zinc-800"
+            >
+              <PeriodControls data={data} />
+              <label className="flex items-center gap-2">
+                <span className="shrink-0">{filters.tag ? '分類媒體數' : '顯示媒體數'}</span>
                 <select
-                  value={filters.camp}
-                  onChange={(event) => updateFilters({ camp: event.target.value as GraphFilters['camp'] })}
-                  className={control}
+                  value={filters.limit}
+                  onChange={(event) => updateFilters({ limit: Number(event.target.value) })}
+                  className={`${inlineControl} w-28`}
                 >
-                  {campOptions.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  {[10, 20, 30, 50, 100, 0].map((limit) => (
+                    <option key={limit} value={limit}>
+                      {limit ? `前 ${limit} 家` : '全部媒體'}
                     </option>
                   ))}
                 </select>
               </label>
-              <label className="block">
-                媒體 tag
-                <select value={filters.tag} onChange={(event) => updateFilters({ tag: event.target.value })} className={control}>
-                  <option value="">全部 tag</option>
-                  {availableTags.map((tag) => (
-                    <option key={tag.id} value={tag.id}>
-                      {tag.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="text-[11px] leading-5 text-zinc-500">依本期納入分析篇數排序</p>
-              {(filters.camp !== 'all' || filters.tag) && (
-                <button
-                  type="button"
-                  onClick={() => updateFilters({ camp: 'all', tag: '' })}
-                  className="text-brand-700 underline dark:text-brand-400"
-                >
-                  清除篩選
-                </button>
-              )}
-            </Popover>
-            <ThresholdControl data={data} />
-          </fieldset>
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
-            <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
-              {(
-                [
-                  ['all', '全部關係'],
-                  ['similarity', '內文相似'],
-                  ['citation', '明示引用'],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={mode === value}
-                  onClick={() => updateMode(value)}
-                  className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
-                >
-                  {label}
-                </button>
-              ))}
+              <Popover label={filterLabel} active={filters.camp !== 'all' || !!filters.tag}>
+                <label className="block">
+                  藍綠分類
+                  <select
+                    value={filters.camp}
+                    onChange={(event) => updateFilters({ camp: event.target.value as GraphFilters['camp'] })}
+                    className={control}
+                  >
+                    {campOptions.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  媒體 tag
+                  <select value={filters.tag} onChange={(event) => updateFilters({ tag: event.target.value })} className={control}>
+                    <option value="">全部 tag</option>
+                    {availableTags.map((tag) => (
+                      <option key={tag.id} value={tag.id}>
+                        {tag.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-[11px] leading-5 text-zinc-500">依本期納入分析篇數排序</p>
+                {(filters.camp !== 'all' || filters.tag) && (
+                  <button
+                    type="button"
+                    onClick={() => updateFilters({ camp: 'all', tag: '' })}
+                    className="text-brand-700 underline dark:text-brand-400"
+                  >
+                    清除篩選
+                  </button>
+                )}
+              </Popover>
+              <ThresholdControl data={data} />
             </fieldset>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                aria-pressed={showAll}
-                onClick={() => setShowAll((value) => !value)}
-                className="rounded-md border border-zinc-200 px-2 py-1.5 text-xs dark:border-zinc-700"
-              >
-                {showAll ? '回到主要連線' : '顯示全部連線'}
-              </button>
-              <button type="button" onClick={openBrowser} className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700">
-                媒體比較 ↓
-              </button>
+          )}
+          {!fullscreen && (
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
+              <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
+                {(
+                  [
+                    ['all', '全部關係'],
+                    ['similarity', '內文相似'],
+                    ['citation', '明示引用'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={mode === value}
+                    onClick={() => updateMode(value)}
+                    className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </fieldset>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  aria-pressed={showAll}
+                  onClick={() => setShowAll((value) => !value)}
+                  className="rounded-md border border-zinc-200 px-2 py-1.5 text-xs dark:border-zinc-700"
+                >
+                  {showAll ? '回到主要連線' : '顯示全部連線'}
+                </button>
+                <button type="button" onClick={openBrowser} className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700">
+                  媒體比較 ↓
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           <div className="relative min-h-0 flex-1" data-testid="media-graph-frame">
             <SimilarityGraph
               nodes={nodes}
@@ -647,36 +651,41 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
               onToggleFullscreen={toggleFullscreen}
             />
           </div>
-          <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
-            <p>
-              <span className="text-orange-600 dark:text-orange-400">同組：最早 → 較晚</span>
-              <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
-              <span className="ml-3">
-                {selection
-                  ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`
-                  : `總覽 ${showAll ? edges.length : overview.length}／${edges.length} 條`}
-              </span>
-            </p>
-            <div className="flex items-center gap-3">
-              {selection && (
-                <button type="button" onClick={() => select(null)} className="underline">
-                  清除選取
-                </button>
-              )}
-              <span>移入預覽 · 點選固定 · 下方瀏覽文章</span>
+          {!fullscreen && (
+            <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
+              <p>
+                <span className="text-orange-600 dark:text-orange-400">同組：最早 → 較晚</span>
+                <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
+                <span className="ml-3">
+                  {selection
+                    ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`
+                    : `總覽 ${showAll ? edges.length : overview.length}／${edges.length} 條`}
+                </span>
+              </p>
+              <div className="flex items-center gap-3">
+                {selection && (
+                  <button type="button" onClick={() => select(null)} className="underline">
+                    清除選取
+                  </button>
+                )}
+                <span>移入預覽 · 點選固定 · 下方瀏覽文章</span>
+              </div>
             </div>
-          </div>
+          )}
         </section>
-        <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
-          本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則明示引用
-          {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''} · <MethodLink />
-        </p>
+        {!fullscreen && (
+          <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
+            本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則明示引用
+            {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''} · <MethodLink />
+          </p>
+        )}
       </div>
       <section
         ref={browser}
         id="graph-browser"
         aria-labelledby="graph-browser-title"
-        className={`${panel} ${fullscreen ? 'scroll-mt-4' : 'scroll-mt-20'}`}
+        hidden={fullscreen}
+        className={`${panel} scroll-mt-20`}
       >
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-zinc-800">
           <div>
