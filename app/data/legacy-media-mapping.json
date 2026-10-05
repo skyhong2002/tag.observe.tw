@@ -1,5 +1,5 @@
 {
-  "version": "legacy-media-mapping-v2",
+  "version": "legacy-media-mapping-v3",
   "reviewedAt": "2026-10-05",
   "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
   "media": {
@@ -1959,6 +1959,20 @@
       ],
       "sourceUrl": "https://www.ap.org/",
       "evidence": "The Associated Press 官方網站；通訊社識別使用美聯社"
+    },
+    "eld": {
+      "publisherRoots": [
+        "everylittled.com"
+      ],
+      "sourceUrl": "https://everylittled.com/feed/rss/latest-article",
+      "evidence": "Historical every little d identity retained, not reassigned to Roomie. app/data/crawl-sources.json eld index and app/data/media-names.json eld historical brand notice."
+    },
+    "newcongress": {
+      "publisherRoots": [
+        "newcongress.tw"
+      ],
+      "sourceUrl": "http://newcongress.tw/?feed=rss2",
+      "evidence": "Historical 新公民議會 identity retained. app/data/crawl-sources.json newcongress index and app/data/media-names.json retained brand."
     }
   },
   "aliases": {

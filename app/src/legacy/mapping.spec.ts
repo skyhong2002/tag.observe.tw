@@ -65,6 +65,19 @@ describe('reviewed legacy media mapping', () => {
     const otherPublisher = { ...raw, media: 'babyou', url: 'https://www.nownews.com/123' };
     expect(normalizeLegacyArticle(otherPublisher, context('tag_babyou', otherPublisher)).reasons).toContain('unreviewed_url_host');
   });
+  it('retains evidenced historical brands without merging them into successor publishers', () => {
+    for (const [media, host] of [
+      ['eld', 'everylittled.com'],
+      ['newcongress', 'newcongress.tw'],
+    ]) {
+      const input = { ...raw, media, url: `https://${host}/historical` };
+      const result = normalizeLegacyArticle(input, context(`tag_${media}`, input));
+      expect(result.disposition).toBe('candidate');
+      expect(result.article.media).toBe(media);
+    }
+    const successor = { ...raw, media: 'eld', url: 'https://www.roomie.tw/posts/50784' };
+    expect(normalizeLegacyArticle(successor, context('tag_eld', successor)).reasons).toContain('unreviewed_url_host');
+  });
   it('requires an explicit known mixed-row media and keeps original table lineage', () => {
     const row = normalizeLegacyArticle(raw, context('tag_news'));
     expect(row.disposition).toBe('candidate');
