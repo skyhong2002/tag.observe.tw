@@ -346,6 +346,7 @@ export async function runArticles(
     concurrency = 2,
     hours = 90 * 24,
     vocab = null as TitleVocab | null,
+    signal = undefined as AbortSignal | undefined,
   } = {},
 ) {
   if (spec.discovery) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
@@ -406,13 +407,14 @@ export async function runArticles(
     rejected = 0;
   const provider = spec.article.provider ? new RegExp(spec.article.provider) : null;
   const errors: string[] = [];
-  // HTTP 429: stop this batch and leave the rest (and this row) for the next run.
+  // HTTP 429 or a worker shutdown: stop this batch and leave the rest (and this
+  // row) for the next run.
   let throttled = false;
   await Promise.all(
     pending.map((row, i) =>
       gate(async () => {
         if (i) await new Promise((r) => setTimeout(r, Math.min(spec.article.delayMs, 3000) * (i % concurrency)));
-        if (throttled) return;
+        if (throttled || signal?.aborted) return;
         try {
           const res = await fetch(row.url, { userAgent: spec.article.userAgent });
           if (res.status === 429) {

@@ -38,7 +38,7 @@ Cloudflare Tunnel → tag.observe.tw
 | 工作 | 時間 |
 | --- | --- |
 | 新聞類列表 `crawl-index news` | 每 9 分鐘 |
-| 其他媒體列表 `crawl-index hourly` | 每 60 分鐘 |
+| 其他媒體列表 `crawl-index hourly` | 每 30 分鐘啟動一輪（`CRAWL_HOURLY_RUN_MINUTES`），每個來源仍以 60 分鐘為週期 |
 | 內文與標籤 `crawl-articles` | 每 19 分鐘 |
 | 排行 `ranking` | 每 10 分鐘（以整點小時存 `ranking_snapshots`） |
 | 事件分群 `events` | 每小時 :04、:34 |
@@ -52,6 +52,8 @@ Cloudflare Tunnel → tag.observe.tw
 時間都可用環境變數覆寫（`CRAWL_NEWS_MINUTES`、`EVENTS_CRON`…）。
 
 兩個 `crawl-index` 工作每輪不是照固定順序跑完整組：先從 `crawl_runs` 取每個來源最近一次完成的列表抓取時間，依由舊到新排序（沒抓過的最前面），距上次完成不到該組週期八成的來源（news 約 7 分鐘、hourly 約 48 分鐘）這輪跳過。部署重啟 worker 或一輪跑超過週期時，下一輪會從沒輪到的來源接著跑，不會有來源長期沒抓（`app/src/jobs/crawl-job.ts` 的 `orderDueSources`）。
+
+部署時 worker 收到 SIGTERM 會先中止派發：`crawl-index` 與 `crawl-articles` 不再開始新的來源，只把進行中的抓完後正常結束工作（`stopped` 記錄沒輪到的數量；systemd `TimeoutStopSec=50`）。新 worker 啟動時立刻排入一次 news 與 hourly 的 `crawl-index`，靠到期過濾只補沒輪到的來源，所以連續部署期間抓取只會暫停幾秒，不會有來源被跳過或等到下一個整點。
 
 ## 議題來源與更新驗證
 

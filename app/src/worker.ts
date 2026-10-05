@@ -30,6 +30,11 @@ await queue.upsertJobScheduler(
   { name: 'ranking', data: {}, opts: { removeOnComplete: 100, removeOnFail: 100 } },
 );
 
+// Deploys restart this process. Crawl jobs stop dispatching new sources once
+// `shutdown` is aborted and return what they finished, and a fresh worker
+// enqueues an immediate run for each group so the sources still due are taken
+// up within seconds instead of at the next scheduled tick.
+const shutdown = new AbortController();
 const crawlEnabled = process.env.CRAWL_ENABLED !== '0';
 if (crawlEnabled) {
   await queue.upsertJobScheduler(
@@ -37,9 +42,12 @@ if (crawlEnabled) {
     { every: Number(process.env.CRAWL_NEWS_MINUTES || 9) * 60e3 },
     { name: 'crawl-index', data: { group: 'news' }, opts: { removeOnComplete: 50, removeOnFail: 50 } },
   );
+  // The hourly group's period (CRAWL_HOURLY_MINUTES) is enforced by crawlGroup's
+  // due filter; runs start twice as often so a source is never left waiting a
+  // whole extra period after being skipped or after a restart.
   await queue.upsertJobScheduler(
     'crawl-hourly',
-    { every: Number(process.env.CRAWL_HOURLY_MINUTES || 60) * 60e3 },
+    { every: Number(process.env.CRAWL_HOURLY_RUN_MINUTES || 30) * 60e3 },
     { name: 'crawl-index', data: { group: 'hourly' }, opts: { removeOnComplete: 50, removeOnFail: 50 } },
   );
   await queue.upsertJobScheduler(
@@ -47,6 +55,8 @@ if (crawlEnabled) {
     { every: Number(process.env.CRAWL_ARTICLES_MINUTES || 19) * 60e3 },
     { name: 'crawl-articles', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
   );
+  for (const group of ['news', 'hourly'])
+    await queue.add('crawl-index', { group }, { jobId: `crawl-index-boot-${group}-${Date.now()}`, removeOnComplete: 50, removeOnFail: 50 });
 } else {
   for (const id of ['crawl-news', 'crawl-hourly', 'crawl-articles']) await queue.removeJobScheduler(id);
 }
@@ -186,13 +196,13 @@ const worker = new Worker(
         return r;
       }
       if (job.name === 'crawl-index') {
-        const r = await crawlGroup(db, job.data.group, { log });
+        const r = await crawlGroup(db, job.data.group, { log, signal: shutdown.signal });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         log.info({ job: job.name, ...r }, 'crawl index group finished');
         return r;
       }
       if (job.name === 'crawl-articles') {
-        const r = await crawlArticles(db, { log });
+        const r = await crawlArticles(db, { log, signal: shutdown.signal });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         log.info({ job: job.name, ...r }, 'crawl articles finished');
         return r;
@@ -231,7 +241,12 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const)
   process.on(signal, async () => {
     if (closing) return;
     closing = true;
-    const deadline = setTimeout(() => process.exit(1), 15000).unref();
+    shutdown.abort();
+    log.info({ signal }, 'worker stopping; crawl jobs finish in-flight sources only');
+    const deadline = setTimeout(() => {
+      log.error('worker shutdown deadline reached; exiting with active jobs');
+      process.exit(1);
+    }, 40000).unref();
     await worker.close();
     await queue.close();
     await connection.quit();

@@ -38,6 +38,26 @@ describe('group crawl order', () => {
     expect(result).toMatchObject({ group: 'hourly', sources: 2, skipped: 2, items: 2, failed: [] });
   });
 
+  it('stops dispatching sources once shutdown is signalled and reports what was left', async () => {
+    runIndex.mockClear();
+    const controller = new AbortController();
+    runIndex.mockImplementationOnce(async (_db: unknown, spec: { media: string }) => {
+      controller.abort();
+      return { items: 1, inserted: 0, errors: [], media: spec.media };
+    });
+    const db = { select: () => ({ from: () => ({ where: () => ({ groupBy: async () => [] }) }) }) } as unknown as Db;
+    const warn = vi.fn();
+    const result = await crawlGroup(db, 'hourly', {
+      log: { info: vi.fn(), warn, error: vi.fn(), debug: vi.fn() } as never,
+      now,
+      signal: controller.signal,
+      concurrency: 1,
+    });
+    expect(runIndex).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ sources: 1, stopped: 3, items: 1 });
+    expect(warn).toHaveBeenCalledWith({ group: 'hourly', stopped: 3 }, 'crawl index group stopped early for shutdown');
+  });
+
   it('falls back to catalog order when run history cannot be read', async () => {
     runIndex.mockClear();
     const db = {

@@ -17,6 +17,9 @@ export const groupPeriodMs = (group: 'news' | 'hourly') =>
 // period. Deploys restart the worker mid-run and a full hourly pass can take
 // longer than an hour; with this order the next run continues where the
 // previous one stopped instead of starting over, so no source is starved.
+// `signal` is the worker's shutdown signal: once aborted, sources not yet
+// started are left for the next run (which the new worker enqueues on boot)
+// while in-flight ones finish, so a deploy loses no source and no job.
 export function orderDueSources<T extends { media: string }>(specs: T[], lastRun: Map<string, Date>, periodMs: number, now = new Date()) {
   const at = (spec: T) => lastRun.get(spec.media)?.getTime() ?? 0;
   return specs.filter((spec) => now.getTime() - at(spec) >= periodMs * 0.8).sort((a, b) => at(a) - at(b));
@@ -35,7 +38,7 @@ export async function lastIndexRuns(db: Db, media: string[]): Promise<Map<string
 export async function crawlGroup(
   db: Db,
   group: 'news' | 'hourly',
-  { log, concurrency = 6, now = new Date() }: { log: Logger; concurrency?: number; now?: Date },
+  { log, concurrency = 6, now = new Date(), signal }: { log: Logger; concurrency?: number; now?: Date; signal?: AbortSignal },
 ) {
   const gate = pLimit(concurrency);
   const all = sourcesInGroup(group);
@@ -47,9 +50,14 @@ export async function crawlGroup(
     return new Map<string, Date>();
   });
   const due = orderDueSources(all, lastRun, groupPeriodMs(group), now);
+  let stopped = 0;
   const results = await Promise.all(
     due.map((spec) =>
       gate(async () => {
+        if (signal?.aborted) {
+          stopped++;
+          return null;
+        }
         try {
           const r = await runIndex(db, spec, { log });
           return { media: spec.media, ...r, errors: r.errors.length };
@@ -59,11 +67,13 @@ export async function crawlGroup(
         }
       }),
     ),
-  );
+  ).then((rows) => rows.filter((r) => r != null));
+  if (stopped) log.warn({ group, stopped }, 'crawl index group stopped early for shutdown');
   return {
     group,
     sources: results.length,
     skipped: all.length - due.length,
+    stopped,
     items: results.reduce((s, r) => s + r.items, 0),
     inserted: results.reduce((s, r) => s + r.inserted, 0),
     failed: results.filter((r) => r.errors && !r.items).map((r) => r.media),
@@ -72,7 +82,7 @@ export async function crawlGroup(
 
 export async function crawlArticles(
   db: Db,
-  { log, concurrency = 6, perMedia = 80 }: { log: Logger; concurrency?: number; perMedia?: number },
+  { log, concurrency = 6, perMedia = 80, signal }: { log: Logger; concurrency?: number; perMedia?: number; signal?: AbortSignal },
 ) {
   const gate = pLimit(concurrency);
   // Fetch bodies for every active source, including articles already tagged by
@@ -82,11 +92,16 @@ export async function crawlArticles(
     log.warn({ err: (error as Error).message }, 'title vocabulary unavailable');
     return null;
   });
+  let stopped = 0;
   const results = await Promise.all(
     specs.map((spec) =>
       gate(async () => {
+        if (signal?.aborted) {
+          stopped++;
+          return { media: spec.media, fetched: 0, updated: 0, failed: 0 };
+        }
         try {
-          return { media: spec.media, ...(await runArticles(db, spec, { log, limit: perMedia, vocab })) };
+          return { media: spec.media, ...(await runArticles(db, spec, { log, limit: perMedia, vocab, signal })) };
         } catch (error) {
           log.warn({ media: spec.media, err: (error as Error).message }, 'crawl articles failed');
           return { media: spec.media, fetched: 0, updated: 0, failed: 1 };
@@ -94,9 +109,11 @@ export async function crawlArticles(
       }),
     ),
   );
-  const titleTagged = vocab ? await titleTagRecent(db, vocab) : 0;
+  const titleTagged = vocab && !signal?.aborted ? await titleTagRecent(db, vocab) : 0;
+  if (stopped) log.warn({ stopped }, 'crawl articles stopped early for shutdown');
   return {
-    sources: specs.length,
+    sources: specs.length - stopped,
+    stopped,
     vocab: vocab?.size ?? 0,
     titleTagged,
     fetched: results.reduce((s, r) => s + r.fetched, 0),

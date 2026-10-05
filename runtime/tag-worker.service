@@ -12,6 +12,8 @@ Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
 Environment=WORKER_METRICS_PORT=18133
 Environment=RANKING_INTERVAL_MINUTES=10
 EnvironmentFile=-/home/deck/Projects/tag.analysis.tw/.env
+# Crawl jobs stop taking new sources on SIGTERM and finish in-flight ones; give them time.
+TimeoutStopSec=50
 Restart=always
 RestartSec=5
 PrivateTmp=yes
