@@ -1,5 +1,5 @@
 import { API_ORIGIN, fetchMedia, fetchRanking, type MediaInfo, type Ranking } from './api';
-import { clipHeadline, headlineTags, selectEventLead } from './event-presentation.mts';
+import { clipHeadline, headlineTags, selectEventCover, selectEventLead } from './event-presentation.mts';
 import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
 import { type EventCoverage, type EventItem, type FeedTopic, fetchEvents, fetchTopics } from './pages';
@@ -41,7 +41,10 @@ function story(event: EventItem, media: MediaInfo): DemoStory | null {
   const news = event.news.filter((n) => n.title.trim());
   const lead = selectEventLead(news, event.major);
   if (!lead) return null;
-  // Keep the selected outlet's original title, image and credit together.
+  // Keep the selected outlet's original title and credit together; the cover
+  // falls back to another outlet's photo when the lead's is missing, generic
+  // or off the image allowlist, as the event table does.
+  const cover = selectEventCover(news, lead, isAllowedImage);
   // Prefer tags the headline itself says; when it uses none of them verbatim
   // (宜蘭 for 宜蘭縣), fall back to the event's major tags rather than none.
   const title = clipHeadline(lead.title);
@@ -54,7 +57,7 @@ function story(event: EventItem, media: MediaInfo): DemoStory | null {
       : `/tag/${encodeURIComponent(tags[0] ?? event.major[0] ?? event.tags[0]?.tag ?? '')}/`,
     title,
     tags,
-    image: isAllowedImage(lead.image) ? lead.image : null,
+    image: cover?.image ?? null,
     media: lead.media,
     source: media[lead.media]?.title ?? lead.media,
     coverage: event.coverage ?? null,
