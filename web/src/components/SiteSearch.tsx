@@ -1,14 +1,28 @@
+'use client';
+
+import { usePathname, useSearchParams } from 'next/navigation';
 import type { Ref } from 'react';
 
-export default function SiteSearch({ inputRef, onEscape }: { inputRef?: Ref<HTMLInputElement>; onEscape?: () => void }) {
+// The site's one search box, in the header. On the results page (/search/) it
+// holds the current query and keeps the chosen range, so refining a search
+// happens in the same place it started.
+
+export const isSearchPage = (pathname: string | null) => pathname === '/search/' || pathname === '/search';
+
+type Props = { inputRef?: Ref<HTMLInputElement>; onEscape?: () => void };
+
+export default function SiteSearch({ inputRef, onEscape, q = '', days = null }: Props & { q?: string; days?: string | null }) {
   return (
     <search aria-label="新聞搜尋" className="w-full">
       <form
         action="/search/"
         className="flex min-w-0 items-center rounded-md border border-zinc-300 bg-zinc-50 focus-within:border-brand-600 dark:border-zinc-700 dark:bg-zinc-900"
       >
+        {days && <input type="hidden" name="days" value={days} />}
         <input
+          key={q}
           ref={inputRef}
+          defaultValue={q}
           onKeyDown={(event) => {
             if (event.key === 'Escape') onEscape?.();
           }}
@@ -33,4 +47,13 @@ export default function SiteSearch({ inputRef, onEscape }: { inputRef?: Ref<HTML
       </form>
     </search>
   );
+}
+
+/** SiteSearch filled from the URL on the results page. Reads search params,
+ *  so it must sit inside a Suspense boundary (SiteSearch is the fallback). */
+export function SiteSearchFromUrl(props: Props) {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  if (!isSearchPage(pathname)) return <SiteSearch {...props} />;
+  return <SiteSearch {...props} q={params.get('q') ?? ''} days={params.get('days')} />;
 }

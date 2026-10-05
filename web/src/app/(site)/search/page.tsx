@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink, RangeChips } from '@/components/ArticleResults';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo } from '@/lib/api';
@@ -8,14 +9,16 @@ import { clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import { fetchEvents } from '@/lib/pages';
 
 // Site search over every stored article: title, summary and exact tag (we do
-// not search article bodies), via /api/v1/articles. The scope and what the
+// not search article bodies), via /api/v1/articles. The query is typed in the
+// header's search box, which this page fills with it; with no query the page
+// sends readers to the plain listing (最新文章). The scope and what the
 // camp bar counts are in the footer's 資料來源與計算方式 (SearchMethod).
 
 type Search = { q?: string; days?: string; camp?: string; cursor?: string };
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
   const q = (await searchParams).q?.trim();
-  return { title: q ? `搜尋：${q}` : '搜尋新聞', robots: { index: false } };
+  return { title: q ? `搜尋：${q}` : '最新文章', robots: { index: false } };
 }
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<Search> }) {
@@ -30,13 +33,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     return `/search/?${params}`;
   };
 
-  const [{ page, facets }, media, events] = q
-    ? await Promise.all([
-        fetchArticleListing({ q, days, camp, cursor }),
-        fetchMedia().catch((): MediaInfo => ({})),
-        cursor ? Promise.resolve(null) : fetchEvents(30).catch(() => null),
-      ])
-    : [{ page: null, facets: undefined }, {} as MediaInfo, null];
+  // Nothing to search for: the plain listing is the same list without a term.
+  if (!q) redirect('/article/');
+  const [{ page, facets }, media, events] = await Promise.all([
+    fetchArticleListing({ q, days, camp, cursor }),
+    fetchMedia().catch((): MediaInfo => ({})),
+    cursor ? Promise.resolve(null) : fetchEvents(30).catch(() => null),
+  ]);
   const needle = q.toLocaleLowerCase('zh-TW');
   const relatedEvents = (events?.events ?? [])
     .filter(
@@ -49,36 +52,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-5">
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight">搜尋新聞</h1>
-        <form action="/search/" className="flex max-w-2xl gap-2">
-          <input
-            name="q"
-            defaultValue={q}
-            maxLength={60}
-            placeholder="搜尋標題、摘要與標籤"
-            aria-label="搜尋標題、摘要與標籤"
-            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-700 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          {days !== 31 && <input type="hidden" name="days" value={days} />}
-          <button type="submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900">
-            搜尋
-          </button>
-        </form>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">「{q}」的搜尋結果</h1>
         <p className="text-xs">
           <MethodLink />
         </p>
       </div>
 
-      {!q ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          沒有要找的字詞時，可以直接瀏覽
-          <Link href="/article/" className="text-brand-700 hover:underline dark:text-brand-400">
-            全站最新文章
-          </Link>
-          。
-        </p>
-      ) : !page ? (
+      {!page ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">搜尋暫時無法使用，請稍後再試。</p>
       ) : (
         <>

@@ -18,7 +18,7 @@ type FooterLink = { href: string; label: string; external?: boolean };
 const [news, trend, sources] = NAV_GROUPS;
 // The header's three groups, each with the pages that only the footer lists, then 關於本站.
 const COLUMNS: Array<{ label: string; links: FooterLink[] }> = [
-  { label: news.label, links: [...news.links, { href: '/search/', label: '搜尋報導' }] },
+  { label: news.label, links: news.links },
   { label: trend.label, links: [...trend.links, { href: '/observe/', label: '網站觀測' }] },
   {
     label: sources.label,

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink, RangeChips } from '@/components/ArticleResults';
 import MethodLink from '@/components/MethodLink';
 import PeriodEvents from '@/components/PeriodEvents';
@@ -51,11 +50,7 @@ export default async function ArticleIndexPage({ searchParams }: { searchParams:
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">最新文章</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          本站收錄的所有媒體文章，依刊登時間由新到舊。要找特定字詞，請用
-          <Link href="/search/" className="text-brand-700 hover:underline dark:text-brand-400">
-            搜尋
-          </Link>
-          。
+          本站收錄的所有媒體文章，依刊登時間由新到舊。要找特定字詞，請用頁首的搜尋框。
         </p>
         <p className="text-xs">
           <MethodLink />

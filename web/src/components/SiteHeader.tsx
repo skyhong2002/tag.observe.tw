@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import NavPending, { NavPendingContext, NavProgressBar } from './NavPending';
 import SiteNavigation from './SiteNavigation';
-import SiteSearch from './SiteSearch';
+import SiteSearch, { isSearchPage, SiteSearchFromUrl } from './SiteSearch';
 import ThemeToggle from './ThemeToggle';
 import Wordmark from './Wordmark';
 
@@ -60,7 +61,10 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
   // While the wordmark is hidden, phones show the search box in the space it
   // would take instead of a bare bar; it folds back into an icon once the
   // wordmark returns. An explicit open outlives that.
-  const autoSearch = !revealed && !searchOpen;
+  // The results page has no search box of its own, so phones keep this one
+  // open there (without focusing it, which would pop the keyboard).
+  const onResults = isSearchPage(usePathname());
+  const autoSearch = (!revealed || onResults) && !searchOpen;
   const searchToggle = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -100,7 +104,9 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
               </svg>
             </button>
             <div id="header-search" className={`${searchOpen || autoSearch ? 'block' : 'hidden'} min-w-0 flex-1 lg:block`}>
-              <SiteSearch inputRef={searchInput} onEscape={closeSearch} />
+              <Suspense fallback={<SiteSearch inputRef={searchInput} onEscape={closeSearch} />}>
+                <SiteSearchFromUrl inputRef={searchInput} onEscape={closeSearch} />
+              </Suspense>
             </div>
           </div>
           <div className="shrink-0">
