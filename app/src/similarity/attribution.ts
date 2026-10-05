@@ -149,6 +149,8 @@ const newsDesk = /(?:中心|編輯部|編輯室|新聞部|採訪部|報導|报�
 /** The organization in a credit line. Pages may put the whole lead paragraph in the credit
  * slot: 圖、文／菱傳媒, 民視新聞／吳憲昌 綜合報導, 政治中心／李筱舲報導 2026年…. */
 function creditedOrganization(provider: string): string {
+  const syndication = /^•?\s*以上言論由\s+(.+?)\s+授權轉載[，,]/u.exec(provider);
+  if (syndication) return syndication[1].trim();
   const rights = /本文版權(?:為|屬|归|歸)(.{2,30}?)所有/u.exec(provider);
   if (rights) return rights[1].trim();
   const [first, second] = provider.split(/\s*[／/]\s*/u);

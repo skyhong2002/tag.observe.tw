@@ -11,7 +11,6 @@ import { newsSiteRules } from '../app/src/crawl/news-site-rules.ts';
 import { sourceByMedia } from '../app/src/crawl/registry.ts';
 import { createDb } from '../app/src/db/client.ts';
 import { articleCitations, articleSketches, articles, similarityPairs } from '../app/src/db/schema.ts';
-import { extractAttributions } from '../app/src/similarity/attribution.ts';
 import { normalizeBody } from '../app/src/similarity/compute.ts';
 
 // Re-fetch retained JSON-LD bodies; only a visible DOM replacement qualifies,
@@ -100,9 +99,9 @@ try {
                     bodyStatus: detail.bodyStatus,
                     contentFetchedAt: new Date(),
                     contentArchiveHash: null,
-                    ...(proseChanged
-                      ? { similarityAt: null, attributions: extractAttributions(detail.body!, row.media, detail.provider) }
-                      : {}),
+                    // Formatting repair must retain existing credits, including
+                    // notices outside the selected prose container.
+                    ...(proseChanged ? { similarityAt: null } : {}),
                   })
                   .where(
                     and(

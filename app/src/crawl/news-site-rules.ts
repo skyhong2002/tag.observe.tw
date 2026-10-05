@@ -35,7 +35,13 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   // EBC's JSON-LD rewrites punctuation and merges headlines into the prose.
-  { host: 'news.ebc.net.tw', path: /^\/news\/[^/]+\/\d+\/?$/, bodySelector: '.article_main > .article_content', preferShortBody: true },
+  {
+    host: 'news.ebc.net.tw',
+    path: /^\/news\/[^/]+\/\d+\/?$/,
+    bodySelector: '.article_main > .article_content',
+    preferShortBody: true,
+    providerSelector: '.article_main > .article_content > div.rss_box',
+  },
   ...BLOCKED_NEWS_SITES,
   ...EXTRA_NEWS_SITES,
   ...ENN_NEWS_SITES,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { extractAttributions } from '../similarity/attribution.ts';
 import { extractArticle } from './article.ts';
 
 const url = 'https://example.com/story/1';
@@ -8,6 +9,14 @@ const ld = (data: Record<string, unknown>) =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, ...data })}</script>`;
 
 describe('article extraction review regressions', () => {
+  it('retains EBC syndication evidence outside the visible prose paragraphs', () => {
+    const credit = '•以上言論由 中央社 授權轉載，不代表東森新聞立場。';
+    const html = `<div class="article_main"><div class="article_content"><p>${lead}</p><div class="rss_box">${credit}</div><h2 class="rss_box">相關專題</h2></div></div>`;
+    const detail = extractArticle(html, 'https://news.ebc.net.tw/news/living/574100');
+    expect(detail.provider).toBe(credit);
+    expect(detail.body).toBe(lead);
+    expect(extractAttributions(detail.body!, 'ebc', detail.provider)).toMatchObject([{ media: 'cna', kind: 'explicit' }]);
+  });
   it('retains visible punctuation for short equivalent bodies too', () => {
     const prose = '居民說：「班次增加了！」（試辦路線）；票價維持 1.5 元。';
     const html = ld({ articleBody: prose.normalize('NFKC') }) + `<article><p>${prose}</p></article>`;
