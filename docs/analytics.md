@@ -69,8 +69,8 @@ GSC API 可讀搜尋查詢、頁面、裝置與點擊／曝光／CTR／平均排
   使用者取最大值不相加。`/search/` 一律只存路徑、不存標題，避免存到搜尋字詞。另存每日總瀏覽／工作階段／使用者、
   預設管道、裝置與 `open_original` 等自訂事件次數。
 - GSC：`dataState=all`（含尚未定案的近日資料），存每日點擊／曝光／平均排名與逐頁點擊／曝光，**不讀搜尋字詞**。
-- Web Vitals 需 GA4 管理員建立事件範圍自訂維度 `metric_name`、`metric_rating`（Viewer 無法建立）；建立前 `vitals` 為 null，
-  頁面顯示一行說明。建立後新資料會在下一次 job 出現，不回補歷史。
+- Web Vitals 用 GA4 事件範圍自訂維度 `metric_name`、`metric_rating`（2026-10-05 已建立）。GA 不回補：建立前送出的
+  `web_vital` 評級是空白，job 會略過；沒有已評級樣本時 `vitals` 為 null，頁面顯示一行說明。
 
 手動跑一次（例如剛部署或想立即更新）：
 

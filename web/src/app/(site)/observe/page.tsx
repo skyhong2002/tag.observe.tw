@@ -303,11 +303,7 @@ export default async function ObservePage({ searchParams }: { searchParams: Prom
           </Section>
 
           <Section title="使用體驗" aside={data.vitals ? '讀者瀏覽器回報的樣本' : undefined}>
-            {data.vitals ? (
-              <Vitals vitals={data.vitals} />
-            ) : (
-              <Empty>使用體驗資料尚未開放：GA4 需先登錄 metric_name、metric_rating 兩個自訂維度。</Empty>
-            )}
+            {data.vitals ? <Vitals vitals={data.vitals} /> : <Empty>還沒有讀者瀏覽器回報的使用體驗樣本。</Empty>}
           </Section>
         </>
       )}
