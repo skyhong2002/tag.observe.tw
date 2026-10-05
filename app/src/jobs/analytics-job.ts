@@ -3,10 +3,10 @@
 // re-reads a trailing window (GA keeps processing for ~3 days, GSC lags 2–3
 // days) and replaces those days, so late data and vanished keys settle.
 // runRealtimeJob adds the last 30 minutes from GA's Realtime API every few minutes.
-import { and, between, count, eq, sql } from 'drizzle-orm';
+import { and, between, count, eq, gte, sql } from 'drizzle-orm';
 import { type GoogleConfig, type GoogleFetch, googleClient } from '../analytics/google.ts';
 import type { Db } from '../db/client.ts';
-import { jobRuns, siteMetrics } from '../db/schema.ts';
+import { articles, jobRuns, siteMetrics, topics } from '../db/schema.ts';
 
 export const SITE_HOST = 'tag.observe.tw';
 const BACKFILL_DAYS = 90;
@@ -108,6 +108,21 @@ export async function fetchGa(google: GoogleFetch, propertyId: string, start: st
   const events = { filter: { fieldName: 'eventName', inListFilter: { values: TRACKED_EVENTS } } };
   for (const r of await report(['eventName'], ['eventCount'], events))
     out.push({ day: r.day, source: 'ga', metric: 'event', key: r.dims[0], value: r.values[0] });
+  // Which event or tag a list click opened: GA's built-in contentType/contentId, from
+  // select_content's content_type and content_id (web/src/lib/analytics-consent.mts).
+  const select = { filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: 'select_content' } } };
+  for (const r of await report(['contentType', 'contentId'], ['eventCount'], select)) {
+    const [type, id] = r.dims;
+    if ((type === 'event' || type === 'tag') && id && id !== '(not set)' && id.length <= 100)
+      out.push({ day: r.day, source: 'ga', metric: 'select_content', key: `${type}:${id}`, value: r.values[0] });
+  }
+  // Original-site clicks by the linked domain (built-in linkDomain from link_domain); runAnalyticsJob maps domains to outlets.
+  const original = { filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: 'open_original' } } };
+  for (const r of await report(['linkDomain'], ['eventCount'], original)) {
+    const domain = r.dims[0].toLowerCase();
+    if (/^[a-z0-9.-]{1,253}$/.test(domain))
+      out.push({ day: r.day, source: 'ga', metric: 'original_domain', key: domain, value: r.values[0] });
+  }
   // Web Vitals ratings need the event-scoped custom dimensions registered in GA (docs/analytics.md).
   const meta = await google(`${url}/metadata`);
   const dims = new Set((meta.dimensions ?? []).map((d: { apiName: string }) => d.apiName));
@@ -189,6 +204,51 @@ export async function runRealtimeJob(db: Db, config: GoogleConfig, { now = () =>
   return { activeUsers: rows[1].value, views: rows[2].value };
 }
 
+const bareHost = (host: string) => host.toLowerCase().replace(/^(www|m|mobile|amp)\./, '');
+
+/**
+ * Outlet for each linked domain: the outlet whose collected articles (last 30 days)
+ * or topic pages use that host most. Unknown domains stay unmapped.
+ */
+export function outletsByHost(rows: Array<{ media: string; host: string; n: number }>) {
+  const best = new Map<string, { media: string; n: number }>();
+  for (const r of rows) {
+    const host = bareHost(r.host);
+    const prev = best.get(host);
+    if (!prev || r.n > prev.n) best.set(host, { media: r.media, n: r.n });
+  }
+  return (domain: string) => best.get(bareHost(domain))?.media ?? null;
+}
+
+export async function hostOutlets(db: Db, now: Date) {
+  const host = (url: typeof articles.url | typeof topics.url) => sql<string>`SUBSTRING_INDEX(SUBSTRING_INDEX(${url}, '/', 3), '/', -1)`;
+  const recent = await db
+    .select({ media: articles.media, host: host(articles.url), n: sql<number>`COUNT(*)` })
+    .from(articles)
+    .where(gte(articles.publishedAt, new Date(now.getTime() - 30 * 864e5)))
+    .groupBy(articles.media, host(articles.url));
+  const topicHosts = await db
+    .select({ media: topics.media, host: host(topics.url), n: sql<number>`COUNT(*)` })
+    .from(topics)
+    .groupBy(topics.media, host(topics.url));
+  return outletsByHost([...recent, ...topicHosts].map((r) => ({ ...r, n: Number(r.n) })));
+}
+
+/** Per-day open_original counts per outlet, summed over the outlet's domains. */
+export function originalByOutlet(rows: MetricRow[], outletOf: (domain: string) => string | null): MetricRow[] {
+  const sums = new Map<string, MetricRow>();
+  for (const r of rows) {
+    if (r.metric !== 'original_domain') continue;
+    const media = outletOf(r.key ?? '');
+    if (!media) continue;
+    const id = `${r.day} ${media}`;
+    const prev = sums.get(id);
+    if (prev) prev.value += r.value;
+    else sums.set(id, { day: r.day, source: 'ga', metric: 'original_media', key: media, value: r.value });
+  }
+  return [...sums.values()];
+}
+
 async function replaceDays(db: Db, source: string, start: string, end: string, rows: MetricRow[]) {
   await db.transaction(async (tx) => {
     await tx.delete(siteMetrics).where(and(eq(siteMetrics.source, source), between(siteMetrics.day, start, end)));
@@ -214,6 +274,8 @@ export async function runAnalyticsJob(
       const start = shiftDay(today, -(n ? refresh : BACKFILL_DAYS));
       const rows =
         source === 'ga' ? await fetchGa(google, config.propertyId, start, today) : await fetchGsc(google, config.siteUrl, start, today);
+      if (source === 'ga' && rows.some((r) => r.metric === 'original_domain'))
+        rows.push(...originalByOutlet(rows, await hostOutlets(db, started)));
       await replaceDays(db, source, start, today, rows);
       summary[source] = { start, end: today, rows: rows.length };
     }

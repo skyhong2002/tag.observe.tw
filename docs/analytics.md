@@ -8,11 +8,28 @@
 
 - 初次瀏覽與 Next.js 站內切頁交由 GA4 加強型評估處理。串流的「網頁瀏覽 → 進階設定 → 根據瀏覽器記錄事件變更網頁」需開啟；程式不另外送 `page_view`。
 - `open_original`：點擊共用 `SourceLink` 的原站連結，參數為 `link_domain`、`source_page_type`。不代表原文讀完。GA 自動外連 `click` 可能同時存在，兩者不可加總當作原文點擊數。
-- `select_content`：點擊本站標籤／事件連結，參數為 `content_type`（tag/event）、`source_page_type`。
+- `select_content`：點擊本站標籤／事件連結，參數為 `content_type`（tag/event）、`content_id`（事件 thread 編號或標籤文字，
+  只送純數字或 ≤100 字、無控制字元／角括號／引號／斜線／@ 的標籤，否則不帶）、`source_page_type`。GA 內建維度
+  `contentType`／`contentId` 直接可查，不需另建自訂維度。規則在 `web/src/lib/analytics-consent.mts`。
 - `rss_click`：點擊本站 RSS 連結；不代表訂閱成功。
 - `app_installed`：瀏覽器發出 `appinstalled`，不以按安裝按鈕或接受提示代替。未提供此事件的瀏覽器無法量到。
 
 自訂事件不送標題、搜尋字詞、完整外連 URL 或使用者識別碼。但 GA 加強型評估仍會收集網頁網址、標題、外連與站內搜尋等資料；上線管理時需檢查資料刪改設定（電子郵件及 URL 查詢參數，例如 `q`），若不需要搜尋字詞報表可關閉站內搜尋評估。URL 刪改不會自動清理頁面標題，搜尋頁標題也應避免帶入敏感輸入。
+
+## 不送統計的瀏覽器
+
+`SiteAnalytics` 在掛上 Google tag 之前判斷（`analyticsBlock`），任一成立就完全不載入 gtag.js，page_view、自訂事件與
+`web_vital` 都不會送出，同時設 `window['ga-disable-G-D1E1CZSX7L']`：
+
+- 非 production 或 hostname 不是 `tag.observe.tw`。
+- 自動化瀏覽器：`navigator.webdriver === true`，或 UA 含 HeadlessChrome、Lighthouse、Playwright、Puppeteer、Selenium、bot 等。
+  要從自動化測試驗證一般讀者的追蹤，需在測試中以 init script 把 `navigator.webdriver` 改為 false、換一般 UA，並攔截
+  `/g/collect` 不讓請求送到 GA。
+- 使用者在 **`/observe/opt-out/`（不計入統計）** 按下「這個瀏覽器不計入統計」：localStorage `tag-analytics-opt-out=1`，
+  可在同一頁「恢復計入統計」（下一次載入頁面起生效）。設定隨瀏覽器與網站資料，無痕視窗、換瀏覽器或清除資料需重設；
+  Safari 可能在 7 天未造訪後清除。頁面 noindex，入口在網站觀測頁尾的計算方式說明。
+
+不做 IP 排除。已送出的紀錄無法回溯刪除。
 
 ## 驗收與報表
 
@@ -71,6 +88,9 @@ GSC API 可讀搜尋查詢、頁面、裝置與點擊／曝光／CTR／平均排
 - GA：只計 hostname `tag.observe.tw`。逐頁存瀏覽數與 GA 的頁面標題（去掉「 · 新文易數」）；同一路徑不同編碼合併，
   使用者取最大值不相加。`/search/` 一律只存路徑、不存標題，避免存到搜尋字詞。另存每日總瀏覽／工作階段／使用者、
   預設管道、裝置與 `open_original` 等自訂事件次數。
+- `select_content` 依 `contentType`/`contentId` 存為 `select_content`（鍵 `event:897`、`tag:蔡英文`）。`open_original` 依 GA 內建
+  `linkDomain` 存為 `original_domain`，再以近 30 天收錄文章與議題頁的網址主機對應媒體（去掉 www./m.，取篇數最多者），
+  加總存為 `original_media`（鍵為媒體代號）；對不到的網域只留 `original_domain`。兩者目前只保存，不在網頁顯示。
 - GSC：`dataState=all`（含尚未定案的近日資料），存每日點擊／曝光／平均排名與逐頁點擊／曝光，**不讀搜尋字詞**。
 - Web Vitals 用 GA4 事件範圍自訂維度 `metric_name`、`metric_rating`（2026-10-05 已建立）。GA 不回補：建立前送出的
   `web_vital` 評級是空白，job 會略過；沒有已評級樣本時 `vitals` 為 null，頁面顯示一行說明。

@@ -11,7 +11,7 @@ import type { SourceSpec } from '../src/crawl/sources.ts';
 import { loadTitleVocab } from '../src/crawl/title-tags.ts';
 import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots } from '../src/db/schema.ts';
+import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots, siteMetrics } from '../src/db/schema.ts';
 import { runAnalyticsJob, runRealtimeJob } from '../src/jobs/analytics-job.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
@@ -459,6 +459,10 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
         };
       if (dims === 'sessionDefaultChannelGroup') return { rows: [row([ga, 'Organic Search'], [3]), row([ga, 'Direct'], [2])] };
       if (dims === 'deviceCategory') return { rows: [row([ga, 'mobile'], [5])] };
+      if (dims === 'contentType,contentId')
+        return { rows: [row([ga, 'event', '9'], [2]), row([ga, 'tag', '颱風'], [1]), row([ga, 'event', '(not set)'], [1])] };
+      if (dims === 'linkDomain')
+        return { rows: [row([ga, 'www.setn.com'], [2]), row([ga, 'setn.com'], [1]), row([ga, 'github.com'], [1])] };
       return { rows: [row([ga, 'open_original'], [1])] };
     };
     const config = { credentialsFile: '', propertyId: '1', siteUrl: 'https://tag.observe.tw/' };
@@ -484,6 +488,18 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       expect(body.search).toMatchObject({ clicks: 2, impressions: 40, position: 8.5 });
       expect(body.search.pages[0]).toMatchObject({ path: '/eve/9/', clicks: 2, impressions: 30 });
       expect(body.vitals).toBeNull();
+      const stored = await db
+        .select({ metric: siteMetrics.metric, key: siteMetrics.key, value: siteMetrics.value })
+        .from(siteMetrics)
+        .where(sql`${siteMetrics.metric} IN ('select_content', 'original_media', 'original_domain')`);
+      expect(stored.sort((a, b) => `${a.metric}${a.key}`.localeCompare(`${b.metric}${b.key}`))).toEqual([
+        { metric: 'original_domain', key: 'github.com', value: 1 },
+        { metric: 'original_domain', key: 'setn.com', value: 1 },
+        { metric: 'original_domain', key: 'www.setn.com', value: 2 },
+        { metric: 'original_media', key: 'setn', value: 3 },
+        { metric: 'select_content', key: 'event:9', value: 2 },
+        { metric: 'select_content', key: 'tag:颱風', value: 1 },
+      ]);
       expect((await app.inject('/api/v1/site-observation?days=5')).statusCode).toBe(400);
     } finally {
       await app.close();

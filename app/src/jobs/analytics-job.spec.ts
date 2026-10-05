@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pageKind } from '../v1/site-observation.ts';
-import { cleanTitle, pageRows, sitePath } from './analytics-job.ts';
+import { cleanTitle, originalByOutlet, outletsByHost, pageRows, sitePath } from './analytics-job.ts';
 
 describe('analytics page paths', () => {
   it('normalizes encodings, full URLs and missing slashes', () => {
@@ -37,5 +37,36 @@ describe('analytics page paths', () => {
     expect(pageKind('/media/sources/')).toBe('page');
     expect(pageKind('/topic/')).toBe('page');
     expect(pageKind('/')).toBe('page');
+  });
+});
+
+describe('original-site clicks by outlet', () => {
+  const outletOf = outletsByHost([
+    { media: 'setn', host: 'www.setn.com', n: 50 },
+    { media: 'yahoo', host: 'tw.news.yahoo.com', n: 80 },
+    { media: 'cts', host: 'tw.news.yahoo.com', n: 3 },
+  ]);
+  it('maps domains, with or without www, to the outlet that uses them most', () => {
+    expect(outletOf('setn.com')).toBe('setn');
+    expect(outletOf('WWW.SETN.COM')).toBe('setn');
+    expect(outletOf('tw.news.yahoo.com')).toBe('yahoo');
+    expect(outletOf('github.com')).toBeNull();
+  });
+  it('sums one outlet across its domains per day and skips unknown domains', () => {
+    const row = (day: string, key: string, value: number) => ({ day, source: 'ga', metric: 'original_domain', key, value });
+    expect(
+      originalByOutlet(
+        [
+          row('2026-10-05', 'setn.com', 1),
+          row('2026-10-05', 'www.setn.com', 2),
+          row('2026-10-06', 'setn.com', 1),
+          row('2026-10-05', 'github.com', 4),
+        ],
+        outletOf,
+      ),
+    ).toEqual([
+      { day: '2026-10-05', source: 'ga', metric: 'original_media', key: 'setn', value: 3 },
+      { day: '2026-10-06', source: 'ga', metric: 'original_media', key: 'setn', value: 1 },
+    ]);
   });
 });

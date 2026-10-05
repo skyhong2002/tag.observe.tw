@@ -11,7 +11,11 @@ export function ObserveMethod() {
       <p>
         本站每小時從 Google Analytics 4 與 Google Search Console 讀取彙整數字，近幾天的資料每次重抓，晚到的資料會補上；GA4
         處理需要時間，今天的數字通常落後一小時左右。只計 tag.observe.tw 的造訪；阻擋追蹤或停用 JavaScript 的讀者不會被計入。2026 年 10 月 5
-        日開始追蹤，當天數字多為本站自己的測試瀏覽。
+        日開始追蹤，當天數字多為本站自己的測試瀏覽。自動化測試工具不送統計；測試用的瀏覽器可在
+        <Link href="/observe/opt-out/" className={inlineLink}>
+          不計入統計
+        </Link>
+        設定排除。
       </p>
       <dl className={methodList}>
         <dt className={methodTerm}>最近 30 分鐘</dt>
