@@ -413,27 +413,31 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       .normalize('NFKC')
       .toLowerCase()
       .replace(/[^\p{L}\p{N}]/gu, '');
-  let complete = usable.find((candidate) => candidate.source === 'selector') ?? usable[0];
-  if (complete?.source === 'ld+json') {
-    const structured = comparisonText(complete.body);
-    const headlines = nodes.flatMap((node) => (typeof node['headline'] === 'string' ? [comparisonText(node['headline'])] : []));
-    const withoutHeadline = headlines.reduce(
-      (text, headline) => (headline && text.startsWith(headline) ? text.slice(headline.length) : text),
-      structured,
-    );
-    complete =
-      usable.find((candidate) => {
-        if (candidate.source === 'ld+json') return false;
-        const dom = comparisonText(candidate.body);
-        return (
-          dom === structured ||
-          (withoutHeadline.length >= 200 && dom === withoutHeadline) ||
-          (candidate.source !== 'article' &&
-            dom.length >= structured.length + Math.max(40, Math.ceil(structured.length * 0.1)) &&
-            dom.includes(structured))
-        );
-      }) ?? complete;
-  }
+  const chooseBody = (choices: Candidate[]) => {
+    let complete = choices.find((candidate) => candidate.source === 'selector') ?? choices[0];
+    if (complete?.source === 'ld+json') {
+      const structured = comparisonText(complete.body);
+      const headlines = nodes.flatMap((node) => (typeof node['headline'] === 'string' ? [comparisonText(node['headline'])] : []));
+      const withoutHeadline = headlines.reduce(
+        (text, headline) => (headline && text.startsWith(headline) ? text.slice(headline.length) : text),
+        structured,
+      );
+      complete =
+        choices.find((candidate) => {
+          if (candidate.source === 'ld+json') return false;
+          const dom = comparisonText(candidate.body);
+          return (
+            dom === structured ||
+            (withoutHeadline.length > 0 && dom === withoutHeadline) ||
+            (candidate.source !== 'article' &&
+              dom.length >= structured.length + Math.max(40, Math.ceil(structured.length * 0.1)) &&
+              dom.includes(structured))
+          );
+        }) ?? complete;
+    }
+    return complete;
+  };
+  const complete = chooseBody(usable);
   if (complete) return { body: complete.body, bodySource: complete.source, authors, bodyStatus: 'ok' };
 
   const blocked =
@@ -441,7 +445,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     nodes.some((node) => node['isAccessibleForFree'] === false || node['isAccessibleForFree'] === 'false') ||
     BLOCK_TEXT.test(normalize($('body').text()));
   if (blocked) return { body: null, authors, bodySource: 'none', bodyStatus: 'blocked' };
-  const short = candidates.sort((a, b) => contentLength(b.body) - contentLength(a.body))[0];
+  const short = chooseBody(candidates.sort((a, b) => contentLength(b.body) - contentLength(a.body)));
   if (short) return { body: short.body, authors, bodySource: short.source, bodyStatus: 'short' };
   return { body: null, authors, bodySource: 'none', bodyStatus: 'missing' };
 }

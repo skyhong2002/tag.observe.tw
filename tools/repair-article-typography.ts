@@ -13,8 +13,9 @@ import { articleCitations, articleSketches, articles, similarityPairs } from '..
 import { extractAttributions } from '../app/src/similarity/attribution.ts';
 import { normalizeBody } from '../app/src/similarity/compute.ts';
 
-// Re-fetch retained JSON-LD bodies; only a complete visible DOM replacement
-// qualifies. Dry-run by default. The backup is durable before each DB write.
+// Re-fetch retained JSON-LD bodies; only a visible DOM replacement qualifies,
+// without downgrading an existing complete body to short. Dry-run by default.
+// The backup is durable before each DB write.
 const { values } = parseArgs({
   options: {
     apply: { type: 'boolean', default: false },
@@ -46,7 +47,7 @@ try {
     .where(
       and(
         eq(articles.bodySource, 'ld+json'),
-        eq(articles.bodyStatus, 'ok'),
+        inArray(articles.bodyStatus, ['ok', 'short']),
         sql`${articles.body} IS NOT NULL`,
         sql`${articles.id} > ${afterId}`,
         gte(articles.crawledAt, new Date(Date.now() - BODY_RETENTION_MS)),
@@ -75,7 +76,8 @@ try {
             if (result.status >= 400) throw Error(`HTTP ${result.status}`);
             const detail = extractArticle(result.body, row.url, spec?.article);
             if (spec?.article.provider && !new RegExp(spec.article.provider).test(detail.provider ?? '')) throw Error('provider changed');
-            if (detail.bodyStatus !== 'ok' || !detail.body) throw Error(`body ${detail.bodyStatus}`);
+            if (!detail.body || (detail.bodyStatus !== 'ok' && !(row.bodyStatus === 'short' && detail.bodyStatus === 'short')))
+              throw Error(`body ${detail.bodyStatus}`);
             if (detail.bodySource === 'ld+json' || detail.body === row.body) {
               counts.unchanged++;
               return;
@@ -89,6 +91,7 @@ try {
                   .set({
                     body: detail.body,
                     bodySource: detail.bodySource,
+                    bodyStatus: detail.bodyStatus,
                     contentFetchedAt: new Date(),
                     contentArchiveHash: null,
                     ...(proseChanged

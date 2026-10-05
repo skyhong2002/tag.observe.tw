@@ -8,6 +8,23 @@ const ld = (data: Record<string, unknown>) =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, ...data })}</script>`;
 
 describe('article extraction review regressions', () => {
+  it('retains visible punctuation for short equivalent bodies too', () => {
+    const prose = '居民說：「班次增加了！」（試辦路線）；票價維持 1.5 元。';
+    const html = ld({ articleBody: prose.normalize('NFKC') }) + `<article><p>${prose}</p></article>`;
+    expect(extractArticle(html, url)).toMatchObject({ body: prose, bodySource: 'article', bodyStatus: 'short' });
+  });
+
+  it('prefers the verified EBC container for short news instead of the longer structured headline and body', () => {
+    const prose = '國道車多！車流回堵，請小心駕駛。';
+    const html =
+      ld({ url: 'https://news.ebc.net.tw/news/living/574100', articleBody: `國道交通新聞。${prose.normalize('NFKC')}` }) +
+      `<div class="article_main"><div class="article_content"><p>${prose}</p></div></div>`;
+    expect(extractArticle(html, 'https://news.ebc.net.tw/news/living/574100')).toMatchObject({
+      body: prose,
+      bodySource: 'selector',
+      bodyStatus: 'short',
+    });
+  });
   it.each(['article', 'div.article-content', 'div[itemprop="articleBody"]'])(
     'preserves visible punctuation and paragraphs for equivalent prose in %s',
     (selector) => {
@@ -36,7 +53,10 @@ describe('article extraction review regressions', () => {
   it('uses EBC visible prose even when structured data embeds headings and rewrites brackets', () => {
     const prose = `公共運輸（試辦路線）改善了！${lead}`;
     const html =
-      ld({ articleBody: `新聞標題。${prose.replaceAll('（', '「').replaceAll('）', '」').normalize('NFKC')}小標題${ending}` }) +
+      ld({
+        url: 'https://news.ebc.net.tw/news/world/574175',
+        articleBody: `新聞標題。${prose.replaceAll('（', '「').replaceAll('）', '」').normalize('NFKC')}小標題${ending}`,
+      }) +
       `<div class="article_main"><div class="article_content"><p>${prose}</p><h2>小標題</h2><p>${ending}</p><div class="related"><p>推薦新聞</p></div></div></div>`;
     expect(extractArticle(html, 'https://news.ebc.net.tw/news/world/574175')).toMatchObject({
       body: `${prose}\n\n${ending}`,
