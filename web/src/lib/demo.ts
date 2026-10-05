@@ -3,7 +3,7 @@ import { clipHeadline, headlineTags, selectEventLead } from './event-presentatio
 import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
 import { type EventCoverage, type EventItem, type FeedTopic, fetchEvents, fetchTopics } from './pages';
-import { fetchSimilarity, type SimilarityData } from './similarity';
+import { fetchSimilarity, type SimilarityData, type SimilarityEdge } from './similarity';
 import { updatedAtOf } from './topic-update.mts';
 
 export type DemoCamp = 'green' | 'other' | 'blue';
@@ -153,9 +153,17 @@ export function campGaps(events: EventItem[], perSide = 3): CampGap[] {
   ];
 }
 
-/** What the similarity graph says today, small enough for a home panel.
- *  Shares rather than counts, so an outlet that simply publishes a lot (中央社)
- *  does not top every list. */
+/** What the similarity graph says today, small enough for a home panel:
+ *  who publishes a story first, who follows, who gets cited and who cites. */
+export interface GraphOutlet {
+  media: string;
+  name: string;
+  /** Distinct articles in the period. */
+  count: number;
+  /** The outlet most often on the other end of those links. */
+  partner: string | null;
+  partnerName: string | null;
+}
 export interface GraphSummary {
   hours: number;
   outlets: number;
@@ -164,63 +172,43 @@ export interface GraphSummary {
   pairs: number;
   citations: number;
   analyzed: number;
-  /** Outlets with the largest share of their own articles closely matching another outlet's. */
-  similar: Array<{
-    media: string;
-    name: string;
-    share: number;
-    matched: number;
-    articles: number;
-    partner: string | null;
-    partnerName: string | null;
-  }>;
-  /** Outlets credited most often, as a share of every citation found. */
-  cited: Array<{ media: string; name: string; share: number; count: number }>;
+  /** Earliest in a story group that another outlet later matched. */
+  earliest: GraphOutlet[];
+  /** Matched a story another outlet had published earlier. */
+  later: GraphOutlet[];
+  /** Credited by name in other outlets' articles. */
+  cited: GraphOutlet[];
+  /** Credited another outlet by name. */
+  citing: GraphOutlet[];
 }
-/** Too few analysed articles make a share meaningless (1 of 2 is 50%). */
-const MIN_ARTICLES = 20;
+const TOP = 5;
 export function graphSummary(data: SimilarityData | null): GraphSummary | null {
   if (!data) return null;
   const nodes = new Map(data.nodes.map((n) => [n.id, n]));
   const name = (id: string) => nodes.get(id)?.name ?? id;
   const similarity = data.edges.filter((e) => e.kind === 'similarity');
   const citation = data.edges.filter((e) => e.kind === 'citation');
-  // Story links in either direction: later article → the group's earliest.
-  const partners = new Map<string, Map<string, number>>();
-  for (const e of similarity)
-    for (const [self, other] of [
-      [e.source, e.target],
-      [e.target, e.source],
-    ]) {
-      const counts = partners.get(self) ?? new Map<string, number>();
-      counts.set(other, (counts.get(other) ?? 0) + e.count);
-      partners.set(self, counts);
+  // Similarity edges point from the later outlet to its group's earliest;
+  // citation edges from the citing outlet to the cited one.
+  const tally = (edges: SimilarityEdge[], self: 'source' | 'target') => {
+    const other = self === 'source' ? 'target' : 'source';
+    const partners = new Map<string, Map<string, number>>();
+    for (const e of edges) {
+      const counts = partners.get(e[self]) ?? new Map<string, number>();
+      counts.set(e[other], (counts.get(e[other]) ?? 0) + e.count);
+      partners.set(e[self], counts);
     }
-  const similar = data.nodes
-    .filter((n) => n.similar > 0)
-    .map(({ id: media, similar: matched }) => {
-      const articles = nodes.get(media)?.articles ?? 0;
-      const top = [...(partners.get(media) ?? [])].sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
-      return {
-        media,
-        name: name(media),
-        share: articles ? Math.min(1, matched / articles) : 0,
-        matched,
-        articles,
-        partner: top,
-        partnerName: top ? name(top) : null,
-      };
-    })
-    .filter((r) => r.articles >= MIN_ARTICLES && !nodes.get(r.media)?.external)
-    .sort((x, y) => y.share - x.share || y.matched - x.matched)
-    .slice(0, 5);
-  const credited = new Map<string, number>();
-  for (const e of citation) credited.set(e.target, (credited.get(e.target) ?? 0) + e.count);
-  const totalCited = [...credited.values()].reduce((n, v) => n + v, 0);
-  const cited = [...credited]
-    .sort((x, y) => y[1] - x[1])
-    .slice(0, 5)
-    .map(([media, count]) => ({ media, name: name(media), share: totalCited ? count / totalCited : 0, count }));
+    return (id: string) => [...(partners.get(id) ?? [])].sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
+  };
+  const list = (key: 'earliest' | 'later' | 'incoming' | 'outgoing', partnerOf: (id: string) => string | null, externalToo = false) =>
+    data.nodes
+      .filter((n) => n[key] > 0 && (externalToo || !n.external))
+      .sort((x, y) => y[key] - x[key] || y.articles - x.articles)
+      .slice(0, TOP)
+      .map((n) => {
+        const partner = partnerOf(n.id);
+        return { media: n.id, name: n.name, count: n[key], partner, partnerName: partner ? name(partner) : null };
+      });
   return {
     hours: data.hours ?? 24,
     outlets: data.nodes.filter((n) => !n.external).length,
@@ -229,8 +217,10 @@ export function graphSummary(data: SimilarityData | null): GraphSummary | null {
     pairs: data.index.pairs,
     citations: data.index.citations,
     analyzed: data.index.analyzed,
-    similar,
-    cited,
+    earliest: list('earliest', tally(similarity, 'target')),
+    later: list('later', tally(similarity, 'source')),
+    cited: list('incoming', tally(citation, 'target'), true),
+    citing: list('outgoing', tally(citation, 'source')),
   };
 }
 
@@ -282,7 +272,8 @@ export async function loadDemo() {
           outlets: topics.media.length,
           // Topics updated in the past day; the feed is most recently updated first and long enough to cover one.
           today: feed.filter((t) => Date.now() - Date.parse(updatedAtOf(t) ?? '') < 86400e3).length,
-          latest: feed.slice(0, 6),
+          // The five newest, one topic per outlet, so one busy entrance does not fill the list.
+          latest: feed.filter((t, i) => feed.findIndex((u) => u.media === t.media) === i).slice(0, 5),
         }
       : null,
     graph: graphSummary(graph),

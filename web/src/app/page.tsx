@@ -9,8 +9,17 @@ import { EventMethod, HomeMethod, MediaCardMethod } from '@/components/MethodNot
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
 import Sparkline from '@/components/Sparkline';
-import { type MediaInfo, type RankingEntry, taipei } from '@/lib/api';
-import { type CampGap, type CampShare, DEMO_CAMPS, type DemoStory, type GraphSummary, type JournalistBrief, loadDemo } from '@/lib/demo';
+import { type RankingEntry, taipei } from '@/lib/api';
+import {
+  type CampGap,
+  type CampShare,
+  DEMO_CAMPS,
+  type DemoStory,
+  type GraphOutlet,
+  type GraphSummary,
+  type JournalistBrief,
+  loadDemo,
+} from '@/lib/demo';
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
@@ -208,56 +217,47 @@ function JournalistPanel({ brief }: { brief: JournalistBrief | null }) {
   );
 }
 
-const percent = (share: number) => `${Math.round(share * 100)}%`;
+function OutletList({ caption, rows, verb }: { caption: string; rows: GraphOutlet[]; verb: string }) {
+  const max = rows[0]?.count ?? 1;
+  return (
+    <div>
+      <p className={styles.panelCaption}>{caption}</p>
+      <ol className={styles.pairList}>
+        {rows.map((r) => (
+          <li key={r.media}>
+            <span className={styles.shareRow}>
+              <span className={styles.pairNames}>
+                <MediaHoverLink media={r.media} icon={14} className="hover:underline">
+                  {r.name}
+                </MediaHoverLink>
+                {r.partnerName && (
+                  <small>
+                    {verb}
+                    {r.partnerName}
+                  </small>
+                )}
+              </span>
+              <span className={styles.shareTrack} aria-hidden="true">
+                <span style={{ width: `${Math.round((r.count / max) * 100)}%` }} />
+              </span>
+            </span>
+            <span className={styles.pairCount}>{r.count.toLocaleString()} 篇</span>
+          </li>
+        ))}
+        {rows.length === 0 && <li className={styles.muted}>目前沒有紀錄。</li>}
+      </ol>
+    </div>
+  );
+}
 
-function GraphPanel({ graph, media }: { graph: GraphSummary | null; media: MediaInfo }) {
+function GraphPanel({ graph }: { graph: GraphSummary | null }) {
   if (!graph) return <p className={styles.notice}>相似度比對整理中。</p>;
-  const label = (id: string, fallback: string) => media[id]?.title ?? fallback;
   return (
     <div className={styles.graphBody}>
-      <div>
-        <p className={styles.panelCaption}>內文與他家相近的比例</p>
-        <ol className={styles.pairList}>
-          {graph.similar.map((r) => (
-            <li key={r.media} title={`${r.articles} 篇中有 ${r.matched} 篇與其他媒體內文相近`}>
-              <span className={styles.shareRow}>
-                <span className={styles.pairNames}>
-                  <MediaHoverLink media={r.media} icon={14} className="hover:underline">
-                    {label(r.media, r.name)}
-                  </MediaHoverLink>
-                  {r.partner && <small>多與{label(r.partner, r.partnerName ?? r.partner)}相近</small>}
-                </span>
-                <span className={styles.shareTrack} aria-hidden="true">
-                  <span style={{ width: percent(r.share) }} />
-                </span>
-              </span>
-              <span className={styles.pairCount}>{percent(r.share)}</span>
-            </li>
-          ))}
-          {graph.similar.length === 0 && <li className={styles.muted}>目前沒有相近文章。</li>}
-        </ol>
-      </div>
-      <div>
-        <p className={styles.panelCaption}>被引用的占比</p>
-        <ol className={styles.pairList}>
-          {graph.cited.map((c) => (
-            <li key={c.media} title={`${graph.citations} 筆引用中有 ${c.count} 筆`}>
-              <span className={styles.shareRow}>
-                <span className={styles.pairNames}>
-                  <MediaHoverLink media={c.media} icon={14} className="hover:underline">
-                    {label(c.media, c.name)}
-                  </MediaHoverLink>
-                </span>
-                <span className={styles.shareTrack} aria-hidden="true">
-                  <span style={{ width: percent(c.share) }} />
-                </span>
-              </span>
-              <span className={styles.pairCount}>{percent(c.share)}</span>
-            </li>
-          ))}
-          {graph.cited.length === 0 && <li className={styles.muted}>目前沒有明示引用的紀錄。</li>}
-        </ol>
-      </div>
+      <OutletList caption="先發，之後被他家跟進" rows={graph.earliest} verb="多被跟進：" />
+      <OutletList caption="跟進他家已發的報導" rows={graph.later} verb="多跟進：" />
+      <OutletList caption="被他家明示引用" rows={graph.cited} verb="多被引用：" />
+      <OutletList caption="明示引用他家" rows={graph.citing} verb="多引用：" />
       {/* What the columns mean is in the footer's 資料來源與計算方式 (HomeMethod). */}
       <p className={styles.panelFoot}>
         過去 {graph.hours} 小時比對 {graph.analyzed.toLocaleString()} 篇正文、{graph.citations.toLocaleString()} 筆明示引用 ·{' '}
@@ -384,13 +384,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               </Link>
             </div>
             <JournalistPanel brief={data.journalists} />
-            {data.journalists && (
-              <p className={styles.panelNote}>
-                <a href="#method" className={styles.campShareMethod}>
-                  怎麼算 ⓘ
-                </a>
-              </p>
-            )}
           </aside>
 
           <section className={styles.center} aria-label="焦點事件">
@@ -483,21 +476,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 事件表 <Arrow />
               </Link>
             </div>
-            <p className={styles.gapIntro}>
-              <a href="#method" className={styles.campShareMethod}>
-                怎麼算 ⓘ
-              </a>
-            </p>
             <CampGaps gaps={data.gaps} />
 
             <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>同題不同標</h2>
             </div>
-            <p className={styles.gapIntro}>
-              <a href="#method" className={styles.campShareMethod}>
-                怎麼算 ⓘ
-              </a>
-            </p>
             <Suspense fallback={<p className={styles.notice}>正在整理標題對照…</p>}>
               <HeadlineSidebar query="" />
             </Suspense>
@@ -512,7 +495,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 看整張圖 <Arrow />
               </Link>
             </div>
-            <GraphPanel graph={data.graph} media={data.media} />
+            <GraphPanel graph={data.graph} />
           </section>
           <section className={styles.panel} aria-label="最近更新的議題">
             <div className={styles.sectionHeading}>

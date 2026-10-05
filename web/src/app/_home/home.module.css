@@ -178,9 +178,12 @@
 
 /* Outlet icons folded away so the share bar stays one line. */
 /* Two rows of icons per camp until expanded (26px icons, 6px gaps). */
-.campOutletsWrap { flex-basis: 100%; min-width: 0; }
-.campOutletsCollapsed .campOutletGroup ul { max-height: 58px; overflow: hidden; }
+.campOutletsWrap { position: relative; flex-basis: 100%; min-width: 0; }
+/* Collapsed: three rows per camp, fading out towards the bottom, with the expand button sitting on the last row. */
+.campOutletsCollapsed .campOutletGroup ul { max-height: 90px; overflow: hidden; }
+.campOutletsCollapsed { mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); }
 .campOutletsMore { display: flex; align-items: center; gap: 6px; margin: 10px auto 0; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 12px; cursor: pointer; }
+.campOutletsMoreOverlay { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); margin: 0; box-shadow: 0 1px 4px rgb(0 0 0 / .08); }
 .campOutletsMore:hover { color: var(--accent); border-color: var(--accent); }
 
 /* Ranking rows: change since yesterday and a 48h trend line. */
@@ -245,6 +248,13 @@
   .graphBody { grid-template-columns: minmax(0, 1fr); }
 }
 .shareRow { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-.pairNames > small { font-size: 10px; color: var(--muted); }
+.pairNames > small { font-size: 10px; color: var(--muted); white-space: nowrap; }
 .shareTrack { display: block; height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; }
 .shareTrack > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+/* After the base rules above so these win at equal specificity. */
+@media (max-width: 640px) {
+  /* Stacked camps: two rows each and no fade, or the bottom camp would vanish under it. */
+  .campOutletsCollapsed { mask-image: none; -webkit-mask-image: none; }
+  .campOutletsCollapsed .campOutletGroup ul { max-height: 58px; }
+  .campOutletsMoreOverlay { position: static; transform: none; margin: 10px auto 0; box-shadow: none; }
+}

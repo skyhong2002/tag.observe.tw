@@ -3,8 +3,8 @@
 import { type CSSProperties, type ReactNode, useState } from 'react';
 import styles from './home.module.css';
 
-/** The outlets behind each camp segment: two rows per camp (busiest first) as
- *  a preview, the full list a click away. */
+/** The outlets behind each camp segment: three rows per camp (busiest first)
+ *  fading out as a preview, the full list a click away. */
 export default function CampOutlets({ total, columns, children }: { total: number; columns: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
@@ -18,7 +18,7 @@ export default function CampOutlets({ total, columns, children }: { total: numbe
       </div>
       <button
         type="button"
-        className={styles.campOutletsMore}
+        className={`${styles.campOutletsMore} ${open ? '' : styles.campOutletsMoreOverlay}`}
         aria-expanded={open}
         aria-controls="camp-outlets"
         onClick={() => setOpen((v) => !v)}
