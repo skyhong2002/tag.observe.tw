@@ -14,7 +14,7 @@ Cloudflare Tunnel → tag.observe.tw
   Worker :18133 metrics（tag-worker.service，BullMQ + Redis）
   infra/compose.yml：MariaDB 11.4 :13306、Redis :16379、Prometheus :19090、Loki :13100、Alloy、Grafana :13000
                      （全部只綁 127.0.0.1；Grafana 管理密碼在 infra/.env；告警送 Discord）
-  tag-backup.timer：每日 04:30 備份與還原演練（scripts/backup-db.sh，保留 14 天，在 ~/tag-analysis-private/backups）
+  tag-backup.timer：每日 04:30 備份與完整隔離還原演練（scripts/backup-db.sh），讀回驗證後保存到 NAS site-db-v1；本機保留至少 14 天，詳見 docs/site-database-backup.md
 ```
 
 執行期不連線舊站 tag.analysis.tw 或其資料庫。
