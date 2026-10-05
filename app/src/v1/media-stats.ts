@@ -7,7 +7,7 @@ import { allSources, disabled } from '../crawl/registry.ts';
 import { codeLink, crawlerInfo } from '../crawl/source-info.ts';
 import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
-import { articleDiscoveries, articles, crawlRuns } from '../db/schema.ts';
+import { articleDiscoveries, articles, crawlRuns, topics } from '../db/schema.ts';
 import { articleMediaOf, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
@@ -76,7 +76,16 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
         >`MAX(IF(${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt}, NULL, ${articles.publishedAt}))`,
       })
       .from(articles)
-      .where(and(gte(articles.publishedAt, week), lte(articles.publishedAt, future), sql`${articles.source} = 'own'`))
+      .where(
+        and(
+          gte(articles.publishedAt, week),
+          lte(articles.publishedAt, future),
+          sql`${articles.source} = 'own'`,
+          // A 議題／專題 page's own row is the package, not a report: undated
+          // ones sit at their first-seen time and carry no tags.
+          sql`NOT EXISTS (SELECT 1 FROM ${topics} WHERE ${topics.url} = ${articles.url} AND ${topics.kind} IN ('topic', 'feature'))`,
+        ),
+      )
       .groupBy(articles.media);
     // When our own crawler first stored an article for each media: the 7-day
     // column only covers that much until a full week has passed.

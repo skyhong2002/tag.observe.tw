@@ -23,6 +23,8 @@ export interface NewsSource {
   provider?: string;
   titleSuffix?: string;
   articleUrls?: string[];
+  /** For pages without keyword meta: the elements whose text are the article's tags. */
+  tagSelector?: string;
 }
 
 export interface NewsCrawlAudit {
@@ -79,7 +81,13 @@ export function addNewsSources(
               }
             : {}),
         },
-        article: { enabled: !!source.websiteUrl, batch: 12, delayMs: 1500, ...(source.provider ? { provider: source.provider } : {}) },
+        article: {
+          enabled: !!source.websiteUrl,
+          batch: 12,
+          delayMs: 1500,
+          ...(source.provider ? { provider: source.provider } : {}),
+          ...(source.tagSelector ? { tagSelector: source.tagSelector } : {}),
+        },
       };
     });
   return [...existing, ...additions];

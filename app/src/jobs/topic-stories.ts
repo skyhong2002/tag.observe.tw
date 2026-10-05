@@ -85,13 +85,17 @@ export async function resolveTopicStories(db: Db, media: string, stories: Stored
     .sort((a, b) => (b.date ? Date.parse(b.date) : 0) - (a.date ? Date.parse(a.date) : 0));
 }
 
+// A card whose only link text is its button ("Read More", 閱讀更多): on TVBS
+// campaign microsites these lead to sub-pages that would be stored untitled.
+const BUTTON_LABEL = /^(?:(?:read|view|see|learn) more|more|閱讀更多|看更多|查看更多|了解更多|瞭解更多)[.…\s]*$/i;
+
 /** Use the ordinary article pipeline without adding the collection name as a tag. */
 export async function indexTopicStories(db: Db, media: string, stories: StoredStory[]) {
   const spec = sourceByMedia(articleMediaOf(media));
   if (!spec || spec.discovery || disabled().has(spec.media)) return 0;
   const resolved = await resolveTopicStories(db, media, stories);
   const items = resolved.flatMap((s) => {
-    if (s.id || !s.url) return [];
+    if (s.id || !s.url || BUTTON_LABEL.test(s.title.trim())) return [];
     const date = s.date ? new Date(s.date) : undefined;
     return [{ url: s.url, title: s.title, publishedAt: date && Number.isFinite(+date) ? date : null }];
   });

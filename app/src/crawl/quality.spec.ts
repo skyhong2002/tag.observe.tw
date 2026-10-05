@@ -302,6 +302,13 @@ describe('2026-10-01 audit fixes', () => {
       '<a href="https://gnn.gamer.com.tw/search_tag.php?q=x">#大逃殺</a><a href="https://gnn.gamer.com.tw/search_tag.php?q=y">#試玩</a>';
     expect(extractArticle(gnn, 'https://gnn.gamer.com.tw/detail.php?sn=1', spec('gamer').article).tags).toEqual(['大逃殺', '試玩']);
   });
+  it('reads <meta property="keywords"> (澎湃) and BBC topic chips', () => {
+    const paper = '<meta property="keywords" content="缅北,电诈"/>';
+    expect(extractArticle(paper, 'https://www.thepaper.cn/newsDetail_forward_1', spec('thepaper').article).tags).toEqual(['缅北', '电诈']);
+    const bbc =
+      '<a href="/news/topics/a1" class="Tag-styles__TagLink-sc-1 x">BT Group</a><a href="/news/topics/b2" class="Tag-styles__TagLink-sc-1 x">Broadband</a><a href="/news/topics/c3" class="Nav">World</a>';
+    expect(extractArticle(bbc, 'https://www.bbc.com/news/articles/x', spec('bbc_global').article).tags).toEqual(['BT Group', 'Broadband']);
+  });
   it('collapses LTN section variants of one story', () => {
     const id = spec('ltn').list.articleId;
     expect(urlKey('https://news.ltn.com.tw/news/life/breakingnews/5590597', id)).toBe(

@@ -71,7 +71,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   if (!rules.skipMeta) {
     const candidates: Array<[string, string | null]> = [
       ['news_keywords', meta('meta[name="news_keywords"]')],
-      ['keywords', meta('meta[name="keywords"], meta[itemprop="keywords"], meta[property="article:tag"]')],
+      ['keywords', meta('meta[name="keywords"], meta[itemprop="keywords"], meta[property="keywords"], meta[property="article:tag"]')],
     ];
     const articleTags = $('meta[property="article:tag"]')
       .map((_, e) => $(e).attr('content') ?? '')

@@ -286,7 +286,8 @@
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。BBC 全站列獨立於 BBC 中文列。",
       "feedUrls": [
         "https://feeds.bbci.co.uk/news/rss.xml"
-      ]
+      ],
+      "tagSelector": "a[href^=\"/news/topics/\"][class*=\"TagLink\"]"
     },
     {
       "media": "mirrordaily",

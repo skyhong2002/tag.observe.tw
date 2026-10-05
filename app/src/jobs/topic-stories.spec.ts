@@ -84,6 +84,14 @@ describe('publisher topic membership', () => {
       { url: 'https://example.com/new', title: 'New', publishedAt: null },
     ]);
   });
+  it('skips cards titled only by their button (TVBS campaign "Read More")', async () => {
+    runIndex.mockClear();
+    const { db } = database([]);
+    const buttons = ['Read More', 'VIEW MORE', '閱讀更多'].map((title, i) => ({ key: `example.com/b${i}`, title }));
+    expect(await indexTopicStories(db, 'cna', [...buttons, { key: 'example.com/more-tax', title: 'More tax cuts' }])).toBe(1);
+    const listed = (runIndex.mock.calls[0] as unknown as [Db, unknown, { listed: { items: object[] } }])[2].listed;
+    expect(listed.items).toEqual([{ url: 'https://example.com/more-tax', title: 'More tax cuts', publishedAt: null }]);
+  });
 });
 
 describe('article collection backlinks', () => {
