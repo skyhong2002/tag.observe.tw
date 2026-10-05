@@ -16,6 +16,7 @@ import { registerApiMeta } from './v1/openapi.ts';
 import { registerPageApis } from './v1/pages.ts';
 import { registerV1Routes } from './v1/routes.ts';
 import { registerSimilarity } from './v1/similarity.ts';
+import { registerSiteObservation } from './v1/site-observation.ts';
 
 export async function buildApp(config, { logger = false, db = /** @type {import('./db/client.ts').Db | null} */ (null) } = {}) {
   const app = Fastify({
@@ -79,6 +80,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerArticleRelated(app, own.db);
   }
   registerApiMeta(app);
+  registerSiteObservation(app);
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {
     if (own) await own.close();

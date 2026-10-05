@@ -209,6 +209,8 @@ export async function sitemapUrls(db: Db, now = new Date()): Promise<SitemapUrl[
   const featureMedia = [...new Set(TOPIC_RULES.map((r) => r.media))].filter((m) => (topicCounts[m]?.feature ?? 0) > 0);
   return [
     { loc: '/', changefreq: 'hourly', priority: 1 },
+    { loc: '/observe/', changefreq: 'weekly', priority: 0.3 },
+    { loc: '/readers/', changefreq: 'weekly', priority: 0.4 },
     { loc: '/ranking/', changefreq: 'hourly', priority: 0.9 },
     { loc: '/event/', changefreq: 'hourly', priority: 0.9 },
     { loc: '/event/archive/', changefreq: 'hourly', priority: 0.6 },

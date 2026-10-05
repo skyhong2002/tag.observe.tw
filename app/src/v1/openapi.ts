@@ -563,7 +563,40 @@ export const API_TAGS = [
   { name: 'media', description: '媒體與爬蟲狀態' },
 ];
 
+const observationPeriod = obj({ start: str(), end: str() });
+const observationSearchCounts = obj({ clicks: int(), impressions: int() });
+
 export const ENDPOINTS: Endpoint[] = [
+  {
+    path: '/api/v1/site-observation',
+    tag: 'meta',
+    summary: '公開網站觀測快照',
+    description:
+      '手動更新的 GA4／GSC 彙整；無可用快照時 snapshot 為 null。依 updatedAt 判斷新鮮度。GA 採台灣時間近 7 個完整日，GSC 採太平洋時間近 28 個完整日且只取 final 資料。排行至少 10 次瀏覽與 3 位活躍使用者，體驗指標至少 30 份樣本。不公開搜尋字詞或使用者識別資料。',
+    cache: '1 分鐘',
+    response: obj({
+      snapshot: nullable(
+        obj({
+          version: int(),
+          updatedAt: time(),
+          content: obj({
+            period: observationPeriod,
+            totals: nullable(obj({ views: int(), sessions: int() })),
+            ranking: arr(obj({ path: str(), title: str(), views: int() })),
+          }),
+          search: obj({
+            period: observationPeriod,
+            totals: nullable(observationSearchCounts),
+            daily: arr(obj({ date: str(), clicks: int(), impressions: int() })),
+          }),
+          experience: obj({
+            status: str('definitions_missing／insufficient／ready'),
+            metrics: arr(obj({ name: str('LCP／INP／CLS'), samples: int(), goodPercent: num('良好樣本百分比，非 p75') })),
+          }),
+        }),
+      ),
+    }),
+  },
   {
     path: '/api/v1/similarity',
     tag: 'articles',

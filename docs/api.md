@@ -57,6 +57,7 @@ for a in r.json()["articles"]:
 
 | 端點 | 說明 |
 | --- | --- |
+| [`GET /api/v1/site-observation`](#api-v1-site-observation) | 公開網站觀測快照 |
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
 | [`GET /api/v1/similarity/evidence`](#api-v1-similarity-evidence) | 相似與引用證據（分頁） |
 | [`GET /api/v1/similarity/daily`](#api-v1-similarity-daily) | 每日相似配對與引用統計 |
@@ -89,6 +90,58 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media-stats`](#api-v1-media-stats) | 各媒體收錄量與爬蟲狀態 |
 
 ## API 本身
+
+<a id="api-v1-site-observation"></a>
+
+### `GET /api/v1/site-observation`
+
+**公開網站觀測快照**
+
+手動更新的 GA4／GSC 彙整；無可用快照時 snapshot 為 null。依 updatedAt 判斷新鮮度。GA 採台灣時間近 7 個完整日，GSC 採太平洋時間近 28 個完整日且只取 final 資料。排行至少 10 次瀏覽與 3 位活躍使用者，體驗指標至少 30 份樣本。不公開搜尋字詞或使用者識別資料。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/site-observation'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshot` | object \| null |  |
+| `snapshot.version` | integer |  |
+| `snapshot.updatedAt` | string (ISO 時間) |  |
+| `snapshot.content` | object |  |
+| `snapshot.content.period` | object |  |
+| `snapshot.content.period.start` | string |  |
+| `snapshot.content.period.end` | string |  |
+| `snapshot.content.totals` | object \| null |  |
+| `snapshot.content.totals.views` | integer |  |
+| `snapshot.content.totals.sessions` | integer |  |
+| `snapshot.content.ranking` | object[] |  |
+| `snapshot.content.ranking[].path` | string |  |
+| `snapshot.content.ranking[].title` | string |  |
+| `snapshot.content.ranking[].views` | integer |  |
+| `snapshot.search` | object |  |
+| `snapshot.search.period` | object |  |
+| `snapshot.search.period.start` | string |  |
+| `snapshot.search.period.end` | string |  |
+| `snapshot.search.totals` | object \| null |  |
+| `snapshot.search.totals.clicks` | integer |  |
+| `snapshot.search.totals.impressions` | integer |  |
+| `snapshot.search.daily` | object[] |  |
+| `snapshot.search.daily[].date` | string |  |
+| `snapshot.search.daily[].clicks` | integer |  |
+| `snapshot.search.daily[].impressions` | integer |  |
+| `snapshot.experience` | object |  |
+| `snapshot.experience.status` | string | definitions_missing／insufficient／ready |
+| `snapshot.experience.metrics` | object[] |  |
+| `snapshot.experience.metrics[].name` | string | LCP／INP／CLS |
+| `snapshot.experience.metrics[].samples` | integer |  |
+| `snapshot.experience.metrics[].goodPercent` | number | 良好樣本百分比，非 p75 |
+
+快取：1 分鐘。
 
 <a id="api-v1"></a>
 
@@ -676,11 +729,12 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `article.discoverySources[].title` | string | 發現來源名稱 |
 | `article.discoverySources[].url` | string | 實際發現文章的公開頁面網址 |
 | `article.discoverySources[].discoveredAt` | string (ISO 時間) | 首次經此來源發現文章的時間，不取代刊登時間 |
-| `article.collections` | object[] | 單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期 |
+| `article.collections` | object[] | 單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期；self 為 true 的專題即此文章本身 |
 | `article.collections[].id` | string |  |
 | `article.collections[].media` | string |  |
 | `article.collections[].title` | string |  |
 | `article.collections[].kind` | "topic" \| "feature" |  |
+| `article.collections[].self` | boolean | 此文章就是該專題頁本身 |
 | `content` | object |  |
 | `content.status` | "ok" \| "short" \| "missing" \| "blocked" \| "error" \| "not_fetched" \| "expired" |  |
 | `content.body` | string \| null | 刊登 7 天內已抓取的文字；之後為 null。不保證原站目前仍存在 |
@@ -1802,11 +1856,12 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
 | `articles[].discoverySources[].title` | string | 發現來源名稱 |
 | `articles[].discoverySources[].url` | string | 實際發現文章的公開頁面網址 |
 | `articles[].discoverySources[].discoveredAt` | string (ISO 時間) | 首次經此來源發現文章的時間，不取代刊登時間 |
-| `articles[].collections` | object[] | 單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期 |
+| `articles[].collections` | object[] | 單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期；self 為 true 的專題即此文章本身 |
 | `articles[].collections[].id` | string |  |
 | `articles[].collections[].media` | string |  |
 | `articles[].collections[].title` | string |  |
 | `articles[].collections[].kind` | "topic" \| "feature" |  |
+| `articles[].collections[].self` | boolean | 此文章就是該專題頁本身 |
 | `articles[].bodyStatus` | string |  |
 | `articles[].bodyChars` | integer |  |
 | `articles[].contentFetchedAt` | string (ISO 時間) \| null |  |
