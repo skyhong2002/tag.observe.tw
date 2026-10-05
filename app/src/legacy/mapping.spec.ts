@@ -59,12 +59,26 @@ describe('reviewed legacy media mapping', () => {
       ['asiatatler', 'tw.asiatatler.com'],
       ['bbc', 'www.bbc.co.uk'],
       ['ctitv', 'gotv.ctitv.com.tw'],
+      ['edh', 'everydayhealth.com.tw'],
+      ['gv', 'zh.globalvoicesonline.org'],
+      ['lihpao', 'lihpao.com'],
+      ['musou', 'musou.tw'],
+      ['oncc', 'tw.on.cc'],
+      ['tsna', 'tsna.com.tw'],
+      ['ttv', 'ttv.com.tw'],
+      ['wyc', 'world.yam.com'],
     ]) {
       const input = { ...raw, media, url: `https://${host}/historical-article` };
       expect(normalizeLegacyArticle(input, context(`tag_${media}`, input)).disposition).toBe('candidate');
     }
     const otherPublisher = { ...raw, media: 'babyou', url: 'https://www.nownews.com/123' };
     expect(normalizeLegacyArticle(otherPublisher, context('tag_babyou', otherPublisher)).reasons).toContain('unreviewed_url_host');
+  });
+  it('keeps malformed historical TTV hosts quarantined', () => {
+    for (const host of ['www.ttv.com.twhttp', 'ttv.com.tw.example.com']) {
+      const input = { ...raw, media: 'ttv', url: `https://${host}/news/1` };
+      expect(normalizeLegacyArticle(input, context('tag_ttv', input)).reasons).toContain('unreviewed_url_host');
+    }
   });
   it('retains evidenced historical brands without merging them into successor publishers', () => {
     for (const [media, host] of [

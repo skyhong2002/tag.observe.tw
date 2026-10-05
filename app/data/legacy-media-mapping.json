@@ -1,5 +1,5 @@
 {
-  "version": "legacy-media-mapping-v4",
+  "version": "legacy-media-mapping-v5",
   "reviewedAt": "2026-10-05",
   "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
   "media": {
@@ -113,10 +113,11 @@
     },
     "ttv": {
       "publisherRoots": [
-        "news.ttv.com.tw"
+        "news.ttv.com.tw",
+        "ttv.com.tw"
       ],
       "sourceUrl": "https://news.ttv.com.tw/",
-      "evidence": "台視新聞網"
+      "evidence": "台視新聞網; Historical ttv.com.tw evidenced by ttv.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_ttv raw chunk0. Retain original media code."
     },
     "housefun": {
       "publisherRoots": [
@@ -384,17 +385,19 @@
     },
     "wyc": {
       "publisherRoots": [
-        "dq.yam.com"
+        "dq.yam.com",
+        "world.yam.com"
       ],
       "sourceUrl": "https://dq.yam.com/",
-      "evidence": "DQ 地球圖輯隊"
+      "evidence": "DQ 地球圖輯隊; Historical world.yam.com evidenced by wyc.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_wyc raw chunk0. Retain original media code."
     },
     "gv": {
       "publisherRoots": [
-        "zht.globalvoices.org"
+        "zht.globalvoices.org",
+        "zh.globalvoicesonline.org"
       ],
       "sourceUrl": "https://zht.globalvoices.org/",
-      "evidence": "Global Voices 繁體中文；全球之聲"
+      "evidence": "Global Voices 繁體中文；全球之聲; Historical zh.globalvoicesonline.org evidenced by gv.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_gv raw chunk0. Retain original media code."
     },
     "punchline": {
       "publisherRoots": [
@@ -433,17 +436,19 @@
     },
     "lihpao": {
       "publisherRoots": [
-        "limedia.tw"
+        "limedia.tw",
+        "lihpao.com"
       ],
       "sourceUrl": "https://www.limedia.tw/",
-      "evidence": "立報傳媒 | 教育．傳播．科技．影視文化新聞"
+      "evidence": "立報傳媒 | 教育．傳播．科技．影視文化新聞; Historical lihpao.com evidenced by lihpao.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_lihpao raw chunk0. Retain original media code."
     },
     "edh": {
       "publisherRoots": [
-        "edh.tw"
+        "edh.tw",
+        "everydayhealth.com.tw"
       ],
       "sourceUrl": "https://edh.tw:443/",
-      "evidence": "早安健康-每天都做得到的健康！"
+      "evidence": "早安健康-每天都做得到的健康！; Historical everydayhealth.com.tw evidenced by edh.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_edh raw chunk0. Retain original media code."
     },
     "healthnews": {
       "publisherRoots": [
@@ -531,10 +536,11 @@
     },
     "tsna": {
       "publisherRoots": [
-        "tsna.com"
+        "tsna.com",
+        "tsna.com.tw"
       ],
       "sourceUrl": "https://tsna.com/",
-      "evidence": "首頁 - TSNA體育新聞團隊"
+      "evidence": "首頁 - TSNA體育新聞團隊; Historical tsna.com.tw evidenced by tsna.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_tsna raw chunk0. Retain original media code."
     },
     "civilmedia": {
       "publisherRoots": [
@@ -545,10 +551,11 @@
     },
     "musou": {
       "publisherRoots": [
-        "watchout.tw"
+        "watchout.tw",
+        "musou.tw"
       ],
       "sourceUrl": "https://watchout.tw/reports/V4KMK7s5sp9qhadabgc5",
-      "evidence": "沃草官方報導；既有 musou 來源保留識別"
+      "evidence": "沃草官方報導；既有 musou 來源保留識別; Historical musou.tw evidenced by musou.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_musou raw chunk0. Retain original media code."
     },
     "hbr": {
       "publisherRoots": [
@@ -608,10 +615,11 @@
     },
     "oncc": {
       "publisherRoots": [
-        "hk.on.cc"
+        "hk.on.cc",
+        "tw.on.cc"
       ],
       "sourceUrl": "https://hk.on.cc/hk/news/index.html",
-      "evidence": "on.cc東網"
+      "evidence": "on.cc東網; Historical tw.on.cc evidenced by oncc.index.urls in app/data/crawl-sources.json and isolated restore of verified tag_oncc raw chunk0. Retain original media code."
     },
     "mplus": {
       "publisherRoots": [
