@@ -98,6 +98,15 @@ function sectionsFor(pathname: string) {
   // The /topic/ and /feature/ indexes get TopicMethod with their counts from @notes.
   if (pathname === '/topic' || pathname === '/feature' || pathname === '/topic/' || pathname === '/feature/') return null;
   if (pathname.startsWith('/topic/')) return <TopicMethod kind="topic" outlet />;
+  // One 專題 is read as an article (web/src/components/article/ArticleView.tsx).
+  if (/^\/feature\/[^/]+\/[^/]+\/?$/.test(pathname)) {
+    return (
+      <>
+        <ArticleMethod feature />
+        <SourceMethod />
+      </>
+    );
+  }
   if (pathname.startsWith('/feature/')) return <TopicMethod kind="feature" outlet />;
   if (/^\/event(\/|$)/.test(pathname)) {
     return (
