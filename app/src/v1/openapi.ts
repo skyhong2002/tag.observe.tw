@@ -485,8 +485,18 @@ schemas.ContentArticle = obj(
     publisher: ref('OutletIdentity'),
     discoverySources: arr(ref('DiscoverySource')),
     collections: arr(
-      obj({ id: str(), media: str(), title: str(), kind: str(undefined, { enum: ['topic', 'feature'] }) }),
-      '單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期',
+      obj(
+        {
+          id: str(),
+          media: str(),
+          title: str(),
+          kind: str(undefined, { enum: ['topic', 'feature'] }),
+          self: bool('此文章就是該專題頁本身'),
+        },
+        undefined,
+        ['self'],
+      ),
+      '單篇內文回傳原站清單中實際收錄此文章的議題與專題，不限日期；self 為 true 的專題即此文章本身',
     ),
   },
   undefined,

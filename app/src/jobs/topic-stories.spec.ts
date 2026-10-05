@@ -110,7 +110,9 @@ describe('article collection backlinks', () => {
         from: () => ({
           where: async (predicate: SQL) => {
             const compiled = new MySqlDialect().sqlToQuery(predicate);
-            return sqlite.prepare(`SELECT id, media, title, kind FROM topics WHERE ${compiled.sql}`).all(...(compiled.params as string[]));
+            return sqlite
+              .prepare(`SELECT id, media, title, kind, url FROM topics WHERE ${compiled.sql}`)
+              .all(...(compiled.params as string[]));
           },
         }),
       }),
@@ -121,7 +123,10 @@ describe('article collection backlinks', () => {
         ['2', 'feature'],
       ]);
       expect(await collectionsForArticle(db, 'reporter', 'missing')).toEqual([]);
-      expect((await collectionsForArticle(db, 'reporter', 'missing', 'https://example.com/feature')).map((c) => c.id)).toEqual(['5']);
+      expect((await collectionsForArticle(db, 'reporter', 'missing', 'https://example.com/feature')).map((c) => [c.id, c.self])).toEqual([
+        ['5', true],
+      ]);
+      expect((await collectionsForArticle(db, 'reporter', 'example.com#123')).map((c) => c.self)).toEqual([undefined, undefined]);
     } finally {
       sqlite.close();
     }

@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import ArticleView from '@/components/article/ArticleView';
 import { API_ORIGIN } from '@/lib/api';
 import type { StoredContent } from '@/lib/article-content';
+import { featurePathOf } from '@/lib/article-metadata';
 import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { fetchArticleRelated } from '@/lib/related';
 import { fetchArticleSimilarity } from '@/lib/similarity';
@@ -27,6 +28,8 @@ export default async function ArticleContentPage({
   if (res?.status === 404 || res?.status === 400) notFound();
   if (!res?.ok) return <p className="py-12 text-zinc-600 dark:text-zinc-400">暫時無法取得文章內容，請稍後重新整理。</p>;
   const [content, similar, related] = await Promise.all([res.json() as Promise<StoredContent>, similarRequest, relatedRequest]);
+  const featurePath = featurePathOf(content.article);
+  if (featurePath) permanentRedirect(featurePath);
   const mediaHref = `/media/${encodeURIComponent(content.article.media)}/`;
   return (
     <ArticleView

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { API_ORIGIN } from '@/lib/api';
 import type { StoredContent } from '@/lib/article-content';
-import { articleIndexable, articleMetadata } from '@/lib/article-metadata';
+import { articleIndexable, articleMetadata, featurePathOf } from '@/lib/article-metadata';
 import { fetchArticleRelated } from '@/lib/related';
 import { fetchArticleSimilarity } from '@/lib/similarity';
 
@@ -18,6 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!res?.ok) return { title: '暫時無法取得文章', robots: { index: false, follow: true } };
 
   const stored = (await res.json()) as StoredContent;
+  const featurePath = featurePathOf(stored.article);
+  if (featurePath) permanentRedirect(featurePath);
   // Only pages without a readable excerpt need the extra indexing decision.
   // These are the same cached requests the visible page already makes.
   const [related, similar] = articleIndexable(stored.content, null, null)

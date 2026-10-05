@@ -60,3 +60,9 @@ export function articleMetadata(
 }
 
 export { articleIndexable };
+
+/** A 專題's own article is read at its /feature/ URL: the page that also lists its stories. */
+export function featurePathOf(article: StoredContent['article']): string | null {
+  const own = article.collections?.find((c) => c.kind === 'feature' && c.self);
+  return own ? `/feature/${encodeURIComponent(own.media)}/${encodeURIComponent(own.id)}/` : null;
+}

@@ -105,6 +105,8 @@ export interface ArticleCollection {
   media: string;
   title: string;
   kind: TopicKind;
+  /** The article is this 專題's own page, not one of the stories it lists. */
+  self?: boolean;
 }
 
 /** Reverse the publisher's saved membership, never infer it from title or tags. */
@@ -112,7 +114,7 @@ export async function collectionsForArticle(db: Db, media: string, key: string, 
   const outlets = TOPIC_RULES.filter((r) => articleMediaOf(r.media) === media).map((r) => r.media);
   if (!key || !outlets.length) return [];
   const rows = await db
-    .select({ id: topics.id, media: topics.media, title: topics.title, kind: topics.kind })
+    .select({ id: topics.id, media: topics.media, title: topics.title, kind: topics.kind, url: topics.url })
     .from(topics)
     .where(
       and(
@@ -124,5 +126,12 @@ export async function collectionsForArticle(db: Db, media: string, key: string, 
         ),
       ),
     );
-  return rows.sort((a, b) => a.id - b.id).map((r) => ({ ...r, id: String(r.id), kind: r.kind as TopicKind }));
+  return rows
+    .sort((a, b) => a.id - b.id)
+    .map(({ url: topicUrl, ...r }) => ({
+      ...r,
+      id: String(r.id),
+      kind: r.kind as TopicKind,
+      ...(r.kind === 'feature' && url && topicUrl === url ? { self: true } : {}),
+    }));
 }

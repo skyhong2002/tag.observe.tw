@@ -26,7 +26,7 @@ export interface StoredArticle {
   authors: string[];
   publisher: Publisher;
   discoverySources?: DiscoverySource[];
-  collections?: Array<{ id: string; media: string; title: string; kind: 'topic' | 'feature' }>;
+  collections?: Array<{ id: string; media: string; title: string; kind: 'topic' | 'feature'; self?: boolean }>;
 }
 export interface StoredContent {
   article: StoredArticle;
