@@ -13,6 +13,7 @@ import time
 import uuid
 
 DOCKER = '/home/deck/.local/bin/docker'
+RCLONE = '/home/deck/.local/bin/rclone'
 GIB = 1024 ** 3
 
 
@@ -119,10 +120,10 @@ class Nas:
         self.config = config
 
     def command(self, *args, **kwargs):
-        return run(['rclone', '--config', self.config, '--bwlimit', '8M', *args], **kwargs)
+        return run([RCLONE, '--config', self.config, '--bwlimit', '8M', *args], **kwargs)
 
     def verify(self, remote, expected_hash):
-        process = subprocess.Popen(['rclone', '--config', self.config, '--bwlimit', '8M', 'cat', remote], stdout=subprocess.PIPE)
+        process = subprocess.Popen([RCLONE, '--config', self.config, '--bwlimit', '8M', 'cat', remote], stdout=subprocess.PIPE)
         h = hashlib.sha256()
         for chunk in iter(lambda: process.stdout.read(1024 * 1024), b''):
             h.update(chunk)
@@ -135,6 +136,58 @@ class Nas:
         self.command('copyto', str(local), remote)
         self.verify(remote, digest(local))
         return remote
+
+
+def publish_restored(path, report_path, report, nas):
+    if report.get('restore', {}).get('status') != 'passed':
+        raise RuntimeError('A successful full restore receipt is required')
+    if path.stat().st_size != report['bytes'] or digest(path) != report['sha256']:
+        raise RuntimeError('Local backup changed since restore verification')
+    report.pop('error', None)
+    report['status'] = 'publishing'
+    atomic_json(report_path, report)
+    capacity = json.loads(nas.command('about', nas.remote.split(':', 1)[0] + ':', '--json', capture_output=True, text=True).stdout)
+    if capacity.get('free', 0) < report['bytes'] + 100 * GIB:
+        raise RuntimeError('NAS reserve below 100 GiB; local backup preserved')
+    report['object'] = nas.publish(path, 'objects/' + report['sha256'] + '.sql.zst')
+    report.update(status='verified', finished_at=dt.datetime.now(dt.timezone.utc).isoformat())
+    atomic_json(report_path, report)
+    nas.publish(report_path, 'manifests/' + report['backup_id'] + '.json')
+    # NAS retains every generation. Local expiry requires a verified remote receipt.
+    for previous in path.parent.glob('tag_observe-*.sql.zst'):
+        if previous == path or time.time() - previous.stat().st_mtime < 14 * 86400:
+            continue
+        receipt = previous.with_suffix('.manifest.json')
+        if not receipt.exists():
+            continue
+        old = json.loads(receipt.read_text())
+        if old.get('status') != 'verified' or not old.get('object', '').startswith(nas.remote + '/objects/'):
+            continue
+        nas.verify(old['object'], old['sha256'])
+        previous.unlink()
+    print(json.dumps(report), flush=True)
+    return report
+
+
+def resume_backup(dest, report_path, nas):
+    dest, report_path = dest.resolve(), report_path.resolve()
+    if report_path.parent != dest:
+        raise ValueError('Resume receipt must be in the configured backup directory')
+    with (dest / '.backup.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        report = json.loads(report_path.read_text())
+        path = (dest / report['file']).resolve()
+        if path.parent != dest or report_path != path.with_suffix('.manifest.json') or report.get('database') != 'tag_observe':
+            raise ValueError('Unexpected backup identity or path')
+        import re
+        if not re.fullmatch(r'\d{8}T\d{6}Z-[0-9a-f]{8}', report.get('backup_id', '')):
+            raise ValueError('Invalid backup ID')
+        try:
+            return publish_restored(path, report_path, report, nas)
+        except Exception as error:
+            report.update(status='failed', error=str(error))
+            atomic_json(report_path, report)
+            raise
 
 
 def backup(dest, nas):
@@ -160,27 +213,7 @@ def backup(dest, nas):
             report.update(file=path.name, bytes=path.stat().st_size, sha256=digest(path), schema_sha256=schema_hash)
             atomic_json(report_path, report)
             report['restore'] = restore_drill(path, tables)
-            capacity = json.loads(nas.command('about', nas.remote.split(':', 1)[0] + ':', '--json', capture_output=True, text=True).stdout)
-            if capacity.get('free', 0) < report['bytes'] + 100 * GIB:
-                raise RuntimeError('NAS reserve below 100 GiB; local backup preserved')
-            report['object'] = nas.publish(path, 'objects/' + report['sha256'] + '.sql.zst')
-            report.update(status='verified', finished_at=dt.datetime.now(dt.timezone.utc).isoformat())
-            atomic_json(report_path, report)
-            nas.publish(report_path, 'manifests/' + stamp + '.json')
-            # NAS retains every generation. Local expiry requires a verified remote receipt.
-            for previous in dest.glob('tag_observe-*.sql.zst'):
-                if previous == path or time.time() - previous.stat().st_mtime < 14 * 86400:
-                    continue
-                receipt = previous.with_suffix('.manifest.json')
-                if not receipt.exists():
-                    continue
-                old = json.loads(receipt.read_text())
-                if old.get('status') != 'verified' or not old.get('object', '').startswith(nas.remote + '/objects/'):
-                    continue
-                nas.verify(old['object'], old['sha256'])
-                previous.unlink()
-            print(json.dumps(report), flush=True)
-            return report
+            return publish_restored(path, report_path, report, nas)
         except Exception as error:
             report.update(status='failed', error=str(error))
             atomic_json(report_path, report)
@@ -190,11 +223,22 @@ def backup(dest, nas):
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--resume', help='Resume publication of an already restored backup receipt')
     parser.add_argument('--dest', default='/home/deck/tag-analysis-private/backups')
     parser.add_argument('--remote', default='nas:Archive/tag.analysis.tw/site-db-v1')
     parser.add_argument('--rclone-config', default='/home/deck/.config/nas-backup/rclone.conf')
     args = parser.parse_args()
-    backup(Path(args.dest), Nas(args.remote, args.rclone_config))
+    if not Path(DOCKER).is_file() or not Path(RCLONE).is_file() or not shutil.which('zstd'):
+        raise RuntimeError('docker, rclone and zstd must be installed before starting a backup')
+    dest, nas = Path(args.dest), Nas(args.remote, args.rclone_config)
+    if args.resume:
+        resume_backup(dest, Path(args.resume), nas)
+    else:
+        for receipt in sorted(dest.glob('tag_observe-*.manifest.json')):
+            old = json.loads(receipt.read_text())
+            if old.get('status') in ('failed', 'publishing') and old.get('restore', {}).get('status') == 'passed':
+                resume_backup(dest, receipt, nas)
+        backup(dest, nas)
 
 
 if __name__ == '__main__':

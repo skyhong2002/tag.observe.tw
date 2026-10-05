@@ -15,3 +15,11 @@
 取回時從 NAS manifest 選擇物件，以 `rclone copyto` 下載、比對 SHA256、`zstd -t`，再還原到獨立 MariaDB。來源原本的 definer／events 不應未經檢查便在新環境啟用；本工具的演練容器無網路且停用 event scheduler。不要直接將整份備份匯入仍在服務的資料庫。
 
 NAS 與本機容量有限，沒有自動刪除 NAS 歷史或無限保存的保證。空間不足時工作會報錯並保留既有資料，需擴充容量；同一地點 NAS 也不是異地災難備援。
+
+上傳或讀回失敗可從成功的完整還原 receipt 接續；先重新比對本機 dump 大小和 SHA256，內容不同就拒絕沿用還原結果。排程下一次啟動時先補傳這類失敗備份，再產生新快照。也可手動只補傳：
+
+```sh
+python3 tools/nearline/backup-site.py --resume /home/deck/tag-analysis-private/backups/<backup>.sql.manifest.json
+```
+
+工作啟動前確認 docker、rclone、zstd 存在。rclone 使用明確安裝路徑；systemd unit 亦設定工具 PATH，避免登入 shell 與排程環境不同。

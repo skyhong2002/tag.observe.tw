@@ -46,3 +46,25 @@ class BackupTests(unittest.TestCase):
             self.assertEqual(report['status'], 'verified')
             self.assertTrue(nas.publish.call_args_list[0].args[1].startswith('objects/'))
             self.assertTrue(nas.publish.call_args_list[1].args[1].startswith('manifests/'))
+
+    def test_resume_reuses_restore_proof_but_rejects_changed_dump(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            nas = Mock(remote='nas:test')
+            nas.command.return_value = Mock(stdout=json.dumps({'free': 200*module.GIB}))
+            nas.publish.side_effect = ['nas:test/objects/hash.sql.zst', RuntimeError('network interrupted')]
+            with self.assertRaisesRegex(RuntimeError, 'network interrupted'):
+                self.exercise(root, nas, Mock(return_value={'status': 'passed'}))
+            receipt = next(root.glob('*.manifest.json'))
+            nas.publish.side_effect = lambda p, relative: 'nas:test/' + relative
+            with patch.object(module, 'export_database') as export, patch.object(module, 'restore_drill') as restore:
+                result = module.resume_backup(root, receipt, nas)
+                self.assertEqual(result['status'], 'verified')
+                self.assertNotIn('error', result)
+                export.assert_not_called()
+                restore.assert_not_called()
+            next(root.glob('*.sql.zst')).write_bytes(b'changed archive')
+            nas.publish.reset_mock()
+            with self.assertRaisesRegex(RuntimeError, 'changed since restore'):
+                module.resume_backup(root, receipt, nas)
+            nas.publish.assert_not_called()
