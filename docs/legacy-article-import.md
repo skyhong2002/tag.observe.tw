@@ -36,6 +36,16 @@ node --env-file=.env tools/nearline/import-articles.ts \
 
 ## 驗證
 
+逐表交付報告可在匯入期間及完成後重新產生，每次使用新的輸出目錄：
+
+```sh
+python3 tools/nearline/integration_catalog.py \
+  --config /home/deck/.local/share/tag-legacy-import/config.json \
+  --out /private/new-catalog-directory --archive
+```
+
+工具讀取 NAS generation manifest，逐一對照計畫中的全部資料表、已處理原始物件及目前 audit 的獨立核對結果。`catalog.json` 分開列出原始備份、成功來源關聯、隔離原因、待重新處理資料包、nearline-only 資料與來源缺口；成功來源關聯包含連結既有文章，不等於新增文章數。舊 audit 的核對不能替新版 receipt 作證，仍待套用的新規則也不算完成。`--archive` 將報告存入獨立 NAS 路徑並回讀驗證，不改匯入狀態。這是當時的資料快照；匯入完畢後仍須另外驗證包含最終結果的新站資料庫備份。
+
 `app/src/legacy/import.spec.ts` 包含日期與容量檢查，以及隔離 MariaDB 整合測試：預演無正式寫入、既有 own 資料保留、大小寫衝突、URL/urlKey 分裂、版本衝突、重跑冪等、失敗交易回滾。資料庫測試僅允許 loopback `23316/legacy_import_test`：
 
 ```sh
