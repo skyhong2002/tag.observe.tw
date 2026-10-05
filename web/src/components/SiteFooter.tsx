@@ -106,7 +106,9 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
             </Link>
             <div className="space-y-1.5">
               <p className="text-base font-medium text-zinc-900 dark:text-zinc-100">同一件事，各家怎麼說。</p>
-              <p className="max-w-sm leading-7">追蹤台灣新聞媒體的標籤、事件與議題，並排比較各家標題。</p>
+              <p className="leading-7">
+                追蹤台灣新聞媒體的標籤、事件與議題，<span className="whitespace-nowrap">並排比較各家標題。</span>
+              </p>
             </div>
             <Suspense fallback={null}>
               <FooterStats />
