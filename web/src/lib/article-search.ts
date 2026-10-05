@@ -21,6 +21,7 @@ export const CAMPS: Array<{ key: Camp; label: string; bar: string; badge: string
 ];
 export const RANGES = [
   { days: 1, label: '1 天' },
+  { days: 3, label: '3 天' },
   { days: 7, label: '7 天' },
   { days: 31, label: '31 天' },
 ];

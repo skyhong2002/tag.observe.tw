@@ -214,7 +214,7 @@ export async function threadSeries(db: Db, thread: { majorTags: string[]; firstT
   };
 }
 
-export const PERIOD_DAYS = [1, 7, 31] as const;
+export const PERIOD_DAYS = [1, 3, 7, 31] as const;
 
 /** Weigh each thread by its summed hourly score in the window (the best row
  *  when a thread holds two ranks in one hour), so a story that led for days

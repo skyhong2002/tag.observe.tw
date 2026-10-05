@@ -79,7 +79,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
 | [`GET /api/v1/events/threads`](#api-v1-events-threads) | 某一天的所有事件串 |
-| [`GET /api/v1/events/threads/period`](#api-v1-events-threads-period) | 過去 1、7 或 31 天的主要事件串 |
+| [`GET /api/v1/events/threads/period`](#api-v1-events-threads-period) | 過去 1、3、7 或 31 天的主要事件串 |
 | [`GET /api/v1/events/threads/{id}`](#api-v1-events-threads-id) | 單一事件串 |
 | [`GET /api/v1/events/threads/{id}/series`](#api-v1-events-threads-id-series) | 事件串的每小時趨勢 |
 | [`GET /api/v1/events/threads/{id}/coverage`](#api-v1-events-threads-id-coverage) | 同一事件的各家標題對照 |
@@ -1370,13 +1370,13 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 
 ### `GET /api/v1/events/threads/period`
 
-**過去 1、7 或 31 天的主要事件串**
+**過去 1、3、7 或 31 天的主要事件串**
 
 依事件串在期間內每小時分數的總和排序，在榜越久、越前面的越重；同一則新聞被拆成不同事件串時（主要標籤過半重疊或第一個標籤相同）只留較重的一個。藍綠報導（`coverage`、`baseline`）的窗口是整段期間。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
-| `days` | query | integer | 期間天數：1、7 或 31，預設 1，例：`7` |
+| `days` | query | integer | 期間天數：1、3、7 或 31，預設 1，例：`7` |
 | `limit` | query | integer | 回傳幾個事件串，1 到 12，預設 6，例：`6` |
 
 範例：
@@ -1433,7 +1433,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/period?days=7'
 | `threads[].news[].image` | string \| null | 代表圖網址 |
 | `threads[].news[].camp` | string | 媒體陣營 blue／green／other（只在 /api/v1/events 回傳） |
 
-錯誤：`400` `days` 不是 1、7 或 31。
+錯誤：`400` `days` 不是 1、3、7 或 31。
 
 <a id="api-v1-events-threads-id"></a>
 

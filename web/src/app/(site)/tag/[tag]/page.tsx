@@ -64,7 +64,8 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   ]);
   const tagged = facets?.total ?? 0;
   const untagged = mentions === null ? 0 : mentions - tagged;
-  const searchDays = hours <= 24 ? 1 : hours <= 168 ? 7 : 31;
+  // The search range that covers the chart's window: the same one for 1, 3 and 7 days.
+  const searchDays = hours <= 24 ? 1 : hours <= 72 ? 3 : hours <= 168 ? 7 : 31;
   const searchHref = `/search/?${new URLSearchParams({ q: tag, ...(searchDays === 31 ? {} : { days: String(searchDays) }) })}`;
   // A tag the site has never recorded: no articles, no counts, no ranking, history or events.
   if (

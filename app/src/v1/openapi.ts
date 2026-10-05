@@ -1123,10 +1123,10 @@ export const ENDPOINTS: Endpoint[] = [
   {
     path: '/api/v1/events/threads/period',
     tag: 'events',
-    summary: '過去 1、7 或 31 天的主要事件串',
+    summary: '過去 1、3、7 或 31 天的主要事件串',
     description:
       '依事件串在期間內每小時分數的總和排序，在榜越久、越前面的越重；同一則新聞被拆成不同事件串時（主要標籤過半重疊或第一個標籤相同）只留較重的一個。藍綠報導（`coverage`、`baseline`）的窗口是整段期間。',
-    params: [q('days', '期間天數：1、7 或 31，預設 1', int(), '7'), q('limit', '回傳幾個事件串，1 到 12，預設 6', int(), '6')],
+    params: [q('days', '期間天數：1、3、7 或 31，預設 1', int(), '7'), q('limit', '回傳幾個事件串，1 到 12，預設 6', int(), '6')],
     response: obj({
       days: int(),
       from: time(),
@@ -1147,7 +1147,7 @@ export const ENDPOINTS: Endpoint[] = [
         }),
       ),
     }),
-    errors: { '400': '`days` 不是 1、7 或 31' },
+    errors: { '400': '`days` 不是 1、3、7 或 31' },
     example: '/api/v1/events/threads/period?days=7',
   },
   {
