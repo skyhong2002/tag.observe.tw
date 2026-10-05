@@ -12,7 +12,7 @@ import { loadTitleVocab } from '../src/crawl/title-tags.ts';
 import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots } from '../src/db/schema.ts';
-import { runAnalyticsJob } from '../src/jobs/analytics-job.ts';
+import { runAnalyticsJob, runRealtimeJob } from '../src/jobs/analytics-job.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
 import { runSimilarityJob } from '../src/jobs/similarity-job.ts';
@@ -435,16 +435,20 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     });
     const calls: string[] = [];
     const google = async (u: string, payload?: object) => {
-      const body = payload as { dimensions: Array<string | { name: string }> };
+      const body = payload as { dimensions?: Array<string | { name: string }> };
       calls.push(u.split('?')[0]);
+      if (u.endsWith(':runRealtimeReport'))
+        return body.dimensions
+          ? { rows: [row(['00'], [2]), row(['29'], [1])] }
+          : { rows: [{ metricValues: [{ value: '3' }, { value: '7' }] }] };
       if (u.endsWith('/metadata')) return { dimensions: [] };
       if (u.includes('searchAnalytics')) {
-        if (body.dimensions.includes('query')) throw Error('queries must never be requested');
-        return body.dimensions.length === 1
+        if (body.dimensions?.includes('query')) throw Error('queries must never be requested');
+        return body.dimensions?.length === 1
           ? { rows: [{ keys: [day], clicks: 2, impressions: 40, position: 8.5 }] }
           : { rows: [{ keys: [day, 'https://tag.observe.tw/eve/9/'], clicks: 2, impressions: 30, position: 4 }] };
       }
-      const dims = body.dimensions
+      const dims = (body.dimensions ?? [])
         .map((d) => (typeof d === 'string' ? d : d.name))
         .slice(1)
         .join(',');
@@ -460,6 +464,8 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     const config = { credentialsFile: '', propertyId: '1', siteUrl: 'https://tag.observe.tw/' };
     await runAnalyticsJob(db, config, { google });
     await runAnalyticsJob(db, config, { google }); // replaces the window, never duplicates
+    await runRealtimeJob(db, config, { google });
+    await runRealtimeJob(db, config, { google });
     expect(calls.some((c) => c.includes('searchAnalytics'))).toBe(true);
     const app = await buildApp({ tagDbUrl: null, uiOrigin: 'http://127.0.0.1:1', rateLimit: false }, { db });
     try {
@@ -467,6 +473,9 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       expect(r.statusCode).toBe(200);
       const body = r.json();
       expect(body.updatedAt).not.toBeNull();
+      expect(body.live).toMatchObject({ activeUsers: 3, views: 7 });
+      expect(body.live.perMinute).toHaveLength(30);
+      expect([body.live.perMinute[0], body.live.perMinute[29], body.live.perMinute[15]]).toEqual([1, 2, 0]);
       expect(body.traffic.views).toBe(12);
       expect(body.traffic.daily.at(-1)).toEqual({ date: day, views: 12, sessions: 5, users: 4 });
       expect(body.traffic.channels[0]).toEqual({ name: 'Organic Search', value: 3 });

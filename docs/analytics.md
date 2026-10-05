@@ -57,9 +57,12 @@ GSC API 可讀搜尋查詢、頁面、裝置與點擊／曝光／CTR／平均排
 首頁左欄的「讀者關注」（近 7 天內容頁前 5 名，不足 3 筆時不顯示）。`/readers/` 永久轉址到 `/observe/#readers`。
 定義寫在頁尾「本頁的資料來源與計算方式」（`web/src/components/method/observe.tsx`）。
 
-資料流：`tag-worker` 的 `analytics` job（`app/src/jobs/analytics-job.ts`）每天 06:20（`ANALYTICS_CRON`）用服務帳戶
+資料流：`tag-worker` 的 `analytics` job（`app/src/jobs/analytics-job.ts`）每小時 :20（`ANALYTICS_CRON`）用服務帳戶
 唯讀讀取 GA4 Data API 與 Search Console，寫入 `site_metrics`（每日 × 來源 × 指標 × 鍵），API
 `GET /api/v1/site-observation`（`app/src/v1/site-observation.ts`）彙整給網頁。網站程序不碰 Google 憑證。
+`analytics-live` 每 2 分鐘（`ANALYTICS_LIVE_MINUTES`）讀 GA Realtime API 的最近 30 分鐘活躍使用者、瀏覽與每分鐘瀏覽
+（source=`rt`，每次整批替換，不寫 job_runs）；只取總數，不取 `unifiedScreenName`，避免頁面標題帶出搜尋字詞。
+超過 15 分鐘沒更新時 API 的 `live` 為 null，頁面不顯示「最近 30 分鐘」。API 與頁面快取 1 分鐘。
 
 - worker 從專案 `.env` 讀 `GOOGLE_APPLICATION_CREDENTIALS`（指向 Git 外 0600 的 service-account.json）、
   `GA4_PROPERTY_ID`、`GSC_SITE_URL`；三者缺一則不排程。授權只用 analytics.readonly／webmasters.readonly，

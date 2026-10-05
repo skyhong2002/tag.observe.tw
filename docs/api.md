@@ -97,7 +97,7 @@ for a in r.json()["articles"]:
 
 **網站觀測：GA4 與 Search Console 每日彙整**
 
-worker 每天自 GA4（台灣時間）與 Search Console（美國太平洋時間，含尚未定案的近日資料）讀取彙整數字，近幾天每次重抓覆蓋。只含 tag.observe.tw 的流量；不含搜尋字詞、站內搜尋內容或使用者識別資料。traffic／search 在尚無資料時為 null；traffic.daily 從開始追蹤日補零。content 為讀者造訪的內容頁（事件、標籤、議題、專題、文章、記者、媒體），pages 含首頁與索引頁。vitals 需 GA4 已登錄 metric_name／metric_rating 自訂維度，否則為 null。
+worker 每小時自 GA4（台灣時間）與 Search Console（美國太平洋時間，含尚未定案的近日資料）讀取彙整數字，近幾天每次重抓覆蓋；live 為 GA Realtime 最近 30 分鐘，約每 2 分鐘更新，超過 15 分鐘未更新則為 null。只含 tag.observe.tw 的流量；不含搜尋字詞、站內搜尋內容或使用者識別資料。traffic／search 在尚無資料時為 null；traffic.daily 從開始追蹤日補零。content 為讀者造訪的內容頁（事件、標籤、議題、專題、文章、記者、媒體），pages 含首頁與索引頁。vitals 需 GA4 已登錄 metric_name／metric_rating 自訂維度，否則為 null。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -114,6 +114,11 @@ curl -s 'https://tag.observe.tw/api/v1/site-observation'
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `updatedAt` | string (ISO 時間) \| null |  |
+| `live` | object \| null |  |
+| `live.fetchedAt` | string (ISO 時間) |  |
+| `live.activeUsers` | integer | 最近 30 分鐘活躍使用者 |
+| `live.views` | integer | 最近 30 分鐘瀏覽 |
+| `live.perMinute` | integer[] | 每分鐘瀏覽，30 筆，最舊在前 |
 | `days` | integer |  |
 | `start` | string | 台北日期 YYYY-MM-DD |
 | `end` | string | 今天（台北） |
@@ -168,7 +173,7 @@ curl -s 'https://tag.observe.tw/api/v1/site-observation'
 
 錯誤：`400` days 不是 7、28 或 90。
 
-快取：5 分鐘。
+快取：1 分鐘。
 
 <a id="api-v1"></a>
 

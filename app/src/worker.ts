@@ -4,7 +4,7 @@ import { Redis } from 'ioredis';
 import pino from 'pino';
 import { googleConfigFromEnv } from './analytics/google.ts';
 import { createDb } from './db/client.ts';
-import { runAnalyticsJob } from './jobs/analytics-job.ts';
+import { runAnalyticsJob, runRealtimeJob } from './jobs/analytics-job.ts';
 import { runCrawlHealthJob } from './jobs/crawl-health-job.ts';
 import { crawlArticles, crawlGroup } from './jobs/crawl-job.ts';
 import { runEventsJob } from './jobs/events-job.ts';
@@ -87,16 +87,22 @@ await queue.upsertJobScheduler(
   { name: 'source-probe', data: {}, opts: { removeOnComplete: 10, removeOnFail: 10 } },
 );
 
-// GA4 / Search Console aggregates for /observe/; skipped where the read-only
-// service account is not configured (docs/analytics.md).
+// GA4 / Search Console aggregates for /observe/ hourly, GA Realtime every few
+// minutes; skipped where the read-only service account is not configured (docs/analytics.md).
 const google = googleConfigFromEnv();
-if (google)
+await queue.removeJobScheduler('analytics-daily');
+if (google) {
   await queue.upsertJobScheduler(
-    'analytics-daily',
-    { pattern: process.env.ANALYTICS_CRON || '20 6 * * *' },
+    'analytics-hourly',
+    { pattern: process.env.ANALYTICS_CRON || '20 * * * *' },
     { name: 'analytics', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
   );
-else await queue.removeJobScheduler('analytics-daily');
+  await queue.upsertJobScheduler(
+    'analytics-live',
+    { every: Number(process.env.ANALYTICS_LIVE_MINUTES || 2) * 60e3 },
+    { name: 'analytics-live', data: {}, opts: { removeOnComplete: 10, removeOnFail: 10 } },
+  );
+} else for (const id of ['analytics-hourly', 'analytics-live']) await queue.removeJobScheduler(id);
 
 // Export zero-valued series from startup so the alert queries have data after a restart,
 // instead of going NoData until the first job of each kind completes.
@@ -106,6 +112,7 @@ for (const job of [
   'retention',
   'source-probe',
   'analytics',
+  'analytics-live',
   'crawl-health',
   'topics',
   'tag-stats',
@@ -152,6 +159,12 @@ const worker = new Worker(
       if (job.name === 'analytics') {
         if (!google) throw Error('Google analytics access is not configured');
         const r = await runAnalyticsJob(db, google, { log: (o, m) => log.info(o, m) });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'analytics-live') {
+        if (!google) throw Error('Google analytics access is not configured');
+        const r = await runRealtimeJob(db, google);
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

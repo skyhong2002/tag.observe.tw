@@ -23,6 +23,25 @@ export function pageKind(path: string) {
   return CONTENT.test(path) ? (KINDS[path.split('/')[1]] ?? 'page') : 'page';
 }
 
+// GA Realtime rows older than this mean the live job has stopped; show nothing rather than stale "now".
+const LIVE_STALE_MS = 15 * 60e3;
+
+/** The last 30 minutes from the analytics-live job, oldest minute first; null when missing or stale. */
+export async function liveObservation(db: Db, now = new Date()) {
+  const rows = await db
+    .select({ metric: siteMetrics.metric, key: siteMetrics.key, value: siteMetrics.value })
+    .from(siteMetrics)
+    .where(eq(siteMetrics.source, 'rt'));
+  const get = (metric: string) => rows.find((r) => r.metric === metric && r.key === '')?.value;
+  const fetchedAt = get('fetched_at');
+  if (!fetchedAt || now.getTime() - fetchedAt > LIVE_STALE_MS) return null;
+  const perMinute = Array.from({ length: 30 }, (_, i) => {
+    const ago = String(29 - i).padStart(2, '0');
+    return rows.find((r) => r.metric === 'minute_views' && r.key === ago)?.value ?? 0;
+  });
+  return { fetchedAt: new Date(fetchedAt).toISOString(), activeUsers: get('active_users') ?? 0, views: get('views') ?? 0, perMinute };
+}
+
 const taipeiDay = (d: Date) => new Date(d.getTime() + 8 * 3600e3).toISOString().slice(0, 10);
 const shiftDay = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * 864e5).toISOString().slice(0, 10);
 const round = (n: number, digits = 0) => Math.round(n * 10 ** digits) / 10 ** digits;
@@ -40,9 +59,9 @@ export async function siteObservation(db: Db, days: number, now = new Date()) {
   const [first] = await db
     .select({ ga: sql<string | null>`MIN(CASE WHEN ${siteMetrics.source} = 'ga' THEN ${siteMetrics.day} END)`, any: min(siteMetrics.day) })
     .from(siteMetrics);
-  const updatedAt = await lastAnalyticsRun(db);
+  const [updatedAt, live] = await Promise.all([lastAnalyticsRun(db), liveObservation(db, now)]);
   if (!first?.any)
-    return { updatedAt, days, start, end, trackingSince: null, traffic: null, pages: [], content: [], search: null, vitals: null };
+    return { updatedAt, live, days, start, end, trackingSince: null, traffic: null, pages: [], content: [], search: null, vitals: null };
   const inRange = between(siteMetrics.day, start, end);
   const totals = await db
     .select({ day: siteMetrics.day, source: siteMetrics.source, metric: siteMetrics.metric, value: siteMetrics.value })
@@ -168,6 +187,7 @@ export async function siteObservation(db: Db, days: number, now = new Date()) {
   const [pages, content] = await Promise.all([topPages('ga', 'page_views', false, 20), topPages('ga', 'page_views', true, 10)]);
   return {
     updatedAt,
+    live,
     days,
     start,
     end,
@@ -184,7 +204,7 @@ export function registerSiteObservation(app: FastifyInstance, db: Db) {
   app.get<{ Querystring: { days?: string } }>('/api/v1/site-observation', async (request, reply) => {
     const days = Number(request.query.days ?? 28);
     if (!(OBSERVATION_DAYS as readonly number[]).includes(days)) return reply.code(400).send({ error: 'days must be 7, 28 or 90' });
-    reply.header('cache-control', 'public, max-age=300');
+    reply.header('cache-control', 'public, max-age=60');
     return siteObservation(db, days);
   });
 }

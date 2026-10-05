@@ -1,7 +1,8 @@
-// Pull daily GA4 and Search Console aggregates into site_metrics for the public
-// 網站觀測 page (/observe/) and the home page's 讀者關注 panel. Each run
+// Pull GA4 and Search Console aggregates into site_metrics for the public
+// 網站觀測 page (/observe/) and the home page's 讀者關注 panel. Each hourly run
 // re-reads a trailing window (GA keeps processing for ~3 days, GSC lags 2–3
 // days) and replaces those days, so late data and vanished keys settle.
+// runRealtimeJob adds the last 30 minutes from GA's Realtime API every few minutes.
 import { and, between, count, eq, sql } from 'drizzle-orm';
 import { type GoogleConfig, type GoogleFetch, googleClient } from '../analytics/google.ts';
 import type { Db } from '../db/client.ts';
@@ -154,6 +155,38 @@ export async function fetchGsc(google: GoogleFetch, siteUrl: string, start: stri
       { day: p.day, source: 'gsc', metric: 'page_impressions', key: p.path, value: p.impressions },
     );
   return out;
+}
+
+/** GA Realtime: active users and views over the last 30 minutes, views per minute (no pages: titles can carry search terms). */
+export async function fetchRealtime(google: GoogleFetch, propertyId: string, now: Date): Promise<MetricRow[]> {
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`;
+  const value = (row: { metricValues: { value: string }[] } | undefined, i: number) => Number(row?.metricValues[i].value ?? 0);
+  const [total, minutes] = await Promise.all([
+    google(url, { metrics: [{ name: 'activeUsers' }, { name: 'screenPageViews' }] }),
+    google(url, { dimensions: [{ name: 'minutesAgo' }], metrics: [{ name: 'screenPageViews' }] }),
+  ]);
+  const day = taipeiDay(now);
+  const out: MetricRow[] = [
+    { day, source: 'rt', metric: 'fetched_at', key: '', value: now.getTime() },
+    { day, source: 'rt', metric: 'active_users', key: '', value: value(total.rows?.[0], 0) },
+    { day, source: 'rt', metric: 'views', key: '', value: value(total.rows?.[0], 1) },
+  ];
+  for (const row of minutes.rows ?? []) {
+    const ago = Number(row.dimensionValues[0].value);
+    if (Number.isInteger(ago) && ago >= 0 && ago < 30)
+      out.push({ day, source: 'rt', metric: 'minute_views', key: String(ago).padStart(2, '0'), value: value(row, 0) });
+  }
+  return out;
+}
+
+/** Replace the realtime rows; not logged to job_runs (it runs every few minutes). */
+export async function runRealtimeJob(db: Db, config: GoogleConfig, { now = () => new Date(), google = googleClient(config) } = {}) {
+  const rows = await fetchRealtime(google, config.propertyId, now());
+  await db.transaction(async (tx) => {
+    await tx.delete(siteMetrics).where(eq(siteMetrics.source, 'rt'));
+    await tx.insert(siteMetrics).values(rows);
+  });
+  return { activeUsers: rows[1].value, views: rows[2].value };
 }
 
 async function replaceDays(db: Db, source: string, start: string, end: string, rows: MetricRow[]) {

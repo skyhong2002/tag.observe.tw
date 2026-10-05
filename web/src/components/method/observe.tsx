@@ -9,12 +9,15 @@ export function ObserveMethod() {
     <>
       <h3 className={methodHeading}>網站觀測</h3>
       <p>
-        本站每天早上從 Google Analytics 4 與 Google Search Console 讀取前一段期間的彙整數字，近幾天的資料每次重抓，晚到的資料會補上。只計
-        tag.observe.tw 的造訪；阻擋追蹤或停用 JavaScript 的讀者不會被計入。2026 年 10 月 5 日開始追蹤，初期數字含本站自己的測試瀏覽。
+        本站每小時從 Google Analytics 4 與 Google Search Console 讀取彙整數字，近幾天的資料每次重抓，晚到的資料會補上；GA4
+        處理需要時間，今天的數字通常落後一小時左右。只計 tag.observe.tw 的造訪；阻擋追蹤或停用 JavaScript 的讀者不會被計入。2026 年 10 月 5
+        日開始追蹤，當天數字多為本站自己的測試瀏覽。
       </p>
       <dl className={methodList}>
+        <dt className={methodTerm}>最近 30 分鐘</dt>
+        <dd>GA4 即時報表：最近 30 分鐘內有活動的讀者數、瀏覽次數與每分鐘瀏覽，約每 2 分鐘更新。只有總數，不列出正在看的頁面。</dd>
         <dt className={methodTerm}>瀏覽</dt>
-        <dd>GA4 的網頁瀏覽次數，包含同一人重複開啟；今天的數字到下次更新前不會變動。</dd>
+        <dd>GA4 的網頁瀏覽次數，包含同一人重複開啟。</dd>
         <dt className={methodTerm}>造訪</dt>
         <dd>
           GA4 的工作階段：一次連續使用網站，閒置 30 分鐘後再回來算新的一次。來源依 GA4 預設管道分類，「未指派」是 GA4 無法判斷來源的造訪。

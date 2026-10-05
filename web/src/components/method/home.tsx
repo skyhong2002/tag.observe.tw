@@ -89,7 +89,7 @@ export function HomeMethod({
         </dd>
         <dt className={methodTerm}>讀者關注</dt>
         <dd>
-          近 7 天本站讀者瀏覽最多的事件、標籤、議題、專題與文章頁，依 Google Analytics 每天更新；不是媒體報導量。定義見
+          近 7 天本站讀者瀏覽最多的事件、標籤、議題、專題與文章頁，依 Google Analytics 每小時更新；不是媒體報導量。定義見
           <Link href="/observe/" className={inlineLink}>
             網站觀測
           </Link>

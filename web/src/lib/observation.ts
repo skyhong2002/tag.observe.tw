@@ -12,6 +12,8 @@ export interface ObservedPage {
 }
 export interface Observation {
   updatedAt: string | null;
+  /** GA Realtime, last 30 minutes; perMinute is oldest first. */
+  live: { fetchedAt: string; activeUsers: number; views: number; perMinute: number[] } | null;
   days: number;
   start: string;
   end: string;
@@ -38,7 +40,7 @@ export interface Observation {
 
 export async function fetchObservation(days: ObservationDays): Promise<Observation | null> {
   const response = await fetch(`${API_ORIGIN}/api/v1/site-observation?days=${days}`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 60 },
     signal: AbortSignal.timeout(8000),
   }).catch(() => null);
   return response?.ok ? response.json() : null;

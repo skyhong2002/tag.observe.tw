@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MethodLink from '@/components/MethodLink';
+import Sparkline from '@/components/Sparkline';
 import { taipei } from '@/lib/api';
 import {
   fetchObservation,
@@ -13,7 +14,7 @@ import {
 import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
 import DailyBars from './DailyBars';
 
-export const revalidate = 300;
+export const revalidate = 60;
 type Search = { days?: string };
 const daysOf = (sp: Search): ObservationDays =>
   (OBSERVATION_DAYS as readonly number[]).includes(Number(sp.days)) ? (Number(sp.days) as ObservationDays) : 28;
@@ -59,6 +60,39 @@ function Tile({ label, value, note }: { label: string; value: string; note?: str
       <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
       {note && <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{note}</div>}
     </div>
+  );
+}
+
+/** GA Realtime: who is reading right now. */
+function Live({ live }: { live: NonNullable<Observation['live']> }) {
+  const time = new Date(live.fetchedAt).toLocaleTimeString('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return (
+    <section className={`${card} flex flex-wrap items-center gap-x-6 gap-y-3`} aria-label="最近 30 分鐘">
+      <p className="flex items-center gap-2 text-sm">
+        <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+          {live.activeUsers > 0 && (
+            <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-500 opacity-60" />
+          )}
+          <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${live.activeUsers > 0 ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+        </span>
+        最近 30 分鐘
+      </p>
+      <p className="text-sm">
+        <span className="text-2xl font-semibold tabular-nums tracking-tight">{n(live.activeUsers)}</span> 位讀者
+      </p>
+      <p className="text-sm">
+        <span className="text-2xl font-semibold tabular-nums tracking-tight">{n(live.views)}</span> 次瀏覽
+      </p>
+      <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:flex-1 sm:justify-end">
+        <Sparkline values={live.perMinute} className="h-8 w-40 max-w-full" />
+        <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">每分鐘瀏覽 · {time}</span>
+      </div>
+    </section>
   );
 }
 
@@ -199,6 +233,7 @@ export default async function ObservePage({ searchParams }: { searchParams: Prom
         </p>
       ) : (
         <>
+          {data.live && <Live live={data.live} />}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Tile label="瀏覽" value={traffic ? n(traffic.views) : '—'} />
             <Tile label="造訪" value={traffic ? n(traffic.sessions) : '—'} />
