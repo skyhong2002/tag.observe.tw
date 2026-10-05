@@ -59,6 +59,7 @@ describe('reviewed legacy media mapping', () => {
       ['asiatatler', 'tw.asiatatler.com'],
       ['bbc', 'www.bbc.co.uk'],
       ['ctitv', 'gotv.ctitv.com.tw'],
+      ['ftv', 'news.ftv.com.tw'],
       ['edh', 'everydayhealth.com.tw'],
       ['gv', 'zh.globalvoicesonline.org'],
       ['lihpao', 'lihpao.com'],
@@ -73,6 +74,12 @@ describe('reviewed legacy media mapping', () => {
     }
     const otherPublisher = { ...raw, media: 'babyou', url: 'https://www.nownews.com/123' };
     expect(normalizeLegacyArticle(otherPublisher, context('tag_babyou', otherPublisher)).reasons).toContain('unreviewed_url_host');
+  });
+  it('limits historical FTV approval to the reviewed news hostname', () => {
+    for (const host of ['news.ftv.com.tw.example.com', 'unreviewed.ftv.com.tw']) {
+      const input = { ...raw, media: 'ftv', url: `https://${host}/news/detail/2017922N07M1` };
+      expect(normalizeLegacyArticle(input, context('tag_ftv', input)).reasons).toContain('unreviewed_url_host');
+    }
   });
   it('keeps malformed historical TTV hosts quarantined', () => {
     for (const host of ['www.ttv.com.twhttp', 'ttv.com.tw.example.com']) {

@@ -1,5 +1,5 @@
 {
-  "version": "legacy-media-mapping-v5",
+  "version": "legacy-media-mapping-v6",
   "reviewedAt": "2026-10-05",
   "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
   "media": {
@@ -178,10 +178,12 @@
     },
     "ftv": {
       "publisherRoots": [
-        "ftvnews.com.tw"
+        "ftvnews.com.tw",
+        "news.ftv.com.tw"
       ],
       "sourceUrl": "https://www.ftvnews.com.tw/",
-      "evidence": "民視新聞網"
+      "evidence": "民視新聞網；歷史新聞網 news.ftv.com.tw：已驗證 NAS 原始文章，及民視新聞台公開歷史引用（2018-05-04 民視聲明）",
+      "historicalSourceUrl": "https://zh.wikipedia.org/wiki/民視新聞台"
     },
     "epochtimes": {
       "publisherRoots": [
