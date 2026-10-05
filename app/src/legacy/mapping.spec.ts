@@ -64,6 +64,7 @@ describe('reviewed legacy media mapping', () => {
       ['gv', 'zh.globalvoicesonline.org'],
       ['lihpao', 'lihpao.com'],
       ['musou', 'musou.tw'],
+      ['nikkei', 'cn.nikkei.com'],
       ['oncc', 'tw.on.cc'],
       ['tsna', 'tsna.com.tw'],
       ['ttv', 'ttv.com.tw'],
@@ -79,6 +80,12 @@ describe('reviewed legacy media mapping', () => {
     for (const host of ['news.ftv.com.tw.example.com', 'unreviewed.ftv.com.tw']) {
       const input = { ...raw, media: 'ftv', url: `https://${host}/news/detail/2017922N07M1` };
       expect(normalizeLegacyArticle(input, context('tag_ftv', input)).reasons).toContain('unreviewed_url_host');
+    }
+  });
+  it('keeps unreviewed Nikkei editions and lookalike hosts quarantined', () => {
+    for (const host of ['cn.nikkei.com.example.com', 'asia.nikkei.com', 'www.nikkei.com']) {
+      const input = { ...raw, media: 'nikkei', url: `https://${host}/historical-article` };
+      expect(normalizeLegacyArticle(input, context('tag_nikkei', input)).reasons).toContain('unreviewed_url_host');
     }
   });
   it('keeps malformed historical TTV hosts quarantined', () => {

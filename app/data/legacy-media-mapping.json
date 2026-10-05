@@ -1,5 +1,5 @@
 {
-  "version": "legacy-media-mapping-v7",
+  "version": "legacy-media-mapping-v8",
   "reviewedAt": "2026-10-05",
   "policy": "Exact existing media code only. Publisher domains from reviewed media-names and traffic catalog; RSS proxy hosts are not publishers. Historical aliases require explicit additions. Subdomains within these publisher domains accepted.",
   "media": {
@@ -205,10 +205,15 @@
     },
     "nikkei": {
       "publisherRoots": [
-        "zh.cn.nikkei.com"
+        "zh.cn.nikkei.com",
+        "cn.nikkei.com"
       ],
       "sourceUrl": "https://zh.cn.nikkei.com/",
-      "evidence": "日經中文網--日本經濟新聞中文版"
+      "evidence": "日經中文網--日本經濟新聞中文版",
+      "historicalEvidence": [
+        "Hash-verified tag_nikkei source package: 441 original cn.nikkei.com article URLs; original URL and timestamps retained.",
+        "https://zh.wikipedia.org/wiki/日經中文網 redirects to 日本經濟新聞; external link https://cn.nikkei.com labeled 日經中文網 and historical 2013 article citations. Retrieved 2026-10-05; direct publisher request returned 403, not content verification."
+      ]
     },
     "ctitv": {
       "publisherRoots": [
