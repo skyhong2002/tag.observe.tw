@@ -4,6 +4,7 @@ import ArticleBody from '@/components/ArticleBody';
 import ArticleImage from '@/components/ArticleImage';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
+import SourceLink from '@/components/SourceLink';
 import { kindNoun, topicMediaHref } from '@/components/TopicCard';
 import { CONTENT_STATUS } from '@/lib/article-content';
 import { fetchFeatureContent, fetchTopicStories, type TopicKind } from '@/lib/pages';
@@ -29,27 +30,22 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
       </nav>
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">{data.title}</h1>
-        <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-700 hover:underline dark:text-brand-300">
-          原站{noun} ↗
-        </a>
+        {kind === 'topic' && <SourceLink url={data.url} label={`原站${noun}`} showUrl />}
       </div>
       {kind === 'feature' && (
         <section aria-label="專題內容" className="mx-auto max-w-[44rem] space-y-5">
-          <ArticleImage src={content?.article.image ?? data.image} title={data.title} mediaTitle={data.mediaTitle} sourceUrl={data.url} />
+          <ArticleImage src={content?.article.image ?? data.image} title={data.title} mediaTitle={data.mediaTitle} />
           {content?.content.body ? (
             <ArticleBody body={content.content.body} sourceUrl={data.url} />
+          ) : content?.article.description ? (
+            <ArticleBody body={content.article.description} sourceUrl={data.url} label="文章摘要" />
           ) : (
-            <>
-              {content?.article.description && (
-                <div>
-                  <h2 className="mb-2 text-sm text-zinc-500">專題摘要</h2>
-                  <p className="whitespace-pre-wrap text-base leading-8">{content.article.description}</p>
-                </div>
-              )}
+            <div>
               <p className="text-sm text-zinc-500">
                 {content ? CONTENT_STATUS[content.content.status].detail : '專題內文尚待擷取，可先前往原站閱讀。'}
               </p>
-            </>
+              <SourceLink url={data.url} label={`原站${noun}`} showUrl className="mt-3" />
+            </div>
           )}
         </section>
       )}

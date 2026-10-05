@@ -78,7 +78,7 @@ export default function TopicCard({
           {updated && `最後更新 ${taipeiDate(updated)}`}
           {updated && <span aria-hidden>·</span>}
           {topic.time && !topic.backlog ? `首次發現 ${taipei(topic.time)}` : '開始追蹤前已上架'}
-          <SourceLink url={topic.url} label={`原站${noun}`} className="!min-h-5 shrink-0" />
+          <SourceLink url={topic.url} label={`原站${noun}`} showUrl className="!min-h-5" />
         </span>
         {topic.coverage && <Coverage c={topic.coverage} />}
         {nested}

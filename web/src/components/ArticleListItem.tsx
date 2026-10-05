@@ -71,7 +71,7 @@ export default function ArticleListItem({
               <span>報導日期不明</span>
             )}
             <AuthorCredits credits={article.authors} className="max-w-40 truncate" />
-            <SourceLink url={article.url} className="!min-h-5 !text-[11px]" />
+            <SourceLink url={article.url} showUrl className="!min-h-5 !text-[11px]" />
           </div>
           {article.tags.length > 0 && (
             <ul aria-label="關鍵字" className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-5">

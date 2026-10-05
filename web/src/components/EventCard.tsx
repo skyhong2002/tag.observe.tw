@@ -164,10 +164,12 @@ function Headlines({
           <MediaHoverLink media={n.media} icon={14} className="mt-0.5 shrink-0">
             <span className="sr-only">{media[n.media]?.title ?? n.media}</span>
           </MediaHoverLink>
-          <Link href={articleHref(n)} className="line-clamp-1 min-w-0 flex-1 hover:underline">
-            {n.title}
-          </Link>
-          <SourceLink url={n.url} iconOnly className="!min-h-5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <Link href={articleHref(n)} className="line-clamp-1 hover:underline">
+              {n.title}
+            </Link>
+            <SourceLink url={n.url} showUrl className="!min-h-5" />
+          </div>
         </li>
       ))}
     </ul>

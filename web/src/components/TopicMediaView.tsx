@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
+import SourceLink from '@/components/SourceLink';
 import TopicCard, { kindNoun } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
 import { fetchTopicMedia, kindCount, type MediaTopic, ofKind, type TopicKind } from '@/lib/pages';
@@ -71,15 +72,8 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
           <MediaIcon media={data.media} title={data.title} size={24} />
           {data.title}的{noun}
-          <a
-            href={data.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-auto text-xs font-normal text-zinc-500 hover:text-brand-700"
-          >
-            官方入口 ↗
-          </a>
         </h1>
+        <SourceLink url={data.link} label="官方入口" showUrl className="mt-2" />
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           {data.title}官方入口上的{noun}
           {kind === 'feature' && (

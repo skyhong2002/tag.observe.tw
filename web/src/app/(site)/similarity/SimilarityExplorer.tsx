@@ -7,6 +7,7 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } 
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
+import SourceLink from '@/components/SourceLink';
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
@@ -70,10 +71,10 @@ function ArticleLine({ article, badge, dim = false }: { article: SimilarityArtic
       <span className="shrink-0 text-xs text-zinc-500 tabular-nums">
         <time dateTime={article.publishedAt}>{when}</time>
         {article.authors.length > 0 && ` · ${article.authors.join('、')}`}{' '}
-        <a href={article.url} target="_blank" rel="noopener noreferrer" className={linkStyle} title="媒體原文">
-          ↗<span className="sr-only">{article.mediaTitle} 原文</span>
-        </a>
       </span>
+      <div className="w-full min-w-0">
+        <SourceLink url={article.url} label={`${article.mediaTitle} 原文`} showUrl />
+      </div>
     </div>
   );
 }
