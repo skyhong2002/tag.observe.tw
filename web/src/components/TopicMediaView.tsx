@@ -5,11 +5,19 @@ import MethodLink from '@/components/MethodLink';
 import TopicCard, { kindNoun } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
 import { fetchTopicMedia, kindCount, type MediaTopic, ofKind, type TopicKind } from '@/lib/pages';
+import { pageMetadata } from '@/lib/seo.mts';
 import { updatedAtOf } from '@/lib/topic-update.mts';
 
-export async function topicMediaTitle(media: string, kind: TopicKind) {
-  const data = await fetchTopicMedia(media, 1, kind);
-  return data ? `${data.title}的${kindNoun(kind)}` : kind === 'feature' ? '專題' : '議題表';
+export async function topicMediaMetadata(media: string, kind: TopicKind) {
+  // Match the visible list's request so Next can share its fetch with metadata.
+  const data = await fetchTopicMedia(media, 200, kind);
+  const noun = kindNoun(kind);
+  const title = data ? `${data.title}的${noun}` : noun;
+  const hasTopics = data?.topics.some((topic) => ofKind(topic, kind));
+  return {
+    ...pageMetadata(`/${kind}/${encodeURIComponent(media)}/`, title, `瀏覽${title}，查看原站${noun}入口、相關報導與更新情況。`),
+    ...(!hasTopics ? { robots: { index: false, follow: true } } : {}),
+  };
 }
 
 /** One outlet's 議題 or 專題, child topics indented under their parent. */

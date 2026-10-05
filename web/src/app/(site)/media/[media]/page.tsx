@@ -98,7 +98,7 @@ export default async function MediaPage({
     : null;
   return (
     <div className="pb-4">
-      <StructuredData data={pageSchema(base, data.title, [['/media/', '媒體']])} />
+      <StructuredData data={pageSchema(canonicalQuery(base, { cursor: cursor ?? undefined }), data.title, [['/media/', '媒體']])} />
       <nav aria-label="麵包屑" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
         <Link href="/media/" className="hover:text-brand-700 dark:hover:text-brand-400">
           媒體

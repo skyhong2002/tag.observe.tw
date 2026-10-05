@@ -205,6 +205,7 @@ export async function sitemapUrls(db: Db, now = new Date()): Promise<SitemapUrl[
   const off = new Set(disabled());
   // 專題 pages only for outlets that have at least one.
   const topicCounts = await topicCountPerMedia(db);
+  const topicMedia = [...new Set(TOPIC_RULES.map((r) => r.media))].filter((m) => (topicCounts[m]?.topic ?? 0) > 0);
   const featureMedia = [...new Set(TOPIC_RULES.map((r) => r.media))].filter((m) => (topicCounts[m]?.feature ?? 0) > 0);
   return [
     { loc: '/', changefreq: 'hourly', priority: 1 },
@@ -214,13 +215,16 @@ export async function sitemapUrls(db: Db, now = new Date()): Promise<SitemapUrl[
     { loc: '/topic/', changefreq: 'hourly', priority: 0.7 },
     { loc: '/feature/', changefreq: 'daily', priority: 0.6 },
     { loc: '/media/', changefreq: 'daily', priority: 0.5 },
+    { loc: '/similarity/', changefreq: 'hourly', priority: 0.7 },
+    { loc: '/similarity/daily/', changefreq: 'daily', priority: 0.6 },
+    { loc: '/similarity/about/', changefreq: 'weekly', priority: 0.3 },
     { loc: '/journalist/', changefreq: 'hourly', priority: 0.6 },
     { loc: '/media/sources/', changefreq: 'weekly', priority: 0.5 },
     { loc: '/api/', changefreq: 'weekly', priority: 0.3 },
     { loc: '/method/', changefreq: 'weekly', priority: 0.3 },
     ...threads.map((t): SitemapUrl => ({ loc: `/eve/${t.id}/`, lastmod: t.lastTime, priority: 0.7 })),
     ...tags.map((t): SitemapUrl => ({ loc: `/tag/${encodeURIComponent(t.tag)}/`, lastmod: t.lastHour, priority: 0.6 })),
-    ...[...new Set(TOPIC_RULES.map((r) => r.media))].map((m): SitemapUrl => ({ loc: `/topic/${m}/`, changefreq: 'daily', priority: 0.4 })),
+    ...topicMedia.map((m): SitemapUrl => ({ loc: `/topic/${m}/`, changefreq: 'daily', priority: 0.4 })),
     ...featureMedia.map((m): SitemapUrl => ({ loc: `/feature/${m}/`, changefreq: 'weekly', priority: 0.3 })),
     ...[...new Set(allSources().map((s) => s.media))]
       .filter((m) => !off.has(m))

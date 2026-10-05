@@ -17,13 +17,13 @@ export const revalidate = 60;
 type Params = { tag: string };
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const tag = decodeRouteParam((await params).tag);
+  const recent = await fetchTagArticles(tag, 72).catch(() => null);
+  const headline = recent?.articles[0]?.title;
+  const description = headline
+    ? `「${tag}」新聞與媒體報導對照。近 72 小時收錄的報導包括：${Array.from(headline).slice(0, 70).join('')}。查看關鍵字熱度與逐時趨勢。`
+    : `追蹤「${tag}」相關新聞，對照各媒體報導、關鍵字熱度與逐時趨勢，探索相關事件。`;
   return {
-    ...pageMetadata(
-      `/tag/${encodeURIComponent(tag)}/`,
-      `${tag}新聞與趨勢`,
-      `追蹤「${tag}」相關新聞，對照各媒體報導、關鍵字熱度與逐時趨勢，探索相關事件。`,
-      true,
-    ),
+    ...pageMetadata(`/tag/${encodeURIComponent(tag)}/`, `${tag}新聞與趨勢`, description, true),
     alternates: {
       canonical: `https://tag.observe.tw/tag/${encodeURIComponent(tag)}/`,
       types: { 'application/rss+xml': [{ url: `/feeds/tag/${encodeURIComponent(tag)}.xml`, title: `新文易數｜${tag}` }] },

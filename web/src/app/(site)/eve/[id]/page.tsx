@@ -87,7 +87,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const data = await fetchThread(id);
   if (!data) return { title: '找不到事件', robots: { index: false } };
   const title = headlineOf(data);
-  return pageMetadata(`/eve/${data.thread.id}/`, title, `比較「${title}」的各家媒體報導，查看標題對照、事件時間線與關鍵字趨勢。`, true);
+  return pageMetadata(
+    `/eve/${data.thread.id}/`,
+    title,
+    `「${title}」：${taipeiHour(data.thread.firstTime)} 至 ${taipeiHour(data.thread.lastTime)} 的報導對照，追蹤${data.thread.majorTags.slice(0, 3).join('、')}等關鍵字與事件時間線。`,
+    true,
+  );
 }
 
 /** Coverage in the shape the shared camp bars take; one copy counts outlets, one counts reports. */

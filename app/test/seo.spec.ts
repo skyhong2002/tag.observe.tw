@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalQuery, decodeRouteParam, jsonLd, pageMetadata, pageSchema } from '../../web/src/lib/seo.mts';
+import {
+  archiveDay,
+  articleIndexable,
+  canonicalQuery,
+  decodeRouteParam,
+  jsonLd,
+  pageMetadata,
+  pageSchema,
+} from '../../web/src/lib/seo.mts';
 import { legacyRoute } from '../src/legacy-redirects.js';
 
 describe('search and social metadata', () => {
@@ -42,5 +50,29 @@ describe('search and social metadata', () => {
       ],
     });
     expect(data['@graph'][1]).toMatchObject({ '@type': 'CollectionPage', mainEntity: { '@type': 'ItemList' } });
+  });
+});
+
+describe('indexing eligibility', () => {
+  it('rejects impossible dates and shares the archive fallback for invalid input', () => {
+    expect(archiveDay('2024-02-29')).toBe('2024-02-29');
+    for (const value of ['2026-02-29', '2026-04-31', 'yesterday', ['2026-10-05'], undefined]) {
+      expect(archiveDay(value)).toBeUndefined();
+    }
+  });
+  it('keeps readable excerpts but excludes empty or expired source-only pages', () => {
+    expect(articleIndexable({ status: 'ok', body: '節錄' }, null, null)).toBe(true);
+    expect(articleIndexable({ status: 'missing', body: '  ' }, null, null)).toBe(false);
+    expect(articleIndexable({ status: 'expired', body: '不應公開的舊內文' }, null, null)).toBe(false);
+    expect(articleIndexable({ status: 'expired', body: null }, { events: [], otherMedia: [] }, null)).toBe(false);
+  });
+  it('keeps expired pages when the visible page supplies events or cross-outlet context', () => {
+    const expired = { status: 'expired', body: null };
+    expect(articleIndexable(expired, { events: [{ id: 1 }], otherMedia: [] }, null)).toBe(true);
+    expect(articleIndexable(expired, { events: [], otherMedia: [{ id: 2 }] }, null)).toBe(true);
+    const similarity = { indexedAt: '2026-10-05', chars: 500, matches: [{}] };
+    expect(articleIndexable(expired, null, similarity)).toBe(true);
+    expect(articleIndexable(expired, null, { ...similarity, indexedAt: null })).toBe(false);
+    expect(articleIndexable(expired, null, { ...similarity, chars: null })).toBe(false);
   });
 });

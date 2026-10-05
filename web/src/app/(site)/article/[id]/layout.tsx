@@ -4,6 +4,9 @@ import { API_ORIGIN } from '@/lib/api';
 import type { StoredContent } from '@/lib/article-content';
 import { isAllowedImage } from '@/lib/images';
 import { readingTitle } from '@/lib/reading.mts';
+import { fetchArticleRelated } from '@/lib/related';
+import { articleIndexable } from '@/lib/seo.mts';
+import { fetchArticleSimilarity } from '@/lib/similarity';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -17,6 +20,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!res?.ok) return { title: '暫時無法取得文章', robots: { index: false, follow: true } };
 
   const { article, content } = (await res.json()) as StoredContent;
+  // Only pages without a readable excerpt need the extra indexing decision.
+  // These are the same cached requests the visible page already makes.
+  const [related, similar] = articleIndexable(content, null, null)
+    ? [null, null]
+    : await Promise.all([fetchArticleRelated(Number(id)), fetchArticleSimilarity(Number(id))]);
   const headline = readingTitle(article.title).title;
   const title = `${headline}｜${article.mediaTitle}`;
   const summary = article.description?.trim() || content.body?.trim() || title;
@@ -30,6 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title,
     description,
+    ...(!articleIndexable(content, related, similar) ? { robots: { index: false, follow: true } } : {}),
     alternates: { canonical: url },
     authors: article.authors.map((name) => ({ name })),
     openGraph: {

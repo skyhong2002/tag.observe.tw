@@ -90,3 +90,27 @@ export function pageSchema(
     ],
   };
 }
+
+/** Use the same calendar validation for metadata and the rendered archive. */
+export function archiveDay(value: unknown): string | undefined {
+  return typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(value)) &&
+    new Date(value).toISOString().slice(0, 10) === value
+    ? value
+    : undefined;
+}
+
+/** A source title/description alone is not a useful standalone search result. */
+export function articleIndexable(
+  content: { status: string; body: string | null },
+  related: { events: unknown[]; otherMedia: unknown[] } | null,
+  similar: { indexedAt: string | null; chars: number | null; matches: unknown[] } | null,
+) {
+  return Boolean(
+    (content.status !== 'expired' && content.body?.trim()) ||
+      related?.events.length ||
+      related?.otherMedia.length ||
+      (similar?.indexedAt && similar.chars !== null && similar.matches.length),
+  );
+}

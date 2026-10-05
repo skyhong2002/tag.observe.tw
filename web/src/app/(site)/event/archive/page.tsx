@@ -6,23 +6,22 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipeiHour } from '@/lib/api';
 import { type ArchivedThread, type EventItem, fetchEventDay } from '@/lib/pages';
-import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
+import { archiveDay, canonicalQuery, pageMetadata } from '@/lib/seo.mts';
 
 export const revalidate = 300;
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
-  const raw = (await searchParams).day;
-  const value =
-    typeof raw === 'string' &&
-    /^\d{4}-\d{2}-\d{2}$/.test(raw) &&
-    !Number.isNaN(Date.parse(raw)) &&
-    new Date(raw).toISOString().slice(0, 10) === raw
-      ? raw
-      : undefined;
-  return pageMetadata(
-    canonicalQuery('/event/archive/', { day: value }),
-    value ? `${value} · 事件存檔` : '事件存檔',
-    '回顧曾登上事件表的新聞，查看事件發展、各媒體報導與當時熱門關鍵字。',
-  );
+  const value = archiveDay((await searchParams).day);
+  const data = await fetchEventDay(value);
+  return {
+    ...pageMetadata(
+      canonicalQuery('/event/archive/', { day: value }),
+      value ? `${value} · 事件存檔` : '事件存檔',
+      data?.threads.length
+        ? `${data.day} 共 ${data.threads.length} 件新聞事件，回顧事件發展、各媒體報導與當時熱門關鍵字。`
+        : '回顧曾登上事件表的新聞，查看事件發展、各媒體報導與當時熱門關鍵字。',
+    ),
+    ...(!data?.threads.length ? { robots: { index: false, follow: true } } : {}),
+  };
 }
 
 // One day of the event table, laid out like the hourly page: every thread that
@@ -90,8 +89,7 @@ function Run({ t, day }: { t: ArchivedThread; day: string }) {
 }
 
 export default async function EventArchivePage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
-  const q = (await searchParams).day;
-  const day = q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : undefined;
+  const day = archiveDay((await searchParams).day);
   const [data, media] = await Promise.all([fetchEventDay(day), fetchMedia().catch((): MediaInfo => ({}))]);
   if (!data)
     return (

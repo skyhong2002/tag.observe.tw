@@ -22,31 +22,54 @@ export default function Sparkline({
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current) return;
-    const chart = echarts.init(ref.current, undefined, { renderer: 'canvas' });
-    chart.setOption({
-      animation: false,
-      // Rank 1 sits on the top edge; leave room for its marker.
-      grid: { left: 2, right: 2, top: rank ? 5 : 4, bottom: rank ? 3 : 2 },
-      xAxis: { type: 'category', show: false, data: values.map((_, i) => i) },
-      yAxis: rank
-        ? { type: 'value', show: false, inverse: true, min: 1, max: Math.max(10, ...values.filter((v): v is number => v !== null)) }
-        : { type: 'value', show: false, min: 0 },
-      series: [
-        {
-          type: 'line',
-          data: values,
-          smooth: false,
-          symbol: rank ? 'circle' : 'none',
-          symbolSize: 4,
-          showSymbol: rank,
-          connectNulls: false,
-          lineStyle: { width: rank ? 2 : 1.5, color },
-          itemStyle: { color },
-          ...(rank ? {} : { areaStyle: { color, opacity: 0.12 } }),
-        },
-      ],
-    });
-    return () => chart.dispose();
+    let chart: ReturnType<typeof echarts.init> | undefined;
+    const draw = () => {
+      if (!ref.current || chart) return;
+      chart = echarts.init(ref.current, undefined, { renderer: 'canvas' });
+      chart.setOption({
+        animation: false,
+        // Rank 1 sits on the top edge; leave room for its marker.
+        grid: { left: 2, right: 2, top: rank ? 5 : 4, bottom: rank ? 3 : 2 },
+        xAxis: { type: 'category', show: false, data: values.map((_, i) => i) },
+        yAxis: rank
+          ? { type: 'value', show: false, inverse: true, min: 1, max: Math.max(10, ...values.filter((v): v is number => v !== null)) }
+          : { type: 'value', show: false, min: 0 },
+        series: [
+          {
+            type: 'line',
+            data: values,
+            smooth: false,
+            symbol: rank ? 'circle' : 'none',
+            symbolSize: 4,
+            showSymbol: rank,
+            connectNulls: false,
+            lineStyle: { width: rank ? 2 : 1.5, color },
+            itemStyle: { color },
+            ...(rank ? {} : { areaStyle: { color, opacity: 0.12 } }),
+          },
+        ],
+      });
+    };
+    // Long rankings can contain hundreds of charts. Initialize only near the
+    // viewport, preserving every row and its server-rendered text.
+    const observer =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver(
+            (entries) => {
+              if (entries.some((entry) => entry.isIntersecting)) {
+                draw();
+                observer?.disconnect();
+              }
+            },
+            { rootMargin: '200px' },
+          );
+    if (observer) observer.observe(ref.current);
+    else draw();
+    return () => {
+      observer?.disconnect();
+      chart?.dispose();
+    };
   }, [values, color, rank]);
   return <div ref={ref} className={className} aria-hidden />;
 }
