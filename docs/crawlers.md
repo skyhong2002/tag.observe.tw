@@ -242,3 +242,5 @@ Issue 列的 17 個「可再嘗試」來源已在 10-03 全數移出 `crawl-disa
 ### 2026-10-05：移除蘋果日報、overdope，恢復 NHK
 
 依網站維護者要求，媒體目錄不再保留任何「未啟用」項目：`apple`（蘋果日報，2022 年停刊，只有歷史名稱、沒有爬蟲）與 `overdope`（網域自 2026-10-01 起全為博弈垃圾頁）列入 `excludedMedia`，overdope 同時移出 `crawl-groups.json`；資料庫內兩家都沒有文章。NHK 於 10-04 改用繁體版（zt）後，`news-crawl-audit.json` 仍是簡體版（zh）網址，網址不符使它被判為未驗證而停在 `off` 群組；本次以 zt 網址重跑 audit（verified 3 篇，api），回到每小時排程。
+
+NHK 發布時間修正（同日）：NHK WORLD JSON 的 `public_at` 與文章頁的 datePublished 都是整份列表的重建時間，繁體版 38 篇、簡體版 76 篇各自全部同值，不是單篇發布時間。改為以文章 ID 內的日期（YYYYMMDD，日本時間）為發布日，若 `updated_at` 落在同一個日本日期則取其時刻，否則記為該日 00:00 JST；ID 日期超過 14 天或在未來一天以上的略過。資料庫既有 27 筆（15 篇簡體、12 篇繁體）已依同一規則回填。

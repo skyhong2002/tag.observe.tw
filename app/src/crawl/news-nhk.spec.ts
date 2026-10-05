@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { discoverNhk, nhkArticle } from './news-nhk.ts';
+import { discoverNhk, nhkArticle, nhkPublishedAt } from './news-nhk.ts';
 
 const now = new Date('2026-10-04T00:00:00Z');
 const id = '20261003de54017';
@@ -7,30 +7,36 @@ const row = {
   id,
   page_url: `/nhkworld/zt/news/${id}/`,
   title: '日本新聞測試報導',
-  public_at: String(Date.parse('2026-10-03T01:00:00Z')),
-  updated_at: String(now.getTime()),
+  // The listing's regeneration stamp, shared by every story; never the publication time.
+  public_at: String(now.getTime()),
+  updated_at: String(Date.parse('2026-10-03T01:00:00Z')),
   description: '摘要不應充當全文。',
   detail: '這是公共新聞完整內文，刊登日期應保留原始時間，並且不能被後來的更新時間取代。'.repeat(8),
 };
 
 describe('NHK public Traditional Chinese news', () => {
-  it('uses full detail and publication time, preserving the public article URL', () => {
+  it('uses full detail and dates the story from its id and same-day edit, preserving the public article URL', () => {
     const item = nhkArticle({ data: row }, id, now);
     expect(item?.publishedAt?.toISOString()).toBe('2026-10-03T01:00:00.000Z');
+    // An edit on a later Japan day keeps the id's date at 00:00 Japan time.
+    expect(nhkArticle({ data: { ...row, updated_at: String(now.getTime()) } }, id, now)?.publishedAt?.toISOString()).toBe(
+      '2026-10-02T15:00:00.000Z',
+    );
+    expect(nhkPublishedAt('nd-20261004de54249', '1791174213000')?.toISOString()).toBe('2026-10-03T15:00:00.000Z');
+    expect(nhkPublishedAt('20261005_ML01', '')?.toISOString()).toBe('2026-10-04T15:00:00.000Z');
+    expect(nhkPublishedAt('20261399x', '')).toBeNull();
     expect(item?.url).toBe(`https://www3.nhk.or.jp${row.page_url}`);
     expect(item?.verifiedContent?.body).toBe(row.detail);
   });
 
   it('rejects mismatched identities, excerpts, missing dates, old and future stories', () => {
-    for (const change of [
-      { id: '20261003other' },
-      { page_url: 'https://example.com/story' },
-      { detail: row.description },
-      { public_at: '' },
-      { public_at: String(now.getTime() + 86400000) },
-      { public_at: String(now.getTime() - 30 * 86400000) },
-    ])
+    for (const change of [{ id: '20261003other' }, { page_url: 'https://example.com/story' }, { detail: row.description }])
       expect(nhkArticle({ data: { ...row, ...change } }, id, now)).toBeNull();
+    for (const [storyId, at] of [
+      ['20261103de54017', now],
+      ['20260903de54017', now],
+    ] as const)
+      expect(nhkArticle({ data: { ...row, id: storyId, page_url: `/nhkworld/zt/news/${storyId}/` } }, storyId, at)).toBeNull();
   });
 
   it('reads only official JSON and stops requests on rate limiting', async () => {

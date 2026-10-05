@@ -9,13 +9,32 @@ const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 
 // These are the public static JSON files used by NHK's own Traditional Chinese news page.
-// public_at is publication; updated_at must never stand in for it.
+// NHK WORLD has no per-article publication time: public_at (JSON and the page's
+// datePublished) is the regeneration stamp of the whole listing, identical for every
+// story. The story id carries its publication date (YYYYMMDD, Japan time) and
+// updated_at is the per-story last edit, so the date comes from the id and the
+// time of day from updated_at only when that edit happened on the same Japan day.
+const JST_OFFSET_MS = 9 * 3600000;
+export function nhkPublishedAt(id: string, updatedAt: unknown): Date | null {
+  const match = /^(?:nd-)?(\d{4})(\d{2})(\d{2})[a-z0-9_]+$/i.exec(id);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const dayStart = Date.UTC(Number(y), Number(m) - 1, Number(d)) - JST_OFFSET_MS;
+  if (Number.isNaN(dayStart)) return null;
+  const check = new Date(dayStart + JST_OFFSET_MS);
+  if (check.getUTCFullYear() !== Number(y) || check.getUTCMonth() !== Number(m) - 1 || check.getUTCDate() !== Number(d)) return null;
+  const edited = /^\d{13}$/.test(String(updatedAt)) ? Number(updatedAt) : Number.NaN;
+  if (edited >= dayStart && edited < dayStart + 86400000) return new Date(edited);
+  return new Date(dayStart);
+}
+
 export function nhkArticle(raw: unknown, id: string, now: Date): FeedItem | null {
   const row = record(record(raw).data);
   if (!/^(?:nd-)?\d{8}[a-z0-9]+$/.test(id) || row.id !== id || row.page_url !== `/nhkworld/zt/news/${id}/`) return null;
-  if (typeof row.title !== 'string' || typeof row.detail !== 'string' || !/^\d{13}$/.test(String(row.public_at))) return null;
-  const publishedAt = new Date(Number(row.public_at));
-  if (publishedAt.getTime() > now.getTime() + 3600000 || publishedAt.getTime() < now.getTime() - 14 * 86400000) return null;
+  if (typeof row.title !== 'string' || typeof row.detail !== 'string') return null;
+  const publishedAt = nhkPublishedAt(id, row.updated_at);
+  if (!publishedAt) return null;
+  if (publishedAt.getTime() > now.getTime() + 86400000 || publishedAt.getTime() < now.getTime() - 14 * 86400000) return null;
   const body = load(row.detail.replace(/<br\s*\/?\s*>/gi, '\n'))
     .text()
     .trim();
@@ -75,6 +94,6 @@ export async function discoverNhk(config: NewsDiscoveryConfig, options: NewsDisc
   if (result.items.length) {
     result.strategy = 'api';
     result.listingUrl = listing;
-  } else result.errors.push('No complete NHK article with a verified publication date');
+  } else result.errors.push('No complete NHK article with a dated story id');
   return result;
 }
