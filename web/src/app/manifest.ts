@@ -21,10 +21,10 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/pwa/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
     shortcuts: [
+      { name: '最新文章', url: '/article/' },
       { name: '事件表', url: '/event/' },
       { name: '關鍵字排行', url: '/ranking/' },
       { name: '議題表', url: '/topic/' },
-      { name: '專題', url: '/feature/' },
     ],
   };
 }

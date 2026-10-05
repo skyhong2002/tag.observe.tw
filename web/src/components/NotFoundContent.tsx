@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 const ENTRIES = [
   { href: '/', label: '首頁', note: '今天的新聞總覽' },
+  { href: '/article/', label: '最新文章', note: '所有媒體的文章，由新到舊' },
   { href: '/event/', label: '事件表', note: '各家媒體正在報導的事件' },
   { href: '/ranking/', label: '關鍵字排行', note: '每小時升溫的新聞關鍵字' },
   { href: '/topic/', label: '議題表', note: '媒體持續更新的議題' },

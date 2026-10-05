@@ -42,6 +42,8 @@ function sectionsFor(pathname: string) {
       </>
     );
   }
+  // The listing (/article/) shares 搜尋新聞's list; one article has its own block.
+  if (pathname === '/article' || pathname === '/article/') return <SearchMethod listing />;
   if (/^\/article(\/|$)/.test(pathname)) {
     return (
       <>

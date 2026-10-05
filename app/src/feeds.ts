@@ -212,6 +212,7 @@ export async function sitemapUrls(db: Db, now = new Date()): Promise<SitemapUrl[
     { loc: '/observe/', changefreq: 'weekly', priority: 0.3 },
     { loc: '/readers/', changefreq: 'weekly', priority: 0.4 },
     { loc: '/ranking/', changefreq: 'hourly', priority: 0.9 },
+    { loc: '/article/', changefreq: 'hourly', priority: 0.8 },
     { loc: '/event/', changefreq: 'hourly', priority: 0.9 },
     { loc: '/event/archive/', changefreq: 'hourly', priority: 0.6 },
     { loc: '/topic/', changefreq: 'hourly', priority: 0.7 },

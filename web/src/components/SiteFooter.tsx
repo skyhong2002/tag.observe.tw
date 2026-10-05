@@ -10,12 +10,12 @@ import Wordmark from './Wordmark';
 
 export { methodHeading } from './MethodNotes';
 
-// Four link columns: the header's sections (趨勢 and 新聞 share a column), then
+// Four link columns: the header's sections (新聞 and 趨勢 share a column), then
 // tools and about.
 type FooterLink = { href: string; label: string; external?: boolean };
-const [trend, news, media] = NAV_GROUPS;
+const [news, trend, media] = NAV_GROUPS;
 const COLUMNS: Array<{ label: string; links: FooterLink[]; install?: boolean }> = [
-  { label: '新聞', links: [...trend.links, ...news.links] },
+  { label: '新聞', links: [...news.links, ...trend.links] },
   // The media comparison page only lives here.
   { label: '媒體', links: [media.links[0], { href: '/media/sources/', label: '媒體流量與收錄比較' }, ...media.links.slice(1)] },
   {
