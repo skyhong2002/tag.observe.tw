@@ -14,6 +14,14 @@ describe('search and social metadata', () => {
   it('keeps share images reachable through the gateway without changing legacy redirects', () => {
     expect(legacyRoute('/tag/%E8%94%A1%E8%8B%B1%E6%96%87/opengraph-image-6ffhew?version=1')).toBeNull();
     expect(legacyRoute('/eve/897/opengraph-image-8pdfrx')).toBeNull();
+    // Section pages' images sit under old redirect patterns (/event/…, /media/x/…).
+    for (const path of [
+      '/event/opengraph-image-1yg7ay',
+      '/media/sources/opengraph-image-190gsc',
+      '/media/crawlers/opengraph-image-1pmn3r/',
+    ])
+      expect(legacyRoute(path)).toBeNull();
+    expect(legacyRoute('/event/opengraph')).toEqual({ status: 301, location: '/event/' });
     expect(legacyRoute('/tag/test/old-chart/')).toEqual({ status: 301, location: '/tag/test/' });
   });
   it('decodes page parameters once, including tags containing a percent sign', () => {

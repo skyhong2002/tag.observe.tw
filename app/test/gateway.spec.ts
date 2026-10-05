@@ -82,6 +82,9 @@ describe('gateway', () => {
     for (const p of ['/', '/tag/x/', '/eve/1/', '/does-not-exist', '/app/src/server.js'])
       expect((await app.inject(p)).body).toBe(`<h1>next:${p}</h1>`);
     expect(hits).toHaveLength(5);
+    // Share images, including /api/'s and ones under legacy redirect patterns.
+    for (const p of ['/api/opengraph-image-5jkhib', '/event/opengraph-image-1yg7ay', '/media/crawlers/opengraph-image-1pmn3r'])
+      expect((await app.inject(p)).body).toBe(`<h1>next:${p}</h1>`);
     const head = await app.inject({ method: 'HEAD', url: '/' });
     expect(head.statusCode).toBe(200);
     expect(head.body).toBe('');

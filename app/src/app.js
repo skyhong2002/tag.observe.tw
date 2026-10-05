@@ -2,7 +2,7 @@ import rateLimit from '@fastify/rate-limit';
 import Fastify, { LogController } from 'fastify';
 import { createDb } from './db/client.ts';
 import { registerFeeds } from './feeds.ts';
-import { legacyRoute } from './legacy-redirects.js';
+import { isShareImage, legacyRoute } from './legacy-redirects.js';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
@@ -94,8 +94,8 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
       return reply.code(301).header('location', legacy.location).header('cache-control', 'public, max-age=86400').send();
     if (legacy?.status === 410) return reply.code(410).header('cache-control', 'public, max-age=86400').send(legacy.body);
     const path = request.url.split('?')[0];
-    // /api/ itself is the docs page (Next); anything else under /api/ is JSON.
-    const api = path.startsWith('/api/') && path !== '/api/';
+    // /api/ itself is the docs page (Next) with its share image; anything else under /api/ is JSON.
+    const api = path.startsWith('/api/') && path !== '/api/' && !isShareImage(path);
     if (api && request.method === 'OPTIONS')
       return reply
         .code(204)

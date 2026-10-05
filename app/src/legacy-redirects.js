@@ -29,6 +29,9 @@ function safeDecode(s) {
   }
 }
 
+/** A page's generated share image (any route segment), e.g. /media/sources/opengraph-image-190gsc. */
+export const isShareImage = (/** @type {string} */ path) => /^(?:\/[^/]+)+\/opengraph-image(?:-[a-z0-9]+)?\/?$/.test(path);
+
 /** @returns {null | { status: 301, location: string } | { status: 410, body: object }} */
 export function legacyRoute(rawUrl) {
   const q = rawUrl.indexOf('?');
@@ -36,7 +39,7 @@ export function legacyRoute(rawUrl) {
   const params = new URLSearchParams(q < 0 ? '' : rawUrl.slice(q + 1));
   // Next's generated share images are current routes, not old tag subpages.
   // Route groups add a hash suffix; the query string is only a cache version.
-  if (/^\/(?:tag\/[^/]+|eve\/[1-9]\d*)\/opengraph-image(?:-[a-z0-9]+)?\/?$/.test(path)) return null;
+  if (isShareImage(path)) return null;
   let m;
   if (path.startsWith('/api/') && path.endsWith('.php')) {
     const replacement = Object.hasOwn(API_REPLACEMENTS, path) ? API_REPLACEMENTS[path] : null;
