@@ -302,6 +302,7 @@ export const overrides: Record<string, SourceOverride> = {
       articleId: String.raw`^/news/(\d{14})-\d+$`,
     },
   },
+  womany: { titleSuffix: String.raw`\s*｜\s*女人迷\s*Womany` },
   cw: {
     list: { urls: [{ cat: 'news', url: 'https://www.cw.com.tw/' }], discover: { pattern: '^/article/\\d+' } },
     titleSuffix: String.raw`\s*｜\s*天下雜誌`,

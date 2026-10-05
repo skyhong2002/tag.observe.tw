@@ -421,11 +421,20 @@ export async function runArticles(
             return;
           }
           const pageTitle = detail.title ? stripTitleSuffix(detail.title, spec.titleSuffix) : null;
-          // Discovered titles, and those of undated links taken from a topic
-          // page (womany cards add 「作者 N 個互動」), are listing anchor text;
-          // the page headline wins when that text ran past the headline.
-          const listed = spec.list.discover || row.publishedAt.getTime() === row.crawledAt.getTime();
-          const title = Buffer.byteLength(row.title ?? '') < 2 ? pageTitle : listed ? headlineFromPage(row.title ?? '', pageTitle) : null;
+          // Discovered titles are listing anchor text; the page headline wins
+          // when that text ran past the headline. Undated links taken from a
+          // topic page carry whatever the card printed (womany adds the author,
+          // 「N 個互動」, a lede or 「閱讀更多」): a shorter page title wins.
+          const listed = row.title ?? '';
+          const undated = row.publishedAt.getTime() === row.crawledAt.getTime();
+          const title =
+            Buffer.byteLength(listed) < 2
+              ? pageTitle
+              : spec.list.discover
+                ? headlineFromPage(listed, pageTitle)
+                : undated && pageTitle && pageTitle.length < listed.length
+                  ? pageTitle
+                  : null;
           const titleTags = !detail.tags.length && vocab ? tagsFromTitle(title || row.title || '', vocab) : [];
           const tags = (detail.tags.length ? detail.tags : titleTags).filter((tag) => !isOwnMediaTag(tag, spec.media));
           // Discovered links have no listing time; adopt the page's published

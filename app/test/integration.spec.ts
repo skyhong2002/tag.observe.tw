@@ -184,7 +184,7 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     });
     const pages: Record<string, string> = {
       [story]:
-        '<html><head><meta property="og:title" content="媽媽，妳是我的心臟"><meta property="article:published_time" content="2019-11-07T08:00:00+08:00"></head></html>',
+        '<html><head><meta property="og:title" content="給媽媽的家書：妳是我的心臟"><meta property="article:published_time" content="2019-11-07T08:00:00+08:00"></head></html>',
       [feature]: '<html><head><meta property="og:title" content="特別企劃"></head></html>',
     };
     await runArticles(db, womany, { fetch: async (u: string) => res(u, pages[u]), limit: 10 });
@@ -200,7 +200,7 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       .orderBy(articles.url);
     expect(rows).toEqual([
       { url: feature, title: '特別企劃', publishedAt: storyFirstAt },
-      { url: story, title: '媽媽，妳是我的心臟', publishedAt: new Date('2019-11-07T00:00:00Z') },
+      { url: story, title: '給媽媽的家書：妳是我的心臟', publishedAt: new Date('2019-11-07T00:00:00Z') },
     ]);
     // Later tests count every article.
     await db.delete(articles).where(sql`${articles.media} = 'womany'`);
