@@ -4,6 +4,8 @@ import argparse
 import json
 from pathlib import Path
 
+from integrate import needs_processing
+
 
 def status(config):
     root = Path(config['state_dir'])
@@ -13,6 +15,13 @@ def status(config):
     backup = json.loads((Path(backup_config['state_dir']) / 'state.json').read_text())
     same_generation = backup['generation'] == plan['generation']
     completed = state.get('completed', {})
+    pending_replays = {key for key, result in completed.items()
+                       if needs_processing(result, config.get('allow_recent', False), plan.get('mappingSha256'))}
+    reconciliation_path = root / 'reconciliation.json'
+    reconciliation = json.loads(reconciliation_path.read_text()) if reconciliation_path.exists() else {}
+    reconciled = reconciliation.get('chunks', {}) if reconciliation.get('generation') == state['generation'] else {}
+    current_verified = {key: result for key, result in completed.items()
+                        if reconciled.get(key, {}).get('audit') == result['audit']}
     counts = {}
     reasons = {}
     for result in completed.values():
@@ -33,9 +42,12 @@ def status(config):
         waiting_tables = [t['table'] for t in targets if backup['tables'][t['table']]['status'] != 'complete']
         for t in targets:
             table = backup['tables'][t['table']]
-            if table['status'] == 'complete' and all(t['table'] + '/' + chunk['sha256'] in completed for chunk in table['chunks']):
+            if table['status'] == 'complete' and all(t['table'] + '/' + chunk['sha256'] in completed and t['table'] + '/' + chunk['sha256'] not in pending_replays for chunk in table['chunks']):
                 completed_tables.append(t['table'])
     return {'generation': state['generation'], 'status': state['status'], 'verified_chunks': len(completed),
+            'independently_verified_current_chunks': len(current_verified),
+            'independently_verified_current_rows': sum(result['rows'] for result in current_verified.values()),
+            'reprocessing_pending_chunks': len(pending_replays),
             'available_article_chunks': available_chunks, 'article_tables': len(targets), 'completed_tables': completed_tables,
             'rows_accounted_for': sum(result['rows'] for result in completed.values()), 'counts': counts,
             'recent_rows_pending': reasons.get('recent_requires_separate_review', 0),
