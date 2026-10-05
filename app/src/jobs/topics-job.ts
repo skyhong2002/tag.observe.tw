@@ -196,9 +196,11 @@ export async function refreshTopicPages(
   // A page found this week whose list is still empty (one link is not a list;
   // a collection opened before its stories) is also re-read every 6 hours, so
   // it is not parked as a storyless 專題 for 3 days. Confirmed single reports
-  // (kind 'article') have no list to wait for.
+  // (kind 'article') have no list to wait for, and backlog pages were not
+  // found this week, only first crawled.
   const fresh = and(
     ne(topics.kind, 'article'),
+    eq(topics.backlog, false),
     gte(topics.firstSeen, new Date(t - 7 * 86400e3)),
     or(isNull(topics.pageStories), sql`JSON_LENGTH(${topics.pageStories}) = 0`),
   );
