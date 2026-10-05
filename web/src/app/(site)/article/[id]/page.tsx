@@ -150,16 +150,6 @@ export default async function ArticleContentPage({
           mediaTitle={article.mediaTitle}
           similar={<ArticleSimilar data={similar} publishedAt={article.publishedAt} />}
         />
-        <details className="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-          <summary className="cursor-pointer py-2 hover:text-zinc-900 dark:hover:text-zinc-200">內文資訊</summary>
-          <div className="mt-2 space-y-1">
-            <p>
-              {state.label}
-              {content.body ? ` · ${content.chars.toLocaleString('zh-TW')} 字` : ''} · 刊登媒體所在地：{article.publisher.country}
-            </p>
-            {content.fetchedAt && <p>內文擷取：{taipei(content.fetchedAt)}</p>}
-          </div>
-        </details>
       </footer>
     </article>
   );

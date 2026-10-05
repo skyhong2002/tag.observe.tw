@@ -5,10 +5,7 @@ export default function ArticleTags({ data, tags }: { data: ArticleRelated | nul
   const entries = data?.tags ?? tags.map((tag) => ({ tag, articles: 0, media: 0 }));
   if (!entries.length) return null;
   return (
-    <nav aria-labelledby="article-tags" className="mt-5">
-      <h2 id="article-tags" className="mb-2 text-sm font-medium">
-        相關關鍵字
-      </h2>
+    <nav aria-label="文章關鍵字" className="mt-5">
       <ul className="flex flex-wrap gap-2 text-sm">
         {entries.map((entry) => (
           <li key={entry.tag}>
