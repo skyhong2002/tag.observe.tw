@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-03T18:20:36.309Z",
+  "checkedAt": "2026-10-05T07:35:10.704Z",
   "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing",
   "sourceMonth": "202608",
   "results": [
@@ -4826,27 +4826,33 @@
     },
     {
       "media": "nhk",
-      "websiteUrl": "https://www3.nhk.or.jp/nhkworld/zh/news/",
-      "checkedAt": "2026-10-03T18:17:39.555Z",
-      "articleCount": 2,
+      "websiteUrl": "https://www3.nhk.or.jp/nhkworld/zt/news/",
+      "checkedAt": "2026-10-05T07:35:10.416Z",
+      "articleCount": 3,
       "samples": [
         {
-          "url": "https://www3.nhk.or.jp/nhkworld/zh/news/20261003de54017/",
-          "title": "G7拟4个月内释放1亿桶石油储备应对油价飙升",
-          "publishedAt": "2026-10-03T05:35:57.000Z",
-          "bodyLength": 360
+          "url": "https://www3.nhk.or.jp/nhkworld/zt/news/nd-20261001de53699/",
+          "title": "熊本地震後振興觀光 「九州復興應援優惠」開跑",
+          "publishedAt": "2026-10-05T04:09:31.000Z",
+          "bodyLength": 250
         },
         {
-          "url": "https://www3.nhk.or.jp/nhkworld/zh/news/nd-20261002de53957/",
-          "title": "美国向台湾出售的两架新型F16V抵台",
-          "publishedAt": "2026-10-03T05:35:57.000Z",
-          "bodyLength": 431
+          "url": "https://www3.nhk.or.jp/nhkworld/zt/news/nd-20261001de53745/",
+          "title": "日本版DBS將上路 兒童家庭廳設立資訊管理諮詢窗口",
+          "publishedAt": "2026-10-05T04:09:31.000Z",
+          "bodyLength": 379
+        },
+        {
+          "url": "https://www3.nhk.or.jp/nhkworld/zt/news/nd-20260930de53487/",
+          "title": "中國國慶長假開始 來日旅客預計減少",
+          "publishedAt": "2026-10-05T04:09:31.000Z",
+          "bodyLength": 327
         }
       ],
       "status": "verified",
       "strategy": "api",
-      "listingUrl": "https://www3.nhk.or.jp/nhkworld/data/zh/news/all.json",
-      "detail": "以 api 驗證 2 篇近期文章的標題、日期與內文。"
+      "listingUrl": "https://www3.nhk.or.jp/nhkworld/data/zt/news/all.json",
+      "detail": "以 api 驗證 3 篇近期文章的標題、日期與內文。"
     }
   ]
 }

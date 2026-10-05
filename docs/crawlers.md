@@ -238,3 +238,7 @@ Issue 列的 17 個「可再嘗試」來源已在 10-03 全數移出 `crawl-disa
 ### 2026-10-04：移除報橘、農傳媒、動網、風向新聞
 
 依網站維護者要求，`buzzorange`、`agriharvest`、`dongtw`、`kairos` 列入 `excludedMedia`，從網站媒體目錄、爬蟲設定與圖示移除（`media-names.json`、`news-source-catalog.json` 保留歷史對照），資料庫內 8 篇舊文章一併刪除。理由見上方 10-04 複查：報橘自 2022 年後停更、農傳媒在 Vercel Security Checkpoint 後、動網無限轉址、風向新聞無 DNS。
+
+### 2026-10-05：移除蘋果日報、overdope，恢復 NHK
+
+依網站維護者要求，媒體目錄不再保留任何「未啟用」項目：`apple`（蘋果日報，2022 年停刊，只有歷史名稱、沒有爬蟲）與 `overdope`（網域自 2026-10-01 起全為博弈垃圾頁）列入 `excludedMedia`，overdope 同時移出 `crawl-groups.json`；資料庫內兩家都沒有文章。NHK 於 10-04 改用繁體版（zt）後，`news-crawl-audit.json` 仍是簡體版（zh）網址，網址不符使它被判為未驗證而停在 `off` 群組；本次以 zt 網址重跑 audit（verified 3 篇，api），回到每小時排程。

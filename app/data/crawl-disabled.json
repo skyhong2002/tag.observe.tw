@@ -15,9 +15,11 @@
     "agriharvest",
     "dongtw",
     "kairos",
-    "want"
+    "want",
+    "apple",
+    "overdope"
   ],
-  "excludedMediaReason": "2026-10-03: user requested removal of 旺報 (want) from crawling and the public media directory; historical articles remain unchanged. 2026-10-04: user requested removal of buzzorange, agriharvest, dongtw and kairos (dormant, blocked or dead); their 8 archive rows were deleted.",
+  "excludedMediaReason": "2026-10-03: user requested removal of 旺報 (want) from crawling and the public media directory; historical articles remain unchanged. 2026-10-04: user requested removal of buzzorange, agriharvest, dongtw and kairos (dormant, blocked or dead); their 8 archive rows were deleted. 2026-10-05: user requested removal of apple (蘋果日報, historical catalog entry with no crawler) and overdope (domain serves gambling spam) so the media directory has no 未啟用 entries; neither had any stored articles.",
   "duplicates": {
     "cti": "ctitv"
   }
