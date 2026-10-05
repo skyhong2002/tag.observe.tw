@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import PageOutline, { type OutlineEntry } from '@/components/PageOutline';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -92,6 +93,7 @@ const anchor = (path: string) =>
     .replace(/[{}]/g, '')
     .replace(/[/.]/g, '-')
     .replace(/-+$/, '');
+const h2Class = 'scroll-mt-24 text-lg font-semibold';
 const cellClass = 'border-b border-zinc-200 px-2 py-1.5 align-top dark:border-zinc-800';
 const linkClass = 'text-brand-700 underline decoration-brand-300 underline-offset-2 hover:decoration-brand-600 dark:text-brand-400';
 
@@ -108,7 +110,7 @@ function Endpoint({ path, op, example, tools }: { path: string; op: Operation; e
   const variants = ok?.oneOf ?? (ok ? [ok] : []);
   const errors = Object.entries(op.responses).filter(([code]) => code !== '200' && code !== '429');
   return (
-    <section id={anchor(path)} className="scroll-mt-20 border-t border-zinc-300 pt-5 dark:border-zinc-800">
+    <section id={anchor(path)} className="scroll-mt-24 border-t border-zinc-300 pt-5 dark:border-zinc-800">
       <h3 className="flex flex-wrap items-baseline gap-2 font-mono text-[15px]">
         <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
           GET
@@ -230,71 +232,101 @@ export default async function ApiDocsPage() {
   const tools = schemaTools(spec.components.schemas);
   const ops = Object.entries(spec.paths).map(([path, { get }]) => ({ path, op: get }));
   const rules = spec.info.description.split('\n').map((l) => l.replace(/^- /, ''));
+  const groups = spec.tags
+    .map((tag) => ({ tag, list: ops.filter(({ op }) => op.tags.includes(tag.name)) }))
+    .filter(({ list }) => list.length > 0);
+  // The outline lists each group's endpoints by path (without /api/v1), the summary on hover.
+  const outline: OutlineEntry[] = [
+    { id: 'rules', title: '使用規則' },
+    { id: 'quickstart', title: '快速開始' },
+    { id: 'endpoints', title: '端點一覽' },
+    ...groups.map(({ tag, list }) => ({
+      id: `tag-${tag.name}`,
+      title: tag.description,
+      children: list.map(({ path, op }) => ({
+        id: anchor(path),
+        title: path.replace(/^\/api\/v1(?=\/)/, ''),
+        hint: op.summary,
+        mono: true,
+      })),
+    })),
+  ];
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{spec.info.title}</h1>
-        <p className="text-zinc-700 dark:text-zinc-300">{spec.info.summary}</p>
-        <div className="flex flex-wrap gap-2 pt-1 text-sm">
-          {[
-            ['/api/v1/openapi.json', 'OpenAPI 3.1 規格'],
-            ['/api/v1', '端點索引 JSON'],
-            [GITHUB_DOC, 'Markdown 版文件'],
-          ].map(([href, label]) => (
-            <a key={href} href={href} className="rounded-full border border-zinc-300 px-3 py-1 hover:border-brand-400 dark:border-zinc-700">
-              {label}
-            </a>
-          ))}
-        </div>
-      </header>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">使用規則</h2>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
-          {rules.map((r) => (
-            <li key={r}>
-              <Prose text={r} />
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">快速開始</h2>
-        {spec.info['x-quickstart'].map((q) => (
-          <div key={q.label} className="space-y-1">
-            <p className="text-sm font-medium">{q.label}</p>
-            <CodeBlock code={q.code} />
-          </div>
-        ))}
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">端點一覽</h2>
-        <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-          {ops.map(({ path, op }) => (
-            <li key={path} className="flex min-w-0 gap-2">
-              <a href={`#${anchor(path)}`} className={`truncate font-mono ${linkClass}`}>
-                {path}
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-12">
+      <div className="min-w-0 space-y-8">
+        <header className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">{spec.info.title}</h1>
+          <p className="text-zinc-700 dark:text-zinc-300">{spec.info.summary}</p>
+          <div className="flex flex-wrap gap-2 pt-1 text-sm">
+            {[
+              ['/api/v1/openapi.json', 'OpenAPI 3.1 規格'],
+              ['/api/v1', '端點索引 JSON'],
+              [GITHUB_DOC, 'Markdown 版文件'],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-full border border-zinc-300 px-3 py-1 hover:border-brand-400 dark:border-zinc-700"
+              >
+                {label}
               </a>
-              <span className="shrink-0 text-zinc-600 dark:text-zinc-400">{op.summary}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+            ))}
+          </div>
+        </header>
 
-      {spec.tags.map((tag) => {
-        const list = ops.filter(({ op }) => op.tags.includes(tag.name));
-        if (!list.length) return null;
-        return (
+        <section className="space-y-2">
+          <h2 id="rules" className={h2Class}>
+            使用規則
+          </h2>
+          <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
+            {rules.map((r) => (
+              <li key={r}>
+                <Prose text={r} />
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="space-y-3">
+          <h2 id="quickstart" className={h2Class}>
+            快速開始
+          </h2>
+          {spec.info['x-quickstart'].map((q) => (
+            <div key={q.label} className="space-y-1">
+              <p className="text-sm font-medium">{q.label}</p>
+              <CodeBlock code={q.code} />
+            </div>
+          ))}
+        </section>
+
+        <section className="space-y-2">
+          <h2 id="endpoints" className={h2Class}>
+            端點一覽
+          </h2>
+          <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+            {ops.map(({ path, op }) => (
+              <li key={path} className="flex min-w-0 gap-2">
+                <a href={`#${anchor(path)}`} className={`truncate font-mono ${linkClass}`}>
+                  {path}
+                </a>
+                <span className="shrink-0 text-zinc-600 dark:text-zinc-400">{op.summary}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {groups.map(({ tag, list }) => (
           <section key={tag.name} className="space-y-5">
-            <h2 className="text-lg font-semibold">{tag.description}</h2>
+            <h2 id={`tag-${tag.name}`} className={h2Class}>
+              {tag.description}
+            </h2>
             {list.map(({ path, op }) => (
               <Endpoint key={path} path={path} op={op} example={examples[path] ?? path} tools={tools} />
             ))}
           </section>
-        );
-      })}
+        ))}
+      </div>
+      <PageOutline entries={outline} />
     </div>
   );
 }

@@ -142,11 +142,7 @@ export default function MethodPage() {
           </section>
         ))}
       </article>
-      <aside className="hidden lg:block">
-        <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain pb-6">
-          <MethodToc groups={GROUPS.map(({ id, title }) => ({ id, title }))} />
-        </div>
-      </aside>
+      <MethodToc groups={GROUPS.map(({ id, title }) => ({ id, title }))} />
     </div>
   );
 }
