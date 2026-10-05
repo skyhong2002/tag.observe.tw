@@ -51,19 +51,21 @@ export default function HeadlineRowView({
         <Link href={articleHref(a)} className={`leading-snug hover:underline ${compact ? '' : 'font-medium'}`}>
           {a.title}
         </Link>
-        <SourceLink url={a.url} iconOnly className="ml-1 !min-h-0 align-middle" />
         {!compact && a.description && (
           <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-zinc-600 dark:text-zinc-400">{a.description}</p>
         )}
-        {showOutlet && (
-          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
-            {showCamp && <CampDot camp={a.outlet.camp} />}
-            <MediaHoverLink media={a.outlet.media} icon={12} className="hover:underline">
-              {a.outlet.title}
-            </MediaHoverLink>
-            {!time && <span className="tabular-nums">{clock(a.publishedAt)}</span>}
-          </p>
-        )}
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-xs text-zinc-600 dark:text-zinc-400">
+          {showOutlet && (
+            <span className="flex items-center gap-1.5">
+              {showCamp && <CampDot camp={a.outlet.camp} />}
+              <MediaHoverLink media={a.outlet.media} icon={12} className="hover:underline">
+                {a.outlet.title}
+              </MediaHoverLink>
+              {!time && <span className="tabular-nums">{clock(a.publishedAt)}</span>}
+            </span>
+          )}
+          <SourceLink url={a.url} showUrl className="!min-h-5 !text-[11px]" />
+        </div>
       </div>
     </li>
   );

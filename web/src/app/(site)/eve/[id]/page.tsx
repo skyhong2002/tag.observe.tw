@@ -251,9 +251,9 @@ export default async function EventThreadPage({
                   {leadReport?.outlet.title ?? mediaNames[lead.media]?.name ?? lead.media}
                 </MediaHoverLink>
                 {leadReport && <span className="tabular-nums">{taipei(leadReport.publishedAt)}</span>}
-                {/* The article page only keeps an excerpt; the full text is on the outlet's site. */}
-                <SourceLink url={lead.url} label="原站全文" className="!min-h-0" />
               </p>
+              {/* The article page only keeps an excerpt; the full text is on the outlet's site. */}
+              <SourceLink url={lead.url} label="原站全文" showUrl className="!min-h-5" />
             </div>
           )}
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
@@ -501,8 +501,8 @@ export default async function EventThreadPage({
                   <Link href={articleHref(n)} className="line-clamp-2 font-medium hover:underline">
                     {n.title}
                   </Link>
-                  <SourceLink url={n.url} className="ml-2" />
-                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{n.media}</p>
+                  <SourceLink url={n.url} showUrl className="!min-h-5" />
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">{n.media}</p>
                 </div>
               </li>
             ))}

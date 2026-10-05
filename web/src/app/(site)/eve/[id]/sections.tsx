@@ -184,7 +184,7 @@ export function LeadStories({ items }: { items: TimedArticle[] }) {
               </p>
             )}
             {/* The article page only keeps an excerpt; the full text is on the outlet's site. */}
-            <SourceLink url={a.url} label="原站全文" className="!min-h-0" />
+            <SourceLink url={a.url} label="原站全文" showUrl className="!min-h-5" />
           </div>
           {a.image && /^https?:\/\//.test(a.image) && (
             <Link href={articleHref(a)} tabIndex={-1} aria-hidden="true" className="flex-none">
