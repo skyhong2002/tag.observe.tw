@@ -66,7 +66,12 @@ export default function MethodToc({ groups }: { groups: Group[] }) {
   useEffect(() => {
     const box = navRef.current?.parentElement;
     const link = active && navRef.current?.querySelector<HTMLElement>(`a[href="#${CSS.escape(active)}"]`);
-    if (!box || !link) return;
+    if (!box) return;
+    // Above the first heading: show the outline from its start.
+    if (!link) {
+      box.scrollTop = 0;
+      return;
+    }
     // Scroll only the outline's box: scrollIntoView would also move the page.
     const top = link.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
     if (top < box.scrollTop) box.scrollTop = top;
