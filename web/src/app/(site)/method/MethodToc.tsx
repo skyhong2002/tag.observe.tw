@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Group = { id: string; title: string };
 type Entry = Group & { children: Group[] };
@@ -11,10 +11,13 @@ const ACTIVE_OFFSET = 112;
 // The /method/ page's side outline: each group's h2 from the server, then the
 // h3s inside it once the page is read. The method blocks are shared with the
 // footer and carry no ids, so their h3s are numbered here (#ranking-2 is the
-// ranking group's second h3). The heading above the reading line is marked.
+// ranking group's second h3). The heading above the reading line is marked; at
+// the foot of the page, where the last short sections never reach that line,
+// the last heading is.
 export default function MethodToc({ groups }: { groups: Group[] }) {
   const [entries, setEntries] = useState<Entry[]>(() => groups.map((g) => ({ ...g, children: [] })));
   const [active, setActive] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const headings: HTMLElement[] = [];
@@ -42,6 +45,8 @@ export default function MethodToc({ groups }: { groups: Group[] }) {
         if (h.getBoundingClientRect().top > ACTIVE_OFFSET + 8) break;
         current = h.id;
       }
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (atBottom && headings.length) current = headings[headings.length - 1].id;
       setActive(current);
     };
     const onScroll = () => {
@@ -57,6 +62,17 @@ export default function MethodToc({ groups }: { groups: Group[] }) {
     };
   }, [groups]);
 
+  // The outline is taller than most screens; keep the marked entry in its box.
+  useEffect(() => {
+    const box = navRef.current?.parentElement;
+    const link = active && navRef.current?.querySelector<HTMLElement>(`a[href="#${CSS.escape(active)}"]`);
+    if (!box || !link) return;
+    // Scroll only the outline's box: scrollIntoView would also move the page.
+    const top = link.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    if (top < box.scrollTop) box.scrollTop = top;
+    else if (top + link.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = top + link.offsetHeight - box.clientHeight;
+  }, [active]);
+
   const item = (id: string, nested: boolean) =>
     `-ml-px block border-l py-1 ${nested ? 'pl-6 text-[13px]' : 'pl-3'} ${
       active === id
@@ -65,7 +81,7 @@ export default function MethodToc({ groups }: { groups: Group[] }) {
     }`;
 
   return (
-    <nav aria-label="本頁大綱" className="text-sm leading-snug">
+    <nav ref={navRef} aria-label="本頁大綱" className="text-sm leading-snug">
       <h2 className="mb-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">本頁大綱</h2>
       <ol className="border-l border-zinc-200 dark:border-zinc-800">
         {entries.map((entry) => (
