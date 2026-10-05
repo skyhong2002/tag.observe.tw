@@ -811,7 +811,7 @@ export default function LiveBoard({
                           {eventHeadline(e)}
                         </Go>
                         <Movement e={{ ...e, hours: null }} className="shrink-0" />
-                        <span className="ml-auto shrink-0">
+                        <span className="ml-auto flex shrink-0 items-center">
                           <RankTrail e={e} className="h-5 w-16" />
                         </span>
                       </li>
