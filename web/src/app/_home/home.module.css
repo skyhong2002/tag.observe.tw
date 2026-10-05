@@ -253,8 +253,16 @@
 .shareTrack > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
 /* After the base rules above so these win at equal specificity. */
 @media (max-width: 640px) {
-  /* Stacked camps: two rows each and no fade, or the bottom camp would vanish under it. */
+  /* Stacked camps run 綠, 藍, then 其他 last; only that long last group fades out under the button. */
+  .campOutletGroup:nth-child(2) { order: 3; }
   .campOutletsCollapsed { mask-image: none; -webkit-mask-image: none; }
-  .campOutletsCollapsed .campOutletGroup ul { max-height: 58px; }
-  .campOutletsMoreOverlay { position: static; transform: none; margin: 10px auto 0; box-shadow: none; }
+  .campOutletsCollapsed .campOutletGroup:nth-child(2) { mask-image: linear-gradient(to bottom, #000 45%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%); }
+  /* 關鍵字升溫榜 and 記者動態: one line per row. */
+  .ranking a { padding: 10px 12px; }
+  .rankBody { flex: 1; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .rankBody small { white-space: nowrap; }
+  .rankTrend { flex-direction: row; align-items: center; gap: 8px; }
+  .journalists a { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto; align-items: center; padding: 10px 12px; }
+  .journalistOutlets { grid-row: 1; grid-column: 2; }
+  .journalistCount { grid-row: 1; grid-column: 3; flex-direction: row; align-items: baseline; gap: 6px; }
 }
