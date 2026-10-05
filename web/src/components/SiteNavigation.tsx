@@ -59,7 +59,7 @@ export default function SiteNavigation() {
           <path d={open ? 'M6 6l12 12M6 18L18 6' : 'M4 6h16M4 12h16M4 18h16'} />
         </svg>
       </button>
-      {/* Desktop: one row with a thin rule between groups. Mobile menu: a titled block per group. */}
+      {/* Desktop: one row with a thin rule between groups. Mobile menu: one row per group, its label on the left. */}
       <nav
         id="site-navigation"
         className={`${open ? 'flex' : 'hidden'} absolute inset-x-0 top-full flex-col gap-3 border-b border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950 lg:static lg:flex lg:flex-row lg:items-center lg:gap-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:dark:bg-transparent`}
@@ -68,10 +68,10 @@ export default function SiteNavigation() {
         {NAV_GROUPS.map((group) => (
           <div
             key={group.label}
-            className="lg:flex lg:items-center lg:border-l lg:border-zinc-200 lg:pl-1 lg:not-first:ml-1 lg:first:border-l-0 lg:first:pl-0 dark:lg:border-zinc-800"
+            className="flex items-start gap-2 lg:items-center lg:gap-0 lg:border-l lg:border-zinc-200 lg:pl-1 lg:not-first:ml-1 lg:first:border-l-0 lg:first:pl-0 dark:lg:border-zinc-800"
           >
-            <p className="px-1 pb-1 text-xs text-zinc-500 lg:hidden dark:text-zinc-400">{group.label}</p>
-            <div className="grid grid-cols-3 gap-1 lg:flex">
+            <p className="w-12 shrink-0 pt-2.5 text-xs leading-5 text-zinc-500 lg:hidden dark:text-zinc-400">{group.label}</p>
+            <div className="flex flex-wrap gap-1">
               {group.links.map(({ href, short }) => {
                 const exact = pathname === href || `${pathname}/` === href;
                 const current = exact || pathname.startsWith(href);
