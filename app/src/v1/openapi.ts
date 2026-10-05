@@ -1143,14 +1143,14 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'topics',
     summary: '各媒體的議題／專題',
     description:
-      '`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，依最後更新新到舊，附站內相關報導 `coverage`，不含已停更與更新時間不明者；開始追蹤前已上架的議題有新報導也會列入）與各媒體最近更新的議題（`media`）。給 `media`：只回該媒體最近更新的議題（同樣附 `coverage`），子議題列在上層議題的 `children`。給 `tag` 或 `q`（且不給 `media`）：不分 kind，回所有媒體帶這個標籤／名稱含這段文字的上層議題與專題（含已停更，不附 coverage），依媒體分組：符合數多的媒體在前，同一媒體依最後更新新到舊、更新時間不明者在後。不給 `media` 時都附 `tags`：所有未停更上層議題與專題名稱中最常見的站內標籤（依媒體家數，前 40 個）。所有列表依最後更新（`updatedAt`）排序：議題頁上最新一則報導的時間；沒有報導日期的用本站首次發現時間（backlog 則為不明，排最後）。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
+      '`kind=topic`（預設）為議題：持續增加新聞的集合；`kind=feature` 為專題：一次性的新聞包（長文、微網站或一次發完的系列）。媒體入口有宣告者依宣告，其餘依專題頁所列新聞的日期判定。不給 `media`：跨媒體合併的議題流（`feed`，依最後更新新到舊，附站內相關報導 `coverage`，不含已停更與更新時間不明者；開始追蹤前已上架的議題有新報導也會列入）與各媒體最近更新的議題（`media`）。給 `media`：只回該媒體最近更新的議題（同樣附 `coverage`），子議題列在上層議題的 `children`。給 `tag` 或 `q`（且不給 `media`）：依 kind，回所有媒體帶這個標籤／名稱含這段文字的同類型上層項目（含已停更，不附 coverage），依媒體分組：符合數多的媒體在前，同一媒體依最後更新新到舊、更新時間不明者在後。不給 `media` 時都附 `tags`：指定 kind 的未停更上層項目名稱中最常見的站內標籤（依媒體家數，前 40 個）。所有列表依最後更新（`updatedAt`）排序：議題頁上最新一則報導的時間；沒有報導日期的用本站首次發現時間（backlog 則為不明，排最後）。每小時 :50 檢查官方入口，`check` 顯示各媒體檢查狀態；部分入口失敗時保留成功結果與既有資料。',
     params: [
       q('kind', 'topic 議題（預設）或 feature 專題', str(undefined, { enum: ['topic', 'feature'] }), 'feature'),
       q('media', '只取這家媒體（須為有追蹤議題的媒體）', ref('MediaKey'), 'pts'),
       q('limit', '筆數：有 media 時預設 20、最多 200；否則為 feed 筆數，預設 60、最多 120', { type: 'integer', minimum: 1 }, 20),
       q('per', '沒給 media 時，每家媒體附幾則最近議題', intIn(1, 10, 4), 2),
-      q('tag', '只取名稱對應到這個站內標籤的議題與專題（不分 kind，跨媒體）', str(), '核電'),
-      q('q', '只取名稱含這段文字的議題與專題（不分大小寫，最多 50 字；不分 kind，跨媒體）', str(), '選舉'),
+      q('tag', '只取指定 kind 中名稱對應到這個站內標籤的項目（跨媒體）', str(), '核電'),
+      q('q', '只取指定 kind 中名稱含這段文字的項目（不分大小寫，最多 50 字；跨媒體）', str(), '選舉'),
     ],
     response: {
       oneOf: [
@@ -1182,12 +1182,13 @@ export const ENDPOINTS: Endpoint[] = [
                 }),
               ],
             }),
-            tags: arr(ref('TopicTagCount'), '議題與專題最常見的標籤'),
+            tags: arr(ref('TopicTagCount'), '指定 kind 最常見的標籤'),
           },
           '不給 media',
         ),
         obj(
           {
+            kind: str(undefined, { enum: ['topic', 'feature'] }),
             tag: nullable(str()),
             q: nullable(str()),
             total: int('符合的項目數'),
@@ -1199,7 +1200,7 @@ export const ENDPOINTS: Endpoint[] = [
               },
               '依媒體分組；limit 預設 300、最多 500',
             ),
-            tags: arr(ref('TopicTagCount'), '議題與專題最常見的標籤'),
+            tags: arr(ref('TopicTagCount'), '指定 kind 最常見的標籤'),
           },
           '給 tag 或 q（不給 media）',
         ),

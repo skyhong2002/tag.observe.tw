@@ -161,17 +161,20 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
       title: mediaInfo[m]?.title ?? TOPIC_NAMES[m] ?? m,
       icon: iconUrl(m),
     });
-    // Every top-level 議題 and 專題 across outlets, both kinds: the keyword
-    // summary over the live ones, and the tag / title search.
-    const everything = async () =>
-      (await allTopLevelTopics(db)).filter((r) => TOPIC_MEDIA.includes(r.media)).map((r) => ({ ...fmt(r), media: r.media }));
-    const summary = (all: Awaited<ReturnType<typeof everything>>) => topicTagSummary(all.filter((t) => t.status !== 'ended'));
+    // Scope before counting, ranking keywords, searching, or applying limits.
+    // Both index and filtered views must stay within the requested kind.
+    const allOfKind = async () =>
+      (await allTopLevelTopics(db))
+        .filter((r) => r.kind === kind && TOPIC_MEDIA.includes(r.media))
+        .map((r) => ({ ...fmt(r), media: r.media }));
+    const summary = (all: Awaited<ReturnType<typeof allOfKind>>) => topicTagSummary(all.filter((t) => t.status !== 'ended'));
     reply.header('cache-control', 'public, max-age=300');
     if (!media && (tag || q)) {
-      const all = await everything();
+      const all = await allOfKind();
       const hits = matchTopics(all, { tag, q }, TOPIC_MEDIA);
       const max = Math.min(500, Math.max(1, Number(request.query.limit) || 300));
       return {
+        kind,
         tag: tag ?? null,
         q: q ?? null,
         total: hits.length,
@@ -211,7 +214,7 @@ export function registerPageApis(app: FastifyInstance, db: Db) {
     }
     const per = Math.min(10, Math.max(1, Number(request.query.per) || 4));
     const feedSize = Math.min(120, Math.max(1, Number(request.query.limit) || 60));
-    const [recent, all] = await Promise.all([latestTopicPerMedia(db, Math.max(per, 12), kind, firstRun), everything()]);
+    const [recent, all] = await Promise.all([latestTopicPerMedia(db, Math.max(per, 12), kind, firstRun), allOfKind()]);
     // One list across outlets (each outlet's 12 most recently updated at most),
     // most recently updated first. A topic listed before tracking began that got
     // a new story today belongs at the top; 已停更 and topics whose update time

@@ -168,7 +168,7 @@ export interface EventDay {
   threads: ArchivedThread[];
 }
 export const fetchEventDay = (day?: string) => get<EventDay>(`/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`, 300);
-/** A keyword across 議題 and 專題: how many outlets, and items of each kind, carry it. */
+/** Counts for a keyword within the requested kind. The other kind is zero. */
 export interface TopicTagCount {
   tag: string;
   media: number;
@@ -178,18 +178,19 @@ export interface TopicTagCount {
 export const fetchTopics = (limit = 120, kind: TopicKind = 'topic') =>
   get<{ media: TopicMedia[]; feed?: FeedTopic[]; tags?: TopicTagCount[] }>(`/api/v1/topics?limit=${limit}&kind=${kind}`, 300);
 export interface TopicSearch {
+  kind: TopicKind;
   tag: string | null;
   q: string | null;
   total: number;
   mediaCount: number;
   counts: TopicCounts;
-  /** Both kinds, grouped by outlet. */
+  /** Requested kind, grouped by outlet. */
   topics: FeedTopic[];
   tags: TopicTagCount[];
 }
-/** Every outlet's 議題 and 專題 carrying a tag and/or with `q` in the name. */
-export const fetchTopicSearch = ({ tag, q }: { tag?: string; q?: string }) => {
-  const p = new URLSearchParams();
+/** Requested kind across outlets carrying a tag and/or with `q` in the name. */
+export const fetchTopicSearch = ({ tag, q, kind }: { tag?: string; q?: string; kind: TopicKind }) => {
+  const p = new URLSearchParams({ kind });
   if (tag) p.set('tag', tag);
   if (q) p.set('q', q);
   return get<TopicSearch>(`/api/v1/topics?${p}`, 300);

@@ -23,14 +23,13 @@ export type TopicIndexParams = { tag?: string | string[]; q?: string | string[] 
 const param = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim().slice(0, 50) || undefined;
 
 /** The 議題表 (/topic/) and 專題 (/feature/) index: one layout, two kinds.
- *  A keyword (?tag=) or title filter (?q=) lists both kinds across outlets,
- *  the same on either page. Old ?coverage= / ?backlog= links are ignored. */
+ *  A keyword (?tag=) or title filter (?q=) stays within that page’s kind. Old ?coverage= / ?backlog= links are ignored. */
 // The footer's method notes (@notes/topic, @notes/feature) quote these counts; the
 // requests match the page's own, so they are fetched once per render.
 async function topicData(kind: TopicKind, searchParams: TopicIndexParams) {
   const tag = param(searchParams.tag);
   const q = param(searchParams.q);
-  const [data, found] = await Promise.all([fetchTopics(120, kind), tag || q ? fetchTopicSearch({ tag, q }) : null]);
+  const [data, found] = await Promise.all([fetchTopics(120, kind), tag || q ? fetchTopicSearch({ tag, q, kind }) : null]);
   // Outlets with none of this kind yet (only known once the API sends counts).
   const media = (data?.media ?? []).filter((m) => kindCount(m, kind) !== 0);
   const tagCounts = data?.tags ?? found?.tags ?? [];
@@ -76,9 +75,9 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
             <MediaList media={media} kind={kind} />
           </MediaSidebar>
           <div className="mt-5 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
-            <KeywordBar tags={tagCounts} active={tag} q={q} base={base} tagHref={tagHref} />
+            <KeywordBar kind={kind} tags={tagCounts} active={tag} q={q} base={base} tagHref={tagHref} />
             {tag || q ? (
-              <SearchResults found={found} tag={tag} q={q} />
+              <SearchResults kind={kind} found={found} tag={tag} q={q} />
             ) : (
               <>
                 {groups.length === 0 && <p className="text-sm text-zinc-600">目前沒有最近更新的{noun}。</p>}
@@ -123,14 +122,16 @@ const chipClass = (on: boolean) =>
   }`;
 
 const SHOWN_TAGS = 18;
-/** The most common keywords across 議題 and 專題, and a title filter. */
+/** Keywords and title search for the current kind. */
 function KeywordBar({
+  kind,
   tags,
   active,
   q,
   base,
   tagHref,
 }: {
+  kind: TopicKind;
   tags: TopicTagCount[];
   active?: string;
   q?: string;
@@ -150,7 +151,7 @@ function KeywordBar({
         <Link
           href={on ? base : tagHref(t.tag)}
           aria-current={on ? 'page' : undefined}
-          title={t.media != null ? `${t.media} 家媒體：${t.topic} 個議題、${t.feature} 個專題` : undefined}
+          title={t.media != null ? `${t.media} 家媒體：${t[kind]} 個${kindNoun(kind)}` : undefined}
           className={chipClass(on)}
         >
           {t.tag}
@@ -163,7 +164,7 @@ function KeywordBar({
     <section aria-labelledby="keywords-heading" className="space-y-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="keywords-heading" className="text-sm font-semibold">
-          各家把哪些關鍵字做成議題、專題
+          各家把哪些關鍵字做成{kindNoun(kind)}
         </h2>
         {(active || q) && (
           <Link href={base} className="text-xs text-zinc-600 hover:underline dark:text-zinc-400">
@@ -185,8 +186,8 @@ function KeywordBar({
           name="q"
           defaultValue={q ?? ''}
           maxLength={50}
-          aria-label="搜尋議題與專題名稱"
-          placeholder="搜尋議題與專題名稱"
+          aria-label={`搜尋${kindNoun(kind)}名稱`}
+          placeholder={`搜尋${kindNoun(kind)}名稱`}
           className="min-w-0 flex-1 rounded border border-zinc-200 bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-600 dark:border-zinc-700"
         />
         <button
@@ -205,9 +206,9 @@ const KIND_BADGE: Record<TopicKind, string> = {
   feature: 'border-sky-300 text-sky-800 dark:border-sky-800 dark:text-sky-300',
 };
 
-/** Both kinds for a keyword or title filter: for a keyword, outlets in the order
+/** The current kind for a keyword or title filter: for a keyword, outlets in the order
  *  they opened one (TagRace); for a title filter alone, one block per outlet (the API sends them grouped). */
-function SearchResults({ found, tag, q }: { found: TopicSearch | null; tag?: string; q?: string }) {
+function SearchResults({ found, tag, q, kind }: { found: TopicSearch | null; tag?: string; q?: string; kind: TopicKind }) {
   if (!found) return <p className="text-sm text-zinc-600">篩選結果目前無法取得。</p>;
   const label = [tag && `「${tag}」`, q && `名稱含「${q}」`].filter(Boolean).join('、');
   const outlets: Array<{ media: string; title: string; items: FeedTopic[] }> = [];
@@ -223,9 +224,7 @@ function SearchResults({ found, tag, q }: { found: TopicSearch | null; tag?: str
           {label}
         </h2>
         <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-          {found.total
-            ? `${found.mediaCount} 家媒體的 ${found.counts.topic} 個議題、${found.counts.feature} 個專題`
-            : '沒有符合的議題或專題。'}
+          {found.total ? `${found.mediaCount} 家媒體的 ${found.counts[kind]} 個${kindNoun(kind)}` : `沒有符合的${kindNoun(kind)}。`}
           {found.topics.length < found.total && `，列出前 ${found.topics.length} 個`}
           {tag && (
             <>
