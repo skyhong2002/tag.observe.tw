@@ -10,6 +10,7 @@ import { articles, articleTags, rankingSnapshots } from '../db/schema.ts';
 import { titleTagRecent } from './crawl-job.ts';
 import { loadEventInputs } from './events-job.ts';
 import { readOwnTagRows } from './ranking-job.ts';
+import { runTagStatsJob } from './tag-stats-job.ts';
 
 const testUrl = process.env.LEGACY_POLICY_TEST_DB_URL;
 describe.skipIf(!testUrl)('legacy ownership policy in disposable MariaDB', () => {
@@ -63,19 +64,17 @@ describe.skipIf(!testUrl)('legacy ownership policy in disposable MariaDB', () =>
     const vocab = await loadTitleVocab(db, { minArticles: 1, minShort: 1 });
     expect(vocab.freq.has(own)).toBe(true);
     expect(vocab.freq.has(legacy)).toBe(false);
-    await db
-      .insert(rankingSnapshots)
-      .values({
-        category: 'all',
-        hourStart: now,
-        computedAt: now,
-        hours: 24,
-        weight: 1,
-        mediaCount: 1,
-        articleCount: 1,
-        durationMs: 0,
-        chart: JSON.stringify({ entries: [], weight: 1 }),
-      });
+    await db.insert(rankingSnapshots).values({
+      category: 'all',
+      hourStart: now,
+      computedAt: now,
+      hours: 24,
+      weight: 1,
+      mediaCount: 1,
+      articleCount: 1,
+      durationMs: 0,
+      chart: JSON.stringify({ entries: [], weight: 1 }),
+    });
     expect((await loadEventInputs(db, now)).rows.map((r) => r.id)).toEqual([1]);
     const fetch = vi.fn(async () => {
       throw new Error('Legacy import must not trigger a fetch');
@@ -87,5 +86,18 @@ describe.skipIf(!testUrl)('legacy ownership policy in disposable MariaDB', () =>
     await titleTagRecent(db, buildVocab([{ tag: own, n: 20 }]));
     const [preserved] = await db.select({ tags: articles.tags, source: articles.source }).from(articles).where(eq(articles.id, 2));
     expect(preserved).toEqual({ tags: [], source: 'legacy' });
+    await db.insert(articles).values(
+      [3, 4, 5, 6].map((id) => ({
+        id,
+        media: id < 5 ? 'cna' : 'udn',
+        url: `https://publisher.example/${id}`,
+        title: legacy,
+        source: 'legacy',
+        publishedAt: new Date(now.getTime() - 2 * 3600e3),
+        crawledAt: now,
+        tags: ['匯入專用詞'],
+      })),
+    );
+    expect(await runTagStatsJob(db, { now: () => now, categories: ['news'] })).toMatchObject({ news: { level2: 0, level3: 0 } });
   });
 });

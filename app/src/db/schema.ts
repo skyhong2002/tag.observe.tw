@@ -88,6 +88,7 @@ export const articles = mysqlTable(
     index('articles_media_id').on(t.media, t.mediaId),
     index('articles_published').on(t.publishedAt),
     index('articles_media_published').on(t.media, t.publishedAt),
+    index('articles_source_media_published').on(t.source, t.media, t.publishedAt),
     index('articles_media_fetch').on(t.media, t.fetchedAt),
     index('articles_media_content').on(t.media, t.id),
     index('articles_similarity').on(t.similarityAt, t.bodyStatus, t.publishedAt),

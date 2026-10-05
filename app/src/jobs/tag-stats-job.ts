@@ -51,6 +51,7 @@ export async function runTagStatsJob(
         .from(articles)
         .where(
           and(
+            eq(articles.source, 'own'),
             gte(articles.publishedAt, new Date(hour.getTime() - windowHours * 3600e3)),
             lt(articles.publishedAt, hour),
             sql`${articles.media} IN (${sql.join(
