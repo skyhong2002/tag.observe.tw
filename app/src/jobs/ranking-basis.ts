@@ -24,10 +24,13 @@ export function rankingBasis(category: string): RankingBasis {
 }
 
 /** Recalculate BOTH numerator and denominator from saved per-outlet counts.
- * Never relabel an incompatible fixed cohort: missing publishers cannot be recovered.
+ * Never relabel an incompatible fixed cohort: missing publishers cannot be
+ * recovered. A chart over a superset of the basis can be: a revision that only
+ * removes outlets (fixed-media-v2 drops on.cc) restates history exactly.
  */
 export function applyRankingBasis(chart: RankingChart, basis: RankingBasis, at: Date): RankingChart {
-  const incompatible = chart.basis && chart.basis.id !== basis.id;
+  const covered = new Set(chart.basis?.media ?? []);
+  const incompatible = chart.basis && chart.basis.id !== basis.id && !basis.media.every((m) => covered.has(m));
   const allowed = new Set(basis.media);
   const entries = chart.entries
     .filter((e) => !isTagNoise(e.tag))

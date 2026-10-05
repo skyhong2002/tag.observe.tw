@@ -1,7 +1,22 @@
 {
-  "version": "fixed-media-v1",
+  "version": "fixed-media-v2",
   "frozenAt": "2026-10-03T17:50:20.109Z",
   "selection": "Enabled non-discovery sources with a successful non-empty index crawl at least 72 hours before freeze and within the last 3 hours. Frozen once; never grows automatically. coverageFrom is the next full hour after the first such crawl, not an assertion of historical completeness.",
+  "revisions": [
+    {
+      "version": "fixed-media-v2",
+      "at": "2026-10-06",
+      "removed": {
+        "all": [
+          "oncc"
+        ],
+        "news": [
+          "oncc"
+        ]
+      },
+      "reason": "on.cc 東網的台灣版（/tw/news/）已轉址到香港版，本站實際收的是香港新聞，不屬台灣媒體比較範圍（docs/media-inclusion-research-2026-10-06.md）。v1 快照保留各媒體篇數，移除成員後可逐小時重算，歷史改以 v2 名單呈現；新增成員則無法回補，仍須另起基準。"
+    }
+  ],
   "coverageFrom": {
     "1111": "2026-09-28T09:00:00.000Z",
     "4gamers": "2026-09-28T09:00:00.000Z",
@@ -79,7 +94,6 @@
     "nius": "2026-09-28T09:00:00.000Z",
     "nom": "2026-09-28T09:00:00.000Z",
     "nownews": "2026-09-28T09:00:00.000Z",
-    "oncc": "2026-09-28T15:00:00.000Z",
     "pansci": "2026-09-28T09:00:00.000Z",
     "pantravel": "2026-09-28T09:00:00.000Z",
     "people": "2026-09-28T09:00:00.000Z",
@@ -145,7 +159,6 @@
       "nextapple",
       "nikkei",
       "nownews",
-      "oncc",
       "people",
       "peopo",
       "pts",
@@ -371,7 +384,6 @@
       "nius",
       "nom",
       "nownews",
-      "oncc",
       "pansci",
       "pantravel",
       "people",

@@ -30,7 +30,26 @@ describe('fixed ranking cohort', () => {
     expect(normalizedScore(chart, chart.entries[0].score)).toBe(37.5);
     expect(old.entries).toHaveLength(2);
     expect(applyRankingBasis(old, basis, new Date(basis.coverageFrom)).available).toBe(false);
-    expect(applyRankingBasis({ ...old, basis: { ...basis, id: 'other' } }, basis, new Date(basis.validFrom)).available).toBe(false);
+    // A stored cohort missing a current member cannot be restated.
+    expect(applyRankingBasis({ ...old, basis: { ...basis, id: 'other', media: ['a'] } }, basis, new Date(basis.validFrom)).available).toBe(
+      false,
+    );
+  });
+  it('restates charts on a cohort that only removed outlets, but not on one that added them', () => {
+    const v1 = { ...basis, id: 'test-v1:all:abc', media: ['a', 'b', 'c'] };
+    const old = computeRanking(
+      [
+        { media: 'c', tags: '[香港]' },
+        { media: 'a', tags: '[日本]' },
+      ],
+      { hours: 24, basis: v1 },
+    );
+    const removed = applyRankingBasis(old, basis, new Date(basis.validFrom));
+    expect(removed.available).toBe(true);
+    expect(removed.weight).toBe(2);
+    expect(removed.entries.map((e) => e.tag)).toEqual(['日本']);
+    const added = { ...basis, id: 'test-v3', media: ['a', 'b', 'c', 'd'] };
+    expect(applyRankingBasis(old, added, new Date(basis.validFrom)).available).toBe(false);
   });
   it('never treats legacy omitted tags as known zeros', () => {
     const { truncated: _, ...old } = computeRanking([], { hours: 24 });
@@ -38,7 +57,8 @@ describe('fixed ranking cohort', () => {
   });
   it('keeps every category within the frozen all-media cohort and starts after a full day', () => {
     const all = rankingBasis('all');
-    expect(all.media.length).toBe(111);
+    expect(all.media.length).toBe(110);
+    expect(all.media).not.toContain('oncc');
     for (const category of Object.keys(baseline.categories)) {
       const b = rankingBasis(category);
       expect(b.media.length).toBeGreaterThan(0);

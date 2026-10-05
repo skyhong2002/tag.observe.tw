@@ -79,7 +79,7 @@
     "cn_nytimes": {
       "scope": "intl-zh",
       "language": "zh-Hant",
-      "coverage": "官方繁體版（/zh-hant/）；2026-10-06 前同一篇的簡繁兩版各存一筆。"
+      "coverage": "官方繁體版（/zh-hant/）；先前簡繁兩版各存一筆，重複的 7 筆簡體版已於 2026-10-06 刪除。"
     },
     "cn_wsj": {
       "scope": "intl-zh",
@@ -231,7 +231,7 @@
     "oncc": {
       "scope": "hkmo",
       "language": "zh-Hant",
-      "coverage": "香港版新聞；原本的台灣版（/tw/）已轉址到香港版。"
+      "coverage": "香港版新聞；原本的台灣版（/tw/）已轉址到香港版。2026-10-06 起不列入固定關鍵字排行（fixed-media-v2）。"
     },
     "people_cn": {
       "scope": "cn",
@@ -355,7 +355,7 @@
     "xinhuanet": {
       "scope": "cn",
       "language": "zh-Hans",
-      "coverage": "已停止定期抓取：與新華社（xinhua）是同一批 news.cn 文章，改由新華社收錄。"
+      "coverage": "已停止定期抓取：與新華社（xinhua）是同一批 news.cn 文章，改由新華社收錄；重複的 41 筆已於 2026-10-06 刪除，另 2 筆新華社沒有的保留。"
     },
     "yahoo": {
       "scope": "tw",
