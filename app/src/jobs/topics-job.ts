@@ -193,6 +193,15 @@ export async function refreshTopicPages(
   // 議題 still gaining stories are re-read every 6 hours so 最後更新 stays
   // current; 專題, stopped 議題 and undated pages every 3 days.
   const active = and(eq(topics.kind, 'topic'), gte(topics.storyLastAt, new Date(t - 90 * 86400e3)));
+  // A page found this week whose list is still empty (one link is not a list;
+  // a collection opened before its stories) is also re-read every 6 hours, so
+  // it is not parked as a storyless 專題 for 3 days. Confirmed single reports
+  // (kind 'article') have no list to wait for.
+  const fresh = and(
+    ne(topics.kind, 'article'),
+    gte(topics.firstSeen, new Date(t - 7 * 86400e3)),
+    or(isNull(topics.pageStories), sql`JSON_LENGTH(${topics.pageStories}) = 0`),
+  );
   // Legacy ID-only story keys need a fresh publisher page to recover their URLs.
   const missingUrls = sql`JSON_LENGTH(${topics.pageStories}) > COALESCE(JSON_LENGTH(JSON_EXTRACT(${topics.pageStories}, '$[*].url')), 0)`;
   // Topics still without a cover go first: the page's share image fills it.
@@ -218,7 +227,7 @@ export async function refreshTopicPages(
         or(gte(topics.lastSeen, new Date(t - 3 * 86400e3)), isNull(topics.kindSource), missingUrls),
         or(
           isNull(topics.pageCheckedAt),
-          and(active, lt(topics.pageCheckedAt, new Date(t - 6 * 3600e3))),
+          and(or(active, fresh), lt(topics.pageCheckedAt, new Date(t - 6 * 3600e3))),
           lt(topics.pageCheckedAt, new Date(t - 3 * 86400e3)),
         ),
       ),
