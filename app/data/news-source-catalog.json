@@ -2370,6 +2370,7 @@
       "media": "worldjournal",
       "name": "世界新聞 /10",
       "websiteUrl": "http://worldjournal.com",
+      "titleSuffix": "\\s*[|｜]\\s*世界新聞網",
       "referenceNames": [
         "世界新聞 /10",
         "世界新聞 /2",

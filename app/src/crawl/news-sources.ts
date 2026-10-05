@@ -21,6 +21,7 @@ export interface NewsSource {
   transport?: 'curl';
   requestTimeoutMs?: number;
   provider?: string;
+  titleSuffix?: string;
   articleUrls?: string[];
 }
 
@@ -55,6 +56,7 @@ export function addNewsSources(
       return {
         media: source.media,
         group: verified ? 'hourly' : 'off',
+        ...(source.titleSuffix ? { titleSuffix: source.titleSuffix } : {}),
         list: {
           urls: source.websiteUrl ? [{ cat: 'news', url: source.websiteUrl }] : [],
           ...(source.websiteUrl

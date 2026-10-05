@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-o
 import pLimit from 'p-limit';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
+import { isOwnMediaTag } from '../media-tags.ts';
 import { extractAttributions } from '../similarity/attribution.ts';
 import { runDiscoveryIndex } from './discovery-index.ts';
 import { extractFeatureArticle as extractArticle } from './feature-article.ts';
@@ -182,7 +183,7 @@ export async function runIndex(
               category: trunc(it.category, 64),
               creator: trunc(it.creator, 256),
               description: trunc(it.description, 4000),
-              tags: (it.tags ?? []).map(normalizeTag).filter(Boolean),
+              tags: (it.tags ?? []).map(normalizeTag).filter((tag) => tag && !isOwnMediaTag(tag, spec.media)),
               fetchedAt: content ? started : null,
               fetchStatus: content ? (it.tags?.length ? 'ok' : 'notags') : null,
               ...(content
@@ -304,7 +305,7 @@ async function indexTags(db: Db, media: string, rows: Array<{ url: string; tags:
   const values = rows.flatMap((r) => {
     const article = byUrl.get(r.url);
     return article
-      ? [...new Set(r.tags.map(normalizeTag).filter((t) => Buffer.byteLength(t) > 1))].map((tag) => ({
+      ? [...new Set(r.tags.map(normalizeTag).filter((t) => Buffer.byteLength(t) > 1 && !isOwnMediaTag(t, media)))].map((tag) => ({
           articleId: article.id,
           tag: tag.slice(0, 60),
           publishedAt: article.publishedAt,
@@ -425,7 +426,7 @@ export async function runArticles(
           const title =
             Buffer.byteLength(row.title ?? '') < 2 ? pageTitle : spec.list.discover ? headlineFromPage(row.title ?? '', pageTitle) : null;
           const titleTags = !detail.tags.length && vocab ? tagsFromTitle(title || row.title || '', vocab) : [];
-          const tags = detail.tags.length ? detail.tags : titleTags;
+          const tags = (detail.tags.length ? detail.tags : titleTags).filter((tag) => !isOwnMediaTag(tag, spec.media));
           // Discovered links have no listing time; adopt the page's published
           // time unless it is in the future or implausibly old.
           const metaTime =

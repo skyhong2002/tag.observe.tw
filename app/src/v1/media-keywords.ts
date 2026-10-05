@@ -6,17 +6,19 @@ import { excludedMedia } from '../crawl/registry.ts';
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
+import { isOwnMediaTag } from '../media-tags.ts';
 import { isTagNoise } from '../tag-noise.ts';
 import { parseContentId } from './article-content.ts';
 
 export const KEYWORD_SAMPLE_LIMIT = 2000;
 const excluded = new Set([...noEqual.tags, '國際', '生活', '政治', '財經', '兩岸', '社會', '地方', '體育', '娛樂', '科技', '新聞']);
 
-export function mediaKeywordTerms(rows: Array<{ title: string; tags: string[] }>, vocab: TitleVocab) {
+export function mediaKeywordTerms(rows: Array<{ title: string; tags: string[] }>, vocab: TitleVocab, media?: string) {
   const counts = new Map<string, number>();
   for (const row of rows) {
     const terms = new Set([...row.tags, ...tagsFromTitle(row.title, vocab, 12)].map((tag) => tag.trim()));
     for (const term of terms) {
+      if (isOwnMediaTag(term, media)) continue;
       if (term.length < 2 || term.length > 30 || excluded.has(term) || isTagNoise(term) || /^\d+(?:年|月|日)?$/.test(term)) continue;
       counts.set(term, (counts.get(term) ?? 0) + 1);
     }
@@ -43,7 +45,7 @@ export async function loadMediaKeywords(db: Db, media: string, hours: number, vo
     to: now,
     sampledArticles: sample.length,
     capped: rows.length > KEYWORD_SAMPLE_LIMIT,
-    terms: mediaKeywordTerms(sample, vocab),
+    terms: mediaKeywordTerms(sample, vocab, media),
   };
 }
 

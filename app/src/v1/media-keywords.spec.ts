@@ -11,6 +11,15 @@ const vocab = buildVocab([
   { tag: 'AI', n: 20 },
 ]);
 describe('media keyword cloud', () => {
+  it('excludes the outlet name from stored tags and title matches, while keeping other media', () => {
+    const brands = buildVocab([
+      { tag: '世界新聞網', n: 50 },
+      { tag: '紐約時報', n: 20 },
+    ]);
+    const rows = [{ title: '新聞標題 | 世界新聞網', tags: [' 世界新聞網 ', '紐約時報'] }];
+    expect(mediaKeywordTerms(rows, brands, 'worldjournal')).toEqual([{ label: '紐約時報', count: 1 }]);
+    expect(mediaKeywordTerms(rows, brands, 'udn')).toContainEqual({ label: '世界新聞網', count: 1 });
+  });
   it('counts each keyword once per article, enriches titles and drops broad categories', () => {
     const result = mediaKeywordTerms(
       [
