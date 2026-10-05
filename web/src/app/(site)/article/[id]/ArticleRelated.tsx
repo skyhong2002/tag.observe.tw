@@ -6,8 +6,6 @@ import { readingTitle } from '@/lib/reading.mts';
 import type { ArticleRelated as Related, RelatedArticle } from '@/lib/related';
 
 const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
-const chip =
-  'rounded-full bg-zinc-100 px-3 py-1.5 text-zinc-600 hover:text-brand-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-brand-400';
 
 function RelatedList({ id, title, items }: { id: string; title: string; items: RelatedArticle[] }) {
   if (!items.length) return null;
@@ -40,17 +38,14 @@ function RelatedList({ id, title, items }: { id: string; title: string; items: R
 
 /**
  * 延伸閱讀: events, body matches (passed in as `similar`), other coverage of the
- * subject at other outlets and at this outlet, and the subject's keywords.
+ * subject at other outlets and at this outlet.
  */
 export default function ArticleRelated({
   data,
-  tags,
   mediaTitle,
   similar,
 }: {
   data: Related | null;
-  /** The article's own tags, shown plainly when `data` is unavailable. */
-  tags: string[];
   mediaTitle: string;
   similar: React.ReactNode;
 }) {
@@ -96,27 +91,6 @@ export default function ArticleRelated({
         <p role="status" className="text-sm text-zinc-600 dark:text-zinc-400">
           {data.tags.length ? `前後 ${days} 天內沒有找到同一題的其他報導。` : '這篇沒有關鍵字，無法找出同一題的其他報導。'}
         </p>
-      )}
-      {(data?.tags.length ?? tags.length) > 0 && (
-        <nav aria-labelledby="related-tags">
-          <h3 id="related-tags" className="mb-2 text-sm font-medium">
-            相關關鍵字
-          </h3>
-          <ul className="flex flex-wrap gap-2 text-sm">
-            {(data?.tags ?? tags.map((tag) => ({ tag, articles: 0, media: 0 }))).map((entry) => (
-              <li key={entry.tag}>
-                <Link href={`/tag/${encodeURIComponent(entry.tag)}/`} className={`inline-block ${chip}`}>
-                  #{entry.tag}
-                  {entry.articles > 1 && (
-                    <span className="ml-1.5 text-xs text-zinc-500 dark:text-zinc-500">
-                      {entry.media} 家 · {entry.articles} 篇
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
       )}
     </section>
   );

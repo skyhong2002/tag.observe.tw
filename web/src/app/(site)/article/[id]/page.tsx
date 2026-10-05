@@ -15,6 +15,7 @@ import { fetchArticleRelated } from '@/lib/related';
 import { fetchArticleSimilarity } from '@/lib/similarity';
 import ArticleRelated from './ArticleRelated';
 import ArticleSimilar from './ArticleSimilar';
+import ArticleTags from './ArticleTags';
 
 export const revalidate = 60;
 export default async function ArticleContentPage({
@@ -103,6 +104,7 @@ export default async function ArticleContentPage({
             })}
           </nav>
         )}
+        <ArticleTags data={related} tags={article.tags} />
       </header>
       <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} />
       {content.body ? (
@@ -145,7 +147,6 @@ export default async function ArticleContentPage({
         )}
         <ArticleRelated
           data={related}
-          tags={article.tags}
           mediaTitle={article.mediaTitle}
           similar={<ArticleSimilar data={similar} publishedAt={article.publishedAt} />}
         />
