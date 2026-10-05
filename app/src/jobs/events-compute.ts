@@ -319,16 +319,20 @@ export function clusterEvents(
     });
   }
   out.sort((a, b) => b.score - a.score);
-  // A cluster whose articles mostly sit in higher-ranked events is the same
-  // day seen through other names: 韓國瑜/侯友宜 on 2026-10-05 was the 李四川
-  // and 江啟臣 rallies they both attended, 59% already listed above.
-  const listed = new Set<number>();
-  const kept = out.filter((e) => {
-    const inside = e.memberIds.filter((id) => listed.has(id)).length;
-    if (e.memberIds.length > 0 && inside / e.memberIds.length >= duplicateShare) return false;
-    for (const id of e.memberIds) listed.add(id);
-    return true;
-  });
+  // A cluster whose articles mostly sit in other events is the same day seen
+  // through other names: 韓國瑜/侯友宜 on 2026-10-05 was the 李四川 and 江啟臣
+  // rallies they both attended, 59% of it listed elsewhere. Rank does not
+  // matter (at 08:34 it outscored 江啟臣 and only the 李四川 share counted), so
+  // events are tested from the lowest score up against every other survivor.
+  const dropped = new Set<EventCluster>();
+  for (const e of out.slice().reverse()) {
+    if (e.memberIds.length === 0) continue;
+    const elsewhere = new Set<number>();
+    for (const o of out) if (o !== e && !dropped.has(o)) for (const id of o.memberIds) elsewhere.add(id);
+    const inside = e.memberIds.filter((id) => elsewhere.has(id)).length;
+    if (inside / e.memberIds.length >= duplicateShare) dropped.add(e);
+  }
+  const kept = out.filter((e) => !dropped.has(e));
   kept.forEach((e, i) => {
     e.rank = i + 1;
   });

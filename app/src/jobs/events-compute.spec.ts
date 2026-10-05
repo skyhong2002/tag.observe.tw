@@ -179,6 +179,26 @@ describe('clusterEvents', () => {
     expect(deduped).toHaveLength(all.length - 1);
     expect(deduped.some((g) => g.join() === ['韓國瑜', '侯友宜'].sort().join())).toBe(false);
   });
+  it('drops the duplicate even when it outscores the events it duplicates', () => {
+    // 韓國瑜/侯友宜 across more outlets than either rally: higher burst, same articles.
+    const articles = [
+      ...[1, 2, 3, 4].map((i) => art(i, 'a', ['李四川', '板橋'])),
+      ...['c', 'd'].map((m, i) => art(i + 5, m, ['李四川', '板橋', '韓國瑜', '侯友宜'])),
+      ...[7, 8, 9, 10].map((i) => art(i, 'b', ['江啟臣', '盧秀燕'])),
+      ...['e', 'f'].map((m, i) => art(i + 11, m, ['江啟臣', '盧秀燕', '韓國瑜', '侯友宜'])),
+      art(13, 'g', ['韓國瑜', '侯友宜']),
+    ];
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const burst = computeBurst(chart, new Map());
+    const all = clusterEvents(burst, articles, [], { now: t0, duplicateShare: 2 });
+    expect(all[0].tags.map(([t]) => t).sort()).toEqual(['侯友宜', '韓國瑜']);
+    const deduped = clusterEvents(burst, articles, [], { now: t0 });
+    expect(deduped).toHaveLength(2);
+    expect(deduped.some((e) => e.tags.some(([t]) => t === '韓國瑜'))).toBe(false);
+  });
   it('honours the no-equal list', () => {
     const ranking = computeRanking(
       rows.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
