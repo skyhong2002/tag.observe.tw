@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ArticleRow, CoOccurrence, clusterEvents, hubTags, matchThread, siteTags, threadUpdate } from './events-compute.ts';
+import { type ArticleRow, aliasTags, CoOccurrence, clusterEvents, hubTags, matchThread, siteTags, threadUpdate } from './events-compute.ts';
 import { computeBurst, computeRanking } from './ranking-compute.ts';
 
 const t0 = new Date('2026-09-28T08:00:00Z');
@@ -198,6 +198,31 @@ describe('clusterEvents', () => {
     const deduped = clusterEvents(burst, articles, [], { now: t0 });
     expect(deduped).toHaveLength(2);
     expect(deduped.some((e) => e.tags.some(([t]) => t === '韓國瑜'))).toBe(false);
+  });
+  it('folds a longer tag into the shorter tag it contains and mostly co-occurs with', () => {
+    const articles = [
+      ...[1, 2].map((i) => art(i, 'a', ['名古屋亞運', '亞運', '王婕菱'])),
+      ...[3, 4, 11].map((i) => art(i, 'b', ['名古屋亞運', '王婕菱'])),
+      ...[5, 6, 7].map((i) => art(i, 'c', ['亞運', '李洋'])),
+      // 亞運會 never appears with 亞運: no alias. 日本麥當勞 folds into the
+      // longest qualifying tag, 麥當勞, and never into a blocked tag.
+      ...[8, 9, 10].map((i) => art(i, 'd', ['亞運會', '盧彥勳'])),
+      ...[12, 13].map((i) => art(i, 'e', ['日本麥當勞', '麥當勞', '日本'])),
+    ];
+    const co = new CoOccurrence(articles);
+    const tags = ['亞運', '名古屋亞運', '亞運會', '王婕菱', '李洋', '日本麥當勞', '麥當勞', '日本'];
+    expect(Object.fromEntries(aliasTags(co, tags))).toEqual({ 名古屋亞運: '亞運', 日本麥當勞: '麥當勞' });
+    expect(Object.fromEntries(aliasTags(co, tags, { blocked: new Set(['麥當勞', '亞運']) }))).toEqual({ 日本麥當勞: '日本' });
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const burst = computeBurst(chart, new Map());
+    const events = clusterEvents(burst, articles, [], { now: t0 });
+    const games = events.find((e) => e.tags.some(([t]) => t === '亞運')) as (typeof events)[number];
+    expect(games.tags.map(([t]) => t)).not.toContain('名古屋亞運');
+    // The article tagged 名古屋亞運 (not 亞運) + 王婕菱 belongs through the alias.
+    expect(games.memberIds).toContain(4);
   });
   it('honours the no-equal list', () => {
     const ranking = computeRanking(

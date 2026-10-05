@@ -45,6 +45,32 @@ export function siteTags(rows: ArticleRow[], min = SITE_TAG_MIN): Set<string> {
 
 // relation24.php: co-occurring tags in the last 24h. A tag T' is "equal" to T
 // when it appears in > 50% of T's articles (both counts over the same window).
+/** Near-synonym tags: a longer tag that contains a shorter one (名古屋亞運 ⊃
+ *  亞運, 美沙冬替代療法 ⊃ 美沙冬) and whose articles often carry the shorter
+ *  one too. Outlets pick one form or the other, so the share is well under
+ *  the 50% "equal" rule (名古屋亞運: 30 of 85 on 2026-10-05), yet each form
+ *  seeded its own cluster and the Asian Games closing became two events.
+ *  The canonical form is the longest qualifying shorter tag (日本麥當勞 →
+ *  麥當勞, not 日本); tags on the no-equal list never absorb others. */
+export const ALIAS_MIN_SHARE = 0.3;
+export function aliasTags(
+  co: CoOccurrence,
+  tags: readonly string[],
+  { minShare = ALIAS_MIN_SHARE, blocked = new Set<string>() }: { minShare?: number; blocked?: ReadonlySet<string> } = {},
+): Map<string, string> {
+  const out = new Map<string, string>();
+  const byLength = tags.filter((t) => co.count(t) > 0).sort((a, b) => a.length - b.length);
+  for (const long of byLength) {
+    let best: string | null = null;
+    for (const short of byLength) {
+      if (short === long || short.length >= long.length || blocked.has(short) || !long.includes(short)) continue;
+      if (co.shared(long, short) >= minShare * co.count(long) && (!best || short.length > best.length)) best = short;
+    }
+    if (best) out.set(long, out.get(best) ?? best);
+  }
+  return out;
+}
+
 export class CoOccurrence {
   private byTag = new Map<string, Set<number>>();
   private byArticle = new Map<number, string[]>();
@@ -173,14 +199,30 @@ export function clusterEvents(
     newsLimit = NEWS_LIMIT,
     siteTagMin = SITE_TAG_MIN,
     duplicateShare = DUPLICATE_SHARE,
+    aliases: mergeAliases = true,
   } = {},
 ): EventCluster[] {
   const noEqual = new Set(noEqualList);
+  const ranked0 = entries.filter((e) => !isTagNoise(e.tag)).slice(0, maxTags);
+  // Fold near-synonyms into their shorter form before anything else sees them.
+  const alias = mergeAliases
+    ? aliasTags(
+        new CoOccurrence(rows, { siteTagMin }),
+        ranked0.map((e) => e.tag),
+      )
+    : new Map<string, string>();
+  const canon = (t: string) => alias.get(clean(t)) ?? clean(t);
+  if (alias.size) rows = rows.map((r) => ({ ...r, tags: [...new Set(r.tags.map(canon))] }));
   const co = new CoOccurrence(rows, { siteTagMin });
-  const order = entries
-    .filter((e) => !isTagNoise(e.tag))
-    .slice(0, maxTags)
-    .map((e) => e.tag);
+  const burst = new Map<string, number>();
+  const order: string[] = [];
+  for (const e of ranked0) {
+    const t = canon(e.tag);
+    // With insufficient history, use current score for grouping, not a fabricated burst.
+    const b = e.burst ?? e.normalized;
+    burst.set(t, Math.max(burst.get(t) ?? Number.NEGATIVE_INFINITY, b));
+    if (!order.includes(t)) order.push(t);
+  }
   // Each ranked tag's closure skips the hubs whose home group it is not in.
   const ranked = order.filter((t) => !noEqual.has(t));
   const hubs = detectHubs ? hubTags(co, ranked, new Map(ranked.map((t) => [t, co.closure(t, noEqual)]))) : new Map<string, Set<string>>();
@@ -190,8 +232,6 @@ export function clusterEvents(
     return out;
   };
   const blocked = new Map(order.map((t) => [t, blockedFor(t)]));
-  // With insufficient history, use current score for grouping, not a fabricated burst.
-  const burst = new Map(entries.map((e) => [e.tag, e.burst ?? e.normalized]));
   const closures = new Map(order.map((t) => [t, co.closure(t, blocked.get(t) as Set<string>)]));
   // tagmap: for each tag, the highest-ranked earlier tag it is equal to.
   const position = new Map(order.map((t, i) => [t, i]));
