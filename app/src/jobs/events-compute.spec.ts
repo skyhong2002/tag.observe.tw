@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { type ArticleRow, aliasTags, CoOccurrence, clusterEvents, hubTags, matchThread, siteTags, threadUpdate } from './events-compute.ts';
+import {
+  type ArticleRow,
+  aliasTags,
+  CoOccurrence,
+  clusterEvents,
+  hubTags,
+  matchThread,
+  outletBoilerplate,
+  siteTags,
+  threadUpdate,
+} from './events-compute.ts';
 import { computeBurst, computeRanking } from './ranking-compute.ts';
 
 const t0 = new Date('2026-09-28T08:00:00Z');
@@ -223,6 +233,30 @@ describe('clusterEvents', () => {
     expect(games.tags.map(([t]) => t)).not.toContain('名古屋亞運');
     // The article tagged 名古屋亞運 (not 亞運) + 王婕菱 belongs through the alias.
     expect(games.memberIds).toContain(4);
+  });
+  it('strips tags an outlet stamps on nearly every article, from that outlet only', () => {
+    const military = ['國防部', '國軍', '空軍'];
+    const articles = [
+      // 青年日報: eight unrelated stories, all carrying the military set.
+      ...['月曆', '音樂節', '綜藝', '糖業', '鐵路', '營隊', '重陽', '律師'].map((t, i) => art(i + 1, 'ydn', [...military, t])),
+      // Real coverage elsewhere.
+      ...['storm', 'ltn', 'ctitv'].map((m, i) => art(i + 20, m, ['F-16V', '空軍', '國防部'])),
+    ];
+    const boiler = outletBoilerplate(articles);
+    expect([...boiler.keys()]).toEqual(['ydn']);
+    expect([...(boiler.get('ydn') as Set<string>)].sort()).toEqual(military.sort());
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const burst = computeBurst(chart, new Map());
+    const events = clusterEvents(burst, articles, [], { now: t0 });
+    expect(events).toHaveLength(1);
+    expect(events[0].tags.map(([t]) => t).sort()).toEqual(['F-16V', '國防部', '空軍'].sort());
+    expect(events[0].memberIds.sort()).toEqual([20, 21, 22]);
+    // Without the rule the eight 青年日報 stories are the event.
+    const raw = clusterEvents(burst, articles, [], { now: t0, boilerplate: false });
+    expect(raw[0].memberIds.length).toBeGreaterThanOrEqual(8);
   });
   it('honours the no-equal list', () => {
     const ranking = computeRanking(

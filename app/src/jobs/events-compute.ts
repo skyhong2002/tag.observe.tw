@@ -45,6 +45,41 @@ export function siteTags(rows: ArticleRow[], min = SITE_TAG_MIN): Set<string> {
 
 // relation24.php: co-occurring tags in the last 24h. A tag T' is "equal" to T
 // when it appears in > 50% of T's articles (both counts over the same window).
+/** Tags an outlet stamps on nearly every article it publishes: 青年日報 puts
+ *  國防部, 軍事, 國軍, 陸軍, 海軍, 空軍 and 憲兵 on its concert and calendar
+ *  stories too, and those eight tags formed an "event" of 50 unrelated
+ *  articles on 2026-10-05. The site-tag rule missed them because other
+ *  outlets use 國防部 and 空軍 as real subjects. Returns outlet → tags the
+ *  outlet carries on at least `minShare` of its articles (given `minArticles`
+ *  articles); those tags are dropped from that outlet's articles only. */
+export const BOILERPLATE_MIN_ARTICLES = 8;
+export const BOILERPLATE_MIN_SHARE = 0.8;
+export function outletBoilerplate(
+  rows: readonly ArticleRow[],
+  { minArticles = BOILERPLATE_MIN_ARTICLES, minShare = BOILERPLATE_MIN_SHARE } = {},
+): Map<string, Set<string>> {
+  const perOutlet = new Map<string, { n: number; tags: Map<string, number> }>();
+  for (const r of rows) {
+    let m = perOutlet.get(r.media);
+    if (!m) perOutlet.set(r.media, (m = { n: 0, tags: new Map() }));
+    m.n++;
+    for (const t of new Set(r.tags.map(clean))) m.tags.set(t, (m.tags.get(t) ?? 0) + 1);
+  }
+  const out = new Map<string, Set<string>>();
+  for (const [media, { n, tags }] of perOutlet) {
+    if (n < minArticles) continue;
+    const set = new Set([...tags].filter(([, k]) => k >= minShare * n).map(([t]) => t));
+    if (set.size) out.set(media, set);
+  }
+  return out;
+}
+export function stripBoilerplate(rows: readonly ArticleRow[], boiler: ReadonlyMap<string, ReadonlySet<string>>): ArticleRow[] {
+  return rows.map((r) => {
+    const drop = boiler.get(r.media);
+    return drop?.size ? { ...r, tags: r.tags.filter((t) => !drop.has(clean(t))) } : r;
+  });
+}
+
 /** Near-synonym tags: a longer tag that contains a shorter one (名古屋亞運 ⊃
  *  亞運, 美沙冬替代療法 ⊃ 美沙冬) and whose articles often carry the shorter
  *  one too. Outlets pick one form or the other, so the share is well under
@@ -200,9 +235,11 @@ export function clusterEvents(
     siteTagMin = SITE_TAG_MIN,
     duplicateShare = DUPLICATE_SHARE,
     aliases: mergeAliases = true,
+    boilerplate = true,
   } = {},
 ): EventCluster[] {
   const noEqual = new Set(noEqualList);
+  if (boilerplate) rows = stripBoilerplate(rows, outletBoilerplate(rows));
   const ranked0 = entries.filter((e) => !isTagNoise(e.tag)).slice(0, maxTags);
   // Fold near-synonyms into their shorter form before anything else sees them.
   const alias = mergeAliases

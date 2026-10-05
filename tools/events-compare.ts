@@ -60,7 +60,15 @@ try {
   const { burst, rows } = await loadEventInputs(db, now);
   const list = (noEqual as { tags: string[] }).tags;
   const variants: Record<string, Parameters<typeof clusterEvents>[3]> = {
-    legacy: { now, minShared: 1, newsLimit: 5, siteTagMin: Number.POSITIVE_INFINITY, duplicateShare: 2, aliases: false },
+    legacy: {
+      now,
+      minShared: 1,
+      newsLimit: 5,
+      siteTagMin: Number.POSITIVE_INFINITY,
+      duplicateShare: 2,
+      aliases: false,
+      boilerplate: false,
+    },
     current: { now },
   };
   const report: Record<string, unknown> = { at: now.toISOString(), articles: rows.length };
