@@ -616,9 +616,39 @@ export default function LiveBoard({
           <Stat label="24 小時發稿媒體" value={totals?.publishingMedia24h ?? '—'} unit="家" className="portrait:hidden" />
           <Stat label="爬蟲" value={status.ok ?? '—'} unit="正常" className="portrait:hidden">
             {((status.stale ?? 0) > 0 || (status.failing ?? 0) > 0) && (
-              <span className="ml-1 inline-flex flex-col self-center text-sm font-normal leading-4">
-                {(status.stale ?? 0) > 0 && <span className="text-amber-400">△ {status.stale} 無近期文章</span>}
-                {(status.failing ?? 0) > 0 && <span className="text-rose-400">✕ {status.failing} 失敗</span>}
+              <span className="ml-1 inline-grid grid-cols-[1em_max-content_max-content] items-center gap-x-1 self-center text-sm font-normal leading-4">
+                {(status.stale ?? 0) > 0 && (
+                  <span className="contents text-amber-400">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      className="h-[1em] w-[1em]"
+                      aria-hidden="true"
+                    >
+                      <path d="M10 2 19 18H1Z" />
+                    </svg>
+                    <span className="text-right">{status.stale}</span>
+                    <span>無近期文章</span>
+                  </span>
+                )}
+                {(status.failing ?? 0) > 0 && (
+                  <span className="contents text-rose-400">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      className="h-[1em] w-[1em]"
+                      aria-hidden="true"
+                    >
+                      <path d="m4 4 12 12M16 4 4 16" />
+                    </svg>
+                    <span className="text-right">{status.failing}</span>
+                    <span>失敗</span>
+                  </span>
+                )}
               </span>
             )}
           </Stat>
