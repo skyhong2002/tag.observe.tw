@@ -405,8 +405,9 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   }
   const usable = candidates.filter((candidate) => contentLength(candidate.body) >= 200);
   // A source-specific container is authoritative when present. Generic DOM
-  // candidates only replace structured data when they contain that entire
-  // text plus a substantial extension, rather than merely being longer.
+  // candidates also win when they contain the same prose: publishers may
+  // flatten punctuation and paragraphs in JSON-LD. Normalize only the comparison,
+  // never the selected text. A longer unrelated body or a partial teaser must not win.
   const comparisonText = (text: string) =>
     text
       .normalize('NFKC')
@@ -415,14 +416,23 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   let complete = usable.find((candidate) => candidate.source === 'selector') ?? usable[0];
   if (complete?.source === 'ld+json') {
     const structured = comparisonText(complete.body);
+    const headlines = nodes.flatMap((node) => (typeof node['headline'] === 'string' ? [comparisonText(node['headline'])] : []));
+    const withoutHeadline = headlines.reduce(
+      (text, headline) => (headline && text.startsWith(headline) ? text.slice(headline.length) : text),
+      structured,
+    );
     complete =
-      usable.find(
-        (candidate) =>
-          candidate.source !== 'ld+json' &&
-          candidate.source !== 'article' &&
-          comparisonText(candidate.body).length >= structured.length + Math.max(40, Math.ceil(structured.length * 0.1)) &&
-          comparisonText(candidate.body).includes(structured),
-      ) ?? complete;
+      usable.find((candidate) => {
+        if (candidate.source === 'ld+json') return false;
+        const dom = comparisonText(candidate.body);
+        return (
+          dom === structured ||
+          (withoutHeadline.length >= 200 && dom === withoutHeadline) ||
+          (candidate.source !== 'article' &&
+            dom.length >= structured.length + Math.max(40, Math.ceil(structured.length * 0.1)) &&
+            dom.includes(structured))
+        );
+      }) ?? complete;
   }
   if (complete) return { body: complete.body, bodySource: complete.source, authors, bodyStatus: 'ok' };
 

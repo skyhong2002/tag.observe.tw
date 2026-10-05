@@ -8,6 +8,41 @@ const ld = (data: Record<string, unknown>) =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, ...data })}</script>`;
 
 describe('article extraction review regressions', () => {
+  it.each(['article', 'div.article-content', 'div[itemprop="articleBody"]'])(
+    'preserves visible punctuation and paragraphs for equivalent prose in %s',
+    (selector) => {
+      const prose = `${lead}居民說：「班次增加了！」（試辦路線）；票價維持 1.5 元。`;
+      const dom = `${prose}\n\n${ending}`;
+      const tag = selector === 'article' ? 'article' : 'div';
+      const attrs = selector.includes('.') ? ' class="article-content"' : selector.includes('[') ? ' itemprop="articleBody"' : '';
+      const html =
+        ld({ articleBody: dom.normalize('NFKC').replace(/\n/g, '') }) + `<${tag}${attrs}><p>${prose}</p><p>${ending}</p></${tag}>`;
+      expect(extractArticle(html, url)).toMatchObject({ body: dom, bodyStatus: 'ok' });
+    },
+  );
+
+  it('ignores a duplicated structured headline when comparing complete visible prose', () => {
+    const headline = '公共運輸新政策！';
+    const html =
+      ld({ headline, articleBody: `${headline}${lead}`.normalize('NFKC') }) + `<article><h1>${headline}</h1><p>${lead}</p></article>`;
+    expect(extractArticle(html, url)).toMatchObject({ body: lead, bodySource: 'article' });
+  });
+
+  it('does not replace a full structured report with a matching DOM excerpt', () => {
+    const html = ld({ articleBody: lead + ending }) + `<div class="article-content"><p>${lead}</p></div>`;
+    expect(extractArticle(html, url)).toMatchObject({ body: lead + ending, bodySource: 'ld+json' });
+  });
+
+  it('uses EBC visible prose even when structured data embeds headings and rewrites brackets', () => {
+    const prose = `公共運輸（試辦路線）改善了！${lead}`;
+    const html =
+      ld({ articleBody: `新聞標題。${prose.replaceAll('（', '「').replaceAll('）', '」').normalize('NFKC')}小標題${ending}` }) +
+      `<div class="article_main"><div class="article_content"><p>${prose}</p><h2>小標題</h2><p>${ending}</p><div class="related"><p>推薦新聞</p></div></div></div>`;
+    expect(extractArticle(html, 'https://news.ebc.net.tw/news/world/574175')).toMatchObject({
+      body: `${prose}\n\n${ending}`,
+      bodySource: 'selector',
+    });
+  });
   it.each(['comments-off', 'with-share', 'has-share-float', 'social-after-title', 'has-banner'])(
     'keeps article prose inside the observed %s layout wrapper while excluding actual widgets',
     (layout) => {

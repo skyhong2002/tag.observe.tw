@@ -32,6 +32,8 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // an explicit host, article URL shape, and main-article container. Header clocks,
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
+  // EBC's JSON-LD rewrites punctuation and merges headlines into the prose.
+  { host: 'news.ebc.net.tw', path: /^\/news\/[^/]+\/\d+\/?$/, bodySelector: '.article_main > .article_content' },
   ...BLOCKED_NEWS_SITES,
   ...EXTRA_NEWS_SITES,
   ...ENN_NEWS_SITES,
