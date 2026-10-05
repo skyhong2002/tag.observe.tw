@@ -100,6 +100,11 @@ describe.skipIf(!testUrl)('disposable MariaDB import', () => {
       const [rolledBack] = await c.query('SELECT COUNT(*) n FROM articles WHERE url=?', [candidate(8).article.url]);
       expect((rolledBack as { n: number }[])[0].n).toBe(0);
       expect((await run([candidate(8)], true))[0].action).toBe('inserted');
+      await expect(run([candidate(11), candidate(11)], true)).rejects.toThrow('Duplicate source keys');
+      const missing = candidate(12);
+      const [created] = await run([missing], true);
+      await c.query('DELETE FROM articles WHERE id=?', [created.articleId]);
+      expect((await run([missing], true))[0].reason).toBe('missing_origin_article');
       const recent = candidate(10);
       recent.article.publishedAt = now.toISOString();
       recent.article.crawledAt = now.toISOString();

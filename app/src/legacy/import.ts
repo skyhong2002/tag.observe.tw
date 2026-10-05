@@ -30,6 +30,7 @@ export async function importCandidates(
     onBatch?: (outcomes: ImportOutcome[]) => void;
   },
 ) {
+  if (new Set(rows.map((row) => row.lineage.sourceKey)).size !== rows.length) throw new Error('Duplicate source keys in package');
   const c = connection;
   const query = async (sql: string, values: unknown[] = []) => (await c.query<RowDataPacket[]>(sql, values))[0];
   const lock = `legacy-import:${(await query('SELECT DATABASE() db'))[0].db}`;
@@ -68,15 +69,21 @@ export async function importCandidates(
     await c.query(
       'ALTER TABLE legacy_input ADD seq INT NOT NULL PRIMARY KEY, ADD INDEX input_url(media,url), ADD INDEX input_key(media,url_key)',
     );
+    await c.query('CREATE TEMPORARY TABLE legacy_origin_input AS SELECT source_key FROM article_origins WHERE 0');
+    await c.query('ALTER TABLE legacy_origin_input ADD seq INT NOT NULL PRIMARY KEY');
     for (let start = 0; start < rows.length; start += 250) {
       const batch = rows
         .slice(start, start + 250)
         .map((row, offset) => ({ row, seq: start + offset }))
         .filter(({ row }) => !importIssue(row, options.now, options.allowRecent));
-      if (batch.length)
+      if (batch.length) {
         await c.query('INSERT INTO legacy_input (media,url,url_key,seq) VALUES ?', [
           batch.map(({ row, seq }) => [row.article.media, row.article.url, row.article.urlKey, seq]),
         ]);
+        await c.query('INSERT INTO legacy_origin_input (source_key,seq) VALUES ?', [
+          batch.map(({ row, seq }) => [row.lineage.sourceKey, seq]),
+        ]);
+      }
     }
     // MariaDB cannot reopen one temporary table twice in a single statement.
     await c.query('CREATE TEMPORARY TABLE legacy_dup_urls AS SELECT media,url FROM legacy_input GROUP BY media,url HAVING COUNT(*)>1');
@@ -94,7 +101,46 @@ export async function importCandidates(
       const batch: ImportOutcome[] = [];
       await c.beginTransaction();
       try {
-        for (let i = start; i < Math.min(start + 100, rows.length); i++) {
+        const end = Math.min(start + 100, rows.length);
+        const grouped = (results: RowDataPacket[]) => {
+          const map = new Map<number, RowDataPacket[]>();
+          for (const result of results) {
+            const key = Number(result.seq);
+            const values = map.get(key) ?? [];
+            values.push(result);
+            map.set(key, values);
+          }
+          return map;
+        };
+        // Join by input sequence so comparisons use MariaDB's actual collations.
+        // Lock matching origins/articles before any writes in this bounded transaction.
+        // Force identity indexes: stale estimates on growing tables can otherwise
+        // choose the media/date index and scan an entire publisher for each input.
+        const originsBySeq = grouped(
+          await query(
+            `SELECT i.seq,o.source_key,o.raw_hash,o.article_id,a.id target_id
+           FROM legacy_origin_input i STRAIGHT_JOIN ${names.origins} o ON o.source_key=i.source_key
+           LEFT JOIN ${names.articles} a ON a.id=o.article_id
+           WHERE i.seq>=? AND i.seq<? FOR UPDATE`,
+            [start, end],
+          ),
+        );
+        const fields = "a.id,a.media,a.url,a.url_key,a.title,DATE_FORMAT(a.published_at,'%Y-%m-%d %H:%i:%s') published_at";
+        const urlsBySeq = grouped(
+          await query(
+            `SELECT i.seq,${fields} FROM legacy_input i STRAIGHT_JOIN ${names.articles} a FORCE INDEX (articles_media_url) ON a.media=i.media AND a.url=i.url
+           WHERE i.seq>=? AND i.seq<? FOR UPDATE`,
+            [start, end],
+          ),
+        );
+        const keysBySeq = grouped(
+          await query(
+            `SELECT i.seq,${fields} FROM legacy_input i STRAIGHT_JOIN ${names.articles} a FORCE INDEX (articles_media_url_key) ON a.media=i.media AND a.url_key=i.url_key
+           WHERE i.seq>=? AND i.seq<? FOR UPDATE`,
+            [start, end],
+          ),
+        );
+        for (let i = start; i < end; i++) {
           const row = rows[i];
           const a = row.article;
           const base = { sourceKey: row.lineage.sourceKey, rawHash: row.lineage.rawSha256 };
@@ -103,19 +149,15 @@ export async function importCandidates(
             batch.push({ ...base, action: 'quarantine', reason: issue });
             continue;
           }
-          const origins = await query(`SELECT source_key,raw_hash,article_id FROM ${names.origins} WHERE source_key=? FOR UPDATE`, [
-            base.sourceKey,
-          ]);
+          const origins = originsBySeq.get(i) ?? [];
           if (origins.length) {
             const origin = origins.find((r) => r.source_key === base.sourceKey && r.raw_hash === base.rawHash);
-            const target = origin ? await query(`SELECT id FROM ${names.articles} WHERE id=? FOR UPDATE`, [origin.article_id]) : [];
-            if (origin && target.length) batch.push({ ...base, action: 'already_imported', articleId: String(origin.article_id) });
+            if (origin?.target_id != null) batch.push({ ...base, action: 'already_imported', articleId: String(origin.article_id) });
             else batch.push({ ...base, action: 'quarantine', reason: origin ? 'missing_origin_article' : 'source_version_conflict' });
             continue;
           }
-          const fields = "id,media,url,url_key,title,DATE_FORMAT(published_at,'%Y-%m-%d %H:%i:%s') published_at";
-          const byUrl = await query(`SELECT ${fields} FROM ${names.articles} WHERE media=? AND url=? FOR UPDATE`, [a.media, a.url]);
-          const byKey = await query(`SELECT ${fields} FROM ${names.articles} WHERE media=? AND url_key=? FOR UPDATE`, [a.media, a.urlKey]);
+          const byUrl = urlsBySeq.get(i) ?? [];
+          const byKey = keysBySeq.get(i) ?? [];
           const matches = [...new Map([...byUrl, ...byKey].map((r) => [String(r.id), r])).values()];
           let articleId: string;
           let action: string;
@@ -184,6 +226,7 @@ export async function importCandidates(
   } finally {
     for (const name of [
       'legacy_input',
+      'legacy_origin_input',
       'legacy_dup_urls',
       'legacy_dup_keys',
       'legacy_dry_articles',

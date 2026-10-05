@@ -20,7 +20,7 @@ node --env-file=.env tools/nearline/import-articles.ts \
   --package /path/to/verified-prepared-package --out /private/new-apply-directory --apply
 ```
 
-每 100 列一個交易，文章、標籤與 `article_origins` 同時提交。中斷後用相同 package、新的輸出目錄重跑即可，來源主鍵與原始內容 SHA-256 會辨認已完成的列。交易提交後若尚未寫完本機報告就中斷，資料庫來源紀錄仍是續跑依據。已連結來源出現不同原始版本時列入衝突，不默默覆寫既有文章。
+每 100 列一個交易，文章、標籤與 `article_origins` 同時提交。 每批先以資料庫原有 collation 與唯一索引批次讀取並鎖定來源／文章身份，避免逐列重複往返；同包身份碰撞仍在寫入前排除，來源主鍵必須唯一。中斷後用相同 package、新的輸出目錄重跑即可，來源主鍵與原始內容 SHA-256 會辨認已完成的列。交易提交後若尚未寫完本機報告就中斷，資料庫來源紀錄仍是續跑依據。已連結來源出現不同原始版本時列入衝突，不默默覆寫既有文章。
 
 ## 邊界與保護
 
