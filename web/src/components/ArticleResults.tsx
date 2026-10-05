@@ -76,7 +76,7 @@ const OUTLETS = 10;
 export function ArticleFacets({
   facets,
   subject,
-  days,
+  span,
   camp,
   link,
   media,
@@ -84,7 +84,8 @@ export function ArticleFacets({
   facets: Facets;
   /** What was matched: 「q」 for a search, 全站 for the plain listing. */
   subject: string;
-  days: number;
+  /** The period, as the page words it: 過去 7 天, 過去 6 小時. */
+  span: string;
   camp: Camp | null;
   link: ListingLink;
   media: MediaInfo;
@@ -97,7 +98,8 @@ export function ArticleFacets({
       aria-label="文章的媒體分布"
     >
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        {subject}過去 {days} 天
+        {subject}
+        {span}
         <strong className="mx-1 block text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
           {facets.total.toLocaleString()} 篇
         </strong>

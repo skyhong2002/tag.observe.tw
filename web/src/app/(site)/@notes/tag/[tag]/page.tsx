@@ -20,7 +20,7 @@ export default async function TagNotes({
   const [series, media] = await Promise.all([fetchTagSeries(tag, 'all', hours).catch(() => null), fetchMedia().catch(() => null)]);
   return (
     <>
-      <TagMethod basisCount={series?.basis.media.length} hours={hours} />
+      <TagMethod basisCount={series?.basis.media.length} />
       {series && media && (
         <>
           <h3 className={methodHeading}>本頁圖表：固定基準 {series.basis.media.length} 家媒體</h3>

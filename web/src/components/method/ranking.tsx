@@ -56,11 +56,10 @@ export function RankingMethod() {
   );
 }
 
-/** One keyword's page. `basisCount` and `hours` come from the page's own
- *  request (@notes/tag/[tag]); without them the text stays general. `camp:
+/** One keyword's page. `basisCount` comes from the page's own request
+ *  (@notes/tag/[tag]); without it the text stays general. `camp:
  *  false` leaves out the camp basis where another block already states it. */
-export function TagMethod({ basisCount, hours, camp = true }: { basisCount?: number; hours?: number; camp?: boolean }) {
-  const listHours = hours ? Math.max(48, hours) : null;
+export function TagMethod({ basisCount, camp = true }: { basisCount?: number; camp?: boolean }) {
   return (
     <>
       <h3 className={methodHeading}>關鍵字頁</h3>
@@ -93,11 +92,14 @@ export function TagMethod({ basisCount, hours, camp = true }: { basisCount?: num
         </dd>
         <dt className={methodTerm}>報導列表</dt>
         <dd>
-          {listHours ? `最近 ${listHours} 小時` : '最近 48 小時（選 7 天時為 168 小時）'}
-          帶有這個標籤的最新 80 篇報導，來自所有收錄媒體，不限基準名單，所以篇數可能和上方圖表不同。
+          與上方圖表同一期間內，帶有這個標籤的所有報導，由新到舊，每頁 30
+          篇；來自所有收錄媒體，不限基準名單，所以篇數可能和圖表不同。標題或摘要提到這個字、但沒有這個標籤的報導不在列表內，列表上方會標出篇數並連到搜尋。
         </dd>
-        <dt className={methodTerm}>媒體分布</dt>
-        <dd>依報導列表中的文章計算各媒體篇數，再依媒體所屬陣營加總；圓點顏色為媒體的藍綠分類。</dd>
+        <dt className={methodTerm}>藍綠分布與媒體</dt>
+        <dd>
+          依期間內所有帶這個標籤的報導計算，不只是這一頁；點分布條可只看單一傾向。媒體清單列出篇數最多的 10
+          家。「偏藍」「偏綠」標記依刊登媒體的分類，不判斷單篇立場。
+        </dd>
         <dt className={methodTerm}>相關事件</dt>
         <dd>最近 72 小時內上過事件表、標籤含這個關鍵字的事件，最多 6 件，最近的在前；「在榜」是這件事上過事件表的小時數。</dd>
       </dl>

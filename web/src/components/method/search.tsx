@@ -43,6 +43,8 @@ export function SearchMethod({ camp = true, listing = false }: { camp?: boolean;
         )}
         {!listing && (
           <>
+            <dt className={methodTerm}>標籤摘要</dt>
+            <dd>搜尋字詞剛好也是標籤時，列出所選期間帶有這個標籤的篇數、目前的關鍵字排行名次與最近 3 天每小時篇數，並連到標籤頁。</dd>
             <dt className={methodTerm}>相關焦點事件</dt>
             <dd>目前事件表前 30 件中，主要標籤、標籤或列出的標題含搜尋字詞的事件，最多 3 件。</dd>
           </>

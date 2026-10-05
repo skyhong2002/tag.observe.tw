@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink, RangeChips } from '@/components/ArticleResults';
 import MethodLink from '@/components/MethodLink';
-import { fetchMedia, type MediaInfo } from '@/lib/api';
-import { fetchArticleListing, isCamp, rangeDays, validCursor } from '@/lib/article-search';
+import TagSummaryCard from '@/components/TagSummaryCard';
+import { fetchMedia, fetchTagSeries, fetchTagStatus, type MediaInfo } from '@/lib/api';
+import { countArticles, fetchArticleListing, isCamp, rangeDays, validCursor } from '@/lib/article-search';
 import { clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import { fetchEvents } from '@/lib/pages';
 
@@ -35,10 +36,15 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   // Nothing to search for: the plain listing is the same list without a term.
   if (!q) redirect('/article/');
-  const [{ page, facets }, media, events] = await Promise.all([
+  // On the first page, whether the query is also a tag, and that tag's standing.
+  const first = !cursor;
+  const [{ page, facets }, media, events, tagged, status, series] = await Promise.all([
     fetchArticleListing({ q, days, camp, cursor }),
     fetchMedia().catch((): MediaInfo => ({})),
-    cursor ? Promise.resolve(null) : fetchEvents(30).catch(() => null),
+    first ? fetchEvents(30).catch(() => null) : null,
+    first ? countArticles({ tag: q, hours: days * 24 }) : null,
+    first ? fetchTagStatus(q).catch(() => null) : null,
+    first ? fetchTagSeries(q, 'all', 72).catch(() => null) : null,
   ]);
   const needle = q.toLocaleLowerCase('zh-TW');
   const relatedEvents = (events?.events ?? [])
@@ -48,7 +54,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         [...e.major, ...e.tags.map((t) => t.tag), ...e.news.map((n) => n.title)].some((s) => s.toLocaleLowerCase('zh-TW').includes(needle)),
     )
     .slice(0, 3);
-  const isTag = page?.articles.some((a) => a.tags.includes(q)) ?? false;
 
   return (
     <div className="space-y-5">
@@ -63,13 +68,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">搜尋暫時無法使用，請稍後再試。</p>
       ) : (
         <>
-          <RangeChips days={days} defaultDays={31} link={link}>
-            {isTag && (
-              <Link href={`/tag/${encodeURIComponent(q)}/`} className="ml-auto text-brand-700 hover:underline dark:text-brand-400">
-                #{q} 標籤頁 →
-              </Link>
-            )}
-          </RangeChips>
+          <RangeChips days={days} defaultDays={31} link={link} />
+
+          {tagged ? (
+            <TagSummaryCard tag={q} tagged={tagged} span={`過去 ${days} 天`} status={status} points={series?.points ?? null} />
+          ) : null}
 
           {relatedEvents.length > 0 && (
             <section className="space-y-2" aria-label="相關焦點事件">
@@ -97,7 +100,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             {facets && (
               <aside className="lg:order-2">
                 <div className="lg:sticky lg:top-20">
-                  <ArticleFacets facets={facets} subject={`「${q}」`} days={days} camp={camp} link={link} media={media} />
+                  <ArticleFacets facets={facets} subject={`「${q}」`} span={`過去 ${days} 天`} camp={camp} link={link} media={media} />
                 </div>
               </aside>
             )}

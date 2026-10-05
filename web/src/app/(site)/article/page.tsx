@@ -65,7 +65,7 @@ export default async function ArticleIndexPage({ searchParams }: { searchParams:
           {facets && (
             <aside className="lg:order-2">
               <div className="lg:sticky lg:top-20">
-                <ArticleFacets facets={facets} subject="全站" days={days} camp={camp} link={link} media={media} />
+                <ArticleFacets facets={facets} subject="全站" span={`過去 ${days} 天`} camp={camp} link={link} media={media} />
               </div>
             </aside>
           )}

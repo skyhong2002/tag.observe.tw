@@ -1,29 +1,29 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import MediaHoverLink from '@/components/MediaHoverLink';
+import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
 import MethodLink from '@/components/MethodLink';
-import SafeImage from '@/components/SafeImage';
-import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
 import TagStatusPanel from '@/components/TagStatusPanel';
-import { type Camp, fetchMedia, fetchTagArticles, fetchTagSeries, fetchTagStatus, taipei } from '@/lib/api';
-import { articleHref } from '@/lib/reading.mts';
+import { fetchMedia, fetchTagArticles, fetchTagSeries, fetchTagStatus, type MediaInfo, taipei } from '@/lib/api';
+import { countArticles, fetchArticleListing, isCamp, validCursor } from '@/lib/article-search';
 import { decodeRouteParam, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;
 type Params = { tag: string };
+type Query = { hours?: string; camp?: string; cursor?: string };
 export async function generateMetadata({
   params,
   searchParams,
 }: {
   params: Promise<Params>;
-  searchParams: Promise<{ hours?: string }>;
+  searchParams: Promise<Query>;
 }): Promise<Metadata> {
   const tag = decodeRouteParam((await params).tag);
-  const hours = Math.max(48, tagHours(await searchParams));
+  const sp = await searchParams;
+  const hours = Math.max(48, tagHours(sp));
   const recent = await fetchTagArticles(tag, hours).catch(() => null);
   const headline = recent?.articles[0]?.title;
   const description = headline
@@ -35,19 +35,37 @@ export async function generateMetadata({
       canonical: `https://tag.observe.tw/tag/${encodeURIComponent(tag)}/`,
       types: { 'application/rss+xml': [{ url: `/feeds/tag/${encodeURIComponent(tag)}.xml`, title: `新文易數｜${tag}` }] },
     },
+    // One camp or an older page of the list is a view of this page, not another one.
+    ...(isCamp(sp.camp) || validCursor(sp.cursor) ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
-export default async function TagPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ hours?: string }> }) {
+export default async function TagPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Query> }) {
   const tag = decodeRouteParam((await params).tag);
+  const sp = await searchParams;
   // The footer's @notes/tag/[tag] makes the same series request for the basis list.
-  const hours = tagHours(await searchParams);
-  const [series, list, media, status] = await Promise.all([
+  const hours = tagHours(sp);
+  const camp = isCamp(sp.camp) ? sp.camp : null;
+  const cursor = validCursor(sp.cursor);
+  const span = hours % 24 === 0 ? `過去 ${hours / 24} 天` : `過去 ${hours} 小時`;
+  const link: ListingLink = (patch) => {
+    const next: Record<string, string | null> = { hours: hours === 72 ? null : String(hours), camp, cursor, ...patch };
+    const query = new URLSearchParams(Object.entries(next).filter((kv): kv is [string, string] => Boolean(kv[1])));
+    return `/tag/${encodeURIComponent(tag)}/${query.size ? `?${query}` : ''}`;
+  };
+  const [series, { page, facets }, media, status, mentions] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
-    fetchTagArticles(tag, Math.max(48, hours)),
-    fetchMedia(),
+    // The list and its camp split use the chart's window and every tagged article in it.
+    fetchArticleListing({ tag, hours, camp, cursor }),
+    fetchMedia().catch((): MediaInfo => ({})),
     fetchTagStatus(tag).catch(() => null),
+    // Reports that name the tag in their title or summary but were not tagged with it.
+    cursor ? Promise.resolve(null) : countArticles({ q: tag, hours }),
   ]);
+  const tagged = facets?.total ?? 0;
+  const untagged = mentions === null ? 0 : mentions - tagged;
+  const searchDays = hours <= 24 ? 1 : hours <= 168 ? 7 : 31;
+  const searchHref = `/search/?${new URLSearchParams({ q: tag, ...(searchDays === 31 ? {} : { days: String(searchDays) }) })}`;
   // A tag the site has never recorded: no articles, no counts, no ranking, history or events.
   if (
     status &&
@@ -55,17 +73,11 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     !status.history &&
     status.threads.length === 0 &&
     status.related.length === 0 &&
-    list.articles.length === 0 &&
+    tagged === 0 &&
+    !page?.articles.length &&
     !series.points.some((p) => p.count || p.hourlyCount)
   )
     notFound();
-  const byMedia = new Map<string, { title: string; count: number; camp: Camp }>();
-  for (const a of list.articles)
-    byMedia.set(a.media, { title: a.mediaTitle, camp: media[a.media]?.camp ?? 'other', count: (byMedia.get(a.media)?.count ?? 0) + 1 });
-  const campTotals = { blue: 0, green: 0, other: 0 };
-  for (const { count, camp } of byMedia.values()) campTotals[camp] += count;
-  const campDot = { blue: 'bg-blue-600', green: 'bg-emerald-600', other: 'bg-zinc-400' } as const;
-  const campLabel = { blue: '藍營傾向', green: '綠營傾向', other: '其他' } as const;
   return (
     <div className="space-y-6">
       <StructuredData
@@ -73,7 +85,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           `/tag/${encodeURIComponent(tag)}/`,
           `${tag}新聞與趨勢`,
           [['/ranking/', '關鍵字排行']],
-          list.articles.slice(0, 10).map((a) => ({ name: a.title, path: `/article/${a.id}/` })),
+          (page?.articles ?? []).slice(0, 10).map((a) => ({ name: a.title, path: `/article/${a.id}/` })),
         )}
       />
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -116,120 +128,53 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </h2>
         <TagChart points={series.points} />
       </section>
-      <section className="grid gap-6 md:grid-cols-[1fr_16rem]">
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-zinc-600">
-            最近 {Math.max(48, hours)} 小時的報導（{list.articles.length}）
-          </h2>
-          {list.articles.length === 0 && <p className="text-sm text-zinc-600">沒有找到報導。</p>}
-          <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-            {list.articles.map((a) => (
-              <li key={a.id} className="flex gap-3 p-3">
-                {a.image && /^https?:\/\//.test(a.image) && (
-                  <Link href={articleHref(a)} tabIndex={-1} aria-label={`閱讀：${a.title}`} className="flex-none">
-                    <SafeImage
-                      src={a.image}
-                      alt=""
-                      width={96}
-                      height={64}
-                      className="h-16 w-24 flex-none rounded-md object-cover"
-                      loading="lazy"
-                      unoptimized={false}
-                    />
-                  </Link>
-                )}
-                <div className="min-w-0 flex-1">
-                  <Link href={articleHref(a)} className="line-clamp-2 font-medium hover:underline">
-                    {a.title}
-                  </Link>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-600">
-                    <span className="inline-flex max-w-full items-center gap-1">
-                      <MediaHoverLink media={a.media} icon={12} className="min-w-0 hover:underline">
-                        {a.mediaTitle}
-                      </MediaHoverLink>
-                      <SourceLink url={a.url} className="ml-1 !min-h-5 shrink-0" />
-                    </span>
-                    <span aria-hidden>·</span>
-                    <span>{taipei(a.publishedAt)}</span>
-                  </p>
-                  <p className="mt-1 line-clamp-1 text-xs text-zinc-500">
-                    {a.tags
-                      .filter((t) => t !== tag)
-                      .slice(0, 8)
-                      .map((t) => (
-                        <Link key={t} href={`/tag/${encodeURIComponent(t)}`} className="mr-1.5 hover:text-brand-700">
-                          #{t}
-                        </Link>
-                      ))}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <aside className="space-y-4">
-          {status && status.threads.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-sm font-medium text-zinc-600">相關事件</h2>
-              <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white text-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-                {status.threads.map((t) => (
-                  <li key={t.id} className="px-3 py-2">
-                    <Link href={`/eve/${t.id}/`} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
-                      {t.maxTag ?? t.majorTags[0] ?? `事件 ${t.id}`}
-                    </Link>
-                    <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
-                      {t.majorTags
-                        .filter((x) => x !== t.maxTag)
-                        .slice(0, 4)
-                        .join('、')}
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      {taipei(t.firstTime)} 起 · 在榜 {t.hours} 小時
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div className="space-y-2">
-            <h2 className="text-sm font-medium text-zinc-600">媒體分布</h2>
-            {list.articles.length > 0 && (
-              <div className="space-y-1 text-xs text-zinc-600">
-                <div className="flex h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden>
-                  {(['blue', 'green', 'other'] as const).map((c) =>
-                    campTotals[c] ? (
-                      <span key={c} className={campDot[c]} style={{ width: `${(campTotals[c] / list.articles.length) * 100}%` }} />
-                    ) : null,
-                  )}
-                </div>
-                <p className="flex flex-wrap gap-x-3">
-                  {(['blue', 'green', 'other'] as const).map((c) => (
-                    <span key={c} className="inline-flex items-center gap-1">
-                      <span className={`h-2 w-2 rounded-full ${campDot[c]}`} aria-hidden />
-                      {campLabel[c]} {campTotals[c]}
-                    </span>
+      {!page ? (
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">報導列表暫時無法使用，請稍後再試。</p>
+      ) : (
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <aside className="space-y-4 lg:order-2">
+            {facets && <ArticleFacets facets={facets} subject={`#${tag} `} span={span} camp={camp} link={link} media={media} />}
+            {status && status.threads.length > 0 && (
+              <div className="space-y-2">
+                <h2 className="text-sm font-medium text-zinc-600">相關事件</h2>
+                <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white text-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+                  {status.threads.map((t) => (
+                    <li key={t.id} className="px-3 py-2">
+                      <Link href={`/eve/${t.id}/`} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
+                        {t.maxTag ?? t.majorTags[0] ?? `事件 ${t.id}`}
+                      </Link>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
+                        {t.majorTags
+                          .filter((x) => x !== t.maxTag)
+                          .slice(0, 4)
+                          .join('、')}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {taipei(t.firstTime)} 起 · 在榜 {t.hours} 小時
+                      </p>
+                    </li>
                   ))}
-                </p>
+                </ul>
               </div>
             )}
-            <ul className="rounded-xl border border-zinc-300 bg-white text-sm dark:border-zinc-800 dark:bg-zinc-900">
-              {[...byMedia.entries()]
-                .sort((a, b) => b[1].count - a[1].count)
-                .map(([m, { title, count, camp }]) => (
-                  <li key={m} className="flex items-center justify-between gap-2 px-3 py-1.5">
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${campDot[camp]}`} title={campLabel[camp]} aria-hidden />
-                      <MediaHoverLink media={m} icon={14} className="min-w-0 hover:underline">
-                        {title}
-                      </MediaHoverLink>
-                    </span>
-                    <span className="shrink-0 tabular-nums text-zinc-600">{count}</span>
-                  </li>
-                ))}
-            </ul>
+          </aside>
+          <div className="min-w-0 space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">{cursor ? '更早的報導' : `${span}標成 #${tag} 的報導`}</h2>
+              {untagged > 0 && (
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  另有 {untagged.toLocaleString()} 篇標題或摘要提到「{tag}」，但沒有這個標籤。
+                  <Link href={searchHref} className="text-brand-700 hover:underline dark:text-brand-400">
+                    看所有提到「{tag}」的文章 →
+                  </Link>
+                </p>
+              )}
+            </div>
+            <ArticleList page={page} byHour={hours <= 24} empty={`${span}沒有標成 #${tag} 的報導${camp ? '（目前只看單一傾向）' : ''}。`} />
+            <ArticlePager page={page} cursor={cursor} link={link} />
           </div>
-        </aside>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
