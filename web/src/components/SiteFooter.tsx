@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { API_ORIGIN } from '@/lib/api';
-import { METHOD_HREF, NAV_GROUPS } from '@/lib/site-nav';
+import { METHOD_HREF } from '@/lib/site-nav';
 import BackToTop from './BackToTop';
 import FooterMethod from './FooterMethod';
 import InstallApp from './InstallApp';
@@ -15,24 +15,21 @@ import Wordmark from './Wordmark';
 export { methodHeading } from './MethodNotes';
 
 type FooterLink = { href: string; label: string; external?: boolean };
-const [news, trend, sources] = NAV_GROUPS;
-// The header's three groups, each with the pages that only the footer lists, then 關於本站.
+// Only what the header does not already link: its sections stay up there, and
+// search has the header's box. Channels are the buttons under the brand.
 const COLUMNS: Array<{ label: string; links: FooterLink[] }> = [
-  { label: news.label, links: news.links },
-  { label: trend.label, links: [...trend.links, { href: '/observe/', label: '網站觀測' }] },
   {
-    label: sources.label,
+    label: '資料與透明度',
     links: [
-      sources.links[0],
-      { href: '/media/sources/', label: '流量與收錄比較' },
+      { href: '/observe/', label: '網站觀測' },
+      { href: '/media/sources/', label: '媒體流量與收錄比較' },
       { href: '/media/crawlers/', label: '爬蟲資訊' },
-      ...sources.links.slice(1),
+      { href: METHOD_HREF, label: '資料來源與計算方式' },
     ],
   },
   {
-    label: '關於本站',
+    label: '開發與聯絡',
     links: [
-      { href: METHOD_HREF, label: '資料來源與計算方式' },
       { href: '/api/', label: 'API 文件' },
       { href: 'https://github.com/skyhong2002/tag.observe.tw/issues/new', label: '聯絡與移除請求', external: true },
       { href: 'https://tag.analysis.tw', label: '母站 tag.analysis.tw', external: true },
@@ -102,7 +99,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
       <FooterMethod notes={notes} />
 
       <div className={`${band} mt-10 pt-12 pb-6`}>
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,8fr)] lg:gap-14">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20">
           <div className="space-y-5">
             <Link href="/" aria-label="新文易數 首頁" className="inline-block text-zinc-900 dark:text-zinc-100">
               <Wordmark className="h-9 w-auto" />
@@ -134,7 +131,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,1.4fr)] sm:gap-x-8">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:max-w-md sm:gap-x-16 lg:max-w-none">
             {COLUMNS.map((col) => (
               <nav key={col.label} aria-label={col.label}>
                 <h2 className="mb-2.5 text-xs font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">{col.label}</h2>
