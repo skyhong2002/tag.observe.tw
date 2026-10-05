@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 import zlib
 
 PREFIX = 'NEARLINE1:'
@@ -33,6 +34,27 @@ def query(sql):
     if p.returncode:
         raise RuntimeError(err.decode('utf8', 'replace')[-2000:])
     return [line.split('\t') for line in out.decode('utf8').splitlines()]
+
+
+def stop_dump(process):
+    # Stop consuming an oversized stream without waiting forever on a dump whose
+    # SIGTERM handler is blocked writing to our now-unread stdout pipe.
+    if process.stdout is not None:
+        process.stdout.close()
+    if process.poll() is None:
+        try:
+            process.terminate()
+        except OSError:
+            pass
+        deadline = time.time() + 2
+        while process.poll() is None and time.time() < deadline:
+            time.sleep(0.05)
+        if process.poll() is None:
+            try:
+                process.kill()
+            except OSError:
+                pass
+    process.wait()
 
 
 def main(request):
@@ -112,9 +134,8 @@ def main(request):
             emit({'type': 'data', 'base64': base64.b64encode(packed).decode('ascii')})
             emit({'type': 'end', 'sha256': digest.hexdigest(), 'raw_bytes': total})
         finally:
-            if p is not None and p.poll() is None:
-                p.terminate()
-                p.wait()
+            if p is not None:
+                stop_dump(p)
 
 
 try:
