@@ -8,6 +8,7 @@ import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
+import { ATTRIBUTION_RELATION_LABEL, attributionRole, authorDisplay } from '@/lib/author-display.mts';
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
@@ -70,7 +71,7 @@ function ArticleLine({ article, badge, dim = false }: { article: SimilarityArtic
       </Link>
       <span className="shrink-0 text-xs text-zinc-500 tabular-nums">
         <time dateTime={article.publishedAt}>{when}</time>
-        {article.authors.length > 0 && ` · ${article.authors.join('、')}`}{' '}
+        {` · ${authorDisplay(article.authors, article)}`}{' '}
       </span>
       <div className="w-full min-w-0">
         <SourceLink url={article.url} label={`${article.mediaTitle} 原文`} showUrl />
@@ -109,7 +110,7 @@ function CitationEvidence({ article, source }: { article: SimilarityArticle; sou
       <Passage
         lead={
           <span className="font-medium text-violet-700 dark:text-violet-400">
-            明示引用 {source.name}（{source.country}）
+            {attributionRole(source)} {source.name}（{source.country}）
           </span>
         }
         text={source.evidence}
@@ -608,7 +609,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   [
                     ['all', '全部關係'],
                     ['similarity', '內文相似'],
-                    ['citation', '明示引用'],
+                    ['citation', ATTRIBUTION_RELATION_LABEL],
                   ] as const
                 ).map(([value, label]) => (
                   <button
@@ -655,7 +656,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
             <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
               <p>
                 <span className="text-orange-600 dark:text-orange-400">同組：最早 → 較晚</span>
-                <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
+                <span className="ml-3 text-violet-600 dark:text-violet-400">來源／引用：來源 → 採用或引用方</span>
                 <span className="ml-3">
                   {selection
                     ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`
@@ -675,7 +676,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
         </section>
         {!fullscreen && (
           <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
-            本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則明示引用
+            本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則{ATTRIBUTION_RELATION_LABEL}
             {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''} · <MethodLink />
           </p>
         )}
@@ -746,7 +747,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   <select value={mode} onChange={(event) => updateMode(event.target.value as typeof mode)} className={control}>
                     <option value="all">全部關係</option>
                     <option value="similarity">內文相似</option>
-                    <option value="citation">明示引用</option>
+                    <option value="citation">{ATTRIBUTION_RELATION_LABEL}</option>
                   </select>
                 </label>
                 <label className="block text-sm">
@@ -760,7 +761,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   />
                 </label>
                 <label className="block text-sm">
-                  {mode === 'similarity' ? '刊出先後' : '引用方向'}
+                  {mode === 'similarity' ? '刊出先後' : '來源／引用方向'}
                   <select
                     value={direction}
                     disabled={!selection || !('node' in selection)}
@@ -770,9 +771,9 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                     }}
                     className={`${control} disabled:opacity-40`}
                   >
-                    <option value="all">{mode === 'similarity' ? '不分先後' : '所有引用方向'}</option>
-                    <option value="outgoing">{mode === 'similarity' ? '同組較晚' : '引用其他媒體'}</option>
-                    <option value="incoming">{mode === 'similarity' ? '同組最早' : '被其他媒體引用'}</option>
+                    <option value="all">{mode === 'similarity' ? '不分先後' : '所有來源／引用方向'}</option>
+                    <option value="outgoing">{mode === 'similarity' ? '同組較晚' : '採用／引用他媒'}</option>
+                    <option value="incoming">{mode === 'similarity' ? '同組最早' : '被採用／引用'}</option>
                   </select>
                 </label>
               </div>
@@ -796,13 +797,13 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   <p className="text-xs text-zinc-500">
                     {byId.get(selection.node)?.country} ·{' '}
                     {byId.get(selection.node)?.external
-                      ? '僅作為引用來源，未收錄本期內文'
+                      ? '僅作為來源／引用對象，未收錄本期內文'
                       : `已比對 ${number(byId.get(selection.node)?.articles ?? 0)} 篇`}
                   </p>
                   <div className="grid max-w-3xl grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
                     {[
-                      [selectedCounts?.outgoing ?? 0, '引用其他媒體'],
-                      [selectedCounts?.incoming ?? 0, '被其他媒體引用'],
+                      [selectedCounts?.outgoing ?? 0, '採用／引用他媒'],
+                      [selectedCounts?.incoming ?? 0, '被採用／引用'],
                       [selectedCounts?.earliest ?? 0, '同組最早'],
                       [selectedCounts?.later ?? 0, '同組較晚'],
                     ].map(([n, label]) => (

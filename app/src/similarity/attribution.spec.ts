@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
-import { extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
+import { attributionRole, extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
 
 describe('explicit media attribution', () => {
+  it('distinguishes a content provider from a cited outlet using preserved evidence', () => {
+    const result = extractAttributions('法新社報導，事件已確認。', 'pchome', '中央社');
+    expect(result.map((source) => [source.media, attributionRole(source)])).toEqual([
+      ['cna', '來源'],
+      ['afp', '引用'],
+    ]);
+    expect(result[0].evidence).toBe('內容提供者：中央社');
+    expect(attributionRole({ evidence: '法新社報導指出，內容提供者：中央社為頁面標示。' })).toBe('引用');
+  });
   it('recognizes reporting and credit cues with outlet countries', () => {
     const result = extractAttributions('根據《路透社》報導，市場回穩。法新社報導指出，協議已簽署。來源：美聯社', 'udn');
     expect(result.map((a) => [a.media, a.countryCode, a.kind])).toEqual([

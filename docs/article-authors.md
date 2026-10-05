@@ -57,3 +57,5 @@ node --env-file=.env tools/repair-article-authors.ts --stored-body --limit 1000 
 - 民視 30606908：機構署名民間全民電視公司、引用法新社。
 - 波新聞 10864474：作者李至文；牧迪網頁設計是網站 metadata，排除為作者。波新聞保存正文 76 篇重新掃描、43 筆回填，備份 bo-lead-original.jsonl。
 - 1111 30082822：日期旁可見記者黃彩絹／綜合報導，優先於網站公司 metadata。指定作者欄在正文排除日期前保存。
+
+看板與 `/similarity/` 的文章列共用 `app/src/journalists/credits.ts`，來源／引用角色共用 `attributionRole`。關係圖、媒體表及每日趨勢的既有 citation 合計包含內容提供者與明示引用，統一標示「來源／引用」，逐筆證據使用「來源」或「引用」。角色顯示不改寫證據、不重新計算內文相似度，也不把署名中的媒體自動新增成關係圖證據。

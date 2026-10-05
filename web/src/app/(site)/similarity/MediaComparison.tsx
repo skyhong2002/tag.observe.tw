@@ -16,8 +16,8 @@ const columns: { key: SortKey; label: string }[] = [
   { key: 'articles', label: '分析篇數' },
   { key: 'earliest', label: '同組最早' },
   { key: 'later', label: '同組較晚' },
-  { key: 'outgoing', label: '引用他媒' },
-  { key: 'incoming', label: '被他媒引用' },
+  { key: 'outgoing', label: '採用／引用他媒' },
+  { key: 'incoming', label: '被他媒採用／引用' },
 ];
 const number = (value: number) => value.toLocaleString('zh-TW');
 type RelationshipKey = 'earliest' | 'later' | 'outgoing' | 'incoming';
@@ -26,8 +26,8 @@ type RelationshipKey = 'earliest' | 'later' | 'outgoing' | 'incoming';
 const relationshipFilters: Record<RelationshipKey, { label: string; matches: (edge: SimilarityEdge, id: string) => boolean }> = {
   earliest: { label: '同組較晚的對象', matches: (edge, id) => edge.kind !== 'citation' && edge.target === id },
   later: { label: '同組最早的對象', matches: (edge, id) => edge.kind !== 'citation' && edge.source === id },
-  outgoing: { label: '引用的對象', matches: (edge, id) => edge.kind === 'citation' && edge.source === id },
-  incoming: { label: '引用本媒的對象', matches: (edge, id) => edge.kind === 'citation' && edge.target === id },
+  outgoing: { label: '採用／引用的對象', matches: (edge, id) => edge.kind === 'citation' && edge.source === id },
+  incoming: { label: '採用／引用本媒的對象', matches: (edge, id) => edge.kind === 'citation' && edge.target === id },
 };
 
 export default function MediaComparison({
@@ -70,7 +70,7 @@ export default function MediaComparison({
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h3 className="font-semibold">各家媒體，怎麼報、引用誰？</h3>
+          <h3 className="font-semibold">各家媒體，怎麼報、採用或引用誰？</h3>
           <p className="mt-1 text-xs leading-6 text-zinc-500">點欄位排序，點數字查看報導，點關係對象比較兩家媒體。</p>
         </div>
         <label className="text-xs text-zinc-500">
@@ -115,7 +115,7 @@ export default function MediaComparison({
                 <span className="ml-2 font-normal">
                   {focus && <span className="text-zinc-700 dark:text-zinc-300">{focus.label} · </span>}
                   <span className="text-amber-700 dark:text-amber-400">內文相近</span> ·{' '}
-                  <span className="text-violet-700 dark:text-violet-400">引用</span> · 箭頭由來源指向較晚或引用的一方
+                  <span className="text-violet-700 dark:text-violet-400">來源／引用</span> · 箭頭由來源指向較晚或採用／引用的一方
                 </span>
               </th>
             </tr>
@@ -135,7 +135,9 @@ export default function MediaComparison({
                         <MediaIcon media={row.id} title={row.name} size={22} />
                         <span className={`${table.leadText} font-medium`}>{row.name}</span>
                       </span>
-                      {row.external && <span className={`${table.leadExtra} whitespace-nowrap text-[11px] text-zinc-500`}>僅引用來源</span>}
+                      {row.external && (
+                        <span className={`${table.leadExtra} whitespace-nowrap text-[11px] text-zinc-500`}>僅來源／引用對象</span>
+                      )}
                     </button>
                   </th>
                   <td className={`${table.num} py-2.5`}>{row.external ? <span title="未收錄本期內文">—</span> : number(row.articles)}</td>
@@ -171,7 +173,13 @@ export default function MediaComparison({
                         const other = outgoing ? edge.target : edge.source;
                         const name = names.get(other) ?? other;
                         const label =
-                          edge.kind === 'citation' ? (outgoing ? '引用' : '被引用') : outgoing ? '對方同組最早' : '本媒同組最早';
+                          edge.kind === 'citation'
+                            ? outgoing
+                              ? '採用／引用'
+                              : '被採用／引用'
+                            : outgoing
+                              ? '對方同組最早'
+                              : '本媒同組最早';
                         return (
                           <button
                             key={`${edge.kind}:${edge.source}:${edge.target}`}

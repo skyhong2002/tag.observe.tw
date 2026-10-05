@@ -5,6 +5,14 @@ import { reporterCredit } from '../crawl/byline.ts';
 export type OutletIdentity = { media: string; name: string; country: string; countryCode: string };
 export type Attribution = OutletIdentity & { evidence: string; kind: 'explicit' };
 
+/** Supplying content differs from citing it; both roles require evidence. */
+export function attributionRole(source: { evidence: string }): '來源' | '引用' {
+  return /^內容提供者[：:]/u.test(source.evidence.trim()) ? '來源' : '引用';
+}
+
+/** Aggregate relationships include content providers and explicit citations. */
+export const ATTRIBUTION_RELATION_LABEL = '來源／引用';
+
 type Outlet = OutletIdentity & { aliases: string[] };
 const titles = favicons as Record<string, { title: string | null }>;
 const countries: Record<string, string> = {

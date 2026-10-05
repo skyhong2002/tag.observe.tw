@@ -116,7 +116,7 @@ describe('filtered relationships and hover summaries', () => {
     const tooltip = createGraphTooltip([...nodes, node('<b>x</b>', 1)], camps);
     const citation = tooltip({ edge: edges[0] }, edges);
     expect(citation).toContain('blue → large');
-    expect(citation).toContain('2 篇文章明示引用');
+    expect(citation).toContain('2 篇文章來源／引用');
     const similar = tooltip({ edge: storyEdge }, [storyEdge]);
     expect(similar).toContain('large → green');
     expect(similar).toContain('95.0%');
@@ -132,7 +132,7 @@ describe('filtered relationships and hover summaries', () => {
     expect(tooltip({ node: 'green' }, edges)).toContain('綠營傾向');
     const isolated = createGraphTooltip(filter({ camp: 'blue' }).nodes, camps)({ node: 'blue' }, []);
     expect(isolated).toContain('目前篩選與關係模式下沒有連線');
-    expect(isolated).toContain('被引用 2 篇');
+    expect(isolated).toContain('被採用／引用 2 篇');
     expect(tooltip({ node: 'unknown' }, [])).toBe('');
   });
 });

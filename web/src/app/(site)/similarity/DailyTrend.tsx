@@ -22,7 +22,7 @@ const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
 const SERIES = [
   { key: 'pairs', name: '相似配對', color: '#ea580c', dashed: false },
   { key: 'identical', name: '內文相同', color: '#0d9488', dashed: true },
-  { key: 'citations', name: '明示引用', color: '#8b5cf6', dashed: false },
+  { key: 'citations', name: '來源／引用', color: '#8b5cf6', dashed: false },
 ] as const;
 
 /** Today's date in Asia/Taipei as YYYY-MM-DD. */
@@ -122,7 +122,7 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
       chart.dispose();
     };
   }, [data, start, dark]);
-  return <div ref={ref} className="h-96 w-full" role="img" aria-label="每日相似配對、內文相同、明示引用與比對篇數" />;
+  return <div ref={ref} className="h-96 w-full" role="img" aria-label="每日相似配對、內文相同、來源／引用與比對篇數" />;
 }
 
 type Metric = 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
@@ -132,8 +132,8 @@ const columns: Array<{ key: 'name' | Metric; label: string; share?: boolean }> =
   { key: 'articles', label: '比對篇數' },
   { key: 'copied', label: '被跟進', share: true },
   { key: 'copying', label: '跟進他媒', share: true },
-  { key: 'citing', label: '引用他媒', share: true },
-  { key: 'cited', label: '被引用' },
+  { key: 'citing', label: '採用／引用他媒', share: true },
+  { key: 'cited', label: '被採用／引用' },
 ];
 interface Row {
   media: string;
@@ -195,7 +195,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
   return (
     <TableScroller label="各媒體每日比對表格，可左右捲動">
       <table className="w-full min-w-[40rem] border-collapse text-sm">
-        <caption className="sr-only">期間內各媒體的比對篇數、被跟進與跟進他媒的篇數、引用與被引用</caption>
+        <caption className="sr-only">期間內各媒體的比對篇數、被跟進與跟進他媒的篇數、採用／引用與被採用／引用</caption>
         <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
           <tr className="border-b border-zinc-200 dark:border-zinc-800">
             {columns.map((column) => {
@@ -296,7 +296,7 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
         { label: '比對篇數', value: sum(data.totals.articles) },
         { label: '相似配對', value: sum(data.totals.pairs) },
         { label: '內文相同', value: sum(data.totals.identical) },
-        { label: '明示引用', value: sum(data.totals.citations) },
+        { label: '來源／引用', value: sum(data.totals.citations) },
       ]
     : [];
   return (

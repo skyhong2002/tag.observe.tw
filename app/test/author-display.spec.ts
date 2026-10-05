@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { authorCreditParts, authorDisplay } from '../../web/src/lib/author-display.mts';
+import { publicArticle } from '../src/similarity/compute.ts';
 
 const source = (media: string, name: string, evidence: string) => ({ media, name, evidence });
 describe('liveboard author and source roles', () => {
+  it('uses the same author/source grouping on similarity articles', () => {
+    const article = publicArticle({
+      id: 1,
+      media: 'msn',
+      title: '新聞',
+      url: 'https://example.com/',
+      publishedAt: new Date('2026-10-06T00:00:00Z'),
+      authors: ['TVBS新聞網', '高鈺婷'],
+      creator: 'TVBS新聞網',
+      chars: 500,
+      attributions: [
+        { media: 'tvbs', name: 'TVBS新聞網', country: '台灣', countryCode: 'TW', kind: 'explicit', evidence: '內容提供者：TVBS新聞網' },
+      ],
+    });
+    expect(authorDisplay(article.authors, article)).toBe('作者 高鈺婷 · 來源 TVBS新聞網');
+    expect(authorCreditParts(article.authors, article).find((part) => part.media === 'tvbs')?.evidence).toBe('內容提供者：TVBS新聞網');
+  });
   it('separates an MSN writer from the supplying publisher', () => {
     expect(authorDisplay(['TVBS新聞網', '高鈺婷'], { media: 'msn' })).toBe('作者 高鈺婷 · 來源 TVBS新聞網');
   });
