@@ -99,7 +99,12 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
         const nodes = Array.isArray(data) ? data : (data['@graph'] ?? [data]);
         for (const node of nodes) {
           const kw = node?.keywords;
-          const list = Array.isArray(kw) ? kw.map(String) : typeof kw === 'string' ? splitKeywords(kw, rules.split ?? null) : [];
+          // Videoland wraps a comma-separated keyword list in a single array entry.
+          const list = Array.isArray(kw)
+            ? kw.flatMap((value) => splitKeywords(String(value), rules.split ?? null))
+            : typeof kw === 'string'
+              ? splitKeywords(kw, rules.split ?? null)
+              : [];
           const t = list.map(normalizeTag).filter((x) => Buffer.byteLength(x) > 1);
           if (t.length) {
             tags = t;
