@@ -58,6 +58,7 @@ export interface MediaTotals {
   today: number;
   last24h: number;
   publishingMedia24h: number;
+  activeSources: number;
   statusCounts: Record<string, number>;
 }
 
@@ -621,52 +622,21 @@ export default function LiveBoard({
             className="portrait:hidden"
           />
           <Stat label="24 小時發稿媒體" value={totals?.publishingMedia24h ?? '—'} unit="家" className="portrait:hidden" />
-          <Stat label="爬蟲" value={status.ok ?? '—'} unit="正常" className="portrait:hidden">
-            {((status.stale ?? 0) > 0 || (status.failing ?? 0) > 0) && (
-              <span className="ml-1 inline-grid grid-cols-[1em_max-content_max-content] items-center gap-x-1 self-center text-sm font-normal leading-4">
-                {(status.stale ?? 0) > 0 && (
-                  <span className="contents text-amber-400">
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      className="h-[1em] w-[1em]"
-                      aria-hidden="true"
-                    >
-                      <path d="M10 2 19 18H1Z" />
-                    </svg>
-                    <span className="text-right">{status.stale}</span>
-                    <span>無近期文章</span>
-                  </span>
-                )}
-                {(status.failing ?? 0) > 0 && (
-                  <span className="contents text-rose-400">
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      className="h-[1em] w-[1em]"
-                      aria-hidden="true"
-                    >
-                      <path d="m4 4 12 12M16 4 4 16" />
-                    </svg>
-                    <span className="text-right">{status.failing}</span>
-                    <span>失敗</span>
-                  </span>
-                )}
-              </span>
-            )}
-          </Stat>
-          <Stat label="本站線上讀者" value={presence.count ?? '—'} unit="人" className="portrait:hidden">
-            <a
-              href="/observe/opt-out/"
-              title="最近 90 秒內回報的可見頁面；每 30 秒更新，同一瀏覽器多分頁只計一次。這是瀏覽器數估計，非精確人數。點此調整是否計入統計。"
-              className="ml-2 max-w-32 text-xs text-zinc-400 hover:text-zinc-200"
-            >
-              {presence.status}
-            </a>
+          <Stat label={`${totals?.activeSources ?? '—'} 爬蟲`} value={status.ok ?? '—'} unit="正常" className="portrait:hidden" />
+          <Stat
+            label="本站線上讀者"
+            value={
+              <a href="/observe/opt-out/" title={presence.status}>
+                {presence.count ?? '—'}
+              </a>
+            }
+            unit="人"
+            className="portrait:hidden"
+          />
+          <Stat label="本站瀏覽量" value={feed?.visitors?.views ?? '—'} unit="次" className="portrait:hidden">
+            <span title="GA4 最近 30 分鐘瀏覽量" className="ml-2 h-6 w-20 self-center short:w-12">
+              {feed?.visitors && <Sparkline values={feed.visitors.perMinute} color="#f97316" className="h-full w-full" />}
+            </span>
           </Stat>
           <div className="ml-auto flex shrink-0 flex-col items-end">
             <Clock />
