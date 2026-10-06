@@ -133,9 +133,10 @@ function Clock() {
   if (!now) return null;
   const opts = { timeZone: 'Asia/Taipei' } as const;
   return (
-    <div className="flex items-baseline gap-3 tabular-nums">
+    <div className="flex items-center gap-3 tabular-nums">
       <span className="whitespace-nowrap text-base text-zinc-400 short:hidden portrait:hidden">
-        {now.toLocaleDateString('zh-TW', { ...opts, month: 'numeric', day: 'numeric', weekday: 'short' })}
+        <span className="block">{now.toLocaleDateString('zh-TW', { ...opts, year: 'numeric', month: 'numeric', day: 'numeric' })}</span>
+        <span className="block">{now.toLocaleDateString('zh-TW', { ...opts, weekday: 'short' })}</span>
       </span>
       <span className="w-[8ch] shrink-0 whitespace-nowrap text-right font-mono text-4xl font-bold short:text-3xl portrait:text-3xl">
         {now.toLocaleTimeString('zh-TW', { ...opts, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -158,7 +159,7 @@ function Stat({
   className?: string;
 }) {
   return (
-    <div className={`flex min-w-0 flex-col ${className}`}>
+    <div className={`flex shrink-0 flex-col ${className}`}>
       <span className="whitespace-nowrap text-xs text-zinc-500">{label}</span>
       <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl font-bold tabular-nums short:text-xl">
         {value}
@@ -597,14 +598,10 @@ export default function LiveBoard({
       className={`fixed inset-0 flex flex-col overflow-hidden bg-zinc-950 text-zinc-100 ${styles.board}`}
     >
       <header className="shrink-0 border-b border-zinc-800">
-        <div className="flex items-center gap-8 px-6 py-2 short:gap-4 short:px-4 short:py-1 portrait:gap-4 portrait:px-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-2 short:gap-4 short:px-4 short:py-1 portrait:gap-4 portrait:px-3">
           <div className="flex shrink-0 items-end gap-3">
             <Wordmark className="h-9 w-auto text-zinc-100 short:h-7" />
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap pb-0.5 text-xs text-zinc-500">
-              <span className={`h-2 w-2 rounded-full ${online ? `bg-emerald-500 ${styles.pulse}` : 'bg-rose-500'}`} aria-hidden />
-              <span className="short:hidden portrait:hidden">tag.observe.tw</span>
-              {online ? '' : '離線，重試中'}
-            </span>
+            {!online && <span className="whitespace-nowrap text-xs text-rose-400">離線，重試中</span>}
           </div>
           <Stat label="今日收錄" value={totals ? (totals.today + todayExtra).toLocaleString() : '—'} unit="篇" />
           <Stat
@@ -657,7 +654,7 @@ export default function LiveBoard({
               <Sparkline values={feed.visitors.perMinute} color="#f97316" className="ml-2 h-6 w-20 self-center short:w-12" />
             </Stat>
           )}
-          <div className="ml-auto flex flex-col items-end">
+          <div className="ml-auto flex shrink-0 flex-col items-end">
             <Clock />
           </div>
         </div>
