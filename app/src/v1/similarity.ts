@@ -135,6 +135,8 @@ export async function loadSimilarity(db: Db, params: SimilarityParams): Promise<
 
 const mediaList = (value: string | undefined) => (value ? new Set(value.split(',').filter(Boolean).slice(0, 500)) : undefined);
 export function evidenceFilter(query: Record<string, string | undefined>): EvidenceFilter | null {
+  if (query.edgeRelation && !['attributed', 'same-byline', 'unattributed'].includes(query.edgeRelation)) return null;
+  if (query.edgeDirected !== undefined && !['true', 'false'].includes(query.edgeDirected)) return null;
   if (query.relation && !['attributed', 'same-byline', 'unattributed'].includes(query.relation)) return null;
   const mode = query.mode ?? 'all',
     direction = query.direction ?? 'all',
@@ -145,7 +147,13 @@ export function evidenceFilter(query: Record<string, string | undefined>): Evide
   let edge: EvidenceFilter['edge'];
   if (query.edgeKind !== undefined || query.source !== undefined || query.target !== undefined) {
     if ((query.edgeKind !== 'similarity' && query.edgeKind !== 'citation') || !query.source || !query.target || query.node) return null;
-    edge = { kind: query.edgeKind, source: query.source, target: query.target };
+    edge = {
+      kind: query.edgeKind,
+      source: query.source,
+      target: query.target,
+      relation: query.edgeRelation as EvidenceFilter['relation'],
+      directed: query.edgeDirected === undefined ? undefined : query.edgeDirected === 'true',
+    };
   }
   return {
     mode: mode as EvidenceFilter['mode'],
@@ -376,9 +384,24 @@ export function registerSimilarity(app: FastifyInstance, db: Db) {
     return data;
   });
   app.get<{ Querystring: Record<string, string | undefined> }>('/api/v1/similarity/evidence', async (request, reply) => {
-    const { mode, relation, node, edgeKind, source, target, direction, scope, focus, q, page, ...window } = request.query;
+    const { mode, relation, node, edgeKind, edgeRelation, edgeDirected, source, target, direction, scope, focus, q, page, ...window } =
+      request.query;
     const params = similarityParams(window);
-    const filter = evidenceFilter({ mode, relation, node, edgeKind, source, target, direction, scope, focus, q, page });
+    const filter = evidenceFilter({
+      mode,
+      relation,
+      node,
+      edgeKind,
+      edgeRelation,
+      edgeDirected,
+      source,
+      target,
+      direction,
+      scope,
+      focus,
+      q,
+      page,
+    });
     if (!params || !filter) return reply.code(400).send({ error: `${PARAMS_ERROR}; see the OpenAPI document for evidence filters` });
     const data = await loadEvidence(db, await cachedIndexView(db, params), filter);
     reply.header('cache-control', params.hours ? 'public, max-age=60' : 'public, max-age=600');

@@ -8,6 +8,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import { graphBoundaryDiameter, graphEdgeHasRoom } from '@/lib/graph-edge-boundary.mts';
+import { edgeColor, edgeHasArrow } from '@/lib/graph-edge-style.mts';
 import { type GraphSelection, highlightedRelationship, sameGraphSelection } from '@/lib/graph-evidence.mts';
 import { bindGraphNavigation, GRAPH_ZOOM_MAX, GRAPH_ZOOM_MIN } from '@/lib/graph-navigation.mts';
 import { createGraphTooltip } from '@/lib/graph-tooltip.mts';
@@ -198,16 +199,16 @@ export default function SimilarityGraph({
             // line's square end pokes out beside the tip. A path symbol is
             // centred on the line end instead: the line stops halfway into
             // the head, where the head is at least as wide as the line.
-            symbol: e.kind === 'citation' ? ['path://M5 0L10 10L5 8L0 10Z', 'circle'] : ['none', 'none'],
+            symbol: edgeHasArrow(e) ? ['path://M5 0L10 10L5 8L0 10Z', 'circle'] : ['none', 'none'],
             symbolSize: [[Math.max(12, 2 * width + 6), 14], 0],
             lineStyle: {
               width,
               // ECharts draws the line and its arrowhead as two shapes sharing one
               // opacity; translucency would darken where they overlap.
-              color: flatten(e.kind === 'citation' ? (dark ? '#a78bfa' : '#8b5cf6') : dark ? '#fb923c' : '#ea580c', opacity),
+              color: flatten(edgeColor(e, dark), opacity),
               type: 'solid',
               opacity: 1,
-              curveness: e.kind === 'citation' ? 0.1 : -0.05,
+              curveness: e.kind === 'citation' || e.relation === 'attributed' ? 0.15 : e.relation === 'same-byline' ? -0.15 : 0.04,
             },
           }))
       );

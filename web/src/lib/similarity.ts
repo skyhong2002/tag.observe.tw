@@ -41,7 +41,7 @@ export interface EvidenceQuery {
   mode: 'all' | 'similarity' | 'citation';
   relation?: 'attributed' | 'same-byline' | 'unattributed';
   node?: string;
-  edge?: { kind: 'similarity' | 'citation'; source: string; target: string };
+  edge?: { kind: 'similarity' | 'citation'; source: string; target: string; relation?: EvidenceQuery['relation']; directed?: boolean };
   direction: 'all' | 'outgoing' | 'incoming';
   /** Media on screen; relationships need both ends inside. */
   scope?: string[];
@@ -61,6 +61,8 @@ export async function fetchEvidence(period: SimilarityPeriod, threshold: number,
   if (query.node) params.set('node', query.node);
   if (query.edge) {
     params.set('edgeKind', query.edge.kind);
+    if (query.edge.relation) params.set('edgeRelation', query.edge.relation);
+    if (query.edge.directed !== undefined) params.set('edgeDirected', String(query.edge.directed));
     params.set('source', query.edge.source);
     params.set('target', query.edge.target);
   }

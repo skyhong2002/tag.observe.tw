@@ -46,7 +46,7 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
         </dd>
         <dt className={methodTerm}>箭頭與線條</dt>
         <dd>
-          橘色無方向線表示直接比對的文字重疊；紫色箭頭由内容提供者或被明示引用的媒體指向採用／引用方。相似線粗細代表配對數，引用線粗細代表引用篇數。
+          紫色箭頭由明示來源指向引用方；橘色箭頭表示未辨識稿源配對的較早刊登方指向較晚刊登方，不代表原創或改寫；青綠色無箭頭線表示同署名跨站刊登。同一分鐘、時間未確認或只共同引用第三方時不畫箭頭。線粗細代表配對數或引用篇數。
         </dd>
       </dl>
       {(all || page === 'graph') && (
@@ -64,7 +64,7 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
           </dd>
           <dt className={methodTerm}>媒體比較</dt>
           <dd>
-            各媒體同署名跨站、已註明來源、未辨識稿源的篇數，皆依文章去重；同一篇文章若與不同文章形成不同類別配對，可出現在多欄，因此不可直接相加。引用與被採用／引用另計。主要關係對象依直接配對數或引用篇數列出。
+            各媒體同署名跨站、已註明來源、未辨識稿源的篇數，皆依文章去重；同一篇文章若與不同文章形成不同類別配對，可出現在多欄，因此不可直接相加。引用與被引用另計。主要關係對象依直接配對數或引用篇數列出。
           </dd>
           <dt className={methodTerm}>新聞對照</dt>
           <dd>
@@ -87,7 +87,7 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
             <dd>沒有同署名或明示稿源線索的直接相似配對中，標示刊登較晚的篇數；不代表跟稿。同一分鐘或時間未確認的配對不計先後。</dd>
             <dt className={methodTerm}>採用／引用他媒</dt>
             <dd>這家媒體文章內文明示採用／引用其他媒體的次數。</dd>
-            <dt className={methodTerm}>被採用／引用</dt>
+            <dt className={methodTerm}>被引用</dt>
             <dd>其他媒體文章內文明示引用這家媒體的次數。</dd>
             <dt className={methodTerm}>百分比</dt>
             <dd>較早刊登、較晚刊登與採用／引用他媒旁的百分比，是佔這家媒體比對篇數的比例；各媒體表為期間合計。</dd>

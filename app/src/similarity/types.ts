@@ -61,6 +61,10 @@ export interface SimilarityEdge {
   source: string;
   target: string;
   kind: 'similarity' | 'citation';
+  /** Visual category; matching bylines take priority over source credits. */
+  relation?: PairRelationInfo['kind'];
+  /** Arrow points from target to source; orange means publication order only. */
+  directed?: boolean;
   count: number;
   score: number | null;
   sameByline?: number;

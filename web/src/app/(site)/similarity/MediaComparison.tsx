@@ -5,6 +5,7 @@ import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
+import { edgeCategory, edgeHasArrow, edgeLabel } from '@/lib/graph-edge-style.mts';
 import type { CitationDirection, GraphSelection, RelationshipMode } from '@/lib/graph-evidence.mts';
 import { nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityEdge, SimilarityNode } from '@/lib/similarity';
@@ -17,8 +18,8 @@ const columns: { key: SortKey; label: string }[] = [
   { key: 'sameByline', label: '同署名跨站' },
   { key: 'attributed', label: '已註明來源' },
   { key: 'unattributed', label: '未辨識稿源' },
-  { key: 'outgoing', label: '採用／引用他媒' },
-  { key: 'incoming', label: '被他媒採用／引用' },
+  { key: 'outgoing', label: '引用' },
+  { key: 'incoming', label: '被引用' },
 ];
 const number = (value: number) => value.toLocaleString('zh-TW');
 type RelationshipKey = 'earliest' | 'later' | 'outgoing' | 'incoming';
@@ -91,9 +92,9 @@ export default function MediaComparison({
       <p role="status" className="text-xs text-zinc-500">
         符合 {filtered.length} 家 · 沿用圖上媒體篩選 · <MethodLink />
       </p>
-      <TableScroller label="各家媒體關係表格，可左右捲動">
-        <table className="w-full min-w-[1040px] border-collapse text-sm">
-          <thead className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800">
+      <TableScroller card label="各家媒體關係表格，可左右捲動">
+        <table className="w-full min-w-[880px] border-collapse text-sm">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
             <tr>
               {columns.map((column) => (
                 <th
@@ -118,8 +119,9 @@ export default function MediaComparison({
                 主要關係對象
                 <span className="ml-2 font-normal">
                   {focus && <span className="text-zinc-700 dark:text-zinc-300">{focus.label} · </span>}
-                  <span className="text-amber-700 dark:text-amber-400">內文相近</span> ·{' '}
-                  <span className="text-violet-700 dark:text-violet-400">引用</span> · 相似無方向，引用箭頭指向引用方
+                  <span className="text-amber-700 dark:text-amber-400">未辨識稿源</span> ·{' '}
+                  <span className="text-violet-700 dark:text-violet-400">引用</span> ·{' '}
+                  <span className="text-teal-700 dark:text-teal-400">同署名</span>
                 </span>
               </th>
             </tr>
@@ -178,17 +180,17 @@ export default function MediaComparison({
                         const outgoing = edge.source === row.id;
                         const other = outgoing ? edge.target : edge.source;
                         const name = names.get(other) ?? other;
-                        const label = edge.kind === 'citation' ? (outgoing ? '採用／引用' : '被採用／引用') : '直接文字比對';
+                        const label = edge.kind === 'citation' ? (outgoing ? '引用' : '被引用') : edgeLabel(edge);
                         return (
                           <button
-                            key={`${edge.kind}:${edge.source}:${edge.target}`}
+                            key={`${edge.kind}:${edge.relation}:${edge.directed}:${edge.source}:${edge.target}`}
                             type="button"
                             title={`${name} · ${label} ${number(edge.count)} 篇`}
                             aria-label={`${row.name}與${name}：${label} ${number(edge.count)} 篇，比較兩家媒體`}
                             onClick={() => onSelect({ edge }, edge.kind, 'all')}
-                            className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] ${edge.kind === 'citation' ? 'bg-violet-50 text-violet-800 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'}`}
+                            className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] ${edgeCategory(edge) === 'same-byline' ? 'bg-teal-50 text-teal-800 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300' : edgeCategory(edge) === 'attributed' ? 'bg-violet-50 text-violet-800 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'}`}
                           >
-                            <span aria-hidden="true">{edge.kind === 'citation' ? (outgoing ? '←' : '→') : '↔'}</span>
+                            <span aria-hidden="true">{edgeHasArrow(edge) ? (outgoing ? '←' : '→') : '↔'}</span>
                             <MediaIcon media={other} title={name} size={14} />
                             {name}
                             <span className="tabular-nums opacity-70">{number(edge.count)}</span>

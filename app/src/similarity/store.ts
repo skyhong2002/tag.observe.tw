@@ -5,9 +5,10 @@ import type { Db } from '../db/client.ts';
 import { articleCitations, articleSketches, articles, similarityPairs } from '../db/schema.ts';
 import { type Attribution, outletIdentity } from './attribution.ts';
 import { PAIR_WINDOW_MS, publicArticle } from './compute.ts';
-import { classifyRelation } from './relation.ts';
+import { classifyRelation, similarityConnection } from './relation.ts';
 import type {
   EvidenceRef,
+  PairRelationInfo,
   SimilarityArticle,
   SimilarityEdge,
   SimilarityEvidence,
@@ -250,6 +251,8 @@ export function aggregateRelations(
       });
     return counts.get(media)!;
   };
+  const citationKeys = new Set(citations.map((c) => `${c.articleId}:${c.source}`));
+  const sameBylineCredits = new Set<string>();
   for (const stored of pairs) {
     const pair = toPair(stored, known);
     if (!pair || pair.a.media === pair.b.media) continue;
@@ -266,12 +269,25 @@ export function aggregateRelations(
       count(earlier.media).earliest.add(earlier.id);
       count(later.media).later.add(later.id);
     }
-    const [source, target] = [a.media, b.media].sort();
-    const key = `similarity:${source}:${target}`;
+    const connection = similarityConnection(a, b, relation);
+    if (connection.relation === 'same-byline') {
+      sameBylineCredits.add(`${a.id}:${b.media}`);
+      sameBylineCredits.add(`${b.id}:${a.media}`);
+    }
+    // A measured pair with a stored direct credit already has a purple citation edge.
+    if (
+      connection.relation === 'attributed' &&
+      ((relation.aCitesB && citationKeys.has(`${a.id}:${b.media}`)) || (relation.bCitesA && citationKeys.has(`${b.id}:${a.media}`)))
+    )
+      continue;
+    const { source, target } = connection;
+    const key = `similarity:${connection.relation}:${connection.directed}:${source}:${target}`;
     const edge = edges.get(key) ?? {
       source,
       target,
       kind: 'similarity' as const,
+      relation: connection.relation,
+      directed: connection.directed,
       count: 0,
       score: null,
       sameByline: 0,
@@ -286,6 +302,7 @@ export function aggregateRelations(
   for (const citation of citations) {
     count(citation.media).outgoing.add(citation.articleId);
     count(citation.source).incoming.add(citation.articleId);
+    if (sameBylineCredits.has(`${citation.articleId}:${citation.source}`)) continue;
     const key = `citation:${citation.media}:${citation.source}`;
     const edge = edges.get(key) ?? {
       source: citation.media,
@@ -328,8 +345,8 @@ export interface EvidenceFilter {
   mode: 'all' | 'similarity' | 'citation';
   relation?: 'attributed' | 'same-byline' | 'unattributed';
   node?: string;
-  edge?: { kind: 'similarity' | 'citation'; source: string; target: string };
-  /** Citation direction only; similarity is undirected. */
+  edge?: { kind: 'similarity' | 'citation'; source: string; target: string; relation?: PairRelationInfo['kind']; directed?: boolean };
+  /** Node evidence direction filters explicit citations; edge direction is selected separately. */
   direction: 'all' | 'outgoing' | 'incoming';
   /** Media on screen; relationships need both ends inside. */
   scope?: Set<string>;
@@ -350,7 +367,7 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
   const { node, edge, direction } = filter;
   let items: LightItem[] = [];
   const known = new Map(view.articleById ?? []);
-  if (filter.relation && !known.size)
+  if ((filter.relation || edge?.relation) && !known.size)
     for (const [id, article] of await loadArticles(
       db,
       view.pairs.flatMap((pair) => [pair.aId, pair.bId]),
@@ -375,6 +392,18 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
     for (const origin of view.origins) {
       const { article, source } = origin;
       if (filter.relation && (!origin.directPair || toPair(origin.directPair, known)?.relation?.kind !== filter.relation)) continue;
+      if (edge?.relation) {
+        const pair = origin.directPair && toPair(origin.directPair, known);
+        if (!pair) continue;
+        const connection = similarityConnection(pair.a, pair.b, pair.relation);
+        if (
+          connection.relation !== edge.relation ||
+          connection.directed !== edge.directed ||
+          connection.source !== edge.source ||
+          connection.target !== edge.target
+        )
+          continue;
+      }
       if (!includes(article.media, source.media)) continue;
       if (node) {
         if (article.media !== node && source.media !== node) continue;

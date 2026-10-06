@@ -132,7 +132,7 @@ describe('filtered relationships and hover summaries', () => {
     expect(tooltip({ node: 'green' }, edges)).toContain('綠營傾向');
     const isolated = createGraphTooltip(filter({ camp: 'blue' }).nodes, camps)({ node: 'blue' }, []);
     expect(isolated).toContain('目前篩選與關係模式下沒有連線');
-    expect(isolated).toContain('被採用／引用 2 篇');
+    expect(isolated).toContain('被引用 2 篇');
     expect(tooltip({ node: 'unknown' }, [])).toBe('');
   });
 });

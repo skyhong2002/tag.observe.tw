@@ -54,3 +54,20 @@ export function classifyRelation(a: CreditedArticle, b: CreditedArticle): PairRe
     publication,
   };
 }
+
+/** Graph arrows describe explicit credits or publication order, never inferred authorship. */
+export function similarityConnection(a: CreditedArticle, b: CreditedArticle, relation = classifyRelation(a, b)) {
+  const category = relation.sharedAuthors.length ? 'same-byline' : relation.kind;
+  let source: string, target: string;
+  let directed = false;
+  if (category === 'attributed' && relation.aCitesB !== relation.bCitesA) {
+    [source, target] = relation.aCitesB ? [a.media, b.media] : [b.media, a.media];
+    directed = true;
+  } else if (category === 'unattributed' && ['a-earlier', 'b-earlier'].includes(relation.publication)) {
+    [source, target] = relation.publication === 'a-earlier' ? [b.media, a.media] : [a.media, b.media];
+    directed = true;
+  } else {
+    [source, target] = [a.media, b.media].sort();
+  }
+  return { source, target, relation: category, directed };
+}

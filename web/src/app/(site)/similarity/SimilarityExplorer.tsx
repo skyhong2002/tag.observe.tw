@@ -9,6 +9,7 @@ import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
 import { ATTRIBUTION_RELATION_LABEL, attributionRole, authorDisplay } from '@/lib/author-display.mts';
+import { edgeHasArrow } from '@/lib/graph-edge-style.mts';
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
@@ -476,7 +477,13 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       node: selection && 'node' in selection ? selection.node : undefined,
       edge:
         selection && 'edge' in selection
-          ? { kind: selection.edge.kind, source: selection.edge.source, target: selection.edge.target }
+          ? {
+              kind: selection.edge.kind,
+              source: selection.edge.source,
+              target: selection.edge.target,
+              relation: selection.edge.relation,
+              directed: selection.edge.directed,
+            }
           : undefined,
       direction: selection && 'node' in selection ? direction : 'all',
       scope: graph.nodes.map((node) => node.id),
@@ -521,7 +528,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
       : selection && 'edge' in selection
-        ? `${byId.get(selection.edge.target)?.name} ${selection.edge.kind === 'citation' ? '→' : '↔'} ${byId.get(selection.edge.source)?.name}`
+        ? `${byId.get(selection.edge.target)?.name} ${edgeHasArrow(selection.edge) ? '→' : '↔'} ${byId.get(selection.edge.source)?.name}`
         : '圖上全部媒體';
   const highlightedCount = selection ? edges.filter((edge) => highlightedRelationship(edge, selection)).length : 0;
   const openBrowser = () => browser.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
@@ -662,10 +669,12 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
             />
           </div>
           {!fullscreen && (
-            <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
+            <div className="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:min-h-12">
               <p>
-                <span className="text-orange-600 dark:text-orange-400">文字重疊：無方向</span>
+                <span className="text-orange-600 dark:text-orange-400">未辨識稿源：較早 → 較晚</span>
                 <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
+                <span className="ml-3 text-teal-600 dark:text-teal-400">同署名跨站：無箭頭</span>
+                <span className="ml-3">橘色僅表示刊登先後；時間未明、共同引用第三方無箭頭</span>
                 <span className="ml-3">
                   {selection
                     ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`

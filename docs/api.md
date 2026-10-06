@@ -327,7 +327,7 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 
 **內文相似與明確引用關係**
 
-讀取全量相似度索引：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，配對永久保存，每 10 分鐘更新；排除「內容」聯播來源。index 揭露期間內的比對篇數與尚待比對篇數。相似連線只使用直接比對，無方向，附上同署名與明示來源分類；citation 由刊登媒體指向明確提及來源，並不保證最初作者。文章證據另由 /api/v1/similarity/evidence 分頁取得。
+讀取全量相似度索引：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，配對永久保存，每 10 分鐘更新；排除「內容」聯播來源。index 揭露期間內的比對篇數與尚待比對篇數。相似連線只使用直接比對，依同署名、明示來源與刊登先後分開彙整；citation 由刊登媒體指向明確提及來源，並不保證最初作者。文章證據另由 /api/v1/similarity/evidence 分頁取得。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -394,6 +394,8 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 | `edges[].source` | string |  |
 | `edges[].target` | string |  |
 | `edges[].kind` | "similarity" \| "citation" |  |
+| `edges[].relation` | "attributed" \| "same-byline" \| "unattributed" | 視覺分類，同署名優先 |
+| `edges[].directed` | boolean | 箭頭由 target 指向 source；未辨識稿源僅表示刊登先後 |
 | `edges[].count` | integer |  |
 | `edges[].score` | number \| null |  |
 | `edges[].sameByline` | integer |  |
@@ -420,6 +422,8 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 | `threshold` | query | number | 最低 Dice 相似度，0.5–1，預設 `0.65` |
 | `mode` | query | "all" \| "similarity" \| "citation" | 關係類型，預設 `all` |
 | `node` | query | string | 只看與此媒體有關的證據 |
+| `edgeRelation` | query | "attributed" \| "same-byline" \| "unattributed" | 相似連線視覺分類（同署名優先） |
+| `edgeDirected` | query | "true" \| "false" | 該相似連線是否有箭頭 |
 | `edgeKind` | query | "similarity" \| "citation" | 只看一條連線：類型（需同時給 source、target） |
 | `source` | query | string | 連線起點媒體 |
 | `target` | query | string | 連線終點媒體 |
