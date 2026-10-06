@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SIMILARITY_CAVEAT } from '@/lib/journalists';
+import { REPOSITORY_URL, SIMILARITY_CAVEAT } from '@/lib/journalists';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
 // 記者 (/journalist/) and one person's page (/journalist/[name]/). The window
@@ -14,6 +14,18 @@ export function JournalistMethod() {
       <h3 className={methodHeading}>記者</h3>
       <p>
         記者頁從文章署名整理出人名與筆名，不含媒體、部門、通訊社、職稱與責任編輯；可看每個人在哪些媒體刊登、寫了幾篇，以及文章與其他媒體內文相近時的刊登先後。較晚刊登只是閱讀線索，不是抄襲判定。
+      </p>
+      <p className="mt-2 max-w-3xl text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+        這些頁面由公開署名自動整理，不是本人建立的檔案。本人不希望出現在記者頁，可在
+        <a
+          href={`${REPOSITORY_URL}/issues/new?title=${encodeURIComponent('記者頁移除請求')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-brand-700 hover:underline dark:text-brand-400"
+        >
+          GitHub 提出移除請求
+        </a>
+        ，或由個人頁的「關於這一頁」直接送出。Issue 是公開的，請勿填寫名字以外的個資；送出後約 15 分鐘內下架。
       </p>
       <p>{SIMILARITY_CAVEAT}</p>
       <p>
@@ -44,8 +56,8 @@ export function JournalistMethod() {
         </dd>
         <dt className={methodTerm}>排序與顯示</dt>
         <dd>
-          每格同列顯示篇數與百分比。切換「篇數／百分比
-          %」後點欄名排序，再點一次切換升冪／降冪；百分比排序套用於已比對至引用各欄。從姓名、媒體或總篇數切換百分比時，預設依未見相近比例降冪排列。刊登媒體只顯示前兩家，完整資料可見提示或個人頁。
+          預設顯示記者、刊登媒體、篇數、首見報導、內文相近與引用；「詳細欄位」可展開其餘統計，「進階篩選」可設定關係、篇數與比例範圍。每格同列顯示篇數與百分比。切換「篇數／百分比
+          %」後點欄名排序，再點一次切換升冪／降冪；百分比排序套用於已比對至引用各欄。從姓名、媒體或總篇數切換百分比時，預設依首見報導比例降冪排列。刊登媒體只顯示前兩家，完整資料可見提示或個人頁。
         </dd>
         <dt className={methodTerm}>比例與篩選</dt>
         <dd>

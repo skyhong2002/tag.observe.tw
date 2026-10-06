@@ -10,7 +10,7 @@ import { type Metric, matchesFilters, metricCount, metricShare, metrics, type So
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
 import { table } from '@/lib/table-styles';
 
-const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
+const allColumns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
   { key: 'name', label: '記者', numeric: false },
   { key: 'media', label: '刊登媒體', title: '依刊登媒體數排序', numeric: false },
   { key: 'articles', label: '篇數', numeric: true },
@@ -42,6 +42,9 @@ const PAGE = 150;
 const number = (value: number) => value.toLocaleString('zh-TW');
 
 export default function JournalistTable({ rows }: { rows: JournalistSummary[] }) {
+  const [detailed, setDetailed] = useState(false);
+  const displayMetrics = metrics.filter(({ key }) => detailed || ['firstSeen', 'matched', 'cited'].includes(key));
+  const columns = allColumns.filter(({ key }) => detailed || ['name', 'media', 'articles', 'firstSeen', 'matched', 'cited'].includes(key));
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
@@ -51,7 +54,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
   const [relation, setRelation] = useState<Metric | ''>('');
   const [minArticles, setMinArticles] = useState(0);
   const [minCoverage, setMinCoverage] = useState(0);
-  const [metric, setMetric] = useState<Metric>('unmatched');
+  const [metric, setMetric] = useState<Metric>('firstSeen');
   const [minShare, setMinShare] = useState('');
   const [maxShare, setMaxShare] = useState('');
   const resetFilters = () => {
@@ -118,7 +121,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
         </ul>
       </td>
       <td className={cell}>{number(row.articles)}</td>
-      {metrics.map(({ key }) => (
+      {displayMetrics.map(({ key }) => (
         <MetricCell key={key} row={row} metric={key} />
       ))}
     </tr>
@@ -180,7 +183,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             onClick={() => {
               setSortMode('share');
               if (sort === 'articles' || sort === 'name' || sort === 'media') {
-                setSort('unmatched');
+                setSort('firstSeen');
                 setDescending(true);
               }
               setShown(PAGE);
@@ -189,124 +192,147 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             百分比 %
           </button>
         </fieldset>
+        <label className="inline-flex items-center gap-1.5 py-2">
+          <input
+            type="checkbox"
+            checked={detailed}
+            onChange={(e) => {
+              setDetailed(e.target.checked);
+              if (!e.target.checked && !['name', 'media', 'articles', 'firstSeen', 'matched', 'cited'].includes(sort)) {
+                setSort('firstSeen');
+                setDescending(true);
+              }
+              setShown(PAGE);
+            }}
+          />
+          詳細欄位
+        </label>
         <MethodLink className="py-2" />
       </div>
-      <section className="mb-3 flex flex-wrap gap-2 text-xs" aria-label="關係篩選">
-        <button
-          type="button"
-          className={chip(!relation)}
-          aria-pressed={!relation}
-          onClick={() => {
-            setRelation('');
-            setShown(PAGE);
-          }}
-        >
-          全部關係
-        </button>
-        {metrics
-          .filter(({ key }) => key !== 'compared')
-          .map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              className={chip(relation === key)}
-              aria-pressed={relation === key}
-              onClick={() => {
-                setRelation(relation === key ? '' : key);
+      <details className="mb-3 text-xs">
+        <summary className="w-fit cursor-pointer py-1 text-zinc-500 dark:text-zinc-400">
+          進階篩選
+          {[Boolean(relation), minArticles > 0, minCoverage > 0, minShare !== '', maxShare !== ''].filter(Boolean).length > 0
+            ? `（${[Boolean(relation), minArticles > 0, minCoverage > 0, minShare !== '', maxShare !== ''].filter(Boolean).length} 項已套用）`
+            : ''}
+        </summary>
+        <section className="mt-2 mb-3 flex flex-wrap gap-2 text-xs" aria-label="關係篩選">
+          <button
+            type="button"
+            className={chip(!relation)}
+            aria-pressed={!relation}
+            onClick={() => {
+              setRelation('');
+              setShown(PAGE);
+            }}
+          >
+            全部關係
+          </button>
+          {metrics
+            .filter(({ key }) => key !== 'compared')
+            .map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={chip(relation === key)}
+                aria-pressed={relation === key}
+                onClick={() => {
+                  setRelation(relation === key ? '' : key);
+                  setShown(PAGE);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+        </section>
+        <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
+          <label className="flex flex-col gap-1">
+            最低篇數
+            <input
+              className={`${control} w-24`}
+              type="number"
+              min="0"
+              step="1"
+              value={minArticles}
+              onChange={(e) => {
+                setMinArticles(Math.max(0, Number(e.target.value)));
+                setShown(PAGE);
+              }}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            最低已比對比例
+            <select
+              className={control}
+              value={minCoverage}
+              onChange={(e) => {
+                setMinCoverage(Number(e.target.value));
                 setShown(PAGE);
               }}
             >
-              {label}
-            </button>
-          ))}
-      </section>
-      <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
-        <label className="flex flex-col gap-1">
-          最低篇數
-          <input
-            className={`${control} w-24`}
-            type="number"
-            min="0"
-            step="1"
-            value={minArticles}
-            onChange={(e) => {
-              setMinArticles(Math.max(0, Number(e.target.value)));
-              setShown(PAGE);
-            }}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          最低已比對比例
-          <select
-            className={control}
-            value={minCoverage}
-            onChange={(e) => {
-              setMinCoverage(Number(e.target.value));
-              setShown(PAGE);
-            }}
-          >
-            {[0, 50, 80, 100].map((value) => (
-              <option key={value} value={value}>
-                {value ? `${value}%` : '不限'}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          比例篩選欄位
-          <select
-            className={control}
-            value={metric}
-            onChange={(e) => {
-              setMetric(e.target.value as Metric);
-              setShown(PAGE);
-            }}
-          >
-            {metrics.map(({ key, label }) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          最低比例（%）
-          <input
-            className={`${control} w-28`}
-            type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            placeholder="不限"
-            value={minShare}
-            onChange={(e) => {
-              setMinShare(e.target.value);
-              setShown(PAGE);
-            }}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          最高比例（%）
-          <input
-            className={`${control} w-28`}
-            type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            placeholder="不限"
-            value={maxShare}
-            onChange={(e) => {
-              setMaxShare(e.target.value);
-              setShown(PAGE);
-            }}
-          />
-        </label>
-        <button type="button" className="py-2 underline underline-offset-4" onClick={resetFilters}>
-          清除篩選
-        </button>
-      </div>
+              {[0, 50, 80, 100].map((value) => (
+                <option key={value} value={value}>
+                  {value ? `${value}%` : '不限'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            比例篩選欄位
+            <select
+              className={control}
+              value={metric}
+              onChange={(e) => {
+                setMetric(e.target.value as Metric);
+                setShown(PAGE);
+              }}
+            >
+              {metrics.map(({ key, label }) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            最低比例（%）
+            <input
+              className={`${control} w-28`}
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="不限"
+              value={minShare}
+              onChange={(e) => {
+                setMinShare(e.target.value);
+                setShown(PAGE);
+              }}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            最高比例（%）
+            <input
+              className={`${control} w-28`}
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="不限"
+              value={maxShare}
+              onChange={(e) => {
+                setMaxShare(e.target.value);
+                setShown(PAGE);
+              }}
+            />
+          </label>
+          <button type="button" className="py-2 underline underline-offset-4" onClick={resetFilters}>
+            清除篩選
+          </button>
+        </div>
+      </details>
       <TableScroller label="記者表格，可左右捲動">
-        <table className="w-full min-w-[80rem] border-collapse text-sm [&_td]:py-1 [&_th]:py-1">
+        <table className={`w-full ${detailed ? 'min-w-[80rem]' : 'min-w-[44rem]'} border-collapse text-sm [&_td]:py-1 [&_th]:py-1`}>
           <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
               {columns.map((column) => (
