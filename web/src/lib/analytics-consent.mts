@@ -7,7 +7,7 @@ export const OPT_OUT_KEY = 'tag-analytics-opt-out';
 /** Fired on window when this browser's choice changes (same tab; other tabs get `storage`). */
 export const OPT_OUT_EVENT = 'tag-analytics-opt-out-change';
 
-export type AnalyticsBlock = 'environment' | 'automation' | 'opt-out' | null;
+export type AnalyticsBlock = 'environment' | 'automation' | 'opt-out' | 'privacy' | null;
 
 interface Env {
   production: boolean;
@@ -15,6 +15,8 @@ interface Env {
   webdriver: boolean | undefined;
   userAgent: string;
   optedOut: boolean;
+  doNotTrack?: string | null;
+  globalPrivacyControl?: boolean;
   pathname?: string;
 }
 
@@ -26,6 +28,7 @@ export function analyticsBlock(env: Env): AnalyticsBlock {
   if (!env.production || env.hostname !== 'tag.observe.tw') return 'environment';
   if (env.webdriver === true || AUTOMATION_UA.test(env.userAgent)) return 'automation';
   if (env.optedOut) return 'opt-out';
+  if (env.doNotTrack === '1' || env.doNotTrack === 'yes' || env.globalPrivacyControl) return 'privacy';
   return null;
 }
 

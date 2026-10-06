@@ -629,9 +629,9 @@ export default function LiveBoard({
                 此刻在線
                 <span
                   role="img"
-                  aria-label={online && presence.count !== null ? '連線正常' : '連線未確認'}
-                  title={online && presence.count !== null ? '連線正常' : '連線未確認'}
-                  className={`h-1.5 w-1.5 rounded-full ${online && presence.count !== null ? 'bg-emerald-400' : 'bg-zinc-600'}`}
+                  aria-label={presence.status}
+                  title={presence.status}
+                  className={`h-1.5 w-1.5 rounded-full ${online && presence.counted ? 'bg-emerald-400' : 'bg-zinc-600'}`}
                 />
               </span>
             }

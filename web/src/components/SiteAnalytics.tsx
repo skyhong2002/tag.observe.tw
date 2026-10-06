@@ -33,6 +33,8 @@ export default function SiteAnalytics() {
       production: process.env.NODE_ENV === 'production',
       hostname: location.hostname,
       webdriver: navigator.webdriver,
+      doNotTrack: navigator.doNotTrack,
+      globalPrivacyControl: (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl,
       userAgent: navigator.userAgent,
       optedOut: readOptOut(safeStorage()),
       pathname: location.pathname,

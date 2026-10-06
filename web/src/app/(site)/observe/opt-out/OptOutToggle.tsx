@@ -5,6 +5,7 @@ import { type AnalyticsBlock, analyticsBlock, OPT_OUT_EVENT, readOptOut, writeOp
 const STATUS: Record<NonNullable<AnalyticsBlock> | 'counted', { label: string; note: string }> = {
   counted: { label: '計入統計', note: '這個瀏覽器的造訪會送到 Google Analytics，可見頁面也會計入本站線上讀者。' },
   'opt-out': { label: '不計入統計', note: '已在這個瀏覽器關閉，Google Analytics 不會載入，也不再回報線上讀者心跳。' },
+  privacy: { label: '不計入統計', note: '瀏覽器已要求不要追蹤，不送出統計或線上讀者心跳。' },
   automation: { label: '不計入統計', note: '偵測到自動化測試瀏覽器，預設不送統計。' },
   environment: { label: '不計入統計', note: '這不是正式網站（tag.observe.tw），本來就不送統計。' },
 };
@@ -19,6 +20,8 @@ function current() {
     production: process.env.NODE_ENV === 'production',
     hostname: location.hostname,
     webdriver: navigator.webdriver,
+    doNotTrack: navigator.doNotTrack,
+    globalPrivacyControl: (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl,
     userAgent: navigator.userAgent,
     optedOut,
   });
@@ -82,7 +85,7 @@ export default function OptOutToggle() {
         )}
       </div>
       {changed && !state.optedOut && !state.block && (
-        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">已恢復線上讀者心跳；Google Analytics 從下一次開啟頁面起開始計入。</p>
+        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">已恢復設定，重新載入頁面後確認追蹤連線並開始計入。</p>
       )}
       {changed && state.optedOut && <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">已關閉，從現在起不再送出統計。</p>}
       {error && (
