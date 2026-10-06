@@ -1096,10 +1096,10 @@ curl -s 'https://tag.observe.tw/api/v1/journalists?hours=48&limit=50'
 | `journalists[].similar` | object |  |
 | `journalists[].similar.pairs` | integer | 至少一端是此記者文章的相似配對數 |
 | `journalists[].similar.articles` | integer | 有相似配對的自家文章數（去重） |
-| `journalists[].similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站或已註明來源 |
-| `journalists[].similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站或已註明來源 |
-| `journalists[].similar.sameAuthor` | integer | 對方文章也署同一名字的配對數（不保證同一人） |
-| `journalists[].similar.attributed` | integer | 排除同署名後，已有明示来源的配對數 |
+| `journalists[].similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `journalists[].similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `journalists[].similar.sameAuthor` | integer | 有同署名相近文章的篇數（期間內文章去重，不保證同一人） |
+| `journalists[].similar.attributed` | integer | 排除同署名後，有明示來源相似配對的篇數（期間內文章去重） |
 | `journalists[].similar.identical` | integer | 正規化內文完全相同的配對數 |
 
 錯誤：`400` 參數無效。
@@ -1146,10 +1146,10 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `stats.similar` | object |  |
 | `stats.similar.pairs` | integer | 至少一端是此記者文章的相似配對數 |
 | `stats.similar.articles` | integer | 有相似配對的自家文章數（去重） |
-| `stats.similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站或已註明來源 |
-| `stats.similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站或已註明來源 |
-| `stats.similar.sameAuthor` | integer | 對方文章也署同一名字的配對數（不保證同一人） |
-| `stats.similar.attributed` | integer | 排除同署名後，已有明示来源的配對數 |
+| `stats.similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `stats.similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `stats.similar.sameAuthor` | integer | 有同署名相近文章的篇數（期間內文章去重，不保證同一人） |
+| `stats.similar.attributed` | integer | 排除同署名後，有明示來源相似配對的篇數（期間內文章去重） |
 | `stats.similar.identical` | integer | 正規化內文完全相同的配對數 |
 | `media` | object[] |  |
 | `media[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |

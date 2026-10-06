@@ -29,10 +29,10 @@ export interface JournalistSimilarity {
   pairs: number;
   /** Distinct own articles that matched something. */
   articles: number;
-  /** Pairs where the own article was published at least a minute after the other outlet's. */
+  /** Distinct own articles published at least a minute after another outlet's. */
   later: number;
   earlier: number;
-  /** Pairs whose other side carries the same byline (the person's own copy elsewhere). */
+  /** Distinct own articles with a same-byline match at another outlet. */
   sameAuthor: number;
   attributed?: number;
   identical: number;
@@ -104,19 +104,33 @@ export function orientPair(pair: SimilarityPair, isOwn: (article: SimilarityArti
     otherCitesOwn: other.attributions.some((source) => source.media === own.media),
   };
 }
-export function countSimilarity(pairs: JournalistPair[]): JournalistSimilarity {
+export function countSimilarity(pairs: JournalistPair[], ownIds?: ReadonlySet<number>): JournalistSimilarity {
   const result = emptySimilarity();
   const matched = new Set<number>();
+  const categories = {
+    later: new Set<number>(),
+    earlier: new Set<number>(),
+    sameAuthor: new Set<number>(),
+    attributed: new Set<number>(),
+  };
   for (const pair of pairs) {
     result.pairs++;
-    matched.add(pair.own.id);
     if (pair.kind === 'identical') result.identical++;
-    if (pair.sameAuthor) result.sameAuthor++;
-    else if (pair.attributed || pair.ownCitesOther || pair.otherCitesOwn) result.attributed = (result.attributed ?? 0) + 1;
-    else if (pair.relation === 'later') result.later++;
-    else if (pair.relation === 'earlier') result.earlier++;
+    // Both endpoints may be this journalist's posts in the selected period.
+    // Do not count a same-byline counterpart outside that period.
+    for (const article of [pair.own, pair.other]) {
+      if (ownIds ? !ownIds.has(article.id) : article !== pair.own) continue;
+      matched.add(article.id);
+      if (pair.sameAuthor) categories.sameAuthor.add(article.id);
+      else if (pair.attributed || pair.ownCitesOther || pair.otherCitesOwn) categories.attributed.add(article.id);
+      else if (!pair.publicationUnknown && pair.relation !== 'same') {
+        const relation = article === pair.own ? pair.relation : pair.relation === 'later' ? 'earlier' : 'later';
+        categories[relation].add(article.id);
+      }
+    }
   }
   result.articles = matched.size;
+  for (const key of ['later', 'earlier', 'sameAuthor', 'attributed'] as const) result[key] = categories[key].size;
   return result;
 }
 
@@ -156,7 +170,7 @@ export function summarizeJournalists(
       cited: entry.rows.filter((row) => (row.attributions?.length ?? 0) > 0).length,
       latest: new Date(Math.max(...entry.rows.map((row) => row.publishedAt.getTime()))).toISOString(),
       compared: entry.rows.filter((row) => row.indexed).length,
-      similar: countSimilarity(pairsOf.get(name) ?? []),
+      similar: countSimilarity(pairsOf.get(name) ?? [], new Set(entry.rows.map((row) => row.id))),
     }))
     .sort((a, b) => b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant'));
 }

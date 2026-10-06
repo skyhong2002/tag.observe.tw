@@ -105,3 +105,53 @@ describe('summarizeJournalists', () => {
     expect(wang.similar).toEqual({ pairs: 1, articles: 1, later: 1, earlier: 0, sameAuthor: 0, attributed: 0, identical: 0 });
   });
 });
+
+describe('article-based similarity counts', () => {
+  it('deduplicates each category while allowing one article in multiple categories', () => {
+    const own = article(1, 'a', '2026-10-01T02:00:00Z', ['王小明']);
+    const others = [
+      article(2, 'b', '2026-10-01T01:00:00Z', []),
+      article(3, 'c', '2026-10-01T01:30:00Z', []),
+      article(4, 'd', '2026-10-01T03:00:00Z', []),
+      article(5, 'e', '2026-10-01T04:00:00Z', ['王小明']),
+      article(6, 'f', '2026-10-01T05:00:00Z', ['王小明']),
+      article(7, 'g', '2026-10-01T06:00:00Z', [], ['a']),
+      article(8, 'h', '2026-10-01T07:00:00Z', [], ['a']),
+    ];
+    const pairs = others.map((other) => orientPair(pair(own, other), (a) => a.id === 1, '王小明')!);
+    expect(countSimilarity(pairs, new Set([1]))).toEqual({
+      pairs: 7,
+      articles: 1,
+      later: 1,
+      earlier: 1,
+      sameAuthor: 1,
+      attributed: 1,
+      identical: 0,
+    });
+  });
+
+  it('counts both in-period same-byline posts and excludes out-of-period counterparts regardless of orientation', () => {
+    const a = article(1, 'a', '2026-10-01T02:00:00Z', ['王小明']);
+    const b = article(2, 'b', '2026-10-01T03:00:00Z', ['王小明']);
+    const outside = article(3, 'c', '2026-09-30T03:00:00Z', ['王小明']);
+    const rows = [row(a.id, a.media, a.publishedAt, a.authors), row(b.id, b.media, b.publishedAt, b.authors)];
+    for (const pairs of [
+      [pair(a, b), pair(a, outside)],
+      [pair(b, a), pair(outside, a)],
+    ]) {
+      const [summary] = summarizeJournalists(rows, pairs, (m) => m);
+      expect(summary.similar).toEqual({
+        pairs: 2,
+        articles: 2,
+        later: 0,
+        earlier: 0,
+        sameAuthor: 2,
+        attributed: 0,
+        identical: 0,
+      });
+      expect(summary.similar.articles).toBe(summary.articles);
+      const oriented = pairs.map((p) => orientPair(p, (a) => a.id <= 2, '王小明')!);
+      expect(countSimilarity(oriented, new Set([1, 2]))).toEqual(summary.similar);
+    }
+  });
+});

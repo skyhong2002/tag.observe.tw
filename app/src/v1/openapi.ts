@@ -442,10 +442,10 @@ schemas.JournalistOutlet = obj({ media: ref('MediaKey'), name: str('媒體名稱
 schemas.JournalistSimilarity = obj({
   pairs: int('至少一端是此記者文章的相似配對數'),
   articles: int('有相似配對的自家文章數（去重）'),
-  later: int('自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站或已註明來源'),
-  earlier: int('自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站或已註明來源'),
-  sameAuthor: int('對方文章也署同一名字的配對數（不保證同一人）'),
-  attributed: int('排除同署名後，已有明示来源的配對數'),
+  later: int('自家文章比對方晚至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源'),
+  earlier: int('自家文章比對方早至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源'),
+  sameAuthor: int('有同署名相近文章的篇數（期間內文章去重，不保證同一人）'),
+  attributed: int('排除同署名後，有明示來源相似配對的篇數（期間內文章去重）'),
   identical: int('正規化內文完全相同的配對數'),
 });
 schemas.JournalistSummary = obj({

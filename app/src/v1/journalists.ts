@@ -270,7 +270,7 @@ export async function loadJournalist(
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant'))
         .slice(0, 30)
         .map(([tag, count]) => ({ tag, count })),
-      similar: countSimilarity(pairs),
+      similar: countSimilarity(pairs, new Set(own.map((row) => row.id))),
     },
     media: [...media]
       .map(([key, count]) => ({ media: key, name: mediaTitle(key), count }))
