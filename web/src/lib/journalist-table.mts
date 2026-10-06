@@ -49,3 +49,16 @@ export function matchesFilters(row: JournalistSummary, filters: TableFilters): b
   if (filters.maxShare !== '' && (share === null || share * 100 > Number(filters.maxShare))) return false;
   return true;
 }
+
+/** One branch per journalist's busiest outlet, so multi-outlet bylines do not duplicate people. */
+export function groupJournalists(rows: JournalistSummary[]) {
+  const groups = new Map<string, { id: string; name: string; rows: JournalistSummary[] }>();
+  for (const row of rows) {
+    const primary = [...row.media].sort((a, b) => b.count - a.count || a.media.localeCompare(b.media))[0];
+    const id = primary?.media ?? 'unknown';
+    const group = groups.get(id) ?? { id, name: primary?.name ?? '未分類媒體', rows: [] };
+    group.rows.push(row);
+    groups.set(id, group);
+  }
+  return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant') || a.id.localeCompare(b.id));
+}

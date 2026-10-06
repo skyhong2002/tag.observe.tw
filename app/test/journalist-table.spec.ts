@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { matchesFilters, metricCount, metricShare, sortValue, type TableFilters } from '../../web/src/lib/journalist-table.mts';
+import {
+  groupJournalists,
+  matchesFilters,
+  metricCount,
+  metricShare,
+  sortValue,
+  type TableFilters,
+} from '../../web/src/lib/journalist-table.mts';
 import type { JournalistSummary } from '../src/journalists/aggregate.ts';
 
 const row: JournalistSummary = {
@@ -52,5 +59,32 @@ describe('journalist table ratios and filters', () => {
     }
     expect(matchesFilters({ ...row, unmatched: 0 }, { ...filters, relation: 'unmatched' })).toBe(false);
     expect(matchesFilters(row, filters)).toBe(true);
+  });
+});
+
+describe('journalist media tree', () => {
+  it('groups each person once by their busiest outlet and preserves child sort order', () => {
+    const first = {
+      ...row,
+      name: '第一位',
+      media: [
+        { media: 'b', name: 'B', count: 2 },
+        { media: 'a', name: 'A', count: 8 },
+      ],
+    };
+    const second = {
+      ...row,
+      name: '第二位',
+      media: [
+        { media: 'a', name: 'A', count: 5 },
+        { media: 'b', name: 'B', count: 5 },
+      ],
+    };
+    const third = { ...row, name: '第三位', media: [{ media: 'b', name: 'B', count: 10 }] };
+    const groups = groupJournalists([third, second, first]);
+    expect(groups.map((group) => group.id)).toEqual(['a', 'b']);
+    expect(groups[0].rows.map((r) => r.name)).toEqual(['第二位', '第一位']);
+    expect(groups.flatMap((group) => group.rows)).toHaveLength(3);
+    expect(groupJournalists([])).toEqual([]);
   });
 });
