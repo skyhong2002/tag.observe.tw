@@ -5,7 +5,6 @@ import { CAMP_FILL, CAMP_LABEL } from '@/components/CampBar';
 import { CampDot } from '@/components/EventCampDot';
 import { eventHeadline, eventHref, Movement, RankTrail } from '@/components/EventCard';
 import MediaIcon from '@/components/MediaIcon';
-import SafeImage from '@/components/SafeImage';
 import Sparkline from '@/components/Sparkline';
 import Wordmark from '@/components/Wordmark';
 import type { MediaInfo, RankingEntry } from '@/lib/api';
@@ -38,6 +37,7 @@ import {
 } from '@/lib/liveboard.mts';
 import type { Camp, EventItem, EventsSnapshot } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
+import BoardImage from './BoardImage';
 import styles from './liveboard.module.css';
 import StageCard, {
   CARD_DOT,
@@ -281,8 +281,8 @@ function Countdown({ at }: { at: string }) {
 /** The header's second row: crawl runs scrolling past, then the jobs running and due next. */
 function ActivityStrip({ activity }: { activity: LiveActivity }) {
   const crawls = activity.crawls;
-  const items = crawls.map((c, i) => (
-    <span key={i} className="inline-flex shrink-0 items-center gap-1.5 pr-5">
+  const items = crawls.map((c) => (
+    <span key={`${c.media}:${c.stage}:${c.at}`} className="inline-flex shrink-0 items-center gap-1.5 pr-5">
       {c.running && <span className={`h-1.5 w-1.5 rounded-full bg-emerald-400 ${styles.pulse}`} aria-hidden />}
       <MediaIcon rem media={c.media} title={c.mediaTitle} size={14} />
       <span className={c.failed ? 'text-rose-400' : 'text-zinc-300'}>{c.mediaTitle}</span>
@@ -297,8 +297,8 @@ function ActivityStrip({ activity }: { activity: LiveActivity }) {
         {crawls.length > 0 && (
           <div className={`flex w-max ${styles.marquee}`} style={{ animationDuration: `${Math.max(30, crawls.length * 3)}s` }}>
             {items}
-            {items.map((item, i) => (
-              <span key={`b${i}`} aria-hidden className="inline-flex">
+            {items.map((item) => (
+              <span key={`repeat:${item.key}`} aria-hidden className="inline-flex">
                 {item}
               </span>
             ))}
@@ -860,20 +860,24 @@ export default function LiveBoard({
                     {reading.mediaTitle}
                   </Go>
                   <CampDot camp={reading.camp} />
-                  <Reporters article={reading} className="text-sm text-zinc-400" />
                   <span className="ml-auto shrink-0 tabular-nums text-zinc-500">{clock(reading.publishedAt)} 發布</span>
                 </div>
                 <div className="flex shrink-0 gap-3">
                   {isAllowedImage(reading.image) && (
-                    <div className="relative aspect-[4/3] w-[28%] shrink-0 self-start overflow-hidden rounded-lg bg-zinc-800">
-                      <SafeImage src={reading.image} alt="" fill sizes="12vw" className="object-cover" priority />
-                    </div>
+                    <BoardImage
+                      src={reading.image}
+                      frameClassName="relative aspect-[4/3] w-[28%] shrink-0 self-start overflow-hidden rounded-lg bg-zinc-800"
+                      sizes="12vw"
+                      className="object-cover"
+                      priority
+                    />
                   )}
-                  <div className="flex min-w-0 flex-col gap-1.5">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <Go href={articleHref(reading)} className={`text-[1.15rem] font-bold leading-snug ${styles.clamp3}`}>
                       {reading.title}
                     </Go>
-                    <TagChips tags={reading.tags} max={5} className="flex-wrap text-base" />
+                    <Reporters article={reading} className="shrink-0 text-sm text-zinc-400" />
+                    <TagChips tags={reading.tags} className="text-base" />
                   </div>
                 </div>
                 <p
@@ -904,7 +908,7 @@ export default function LiveBoard({
               {slots.map((slot, i) => {
                 const a = slot?.article;
                 return (
-                  <li key={i} className="min-h-0 overflow-hidden border-b border-zinc-800/80 last:border-b-0">
+                  <li key={a?.id ?? `empty:${i}`} className="min-h-0 overflow-hidden border-b border-zinc-800/80 last:border-b-0">
                     {a && (
                       <div key={a.id} className={`flex h-full flex-col justify-center gap-1 py-1 ${fresh === a.id ? styles.enter : ''}`}>
                         <div className="flex min-w-0 items-baseline gap-2">
@@ -924,7 +928,7 @@ export default function LiveBoard({
                           {fresh === a.id && (
                             <span className="shrink-0 rounded bg-brand-600 px-1 text-[0.6875rem] font-bold text-white">剛進</span>
                           )}
-                          <TagChips tags={a.tags} max={4} className="text-sm" />
+                          <TagChips tags={a.tags} max={4} compact className="text-sm" />
                         </div>
                       </div>
                     )}

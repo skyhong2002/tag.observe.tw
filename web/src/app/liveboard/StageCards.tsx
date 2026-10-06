@@ -3,7 +3,6 @@ import { FullBar } from '@/components/CampBar';
 import { CAMP_LONG, CampDot } from '@/components/EventCampDot';
 import { eventHeadline, eventHref, Movement } from '@/components/EventCard';
 import MediaIcon from '@/components/MediaIcon';
-import SafeImage from '@/components/SafeImage';
 import { topicHref } from '@/components/TopicCard';
 import type { MediaInfo } from '@/lib/api';
 import { authorCreditParts } from '@/lib/author-display.mts';
@@ -27,6 +26,7 @@ import {
 import type { Camp } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import { relationDetails, relationLabel } from '@/lib/relation-label.mts';
+import BoardImage from './BoardImage';
 import styles from './liveboard.module.css';
 
 // The big rotating card on the left of /liveboard/, one view per card kind.
@@ -91,12 +91,28 @@ function Kicker({ children, tone = 'bg-brand-600' }: { children: React.ReactNode
 }
 
 /** An article's site tags as plain #tag text after its outlet or headline; each opens the tag page. */
-export function TagChips({ tags, max = 3, className = '' }: { tags: readonly string[]; max?: number; className?: string }) {
+export function TagChips({
+  tags,
+  max = tags.length,
+  compact = false,
+  className = '',
+}: {
+  tags: readonly string[];
+  max?: number;
+  compact?: boolean;
+  className?: string;
+}) {
   if (!tags.length) return null;
   return (
-    <span className={`inline-flex min-w-0 shrink items-center gap-2.5 overflow-hidden ${className}`}>
+    <span
+      className={`inline-flex min-w-0 items-center gap-x-2.5 gap-y-1 ${compact ? 'shrink overflow-hidden' : 'shrink-0 flex-wrap'} ${className}`}
+    >
       {tags.slice(0, max).map((t) => (
-        <Go key={t} href={tagHref(t)} className="shrink-0 whitespace-nowrap font-medium text-orange-300">
+        <Go
+          key={t}
+          href={tagHref(t)}
+          className={`font-medium text-orange-300 ${compact ? 'shrink-0 whitespace-nowrap' : 'max-w-full break-words'}`}
+        >
           #{t}
         </Go>
       ))}
@@ -107,8 +123,12 @@ export function TagChips({ tags, max = 3, className = '' }: { tags: readonly str
 /** Keep authors, source credits and explicit citations distinct. */
 export function Reporters({ article, className = '' }: { article: LiveArticle; className?: string }) {
   const parts = authorCreditParts(article.authors, article);
+  if (!parts.length) return null;
   return (
-    <span className={`min-w-0 truncate ${className}`} title={parts.map((part) => part.evidence ?? `${part.label} ${part.text}`).join('\n')}>
+    <span
+      className={`min-w-0 break-words ${className}`}
+      title={parts.map((part) => part.evidence ?? `${part.label} ${part.text}`).join('\n')}
+    >
       {parts.map((part, index) => (
         <span key={`${part.label}-${part.text}`}>
           {index > 0 && <span className="text-zinc-600"> · </span>}
@@ -171,9 +191,13 @@ function ReportTile({ r, now, index }: { r: CoverageReport; now: number; index: 
       className={`flex min-h-0 min-w-0 gap-3 overflow-hidden rounded-xl border-l-4 bg-zinc-900 p-2.5 ${CAMP_RULE[r.camp]} ${REPORT_FIT[index] ?? ''}`}
     >
       {isAllowedImage(r.image) && (
-        <div className="relative aspect-[4/3] h-full max-w-[28%] shrink-0 overflow-hidden rounded-lg bg-zinc-800">
-          <SafeImage src={r.image} alt="" fill sizes={SIZES.thumb} className="object-cover" loading="eager" />
-        </div>
+        <BoardImage
+          src={r.image}
+          frameClassName="relative aspect-[4/3] h-full max-w-[28%] shrink-0 overflow-hidden rounded-lg bg-zinc-800"
+          sizes={SIZES.thumb}
+          className="object-cover"
+          loading="eager"
+        />
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex min-w-0 items-center gap-1.5 text-sm text-zinc-400">
@@ -183,7 +207,7 @@ function ReportTile({ r, now, index }: { r: CoverageReport; now: number; index: 
           </Go>
           <span className="ml-auto shrink-0 tabular-nums">{ago(r.publishedAt, now)}</span>
         </div>
-        <Go href={articleHref(r)} className={`text-base font-semibold leading-snug ${styles.clamp2}`}>
+        <Go href={articleHref(r)} className={`shrink-0 text-base font-semibold leading-snug ${styles.clamp2}`}>
           {r.title}
         </Go>
         {r.description && <p className={`min-h-0 text-sm leading-snug text-zinc-400 ${styles.clamp2}`}>{r.description}</p>}
@@ -212,9 +236,13 @@ function EventStage({
       {/* Covers are landscape photos: keep them wide and short beside the headline, never a tall crop. */}
       <div className="flex shrink-0 gap-5">
         {cover?.image && (
-          <div className="relative aspect-video w-[34%] shrink-0 self-start overflow-hidden rounded-2xl bg-zinc-900">
-            <SafeImage src={cover.image} alt="" fill sizes={SIZES.cover} className="object-cover" priority />
-          </div>
+          <BoardImage
+            src={cover.image}
+            frameClassName="relative aspect-video w-[34%] shrink-0 self-start overflow-hidden rounded-2xl bg-zinc-900"
+            sizes={SIZES.cover}
+            className="object-cover"
+            priority
+          />
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -370,7 +398,9 @@ function SharedBody({ parts }: { parts: TextPart[] }) {
 
 function CopyColumn({ a, side, title, body }: { a: LiveArticle; side: string; title: TextPart[] | null; body: TextPart[] | null }) {
   return (
-    <div className={`flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-2xl border-t-4 bg-zinc-900 p-4 ${CAMP_RULE[a.camp]}`}>
+    <div
+      className={`flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto rounded-2xl border-t-4 bg-zinc-900 p-4 ${CAMP_RULE[a.camp]}`}
+    >
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-sm font-semibold tracking-widest text-zinc-500">{side}</span>
         <div className="min-w-0 flex-1">
@@ -380,9 +410,9 @@ function CopyColumn({ a, side, title, body }: { a: LiveArticle; side: string; ti
       <Go href={articleHref(a)} className={`shrink-0 text-[1.3rem] font-bold leading-snug ${styles.clamp2}`}>
         {title ? <Diffed parts={title} /> : a.title}
       </Go>
-      <div className="flex min-w-0 shrink-0 items-center gap-2 text-sm">
+      <div className="flex min-w-0 shrink-0 flex-col items-start gap-1 text-sm">
         <Reporters article={a} className="font-medium text-zinc-300" />
-        <TagChips tags={a.tags} max={4} />
+        <TagChips tags={a.tags} />
       </div>
       <p
         className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-[0.95rem] leading-relaxed ${styles.fadeOut} ${styles.paragraphs}`}
@@ -455,28 +485,33 @@ function BurstStage({ card, now }: { card: Extract<Card, { kind: 'burst' }>; now
         <Kicker>剛讀完 {card.total} 篇內文</Kicker>
         <span className="text-lg text-zinc-400">{outlets} 家媒體的最新報導</span>
       </div>
-      <ul className="grid min-h-0 flex-1 grid-cols-4 grid-rows-2 gap-3 @max-xl:grid-cols-2 @max-xl:[&>li:nth-child(n+5)]:hidden">
+      <ul className="grid min-h-0 flex-1 grid-cols-4 grid-rows-[repeat(2,minmax(0,1fr))] gap-3 @max-xl:grid-cols-2 @max-xl:[&>li:nth-child(n+5)]:hidden">
         {card.articles.map((a) => (
           <li
             key={a.id}
-            className={`flex min-h-0 flex-col gap-1.5 overflow-hidden rounded-xl border-t-4 bg-zinc-900 p-3 ${CAMP_RULE[a.camp]}`}
+            className={`flex min-h-0 min-w-0 flex-col gap-1.5 overflow-y-auto rounded-xl border-t-4 bg-zinc-900 p-3 ${CAMP_RULE[a.camp]}`}
           >
             {isAllowedImage(a.image) && (
-              <div className="relative aspect-video shrink-0 overflow-hidden rounded-lg bg-zinc-800 [@container(max-height:26rem)]:hidden">
-                <SafeImage src={a.image} alt="" fill sizes={SIZES.tile} className="object-cover" loading="eager" />
-              </div>
+              <BoardImage
+                src={a.image}
+                frameClassName="relative aspect-video min-h-0 max-h-[35%] shrink overflow-hidden rounded-lg bg-zinc-800 [@container(max-height:26rem)]:hidden"
+                sizes={SIZES.tile}
+                className="object-cover"
+                loading="eager"
+              />
             )}
-            <div className="flex items-center gap-1.5 text-sm text-zinc-400">
+            <div className="flex shrink-0 items-center gap-1.5 text-sm text-zinc-400">
               <MediaIcon rem media={a.media} title={a.mediaTitle} size={18} />
               <Go href={mediaHref(a.media)} className="truncate">
                 {a.mediaTitle}
               </Go>
               <span className="ml-auto shrink-0 tabular-nums">{ago(a.publishedAt, now)}</span>
             </div>
-            <Go href={articleHref(a)} className={`text-base font-semibold leading-snug ${styles.clamp3}`}>
+            <Go href={articleHref(a)} className={`shrink-0 text-base font-semibold leading-snug ${styles.clamp3}`}>
               {a.title}
             </Go>
-            <TagChips tags={a.tags} max={3} className="shrink-0 text-sm" />
+            <Reporters article={a} className="shrink-0 text-sm text-zinc-400" />
+            <TagChips tags={a.tags} className="text-sm" />
             {a.text && (
               <p className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-sm leading-relaxed text-zinc-400 ${styles.fadeOut}`}>
                 {a.text}
@@ -497,9 +532,13 @@ function TopicStage({ card, now }: { card: Extract<Card, { kind: 'topic' }>; now
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex shrink-0 gap-4">
         {isAllowedImage(t.image) && (
-          <div className="relative aspect-video w-[30%] shrink-0 self-start overflow-hidden rounded-2xl bg-zinc-900">
-            <SafeImage src={t.image} alt="" fill sizes={SIZES.topic} className="object-cover" priority />
-          </div>
+          <BoardImage
+            src={t.image}
+            frameClassName="relative aspect-video w-[30%] shrink-0 self-start overflow-hidden rounded-2xl bg-zinc-900"
+            sizes={SIZES.topic}
+            className="object-cover"
+            priority
+          />
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
@@ -523,21 +562,25 @@ function TopicStage({ card, now }: { card: Extract<Card, { kind: 'topic' }>; now
           {t.stories.map((st) => {
             const a = st.article;
             return (
-              <li key={st.url ?? st.title} className="flex min-h-0 min-w-0 gap-3 overflow-hidden rounded-xl bg-zinc-900 p-3">
+              <li key={st.url ?? st.title} className="flex min-h-0 min-w-0 gap-3 overflow-y-auto rounded-xl bg-zinc-900 p-3">
                 {a && isAllowedImage(a.image) && (
-                  <div className="relative aspect-[4/3] w-[32%] shrink-0 self-start overflow-hidden rounded-lg bg-zinc-800">
-                    <SafeImage src={a.image} alt="" fill sizes={SIZES.thumb} className="object-cover" loading="eager" />
-                  </div>
+                  <BoardImage
+                    src={a.image}
+                    frameClassName="relative aspect-[4/3] w-[32%] shrink-0 self-start overflow-hidden rounded-lg bg-zinc-800"
+                    sizes={SIZES.thumb}
+                    className="object-cover"
+                    loading="eager"
+                  />
                 )}
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <div className="flex min-w-0 items-center gap-2 text-sm text-zinc-400">
-                    {st.date && <span className="shrink-0 tabular-nums">{ago(st.date, now)}</span>}
-                    {a && <Reporters article={a} />}
+                  <div className="shrink-0 text-sm text-zinc-400">
+                    {st.date && <span className="tabular-nums">{ago(st.date, now)}</span>}
                   </div>
-                  <Go href={a ? articleHref(a) : href} className={`text-base font-semibold leading-snug ${styles.clamp2}`}>
+                  <Go href={a ? articleHref(a) : href} className={`shrink-0 text-base font-semibold leading-snug ${styles.clamp2}`}>
                     {st.title}
                   </Go>
-                  {a && <TagChips tags={a.tags} max={3} className="shrink-0 text-sm" />}
+                  {a && <Reporters article={a} className="shrink-0 text-sm text-zinc-400" />}
+                  {a && <TagChips tags={a.tags} className="text-sm" />}
                   {a?.text && (
                     <p
                       className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-sm leading-relaxed text-zinc-400 ${styles.fadeOut}`}
