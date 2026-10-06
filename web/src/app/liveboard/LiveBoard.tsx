@@ -876,8 +876,10 @@ export default function LiveBoard({
                     <Go href={articleHref(reading)} className={`text-[1.15rem] font-bold leading-snug ${styles.clamp3}`}>
                       {reading.title}
                     </Go>
-                    <Reporters article={reading} className="shrink-0 text-sm text-zinc-400" />
-                    <TagChips tags={reading.tags} className="text-base" />
+                    <div className="min-w-0 text-base leading-tight">
+                      <Reporters article={reading} className="mr-2.5 text-sm text-zinc-400" />
+                      <TagChips tags={reading.tags} inline />
+                    </div>
                   </div>
                 </div>
                 <p
@@ -925,6 +927,7 @@ export default function LiveBoard({
                             {a.mediaTitle}
                           </Go>
                           <CampDot camp={a.camp} />
+                          <Reporters article={a} citationsOnly className="max-w-[45%] shrink-0 truncate leading-tight" />
                           {fresh === a.id && (
                             <span className="shrink-0 rounded bg-brand-600 px-1 text-[0.6875rem] font-bold text-white">剛進</span>
                           )}

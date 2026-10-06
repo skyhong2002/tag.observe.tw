@@ -95,23 +95,25 @@ export function TagChips({
   tags,
   max = tags.length,
   compact = false,
+  inline = false,
   className = '',
 }: {
   tags: readonly string[];
   max?: number;
   compact?: boolean;
+  inline?: boolean;
   className?: string;
 }) {
   if (!tags.length) return null;
   return (
     <span
-      className={`inline-flex min-w-0 items-center gap-x-2.5 gap-y-1 ${compact ? 'shrink overflow-hidden' : 'shrink-0 flex-wrap'} ${className}`}
+      className={`${inline ? 'inline leading-tight' : `inline-flex min-w-0 items-center gap-x-2.5 gap-y-0.5 leading-tight ${compact ? 'shrink overflow-hidden' : 'shrink-0 flex-wrap'}`} ${className}`}
     >
       {tags.slice(0, max).map((t) => (
         <Go
           key={t}
           href={tagHref(t)}
-          className={`font-medium text-orange-300 ${compact ? 'shrink-0 whitespace-nowrap' : 'max-w-full break-words'}`}
+          className={`font-medium text-orange-300 ${inline ? 'mr-2.5 inline-block max-w-full break-words last:mr-0' : compact ? 'shrink-0 whitespace-nowrap' : 'max-w-full break-words'}`}
         >
           #{t}
         </Go>
@@ -121,8 +123,16 @@ export function TagChips({
 }
 
 /** Keep authors, source credits and explicit citations distinct. */
-export function Reporters({ article, className = '' }: { article: LiveArticle; className?: string }) {
-  const parts = authorCreditParts(article.authors, article);
+export function Reporters({
+  article,
+  citationsOnly = false,
+  className = '',
+}: {
+  article: LiveArticle;
+  citationsOnly?: boolean;
+  className?: string;
+}) {
+  const parts = authorCreditParts(citationsOnly ? [] : article.authors, article);
   if (!parts.length) return null;
   return (
     <span
