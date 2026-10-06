@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { analyticsBlock, readOptOut, selectContentTarget, writeOptOut } from '../../web/src/lib/analytics-consent.mts';
+import {
+  analyticsBlock,
+  readOptOut,
+  selectContentTarget,
+  shouldReportLiveboardActivity,
+  writeOptOut,
+} from '../../web/src/lib/analytics-consent.mts';
 
 const reader = {
   production: true,
@@ -50,6 +56,17 @@ describe('who sends GA data', () => {
       }),
     ).toBe(false);
     expect(readOptOut(null)).toBe(false);
+  });
+});
+
+describe('liveboard activity', () => {
+  it('reports only visible boards, respecting opt-out and navigation away', () => {
+    expect(shouldReportLiveboardActivity('/liveboard', 'visible', false)).toBe(true);
+    expect(shouldReportLiveboardActivity('/liveboard/', 'visible', false)).toBe(true);
+    expect(shouldReportLiveboardActivity('/liveboard/', 'hidden', false)).toBe(false);
+    expect(shouldReportLiveboardActivity('/liveboard/', 'visible', true)).toBe(false);
+    expect(shouldReportLiveboardActivity('/', 'visible', false)).toBe(false);
+    expect(shouldReportLiveboardActivity('/liveboards/', 'visible', false)).toBe(false);
   });
 });
 

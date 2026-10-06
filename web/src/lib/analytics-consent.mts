@@ -29,6 +29,11 @@ export function analyticsBlock(env: Env): AnalyticsBlock {
   return null;
 }
 
+/** A visible wall board remains in use even without clicks or navigation. */
+export function shouldReportLiveboardActivity(pathname: string, visibility: string, optedOut: boolean): boolean {
+  return /^\/liveboard\/?$/.test(pathname) && visibility === 'visible' && !optedOut;
+}
+
 /** Storage can throw (disabled, sandboxed); an unreadable choice counts as not opted out. */
 export function readOptOut(storage: Pick<Storage, 'getItem'> | null | undefined): boolean {
   try {

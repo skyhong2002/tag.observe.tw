@@ -2,7 +2,15 @@
 
 import { GoogleAnalytics, sendGAEvent } from '@next/third-parties/google';
 import { useEffect, useState } from 'react';
-import { analyticsBlock, GA_ID, OPT_OUT_EVENT, OPT_OUT_KEY, readOptOut, selectContentTarget } from '@/lib/analytics-consent.mts';
+import {
+  analyticsBlock,
+  GA_ID,
+  OPT_OUT_EVENT,
+  OPT_OUT_KEY,
+  readOptOut,
+  selectContentTarget,
+  shouldReportLiveboardActivity,
+} from '@/lib/analytics-consent.mts';
 import WebVitals from './WebVitals';
 
 const safeStorage = () => {
@@ -43,6 +51,15 @@ export default function SiteAnalytics() {
     const analyticsWindow = window as Window & { dataLayer?: unknown[] };
     analyticsWindow.dataLayer ??= [];
 
+    // Keep an unattended, visible board active without inflating page views.
+    // Read the current path so client-side navigation also starts/stops reporting.
+    const heartbeat = setInterval(() => {
+      if (disable[`ga-disable-${GA_ID}`]) return;
+      if (shouldReportLiveboardActivity(location.pathname, document.visibilityState, readOptOut(safeStorage()))) {
+        sendGAEvent('event', 'liveboard_activity');
+      }
+    }, 60_000);
+
     const click = (event: MouseEvent) => {
       if (event.type === 'auxclick' && event.button !== 1) return;
       const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
@@ -67,6 +84,7 @@ export default function SiteAnalytics() {
     window.addEventListener(OPT_OUT_EVENT, choice);
     window.addEventListener('storage', choice);
     return () => {
+      clearInterval(heartbeat);
       document.removeEventListener('click', click);
       document.removeEventListener('auxclick', click);
       window.removeEventListener('appinstalled', installed);

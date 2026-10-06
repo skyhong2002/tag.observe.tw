@@ -38,6 +38,7 @@ import {
 import type { Camp, EventItem, EventsSnapshot } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import BoardImage from './BoardImage';
+import OfflineWordmark from './OfflineWordmark';
 import styles from './liveboard.module.css';
 import StageCard, {
   CARD_DOT,
@@ -599,9 +600,16 @@ export default function LiveBoard({
     >
       <header className="shrink-0 border-b border-zinc-800">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-2 short:gap-4 short:px-4 short:py-1 portrait:gap-4 portrait:px-3">
-          <div className="flex shrink-0 items-end gap-3">
-            <Wordmark className="h-9 w-auto text-zinc-100 short:h-7" />
-            {!online && <span className="whitespace-nowrap text-xs text-rose-400">離線，重試中</span>}
+          <div className="relative flex shrink-0 items-end">
+            <Wordmark className={`h-9 w-auto text-zinc-100 short:h-7 ${online ? '' : 'invisible'}`} />
+            <span role="status" className="absolute inset-0 flex items-center justify-center text-rose-400">
+              {!online && (
+                <>
+                  <span className="sr-only">離線中嗚嗚嗚</span>
+                  <OfflineWordmark />
+                </>
+              )}
+            </span>
           </div>
           <Stat label="今日收錄" value={totals ? (totals.today + todayExtra).toLocaleString() : '—'} unit="篇" />
           <Stat
@@ -649,11 +657,14 @@ export default function LiveBoard({
               </span>
             )}
           </Stat>
-          {feed?.visitors && (
-            <Stat label="本站線上讀者" value={feed.visitors.activeUsers} unit="人" className="portrait:hidden">
-              <Sparkline values={feed.visitors.perMinute} color="#f97316" className="ml-2 h-6 w-20 self-center short:w-12" />
-            </Stat>
-          )}
+          <Stat label="本站線上讀者" value={feed?.visitors?.activeUsers ?? '—'} unit="人" className="portrait:hidden">
+            <span
+              title="GA4 最近 30 分鐘活動讀者，約每 2 分鐘更新；包含看板讀者，非目前連線數。"
+              className="ml-2 h-6 w-20 self-center short:w-12"
+            >
+              {feed?.visitors && <Sparkline values={feed.visitors.perMinute} color="#f97316" className="h-full w-full" />}
+            </span>
+          </Stat>
           <div className="ml-auto flex shrink-0 flex-col items-end">
             <Clock />
           </div>
