@@ -927,7 +927,9 @@ export default function LiveBoard({
                             {a.mediaTitle}
                           </Go>
                           <CampDot camp={a.camp} />
-                          <Reporters article={a} citationsOnly className="max-w-[45%] shrink-0 truncate leading-tight" />
+                          {(a.authors.length > 0 || !!a.attributions?.length) && (
+                            <Reporters article={a} className="max-w-[45%] shrink-0 truncate leading-tight" />
+                          )}
                           {fresh === a.id && (
                             <span className="shrink-0 rounded bg-brand-600 px-1 text-[0.6875rem] font-bold text-white">剛進</span>
                           )}

@@ -123,17 +123,8 @@ export function TagChips({
 }
 
 /** Keep authors, source credits and explicit citations distinct. */
-export function Reporters({
-  article,
-  citationsOnly = false,
-  className = '',
-}: {
-  article: LiveArticle;
-  citationsOnly?: boolean;
-  className?: string;
-}) {
-  const credits = authorCreditParts(citationsOnly ? [] : article.authors, article);
-  const parts = citationsOnly ? credits.filter((part) => part.media) : credits;
+export function Reporters({ article, className = '' }: { article: LiveArticle; className?: string }) {
+  const parts = authorCreditParts(article.authors, article);
   if (!parts.length) return null;
   return (
     <span
