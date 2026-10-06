@@ -124,7 +124,7 @@ export function TagChips({
 
 /** Keep authors, source credits and explicit citations distinct. */
 export function Reporters({ article, className = '' }: { article: LiveArticle; className?: string }) {
-  const parts = authorCreditParts(article.authors, article);
+  const parts = authorCreditParts(article.authors, article).filter((part) => part.text !== '未署名');
   if (!parts.length) return null;
   return (
     <span
@@ -139,6 +139,15 @@ export function Reporters({ article, className = '' }: { article: LiveArticle; c
         </span>
       ))}
     </span>
+  );
+}
+
+function ArticleMetadata({ article }: { article: LiveArticle }) {
+  return (
+    <div className="min-w-0 shrink-0 text-sm leading-snug">
+      <Reporters article={article} className="mr-2.5 font-medium text-zinc-300" />
+      <TagChips tags={article.tags} inline />
+    </div>
   );
 }
 
@@ -398,13 +407,12 @@ function SharedBody({ parts }: { parts: TextPart[] }) {
   );
 }
 
-function CopyColumn({ a, side, title, body }: { a: LiveArticle; side: string; title: TextPart[] | null; body: TextPart[] | null }) {
+function CopyColumn({ a, title, body }: { a: LiveArticle; title: TextPart[] | null; body: TextPart[] | null }) {
   return (
     <div
       className={`flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto rounded-2xl border-t-4 bg-zinc-900 p-4 ${CAMP_RULE[a.camp]}`}
     >
       <div className="flex shrink-0 items-center gap-2">
-        <span className="text-sm font-semibold tracking-widest text-zinc-500">{side}</span>
         <div className="min-w-0 flex-1">
           <Byline media={a.media} title={a.mediaTitle} camp={a.camp} at={a.publishedAt} size={22} />
         </div>
@@ -412,10 +420,7 @@ function CopyColumn({ a, side, title, body }: { a: LiveArticle; side: string; ti
       <Go href={articleHref(a)} className={`shrink-0 text-[1.3rem] font-bold leading-snug ${styles.clamp2}`}>
         {title ? <Diffed parts={title} /> : a.title}
       </Go>
-      <div className="flex min-w-0 shrink-0 flex-col items-start gap-1 text-sm">
-        <Reporters article={a} className="font-medium text-zinc-300" />
-        <TagChips tags={a.tags} />
-      </div>
+      <ArticleMetadata article={a} />
       <p
         className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-[0.95rem] leading-relaxed ${styles.fadeOut} ${styles.paragraphs}`}
       >
@@ -472,8 +477,8 @@ function CopyStage({ card }: { card: Extract<Card, { kind: 'copy' }> }) {
         </p>
       )}
       <div className="flex min-h-0 flex-1 gap-3 @max-xl:flex-col">
-        <CopyColumn a={story.lead} side="刊登平台" title={lt} body={bodies?.[0] ?? null} />
-        <CopyColumn a={featured.article} side="刊登平台" title={ft} body={bodies?.[1] ?? null} />
+        <CopyColumn a={story.lead} title={lt} body={bodies?.[0] ?? null} />
+        <CopyColumn a={featured.article} title={ft} body={bodies?.[1] ?? null} />
       </div>
     </div>
   );
@@ -512,8 +517,7 @@ function BurstStage({ card, now }: { card: Extract<Card, { kind: 'burst' }>; now
             <Go href={articleHref(a)} className={`shrink-0 text-base font-semibold leading-snug ${styles.clamp3}`}>
               {a.title}
             </Go>
-            <Reporters article={a} className="shrink-0 text-sm text-zinc-400" />
-            <TagChips tags={a.tags} className="text-sm" />
+            <ArticleMetadata article={a} />
             {a.text && (
               <p className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-sm leading-relaxed text-zinc-400 ${styles.fadeOut}`}>
                 {a.text}
@@ -581,8 +585,7 @@ function TopicStage({ card, now }: { card: Extract<Card, { kind: 'topic' }>; now
                   <Go href={a ? articleHref(a) : href} className={`shrink-0 text-base font-semibold leading-snug ${styles.clamp2}`}>
                     {st.title}
                   </Go>
-                  {a && <Reporters article={a} className="shrink-0 text-sm text-zinc-400" />}
-                  {a && <TagChips tags={a.tags} className="text-sm" />}
+                  {a && <ArticleMetadata article={a} />}
                   {a?.text && (
                     <p
                       className={`min-h-0 flex-1 overflow-hidden whitespace-pre-line text-sm leading-relaxed text-zinc-400 ${styles.fadeOut}`}
