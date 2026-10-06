@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SimilarityArticle, SimilarityPair } from '../similarity/types.ts';
-import { type BylineRow, countSimilarity, countUnmatched, orientPair, summarizeJournalists } from './aggregate.ts';
+import { type BylineRow, countFirstSeen, countSimilarity, countUnmatched, orientPair, summarizeJournalists } from './aggregate.ts';
 
 const article = (id: number, media: string, publishedAt: string, authors: string[], attributions: string[] = []): SimilarityArticle => ({
   id,
@@ -166,5 +166,28 @@ describe('unmatched compared articles', () => {
     const rows = [1, 2, 3, 4].map((id) => row(id, `m${id}`, a.publishedAt, ['王小明'], { indexed: id !== 4 }));
     const [summary] = summarizeJournalists(rows, [pair(a, b)], (m) => m);
     expect(summary).toMatchObject({ articles: 4, compared: 3, unmatched: 1 });
+  });
+});
+
+describe('first-seen reports', () => {
+  it('subtracts the union of citations, earlier matches and unknown times, including both byline endpoints', () => {
+    const date = '2026-10-01T02:00:00Z';
+    const rows = Array.from({ length: 8 }, (_, i) => row(i + 1, `m${i}`, date, ['王小明']));
+    rows[1].attributions = [{ media: 'cna', name: '中央社', country: '台灣', countryCode: 'TW', evidence: 'x', kind: 'explicit' }];
+    rows[6].indexed = false;
+    rows[7].datePending = true;
+    const own = (id: number) => article(id, `m${id}`, date, ['王小明']);
+    const oriented = (a: SimilarityArticle, b: SimilarityArticle) => orientPair(pair(a, b), (a) => a.id <= 8, '王小明')!;
+    const pairs = [
+      oriented(own(2), article(20, 'other', '2026-10-01T01:00:00Z', [])),
+      oriented(own(3), article(21, 'other', '2026-10-01T01:00:00Z', ['王小明'])),
+      oriented(own(4), article(22, 'other', date, [])),
+      oriented(own(5), { ...own(6), publishedAt: '2026-10-01T03:00:00Z' }),
+      oriented(own(6), { ...article(23, 'other', date, []), datePending: true }),
+    ];
+    // 1 has no match, 4 is simultaneous, 5 precedes 6. Citation+earlier on 2 is deducted once.
+    expect(countFirstSeen(pairs, rows)).toBe(3);
+    expect(countFirstSeen([], [])).toBe(0);
+    expect(summarizeJournalists(rows, [], (m) => m)[0].firstSeen).toBe(5);
   });
 });

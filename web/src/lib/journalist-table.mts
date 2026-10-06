@@ -1,8 +1,9 @@
 import type { JournalistSummary } from '../../../app/src/journalists/aggregate.ts';
 
-export type Metric = 'compared' | 'unmatched' | 'matched' | 'later' | 'earlier' | 'sameAuthor' | 'attributed' | 'cited';
+export type Metric = 'firstSeen' | 'compared' | 'unmatched' | 'matched' | 'later' | 'earlier' | 'sameAuthor' | 'attributed' | 'cited';
 export type SortKey = 'name' | 'media' | 'articles' | Metric;
 export const metrics: Array<{ key: Metric; label: string }> = [
+  { key: 'firstSeen', label: '首見報導' },
   { key: 'compared', label: '已比對' },
   { key: 'unmatched', label: '未見相近' },
   { key: 'matched', label: '內文相近' },
@@ -14,6 +15,7 @@ export const metrics: Array<{ key: Metric; label: string }> = [
 ];
 export function metricCount(row: JournalistSummary, key: Metric): number | null {
   if (key === 'compared' || key === 'cited') return row[key];
+  if (key === 'firstSeen') return row.firstSeen ?? null;
   if (key === 'unmatched') return row.unmatched ?? null;
   if (key === 'matched') return row.similar.articles;
   return row.similar[key] ?? 0;

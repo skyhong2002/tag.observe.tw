@@ -1093,6 +1093,7 @@ curl -s 'https://tag.observe.tw/api/v1/journalists?hours=48&limit=50'
 | `journalists[].cited` | integer | 內文明示引用其他媒體的篇數 |
 | `journalists[].latest` | string (ISO 時間) | 最近一篇刊登時間 |
 | `journalists[].compared` | integer | 相似度索引已比對的篇數 |
+| `journalists[].firstSeen` | integer | 已比對文章扣除明示引用、有較早相近版本及時間未確認的文章，依 ID 去重 |
 | `journalists[].unmatched` | integer | 已比對但未見達門檻相近文章的篇數；不代表原創 |
 | `journalists[].similar` | object |  |
 | `journalists[].similar.pairs` | integer | 至少一端是此記者文章的相似配對數 |
@@ -1231,6 +1232,7 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `pairs[].otherCitesOwn` | boolean | 對方文章明示引用自家媒體 |
 | `index` | object |  |
 | `index.compared` | integer | 已比對的自家文章數 |
+| `index.firstSeen` | integer | 已比對文章扣除明示引用、有較早相近版本及時間未確認的文章，依 ID 去重 |
 | `index.unmatched` | integer | 已比對但未見達門檻相近文章的篇數；不代表原創 |
 | `index.pending` | integer | 有可用正文、等待索引的自家文章數 |
 | `index.windowDays` | integer | 每篇與前後幾天內的他家文章比對 |

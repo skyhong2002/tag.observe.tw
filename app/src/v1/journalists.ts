@@ -6,6 +6,7 @@ import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
 import {
   type BylineRow,
+  countFirstSeen,
   countSimilarity,
   countUnmatched,
   type JournalistOutlet,
@@ -89,6 +90,7 @@ export interface JournalistDetail {
     compared: number;
     /** Compared articles with no similar counterpart; not proof of originality. */
     unmatched: number;
+    firstSeen: number;
     /** Own stories with a usable body still waiting for the index. */
     pending: number;
     windowDays: number;
@@ -127,6 +129,8 @@ export async function loadJournalistIndex(
         id: articles.id,
         media: articles.media,
         publishedAt: articles.publishedAt,
+        fetchedAt: articles.fetchedAt,
+        crawledAt: articles.crawledAt,
         authors: articles.authors,
         creator: articles.creator,
         bodyStatus: articles.bodyStatus,
@@ -140,6 +144,7 @@ export async function loadJournalistIndex(
   ]);
   const bylines: BylineRow[] = rows.map((row) => ({
     ...row,
+    datePending: row.fetchedAt === null && row.crawledAt?.getTime() === row.publishedAt.getTime(),
     hasBody: Number(row.hasBody) === 1,
     indexed: Number(row.indexed) === 1 && row.bodyStatus === 'ok' && Number(row.hasBody) === 1,
   }));
@@ -189,6 +194,8 @@ export async function loadJournalist(
       url: articles.url,
       image: articles.image,
       publishedAt: articles.publishedAt,
+      fetchedAt: articles.fetchedAt,
+      crawledAt: articles.crawledAt,
       tags: articles.tags,
       authors: articles.authors,
       creator: articles.creator,
@@ -283,6 +290,14 @@ export async function loadJournalist(
     index: {
       compared: indexed.size,
       unmatched: countUnmatched(pairs, indexed),
+      firstSeen: countFirstSeen(
+        pairs,
+        own.map((row) => ({
+          ...row,
+          indexed: indexed.has(row.id),
+          datePending: row.fetchedAt === null && row.crawledAt?.getTime() === row.publishedAt.getTime(),
+        })),
+      ),
       pending: own.filter((row) => !row.similarityAt && row.bodyStatus === 'ok' && Number(row.bodyChars) > 0 && !syndication.has(row.media))
         .length,
       windowDays: WINDOW_DAYS,

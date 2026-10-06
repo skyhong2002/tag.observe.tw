@@ -7,6 +7,7 @@ const row: JournalistSummary = {
   articles: 100,
   compared: 80,
   unmatched: 20,
+  firstSeen: 35,
   withBody: 90,
   cited: 10,
   latest: '2026-10-01T00:00:00Z',

@@ -57,6 +57,7 @@ export interface JournalistDetail {
     compared: number;
     /** Compared articles with no similar counterpart; not proof of originality. */
     unmatched: number;
+    firstSeen: number;
     /** Own stories with a usable body still waiting for the index. */
     pending: number;
     windowDays: number;

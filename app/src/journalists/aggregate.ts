@@ -17,6 +17,7 @@ export interface BylineRow {
   hasBody: boolean;
   /** Compared by the similarity index. */
   indexed: boolean;
+  datePending?: boolean;
   attributions: Attribution[] | null;
 }
 export interface JournalistOutlet {
@@ -48,6 +49,7 @@ export interface JournalistSummary {
   compared: number;
   /** Compared own articles with no match at the requested threshold; not proof of originality. */
   unmatched: number;
+  firstSeen: number;
   similar: JournalistSimilarity;
 }
 export type PairRelation = 'later' | 'earlier' | 'same';
@@ -106,6 +108,26 @@ export function orientPair(pair: SimilarityPair, isOwn: (article: SimilarityArti
     otherCitesOwn: other.attributions.some((source) => source.media === own.media),
   };
 }
+/** Set subtraction avoids double deductions and includes same-byline earlier versions. */
+export function countFirstSeen(
+  pairs: JournalistPair[],
+  rows: Array<{ id: number; indexed: boolean; datePending?: boolean; publishedAt: Date; attributions: Attribution[] | null }>,
+): number {
+  const candidates = new Set(
+    rows
+      .filter((row) => row.indexed && !row.datePending && Number.isFinite(row.publishedAt.getTime()) && !row.attributions?.length)
+      .map((row) => row.id),
+  );
+  for (const pair of pairs) {
+    if (pair.publicationUnknown) {
+      candidates.delete(pair.own.id);
+      candidates.delete(pair.other.id);
+    } else if (pair.relation === 'later') candidates.delete(pair.own.id);
+    else if (pair.relation === 'earlier') candidates.delete(pair.other.id);
+  }
+  return candidates.size;
+}
+
 export function countUnmatched(pairs: JournalistPair[], comparedIds: ReadonlySet<number>): number {
   const remaining = new Set(comparedIds);
   for (const pair of pairs) {
@@ -181,6 +203,7 @@ export function summarizeJournalists(
       cited: entry.rows.filter((row) => (row.attributions?.length ?? 0) > 0).length,
       latest: new Date(Math.max(...entry.rows.map((row) => row.publishedAt.getTime()))).toISOString(),
       compared: entry.rows.filter((row) => row.indexed).length,
+      firstSeen: countFirstSeen(pairsOf.get(name) ?? [], entry.rows),
       unmatched: countUnmatched(pairsOf.get(name) ?? [], new Set(entry.rows.filter((row) => row.indexed).map((row) => row.id))),
       similar: countSimilarity(pairsOf.get(name) ?? [], new Set(entry.rows.map((row) => row.id))),
     }))

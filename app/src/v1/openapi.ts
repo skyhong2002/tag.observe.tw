@@ -456,6 +456,7 @@ schemas.JournalistSummary = obj({
   cited: int('內文明示引用其他媒體的篇數'),
   latest: time('最近一篇刊登時間'),
   compared: int('相似度索引已比對的篇數'),
+  firstSeen: int('已比對文章扣除明示引用、有較早相近版本及時間未確認的文章，依 ID 去重'),
   unmatched: int('已比對但未見達門檻相近文章的篇數；不代表原創'),
   similar: ref('JournalistSimilarity'),
 });
@@ -511,6 +512,7 @@ schemas.JournalistDetail = obj({
   pairs: arr(ref('JournalistPair'), '相似度高者在前'),
   index: obj({
     compared: int('已比對的自家文章數'),
+    firstSeen: int('已比對文章扣除明示引用、有較早相近版本及時間未確認的文章，依 ID 去重'),
     unmatched: int('已比對但未見達門檻相近文章的篇數；不代表原創'),
     pending: int('有可用正文、等待索引的自家文章數'),
     windowDays: int('每篇與前後幾天內的他家文章比對'),
