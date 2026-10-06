@@ -5,6 +5,7 @@ import { CAMP_FILL, CAMP_LABEL } from '@/components/CampBar';
 import { CampDot } from '@/components/EventCampDot';
 import { eventHeadline, eventHref, Movement, RankTrail } from '@/components/EventCard';
 import MediaIcon from '@/components/MediaIcon';
+import { useReaderPresence } from '@/components/ReaderPresence';
 import Sparkline from '@/components/Sparkline';
 import Wordmark from '@/components/Wordmark';
 import type { MediaInfo, RankingEntry } from '@/lib/api';
@@ -38,8 +39,8 @@ import {
 import type { Camp, EventItem, EventsSnapshot } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import BoardImage from './BoardImage';
-import OfflineWordmark from './OfflineWordmark';
 import styles from './liveboard.module.css';
+import OfflineWordmark from './OfflineWordmark';
 import StageCard, {
   CARD_DOT,
   CARD_LABEL,
@@ -352,6 +353,7 @@ export default function LiveBoard({
   const [rankSerial, setRankSerial] = useState(0);
   const [pane, setPane] = useState(0);
   const [events, setEvents] = useState<EventItem[]>(initialEvents?.events ?? []);
+  const presence = useReaderPresence();
   const [online, setOnline] = useState(true);
   const [now, setNow] = useState(() => Date.parse(initialFeed?.generatedAt ?? initialEvents?.builtAt ?? '') || 0);
   const [shown, setShown] = useState<{ card: Card; serial: number; replay: boolean } | null>(null);
@@ -657,13 +659,14 @@ export default function LiveBoard({
               </span>
             )}
           </Stat>
-          <Stat label="本站線上讀者" value={feed?.visitors?.activeUsers ?? '—'} unit="人" className="portrait:hidden">
-            <span
-              title="GA4 最近 30 分鐘活動讀者，約每 2 分鐘更新；包含看板讀者，非目前連線數。"
-              className="ml-2 h-6 w-20 self-center short:w-12"
+          <Stat label="本站線上讀者" value={presence.count ?? '—'} unit="人" className="portrait:hidden">
+            <a
+              href="/observe/opt-out/"
+              title="最近 90 秒內回報的可見頁面；每 30 秒更新，同一瀏覽器多分頁只計一次。這是瀏覽器數估計，非精確人數。點此調整是否計入統計。"
+              className="ml-2 max-w-32 text-xs text-zinc-400 hover:text-zinc-200"
             >
-              {feed?.visitors && <Sparkline values={feed.visitors.perMinute} color="#f97316" className="h-full w-full" />}
-            </span>
+              {presence.status}
+            </a>
           </Stat>
           <div className="ml-auto flex shrink-0 flex-col items-end">
             <Clock />

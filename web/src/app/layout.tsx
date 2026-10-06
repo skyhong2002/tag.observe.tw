@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import ReaderPresence from '@/components/ReaderPresence';
 import SiteAnalytics from '@/components/SiteAnalytics';
 import StructuredData from '@/components/StructuredData';
 import ThemeSync from '@/components/ThemeSync';
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-full bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         <ThemeSync />
-        {children}
+        <ReaderPresence>{children}</ReaderPresence>
         <StructuredData
           data={{
             '@context': 'https://schema.org',

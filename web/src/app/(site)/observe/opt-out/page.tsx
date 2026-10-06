@@ -3,7 +3,7 @@ import OptOutToggle from './OptOutToggle';
 
 export const metadata = {
   title: { absolute: '不計入統計 · 新文易數' },
-  description: '讓這個瀏覽器的造訪不送到 Google Analytics，也不列入網站觀測；可隨時恢復。',
+  description: '讓這個瀏覽器的造訪不送到 Google Analytics，也不列入網站觀測與線上讀者；可隨時恢復。',
   robots: { index: false, follow: true },
 };
 
@@ -17,7 +17,7 @@ export default function OptOutPage() {
           <Link href="/observe/" className="text-brand-700 hover:underline dark:text-brand-400">
             網站觀測
           </Link>
-          。
+          ，也不計入看板的線上讀者數。
         </p>
       </header>
       <OptOutToggle />
