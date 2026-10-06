@@ -193,6 +193,35 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             全部收合
           </button>
         )}
+        <fieldset className="flex items-center gap-1 py-1" aria-label="排序依據">
+          <span className="mr-1 text-zinc-500">排序</span>
+          <button
+            type="button"
+            className={chip(sortMode === 'count')}
+            aria-pressed={sortMode === 'count'}
+            onClick={() => {
+              setSortMode('count');
+              setShown(PAGE);
+            }}
+          >
+            篇數
+          </button>
+          <button
+            type="button"
+            className={chip(sortMode === 'share')}
+            aria-pressed={sortMode === 'share'}
+            onClick={() => {
+              setSortMode('share');
+              if (sort === 'articles' || sort === 'name' || sort === 'media') {
+                setSort('unmatched');
+                setDescending(true);
+              }
+              setShown(PAGE);
+            }}
+          >
+            百分比 %
+          </button>
+        </fieldset>
         <MethodLink className="py-2" />
       </div>
       <section className="mb-3 flex flex-wrap gap-2 text-xs" aria-label="關係篩選">
@@ -225,20 +254,6 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
           ))}
       </section>
       <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
-        <label className="flex flex-col gap-1">
-          排序依據
-          <select
-            className={control}
-            value={sortMode}
-            onChange={(e) => {
-              setSortMode(e.target.value as 'count' | 'share');
-              setShown(PAGE);
-            }}
-          >
-            <option value="count">篇數</option>
-            <option value="share">比例</option>
-          </select>
-        </label>
         <label className="flex flex-col gap-1">
           最低篇數
           <input
@@ -324,7 +339,8 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
         </button>
       </div>
       <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-        每格顯示篇數與占該記者總篇數的比例。點欄名排序；比例排序套用於已比對至引用各欄。各欄可能重疊，不可相加。媒體篩選只選出曾在該媒體刊登的記者，統計仍包含其全部刊登媒體。
+        每格顯示篇數與占該記者總篇數的比例。切換「篇數／百分比
+        %」後點欄名排序，再點一次切換升冪／降冪；百分比排序套用於已比對至引用各欄。各欄可能重疊，不可相加。媒體篩選只選出曾在該媒體刊登的記者，統計仍包含其全部刊登媒體。
       </p>
       <p className="mb-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
         未見相近：已完成比對，但在目前收錄範圍與相似度門檻下未發現相近文章；不包含尚未比對的文章，也不代表已確認原創。
