@@ -112,9 +112,11 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
                 追蹤台灣新聞媒體的標籤、事件與議題，<span className="whitespace-nowrap">並排比較各家標題。</span>
               </p>
             </div>
-            <Suspense fallback={null}>
-              <FooterStats />
-            </Suspense>
+            <div className="min-h-10 sm:min-h-5" data-vital-region="footer-stats">
+              <Suspense fallback={null}>
+                <FooterStats />
+              </Suspense>
+            </div>
             <div className="flex flex-wrap gap-2">
               <a href="https://t.me/tag_observe_tw" target="_blank" rel="noopener noreferrer" className={pill}>
                 <Icon d={ICONS.telegram} fill />

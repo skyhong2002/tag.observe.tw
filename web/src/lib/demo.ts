@@ -28,7 +28,7 @@ export interface DemoStory {
   event: EventItem;
 }
 
-async function mediaStats(): Promise<MediaStatRow[]> {
+export async function mediaStats(): Promise<MediaStatRow[]> {
   try {
     const res = await fetch(`${API_ORIGIN}/api/v1/media-stats`, { next: { revalidate: 120 }, signal: AbortSignal.timeout(6000) });
     return res.ok ? ((await res.json()) as { media: MediaStatRow[] }).media : [];
@@ -254,31 +254,25 @@ export interface JournalistBrief {
 }
 
 export async function loadDemo() {
-  const [events, day, ranking, media, blue, green, stats, journalists, topics, graph] = await Promise.all([
+  const [events, day, ranking, media, blue, green] = await Promise.all([
     fetchEvents(24),
     fetchEventDay(),
     fetchRanking('news', 'burst', 16, true).catch(() => null),
     fetchMedia().catch((): MediaInfo => ({})),
     fetchRanking('blue', 'score', 1).catch(() => null),
     fetchRanking('green', 'score', 1).catch(() => null),
-    mediaStats(),
-    fetchJournalists(48, 0.65, 6),
-    fetchTopics(120),
-    similarity(),
   ]);
   const unique = [...new Map((events?.events ?? []).map((e) => [e.relatedEventPk ?? `rank-${e.rank}`, e])).values()];
   const stories = unique
     .slice(0, 12)
     .map((e) => story(e, media))
     .filter((s): s is DemoStory => s !== null);
-  // Most recently updated first, as on /topic/; a topic listed before tracking began counts once it has a dated story.
-  const feed: FeedTopic[] = (topics?.feed ?? []).filter((t) => updatedAtOf(t) && t.title);
   return {
     events,
     ranking,
     media,
     stories,
-    campShare: campShare(ranking, blue, green, stats),
+    campShare: campShare(ranking, blue, green),
     // The whole day, not just this hour: a camp's blind spots show up over hours.
     // This hour's events too, so the column is not empty just after midnight.
     gaps: campGaps([
@@ -286,18 +280,26 @@ export async function loadDemo() {
         [...(day?.threads ?? []).map((t, i) => threadAsEvent(t, i + 1)), ...unique].map((e) => [e.relatedEventPk ?? `rank-${e.rank}`, e]),
       ).values(),
     ]),
-    journalists: journalists
-      ? ({ hours: journalists.hours, totals: journalists.totals, top: journalists.journalists.slice(0, 6) } satisfies JournalistBrief)
-      : null,
-    topics: topics
-      ? {
-          outlets: topics.media.length,
-          // Topics updated in the past day; the feed is most recently updated first and long enough to cover one.
-          today: feed.filter((t) => Date.now() - Date.parse(updatedAtOf(t) ?? '') < 86400e3).length,
-          // The five newest, one topic per outlet, so one busy entrance does not fill the list.
-          latest: feed.filter((t, i) => feed.findIndex((u) => u.media === t.media) === i).slice(0, 5),
-        }
-      : null,
-    graph: graphSummary(graph),
+  };
+}
+
+// These panels stream independently; a slow graph must not hold up the lead story.
+export async function loadHomeJournalists(): Promise<JournalistBrief | null> {
+  const data = await fetchJournalists(48, 0.65, 6);
+  return data ? { hours: data.hours, totals: data.totals, top: data.journalists.slice(0, 6) } : null;
+}
+
+export async function loadHomeGraph() {
+  return graphSummary(await similarity());
+}
+
+export async function loadHomeTopics() {
+  const topics = await fetchTopics(120);
+  if (!topics) return null;
+  const feed: FeedTopic[] = (topics.feed ?? []).filter((t) => updatedAtOf(t) && t.title);
+  return {
+    outlets: topics.media.length,
+    today: feed.filter((t) => Date.now() - Date.parse(updatedAtOf(t) ?? '') < 86400e3).length,
+    latest: feed.filter((t, i) => feed.findIndex((u) => u.media === t.media) === i).slice(0, 5),
   };
 }
