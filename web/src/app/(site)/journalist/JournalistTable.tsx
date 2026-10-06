@@ -1,21 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
-import {
-  groupJournalists,
-  type Metric,
-  matchesFilters,
-  metricCount,
-  metricShare,
-  metrics,
-  type SortKey,
-  sortValue,
-} from '@/lib/journalist-table.mts';
+import { type Metric, matchesFilters, metricCount, metricShare, metrics, type SortKey, sortValue } from '@/lib/journalist-table.mts';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
 import { table } from '@/lib/table-styles';
 
@@ -51,8 +42,6 @@ const PAGE = 150;
 const number = (value: number) => value.toLocaleString('zh-TW');
 
 export default function JournalistTable({ rows }: { rows: JournalistSummary[] }) {
-  const [view, setView] = useState<'list' | 'tree'>('list');
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
@@ -99,20 +88,11 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
     setShown(PAGE);
   };
   const visible = filtered.slice(0, shown);
-  const groups = useMemo(() => groupJournalists(filtered), [filtered]);
-  const hasMore = view === 'list' ? filtered.length > shown : groups.some((group) => expanded.has(group.id) && group.rows.length > shown);
-  const toggleGroup = (id: string) =>
-    setExpanded((previous) => {
-      const next = new Set(previous);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   const cell = table.num;
   const renderRow = (row: JournalistSummary) => (
     <tr key={row.name} className={table.row}>
       <td className={table.lead}>
-        <div className={`${table.leadBox} ${view === 'tree' ? 'border-l border-zinc-300 pl-4 dark:border-zinc-700' : ''}`}>
+        <div className={table.leadBox}>
           <Link
             href={journalistHref(row.name)}
             className="block truncate font-medium hover:text-brand-700 hover:underline dark:hover:text-brand-400"
@@ -180,19 +160,6 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
         <p role="status" className="py-2 text-zinc-500 dark:text-zinc-400">
           符合 {number(filtered.length)} 人
         </p>
-        <fieldset className="flex gap-1 py-1" aria-label="顯示方式">
-          <button type="button" className={chip(view === 'list')} aria-pressed={view === 'list'} onClick={() => setView('list')}>
-            列表
-          </button>
-          <button type="button" className={chip(view === 'tree')} aria-pressed={view === 'tree'} onClick={() => setView('tree')}>
-            媒體樹狀
-          </button>
-        </fieldset>
-        {view === 'tree' && (
-          <button type="button" className="py-2 underline underline-offset-4" onClick={() => setExpanded(new Set())}>
-            全部收合
-          </button>
-        )}
         <fieldset className="flex items-center gap-1 py-1" aria-label="排序依據">
           <span className="mr-1 text-zinc-500">排序</span>
           <button
@@ -338,18 +305,6 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
           清除篩選
         </button>
       </div>
-      <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-        每格顯示篇數與占該記者總篇數的比例。切換「篇數／百分比
-        %」後點欄名排序，再點一次切換升冪／降冪；百分比排序套用於已比對至引用各欄。各欄可能重疊，不可相加。媒體篩選只選出曾在該媒體刊登的記者，統計仍包含其全部刊登媒體。
-      </p>
-      <p className="mb-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-        未見相近：已完成比對，但在目前收錄範圍與相似度門檻下未發現相近文章；不包含尚未比對的文章，也不代表已確認原創。
-      </p>
-      {view === 'tree' && (
-        <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-          以各記者篇數最多的刊登媒體分組，每人只出現一次。媒體按名稱排列，展開後的記者沿用目前欄位排序；各欄仍計此人全部媒體的文章。
-        </p>
-      )}
       <TableScroller label="記者表格，可左右捲動">
         <table className="w-full min-w-[80rem] border-collapse text-sm [&_td]:py-1 [&_th]:py-1">
           <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
@@ -376,40 +331,17 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-            {view === 'list'
-              ? visible.map(renderRow)
-              : groups.map((group) => (
-                  <Fragment key={group.id}>
-                    <tr className="bg-zinc-50 dark:bg-zinc-900">
-                      <th colSpan={columns.length} scope="rowgroup" className="px-2 text-left text-xs font-medium sm:px-3">
-                        <button
-                          type="button"
-                          aria-expanded={expanded.has(group.id)}
-                          onClick={() => toggleGroup(group.id)}
-                          className="sticky left-2 inline-flex items-center gap-2 py-1"
-                        >
-                          <span aria-hidden="true">{expanded.has(group.id) ? '▾' : '▸'}</span>
-                          <MediaIcon media={group.id} title={group.name} size={14} />
-                          {group.name}
-                          <span className="font-normal text-zinc-500">{group.rows.length} 位記者</span>
-                        </button>
-                      </th>
-                    </tr>
-                    {expanded.has(group.id) && group.rows.slice(0, shown).map(renderRow)}
-                  </Fragment>
-                ))}
-          </tbody>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">{visible.map(renderRow)}</tbody>
         </table>
       </TableScroller>
-      {hasMore && (
+      {filtered.length > shown && (
         <div className="mt-3 text-center">
           <button
             type="button"
             onClick={() => setShown((value) => value + PAGE)}
             className="rounded border border-zinc-300 px-4 py-2 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
-            {view === 'list' ? `顯示更多（還有 ${number(filtered.length - shown)} 人）` : '顯示更多記者'}
+            {`顯示更多（還有 ${number(filtered.length - shown)} 人）`}
           </button>
         </div>
       )}
