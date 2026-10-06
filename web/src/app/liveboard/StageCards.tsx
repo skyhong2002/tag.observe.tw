@@ -132,7 +132,8 @@ export function Reporters({
   citationsOnly?: boolean;
   className?: string;
 }) {
-  const parts = authorCreditParts(citationsOnly ? [] : article.authors, article);
+  const credits = authorCreditParts(citationsOnly ? [] : article.authors, article);
+  const parts = citationsOnly ? credits.filter((part) => part.media) : credits;
   if (!parts.length) return null;
   return (
     <span
