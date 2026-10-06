@@ -6,44 +6,33 @@ import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
+import { type Metric, matchesFilters, metricCount, metricShare, metrics, type SortKey, sortValue } from '@/lib/journalist-table.mts';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
 import { table } from '@/lib/table-styles';
 
-type SortKey = 'name' | 'media' | 'articles' | 'compared' | 'matched' | 'later' | 'earlier' | 'sameAuthor' | 'attributed' | 'cited';
-// Click a heading to sort, click again to flip, like the media tables.
-// Column meanings are in the footer notes (JournalistMethod); titles only hint at sorting.
 const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
   { key: 'name', label: '記者', numeric: false },
   { key: 'media', label: '刊登媒體', title: '依刊登媒體數排序', numeric: false },
   { key: 'articles', label: '篇數', numeric: true },
-  { key: 'compared', label: '已比對', numeric: true },
-  { key: 'matched', label: '內文相近', numeric: true },
-  { key: 'later', label: '對方較早', numeric: true },
-  { key: 'earlier', label: '本篇較早', numeric: true },
-  { key: 'sameAuthor', label: '同署名', numeric: true },
-  { key: 'attributed', label: '已註明來源', numeric: true },
-  { key: 'cited', label: '引用', numeric: true },
+  ...metrics.map((metric) => ({ ...metric, numeric: true })),
 ];
-const sortValue = (row: JournalistSummary, key: SortKey): number =>
-  key === 'media'
-    ? row.media.length
-    : key === 'articles'
-      ? row.articles
-      : key === 'compared'
-        ? row.compared
-        : key === 'matched'
-          ? row.similar.articles
-          : key === 'later'
-            ? row.similar.later
-            : key === 'earlier'
-              ? row.similar.earlier
-              : key === 'sameAuthor'
-                ? row.similar.sameAuthor
-                : key === 'attributed'
-                  ? (row.similar.attributed ?? 0)
-                  : key === 'cited'
-                    ? row.cited
-                    : 0;
+const control = 'rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950';
+const chip = (active: boolean) =>
+  `rounded-full px-3 py-1 ${active ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`;
+const percent = (value: number | null) => (value === null ? '—' : `${(value * 100).toFixed(1)}%`);
+function MetricCell({ row, metric }: { row: JournalistSummary; metric: Metric }) {
+  const count = metricCount(row, metric);
+  const share = metricShare(row, metric);
+  return (
+    <td className={`${table.num} min-w-24`} title={`${count === null ? '未知' : `${count} 篇`} / 全部 ${row.articles} 篇`}>
+      <span className={count === 0 ? 'text-zinc-400' : ''}>{count === null ? '—' : number(count)}</span>
+      <span className="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-400">{percent(share)}</span>
+      <div className="mt-1 h-1 rounded bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
+        <div className="h-1 rounded bg-zinc-400 dark:bg-zinc-500" style={{ width: `${Math.min(100, Math.max(0, (share ?? 0) * 100))}%` }} />
+      </div>
+    </td>
+  );
+}
 const PAGE = 150;
 const number = (value: number) => value.toLocaleString('zh-TW');
 
@@ -53,6 +42,23 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
   const [descending, setDescending] = useState(true);
   const [media, setMedia] = useState('');
   const [shown, setShown] = useState(PAGE);
+  const [sortMode, setSortMode] = useState<'count' | 'share'>('count');
+  const [relation, setRelation] = useState<Metric | ''>('');
+  const [minArticles, setMinArticles] = useState(0);
+  const [minCoverage, setMinCoverage] = useState(0);
+  const [metric, setMetric] = useState<Metric>('unmatched');
+  const [minShare, setMinShare] = useState('');
+  const [maxShare, setMaxShare] = useState('');
+  const resetFilters = () => {
+    setQuery('');
+    setMedia('');
+    setRelation('');
+    setMinArticles(0);
+    setMinCoverage(0);
+    setMinShare('');
+    setMaxShare('');
+    setShown(PAGE);
+  };
   const outlets = useMemo(() => {
     const names = new Map<string, { name: string; count: number }>();
     for (const row of rows)
@@ -60,16 +66,14 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
     return [...names].sort((a, b) => b[1].count - a[1].count);
   }, [rows]);
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
     return rows
-      .filter(
-        (row) => (!needle || row.name.toLowerCase().includes(needle)) && (!media || row.media.some((outlet) => outlet.media === media)),
-      )
+      .filter((row) => matchesFilters(row, { query, media, relation, minArticles, minCoverage, metric, minShare, maxShare }))
       .sort((a, b) => {
-        const order = sort === 'name' ? a.name.localeCompare(b.name, 'zh-Hant') : sortValue(a, sort) - sortValue(b, sort);
+        const order =
+          sort === 'name' ? a.name.localeCompare(b.name, 'zh-Hant') : sortValue(a, sort, sortMode) - sortValue(b, sort, sortMode);
         return (descending ? -order : order) || b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant');
       });
-  }, [rows, query, sort, descending, media]);
+  }, [rows, query, media, relation, minArticles, minCoverage, metric, minShare, maxShare, sort, descending, sortMode]);
   const sortBy = (key: SortKey) => {
     if (sort === key) setDescending(!descending);
     else {
@@ -114,12 +118,147 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             ))}
           </select>
         </label>
-        <p className="py-2 text-zinc-500 dark:text-zinc-400">符合 {number(filtered.length)} 人</p>
+        <p role="status" className="py-2 text-zinc-500 dark:text-zinc-400">
+          符合 {number(filtered.length)} 人
+        </p>
         <MethodLink className="py-2" />
       </div>
-      <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">各欄以文章篇數計，同篇在每欄只計一次；不同欄可能重疊，不可相加。</p>
+      <section className="mb-3 flex flex-wrap gap-2 text-xs" aria-label="關係篩選">
+        <button
+          type="button"
+          className={chip(!relation)}
+          aria-pressed={!relation}
+          onClick={() => {
+            setRelation('');
+            setShown(PAGE);
+          }}
+        >
+          全部關係
+        </button>
+        {metrics
+          .filter(({ key }) => key !== 'compared')
+          .map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              className={chip(relation === key)}
+              aria-pressed={relation === key}
+              onClick={() => {
+                setRelation(relation === key ? '' : key);
+                setShown(PAGE);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+      </section>
+      <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
+        <label className="flex flex-col gap-1">
+          排序依據
+          <select
+            className={control}
+            value={sortMode}
+            onChange={(e) => {
+              setSortMode(e.target.value as 'count' | 'share');
+              setShown(PAGE);
+            }}
+          >
+            <option value="count">篇數</option>
+            <option value="share">比例</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          最低篇數
+          <input
+            className={`${control} w-24`}
+            type="number"
+            min="0"
+            step="1"
+            value={minArticles}
+            onChange={(e) => {
+              setMinArticles(Math.max(0, Number(e.target.value)));
+              setShown(PAGE);
+            }}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          最低已比對比例
+          <select
+            className={control}
+            value={minCoverage}
+            onChange={(e) => {
+              setMinCoverage(Number(e.target.value));
+              setShown(PAGE);
+            }}
+          >
+            {[0, 50, 80, 100].map((value) => (
+              <option key={value} value={value}>
+                {value ? `${value}%` : '不限'}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          比例篩選欄位
+          <select
+            className={control}
+            value={metric}
+            onChange={(e) => {
+              setMetric(e.target.value as Metric);
+              setShown(PAGE);
+            }}
+          >
+            {metrics.map(({ key, label }) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          最低比例（%）
+          <input
+            className={`${control} w-28`}
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="不限"
+            value={minShare}
+            onChange={(e) => {
+              setMinShare(e.target.value);
+              setShown(PAGE);
+            }}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          最高比例（%）
+          <input
+            className={`${control} w-28`}
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="不限"
+            value={maxShare}
+            onChange={(e) => {
+              setMaxShare(e.target.value);
+              setShown(PAGE);
+            }}
+          />
+        </label>
+        <button type="button" className="py-2 underline underline-offset-4" onClick={resetFilters}>
+          清除篩選
+        </button>
+      </div>
+      <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+        每格顯示篇數與占該記者總篇數的比例。點欄名排序；比例排序套用於已比對至引用各欄。各欄可能重疊，不可相加。媒體篩選只選出曾在該媒體刊登的記者，統計仍包含其全部刊登媒體。
+      </p>
+      <p className="mb-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+        未見相近：已完成比對，但在目前收錄範圍與相似度門檻下未發現相近文章；不包含尚未比對的文章，也不代表已確認原創。
+      </p>
       <TableScroller label="記者表格，可左右捲動">
-        <table className="w-full min-w-[44rem] border-collapse text-sm">
+        <table className="w-full min-w-[76rem] border-collapse text-sm">
           <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
               {columns.map((column) => (
@@ -171,15 +310,9 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
                   </ul>
                 </td>
                 <td className={cell}>{number(row.articles)}</td>
-                <td className={`${cell} text-zinc-500 dark:text-zinc-400`}>{number(row.compared)}</td>
-                <td className={cell}>
-                  {row.similar.articles ? number(row.similar.articles) : <span className="text-zinc-300 dark:text-zinc-700">0</span>}
-                </td>
-                <td className={`${cell} ${row.similar.later ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.later}</td>
-                <td className={`${cell} ${row.similar.earlier ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.earlier}</td>
-                <td className={`${cell} ${row.similar.sameAuthor ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.sameAuthor}</td>
-                <td className={cell}>{row.similar.attributed ?? 0}</td>
-                <td className={`${cell} ${row.cited ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.cited}</td>
+                {metrics.map(({ key }) => (
+                  <MetricCell key={key} row={row} metric={key} />
+                ))}
               </tr>
             ))}
           </tbody>

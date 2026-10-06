@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SimilarityArticle, SimilarityPair } from '../similarity/types.ts';
-import { type BylineRow, countSimilarity, orientPair, summarizeJournalists } from './aggregate.ts';
+import { type BylineRow, countSimilarity, countUnmatched, orientPair, summarizeJournalists } from './aggregate.ts';
 
 const article = (id: number, media: string, publishedAt: string, authors: string[], attributions: string[] = []): SimilarityArticle => ({
   id,
@@ -153,5 +153,18 @@ describe('article-based similarity counts', () => {
       const oriented = pairs.map((p) => orientPair(p, (a) => a.id <= 2, '王小明')!);
       expect(countSimilarity(oriented, new Set([1, 2]))).toEqual(summary.similar);
     }
+  });
+});
+
+describe('unmatched compared articles', () => {
+  it('excludes unprocessed stories and removes both own endpoints of matches', () => {
+    const a = article(1, 'a', '2026-10-01T02:00:00Z', ['王小明']);
+    const b = article(2, 'b', '2026-10-01T03:00:00Z', ['王小明']);
+    const oriented = orientPair(pair(a, b), () => true, '王小明')!;
+    expect(countUnmatched([oriented, oriented], new Set([1, 2, 3]))).toBe(1);
+    expect(countUnmatched([], new Set())).toBe(0);
+    const rows = [1, 2, 3, 4].map((id) => row(id, `m${id}`, a.publishedAt, ['王小明'], { indexed: id !== 4 }));
+    const [summary] = summarizeJournalists(rows, [pair(a, b)], (m) => m);
+    expect(summary).toMatchObject({ articles: 4, compared: 3, unmatched: 1 });
   });
 });

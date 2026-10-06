@@ -232,6 +232,8 @@ export default async function JournalistPage({
             <dl className="grid grid-cols-[6rem_minmax(0,1fr)] gap-y-1.5">
               <dt className="text-zinc-500 dark:text-zinc-400">已比對</dt>
               <dd>{number(data.index.compared)} 篇</dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">未見相近</dt>
+              <dd title="已比對但未發現達門檻的相近文章，不代表已確認原創">{number(data.index.unmatched)} 篇</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">尚待比對</dt>
               <dd>{number(data.index.pending)} 篇</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">同署名跨站</dt>

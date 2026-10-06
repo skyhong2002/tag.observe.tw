@@ -46,6 +46,8 @@ export interface JournalistSummary {
   latest: string;
   /** Articles the similarity index compared with other outlets. */
   compared: number;
+  /** Compared own articles with no match at the requested threshold; not proof of originality. */
+  unmatched: number;
   similar: JournalistSimilarity;
 }
 export type PairRelation = 'later' | 'earlier' | 'same';
@@ -104,6 +106,15 @@ export function orientPair(pair: SimilarityPair, isOwn: (article: SimilarityArti
     otherCitesOwn: other.attributions.some((source) => source.media === own.media),
   };
 }
+export function countUnmatched(pairs: JournalistPair[], comparedIds: ReadonlySet<number>): number {
+  const remaining = new Set(comparedIds);
+  for (const pair of pairs) {
+    remaining.delete(pair.own.id);
+    remaining.delete(pair.other.id);
+  }
+  return remaining.size;
+}
+
 export function countSimilarity(pairs: JournalistPair[], ownIds?: ReadonlySet<number>): JournalistSimilarity {
   const result = emptySimilarity();
   const matched = new Set<number>();
@@ -170,6 +181,7 @@ export function summarizeJournalists(
       cited: entry.rows.filter((row) => (row.attributions?.length ?? 0) > 0).length,
       latest: new Date(Math.max(...entry.rows.map((row) => row.publishedAt.getTime()))).toISOString(),
       compared: entry.rows.filter((row) => row.indexed).length,
+      unmatched: countUnmatched(pairsOf.get(name) ?? [], new Set(entry.rows.filter((row) => row.indexed).map((row) => row.id))),
       similar: countSimilarity(pairsOf.get(name) ?? [], new Set(entry.rows.map((row) => row.id))),
     }))
     .sort((a, b) => b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant'));

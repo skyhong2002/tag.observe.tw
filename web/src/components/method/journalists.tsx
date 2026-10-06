@@ -31,6 +31,14 @@ export function JournalistMethod() {
         </dd>
         <dt className={methodTerm}>已比對</dt>
         <dd>相似度索引已比對的篇數。</dd>
+        <dt className={methodTerm}>未見相近</dt>
+        <dd>
+          已完成比對，但沒有達到所選相似度門檻的他站文章。同署名配對兩端皆排除；尚未比對的文章不算。未收錄的來源、比對時間範圍與門檻都會影響結果，不能據此確認原創。
+        </dd>
+        <dt className={methodTerm}>比例與篩選</dt>
+        <dd>
+          記者表各欄百分比均以該記者所選期間的總篇數為分母；未見相近不是原創率。可按篇數或比例排序，並交叉篩選刊登媒體、關係類型、最低篇數、已比對比例與指定欄位的比例範圍。關係按鈕表示該欄至少一篇；媒體篩選不會把統計縮限到單一媒體。尚未比對的文章不屬於未見相近。
+        </dd>
         <dt className={methodTerm}>內文相近</dt>
         <dd>有至少一篇他站相近文章的署名篇數；同一新聞稿、通訊社稿、授權轉載與引用都會相近。</dd>
         <dt className={methodTerm}>對方較早</dt>
