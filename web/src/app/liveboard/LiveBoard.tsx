@@ -155,7 +155,7 @@ function Stat({
   children,
   className = '',
 }: {
-  label: string;
+  label: React.ReactNode;
   value: React.ReactNode;
   unit?: string;
   children?: React.ReactNode;
@@ -624,7 +624,17 @@ export default function LiveBoard({
           <Stat label="24 小時發稿媒體" value={totals?.publishingMedia24h ?? '—'} unit="家" className="portrait:hidden" />
           <Stat label={`${totals?.activeSources ?? '—'} 爬蟲`} value={status.ok ?? '—'} unit="正常" className="portrait:hidden" />
           <Stat
-            label="本站線上讀者"
+            label={
+              <span className="inline-flex items-center gap-1.5">
+                此刻在線
+                <span
+                  role="img"
+                  aria-label={online && presence.count !== null ? '連線正常' : '連線未確認'}
+                  title={online && presence.count !== null ? '連線正常' : '連線未確認'}
+                  className={`h-1.5 w-1.5 rounded-full ${online && presence.count !== null ? 'bg-emerald-400' : 'bg-zinc-600'}`}
+                />
+              </span>
+            }
             value={
               <a href="/observe/opt-out/" title={presence.status}>
                 {presence.count ?? '—'}
@@ -632,9 +642,8 @@ export default function LiveBoard({
             }
             unit="人"
             className="portrait:hidden"
-          />
-          <Stat label="本站瀏覽量" value={feed?.visitors?.views ?? '—'} unit="次" className="portrait:hidden">
-            <span title="GA4 最近 30 分鐘瀏覽量" className="ml-2 h-6 w-20 self-center short:w-12">
+          >
+            <span title="本站瀏覽量：最近 30 分鐘每分鐘瀏覽次數（GA4）" className="ml-2 h-6 w-20 self-center short:w-12">
               {feed?.visitors && <Sparkline values={feed.visitors.perMinute} color="#f97316" className="h-full w-full" />}
             </span>
           </Stat>
