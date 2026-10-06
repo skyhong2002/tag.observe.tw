@@ -36,21 +36,19 @@ describe('mediaRelations', () => {
     edge('me', 'me', 'similarity', 7), // self loops never count
   ];
 
-  it('splits each partner by direction and kind, ranked by total articles', () => {
+  it('keeps similarity undirected and citation direction, ranked by total relationships', () => {
     const result = mediaRelations({ nodes, edges }, 'me');
     expect(result.node?.articles).toBe(42);
     expect(result.partners).toEqual([
-      { id: 'cna', name: 'cna-name', external: false, later: 5, earliest: 2, cites: 0, citedBy: 0, total: 7 },
-      { id: 'udn', name: 'udn-name', external: false, later: 0, earliest: 1, cites: 0, citedBy: 4, total: 5 },
-      { id: 'reuters', name: 'reuters-name', external: true, later: 0, earliest: 0, cites: 3, citedBy: 0, total: 3 },
+      { id: 'cna', name: 'cna-name', external: false, similar: 7, cites: 0, citedBy: 0, total: 7 },
+      { id: 'udn', name: 'udn-name', external: false, similar: 1, cites: 0, citedBy: 4, total: 5 },
+      { id: 'reuters', name: 'reuters-name', external: true, similar: 0, cites: 3, citedBy: 0, total: 3 },
     ]);
   });
 
   it('names partners missing from the node list by id', () => {
     const result = mediaRelations({ nodes: [node('me')], edges: [edge('ghost', 'me', 'citation', 1)] }, 'me');
-    expect(result.partners).toEqual([
-      { id: 'ghost', name: 'ghost', external: false, later: 0, earliest: 0, cites: 0, citedBy: 1, total: 1 },
-    ]);
+    expect(result.partners).toEqual([{ id: 'ghost', name: 'ghost', external: false, similar: 0, cites: 0, citedBy: 1, total: 1 }]);
   });
 
   it('reports an unknown outlet without relationships', () => {

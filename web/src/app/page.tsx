@@ -255,8 +255,8 @@ function GraphPanel({ graph }: { graph: GraphSummary | null }) {
   if (!graph) return <p className={styles.notice}>相似度比對整理中。</p>;
   return (
     <div className={styles.graphBody}>
-      <OutletList caption="先發，之後被他家跟進" rows={graph.earliest} verb="多被跟進：" />
-      <OutletList caption="跟進他家已發的報導" rows={graph.later} verb="多跟進：" />
+      <OutletList caption="文字相近，標示刊登較早" rows={graph.earliest} verb="相近對象：" />
+      <OutletList caption="文字相近，標示刊登較晚" rows={graph.later} verb="相近對象：" />
       <OutletList caption="被他家明示引用" rows={graph.cited} verb="多被引用：" />
       <OutletList caption="明示引用他家" rows={graph.citing} verb="多引用：" />
       {/* What the columns mean is in the footer's 資料來源與計算方式 (HomeMethod). */}

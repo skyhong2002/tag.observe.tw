@@ -1,4 +1,5 @@
 import type { Attribution } from '../similarity/attribution.ts';
+import { classifyRelation } from '../similarity/relation.ts';
 import type { SimilarityArticle, SimilarityPair } from '../similarity/types.ts';
 import { journalistNames } from './names.ts';
 
@@ -33,6 +34,7 @@ export interface JournalistSimilarity {
   earlier: number;
   /** Pairs whose other side carries the same byline (the person's own copy elsewhere). */
   sameAuthor: number;
+  attributed?: number;
   identical: number;
 }
 export interface JournalistSummary {
@@ -59,6 +61,8 @@ export interface JournalistPair {
   minutes: number;
   relation: PairRelation;
   sameAuthor: boolean;
+  attributed?: boolean;
+  publicationUnknown?: boolean;
   ownCitesOther: boolean;
   otherCitesOwn: boolean;
 }
@@ -67,13 +71,22 @@ export function rowJournalists(row: { authors: string[] | null; creator: string 
   const credits = row.authors?.length ? row.authors : row.creator?.trim() ? [row.creator] : [];
   return journalistNames(credits);
 }
-const emptySimilarity = (): JournalistSimilarity => ({ pairs: 0, articles: 0, later: 0, earlier: 0, sameAuthor: 0, identical: 0 });
+const emptySimilarity = (): JournalistSimilarity => ({
+  pairs: 0,
+  articles: 0,
+  later: 0,
+  earlier: 0,
+  sameAuthor: 0,
+  attributed: 0,
+  identical: 0,
+});
 
 export function orientPair(pair: SimilarityPair, isOwn: (article: SimilarityArticle) => boolean, name: string): JournalistPair | null {
   const [own, other] = isOwn(pair.a) ? [pair.a, pair.b] : isOwn(pair.b) ? [pair.b, pair.a] : [null, null];
   if (!own || !other) return null;
   const minutes = Math.round((Date.parse(other.publishedAt) - Date.parse(own.publishedAt)) / 60000);
-  const relation: PairRelation = !Number.isFinite(minutes) || Math.abs(minutes) < 1 ? 'same' : minutes < 0 ? 'later' : 'earlier';
+  const info = classifyRelation(own, other);
+  const relation: PairRelation = info.publication === 'a-earlier' ? 'earlier' : info.publication === 'b-earlier' ? 'later' : 'same';
   return {
     own,
     other,
@@ -84,7 +97,9 @@ export function orientPair(pair: SimilarityPair, isOwn: (article: SimilarityArti
     evidence: pair.evidence,
     minutes: Number.isFinite(minutes) ? minutes : 0,
     relation,
-    sameAuthor: journalistNames(other.authors).includes(name),
+    sameAuthor: info.sharedAuthors.includes(name),
+    attributed: info.kind === 'attributed',
+    publicationUnknown: info.publication === 'unknown',
     ownCitesOther: own.attributions.some((source) => source.media === other.media),
     otherCitesOwn: other.attributions.some((source) => source.media === own.media),
   };
@@ -97,6 +112,7 @@ export function countSimilarity(pairs: JournalistPair[]): JournalistSimilarity {
     matched.add(pair.own.id);
     if (pair.kind === 'identical') result.identical++;
     if (pair.sameAuthor) result.sameAuthor++;
+    else if (pair.attributed || pair.ownCitesOther || pair.otherCitesOwn) result.attributed = (result.attributed ?? 0) + 1;
     else if (pair.relation === 'later') result.later++;
     else if (pair.relation === 'earlier') result.earlier++;
   }

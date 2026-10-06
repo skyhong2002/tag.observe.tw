@@ -4,7 +4,7 @@ export type { EvidenceItem } from './story-origins.mts';
 
 export type GraphSelection = { node: string } | { edge: SimilarityEdge } | null;
 export type RelationshipMode = 'all' | 'similarity' | 'citation';
-/** Citations: outgoing cites another outlet. Similarity: outgoing published later, incoming was the group's earliest. */
+/** Citation direction only; similarity is undirected. */
 export type CitationDirection = 'all' | 'outgoing' | 'incoming';
 
 export function sameGraphSelection(a: GraphSelection, b: GraphSelection): boolean {

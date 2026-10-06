@@ -5,10 +5,8 @@ export interface MediaPartner {
   id: string;
   name: string;
   external: boolean;
-  /** Articles of this outlet that joined a story group the partner started. */
-  later: number;
-  /** Articles of the partner that joined a story group this outlet started. */
-  earliest: number;
+  /** Direct measured pairs, independent of article chronology. */
+  similar: number;
   /** Articles of this outlet explicitly citing the partner. */
   cites: number;
   /** Articles of the partner explicitly citing this outlet. */
@@ -21,7 +19,7 @@ export interface MediaRelations {
   partners: MediaPartner[];
 }
 
-/** Similarity edges point from the later outlet to the group's earliest; citation edges from the citing outlet to the cited one. */
+/** Similarity is undirected; citations point from the citing outlet to the cited one. */
 export function mediaRelations(data: { nodes: SimilarityNode[]; edges: SimilarityEdge[] }, media: string): MediaRelations {
   const byId = new Map(data.nodes.map((node) => [node.id, node]));
   const partners = new Map<string, MediaPartner>();
@@ -29,7 +27,7 @@ export function mediaRelations(data: { nodes: SimilarityNode[]; edges: Similarit
     let entry = partners.get(id);
     if (!entry) {
       const node = byId.get(id);
-      entry = { id, name: node?.name ?? id, external: node?.external ?? false, later: 0, earliest: 0, cites: 0, citedBy: 0, total: 0 };
+      entry = { id, name: node?.name ?? id, external: node?.external ?? false, similar: 0, cites: 0, citedBy: 0, total: 0 };
       partners.set(id, entry);
     }
     return entry;
@@ -41,8 +39,7 @@ export function mediaRelations(data: { nodes: SimilarityNode[]; edges: Similarit
     if (edge.kind === 'citation') {
       if (outgoing) entry.cites += edge.count;
       else entry.citedBy += edge.count;
-    } else if (outgoing) entry.later += edge.count;
-    else entry.earliest += edge.count;
+    } else entry.similar += edge.count;
     entry.total += edge.count;
   }
   return {

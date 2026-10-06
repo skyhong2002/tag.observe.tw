@@ -12,6 +12,7 @@ import { ATTRIBUTION_RELATION_LABEL, attributionRole, authorDisplay } from '@/li
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
+import { relationDetails, relationLabel } from '@/lib/relation-label.mts';
 import {
   type EvidenceQuery,
   fetchEvidence,
@@ -126,16 +127,21 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
   const toggle = `${linkStyle} underline-offset-2`;
   return (
     <article className="min-w-0 space-y-1 py-3" data-testid="story-origin" data-source-id={source.id} data-article-id={article.id}>
+      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+        {relationLabel(directPair?.relation)}
+        {relationDetails(directPair?.relation, directPair?.a.mediaTitle ?? '', directPair?.b.mediaTitle ?? '') &&
+          ` · ${relationDetails(directPair?.relation, directPair?.a.mediaTitle ?? '', directPair?.b.mediaTitle ?? '')}`}
+      </p>
       <ArticleLine article={article} />
-      <ArticleLine article={source} badge="來源" dim />
+      <ArticleLine article={source} badge="比對文章" dim />
       {directPair ? (
         <Passage
-          lead={<span className="font-medium text-brand-700 dark:text-brand-400">與來源相似 {(directPair.score * 100).toFixed(1)}%</span>}
+          lead={<span className="font-medium text-brand-700 dark:text-brand-400">直接比對相似 {(directPair.score * 100).toFixed(1)}%</span>}
           text={directPair.evidence}
         />
       ) : (
         <p className="text-xs leading-5 text-zinc-500">
-          這兩篇沒有直接比對分數，經同組配對歸源。
+          這兩篇沒有直接比對分數，不能推定彼此相似或稿源。
           <MethodLink />
         </p>
       )}
@@ -156,7 +162,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
           <ol className="max-h-80 space-y-1 overflow-y-auto">
             {group.articles.map((member) => (
               <li key={member.id}>
-                <ArticleLine article={member} badge={member.id === source.id ? '來源' : undefined} />
+                <ArticleLine article={member} badge={member.id === group.source?.id ? '展示代表' : undefined} />
               </li>
             ))}
           </ol>
@@ -460,11 +466,13 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     setView('evidence');
   };
   // One page of evidence from the full index for the media on screen; refetched when any filter changes.
+  const [relationFilter, setRelationFilter] = useState<NonNullable<EvidenceQuery['relation']> | 'all'>('all');
   const [retry, setRetry] = useState(0);
   const requestKey = JSON.stringify({
     period: periodQuery(data.days ? data.days : { hours: data.hours ?? 48 }, data.threshold).toString(),
     query: {
       mode,
+      relation: mode !== 'citation' && relationFilter !== 'all' ? relationFilter : undefined,
       node: selection && 'node' in selection ? selection.node : undefined,
       edge:
         selection && 'edge' in selection
@@ -513,10 +521,11 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
     selection && 'node' in selection
       ? byId.get(selection.node)?.name
       : selection && 'edge' in selection
-        ? `${byId.get(selection.edge.target)?.name} → ${byId.get(selection.edge.source)?.name}`
+        ? `${byId.get(selection.edge.target)?.name} ${selection.edge.kind === 'citation' ? '→' : '↔'} ${byId.get(selection.edge.source)?.name}`
         : '圖上全部媒體';
   const highlightedCount = selection ? edges.filter((edge) => highlightedRelationship(edge, selection)).length : 0;
   const openBrowser = () => browser.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+  const selectedNode = selection && 'node' in selection ? data.nodes.find((node) => node.id === selection.node) : null;
   const selectedCounts = selection && 'node' in selection ? counts.get(selection.node) : null;
 
   return (
@@ -655,8 +664,8 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
           {!fullscreen && (
             <div className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:h-12">
               <p>
-                <span className="text-orange-600 dark:text-orange-400">同組：最早 → 較晚</span>
-                <span className="ml-3 text-violet-600 dark:text-violet-400">來源／引用：來源 → 採用或引用方</span>
+                <span className="text-orange-600 dark:text-orange-400">文字重疊：無方向</span>
+                <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
                 <span className="ml-3">
                   {selection
                     ? `已固定 ${selectedTitle} · 高亮 ${highlightedCount} 條`
@@ -676,7 +685,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
         </section>
         {!fullscreen && (
           <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
-            本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則{ATTRIBUTION_RELATION_LABEL}
+            本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則來源／引用
             {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''} · <MethodLink />
           </p>
         )}
@@ -751,6 +760,23 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   </select>
                 </label>
                 <label className="block text-sm">
+                  來源線索
+                  <select
+                    value={relationFilter}
+                    disabled={mode === 'citation'}
+                    className={control}
+                    onChange={(event) => {
+                      setRelationFilter(event.target.value as typeof relationFilter);
+                      setPage(0);
+                    }}
+                  >
+                    <option value="all">全部相似配對</option>
+                    <option value="attributed">已註明來源</option>
+                    <option value="same-byline">同署名跨站（無明示來源）</option>
+                    <option value="unattributed">未辨識稿源</option>
+                  </select>
+                </label>
+                <label className="block text-sm">
                   搜尋文章
                   <input
                     type="search"
@@ -761,19 +787,19 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   />
                 </label>
                 <label className="block text-sm">
-                  {mode === 'similarity' ? '刊出先後' : '來源／引用方向'}
+                  來源／引用方向
                   <select
                     value={direction}
-                    disabled={!selection || !('node' in selection)}
+                    disabled={mode === 'similarity' || !selection || !('node' in selection)}
                     onChange={(event) => {
                       setDirection(event.target.value as CitationDirection);
                       setPage(0);
                     }}
                     className={`${control} disabled:opacity-40`}
                   >
-                    <option value="all">{mode === 'similarity' ? '不分先後' : '所有來源／引用方向'}</option>
-                    <option value="outgoing">{mode === 'similarity' ? '同組較晚' : '採用／引用他媒'}</option>
-                    <option value="incoming">{mode === 'similarity' ? '同組最早' : '被採用／引用'}</option>
+                    <option value="all">所有來源／引用方向</option>
+                    <option value="outgoing">採用／引用其他媒體</option>
+                    <option value="incoming">被其他媒體採用／引用</option>
                   </select>
                 </label>
               </div>
@@ -802,10 +828,11 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                   </p>
                   <div className="grid max-w-3xl grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
                     {[
-                      [selectedCounts?.outgoing ?? 0, '採用／引用他媒'],
-                      [selectedCounts?.incoming ?? 0, '被採用／引用'],
-                      [selectedCounts?.earliest ?? 0, '同組最早'],
-                      [selectedCounts?.later ?? 0, '同組較晚'],
+                      [selectedCounts?.outgoing ?? 0, '採用／引用其他媒體'],
+                      [selectedCounts?.incoming ?? 0, '被其他媒體採用／引用'],
+                      [selectedNode?.sameByline ?? 0, '同署名跨站'],
+                      [selectedNode?.attributed ?? 0, '已註明來源'],
+                      [selectedNode?.unattributed ?? 0, '未辨識稿源'],
                     ].map(([n, label]) => (
                       <div key={label} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
                         <p className="mb-1 text-xl font-semibold">{number(Number(n))}</p>

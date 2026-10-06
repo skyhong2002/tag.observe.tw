@@ -32,11 +32,13 @@ export function JournalistMethod() {
         <dt className={methodTerm}>內文相近</dt>
         <dd>至少一端是此人文章的相近配對；同一新聞稿、通訊社稿、授權轉載與引用都會相近。</dd>
         <dt className={methodTerm}>對方較早</dt>
-        <dd>他站相近文章比此人文章早至少一分鐘刊登的配對；刊登時間以各站標示為準，不含同署名跨站。</dd>
+        <dd>他站相近文章比此人文章早至少一分鐘刊登的配對；刊登時間以各站標示為準，不含同署名跨站或已註明來源。</dd>
         <dt className={methodTerm}>本篇較早</dt>
-        <dd>此人文章比他站相近文章早至少一分鐘刊登的配對，同樣不含同署名跨站。相差不到一分鐘算同時刊登，兩欄都不計。</dd>
+        <dd>此人文章比他站相近文章早至少一分鐘刊登的配對，同樣不含同署名跨站或已註明來源。相差不到一分鐘算同時刊登，兩欄都不計。</dd>
         <dt className={methodTerm}>同署名</dt>
-        <dd>對方文章也署同一名字：同一人把稿件刊在不同媒體。</dd>
+        <dd>對方文章也署同一名字，可能是同稿跨站刊登；同名不保證同一人。</dd>
+        <dt className={methodTerm}>已註明來源</dt>
+        <dd>排除同署名後，彼此明示引用或共同明示來源的相似配對，不計入較早／較晚。</dd>
         <dt className={methodTerm}>引用</dt>
         <dd>內文明示引用其他媒體的篇數。</dd>
         <dt className={methodTerm}>有正文</dt>

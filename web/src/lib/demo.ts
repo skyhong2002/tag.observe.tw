@@ -220,8 +220,20 @@ export function graphSummary(data: SimilarityData | null): GraphSummary | null {
     pairs: data.index.pairs,
     citations: data.index.citations,
     analyzed: data.index.analyzed,
-    earliest: list('earliest', tally(similarity, 'target')),
-    later: list('later', tally(similarity, 'source')),
+    earliest: list(
+      'earliest',
+      tally(
+        similarity.flatMap((edge) => [edge, { ...edge, source: edge.target, target: edge.source }]),
+        'target',
+      ),
+    ),
+    later: list(
+      'later',
+      tally(
+        similarity.flatMap((edge) => [edge, { ...edge, source: edge.target, target: edge.source }]),
+        'source',
+      ),
+    ),
     cited: list('incoming', tally(citation, 'target'), true),
     citing: list('outgoing', tally(citation, 'source')),
   };

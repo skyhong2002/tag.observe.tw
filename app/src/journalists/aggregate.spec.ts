@@ -56,13 +56,22 @@ describe('orientPair', () => {
     expect(oriented.sameAuthor).toBe(false);
     expect(oriented.otherCitesOwn).toBe(true);
     expect(oriented.ownCitesOther).toBe(false);
+    expect(countSimilarity([oriented])).toMatchObject({ earlier: 0, later: 0, attributed: 1 });
   });
   it('flags the same byline at another outlet instead of calling it copying', () => {
     const own = article(1, 'udn', '2026-10-01T02:00:00Z', ['王小明']);
     const other = article(2, 'udnmoney', '2026-10-01T01:00:00Z', ['記者王小明／台北報導']);
     const oriented = orientPair(pair(own, other), (a) => a.id === 1, '王小明')!;
     expect(oriented.sameAuthor).toBe(true);
-    expect(countSimilarity([oriented])).toEqual({ pairs: 1, articles: 1, later: 0, earlier: 0, sameAuthor: 1, identical: 0 });
+    expect(countSimilarity([oriented])).toEqual({
+      pairs: 1,
+      articles: 1,
+      later: 0,
+      earlier: 0,
+      sameAuthor: 1,
+      attributed: 0,
+      identical: 0,
+    });
   });
   it('returns null when neither side is the journalist’s', () => {
     expect(
@@ -93,6 +102,6 @@ describe('summarizeJournalists', () => {
     expect(wang.cited).toBe(1);
     expect(wang.compared).toBe(2);
     expect(wang.latest).toBe('2026-10-01T03:00:00.000Z');
-    expect(wang.similar).toEqual({ pairs: 1, articles: 1, later: 1, earlier: 0, sameAuthor: 0, identical: 0 });
+    expect(wang.similar).toEqual({ pairs: 1, articles: 1, later: 1, earlier: 0, sameAuthor: 0, attributed: 0, identical: 0 });
   });
 });

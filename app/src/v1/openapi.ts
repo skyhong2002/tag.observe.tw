@@ -215,6 +215,20 @@ schemas.Attribution = obj({
   evidence: str(),
   kind: str(undefined, { enum: ['explicit'] }),
 });
+schemas.PairRelationInfo = obj(
+  {
+    kind: str('分類優先序：明示来源、同署名、未辨識稿源', { enum: ['attributed', 'same-byline', 'unattributed'] }),
+    sharedAuthors: arr(str(), '共同人名署名；不保證同一人'),
+    aCitesB: bool(),
+    bCitesA: bool(),
+    aCreditRole: str('A 對 B 的來源標示角色', { enum: ['來源', '引用'] }),
+    bCreditRole: str('B 對 A 的來源標示角色', { enum: ['來源', '引用'] }),
+    commonSources: arr(obj({ media: str(), name: str() })),
+    publication: str('標示刊登先後，與稿源無關；同一分鐘或時間未確認不計方向', { enum: ['same', 'a-earlier', 'b-earlier', 'unknown'] }),
+  },
+  undefined,
+  ['aCreditRole', 'bCreditRole'],
+);
 schemas.SimilarityArticle = obj({
   id: int(),
   media: str(),
@@ -225,11 +239,13 @@ schemas.SimilarityArticle = obj({
   url: str(),
   publishedAt: time(),
   authors: arr(str()),
+  datePending: bool(),
   bodyLength: int(),
   attributions: arr(ref('Attribution')),
 });
 schemas.SimilarityPair = obj({
   id: str(),
+  relation: ref('PairRelationInfo'),
   a: ref('SimilarityArticle'),
   b: ref('SimilarityArticle'),
   score: num('正規化內文五字片段的 Dice 相似度'),
@@ -283,23 +299,35 @@ schemas.Similarity = obj({
       countryCode: str(),
       articles: int('期間內已比對篇數'),
       external: bool('只被引用、沒有收錄內文的媒體'),
-      similar: int('屬於同題報導組的文章數'),
-      earliest: int('其中為同組最早刊登的篇數'),
-      later: int('其中同組已有更早刊登的篇數'),
+      similar: int('有直接相似配對的文章數'),
+      sameByline: int('同署名跨站、無明示來源的文章數'),
+      attributed: int('彼此引用或有共同明示來源的文章數'),
+      unattributed: int('未辨識稿源的文章數'),
+      earliest: int('未辨識稿源配對中標示刊登較早的篇數；不含同署名或時間未確認'),
+      later: int('未辨識稿源配對中標示刊登較晚的篇數；不含同署名或時間未確認'),
       outgoing: int('引用其他媒體的篇數'),
       incoming: int('被其他媒體引用的篇數'),
     }),
   ),
   edges: arr(
     obj(
-      { source: str(), target: str(), kind: str(undefined, { enum: ['similarity', 'citation'] }), count: int(), score: nullable(num()) },
-      'similarity：同組較晚刊登的媒體 → 同組最早刊登的媒體；citation：刊登媒體 → 明示引用的媒體',
+      {
+        source: str(),
+        target: str(),
+        kind: str(undefined, { enum: ['similarity', 'citation'] }),
+        count: int(),
+        score: nullable(num()),
+        sameByline: int(),
+        attributed: int(),
+        unattributed: int(),
+      },
+      'similarity：直接比對的媒體，無方向，count 為配對數；citation：刊登媒體 → 明示引用的媒體，count 為引用篇數',
     ),
   ),
 });
 schemas.StoryGroup = obj({
   id: str(),
-  sourceId: nullable(int('同組最早刊登的文章 id')),
+  sourceId: nullable(int('展示代表文章 id；不是稿源')),
   articleIds: arr(int(), '同組文章，刊登時間先後排序'),
   tiedFirst: int('同時最早刊登的篇數'),
   pairCount: int('同組相似配對總數'),
@@ -309,7 +337,7 @@ schemas.SimilarityEvidence = obj({
   total: int('符合條件的證據總數'),
   page: int(),
   pageSize: int(),
-  hiddenSources: int('scope 內媒體的同組來源在 scope 外的則數'),
+  hiddenSources: int('scope 內媒體的直接比對對象在 scope 外的則數'),
   items: arr(
     obj(
       {
@@ -317,7 +345,7 @@ schemas.SimilarityEvidence = obj({
         key: str(),
         publishedAt: time(),
         articleId: int(),
-        sourceId: int('origin：同組最早刊登的文章 id'),
+        sourceId: int('origin：直接比對的另一篇文章 id；不是稿源'),
         groupId: str('origin：同題報導組 id'),
         directPair: nullable(ref('SimilarityPair')),
         source: ref('Attribution'),
@@ -346,8 +374,17 @@ schemas.SimilarityDaily = obj({
       name: str(),
       articles: arr(int()),
       pairs: arr(int(), '一端為此媒體的配對數'),
-      copied: arr(int(), '被跟進：此媒體先刊出、之後有他媒刊出相似內容的篇數（文章去重，以自身刊登日計；同時刊登不計）'),
-      copying: arr(int(), '跟進他媒：此媒體刊出時已有他媒相似文章的篇數（文章去重，以自身刊登日計；同時刊登不計）'),
+      sameByline: arr(int(), '同署名跨站、無明示來源的文章數'),
+      attributed: arr(int(), '已註明來源的文章數'),
+      unattributed: arr(int(), '未辨識稿源的文章數'),
+      copied: arr(
+        int(),
+        '較早刊登：此媒體先刊出、之後有他媒刊出相似內容的篇數（文章去重，以自身刊登日計；排除同署名、有明示來源、同一分鐘與未確認時間）',
+      ),
+      copying: arr(
+        int(),
+        '較晚刊登：此媒體刊出時已有他媒相似文章的篇數（文章去重，以自身刊登日計；排除同署名、有明示來源、同一分鐘與未確認時間）',
+      ),
       citing: arr(int(), '此媒體引用他媒的則數'),
       cited: arr(int(), '他媒引用此媒體的則數'),
     }),
@@ -363,6 +400,7 @@ schemas.ArticleSimilarity = obj({
   matches: arr(
     obj({
       article: ref('SimilarityArticle'),
+      relation: ref('PairRelationInfo'),
       score: num(),
       containment: num(),
       kind: str(undefined, { enum: ['identical', 'high'] }),
@@ -401,9 +439,10 @@ schemas.JournalistOutlet = obj({ media: ref('MediaKey'), name: str('媒體名稱
 schemas.JournalistSimilarity = obj({
   pairs: int('至少一端是此記者文章的相似配對數'),
   articles: int('有相似配對的自家文章數（去重）'),
-  later: int('自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站'),
-  earlier: int('自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站'),
-  sameAuthor: int('對方文章也署同一名字的配對數（同一人跨媒體刊登）'),
+  later: int('自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站或已註明來源'),
+  earlier: int('自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站或已註明來源'),
+  sameAuthor: int('對方文章也署同一名字的配對數（不保證同一人）'),
+  attributed: int('排除同署名後，已有明示来源的配對數'),
   identical: int('正規化內文完全相同的配對數'),
 });
 schemas.JournalistSummary = obj({
@@ -427,6 +466,8 @@ schemas.JournalistPair = obj({
   minutes: int('對方刊登時間減自家刊登時間（分鐘）；正值表示自家較早'),
   relation: str('later 自家較晚、earlier 自家較早、same 一分鐘內', { enum: ['later', 'earlier', 'same'] }),
   sameAuthor: bool('對方文章署同一名字'),
+  attributed: bool('已有彼此引用或共同明示來源'),
+  publicationUnknown: bool('標示刊登時間尚未確認'),
   ownCitesOther: bool('自家文章明示引用對方媒體'),
   otherCitesOwn: bool('對方文章明示引用自家媒體'),
 });
@@ -631,7 +672,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'articles',
     summary: '內文相似與明確引用關係',
     description:
-      '讀取全量相似度索引：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，配對永久保存，每 10 分鐘更新；排除「內容」聯播來源。index 揭露期間內的比對篇數與尚待比對篇數。相似連線由同組較晚刊登的媒體指向同組最早刊登的媒體（早刊登不等於原創）；citation 由刊登媒體指向明確提及來源，並不保證最初作者。文章證據另由 /api/v1/similarity/evidence 分頁取得。',
+      '讀取全量相似度索引：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，配對永久保存，每 10 分鐘更新；排除「內容」聯播來源。index 揭露期間內的比對篇數與尚待比對篇數。相似連線只使用直接比對，無方向，附上同署名與明示來源分類；citation 由刊登媒體指向明確提及來源，並不保證最初作者。文章證據另由 /api/v1/similarity/evidence 分頁取得。',
     params: [
       q('hours', '回溯小時；與 from／to 擇一', intIn(1, 168, 48)),
       q('from', '起始台北日期 YYYY-MM-DD（與 to 一起使用，最多 31 天）', str()),
@@ -647,7 +688,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'articles',
     summary: '相似與引用證據（分頁）',
     description:
-      '與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為同題報導：文章連回同組最早刊登的文章；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選。',
+      '與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為直接比對的相似文章配對，不推定稿源；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選。',
     params: [
       q('hours', '回溯小時；與 from／to 擇一', intIn(1, 168, 48)),
       q('from', '起始台北日期 YYYY-MM-DD（與 to 一起使用，最多 31 天）', str()),
@@ -658,13 +699,14 @@ export const ENDPOINTS: Endpoint[] = [
       q('edgeKind', '只看一條連線：類型（需同時給 source、target）', { type: 'string', enum: ['similarity', 'citation'] }),
       q('source', '連線起點媒體', str()),
       q('target', '連線終點媒體', str()),
-      q('direction', '引用：outgoing 引用他媒、incoming 被引用；相似：outgoing 較晚刊登、incoming 同組最早', {
+      q('direction', '引用：outgoing 引用他媒、incoming 被引用；相似配對無方向，忽略此參數', {
         type: 'string',
         enum: ['all', 'outgoing', 'incoming'],
         default: 'all',
       }),
       q('scope', '逗號分隔的媒體；兩端都要在內', str()),
       q('focus', '逗號分隔的媒體；至少一端在內', str()),
+      q('relation', '相似配對來源線索，指定時只回相似配對', str(undefined, { enum: ['attributed', 'same-byline', 'unattributed'] })),
       q('q', '關鍵字（最多 100 字元）', str()),
       q('page', '頁碼，從 0 開始', { type: 'integer', minimum: 0, default: 0 }),
     ],
@@ -1518,16 +1560,16 @@ export const ENDPOINTS: Endpoint[] = [
   {
     path: '/api/v1/liveboard',
     tag: 'articles',
-    summary: '即時看板輪詢：新文章、轉載組與發稿量',
+    summary: '即時看板輪詢：新文章、相似報導組與發稿量',
     description:
-      '給 /liveboard/ 這類常駐畫面輪詢。不帶參數時回最近 3 小時內收錄的 40 篇本站爬取文章與最近的轉載組；之後把回應的 cursor 原樣帶回，只取新收錄的文章（依收錄順序，不是發布時間，晚抓到的也不會漏）與新算出的轉載組。轉載組是 3 小時內算出的正文相似配對連起來的一群文章，最早發布者為 lead，其餘依是否直接相似、相似度排序。stats 為依發布時間的各陣營發稿量。',
+      '給 /liveboard/ 這類常駐畫面輪詢。不帶參數時回最近 3 小時內收錄的 40 篇本站爬取文章與最近的相似報導組；之後把回應的 cursor 原樣帶回，只取新收錄的文章（依收錄順序，不是發布時間，晚抓到的也不會漏）與新算出的相似報導組。相似報導組是 3 小時內算出的正文相似配對連起來的一群文章，最早發布者為 lead，其餘依是否直接相似、相似度排序。stats 為依發布時間的各陣營發稿量。',
     params: [
       q('after', '上次回應的 cursor.after（文章 id）', { type: 'integer', minimum: 0 }, 23198458),
       q('pairsAfter', '上次回應的 cursor.pairsAfter', time()),
       q('readAfter', '上次回應的 cursor.readAfter', time()),
     ],
     errors: { '400': 'after、pairsAfter 或 readAfter 格式錯誤' },
-    cache: '15 秒（轉載組與 stats 每分鐘更新）',
+    cache: '15 秒（相似報導組與 stats 每分鐘更新）',
     response: obj({
       generatedAt: time(),
       cursor: obj({ after: nullable(int()), pairsAfter: nullable(time()), readAfter: nullable(time()) }, '下次輪詢原樣帶回'),
@@ -1545,7 +1587,7 @@ export const ENDPOINTS: Endpoint[] = [
           tags: arr(str(), '前 8 個標籤'),
           authors: arr(str(), '原始作者署名（包含具名作者與機構）'),
           attributions: arr(ref('Attribution'), '原文明示的內容提供者或引用媒體及證據'),
-          text: nullable(str('內文開頭（新文章 600 字、轉載組的 lead 與前 3 篇跟稿 1500 字），沒有內文時為摘要')),
+          text: nullable(str('內文開頭（新文章 600 字、相似報導組的 lead 與前 3 篇同組文章 1500 字），沒有內文時為摘要')),
         }),
         '新收錄文章，新的在前，最多 40 篇',
       ),
@@ -1561,13 +1603,14 @@ export const ENDPOINTS: Endpoint[] = [
               containment: num(),
               kind: str(undefined, { enum: ['identical', 'high'] }),
               evidence: str('共同段落摘錄'),
-              direct: bool('false 表示只和組內其他跟稿相似'),
+              relation: ref('PairRelationInfo'),
+              direct: bool('false 表示只與組內其他文章相似，不能展示為與 lead 相似'),
               gapMinutes: int('比 lead 晚幾分鐘發布'),
             }),
           ),
-          more: int('未列出的跟稿數'),
+          more: int('未列出的同組文章數'),
         }),
-        '新算出的轉載組，最多 12 組',
+        '新算出的相似報導組，最多 12 組',
       ),
       activity: obj(
         {

@@ -125,13 +125,16 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
   return <div ref={ref} className="h-96 w-full" role="img" aria-label="每日相似配對、內文相同、來源／引用與比對篇數" />;
 }
 
-type Metric = 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
+type Metric = 'sameByline' | 'attributed' | 'unattributed' | 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
 type SortKey = 'name' | Metric | `${Metric}Share`;
 const columns: Array<{ key: 'name' | Metric; label: string; share?: boolean }> = [
   { key: 'name', label: '媒體' },
   { key: 'articles', label: '比對篇數' },
-  { key: 'copied', label: '被跟進', share: true },
-  { key: 'copying', label: '跟進他媒', share: true },
+  { key: 'sameByline', label: '同署名跨站', share: true },
+  { key: 'attributed', label: '已註明來源', share: true },
+  { key: 'unattributed', label: '未辨識稿源', share: true },
+  { key: 'copied', label: '較早刊登', share: true },
+  { key: 'copying', label: '較晚刊登', share: true },
   { key: 'citing', label: '採用／引用他媒', share: true },
   { key: 'cited', label: '被採用／引用' },
 ];
@@ -139,6 +142,9 @@ interface Row {
   media: string;
   name: string;
   articles: number;
+  sameByline: number;
+  attributed: number;
+  unattributed: number;
   copied: number;
   copying: number;
   citing: number;
@@ -168,6 +174,9 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
       media: m.media,
       name: m.name,
       articles: sum(m.articles),
+      sameByline: sum(m.sameByline ?? []),
+      attributed: sum(m.attributed ?? []),
+      unattributed: sum(m.unattributed ?? []),
       copied: sum(m.copied),
       copying: sum(m.copying),
       citing: sum(m.citing),
@@ -195,7 +204,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
   return (
     <TableScroller label="各媒體每日比對表格，可左右捲動">
       <table className="w-full min-w-[40rem] border-collapse text-sm">
-        <caption className="sr-only">期間內各媒體的比對篇數、被跟進與跟進他媒的篇數、採用／引用與被採用／引用</caption>
+        <caption className="sr-only">期間內各媒體的比對篇數、較早與較晚刊登的篇數、引用與被採用／引用</caption>
         <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
           <tr className="border-b border-zinc-200 dark:border-zinc-800">
             {columns.map((column) => {
@@ -252,7 +261,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                 </div>
               </th>
               <td className={`${cell} ${muted(row.articles)}`}>{number(row.articles)}</td>
-              {(['copied', 'copying', 'citing'] as const).map((metric) => (
+              {(['sameByline', 'attributed', 'unattributed', 'copied', 'copying', 'citing'] as const).map((metric) => (
                 <td key={metric} className={cell}>
                   <Share row={row} metric={metric} />
                 </td>

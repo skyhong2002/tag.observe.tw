@@ -26,6 +26,7 @@ import {
 } from '@/lib/liveboard.mts';
 import type { Camp } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
+import { relationDetails, relationLabel } from '@/lib/relation-label.mts';
 import styles from './liveboard.module.css';
 
 // The big rotating card on the left of /liveboard/, one view per card kind.
@@ -120,15 +121,19 @@ export function Reporters({ article, className = '' }: { article: LiveArticle; c
 }
 
 function Diffed({ parts }: { parts: TextPart[] }) {
+  // Diff fragments are immutable text positions, not reorderable items.
   return (
     <>
       {parts.map((p, i) =>
         p.different ? (
-          <mark key={i} className="rounded bg-amber-400/25 px-0.5 text-amber-100">
+          <mark
+            key={parts.slice(0, i).reduce((length, part) => length + part.text.length, 0)}
+            className="rounded bg-amber-400/25 px-0.5 text-amber-100"
+          >
             {p.text}
           </mark>
         ) : (
-          <span key={i}>{p.text}</span>
+          <span key={parts.slice(0, i).reduce((length, part) => length + part.text.length, 0)}>{p.text}</span>
         ),
       )}
     </>
@@ -350,11 +355,11 @@ function SharedBody({ parts }: { parts: TextPart[] }) {
     <>
       {parts.map((p, i) =>
         p.different ? (
-          <span key={i} className="text-zinc-400">
+          <span key={parts.slice(0, i).reduce((length, part) => length + part.text.length, 0)} className="text-zinc-400">
             {p.text}
           </span>
         ) : (
-          <mark key={i} className="bg-sky-500/20 text-sky-50">
+          <mark key={parts.slice(0, i).reduce((length, part) => length + part.text.length, 0)} className="bg-sky-500/20 text-sky-50">
             {p.text}
           </mark>
         ),
@@ -399,14 +404,19 @@ function CopyStage({ card }: { card: Extract<Card, { kind: 'copy' }> }) {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
-        <Kicker tone="bg-sky-700">先發 ↔ 跟稿</Kicker>
+        <Kicker tone="bg-sky-700">{relationLabel(featured.relation)}</Kicker>
         <span
-          className={`rounded-md px-2.5 py-1 text-base font-bold ${tone === 'same' ? 'bg-rose-600 text-white' : tone === 'light' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-200 text-zinc-900'}`}
+          className={`rounded-md px-2.5 py-1 text-base font-bold ${tone === 'same' ? 'bg-sky-700 text-white' : 'bg-zinc-700 text-zinc-100'}`}
         >
           {COPY_TONE_LABEL[tone]}
         </span>
         <span className="text-lg text-zinc-300">
-          內文相似 <b className="tabular-nums text-zinc-100">{pct}%</b> · {gapLabel(featured.gapMinutes)}
+          內文相似 <b className="tabular-nums text-zinc-100">{pct}%</b> ·{' '}
+          {featured.relation?.publication === 'unknown'
+            ? '刊登時間未確認'
+            : featured.relation?.publication === 'same' || featured.gapMinutes === 0
+              ? '兩站標示同時刊登'
+              : `標示刊登${gapLabel(featured.gapMinutes)}`}
         </span>
         <span className="text-base text-zinc-500">
           {bodies ? <mark className="bg-sky-500/20 px-1 text-sky-50">藍底</mark> : null}
@@ -424,9 +434,14 @@ function CopyStage({ card }: { card: Extract<Card, { kind: 'copy' }> }) {
           </span>
         )}
       </div>
+      {relationDetails(featured.relation, story.lead.mediaTitle, featured.article.mediaTitle) && (
+        <p className="shrink-0 text-base text-zinc-300">
+          {relationDetails(featured.relation, story.lead.mediaTitle, featured.article.mediaTitle)}
+        </p>
+      )}
       <div className="flex min-h-0 flex-1 gap-3 @max-xl:flex-col">
-        <CopyColumn a={story.lead} side="先發" title={lt} body={bodies?.[0] ?? null} />
-        <CopyColumn a={featured.article} side="跟稿" title={ft} body={bodies?.[1] ?? null} />
+        <CopyColumn a={story.lead} side="刊登平台" title={lt} body={bodies?.[0] ?? null} />
+        <CopyColumn a={featured.article} side="刊登平台" title={ft} body={bodies?.[1] ?? null} />
       </div>
     </div>
   );
@@ -566,7 +581,13 @@ export default function StageCard({
   }
 }
 
-export const CARD_LABEL: Record<Card['kind'], string> = { event: '事件', headline: '標題對照', copy: '轉載', topic: '議題', burst: '新稿' };
+export const CARD_LABEL: Record<Card['kind'], string> = {
+  event: '事件',
+  headline: '標題對照',
+  copy: '跨站對照',
+  topic: '議題',
+  burst: '新稿',
+};
 export const CARD_DOT: Record<Card['kind'], string> = {
   event: 'bg-brand-500',
   headline: 'bg-violet-500',

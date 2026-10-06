@@ -6,9 +6,9 @@ import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 // (/similarity/about/). Comparison rules: app/src/similarity/compute.ts
 // (200 characters, 100 shared 5-character shingles, a consecutive passage,
 // 7-day window, thresholds 0.5–1); the default 0.65 is in app/src/v1/similarity.ts;
-// the index runs every 10 minutes (app/src/worker.ts). Groups and their source
-// (earliest, then lowest article id): storyGroups in app/src/similarity/store.ts.
-// Arrows run source → follower (components/SimilarityGraph.tsx); main links are
+// the index runs every 10 minutes (app/src/worker.ts). Groups are for browsing;
+// only direct measured pairs form undirected similarity edges. Citation arrows
+// run credited outlet → citing outlet; main links are
 // each outlet's strongest two (lib/media-graph.mts mainGraphEdges). Daily
 // counts: loadDaily in app/src/v1/similarity.ts.
 
@@ -35,9 +35,10 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
           個共同片段及連續相同文字才列為候選。正規化全文相等才標為內文相同；相似度不使用標題或刊登時間。門檻可在關係圖的「進階」調整，範圍
           0.5–1，預設 0.65；門檻越高，只留下內文越接近的報導。
         </dd>
-        <dt className={methodTerm}>同組與來源</dt>
+        <dt className={methodTerm}>分組與稿源線索</dt>
         <dd>
-          內文相近的報導連成同一組（甲與乙相近、乙又與丙相近，三篇就同組），完成分組後才以最早刊登時間指定同組來源：全組最早刊登的一篇。幾篇同時最早刊登時，取本站較早收錄（文章編號較小）的一篇。來源依本期全部相似配對指定，完整分組可能包含未顯示在圖上的媒體；組內其他報導都直接連回來源，即使與來源沒有直接比對分數（經同組配對歸源）。這是依刊登時間歸源的規則，不等於查證原創或抄襲；相近內文也可能來自通訊社稿或授權轉載。
+          相近報導連成同組供瀏覽，但連線與證據只使用直接比對過的兩篇文章。甲與乙相近、乙與丙相近，不推定甲與丙相近。展示代表只用於排序，不代表稿源。
+          配對依序區分為已註明來源（彼此引用或共同明示來源）、同署名跨站、未辨識稿源；分數不因分類改變。相同署名不保證同一人；引用與署名都不能證明授權。
         </dd>
         <dt className={methodTerm}>來源／引用</dt>
         <dd>
@@ -45,7 +46,7 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
         </dd>
         <dt className={methodTerm}>箭頭與線條</dt>
         <dd>
-          箭頭依內文流向畫：橘色箭頭由同組最早刊登的媒體指向較晚刊登的媒體，紫色箭頭由內容提供者或被引用的媒體指向採用／引用它的媒體。線條越粗代表關係文章越多。
+          橘色無方向線表示直接比對的文字重疊；紫色箭頭由内容提供者或被明示引用的媒體指向採用／引用方。相似線粗細代表配對數，引用線粗細代表引用篇數。
         </dd>
       </dl>
       {(all || page === 'graph') && (
@@ -63,11 +64,11 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
           </dd>
           <dt className={methodTerm}>媒體比較</dt>
           <dd>
-            從各家媒體出發，比較相近報導、來源／引用往來與實際新聞。分析篇數為本期已完成比對的內文；同組最早、同組較晚、採用／引用與被採用／引用皆依各欄文章去重，涵蓋本期與所有媒體的關係，不隨圖上篩選改變；主要關係對象只列圖上媒體。同組最早是該組最早刊出的那篇，同組較晚是同組已有更早刊出的報導。主要關係對象依關係篇數列出前三項；依同組最早、同組較晚、採用／引用他媒或被他媒採用／引用排序時，只列該類關係的對象，滑過可看關係類型。同組最早僅依刊登時間判定，不代表原創。
+            各媒體同署名跨站、已註明來源、未辨識稿源的篇數，皆依文章去重；同一篇文章若與不同文章形成不同類別配對，可出現在多欄，因此不可直接相加。引用與被採用／引用另計。主要關係對象依直接配對數或引用篇數列出。
           </dd>
           <dt className={methodTerm}>新聞對照</dt>
           <dd>
-            選定一家媒體時，上方四個數字是本期與所有媒體的關係，依文章去重計數；已比對篇數也是圖示大小的依據。下方文章只列圖上媒體之間的關係，每篇標出同組來源與兩篇的相似度；來源媒體未顯示在圖上時，來源仍保持不變。
+            選定媒體後可查看直接文字比對與明示引用證據。每組直接配對附相似度與來源線索，完整分組可能包含圖上未顯示的媒體；最早刊登不代表原創或稿源。
           </dd>
         </dl>
       )}
@@ -80,16 +81,16 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
           <dl className={methodList}>
             <dt className={methodTerm}>比對篇數</dt>
             <dd>期間內相似度索引已比對的文章數；只作為來源／引用對象、沒有收錄內文的媒體為 0。</dd>
-            <dt className={methodTerm}>被跟進</dt>
-            <dd>這家媒體先刊出，之後有其他媒體刊出相似內容的篇數。</dd>
-            <dt className={methodTerm}>跟進他媒</dt>
-            <dd>這家媒體刊出時，已有其他媒體相似文章的篇數。被跟進與跟進他媒都依文章去重；同時刊登的配對不計方向。</dd>
+            <dt className={methodTerm}>較早刊登</dt>
+            <dd>沒有同署名或明示稿源線索的直接相似配對中，標示刊登較早的篇數；不代表原創。</dd>
+            <dt className={methodTerm}>較晚刊登</dt>
+            <dd>沒有同署名或明示稿源線索的直接相似配對中，標示刊登較晚的篇數；不代表跟稿。同一分鐘或時間未確認的配對不計先後。</dd>
             <dt className={methodTerm}>採用／引用他媒</dt>
-            <dd>這家媒體文章標示其他媒體為內容提供者，或內文明示引用其他媒體的次數。</dd>
+            <dd>這家媒體文章內文明示採用／引用其他媒體的次數。</dd>
             <dt className={methodTerm}>被採用／引用</dt>
-            <dd>其他媒體文章標示這家媒體為內容提供者，或內文明示引用這家媒體的次數。</dd>
+            <dd>其他媒體文章內文明示引用這家媒體的次數。</dd>
             <dt className={methodTerm}>百分比</dt>
-            <dd>被跟進、跟進他媒與採用／引用他媒旁的百分比，是佔這家媒體比對篇數的比例；各媒體表為期間合計。</dd>
+            <dd>較早刊登、較晚刊登與採用／引用他媒旁的百分比，是佔這家媒體比對篇數的比例；各媒體表為期間合計。</dd>
           </dl>
         </>
       )}

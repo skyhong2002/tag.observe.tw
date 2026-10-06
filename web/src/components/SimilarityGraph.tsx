@@ -198,7 +198,7 @@ export default function SimilarityGraph({
             // line's square end pokes out beside the tip. A path symbol is
             // centred on the line end instead: the line stops halfway into
             // the head, where the head is at least as wide as the line.
-            symbol: ['path://M5 0L10 10L5 8L0 10Z', 'circle'],
+            symbol: e.kind === 'citation' ? ['path://M5 0L10 10L5 8L0 10Z', 'circle'] : ['none', 'none'],
             symbolSize: [[Math.max(12, 2 * width + 6), 14], 0],
             lineStyle: {
               width,

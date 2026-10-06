@@ -9,7 +9,7 @@ import TableScroller from '@/components/TableScroller';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
 import { table } from '@/lib/table-styles';
 
-type SortKey = 'name' | 'media' | 'articles' | 'compared' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'cited';
+type SortKey = 'name' | 'media' | 'articles' | 'compared' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'attributed' | 'cited';
 // Click a heading to sort, click again to flip, like the media tables.
 // Column meanings are in the footer notes (JournalistMethod); titles only hint at sorting.
 const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
@@ -21,6 +21,7 @@ const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boo
   { key: 'later', label: '對方較早', numeric: true },
   { key: 'earlier', label: '本篇較早', numeric: true },
   { key: 'sameAuthor', label: '同署名', numeric: true },
+  { key: 'attributed', label: '已註明來源', numeric: true },
   { key: 'cited', label: '引用', numeric: true },
 ];
 const sortValue = (row: JournalistSummary, key: SortKey): number =>
@@ -38,9 +39,11 @@ const sortValue = (row: JournalistSummary, key: SortKey): number =>
               ? row.similar.earlier
               : key === 'sameAuthor'
                 ? row.similar.sameAuthor
-                : key === 'cited'
-                  ? row.cited
-                  : 0;
+                : key === 'attributed'
+                  ? (row.similar.attributed ?? 0)
+                  : key === 'cited'
+                    ? row.cited
+                    : 0;
 const PAGE = 150;
 const number = (value: number) => value.toLocaleString('zh-TW');
 
@@ -174,6 +177,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
                 <td className={`${cell} ${row.similar.later ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.later}</td>
                 <td className={`${cell} ${row.similar.earlier ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.earlier}</td>
                 <td className={`${cell} ${row.similar.sameAuthor ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.sameAuthor}</td>
+                <td className={cell}>{row.similar.attributed ?? 0}</td>
                 <td className={`${cell} ${row.cited ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.cited}</td>
               </tr>
             ))}

@@ -236,6 +236,8 @@ export default async function JournalistPage({
               <dd>{number(data.index.pending)} 篇</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">同署名跨站</dt>
               <dd>{number(stats.similar.sameAuthor)} 組</dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">已註明來源</dt>
+              <dd>{number(stats.similar.attributed ?? 0)} 組</dd>
             </dl>
             <p className="mt-2">
               <MethodLink />

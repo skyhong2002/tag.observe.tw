@@ -39,6 +39,7 @@ export async function fetchSimilarity(period: SimilarityPeriod, threshold: numbe
 
 export interface EvidenceQuery {
   mode: 'all' | 'similarity' | 'citation';
+  relation?: 'attributed' | 'same-byline' | 'unattributed';
   node?: string;
   edge?: { kind: 'similarity' | 'citation'; source: string; target: string };
   direction: 'all' | 'outgoing' | 'incoming';
@@ -53,6 +54,7 @@ export interface EvidenceQuery {
 export async function fetchEvidence(period: SimilarityPeriod, threshold: number, query: EvidenceQuery, signal?: AbortSignal) {
   const params = periodQuery(period, threshold);
   params.set('mode', query.mode);
+  if (query.relation) params.set('relation', query.relation);
   params.set('direction', query.direction);
   params.set('page', String(query.page));
   if (query.q.trim()) params.set('q', query.q.trim());

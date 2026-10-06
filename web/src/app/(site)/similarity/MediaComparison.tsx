@@ -10,12 +10,13 @@ import { nodeArticleCounts } from '@/lib/media-graph.mts';
 import type { SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 import { table } from '@/lib/table-styles';
 
-type SortKey = 'name' | 'articles' | 'earliest' | 'later' | 'outgoing' | 'incoming';
+type SortKey = 'name' | 'articles' | 'sameByline' | 'attributed' | 'unattributed' | 'outgoing' | 'incoming';
 const columns: { key: SortKey; label: string }[] = [
   { key: 'name', label: '媒體' },
   { key: 'articles', label: '分析篇數' },
-  { key: 'earliest', label: '同組最早' },
-  { key: 'later', label: '同組較晚' },
+  { key: 'sameByline', label: '同署名跨站' },
+  { key: 'attributed', label: '已註明來源' },
+  { key: 'unattributed', label: '未辨識稿源' },
   { key: 'outgoing', label: '採用／引用他媒' },
   { key: 'incoming', label: '被他媒採用／引用' },
 ];
@@ -24,10 +25,10 @@ type RelationshipKey = 'earliest' | 'later' | 'outgoing' | 'incoming';
 // Similarity edges point from a later outlet to its group's earliest one;
 // citation edges point from the citing outlet to the cited one.
 const relationshipFilters: Record<RelationshipKey, { label: string; matches: (edge: SimilarityEdge, id: string) => boolean }> = {
-  earliest: { label: '同組較晚的對象', matches: (edge, id) => edge.kind !== 'citation' && edge.target === id },
-  later: { label: '同組最早的對象', matches: (edge, id) => edge.kind !== 'citation' && edge.source === id },
-  outgoing: { label: '採用／引用的對象', matches: (edge, id) => edge.kind === 'citation' && edge.source === id },
-  incoming: { label: '採用／引用本媒的對象', matches: (edge, id) => edge.kind === 'citation' && edge.target === id },
+  earliest: { label: '相似文章對象', matches: (edge, id) => edge.kind !== 'citation' && (edge.source === id || edge.target === id) },
+  later: { label: '相似文章對象', matches: (edge, id) => edge.kind !== 'citation' && (edge.source === id || edge.target === id) },
+  outgoing: { label: '引用的對象', matches: (edge, id) => edge.kind === 'citation' && edge.source === id },
+  incoming: { label: '引用本媒的對象', matches: (edge, id) => edge.kind === 'citation' && edge.target === id },
 };
 
 export default function MediaComparison({
@@ -46,6 +47,9 @@ export default function MediaComparison({
     return data.nodes.map((node) => ({
       ...node,
       ...counts.get(node.id),
+      sameByline: node.sameByline ?? 0,
+      attributed: node.attributed ?? 0,
+      unattributed: node.unattributed ?? 0,
       relationships: data.edges
         .filter((edge) => edge.source === node.id || edge.target === node.id)
         .sort(
@@ -115,7 +119,7 @@ export default function MediaComparison({
                 <span className="ml-2 font-normal">
                   {focus && <span className="text-zinc-700 dark:text-zinc-300">{focus.label} · </span>}
                   <span className="text-amber-700 dark:text-amber-400">內文相近</span> ·{' '}
-                  <span className="text-violet-700 dark:text-violet-400">來源／引用</span> · 箭頭由來源指向較晚或採用／引用的一方
+                  <span className="text-violet-700 dark:text-violet-400">引用</span> · 相似無方向，引用箭頭指向引用方
                 </span>
               </th>
             </tr>
@@ -141,11 +145,13 @@ export default function MediaComparison({
                     </button>
                   </th>
                   <td className={`${table.num} py-2.5`}>{row.external ? <span title="未收錄本期內文">—</span> : number(row.articles)}</td>
-                  {(['earliest', 'later', 'outgoing', 'incoming'] as const).map((key) => {
-                    const similar = key === 'earliest' || key === 'later';
+                  {(['sameByline', 'attributed', 'unattributed', 'outgoing', 'incoming'] as const).map((key) => {
+                    const similar = key !== 'outgoing' && key !== 'incoming';
                     return (
                       <td key={key} className={`${table.num} py-2.5`}>
-                        {row[key] ? (
+                        {similar ? (
+                          <span>{number(row[key])}</span>
+                        ) : row[key] ? (
                           <button
                             type="button"
                             aria-label={`${row.name}：${columns.find((column) => column.key === key)?.label} ${row[key]} 篇，查看報導`}
@@ -153,7 +159,7 @@ export default function MediaComparison({
                               onSelect(
                                 { node: row.id },
                                 similar ? 'similarity' : 'citation',
-                                key === 'earliest' ? 'incoming' : key === 'later' ? 'outgoing' : key,
+                                similar ? 'all' : key === 'incoming' ? 'incoming' : 'outgoing',
                               )
                             }
                             className={`underline decoration-dotted underline-offset-4 ${similar ? 'text-amber-700 dark:text-amber-400' : 'text-violet-700 dark:text-violet-400'}`}
@@ -172,14 +178,7 @@ export default function MediaComparison({
                         const outgoing = edge.source === row.id;
                         const other = outgoing ? edge.target : edge.source;
                         const name = names.get(other) ?? other;
-                        const label =
-                          edge.kind === 'citation'
-                            ? outgoing
-                              ? '採用／引用'
-                              : '被採用／引用'
-                            : outgoing
-                              ? '對方同組最早'
-                              : '本媒同組最早';
+                        const label = edge.kind === 'citation' ? (outgoing ? '採用／引用' : '被採用／引用') : '直接文字比對';
                         return (
                           <button
                             key={`${edge.kind}:${edge.source}:${edge.target}`}
@@ -189,7 +188,7 @@ export default function MediaComparison({
                             onClick={() => onSelect({ edge }, edge.kind, 'all')}
                             className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] ${edge.kind === 'citation' ? 'bg-violet-50 text-violet-800 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'}`}
                           >
-                            <span aria-hidden="true">{outgoing ? '←' : '→'}</span>
+                            <span aria-hidden="true">{edge.kind === 'citation' ? (outgoing ? '←' : '→') : '↔'}</span>
                             <MediaIcon media={other} title={name} size={14} />
                             {name}
                             <span className="tabular-nums opacity-70">{number(edge.count)}</span>
