@@ -22,14 +22,40 @@ const columns: { key: SortKey; label: string }[] = [
   { key: 'incoming', label: '被引用' },
 ];
 const number = (value: number) => value.toLocaleString('zh-TW');
-type RelationshipKey = 'earliest' | 'later' | 'outgoing' | 'incoming';
-// Similarity edges point from a later outlet to its group's earliest one;
-// citation edges point from the citing outlet to the cited one.
-const relationshipFilters: Record<RelationshipKey, { label: string; matches: (edge: SimilarityEdge, id: string) => boolean }> = {
-  earliest: { label: '相似文章對象', matches: (edge, id) => edge.kind !== 'citation' && (edge.source === id || edge.target === id) },
-  later: { label: '相似文章對象', matches: (edge, id) => edge.kind !== 'citation' && (edge.source === id || edge.target === id) },
-  outgoing: { label: '引用的對象', matches: (edge, id) => edge.kind === 'citation' && edge.source === id },
-  incoming: { label: '引用本媒的對象', matches: (edge, id) => edge.kind === 'citation' && edge.target === id },
+type RelationshipKey = Exclude<SortKey, 'name' | 'articles'>;
+const relationshipFilters: Record<
+  RelationshipKey,
+  {
+    label: string;
+    className: string;
+    matches: (edge: SimilarityEdge, id: string) => boolean;
+  }
+> = {
+  sameByline: {
+    label: '同署名跨站對象',
+    className: 'text-teal-700 dark:text-teal-400',
+    matches: (edge) => edgeCategory(edge) === 'same-byline',
+  },
+  attributed: {
+    label: '已註明來源對象',
+    className: 'text-violet-700 dark:text-violet-400',
+    matches: (edge) => edgeCategory(edge) === 'attributed',
+  },
+  unattributed: {
+    label: '未辨識稿源對象',
+    className: 'text-amber-700 dark:text-amber-400',
+    matches: (edge) => edgeCategory(edge) === 'unattributed',
+  },
+  outgoing: {
+    label: '引用的對象',
+    className: 'text-violet-700 dark:text-violet-400',
+    matches: (edge, id) => edge.kind === 'citation' && edge.source === id,
+  },
+  incoming: {
+    label: '引用本媒的對象',
+    className: 'text-violet-700 dark:text-violet-400',
+    matches: (edge, id) => edge.kind === 'citation' && edge.target === id,
+  },
 };
 
 export default function MediaComparison({
@@ -116,13 +142,18 @@ export default function MediaComparison({
                 </th>
               ))}
               <th scope="col" className={`${table.cell} py-3 text-left font-medium`}>
-                主要關係對象
-                <span className="ml-2 font-normal">
-                  {focus && <span className="text-zinc-700 dark:text-zinc-300">{focus.label} · </span>}
-                  <span className="text-amber-700 dark:text-amber-400">未辨識稿源</span> ·{' '}
-                  <span className="text-violet-700 dark:text-violet-400">引用</span> ·{' '}
-                  <span className="text-teal-700 dark:text-teal-400">同署名</span>
-                </span>
+                {focus ? (
+                  <span className={focus.className}>{focus.label}</span>
+                ) : (
+                  <>
+                    主要關係對象
+                    <span className="ml-2 font-normal">
+                      <span className="text-amber-700 dark:text-amber-400">未辨識稿源</span> ·{' '}
+                      <span className="text-violet-700 dark:text-violet-400">引用</span> ·{' '}
+                      <span className="text-teal-700 dark:text-teal-400">同署名</span>
+                    </span>
+                  </>
+                )}
               </th>
             </tr>
           </thead>
