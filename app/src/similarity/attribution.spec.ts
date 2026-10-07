@@ -63,6 +63,28 @@ describe('explicit media attribution', () => {
     expect(result[0].countryCode).toBe('JP');
   });
 
+  it('recognizes a complete source-citing report cue without treating media mentions as citations', () => {
+    const result = extractAttributions('據彭博社援引消息人士報導稱，歐盟正準備採取措施。', 'rfi');
+    expect(result.map((x) => [x.media, x.name, x.countryCode, attributionRole(x)])).toEqual([['bloomberg', '彭博社', 'ZZ', '引用']]);
+    expect(extractAttributions('彭博社援引消息人士討論本公司的營運。據彭博社的職員表示，辦公室已搬遷。', 'rfi')).toEqual([]);
+    expect(extractAttributions('圖片來源：彭博社援引消息人士報導稱，會議結束。', 'rfi')).toEqual([]);
+  });
+
+  it('retains all known outlets in a complete standalone reference list', () => {
+    expect(extractAttributions('（資料來源：Bloomberg, Guardian, Economist）', 'cw').map((x) => x.media)).toEqual([
+      'bloomberg',
+      'guardian',
+      'economist',
+    ]);
+    expect(extractAttributions('資料來源：BBC, 不明網站, Reuters', 'cw').map((x) => x.media)).toEqual(['bbc', 'reuters']);
+    expect(extractAttributions('（圖片來源：Bloomberg, Guardian, Economist）', 'cw')).toEqual([]);
+    // Existing explicit "來源：Bloomberg" remains a citation; the list rule
+    // must not extend the prose declaration to its other mentioned outlets.
+    expect(extractAttributions('讀者認為資料來源：Bloomberg, Guardian, Economist 有問題。', 'cw').map((x) => x.media)).toEqual([
+      'bloomberg',
+    ]);
+  });
+
   it('does not infer an origin from mentions or reports about media companies', () => {
     expect(
       extractAttributions(

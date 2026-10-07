@@ -258,3 +258,9 @@ it('separates reviewed LIFE reporter labels and explicit Chinese agency lead cre
   expect(extractLeadReporterNames('有人提及［中華通訊社］記者 涂紹君/台北報導')).toEqual([]);
   expect(extractLeadReporterNames('［中華通訊社］編輯 涂紹君/台北報導')).toEqual([]);
 });
+
+it('uses an explicit Young News opening reporter rather than its publisher account', () => {
+  expect(extractLeadReporterNames('【漾新聞記者陳雯萍／高雄報導】毒品防制成為選戰議題。')).toEqual(['陳雯萍']);
+  expect(extractLeadReporterNames('受訪者提到【漾新聞記者陳雯萍／高雄報導】這篇新聞。')).toEqual([]);
+  expect(extractLeadReporterNames('【漾新聞／高雄報導】新聞內容。')).toEqual([]);
+});

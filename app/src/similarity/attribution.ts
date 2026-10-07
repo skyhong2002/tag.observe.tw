@@ -44,6 +44,10 @@ const outlets: Outlet[] = [
   outlet('yahoo', 'Yahoo奇摩新聞', 'TW', ['Yahoo', 'Yahoo新聞', 'Yahoo News']),
   // Seen in a linked 4Gamers report; jurisdiction remains unverified.
   outlet('gamerant', 'Game Rant', 'ZZ', ['GameRant']),
+  // RFI explicitly cites this label; jurisdiction awaits independent evidence.
+  outlet('bloomberg', '彭博社', 'ZZ', ['Bloomberg']),
+  outlet('guardian', 'The Guardian', 'ZZ', ['Guardian']),
+  outlet('economist', 'The Economist', 'ZZ', ['Economist']),
   // Official dongqiudi.com footer identifies the outlet and its Tianjin ICP registration.
   outlet('dongqiudi', '懂球帝', 'CN', []),
   outlet('reuters', '路透社', 'GB', ['Reuters', '路透']),
@@ -150,7 +154,10 @@ const authorization = new RegExp(`^${closeQuote}(?:授權|授权)(?:刊登|轉�
 function explicitContext(before: string, after: string): boolean {
   // A photograph credit does not establish the source of the article's text.
   if (/(?:圖片|图片|照片|攝影|摄影|影像|圖|图)\s*(?:來源|来源|出處|出处)\s*[：:]?\s*[「『《“"]*\s*$/.test(before)) return false;
-  return report.test(after) || credit.test(before) || authorization.test(after);
+  const citingSources =
+    /(?:據|据|根據|根据)\s*[「『《“"]*\s*$/.test(before) &&
+    new RegExp(`^${closeQuote}援引(?:消息人士|知情人士)(?:報導|報道|报道)(?:稱|称)?(?=[，,:：]|$)`).test(after);
+  return report.test(after) || credit.test(before) || authorization.test(after) || citingSources;
 }
 
 // Catalog display titles name outlets that attribution has no aliases for (菱傳媒 → rwnews).
@@ -236,6 +243,16 @@ export function extractAttributions(body: string, publisher: string, provider?: 
   const dispatch = cnaDispatch.exec(body);
   if (dispatch) add(outletIdentity('cna'), dispatch[0]);
   for (const sentence of body.split(/[。！？!?；;\n]+/)) {
+    // A complete standalone reference list identifies each named outlet.
+    // Photo credits and prose that merely mentions sources do not qualify.
+    const references = /^\s*[（(]?(?:資料來源|参考来源|參考來源|來源|来源)[:：]\s*([^（）()]{2,150})[）)]?\s*$/u.exec(sentence);
+    if (references) {
+      for (const label of references[1].split(/\s*[,，、]\s*/u)) {
+        const name = label.trim().replace(/^[「『《“"]|[」』》”"]$/g, '');
+        const identity = outlets.find((outlet) => outlet.aliases.some((alias) => alias.toLowerCase() === name.toLowerCase()));
+        if (identity) add(identityOnly(identity), references[0]);
+      }
+    }
     // Joint reports can name a second outlet before the reporting verb.
     // Require the complete opening declaration and exact known outlet labels;
     // unrecognized peers do not acquire guessed identities or countries.

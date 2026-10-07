@@ -96,6 +96,8 @@ const SITES: Site[] = [
     host: 'ccsn0405.com',
     path: /^\/\d{4}\/\d{2}\/[^/]+\.html$/,
     bodySelector: '.post-body',
+    publishedSelector: '.post .post-timestamp > a.timestamp-link > abbr.published[itemprop="datePublished"]',
+    publishedAttribute: 'title',
     plainTextBody: true,
   },
   {

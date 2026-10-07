@@ -398,6 +398,18 @@ it('keeps a DW extra reporter name out of the agency-provider field', () => {
   ).toBeNull();
 });
 
+it('reads Blogger publication from the CCSN main post zoned title without using sidebar clocks', () => {
+  const html = `<aside><abbr class="published" itemprop="datePublished" title="2026-10-08T10:00:00+08:00">最新</abbr></aside><div class="post"><h1>本篇新聞</h1><div class="post-body">${'這是完整的原站新聞內容。'.repeat(30)}</div><span class="post-timestamp"><a class="timestamp-link"><abbr class="published" itemprop="datePublished" title="2026-10-07T23:43:00+08:00">星期三, 10月 07, 2026</abbr></a></span></div>`;
+  expect(extractArticle(html, 'https://www.ccsn0405.com/2026/10/8medical-japan.html').publishedAt?.toISOString()).toBe(
+    '2026-10-07T15:43:00.000Z',
+  );
+  expect(extractArticle(html, 'https://example.org/2026/10/8medical-japan.html').publishedAt).toBeNull();
+  expect(
+    extractArticle(html.replace('title="2026-10-07T23:43:00+08:00"', ''), 'https://www.ccsn0405.com/2026/10/8medical-japan.html')
+      .publishedAt,
+  ).toBeNull();
+});
+
 it('reads MKnews publication from the main post datetime and explicit partner source', () => {
   const html = `<time class="entry-date published" datetime="2030-01-01T00:00:00+08:00"></time><article><div class="entry-meta">新聞來源:焦點時報 頭條</div><div class="entry-meta"><time class="entry-date published updated" datetime="2026-10-07T22:29:42+08:00">2026-10-07</time></div><div class="entry-content"><p>${'新聞內容。'.repeat(60)}</p></div></article>`;
   expect(extractArticle(html, 'https://mknews.com.tw/2026/10/1002678/')).toMatchObject({
