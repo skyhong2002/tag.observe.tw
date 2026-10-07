@@ -8,6 +8,10 @@ export const ROUND3_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegE
     path: /^\/news\/(?!author\/|category\/|tag\/|wp-json\/)[^/]+\/$/,
     titleSelector: 'article > .post-banner > .post-title',
     bodySelector: 'article > .post-content',
+    // Personal pen names in the header; syndicated brand accounts must not
+    // override a named writer in the article lead.
+    authorSelector: 'article > .post-meta > li.author > a',
+    authorPattern: /^([\p{Script=Han}]{2,4})$/u,
     // The shared CO author archive also contains TechOrange posts; use the
     // explicit license credit inside this article to distinguish the brands.
     providerSelector: 'article > .post-content > p > span > strong > span > a',

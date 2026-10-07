@@ -106,6 +106,13 @@ describe('reporter identity from the selected article', () => {
     const unrelated = `<div class="ak-post-content"><p>${prose}</p></div><aside><p>商傳媒｜其他作者／報導</p></aside>`;
     expect(extractArticle(unrelated, 'https://lifenews.com.tw/593669').provider).toBeNull();
   });
+  it('reads GRI header pen names without overriding a syndicated article writer', () => {
+    const article = (name: string, lead: string) =>
+      `<article><ul class="post-meta"><li class="author">Post by <a>${name}</a></li></ul><div class="post-content"><p>${lead}</p><p>${prose}</p></div></article><aside><li class="author"><a>其他作者</a></li></aside>`;
+    expect(extractArticle(article('小丞', '草根影響力新視野 小丞'), 'https://grinews.com/news/story/').authors).toEqual(['小丞']);
+    expect(extractArticle(article('myhousing住展', '文／梁愷恩'), 'https://grinews.com/news/story/').authors).toEqual(['梁愷恩']);
+    expect(extractArticle(article('admin', prose), 'https://grinews.com/news/story/').authors).toEqual([]);
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });
