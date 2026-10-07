@@ -9,6 +9,7 @@ export interface ArticleSummary {
 }
 
 const boilerplate = new Set([
+  '觀策站',
   '迷音 Miin — Let me in!',
   '視傳媒-新興網路媒體，目前各縣市均有記者發稿，有多位資深也有很多充滿活力的記者，一起拿起筆桿來為民眾出聲。',
   '青年日報為中華民國國防部發行的官方報紙，提供軍事、政治、社會、地方、兩岸、國際、生活、運動、藝文、娛樂等豐富新聞內容。',
@@ -33,7 +34,11 @@ export function publisherSummary(value: unknown, source: string, title?: string 
     summary === (title ? normalized(title) : '') ||
     boilerplate.has(summary) ||
     (summary.length <= 80 && /(?:報導|報道|报道)[）)】〕]?$/u.test(summary) && reporterNames(summary).length > 0) ||
-    /^文\s*[/／]\s*[^。！？]{2,20}中心$/u.test(summary)
+    /^文\s*[/／]\s*[^。！？]{2,20}中心$/u.test(summary) ||
+    // Reviewed descriptions containing only a contributor's role and name.
+    /^(?:淡江戰略研究所博士生|直轄市政府青年諮詢組織青年委員)\s+[\p{Script=Han}]{2,4}$/u.test(summary) ||
+    // Watch Media sometimes truncates both descriptions inside the byline.
+    /^[（(]觀傳媒[^）)]{1,8}新聞[）)]\s*【記者\s*[\p{Script=Han}]{2,4}$/u.test(summary)
   )
     return { summary: null, summarySource: null };
   return { summary, summarySource: source };

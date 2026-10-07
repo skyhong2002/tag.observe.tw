@@ -66,6 +66,20 @@ describe('publisher summary metadata', () => {
     expect(publisherSummary('記者林文強報導這項公共政策的影響。', 'meta:description').summary).not.toBeNull();
     expect(publisherSummary('記者王丹荷／綜合報導 韓國樂團宣布再度來臺，將舉辦巡迴演唱會。', 'meta:description').summary).not.toBeNull();
   });
+  it('rejects reviewed outlet-only and contributor-only descriptions without discarding prose', () => {
+    for (const credit of ['淡江戰略研究所博士生 宋磊', '直轄市政府青年諮詢組織青年委員 風雨聲']) {
+      expect(
+        extractArticle(
+          `<meta name="description" content="觀策站"><meta property="og:description" content="${credit}">`,
+          'https://www.viewpointtaiwan.com/commentary/story',
+        ),
+      ).toMatchObject({ summary: null, summarySource: null });
+    }
+    expect(publisherSummary('(觀傳媒雲嘉南新聞)【記者 陳惲朋', 'meta:description').summary).toBeNull();
+    const prose = '(觀傳媒花東新聞）【記者劉百瑞/台東報導】東海岸攝影學會舉辦聯展，邀請民眾參觀。';
+    expect(publisherSummary(prose, 'meta:description').summary).toBe(prose);
+    expect(publisherSummary('淡江戰略研究所博士生 宋磊分析區域情勢。', 'meta:description').summary).not.toBeNull();
+  });
   it('preserves RSS description and Atom summary provenance without using full Atom content', () => {
     const rss = parseFeed(
       '<rss><channel><item><title>標題</title><link>https://example.org/a</link><description>RSS摘要</description></item></channel></rss>',
