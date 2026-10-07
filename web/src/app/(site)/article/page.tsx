@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink, RangeChips } from '@/components/ArticleResults';
 import ArticleTabs from '@/components/ArticleTabs';
-import MethodLink from '@/components/MethodLink';
 import PeriodEvents from '@/components/PeriodEvents';
 import { fetchMedia, type MediaInfo } from '@/lib/api';
 import { fetchArticleListing, isCamp, rangeDays, validCursor } from '@/lib/article-search';
@@ -49,15 +48,6 @@ export default async function ArticleIndexPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-6">
       <ArticleTabs current="latest" />
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">最新文章</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          本站收錄的所有媒體文章，依刊登時間由新到舊。要找特定字詞，請用頁首的搜尋框。
-        </p>
-        <p className="text-xs">
-          <MethodLink />
-        </p>
-      </div>
       <RangeChips days={days} defaultDays={DEFAULT_DAYS} link={link} />
       {!cursor && <PeriodEvents threads={threads} days={days} media={media} />}
       {!page ? (

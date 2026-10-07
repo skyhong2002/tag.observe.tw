@@ -41,14 +41,22 @@ function MetricCell({ row, metric }: { row: JournalistSummary; metric: Metric })
 const PAGE = 150;
 const number = (value: number) => value.toLocaleString('zh-TW');
 
-export default function JournalistTable({ rows }: { rows: JournalistSummary[] }) {
+export default function JournalistTable({
+  rows,
+  initialQuery = '',
+  initialMedia = '',
+}: {
+  rows: JournalistSummary[];
+  initialQuery?: string;
+  initialMedia?: string;
+}) {
   const [detailed, setDetailed] = useState(false);
   const displayMetrics = metrics.filter(({ key }) => detailed || ['firstSeen', 'matched', 'cited'].includes(key));
   const columns = allColumns.filter(({ key }) => detailed || ['name', 'media', 'articles', 'firstSeen', 'matched', 'cited'].includes(key));
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
-  const [media, setMedia] = useState('');
+  const [media, setMedia] = useState(initialMedia);
   const [shown, setShown] = useState(PAGE);
   const [sortMode, setSortMode] = useState<'count' | 'share'>('count');
   const [relation, setRelation] = useState<Metric | ''>('');

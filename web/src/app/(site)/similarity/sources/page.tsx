@@ -1,11 +1,9 @@
 import Link from 'next/link';
 import MediaIcon from '@/components/MediaIcon';
-import { taipei } from '@/lib/api';
 import { relationshipQuery } from '@/lib/relationship-query.mts';
 import { pageMetadata } from '@/lib/seo.mts';
 import { fetchSimilarity, periodQuery } from '@/lib/similarity';
 import { sourceRanking } from '@/lib/source-ranking.mts';
-import { periodLabel } from '../format';
 import { similarityPeriod, similarityThreshold } from '../query';
 import SimilarityTabs from '../SimilarityTabs';
 
@@ -35,17 +33,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-5 pb-8">
       <SimilarityTabs current="sources" query={params.toString()} />
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">來源排行</h1>
-        <p className="max-w-3xl text-sm leading-6 text-zinc-500">
-          哪些來源被新聞註明來源或引用？排行涵蓋本期全部來源，沿用關係圖的來源／引用資料，點來源看來源／引用文章與原文證據。內文相似、刊登較早不計入被註明篇數。
-        </p>
-        {data && (
-          <p className="text-xs text-zinc-500">
-            {periodLabel(data)} · {taipei(data.generatedAt)} 更新
-          </p>
-        )}
-      </header>
+
       <nav aria-label="來源排行期間" className="flex flex-wrap gap-2 text-xs">
         {[24, 48, 72, 168].map((hours) => (
           <Link
@@ -158,9 +146,6 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
           </div>
         </>
       )}
-      <p className="text-xs leading-6 text-zinc-500">
-        所屬地區描述來源機構，不代表新聞發生地或作者國籍。同篇引用多個來源會各別計入，排行篇數不可相加為全站文章數。
-      </p>
     </div>
   );
 }

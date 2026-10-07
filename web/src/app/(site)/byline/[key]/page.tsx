@@ -52,16 +52,7 @@ export default async function BylinePage({ params, searchParams }: Props) {
           本期 {byline.articles.toLocaleString('zh-TW')} 篇署名文章 · {byline.outlets.length} 家刊登媒體
           {byline.roles.length > 0 && ` · 原文角色：${byline.roles.join('、')}`}
         </p>
-        <p className="text-xs leading-6 text-zinc-500">
-          {byline.kind === 'person'
-            ? '依公開署名整理，同名不保證同一人，也不代表已確認職業身分。'
-            : byline.kind === 'desk'
-              ? '此團隊署名依刊登媒體區分，不會與其他媒體的同名部門合併。'
-              : byline.kind === 'unknown'
-                ? '目前無法確認這個署名的身分類型，以下保留原文線索。'
-                : '機構署名與刊登媒體、引用來源分別記錄。'}{' '}
-          角色是本期文章出現過的標示。
-        </p>
+
         <nav aria-label="署名統計期間" className="flex flex-wrap gap-2 text-xs">
           {BYLINE_HOURS.map((value) => (
             <Link

@@ -212,7 +212,6 @@ export default async function SourceProfile({ media, query }: { media: string; q
           )}
         </>
       )}
-      <p className="text-xs leading-6 text-zinc-500">關係依原文明示的來源與證據整理，不表示全文轉載、原創權歸屬或機構所有權關係。</p>
     </div>
   );
 }

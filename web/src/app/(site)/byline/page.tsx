@@ -1,8 +1,12 @@
 import Link from 'next/link';
-import SectionTabs from '@/components/SectionTabs';
+import BylineTabs from '@/components/BylineTabs';
+import MediaIcon from '@/components/MediaIcon';
+import TableScroller from '@/components/TableScroller';
 import { taipei } from '@/lib/api';
-import { BYLINE_HOURS, bylineHours, bylineHref, CREDIT_KINDS, CREDIT_LABELS, fetchBylines, periodLabel } from '@/lib/bylines';
+import { BYLINE_HOURS, bylineHours, bylineHref, CREDIT_KINDS, fetchBylines, periodLabel } from '@/lib/bylines';
 import { pageMetadata } from '@/lib/seo.mts';
+import { table } from '@/lib/table-styles';
+import JournalistOverview from '../journalist/JournalistOverview';
 
 export const metadata = pageMetadata(
   '/byline/',
@@ -13,16 +17,24 @@ export const revalidate = 120;
 type Query = { kind?: string; hours?: string; q?: string; media?: string; page?: string };
 export default async function BylineIndexPage({ searchParams }: { searchParams: Promise<Query> }) {
   const sp = await searchParams;
-  const hours = bylineHours(sp.hours);
-  const kind = CREDIT_KINDS.find((value) => value === sp.kind);
+  const selectedHours = bylineHours(sp.hours);
+  const kind = sp.kind === 'all' ? undefined : (CREDIT_KINDS.find((value) => value === sp.kind) ?? 'person');
+  const hours = kind === 'person' ? Math.min(selectedHours, 168) : selectedHours;
+  if (kind === 'person')
+    return (
+      <div className="space-y-4 pb-4">
+        <BylineTabs current="person" hours={hours} q={sp.q} media={sp.media} />
+        <JournalistOverview hours={hours} initialQuery={sp.q?.trim().slice(0, 120)} initialMedia={sp.media} />
+      </div>
+    );
   const query = {
     hours: String(hours),
-    kind,
+    kind: kind ?? 'all',
     q: sp.q?.trim().slice(0, 120),
     media: sp.media,
     page: /^\d+$/.test(sp.page ?? '') ? sp.page : '0',
   };
-  const result = await fetchBylines('', query);
+  const result = await fetchBylines('', { ...query, kind });
   const data = result && result !== 'missing' ? result : null;
   const href = (patch: Partial<Query>) => {
     const params = new URLSearchParams(
@@ -32,33 +44,7 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
   };
   return (
     <div className="space-y-5 pb-8">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">新聞署名</h1>
-        <p className="max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          從文章署名找人、團隊與機構。個人與筆名依公開署名整理，同名不一定是同一人；編輯部與團隊依刊登媒體分開。
-        </p>
-      </header>
-      <SectionTabs
-        label="署名類型"
-        tabs={[
-          {
-            href: href({ kind: undefined }),
-            label: `全部${
-              data
-                ? ` ${Object.values(data.counts)
-                    .reduce((a, b) => a + b, 0)
-                    .toLocaleString('zh-TW')}`
-                : ''
-            }`,
-            current: !kind,
-          },
-          ...CREDIT_KINDS.map((value) => ({
-            href: href({ kind: value }),
-            label: `${CREDIT_LABELS[value]}${data ? ` ${data.counts[value].toLocaleString('zh-TW')}` : ''}`,
-            current: kind === value,
-          })),
-        ]}
-      />
+      <BylineTabs current={kind ?? 'all'} hours={hours} q={query.q} media={query.media} />
       <nav aria-label="署名統計期間" className="flex flex-wrap gap-2 text-xs">
         {BYLINE_HOURS.map((value) => (
           <Link
@@ -71,9 +57,9 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
           </Link>
         ))}
       </nav>
-      <form action="/byline/" className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+      <form action="/byline/" className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="hours" value={hours} />
-        {kind && <input type="hidden" name="kind" value={kind} />}
+        <input type="hidden" name="kind" value={query.kind} />
         <label className="text-xs text-zinc-500">
           搜尋署名
           <input
@@ -118,12 +104,15 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
             符合 {data.total.toLocaleString('zh-TW')} 個署名 · 本期 {data.credited.toLocaleString('zh-TW')} 篇可辨識署名文章 ·{' '}
             {taipei(data.generatedAt)} 更新
           </p>
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full min-w-[620px] text-left text-sm">
-              <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
-                <tr>
-                  {['署名', '類型／原文角色', '刊登媒體', '署名篇數'].map((label) => (
-                    <th key={label} className="px-4 py-3">
+          <TableScroller label="署名表格，可左右捲動">
+            <table className="w-full min-w-[32rem] border-collapse text-left text-sm [&_td]:py-1 [&_th]:py-1">
+              <thead className="text-xs text-zinc-500 dark:text-zinc-400">
+                <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                  {['署名', '刊登媒體', '篇數'].map((label) => (
+                    <th
+                      key={label}
+                      className={`${label === '篇數' ? table.num : label === '署名' ? table.leadHead : table.cell} font-medium`}
+                    >
                       {label}
                     </th>
                   ))}
@@ -131,35 +120,37 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {data.bylines.map((entry) => (
-                  <tr key={entry.key} className="hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                    <td className="px-4 py-3">
-                      <Link href={bylineHref(entry.key, hours)} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
-                        {entry.name}
-                      </Link>
+                  <tr key={entry.key} className={table.row}>
+                    <td className={table.lead}>
+                      <div className={table.leadBox}>
+                        <Link
+                          href={bylineHref(entry.key, hours)}
+                          className="block truncate font-medium hover:text-brand-700 hover:underline dark:hover:text-brand-400"
+                        >
+                          {entry.name}
+                        </Link>
+                      </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span>{CREDIT_LABELS[entry.kind]}</span>
-                      {entry.roles.length > 0 && <p className="mt-1 text-xs text-zinc-500">{entry.roles.join('、')}</p>}
-                    </td>
-                    <td className="px-4 py-3">
+                    <td className={table.cell}>
                       {entry.outlets.slice(0, 2).map((outlet) => (
                         <Link
                           key={outlet.media}
                           href={`/media/${encodeURIComponent(outlet.media)}/?hours=${Math.min(hours, 168)}`}
-                          className="mr-3 inline-block text-xs hover:underline"
+                          className="mr-3 inline-flex items-center gap-1 whitespace-nowrap text-xs text-zinc-600 hover:underline dark:text-zinc-400"
                         >
+                          <MediaIcon media={outlet.media} title={outlet.name} size={14} />
                           {outlet.name} <span className="text-zinc-500">{outlet.count}</span>
                         </Link>
                       ))}
                       {entry.outlets.length > 2 && <span className="text-xs text-zinc-500">另 {entry.outlets.length - 2} 家</span>}
                     </td>
-                    <td className="px-4 py-3 tabular-nums">{entry.articles.toLocaleString('zh-TW')}</td>
+                    <td className={table.num}>{entry.articles.toLocaleString('zh-TW')}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {!data.bylines.length && <p className="p-8 text-center text-zinc-500">這段期間沒有符合篩選的署名。</p>}
-          </div>
+          </TableScroller>
           <nav aria-label="署名分頁" className="flex justify-between text-sm">
             {data.page > 0 ? (
               <Link href={href({ page: String(data.page - 1) })} className="py-2 text-brand-700 dark:text-brand-400">
@@ -179,15 +170,6 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
           </nav>
         </>
       )}
-      <p className="text-xs leading-6 text-zinc-500">
-        分類由原文署名自動整理；無法確認的署名保留在「待辨識」。角色只採用明確標示，各角色可在不同文章出現。同篇多人共同署名會分別計入，篇數不可直接相加。
-      </p>
-      <Link
-        href={`/journalist/?hours=${Math.min(hours, 168)}`}
-        className="inline-block text-sm text-brand-700 hover:underline dark:text-brand-400"
-      >
-        個人署名的相似報導統計 →
-      </Link>
     </div>
   );
 }

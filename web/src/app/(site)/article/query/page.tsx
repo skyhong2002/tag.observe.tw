@@ -53,12 +53,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-5 pb-8">
       <ArticleTabs current="query" />
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">進階文章查詢</h1>
-        <p className="text-sm leading-6 text-zinc-500">
-          交叉查詢刊登媒體、原文署名、明示來源／引用、標籤與原站分類。所有條件同時套用，查詢網址可以分享。
-        </p>
-      </header>
+
       <form
         action="/article/query/"
         className="grid gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3"
@@ -167,9 +162,6 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
           </nav>
         </>
       )}
-      <p className="text-xs leading-6 text-zinc-500">
-        署名條件比對原文署名字串，並非職業或身分認證；引用條件只採用已辨識的明示來源／引用，資料缺漏可能影響結果。
-      </p>
     </div>
   );
 }
