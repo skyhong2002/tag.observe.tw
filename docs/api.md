@@ -57,6 +57,7 @@ for a in r.json()["articles"]:
 
 | 端點 | 說明 |
 | --- | --- |
+| [`GET /api/v1/reader-presence`](#api-v1-reader-presence) | 本站最近 90 秒的線上讀者估計 |
 | [`GET /api/v1/site-observation`](#api-v1-site-observation) | 網站觀測：GA4 與 Search Console 每日彙整 |
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
 | [`GET /api/v1/similarity/evidence`](#api-v1-similarity-evidence) | 相似與引用證據（分頁） |
@@ -92,6 +93,29 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 
 ## API 本身
+
+<a id="api-v1-reader-presence"></a>
+
+### `GET /api/v1/reader-presence`
+
+**本站最近 90 秒的線上讀者估計**
+
+單一 gateway 記憶體內的短期連線估計，不是 GA4 人數，不持久保存或按 IP 分組；服務重啟會歸零。此公開 GET 只回傳總數，不回傳識別碼。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/reader-presence'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `activeReaders` | integer | 最近 90 秒送過心跳且未離開的讀者數 |
+| `windowSeconds` | integer | 統計時間窗，固定 90 秒 |
+
+快取：no-store。
 
 <a id="api-v1-site-observation"></a>
 

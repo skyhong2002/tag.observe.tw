@@ -628,6 +628,15 @@ const observationPage = obj({
 
 export const ENDPOINTS: Endpoint[] = [
   {
+    path: '/api/v1/reader-presence',
+    tag: 'meta',
+    summary: '本站最近 90 秒的線上讀者估計',
+    description:
+      '單一 gateway 記憶體內的短期連線估計，不是 GA4 人數，不持久保存或按 IP 分組；服務重啟會歸零。此公開 GET 只回傳總數，不回傳識別碼。',
+    cache: 'no-store',
+    response: obj({ activeReaders: int('最近 90 秒送過心跳且未離開的讀者數'), windowSeconds: int('統計時間窗，固定 90 秒') }),
+  },
+  {
     path: '/api/v1/site-observation',
     tag: 'meta',
     summary: '網站觀測：GA4 與 Search Console 每日彙整',

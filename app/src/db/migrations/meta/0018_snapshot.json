@@ -60,9 +60,7 @@
       "indexes": {
         "article_archives_verified": {
           "name": "article_archives_verified",
-          "columns": [
-            "verified_at"
-          ],
+          "columns": ["verified_at"],
           "isUnique": false
         }
       },
@@ -70,10 +68,7 @@
       "compositePrimaryKeys": {
         "article_archives_article_id_content_hash_pk": {
           "name": "article_archives_article_id_content_hash_pk",
-          "columns": [
-            "article_id",
-            "content_hash"
-          ]
+          "columns": ["article_id", "content_hash"]
         }
       },
       "uniqueConstraints": {},
@@ -121,17 +116,12 @@
       "indexes": {
         "citations_published": {
           "name": "citations_published",
-          "columns": [
-            "published_at"
-          ],
+          "columns": ["published_at"],
           "isUnique": false
         },
         "citations_day": {
           "name": "citations_day",
-          "columns": [
-            "day",
-            "media"
-          ],
+          "columns": ["day", "media"],
           "isUnique": false
         }
       },
@@ -139,10 +129,7 @@
       "compositePrimaryKeys": {
         "article_citations_pk": {
           "name": "article_citations_pk",
-          "columns": [
-            "article_id",
-            "source"
-          ]
+          "columns": ["article_id", "source"]
         }
       },
       "uniqueConstraints": {},
@@ -190,18 +177,12 @@
       "indexes": {
         "discovery_article_media": {
           "name": "discovery_article_media",
-          "columns": [
-            "article_id",
-            "media"
-          ],
+          "columns": ["article_id", "media"],
           "isUnique": true
         },
         "discovery_media_article": {
           "name": "discovery_media_article",
-          "columns": [
-            "media",
-            "article_id"
-          ],
+          "columns": ["media", "article_id"],
           "isUnique": false
         }
       },
@@ -209,9 +190,7 @@
       "compositePrimaryKeys": {
         "article_discoveries_id": {
           "name": "article_discoveries_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -273,9 +252,7 @@
       "indexes": {
         "article_origins_article": {
           "name": "article_origins_article",
-          "columns": [
-            "article_id"
-          ],
+          "columns": ["article_id"],
           "isUnique": false
         }
       },
@@ -283,10 +260,7 @@
       "compositePrimaryKeys": {
         "article_origins_source_key_raw_hash_pk": {
           "name": "article_origins_source_key_raw_hash_pk",
-          "columns": [
-            "source_key",
-            "raw_hash"
-          ]
+          "columns": ["source_key", "raw_hash"]
         }
       },
       "uniqueConstraints": {},
@@ -334,9 +308,7 @@
       "indexes": {
         "sketches_published": {
           "name": "sketches_published",
-          "columns": [
-            "published_at"
-          ],
+          "columns": ["published_at"],
           "isUnique": false
         }
       },
@@ -344,9 +316,7 @@
       "compositePrimaryKeys": {
         "article_sketches_article_id": {
           "name": "article_sketches_article_id",
-          "columns": [
-            "article_id"
-          ]
+          "columns": ["article_id"]
         }
       },
       "uniqueConstraints": {},
@@ -380,18 +350,12 @@
       "indexes": {
         "article_tag": {
           "name": "article_tag",
-          "columns": [
-            "article_id",
-            "tag"
-          ],
+          "columns": ["article_id", "tag"],
           "isUnique": true
         },
         "tag_published": {
           "name": "tag_published",
-          "columns": [
-            "tag",
-            "published_at"
-          ],
+          "columns": ["tag", "published_at"],
           "isUnique": false
         }
       },
@@ -598,75 +562,47 @@
       "indexes": {
         "articles_media_url": {
           "name": "articles_media_url",
-          "columns": [
-            "media",
-            "url"
-          ],
+          "columns": ["media", "url"],
           "isUnique": true
         },
         "articles_media_url_key": {
           "name": "articles_media_url_key",
-          "columns": [
-            "media",
-            "url_key"
-          ],
+          "columns": ["media", "url_key"],
           "isUnique": true
         },
         "articles_media_id": {
           "name": "articles_media_id",
-          "columns": [
-            "media",
-            "media_id"
-          ],
+          "columns": ["media", "media_id"],
           "isUnique": false
         },
         "articles_published": {
           "name": "articles_published",
-          "columns": [
-            "published_at"
-          ],
+          "columns": ["published_at"],
           "isUnique": false
         },
         "articles_media_published": {
           "name": "articles_media_published",
-          "columns": [
-            "media",
-            "published_at"
-          ],
+          "columns": ["media", "published_at"],
           "isUnique": false
         },
         "articles_source_media_published": {
           "name": "articles_source_media_published",
-          "columns": [
-            "source",
-            "media",
-            "published_at"
-          ],
+          "columns": ["source", "media", "published_at"],
           "isUnique": false
         },
         "articles_media_fetch": {
           "name": "articles_media_fetch",
-          "columns": [
-            "media",
-            "fetched_at"
-          ],
+          "columns": ["media", "fetched_at"],
           "isUnique": false
         },
         "articles_media_content": {
           "name": "articles_media_content",
-          "columns": [
-            "media",
-            "id"
-          ],
+          "columns": ["media", "id"],
           "isUnique": false
         },
         "articles_similarity": {
           "name": "articles_similarity",
-          "columns": [
-            "similarity_at",
-            "body_status",
-            "published_at"
-          ],
+          "columns": ["similarity_at", "body_status", "published_at"],
           "isUnique": false
         }
       },
@@ -674,9 +610,7 @@
       "compositePrimaryKeys": {
         "articles_id": {
           "name": "articles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -770,10 +704,7 @@
       "indexes": {
         "crawl_runs_media": {
           "name": "crawl_runs_media",
-          "columns": [
-            "media",
-            "started_at"
-          ],
+          "columns": ["media", "started_at"],
           "isUnique": false
         }
       },
@@ -781,9 +712,7 @@
       "compositePrimaryKeys": {
         "crawl_runs_id": {
           "name": "crawl_runs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -852,10 +781,7 @@
       "indexes": {
         "event_snapshot_hour": {
           "name": "event_snapshot_hour",
-          "columns": [
-            "category",
-            "hour_start"
-          ],
+          "columns": ["category", "hour_start"],
           "isUnique": true
         }
       },
@@ -863,9 +789,7 @@
       "compositePrimaryKeys": {
         "event_snapshots_id": {
           "name": "event_snapshots_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -984,18 +908,12 @@
       "indexes": {
         "threads_last": {
           "name": "threads_last",
-          "columns": [
-            "category",
-            "last_time"
-          ],
+          "columns": ["category", "last_time"],
           "isUnique": false
         },
         "threads_first": {
           "name": "threads_first",
-          "columns": [
-            "category",
-            "first_time"
-          ],
+          "columns": ["category", "first_time"],
           "isUnique": false
         }
       },
@@ -1003,9 +921,7 @@
       "compositePrimaryKeys": {
         "event_threads_id": {
           "name": "event_threads_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1081,17 +997,12 @@
       "indexes": {
         "events_snapshot": {
           "name": "events_snapshot",
-          "columns": [
-            "snapshot_id",
-            "rank"
-          ],
+          "columns": ["snapshot_id", "rank"],
           "isUnique": false
         },
         "events_thread": {
           "name": "events_thread",
-          "columns": [
-            "thread_id"
-          ],
+          "columns": ["thread_id"],
           "isUnique": false
         }
       },
@@ -1099,9 +1010,7 @@
       "compositePrimaryKeys": {
         "events_id": {
           "name": "events_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1156,10 +1065,7 @@
       "indexes": {
         "job_runs_name": {
           "name": "job_runs_name",
-          "columns": [
-            "name",
-            "started_at"
-          ],
+          "columns": ["name", "started_at"],
           "isUnique": false
         }
       },
@@ -1167,9 +1073,7 @@
       "compositePrimaryKeys": {
         "job_runs_id": {
           "name": "job_runs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1231,18 +1135,12 @@
       "indexes": {
         "entries_snapshot": {
           "name": "entries_snapshot",
-          "columns": [
-            "snapshot_id",
-            "rank"
-          ],
+          "columns": ["snapshot_id", "rank"],
           "isUnique": false
         },
         "entries_tag": {
           "name": "entries_tag",
-          "columns": [
-            "tag",
-            "snapshot_id"
-          ],
+          "columns": ["tag", "snapshot_id"],
           "isUnique": false
         }
       },
@@ -1250,9 +1148,7 @@
       "compositePrimaryKeys": {
         "ranking_entries_id": {
           "name": "ranking_entries_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1335,17 +1231,12 @@
       "indexes": {
         "ranking_category_hour": {
           "name": "ranking_category_hour",
-          "columns": [
-            "category",
-            "hour_start"
-          ],
+          "columns": ["category", "hour_start"],
           "isUnique": true
         },
         "ranking_hour": {
           "name": "ranking_hour",
-          "columns": [
-            "hour_start"
-          ],
+          "columns": ["hour_start"],
           "isUnique": false
         }
       },
@@ -1353,9 +1244,7 @@
       "compositePrimaryKeys": {
         "ranking_snapshots_id": {
           "name": "ranking_snapshots_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1396,17 +1285,12 @@
       "indexes": {
         "rejected_media_key": {
           "name": "rejected_media_key",
-          "columns": [
-            "media",
-            "url_key"
-          ],
+          "columns": ["media", "url_key"],
           "isUnique": true
         },
         "rejected_created": {
           "name": "rejected_created",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -1527,25 +1411,17 @@
       "indexes": {
         "pairs_b": {
           "name": "pairs_b",
-          "columns": [
-            "b_id"
-          ],
+          "columns": ["b_id"],
           "isUnique": false
         },
         "pairs_last": {
           "name": "pairs_last",
-          "columns": [
-            "last_published",
-            "first_published"
-          ],
+          "columns": ["last_published", "first_published"],
           "isUnique": false
         },
         "pairs_day": {
           "name": "pairs_day",
-          "columns": [
-            "day",
-            "score"
-          ],
+          "columns": ["day", "score"],
           "isUnique": false
         }
       },
@@ -1553,10 +1429,7 @@
       "compositePrimaryKeys": {
         "similarity_pairs_pk": {
           "name": "similarity_pairs_pk",
-          "columns": [
-            "a_id",
-            "b_id"
-          ]
+          "columns": ["a_id", "b_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1612,11 +1485,7 @@
       "indexes": {
         "site_metrics_metric_day": {
           "name": "site_metrics_metric_day",
-          "columns": [
-            "source",
-            "metric",
-            "day"
-          ],
+          "columns": ["source", "metric", "day"],
           "isUnique": false
         }
       },
@@ -1624,12 +1493,7 @@
       "compositePrimaryKeys": {
         "site_metrics_day_source_metric_key_pk": {
           "name": "site_metrics_day_source_metric_key_pk",
-          "columns": [
-            "day",
-            "source",
-            "metric",
-            "key"
-          ]
+          "columns": ["day", "source", "metric", "key"]
         }
       },
       "uniqueConstraints": {},
@@ -1692,10 +1556,7 @@
       "indexes": {
         "source_probes_media": {
           "name": "source_probes_media",
-          "columns": [
-            "media",
-            "checked_at"
-          ],
+          "columns": ["media", "checked_at"],
           "isUnique": false
         }
       },
@@ -1703,9 +1564,7 @@
       "compositePrimaryKeys": {
         "source_probes_id": {
           "name": "source_probes_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1788,20 +1647,12 @@
       "indexes": {
         "tag_stats_key": {
           "name": "tag_stats_key",
-          "columns": [
-            "tag",
-            "category",
-            "level"
-          ],
+          "columns": ["tag", "category", "level"],
           "isUnique": true
         },
         "tag_stats_last": {
           "name": "tag_stats_last",
-          "columns": [
-            "category",
-            "level",
-            "last_hour"
-          ],
+          "columns": ["category", "level", "last_hour"],
           "isUnique": false
         }
       },
@@ -1809,9 +1660,7 @@
       "compositePrimaryKeys": {
         "tag_stats_id": {
           "name": "tag_stats_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1960,27 +1809,17 @@
       "indexes": {
         "topics_media_url": {
           "name": "topics_media_url",
-          "columns": [
-            "media",
-            "url"
-          ],
+          "columns": ["media", "url"],
           "isUnique": true
         },
         "topics_media_seen": {
           "name": "topics_media_seen",
-          "columns": [
-            "media",
-            "first_seen"
-          ],
+          "columns": ["media", "first_seen"],
           "isUnique": false
         },
         "topics_kind_media_seen": {
           "name": "topics_kind_media_seen",
-          "columns": [
-            "kind",
-            "media",
-            "first_seen"
-          ],
+          "columns": ["kind", "media", "first_seen"],
           "isUnique": false
         }
       },
@@ -1988,9 +1827,7 @@
       "compositePrimaryKeys": {
         "topics_id": {
           "name": "topics_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
