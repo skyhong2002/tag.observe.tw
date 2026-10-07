@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { extractArticle, parsePublished } from './article.ts';
 import { discoverNews } from './news-discovery.ts';
 import { newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
+import { sourceByMedia } from './registry.ts';
 
 it('reads Ifeng content provider only from the selected article source credit', () => {
   const html =
@@ -321,4 +322,52 @@ it('extracts AP report text without related services or gallery page furniture',
   );
   expect(article.body).toBe(body);
   expect(article.body).not.toContain('Explore related services');
+});
+
+describe('TaiSounds special-topic articles', () => {
+  it('keeps direct text and nested paragraphs without the heading, clock or linked stories', () => {
+    const html = `<title>作者姓名 混入列表標題 - 太報 TaiSounds</title><script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2023-12-07T07:20:00+08:00","author":{"name":"洪敏隆"}}</script><div class="container"><div class="special-text2"><h3>專題文章標題</h3><div class="publish">2023-12-07 07:20</div>首段直接文字。<br><br>${paragraph}<subh3>內文章節標題</subh3><br>末段直接文字。</div></div><div class="special-list"><h3>無關推薦標題</h3><p>無關推薦內容</p></div>`;
+    const result = extractArticle(html, 'https://www.taisounds.com/specialtopic/content/101/95022', sourceByMedia('taisounds')?.article);
+    expect(result.title).toBe('專題文章標題');
+    expect(result.body).toContain('首段直接文字。');
+    expect(result.body).toContain(body);
+    expect(result.body).toContain('內文章節標題');
+    expect(result.body).toContain('末段直接文字。');
+    expect(result.body).not.toMatch(/專題文章標題|2023-12-07 07:20|無關推薦/);
+    expect(result.authors).toEqual(['洪敏隆']);
+    expect(result.publishedAt?.toISOString()).toBe('2023-12-06T23:20:00.000Z');
+  });
+
+  it('leaves ordinary news and topic landing pages outside the reviewed path', () => {
+    for (const path of ['/news/content/101/95022', '/special/topic/101']) {
+      const result = extractArticle(`<div class="special-text2"><h3>推薦標題</h3>${paragraph}</div>`, `https://www.taisounds.com${path}`);
+      expect(result.bodySource).not.toBe('selector');
+    }
+  });
+});
+
+it('takes AP reporting credits ahead of the publishing account and removes only the declared organization suffix', () => {
+  const html = `<meta name="author" content="Dominic Hurry"><article><div class="content-container__inner">${paragraph}</div><div class="post-meta"><p class="author">By Kaitlyn Humani and Barbara Ortutay, The Associated Press</p></div></article>`;
+  expect(extractArticle(html, 'https://www.ap.org/news-highlights/spotlights/2026/ai-safety/').authors).toEqual([
+    'Kaitlyn Humani',
+    'Barbara Ortutay',
+  ]);
+  expect(
+    extractArticle(
+      html.replace(
+        'Kaitlyn Humani and Barbara Ortutay, The Associated Press',
+        'Linley Sanders, Sarah Jane Tribble, Ali Swenson and Fatima Hussein Associated Press and KFF Health News',
+      ),
+      'https://www.ap.org/news-highlights/spotlights/2026/poll/',
+    ).authors,
+  ).toEqual(['Linley Sanders', 'Sarah Jane Tribble', 'Ali Swenson', 'Fatima Hussein']);
+});
+
+it('separates a Babyou comprehensive-report role from the visible writer name', () => {
+  const html = `<meta name="author" content="周昭安 綜合報導"><span class="elementor-post-info__item--type-author">周昭安 綜合報導</span><article>${paragraph}</article>`;
+  const rules = sourceByMedia('babyou')?.article;
+  expect(extractArticle(html, 'https://babyou.me/example', rules).authors).toEqual(['周昭安']);
+  expect(extractArticle(html.replaceAll('周昭安 綜合報導', '姊妹淘編輯部'), 'https://babyou.me/example', rules).authors).toEqual([
+    '姊妹淘編輯部',
+  ]);
 });

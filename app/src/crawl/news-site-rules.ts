@@ -46,6 +46,14 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'taisounds.com',
+    path: /^\/specialtopic\/content\/\d+\/\d+$/,
+    bodySelector: '.container > .special-text2',
+    titleSelector: '.container > .special-text2 > h3',
+    bodyExcludeSelector: '.special-text2 > .publish',
+    plainTextBody: true,
+  },
+  {
     host: 'news.ifeng.com',
     path: /^\/c\/[A-Za-z0-9]+$/,
     bodySelector: 'article div[class^="index_articleBox_"] > div[class^="index_text_"]',
@@ -237,6 +245,8 @@ const SITES: Site[] = [
     host: 'ap.org',
     path: /^\/news-highlights\/(?:elections|spotlights)\/\d{4}\/[^/]+\/$/,
     bodySelector: 'article .content-container__inner',
+    authorSelector: '.post-meta > .author',
+    authorPattern: /^(By\s+.+?)(?:,\s*|\s+)(?:The\s+)?Associated Press(?: and KFF Health News)?$/,
   },
   {
     host: 'news.cn',

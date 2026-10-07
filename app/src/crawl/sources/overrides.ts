@@ -166,7 +166,11 @@ export const overrides: Record<string, SourceOverride> = {
   babyou: {
     group: 'hourly',
     list: { autoDiscover: { homeUrl: 'https://babyou.me/', maxArticles: 12, feedUrls: ['https://babyou.me/feed'] } },
-    article: { enabled: true },
+    article: {
+      enabled: true,
+      authorSelector: '.elementor-post-info__item--type-author',
+      authorPattern: /^([\p{Script=Han}]{2,5})\s+綜合報導$/u,
+    },
   },
   techcrunch: {
     group: 'hourly',
@@ -429,7 +433,7 @@ export const overrides: Record<string, SourceOverride> = {
   // topic pages link the same id as /specialtopic/content/<topic>/<id>.
   taisounds: {
     list: { articleId: String.raw`^/(?:news|specialtopic)/content/\d+/(\d+)` },
-    article: { bodySelector: '.news-box-text' },
+    article: { bodySelector: '.news-box-text, .container > .special-text2' },
     titleSuffix: String.raw`\s*\|[^|]*-\s*太報 TaiSounds`,
   },
   // "<title> | 綜合 | 運動 | NOWnews今日新聞": up to three short section names.

@@ -211,3 +211,21 @@
 人工檢驗記錄更新為 170 份、169 篇不同文章、92 個媒體，165 篇屬自動樣本；含局部欄位與未解項目。另核對工商時報傅秉祥、天下編譯樂羽嘉、火報組織署名及葛瑪蘭三名記者，指定欄位有原文證據。23:00 定期取樣正在執行，尚未計入完成輪數。24 小時觀察仍待 10/8 18:49:13 到期。
 
 證據：`batch5-final-all-sample-replay.json`、`batch5-ifeng-all-sample-proof.json`、`batch5-expanded-fresh-proof.json`、`batch5-final-ifeng-proof.json`、`batch5-final-crawl-attribution-tests.log`、`batch5-final-tsc.log`、`batch5-final-biome.log`、`batch5-row-repair-dry-run.json`、`batch5-two-authors-dry-run.jsonl`、`batch5-summary-dry-run.json`、`batch5-paired-body-plan.json`、`review-coverage.json`。
+
+## 第六批累積（23:16，未推送或部署）
+
+第五批候選 `17d6bde24d856d5abb08e638452a6747e63cece1` 已推送；CI 37641834399 成功，1,390 項通過、2 項跳過，web 建置、型別、Biome、秘密掃描通過。固定該候選的第五批 timer 排在 23:30:46，執行前還須確認正式版仍為 c76f530、候選與 origin/main 相符，再排空 active jobs。23:16 尚未部署，所有第五批資料補正仍未套用。
+
+23:00 輪於 23:05:36 完成，新增 206 樣本／1,027 母體。累計 1,318 個不同樣本／6,307 篇不同母體、218 媒體；299 樣本屬觀察前基準，1,019 屬 24 小時觀察期間。1,267 原頁可解析、44 次非 200、7 次請求例外。不能把 `round.errors=[]` 當成零抓取錯誤。
+
+太報六篇 `/specialtopic/content/<topic>/<id>` 專題文有 `.container > .special-text2` 正文，原來源僅 `.news-box-text` 因而漏抓。加入限定路徑與容器，配合來源設定接受專題容器，取文章 h3 去除網站尾綴與列表作者前綴；直接文字、nested paragraphs 及小節均保留，排除頁首刊登列及其他推薦文。六份原文取回 4,424／970／583／664／973／626 字正文，署名、刊登時間、summary 與引用均不變。
+
+六筆資料都重新抓取原文、完整 DB 快照試跑確認；原 body null、body_status missing、content_archive_hash null，沒有既存 sketch 或相似配對。這是確定的解析漏抓，不是恢復遭封存清除的正文。限定補正腳本須 live SHA 相符、原快照未變、無封存及配對，先落盤備份，只改 title/body/body_status/body_source，重新安排自然索引；不改取得時間，也不繞過公開全文七日規則。目前尚未寫入。
+
+鳳凰網 45709872 及新浪 45709996 末尾明示「红星新闻记者 周月潇」，品牌帳號誤當作者，加入限定末尾署名及最多兩列編輯／審核規則，不搜尋敘事中的記者提及。AP 45711388 原頁是 Linley Sanders、Sarah Jane Tribble、Ali Swenson、Fatima Hussein，45711389 是 Kaitlyn Humani、Barbara Ortutay；原 metadata 卻分別為機構及網站帳號 Dominic Hurry。限定 AP 文章路徑的 `.post-meta > .author` 及明示機構尾綴，正確分出撰稿人。姊妹淘 45409438／45490422／45711098 作者列把「綜合報導」當姓名，改取陳知微／黃語汐／周昭安，保留正常組織或非該格式署名。
+
+第六批 854 項爬蟲測試通過，型別與 Biome 通過（既有 String.raw info 提示未變）。全部 1,267 原頁與固定第五批解析器重播，僅 13 篇改變：6 太報標題／正文、7 署名；刊登時間與摘要全部不變。8 筆署名 fresh-source 試跑：7 需改、1 原本正確、0 不可取得、0 競態。另核對 SCMP Matthew Cheng、Tatler Edgar Chang 的可見作者連結，TVBS 羅凌筠的同篇結構化宣告。只宣稱指定欄位，沒有宣稱全文正確。
+
+人工記錄目前 186 份，涉及 185 篇、98 媒體，181 篇屬樣本；含局部／未解項目。第六批在独立 `tag-crawler-quality-batch6-20261007` 累積，以免改動已排程的第五批 checkout。發布須待第五批實際部署後相隔約一小時。
+
+證據：`batch6-all-sample-replay.json`、`batch6-taisounds-original-replay.json`、`batch6-taisounds-reviewed-plan.json`、`batch6-taisounds-dry-run.json`、`batch6-expanded-authors-dry-run.jsonl`、`batch6-seven-authors-plan.json`、`batch6-final-crawl-tests.log`、`batch6-final-tsc.log`、`batch6-final-biome.log`、`round7-five-media-byline-proof.json`、`sample-outcomes.json`、`review-coverage.json`。

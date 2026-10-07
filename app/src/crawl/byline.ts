@@ -348,6 +348,13 @@ export function extractLeadReporterNames(body: string): string[] {
 
 /** CNA syndicated reports credit their translator in the closing parenthesis. */
 export function extractClosingReporterNames(body: string): string[] {
+  // Red Star reports close with a standalone reporter line and optional
+  // editing/review lines. A reporter mentioned inside narrative is not a credit.
+  const redStar =
+    /(?:^|\n\s*\n)(?:红星新闻记者|紅星新聞記者)\s+([^\n。！？]{2,40})(?:\n\s*\n(?:编辑|編輯|审核|審核)\s+[^\n。！？]{2,40}){0,2}\s*$/u.exec(
+      body,
+    );
+  if (redStar) return creditedNames(redStar[1]);
   const closing = /[（(]\s*編譯\s*[:：]\s*([^（）()\n]{2,60})\s*[）)]\s*(?:\d{6,8})?\s*$/.exec(body);
   if (closing) return creditedNames(closing[1]);
   // Verified NTD syndicated reports end in a standalone reporting credit.

@@ -211,3 +211,11 @@ describe('body lead credits', () => {
     expect(extractLeadReporterNames('【大紀元2026年10月06日訊】校友歡聚中秋。\n\n（大紀元記者陸希休斯頓報導）')).toEqual([]);
   });
 });
+
+it('reads Red Star terminal reporters while excluding editors and narrative mentions', () => {
+  expect(extractClosingReporterNames('完整報導。\n\n红星新闻记者 周月潇\n\n编辑 邓旆光\n\n审核 何先菊')).toEqual(['周月潇']);
+  expect(extractClosingReporterNames('完整報導。\n\n紅星新聞記者 王小明')).toEqual(['王小明']);
+  expect(extractClosingReporterNames('红星新闻记者 周月潇曾在採訪中提問。')).toEqual([]);
+  expect(extractClosingReporterNames('完整報導。\n\n编辑 邓旆光\n\n审核 何先菊')).toEqual([]);
+  expect(extractClosingReporterNames('完整報導。\n\n红星新闻记者 周月潇\n\n後續另一篇報導。')).toEqual([]);
+});
