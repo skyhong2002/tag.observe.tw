@@ -645,3 +645,13 @@ Cool3c兩篇新樣本46007506／46007507的原站description將作者、完整h1
 batch13-cool3c-reviewed-plan.json、repair-batch13-cool3c.mjs、verify-batch13-cool3c.mjs完成；metadata only transaction保留正文／署名／tags／attributions／日期／取得時間，全snapshot比較、durable backup、exact live release與clean candidate guard，支援已套用row的只讀核對避免重复寫入；public body expiry政策保留。5篇乾跑passed，尚未apply。964crawl／attribution測試、tsc及全Biome通過。第十三批合計11不同候選：11摘要、3正文文字修正、6正文來源修正、0署名或日期歷史寫入。
 
 正式仍c63dacb已推送／部署／驗證；第十二批bfb34f2冻结、本地提交未推送／部署／套用，07:21發布timer維持。第十三批本章與Cool3c修正為本地提交，未推送／部署／套用，仍unfrozen且未排程，需距第十二批實際成功部署約一小時再發佈。24小時觀察至18:49:13仍active，最終報告尚未完成。
+
+### 10/8 06:47：美麗佳人JSON正文延伸閱讀與三篇原站摘要補齊
+
+美麗佳人45861884正文JSON包含最後獨立p.extendArticle「延伸閱讀：」與ul.extendArticle中8個其他文章標題。新增僅own marieclaire兩層分類／數字article URL、canonical exact、article直系.articleContent#contentID[itemprop=articleBody]唯一、article直系h1與JSONheadline exact、DOM整篇與JSON正文去除空白後完全一致時處理。只移除單一p.extendArticle與下一個ul.extendArticle同站article links的字面完整末尾suffix，後面如仍有正文就拒絕；保留章節、正文裡的延伸閱讀字樣與引用URL，不靠全文keyword切割、不選較短DOM正文造成章節遺失。HTML JSON正文、不一致canonical／ID／heading／prose／class／非最後清單／外站links均保持原文。
+
+2013成功HTML對冻结第十二批回放現在15篇：6iThome、5Cool3c、4MarieClaire；4MarieClaire僅body變化，沒有署名、日期或摘要parser變化。四篇45861884／45410174／45410171／45491179 fresh200、舊parser exact DB正文、剩餘正文是原JSON逐字prefix、精確publishedAt／authors保持，body由6041→5637、1611→1556、742→633、3796→3654字；每篇1既有sketch、0pairs／citations，全article snapshots和索引snapshot乾跑passed。後三篇DBsummary null／summary_source null，但原站與舊parser均提供相同實質meta:description，正文清理與摘要補齊在同transaction，沒有生成摘要或覆寫非空summary。
+
+prepare／repair／verify-batch13-marieclaire.mjs與batch13-marieclaire-reviewed-plan.json準備完成。完整article／sketch／citation／pairs與counterpart备份、exact release／clean candidate／similarity-index lock守衛；apply移除舊sketch與設定similarity_at null，等待原有natural index job，verifier核對DB／fresh原頁／public API、原日期、自然minhash及任何new natural pair的正文證據。4篇尚未apply，禁止重啟或另插索引job。972crawl／attribution tests、tsc及全Biome通過，formatter只更動指定files。
+
+第十三批合計15不同候選：14摘要、7正文文字修正、6iThome正文來源修正、0署名或日期歷史寫入；6iThome／5Cool3c／4MarieClaire乾跑通過。正式仍c63dacb已推送／部署／驗證；第十二批bfb34f2冻结、本地提交未推送／部署／回寫，07:21 timer維持；第十三批本地提交未推送／部署／回寫，仍未冻结或排程，下一批須距第十二批實際成功部署約一小時。24小時觀察至18:49:13持續active。

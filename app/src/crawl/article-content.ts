@@ -8,6 +8,7 @@ import {
   reporterNames,
 } from './byline.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
+import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
 import { womanyCollectionDescription } from './news-womany-collection.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
@@ -439,7 +440,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const collection = womanyCollectionDescription($, url);
   if (collection) return result(collection, 'feature:womany-description', contentLength(collection) >= 200 ? 'ok' : 'short');
   const candidates: Candidate[] = nodes
-    .map((node) => ({ body: structuredBody(node['articleBody']), source: 'ld+json' }))
+    .map((node) => ({ body: structuredBody(marieclaireStructuredBody($, url, node)), source: 'ld+json' }))
     .filter((candidate) => candidate.body);
   if (rules.bodyHtmlSelector) {
     for (const node of $(rules.bodyHtmlSelector).toArray()) {
