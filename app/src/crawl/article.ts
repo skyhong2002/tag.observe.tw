@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { type ArticleContent, extractArticleContent } from './article-content.ts';
+import { globalVoicesCredits } from './news-globalvoices-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
 import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 import { type ArticleSummary, extractSummary } from './summary.ts';
@@ -172,9 +173,13 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   const providerRaw = site?.providerSelector
     ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
     : providerName(html);
-  const provider = site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw;
+  const credits = globalVoicesCredits($, url);
+  const provider = credits?.provider ?? (site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw);
+  // Body cleanup can remove caption/header evidence used by summary extraction.
+  const summary = extractSummary($, url);
+  const content = extractArticleContent($, url, rules);
   return {
-    ...extractSummary($, url),
+    ...summary,
     tags: [...new Set(tags)].slice(0, 100),
     image: imageRaw ? resolveUrl(imageRaw, url) : null,
     description:
@@ -186,7 +191,8 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     publishedAt,
     provider,
     keywordSource,
-    ...extractArticleContent($, url, rules),
+    ...content,
+    authors: credits?.authors.length ? credits.authors : content.authors,
   };
 }
 

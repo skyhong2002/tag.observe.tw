@@ -543,3 +543,15 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 新增全球之聲與女人迷各2份指定欄位檢查，人工目前713紀錄／524不同文章／228媒體／520自動樣本。全球之聲own English作者、繁中譯者、主文原稿writer與publisher信用需要區分角色，尚未覆寫；女人迷樣本是collections专题landing而非個別新聞，標題／description有實質內容，空personal byline不應當錯誤；nested teaser短正文與取得分類另待查。其餘6家未取得200原頁，仍不能宣稱metadata正確。
 
 正式第十批183f87e已推送／部署／21篇修復驗證完成，不要重套。05:32主機probe仍主站與worker200，持續至05:57（不是零停機或用戶browser證明）。第十一批c63dacb固定本地提交，未推送／部署／套資料，06:16 publisher／06:11 probe timer仍active；禁止修改固定checkout。第十二批另有隔離checkout，本地提交後仍未推送／部署／套資料，最早距第十一批實際部署约一小時後發布，尚未排程。24小時觀察仍至18:49:13維持active。
+
+### 10/8 05:43：全球之聲原作者、英語版作者、譯者與來源分開核對
+
+全球之聲21818351的主文章header標示「作者 (English) Hong Kong Free Press」「譯者 (繁體中文) 臺北科技大學應用英文研究所翻譯小組」，主文第一段完整明示Hans Tse撰寫並於香港自由新聞刊登，且依夥伴協議重新刊登；同篇entry內methods段完整列出譯者Gwendolyn Liu、Riley Hung、Young Chung。21818350的own英語版作者是Anastasia Pestova、繁中譯者Tenn，主文第一段另外完整宣告原稿Alina Mikhalkina／NewsMaker以及內容共享、編譯轉載。不能把原稿writer／publisher與own English credit混為一個欄位或用其中一方蓋掉另一方。
+
+新增僅zht.globalvoices.org日期／數字文章path、main header bookmark與own URL一致、主文entry存在的信用抽取。只採主文章header明示English作者／繁中譯者的官方author链接，不採校對、日本語譯者、sidebar或其他文章作者。完整首段夥伴／共享宣告成立才加入原稿writer與provider；香港自由新聞發布帳號移為來源，Hans Tse保留為writer，已明示成員的翻譯小組以該篇完整methods名單取代。結果21818351署名Hans Tse、Gwendolyn Liu、Riley Hung、Young Chung；21818350保留Anastasia Pestova，並加入Alina Mikhalkina、Tenn。原稿HKFP與NewsMaker链接分别指向hongkongfp.com、newsmaker.md，新增來源identity，國別ZZ未猜測。已登錄且原頁明示供稿的媒體，即使國別未知，也應保留其來源identity，不需先猜出國別才辨識來源。
+
+兩篇fresh200原頁完整14欄核對通過，正文／日期／summary／tags保持，writer與citationindex同篇atomic修復；較早原稿日期不取代繁中版既有publication。2024文章超過既有七天public body期限，verification按article-retention檢查public body被masked、精確expiry與公開來源／署名，而DB正文及sketch/pair完整保存；沒有放寬public期限或改寫正文。
+
+955crawl／attribution、tsc、全專案Biome通過；1935份成功HTML對固定第十一批c63dacb回放13篇變化：先前11份source／Hakka summary加上2全球之聲provider／署名／引用，0正文／日期。維持先取得summary再進行正文DOM cleanup，1111兩份既有圖說摘要排除結果相同，沒有回歸。第十二批候選增至16篇不同文章：metadata4＋source12（含全球之聲2writer／source及客新聞1summary／source），合計4署名、3摘要、12來源、0正文／日期歷史寫入；metadata4與source12全部fresh完整快照乾跑成功。`batch12-gv-reviewed-plan.json`保存2篇新增before／update，source apply／verifier已涵蓋12篇且檢查fresh extraction与citationindex，正式資料未套用。
+
+目前正式仍183f87e已推送／部署、21篇驗證完成；第十一批c63dacb固定本地提交未推送／部署，06:16 timer。第十二批本地程式與報告提交，未推送／部署／套資料，仍未冻结或排程，發布需距第十一批實際部署約一小時。觀察持續至18:49:13維持active。

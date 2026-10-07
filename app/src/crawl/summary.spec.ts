@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { extractArticle } from './article.ts';
 import { parseFeed } from './feed.ts';
+import { sourceByMedia } from './registry.ts';
 import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
@@ -28,6 +29,7 @@ describe('publisher summary metadata', () => {
       summarySource: 'meta:description',
     });
     expect(extractArticle(`<meta name="description" content="${caption}">${copy}`, url).summary).toBeNull();
+    expect(extractArticle(`<meta name="description" content="${caption}">${copy}`, url, sourceByMedia('1111')!.article).summary).toBeNull();
     expect(
       extractArticle(
         `<meta name="description" content="${caption}">${copy.replace('<center>', '<div>').replace('</center>', '</div>')}`,

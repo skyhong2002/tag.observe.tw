@@ -52,6 +52,8 @@ const outlets: Outlet[] = [
   // Reviewed supplied-copy declarations; jurisdiction has not been established.
   outlet('mygopen', 'MyGoPen', 'ZZ', ['MyGoPen 事實查證網站']),
   outlet('prnewswire', '美通社', 'ZZ', ['PR Newswire']),
+  outlet('hkfp', '香港自由新聞', 'ZZ', ['Hong Kong Free Press', 'HKFP']),
+  outlet('newsmaker', 'NewsMaker', 'ZZ', []),
   outlet('guardian', 'The Guardian', 'ZZ', ['Guardian']),
   outlet('economist', 'The Economist', 'ZZ', ['Economist']),
   // Official dongqiudi.com footer identifies the outlet and its Tianjin ICP registration.
@@ -211,7 +213,8 @@ export function providerOutlet(provider: string): OutletIdentity | null {
   if (/(?:記者|记者|撰稿人|特約作者|\breporter\b|\bcorrespondent\b)/iu.test(value)) return null;
   const titled = titledMedia.get(value);
   const identity = outletIdentity(titled ?? value);
-  if (identity.countryCode !== 'ZZ' || Object.hasOwn(titles, identity.media)) return identity;
+  if (identity.countryCode !== 'ZZ' || Object.hasOwn(titles, identity.media) || outlets.some((outlet) => outlet.media === identity.media))
+    return identity;
   // Unknown organizations may retain their label, but a bare person's name
   // supplies no evidence that a new media organization exists.
   return /(?:新聞|傳媒|媒體|通訊社|日報|時報|週刊|周刊|雜誌|電視|廣播|\bnews\b|\bmedia\b|\bpress\b|\btimes\b)/iu.test(value)
