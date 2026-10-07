@@ -162,14 +162,20 @@ const authorization = new RegExp(`^${closeQuote}(?:授權|授权)(?:刊登|轉�
 
 function explicitContext(before: string, after: string): boolean {
   // A photograph credit does not establish the source of the article's text.
-  if (/(?:圖片|图片|照片|攝影|摄影|影像|圖|图)\s*(?:來源|来源|出處|出处)\s*[：:]?\s*[「『《“"]*\s*$/.test(before)) return false;
+  if (
+    /(?:圖片|图片|照片|攝影|摄影|影像|圖|图)\s*(?:來源|来源|出處|出处)\s*[：:]?\s*(?:(?:據|据|根據|根据)\s*)?[「『《“"]*\s*$/.test(before)
+  )
+    return false;
   const citingSources =
     /(?:據|据|根據|根据)\s*[「『《“"]*\s*$/.test(before) &&
     new RegExp(`^${closeQuote}援引(?:消息人士|知情人士)(?:報導|報道|报道)(?:稱|称)?(?=[，,:：]|$)`).test(after);
+  const citingMessage =
+    /(?:據|据|根據|根据)\s*[「『《“"]*\s*$/.test(before) &&
+    new RegExp(`^${closeQuote}(?:的)?消息(?:指出|指|稱|称|表示)[，,:：]`).test(after);
   const publishedCommentary =
     /^(?:今[（(]\d{1,2}[）)]日|\d{1,2}月\d{1,2}日)(?:刊登(?:評論|评论)(?=[，,])|引述)/u.test(after) ||
     /^星期[一二三四五六日天]在一篇(?:評論|评论)文章中(?=[，,])/u.test(after);
-  return report.test(after) || credit.test(before) || authorization.test(after) || citingSources || publishedCommentary;
+  return report.test(after) || credit.test(before) || authorization.test(after) || citingSources || citingMessage || publishedCommentary;
 }
 
 // Catalog display titles name outlets that attribution has no aliases for (菱傳媒 → rwnews).

@@ -131,6 +131,14 @@ describe('explicit media attribution', () => {
     ]);
   });
 
+  it('recognizes a quoted outlet with an explicit according-to message declaration', () => {
+    const result = extractAttributions('另一方面，根據《BBC》的消息指，賴斯亦接近與阿仙奴續長約。', 'stheadline');
+    expect(result.map((x) => [x.media, attributionRole(x)])).toEqual([['bbc', '引用']]);
+    expect(result[0].evidence).toContain('根據《BBC》的消息指');
+    expect(extractAttributions('圖片來源：根據《BBC》的消息指，照片是當天拍攝。', 'stheadline')).toEqual([]);
+    expect(extractAttributions('根據《BBC》的消息指數，本站研究員推算數值。BBC消息指控員工。', 'stheadline')).toEqual([]);
+  });
+
   it('does not infer an origin from mentions or reports about media companies', () => {
     expect(
       extractAttributions(

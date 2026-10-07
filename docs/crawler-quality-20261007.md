@@ -667,3 +667,13 @@ Miin45558768／46085197／46149826／46149825公開api.miin.cc story endpoint ex
 PNN45478221／45780646實際pnn5.aotter.net hosted viewer（一般pnn.tw response是殼）與其description明示的中央社own原文均fresh200，main viewer heading／origin title與canonical／兩方向正文overlap與closingparagraph／精確original publication／provider＋authors及DBbody一致。兩篇origin頁有獨立meta:description摘要，viewer無自己summary metadata；新增僅已完整驗證供稿原文後保存detail.summary與origin:meta:description來源，保持原文URL／供稿credit，不自行生成或誤稱viewer自己供應。兩篇full13field snapshot＋fresh viewer與original乾跑通過，摘要字面出現在供稿正文；PNN source資料取得或identity不符就拒絕，缺original summary維持null。batch13-pnn-evidence.mjs、reviewed-plan、prepare／repair／verify準備完成，尚未apply。
 
 974crawl／attribution tests、tsc／全Biome通過；第十三批合計21不同候選：20摘要、7正文文字修正、6iThome正文來源修正、0署名或日期歷史寫入，6iThome／5Cool3c／4MarieClaire／4MSN／2PNN各fresh完整snapshot乾跑通過。正式仍c63dacb已推送／部署／驗證；第十二批bfb34f2冻结、本地提交未推送／部署／回寫，07:21 timer；第十三批本地提交未推送／部署／回寫、unfrozen且未排程，須距第十二批實際成功部署約一小時再發佈。24小時觀察維持至18:49:13。
+
+### 10/8 06:57：星島明示BBC引用與過期pending記錄校正
+
+星島46150129主文完整「另一方面，根據《BBC》的消息指，賴斯亦接近與阿仙奴續長約。」實際指向BBC新聞消息；舊來源parser未涵蓋此句型。新增僅據／根據引導、可引號完整已知outlet、可「的」、消息指出／指／稱／表示＋明確逗號或冒號的citation cue；單純BBC提及、消息指數、消息指控、圖片信用不成立。來源為bbc、引用角色，既有已核對GB identity保留，不把BBC改為作者或猜供稿provider。新增圖片來源後包含根據的排除測試，先前測試發現的false-positive已修正。
+
+975crawl／attribution tests、tsc與全Biome通過；2013成功HTML回放現在16篇（之前15＋星島1，只有新增attributions變化）。Fresh200 own body／authors／summary／精確publication與DB相同，full14field snapshot乾跑passed；batch13-bbc-source-reviewed-plan.json、prepare／repair／verify準備完成，只更新attributions與citation index，同transaction備份完整metadata／sketch／pairs／citations，正文及日期不變，尚未apply。
+
+舊Kingtop45408331／45408332的pending狀態已過期，現在fresh原頁、DB、public API的summary與summarySource均null且一致；batch13-kingtop-state-review.json verifiedtrue，没有重复資料寫入。ccsn0405兩篇及iw_times／peopo／guancha／lihpao／nikkei／musou共8篇屬已部署parser但歷史未回寫／selected fields／fresh不可用限制未解除；依各batch7／9／11 live verification與對現live的git ancestry證據標記parser-deployed-historical-review-retained，不能誤標成所有metadata已修正。保留原有date精度與upstream／availability排除理由，final報告須區分parser部署與歷史資料驗證。
+
+第十三批合計22不同候選：20摘要、7正文文字修正、6iThome正文來源修正、1BBC引用、0署名或日期歷史寫入；6iThome／5Cool3c／4MarieClaire／4MSN／2PNN／1BBC各fresh完整snapshot乾跑通過。正式仍c63dacb已推送／部署／驗證，readonly probe PID801457執行至07:01；第十二批bfb34f2冻结、本地提交未推送／部署／回寫，07:21 timer；第十三批本地提交未推送／部署／回寫、unfrozen未排程，須距第十二批實際成功部署約一小時再發佈。24小時觀察至18:49:13持續active，07:00下一輪自然抽樣尚未開始。
