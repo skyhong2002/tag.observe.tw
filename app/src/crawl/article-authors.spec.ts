@@ -7,6 +7,16 @@ const ld = (body: string, name = '網站管理員') =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body, author: { '@type': 'Person', name } })}</script>`;
 
 describe('reporter identity from the selected article', () => {
+  it('preserves CCSN direct-text lead before paragraph-wrapped prose', () => {
+    const lead = '【記者于郁金/臺南報導】市府今日公布新的公共政策。';
+    const html = `<div class="post-body"><div class="separator"><img src="photo.jpg"></div>${lead}<span><a name="more"></a></span><p>${prose}</p></div><aside>記者李小明/台北報導</aside>`;
+    expect(extractArticle(html, 'https://www.ccsn0405.com/2026/10/blog-post_761.html')).toMatchObject({
+      authors: ['于郁金'],
+      body: `${lead}${prose}`,
+      bodySource: 'selector',
+    });
+    expect(extractArticle(html, 'https://www.ccsn0405.com/search/label/news').body ?? '').not.toContain(lead);
+  });
   it('prefers the visible opening reporter over a WordPress account', () => {
     expect(extractArticle(ld(prose) + `<div class="entry-content"><p>記者蔡佳坊／嘉義報導</p><p>${prose}</p></div>`, url).authors).toEqual([
       '蔡佳坊',
