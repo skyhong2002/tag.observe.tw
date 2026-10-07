@@ -525,3 +525,5 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 台灣好報RSS description含實質publisher excerpt，加上「〈本篇標題〉這篇文章最早發佈於《台灣好報》。」，已限feed:description、與本篇標題完全相符的精確尾句移除，保留原站導讀及截斷標记，不从正文另生摘要；錯誤標題或metadata來源不移除。fresh官方feed10項全部只有summary改變，標題／URL／日期不變，`batch11-goodnews-feed-replay.json`保存證據；兩篇既有feed摘要的歷史修復尚未準備，不計入本批13篇候選。
 
 951crawl／attribution、tsc、全專案Biome通過；1935成功HTML對固定第十批回放44篇變化，其中台灣線報14篇只有或包含bodySource標記變更（正文相同）、1篇新增蔡宗憲署名，看中國3篇新增明示編譯記者；原有3篇TechNews去UI正文、Epoch時間及其他變化範圍維持。第十一批本地提交仍未推送／部署／套資料；下一批須距第十批實際05:13:52完成約一小時。24小時觀察持續至18:49:13。
+
+05:17補充：第十批14metadata、5source與2health combined共21篇修復已套用並留備份；health2篇原文／完整DB／公開API／citation/sketch/pair核對通過。其他兩組驗證首次在公開API回傳500時停止，第二個metadata及第三個source請求受影響；重查45408380與45709901皆200。首次失敗報告與log另存first-attempt，尚待完整重新驗證，不把已套用等同已驗證，也不重新套用資料。
