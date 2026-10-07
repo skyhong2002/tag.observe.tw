@@ -3,6 +3,22 @@ import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
 import { attributionRole, extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
 
 describe('explicit media attribution', () => {
+  it('recognizes a declared published commentary source without guessing its country', () => {
+    for (const body of [
+      '北韓官媒朝中社今（7）日刊登評論，批評對台軍售。',
+      '据凤凰卫视报道，朝中社10月7日引述国际事务分析师的文章。',
+      '朝鲜国家通讯社朝中社星期三在一篇评论文章中，引用分析师的话。',
+    ]) {
+      const source = extractAttributions(body, 'voachinese').find((x) => x.media === 'kcna');
+      expect(source).toMatchObject({ name: '朝中社', countryCode: 'ZZ', country: '未知', kind: 'explicit' });
+      expect(attributionRole(source!)).toBe('引用');
+    }
+    for (const body of ['朝中社將刊登評論。', '訪談提到朝中社的名稱。', '圖片來源：朝中社', '朝中社的評論風格引發討論。'])
+      expect(extractAttributions(body, 'voachinese')).toEqual([]);
+    expect(extractAttributions('朝中社今（7）日刊登評論，批評政策。', 'kcna')).toEqual([]);
+    expect(extractAttributions('Reuters10月7日引述消息人士。', 'voachinese')).toEqual([]);
+    expect(extractAttributions('朝中社123ABC报道新闻。', 'voachinese')).toEqual([]);
+  });
   it('resolves the declared simplified Guancha provider to its reviewed catalog identity', () => {
     expect(extractAttributions('新聞內容。', 'ifeng', '观察者网')).toContainEqual({
       media: 'guancha',

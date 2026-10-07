@@ -46,6 +46,9 @@ const outlets: Outlet[] = [
   outlet('gamerant', 'Game Rant', 'ZZ', ['GameRant']),
   // RFI explicitly cites this label; jurisdiction awaits independent evidence.
   outlet('bloomberg', '彭博社', 'ZZ', ['Bloomberg']),
+  // Reviewed articles explicitly identify 朝中社 as their commentary source;
+  // no independent jurisdiction evidence has been recorded in this audit.
+  outlet('kcna', '朝中社', 'ZZ', []),
   outlet('guardian', 'The Guardian', 'ZZ', ['Guardian']),
   outlet('economist', 'The Economist', 'ZZ', ['Economist']),
   // Official dongqiudi.com footer identifies the outlet and its Tianjin ICP registration.
@@ -138,8 +141,8 @@ const mentions = outlets.map((o) => ({
   pattern: new RegExp(
     `(?<![A-Za-z0-9_])(?:${o.aliases
       .sort((a, b) => b.length - a.length)
-      .map(escapeRegex)
-      .join('|')})(?![A-Za-z0-9_])`,
+      .map((alias) => `${escapeRegex(alias)}${/\p{Script=Han}/u.test(alias) ? '(?![A-Za-z_])' : '(?![A-Za-z0-9_])'}`)
+      .join('|')})`,
     'gi',
   ),
 }));
@@ -157,7 +160,10 @@ function explicitContext(before: string, after: string): boolean {
   const citingSources =
     /(?:據|据|根據|根据)\s*[「『《“"]*\s*$/.test(before) &&
     new RegExp(`^${closeQuote}援引(?:消息人士|知情人士)(?:報導|報道|报道)(?:稱|称)?(?=[，,:：]|$)`).test(after);
-  return report.test(after) || credit.test(before) || authorization.test(after) || citingSources;
+  const publishedCommentary =
+    /^(?:今[（(]\d{1,2}[）)]日|\d{1,2}月\d{1,2}日)(?:刊登(?:評論|评论)(?=[，,])|引述)/u.test(after) ||
+    /^星期[一二三四五六日天]在一篇(?:評論|评论)文章中(?=[，,])/u.test(after);
+  return report.test(after) || credit.test(before) || authorization.test(after) || citingSources || publishedCommentary;
 }
 
 // Catalog display titles name outlets that attribution has no aliases for (菱傳媒 → rwnews).

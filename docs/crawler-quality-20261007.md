@@ -435,3 +435,13 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 927項crawl／attribution測試、tsc、全專案Biome通过（2個既有info），1,794份原頁對固定第九批d2f9a58回放24篇變化：14青年日報日期與body來源標記、7台灣生活新聞署名、2中評社署名、1緯來摘要；正文內容皆無變。9署名／1摘要的10篇候選全部fresh-original與完整13欄DB快照核對通過，日期／標題／tags／引用不寫入；仍未套用。證據 `batch10-uncovered-markup-proof.json`、`batch10-ydn-date-proof.json`、`batch10-all-sample-replay.json`、`batch10-expanded-metadata-reviewed-plan.json`、`batch10-metadata-reviewed-plan.json`、`batch10-crawl-tests.log`、`batch10-tsc.log`、`batch10-biome.log`。
 
 第九批固定d2f9a58仍只在本地，04:08發布timer等待中，線上仍8958290。第十批在獨立checkout累積，尚未推送／部署／套資料，下一次發布須距第九批實際部署約一小時，不能拿排程時間當完成時間。24小時觀察至18:49:13持續中。
+
+### 10/8 03:43：第十批補上明示評論引用
+
+年代45489775、鳳凰45559164、壹電視45709901及美國之音45862947主文直接引用朝中社已刊登的評論，原parser沒有這個agency identity／刊登cue。新增朝中社identity kcna，國別保留ZZ未知，未以政治事件或敘述中的國名猜country。只接受完整明示已刊登評論或日期加引述、星期加「在一篇評論文章中」的原文；一般提及名稱、未來刊登計畫、照片來源與自家引用不新增citation，role仍為引用而非供稿來源。測試同時發現中文media alias緊接日期數字會被ASCII單字邊界排除，改為中文名稱允許數字相鄰，英文alias保留原邊界；例如Reuters10月不會誤識別為Reuters媒體。
+
+4篇原文均重新取得200且正文與DB逐字相同，新增kcna以外的引用与既有正規化引用完全相同，完整12欄snapshot乾跑通過；所有既存正文、署名、日期、tags、配對與sketch皆不寫入，正式更新只補attributions與對應citation index。第十批合計14篇不同文章，9署名、1摘要、4引用，日期寫入0，全部尚未套資料。新增 `batch10-reviewed-source-plan.json`、4份`batch10-source-ID.html.gz`、`batch10-source-fresh-dry-run.json`；修復守門仍要求exact HEAD／live與clean checkout，網路重新核對完成後再重檢，保留durable backup。
+
+最新928項crawl／attribution測試與tsc、全專案Biome通過；1,794原頁對固定第九批回放28篇變化，含4篇新增朝中社引用，正文內容仍沒有改變。其他24篇為既已核對的14青年日報日期解析、7台灣生活新聞／2中評社署名、1緯來摘要。世界新聞網日期歧義與中評社「衛星新聞」短稱尚未取得獨立唯一身份證據，這些不猜、不改資料。
+
+人工530筆紀錄、378篇不同文章、168家媒體，包括部分及指定欄位核對。第九批04:08timer仍等待、線上仍8958290；第十批本地累積未推送／部署／套資料，下次發布以第九批實際完成後約一小時為準。24小時觀察仍待18:49:13到期。
