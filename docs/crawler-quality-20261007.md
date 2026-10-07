@@ -235,3 +235,21 @@
 大愛 description 等同全份逐字稿，新增原文全文一致時排除為摘要；保持独立 description 的摘要正常。兩篇正式 summary 已經 null，因此無摘要清除或正文回填需求。第六批資料署名補正計畫增至 9 筆；6 太報正文計畫不變，全部未寫入。最新 858 項爬蟲測試、型別、Biome 通過；1,267 原頁完整重播共 15 篇改變，刊登時間全部不變。大愛的兩篇只是一般解析結果與先前 specialised pipeline 對齊，不宣稱修過既有正文。
 
 Bnext 44696550、早安健康 45595849 是 topic／special landing，標題與描述具有文章專屬意義，沒有可確認記者或刊登時間；正文是否有可用獨立導讀仍待 specialised 檢查，不以 generic missing 判定文章漏抓。新增原頁欄位檢驗記錄，證據 `batch6-daai-and-landing-review-proof.json`、`batch6-daai-author-dry-run.jsonl`、`batch6-daai-second-author-dry-run.jsonl`、`batch6-nine-authors-plan.json`。23:24 已啟動第五批部署前後服務探測，session 56466，預計 23:43 結束，探測非終端時不得重啟或另开副本。
+
+## 第五批實際上線與完整驗證（23:30–23:42）
+
+候選 `17d6bde24d856d5abb08e638452a6747e63cece1` 於 23:32:34.538 安裝成功並恢復派工。23:30:52.813 暫停新派工，active 已為 0，排空在同秒完成；新派工暫停 101.725 秒。先前爬蟲 `repeat:crawl-hourly:1791386636639` 已於 23:29:32.390 自然完成，queue job 狀態 completed、attemptsMade 1，沒有複製／重啟該 job。初次正式驗證 worker PID481094、gateway481575、web481548 均指向候選；首頁200、worker健康、queue未暫停、無新增失敗 job ID（7個基準失敗）。公視兩筆摘要 DB／API 再核對原文相符，schema migration 未重做。
+
+網站可用性與 job 排空分開記錄：196 次主機側探測中，23:32:16／21／27 回應503、23:32:33回應502、23:32:38恢復200；五秒左右探測節奏不能推算精確停機秒數。23:31:34 build 期間另有首頁 timeout；23:25:39 worker health 單次 timeout 發生在更新前。後續外部部署期間23:33:43／23:37:12亦有首頁 timeout，最後23:42:59首頁200、worker健康。沒有使用者機器上的瀏覽器驗證，不宣稱网站零停機。
+
+資料補正：15 常規筆（11標題、3正文、1新華社 attribution）在重新抓取原文確認後套用；另鳳凰網45640508正文／觀察者網 attribution與兩個既存配對一同備份後更新，兩個分數0.7939849624／0.7775891341仍成立。兩筆署名王作葵、刘恺／张红日 fresh-source套用，0不可取得／0競態；是新聞45640094及大成報45640161清除圖說／纯署名省略摘要，資料庫及公開API均null。`verify-batch5-repairs.mjs` 核對全部修正欄位及其他快照欄位相符，citation衍生索引也相符。四份 durable 原始備份已保存。
+
+四篇正文於23:35:48自然建索引，23:36:42回讀驗證 sketch bytes 與正式 minhash 重算完全相符，chars1137／752／828／2905，兩個既存配對分數未被覆蓋。沒有為補正強制重跑或中斷 similarity job。第五批資料補正及索引驗證完成，後续不用重做。
+
+同時有其他網站工作切換服務：23:33正式版改為 `bc4be106f09bed1aa37e31f854f91691f2db2072`，其後為 `6868b8ba1243248930315c7876931aae65e37af1`。兩版都是候選17d6bde的後續，crawl/jobs/db/similarity程式差異為空。原配對補正當遇live SHA變動時在任何寫入前拒絕操作，確認代碼相同且現行三服務／API正常後才按新SHA套用。bc4版CI37644775031成功；23:40再次驗證6868三服務、首頁200、worker健康、queue未暫停、無新增failed IDs。外部服務切換沒有本稽核逐job排空證據，不宣稱其零中斷。外部網站提交已保留；第六批重基底至6868，仍未推送或上線，下一批不早於00:40:02（以最新觀測驗證時間保守間隔一小時），發佈前重查正式版。
+
+證據：`batch5-deployment.json`、`batch5-natural-crawl-completion.json`、`batch5-initial-live-verification.json`、`batch5-external-bc4-live-verification.json`、`batch5-live-verification.json`、`batch5-before-apply-fresh-verification.json`、`batch5-repairs-verification.json`、`batch5-natural-reindex-verification.json`、`batch5-service-probes.jsonl`、`batch5-service-transition.log`、`batch5-external-service-transition.log`，以及四份 batch5 原始備份。
+
+23:44 第六批追加引用：鳳凰網45709873原文「据美联社和哥伦比亚广播公司等媒体报道」是明示聯合引用，舊規則因後面不是立刻「報導」而漏了美聯社。新增限定段首完整「據／根據＋列舉＋等媒體報導」格式，只把精確匹配的已知媒體標籤加入；CBS原名仍只是原文證據，不猜媒體鍵或國别，不把圖片來源或單純提及算引用。提供者新華社也有頁首明示，準備一筆來源／引用補正，重新抓原文確認正文、標題、時間不變，完整快照試跑通過，尚未寫入。括號結尾「海洋」沒有清楚角色標記，作者身份保留待查。
+
+最新880項爬蟲／引用測試、型別與格式檢查通過；以不可變17d6bde正式release重播全部1267份原頁，第六批僅16篇改變（前15篇加一筆美聯社引用），刊登時間全部不變。計畫目前6太報正文／標題、9署名、1来源／引用，皆待下一小時批次。取樣未增加，最新人工紀錄209份（190篇不同文章、101媒體、186篇屬取樣集合），含局部／未解／重複驗證，不宣稱全部樣本人工合格。

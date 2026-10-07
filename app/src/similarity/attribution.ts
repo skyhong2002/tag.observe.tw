@@ -231,6 +231,18 @@ export function extractAttributions(body: string, publisher: string, provider?: 
   const dispatch = cnaDispatch.exec(body);
   if (dispatch) add(outletIdentity('cna'), dispatch[0]);
   for (const sentence of body.split(/[。！？!?；;\n]+/)) {
+    // Joint reports can name a second outlet before the reporting verb.
+    // Require the complete opening declaration and exact known outlet labels;
+    // unrecognized peers do not acquire guessed identities or countries.
+    const joint = /^\s*(?:据|據|根據|根据)(.{2,70}?)等(?:媒体|媒體)(?:報導|報道|报道)(?=[，,:：]|$)/u.exec(sentence);
+    if (joint) {
+      for (const label of joint[1].split(/\s*(?:[、，,]|以及|和|與|与|及)\s*/u)) {
+        const name = label.trim().replace(/^[「『《“"]|[」』》”"]$/g, '');
+        const identity = outlets.find((outlet) => outlet.aliases.some((alias) => alias.toLowerCase() === name.toLowerCase()));
+        if (identity) add(identityOnly(identity), joint[0]);
+      }
+    }
+
     for (const { outlet: identity, pattern } of mentions) {
       if (identity.media === own) continue;
       for (const match of sentence.matchAll(pattern)) {

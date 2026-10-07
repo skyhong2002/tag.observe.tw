@@ -179,3 +179,15 @@ describe('outlet identity', () => {
     expect(outletIdentity('unlisted')).toEqual({ media: 'unlisted', name: 'unlisted', country: '未知', countryCode: 'ZZ' });
   });
 });
+
+it('recognizes joint reporting declarations without guessing unknown peers or quoted mentions', () => {
+  expect(extractAttributions('据美联社和哥伦比亚广播公司等媒体报道，公布了法庭文件。', 'ifeng').map((x) => x.media)).toEqual(['ap']);
+  expect(extractAttributions('根據《美聯社》與「路透社」等媒體報導，官方發布公告。', 'ifeng').map((x) => x.media)).toEqual([
+    'ap',
+    'reuters',
+  ]);
+  expect(extractAttributions('据美联社和路透社等媒体报道，官方發布公告。', 'ap').map((x) => x.media)).toEqual(['reuters']);
+  expect(extractAttributions('美联社和路透社等媒体参加了记者会。', 'ifeng')).toEqual([]);
+  expect(extractAttributions('照片據美聯社與路透社等媒體報導，活動結束。', 'ifeng')).toEqual([]);
+  expect(extractAttributions('据反对美联社和未知新闻公司等媒体报道，活动结束。', 'ifeng')).toEqual([]);
+});
