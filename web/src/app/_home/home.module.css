@@ -274,7 +274,7 @@
   .campOutletsSlot { order: 2; min-height: 385px; }
 }
 
-/* A compact summary above the masthead; media details live on /media/. */
+/* A compact summary below the main content; media details live on /media/. */
 .campShareLinks { display: flex; flex-shrink: 0; gap: 12px; font-size: 12px; color: var(--accent); }
 .campShareUnavailable { display: flex; align-items: center; justify-content: space-around; gap: 8px; min-height: 28px; font-size: 11px; color: var(--muted); }
 .campShareUnavailable > span { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
@@ -290,3 +290,8 @@
   .campShareStatus { order: 2; font-size: 11px; }
   .campShareUnavailable { min-height: 38px; }
 }
+
+/* The volume summary follows the main content, before the footer. */
+.band + .campShare { margin-top: 28px; }
+.rankingRetry { margin-top: 8px; color: var(--accent); cursor: pointer; }
+.rankingRetry:disabled { opacity: .6; cursor: wait; }

@@ -93,7 +93,23 @@ export interface TagStatus {
 }
 
 async function get<T>(path: string, revalidate = 60): Promise<T> {
-  const res = await fetch(API_ORIGIN + path, { next: { revalidate }, headers: { accept: 'application/json' } });
+  // Recover from a transient cached response or transport failure within the
+  // same server render, rather than leaving the page with a frozen placeholder.
+  try {
+    const res = await fetch(API_ORIGIN + path, {
+      next: { revalidate },
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.ok) return (await res.json()) as T;
+  } catch {
+    // The fresh attempt below also covers network errors and invalid JSON.
+  }
+  const res = await fetch(API_ORIGIN + path, {
+    cache: 'no-store',
+    headers: { accept: 'application/json' },
+    signal: AbortSignal.timeout(6000),
+  });
   if (!res.ok) throw new Error(`${path} -> ${res.status}`);
   return res.json() as Promise<T>;
 }

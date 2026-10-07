@@ -8,8 +8,7 @@ import MediaIcon from '@/components/MediaIcon';
 import { EventMethod, HomeMethod, MediaCardMethod } from '@/components/MethodNotes';
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
-import Sparkline from '@/components/Sparkline';
-import { type RankingEntry, taipei } from '@/lib/api';
+import { taipei } from '@/lib/api';
 import {
   type CampGap,
   DEMO_CAMPS,
@@ -30,6 +29,7 @@ import { updatedAtOf } from '@/lib/topic-update.mts';
 import EventRecovery from './_home/EventRecovery';
 import CampShareSummary from './_home/CampShareSummary';
 import HeadlineSidebar from './_home/HeadlineSidebar';
+import HomeRanking from './_home/HomeRanking';
 import styles from './_home/home.module.css';
 import Masthead from './_home/Masthead';
 import NewsImage from './_home/NewsImage';
@@ -73,18 +73,6 @@ function StoryMeta({ story, trail = 'h-5 w-16' }: { story: DemoStory; trail?: st
       <Movement e={story.event} />
       <RankTrail e={story.event} className={trail} />
     </p>
-  );
-}
-
-function RankChange({ e }: { e: RankingEntry }) {
-  if (e.new) return <span className={styles.rankNew}>新</span>;
-  if (e.rank24h === null || e.rank24h === e.rank) return <span className={styles.rankSame}>－</span>;
-  const up = e.rank24h > e.rank;
-  return (
-    <span className={up ? styles.rankUp : styles.rankDown} title={`24 小時前第 ${e.rank24h} 名`}>
-      {up ? '▲' : '▼'}
-      {Math.abs(e.rank24h - e.rank)}
-    </span>
   );
 }
 
@@ -304,8 +292,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </a>
       <SiteHeader mastheadId="masthead" />
       <main id="news-main" className={styles.main}>
-        <CampShareSummary initialShare={data.campShare} />
-
         <Masthead date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
 
         {data.events?.stale && <p className={styles.notice}>事件分群更新延遲，目前顯示最近一次的結果。</p>}
@@ -318,28 +304,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 完整排行 <Arrow />
               </Link>
             </div>
-            {!ranking && <p className={styles.notice}>排行資料更新中</p>}
-            <ol className={styles.ranking}>
-              {ranking?.entries.slice(0, 8).map((e, i) => (
-                <li key={e.tag}>
-                  <Link href={`/tag/${encodeURIComponent(e.tag)}/`}>
-                    <span className={styles.rank}>{String(i + 1).padStart(2, '0')}</span>
-                    <span className={styles.rankBody}>
-                      <strong>
-                        {e.tag} <RankChange e={e} />
-                      </strong>
-                      <small>
-                        {Object.keys(e.media).length} 家媒體 · {e.count} 篇
-                      </small>
-                    </span>
-                    <span className={styles.rankTrend}>
-                      {e.trend && e.trend.length > 1 && <Sparkline values={e.trend.map((p) => p.average24h)} className="h-6 w-14" />}
-                      <span className={styles.burst}>{e.burst === null ? '歷史不足' : `↗ ${e.burst.toFixed(1)}`}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
+            <HomeRanking initialRanking={ranking} />
 
             <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>記者動態</h2>
@@ -488,6 +453,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </div>
           </section>
         </div>
+
+        <CampShareSummary initialShare={data.campShare} />
 
         <SiteFooter
           notes={
