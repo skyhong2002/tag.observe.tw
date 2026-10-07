@@ -113,3 +113,7 @@
 另抽查自然取得的新唐人亞太 45606669、聯合早報 45606562、PChome 45600449；它們在 20:55:55–57 自動入庫，非人工回填。重新請求原頁後，儲存摘要與媒體 description 逐字一致，來源正確為 `meta:description`，未混稱為編輯摘要。正式逐項核對紀錄增至 94 筆。21:00 抽樣已啟動，使用 eecd30e 與摘要欄位；尚未完成的這輪不提前計入總數。
 
 完整證據見 artifacts 中 `batch2-deployment.json`、`batch2-live-verification.json`、`batch2-row-repair-verification.json`、`batch2-authors-and-cleanup-verification.json`、`batch2-natural-summary-verification.json` 及原始備份。
+
+## 第三批待發布：AMM 轉載署名及來源
+
+21:00 抽樣中，AMM 45559582、45559584 的開頭明示「商傳媒｜方承業／綜合外電報導」「商傳媒｜吳承岳／台北報導」，但入庫署名與內容提供者為空。補上商傳媒署名格式及限定 AMM 正文首段的來源辨識；兩份原 HTML 回放正文、發布時間不變，取得正確人名及商傳媒引用來源。828 項 crawl 測試、型別檢查通過，兩筆來源回填計畫預演成功。此節修正尚未部署，既有資料也尚未回填；不早於 21:55:46 累積批次發布。

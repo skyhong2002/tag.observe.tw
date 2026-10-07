@@ -79,6 +79,13 @@ const SITES: Site[] = [
     preferPrintedPublication: true,
   },
   {
+    host: 'ammtw.com',
+    path: /^\/\d+\/?$/,
+    bodySelector: '.ak-post-content',
+    providerSelector: '.ak-post-content p',
+    providerPattern: /^\s*(商傳媒)\s*[｜|]/u,
+  },
+  {
     host: 'taiwanhot.net',
     path: /^\/news\/\d+(?:\/|$)/,
     bodySelector: 'article .news_content',

@@ -60,6 +60,17 @@ describe('reporter identity from the selected article', () => {
       extractArticle(html.replace('記者葉志成 ／桃園報導', '生活中心／綜合報導'), 'https://taiwanhot.net/news/1150397/story').authors,
     ).toEqual(['生活中心／綜合報導']);
   });
+  it.each([
+    ['商傳媒｜方承業／綜合外電報導', '方承業'],
+    ['商傳媒｜吳承岳／台北報導', '吳承岳'],
+  ])('separates syndicated Sun Media writer from the provider: %s', (credit, name) => {
+    const html = `<article><div class="ak-post-content"><p>${credit}</p><p>${prose}</p></div></article>`;
+    const detail = extractArticle(html, 'https://ammtw.com/174127');
+    expect(detail.authors).toEqual([name]);
+    expect(detail.provider).toBe('商傳媒');
+    const unrelated = `<article><div class="ak-post-content"><p>${prose}</p></div></article><aside><p>${credit}</p></aside>`;
+    expect(extractArticle(unrelated, 'https://ammtw.com/174127')).toMatchObject({ authors: [], provider: null });
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });
