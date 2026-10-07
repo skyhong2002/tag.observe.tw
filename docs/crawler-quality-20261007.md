@@ -353,3 +353,15 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 第八批902項crawl／attribution測試與tsc通過；對固定第七批重播1600原頁，僅14份奧丁丁body來源標記改變，其中1份作者修正；正文／日期／其他媒體無變。只有1筆作者待補，不重写14筆正文或開新crawler/index job。第八批本地工作尚未推送／部署，下一次發布須距第七批實際發布約一小時，不能以已排定時間當成已完成部署。
 
 證據 `batch8-all-sample-replay.json`、`batch8-owlting-fresh-proof.json`、`batch8-one-author-dry-run.jsonl`、`batch8-crawl-tests.log`、`batch8-tsc.log`、`one-am-additional-media-proof.json`。24小時觀察仍待18:49:13到期。
+
+## 世界新聞網正文／來源修正與日期歧義（01:49，第八批未發布）
+
+世界新聞網45860649正文段首的波蘭是p內a.trigger_tag文字，與一般tag導航不同；原generic cleaner誤移除這類anchor，造成句中關鍵字遺失。改為保留p中的trigger_tag，仍由父導航widget排除標籤選單。限定WorldJournal /wj/story/類別/文章ID，主文章.article-content__editor排除.next-page，原上一則／下一則不再混入正文。主文章作者欄完整「中央社華沙7日綜合外電報導」／「中央社斯德哥爾摩7日綜合外電報導」正規化為機構作者中央社，另解析供稿來源中央社；正文法新社／NHK引用保持分開，圖說路透不會成為文章來源。
+
+903項crawl／attribution測試與tsc通過；1600原頁對固定第七批重播28份改變：14奧丁丁來源標記（其中1作者）、14WorldJournal正文及來源標記（其中2作者／供稿來源），其他媒體與刊登日期不變。14份WorldJournal fresh originals與完整DB快照準備／試跑全數通過，22個既存跨媒體配對重算仍有效；所有配對counterpart均不是同批另一目標，完整保存counterpart snapshots。正文補正只還原當前原文inline anchor文字、去除上一則／下一則控制項，其餘段落逐字保留，沒有任意重抓全批body或重新開crawler/index job。
+
+部分頁面的tagging／前後導航隨網站更新，舊parser對fresh HTML不一定等於之前DB，但目前可逐段證明新正文只補回原HTMLa.trigger_tag中被省略的字，未改新闻敘述；完整相等的原頁與樣本另保留。14筆正文、2筆CNA署名／來源與1筆奧丁丁作者皆為第八批未套資料計畫。套用後須自然重建14份sketch、驗證22配對／citation index與DB/API；不得把試跑當成已修資料。
+
+45860643發現日期歧義：RSS item連結121617/9800286宣告16:25Z，該路徑原頁也宣告16:25Z；canonical指向121232/9800286，其原頁則是06:27Z（02:27-04:00），兩頁作者／正文相同、permalink文章ID相同。只抓canonical時看似RSS日期錯誤，但重抓RSS原連結提出相反證據，因此原DB feed時間保持。没有新增WorldJournal preferPagePublication規則、沒有跨日改標籤／引用／配對日期；日期來源語義列為待查，不能把不同路徑同內容當成唯一確定的日期證據。
+
+第七批仍固定251790d，01:50read-only probe／01:53:55publisher排程保留；第八批代碼本地已提交未推送，上線仍06512c9。證據 `batch8-worldjournal-reviewed-plan.json`、`batch8-worldjournal-dry-run.json`、`batch8-worldjournal-feed.xml.gz`、`batch8-worldjournal-feed-route-proof.json`、`batch8-worldjournal-feed-route.html.gz`、`batch8-worldjournal-replay.log`、`batch8-expanded-tests.log`、`batch8-expanded-tsc.log`。24小時觀察繼續。
