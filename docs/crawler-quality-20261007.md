@@ -193,3 +193,7 @@
 新公視 45618788（13:13:32Z 取得、13:27:05Z 抓正文）自然寫入 95 字編輯摘要，原頁 `.post-article > .articleimg`、資料庫與公開 API 完全相符，不是手動回填。
 
 證據：`batch4-live-verification.json`、`batch4-external-service-transition.log`、`batch4-row-repair-applied.json`、`batch4-paired-body-applied.json`、`batch4-author-repair-applied.jsonl`、`batch4-summary-applied.json`、`batch4-repairs-verification.json`、4 份 batch4 原資料備份、`round6-natural-pts-summary-verification.json`。第五批現仍僅本地保存，發佈間隔改以新正式版觀測驗證時間起算，最早 23:30:46，避免重複重啟。
+
+22:35:51 自然 similarity 排程已完成兩篇正文重新建索引。回讀 45640433／45640434 的 chars 分別 803／523，sketch bytes 與以當前完整正文重算的 minhash 完全一致；既有 PChome 配對分數仍為 0.6920700309。證據 `batch4-natural-reindex-verification.json`，無需額外重啟 worker 或強制另開索引 job。第四批資料補正驗證完成。
+
+22:36 覆蓋口徑：1,112 自動樣本／212 媒體；152 份人工記錄涉及 151 篇不同文章、85 個媒體，其中 147 篇屬取樣集合。人工檢驗含局部欄位及待查項目，不把全部自動樣本算成人工驗證。
