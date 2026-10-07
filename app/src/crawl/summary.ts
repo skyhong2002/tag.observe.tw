@@ -54,6 +54,8 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const titles = [$('h1').first().text(), $('meta[property="og:title"]').attr('content'), $('title').text()]
     .filter((value): value is string => !!value)
     .map(normalized);
+  const isBannedbook = /^https?:\/\/(?:www\.)?bannedbook\.org\//i.test(url);
+  const promotion = /^來源[:：].{1,60}文章內容並不代表本網立場和觀點。\s*(?:【江峰優品】推出|(?:#[^\s]+\s+)*「年代電視」是完全數位)/u;
   const candidates: Array<[unknown, string]> = [];
   if (selector) candidates.push([$(selector).first().text(), 'article:selector']);
   for (const node of articleNodes($, url)) candidates.push([node.abstract, 'jsonld:abstract']);
@@ -65,7 +67,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     candidates.push([$(selector).first().attr('content'), source]);
   for (const [value, source] of candidates) {
     const result = publisherSummary(value, source);
-    if (result.summary && !titles.includes(result.summary)) return result;
+    if (result.summary && !titles.includes(result.summary) && !(isBannedbook && promotion.test(result.summary))) return result;
   }
   return { summary: null, summarySource: null };
 }

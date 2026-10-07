@@ -80,6 +80,17 @@ describe('publisher summary metadata', () => {
     expect(publisherSummary(prose, 'meta:description').summary).toBe(prose);
     expect(publisherSummary('淡江戰略研究所博士生 宋磊分析區域情勢。', 'meta:description').summary).not.toBeNull();
   });
+  it('rejects reviewed video promotion templates while retaining topical descriptions', () => {
+    const prefix = '來源: 年代向錢看 , 文章內容並不代表本網立場和觀點。 ';
+    const article = (text: string, host = 'www.bannedbook.org') =>
+      extractArticle(`<meta property="og:description" content="${text}">`, `https://${host}/bnews/zh-tw/bannedvideo/20261007/2367547.html`);
+    for (const text of ['【江峰優品】推出 **55 折大優惠**！', '#沈伯洋 #趙少康 #國民黨 「年代電視」是完全數位 […]']) {
+      expect(article(prefix + text).summary).toBeNull();
+      expect(article(prefix + text, 'example.org').summary).not.toBeNull();
+    }
+    const topic = prefix + '倒數52天!雙北大戰!藍綠對決!誰能催出關鍵基本盤? […]';
+    expect(article(topic).summary).toBe(topic);
+  });
   it('preserves RSS description and Atom summary provenance without using full Atom content', () => {
     const rss = parseFeed(
       '<rss><channel><item><title>標題</title><link>https://example.org/a</link><description>RSS摘要</description></item></channel></rss>',
