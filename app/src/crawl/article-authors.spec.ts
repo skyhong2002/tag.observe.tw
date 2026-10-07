@@ -50,6 +50,16 @@ describe('reporter identity from the selected article', () => {
     const html = `<span class="credit">中央社／ 台北7日電</span><article><p>${prose}</p></article>`;
     expect(extractArticle(html, url, { authorSelector: '.credit' }).authors).toEqual(['中央社']);
   });
+  it('reads TaiwanHot header credits and local publication without using related stories', () => {
+    const html = `<div class="content_wrapper"><div class="top_title"><h2 class="news_title">本文標題</h2><span class="reporter_name">記者葉志成 ／桃園報導</span><span class="post_time">2026-10-07 18:54</span></div><article><div class="news_content"><p>${prose}</p></div></article></div><aside><span class="reporter_name">記者別人／台北報導</span><span class="post_time">2026-10-07 20:00</span></aside>`;
+    const detail = extractArticle(html, 'https://taiwanhot.net/news/1150397/story');
+    expect(detail.authors).toEqual(['葉志成']);
+    expect(detail.publishedAt?.toISOString()).toBe('2026-10-07T10:54:00.000Z');
+    expect(detail.body).toBe(prose);
+    expect(
+      extractArticle(html.replace('記者葉志成 ／桃園報導', '生活中心／綜合報導'), 'https://taiwanhot.net/news/1150397/story').authors,
+    ).toEqual(['生活中心／綜合報導']);
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });

@@ -79,6 +79,15 @@ const SITES: Site[] = [
     preferPrintedPublication: true,
   },
   {
+    host: 'taiwanhot.net',
+    path: /^\/news\/\d+(?:\/|$)/,
+    bodySelector: 'article .news_content',
+    titleSelector: '.content_wrapper > .top_title .news_title',
+    authorSelector: '.content_wrapper > .top_title .reporter_name',
+    publishedSelector: '.content_wrapper > .top_title .post_time',
+    publishedAttribute: null,
+  },
+  {
     host: 'taronews.tw',
     path: /^\/\d{4}\/\d{2}\/\d{2}\/\d+\/$/,
     bodySelector: 'article .entry-content',
