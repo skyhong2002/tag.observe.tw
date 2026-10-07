@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { type ArticleContent, extractArticleContent } from './article-content.ts';
 import { publicArticleHtml } from './news-public-html.ts';
-import { newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
+import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 import { between, decodeEntities, normalizeTag, resolveUrl } from './text.ts';
 
 export interface ArticleDetail extends ArticleContent {
@@ -162,10 +162,9 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     meta('meta[property="og:image"], meta[name="og:image"], meta[itemprop="image"], meta[name="twitter:image"]') ??
     (rules.imageMarker ? between(html, rules.imageMarker.start, rules.imageMarker.end, 0, 1000) : null);
   const canonicalRaw = $('link[rel="canonical"]').first().attr('href')?.trim() || meta('meta[property="og:url"]');
-  const printedTime = parsePublished(siteEvidence.publishedRaw);
-  const publishedAt = siteEvidence.preferPrintedPublication
-    ? (printedTime ?? publishedTime($, html))
-    : (publishedTime($, html) ?? printedTime);
+  const printedTime = siteEvidence.correctUtcClock ? null : parsePublished(siteEvidence.publishedRaw);
+  const declaredTime = correctPublicationClock(publishedTime($, html), siteEvidence);
+  const publishedAt = siteEvidence.preferPrintedPublication ? (printedTime ?? declaredTime) : (declaredTime ?? printedTime);
   return {
     tags: [...new Set(tags)].slice(0, 100),
     image: imageRaw ? resolveUrl(imageRaw, url) : null,

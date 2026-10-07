@@ -31,6 +31,21 @@ function fixture(pages: Record<string, string | Partial<FetchResult> | Error>) {
 }
 
 describe('discoverNews', () => {
+  it('uses corroborated publication clocks in discovery as well as article re-extraction', async () => {
+    const site = 'https://www.epochtimes.com/';
+    const url = `${site}b5/26/10/7/n14865341.htm`;
+    const f = fixture({
+      [`${site}feed`]: rss(url, '2026-10-07T10:28:08Z'),
+      [url]: `<title>完整報導的發布時區</title><script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2026-10-07T18:28:08Z"}</script><div id="artbody" itemprop="articleBody"><header><time datetime="2026-10-07T18:28:08+08:00">更新</time></header><p>${body}</p></div>`,
+    });
+    const result = await discoverNews(
+      { homeUrl: site, feedUrls: [`${site}feed`], feedOnly: true },
+      { ...f.options, now: () => new Date('2026-10-07T11:00:00Z') },
+    );
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].publishedAt?.toISOString()).toBe('2026-10-07T10:28:08.000Z');
+  });
+
   it('carries a verified provider from the article to persistence independently of its reporter', async () => {
     const site = 'https://tw.aboluowang.com/';
     const url = `${site}2026/1002/2442777.html`;

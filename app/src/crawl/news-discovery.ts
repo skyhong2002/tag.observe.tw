@@ -8,7 +8,7 @@ import { discoverMsn } from './news-msn.ts';
 import { discoverNhk } from './news-nhk.ts';
 import { discoverPnn } from './news-pnn.ts';
 import { parsePublicJson, publicArticleHtml } from './news-public-html.ts';
-import { newsSiteEvidence } from './news-site-rules.ts';
+import { correctPublicationClock, newsSiteEvidence } from './news-site-rules.ts';
 import { decodeEntities } from './text.ts';
 
 export interface NewsDiscoveryConfig {
@@ -148,7 +148,8 @@ function pageEvidence($: cheerio.CheerioAPI, url: string, html: string) {
   const site = newsSiteEvidence($, url);
   const printedPublication = parsePublished(site.publishedRaw);
   if ('preferPrintedPublication' in site && site.preferPrintedPublication === true && printedPublication) publishedAt = printedPublication;
-  else publishedAt ??= printedPublication;
+  else if (!('correctUtcClock' in site && site.correctUtcClock)) publishedAt ??= printedPublication;
+  publishedAt = correctPublicationClock(publishedAt, site);
   title ??= site.title;
   isArticle ||= site.isArticle;
   // This publisher's article template labels news as Product in JSON-LD.

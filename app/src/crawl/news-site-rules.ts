@@ -15,10 +15,13 @@ export interface NewsSiteRules {
   titleSelector?: string;
   authorSelector?: string;
   publishedSelector?: string;
-  publishedAttribute?: string;
+  /** null explicitly selects visible text instead of a datetime attribute. */
+  publishedAttribute?: string | null;
   publicationPattern?: RegExp;
   publicationFormat?: 'epoch-ms' | 'epoch-seconds' | 'day-first' | 'utc' | 'roc';
   preferPrintedPublication?: boolean;
+  /** Correct a known false UTC declaration only when its wall clock agrees with printed evidence. */
+  correctUtcClock?: boolean;
   providerSelector?: string;
   bodyExcludeSelector?: string;
   /** Keep the container even when a page wrapper's class looks like ads/share UI (#ad-root, under-ads). */
@@ -57,6 +60,22 @@ const SITES: Site[] = [
     publishedSelector: '.post-header time.post-published:contains("發表時間")',
     publishedAttribute: 'datetime',
     preferPrintedPublication: true,
+  },
+  {
+    host: 'epochtimes.com',
+    path: /^\/(?:b5|gb)\/\d{2,4}\/\d{1,2}\/\d{1,2}\/n\d+\.htm$/,
+    bodySelector: '#artbody[itemprop="articleBody"]',
+    publishedSelector: '#artbody > header time[datetime]',
+    publishedAttribute: 'datetime',
+    correctUtcClock: true,
+  },
+  {
+    host: 'theinitium.com',
+    path: /^\/\d{8}-[^/]+\/$/,
+    bodySelector: 'article',
+    publishedSelector: '.post-info time',
+    publishedAttribute: null,
+    correctUtcClock: true,
   },
   // EBC's JSON-LD rewrites punctuation and merges headlines into the prose.
   {
@@ -405,7 +424,12 @@ export function newsSiteEvidence($: CheerioAPI, url: string) {
     for (const node of $(rules.publishedSelector).toArray()) {
       const element = $(node);
       let raw =
-        (rules.publishedAttribute ? element.attr(rules.publishedAttribute) : (element.attr('datetime') ?? element.text().trim())) ?? '';
+        (rules.publishedAttribute === null
+          ? element.text().trim()
+          : rules.publishedAttribute
+            ? element.attr(rules.publishedAttribute)
+            : (element.attr('datetime') ?? element.text().trim())) ?? '';
+      if (rules.correctUtcClock && !/\d{1,2}:\d{2}/.test(raw)) continue;
       if (rules.publicationFormat === 'epoch-seconds' && /^\d{10}$/.test(raw)) {
         publishedRaw = new Date(Number(raw) * 1000).toISOString();
         break;
@@ -425,5 +449,28 @@ export function newsSiteEvidence($: CheerioAPI, url: string) {
       if (publishedRaw) break;
     }
   }
-  return { title, publishedRaw, isArticle: !!title, preferPrintedPublication: rules.preferPrintedPublication };
+  return {
+    title,
+    publishedRaw,
+    isArticle: !!title,
+    preferPrintedPublication: rules.preferPrintedPublication,
+    correctUtcClock: rules.correctUtcClock,
+  };
+}
+
+/** A later update is not publication evidence. Only its agreeing local clock
+ * can corroborate a reviewed publisher's false UTC zone (also checked in RSS).
+ * Compare through minutes because some visible headers omit seconds; retain
+ * the declared seconds/milliseconds, never copy the update timestamp. */
+export function correctPublicationClock(
+  declared: Date | null,
+  evidence: { publishedRaw: string | null; correctUtcClock?: boolean },
+): Date | null {
+  if (!declared || !evidence.correctUtcClock || !evidence.publishedRaw) return declared;
+  const raw = evidence.publishedRaw;
+  if (declared.toISOString().slice(0, 16) !== raw.slice(0, 16)) return declared;
+  const zone = /([+-])(\d{2}):(\d{2})$/.exec(raw);
+  if (!zone) return declared;
+  const minutes = (Number(zone[2]) * 60 + Number(zone[3])) * (zone[1] === '+' ? 1 : -1);
+  return new Date(declared.getTime() - minutes * 60000);
 }

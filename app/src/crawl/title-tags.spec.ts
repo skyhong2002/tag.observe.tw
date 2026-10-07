@@ -32,6 +32,11 @@ describe('tagsFromTitle', () => {
     expect(tagsFromTitle('《切割的人生》上映', vocab)).toEqual([]);
     expect(tagsFromTitle('人生很難', vocab)).toEqual([]);
   });
+  it('does not turn English grammatical words into news metadata', () => {
+    const english = buildVocab(['for', 'The', 'and', 'US', 'AI', 'The Hope'].map((tag) => ({ tag, n: 100 })));
+    expect(tagsFromTitle("Sri Lanka's former first lady arrested for alleged fraud", english)).toEqual([]);
+    expect(tagsFromTitle('The Hope opens an AI project in the US', english)).toEqual(['The Hope', 'AI', 'US']);
+  });
   it('caps the number of tags', () => {
     expect(tagsFromTitle('川普 習近平 AI 輝達 亞運 桃園', vocab, 3)).toHaveLength(3);
   });

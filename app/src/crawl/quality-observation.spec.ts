@@ -105,3 +105,21 @@ describe('additional independently evidenced credits', () => {
     expect(extractAttributions('圖片來源：GameRant', '4gamers')).toEqual([]);
   });
 });
+
+describe('feed-corroborated publication zone errors', () => {
+  const epoch = (declared: string | null, updated = '2026-10-07T18:28:08+08:00') =>
+    `${declared ? `<script type="application/ld+json">{"@type":"NewsArticle","datePublished":"${declared}"}</script>` : ''}<div id="artbody" itemprop="articleBody"><header><time datetime="${updated}">更新時間</time></header><p>${prose}</p></div>`;
+  it('corrects Epoch Times false UTC only when the printed local clock agrees', () => {
+    const url = 'https://www.epochtimes.com/b5/26/10/7/n14865341.htm';
+    expect(extractArticle(epoch('2026-10-07T18:28:08Z'), url).publishedAt?.toISOString()).toBe('2026-10-07T10:28:08.000Z');
+    expect(extractArticle(epoch('2026-10-07T10:28:08Z'), url).publishedAt?.toISOString()).toBe('2026-10-07T10:28:08.000Z');
+    expect(extractArticle(epoch('2026-10-06T10:28:08Z'), url).publishedAt?.toISOString()).toBe('2026-10-06T10:28:08.000Z');
+    expect(extractArticle(epoch(null), url).publishedAt).toBeNull();
+  });
+  it('retains Initium seconds when its visible publication clock only shows minutes', () => {
+    const html = `<meta property="article:published_time" content="2026-10-07T17:30:41.000Z"><div class="post-info"><time datetime="2026-10-07">2026年10月7日 17:30</time></div><article><p>${prose}</p></article>`;
+    expect(extractArticle(html, 'https://theinitium.com/20261007-initium-audio-example/').publishedAt?.toISOString()).toBe(
+      '2026-10-07T09:30:41.000Z',
+    );
+  });
+});
