@@ -281,3 +281,5 @@ DW 六篇限定中文文章路径與主文章容器，讀取 author-details 的 
 第六批補正計畫累計14正文（8太報＋6DW）、22署名、6來源／引用（1鳳凰網＋4央廣＋1天天上新聞）、4摘要。署名fresh-source試跑及來源guard試跑已完成；正文配對計畫不變。最新版893項爬蟲／引用測試、tsc通過；全部1450原頁重播55篇欄位差異包含MKnews從missing補出的parser日期（DB未變），其餘解析刊登時間不變。人工記錄248份、222篇不同文章、105媒體，218篇屬自動樣本；仍是指定欄位及局部檢驗，非全部資料已人工驗證。部署前仍須等間隔、CI成功、現行版本驗證與自然job排空。
 
 證據：`ttv-main-feed.xml.gz`、`midnight-selected-markup-proof.json`、`batch6-midnight-reviewed-proof.json`、`batch6-ttv-natural-retry-plan.json`、`batch6-expanded-authors-plan.json`、`batch6-22-authors-dry-run.jsonl`、`batch6-expanded-source-plan.json`、`batch6-expanded-source-dry-run.json`、`batch6-reviewed-summary-plan.json`、`batch6-summary-dry-run.json`、`batch6-expanded-final-tests.log`、`batch6-expanded-final-tsc.log`。
+
+00:28 鏡報44942252已於00:17:47由正常crawler重試成功，正文247字、三段原文逐字相符，呂健豪與刊登12:06+08正確，summary也與原頁相符；00:25:50自然索引。没有人工寫入、沒有重新開job，原先body-blocked待查已由新證據解除。證據 `mirrordaily-44942252-midnight-retry.json`、原頁gzip、`mirrordaily-44942252-natural-retry-verification.json`。
