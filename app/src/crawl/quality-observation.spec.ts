@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { extractAttributions } from '../similarity/attribution.ts';
 import { extractArticle } from './article.ts';
+import { sourceByMedia } from './registry.ts';
+import { stripTitleSuffix } from './text.ts';
 
 const prose = 'This is the full factual report, with context and evidence from the original publisher. '.repeat(5);
 
@@ -31,6 +33,18 @@ describe('2026-10-07 live quality samples', () => {
 });
 
 describe('other observed main-article credits and UI', () => {
+  it('keeps Awakening article prose apart from its donation footer, logo and cover caption', () => {
+    const html = `<meta property="og:title" content="原始新聞標題 - 台灣醒報 Awakening News Networks"><header><h1>台灣醒報</h1></header>
+      <div class="article-header"><h3>原始新聞標題</h3></div><article><div class="markdown-body"><div class="cover"><div class="description">攝影圖說</div></div>
+      <p>【台灣醒報記者呂翔禾台北報導】${prose}</p><p>報導最後一段。</p></div><div class="support-message"><p>捐款成為醒報天使，我們會寄給您抵稅收據！</p></div></article>`;
+    const detail = extractArticle(html, 'https://www.anntw.com/articles/20261007-ZbPj');
+    expect(detail.title).toBe('原始新聞標題');
+    expect(detail.authors).toEqual(['呂翔禾']);
+    expect(detail.body).toContain(prose.trim());
+    expect(detail.body).toContain('報導最後一段。');
+    expect(detail.body).not.toMatch(/攝影圖說|抵稅收據|醒報天使/);
+    expect(stripTitleSuffix('原始新聞標題 - 台灣醒報 Awakening News Networks', sourceByMedia('anntw')?.titleSuffix)).toBe('原始新聞標題');
+  });
   it('reads the Focus Taiwan closing byline without its end-item/editor code', () => {
     const html = `<meta name="author" content="Focus Taiwan - CNA English News"><div class="PrimarySide"><div class="paragraph"><p>${prose}</p></div><div class="author"><p>(By Wang Cheng-chung and Matthew Mazzetta)</p><p>Enditem/AW</p></div></div>`;
     expect(extractArticle(html, 'https://focustaiwan.tw/politics/202610070020').authors).toEqual(['Wang Cheng-chung', 'Matthew Mazzetta']);

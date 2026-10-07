@@ -40,6 +40,13 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'anntw.com',
+    path: /^\/articles\/\d{8}-[A-Za-z0-9]+$/,
+    bodySelector: 'article > .markdown-body',
+    titleSelector: '.article-header h3',
+    bodyExcludeSelector: '.cover',
+  },
+  {
     host: 'upmedia.mg',
     path: /^\/tw\/[^/]+\/[^/]+\/\d+(?:\?|$)/,
     bodySelector: '.news-box-text',
