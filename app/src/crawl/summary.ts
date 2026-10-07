@@ -1,6 +1,7 @@
 import type { CheerioAPI } from 'cheerio';
 import { articleNodes } from './article-content.ts';
 import { reporterNames } from './byline.ts';
+import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
 export interface ArticleSummary {
@@ -141,6 +142,13 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   }
   if (selector) candidates.push([$(selector).first().text(), 'article:selector']);
   for (const node of articleNodes($, url)) candidates.push([node.abstract, 'jsonld:abstract']);
+  const ithome = ithomeFeatureDescription($, url);
+  if (ithome) {
+    for (const node of $('meta[name="description"]').toArray()) {
+      const supplied = $(node).attr('content');
+      if (supplied && normalized(supplied) === normalized(ithome.body)) candidates.push([supplied, 'meta:description']);
+    }
+  }
   for (const [selector, source] of [
     ['meta[name="summary"]', 'meta:summary'],
     ['meta[name="description"]', 'meta:description'],

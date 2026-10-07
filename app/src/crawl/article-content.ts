@@ -7,6 +7,7 @@ import {
   normalizeAuthorCredits,
   reporterNames,
 } from './byline.ts';
+import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { womanyCollectionDescription } from './news-womany-collection.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
@@ -400,7 +401,13 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   });
   if (rules.bodyExcludeSelector) $(rules.bodyExcludeSelector).remove();
   const nodes = articleNodes($, url);
-  const result = (body: string | null, bodySource: string, bodyStatus: ArticleContent['bodyStatus']): ArticleContent => {
+  const result = (
+    body: string | null,
+    bodySource: string,
+    bodyStatus: ArticleContent['bodyStatus'],
+    authorDom = $,
+    authorValues = configuredValues,
+  ): ArticleContent => {
     let authorBody = body ?? '';
     if (body && bodySource === 'ld+json') {
       // Structured prose sometimes omits the visible opening byline. Accept
@@ -416,9 +423,19 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       });
       if (matching) authorBody = matching.body;
     }
-    return { body, bodySource, bodyStatus, authors: extractAuthors($, nodes, rules, authorBody, configuredValues) };
+    return { body, bodySource, bodyStatus, authors: extractAuthors(authorDom, nodes, rules, authorBody, authorValues) };
   };
   if (isExcerpt) return result(null, 'publisher:excerpt', 'short');
+  const feature = ithomeFeatureDescription($, url);
+  if (feature) {
+    const own = cheerio.load(($('head').html() ?? '') + $.html($(feature.selector)));
+    const values = (rules.authorSelector ? scopedAuthorElements(own, rules.authorSelector, true) : []).flatMap((value) => {
+      if (!rules.authorPattern) return [value];
+      const name = rules.authorPattern.exec(value)?.[1];
+      return name ? [name] : [];
+    });
+    return result(feature.body, 'feature:ithome-description', contentLength(feature.body) >= 200 ? 'ok' : 'short', own, values);
+  }
   const collection = womanyCollectionDescription($, url);
   if (collection) return result(collection, 'feature:womany-description', contentLength(collection) >= 200 ? 'ok' : 'short');
   const candidates: Candidate[] = nodes

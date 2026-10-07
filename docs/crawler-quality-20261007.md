@@ -623,3 +623,15 @@ batch11-full-repairs-verification.json verifiedtrue：13不同文章（metadata1
 第十二批固定bfb34f2，本地已提交，未推送／部署／回寫；30不同候選（metadata7＋source20＋Womanybody3）乾跑全部通過，962crawl／attribution＋tsc／全Biome，7commit gitleaks clean，排程07:21 exactpublisher、07:16→08:06 probe，兩timer active。不能再修改冻结checkout；第十三批另在audit/crawler-quality-batch13-20261008工作目錄承接新修正，本章報告提交為本地狀態，不是線上版本。
 
 24小時抽樣仍維持active至18:49:13，14輪2086樣本／235媒體、229媒體已做指定欄位檢查；原頁不可取得與partial fields／首頁錯誤分類仍須如實列入最終報告。最终bounded round、完整24h報告与completion audit尚未完成。
+
+### 10/8 06:35：iThome Drupal專題本身介紹與第二個description
+
+iThome10668468／10668465的/article/170511、170893是node-featured-story專題，own article#node-ID有header > h1、row-fluid > field-name-body > field-items > field-item > p；旗下/news/報導是其他node-info。舊通用最長article候選可能取較長的旗下story介紹，10668465因此抓到「2025年新興資安投資」片段，而真正自有介紹是整體預算／DevSecOps／FIDO重點。另外兩份歷史樣本也可重現正文混入，不能把linked story短介紹當成專題正文。
+
+新增僅ithome host／article數字path／canonical own identity／唯一node-featured-story且node-ID相同／main header h1及直系body field的介紹擷取，保留原站段落，bodySource feature:ithome-description；真正intro仍short，不加入linked stories達長度門檻。署名用own article和head的隔離DOM核對配置authorSelector，排除其他node-info的submitted作者，不猜測姓名；六篇own publication仍null，DB既有日期保留，不由標題年份或旗下文章日期推測。
+
+原站description有重複meta，第一個空白，第二個是真正編輯介紹。僅已驗證own feature identity／main field時，讀取內容與該介紹完全一致的原站description，記meta:description，不由普通正文首段生成摘要，不採不同文章description，也不改通用meta順序。新增實際失敗案例測試：空白第一meta／自身供應第二meta、较長related article、related author、mismatchedID／canonical／kind／news path／不一致或空白第二meta。963crawl／attribution、tsc、全專案Biome通過，2013成功HTML對固定第十二批bfb34f2回放只有6篇iThome變化，3篇body文字改為own介紹，6summary／bodySource變化，0作者／日期parser變化。
+
+fresh200完整DB snapshots＋old parser exact DBbody＋own metadata／intro核對6篇通過：10668468、10668465、10668457、10668454、10668443、10668494。summary均供應於原頁且與主介紹相同；3正文內容修正、3既有正文相同，6provenance修正，保留「這也了雲原生生態系」等原站文句，不自行改稿。全部0existing pairs／sketches／citations，combined body／summary6乾跑通過。batch13-ithome-reviewed-plan.json與repair／verifier保留完整article backup／exact live release／clean candidate／index lock／single-apply guard；摘要與介紹同transaction。既有過期public body的mask及expiry維持，沒有強制重索引、回寫日期或套正式資料。
+
+正式仍c63dacb已推送／部署且第十一批13修復全驗證；第十二批bfb34f2已冻结、本地提交未推送／部署／套用，07:21timer；第十三批本地程式／報告提交、未推送／部署／套資料，尚未冻结或排程，下一次需距第十二批實際部署約一小時。24小時觀察維持active至18:49:13。
