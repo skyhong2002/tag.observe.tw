@@ -50,6 +50,10 @@ describe('legacyRoute', () => {
       '/media/rti/articles/',
       '/media/rti/articles/?cursor=123',
       '/media/setn/articles/?cursor=456',
+      '/media/cna/references',
+      '/media/cna/references/',
+      '/media/cna/references/?hours=48&direction=incoming&page=2',
+      '/media/reuters/references/?hours=168',
       '/article/123/',
       '/_next/static/a.js',
       '/api/v1/ranking',
@@ -113,6 +117,22 @@ describe('gateway', () => {
     expect(head.statusCode).toBe(200);
     expect(head.headers.location).toBeUndefined();
     expect(head.body).toBe('');
+  });
+  it('proxies source evidence pages with their period, direction and pagination intact', async () => {
+    hits = [];
+    const paths = [
+      '/media/cna/references',
+      '/media/cna/references/',
+      '/media/cna/references/?hours=48&direction=outgoing&page=2',
+      '/media/reuters/references/?hours=168',
+    ];
+    for (const path of paths) {
+      const response = await app.inject({ url: path, headers: external() });
+      expect(response.statusCode, path).toBe(200);
+      expect(response.headers.location, path).toBeUndefined();
+      expect(response.body, path).toBe(`<h1>next:${path}</h1>`);
+    }
+    expect(hits).toEqual(paths.map((path) => `GET ${path}`));
   });
   it('rejects non-GET methods on pages', async () => {
     expect((await app.inject({ method: 'POST', url: '/' })).statusCode).toBe(405);
