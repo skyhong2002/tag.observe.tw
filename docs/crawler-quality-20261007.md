@@ -329,3 +329,15 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 45816975原description附有tags與slug，但同頁.post_introduction獨立導讀與og:description逐字相同。限INSIDE /article/數字-路徑優先取此導讀，記來源article:selector；description及正文、作者、日期仍保留原值。fresh原頁確認導讀與分享描述一致，為原站摘要而非從正文生成。另準備1筆summary及來源補正，與原7笔摘要排除及2笔署名同批發布；尚未推送、部署或套資料。
 
 擴充後897項crawl／attribution測試、tsc與Biome通過，1450原頁重播12篇改變，只涉及摘要／來源及2筆署名，正文／刊登日期皆未變。8筆摘要fresh-source精確snapshot試跑全數通過。證據 `batch7-inside-proof.json`、`batch7-inside-summary-plan.json`、`batch7-expanded-summary-dry-run.log`、`batch7-expanded-tests.log`、`batch7-expanded-tsc.log`、`batch7-all-sample-replay.json`。
+
+## 01:00樣本與第七批最終累積（01:11）
+
+第9輪已正常完成，新增154樣本，累計1662篇／224媒體、8242筆不同取得母體；1600份原頁成功解析、51份HTTP非200、11份請求或解析例外。新增12篇原頁指定欄位核對涵蓋ENEWS、美麗佳人、新頭殼、NOWnews、法廣、漾新聞、好視新聞與新頭條等。ENEWS照片中的郭懿慧攝不能證明新聞作者；好視的政府帳號作者角色仍待查；美麗佳人正文尾部旅遊相關連結範圍待查，沒有宣稱全文已正確。
+
+中華鱻傳媒主文章Blogger時間放在.post .post-timestamp的abbr.published[itemprop=datePublished] title欄，原parser為null；新增限定URL／主文章／明示日期欄規則。01:00兩篇page23:43:00／00:04:00+08，比DB保留的RSS23:43:23／00:04:59精度低，因此只補parser，沒有改DB日期、沒有任意補秒。鉅亨兩篇page無description但原feed摘要有意義；summary-differs自動旗標不等於錯誤，不清原feed摘要。
+
+漾新聞三筆段首【漾新聞記者陳雯萍／高雄報導】明示writer，原organizationaccount漾新聞改為陳雯萍。法廣45855888明示「據彭博社援引消息人士報導稱」卻漏引用；新增完整限定cue與Bloomberg別名。重播另見天下45360694獨立資料來源列Bloomberg, Guardian, Economist、電腦王阿達45409625資料來源bloomberg與奧丁丁45709445根據Bloomberg報導，fresh三頁正文逐字相符後準備來源補正。獨立完整reference-list取每個已知標籤，不把圖片來源或列表外其他提及擴成引用。新identity國家保留ZZ，Bloomberg官方contact403不是國別證據，沒有根據事件所在地猜國家。
+
+第七批總計6署名、10摘要、4來源／引用資料補正；兩篇台灣華報本輪新錯摘要併入10筆，兩篇舊資料alreadyNULL保持不寫。901項crawl／attribution測試與tsc通過；6作者及10摘要fresh-source試跑通過，4來源完整snapshot試跑通過，套用前還要重抓全部4原頁確認。所有資料仍未套用，代碼本地commit尚未推送。發布不早於01:53:55，要求main／live／candidate一致與精確CI成功，再暫停新派工、等active自然結束；不能因等待逾時重開job。
+
+證據 `one-am-original-markup-proof.json`、`batch7-one-am-fresh-proof.json`、`batch7-followup-fresh-proof.json`、`batch7-reviewed-source-plan.json`、`batch7-six-authors-dry-run.jsonl`、`batch7-ten-summary-dry-run.log`、`batch7-four-source-dry-run.json`、`batch7-complete-tests.log`、`batch7-complete-tsc.log`。24小時觀察仍進行中，第六批資料不可重套。
