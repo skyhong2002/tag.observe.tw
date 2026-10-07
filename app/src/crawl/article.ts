@@ -59,6 +59,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     ...(site
       ? {
           bodySelector: site.bodySelector,
+          authorSelector: site.authorSelector,
           bodyHtmlSelector: site.bodyHtmlSelector,
           bodyExcludeSelector: site.bodyExcludeSelector,
           trustContainer: site.trustContainer,

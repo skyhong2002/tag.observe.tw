@@ -1,0 +1,65 @@
+import { describe, expect, it } from 'vitest';
+import { extractAttributions } from '../similarity/attribution.ts';
+import { extractArticle } from './article.ts';
+
+const prose = 'This is the full factual report, with context and evidence from the original publisher. '.repeat(5);
+
+describe('2026-10-07 live quality samples', () => {
+  it('uses AFP report publication and desk credit, not the nested claim date/author', () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({ '@type': 'ClaimReview', itemReviewed: { '@type': 'Claim', datePublished: '2026-09-30', author: { name: 'Multiple Sources' } }, datePublished: '2026-10-07 11:30' })}</script>
+      <article><div class="sub-header"><h1>AI image misrepresented as Myanmar repatriation</h1><span class="person-link"><a>AFP Thailand</a></span>
+      <li class="date-full-format" data-type="created" data-utc-time="1791365448">Published on October 7, 2026 at 11:30</li></div>
+      <div class="wrapper-body"><p>${prose}</p></div></article><aside><span class="person-link">Unrelated author</span></aside>`;
+    const detail = extractArticle(html, 'https://factcheck.afp.com/doc.afp.com.D28L6T4');
+    expect(detail.publishedAt?.toISOString()).toBe('2026-10-07T09:30:48.000Z');
+    expect(detail.authors).toEqual(['AFP Thailand']);
+  });
+  it('keeps NTD reporting names separate from the syndicated provider', () => {
+    const html = `<meta property="og:article:author" content="新唐人電視台"><article itemprop="articleBody"><p>${prose}</p><p>新唐人電視台記者安琪、臣倩綜合報導</p></article>`;
+    const detail = extractArticle(html, 'https://tw.aboluowang.com/2026/1007/2442777.html');
+    expect(detail.authors).toEqual(['安琪', '臣倩']);
+    expect(detail.provider).toBe('新唐人電視台');
+    expect(extractAttributions(detail.body ?? '', 'aboluowang', detail.provider).map((c) => c.media)).toEqual(['ntdtv']);
+  });
+  it('does not turn an NTD reporter mentioned inside prose into the author', () => {
+    const detail = extractArticle(
+      `<article><p>${prose}</p><p>受訪者感謝新唐人電視台記者安琪、臣倩綜合報導</p></article>`,
+      'https://example.org/news',
+    );
+    expect(detail.authors).toEqual([]);
+  });
+});
+
+describe('other observed main-article credits and UI', () => {
+  it('reads the Focus Taiwan closing byline without its end-item/editor code', () => {
+    const html = `<meta name="author" content="Focus Taiwan - CNA English News"><div class="PrimarySide"><div class="paragraph"><p>${prose}</p></div><div class="author"><p>(By Wang Cheng-chung and Matthew Mazzetta)</p><p>Enditem/AW</p></div></div>`;
+    expect(extractArticle(html, 'https://focustaiwan.tw/politics/202610070020').authors).toEqual(['Wang Cheng-chung', 'Matthew Mazzetta']);
+  });
+  it('uses the explicit syndicated reporter instead of the WordPress account', () => {
+    const html = `<meta name="author" content="高雄港區新聞網"><div class="elementor-widget-theme-post-content"><p><a href="https://more-news.tw/">墨新聞</a>｜記者張游舜／台北報導</p><p>${prose}</p></div>`;
+    const detail = extractArticle(html, 'https://www.fclnews.com/230400/');
+    expect(detail.authors).toEqual(['張游舜']);
+    expect(detail.provider).toBe('墨新聞');
+    expect(extractAttributions(detail.body ?? '', 'fclnews', detail.provider).map((c) => c.name)).toContain('墨新聞');
+  });
+  it('removes BBC embed-consent text without losing the article paragraphs', () => {
+    const html = `<main><p>${prose}</p><div data-testid="consentBanner"><p>此文包含Google YouTube提供的内容，曲奇政策和隱私政策。</p></div><p id="end-of-youtube-content">結尾 YouTube 帖子</p><p>本文原以英文撰寫。</p></main>`;
+    const detail = extractArticle(html, 'https://www.bbc.com/zhongwen/articles/c8wy910lv7q6o/trad?at_medium=RSS');
+    expect(detail.body).toContain(prose.trim());
+    expect(detail.body).toContain('本文原以英文撰寫。');
+    expect(detail.body).not.toMatch(/曲奇|結尾 YouTube/);
+  });
+});
+
+describe('live discovery sources share their article rules', () => {
+  it('reads i-media reporter credit through the URL rule used by discovery', () => {
+    const html = `<article class="entry"><h1>南京新聞</h1><div class="entry__meta-author"><a href="/Home/Search?Author=52">梅花新聞網 陳素貞/綜合報導</a></div><div id="articleContent"><p>${prose}</p></div></article>`;
+    expect(extractArticle(html, 'https://i-media.tw/Article/Detail/51348').authors).toEqual(['陳素貞']);
+  });
+  it('reads HS News microdata in the main article header without an article tag', () => {
+    const html = `<div class="article-details"><h1>生命教育</h1><div class="article-info"><span itemprop="author"><span itemprop="name">陳淑鈴</span></span><time itemprop="datePublished" datetime="2026-10-07T18:23:24+08:00">2026年10月07日</time></div><div itemprop="articleBody"><p>${prose}</p></div></div>`;
+    const detail = extractArticle(html, 'https://hsnews.com.tw/education-and-culture/example.html');
+    expect(detail.authors).toEqual(['陳淑鈴']);
+    expect(detail.publishedAt?.toISOString()).toBe('2026-10-07T10:23:24.000Z');
+  });
+});

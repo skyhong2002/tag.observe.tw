@@ -13,6 +13,7 @@ export interface NewsSiteRules {
   bodySelector: string;
   bodyHtmlSelector?: string;
   titleSelector?: string;
+  authorSelector?: string;
   publishedSelector?: string;
   publishedAttribute?: string;
   publicationPattern?: RegExp;
@@ -81,9 +82,44 @@ const SITES: Site[] = [
     host: 'factcheck.afp.com',
     path: /^\/doc\.afp\.com\.[A-Z0-9]+$/,
     bodySelector: 'article .wrapper-body',
+    authorSelector: 'article .sub-header .person-link',
+    // ClaimReview embeds the claim date before the actual report date.
+    preferPrintedPublication: true,
     publishedSelector: 'article .date-full-format[data-type="created"]',
     publishedAttribute: 'data-utc-time',
     publicationFormat: 'epoch-seconds',
+  },
+  {
+    host: 'tw.aboluowang.com',
+    path: /^\/(?:\d{4}\/\d{4}\/\d+\.html)$/,
+    bodySelector: '[itemprop="articleBody"]',
+    providerSelector: 'meta[property="og:article:author"]',
+  },
+  {
+    host: 'focustaiwan.tw',
+    path: /^\/[^/]+\/\d{12}$/,
+    bodySelector: '.PrimarySide > .paragraph',
+    authorSelector: '.PrimarySide .author > p:first-child',
+  },
+  {
+    host: 'fclnews.com',
+    path: /^\/\d+\/$/,
+    bodySelector: '.elementor-widget-theme-post-content',
+    providerSelector: '.elementor-widget-theme-post-content p > a[href="https://more-news.tw/"]',
+  },
+  {
+    host: 'bbc.com',
+    path: /^\/zhongwen\/articles\/[^/]+(?:\/trad)?(?:\?|$)/,
+    bodySelector: 'main',
+    bodyExcludeSelector: '[data-testid="consentBanner"] + small, [data-testid="consentBanner"], [id="end-of-youtube-content"]',
+  },
+  {
+    host: 'hsnews.com.tw',
+    path: /^\/[^/]+\/[^/]+\.html$/,
+    bodySelector: '.article-details [itemprop="articleBody"]',
+    authorSelector: '.article-details .article-info [itemprop="author"]',
+    publishedSelector: '.article-details .article-info time[itemprop="datePublished"]',
+    publishedAttribute: 'datetime',
   },
   {
     host: 'ap.org',
@@ -211,6 +247,7 @@ const SITES: Site[] = [
     host: 'i-media.tw',
     path: /^\/Article\/Detail\/\d+/i,
     bodySelector: '#articleContent',
+    authorSelector: 'article.entry .entry__meta-author a[href*="Author="]',
     titleSelector: 'article.entry h1',
     publishedSelector: 'article.entry > .entry__meta-holder .entry__meta-date',
   },

@@ -14,6 +14,8 @@ export interface FeedItem {
   creator?: string;
   /** Publisher's explicit full-content element; never synthesized from description. */
   contentHtml?: string;
+  /** Explicit provider from the verified article, separate from reporter names. */
+  verifiedProvider?: string | null;
   /** Body already validated by discovery; safe to persist without fetching twice. */
   verifiedContent?: { body: string; authors: string[]; bodySource: string; bodyStatus: 'ok' | 'short' };
 }

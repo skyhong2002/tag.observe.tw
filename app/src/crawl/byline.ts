@@ -210,7 +210,7 @@ const placeName = new RegExp(`^${PLACE}$`, 'u');
 const SUFFIX_ROLE = '(?:駐外記者|特派記者|特約記者|資深記者|實習記者|記者)';
 const ROLE = `(?:${SUFFIX_ROLE}|編譯|採訪撰文|撰文|撰稿|(?:圖\\s*/\\s*文|文\\s*[、/]\\s*圖|圖文)(?=\\s*[/：:])|文(?=\\s*[/：:]))`;
 const OUTLET =
-  '(?:中央社|聯合報|聯合晚報|經濟日報|自由時報|中國時報|工商時報|台灣醒報|台灣電報|大成報|勁報|新頭殼|新頭殼newtalk|Newtalk|NOWnews|ETtoday|TVBS|CTWANT|匯流新聞網|CNEWS匯流新聞網|台灣好新聞|臺灣好新聞|台灣新生報|民眾日報|民眾網|視傳媒|台灣新聞雲|今傳媒|TMNU|好房網News|中華日報|青年日報|民生電子報|觀傳媒|威傳媒|警政時報|亞太新聞網|獨家報導|壹蘋新聞網|鏡新聞|中時新聞網|東森新聞|三立新聞網|中天新聞網|民視新聞|風傳媒|信傳媒|太報|上報|聯合新聞網|大紀元)';
+  '(?:中央社|聯合報|聯合晚報|經濟日報|自由時報|中國時報|工商時報|台灣醒報|台灣電報|大成報|勁報|新頭殼|新頭殼newtalk|Newtalk|NOWnews|ETtoday|TVBS|CTWANT|匯流新聞網|CNEWS匯流新聞網|台灣好新聞|臺灣好新聞|台灣新生報|民眾日報|民眾網|視傳媒|台灣新聞雲|今傳媒|TMNU|好房網News|中華日報|青年日報|民生電子報|觀傳媒|威傳媒|警政時報|亞太新聞網|獨家報導|壹蘋新聞網|鏡新聞|中時新聞網|東森新聞|三立新聞網|中天新聞網|民視新聞|風傳媒|信傳媒|太報|上報|聯合新聞網|大紀元|新唐人電視台|墨新聞)';
 const outletName = new RegExp(`^${OUTLET}$`, 'iu');
 const OPEN = '[〔【(\\[]';
 const CLOSE = '[〕】)\\]]';
@@ -302,6 +302,8 @@ export function reporterNames(value: string): string[] {
       text,
     );
   if (namedOutlet) return creditedNames(namedOutlet[1]);
+  const parenthesizedEnglish = /^\(By\s+([^()]+)\)$/iu.exec(text);
+  if (parenthesizedEnglish) return creditedNames(parenthesizedEnglish[1]);
   const english = /^By\s+([^|:：〕】)\]]+)(?:$|\s*\/)/iu.exec(text);
   if (english) return creditedNames(english[1]);
   const report = new RegExp(
@@ -328,5 +330,14 @@ export function extractLeadReporterNames(body: string): string[] {
 /** CNA syndicated reports credit their translator in the closing parenthesis. */
 export function extractClosingReporterNames(body: string): string[] {
   const closing = /[（(]\s*編譯\s*[:：]\s*([^（）()\n]{2,60})\s*[）)]\s*(?:\d{6,8})?\s*$/.exec(body);
-  return closing ? creditedNames(closing[1]) : [];
+  if (closing) return creditedNames(closing[1]);
+  // Verified NTD syndicated reports end in a standalone reporting credit.
+  // Do not search narrative paragraphs for people mentioned as reporters.
+  const last =
+    body
+      .trim()
+      .split(/\n\s*\n/)
+      .at(-1)
+      ?.trim() ?? '';
+  return /^新唐人電視台記者[^。！？\n]{2,60}(?:綜合)?報導$/.test(last) ? reporterNames(last) : [];
 }

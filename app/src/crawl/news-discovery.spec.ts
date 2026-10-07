@@ -31,6 +31,20 @@ function fixture(pages: Record<string, string | Partial<FetchResult> | Error>) {
 }
 
 describe('discoverNews', () => {
+  it('carries a verified provider from the article to persistence independently of its reporter', async () => {
+    const site = 'https://tw.aboluowang.com/';
+    const url = `${site}2026/1002/2442777.html`;
+    const f = fixture({
+      [site]: link(url),
+      [url]: article(
+        `<meta property="article:published_time" content="${today}"><meta property="og:article:author" content="新唐人電視台">`,
+      ),
+    });
+    const result = await discoverNews({ homeUrl: site, maxArticles: 1 }, f.options);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].verifiedProvider).toBe('新唐人電視台');
+  });
+
   it('does not cross from a reviewed news-section feed into unrelated homepage or global feeds', async () => {
     const url = `${home}news/12345`;
     const f = fixture({ [home]: link(`${home}other/56789`), [`${home}news/feed`]: rss(url), [url]: article() });

@@ -191,7 +191,7 @@ export async function runIndex(
                     ...content,
                     contentFetchedAt: started,
                     contentAttempts: 1,
-                    attributions: extractAttributions(content.body, spec.media, null),
+                    attributions: extractAttributions(content.body, spec.media, it.verifiedProvider),
                   }
                 : {}),
               source: 'own',
@@ -269,7 +269,7 @@ export async function runIndex(
                 contentFetchedAt: existing.bodyStatus === 'expired' ? (existing.contentFetchedAt ?? existing.crawledAt) : started,
                 contentAttempts: sql`${articles.contentAttempts} + 1`,
                 fetchStatus: item.tags?.length ? 'ok' : 'notags',
-                attributions: extractAttributions(content.body, spec.media, null),
+                attributions: extractAttributions(content.body, spec.media, item.verifiedProvider),
               })
               .where(repairable);
             if (correctedDate)

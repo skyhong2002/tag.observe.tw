@@ -175,6 +175,29 @@ function discover(items: FeedItem[]) {
 describe('discovered full content persistence', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('persists verified provider citations on both insert and body repair', async () => {
+    discover([{ ...item, verifiedProvider: '新唐人電視台' }]);
+    const inserted = memoryDb();
+    await runIndex(inserted.db, spec, { now: () => now });
+    expect(inserted.rows[0].attributions).toEqual([expect.objectContaining({ media: 'ntdtv', evidence: '內容提供者：新唐人電視台' })]);
+    expect(inserted.rows[0]).not.toHaveProperty('verifiedProvider');
+    const repaired = memoryDb([
+      {
+        id: 1,
+        media: spec.media,
+        urlKey: urlKey(item.url),
+        title: item.title,
+        publishedAt,
+        crawledAt: now,
+        bodyStatus: 'blocked',
+        body: null,
+      },
+    ]);
+    await runIndex(repaired.db, spec, { now: () => now });
+    expect(repaired.rows[0].attributions).toEqual(inserted.rows[0].attributions);
+    expect(repaired.rows[0]).not.toHaveProperty('verifiedProvider');
+  });
+
   it('preserves existing reporter credits when a retried page exposes no author', async () => {
     const { db, writes } = memoryDb([
       {
