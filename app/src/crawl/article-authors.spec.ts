@@ -113,6 +113,14 @@ describe('reporter identity from the selected article', () => {
     expect(extractArticle(article('myhousing住展', '文／梁愷恩'), 'https://grinews.com/news/story/').authors).toEqual(['梁愷恩']);
     expect(extractArticle(article('admin', prose), 'https://grinews.com/news/story/').authors).toEqual([]);
   });
+  it.each([
+    ['翁聖權', '新營'],
+    ['翁順利', '台南'],
+  ])('reads the division slash in CDNS reporter credits: %s', (name, place) => {
+    expect(
+      extractArticle(`<article><p>記者${name}∕${place}報導</p><p>${prose}</p></article>`, 'https://www.cdns.com.tw/articles/1').authors,
+    ).toEqual([name]);
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });

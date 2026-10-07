@@ -265,7 +265,7 @@ function creditedNames(value: string): string[] {
 export function reporterNames(value: string): string[] {
   // The publisher's opening date is followed by a separate parenthesized
   // reporter declaration; only remove that exact dateline at the start.
-  const text = value.normalize('NFKC').replace(/╱/g, '/').replace(/\s+/g, ' ').trim().replace(epochDateline, '');
+  const text = value.normalize('NFKC').replace(/[╱∕]/g, '/').replace(/\s+/g, ' ').trim().replace(epochDateline, '');
   if (!text) return [];
   // Imported health features credit their original writer and translator in
   // one field. Both roles establish authorship; editors remain separate.

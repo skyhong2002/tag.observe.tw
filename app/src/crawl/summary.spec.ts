@@ -91,6 +91,14 @@ describe('publisher summary metadata', () => {
     const topic = prefix + '倒數52天!雙北大戰!藍綠對決!誰能催出關鍵基本盤? […]';
     expect(article(topic).summary).toBe(topic);
   });
+  it('skips Bo News site description and preserves the article-specific social excerpt', () => {
+    const html =
+      '<meta name="description" content="波新聞秉持傳遞正向訊息、提升正向能量、波動良善之心、\n共同關懷弱勢、讓我們的社會更加祥和與美好。"><meta property="og:description" content="波新聞-林冬生/新竹 竹北水圳公園宣布舉辦藝文活動。">';
+    expect(extractArticle(html, 'https://www.bo6s.com.tw/news/1')).toMatchObject({
+      summary: '波新聞-林冬生/新竹 竹北水圳公園宣布舉辦藝文活動。',
+      summarySource: 'meta:og:description',
+    });
+  });
   it('preserves RSS description and Atom summary provenance without using full Atom content', () => {
     const rss = parseFeed(
       '<rss><channel><item><title>標題</title><link>https://example.org/a</link><description>RSS摘要</description></item></channel></rss>',
