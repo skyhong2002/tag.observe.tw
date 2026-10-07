@@ -323,3 +323,9 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 第七批已無衝突重整至065，仍未推送／部署／套資料。保守將下一次發布改為不早於01:53:55（一小時距最新live驗證），發布前須再查main與實際版本。重整後873項crawl測試、型別檢查及變更檔Biome通過；引用測試另列。
 
 證據 `batch6-initial-live-verification.json`、`batch6-external-065-live-verification.json`、`batch6-service-probes.jsonl`、`batch7-post-rebase-tests.log`、`batch7-post-rebase-tsc.log`、`batch7-post-rebase-biome.log`。24小時觀察仍進行中。
+
+## INSIDE摘要證據與第七批擴充（00:58）
+
+45816975原description附有tags與slug，但同頁.post_introduction獨立導讀與og:description逐字相同。限INSIDE /article/數字-路徑優先取此導讀，記來源article:selector；description及正文、作者、日期仍保留原值。fresh原頁確認導讀與分享描述一致，為原站摘要而非從正文生成。另準備1筆summary及來源補正，與原7笔摘要排除及2笔署名同批發布；尚未推送、部署或套資料。
+
+擴充後897項crawl／attribution測試、tsc與Biome通過，1450原頁重播12篇改變，只涉及摘要／來源及2筆署名，正文／刊登日期皆未變。8筆摘要fresh-source精確snapshot試跑全數通過。證據 `batch7-inside-proof.json`、`batch7-inside-summary-plan.json`、`batch7-expanded-summary-dry-run.log`、`batch7-expanded-tests.log`、`batch7-expanded-tsc.log`、`batch7-all-sample-replay.json`。
