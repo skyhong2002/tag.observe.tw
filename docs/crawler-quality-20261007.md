@@ -341,3 +341,15 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 第七批總計6署名、10摘要、4來源／引用資料補正；兩篇台灣華報本輪新錯摘要併入10筆，兩篇舊資料alreadyNULL保持不寫。901項crawl／attribution測試與tsc通過；6作者及10摘要fresh-source試跑通過，4來源完整snapshot試跑通過，套用前還要重抓全部4原頁確認。所有資料仍未套用，代碼本地commit尚未推送。發布不早於01:53:55，要求main／live／candidate一致與精確CI成功，再暫停新派工、等active自然結束；不能因等待逾時重開job。
 
 證據 `one-am-original-markup-proof.json`、`batch7-one-am-fresh-proof.json`、`batch7-followup-fresh-proof.json`、`batch7-reviewed-source-plan.json`、`batch7-six-authors-dry-run.jsonl`、`batch7-ten-summary-dry-run.log`、`batch7-four-source-dry-run.json`、`batch7-complete-tests.log`、`batch7-complete-tsc.log`。24小時觀察仍進行中，第六批資料不可重套。
+
+## 第七批固定發布排程與第八批新署名（01:24）
+
+第七批固定候選251790dcd3a9bff387b353a72e2c64db8ce7ffa0，本地已提交、尚未推送／部署／套資料。systemd timer tag-crawler-quality-batch7-release.timer已排定01:53:55啟動：main與live須仍06512c9、候選checkoutclean且精確HEAD一致，推送後等該SHA CI成功，再自然排空active才安裝；外部變更則停止不強行覆蓋。samplercheckout只有在MainPID0且仍原HEAD／clean時才fast-forward，若採樣仍執行就保留checkout，事後補核對parser版本。來源補正前全部4原頁fresh檢查／完整snapshot與backup；摘要10與作者6仍未套用。
+
+另建獨立batch8 checkout，保留第七批固定候選。新增8篇原页指定欄位核對至東網、美國之音、世界新聞網、經濟日報、星島、風傳媒、墨新聞與奧丁丁；累计357人工記錄、272不同文章、136媒體、268篇屬樣本，仍分局部／指定欄位檢驗。世界新聞網CNA dispatch label是否應正規化／來源獨立欄、正文開頭及導航範圍待查；美國之音KCNA commentary引用覆蓋、墨新聞lead範圍也保留待查。日期與作者以原站明示欄位為準，不因自動旗標或機構名字就發明人名。
+
+奧丁丁45860070主文章第三個p明示「文／陳怡瑄　攝影／徐裕庭」，原JSONLD Organization閱政治不能替代記者。限定news.owlting.com/articles/數字、main.article-detail article.news-content最前3個直屬p，只接受完整writer／photo格式，取陳怡瑄、不取攝影徐裕庭；敘述提及、旁欄或第四段後信用都不採。使用已驗證主文章container，body來源標記會由.news-content變selector，但正文逐字相同，沒有回寫舊body來源。fresh原頁確認正文／日期與DB一樣，準備1筆author補正未套。
+
+第八批902項crawl／attribution測試與tsc通過；對固定第七批重播1600原頁，僅14份奧丁丁body來源標記改變，其中1份作者修正；正文／日期／其他媒體無變。只有1筆作者待補，不重写14筆正文或開新crawler/index job。第八批本地工作尚未推送／部署，下一次發布須距第七批實際發布約一小時，不能以已排定時間當成已完成部署。
+
+證據 `batch8-all-sample-replay.json`、`batch8-owlting-fresh-proof.json`、`batch8-one-author-dry-run.jsonl`、`batch8-crawl-tests.log`、`batch8-tsc.log`、`one-am-additional-media-proof.json`。24小時觀察仍待18:49:13到期。

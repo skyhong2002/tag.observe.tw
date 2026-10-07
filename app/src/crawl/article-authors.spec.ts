@@ -8,6 +8,30 @@ const ld = (body: string, name = '網站管理員') =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body, author: { '@type': 'Person', name } })}</script>`;
 
 describe('reporter identity from the selected article', () => {
+  it('reads a separate Owlting partner writer credit below its introduction without including the photographer', () => {
+    const rules = sourceByMedia('owlting')?.article;
+    const owlLd = () => ld(prose, '閱政治').replace('https://example.com/news/1', 'https://news.owlting.com/articles/1467734');
+    const credit = '<p>文／陳怡瑄　攝影／徐裕庭</p>';
+    const lead = '<p>新聞副標題</p><p>這是原站的新聞導讀。</p>';
+    const wrapper = (content: string) =>
+      `<main class="article-detail"><article class="news-content">${content}<p>${prose}</p></article></main>`;
+    expect(extractArticle(owlLd() + wrapper(lead + credit), 'https://news.owlting.com/articles/1467734', rules).authors).toEqual([
+      '陳怡瑄',
+    ]);
+    expect(
+      extractArticle(
+        owlLd() + wrapper(lead + '<p>受訪者分享文／陳怡瑄 攝影／徐裕庭的作品。</p>'),
+        'https://news.owlting.com/articles/1467734',
+        rules,
+      ).authors,
+    ).toEqual(['閱政治']);
+    expect(
+      extractArticle(owlLd() + wrapper(lead + '<p>另一段正文。</p>' + credit), 'https://news.owlting.com/articles/1467734', rules).authors,
+    ).toEqual(['閱政治']);
+    expect(
+      extractArticle(owlLd() + wrapper(lead) + `<aside>${credit}</aside>`, 'https://news.owlting.com/articles/1467734', rules).authors,
+    ).toEqual(['閱政治']);
+  });
   it('prefers the reporters named by an opening Xinhua dispatch over an agency account', () => {
     const html = `<meta name="author" content="新华社"><article><p>新华社莫斯科10月7日电（记者王作葵 刘恺）${prose}</p></article>`;
     expect(extractArticle(html, 'https://news.ifeng.com/c/story')).toMatchObject({ authors: ['王作葵', '刘恺'] });

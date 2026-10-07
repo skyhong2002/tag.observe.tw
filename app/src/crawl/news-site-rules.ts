@@ -46,6 +46,14 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'news.owlting.com',
+    path: /^\/articles\/\d+$/,
+    bodySelector: 'main.article-detail article.news-content',
+    // Partner features put a separate writer/photo credit after their intro.
+    authorSelector: 'main.article-detail article.news-content > p:nth-of-type(-n+3)',
+    authorPattern: /^文[／/]\s*([\p{Script=Han}]{2,5})\s+攝影[／/]\s*[\p{Script=Han}]{2,5}$/u,
+  },
+  {
     host: 'mknews.com.tw',
     path: /^\/\d{4}\/\d{2}\/\d+\/$/,
     bodySelector: '.entry-content',
