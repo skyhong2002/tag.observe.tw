@@ -365,3 +365,15 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 45860643發現日期歧義：RSS item連結121617/9800286宣告16:25Z，該路徑原頁也宣告16:25Z；canonical指向121232/9800286，其原頁則是06:27Z（02:27-04:00），兩頁作者／正文相同、permalink文章ID相同。只抓canonical時看似RSS日期錯誤，但重抓RSS原連結提出相反證據，因此原DB feed時間保持。没有新增WorldJournal preferPagePublication規則、沒有跨日改標籤／引用／配對日期；日期來源語義列為待查，不能把不同路徑同內容當成唯一確定的日期證據。
 
 第七批仍固定251790d，01:50read-only probe／01:53:55publisher排程保留；第八批代碼本地已提交未推送，上線仍06512c9。證據 `batch8-worldjournal-reviewed-plan.json`、`batch8-worldjournal-dry-run.json`、`batch8-worldjournal-feed.xml.gz`、`batch8-worldjournal-feed-route-proof.json`、`batch8-worldjournal-feed-route.html.gz`、`batch8-worldjournal-replay.log`、`batch8-expanded-tests.log`、`batch8-expanded-tsc.log`。24小時觀察繼續。
+
+### 10/8 02:10：第七批正式部署與第八批新增證據
+
+第七批最初提交 `251790d` 的完整 CI 失敗，未部署，也未暫停派送。原因是網站署名頁的型別引用帶入後端資料庫模組，及搜尋 effect 遺漏 callback 相依性。修正版 `fadd82d52023c7ea0d7a7e14801153910f0e5255` 已推送，CI 37663725717 通過（1,442 passed、2 skipped，前端型別及建置成功）。02:03:42 暫停新派送，當時 active=0；02:04:04 安裝驗證完成並恢復，暫停 21.786 秒。三個服務均指向修正版，主站 HTTPS 200、worker health 正常、派送未暫停，失敗 job 與既有 7 筆基準相同。這些為主機端驗證；五秒探測不能證明網站零停機。
+
+6 筆署名、10 筆摘要、4 筆引用已備份並修復，沒有日期寫入。摘要程序在完成兩筆後遇到原站逾時；接續程序依備份及完整原始快照確認已寫入的兩筆，僅寫入其餘八筆。最後原文／DB／公開 API／引用索引核對仍在進行；初版驗證器把引用讀自 `article.attributions`，已依實際 API 契約修正為 `content.attributions`，不得把驗證器錯誤當成正式資料錯誤。證據存於 `batch7-deployment.json`、`batch7-live-verification.json`、三類 durable backup、`batch7-repairs-verification.json`。
+
+02:00 抽樣正常完成，累計 10 輪、1,766 篇、227 家媒體、8,798 篇不重複取得母體；1,702 篇解析成功、53 篇非 200、11 篇請求或解析例外。人工為 373 筆檢查紀錄、287 篇不同文章、136 家媒體，包含選定欄位及部分檢查，並非所有欄位皆已確認。
+
+第八批另確認台灣新聞雲兩篇（45928241、45928242）的 description 與 og:description 都是固定網站宣傳，已加入精確文字過濾；第二篇首段為墨新聞編輯部信用，接續獨立署名明確寫「記者李婉如／綜合報導」。修正限於文章容器內前四個段落及完整署名格式，測試確認較後段或容器外的文字不作作者。38 個相關測試、型別檢查與秘密資訊掃描通過，兩篇新鮮原文解析均保持正文不變。快照與 gzip 原文：`batch8-fcl-reviewed-plan.json`、`batch8-fcl-45928241.html.gz`、`batch8-fcl-45928242.html.gz`。第八批仍僅本地提交，未推送、未部署、未修復正式資料；最早約 03:05 才能再發布。
+
+24 小時觀察仍為進行中，預定 10/8 18:49:13 結束後提交最終報告。
