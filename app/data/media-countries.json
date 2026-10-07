@@ -927,6 +927,33 @@
       "countryCode": "HK",
       "evidenceUrl": "https://www.adaymag.com/about-us",
       "note": "官方關於頁明示香港成立。"
+    },
+    "president": {
+      "countryCode": "TW"
+    },
+    "mohw": {
+      "countryCode": "TW"
+    },
+    "mol": {
+      "countryCode": "TW"
+    },
+    "taipei_gov": {
+      "countryCode": "TW"
+    },
+    "ntpc_gov": {
+      "countryCode": "TW"
+    },
+    "moi": {
+      "countryCode": "TW"
+    },
+    "moa": {
+      "countryCode": "TW"
+    },
+    "mofa": {
+      "countryCode": "TW"
+    },
+    "mnd": {
+      "countryCode": "TW"
     }
   }
 }

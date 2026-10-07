@@ -2534,6 +2534,69 @@
       "status": "verified",
       "sourceUrl": "https://www.adaymag.com/",
       "evidence": "官方首頁與近期文章的品牌署名；2026-10-03 恢復既有爬蟲。"
+    },
+    "president": {
+      "name": "總統府",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.president.gov.tw/Page/35",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "mohw": {
+      "name": "衛生福利部",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.mohw.gov.tw/lp-16-1.html",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "mol": {
+      "name": "勞動部",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.mol.gov.tw/1607/1632/1633/",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "taipei_gov": {
+      "name": "臺北市政府",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.gov.taipei/News.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "ntpc_gov": {
+      "name": "新北市政府",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "moi": {
+      "name": "內政部",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.moi.gov.tw/News.aspx?n=4&sms=9009",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "moa": {
+      "name": "農業部",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.moa.gov.tw/theme_list.php?theme=news&sub_theme=agri",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "mofa": {
+      "name": "外交部",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.mofa.gov.tw/News.aspx?n=95&sms=73",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "mnd": {
+      "name": "國防部",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.mnd.gov.tw/",
+      "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
     }
   }
 }

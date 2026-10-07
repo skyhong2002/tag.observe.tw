@@ -206,7 +206,16 @@
       "nhk",
       "kyodo",
       "yonhap",
-      "xinhua"
+      "xinhua",
+      "president",
+      "mohw",
+      "mol",
+      "taipei_gov",
+      "ntpc_gov",
+      "moi",
+      "moa",
+      "mofa",
+      "mnd"
     ],
     "women": [
       "nius",

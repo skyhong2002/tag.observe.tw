@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-05T20:28:47.465Z",
+  "checkedAt": "2026-10-07T08:08:52.599Z",
   "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing",
   "sourceMonth": "202608",
   "results": [
@@ -4871,6 +4871,276 @@
       "strategy": "api",
       "listingUrl": "https://www3.nhk.or.jp/nhkworld/data/zt/news/all.json",
       "detail": "以 api 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "president",
+      "websiteUrl": "https://www.president.gov.tw/Page/35",
+      "checkedAt": "2026-10-07T08:08:47.069Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.president.gov.tw/NEWS/40403",
+          "title": "台灣美國商會75周年慶祝活動 副總統盼深化臺美科技產業合作 打造更強健夥伴關係",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 1996
+        },
+        {
+          "url": "https://www.president.gov.tw/NEWS/40402",
+          "title": "接見亞運代表團 總統肯定選手站上國際舞台是國家驕傲 政府持續給予有力支持",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 1059
+        },
+        {
+          "url": "https://www.president.gov.tw/NEWS/40401",
+          "title": "總統接受史瓦帝尼王國新任駐臺大使呈遞到任國書 盼持續深化臺史夥伴關係 為雙方人民創造更多福祉",
+          "publishedAt": "2026-10-04T16:00:00.000Z",
+          "bodyLength": 1547
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.president.gov.tw/RSSNEWS.aspx",
+      "detail": "以 rss 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mohw",
+      "websiteUrl": "https://www.mohw.gov.tw/lp-16-1.html",
+      "checkedAt": "2026-10-07T08:08:47.076Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.mohw.gov.tw/cp-16-88160-1.html",
+          "title": "臺灣女孩日勇敢拒絕第一口 辨別菸品誘惑 健康自信成長",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 1421
+        },
+        {
+          "url": "https://www.mohw.gov.tw/cp-16-88158-1.html",
+          "title": "食藥署持續把關輸入馬鈴薯 不合格產品邊境主動攔截未流入市面",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 531
+        },
+        {
+          "url": "https://www.mohw.gov.tw/cp-16-88157-1.html",
+          "title": "針對俄羅斯傳出疑似感染鼠疫死亡事件 疾管署已透過國際衛生條例機制詢問相關事件 並持續監測國內外疫情及強化邊境檢疫措施",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 1168
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.mohw.gov.tw/lp-16-1.html",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mol",
+      "websiteUrl": "https://www.mol.gov.tw/1607/1632/1633/",
+      "checkedAt": "2026-10-07T08:08:47.076Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.mol.gov.tw/1607/1632/1633/99440/",
+          "title": "115年『國慶日』連假三日，雇主應依法給假，出勤應給加班費",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 986
+        },
+        {
+          "url": "https://www.mol.gov.tw/1607/1632/1633/99431/",
+          "title": "「純舊制」勞工申辦自提退休金踴躍，勞雇雙方合意結算退休金存入勞工個人專戶亦有進展，勞工退休保障多更多。",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 1266
+        },
+        {
+          "url": "https://www.mol.gov.tw/1607/1632/1633/99271/",
+          "title": "勞動部黃玲娜政務次長應邀出席美國勞工行政官員協會（NAGLO）2026年年會並致開幕詞",
+          "publishedAt": "2026-10-01T16:00:00.000Z",
+          "bodyLength": 993
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.mol.gov.tw/1607/1632/1633/",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "taipei_gov",
+      "websiteUrl": "https://www.gov.taipei/News.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6",
+      "checkedAt": "2026-10-07T08:08:47.359Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.gov.taipei/News_Content.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6&s=FDF5F67E2C258127",
+          "title": "酒癮治療補助依法查核 北市衛生局：未撤銷計畫、既有個案治療不中斷",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 529
+        },
+        {
+          "url": "https://www.gov.taipei/News_Content.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6&s=B01B64C7D2A3AA25",
+          "title": "視察北市聯醫昆明防治中心毒品防治成效 蔣萬安：五大措施協助藥癮者走向復原",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 1373
+        },
+        {
+          "url": "https://www.gov.taipei/News_Content.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6&s=945CDACA6FAACD2B",
+          "title": "北市警局公布酒(毒)駕9月份累犯名單",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 438
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.gov.taipei/News.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "ntpc_gov",
+      "websiteUrl": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1",
+      "checkedAt": "2026-10-07T08:08:47.409Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1&dataserno=697a0140e8ad1be20f5b9ff28a716100",
+          "title": "新北市115年9月份物價指數",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 654
+        },
+        {
+          "url": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1&dataserno=697a0140e8ad1be2395e57d8ad5c8fac",
+          "title": "新北「以人為本」傾聽地方 侯友宜：用行動解決市民大小事",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 784
+        },
+        {
+          "url": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1&dataserno=697a0140e8ad1be204111d2a17689944",
+          "title": "115年新北市松年大學成果展 輕銀世代展活力 AI照相館吸睛",
+          "publishedAt": "2026-10-06T16:00:00.000Z",
+          "bodyLength": 941
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "moi",
+      "websiteUrl": "https://www.moi.gov.tw/News.aspx?n=4&sms=9009",
+      "checkedAt": "2026-10-07T08:08:48.394Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "http://www.moi.gov.tw/News_Content.aspx?n=4&s=342455",
+          "title": "舊社區看過來 都市更新自己來 內政部提供「第一桶金」支持 最高補助1,100萬元",
+          "publishedAt": "2026-10-07T07:14:00.000Z",
+          "bodyLength": 569
+        },
+        {
+          "url": "http://www.moi.gov.tw/News_Content.aspx?n=4&s=342435",
+          "title": "國土署舉辦水資源技術研討會 表揚創新應用推動下水道資源永續循環",
+          "publishedAt": "2026-10-07T03:23:00.000Z",
+          "bodyLength": 655
+        },
+        {
+          "url": "http://www.moi.gov.tw/News_Content.aspx?n=4&s=342425",
+          "title": "第20屆優良工程金安獎 內政部國土署獲9項殊榮 全國第一",
+          "publishedAt": "2026-10-07T02:00:00.000Z",
+          "bodyLength": 703
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.moi.gov.tw/OpenData.aspx?SN=76F358C679FAD4CF",
+      "detail": "以 rss 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "moa",
+      "websiteUrl": "https://www.moa.gov.tw/theme_list.php?theme=news&sub_theme=agri",
+      "checkedAt": "2026-10-07T08:08:48.647Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.moa.gov.tw/theme_data.php?theme=news&sub_theme=agri&id=10299",
+          "title": "世界動物日決戰動保知識 「2026 毛孩守護者爭霸賽」毛孩守護者前三名出爐",
+          "publishedAt": "2026-10-04T10:28:45.000Z",
+          "bodyLength": 770
+        },
+        {
+          "url": "https://www.moa.gov.tw/theme_data.php?theme=news&sub_theme=agri&id=10298",
+          "title": "保護農業生產環境及農民權益 農業部依法審查虎尾產業園區農業用地變更",
+          "publishedAt": "2026-10-02T08:21:41.000Z",
+          "bodyLength": 773
+        },
+        {
+          "url": "https://www.moa.gov.tw/theme_data.php?theme=news&sub_theme=agri&id=10297",
+          "title": "全國30強毛孩守護者出爐 10月4日齊聚農業部角逐前三名",
+          "publishedAt": "2026-10-01T02:05:56.000Z",
+          "bodyLength": 577
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.moa.gov.tw/open_data.php?format=rss&func=news_agri",
+      "detail": "以 rss 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mofa",
+      "websiteUrl": "https://www.mofa.gov.tw/News.aspx?n=95&sms=73",
+      "checkedAt": "2026-10-07T08:08:48.715Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.mofa.gov.tw/News_Content.aspx?n=95&s=123194",
+          "title": "外交部政務次長吳志中出席「2026德國國慶酒會」",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 724
+        },
+        {
+          "url": "https://www.mofa.gov.tw/News_Content.aspx?n=95&s=123193",
+          "title": "外交部歡迎美國聯邦參議員班奈特訪問台灣",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 207
+        },
+        {
+          "url": "https://www.mofa.gov.tw/News_Content.aspx?n=95&s=123192",
+          "title": "外交部歡迎美國聯邦眾議院「預算委員會」民主黨首席議員博伊爾率團訪台",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 448
+        }
+      ],
+      "status": "verified",
+      "strategy": "rss",
+      "listingUrl": "https://www.mofa.gov.tw/OpenData.aspx?SN=8ABA444B9AC1360F",
+      "detail": "以 rss 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "mnd",
+      "websiteUrl": "https://www.mnd.gov.tw/",
+      "checkedAt": "2026-10-07T08:08:51.183Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.mnd.gov.tw/news/mnd/87932",
+          "title": "顧部長：美對臺軍售政策未變 F-16 BLK 70持續量產",
+          "publishedAt": "2026-10-05T16:00:00.000Z",
+          "bodyLength": 578
+        },
+        {
+          "url": "https://www.mnd.gov.tw/news/mnd/87897",
+          "title": "國軍醫療經營管理研討會 提升經營效能與醫療品質",
+          "publishedAt": "2026-09-30T16:00:00.000Z",
+          "bodyLength": 882
+        },
+        {
+          "url": "https://www.mnd.gov.tw/news/mnd/87886",
+          "title": "行政院國防科技貢獻獎評選 吳常次頒發委員聘書",
+          "publishedAt": "2026-09-29T16:00:00.000Z",
+          "bodyLength": 463
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.mnd.gov.tw/",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
     }
   ]
 }

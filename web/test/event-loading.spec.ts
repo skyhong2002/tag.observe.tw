@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { fetchEvents } from '../../web/src/lib/pages';
+import { fetchEvents } from '../src/lib/pages.ts';
 
 afterEach(() => {
   vi.unstubAllGlobals();

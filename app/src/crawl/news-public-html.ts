@@ -61,6 +61,28 @@ function assignedObject(source: string, marker: RegExp): Record<string, unknown>
 
 export function publicArticleHtml(html: string, url: string): string {
   const host = hostKey(new URL(url));
+  if (host === 'mofa.gov.tw' && new URL(url).pathname === '/News_Content.aspx') {
+    const $ = cheerio.load(html);
+    const article = new URL(url);
+    // This template prefixes its origin to an already URL-encoded absolute
+    // article URL. Repair only when the embedded official news ID matches.
+    $('meta[property="og:url"]').each((_, node) => {
+      try {
+        const declared = new URL($(node).attr('content') ?? '', url);
+        if (declared.origin !== article.origin || !/^\/https?%3a%2f%2f/i.test(declared.pathname)) return;
+        const embedded = new URL(decodeURIComponent(declared.pathname.slice(1)));
+        if (
+          embedded.origin === article.origin &&
+          embedded.pathname === article.pathname &&
+          ['n', 's'].every((key) => article.searchParams.has(key) && embedded.searchParams.get(key) === article.searchParams.get(key))
+        )
+          $(node).attr('content', article.href);
+      } catch {
+        // An unrecognized canonical remains subject to normal scope checks.
+      }
+    });
+    return $.html();
+  }
   if (['china.createsend1.com', 'china.cmail19.com'].includes(host)) {
     if (cheerio.load(html)('script[data-news-public="wsj-newsletter"]').length) return html;
     return renderWsjNewsletter(html, url) ?? '';

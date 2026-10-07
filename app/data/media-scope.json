@@ -10,7 +10,8 @@
     "sgmy": "新馬華文",
     "overseas-zh": "海外華文",
     "zh-special": "華文專業／生活",
-    "foreign": "其他外語"
+    "foreign": "其他外語",
+    "tw-gov": "台灣政府"
   },
   "languages": {
     "zh-Hant": "繁體中文",
@@ -22,7 +23,8 @@
     "wire": "通訊社",
     "platform": "平台代刊",
     "discovery": "發現來源",
-    "corporate": "企業內容"
+    "corporate": "企業內容",
+    "government": "政府機關"
   },
   "media": {
     "1111": {
@@ -376,6 +378,78 @@
     "zaobao": {
       "scope": "sgmy",
       "language": "zh-Hans"
+    },
+    "president": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "mohw": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "mol": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "taipei_gov": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "ntpc_gov": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "moi": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "moa": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "mofa": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
+    },
+    "mnd": {
+      "scope": "tw-gov",
+      "language": "zh-Hant",
+      "roles": [
+        "government"
+      ],
+      "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     }
   }
 }

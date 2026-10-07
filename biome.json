@@ -11,6 +11,7 @@
       "app/test/**",
       "tools/**",
       "web/src/**",
+      "web/test/**",
       "*.ts",
       "*.json",
       "!app/data",

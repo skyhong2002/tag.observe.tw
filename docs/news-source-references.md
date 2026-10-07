@@ -1,6 +1,6 @@
 # Similarweb 新聞來源對照
 
-`app/data/news-source-catalog.json` 以 [來源試算表](https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing) 已匯入快照的「新聞」類別為範圍，並非只收錄 29 家流量基準媒體。202608 保留的 197 列對應 192 個來源，加上歷史月份獨有的 READr、上下游、緯來新聞及花花日報，共 196 個來源；2026-10-04 另補入 6 個國際媒體，合計 202 個來源。來源名單與爬蟲實際成功狀態分開保存；列入名單不代表已成功取得文章。
+`app/data/news-source-catalog.json` 以 [來源試算表](https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing) 已匯入快照的「新聞」類別為起點，並非只收錄 29 家流量基準媒體。202608 保留的 197 列對應 192 個來源，加上歷史月份獨有的 READr、上下游、緯來新聞及花花日報，共 196 個來源；2026-10-04 另補入 6 個國際媒體，2026-10-07 再補入 9 個政府機關，合計 211 個來源。來源名單與爬蟲實際成功狀態分開保存；列入名單不代表已成功取得文章。
 
 - `referenceRows` 僅指 202608 工作表列號；197 列各出現一次。
 - `referenceNames` 保留各月份原始名稱與別名；歷史獨有來源的 `referenceRows` 為空。
@@ -75,3 +75,27 @@
 兩個無法恢復為原品牌的例外：台灣蘋果日報已停更，2026-10-04 舊網址實測轉至其他內容的 appledaily.com；overdope.com 同日回應文件下載站。已撤下這兩個原網域的公開來源連結，保留歷史名稱及停用狀態，不把新站內容當成原媒體新聞。
 
 有些官網與爬蟲入口不同是既有公開供稿設定：好房網→MyHousing、Cheers→Yahoo、報橘→寰宇新聞網、農傳媒→環境資訊中心、GQ→ROOMIE、美洲台灣日報→銳傳媒、宜蘭新聞網→觀傳媒、三星傳媒→蕃新聞、菱傳媒→民視、台灣網→新浪。這些入口的原發布者限制與逐篇核對證據沿用 [抓取修復紀錄](crawl-restoration.md)，不能將代刊平台網址覆蓋原品牌。ETtoday、關鍵評論網、癮科技、女人迷、T客邦、苦勞網的 FeedBurner feed，以及新聞子網域／靜態 sitemap 主機，也不因主機不同而另建媒體。
+
+## 2026-10-07：官方政府新聞來源
+
+新增總統府、內政部、外交部、農業部、國防部、衛生福利部、勞動部、臺北市政府及新北市政府。每站使用正常 discovery／正文解析實際核對 3 篇近期完整新聞，共 27 篇；逐篇標題、URL、發布時間與正文長度已存入 `app/data/news-crawl-audit.json`。這是抓取驗證，不代表已入庫或已部署；新來源按既有驗證門檻登記為每小時爬取。
+
+| 來源 ID | 原發布機關 | 官方新聞入口 | 已驗證方法 |
+| --- | --- | --- | --- |
+| president | 總統府 | [新聞列表](https://www.president.gov.tw/Page/35)、[RSS](https://www.president.gov.tw/RSSNEWS.aspx) | RSS 找文章，再讀正文 |
+| moi | 內政部 | [新聞發布](https://www.moi.gov.tw/News.aspx?n=4&sms=9009)、[RSS](https://www.moi.gov.tw/OpenData.aspx?SN=76F358C679FAD4CF) | RSS 找文章，再讀正文 |
+| mofa | 外交部 | [新聞發布](https://www.mofa.gov.tw/News.aspx?n=95&sms=73)、[RSS](https://www.mofa.gov.tw/OpenData.aspx?SN=8ABA444B9AC1360F) | RSS 找文章，再讀正文 |
+| moa | 農業部 | [農業新聞](https://www.moa.gov.tw/theme_list.php?theme=news&sub_theme=agri)、[RSS](https://www.moa.gov.tw/open_data.php?format=rss&func=news_agri) | RSS 找文章，再讀正文 |
+| mnd | 國防部 | [官方首頁](https://www.mnd.gov.tw/) | HTML 文章探索 |
+| mohw | 衛生福利部 | [新聞列表](https://www.mohw.gov.tw/lp-16-1.html) | HTML 文章探索 |
+| mol | 勞動部 | [新聞稿](https://www.mol.gov.tw/1607/1632/1633/) | HTML 文章探索 |
+| taipei_gov | 臺北市政府 | [市府新聞](https://www.gov.taipei/News.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6) | HTML 文章探索 |
+| ntpc_gov | 新北市政府 | [市政新聞](https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1) | HTML 文章探索 |
+
+來源收進新聞類別，但收錄範圍為「台灣政府」、角色為「政府機關」，說明其內容是官方新聞稿及機關消息。各 ID 保留原發布機關，不指定藍綠分類，也沒有對應試算表流量或列號。
+
+`government-sites.ts` 的規則限定官方主機、文章路徑及正文容器。總統府模板的 JSON-LD 固定顯示「總統府新聞」與 2017 年日期，改讀文章標題及民國日期；勞動部讀「發布日期」，排除「更新日期」；內政部、外交部、新北及臺北市政府分別讀文章自己的日期欄位。民國年轉換只在明確宣告 `publicationFormat: 'roc'` 的模板啟用。正文包含清單與直接文字節點，排除導航、照片區及發布資訊。
+
+外交部的 `og:url` 錯誤地把已編碼的絕對網址接在官網網址後；只有內嵌網址的官方 origin、文章路徑及 `n`／`s` 身分與本篇相符，才改回本篇網址。異站網址及不同文章 ID 仍由正常來源範圍驗證拒絕。
+
+行政院本次遇到驗證頁面、經濟部與環境部遇到存取阻擋、財政部逾時、數位發展部測試入口顯示維護頁。這些機關尚未登記為通過來源，不能據此認定其官網停站。

@@ -1,4 +1,5 @@
 import type { CheerioAPI } from 'cheerio';
+import { GOVERNMENT_NEWS_SITES } from './government-sites.ts';
 import { BLOCKED_NEWS_SITES } from './news-blocked-sites.ts';
 import { ENN_NEWS_SITES } from './news-enn.ts';
 import { EXTRA_NEWS_SITES } from './news-extra-site-rules.ts';
@@ -15,7 +16,7 @@ export interface NewsSiteRules {
   publishedSelector?: string;
   publishedAttribute?: string;
   publicationPattern?: RegExp;
-  publicationFormat?: 'epoch-ms' | 'epoch-seconds' | 'day-first' | 'utc';
+  publicationFormat?: 'epoch-ms' | 'epoch-seconds' | 'day-first' | 'utc' | 'roc';
   preferPrintedPublication?: boolean;
   providerSelector?: string;
   bodyExcludeSelector?: string;
@@ -50,6 +51,7 @@ const SITES: Site[] = [
   ...ROUND3_LEGACY_NEWS_SITES,
   ...ROUND3_NEWS_SITES,
   ...ROUND4_NEWS_SITES,
+  ...GOVERNMENT_NEWS_SITES,
   {
     host: 'myhousing.com.tw',
     path: /^\/(?:n|p)\/(?:[^/?]+\/)*\d+\/$/,
@@ -350,6 +352,9 @@ export function newsSiteEvidence($: CheerioAPI, url: string) {
         break;
       }
       if (rules.publicationPattern) raw = rules.publicationPattern.exec(raw)?.[1] ?? '';
+      if (rules.publicationFormat === 'roc') {
+        raw = raw.replace(/^(\d{2,3})(?=\s*[-/.年])/, (_, year) => String(Number(year) + 1911));
+      }
       if (rules.publicationFormat === 'day-first') raw = raw.replace(/^(\d{2})-(\d{2})-(\d{4})$/, '$3-$2-$1');
       if (rules.publicationFormat === 'utc') raw += 'Z';
       publishedRaw =

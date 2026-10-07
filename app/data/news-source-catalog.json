@@ -3253,6 +3253,139 @@
       "notes": "2026-10-04 全媒體收錄盤點補入官方公開新聞入口；改用 NHK WORLD 繁體中文版（zt）。",
       "articlePattern": "/nhkworld/zt/news/\\d+",
       "feedUrls": []
+    },
+    {
+      "media": "president",
+      "name": "總統府",
+      "websiteUrl": "https://www.president.gov.tw/Page/35",
+      "referenceNames": [
+        "總統府"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.president.gov.tw/Page/35",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "feedUrls": [
+        "https://www.president.gov.tw/RSSNEWS.aspx"
+      ],
+      "feedOnly": true,
+      "articlePattern": "^/NEWS/[0-9]+/?$"
+    },
+    {
+      "media": "mohw",
+      "name": "衛生福利部",
+      "websiteUrl": "https://www.mohw.gov.tw/lp-16-1.html",
+      "referenceNames": [
+        "衛生福利部"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.mohw.gov.tw/lp-16-1.html",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "articlePattern": "^/cp-16-\\d+-1\\.html$"
+    },
+    {
+      "media": "mol",
+      "name": "勞動部",
+      "websiteUrl": "https://www.mol.gov.tw/1607/1632/1633/",
+      "referenceNames": [
+        "勞動部"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.mol.gov.tw/1607/1632/1633/",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "articlePattern": "^/1607/1632/1633/\\d+(?:/post)?/?$"
+    },
+    {
+      "media": "taipei_gov",
+      "name": "臺北市政府",
+      "websiteUrl": "https://www.gov.taipei/News.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6",
+      "referenceNames": [
+        "臺北市政府"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.gov.taipei/News.aspx?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "articlePattern": "^/News_Content\\.aspx\\?n=F0DDAF49B89E9413&sms=72544237BBE4C5F6&s=[A-Fa-f0-9]+$"
+    },
+    {
+      "media": "ntpc_gov",
+      "name": "新北市政府",
+      "websiteUrl": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1",
+      "referenceNames": [
+        "新北市政府"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.ntpc.gov.tw/ch/home.jsp?id=e8ca970cde5c00e1",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "articlePattern": "^/ch/home\\.jsp\\?id=e8ca970cde5c00e1&dataserno=[a-f0-9]+$"
+    },
+    {
+      "media": "moi",
+      "name": "內政部",
+      "websiteUrl": "https://www.moi.gov.tw/News.aspx?n=4&sms=9009",
+      "referenceNames": [
+        "內政部"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.moi.gov.tw/News.aspx?n=4&sms=9009",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "feedUrls": [
+        "https://www.moi.gov.tw/OpenData.aspx?SN=76F358C679FAD4CF"
+      ],
+      "feedOnly": true,
+      "articlePattern": "^/News_Content\\.aspx\\?n=4&(?:amp;)?s=\\d+$"
+    },
+    {
+      "media": "moa",
+      "name": "農業部",
+      "websiteUrl": "https://www.moa.gov.tw/theme_list.php?theme=news&sub_theme=agri",
+      "referenceNames": [
+        "農業部"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.moa.gov.tw/theme_list.php?theme=news&sub_theme=agri",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "feedUrls": [
+        "https://www.moa.gov.tw/open_data.php?format=rss&func=news_agri"
+      ],
+      "feedOnly": true,
+      "articlePattern": "^/theme_data\\.php\\?theme=news&sub_theme=agri&id=\\d+$"
+    },
+    {
+      "media": "mofa",
+      "name": "外交部",
+      "websiteUrl": "https://www.mofa.gov.tw/News.aspx?n=95&sms=73",
+      "referenceNames": [
+        "外交部"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.mofa.gov.tw/News.aspx?n=95&sms=73",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "feedUrls": [
+        "https://www.mofa.gov.tw/OpenData.aspx?SN=8ABA444B9AC1360F"
+      ],
+      "feedOnly": true,
+      "articlePattern": "^/News_Content\\.aspx\\?n=95&s=\\d+$"
+    },
+    {
+      "media": "mnd",
+      "name": "國防部",
+      "websiteUrl": "https://www.mnd.gov.tw/",
+      "referenceNames": [
+        "國防部"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.mnd.gov.tw/",
+      "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
+      "articlePattern": "^/news/(?:mnd|pressrelease)/\\d+/?$"
     }
   ]
 }

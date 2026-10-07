@@ -34,7 +34,7 @@ const CAMPS: Record<Exclude<Camp, 'other'>, { label: string; short: string; badg
 };
 // Readership of the collected edition (app/data/media-scope.json), in the
 // order the filter lists them.
-const SCOPE_ORDER = ['tw', 'tw-foreign', 'intl-zh', 'hkmo', 'sgmy', 'overseas-zh', 'zh-special', 'cn', 'foreign'];
+const SCOPE_ORDER = ['tw', 'tw-gov', 'tw-foreign', 'intl-zh', 'hkmo', 'sgmy', 'overseas-zh', 'zh-special', 'cn', 'foreign'];
 interface MediaScope {
   scope: string;
   scopeLabel: string;

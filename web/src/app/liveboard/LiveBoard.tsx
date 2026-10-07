@@ -36,9 +36,11 @@ import {
   type ThreadCoverage,
   topicCards,
 } from '@/lib/liveboard.mts';
+import { createFeedPoller } from '@/lib/liveboard-poll.mts';
 import type { Camp, EventItem, EventsSnapshot } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import BoardImage from './BoardImage';
+import CrawlMarquee from './CrawlMarquee';
 import styles from './liveboard.module.css';
 import OfflineWordmark from './OfflineWordmark';
 import StageCard, {
@@ -101,7 +103,6 @@ const KEYWORDS = 20;
 // Rank trails draw places below this at the bottom, so one far-off hour does not flatten the rest.
 const TRAIL_FLOOR = 30;
 const PANE_EVERY = 10 * SECOND;
-const STAGE_LABEL: Record<string, string> = { index: '巡查', article: '內文', topic: '議題' };
 const HOUR = 3600 * SECOND;
 const DAY = 24 * HOUR;
 const taipeiMidnight = (at: number) => Math.floor((at + 8 * HOUR) / DAY) * DAY - 8 * HOUR;
@@ -285,30 +286,10 @@ function Countdown({ at }: { at: string }) {
 /** The header's second row: crawl runs scrolling past, then the jobs running and due next. */
 function ActivityStrip({ activity }: { activity: LiveActivity }) {
   const crawls = activity.crawls;
-  const items = crawls.map((c) => (
-    <span key={`${c.media}:${c.stage}:${c.at}`} className="inline-flex shrink-0 items-center gap-1.5 pr-5">
-      {c.running && <span className={`h-1.5 w-1.5 rounded-full bg-emerald-400 ${styles.pulse}`} aria-hidden />}
-      <MediaIcon rem media={c.media} title={c.mediaTitle} size={14} />
-      <span className={c.failed ? 'text-rose-400' : 'text-zinc-300'}>{c.mediaTitle}</span>
-      <span className="text-zinc-500">{STAGE_LABEL[c.stage] ?? c.stage}</span>
-      {c.failed ? <span className="text-rose-400">失敗</span> : c.inserted > 0 && <span className="text-brand-400">+{c.inserted}</span>}
-    </span>
-  ));
   return (
     <div className="flex items-center gap-3 border-t border-zinc-800/70 px-6 py-1 text-sm short:px-4 short:py-0.5 portrait:hidden">
       <span className="shrink-0 text-xs font-semibold text-zinc-500">爬蟲 · 近 10 分鐘 {crawls.length} 次</span>
-      <div className="relative min-w-0 flex-1 overflow-hidden">
-        {crawls.length > 0 && (
-          <div className={`flex w-max ${styles.marquee}`} style={{ animationDuration: `${Math.max(30, crawls.length * 3)}s` }}>
-            {items}
-            {items.map((item) => (
-              <span key={`repeat:${item.key}`} aria-hidden className="inline-flex">
-                {item}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <CrawlMarquee crawls={crawls} />
       {activity.running.map((r) => (
         <span key={r.job} className="inline-flex shrink-0 items-center gap-1 rounded bg-emerald-900/60 px-1.5 text-xs text-emerald-300">
           <span className={`h-1.5 w-1.5 rounded-full bg-emerald-400 ${styles.pulse}`} aria-hidden />
@@ -356,6 +337,7 @@ export default function LiveBoard({
   const [events, setEvents] = useState<EventItem[]>(initialEvents?.events ?? []);
   const presence = useReaderPresence();
   const [online, setOnline] = useState(true);
+  const feedPoller = useRef<ReturnType<typeof createFeedPoller<LiveFeed>> | null>(null);
   const [now, setNow] = useState(() => Date.parse(initialFeed?.generatedAt ?? initialEvents?.builtAt ?? '') || 0);
   const [shown, setShown] = useState<{ card: Card; serial: number; replay: boolean } | null>(null);
   const [upcoming, setUpcoming] = useState<Card[]>([]);
@@ -374,6 +356,15 @@ export default function LiveBoard({
   const readingList = useRef<LiveArticle[]>(initialFeed?.reading ?? []);
   const readShown = useRef(new Set<number>());
   const knownTopics = useRef(new Set((initialFeed?.topics ?? []).map((t) => `${t.id}:${t.at}`)));
+
+  useEffect(() => {
+    const poller = createFeedPoller<LiveFeed>({ connection: setOnline });
+    feedPoller.current = poller;
+    return () => {
+      poller.stop();
+      feedPoller.current = null;
+    };
+  }, []);
 
   const push = useCallback((cards: Array<Card | null>) => {
     const real = cards.filter((c): c is Card => c !== null);
@@ -470,8 +461,7 @@ export default function LiveBoard({
     if (c.after) query.set('after', String(c.after));
     if (c.pairsAfter) query.set('pairsAfter', c.pairsAfter);
     if (c.readAfter) query.set('readAfter', c.readAfter);
-    const next = await getJson<LiveFeed>(`/api/v1/liveboard${query.size ? `?${query}` : ''}`);
-    setOnline(next !== null);
+    const next = await feedPoller.current?.poll(() => getJson<LiveFeed>(`/api/v1/liveboard${query.size ? `?${query}` : ''}`));
     if (!next) return;
     const at = Date.now();
     const seeded = c.after !== null;

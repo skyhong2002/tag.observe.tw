@@ -139,14 +139,12 @@
 }
 
 .marquee {
-  animation-name: marquee;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  will-change: transform;
 }
-@keyframes marquee {
-  to {
-    transform: translateX(-50%);
-  }
+.marqueeGroup {
+  display: flex;
+  flex: none;
+  min-width: var(--marquee-viewport, 0px);
 }
 
 .fade {

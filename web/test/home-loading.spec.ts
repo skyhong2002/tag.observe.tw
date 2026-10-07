@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { loadDemo, loadHomeGraph, loadHomeJournalists, loadHomeTopics, mediaStats } from '../../web/src/lib/demo';
+import { loadDemo, loadHomeGraph, loadHomeJournalists, loadHomeTopics, mediaStats } from '../src/lib/demo.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 

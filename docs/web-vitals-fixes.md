@@ -44,7 +44,7 @@ GA4 要在自訂定義註冊事件維度 `metric_target`、`page_type`，以及�
 
 ## 驗證
 
-- `app/test/home-loading.spec.ts`：四份附屬資料保持 pending 時，主內容仍能完成；失敗後可正常結束。
+- `web/test/home-loading.spec.ts`：四份附屬資料保持 pending 時，主內容仍能完成；失敗後可正常結束。
 - 既有 analytics-consent 與 analytics-job 測試，合計 15 項。
 - Web TypeScript 與 Next production build。
 - 協作瀏覽器在本地 production build 的議題頁模擬縮圖 error：圖片移除，欄寬 80px、高 55px

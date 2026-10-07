@@ -1178,5 +1178,41 @@
   "adaymag": {
     "icon": "https://adayimg.com/wp-content/uploads/2017/04/3d2cd9e4496057638a60144845e8d2c8-192x192.png",
     "title": "A Day Magazine"
+  },
+  "president": {
+    "title": "總統府",
+    "icon": null
+  },
+  "mohw": {
+    "title": "衛生福利部",
+    "icon": null
+  },
+  "mol": {
+    "title": "勞動部",
+    "icon": null
+  },
+  "taipei_gov": {
+    "title": "臺北市政府",
+    "icon": null
+  },
+  "ntpc_gov": {
+    "title": "新北市政府",
+    "icon": null
+  },
+  "moi": {
+    "title": "內政部",
+    "icon": null
+  },
+  "moa": {
+    "title": "農業部",
+    "icon": null
+  },
+  "mofa": {
+    "title": "外交部",
+    "icon": null
+  },
+  "mnd": {
+    "title": "國防部",
+    "icon": null
   }
 }
