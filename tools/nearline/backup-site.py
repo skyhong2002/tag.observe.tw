@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import time
@@ -195,7 +196,80 @@ def resume_backup(dest, report_path, nas):
             raise
 
 
-def backup(dest, nas):
+def trim_docker_storage():
+    """Trim only this host's mounted Docker filesystem, using existing Docker access."""
+    target = '/home/.docker-data'
+    actual = run([DOCKER, 'info', '--format', '{{.DockerRootDir}}'], capture_output=True, text=True).stdout.strip()
+    if actual != target or not os.path.ismount(target):
+        raise RuntimeError('Docker trim requires the expected mounted Docker data directory')
+    result = run([DOCKER, 'run', '--rm', '--network', 'none', '--cap-drop', 'ALL',
+                  '--cap-add', 'SYS_ADMIN', '--mount', 'type=bind,src=' + target + ',dst=/trim',
+                  '--entrypoint', '/usr/sbin/fstrim', 'mariadb:11.4', '-v', '/trim'],
+                 capture_output=True, text=True, timeout=300)
+    return {'target': target, 'output': result.stdout.strip()}
+
+
+def reclaim_for_capacity(dest, nas, required, report_path, report):
+    """Under the backup lock, expire verified duplicates only; retain the newest verified dump."""
+    dumps = sorted(p for p in dest.glob('tag_observe-*.sql.zst') if p.is_file() and not p.is_symlink())
+    verified = []
+    for path in dumps:
+        receipt = path.with_suffix('.manifest.json')
+        if not receipt.is_file() or receipt.is_symlink():
+            continue
+        raw = receipt.read_bytes()
+        try:
+            old = json.loads(raw)
+        except (ValueError, UnicodeError):
+            continue
+        if not isinstance(old, dict):
+            continue
+        backup_id = old.get('backup_id', '')
+        sha = old.get('sha256', '')
+        if (old.get('status') != 'verified' or not isinstance(old.get('restore'), dict)
+                or old['restore'].get('status') != 'passed'
+                or not isinstance(backup_id, str) or not re.fullmatch(r'\d{8}T\d{6}Z-[0-9a-f]{8}', backup_id)
+                or not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)
+                or path.name != 'tag_observe-' + backup_id + '.sql.zst'
+                or old.get('file') != path.name
+                or old.get('object') != nas.remote + '/objects/' + sha + '.sql.zst'):
+            continue
+        verified.append((path, receipt, raw, old))
+    # Also protect the newest dump even if its receipt is incomplete or failed.
+    protected = {dumps[-1]} if dumps else set()
+    if verified:
+        protected.add(verified[-1][0])
+    if any(path not in protected for path, *_ in verified):
+        latest, _, _, proof = verified[-1]
+        if latest.stat().st_size != proof.get('bytes') or digest(latest) != proof['sha256']:
+            raise RuntimeError('Newest verified local backup is damaged; preserve older copies')
+    for path, receipt, raw, old in verified:
+        if shutil.disk_usage(dest).free >= required:
+            break
+        if path in protected:
+            continue
+        before = path.lstat()
+        if before.st_size != old.get('bytes') or digest(path) != old['sha256']:
+            raise RuntimeError('Local reclaim candidate differs from its verified receipt')
+        remote_receipt = nas.remote + '/manifests/' + old['backup_id'] + '.json'
+        remote = nas.command('cat', remote_receipt, capture_output=True).stdout
+        if remote != raw:
+            raise RuntimeError('NAS reclaim receipt differs from the local receipt')
+        nas.verify(old['object'], old['sha256'])
+        after = path.lstat()
+        identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        if path.is_symlink() or identity(after) != identity(before) or receipt.read_bytes() != raw:
+            raise RuntimeError('Local reclaim candidate changed during NAS verification')
+        item = {'file': path.name, 'bytes': before.st_size, 'sha256': old['sha256'],
+                'object': old['object'], 'status': 'verified_before_local_removal'}
+        report.setdefault('capacity_reclaims', []).append(item)
+        atomic_json(report_path, report)
+        path.unlink()
+        item['status'] = 'local_removed_nas_retained'
+        atomic_json(report_path, report)
+
+
+def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
     dest.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (dest / '.backup.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -206,7 +280,16 @@ def backup(dest, nas):
         atomic_json(report_path, report)
         try:
             size = int(source_sql('SELECT COALESCE(SUM(DATA_LENGTH+INDEX_LENGTH),0) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()').strip())
-            if shutil.disk_usage(dest).free < size * 1.5 + 25 * GIB:
+            required = size * 1.5 + 25 * GIB
+            report['required_free_bytes'] = int(required)
+            if trim_docker and shutil.disk_usage(dest).free < required:
+                report['docker_trim'] = trim_docker_storage()
+                atomic_json(report_path, report)
+            if reclaim_verified and shutil.disk_usage(dest).free < required:
+                reclaim_for_capacity(dest, nas, required, report_path, report)
+            report['free_bytes_before_export'] = shutil.disk_usage(dest).free
+            atomic_json(report_path, report)
+            if report['free_bytes_before_export'] < required:
                 raise RuntimeError('Insufficient local space for full export and isolated restore; existing backups preserved')
             engines = source_sql("SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE() AND TABLE_TYPE='BASE TABLE' AND ENGINE<>'InnoDB'").strip()
             if engines:
@@ -229,6 +312,8 @@ def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--resume', help='Resume publication of an already restored backup receipt')
+    parser.add_argument('--trim-docker-data', action='store_true', help='On space pressure, trim the mounted /home/.docker-data filesystem')
+    parser.add_argument('--reclaim-verified-on-pressure', action='store_true', help='Reverify and expire older local NAS duplicates under space pressure; retain newest verified dump')
     parser.add_argument('--dest', default='/home/deck/tag-analysis-private/backups')
     parser.add_argument('--remote', default='nas:Archive/tag.analysis.tw/site-db-v1')
     parser.add_argument('--rclone-config', default='/home/deck/.config/nas-backup/rclone.conf')
@@ -243,7 +328,7 @@ def main():
             old = json.loads(receipt.read_text())
             if old.get('status') in ('failed', 'publishing') and old.get('restore', {}).get('status') == 'passed':
                 resume_backup(dest, receipt, nas)
-        backup(dest, nas)
+        backup(dest, nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure)
 
 
 if __name__ == '__main__':

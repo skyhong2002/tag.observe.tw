@@ -5,6 +5,7 @@
 `tools/nearline/backup-site.py` 執行以下順序：
 
 1. 取得單一工作鎖，確認本機有完整匯出及隔離還原需要的容量；檢查資料表皆為 InnoDB。
+   主機排程在空間不足時先對已掛載的 `/home/.docker-data` 執行 trim；透過既有 Docker 管理權限，以無網路、僅加入 `SYS_ADMIN` 的暫存容器執行固定 `fstrim` 命令。如果仍不足，可提前回收較舊的本機備份副本：必須有成功完整還原與 NAS 發布收據、本機內容一致、NAS 收據逐位元相同，且 NAS 物件重新完整讀回 checksum 通過。保留最新已驗證的本機備份，也保留最新產生的 dump、失敗及無有效收據的檔案。本機 manifest 與 NAS 物件不刪除；回收過程記錄於新備份 manifest。仍不足或驗證失敗就停止，不降低 `資料庫大小 × 1.5 + 25 GiB` 門檻。
 2. 串流匯出並以兩個 zstd threads 壓縮，成功與完整性檢查後才將 `.partial` 改成正式檔名。匯出前後 schema 不同時失敗，不宣稱同時完成 DDL 的備份可靠。
 3. 在 `--network none`、`--skip-networking`、event scheduler 關閉的暫存 MariaDB 還原**整份** SQL。檢查 SQL 執行結果與完整資料表名單，結束移除測試容器及其 volume。失敗回傳非零，保留本機 dump 與失敗報告。
 4. 確認 NAS 至少仍有 100 GiB 預留空間，上傳 `nas:Archive/tag.analysis.tw/site-db-v1/objects/<sha256>.sql.zst`，完整讀回驗證 hash，再上傳並讀回驗證 manifest。
