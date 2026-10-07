@@ -144,7 +144,7 @@ function excludedContainer(element: cheerio.Cheerio<AnyNode>): boolean {
     )
     // UDN marks keywords inside prose with a.tag. They are words in the
     // sentence, not the separate tag navigation removed by its parent widget.
-    .filter((name) => !(name === 'tag' && element.is('a') && element.closest('p').length > 0))
+    .filter((name) => !(['tag', 'trigger_tag'].includes(name) && element.is('a') && element.closest('p').length > 0))
     .join(' ');
   return EXCLUDED_CLASS.test(`${classes} ${element.attr('id') ?? ''}`);
 }

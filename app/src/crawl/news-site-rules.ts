@@ -46,6 +46,14 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'worldjournal.com',
+    path: /^\/wj\/story\/\d+\/\d+(?:\?|$)/,
+    bodySelector: '.article-content__editor',
+    bodyExcludeSelector: '.article-content__editor .next-page',
+    providerSelector: '.article-content__author',
+    providerPattern: /^(中央社)[\p{Script=Han}]{1,12}\d{1,2}日綜合外電報導$/u,
+  },
+  {
     host: 'news.owlting.com',
     path: /^\/articles\/\d+$/,
     bodySelector: 'main.article-detail article.news-content',

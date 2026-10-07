@@ -8,6 +8,17 @@ const ld = (body: string, name = '網站管理員') =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body, author: { '@type': 'Person', name } })}</script>`;
 
 describe('reporter identity from the selected article', () => {
+  it('separates a World Journal agency dispatch from people, inline prose words, photo credits, and navigation', () => {
+    const storyUrl = 'https://www.worldjournal.com/wj/story/121480/9801635';
+    const html = `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url: storyUrl, author: { '@type': 'Person', name: '中央社華沙7日綜合外電報導' } })}</script><div class="article-content__author">中央社華沙7日綜合外電報導</div><section class="article-content__editor"><figure><figcaption>照片來源：路透社</figcaption></figure><p><a class="trigger_tag"><strong>波蘭</strong></a>${prose}</p><p>法新社報導，警方公布結果。</p><section class="keywords"><a class="trigger_tag">導航關鍵字</a></section><section class="next-page"><p>上一則</p><p>下一則</p></section></section>`;
+    const detail = extractArticle(html, storyUrl);
+    expect(detail.authors).toEqual(['中央社']);
+    expect(detail.provider).toBe('中央社');
+    expect(detail.body).toBe(`波蘭${prose}\n\n法新社報導，警方公布結果。`);
+    expect(
+      extractArticle(html.replace('中央社華沙7日綜合外電報導</div>', '有人提到中央社華沙7日綜合外電報導</div>'), storyUrl).provider,
+    ).toBeNull();
+  });
   it('reads a separate Owlting partner writer credit below its introduction without including the photographer', () => {
     const rules = sourceByMedia('owlting')?.article;
     const owlLd = () => ld(prose, '閱政治').replace('https://example.com/news/1', 'https://news.owlting.com/articles/1467734');

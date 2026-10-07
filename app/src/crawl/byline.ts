@@ -224,6 +224,7 @@ const dateline = new RegExp(
 // A wire-service dispatch location is not an additional author.
 function agencyDatelineCredit(value: string): string | null {
   const text = value.normalize('NFKC').replace(/\s+/g, ' ').trim();
+  if (new RegExp(`^中央社\\s*${PLACE}\\s*\\d{1,2}日綜合外電報導$`, 'u').test(text)) return '中央社';
   return new RegExp(`^中央社\\s*/\\s*${PLACE}\\s*\\d{1,2}日(?:專電|電)$`, 'u').test(text) ? '中央社' : null;
 }
 
