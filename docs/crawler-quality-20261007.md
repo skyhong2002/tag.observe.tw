@@ -179,3 +179,17 @@
 843 項爬蟲測試、型別與格式檢查通過。全部 1,072 份可解析原始頁面以第四批／第五批解析器重播比對，仅三篇健康醫療網 title 與兩筆已核對 summary 欄位改變，所有正文與刊登時間不變。另補核對六個媒體署名：鉅聞天下李蘭妮、今周刊鄭鴻達、匯流新聞網謝東明、報新聞袁青、FTNN 吳峻光、巴哈姆特 RU，均有原頁明確署名證據。此為指定欄位人工檢驗，不宣稱每篇全欄位皆正確。
 
 證據：`batch5-healthnews-yesmedia-replay.json`、`batch5-all-sample-replay.json`、`batch5-reviewed-row-plan.json`、`batch5-row-repair-dry-run.json`、`batch5-reviewed-summary-plan.json`、`batch5-summary-dry-run.json`、`round6-six-media-original-proof.json`。第五批先在 followup 工作目錄保存；第四批安裝工作目錄保持固定候選。第五批發布需等第四批實際完成後再相隔約一小時。
+
+## 第四批實際上線與補正（22:22–22:33）
+
+22:29 驗證公視新文章時發現，另一項 logo 更新已於 22:22 切換正式版為 `c76f53036ff3539e84227d643d99a1ad7f6cdb86`。該版為 b385f42 的後續 commit，爬蟲、jobs 與 DB 程式完全相同，包含全部第四批修正，CI 37636008727 成功。原定 22:57:18 的第四批 timer 已取消，避免重複部署；並未執行本稽核的第四批 drain／安裝 wrapper。這次部署由另一項工作執行，本稽核沒有其逐 job 排空及網站探測證據，因此不宣稱全程零中斷。
+
+22:30 主機端驗證 worker、gateway、web 全部指向 c76f530，worker PID 401823、健康回應正常、公開首頁 200、佇列未暫停、13 delayed、0 active、無新增失敗 job ID（仍為 7 個基準失敗）。服务切換 journal 已保存，worker 於 22:22:26 正常 SIGTERM／停止，新服務随后恢復。
+
+第四批補正已套用並備份：10 筆署名均重新抓取原文成功，0 抓取失敗／0 競態；45639987 分離健康醫療網署名附註的標題，其既有健康醫療網 attribution 與引用索引原本已正確，保留並核對，沒有額外來源改寫。中華鱻傳媒 45640433／45640434 恢復首段，完整保留其他快照欄位；後者與 PChome 的既有配對按正式演算法更新至 0.6920700309。兩篇 sketch 已清除並安排自然重建，22:32 尚待排程完成。
+
+摘要共 4 筆：波新聞 45640308／45640309 改為文章專屬 og:description，草根影響力 45639985 與禁聞網 45653096 清除無效摘要。公開 API 與資料庫回讀均相符。全部補正於 `verify-batch4-repairs.mjs` 通過，索引完成仍須另行追蹤。
+
+新公視 45618788（13:13:32Z 取得、13:27:05Z 抓正文）自然寫入 95 字編輯摘要，原頁 `.post-article > .articleimg`、資料庫與公開 API 完全相符，不是手動回填。
+
+證據：`batch4-live-verification.json`、`batch4-external-service-transition.log`、`batch4-row-repair-applied.json`、`batch4-paired-body-applied.json`、`batch4-author-repair-applied.jsonl`、`batch4-summary-applied.json`、`batch4-repairs-verification.json`、4 份 batch4 原資料備份、`round6-natural-pts-summary-verification.json`。第五批現仍僅本地保存，發佈間隔改以新正式版觀測驗證時間起算，最早 23:30:46，避免重複重啟。
