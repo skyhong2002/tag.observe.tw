@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { type CampShare, fetchCampShare, wholePercentages } from '@/lib/camp-share.mts';
 import styles from './home.module.css';
 
@@ -11,7 +11,7 @@ const CAMPS = [
   { key: 'blue', label: '藍營傾向' },
 ] as const;
 
-export default function CampShareSummary({ initialShare }: { initialShare: CampShare | null }) {
+export default function CampShareSummary({ initialShare, children }: { initialShare: CampShare | null; children?: ReactNode }) {
   const [recovered, setRecovered] = useState<CampShare | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [retryKey, setRetryKey] = useState(0);
@@ -102,6 +102,7 @@ export default function CampShareSummary({ initialShare }: { initialShare: CampS
           </button>
         </div>
       )}
+      {children && <div className={styles.campDirectorySlot}>{children}</div>}
     </section>
   );
 }

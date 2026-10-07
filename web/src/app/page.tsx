@@ -26,8 +26,9 @@ import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
 import { pageMetadata } from '@/lib/seo.mts';
 import { updatedAtOf } from '@/lib/topic-update.mts';
-import EventRecovery from './_home/EventRecovery';
+import CampOutletDirectory from './_home/CampOutletDirectory';
 import CampShareSummary from './_home/CampShareSummary';
+import EventRecovery from './_home/EventRecovery';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import HomeRanking from './_home/HomeRanking';
 import styles from './_home/home.module.css';
@@ -390,10 +391,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                       </Link>
                     </article>
                   ))}
+                  <Link href="/event/" className={styles.more}>
+                    探索更多事件 <Arrow />
+                  </Link>
                 </div>
-                <Link href="/event/" className={styles.more}>
-                  探索更多事件 <Arrow />
-                </Link>
               </>
             ) : (
               <div className={styles.empty}>
@@ -454,7 +455,17 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </section>
         </div>
 
-        <CampShareSummary initialShare={data.campShare} />
+        <CampShareSummary initialShare={data.campShare}>
+          <Suspense
+            fallback={
+              <p className={styles.notice} role="status">
+                媒體清單載入中…
+              </p>
+            }
+          >
+            <CampOutletDirectory />
+          </Suspense>
+        </CampShareSummary>
 
         <SiteFooter
           notes={

@@ -295,3 +295,12 @@
 .band + .campShare { margin-top: 28px; }
 .rankingRetry { margin-top: 8px; color: var(--accent); cursor: pointer; }
 .rankingRetry:disabled { opacity: .6; cursor: wait; }
+
+/* Reserve the collapsed directory height while its independent API streams. */
+.campDirectorySlot { flex-basis: 100%; min-width: 0; min-height: 129px; }
+@media (max-width: 640px) {
+  .campDirectorySlot { order: 2; min-height: 385px; }
+}
+
+/* The event link is the final row of the same card as the stories. */
+.storyList > .more { margin-top: 0; border: 0; border-top: 1px solid var(--soft-line); border-radius: 0; }
