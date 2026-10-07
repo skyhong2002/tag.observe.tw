@@ -677,3 +677,15 @@ PNN45478221／45780646實際pnn5.aotter.net hosted viewer（一般pnn.tw respons
 舊Kingtop45408331／45408332的pending狀態已過期，現在fresh原頁、DB、public API的summary與summarySource均null且一致；batch13-kingtop-state-review.json verifiedtrue，没有重复資料寫入。ccsn0405兩篇及iw_times／peopo／guancha／lihpao／nikkei／musou共8篇屬已部署parser但歷史未回寫／selected fields／fresh不可用限制未解除；依各batch7／9／11 live verification與對現live的git ancestry證據標記parser-deployed-historical-review-retained，不能誤標成所有metadata已修正。保留原有date精度與upstream／availability排除理由，final報告須區分parser部署與歷史資料驗證。
 
 第十三批合計22不同候選：20摘要、7正文文字修正、6iThome正文來源修正、1BBC引用、0署名或日期歷史寫入；6iThome／5Cool3c／4MarieClaire／4MSN／2PNN／1BBC各fresh完整snapshot乾跑通過。正式仍c63dacb已推送／部署／驗證，readonly probe PID801457執行至07:01；第十二批bfb34f2冻结、本地提交未推送／部署／回寫，07:21 timer；第十三批本地提交未推送／部署／回寫、unfrozen未排程，須距第十二批實際成功部署約一小時再發佈。24小時觀察至18:49:13持續active，07:00下一輪自然抽樣尚未開始。
+
+### 10/8 07:08：第十五輪、報新聞／蕃新聞署名與第十三批固定候選
+
+07:00 sampler PID842952於07:02:18自然完成，ExecMainStatus0且MainPID0；新一輪112樣本／310新取得population，累計15輪2198樣本／10034不同取得文章／237媒體。2123成功解析／60non200／15exceptions，299pre-observation baseline＋1899within observation acquisition；此輪parser仍正式c63dacb，沒有中途改checkout或重開job。新媒體GQ與聚傳媒；GQ兩篇LINE syndication metadata作者Adam Cheung／Katherine Tu、精確JSON datePublished、獨立description與stored相同，正文exact DB但引用／全文清理未全面核對，僅selected fields檢查，batch13-seven-am-gq-proof.json留證。聚傳媒46292249完整特約記者credit在照片caption後同p內，待另批scoped DOM修正，不因no-author旗標猜人名。
+
+報新聞46292873主文開頭完整「報新聞/記者蔡昀臻/台北報導」，舊OUTLET reporter prefix沒有報新聞；加入已確認prefix，既有完整記者role／姓名／地名邊界規則處理，不把editor desk或後段敘述提及當作者。蕃新聞46292320供應相同完整稿件，舊parser fallback作者蕃新聞，現可取明示記者蔡昀臻。兩篇fresh200、主文exact DB、精確日期與DB相同，報新聞own canonical exact；蕃新聞own數字Article identity／主h1僅空白normalization後exact DBtitle，沒有放寬body guard或猜canonical。完整13field snapshots與乾跑passed；只改authors／creator，RSS供應summary與蕃新聞原meta summary完全保留。batch13-contentplatform-reviewed-plan.json／prepare／repair／verify完成，尚未apply。
+
+新Cool3c46292892的原站wrapper與own author yeah／h1／JSON／分鐘clock／文章ID252687／body excerpt全部成立，加入既有摘要計畫；6篇Cool3c重新fresh full13field乾跑全部passed，保留原description供應截斷。976crawl／attribution tests、tsc／全Biome通過；2123成功HTML對冻结第十二批回放19篇：6iThome、6Cool3c、4MarieClaire、1星島、2報新聞／Yam，新增byline only2，無新日期parser變化；MSN／PNN另6份專用資料途徑摘要變化獨立列證。
+
+第十一批probe PID801457已inactive／MainPID0／exit0，06:11:00.126→07:00:59.474共545主站200＋545worker200，batch11-probe-summary.json verifiedtrue。這是主機端定期探測，不能宣稱零停機或用戶browser已驗證；先前gateway restart錯誤紀錄保留，不重開probe。
+
+第十三批固定候選25不同文章：21摘要、2署名、7正文文字修正、6iThome正文來源修正、1BBC引用、0日期歷史寫入；6iThome／6Cool3c／4MarieClaire／4MSN／2PNN／1BBC／2報新聞Yam各fresh完整snapshot乾跑通過。準備以本章commit冻结候選並安排08:26發布；publisher需第十二批實際部署／完整30修復驗證且距resumed至少3600秒，再核對exact main／live／clean與CI才部署。第十二批bfb34f2仍冻结、本地提交未推送／部署／回寫，07:16probe及07:21release timers維持；正式仍c63dacb已推送／部署／驗證。第十三批本地提交尚未推送／部署／套用，冻结及timer實際狀態以ledger為準；後續聚傳媒、三立main editor credit、MSN複合人名與食力legacy頁面等新發現移交第十四批隔離checkout持續處理，並非24h工作完成。觀察到18:49:13仍active，最终有界round、全程報告與completion audit未完成。

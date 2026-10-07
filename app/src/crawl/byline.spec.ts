@@ -200,6 +200,12 @@ describe('closing translator credits', () => {
 });
 
 describe('body lead credits', () => {
+  it('reads the explicit 報新聞 reporter credit with slash-separated publisher and dateline', () => {
+    expect(extractLeadReporterNames('報新聞/記者蔡昀臻/台北報導\n\n本土研究指出相關健康風險。')).toEqual(['蔡昀臻']);
+    expect(extractLeadReporterNames('報新聞／記者蔡昀臻／台北報導\n\n研究發表。')).toEqual(['蔡昀臻']);
+    expect(extractLeadReporterNames('報新聞/記者編輯中心/台北報導\n\n研究發表。')).toEqual([]);
+    expect(extractLeadReporterNames('患者受訪表示身體不適。\n\n報新聞/記者蔡昀臻/台北報導')).toEqual([]);
+  });
   it('recognizes the opening reporter declaration after photo captions', () => {
     expect(extractLeadReporterNames('▲市長出席記者會。（圖／記者張小明攝）\n\n記者王小明／台北報導\n\n市長今天公布政策。')).toEqual([
       '王小明',
