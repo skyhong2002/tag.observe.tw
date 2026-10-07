@@ -253,3 +253,17 @@ Bnext 44696550、早安健康 45595849 是 topic／special landing，標題與�
 23:44 第六批追加引用：鳳凰網45709873原文「据美联社和哥伦比亚广播公司等媒体报道」是明示聯合引用，舊規則因後面不是立刻「報導」而漏了美聯社。新增限定段首完整「據／根據＋列舉＋等媒體報導」格式，只把精確匹配的已知媒體標籤加入；CBS原名仍只是原文證據，不猜媒體鍵或國别，不把圖片來源或單純提及算引用。提供者新華社也有頁首明示，準備一筆來源／引用補正，重新抓原文確認正文、標題、時間不變，完整快照試跑通過，尚未寫入。括號結尾「海洋」沒有清楚角色標記，作者身份保留待查。
 
 最新880項爬蟲／引用測試、型別與格式檢查通過；以不可變17d6bde正式release重播全部1267份原頁，第六批僅16篇改變（前15篇加一筆美聯社引用），刊登時間全部不變。計畫目前6太報正文／標題、9署名、1来源／引用，皆待下一小時批次。取樣未增加，最新人工紀錄209份（190篇不同文章、101媒體、186篇屬取樣集合），含局部／未解／重複驗證，不宣稱全部樣本人工合格。
+
+## 午夜抽樣恢復與第六批擴充（10/8 00:14，尚未發布）
+
+00:00 輪因資料庫 SELECT 超過 30 秒 statement budget 終止，確認 MainPID 0／failed 後才重新啟動唯讀抽樣 service；沒有重啟 crawler。原讀取以未索引取得時間篩選，改為 source/media/published covering index 取得全部 own ID，再每 500 ID 以主鍵分頁讀取精確取得區間，各頁有 30 秒上限及 10 ms 讓步；沒有新增 DB index，也沒有用 ID 新舊或刊登日期縮減母體。修正提交 `050b0a13cb081add73d6b52adef735f30fa32d68` 尚未推送，但抽樣 systemd 執行的 checkout 已使用它。
+
+補跑窗口從原 cursor 23:00:00.498 到 00:03:51.233，沒有跳過取得區間。176,807 own candidates 中 1,182 符合區間，population scan 8,993 ms；00:08 後自然完成、service Result success。累計 8 輪、1,508 不同樣本／7,478 不同母體、221 媒體；1,209 樣本於觀察期間取得，299 屬之前基準。1,450 原頁可解析、47 非 200、11 請求或解析例外。證據 `midnight-sampler-recovery.log`、00:03:51 輪 selection/round.json 與 state.json。
+
+ELLE 45559848 頁面 sailthru.author 與文章作者宣告均為 Christy Tung，新增明示 metadata 來源。遠見 45572290／45572292 頁首明示本文節錄自指定書籍、作者潘韞珊／吳錦珠及王小寧、出版社與以下為摘文；只匹配完整書摘作者宣告，不把一般書名提及或推薦框當撰稿人。三篇 fresh-source 試跑通過，正文與 DB 逐字相符；解析 title/date/summary 與既有 immutable release 相符，只計畫改署名，保留 DB 舊刊登精度、已清理標題及既有摘要狀態。
+
+DW 六篇限定中文文章路径與主文章容器，讀取 author-details 的 extra-info 通訊社列；Felix Tamsut 等前綴人名不當通訊社，德正集體筆名沿用原署名。可確認 AFP/AP/Reuters 才加入既有身份；德新社只保留原始 provider，不猜 DPA 身份或國別。六篇移除兩段固定 Instagram 宣傳／著作權聲明，fresh HTML 與既有正式 parser 重播證明所有其餘段落順序／文字完全相同。正文 466／792／700／973／690／693 字，標題、署名、解析刊登時間與摘要不變。五個既有配對都有完整 pair/counterpart 快照與重算證據，仍成立，更新須連同原 sketch/citation/pair 備份後進行。
+
+午夜新樣本另兩篇太報專題 45676868／45676876 同樣漏抓，重新取得正文 3,666／3,398 字，確認 missing、無 archive/sketch/pair，加入原六篇計畫，共八篇。最新 1,450 原頁完整重播相對不可變17d6bde共27篇差異，新增兩篇已核對，刊登時間不變。887項爬蟲／引用測試通過，tsc／Biome 通過（既有 String.raw info）。第六批計畫為8太報正文／標題、6DW正文（其中3增加agency attribution）、12署名、1鳳凰網引用；全部尚未寫入、未推送或部署，維持不早於00:40:02並於發佈前重查正式版及自然job排空。
+
+證據：`batch6-extra-authors-original-proof.json`、`batch6-twelve-authors-plan.json`、`batch6-dw-reviewed-plan.json`、`batch6-dw-dry-run.json`、`batch6-taisounds-reviewed-plan.json`、`batch6-current-tests.log`、`batch6-all-sample-replay.json`。累計人工紀錄220份、196篇不同文章／101媒體，其中192篇屬取樣集合；包含局部欄位檢驗、待查及重複驗證，不宣稱全部自動樣本人工合格。24小時觀察仍持續至10/8 18:49:13。

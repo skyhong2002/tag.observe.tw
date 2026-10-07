@@ -46,6 +46,16 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'dw.com',
+    path: /^\/(?:zh|zh-hant)\/[^/]+\/a-\d+$/,
+    bodySelector: 'article',
+    providerSelector: 'article > .content-area > header .author-details .extra-info',
+    providerPattern:
+      /^(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+,\s*)?((?:德新社|法新社|美聯社|路透社)(?:\s*[、,]\s*(?:德新社|法新社|美聯社|路透社))*)$/,
+    bodyExcludeSelector:
+      'article .rich-text > p:contains("DW中文有Instagram！歡迎搜尋dw.chinese"), article .rich-text > p:contains("年德國之聲版權聲明：本文所有內容受到著作權法保護")',
+  },
+  {
     host: 'taisounds.com',
     path: /^\/specialtopic\/content\/\d+\/\d+$/,
     bodySelector: '.container > .special-text2',

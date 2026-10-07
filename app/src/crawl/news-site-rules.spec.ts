@@ -371,3 +371,29 @@ it('separates a Babyou comprehensive-report role from the visible writer name', 
     '姊妹淘編輯部',
   ]);
 });
+
+it('reads DW agency credits only from the selected article header', () => {
+  const html = `<aside><span class="extra-info">路透社</span></aside><article><div class="content-area"><header><h1>新聞標題</h1><div class="author-details"><a rel="author">德正</a><span class="extra-info">德新社、法新社、美聯社</span></div></header>${paragraph}</div></article>`;
+  expect(extractArticle(html, 'https://www.dw.com/zh-hant/story/a-79578715')).toMatchObject({
+    provider: '德新社、法新社、美聯社',
+    authors: ['德正'],
+  });
+  expect(extractArticle(html, 'https://www.dw.com/zh-hant/person-71098430').provider).toBeNull();
+});
+
+it('excludes only reviewed DW house promotion and license paragraphs from the news body', () => {
+  const html = `<article><div class="content-area"><header><h1>新聞標題</h1></header><div class="rich-text">${paragraph}<p>受訪者在Instagram討論著作權與新聞工作。</p><p>DW中文有Instagram！歡迎搜尋dw.chinese，看更多深入淺出的圖文與影音報導。</p><p>© 2026年德國之聲版權聲明：本文所有內容受到著作權法保護，如無特別授權不得使用。</p></div></div></article>`;
+  const result = extractArticle(html, 'https://www.dw.com/zh-hant/story/a-79578715');
+  expect(result.body).toContain(body);
+  expect(result.body).toContain('受訪者在Instagram討論著作權與新聞工作。');
+  expect(result.body).not.toMatch(/DW中文有Instagram|德國之聲版權聲明/);
+});
+
+it('keeps a DW extra reporter name out of the agency-provider field', () => {
+  const html = `<article><div class="content-area"><header><div class="author-details"><span class="extra-info">Felix Tamsut, 法新社、路透社</span></div></header>${paragraph}</div></article>`;
+  expect(extractArticle(html, 'https://www.dw.com/zh-hant/story/a-79578715').provider).toBe('法新社、路透社');
+  expect(
+    extractArticle(html.replace('Felix Tamsut, 法新社、路透社', 'Collective Writer'), 'https://www.dw.com/zh-hant/story/a-79578715')
+      .provider,
+  ).toBeNull();
+});

@@ -267,6 +267,8 @@ export function reporterNames(value: string): string[] {
   // reporter declaration; only remove that exact dateline at the start.
   const text = value.normalize('NFKC').replace(/[╱∕]/g, '/').replace(/\s+/g, ' ').trim().replace(epochDateline, '');
   if (!text) return [];
+  const authors = /^作者\s*[:：]\s*([\p{Script=Han}]{2,5}(?:\s*[、，,]\s*[\p{Script=Han}]{2,5}){0,5})$/u.exec(text);
+  if (authors) return creditedNames(authors[1]);
   const writer = /^文\s+([\p{Script=Han}]{2,5})$/u.exec(text);
   if (writer) return creditedNames(writer[1]);
   // Xinhua wire dispatches put a parenthesized reporter credit immediately

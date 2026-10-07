@@ -223,8 +223,13 @@ export function extractAttributions(body: string, publisher: string, provider?: 
       found.set(identity.media, { ...identity, evidence: evidence.replace(/\s+/g, ' ').trim().slice(0, 160), kind: 'explicit' });
     }
   };
-  const providerIdentity = provider ? providerOutlet(provider) : null;
-  if (providerIdentity) add(providerIdentity, `內容提供者：${provider?.trim()}`);
+  // DW's reviewed agency-credit slot can list several providers next to the
+  // separate author link. Unrecognized labels retain no guessed identity.
+  const providerValues = publisher === 'dw' && provider && /[、,]/.test(provider) ? provider.split(/[、,]/) : [provider];
+  for (const value of providerValues) {
+    const providerIdentity = value ? providerOutlet(value.trim()) : null;
+    if (providerIdentity) add(providerIdentity, `內容提供者：${value?.trim()}`);
+  }
   // CNA syndicated copy commonly starts with its agency dispatch byline.
   // Require the enclosing dateline and date/electric-dispatch suffix so a
   // news story merely mentioning a CNA reporter cannot become a citation.

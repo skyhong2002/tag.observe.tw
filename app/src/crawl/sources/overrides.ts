@@ -500,7 +500,18 @@ export const overrides: Record<string, SourceOverride> = {
     list: { urls: [{ cat: 'news', url: 'https://www.top1health.com/' }], discover: { pattern: String.raw`^/Article/\d+/\d+$` } },
   },
   // Issue #4 replacements (2026-09-29); the rss.app proxies these used are gone.
-  elle: { list: { urls: [{ cat: 'news', url: 'https://www.elle.com/tw/sitemap_google_news.xml' }] } },
+  gvm: {
+    article: {
+      authorSelector: '.article-head_blockquote > p',
+      // Only a declaration that this article is the following book excerpt.
+      authorPattern:
+        /本文節錄自《[^《》]{1,100}》一書，(作者：[\p{Script=Han}]{2,5}(?:\s*[、，,]\s*[\p{Script=Han}]{2,5}){0,5})，[^，。]{2,20}出版，以下為摘文。/u,
+    },
+  },
+  elle: {
+    list: { urls: [{ cat: 'news', url: 'https://www.elle.com/tw/sitemap_google_news.xml' }] },
+    article: { authorSelector: 'meta[name="sailthru.author"]' },
+  },
   hbr: {
     list: {
       urls: [{ cat: 'news', url: 'https://www.hbrtaiwan.com/sitemap/sitemap-articles.xml' }],

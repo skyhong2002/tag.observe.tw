@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractArticle } from './article.ts';
+import { sourceByMedia } from './registry.ts';
 
 const url = 'https://example.com/news/1';
 const prose = '市府今天公布公共運輸改善計畫，增加班次並邀請居民參與討論。'.repeat(10);
@@ -148,4 +149,36 @@ describe('reporter identity from the selected article', () => {
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });
+});
+
+it('reads ELLE declared Sailthru author metadata while ignoring recommendation accounts', () => {
+  const rules = sourceByMedia('elle')?.article;
+  expect(
+    extractArticle(
+      '<meta name="sailthru.author" content="Christy Tung"><aside><span class="article-author">Other Writer</span></aside>',
+      'https://www.elle.com/tw/life/a74063621/antigone/',
+      rules,
+    ).authors,
+  ).toEqual(['Christy Tung']);
+  expect(
+    extractArticle(
+      '<meta name="author" content="Existing Writer"><aside><span class="article-author">Other Writer</span></aside>',
+      'https://www.elle.com/tw/life/a74063621/antigone/',
+      rules,
+    ).authors,
+  ).toEqual(['Existing Writer']);
+});
+
+it('uses GVM explicitly declared excerpt writers and leaves ordinary book mentions outside authorship', () => {
+  const rules = sourceByMedia('gvm')?.article;
+  const declaration = '本文節錄自《書名》一書，作者：潘韞珊，吳錦珠，聯合文學出版，以下為摘文。';
+  const html = `<meta name="author" content="遠見好讀"><div class="article-head_blockquote"><p>導讀。（${declaration}）</p></div><article><p>${prose}</p></article>`;
+  expect(extractArticle(html, 'https://www.gvm.com.tw/article/116103', rules).authors).toEqual(['潘韞珊', '吳錦珠']);
+  expect(extractArticle(html.replace('以下為摘文。', '接受了專訪。'), 'https://www.gvm.com.tw/article/116103', rules).authors).toEqual([
+    '遠見好讀',
+  ]);
+  expect(
+    extractArticle(html.replace('article-head_blockquote', 'related-recommendation'), 'https://www.gvm.com.tw/article/116103', rules)
+      .authors,
+  ).toEqual(['遠見好讀']);
 });

@@ -191,3 +191,9 @@ it('recognizes joint reporting declarations without guessing unknown peers or qu
   expect(extractAttributions('照片據美聯社與路透社等媒體報導，活動結束。', 'ifeng')).toEqual([]);
   expect(extractAttributions('据反对美联社和未知新闻公司等媒体报道，活动结束。', 'ifeng')).toEqual([]);
 });
+
+it('keeps DW agency providers separate from its declared collective author', () => {
+  expect(extractAttributions('新聞內文。', 'dw', '德新社、法新社、美聯社').map((x) => x.media)).toEqual(['afp', 'ap']);
+  expect(extractAttributions('新聞內文。', 'dw', '德正')).toEqual([]);
+  expect(extractAttributions('新聞內文。', 'dw', '未知供稿者、美聯社').map((x) => x.media)).toEqual(['ap']);
+});

@@ -231,3 +231,9 @@ it('separates terminal reporting credits from Daai production credits', () => {
   expect(extractClosingReporterNames('完整新聞。張慧珍 拉梅什 陳榮豐 尼泊爾報導│歐君萍 卓谷翰 製作')).toEqual([]);
   expect(extractClosingReporterNames('完整新聞。\n\n歐君萍 卓谷翰 製作')).toEqual([]);
 });
+
+it('splits complete Chinese author declarations without accepting prose or role descriptions', () => {
+  expect(reporterNames('作者：潘韞珊，吳錦珠')).toEqual(['潘韞珊', '吳錦珠']);
+  expect(reporterNames('作者：王小明表示這是一本新書。')).toEqual([]);
+  expect(reporterNames('作者：新聞編輯中心')).toEqual([]);
+});
