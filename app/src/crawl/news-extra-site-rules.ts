@@ -15,7 +15,9 @@ export const EXTRA_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegEx
     path: /^\/(?:reports|forum)\/[a-zA-Z0-9]+$/,
     bodySelector: '.content.paragraphs',
     titleSelector: 'h1',
-    publishedSelector: '.dates > div:first-child > span:last-child',
+    authorSelector: '.page.read.single .doc-header .authors-container > .authors > a[href^="https://watchout.tw/authors/"] .name',
+    publishedSelector: '.page.read.single .doc-header .dates > div:first-child > span:last-child',
+    preferPrintedPublication: true,
     // SSR prints UTC; verified against this article's publishedAt.seconds.
     publicationFormat: 'utc',
   },

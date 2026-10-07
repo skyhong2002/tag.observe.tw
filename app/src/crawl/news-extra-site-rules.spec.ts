@@ -8,7 +8,7 @@ const head = '<title>真實新聞文章標題</title>';
 const samples = [
   {
     url: 'https://watchout.tw/reports/cfQ1ORe7lYAGkaX0Oqpr',
-    html: `<h1>真實新聞文章標題</h1><div class="dates"><div><span>發佈時間</span><span>2026/10/1 06:47:33</span></div><div><span>最後更新</span><span>2026/10/2 09:00:00</span></div></div><div class="content paragraphs">${article}</div><div class="after-article"><div class="date">2026/12/31</div>其他新聞</div>`,
+    html: `<div class="page read single"><div class="doc-header"><h1>真實新聞文章標題</h1><div class="dates"><div><span>發佈時間</span><span>2026/10/1 06:47:33</span></div><div><span>最後更新</span><span>2026/10/2 09:00:00</span></div></div></div><div class="content paragraphs">${article}</div></div><div class="after-article"><div class="date">2026/12/31</div>其他新聞</div>`,
     iso: '2026-10-01T06:47:33.000Z',
   },
   {
@@ -73,4 +73,11 @@ describe('additional publisher article templates', () => {
     root.hostname = 'unrelated.example';
     expect(newsSiteRules(root.href)).toBeUndefined();
   });
+});
+
+it('prefers Watchout printed UTC publication over its zoneless JSONLD and reads its main author credit', () => {
+  const url = 'https://watchout.tw/reports/TGBqL290gwsihU5z6yTU';
+  const html = `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', mainEntityOfPage: { '@id': 'https://watchout.tw' }, datePublished: '2026/10/7 11:03:50', author: [{ '@type': 'Person', name: '薛翰駿 Sih Hān-Tsùn' }] })}</script><aside><div class="dates"><div><span>2027/12/31 12:00:00</span></div></div></aside><main><div class="page read single"><div class="doc-header"><div class="authors authors-container"><div class="author-type">作者</div><div class="authors"><a href="https://watchout.tw/authors/272"><div class="name">薛翰駿 Sih Hān-Tsùn</div></a></div></div><div class="dates"><div><span>發佈時間</span><span>2026/10/7 11:03:50</span></div><div><span>最後更新</span><span>2026/10/7 11:34:31</span></div></div></div><div class="content paragraphs">${article}</div></div></main><aside><div class="authors-container"><div class="authors"><a href="https://watchout.tw/authors/999"><div class="name">其他作者</div></a></div></div></aside>`;
+  expect(extractArticle(html, url)).toMatchObject({ authors: ['薛翰駿 Sih Hān-Tsùn'], publishedAt: new Date('2026-10-07T11:03:50Z') });
+  expect(extractArticle(html.replace('page read single', 'other-page'), url).authors).toEqual([]);
 });

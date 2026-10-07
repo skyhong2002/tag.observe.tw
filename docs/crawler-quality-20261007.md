@@ -485,3 +485,11 @@ Yahoo日本地震pickup metadata僅「(Yahoo!天気・災害)」服務信用，a
 第九批live仍`d2f9a58`，已推送／部署並完成9篇修復驗證；probe04:31樣本仍主站／worker200，持續至04:53。第十批固定`183f87e`僅本地提交，未推送／部署／套資料，timer05:12。第十一批目前本地累積，發布須距第十批實際完成約一小時，尚未排程。24小時觀察仍至18:49:13，沒有提前結束。
 
 04:34補充：台北郵報46006945／46085458 fresh原頁與完整13欄快照核對通過，只清除純信用摘要；日經45378769重新取得為完整文章，與DB舊paywall提示正文不同，因此不納入歷史摘要或正文回寫。擴充後6metadata候選乾跑全部通過，併同3TechNews正文為9篇不同候選（3作者、3摘要、3正文、0日期），5既存配對已核對；正式資料尚未套用。第十一批程式提交`2f9fcccea1b3f63643e8a5af3cdc720825079dfb`僅本地、未推送／部署，報告補充另行提交。
+
+### 10/8 04:40：沃草UTC時間優先順序與明示作者
+
+沃草45491414的JSONLD `2026/10/7 11:03:50` 未宣告時區，被generic解析成+08:00的03:03:50Z。原頁SSR印出11:03:50 UTC、Nuxt內嵌doc.publishedAt.seconds=1791371030，皆等於DB既有11:03:50Z。已在該站既有utc规则明示preferPrintedPublication，並限定主文章 `.page.read.single .doc-header .dates`，不從側欄或更新時間取日期。主文章作者卡明示完整「薛翰駿 Sih Hān-Tsùn」，新增精確writer欄，維持姓名完整、不拆成兩人。
+
+原存檔與新取得200原頁，經內嵌fetchReportsIdData.doc.id核對文章identity，均確認epoch／printed／DB一致，沒有歷史日期写入。正文与DB仍有差異，且不只段落空白差異，暂不纳入歷史作者或正文更新。`batch11-watchout-date-proof.json`、`batch11-watchout-fresh-date-proof.json`保存只含必要欄位的證據，未把整個頁面客戶端設定當資料來源。941crawl／attribution、tsc、全專案Biome通過；原頁1859回放24篇變化，較前次增加這篇作者與日期修正，正文內容沒有新增變化，正式9篇候選不變。
+
+前一goal turn為實際進展：新增parser、fresh originals、historical dryruns、report及commits。本輪亦為進展；24小時目標維持active。正式仍d2f9a58已推送／部署並完成9篇验证；第十批183f87e仍本地提交未推送／部署，05:12排程。第十一批本地程式與報告提交，尚未推送／部署／套資料，下一次發布須距第十批實際部署約一小時。
