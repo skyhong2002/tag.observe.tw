@@ -49,6 +49,9 @@ const outlets: Outlet[] = [
   // Reviewed articles explicitly identify 朝中社 as their commentary source;
   // no independent jurisdiction evidence has been recorded in this audit.
   outlet('kcna', '朝中社', 'ZZ', []),
+  // Reviewed supplied-copy declarations; jurisdiction has not been established.
+  outlet('mygopen', 'MyGoPen', 'ZZ', ['MyGoPen 事實查證網站']),
+  outlet('prnewswire', '美通社', 'ZZ', ['PR Newswire']),
   outlet('guardian', 'The Guardian', 'ZZ', ['Guardian']),
   outlet('economist', 'The Economist', 'ZZ', ['Economist']),
   // Official dongqiudi.com footer identifies the outlet and its Tianjin ICP registration.
@@ -251,6 +254,23 @@ export function extractAttributions(body: string, publisher: string, provider?: 
   if (dispatch) add(outletIdentity('cna'), dispatch[0]);
   const healthDispatch = /^【健康醫療網[／/]記者[\p{Script=Han}]{2,5}報導】/u.exec(body);
   if (healthDispatch && reporterNames(healthDispatch[0]).length) add(outletIdentity('healthnews'), `來源：${healthDispatch[0]}`);
+  if (publisher === 'hakkanews') {
+    const cooperation =
+      /^編按：《客新聞》與《MyGoPen》合作反詐騙，將提供「事實查核」、「詐騙破解」等相關新聞訊息，本篇文章由《MyGoPen》提供[，。]/u.exec(
+        body.trim(),
+      );
+    if (cooperation) add(outletIdentity('mygopen'), `來源：${cooperation[0]}`);
+  }
+  if (publisher === 'ammtw') {
+    const lead = body
+      .trim()
+      .split(/\n\s*\n/)
+      .slice(0, 3);
+    for (const paragraph of lead) {
+      const release = /^[\p{Script=Han}]{2,20}\d{4}年\d{1,2}月\d{1,2}日\s*\/美通社\/\s*[—–-]/u.exec(paragraph);
+      if (release) add(outletIdentity('prnewswire'), `來源：${release[0]}`);
+    }
+  }
   for (const sentence of body.split(/[。！？!?；;\n]+/)) {
     // A complete standalone reference list identifies each named outlet.
     // Photo credits and prose that merely mentions sources do not qualify.

@@ -529,3 +529,17 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 05:17補充：第十批14metadata、5source與2health combined共21篇修復已套用並留備份；health2篇原文／完整DB／公開API／citation/sketch/pair核對通過。其他兩組驗證首次在公開API回傳500時停止，第二個metadata及第三個source請求受影響；重查45408380與45709901皆200。首次失敗報告與log另存first-attempt，尚待完整重新驗證，不把已套用等同已驗證，也不重新套用資料。
 
 05:18驗證完成：第十批全部21篇不同文章（14metadata、5source、2health combined）與備份／DB／公開API／指定original证据核對成功，11署名、5摘要、7來源，0正文／日期歷史寫入；source與health的citationindex及既有sketch/pair保存亦通過。`batch10-full-repairs-verification.json`整合三組verified=true。公開API首次短暫500仍保留紀錄；source第二次失敗是驗證脚本未考慮2023年端傳媒文章既有七天public body window，而非資料庫正文遺失，改按live article-retention驗證expired/body=null/chars=0/source=null與精確deadline，同時核對正文DB完整不變及公開引用仍保留後通過。沒有改公開期限或重套修復。第十批已推送／部署且21篇修復驗證完成，後續禁止重套。本批第十一批13篇候選仍未套用，程式提交未推送／部署；下一批安排06:16，比第十批實際恢復晚約一小時。觀察持續至18:49:13。
+
+### 10/8 05:32：客新聞明示摘要框、MyGoPen／美通社來源與第十二批準備
+
+客新聞46163199主文開頭有合作編按，但真正導讀是main-content內single-content文章、post-content第一個div開頭的quote_style，h3明示「你可以先知道：」，後續兩段依序（1）（2）整理查核結论。新增僅該站日期／數字文章路徑、主文直系框、完整label与連續編號的摘要抽取；保留原站重點文字並記為article:selector，不從任意本文段落生成摘要，不從推薦／側欄或普通引言採摘要。原有截斷合作編按排除為摘要，沒有真正重點框時保留其他實質description fallback。fresh200原頁與既有正文／組織署名相同，主文原有編按和重點正文保持不變。
+
+同篇完整開頭「本篇文章由《MyGoPen》提供」明示來源，原引用identity缺少MyGoPen；加入已審閱名稱（國別ZZ待獨立證據）與僅客新聞完整lead合作宣告。AMM轉貼46161211的第二段完整「洛杉磯2026年10月8日 /美通社/ —」也明示稿件來源，新增美通社／PR Newswire identity（國別ZZ）、僅AMM開頭三段的完整中文城市日期agency dispatch；排除普通名稱、圖片來源、未完整宣告或稍後段落。source evidence保留明示信用，來源與作者角色分開。名稱identity亦讓其他已存在完整「新聞來源：PR Newswire」的台灣新聞網／新頭條原文被正確識別。
+
+953crawl／attribution、tsc、全專案Biome通過；1935成功HTML對固定第十一批c63dacb回放11篇變化：客新聞1summary／來源、美通社10來源，0正文／作者／日期parser變化。全部11份變化的source evidence逐項人工核對，其他非來源字段沒有變化。台灣好報46149813／46149814用fresh官方feed同post ID、題名（DB保留站名prefix）、精確date與原文正文／署名交叉驗證，只去除已審阅own-title出版宣傳尾句，保留feed excerpt；不能因HTML摘要為空便清除feed摘要。看中國45715476／45793185 fresh200確認完整田靜心編譯信用，正文與DB相同。
+
+第十二批候選14篇不同文章：4metadata（2看中國署名、2台灣好報feed摘要）及10source（含客新聞summary＋來源atomic update），合計2署名、3摘要、10來源、0正文／日期寫入。4metadata fresh／完整13欄與10source fresh／完整14欄乾跑全部通過。source apply會durable backup完整metadata／citationindex／sketch／pair，來源與摘要同篇transaction更新；正式資料尚未套用。`batch12-goodnews-reviewed-plan.json`、`batch12-secretchina-reviewed-plan.json`、`batch12-source-reviewed-plan.json`保存快照。AMM46161211雖初次fresh200證據成立，後續重驗兩次逾時，排除正式source plan，沒有盲目回寫或覆蓋正文。保留原3-summary proof作archive；不要另外套用包含客新聞的舊summary-only plan，避免與atomic source計畫重疊。
+
+新增全球之聲與女人迷各2份指定欄位檢查，人工目前713紀錄／524不同文章／228媒體／520自動樣本。全球之聲own English作者、繁中譯者、主文原稿writer與publisher信用需要區分角色，尚未覆寫；女人迷樣本是collections专题landing而非個別新聞，標題／description有實質內容，空personal byline不應當錯誤；nested teaser短正文與取得分類另待查。其餘6家未取得200原頁，仍不能宣稱metadata正確。
+
+正式第十批183f87e已推送／部署／21篇修復驗證完成，不要重套。05:32主機probe仍主站與worker200，持續至05:57（不是零停機或用戶browser證明）。第十一批c63dacb固定本地提交，未推送／部署／套資料，06:16 publisher／06:11 probe timer仍active；禁止修改固定checkout。第十二批另有隔離checkout，本地提交後仍未推送／部署／套資料，最早距第十一批實際部署约一小時後發布，尚未排程。24小時觀察仍至18:49:13維持active。

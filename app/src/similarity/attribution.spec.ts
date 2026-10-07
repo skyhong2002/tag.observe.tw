@@ -16,6 +16,23 @@ describe('explicit media attribution', () => {
     expect(extractAttributions('文章提到【健康醫療網／記者陳靖安報導】的文字。', 'tyenews')).toEqual([]);
     expect(extractAttributions('【健康醫療網／攝影陳靖安】照片說明。', 'tyenews')).toEqual([]);
   });
+  it('recognizes reviewed Hakka fact-check and AMM press-release supplied-copy declarations', () => {
+    const cooperation =
+      '編按：《客新聞》與《MyGoPen》合作反詐騙，將提供「事實查核」、「詐騙破解」等相關新聞訊息，本篇文章由《MyGoPen》提供，後續查核內容。';
+    const source = extractAttributions(cooperation, 'hakkanews');
+    expect(source).toEqual([expect.objectContaining({ media: 'mygopen', countryCode: 'ZZ' })]);
+    expect(attributionRole(source[0])).toBe('來源');
+    expect(extractAttributions('人物表示' + cooperation, 'hakkanews')).toEqual([]);
+    expect(extractAttributions(cooperation.replace('提供，', '討論，'), 'hakkanews')).toEqual([]);
+    const release = '申請情況反映產業關注\n\n洛杉磯2026年10月8日 /美通社/ — 組織公佈申請名單。';
+    const agency = extractAttributions(release, 'ammtw');
+    expect(agency).toEqual([expect.objectContaining({ media: 'prnewswire', countryCode: 'ZZ' })]);
+    expect(attributionRole(agency[0])).toBe('來源');
+    expect(extractAttributions('公司提及美通社活動。', 'ammtw')).toEqual([]);
+    expect(extractAttributions('圖片來源：美通社', 'ammtw')).toEqual([]);
+    expect(extractAttributions(release.replace('/美通社/ —', '/美通社/ 的活動'), 'ammtw')).toEqual([]);
+    expect(extractAttributions('前文。\n\n前文。\n\n前文。\n\n洛杉磯2026年10月8日 /美通社/ — 舊新聞。', 'ammtw')).toEqual([]);
+  });
   it('recognizes a declared published commentary source without guessing its country', () => {
     for (const body of [
       '北韓官媒朝中社今（7）日刊登評論，批評對台軍售。',

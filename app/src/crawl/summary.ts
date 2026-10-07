@@ -117,6 +117,19 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const promotion =
     /^來源[:：].{1,60}文章內容並不代表本網立場和觀點。\s*(?:【江峰優品】推出|八炯眼貼小舖連結[：:]|(?:#[^\s]+\s+)*「年代電視」是完全數位)/u;
   const candidates: Array<[unknown, string]> = [];
+  const isHakkaNews = /^https?:\/\/(?:www\.)?hakkanews\.tw\/\d{4}\/\d{2}\/\d{2}\/\d+\/$/i.test(url);
+  if (isHakkaNews && !selector) {
+    const box = $('#main-content article.single-content > .post-content > div:first-of-type > .quote_style:first-child').first();
+    if (/^你可以先知道[:：]$/u.test(box.children('h3').first().text().trim())) {
+      const points = box
+        .children('p')
+        .toArray()
+        .map((node) => $(node).text().trim())
+        .filter(Boolean);
+      if (points.length && points.every((text, index) => text.startsWith(`（${index + 1}）`)))
+        candidates.push([points.join('\n'), 'article:selector']);
+    }
+  }
   if (selector) candidates.push([$(selector).first().text(), 'article:selector']);
   for (const node of articleNodes($, url)) candidates.push([node.abstract, 'jsonld:abstract']);
   for (const [selector, source] of [
@@ -132,6 +145,11 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (isYahooJapanPickup && result.summary === '(Yahoo!天気・災害)') continue;
+    if (
+      isHakkaNews &&
+      result.summary.startsWith('編按：《客新聞》與《MyGoPen》合作反詐騙，將提供「事實查核」、「詐騙破解」等相關新聞訊息，')
+    )
+      continue;
     if (
       /^https?:\/\/(?:www\.)?taipeipost\.org\/\d+\/$/i.test(url) &&
       (/^編輯[／/]\s*[\p{Script=Han}]{2,5}撰文$/u.test(result.summary) || result.summary === '生活中心/綜合報導')

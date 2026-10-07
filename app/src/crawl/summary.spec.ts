@@ -63,6 +63,23 @@ describe('publisher summary metadata', () => {
       'meta:description',
     );
   });
+  it('uses the Hakka News labelled main fact-check takeaways instead of a cooperation editor note', () => {
+    const url = 'https://hakkanews.tw/2026/10/08/306389/';
+    const note = '編按：《客新聞》與《MyGoPen》合作反詐騙，將提供「事實查核」、「詐騙破解」等相關新聞訊息，本篇文章由《M...';
+    const points = ['（1）研究並未證明食用黑木耳可以治癌。', '（2）傳言誇大研究結果，不應取代醫療。'];
+    const box = `<div class="quote_style"><h3>你可以先知道：</h3>${points.map((p) => `<p>${p}</p>`).join('')}</div>`;
+    const html = `<meta name="description" content="${note}"><div id="main-content"><article class="single-content"><div class="post-content"><p>合作編按</p><div>${box}<p>正文。</p></div></div></article></div>`;
+    expect(extractArticle(html, url)).toMatchObject({ summary: points.join(' '), summarySource: 'article:selector' });
+    for (const unsafe of [
+      html.replace('id="main-content"', 'id="sidebar"'),
+      html.replace('你可以先知道：', '受訪者表示：'),
+      html.replace('（2）', '（3）'),
+      html.replace(`<div>${box}`, `<div><p>前文。</p>${box}`),
+    ])
+      expect(extractArticle(unsafe, url)).toMatchObject({ summary: null, summarySource: null });
+    expect(extractArticle(html, 'https://example.com/news').summary).toBe(note);
+    expect(extractArticle('<meta name="description" content="這篇文章整理最新科學研究及醫師建議。">', url).summary).not.toBeNull();
+  });
   it('excludes a matching own-title Taiwan Good News feed credit while preserving its supplied excerpt', () => {
     const title = '地方幼兒園正式啟用';
     const excerpt = '【記者 劉峻文／雲林 報導】為擴充公共化教保服務，地方幼兒園正式啟用。 [...]';
