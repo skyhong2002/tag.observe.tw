@@ -55,8 +55,13 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const titles = [$('h1').first().text(), $('meta[property="og:title"]').attr('content'), $('title').text()]
     .filter((value): value is string => !!value)
     .map(normalized);
+  const isGrinews = /^https?:\/\/(?:www\.)?grinews\.com\/news\//i.test(url);
+  const griContent = isGrinews ? $('article > .post-content').clone() : null;
+  griContent?.find('audio, script, style').remove();
+  const griBody = griContent ? normalized(griContent.text()).replace(/\s+/g, '') : '';
   const isBannedbook = /^https?:\/\/(?:www\.)?bannedbook\.org\//i.test(url);
-  const promotion = /^來源[:：].{1,60}文章內容並不代表本網立場和觀點。\s*(?:【江峰優品】推出|(?:#[^\s]+\s+)*「年代電視」是完全數位)/u;
+  const promotion =
+    /^來源[:：].{1,60}文章內容並不代表本網立場和觀點。\s*(?:【江峰優品】推出|八炯眼貼小舖連結[：:]|(?:#[^\s]+\s+)*「年代電視」是完全數位)/u;
   const candidates: Array<[unknown, string]> = [];
   if (selector) candidates.push([$(selector).first().text(), 'article:selector']);
   for (const node of articleNodes($, url)) candidates.push([node.abstract, 'jsonld:abstract']);
@@ -68,7 +73,15 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     candidates.push([$(selector).first().attr('content'), source]);
   for (const [value, source] of candidates) {
     const result = publisherSummary(value, source);
-    if (result.summary && !titles.includes(result.summary) && !(isBannedbook && promotion.test(result.summary))) return result;
+    if (!result.summary || titles.includes(result.summary)) continue;
+    if (isBannedbook && promotion.test(result.summary)) continue;
+    if (
+      isGrinews &&
+      (/^草根影響力新視野\s+[\p{Script=Han}]{2,4}\s+在\s+\d{4}$/u.test(result.summary) ||
+        (griBody && result.summary.replace(/\s+/g, '') === griBody))
+    )
+      continue;
+    return result;
   }
   return { summary: null, summarySource: null };
 }

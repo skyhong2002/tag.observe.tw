@@ -84,7 +84,11 @@ describe('publisher summary metadata', () => {
     const prefix = '來源: 年代向錢看 , 文章內容並不代表本網立場和觀點。 ';
     const article = (text: string, host = 'www.bannedbook.org') =>
       extractArticle(`<meta property="og:description" content="${text}">`, `https://${host}/bnews/zh-tw/bannedvideo/20261007/2367547.html`);
-    for (const text of ['【江峰優品】推出 **55 折大優惠**！', '#沈伯洋 #趙少康 #國民黨 「年代電視」是完全數位 […]']) {
+    for (const text of [
+      '【江峰優品】推出 **55 折大優惠**！',
+      '#沈伯洋 #趙少康 #國民黨 「年代電視」是完全數位 […]',
+      '八炯眼貼小舖連結：:https://baj […]',
+    ]) {
       expect(article(prefix + text).summary).toBeNull();
       expect(article(prefix + text, 'example.org').summary).not.toBeNull();
     }
@@ -98,6 +102,15 @@ describe('publisher summary metadata', () => {
       summary: '波新聞-林冬生/新竹 竹北水圳公園宣布舉辦藝文活動。',
       summarySource: 'meta:og:description',
     });
+  });
+  it('rejects GRI clipped credits and full-body descriptions while retaining actual excerpts', () => {
+    const prose = '草根影響力新視野 王清厚 在 2026 年，地方政策引起討論。';
+    const html = `<meta name="description" content="草根影響力新視野 王清厚 在 2026"><meta property="og:description" content="${prose}"><article><div class="post-content">${prose}</div></article>`;
+    expect(extractArticle(html, 'https://grinews.com/news/story/').summary).toBeNull();
+    expect(
+      extractArticle(html.replace(`content="${prose}"`, 'content="地方政策引起討論。"'), 'https://grinews.com/news/story/').summary,
+    ).toBe('地方政策引起討論。');
+    expect(extractArticle(html, 'https://example.org/story/').summary).not.toBeNull();
   });
   it('preserves RSS description and Atom summary provenance without using full Atom content', () => {
     const rss = parseFeed(

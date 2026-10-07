@@ -7,14 +7,16 @@ export const ROUND3_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegE
     host: 'grinews.com',
     path: /^\/news\/(?!author\/|category\/|tag\/|wp-json\/)[^/]+\/$/,
     titleSelector: 'article > .post-banner > .post-title',
+    titlePattern: /^(.*?)\s+\d{4}-\d{2}-\d{2}\s+健康醫療網[／/]記者[\p{Script=Han}]{2,4}報導$/u,
     bodySelector: 'article > .post-content',
     // Personal pen names in the header; syndicated brand accounts must not
     // override a named writer in the article lead.
-    authorSelector: 'article > .post-meta > li.author > a',
-    authorPattern: /^([\p{Script=Han}]{2,4})$/u,
+    authorSelector: 'article > .post-meta > li.author > a, article > .post-banner > .post-title',
+    authorPattern: /^(?:.*?\s+\d{4}-\d{2}-\d{2}\s+健康醫療網[／/]記者)?([\p{Script=Han}]{2,4})(?:報導)?$/u,
     // The shared CO author archive also contains TechOrange posts; use the
     // explicit license credit inside this article to distinguish the brands.
-    providerSelector: 'article > .post-content > p > span > strong > span > a',
+    providerSelector:
+      'article > .post-meta > li.author > a[href$="/author/healthnews/"], article > .post-content > p > span > strong > span > a',
   },
   {
     host: 'roomie.tw',

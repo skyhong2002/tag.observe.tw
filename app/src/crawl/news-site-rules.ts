@@ -13,6 +13,8 @@ export interface NewsSiteRules {
   bodySelector: string;
   bodyHtmlSelector?: string;
   titleSelector?: string;
+  /** First capture removes only a reviewed adjacent credit from a title field. */
+  titlePattern?: RegExp;
   authorSelector?: string;
   /** Accept only a complete reviewed credit; capture the author name. */
   authorPattern?: RegExp;
@@ -464,11 +466,12 @@ function printedPublication(raw: string): string | null {
 export function newsSiteEvidence($: CheerioAPI, url: string) {
   const rules = newsSiteRules(url);
   if (!rules || !$(rules.bodySelector).length) return { title: null, publishedRaw: null, isArticle: false };
-  const title =
+  let title =
     (rules.titleSelector ? $(rules.titleSelector).first().text().trim() : '') ||
     $('meta[property="og:title"]').first().attr('content')?.trim() ||
     $('title').first().text().trim() ||
     null;
+  if (title && rules.titlePattern) title = rules.titlePattern.exec(title)?.[1]?.trim() || title;
   let publishedRaw: string | null = null;
   if (rules.publishedSelector) {
     for (const node of $(rules.publishedSelector).toArray()) {

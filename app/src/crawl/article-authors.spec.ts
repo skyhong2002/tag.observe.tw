@@ -121,6 +121,15 @@ describe('reporter identity from the selected article', () => {
       extractArticle(`<article><p>記者${name}∕${place}報導</p><p>${prose}</p></article>`, 'https://www.cdns.com.tw/articles/1').authors,
     ).toEqual([name]);
   });
+  it('separates the dated Healthnews credit appended to a GRI title', () => {
+    const html = `<article><div class="post-banner"><div class="post-title">高齡人口增帶動輔具需求！ 2026-10-02　 健康醫療網／記者黃嫊雰報導</div></div><ul class="post-meta"><li class="author"><a href="https://grinews.com/news/author/healthnews/">健康醫療網</a></li></ul><div class="post-content"><p>${prose}</p></div></article>`;
+    expect(extractArticle(html, 'https://grinews.com/news/story/')).toMatchObject({
+      title: '高齡人口增帶動輔具需求！',
+      authors: ['黃嫊雰'],
+      provider: '健康醫療網',
+      body: prose,
+    });
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });
