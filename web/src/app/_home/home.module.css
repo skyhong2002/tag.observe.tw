@@ -273,3 +273,20 @@
 @media (max-width: 640px) {
   .campOutletsSlot { order: 2; min-height: 385px; }
 }
+
+/* A compact summary above the masthead; media details live on /media/. */
+.campShareLinks { display: flex; flex-shrink: 0; gap: 12px; font-size: 12px; color: var(--accent); }
+.campShareUnavailable { display: flex; align-items: center; justify-content: space-around; gap: 8px; min-height: 28px; font-size: 11px; color: var(--muted); }
+.campShareUnavailable > span { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.campShareUnavailable i { width: 6px; height: 6px; border-radius: 2px; }
+.campShareStatus { flex-basis: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.campShareStatus button { flex-shrink: 0; cursor: pointer; color: var(--accent); }
+.campShareStatus button:disabled { cursor: wait; opacity: .6; }
+@media (max-width: 640px) {
+  .campShare { padding: 10px 12px; gap: 8px; }
+  .campShareLabel { flex: 1; font-size: 12px; }
+  .campShareLabel > span { margin-left: 6px; font-size: 11px; }
+  .campShareLinks { gap: 8px; font-size: 11px; }
+  .campShareStatus { order: 2; font-size: 11px; }
+  .campShareUnavailable { min-height: 38px; }
+}

@@ -12,8 +12,6 @@ import Sparkline from '@/components/Sparkline';
 import { type RankingEntry, taipei } from '@/lib/api';
 import {
   type CampGap,
-  type CampShare,
-  campOutlets,
   DEMO_CAMPS,
   type DemoStory,
   type GraphOutlet,
@@ -23,16 +21,14 @@ import {
   loadHomeGraph,
   loadHomeJournalists,
   loadHomeTopics,
-  mediaStats,
 } from '@/lib/demo';
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
 import { pageMetadata } from '@/lib/seo.mts';
 import { updatedAtOf } from '@/lib/topic-update.mts';
-import CampOutletIcon from './_home/CampOutletIcon';
-import CampOutlets from './_home/CampOutlets';
 import EventRecovery from './_home/EventRecovery';
+import CampShareSummary from './_home/CampShareSummary';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import styles from './_home/home.module.css';
 import Masthead from './_home/Masthead';
@@ -48,89 +44,6 @@ export const metadata = pageMetadata(
 
 function Arrow() {
   return <span aria-hidden="true">→</span>;
-}
-
-/** Whole percentages that still sum to 100 (largest remainders). */
-function wholePercentages(counts: number[]): number[] {
-  const total = counts.reduce((sum, n) => sum + n, 0);
-  if (!total) return counts.map(() => 0);
-  const exact = counts.map((n) => (n / total) * 100);
-  const percentages = exact.map(Math.floor);
-  const remaining = 100 - percentages.reduce((sum, n) => sum + n, 0);
-  exact
-    .map((n, i) => ({ i, remainder: n - percentages[i] }))
-    .sort((a, b) => b.remainder - a.remainder)
-    .slice(0, remaining)
-    .forEach(({ i }) => {
-      percentages[i]++;
-    });
-  return percentages;
-}
-
-function CampShareBar({ share, outlets }: { share: CampShare; outlets: ReturnType<typeof mediaStats> }) {
-  const camps = DEMO_CAMPS.map((c) => ({ ...c, count: share.camps.find((v) => v.camp === c.key)?.articles ?? 0 }));
-  const percentages = wholePercentages(camps.map((c) => c.count));
-  const description = camps.map((c, i) => `${c.label} ${percentages[i]}%（${c.count.toLocaleString()} 篇）`).join('、');
-  return (
-    <section className={styles.campShare} aria-label="過去 24 小時新聞量藍綠分布">
-      <p className={styles.campShareLabel}>
-        過去 24 小時新聞量
-        <span>{share.articles.toLocaleString()} 篇</span>
-      </p>
-      <div className={styles.campShareChart}>
-        <div className={styles.bar} role="img" aria-label={description} title={description}>
-          {camps
-            .filter((c) => c.count > 0)
-            .map((c) => (
-              <span key={c.key} className={styles[c.key]} style={{ flexGrow: c.count }}>
-                <span className={styles.campShareText}>
-                  <span>{c.label}</span>
-                  <span>{percentages[camps.indexOf(c)]}%</span>
-                </span>
-              </span>
-            ))}
-        </div>
-      </div>
-      <a href="#method" className={styles.campShareMethod}>
-        怎麼算 ⓘ
-      </a>
-      <div className={styles.campOutletsSlot} data-vital-region="home-outlets">
-        <Suspense fallback={<PanelLoading />}>
-          <DeferredCampOutlets data={outlets} />
-        </Suspense>
-      </div>
-    </section>
-  );
-}
-
-async function DeferredCampOutlets({ data }: { data: ReturnType<typeof mediaStats> }) {
-  const groups = campOutlets(await data);
-  if (Object.values(groups).every((list) => list.length === 0)) return <p className={styles.notice}>媒體清單暫時無法取得。</p>;
-  return (
-    <CampOutlets
-      total={Object.values(groups).reduce((n, list) => n + list.length, 0)}
-      columns={DEMO_CAMPS.map((c) => `minmax(128px, ${Math.max(1, groups[c.key].length)}fr)`).join(' ')}
-    >
-      {DEMO_CAMPS.map((c) => {
-        const outlets = groups[c.key];
-        return (
-          <div key={c.key} className={styles.campOutletGroup}>
-            <p>
-              <i className={styles[c.key]} aria-hidden="true" />
-              {c.label} <span>{outlets.length} 家</span>
-            </p>
-            <ul>
-              {outlets.map((o) => (
-                <li key={o.media}>
-                  <CampOutletIcon outlet={o} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
-    </CampOutlets>
-  );
 }
 
 /** Outlet split for one story, drawn from the event snapshot's coverage. */
@@ -367,7 +280,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // The box used to filter this page's events; it now searches every article.
   const q = (Array.isArray(query.q) ? query.q[0] : (query.q ?? '')).trim().slice(0, 60);
   if (q) redirect(`/search/?${new URLSearchParams({ q })}`);
-  const outlets = mediaStats();
   const journalists = loadHomeJournalists();
   const graph = loadHomeGraph();
   const topics = loadHomeTopics();
@@ -392,9 +304,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </a>
       <SiteHeader mastheadId="masthead" />
       <main id="news-main" className={styles.main}>
-        <Masthead date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
+        <CampShareSummary initialShare={data.campShare} />
 
-        {data.campShare && <CampShareBar share={data.campShare} outlets={outlets} />}
+        <Masthead date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
 
         {data.events?.stale && <p className={styles.notice}>事件分群更新延遲，目前顯示最近一次的結果。</p>}
 

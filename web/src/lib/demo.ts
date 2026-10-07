@@ -1,4 +1,8 @@
 import { API_ORIGIN, fetchMedia, fetchRanking, type MediaInfo, type Ranking } from './api';
+import { type CampOutlet, type CampShare, campShareCounts, type DemoCamp } from './camp-share.mts';
+
+export type { CampOutlet, CampShare, DemoCamp } from './camp-share.mts';
+
 import { clipHeadline, headlineTags, selectEventCover, selectEventLead } from './event-presentation.mts';
 import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
@@ -6,7 +10,6 @@ import { type EventCoverage, type EventItem, type FeedTopic, fetchEventDay, fetc
 import { fetchSimilarity, type SimilarityData, type SimilarityEdge } from './similarity';
 import { updatedAtOf } from './topic-update.mts';
 
-export type DemoCamp = 'green' | 'other' | 'blue';
 export const DEMO_CAMPS: Array<{ key: DemoCamp; label: string; short: string }> = [
   { key: 'green', label: '綠營傾向', short: '綠' },
   { key: 'other', label: '其他', short: '其他' },
@@ -67,19 +70,6 @@ function story(event: EventItem, media: MediaInfo): DemoStory | null {
   };
 }
 
-/** Share of the past 24h of tagged news articles by camp; the ranking snapshots already count them. */
-export interface CampOutlet {
-  media: string;
-  title: string;
-  icon: string | null;
-  last24h: number;
-  active: boolean;
-}
-export interface CampShare {
-  hourStart: string;
-  articles: number;
-  camps: Array<{ camp: DemoCamp; articles: number; outlets: CampOutlet[] }>;
-}
 /** The rows of /api/v1/media-stats this needs. */
 export interface MediaStatRow {
   media: string;
@@ -106,32 +96,10 @@ export function campOutlets(rows: MediaStatRow[]): Record<DemoCamp, CampOutlet[]
   return out;
 }
 export function campShare(news: Ranking | null, blue: Ranking | null, green: Ranking | null, stats: MediaStatRow[] = []): CampShare | null {
-  if (!news || !blue || !green) return null;
-  // Each ranking fetch is cached on its own, so around the hour one may lag;
-  // 24h windows an hour apart are close enough, anything older is not.
-  const hour = news.snapshot.hourStart;
-  const apart = (r: Ranking) => Math.abs(Date.parse(r.snapshot.hourStart) - Date.parse(hour));
-  if (
-    apart(blue) > 3600e3 ||
-    apart(green) > 3600e3 ||
-    !news.snapshot.articleCount ||
-    blue.snapshot.articleCount === null ||
-    green.snapshot.articleCount === null
-  )
-    return null;
-  const b = blue.snapshot.articleCount;
-  const g = green.snapshot.articleCount;
-  const other = Math.max(0, news.snapshot.articleCount - b - g);
+  const share = campShareCounts(news, blue, green);
+  if (!share) return null;
   const outlets = campOutlets(stats);
-  return {
-    hourStart: hour,
-    articles: b + g + other,
-    camps: [
-      { camp: 'green', articles: g, outlets: outlets.green },
-      { camp: 'other', articles: other, outlets: outlets.other },
-      { camp: 'blue', articles: b, outlets: outlets.blue },
-    ],
-  };
+  return { ...share, camps: share.camps.map((c) => ({ ...c, outlets: outlets[c.camp] })) };
 }
 
 /** The events one camp is barely on, or pushing far harder than usual:
