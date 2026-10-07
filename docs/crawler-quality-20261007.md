@@ -527,3 +527,5 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 951crawl／attribution、tsc、全專案Biome通過；1935成功HTML對固定第十批回放44篇變化，其中台灣線報14篇只有或包含bodySource標記變更（正文相同）、1篇新增蔡宗憲署名，看中國3篇新增明示編譯記者；原有3篇TechNews去UI正文、Epoch時間及其他變化範圍維持。第十一批本地提交仍未推送／部署／套資料；下一批須距第十批實際05:13:52完成約一小時。24小時觀察持續至18:49:13。
 
 05:17補充：第十批14metadata、5source與2health combined共21篇修復已套用並留備份；health2篇原文／完整DB／公開API／citation/sketch/pair核對通過。其他兩組驗證首次在公開API回傳500時停止，第二個metadata及第三個source請求受影響；重查45408380與45709901皆200。首次失敗報告與log另存first-attempt，尚待完整重新驗證，不把已套用等同已驗證，也不重新套用資料。
+
+05:18驗證完成：第十批全部21篇不同文章（14metadata、5source、2health combined）與備份／DB／公開API／指定original证据核對成功，11署名、5摘要、7來源，0正文／日期歷史寫入；source與health的citationindex及既有sketch/pair保存亦通過。`batch10-full-repairs-verification.json`整合三組verified=true。公開API首次短暫500仍保留紀錄；source第二次失敗是驗證脚本未考慮2023年端傳媒文章既有七天public body window，而非資料庫正文遺失，改按live article-retention驗證expired/body=null/chars=0/source=null與精確deadline，同時核對正文DB完整不變及公開引用仍保留後通過。沒有改公開期限或重套修復。第十批已推送／部署且21篇修復驗證完成，後續禁止重套。本批第十一批13篇候選仍未套用，程式提交未推送／部署；下一批安排06:16，比第十批實際恢復晚約一小時。觀察持續至18:49:13。
