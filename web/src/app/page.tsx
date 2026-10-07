@@ -32,6 +32,7 @@ import { pageMetadata } from '@/lib/seo.mts';
 import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
+import EventRecovery from './_home/EventRecovery';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import styles from './_home/home.module.css';
 import Masthead from './_home/Masthead';
@@ -520,8 +521,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             ) : (
               <div className={styles.empty}>
                 <span aria-hidden="true">◎</span>
-                <h2>新聞正在整理中</h2>
-                <p>目前暫時無法取得事件資料，請稍後重新整理。</p>
+                <h2>焦點事件載入中</h2>
+                <EventRecovery />
                 <Link href="/event/">
                   前往事件表 <Arrow />
                 </Link>
