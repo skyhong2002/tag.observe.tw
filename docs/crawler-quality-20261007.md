@@ -699,3 +699,13 @@ PNN45478221／45780646實際pnn5.aotter.net hosted viewer（一般pnn.tw respons
 980crawl／attribution tests、tsc及全Biome通過；2123成功HTML對冻结第十三批bedafe7重播只有46292249的authors與summary變化，0正文／日期parser變化。Fresh200，old parser與DB正文及原summary exact，own reporter／新excerpt／精確publishedAt均核對，全13field snapshot乾跑passed；summary與authors／creator同transaction，完整metadata backup／exact live／clean candidate／already-applied核對／DB-publicAPI-origin verifier準備完成，日期／正文／tags／attributions／取得時間保留。batch14-j-media-reviewed-plan.json／repair／verify尚未apply。第十四批1候選：1署名＋1摘要、0日期或正文寫入，unfrozen未排程。
 
 第十二批bfb34f2已07:21:02推送main，exact CI37701765282當時in_progress，正式仍c63dacb已推送／部署／驗證；PID859022 publisher只執行原timer一次，07:16→08:06 probe PID854082 active、主站與worker200。部署前metadata7／source20／Womanybody3重新fresh完整快照乾跑共30passed，尚未apply，不把pushed當deployed。第十三批bedafe7冻结、25候選未推送／部署／apply，08:26 timer且需第十二批完整30驗證與actual resumed至少1小時間隔；不能修改冻结checkout。24小時觀察持續至18:49:13，最终有界round與總報告仍未完成。
+
+### 10/8 07:31：第十二批部署與30筆修正核對完成；MSN明示複合署名
+
+第十二批bfb34f290d3c6769414c82eb6362fe1f40dd4163已07:21:02推送main，exact CI37701765282 success；原timer publisher自然完成，未重複啟動。07:22:24.583 active0後暫停新派工，installer verified，07:22:50.475恢復，暫停25.892秒；三個服務實際cwd為exact release，主站200、workerhealthy、queue pausedfalse，原7個failed IDs不變。兩篇公視summary原站／DB／API一致。這是主機端驗證，沒有宣稱用戶browser測試或零停機；07:16→08:06既有probe繼續。
+
+metadata7／source20／Womany正文3已逐筆fresh/full snapshot核對、durable backup後套用，30不同文章全部original／DB／publicAPI驗證通過，0日期寫入；batch12-full-repairs-verification.json verifiedtrue／expected exact bfb／uniqueArticles30。GoodNews檢核最初誤將已修正row傳給需要pre-repair摘要尾註的freshEvidence，改傳已備份before，重新驗證通過；source verifier最初未處理API既有authors空值回退creator及normalizeAuthorCredits，確認正式contentArticle規則後修正檢核，重新通過。兩份首次失敗log保留，沒有重套資料或放寬原站正文guard。GV到期body仍masked，Womany原日期／摘要／作者保留。不得再次apply。
+
+MSN46294703 public Detail明示authors.name為「洪凱音、黃琮淵╱台北報導」，既有reporterNames可完整辨識兩人。只在MSN已驗證同article的公開author欄位套既有明示role／地名規則，有有效名字才拆分；沒有識別到完整credit時保留原字串。供稿中時新聞網及普通陳凱俊／財經中心保留，台北指控等不完整報導邊界不拆。46294701與46294703各有public abstract、相同title／完整body／精確publication及供稿人，追加第十四批兩份原站供應摘要候選；46294703 authors／creator與summary同transaction更新，另一篇只改summary／summary_source，正文／日期／取得時間／tags／attributions保持。原DBcreator是pipeline完整署名join，核對oldjoin後更新新join，不把provider欄位誤當DBcreator。
+
+981crawl／attribution tests、tsc、全Biome通過；6份MSN專用API回放僅46294703作者拆分變化，summary／正文／日期及provider無變化；兩篇fresh完整13field snapshot乾跑通過，batch14-msn-reviewed-plan.json／repair／verify已準備但未apply。第十四批現在3不同候選：2署名、3摘要、0正文／日期寫入，本地提交未推送／部署／apply，unfrozen未排程。第十三批bedafe7冻结25候選，08:26timer保留，需距第十二批actualresumed至少1h才發布。24h觀察仍active到18:49:13，總報告與最後有界round未完成。

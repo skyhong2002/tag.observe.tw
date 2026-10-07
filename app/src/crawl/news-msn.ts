@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { extractArticle, parsePublished } from './article.ts';
+import { reporterNames } from './byline.ts';
 import type { FeedItem } from './feed.ts';
 import { fetchText } from './fetch.ts';
 import type { NewsDiscoveryConfig, NewsDiscoveryOptions, NewsDiscoveryResult } from './news-discovery.ts';
@@ -92,7 +93,14 @@ export function msnArticle(raw: unknown, candidate: { id: string; url: string },
   } catch {
     /* Missing provider URL is not replaced by an inferred address. */
   }
-  const authors = Array.isArray(detail.authors) ? detail.authors.map((author) => text(record(author).name)).filter(Boolean) : [];
+  const authors = Array.isArray(detail.authors)
+    ? detail.authors.flatMap((author) => {
+        const credit = text(record(author).name);
+        if (!credit) return [];
+        const names = reporterNames(credit);
+        return names.length ? names : [credit];
+      })
+    : [];
   const images = Array.isArray(detail.imageResources) ? detail.imageResources : [];
   const image = images.map((entry) => text(record(entry).url)).find((url) => /^https:\/\//.test(url));
   return {

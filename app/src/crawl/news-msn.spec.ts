@@ -26,6 +26,18 @@ const bundle = `let a="${anonymousKey}";function s(t){t.set("apikey",a)}const pa
 const home = '<script src="https://assets.msn.com/bundles/v1/hub/latest/common.abcdef123.js"></script>';
 
 describe('MSN anonymous public reader', () => {
+  it('splits explicit reporter datelines in the public author field while retaining provider and other credits', () => {
+    const authors = [{ name: '洪凱音、黃琮淵╱台北報導' }, { name: '陳凱俊' }, { name: '財經中心' }, { name: '' }];
+    const item = msnArticle({ ...detail, authors }, candidate, now);
+    expect(item?.verifiedContent?.authors).toEqual(['真正供稿新聞社', '洪凱音', '黃琮淵', '陳凱俊', '財經中心']);
+    expect(item?.creator).toBe('真正供稿新聞社');
+    expect(item?.verifiedContent?.body).toBe(msnArticle(detail, candidate, now)?.verifiedContent?.body);
+    expect(item?.publishedAt).toEqual(msnArticle(detail, candidate, now)?.publishedAt);
+    expect(msnArticle({ ...detail, authors: [{ name: '洪凱音、黃琮淵╱台北指控' }] }, candidate, now)?.verifiedContent?.authors).toEqual([
+      '真正供稿新聞社',
+      '洪凱音、黃琮淵╱台北指控',
+    ]);
+  });
   it('retains the matching public detail abstract separately from provider credit without generating a body excerpt', () => {
     const abstract = '原站提供的新聞摘要，保留其截斷…';
     expect(msnArticle({ ...detail, abstract }, candidate, now)).toMatchObject({
