@@ -10,6 +10,7 @@ export interface ArticleSummary {
 
 const boilerplate = new Set([
   '觀策站',
+  '日经中文网官方网站。日经中文网是日本经济新闻社的中文财经网站。提供日本、中国、欧美财经金融信息、商务、企业、高科技报道、评论和专栏。',
   '澳門日報版權所有 澳門日報電子報由澳門日報出版社出版',
   '在這裡找到你想要的美食',
   '客家電視是屬於全民、以至於全世界客家族群的頻道，亦是為傳播客家文化而存在，定位為「全體客家族群之媒體」。',
@@ -66,6 +67,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const titles = [$('h1').first().text(), $('meta[property="og:title"]').attr('content'), $('title').text()]
     .filter((value): value is string => !!value)
     .map(normalized);
+  const isYahooJapanPickup = /^https?:\/\/news\.yahoo\.co\.jp\/pickup\/\d+$/i.test(url);
   const isGrinews = /^https?:\/\/(?:www\.)?grinews\.com\/news\//i.test(url);
   const griContent = isGrinews ? $('article > .post-content').clone() : null;
   griContent?.find('audio, script, style').remove();
@@ -107,9 +109,18 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     ['meta[property="og:description"]', 'meta:og:description'],
   ])
     candidates.push([$(selector).first().attr('content'), source]);
+  if (isYahooJapanPickup) {
+    for (const node of articleNodes($, url)) candidates.push([node.description, 'jsonld:description']);
+  }
   for (const [value, source] of candidates) {
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    if (isYahooJapanPickup && result.summary === '(Yahoo!天気・災害)') continue;
+    if (
+      /^https?:\/\/(?:www\.)?taipeipost\.org\/\d+\/$/i.test(url) &&
+      (/^編輯[／/]\s*[\p{Script=Han}]{2,5}撰文$/u.test(result.summary) || result.summary === '生活中心/綜合報導')
+    )
+      continue;
     // Reviewed malformed quoted metadata ends inside an unclosed link tag.
     if (/^https?:\/\/news\.videoland\.com\.tw\/article\/[a-f0-9-]+\.html$/i.test(url) && /<a\s+href\s*=\s*$/iu.test(result.summary))
       continue;

@@ -43,6 +43,8 @@ export const EXTRA_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegEx
     host: 'guancha.cn',
     path: /^\/[^/]+\/\d{4}_\d{2}_\d{2}_\d+\.shtml$/,
     bodySelector: '.left-main > .all-txt',
+    authorSelector: '.left-main > .all-txt > p:first-child',
+    authorPattern: /^（文\/观察者网\s+([\p{Script=Han}]{2,5})）$/u,
     titleSelector: '.left-main > h3',
     publishedSelector: '.left-main > .time > span:first-child',
   },

@@ -249,6 +249,8 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string, configure
     .toArray()
     .flatMap((node) => {
       const element = $(node);
+      const mainHeaderCredit =
+        configured && element.closest('footer.entry-meta').parent('header.entry-header').parent('article').length > 0;
       if (
         element
           .add(element.parents())
@@ -256,7 +258,8 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string, configure
           .some((parent) => {
             const ancestor = $(parent);
             return (
-              ancestor.is('nav, footer, [hidden], [aria-hidden="true"], .e-loop-item') ||
+              ancestor.is('nav, [hidden], [aria-hidden="true"], .e-loop-item') ||
+              (ancestor.is('footer') && !mainHeaderCredit) ||
               (!configured && ancestor.is('aside')) ||
               /(?:^|[\s_-])(?:related|recommend(?:ed|ation|ations)?|recirculation)(?:$|[\s_-])/i.test(
                 `${ancestor.attr('class') ?? ''} ${ancestor.attr('id') ?? ''}`,

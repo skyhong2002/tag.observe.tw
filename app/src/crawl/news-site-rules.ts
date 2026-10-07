@@ -46,6 +46,44 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'commonhealth.com.tw',
+    path: /^\/article\/\d+$/,
+    bodySelector: '[itemprop="articleBody"]',
+    authorSelector:
+      '.article-info > span:has(> .flex--title:contains("文 /")) > .flex--desc > .desc--content > a[data-position="文章作者資訊"]',
+  },
+  {
+    host: 'limedia.tw',
+    path: /^\/[a-z-]+\/\d+\/(?:\?|$)/,
+    bodySelector: 'article.post .td-post-content',
+    authorSelector: 'article.post .td-post-header > header.td-post-title .td-module-meta-info > .td-post-author-name > a',
+    authorPattern: /^([\p{Script=Han}]{2,5})[／/]綜合報導$/u,
+  },
+  {
+    host: 'livio.com.tw',
+    path: /^\/\d+\/$/,
+    bodySelector: 'article.post:not(.elementor-post) > .entry-content',
+    authorSelector: 'article.post:not(.elementor-post) > header.entry-header > footer.entry-meta .byline > .author.vcard',
+    publishedSelector: 'article.post:not(.elementor-post) > header.entry-header > footer.entry-meta time.entry-date.published',
+    publishedAttribute: 'datetime',
+  },
+  ...['technews.tw', 'finance.technews.tw', 'ccc.technews.tw'].map((host) => ({
+    host,
+    path: /^\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/?$/,
+    bodySelector: 'article.post > .content > .entry-content',
+    titleSelector: 'article.post > .content > .entry-header h1.entry-title',
+    publishedSelector: 'article.post > .content > .entry-header span.head:contains("發布日期") + span.body',
+    publishedAttribute: null,
+    bodyExcludeSelector: '#bmc-tn-modal, .googlenews_Content',
+  })),
+  {
+    host: 'peopo.org',
+    path: /^\/news\/\d+$/,
+    bodySelector: '#block-peopo-content article.node--type-post.node--view-mode-full',
+    publishedSelector: '#block-peopo-content article.node--type-post.node--view-mode-full > header > .node__meta > span.me-1',
+    publishedAttribute: null,
+  },
+  {
     host: 'ydn.com.tw',
     path: /^\/tw\/News\/ugC_News_Detail\.aspx\?ID=\d+$/i,
     bodySelector: 'article.PageArticle #ContentPlaceHolder1_div_Desc',

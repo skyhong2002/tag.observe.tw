@@ -441,3 +441,61 @@ it('reads RTI agency evidence from the separately labelled news-source slot', ()
     extractArticle(html.replace('新聞引據：法新社', '新聞引據：新聞中心'), 'https://www.rti.org.tw/news?uid=3&pid=236330').provider,
   ).toBeNull();
 });
+
+it('reads the TechNews printed publication and excludes its donation and follow widgets', () => {
+  const url = 'https://finance.technews.tw/2026/10/08/financial-report/';
+  const html = `<aside><span class="head">發布日期</span><span class="body">2027 年 01 月 01 日 12:00</span></aside><article class="post"><div class="content"><header class="entry-header"><h1 class="entry-title">公司營收</h1><span class="head">作者</span><span class="body"><a rel="author">Atkinson</a></span><span class="head">發布日期</span><span class="body">2026 年 10 月 08 日 0:00</span></header><div class="entry-content">${paragraph}<div id="bmc-tn-modal"><p>您的咖啡贊助將是讓我們持續走下去的動力</p></div><div class="googlenews_Content"><p>從這裡可透過《Google 新聞》追蹤 TechNews</p></div></div></div></article>`;
+  expect(extractArticle(html, url)).toMatchObject({
+    title: '公司營收',
+    authors: ['Atkinson'],
+    body,
+    publishedAt: new Date('2026-10-07T16:00:00Z'),
+  });
+  expect(extractArticle(html.replace('class="post"', 'class="other"'), url).publishedAt).toBeNull();
+  expect(newsSiteRules('https://unreviewed.technews.tw/2026/10/08/financial-report/')).toBeUndefined();
+});
+
+it('reads PeoPo publication only from the full report header, ignoring related article times', () => {
+  const url = 'https://www.peopo.org/news/859649';
+  const html = `<div id="block-peopo-content"><article class="node--type-post node--view-mode-full"><header><div class="node__meta"><span class="me-1">2026/10/08 03:17</span></div></header>${paragraph}<aside><time datetime="2025-01-13T19:02:44+08:00">舊稿</time></aside></article></div>`;
+  expect(extractArticle(html, url).publishedAt).toEqual(new Date('2026-10-07T19:17:00Z'));
+  expect(extractArticle(html.replace('node--view-mode-full', 'node--view-mode-teaser'), url).publishedAt).toBeNull();
+  expect(newsSiteRules('https://www.peopo.org/user/2539')).toBeUndefined();
+});
+
+it('reads Limedia complete author credit only from its own report header', () => {
+  const url = 'https://www.limedia.tw/comm/74441/?utm_source=rss';
+  const html = `<article class="post"><div class="td-post-header"><header class="td-post-title"><div class="td-module-meta-info"><div class="td-post-author-name"><a>潘韜宇／綜合報導</a></div></div></header></div><div class="td-post-content">${paragraph}</div></article><aside><div class="td-post-author-name"><a>王小明／綜合報導</a></div></aside>`;
+  expect(extractArticle(html, url).authors).toEqual(['潘韜宇']);
+  expect(extractArticle(html.replace('潘韜宇／綜合報導', '攝影：潘韜宇'), url).authors).toEqual([]);
+});
+
+it('reads Livio semantic header footer credits without using page footer or recommendation authors', () => {
+  const url = 'https://livio.com.tw/257404/';
+  const html = `<article class="post"><header class="entry-header"><footer class="entry-meta"><time class="entry-date published" datetime="2026-10-08T00:01:50+08:00">08 Oct. 2026</time><time class="updated" datetime="2026-09-05T12:43:49+08:00">更新</time><span class="byline"><span class="author vcard">Ben Ma</span></span></footer></header><div class="entry-content">${paragraph}</div></article><article class="post elementor-post"><header class="entry-header"><footer class="entry-meta"><span class="byline"><span class="author vcard">Another Author</span></span></footer></header></article>`;
+  expect(extractArticle(html, url)).toMatchObject({ authors: ['Ben Ma'], publishedAt: new Date('2026-10-07T16:01:50Z') });
+  const outsideHeader = html.replace('header class="entry-header"', 'div class="other"').replace('</header>', '</div>');
+  expect(extractArticle(outsideHeader, url).authors).toEqual([]);
+});
+
+it('keeps CommonHealth declared writers separate from responsible editors in JSONLD', () => {
+  const url = 'https://www.commonhealth.com.tw/article/94719';
+  const html = `<script type="application/ld+json">${JSON.stringify({
+    '@type': 'NewsArticle',
+    url,
+    author: [
+      { '@type': 'Person', name: '梁惠明' },
+      { '@type': 'Person', name: '王湘翎' },
+    ],
+  })}</script><div class="article-info"><span><span class="flex--title">文 /</span><span class="flex--desc"><span class="desc--content"><a data-position="文章作者資訊">梁惠明</a></span></span></span><span><span class="flex--title">責任編輯 /</span><span class="flex--desc"><span class="desc--content"><a data-position="文章作者資訊">王湘翎</a></span></span></span></div><div itemprop="articleBody">${paragraph}</div>`;
+  expect(extractArticle(html, url).authors).toEqual(['梁惠明']);
+  expect(extractArticle(html.replace('文 /', '圖片 /'), url).authors).toEqual(['梁惠明', '王湘翎']);
+});
+
+it('reads Guancha complete opening writer credit without accepting quotations or photography', () => {
+  const url = 'https://www.guancha.cn/GuoJi/2026_10_07_903416.shtml';
+  const html = `<div class="left-main"><div class="content all-txt"><p>（文/观察者网 郭光昊）</p>${paragraph}<p>（文/观察者网 王小明）</p></div></div>`;
+  expect(extractArticle(html, url).authors).toEqual(['郭光昊']);
+  expect(extractArticle(html.replace('（文/观察者网 郭光昊）', '（图/观察者网 郭光昊）'), url).authors).toEqual([]);
+  expect(extractArticle(html.replace('（文/观察者网 郭光昊）', '评论指出（文/观察者网 郭光昊）'), url).authors).toEqual([]);
+});

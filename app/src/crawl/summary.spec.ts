@@ -5,6 +5,33 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('rejects the exact Nikkei site description while preserving an article description', () => {
+    const slogan =
+      '日经中文网官方网站。日经中文网是日本经济新闻社的中文财经网站。提供日本、中国、欧美财经金融信息、商务、企业、高科技报道、评论和专栏。';
+    expect(publisherSummary(slogan, 'meta:description').summary).toBeNull();
+    expect(publisherSummary('日本经济新闻社报道，日本公布最新经济政策。', 'meta:description').summary).not.toBeNull();
+  });
+  it('rejects TaipeiPost credit-only descriptions without treating article prose as a credit', () => {
+    const url = 'https://taipeipost.org/397156/';
+    for (const credit of ['編輯/鄭欣宜撰文', '生活中心/綜合報導']) {
+      expect(extractArticle(`<meta name="description" content="${credit}">`, url).summary).toBeNull();
+    }
+    expect(extractArticle('<meta name="description" content="編輯/鄭欣宜撰文，介紹最新展覽與交通安排。">', url).summary).not.toBeNull();
+    expect(extractArticle('<meta name="description" content="生活中心/綜合報導">', 'https://example.com/story').summary).not.toBeNull();
+  });
+  it('uses the Yahoo Japan pickup article description after rejecting a weather service credit', () => {
+    const url = 'https://news.yahoo.co.jp/pickup/6596901';
+    const summary = '地震が発生しました。今後の情報にご注意ください。各地域の震度はこちら。';
+    const html = `<meta name="description" content="(Yahoo!天気・災害)"><meta property="og:description" content="(Yahoo!天気・災害)"><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, description: summary })}</script>`;
+    expect(extractArticle(html, url)).toMatchObject({ summary, summarySource: 'jsonld:description' });
+    expect(extractArticle('<meta name="description" content="(Yahoo!天気・災害)">', url).summary).toBeNull();
+    expect(extractArticle('<meta name="description" content="(Yahoo!天気・災害)">', 'https://example.com/article').summary).toBe(
+      '(Yahoo!天気・災害)',
+    );
+    expect(extractArticle('<meta name="description" content="台風が接近しています。備えを確認してください。">', url).summarySource).toBe(
+      'meta:description',
+    );
+  });
   it('rejects an RSS description containing only its title and a continue-reading link', () => {
     const rss =
       '<rss><channel><item><title>地方活動　正式開幕</title><link>https://886.news/archives/365381</link><description><![CDATA[<p>地方活動　正式開幕</p><a href="https://886.news/archives/365381">繼續閱讀</a>]]></description></item></channel></rss>';
