@@ -719,3 +719,13 @@ FoodNext46335496自有主文.post-content第一個直系p為「採訪·撰文=�
 SETN46281284唯一主文.article_time_wrap > .article_time_area > .article_remark_wrap > .author_wrap明示「編輯 林昀萱 台北報導」，own主h1相同。新增只在三立該主文欄位完整匹配的署名pattern；不放寬通用reporterNames或responsibility editor規則、不採aside相同class。fresh原頁正文／精確date／summary與DB一致，DB和正式API本就林昀萱正確，故只有parser修正、沒有新增歷史回寫候選。batch14-setn-proof.json verifiedtrue；責任編輯、他站同名欄位測試排除。
 
 最終983crawl／attribution tests、tsc、全Biome通過；2123成功原HTML對冻结13回放僅食力2／聚傳媒1／三立1的署名（聚傳媒另摘要）變化，0正文／日期變化。MSN專用6份API回放另1作者拆分；第十四批5不同歷史候選＝4署名+3摘要（overlap2），0正文／日期寫入，三立parser-only不混算歷史repair。第十四批本地提交未推送／部署／apply，unfrozen未排程；正式仍bfb34f2已推送／部署／完整30驗證。第十三批bedafe7冻结，08:21probe／08:26release既有timers，actual hourly gate earliest08:22:50.475，不重啟timer。07:38第十二批probe實際PID854082仍active，主站200+worker200，nextsampler08:00維持。24h觀察至18:49:13仍active，總報告及最後有界round未完成。
+
+### 10/8 07:45：Taipei Times主文通訊社供稿與中評社Sputnik引用
+
+TaipeiTimes45941770 own URL/meta og:url同identity，#left_blake > .archives唯一主h1及直系ul.boxTitle > li > .name明示「AFP, WASHINGTON, DC」。新增僅該站數字archives path／owncanonical／唯一主header與完整agency+dateline的解析，作者credit保留AFP而city不當作者，providerAFP建立「內容提供者：AFP」source及citation index。个人評論者Juan Fernando Herrera Ramos仍原credit，正文Photo:AFP/AP不是供稿證據，aside同name／canonical不同／署名後接其他文案不採。
+
+Fresh200 own主h1同DB，generic title含固定「 - Taipei Times」suffix另核對，full body／summary／summary_source exactDB，oldparser完整署名同DB。原頁publicationmeta 2026-10-08T00:00+08與RSS項目2026-10-08T08:00+08有8h差異；重新fresh取index.rss，對同canonical、title唯一item的publication00:00Z exactDB，來源本來skipMeta保留feed時間。本次不更動日期或泛化校正，記錄pageMeta／storedFeed衝突與完整原始feed，作者／creator／attribution一個transaction；完整14field snapshot+existing citations／sketches／pairs備份、fresh乾跑passed，尚未apply。
+
+中評社45781142 fresh own docid107241172／title／full body／summary／作者[]／精確date皆同DB，開頭完整「中評社香港10月7日電／衛星新聞報道，…」是明示報道引用，不是記者。公開sputniknews.cn首頁200，中文title為俄羅斯衛星通訊社，meta description明示Sputnik，支持Sputnik／衛星新聞／衛星通訊社繁簡別名。新增outlet sputnik及明示report邊界，照片來源或衛星技術文字不採；jurisdiction未獨立審核而維持country unknown／ZZ，不據domain猜國籍。只新增attributions及citation index，作者／日期／正文／摘要全部保留；fresh full14snapshot乾跑passed，backup與exact deployment guards準備，未apply。原頁和品牌首頁HTML.gz及identity log留證。
+
+985crawl／attribution tests、tsc、全Biome通過；2123成功HTML對冻结13回放6文章：CRNTT引用1、TaipeiTimesagency署名+provider+source1、食力署名2、聚傳媒署名+summary1、三立署名1，0正文／日期parser變化；MSN另6API回放1作者拆分。第十四批共7不同歷史候選：5署名、3摘要、2source，0正文／日期寫入，SETN另parser-only已正確DB不用回寫。第十四批仍unfrozen未排程，本地提交未推送／部署／套用，需待第十三批actualdeployment+一小時間隔。正式bfb34f2已推送／部署／完整30驗證；13bedafe7冻结08:26timer與priorgate仍維持。24h觀察active到18:49:13，final boundedround及完整修改清單仍待結束時審核。

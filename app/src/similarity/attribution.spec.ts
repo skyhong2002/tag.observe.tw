@@ -273,3 +273,13 @@ it('keeps DW agency providers separate from its declared collective author', () 
   expect(extractAttributions('新聞內文。', 'dw', '德正')).toEqual([]);
   expect(extractAttributions('新聞內文。', 'dw', '未知供稿者、美聯社').map((x) => x.media)).toEqual(['ap']);
 });
+
+it('recognizes reviewed Sputnik reporting labels without treating satellite technology or photos as article sources', () => {
+  expect(extractAttributions('中評社香港10月7日電／衛星新聞報道，俄羅斯外長表示。', 'hk_crntt')).toMatchObject([
+    { media: 'sputnik', countryCode: 'ZZ', kind: 'explicit' },
+  ]);
+  expect(extractAttributions('据俄罗斯卫星通讯社报道，部长回应。', 'hk_crntt').map((a) => a.media)).toEqual(['sputnik']);
+  expect(extractAttributions('據Sputnik報導，部長回應。', 'hk_crntt').map((a) => a.media)).toEqual(['sputnik']);
+  expect(extractAttributions('照片來源：衛星新聞', 'hk_crntt')).toEqual([]);
+  expect(extractAttributions('新發射的衛星傳回影像，衛星新聞技術論壇發表研究。', 'hk_crntt')).toEqual([]);
+});

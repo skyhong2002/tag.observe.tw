@@ -54,6 +54,8 @@ const outlets: Outlet[] = [
   outlet('prnewswire', '美通社', 'ZZ', ['PR Newswire']),
   outlet('hkfp', '香港自由新聞', 'ZZ', ['Hong Kong Free Press', 'HKFP']),
   outlet('newsmaker', 'NewsMaker', 'ZZ', []),
+  // Public Chinese homepage names Sputnik; jurisdiction has not been audited.
+  outlet('sputnik', '衛星通訊社', 'ZZ', ['Sputnik', '衛星新聞', '卫星新闻', '卫星通讯社', '俄羅斯衛星通訊社', '俄罗斯卫星通讯社']),
   outlet('guardian', 'The Guardian', 'ZZ', ['Guardian']),
   outlet('economist', 'The Economist', 'ZZ', ['Economist']),
   // Official dongqiudi.com footer identifies the outlet and its Tianjin ICP registration.
