@@ -133,6 +133,8 @@ export function pnnArticle(
     publishedAt: date,
     creator: candidate.provider,
     description: `供稿來源：${candidate.provider}。原文：${candidate.originUrl}`,
+    summary: detail.summary,
+    summarySource: detail.summary && detail.summarySource ? `origin:${detail.summarySource}` : null,
     image: detail.image ?? undefined,
     verifiedContent: {
       body: body.body,

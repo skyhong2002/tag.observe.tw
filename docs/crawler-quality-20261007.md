@@ -655,3 +655,15 @@ batch13-cool3c-reviewed-plan.json、repair-batch13-cool3c.mjs、verify-batch13-c
 prepare／repair／verify-batch13-marieclaire.mjs與batch13-marieclaire-reviewed-plan.json準備完成。完整article／sketch／citation／pairs與counterpart备份、exact release／clean candidate／similarity-index lock守衛；apply移除舊sketch與設定similarity_at null，等待原有natural index job，verifier核對DB／fresh原頁／public API、原日期、自然minhash及任何new natural pair的正文證據。4篇尚未apply，禁止重啟或另插索引job。972crawl／attribution tests、tsc及全Biome通過，formatter只更動指定files。
 
 第十三批合計15不同候選：14摘要、7正文文字修正、6iThome正文來源修正、0署名或日期歷史寫入；6iThome／5Cool3c／4MarieClaire乾跑通過。正式仍c63dacb已推送／部署／驗證；第十二批bfb34f2冻结、本地提交未推送／部署／回寫，07:21 timer維持；第十三批本地提交未推送／部署／回寫，仍未冻结或排程，下一批須距第十二批實際成功部署約一小時。24小時觀察至18:49:13持續active。
+
+### 10/8 06:52：MSN公開abstract、PNN已核對原站summary、Miin API實證
+
+先前MSN／Miin／PNN的一般HTML是應用殼，不能作為空正文或缺署名的正確性證明。本次直接核對原爬蟲採用的公開資料途徑，不重開爬蟲job：MSN assets.msn.com/content/view/v2/Detail/zh-tw/ID四篇45492352／46087842／46163067／46163066都是public-access article／locale zh-tw／own ID完全相同，parsed完整正文、作者（保留供稿provider＋明示作者）、精確publication均與DB一致；四份detail.abstract都是原站獨立供應的實質摘要，舊adapter只保留供稿來源description而漏存abstract。新增publisherSummary(detail.abstract, api:msn:abstract, ownTitle)，保留原abstract及其截斷、不從正文生成，provider／原文URL description維持；錯ID、限制／paywall、缺abstract／相同title／oversized摘要均不補。
+
+MSN四篇full13field snapshot＋fresh API乾跑通過，摘要都能在該篇已核對正文中找到，原DBsummary／summary_source null。batch13-msn-evidence.mjs、reviewed-plan、prepare／repair／verify-batch13-msn.mjs保留exact-release／clean guard、durable metadata backup、single-apply核對、public API與retention檢查；尚未apply。一般2013 HTML回放仍15篇變化；專用API新增4摘要變化獨立列證，不把應用殼回放當完整adapter驗證。
+
+Miin45558768／46085197／46149826／46149825公開api.miin.cc story endpoint exact storyId、normal state與正常content spans已驗證，完整body／title／publishing account Miin Events (EN)／createAt精確日期同DB。API dataKeys只有title／content／author等，沒有summary或description；四篇summary保持null、不把網站slogan或自動正文首段當摘要，也不改publishing account成推測記者。batch13-public-api-review.json／gzip保留實證；檢查的是上述selected fields，不宣稱所有欄位已正確。
+
+PNN45478221／45780646實際pnn5.aotter.net hosted viewer（一般pnn.tw response是殼）與其description明示的中央社own原文均fresh200，main viewer heading／origin title與canonical／兩方向正文overlap與closingparagraph／精確original publication／provider＋authors及DBbody一致。兩篇origin頁有獨立meta:description摘要，viewer無自己summary metadata；新增僅已完整驗證供稿原文後保存detail.summary與origin:meta:description來源，保持原文URL／供稿credit，不自行生成或誤稱viewer自己供應。兩篇full13field snapshot＋fresh viewer與original乾跑通過，摘要字面出現在供稿正文；PNN source資料取得或identity不符就拒絕，缺original summary維持null。batch13-pnn-evidence.mjs、reviewed-plan、prepare／repair／verify準備完成，尚未apply。
+
+974crawl／attribution tests、tsc／全Biome通過；第十三批合計21不同候選：20摘要、7正文文字修正、6iThome正文來源修正、0署名或日期歷史寫入，6iThome／5Cool3c／4MarieClaire／4MSN／2PNN各fresh完整snapshot乾跑通過。正式仍c63dacb已推送／部署／驗證；第十二批bfb34f2冻结、本地提交未推送／部署／回寫，07:21 timer；第十三批本地提交未推送／部署／回寫、unfrozen且未排程，須距第十二批實際成功部署約一小時再發佈。24小時觀察維持至18:49:13。

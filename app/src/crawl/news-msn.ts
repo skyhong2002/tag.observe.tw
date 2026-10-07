@@ -3,6 +3,7 @@ import { extractArticle, parsePublished } from './article.ts';
 import type { FeedItem } from './feed.ts';
 import { fetchText } from './fetch.ts';
 import type { NewsDiscoveryConfig, NewsDiscoveryOptions, NewsDiscoveryResult } from './news-discovery.ts';
+import { publisherSummary } from './summary.ts';
 
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -100,6 +101,7 @@ export function msnArticle(raw: unknown, candidate: { id: string; url: string },
     publishedAt,
     creator: provider,
     description: `供稿來源：${provider}。${sourceUrl ? `原文：${sourceUrl}` : ''}`,
+    ...publisherSummary(detail.abstract, 'api:msn:abstract', title),
     image,
     verifiedContent: {
       body: extracted.body,

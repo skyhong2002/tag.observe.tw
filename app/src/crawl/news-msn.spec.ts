@@ -26,6 +26,19 @@ const bundle = `let a="${anonymousKey}";function s(t){t.set("apikey",a)}const pa
 const home = '<script src="https://assets.msn.com/bundles/v1/hub/latest/common.abcdef123.js"></script>';
 
 describe('MSN anonymous public reader', () => {
+  it('retains the matching public detail abstract separately from provider credit without generating a body excerpt', () => {
+    const abstract = '原站提供的新聞摘要，保留其截斷…';
+    expect(msnArticle({ ...detail, abstract }, candidate, now)).toMatchObject({
+      summary: abstract,
+      summarySource: 'api:msn:abstract',
+      description: `供稿來源：真正供稿新聞社。原文：${detail.sourceHref}`,
+    });
+    for (const abstract of [undefined, '', detail.title, 'x'.repeat(4001)]) {
+      expect(msnArticle({ ...detail, abstract }, candidate, now)).toMatchObject({ summary: null, summarySource: null });
+    }
+    expect(msnArticle({ ...detail, abstract, id: 'AAwrong123' }, candidate, now)).toBeNull();
+    expect(msnArticle({ ...detail, abstract, renderingRestriction: 1 }, candidate, now)).toBeNull();
+  });
   it('extracts the published date and complete partner text without confusing provider premium status with access restrictions', () => {
     const item = msnArticle(detail, candidate, now);
     expect(item?.publishedAt?.toISOString()).toBe('2026-10-02T10:00:00.000Z');

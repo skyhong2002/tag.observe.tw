@@ -27,6 +27,14 @@ const viewer = (ps = paragraphs) =>
 const now = new Date('2026-10-03T13:00:00Z');
 
 describe('PNN hosted CNA stories with independently checked publication evidence', () => {
+  it('keeps the verified original publisher summary and its provenance without synthesizing a viewer body excerpt', () => {
+    const summary = '中央社原文獨立提供的新聞摘要。';
+    const supplied = `<meta name="description" content="${summary}">${original()}`;
+    expect(pnnArticle(candidate, viewer(), supplied, now)).toMatchObject({ summary, summarySource: 'origin:meta:description' });
+    expect(pnnArticle(candidate, viewer(), original(), now)).toMatchObject({ summary: null, summarySource: null });
+    expect(pnnArticle(candidate, viewer(), supplied.replace(row.title, '另一篇新聞'), now)).toBeNull();
+    expect(pnnArticle(candidate, viewer(paragraphs.slice(0, -1)), supplied, now)).toBeNull();
+  });
   it('uses original publication time, keeps provider/source URL and removes surrounding reader controls', () => {
     const item = pnnArticle(candidate, viewer(), original(), now);
     expect(item?.publishedAt?.toISOString()).toBe('2026-10-02T14:08:00.000Z');
