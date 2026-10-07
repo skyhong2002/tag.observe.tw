@@ -1,5 +1,6 @@
 import type { CheerioAPI } from 'cheerio';
 import { articleNodes } from './article-content.ts';
+import { reporterNames } from './byline.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
 export interface ArticleSummary {
@@ -7,16 +8,34 @@ export interface ArticleSummary {
   summarySource: string | null;
 }
 
-/** Preserve publisher text, never invent a summary by taking the body's lead. */
-export function publisherSummary(value: unknown, source: string, title?: string | null): ArticleSummary {
-  if (typeof value !== 'string') return { summary: null, summarySource: null };
-  const summary = decodeEntities(stripTags(value))
+const boilerplate = new Set([
+  '迷音 Miin — Let me in!',
+  '視傳媒-新興網路媒體，目前各縣市均有記者發稿，有多位資深也有很多充滿活力的記者，一起拿起筆桿來為民眾出聲。',
+  '青年日報為中華民國國防部發行的官方報紙，提供軍事、政治、社會、地方、兩岸、國際、生活、運動、藝文、娛樂等豐富新聞內容。',
+  'lai賴傳媒新聞網追求公正、快速的新聞，讓讀者「看新聞就搜賴傳媒新聞網」。',
+  '中嘉新聞網提供在地新聞與縣市政府公告事項',
+]);
+const normalized = (value: string) =>
+  decodeEntities(stripTags(value))
     .replace(/[\u200b-\u200d\ufeff]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+
+/** Preserve publisher text, never invent a summary by taking the body's lead. */
+export function publisherSummary(value: unknown, source: string, title?: string | null): ArticleSummary {
+  if (typeof value !== 'string') return { summary: null, summarySource: null };
+  const summary = normalized(value);
   // Oversized feed descriptions often contain the entire article. Do not silently
   // turn them into an excerpt and call that a publisher-provided summary.
-  if (!summary || summary.length > 4000 || summary === title?.trim()) return { summary: null, summarySource: null };
+  if (
+    !summary ||
+    summary.length > 4000 ||
+    summary === (title ? normalized(title) : '') ||
+    boilerplate.has(summary) ||
+    (summary.length <= 80 && /(?:報導|報道|报道)[）)】〕]?$/u.test(summary) && reporterNames(summary).length > 0) ||
+    /^文\s*[/／]\s*[^。！？]{2,20}中心$/u.test(summary)
+  )
+    return { summary: null, summarySource: null };
   return { summary, summarySource: source };
 }
 
@@ -27,7 +46,9 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
       if (page.hostname === 'news.pts.org.tw' && /^\/article\/\d+$/.test(page.pathname)) selector = '.post-article > .articleimg';
     } catch {}
   }
-  const title = $('h1').first().text().trim() || $('meta[property="og:title"]').attr('content');
+  const titles = [$('h1').first().text(), $('meta[property="og:title"]').attr('content'), $('title').text()]
+    .filter((value): value is string => !!value)
+    .map(normalized);
   const candidates: Array<[unknown, string]> = [];
   if (selector) candidates.push([$(selector).first().text(), 'article:selector']);
   for (const node of articleNodes($, url)) candidates.push([node.abstract, 'jsonld:abstract']);
@@ -38,8 +59,8 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   ])
     candidates.push([$(selector).first().attr('content'), source]);
   for (const [value, source] of candidates) {
-    const result = publisherSummary(value, source, title);
-    if (result.summary) return result;
+    const result = publisherSummary(value, source);
+    if (result.summary && !titles.includes(result.summary)) return result;
   }
   return { summary: null, summarySource: null };
 }

@@ -51,6 +51,21 @@ describe('publisher summary metadata', () => {
       summarySource: 'meta:summary',
     });
   });
+  it('skips verified site slogans and tries the article-specific social description', () => {
+    const detail = extractArticle(
+      '<meta name="description" content="lai賴傳媒新聞網追求公正、快速的新聞，讓讀者「看新聞就搜賴傳媒新聞網」。"><meta property="og:description" content="渣打銀行發布第4季展望，持續看好台灣股市。">',
+      'https://lai-media.net/news_view.php?new_sn=145420',
+    );
+    expect(detail).toMatchObject({ summary: '渣打銀行發布第4季展望，持續看好台灣股市。', summarySource: 'meta:og:description' });
+  });
+  it('rejects whitespace-normalized headlines and standalone bylines', () => {
+    expect(extractArticle('<h1>新聞　標題</h1><meta name="description" content="新聞 標題">', 'https://example.org/a').summary).toBeNull();
+    expect(publisherSummary('【記者林文強/台北報導】', 'meta:description').summary).toBeNull();
+    expect(publisherSummary('文/ 金融消費中心', 'meta:description').summary).toBeNull();
+    expect(publisherSummary('迷音 Miin — Let me in!', 'meta:description').summary).toBeNull();
+    expect(publisherSummary('記者林文強報導這項公共政策的影響。', 'meta:description').summary).not.toBeNull();
+    expect(publisherSummary('記者王丹荷／綜合報導 韓國樂團宣布再度來臺，將舉辦巡迴演唱會。', 'meta:description').summary).not.toBeNull();
+  });
   it('preserves RSS description and Atom summary provenance without using full Atom content', () => {
     const rss = parseFeed(
       '<rss><channel><item><title>標題</title><link>https://example.org/a</link><description>RSS摘要</description></item></channel></rss>',
