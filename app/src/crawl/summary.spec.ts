@@ -5,6 +5,22 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('rejects the shared FCLNews site promotion while preserving an article-specific fallback', () => {
+    const slogan =
+      '-台灣新聞雲報提供台灣最中立最公正最即時的各類型新聞報導，包括政治新聞、焦點新聞、社會新聞、國際新聞、地方新聞、娛樂新聞、科技新聞、專訪新聞、政黨新聞、藝文活動、美食推廣、體育賽事等相關新聞報導。歡迎各界好友踴躍贊助推廣。';
+    expect(
+      extractArticle(
+        `<meta name="description" content="${slogan}"><meta property="og:description" content="${slogan}">`,
+        'https://www.fclnews.com/230503/',
+      ),
+    ).toMatchObject({ summary: null, summarySource: null });
+    expect(
+      extractArticle(
+        `<meta name="description" content="${slogan}"><meta property="og:description" content="花蓮藥膳食堂介紹傳統慢火熬煮工法。">`,
+        'https://www.fclnews.com/230503/',
+      ),
+    ).toMatchObject({ summary: '花蓮藥膳食堂介紹傳統慢火熬煮工法。', summarySource: 'meta:og:description' });
+  });
   it('uses INSIDE editorial introduction before its description with appended tags', () => {
     const html = `<meta name="description" content="媒體提供的獨立導讀。#Google,影音 (story-slug)"><meta property="og:description" content="媒體提供的獨立導讀。"><div class="post_introduction">媒體提供的獨立導讀。</div><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', articleBody: body })}</script>`;
     expect(extractArticle(html, 'https://www.inside.com.tw/article/42585-story-slug')).toMatchObject({
