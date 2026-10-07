@@ -601,3 +601,15 @@ Heho46195370／46195371實際是lifestyle／kids首頁加utm_source=heho-menu，
 962crawl／attribution、tsc、全專案Biome通過；2013份成功HTML对固定第十一批回放27篇變化，新增大媒體7篇provider／引用（包含先前6份樣本），沒有額外正文／日期變化。其他6篇歷史來源修復尚待fresh再核對，不能當成已回寫。最新source14、body3乾跑通過，metadata7乾跑保留；第十二批24篇不同候選（metadata7＋source14＋body3），7署名、4摘要、14來源、3正文、0日期歷史寫入。
 
 第十一批06:14:08發布前13篇DB完整快照及body既有pairs與review plan全相同，batch11-prepublish-snapshot-preflight.json verifiedtrue。06:11 readonly probe PID801457正常運行，主站／worker200；06:16固定release timer未重複啟動。正式仍183f87e已推送／部署，第十一批c63dacb固定本地未推送／部署，第十二批本地提交未推送／部署／套資料且未冻结，發布須距第十一批實際成功部署約一小時。24h觀察仍至18:49:13。
+
+### 10/8 06:21：第十一批已部署與13修復已套用；第十二批30候選
+
+第十一批c63dacb於06:16:03推送main，exact CI37695068621 success，06:18:11.349恢復派送；new-dispatch pause30.095秒，initial active0，沒有殺掉既有job或重開job。三service指向同一release、主站200、workerhealthy、queue未paused，failed IDs與原baseline7相同，兩篇公視summary原頁／DB／publicAPI仍相同，batch11-live-verification.json verifiedtrue。Samplerversion在inactive／clean／expectedoldhead時FF更新至c63dacb，不修改active round。
+
+TechNews body3與既有5pairs已transaction更新、durable backup存在；metadata10已套用且10篇fresh原頁／DB／publicAPI／完整13欄驗證全部通過。合計13不同文章、7署名（6personal＋1desk）、5摘要、3正文、0日期寫入。禁止重套既有修復。Body verifier第一次查到natural reindex pending（NULL similarity_at／無sketch），第一attempt report/log已保存；不是apply失敗。queue readonly觀察顯示原有repeat:similarity-index:1791411947307於06:25:47.307排程，先等待既有job再核對3natural sketches及5pairs，不插入duplicate或重啟worker。完整13修復final verification尚待body索引核對，不能提前宣稱完成。
+
+大媒體先前6份樣本fresh200均成功，完整own header及articleAuthor信用PRNewswire與正文／署名一致；45558630／45558629的DBsummary原為null，但原站已有實質meta:description excerpt（AMEXGOURMETCLUB／femtoAI各自新聞開頭），沒有自行截取正文生成摘要。將兩篇真正供應的summary／summary_source連同來源在同transaction補齊，其他5篇summary不變，全部既有正文／日期保持。source plan BigMedia由1增至7，最新source20完整14欄fresh乾跑全部通過；不因舊DB摘要空白而排除可核對的原站摘要。
+
+第十二批現在30不同候選：metadata7＋source20＋body3，7署名、6摘要、20來源、3正文、0日期歷史寫入。metadata7／source20／body3各自完整snapshot與fresh原頁乾跑已通過。程式仍962crawl／attribution、tsc、全專案Biome，2013成功HTML回放27篇變化，不重複測試未更動的程式。第十二批report本地提交後準備冻结並排程07:21，距第十一批实际恢復派送超過一小時；exact候選CI／clean checkout／main及live守衛仍適用。正式資料未套用，不能把候選當成線上版本。
+
+正式部署c63dacb已推送／驗證，readonly probe PID801457持續至07:01，探測仍非零停機或用戶browser證明。14輪2086樣本／235媒體觀察保持至18:49:13；最终有界抽樣與全程報告仍未完成。
