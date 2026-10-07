@@ -24,7 +24,7 @@ export const ROUND3_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegE
     titleSelector: 'main > article:first-of-type h1',
     bodySelector: 'main > article:first-of-type > .content',
     providerSelector: 'main > article:first-of-type .author-section a[href*="/posts/author/"]',
-    bodyExcludeSelector: '.wp-block-heading:has(a[href*="instagram.com/roomie"])',
+    bodyExcludeSelector: '.wp-block-heading:has(a[href*="instagram.com/roomie"]), .kakomi:has(a[href^="https://www.roomie.jp/writer/"])',
   },
   {
     host: 'fearless.cool',

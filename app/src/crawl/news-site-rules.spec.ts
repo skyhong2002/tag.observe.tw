@@ -4,6 +4,22 @@ import { extractArticle, parsePublished } from './article.ts';
 import { discoverNews } from './news-discovery.ts';
 import { newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 
+it('reads Ifeng content provider only from the selected article source credit', () => {
+  const html =
+    '<aside><a rel="medianame">推荐媒体</a></aside><article><h1>新闻标题</h1><div class="index_sourceTitleText_hash"><a rel="medianame">新华社</a></div><div class="index_articleBox_hash"><div class="index_text_hash"><p>这是新闻内容。</p></div></div></article>';
+  expect(extractArticle(html, 'https://news.ifeng.com/c/8x2H6OhjklO')).toMatchObject({
+    title: '新闻标题',
+    provider: '新华社',
+    body: '这是新闻内容。',
+  });
+});
+
+it('uses Meihua article h1 independently from its author-prefixed metadata title', () => {
+  const html =
+    '<meta property="og:title" content="金價波動 |梅花新聞網 陳素貞/綜合報導| 梅花新聞網"><article class="entry"><h1>金價波動</h1><div id="articleContent"><p>完整文章內容。</p></div></article>';
+  expect(extractArticle(html, 'https://www.i-meihua.com/Article/Detail/57258').title).toBe('金價波動');
+});
+
 const body = '地方政府公布交通改善計畫，將增加公車班次，並公開工程預算與施工進度，邀請居民參與討論。'.repeat(7);
 const paragraph = `<p>${body}</p>`;
 const title = '<meta property="og:title" content="地方新聞測試標題">';

@@ -1,8 +1,16 @@
 import * as cheerio from 'cheerio';
 import { describe, expect, it } from 'vitest';
+import { extractArticle } from './article.ts';
 import { ROUND3_NEWS_SITES } from './news-round3-sites.ts';
 
 describe('migrated publisher identity', () => {
+  it('excludes a Roomie writer-profile box while retaining ordinary inset prose', () => {
+    const body = '文章介紹沙發的尺寸、設計與居家使用情境。'.repeat(15);
+    const html = `<main><article><div class="content"><div class="kakomi"><p>作者個人經歷與簡介。</p><a href="https://www.roomie.jp/writer/tomokokizuki/">文章列表</a></div><p>${body}</p><div class="kakomi"><p>這是文章補充資訊。</p></div></div></article><article><div class="content"><p>下一篇文章。</p></div></article></main>`;
+    const article = extractArticle(html, 'https://www.roomie.tw/posts/170337');
+    expect(article.body).toBe(`${body}\n\n這是文章補充資訊。`);
+  });
+
   it('reads article credit independently from reused author archives and sidebar mentions', () => {
     const rule = ROUND3_NEWS_SITES.find((site) => site.host === 'vigormedia.tw')!;
     const $ = cheerio.load(`<aside>美洲台灣日報</aside>

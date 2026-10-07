@@ -7,6 +7,11 @@ const ld = (body: string, name = '網站管理員') =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body, author: { '@type': 'Person', name } })}</script>`;
 
 describe('reporter identity from the selected article', () => {
+  it('prefers the reporters named by an opening Xinhua dispatch over an agency account', () => {
+    const html = `<meta name="author" content="新华社"><article><p>新华社莫斯科10月7日电（记者王作葵 刘恺）${prose}</p></article>`;
+    expect(extractArticle(html, 'https://news.ifeng.com/c/story')).toMatchObject({ authors: ['王作葵', '刘恺'] });
+  });
+
   it('preserves CCSN direct-text lead before paragraph-wrapped prose', () => {
     const lead = '【記者于郁金/臺南報導】市府今日公布新的公共政策。';
     const html = `<div class="post-body"><div class="separator"><img src="photo.jpg"></div>${lead}<span><a name="more"></a></span><p>${prose}</p></div><aside>記者李小明/台北報導</aside>`;

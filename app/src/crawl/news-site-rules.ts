@@ -46,6 +46,19 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'news.ifeng.com',
+    path: /^\/c\/[A-Za-z0-9]+$/,
+    bodySelector: 'article div[class^="index_articleBox_"] > div[class^="index_text_"]',
+    titleSelector: 'article h1',
+    providerSelector: 'article div[class^="index_sourceTitleText_"] a[rel="medianame"]',
+  },
+  {
+    host: 'i-meihua.com',
+    path: /^\/Article\/Detail\/\d+$/i,
+    bodySelector: '#articleContent',
+    titleSelector: 'article.entry h1',
+  },
+  {
     host: 'ccsn0405.com',
     path: /^\/\d{4}\/\d{2}\/[^/]+\.html$/,
     bodySelector: '.post-body',

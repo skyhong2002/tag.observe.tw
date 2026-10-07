@@ -3,6 +3,17 @@ import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
 import { attributionRole, extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
 
 describe('explicit media attribution', () => {
+  it('resolves the declared simplified Guancha provider to its reviewed catalog identity', () => {
+    expect(extractAttributions('新聞內容。', 'ifeng', '观察者网')).toContainEqual({
+      media: 'guancha',
+      name: '觀察者網',
+      countryCode: 'CN',
+      country: '中國',
+      evidence: '內容提供者：观察者网',
+      kind: 'explicit',
+    });
+  });
+
   it('recognizes Dongqiudi as an outlet even without a generic media suffix', () => {
     expect(extractAttributions('', 'news_sina', '懂球帝')).toEqual([
       expect.objectContaining({ media: 'dongqiudi', name: '懂球帝', countryCode: 'CN', evidence: '內容提供者：懂球帝' }),

@@ -9,6 +9,20 @@ import {
 } from './byline.ts';
 
 describe('explicit reporter credits', () => {
+  it('accepts a standalone writer credit without treating ordinary prose as a byline', () => {
+    expect(extractLeadReporterNames('文 张红日\n\n文章介紹巴西選舉。')).toEqual(['张红日']);
+    expect(reporterNames('文 张红日与同事讨论了这一话题。')).toEqual([]);
+    expect(reporterNames('文 新闻编辑中心')).toEqual([]);
+  });
+
+  it('reads the reporters in an opening Xinhua dispatch credit', () => {
+    expect(reporterNames('新华社莫斯科10月7日电（记者王作葵　刘恺）俄罗斯发布通告。')).toEqual(['王作葵', '刘恺']);
+    expect(reporterNames('新華社莫斯科10月7日電（記者王作葵、劉愷）政府发布通告。')).toEqual(['王作葵', '劉愷']);
+    expect(reporterNames('引述新华社莫斯科10月7日电（记者王作葵 刘恺）的消息。')).toEqual([]);
+    expect(reporterNames('新华社莫斯科10月7日电（责任编辑王小明）政府发布通告。')).toEqual([]);
+    expect(extractLeadReporterNames('政府发布通告。\n\n新华社莫斯科10月7日电（记者王作葵 刘恺）')).toEqual([]);
+  });
+
   it('extracts NTD Asia Pacific terminal credits even after a merged paragraph', () => {
     expect(extractClosingReporterNames('完整新聞內容。 新唐人亞太電視 黃亮戩 林嘉韋 邱春蓉 台灣台北報導')).toEqual([
       '黃亮戩',

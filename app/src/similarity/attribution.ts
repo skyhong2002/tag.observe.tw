@@ -55,6 +55,7 @@ const outlets: Outlet[] = [
   outlet('kyodo', '共同社', 'JP', ['Kyodo', 'Kyodo News', '共同通信社']),
   outlet('yonhap', '韓聯社', 'KR', ['Yonhap', 'Yonhap News Agency', '韩联社']),
   outlet('xinhua', '新華社', 'CN', ['Xinhua', 'Xinhua News Agency', '新华社']),
+  outlet('guancha', '觀察者網', 'CN', ['观察者网']),
   outlet('dw', '德國之聲', 'DE', ['DW', 'Deutsche Welle', '德国之声']),
   outlet('rfi', '法國國際廣播電台', 'FR', ['RFI', '法廣', '法广', 'RFI法廣', 'RFI法广']),
   outlet('soundofhope', '希望之聲', 'US', ['希望之聲TV', '希望之声', '希望之声TV']),

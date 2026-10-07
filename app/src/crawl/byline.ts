@@ -267,6 +267,12 @@ export function reporterNames(value: string): string[] {
   // reporter declaration; only remove that exact dateline at the start.
   const text = value.normalize('NFKC').replace(/[╱∕]/g, '/').replace(/\s+/g, ' ').trim().replace(epochDateline, '');
   if (!text) return [];
+  const writer = /^文\s+([\p{Script=Han}]{2,5})$/u.exec(text);
+  if (writer) return creditedNames(writer[1]);
+  // Xinhua wire dispatches put a parenthesized reporter credit immediately
+  // after their city/date dateline. Later quoted mentions do not qualify.
+  const xinhua = /^(?:新华社|新華社)[\p{Script=Han}]{1,12}\d{1,2}月\d{1,2}日(?:电|電)\s*\((?:记者|記者)\s*([^()]{2,60})\)/u.exec(text);
+  if (xinhua) return creditedNames(xinhua[1]);
   // Imported health features credit their original writer and translator in
   // one field. Both roles establish authorship; editors remain separate.
   const translated = /^(?:文|撰文|撰稿|作者)\s*[/：:]\s*(.+?)\s+(?:編譯|翻譯)\s*[/：:]\s*(.+)$/u.exec(text);
