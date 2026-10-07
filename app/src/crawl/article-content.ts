@@ -7,6 +7,7 @@ import {
   normalizeAuthorCredits,
   reporterNames,
 } from './byline.ts';
+import { womanyCollectionDescription } from './news-womany-collection.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
 export interface ArticleContent {
@@ -418,6 +419,8 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     return { body, bodySource, bodyStatus, authors: extractAuthors($, nodes, rules, authorBody, configuredValues) };
   };
   if (isExcerpt) return result(null, 'publisher:excerpt', 'short');
+  const collection = womanyCollectionDescription($, url);
+  if (collection) return result(collection, 'feature:womany-description', contentLength(collection) >= 200 ? 'ok' : 'short');
   const candidates: Candidate[] = nodes
     .map((node) => ({ body: structuredBody(node['articleBody']), source: 'ld+json' }))
     .filter((candidate) => candidate.body);

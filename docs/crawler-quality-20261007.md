@@ -555,3 +555,13 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 955crawl／attribution、tsc、全專案Biome通過；1935份成功HTML對固定第十一批c63dacb回放13篇變化：先前11份source／Hakka summary加上2全球之聲provider／署名／引用，0正文／日期。維持先取得summary再進行正文DOM cleanup，1111兩份既有圖說摘要排除結果相同，沒有回歸。第十二批候選增至16篇不同文章：metadata4＋source12（含全球之聲2writer／source及客新聞1summary／source），合計4署名、3摘要、12來源、0正文／日期歷史寫入；metadata4與source12全部fresh完整快照乾跑成功。`batch12-gv-reviewed-plan.json`保存2篇新增before／update，source apply／verifier已涵蓋12篇且檢查fresh extraction与citationindex，正式資料未套用。
 
 目前正式仍183f87e已推送／部署、21篇驗證完成；第十一批c63dacb固定本地提交未推送／部署，06:16 timer。第十二批本地程式與報告提交，未推送／部署／套資料，仍未冻结或排程，發布需距第十一批實際部署約一小時。觀察持續至18:49:13維持active。
+
+### 10/8 05:55：女人迷專題介紹正文，保留獨立摘要與未知日期
+
+女人迷10668979（collections/2026Unilever）與10668991（collections/ChildWelfare）是專題頁，原擷取分別只留下內嵌故事卡63字或育兒guide單一步驟77字。新增僅womany.net／www、collections單一slug、own canonical一致且主頁seo-title存在的介紹擷取；從main直系editor／emphasis／youtube／qa-fold／gallery／feature-intro章節的直系container > p.description依序取得原站編輯介紹。排除linked articles、tag_articles、socialshare與頁尾；同章節desktop存在時排除mobile重複，保留neutral及mobile-only文字。這是專題自身介紹，不宣稱已抓取全部互動元件或連結文章。
+
+兩頁fresh200確認新正文327字／164字，bodySource均feature:womany-description，後者維持short，不為達長度門檻拼入推薦文章。原站獨立description摘要不變，personal authors仍空，parser publication仍null。資料庫既有2023／2020日期保留，不能由2026網址或內容年份推測覆寫。舊parser正文與DB完全一致，兩頁皆0existing pairs／sketches／citations；完整article snapshot與重新取得原頁的正文修復乾跑通過。正式資料尚未套用。repair-batch12-womany.mjs僅更新body／body_status／body_source與重新索引標記，apply需exact live release、clean candidate、索引鎖與不存在backup；逐筆durable backup後transaction提交。verifier保存歷史七天public body期限，檢查expired mask與exact expiry、DB正文、原頁及公開metadata，不為舊專題強制啟動重索引。
+
+957crawl／attribution測試、tsc、全專案Biome通過。1935成功HTML對固定第十一批回放共15篇變化（原13篇加女人迷2篇）；只有這兩篇新增正文變化，日期沒有改變。第十二批候選18篇不同文章：metadata4、source12及女人迷body2；合計4署名、3摘要、12來源、2正文、0日期歷史寫入。16份既有metadata／source乾跑及新增2份body乾跑均已通過；未推送／部署／套用。
+
+正式版本仍183f87e已推送／部署且21修復驗證完成，主站／worker最新主機probe200。第十一批c63dacb固定本地提交未推送／部署，06:16發布timer維持；第十二批仍未凍結或排程，發布需距第十一批實際部署約一小時。24小時觀察維持active至18:49:13，需最終有界抽樣與完整報告。
