@@ -24,6 +24,23 @@ it('uses Meihua article h1 independently from its author-prefixed metadata title
 const body = '地方政府公布交通改善計畫，將增加公車班次，並公開工程預算與施工進度，邀請居民參與討論。'.repeat(7);
 const paragraph = `<p>${body}</p>`;
 const title = '<meta property="og:title" content="地方新聞測試標題">';
+it('reads ST Media reporter only from the main article header, not photos or recommendations', () => {
+  const article = `<main class="main"><div class="content min-h"><div class="top-info"><div><span class="date">2026.10.07</span><span class="author">記者 范宏坤 報導</span></div></div><div class="row">${paragraph}<div>照片／王小明攝</div></div></div></main>`;
+  const sidebar = '<aside><div class="top-info"><div><span class="author">記者 王小明 報導</span></div></div></aside>';
+  const url = 'https://news.st-media.com.tw/news/63204';
+  expect(extractArticle(article + sidebar, url).authors).toEqual(['范宏坤']);
+  expect(extractArticle(article.replace('記者 范宏坤 報導', '攝影 范宏坤'), url).authors).toEqual([]);
+  expect(extractArticle(article.replace('class="top-info"', 'class="other"') + sidebar, url).authors).toEqual([]);
+  expect(extractArticle(article + sidebar, 'https://example.org/story').authors).toEqual([]);
+});
+it('reads the Youth Daily declared release time only from its main article', () => {
+  const url = 'https://www.ydn.com.tw/tw/News/ugC_News_Detail.aspx?ID=647354';
+  const html = `<aside><span id="ContentPlaceHolder1_domReleaseDate">2026/10/09 09:00</span></aside><article class="PageArticle"><div class="date"><span>發佈日期:</span><span id="ContentPlaceHolder1_domReleaseDate">2026/10/08 02:00</span></div><div id="ContentPlaceHolder1_div_Desc">${paragraph}</div></article>`;
+  expect(extractArticle(html, url).publishedAt?.toISOString()).toBe('2026-10-07T18:00:00.000Z');
+  expect(extractArticle(html, url).body).toBe(body);
+  expect(extractArticle(html.replace('class="PageArticle"', ''), url).publishedAt).toBeNull();
+  expect(extractArticle(html, 'https://example.org/story').publishedAt).toBeNull();
+});
 
 // Reduced markup from real article responses fetched on 2026-10-03. Preserve
 // the observed wrappers, date labels and neighboring widgets; replace prose

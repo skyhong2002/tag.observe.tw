@@ -46,6 +46,13 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'ydn.com.tw',
+    path: /^\/tw\/News\/ugC_News_Detail\.aspx\?ID=\d+$/i,
+    bodySelector: 'article.PageArticle #ContentPlaceHolder1_div_Desc',
+    publishedSelector: 'article.PageArticle .date #ContentPlaceHolder1_domReleaseDate',
+    publishedAttribute: null,
+  },
+  {
     host: 'iw-times.com',
     path: /^\/news_view(?:\.php)?\?/,
     bodySelector: '.page-left > .editor',
@@ -475,6 +482,8 @@ const SITES: Site[] = [
     host: 'news.st-media.com.tw',
     path: /^\/news\/\d+$/,
     bodySelector: '.page-content > .row',
+    authorSelector: '.main .content.min-h > .top-info > div > span.author',
+    authorPattern: /^記者\s+([\p{Script=Han}]{2,5})\s+報導$/u,
     publishedSelector: '.top-info > div > span.date',
   },
   {

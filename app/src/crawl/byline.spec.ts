@@ -22,6 +22,15 @@ describe('explicit reporter credits', () => {
     expect(reporterNames('新华社莫斯科10月7日电（责任编辑王小明）政府发布通告。')).toEqual([]);
     expect(extractLeadReporterNames('政府发布通告。\n\n新华社莫斯科10月7日电（记者王作葵 刘恺）')).toEqual([]);
   });
+  it('reads a complete CRNTT dispatch reporter credit after a photo caption', () => {
+    expect(
+      extractLeadReporterNames('園區內的遊憩設施。（中評社 李京昇攝）\n\n中評社雲林10月8日電（記者 李京昇）雲林酪農產業已有多年歷史。'),
+    ).toEqual(['李京昇']);
+    expect(reporterNames('中評社雲林10月8日電（記者 李京昇、王小明）新聞內容。')).toEqual(['李京昇', '王小明']);
+    expect(reporterNames('引述中評社雲林10月8日電（記者 李京昇）的消息。')).toEqual([]);
+    expect(reporterNames('中評社雲林10月8日電（攝影 李京昇）新聞內容。')).toEqual([]);
+    expect(extractLeadReporterNames('完整新聞正文。\n\n中評社雲林10月8日電（記者 李京昇）其他消息。')).toEqual([]);
+  });
 
   it('extracts NTD Asia Pacific terminal credits even after a merged paragraph', () => {
     expect(extractClosingReporterNames('完整新聞內容。 新唐人亞太電視 黃亮戩 林嘉韋 邱春蓉 台灣台北報導')).toEqual([

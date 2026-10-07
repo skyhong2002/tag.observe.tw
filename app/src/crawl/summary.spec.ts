@@ -72,6 +72,19 @@ describe('publisher summary metadata', () => {
       ),
     ).toMatchObject({ summary: '石排灣水廠排泥水處理設施建造工程公開招標。', summarySource: 'meta:og:description' });
   });
+  it('rejects a Videoland description cut inside a link attribute and tries the next publisher description', () => {
+    const url = 'https://news.videoland.com.tw/article/826ab0df-e1d2-41c5-80c3-88eee5062dce.html';
+    const broken =
+      '<meta name="description" content="聯盟公布規則，詳細辦法請見<a href="https://news.videoland.com.tw/article/example.html">';
+    expect(extractArticle(broken, url).summary).toBeNull();
+    expect(extractArticle(broken + '<meta property="og:description" content="聯盟公布新的勞資協商規則。">', url).summary).toBe(
+      '聯盟公布新的勞資協商規則。',
+    );
+    expect(extractArticle('<meta name="description" content="聯盟公布新規則，詳細內容稍後公布。">', url).summary).toBe(
+      '聯盟公布新規則，詳細內容稍後公布。',
+    );
+    expect(extractArticle(broken, 'https://example.org/story').summary).toContain('<a href=');
+  });
   it('rejects a Youth Daily description copying all long article paragraphs in order', () => {
     const paragraphs = [
       '總統府舉辦光雕展演，完整呈現臺灣日常風景與歷史記憶。'.repeat(5),

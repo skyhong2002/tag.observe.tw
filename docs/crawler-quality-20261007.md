@@ -423,3 +423,15 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 初版驗證器要求配對筆數等於修復前數量，正常索引新增有效配對時停止；修正為保留且驗證所有原配對，另嚴格重算新增配對，不放寬matching門檻。重讀公開 content API 會更新正常 `content_accessed_at`，因此驗證器保留對文章metadata／正文的逐欄要求，只將有效的API存取時間及自然similarity時間視為可正常更新的操作欄位。没有重套資料或重開job。最終驗證器已正常結束。
 
 第九批已固定本地提交 `d2f9a5828deef0b99469ec4f3e3f4cafb373b81d`，3個新提交秘密資訊掃描乾淨，尚未推送／部署／套資料。發布timer為04:08，probe04:03至04:53；exactHEAD、舊main／live8958290、完整CI、排空及排空後main／live重檢守門。若外部版本介入則停止，不能覆蓋。新工作使用獨立batch10 checkout，保留固定第九批。第八批五秒探測03:18:47為止205筆均主站200／worker200，仍不能推論取樣間隔零停機。觀察預定18:49:13結束。
+
+### 10/8 03:31：跨媒體覆蓋擴充與第十批累積
+
+新核對34篇指定欄位，涵蓋17媒體，包括15家先前未記錄人工檢查的媒體。累計人工520紀錄、370不同文章、168媒體、366篇自動樣本；有部分核對與未解項，不能當成370篇所有metadata全數正確。中視樣本主要為影片頁描述，未取得主文／記者證據；更生日報兩篇為分類廣告而非一般新聞，保留本報訊機構信用，文章分類仍待查。癮科技署名Vera與作者profile相符，其描述的作者／標題／日期wrapper保留待查。商傳媒45860692解析正文比先前DB多出一個與描述相同的開頭段，尚未證明為來源更新或既有parser變更，因此不盲目覆寫正文。美通社、GlobeNewswire與記者爆料網等帳號是原站信用，不猜個人名字。
+
+第十批修正緯來新聞45640994 description及OG都因未跳脫引號而截斷在 `<a href=`；限news.videoland.com.tw官方文章路徑與這個完整未封閉尾碼排除，嘗試下一個原站摘要欄，保留一般短摘要。中評社主文通稿完整「中評社雲林10月8日電（記者 李京昇）」明示writer，泛用lead parser新增精確通稿格式，支持開頭照片後的署名，不接受攝影、敘述引用或較後段人物提及。台灣生活新聞官方news/數字頁，主新聞 `.main .content.min-h > .top-info > div > span.author` 完整「記者 范宏坤 報導」才採作者，不從側欄、圖片或缺少記者角色的文字推斷。
+
+青年日報主文章 `article.PageArticle .date #ContentPlaceHolder1_domReleaseDate` 明示發佈日期，新增日期解析，隔離側欄／無主文章wrapper的宣告。14份原始頁均與DB日期一致，正文逐字相同；兩份僅宣告日期而無時分，仍保留原有日精度語義，不宣稱原站刊登在午夜，也沒有歷史日期写入。
+
+927項crawl／attribution測試、tsc、全專案Biome通过（2個既有info），1,794份原頁對固定第九批d2f9a58回放24篇變化：14青年日報日期與body來源標記、7台灣生活新聞署名、2中評社署名、1緯來摘要；正文內容皆無變。9署名／1摘要的10篇候選全部fresh-original與完整13欄DB快照核對通過，日期／標題／tags／引用不寫入；仍未套用。證據 `batch10-uncovered-markup-proof.json`、`batch10-ydn-date-proof.json`、`batch10-all-sample-replay.json`、`batch10-expanded-metadata-reviewed-plan.json`、`batch10-metadata-reviewed-plan.json`、`batch10-crawl-tests.log`、`batch10-tsc.log`、`batch10-biome.log`。
+
+第九批固定d2f9a58仍只在本地，04:08發布timer等待中，線上仍8958290。第十批在獨立checkout累積，尚未推送／部署／套資料，下一次發布須距第九批實際部署約一小時，不能拿排程時間當完成時間。24小時觀察至18:49:13持續中。

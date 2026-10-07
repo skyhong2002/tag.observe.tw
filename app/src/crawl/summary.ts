@@ -108,6 +108,9 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   for (const [value, source] of candidates) {
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    // Reviewed malformed quoted metadata ends inside an unclosed link tag.
+    if (/^https?:\/\/news\.videoland\.com\.tw\/article\/[a-f0-9-]+\.html$/i.test(url) && /<a\s+href\s*=\s*$/iu.test(result.summary))
+      continue;
     if (isDaai && daaiBodies.includes(result.summary)) continue;
     if (/^https?:\/\/(?:www\.)?lifetoutiao\.news\/\d+\//i.test(url) && /^[（(]圖取自[／/][^（）()]{1,150}[）)]$/u.test(result.summary))
       continue;
