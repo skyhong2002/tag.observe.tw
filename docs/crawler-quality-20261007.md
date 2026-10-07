@@ -613,3 +613,13 @@ TechNews body3與既有5pairs已transaction更新、durable backup存在；metad
 第十二批現在30不同候選：metadata7＋source20＋body3，7署名、6摘要、20來源、3正文、0日期歷史寫入。metadata7／source20／body3各自完整snapshot與fresh原頁乾跑已通過。程式仍962crawl／attribution、tsc、全專案Biome，2013成功HTML回放27篇變化，不重複測試未更動的程式。第十二批report本地提交後準備冻结並排程07:21，距第十一批实际恢復派送超過一小時；exact候選CI／clean checkout／main及live守衛仍適用。正式資料未套用，不能把候選當成線上版本。
 
 正式部署c63dacb已推送／驗證，readonly probe PID801457持續至07:01，探測仍非零停機或用戶browser證明。14輪2086樣本／235媒體觀察保持至18:49:13；最终有界抽樣與全程報告仍未完成。
+
+### 10/8 06:27：第十一批13修復最終驗證完成，不重套
+
+原排程repeat:similarity-index:1791411947307在06:25:49自然完成（worker log articles165／indexed162／pairs211／pending0），body修復三篇各有similarity_at及1個sketch。再次執行只讀body verifier，三篇完整snapshot、DB／public API正文、date保留、citationindex與natural minhash字元／hash／published_at均通過，既有5pairs的score／containment／shared／kind／evidence及counterpart snapshots一致，沒有額外新pair。第一attempt pending log保留，没有重apply或強制新job。
+
+batch11-full-repairs-verification.json verifiedtrue：13不同文章（metadata10＋body3），7署名、5摘要、3正文、0日期寫入；metadata10原頁／DB／API核對與body3自然索引全部完成。正式release c63dacb已推送／部署，exact CI37695068621 success、三services指向該release、queue未paused，最初7failed IDs保持。06:11→07:01 probe仍執行，不能提前當成完整監測窗口或零停機證明。
+
+第十二批固定bfb34f2，本地已提交，未推送／部署／回寫；30不同候選（metadata7＋source20＋Womanybody3）乾跑全部通過，962crawl／attribution＋tsc／全Biome，7commit gitleaks clean，排程07:21 exactpublisher、07:16→08:06 probe，兩timer active。不能再修改冻结checkout；第十三批另在audit/crawler-quality-batch13-20261008工作目錄承接新修正，本章報告提交為本地狀態，不是線上版本。
+
+24小時抽樣仍維持active至18:49:13，14輪2086樣本／235媒體、229媒體已做指定欄位檢查；原頁不可取得與partial fields／首頁錯誤分類仍須如實列入最終報告。最终bounded round、完整24h報告与completion audit尚未完成。
