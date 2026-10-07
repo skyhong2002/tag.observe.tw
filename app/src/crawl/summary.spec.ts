@@ -5,6 +5,25 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('uses INSIDE editorial introduction before its description with appended tags', () => {
+    const html = `<meta name="description" content="媒體提供的獨立導讀。#Google,影音 (story-slug)"><meta property="og:description" content="媒體提供的獨立導讀。"><div class="post_introduction">媒體提供的獨立導讀。</div><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', articleBody: body })}</script>`;
+    expect(extractArticle(html, 'https://www.inside.com.tw/article/42585-story-slug')).toMatchObject({
+      summary: '媒體提供的獨立導讀。',
+      summarySource: 'article:selector',
+      description: '媒體提供的獨立導讀。#Google,影音 (story-slug)',
+      body,
+    });
+    expect(extractArticle(html, 'https://example.org/article/42585-story-slug')).toMatchObject({
+      summary: '媒體提供的獨立導讀。#Google,影音 (story-slug)',
+      summarySource: 'meta:description',
+    });
+    expect(
+      extractArticle('<meta property="og:description" content="官方分享摘要">', 'https://www.inside.com.tw/article/42585-story-slug'),
+    ).toMatchObject({
+      summary: '官方分享摘要',
+      summarySource: 'meta:og:description',
+    });
+  });
   it('prefers PTS editorial summary without changing its separately structured body', () => {
     const html = `<h1>原文標題</h1><meta name="description" content="搜尋引擎摘要"><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', articleBody: body })}</script><div class="post-article"><div class="articleimg">媒體編輯的摘要，與正文分開。</div></div>`;
     const detail = extractArticle(html, 'https://news.pts.org.tw/article/830328');

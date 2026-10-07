@@ -52,6 +52,8 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     try {
       const page = new URL(url);
       if (page.hostname === 'news.pts.org.tw' && /^\/article\/\d+$/.test(page.pathname)) selector = '.post-article > .articleimg';
+      if (['www.inside.com.tw', 'inside.com.tw'].includes(page.hostname) && /^\/article\/\d+-/.test(page.pathname))
+        selector = '.post_introduction';
     } catch {}
   }
   const titles = [$('h1').first().text(), $('meta[property="og:title"]').attr('content'), $('title').text()]
