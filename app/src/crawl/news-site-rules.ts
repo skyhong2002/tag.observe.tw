@@ -106,7 +106,7 @@ const SITES: Site[] = [
     path: /^\/news\/b5\/\d{4}\/\d{1,2}\/\d{1,2}\/\d+\.html$/,
     bodySelector: '.article_right[itemprop="articleBody"]',
     authorSelector: '.article_right[itemprop="articleBody"] > p:nth-of-type(-n+3)',
-    authorPattern: /^【看中國\d{4}年\d{1,2}月\d{1,2}日訊】[（(]看中國記者([\p{Script=Han}]{2,5})綜合報導[）)]/u,
+    authorPattern: /^【看中國\d{4}年\d{1,2}月\d{1,2}日訊】[（(]看中國記者([\p{Script=Han}]{2,5})(?:編譯[／/])?綜合報導[）)]/u,
   },
 
   {
@@ -366,6 +366,13 @@ const SITES: Site[] = [
     publishedSelector: '.mheader > .info',
   },
   { host: 'n.yam.com', path: /^\/Article\/\d+$/i, bodySelector: 'section.inner-page > .inner-content' },
+  {
+    host: 'twline365.com',
+    path: /^\/\d{4}\/\d{2}\/\d+\/$/,
+    bodySelector: '.td-post-content',
+    authorSelector: '.td-post-content > .tdb-block-inner > p:first-of-type',
+    authorPattern: /^(?:[^〈〔\n]{1,100}〈圖[／/][^〉]{1,40}〉\s*)?〔焦點時報[／/]記者([\p{Script=Han}]{2,5})報導〕/u,
+  },
   {
     host: 'taipeipost.org',
     path: /^\/\d+\/$/,

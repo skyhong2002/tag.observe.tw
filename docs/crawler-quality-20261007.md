@@ -513,3 +513,15 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 大紀元46112193新樣板的主文info時間是artbody兄弟，原correctUtcClock selector漏取；datetime宣告更新03:43:27+08:00，可見「更新 2026-10-08 3:29 AM」實際對應JSONLD publication03:29:39Z，而dateModified03:43:27Z對應datetime的wall clock。新增僅該站、主文wrapper、唯一同URL article JSONLD、published分鐘與可見時間一致、modified秒與datetime一致且publication不晚於modified的交叉證據；以明示+08:00校正publication並保留秒，沒有直接把較晚更新時間當刊登時間。
 
 05:08 fresh200原頁再次驗證，校正19:29:39Z與DB完全一致，正文／作者／summary／summarySource均相同；沒有歷史日期寫入。`batch11-epoch-fresh-proof.json`與壓縮原頁保存證據。948crawl／attribution、tsc、全專案Biome通過；1935成功原頁對固定第十批回放27篇變化，只新增該篇publication，其他既有差異範圍不變。第十一批仍本地提交、未推送／部署／套資料；第十批仍按05:12排程，正式目前d2f9a58已推送／部署並完成9篇修復驗證。24小時觀察持續至18:49:13。
+
+### 10/8 05:15：新增署名與RSS摘要尾句修正；第十批已上線
+
+第十批183f87e於05:12:02推送，精確SHA CI37687691752成功，05:13:26暫停新派送時active=0，05:13:52安裝驗證並恢复，約26.47秒。線上三服務版本、公網主站200、worker健康、佇列未暫停與既有7個失敗job不變已驗證；兩篇公視摘要仍與fresh原文、DB與公開API相同。`batch10-live-verification.json` verified=true。21篇已審核歷史修復開始套用，本段記錄時尚未全部完成，不能當作已驗證。主機端檢查不是零停機或使用者瀏覽器證明。
+
+第十三輪另20篇／12媒體的markup指定欄位核對已保存`five-am-markup-proof.json`；累計676人工紀錄、509不同文章、226媒體、505自動抽樣文章。MSN與Miin的HTML空殼不能證明既有署名錯誤，鉅亨HTML無摘要也不能因此清除有實質feed導讀，均保持資料。客新聞摘要為截斷合作編按、美通社轉貼的description有編碼殘留，仍待進一步核對，沒有猜測回寫。
+
+台灣線報46160988第一段將「貴賓大合照。〈圖／記者翻攝-下同〉」與完整「〔焦點時報/記者蔡宗憲報導〕」接在一起，generic opening credit未認出。新增僅該站年月數字文章路徑、main td-post-content內首個p、完整照片括號前綴及焦點時報記者報導信用；採蔡宗憲，排除攝影與敘事提及，正文不改。看中國46163511主文首段完整「看中國記者高芸編譯/綜合報導」原規則只接受綜合報導，擴充同一完整信用的編譯/前綴。另2份存檔45715476／45793185完整田靜心同格式已人工驗證，但未作fresh歷史修復。2篇新增候選fresh200及完整13欄乾跑成功，擴充第十一批metadata10篇乾跑全數通過；併TechNews正文3篇為13篇不同候選、7作者信用、5摘要、3正文、5既有配對、0日期寫入，正式本批未套用。
+
+台灣好報RSS description含實質publisher excerpt，加上「〈本篇標題〉這篇文章最早發佈於《台灣好報》。」，已限feed:description、與本篇標題完全相符的精確尾句移除，保留原站導讀及截斷標记，不从正文另生摘要；錯誤標題或metadata來源不移除。fresh官方feed10項全部只有summary改變，標題／URL／日期不變，`batch11-goodnews-feed-replay.json`保存證據；兩篇既有feed摘要的歷史修復尚未準備，不計入本批13篇候選。
+
+951crawl／attribution、tsc、全專案Biome通過；1935成功HTML對固定第十批回放44篇變化，其中台灣線報14篇只有或包含bodySource標記變更（正文相同）、1篇新增蔡宗憲署名，看中國3篇新增明示編譯記者；原有3篇TechNews去UI正文、Epoch時間及其他變化範圍維持。第十一批本地提交仍未推送／部署／套資料；下一批須距第十批實際05:13:52完成約一小時。24小時觀察持續至18:49:13。

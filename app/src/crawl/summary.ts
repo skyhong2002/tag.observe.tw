@@ -33,8 +33,12 @@ const normalized = (value: string) =>
 /** Preserve publisher text, never invent a summary by taking the body's lead. */
 export function publisherSummary(value: unknown, source: string, title?: string | null): ArticleSummary {
   if (typeof value !== 'string') return { summary: null, summarySource: null };
-  const summary = normalized(value);
+  let summary = normalized(value);
   const heading = title ? normalized(title) : null;
+  // Reviewed WordPress feed suffix repeats the own title and publication credit.
+  // Preserve the publisher's excerpt; do not include the syndication boilerplate.
+  const feedCredit = heading ? `〈${heading}〉這篇文章最早發佈於《台灣好報》。` : null;
+  if (source === 'feed:description' && feedCredit && summary.endsWith(feedCredit)) summary = summary.slice(0, -feedCredit.length).trim();
   // Oversized feed descriptions often contain the entire article. Do not silently
   // turn them into an excerpt and call that a publisher-provided summary.
   if (

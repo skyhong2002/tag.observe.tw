@@ -63,6 +63,16 @@ describe('publisher summary metadata', () => {
       'meta:description',
     );
   });
+  it('excludes a matching own-title Taiwan Good News feed credit while preserving its supplied excerpt', () => {
+    const title = '地方幼兒園正式啟用';
+    const excerpt = '【記者 劉峻文／雲林 報導】為擴充公共化教保服務，地方幼兒園正式啟用。 [...]';
+    const credit = `〈${title}〉這篇文章最早發佈於《台灣好報》。`;
+    const rss = `<rss><channel><item><title>${title}</title><link>https://newstaiwan.net/?p=487121</link><description><![CDATA[<p>${excerpt}</p><p><a>${title ? `〈${title}〉` : ''}</a>這篇文章最早發佈於<a>《台灣好報》</a>。</p>]]></description></item></channel></rss>`;
+    expect(parseFeed(rss).items[0]).toMatchObject({ summary: excerpt, summarySource: 'feed:description' });
+    expect(publisherSummary(credit, 'feed:description', title)).toMatchObject({ summary: null, summarySource: null });
+    expect(publisherSummary(excerpt + ' ' + credit, 'feed:description', '另一則新聞').summary).toContain(credit);
+    expect(publisherSummary(excerpt + ' ' + credit, 'meta:description', title).summary).toContain(credit);
+  });
   it('rejects an RSS description containing only its title and a continue-reading link', () => {
     const rss =
       '<rss><channel><item><title>地方活動　正式開幕</title><link>https://886.news/archives/365381</link><description><![CDATA[<p>地方活動　正式開幕</p><a href="https://886.news/archives/365381">繼續閱讀</a>]]></description></item></channel></rss>';

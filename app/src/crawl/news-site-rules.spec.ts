@@ -518,6 +518,24 @@ it('preserves the 1111 main dateline media desk credit instead of its corporate 
   ]);
 });
 
+it('reads Secret China complete reporter and translator credit after an opening photo caption', () => {
+  const url = 'https://www.secretchina.com/news/b5/2026/10/08/1105810.html';
+  const credit = '【看中國2026年10月8日訊】（看中國記者高芸編譯/綜合報導）';
+  const html = `<div class="article_right" itemprop="articleBody"><p>官員訪問照片。（圖片來源：攝影社）</p><p>${credit}${body}</p><p>責任編輯王小明</p></div>`;
+  expect(extractArticle(html, url).authors).toEqual(['高芸']);
+  expect(extractArticle(html.replace(credit, credit.replace('記者高芸編譯', '攝影高芸編譯')), url).authors).toEqual([]);
+  expect(extractArticle(html.replace(credit, '受訪者提及' + credit), url).authors).toEqual([]);
+});
+
+it('reads a Twline main opening partner credit after its adjoining photo caption', () => {
+  const url = 'https://twline365.com/2026/10/1243821/';
+  const lead = '貴賓大合照。〈圖／記者翻攝-下同〉 〔焦點時報/記者蔡宗憲報導〕';
+  const html = `<div class="td-post-content"><div class="tdb-block-inner"><p>${lead}活動即將登場。</p>${paragraph}<p>〔焦點時報/記者王小明報導〕</p></div></div>`;
+  expect(extractArticle(html, url).authors).toEqual(['蔡宗憲']);
+  expect(extractArticle(html.replace(lead, '受訪者提及〔焦點時報/記者蔡宗憲報導〕'), url).authors).toEqual([]);
+  expect(extractArticle(html.replace(lead, '貴賓大合照。〈圖／記者翻攝-下同〉 〔焦點時報/攝影蔡宗憲〕'), url).authors).toEqual([]);
+});
+
 it('corrects EpochTimes publication using agreeing main publication and modification clocks', () => {
   const url = 'https://www.epochtimes.com/b5/26/10/7/n14865552.htm';
   const node = { '@type': 'NewsArticle', url, datePublished: '2026-10-08T03:29:39Z', dateModified: '2026-10-08T03:43:27Z' };
