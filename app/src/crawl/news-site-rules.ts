@@ -46,6 +46,14 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'secretchina.com',
+    path: /^\/news\/b5\/\d{4}\/\d{1,2}\/\d{1,2}\/\d+\.html$/,
+    bodySelector: '.article_right[itemprop="articleBody"]',
+    authorSelector: '.article_right[itemprop="articleBody"] > p:nth-of-type(-n+3)',
+    authorPattern: /^【看中國\d{4}年\d{1,2}月\d{1,2}日訊】[（(]看中國記者([\p{Script=Han}]{2,5})綜合報導[）)]/u,
+  },
+
+  {
     host: 'worldjournal.com',
     path: /^\/wj\/story\/\d+\/\d+(?:\?|$)/,
     bodySelector: '.article-content__editor',

@@ -21,6 +21,44 @@ describe('publisher summary metadata', () => {
       ),
     ).toMatchObject({ summary: '花蓮藥膳食堂介紹傳統慢火熬煮工法。', summarySource: 'meta:og:description' });
   });
+  it('removes only the exact Secret China promotion suffix and retains publisher prose', () => {
+    const promotion =
+      '看中國》是總部設於美國、以復興傳統中華文化為理念的獨立媒體。自2001年起，堅持報導最新社會焦點和傳統文化專題，中文報紙已在北美、歐洲、澳洲、亞洲等17個國家發行。中國新聞,中國大陸新聞,內幕新聞,中文媒體,新聞評論,時事,財經,博談,歷史,文化,養生,娛樂,奇聞。';
+    const html = `<meta name="description" content="原站提供的新聞摘要。 新聞 美國 - ${promotion}">`;
+    expect(extractArticle(html, 'https://www.secretchina.com/news/b5/2026/10/08/1105806.html')).toMatchObject({
+      summary: '原站提供的新聞摘要。',
+      summarySource: 'meta:description',
+    });
+    expect(extractArticle(html, 'https://example.com/news/b5/story').summary).toContain(promotion);
+    expect(
+      extractArticle(
+        '<meta name="description" content="原站報導新聞 美國政策的變化。">',
+        'https://www.secretchina.com/news/b5/2026/10/08/1105806.html',
+      ).summary,
+    ).toBe('原站報導新聞 美國政策的變化。');
+  });
+  it('rejects a complete Singular report copied into metadata even with captions between paragraphs', () => {
+    const paragraphs = [
+      '市府宣布交通建設計畫，完整說明政策與執行細節。'.repeat(6),
+      '居民提出意見，專家回應可能影響。'.repeat(8),
+      '報導最後整理計畫的經費及時程。'.repeat(8),
+    ];
+    const report = `<div class="td-post-content">${paragraphs.map((p) => `<p>${p}</p>`).join('')}</div>`;
+    expect(
+      extractArticle(
+        `<meta name="description" content="${paragraphs.join(' 圖：記者提供。 ')}">${report}`,
+        'https://www.scooptw.com/yesmedia/535838/story',
+      ).summary,
+    ).toBeNull();
+    expect(
+      extractArticle(`<meta name="description" content="編輯另撰的新聞導讀。">${report}`, 'https://www.scooptw.com/yesmedia/535838/story')
+        .summary,
+    ).toBe('編輯另撰的新聞導讀。');
+    expect(
+      extractArticle(`<meta name="description" content="${paragraphs[0]}">${report}`, 'https://www.scooptw.com/yesmedia/535838/story')
+        .summary,
+    ).toBe(paragraphs[0]);
+  });
   it('uses INSIDE editorial introduction before its description with appended tags', () => {
     const html = `<meta name="description" content="媒體提供的獨立導讀。#Google,影音 (story-slug)"><meta property="og:description" content="媒體提供的獨立導讀。"><div class="post_introduction">媒體提供的獨立導讀。</div><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', articleBody: body })}</script>`;
     expect(extractArticle(html, 'https://www.inside.com.tw/article/42585-story-slug')).toMatchObject({

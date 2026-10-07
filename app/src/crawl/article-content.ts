@@ -145,6 +145,15 @@ function excludedContainer(element: cheerio.Cheerio<AnyNode>): boolean {
     // UDN marks keywords inside prose with a.tag. They are words in the
     // sentence, not the separate tag navigation removed by its parent widget.
     .filter((name) => !(['tag', 'trigger_tag'].includes(name) && element.is('a') && element.closest('p').length > 0))
+    .filter(
+      (name) =>
+        !(
+          name === 'article-content-tag-links' &&
+          element.is('span') &&
+          element.closest('p').length > 0 &&
+          element.children('a.tagClick[href^="https://www.sinchew.com.my/tag/"]').length > 0
+        ),
+    )
     .join(' ');
   return EXCLUDED_CLASS.test(`${classes} ${element.attr('id') ?? ''}`);
 }
@@ -260,6 +269,10 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string, configure
       if (element.is('time')) {
         const credit = name.replace(/^\d{4}-\d{2}-\d{2}\s+(?:(?:上午|下午|早上|晚上)\s*)?\d{1,2}:\d{2}\s*/u, '');
         return reporterNames(credit);
+      }
+      if (element.is('[data-section="article-contributors"]')) {
+        const editors = /^編輯[：:]\s*([\p{Script=Han}]{2,5})\s*[｜|]\s*責任編輯[：:]\s*([\p{Script=Han}]{2,5})$/u.exec(name);
+        if (editors) return [editors[1], editors[2]];
       }
       // A visible author declaration can distinguish the writer from a
       // responsible editor incorrectly included in structured author arrays.

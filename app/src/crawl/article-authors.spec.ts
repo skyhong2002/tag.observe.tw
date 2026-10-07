@@ -8,6 +8,34 @@ const ld = (body: string, name = '網站管理員') =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body, author: { '@type': 'Person', name } })}</script>`;
 
 describe('reporter identity from the selected article', () => {
+  it('reads the Secret China opening reporter declaration after a photo caption', () => {
+    const story = 'https://www.secretchina.com/news/b5/2026/10/08/1105805.html';
+    const credit = `<p>【看中國2026年10月7日訊】（看中國記者李亭綜合報導）${prose}</p>`;
+    const wrap = (content: string) => `<div class="article_right" itemprop="articleBody">${content}</div>`;
+    expect(extractArticle(wrap('<p>照片提供：公有領域。</p>' + credit), story).authors).toEqual(['李亭']);
+    expect(extractArticle(wrap(`<p>${prose}</p>`) + `<aside>${credit}</aside>`, story).authors).toEqual([]);
+    expect(extractArticle(wrap(`<p>${prose}</p><p>第二段正文。</p><p>第三段正文。</p>` + credit), story).authors).toEqual([]);
+  });
+  it('separates the explicit TVBS editor and responsible-editor credit', () => {
+    const rules = sourceByMedia('tvbs')?.article;
+    const html = `<li data-section="article-contributors"><span>編輯：李艾庭｜責任編輯：鄒昀孝</span></li><div class="article-editor-content"><p>${prose}</p></div>`;
+    expect(extractArticle(html, 'https://news.tvbs.com.tw/travel/4030943', rules).authors).toEqual(['李艾庭', '鄒昀孝']);
+    expect(
+      extractArticle(
+        html.replace('編輯：李艾庭｜責任編輯：鄒昀孝', '編輯部整理新聞，責任編輯尚待確認。'),
+        'https://news.tvbs.com.tw/travel/4030943',
+        rules,
+      ).authors,
+    ).not.toContain('李艾庭');
+  });
+  it('preserves Sinchew inline linked prose while removing separate keyword navigation', () => {
+    const keyword =
+      '<span class="article-content-tag-links"><a class="tagClick" href="https://www.sinchew.com.my/tag/谋杀">谋杀</a></span>';
+    const html = `<article><p>警方侦破一起${keyword}案。${prose}</p><div class="article-content-tag-links"><a class="tagClick">導航關鍵字</a></div></article>`;
+    const detail = extractArticle(html, 'https://www.sinchew.com.my/?p=7924050');
+    expect(detail.body).toContain('警方侦破一起谋杀案。');
+    expect(detail.body).not.toContain('導航關鍵字');
+  });
   it('separates a World Journal agency dispatch from people, inline prose words, photo credits, and navigation', () => {
     const storyUrl = 'https://www.worldjournal.com/wj/story/121480/9801635';
     const html = `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url: storyUrl, author: { '@type': 'Person', name: '中央社華沙7日綜合外電報導' } })}</script><div class="article-content__author">中央社華沙7日綜合外電報導</div><section class="article-content__editor"><figure><figcaption>照片來源：路透社</figcaption></figure><p><a class="trigger_tag"><strong>波蘭</strong></a>${prose}</p><p>法新社報導，警方公布結果。</p><section class="keywords"><a class="trigger_tag">導航關鍵字</a></section><section class="next-page"><p>上一則</p><p>下一則</p></section></section>`;

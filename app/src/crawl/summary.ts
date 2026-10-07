@@ -68,6 +68,16 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const daaiBodies = isDaai
     ? articleNodes($, url).flatMap((node) => (typeof node.articleBody === 'string' ? [normalized(node.articleBody)] : []))
     : [];
+  const isSingular = /^https?:\/\/(?:www\.)?scooptw\.com\/yesmedia\/\d+\//i.test(url);
+  const singularParagraphs = isSingular
+    ? $('.td-post-content p')
+        .toArray()
+        .map((node) => normalized($(node).text()).replace(/\s/g, ''))
+        .filter((text) => text.length > 40)
+    : [];
+  const isSecretChina = /^https?:\/\/(?:www\.)?secretchina\.com\/news\/b5\//i.test(url);
+  const secretChinaPromotion =
+    '看中國》是總部設於美國、以復興傳統中華文化為理念的獨立媒體。自2001年起，堅持報導最新社會焦點和傳統文化專題，中文報紙已在北美、歐洲、澳洲、亞洲等17個國家發行。中國新聞,中國大陸新聞,內幕新聞,中文媒體,新聞評論,時事,財經,博談,歷史,文化,養生,娛樂,奇聞。';
   const isKingtop = /^https?:\/\/(?:www\.)?kingtop\.com\.tw\//i.test(url);
   const isYesMedia = /^https?:\/\/(?:www\.)?yesmedia\.com\.tw\//i.test(url);
   const captionDescriptions = /^https?:\/\/(?:www\.)?(?:yesmedia\.com\.tw|firenews\.com\.tw|mknews\.com\.tw)\//i.test(url);
@@ -93,6 +103,26 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (isDaai && daaiBodies.includes(result.summary)) continue;
+    if (isSecretChina && result.summary.endsWith(secretChinaPromotion)) {
+      const prefix = result.summary.slice(0, -secretChinaPromotion.length);
+      const credit = /\s+新聞\s+[\p{Script=Han}]{1,20}\s+-\s*$/u;
+      if (credit.test(prefix)) {
+        result = publisherSummary(prefix.replace(credit, ''), source);
+        if (!result.summary) continue;
+      }
+    }
+    if (isSingular && singularParagraphs.length >= 3) {
+      const compact = result.summary.replace(/\s/g, '');
+      let cursor = 0;
+      const wholeReport = singularParagraphs.every((text) => {
+        const index = compact.indexOf(text, cursor);
+        if (index < 0) return false;
+        cursor = index + text.length;
+        return true;
+      });
+      if (wholeReport && singularParagraphs.reduce((n, text) => n + text.length, 0) >= 300) continue;
+    }
+
     if (isKingtop && /^https?:\/\/(?:www\.)?kingtop\.com\.tw\//i.test(result.summary)) continue;
     if (isBannedbook && promotion.test(result.summary)) continue;
     if (isYesMedia && /^《圖說》/u.test(result.summary)) continue;
