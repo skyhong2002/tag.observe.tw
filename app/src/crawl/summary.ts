@@ -10,6 +10,7 @@ export interface ArticleSummary {
 
 const boilerplate = new Set([
   '觀策站',
+  '澳門日報版權所有 澳門日報電子報由澳門日報出版社出版',
   '在這裡找到你想要的美食',
   '客家電視是屬於全民、以至於全世界客家族群的頻道，亦是為傳播客家文化而存在，定位為「全體客家族群之媒體」。',
   '國際環宇時報International World Times的使命是以公正、客觀的角度報導國內外新聞，幫助讀者深入了解全球範圍內的重大事件與趨勢。其願景是成為全球讀者首選的新聞來源，促進世界各國之間的理解與交流。國際環宇時報以其真實、公正、全面和創新的報導風格，贏得了全球讀者的信賴和支持。',
@@ -72,12 +73,14 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     ? articleNodes($, url).flatMap((node) => (typeof node.articleBody === 'string' ? [normalized(node.articleBody)] : []))
     : [];
   const isSingular = /^https?:\/\/(?:www\.)?scooptw\.com\/yesmedia\/\d+\//i.test(url);
-  const singularParagraphs = isSingular
-    ? $('.td-post-content p')
-        .toArray()
-        .map((node) => normalized($(node).text()).replace(/\s/g, ''))
-        .filter((text) => text.length > 40)
-    : [];
+  const isYdn = /^https?:\/\/(?:www\.)?ydn\.com\.tw\/tw\/News\/ugC_News_Detail\.aspx\?ID=\d+$/i.test(url);
+  const copiedReportParagraphs =
+    isSingular || isYdn
+      ? $(isYdn ? 'article.PageArticle #ContentPlaceHolder1_div_Desc p' : '.td-post-content p')
+          .toArray()
+          .map((node) => normalized($(node).text()).replace(/\s/g, ''))
+          .filter((text) => text.length > 40)
+      : [];
   const isSecretChina = /^https?:\/\/(?:www\.)?secretchina\.com\/news\/b5\//i.test(url);
   const secretChinaPromotion =
     '看中國》是總部設於美國、以復興傳統中華文化為理念的獨立媒體。自2001年起，堅持報導最新社會焦點和傳統文化專題，中文報紙已在北美、歐洲、澳洲、亞洲等17個國家發行。中國新聞,中國大陸新聞,內幕新聞,中文媒體,新聞評論,時事,財經,博談,歷史,文化,養生,娛樂,奇聞。';
@@ -122,16 +125,16 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
         if (!result.summary) continue;
       }
     }
-    if (isSingular && singularParagraphs.length >= 3) {
+    if (copiedReportParagraphs.length >= 3) {
       const compact = result.summary.replace(/\s/g, '');
       let cursor = 0;
-      const wholeReport = singularParagraphs.every((text) => {
+      const wholeReport = copiedReportParagraphs.every((text) => {
         const index = compact.indexOf(text, cursor);
         if (index < 0) return false;
         cursor = index + text.length;
         return true;
       });
-      if (wholeReport && singularParagraphs.reduce((n, text) => n + text.length, 0) >= 300) continue;
+      if (wholeReport && copiedReportParagraphs.reduce((n, text) => n + text.length, 0) >= 300) continue;
     }
 
     if (isKingtop && /^https?:\/\/(?:www\.)?kingtop\.com\.tw\//i.test(result.summary)) continue;

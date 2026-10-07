@@ -59,6 +59,35 @@ describe('publisher summary metadata', () => {
         .summary,
     ).toBe(paragraphs[0]);
   });
+  it('rejects the Macao Daily copyright description but preserves a real article description', () => {
+    const copyright = '澳門日報版權所有 澳門日報電子報由澳門日報出版社出版';
+    expect(
+      extractArticle(`<meta name="description" content="${copyright}">`, 'https://www.macaodaily.com/html/2026-10/08/content_1938623.htm')
+        .summary,
+    ).toBeNull();
+    expect(
+      extractArticle(
+        `<meta name="description" content="${copyright}"><meta property="og:description" content="石排灣水廠排泥水處理設施建造工程公開招標。">`,
+        'https://www.macaodaily.com/html/2026-10/08/content_1938623.htm',
+      ),
+    ).toMatchObject({ summary: '石排灣水廠排泥水處理設施建造工程公開招標。', summarySource: 'meta:og:description' });
+  });
+  it('rejects a Youth Daily description copying all long article paragraphs in order', () => {
+    const paragraphs = [
+      '總統府舉辦光雕展演，完整呈現臺灣日常風景與歷史記憶。'.repeat(5),
+      '樂團演奏作品，邀請民眾共度國慶前夕的夜晚。'.repeat(6),
+      '主辦單位公布展演時程與場次，民眾可依時間前往觀賞。'.repeat(5),
+    ];
+    const report = `<article class="PageArticle"><div id="ContentPlaceHolder1_div_Desc">${paragraphs.map((p) => `<p>${p}</p>`).join('')}</div></article>`;
+    const html = `<meta property="og:description" content="${paragraphs.join(' ')}">${report}`;
+    const url = 'https://www.ydn.com.tw/tw/News/ugC_News_Detail.aspx?ID=647354';
+    expect(extractArticle(html, url).summary).toBeNull();
+    expect(extractArticle(html, 'https://example.org/story').summary).toBe(paragraphs.join(' '));
+    expect(extractArticle(`<meta property="og:description" content="${paragraphs[0]}">${report}`, url).summary).toBe(paragraphs[0]);
+    expect(extractArticle(`<meta property="og:description" content="主辦單位將在國慶前夕舉辦光雕展演。">${report}`, url).summary).toBe(
+      '主辦單位將在國慶前夕舉辦光雕展演。',
+    );
+  });
   it('skips reviewed Hakka TV and International World Times site descriptions', () => {
     const hakkatv = '客家電視是屬於全民、以至於全世界客家族群的頻道，亦是為傳播客家文化而存在，定位為「全體客家族群之媒體」。';
     const iw =

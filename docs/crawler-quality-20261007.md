@@ -403,3 +403,15 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 921 項 crawl／attribution 測試、TypeScript、Biome 與新提交秘密資訊掃描通過。1,702 原頁相對固定第八批回放有 18 筆 metadata 變化，沒有正文或日期變化。5 篇正式資料候選乾跑通過：台灣好報 45780516、45780517，生活頭條 45939738，食尚玩家 45596631 共 4 筆摘要清除；自由亞洲 45640862 共 1 筆作者補正。國際世界時報 45559924 原存檔證據確認 parser 問題，但重新取得為 403，因此不納入正式資料修復。各筆保留完整快照與 fresh 原文，套用仍須精確部署版本、交易前快照及 durable backup。
 
 第八批固定候選 `8958290` 03:05 自動發布程序已到啟動時間，是否已推送／CI 通過／部署應依 `batch8-publish-progress.json` 與正式部署記錄判定，不能把排程當成完成。第九批下一次發布須距第八批實際部署約一小時，仍持續至 18:49:13。證據：`batch9-all-sample-replay.json`、`batch9-hakkatv-api-db-proof.json`、`batch9-hakkatv-public-api.json`、`batch9-metadata-reviewed-plan.json`、`batch9-metadata-dry-run.json`、`batch9-expanded-crawl-tests.log`、`batch9-uncovered-markup-proof.json`、`review-coverage.json`。
+
+### 10/8 03:14：第八批上線及下一批摘要擴充
+
+第八批 `8958290d81f28770f037e78d0b285fe194e62788` 已於 03:05:02 推送，精確 SHA 的 CI 37671790192 成功。03:06:25 暫停新派送時 active=0，03:06:50 安裝驗證並恢復派送，約 25.1 秒。03:07 線上核對三服務均指向該版本、主站 HTTPS 200、worker 健康、佇列未暫停、失敗 ID 仍既有 7 筆；兩篇公視摘要與原文、DB、公開 API 相符。這是主機端檢查，不是使用者瀏覽器或零停機證明。
+
+40 篇不重複文章的正式修復全部已備份並套用：世界新聞網 16、星洲網 12 筆正文；6 筆獨立作者與6篇 metadata，合計 28 正文、11 作者、5 摘要、2 CNA 供稿引用、0 日期變更。既有 22 配對在交易中依 counterpart 快照確認並重算。全套 DB／API／配對與自然 sketch 的最終驗證仍待排程索引，不可宣稱已通過；下一次自然 similarity 排程為 03:15:47，沒有強制啟動或重開 job。證據 `batch8-deployment.json`、`batch8-live-verification.json`、三組 repair backups／applied reports、`batch8-author-repair-applied.jsonl`。
+
+03:00 樣本另確認澳門日報两篇摘要是精確版權聲明，青年日報兩篇 OG 描述包含主文全部較長段落。新增澳門版權文字排除；青年日報限官方文章路徑及主文章 `article.PageArticle #ContentPlaceHolder1_div_Desc p`，至少3段、總長300字、依原文順序全部出現在描述中才排除全文拷貝，保留独立導讀或只引用首段。没有修改日期／正文／署名或從正文生成摘要。
+
+最新測試為 crawl 898 與 attribution 25，共 923 passed，tsc／Biome 成功；1,794 原頁重播共 32 metadata 變化，包含12青年日報、2澳門日報，没有正文或日期變化。新增4筆摘要 fresh source／完整快照通過，併入第九批共9篇候選（8摘要、1作者），仍未套用。食尚玩家45596631被正常爬蟲更新 `content_fetched_at`，首次完整快照乾跑如預期停止且未寫入；重新抓原頁確認其他12欄完全一致，保留舊快照後更新review snapshot，9篇乾跑全部通過。人工紀錄446筆、338篇不同文章、153家媒體，仍為部分／指定欄位核對。
+
+第九批僅本地提交，未推送或部署；最早下一次更新須不早於04:06:50。`batch9-round11-summary-reviewed-plan.json`、`batch9-nine-metadata-dry-run.log`、`batch9-supertaste-refresh-plan.json`、`batch9-metadata-reviewed-plan-before-natural-fetch.json`、`batch9-latest-crawl-tests.log`、`batch9-latest-attribution-tests.log`、`batch9-all-sample-replay.json` 保留證據。
