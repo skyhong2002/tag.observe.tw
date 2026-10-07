@@ -12,7 +12,7 @@
     "dev": "node --watch --env-file-if-exists=.env app/src/server.js",
     "test": "npx vitest run",
     "worker": "node --env-file-if-exists=.env app/src/worker.ts",
-    "typecheck": "npx tsc -p tsconfig.json && npx tsc -p web/tsconfig.json",
+    "typecheck": "npx tsc -p tsconfig.json && npx tsc -p web/tsconfig.json && npx tsc -p web/tsconfig.tests.json",
     "lint": "npx biome check .",
     "test:vitest": "npx vitest run",
     "db:generate": "npx drizzle-kit generate",

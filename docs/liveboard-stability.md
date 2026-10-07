@@ -8,6 +8,6 @@
 
 驗證包含六小時模擬、清單寬度變動、重複紀錄、背景／前景切換、動畫停止與重新掛載、暫時失敗重試、持續斷線及恢復，以及重疊輪詢／卸載時的延遲回應。相關 21 項測試通過；Tailscale 預覽能載入看板與 API，瀏覽器確認跑馬燈使用單一位移控制且沒有殘留的 CSS 跑馬燈動畫。六小時是程式模擬測試，並非在使用者機器實際開啟六小時。
 
-前端事件／首頁載入測試移到 `web/test`，由前端的 TypeScript bundler 設定檢查；Vitest 與 Biome 同時納入該目錄。`npm run typecheck` 現在依序檢查後端及前端，兩者皆通過。
+前端事件／首頁載入測試移到 `web/test`，由 `web/tsconfig.tests.json` 的 TypeScript bundler 設定檢查；Vitest 與 Biome 同時納入該目錄。`npm run typecheck` 依序檢查後端、前端及前端測試。正式 Next 建置排除測試目錄，避免發佈環境沒有 Vitest 開發依賴時建置失敗。
 
 這份紀錄描述本機修正與驗證，不表示正式站已部署。

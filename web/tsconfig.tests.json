@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "types": ["node", "next"] },
+  "include": ["test/**/*.ts", "next-env.d.ts"],
+  "exclude": ["node_modules"]
+}
