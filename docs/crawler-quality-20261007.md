@@ -591,3 +591,13 @@ Heho46195370／46195371實際是lifestyle／kids首頁加utm_source=heho-menu，
 961crawl／attribution、tsc、全專案Biome通過；2013成功HTML回放20篇變化，4新增AFP／FoodNext字段、06:00女人迷10669143專題介紹scope及先前15篇。正文文字變化僅女人迷3篇；date parser變化僅2食力（從null到DB相同日日期）。第三女人迷201509Witch的原編輯介紹、獨立summary／空personal byline／未知publication已確認，尚未新增歷史body修復plan，不能把回放變化當成已回寫。第十二批現在22篇正式候選：metadata7＋source13＋body2，合計7署名（包含真實組織）、4摘要、13來源、2正文、0日期歷史寫入。
 
 正式仍183f87e已推送／部署；第十一批c63dacb固定未推送／部署，06:11probe／06:16release timer；第十二批本地提交未推送／部署／回寫，仍未冻结，需距第十一批實際部署約一小時後發布。24小時觀察持續至18:49:13。
+
+### 10/8 06:15：大媒體明示 wire provider、第三女人迷專題与第十一批發布前快照
+
+大媒體46217819 own article-header的article-meta span完整標示「鉅聞天下｜作者 PR Newswire」，meta#articleAuthor同時是「鉅聞天下｜PR Newswire」，own canonical exact article identity一致。footer的PRNewswire只是全站合作媒體清單，不能作為該篇來源證據。新增僅bigmedia數字article path／own canonical／main article-read-block header h1／完整兩處wire credit一致的provider識別，僅已確認PR Newswire組織；保留原作者組織信用、summary、正文與日期，不推測其他人名是供稿媒體。完整主文、summary、署名与fresh200／14欄snapshot乾跑通過，citationindex可依原明示provider補prnewswire；國別仍ZZ未猜測。
+
+女人迷10669143 collections/201509Witch的自有編輯介紹86字談歐洲獵巫歷史與電影女巫形象，舊parser只取nested linked story的迪士尼片段。既有scoped collection parser取得正確own介紹，獨立summary／空署名／date-null保持；歷史資料日期保留，不由201509網址推測。三篇Womany重新fresh200，old parser正文exact DB，主文介紹／摘要／署名核對，全部0existing pairs／sketches／citations；第三篇維持short，不拼入故事卡。plan／apply／verifier加入第三ID，完整article snapshot與原頁的body3乾跑通過；API歷史expired body政策保持，正式資料未套用。
+
+962crawl／attribution、tsc、全專案Biome通過；2013份成功HTML对固定第十一批回放27篇變化，新增大媒體7篇provider／引用（包含先前6份樣本），沒有額外正文／日期變化。其他6篇歷史來源修復尚待fresh再核對，不能當成已回寫。最新source14、body3乾跑通過，metadata7乾跑保留；第十二批24篇不同候選（metadata7＋source14＋body3），7署名、4摘要、14來源、3正文、0日期歷史寫入。
+
+第十一批06:14:08發布前13篇DB完整快照及body既有pairs與review plan全相同，batch11-prepublish-snapshot-preflight.json verifiedtrue。06:11 readonly probe PID801457正常運行，主站／worker200；06:16固定release timer未重複啟動。正式仍183f87e已推送／部署，第十一批c63dacb固定本地未推送／部署，第十二批本地提交未推送／部署／套資料且未冻结，發布須距第十一批實際成功部署約一小時。24h觀察仍至18:49:13。

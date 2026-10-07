@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { type ArticleContent, extractArticleContent } from './article-content.ts';
+import { bigMediaProvider } from './news-bigmedia-provider.ts';
 import { foodNextCredits } from './news-foodnext-credits.ts';
 import { globalVoicesCredits } from './news-globalvoices-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
@@ -175,7 +176,10 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
     : providerName(html);
   const credits = globalVoicesCredits($, url) ?? foodNextCredits($, url);
-  const provider = credits?.provider ?? (site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw);
+  const provider =
+    credits?.provider ??
+    bigMediaProvider($, url) ??
+    (site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw);
   // Body cleanup can remove caption/header evidence used by summary extraction.
   const summary = extractSummary($, url);
   const content = extractArticleContent($, url, rules);
