@@ -3,6 +3,12 @@ import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
 import { attributionRole, extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
 
 describe('explicit media attribution', () => {
+  it('recognizes Dongqiudi as an outlet even without a generic media suffix', () => {
+    expect(extractAttributions('', 'news_sina', '懂球帝')).toEqual([
+      expect.objectContaining({ media: 'dongqiudi', name: '懂球帝', countryCode: 'CN', evidence: '內容提供者：懂球帝' }),
+    ]);
+    expect(extractAttributions('', 'news_sina', '王晨晨')).toEqual([]);
+  });
   it('resolves original organizational credits in reprinted bannedbook articles', () => {
     expect(extractAttributions('', 'bannedbook', '希望之聲TV')).toEqual([
       expect.objectContaining({ media: 'soundofhope', countryCode: 'US', evidence: '內容提供者：希望之聲TV' }),

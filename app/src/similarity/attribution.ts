@@ -44,6 +44,8 @@ const outlets: Outlet[] = [
   outlet('yahoo', 'Yahoo奇摩新聞', 'TW', ['Yahoo', 'Yahoo新聞', 'Yahoo News']),
   // Seen in a linked 4Gamers report; jurisdiction remains unverified.
   outlet('gamerant', 'Game Rant', 'ZZ', ['GameRant']),
+  // Official dongqiudi.com footer identifies the outlet and its Tianjin ICP registration.
+  outlet('dongqiudi', '懂球帝', 'CN', []),
   outlet('reuters', '路透社', 'GB', ['Reuters', '路透']),
   outlet('afp', '法新社', 'FR', ['AFP', 'Agence France-Presse']),
   outlet('ap', '美聯社', 'US', ['AP', 'Associated Press', '美联社']),
