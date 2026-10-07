@@ -313,3 +313,13 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 第六批資料與自然索引驗證完成，往後不得重做。第七批仍本地未推送，發布時間保守不早於01:42:33，發佈前重查現行版本。24小時品質觀察仍待10/8 18:49:13到期，報告是進行中版本。
 
 證據 `batch6-ci-result.json`、`batch6-ci-test-summary.log`、`batch6-deployment.json`、`batch6-live-verification.json`、`batch6-natural-crawl-completion.json`、`batch6-crawl-job-journal.log`、`batch6-repairs-verification.json`、`batch6-natural-reindex-verification.json`、`batch6-ttv-verification.json`、`batch6-service-probes.jsonl`，以及TaiSounds／DW／source／author／summary／TTV-date六份原資料備份。
+
+## 外部網站版更新與第七批重整（00:54）
+
+第六批完成後，同時進行的網站工作另部署683c254與06512c989a094a43ed46fa1444bb34b05a8e8a5b。e4b5934到06512c9在crawl／jobs／db／similarity的差異為空；00:53:54主機側驗證三服務PID555292／555304／554772指向065，首頁200、worker健康、queue未暫停、active1、failed仍為基準7個。兩篇公視摘要再次與原文／DB／公開API一致。這是外部網站版包含已部署爬蟲修正的驗證，沒有重套第六批資料補正。
+
+五秒探測實際記錄00:48:14.965首頁503、00:48:26.109首頁502，後續恢復200；外部切換缺少逐job自然排空證據，不能宣稱全程零停機或零job中斷。原第六批e4b初始驗證與外部065驗證分別保存，不能用後者替換原部署紀錄。
+
+第七批已無衝突重整至065，仍未推送／部署／套資料。保守將下一次發布改為不早於01:53:55（一小時距最新live驗證），發布前須再查main與實際版本。重整後873項crawl測試、型別檢查及變更檔Biome通過；引用測試另列。
+
+證據 `batch6-initial-live-verification.json`、`batch6-external-065-live-verification.json`、`batch6-service-probes.jsonl`、`batch7-post-rebase-tests.log`、`batch7-post-rebase-tsc.log`、`batch7-post-rebase-biome.log`。24小時觀察仍進行中。
