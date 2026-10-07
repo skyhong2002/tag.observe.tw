@@ -165,6 +165,10 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   const printedTime = siteEvidence.correctUtcClock ? null : parsePublished(siteEvidence.publishedRaw);
   const declaredTime = correctPublicationClock(publishedTime($, html), siteEvidence);
   const publishedAt = siteEvidence.preferPrintedPublication ? (printedTime ?? declaredTime) : (declaredTime ?? printedTime);
+  const providerRaw = site?.providerSelector
+    ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
+    : providerName(html);
+  const provider = site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw;
   return {
     tags: [...new Set(tags)].slice(0, 100),
     image: imageRaw ? resolveUrl(imageRaw, url) : null,
@@ -175,9 +179,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
       (rules.titleSelector && $(rules.titleSelector).first().text().replace(/\s+/g, ' ').trim()) ||
       (siteEvidence.title ?? ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null)),
     publishedAt,
-    provider: site?.providerSelector
-      ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
-      : providerName(html),
+    provider,
     keywordSource,
     ...extractArticleContent($, url, rules),
   };

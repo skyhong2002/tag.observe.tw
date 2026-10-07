@@ -23,6 +23,8 @@ export interface NewsSiteRules {
   /** Correct a known false UTC declaration only when its wall clock agrees with printed evidence. */
   correctUtcClock?: boolean;
   providerSelector?: string;
+  /** First capture isolates a provider explicitly named in a shared credit. */
+  providerPattern?: RegExp;
   bodyExcludeSelector?: string;
   /** Keep the container even when a page wrapper's class looks like ads/share UI (#ad-root, under-ads). */
   trustContainer?: boolean;
@@ -39,6 +41,14 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // an explicit host, article URL shape, and main-article container. Header clocks,
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
+  {
+    host: 'udn.com',
+    path: /^\/news\/story\/\d+\/\d+(?:\?|$)/,
+    bodySelector: '.article-content__editor',
+    authorSelector: '.article-content__author',
+    providerSelector: '.authors .article-content__author',
+    providerPattern: /^\s*(台灣醒報)\s*[／/]\s*記者/u,
+  },
   {
     host: 'anntw.com',
     path: /^\/articles\/\d{8}-[A-Za-z0-9]+$/,

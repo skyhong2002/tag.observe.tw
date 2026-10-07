@@ -33,6 +33,16 @@ describe('2026-10-07 live quality samples', () => {
 });
 
 describe('other observed main-article credits and UI', () => {
+  it('separates UDN syndicated byline provider from the reporter with a diagonal slash', () => {
+    const html = `<section class="authors"><span class="article-content__author">台灣醒報／ 記者呂翔禾╱台北報導</span></section><div class="article-content__editor"><p>${prose}</p></div>`;
+    const detail = extractArticle(html, 'https://udn.com/news/story/7240/9800910');
+    expect(detail.authors).toEqual(['呂翔禾']);
+    expect(detail.provider).toBe('台灣醒報');
+    expect(extractAttributions(detail.body ?? '', 'udn', detail.provider).map((item) => item.media)).toContain('anntw');
+    const own = extractArticle(html.replace('台灣醒報／', '聯合報／'), 'https://udn.com/news/story/7240/9800910');
+    expect(own.authors).toEqual(['呂翔禾']);
+    expect(own.provider).toBeNull();
+  });
   it('keeps Awakening article prose apart from its donation footer, logo and cover caption', () => {
     const html = `<meta property="og:title" content="原始新聞標題 - 台灣醒報 Awakening News Networks"><header><h1>台灣醒報</h1></header>
       <div class="article-header"><h3>原始新聞標題</h3></div><article><div class="markdown-body"><div class="cover"><div class="description">攝影圖說</div></div>
