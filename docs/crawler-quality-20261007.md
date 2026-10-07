@@ -447,3 +447,15 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 人工530筆紀錄、378篇不同文章、168家媒體，包括部分及指定欄位核對。第九批04:08timer仍等待、線上仍8958290；第十批本地累積未推送／部署／套資料，下次發布以第九批實際完成後約一小時為準。24小時觀察仍待18:49:13到期。
 
 03:45 補充：端傳媒45373600明示「路透社9月26日引述知情人士報導」也因中文alias緊接日期而漏列；重新取得官方公開頁200，正文與DB完全相同，既有引用不變，新增路透社引用。併入第十批來源修復總計5篇，整批15篇不同文章（9署名、1摘要、5引用），仍沒有日期或正文歷史寫入，也未套用正式資料。證據 `batch10-initium-reviewed-source-plan.json`、`batch10-source-45373600.html.gz`、擴充後`batch10-reviewed-source-plan.json`。回放29篇是已確認總數，初步28篇計數漏算這篇，已更正。
+
+### 10/8 03:59：另外20媒體與健康醫療網稿件署名／來源
+
+新核對40篇指定欄位，涵蓋20家先前未記錄人工檢查的媒體。各網站的筆名及組織信用依宣告保留：新聞府跳跳虎（蔡虎虎）、硬是要學手哥HANDBRO、運動視界圓周率／kazumi，以及總統府GovernmentOrganization。TaiwanPlus45559355的JSONLD與可見By欄均為DevinTsai?Amelia Loi，保留原站完整信用，不擅自拆分人名。Vogue45559890原刊登精度含472毫秒，DB秒精度差異不做無意義歷史回寫；台灣產經新聞45492435的page日時與舊DB同一localday但DB只保留午夜，日期精度／来源語義仍待查，不能當成確定19小時時差錯誤。部分政府稿無個人記者證據，保留機構信用／空值，不從文內官員姓名推斷作者。
+
+桃園電子報45862872首段完整「【健康醫療網／記者陳靖安報導】」與是新聞45411677「【健康醫療網／記者林則澄報導】」明示writer，原帳號健康醫療網不能替代記者。已將健康醫療網加入完整署名格式的publisher前綴，兩篇原頁正文皆與DB一致。主文開頭的完整agency／reporter credit另證明稿件來源，解析為來源：完整信用，不將普通提及、照片信用或主文較後段quote當成provider。健康醫療網identity／TW使用既有catalog名稱與國別。原頁桃園稿尾亦有健康醫療網原稿超連結，但正文cleaner排除導航連結後不保留footer，因此來源判斷根據主文明示署名，不靠補寫被清除的正文。
+
+兩篇作者與來源將以單篇原子交易一起修復，備份原始14欄metadata、citations、sketch及pairs；正文／日期／tags保持，更新author／creator／attributions及citationindex，不清sketch或強制重開job。原文／快照準備已通過；所有正式資料仍未套用。第十批合計17篇候選（原10metadata、5引用、2合併署名與來源）：11署名、1摘要、7來源／引用，日期寫入0。
+
+最新930項crawl／attribution測試、tsc、全專案Biome通過。對固定第九批回放1,794原頁，31篇變化，新增兩篇健康稿的作者與來源，正文內容無變；其餘29為前述已核對欄位。人工將包括新增核對及是新聞fresh followup，仍明示部分／指定欄位而非全欄位正確性結論。新增證據 `batch10-more-uncovered-markup-proof.json`、`batch10-health-reviewed-plan.json`、`batch10-health-45411677.html.gz`、`batch10-health-45862872.html.gz`、`batch10-final-health-replay.log`、`batch10-health-crawl-tests.log`。
+
+第八批read-only探測已正常結束，544筆從03:00:00至03:49:55，主站及worker均200、無記錄錯誤；五秒採樣仍不能證明取樣間隔零停機，使用者端未驗證。`batch8-service-probes-summary.json` 保存terminal狀態及統計。第九批04:08仍排定，線上8958290；本批尚未推送／部署，發布間距依第九批實際部署完成計時。24小時觀察尚未結束。

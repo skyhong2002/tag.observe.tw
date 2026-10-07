@@ -1,6 +1,6 @@
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import countryRegistry from '../../data/media-countries.json' with { type: 'json' };
-import { reporterCredit } from '../crawl/byline.ts';
+import { reporterCredit, reporterNames } from '../crawl/byline.ts';
 
 export type OutletIdentity = { media: string; name: string; country: string; countryCode: string };
 export type Attribution = OutletIdentity & { evidence: string; kind: 'explicit' };
@@ -85,6 +85,7 @@ const outlets: Outlet[] = [
   outlet('ctv', '中視新聞', 'TW', ['中視', '中视']),
   outlet('ftv', '民視新聞', 'TW', ['民視', '民视']),
   outlet('pts', '公視新聞', 'TW', ['公視', '公视', '公視新聞網']),
+  outlet('healthnews', '健康醫療網', 'TW', []),
   outlet('ctitv', '中天新聞', 'TW', ['中天新聞網', '中天新闻']),
   outlet('mirror', '鏡週刊', 'TW', ['鏡周刊', '镜周刊']),
   outlet('mirrordaily', '鏡報', 'TW', ['鏡報新聞網']),
@@ -248,6 +249,8 @@ export function extractAttributions(body: string, publisher: string, provider?: 
   // news story merely mentioning a CNA reporter cannot become a citation.
   const dispatch = cnaDispatch.exec(body);
   if (dispatch) add(outletIdentity('cna'), dispatch[0]);
+  const healthDispatch = /^【健康醫療網[／/]記者[\p{Script=Han}]{2,5}報導】/u.exec(body);
+  if (healthDispatch && reporterNames(healthDispatch[0]).length) add(outletIdentity('healthnews'), `來源：${healthDispatch[0]}`);
   for (const sentence of body.split(/[。！？!?；;\n]+/)) {
     // A complete standalone reference list identifies each named outlet.
     // Photo credits and prose that merely mentions sources do not qualify.

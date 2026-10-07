@@ -8,6 +8,12 @@ const ld = (body: string, name = '網站管理員') =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body, author: { '@type': 'Person', name } })}</script>`;
 
 describe('reporter identity from the selected article', () => {
+  it('reads the Health News reporter in a syndicated lead rather than its organization account', () => {
+    const body = `【健康醫療網／記者陳靖安報導】${prose}`;
+    expect(extractArticle(ld(body, '健康醫療網'), url)).toMatchObject({ body, authors: ['陳靖安'] });
+    expect(extractArticle(ld(`【健康醫療網／攝影陳靖安】${prose}`, '健康醫療網'), url).authors).toEqual(['健康醫療網']);
+    expect(extractArticle(ld(`${prose}\n\n【健康醫療網／記者陳靖安報導】`, '健康醫療網'), url).authors).toEqual(['健康醫療網']);
+  });
   it('reads the International World Times separate opening byline with a date suffix', () => {
     const story = 'https://www.iw-times.com/news_view.php?new_sn=145424';
     const credit = '<p><span>崔振興／屏東報導2026.10.07</span></p>';

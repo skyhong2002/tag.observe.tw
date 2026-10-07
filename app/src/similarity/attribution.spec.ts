@@ -3,6 +3,19 @@ import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
 import { attributionRole, extractAttributions, normalizeAttributions, outletIdentity } from './attribution.ts';
 
 describe('explicit media attribution', () => {
+  it('reads an explicit Health News reference with a URL without inventing a source from a plain mention', () => {
+    expect(extractAttributions('資料來源：健康醫療網 https://www.healthnews.com.tw/readnews.php?id=69779', 'tyenews')).toContainEqual(
+      expect.objectContaining({ media: 'healthnews', name: '健康醫療網', countryCode: 'TW' }),
+    );
+    expect(extractAttributions('健康醫療網舉辦活動。', 'tyenews')).toEqual([]);
+    expect(extractAttributions('圖片來源：健康醫療網', 'tyenews')).toEqual([]);
+    expect(extractAttributions('資料來源：健康醫療網', 'healthnews')).toEqual([]);
+    const dispatch = extractAttributions('【健康醫療網／記者陳靖安報導】醫師說明過敏症狀。', 'tyenews');
+    expect(dispatch).toContainEqual(expect.objectContaining({ media: 'healthnews', evidence: '來源：【健康醫療網／記者陳靖安報導】' }));
+    expect(attributionRole(dispatch[0])).toBe('來源');
+    expect(extractAttributions('文章提到【健康醫療網／記者陳靖安報導】的文字。', 'tyenews')).toEqual([]);
+    expect(extractAttributions('【健康醫療網／攝影陳靖安】照片說明。', 'tyenews')).toEqual([]);
+  });
   it('recognizes a declared published commentary source without guessing its country', () => {
     for (const body of [
       '北韓官媒朝中社今（7）日刊登評論，批評對台軍售。',
