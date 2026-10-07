@@ -348,6 +348,13 @@ export function extractLeadReporterNames(body: string): string[] {
 
 /** CNA syndicated reports credit their translator in the closing parenthesis. */
 export function extractClosingReporterNames(body: string): string[] {
+  // Verified Daai transcripts separate reporting names from production names
+  // with a vertical bar. Only a complete standalone terminal credit qualifies.
+  const daai =
+    /(?:^|\n\s*\n)([\p{Script=Han}]{2,5}(?:\s+[\p{Script=Han}]{2,5}){0,4})\s+(?:尼泊爾|花蓮)報導(?:[│|]\s*[\p{Script=Han}]{2,5}(?:\s+[\p{Script=Han}]{2,5}){0,4}\s+製作)?\s*$/u.exec(
+      body,
+    );
+  if (daai) return creditedNames(daai[1]);
   // Red Star reports close with a standalone reporter line and optional
   // editing/review lines. A reporter mentioned inside narrative is not a credit.
   const redStar =

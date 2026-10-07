@@ -229,3 +229,9 @@
 人工記錄目前 186 份，涉及 185 篇、98 媒體，181 篇屬樣本；含局部／未解項目。第六批在独立 `tag-crawler-quality-batch6-20261007` 累積，以免改動已排程的第五批 checkout。發布須待第五批實際部署後相隔約一小時。
 
 證據：`batch6-all-sample-replay.json`、`batch6-taisounds-original-replay.json`、`batch6-taisounds-reviewed-plan.json`、`batch6-taisounds-dry-run.json`、`batch6-expanded-authors-dry-run.jsonl`、`batch6-seven-authors-plan.json`、`batch6-final-crawl-tests.log`、`batch6-final-tsc.log`、`batch6-final-biome.log`、`round7-five-media-byline-proof.json`、`sample-outcomes.json`、`review-coverage.json`。
+
+23:26 第六批追加：大愛文章頁其實也內嵌與首頁相同的新聞 JSON；依 URL NewsID 只讀對應記錄、不執行 JavaScript、不取推薦篇。45639979／45639977 取出正文 1,038／988 字，与既有正式正文逐字相符；原來一般文章頁抽查為空，但正式 specialized discovery 已存有正文。追加共享一般文章解析支援，使後續署名 refresh 也能核對原頁。兩篇末尾明示張慧珍、拉梅什、陳榮豐（尼泊爾報導）及蔣邦彥、鍾江波（花蓮報導），新增嚴格完整結尾格式，若有「│製作」只取前段報導人名。兩筆 fresh-source 署名試跑通過。
+
+大愛 description 等同全份逐字稿，新增原文全文一致時排除為摘要；保持独立 description 的摘要正常。兩篇正式 summary 已經 null，因此無摘要清除或正文回填需求。第六批資料署名補正計畫增至 9 筆；6 太報正文計畫不變，全部未寫入。最新 858 項爬蟲測試、型別、Biome 通過；1,267 原頁完整重播共 15 篇改變，刊登時間全部不變。大愛的兩篇只是一般解析結果與先前 specialised pipeline 對齊，不宣稱修過既有正文。
+
+Bnext 44696550、早安健康 45595849 是 topic／special landing，標題與描述具有文章專屬意義，沒有可確認記者或刊登時間；正文是否有可用獨立導讀仍待 specialised 檢查，不以 generic missing 判定文章漏抓。新增原頁欄位檢驗記錄，證據 `batch6-daai-and-landing-review-proof.json`、`batch6-daai-author-dry-run.jsonl`、`batch6-daai-second-author-dry-run.jsonl`、`batch6-nine-authors-plan.json`。23:24 已啟動第五批部署前後服務探測，session 56466，預計 23:43 結束，探測非終端時不得重啟或另开副本。

@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { daaiNewsRecord } from './news-daai.ts';
 import { renderWsjNewsletter } from './news-wsj-newsletter.ts';
 
 const hostKey = (url: URL) => url.hostname.toLowerCase().replace(/^www\./, '');
@@ -61,6 +62,16 @@ function assignedObject(source: string, marker: RegExp): Record<string, unknown>
 
 export function publicArticleHtml(html: string, url: string): string {
   const host = hostKey(new URL(url));
+  if (host === 'daai.tv' && /^\/news\/\d+$/.test(new URL(url).pathname)) {
+    const $ = cheerio.load(html);
+    if ($('script[data-news-public="daai"]').length) return html;
+    const record = daaiNewsRecord(html, Number(new URL(url).pathname.split('/').at(-1)));
+    if (!record) return html;
+    const node = { '@type': 'NewsArticle', url, headline: record.Title, articleBody: record.Description };
+    const json = JSON.stringify(node).replace(/</g, '\\u003c');
+    $('body').append(`<script type="application/ld+json" data-news-public="daai">${json}</script>`);
+    return $.html();
+  }
   if (host === 'mofa.gov.tw' && new URL(url).pathname === '/News_Content.aspx') {
     const $ = cheerio.load(html);
     const article = new URL(url);

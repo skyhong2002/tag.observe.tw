@@ -219,3 +219,15 @@ it('reads Red Star terminal reporters while excluding editors and narrative ment
   expect(extractClosingReporterNames('完整報導。\n\n编辑 邓旆光\n\n审核 何先菊')).toEqual([]);
   expect(extractClosingReporterNames('完整報導。\n\n红星新闻记者 周月潇\n\n後續另一篇報導。')).toEqual([]);
 });
+
+it('separates terminal reporting credits from Daai production credits', () => {
+  expect(extractClosingReporterNames('完整新聞。\n\n張慧珍 拉梅什 陳榮豐 尼泊爾報導│歐君萍 卓谷翰 製作')).toEqual([
+    '張慧珍',
+    '拉梅什',
+    '陳榮豐',
+  ]);
+  expect(extractClosingReporterNames('完整新聞。\n\n蔣邦彥 鍾江波 花蓮報導│王小明 製作')).toEqual(['蔣邦彥', '鍾江波']);
+  expect(extractClosingReporterNames('完整新聞。\n\n蔣邦彥 鍾江波 花蓮報導')).toEqual(['蔣邦彥', '鍾江波']);
+  expect(extractClosingReporterNames('完整新聞。張慧珍 拉梅什 陳榮豐 尼泊爾報導│歐君萍 卓谷翰 製作')).toEqual([]);
+  expect(extractClosingReporterNames('完整新聞。\n\n歐君萍 卓谷翰 製作')).toEqual([]);
+});

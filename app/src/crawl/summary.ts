@@ -59,6 +59,10 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const griContent = isGrinews ? $('article > .post-content').clone() : null;
   griContent?.find('audio, script, style').remove();
   const griBody = griContent ? normalized(griContent.text()).replace(/\s+/g, '') : '';
+  const isDaai = /^https?:\/\/(?:www\.)?daai\.tv\/news\/\d+$/i.test(url);
+  const daaiBodies = isDaai
+    ? articleNodes($, url).flatMap((node) => (typeof node.articleBody === 'string' ? [normalized(node.articleBody)] : []))
+    : [];
   const isYesMedia = /^https?:\/\/(?:www\.)?yesmedia\.com\.tw\//i.test(url);
   const isBannedbook = /^https?:\/\/(?:www\.)?bannedbook\.org\//i.test(url);
   const promotion =
@@ -75,6 +79,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   for (const [value, source] of candidates) {
     const result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    if (isDaai && daaiBodies.includes(result.summary)) continue;
     if (isBannedbook && promotion.test(result.summary)) continue;
     if (isYesMedia && /^《圖說》/u.test(result.summary)) continue;
     if (
