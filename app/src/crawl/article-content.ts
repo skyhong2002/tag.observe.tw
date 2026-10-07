@@ -8,6 +8,7 @@ import {
   reporterNames,
 } from './byline.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
+import { jMediaLead } from './news-j-media-summary.ts';
 import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
 import { womanyCollectionDescription } from './news-womany-collection.ts';
 import { decodeEntities, urlKey } from './text.ts';
@@ -393,6 +394,7 @@ function publisherExcerpt($: cheerio.CheerioAPI, value: string): boolean {
 
 export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules: ContentRules): ArticleContent {
   const isExcerpt = publisherExcerpt($, url);
+  const jMedia = jMediaLead($, url);
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
   const configuredValues = (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : []).flatMap((value) => {
@@ -424,7 +426,12 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       });
       if (matching) authorBody = matching.body;
     }
-    return { body, bodySource, bodyStatus, authors: extractAuthors(authorDom, nodes, rules, authorBody, authorValues) };
+    return {
+      body,
+      bodySource,
+      bodyStatus,
+      authors: jMedia ? [jMedia.author] : extractAuthors(authorDom, nodes, rules, authorBody, authorValues),
+    };
   };
   if (isExcerpt) return result(null, 'publisher:excerpt', 'short');
   const feature = ithomeFeatureDescription($, url);

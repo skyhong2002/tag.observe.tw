@@ -689,3 +689,13 @@ PNN45478221／45780646實際pnn5.aotter.net hosted viewer（一般pnn.tw respons
 第十一批probe PID801457已inactive／MainPID0／exit0，06:11:00.126→07:00:59.474共545主站200＋545worker200，batch11-probe-summary.json verifiedtrue。這是主機端定期探測，不能宣稱零停機或用戶browser已驗證；先前gateway restart錯誤紀錄保留，不重開probe。
 
 第十三批固定候選25不同文章：21摘要、2署名、7正文文字修正、6iThome正文來源修正、1BBC引用、0日期歷史寫入；6iThome／6Cool3c／4MarieClaire／4MSN／2PNN／1BBC／2報新聞Yam各fresh完整snapshot乾跑通過。準備以本章commit冻结候選並安排08:26發布；publisher需第十二批實際部署／完整30修復驗證且距resumed至少3600秒，再核對exact main／live／clean與CI才部署。第十二批bfb34f2仍冻结、本地提交未推送／部署／回寫，07:16probe及07:21release timers維持；正式仍c63dacb已推送／部署／驗證。第十三批本地提交尚未推送／部署／套用，冻结及timer實際狀態以ledger為準；後續聚傳媒、三立main editor credit、MSN複合人名與食力legacy頁面等新發現移交第十四批隔離checkout持續處理，並非24h工作完成。觀察到18:49:13仍active，最终有界round、全程報告與completion audit未完成。
+
+### 10/8 07:22：聚傳媒自有主文記者及供應摘要包裝
+
+聚傳媒46292249 own Article/Detail/38688 canonical與og:url同identity，唯一article.entry的直系.single-post__entry-header含主h1。實際正文在直系.entry__article-wrap > .entry__article > div > first p；同p以「照片取自臺南市政府<br>【聚傳媒特約記者陳欣如報導】」開頭，原JSON／DOM通用正文flatten成同一段，lead parser因photo caption未取得記者。新增僅j-media own數字article URL／own canonical／唯一主header與精確正文層級的完整開頭credit，取陳欣如，排除政府照片信用、sidebar、後段敘述、人名不完整及編輯中心placeholder。聚傳媒屬news catalog新增來源，legacy overrides不套用；已改為有own identity的專用parser，沒有保留不起作用的override或更動通用catalog合併架構。
+
+原站獨立meta:description同樣包「照片取自臺南市政府【聚傳媒特約記者陳欣如報導】」在真正供應excerpt外；只有其prefix去空白後與own首p完整credit相同，且剩餘摘要去末尾省略號後字面出现在該own正文，才移除photo／byline包裝。保留原站excerpt與...、meta:description來源，沒生成摘要、刪正文或抓較長related內容。Own canonical／caption／excerpt不一致時不改摘要。
+
+980crawl／attribution tests、tsc及全Biome通過；2123成功HTML對冻结第十三批bedafe7重播只有46292249的authors與summary變化，0正文／日期parser變化。Fresh200，old parser與DB正文及原summary exact，own reporter／新excerpt／精確publishedAt均核對，全13field snapshot乾跑passed；summary與authors／creator同transaction，完整metadata backup／exact live／clean candidate／already-applied核對／DB-publicAPI-origin verifier準備完成，日期／正文／tags／attributions／取得時間保留。batch14-j-media-reviewed-plan.json／repair／verify尚未apply。第十四批1候選：1署名＋1摘要、0日期或正文寫入，unfrozen未排程。
+
+第十二批bfb34f2已07:21:02推送main，exact CI37701765282當時in_progress，正式仍c63dacb已推送／部署／驗證；PID859022 publisher只執行原timer一次，07:16→08:06 probe PID854082 active、主站與worker200。部署前metadata7／source20／Womanybody3重新fresh完整快照乾跑共30passed，尚未apply，不把pushed當deployed。第十三批bedafe7冻结、25候選未推送／部署／apply，08:26 timer且需第十二批完整30驗證與actual resumed至少1小時間隔；不能修改冻结checkout。24小時觀察持續至18:49:13，最终有界round與總報告仍未完成。
