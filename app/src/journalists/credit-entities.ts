@@ -17,6 +17,11 @@ export interface CreditEntity {
   organization: string | null;
   roles: string[];
 }
+export interface BylineSummary extends CreditEntity {
+  articles: number;
+  latest: string;
+  outlets: Array<{ media: string; name: string; count: number }>;
+}
 const normalize = (value: string) => value.normalize('NFKC').replace(/\s+/g, ' ').trim();
 const role =
   /^(特派記者|資深記者|實習記者|特約記者|駐外記者|記者|責任編輯|责任编辑|攝影記者|攝影|編譯|编译|翻譯|撰文|撰稿|採訪|整理|口述|作者|編輯|圖文|文字|文|圖)\s*[:/／]?\s*(.*)$/u;

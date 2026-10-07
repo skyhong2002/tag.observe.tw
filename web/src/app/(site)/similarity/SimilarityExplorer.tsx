@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AuthorCredits from '@/components/AuthorCredits';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
@@ -354,7 +354,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
   const searchParams = useSearchParams();
   // Media pages link here with `node` to open one outlet's relationships.
   const state = readGraphState(new URLSearchParams(searchParams.toString()));
-  const updateUrl = (patch: Record<string, string | number | undefined>, replace = false) => {
+  const updateUrl = useCallback((patch: Record<string, string | number | undefined>, replace = false) => {
     const params = relationshipQuery(new URLSearchParams(window.location.search));
     for (const [key, value] of Object.entries(patch)) {
       if (value === undefined || value === '') params.delete(key);
@@ -365,7 +365,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       if (replace) window.history.replaceState(null, '', url);
       else window.history.pushState(null, '', url);
     }
-  };
+  }, []);
   const linkedNode = searchParams.get('node');
   const linkedEdge = data.edges.find(
     (edge) =>
@@ -445,7 +445,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       updateUrl({ q: query, page: undefined }, true);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, updateUrl]);
   const direction = state.direction;
   const page = state.page;
   const setDirection = (next: CitationDirection) => updateUrl({ direction: next, page: undefined });

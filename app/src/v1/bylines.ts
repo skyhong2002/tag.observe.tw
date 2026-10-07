@@ -2,15 +2,12 @@ import { and, desc, gte, inArray, lt, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
-import { CREDIT_KINDS, type CreditEntity, type CreditKind, creditsOf } from '../journalists/credit-entities.ts';
+import { type BylineSummary, CREDIT_KINDS, type CreditEntity, type CreditKind, creditsOf } from '../journalists/credit-entities.ts';
 import { isExcludedJournalist } from '../journalists/names.ts';
 import { normalizeAttributions, outletIdentity } from '../similarity/attribution.ts';
 
-export interface BylineSummary extends CreditEntity {
-  articles: number;
-  latest: string;
-  outlets: Array<{ media: string; name: string; count: number }>;
-}
+export type { BylineSummary } from '../journalists/credit-entities.ts';
+
 type CreditRow = { id: number; media: string; publishedAt: Date; authors: string[] | null; creator: string | null };
 
 export function aggregateCredits(rows: CreditRow[]) {

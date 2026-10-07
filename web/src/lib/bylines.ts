@@ -1,6 +1,5 @@
-import type { CreditEntity } from '../../../app/src/journalists/credit-entities';
+import type { BylineSummary, CreditEntity } from '../../../app/src/journalists/credit-entities';
 import type { Attribution } from '../../../app/src/similarity/attribution';
-import type { BylineSummary } from '../../../app/src/v1/bylines';
 import { API_ORIGIN } from './api';
 
 export type { CreditEntity, CreditKind } from '../../../app/src/journalists/credit-entities';
