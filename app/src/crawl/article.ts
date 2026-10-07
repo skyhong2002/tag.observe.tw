@@ -20,6 +20,8 @@ export interface ArticleRules {
   bodyHtmlSelector?: string;
   bodyExcludeSelector?: string;
   authorSelector?: string;
+  /** Accept only a complete reviewed credit; capture the author name. */
+  authorPattern?: RegExp;
   // The headline element, for sites whose og:title appends a section name
   // that no fixed titleSuffix covers (womany: 「｜回家吧 I’m home」).
   titleSelector?: string;
@@ -61,6 +63,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
       ? {
           bodySelector: site.bodySelector,
           authorSelector: site.authorSelector,
+          authorPattern: site.authorPattern,
           bodyHtmlSelector: site.bodyHtmlSelector,
           bodyExcludeSelector: site.bodyExcludeSelector,
           trustContainer: site.trustContainer,

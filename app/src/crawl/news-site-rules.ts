@@ -14,6 +14,8 @@ export interface NewsSiteRules {
   bodyHtmlSelector?: string;
   titleSelector?: string;
   authorSelector?: string;
+  /** Accept only a complete reviewed credit; capture the author name. */
+  authorPattern?: RegExp;
   publishedSelector?: string;
   /** null explicitly selects visible text instead of a datetime attribute. */
   publishedAttribute?: string | null;

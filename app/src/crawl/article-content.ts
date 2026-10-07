@@ -21,6 +21,8 @@ type ContentRules = {
   bodyHtmlSelector?: string;
   bodyExcludeSelector?: string;
   authorSelector?: string;
+  /** Accept only a complete reviewed credit; capture the author name. */
+  authorPattern?: RegExp;
   /** The site container counts even inside wrappers whose class names look like ads or share bars. */
   trustContainer?: boolean;
   /** Paragraphs are block elements and line breaks rather than <p>. */
@@ -373,7 +375,11 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const isExcerpt = publisherExcerpt($, url);
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
-  const configuredValues = rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : [];
+  const configuredValues = (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : []).flatMap((value) => {
+    if (!rules.authorPattern) return [value];
+    const name = rules.authorPattern.exec(value)?.[1];
+    return name ? [name] : [];
+  });
   if (rules.bodyExcludeSelector) $(rules.bodyExcludeSelector).remove();
   const nodes = articleNodes($, url);
   const result = (body: string | null, bodySource: string, bodyStatus: ArticleContent['bodyStatus']): ArticleContent => {

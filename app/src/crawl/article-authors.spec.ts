@@ -71,6 +71,22 @@ describe('reporter identity from the selected article', () => {
     const unrelated = `<article><div class="ak-post-content"><p>${prose}</p></div></article><aside><p>${credit}</p></aside>`;
     expect(extractArticle(unrelated, 'https://ammtw.com/174127')).toMatchObject({ authors: [], provider: null });
   });
+  it('separates Sina syndicated source from its terminal journalist credit', () => {
+    const article = (first: string, last: string) =>
+      `<meta name="author" content="新浪新闻"><section class="j_main_art"><article class="art_box"><section class="art_content"><p>${first}</p><p>${prose}</p><p>${last}</p></section></article></section><aside><p>来源：其他媒体</p><p>记者：其他作者</p></aside>`;
+    const sinaUrl = 'https://news.sina.cn/gj/2026-10-07/detail-iniukxhc4898442.d.html';
+    expect(extractArticle(article('来源：中国新闻周刊', '记者：王晨晨'), sinaUrl)).toMatchObject({
+      provider: '中国新闻周刊',
+      authors: ['王晨晨'],
+    });
+    expect(
+      extractArticle(article('来源：懂球帝', '技术统计'), 'https://news.sina.cn/2026-10-07/detail-iniumcpz4854264.d.html'),
+    ).toMatchObject({ provider: '懂球帝', authors: ['新浪新闻'] });
+    expect(extractArticle(article('消息来源：有人表示', '记者：王晨晨认为这值得关注。'), sinaUrl)).toMatchObject({
+      provider: null,
+      authors: ['新浪新闻'],
+    });
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });

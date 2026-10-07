@@ -31,7 +31,9 @@ describe('reviewed Taiwan.cn syndication on People.com.cn', () => {
   });
 
   it('keeps the matching mobile canonical article body and publisher credit', () => {
-    const mobile = ROUND3_LEGACY_NEWS_SITES.find((site) => site.host === 'news.sina.cn')!;
+    const mobile = ROUND3_LEGACY_NEWS_SITES.find(
+      (site) => site.host === 'news.sina.cn' && site.path.test('/znl/2026-09-24/detail-inisxhnx5304571.d.html'),
+    )!;
     const $ = cheerio.load(
       `<meta name="author" content="中国台湾网"><section class="j_main_art"><h1 class="art_tit_h1">同一則完整報導</h1><article class="art_box"><section class="art_content"><p>${body}</p></section></article></section><aside><p>不要混入推薦摘要</p></aside>`,
     );
