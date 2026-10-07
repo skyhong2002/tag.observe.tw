@@ -397,3 +397,18 @@ it('keeps a DW extra reporter name out of the agency-provider field', () => {
       .provider,
   ).toBeNull();
 });
+
+it('reads MKnews publication from the main post datetime and explicit partner source', () => {
+  const html = `<time class="entry-date published" datetime="2030-01-01T00:00:00+08:00"></time><article><div class="entry-meta">新聞來源:焦點時報 頭條</div><div class="entry-meta"><time class="entry-date published updated" datetime="2026-10-07T22:29:42+08:00">2026-10-07</time></div><div class="entry-content"><p>${'新聞內容。'.repeat(60)}</p></div></article>`;
+  expect(extractArticle(html, 'https://mknews.com.tw/2026/10/1002678/')).toMatchObject({
+    publishedAt: new Date('2026-10-07T14:29:42Z'),
+    provider: '焦點時報',
+  });
+});
+it('reads RTI agency evidence from the separately labelled news-source slot', () => {
+  const html = `<div class="dateWrap"><div class="date"><span class="time">2026-10-07 21:47</span></div><div class="date"><span class="time">新聞引據：法新社</span></div><div class="date"><span class="time">採訪撰稿：王小明 責任編輯：王大明</span></div></div><div class="text ivu-mt"><p>${'新聞内容。'.repeat(60)}</p></div>`;
+  expect(extractArticle(html, 'https://www.rti.org.tw/news?uid=3&pid=236330').provider).toBe('法新社');
+  expect(
+    extractArticle(html.replace('新聞引據：法新社', '新聞引據：新聞中心'), 'https://www.rti.org.tw/news?uid=3&pid=236330').provider,
+  ).toBeNull();
+});

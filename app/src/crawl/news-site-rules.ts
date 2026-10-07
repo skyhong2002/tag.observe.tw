@@ -46,6 +46,22 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'mknews.com.tw',
+    path: /^\/\d{4}\/\d{2}\/\d+\/$/,
+    bodySelector: '.entry-content',
+    publishedSelector: 'article .entry-meta time.entry-date.published',
+    publishedAttribute: 'datetime',
+    providerSelector: 'article .entry-meta',
+    providerPattern: /^新聞來源[:：]\s*(焦點時報)(?:\s|$)/u,
+  },
+  {
+    host: 'rti.org.tw',
+    path: /^\/news\?uid=\d+&pid=\d+$/,
+    bodySelector: '.text.ivu-mt',
+    providerSelector: '.dateWrap > .date > .time:contains("新聞引據：")',
+    providerPattern: /^\s*新聞引據[:：]\s*(法新社|美聯社|路透社)\s*$/u,
+  },
+  {
     host: 'dw.com',
     path: /^\/(?:zh|zh-hant)\/[^/]+\/a-\d+$/,
     bodySelector: 'article',

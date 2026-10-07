@@ -237,3 +237,16 @@ it('splits complete Chinese author declarations without accepting prose or role 
   expect(reporterNames('作者：王小明表示這是一本新書。')).toEqual([]);
   expect(reporterNames('作者：新聞編輯中心')).toEqual([]);
 });
+
+it('reads explicit partner lead reporters and excludes narrative mentions', () => {
+  expect(extractLeadReporterNames('〔焦點時報/記者蔡宗憲報導〕活動今天登場。')).toEqual(['蔡宗憲']);
+  expect(extractLeadReporterNames('（觀傳媒中彰投新聞）【記者廖妙茜/台中報導】活動開始。')).toEqual(['廖妙茜']);
+  expect(extractLeadReporterNames('活動開始。〔焦點時報/記者蔡宗憲報導〕')).toEqual([]);
+  expect(extractLeadReporterNames('〔焦點時報/編輯王小明〕活動開始。')).toEqual([]);
+});
+it('reads the terminal television translator separately from an editor', () => {
+  expect(extractClosingReporterNames('新聞正文。\n\n國際中心／闕帝慈 編譯 編輯／洪季謙')).toEqual(['闕帝慈']);
+  expect(extractClosingReporterNames('新聞正文。\n\n國際中心／闕帝慈 編譯')).toEqual(['闕帝慈']);
+  expect(extractClosingReporterNames('受訪者表示國際中心／闕帝慈 編譯 編輯／洪季謙')).toEqual([]);
+  expect(extractClosingReporterNames('新聞正文。\n\n編輯／洪季謙')).toEqual([]);
+});

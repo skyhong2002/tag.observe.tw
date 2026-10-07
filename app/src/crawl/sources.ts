@@ -42,7 +42,14 @@ export interface SourceSpec {
   };
   // Site-name tail to drop from page titles, e.g. " | 聯合新聞網".
   titleSuffix?: string;
-  article: ArticleRules & { enabled: boolean; batch: number; delayMs: number; userAgent?: string };
+  article: ArticleRules & {
+    enabled: boolean;
+    batch: number;
+    delayMs: number;
+    userAgent?: string;
+    /** Reviewed feeds that publish modification times: use the article's declared publication instead. */
+    preferPagePublication?: boolean;
+  };
 }
 type PhpSpec = {
   media: string;

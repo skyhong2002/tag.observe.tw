@@ -64,6 +64,13 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     ? articleNodes($, url).flatMap((node) => (typeof node.articleBody === 'string' ? [normalized(node.articleBody)] : []))
     : [];
   const isYesMedia = /^https?:\/\/(?:www\.)?yesmedia\.com\.tw\//i.test(url);
+  const captionDescriptions = /^https?:\/\/(?:www\.)?(?:yesmedia\.com\.tw|firenews\.com\.tw|mknews\.com\.tw)\//i.test(url);
+  const captions = captionDescriptions
+    ? $('article figcaption, article .wp-caption-text')
+        .toArray()
+        .map((node) => normalized($(node).text()))
+        .filter(Boolean)
+    : [];
   const isBannedbook = /^https?:\/\/(?:www\.)?bannedbook\.org\//i.test(url);
   const promotion =
     /^來源[:：].{1,60}文章內容並不代表本網立場和觀點。\s*(?:【江峰優品】推出|八炯眼貼小舖連結[：:]|(?:#[^\s]+\s+)*「年代電視」是完全數位)/u;
@@ -77,11 +84,23 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   ])
     candidates.push([$(selector).first().attr('content'), source]);
   for (const [value, source] of candidates) {
-    const result = publisherSummary(value, source);
+    let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (isDaai && daaiBodies.includes(result.summary)) continue;
     if (isBannedbook && promotion.test(result.summary)) continue;
     if (isYesMedia && /^《圖說》/u.test(result.summary)) continue;
+    const leadingCaption = captions.find((caption) => result.summary?.startsWith(caption));
+    if (leadingCaption) {
+      // Keep only the publisher's remaining description, with an exact caption
+      // and reviewed adjacent credit removed; never synthesize body excerpts.
+      const remainder = result.summary
+        .slice(leadingCaption.length)
+        .trim()
+        .replace(/^商傳媒[｜|]\s*[\p{Script=Han}]{2,5}[／/]綜合外電報導\s*/u, '');
+      if (remainder.length < 20 || /^[（(]觀傳媒[^）)]*新聞[）)]\s*【記者/u.test(remainder)) continue;
+      result = publisherSummary(remainder, source);
+      if (!result.summary) continue;
+    }
     if (
       isGrinews &&
       (/^草根影響力新視野\s+[\p{Script=Han}]{2,4}\s+在\s+\d{4}$/u.test(result.summary) ||

@@ -269,6 +269,12 @@ export function reporterNames(value: string): string[] {
   if (!text) return [];
   const authors = /^作者\s*[:：]\s*([\p{Script=Han}]{2,5}(?:\s*[、，,]\s*[\p{Script=Han}]{2,5}){0,5})$/u.exec(text);
   if (authors) return creditedNames(authors[1]);
+  // Reviewed partner articles put an explicit reporter credit before prose.
+  const partner =
+    /^(?:〔焦點時報\/記者([\p{Script=Han}]{2,5})報導〕|\(觀傳媒[\p{Script=Han}]{1,6}新聞\)【記者([\p{Script=Han}]{2,5})\/[^/【】]{1,8}報導】)/u.exec(
+      text,
+    );
+  if (partner) return creditedNames(partner[1] ?? partner[2]);
   const writer = /^文\s+([\p{Script=Han}]{2,5})$/u.exec(text);
   if (writer) return creditedNames(writer[1]);
   // Xinhua wire dispatches put a parenthesized reporter credit immediately
@@ -364,6 +370,10 @@ export function extractClosingReporterNames(body: string): string[] {
       body,
     );
   if (redStar) return creditedNames(redStar[1]);
+  const televisionTranslator = /(?:^|\n\s*\n)國際中心[／/]([\p{Script=Han}]{2,5})\s+編譯(?:\s+編輯[／/][\p{Script=Han}]{2,5})?\s*$/u.exec(
+    body,
+  );
+  if (televisionTranslator) return creditedNames(televisionTranslator[1]);
   const closing = /[（(]\s*編譯\s*[:：]\s*([^（）()\n]{2,60})\s*[）)]\s*(?:\d{6,8})?\s*$/.exec(body);
   if (closing) return creditedNames(closing[1]);
   // Verified NTD syndicated reports end in a standalone reporting credit.

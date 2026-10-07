@@ -468,13 +468,16 @@ export async function runArticles(
                   : null;
           const titleTags = !detail.tags.length && vocab ? tagsFromTitle(title || row.title || '', vocab) : [];
           const tags = usableTags(detail.tags.length ? detail.tags : titleTags, spec.media);
-          // Discovered links have no listing time; adopt the page's published
-          // time unless it is in the future or implausibly old.
+          // Undated discoveries use the page's publication. Reviewed feeds
+          // that carry modification time also use this declared publication.
           const metaTime =
             detail.publishedAt && detail.publishedAt.getTime() < Date.now() + 86400e3 && detail.publishedAt.getFullYear() >= 2000
               ? detail.publishedAt
               : null;
-          const publishedAt = metaTime && row.publishedAt.getTime() === row.crawledAt.getTime() ? metaTime : row.publishedAt;
+          const publishedAt =
+            metaTime && (spec.article.preferPagePublication || row.publishedAt.getTime() === row.crawledAt.getTime())
+              ? metaTime
+              : row.publishedAt;
           await db
             .update(articles)
             .set({

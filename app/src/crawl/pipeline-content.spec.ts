@@ -37,7 +37,11 @@ type Row = Record<string, unknown> & { id: number; media: string; urlKey: string
 
 // The fluent double records writes; SQLite evaluates Drizzle's actual predicates.
 // This catches guard regressions without duplicating their logic or opening a server DB.
-function memoryDb(seed: Row[] = [], tagSeed: Array<{ articleId: number; tag: string; publishedAt: Date }> = []) {
+function memoryDb(
+  seed: Row[] = [],
+  tagSeed: Array<{ articleId: number; tag: string; publishedAt: Date }> = [],
+  articleTagTransaction = true,
+) {
   const rows: Row[] = seed.map((row) => ({ source: 'own', ...row }));
   const tags = tagSeed.map((row) => ({ ...row }));
   const locks: string[] = [];
@@ -123,7 +127,7 @@ function memoryDb(seed: Row[] = [], tagSeed: Array<{ articleId: number; tag: str
           where: async (condition: SQL) => {
             writes.push({ table, values, condition });
             if (table === articleTags) {
-              expect(transactionDepth).toBe(1);
+              expect(transactionDepth).toBe(articleTagTransaction ? 1 : 0);
               const query = new MySqlDialect().sqlToQuery(condition);
               for (const tag of tags) if (tag.articleId === query.params[0]) tag.publishedAt = values.publishedAt as Date;
             }
@@ -143,15 +147,22 @@ function memoryDb(seed: Row[] = [], tagSeed: Array<{ articleId: number; tag: str
           where: (condition: SQL) => {
             if (table === rejectedUrls) return Promise.resolve([]);
             selected.push(condition);
-            return Object.assign(Promise.resolve(matching(condition)), {
+            return Object.assign(Promise.resolve(matching(condition).map((row) => ({ ...row }))), {
               limit: (limit: number) => ({
                 for: async (strength: string) => {
                   expect(transactionDepth).toBe(1);
                   locks.push(strength);
-                  return matching(condition).slice(0, limit);
+                  return matching(condition)
+                    .slice(0, limit)
+                    .map((row) => ({ ...row }));
                 },
               }),
-              orderBy: () => ({ limit: async (limit: number) => matching(condition).slice(0, limit) }),
+              orderBy: () => ({
+                limit: async (limit: number) =>
+                  matching(condition)
+                    .slice(0, limit)
+                    .map((row) => ({ ...row })),
+              }),
             });
           },
         }),
@@ -539,4 +550,37 @@ describe('discovered full content persistence', () => {
     ]);
     expect(writes.filter((write) => write.table === articleTags)).toHaveLength(0);
   });
+});
+
+it('replaces reviewed feed modification time with page publication and moves ranking dates', async () => {
+  const feedTime = new Date('2026-10-03T07:42:25Z');
+  const pageTime = new Date('2026-10-03T03:50:14Z');
+  const seed = {
+    id: 7,
+    media: spec.media,
+    url: item.url,
+    urlKey: urlKey(item.url),
+    title: item.title,
+    publishedAt: feedTime,
+    crawledAt: now,
+    fetchedAt: null,
+    contentFetchedAt: null,
+    contentAttempts: 0,
+  };
+  const fetch = async (url: string) => ({
+    url,
+    status: 200,
+    body: `<meta property="article:published_time" content="${pageTime.toISOString()}"><script type="application/ld+json">{"@type":"NewsArticle","datePublished":"${pageTime.toISOString()}","dateModified":"${feedTime.toISOString()}"}</script><article><p>${'完整新聞正文。'.repeat(40)}</p></article>`,
+    contentType: 'text/html',
+    ms: 1,
+  });
+  const reviewed = memoryDb([seed], [{ articleId: 7, tag: '已存在標籤', publishedAt: feedTime }], false);
+  expect(
+    await runArticles(reviewed.db, { ...spec, article: { ...spec.article, preferPagePublication: true } }, { now: () => now, fetch }),
+  ).toMatchObject({ updated: 1, failed: 0 });
+  expect(reviewed.rows[0].publishedAt).toEqual(pageTime);
+  expect(reviewed.tags[0].publishedAt).toEqual(pageTime);
+  const ordinary = memoryDb([seed]);
+  expect(await runArticles(ordinary.db, spec, { now: () => now, fetch })).toMatchObject({ updated: 1, failed: 0 });
+  expect(ordinary.rows[0].publishedAt).toEqual(feedTime);
 });

@@ -585,6 +585,8 @@ export const overrides: Record<string, SourceOverride> = {
   reporter: { article: { jsonTags: 'tags', authorSelector: 'a[href^="/authors/"]' } },
   // Verified public-page body containers, 2026-10-03 similarity audit.
   ftnn: { article: { bodySelector: '.news-body' } },
+  // TTV RSS pubDate matches article dateModified, while datePublished is separate.
+  ttv: { article: { preferPagePublication: true } },
   rti: { article: { bodySelector: '.text.ivu-mt', authorSelector: 'a[href*="newsauthorlist"]' } },
   // Verified visible credits absent from NewsArticle.author, 2026-10-06.
   cmmedia: { article: { authorSelector: '.article_author-bar .article_author a.author' } },

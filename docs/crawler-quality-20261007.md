@@ -267,3 +267,17 @@ DW 六篇限定中文文章路径與主文章容器，讀取 author-details 的 
 午夜新樣本另兩篇太報專題 45676868／45676876 同樣漏抓，重新取得正文 3,666／3,398 字，確認 missing、無 archive/sketch/pair，加入原六篇計畫，共八篇。最新 1,450 原頁完整重播相對不可變17d6bde共27篇差異，新增兩篇已核對，刊登時間不變。887項爬蟲／引用測試通過，tsc／Biome 通過（既有 String.raw info）。第六批計畫為8太報正文／標題、6DW正文（其中3增加agency attribution）、12署名、1鳳凰網引用；全部尚未寫入、未推送或部署，維持不早於00:40:02並於發佈前重查正式版及自然job排空。
 
 證據：`batch6-extra-authors-original-proof.json`、`batch6-twelve-authors-plan.json`、`batch6-dw-reviewed-plan.json`、`batch6-dw-dry-run.json`、`batch6-taisounds-reviewed-plan.json`、`batch6-current-tests.log`、`batch6-all-sample-replay.json`。累計人工紀錄220份、196篇不同文章／101媒體，其中192篇屬取樣集合；包含局部欄位檢驗、待查及重複驗證，不宣稱全部自動樣本人工合格。24小時觀察仍持續至10/8 18:49:13。
+
+## 午夜樣本擴充核對（00:26，仍未發布）
+
+台視45766680原頁明示 datePublished／dateCreated 18:50:14+08、dateModified22:42:25+08，RSS pubDate卻等於後者，DB也存後者。已保存主RSS與完整HTML證據。增加僅台視啟用的 preferPagePublication，成功取文章時以合法原頁刊登時間取代RSS時間，並同步既有article_tags排名時間；普通媒體仍保留既有已知時間。pipeline整合測試實際驗證文章／排名標籤修正、dateModified不誤用及普通來源不變。該筆原fetch_status/body_status error、attempts1、archive null、similarity null，下一輪已有正常HTTP重試資格，等第六批上線後自然重試修正文／日期；不複製job。已準備獨立自然回讀計畫，尚未宣稱日期或正文資料已修好。
+
+天天上新聞11篇以限定主文章 entry-meta time.entry-date.published datetime補足一般parser日期，fresh值全部與既有DB完全一致，沒有historical日期回填。45781233原頁〔焦點時報/記者蔡宗憲報導〕及新聞來源焦點時報明示；只保留原名與未知國別，沒有誤指認成今傳媒Focusnews。央廣四篇限定新聞引據欄位明示AFP／Reuters；45781400雖不足200字，確認原頁完整三段與DB一致，不因short狀態硬補正文。
+
+新增完整段首觀傳媒地域新聞記者格式，確認奇異果5篇、觀傳媒2篇、是新聞1篇記者；台視末尾只取國際中心闕帝慈編譯，不列編輯洪季謙。全部原頁重播新增28篇欄位差異都逐一fresh核對，原文證據含lead、末尾署名、来源槽、圖說及日期，不把一般提及記者作署名。
+
+摘要對指定合作媒體比對主文章實際figcaption／wp-caption-text，只有description以該完整圖說開頭才移除；若剩餘是足夠長的媒體原始新聞描述就保留，絕不從正文生成導讀。是新聞45477997保留原metadata中育碧新聞描述（DB之前為null）；45640091、45780443移除圖說與商傳媒明示署名保留新聞片段；45780442只剩被截斷的記者列，清為null。45477994原圖說後只剩「如」等短殘文，parser排除，但正式summary已null、不再寫入。四筆summary計畫重新抓原頁及完整限制欄位試跑通過。
+
+第六批補正計畫累計14正文（8太報＋6DW）、22署名、6來源／引用（1鳳凰網＋4央廣＋1天天上新聞）、4摘要。署名fresh-source試跑及來源guard試跑已完成；正文配對計畫不變。最新版893項爬蟲／引用測試、tsc通過；全部1450原頁重播55篇欄位差異包含MKnews從missing補出的parser日期（DB未變），其餘解析刊登時間不變。人工記錄248份、222篇不同文章、105媒體，218篇屬自動樣本；仍是指定欄位及局部檢驗，非全部資料已人工驗證。部署前仍須等間隔、CI成功、現行版本驗證與自然job排空。
+
+證據：`ttv-main-feed.xml.gz`、`midnight-selected-markup-proof.json`、`batch6-midnight-reviewed-proof.json`、`batch6-ttv-natural-retry-plan.json`、`batch6-expanded-authors-plan.json`、`batch6-22-authors-dry-run.jsonl`、`batch6-expanded-source-plan.json`、`batch6-expanded-source-dry-run.json`、`batch6-reviewed-summary-plan.json`、`batch6-summary-dry-run.json`、`batch6-expanded-final-tests.log`、`batch6-expanded-final-tsc.log`。

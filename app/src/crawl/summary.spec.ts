@@ -139,3 +139,18 @@ describe('publisher summary metadata', () => {
     expect(noSummary.items[0].summary).toBeNull();
   });
 });
+
+it('rejects descriptions that start with the actual article photo caption on reviewed partner sites', () => {
+  const caption = '住宅發展工程處活動報名連結。（圖/記者廖妙茜翻攝）';
+  const page = (description: string, host = 'www.yesmedia.com.tw') =>
+    extractArticle(
+      `<meta name="description" content="${description}"><article><figcaption>${caption}</figcaption></article>`,
+      `https://${host}/story/`,
+    );
+  expect(page(caption + ' （觀傳媒中彰投新聞）【記者廖妙茜/台中報').summary).toBeNull();
+  expect(page(caption, 'example.org').summary).toBe(caption);
+  const topic = '活動將於十七日登場，居民可免費報名參加萬聖節闖關市集。';
+  expect(page(caption + ' 商傳媒｜王小明／綜合外電報導 ' + topic).summary).toBe(topic);
+  expect(page('住宅處將於十七日推出萬聖節活動。').summary).toBe('住宅處將於十七日推出萬聖節活動。');
+  expect(page('本文提及照片，' + caption).summary).not.toBeNull();
+});
