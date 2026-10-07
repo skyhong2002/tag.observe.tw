@@ -59,11 +59,30 @@ try {
   const summarySelection = hasSummary ? 'summary,summary_source' : 'NULL AS summary,NULL AS summary_source';
   // Acquisition time defines the population, even for archive stories or bad
   // future publication dates. A server-side budget bounds this read-only scan.
-  const [rows] = await pool.execute(
-    `SET STATEMENT max_statement_time=30 FOR SELECT id,media,content_fetched_at FROM articles
-    WHERE source='own' AND content_fetched_at >= ? AND content_fetched_at < ? ORDER BY media,id`,
-    [new Date(state.cursor), until],
+  // The timestamp lacks its own index. Read all own IDs through the covering
+  // source/media index, then inspect bounded primary-key pages in ID order.
+  // This preserves old articles fetched again during the window; neither ID
+  // recency nor publication age may shrink the acquisition-time population.
+  const scanStarted = Date.now();
+  const [candidates] = await pool.query(
+    "SET STATEMENT max_statement_time=30 FOR SELECT id FROM articles FORCE INDEX (articles_source_media_published) WHERE source='own'",
   );
+  candidates.sort((a, b) => a.id - b.id);
+  const rows = [];
+  for (let offset = 0; offset < candidates.length; offset += 500) {
+    const ids = candidates.slice(offset, offset + 500).map((row) => row.id);
+    const [page] = await pool.execute(
+      `SET STATEMENT max_statement_time=30 FOR SELECT id,media,content_fetched_at FROM articles FORCE INDEX (PRIMARY)
+      WHERE id IN (${ids.map(() => '?').join(',')}) AND source='own' AND content_fetched_at >= ? AND content_fetched_at < ?`,
+      [...ids, new Date(state.cursor), until],
+    );
+    rows.push(...page);
+    // Yield between reads so the quality observer does not monopolize DB I/O.
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  rows.sort((a, b) => a.media.localeCompare(b.media) || a.id - b.id);
+  round.populationScan = { ownCandidates: candidates.length, matched: rows.length, milliseconds: Date.now() - scanStarted, pageSize: 500 };
+  console.log(JSON.stringify({ populationScan: round.populationScan }));
   const seen = new Set(state.seen);
   const groups = Map.groupBy(
     rows.filter((row) => !seen.has(row.id)),
