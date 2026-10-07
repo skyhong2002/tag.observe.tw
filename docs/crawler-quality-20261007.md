@@ -283,3 +283,17 @@ DW 六篇限定中文文章路径與主文章容器，讀取 author-details 的 
 證據：`ttv-main-feed.xml.gz`、`midnight-selected-markup-proof.json`、`batch6-midnight-reviewed-proof.json`、`batch6-ttv-natural-retry-plan.json`、`batch6-expanded-authors-plan.json`、`batch6-22-authors-dry-run.jsonl`、`batch6-expanded-source-plan.json`、`batch6-expanded-source-dry-run.json`、`batch6-reviewed-summary-plan.json`、`batch6-summary-dry-run.json`、`batch6-expanded-final-tests.log`、`batch6-expanded-final-tsc.log`。
 
 00:28 鏡報44942252已於00:17:47由正常crawler重試成功，正文247字、三段原文逐字相符，呂健豪與刊登12:06+08正確，summary也與原頁相符；00:25:50自然索引。没有人工寫入、沒有重新開job，原先body-blocked待查已由新證據解除。證據 `mirrordaily-44942252-midnight-retry.json`、原頁gzip、`mirrordaily-44942252-natural-retry-verification.json`。
+
+## 第七批累積（00:38，獨立checkout，未發布）
+
+目前仍保持第六批候選e4b5934與其checkout不變，00:40後程序先檢查main／正式版／候選與CI，再自然排空active job。第七批在獨立batch7 checkout累積，不能併入已固定的第六批安裝。
+
+新增15篇原頁指定欄位核對涵蓋此前未人工記錄的14媒體：BAZAAR Kelly Hsiao、BEAUTY321 Jessie、苦勞網王顥中、放言中央社電訊黃麗芸、INSIDE Sisley、台灣華報任禮清、樂活新聞墨新聞记者卞金峰、明報機構署名、鏡週刊陳凱俊、NewMobileLife Doris、日本Yahoo文春組織署名、台灣新聞雲劉艾琳、new-reporter金東天。分辨真正記者、平台帳號與媒體機構，不把人名提及當作者，也不把歷史文章取得時間當刊登日。放言／台灣華報只確認日期精度到日，沒有任意補時分秒。INSIDE摘要含tag／slug，新聞開頭有意義，但是否有更乾淨獨立描述仍待查。日本Yahoo組織作者與文內採訪記者分開，尚未宣稱真實作者身份。
+
+LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台灣新聞雲45780420明示「［中華通訊社］記者涂紹君/台北報導」，原小編帳號不能代替记者。增加嚴格角色／段首規則，只在明示完整格式取人名；中華通訊社原名不等同中央社/CNA。
+
+台灣華報8篇 description全為「台灣華報」，ogdescription則是URL＋標題，同樣不能作獨立摘要；new-reporter45780478 description截在「【Lai傳媒、記者爆料網」，ogdescription截在姓名／台北報，兩個備援都排除。不能只排除第一description又接受同樣錯誤的備援。若真有文章專屬摘要仍保留。9篇fresh originals核對，兩篇summary已null，因此僅7篇待清；不重寫已正確資料。
+
+第七批896項爬蟲／引用測試與tsc通過；1450原頁對第六批候選重播僅11篇欄位改變（8台灣華報摘要、1new-reporter摘要、2署名），正文／刊登時間不變。兩筆署名fresh-source試跑2changed／0unavailable／0raced；7摘要計畫有原欄位快照及fresh證據，尚未套用、推送或部署。人工累計264記錄、237不同文章、119媒體、233篇屬樣本；選定欄位與局部檢驗分開計數，不宣稱全樣本正確。
+
+證據 `midnight-uncovered-media-proof.json`、`batch7-all-sample-replay.json`、`batch7-fresh-original-proof.json`、`batch7-reviewed-summary-plan.json`、`batch7-reviewed-author-plan.json`、`batch7-two-authors-dry-run.jsonl`、`batch7-crawl-tests.log`、`batch7-tsc.log`。

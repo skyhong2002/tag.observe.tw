@@ -250,3 +250,11 @@ it('reads the terminal television translator separately from an editor', () => {
   expect(extractClosingReporterNames('受訪者表示國際中心／闕帝慈 編譯 編輯／洪季謙')).toEqual([]);
   expect(extractClosingReporterNames('新聞正文。\n\n編輯／洪季謙')).toEqual([]);
 });
+
+it('separates reviewed LIFE reporter labels and explicit Chinese agency lead credits', () => {
+  expect(reporterNames('LIFE生活網記者-郭懿慧')).toEqual(['郭懿慧']);
+  expect(reporterNames('LIFE生活網記者-編輯中心')).toEqual([]);
+  expect(extractLeadReporterNames('［中華通訊社］記者 涂紹君/台北報導\n\n連假疏運措施開始。')).toEqual(['涂紹君']);
+  expect(extractLeadReporterNames('有人提及［中華通訊社］記者 涂紹君/台北報導')).toEqual([]);
+  expect(extractLeadReporterNames('［中華通訊社］編輯 涂紹君/台北報導')).toEqual([]);
+});

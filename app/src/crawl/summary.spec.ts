@@ -154,3 +154,24 @@ it('rejects descriptions that start with the actual article photo caption on rev
   expect(page('住宅處將於十七日推出萬聖節活動。').summary).toBe('住宅處將於十七日推出萬聖節活動。');
   expect(page('本文提及照片，' + caption).summary).not.toBeNull();
 });
+
+it('rejects exact publisher names and clipped publisher-only credits without rejecting topic text', () => {
+  expect(publisherSummary('台灣華報', 'meta:description').summary).toBeNull();
+  expect(publisherSummary('【Lai傳媒、記者爆料網', 'meta:description').summary).toBeNull();
+  expect(publisherSummary('【Lai傳媒、記者爆料網 金東天／台北報', 'meta:og:description').summary).toBeNull();
+  expect(publisherSummary('台灣華報報導地方產業與觀光政策。', 'meta:description').summary).not.toBeNull();
+  expect(publisherSummary('【Lai傳媒、記者爆料網 金東天／台北報導】地方政策正式公布。', 'meta:description').summary).not.toBeNull();
+});
+
+it('rejects the reviewed Kingtop social-description URL and headline template', () => {
+  const html =
+    '<meta name="description" content="台灣華報"><meta property="og:description" content="https://www.kingtop.com.tw/南華大學國際學術交流">';
+  expect(extractArticle(html, 'https://www.kingtop.com.tw/detail/1').summary).toBeNull();
+  expect(extractArticle(html, 'https://example.org/detail/1').summary).not.toBeNull();
+  expect(
+    extractArticle(
+      html.replace('https://www.kingtop.com.tw/南華大學國際學術交流', '南華大學邀請波蘭學者探討民主價值與國際交流。'),
+      'https://www.kingtop.com.tw/detail/1',
+    ).summary,
+  ).not.toBeNull();
+});

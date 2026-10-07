@@ -10,6 +10,7 @@ export interface ArticleSummary {
 
 const boilerplate = new Set([
   '觀策站',
+  '台灣華報',
   '波新聞秉持傳遞正向訊息、提升正向能量、波動良善之心、 共同關懷弱勢、讓我們的社會更加祥和與美好。',
   '迷音 Miin — Let me in!',
   '視傳媒-新興網路媒體，目前各縣市均有記者發稿，有多位資深也有很多充滿活力的記者，一起拿起筆桿來為民眾出聲。',
@@ -34,6 +35,7 @@ export function publisherSummary(value: unknown, source: string, title?: string 
     summary.length > 4000 ||
     summary === (title ? normalized(title) : '') ||
     boilerplate.has(summary) ||
+    /^【(?:Lai|賴)傳媒、記者爆料網(?:\s+[\p{Script=Han}]{2,5}[／/][^】。！？]{0,12})?\s*$/u.test(summary) ||
     (summary.length <= 80 && /(?:報導|報道|报道)[）)】〕]?(?:\.{3}|…)?$/u.test(summary) && reporterNames(summary).length > 0) ||
     /^文\s*[/／]\s*[^。！？]{2,20}中心$/u.test(summary) ||
     // Reviewed descriptions containing only a contributor's role and name.
@@ -63,6 +65,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const daaiBodies = isDaai
     ? articleNodes($, url).flatMap((node) => (typeof node.articleBody === 'string' ? [normalized(node.articleBody)] : []))
     : [];
+  const isKingtop = /^https?:\/\/(?:www\.)?kingtop\.com\.tw\//i.test(url);
   const isYesMedia = /^https?:\/\/(?:www\.)?yesmedia\.com\.tw\//i.test(url);
   const captionDescriptions = /^https?:\/\/(?:www\.)?(?:yesmedia\.com\.tw|firenews\.com\.tw|mknews\.com\.tw)\//i.test(url);
   const captions = captionDescriptions
@@ -87,6 +90,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (isDaai && daaiBodies.includes(result.summary)) continue;
+    if (isKingtop && /^https?:\/\/(?:www\.)?kingtop\.com\.tw\//i.test(result.summary)) continue;
     if (isBannedbook && promotion.test(result.summary)) continue;
     if (isYesMedia && /^《圖說》/u.test(result.summary)) continue;
     const leadingCaption = captions.find((caption) => result.summary?.startsWith(caption));

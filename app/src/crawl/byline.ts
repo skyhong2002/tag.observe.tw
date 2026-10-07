@@ -275,6 +275,10 @@ export function reporterNames(value: string): string[] {
       text,
     );
   if (partner) return creditedNames(partner[1] ?? partner[2]);
+  const lifeReporter = /^LIFE生活網記者-([\p{Script=Han}]{2,5})$/u.exec(text);
+  if (lifeReporter) return creditedNames(lifeReporter[1]);
+  const chineseAgency = new RegExp(`^\\[中華通訊社\\]\\s*記者\\s*([\\p{Script=Han}]{2,5})\\s*/\\s*${PLACE}報導(?=\\s|$)`, 'u').exec(text);
+  if (chineseAgency) return creditedNames(chineseAgency[1]);
   const writer = /^文\s+([\p{Script=Han}]{2,5})$/u.exec(text);
   if (writer) return creditedNames(writer[1]);
   // Xinhua wire dispatches put a parenthesized reporter credit immediately
