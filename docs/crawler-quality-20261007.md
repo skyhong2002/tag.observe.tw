@@ -575,3 +575,19 @@ AMM46161211的meta description／og:description原站直接供應「申請情況
 958crawl／attribution、tsc、全專案Biome通過；1935成功HTML回放仍15篇變化，AMM既有來源變化增加summary字段，僅去除截斷entity，沒有新增body或日期變化。第十二批候選19篇不同文章：metadata4＋source13＋body2，合計4署名、4摘要、13來源、2正文、0日期歷史寫入。更新後source13與原metadata4／body2乾跑已通過。第十批probe PID747632於05:57:01正常結束，544次主機主站／worker200，探測間隔不證明零停機，保留部署gateway restart錯誤紀錄。06:00抽樣已以新PID792801自然啟動，禁止重複或修改其checkout。
 
 正式仍183f87e已推送／部署；第十一批c63dacb固定本地提交未推送／部署，06:16timer；第十二批本地提交未推送／部署／回寫，未冻结或排程。觀察持續至18:49:13。
+
+### 10/8 06:10：第十四輪、法新社作者連結、食力主文署名與追蹤首頁
+
+06:00自然抽樣PID792801已terminal success：新增取得population280、抽樣82；累計14輪2086樣本／9724不同取得文章／235媒體，2013成功解析／58non200／15exceptions（新增4fetch exceptions保留證據，不宣稱原metadata錯誤）。
+
+AFP46229872／46229871 main sub-header的By作者及Translation and adaptation信用以person-link > a標示，逗號在作者anchor外。僅將已存在AFP署名selector收窄至直系anchor，移除Liesa PAUWELS／Gwen Roley尾逗號；保留原頁明示AFP Netherlands／AFP Canada／AFP USA組織作者／adaptation信用，不把它們猜成個人，也不抓sidebar。兩篇fresh200，正文／summary／精確UTC publication完全一致，完整metadata快照乾跑通過。
+
+食力46261386／46261388 issue/paper頁面主h1與post-content共用直系容器，獨立takeaways blockquote後第一個直系p完整「採訪＝林玉婷、李加祈<br>撰文＝李加祈」及「撰文=食力企劃」。新增僅foodnext own article path、canonical或og:url與own identity一致、main h1／post-content、第一個直系p完整署名。採訪者與撰文者去重為林玉婷／李加祈；另一篇保留真實組織署名食力企劃，不取正文受訪者夏豪均或推薦文章作者。主文章直系p.date完整2022/09/07／2021/08/13提供正確+08:00日日期，與DB精確一致，0歷史日期寫入；bodySelector限定main h1直系post-content，正文文字不變（bodySource parser變為selector，歷史body_source保持）。两篇fresh200／正文／summary／精確日期及完整metadata快照乾跑通過。舊食力news-only listing策略沒有更動。
+
+Heho46195370／46195371實際是lifestyle／kids首頁加utm_source=heho-menu，網站description／舊建立日期／帳號並非新聞metadata。原listSource只排除沒有query的root，新增root的query全部屬TRACKING時同樣排除。保留?p=及其他文章識別query與正常article path；新增Heho RSS root／tracking-only／article-ID／path混合測試。沒有因此直接刪除既有首頁row或強制改日期，既有錯誤分類另列待處理。
+
+新metadata4加入第十二批；重新乾跑原計畫时45715476原文有已逐項核對的逗號／直角引號與ASCII引號差異，但移除僅這些標點與空白後全篇逐字一致，own canonical、精確date及完整田靜心信用成立；只該ID可接受明示typography proof，DB正文完全保留。45793185原文有其他敘述變化，fullbody guard擋下，從正式metadata plan排除（旧兩篇plan已archive）；不放寬通用body guard。最新metadata7完整快照fresh乾跑通過，13source／2body既有乾跑保存，正式資料尚未套用。
+
+961crawl／attribution、tsc、全專案Biome通過；2013成功HTML回放20篇變化，4新增AFP／FoodNext字段、06:00女人迷10669143專題介紹scope及先前15篇。正文文字變化僅女人迷3篇；date parser變化僅2食力（從null到DB相同日日期）。第三女人迷201509Witch的原編輯介紹、獨立summary／空personal byline／未知publication已確認，尚未新增歷史body修復plan，不能把回放變化當成已回寫。第十二批現在22篇正式候選：metadata7＋source13＋body2，合計7署名（包含真實組織）、4摘要、13來源、2正文、0日期歷史寫入。
+
+正式仍183f87e已推送／部署；第十一批c63dacb固定未推送／部署，06:11probe／06:16release timer；第十二批本地提交未推送／部署／回寫，仍未冻结，需距第十一批實際部署約一小時後發布。24小時觀察持續至18:49:13。

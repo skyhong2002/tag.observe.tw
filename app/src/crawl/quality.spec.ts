@@ -284,6 +284,18 @@ describe('2026-10-01 audit fixes', () => {
   const feedFetch =
     (body: string) =>
     async (url: string): Promise<FetchResult> => ({ url, status: 200, body, contentType: 'application/rss+xml', ms: 1 });
+  it('rejects homepage feed entries carrying only tracking queries while preserving article identifiers', async () => {
+    const urls = [
+      'https://lifestyle.heho.com.tw/?utm_source=heho-menu',
+      'https://kids.heho.com.tw/?utm_source=heho-menu&fbclid=menu',
+      'https://heho.com.tw/',
+      'https://heho.com.tw/?p=123&uk=archive',
+      'https://heho.com.tw/archives/123?utm_source=menu',
+    ];
+    const body = `<rss><channel>${urls.map((url) => `<item><title>原站項目</title><link>${url.replaceAll('&', '&amp;')}</link><pubDate>${new Date().toUTCString()}</pubDate></item>`).join('')}</channel></rss>`;
+    const { items } = await listSource(spec('heho'), feedFetch(body));
+    expect(items.map((item) => item.url)).toEqual(urls.slice(3));
+  });
   it('keeps WordPress /?p= permalinks (they are not the homepage)', async () => {
     const body = `<rss><channel><item><title>新國會文章標題</title><link>https://newcongress.tw/?p=38094</link><pubDate>${new Date().toUTCString()}</pubDate></item></channel></rss>`;
     const { items } = await listSource(spec('newcongress'), feedFetch(body));

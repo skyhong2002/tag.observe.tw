@@ -11,7 +11,7 @@ import { fetchText, fetchViaCurl } from './fetch.ts';
 import { discoverLinks, parseMarkerList } from './html-list.ts';
 import { discoverNews } from './news-discovery.ts';
 import type { SourceSpec } from './sources.ts';
-import { headlineFromPage, normalizeTag, stripTitleSuffix, urlKey } from './text.ts';
+import { headlineFromPage, normalizeTag, stripTitleSuffix, TRACKING, urlKey } from './text.ts';
 import { type TitleVocab, tagsFromTitle } from './title-tags.ts';
 
 export interface Logger {
@@ -108,7 +108,7 @@ export async function listSource(spec: SourceSpec, fetch = fetchText): Promise<{
     try {
       const u = new URL(item.url);
       // (WordPress permalinks like /?p=123 are articles, not the homepage.)
-      if (u.pathname.replace(/\/+$/, '') === '' && !u.search) return false;
+      if (u.pathname.replace(/\/+$/, '') === '' && [...u.searchParams.keys()].every((key) => TRACKING.test(key))) return false;
       if (include && !include.test(u.pathname + u.search)) return false;
     } catch {
       return false;

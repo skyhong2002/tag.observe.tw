@@ -307,10 +307,17 @@ const SITES: Site[] = [
     publishedSelector: '.itembox-left > .info_view_date',
   },
   {
+    host: 'foodnext.net',
+    bodySelector: 'div:has(> h1) > .post-content',
+    path: /^\/(?:issue|news\/newsnow)\/paper\/\d+$/,
+    publishedSelector: 'div:has(> h1):has(> .post-content) > p.date',
+    publicationPattern: /^(\d{4}\/\d{2}\/\d{2})$/,
+  },
+  {
     host: 'factcheck.afp.com',
     path: /^\/doc\.afp\.com\.[A-Z0-9]+$/,
     bodySelector: 'article .wrapper-body',
-    authorSelector: 'article .sub-header .person-link',
+    authorSelector: 'article .sub-header .person-link > a',
     // ClaimReview embeds the claim date before the actual report date.
     preferPrintedPublication: true,
     publishedSelector: 'article .date-full-format[data-type="created"]',
