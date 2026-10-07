@@ -8,7 +8,7 @@ export function reporterCredit(value: string): string | null {
   return /(?:編輯室|編輯部|新聞網|通訊社)/u.test(name) ? null : name;
 }
 export function normalizeAuthorCredits(values: string[]): string[] {
-  return [...new Set(values.map((value) => reporterCredit(value) ?? value.trim()).filter(Boolean))];
+  return [...new Set(values.map((value) => reporterCredit(value) ?? agencyDatelineCredit(value) ?? value.trim()).filter(Boolean))];
 }
 
 /** Roles, placeholders and technical site credits do not identify authors. */
@@ -221,6 +221,12 @@ const dateline = new RegExp(
   `\\s*(?:${PLACE})(?:\\s*${PLACE})?(?:\\s*\\d{1,2}日(?:電|專電)|\\s*(?:(?:綜合|综合)?(?:報導|報道|报道)|電|專電))(?=\\s*(?:${CLOSE}|$|[。；;]))`,
   'u',
 );
+// A wire-service dispatch location is not an additional author.
+function agencyDatelineCredit(value: string): string | null {
+  const text = value.normalize('NFKC').replace(/\s+/g, ' ').trim();
+  return new RegExp(`^中央社\\s*/\\s*${PLACE}\\s*\\d{1,2}日(?:專電|電)$`, 'u').test(text) ? '中央社' : null;
+}
+
 const NON_PERSON =
   /(?:記者|记者|編譯|编译|編輯|编辑|攝影|摄影|整理|報導|報道|报道|新聞|新闻|通訊|通讯|中心|小組|小组|綜合|综合|採訪|采访|本報|本报|即時|即时|提問|提问|訪問|访问|中央社|法新社|美聯社|路透社|警政時報|頻道|频道|日報|日报|時報|时报|報紙|报纸|社群|週刊|周刊|月刊|年刊|雜誌|杂志|媒體|媒体|傳媒|传媒|團隊|团队|製作|制作|主編|主编|總編|总编|共同編寫|共同编写|溫度計|温度计|台灣前進)|^(?:TaiwanPlus|US Taiwan Watch)$|\b(?:staff|writer|agencies|agency|editor|team|desk|news|reporter|press|bureau)\b/iu;
 const epochDateline = /^[【[]大紀元\d{4}年\d{1,2}月\d{1,2}日訊[】\]]\s*/u;
@@ -269,6 +275,12 @@ export function reporterNames(value: string): string[] {
     const translators = creditedNames(translated[2]);
     return writers.length && translators.length ? [...new Set([...writers, ...translators])] : [];
   }
+  // A desk-prefixed television byline explicitly ends at its reporting place.
+  const desk = new RegExp(
+    `^(?:社會|政治|生活|國際|財經|體育|娛樂|地方|新聞)中心\\s*/\\s*(.+?)\\s+${PLACE}\\s*(?:報導|報道|报道)$`,
+    'u',
+  ).exec(text);
+  if (desk) return creditedNames(desk[1]);
   const prefix = rolePrefix.exec(text);
   if (prefix) {
     let rest = text.slice(prefix[0].length);

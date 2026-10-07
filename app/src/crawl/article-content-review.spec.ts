@@ -164,11 +164,11 @@ describe('article extraction review regressions', () => {
     });
   });
 
-  it('preserves a full agency byline instead of a misleading Person dateline', () => {
+  it('preserves the agency credit instead of a misleading Person dateline', () => {
     const html =
       ld({ articleBody: lead, author: { '@type': 'Person', name: '曼谷3日專電' } }) +
       '<div class="article-content__author">中央社／ 曼谷3日專電</div>';
-    expect(extractArticle(html, url, { authorSelector: '.article-content__author' }).authors).toEqual(['中央社／ 曼谷3日專電']);
+    expect(extractArticle(html, url, { authorSelector: '.article-content__author' }).authors).toEqual(['中央社']);
   });
 
   it('does not count UDN member widgets and related feature titles as a complete short article', () => {

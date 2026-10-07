@@ -39,6 +39,17 @@ describe('reporter identity from the selected article', () => {
     const html = `<div class="credit">中央社</div><article><p>（中央社記者黎建忠名古屋3日電）${prose}</p></article>`;
     expect(extractArticle(html, url, { authorSelector: '.credit' }).authors).toEqual(['黎建忠']);
   });
+  it('extracts desk-prefixed television reporters instead of the company credit', () => {
+    const html =
+      '<meta name="author" content="民間全民電視公司">' + `<article><p>社會中心／王毓珺　黃柏榕　新北市報導</p><p>${prose}</p></article>`;
+    expect(extractArticle(html, url).authors).toEqual(['王毓珺', '黃柏榕']);
+    const narrative = `<article><p>社會中心／交通問題引起市民關注</p><p>${prose}</p></article>`;
+    expect(extractArticle(narrative, url).authors).toEqual([]);
+  });
+  it('keeps the agency without treating its dispatch location as a reporter', () => {
+    const html = `<span class="credit">中央社／ 台北7日電</span><article><p>${prose}</p></article>`;
+    expect(extractArticle(html, url, { authorSelector: '.credit' }).authors).toEqual(['中央社']);
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });
