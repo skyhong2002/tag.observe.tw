@@ -100,6 +100,12 @@ describe('reporter identity from the selected article', () => {
         .provider,
     ).toBeNull();
   });
+  it('preserves LifeNews syndicated Sun Media writer and provider separately', () => {
+    const html = `<meta name="author" content="商傳媒"><div class="ak-post-content"><p><a href="https://sunmedia.tw/">商傳媒</a>｜葉安庭／綜合外電報導</p><p>${prose}</p></div>`;
+    expect(extractArticle(html, 'https://lifenews.com.tw/593669')).toMatchObject({ provider: '商傳媒', authors: ['葉安庭'] });
+    const unrelated = `<div class="ak-post-content"><p>${prose}</p></div><aside><p>商傳媒｜其他作者／報導</p></aside>`;
+    expect(extractArticle(unrelated, 'https://lifenews.com.tw/593669').provider).toBeNull();
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });

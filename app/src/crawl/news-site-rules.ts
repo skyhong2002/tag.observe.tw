@@ -81,6 +81,13 @@ const SITES: Site[] = [
     preferPrintedPublication: true,
   },
   {
+    host: 'lifenews.com.tw',
+    path: /^\/\d+\/?$/,
+    bodySelector: '.ak-post-content',
+    providerSelector: '.ak-post-content p',
+    providerPattern: /^\s*(商傳媒)\s*[｜|]/u,
+  },
+  {
     host: 'ammtw.com',
     path: /^\/\d+\/?$/,
     bodySelector: '.ak-post-content',
