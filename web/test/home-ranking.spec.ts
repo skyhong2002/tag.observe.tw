@@ -39,7 +39,7 @@ describe('home ranking availability', () => {
     const signal = new AbortController().signal;
     expect(await fetchHomeRanking(signal, fetcher)).toEqual(ranking);
     expect(fetcher.mock.calls[0]).toEqual([
-      '/api/v1/ranking/?category=news&order=burst&limit=8&trend=1',
+      '/api/v1/ranking?category=news&order=burst&limit=8&trend=1',
       { cache: 'no-store', signal, headers: { accept: 'application/json' } },
     ]);
   });

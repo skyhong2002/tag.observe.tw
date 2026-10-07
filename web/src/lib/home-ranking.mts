@@ -6,7 +6,7 @@ export function rankingReady(ranking: Ranking | null): ranking is Ranking {
 
 /** Refresh only this panel through the same origin, independent of SSR caches. */
 export async function fetchHomeRanking(signal: AbortSignal, fetcher: typeof fetch = fetch): Promise<Ranking> {
-  const path = '/api/v1/ranking/?category=news&order=burst&limit=8';
+  const path = '/api/v1/ranking?category=news&order=burst&limit=8';
   let response = await fetcher(`${path}&trend=1`, { cache: 'no-store', signal, headers: { accept: 'application/json' } });
   // Trends are optional. A failed history query must not hide the ranking.
   if (!response.ok) response = await fetcher(path, { cache: 'no-store', signal, headers: { accept: 'application/json' } });
