@@ -2,6 +2,7 @@ import type { CheerioAPI } from 'cheerio';
 import { GOVERNMENT_NEWS_SITES } from './government-sites.ts';
 import { BLOCKED_NEWS_SITES } from './news-blocked-sites.ts';
 import { ENN_NEWS_SITES } from './news-enn.ts';
+import { epochPublicationClock } from './news-epoch-evidence.ts';
 import { EXTRA_NEWS_SITES } from './news-extra-site-rules.ts';
 import { LEGACY_NEWS_SITES } from './news-legacy-sites.ts';
 import { PLATFORM_NEWS_SITES } from './news-platform-sites.ts';
@@ -649,6 +650,7 @@ export function newsSiteEvidence($: CheerioAPI, url: string) {
       if (publishedRaw) break;
     }
   }
+  if (rules.correctUtcClock) publishedRaw = epochPublicationClock($, url) ?? publishedRaw;
   return {
     title,
     publishedRaw,

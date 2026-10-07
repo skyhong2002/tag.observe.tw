@@ -517,3 +517,29 @@ it('preserves the 1111 main dateline media desk credit instead of its corporate 
     '1111人力銀行 | 全球華人股份有限公司',
   ]);
 });
+
+it('corrects EpochTimes publication using agreeing main publication and modification clocks', () => {
+  const url = 'https://www.epochtimes.com/b5/26/10/7/n14865552.htm';
+  const node = { '@type': 'NewsArticle', url, datePublished: '2026-10-08T03:29:39Z', dateModified: '2026-10-08T03:43:27Z' };
+  const html = `<script type="application/ld+json">${JSON.stringify(node)}</script><main id="main"><div class="main_content"><div class="article"><h1>新聞標題</h1><div class="info"><time datetime="2026-10-08T03:43:27+08:00">更新 2026-10-08 3:29 AM</time></div><div id="artbody" itemprop="articleBody">${paragraph}</div></div></div></main>`;
+  expect(extractArticle(html, url)).toMatchObject({ publishedAt: new Date('2026-10-07T19:29:39Z'), body });
+  for (const unsafe of [
+    html.replace('更新 2026-10-08 3:29 AM', '更新 2026-10-08 3:43 AM'),
+    html.replace('03:43:27+08:00', '03:44:27+08:00'),
+    html.replace('id="main"', 'id="sidebar"'),
+    html.replace('"url":"' + url + '"', '"url":"https://www.epochtimes.com/b5/26/10/7/n999.htm"'),
+  ])
+    expect(extractArticle(unsafe, url).publishedAt).toEqual(new Date('2026-10-08T03:29:39Z'));
+});
+
+it('handles EpochTimes midnight/noon publication clocks without copying its later modification time', () => {
+  const url = 'https://www.epochtimes.com/b5/26/10/7/n14865552.htm';
+  for (const [hour, suffix] of [
+    ['00', 'AM'],
+    ['12', 'PM'],
+  ]) {
+    const node = { '@type': 'NewsArticle', url, datePublished: `2026-10-08T${hour}:01:09Z`, dateModified: `2026-10-08T${hour}:04:21Z` };
+    const html = `<script type="application/ld+json">${JSON.stringify(node)}</script><main id="main"><div class="main_content"><div class="article"><div class="info"><time datetime="2026-10-08T${hour}:04:21+08:00">更新 2026-10-08 12:01 ${suffix}</time></div><div id="artbody" itemprop="articleBody">${paragraph}</div></div></div></main>`;
+    expect(extractArticle(html, url).publishedAt).toEqual(new Date(`2026-10-08T${hour}:01:09+08:00`));
+  }
+});

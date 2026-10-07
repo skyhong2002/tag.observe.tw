@@ -505,3 +505,11 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 另檢查7家未取得200原頁的媒体HTTP取得狀況，這是availability檢查，不可當作其署名／summary已正確：中廣、艾傳媒、rise、威傳、媽媽經、上下游仍403；內政部舊HTTP逾時而同一官方文章HTTPS200。加入精確官方moi.gov.tw／www.moi.gov.tw的News_Content.aspx、n與s數字ID、預設port的HTTPS request upgrade；不改DB原URL，也沒有改其他HTTP目標或地址／DNS安全驗證。兩篇45420690／45420696直接用stored HTTP URL走新fetch，200 final HTTPS、正文／空個人署名／ROC日期與DB完全一致。`unavailable-media-review.json`與`batch11-moi-https-proof.json`保存資料。
 
 946crawl／attribution、tsc、全專案Biome通過；1859成功原頁對固定第十批回放26篇變化，較前次增加2篇1111，另台北郵報同篇增加作者修正，沒有多出日期或正文變化。人工656紀錄、489不同文章、226媒體、485自動樣本，包括部分與未解项。第九批正式d2f9a58已推送／部署／9篇驗證；第十批183f87e仍本地提交未推送／部署，05:12 timer；本批新修改本地提交後仍須距第十批實際部署约一小時才能發布。24小時觀察至18:49:13維持active。
+
+### 10/8 05:09：第十三輪與大紀元時區交叉證據
+
+05:00抽樣已正常結束：78樣本／158新取得不同文章；累計13輪、2004樣本、9444取得母體、233媒體，1935成功解析、58非200、11請求或解析異常；299觀察前基線、1705觀察內。人工檢查仍為指定欄位及部分檢查，不能把自動旗標當錯誤判定。
+
+大紀元46112193新樣板的主文info時間是artbody兄弟，原correctUtcClock selector漏取；datetime宣告更新03:43:27+08:00，可見「更新 2026-10-08 3:29 AM」實際對應JSONLD publication03:29:39Z，而dateModified03:43:27Z對應datetime的wall clock。新增僅該站、主文wrapper、唯一同URL article JSONLD、published分鐘與可見時間一致、modified秒與datetime一致且publication不晚於modified的交叉證據；以明示+08:00校正publication並保留秒，沒有直接把較晚更新時間當刊登時間。
+
+05:08 fresh200原頁再次驗證，校正19:29:39Z與DB完全一致，正文／作者／summary／summarySource均相同；沒有歷史日期寫入。`batch11-epoch-fresh-proof.json`與壓縮原頁保存證據。948crawl／attribution、tsc、全專案Biome通過；1935成功原頁對固定第十批回放27篇變化，只新增該篇publication，其他既有差異範圍不變。第十一批仍本地提交、未推送／部署／套資料；第十批仍按05:12排程，正式目前d2f9a58已推送／部署並完成9篇修復驗證。24小時觀察持續至18:49:13。
