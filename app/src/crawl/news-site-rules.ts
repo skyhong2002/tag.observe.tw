@@ -365,7 +365,13 @@ const SITES: Site[] = [
     publishedSelector: '.mheader > .info',
   },
   { host: 'n.yam.com', path: /^\/Article\/\d+$/i, bodySelector: 'section.inner-page > .inner-content' },
-  { host: 'taipeipost.org', path: /^\/\d+\/$/, bodySelector: 'main > .elementor-widget-text-editor > .elementor-widget-container' },
+  {
+    host: 'taipeipost.org',
+    path: /^\/\d+\/$/,
+    bodySelector: 'main > .elementor-widget-text-editor > .elementor-widget-container',
+    authorSelector: 'main > .elementor-widget-text-editor > .elementor-widget-container > p:first-child',
+    authorPattern: /^編輯[／/]\s*([\p{Script=Han}]{2,5})撰文$/u,
+  },
   {
     host: 'matsu.idv.tw',
     path: /^\/topicdetail\.php\?f=1&t=\d+(?:&|$)/,

@@ -499,3 +499,21 @@ it('reads Guancha complete opening writer credit without accepting quotations or
   expect(extractArticle(html.replace('（文/观察者网 郭光昊）', '（图/观察者网 郭光昊）'), url).authors).toEqual([]);
   expect(extractArticle(html.replace('（文/观察者网 郭光昊）', '评论指出（文/观察者网 郭光昊）'), url).authors).toEqual([]);
 });
+
+it('reads TaipeiPost complete writing credit instead of a syndicated publishing account', () => {
+  const url = 'https://taipeipost.org/397156/';
+  const html = `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, author: { name: '享民頭條' } })}</script><main><div class="elementor-widget-text-editor"><div class="elementor-widget-container"><p>編輯/鄭欣宜撰文</p>${paragraph}<p>編輯/王小明撰文</p></div></div></main>`;
+  expect(extractArticle(html, url).authors).toEqual(['鄭欣宜']);
+  expect(extractArticle(html.replace('編輯/鄭欣宜撰文', '照片/鄭欣宜提供'), url).authors).toEqual(['享民頭條']);
+});
+
+it('preserves the 1111 main dateline media desk credit instead of its corporate site author', () => {
+  const url = 'https://www.1111.com.tw/news/jobns/167717';
+  const spec = sourceByMedia('1111')!.article;
+  const html = `<meta name="author" content="1111人力銀行 | 全球華人股份有限公司"><main><div class="yellow-white-bg"><time>2026-10-07 上午 09:24 媒體中心／綜合報導</time>${paragraph}</div></main>`;
+  expect(extractArticle(html, url, spec).authors).toEqual(['媒體中心／綜合報導']);
+  expect(extractArticle(html.replace('媒體中心／綜合報導', '記者林育如／台北報導'), url, spec).authors).toEqual(['林育如']);
+  expect(extractArticle(html.replace('媒體中心／綜合報導', '媒體中心活動'), url, spec).authors).toEqual([
+    '1111人力銀行 | 全球華人股份有限公司',
+  ]);
+});

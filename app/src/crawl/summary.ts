@@ -91,11 +91,23 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const isKingtop = /^https?:\/\/(?:www\.)?kingtop\.com\.tw\//i.test(url);
   const isYesMedia = /^https?:\/\/(?:www\.)?yesmedia\.com\.tw\//i.test(url);
   const captionDescriptions = /^https?:\/\/(?:www\.)?(?:yesmedia\.com\.tw|firenews\.com\.tw|mknews\.com\.tw)\//i.test(url);
-  const captions = captionDescriptions
-    ? $('article figcaption, article .wp-caption-text')
+  const isJobs1111 = /^https?:\/\/(?:www\.)?1111\.com\.tw\/news\/jobns\/\d+$/i.test(url);
+  const captions = isJobs1111
+    ? $('main .yellow-white-bg > center:has(img) + div')
         .toArray()
         .map((node) => normalized($(node).text()))
-        .filter(Boolean)
+        .filter((text) => /^.{1,200}[（(]圖[／/][^（）()]{1,80}[）)]$/u.test(text))
+    : captionDescriptions
+      ? $('article figcaption, article .wp-caption-text')
+          .toArray()
+          .map((node) => normalized($(node).text()))
+          .filter(Boolean)
+      : [];
+  const jobs1111Paragraphs = isJobs1111
+    ? $('main .yellow-white-bg > div')
+        .toArray()
+        .map((node) => normalized($(node).text()))
+        .filter((text) => text && !captions.includes(text))
     : [];
   const isBannedbook = /^https?:\/\/(?:www\.)?bannedbook\.org\//i.test(url);
   const promotion =
@@ -164,6 +176,13 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
         .slice(leadingCaption.length)
         .trim()
         .replace(/^商傳媒[｜|]\s*[\p{Script=Han}]{2,5}[／/]綜合外電報導\s*/u, '');
+      if (
+        isJobs1111 &&
+        remainder.length < 50 &&
+        !/[。！？.!?]$/u.test(remainder) &&
+        jobs1111Paragraphs.some((text) => text.length > remainder.length && text.startsWith(remainder))
+      )
+        continue;
       if (remainder.length < 20 || /^[（(]觀傳媒[^）)]*新聞[）)]\s*【記者/u.test(remainder)) continue;
       result = publisherSummary(remainder, source);
       if (!result.summary) continue;

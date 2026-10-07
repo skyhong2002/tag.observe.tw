@@ -271,6 +271,7 @@ function scopedAuthorElements($: cheerio.CheerioAPI, selector: string, configure
       let name = normalize(element.attr('content') ?? (element.find('[itemprop="name"]').first().text() || element.text()));
       if (element.is('time')) {
         const credit = name.replace(/^\d{4}-\d{2}-\d{2}\s+(?:(?:上午|下午|早上|晚上)\s*)?\d{1,2}:\d{2}\s*/u, '');
+        if (configured && /^媒體中心[／/]綜合報導$/u.test(credit)) return [credit];
         return reporterNames(credit);
       }
       if (element.is('[data-section="article-contributors"]')) {

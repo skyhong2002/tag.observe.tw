@@ -493,3 +493,15 @@ Yahoo日本地震pickup metadata僅「(Yahoo!天気・災害)」服務信用，a
 原存檔與新取得200原頁，經內嵌fetchReportsIdData.doc.id核對文章identity，均確認epoch／printed／DB一致，沒有歷史日期写入。正文与DB仍有差異，且不只段落空白差異，暂不纳入歷史作者或正文更新。`batch11-watchout-date-proof.json`、`batch11-watchout-fresh-date-proof.json`保存只含必要欄位的證據，未把整個頁面客戶端設定當資料來源。941crawl／attribution、tsc、全專案Biome通過；原頁1859回放24篇變化，較前次增加這篇作者與日期修正，正文內容沒有新增變化，正式9篇候選不變。
 
 前一goal turn為實際進展：新增parser、fresh originals、historical dryruns、report及commits。本輪亦為進展；24小時目標維持active。正式仍d2f9a58已推送／部署並完成9篇验证；第十批183f87e仍本地提交未推送／部署，05:12排程。第十一批本地程式與報告提交，尚未推送／部署／套資料，下一次發布須距第十批實際部署約一小時。
+
+### 10/8 04:53：台北郵報寫稿信用、1111图說及內政部傳輸
+
+台北郵報46006945主文第一段完整「編輯/鄭欣宜撰文」明示writer，配置主文章首段及完整pattern，採鄭欣宜而非刊稿帳號享民頭條；不接受攝影／普通人物提及／稍後段落信用。與其原有純信用摘要清除以單篇metadata transaction處理，保留先前summary-only review作archive，改用`batch11-taipeipost-combined-reviewed-plan.json`。46085458帳號新頭條保持。
+
+1111兩篇description前綴是主圖圖說，限官方/news/jobns/數字頁及主文章yellow panel的center(img)後面相鄰div，與metadata逐字相同才處理。46085989僅有圖說，清除summary。46085984去圖說後僅剩「臺灣證券交易所啟動115年新進人員招募甄選，廣徵」，是主文首段被切斷的短前綴；限小於50字、缺完整句尾、等於主文長段落的嚴格前綴，排除該不完整候選。保留有實質完整導讀、獨立短描述，或本文完整段落本身；沒有用正文補寫摘要。兩篇正文和日期均不變。46085989的main time完整「媒體中心／綜合報導」保留為組織信用，取代全站公司meta author；沒有當成人名。46085984的記者林育如保持。
+
+fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾跑成功；加上3篇TechNews正文為11篇不同候選，5作者信用（4個人、1組織desk）、5摘要、3正文，0日期歷史寫入；5既存配對已有完整核對。`batch11-1111-reviewed-plan.json`、`batch11-final-eight-metadata-dry-run.log`保留證據，所有正式資料尚未套用。
+
+另檢查7家未取得200原頁的媒体HTTP取得狀況，這是availability檢查，不可當作其署名／summary已正確：中廣、艾傳媒、rise、威傳、媽媽經、上下游仍403；內政部舊HTTP逾時而同一官方文章HTTPS200。加入精確官方moi.gov.tw／www.moi.gov.tw的News_Content.aspx、n與s數字ID、預設port的HTTPS request upgrade；不改DB原URL，也沒有改其他HTTP目標或地址／DNS安全驗證。兩篇45420690／45420696直接用stored HTTP URL走新fetch，200 final HTTPS、正文／空個人署名／ROC日期與DB完全一致。`unavailable-media-review.json`與`batch11-moi-https-proof.json`保存資料。
+
+946crawl／attribution、tsc、全專案Biome通過；1859成功原頁對固定第十批回放26篇變化，較前次增加2篇1111，另台北郵報同篇增加作者修正，沒有多出日期或正文變化。人工656紀錄、489不同文章、226媒體、485自動樣本，包括部分與未解项。第九批正式d2f9a58已推送／部署／9篇驗證；第十批183f87e仍本地提交未推送／部署，05:12 timer；本批新修改本地提交後仍須距第十批實際部署约一小時才能發布。24小時觀察至18:49:13維持active。

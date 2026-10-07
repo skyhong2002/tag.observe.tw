@@ -18,6 +18,23 @@ export interface FetchResult {
   ms: number;
 }
 
+/** Prefer the reviewed working transport for legacy official MOI article links. */
+export function publisherRequestUrl(value: string): URL {
+  const url = new URL(value);
+  if (
+    url.protocol === 'http:' &&
+    ['moi.gov.tw', 'www.moi.gov.tw'].includes(url.hostname) &&
+    !url.port &&
+    !url.username &&
+    !url.password &&
+    /^\/News_Content\.aspx$/i.test(url.pathname) &&
+    /^\d+$/u.test(url.searchParams.get('n') ?? '') &&
+    /^\d+$/u.test(url.searchParams.get('s') ?? '')
+  )
+    url.protocol = 'https:';
+  return url;
+}
+
 // --- SSRF guard -------------------------------------------------------------
 // Crawled feeds and sitemaps decide which URLs we fetch next, so every hop
 // (including redirects) must resolve only to public addresses, and the socket
@@ -192,7 +209,7 @@ async function curlOnce(
   const file = join(dir, 'body');
   const started = performance.now();
   try {
-    let current = new URL(url);
+    let current = publisherRequestUrl(url);
     for (let hop = 0; hop <= MAX_HOPS; hop++) {
       const targets = await resolvePublicAll(current);
       const port = current.port || (current.protocol === 'https:' ? '443' : '80');
@@ -290,7 +307,7 @@ async function fetchOnce(
 ): Promise<FetchResult> {
   const started = performance.now();
   const deadline = AbortSignal.timeout(timeout);
-  let current = new URL(url);
+  let current = publisherRequestUrl(url);
   const jar: Jar = [];
   for (let hop = 0; hop <= MAX_HOPS; hop++) {
     const host = current.hostname.toLowerCase();

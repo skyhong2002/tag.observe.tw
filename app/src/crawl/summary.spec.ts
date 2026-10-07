@@ -5,6 +5,37 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('rejects a 1111 caption-prefixed description cut inside the opening report paragraph', () => {
+    const url = 'https://www.1111.com.tw/news/jobns/167722';
+    const caption = '證交所公布年度招募計畫。（圖／1111人力銀行）';
+    const clipped = '臺灣證券交易所啟動115年新進人員招募甄選，廣徵';
+    const report = `${clipped}財會、企劃、法律及資訊專業人才，邀請具備相關能力的求職者加入。`;
+    const copy = `<main><div class="yellow-white-bg"><center><img src="cover.jpg"></center><div>${caption}</div><div>${report}</div></div></main>`;
+    expect(extractArticle(`<meta name="description" content="${caption} ${clipped}">${copy}`, url).summary).toBeNull();
+    const independent = '本次招募提供財會、法律、資訊等多類職缺，歡迎專業人才申請';
+    expect(extractArticle(`<meta name="description" content="${caption} ${independent}">${copy}`, url).summary).toBe(independent);
+    expect(extractArticle(`<meta name="description" content="${caption} ${clipped}">${copy.replace(report, clipped)}`, url).summary).toBe(
+      clipped,
+    );
+  });
+  it('removes only an exact 1111 main image caption from publisher descriptions', () => {
+    const url = 'https://www.1111.com.tw/news/jobns/167717';
+    const caption = '團隊走進地方街區，以彩色裝置展現文化創意。（圖／大學提供）';
+    const prose = '年度地方活動吸引多組團隊參與，師生沿著街道展示歷史與文化作品。';
+    const copy = `<main><div class="yellow-white-bg"><center><img src="image.jpg"></center><div><span>${caption}</span></div><div>${prose}</div></div></main>`;
+    expect(extractArticle(`<meta name="description" content="${caption} ${prose}">${copy}`, url)).toMatchObject({
+      summary: prose,
+      summarySource: 'meta:description',
+    });
+    expect(extractArticle(`<meta name="description" content="${caption}">${copy}`, url).summary).toBeNull();
+    expect(
+      extractArticle(
+        `<meta name="description" content="${caption}">${copy.replace('<center>', '<div>').replace('</center>', '</div>')}`,
+        url,
+      ).summary,
+    ).toBe(caption);
+    expect(extractArticle(`<meta name="description" content="${caption}">${copy}`, 'https://example.com/report').summary).toBe(caption);
+  });
   it('rejects the exact Nikkei site description while preserving an article description', () => {
     const slogan =
       '日经中文网官方网站。日经中文网是日本经济新闻社的中文财经网站。提供日本、中国、欧美财经金融信息、商务、企业、高科技报道、评论和专栏。';

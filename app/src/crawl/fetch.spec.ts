@@ -1,7 +1,7 @@
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 import { describe, expect, it } from 'vitest';
-import { BlockedUrlError, fetchText, isPublicAddress, resolvePublic } from './fetch.ts';
+import { BlockedUrlError, fetchText, isPublicAddress, publisherRequestUrl, resolvePublic } from './fetch.ts';
 
 describe('isPublicAddress', () => {
   it('rejects private, loopback, link-local, CGNAT, multicast and mapped addresses', () => {
@@ -124,4 +124,21 @@ describe('address pools', () => {
     expect(isConnectFailure(failed({ code: 'ECONNRESET' }))).toBe(false);
     expect(isConnectFailure(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))).toBe(false);
   });
+});
+
+it('uses HTTPS for reviewed legacy MOI article links without changing their identity', () => {
+  expect(publisherRequestUrl('http://www.moi.gov.tw/News_Content.aspx?n=4&s=342329').href).toBe(
+    'https://www.moi.gov.tw/News_Content.aspx?n=4&s=342329',
+  );
+  for (const url of [
+    'http://www.moi.gov.tw/News_Content.aspx?n=4',
+    'http://www.moi.gov.tw/News_Content.aspx?n=4&s=unknown',
+    'http://www.moi.gov.tw/News_List.aspx?n=4',
+    'http://www.moi.gov.tw:8080/News_Content.aspx?n=4&s=342329',
+    'http://user:password@www.moi.gov.tw/News_Content.aspx?n=4&s=342329',
+    'http://moi.gov.tw.example.com/News_Content.aspx?n=4&s=342329',
+    'https://www.moi.gov.tw/News_Content.aspx?n=4&s=342329',
+    'http://example.com/News_Content.aspx?n=4&s=342329',
+  ])
+    expect(publisherRequestUrl(url).href).toBe(url);
 });
