@@ -34,7 +34,7 @@ export function publisherSummary(value: unknown, source: string, title?: string 
     summary.length > 4000 ||
     summary === (title ? normalized(title) : '') ||
     boilerplate.has(summary) ||
-    (summary.length <= 80 && /(?:報導|報道|报道)[）)】〕]?$/u.test(summary) && reporterNames(summary).length > 0) ||
+    (summary.length <= 80 && /(?:報導|報道|报道)[）)】〕]?(?:\.{3}|…)?$/u.test(summary) && reporterNames(summary).length > 0) ||
     /^文\s*[/／]\s*[^。！？]{2,20}中心$/u.test(summary) ||
     // Reviewed descriptions containing only a contributor's role and name.
     /^(?:淡江戰略研究所博士生|直轄市政府青年諮詢組織青年委員)\s+[\p{Script=Han}]{2,4}$/u.test(summary) ||
@@ -59,6 +59,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const griContent = isGrinews ? $('article > .post-content').clone() : null;
   griContent?.find('audio, script, style').remove();
   const griBody = griContent ? normalized(griContent.text()).replace(/\s+/g, '') : '';
+  const isYesMedia = /^https?:\/\/(?:www\.)?yesmedia\.com\.tw\//i.test(url);
   const isBannedbook = /^https?:\/\/(?:www\.)?bannedbook\.org\//i.test(url);
   const promotion =
     /^來源[:：].{1,60}文章內容並不代表本網立場和觀點。\s*(?:【江峰優品】推出|八炯眼貼小舖連結[：:]|(?:#[^\s]+\s+)*「年代電視」是完全數位)/u;
@@ -75,6 +76,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     const result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (isBannedbook && promotion.test(result.summary)) continue;
+    if (isYesMedia && /^《圖說》/u.test(result.summary)) continue;
     if (
       isGrinews &&
       (/^草根影響力新視野\s+[\p{Script=Han}]{2,4}\s+在\s+\d{4}$/u.test(result.summary) ||

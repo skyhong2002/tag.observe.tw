@@ -61,6 +61,8 @@ describe('publisher summary metadata', () => {
   it('rejects whitespace-normalized headlines and standalone bylines', () => {
     expect(extractArticle('<h1>新聞　標題</h1><meta name="description" content="新聞 標題">', 'https://example.org/a').summary).toBeNull();
     expect(publisherSummary('【記者林文強/台北報導】', 'meta:description').summary).toBeNull();
+    expect(publisherSummary('【大成報記者林瑞明/台北報導】...', 'meta:description').summary).toBeNull();
+    expect(publisherSummary('【記者林文強/台北報導】…', 'meta:description').summary).toBeNull();
     expect(publisherSummary('文/ 金融消費中心', 'meta:description').summary).toBeNull();
     expect(publisherSummary('迷音 Miin — Let me in!', 'meta:description').summary).toBeNull();
     expect(publisherSummary('記者林文強報導這項公共政策的影響。', 'meta:description').summary).not.toBeNull();
@@ -111,6 +113,16 @@ describe('publisher summary metadata', () => {
       extractArticle(html.replace(`content="${prose}"`, 'content="地方政策引起討論。"'), 'https://grinews.com/news/story/').summary,
     ).toBe('地方政策引起討論。');
     expect(extractArticle(html, 'https://example.org/story/').summary).not.toBeNull();
+  });
+  it('rejects YesMedia image-caption descriptions without discarding article summaries', () => {
+    const caption = '《圖說》侯友宜市長強調，八年306場行動治理成果，透過里長、區公所';
+    const article = (text: string, host = 'www.yesmedia.com.tw') =>
+      extractArticle(`<meta property="og:description" content="${text}">`, `https://${host}/story/`);
+    expect(article(caption).summary).toBeNull();
+    expect(article(caption, 'example.org').summary).toBe(caption);
+    const actual = '新北市府推動行動治理，八年受理4401案，92.4%已解列。';
+    expect(article(actual).summary).toBe(actual);
+    expect(article('市長談到《圖說》的文字與新聞內容。').summary).not.toBeNull();
   });
   it('preserves RSS description and Atom summary provenance without using full Atom content', () => {
     const rss = parseFeed(

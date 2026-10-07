@@ -1,10 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { extractArticle } from './article.ts';
+import { listSource } from './pipeline.ts';
+import { sourceByMedia } from './registry.ts';
 
 // Long enough to clear the 200-character body minimum.
 const prose = (label: string) => `${label}：${'這是一段完整的新聞內文，描述事件的經過與背景。'.repeat(12)}`;
 
 describe('round 4 article templates', () => {
+  it('uses Healthnews headlines instead of the category wrapped in a second listing link', async () => {
+    const headline = '為什麼過敏有的孩子鼻塞、有的卻皮膚癢？';
+    const html = `<a href="/article/69779"><div class="a1">${headline}</div></a><a href="/article/69779"><span class="badge">過敏</span><span class="a1-title">${headline}</span></a>`;
+    const spec = sourceByMedia('healthnews')!;
+    const list = await listSource(spec, async () => ({
+      status: 200,
+      body: html,
+      url: 'https://www.healthnews.com.tw/',
+      contentType: 'text/html',
+      ms: 1,
+    }));
+    expect(list.items).toHaveLength(1);
+    expect(list.items[0].title).toBe(headline);
+    const article = `<h1>${headline}</h1><meta property="og:title" content="${headline} - 健康醫療網"><div id="article-content"><p>${prose('健康醫療網')}</p></div>`;
+    expect(extractArticle(article, 'https://www.healthnews.com.tw/article/69779')).toMatchObject({
+      title: headline,
+      body: prose('健康醫療網'),
+    });
+  });
+
   it('keeps a site container inside wrappers whose class names look like ads', () => {
     const html = `<div id="ad-root"><article id="article-content"><p>${prose('食尚玩家')}</p><div class="ad-slot"><p>廣告文字</p></div></article></div>`;
     const detail = extractArticle(html, 'https://supertaste.tvbs.com.tw/food/361774');

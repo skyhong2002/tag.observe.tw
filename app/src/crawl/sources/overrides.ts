@@ -485,7 +485,10 @@ export const overrides: Record<string, SourceOverride> = {
   soft4fun: { list: { urls: [{ cat: 'news', url: 'https://www.soft4fun.net/feed' }] } },
   // RSS gone; the homepage links ~90 recent /article/<id> stories.
   healthnews: {
-    list: { urls: [{ cat: 'news', url: 'https://www.healthnews.com.tw/' }], discover: { pattern: String.raw`^/article/\d+$` } },
+    list: {
+      urls: [{ cat: 'news', url: 'https://www.healthnews.com.tw/' }],
+      discover: { pattern: String.raw`^/article/\d+$`, titleSelector: '.a1-title, .a1' },
+    },
   },
   // The RSS froze at 2026-09-23 (and often times out) while the site publishes
   // daily; the homepage links ~50 recent /Article/<category>/<id> stories.

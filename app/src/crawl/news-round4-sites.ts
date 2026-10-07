@@ -53,6 +53,7 @@ export const ROUND4_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegE
     // Older listings link readnews.php?id=N, which redirects to /article/N.
     path: /^\/(?:article\/\d+\/?|readnews\.php\?id=\d+)$/,
     bodySelector: '#article-content',
+    titleSelector: 'h1',
   },
   {
     host: 'natgeomedia.com',
