@@ -38,6 +38,9 @@ type Manifest = Record<
     source: string;
     fetchedAt: string;
     curated?: boolean;
+    /** Reviewed crop or name-derived identifier; refresh manually. */
+    manual?: boolean;
+    crop?: { left: number; top: number; width: number; height: number };
     sourceWidth?: number;
     sourceHeight?: number;
     transparent?: boolean;
@@ -146,12 +149,12 @@ async function toPng(body: Buffer): Promise<Icon | null> {
   }
 }
 
-/** <link rel="icon|apple-touch-icon"> candidates from the home page, largest first. */
+/** Prefer the publisher's small-display favicon to a large header/touch mark. */
 async function declaredIcons(origin: string): Promise<string[]> {
   const page = await get(origin, 'text/html');
   if (!page?.type.includes('html')) return [];
   const html = page.body.toString('utf8').slice(0, 300_000);
-  const out: Array<{ href: string; size: number }> = [];
+  const out: Array<{ href: string; size: number; favicon: boolean }> = [];
   for (const tag of html.match(/<link\b[^>]*>/gi) ?? []) {
     const rel = /\brel=["']?([^"'>]+)/i.exec(tag)?.[1].toLowerCase() ?? '';
     if (!/(^|\s)(icon|apple-touch-icon|apple-touch-icon-precomposed)(\s|$)/.test(rel)) continue;
@@ -159,12 +162,13 @@ async function declaredIcons(origin: string): Promise<string[]> {
     if (!href || href.startsWith('data:')) continue;
     const size = Number(/\bsizes=["']?(\d+)/i.exec(tag)?.[1] ?? (rel.includes('apple') ? 180 : 32));
     try {
-      out.push({ href: new URL(href.replaceAll('&amp;', '&'), page.url).href, size });
+      out.push({ href: new URL(href.replaceAll('&amp;', '&'), page.url).href, size, favicon: !rel.includes('apple') });
     } catch {}
   }
-  // Prefer icons large enough for the graph on high-density displays.
+  // Favicons are designed for small displays; within that group prefer
+  // sufficient resolution for high-density screens.
   const score = (s: number) => (s >= SIZE ? 1000 - Math.abs(s - SIZE) : s);
-  return out.sort((a, b) => score(b.size) - score(a.size)).map((o) => o.href);
+  return out.sort((a, b) => Number(b.favicon) - Number(a.favicon) || score(b.size) - score(a.size)).map((o) => o.href);
 }
 
 // Outlets whose crawl index lives on another site (rss.app feeds, China
@@ -229,13 +233,24 @@ function origins(media: string): string[] {
 }
 
 async function fetchIcon(media: string): Promise<(Icon & { source: string }) | null> {
-  // This publisher exposes the generic Blogger favicon, not its own mark.
-  // Keep its name fallback until a publisher-specific source is reviewed.
-  if (media === 'ccsn0405' && !manifest[media]?.curated) return null;
   // A reviewed mark must not silently regress to a tiny favicon, a generic
   // profile picture, or another brand after a redirect. Keep the local copy
   // if its pinned source fails or starts returning a lower-resolution image.
   const pinned = manifest[media];
+  // Automatic downloads cannot recreate a reviewed crop or local identifier.
+  // Keep the stored asset rather than restoring its full-width source image.
+  if (pinned?.manual) {
+    const png = await readFile(`${OUT}/${media}.png`).catch(() => null);
+    return png
+      ? {
+          png,
+          source: pinned.source,
+          sourceWidth: pinned.sourceWidth ?? SIZE,
+          sourceHeight: pinned.sourceHeight ?? SIZE,
+          transparent: pinned.transparent ?? true,
+        }
+      : null;
+  }
   if (pinned?.curated) {
     const response = await get(pinned.source, 'image/*,*/*');
     const icon = response && !response.type.includes('html') ? await toPng(response.body) : null;

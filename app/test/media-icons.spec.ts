@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import sources from '../data/crawl-sources.json' with { type: 'json' };
+import catalog from '../data/favicon-catalog.json' with { type: 'json' };
 import manifest from '../data/favicon-local.json' with { type: 'json' };
+import newsSources from '../data/news-source-catalog.json' with { type: 'json' };
 import { FAVICON_BASE, iconUrl } from '../src/v1/icons.ts';
 
 describe('reviewed media icons', () => {
@@ -23,7 +26,14 @@ describe('reviewed media icons', () => {
     expect(iconUrl('unknown-outlet')).toBeNull();
   });
 
-  it('uses the name fallback for the unavailable Apple Daily icon instead of a broken remote image', () => {
-    expect(iconUrl('apple')).toBeNull();
+  it('covers every catalogued publisher and configured crawl source, including government and archived outlets', () => {
+    const configured = Object.entries(sources)
+      .filter(([, source]) => (source.index?.urls.length ?? 0) > 0)
+      .map(([id]) => id);
+    const ids = new Set([...Object.keys(catalog), ...configured, ...newsSources.sources.map((source) => source.media)]);
+    for (const id of ids) {
+      expect(Object.hasOwn(manifest, id), id).toBe(true);
+      expect(iconUrl(id), id).toMatch(/^https:\/\/tag\.observe\.tw\/favicons\/.+\.png\?v=[a-f0-9]{12}$/);
+    }
   });
 });

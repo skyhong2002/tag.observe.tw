@@ -73,6 +73,23 @@
     "transparent": false,
     "revision": "b933133cc281"
   },
+  "ammtw": {
+    "source": "https://ammtw.com/wp-content/uploads/2022/04/Artboard1-1.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 500,
+    "sourceHeight": 220,
+    "transparent": true,
+    "revision": "ed4509f3db4d",
+    "curated": true,
+    "manual": true,
+    "crop": {
+      "left": 60,
+      "top": 15,
+      "width": 110,
+      "height": 105
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
+  },
   "anntw": {
     "source": "https://www.anntw.com/favicon.png",
     "fetchedAt": "2026-10-03",
@@ -91,6 +108,23 @@
     "sourceHeight": 180,
     "transparent": false,
     "revision": "4e70642a69d2"
+  },
+  "apple": {
+    "source": "https://upload.wikimedia.org/wikipedia/zh/5/52/Apple_Daily_logo.svg",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 200,
+    "sourceHeight": 360,
+    "transparent": true,
+    "revision": "77907e5fc83e",
+    "curated": true,
+    "manual": true,
+    "crop": {
+      "left": 25,
+      "top": 0,
+      "width": 163,
+      "height": 156
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
   },
   "applealmond": {
     "source": "https://img.applealmond.com/2021/07/1627455091-2f1138deb69f22a0fcbdff8a3f26365f.png",
@@ -140,26 +174,22 @@
     "revision": "19e69d844795"
   },
   "bbc": {
-    "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_Logo_2021.svg/250px-BBC_Logo_2021.svg.png?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 250,
-    "sourceHeight": 72,
-    "transparent": true,
-    "revision": "61e12bd5362c",
-    "dark": "invert",
-    "note": "Transparent BBC wordmark; avoids the three blank blocks in the small official favicon."
+    "source": "https://static.files.bbci.co.uk/ws/simorgh-assets/public/zhongwen/images/icons/icon-192x192.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "0052bfe3adeb",
+    "curated": true
   },
   "bbc_global": {
-    "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_Logo_2021.svg/250px-BBC_Logo_2021.svg.png?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 250,
-    "sourceHeight": 72,
-    "transparent": true,
-    "revision": "61e12bd5362c",
-    "dark": "invert",
-    "note": "Same publisher identity as bbc."
+    "source": "https://static.files.bbci.co.uk/bbcdotcom/web/20261005-153342-40cbc1e8b4-web-3.23.0-2/apple-touch-icon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "3f0bf4b4b5ad",
+    "curated": true
   },
   "bccnews": {
     "source": "https://bccnews.com.tw/favicon.ico",
@@ -217,13 +247,13 @@
     "curated": true
   },
   "businesstoday": {
-    "source": "https://www.businesstoday.com.tw/lazyweb/web/img/logo.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 200,
-    "sourceHeight": 90,
+    "source": "https://www.businesstoday.com.tw/lazyweb/web/img/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
     "transparent": false,
-    "revision": "d6411eb28607"
+    "revision": "fb8877bddafb",
+    "curated": true
   },
   "buzzorange": {
     "source": "https://buzzorange.com/favicon.ico",
@@ -244,6 +274,17 @@
     "transparent": false,
     "revision": "945e42117b65",
     "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "ccsn0405": {
+    "source": "https://www.ccsn0405.com/",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "a7e3ac65384c",
+    "curated": true,
+    "manual": true,
+    "note": "Name-derived compact identifier 鱻 for 中華鱻傳媒; publisher header is foliage without a distinct brand mark. This is a local identifier, not an official emblem."
   },
   "cctv": {
     "source": "http://cctv.com//favicon.ico",
@@ -448,34 +489,31 @@
     "note": "Publisher supplies this transparent version of its icon."
   },
   "cti": {
-    "source": "https://ctinews.com/_nuxt/logo.B9td3QbG.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 426,
-    "sourceHeight": 90,
-    "transparent": true,
-    "revision": "69415bb20272",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://ctinews.com/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "19359af40527",
+    "curated": true
   },
   "ctit": {
-    "source": "https://ctinews.com/_nuxt/logo.B9td3QbG.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 426,
-    "sourceHeight": 90,
-    "transparent": true,
-    "revision": "69415bb20272",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://ctinews.com/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "19359af40527",
+    "curated": true
   },
   "ctitv": {
-    "source": "https://ctinews.com/_nuxt/logo.B9td3QbG.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 426,
-    "sourceHeight": 90,
-    "transparent": true,
-    "revision": "69415bb20272",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://ctinews.com/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "19359af40527",
+    "curated": true
   },
   "cts": {
     "source": "https://news.cts.com.tw/assets/favicon-news.png",
@@ -488,25 +526,22 @@
     "note": "Current transparent CTS News emblem from the publisher."
   },
   "ctv": {
-    "source": "https://thumb.wikimedia.org/wikipedia/zh/thumb/6/67/CTV_News_logo.png/250px-CTV_News_logo.png?utm_source=zh.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 250,
-    "sourceHeight": 61,
+    "source": "https://www.ctv.com.tw/Cms_Data/Sites/CTV4/Files/images/favicon-32x32.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
     "transparent": true,
-    "revision": "a8e7e5d207d0",
-    "dark": "outline"
+    "revision": "5a8a13378ef0",
+    "curated": true
   },
   "ctwant": {
-    "source": "https://static.ctwant.com/images/dist/logo.svg",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 143,
-    "sourceHeight": 26,
-    "transparent": true,
-    "revision": "b8e0f5f2bfdc",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
+    "source": "https://static.ctwant.com/images/dist/apple-touch-icon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "3a7ba0b14a1e",
+    "curated": true
   },
   "cw": {
     "source": "https://www.google.com/s2/favicons?domain=www.cw.com.tw&sz=256",
@@ -518,15 +553,13 @@
     "revision": "e45c42b7537a"
   },
   "daai": {
-    "source": "https://www.daai.tv/images/logo.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 358,
-    "sourceHeight": 80,
-    "transparent": true,
-    "revision": "62b75343ad42",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved.",
-    "dark": "outline"
+    "source": "https://www.daai.tv/images/apple-icon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 300,
+    "sourceHeight": 300,
+    "transparent": false,
+    "revision": "c2dc200df5f2",
+    "curated": true
   },
   "dacota": {
     "source": "https://img.dacota.tw/2017/09/1504802621-4265a788ecc74a4ea0967fbcf0a43f6e.png",
@@ -567,6 +600,23 @@
     "revision": "d6064d0ea049",
     "curated": true,
     "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "dongtw": {
+    "source": "https://s1.dmcdn.net/u/8IMNn1ep42uSl6WD-/240x240",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 240,
+    "sourceHeight": 240,
+    "transparent": true,
+    "revision": "2f291e4820e4",
+    "curated": true,
+    "manual": true,
+    "crop": {
+      "left": 47,
+      "top": 13,
+      "width": 146,
+      "height": 148
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
   },
   "dramaqueen": {
     "source": "https://www.dramaqueen.com.tw/img/logo.png",
@@ -652,15 +702,13 @@
     "revision": "790b118726e6"
   },
   "epochtimes": {
-    "source": "https://www.epochtimes.com/assets/themes/djy/images/djy_logo2.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 149,
-    "sourceHeight": 67,
+    "source": "https://www.epochtimes.com/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
     "transparent": true,
-    "revision": "49dfd744e4cf",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "revision": "91a5c7bbdff6",
+    "curated": true
   },
   "eracom": {
     "source": "https://www.eracom.com.tw/t/2/2/img/favicon-eranews.ico?v=20240329170939",
@@ -777,15 +825,13 @@
     "curated": true
   },
   "ftnn": {
-    "source": "https://static.ftnn.com.tw/www/images/ftnn-logo-rtop-2.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 112,
-    "sourceHeight": 46,
-    "transparent": true,
-    "revision": "cfccbe05c805",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://static.ftnn.com.tw/www/images/ftnn-icon-64.jpg",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": false,
+    "revision": "1239dce0405d",
+    "curated": true
   },
   "ftv": {
     "source": "https://www.google.com/s2/favicons?domain=www.ftvnews.com.tw&sz=256",
@@ -1072,6 +1118,23 @@
     "revision": "c31d25de454a",
     "dark": "outline"
   },
+  "idn": {
+    "source": "https://www.idn.com.tw/images/top_01.gif",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 301,
+    "sourceHeight": 67,
+    "transparent": true,
+    "revision": "a553a5c97968",
+    "curated": true,
+    "manual": true,
+    "crop": {
+      "left": 5,
+      "top": 13,
+      "width": 44,
+      "height": 43
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
+  },
   "ifeng": {
     "source": "https://y1.ifengimg.com/index/72x72_2520ifeng.png",
     "fetchedAt": "2026-10-03",
@@ -1129,6 +1192,40 @@
     "curated": true,
     "note": "Best verified publisher mark available; original resolution is limited."
   },
+  "jdanews": {
+    "source": "http://jdanews.com/img/jdanews-1.gif",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 293,
+    "sourceHeight": 72,
+    "transparent": true,
+    "revision": "3ba849b311a1",
+    "curated": true,
+    "manual": true,
+    "crop": {
+      "left": 4,
+      "top": 4,
+      "width": 58,
+      "height": 65
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
+  },
+  "kairos": {
+    "source": "https://yt3.googleusercontent.com/ytc/AIdro_mnbCq3EScKNm18CpbXpXs5eRYXgFc2pgX93vIPmvjuMxA=s900-c-k-c0x00ffffff-no-rj",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 900,
+    "sourceHeight": 900,
+    "transparent": true,
+    "revision": "a854ce86229a",
+    "curated": true,
+    "manual": true,
+    "crop": {
+      "left": 155,
+      "top": 105,
+      "width": 585,
+      "height": 595
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
+  },
   "kamalan_news": {
     "source": "https://www.kamalan-news.com/archive/system/company/favicon.png",
     "fetchedAt": "2026-10-03",
@@ -1158,15 +1255,13 @@
     "revision": "237e1e9f8d76"
   },
   "kocpc": {
-    "source": "https://www.kocpc.com.tw/wp-content/uploads/2021/12/1640845671-3a3728f68b5052648131103dbc04be26.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 376,
-    "sourceHeight": 84,
-    "transparent": true,
-    "revision": "8f1f51ae6786",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://www.kocpc.com.tw/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": false,
+    "revision": "823d55f85627",
+    "curated": true
   },
   "ksnews": {
     "source": "https://www.google.com/s2/favicons?domain=www.ksnews.com.tw&sz=256",
@@ -1196,15 +1291,13 @@
     "curated": true
   },
   "ldope": {
-    "source": "https://ldope.com/wp-content/uploads/2018/10/LDope_logo2018_313x75.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 313,
-    "sourceHeight": 75,
-    "transparent": true,
-    "revision": "6b896818368f",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://graph.facebook.com/LDopeCom/picture",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 50,
+    "sourceHeight": 50,
+    "transparent": false,
+    "revision": "80cc6922ef98",
+    "curated": true
   },
   "leho": {
     "source": "https://leho.com.tw/wp-content/uploads/2021/11/cropped-leho-favicon-192x192.png",
@@ -1301,14 +1394,13 @@
     "note": "Best verified publisher mark available; original resolution is limited."
   },
   "marieclaire": {
-    "source": "https://il.marieclaire.com.tw/images/product/logoRed.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 351,
-    "sourceHeight": 60,
-    "transparent": true,
-    "revision": "b3a42df81894",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://www.marieclaire.com.tw/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "eb6d720696b9",
+    "curated": true
   },
   "matsu_idv": {
     "source": "http://matsu.idv.tw/img/favicon.png",
@@ -1367,15 +1459,13 @@
     "revision": "2cc50e90bbc1"
   },
   "mirror": {
-    "source": "https://www.mirrormedia.mg/images-next/mirror-media-logo.svg",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 108,
-    "sourceHeight": 46,
-    "transparent": true,
-    "revision": "7bd1edc94944",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
+    "source": "https://www.mirrormedia.mg/apple-touch-icon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": false,
+    "revision": "42bd7c81b13b",
+    "curated": true
   },
   "mirrordaily": {
     "source": "https://www.mirrordaily.news/favicon.ico",
@@ -1395,6 +1485,16 @@
     "revision": "727a77585af6",
     "curated": true
   },
+  "mnd": {
+    "source": "https://www.google.com/s2/favicons?domain=www.mnd.gov.tw&sz=128",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "transparent": true,
+    "revision": "c570e903cfd9",
+    "curated": true,
+    "note": "Official Ministry of National Defense favicon retrieved from Google favicon cache because the origin timed out."
+  },
   "mnews": {
     "source": "https://www.mnews.tw/favicon.ico",
     "fetchedAt": "2026-10-03",
@@ -1404,6 +1504,46 @@
     "transparent": false,
     "revision": "aee4056e080f",
     "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "moa": {
+    "source": "https://www.moa.gov.tw/img/favicons/apple-touch-icon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 180,
+    "sourceHeight": 180,
+    "transparent": true,
+    "revision": "7d707a33eb45"
+  },
+  "mofa": {
+    "source": "https://ws.mofa.gov.tw/001/Upload/402/sites/pagebackimage/282dada4-149c-403a-b122-4b17d99409f7.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "f9b02c496544"
+  },
+  "mohw": {
+    "source": "https://www.mohw.gov.tw/xslGip/Unit001/images/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 256,
+    "sourceHeight": 256,
+    "transparent": true,
+    "revision": "09d67921c5ad"
+  },
+  "moi": {
+    "source": "https://ws.moi.gov.tw/001/Upload/400/sites/pagebackimage/ef9b9560-7f3e-4f12-86e4-e4f196ebb4c4.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 62,
+    "sourceHeight": 63,
+    "transparent": false,
+    "revision": "519217c21cf8"
+  },
+  "mol": {
+    "source": "https://www.mol.gov.tw/Content/main//images/favicon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "a1294c61cef8"
   },
   "moneydj": {
     "source": "https://www.google.com/s2/favicons?domain=www.moneydj.com&sz=256",
@@ -1415,15 +1555,13 @@
     "revision": "ac4ebecf5a2e"
   },
   "more_news": {
-    "source": "https://more-news.tw/more-news-media/logo.webp",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 300,
-    "sourceHeight": 113,
-    "transparent": true,
-    "revision": "f7afe2915b67",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://more-news.tw/wp-content/uploads/cropped-more-news-logo.jpg",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 512,
+    "sourceHeight": 512,
+    "transparent": false,
+    "revision": "216b6ac676c0",
+    "curated": true
   },
   "mplus": {
     "source": "https://www.mplus.com.tw/favicon.ico",
@@ -1435,15 +1573,13 @@
     "revision": "dbde81004abe"
   },
   "mrmad": {
-    "source": "https://mrmad.com.tw/wp-content/uploads/2021/05/sticky_logo-142x32.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 142,
-    "sourceHeight": 32,
-    "transparent": true,
-    "revision": "947e11fef026",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://mrmad.com.tw/wp-content/uploads/2016/07/iconmrmad.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 400,
+    "sourceHeight": 400,
+    "transparent": false,
+    "revision": "d31e971acfb7",
+    "curated": true
   },
   "msn": {
     "source": "https://www.msn.com/favicon.ico",
@@ -1454,6 +1590,15 @@
     "revision": "20bb4dc6c804",
     "curated": true,
     "note": "Best verified publisher mark available; original resolution is limited."
+  },
+  "musou": {
+    "source": "https://raw.githubusercontent.com/watchout-tw/watchout-common-assets/master/images/logo/watchout/small.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 96,
+    "sourceHeight": 96,
+    "transparent": false,
+    "revision": "416b5164f5aa",
+    "curated": true
   },
   "my_formosa": {
     "source": "https://my-formosa.com.tw/favicon.ico",
@@ -1486,13 +1631,21 @@
   },
   "newcongress": {
     "source": "https://newcongress.tw/wp-content/themes/fundesigner/images/logo.png",
-    "fetchedAt": "2026-10-03",
+    "fetchedAt": "2026-10-07",
     "curated": true,
     "sourceWidth": 300,
     "sourceHeight": 74,
     "transparent": true,
-    "revision": "dc80a521930e",
-    "dark": "invert"
+    "revision": "2989cf8561ee",
+    "dark": "invert",
+    "manual": true,
+    "crop": {
+      "left": 0,
+      "top": 0,
+      "width": 64,
+      "height": 74
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
   },
   "newday": {
     "source": "https://www.google.com/s2/favicons?domain=www.newsday.tw&sz=256",
@@ -1604,15 +1757,13 @@
     "note": "Best verified publisher mark available; original resolution is limited."
   },
   "newtalk": {
-    "source": "https://newtalk.tw/_nuxt/logo-header-light-mobile.DdikG_4q.svg",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 160,
-    "sourceHeight": 44,
+    "source": "http://newtalk.tw/sys_images/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
     "transparent": true,
-    "revision": "43c726c110dc",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
+    "revision": "71b1f1f6f972",
+    "curated": true
   },
   "nextapple": {
     "source": "https://static.nextapple.tw/web/layout/favicon/android-icon-192x192.png",
@@ -1708,6 +1859,14 @@
     "revision": "e6a13830b85a",
     "curated": true
   },
+  "ntpc_gov": {
+    "source": "https://www.ntpc.gov.tw/ntpc.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "c2066b7936e0"
+  },
   "nvns": {
     "source": "https://www.google.com/s2/favicons?domain=www.nvns.net&sz=256",
     "fetchedAt": "2026-10-03",
@@ -1756,23 +1915,22 @@
     "dark": "outline"
   },
   "pantravel": {
-    "source": "https://pantravel.life//wp-content/uploads/2015/06/pantravel_logo.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 376,
-    "sourceHeight": 158,
+    "source": "https://pantravel.life/wp-content/uploads/2015/08/旅飯favicon_30x30.jpg",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 30,
+    "sourceHeight": 30,
     "transparent": false,
-    "revision": "cc7d9a5e1c58"
+    "revision": "d81083e28c76",
+    "curated": true
   },
   "people": {
-    "source": "https://www.peoplenews.tw/wp-content/uploads/2025/12/peoplenews.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 1488,
-    "sourceHeight": 552,
-    "transparent": true,
-    "revision": "f4eee2c3834f",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://www.peoplenews.tw/wp-content/uploads/2025/12/Gemini_Generated_Image_28t76z28t76z28t7.jpg",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 819,
+    "sourceHeight": 819,
+    "transparent": false,
+    "revision": "237a334379fb",
+    "curated": true
   },
   "people_cn": {
     "source": "https://www.people.com.cn//favicon.ico",
@@ -1840,6 +1998,16 @@
     "transparent": false,
     "revision": "1be1a10fae36"
   },
+  "president": {
+    "source": "https://www.president.gov.tw/_content/template/assets/img/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": true,
+    "revision": "965dc87d3897",
+    "curated": true,
+    "note": "Official Presidential Office favicon: compact gold palace emblem, not the wide header wordmark."
+  },
   "pronews": {
     "source": "https://image.pronews.tw/2025/10/8af3a74ede48e250ceb935c026242483.png",
     "fetchedAt": "2026-10-03",
@@ -1861,12 +2029,20 @@
   },
   "punchline": {
     "source": "https://punchline.asia/wp-content/uploads/2014/09/favicon.ico",
-    "fetchedAt": "2026-10-03",
+    "fetchedAt": "2026-10-07",
     "curated": true,
     "sourceWidth": 260,
     "sourceHeight": 80,
     "transparent": true,
-    "revision": "3ca2991e19e8"
+    "revision": "98b586dd6480",
+    "manual": true,
+    "crop": {
+      "left": 0,
+      "top": 0,
+      "width": 92,
+      "height": 80
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
   },
   "readr": {
     "source": "https://www.readr.tw/apple-touch-icon.png",
@@ -1933,15 +2109,13 @@
     "curated": true
   },
   "rti": {
-    "source": "https://www.rti.org.tw/Static/tw/image/classifyLogo.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 235,
-    "sourceHeight": 58,
-    "transparent": true,
-    "revision": "0ad954f926c9",
-    "dark": "outline",
-    "note": "Publisher transparent wordmark; the favicon is only 16px."
+    "source": "https://www.rti.org.tw/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": false,
+    "revision": "db497505e078",
+    "curated": true
   },
   "rwnews": {
     "source": "https://www.google.com/s2/favicons?domain=www.rwnews.tw&sz=256",
@@ -1983,15 +2157,13 @@
     "curated": true
   },
   "setn": {
-    "source": "https://attach.setn.com/images/20260331152319_logo-blue2x.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 190,
-    "sourceHeight": 48,
-    "transparent": true,
-    "revision": "eb1bc9b680eb",
-    "dark": "outline",
-    "note": "Publisher transparent wordmark; the favicon is only 16px."
+    "source": "http://www.setn.com/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": false,
+    "revision": "6d95c7cc9d7f",
+    "curated": true
   },
   "shoppingdesign": {
     "source": "https://cdn.bnextmedia.com.tw/sd/images/sd-192x192.png",
@@ -2069,15 +2241,13 @@
     "curated": true
   },
   "storm": {
-    "source": "https://www.storm.mg/img/logo-storm.svg",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 156,
-    "sourceHeight": 48,
+    "source": "https://www.storm.mg/img/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
     "transparent": true,
-    "revision": "56e5f8677d92",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
+    "revision": "0abb78db1b21",
+    "curated": true
   },
   "sunmedia": {
     "source": "https://sunmedia.tw/favicon-96x96.png",
@@ -2098,15 +2268,21 @@
     "revision": "60099dee37bb"
   },
   "taidaily": {
-    "source": "https://img.taidaily.com/2026/07/b648e3d69dd0a39be485dc30a0daed4b.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 1050,
-    "sourceHeight": 312,
+    "source": "https://taidaily.com/wp-content/uploads/2024/08/cropped-033ad57c455e50e02ad81cca94e44a21-32x32.jpg",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "1a24fcf0effa",
+    "curated": true
+  },
+  "taipei_gov": {
+    "source": "https://www.gov.taipei/images/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
     "transparent": true,
-    "revision": "c51bdbe14f66",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "revision": "f534b6a0b506"
   },
   "taipeipost": {
     "source": "https://taipeipost.org/wp-content/uploads/2021/02/favicon-s-256x256.jpg",
@@ -2147,12 +2323,20 @@
   },
   "taiwandaily": {
     "source": "https://www.google.com/s2/favicons?domain=www.taiwandaily.net&sz=256",
-    "fetchedAt": "2026-10-03",
+    "fetchedAt": "2026-10-07",
     "curated": true,
     "sourceWidth": 300,
     "sourceHeight": 91,
-    "transparent": false,
-    "revision": "44c3fed9ad23"
+    "transparent": true,
+    "revision": "bccff7ef5a6a",
+    "manual": true,
+    "crop": {
+      "left": 40,
+      "top": 3,
+      "width": 60,
+      "height": 67
+    },
+    "note": "Compact first character cropped from the authentic publisher wordmark."
   },
   "taiwandom": {
     "source": "https://i0.wp.com/taiwandomnews.com/wp-content/uploads/2021/11/cropped-domLogo-3.png?fit=180%2C180&#038;ssl=1",
@@ -2212,13 +2396,38 @@
   },
   "taiwanpost": {
     "source": "https://91postnews-media.s3.ap-northeast-1.amazonaws.com/wp-content/uploads/2025/07/5970315C-13F9-4178-9EA3-8DC876AA3EC3-1-1-scaled.png",
-    "fetchedAt": "2026-10-03",
+    "fetchedAt": "2026-10-07",
     "curated": true,
     "sourceWidth": 2560,
     "sourceHeight": 839,
     "transparent": true,
-    "revision": "f7358bc3ef3e",
-    "dark": "outline"
+    "revision": "1c77b49e8c79",
+    "dark": "outline",
+    "manual": true,
+    "crop": {
+      "left": 0,
+      "top": 0,
+      "width": 660,
+      "height": 839
+    },
+    "note": "Compact first character cropped from the authentic publisher wordmark."
+  },
+  "taiwanus": {
+    "source": "https://www.taiwanus.net/newindex/images/index_06.jpg",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 255,
+    "sourceHeight": 111,
+    "transparent": true,
+    "revision": "9399979e6fd6",
+    "curated": true,
+    "manual": true,
+    "crop": {
+      "left": 20,
+      "top": 8,
+      "width": 44,
+      "height": 43
+    },
+    "note": "Reviewed compact symbol cropped from publisher brand mark; preserve this composition on refresh."
   },
   "taro": {
     "source": "https://cdn.taronews.tw/files/2018/02/favicon-taronews-114.png",
@@ -2230,15 +2439,13 @@
     "revision": "1d5a24c980ff"
   },
   "tcnews": {
-    "source": "https://www.tcnews.com.tw/images/logo.webp",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 1040,
-    "sourceHeight": 434,
+    "source": "https://www.tcnews.com.tw/images/favicon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
     "transparent": true,
-    "revision": "16337dee4f2c",
-    "dark": "outline",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "revision": "2b973c8dc2c9",
+    "curated": true
   },
   "techbang": {
     "source": "https://www.techbang.com/favicon.ico",
@@ -2250,14 +2457,13 @@
     "revision": "112dcb1f0304"
   },
   "techcrunch": {
-    "source": "https://techcrunch.com/wp-content/themes/tc-24/dist/svg/tc-logo.svg",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 94,
-    "sourceHeight": 48,
-    "transparent": true,
-    "revision": "d76cb443c8b7",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved. Vector source; dimensions describe its intrinsic viewport."
+    "source": "https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": false,
+    "revision": "b9fb6e34e591",
+    "curated": true
   },
   "technews": {
     "source": "https://img.technews.tw/wp-content/themes/twentytwelve/images/favicon.ico",
@@ -2326,6 +2532,15 @@
     "revision": "ea9761e57e90",
     "curated": true
   },
+  "tnews": {
+    "source": "https://tnews.cc/images/ico/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 10,
+    "sourceHeight": 17,
+    "transparent": true,
+    "revision": "6c19c7d04d9e",
+    "curated": true
+  },
   "tnl": {
     "source": "https://www.google.com/s2/favicons?domain=www.thenewslens.com&sz=256",
     "fetchedAt": "2026-10-03",
@@ -2379,6 +2594,15 @@
     "sourceHeight": 500,
     "transparent": true,
     "revision": "b69ae2d9674f",
+    "curated": true
+  },
+  "tsna": {
+    "source": "https://tsna.com/static/images/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
+    "transparent": true,
+    "revision": "0551183335e7",
     "curated": true
   },
   "ttv": {
@@ -2455,15 +2679,13 @@
     "revision": "7716c5e44d20"
   },
   "upmedia": {
-    "source": "https://www.upmedia.mg/images/dlogo.png",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 110,
-    "sourceHeight": 50,
+    "source": "https://www.upmedia.mg/favicon.ico",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 16,
+    "sourceHeight": 16,
     "transparent": true,
-    "revision": "83ed92fbef16",
-    "dark": "outline",
-    "note": "Publisher transparent wordmark; the favicon is only 16px."
+    "revision": "eb34cd57f787",
+    "curated": true
   },
   "ustv": {
     "source": "https://cdn.ustv.com.tw/img/favicon.svg",
@@ -2502,14 +2724,13 @@
     "curated": true
   },
   "voachinese": {
-    "source": "https://www.voachinese.com/Content/responsive/VOA/zh-CN/img/logo.svg?cb=323",
-    "fetchedAt": "2026-10-03",
-    "curated": true,
-    "sourceWidth": 201,
-    "sourceHeight": 80,
-    "transparent": true,
-    "revision": "b004d6f1754f",
-    "note": "Official native-transparent publisher logo, reviewed on light and dark backgrounds. Brand colors and proportions preserved."
+    "source": "https://www.voachinese.com/Content/responsive/VOA/img/webApp/ico-192x192.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 192,
+    "sourceHeight": 192,
+    "transparent": false,
+    "revision": "ddb343ce750a",
+    "curated": true
   },
   "vogue": {
     "source": "https://www.vogue.com.tw/verso/static/vogue-global/assets/tw/logo-header.svg",
@@ -2520,6 +2741,16 @@
     "transparent": true,
     "revision": "eea030393ccc",
     "dark": "invert"
+  },
+  "voicettank": {
+    "source": "https://voicettank.org/wp-content/uploads/2021/04/思想坦克favicon.png",
+    "fetchedAt": "2026-10-07",
+    "sourceWidth": 341,
+    "sourceHeight": 341,
+    "transparent": true,
+    "revision": "cbf2909ba02a",
+    "curated": true,
+    "dark": "outline"
   },
   "want": {
     "source": "https://www.chinatimes.com/images/2020/apple-touch-icon.png",

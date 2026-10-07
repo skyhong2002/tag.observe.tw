@@ -20,6 +20,8 @@ console.log('Candidate discovery browser passed: Chromium starts and closes.');
 // must ship the matching PNGs, not just a healthy gateway and an older UI.
 const icons = JSON.parse(await readFile(join(directory, 'app/data/favicon-local.json'), 'utf8'));
 assert.ok(Object.keys(icons).length > 0, 'Media icon manifest must not be empty');
+const catalog = JSON.parse(await readFile(join(directory, 'app/data/favicon-catalog.json'), 'utf8'));
+for (const media of Object.keys(catalog)) assert.ok(Object.hasOwn(icons, media), `${media}: missing source logo`);
 await Promise.all(
   Object.entries(icons).map(async ([media, entry]) => {
     assert.match(media, /^[a-z0-9_-]+$/);
