@@ -175,6 +175,14 @@ function discover(items: FeedItem[]) {
 describe('discovered full content persistence', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('rejects headline-length RSS tags in both the article and ranking index', async () => {
+    discover([{ ...item, tags: ['地方大小事', '高雄市', '經濟部「歡慶十月-精彩好市券」登場 高雄4處夜市連四週祭雙倍優惠'] }]);
+    const { db, rows, tags } = memoryDb();
+    await runIndex(db, spec, { now: () => now });
+    expect(rows[0].tags).toEqual(['地方大小事', '高雄市']);
+    expect(tags.map((tag) => tag.tag)).toEqual(['地方大小事', '高雄市']);
+  });
+
   it('persists verified provider citations on both insert and body repair', async () => {
     discover([{ ...item, verifiedProvider: '新唐人電視台' }]);
     const inserted = memoryDb();

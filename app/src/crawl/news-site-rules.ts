@@ -36,6 +36,28 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // an explicit host, article URL shape, and main-article container. Header clocks,
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
+  {
+    host: 'upmedia.mg',
+    path: /^\/tw\/[^/]+\/[^/]+\/\d+(?:\?|$)/,
+    bodySelector: '.news-box-text',
+    plainTextBody: true,
+    bodyExcludeSelector: '.news-box-text .mbt-text, .news-box-text .news-foot, .news-box-text .rss_close',
+  },
+  {
+    host: 'setn.com',
+    path: /^\/(?:news\/\d+|News\.aspx\?)/i,
+    bodySelector: '#newsContent',
+    publishedSelector: '.article_time_box .time_item:first-child > span',
+    preferPrintedPublication: true,
+  },
+  {
+    host: 'taronews.tw',
+    path: /^\/\d{4}\/\d{2}\/\d{2}\/\d+\/$/,
+    bodySelector: 'article .entry-content',
+    publishedSelector: '.post-header time.post-published:contains("發表時間")',
+    publishedAttribute: 'datetime',
+    preferPrintedPublication: true,
+  },
   // EBC's JSON-LD rewrites punctuation and merges headlines into the prose.
   {
     host: 'news.ebc.net.tw',

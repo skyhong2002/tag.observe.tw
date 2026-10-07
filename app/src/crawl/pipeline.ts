@@ -20,6 +20,11 @@ export interface Logger {
 }
 const noop: Logger = { info() {}, warn() {} };
 const trunc = (s: string | null | undefined, n: number) => (s == null ? null : s.slice(0, n));
+// Match the article extractor's keyword limit at every persistence path.
+// Some WordPress RSS feeds put the entire headline in a category/tag field.
+const usableTags = (tags: string[], media: string) => [
+  ...new Set(tags.map(normalizeTag).filter((tag) => Buffer.byteLength(tag) > 1 && tag.length <= 30 && !isOwnMediaTag(tag, media))),
+];
 const PLAIN_SITEMAP_WINDOW_MS = 2 * 86400e3;
 const PLAIN_SITEMAP_MAX = 300;
 const FEED_START = /^\s*(?:<\?xml[^>]*>\s*)?(?:<\?xml-stylesheet[^>]*>\s*)?<(?:urlset|sitemapindex|rss|feed|rdf:RDF)\b/;
@@ -183,7 +188,7 @@ export async function runIndex(
               category: trunc(it.category, 64),
               creator: trunc(content?.authors.length ? content.authors.join('、') : it.creator, 256),
               description: trunc(it.description, 4000),
-              tags: (it.tags ?? []).map(normalizeTag).filter((tag) => tag && !isOwnMediaTag(tag, spec.media)),
+              tags: usableTags(it.tags ?? [], spec.media),
               fetchedAt: content ? started : null,
               fetchStatus: content ? (it.tags?.length ? 'ok' : 'notags') : null,
               ...(content
@@ -323,7 +328,7 @@ async function indexTags(db: Db, media: string, rows: Array<{ url: string; tags:
   const values = rows.flatMap((r) => {
     const article = byUrl.get(r.url);
     return article
-      ? [...new Set(r.tags.map(normalizeTag).filter((t) => Buffer.byteLength(t) > 1 && !isOwnMediaTag(t, media)))].map((tag) => ({
+      ? usableTags(r.tags, media).map((tag) => ({
           articleId: article.id,
           tag: tag.slice(0, 60),
           publishedAt: article.publishedAt,
@@ -459,7 +464,7 @@ export async function runArticles(
                   ? pageTitle
                   : null;
           const titleTags = !detail.tags.length && vocab ? tagsFromTitle(title || row.title || '', vocab) : [];
-          const tags = (detail.tags.length ? detail.tags : titleTags).filter((tag) => !isOwnMediaTag(tag, spec.media));
+          const tags = usableTags(detail.tags.length ? detail.tags : titleTags, spec.media);
           // Discovered links have no listing time; adopt the page's published
           // time unless it is in the future or implausibly old.
           const metaTime =

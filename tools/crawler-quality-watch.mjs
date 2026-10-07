@@ -52,12 +52,12 @@ await mkdir(roundDir, { recursive: true });
 const json = (value) => (typeof value === 'string' ? JSON.parse(value) : value);
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 try {
-  // Published-time index bounds this to recent articles; legacy imports are excluded.
+  // Acquisition time defines the population, even for archive stories or bad
+  // future publication dates. A server-side budget bounds this read-only scan.
   const [rows] = await pool.execute(
-    `SELECT id,media,content_fetched_at FROM articles
-    WHERE source='own' AND published_at >= ? AND published_at <= ?
-    AND content_fetched_at >= ? AND content_fetched_at < ? ORDER BY media,id`,
-    [new Date(+until - 7 * 86400000), until, new Date(state.cursor), until],
+    `SET STATEMENT max_statement_time=30 FOR SELECT id,media,content_fetched_at FROM articles
+    WHERE source='own' AND content_fetched_at >= ? AND content_fetched_at < ? ORDER BY media,id`,
+    [new Date(state.cursor), until],
   );
   const seen = new Set(state.seen);
   const groups = Map.groupBy(
@@ -76,6 +76,8 @@ try {
       );
     }
   }
+  round.population = Object.values(round.populations).reduce((sum, count) => sum + count, 0);
+  await writeFile(`${roundDir}/selection.json`, JSON.stringify({ ...round, selected: chosen }, null, 2));
   // Sequential fetches plus a per-request delay avoid competing with the crawler.
   for (const chosenRow of chosen) {
     const [records] = await pool.execute(
@@ -101,6 +103,9 @@ try {
         if (JSON.stringify(stored.authors ?? []) !== JSON.stringify(parsed.authors)) evidence.flags.push('authors-differ');
         if (parsed.bodyStatus !== 'ok') evidence.flags.push(`body-${parsed.bodyStatus}`);
         if (!parsed.authors.length) evidence.flags.push('no-author-credit');
+        if (!parsed.publishedAt) evidence.flags.push('no-parsed-publication');
+        if (+new Date(stored.published_at) > +until + 3600000) evidence.flags.push('stored-future-publication');
+        if (parsed.publishedAt && +parsed.publishedAt > +until + 3600000) evidence.flags.push('parsed-future-publication');
         const keys = (items) =>
           (items ?? [])
             .map((item) => item.media)
@@ -127,7 +132,7 @@ try {
     await new Promise((r) => setTimeout(r, 750));
   }
   // Only advance the cursor after every selected sample has a durable record.
-  state.seen = [...seen, ...rows.map((row) => row.id)];
+  state.seen = [...new Set([...seen, ...rows.map((row) => row.id)])];
   state.cursor = until.toISOString();
   round.finished = new Date().toISOString();
   await writeFile(`${roundDir}/round.json`, JSON.stringify(round, null, 2));
@@ -136,7 +141,7 @@ try {
     until: round.until,
     file: `${roundDir}/round.json`,
     samples: round.samples.length,
-    population: rows.length,
+    population: round.population,
   });
   if (+until >= +new Date(state.end)) state.completed = true;
   await writeFile(`${statePath}.tmp`, JSON.stringify(state, null, 2));
@@ -146,7 +151,7 @@ try {
     JSON.stringify({
       round: roundDir,
       samples: round.samples.length,
-      population: rows.length,
+      population: round.population,
       end: state.end,
       completed: !!state.completed,
     }),

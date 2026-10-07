@@ -63,3 +63,45 @@ describe('live discovery sources share their article rules', () => {
     expect(detail.publishedAt?.toISOString()).toBe('2026-10-07T10:23:24.000Z');
   });
 });
+
+describe('baseline body and publication evidence', () => {
+  it('retains Upmedia div paragraphs when an embedded tweet is the only p element', () => {
+    const html = `<div class="news-box-text"><div class="mbt-text">圖片圖說</div><div>${prose}</div><div>美國有線電視新聞網（CNN）報導，新聞正文與明示引用。</div><blockquote><p>Embedded social post.</p></blockquote><div>主文結尾。</div><div class="news-foot">相關關鍵字</div><div class="rss_close">延伸閱讀：推薦文章</div></div>`;
+    const detail = extractArticle(html, 'https://www.upmedia.mg/tw/international/headlines/270821');
+    expect(detail.bodyStatus).toBe('ok');
+    expect(detail.body).toContain(prose.trim());
+    expect(detail.body).toContain('主文結尾。');
+    expect(detail.body).not.toMatch(/圖片圖說|相關關鍵字|推薦文章/);
+    expect(extractAttributions(detail.body ?? '', 'upmedia').map((c) => c.media)).toContain('cnn');
+  });
+  it('uses SETN visible publication clock rather than its incorrect UTC declaration', () => {
+    const html = `<script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2026-10-07 18:00 +00:00"}</script><div class="article_time_box"><div class="time_item"><span>2026/10/07 18:00:00</span></div></div><div id="newsContent"><p>${prose}</p></div>`;
+    expect(extractArticle(html, 'https://www.setn.com/news/1918897').publishedAt?.toISOString()).toBe('2026-10-07T10:00:00.000Z');
+  });
+  it('uses Taro publication datetime without taking its later update or header clock', () => {
+    const html = `<span class="topbar-date">2026-10-07 18:55</span><script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2026-10-07"}</script><div class="post-header"><time class="post-published" datetime="2026-10-07T17:49:48+08:00">最後更新</time><time class="post-published" datetime="2026-10-07T14:48:45+08:00">發表時間</time></div><article><div class="entry-content"><p>${prose}</p></div></article>`;
+    expect(extractArticle(html, 'https://taronews.tw/2026/10/07/1209686/').publishedAt?.toISOString()).toBe('2026-10-07T06:48:45.000Z');
+  });
+  it('keeps syndicated Hoo Media reporter names distinct from the publishing aggregator', () => {
+    const html = `<meta name="author" content="蕃新聞"><article><p>【互傳媒／記者 蔡鳳敏／雲林 報導】</p><p>${prose}</p></article>`;
+    expect(extractArticle(html, 'https://n.yam.com/Article/20261007892837').authors).toEqual(['蔡鳳敏']);
+  });
+});
+
+describe('additional independently evidenced credits', () => {
+  it('recognizes the explicit Chuang and Point Media opening reporters', () => {
+    for (const [byline, name] of [
+      ['【創新聞記者陳光蘊／採訪報導】', '陳光蘊'],
+      ['【點傳媒／記者張良舜埔里報導】', '張良舜'],
+    ]) {
+      expect(extractArticle(`<article><p>${byline}</p><p>${prose}</p></article>`, 'https://example.org/news').authors).toEqual([name]);
+    }
+  });
+  it('records a GameRant report citation without inventing its country or citing a mere mention', () => {
+    expect(extractAttributions('根據外媒 GameRant 報導，開發者已完成計畫。', '4gamers')).toEqual([
+      expect.objectContaining({ media: 'gamerant', name: 'Game Rant', countryCode: 'ZZ' }),
+    ]);
+    expect(extractAttributions('GameRant 是這篇報導討論的遊戲網站。', '4gamers')).toEqual([]);
+    expect(extractAttributions('圖片來源：GameRant', '4gamers')).toEqual([]);
+  });
+});
