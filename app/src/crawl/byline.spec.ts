@@ -9,6 +9,17 @@ import {
 } from './byline.ts';
 
 describe('explicit reporter credits', () => {
+  it('extracts NTD Asia Pacific terminal credits even after a merged paragraph', () => {
+    expect(extractClosingReporterNames('完整新聞內容。 新唐人亞太電視 黃亮戩 林嘉韋 邱春蓉 台灣台北報導')).toEqual([
+      '黃亮戩',
+      '林嘉韋',
+      '邱春蓉',
+    ]);
+    expect(extractClosingReporterNames('新聞正文。\n\n新唐人亞太電視 池千里 陳玲芝 綜合報導')).toEqual(['池千里', '陳玲芝']);
+    expect(extractClosingReporterNames('受訪者提到「新唐人亞太電視 池千里 陳玲芝 綜合報導」。')).toEqual([]);
+    expect(extractClosingReporterNames('新唐人亞太電視 池千里 陳玲芝 綜合報導\n\n以上是受訪者的引述。')).toEqual([]);
+  });
+
   it.each(['友站新聞', '社論', '社论', '責任編輯 靳璦', '責任編輯靳璦', '牧迪網頁設計', 'Web Design Studio', '網站製作'])(
     'excludes non-author credit %s',
     (value) => {

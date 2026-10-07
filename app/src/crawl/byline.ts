@@ -352,5 +352,12 @@ export function extractClosingReporterNames(body: string): string[] {
       .split(/\n\s*\n/)
       .at(-1)
       ?.trim() ?? '';
+  // NTD Asia Pacific closes video transcripts with a publisher-prefixed
+  // credit, sometimes merged into the final paragraph by <br> markup.
+  const asiaPacific = new RegExp(
+    `(?:^|[。！？]\\s+)新唐人亞太電視\\s+([^。！？]{2,60}?)\\s+(?:${PLACE}(?:\\s*${PLACE})?|綜合(?:外電)?)報導$`,
+    'u',
+  ).exec(last.normalize('NFKC').replace(/\s+/g, ' '));
+  if (asiaPacific) return creditedNames(asiaPacific[1]);
   return /^新唐人電視台記者[^。！？\n]{2,60}(?:綜合)?報導$/.test(last) ? reporterNames(last) : [];
 }
