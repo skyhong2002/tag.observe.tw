@@ -8,8 +8,7 @@ const number = (value: number) => value.toLocaleString('zh-TW');
 const SHOWN = 8;
 // Same hues as the news graph: orange for shared story groups, violet for explicit citations.
 const segments: Array<{ key: Exclude<keyof MediaPartner, 'id' | 'name' | 'external' | 'total'>; label: string; className: string }> = [
-  { key: 'later', label: '本媒較晚', className: 'bg-orange-500 dark:bg-orange-400' },
-  { key: 'earliest', label: '本媒最早', className: 'bg-orange-200 dark:bg-orange-800' },
+  { key: 'similar', label: '直接文字比對', className: 'bg-orange-500 dark:bg-orange-400' },
   { key: 'cites', label: '引用對方', className: 'bg-violet-500 dark:bg-violet-400' },
   { key: 'citedBy', label: '被對方引用', className: 'bg-violet-200 dark:bg-violet-800' },
 ];
@@ -17,7 +16,7 @@ const segments: Array<{ key: Exclude<keyof MediaPartner, 'id' | 'name' | 'extern
 function PartnerRow({ partner, max }: { partner: MediaPartner; max: number }) {
   const breakdown = segments
     .filter(({ key }) => partner[key] > 0)
-    .map(({ key, label }) => `${label} ${number(partner[key])} 篇`)
+    .map(({ key, label }) => `${label} ${number(partner[key])} 筆`)
     .join(' · ');
   return (
     <li className="py-1.5">
@@ -27,7 +26,7 @@ function PartnerRow({ partner, max }: { partner: MediaPartner; max: number }) {
         </MediaHoverLink>
         <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-400">
           {number(partner.total)}
-          <span className="ml-0.5 text-[10px] text-zinc-500">篇</span>
+          <span className="ml-0.5 text-[10px] text-zinc-500">筆關係</span>
         </span>
       </div>
       <div
@@ -55,8 +54,9 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
   const stats = [
     { label: '引用其他媒體', value: node?.outgoing ?? 0 },
     { label: '被其他媒體引用', value: node?.incoming ?? 0 },
-    { label: '同組最早', value: node?.earliest ?? 0 },
-    { label: '同組較晚', value: node?.later ?? 0 },
+    { label: '同署名跨站', value: node?.sameByline ?? 0 },
+    { label: '已註明來源', value: node?.attributed ?? 0 },
+    { label: '未辨識稿源', value: node?.unattributed ?? 0 },
   ];
   return (
     <section aria-label="與其他媒體的關係" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">

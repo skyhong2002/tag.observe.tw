@@ -5,6 +5,7 @@ import { taipei } from '@/lib/api';
 import { clipHeadline } from '@/lib/event-presentation.mts';
 import { describeGap } from '@/lib/journalists';
 import { readingTitle } from '@/lib/reading.mts';
+import { relationLabel } from '@/lib/relation-label.mts';
 import type { ArticleSimilarity } from '@/lib/similarity';
 
 const percent = (value: number) => `${Math.round(value * 100)}%`;
@@ -55,9 +56,12 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
                     {other.mediaTitle}
                   </MediaHoverLink>
                   <time dateTime={other.publishedAt}>{taipei(other.publishedAt)}</time>
-                  <span className={tone}>{order(publishedAt, other.publishedAt)}</span>
+                  <span className={tone}>
+                    {match.relation?.publication === 'unknown' ? '刊登時間未確認' : order(publishedAt, other.publishedAt)}
+                  </span>
                   <span className="tabular-nums">相似 {percent(match.score)}</span>
                   {match.kind === 'identical' && <span className={tone}>內文相同</span>}
+                  <span className={tone}>{relationLabel(match.relation)}</span>
                 </div>
                 <p className="mt-1 break-words text-[15px] leading-7">
                   <Link href={`/article/${other.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">

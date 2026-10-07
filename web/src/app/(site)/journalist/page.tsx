@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import MethodLink from '@/components/MethodLink';
 import { taipei } from '@/lib/api';
-import { fetchJournalists, INDEX_HOURS, REPOSITORY_URL } from '@/lib/journalists';
+import { fetchJournalists, INDEX_HOURS } from '@/lib/journalists';
 import { pageMetadata } from '@/lib/seo.mts';
 import JournalistTable from './JournalistTable';
 
@@ -25,18 +25,6 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
         <h1 className="text-2xl font-semibold tracking-tight">記者</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           <MethodLink>相似不等於抄襲</MethodLink>
-        </p>
-        <p className="mt-2 max-w-3xl text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-          這些頁面由公開署名自動整理，不是本人建立的檔案。本人不希望出現在記者頁，可在
-          <a
-            href={`${REPOSITORY_URL}/issues/new?title=${encodeURIComponent('記者頁移除請求')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-700 hover:underline dark:text-brand-400"
-          >
-            GitHub 提出移除請求
-          </a>
-          ，或由個人頁的「關於這一頁」直接送出。Issue 是公開的，請勿填寫名字以外的個資；送出後約 15 分鐘內下架。
         </p>
         <nav aria-label="期間" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-zinc-500 dark:text-zinc-400">期間</span>

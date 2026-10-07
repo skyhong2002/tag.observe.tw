@@ -444,11 +444,12 @@ export function isExcludedJournalist(name: string): boolean {
 }
 
 /** People (or consistent pen names) credited in one stored byline value. */
-export function personNames(raw: string): string[] {
+export function personNames(raw: string, includeExcluded = false): string[] {
   if (!raw || raw.length > 200) return [];
   const result: string[] = [];
   for (const piece of piecesOf(raw)) {
-    for (const name of namesInPiece(piece)) if (!result.includes(name) && !isExcludedJournalist(name)) result.push(name);
+    for (const name of namesInPiece(piece))
+      if (!result.includes(name) && (includeExcluded || !isExcludedJournalist(name))) result.push(name);
   }
   return result;
 }

@@ -1,5 +1,6 @@
 import { API_ORIGIN } from './api';
 import type { StoredContent } from './article-content';
+import { fetchEventSnapshot } from './event-snapshot';
 import type { Camp, CampBaseline, EventCoverage, EventItem, EventNews } from './event-types.mts';
 
 export type { Camp, CampBaseline, EventCoverage, EventItem, EventNews };
@@ -101,8 +102,7 @@ export interface EventsSnapshot {
   baseline?: CampBaseline;
   events: EventItem[];
 }
-export const fetchEvents = (limit = 30, at?: string) =>
-  get<EventsSnapshot>(`/api/v1/events?limit=${limit}${at ? `&at=${encodeURIComponent(at)}` : ''}`, 120);
+export const fetchEvents = (limit = 30, at?: string) => fetchEventSnapshot(limit, at);
 export interface ArchivedThread {
   id: number;
   firstTime: string;

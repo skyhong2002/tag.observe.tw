@@ -104,3 +104,34 @@ PATH=/home/deck/.local/bin:$PATH node --env-file=.env tools/analytics-once.ts
 
 驗證：`npx vitest run app/src/jobs/analytics-job.spec.ts`；整合測試 `app/test/integration.spec.ts`（需 `TEST_DB_URL`）
 以假 Google 回應跑 job 兩次並檢查 API。
+
+## 看板的本站線上讀者
+
+看板的「本站線上讀者」使用同源 `/api/v1/reader-presence`，與 GA4 最近 30 分鐘活動人數分開。
+全站可見頁面載入時、回到前景及每 30 秒送一次心跳；最近 90 秒內回報的瀏覽器計為在線。
+不需點擊或重新整理，因此可見的常駐看板也會計入。頁面關閉、休眠或進入背景後最多 90 秒自然過期；
+同一瀏覽器多分頁共享 localStorage 的隨機 UUID，24 小時輪替，不用 IP、網址、指紋或 GA 識別碼。
+輪替交界可能有最多 90 秒的重疊；不同瀏覽器／無痕視窗仍各自計數，這是瀏覽器數估計，不能當成精確人數。
+
+遵守既有「不計入統計」選擇、正式網域限制及自動化排除；storage 無法使用時不計入，避免按分頁重複計數。
+看板顯示「包含你的瀏覽器」、「你已選擇不計入」或連線狀態，可點進設定頁調整。
+請求失敗顯示 `—`，不假裝成 0。此心跳不增加 GA page_view；僅在 Google 腳本已載入、追蹤端點可連線時送出，以尊重阻擋追蹤的選擇。
+
+目前由單一 Fastify gateway 在記憶體保存 UUID 與最後回報時間，每 90 秒清理，不寫資料庫或歷史紀錄；
+服務重啟後會在下一輪心跳重建，若未來擴充多個 gateway，需先改為共用 TTL 儲存。
+API 回應 `no-store`，GET/HEAD 不會建立讀者；POST 僅接受正式站 Origin 的 JSON 小型請求，沿用 API 限流。
+它不是身分驗證或反作弊統計。舊 liveboard feed 的 `visitors` 仍保留 GA 資料相容性，但看板不再把它當線上人數。
+
+
+### 看板綠點與防追蹤
+
+綠點表示這個瀏覽器已通過追蹤可用性檢查，且本輪本站心跳成功；不是「全站有人」就亮綠點。
+未計入或無法確認時為灰點，其他讀者的總人數仍可讀取。滑鼠提示說明自己的狀態。
+使用者 opt-out、DNT=1/yes、GPC=true 時，Google tag 與心跳都停用。
+Google 腳本尚未載入或遭阻擋，也不送心跳。
+
+每輪心跳前，以不帶 measurement ID、使用者識別碼、事件、Cookie、referrer 的 POST，確認原本
+`https://www.google-analytics.com/g/collect` 端點可連線；不代理、不改網域、不繞過封鎖。
+DNS／Pi-hole、AdBlock 或網路錯誤導致失敗時，停止心跳並嘗試移除既有在線紀錄；無法移除時最多 90 秒過期。
+檢查本身不產生 GA 瀏覽量。opaque 回應僅代表請求未遭瀏覽器阻止，不代表 GA 已入帳；
+瀏覽器無法可靠辨認所有阻擋工具或針對特定事件的過濾，也無法區分斷網與防追蹤，統一顯示未確認。

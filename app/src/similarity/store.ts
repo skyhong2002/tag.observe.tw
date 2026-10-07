@@ -5,8 +5,10 @@ import type { Db } from '../db/client.ts';
 import { articleCitations, articleSketches, articles, similarityPairs } from '../db/schema.ts';
 import { type Attribution, outletIdentity } from './attribution.ts';
 import { PAIR_WINDOW_MS, publicArticle } from './compute.ts';
+import { classifyRelation, similarityConnection } from './relation.ts';
 import type {
   EvidenceRef,
+  PairRelationInfo,
   SimilarityArticle,
   SimilarityEdge,
   SimilarityEvidence,
@@ -72,6 +74,8 @@ export async function loadArticles(db: Db, ids: Iterable<number>): Promise<Map<n
         publishedAt: articles.publishedAt,
         authors: articles.authors,
         creator: articles.creator,
+        crawledAt: articles.crawledAt,
+        fetchedAt: articles.fetchedAt,
         attributions: articles.attributions,
         chars: sql<number | null>`${articleSketches.chars}`,
       })
@@ -88,6 +92,7 @@ export function toPair(pair: StoredPair, byId: Map<number, SimilarityArticle>): 
   if (!a || !b) return null;
   return {
     id: `${pair.aId}-${pair.bId}`,
+    relation: classifyRelation(a, b),
     a,
     b,
     score: pair.score,
@@ -119,11 +124,8 @@ export interface Origin {
 }
 const pairKey = (a: number, b: number) => `${Math.min(a, b)}:${Math.max(a, b)}`;
 
-/**
- * Connected components of the pair graph. Every member points to the same
- * earliest article, even without a direct pair with it; scores and excerpts
- * stay on measured pairs. Mirrors the grouping the page used to do in the browser.
- */
+/** Connected components for browsing. Evidence links use only directly measured pairs.
+ * The earliest member is a display representative, never an inferred source. */
 export function storyGroups(pairs: StoredPair[]) {
   const parents = new Map<number, number>();
   const stubs = new Map<number, Stub>();
@@ -166,15 +168,11 @@ export function storyGroups(pairs: StoredPair[]) {
     group.source = group.members[0];
     group.tiedFirst = group.members.filter((m) => m.at === group.source.at).length;
     group.pairs.sort((a, b) => b.score - a.score || a.aId - b.aId || a.bId - b.bId);
-    for (const article of group.members) {
-      if (article.id === group.source.id) continue;
-      origins.push({
-        id: `${group.id}:${article.id}`,
-        article,
-        source: group.source,
-        group,
-        directPair: measured.get(pairKey(article.id, group.source.id)) ?? null,
-      });
+    for (const pair of group.pairs) {
+      const a = stubs.get(pair.aId)!,
+        b = stubs.get(pair.bId)!;
+      const [source, article] = a.at < b.at || (a.at === b.at && a.id < b.id) ? [a, b] : [b, a];
+      origins.push({ id: `${group.id}:${pairKey(a.id, b.id)}`, article, source, group, directPair: pair });
     }
   }
   return { groups, origins };
@@ -198,6 +196,7 @@ export interface IndexView {
   analyzed: Map<string, number>;
   nodes: SimilarityNode[];
   edges: SimilarityEdge[];
+  articleById?: Map<number, SimilarityArticle>;
 }
 export async function loadIndexView(db: Db, from: Date, to: Date, threshold: number): Promise<IndexView> {
   const [pairs, citations, analyzedRows] = await Promise.all([
@@ -220,33 +219,101 @@ export async function loadIndexView(db: Db, from: Date, to: Date, threshold: num
   const analyzed = new Map(analyzedRows.map((r) => [r.media, Number(r.n)]));
   const { groups, origins } = storyGroups(pairs);
 
+  const known = await loadArticles(
+    db,
+    pairs.flatMap((pair) => [pair.aId, pair.bId]),
+  );
+  const { nodes, edges } = aggregateRelations(pairs, known, analyzed, citations);
+  return { from, to, threshold, pairs, groups, origins, citations, analyzed, nodes, edges, articleById: known };
+}
+
+/** Direct measured relationships, with chronology independent of source attribution. */
+export function aggregateRelations(
+  pairs: StoredPair[],
+  known: Map<number, SimilarityArticle>,
+  analyzed: Map<string, number>,
+  citations: CitationRow[],
+) {
   const edges = new Map<string, SimilarityEdge>();
-  const counts = new Map<
-    string,
-    { similar: Set<number>; earliest: Set<number>; later: Set<number>; outgoing: Set<number>; incoming: Set<number> }
-  >();
+  type CountKey = 'similar' | 'earliest' | 'later' | 'sameByline' | 'attributed' | 'unattributed' | 'outgoing' | 'incoming';
+  const counts = new Map<string, Record<CountKey, Set<number>>>();
   const count = (media: string) => {
     if (!counts.has(media))
-      counts.set(media, { similar: new Set(), earliest: new Set(), later: new Set(), outgoing: new Set(), incoming: new Set() });
+      counts.set(media, {
+        similar: new Set(),
+        earliest: new Set(),
+        later: new Set(),
+        sameByline: new Set(),
+        attributed: new Set(),
+        unattributed: new Set(),
+        outgoing: new Set(),
+        incoming: new Set(),
+      });
     return counts.get(media)!;
   };
-  for (const origin of origins) {
-    count(origin.article.media).similar.add(origin.article.id);
-    count(origin.article.media).later.add(origin.article.id);
-    count(origin.source.media).similar.add(origin.source.id);
-    count(origin.source.media).earliest.add(origin.source.id);
-    if (origin.article.media === origin.source.media) continue; // No media self-loops.
-    const key = `similarity:${origin.article.media}:${origin.source.media}`;
-    const edge = edges.get(key) ?? { source: origin.article.media, target: origin.source.media, kind: 'similarity', count: 0, score: null };
+  const citationKeys = new Set(citations.map((c) => `${c.articleId}:${c.source}`));
+  const sameBylineCredits = new Set<string>();
+  for (const stored of pairs) {
+    const pair = toPair(stored, known);
+    if (!pair || pair.a.media === pair.b.media) continue;
+    const { a, b } = pair,
+      relation = pair.relation!;
+    const category = relation.kind === 'attributed' ? 'attributed' : relation.kind === 'same-byline' ? 'sameByline' : 'unattributed';
+    for (const article of [a, b]) {
+      count(article.media).similar.add(article.id);
+      count(article.media)[category].add(article.id);
+    }
+    // Matching bylines or source credits are counted separately, never as follow-up reporting.
+    if (relation.kind === 'unattributed' && !relation.sharedAuthors.length && ['a-earlier', 'b-earlier'].includes(relation.publication)) {
+      const [earlier, later] = relation.publication === 'a-earlier' ? [a, b] : [b, a];
+      count(earlier.media).earliest.add(earlier.id);
+      count(later.media).later.add(later.id);
+    }
+    const connection = similarityConnection(a, b, relation);
+    if (connection.relation === 'same-byline') {
+      sameBylineCredits.add(`${a.id}:${b.media}`);
+      sameBylineCredits.add(`${b.id}:${a.media}`);
+    }
+    // A measured pair with a stored direct credit already has a purple citation edge.
+    if (
+      connection.relation === 'attributed' &&
+      ((relation.aCitesB && citationKeys.has(`${a.id}:${b.media}`)) || (relation.bCitesA && citationKeys.has(`${b.id}:${a.media}`)))
+    )
+      continue;
+    const { source, target } = connection;
+    const key = `similarity:${connection.relation}:${connection.directed}:${source}:${target}`;
+    const edge = edges.get(key) ?? {
+      source,
+      target,
+      kind: 'similarity' as const,
+      relation: connection.relation,
+      directed: connection.directed,
+      count: 0,
+      score: null,
+      sameByline: 0,
+      attributed: 0,
+      unattributed: 0,
+    };
     edge.count++;
-    if (origin.directPair) edge.score = Math.max(edge.score ?? 0, origin.directPair.score);
+    edge[category] = (edge[category] ?? 0) + 1;
+    edge.score = Math.max(edge.score ?? 0, pair.score);
     edges.set(key, edge);
   }
   for (const citation of citations) {
     count(citation.media).outgoing.add(citation.articleId);
     count(citation.source).incoming.add(citation.articleId);
+    if (sameBylineCredits.has(`${citation.articleId}:${citation.source}`)) continue;
     const key = `citation:${citation.media}:${citation.source}`;
-    const edge = edges.get(key) ?? { source: citation.media, target: citation.source, kind: 'citation', count: 0, score: null };
+    const edge = edges.get(key) ?? {
+      source: citation.media,
+      target: citation.source,
+      kind: 'citation',
+      count: 0,
+      score: null,
+      sameByline: 0,
+      attributed: 0,
+      unattributed: 0,
+    };
     edge.count++;
     edges.set(key, edge);
   }
@@ -262,20 +329,24 @@ export async function loadIndexView(db: Db, from: Date, to: Date, threshold: num
       articles: analyzed.get(media) ?? 0,
       external: !analyzed.has(media),
       similar: c?.similar.size ?? 0,
+      sameByline: c?.sameByline.size ?? 0,
+      attributed: c?.attributed.size ?? 0,
+      unattributed: c?.unattributed.size ?? 0,
       earliest: c?.earliest.size ?? 0,
       later: c?.later.size ?? 0,
       outgoing: c?.outgoing.size ?? 0,
       incoming: c?.incoming.size ?? 0,
     };
   });
-  return { from, to, threshold, pairs, groups, origins, citations, analyzed, nodes, edges: [...edges.values()] };
+  return { nodes, edges: [...edges.values()] };
 }
 
 export interface EvidenceFilter {
   mode: 'all' | 'similarity' | 'citation';
+  relation?: 'attributed' | 'same-byline' | 'unattributed';
   node?: string;
-  edge?: { kind: 'similarity' | 'citation'; source: string; target: string };
-  /** Citations: outgoing cites another outlet. Similarity: outgoing published later, incoming was the group's earliest. */
+  edge?: { kind: 'similarity' | 'citation'; source: string; target: string; relation?: PairRelationInfo['kind']; directed?: boolean };
+  /** Node evidence direction filters explicit citations; edge direction is selected separately. */
   direction: 'all' | 'outgoing' | 'incoming';
   /** Media on screen; relationships need both ends inside. */
   scope?: Set<string>;
@@ -295,7 +366,14 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
     (!filter.focus || filter.focus.has(source) || filter.focus.has(target));
   const { node, edge, direction } = filter;
   let items: LightItem[] = [];
-  if (filter.mode !== 'similarity' && (!edge || edge.kind === 'citation'))
+  const known = new Map(view.articleById ?? []);
+  if ((filter.relation || edge?.relation) && !known.size)
+    for (const [id, article] of await loadArticles(
+      db,
+      view.pairs.flatMap((pair) => [pair.aId, pair.bId]),
+    ))
+      known.set(id, article);
+  if (!filter.relation && filter.mode !== 'similarity' && (!edge || edge.kind === 'citation'))
     for (const citation of view.citations) {
       if (!includes(citation.media, citation.source)) continue;
       if (node) {
@@ -313,12 +391,30 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
   if (filter.mode !== 'citation' && (!edge || edge.kind === 'similarity'))
     for (const origin of view.origins) {
       const { article, source } = origin;
+      if (filter.relation && (!origin.directPair || toPair(origin.directPair, known)?.relation?.kind !== filter.relation)) continue;
+      if (edge?.relation) {
+        const pair = origin.directPair && toPair(origin.directPair, known);
+        if (!pair) continue;
+        const connection = similarityConnection(pair.a, pair.b, pair.relation);
+        if (
+          connection.relation !== edge.relation ||
+          connection.directed !== edge.directed ||
+          connection.source !== edge.source ||
+          connection.target !== edge.target
+        )
+          continue;
+      }
       if (!includes(article.media, source.media)) continue;
       if (node) {
-        const later = article.media === node && (filter.mode !== 'similarity' || direction !== 'incoming');
-        const earliest = source.media === node && (filter.mode !== 'similarity' || direction !== 'outgoing');
-        if (!later && !earliest) continue;
-      } else if (edge && (article.media !== edge.source || source.media !== edge.target)) continue;
+        if (article.media !== node && source.media !== node) continue;
+      } else if (
+        edge &&
+        !(
+          (article.media === edge.source && source.media === edge.target) ||
+          (article.media === edge.target && source.media === edge.source)
+        )
+      )
+        continue;
       items.push({ kind: 'origin', key: `origin:${origin.id}`, at: article.at, origin });
     }
   const hiddenSources = filter.scope
@@ -326,7 +422,6 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
     : 0;
 
   const words = filter.query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const known = new Map<number, SimilarityArticle>();
   if (words.length) {
     const ids = items.flatMap((item) =>
       item.kind === 'citation' ? [item.citation.articleId] : [item.origin.article.id, item.origin.source.id],
@@ -355,7 +450,7 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
         source.mediaTitle,
         ...article.authors,
         ...source.authors,
-        ...item.origin.group.pairs.map((pair) => pair.evidence),
+        item.origin.directPair?.evidence ?? '',
       );
     });
   }

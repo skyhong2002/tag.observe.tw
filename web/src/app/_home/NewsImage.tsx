@@ -17,7 +17,12 @@ export default function NewsImage({ src, priority = false }: { src: string | nul
           src={src}
           alt=""
           fill
-          sizes={priority ? '(max-width: 760px) 100vw, 55vw' : '(max-width: 760px) 35vw, 25vw'}
+          sizes={
+            priority
+              ? '(max-width: 640px) calc(100vw - 34px), (max-width: 1000px) calc(66vw - 36px), (max-width: 1152px) calc(52vw - 40px), 560px'
+              : '(max-width: 640px) 26vw, (max-width: 1000px) 17vw, 150px'
+          }
+          fetchPriority={priority ? 'high' : undefined}
           loading={priority ? 'eager' : 'lazy'}
           className={styles.photo}
           onError={() => setFailed(true)}

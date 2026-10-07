@@ -89,7 +89,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media/{media}`](#api-v1-media-media) | 單一媒體最近的文章與熱門標籤 |
 | [`GET /api/v1/media-traffic-comparison`](#api-v1-media-traffic-comparison) | 本站爬蟲跨月收錄量 |
 | [`GET /api/v1/media-stats`](#api-v1-media-stats) | 各媒體收錄量與爬蟲狀態 |
-| [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、轉載組與發稿量 |
+| [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 
 ## API 本身
 
@@ -327,7 +327,7 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 
 **內文相似與明確引用關係**
 
-讀取全量相似度索引：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，配對永久保存，每 10 分鐘更新；排除「內容」聯播來源。index 揭露期間內的比對篇數與尚待比對篇數。相似連線由同組較晚刊登的媒體指向同組最早刊登的媒體（早刊登不等於原創）；citation 由刊登媒體指向明確提及來源，並不保證最初作者。文章證據另由 /api/v1/similarity/evidence 分頁取得。
+讀取全量相似度索引：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，配對永久保存，每 10 分鐘更新；排除「內容」聯播來源。index 揭露期間內的比對篇數與尚待比對篇數。相似連線只使用直接比對，依同署名、明示來源與刊登先後分開彙整；citation 由刊登媒體指向明確提及來源，並不保證最初作者。文章證據另由 /api/v1/similarity/evidence 分頁取得。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -382,17 +382,25 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 | `nodes[].countryCode` | string |  |
 | `nodes[].articles` | integer | 期間內已比對篇數 |
 | `nodes[].external` | boolean | 只被引用、沒有收錄內文的媒體 |
-| `nodes[].similar` | integer | 屬於同題報導組的文章數 |
-| `nodes[].earliest` | integer | 其中為同組最早刊登的篇數 |
-| `nodes[].later` | integer | 其中同組已有更早刊登的篇數 |
+| `nodes[].similar` | integer | 有直接相似配對的文章數 |
+| `nodes[].sameByline` | integer | 同署名跨站、無明示來源的文章數 |
+| `nodes[].attributed` | integer | 彼此引用或有共同明示來源的文章數 |
+| `nodes[].unattributed` | integer | 未辨識稿源的文章數 |
+| `nodes[].earliest` | integer | 未辨識稿源配對中標示刊登較早的篇數；不含同署名或時間未確認 |
+| `nodes[].later` | integer | 未辨識稿源配對中標示刊登較晚的篇數；不含同署名或時間未確認 |
 | `nodes[].outgoing` | integer | 引用其他媒體的篇數 |
 | `nodes[].incoming` | integer | 被其他媒體引用的篇數 |
 | `edges` | object[] |  |
 | `edges[].source` | string |  |
 | `edges[].target` | string |  |
 | `edges[].kind` | "similarity" \| "citation" |  |
+| `edges[].relation` | "attributed" \| "same-byline" \| "unattributed" | 視覺分類，同署名優先 |
+| `edges[].directed` | boolean | 箭頭由 target 指向 source；未辨識稿源僅表示刊登先後 |
 | `edges[].count` | integer |  |
 | `edges[].score` | number \| null |  |
+| `edges[].sameByline` | integer |  |
+| `edges[].attributed` | integer |  |
+| `edges[].unattributed` | integer |  |
 
 錯誤：`400` 參數無效。
 
@@ -404,7 +412,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 
 **相似與引用證據（分頁）**
 
-與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為同題報導：文章連回同組最早刊登的文章；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選。
+與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為直接比對的相似文章配對，不推定稿源；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -414,12 +422,15 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 | `threshold` | query | number | 最低 Dice 相似度，0.5–1，預設 `0.65` |
 | `mode` | query | "all" \| "similarity" \| "citation" | 關係類型，預設 `all` |
 | `node` | query | string | 只看與此媒體有關的證據 |
+| `edgeRelation` | query | "attributed" \| "same-byline" \| "unattributed" | 相似連線視覺分類（同署名優先） |
+| `edgeDirected` | query | "true" \| "false" | 該相似連線是否有箭頭 |
 | `edgeKind` | query | "similarity" \| "citation" | 只看一條連線：類型（需同時給 source、target） |
 | `source` | query | string | 連線起點媒體 |
 | `target` | query | string | 連線終點媒體 |
-| `direction` | query | "all" \| "outgoing" \| "incoming" | 引用：outgoing 引用他媒、incoming 被引用；相似：outgoing 較晚刊登、incoming 同組最早，預設 `all` |
+| `direction` | query | "all" \| "outgoing" \| "incoming" | 引用：outgoing 引用他媒、incoming 被引用；相似配對無方向，忽略此參數，預設 `all` |
 | `scope` | query | string | 逗號分隔的媒體；兩端都要在內 |
 | `focus` | query | string | 逗號分隔的媒體；至少一端在內 |
+| `relation` | query | "attributed" \| "same-byline" \| "unattributed" | 相似配對來源線索，指定時只回相似配對 |
 | `q` | query | string | 關鍵字（最多 100 字元） |
 | `page` | query | integer | 頁碼，從 0 開始，預設 `0` |
 
@@ -436,16 +447,27 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `total` | integer | 符合條件的證據總數 |
 | `page` | integer |  |
 | `pageSize` | integer |  |
-| `hiddenSources` | integer | scope 內媒體的同組來源在 scope 外的則數 |
+| `hiddenSources` | integer | scope 內媒體的直接比對對象在 scope 外的則數 |
 | `items` | object[] |  |
 | `items[].kind` | "origin" \| "citation" |  |
 | `items[].key` | string |  |
 | `items[].publishedAt` | string (ISO 時間) |  |
 | `items[].articleId` | integer |  |
-| `items[].sourceId` | integer | origin：同組最早刊登的文章 id |
+| `items[].sourceId` | integer | origin：直接比對的另一篇文章 id；不是稿源 |
 | `items[].groupId` | string | origin：同題報導組 id |
 | `items[].directPair` | object \| null |  |
 | `items[].directPair.id` | string |  |
+| `items[].directPair.relation` | object |  |
+| `items[].directPair.relation.kind` | "attributed" \| "same-byline" \| "unattributed" | 分類優先序：明示来源、同署名、未辨識稿源 |
+| `items[].directPair.relation.sharedAuthors` | string[] | 共同人名署名；不保證同一人 |
+| `items[].directPair.relation.aCitesB` | boolean |  |
+| `items[].directPair.relation.bCitesA` | boolean |  |
+| `items[].directPair.relation.aCreditRole` | "來源" \| "引用" | A 對 B 的來源標示角色 |
+| `items[].directPair.relation.bCreditRole` | "來源" \| "引用" | B 對 A 的來源標示角色 |
+| `items[].directPair.relation.commonSources` | object[] |  |
+| `items[].directPair.relation.commonSources[].media` | string |  |
+| `items[].directPair.relation.commonSources[].name` | string |  |
+| `items[].directPair.relation.publication` | "same" \| "a-earlier" \| "b-earlier" \| "unknown" | 標示刊登先後，與稿源無關；同一分鐘或時間未確認不計方向 |
 | `items[].directPair.a` | object |  |
 | `items[].directPair.a.id` | integer |  |
 | `items[].directPair.a.media` | string |  |
@@ -456,6 +478,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `items[].directPair.a.url` | string |  |
 | `items[].directPair.a.publishedAt` | string (ISO 時間) |  |
 | `items[].directPair.a.authors` | string[] |  |
+| `items[].directPair.a.datePending` | boolean |  |
 | `items[].directPair.a.bodyLength` | integer |  |
 | `items[].directPair.a.attributions` | object[] |  |
 | `items[].directPair.a.attributions[].media` | string |  |
@@ -474,6 +497,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `items[].directPair.b.url` | string |  |
 | `items[].directPair.b.publishedAt` | string (ISO 時間) |  |
 | `items[].directPair.b.authors` | string[] |  |
+| `items[].directPair.b.datePending` | boolean |  |
 | `items[].directPair.b.bodyLength` | integer |  |
 | `items[].directPair.b.attributions` | object[] |  |
 | `items[].directPair.b.attributions[].media` | string |  |
@@ -504,6 +528,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `articles.{鍵}.url` | string |  |
 | `articles.{鍵}.publishedAt` | string (ISO 時間) |  |
 | `articles.{鍵}.authors` | string[] |  |
+| `articles.{鍵}.datePending` | boolean |  |
 | `articles.{鍵}.bodyLength` | integer |  |
 | `articles.{鍵}.attributions` | object[] |  |
 | `articles.{鍵}.attributions[].media` | string |  |
@@ -514,12 +539,23 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `articles.{鍵}.attributions[].kind` | "explicit" |  |
 | `groups` | {鍵: object} | 以 id 為鍵，本頁用到的同題報導組 |
 | `groups.{鍵}.id` | string |  |
-| `groups.{鍵}.sourceId` | integer \| null | 同組最早刊登的文章 id |
+| `groups.{鍵}.sourceId` | integer \| null | 展示代表文章 id；不是稿源 |
 | `groups.{鍵}.articleIds` | integer[] | 同組文章，刊登時間先後排序 |
 | `groups.{鍵}.tiedFirst` | integer | 同時最早刊登的篇數 |
 | `groups.{鍵}.pairCount` | integer | 同組相似配對總數 |
 | `groups.{鍵}.pairs` | object[] | 分數最高的最多 100 組 |
 | `groups.{鍵}.pairs[].id` | string |  |
+| `groups.{鍵}.pairs[].relation` | object |  |
+| `groups.{鍵}.pairs[].relation.kind` | "attributed" \| "same-byline" \| "unattributed" | 分類優先序：明示来源、同署名、未辨識稿源 |
+| `groups.{鍵}.pairs[].relation.sharedAuthors` | string[] | 共同人名署名；不保證同一人 |
+| `groups.{鍵}.pairs[].relation.aCitesB` | boolean |  |
+| `groups.{鍵}.pairs[].relation.bCitesA` | boolean |  |
+| `groups.{鍵}.pairs[].relation.aCreditRole` | "來源" \| "引用" | A 對 B 的來源標示角色 |
+| `groups.{鍵}.pairs[].relation.bCreditRole` | "來源" \| "引用" | B 對 A 的來源標示角色 |
+| `groups.{鍵}.pairs[].relation.commonSources` | object[] |  |
+| `groups.{鍵}.pairs[].relation.commonSources[].media` | string |  |
+| `groups.{鍵}.pairs[].relation.commonSources[].name` | string |  |
+| `groups.{鍵}.pairs[].relation.publication` | "same" \| "a-earlier" \| "b-earlier" \| "unknown" | 標示刊登先後，與稿源無關；同一分鐘或時間未確認不計方向 |
 | `groups.{鍵}.pairs[].a` | object |  |
 | `groups.{鍵}.pairs[].a.id` | integer |  |
 | `groups.{鍵}.pairs[].a.media` | string |  |
@@ -530,6 +566,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `groups.{鍵}.pairs[].a.url` | string |  |
 | `groups.{鍵}.pairs[].a.publishedAt` | string (ISO 時間) |  |
 | `groups.{鍵}.pairs[].a.authors` | string[] |  |
+| `groups.{鍵}.pairs[].a.datePending` | boolean |  |
 | `groups.{鍵}.pairs[].a.bodyLength` | integer |  |
 | `groups.{鍵}.pairs[].a.attributions` | object[] |  |
 | `groups.{鍵}.pairs[].a.attributions[].media` | string |  |
@@ -548,6 +585,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `groups.{鍵}.pairs[].b.url` | string |  |
 | `groups.{鍵}.pairs[].b.publishedAt` | string (ISO 時間) |  |
 | `groups.{鍵}.pairs[].b.authors` | string[] |  |
+| `groups.{鍵}.pairs[].b.datePending` | boolean |  |
 | `groups.{鍵}.pairs[].b.bodyLength` | integer |  |
 | `groups.{鍵}.pairs[].b.attributions` | object[] |  |
 | `groups.{鍵}.pairs[].b.attributions[].media` | string |  |
@@ -604,8 +642,11 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/daily'
 | `media[].name` | string |  |
 | `media[].articles` | integer[] |  |
 | `media[].pairs` | integer[] | 一端為此媒體的配對數 |
-| `media[].copied` | integer[] | 被跟進：此媒體先刊出、之後有他媒刊出相似內容的篇數（文章去重，以自身刊登日計；同時刊登不計） |
-| `media[].copying` | integer[] | 跟進他媒：此媒體刊出時已有他媒相似文章的篇數（文章去重，以自身刊登日計；同時刊登不計） |
+| `media[].sameByline` | integer[] | 同署名跨站、無明示來源的文章數 |
+| `media[].attributed` | integer[] | 已註明來源的文章數 |
+| `media[].unattributed` | integer[] | 未辨識稿源的文章數 |
+| `media[].copied` | integer[] | 較早刊登：此媒體先刊出、之後有他媒刊出相似內容的篇數（文章去重，以自身刊登日計；排除同署名、有明示來源、同一分鐘與未確認時間） |
+| `media[].copying` | integer[] | 較晚刊登：此媒體刊出時已有他媒相似文章的篇數（文章去重，以自身刊登日計；排除同署名、有明示來源、同一分鐘與未確認時間） |
 | `media[].citing` | integer[] | 此媒體引用他媒的則數 |
 | `media[].cited` | integer[] | 他媒引用此媒體的則數 |
 
@@ -652,6 +693,7 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/similarity'
 | `matches[].article.url` | string |  |
 | `matches[].article.publishedAt` | string (ISO 時間) |  |
 | `matches[].article.authors` | string[] |  |
+| `matches[].article.datePending` | boolean |  |
 | `matches[].article.bodyLength` | integer |  |
 | `matches[].article.attributions` | object[] |  |
 | `matches[].article.attributions[].media` | string |  |
@@ -660,6 +702,17 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/similarity'
 | `matches[].article.attributions[].countryCode` | string |  |
 | `matches[].article.attributions[].evidence` | string |  |
 | `matches[].article.attributions[].kind` | "explicit" |  |
+| `matches[].relation` | object |  |
+| `matches[].relation.kind` | "attributed" \| "same-byline" \| "unattributed" | 分類優先序：明示来源、同署名、未辨識稿源 |
+| `matches[].relation.sharedAuthors` | string[] | 共同人名署名；不保證同一人 |
+| `matches[].relation.aCitesB` | boolean |  |
+| `matches[].relation.bCitesA` | boolean |  |
+| `matches[].relation.aCreditRole` | "來源" \| "引用" | A 對 B 的來源標示角色 |
+| `matches[].relation.bCreditRole` | "來源" \| "引用" | B 對 A 的來源標示角色 |
+| `matches[].relation.commonSources` | object[] |  |
+| `matches[].relation.commonSources[].media` | string |  |
+| `matches[].relation.commonSources[].name` | string |  |
+| `matches[].relation.publication` | "same" \| "a-earlier" \| "b-earlier" \| "unknown" | 標示刊登先後，與稿源無關；同一分鐘或時間未確認不計方向 |
 | `matches[].score` | number |  |
 | `matches[].containment` | number |  |
 | `matches[].kind` | "identical" \| "high" |  |
@@ -865,9 +918,9 @@ curl -s 'https://tag.observe.tw/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&li
 
 ### `GET /api/v1/liveboard`
 
-**即時看板輪詢：新文章、轉載組與發稿量**
+**即時看板輪詢：新文章、相似報導組與發稿量**
 
-給 /liveboard/ 這類常駐畫面輪詢。不帶參數時回最近 3 小時內收錄的 40 篇本站爬取文章與最近的轉載組；之後把回應的 cursor 原樣帶回，只取新收錄的文章（依收錄順序，不是發布時間，晚抓到的也不會漏）與新算出的轉載組。轉載組是 3 小時內算出的正文相似配對連起來的一群文章，最早發布者為 lead，其餘依是否直接相似、相似度排序。stats 為依發布時間的各陣營發稿量。
+給 /liveboard/ 這類常駐畫面輪詢。不帶參數時回最近 3 小時內收錄的 40 篇本站爬取文章與最近的相似報導組；之後把回應的 cursor 原樣帶回，只取新收錄的文章（依收錄順序，不是發布時間，晚抓到的也不會漏）與新算出的相似報導組。相似報導組是 3 小時內算出的正文相似配對連起來的一群文章，最早發布者為 lead，其餘依是否直接相似、相似度排序。stats 為依發布時間的各陣營發稿量。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -909,8 +962,8 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard'
 | `articles[].attributions[].countryCode` | string |  |
 | `articles[].attributions[].evidence` | string |  |
 | `articles[].attributions[].kind` | "explicit" |  |
-| `articles[].text` | string \| null | 內文開頭（新文章 600 字、轉載組的 lead 與前 3 篇跟稿 1500 字），沒有內文時為摘要 |
-| `stories` | object[] | 新算出的轉載組，最多 12 組 |
+| `articles[].text` | string \| null | 內文開頭（新文章 600 字、相似報導組的 lead 與前 3 篇同組文章 1500 字），沒有內文時為摘要 |
+| `stories` | object[] | 新算出的相似報導組，最多 12 組 |
 | `stories[].key` | string | lead 文章 id |
 | `stories[].computedAt` | string (ISO 時間) | 組內最新配對的計算時間 |
 | `stories[].lead` | object | 最早發布的文章，欄位同 articles |
@@ -920,9 +973,20 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard'
 | `stories[].followers[].containment` | number |  |
 | `stories[].followers[].kind` | "identical" \| "high" |  |
 | `stories[].followers[].evidence` | string | 共同段落摘錄 |
-| `stories[].followers[].direct` | boolean | false 表示只和組內其他跟稿相似 |
+| `stories[].followers[].relation` | object |  |
+| `stories[].followers[].relation.kind` | "attributed" \| "same-byline" \| "unattributed" | 分類優先序：明示来源、同署名、未辨識稿源 |
+| `stories[].followers[].relation.sharedAuthors` | string[] | 共同人名署名；不保證同一人 |
+| `stories[].followers[].relation.aCitesB` | boolean |  |
+| `stories[].followers[].relation.bCitesA` | boolean |  |
+| `stories[].followers[].relation.aCreditRole` | "來源" \| "引用" | A 對 B 的來源標示角色 |
+| `stories[].followers[].relation.bCreditRole` | "來源" \| "引用" | B 對 A 的來源標示角色 |
+| `stories[].followers[].relation.commonSources` | object[] |  |
+| `stories[].followers[].relation.commonSources[].media` | string |  |
+| `stories[].followers[].relation.commonSources[].name` | string |  |
+| `stories[].followers[].relation.publication` | "same" \| "a-earlier" \| "b-earlier" \| "unknown" | 標示刊登先後，與稿源無關；同一分鐘或時間未確認不計方向 |
+| `stories[].followers[].direct` | boolean | false 表示只與組內其他文章相似，不能展示為與 lead 相似 |
 | `stories[].followers[].gapMinutes` | integer | 比 lead 晚幾分鐘發布 |
-| `stories[].more` | integer | 未列出的跟稿數 |
+| `stories[].more` | integer | 未列出的同組文章數 |
 | `activity` | object | 爬蟲與排程工作動態；每 15 秒更新 |
 | `activity.crawls` | object[] | 近 10 分鐘的爬取，新的在前，最多 40 筆 |
 | `activity.crawls[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
@@ -976,7 +1040,7 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard'
 
 錯誤：`400` after、pairsAfter 或 readAfter 格式錯誤。
 
-快取：15 秒（轉載組與 stats 每分鐘更新）。
+快取：15 秒（相似報導組與 stats 每分鐘更新）。
 
 ## 記者署名與跨媒體相似
 
@@ -1029,12 +1093,15 @@ curl -s 'https://tag.observe.tw/api/v1/journalists?hours=48&limit=50'
 | `journalists[].cited` | integer | 內文明示引用其他媒體的篇數 |
 | `journalists[].latest` | string (ISO 時間) | 最近一篇刊登時間 |
 | `journalists[].compared` | integer | 相似度索引已比對的篇數 |
+| `journalists[].firstSeen` | integer | 已比對文章扣除明示引用、有較早相近版本及時間未確認的文章，依 ID 去重 |
+| `journalists[].unmatched` | integer | 已比對但未見達門檻相近文章的篇數；不代表原創 |
 | `journalists[].similar` | object |  |
 | `journalists[].similar.pairs` | integer | 至少一端是此記者文章的相似配對數 |
 | `journalists[].similar.articles` | integer | 有相似配對的自家文章數（去重） |
-| `journalists[].similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站 |
-| `journalists[].similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站 |
-| `journalists[].similar.sameAuthor` | integer | 對方文章也署同一名字的配對數（同一人跨媒體刊登） |
+| `journalists[].similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `journalists[].similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `journalists[].similar.sameAuthor` | integer | 有同署名相近文章的篇數（期間內文章去重，不保證同一人） |
+| `journalists[].similar.attributed` | integer | 排除同署名後，有明示來源相似配對的篇數（期間內文章去重） |
 | `journalists[].similar.identical` | integer | 正規化內文完全相同的配對數 |
 
 錯誤：`400` 參數無效。
@@ -1081,9 +1148,10 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `stats.similar` | object |  |
 | `stats.similar.pairs` | integer | 至少一端是此記者文章的相似配對數 |
 | `stats.similar.articles` | integer | 有相似配對的自家文章數（去重） |
-| `stats.similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的配對數；不含同署名跨站 |
-| `stats.similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的配對數；不含同署名跨站 |
-| `stats.similar.sameAuthor` | integer | 對方文章也署同一名字的配對數（同一人跨媒體刊登） |
+| `stats.similar.later` | integer | 自家文章比對方晚至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `stats.similar.earlier` | integer | 自家文章比對方早至少一分鐘刊登的篇數（期間內文章去重，各欄可重疊）；不含同署名跨站或已註明來源 |
+| `stats.similar.sameAuthor` | integer | 有同署名相近文章的篇數（期間內文章去重，不保證同一人） |
+| `stats.similar.attributed` | integer | 排除同署名後，有明示來源相似配對的篇數（期間內文章去重） |
 | `stats.similar.identical` | integer | 正規化內文完全相同的配對數 |
 | `media` | object[] |  |
 | `media[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
@@ -1122,6 +1190,7 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `pairs[].own.url` | string |  |
 | `pairs[].own.publishedAt` | string (ISO 時間) |  |
 | `pairs[].own.authors` | string[] |  |
+| `pairs[].own.datePending` | boolean |  |
 | `pairs[].own.bodyLength` | integer |  |
 | `pairs[].own.attributions` | object[] |  |
 | `pairs[].own.attributions[].media` | string |  |
@@ -1140,6 +1209,7 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `pairs[].other.url` | string |  |
 | `pairs[].other.publishedAt` | string (ISO 時間) |  |
 | `pairs[].other.authors` | string[] |  |
+| `pairs[].other.datePending` | boolean |  |
 | `pairs[].other.bodyLength` | integer |  |
 | `pairs[].other.attributions` | object[] |  |
 | `pairs[].other.attributions[].media` | string |  |
@@ -1156,10 +1226,14 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `pairs[].minutes` | integer | 對方刊登時間減自家刊登時間（分鐘）；正值表示自家較早 |
 | `pairs[].relation` | "later" \| "earlier" \| "same" | later 自家較晚、earlier 自家較早、same 一分鐘內 |
 | `pairs[].sameAuthor` | boolean | 對方文章署同一名字 |
+| `pairs[].attributed` | boolean | 已有彼此引用或共同明示來源 |
+| `pairs[].publicationUnknown` | boolean | 標示刊登時間尚未確認 |
 | `pairs[].ownCitesOther` | boolean | 自家文章明示引用對方媒體 |
 | `pairs[].otherCitesOwn` | boolean | 對方文章明示引用自家媒體 |
 | `index` | object |  |
 | `index.compared` | integer | 已比對的自家文章數 |
+| `index.firstSeen` | integer | 已比對文章扣除明示引用、有較早相近版本及時間未確認的文章，依 ID 去重 |
+| `index.unmatched` | integer | 已比對但未見達門檻相近文章的篇數；不代表原創 |
 | `index.pending` | integer | 有可用正文、等待索引的自家文章數 |
 | `index.windowDays` | integer | 每篇與前後幾天內的他家文章比對 |
 

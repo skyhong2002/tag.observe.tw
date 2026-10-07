@@ -5,7 +5,7 @@ import { CAMP_FILL, CAMP_LABEL } from '@/components/CampBar';
 import { CampDot } from '@/components/EventCampDot';
 import { eventHeadline, eventHref, Movement, RankTrail } from '@/components/EventCard';
 import MediaIcon from '@/components/MediaIcon';
-import SafeImage from '@/components/SafeImage';
+import { useReaderPresence } from '@/components/ReaderPresence';
 import Sparkline from '@/components/Sparkline';
 import Wordmark from '@/components/Wordmark';
 import type { MediaInfo, RankingEntry } from '@/lib/api';
@@ -38,7 +38,9 @@ import {
 } from '@/lib/liveboard.mts';
 import type { Camp, EventItem, EventsSnapshot } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
+import BoardImage from './BoardImage';
 import styles from './liveboard.module.css';
+import OfflineWordmark from './OfflineWordmark';
 import StageCard, {
   CARD_DOT,
   CARD_LABEL,
@@ -56,6 +58,7 @@ export interface MediaTotals {
   today: number;
   last24h: number;
   publishingMedia24h: number;
+  activeSources: number;
   statusCounts: Record<string, number>;
 }
 
@@ -133,9 +136,10 @@ function Clock() {
   if (!now) return null;
   const opts = { timeZone: 'Asia/Taipei' } as const;
   return (
-    <div className="flex items-baseline gap-3 tabular-nums">
+    <div className="flex items-center gap-3 tabular-nums">
       <span className="whitespace-nowrap text-base text-zinc-400 short:hidden portrait:hidden">
-        {now.toLocaleDateString('zh-TW', { ...opts, month: 'numeric', day: 'numeric', weekday: 'short' })}
+        <span className="block">{now.toLocaleDateString('zh-TW', { ...opts, year: 'numeric', month: 'numeric', day: 'numeric' })}</span>
+        <span className="block">{now.toLocaleDateString('zh-TW', { ...opts, weekday: 'long' })}</span>
       </span>
       <span className="w-[8ch] shrink-0 whitespace-nowrap text-right font-mono text-4xl font-bold short:text-3xl portrait:text-3xl">
         {now.toLocaleTimeString('zh-TW', { ...opts, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -151,14 +155,14 @@ function Stat({
   children,
   className = '',
 }: {
-  label: string;
+  label: React.ReactNode;
   value: React.ReactNode;
   unit?: string;
   children?: React.ReactNode;
   className?: string;
 }) {
   return (
-    <div className={`flex min-w-0 flex-col ${className}`}>
+    <div className={`flex shrink-0 flex-col ${className}`}>
       <span className="whitespace-nowrap text-xs text-zinc-500">{label}</span>
       <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl font-bold tabular-nums short:text-xl">
         {value}
@@ -281,8 +285,8 @@ function Countdown({ at }: { at: string }) {
 /** The header's second row: crawl runs scrolling past, then the jobs running and due next. */
 function ActivityStrip({ activity }: { activity: LiveActivity }) {
   const crawls = activity.crawls;
-  const items = crawls.map((c, i) => (
-    <span key={i} className="inline-flex shrink-0 items-center gap-1.5 pr-5">
+  const items = crawls.map((c) => (
+    <span key={`${c.media}:${c.stage}:${c.at}`} className="inline-flex shrink-0 items-center gap-1.5 pr-5">
       {c.running && <span className={`h-1.5 w-1.5 rounded-full bg-emerald-400 ${styles.pulse}`} aria-hidden />}
       <MediaIcon rem media={c.media} title={c.mediaTitle} size={14} />
       <span className={c.failed ? 'text-rose-400' : 'text-zinc-300'}>{c.mediaTitle}</span>
@@ -297,8 +301,8 @@ function ActivityStrip({ activity }: { activity: LiveActivity }) {
         {crawls.length > 0 && (
           <div className={`flex w-max ${styles.marquee}`} style={{ animationDuration: `${Math.max(30, crawls.length * 3)}s` }}>
             {items}
-            {items.map((item, i) => (
-              <span key={`b${i}`} aria-hidden className="inline-flex">
+            {items.map((item) => (
+              <span key={`repeat:${item.key}`} aria-hidden className="inline-flex">
                 {item}
               </span>
             ))}
@@ -350,6 +354,7 @@ export default function LiveBoard({
   const [rankSerial, setRankSerial] = useState(0);
   const [pane, setPane] = useState(0);
   const [events, setEvents] = useState<EventItem[]>(initialEvents?.events ?? []);
+  const presence = useReaderPresence();
   const [online, setOnline] = useState(true);
   const [now, setNow] = useState(() => Date.parse(initialFeed?.generatedAt ?? initialEvents?.builtAt ?? '') || 0);
   const [shown, setShown] = useState<{ card: Card; serial: number; replay: boolean } | null>(null);
@@ -597,13 +602,16 @@ export default function LiveBoard({
       className={`fixed inset-0 flex flex-col overflow-hidden bg-zinc-950 text-zinc-100 ${styles.board}`}
     >
       <header className="shrink-0 border-b border-zinc-800">
-        <div className="flex items-center gap-8 px-6 py-2 short:gap-4 short:px-4 short:py-1 portrait:gap-4 portrait:px-3">
-          <div className="flex shrink-0 items-end gap-3">
-            <Wordmark className="h-9 w-auto text-zinc-100 short:h-7" />
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap pb-0.5 text-xs text-zinc-500">
-              <span className={`h-2 w-2 rounded-full ${online ? `bg-emerald-500 ${styles.pulse}` : 'bg-rose-500'}`} aria-hidden />
-              <span className="short:hidden portrait:hidden">tag.observe.tw</span>
-              {online ? '' : '離線，重試中'}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-2 short:gap-4 short:px-4 short:py-1 portrait:gap-4 portrait:px-3">
+          <div className="relative flex shrink-0 items-end">
+            <Wordmark className={`h-9 w-auto text-zinc-100 short:h-7 ${online ? '' : 'invisible'}`} />
+            <span role="status" className="absolute inset-0 flex items-center justify-center text-rose-400">
+              {!online && (
+                <>
+                  <span className="sr-only">離線中嗚嗚嗚</span>
+                  <OfflineWordmark />
+                </>
+              )}
             </span>
           </div>
           <Stat label="今日收錄" value={totals ? (totals.today + todayExtra).toLocaleString() : '—'} unit="篇" />
@@ -614,50 +622,32 @@ export default function LiveBoard({
             className="portrait:hidden"
           />
           <Stat label="24 小時發稿媒體" value={totals?.publishingMedia24h ?? '—'} unit="家" className="portrait:hidden" />
-          <Stat label="爬蟲" value={status.ok ?? '—'} unit="正常" className="portrait:hidden">
-            {((status.stale ?? 0) > 0 || (status.failing ?? 0) > 0) && (
-              <span className="ml-1 inline-grid grid-cols-[1em_max-content_max-content] items-center gap-x-1 self-center text-sm font-normal leading-4">
-                {(status.stale ?? 0) > 0 && (
-                  <span className="contents text-amber-400">
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      className="h-[1em] w-[1em]"
-                      aria-hidden="true"
-                    >
-                      <path d="M10 2 19 18H1Z" />
-                    </svg>
-                    <span className="text-right">{status.stale}</span>
-                    <span>無近期文章</span>
-                  </span>
-                )}
-                {(status.failing ?? 0) > 0 && (
-                  <span className="contents text-rose-400">
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      className="h-[1em] w-[1em]"
-                      aria-hidden="true"
-                    >
-                      <path d="m4 4 12 12M16 4 4 16" />
-                    </svg>
-                    <span className="text-right">{status.failing}</span>
-                    <span>失敗</span>
-                  </span>
-                )}
+          <Stat label={`${totals?.activeSources ?? '—'} 爬蟲`} value={status.ok ?? '—'} unit="正常" className="portrait:hidden" />
+          <Stat
+            label={
+              <span className="inline-flex items-center gap-1.5">
+                此刻在線
+                <span
+                  role="img"
+                  aria-label={presence.status}
+                  title={presence.status}
+                  className={`h-1.5 w-1.5 rounded-full ${online && presence.counted ? 'bg-emerald-400' : 'bg-zinc-600'}`}
+                />
               </span>
-            )}
+            }
+            value={
+              <a href="/observe/opt-out/" title={presence.status}>
+                {presence.count ?? '—'}
+              </a>
+            }
+            unit="人"
+            className="portrait:hidden"
+          >
+            <span title="本站瀏覽量：最近 30 分鐘每分鐘瀏覽次數（GA4）" className="ml-2 h-6 w-20 self-center short:w-12">
+              {feed?.visitors && <Sparkline values={feed.visitors.perMinute} color="#f97316" className="h-full w-full" />}
+            </span>
           </Stat>
-          {feed?.visitors && (
-            <Stat label="本站線上讀者" value={feed.visitors.activeUsers} unit="人" className="portrait:hidden">
-              <Sparkline values={feed.visitors.perMinute} color="#f97316" className="ml-2 h-6 w-20 self-center short:w-12" />
-            </Stat>
-          )}
-          <div className="ml-auto flex flex-col items-end">
+          <div className="ml-auto flex shrink-0 flex-col items-end">
             <Clock />
           </div>
         </div>
@@ -860,20 +850,26 @@ export default function LiveBoard({
                     {reading.mediaTitle}
                   </Go>
                   <CampDot camp={reading.camp} />
-                  <Reporters article={reading} className="text-sm text-zinc-400" />
                   <span className="ml-auto shrink-0 tabular-nums text-zinc-500">{clock(reading.publishedAt)} 發布</span>
                 </div>
                 <div className="flex shrink-0 gap-3">
                   {isAllowedImage(reading.image) && (
-                    <div className="relative aspect-[4/3] w-[28%] shrink-0 self-start overflow-hidden rounded-lg bg-zinc-800">
-                      <SafeImage src={reading.image} alt="" fill sizes="12vw" className="object-cover" priority />
-                    </div>
+                    <BoardImage
+                      src={reading.image}
+                      frameClassName="relative aspect-[4/3] w-[28%] shrink-0 self-start overflow-hidden rounded-lg bg-zinc-800"
+                      sizes="12vw"
+                      className="object-cover"
+                      priority
+                    />
                   )}
-                  <div className="flex min-w-0 flex-col gap-1.5">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <Go href={articleHref(reading)} className={`text-[1.15rem] font-bold leading-snug ${styles.clamp3}`}>
                       {reading.title}
                     </Go>
-                    <TagChips tags={reading.tags} max={5} className="flex-wrap text-base" />
+                    <div className="min-w-0 text-base leading-tight">
+                      <Reporters article={reading} className="mr-2.5 text-sm text-zinc-400" />
+                      <TagChips tags={reading.tags} inline />
+                    </div>
                   </div>
                 </div>
                 <p
@@ -904,7 +900,7 @@ export default function LiveBoard({
               {slots.map((slot, i) => {
                 const a = slot?.article;
                 return (
-                  <li key={i} className="min-h-0 overflow-hidden border-b border-zinc-800/80 last:border-b-0">
+                  <li key={a?.id ?? `empty:${i}`} className="min-h-0 overflow-hidden border-b border-zinc-800/80 last:border-b-0">
                     {a && (
                       <div key={a.id} className={`flex h-full flex-col justify-center gap-1 py-1 ${fresh === a.id ? styles.enter : ''}`}>
                         <div className="flex min-w-0 items-baseline gap-2">
@@ -921,10 +917,13 @@ export default function LiveBoard({
                             {a.mediaTitle}
                           </Go>
                           <CampDot camp={a.camp} />
+                          {(a.authors.length > 0 || !!a.attributions?.length) && (
+                            <Reporters article={a} className="max-w-[45%] shrink-0 truncate leading-tight" />
+                          )}
                           {fresh === a.id && (
                             <span className="shrink-0 rounded bg-brand-600 px-1 text-[0.6875rem] font-bold text-white">剛進</span>
                           )}
-                          <TagChips tags={a.tags} max={4} className="text-sm" />
+                          <TagChips tags={a.tags} max={4} compact className="text-sm" />
                         </div>
                       </div>
                     )}

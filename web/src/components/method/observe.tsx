@@ -19,7 +19,11 @@ export function ObserveMethod() {
       </p>
       <dl className={methodList}>
         <dt className={methodTerm}>最近 30 分鐘</dt>
-        <dd>GA4 即時報表：最近 30 分鐘內有活動的讀者數、瀏覽次數與每分鐘瀏覽，約每 2 分鐘更新。只有總數，不列出正在看的頁面。</dd>
+        <dd>
+          GA4 即時報表：最近 30 分鐘內有活動的讀者數、瀏覽次數與每分鐘瀏覽，約每 2
+          分鐘更新。包含即時看板讀者；看板顯示於前景時每分鐘回報活動，不增加瀏覽次數。
+          這不是目前開啟的分頁或連線數；停用統計或阻擋追蹤的瀏覽器不計入。只有總數，不列出正在看的頁面。
+        </dd>
         <dt className={methodTerm}>瀏覽</dt>
         <dd>GA4 的網頁瀏覽次數，包含同一人重複開啟。</dd>
         <dt className={methodTerm}>造訪</dt>

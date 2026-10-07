@@ -118,7 +118,7 @@ export function mediaLabelColor(camp: 'blue' | 'green' | undefined, dark: boolea
   if (camp === 'green') return dark ? '#4ade80' : '#15803d';
   return dark ? '#d4d4d8' : '#52525b';
 }
-const edgeKey = (edge: SimilarityEdge) => `${edge.kind}:${edge.source}:${edge.target}`;
+const edgeKey = (edge: SimilarityEdge) => `${edge.kind}:${edge.relation ?? ''}:${edge.directed ?? ''}:${edge.source}:${edge.target}`;
 
 /** Union of each outlet's strongest two links. A hub may have more than two
  * visible links because other outlets also select it. No relationship is lost. */

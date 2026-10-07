@@ -5,6 +5,7 @@ import { personNames } from './names.ts';
 export type CreditPart = { label: string; text: string; media?: string; evidence?: string };
 type Context = {
   media?: string;
+  mediaTitle?: string;
   attributions?: readonly { media: string; name: string; evidence: string }[];
 };
 const ORGANIZATION = /(?:公司|新聞|電視|傳媒|通訊社|編輯部|製作組|網路溫度計)/u;
@@ -33,6 +34,11 @@ export function authorCreditParts(credits: readonly string[], context: Context =
       continue;
     }
     const outlet = /^中央社[\p{Script=Han}]{2,8}\d{1,2}日(?:電|專電)$/u.test(text) ? providerOutlet('中央社') : providerOutlet(text);
+    if (
+      context.media &&
+      (outlet?.media === context.media || text === context.mediaTitle || (context.media === 'ftv' && text === '民間全民電視公司'))
+    )
+      continue;
     if (outlet && outlet.countryCode !== 'ZZ' && context.media && outlet.media !== context.media) {
       // A publisher in the stored byline is a source credit, not proof of a
       // quotation. Existing explicit citation evidence keeps its own label.

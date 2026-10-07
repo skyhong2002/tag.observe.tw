@@ -1,4 +1,5 @@
 import type { Attribution } from '../similarity/attribution.ts';
+import { classifyRelation } from '../similarity/relation.ts';
 import type { SimilarityArticle, SimilarityPair } from '../similarity/types.ts';
 import { journalistNames } from './names.ts';
 
@@ -16,6 +17,7 @@ export interface BylineRow {
   hasBody: boolean;
   /** Compared by the similarity index. */
   indexed: boolean;
+  datePending?: boolean;
   attributions: Attribution[] | null;
 }
 export interface JournalistOutlet {
@@ -28,11 +30,12 @@ export interface JournalistSimilarity {
   pairs: number;
   /** Distinct own articles that matched something. */
   articles: number;
-  /** Pairs where the own article was published at least a minute after the other outlet's. */
+  /** Distinct own articles published at least a minute after another outlet's. */
   later: number;
   earlier: number;
-  /** Pairs whose other side carries the same byline (the person's own copy elsewhere). */
+  /** Distinct own articles with a same-byline match at another outlet. */
   sameAuthor: number;
+  attributed?: number;
   identical: number;
 }
 export interface JournalistSummary {
@@ -44,6 +47,9 @@ export interface JournalistSummary {
   latest: string;
   /** Articles the similarity index compared with other outlets. */
   compared: number;
+  /** Compared own articles with no match at the requested threshold; not proof of originality. */
+  unmatched: number;
+  firstSeen: number;
   similar: JournalistSimilarity;
 }
 export type PairRelation = 'later' | 'earlier' | 'same';
@@ -59,6 +65,8 @@ export interface JournalistPair {
   minutes: number;
   relation: PairRelation;
   sameAuthor: boolean;
+  attributed?: boolean;
+  publicationUnknown?: boolean;
   ownCitesOther: boolean;
   otherCitesOwn: boolean;
 }
@@ -67,13 +75,22 @@ export function rowJournalists(row: { authors: string[] | null; creator: string 
   const credits = row.authors?.length ? row.authors : row.creator?.trim() ? [row.creator] : [];
   return journalistNames(credits);
 }
-const emptySimilarity = (): JournalistSimilarity => ({ pairs: 0, articles: 0, later: 0, earlier: 0, sameAuthor: 0, identical: 0 });
+const emptySimilarity = (): JournalistSimilarity => ({
+  pairs: 0,
+  articles: 0,
+  later: 0,
+  earlier: 0,
+  sameAuthor: 0,
+  attributed: 0,
+  identical: 0,
+});
 
 export function orientPair(pair: SimilarityPair, isOwn: (article: SimilarityArticle) => boolean, name: string): JournalistPair | null {
   const [own, other] = isOwn(pair.a) ? [pair.a, pair.b] : isOwn(pair.b) ? [pair.b, pair.a] : [null, null];
   if (!own || !other) return null;
   const minutes = Math.round((Date.parse(other.publishedAt) - Date.parse(own.publishedAt)) / 60000);
-  const relation: PairRelation = !Number.isFinite(minutes) || Math.abs(minutes) < 1 ? 'same' : minutes < 0 ? 'later' : 'earlier';
+  const info = classifyRelation(own, other);
+  const relation: PairRelation = info.publication === 'a-earlier' ? 'earlier' : info.publication === 'b-earlier' ? 'later' : 'same';
   return {
     own,
     other,
@@ -84,23 +101,69 @@ export function orientPair(pair: SimilarityPair, isOwn: (article: SimilarityArti
     evidence: pair.evidence,
     minutes: Number.isFinite(minutes) ? minutes : 0,
     relation,
-    sameAuthor: journalistNames(other.authors).includes(name),
+    sameAuthor: info.sharedAuthors.includes(name),
+    attributed: info.kind === 'attributed',
+    publicationUnknown: info.publication === 'unknown',
     ownCitesOther: own.attributions.some((source) => source.media === other.media),
     otherCitesOwn: other.attributions.some((source) => source.media === own.media),
   };
 }
-export function countSimilarity(pairs: JournalistPair[]): JournalistSimilarity {
+/** Set subtraction avoids double deductions and includes same-byline earlier versions. */
+export function countFirstSeen(
+  pairs: JournalistPair[],
+  rows: Array<{ id: number; indexed: boolean; datePending?: boolean; publishedAt: Date; attributions: Attribution[] | null }>,
+): number {
+  const candidates = new Set(
+    rows
+      .filter((row) => row.indexed && !row.datePending && Number.isFinite(row.publishedAt.getTime()) && !row.attributions?.length)
+      .map((row) => row.id),
+  );
+  for (const pair of pairs) {
+    if (pair.publicationUnknown) {
+      candidates.delete(pair.own.id);
+      candidates.delete(pair.other.id);
+    } else if (pair.relation === 'later') candidates.delete(pair.own.id);
+    else if (pair.relation === 'earlier') candidates.delete(pair.other.id);
+  }
+  return candidates.size;
+}
+
+export function countUnmatched(pairs: JournalistPair[], comparedIds: ReadonlySet<number>): number {
+  const remaining = new Set(comparedIds);
+  for (const pair of pairs) {
+    remaining.delete(pair.own.id);
+    remaining.delete(pair.other.id);
+  }
+  return remaining.size;
+}
+
+export function countSimilarity(pairs: JournalistPair[], ownIds?: ReadonlySet<number>): JournalistSimilarity {
   const result = emptySimilarity();
   const matched = new Set<number>();
+  const categories = {
+    later: new Set<number>(),
+    earlier: new Set<number>(),
+    sameAuthor: new Set<number>(),
+    attributed: new Set<number>(),
+  };
   for (const pair of pairs) {
     result.pairs++;
-    matched.add(pair.own.id);
     if (pair.kind === 'identical') result.identical++;
-    if (pair.sameAuthor) result.sameAuthor++;
-    else if (pair.relation === 'later') result.later++;
-    else if (pair.relation === 'earlier') result.earlier++;
+    // Both endpoints may be this journalist's posts in the selected period.
+    // Do not count a same-byline counterpart outside that period.
+    for (const article of [pair.own, pair.other]) {
+      if (ownIds ? !ownIds.has(article.id) : article !== pair.own) continue;
+      matched.add(article.id);
+      if (pair.sameAuthor) categories.sameAuthor.add(article.id);
+      else if (pair.attributed || pair.ownCitesOther || pair.otherCitesOwn) categories.attributed.add(article.id);
+      else if (!pair.publicationUnknown && pair.relation !== 'same') {
+        const relation = article === pair.own ? pair.relation : pair.relation === 'later' ? 'earlier' : 'later';
+        categories[relation].add(article.id);
+      }
+    }
   }
   result.articles = matched.size;
+  for (const key of ['later', 'earlier', 'sameAuthor', 'attributed'] as const) result[key] = categories[key].size;
   return result;
 }
 
@@ -140,7 +203,9 @@ export function summarizeJournalists(
       cited: entry.rows.filter((row) => (row.attributions?.length ?? 0) > 0).length,
       latest: new Date(Math.max(...entry.rows.map((row) => row.publishedAt.getTime()))).toISOString(),
       compared: entry.rows.filter((row) => row.indexed).length,
-      similar: countSimilarity(pairsOf.get(name) ?? []),
+      firstSeen: countFirstSeen(pairsOf.get(name) ?? [], entry.rows),
+      unmatched: countUnmatched(pairsOf.get(name) ?? [], new Set(entry.rows.filter((row) => row.indexed).map((row) => row.id))),
+      similar: countSimilarity(pairsOf.get(name) ?? [], new Set(entry.rows.map((row) => row.id))),
     }))
     .sort((a, b) => b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant'));
 }

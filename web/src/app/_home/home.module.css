@@ -267,3 +267,9 @@
   .journalistOutlets { grid-row: 1; grid-column: 2; }
   .journalistCount { grid-row: 1; grid-column: 3; flex-direction: row; align-items: baseline; gap: 6px; }
 }
+
+/* Keep the asynchronously loaded outlet list off the critical rendering path. */
+.campOutletsSlot { flex-basis: 100%; min-width: 0; min-height: 129px; }
+@media (max-width: 640px) {
+  .campOutletsSlot { order: 2; min-height: 385px; }
+}

@@ -18,6 +18,8 @@ export interface ArticleRow {
   publishedAt: Date;
   authors: string[] | null;
   creator: string | null;
+  crawledAt?: Date;
+  fetchedAt?: Date | null;
   attributions: Attribution[] | null;
   /** Normalized body length. */
   chars: number;
@@ -45,6 +47,7 @@ export function publicArticle(row: ArticleRow): SimilarityArticle {
     url: row.url,
     publishedAt: row.publishedAt.toISOString(),
     authors: normalizeAuthorCredits(row.authors?.length ? row.authors : row.creator ? [row.creator] : []),
+    datePending: row.fetchedAt === null && row.crawledAt?.getTime() === row.publishedAt.getTime(),
     bodyLength: row.chars,
     attributions: normalizeAttributions(row.attributions ?? [], row.media),
   };

@@ -7,8 +7,17 @@ import { articleCitations, articleSketches, articles, similarityPairs } from '..
 import { syndicationMedia } from '../jobs/similarity-job.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { METHOD } from '../similarity/compute.ts';
-import { type EvidenceFilter, type IndexView, loadArticles, loadEvidence, loadIndexView, WINDOW_DAYS } from '../similarity/store.ts';
-import type { ArticleSimilarity, SimilarityDaily, SimilarityData } from '../similarity/types.ts';
+import { classifyRelation } from '../similarity/relation.ts';
+import {
+  type EvidenceFilter,
+  type IndexView,
+  loadArticles,
+  loadEvidence,
+  loadIndexView,
+  type StoredPair,
+  WINDOW_DAYS,
+} from '../similarity/store.ts';
+import type { ArticleSimilarity, SimilarityArticle, SimilarityDaily, SimilarityData } from '../similarity/types.ts';
 import { taipeiDay } from './event-archive.ts';
 
 const HOUR = 3600e3,
@@ -126,6 +135,9 @@ export async function loadSimilarity(db: Db, params: SimilarityParams): Promise<
 
 const mediaList = (value: string | undefined) => (value ? new Set(value.split(',').filter(Boolean).slice(0, 500)) : undefined);
 export function evidenceFilter(query: Record<string, string | undefined>): EvidenceFilter | null {
+  if (query.edgeRelation && !['attributed', 'same-byline', 'unattributed'].includes(query.edgeRelation)) return null;
+  if (query.edgeDirected !== undefined && !['true', 'false'].includes(query.edgeDirected)) return null;
+  if (query.relation && !['attributed', 'same-byline', 'unattributed'].includes(query.relation)) return null;
   const mode = query.mode ?? 'all',
     direction = query.direction ?? 'all',
     page = Number(query.page ?? 0),
@@ -135,10 +147,17 @@ export function evidenceFilter(query: Record<string, string | undefined>): Evide
   let edge: EvidenceFilter['edge'];
   if (query.edgeKind !== undefined || query.source !== undefined || query.target !== undefined) {
     if ((query.edgeKind !== 'similarity' && query.edgeKind !== 'citation') || !query.source || !query.target || query.node) return null;
-    edge = { kind: query.edgeKind, source: query.source, target: query.target };
+    edge = {
+      kind: query.edgeKind,
+      source: query.source,
+      target: query.target,
+      relation: query.edgeRelation as EvidenceFilter['relation'],
+      directed: query.edgeDirected === undefined ? undefined : query.edgeDirected === 'true',
+    };
   }
   return {
     mode: mode as EvidenceFilter['mode'],
+    relation: query.relation as EvidenceFilter['relation'],
     direction: direction as EvidenceFilter['direction'],
     node: query.node || undefined,
     edge,
@@ -149,19 +168,84 @@ export function evidenceFilter(query: Record<string, string | undefined>): Evide
   };
 }
 
+/** Distinct articles per day and category; ties and pending dates do not imply order. */
+export function dailyRelationCounts(pairs: StoredPair[], known: Map<number, SimilarityArticle>) {
+  type Category = 'copied' | 'copying' | 'sameByline' | 'attributed' | 'unattributed';
+  const counts = new Map<string, { day: string; media: string; category: Category; ids: Set<number> }>();
+  const add = (article: SimilarityArticle, category: Category) => {
+    const day = taipeiDay(new Date(article.publishedAt));
+    const key = `${day}:${article.media}:${category}`;
+    const row = counts.get(key) ?? { day, media: article.media, category, ids: new Set<number>() };
+    row.ids.add(article.id);
+    counts.set(key, row);
+  };
+  for (const pair of pairs) {
+    const a = known.get(pair.aId),
+      b = known.get(pair.bId);
+    if (!a || !b || a.media === b.media) continue;
+    const relation = classifyRelation(a, b);
+    const category = relation.kind === 'attributed' ? 'attributed' : relation.kind === 'same-byline' ? 'sameByline' : 'unattributed';
+    add(a, category);
+    add(b, category);
+    if (relation.kind !== 'unattributed' || relation.sharedAuthors.length) continue;
+    if (relation.publication === 'a-earlier') {
+      add(a, 'copied');
+      add(b, 'copying');
+    }
+    if (relation.publication === 'b-earlier') {
+      add(b, 'copied');
+      add(a, 'copying');
+    }
+  }
+  return [...counts.values()].map(({ ids, ...row }) => ({ ...row, count: ids.size }));
+}
+
+/** Bound hydration to 31-day slices even for a full year; each own publication day belongs to one slice. */
+async function loadDailyRelations(db: Db, first: string, last: string, threshold: number) {
+  const result: ReturnType<typeof dailyRelationCounts> = [];
+  for (let start = dayStart(first).getTime(); start <= dayEnd(last).getTime(); start += 31 * DAY) {
+    const from = taipeiDay(new Date(start));
+    const to = taipeiDay(new Date(Math.min(start + 31 * DAY - 1000, dayEnd(last).getTime())));
+    const relationPairs = await db
+      .select({
+        aId: similarityPairs.aId,
+        bId: similarityPairs.bId,
+        aMedia: similarityPairs.aMedia,
+        bMedia: similarityPairs.bMedia,
+        aPublished: similarityPairs.aPublished,
+        bPublished: similarityPairs.bPublished,
+        score: similarityPairs.score,
+        containment: similarityPairs.containment,
+        shared: similarityPairs.shared,
+        kind: similarityPairs.kind,
+        evidence: similarityPairs.evidence,
+      })
+      .from(similarityPairs)
+      .where(
+        and(
+          or(
+            between(similarityPairs.aPublished, dayStart(from), dayEnd(to)),
+            between(similarityPairs.bPublished, dayStart(from), dayEnd(to)),
+          ),
+          gte(similarityPairs.score, threshold),
+        ),
+      );
+    const known = await loadArticles(
+      db,
+      relationPairs.flatMap((pair) => [pair.aId, pair.bId]),
+    );
+    result.push(...dailyRelationCounts(relationPairs, known).filter((row) => row.day >= from && row.day <= to));
+  }
+  return result;
+}
+
 export async function loadDaily(db: Db, from: string, to: string, threshold: number): Promise<SimilarityDaily> {
   const days: string[] = [];
   for (let t = Date.parse(`${from}T00:00:00Z`); t <= Date.parse(`${to}T00:00:00Z`); t += DAY)
     days.push(new Date(t).toISOString().slice(0, 10));
   const position = new Map(days.map((day, i) => [day, i]));
   const localDay = sql<string>`DATE_FORMAT(${articleSketches.publishedAt} + INTERVAL 8 HOUR, '%Y-%m-%d')`;
-  // Each pair once per side, keyed by that article's own publish day: the
-  // earlier side was copied, the later side copied. Ties count for neither.
-  const sides = (side: 'a' | 'b') => {
-    const other = side === 'a' ? 'b' : 'a';
-    return sql`SELECT ${sql.raw(`${side}_id`)} AS id, ${sql.raw(`${side}_media`)} AS media, ${sql.raw(`${side}_published`)} AS published, ${sql.raw(`${side}_published < ${other}_published`)} AS earlier FROM ${similarityPairs} WHERE ${sql.raw(`${side}_published`)} BETWEEN ${dayStart(from)} AND ${dayEnd(to)} AND ${sql.raw(`${side}_published <> ${other}_published`)} AND score >= ${threshold}`;
-  };
-  const [analyzed, pairs, citations, [directions]] = await Promise.all([
+  const [analyzed, pairs, citations, relations] = await Promise.all([
     db
       .select({ day: localDay, media: articleSketches.media, n: sql<number>`COUNT(*)` })
       .from(articleSketches)
@@ -183,9 +267,7 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
       .from(articleCitations)
       .where(between(articleCitations.day, from, to))
       .groupBy(articleCitations.day, articleCitations.media, articleCitations.source),
-    db.execute(
-      sql`SELECT DATE_FORMAT(published + INTERVAL 8 HOUR, '%Y-%m-%d') AS day, media, earlier, COUNT(DISTINCT id) AS n FROM (${sides('a')} UNION ALL ${sides('b')}) AS s GROUP BY day, media, earlier`,
-    ) as unknown as Promise<[Array<{ day: string; media: string; earlier: number; n: number }>, unknown]>,
+    loadDailyRelations(db, from, to, threshold),
   ]);
   const zeros = () => days.map(() => 0);
   const totals = { articles: zeros(), pairs: zeros(), identical: zeros(), citations: zeros() };
@@ -197,6 +279,9 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
         name: outletIdentity(id).name,
         articles: zeros(),
         pairs: zeros(),
+        sameByline: zeros(),
+        attributed: zeros(),
+        unattributed: zeros(),
         copied: zeros(),
         copying: zeros(),
         citing: zeros(),
@@ -218,10 +303,10 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
     media(row.a).pairs[i] += Number(row.n);
     media(row.b).pairs[i] += Number(row.n);
   }
-  for (const row of directions) {
-    const i = position.get(String(row.day));
+  for (const row of relations) {
+    const i = position.get(row.day);
     if (i === undefined) continue;
-    media(row.media)[Number(row.earlier) ? 'copied' : 'copying'][i] += Number(row.n);
+    media(row.media)[row.category]![i] += row.count;
   }
   for (const row of citations) {
     const i = position.get(String(row.day));
@@ -262,10 +347,7 @@ export async function loadArticleSimilarity(db: Db, id: number, threshold: numbe
     })
     .from(similarityPairs)
     .where(and(or(eq(similarityPairs.aId, id), eq(similarityPairs.bId, id)), gte(similarityPairs.score, threshold)));
-  const others = await loadArticles(
-    db,
-    pairs.map((p) => (p.aId === id ? p.bId : p.aId)),
-  );
+  const others = await loadArticles(db, [id, ...pairs.map((p) => (p.aId === id ? p.bId : p.aId))]);
   return {
     articleId: id,
     threshold,
@@ -279,6 +361,7 @@ export async function loadArticleSimilarity(db: Db, id: number, threshold: numbe
           ? [
               {
                 article,
+                relation: others.get(id) ? classifyRelation(others.get(id)!, article) : undefined,
                 score: p.score,
                 containment: p.containment,
                 kind: p.kind === 'identical' ? ('identical' as const) : ('high' as const),
@@ -301,9 +384,24 @@ export function registerSimilarity(app: FastifyInstance, db: Db) {
     return data;
   });
   app.get<{ Querystring: Record<string, string | undefined> }>('/api/v1/similarity/evidence', async (request, reply) => {
-    const { mode, node, edgeKind, source, target, direction, scope, focus, q, page, ...window } = request.query;
+    const { mode, relation, node, edgeKind, edgeRelation, edgeDirected, source, target, direction, scope, focus, q, page, ...window } =
+      request.query;
     const params = similarityParams(window);
-    const filter = evidenceFilter({ mode, node, edgeKind, source, target, direction, scope, focus, q, page });
+    const filter = evidenceFilter({
+      mode,
+      relation,
+      node,
+      edgeKind,
+      edgeRelation,
+      edgeDirected,
+      source,
+      target,
+      direction,
+      scope,
+      focus,
+      q,
+      page,
+    });
     if (!params || !filter) return reply.code(400).send({ error: `${PARAMS_ERROR}; see the OpenAPI document for evidence filters` });
     const data = await loadEvidence(db, await cachedIndexView(db, params), filter);
     reply.header('cache-control', params.hours ? 'public, max-age=60' : 'public, max-age=600');

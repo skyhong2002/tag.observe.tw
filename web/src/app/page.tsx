@@ -13,12 +13,17 @@ import { type RankingEntry, taipei } from '@/lib/api';
 import {
   type CampGap,
   type CampShare,
+  campOutlets,
   DEMO_CAMPS,
   type DemoStory,
   type GraphOutlet,
   type GraphSummary,
   type JournalistBrief,
   loadDemo,
+  loadHomeGraph,
+  loadHomeJournalists,
+  loadHomeTopics,
+  mediaStats,
 } from '@/lib/demo';
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
@@ -27,6 +32,7 @@ import { pageMetadata } from '@/lib/seo.mts';
 import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletIcon from './_home/CampOutletIcon';
 import CampOutlets from './_home/CampOutlets';
+import EventRecovery from './_home/EventRecovery';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import styles from './_home/home.module.css';
 import Masthead from './_home/Masthead';
@@ -61,7 +67,7 @@ function wholePercentages(counts: number[]): number[] {
   return percentages;
 }
 
-function CampShareBar({ share }: { share: CampShare }) {
+function CampShareBar({ share, outlets }: { share: CampShare; outlets: ReturnType<typeof mediaStats> }) {
   const camps = DEMO_CAMPS.map((c) => ({ ...c, count: share.camps.find((v) => v.camp === c.key)?.articles ?? 0 }));
   const percentages = wholePercentages(camps.map((c) => c.count));
   const description = camps.map((c, i) => `${c.label} ${percentages[i]}%（${c.count.toLocaleString()} 篇）`).join('、');
@@ -88,34 +94,42 @@ function CampShareBar({ share }: { share: CampShare }) {
       <a href="#method" className={styles.campShareMethod}>
         怎麼算 ⓘ
       </a>
-      {share.camps.some((c) => c.outlets.length > 0) && (
-        <CampOutlets
-          total={share.camps.reduce((n, c) => n + c.outlets.length, 0)}
-          columns={DEMO_CAMPS.map(
-            (c) => `minmax(128px, ${Math.max(1, share.camps.find((v) => v.camp === c.key)?.outlets.length ?? 0)}fr)`,
-          ).join(' ')}
-        >
-          {DEMO_CAMPS.map((c) => {
-            const outlets = share.camps.find((v) => v.camp === c.key)?.outlets ?? [];
-            return (
-              <div key={c.key} className={styles.campOutletGroup}>
-                <p>
-                  <i className={styles[c.key]} aria-hidden="true" />
-                  {c.label} <span>{outlets.length} 家</span>
-                </p>
-                <ul>
-                  {outlets.map((o) => (
-                    <li key={o.media}>
-                      <CampOutletIcon outlet={o} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </CampOutlets>
-      )}
+      <div className={styles.campOutletsSlot} data-vital-region="home-outlets">
+        <Suspense fallback={<PanelLoading />}>
+          <DeferredCampOutlets data={outlets} />
+        </Suspense>
+      </div>
     </section>
+  );
+}
+
+async function DeferredCampOutlets({ data }: { data: ReturnType<typeof mediaStats> }) {
+  const groups = campOutlets(await data);
+  if (Object.values(groups).every((list) => list.length === 0)) return <p className={styles.notice}>媒體清單暫時無法取得。</p>;
+  return (
+    <CampOutlets
+      total={Object.values(groups).reduce((n, list) => n + list.length, 0)}
+      columns={DEMO_CAMPS.map((c) => `minmax(128px, ${Math.max(1, groups[c.key].length)}fr)`).join(' ')}
+    >
+      {DEMO_CAMPS.map((c) => {
+        const outlets = groups[c.key];
+        return (
+          <div key={c.key} className={styles.campOutletGroup}>
+            <p>
+              <i className={styles[c.key]} aria-hidden="true" />
+              {c.label} <span>{outlets.length} 家</span>
+            </p>
+            <ul>
+              {outlets.map((o) => (
+                <li key={o.media}>
+                  <CampOutletIcon outlet={o} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </CampOutlets>
   );
 }
 
@@ -255,8 +269,8 @@ function GraphPanel({ graph }: { graph: GraphSummary | null }) {
   if (!graph) return <p className={styles.notice}>相似度比對整理中。</p>;
   return (
     <div className={styles.graphBody}>
-      <OutletList caption="先發，之後被他家跟進" rows={graph.earliest} verb="多被跟進：" />
-      <OutletList caption="跟進他家已發的報導" rows={graph.later} verb="多跟進：" />
+      <OutletList caption="文字相近，標示刊登較早" rows={graph.earliest} verb="相近對象：" />
+      <OutletList caption="文字相近，標示刊登較晚" rows={graph.later} verb="相近對象：" />
       <OutletList caption="被他家明示引用" rows={graph.cited} verb="多被引用：" />
       <OutletList caption="明示引用他家" rows={graph.citing} verb="多引用：" />
       {/* What the columns mean is in the footer's 資料來源與計算方式 (HomeMethod). */}
@@ -267,6 +281,39 @@ function GraphPanel({ graph }: { graph: GraphSummary | null }) {
         </a>
       </p>
     </div>
+  );
+}
+
+async function DeferredJournalists({ data }: { data: ReturnType<typeof loadHomeJournalists> }) {
+  return <JournalistPanel brief={await data} />;
+}
+
+async function DeferredGraph({ data }: { data: ReturnType<typeof loadHomeGraph> }) {
+  return <GraphPanel graph={await data} />;
+}
+
+async function DeferredTopics({ data }: { data: ReturnType<typeof loadHomeTopics> }) {
+  return <TopicPanel topics={await data} />;
+}
+
+async function DeferredHomeMethod({
+  basisCount,
+  journalists,
+  graph,
+}: {
+  basisCount?: number;
+  journalists: ReturnType<typeof loadHomeJournalists>;
+  graph: ReturnType<typeof loadHomeGraph>;
+}) {
+  const [j, g] = await Promise.all([journalists, graph]);
+  return <HomeMethod basisCount={basisCount} journalistHours={j?.hours} graphHours={g?.hours} />;
+}
+
+function PanelLoading() {
+  return (
+    <p className={styles.notice} role="status">
+      資料載入中…
+    </p>
   );
 }
 
@@ -320,6 +367,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // The box used to filter this page's events; it now searches every article.
   const q = (Array.isArray(query.q) ? query.q[0] : (query.q ?? '')).trim().slice(0, 60);
   if (q) redirect(`/search/?${new URLSearchParams({ q })}`);
+  const outlets = mediaStats();
+  const journalists = loadHomeJournalists();
+  const graph = loadHomeGraph();
+  const topics = loadHomeTopics();
   const data = await loadDemo();
   const [lead, ...rest] = data.stories;
   const ranking = data.ranking;
@@ -343,7 +394,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <main id="news-main" className={styles.main}>
         <Masthead date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
 
-        {data.campShare && <CampShareBar share={data.campShare} />}
+        {data.campShare && <CampShareBar share={data.campShare} outlets={outlets} />}
 
         {data.events?.stale && <p className={styles.notice}>事件分群更新延遲，目前顯示最近一次的結果。</p>}
 
@@ -384,10 +435,16 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 全部記者 <Arrow />
               </Link>
             </div>
-            <JournalistPanel brief={data.journalists} />
-            <Suspense fallback={null}>
-              <ReadersPanel />
-            </Suspense>
+            <div className="min-h-72" data-vital-region="home-journalists">
+              <Suspense fallback={<PanelLoading />}>
+                <DeferredJournalists data={journalists} />
+              </Suspense>
+            </div>
+            <div className="min-h-80" data-vital-region="home-readers">
+              <Suspense fallback={<PanelLoading />}>
+                <ReadersPanel />
+              </Suspense>
+            </div>
           </aside>
 
           <section className={styles.center} aria-label="焦點事件">
@@ -399,7 +456,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </div>
             {lead ? (
               <>
-                <article className={styles.hero}>
+                <article className={styles.hero} data-vital-region="home-hero">
                   <Link href={lead.href} className={styles.heroImage} tabIndex={-1} aria-hidden="true">
                     <NewsImage src={lead.image} priority />
                   </Link>
@@ -464,8 +521,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             ) : (
               <div className={styles.empty}>
                 <span aria-hidden="true">◎</span>
-                <h2>新聞正在整理中</h2>
-                <p>目前暫時無法取得事件資料，請稍後重新整理。</p>
+                <h2>焦點事件載入中</h2>
+                <EventRecovery />
                 <Link href="/event/">
                   前往事件表 <Arrow />
                 </Link>
@@ -499,7 +556,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 看整張圖 <Arrow />
               </Link>
             </div>
-            <GraphPanel graph={data.graph} />
+            <div className="min-h-80" data-vital-region="home-graph">
+              <Suspense fallback={<PanelLoading />}>
+                <DeferredGraph data={graph} />
+              </Suspense>
+            </div>
           </section>
           <section className={styles.panel} aria-label="最近更新的議題">
             <div className={styles.sectionHeading}>
@@ -508,18 +569,20 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 議題表 <Arrow />
               </Link>
             </div>
-            <TopicPanel topics={data.topics} />
+            <div className="min-h-80" data-vital-region="home-topics">
+              <Suspense fallback={<PanelLoading />}>
+                <DeferredTopics data={topics} />
+              </Suspense>
+            </div>
           </section>
         </div>
 
         <SiteFooter
           notes={
             <>
-              <HomeMethod
-                basisCount={ranking?.snapshot.basis.media.length}
-                journalistHours={data.journalists?.hours}
-                graphHours={data.graph?.hours}
-              />
+              <Suspense fallback={<HomeMethod basisCount={ranking?.snapshot.basis.media.length} />}>
+                <DeferredHomeMethod basisCount={ranking?.snapshot.basis.media.length} journalists={journalists} graph={graph} />
+              </Suspense>
               <EventMethod page="table" />
               <MediaCardMethod />
             </>

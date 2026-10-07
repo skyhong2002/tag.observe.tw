@@ -148,8 +148,8 @@ export default async function JournalistPage({
     { label: '有正文', value: number(stats.withBody), unit: '篇' },
     { label: '平均字元', value: stats.averageChars === null ? '—' : number(stats.averageChars), unit: '' },
     { label: '明示引用', value: number(stats.cited), unit: '篇' },
-    { label: '相近，對方較早', value: number(stats.similar.later), unit: '組' },
-    { label: '相近，本篇較早', value: number(stats.similar.earlier), unit: '組' },
+    { label: '相近，對方較早', value: number(stats.similar.later), unit: '篇' },
+    { label: '相近，本篇較早', value: number(stats.similar.earlier), unit: '篇' },
   ];
   return (
     <div className="pb-4">
@@ -232,10 +232,14 @@ export default async function JournalistPage({
             <dl className="grid grid-cols-[6rem_minmax(0,1fr)] gap-y-1.5">
               <dt className="text-zinc-500 dark:text-zinc-400">已比對</dt>
               <dd>{number(data.index.compared)} 篇</dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">未見相近</dt>
+              <dd title="已比對但未發現達門檻的相近文章，不代表已確認原創">{number(data.index.unmatched)} 篇</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">尚待比對</dt>
               <dd>{number(data.index.pending)} 篇</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">同署名跨站</dt>
-              <dd>{number(stats.similar.sameAuthor)} 組</dd>
+              <dd>{number(stats.similar.sameAuthor)} 篇</dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">已註明來源</dt>
+              <dd>{number(stats.similar.attributed ?? 0)} 篇</dd>
             </dl>
             <p className="mt-2">
               <MethodLink />

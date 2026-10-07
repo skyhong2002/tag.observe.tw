@@ -15,6 +15,7 @@ import { registerMediaStats } from './v1/media-stats.ts';
 import { registerMediaTrafficComparison } from './v1/media-traffic-comparison.ts';
 import { registerApiMeta } from './v1/openapi.ts';
 import { registerPageApis } from './v1/pages.ts';
+import { registerReaderPresence } from './v1/reader-presence.ts';
 import { registerV1Routes } from './v1/routes.ts';
 import { registerSimilarity } from './v1/similarity.ts';
 import { registerSiteObservation } from './v1/site-observation.ts';
@@ -82,6 +83,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
   }
+  registerReaderPresence(app);
   registerApiMeta(app);
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {

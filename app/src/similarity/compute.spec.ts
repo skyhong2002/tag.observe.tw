@@ -67,13 +67,13 @@ describe('story groups', () => {
     kind: 'high',
     evidence: '共同段落',
   });
-  it('points every member at the earliest article, even without a direct pair', () => {
+  it('groups connected articles but exposes only directly measured pairs', () => {
     const { groups, origins } = storyGroups([pair(1, 2, 'cna', 'udn', 1, 2), pair(2, 3, 'udn', 'ltn', 2, 3)]);
     expect(groups).toHaveLength(1);
     expect(groups[0]).toMatchObject({ id: 'story:1', tiedFirst: 1 });
     expect(origins.map((o) => [o.article.id, o.source.id, o.directPair ? 'direct' : 'group'])).toEqual([
       [2, 1, 'direct'],
-      [3, 1, 'group'],
+      [3, 2, 'direct'],
     ]);
   });
 });

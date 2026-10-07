@@ -6,50 +6,67 @@ import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
+import { type Metric, matchesFilters, metricCount, metricShare, metrics, type SortKey, sortValue } from '@/lib/journalist-table.mts';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
 import { table } from '@/lib/table-styles';
 
-type SortKey = 'name' | 'media' | 'articles' | 'compared' | 'pairs' | 'later' | 'earlier' | 'sameAuthor' | 'cited';
-// Click a heading to sort, click again to flip, like the media tables.
-// Column meanings are in the footer notes (JournalistMethod); titles only hint at sorting.
-const columns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
+const allColumns: Array<{ key: SortKey; label: string; title?: string; numeric: boolean }> = [
   { key: 'name', label: '記者', numeric: false },
   { key: 'media', label: '刊登媒體', title: '依刊登媒體數排序', numeric: false },
   { key: 'articles', label: '篇數', numeric: true },
-  { key: 'compared', label: '已比對', numeric: true },
-  { key: 'pairs', label: '內文相近', numeric: true },
-  { key: 'later', label: '對方較早', numeric: true },
-  { key: 'earlier', label: '本篇較早', numeric: true },
-  { key: 'sameAuthor', label: '同署名', numeric: true },
-  { key: 'cited', label: '引用', numeric: true },
+  ...metrics.map((metric) => ({ ...metric, numeric: true })),
 ];
-const sortValue = (row: JournalistSummary, key: SortKey): number =>
-  key === 'media'
-    ? row.media.length
-    : key === 'articles'
-      ? row.articles
-      : key === 'compared'
-        ? row.compared
-        : key === 'pairs'
-          ? row.similar.pairs
-          : key === 'later'
-            ? row.similar.later
-            : key === 'earlier'
-              ? row.similar.earlier
-              : key === 'sameAuthor'
-                ? row.similar.sameAuthor
-                : key === 'cited'
-                  ? row.cited
-                  : 0;
+const control = 'rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950';
+const chip = (active: boolean) =>
+  `rounded-full px-3 py-1 ${active ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`;
+const percent = (value: number | null) => (value === null ? '—' : `${(value * 100).toFixed(1)}%`);
+function MetricCell({ row, metric }: { row: JournalistSummary; metric: Metric }) {
+  const count = metricCount(row, metric);
+  const share = metricShare(row, metric);
+  return (
+    <td className={`${table.num} min-w-28`} title={`${count === null ? '未知' : `${count} 篇`} / 全部 ${row.articles} 篇`}>
+      <div className="relative flex items-baseline justify-end gap-2 whitespace-nowrap">
+        <span className={count === 0 ? 'text-zinc-400' : ''}>{count === null ? '—' : number(count)}</span>
+        <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{percent(share)}</span>
+        <span className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
+          <span
+            className="block h-px bg-zinc-400 dark:bg-zinc-500"
+            style={{ width: `${Math.min(100, Math.max(0, (share ?? 0) * 100))}%` }}
+          />
+        </span>
+      </div>
+    </td>
+  );
+}
 const PAGE = 150;
 const number = (value: number) => value.toLocaleString('zh-TW');
 
 export default function JournalistTable({ rows }: { rows: JournalistSummary[] }) {
+  const [detailed, setDetailed] = useState(false);
+  const displayMetrics = metrics.filter(({ key }) => detailed || ['firstSeen', 'matched', 'cited'].includes(key));
+  const columns = allColumns.filter(({ key }) => detailed || ['name', 'media', 'articles', 'firstSeen', 'matched', 'cited'].includes(key));
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
   const [media, setMedia] = useState('');
   const [shown, setShown] = useState(PAGE);
+  const [sortMode, setSortMode] = useState<'count' | 'share'>('count');
+  const [relation, setRelation] = useState<Metric | ''>('');
+  const [minArticles, setMinArticles] = useState(0);
+  const [minCoverage, setMinCoverage] = useState(0);
+  const [metric, setMetric] = useState<Metric>('firstSeen');
+  const [minShare, setMinShare] = useState('');
+  const [maxShare, setMaxShare] = useState('');
+  const resetFilters = () => {
+    setQuery('');
+    setMedia('');
+    setRelation('');
+    setMinArticles(0);
+    setMinCoverage(0);
+    setMinShare('');
+    setMaxShare('');
+    setShown(PAGE);
+  };
   const outlets = useMemo(() => {
     const names = new Map<string, { name: string; count: number }>();
     for (const row of rows)
@@ -57,16 +74,14 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
     return [...names].sort((a, b) => b[1].count - a[1].count);
   }, [rows]);
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
     return rows
-      .filter(
-        (row) => (!needle || row.name.toLowerCase().includes(needle)) && (!media || row.media.some((outlet) => outlet.media === media)),
-      )
+      .filter((row) => matchesFilters(row, { query, media, relation, minArticles, minCoverage, metric, minShare, maxShare }))
       .sort((a, b) => {
-        const order = sort === 'name' ? a.name.localeCompare(b.name, 'zh-Hant') : sortValue(a, sort) - sortValue(b, sort);
+        const order =
+          sort === 'name' ? a.name.localeCompare(b.name, 'zh-Hant') : sortValue(a, sort, sortMode) - sortValue(b, sort, sortMode);
         return (descending ? -order : order) || b.articles - a.articles || a.name.localeCompare(b.name, 'zh-Hant');
       });
-  }, [rows, query, sort, descending, media]);
+  }, [rows, query, media, relation, minArticles, minCoverage, metric, minShare, maxShare, sort, descending, sortMode]);
   const sortBy = (key: SortKey) => {
     if (sort === key) setDescending(!descending);
     else {
@@ -77,6 +92,40 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
   };
   const visible = filtered.slice(0, shown);
   const cell = table.num;
+  const renderRow = (row: JournalistSummary) => (
+    <tr key={row.name} className={table.row}>
+      <td className={table.lead}>
+        <div className={table.leadBox}>
+          <Link
+            href={journalistHref(row.name)}
+            className="block truncate font-medium hover:text-brand-700 hover:underline dark:hover:text-brand-400"
+            title={row.name}
+          >
+            {row.name}
+          </Link>
+        </div>
+      </td>
+      <td className={table.cell}>
+        <ul
+          title={row.media.map((outlet) => `${outlet.name} ${outlet.count} 篇`).join('、')}
+          className="flex max-w-64 items-center gap-x-2 overflow-hidden whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400"
+        >
+          {row.media.slice(0, 2).map((outlet) => (
+            <li key={outlet.media} className="flex min-w-0 items-center gap-1 whitespace-nowrap">
+              <MediaIcon media={outlet.media} title={outlet.name} size={14} />
+              <span className="truncate">{outlet.name}</span>
+              <span className="tabular-nums text-zinc-400">{outlet.count}</span>
+            </li>
+          ))}
+          {row.media.length > 2 && <li className="shrink-0 text-zinc-400">+{row.media.length - 2}</li>}
+        </ul>
+      </td>
+      <td className={cell}>{number(row.articles)}</td>
+      {displayMetrics.map(({ key }) => (
+        <MetricCell key={key} row={row} metric={key} />
+      ))}
+    </tr>
+  );
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
@@ -111,11 +160,179 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             ))}
           </select>
         </label>
-        <p className="py-2 text-zinc-500 dark:text-zinc-400">符合 {number(filtered.length)} 人</p>
+        <p role="status" className="py-2 text-zinc-500 dark:text-zinc-400">
+          符合 {number(filtered.length)} 人
+        </p>
+        <fieldset className="flex items-center gap-1 py-1" aria-label="排序依據">
+          <span className="mr-1 text-zinc-500">排序</span>
+          <button
+            type="button"
+            className={chip(sortMode === 'count')}
+            aria-pressed={sortMode === 'count'}
+            onClick={() => {
+              setSortMode('count');
+              setShown(PAGE);
+            }}
+          >
+            篇數
+          </button>
+          <button
+            type="button"
+            className={chip(sortMode === 'share')}
+            aria-pressed={sortMode === 'share'}
+            onClick={() => {
+              setSortMode('share');
+              if (sort === 'articles' || sort === 'name' || sort === 'media') {
+                setSort('firstSeen');
+                setDescending(true);
+              }
+              setShown(PAGE);
+            }}
+          >
+            百分比 %
+          </button>
+        </fieldset>
+        <label className="inline-flex items-center gap-1.5 py-2">
+          <input
+            type="checkbox"
+            checked={detailed}
+            onChange={(e) => {
+              setDetailed(e.target.checked);
+              if (!e.target.checked && !['name', 'media', 'articles', 'firstSeen', 'matched', 'cited'].includes(sort)) {
+                setSort('firstSeen');
+                setDescending(true);
+              }
+              setShown(PAGE);
+            }}
+          />
+          詳細欄位
+        </label>
         <MethodLink className="py-2" />
       </div>
+      <details className="mb-3 text-xs">
+        <summary className="w-fit cursor-pointer py-1 text-zinc-500 dark:text-zinc-400">
+          進階篩選
+          {[Boolean(relation), minArticles > 0, minCoverage > 0, minShare !== '', maxShare !== ''].filter(Boolean).length > 0
+            ? `（${[Boolean(relation), minArticles > 0, minCoverage > 0, minShare !== '', maxShare !== ''].filter(Boolean).length} 項已套用）`
+            : ''}
+        </summary>
+        <section className="mt-2 mb-3 flex flex-wrap gap-2 text-xs" aria-label="關係篩選">
+          <button
+            type="button"
+            className={chip(!relation)}
+            aria-pressed={!relation}
+            onClick={() => {
+              setRelation('');
+              setShown(PAGE);
+            }}
+          >
+            全部關係
+          </button>
+          {metrics
+            .filter(({ key }) => key !== 'compared')
+            .map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={chip(relation === key)}
+                aria-pressed={relation === key}
+                onClick={() => {
+                  setRelation(relation === key ? '' : key);
+                  setShown(PAGE);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+        </section>
+        <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
+          <label className="flex flex-col gap-1">
+            最低篇數
+            <input
+              className={`${control} w-24`}
+              type="number"
+              min="0"
+              step="1"
+              value={minArticles}
+              onChange={(e) => {
+                setMinArticles(Math.max(0, Number(e.target.value)));
+                setShown(PAGE);
+              }}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            最低已比對比例
+            <select
+              className={control}
+              value={minCoverage}
+              onChange={(e) => {
+                setMinCoverage(Number(e.target.value));
+                setShown(PAGE);
+              }}
+            >
+              {[0, 50, 80, 100].map((value) => (
+                <option key={value} value={value}>
+                  {value ? `${value}%` : '不限'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            比例篩選欄位
+            <select
+              className={control}
+              value={metric}
+              onChange={(e) => {
+                setMetric(e.target.value as Metric);
+                setShown(PAGE);
+              }}
+            >
+              {metrics.map(({ key, label }) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            最低比例（%）
+            <input
+              className={`${control} w-28`}
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="不限"
+              value={minShare}
+              onChange={(e) => {
+                setMinShare(e.target.value);
+                setShown(PAGE);
+              }}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            最高比例（%）
+            <input
+              className={`${control} w-28`}
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="不限"
+              value={maxShare}
+              onChange={(e) => {
+                setMaxShare(e.target.value);
+                setShown(PAGE);
+              }}
+            />
+          </label>
+          <button type="button" className="py-2 underline underline-offset-4" onClick={resetFilters}>
+            清除篩選
+          </button>
+        </div>
+      </details>
       <TableScroller label="記者表格，可左右捲動">
-        <table className="w-full min-w-[44rem] border-collapse text-sm">
+        <table className={`w-full ${detailed ? 'min-w-[80rem]' : 'min-w-[44rem]'} border-collapse text-sm [&_td]:py-1 [&_th]:py-1`}>
           <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
               {columns.map((column) => (
@@ -140,44 +357,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-            {visible.map((row) => (
-              <tr key={row.name} className={table.row}>
-                <td className={table.lead}>
-                  <div className={table.leadBox}>
-                    <Link
-                      href={journalistHref(row.name)}
-                      className="block truncate font-medium hover:text-brand-700 hover:underline dark:hover:text-brand-400"
-                      title={row.name}
-                    >
-                      {row.name}
-                    </Link>
-                  </div>
-                </td>
-                <td className={table.cell}>
-                  <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-                    {row.media.slice(0, 4).map((outlet) => (
-                      <li key={outlet.media} className="flex items-center gap-1 whitespace-nowrap">
-                        <MediaIcon media={outlet.media} title={outlet.name} size={14} />
-                        <span>{outlet.name}</span>
-                        <span className="tabular-nums text-zinc-400">{outlet.count}</span>
-                      </li>
-                    ))}
-                    {row.media.length > 4 && <li className="text-zinc-400">+{row.media.length - 4}</li>}
-                  </ul>
-                </td>
-                <td className={cell}>{number(row.articles)}</td>
-                <td className={`${cell} text-zinc-500 dark:text-zinc-400`}>{number(row.compared)}</td>
-                <td className={cell}>
-                  {row.similar.pairs ? number(row.similar.pairs) : <span className="text-zinc-300 dark:text-zinc-700">0</span>}
-                </td>
-                <td className={`${cell} ${row.similar.later ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.later}</td>
-                <td className={`${cell} ${row.similar.earlier ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.earlier}</td>
-                <td className={`${cell} ${row.similar.sameAuthor ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.similar.sameAuthor}</td>
-                <td className={`${cell} ${row.cited ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>{row.cited}</td>
-              </tr>
-            ))}
-          </tbody>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">{visible.map(renderRow)}</tbody>
         </table>
       </TableScroller>
       {filtered.length > shown && (
@@ -187,7 +367,7 @@ export default function JournalistTable({ rows }: { rows: JournalistSummary[] })
             onClick={() => setShown((value) => value + PAGE)}
             className="rounded border border-zinc-300 px-4 py-2 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
-            顯示更多（還有 {number(filtered.length - shown)} 人）
+            {`顯示更多（還有 ${number(filtered.length - shown)} 人）`}
           </button>
         </div>
       )}

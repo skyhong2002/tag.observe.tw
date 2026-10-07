@@ -3,6 +3,7 @@
 // recent cards when nothing new has arrived. Pure, so the root test suite can
 // cover it (app/test/liveboard.spec.ts).
 
+import type { PairRelationInfo } from '../../../app/src/similarity/types.ts';
 import type { Camp, EventItem } from './event-types.mts';
 import { type CompareArticle, type CompareEvent, headlineDiff, headlineSimilarity, type TextPart } from './headline-compare.mts';
 
@@ -23,6 +24,7 @@ export interface LiveArticle {
   attributions?: Array<{ media: string; name: string; evidence: string; kind: 'explicit' }>;
 }
 export interface LiveFollower {
+  relation?: PairRelationInfo;
   article: LiveArticle;
   score: number;
   containment: number;
@@ -147,8 +149,8 @@ export function headlineCard(event: EventItem, compare: CompareEvent | null, now
 export type CopyTone = 'same' | 'light' | 'heavy';
 /** How much of the lead a follower kept; every stored pair already shares at least half its text. */
 export const copyTone = (f: Pick<LiveFollower, 'score' | 'kind'>): CopyTone =>
-  f.kind === 'identical' || f.score >= 0.9 ? 'same' : f.score >= 0.7 ? 'light' : 'heavy';
-export const COPY_TONE_LABEL: Record<CopyTone, string> = { same: '幾乎照登', light: '小幅改寫', heavy: '大幅改寫' };
+  f.kind === 'identical' ? 'same' : f.score >= 0.7 ? 'light' : 'heavy';
+export const COPY_TONE_LABEL: Record<CopyTone, string> = { same: '內文相同', light: '內文高度重疊', heavy: '內文部分重疊' };
 
 /**
  * The follower to put beside the lead: a direct match with body text,
@@ -157,7 +159,7 @@ export const COPY_TONE_LABEL: Record<CopyTone, string> = { same: '幾乎照登',
  */
 export function featuredFollower(story: LiveStory): LiveFollower | null {
   const direct = story.followers.filter((f) => f.direct);
-  const pool = direct.length ? direct : story.followers;
+  const pool = direct;
   const retitled = (f: LiveFollower) => headlineSimilarity(f.article.title, story.lead.title) < 0.6;
   // Only followers with body text can be compared side by side.
   const hasText = (f: LiveFollower) => f.article.text !== null;
@@ -173,7 +175,7 @@ export function storyCards(stories: readonly LiveStory[], now: number): Card[] {
     const featured = featuredFollower(story);
     // Copies are compared by their text: both sides need it.
     if (!featured || !story.lead.text || !featured.article.text) return [];
-    return [{ kind: 'copy', key: `copy:${story.lead.id}:${featured.article.id}`, at: now, story, featured }];
+    return [{ kind: 'copy', key: `copy:${story.key}`, at: now, story, featured }];
   });
 }
 

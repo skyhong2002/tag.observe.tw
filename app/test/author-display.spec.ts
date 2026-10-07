@@ -45,9 +45,9 @@ describe('liveboard author and source roles', () => {
   it('does not turn an institutional author into a cited outlet', () => {
     expect(authorCreditParts(['網路溫度計'], { media: 'pchome' })).toEqual([{ label: '機構署名', text: '網路溫度計' }]);
   });
-  it('shows an explicit AFP citation alongside the FTV institutional byline', () => {
+  it('keeps an explicit AFP citation while omitting FTV’s own institutional byline', () => {
     expect(authorDisplay(['民間全民電視公司'], { media: 'ftv', attributions: [source('afp', '法新社', 'AFP 法新社報導')] })).toBe(
-      '機構署名 民間全民電視公司 · 引用 法新社',
+      '引用 法新社',
     );
   });
   it('shows a CNA source and a separate AFP citation', () => {
@@ -73,6 +73,12 @@ describe('liveboard author and source roles', () => {
   });
   it('retains an unclassified original credit without inventing a role', () => {
     expect(authorDisplay(['新聞編輯'])).toBe('機構署名 新聞編輯');
+  });
+  it('omits the publisher’s own outlet aliases while keeping authors and outside sources', () => {
+    expect(authorDisplay(['自由時報電子報', '林欣漢', '中央社'], { media: 'ltn' })).toBe('作者 林欣漢 · 來源 中央社');
+  });
+  it('omits an unknown publisher’s own display name', () => {
+    expect(authorDisplay(['測試新聞'], { media: 'test', mediaTitle: '測試新聞' })).toBe('未署名');
   });
   it('does not invent an author for missing credits', () => {
     expect(authorDisplay([])).toBe('未署名');

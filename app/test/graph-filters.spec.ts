@@ -118,9 +118,9 @@ describe('filtered relationships and hover summaries', () => {
     expect(citation).toContain('blue → large');
     expect(citation).toContain('2 篇文章來源／引用');
     const similar = tooltip({ edge: storyEdge }, [storyEdge]);
-    expect(similar).toContain('large → green');
+    expect(similar).toContain('large ↔ green');
     expect(similar).toContain('95.0%');
-    expect(tooltip({ edge: { ...storyEdge, score: null } }, [])).toContain('經同組配對歸源');
+    expect(tooltip({ edge: { ...storyEdge, score: null } }, [])).not.toContain('歸源');
     const escaped = tooltip({ node: '<b>x</b>' }, []);
     expect(escaped).toContain('&lt;b&gt;x&lt;/b&gt;');
     expect(escaped).not.toContain('<b>x</b>');
@@ -128,11 +128,11 @@ describe('filtered relationships and hover summaries', () => {
   it('shows period-wide counts for media and explains an outlet with no remaining links', () => {
     const tooltip = createGraphTooltip(nodes, camps);
     expect(tooltip({ node: 'large' }, edges)).toContain('引用 3 篇');
-    expect(tooltip({ node: 'large' }, edges)).toContain('同組最早 1 篇 · 同組較晚 0 篇');
+    expect(tooltip({ node: 'large' }, edges)).toContain('較早刊登 1 篇 · 較晚刊登 0 篇');
     expect(tooltip({ node: 'green' }, edges)).toContain('綠營傾向');
     const isolated = createGraphTooltip(filter({ camp: 'blue' }).nodes, camps)({ node: 'blue' }, []);
     expect(isolated).toContain('目前篩選與關係模式下沒有連線');
-    expect(isolated).toContain('被採用／引用 2 篇');
+    expect(isolated).toContain('被引用 2 篇');
     expect(tooltip({ node: 'unknown' }, [])).toBe('');
   });
 });

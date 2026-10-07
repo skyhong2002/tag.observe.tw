@@ -6,7 +6,9 @@ import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
 import {
   type BylineRow,
+  countFirstSeen,
   countSimilarity,
+  countUnmatched,
   type JournalistOutlet,
   type JournalistPair,
   type JournalistSimilarity,
@@ -86,6 +88,9 @@ export interface JournalistDetail {
   index: {
     /** Own stories the index compared with every other outlet. */
     compared: number;
+    /** Compared articles with no similar counterpart; not proof of originality. */
+    unmatched: number;
+    firstSeen: number;
     /** Own stories with a usable body still waiting for the index. */
     pending: number;
     windowDays: number;
@@ -124,6 +129,8 @@ export async function loadJournalistIndex(
         id: articles.id,
         media: articles.media,
         publishedAt: articles.publishedAt,
+        fetchedAt: articles.fetchedAt,
+        crawledAt: articles.crawledAt,
         authors: articles.authors,
         creator: articles.creator,
         bodyStatus: articles.bodyStatus,
@@ -137,6 +144,7 @@ export async function loadJournalistIndex(
   ]);
   const bylines: BylineRow[] = rows.map((row) => ({
     ...row,
+    datePending: row.fetchedAt === null && row.crawledAt?.getTime() === row.publishedAt.getTime(),
     hasBody: Number(row.hasBody) === 1,
     indexed: Number(row.indexed) === 1 && row.bodyStatus === 'ok' && Number(row.hasBody) === 1,
   }));
@@ -186,6 +194,8 @@ export async function loadJournalist(
       url: articles.url,
       image: articles.image,
       publishedAt: articles.publishedAt,
+      fetchedAt: articles.fetchedAt,
+      crawledAt: articles.crawledAt,
       tags: articles.tags,
       authors: articles.authors,
       creator: articles.creator,
@@ -270,7 +280,7 @@ export async function loadJournalist(
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant'))
         .slice(0, 30)
         .map(([tag, count]) => ({ tag, count })),
-      similar: countSimilarity(pairs),
+      similar: countSimilarity(pairs, new Set(own.map((row) => row.id))),
     },
     media: [...media]
       .map(([key, count]) => ({ media: key, name: mediaTitle(key), count }))
@@ -279,6 +289,15 @@ export async function loadJournalist(
     pairs,
     index: {
       compared: indexed.size,
+      unmatched: countUnmatched(pairs, indexed),
+      firstSeen: countFirstSeen(
+        pairs,
+        own.map((row) => ({
+          ...row,
+          indexed: indexed.has(row.id),
+          datePending: row.fetchedAt === null && row.crawledAt?.getTime() === row.publishedAt.getTime(),
+        })),
+      ),
       pending: own.filter((row) => !row.similarityAt && row.bodyStatus === 'ok' && Number(row.bodyChars) > 0 && !syndication.has(row.media))
         .length,
       windowDays: WINDOW_DAYS,

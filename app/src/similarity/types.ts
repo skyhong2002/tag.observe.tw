@@ -1,5 +1,15 @@
 import type { Attribution } from './attribution.ts';
 
+export interface PairRelationInfo {
+  kind: 'attributed' | 'same-byline' | 'unattributed';
+  sharedAuthors: string[];
+  aCitesB: boolean;
+  bCitesA: boolean;
+  aCreditRole?: '來源' | '引用';
+  bCreditRole?: '來源' | '引用';
+  commonSources: Array<{ media: string; name: string }>;
+  publication: 'same' | 'a-earlier' | 'b-earlier' | 'unknown';
+}
 export interface SimilarityArticle {
   id: number;
   media: string;
@@ -10,10 +20,12 @@ export interface SimilarityArticle {
   url: string;
   publishedAt: string;
   authors: string[];
+  datePending?: boolean;
   bodyLength: number;
   attributions: Attribution[];
 }
 export interface SimilarityPair {
+  relation?: PairRelationInfo;
   id: string;
   a: SimilarityArticle;
   b: SimilarityArticle;
@@ -33,9 +45,12 @@ export interface SimilarityNode {
   external: boolean;
   /** Distinct articles of this outlet in a story group with another outlet. */
   similar: number;
-  /** Of `similar`: articles that were the earliest in their group. */
+  sameByline?: number;
+  attributed?: number;
+  unattributed?: number;
+  /** Unattributed direct matches: articles with an earlier confirmed publication. */
   earliest: number;
-  /** Of `similar`: articles whose group already had an earlier one. */
+  /** Unattributed direct matches: articles with a later confirmed publication. */
   later: number;
   /** Distinct articles of this outlet citing another outlet. */
   outgoing: number;
@@ -46,8 +61,15 @@ export interface SimilarityEdge {
   source: string;
   target: string;
   kind: 'similarity' | 'citation';
+  /** Visual category; matching bylines take priority over source credits. */
+  relation?: PairRelationInfo['kind'];
+  /** Arrow points from target to source; orange means publication order only. */
+  directed?: boolean;
   count: number;
   score: number | null;
+  sameByline?: number;
+  attributed?: number;
+  unattributed?: number;
 }
 export interface SimilarityCoverage {
   media: string;
@@ -95,7 +117,7 @@ export interface SimilarityData extends SimilarityWindow {
   edges: SimilarityEdge[];
 }
 
-/** Articles linked by pairs, each pointing to the group's earliest publication. */
+/** Connected article groups; sourceId is a display representative, not an inferred content source. */
 export interface StoryGroupData {
   id: string;
   sourceId: number | null;
@@ -138,9 +160,12 @@ export interface SimilarityDaily {
     name: string;
     articles: number[];
     pairs: number[];
-    /** Articles of this outlet that another outlet later matched (distinct, by own publish day). */
+    /** Unattributed direct matches published earlier; excludes shared bylines and pending dates. */
+    sameByline?: number[];
+    attributed?: number[];
+    unattributed?: number[];
     copied: number[];
-    /** Articles of this outlet published after a matching article elsewhere. */
+    /** Unattributed direct matches published later; excludes shared bylines and pending dates. */
     copying: number[];
     citing: number[];
     cited: number[];
@@ -157,6 +182,7 @@ export interface ArticleSimilarity {
   windowDays: number;
   matches: Array<{
     article: SimilarityArticle;
+    relation?: PairRelationInfo;
     score: number;
     containment: number;
     kind: 'identical' | 'high';

@@ -60,6 +60,16 @@ describe('extractArticle', () => {
     });
     expect(d.tags).toEqual(['戊', '己']);
   });
+  it('splits comma-separated keywords inside Videoland JSON-LD arrays', () => {
+    const detail = extractArticle(
+      html(
+        '<meta http-equiv="keywords" content="緯來新聞網,張齡予,天鵝童鞋"><script type="application/ld+json">{"@type":"NewsArticle","keywords":[",緯來新聞網,張齡予,天鵝童鞋", "張齡予，公益", "Swan 天鵝童鞋"]}</script>',
+      ),
+      'https://news.videoland.com.tw/article/example.html',
+    );
+    expect(detail.tags).toEqual(['緯來新聞網', '張齡予', '天鵝童鞋', '公益', 'Swan 天鵝童鞋']);
+    expect(detail.keywordSource).toBe('ld+json');
+  });
   it('rejects prose disguised as keywords and falls back to the next candidate', () => {
     const d = extractArticle(
       html(

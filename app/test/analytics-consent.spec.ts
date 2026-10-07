@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { analyticsBlock, readOptOut, selectContentTarget, writeOptOut } from '../../web/src/lib/analytics-consent.mts';
+import {
+  analyticsBlock,
+  readOptOut,
+  selectContentTarget,
+  shouldReportLiveboardActivity,
+  writeOptOut,
+} from '../../web/src/lib/analytics-consent.mts';
 
 const reader = {
   production: true,
@@ -21,8 +27,14 @@ describe('who sends GA data', () => {
     expect(analyticsBlock({ ...reader, optedOut: true })).toBe('opt-out');
     expect(analyticsBlock({ ...reader, hostname: 'localhost' })).toBe('environment');
     expect(analyticsBlock({ ...reader, production: false })).toBe('environment');
-    expect(analyticsBlock({ ...reader, pathname: '/liveboard/' })).toBe('kiosk');
     expect(analyticsBlock({ ...reader, pathname: '/liveboards/' })).toBeNull();
+  });
+  it('counts liveboard readers while respecting their opt-out and excluding automation', () => {
+    for (const pathname of ['/liveboard', '/liveboard/']) {
+      expect(analyticsBlock({ ...reader, pathname })).toBeNull();
+      expect(analyticsBlock({ ...reader, pathname, optedOut: true })).toBe('opt-out');
+      expect(analyticsBlock({ ...reader, pathname, webdriver: true })).toBe('automation');
+    }
   });
   it('remembers and restores the opt-out, and treats unreadable storage as not opted out', () => {
     const data = new Map<string, string>();
@@ -44,6 +56,17 @@ describe('who sends GA data', () => {
       }),
     ).toBe(false);
     expect(readOptOut(null)).toBe(false);
+  });
+});
+
+describe('liveboard activity', () => {
+  it('reports only visible boards, respecting opt-out and navigation away', () => {
+    expect(shouldReportLiveboardActivity('/liveboard', 'visible', false)).toBe(true);
+    expect(shouldReportLiveboardActivity('/liveboard/', 'visible', false)).toBe(true);
+    expect(shouldReportLiveboardActivity('/liveboard/', 'hidden', false)).toBe(false);
+    expect(shouldReportLiveboardActivity('/liveboard/', 'visible', true)).toBe(false);
+    expect(shouldReportLiveboardActivity('/', 'visible', false)).toBe(false);
+    expect(shouldReportLiveboardActivity('/liveboards/', 'visible', false)).toBe(false);
   });
 });
 

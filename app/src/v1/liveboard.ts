@@ -1,10 +1,13 @@
 import { and, desc, eq, gt, gte, inArray, lte, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
+import { normalizeAuthorCredits } from '../crawl/byline.ts';
 import type { Db } from '../db/client.ts';
 import { articles, similarityPairs, topics } from '../db/schema.ts';
 import { articleMediaOf } from '../jobs/topics-job.ts';
 import { type Attribution, normalizeAttributions } from '../similarity/attribution.ts';
+import { classifyRelation } from '../similarity/relation.ts';
+import type { PairRelationInfo } from '../similarity/types.ts';
 import { type Camp, campOf } from './coverage.ts';
 import { loadActivity } from './liveboard-activity.ts';
 import { liveObservation } from './site-observation.ts';
@@ -51,6 +54,7 @@ export interface LiveArticle {
   attributions?: Attribution[];
 }
 export interface LiveFollower {
+  relation?: PairRelationInfo;
   article: LiveArticle;
   score: number;
   containment: number;
@@ -157,7 +161,7 @@ export const liveArticle = (r: ArticleRow): LiveArticle => ({
   datePending: r.fetchedAt === null && r.publishedAt.getTime() === r.crawledAt.getTime(),
   tags: r.tags.slice(0, 8),
   text: readableText(r.text, Number(r.textChars ?? 600)),
-  authors: r.authors?.length ? r.authors.slice(0, 4) : r.creator?.trim() ? [r.creator.trim()] : [],
+  authors: normalizeAuthorCredits(r.authors?.length ? r.authors : r.creator?.trim() ? [r.creator.trim()] : []).slice(0, 4),
   attributions: normalizeAttributions(r.attributions ?? [], r.media),
 });
 
@@ -197,6 +201,7 @@ export function groupStories(pairs: PairRow[], byId: Map<number, LiveArticle>): 
       const pair = direct ?? own.reduce((best, p) => (p.score > best.score ? p : best));
       return {
         article,
+        relation: direct ? classifyRelation(lead, article) : undefined,
         score: pair.score,
         containment: pair.containment,
         kind: pair.kind,

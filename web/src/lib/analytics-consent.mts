@@ -7,7 +7,7 @@ export const OPT_OUT_KEY = 'tag-analytics-opt-out';
 /** Fired on window when this browser's choice changes (same tab; other tabs get `storage`). */
 export const OPT_OUT_EVENT = 'tag-analytics-opt-out-change';
 
-export type AnalyticsBlock = 'environment' | 'automation' | 'kiosk' | 'opt-out' | null;
+export type AnalyticsBlock = 'environment' | 'automation' | 'opt-out' | 'privacy' | null;
 
 interface Env {
   production: boolean;
@@ -15,12 +15,10 @@ interface Env {
   webdriver: boolean | undefined;
   userAgent: string;
   optedOut: boolean;
+  doNotTrack?: string | null;
+  globalPrivacyControl?: boolean;
   pathname?: string;
 }
-
-// Unattended screens (/liveboard/ on a wall tablet) are not readers, and the
-// board itself shows GA's live visitor count.
-const KIOSK_PATH = /^\/liveboard(\/|$)/;
 
 // Headless browsers and auditing tools that may not set navigator.webdriver.
 const AUTOMATION_UA = /HeadlessChrome|Chrome-Lighthouse|Lighthouse|PTST|Playwright|Puppeteer|Cypress|Selenium|bot\b|crawler|spider/i;
@@ -29,9 +27,14 @@ const AUTOMATION_UA = /HeadlessChrome|Chrome-Lighthouse|Lighthouse|PTST|Playwrig
 export function analyticsBlock(env: Env): AnalyticsBlock {
   if (!env.production || env.hostname !== 'tag.observe.tw') return 'environment';
   if (env.webdriver === true || AUTOMATION_UA.test(env.userAgent)) return 'automation';
-  if (env.pathname && KIOSK_PATH.test(env.pathname)) return 'kiosk';
   if (env.optedOut) return 'opt-out';
+  if (env.doNotTrack === '1' || env.doNotTrack === 'yes' || env.globalPrivacyControl) return 'privacy';
   return null;
+}
+
+/** A visible wall board remains in use even without clicks or navigation. */
+export function shouldReportLiveboardActivity(pathname: string, visibility: string, optedOut: boolean): boolean {
+  return /^\/liveboard\/?$/.test(pathname) && visibility === 'visible' && !optedOut;
 }
 
 /** Storage can throw (disabled, sandboxed); an unreadable choice counts as not opted out. */

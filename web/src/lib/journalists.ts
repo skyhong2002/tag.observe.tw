@@ -55,6 +55,9 @@ export interface JournalistDetail {
   index: {
     /** Own stories the index compared with every other outlet. */
     compared: number;
+    /** Compared articles with no similar counterpart; not proof of originality. */
+    unmatched: number;
+    firstSeen: number;
     /** Own stories with a usable body still waiting for the index. */
     pending: number;
     windowDays: number;
@@ -99,8 +102,12 @@ export function describeGap(minutes: number): string {
   if (abs < 48 * 60) return `${Math.floor(abs / 60)} 小時${abs % 60 ? ` ${abs % 60} 分` : ''}`;
   return `${Math.floor(abs / 1440)} 天`;
 }
-export function relationLabel(pair: Pick<JournalistPair, 'relation' | 'minutes' | 'sameAuthor'>): string {
+export function relationLabel(
+  pair: Pick<JournalistPair, 'relation' | 'minutes' | 'sameAuthor' | 'publicationUnknown' | 'attributed'>,
+): string {
   if (pair.sameAuthor) return '同署名跨站刊登';
+  if (pair.attributed) return '已註明來源';
+  if (pair.publicationUnknown) return '刊登時間未確認';
   if (pair.relation === 'same') return '一分鐘內同時刊登';
   return pair.relation === 'later' ? `對方早 ${describeGap(pair.minutes)} 刊登` : `本篇早 ${describeGap(pair.minutes)} 刊登`;
 }
