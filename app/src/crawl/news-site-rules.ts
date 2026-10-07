@@ -269,6 +269,9 @@ const SITES: Site[] = [
     host: 'fclnews.com',
     path: /^\/\d+\/$/,
     bodySelector: '.elementor-widget-theme-post-content',
+    // A syndicated desk credit can precede the separate reporter line.
+    authorSelector: '.elementor-widget-theme-post-content > .elementor-widget-container > div > p:nth-of-type(-n+4)',
+    authorPattern: /^記者([\p{Script=Han}]{2,5})[／/]綜合報導$/u,
     providerSelector: '.elementor-widget-theme-post-content p > a[href="https://more-news.tw/"]',
   },
   {

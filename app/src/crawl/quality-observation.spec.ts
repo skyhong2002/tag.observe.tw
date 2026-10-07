@@ -80,6 +80,19 @@ describe('other observed main-article credits and UI', () => {
     expect(detail.provider).toBe('墨新聞');
     expect(extractAttributions(detail.body ?? '', 'fclnews', detail.provider).map((c) => c.name)).toContain('墨新聞');
   });
+  it('reads the separate FCLNews syndicated reporter after the desk and photo, within the opening paragraphs', () => {
+    const credit = '<p class="p1"><span>記者李婉如／綜合報導</span></p>';
+    const opening = '<p><a href="https://more-news.tw/">墨新聞</a>｜新聞策劃編輯部</p><p><img src="photo.jpg"></p>';
+    const wrap = (content: string) =>
+      `<meta name="author" content="墨新聞"><div class="elementor-widget-theme-post-content"><div class="elementor-widget-container"><div>${content}</div></div></div>`;
+    expect(extractArticle(wrap(opening + credit + `<p>${prose}</p>`), 'https://www.fclnews.com/230505/').authors).toEqual(['李婉如']);
+    expect(extractArticle(wrap(opening + `<p>${prose}</p><p>其他正文。</p>` + credit), 'https://www.fclnews.com/230505/').authors).toEqual([
+      '墨新聞',
+    ]);
+    expect(
+      extractArticle(wrap(opening + `<p>${prose}</p>`) + `<aside>${credit}</aside>`, 'https://www.fclnews.com/230505/').authors,
+    ).toEqual(['墨新聞']);
+  });
   it('removes BBC embed-consent text without losing the article paragraphs', () => {
     const html = `<main><p>${prose}</p><div data-testid="consentBanner"><p>此文包含Google YouTube提供的内容，曲奇政策和隱私政策。</p></div><p id="end-of-youtube-content">結尾 YouTube 帖子</p><p>本文原以英文撰寫。</p></main>`;
     const detail = extractArticle(html, 'https://www.bbc.com/zhongwen/articles/c8wy910lv7q6o/trad?at_medium=RSS');
