@@ -52,6 +52,11 @@ await mkdir(roundDir, { recursive: true });
 const json = (value) => (typeof value === 'string' ? JSON.parse(value) : value);
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 try {
+  // A deployment/migration delay must not stop the 24-hour observation.
+  const [summaryColumns] = await pool.query("SHOW COLUMNS FROM articles WHERE Field IN ('summary','summary_source')");
+  const hasSummary = summaryColumns.length === 2;
+  round.summarySchemaAvailable = hasSummary;
+  const summarySelection = hasSummary ? 'summary,summary_source' : 'NULL AS summary,NULL AS summary_source';
   // Acquisition time defines the population, even for archive stories or bad
   // future publication dates. A server-side budget bounds this read-only scan.
   const [rows] = await pool.execute(
@@ -82,7 +87,7 @@ try {
   for (const chosenRow of chosen) {
     const [records] = await pool.execute(
       `SELECT id,media,url,title,published_at,crawled_at,content_fetched_at,
-      creator,authors,tags,canonical,image,description,summary,summary_source,body,body_status,body_source,attributions FROM articles WHERE id=?`,
+      creator,authors,tags,canonical,image,description,${summarySelection},body,body_status,body_source,attributions FROM articles WHERE id=?`,
       [chosenRow.id],
     );
     const stored = records[0];
@@ -101,7 +106,10 @@ try {
         const citations = extractAttributions(parsed.body ?? '', stored.media, parsed.provider);
         evidence.parsed = { ...parsed, attributions: citations };
         if (JSON.stringify(stored.authors ?? []) !== JSON.stringify(parsed.authors)) evidence.flags.push('authors-differ');
-        if ((stored.summary ?? null) !== parsed.summary || (stored.summary_source ?? null) !== parsed.summarySource)
+        if (
+          hasSummary &&
+          ((stored.summary ?? null) !== (parsed.summary ?? null) || (stored.summary_source ?? null) !== (parsed.summarySource ?? null))
+        )
           evidence.flags.push('summary-differs');
         if (parsed.bodyStatus !== 'ok') evidence.flags.push(`body-${parsed.bodyStatus}`);
         if (!parsed.authors.length) evidence.flags.push('no-author-credit');
