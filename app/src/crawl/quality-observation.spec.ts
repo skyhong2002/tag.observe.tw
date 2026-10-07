@@ -129,6 +129,13 @@ describe('baseline body and publication evidence', () => {
     const html = `<script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2026-10-07 18:00 +00:00"}</script><div class="article_time_box"><div class="time_item"><span>2026/10/07 18:00:00</span></div></div><div id="newsContent"><p>${prose}</p></div>`;
     expect(extractArticle(html, 'https://www.setn.com/news/1918897').publishedAt?.toISOString()).toBe('2026-10-07T10:00:00.000Z');
   });
+  it('normalizes SETN own main editor reporting declaration while excluding responsibility and unrelated credits', () => {
+    const credit = '編輯 林昀萱 台北報導';
+    const html = `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', author: { '@type': 'Person', name: credit } })}</script><h1>主文題名</h1><div class="article_time_wrap"><div class="article_time_area"><div class="article_remark_wrap"><div class="author_wrap">${credit}</div></div></div></div><div id="newsContent"><p>${prose}</p></div><aside><div class="author_wrap">編輯 王小明 台北報導</div></aside>`;
+    expect(extractArticle(html, 'https://www.setn.com/news/1919110').authors).toEqual(['林昀萱']);
+    expect(extractArticle(html.replaceAll(credit, '責任編輯 林昀萱 台北報導'), 'https://www.setn.com/news/1919110').authors).toEqual([]);
+    expect(extractArticle(html, 'https://example.com/news/1919110').authors).toEqual([credit]);
+  });
   it('uses Taro publication datetime without taking its later update or header clock', () => {
     const html = `<span class="topbar-date">2026-10-07 18:55</span><script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2026-10-07"}</script><div class="post-header"><time class="post-published" datetime="2026-10-07T17:49:48+08:00">最後更新</time><time class="post-published" datetime="2026-10-07T14:48:45+08:00">發表時間</time></div><article><div class="entry-content"><p>${prose}</p></div></article>`;
     expect(extractArticle(html, 'https://taronews.tw/2026/10/07/1209686/').publishedAt?.toISOString()).toBe('2026-10-07T06:48:45.000Z');

@@ -709,3 +709,13 @@ metadata7／source20／Womany正文3已逐筆fresh/full snapshot核對、durable
 MSN46294703 public Detail明示authors.name為「洪凱音、黃琮淵╱台北報導」，既有reporterNames可完整辨識兩人。只在MSN已驗證同article的公開author欄位套既有明示role／地名規則，有有效名字才拆分；沒有識別到完整credit時保留原字串。供稿中時新聞網及普通陳凱俊／財經中心保留，台北指控等不完整報導邊界不拆。46294701與46294703各有public abstract、相同title／完整body／精確publication及供稿人，追加第十四批兩份原站供應摘要候選；46294703 authors／creator與summary同transaction更新，另一篇只改summary／summary_source，正文／日期／取得時間／tags／attributions保持。原DBcreator是pipeline完整署名join，核對oldjoin後更新新join，不把provider欄位誤當DBcreator。
 
 981crawl／attribution tests、tsc、全Biome通過；6份MSN專用API回放僅46294703作者拆分變化，summary／正文／日期及provider無變化；兩篇fresh完整13field snapshot乾跑通過，batch14-msn-reviewed-plan.json／repair／verify已準備但未apply。第十四批現在3不同候選：2署名、3摘要、0正文／日期寫入，本地提交未推送／部署／apply，unfrozen未排程。第十三批bedafe7冻结25候選，08:26timer保留，需距第十二批actualresumed至少1h才發布。24h觀察仍active到18:49:13，總報告與最後有界round未完成。
+
+### 10/8 07:38：食力舊頁面明示寫作角色與三立主文署名
+
+FoodNext46335496自有主文.post-content第一個直系p為「採訪·撰文=蔡幸儒」；46335500完整「撰文＝約翰‧艾倫（John S.Allen，美國南加州大學…的神經人類學家。）」將英文別名和個人簡介放在同一parenthesis。沿用既有數字paper path／own URL identity／主h1+post-content DOM scope，只接受完整採訪·撰文角色、有效personal name，或完整dotted外國名字+有效英文alias+以學術職業／研究單位結尾的bio；保留原「約翰‧艾倫」字形，不把別名算第二人、不將簡介當姓名，後接活動文案／alias無效／canonical不同／related credit不採。HTTP og:url與HTTPS输入本來就由urlKey同identity，不需更動URL規則。
+
+兩篇fresh200、main title及canonical identity／精確date／整篇body／summary+summary_source exactDB；oldparser authors同DB食力foodNEXT，新parser蔡幸儒／約翰‧艾倫。完整13field snapshot乾跑passed，batch14-foodnext-reviewed-plan.json／repair／verify準備，僅authors+creator，不改日期、正文、摘要或引用，尚未套用。
+
+SETN46281284唯一主文.article_time_wrap > .article_time_area > .article_remark_wrap > .author_wrap明示「編輯 林昀萱 台北報導」，own主h1相同。新增只在三立該主文欄位完整匹配的署名pattern；不放寬通用reporterNames或responsibility editor規則、不採aside相同class。fresh原頁正文／精確date／summary與DB一致，DB和正式API本就林昀萱正確，故只有parser修正、沒有新增歷史回寫候選。batch14-setn-proof.json verifiedtrue；責任編輯、他站同名欄位測試排除。
+
+最終983crawl／attribution tests、tsc、全Biome通過；2123成功原HTML對冻结13回放僅食力2／聚傳媒1／三立1的署名（聚傳媒另摘要）變化，0正文／日期變化。MSN專用6份API回放另1作者拆分；第十四批5不同歷史候選＝4署名+3摘要（overlap2），0正文／日期寫入，三立parser-only不混算歷史repair。第十四批本地提交未推送／部署／apply，unfrozen未排程；正式仍bfb34f2已推送／部署／完整30驗證。第十三批bedafe7冻结，08:21probe／08:26release既有timers，actual hourly gate earliest08:22:50.475，不重啟timer。07:38第十二批probe實際PID854082仍active，主站200+worker200，nextsampler08:00維持。24h觀察至18:49:13仍active，總報告及最後有界round未完成。

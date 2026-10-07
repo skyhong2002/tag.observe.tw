@@ -214,6 +214,8 @@ const SITES: Site[] = [
     host: 'setn.com',
     path: /^\/(?:news\/\d+|News\.aspx\?)/i,
     bodySelector: '#newsContent',
+    authorSelector: '.article_time_wrap > .article_time_area > .article_remark_wrap > .author_wrap',
+    authorPattern: /^編輯\s+([\p{Script=Han}]{2,5})\s+台北報導$/u,
     publishedSelector: '.article_time_box .time_item:first-child > span',
     preferPrintedPublication: true,
   },

@@ -32,6 +32,22 @@ export function foodNextCredits($: CheerioAPI, value: string): { authors: string
     return null;
   }
   if (/^撰文\s*=\s*食力企劃$/u.test(declaration)) return { authors: ['食力企劃'], provider: null };
+  const interviewWriter = /^採訪\s*[·‧]\s*撰文\s*=\s*([\p{Script=Han}]{2,5})$/u.exec(declaration);
+  if (interviewWriter) {
+    const authors = reporterNames(`文／${interviewWriter[1]}`);
+    if (authors.length) return { authors, provider: null };
+  }
+  // The parenthesis explicitly gives this writer's Latin alias followed by
+  // a biographical affiliation. It is not a second author or a prose mention.
+  const biography =
+    /^撰文\s*=\s*([\p{Script=Han}]{1,8}(?:[·‧・.][\p{Script=Han}]{1,8}){1,3})\s*\(([A-Za-zÀ-ž][A-Za-zÀ-ž.'’ -]{1,80}),\s*([^()]{4,200})\)$/u.exec(
+      declaration,
+    );
+  if (biography && /(?:大學|研究所|研究中心|學家)[。.]?$/u.test(biography[3])) {
+    const name = biography[1];
+    if (reporterNames(`文／${name.replace(/‧/g, '·')}`).length && reporterNames(`文／${biography[2].trim()}`).length)
+      return { authors: [name], provider: null };
+  }
   const written = /^撰文\s*=\s*([\p{Script=Han}]{2,5}(?:\s*[、，,]\s*[\p{Script=Han}]{2,5}){0,5})$/u.exec(declaration);
   const authors = written ? reporterNames(`文／${written[1]}`) : [];
   return authors.length ? { authors, provider: null } : null;
