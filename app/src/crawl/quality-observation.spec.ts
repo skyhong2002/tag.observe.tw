@@ -33,6 +33,20 @@ describe('2026-10-07 live quality samples', () => {
 });
 
 describe('other observed main-article credits and UI', () => {
+  it('reads both public Mirror Daily story segments without mistaking footer subscriptions for an access block', () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', author: { '@type': 'Person', name: '呂健豪' }, datePublished: '2026-10-07T12:06:00+08:00' })}</script>
+      <main><div><section><h1>新聞標題</h1><p>封面圖說</p></section><article class="brief story-renderer"><div>摘要開頭。${prose}</div></article>
+      <div><article class="content story-renderer"><div>新聞第一段。</div><div>新聞最後一段。</div></article></div>
+      <div>分享與訂閱</div><section><p>延伸閱讀的其他新聞。</p></section></div></main><footer>訂閱電子報 閱讀更多</footer>`;
+    const detail = extractArticle(html, 'https://www.mirrordaily.news/story/90137');
+    expect(detail.bodyStatus).toBe('ok');
+    expect(detail.body).toContain('摘要開頭。');
+    expect(detail.body).toContain('新聞第一段。');
+    expect(detail.body).toContain('新聞最後一段。');
+    expect(detail.body).not.toMatch(/封面圖說|分享|延伸閱讀|訂閱/);
+    expect(detail.authors).toEqual(['呂健豪']);
+    expect(detail.publishedAt?.toISOString()).toBe('2026-10-07T04:06:00.000Z');
+  });
   it('separates UDN syndicated byline provider from the reporter with a diagonal slash', () => {
     const html = `<section class="authors"><span class="article-content__author">台灣醒報／ 記者呂翔禾╱台北報導</span></section><div class="article-content__editor"><p>${prose}</p></div>`;
     const detail = extractArticle(html, 'https://udn.com/news/story/7240/9800910');

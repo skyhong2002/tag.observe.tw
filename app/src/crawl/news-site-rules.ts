@@ -42,6 +42,14 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'mirrordaily.news',
+    path: /^\/story\/\d+$/,
+    bodySelector: 'div:has(> article.brief.story-renderer):has(> div > article.content.story-renderer)',
+    plainTextBody: true,
+    bodyExcludeSelector:
+      'div:has(> article.brief.story-renderer) > section, div:has(> article.brief.story-renderer) > div:not(:has(> article.content.story-renderer))',
+  },
+  {
     host: 'udn.com',
     path: /^\/news\/story\/\d+\/\d+(?:\?|$)/,
     bodySelector: '.article-content__editor',
