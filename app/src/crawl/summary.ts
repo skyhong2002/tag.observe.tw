@@ -10,6 +10,9 @@ export interface ArticleSummary {
 
 const boilerplate = new Set([
   '觀策站',
+  '在這裡找到你想要的美食',
+  '客家電視是屬於全民、以至於全世界客家族群的頻道，亦是為傳播客家文化而存在，定位為「全體客家族群之媒體」。',
+  '國際環宇時報International World Times的使命是以公正、客觀的角度報導國內外新聞，幫助讀者深入了解全球範圍內的重大事件與趨勢。其願景是成為全球讀者首選的新聞來源，促進世界各國之間的理解與交流。國際環宇時報以其真實、公正、全面和創新的報導風格，贏得了全球讀者的信賴和支持。',
   '-台灣新聞雲報提供台灣最中立最公正最即時的各類型新聞報導，包括政治新聞、焦點新聞、社會新聞、國際新聞、地方新聞、娛樂新聞、科技新聞、專訪新聞、政黨新聞、藝文活動、美食推廣、體育賽事等相關新聞報導。歡迎各界好友踴躍贊助推廣。',
   '台灣華報',
   '波新聞秉持傳遞正向訊息、提升正向能量、波動良善之心、 共同關懷弱勢、讓我們的社會更加祥和與美好。',
@@ -103,6 +106,14 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (isDaai && daaiBodies.includes(result.summary)) continue;
+    if (/^https?:\/\/(?:www\.)?lifetoutiao\.news\/\d+\//i.test(url) && /^[（(]圖取自[／/][^（）()]{1,150}[）)]$/u.test(result.summary))
+      continue;
+    // This publisher's auto-description is clipped after capturing its UI controls.
+    if (
+      /^https?:\/\/(?:www\.)?newstaiwan\.net\//i.test(url) &&
+      /^新聞熱度[：:]\s*[\d,]+\s*\|閱讀時間[：:]約\s*\d+\s*分鐘\|字體調整[：:]A\+A-/u.test(result.summary)
+    )
+      continue;
     if (isSecretChina && result.summary.endsWith(secretChinaPromotion)) {
       const prefix = result.summary.slice(0, -secretChinaPromotion.length);
       const credit = /\s+新聞\s+[\p{Script=Han}]{1,20}\s+-\s*$/u;

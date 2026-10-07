@@ -30,13 +30,15 @@ if (state.completed) {
 const until = new Date(Math.min(Date.now(), +new Date(state.end)));
 const release = await realpath('/home/deck/.local/share/tag-analysis/current');
 const moduleAt = (path) => import(pathToFileURL(`${release}/app/src/${path}`).href);
-const [{ createDb }, { extractArticle }, { extractAttributions }, { sourceByMedia }, { fetchText }] = await Promise.all([
-  moduleAt('db/client.ts'),
-  moduleAt('crawl/article.ts'),
-  moduleAt('similarity/attribution.ts'),
-  moduleAt('crawl/registry.ts'),
-  moduleAt('crawl/fetch.ts'),
-]);
+const [{ createDb }, { extractArticle }, { extractAttributions }, { sourceByMedia }, { fetchText }, { hakkaArticleFromPublicApi }] =
+  await Promise.all([
+    moduleAt('db/client.ts'),
+    moduleAt('crawl/article.ts'),
+    moduleAt('similarity/attribution.ts'),
+    moduleAt('crawl/registry.ts'),
+    moduleAt('crawl/fetch.ts'),
+    moduleAt('crawl/news-hakka-evidence.ts'),
+  ]);
 const { pool, close } = createDb(undefined, { poolSize: 1 });
 const round = {
   from: state.cursor,
@@ -121,7 +123,27 @@ try {
       evidence.htmlSha256 = hash(response.body);
       if (response.status !== 200) evidence.flags.push(`http-${response.status}`);
       else {
-        const parsed = extractArticle(response.body, response.url, spec?.article ?? {});
+        let parsed = extractArticle(response.body, response.url, spec?.article ?? {});
+        const hakkaId =
+          stored.media === 'hakkatv' && /^https:\/\/(?:www\.)?hakkatv\.org\.tw\/news-detail\/(\d{10,})$/.exec(stored.url)?.[1];
+        if (hakkaId) {
+          evidence.parsedHtml = parsed;
+          try {
+            const api = await fetchText(`https://api.hakkatv.org.tw/api/news/read/${hakkaId}`, { timeout: 15000, retries: 0 });
+            const file = `${roundDir}/${stored.id}.api.json.gz`;
+            await writeFile(file, gzipSync(api.body));
+            evidence.publicApi = { url: api.url, status: api.status, sha256: hash(api.body), file };
+            const detail = api.status === 200 ? hakkaArticleFromPublicApi(stored.url, JSON.parse(api.body)) : null;
+            if (detail) {
+              parsed = detail;
+              evidence.metadataEvidenceSource = 'api:hakkatv';
+            } else evidence.flags.push('public-api-evidence-unverified');
+          } catch (error) {
+            evidence.publicApiError = error.message;
+            evidence.flags.push('public-api-evidence-unverified');
+          }
+        }
+
         const citations = extractAttributions(parsed.body ?? '', stored.media, parsed.provider);
         evidence.parsed = { ...parsed, attributions: citations };
         if (JSON.stringify(stored.authors ?? []) !== JSON.stringify(parsed.authors)) evidence.flags.push('authors-differ');

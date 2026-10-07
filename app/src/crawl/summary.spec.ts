@@ -59,6 +59,45 @@ describe('publisher summary metadata', () => {
         .summary,
     ).toBe(paragraphs[0]);
   });
+  it('skips reviewed Hakka TV and International World Times site descriptions', () => {
+    const hakkatv = '客家電視是屬於全民、以至於全世界客家族群的頻道，亦是為傳播客家文化而存在，定位為「全體客家族群之媒體」。';
+    const iw =
+      '國際環宇時報International World Times的使命是以公正、客觀的角度報導國內外新聞，幫助讀者深入了解全球範圍內的重大事件與趨勢。其願景是成為全球讀者首選的新聞來源，促進世界各國之間的理解與交流。國際環宇時報以其真實、公正、全面和創新的報導風格，贏得了全球讀者的信賴和支持。';
+    expect(
+      extractArticle(
+        `<meta name="description" content="${hakkatv}"><meta property="og:description" content="${hakkatv}">`,
+        'https://www.hakkatv.org.tw/news-detail/1791369130715780',
+      ).summary,
+    ).toBeNull();
+    expect(
+      extractArticle(
+        `<meta name="description" content="${iw}"><meta property="og:description" content="國際獅子會於屏東舉辦校園反霸凌音樂會。">`,
+        'https://www.iw-times.com/news_view.php?new_sn=145424',
+      ),
+    ).toMatchObject({ summary: '國際獅子會於屏東舉辦校園反霸凌音樂會。', summarySource: 'meta:og:description' });
+  });
+  it('rejects clipped Good News UI descriptions without removing other publisher prose', () => {
+    const value = '新聞熱度：5,596 |閱讀時間：約 2 分鐘|字體調整：A+A- 【記者 朱達志／台東 報導】海洋委員會公布';
+    expect(
+      extractArticle(`<meta property="og:description" content="${value}">`, 'https://newstaiwan.net/2026/10/07/487096/').summary,
+    ).toBeNull();
+    expect(
+      extractArticle('<meta property="og:description" content="海洋委員會公布新計畫。">', 'https://newstaiwan.net/2026/10/07/487096/')
+        .summary,
+    ).toBe('海洋委員會公布新計畫。');
+    expect(extractArticle(`<meta property="og:description" content="${value}">`, 'https://example.org/story').summary).toBe(value);
+  });
+  it('rejects the SuperTaste site slogan and a reviewed LifeToutiao image-credit-only description', () => {
+    expect(
+      extractArticle('<meta name="description" content="在這裡找到你想要的美食">', 'https://supertaste.tvbs.com.tw/infocard/34307').summary,
+    ).toBeNull();
+    const caption = '<meta name="description" content="(圖取自/台南市政府體育局 校園籃球熱血對抗)">';
+    expect(extractArticle(caption, 'https://www.lifetoutiao.news/357315/').summary).toBeNull();
+    expect(extractArticle(caption, 'https://example.com/357315/').summary).toBe('(圖取自/台南市政府體育局 校園籃球熱血對抗)');
+    expect(
+      extractArticle('<meta name="description" content="台南市政府推動校園籃球運動。">', 'https://www.lifetoutiao.news/357315/').summary,
+    ).toBe('台南市政府推動校園籃球運動。');
+  });
   it('uses INSIDE editorial introduction before its description with appended tags', () => {
     const html = `<meta name="description" content="媒體提供的獨立導讀。#Google,影音 (story-slug)"><meta property="og:description" content="媒體提供的獨立導讀。"><div class="post_introduction">媒體提供的獨立導讀。</div><script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', articleBody: body })}</script>`;
     expect(extractArticle(html, 'https://www.inside.com.tw/article/42585-story-slug')).toMatchObject({

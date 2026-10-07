@@ -8,6 +8,19 @@ const ld = (body: string, name = '網站管理員') =>
   `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body, author: { '@type': 'Person', name } })}</script>`;
 
 describe('reporter identity from the selected article', () => {
+  it('reads the International World Times separate opening byline with a date suffix', () => {
+    const story = 'https://www.iw-times.com/news_view.php?new_sn=145424';
+    const credit = '<p><span>崔振興／屏東報導2026.10.07</span></p>';
+    const wrap = (content: string) => `<div class="page-left"><div class="editor">${content}</div></div>`;
+    expect(extractArticle(wrap('<p>把生命唱成光，讓青春不孤單</p>' + credit + `<p>${prose}</p>`), story).authors).toEqual(['崔振興']);
+    expect(extractArticle(wrap(`<p>${prose}</p><p>第二段。</p><p>第三段。</p>` + credit), story).authors).toEqual([]);
+    expect(extractArticle(wrap(`<p>${prose}</p>`) + `<aside>${credit}</aside>`, story).authors).toEqual([]);
+  });
+  it('normalizes a complete named-reporter label without interpreting a reporting sentence as a name', () => {
+    expect(extractArticle(ld(prose, '记者：刘保罗'), url).authors).toEqual(['刘保罗']);
+    expect(extractArticle(ld(prose, '記者：王小明、李小華'), url).authors).toEqual(['王小明', '李小華']);
+    expect(extractArticle(ld(prose, '记者：刘保罗报道了这件事情。'), url).authors).not.toEqual(['刘保罗']);
+  });
   it('reads the Secret China opening reporter declaration after a photo caption', () => {
     const story = 'https://www.secretchina.com/news/b5/2026/10/08/1105805.html';
     const credit = `<p>【看中國2026年10月7日訊】（看中國記者李亭綜合報導）${prose}</p>`;

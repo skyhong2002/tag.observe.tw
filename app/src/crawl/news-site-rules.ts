@@ -46,6 +46,16 @@ const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 // recommendation cards, URL dates and modification times are not evidence.
 const SITES: Site[] = [
   {
+    host: 'iw-times.com',
+    path: /^\/news_view(?:\.php)?\?/,
+    bodySelector: '.page-left > .editor',
+    titleSelector: '.page-left > .headingbar_pageview h1',
+    publishedSelector: '.page-left > .headingbar_pageview .info_view_date > .info-text',
+    authorSelector: '.page-left > .editor > p:nth-of-type(-n+3)',
+    authorPattern: /^([\p{Script=Han}]{2,5})[／/][\p{Script=Han}]{1,6}報導\s*\d{4}\.\d{2}\.\d{2}$/u,
+  },
+
+  {
     host: 'secretchina.com',
     path: /^\/news\/b5\/\d{4}\/\d{1,2}\/\d{1,2}\/\d+\.html$/,
     bodySelector: '.article_right[itemprop="articleBody"]',
@@ -333,7 +343,7 @@ const SITES: Site[] = [
     titleSelector: '.page-left > .view-heading .title',
     publishedSelector: '.page-left > .page-headline-flex .date-time > .title',
   },
-  ...['lai-media.net', 'iw-times.com'].map(
+  ...['lai-media.net'].map(
     (host): Site => ({
       host,
       path: /^\/news_view(?:\.php)?\?/,
