@@ -137,7 +137,12 @@ export default function ArticleView({
               {content.attributions.map((source) => (
                 <li key={source.media} className="border-l-2 border-zinc-200 pl-4 dark:border-zinc-700">
                   <p className="font-medium">
-                    {attributionRole(source)} {source.name}
+                    <Link
+                      href={`/media/${encodeURIComponent(source.media)}/references/?hours=168&direction=incoming`}
+                      className="text-brand-700 hover:underline dark:text-brand-400"
+                    >
+                      {attributionRole(source)} {source.name}
+                    </Link>
                     <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{source.country}</span>
                   </p>
                   <p className="mt-1 break-words leading-7 text-zinc-600 dark:text-zinc-400">{source.evidence}</p>

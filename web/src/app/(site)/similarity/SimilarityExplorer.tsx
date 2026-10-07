@@ -4,16 +4,18 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import AuthorCredits from '@/components/AuthorCredits';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
-import { ATTRIBUTION_RELATION_LABEL, attributionRole, authorDisplay } from '@/lib/author-display.mts';
+import { ATTRIBUTION_RELATION_LABEL, attributionRole } from '@/lib/author-display.mts';
 import { edgeHasArrow } from '@/lib/graph-edge-style.mts';
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
 import { relationDetails, relationLabel } from '@/lib/relation-label.mts';
+import { readGraphState, relationshipQuery } from '@/lib/relationship-query.mts';
 import {
   type EvidenceQuery,
   fetchEvidence,
@@ -73,7 +75,9 @@ function ArticleLine({ article, badge, dim = false }: { article: SimilarityArtic
       </Link>
       <span className="shrink-0 text-xs text-zinc-500 tabular-nums">
         <time dateTime={article.publishedAt}>{when}</time>
-        {` · ${authorDisplay(article.authors, article)}`}{' '}
+        {article.authors.length > 0 && (
+          <AuthorCredits credits={article.authors} media={article.media} attributions={article.attributions} />
+        )}{' '}
       </span>
       <div className="w-full min-w-0">
         <SourceLink url={article.url} label={`${article.mediaTitle} 原文`} showUrl />
@@ -213,7 +217,12 @@ function PeriodControls({ data }: { data: SimilarityData }) {
         : rangeDays(from, to) > MAX_RANGE_DAYS
           ? `日期範圍最多 ${MAX_RANGE_DAYS} 天。`
           : '';
-  const go = (selected: SimilarityPeriod, value: number) => router.push(`/similarity/?${periodQuery(selected, value)}`);
+  const go = (selected: SimilarityPeriod, value: number) => {
+    const params = relationshipQuery(new URLSearchParams(window.location.search));
+    for (const key of ['hours', 'from', 'to', 'page']) params.delete(key);
+    for (const [key, item] of periodQuery(selected, value)) params.set(key, item);
+    router.push(`/similarity/?${params}`);
+  };
   const submitRange = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!rangeError) go({ from, to }, data.threshold);
@@ -307,7 +316,10 @@ function ThresholdControl({ data }: { data: SimilarityData }) {
   const [threshold, setThreshold] = useState(String(data.threshold));
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    router.push(`/similarity/?${periodQuery(data.days ?? { hours: data.hours ?? 48 }, Number(threshold))}`);
+    const params = relationshipQuery(new URLSearchParams(window.location.search));
+    params.set('threshold', threshold);
+    params.delete('page');
+    router.push(`/similarity/?${params}`);
   };
   return (
     <Popover label="進階" active={data.threshold !== 0.65}>
@@ -341,16 +353,41 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
   // Keep the tab in the URL so the browser's back button steps between tabs.
   const searchParams = useSearchParams();
   // Media pages link here with `node` to open one outlet's relationships.
+  const state = readGraphState(new URLSearchParams(searchParams.toString()));
+  const updateUrl = (patch: Record<string, string | number | undefined>, replace = false) => {
+    const params = relationshipQuery(new URLSearchParams(window.location.search));
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value === '') params.delete(key);
+      else params.set(key, String(value));
+    }
+    const url = `${window.location.pathname}${params.size ? `?${params}` : ''}${window.location.hash}`;
+    if (url !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+      if (replace) window.history.replaceState(null, '', url);
+      else window.history.pushState(null, '', url);
+    }
+  };
   const linkedNode = searchParams.get('node');
-  const [filters, setFilters] = useState<GraphFilters>(() => {
-    const initial: GraphFilters = { limit: 30, camp: 'all', tag: '' };
-    // A linked outlet outside the 30 largest needs the full graph to stay in scope.
-    return linkedNode && !filterGraphMedia(data.nodes, data.edges, camps, tags, initial).nodes.some((node) => node.id === linkedNode)
-      ? { ...initial, limit: 0 }
-      : initial;
-  });
-  const [mode, setMode] = useState<'all' | 'similarity' | 'citation'>('all');
-  const [showAll, setShowAll] = useState(false);
+  const linkedEdge = data.edges.find(
+    (edge) =>
+      edge.kind === searchParams.get('edgeKind') &&
+      edge.source === searchParams.get('source') &&
+      edge.target === searchParams.get('target') &&
+      (!searchParams.has('edgeRelation') || edge.relation === searchParams.get('edgeRelation')) &&
+      (!searchParams.has('edgeDirected') || String(edge.directed) === searchParams.get('edgeDirected')),
+  );
+  const selection: GraphSelection = linkedEdge
+    ? { edge: linkedEdge }
+    : linkedNode && data.nodes.some((node) => node.id === linkedNode)
+      ? { node: linkedNode }
+      : null;
+  const initialFilters: GraphFilters = { limit: state.limit, camp: state.camp, tag: state.tag };
+  const inScope = filterGraphMedia(data.nodes, data.edges, camps, tags, initialFilters).nodes;
+  const linkedIds = linkedEdge ? [linkedEdge.source, linkedEdge.target] : linkedNode ? [linkedNode] : [];
+  const filters: GraphFilters = linkedIds.some((id) => !inScope.some((node) => node.id === id))
+    ? { ...initialFilters, limit: 0 }
+    : initialFilters;
+  const mode = state.mode;
+  const showAll = state.showAll;
   const dashboard = useRef<HTMLDivElement>(null);
   const fullscreenButton = useRef<HTMLElement | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -391,33 +428,28 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       setFullscreen(true);
     }
   };
-  const [selection, setSelection] = useState<GraphSelection>(() =>
-    linkedNode && data.nodes.some((node) => node.id === linkedNode) ? { node: linkedNode } : null,
-  );
   const view: View = views.find(([value]) => value === searchParams.get('view'))?.[0] ?? 'media';
-  const setView = (next: View) => {
-    if (next === view) return;
-    const params = new URLSearchParams(searchParams.toString());
-    if (next === 'media') params.delete('view');
-    else params.set('view', next);
-    const search = params.toString();
-    window.history.pushState(null, '', search ? `?${search}` : window.location.pathname);
-  };
-  const [query, setQuery] = useState('');
-  const [searchText, setSearchText] = useState('');
-  const applied = useRef('');
+  const setView = (next: View) => updateUrl({ view: next });
+  const [query, setQuery] = useState(state.q);
+  const searchText = state.q;
+  const applied = useRef(state.q);
+  useEffect(() => {
+    setQuery(searchText);
+    applied.current = searchText;
+  }, [searchText]);
   // Search after typing pauses; the page resets together with the applied text.
   useEffect(() => {
     const timer = setTimeout(() => {
       if (applied.current === query) return;
       applied.current = query;
-      setSearchText(query);
-      setPage(0);
+      updateUrl({ q: query, page: undefined }, true);
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
-  const [direction, setDirection] = useState<CitationDirection>('all');
-  const [page, setPage] = useState(0);
+  const direction = state.direction;
+  const page = state.page;
+  const setDirection = (next: CitationDirection) => updateUrl({ direction: next, page: undefined });
+  const setPage = (next: number) => updateUrl({ page: next || undefined });
   const browser = useRef<HTMLElement>(null);
   const byId = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
   const availableTags = useMemo(
@@ -431,26 +463,22 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
   const scopedData = useMemo(() => graphEvidenceScope(data, graph.nodes, graph.focus), [data, graph.nodes, graph.focus]);
   const counts = useMemo(() => nodeArticleCounts(data.nodes), [data.nodes]);
   const updateFilters = (next: Partial<GraphFilters>, nextMode = mode) => {
-    setFilters((current) => {
-      const updated = { ...current, ...next };
-      if (
-        updated.tag &&
-        !availableGraphTags(data.nodes, data.edges, camps, tags, updated, nextMode).some((tag) => tag.id === updated.tag)
-      ) {
-        updated.tag = '';
-      }
-      return updated;
+    const updated = { ...filters, ...next };
+    if (updated.tag && !availableGraphTags(data.nodes, data.edges, camps, tags, updated, nextMode).some((tag) => tag.id === updated.tag))
+      updated.tag = '';
+    updateUrl({
+      ...updated,
+      mode: nextMode,
+      node: undefined,
+      edgeKind: undefined,
+      source: undefined,
+      target: undefined,
+      edgeRelation: undefined,
+      edgeDirected: undefined,
+      page: undefined,
     });
-    setSelection(null);
-    setPage(0);
   };
-  const updateMode = (next: typeof mode) => {
-    if (filters.tag && !availableGraphTags(data.nodes, data.edges, camps, tags, filters, next).some((tag) => tag.id === filters.tag)) {
-      updateFilters({}, next);
-    }
-    setMode(next);
-    setPage(0);
-  };
+  const updateMode = (next: typeof mode) => updateUrl({ mode: next, page: undefined });
   const nodes = graph.nodes;
   const filterLabel =
     [
@@ -461,13 +489,17 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       .join(' · ') || '篩選';
   const edges = useMemo(() => graph.edges.filter((e) => mode === 'all' || e.kind === mode), [graph.edges, mode]);
   const overview = useMemo(() => mainGraphEdges(edges), [edges]);
-  const select = (value: GraphSelection) => {
-    setSelection(value);
-    setPage(0);
-    setView('evidence');
-  };
+  const selectionPatch = (value: GraphSelection) => ({
+    node: value && 'node' in value ? value.node : undefined,
+    edgeKind: value && 'edge' in value ? value.edge.kind : undefined,
+    source: value && 'edge' in value ? value.edge.source : undefined,
+    target: value && 'edge' in value ? value.edge.target : undefined,
+    edgeRelation: value && 'edge' in value ? value.edge.relation : undefined,
+    edgeDirected: value && 'edge' in value && value.edge.directed !== undefined ? String(value.edge.directed) : undefined,
+  });
+  const select = (value: GraphSelection) => updateUrl({ ...selectionPatch(value), page: undefined, view: 'evidence' });
   // One page of evidence from the full index for the media on screen; refetched when any filter changes.
-  const [relationFilter, setRelationFilter] = useState<NonNullable<EvidenceQuery['relation']> | 'all'>('all');
+  const relationFilter = state.relation;
   const [retry, setRetry] = useState(0);
   const requestKey = JSON.stringify({
     period: periodQuery(data.days ? data.days : { hours: data.hours ?? 48 }, data.threshold).toString(),
@@ -545,7 +577,13 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
       <div className={`flex min-h-[420px] flex-col gap-3 ${fullscreen ? 'h-full' : 'h-[calc(100svh-112px)]'}`}>
         {!fullscreen && (
           <header className="shrink-0 space-y-3">
-            <SimilarityTabs current="graph" query={periodQuery(data.days ?? { hours: data.hours ?? 48 }, data.threshold).toString()} />
+            <SimilarityTabs
+              current="graph"
+              query={relationshipQuery({
+                ...Object.fromEntries(searchParams),
+                ...Object.fromEntries(periodQuery(data.days ?? { hours: data.hours ?? 48 }, data.threshold)),
+              }).toString()}
+            />
             <div>
               <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
               <p className="mt-1 text-xs text-zinc-500">
@@ -643,7 +681,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 <button
                   type="button"
                   aria-pressed={showAll}
-                  onClick={() => setShowAll((value) => !value)}
+                  onClick={() => updateUrl({ showAll: showAll ? undefined : '1' })}
                   className="rounded-md border border-zinc-200 px-2 py-1.5 text-xs dark:border-zinc-700"
                 >
                   {showAll ? '回到主要連線' : '顯示全部連線'}
@@ -734,10 +772,14 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
             <MediaComparison
               data={scopedData}
               onSelect={(value, nextMode, nextDirection) => {
-                updateMode(nextMode);
-                setQuery('');
-                setDirection(nextDirection);
-                select(value);
+                updateUrl({
+                  ...selectionPatch(value),
+                  mode: nextMode,
+                  direction: nextDirection,
+                  q: undefined,
+                  page: undefined,
+                  view: 'evidence',
+                });
               }}
             />
           )}
@@ -775,8 +817,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                     disabled={mode === 'citation'}
                     className={control}
                     onChange={(event) => {
-                      setRelationFilter(event.target.value as typeof relationFilter);
-                      setPage(0);
+                      updateUrl({ relation: event.target.value, page: undefined });
                     }}
                   >
                     <option value="all">全部相似配對</option>
@@ -802,7 +843,6 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                     disabled={mode === 'similarity' || !selection || !('node' in selection)}
                     onChange={(event) => {
                       setDirection(event.target.value as CitationDirection);
-                      setPage(0);
                     }}
                     className={`${control} disabled:opacity-40`}
                   >
@@ -817,10 +857,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
                 <button
                   type="button"
                   onClick={() => {
-                    select(null);
-                    updateMode('all');
-                    setQuery('');
-                    setDirection('all');
+                    updateUrl({ ...selectionPatch(null), mode: 'all', direction: 'all', q: undefined, page: undefined });
                   }}
                   className="text-sm text-brand-700 underline dark:text-brand-400"
                 >

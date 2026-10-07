@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink, RangeChips } from '@/components/ArticleResults';
+import ArticleTabs from '@/components/ArticleTabs';
 import MethodLink from '@/components/MethodLink';
 import TagSummaryCard from '@/components/TagSummaryCard';
 import { fetchMedia, fetchTagSeries, fetchTagStatus, type MediaInfo } from '@/lib/api';
@@ -57,6 +58,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-5">
+      <ArticleTabs current="latest" />
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">「{q}」的搜尋結果</h1>
         <p className="text-xs">

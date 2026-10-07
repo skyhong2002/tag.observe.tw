@@ -74,7 +74,7 @@ export default function SiteNavigation() {
             <div className="flex flex-wrap gap-1">
               {group.links.map(({ href, short }) => {
                 const exact = pathname === href || `${pathname}/` === href;
-                const current = exact || pathname.startsWith(href);
+                const current = exact || pathname.startsWith(href) || (href === '/byline/' && pathname.startsWith('/journalist/'));
                 return (
                   <Link
                     key={href}

@@ -64,7 +64,9 @@ function PairRow({ pair }: { pair: JournalistPair }) {
       </p>
       <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] text-zinc-500 dark:text-zinc-400">
         <time dateTime={pair.other.publishedAt}>{taipei(pair.other.publishedAt)}</time>
-        {pair.other.authors.length > 0 && <AuthorCredits credits={pair.other.authors} className="max-w-72 truncate" />}
+        {pair.other.authors.length > 0 && (
+          <AuthorCredits credits={pair.other.authors} media={pair.other.media} className="max-w-72 truncate" />
+        )}
         <SourceLink url={pair.other.url} className="!min-h-5 !text-[11px]" />
       </p>
       {pair.evidence && (
@@ -154,8 +156,8 @@ export default async function JournalistPage({
   return (
     <div className="pb-4">
       <nav aria-label="麵包屑" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
-        <Link href="/journalist/" className="hover:text-brand-700 dark:hover:text-brand-400">
-          記者
+        <Link href="/byline/?kind=person" className="hover:text-brand-700 dark:hover:text-brand-400">
+          署名
         </Link>
         <span className="mx-2" aria-hidden="true">
           /
@@ -165,6 +167,12 @@ export default async function JournalistPage({
       <header className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-zinc-300 pb-4 dark:border-zinc-700">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">{data.name}</h1>
+          <Link
+            href={`/byline/${encodeURIComponent(`person:${data.name}`)}/?hours=${hours}`}
+            className="mt-2 inline-block text-sm text-brand-700 hover:underline dark:text-brand-400"
+          >
+            署名文章與原文角色 →
+          </Link>
           <ul className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             {data.media.map((outlet) => (
               <li key={outlet.media} className="flex items-center gap-1.5">

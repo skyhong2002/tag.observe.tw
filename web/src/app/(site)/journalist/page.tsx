@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import { taipei } from '@/lib/api';
 import { fetchJournalists, INDEX_HOURS } from '@/lib/journalists';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -8,7 +9,7 @@ import JournalistTable from './JournalistTable';
 export const revalidate = 120;
 export const metadata = pageMetadata(
   '/journalist/',
-  '記者',
+  '個人署名的相似報導統計',
   '從新聞署名探索記者與作者，查看刊登媒體、報導篇數、常寫主題與跨媒體相似報導。',
   true,
 );
@@ -20,9 +21,16 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
   const data = await fetchJournalists(hours);
   const periodLabel = (value: number) => (value < 48 ? `${value} 小時` : `${value / 24} 天`);
   return (
-    <div className="pb-4">
+    <div className="space-y-4 pb-4">
+      <SectionTabs
+        label="署名資料"
+        tabs={[
+          { href: `/byline/?hours=${hours}&kind=person`, label: '個人／筆名' },
+          { href: `/journalist/?hours=${hours}`, label: '相似報導統計', current: true },
+        ]}
+      />
       <header className="mb-4 border-b border-zinc-300 pb-4 dark:border-zinc-700">
-        <h1 className="text-2xl font-semibold tracking-tight">記者</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">個人署名的相似報導統計</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           <MethodLink>相似不等於抄襲</MethodLink>
         </p>
@@ -48,7 +56,7 @@ export default async function JournalistIndexPage({ searchParams }: { searchPara
         <>
           <dl className="mb-4 flex flex-wrap gap-x-7 gap-y-3 text-xs text-zinc-500 dark:text-zinc-400">
             <div>
-              <dt>具名記者</dt>
+              <dt>個人／筆名署名</dt>
               <dd className="mt-0.5 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
                 {number(data.totals.journalists)}
               </dd>

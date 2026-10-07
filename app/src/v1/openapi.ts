@@ -632,6 +632,23 @@ const observationPage = obj({
   views: int(),
 });
 
+const creditEntity = obj({
+  key: str('署名識別；部門依刊登媒體區分'),
+  name: str(),
+  kind: str('', { enum: ['person', 'desk', 'organization', 'unknown'] }),
+  media: nullable(str('部門或待辨識署名的刊登媒體')),
+  organization: nullable(str('已辨識機構的來源代碼')),
+  roles: arr(str('原文明確標示的角色')),
+});
+const creditSummary = {
+  allOf: [creditEntity, obj({ articles: int(), latest: time(), outlets: arr(obj({ media: str(), name: str(), count: int() })) })],
+};
+const bylineFilters = [
+  q('hours', '最近幾小時', intIn(1, 720, 48)),
+  q('page', '頁碼，從 0 起', intIn(0, 10000, 0)),
+  q('media', '限制刊登媒體', str()),
+];
+
 export const ENDPOINTS: Endpoint[] = [
   {
     path: '/api/v1/reader-presence',
@@ -642,6 +659,65 @@ export const ENDPOINTS: Endpoint[] = [
     cache: 'no-store',
     response: obj({ activeReaders: int('最近 90 秒送過心跳且未離開的讀者數'), windowSeconds: int('統計時間窗，固定 90 秒') }),
   },
+  {
+    path: '/api/v1/bylines',
+    tag: 'journalists',
+    summary: '所有新聞署名：個人、團隊、機構與待辨識',
+    description:
+      '依公開署名自動分類。部門依刊登媒體區分；同名不保證同一人。原文角色不推定職業；共同署名各自計入，篇數不可相加。沿用個人署名移除名單。',
+    params: [
+      ...bylineFilters,
+      q('kind', '署名類型', str('', { enum: ['person', 'desk', 'organization', 'unknown'] })),
+      q('q', '搜尋署名名稱', str()),
+    ],
+    response: obj({
+      generatedAt: time(),
+      hours: int(),
+      page: int(),
+      pageSize: int(),
+      total: int(),
+      credited: int('可辨識署名文章数'),
+      counts: map(int()),
+      outlets: arr(obj({ media: str(), name: str() })),
+      bylines: arr(creditSummary),
+    }),
+    errors: { '400': '無效的篩選條件' },
+    cache: '2 分鐘',
+    example: '/api/v1/bylines?hours=48&kind=organization',
+  },
+  {
+    path: '/api/v1/bylines/{key}',
+    tag: 'journalists',
+    summary: '單一署名的文章與原文角色',
+    params: [p('key', '署名總覽回傳的 key，放進路徑時需 URL 編碼', str()), ...bylineFilters],
+    response: obj({
+      generatedAt: time(),
+      hours: int(),
+      page: int(),
+      pageSize: int(),
+      total: int(),
+      byline: creditSummary,
+      articles: arr(
+        obj({
+          id: int(),
+          media: str(),
+          mediaTitle: str(),
+          title: str(),
+          url: str(),
+          image: nullable(str()),
+          publishedAt: time(),
+          tags: arr(str()),
+          credits: arr(str('原文署名')),
+          entities: arr(creditEntity),
+          attributions: arr(ref('Attribution')),
+        }),
+      ),
+    }),
+    errors: { '400': '無效的署名或篩選條件', '404': '本期沒有這個署名' },
+    cache: '2 分鐘',
+    example: '/api/v1/bylines/organization%3Acna?hours=48',
+  },
+
   {
     path: '/api/v1/site-observation',
     tag: 'meta',
@@ -952,6 +1028,9 @@ export const ENDPOINTS: Endpoint[] = [
     description: `依時間窗、關鍵字（標題、摘要或標籤）、媒體、分類、政治傾向、標籤篩選所有爬到的文章，新到舊排序。關鍵字只比對標題、摘要與標籤，不搜尋內文（站內正文只保留刊登後 7 天）。給 \`facets=1\` 會另外回傳整個查詢（不限本頁）依媒體與政治傾向的篇數。時間窗預設為過去 24 小時，最長 ${MAX_SPAN_DAYS} 天。還有下一頁時 \`nextCursor\` 不為 null，把它原樣放進 \`cursor\` 參數（其他參數不變）取下一頁。`,
     params: [
       q('q', '標題或摘要包含這段文字，或文章帶有完全相同的標籤（最多 60 字）', str(), '颱風'),
+      q('credit', '原文署名包含這段文字，最多 120 字', str()),
+      q('source', '明示引用的來源代碼，例如 cna、reuters', str()),
+      q('section', '原站分類完整名稱（完全相符）', str()),
       q('media', '媒體代碼，逗號分隔（最多 50 個）', str(), 'cna,pts'),
       q('category', '排行分類（例如 news、blue、green），與 media 同時給則取交集', str(), 'green'),
       q('camp', '政治傾向：blue、green 或 other（不在藍綠名單的媒體）', str('', { enum: ['blue', 'green', 'other'] }), 'blue'),
@@ -968,6 +1047,9 @@ export const ENDPOINTS: Endpoint[] = [
       {
         query: obj({
           q: nullable(str()),
+          credit: nullable(str()),
+          source: nullable(str()),
+          section: nullable(str()),
           media: nullable(arr(ref('MediaKey'))),
           category: nullable(str()),
           tag: nullable(str()),

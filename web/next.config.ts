@@ -8,6 +8,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: process.env.TAG_DEV_ORIGINS?.split(',').filter(Boolean),
   output: 'standalone',
   outputFileTracingIncludes: {
     '/*': ['./assets/NotoSansTC-Share.woff'],
@@ -25,6 +26,11 @@ const nextConfig: NextConfig = {
   // EACCES and every revalidating page stayed at its build-time render. Keep
   // regenerated pages in memory instead (cacheMaxMemorySize, 50 MB default).
   experimental: { isrFlushToDisk: false },
+  async rewrites() {
+    if (process.env.NODE_ENV !== 'development') return [];
+    const origin = process.env.TAG_API_ORIGIN ?? 'http://127.0.0.1:18130';
+    return [{ source: '/api/v1/:path*/', destination: `${origin}/api/v1/:path*` }];
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

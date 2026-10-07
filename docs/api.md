@@ -58,6 +58,8 @@ for a in r.json()["articles"]:
 | 端點 | 說明 |
 | --- | --- |
 | [`GET /api/v1/reader-presence`](#api-v1-reader-presence) | 本站最近 90 秒的線上讀者估計 |
+| [`GET /api/v1/bylines`](#api-v1-bylines) | 所有新聞署名：個人、團隊、機構與待辨識 |
+| [`GET /api/v1/bylines/{key}`](#api-v1-bylines-key) | 單一署名的文章與原文角色 |
 | [`GET /api/v1/site-observation`](#api-v1-site-observation) | 網站觀測：GA4 與 Search Console 每日彙整 |
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
 | [`GET /api/v1/similarity/evidence`](#api-v1-similarity-evidence) | 相似與引用證據（分頁） |
@@ -882,6 +884,9 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `q` | query | string | 標題或摘要包含這段文字，或文章帶有完全相同的標籤（最多 60 字），例：`颱風` |
+| `credit` | query | string | 原文署名包含這段文字，最多 120 字 |
+| `source` | query | string | 明示引用的來源代碼，例如 cna、reuters |
+| `section` | query | string | 原站分類完整名稱（完全相符） |
 | `media` | query | string | 媒體代碼，逗號分隔（最多 50 個），例：`cna,pts` |
 | `category` | query | string | 排行分類（例如 news、blue、green），與 media 同時給則取交集，例：`green` |
 | `camp` | query | "blue" \| "green" \| "other" | 政治傾向：blue、green 或 other（不在藍綠名單的媒體），例：`blue` |
@@ -906,6 +911,9 @@ curl -s 'https://tag.observe.tw/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&li
 | --- | --- | --- |
 | `query` | object |  |
 | `query.q` | string \| null |  |
+| `query.credit` | string \| null |  |
+| `query.source` | string \| null |  |
+| `query.section` | string \| null |  |
 | `query.media` | string[] \| null |  |
 | `query.category` | string \| null |  |
 | `query.tag` | string \| null |  |
@@ -1071,6 +1079,130 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard'
 快取：15 秒（相似報導組與 stats 每分鐘更新）。
 
 ## 記者署名與跨媒體相似
+
+<a id="api-v1-bylines"></a>
+
+### `GET /api/v1/bylines`
+
+**所有新聞署名：個人、團隊、機構與待辨識**
+
+依公開署名自動分類。部門依刊登媒體區分；同名不保證同一人。原文角色不推定職業；共同署名各自計入，篇數不可相加。沿用個人署名移除名單。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `hours` | query | integer | 最近幾小時，1–720，預設 `48` |
+| `page` | query | integer | 頁碼，從 0 起，0–10000，預設 `0` |
+| `media` | query | string | 限制刊登媒體 |
+| `kind` | query | "person" \| "desk" \| "organization" \| "unknown" | 署名類型 |
+| `q` | query | string | 搜尋署名名稱 |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/bylines?hours=48&kind=organization'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `hours` | integer |  |
+| `page` | integer |  |
+| `pageSize` | integer |  |
+| `total` | integer |  |
+| `credited` | integer | 可辨識署名文章数 |
+| `counts` | {鍵: integer} |  |
+| `outlets` | object[] |  |
+| `outlets[].media` | string |  |
+| `outlets[].name` | string |  |
+| `bylines` | object[] |  |
+| `bylines[].key` | string | 署名識別；部門依刊登媒體區分 |
+| `bylines[].name` | string |  |
+| `bylines[].kind` | "person" \| "desk" \| "organization" \| "unknown" |  |
+| `bylines[].media` | string \| null | 部門或待辨識署名的刊登媒體 |
+| `bylines[].organization` | string \| null | 已辨識機構的來源代碼 |
+| `bylines[].roles` | string[] |  |
+| `bylines[].articles` | integer |  |
+| `bylines[].latest` | string (ISO 時間) |  |
+| `bylines[].outlets` | object[] |  |
+| `bylines[].outlets[].media` | string |  |
+| `bylines[].outlets[].name` | string |  |
+| `bylines[].outlets[].count` | integer |  |
+
+錯誤：`400` 無效的篩選條件。
+
+快取：2 分鐘。
+
+<a id="api-v1-bylines-key"></a>
+
+### `GET /api/v1/bylines/{key}`
+
+**單一署名的文章與原文角色**
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `key` | 路徑 | string | 署名總覽回傳的 key，放進路徑時需 URL 編碼 |
+| `hours` | query | integer | 最近幾小時，1–720，預設 `48` |
+| `page` | query | integer | 頁碼，從 0 起，0–10000，預設 `0` |
+| `media` | query | string | 限制刊登媒體 |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/bylines/organization%3Acna?hours=48'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `hours` | integer |  |
+| `page` | integer |  |
+| `pageSize` | integer |  |
+| `total` | integer |  |
+| `byline` | object |  |
+| `byline.key` | string | 署名識別；部門依刊登媒體區分 |
+| `byline.name` | string |  |
+| `byline.kind` | "person" \| "desk" \| "organization" \| "unknown" |  |
+| `byline.media` | string \| null | 部門或待辨識署名的刊登媒體 |
+| `byline.organization` | string \| null | 已辨識機構的來源代碼 |
+| `byline.roles` | string[] |  |
+| `byline.articles` | integer |  |
+| `byline.latest` | string (ISO 時間) |  |
+| `byline.outlets` | object[] |  |
+| `byline.outlets[].media` | string |  |
+| `byline.outlets[].name` | string |  |
+| `byline.outlets[].count` | integer |  |
+| `articles` | object[] |  |
+| `articles[].id` | integer |  |
+| `articles[].media` | string |  |
+| `articles[].mediaTitle` | string |  |
+| `articles[].title` | string |  |
+| `articles[].url` | string |  |
+| `articles[].image` | string \| null |  |
+| `articles[].publishedAt` | string (ISO 時間) |  |
+| `articles[].tags` | string[] |  |
+| `articles[].credits` | string[] |  |
+| `articles[].entities` | object[] |  |
+| `articles[].entities[].key` | string | 署名識別；部門依刊登媒體區分 |
+| `articles[].entities[].name` | string |  |
+| `articles[].entities[].kind` | "person" \| "desk" \| "organization" \| "unknown" |  |
+| `articles[].entities[].media` | string \| null | 部門或待辨識署名的刊登媒體 |
+| `articles[].entities[].organization` | string \| null | 已辨識機構的來源代碼 |
+| `articles[].entities[].roles` | string[] |  |
+| `articles[].attributions` | object[] |  |
+| `articles[].attributions[].media` | string |  |
+| `articles[].attributions[].name` | string |  |
+| `articles[].attributions[].country` | string |  |
+| `articles[].attributions[].countryCode` | string |  |
+| `articles[].attributions[].evidence` | string |  |
+| `articles[].attributions[].kind` | "explicit" |  |
+
+錯誤：`400` 無效的署名或篩選條件；`404` 本期沒有這個署名。
+
+快取：2 分鐘。
 
 <a id="api-v1-journalists"></a>
 

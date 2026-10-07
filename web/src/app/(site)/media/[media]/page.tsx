@@ -7,7 +7,9 @@ import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import SourceLink from '@/components/SourceLink';
+import SourceProfile from '@/components/SourceProfile';
 import StructuredData from '@/components/StructuredData';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaContent } from '@/lib/article-content';
@@ -16,6 +18,7 @@ import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profi
 import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import type { SimilarityData } from '@/lib/similarity';
+import { outletIdentity } from '../../../../../../app/src/similarity/attribution';
 
 export const revalidate = 60;
 export async function generateMetadata({
@@ -26,8 +29,7 @@ export async function generateMetadata({
   searchParams: Promise<ReadingParams>;
 }) {
   const { media } = await params;
-  const name = mediaNames[media]?.name;
-  if (!name) return { title: '找不到媒體', robots: { index: false } };
+  const name = mediaNames[media]?.name ?? outletIdentity(media).name;
   const query = readingQuery(await searchParams);
   const path = canonicalQuery(`/media/${encodeURIComponent(media)}/`, { cursor: query?.get('cursor') ?? undefined });
   return {
@@ -71,7 +73,8 @@ export default async function MediaPage({
           .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
           .catch(() => null),
   ]);
-  if (res?.status === 404 || res?.status === 400) notFound();
+  if (res?.status === 400) notFound();
+  if (res?.status === 404) return <SourceProfile media={media} query={Object.fromEntries(query)} />;
   if (!res?.ok) return <p className="py-8 text-zinc-600 dark:text-zinc-400">暫時無法取得文章，請稍後重新整理。</p>;
   const data = (await res.json()) as MediaContent;
   const discovery = data.sourceKind === 'discovery';
@@ -145,6 +148,18 @@ export default async function MediaPage({
           ))}
         </dl>
       </header>
+      {!discovery && (
+        <div className="mb-5">
+          <SectionTabs
+            label="機構資料"
+            tabs={[
+              { href: `${base}?hours=${cloudHours}`, label: '收錄文章', current: true },
+              { href: `/byline/?media=${media}&hours=${cloudHours}`, label: '相關署名' },
+              { href: `${base}references/?hours=${cloudHours}&threshold=0.65`, label: '來源／引用關係' },
+            ]}
+          />
+        </div>
+      )}
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
         <MediaSidebar label={discovery ? '發現來源資料' : '媒體資料與媒體關係'}>
           <section

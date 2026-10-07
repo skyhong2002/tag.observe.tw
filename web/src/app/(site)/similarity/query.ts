@@ -1,6 +1,6 @@
 import { MAX_RANGE_DAYS, PERIOD_HOURS, type SimilarityPeriod } from '@/lib/similarity';
 
-export type SimilarityQuery = { hours?: string; from?: string; to?: string; threshold?: string };
+export type SimilarityQuery = Record<string, string | undefined>;
 
 const isDay = (value: string | undefined): value is string => {
   const time = Date.parse(`${value}T00:00:00Z`);

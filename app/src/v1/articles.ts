@@ -18,6 +18,9 @@ export const MAX_LIMIT = 200;
 
 export interface ArticleQuery {
   q: string | null;
+  credit: string | null;
+  source: string | null;
+  section: string | null;
   media: string[] | null;
   category: string | null;
   tag: string | null;
@@ -31,7 +34,24 @@ export interface ArticleQuery {
   cursor: { at: Date; id: number } | null;
 }
 type Raw = Partial<
-  Record<'q' | 'media' | 'category' | 'camp' | 'tag' | 'since' | 'until' | 'hours' | 'limit' | 'cursor' | 'facets' | 'settled', string>
+  Record<
+    | 'q'
+    | 'credit'
+    | 'source'
+    | 'section'
+    | 'media'
+    | 'category'
+    | 'camp'
+    | 'tag'
+    | 'since'
+    | 'until'
+    | 'hours'
+    | 'limit'
+    | 'cursor'
+    | 'facets'
+    | 'settled',
+    string
+  >
 >;
 
 export const encodeCursor = (at: Date, id: number) => `${at.getTime()}_${id}`;
@@ -48,6 +68,10 @@ function parseTime(s: string | undefined) {
 
 export function parseArticleQuery(raw: Raw, now = new Date()): ArticleQuery | { error: string } {
   const q = raw.q?.trim().slice(0, 60) || null;
+  const credit = raw.credit?.trim().slice(0, 120) || null;
+  const source = raw.source?.trim() || null;
+  const section = raw.section?.trim().slice(0, 64) || null;
+  if (source && !/^[a-z0-9_-]{1,64}$/i.test(source)) return { error: 'bad citation source' };
   let media: string[] | null = null;
   if (raw.media) {
     media = [
@@ -82,7 +106,7 @@ export function parseArticleQuery(raw: Raw, now = new Date()): ArticleQuery | { 
   const limit = Math.min(MAX_LIMIT, Math.max(1, Math.floor(Number(raw.limit)) || 50));
   const cursor = raw.cursor ? decodeCursor(raw.cursor) : null;
   if (raw.cursor && !cursor) return { error: 'bad cursor' };
-  return { q, media, category, tag, camp: camp as Camp | null, facets, settled, since, until, limit, cursor };
+  return { q, credit, source, section, media, category, tag, camp: camp as Camp | null, facets, settled, since, until, limit, cursor };
 }
 
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -106,6 +130,16 @@ export async function searchArticles(db: Db, query: ArticleQuery) {
     gte(articles.publishedAt, query.since),
     lt(articles.publishedAt, query.until),
     sql`${articles.title} <> ''`,
+    query.credit
+      ? or(
+          sql`${articles.authors} LIKE ${`%${likeEscape(query.credit)}%`}`,
+          sql`${articles.creator} LIKE ${`%${likeEscape(query.credit)}%`}`,
+        )
+      : undefined,
+    query.source
+      ? sql`JSON_SEARCH(${articles.attributions}, 'one', ${likeEscape(query.source)}, NULL, '$[*].media') IS NOT NULL`
+      : undefined,
+    query.section ? eq(articles.category, query.section) : undefined,
     // The negation of datePending below.
     query.settled ? sql`(${articles.fetchedAt} IS NOT NULL OR ${articles.publishedAt} <> ${articles.crawledAt})` : undefined,
     media ? inArray(articles.media, media) : undefined,
@@ -197,6 +231,9 @@ export async function searchArticles(db: Db, query: ArticleQuery) {
   return {
     query: {
       q: query.q,
+      credit: query.credit,
+      source: query.source,
+      section: query.section,
       media: query.media,
       category: query.category,
       tag: query.tag,

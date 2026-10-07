@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink, RangeChips } from '@/components/ArticleResults';
+import ArticleTabs from '@/components/ArticleTabs';
 import MethodLink from '@/components/MethodLink';
 import PeriodEvents from '@/components/PeriodEvents';
 import { fetchMedia, type MediaInfo } from '@/lib/api';
@@ -47,6 +48,7 @@ export default async function ArticleIndexPage({ searchParams }: { searchParams:
 
   return (
     <div className="space-y-6">
+      <ArticleTabs current="latest" />
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">最新文章</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">

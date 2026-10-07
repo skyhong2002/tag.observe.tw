@@ -1,4 +1,5 @@
 import MethodLink from '@/components/MethodLink';
+import { relationshipQuery } from '@/lib/relationship-query.mts';
 import { pageMetadata } from '@/lib/seo.mts';
 import { periodQuery } from '@/lib/similarity';
 import DailyTrend from '../DailyTrend';
@@ -17,7 +18,10 @@ export default async function SimilarityDailyPage({ searchParams }: { searchPara
   return (
     <div className="space-y-5">
       <header className="space-y-4">
-        <SimilarityTabs current="daily" query={periodQuery(similarityPeriod(query), threshold).toString()} />
+        <SimilarityTabs
+          current="daily"
+          query={relationshipQuery({ ...query, ...Object.fromEntries(periodQuery(similarityPeriod(query), threshold)) }).toString()}
+        />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">每日趨勢</h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">

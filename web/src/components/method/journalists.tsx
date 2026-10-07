@@ -11,7 +11,10 @@ import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 export function JournalistMethod() {
   return (
     <>
-      <h3 className={methodHeading}>記者</h3>
+      <h3 className={methodHeading}>署名與個人報導</h3>
+      <p>
+        署名總覽保留個人／筆名、編輯部／團隊、機構及待辨識署名。團隊依刊登媒體區分；機構可連到同一機構的媒體與引用資料。角色只採用原文明確標示，同篇共同署名分別計入，不可將篇數直接相加。原始署名保留在文章列表；無法確認的身分不推斷為記者。
+      </p>
       <p>
         記者頁從文章署名整理出人名與筆名，不含媒體、部門、通訊社、職稱與責任編輯；可看每個人在哪些媒體刊登、寫了幾篇，以及文章與其他媒體內文相近時的刊登先後。較晚刊登只是閱讀線索，不是抄襲判定。
       </p>

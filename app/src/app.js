@@ -8,6 +8,7 @@ import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
 import { registerArticleRelated } from './v1/article-related.ts';
 import { registerArticleSearch } from './v1/articles.ts';
+import { registerBylines } from './v1/bylines.ts';
 import { registerJournalists } from './v1/journalists.ts';
 import { registerLiveboard } from './v1/liveboard.ts';
 import { registerMediaKeywords } from './v1/media-keywords.ts';
@@ -78,6 +79,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerArticleSearch(app, own.db);
     registerSimilarity(app, own.db);
     registerJournalists(app, own.db);
+    registerBylines(app, own.db);
     registerArticleContent(app, own.db);
     registerArticleRelated(app, own.db);
     registerSiteObservation(app, own.db);

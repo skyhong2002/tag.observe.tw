@@ -4,6 +4,7 @@ import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
+import { relationshipQuery } from '@/lib/relationship-query.mts';
 import { pageMetadata } from '@/lib/seo.mts';
 import { fetchSimilarity, periodQuery, type SimilarityData } from '@/lib/similarity';
 import { table } from '@/lib/table-styles';
@@ -27,7 +28,7 @@ export default async function SimilarityAboutPage({
   const query = await searchParams;
   const period = similarityPeriod(query);
   const threshold = similarityThreshold(query);
-  const params = periodQuery(period, threshold).toString();
+  const params = relationshipQuery({ ...query, ...Object.fromEntries(periodQuery(period, threshold)) }).toString();
   const data = await fetchSimilarity(period, threshold).catch(() => null);
   return (
     <div className="space-y-6">

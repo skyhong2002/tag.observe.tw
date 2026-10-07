@@ -27,7 +27,7 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
     label: '看來源',
     links: [
       { href: '/media/', label: '媒體來源', short: '媒體' },
-      { href: '/journalist/', label: '記者', short: '記者' },
+      { href: '/byline/', label: '新聞署名', short: '署名' },
     ],
   },
 ];
