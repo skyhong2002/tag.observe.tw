@@ -537,6 +537,12 @@ schemas.ContentArticle = obj(
     publishedDatePrecision: str(undefined, { enum: ['day'] }),
     tags: arr(str()),
     description: nullable(str()),
+    summary: nullable(str('媒體提供的獨立摘要；無摘要時為 null，不從正文自動生成')),
+    summarySource: nullable(
+      str(
+        '摘要依據：article:selector、jsonld:abstract、meta:summary、meta:description、meta:og:description、feed:description 或 feed:summary',
+      ),
+    ),
     authors: arr(str()),
     publisher: ref('OutletIdentity'),
     discoverySources: arr(ref('DiscoverySource')),
@@ -987,7 +993,9 @@ export const ENDPOINTS: Endpoint[] = [
             mediaTitle: str('媒體名稱'),
             camp,
             title: str(),
-            description: nullable(str('摘要（媒體提供的 description）')),
+            description: nullable(str('媒體提供的 description')),
+            summary: nullable(str('媒體摘要；未取得時為 null')),
+            summarySource: nullable(str('摘要取自原文摘要區、JSON-LD abstract、meta 或 feed；與 description 來源明確區分')),
             url: str(),
             image: nullable(str()),
             publishedAt: time('發布時間（UTC）'),

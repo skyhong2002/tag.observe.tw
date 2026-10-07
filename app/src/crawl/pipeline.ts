@@ -188,6 +188,8 @@ export async function runIndex(
               category: trunc(it.category, 64),
               creator: trunc(content?.authors.length ? content.authors.join('、') : it.creator, 256),
               description: trunc(it.description, 4000),
+              summary: it.summary ?? null,
+              summarySource: it.summary ? it.summarySource : null,
               tags: usableTags(it.tags ?? [], spec.media),
               fetchedAt: content ? started : null,
               fetchStatus: content ? (it.tags?.length ? 'ok' : 'notags') : null,
@@ -274,6 +276,7 @@ export async function runIndex(
                 contentFetchedAt: existing.bodyStatus === 'expired' ? (existing.contentFetchedAt ?? existing.crawledAt) : started,
                 contentAttempts: sql`${articles.contentAttempts} + 1`,
                 fetchStatus: item.tags?.length ? 'ok' : 'notags',
+                ...(item.summary ? { summary: item.summary, summarySource: item.summarySource } : {}),
                 attributions: extractAttributions(content.body, spec.media, item.verifiedProvider),
               })
               .where(repairable);
@@ -482,6 +485,7 @@ export async function runArticles(
               canonical: trunc(detail.canonical, 512),
               image: detail.image ? trunc(detail.image, 512) : undefined,
               description: detail.description ? trunc(detail.description, 4000) : undefined,
+              ...(detail.summary ? { summary: detail.summary, summarySource: detail.summarySource } : {}),
               body: detail.body,
               authors: detail.authors.length ? detail.authors : undefined,
               creator: detail.authors.length ? detail.authors.join('、').slice(0, 256) : undefined,

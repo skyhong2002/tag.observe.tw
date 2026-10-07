@@ -833,6 +833,8 @@ curl -s 'https://tag.observe.tw/api/v1/articles/1/content'
 | `article.publishedDatePrecision` | "day" |  |
 | `article.tags` | string[] |  |
 | `article.description` | string \| null |  |
+| `article.summary` | string \| null | 媒體提供的獨立摘要；無摘要時為 null，不從正文自動生成 |
+| `article.summarySource` | string \| null | 摘要依據：article:selector、jsonld:abstract、meta:summary、meta:description、meta:og:description、feed:description 或 feed:summary |
 | `article.authors` | string[] |  |
 | `article.publisher` | object |  |
 | `article.publisher.media` | string |  |
@@ -928,7 +930,9 @@ curl -s 'https://tag.observe.tw/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&li
 | `articles[].mediaTitle` | string | 媒體名稱 |
 | `articles[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
 | `articles[].title` | string |  |
-| `articles[].description` | string \| null | 摘要（媒體提供的 description） |
+| `articles[].description` | string \| null | 媒體提供的 description |
+| `articles[].summary` | string \| null | 媒體摘要；未取得時為 null |
+| `articles[].summarySource` | string \| null | 摘要取自原文摘要區、JSON-LD abstract、meta 或 feed；與 description 來源明確區分 |
 | `articles[].url` | string |  |
 | `articles[].image` | string \| null |  |
 | `articles[].publishedAt` | string (ISO 時間) | 發布時間（UTC） |
@@ -2169,6 +2173,8 @@ curl -s 'https://tag.observe.tw/api/v1/media/cna/content'
 | `articles[].publishedDatePrecision` | "day" |  |
 | `articles[].tags` | string[] |  |
 | `articles[].description` | string \| null |  |
+| `articles[].summary` | string \| null | 媒體提供的獨立摘要；無摘要時為 null，不從正文自動生成 |
+| `articles[].summarySource` | string \| null | 摘要依據：article:selector、jsonld:abstract、meta:summary、meta:description、meta:og:description、feed:description 或 feed:summary |
 | `articles[].authors` | string[] |  |
 | `articles[].publisher` | object |  |
 | `articles[].publisher.media` | string |  |

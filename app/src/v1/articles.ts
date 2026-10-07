@@ -119,6 +119,7 @@ export async function searchArticles(db: Db, query: ArticleQuery) {
       ? or(
           sql`${articles.title} LIKE ${`%${likeEscape(query.q)}%`}`,
           sql`${articles.description} LIKE ${`%${likeEscape(query.q)}%`}`,
+          sql`${articles.summary} LIKE ${`%${likeEscape(query.q)}%`}`,
           sql`JSON_CONTAINS(${articles.tags}, JSON_QUOTE(${query.q}))`,
         )
       : undefined,
@@ -134,6 +135,8 @@ export async function searchArticles(db: Db, query: ArticleQuery) {
     media: articles.media,
     title: articles.title,
     description: articles.description,
+    summary: articles.summary,
+    summarySource: articles.summarySource,
     url: articles.url,
     image: articles.image,
     publishedAt: articles.publishedAt,
@@ -212,6 +215,8 @@ export async function searchArticles(db: Db, query: ArticleQuery) {
       camp: campOf(r.media),
       title: r.title,
       description: r.description?.trim() || null,
+      summary: r.summary?.trim() || null,
+      summarySource: r.summary ? r.summarySource : null,
       url: r.url,
       image: r.image,
       publishedAt: r.publishedAt,

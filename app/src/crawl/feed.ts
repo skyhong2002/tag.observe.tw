@@ -1,4 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
+import { publisherSummary } from './summary.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
 export interface FeedItem {
@@ -11,6 +12,8 @@ export interface FeedItem {
   image?: string;
   tags?: string[];
   description?: string;
+  summary?: string | null;
+  summarySource?: string | null;
   creator?: string;
   /** Publisher's explicit full-content element; never synthesized from description. */
   contentHtml?: string;
@@ -112,6 +115,7 @@ function rssItem(i: Record<string, unknown>): FeedItem | null {
       decodeEntities(stripTags(text(i.description)))
         .trim()
         .slice(0, 2000) || undefined,
+    ...publisherSummary(text(i.description), 'feed:description', decodeEntities(stripTags(text(i.title))).trim()),
     creator: text(i['dc:creator']).trim() || undefined,
     contentHtml: text(i['content:encoded']).trim() || undefined,
   };
@@ -145,6 +149,7 @@ function atomItem(e: Record<string, unknown>): FeedItem | null {
       decodeEntities(stripTags(text(e.summary) || text(e.content)))
         .trim()
         .slice(0, 2000) || undefined,
+    ...publisherSummary(text(e.summary), 'feed:summary', decodeEntities(stripTags(text(e.title))).trim()),
     creator: text((e.author as Record<string, unknown> | undefined)?.name).trim() || undefined,
   };
 }

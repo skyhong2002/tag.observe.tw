@@ -31,6 +31,8 @@ export interface ContentArticle {
   publishedDatePrecision?: 'day';
   tags: string[];
   description: string | null;
+  summary: string | null;
+  summarySource: string | null;
   authors: string[];
   publisher: OutletIdentity;
   discoverySources?: DiscoverySource[];
@@ -116,6 +118,8 @@ const metadata = {
   publishedAt: articles.publishedAt,
   tags: articles.tags,
   description: articles.description,
+  summary: articles.summary,
+  summarySource: articles.summarySource,
   authors: articles.authors,
   creator: articles.creator,
 };
@@ -128,6 +132,8 @@ type MetadataRow = {
   publishedAt: Date;
   tags: string[];
   description: string | null;
+  summary: string | null;
+  summarySource: string | null;
   authors: string[] | null;
   creator: string | null;
 };
@@ -146,6 +152,8 @@ export function contentArticle(row: MetadataRow): ContentArticle {
     ...(dateOnly ? { publishedDate: publication.publishedDate, publishedDatePrecision: 'day' as const } : {}),
     tags: row.tags,
     description: row.description,
+    summary: row.summary ?? null,
+    summarySource: row.summarySource ?? null,
     authors: normalizeAuthorCredits(authors.length ? authors : row.creator?.trim() ? [row.creator.trim()] : []),
     publisher: outletIdentity(row.media),
   };
@@ -242,6 +250,7 @@ export async function loadMediaContent(
           ? or(
               sql`${articles.title} LIKE ${`%${keyword}%`}`,
               sql`${articles.description} LIKE ${`%${keyword}%`}`,
+              sql`${articles.summary} LIKE ${`%${keyword}%`}`,
               sql`JSON_CONTAINS(${articles.tags}, JSON_QUOTE(${query.q}))`,
             )
           : undefined,

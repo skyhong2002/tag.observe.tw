@@ -86,7 +86,7 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
   it('fetches untagged articles and tags them from the title when the page has no keywords', async () => {
     const vocab = await loadTitleVocab(db, { minArticles: 1, minShort: 1 });
     const body = Array.from({ length: 50 }, (_, i) => `第${i}項地方採訪報導指出公共建設應公開招標並邀請居民討論。`).join('');
-    const page = `<html><head><meta property="og:image" content="https://attach.setn.com/x.jpg"><meta name="author" content="王記者"></head><body><article><p>根據路透社報導，當局公布新政策。</p><p>${body}</p></article></body></html>`;
+    const page = `<html><head><meta property="og:image" content="https://attach.setn.com/x.jpg"><meta name="author" content="王記者"><meta name="summary" content="媒體提供的原文摘要"></head><body><article><p>根據路透社報導，當局公布新政策。</p><p>${body}</p></article></body></html>`;
     const r = await runArticles(db, spec, { fetch: async (u: string) => res(u, page), vocab, limit: 10 });
     expect(r.fetched).toBe(4); // body extraction includes already-tagged feed articles
     const [row] = await db
@@ -94,6 +94,8 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
         tags: articles.tags,
         status: articles.fetchStatus,
         image: articles.image,
+        summary: articles.summary,
+        summarySource: articles.summarySource,
         body: articles.body,
         authors: articles.authors,
         bodyStatus: articles.bodyStatus,
@@ -104,6 +106,8 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     expect(row.status).toBe('title');
     expect(row.tags).toEqual(expect.arrayContaining(['川普', '關稅']));
     expect(row.image).toBe('https://attach.setn.com/x.jpg');
+    expect(row.summary).toBe('媒體提供的原文摘要');
+    expect(row.summarySource).toBe('meta:summary');
     expect(row.body).toContain(body);
     expect(row.bodyStatus).toBe('ok');
     expect(row.authors).toEqual(['王記者']);
@@ -412,7 +416,9 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
         media: 'cna',
         title: '相同內文，不同標題',
         url: 'https://cna.com.tw/test-copy',
-        publishedAt: now,
+        // A known publication precedes acquisition; equal timestamps denote an
+        // unconfirmed listing date and must not imply a publication order.
+        publishedAt: new Date(now.getTime() - 5 * 60e3),
         crawledAt: now,
         tags: [],
         body: original.body,

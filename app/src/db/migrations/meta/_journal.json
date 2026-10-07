@@ -134,6 +134,13 @@
       "when": 1791193070756,
       "tag": "0018_legacy-ownership-index",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1791374121059,
+      "tag": "0019_article-summary",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,15 @@ import { articleArchives, articles } from '../db/schema.ts';
 import { type ArchiveStore, digest } from './store.ts';
 
 export type ContentRow = typeof articles.$inferSelect;
-type StoredRow = Record<string, unknown> & { id: number; media: string; url: string; body: string | null; description: string | null };
+type StoredRow = Record<string, unknown> & {
+  id: number;
+  media: string;
+  url: string;
+  body: string | null;
+  description: string | null;
+  summary?: string | null;
+  summarySource?: string | null;
+};
 export const cacheClock = () =>
   sql`GREATEST(COALESCE(${articles.contentAccessedAt}, ${articles.crawledAt}), COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt}))`;
 
@@ -31,7 +39,13 @@ export function decodeContent(data: Buffer, id: number, contentHash: string): St
   for (const field of ['body', 'description']) {
     if (entry.article[field] !== null && typeof entry.article[field] !== 'string') throw new Error('Invalid archived content');
   }
-  return entry.article;
+  // Older v1 archives predate independent summaries. Verify the original hash
+  // before supplying backward-compatible missing values.
+  for (const field of ['summary', 'summarySource']) {
+    if (entry.article[field] !== undefined && entry.article[field] !== null && typeof entry.article[field] !== 'string')
+      throw new Error('Invalid archived summary');
+  }
+  return { ...entry.article, summary: entry.article.summary ?? null, summarySource: entry.article.summarySource ?? null };
 }
 
 export function cacheAgeForSpace(freeBytes: number | undefined, reserveBytes = 20 * 2 ** 30) {
@@ -48,7 +62,7 @@ export async function archiveColdContent(db: Db, store: ArchiveStore | undefined
       and(
         lt(cacheClock(), cutoff),
         lt(articles.publishedAt, new Date(now.getTime() - PUBLIC_BODY_WINDOW_MS)),
-        or(sql`${articles.body} IS NOT NULL`, sql`${articles.description} IS NOT NULL`),
+        or(sql`${articles.body} IS NOT NULL`, sql`${articles.description} IS NOT NULL`, sql`${articles.summary} IS NOT NULL`),
       ),
     )
     .orderBy(asc(articles.id))
@@ -77,7 +91,14 @@ export async function archiveColdContent(db: Db, store: ArchiveStore | undefined
     const contentHash = pack.entries.find((entry) => entry.article.id === row.id)!.contentHash;
     const result = await db
       .update(articles)
-      .set({ body: null, description: null, contentArchiveHash: contentHash, ...(row.body !== null ? { bodyStatus: 'expired' } : {}) })
+      .set({
+        body: null,
+        description: null,
+        summary: null,
+        summarySource: null,
+        contentArchiveHash: contentHash,
+        ...(row.body !== null ? { bodyStatus: 'expired' } : {}),
+      })
       .where(
         and(
           eq(articles.id, row.id),
@@ -85,6 +106,8 @@ export async function archiveColdContent(db: Db, store: ArchiveStore | undefined
           lt(articles.publishedAt, new Date(now.getTime() - PUBLIC_BODY_WINDOW_MS)),
           sql`BINARY ${articles.body} <=> BINARY ${row.body}`,
           sql`BINARY ${articles.description} <=> BINARY ${row.description}`,
+          sql`BINARY ${articles.summary} <=> BINARY ${row.summary}`,
+          sql`BINARY ${articles.summarySource} <=> BINARY ${row.summarySource}`,
           sql`${articles.contentFetchedAt} <=> ${row.contentFetchedAt}`,
           sql`${articles.contentAccessedAt} <=> ${row.contentAccessedAt}`,
         ),
@@ -111,6 +134,8 @@ export async function restoreArticleContent(db: Db, store: ArchiveStore, id: num
     .set({
       body: archived.body,
       description: archived.description,
+      summary: archived.summary ?? null,
+      summarySource: archived.summarySource ?? null,
       bodyStatus: archived.bodyStatus as string | null,
       bodySource: archived.bodySource as string | null,
       contentAccessedAt: now,
@@ -123,6 +148,7 @@ export async function restoreArticleContent(db: Db, store: ArchiveStore, id: num
         eq(articles.contentArchiveHash, cached.hash),
         isNull(articles.body),
         isNull(articles.description),
+        isNull(articles.summary),
         sql`${articles.contentFetchedAt} <=> ${archived.contentFetchedAt ? new Date(String(archived.contentFetchedAt)) : null}`,
       ),
     );
@@ -139,7 +165,7 @@ export async function touchArticleContent(db: Db, id: number, now = new Date()) 
     .where(
       and(
         eq(articles.id, id),
-        or(sql`${articles.body} IS NOT NULL`, sql`${articles.description} IS NOT NULL`),
+        or(sql`${articles.body} IS NOT NULL`, sql`${articles.description} IS NOT NULL`, sql`${articles.summary} IS NOT NULL`),
         or(isNull(articles.contentAccessedAt), lt(articles.contentAccessedAt, new Date(now.getTime() - 86400_000))),
       ),
     );

@@ -23,6 +23,8 @@ const row = {
   publishedAt: fetched,
   tags: ['報導'],
   description: null,
+  summary: null,
+  summarySource: null,
   authors: [' 王記者 ', '王記者'],
   creator: '舊署名',
   body: '第一段。\n\n第二段 <script>alert(1)</script>',
@@ -106,6 +108,13 @@ describe('stored article content', () => {
     expect(contentStatus('ok', 200, fetched)).toBe('ok');
     expect(contentStatus('unknown', 0, null)).toBe('error');
   });
+  it('exposes independent summary text and its provenance in article metadata', () => {
+    expect(contentArticle({ ...row, summary: '編輯摘要', summarySource: 'article:selector' })).toMatchObject({
+      summary: '編輯摘要',
+      summarySource: 'article:selector',
+      description: null,
+    });
+  });
   it('keeps publisher identity separate and retains the supplied author byline', () => {
     expect(contentArticle(row)).toMatchObject({ authors: ['王記者'], publisher: { media: 'cna', country: '台灣' } });
     expect(contentArticle({ ...row, authors: null })).toMatchObject({ authors: ['舊署名'] });
@@ -157,7 +166,7 @@ describe('stored article content', () => {
     await loadMediaContent(db, 'rti', { cursor: 99, limit: 40, q: 'AI_10%' });
     const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
     expect(query.sql).toContain('JSON_CONTAINS');
-    expect(query.params).toEqual(['rti', 99, '%AI\\_10\\%%', '%AI\\_10\\%%', 'AI_10%']);
+    expect(query.params).toEqual(['rti', 99, '%AI\\_10\\%%', '%AI\\_10\\%%', '%AI\\_10\\%%', 'AI_10%']);
   });
   it('loads discovery labels once per page while preserving the original publisher and article IDs', async () => {
     const sources = [

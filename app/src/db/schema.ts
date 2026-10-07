@@ -67,6 +67,8 @@ export const articles = mysqlTable(
     creator: varchar('creator', { length: 256 }),
     tags: json('tags').$type<string[]>().notNull(),
     description: text('description'),
+    summary: text('summary'),
+    summarySource: varchar('summary_source', { length: 64 }),
     body: longtext('body'),
     authors: json('authors').$type<string[]>(),
     bodyStatus: varchar('body_status', { length: 16 }),

@@ -184,11 +184,12 @@ describe('discovered full content persistence', () => {
   });
 
   it('persists verified provider citations on both insert and body repair', async () => {
-    discover([{ ...item, verifiedProvider: '新唐人電視台' }]);
+    discover([{ ...item, verifiedProvider: '新唐人電視台', summary: '經原站驗證的摘要', summarySource: 'article:selector' }]);
     const inserted = memoryDb();
     await runIndex(inserted.db, spec, { now: () => now });
     expect(inserted.rows[0].attributions).toEqual([expect.objectContaining({ media: 'ntdtv', evidence: '內容提供者：新唐人電視台' })]);
     expect(inserted.rows[0]).not.toHaveProperty('verifiedProvider');
+    expect(inserted.rows[0]).toMatchObject({ summary: '經原站驗證的摘要', summarySource: 'article:selector' });
     const repaired = memoryDb([
       {
         id: 1,
@@ -204,6 +205,7 @@ describe('discovered full content persistence', () => {
     await runIndex(repaired.db, spec, { now: () => now });
     expect(repaired.rows[0].attributions).toEqual(inserted.rows[0].attributions);
     expect(repaired.rows[0]).not.toHaveProperty('verifiedProvider');
+    expect(repaired.rows[0]).toMatchObject({ summary: '經原站驗證的摘要', summarySource: 'article:selector' });
   });
 
   it('preserves existing reporter credits when a retried page exposes no author', async () => {

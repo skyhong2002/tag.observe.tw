@@ -52,12 +52,13 @@ describe('discoverNews', () => {
     const f = fixture({
       [site]: link(url),
       [url]: article(
-        `<meta property="article:published_time" content="${today}"><meta property="og:article:author" content="新唐人電視台">`,
+        `<meta property="article:published_time" content="${today}"><meta property="og:article:author" content="新唐人電視台"><meta name="summary" content="來源發布的獨立摘要">`,
       ),
     });
     const result = await discoverNews({ homeUrl: site, maxArticles: 1 }, f.options);
     expect(result.items).toHaveLength(1);
     expect(result.items[0].verifiedProvider).toBe('新唐人電視台');
+    expect(result.items[0]).toMatchObject({ summary: '來源發布的獨立摘要', summarySource: 'meta:summary' });
   });
 
   it('does not cross from a reviewed news-section feed into unrelated homepage or global feeds', async () => {

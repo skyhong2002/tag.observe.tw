@@ -2,9 +2,10 @@ import * as cheerio from 'cheerio';
 import { type ArticleContent, extractArticleContent } from './article-content.ts';
 import { publicArticleHtml } from './news-public-html.ts';
 import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
+import { type ArticleSummary, extractSummary } from './summary.ts';
 import { between, decodeEntities, normalizeTag, resolveUrl } from './text.ts';
 
-export interface ArticleDetail extends ArticleContent {
+export interface ArticleDetail extends ArticleContent, ArticleSummary {
   tags: string[];
   image: string | null;
   description: string | null;
@@ -170,6 +171,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     : providerName(html);
   const provider = site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw;
   return {
+    ...extractSummary($, url),
     tags: [...new Set(tags)].slice(0, 100),
     image: imageRaw ? resolveUrl(imageRaw, url) : null,
     description:

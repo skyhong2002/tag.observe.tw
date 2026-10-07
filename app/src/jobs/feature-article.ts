@@ -37,6 +37,8 @@ export async function indexFeatureArticle(
           title: feature.title,
           publishedAt: featureDate(publishedAt, feature.storyFirstAt),
           tags: detail.tags,
+          summary: detail.summary,
+          summarySource: detail.summarySource,
           ...(image ? { image } : {}),
           ...(detail.description ? { description: detail.description } : {}),
           ...(content ? { verifiedContent: content } : {}),
@@ -45,10 +47,11 @@ export async function indexFeatureArticle(
     },
   });
   // Existing article rows can predate the feature-page extraction.
-  if (image || detail.description)
+  if (image || detail.description || detail.summary)
     await db
       .update(articles)
       .set({
+        ...(detail.summary ? { summary: detail.summary, summarySource: detail.summarySource } : {}),
         ...(image ? { image: detail.image ? detail.image.slice(0, 512) : sql`COALESCE(${articles.image}, ${image.slice(0, 512)})` } : {}),
         ...(detail.description ? { description: sql`COALESCE(${articles.description}, ${detail.description.slice(0, 4000)})` } : {}),
       })

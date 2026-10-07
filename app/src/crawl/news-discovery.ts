@@ -313,6 +313,8 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
       publishedAt,
       image: detail.image ?? candidate.image,
       tags: detail.tags.length ? detail.tags : candidate.tags,
+      summary: detail.summary ?? candidate.summary,
+      summarySource: detail.summary ? detail.summarySource : candidate.summarySource,
       verifiedProvider: detail.provider,
       verifiedContent: { body: detail.body, authors: detail.authors, bodySource, bodyStatus: 'ok' },
     });

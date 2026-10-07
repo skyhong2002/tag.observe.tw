@@ -20,7 +20,9 @@ const row = {
   url: 'https://www.cna.com.tw/a',
   title: 'archive',
   body: '不可丟失的全文',
-  description: '摘要',
+  description: 'SEO說明',
+  summary: '媒體編輯提供的獨立摘要',
+  summarySource: 'article:selector',
   bodyStatus: 'ok',
   bodySource: 'article',
   publishedAt: new Date('2014-01-01Z'),
@@ -71,11 +73,23 @@ describe('verified content cache', () => {
   });
   it('round-trips content and rejects corrupt or mismatched records', () => {
     const pack = encodeContent([row]);
-    expect(decodeContent(pack.data, 1, pack.entries[0].contentHash)).toMatchObject({ body: row.body, description: row.description });
+    expect(decodeContent(pack.data, 1, pack.entries[0].contentHash)).toMatchObject({
+      body: row.body,
+      description: row.description,
+      summary: row.summary,
+      summarySource: row.summarySource,
+    });
     expect(() => decodeContent(pack.data, 2, pack.entries[0].contentHash)).toThrow('identity');
     const corrupt = Buffer.from(pack.data);
     corrupt[20] ^= 255;
     expect(() => decodeContent(corrupt, 1, pack.entries[0].contentHash)).toThrow();
+  });
+  it('restores older archives with no summary fields without changing their identity', () => {
+    const old = { ...row };
+    delete (old as Partial<ContentRow>).summary;
+    delete (old as Partial<ContentRow>).summarySource;
+    const pack = encodeContent([old]);
+    expect(decodeContent(pack.data, 1, pack.entries[0].contentHash)).toMatchObject({ body: row.body, summary: null, summarySource: null });
   });
   it('orders readback verification, persistent indexing, then conditional eviction', async () => {
     const f = fixture();
@@ -85,6 +99,8 @@ describe('verified content cache', () => {
     expect(query.sql).toContain('BINARY `articles`.`body` <=> BINARY');
     expect(query.sql).toContain('`articles`.`content_accessed_at` <=>');
     expect(query.params).toContain(row.body);
+    expect(query.sql).toContain('BINARY `articles`.`summary` <=> BINARY');
+    expect(query.params).toContain(row.summary);
   });
   it('never evicts if NAS or archive indexing fails', async () => {
     const f = fixture();

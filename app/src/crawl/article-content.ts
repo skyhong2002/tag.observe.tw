@@ -78,7 +78,7 @@ const UI_TEXT =
 const BLOCK_TEXT =
   /(?:驗證您(?:是|是否為)|確認您(?:是|是否為)|請完成驗證|檢查您的瀏覽器|verify (?:that )?you are (?:a )?human|checking your browser|just a moment|access denied|enable javascript and cookies|complete the security check|請(?:先)?登入.{0,20}(?:閱讀|全文)|訂閱.{0,20}(?:閱讀|全文)|subscribe to (?:read|continue)|sign in to (?:read|continue))/i;
 
-function articleNodes($: cheerio.CheerioAPI, url: string): JsonNode[] {
+export function articleNodes($: cheerio.CheerioAPI, url: string): JsonNode[] {
   const found: JsonNode[] = [];
   // Visit only structural containers for the page entity. Related ItemList
   // entries can contain perfectly valid NewsArticles belonging to other URLs.
