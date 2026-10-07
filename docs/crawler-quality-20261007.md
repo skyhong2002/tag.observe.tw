@@ -635,3 +635,13 @@ iThome10668468／10668465的/article/170511、170893是node-featured-story專題
 fresh200完整DB snapshots＋old parser exact DBbody＋own metadata／intro核對6篇通過：10668468、10668465、10668457、10668454、10668443、10668494。summary均供應於原頁且與主介紹相同；3正文內容修正、3既有正文相同，6provenance修正，保留「這也了雲原生生態系」等原站文句，不自行改稿。全部0existing pairs／sketches／citations，combined body／summary6乾跑通過。batch13-ithome-reviewed-plan.json與repair／verifier保留完整article backup／exact live release／clean candidate／index lock／single-apply guard；摘要與介紹同transaction。既有過期public body的mask及expiry維持，沒有強制重索引、回寫日期或套正式資料。
 
 正式仍c63dacb已推送／部署且第十一批13修復全驗證；第十二批bfb34f2已冻结、本地提交未推送／部署／套用，07:21timer；第十三批本地程式／報告提交、未推送／部署／套資料，尚未冻结或排程，下一次需距第十二批實際部署約一小時。24小時觀察維持active至18:49:13。
+
+### 10/8 06:43：Cool3c原站摘要包裝清理與空白摘要補齊
+
+Cool3c兩篇新樣本46007506／46007507的原站description將作者、完整h1、更新時間及#(文章ID)包在真正excerpt外。新增僅own Cool3c數字article path、canonical一致、main h1、meta author與own JSON article author一致、JSON headline identity、description逐字相同、datePublished +08:00分鐘與包裝時間完全一致時清理；保留供應excerpt與原本省略號，並要求excerpt去除末尾省略號後包含在own JSON articleBody。移除一個開頭格式殘留句號；沒有自行截取正文、生成新摘要或改寫供應文字。不一致的頁面保留原摘要。
+
+2013成功HTML對冻结第十二批bfb34f2回放共11篇變化：原6篇iThome，加5篇Cool3c只有summary變化。5篇Cool3c fresh200／署名／精確publication／全13欄snapshot／正文完全相同乾跑通過：46007506、46007507、45409091、46086051、46086050。45409091 DBsummary為null，以原站meta:description同一包裝及JSON/body證據補回供應excerpt；其餘4篇僅去除包裝。ProArt摘要從「移動的個人AI代理工作站」開始，是原站提供的中段excerpt，保留原文及截斷，沒有自行補寫開頭。
+
+batch13-cool3c-reviewed-plan.json、repair-batch13-cool3c.mjs、verify-batch13-cool3c.mjs完成；metadata only transaction保留正文／署名／tags／attributions／日期／取得時間，全snapshot比較、durable backup、exact live release與clean candidate guard，支援已套用row的只讀核對避免重复寫入；public body expiry政策保留。5篇乾跑passed，尚未apply。964crawl／attribution測試、tsc及全Biome通過。第十三批合計11不同候選：11摘要、3正文文字修正、6正文來源修正、0署名或日期歷史寫入。
+
+正式仍c63dacb已推送／部署／驗證；第十二批bfb34f2冻结、本地提交未推送／部署／套用，07:21發布timer維持。第十三批本章與Cool3c修正為本地提交，未推送／部署／套用，仍unfrozen且未排程，需距第十二批實際成功部署約一小時再發佈。24小時觀察至18:49:13仍active，最終報告尚未完成。

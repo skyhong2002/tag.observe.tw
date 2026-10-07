@@ -1,6 +1,7 @@
 import type { CheerioAPI } from 'cheerio';
 import { articleNodes } from './article-content.ts';
 import { reporterNames } from './byline.ts';
+import { cool3cSummary } from './news-cool3c-summary.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
@@ -161,6 +162,11 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   for (const [value, source] of candidates) {
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    const cool3c = cool3cSummary($, url, result.summary);
+    if (cool3c !== null) {
+      result = publisherSummary(cool3c, source);
+      if (!result.summary) continue;
+    }
     // Reviewed AMM description is cut inside the encoded dispatch dash.
     // Keep its supplied excerpt and truncation marker; do not invent missing text.
     if (ammLead && /[\p{Script=Han}]{2,12}\d{4}年\d{1,2}月\d{1,2}日\s*\/美通社\/\s+&#821 \[…\]$/u.test(result.summary)) {
