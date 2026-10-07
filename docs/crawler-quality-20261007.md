@@ -415,3 +415,11 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 最新測試為 crawl 898 與 attribution 25，共 923 passed，tsc／Biome 成功；1,794 原頁重播共 32 metadata 變化，包含12青年日報、2澳門日報，没有正文或日期變化。新增4筆摘要 fresh source／完整快照通過，併入第九批共9篇候選（8摘要、1作者），仍未套用。食尚玩家45596631被正常爬蟲更新 `content_fetched_at`，首次完整快照乾跑如預期停止且未寫入；重新抓原頁確認其他12欄完全一致，保留舊快照後更新review snapshot，9篇乾跑全部通過。人工紀錄446筆、338篇不同文章、153家媒體，仍為部分／指定欄位核對。
 
 第九批僅本地提交，未推送或部署；最早下一次更新須不早於04:06:50。`batch9-round11-summary-reviewed-plan.json`、`batch9-nine-metadata-dry-run.log`、`batch9-supertaste-refresh-plan.json`、`batch9-metadata-reviewed-plan-before-natural-fetch.json`、`batch9-latest-crawl-tests.log`、`batch9-latest-attribution-tests.log`、`batch9-all-sample-replay.json` 保留證據。
+
+### 10/8 03:19：第八批全部修復驗證完成
+
+自然 similarity 排程 03:15:48 正常結束，157 筆索引、pending=0；本批 28 筆正文均有正確字數、日期與 minhash。最終 `batch8-repairs-verification.json` verified=true，28 筆正文逐欄 metadata／DB／API／citation／sketch、6 筆獨立作者、6 篇合併 metadata 全部通過。原有22配對逐一保留且分數／containment／shared／kind／evidence與既存counterpart快照吻合；正常索引另外產生的新配對也依當前counterpart正文完整重算驗證，保存新配對證據。所有日期保留。
+
+初版驗證器要求配對筆數等於修復前數量，正常索引新增有效配對時停止；修正為保留且驗證所有原配對，另嚴格重算新增配對，不放寬matching門檻。重讀公開 content API 會更新正常 `content_accessed_at`，因此驗證器保留對文章metadata／正文的逐欄要求，只將有效的API存取時間及自然similarity時間視為可正常更新的操作欄位。没有重套資料或重開job。最終驗證器已正常結束。
+
+第九批已固定本地提交 `d2f9a5828deef0b99469ec4f3e3f4cafb373b81d`，3個新提交秘密資訊掃描乾淨，尚未推送／部署／套資料。發布timer為04:08，probe04:03至04:53；exactHEAD、舊main／live8958290、完整CI、排空及排空後main／live重檢守門。若外部版本介入則停止，不能覆蓋。新工作使用獨立batch10 checkout，保留固定第九批。第八批五秒探測03:18:47為止205筆均主站200／worker200，仍不能推論取樣間隔零停機。觀察預定18:49:13結束。
