@@ -297,3 +297,19 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 第七批896項爬蟲／引用測試與tsc通過；1450原頁對第六批候選重播僅11篇欄位改變（8台灣華報摘要、1new-reporter摘要、2署名），正文／刊登時間不變。兩筆署名fresh-source試跑2changed／0unavailable／0raced；7摘要計畫有原欄位快照及fresh證據，尚未套用、推送或部署。人工累計264記錄、237不同文章、119媒體、233篇屬樣本；選定欄位與局部檢驗分開計數，不宣稱全樣本正確。
 
 證據 `midnight-uncovered-media-proof.json`、`batch7-all-sample-replay.json`、`batch7-fresh-original-proof.json`、`batch7-reviewed-summary-plan.json`、`batch7-reviewed-author-plan.json`、`batch7-two-authors-dry-run.jsonl`、`batch7-crawl-tests.log`、`batch7-tsc.log`。
+
+## 第六批實際上線與補正完成（00:40–00:48）
+
+第六批e4b593451585e6f7c924e8400842c12806ea267d於00:40:04.998推送main，CI37653844756成功：1424passed／2skipped、web建置／型別／Biome／秘密掃描成功。00:41:27.257暫停新派工時active0，00:41:52.054恢復，新派工暫停24.797秒。三服務PID543978／544004／543977皆指向此版，首頁200、worker健康、queue未暫停，7個基準failed IDs無新增。公視兩筆118／105字的既有摘要重新抓原頁、DB／公開API相符；沒有重做schema migration。
+
+爬蟲延續性證據：00:27曾觀察active hourly job repeat:crawl-hourly:1791390236639，其hourly group於00:28:25.524正常回傳、stopped0；文章group00:38:37.862、news group00:40:39.608完成且stopped0，部署pause時無active。指定completed queue record在事後已不存在，因此沒有捏造finishedOn或attemptsMade；保留workerjournal、pause counts與先前active快照作證。原source級HTTP失敗仍有發生，與queue job新增失敗分開報告。
+
+主機側五秒服務探測持續到01:00：截至00:45，首頁探測皆200，00:41:51.450切換時一次worker health fetch failed，後續恢復200。抽樣節奏不能證明精確停機秒數或零停機；未測使用者機器瀏覽器。 sampler checkout在其MainPID0／成功後才fast-forward至正式e4b5934，保留050b0a1主鍵分頁讀取修正，下個01:00輪會用現行解析器。
+
+14筆正文（8太報＋6DW）、22筆署名、6筆來源／引用、4筆摘要均按原文／snapshot guard套用，先保存原資料durable備份。來源衍生citation正確、五個既存DW配對重算仍成立。22署名fresh-source applied22／unavailable0／raced0；4摘要DB與公開API回讀逐字相符（其中一筆原null恢復原媒體metadata新聞片段、一筆清除截斷記者列、另兩筆去除圖說留原新聞片段）。00:45:49正常similarity排程已重建14份sketch；00:47:17回讀全部minhash bytes／正文chars與正式演算法重算相符，没有強制新開或重跑索引job。
+
+台視45766680原失敗正文先在00:36:43由正常crawler retry成功，attempts2、完整490字与fresh original相同；當時仍為舊worker，因此RSS更新時間未修。新版上線後以獨立精確證據與完整備份將刊登22:42:25+08改為原datePublished18:50:14+08，同步3article_tags與1sketch刊登時間；同一日、既存配對0，其餘欄位／取得時間保留。00:47:23讀回正文、闕帝慈署名、日期與衍生日期相符；沒有手動恢復正文、沒有複製crawler job。
+
+第六批資料與自然索引驗證完成，往後不得重做。第七批仍本地未推送，發布時間保守不早於01:42:33，發佈前重查現行版本。24小時品質觀察仍待10/8 18:49:13到期，報告是進行中版本。
+
+證據 `batch6-ci-result.json`、`batch6-ci-test-summary.log`、`batch6-deployment.json`、`batch6-live-verification.json`、`batch6-natural-crawl-completion.json`、`batch6-crawl-job-journal.log`、`batch6-repairs-verification.json`、`batch6-natural-reindex-verification.json`、`batch6-ttv-verification.json`、`batch6-service-probes.jsonl`，以及TaiSounds／DW／source／author／summary／TTV-date六份原資料備份。
