@@ -6,6 +6,19 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('removes an AMM incomplete dash entity only when the own article lead corroborates the excerpt', () => {
+    const prefix = '申請情況反映各界對增加域名系統選擇的關注 洛杉磯2026年10月8日 /美通社/';
+    const description = `${prefix} &amp;#821 […]`;
+    const lead = '<p>申請情況反映各界對增加域名系統選擇的關注</p><p>洛杉磯2026年10月8日 /美通社/ — 機構公佈申請名單。</p>';
+    const html = `<meta name="description" content="${description}"><article id="post-174194"><div class="ak-post-content"><div>${lead}</div></div></article>`;
+    expect(extractArticle(html, 'https://ammtw.com/174194')).toMatchObject({ summary: `${prefix} […]`, summarySource: 'meta:description' });
+    expect(extractArticle(html, 'https://example.com/174194').summary).toBe(`${prefix} &#821 […]`);
+    expect(extractArticle(html, 'https://ammtw.com/174195').summary).toBe(`${prefix} &#821 […]`);
+    expect(
+      extractArticle(html.replace('<p>申請情況反映各界對增加域名', '<p>其他正文與域名'), 'https://ammtw.com/174194').summary,
+    ).toContain('&#821');
+    expect(extractArticle(html.replace('#821', '#8211;'), 'https://ammtw.com/174194').summary).toBe(`${prefix} – […]`);
+  });
   it('rejects a 1111 caption-prefixed description cut inside the opening report paragraph', () => {
     const url = 'https://www.1111.com.tw/news/jobns/167722';
     const caption = '證交所公布年度招募計畫。（圖／1111人力銀行）';

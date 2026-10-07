@@ -565,3 +565,13 @@ fresh原頁／完整13欄快照再次驗證通過，擴充metadata8篇全部乾�
 957crawl／attribution測試、tsc、全專案Biome通過。1935成功HTML對固定第十一批回放共15篇變化（原13篇加女人迷2篇）；只有這兩篇新增正文變化，日期沒有改變。第十二批候選18篇不同文章：metadata4、source12及女人迷body2；合計4署名、3摘要、12來源、2正文、0日期歷史寫入。16份既有metadata／source乾跑及新增2份body乾跑均已通過；未推送／部署／套用。
 
 正式版本仍183f87e已推送／部署且21修復驗證完成，主站／worker最新主機probe200。第十一批c63dacb固定本地提交未推送／部署，06:16發布timer維持；第十二批仍未凍結或排程，發布需距第十一批實際部署約一小時。24小時觀察維持active至18:49:13，需最終有界抽樣與完整報告。
+
+### 10/8 06:00：AMM 摘要被截斷的 numeric entity，來源與摘要原子修復
+
+AMM46161211的meta description／og:description原站直接供應「申請情況反映全球各界對增加域名系統選擇、促進競爭的廣泛關注 洛杉磯2026年10月8日 /美通社/ &amp;#821 […]」，HTML編碼中途截斷形成可見&#821。新增僅AMM數字文章、own article#post-ID內ak-post-content直系p或第一層div直系p開頭三段、完整城市日期／美通社dispatch格式，且metadata保留部分與主文開頭去空白後完全一致才清理。只移除破損&#821，保留原站excerpt與[…]；不猜補缺失的破折號或下文。有效完整entity仍正常解碼、不套清理，其他網站／ID／不一致主文保持原摘要。
+
+此前AMM來源歷史修復曾因fresh timeout排除；本次兩次fresh200已成功，正文／署名／精確publication與DB相同，摘要唯一清理符合預期，美通社完整來源信用同時成立。新增batch12-amm-reviewed-plan.json；摘要與來源同篇transaction、citationindex一起更新，沒有body／日期覆寫。source apply／verifier明確加入第三plan與46161211，13篇source完整14欄fresh乾跑通過，未套正式資料。
+
+958crawl／attribution、tsc、全專案Biome通過；1935成功HTML回放仍15篇變化，AMM既有來源變化增加summary字段，僅去除截斷entity，沒有新增body或日期變化。第十二批候選19篇不同文章：metadata4＋source13＋body2，合計4署名、4摘要、13來源、2正文、0日期歷史寫入。更新後source13與原metadata4／body2乾跑已通過。第十批probe PID747632於05:57:01正常結束，544次主機主站／worker200，探測間隔不證明零停機，保留部署gateway restart錯誤紀錄。06:00抽樣已以新PID792801自然啟動，禁止重複或修改其checkout。
+
+正式仍183f87e已推送／部署；第十一批c63dacb固定本地提交未推送／部署，06:16timer；第十二批本地提交未推送／部署／回寫，未冻结或排程。觀察持續至18:49:13。

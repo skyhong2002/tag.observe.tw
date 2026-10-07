@@ -71,6 +71,15 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   const titles = [$('h1').first().text(), $('meta[property="og:title"]').attr('content'), $('title').text()]
     .filter((value): value is string => !!value)
     .map(normalized);
+  const ammId = /^https?:\/\/(?:www\.)?ammtw\.com\/(\d+)\/?$/i.exec(url)?.[1];
+  const ammLead = ammId
+    ? $(`article#post-${ammId} .ak-post-content > p, article#post-${ammId} .ak-post-content > div > p`)
+        .slice(0, 3)
+        .toArray()
+        .map((node) => normalized($(node).text()))
+        .join(' ')
+        .replace(/\s/g, '')
+    : '';
   const isYahooJapanPickup = /^https?:\/\/news\.yahoo\.co\.jp\/pickup\/\d+$/i.test(url);
   const isGrinews = /^https?:\/\/(?:www\.)?grinews\.com\/news\//i.test(url);
   const griContent = isGrinews ? $('article > .post-content').clone() : null;
@@ -144,6 +153,13 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   for (const [value, source] of candidates) {
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    // Reviewed AMM description is cut inside the encoded dispatch dash.
+    // Keep its supplied excerpt and truncation marker; do not invent missing text.
+    if (ammLead && /[\p{Script=Han}]{2,12}\d{4}年\d{1,2}月\d{1,2}日\s*\/美通社\/\s+&#821 \[…\]$/u.test(result.summary)) {
+      const prefix = result.summary.replace(/\s+&#821 \[…\]$/u, '');
+      if (ammLead.startsWith(prefix.replace(/\s/g, ''))) result = publisherSummary(`${prefix} […]`, source);
+    }
+    if (!result.summary) continue;
     if (isYahooJapanPickup && result.summary === '(Yahoo!天気・災害)') continue;
     if (
       isHakkaNews &&
