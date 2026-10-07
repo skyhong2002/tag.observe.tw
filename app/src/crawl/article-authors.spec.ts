@@ -87,6 +87,19 @@ describe('reporter identity from the selected article', () => {
       authors: ['新浪新闻'],
     });
   });
+  it('reads EBC syndication authorization after the related-story box', () => {
+    const content = `<div class="rss_box"><div class="rss_title">更多 CTWANT 報導</div><a>其他新聞標題</a></div><div class="rss_box">•以上言論由 CTWANT 授權轉載，不代表東森新聞立場。</div>`;
+    const html = `<meta name="author" content="CTWANT"><div class="article_main"><div class="article_content"><p>${prose}</p>${content}</div></div>`;
+    expect(extractArticle(html, 'https://news.ebc.net.tw/news/world/574664')).toMatchObject({
+      provider: '•以上言論由 CTWANT 授權轉載，不代表東森新聞立場。',
+      authors: ['CTWANT'],
+      body: prose,
+    });
+    expect(
+      extractArticle(html.replace('•以上言論由 CTWANT 授權轉載，不代表東森新聞立場。', ''), 'https://news.ebc.net.tw/news/world/574664')
+        .provider,
+    ).toBeNull();
+  });
   it('keeps declared organizational credits when no journalist is named', () => {
     expect(extractArticle('<meta name="author" content="中央社">' + `<article><p>${prose}</p></article>`, url).authors).toEqual(['中央社']);
   });

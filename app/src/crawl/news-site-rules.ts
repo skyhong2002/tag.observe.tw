@@ -126,7 +126,7 @@ const SITES: Site[] = [
     path: /^\/news\/[^/]+\/\d+\/?$/,
     bodySelector: '.article_main > .article_content',
     preferShortBody: true,
-    providerSelector: '.article_main > .article_content > div.rss_box',
+    providerSelector: '.article_main > .article_content > div.rss_box:contains("授權轉載")',
   },
   ...BLOCKED_NEWS_SITES,
   ...EXTRA_NEWS_SITES,
