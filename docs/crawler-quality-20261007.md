@@ -459,3 +459,13 @@ LIFE45780938明示「LIFE生活網記者-郭懿慧」，改署名郭懿慧；台
 最新930項crawl／attribution測試、tsc、全專案Biome通過。對固定第九批回放1,794原頁，31篇變化，新增兩篇健康稿的作者與來源，正文內容無變；其餘29為前述已核對欄位。人工將包括新增核對及是新聞fresh followup，仍明示部分／指定欄位而非全欄位正確性結論。新增證據 `batch10-more-uncovered-markup-proof.json`、`batch10-health-reviewed-plan.json`、`batch10-health-45411677.html.gz`、`batch10-health-45862872.html.gz`、`batch10-final-health-replay.log`、`batch10-health-crawl-tests.log`。
 
 第八批read-only探測已正常結束，544筆從03:00:00至03:49:55，主站及worker均200、無記錄錯誤；五秒採樣仍不能證明取樣間隔零停機，使用者端未驗證。`batch8-service-probes-summary.json` 保存terminal狀態及統計。第九批04:08仍排定，線上8958290；本批尚未推送／部署，發布間距依第九批實際部署完成計時。24小時觀察尚未結束。
+
+### 10/8 04:14：第九批已上線並完成修復；RSS摘要持續檢查
+
+第九批 `d2f9a5828deef0b99469ec4f3e3f4cafb373b81d` 04:08:03 已推送，精確 SHA 的 CI 37679713952 成功。04:09:58 暫停新派送時 active=0，04:10:25 安裝驗證及恢复，約26.4秒。線上三服務皆指向該版、主站200、worker健康、佇列未暫停、失敗ID仍為既有7筆；兩篇公視摘要與原文／DB／公開API一致。全部9篇歷史修復已durable backup並通過fresh原文／完整DB／API核對：8摘要清除、1自由亞洲記者署名補正，正文與日期不改。`batch9-live-verification.json`、`batch9-repairs-verification.json` verified=true。主機端驗證不是使用者瀏覽器或零停機證明；五秒probe持續至04:53。
+
+04:00抽樣正常完成，累計12輪、1926樣本、9286取得文章母體、231媒體；1859成功解析、56非200、11請求或解析異常。樣本中299為觀察前基線、1627為觀察內取得。人工檢查目前572紀錄、420不同文章、188媒體、416抽樣文章，仍包含部分／指定欄位核對。
+
+台灣新聞雲886 RSS description直接附上標題加「繼續閱讀」，detail summary為空時feed fallback重新存成摘要。新增精確title+CTA排除，保留有實質導讀內容的feed摘要。當次fresh官方feed30項對固定第九批回放，15項僅summary／summarySource清除，标题／URL／日期不變；931crawl／attribution測試、tsc、全專案Biome通過。`batch10-news886-feed.xml.gz`、`batch10-news886-feed-replay.json`保存證據。
+
+另4篇fresh原文與完整13欄快照通過：886新聞46085123／46085124的標題CTA、青年日報46088079／46088078的全文拷貝描述，均應清除摘要；記者／正文／日期保持。第十批增加至21篇不同候選，11署名、5摘要、7來源／引用，0正文／日期歷史寫入，正式資料仍未套用。下一批最早05:10:25，依實際第九批恢复時間計算。24小時觀察持續至18:49:13，尚未結束。

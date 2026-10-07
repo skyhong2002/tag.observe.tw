@@ -5,6 +5,16 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('rejects an RSS description containing only its title and a continue-reading link', () => {
+    const rss =
+      '<rss><channel><item><title>地方活動　正式開幕</title><link>https://886.news/archives/365381</link><description><![CDATA[<p>地方活動　正式開幕</p><a href="https://886.news/archives/365381">繼續閱讀</a>]]></description></item></channel></rss>';
+    expect(parseFeed(rss).items[0]).toMatchObject({ summary: null, summarySource: null });
+    expect(publisherSummary('地方活動 正式開幕 繼續閱讀', 'feed:description', '地方活動　正式開幕').summary).toBeNull();
+    expect(publisherSummary('地方活動正式開幕，主辦單位公布交通安排。繼續閱讀', 'feed:description', '地方活動正式開幕').summary).toBe(
+      '地方活動正式開幕，主辦單位公布交通安排。繼續閱讀',
+    );
+    expect(publisherSummary('地方活動正式開幕繼續閱讀', 'feed:description', '另一篇新聞').summary).not.toBeNull();
+  });
   it('rejects the shared FCLNews site promotion while preserving an article-specific fallback', () => {
     const slogan =
       '-台灣新聞雲報提供台灣最中立最公正最即時的各類型新聞報導，包括政治新聞、焦點新聞、社會新聞、國際新聞、地方新聞、娛樂新聞、科技新聞、專訪新聞、政黨新聞、藝文活動、美食推廣、體育賽事等相關新聞報導。歡迎各界好友踴躍贊助推廣。';

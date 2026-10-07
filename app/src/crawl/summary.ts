@@ -33,12 +33,14 @@ const normalized = (value: string) =>
 export function publisherSummary(value: unknown, source: string, title?: string | null): ArticleSummary {
   if (typeof value !== 'string') return { summary: null, summarySource: null };
   const summary = normalized(value);
+  const heading = title ? normalized(title) : null;
   // Oversized feed descriptions often contain the entire article. Do not silently
   // turn them into an excerpt and call that a publisher-provided summary.
   if (
     !summary ||
     summary.length > 4000 ||
-    summary === (title ? normalized(title) : '') ||
+    summary === (heading ?? '') ||
+    (heading !== null && summary.replace(/\s*繼續閱讀$/u, '') === heading) ||
     boilerplate.has(summary) ||
     /^【(?:Lai|賴)傳媒、記者爆料網(?:\s+[\p{Script=Han}]{2,5}[／/][^】。！？]{0,12})?\s*$/u.test(summary) ||
     (summary.length <= 80 && /(?:報導|報道|报道)[）)】〕]?(?:\.{3}|…)?$/u.test(summary) && reporterNames(summary).length > 0) ||
