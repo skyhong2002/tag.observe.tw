@@ -91,13 +91,14 @@ export function dayKeywordFlow(
   return keywordFlow(columns, values, { limit });
 }
 
-/** One event's flow from its snapshot hours: each hour's scored tags, by hour
- *  or merged per Taipei day (a tag's best score that day). */
+/** One event's (or keyword's) flow from hourly tag values, by hour or merged
+ *  per Taipei day: a score keeps its best of the day, a count sums. */
 export function threadKeywordFlow(
   hours: ReadonlyArray<{ hourStart: string; tags: ReadonlyArray<readonly [string, number]> }>,
   major: readonly string[],
   span: 'day' | 'hour',
   limit = 20,
+  merge: 'max' | 'sum' = 'max',
 ) {
   const sorted = [...hours].sort((a, b) => Date.parse(a.hourStart) - Date.parse(b.hourStart));
   const columns: FlowColumn[] = [];
@@ -121,7 +122,7 @@ export function threadKeywordFlow(
       values.push(new Map());
     }
     const col = values[values.length - 1];
-    for (const [tag, score] of h.tags) if (score > 0) col.set(tag, Math.max(col.get(tag) ?? 0, score));
+    for (const [tag, v] of h.tags) if (v > 0) col.set(tag, merge === 'sum' ? (col.get(tag) ?? 0) + v : Math.max(col.get(tag) ?? 0, v));
   }
   return keywordFlow(columns, values, { limit, major });
 }

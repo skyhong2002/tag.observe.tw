@@ -128,6 +128,15 @@ export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
     300,
   );
 
+/** Per hour, the other keywords on the reports tagged `tag` ([tag, reports]). */
+export interface TagFlow {
+  tag: string;
+  hours: number;
+  sampled: boolean;
+  points: Array<{ t: string; count: number; tags: Array<[string, number]> }>;
+}
+export const fetchTagFlow = (tag: string, hours = 336) => get<TagFlow>(`/api/v1/tags/${encodeURIComponent(tag)}/flow?hours=${hours}`, 300);
+
 export const taipei = (iso: string) =>
   new Date(iso).toLocaleString('zh-TW', {
     timeZone: 'Asia/Taipei',

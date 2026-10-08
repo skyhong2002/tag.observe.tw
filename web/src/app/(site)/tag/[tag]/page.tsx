@@ -2,18 +2,24 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
+import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
 import MethodLink from '@/components/MethodLink';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
 import TagStatusPanel from '@/components/TagStatusPanel';
-import { fetchMedia, fetchTagArticles, fetchTagSeries, fetchTagStatus, type MediaInfo, taipei } from '@/lib/api';
+import { fetchMedia, fetchTagArticles, fetchTagFlow, fetchTagSeries, fetchTagStatus, type MediaInfo, taipei } from '@/lib/api';
 import { countArticles, fetchArticleListing, isCamp, validCursor } from '@/lib/article-search';
+import { threadKeywordFlow } from '@/lib/keyword-flow.mts';
 import { decodeRouteParam, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import { tagHours } from '@/lib/tag-query';
 
 export const revalidate = 60;
+/** Whole Taipei days in the daily keyword flow, before today. */
+const FLOW_DAYS = 13;
+/** Hours since Taipei midnight, counting the current one, so the flow's days start at midnight. */
+const hoursIntoToday = () => Math.floor(((Date.now() + 8 * 3600e3) % 864e5) / 3600e3) + 1;
 type Params = { tag: string };
-type Query = { hours?: string; camp?: string; cursor?: string };
+type Query = { hours?: string; camp?: string; cursor?: string; flow?: string };
 export async function generateMetadata({
   params,
   searchParams,
@@ -49,11 +55,19 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   const cursor = validCursor(sp.cursor);
   const span = hours % 24 === 0 ? `過去 ${hours / 24} 天` : `過去 ${hours} 小時`;
   const link: ListingLink = (patch) => {
-    const next: Record<string, string | null> = { hours: hours === 72 ? null : String(hours), camp, cursor, ...patch };
+    const next: Record<string, string | null> = {
+      hours: hours === 72 ? null : String(hours),
+      camp,
+      cursor,
+      flow: flowSpan === 'day' ? null : flowSpan,
+      ...patch,
+    };
     const query = new URLSearchParams(Object.entries(next).filter((kv): kv is [string, string] => Boolean(kv[1])));
     return `/tag/${encodeURIComponent(tag)}/${query.size ? `?${query}` : ''}`;
   };
-  const [series, { page, facets }, media, status, mentions] = await Promise.all([
+  // Keywords riding along: by day over two weeks unless the reader asks for hours.
+  const flowSpan: 'day' | 'hour' = sp.flow === 'hour' ? 'hour' : 'day';
+  const [series, { page, facets }, media, status, mentions, flowData] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     // The list and its camp split use the chart's window and every tagged article in it.
     fetchArticleListing({ tag, hours, camp, cursor }),
@@ -61,7 +75,25 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     fetchTagStatus(tag).catch(() => null),
     // Reports that name the tag in their title or summary but were not tagged with it.
     cursor ? Promise.resolve(null) : countArticles({ q: tag, hours }),
+    fetchTagFlow(tag, flowSpan === 'day' ? FLOW_DAYS * 24 + hoursIntoToday() : hours).catch(() => null),
   ]);
+  const flowHref = (v: 'day' | 'hour') => {
+    const q = new URLSearchParams(
+      Object.entries({ hours: hours === 72 ? null : String(hours), camp, flow: v === 'day' ? null : v }).filter(
+        (kv): kv is [string, string] => Boolean(kv[1]),
+      ),
+    );
+    return `/tag/${encodeURIComponent(tag)}/${q.size ? `?${q}` : ''}#keyword-flow`;
+  };
+  const flow = flowData
+    ? threadKeywordFlow(
+        flowData.points.map((p) => ({ hourStart: p.t, tags: p.tags })),
+        [],
+        flowSpan,
+        20,
+        'sum',
+      )
+    : null;
   const tagged = facets?.total ?? 0;
   const untagged = mentions === null ? 0 : mentions - tagged;
   // The search range that covers the chart's window: the same one for 1, 3 and 7 days.
@@ -129,6 +161,43 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </h2>
         <TagChart points={series.points} />
       </section>
+      {flow && flow.rows.length > 0 && (
+        <section id="keyword-flow" className="scroll-mt-20 space-y-2">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">關鍵字變化</h2>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                {flowSpan === 'day' ? '過去 14 天' : span}標成 #{tag} 的報導，還一起帶了哪些關鍵字；從左往右看，話題在什麼時候轉向。
+              </p>
+            </div>
+            <nav className="inline-flex rounded-md bg-zinc-100 p-0.5 text-xs dark:bg-zinc-800" aria-label="關鍵字變化的單位">
+              {(
+                [
+                  ['day', '每日'],
+                  ['hour', '每小時'],
+                ] as const
+              ).map(([v, name]) => (
+                <Link
+                  key={v}
+                  href={flowHref(v)}
+                  scroll={false}
+                  aria-current={v === flowSpan ? 'page' : undefined}
+                  className={`rounded px-2.5 py-0.5 ${v === flowSpan ? 'bg-white font-medium shadow-sm dark:bg-zinc-700' : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'}`}
+                >
+                  {name}
+                </Link>
+              ))}
+            </nav>
+          </div>
+          <KeywordFlowLegend major={false}>
+            <span>
+              每欄是{flowSpan === 'day' ? '一天' : '一個小時'}，顏色越深表示越多篇同時帶到；點欄位看那{flowSpan === 'day' ? '天' : '小時'}
+              的事件表。
+            </span>
+          </KeywordFlowLegend>
+          <KeywordFlow {...flow} dense={flowSpan === 'hour'} unit="篇數" label={`和 #${tag} 一起出現的關鍵字`} />
+        </section>
+      )}
       {!page ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">報導列表暫時無法使用，請稍後再試。</p>
       ) : (

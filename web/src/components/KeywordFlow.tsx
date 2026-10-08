@@ -31,7 +31,7 @@ export default function KeywordFlow({
   // Dense axes label every third hour and each day's start, so labels never collide.
   const shown = (c: FlowColumn) => !dense || c.label.includes('/') || Number(c.label) % 3 === 0;
   return (
-    <TableScroller card label={`${label}，可左右捲動`}>
+    <TableScroller card startAtEnd label={`${label}，可左右捲動`}>
       <table className={`${dense ? 'w-max' : 'w-full'} border-separate border-spacing-0 text-xs`}>
         <caption className="sr-only">{label}</caption>
         <thead className="text-zinc-500">

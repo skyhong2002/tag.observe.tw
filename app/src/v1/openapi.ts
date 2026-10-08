@@ -1136,6 +1136,29 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?hours=168',
   },
   {
+    path: '/api/v1/tags/{tag}/flow',
+    tag: 'tags',
+    summary: '和這個標籤一起出現的關鍵字，逐小時',
+    description:
+      '標了這個標籤的報導（依發布時間，最近的在前，最多 20000 篇），每小時統計它們還帶了哪些其他標籤：每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱，每小時保留至少 2 篇帶到的前 15 個。沒有報導的小時不列出。',
+    params: [p('tag', '標籤（URL 編碼）', str(), '沈伯洋'), q('hours', '往前幾小時', intIn(1, 744, 336), 336)],
+    response: obj({
+      tag: str(),
+      hours: int(),
+      from: time(),
+      to: time(),
+      sampled: bool('報導超過上限、只讀了最新的 20000 篇'),
+      points: arr(
+        obj({
+          t: time('小時起點（UTC）'),
+          count: int('該小時標了這個標籤的報導篇數'),
+          tags: arr(arr(str()), '[標籤, 同時帶到它的篇數]，多的在前'),
+        }),
+      ),
+    }),
+    example: '/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hours=336',
+  },
+  {
     path: '/api/v1/tags/{tag}/status',
     tag: 'tags',
     summary: '標籤目前狀態',

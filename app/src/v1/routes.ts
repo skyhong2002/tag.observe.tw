@@ -12,6 +12,7 @@ import { campOf, loadThreadCoverage } from './coverage.ts';
 import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
 import { loadBurstTrails } from './ranking-history.ts';
+import { loadTagFlow } from './tag-flow.ts';
 import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyRanks, loadHourlyTrends } from './tag-series.ts';
 import { loadTagStatus } from './tag-status.ts';
@@ -206,6 +207,14 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       return { tag, category, hours, basis, points };
     },
   );
+
+  // Which other keywords rode along with this one, hour by hour.
+  app.get<{ Params: { tag: string }; Querystring: { hours?: string } }>('/api/v1/tags/:tag/flow', async (request, reply) => {
+    const tag = request.params.tag.slice(0, 60);
+    const hours = Math.min(24 * 31, Math.max(1, Math.floor(Number(request.query.hours) || 24 * 14)));
+    reply.header('cache-control', 'public, max-age=300');
+    return loadTagFlow(db, tag, hours);
+  });
 
   app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/status', async (request, reply) => {
     const tag = request.params.tag.slice(0, 60);

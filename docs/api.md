@@ -78,6 +78,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/articles`](#api-v1-articles) | 文章搜尋 |
 | [`GET /api/v1/tags/{tag}/articles`](#api-v1-tags-tag-articles) | 帶有某標籤的最新文章 |
 | [`GET /api/v1/tags/{tag}/series`](#api-v1-tags-tag-series) | 標籤每小時的分數與文章數 |
+| [`GET /api/v1/tags/{tag}/flow`](#api-v1-tags-tag-flow) | 和這個標籤一起出現的關鍵字，逐小時 |
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
@@ -1478,6 +1479,39 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 | `points[].average24h` | number \| null | 24 小時移動平均（篇／小時）；歷史不足為 null |
 
 錯誤：`404` 未知分類。
+
+<a id="api-v1-tags-tag-flow"></a>
+
+### `GET /api/v1/tags/{tag}/flow`
+
+**和這個標籤一起出現的關鍵字，逐小時**
+
+標了這個標籤的報導（依發布時間，最近的在前，最多 20000 篇），每小時統計它們還帶了哪些其他標籤：每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱，每小時保留至少 2 篇帶到的前 15 個。沒有報導的小時不列出。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`沈伯洋` |
+| `hours` | query | integer | 往前幾小時，1–744，預設 `336`，例：`336` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hours=336'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `hours` | integer |  |
+| `from` | string (ISO 時間) |  |
+| `to` | string (ISO 時間) |  |
+| `sampled` | boolean | 報導超過上限、只讀了最新的 20000 篇 |
+| `points` | object[] |  |
+| `points[].t` | string (ISO 時間) | 小時起點（UTC） |
+| `points[].count` | integer | 該小時標了這個標籤的報導篇數 |
+| `points[].tags` | string[][] | [標籤, 同時帶到它的篇數]，多的在前 |
 
 <a id="api-v1-tags-tag-status"></a>
 
