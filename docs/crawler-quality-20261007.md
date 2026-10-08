@@ -767,3 +767,13 @@ Fresh200 own主h1同DB，generic title含固定「 - Taipei Times」suffix另核
 健康 2.0 46410959 原站策展頁同時有影片及 477 字完整食譜正文，署名為「整理／羅以容」，其他人是諮詢專家。既有通用正文選擇器未涵蓋該 sibling-section 版型。第 15 批新增限定主機／insomnia 2024 路徑、own canonical、唯一標題與摘要首段對應的解析，只讀影片前的 content1 正文區塊，排除延伸閱讀、導覽、專家角色及製作團隊；日期沒有原站明確證據，維持 null 解析，不重寫資料庫日期。
 
 新增 3 項正反例，全 crawl／attribution 共 994 項通過，TypeScript／全 Biome 通過。2262 份已保存 HTML 對第 14 批重播僅 3 篇變動：聚傳媒專欄作者及摘要、台灣線報摘要及其來源、健康 2.0 正文及整理者。第 15 批現有 4 篇審查候選（3 署名、3 摘要、1 正文），完整資料快照與原站 dry-run 通過，尚未推送、部署或套用。關鍵評論網兩個專題頁已核對摘要與角色；Alex／Alvin 是製作團隊，不能直接當記者署名，crypto-hk 正文尾段邊界仍待另外檢查。
+
+### 2026-10-08 08:41：第 13 批全數完成，第 16 批五篇候選
+
+第 13 批 25 篇已逐項套用一次並完成原站／資料庫／公開 API 驗證。美麗佳人第一次檢查遇到 natural reindex pending；沒有重複套用資料或新增 job，等待既有 08:35:47 similarity 排程後，四篇 sketch／pair／citation 與全文驗證全部通過。`batch13-full-repairs-verification.json` verified=true、uniqueArticles=25、精確 expected=bedafe7608e36ce0582d0cd1d848e6b3ed2c9da1；第 14 批前置檢查只剩實際滿一小時條件，保留 09:31 發布排程。第 15 批凍結 7f6173854cd1b5969c02b8a721f7534d633e8a94，10:36 發布及 10:31 探測已排程，仍未推送或部署，須第 14 批完整 25 篇及實際恢復派工後一小時。
+
+第 16 批限定關鍵評論網 own canonical／feature 路徑／album-list-wrapper 專題介紹 DOM，且正文必須與原站 supplied description 相符。10668302 移除製作團隊 Alex、Alvin 尾段，10668180 正文維持相同並標明專題介紹來源；不將製作團隊轉為記者署名，不猜日期。女人迷 10668985 是心理測驗，原站正文混入「你是第 0 個龍年開運的人！」互動計數器。限定 own collection／quiz-title／quiz-start／description 與原站摘要一致的版型後，只保留測驗介紹，summary 保持原樣，不讀計數器。10669010 #Proudtobeme 新專題已獨立核对 own canonical、editorial intro、summary、角色，資料庫／公開 API 一致；發布日期無獨立證明，不寫入日期。首次女人迷核對誤以為兩頁均屬 collection description，失敗紀錄保留並促成 quiz 版型修正。
+
+MSN 新取得 46373267／46373268 兩篇的公開 Detail abstract 仍未存入 summary，加入明確原文供應的摘要補回。46373268 author.name 為完整「Newtalk新聞 |張柏源 綜合報導」；限定新頭殼 provider 與 newtalk.tw 原文 news/view 路徑，解析張柏源，保留供稿組織。新頭殼原文 1064345 HTTP 200、same canonical／同標題，顯示「張柏源綜合報導」，另有張柏源 credit，角色原站對照通過。完整資料快照、fresh body／title／API publication／provider 及三組 dry-run 共五篇通過，尚未套用。
+
+1000 crawl／attribution 測試、TypeScript、全 Biome 通過。2262 份 HTML 對第 15 批重播，只有兩篇 TNL 與一篇女人迷變動（2 篇正文內容、3 篇來源）；8 份已保存 MSN 公開 API 重播僅 46373268 作者有變，其他字段不變。合計 5 篇候選，1 篇署名、2 篇摘要、2 篇正文內容、3 篇正文來源，零日期寫入。此章為第 16 批本地準備結果，尚未推送、部署或寫入修復。

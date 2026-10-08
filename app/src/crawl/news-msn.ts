@@ -97,6 +97,14 @@ export function msnArticle(raw: unknown, candidate: { id: string; url: string },
     ? detail.authors.flatMap((author) => {
         const credit = text(record(author).name);
         if (!credit) return [];
+        const newtalkName =
+          provider === '新頭殼' &&
+          sourceUrl &&
+          ['newtalk.tw', 'www.newtalk.tw'].includes(new URL(sourceUrl).hostname) &&
+          /^\/news\/view\/\d{4}-\d{2}-\d{2}\/\d+\/?$/.test(new URL(sourceUrl).pathname)
+            ? /^Newtalk新聞\s*[|｜]\s*([\p{Script=Han}]{2,5})\s+綜合報導$/u.exec(credit)?.[1]
+            : null;
+        if (newtalkName) return [newtalkName];
         const names = reporterNames(credit);
         return names.length ? names : [credit];
       })

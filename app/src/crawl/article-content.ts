@@ -10,8 +10,9 @@ import {
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaLead } from './news-j-media-summary.ts';
 import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
+import { tnlFeatureDescription } from './news-tnl-feature.ts';
 import { tvbsHealthExhibition } from './news-tvbshealth-exhibition.ts';
-import { womanyCollectionDescription } from './news-womany-collection.ts';
+import { womanyCollectionDescription, womanyQuizDescription } from './news-womany-collection.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
 export interface ArticleContent {
@@ -452,8 +453,15 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     });
     return result(feature.body, 'feature:ithome-description', contentLength(feature.body) >= 200 ? 'ok' : 'short', own, values);
   }
+  const quiz = womanyQuizDescription($, url);
+  if (quiz) return result(quiz, 'feature:womany-quiz-description', contentLength(quiz) >= 200 ? 'ok' : 'short');
   const collection = womanyCollectionDescription($, url);
   if (collection) return result(collection, 'feature:womany-description', contentLength(collection) >= 200 ? 'ok' : 'short');
+  const tnlFeature = tnlFeatureDescription($, url);
+  if (tnlFeature) {
+    const own = cheerio.load(($('head').html() ?? '') + $.html($(tnlFeature.selector)));
+    return result(tnlFeature.body, 'feature:tnl-description', contentLength(tnlFeature.body) >= 200 ? 'ok' : 'short', own, []);
+  }
   const candidates: Candidate[] = nodes
     .map((node) => ({ body: structuredBody(marieclaireStructuredBody($, url, node)), source: 'ld+json' }))
     .filter((candidate) => candidate.body);

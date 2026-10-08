@@ -26,6 +26,27 @@ const bundle = `let a="${anonymousKey}";function s(t){t.set("apikey",a)}const pa
 const home = '<script src="https://assets.msn.com/bundles/v1/hub/latest/common.abcdef123.js"></script>';
 
 describe('MSN anonymous public reader', () => {
+  it('normalizes the complete Newtalk partner writer declaration only for its own provider and source article', () => {
+    const credit = 'Newtalk新聞 |張柏源 綜合報導';
+    const own = {
+      ...detail,
+      provider: { name: '新頭殼' },
+      sourceHref: 'http://newtalk.tw/news/view/2026-10-02/1064345',
+      authors: [{ name: credit }],
+    };
+    const parsed = msnArticle(own, candidate, now);
+    expect(parsed?.verifiedContent?.authors).toEqual(['新頭殼', '張柏源']);
+    expect(parsed?.creator).toBe('新頭殼');
+    expect(parsed?.verifiedContent?.body).toBe(msnArticle(detail, candidate, now)?.verifiedContent?.body);
+    expect(parsed?.publishedAt).toEqual(msnArticle(detail, candidate, now)?.publishedAt);
+    for (const value of [
+      { ...own, provider: { name: '其他供稿媒體' } },
+      { ...own, sourceHref: 'https://newtalk.tw.example/news/view/2026-10-02/1064345' },
+      { ...own, sourceHref: 'https://newtalk.tw/about' },
+      { ...own, authors: [{ name: 'Newtalk新聞 |張柏源 提到綜合報導' }] },
+    ])
+      expect(msnArticle(value, candidate, now)?.verifiedContent?.authors).toContain(value.authors[0].name);
+  });
   it('splits explicit reporter datelines in the public author field while retaining provider and other credits', () => {
     const authors = [{ name: '洪凱音、黃琮淵╱台北報導' }, { name: '陳凱俊' }, { name: '財經中心' }, { name: '' }];
     const item = msnArticle({ ...detail, authors }, candidate, now);
