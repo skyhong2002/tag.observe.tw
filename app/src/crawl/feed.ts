@@ -115,7 +115,7 @@ function rssItem(i: Record<string, unknown>): FeedItem | null {
       decodeEntities(stripTags(text(i.description)))
         .trim()
         .slice(0, 2000) || undefined,
-    ...publisherSummary(text(i.description), 'feed:description', decodeEntities(stripTags(text(i.title))).trim()),
+    ...publisherSummary(text(i.description), 'feed:description', decodeEntities(stripTags(text(i.title))).trim(), url),
     creator: text(i['dc:creator']).trim() || undefined,
     contentHtml: text(i['content:encoded']).trim() || undefined,
   };

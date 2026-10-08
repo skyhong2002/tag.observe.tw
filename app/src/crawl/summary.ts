@@ -1,6 +1,7 @@
 import type { CheerioAPI } from 'cheerio';
 import { articleNodes } from './article-content.ts';
 import { reporterNames } from './byline.ts';
+import { contentPlatformFeedCaption } from './news-contentplatform-title.ts';
 import { cool3cSummary } from './news-cool3c-summary.ts';
 import { bo6sSummary } from './news-editor-credits.ts';
 import { hsNewsSummary } from './news-hsnews-summary.ts';
@@ -47,7 +48,7 @@ const normalized = (value: string) =>
     .trim();
 
 /** Preserve publisher text, never invent a summary by taking the body's lead. */
-export function publisherSummary(value: unknown, source: string, title?: string | null): ArticleSummary {
+export function publisherSummary(value: unknown, source: string, title?: string | null, url?: string): ArticleSummary {
   if (typeof value !== 'string') return { summary: null, summarySource: null };
   let summary = normalized(value);
   const heading = title ? normalized(title) : null;
@@ -61,6 +62,7 @@ export function publisherSummary(value: unknown, source: string, title?: string 
   // Oversized feed descriptions often contain the entire article. Do not silently
   // turn them into an excerpt and call that a publisher-provided summary.
   if (
+    (source === 'feed:description' && contentPlatformFeedCaption(summary, url) && !heading?.startsWith('《圖說》')) ||
     !summary ||
     /^(?:\.{3}|…)+$/.test(summary) ||
     summary.length > 4000 ||

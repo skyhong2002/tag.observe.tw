@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { type ArticleContent, extractArticleContent } from './article-content.ts';
 import { bigMediaProvider } from './news-bigmedia-provider.ts';
 import { cctvDeclaredAuthors, cctvDeclaredProvider } from './news-cctv-provider.ts';
+import { contentPlatformTitle } from './news-contentplatform-title.ts';
 import { foodNextCredits } from './news-foodnext-credits.ts';
 import { globalVoicesCredits } from './news-globalvoices-credits.ts';
 import { huanqiuPublished } from './news-huanqiu-body.ts';
@@ -214,7 +215,9 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     canonical: canonicalRaw ? resolveUrl(canonicalRaw, url) : null,
     title:
       (rules.titleSelector && $(rules.titleSelector).first().text().replace(/\s+/g, ' ').trim()) ||
-      (siteEvidence.title ?? ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null)),
+      (contentPlatformTitle($, url) ??
+        siteEvidence.title ??
+        ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null)),
     publishedAt,
     provider,
     keywordSource,
