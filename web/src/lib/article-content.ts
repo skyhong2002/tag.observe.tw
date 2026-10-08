@@ -23,6 +23,8 @@ export interface StoredArticle {
   publishedDatePrecision?: 'day';
   tags: string[];
   description: string | null;
+  summary?: string | null;
+  summarySource?: string | null;
   authors: string[];
   publisher: Publisher;
   discoverySources?: DiscoverySource[];

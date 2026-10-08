@@ -24,7 +24,7 @@ export function articleMetadata(
   const headline = readingTitle(article.title).title;
   const title = `${headline}｜${titleSuffix}`;
   const visible = publicArticleContent(content);
-  const text = visible.body?.trim() || article.description?.trim();
+  const text = article.summary?.trim() || visible.body?.trim() || article.description?.trim();
   const summary = text ? readingExcerpt(text) : title;
   const characters = Array.from(summary.replace(/\s+/g, ' '));
   const description = characters.slice(0, 160).join('') + (characters.length > 160 ? '…' : '');

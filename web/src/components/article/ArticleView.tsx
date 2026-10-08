@@ -19,6 +19,17 @@ import ArticleRelated from './ArticleRelated';
 import ArticleSimilar from './ArticleSimilar';
 import ArticleTags from './ArticleTags';
 
+const summarySourceLabels: Record<string, string> = {
+  'article:selector': '原文導言',
+  'meta:description': '文章頁摘要',
+  'meta:og:description': '文章頁摘要',
+  'jsonld:abstract': '文章頁摘要',
+  'jsonld:description': '文章頁摘要',
+  'feed:description': '供稿摘要',
+  'api:msn:abstract': '供稿摘要',
+  'origin:meta:description': '原始供稿摘要',
+};
+
 /**
  * One article, as read at /article/[id]/ and at /feature/[media]/[id]/: a 專題
  * is an article whose page lists other stories, so both render the same way.
@@ -50,6 +61,7 @@ export default function ArticleView({
       ? { label: '原站僅提供摘要', detail: '這個來源提供的是節錄內容，本站未將其收錄為完整正文。' }
       : CONTENT_STATUS[content.status];
   const headline = readingTitle(article.title);
+  const summary = article.summary?.trim();
   const sectionLabel = section ?? headline.section;
   const collections = (article.collections ?? []).filter((c) => !(self && c.kind === self.kind && c.id === self.id));
   return (
@@ -109,6 +121,17 @@ export default function ArticleView({
         )}
         <ArticleTags data={related} tags={article.tags} />
       </header>
+      {summary && (
+        <section aria-label="文章摘要" className="mb-7 border-l-2 border-brand-200 pl-4 dark:border-brand-700">
+          <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 className="text-sm font-medium">文章摘要</h2>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              {article.mediaTitle} · {summarySourceLabels[article.summarySource ?? ''] ?? '媒體提供的摘要'}
+            </span>
+          </div>
+          <p className="whitespace-pre-wrap break-words text-base leading-8 text-zinc-700 dark:text-zinc-300">{summary}</p>
+        </section>
+      )}
       <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} />
       {content.body ? (
         <>
@@ -117,7 +140,7 @@ export default function ArticleView({
           )}
           <ArticleBody body={content.body} sourceUrl={article.url} />
         </>
-      ) : article.description ? (
+      ) : !summary && article.description ? (
         <ArticleBody body={article.description} sourceUrl={article.url} label="文章摘要" />
       ) : (
         <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
