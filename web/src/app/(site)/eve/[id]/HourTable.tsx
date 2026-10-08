@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
+import { hourWindow } from '@/lib/event-hour-window.mts';
 import type { ThreadHour } from '@/lib/event-thread.mts';
 import { table } from '@/lib/table-styles';
 
@@ -20,19 +21,24 @@ const chip = 'whitespace-nowrap rounded-full px-2 py-0.5 text-xs';
 export default function HourTable({
   hours,
   maxScore,
+  at,
 }: {
   /** `label` is the hour formatted on the server; the browser's date formatting can differ and break hydration. */
   hours: Array<ThreadHour & { label: string }>;
   maxScore: number;
+  at?: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const disclosure = useRef<HTMLDetailsElement>(null);
+  const chronological = [...hours].sort((a, b) => a.hourStart.localeCompare(b.hourStart));
+  const initial = hourWindow(chronological, at);
+  const [range, setRange] = useState(initial);
+  const earlier = range.start;
+  const later = hours.length - range.end;
   const [sort, setSort] = useState<SortKey>('time');
   const [descending, setDescending] = useState(true);
   const value = (h: ThreadHour) => (sort === 'time' ? Date.parse(h.hourStart) : sort === 'rank' ? h.rank : h.score);
-  const rows = [...hours].sort(
-    (a, b) => (descending ? value(b) - value(a) : value(a) - value(b)) || b.hourStart.localeCompare(a.hourStart),
-  );
+  const rows = chronological
+    .slice(range.start, range.end)
+    .sort((a, b) => (descending ? value(b) - value(a) : value(a) - value(b)) || b.hourStart.localeCompare(a.hourStart));
   const sortBy = (key: SortKey) => {
     if (sort === key) setDescending(!descending);
     else {
@@ -52,17 +58,33 @@ export default function HourTable({
       </button>
     </th>
   );
+  const more = (direction: 'earlier' | 'later') => {
+    const remaining = direction === 'earlier' ? earlier : later;
+    if (!remaining) return null;
+    return (
+      <button
+        type="button"
+        className="my-2 w-full rounded-md px-3 py-2 text-sm text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-zinc-800"
+        onClick={() =>
+          setRange((r) =>
+            direction === 'earlier' ? { ...r, start: Math.max(0, r.start - 24) } : { ...r, end: Math.min(hours.length, r.end + 24) },
+          )
+        }
+      >
+        看更{direction === 'earlier' ? '早' : '晚'}的 {Math.min(24, remaining)} 筆 · 尚有 {remaining} 筆
+      </button>
+    );
+  };
   return (
-    <details
-      ref={disclosure}
-      open={expanded}
-      onToggle={(event) => setExpanded(event.currentTarget.open)}
-      className="scroll-mt-20 rounded-xl border border-zinc-200 dark:border-zinc-800"
-    >
-      <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
-        每小時名次與標籤 <span className="ml-2 text-xs font-normal text-zinc-500">{hours.length} 筆</span>
-      </summary>
+    <section aria-label="每小時名次與標籤" className="scroll-mt-20 rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <h3 className="px-4 py-3 text-sm font-medium">
+        每小時名次與標籤{' '}
+        <span className="ml-2 text-xs font-normal text-zinc-500">
+          顯示 {rows.length} / {hours.length} 筆
+        </span>
+      </h3>
       <div className="px-3 pb-3">
+        {more(sort === 'time' && !descending ? 'earlier' : 'later')}
         <TableScroller card label="每小時名次與標籤，可左右捲動">
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-zinc-600 dark:text-zinc-400">
@@ -78,11 +100,16 @@ export default function HourTable({
               {rows.map((h) => {
                 const others = h.tags.filter(([t]) => !h.major.includes(t)).slice(0, 6);
                 return (
-                  <tr key={h.hourStart} className={`${table.row} whitespace-nowrap`}>
+                  <tr
+                    key={h.hourStart}
+                    aria-current={h.hourStart === initial.anchor ? 'time' : undefined}
+                    className={`${table.row} whitespace-nowrap ${h.hourStart === initial.anchor ? 'bg-brand-50 dark:bg-zinc-800' : ''}`}
+                  >
                     <th scope="row" className={`${table.lead} !py-1.5 text-left font-normal tabular-nums`}>
                       <Link href={atLink(h.hourStart)} className="hover:underline" title="看這個小時的整張事件表">
                         {h.label}
                       </Link>
+                      {h.hourStart === initial.anchor && <span className="ml-2 text-xs text-brand-700 dark:text-brand-400">目前時段</span>}
                     </th>
                     <td className={`${table.num} !py-1.5 font-medium ${h.rank === 1 ? 'text-brand-700 dark:text-brand-400' : ''}`}>
                       {h.rank}
@@ -128,18 +155,8 @@ export default function HourTable({
             </tbody>
           </table>
         </TableScroller>
-        <button
-          type="button"
-          className="mt-3 rounded-md px-3 py-2 text-sm text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-zinc-800"
-          onClick={() => {
-            setExpanded(false);
-            disclosure.current?.querySelector('summary')?.focus({ preventScroll: true });
-            disclosure.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
-          }}
-        >
-          收合每小時名次與標籤 ↑
-        </button>
+        {more(sort === 'time' && !descending ? 'later' : 'earlier')}
       </div>
-    </details>
+    </section>
   );
 }

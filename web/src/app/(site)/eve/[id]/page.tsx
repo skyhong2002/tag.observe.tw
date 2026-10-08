@@ -122,7 +122,7 @@ export default async function EventThreadPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string }>;
+  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string; at?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -172,6 +172,7 @@ export default async function EventThreadPage({
   const href = (q: Record<string, string | undefined>, hash?: string) => {
     const next = new URLSearchParams();
     const merged = {
+      at: sp.at,
       view: view === 'timeline' ? undefined : view,
       order: order === 'desc' ? undefined : order,
       sort: sort === 'articles' ? undefined : sort,
@@ -369,6 +370,8 @@ export default async function EventThreadPage({
         <div key={t.id} id="event-history" className="scroll-mt-20 space-y-3">
           <ContinuationLinks ids={continuations.next} label="後續事件" />
           <HourTable
+            key={`${t.id}:${sp.at ?? 'latest'}`}
+            at={sp.at}
             hours={data.hours.map((h) => ({ ...h, label: taipeiHour(h.hourStart) }))}
             maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))}
           />

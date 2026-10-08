@@ -116,13 +116,13 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
               items.length === 0 ? null : tier === 'hero' ? (
                 <ol key={tier} className="space-y-4" aria-label="頭條">
                   {items.map((e) => (
-                    <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} />
+                    <EventCard at={data.hour} key={e.rank} e={e} tier={tier} max={max} media={media} />
                   ))}
                 </ol>
               ) : tier === 'card' ? (
                 <ol key={tier} className="grid gap-4 md:grid-cols-2" aria-label="重要事件">
                   {items.map((e) => (
-                    <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} />
+                    <EventCard at={data.hour} key={e.rank} e={e} tier={tier} max={max} media={media} />
                   ))}
                 </ol>
               ) : (
@@ -138,7 +138,7 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
                   </h2>
                   <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
                     {items.map((e) => (
-                      <EventCard key={e.rank} e={e} tier={tier} max={max} media={media} />
+                      <EventCard at={data.hour} key={e.rank} e={e} tier={tier} max={max} media={media} />
                     ))}
                   </ol>
                 </section>

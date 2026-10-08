@@ -229,13 +229,13 @@ function Compare({ e, className = '' }: { e: EventItem; className?: string }) {
   );
 }
 
-function Title({ e, className }: { e: EventItem; className: string }) {
+function Title({ e, className, at }: { e: EventItem; className: string; at?: string }) {
   const href = eventHref(e);
   const text = eventHeadline(e);
   return (
     <h2 className={className}>
       {href ? (
-        <Link href={href} className="hover:underline">
+        <Link href={at ? `${href}?at=${encodeURIComponent(at)}` : href} className="hover:underline">
           {text}
         </Link>
       ) : (
@@ -252,6 +252,7 @@ export default function EventCard({
   media,
   meta,
   trailSpan,
+  at,
 }: {
   e: EventItem;
   tier: EventTier;
@@ -260,6 +261,7 @@ export default function EventCard({
   /** Extra signals next to the movement badges (the archive's best rank and run). */
   meta?: ReactNode;
   trailSpan?: string;
+  at?: string;
 }) {
   const img = cover(e);
   const pair = tier === 'hero' ? campPair(e) : null;
@@ -270,7 +272,7 @@ export default function EventCard({
         <span className="text-base font-semibold tabular-nums text-zinc-500">{e.rank}</span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <Title e={e} className="font-medium leading-snug" />
+            <Title e={e} at={at} className="font-medium leading-snug" />
             <Movement e={e} />
             {meta}
             <RankTrail e={e} className="h-5 w-16" span={trailSpan} />
@@ -308,7 +310,7 @@ export default function EventCard({
             {meta}
             <RankTrail e={e} className="h-7 w-24" span={trailSpan} />
           </div>
-          <Title e={e} className="text-xl font-semibold leading-snug" />
+          <Title e={e} at={at} className="text-xl font-semibold leading-snug" />
           <Tags e={e} limit={7} />
           {e.coverage && (
             <div className="space-y-1.5">
@@ -350,7 +352,7 @@ export default function EventCard({
           </Link>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <Title e={e} className="font-semibold leading-snug" />
+          <Title e={e} at={at} className="font-semibold leading-snug" />
           <Tags e={e} limit={5} />
           {e.coverage && <CampLine c={e.coverage} />}
         </div>
