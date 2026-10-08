@@ -53,8 +53,8 @@ const topicProblem = (t: MediaTopicSources) => t.status === 'failed' || t.status
 export default function MediaCrawlersTable({ media, initialQuery }: { media: MediaCrawler[]; initialQuery: string }) {
   const [query, setQuery] = useState(initialQuery);
   const [filters, setFilters] = useState(emptyCrawlerFilters);
-  const [sort, setSort] = useState<CrawlerSort>('title');
-  const [descending, setDescending] = useState(false);
+  const [sort, setSort] = useState<CrawlerSort>('totalCollected');
+  const [descending, setDescending] = useState(true);
   const [expanded, setExpanded] = useState<string[]>([]);
   const options = useMemo(
     () =>
