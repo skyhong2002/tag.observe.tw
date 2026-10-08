@@ -10,7 +10,7 @@ import {
   siteTags,
   threadUpdate,
 } from './events-compute.ts';
-import { computeBurst, computeRanking } from './ranking-compute.ts';
+import { BURST_STEPS, computeBurst, computeRanking } from './ranking-compute.ts';
 
 const t0 = new Date('2026-09-28T08:00:00Z');
 const art = (id: number, media: string, tags: string[], minutesAgo = 10): ArticleRow => ({
@@ -51,6 +51,47 @@ describe('CoOccurrence', () => {
 });
 
 describe('clusterEvents', () => {
+  it('keeps new events whose tags follow more than 300 terms with complete burst history', () => {
+    const background = Array.from({ length: 310 }, (_, i) => art(100 + i, 'a', [`既有主題${i}`]));
+    const fresh = [
+      art(1, 'a', ['大立光', 'CPO', '林恩平']),
+      art(2, 'b', ['大立光', 'CPO', '林恩平']),
+      art(3, 'c', ['大立光', 'CPO']),
+      art(4, 'a', ['高虹安', '莊競程']),
+      art(5, 'b', ['高虹安', '莊競程']),
+      art(6, 'c', ['高虹安', '莊競程']),
+    ];
+    const basis = {
+      id: 'event-candidates:all',
+      media: ['a', 'b', 'c'],
+      coverageFrom: '2026-09-20T00:00:00Z',
+      validFrom: '2026-09-21T00:00:00Z',
+    };
+    const chart = (articles: ArticleRow[]) =>
+      computeRanking(
+        articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+        { hours: 24, basis },
+      );
+    // An older top-500 snapshot cannot prove that the new story had zero reports.
+    const older = { ...chart(background), truncated: true };
+    const entries = computeBurst(chart([...background, ...fresh]), new Map(BURST_STEPS.map(([h]) => [h, older])));
+    const cpo = entries.find((e) => e.tag === 'CPO')!;
+    expect(entries.indexOf(cpo)).toBeGreaterThanOrEqual(300);
+    expect(cpo.burst).toBeNull();
+    expect(Object.values(cpo.history).every((score) => score === null)).toBe(true);
+    // This is the old failure: known-history terms consume every candidate slot.
+    expect(clusterEvents(entries, [...background, ...fresh], [], { now: t0, maxTags: 300 })).toHaveLength(0);
+
+    const events = clusterEvents(entries, [...background, ...fresh], [], { now: t0 });
+    expect(events).toHaveLength(2);
+    const financial = events.find((e) => e.major.includes('大立光'))!;
+    expect(financial.tags.map(([tag]) => tag)).toEqual(expect.arrayContaining(['大立光', 'CPO', '林恩平']));
+    expect(financial.memberIds.sort()).toEqual([1, 2, 3]);
+    expect(financial.score).toBe(cpo.normalized);
+    expect(events.find((e) => e.major.includes('高虹安'))?.memberIds.sort()).toEqual([4, 5, 6]);
+    // Forming an event uses current scores without fabricating public burst history.
+    expect(cpo.burst).toBeNull();
+  });
   it('does not merge unrelated subjects through a category or year tag', () => {
     const articles = [
       art(1, 'a', ['彭佳慧', '許富凱', '地方生活', '115年']),

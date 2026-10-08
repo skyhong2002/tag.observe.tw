@@ -1,5 +1,5 @@
-// Replay event clustering on the live database with the legacy rules and the
-// current ones, and print how coherent each event's headlines are, so a rule
+// Replay event clustering on the live database with the former candidate
+// cutoff, approximate legacy rules, and current rules, and print headline cohesion so a rule
 // change can be judged before it is deployed and watched after.
 //
 //   node --env-file=.env tools/events-compare.ts [--limit 30] [--json out.json] [--quiet]
@@ -60,8 +60,10 @@ try {
   const { burst, rows } = await loadEventInputs(db, now);
   const list = (noEqual as { tags: string[] }).tags;
   const variants: Record<string, Parameters<typeof clusterEvents>[3]> = {
+    previousCutoff: { now, maxTags: 300 },
     legacy: {
       now,
+      maxTags: 300,
       minShared: 1,
       newsLimit: 5,
       siteTagMin: Number.POSITIVE_INFINITY,
@@ -71,13 +73,20 @@ try {
     },
     current: { now },
   };
-  const report: Record<string, unknown> = { at: now.toISOString(), articles: rows.length };
+  const report: Record<string, unknown> = {
+    at: now.toISOString(),
+    articles: rows.length,
+    candidateTags: burst.length,
+    tagsWithoutBurstHistory: burst.filter((e) => e.burst === null).length,
+  };
   for (const [name, opts] of Object.entries(variants)) {
-    const events = clusterEvents(burst, rows as ArticleRow[], list, opts).slice(0, limit);
+    const allEvents = clusterEvents(burst, rows as ArticleRow[], list, opts);
+    const events = allEvents.slice(0, limit);
     const c = cohesion(events);
     const out = events.map((e) => outliers(e, c.background).length);
     const summary = {
       events: events.length,
+      totalEvents: allEvents.length,
       meanWithin: +c.meanWithin.toFixed(3),
       background: +c.background.toFixed(3),
       ratio: +(c.meanWithin / c.background).toFixed(2),

@@ -234,7 +234,7 @@ export function clusterEvents(
   rows: ArticleRow[],
   noEqualList: readonly string[],
   {
-    maxTags = 300,
+    maxTags = Number.POSITIVE_INFINITY,
     now = new Date(),
     hubs: detectHubs = true,
     minShared = MIN_SHARED_TAGS,
@@ -247,6 +247,10 @@ export function clusterEvents(
 ): EventCluster[] {
   const noEqual = new Set(noEqualList);
   if (boilerplate) rows = stripBoilerplate(rows, outletBoilerplate(rows));
+  // Use every tag retained by the ranking snapshot (currently at most 500).
+  // computeBurst sorts unknown histories last: another top-300 cut here loses
+  // new stories before their current-score fallback can form an event.
+  // Keep maxTags only for offline comparisons with the former cutoff.
   const ranked0 = entries.filter((e) => !isTagNoise(e.tag)).slice(0, maxTags);
   // Fold near-synonyms into their shorter form before anything else sees them.
   const alias = mergeAliases
