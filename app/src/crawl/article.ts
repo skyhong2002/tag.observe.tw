@@ -3,6 +3,7 @@ import { type ArticleContent, extractArticleContent } from './article-content.ts
 import { bigMediaProvider } from './news-bigmedia-provider.ts';
 import { foodNextCredits } from './news-foodnext-credits.ts';
 import { globalVoicesCredits } from './news-globalvoices-credits.ts';
+import { peopleCredits } from './news-people-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
 import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 import { taipeiTimesCredits } from './news-taipeitimes-credits.ts';
@@ -177,7 +178,12 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   const providerRaw = site?.providerSelector
     ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
     : providerName(html);
-  const credits = globalVoicesCredits($, url) ?? foodNextCredits($, url) ?? taipeiTimesCredits($, url) ?? thePaperCredits($, url);
+  const credits =
+    globalVoicesCredits($, url) ??
+    foodNextCredits($, url) ??
+    taipeiTimesCredits($, url) ??
+    thePaperCredits($, url) ??
+    peopleCredits($, url);
   const provider =
     credits?.provider ??
     bigMediaProvider($, url) ??

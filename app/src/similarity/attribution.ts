@@ -71,6 +71,8 @@ const outlets: Outlet[] = [
   outlet('yonhap', '韓聯社', 'KR', ['Yonhap', 'Yonhap News Agency', '韩联社']),
   outlet('xinhua', '新華社', 'CN', ['Xinhua', 'Xinhua News Agency', '新华社']),
   outlet('xinhuanet', '新華網', 'CN', ['新华网', '新华网客户端']),
+  // Official newspaper archive and publisher's own biography corroborate the publication and its home jurisdiction.
+  outlet('people_daily', '人民日報', 'CN', ['人民日报', '人民日报海外版', '人民日報海外版']),
   // Own newspaper archive, publisher's about page and Beijing contact address corroborate its home jurisdiction.
   outlet('workers_daily', '工人日报', 'CN', ['工人日報']),
   outlet('guancha', '觀察者網', 'CN', ['观察者网']),
@@ -272,7 +274,31 @@ export function extractAttributions(body: string, publisher: string, provider?: 
   // news story merely mentioning a CNA reporter cannot become a citation.
   const dispatch = cnaDispatch.exec(body);
   if (dispatch) add(outletIdentity('cna'), dispatch[0]);
+  if (publisher === 'taiwannews') {
+    const opening = body.trim().split(/\n\s*\n/)[0];
+    const ownReport =
+      /^TAIPEI \(Taiwan News\) [—–-] [^\n]{20,1500}, (CNA reported (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\.)$/.exec(
+        opening,
+      );
+    if (ownReport) add(outletIdentity('cna'), `來源：${ownReport[1]}`);
+  }
   const healthDispatch = /^【健康醫療網[／/]記者[\p{Script=Han}]{2,5}報導】/u.exec(body);
+  if (publisher === 'huanqiu') {
+    const footer = /<p>资料来源：(人民日报、新华社、《[^<>]{1,80}》等)<\/p><\/section><\/article>\s*$/.exec(body);
+    if (footer) {
+      add(outletIdentity('people_daily'), `資料來源：${footer[1]}`);
+      add(outletIdentity('xinhua'), `資料來源：${footer[1]}`);
+    }
+  }
+  if (publisher === 'people_cn') {
+    const closing = body
+      .trim()
+      .split(/\n\s*\n/)
+      .at(-1)
+      ?.replace(/\s+/g, ' ');
+    if (closing && /^（据新华社北京电 记者[\p{Script=Han}]{2,5}(?:、[\p{Script=Han}]{2,5}){1,7}）$/u.test(closing))
+      add(outletIdentity('xinhua'), `來源：${closing}`);
+  }
   if (healthDispatch && reporterNames(healthDispatch[0]).length) add(outletIdentity('healthnews'), `來源：${healthDispatch[0]}`);
   if (publisher === 'hakkanews') {
     const cooperation =

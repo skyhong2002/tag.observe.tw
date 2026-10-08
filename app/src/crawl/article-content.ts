@@ -17,9 +17,13 @@ import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
 import { mdnKidsArticle } from './news-mdnkids.ts';
 import { newCongressPost } from './news-newcongress.ts';
 import { nytChineseCredits } from './news-nyt-chinese-credits.ts';
+import { peopleCredits } from './news-people-credits.ts';
+import { peopoReporter } from './news-peopo-credits.ts';
+import { taiwanNewsWriter } from './news-taiwannews-credits.ts';
 import { tnlFeatureDescription } from './news-tnl-feature.ts';
 import { tvbsHealthExhibition } from './news-tvbshealth-exhibition.ts';
 import { womanyCollectionDescription, womanyQuizDescription } from './news-womany-collection.ts';
+import { zMediaTechnicalCredit } from './news-zmedia-credit.ts';
 import { decodeEntities, urlKey } from './text.ts';
 
 export interface ArticleContent {
@@ -418,6 +422,10 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const nytCredits = nytChineseCredits($, url);
   const mdnAuthor = mdnKidsArticle($, url)?.author;
   const cdnAuthor = cdnCorrespondent($, url);
+  const taiwanAuthor = taiwanNewsWriter($, url);
+  const peopoAuthor = peopoReporter($, url)?.author;
+  const people = peopleCredits($, url);
+  if (zMediaTechnicalCredit($, url)) $('meta[name="author"]').remove();
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
   const configuredValues = (tvbsCredits ?? (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : [])).flatMap(
@@ -456,6 +464,9 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       bodySource,
       bodyStatus,
       authors:
+        people?.authors ??
+        (peopoAuthor ? [peopoAuthor] : null) ??
+        (taiwanAuthor ? [taiwanAuthor] : null) ??
         (cdnAuthor ? [cdnAuthor] : null) ??
         (mdnAuthor ? [mdnAuthor] : null) ??
         nytCredits ??

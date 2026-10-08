@@ -3,11 +3,13 @@ import { articleNodes } from './article-content.ts';
 import { reporterNames } from './byline.ts';
 import { cool3cSummary } from './news-cool3c-summary.ts';
 import { bo6sSummary } from './news-editor-credits.ts';
+import { hsNewsSummary } from './news-hsnews-summary.ts';
 import { iMediaWriterSummary } from './news-i-media-writer.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaSummary } from './news-j-media-summary.ts';
 import { mdnKidsFullDescription } from './news-mdnkids.ts';
 import { newCongressFullDescription } from './news-newcongress.ts';
+import { peopoSummary } from './news-peopo-credits.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
 export interface ArticleSummary {
@@ -16,6 +18,7 @@ export interface ArticleSummary {
 }
 
 const boilerplate = new Set([
+  '花蓮最速報即時訊息及花蓮新聞，在地報導！花蓮最速報提供您各地區最各類新聞報導，滿足您知的權利！',
   '基督教今日報',
   '【彪網媒】追求專業、公正，深耕在地，匯流政府與民間資訊，反應輿情、開創自由表達與理性回饋的優質園地',
   // Reviewed news description imports a legal office's search keyword list.
@@ -57,6 +60,7 @@ export function publisherSummary(value: unknown, source: string, title?: string 
   // turn them into an excerpt and call that a publisher-provided summary.
   if (
     !summary ||
+    /^(?:\.{3}|…)+$/.test(summary) ||
     summary.length > 4000 ||
     summary === (heading ?? '') ||
     (heading !== null && summary.replace(/\s*繼續閱讀$/u, '') === heading) ||
@@ -174,6 +178,16 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   for (const [value, source] of candidates) {
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    const hsExcerpt = hsNewsSummary($, url, result.summary);
+    if (hsExcerpt !== null) {
+      result = publisherSummary(hsExcerpt, source);
+      if (!result.summary) continue;
+    }
+    const peopoExcerpt = peopoSummary($, url, result.summary);
+    if (peopoExcerpt !== null) {
+      result = publisherSummary(peopoExcerpt, source);
+      if (!result.summary) continue;
+    }
     if (newCongressFullDescription($, url, result.summary)) continue;
     if (mdnKidsFullDescription($, url, result.summary)) continue;
     const writerExcerpt = iMediaWriterSummary($, url, result.summary);

@@ -148,6 +148,21 @@ describe('explicit media attribution', () => {
     ).toEqual([]);
   });
 
+  it('recognizes the explicit closing CNA report credit in the own Taiwan News opening dispatch', () => {
+    const report = 'TAIPEI (Taiwan News) — AMD plans to increase its investment in Taiwan as demand grows, CNA reported Tuesday.';
+    expect(extractAttributions(report, 'taiwannews')).toEqual([
+      expect.objectContaining({ media: 'cna', countryCode: 'TW', evidence: '來源：CNA reported Tuesday.' }),
+    ]);
+    for (const text of [
+      report.replace('CNA reported Tuesday.', 'CNA opened a new office.'),
+      report.replace('TAIPEI (Taiwan News) — ', ''),
+      'Photograph: CNA reported Tuesday.',
+      'TAIPEI (Taiwan News) — A source discussed CNA reported Tuesday.',
+    ])
+      expect(extractAttributions(text, 'taiwannews')).toEqual([]);
+    expect(extractAttributions(report, 'udn')).toEqual([]);
+  });
+
   it('does not confuse short English aliases with substrings', () => {
     expect(extractAttributions('來源：Apple。來源：HAPPY。來源：WhatsApp。CNNIC報導指出，調查結束。', 'ltn')).toEqual([]);
     expect(extractAttributions('AP報導指出，調查結束。', 'ltn')[0]?.media).toBe('ap');
@@ -300,4 +315,27 @@ it('uses the independently checked Workers Daily home jurisdiction without chang
   expect(extractAttributions('本文內容。', 'thepaper', '经济日报')).toMatchObject([
     { media: 'economic_daily_thepaper', countryCode: 'ZZ' },
   ]);
+});
+
+it('retains reviewed People Daily edition providers and only complete own Xinhua closing dispatches', () => {
+  for (const provider of ['人民日报', '人民日报海外版']) {
+    expect(extractAttributions('本文內容。', 'people_cn', provider)).toMatchObject([
+      { media: 'people_daily', countryCode: 'CN', evidence: `內容提供者：${provider}` },
+    ]);
+  }
+  const closing = '（据新华社北京电 记者周慧敏、张格、蔡馨逸）';
+  expect(extractAttributions(`旅遊報導。\n\n${closing}`, 'people_cn').map((a) => a.media)).toEqual(['xinhua']);
+  expect(extractAttributions(`旅遊報導。\n\n${closing}`, 'unlisted')).toEqual([]);
+  expect(extractAttributions(`旅遊報導。\n\n照片${closing}`, 'people_cn')).toEqual([]);
+  expect(extractAttributions(`旅遊報導。\n\n受訪者提及${closing}`, 'people_cn')).toEqual([]);
+  expect(extractAttributions('旅遊報導。\n\n（据新华社北京电 记者）', 'people_cn')).toEqual([]);
+});
+
+it('reads the reviewed Huanqiu complete source footer without HTML in its evidence or treating production as reporters', () => {
+  const footer = '<p>制作：彭静</p><p>资料来源：人民日报、新华社、《习近平在正定》等</p></section></article>';
+  const refs = extractAttributions(`<article><section><p>正文。</p>${footer}`, 'huanqiu');
+  expect(refs.map((a) => a.media)).toEqual(['people_daily', 'xinhua']);
+  expect(refs.every((a) => a.evidence === '資料來源：人民日报、新华社、《习近平在正定》等')).toBe(true);
+  expect(extractAttributions('<p>照片：人民日报、新华社</p></section></article>', 'huanqiu')).toEqual([]);
+  expect(extractAttributions('<p>資料介紹人民日报、新华社。</p></section></article>', 'huanqiu')).toEqual([]);
 });

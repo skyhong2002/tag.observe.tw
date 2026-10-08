@@ -6,6 +6,10 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('rejects descriptions consisting solely of ellipsis while preserving truncated article excerpts', () => {
+    for (const value of ['...', '…', '......']) expect(publisherSummary(value, 'meta:og:description').summary).toBeNull();
+    expect(publisherSummary('地方公共服務與居民生活的新報導…', 'meta:og:description').summary).toBe('地方公共服務與居民生活的新報導…');
+  });
   it('skips the exact CDN publisher name and uses its supplied article OG excerpt', () => {
     const excerpt = '英特爾執行長在專訪中談起自己的信仰與工作壓力。';
     expect(
