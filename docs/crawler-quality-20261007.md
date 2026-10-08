@@ -777,3 +777,11 @@ Fresh200 own主h1同DB，generic title含固定「 - Taipei Times」suffix另核
 MSN 新取得 46373267／46373268 兩篇的公開 Detail abstract 仍未存入 summary，加入明確原文供應的摘要補回。46373268 author.name 為完整「Newtalk新聞 |張柏源 綜合報導」；限定新頭殼 provider 與 newtalk.tw 原文 news/view 路徑，解析張柏源，保留供稿組織。新頭殼原文 1064345 HTTP 200、same canonical／同標題，顯示「張柏源綜合報導」，另有張柏源 credit，角色原站對照通過。完整資料快照、fresh body／title／API publication／provider 及三組 dry-run 共五篇通過，尚未套用。
 
 1000 crawl／attribution 測試、TypeScript、全 Biome 通過。2262 份 HTML 對第 15 批重播，只有兩篇 TNL 與一篇女人迷變動（2 篇正文內容、3 篇來源）；8 份已保存 MSN 公開 API 重播僅 46373268 作者有變，其他字段不變。合計 5 篇候選，1 篇署名、2 篇摘要、2 篇正文內容、3 篇正文來源，零日期寫入。此章為第 16 批本地準備結果，尚未推送、部署或寫入修復。
+
+### 2026-10-08 08:59：第 17 批署名與摘要五篇，跨媒體新增選定欄位核對
+
+波新聞 46368414 正文第一行是完整「波新聞─陶泰山編輯」，原解析漏抓具名編輯。限定 NewsID numeric path、同篇 og:url、唯一文章標題與 main opening p 的獨立換行署名，補陶泰山；原站 supplied summary 包含同一個署名前綴，核對後只移除該前綴、保留原文截斷符號。TVBS 46395554「編輯：易軍堯」及 45573927「編輯：張哲輔」在 own main contributors 欄位，限定 own canonical、主標題及完整角色後，保留人名並排除 sidebar、重複 mobile/desktop credits、單獨 responsibility-editor credit。既有 combined editor credits 行為保留，公服組等 desk credit 保留原樣，不推測人名。45573927 原庫 summary=null，原站提供與自身正文相符的 excerpt，原站身份／正文／日期快照通過後一併計畫補回。首次 prepare 遇到 null summary 與現行 parser 結果差異，保留失敗紀錄；重新按 publisher excerpt 證據審查後通過，沒有先行寫入。
+
+新取得的澎湃新聞 46373672 楊喆／46373673 高宇婷 fits 第 14 批既有 own JSON record 與可見 header 同步驗證，追加歷史署名候選；無新增 parser diff、無 source/date/body 寫入。第 17 批合計 5 篇署名、2 篇摘要，零正文／日期寫入；metadata3 與 ThePaper2 完整快照、fresh originals dry-run 全通過。1005 crawl／attribution tests、TypeScript／全 Biome 通過；2262 保存 HTML 對第 16 批重播仅3篇变动，且正文／日期完全不變。原重播捕獲公服組被當人名的風險，已補組織 suffix 排除；該篇不列歷史寫入候選。此章是本地準備结果，尚未推送、部署或套用。
+
+另核對 22 篇跨媒體保存原站 HTML 的摘要與署名角色，屬選定欄位人工核對，並非 fresh API／全欄位正確判定。風傳媒主筆室、台灣好新聞地方中心、世界新聞網中央社即時報導均保留為單位署名，不能因 JSON-LD 標 Person 就推測真人。中天兩篇 own 倪鴻祥 declared credit 與原文工商時報 footer writer 是不同角色；明確「※本文授權自工商時報」引用已正確存 ctee，沒有無證據覆蓋自己的署名。BBC 毫秒 date 在 DB 存秒，無須重寫。CNEWS 文章 title 不是 site-logo h1，按 own article entity／byline／專欄角色核對，sidebar names 排除。中央社 46404625 結構化正文多了 own fullPic figcaption 的98字照片說明，剩餘正文完全與 acquisition body 一致，署名／摘要一致；歷史庫正文已排除該 caption，將在第 18 批檢查 scoped parser boundary，無歷史覆寫需要。

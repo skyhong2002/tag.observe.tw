@@ -7,6 +7,7 @@ import {
   normalizeAuthorCredits,
   reporterNames,
 } from './byline.ts';
+import { bo6sEditorLead, tvbsContributorCredits } from './news-editor-credits.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaLead } from './news-j-media-summary.ts';
 import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
@@ -404,13 +405,17 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     };
   const isExcerpt = publisherExcerpt($, url);
   const jMedia = jMediaLead($, url);
+  const bo6sEditor = bo6sEditorLead($, url);
+  const tvbsCredits = tvbsContributorCredits($, url);
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
-  const configuredValues = (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : []).flatMap((value) => {
-    if (!rules.authorPattern) return [value];
-    const name = rules.authorPattern.exec(value)?.[1];
-    return name ? [name] : [];
-  });
+  const configuredValues = (tvbsCredits ?? (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : [])).flatMap(
+    (value) => {
+      if (!rules.authorPattern) return [value];
+      const name = rules.authorPattern.exec(value)?.[1];
+      return name ? [name] : [];
+    },
+  );
   if (rules.bodyExcludeSelector) $(rules.bodyExcludeSelector).remove();
   const nodes = articleNodes($, url);
   const result = (
@@ -439,7 +444,9 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       body,
       bodySource,
       bodyStatus,
-      authors: jMedia ? [jMedia.author] : extractAuthors(authorDom, nodes, rules, authorBody, authorValues),
+      authors:
+        tvbsCredits ??
+        (bo6sEditor ? [bo6sEditor.author] : jMedia ? [jMedia.author] : extractAuthors(authorDom, nodes, rules, authorBody, authorValues)),
     };
   };
   if (isExcerpt) return result(null, 'publisher:excerpt', 'short');

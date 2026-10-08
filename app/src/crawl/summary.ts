@@ -2,6 +2,7 @@ import type { CheerioAPI } from 'cheerio';
 import { articleNodes } from './article-content.ts';
 import { reporterNames } from './byline.ts';
 import { cool3cSummary } from './news-cool3c-summary.ts';
+import { bo6sSummary } from './news-editor-credits.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaSummary } from './news-j-media-summary.ts';
 import { decodeEntities, stripTags } from './text.ts';
@@ -173,6 +174,11 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     const jMedia = jMediaSummary($, url, result.summary);
     if (jMedia !== null) {
       result = publisherSummary(jMedia, source);
+      if (!result.summary) continue;
+    }
+    const bo6s = bo6sSummary($, url, result.summary);
+    if (bo6s !== null) {
+      result = publisherSummary(bo6s, source);
       if (!result.summary) continue;
     }
     // Reviewed AMM description is cut inside the encoded dispatch dash.
