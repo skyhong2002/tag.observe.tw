@@ -2493,6 +2493,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].last24h` | integer |  |
 | `media[].last7d` | integer |  |
 | `media[].collectingSince` | string (ISO 時間) \| null |  |
+| `media[].totalCollected` | integer | 本站爬蟲歷來儲存的紀錄筆數（source=own，含專題頁、待確認日期紀錄，不含歷史匯入）；探索平台計已連結文章的發現紀錄 |
 | `media[].pendingDate` | integer | 尚未確定發布時間的文章數 |
 | `media[].taggedShare24h` | number \| null |  |
 | `media[].lastArticle` | string (ISO 時間) \| null |  |

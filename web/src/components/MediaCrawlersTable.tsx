@@ -11,6 +11,7 @@ import {
   emptyCrawlerFilters,
   type MediaCrawler,
   type MediaTopicSources,
+  scheduleLabel,
   selectCrawlers,
   type TopicSourceKind,
   topicSourceKindLabels,
@@ -23,6 +24,8 @@ import TableScroller from './TableScroller';
 
 const columns: Array<{ key: CrawlerSort; label: string }> = [
   { key: 'title', label: '媒體' },
+  { key: 'schedule', label: '執行頻率' },
+  { key: 'totalCollected', label: '累計收錄' },
   ...crawlerGroups,
   { key: 'code', label: '程式碼' },
   { key: 'topics', label: '議題／專題' },
@@ -122,7 +125,9 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
             ))}
           </fieldset>
         ))}
-        <p className="text-xs text-zinc-500">可多選；同組符合任一標籤，不同組交叉篩選。點欄名可切換升冪／降冪。</p>
+        <p className="text-xs text-zinc-500">
+          可多選；同組符合任一標籤，不同組交叉篩選。點欄名可切換升冪／降冪。執行頻率是排程設定；累計收錄是本站爬蟲儲存的歷史紀錄（含專題頁，不含歷史匯入），探索平台計發現紀錄。
+        </p>
       </section>
       <TableScroller card label="爬蟲資訊表格，可左右捲動">
         <table className="w-full whitespace-nowrap text-left text-xs">
@@ -154,7 +159,6 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
             {rows.map((row) => {
               const icon = localMediaIcon(row.media);
               const tags = crawlerTags(row);
-              const schedule = row.schedule === 'off' ? '未啟用' : row.schedule === 'hourly' ? '每小時' : '每 9 分鐘';
               return (
                 <Fragment key={row.media}>
                   <tr className={table.row}>
@@ -187,8 +191,20 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                             {row.title}
                           </span>
                         </MediaHoverLink>
-                        <span className={`${table.leadExtra} text-[10px] text-zinc-500`}>{schedule}</span>
                       </div>
+                    </td>
+                    <td className={`${table.cell} py-1.5`} title="設定的排程間隔；實際執行時間可能受佇列等待影響">
+                      {scheduleLabel(row)}
+                    </td>
+                    <td
+                      className={`${table.cell} py-1.5 tabular-nums`}
+                      title={
+                        row.sourceKind === 'discovery'
+                          ? '探索平台累計發現紀錄'
+                          : '本站爬蟲累計儲存的紀錄，含專題頁與日期待確認紀錄，不含歷史匯入'
+                      }
+                    >
+                      {row.totalCollected === undefined ? '—' : `${row.totalCollected.toLocaleString('zh-TW')} 筆`}
                     </td>
                     {crawlerGroups.map(({ key, label }) => (
                       <td key={key} className={`${table.cell} py-1.5`}>

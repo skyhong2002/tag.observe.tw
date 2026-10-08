@@ -104,16 +104,22 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     // When our own crawler first stored an article for each media: the 7-day
     // column only covers that much until a full week has passed.
     const firsts = await db
-      .select({ media: articles.media, first: sql<Date | string | null>`MIN(${articles.crawledAt})` })
+      .select({
+        media: articles.media,
+        first: sql<Date | string | null>`MIN(${articles.crawledAt})`,
+        totalCollected: sql<number>`COUNT(*)`,
+      })
       .from(articles)
       .where(sql`${articles.source} = 'own'`)
       .groupBy(articles.media);
     const firstBy = new Map(firsts.map((f) => [f.media, f.first]));
+    const totalBy = new Map(firsts.map((f) => [f.media, Number(f.totalCollected)]));
     // Aggregators expose discoveries under the original article identity. Their
     // row counts are useful, but must never inflate site-wide publication totals.
     const discoveries = await db
       .select({
         media: articleDiscoveries.media,
+        totalCollected: sql<number>`COUNT(*)`,
         pendingDate: sql<number>`0`,
         today: sql<number>`SUM(${articles.publishedAt} >= ${today})`,
         last24h: sql<number>`SUM(${articles.publishedAt} >= ${day})`,
@@ -126,7 +132,10 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .innerJoin(articles, eq(articles.id, articleDiscoveries.articleId))
       .where(lte(articles.publishedAt, future))
       .groupBy(articleDiscoveries.media);
-    for (const row of discoveries) firstBy.set(row.media, row.first);
+    for (const row of discoveries) {
+      firstBy.set(row.media, row.first);
+      totalBy.set(row.media, Number(row.totalCollected));
+    }
     const runs = await db
       .select({
         media: crawlRuns.media,
@@ -192,6 +201,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           last24h,
           last7d: Number(c?.last7d ?? 0),
           collectingSince: toDate(firstBy.get(s.media)),
+          totalCollected: totalBy.get(s.media) ?? 0,
           pendingDate: Number(c?.pendingDate ?? 0),
           taggedShare24h: last24h ? Number(c?.tagged24h ?? 0) / last24h : null,
           lastArticle,

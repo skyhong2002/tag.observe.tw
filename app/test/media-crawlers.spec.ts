@@ -59,6 +59,22 @@ describe('crawler directory filters and sorting', () => {
     expect(rows.map((row) => row.media)).toEqual(['alpha', 'beta', 'gamma']);
   });
 
+  it('sorts numeric intervals and all-time counts, keeping inactive and unavailable rows last', () => {
+    const entries = [{ ...rows[0], schedule: 'every 9 min', totalCollected: 100 }, { ...rows[1], totalCollected: 9 }, rows[2]];
+    expect(selectCrawlers(entries, '', emptyCrawlerFilters(), 'schedule', false).map((r) => r.media)).toEqual(['alpha', 'beta', 'gamma']);
+    expect(selectCrawlers(entries, '', emptyCrawlerFilters(), 'schedule', true).map((r) => r.media)).toEqual(['beta', 'alpha', 'gamma']);
+    expect(selectCrawlers(entries, '', emptyCrawlerFilters(), 'totalCollected', false).map((r) => r.media)).toEqual([
+      'beta',
+      'alpha',
+      'gamma',
+    ]);
+    expect(selectCrawlers(entries, '', emptyCrawlerFilters(), 'totalCollected', true).map((r) => r.media)).toEqual([
+      'alpha',
+      'beta',
+      'gamma',
+    ]);
+  });
+
   it('adds observed summaries to collected content and keeps source names searchable', () => {
     const summaries = [
       { ...rows[0], summary: { total: 4, withSummary: 3, sources: ['article:selector', 'meta:description'], exampleId: 7 } },

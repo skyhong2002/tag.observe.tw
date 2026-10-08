@@ -1659,6 +1659,9 @@ export const ENDPOINTS: Endpoint[] = [
           last24h: int(),
           last7d: int(),
           collectingSince: nullable(time()),
+          totalCollected: int(
+            '本站爬蟲歷來儲存的紀錄筆數（source=own，含專題頁、待確認日期紀錄，不含歷史匯入）；探索平台計已連結文章的發現紀錄',
+          ),
           pendingDate: int('尚未確定發布時間的文章數'),
           taggedShare24h: nullable(num()),
           lastArticle: nullable(time()),

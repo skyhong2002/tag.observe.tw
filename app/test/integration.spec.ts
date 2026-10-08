@@ -595,7 +595,9 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       expect(response.statusCode).toBe(200);
       const result = response.json();
       expect(result.summaryWindow).toMatchObject({ hours: 168, basis: 'published_at' });
-      const summary = result.media.find((row: { media: string }) => row.media === 'pts').summary;
+      const outlet = result.media.find((row: { media: string }) => row.media === 'pts');
+      expect(outlet.totalCollected).toBe(8); // Includes old, pending and topic records; excludes the legacy import.
+      const summary = outlet.summary;
       expect(summary).toMatchObject({ total: 4, withSummary: 3, sources: ['article:selector', 'meta:description', 'unknown'] });
       const [example] = await db.select({ url: articles.url }).from(articles).where(sql`${articles.id} = ${summary.exampleId}`);
       expect(example.url).toBe(fixtureUrl(0));

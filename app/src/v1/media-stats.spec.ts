@@ -139,8 +139,8 @@ describe('media stats', () => {
     };
     const batches = [
       [{ media: 'cna', ...counts }],
-      [{ media: 'cna', first: recent }],
-      [{ media: 'google_news', ...counts, first: recent }],
+      [{ media: 'cna', first: recent, totalCollected: 100 }],
+      [{ media: 'google_news', ...counts, first: recent, totalCollected: 50 }],
       [],
     ];
     let query = 0;
@@ -165,11 +165,16 @@ describe('media stats', () => {
       const result = response.json();
       expect(result.media.find((row: { media: string }) => row.media === 'google_news')).toMatchObject({
         sourceKind: 'discovery',
+        totalCollected: 50,
         today: 2,
         last24h: 2,
         last7d: 2,
       });
-      expect(result.media.find((row: { media: string }) => row.media === 'cna')).toMatchObject({ sourceKind: 'publisher', today: 2 });
+      expect(result.media.find((row: { media: string }) => row.media === 'cna')).toMatchObject({
+        sourceKind: 'publisher',
+        today: 2,
+        totalCollected: 100,
+      });
       expect(result.totals).toMatchObject({ today: 2, last24h: 2, publishingMedia24h: 1, taggedShare24h: 0.5 });
       expect(result.media.find((row: { media: string }) => row.media === 'google_news').summary).toBeNull();
       expect(result.media.find((row: { media: string }) => row.media === 'cna').summary).toEqual({

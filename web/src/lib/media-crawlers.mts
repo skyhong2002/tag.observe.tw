@@ -4,6 +4,7 @@ export interface MediaCrawler {
   country: string;
   countryCode: string;
   schedule: string;
+  totalCollected?: number;
   sourceKind?: 'discovery' | 'publisher';
   summary?: { total: number; withSummary: number; sources: string[]; exampleId: number | null } | null;
   crawler?: {
@@ -35,7 +36,10 @@ export const crawlerGroups = [
 ] as const;
 export type CrawlerGroup = (typeof crawlerGroups)[number]['key'];
 export type CrawlerFilters = Record<CrawlerGroup, string[]>;
-export type CrawlerSort = 'title' | CrawlerGroup | 'topics' | 'code';
+export type CrawlerSort = 'title' | CrawlerGroup | 'topics' | 'code' | 'schedule' | 'totalCollected';
+export const scheduleMinutes = (row: MediaCrawler) => (row.schedule === 'every 9 min' ? 9 : row.schedule === 'hourly' ? 60 : null);
+export const scheduleLabel = (row: MediaCrawler) =>
+  row.schedule === 'off' ? '未啟用' : row.schedule === 'hourly' ? '每小時' : row.schedule === 'every 9 min' ? '每 9 分鐘' : '未知';
 export const emptyCrawlerFilters = (): CrawlerFilters => ({ methods: [], tools: [], content: [] });
 
 export function summaryTags(row: MediaCrawler): string[] {
@@ -90,7 +94,11 @@ export function selectCrawlers(rows: MediaCrawler[], query: string, filters: Cra
         ? row.title
         : sort === 'code'
           ? (row.crawler?.links.map((link) => link.label).join('、') ?? '')
-          : crawlerTags(row)[sort].join('、');
+          : sort === 'schedule'
+            ? scheduleLabel(row)
+            : sort === 'totalCollected'
+              ? String(row.totalCollected ?? '')
+              : crawlerTags(row)[sort].join('、');
   return rows
     .filter((row) => {
       const tags = crawlerTags(row);
@@ -98,6 +106,7 @@ export function selectCrawlers(rows: MediaCrawler[], query: string, filters: Cra
         row.title,
         row.media,
         row.country,
+        scheduleLabel(row),
         ...(row.crawler?.methods ?? []),
         row.crawler?.transport,
         row.crawler?.body,
@@ -111,7 +120,14 @@ export function selectCrawlers(rows: MediaCrawler[], query: string, filters: Cra
       );
     })
     .sort((a, b) => {
-      const order = value(a).localeCompare(value(b), 'zh-Hant', { numeric: true });
+      let order: number;
+      if (sort === 'schedule' || sort === 'totalCollected') {
+        const x = sort === 'schedule' ? scheduleMinutes(a) : (a.totalCollected ?? null);
+        const y = sort === 'schedule' ? scheduleMinutes(b) : (b.totalCollected ?? null);
+        if (x === null && y !== null) return 1;
+        if (y === null && x !== null) return -1;
+        order = (x ?? 0) - (y ?? 0);
+      } else order = value(a).localeCompare(value(b), 'zh-Hant', { numeric: true });
       return (descending ? -order : order) || a.title.localeCompare(b.title, 'zh-Hant') || a.media.localeCompare(b.media);
     });
 }
