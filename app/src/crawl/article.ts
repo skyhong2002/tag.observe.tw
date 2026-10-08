@@ -4,6 +4,8 @@ import { bigMediaProvider } from './news-bigmedia-provider.ts';
 import { foodNextCredits } from './news-foodnext-credits.ts';
 import { globalVoicesCredits } from './news-globalvoices-credits.ts';
 import { huanqiuPublished } from './news-huanqiu-body.ts';
+import { huanqiuPeopleProvider } from './news-huanqiu-provider.ts';
+import { ownArticleAuthors } from './news-own-author.ts';
 import { peopleCredits } from './news-people-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
 import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
@@ -188,10 +190,12 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     peopleCredits($, url);
   const provider =
     credits?.provider ??
+    huanqiuPeopleProvider($, url) ??
     bigMediaProvider($, url) ??
     (site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw);
   // Body cleanup can remove caption/header evidence used by summary extraction.
   const summary = extractSummary($, url);
+  const ownAuthors = ownArticleAuthors($, url);
   const content = extractArticleContent($, url, rules);
   return {
     ...summary,
@@ -207,7 +211,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     provider,
     keywordSource,
     ...content,
-    authors: credits?.authors.length ? credits.authors : content.authors,
+    authors: ownAuthors ?? (credits?.authors.length ? credits.authors : content.authors),
   };
 }
 
