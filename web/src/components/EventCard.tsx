@@ -223,7 +223,7 @@ function Compare({ e, className = '' }: { e: EventItem; className?: string }) {
   const href = eventHref(e);
   if (!href) return null;
   return (
-    <a href={href} className={`text-xs text-brand-700 hover:underline dark:text-brand-400 ${className}`}>
+    <a href={`${href}headlines/`} className={`text-xs text-brand-700 hover:underline dark:text-brand-400 ${className}`}>
       各媒體標題對照 →
     </a>
   );
