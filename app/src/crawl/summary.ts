@@ -3,6 +3,7 @@ import { articleNodes } from './article-content.ts';
 import { reporterNames } from './byline.ts';
 import { contentPlatformFeedCaption } from './news-contentplatform-title.ts';
 import { cool3cSummary } from './news-cool3c-summary.ts';
+import { dacotaFeedSummary } from './news-dacota-body.ts';
 import { bo6sSummary } from './news-editor-credits.ts';
 import { hsNewsSummary } from './news-hsnews-summary.ts';
 import { iMediaWriterSummary } from './news-i-media-writer.ts';
@@ -52,6 +53,7 @@ export function publisherSummary(value: unknown, source: string, title?: string 
   if (typeof value !== 'string') return { summary: null, summarySource: null };
   let summary = normalized(value);
   const heading = title ? normalized(title) : null;
+  if (source === 'feed:description') summary = dacotaFeedSummary(summary, heading, url);
   // Reviewed WordPress feed suffix repeats the own title and publication credit.
   // Preserve the publisher's excerpt; do not include the syndication boilerplate.
   const feedCredit = heading ? `〈${heading}〉這篇文章最早發佈於《台灣好報》。` : null;

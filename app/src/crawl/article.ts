@@ -3,6 +3,7 @@ import { type ArticleContent, extractArticleContent } from './article-content.ts
 import { bigMediaProvider } from './news-bigmedia-provider.ts';
 import { cctvDeclaredAuthors, cctvDeclaredProvider } from './news-cctv-provider.ts';
 import { contentPlatformTitle } from './news-contentplatform-title.ts';
+import { dacotaHeadline } from './news-dacota-body.ts';
 import { foodNextCredits } from './news-foodnext-credits.ts';
 import { globalVoicesCredits } from './news-globalvoices-credits.ts';
 import { huanqiuPublished } from './news-huanqiu-body.ts';
@@ -17,6 +18,7 @@ import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news
 import { taipeiTimesCredits } from './news-taipeitimes-credits.ts';
 import { thePaperCredits } from './news-thepaper-credits.ts';
 import { tpNewsArticle } from './news-tpnews.ts';
+import { yesMediaArticle } from './news-yesmedia.ts';
 import { type ArticleSummary, extractSummary } from './summary.ts';
 import { between, decodeEntities, normalizeTag, resolveUrl } from './text.ts';
 
@@ -194,6 +196,8 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     taipeiTimesCredits($, url) ??
     thePaperCredits($, url) ??
     peopleCredits($, url);
+  const yesMedia = yesMediaArticle($, url);
+  const dacotaTitle = dacotaHeadline($, url);
   const provider =
     credits?.provider ??
     sinaDeclaredProvider($, url) ??
@@ -201,12 +205,17 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     tpNewsArticle($, url)?.provider ??
     pansciArticle($, url)?.provider ??
     huanqiuPeopleProvider($, url) ??
+    yesMedia?.provider ??
     bigMediaProvider($, url) ??
     (site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw);
   // Body cleanup can remove caption/header evidence used by summary extraction.
   const summary = extractSummary($, url);
   const ownAuthors =
-    tpNewsArticle($, url)?.authors ?? cctvDeclaredAuthors($, url) ?? ownArticleAuthors($, url) ?? ownReporterAuthors($, url);
+    yesMedia?.authors ??
+    tpNewsArticle($, url)?.authors ??
+    cctvDeclaredAuthors($, url) ??
+    ownArticleAuthors($, url) ??
+    ownReporterAuthors($, url);
   const content = extractArticleContent($, url, rules);
   return {
     ...summary,
@@ -218,6 +227,8 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     title:
       (rules.titleSelector && $(rules.titleSelector).first().text().replace(/\s+/g, ' ').trim()) ||
       (contentPlatformTitle($, url) ??
+        yesMedia?.title ??
+        dacotaTitle ??
         siteEvidence.title ??
         ((meta('meta[property="og:title"]') ?? $('title').first().text().trim() ?? '') || null)),
     publishedAt,

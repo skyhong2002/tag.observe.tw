@@ -10,6 +10,7 @@ import {
 import { babyouVerifiedProse } from './news-babyou-body.ts';
 import { cdnCorrespondent } from './news-cdn-credits.ts';
 import { cnaStructuredBody, cnaVerifiedParagraphs } from './news-cna-body.ts';
+import { dacotaOwnProse } from './news-dacota-body.ts';
 import { bo6sEditorLead, tvbsContributorCredits } from './news-editor-credits.ts';
 import { huanqiuArticleMarkup, huanqiuDeclaredReporters, huanqiuSpacedReporters } from './news-huanqiu-body.ts';
 import { iMediaWriter } from './news-i-media-writer.ts';
@@ -493,6 +494,8 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
         (bo6sEditor ? [bo6sEditor.author] : jMedia ? [jMedia.author] : extractAuthors(authorDom, nodes, rules, authorBody, authorValues)),
     };
   };
+  const dacota = dacotaOwnProse($, url);
+  if (dacota) return result(dacota, 'article:dacota-own-prose', 'ok');
   if (isExcerpt) return result(null, 'publisher:excerpt', 'short');
   if (huanqiuMarkup) {
     const body = structuredBody(huanqiuMarkup);
