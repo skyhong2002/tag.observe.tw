@@ -51,7 +51,7 @@ export function summaryTags(row: MediaCrawler): string[] {
     if (source.startsWith('origin:')) return '原始供稿摘要';
     return '來源未記錄／其他';
   });
-  return [...new Set(labels.length ? labels : ['來源未記錄／其他'])];
+  return ['有摘要', ...new Set(labels.length ? labels : ['來源未記錄／其他'])];
 }
 
 const methodLabels: Record<string, string> = {

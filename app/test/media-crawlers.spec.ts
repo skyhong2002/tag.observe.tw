@@ -69,6 +69,10 @@ describe('crawler directory filters and sorting', () => {
       'alpha',
     ]);
     expect(selectCrawlers(summaries, '供稿摘要', emptyCrawlerFilters(), 'title', false).map((r) => r.media)).toEqual(['beta']);
+    expect(selectCrawlers(summaries, '', { ...emptyCrawlerFilters(), summary: ['有摘要'] }, 'title', false).map((r) => r.media)).toEqual([
+      'alpha',
+      'beta',
+    ]);
     expect(summaryTags(summaries[2])).toEqual(['未取得摘要']);
     expect(summaryTags({ ...rows[2], summary: { total: 0, withSummary: 0, sources: [], exampleId: null } })).toEqual(['期間無文章']);
     expect(summaryTags(rows[2])).toEqual(['尚無摘要統計']);
