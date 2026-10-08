@@ -759,3 +759,11 @@ Fresh200 own主h1同DB，generic title含固定「 - Taipei Times」suffix另核
 同輪46368482明示聚傳媒特約記者陳欣如，適用已固定14的舊記者helper，仍補準備本次新取得歷史row；不把它算新parser回放變化。15 metadata plan3unique＝twline summary1+Jmedia author2/summary2，fresh200／owntitle／canonical／exactdate／fullbody／完整13field snapshot乾跑3passed，summary/author+creator同transaction，0body/date写入。台灣線報原authors[]保留、法律事務所與楊秉鈞的角色本次不猜；三筆未apply，未有backup。batch15-metadata-reviewed-plan.json／repair／verify準備完成。
 
 991crawl／attribution tests、tsc、全Biome通過；2262成功HTML對冻结14回放只有46368481的authors+summary，以及46369071的summary+summarySource，0body／date變化。第15批本地提交尚未推送／部署／回寫，unfrozen未排程；正式仍bfb34f2已推送／部署／完整30資料修正驗證，13bedafe7冻结08:26timer維持。13候選在此時另重新fresh/fullsnapshot預發布乾跑，完成狀態以實際logs/ledger為準，不宣稱尚未完成的13部署或回寫。24h觀察至18:49:13仍active，最終有界round、完整修改清單與completion audit尚未完成。
+
+### 2026-10-08 08:31：第 13 批上線與健康 2.0 策展文章
+
+第 13 批 `bedafe7608e36ce0582d0cd1d848e6b3ed2c9da1` 已推送，CI 37707743710 成功，08:28:58 恢復派工。部署前原有 crawl-index job 等待自然完成；新派工暫停 93.034 秒，沒有強制終止該 job。主機端確認三個服務執行精確版本、首頁 HTTP 200、worker healthy、queue 未暫停及既有 7 個 failed IDs 不變。公視兩篇摘要原站／資料庫／公開 API 一致。25 篇資料修復正在逐項套用及驗證，尚不可宣告全數完成。
+
+健康 2.0 46410959 原站策展頁同時有影片及 477 字完整食譜正文，署名為「整理／羅以容」，其他人是諮詢專家。既有通用正文選擇器未涵蓋該 sibling-section 版型。第 15 批新增限定主機／insomnia 2024 路徑、own canonical、唯一標題與摘要首段對應的解析，只讀影片前的 content1 正文區塊，排除延伸閱讀、導覽、專家角色及製作團隊；日期沒有原站明確證據，維持 null 解析，不重寫資料庫日期。
+
+新增 3 項正反例，全 crawl／attribution 共 994 項通過，TypeScript／全 Biome 通過。2262 份已保存 HTML 對第 14 批重播僅 3 篇變動：聚傳媒專欄作者及摘要、台灣線報摘要及其來源、健康 2.0 正文及整理者。第 15 批現有 4 篇審查候選（3 署名、3 摘要、1 正文），完整資料快照與原站 dry-run 通過，尚未推送、部署或套用。關鍵評論網兩個專題頁已核對摘要與角色；Alex／Alvin 是製作團隊，不能直接當記者署名，crypto-hk 正文尾段邊界仍待另外檢查。
