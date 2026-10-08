@@ -53,7 +53,57 @@ export function msnFeedArticles(raw: unknown): Array<{ id: string; url: string }
 
 /** The body field is Microsoft's publicly rendered licensed partner text.
  * An abstract, feed snippet, or premium provider label alone is never body proof. */
-export function msnArticle(raw: unknown, candidate: { id: string; url: string }, now: Date, includeArchive = false): FeedItem | null {
+export function msnTvbsSource(raw: unknown): string | null {
+  const detail = record(raw);
+  const source = text(detail.sourceHref);
+  if (text(record(detail.provider).name) !== 'TVBS新聞網' || !/^https:\/\/news\.tvbs\.com\.tw\/[a-z]+\/\d+$/.test(source)) return null;
+  if (
+    !Array.isArray(detail.authors) ||
+    detail.authors.length !== 1 ||
+    !/^[\p{Script=Han}]{2,5}\s+[\p{Script=Han}]{2,5}\s+新聞中心$/u.test(text(record(detail.authors[0]).name))
+  )
+    return null;
+  return source;
+}
+
+function tvbsReporter(raw: unknown, original: string, item: FeedItem): string | null {
+  const source = msnTvbsSource(raw);
+  if (!source || !item.verifiedContent) return null;
+  const detail = record(raw),
+    $ = cheerio.load(original);
+  const compact = (s: string) => s.normalize('NFKC').replace(/\s/g, '');
+  if (
+    $('link[rel="canonical"]').attr('href') !== source ||
+    $('h1[data-section="article-title"]').length !== 1 ||
+    compact($('h1[data-section="article-title"]').text()) !== compact(item.title)
+  )
+    return null;
+  const credits = [
+    ...new Set(
+      $('main [data-section="article-contributors"] span.caption-12-medium')
+        .toArray()
+        .map((n) => compact($(n).text()))
+        .filter((s) => /^記者:/.test(s)),
+    ),
+  ];
+  if (credits.length !== 1) return null;
+  const match = /^記者:([\p{Script=Han}]{2,5})\|攝影:([\p{Script=Han}]{2,5})\|責任編輯:新聞中心$/u.exec(credits[0]);
+  if (!match || compact(text(record((detail.authors as unknown[])[0]).name)) !== match[1] + match[2] + '新聞中心') return null;
+  if ($('main .article-editor-content').length !== 1) return null;
+  const origin = extractArticle(original, source, { bodySelector: 'main .article-editor-content' });
+  if (origin.bodyStatus !== 'ok' || !origin.body) return null;
+  const paragraphs = item.verifiedContent.body.split(/\n\s*\n/).filter((p) => compact(p).length > 20);
+  if (paragraphs.length < 2 || paragraphs.some((p) => !compact(origin.body!).includes(compact(p)))) return null;
+  return match[1];
+}
+
+export function msnArticle(
+  raw: unknown,
+  candidate: { id: string; url: string },
+  now: Date,
+  includeArchive = false,
+  original?: string,
+): FeedItem | null {
   const detail = record(raw);
   if (detail.id !== candidate.id || detail.type !== 'article' || detail.locale !== 'zh-tw') return null;
   // provider.isPremium describes the partner, not a reader subscription. The
@@ -111,7 +161,7 @@ export function msnArticle(raw: unknown, candidate: { id: string; url: string },
     : [];
   const images = Array.isArray(detail.imageResources) ? detail.imageResources : [];
   const image = images.map((entry) => text(record(entry).url)).find((url) => /^https:\/\//.test(url));
-  return {
+  const item: FeedItem = {
     url: candidate.url,
     title,
     publishedAt,
@@ -126,6 +176,9 @@ export function msnArticle(raw: unknown, candidate: { id: string; url: string },
       bodyStatus: 'ok',
     },
   };
+  const ownReporter = original ? tvbsReporter(raw, original, item) : null;
+  if (ownReporter) item.verifiedContent!.authors = [provider, ownReporter];
+  return item;
 }
 
 /** Scoped adapter for MSN Taiwan's ordinary anonymous news feed and reader API. */
@@ -138,7 +191,8 @@ export async function discoverMsn(config: NewsDiscoveryConfig, options: NewsDisc
   const maxRequests = Math.max(1, Math.min(30, options.maxRequests ?? 18));
   const maxArticles = Math.max(1, Math.min(12, config.maxArticles ?? 3));
   let stopped = false;
-  const get = async (url: string): Promise<string | null> => {
+  const get = async (url: string, partner = false): Promise<string | null> => {
+    if (partner && !/^https:\/\/news\.tvbs\.com\.tw\/[a-z]+\/\d+$/.test(url)) return null;
     if (stopped || result.attempted >= maxRequests || Date.now() >= deadline) return null;
     result.attempted++;
     try {
@@ -149,7 +203,8 @@ export async function discoverMsn(config: NewsDiscoveryConfig, options: NewsDisc
         return null;
       }
       const target = new URL(response.url);
-      if (!['www.msn.com', 'assets.msn.com'].includes(target.hostname) || target.protocol !== 'https:') return null;
+      if (target.protocol !== 'https:' || (partner ? target.href !== url : !['www.msn.com', 'assets.msn.com'].includes(target.hostname)))
+        return null;
       return response.body;
     } catch {
       result.errors.push('MSN public request failed or timed out');
@@ -185,7 +240,13 @@ export async function discoverMsn(config: NewsDiscoveryConfig, options: NewsDisc
     if (!raw) continue;
     let item: FeedItem | null = null;
     try {
-      item = msnArticle(JSON.parse(raw), candidate, now, config.includeArchive);
+      const detail = JSON.parse(raw);
+      item = msnArticle(detail, candidate, now, config.includeArchive);
+      const source = item && msnTvbsSource(detail);
+      if (source) {
+        const original = await get(source, true);
+        if (original) item = msnArticle(detail, candidate, now, config.includeArchive, original);
+      }
     } catch {
       /* malformed public response is not body proof */
     }

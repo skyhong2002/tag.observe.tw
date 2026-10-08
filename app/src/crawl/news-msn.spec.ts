@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { fetchText } from './fetch.ts';
 import { discoverNews } from './news-discovery.ts';
-import { discoverMsn, msnArticle, msnFeedArticles, msnPublicFeedKey } from './news-msn.ts';
+import { discoverMsn, msnArticle, msnFeedArticles, msnPublicFeedKey, msnTvbsSource } from './news-msn.ts';
 
 const candidate = { id: 'AA123456', url: 'https://www.msn.com/zh-tw/news/other/example/ar-AA123456' };
 const now = new Date('2026-10-03T13:00:00Z');
@@ -26,6 +26,42 @@ const bundle = `let a="${anonymousKey}";function s(t){t.set("apikey",a)}const pa
 const home = '<script src="https://assets.msn.com/bundles/v1/hub/latest/common.abcdef123.js"></script>';
 
 describe('MSN anonymous public reader', () => {
+  it('resolves a mixed TVBS partner credit only through exact original identity, reporter role and complete own prose', () => {
+    const own = {
+      ...detail,
+      provider: { name: 'TVBS新聞網' },
+      sourceHref: 'https://news.tvbs.com.tw/local/123456',
+      authors: [{ name: '陳小明 王小華 新聞中心' }],
+      body: detail.body.replace('完整報導最後一段。', '完整報導最後一段，持續說明居民與相關機關回應以及後續的事件處理。'),
+    };
+    const original = `<link rel="canonical" href="${own.sourceHref}"><main><h1 data-section="article-title">${detail.title}</h1><li data-section="article-contributors"><span class="caption-12-medium">記者：陳小明｜攝影：王小華｜責任編輯：新聞中心</span></li><div class="article-editor-content">${own.body}</div></main>`;
+    const parsed = msnArticle(own, candidate, now, false, original);
+    expect(parsed?.verifiedContent?.authors).toEqual(['TVBS新聞網', '陳小明']);
+    expect(parsed?.verifiedContent?.body).toBe(msnArticle(own, candidate, now)?.verifiedContent?.body);
+    expect(parsed?.publishedAt).toEqual(msnArticle(own, candidate, now)?.publishedAt);
+    expect(parsed?.summary).toBe(msnArticle(own, candidate, now)?.summary);
+    for (const html of [
+      original.replace('href="' + own.sourceHref, 'href="https://news.tvbs.com.tw/local/999999'),
+      original.replace(detail.title, '另一篇文章'),
+      original.replace('記者：陳小明', '攝影：陳小明'),
+      original.replace('攝影：王小華', '攝影：其他人'),
+      original.replace(body, '不相符的完整正文'),
+      original.replace(
+        '</main>',
+        '<li data-section="article-contributors"><span class="caption-12-medium">記者：其他人</span></li></main>',
+      ),
+    ])
+      expect(msnArticle(own, candidate, now, false, html)?.verifiedContent?.authors).toEqual(['TVBS新聞網', '陳小明 王小華 新聞中心']);
+    for (const value of [
+      { ...own, provider: { name: '其他媒體' } },
+      { ...own, sourceHref: 'https://news.tvbs.com.tw.example/local/123456' },
+      { ...own, sourceHref: 'http://news.tvbs.com.tw/local/123456' },
+      { ...own, sourceHref: 'https://news.tvbs.com.tw/about' },
+      { ...own, authors: [{ name: '陳小明 王小華 新聞中心 提到' }] },
+    ])
+      expect(msnTvbsSource(value)).toBeNull();
+  });
+
   it('normalizes the complete Newtalk partner writer declaration only for its own provider and source article', () => {
     const credit = 'Newtalk新聞 |張柏源 綜合報導';
     const own = {
@@ -146,6 +182,49 @@ describe('MSN anonymous public reader', () => {
     expect(result.listingUrl).toBe('https://www.msn.com/zh-tw/news');
     expect(JSON.stringify(result)).not.toContain(anonymousKey);
   });
+  it('uses a bounded partner request for ambiguous credits and preserves the article when proof is unavailable', async () => {
+    const own = {
+      ...detail,
+      provider: { name: 'TVBS新聞網' },
+      sourceHref: 'https://news.tvbs.com.tw/local/123456',
+      authors: [{ name: '陳小明 王小華 新聞中心' }],
+      body: `<p>${body}</p><p>${body}</p>`,
+    };
+    const original = `<link rel="canonical" href="${own.sourceHref}"><main><h1 data-section="article-title">${own.title}</h1><li data-section="article-contributors"><span class="caption-12-medium">記者：陳小明｜攝影：王小華｜責任編輯：新聞中心</span></li><div class="article-editor-content">${own.body}</div></main>`;
+    for (const mode of ['verified', '403', 'redirect', 'budget']) {
+      const requested: string[] = [];
+      const fetch: typeof fetchText = async (url) => {
+        requested.push(url);
+        const partner = url === own.sourceHref;
+        return {
+          url: partner && mode === 'redirect' ? 'https://news.tvbs.com.tw/local/999999' : url,
+          status: partner && mode === '403' ? 403 : 200,
+          body: partner
+            ? original
+            : url.includes('/bundles/')
+              ? bundle
+              : url.includes('/service/news/feed')
+                ? JSON.stringify(feed)
+                : url.includes('/content/view/')
+                  ? JSON.stringify(own)
+                  : home,
+          contentType: 'text/html',
+          ms: 1,
+        };
+      };
+      const result = await discoverMsn(
+        { homeUrl: 'https://www.msn.com/zh-tw/news' },
+        { fetch, now: () => now, maxRequests: mode === 'budget' ? 4 : 5 },
+      );
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].verifiedContent?.authors).toEqual(
+        mode === 'verified' ? ['TVBS新聞網', '陳小明'] : ['TVBS新聞網', '陳小明 王小華 新聞中心'],
+      );
+      expect(requested).toHaveLength(mode === 'budget' ? 4 : 5);
+      expect(result.items[0].verifiedContent?.body).toBe(msnArticle(own, candidate, now)?.verifiedContent?.body);
+    }
+  });
+
   it('uses this adapter through the standard discovery entrypoint', async () => {
     const fetch: typeof fetchText = async (url) => ({
       url,
