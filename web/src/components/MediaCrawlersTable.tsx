@@ -26,6 +26,8 @@ const columns: Array<{ key: CrawlerSort; label: string }> = [
   { key: 'title', label: '媒體' },
   { key: 'schedule', label: '執行頻率' },
   { key: 'totalCollected', label: '累計收錄' },
+  { key: 'nextCrawl', label: '下次可爬取' },
+  { key: 'failures', label: '近期失敗' },
   ...crawlerGroups,
   { key: 'code', label: '程式碼' },
   { key: 'topics', label: '議題／專題' },
@@ -50,7 +52,7 @@ const topicStatusLabels: Record<string, string> = {
 };
 const topicProblem = (t: MediaTopicSources) => t.status === 'failed' || t.status === 'partial' || t.sources.some((s) => s.error);
 
-export default function MediaCrawlersTable({ media, initialQuery }: { media: MediaCrawler[]; initialQuery: string }) {
+export default function MediaCrawlersTable({ media, initialQuery, asOf }: { media: MediaCrawler[]; initialQuery: string; asOf: string }) {
   const [query, setQuery] = useState(initialQuery);
   const [filters, setFilters] = useState(emptyCrawlerFilters);
   const [sort, setSort] = useState<CrawlerSort>('totalCollected');
@@ -126,7 +128,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
           </fieldset>
         ))}
         <p className="text-xs text-zinc-500">
-          可多選；同組符合任一標籤，不同組交叉篩選。點欄名可切換升冪／降冪。執行頻率是排程設定；累計收錄是本站爬蟲儲存的歷史紀錄（含專題頁，不含歷史匯入），探索平台計發現紀錄。
+          可多選；同組符合任一標籤，不同組交叉篩選。點欄名可切換升冪／降冪。執行頻率按媒體個別設定；下次可爬取是最早允許巡查的時間（台北），實際開始仍受佇列影響。近期失敗包含近24小時巡查與內文抓取的部分失敗；累計收錄是本站爬蟲儲存的歷史紀錄（含專題頁，不含歷史匯入），探索平台計發現紀錄。
         </p>
       </section>
       <TableScroller card label="爬蟲資訊表格，可左右捲動">
@@ -193,7 +195,10 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                         </MediaHoverLink>
                       </div>
                     </td>
-                    <td className={`${table.cell} py-1.5`} title="設定的排程間隔；實際執行時間可能受佇列等待影響">
+                    <td
+                      className={`${table.cell} py-1.5`}
+                      title={row.crawlSchedule?.reason ?? '設定的排程間隔；實際執行時間可能受佇列等待影響'}
+                    >
                       {scheduleLabel(row)}
                     </td>
                     <td
@@ -205,6 +210,38 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                       }
                     >
                       {row.totalCollected === undefined ? '—' : `${row.totalCollected.toLocaleString('zh-TW')} 筆`}
+                    </td>
+                    <td
+                      className={`${table.cell} py-1.5`}
+                      title="最早可開始巡查的時間（台北）；實際派工依佇列而定，時間以本頁載入的統計為準"
+                    >
+                      {row.schedule === 'off'
+                        ? '未啟用'
+                        : row.crawlSchedule?.running
+                          ? '執行中'
+                          : !row.crawlSchedule?.nextEligibleAt
+                            ? '待首次巡查'
+                            : Date.parse(row.crawlSchedule.nextEligibleAt) <= Date.parse(asOf)
+                              ? '已到期，待執行'
+                              : taipei(row.crawlSchedule.nextEligibleAt)}
+                    </td>
+                    <td
+                      className={`${table.cell} py-1.5`}
+                      title={
+                        row.crawlHealth?.lastFailureAt
+                          ? `近24小時巡查與內文抓取；最後有錯誤：${taipei(row.crawlHealth.lastFailureAt)}`
+                          : '近24小時巡查與內文抓取紀錄；包含部分抓取失敗'
+                      }
+                    >
+                      {!row.crawlHealth?.runs24h ? (
+                        '尚無執行紀錄'
+                      ) : row.crawlHealth.failures24h ? (
+                        <span className="text-amber-700 dark:text-amber-400">
+                          {row.crawlHealth.failures24h} / {row.crawlHealth.runs24h} 次有錯誤
+                        </span>
+                      ) : (
+                        '近24小時無失敗'
+                      )}
                     </td>
                     {crawlerGroups.map(({ key, label }) => (
                       <td key={key} className={`${table.cell} py-1.5`}>

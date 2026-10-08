@@ -19,7 +19,7 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
     () => null,
   );
   const data = response?.ok
-    ? ((await response.json()) as { media: MediaCrawler[]; summaryWindow?: { since: string; until: string } })
+    ? ((await response.json()) as { media: MediaCrawler[]; generatedAt: string; summaryWindow?: { since: string; until: string } })
     : null;
   const observed = data?.media.filter((row) => (row.summary?.total ?? 0) > 0) ?? [];
   const withSummary = observed.filter((row) => (row.summary?.withSummary ?? 0) > 0).length;
@@ -44,7 +44,11 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
           </p>
         </section>
       )}
-      {data ? <MediaCrawlersTable key={q} media={data.media} initialQuery={q} /> : <p>爬蟲資訊暫時無法取得，請稍後再試。</p>}
+      {data ? (
+        <MediaCrawlersTable key={q} media={data.media} initialQuery={q} asOf={data.generatedAt} />
+      ) : (
+        <p>爬蟲資訊暫時無法取得，請稍後再試。</p>
+      )}
     </div>
   );
 }

@@ -2,27 +2,34 @@ import { and, eq, gte, inArray, isNotNull, max, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import { type Logger, runArticles, runIndex } from '../crawl/pipeline.ts';
 import { sourcesInGroup } from '../crawl/registry.ts';
+import { crawlTimestamp, sourceSchedule } from '../crawl/schedule.ts';
+
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, crawlRuns } from '../db/schema.ts';
 
-// Mirrors the legacy cron cadence: index.sh every 9 min (news group),
-// index_hour.sh hourly, tag.sh every 19 min. Sources run concurrently but each
-// media is single-flight and article fetches stay polite per host.
-export const groupPeriodMs = (group: 'news' | 'hourly') =>
-  Number(process.env[group === 'news' ? 'CRAWL_NEWS_MINUTES' : 'CRAWL_HOURLY_MINUTES'] || (group === 'news' ? 9 : 60)) * 60e3;
+export { groupPeriodMs } from '../crawl/schedule.ts';
 
 // A group run visits its sources least-recently-indexed first and skips any
-// source whose last completed index run is younger than 80% of the group's
-// period. Deploys restart the worker mid-run and a full hourly pass can take
+// source whose last completed index run is younger than its configured eligibility threshold.
+// Changed sources enforce the full interval; unchanged sources keep the existing
+// 20% tolerance so small scheduler jitter does not double their period.
+// Deploys restart the worker mid-run and a full hourly pass can take
 // longer than an hour; with this order the next run continues where the
 // previous one stopped instead of starting over, so no source is starved.
 // `signal` is the worker's shutdown signal: once aborted, sources not yet
 // started are left for the next run (which the new worker enqueues on boot)
 // while in-flight ones finish, so a deploy loses no source and no job.
-export function orderDueSources<T extends { media: string }>(specs: T[], lastRun: Map<string, Date>, periodMs: number, now = new Date()) {
+export function orderDueSources<T extends { media: string }>(
+  specs: T[],
+  lastRun: Map<string, Date>,
+  periodMs: number | ((spec: T) => number),
+  now = new Date(),
+) {
   const at = (spec: T) => lastRun.get(spec.media)?.getTime() ?? 0;
-  return specs.filter((spec) => now.getTime() - at(spec) >= periodMs * 0.8).sort((a, b) => at(a) - at(b));
+  return specs
+    .filter((spec) => now.getTime() - at(spec) >= (typeof periodMs === 'number' ? periodMs : periodMs(spec)))
+    .sort((a, b) => at(a) - at(b));
 }
 
 export async function lastIndexRuns(db: Db, media: string[]): Promise<Map<string, Date>> {
@@ -32,7 +39,7 @@ export async function lastIndexRuns(db: Db, media: string[]): Promise<Map<string
     .from(crawlRuns)
     .where(and(eq(crawlRuns.stage, 'index'), isNotNull(crawlRuns.finishedAt), inArray(crawlRuns.media, media)))
     .groupBy(crawlRuns.media);
-  return new Map(rows.filter((r) => r.last != null).map((r) => [r.media, new Date(r.last as Date | string)]));
+  return new Map(rows.filter((r) => r.last != null).map((r) => [r.media, crawlTimestamp(r.last)!]));
 }
 
 export async function crawlGroup(
@@ -49,7 +56,7 @@ export async function crawlGroup(
     log.warn({ group, err: (error as Error).message }, 'crawl run history unavailable; using catalog order');
     return new Map<string, Date>();
   });
-  const due = orderDueSources(all, lastRun, groupPeriodMs(group), now);
+  const due = orderDueSources(all, lastRun, (spec) => sourceSchedule(spec.media, group).dueAfterMinutes * 60e3, now);
   let stopped = 0;
   const results = await Promise.all(
     due.map((spec) =>

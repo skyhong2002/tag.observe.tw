@@ -4,6 +4,7 @@ import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import { allSources, disabled } from '../crawl/registry.ts';
+import { crawlTimestamp, nextIndexEligibleAt, sourceSchedule } from '../crawl/schedule.ts';
 import { codeLink, crawlerInfo } from '../crawl/source-info.ts';
 import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
@@ -139,12 +140,23 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     const runs = await db
       .select({
         media: crawlRuns.media,
-        runs3h: sql<number>`SUM(${crawlRuns.startedAt} >= ${new Date(now - 3 * HOUR)})`,
-        failed3h: sql<number>`SUM(${crawlRuns.startedAt} >= ${new Date(now - 3 * HOUR)} AND ${crawlRuns.status} = 'failed')`,
-        lastOk: sql<Date | string | null>`MAX(IF(${crawlRuns.status} = 'ok', ${crawlRuns.finishedAt}, NULL))`,
+        runs3h: sql<number>`SUM(${crawlRuns.stage} = 'index' AND ${crawlRuns.startedAt} >= ${new Date(now - 3 * HOUR)})`,
+        failed3h: sql<number>`SUM(${crawlRuns.stage} = 'index' AND ${crawlRuns.startedAt} >= ${new Date(now - 3 * HOUR)} AND ${crawlRuns.status} = 'failed')`,
+        lastIndexStarted: sql<Date | string | null>`MAX(IF(${crawlRuns.stage} = 'index', ${crawlRuns.startedAt}, NULL))`,
+        lastIndexCompleted: sql<
+          Date | string | null
+        >`MAX(IF(${crawlRuns.stage} = 'index' AND ${crawlRuns.finishedAt} IS NOT NULL, ${crawlRuns.startedAt}, NULL))`,
+        runs24h: sql<number>`SUM(${crawlRuns.startedAt} >= ${day} AND ${crawlRuns.finishedAt} IS NOT NULL)`,
+        failures24h: sql<number>`SUM(${crawlRuns.startedAt} >= ${day} AND ${crawlRuns.finishedAt} IS NOT NULL AND (${crawlRuns.status} = 'failed' OR ${crawlRuns.failed} > 0 OR ${crawlRuns.detail} IS NOT NULL))`,
+        lastFailureAt: sql<
+          Date | string | null
+        >`MAX(IF(${crawlRuns.startedAt} >= ${day} AND ${crawlRuns.finishedAt} IS NOT NULL AND (${crawlRuns.status} = 'failed' OR ${crawlRuns.failed} > 0 OR ${crawlRuns.detail} IS NOT NULL), ${crawlRuns.finishedAt}, NULL))`,
+        lastOk: sql<
+          Date | string | null
+        >`MAX(IF(${crawlRuns.stage} = 'index' AND ${crawlRuns.status} = 'ok', ${crawlRuns.finishedAt}, NULL))`,
       })
       .from(crawlRuns)
-      .where(and(gte(crawlRuns.startedAt, day), sql`${crawlRuns.stage} = 'index'`))
+      .where(sql`${crawlRuns.stage} IN ('index', 'article')`)
       .groupBy(crawlRuns.media);
     const [topicChecks, topicCounts] = await Promise.all([topicSourceChecks(db, new Date(now)), topicCountPerMedia(db)]);
     const byCount = new Map([...counts, ...discoveries].map((c) => [c.media, c]));
@@ -153,7 +165,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     const off = disabled();
     // Aggregates come back as 'YYYY-MM-DD HH:MM:SS' strings; the DB stores UTC
     // (client timezone 'Z'), so parse as UTC rather than host-local time.
-    const toDate = (v: unknown) => (v instanceof Date ? v : typeof v === 'string' && v ? new Date(`${v.replace(' ', 'T')}Z`) : null);
+    const toDate = crawlTimestamp;
     const specs = allSources();
     const rows = listedMediaSources(specs)
       .map((s) => {
@@ -169,6 +181,13 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           runs3h: Number(r?.runs3h ?? 0),
           failed3h: Number(r?.failed3h ?? 0),
         };
+        const scheduling = sourceSchedule(s.media, s.group === 'news' ? 'news' : 'hourly');
+        const lastIndexStarted = toDate(r?.lastIndexStarted);
+        const lastIndexCompleted = toDate(r?.lastIndexCompleted);
+        const running =
+          !!lastIndexStarted &&
+          lastIndexStarted.getTime() > (lastIndexCompleted?.getTime() ?? 0) &&
+          now - lastIndexStarted.getTime() < 6 * HOUR;
         const category = categoryOf(s.media);
         const topicRule = topicRuleOf(s.media);
         const topicCheck = topicRule && topicChecks[topicRule.media];
@@ -196,7 +215,20 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           category,
           categoryLabel: category ? (CATEGORY_LABELS[category] ?? category) : null,
           camp: campOf(s.media),
-          schedule: base.disabled ? 'off' : s.group === 'news' ? 'every 9 min' : 'hourly',
+          schedule: base.disabled ? 'off' : scheduling.minutes === 60 ? 'hourly' : `every ${scheduling.minutes} min`,
+          crawlSchedule: {
+            intervalMinutes: base.disabled ? null : scheduling.minutes,
+            reason: base.disabled ? '未啟用' : scheduling.reason,
+            reviewedAt: scheduling.reviewedAt,
+            nextEligibleAt: base.disabled ? null : nextIndexEligibleAt(lastIndexCompleted, scheduling.dueAfterMinutes),
+            lastStartedAt: lastIndexStarted,
+            running: !base.disabled && running,
+          },
+          crawlHealth: {
+            runs24h: Number(r?.runs24h ?? 0),
+            failures24h: Number(r?.failures24h ?? 0),
+            lastFailureAt: toDate(r?.lastFailureAt),
+          },
           today: Number(c?.today ?? 0),
           last24h,
           last7d: Number(c?.last7d ?? 0),

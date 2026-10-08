@@ -5,6 +5,15 @@ export interface MediaCrawler {
   countryCode: string;
   schedule: string;
   totalCollected?: number;
+  crawlSchedule?: {
+    intervalMinutes: number | null;
+    reason: string;
+    reviewedAt: string;
+    nextEligibleAt: string | null;
+    lastStartedAt: string | null;
+    running: boolean;
+  };
+  crawlHealth?: { runs24h: number; failures24h: number; lastFailureAt: string | null };
   sourceKind?: 'discovery' | 'publisher';
   summary?: { total: number; withSummary: number; sources: string[]; exampleId: number | null } | null;
   crawler?: {
@@ -36,10 +45,24 @@ export const crawlerGroups = [
 ] as const;
 export type CrawlerGroup = (typeof crawlerGroups)[number]['key'];
 export type CrawlerFilters = Record<CrawlerGroup, string[]>;
-export type CrawlerSort = 'title' | CrawlerGroup | 'topics' | 'code' | 'schedule' | 'totalCollected';
-export const scheduleMinutes = (row: MediaCrawler) => (row.schedule === 'every 9 min' ? 9 : row.schedule === 'hourly' ? 60 : null);
-export const scheduleLabel = (row: MediaCrawler) =>
-  row.schedule === 'off' ? '未啟用' : row.schedule === 'hourly' ? '每小時' : row.schedule === 'every 9 min' ? '每 9 分鐘' : '未知';
+export type CrawlerSort = 'title' | CrawlerGroup | 'topics' | 'code' | 'schedule' | 'totalCollected' | 'nextCrawl' | 'failures';
+export const scheduleMinutes = (row: MediaCrawler) =>
+  row.schedule === 'off'
+    ? null
+    : (row.crawlSchedule?.intervalMinutes ??
+      (row.schedule === 'hourly' ? 60 : /^every (\d+) min$/.test(row.schedule) ? Number(row.schedule.match(/\d+/)?.[0]) : null));
+export const scheduleLabel = (row: MediaCrawler) => {
+  const minutes = scheduleMinutes(row);
+  return row.schedule === 'off'
+    ? '未啟用'
+    : minutes === null
+      ? '未知'
+      : minutes === 60
+        ? '每小時'
+        : minutes % 60 === 0
+          ? `每 ${minutes / 60} 小時`
+          : `每 ${minutes} 分鐘`;
+};
 export const emptyCrawlerFilters = (): CrawlerFilters => ({ methods: [], tools: [], content: [] });
 
 export function summaryTags(row: MediaCrawler): string[] {
@@ -98,7 +121,11 @@ export function selectCrawlers(rows: MediaCrawler[], query: string, filters: Cra
             ? scheduleLabel(row)
             : sort === 'totalCollected'
               ? String(row.totalCollected ?? '')
-              : crawlerTags(row)[sort].join('、');
+              : sort === 'nextCrawl'
+                ? (row.crawlSchedule?.nextEligibleAt ?? '')
+                : sort === 'failures'
+                  ? String(row.crawlHealth?.failures24h ?? '')
+                  : crawlerTags(row)[sort].join('、');
   return rows
     .filter((row) => {
       const tags = crawlerTags(row);
@@ -121,9 +148,19 @@ export function selectCrawlers(rows: MediaCrawler[], query: string, filters: Cra
     })
     .sort((a, b) => {
       let order: number;
-      if (sort === 'schedule' || sort === 'totalCollected') {
-        const x = sort === 'schedule' ? scheduleMinutes(a) : (a.totalCollected ?? null);
-        const y = sort === 'schedule' ? scheduleMinutes(b) : (b.totalCollected ?? null);
+      if (sort === 'schedule' || sort === 'totalCollected' || sort === 'nextCrawl' || sort === 'failures') {
+        const numeric = (row: MediaCrawler) =>
+          sort === 'schedule'
+            ? scheduleMinutes(row)
+            : sort === 'totalCollected'
+              ? (row.totalCollected ?? null)
+              : sort === 'failures'
+                ? (row.crawlHealth?.failures24h ?? null)
+                : row.crawlSchedule?.nextEligibleAt
+                  ? Date.parse(row.crawlSchedule.nextEligibleAt)
+                  : null;
+        const x = numeric(a);
+        const y = numeric(b);
         if (x === null && y !== null) return 1;
         if (y === null && x !== null) return -1;
         order = (x ?? 0) - (y ?? 0);

@@ -11,8 +11,9 @@ import type { SourceSpec } from '../src/crawl/sources.ts';
 import { loadTitleVocab } from '../src/crawl/title-tags.ts';
 import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { articles, articleTags, jobRuns, rankingEntries, rankingSnapshots, siteMetrics, topics } from '../src/db/schema.ts';
+import { articles, articleTags, crawlRuns, jobRuns, rankingEntries, rankingSnapshots, siteMetrics, topics } from '../src/db/schema.ts';
 import { runAnalyticsJob, runRealtimeJob } from '../src/jobs/analytics-job.ts';
+import { lastIndexRuns, orderDueSources } from '../src/jobs/crawl-job.ts';
 import { dateFeatureArticles } from '../src/jobs/feature-article.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
@@ -589,6 +590,12 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       lastSeen: now,
       kind: 'feature',
     });
+    await db.insert(crawlRuns).values([
+      { media: 'pts', stage: 'index', startedAt: at(1), finishedAt: at(0.99), status: 'failed' },
+      { media: 'pts', stage: 'index', startedAt: at(0.25), finishedAt: at(0.24), status: 'ok' },
+      { media: 'pts', stage: 'article', startedAt: at(0.5), finishedAt: at(0.49), status: 'ok', failed: 2 },
+      { media: 'pts', stage: 'index', startedAt: at(25), finishedAt: at(24.99), status: 'failed' },
+    ]);
     const app = await buildApp({ tagDbUrl: null, uiOrigin: 'http://127.0.0.1:1', rateLimit: false }, { db });
     try {
       const response = await app.inject('/api/v1/media-stats');
@@ -596,6 +603,17 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       const result = response.json();
       expect(result.summaryWindow).toMatchObject({ hours: 168, basis: 'published_at' });
       const outlet = result.media.find((row: { media: string }) => row.media === 'pts');
+      expect(outlet.crawlSchedule).toMatchObject({
+        intervalMinutes: 30,
+        lastStartedAt: at(0.25)
+          .toISOString()
+          .replace(/\.\d{3}Z$/, '.000Z'),
+        running: false,
+      });
+      const lastRuns = await lastIndexRuns(db, ['pts']);
+      expect(outlet.crawlSchedule.nextEligibleAt).toBe(new Date(lastRuns.get('pts')!.getTime() + 30 * 60e3).toISOString());
+      expect(orderDueSources([{ media: 'pts' }], lastRuns, 30 * 60e3, now)).toEqual([]);
+      expect(outlet.crawlHealth).toMatchObject({ runs24h: 3, failures24h: 2 });
       expect(outlet.totalCollected).toBe(8); // Includes old, pending and topic records; excludes the legacy import.
       const summary = outlet.summary;
       expect(summary).toMatchObject({ total: 4, withSummary: 3, sources: ['article:selector', 'meta:description', 'unknown'] });

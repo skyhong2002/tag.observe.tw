@@ -2464,7 +2464,18 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].category` | string \| null |  |
 | `media[].categoryLabel` | string \| null |  |
 | `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
-| `media[].schedule` | string | 爬取頻率；未啟用時為 off |
+| `media[].schedule` | string | 爬取頻率；hourly 或 every N min；未啟用時為 off |
+| `media[].crawlSchedule` | object |  |
+| `media[].crawlSchedule.intervalMinutes` | number \| null | 實際逐媒體最小巡查間隔（分鐘） |
+| `media[].crawlSchedule.reason` | string | 調整依據 |
+| `media[].crawlSchedule.reviewedAt` | string (ISO 時間) | 排程評估時間 |
+| `media[].crawlSchedule.nextEligibleAt` | string (ISO 時間) \| null | 最早可巡查時間；不是佇列保證開始時間 |
+| `media[].crawlSchedule.lastStartedAt` | string (ISO 時間) \| null |  |
+| `media[].crawlSchedule.running` | boolean |  |
+| `media[].crawlHealth` | object |  |
+| `media[].crawlHealth.runs24h` | integer | 近24小時已完成巡查與內文抓取次數 |
+| `media[].crawlHealth.failures24h` | integer | 含部分失敗的有錯誤執行次數 |
+| `media[].crawlHealth.lastFailureAt` | string (ISO 時間) \| null |  |
 | `media[].country` | string | 媒體營運／在地發行版本的國家或地區，不是報導發生地 |
 | `media[].countryCode` | string | 國家或地區代碼；INT 跨國、ZZ 待確認 |
 | `media[].scope` | object \| null |  |

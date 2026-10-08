@@ -14,15 +14,24 @@ const minutesAgo = (m: number) => new Date(now.getTime() - m * 60e3);
 const hour = 60 * 60e3;
 
 describe('group crawl order', () => {
-  it('visits least-recently-indexed sources first and skips ones indexed within 80% of the period', () => {
+  it('visits least-recently-indexed sources first and enforces the full interval and skips recently indexed sources', () => {
     const specs = [{ media: 'a' }, { media: 'b' }, { media: 'c' }, { media: 'd' }];
     const lastRun = new Map([
       ['a', minutesAgo(50)],
       ['b', minutesAgo(10)],
       ['c', minutesAgo(90)],
     ]);
-    expect(orderDueSources(specs, lastRun, hour, now).map((s) => s.media)).toEqual(['d', 'c', 'a']);
+    expect(orderDueSources(specs, lastRun, hour, now).map((s) => s.media)).toEqual(['d', 'c']);
     expect(orderDueSources(specs, lastRun, 9 * 60e3, now).map((s) => s.media)).toEqual(['d', 'c', 'a', 'b']);
+  });
+
+  it('applies each source interval and runs exactly at its due time', () => {
+    const specs = [{ media: 'fast' }, { media: 'slow' }];
+    const last = new Map([
+      ['fast', minutesAgo(30)],
+      ['slow', minutesAgo(30)],
+    ]);
+    expect(orderDueSources(specs, last, (s) => (s.media === 'fast' ? 30 : 60) * 60e3, now).map((s) => s.media)).toEqual(['fast']);
   });
 
   it('continues an interrupted hourly pass from the sources that have not run yet', async () => {

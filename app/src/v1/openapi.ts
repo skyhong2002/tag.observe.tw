@@ -1622,7 +1622,20 @@ export const ENDPOINTS: Endpoint[] = [
           category: nullable(str()),
           categoryLabel: nullable(str()),
           camp,
-          schedule: str('爬取頻率；未啟用時為 off'),
+          schedule: str('爬取頻率；hourly 或 every N min；未啟用時為 off'),
+          crawlSchedule: obj({
+            intervalMinutes: nullable(num('實際逐媒體最小巡查間隔（分鐘）')),
+            reason: str('調整依據'),
+            reviewedAt: time('排程評估時間'),
+            nextEligibleAt: nullable(time('最早可巡查時間；不是佇列保證開始時間')),
+            lastStartedAt: nullable(time()),
+            running: bool(),
+          }),
+          crawlHealth: obj({
+            runs24h: int('近24小時已完成巡查與內文抓取次數'),
+            failures24h: int('含部分失敗的有錯誤執行次數'),
+            lastFailureAt: nullable(time()),
+          }),
           country: str('媒體營運／在地發行版本的國家或地區，不是報導發生地'),
           countryCode: str('國家或地區代碼；INT 跨國、ZZ 待確認'),
           scope: nullable(
