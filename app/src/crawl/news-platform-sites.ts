@@ -7,6 +7,10 @@ export const PLATFORM_NEWS_SITES: Array<NewsSiteRules & { host: string; path: Re
     path: /^\/newsDetail_forward_\d+$/,
     bodySelector: 'main [class^="cententWrap__"]',
     titleSelector: 'main h1',
+    authorSelector: 'main [class^="headerContent__"] > [class^="left__"] > div:first-child:not(.ant-space-item):not(:has(.ant-space-item))',
+    providerSelector:
+      'main [class^="headerContent__"] > [class^="left__"] > div:first-child:not(.ant-space-item):not(:has(.ant-space-item))',
+    providerPattern: /^(?:“)?(海南日报|央视新闻)(?:”微信公号)?$/u,
     publishedSelector: 'main [class^="headerContent__"] [class^="left__"] .ant-space-item:first-child > span',
     publicationPattern: /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})$/,
   },

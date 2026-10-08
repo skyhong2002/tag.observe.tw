@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { extractAttributions } from '../similarity/attribution.ts';
 import { extractArticle } from './article.ts';
 import { newsSiteRules } from './news-site-rules.ts';
 
@@ -28,6 +29,21 @@ const samples = [
 ];
 
 describe('platform public article templates', () => {
+  it('retains The Paper main organization credit and supplied-copy source without promoting the responsibility editor', () => {
+    const url = 'https://www.thepaper.cn/newsDetail_forward_34209759';
+    const html = `<main><h1>文字新聞標題</h1><div class="headerContent__abc"><div class="left__def"><div>央视新闻</div><div><div class="ant-space-item"><span>2026-10-08 00:25</span></div></div></div></div><div class="cententWrap__ghi">${p}</div><div class="copyrightBox__xyz">责任编辑：苏晨</div></main><aside><div class="left__def"><div>其他來源</div></div></aside>`;
+    const parsed = extractArticle(html, url);
+    expect(parsed.authors).toEqual(['央视新闻']);
+    expect(parsed.provider).toBe('央视新闻');
+    expect(extractAttributions(parsed.body ?? '', 'thepaper', parsed.provider).map((a) => a.media)).toEqual(['cctv']);
+    const hainan = extractArticle(html.replace('央视新闻', '“海南日报”微信公号'), url);
+    expect(hainan.authors).toEqual(['“海南日报”微信公号']);
+    expect(hainan.provider).toBe('海南日报');
+    expect(extractAttributions(hainan.body ?? '', 'thepaper', hainan.provider).map((a) => a.media)).toEqual(['hainandaily']);
+    expect(extractArticle(html.replace('央视新闻', '责任编辑：苏晨'), url)).toMatchObject({ authors: [], provider: null });
+    expect(extractArticle(html.replace('<div>央视新闻</div>', ''), url)).toMatchObject({ authors: [], provider: null });
+    expect(extractArticle(html, 'https://example.com/newsDetail_forward_34209759')).toMatchObject({ authors: [], provider: null });
+  });
   it.each(samples)('preserves the complete body and its publication date: $url', ({ url, html, iso }) => {
     const result = extractArticle(html, url);
     expect(result.bodyStatus).toBe('ok');

@@ -56,6 +56,7 @@ const outlets: Outlet[] = [
   outlet('newsmaker', 'NewsMaker', 'ZZ', []),
   // Public Chinese homepage names Sputnik; jurisdiction has not been audited.
   outlet('sputnik', '衛星通訊社', 'ZZ', ['Sputnik', '衛星新聞', '卫星新闻', '卫星通讯社', '俄羅斯衛星通訊社', '俄罗斯卫星通讯社']),
+  outlet('hainandaily', '海南日報', 'ZZ', ['海南日报']),
   outlet('guardian', 'The Guardian', 'ZZ', ['Guardian']),
   outlet('economist', 'The Economist', 'ZZ', ['Economist']),
   // Official dongqiudi.com footer identifies the outlet and its Tianjin ICP registration.
@@ -69,6 +70,7 @@ const outlets: Outlet[] = [
   outlet('kyodo', '共同社', 'JP', ['Kyodo', 'Kyodo News', '共同通信社']),
   outlet('yonhap', '韓聯社', 'KR', ['Yonhap', 'Yonhap News Agency', '韩联社']),
   outlet('xinhua', '新華社', 'CN', ['Xinhua', 'Xinhua News Agency', '新华社']),
+  outlet('xinhuanet', '新華網', 'CN', ['新华网', '新华网客户端']),
   outlet('guancha', '觀察者網', 'CN', ['观察者网']),
   outlet('dw', '德國之聲', 'DE', ['DW', 'Deutsche Welle', '德国之声']),
   outlet('rfi', '法國國際廣播電台', 'FR', ['RFI', '法廣', '法广', 'RFI法廣', 'RFI法广']),
@@ -90,6 +92,7 @@ const outlets: Outlet[] = [
   outlet('cts', '華視新聞', 'TW', ['華視', '华视']),
   outlet('ttv', '台視新聞', 'TW', ['台視', '臺視', '台视']),
   outlet('ctv', '中視新聞', 'TW', ['中視', '中视']),
+  outlet('cctv', '央視網', 'CN', ['央視新聞', '央视新闻']),
   outlet('ftv', '民視新聞', 'TW', ['民視', '民视']),
   outlet('pts', '公視新聞', 'TW', ['公視', '公视', '公視新聞網']),
   outlet('healthnews', '健康醫療網', 'TW', []),

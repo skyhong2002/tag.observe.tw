@@ -729,3 +729,19 @@ Fresh200 own主h1同DB，generic title含固定「 - Taipei Times」suffix另核
 中評社45781142 fresh own docid107241172／title／full body／summary／作者[]／精確date皆同DB，開頭完整「中評社香港10月7日電／衛星新聞報道，…」是明示報道引用，不是記者。公開sputniknews.cn首頁200，中文title為俄羅斯衛星通訊社，meta description明示Sputnik，支持Sputnik／衛星新聞／衛星通訊社繁簡別名。新增outlet sputnik及明示report邊界，照片來源或衛星技術文字不採；jurisdiction未獨立審核而維持country unknown／ZZ，不據domain猜國籍。只新增attributions及citation index，作者／日期／正文／摘要全部保留；fresh full14snapshot乾跑passed，backup與exact deployment guards準備，未apply。原頁和品牌首頁HTML.gz及identity log留證。
 
 985crawl／attribution tests、tsc、全Biome通過；2123成功HTML對冻结13回放6文章：CRNTT引用1、TaipeiTimesagency署名+provider+source1、食力署名2、聚傳媒署名+summary1、三立署名1，0正文／日期parser變化；MSN另6API回放1作者拆分。第十四批共7不同歷史候選：5署名、3摘要、2source，0正文／日期寫入，SETN另parser-only已正確DB不用回寫。第十四批仍unfrozen未排程，本地提交未推送／部署／套用，需待第十三批actualdeployment+一小時間隔。正式bfb34f2已推送／部署／完整30驗證；13bedafe7冻结08:26timer與priorgate仍維持。24h觀察active到18:49:13，final boundedround及完整修改清單仍待結束時審核。
+
+### 10/8 08:01：澎湃完整主文署名、通訊來源別名與第二次段落回放
+
+澎湃原12個sample的主文main header第一個author div原本完全未選取，新增該站header直接子欄位，排除時間wrapper／責任編輯／aside；provider只接受完整已核對的央視新聞或海南日報公號credit。Own __NEXT_DATA__ props.pageProps.contId及detailData.contentDetail的contId／name／author／originalFlag與url數字ID／main h1／visible header獨立核對後，拆解「澎湃新闻记者」的完整主名列表，以及同欄明示「见习记者／实习生」具名contributor；主記者或Contributor姓名以既有reporterNames驗證，只移除明示角色不猜姓名。不把「责任编辑苏晨」改成作者。實際陳緒厚欄位有兩個空白，JSON／DOM只做相同空白normalize再核對，邊界／ID／title／role均保持；fixture與fresh原12篇作者逐一literal expected names核對通過。
+
+同一澎湃main JSON originalFlag2明示新華社、新華網客戶端、唐健輝/新華網客戶端的供稿角色：新華社識別xinhua，網站新華網識別xinhuanet，兩個publisher原catalog本就分開，不能合併。唐健輝保留明示個人作者，新華網客戶端／新华社／央视新闻／海南日报公号保留明示組織署名。CCTV及XinhuaNet國別沿用已存在registry CN，海南日報未獨立jurisdiction審核仍ZZ。完整原稿source建立provider attribution及citation index，不把圖片或單純機構提及當來源。
+
+澎湃12fresh200，own DOM title／JSON article ID+main credit／完整body／精確printed-minute publication与DB相同；其中6篇summary原DBnull而own meta description供應同body的已截斷excerpt，加入獨立summary_source，不生成正文摘要。其餘summary原樣保留。作者／creator／必要source及summary同transaction；無source變化的作者-only row不delete/rebuild citations。完整14field snapshot及fresh乾跑12passed，metadata／citations／sketches／pairs備份與DB/API-origin verifier準備，未apply。
+
+加入「央視新聞／央视新闻」及「新华网／新华网客户端」已核對別名之後，原saved成功HTML另外6篇明示「據央視新聞報導」「来源：央视新闻」「（來源：央視新聞）」「（來源：新華網）」新增source：45408257、45411507、45408750、45640760、45710050、45640761，各fresh正文／署名／publication／old-parser date皆同DB，全部full14snapshot乾跑passed。前3summary原null，own meta excerpt與主文相符，梅花摘要的明示「記者梅花新聞網陳素貞/綜合報導」亦與stored陳素貞及剩餘正文獨立核對，忠實保留原站供應excerpt及來源，沒有另生成描述。source+supplied summary原子更新，日期／正文不改；batch14-wire-citations-reviewed-plan.json等準備。舊5行CCTV-only draft乾跑沒有apply，已由6行完整plan取代，不應另跑舊draft。
+
+報導者10667665／10667651 fresh own topics identity/title／完整own topic intro／summary與DB及API相同，無新增作者／發布時間宣告，既有2016／2018日期保留而不能由目前頁面獨立驗證；public expired body mask／expiresAt核對通過，僅selected fields review，未寫資料。初次review verifier用了generic parser title suffix expectation，但feature parser本就移除suffix；改為精確own title+canonical檢核後通過，原失敗log保留，無code/date改動。
+
+988crawl／attribution tests、tsc／全Biome通過。2123成功HTML對冻结13回放24不同文章，變化僅作者／provider／source及聚傳媒摘要，0正文／日期變化；MSN另6API回放1author拆分。第十四批累積25不同歷史候選：17作者credit（含具名人員與明示組織）、12supplied summaries、14source，重疊欄位同transaction，0正文／日期寫入，三立parser-only另外1既有DB已正確。所有候選fresh/fullsnapshot乾跑passed、未apply；本章commit後固定第十四批候選，本地提交未推送／部署／套用，後續新code移到第十五批。第十四批發布timer尚未建立，以實際ledger為準；需第十三批25修正完整驗證+actual resumed至少一小時後才部署。
+
+08:00既有timer自然啟動第16輪sampler PID893592，實際cwd primary checkout，HEAD bfb34f2；不改active checkout、不重開job。第十二批probe PID854082仍active、主站200／worker200；第十三批bedafe7冻结08:21probe／08:26release timers不重複啟動。正式仍bfb34f2已推送／部署／完整30修正驗證，24h觀察至18:49:13仍active，總報告及最後有界round尚未完成。
