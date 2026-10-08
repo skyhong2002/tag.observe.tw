@@ -5,6 +5,7 @@ import { cool3cSummary } from './news-cool3c-summary.ts';
 import { bo6sSummary } from './news-editor-credits.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaSummary } from './news-j-media-summary.ts';
+import { newCongressFullDescription } from './news-newcongress.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
 export interface ArticleSummary {
@@ -45,6 +46,9 @@ export function publisherSummary(value: unknown, source: string, title?: string 
   // Preserve the publisher's excerpt; do not include the syndication boilerplate.
   const feedCredit = heading ? `〈${heading}〉這篇文章最早發佈於《台灣好報》。` : null;
   if (source === 'feed:description' && feedCredit && summary.endsWith(feedCredit)) summary = summary.slice(0, -feedCredit.length).trim();
+  const appleAlmondCredit = heading ? `這篇文章 ${heading} 最早出現於 蘋果仁 - 果仁 iPhone/iOS/好物推薦科技媒體。` : null;
+  if (source === 'feed:description' && appleAlmondCredit && summary.endsWith(appleAlmondCredit))
+    summary = summary.slice(0, -appleAlmondCredit.length).trim();
   // Oversized feed descriptions often contain the entire article. Do not silently
   // turn them into an excerpt and call that a publisher-provided summary.
   if (
@@ -166,6 +170,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
   for (const [value, source] of candidates) {
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    if (newCongressFullDescription($, url, result.summary)) continue;
     const cool3c = cool3cSummary($, url, result.summary);
     if (cool3c !== null) {
       result = publisherSummary(cool3c, source);

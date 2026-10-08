@@ -439,3 +439,16 @@ it('rejects the reviewed Kingtop social-description URL and headline template', 
     ).summary,
   ).not.toBeNull();
 });
+
+it('removes the reviewed AppleAlmond feed publication suffix only for the matching own title', () => {
+  const title = '國慶連假高乘載管制 2026';
+  const credit = `這篇文章 ${title} 最早出現於 蘋果仁 - 果仁 iPhone/iOS/好物推薦科技媒體。`;
+  const excerpt = '國慶連假即將到來，出發前請留意國道高乘載管制時段。 …';
+  expect(publisherSummary(`${excerpt} ${credit}`, 'feed:description', title)).toMatchObject({
+    summary: excerpt,
+    summarySource: 'feed:description',
+  });
+  expect(publisherSummary(credit, 'feed:description', title).summary).toBeNull();
+  expect(publisherSummary(`${excerpt} ${credit}`, 'feed:description', '另一則文章').summary).toContain(credit);
+  expect(publisherSummary(`${excerpt} ${credit}`, 'meta:description', title).summary).toContain(credit);
+});

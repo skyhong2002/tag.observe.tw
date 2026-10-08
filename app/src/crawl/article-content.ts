@@ -7,10 +7,12 @@ import {
   normalizeAuthorCredits,
   reporterNames,
 } from './byline.ts';
+import { cnaStructuredBody } from './news-cna-body.ts';
 import { bo6sEditorLead, tvbsContributorCredits } from './news-editor-credits.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaLead } from './news-j-media-summary.ts';
 import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
+import { newCongressPost } from './news-newcongress.ts';
 import { tnlFeatureDescription } from './news-tnl-feature.ts';
 import { tvbsHealthExhibition } from './news-tvbshealth-exhibition.ts';
 import { womanyCollectionDescription, womanyQuizDescription } from './news-womany-collection.ts';
@@ -407,6 +409,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const jMedia = jMediaLead($, url);
   const bo6sEditor = bo6sEditorLead($, url);
   const tvbsCredits = tvbsContributorCredits($, url);
+  const congressAuthor = newCongressPost($, url)?.author;
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
   const configuredValues = (tvbsCredits ?? (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : [])).flatMap(
@@ -445,6 +448,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       bodySource,
       bodyStatus,
       authors:
+        (congressAuthor ? [congressAuthor] : null) ??
         tvbsCredits ??
         (bo6sEditor ? [bo6sEditor.author] : jMedia ? [jMedia.author] : extractAuthors(authorDom, nodes, rules, authorBody, authorValues)),
     };
@@ -470,7 +474,10 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     return result(tnlFeature.body, 'feature:tnl-description', contentLength(tnlFeature.body) >= 200 ? 'ok' : 'short', own, []);
   }
   const candidates: Candidate[] = nodes
-    .map((node) => ({ body: structuredBody(marieclaireStructuredBody($, url, node)), source: 'ld+json' }))
+    .map((node) => ({
+      body: structuredBody(cnaStructuredBody($, url, { ...node, articleBody: marieclaireStructuredBody($, url, node) })),
+      source: 'ld+json',
+    }))
     .filter((candidate) => candidate.body);
   if (rules.bodyHtmlSelector) {
     for (const node of $(rules.bodyHtmlSelector).toArray()) {
