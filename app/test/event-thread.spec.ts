@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   bestRank,
   type CoverageOutlet,
+  dailySeries,
   firstReports,
   flattenArticles,
+  groupByDay,
   groupByHour,
   leadStories,
   outletRows,
@@ -11,6 +13,7 @@ import {
   sortOutletRows,
   splitByRelevance,
   tagStats,
+  threadDays,
   titleSimilarity,
 } from '../../web/src/lib/event-thread.mts';
 
@@ -178,5 +181,45 @@ describe('reading order', () => {
     // chinatimes leads on its summary; udn's newest equal; ltn's copy of udn's headline gives way.
     expect(leads.map((a) => a.id)).toEqual([3, 1, 6, 7]);
     expect(leads.filter((a) => a.outlet.camp === 'blue')).toHaveLength(2);
+  });
+
+  it('sums chart points per Taipei day, keeping the best score and rank', () => {
+    const pt = (t: string, blue: number, score: number | null) => ({ t, blue, green: 1, other: 0, tags: { 甲: { score, rank: null } } });
+    // 15:00Z is 23:00 in Taipei; 16:00Z starts the next Taipei day.
+    const { points, ranks } = dailySeries(
+      [pt('2026-10-07T15:00:00.000Z', 2, 5), pt('2026-10-07T16:00:00.000Z', 1, 3), pt('2026-10-07T17:00:00.000Z', 4, 9)],
+      [7, null, 2],
+    );
+    expect(points.map((p) => p.t)).toEqual(['2026-10-06T16:00:00.000Z', '2026-10-07T16:00:00.000Z']);
+    expect(points.map((p) => [p.blue, p.green, p.tags?.甲.score])).toEqual([
+      [2, 1, 5],
+      [5, 2, 9],
+    ]);
+    expect(ranks).toEqual([7, 2]);
+  });
+  it('summarises thread hours and groups reports by Taipei day', () => {
+    const h = (hourStart: string, rank: number, major: string[]) => ({
+      hourStart,
+      rank,
+      score: rank,
+      major,
+      tags: [] as Array<[string, number]>,
+    });
+    const days = threadDays([
+      h('2026-10-07T15:00:00.000Z', 3, ['甲']),
+      h('2026-10-07T16:00:00.000Z', 1, ['乙']),
+      h('2026-10-07T18:00:00.000Z', 1, ['乙']),
+    ]);
+    expect(days.map((d) => [d.day, d.hours, d.bestRank, d.bestAt, d.major[0]])).toEqual([
+      ['2026-10-08', 2, 1, '2026-10-07T16:00:00.000Z', '乙'],
+      ['2026-10-07', 1, 3, '2026-10-07T15:00:00.000Z', '甲'],
+    ]);
+    const outlet = { media: 'udn', title: '聯合', camp: 'blue' as const };
+    const a = (id: number, publishedAt: string) => ({ id, publishedAt, outlet }) as unknown as Parameters<typeof groupByDay>[0][number];
+    expect(
+      groupByDay([a(1, '2026-10-07T17:00:00.000Z'), a(2, '2026-10-07T15:59:00.000Z'), a(3, '2026-10-07T16:30:00.000Z')]).map((g) =>
+        g.items.map((x) => x.id),
+      ),
+    ).toEqual([[1, 3], [2]]);
   });
 });

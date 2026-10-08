@@ -248,6 +248,44 @@ export function threadDays(hours: readonly ThreadHour[]): ThreadDay[] {
     });
 }
 
+/** One chart point per Taipei day instead of per hour: reports summed, each
+ *  tag's score and the event-table rank at their best of the day. `t` is the
+ *  day's midnight in Taipei. */
+export function dailySeries<
+  P extends {
+    t: string;
+    blue: number;
+    green: number;
+    other: number;
+    tags: Record<string, { score: number | null; rank: number | null }> | null;
+  },
+>(points: readonly P[], ranks: ReadonlyArray<number | null>) {
+  const days: Array<{ key: number; point: P; rank: number | null }> = [];
+  points.forEach((p, i) => {
+    const key = dayKey(p.t);
+    let d = days.at(-1);
+    if (!d || d.key !== key) {
+      d = {
+        key,
+        point: { ...p, t: new Date(key * DAY - TPE).toISOString(), blue: 0, green: 0, other: 0, tags: null },
+        rank: null,
+      };
+      days.push(d);
+    }
+    d.point.blue += p.blue;
+    d.point.green += p.green;
+    d.point.other += p.other;
+    for (const [tag, v] of Object.entries(p.tags ?? {})) {
+      const tags = (d.point.tags ??= {});
+      const cur = tags[tag];
+      if (!cur || (v.score ?? -Infinity) > (cur.score ?? -Infinity)) tags[tag] = { score: v.score, rank: null };
+    }
+    const r = ranks[i] ?? null;
+    if (r !== null) d.rank = d.rank === null ? r : Math.min(d.rank, r);
+  });
+  return { points: days.map((d) => d.point), ranks: days.map((d) => d.rank) };
+}
+
 /** The first report of each camp, for "who broke it". */
 export function firstReports(byOutlet: readonly CoverageOutlet[]): Array<{ camp: Camp; outlet: CoverageOutlet; article: CoverageArticle }> {
   const first = new Map<Camp, { outlet: CoverageOutlet; article: CoverageArticle }>();
