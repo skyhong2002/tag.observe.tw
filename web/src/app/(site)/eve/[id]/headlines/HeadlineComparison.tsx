@@ -18,7 +18,10 @@ const time = (iso: string) =>
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
-      }).format(new Date(iso))
+      })
+        .format(new Date(iso))
+        // ICU versions use different spaces between date and time.
+        .replace(/\s+/g, ' ')
     : '';
 
 function HighlightedText({ parts }: { parts: GroupHeadlinePart[] }) {
