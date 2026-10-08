@@ -59,20 +59,21 @@ describe('crawler directory filters and sorting', () => {
     expect(rows.map((row) => row.media)).toEqual(['alpha', 'beta', 'gamma']);
   });
 
-  it('filters observed editorial leads independently of generic content capability tags', () => {
+  it('adds observed summaries to collected content and keeps source names searchable', () => {
     const summaries = [
       { ...rows[0], summary: { total: 4, withSummary: 3, sources: ['article:selector', 'meta:description'], exampleId: 7 } },
       { ...rows[1], summary: { total: 2, withSummary: 2, sources: ['feed:description'], exampleId: 8 } },
       { ...rows[2], summary: { total: 2, withSummary: 0, sources: [], exampleId: null } },
     ];
-    expect(selectCrawlers(summaries, '', { ...emptyCrawlerFilters(), summary: ['原文導言'] }, 'title', false).map((r) => r.media)).toEqual([
-      'alpha',
-    ]);
+    expect(selectCrawlers(summaries, '原文導言', emptyCrawlerFilters(), 'title', false).map((r) => r.media)).toEqual(['alpha']);
     expect(selectCrawlers(summaries, '供稿摘要', emptyCrawlerFilters(), 'title', false).map((r) => r.media)).toEqual(['beta']);
-    expect(selectCrawlers(summaries, '', { ...emptyCrawlerFilters(), summary: ['有摘要'] }, 'title', false).map((r) => r.media)).toEqual([
+    expect(selectCrawlers(summaries, '', { ...emptyCrawlerFilters(), content: ['摘要'] }, 'title', false).map((r) => r.media)).toEqual([
       'alpha',
       'beta',
     ]);
+    expect(crawlerTags(summaries[0]).content).toEqual(['正文', '摘要']);
+    expect(crawlerTags(summaries[2]).content).not.toContain('摘要');
+    expect(crawlerTags({ ...summaries[0], sourceKind: 'discovery' }).content).not.toContain('摘要');
     expect(summaryTags(summaries[2])).toEqual(['未取得摘要']);
     expect(summaryTags({ ...rows[2], summary: { total: 0, withSummary: 0, sources: [], exampleId: null } })).toEqual(['期間無文章']);
     expect(summaryTags(rows[2])).toEqual(['尚無摘要統計']);

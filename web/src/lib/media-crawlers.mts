@@ -32,12 +32,11 @@ export const crawlerGroups = [
   { key: 'methods', label: '抓取方式' },
   { key: 'tools', label: '工具' },
   { key: 'content', label: '收錄內容' },
-  { key: 'summary', label: '摘要來源' },
 ] as const;
 export type CrawlerGroup = (typeof crawlerGroups)[number]['key'];
 export type CrawlerFilters = Record<CrawlerGroup, string[]>;
 export type CrawlerSort = 'title' | CrawlerGroup | 'topics' | 'code';
-export const emptyCrawlerFilters = (): CrawlerFilters => ({ methods: [], tools: [], content: [], summary: [] });
+export const emptyCrawlerFilters = (): CrawlerFilters => ({ methods: [], tools: [], content: [] });
 
 export function summaryTags(row: MediaCrawler): string[] {
   if (row.sourceKind === 'discovery') return ['見原媒體'];
@@ -51,7 +50,7 @@ export function summaryTags(row: MediaCrawler): string[] {
     if (source.startsWith('origin:')) return '原始供稿摘要';
     return '來源未記錄／其他';
   });
-  return ['有摘要', ...new Set(labels.length ? labels : ['來源未記錄／其他'])];
+  return [...new Set(labels.length ? labels : ['來源未記錄／其他'])];
 }
 
 const methodLabels: Record<string, string> = {
@@ -72,12 +71,13 @@ export function crawlerTags(row: MediaCrawler): Record<CrawlerGroup, string[]> {
   if (transport?.includes('Playwright')) tools.push('Playwright');
   if (transport?.includes('Chromium')) tools.push('Chromium');
   const body = row.crawler?.body;
+  const content = body === '擷取正文（逐篇驗證）' ? ['正文'] : body === '標題／摘要／影片資料' ? ['標題', '影片資料'] : [body || '未設定'];
+  if (row.sourceKind !== 'discovery' && ((row.summary?.withSummary ?? 0) > 0 || (!row.summary && body?.includes('摘要'))))
+    content.push('摘要');
   return {
     methods: [...new Set((row.crawler?.methods ?? ['尚無資料']).map((method) => methodLabels[method] ?? method))],
     tools: tools.length ? tools : [transport || '未設定'],
-    content:
-      body === '擷取正文（逐篇驗證）' ? ['正文擷取'] : body === '標題／摘要／影片資料' ? ['標題', '摘要', '影片資料'] : [body || '未設定'],
-    summary: summaryTags(row),
+    content,
   };
 }
 
@@ -102,6 +102,7 @@ export function selectCrawlers(rows: MediaCrawler[], query: string, filters: Cra
         row.crawler?.transport,
         row.crawler?.body,
         ...Object.values(tags).flat(),
+        ...summaryTags(row),
         ...(row.topics?.sources.map((s) => s.url) ?? []),
       ].join(' ');
       return (
