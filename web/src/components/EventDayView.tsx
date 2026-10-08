@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
-import { CampGap, EventIndex, HourTimeline, ViewSwitch } from '@/components/EventOverview';
+import EventDayNav from '@/components/EventDayNav';
+import { CampGap, EventIndex, ViewSwitch } from '@/components/EventOverview';
+import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import type { MediaInfo } from '@/lib/api';
 import { cleanEventHeadline, clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
+import { dayKeywordFlow } from '@/lib/keyword-flow.mts';
 import { type ArchivedThread, dayStories, dayStoryAsEvent, type EventDay, type EventItem } from '@/lib/pages';
 
 // The event table's default view: one Taipei day, each story ranked by how
@@ -82,67 +85,15 @@ function Folded({ threads }: { threads: ArchivedThread[] }) {
   );
 }
 
-/** Up to two weeks of days around the shown one, plus a date field for the rest. */
-function DayPicker({ data }: { data: EventDay }) {
-  const i = data.days.indexOf(data.day);
-  const prev = i > 0 ? data.days[i - 1] : i === -1 ? data.days.filter((d) => d < data.day).at(-1) : undefined;
-  const next = i >= 0 && i < data.days.length - 1 ? data.days[i + 1] : undefined;
-  const end = Math.min(data.days.length, Math.max(i + 1, 0) + 3);
-  const shown = data.days.slice(Math.max(0, end - 14), end);
-  const step = (day: string | undefined, label: string) =>
-    day ? (
-      <Link href={dayHref(day)} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
-        {label}
-      </Link>
-    ) : (
-      <span className="rounded-md px-3 py-1 text-zinc-500">{label}</span>
-    );
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {step(prev, '← 前一天')}
-      {step(next, '後一天 →')}
-      <span className="flex flex-wrap gap-1">
-        {shown.map((d) => (
-          <Link
-            key={d}
-            href={dayHref(d)}
-            aria-current={d === data.day ? 'page' : undefined}
-            className={`rounded px-1.5 py-0.5 text-xs tabular-nums ${
-              d === data.day
-                ? 'bg-brand-700 text-white dark:bg-brand-600'
-                : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-            }`}
-          >
-            {mmdd(d)}（{weekday(d)}）
-          </Link>
-        ))}
-      </span>
-      {data.days.length > 0 && (
-        <form action="/event/" className="ml-auto flex items-center gap-1 text-xs">
-          <label htmlFor="event-day" className="text-zinc-600 dark:text-zinc-400">
-            選日期
-          </label>
-          <input
-            id="event-day"
-            type="date"
-            name="day"
-            defaultValue={data.day}
-            min={data.days[0]}
-            max={data.days.at(-1)}
-            className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <button type="submit" className="rounded bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800">
-            前往
-          </button>
-        </form>
-      )}
-    </div>
-  );
-}
-
 export default function EventDayView({ data, media, today }: { data: EventDay; media: MediaInfo; today: boolean }) {
   const stories = dayStories(data.threads);
   const events = stories.map((s, n) => dayStoryAsEvent(s, n + 1));
+  const todayIso = taipeiDay(new Date().toISOString());
+  const flow = dayKeywordFlow(
+    data.day,
+    data.dayHours ?? [],
+    events.map((e) => ({ major: e.major, trail: e.rankTrail })),
+  );
   const daily = data.threads.some((t) => t.dayRank != null);
   const max = Math.max(0, ...events.map((e) => e.score));
   const scope = today ? '今天' : '這一天';
@@ -195,22 +146,20 @@ export default function EventDayView({ data, media, today }: { data: EventDay; m
           </div>
         )}
       </div>
-      <nav
-        aria-label="選擇日期"
-        className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
-      >
-        <DayPicker data={data} />
-        {(data.dayHours?.length ?? 0) > 1 && (
-          <details className="group">
-            <summary className="cursor-pointer text-xs text-zinc-600 select-none hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
-              看某個小時的事件表（{data.dayHours?.length} 個時段）
-            </summary>
-            <div className="mt-2">
-              <HourTimeline hours={data.dayHours ?? []} dayStats={data.dayStats} />
-            </div>
-          </details>
-        )}
-      </nav>
+      <EventDayNav
+        day={data.day}
+        days={data.days}
+        today={todayIso}
+        hourCount={data.dayHours?.length ?? 0}
+        hours={
+          <div className="space-y-2">
+            <KeywordFlowLegend major={false}>
+              <span>每欄是一個小時，列出當時前 8 名事件的關鍵字；點時間看那一小時的事件表。</span>
+            </KeywordFlowLegend>
+            <KeywordFlow {...flow} unit="名次分" label={`${data.day} 各小時的事件關鍵字`} />
+          </div>
+        }
+      />
       {today && (data.dayHours?.length ?? 0) < 6 && prev && (
         <p className="rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
           今天才過了 {data.dayHours?.length ?? 0} 個小時，事件還在累積。

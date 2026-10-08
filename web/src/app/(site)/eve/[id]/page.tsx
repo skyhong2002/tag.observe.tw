@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CAMP_LABEL, FullBar } from '@/components/CampBar';
 import EventChart, { type EventSeriesPoint } from '@/components/EventChart';
 import EventTagCloud from '@/components/EventTagCloud';
+import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
@@ -36,6 +37,7 @@ import {
 } from '@/lib/event-thread.mts';
 import { fetchThreadPart } from '@/lib/event-thread-api';
 import { isAllowedImage } from '@/lib/images';
+import { threadKeywordFlow } from '@/lib/keyword-flow.mts';
 import { mediaNames } from '@/lib/media-names.mts';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
@@ -183,6 +185,11 @@ export default async function EventThreadPage({
   // Snapshot hours and series points share the same UTC hour keys.
   const rankByHour = new Map(data.hours.map((h) => [new Date(h.hourStart).toISOString(), h.rank]));
   const rankAt = new Map(data.hours.map((h) => [hourKey(h.hourStart), h]));
+  const flow = threadKeywordFlow(
+    data.hours.map((h) => ({ hourStart: new Date(h.hourStart).toISOString(), tags: h.tags })),
+    t.majorTags,
+    trend,
+  );
   const hourlyRanks = series?.points.map((p) => rankByHour.get(p.t) ?? null) ?? [];
   const chart = series && (trend === 'day' ? dailySeries(series.points, hourlyRanks) : { points: series.points, ranks: hourlyRanks });
   const rows = cov ? outletRows(cov.byOutlet) : [];
@@ -420,6 +427,17 @@ export default async function EventThreadPage({
               ranks={chart.ranks}
               span={trend}
             />
+          </div>
+        )}
+        {flow.rows.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">關鍵字變化</h3>
+            <KeywordFlowLegend>
+              <span>
+                每欄是{trend === 'day' ? '一天' : '一個小時'}，列出這件事當時的高分關鍵字；從左往右看，哪些關鍵字在什麼時候加入、撐了多久。
+              </span>
+            </KeywordFlowLegend>
+            <KeywordFlow {...flow} dense={trend === 'hour'} unit="分數" label="這件事各時段的關鍵字" />
           </div>
         )}
         <div key={t.id} id="event-history" className="scroll-mt-20 space-y-3">
