@@ -745,3 +745,17 @@ Fresh200 own主h1同DB，generic title含固定「 - Taipei Times」suffix另核
 988crawl／attribution tests、tsc／全Biome通過。2123成功HTML對冻结13回放24不同文章，變化僅作者／provider／source及聚傳媒摘要，0正文／日期變化；MSN另6API回放1author拆分。第十四批累積25不同歷史候選：17作者credit（含具名人員與明示組織）、12supplied summaries、14source，重疊欄位同transaction，0正文／日期寫入，三立parser-only另外1既有DB已正確。所有候選fresh/fullsnapshot乾跑passed、未apply；本章commit後固定第十四批候選，本地提交未推送／部署／套用，後續新code移到第十五批。第十四批發布timer尚未建立，以實際ledger為準；需第十三批25修正完整驗證+actual resumed至少一小時後才部署。
 
 08:00既有timer自然啟動第16輪sampler PID893592，實際cwd primary checkout，HEAD bfb34f2；不改active checkout、不重開job。第十二批probe PID854082仍active、主站200／worker200；第十三批bedafe7冻结08:21probe／08:26release timers不重複啟動。正式仍bfb34f2已推送／部署／完整30修正驗證，24h觀察至18:49:13仍active，總報告及最後有界round尚未完成。
+
+### 10/8 08:21：後續批次guard、16輪新樣本與第十五批兩類metadata修正
+
+第14批89160bd已固定本地commit，25候選尚未推送／部署／套用；09:26→10:16 read-only probe及09:31release timers實際建立，prior gate必須13actualinstaller verified／exactbedafe7 live verified／full25repairs verified／queue resumed且距actualresumed至少3600秒，publisher再核對exactcleanHEAD／originmain／currentrelease／CI。隔離fixture的7個gate contract檢查passed：缺檔、actual hour不足、only24/25、priorfailed、queuepaused、wrong SHA均拒絕；fixture不是13真實部署已完成的證據，目前prior13 aggregate尚未產生。13publisher原本誤指向固定12cwd的deploy-batch12，會在version check拒絕安裝，已在08:26timer前改為專屬deploy-batch13；冻结13／14tracked commits沒改。13六支metadata/API verifier改依正式contentArticle的authors trim／normalize／empty fallback creator規則檢核，完整DB快照及原文檢核保留，syntax passed，沒有改production schema或放寬正文保護。
+
+第12批probe PID854082自然08:06:02結束，journal明示Read-only service probes completed；07:16:00.113→08:05:56.506共542home200＋542worker200，batch12-probe-summary.json已保存。後續Failed to open transient unit檔案是完成後unit移除，不是probe重跑或部署失败；這是主機端定期探測，不代表用户browser驗證或零停機。16輪sampler PID893592已08:02:47正常exit0，新增142samples／476population，累計2340samples／10510不同取得文章／237media，2262parsed／63non200／15exceptions；299baseline＋2041observation-acquired。新樣本8:00仍用正式bfb34f2，沒有改動activecheckout或重開job。
+
+台灣線報46369071 own canonical／numeric WordPress URL／main h1與OG/Twitter記事title相符，meta:name description為完整「高雄律師 台南律師 男律師 女律師…」law-office search keyword list，但同頁own og:description有該篇雇主徵才廣告法律文章的原站supplied excerpt。精確列入已審核boilerplate，不做廣泛法律字詞評分，不生成lead，讓既有候選fallback採原供應OGexcerpt及meta:og:description來源。帶相同法律字詞的真正敘事description仍保留；OG不存在時summarynull。原始description欄保持原宣告，修正独立summary選擇；writer／syndication角色本次未改。
+
+聚傳媒46368481 own唯一main heading「鄭自隆》電影評論…」、canonical及完整opening【聚論壇鄭自隆專欄】明示columnist；實際firstp只有「照片為電影預告截圖」，secondp是columnist+第一段，摘要跨到thirdp的製作方宣傳開頭。新增完整column role+同名main h1雙重核對。僅firstp為完整短photo caption、緊接secondp以完整自有credit開頭，才把own leading3directp作summary excerpt證據；不跨sidebar、後段提及、非photo前言或header姓名不符。Photo+column wrapper與supplied metadata完整相符、剩餘excerpt出現在own leading paragraphs才移除，保留原供應截斷；姓名用既有reporterNames作者role驗證，不把圖說／責任編輯當人名。原singlep記者格式維持。初始fixture未模擬真正分p結構及不完整credit負例只替換了meta，因此被fresh proof／test抓到；修正真實DOM fixture及helper後重新通過，沒有錯誤dataapply。
+
+同輪46368482明示聚傳媒特約記者陳欣如，適用已固定14的舊記者helper，仍補準備本次新取得歷史row；不把它算新parser回放變化。15 metadata plan3unique＝twline summary1+Jmedia author2/summary2，fresh200／owntitle／canonical／exactdate／fullbody／完整13field snapshot乾跑3passed，summary/author+creator同transaction，0body/date写入。台灣線報原authors[]保留、法律事務所與楊秉鈞的角色本次不猜；三筆未apply，未有backup。batch15-metadata-reviewed-plan.json／repair／verify準備完成。
+
+991crawl／attribution tests、tsc、全Biome通過；2262成功HTML對冻结14回放只有46368481的authors+summary，以及46369071的summary+summarySource，0body／date變化。第15批本地提交尚未推送／部署／回寫，unfrozen未排程；正式仍bfb34f2已推送／部署／完整30資料修正驗證，13bedafe7冻结08:26timer維持。13候選在此時另重新fresh/fullsnapshot預發布乾跑，完成狀態以實際logs/ledger為準，不宣稱尚未完成的13部署或回寫。24h觀察至18:49:13仍active，最終有界round、完整修改清單與completion audit尚未完成。
