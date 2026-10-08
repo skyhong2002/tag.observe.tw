@@ -16,6 +16,7 @@ export default function TableScroller({
   label = '可左右捲動的表格',
   className = '',
   footer,
+  startAtEnd = false,
 }: {
   children: ReactNode;
   card?: boolean;
@@ -23,12 +24,15 @@ export default function TableScroller({
   className?: string;
   /** Rendered inside the card below the scrolling area, e.g. a "show more" link. */
   footer?: ReactNode;
+  /** Open scrolled to the right edge, for time axes whose newest columns are last. */
+  startAtEnd?: boolean;
 }) {
   const ref = useRef<HTMLElement>(null);
   const [scroll, setScroll] = useState<ScrollX>();
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (startAtEnd) el.scrollLeft = el.scrollWidth;
     const update = () => {
       const max = el.scrollWidth - el.clientWidth;
       setScroll(max <= 1 ? 'none' : el.scrollLeft <= 1 ? 'start' : el.scrollLeft >= max - 1 ? 'end' : 'middle');
@@ -42,7 +46,7 @@ export default function TableScroller({
       el.removeEventListener('scroll', update);
       observer.disconnect();
     };
-  }, []);
+  }, [startAtEnd]);
   return (
     <div
       className={`table-frame relative ${card ? 'table-card overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900' : ''} ${className}`}

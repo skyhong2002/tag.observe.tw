@@ -115,7 +115,7 @@ function sectionsFor(pathname: string) {
   if (/^\/event(\/|$)/.test(pathname)) {
     return (
       <>
-        <EventMethod page={/^\/event\/archive(\/|$)/.test(pathname) ? 'archive' : 'table'} />
+        <EventMethod page="table" />
         <MediaCardMethod />
       </>
     );

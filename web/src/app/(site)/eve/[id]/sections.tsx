@@ -8,6 +8,8 @@ import {
   CAMP_ORDER,
   type Camp,
   type CoverageOutlet,
+  dayIso,
+  dayKey,
   type HourGroup,
   hourIso,
   type ThreadHour,
@@ -143,7 +145,11 @@ export function LooseReports({ items }: { items: TimedArticle[] }) {
   );
 }
 
-function HourHeading({ g, rankAt }: { g: HourGroup; rankAt: Map<number, ThreadHour> }) {
+export type GroupSpan = 'day' | 'hour';
+const dayLabel = (day: string) => `${day.slice(5).replace('-', '/')}（${'日一二三四五六'[new Date(`${day}T00:00:00Z`).getUTCDay()]}）`;
+
+function HourHeading({ g, rankAt, span }: { g: HourGroup; rankAt: Map<number, ThreadHour>; span: GroupSpan }) {
+  if (span === 'day') return <DayHeading g={g} rankAt={rankAt} />;
   const iso = hourIso(g.key);
   const h = rankAt.get(g.key);
   return (
@@ -169,13 +175,41 @@ function HourHeading({ g, rankAt }: { g: HourGroup; rankAt: Map<number, ThreadHo
   );
 }
 
-/** Every report in time order, grouped by hour. */
-export function Timeline({ groups, rankAt }: { groups: HourGroup[]; rankAt: Map<number, ThreadHour> }) {
+/** A day's heading: its reports per camp and the story's best rank that day. */
+function DayHeading({ g, rankAt }: { g: HourGroup; rankAt: Map<number, ThreadHour> }) {
+  const day = dayIso(g.key);
+  const ranks = [...rankAt.values()].filter((h) => dayKey(h.hourStart) === g.key);
+  const best = ranks.length ? Math.min(...ranks.map((h) => h.rank)) : null;
+  return (
+    <h3 className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-medium">
+      {dayLabel(day)}
+      <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">{g.items.length} 篇</span>
+      <span className="flex items-center gap-1.5 text-xs font-normal text-zinc-600 dark:text-zinc-400">
+        {CAMP_ORDER.filter((c) => g.byCamp[c].length > 0).map((c) => (
+          <span key={c} className="inline-flex items-center gap-1">
+            <CampDot camp={c} />
+            {g.byCamp[c].length}
+          </span>
+        ))}
+      </span>
+      {best ? (
+        <Link href={`/event/?day=${day}`} className="text-xs font-normal text-sky-700 hover:underline dark:text-sky-400">
+          當天最高第 {best} 名 · 上榜 {ranks.length} 小時 →
+        </Link>
+      ) : (
+        <span className="text-xs font-normal text-zinc-500">當天未上榜</span>
+      )}
+    </h3>
+  );
+}
+
+/** Every report in time order, grouped by day or by hour. */
+export function Timeline({ groups, rankAt, span }: { groups: HourGroup[]; rankAt: Map<number, ThreadHour>; span: GroupSpan }) {
   return (
     <ol className="space-y-4">
       {groups.map((g) => (
         <li key={g.key}>
-          <HourHeading g={g} rankAt={rankAt} />
+          <HourHeading g={g} rankAt={rankAt} span={span} />
           <ul className={`${card} divide-y divide-zinc-100 px-3 text-sm dark:divide-zinc-800`}>
             {g.items.map((a) => (
               <HeadlineRow key={a.id} a={a} />
@@ -187,9 +221,9 @@ export function Timeline({ groups, rankAt }: { groups: HourGroup[]; rankAt: Map<
   );
 }
 
-/** Same hour, three columns: what blue-leaning, green-leaning and other
- *  outlets ran side by side, so the framing can be read across. */
-export function CampColumns({ groups, rankAt }: { groups: HourGroup[]; rankAt: Map<number, ThreadHour> }) {
+/** Same day (or hour), three columns: what blue-leaning, green-leaning and
+ *  other outlets ran side by side, so the framing can be read across. */
+export function CampColumns({ groups, rankAt, span }: { groups: HourGroup[]; rankAt: Map<number, ThreadHour>; span: GroupSpan }) {
   const head = (c: Camp, n: number) => (
     <p className={`mb-1 flex items-center gap-1.5 text-xs font-medium ${CAMP_TEXT[c]}`}>
       <CampDot camp={c} />
@@ -201,7 +235,7 @@ export function CampColumns({ groups, rankAt }: { groups: HourGroup[]; rankAt: M
     <ol className="space-y-5">
       {groups.map((g) => (
         <li key={g.key}>
-          <HourHeading g={g} rankAt={rankAt} />
+          <HourHeading g={g} rankAt={rankAt} span={span} />
           <div className="grid gap-3 md:grid-cols-3">
             {CAMP_ORDER.map((c) => (
               <div

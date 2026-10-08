@@ -78,6 +78,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/articles`](#api-v1-articles) | 文章搜尋 |
 | [`GET /api/v1/tags/{tag}/articles`](#api-v1-tags-tag-articles) | 帶有某標籤的最新文章 |
 | [`GET /api/v1/tags/{tag}/series`](#api-v1-tags-tag-series) | 標籤每小時的分數與文章數 |
+| [`GET /api/v1/tags/{tag}/flow`](#api-v1-tags-tag-flow) | 和這個標籤一起出現的關鍵字，逐小時 |
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
@@ -1479,6 +1480,39 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 
 錯誤：`404` 未知分類。
 
+<a id="api-v1-tags-tag-flow"></a>
+
+### `GET /api/v1/tags/{tag}/flow`
+
+**和這個標籤一起出現的關鍵字，逐小時**
+
+標了這個標籤的報導（依發布時間，最近的在前，最多 20000 篇），每小時統計它們還帶了哪些其他標籤：每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱，每小時保留至少 2 篇帶到的前 15 個。沒有報導的小時不列出。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`沈伯洋` |
+| `hours` | query | integer | 往前幾小時，1–744，預設 `336`，例：`336` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hours=336'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `hours` | integer |  |
+| `from` | string (ISO 時間) |  |
+| `to` | string (ISO 時間) |  |
+| `sampled` | boolean | 報導超過上限、只讀了最新的 20000 篇 |
+| `points` | object[] |  |
+| `points[].t` | string (ISO 時間) | 小時起點（UTC） |
+| `points[].count` | integer | 該小時標了這個標籤的報導篇數 |
+| `points[].tags` | string[][] | [標籤, 同時帶到它的篇數]，多的在前 |
+
 <a id="api-v1-tags-tag-status"></a>
 
 ### `GET /api/v1/tags/{tag}/status`
@@ -1654,7 +1688,7 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 
 **某一天的所有事件串**
 
-台北時間某一天內曾出現的事件串，依最高分排序（最多 300 個）。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。
+台北時間某一天內曾出現的事件串（最多 300 個），依當天的事件排序：同一件事的事件串合併（`foldedInto`／`folded`），依當天各小時爆發力加總（`storyWeight`）排名，合併進來的事件串緊接在主事件串之後。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -1694,7 +1728,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | `threads[].majorTags` | string[] |  |
 | `threads[].maxTag` | string \| null | 分數最高的標籤 |
 | `threads[].maxScore` | number |  |
-| `threads[].bestRank` | integer \| null | 最佳名次 |
+| `threads[].bestRank` | integer \| null | 當天的最佳名次 |
 | `threads[].rankTrail` | integer \| null[] \| null | 到 trailEnd 為止 24 個快照小時的名次（最舊在前）；不在榜上的小時為 null |
 | `threads[].trailEnd` | string (ISO 時間) \| null | 名次走勢的最後一小時：事件串當天最後在榜的小時 |
 | `threads[].coverage` | object |  |
@@ -1712,7 +1746,14 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | `threads[].coverage.lean` | number \| null | 藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠 |
 | `threads[].coverage.tilt` | string \| null | 明顯偏向的陣營（\|lean\| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家） |
 | `threads[].coverage.blindspot` | string[] | 盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事 |
-| `threads[].news` | object[] | 最佳名次那一小時的代表新聞（最多 6 則），各附媒體陣營 camp |
+| `threads[].dayRank` | integer \| null | 這件事在當天的名次；合併進來的事件串與主事件串相同 |
+| `threads[].dayWeight` | number | 這條事件串當天各上榜小時爆發力的加總 |
+| `threads[].storyWeight` | number | 這件事（主事件串加上合併進來的）當天的爆發力加總，dayRank 依此排序 |
+| `threads[].hoursOnDay` | integer | 當天上榜的小時數 |
+| `threads[].dayTrail` | integer \| null[] \| null | 當天 00 時到 23 時各小時的名次；不在榜上的小時為 null |
+| `threads[].foldedInto` | integer \| null | 若是同一件事被另開的事件串，主事件串的 id |
+| `threads[].folded` | integer[] | 合併進這條主事件串的其他事件串 id |
+| `threads[].news` | object[] | 當天最佳名次那一小時的代表新聞（最多 6 則；當天沒有則取整段期間），各附媒體陣營 camp |
 | `threads[].news[].id` | integer \| null | 文章 id（舊資料可能為 null） |
 | `threads[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `threads[].news[].title` | string | 標題 |
@@ -1797,7 +1838,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/period?days=7'
 
 **單一事件串**
 
-事件串的整體資訊與逐小時紀錄（最多 72 小時，新到舊）。`thread.history` 的鍵是台北時間 `YYYY-MM-DD HH:00:00`。
+事件串的整體資訊與逐小時紀錄（最近 336 小時，即 14 天，新到舊）。`thread.history` 的鍵是台北時間 `YYYY-MM-DD HH:00:00`。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -1894,7 +1935,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/series'
 
 **同一事件的各家標題對照**
 
-帶有事件主要標籤的所有文章，依媒體與藍／綠／其他分組。`blindspot` 列出「對方陣營有報、這一方完全沒報」的陣營。
+帶有事件主要標籤的文章（最近 14 天，每個台北日最多 400 篇），依媒體與藍／綠／其他分組。`blindspot` 列出「對方陣營有報、這一方完全沒報」的陣營。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |

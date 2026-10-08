@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
-// 事件表 (/event/), its day archive (/event/archive/) and one event (/eve/[id]/).
+// 事件表 (/event/: by day, or one hour with ?at= / ?view=hour) and one event (/eve/[id]/).
 // Thresholds and cadences come from app/src/v1/event-feed.ts (重點, 盲點),
 // app/src/v1/coverage.ts (one event's 盲點), app/src/worker.ts (events at :04
 // and :34) and app/src/jobs/events-*.ts (clustering, threads, links).
@@ -64,7 +64,8 @@ export function EventMethod({ page }: { page?: EventMethodPage }) {
             <Link href="/ranking/" className={inlineLink}>
               關鍵字排行
             </Link>
-            的指標；歷史不足的標籤改用分數），事件表依此排名。爆發力條以本小時第 1 名為滿格。
+            的指標；歷史不足的標籤改用分數），每小時事件表依此排名，爆發力條以本小時第 1 名為滿格；每日事件表的「全天熱度」條以當天第 1
+            名為滿格。
           </dd>
           <dt className={methodTerm}>名次變動</dt>
           <dd>
@@ -86,12 +87,21 @@ export function EventMethod({ page }: { page?: EventMethodPage }) {
           </dd>
         </dl>
       )}
-      {(all || page === 'archive') && (
-        <p>
-          存檔：一天的存檔列出當天任一小時上過事件表的事件，依事件期間的最高爆發力排序，爆發力條以當天第 1
-          名為滿格；名次是這件事在每小時事件表上的最佳名次，時間是它在事件表上的起訖，名次走勢從它第一次上榜的小時畫起。藍綠比例在過去的日子以當天（台北時間）計，今天以過去
-          24 小時計。
-        </p>
+      {table && (
+        <>
+          <h3 className={methodHeading}>每日與每小時</h3>
+          <dl className={methodList}>
+            <dt className={methodTerm}>每日（預設）</dt>
+            <dd>
+              事件表預設顯示一整天（台北時間）：列出當天任一小時上過事件表的事件，依「全天熱度」排序，也就是這件事當天每個上榜小時的爆發力加總，上榜越久、越高越前面。分群每小時重算，同一件事常被拆成幾條事件串；當天兩條事件串第一個主要標籤相同、主要標籤至少
+              2 個相同（只有 1
+              個主要標籤時則該標籤相同），或代表標題是同一篇報導時，併為一件事，熱度相加，其餘事件串列在「同一件事的其他發展」。名次是這件事當天在每小時事件表上的最佳名次（點名次可看那個小時的事件表），上榜小時與時段只計當天；名次走勢畫當天
+              00 時到 23 時各小時的名次。標題取自它當天名次最好的小時。藍綠比例在過去的日子以當天計，今天以過去 24 小時計。
+            </dd>
+            <dt className={methodTerm}>每小時</dt>
+            <dd>切到「每小時」可看單一小時的事件表，依該小時的爆發力排序，並顯示與前一小時相比的名次變化。</dd>
+          </dl>
+        </>
       )}
       {table && (
         <>
@@ -152,21 +162,21 @@ export function EventThreadMethod({
       <dl className={methodList}>
         <dt className={methodTerm}>事件與標籤</dt>
         <dd>
-          事件表每半小時依標籤共現分群，每件事每小時列出前 12 個標籤與分數；標籤雲合併這則事件整段期間（最近 72
-          個上榜小時）的標籤，字越大最高分越高，移到字上可看最高分、出現時間與出現小時數。橘色是主要標籤：這件事各小時最常被選為主要標籤的前
-          5 個{majorTags?.length ? `（${majorTags.join('、')}）` : ''}
+          事件表每半小時依標籤共現分群，每件事每小時列出前 12 個標籤與分數；標籤雲合併這則事件整段期間（最近 336 個上榜小時，即 14
+          天）的標籤，字越大最高分越高，移到字上可看最高分、出現時間與出現小時數。橘色是主要標籤：這件事各小時最常被選為主要標籤的前 5 個
+          {majorTags?.length ? `（${majorTags.join('、')}）` : ''}
           。報導分布與標題對照都依主要標籤計算，其餘標籤只出現在標籤雲與每小時列表。「最高分」取各小時最高分與事件紀錄中的較大者。
         </dd>
         <dt className={methodTerm}>時間變化</dt>
         <dd>
           上圖：各主要標籤每小時的分數（與標籤頁相同，採固定媒體基準，歷史不足留白），虛線為這則事件在事件表上的名次（右軸，第 1
           名在最上面，未上榜的小時留空）；下圖：所有媒體帶有任一主要標籤的報導篇數。灰底為這則事件出現在事件表上的時段，前後各多顯示 12
-          小時。每小時列表點時間可看當時整張事件表，標籤後的數字是該小時分數。
+          小時。預設以天為單位：每天的報導篇數相加，標籤分數與名次取當天最高；可切換成每小時。名次表預設每天一列（當天最高名次、上榜小時數、最高分與當天最常見的主要標籤），點「逐時」或切到每小時可看當天各小時；標題對照預設依日期分組。點時間可看當時整張事件表，標籤後的數字是該小時（或當天最高）的分數。
         </dd>
         <dt className={methodTerm}>各媒體報導量</dt>
         <dd>
           {coverage ? `以主要標籤在 ${hour(coverage.from)} 至 ${hour(coverage.to)} 之間的報導計算` : '以主要標籤在事件期間的報導計算'}
-          （從第一次上榜前 6 小時到最後一次上榜後 1 小時，最多 400
+          （從第一次上榜前 6 小時到最後一次上榜後 1 小時，最多最近 14 天，每天最多 400
           篇）；同一家媒體同標題只算一次。「依媒體家數」每家算一次，「依報導篇數」逐篇計；「各陣營最早報導」是各陣營最早刊登的一則。這一頁的盲點指整段期間一方陣營完全沒有報導、另一方有，比事件表的標準（一營至多
           1 家、另一營至少 4 家）嚴。表格點欄名可排序，預設顯示前 5 家。
         </dd>

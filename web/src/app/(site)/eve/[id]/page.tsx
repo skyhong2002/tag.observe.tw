@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CAMP_LABEL, FullBar } from '@/components/CampBar';
 import EventChart, { type EventSeriesPoint } from '@/components/EventChart';
 import EventTagCloud from '@/components/EventTagCloud';
+import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SafeImage from '@/components/SafeImage';
@@ -16,9 +17,12 @@ import {
   bestRank,
   type Camp,
   type CoverageOutlet,
+  dailySeries,
+  dayKey,
   defaultDir,
   firstReports,
   flattenArticles,
+  groupByDay,
   groupByHour,
   hourKey,
   leadStories,
@@ -29,9 +33,11 @@ import {
   splitByRelevance,
   type ThreadHour,
   tagStats,
+  threadDays,
 } from '@/lib/event-thread.mts';
 import { fetchThreadPart } from '@/lib/event-thread-api';
 import { isAllowedImage } from '@/lib/images';
+import { threadKeywordFlow } from '@/lib/keyword-flow.mts';
 import { mediaNames } from '@/lib/media-names.mts';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
@@ -39,7 +45,18 @@ import { pageMetadata, pageSchema } from '@/lib/seo.mts';
 import ContinuationLinks from './ContinuationLinks';
 import HourTable from './HourTable';
 import OutletTable from './OutletTable';
-import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, LeadStories, LooseReports, SectionTitle, StatTiles, Timeline } from './sections';
+import {
+  ByOutlet,
+  CAMP_TEXT,
+  CampColumns,
+  CampDot,
+  type GroupSpan,
+  LeadStories,
+  LooseReports,
+  SectionTitle,
+  StatTiles,
+  Timeline,
+} from './sections';
 
 export const revalidate = 120;
 
@@ -117,12 +134,18 @@ function asEventCoverage(cov: Coverage, by: 'outlets' | 'articles'): EventCovera
   };
 }
 
+/** "10/8（四）" in Taipei time. */
+const mdDay = (iso: string) => {
+  const d = new Date(Date.parse(iso) + 8 * 3600e3);
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${'日一二三四五六'[d.getUTCDay()]}）`;
+};
+
 export default async function EventThreadPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string; at?: string }>;
+  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string; at?: string; group?: string; trend?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -131,6 +154,10 @@ export default async function EventThreadPage({
   const dir: 'asc' | 'desc' = sp.dir === 'asc' || sp.dir === 'desc' ? sp.dir : defaultDir(sort);
   // Headlines run newest first unless the reader asks for the story in order.
   const order: 'asc' | 'desc' = sp.order === 'asc' ? 'asc' : 'desc';
+  // Headlines are grouped by day unless the reader asks for hours.
+  const span: GroupSpan = sp.group === 'hour' ? 'hour' : 'day';
+  // So does the trend chart; an ?at= link to one hour keeps it hourly.
+  const trend: GroupSpan = sp.trend === 'hour' || (sp.at && sp.trend !== 'day') ? 'hour' : 'day';
   // Coverage and series are separate, heavier queries; the page still renders without them.
   const [data, cov, series] = await Promise.all([
     fetchThread(id),
@@ -151,9 +178,20 @@ export default async function EventThreadPage({
   const stats = tagStats(data.hours, t.majorTags);
   const best = bestRank(data.hours);
   const peakHour = data.hours.reduce<Hour | null>((m, h) => (!m || h.score > m.score ? h : m), null);
+  // The story by day: how many Taipei days it ran, and on how many it led.
+  const days = threadDays(data.hours.map((h) => ({ ...h, hourStart: new Date(h.hourStart).toISOString() })));
+  const daySpan = dayKey(new Date(t.lastTime).toISOString()) - dayKey(new Date(t.firstTime).toISOString()) + 1;
+  const bestDays = best ? days.filter((d) => d.bestRank === best.rank).length : 0;
   // Snapshot hours and series points share the same UTC hour keys.
   const rankByHour = new Map(data.hours.map((h) => [new Date(h.hourStart).toISOString(), h.rank]));
   const rankAt = new Map(data.hours.map((h) => [hourKey(h.hourStart), h]));
+  const flow = threadKeywordFlow(
+    data.hours.map((h) => ({ hourStart: new Date(h.hourStart).toISOString(), tags: h.tags })),
+    t.majorTags,
+    trend,
+  );
+  const hourlyRanks = series?.points.map((p) => rankByHour.get(p.t) ?? null) ?? [];
+  const chart = series && (trend === 'day' ? dailySeries(series.points, hourlyRanks) : { points: series.points, ranks: hourlyRanks });
   const rows = cov ? outletRows(cov.byOutlet) : [];
   // Reports naming only one of several broad major tags are mostly other news;
   // the headline list leads with the rest and folds those away.
@@ -161,7 +199,7 @@ export default async function EventThreadPage({
     ? splitByRelevance(cov.byOutlet, relevanceFloor(cov.byOutlet, cov.majorTags.length))
     : { core: [], fringe: [] };
   const coreCount = core.reduce((n, o) => n + o.articles.length, 0);
-  const groups = groupByHour(flattenArticles(core, order));
+  const groups = (span === 'hour' ? groupByHour : groupByDay)(flattenArticles(core, order));
   const loose = flattenArticles(fringe, order);
   // The headline's own report already sits at the top of the page.
   const leads = leadStories(core.map((o) => ({ ...o, articles: o.articles.filter((a) => a.id !== lead?.id) })));
@@ -175,6 +213,8 @@ export default async function EventThreadPage({
       at: sp.at,
       view: view === 'timeline' ? undefined : view,
       order: order === 'desc' ? undefined : order,
+      group: span === 'day' ? undefined : span,
+      trend: sp.trend,
       sort: sort === 'articles' ? undefined : sort,
       dir: sort === 'articles' && dir === 'desc' ? undefined : dir,
       ...q,
@@ -277,8 +317,9 @@ export default async function EventThreadPage({
               ))}
           </p>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {taipeiHour(t.firstTime)} 至 {taipeiHour(t.lastTime)} · 上榜 {t.hours} 小時
-            {t.hoursTotal && t.hoursTotal > t.hours ? `（含延續事件共 ${t.hoursTotal} 小時）` : ''}
+            {mdDay(t.firstTime)}
+            {daySpan > 1 && ` 至 ${mdDay(t.lastTime)}`} · 上榜 {daySpan} 天（共 {t.hours} 小時）
+            {t.hoursTotal && t.hoursTotal > t.hours ? `，含延續事件共 ${t.hoursTotal} 小時` : ''}
             {continuationCount > 0 && (
               <a href="#event-history" className="ml-2 text-brand-700 hover:underline dark:text-brand-400">
                 前後續與相關事件 {continuationCount} 件 ↓
@@ -323,19 +364,19 @@ export default async function EventThreadPage({
           {
             label: '事件表名次',
             value: best ? `最高第 ${best.rank} 名` : '—',
-            note: best ? `${best.hours} 小時在第 ${best.rank} 名 · 共上榜 ${t.hours} 小時` : undefined,
+            note: best ? `${bestDays} 天登上第 ${best.rank} 名 · 共上榜 ${daySpan} 天` : undefined,
           },
           {
             label: '最高分',
             value: (peakHour ? Math.max(peakHour.score, t.maxScore) : t.maxScore).toFixed(1),
             note: peakHour
-              ? `${taipeiHour(peakHour.hourStart)}，由「${peakHour.tags[0]?.[0] ?? t.maxTag ?? '—'}」帶動`
+              ? `${mdDay(peakHour.hourStart)}，由「${peakHour.tags[0]?.[0] ?? t.maxTag ?? '—'}」帶動`
               : (t.maxTag ?? undefined),
           },
           {
             label: '報導',
             value: cov ? `${cov.articles} 篇` : '—',
-            note: cov ? `${cov.outlets} 家媒體 · ${taipeiHour(cov.from)} 起` : '報導分布暫時無法取得',
+            note: cov ? `${cov.outlets} 家媒體 · ${mdDay(cov.from)} 起` : '報導分布暫時無法取得',
           },
           {
             label: '藍綠家數',
@@ -356,15 +397,47 @@ export default async function EventThreadPage({
       />
 
       <section className="space-y-3">
-        <SectionTitle id="trend">時間變化</SectionTitle>
-        {series && series.points.length > 1 && (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <SectionTitle id="trend">時間變化</SectionTitle>
+          <nav className="inline-flex rounded-md bg-zinc-100 p-0.5 text-xs dark:bg-zinc-800" aria-label="時間變化的單位">
+            {(
+              [
+                ['day', '每日'],
+                ['hour', '每小時'],
+              ] as const
+            ).map(([v, name]) => (
+              <Link
+                key={v}
+                href={href({ trend: v === 'day' ? (sp.at ? 'day' : undefined) : 'hour' }, 'trend')}
+                scroll={false}
+                aria-current={v === trend ? 'page' : undefined}
+                className={`rounded px-2.5 py-0.5 ${v === trend ? 'bg-white font-medium shadow-sm dark:bg-zinc-700' : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'}`}
+              >
+                {name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        {chart && chart.points.length > 1 && (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <EventChart
-              points={series.points}
-              tags={series.tags}
+              points={chart.points}
+              tags={series?.tags ?? []}
               active={{ from: t.firstTime, to: t.lastTime }}
-              ranks={series.points.map((p) => rankByHour.get(p.t) ?? null)}
+              ranks={chart.ranks}
+              span={trend}
             />
+          </div>
+        )}
+        {flow.rows.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">關鍵字變化</h3>
+            <KeywordFlowLegend>
+              <span>
+                每欄是{trend === 'day' ? '一天' : '一個小時'}，列出這件事當時的高分關鍵字；從左往右看，哪些關鍵字在什麼時候加入、撐了多久。
+              </span>
+            </KeywordFlowLegend>
+            <KeywordFlow {...flow} dense={trend === 'hour'} unit="分數" label="這件事各時段的關鍵字" />
           </div>
         )}
         <div key={t.id} id="event-history" className="scroll-mt-20 space-y-3">
@@ -459,6 +532,24 @@ export default async function EventThreadPage({
                 </Link>
               ))}
               <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />
+              {view !== 'outlets' &&
+                (
+                  [
+                    ['day', '每日'],
+                    ['hour', '每小時'],
+                  ] as const
+                ).map(([g, name]) => (
+                  <Link
+                    key={g}
+                    href={href({ group: g === 'day' ? undefined : g }, 'headlines')}
+                    scroll={false}
+                    aria-current={g === span ? 'page' : undefined}
+                    className={`rounded-md px-3 py-1 ${g === span ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
+                  >
+                    {name}
+                  </Link>
+                ))}
+              {view !== 'outlets' && <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />}
               {VIEWS.map(([v, name]) => (
                 <Link
                   key={v}
@@ -475,9 +566,9 @@ export default async function EventThreadPage({
         </div>
         {coreCount > 0 ? (
           view === 'timeline' ? (
-            <Timeline groups={groups} rankAt={rankAt} />
+            <Timeline groups={groups} rankAt={rankAt} span={span} />
           ) : view === 'camps' ? (
-            <CampColumns groups={groups} rankAt={rankAt} />
+            <CampColumns groups={groups} rankAt={rankAt} span={span} />
           ) : (
             <ByOutlet byOutlet={core} order={order} />
           )

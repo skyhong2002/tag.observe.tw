@@ -25,10 +25,14 @@ const CAMPS = [
   { key: 'other', name: '其他媒體', light: '#a1a1aa', dark: '#71717a' },
 ] as const;
 
-const label = (iso: string) => {
+const label = (iso: string, span: 'day' | 'hour' = 'hour') => {
   const d = new Date(Date.parse(iso) + 8 * 3600e3);
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, '0')}:00`;
+  return span === 'day'
+    ? `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${'日一二三四五六'[d.getUTCDay()]}）`
+    : `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, '0')}:00`;
 };
+/** Start of the Taipei day holding `ms`. */
+const dayStart = (ms: number) => Math.floor((ms + 8 * 3600e3) / 864e5) * 864e5 - 8 * 3600e3;
 
 function useDark() {
   const [dark, setDark] = useState(false);
@@ -48,8 +52,11 @@ export default function EventChart({
   tags,
   active,
   ranks,
+  span = 'hour',
 }: {
   points: EventSeriesPoint[];
+  /** One point per hour, or per Taipei day (points already summed by day). */
+  span?: 'day' | 'hour';
   tags: string[];
   /** The event's own span, shaded on both panels. */
   active: { from: string; to: string };
@@ -72,7 +79,8 @@ export default function EventChart({
     const width = ref.current.clientWidth;
     const ink = dark ? '#a1a1aa' : '#71717a',
       grid = dark ? '#27272a' : '#f4f4f5';
-    const labels = points.map((p) => label(p.t));
+    const fmt = (iso: string) => label(iso, span);
+    const labels = points.map((p) => fmt(p.t));
     const rankData = ranks ?? points.map(() => null);
     const hasRank = rankData.some((r) => r !== null);
     const rankColor = dark ? '#38bdf8' : '#0369a1';
@@ -81,9 +89,11 @@ export default function EventChart({
     // Clamp both edges onto the axis, and drop the band if it falls outside.
     const first = Date.parse(points[0]?.t ?? ''),
       last = Date.parse(points.at(-1)?.t ?? '');
-    const from = Math.max(Date.parse(active.from), first),
-      to = Math.min(Date.parse(active.to), last);
-    const band = from <= to ? [[{ xAxis: label(new Date(from).toISOString()) }, { xAxis: label(new Date(to).toISOString()) }]] : [];
+    // By day, the band covers the days the event touched.
+    const edge = (ms: number) => (span === 'day' ? dayStart(ms) : ms);
+    const from = Math.max(edge(Date.parse(active.from)), first),
+      to = Math.min(edge(Date.parse(active.to)), last);
+    const band = from <= to ? [[{ xAxis: fmt(new Date(from).toISOString()) }, { xAxis: fmt(new Date(to).toISOString()) }]] : [];
     const markArea = { silent: true, itemStyle: { color: dark ? 'rgba(250,250,250,0.06)' : 'rgba(24,24,27,0.05)' }, data: band };
     const axis = (i: number) => ({
       type: 'category',
@@ -120,11 +130,12 @@ export default function EventChart({
         formatter: (items: Array<{ seriesName: string; value: number; marker: string; dataIndex: number; seriesIndex: number }>) => {
           const p = points[items[0]?.dataIndex ?? 0];
           const lines = items.map((it) => {
-            if (it.seriesName === '事件表名次') return `${it.marker}事件表名次　${it.value == null ? '未上榜' : `第 ${it.value} 名`}`;
+            if (it.seriesName === '事件表名次')
+              return `${it.marker}事件表${span === 'day' ? '當天最高' : ''}名次　${it.value == null ? '未上榜' : `第 ${it.value} 名`}`;
             const rank = it.seriesIndex < tags.length ? p.tags?.[it.seriesName]?.rank : null;
             return `${it.marker}${it.seriesName}　${it.value}${rank ? `（第 ${rank} 名）` : ''}`;
           });
-          return [label(p.t), ...lines].join('<br/>');
+          return [fmt(p.t), ...lines].join('<br/>');
         },
       },
       legend: { type: 'scroll', top: 0, textStyle: { color: ink }, pageTextStyle: { color: ink } },
@@ -191,7 +202,7 @@ export default function EventChart({
           stack: 'camp',
           xAxisIndex: 1,
           yAxisIndex: 1,
-          barMaxWidth: 14,
+          barMaxWidth: span === 'day' ? 40 : 14,
           color: dark ? c.dark : c.light,
           itemStyle: { borderColor: dark ? '#18181b' : '#ffffff', borderWidth: 1 },
           data: points.map((p) => p[c.key]),
@@ -204,6 +215,8 @@ export default function EventChart({
     return () => {
       window.removeEventListener('resize', onResize);
     };
-  }, [points, tags, active, dark, ranks]);
-  return <div ref={ref} className="h-96 w-full" role="img" aria-label="事件主要標籤分數與每小時報導篇數" />;
+  }, [points, tags, active, dark, ranks, span]);
+  return (
+    <div ref={ref} className="h-96 w-full" role="img" aria-label={`事件主要標籤分數與${span === 'day' ? '每日' : '每小時'}報導篇數`} />
+  );
 }

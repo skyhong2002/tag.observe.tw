@@ -79,6 +79,85 @@ export function trailsEnding(
   return out;
 }
 
+/** Threads re-opened for the same story show up under another id: one sharing
+ *  the leading tag, or at least half of the smaller major set, is the same story. */
+export function sameStory(mine: readonly string[], theirs: readonly string[]) {
+  const shared = mine.filter((tag) => theirs.includes(tag)).length;
+  return (mine[0] !== undefined && mine[0] === theirs[0]) || (shared > 0 && shared >= Math.ceil(Math.min(mine.length, theirs.length) / 2));
+}
+
+/** Each thread's hours on the table: the best score of the hour (a thread can
+ *  hold two ranks in one hour) and its best rank, keyed by hour start. */
+function hourlyByThread(rows: ReadonlyArray<{ threadId: number | null; hourStart: Date; score: number; rank: number }>) {
+  const hourly = new Map<number, Map<number, { score: number; rank: number }>>();
+  for (const r of rows) {
+    if (r.threadId == null) continue;
+    const hours = hourly.get(r.threadId) ?? new Map();
+    const at = hours.get(r.hourStart.getTime());
+    if (!at || r.score > at.score) hours.set(r.hourStart.getTime(), { score: r.score, rank: Math.min(r.rank, at?.rank ?? r.rank) });
+    else at.rank = Math.min(at.rank, r.rank);
+    hourly.set(r.threadId, hours);
+  }
+  return hourly;
+}
+
+/** A thread's run within one Taipei day: the summed hourly score (how long and
+ *  how high it ran that day), hours on the table, best rank, and the rank in
+ *  each hour 00:00–23:00 so every card's line shares the same clock. */
+export function dayRuns(rows: ReadonlyArray<{ threadId: number | null; hourStart: Date; score: number; rank: number }>, from: Date) {
+  const out = new Map<number, { weight: number; hours: number; bestRank: number | null; trail: Array<number | null> }>();
+  for (const [id, hours] of hourlyByThread(rows)) {
+    const trail: Array<number | null> = Array.from({ length: 24 }, () => null);
+    let weight = 0,
+      n = 0,
+      best: number | null = null;
+    for (const [t, h] of hours) {
+      const i = Math.round((t - from.getTime()) / HOUR);
+      if (i < 0 || i >= 24) continue;
+      trail[i] = h.rank;
+      weight += h.score;
+      n++;
+      best = best === null ? h.rank : Math.min(best, h.rank);
+    }
+    out.set(id, { weight, hours: n, bestRank: best, trail });
+  }
+  return out;
+}
+
+/** Within one day the period rule is too loose: a two-tag thread sharing one
+ *  tag (民眾黨, 賴清德) with a big story is usually a different story. Fold only
+ *  on the same leading tag, two shared major tags, a one-tag thread whose tag
+ *  the other carries, or the same report in both threads' headlines. */
+export function sameDayStory(
+  mine: { major: readonly string[]; urls: readonly string[] },
+  theirs: { major: readonly string[]; urls: readonly string[] },
+) {
+  const shared = mine.major.filter((tag) => theirs.major.includes(tag)).length;
+  if (mine.major[0] !== undefined && mine.major[0] === theirs.major[0]) return true;
+  if (shared >= 2 || (shared === 1 && Math.min(mine.major.length, theirs.major.length) === 1)) return true;
+  return mine.urls[0] !== undefined && (theirs.urls.includes(mine.urls[0]) || mine.urls.includes(theirs.urls[0] ?? ''));
+}
+
+/** Order a day's threads by weight and fold each re-opened duplicate into the
+ *  heaviest earlier thread of the same story; a story's weight is its threads' sum. */
+export function foldDayThreads(
+  weights: ReadonlyMap<number, number>,
+  stories: ReadonlyMap<number, { major: readonly string[]; urls: readonly string[] }>,
+) {
+  const none = { major: [], urls: [] };
+  const ordered = [...weights].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+  const leads: Array<{ id: number; weight: number; folded: number[] }> = [];
+  for (const [id, weight] of ordered) {
+    const mine = stories.get(id) ?? none;
+    const lead = leads.find((l) => [l.id, ...l.folded].some((o) => sameDayStory(mine, stories.get(o) ?? none)));
+    if (lead) {
+      lead.folded.push(id);
+      lead.weight += weight;
+    } else leads.push({ id, weight, folded: [] });
+  }
+  return leads.sort((a, b) => b.weight - a.weight || a.id - b.id);
+}
+
 export async function threadsOnDay(db: Db, category: string, day: string, now = new Date()) {
   const { from, to } = dayRange(day);
   const threads = await db
@@ -95,21 +174,28 @@ export async function threadsOnDay(db: Db, category: string, day: string, now = 
     .where(and(eq(eventThreads.category, category), lt(eventThreads.firstTime, to), gte(eventThreads.lastTime, from)))
     .orderBy(desc(eventThreads.maxScore))
     .limit(300);
-  // Each thread's best-ranked hour supplies its headlines.
-  const best = new Map<
-    number,
-    { rank: number; news: Array<{ id?: number; title: string; url: string; image: string | null; media: string }> }
-  >();
+  // Each thread's best-ranked hour supplies its headlines, preferring an hour
+  // of this day so a long-running story shows what was said that day.
+  type News = Array<{ id?: number; title: string; url: string; image: string | null; media: string }>;
+  const best = new Map<number, { rank: number; inDay: boolean; news: News }>();
   const ids = threads.map((t) => t.id);
   for (let i = 0; i < ids.length; i += 100) {
     const rows = await db
-      .select({ threadId: events.threadId, rank: events.rank, news: events.news, majorNews: events.majorNews })
+      .select({
+        threadId: events.threadId,
+        rank: events.rank,
+        news: events.news,
+        majorNews: events.majorNews,
+        hourStart: eventSnapshots.hourStart,
+      })
       .from(events)
+      .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
       .where(inArray(events.threadId, ids.slice(i, i + 100)));
     for (const r of rows) {
       const cur = best.get(r.threadId as number);
-      if (!cur || r.rank < cur.rank)
-        best.set(r.threadId as number, { rank: r.rank, news: (r.majorNews.length ? r.majorNews : r.news).slice(0, 6) });
+      const inDay = r.hourStart >= from && r.hourStart < to;
+      if (!cur || (inDay && !cur.inDay) || (inDay === cur.inDay && r.rank < cur.rank))
+        best.set(r.threadId as number, { rank: r.rank, inDay, news: (r.majorNews.length ? r.majorNews : r.news).slice(0, 6) });
     }
   }
   // Who covered each thread, judged against the window's camp split exactly as
@@ -133,7 +219,7 @@ export async function threadsOnDay(db: Db, category: string, day: string, now = 
   const ends = new Map(threads.map((t) => [t.id, last && t.lastTime > last ? last : t.lastTime]));
   const endTimes = [...ends.values()].map((d) => d.getTime());
   const trailFrom = new Date(Math.min(...endTimes, from.getTime()) - (TRAIL_SPAN - 1) * HOUR);
-  const [coverage, dayStats, trails] = await Promise.all([
+  const [coverage, dayStats, trails, trailRows] = await Promise.all([
     coverageBetween(
       db,
       start,
@@ -146,7 +232,7 @@ export async function threadsOnDay(db: Db, category: string, day: string, now = 
     ids.length === 0
       ? []
       : db
-          .select({ threadId: events.threadId, hourStart: eventSnapshots.hourStart, rank: events.rank })
+          .select({ threadId: events.threadId, hourStart: eventSnapshots.hourStart, rank: events.rank, score: events.score })
           .from(events)
           .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
           .where(
@@ -157,29 +243,53 @@ export async function threadsOnDay(db: Db, category: string, day: string, now = 
               lt(eventSnapshots.hourStart, to),
             ),
           ),
-  ]).then(([c, s, rows]) => [c, s, trailsEnding(rows, ends, TRAIL_SPAN)] as const);
+  ]).then(([c, s, rows]) => [c, s, trailsEnding(rows, ends, TRAIL_SPAN), rows] as const);
+  // The day's own ranking: summed hourly score that day, same stories folded.
+  const runs = dayRuns(trailRows, from);
+  const stories = foldDayThreads(
+    new Map(threads.map((t) => [t.id, runs.get(t.id)?.weight ?? 0])),
+    new Map(threads.map((t) => [t.id, { major: t.majorTags, urls: (best.get(t.id)?.news ?? []).map((n) => n.url) }])),
+  );
+  const story = new Map<number, { rank: number; weight: number; lead: number; folded: number[] }>();
+  stories.forEach((s, i) => {
+    for (const id of [s.id, ...s.folded]) story.set(id, { rank: i + 1, weight: s.weight, lead: s.id, folded: s.folded });
+  });
+  const order = new Map(stories.flatMap((s) => [s.id, ...s.folded]).map((id, i) => [id, i]));
   return {
     day,
     days: days.map((r) => r.d).sort(),
     dayHours: dayHours.map((h) => h.toISOString()),
     dayStats,
     baseline,
-    threads: threads.map((t, i) => ({
-      ...t,
-      maxScore: t.maxScore / 1e6,
-      bestRank: best.get(t.id)?.rank ?? null,
-      rankTrail: trails.get(t.id) ?? null,
-      trailEnd: ends.get(t.id)?.toISOString() ?? null,
-      coverage: coverage[i],
-      news: (best.get(t.id)?.news ?? []).map((n) => ({
-        id: n.id ?? null,
-        media: n.media,
-        camp: campOf(n.media),
-        title: n.title,
-        url: n.url,
-        image: n.image,
-      })),
-    })),
+    threads: threads
+      .map((t, i) => {
+        const run = runs.get(t.id);
+        const s = story.get(t.id);
+        return {
+          ...t,
+          maxScore: t.maxScore / 1e6,
+          bestRank: run?.bestRank ?? best.get(t.id)?.rank ?? null,
+          rankTrail: trails.get(t.id) ?? null,
+          trailEnd: ends.get(t.id)?.toISOString() ?? null,
+          dayRank: s?.rank ?? null,
+          dayWeight: (run?.weight ?? 0) / 1e6,
+          storyWeight: (s?.weight ?? 0) / 1e6,
+          hoursOnDay: run?.hours ?? 0,
+          dayTrail: run?.trail ?? null,
+          foldedInto: s && s.lead !== t.id ? s.lead : null,
+          folded: s?.lead === t.id ? s.folded : [],
+          coverage: coverage[i],
+          news: (best.get(t.id)?.news ?? []).map((n) => ({
+            id: n.id ?? null,
+            media: n.media,
+            camp: campOf(n.media),
+            title: n.title,
+            url: n.url,
+            image: n.image,
+          })),
+        };
+      })
+      .sort((a, b) => (order.get(a.id) ?? Infinity) - (order.get(b.id) ?? Infinity)),
   };
 }
 
@@ -226,16 +336,7 @@ export function pickPeriodThreads(
   majors: ReadonlyMap<number, readonly string[]>,
   limit: number,
 ) {
-  const hourly = new Map<number, Map<number, { score: number; rank: number }>>();
-  for (const r of rows) {
-    if (r.threadId == null) continue;
-    const hours = hourly.get(r.threadId) ?? new Map();
-    const at = hours.get(r.hourStart.getTime());
-    if (!at || r.score > at.score) hours.set(r.hourStart.getTime(), { score: r.score, rank: Math.min(r.rank, at?.rank ?? r.rank) });
-    else at.rank = Math.min(at.rank, r.rank);
-    hourly.set(r.threadId, hours);
-  }
-  const ranked = [...hourly].map(([id, hours]) => {
+  const ranked = [...hourlyByThread(rows)].map(([id, hours]) => {
     const v = [...hours.values()];
     return { id, weight: v.reduce((s, h) => s + h.score, 0), hours: v.length, bestRank: Math.min(...v.map((h) => h.rank)) };
   });
@@ -244,14 +345,7 @@ export function pickPeriodThreads(
   for (const t of ranked) {
     if (picked.length >= limit) break;
     const mine = majors.get(t.id) ?? [];
-    const same = picked.some((p) => {
-      const theirs = majors.get(p.id) ?? [];
-      const shared = mine.filter((tag) => theirs.includes(tag)).length;
-      return (
-        (mine[0] !== undefined && mine[0] === theirs[0]) || (shared > 0 && shared >= Math.ceil(Math.min(mine.length, theirs.length) / 2))
-      );
-    });
-    if (!same) picked.push(t);
+    if (!picked.some((p) => sameStory(mine, majors.get(p.id) ?? []))) picked.push(t);
   }
   return picked;
 }

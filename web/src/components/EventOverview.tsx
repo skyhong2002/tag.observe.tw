@@ -5,13 +5,13 @@ import MethodLink from '@/components/MethodLink';
 import { taipeiHour } from '@/lib/api';
 import type { EventItem } from '@/lib/pages';
 
-// Pieces shared by the hourly event table and the day archive: the hour
+// Pieces shared by the daily and hourly event tables: the hour
 // picker, the camp blind-spot panel and the sidebar index.
 
 const atLink = (iso: string) => `/event/?at=${encodeURIComponent(iso)}`;
 const hh = (iso: string) => taipeiHour(iso).slice(-5);
 
-/** Switch between one hour of the table and the whole day it falls on. */
+/** Switch between the whole day (the default) and one hour of the table. */
 export function ViewSwitch({ view, hourHref, dayHref }: { view: 'hour' | 'day'; hourHref: string; dayHref: string }) {
   const tab = (key: 'hour' | 'day', href: string, label: string) => (
     <Link
@@ -28,8 +28,8 @@ export function ViewSwitch({ view, hourHref, dayHref }: { view: 'hour' | 'day'; 
   );
   return (
     <nav aria-label="事件表範圍" className="inline-flex rounded-md bg-zinc-100 p-0.5 text-sm dark:bg-zinc-800">
+      {tab('day', dayHref, '每日')}
       {tab('hour', hourHref, '每小時')}
-      {tab('day', dayHref, '整天')}
     </nav>
   );
 }

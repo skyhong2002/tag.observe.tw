@@ -38,8 +38,8 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     id: 'event',
     title: '事件表與單一事件',
     pages: [
-      ['/event/', '事件表'],
-      ['/event/archive/', '存檔'],
+      ['/event/', '事件表（每日）'],
+      ['/event/?view=hour', '每小時'],
     ],
     body: <EventMethod />,
   },

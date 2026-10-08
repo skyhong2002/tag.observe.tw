@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { campOf, coverageDescription, groupCoverage } from './coverage.ts';
+import { campOf, coverageDays, coverageDescription, groupCoverage } from './coverage.ts';
 
 const cats = { blue: ['udn', 'tvbs'], green: ['ltn', 'setn'], news: ['udn', 'tvbs', 'ltn', 'setn', 'cna'] };
 const t = (h: number) => new Date(Date.UTC(2025, 7, 13, h));
@@ -87,5 +87,16 @@ describe('coverage', () => {
     const long = coverageDescription('長'.repeat(300), '標題');
     expect([...(long ?? '')].length).toBe(160);
     expect(long?.endsWith('…')).toBe(true);
+  });
+  it('cuts the coverage window at Taipei midnights, keeping the newest days', () => {
+    const from = new Date('2026-10-04T23:00:00Z'); // 10/5 07:00 Taipei
+    const to = new Date('2026-10-06T17:00:00Z'); // 10/7 01:00 Taipei
+    const days = coverageDays({ from, to });
+    expect(days.map((d) => [d.from.toISOString(), d.to.toISOString()])).toEqual([
+      ['2026-10-04T23:00:00.000Z', '2026-10-05T16:00:00.000Z'],
+      ['2026-10-05T16:00:00.000Z', '2026-10-06T16:00:00.000Z'],
+      ['2026-10-06T16:00:00.000Z', '2026-10-06T17:00:00.001Z'],
+    ]);
+    expect(coverageDays({ from, to }, 2)[0].from.toISOString()).toBe('2026-10-05T16:00:00.000Z');
   });
 });

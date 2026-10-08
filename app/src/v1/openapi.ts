@@ -1136,6 +1136,29 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?hours=168',
   },
   {
+    path: '/api/v1/tags/{tag}/flow',
+    tag: 'tags',
+    summary: '和這個標籤一起出現的關鍵字，逐小時',
+    description:
+      '標了這個標籤的報導（依發布時間，最近的在前，最多 20000 篇），每小時統計它們還帶了哪些其他標籤：每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱，每小時保留至少 2 篇帶到的前 15 個。沒有報導的小時不列出。',
+    params: [p('tag', '標籤（URL 編碼）', str(), '沈伯洋'), q('hours', '往前幾小時', intIn(1, 744, 336), 336)],
+    response: obj({
+      tag: str(),
+      hours: int(),
+      from: time(),
+      to: time(),
+      sampled: bool('報導超過上限、只讀了最新的 20000 篇'),
+      points: arr(
+        obj({
+          t: time('小時起點（UTC）'),
+          count: int('該小時標了這個標籤的報導篇數'),
+          tags: arr(arr(str()), '[標籤, 同時帶到它的篇數]，多的在前'),
+        }),
+      ),
+    }),
+    example: '/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hours=336',
+  },
+  {
     path: '/api/v1/tags/{tag}/status',
     tag: 'tags',
     summary: '標籤目前狀態',
@@ -1255,7 +1278,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'events',
     summary: '某一天的所有事件串',
     description:
-      '台北時間某一天內曾出現的事件串，依最高分排序（最多 300 個）。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。',
+      '台北時間某一天內曾出現的事件串（最多 300 個），依當天的事件排序：同一件事的事件串合併（`foldedInto`／`folded`），依當天各小時爆發力加總（`storyWeight`）排名，合併進來的事件串緊接在主事件串之後。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。',
     params: [q('day', '台北日期 YYYY-MM-DD，預設今天', str(undefined, { pattern: '^\\d{4}-\\d{2}-\\d{2}$' }), '2026-09-30')],
     response: obj({
       day: str(),
@@ -1272,11 +1295,18 @@ export const ENDPOINTS: Endpoint[] = [
           majorTags: arr(str()),
           maxTag: nullable(str('分數最高的標籤')),
           maxScore: num(),
-          bestRank: nullable(int('最佳名次')),
+          bestRank: nullable(int('當天的最佳名次')),
           rankTrail: nullable(arr(nullable(int()), '到 trailEnd 為止 24 個快照小時的名次（最舊在前）；不在榜上的小時為 null')),
           trailEnd: nullable(time('名次走勢的最後一小時：事件串當天最後在榜的小時')),
           coverage: eventCoverage('當天'),
-          news: arr(ref('Headline'), '最佳名次那一小時的代表新聞（最多 6 則），各附媒體陣營 camp'),
+          dayRank: nullable(int('這件事在當天的名次；合併進來的事件串與主事件串相同')),
+          dayWeight: num('這條事件串當天各上榜小時爆發力的加總'),
+          storyWeight: num('這件事（主事件串加上合併進來的）當天的爆發力加總，dayRank 依此排序'),
+          hoursOnDay: int('當天上榜的小時數'),
+          dayTrail: nullable(arr(nullable(int()), '當天 00 時到 23 時各小時的名次；不在榜上的小時為 null')),
+          foldedInto: nullable(int('若是同一件事被另開的事件串，主事件串的 id')),
+          folded: arr(int(), '合併進這條主事件串的其他事件串 id'),
+          news: arr(ref('Headline'), '當天最佳名次那一小時的代表新聞（最多 6 則；當天沒有則取整段期間），各附媒體陣營 camp'),
         }),
       ),
     }),
@@ -1317,7 +1347,7 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/events/threads/{id}',
     tag: 'events',
     summary: '單一事件串',
-    description: '事件串的整體資訊與逐小時紀錄（最多 72 小時，新到舊）。`thread.history` 的鍵是台北時間 `YYYY-MM-DD HH:00:00`。',
+    description: '事件串的整體資訊與逐小時紀錄（最近 336 小時，即 14 天，新到舊）。`thread.history` 的鍵是台北時間 `YYYY-MM-DD HH:00:00`。',
     params: [threadId],
     response: obj({
       thread: obj(
@@ -1385,7 +1415,8 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/events/threads/{id}/coverage',
     tag: 'events',
     summary: '同一事件的各家標題對照',
-    description: '帶有事件主要標籤的所有文章，依媒體與藍／綠／其他分組。`blindspot` 列出「對方陣營有報、這一方完全沒報」的陣營。',
+    description:
+      '帶有事件主要標籤的文章（最近 14 天，每個台北日最多 400 篇），依媒體與藍／綠／其他分組。`blindspot` 列出「對方陣營有報、這一方完全沒報」的陣營。',
     params: [threadId],
     response: obj({
       threadId: int(),
