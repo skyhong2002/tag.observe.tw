@@ -81,15 +81,26 @@ export function RankTrail({ e, className = 'h-6 w-20', span = '最近 24 小時'
 }
 
 /** Score as a bar relative to the hour's top event, so gaps are visible. */
-export function ScoreBar({ score, max, width = 'w-16' }: { score: number; max: number; width?: string }) {
+export function ScoreBar({
+  score,
+  max,
+  width = 'w-16',
+  label = '爆發力',
+}: {
+  score: number;
+  max: number;
+  width?: string;
+  /** 爆發力 for one hour; the daily view sums the day's hours into 全天熱度. */
+  label?: string;
+}) {
   const pct = max > 0 ? Math.max(4, Math.round((score / max) * 100)) : 0;
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400" title={`爆發力 ${score.toFixed(1)}`}>
-      <span className="sr-only">爆發力</span>
+    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400" title={`${label} ${score.toFixed(1)}`}>
+      <span className="sr-only">{label}</span>
       <span className={`${width} h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800`} aria-hidden>
         <span className="block h-full rounded-full bg-brand-600 dark:bg-brand-500" style={{ width: `${pct}%` }} />
       </span>
-      <span className="tabular-nums">{score.toFixed(1)}</span>
+      <span className="tabular-nums">{score >= 100 ? score.toFixed(0) : score.toFixed(1)}</span>
     </span>
   );
 }
@@ -253,6 +264,8 @@ export default function EventCard({
   meta,
   trailSpan,
   at,
+  scoreLabel,
+  footer,
 }: {
   e: EventItem;
   tier: EventTier;
@@ -262,6 +275,9 @@ export default function EventCard({
   meta?: ReactNode;
   trailSpan?: string;
   at?: string;
+  scoreLabel?: string;
+  /** Below the card's headlines (the daily view's related threads). */
+  footer?: ReactNode;
 }) {
   const img = cover(e);
   const pair = tier === 'hero' ? campPair(e) : null;
@@ -278,10 +294,11 @@ export default function EventCard({
             <RankTrail e={e} className="h-5 w-16" span={trailSpan} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <ScoreBar score={e.score} max={max} width="w-12" />
+            <ScoreBar score={e.score} max={max} width="w-12" label={scoreLabel} />
             <Tags e={e} limit={3} size="text-[11px]" />
             {e.coverage && <CampLine c={e.coverage} compact />}
           </div>
+          {footer}
         </div>
       </li>
     );
@@ -305,7 +322,7 @@ export default function EventCard({
         <div className={`flex min-w-0 flex-col gap-2 ${img ? '' : 'md:col-span-2'}`}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {rank}
-            <ScoreBar score={e.score} max={max} width="w-24" />
+            <ScoreBar score={e.score} max={max} width="w-24" label={scoreLabel} />
             <Movement e={e} />
             {meta}
             <RankTrail e={e} className="h-7 w-24" span={trailSpan} />
@@ -323,6 +340,7 @@ export default function EventCard({
           )}
           {pair && <CampHeadlines pair={pair} media={media} />}
           <Headlines e={e} media={media} limit={3} skip={[img, pair?.blue, pair?.green]} />
+          {footer}
           <Compare e={e} className="self-end" />
         </div>
       </li>
@@ -335,7 +353,7 @@ export default function EventCard({
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {rank}
-        <ScoreBar score={e.score} max={max} width="w-16" />
+        <ScoreBar score={e.score} max={max} width="w-16" label={scoreLabel} />
         <Movement e={e} />
         {meta}
         <RankTrail e={e} span={trailSpan} />
@@ -359,6 +377,7 @@ export default function EventCard({
       </div>
       {e.coverage && <OutletStrip c={e.coverage} media={media} />}
       <Headlines e={e} media={media} limit={3} skip={[img]} />
+      {footer}
       <Compare e={e} className="mt-auto self-end" />
     </li>
   );

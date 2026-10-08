@@ -6,7 +6,17 @@ export type { CampOutlet, CampShare, DemoCamp } from './camp-share.mts';
 import { clipHeadline, headlineTags, selectEventCover, selectEventLead } from './event-presentation.mts';
 import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
-import { type EventCoverage, type EventItem, type FeedTopic, fetchEventDay, fetchEvents, fetchTopics, threadAsEvent } from './pages';
+import {
+  dayStories,
+  dayStoryAsEvent,
+  type EventCoverage,
+  type EventItem,
+  type FeedTopic,
+  fetchEventDay,
+  fetchEvents,
+  fetchTopics,
+  threadAsEvent,
+} from './pages';
 import { fetchSimilarity, type SimilarityData, type SimilarityEdge } from './similarity';
 import { updatedAtOf } from './topic-update.mts';
 
@@ -231,12 +241,18 @@ export async function loadDemo() {
     fetchRanking('green', 'score', 1).catch(() => null),
   ]);
   const unique = [...new Map((events?.events ?? []).map((e) => [e.relatedEventPk ?? `rank-${e.rank}`, e])).values()];
-  const stories = unique
+  // 焦點事件 follow the event table's default: today's stories by whole-day
+  // weight, falling back to this hour's table before the day has any.
+  const today = day ? dayStories(day.threads).map((s, i) => dayStoryAsEvent(s, i + 1)) : [];
+  const focus = today.length > 0 ? today : unique;
+  const stories = focus
     .slice(0, 12)
     .map((e) => story(e, media))
     .filter((s): s is DemoStory => s !== null);
   return {
     events,
+    /** How many stories 焦點事件 draws from, and over what. */
+    focus: { count: focus.length, daily: today.length > 0 },
     ranking,
     media,
     stories,

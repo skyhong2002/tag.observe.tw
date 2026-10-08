@@ -1,36 +1,68 @@
 import Link from 'next/link';
 import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
+import EventDayView, { dayHref, hourHref, taipeiDay } from '@/components/EventDayView';
 import { CampGap, EventIndex, HourTimeline, ViewSwitch } from '@/components/EventOverview';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
-import { fetchEvents } from '@/lib/pages';
-import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
+import { dayStories, fetchEventDay, fetchEvents } from '@/lib/pages';
+import { archiveDay, canonicalQuery, pageMetadata } from '@/lib/seo.mts';
 
 export const revalidate = 120;
-export async function generateMetadata({ searchParams }: { searchParams: Promise<{ at?: string }> }) {
-  const raw = (await searchParams).at;
-  const value =
-    typeof raw === 'string' && !Number.isNaN(Date.parse(raw)) && /^\d{4}-\d{2}-\d{2}T/.test(raw) ? new Date(raw).toISOString() : undefined;
-  return pageMetadata(
-    canonicalQuery('/event/', { at: value }),
-    value ? `${value} · 事件表` : '事件表',
-    '依新聞標籤共現整理熱門事件，並排比較各家媒體的報導標題與刊登時間。',
-    true,
-  );
+type Search = { limit?: string; at?: string; day?: string; view?: string };
+const validAt = (raw: unknown) =>
+  typeof raw === 'string' && !Number.isNaN(Date.parse(raw)) && /^\d{4}-\d{2}-\d{2}T/.test(raw) ? new Date(raw).toISOString() : undefined;
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }) {
+  const sp = await searchParams;
+  const at = validAt(sp.at);
+  if (at || sp.view === 'hour')
+    return pageMetadata(
+      canonicalQuery('/event/', { at, view: at ? undefined : 'hour' }),
+      at ? `${at} · 每小時事件表` : '每小時事件表',
+      '每小時依新聞標籤共現整理熱門事件，並排比較各家媒體的報導標題與刊登時間。',
+      true,
+    );
+  const day = archiveDay(sp.day);
+  const data = day ? await fetchEventDay(day) : null;
+  return {
+    ...pageMetadata(
+      canonicalQuery('/event/', { day }),
+      day ? `${day} · 事件表` : '事件表',
+      day && data?.threads.length
+        ? `${day} 共 ${dayStories(data.threads).length} 件新聞事件，依全天熱度排序，比較各媒體的報導標題與藍綠分布。`
+        : '每天依新聞標籤共現整理熱門事件，依全天熱度排序，並排比較各家媒體的報導標題與刊登時間。',
+      true,
+    ),
+    ...(day && !data?.threads.length ? { robots: { index: false, follow: true } } : {}),
+  };
 }
 
 const atLink = (iso: string) => `/event/?at=${encodeURIComponent(iso)}`;
-const taipeiDay = (iso: string) => new Date(Date.parse(iso) + 8 * 3600e3).toISOString().slice(0, 10);
 
 // Front-page weighting: a few big stories, a tier of cards, then a dense list.
 const HERO = 3,
   CARDS = 9;
 const tierOf = (rank: number): EventTier => (rank <= HERO ? 'hero' : rank <= CARDS ? 'card' : 'row');
 
-export default async function EventPage({ searchParams }: { searchParams: Promise<{ limit?: string; at?: string }> }) {
+export default async function EventPage({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
+  if (sp.at || sp.view === 'hour') return <HourView sp={sp} />;
+  const day = archiveDay(sp.day);
+  const [data, media] = await Promise.all([fetchEventDay(day), fetchMedia().catch((): MediaInfo => ({}))]);
+  if (!data)
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">事件表</h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">事件資料暫時無法取得，請稍後重新整理。</p>
+      </div>
+    );
+  return <EventDayView data={data} media={media} today={data.day === taipeiDay(new Date().toISOString())} />;
+}
+
+/** One snapshot hour of the table (?at=, or the latest with ?view=hour). */
+async function HourView({ sp }: { sp: Search }) {
   const limit = Math.min(30, Math.max(5, Number(sp.limit) || 30));
   const at = sp.at && !Number.isNaN(Date.parse(sp.at)) ? sp.at : undefined;
   const [data, media] = await Promise.all([fetchEvents(limit, at), fetchMedia().catch((): MediaInfo => ({}))]);
@@ -47,11 +79,7 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">事件表</h1>
             {data && (
-              <ViewSwitch
-                view="hour"
-                hourHref={archived ? atLink(data.hour) : '/event/'}
-                dayHref={`/event/archive/?day=${taipeiDay(data.hour)}`}
-              />
+              <ViewSwitch view="hour" hourHref={archived ? atLink(data.hour) : hourHref()} dayHref={dayHref(taipeiDay(data.hour))} />
             )}
           </div>
           <a
@@ -92,12 +120,12 @@ export default async function EventPage({ searchParams }: { searchParams: Promis
               <span className="rounded-md px-3 py-1 text-zinc-500">後一小時 →</span>
             )}
             {archived && (
-              <Link href="/event/" className="rounded-md bg-zinc-900 px-3 py-1 text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <Link href={hourHref()} className="rounded-md bg-zinc-900 px-3 py-1 text-white dark:bg-zinc-100 dark:text-zinc-900">
                 回到最新
               </Link>
             )}
-            <Link href={`/event/archive/?day=${taipeiDay(data.hour)}`} className="ml-auto text-sky-700 hover:underline dark:text-sky-400">
-              {taipeiDay(data.hour)} 全部事件 →
+            <Link href={dayHref(taipeiDay(data.hour))} className="ml-auto text-sky-700 hover:underline dark:text-sky-400">
+              看 {taipeiDay(data.hour)} 整天的事件 →
             </Link>
           </div>
           <HourTimeline hours={data.dayHours ?? []} dayStats={data.dayStats} current={data.hour} />

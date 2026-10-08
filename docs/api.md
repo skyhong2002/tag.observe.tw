@@ -1654,7 +1654,7 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 
 **某一天的所有事件串**
 
-台北時間某一天內曾出現的事件串，依最高分排序（最多 300 個）。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。
+台北時間某一天內曾出現的事件串（最多 300 個），依當天的事件排序：同一件事的事件串合併（`foldedInto`／`folded`），依當天各小時爆發力加總（`storyWeight`）排名，合併進來的事件串緊接在主事件串之後。`days` 列出所有有資料的日期。藍綠報導（`coverage`、`baseline`）的窗口是到當天結束為止的 24 小時，也就是當天整天；今天則是到現在為止的 24 小時，與 /api/v1/events 相同。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -1694,7 +1694,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | `threads[].majorTags` | string[] |  |
 | `threads[].maxTag` | string \| null | 分數最高的標籤 |
 | `threads[].maxScore` | number |  |
-| `threads[].bestRank` | integer \| null | 最佳名次 |
+| `threads[].bestRank` | integer \| null | 當天的最佳名次 |
 | `threads[].rankTrail` | integer \| null[] \| null | 到 trailEnd 為止 24 個快照小時的名次（最舊在前）；不在榜上的小時為 null |
 | `threads[].trailEnd` | string (ISO 時間) \| null | 名次走勢的最後一小時：事件串當天最後在榜的小時 |
 | `threads[].coverage` | object |  |
@@ -1712,7 +1712,14 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads?day=2026-09-30'
 | `threads[].coverage.lean` | number \| null | 藍綠家數比相對於 baseline 的 log2；0 為平常比例，正偏藍、負偏綠 |
 | `threads[].coverage.tilt` | string \| null | 明顯偏向的陣營（\|lean\| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家） |
 | `threads[].coverage.blindspot` | string[] | 盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事 |
-| `threads[].news` | object[] | 最佳名次那一小時的代表新聞（最多 6 則），各附媒體陣營 camp |
+| `threads[].dayRank` | integer \| null | 這件事在當天的名次；合併進來的事件串與主事件串相同 |
+| `threads[].dayWeight` | number | 這條事件串當天各上榜小時爆發力的加總 |
+| `threads[].storyWeight` | number | 這件事（主事件串加上合併進來的）當天的爆發力加總，dayRank 依此排序 |
+| `threads[].hoursOnDay` | integer | 當天上榜的小時數 |
+| `threads[].dayTrail` | integer \| null[] \| null | 當天 00 時到 23 時各小時的名次；不在榜上的小時為 null |
+| `threads[].foldedInto` | integer \| null | 若是同一件事被另開的事件串，主事件串的 id |
+| `threads[].folded` | integer[] | 合併進這條主事件串的其他事件串 id |
+| `threads[].news` | object[] | 當天最佳名次那一小時的代表新聞（最多 6 則；當天沒有則取整段期間），各附媒體陣營 camp |
 | `threads[].news[].id` | integer \| null | 文章 id（舊資料可能為 null） |
 | `threads[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `threads[].news[].title` | string | 標題 |

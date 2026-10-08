@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
-// 事件表 (/event/), its day archive (/event/archive/) and one event (/eve/[id]/).
+// 事件表 (/event/: by day, or one hour with ?at= / ?view=hour) and one event (/eve/[id]/).
 // Thresholds and cadences come from app/src/v1/event-feed.ts (重點, 盲點),
 // app/src/v1/coverage.ts (one event's 盲點), app/src/worker.ts (events at :04
 // and :34) and app/src/jobs/events-*.ts (clustering, threads, links).
@@ -64,7 +64,8 @@ export function EventMethod({ page }: { page?: EventMethodPage }) {
             <Link href="/ranking/" className={inlineLink}>
               關鍵字排行
             </Link>
-            的指標；歷史不足的標籤改用分數），事件表依此排名。爆發力條以本小時第 1 名為滿格。
+            的指標；歷史不足的標籤改用分數），每小時事件表依此排名，爆發力條以本小時第 1 名為滿格；每日事件表的「全天熱度」條以當天第 1
+            名為滿格。
           </dd>
           <dt className={methodTerm}>名次變動</dt>
           <dd>
@@ -86,12 +87,21 @@ export function EventMethod({ page }: { page?: EventMethodPage }) {
           </dd>
         </dl>
       )}
-      {(all || page === 'archive') && (
-        <p>
-          存檔：一天的存檔列出當天任一小時上過事件表的事件，依事件期間的最高爆發力排序，爆發力條以當天第 1
-          名為滿格；名次是這件事在每小時事件表上的最佳名次，時間是它在事件表上的起訖，名次走勢從它第一次上榜的小時畫起。藍綠比例在過去的日子以當天（台北時間）計，今天以過去
-          24 小時計。
-        </p>
+      {table && (
+        <>
+          <h3 className={methodHeading}>每日與每小時</h3>
+          <dl className={methodList}>
+            <dt className={methodTerm}>每日（預設）</dt>
+            <dd>
+              事件表預設顯示一整天（台北時間）：列出當天任一小時上過事件表的事件，依「全天熱度」排序，也就是這件事當天每個上榜小時的爆發力加總，上榜越久、越高越前面。分群每小時重算，同一件事常被拆成幾條事件串；當天兩條事件串第一個主要標籤相同、主要標籤至少
+              2 個相同（只有 1
+              個主要標籤時則該標籤相同），或代表標題是同一篇報導時，併為一件事，熱度相加，其餘事件串列在「同一件事的其他發展」。名次是這件事當天在每小時事件表上的最佳名次（點名次可看那個小時的事件表），上榜小時與時段只計當天；名次走勢畫當天
+              00 時到 23 時各小時的名次。標題取自它當天名次最好的小時。藍綠比例在過去的日子以當天計，今天以過去 24 小時計。
+            </dd>
+            <dt className={methodTerm}>每小時</dt>
+            <dd>切到「每小時」可看單一小時的事件表，依該小時的爆發力排序，並顯示與前一小時相比的名次變化。</dd>
+          </dl>
+        </>
       )}
       {table && (
         <>

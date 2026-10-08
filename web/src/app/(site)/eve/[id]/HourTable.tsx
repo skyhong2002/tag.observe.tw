@@ -5,7 +5,7 @@ import { useState } from 'react';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { hourWindow } from '@/lib/event-hour-window.mts';
-import type { ThreadHour } from '@/lib/event-thread.mts';
+import { dayKey, type ThreadDay, type ThreadHour, threadDays } from '@/lib/event-thread.mts';
 import { table } from '@/lib/table-styles';
 
 type SortKey = 'time' | 'rank' | 'score';
@@ -13,11 +13,15 @@ type SortKey = 'time' | 'rank' | 'score';
 const FIRST_DESCENDING: Record<SortKey, boolean> = { time: true, rank: false, score: true };
 const tagHref = (tag: string) => `/tag/${encodeURIComponent(tag)}/`;
 const atLink = (iso: string) => `/event/?at=${encodeURIComponent(iso)}`;
+const dayLink = (day: string) => `/event/?day=${day}`;
+const dayLabel = (day: string) => `${day.slice(5).replace('-', '/')}（${'日一二三四五六'[new Date(`${day}T00:00:00Z`).getUTCDay()]}）`;
+const hhmm = (iso: string) => new Date(Date.parse(iso) + 8 * 3600e3).toISOString().slice(11, 16);
 const chip = 'whitespace-nowrap rounded-full px-2 py-0.5 text-xs';
 
-/** Hour by hour: rank, score, and the hour's own top tags, so a reader can see
- *  which angle carried the story at each point. One line per hour; phones
- *  scroll the tag columns sideways like the other data tables. */
+/** Day by day by default (hours on the table, best rank, peak score and the
+ *  day's tags), or hour by hour: rank, score, and the hour's own top tags, so a
+ *  reader can see which angle carried the story at each point. One line per
+ *  row; phones scroll the tag columns sideways like the other data tables. */
 export default function HourTable({
   hours,
   maxScore,
@@ -31,6 +35,17 @@ export default function HourTable({
   const chronological = [...hours].sort((a, b) => a.hourStart.localeCompare(b.hourStart));
   const initial = hourWindow(chronological, at);
   const [range, setRange] = useState(initial);
+  // A link to one hour (?at=) opens on the hours; otherwise the story reads by day.
+  const [mode, setMode] = useState<'day' | 'hour'>(at ? 'hour' : 'day');
+  const days = threadDays(chronological);
+  /** Switch to the hours, showing all of one day. */
+  const openDay = (day: string) => {
+    const key = dayKey(`${day}T12:00:00+08:00`);
+    const start = chronological.findIndex((h) => dayKey(h.hourStart) === key);
+    const end = chronological.findLastIndex((h) => dayKey(h.hourStart) === key) + 1;
+    if (start >= 0) setRange({ start, end, anchor: initial.anchor });
+    setMode('hour');
+  };
   const earlier = range.start;
   const later = hours.length - range.end;
   const [sort, setSort] = useState<SortKey>('time');
@@ -76,87 +91,200 @@ export default function HourTable({
     );
   };
   return (
-    <section aria-label="每小時名次與標籤" className="scroll-mt-20 rounded-xl border border-zinc-200 dark:border-zinc-800">
-      <h3 className="px-4 py-3 text-sm font-medium">
-        每小時名次與標籤{' '}
-        <span className="ml-2 text-xs font-normal text-zinc-500">
-          顯示 {rows.length} / {hours.length} 筆
-        </span>
-      </h3>
-      <div className="px-3 pb-3">
-        {more(sort === 'time' && !descending ? 'earlier' : 'later')}
-        <TableScroller card label="每小時名次與標籤，可左右捲動">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-zinc-600 dark:text-zinc-400">
-              <tr className="bg-(--table-head-bg)">
-                {head('time', '時間', table.leadHead)}
-                {head('rank', '名次', table.num)}
-                {head('score', '分數', table.cell)}
-                <th className={`${table.cell} !py-1.5 font-medium whitespace-nowrap`}>主要標籤</th>
-                <th className={`${table.cell} !py-1.5 font-medium whitespace-nowrap`}>其他高分標籤</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {rows.map((h) => {
-                const others = h.tags.filter(([t]) => !h.major.includes(t)).slice(0, 6);
-                return (
-                  <tr
-                    key={h.hourStart}
-                    aria-current={h.hourStart === initial.anchor ? 'time' : undefined}
-                    className={`${table.row} whitespace-nowrap ${h.hourStart === initial.anchor ? 'bg-brand-50 dark:bg-zinc-800' : ''}`}
-                  >
-                    <th scope="row" className={`${table.lead} !py-1.5 text-left font-normal tabular-nums`}>
-                      <Link href={atLink(h.hourStart)} className="hover:underline" title="看這個小時的整張事件表">
-                        {h.label}
-                      </Link>
-                      {h.hourStart === initial.anchor && <span className="ml-2 text-xs text-brand-700 dark:text-brand-400">目前時段</span>}
-                    </th>
-                    <td className={`${table.num} !py-1.5 font-medium ${h.rank === 1 ? 'text-brand-700 dark:text-brand-400' : ''}`}>
-                      {h.rank}
-                    </td>
-                    <td className={`${table.cell} !py-1.5`}>
-                      <span className="inline-flex items-center gap-1.5 tabular-nums text-xs text-zinc-600 dark:text-zinc-400">
-                        <span className="h-1.5 w-12 overflow-hidden rounded-full bg-zinc-200 sm:w-16 dark:bg-zinc-800" aria-hidden>
-                          <span
-                            className="block h-full rounded-full bg-brand-600 dark:bg-brand-500"
-                            style={{ width: `${Math.max(3, (h.score / Math.max(maxScore, 1e-9)) * 100)}%` }}
-                          />
-                        </span>
-                        {h.score.toFixed(1)}
-                      </span>
-                    </td>
-                    <td className={`${table.cell} !py-1.5`}>
-                      <span className="flex gap-1">
-                        {h.major.map((m) => (
-                          <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white dark:bg-brand-600`}>
-                            {m}
-                          </Link>
-                        ))}
-                      </span>
-                    </td>
-                    <td className={`${table.cell} !py-1.5`}>
-                      <span className="flex gap-1">
-                        {others.map(([t, s]) => (
-                          <Link
-                            key={t}
-                            href={tagHref(t)}
-                            className={`${chip} bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
-                            title={`分數 ${s.toFixed(1)}`}
-                          >
-                            {t}
-                            <span className="ml-1 tabular-nums text-zinc-500">{s.toFixed(0)}</span>
-                          </Link>
-                        ))}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </TableScroller>
-        {more(sort === 'time' && !descending ? 'later' : 'earlier')}
+    <section
+      aria-label={mode === 'day' ? '每日名次與標籤' : '每小時名次與標籤'}
+      className="scroll-mt-20 rounded-xl border border-zinc-200 dark:border-zinc-800"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <h3 className="text-sm font-medium">
+          {mode === 'day' ? '每日' : '每小時'}名次與標籤{' '}
+          <span className="ml-2 text-xs font-normal text-zinc-500">
+            {mode === 'day' ? `${days.length} 天 · 共 ${hours.length} 個上榜小時` : `顯示 ${rows.length} / ${hours.length} 筆`}
+          </span>
+        </h3>
+        <fieldset className="inline-flex rounded-md bg-zinc-100 p-0.5 text-xs dark:bg-zinc-800">
+          <legend className="sr-only">表格單位</legend>
+          {(
+            [
+              ['day', '每日'],
+              ['hour', '每小時'],
+            ] as const
+          ).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={mode === m}
+              onClick={() => setMode(m)}
+              className={`rounded px-2.5 py-0.5 ${
+                mode === m
+                  ? 'bg-white font-medium shadow-sm dark:bg-zinc-700'
+                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </fieldset>
       </div>
+      {mode === 'day' ? (
+        <div className="px-3 pb-3">
+          <DayRows days={days} maxScore={maxScore} onOpen={openDay} />
+        </div>
+      ) : (
+        <div className="px-3 pb-3">
+          {more(sort === 'time' && !descending ? 'earlier' : 'later')}
+          <TableScroller card label="每小時名次與標籤，可左右捲動">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-zinc-600 dark:text-zinc-400">
+                <tr className="bg-(--table-head-bg)">
+                  {head('time', '時間', table.leadHead)}
+                  {head('rank', '名次', table.num)}
+                  {head('score', '分數', table.cell)}
+                  <th className={`${table.cell} !py-1.5 font-medium whitespace-nowrap`}>主要標籤</th>
+                  <th className={`${table.cell} !py-1.5 font-medium whitespace-nowrap`}>其他高分標籤</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {rows.map((h) => {
+                  const others = h.tags.filter(([t]) => !h.major.includes(t)).slice(0, 6);
+                  return (
+                    <tr
+                      key={h.hourStart}
+                      aria-current={h.hourStart === initial.anchor ? 'time' : undefined}
+                      className={`${table.row} whitespace-nowrap ${h.hourStart === initial.anchor ? 'bg-brand-50 dark:bg-zinc-800' : ''}`}
+                    >
+                      <th scope="row" className={`${table.lead} !py-1.5 text-left font-normal tabular-nums`}>
+                        <Link href={atLink(h.hourStart)} className="hover:underline" title="看這個小時的整張事件表">
+                          {h.label}
+                        </Link>
+                        {h.hourStart === initial.anchor && (
+                          <span className="ml-2 text-xs text-brand-700 dark:text-brand-400">目前時段</span>
+                        )}
+                      </th>
+                      <td className={`${table.num} !py-1.5 font-medium ${h.rank === 1 ? 'text-brand-700 dark:text-brand-400' : ''}`}>
+                        {h.rank}
+                      </td>
+                      <td className={`${table.cell} !py-1.5`}>
+                        <ScoreCell score={h.score} maxScore={maxScore} />
+                      </td>
+                      <td className={`${table.cell} !py-1.5`}>
+                        <span className="flex gap-1">
+                          {h.major.map((m) => (
+                            <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white dark:bg-brand-600`}>
+                              {m}
+                            </Link>
+                          ))}
+                        </span>
+                      </td>
+                      <td className={`${table.cell} !py-1.5`}>
+                        <span className="flex gap-1">
+                          {others.map(([t, s]) => (
+                            <Link
+                              key={t}
+                              href={tagHref(t)}
+                              className={`${chip} bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
+                              title={`分數 ${s.toFixed(1)}`}
+                            >
+                              {t}
+                              <span className="ml-1 tabular-nums text-zinc-500">{s.toFixed(0)}</span>
+                            </Link>
+                          ))}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </TableScroller>
+          {more(sort === 'time' && !descending ? 'later' : 'earlier')}
+        </div>
+      )}
     </section>
+  );
+}
+
+function ScoreCell({ score, maxScore }: { score: number; maxScore: number }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 tabular-nums text-xs text-zinc-600 dark:text-zinc-400">
+      <span className="h-1.5 w-12 overflow-hidden rounded-full bg-zinc-200 sm:w-16 dark:bg-zinc-800" aria-hidden>
+        <span
+          className="block h-full rounded-full bg-brand-600 dark:bg-brand-500"
+          style={{ width: `${Math.max(3, (score / Math.max(maxScore, 1e-9)) * 100)}%` }}
+        />
+      </span>
+      {score.toFixed(1)}
+    </span>
+  );
+}
+
+/** One line per Taipei day, newest first. */
+function DayRows({ days, maxScore, onOpen }: { days: ThreadDay[]; maxScore: number; onOpen: (day: string) => void }) {
+  return (
+    <TableScroller card label="每日名次與標籤，可左右捲動">
+      <table className="w-full text-sm">
+        <thead className="text-left text-xs text-zinc-600 dark:text-zinc-400">
+          <tr className="bg-(--table-head-bg)">
+            <th className={`${table.leadHead} !py-1.5 font-medium whitespace-nowrap`}>日期</th>
+            <th className={`${table.num} !py-1.5 font-medium whitespace-nowrap`}>最高名次</th>
+            <th className={`${table.num} !py-1.5 font-medium whitespace-nowrap`}>上榜</th>
+            <th className={`${table.cell} !py-1.5 font-medium whitespace-nowrap`}>最高分</th>
+            <th className={`${table.cell} !py-1.5 font-medium whitespace-nowrap`}>當天主要標籤</th>
+            <th className={`${table.cell} !py-1.5 font-medium whitespace-nowrap`}>其他高分標籤</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          {days.map((d) => (
+            <tr key={d.day} className={`${table.row} whitespace-nowrap`}>
+              <th scope="row" className={`${table.lead} !py-1.5 text-left font-normal tabular-nums`}>
+                <Link href={dayLink(d.day)} className="hover:underline" title="看這一天的事件表">
+                  {dayLabel(d.day)}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => onOpen(d.day)}
+                  className="ml-2 text-xs text-brand-700 hover:underline dark:text-brand-400"
+                >
+                  逐時
+                </button>
+              </th>
+              <td className={`${table.num} !py-1.5 font-medium ${d.bestRank === 1 ? 'text-brand-700 dark:text-brand-400' : ''}`}>
+                <Link href={atLink(d.bestAt)} className="hover:underline" title={`${hhmm(d.bestAt)} 的事件表`}>
+                  {d.bestRank}
+                </Link>
+              </td>
+              <td className={`${table.num} !py-1.5 text-xs text-zinc-600 dark:text-zinc-400`}>{d.hours} 小時</td>
+              <td className={`${table.cell} !py-1.5`}>
+                <ScoreCell score={d.peak} maxScore={maxScore} />
+              </td>
+              <td className={`${table.cell} !py-1.5`}>
+                <span className="flex gap-1">
+                  {d.major.map((m) => (
+                    <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white dark:bg-brand-600`}>
+                      {m}
+                    </Link>
+                  ))}
+                </span>
+              </td>
+              <td className={`${table.cell} !py-1.5`}>
+                <span className="flex gap-1">
+                  {d.tags.slice(0, 6).map(([t, v]) => (
+                    <Link
+                      key={t}
+                      href={tagHref(t)}
+                      className={`${chip} bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
+                      title={`當天最高分 ${v.toFixed(1)}`}
+                    >
+                      {t}
+                      <span className="ml-1 tabular-nums text-zinc-500">{v.toFixed(0)}</span>
+                    </Link>
+                  ))}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableScroller>
   );
 }

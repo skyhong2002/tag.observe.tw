@@ -119,6 +119,18 @@ export interface ArchivedThread {
   /** Outlets on the story over the day (the last 24h, for today). */
   coverage?: EventCoverage;
   news: EventNews[];
+  /** The story's place in the day's ranking (folded threads share their lead's). Absent on old API builds. */
+  dayRank?: number | null;
+  /** Summed hourly score that day, this thread alone and with the threads folded into it. */
+  dayWeight?: number;
+  storyWeight?: number;
+  /** Hours on the table that day. */
+  hoursOnDay?: number;
+  /** Rank in each hour 00:00–23:00 of the day; null = off the table. */
+  dayTrail?: Array<number | null> | null;
+  /** Set on a re-opened thread of a heavier story that day; `folded` lists them on the lead. */
+  foldedInto?: number | null;
+  folded?: number[];
 }
 export interface EventDay {
   day: string;
@@ -146,6 +158,36 @@ export const threadAsEvent = (t: ArchivedThread, rank: number): EventItem => ({
   rankTrail: trimTrail(t.rankTrail),
   firstTime: t.firstTime,
   coverage: t.coverage,
+});
+/** The day's stories, heaviest first: each lead thread with the threads folded
+ *  into it. Old API builds send no day ranking; there each thread stands alone,
+ *  ranked by its best burst as before. */
+export function dayStories(threads: readonly ArchivedThread[]) {
+  if (!threads.some((t) => t.dayRank != null))
+    return [...threads].sort((a, b) => b.maxScore - a.maxScore).map((lead) => ({ lead, folded: [] as ArchivedThread[] }));
+  const byId = new Map(threads.map((t) => [t.id, t]));
+  return threads
+    .filter((t) => t.foldedInto == null)
+    .sort((a, b) => (a.dayRank ?? Infinity) - (b.dayRank ?? Infinity))
+    .map((lead) => ({ lead, folded: (lead.folded ?? []).flatMap((id) => byId.get(id) ?? []) }));
+}
+/** A day's story as a card: ranked and weighed over the whole day, with its rank in each hour of the day. */
+export const dayStoryAsEvent = (
+  { lead, folded }: { lead: ArchivedThread; folded: readonly ArchivedThread[] },
+  rank: number,
+): EventItem => ({
+  ...threadAsEvent(lead, rank),
+  score: lead.storyWeight ?? lead.maxScore,
+  hours: null,
+  // The story's best rank in each hour, whichever of its threads held it.
+  rankTrail: lead.dayTrail
+    ? lead.dayTrail.map((r, i) =>
+        [r, ...folded.map((f) => f.dayTrail?.[i] ?? null)].reduce<number | null>(
+          (m, x) => (x === null ? m : m === null ? x : Math.min(m, x)),
+          null,
+        ),
+      )
+    : trimTrail(lead.rankTrail),
 });
 export const fetchEventDay = (day?: string) => get<EventDay>(`/api/v1/events/threads${day ? `?day=${encodeURIComponent(day)}` : ''}`, 300);
 /** One of the main threads of a period (/api/v1/events/threads/period). */

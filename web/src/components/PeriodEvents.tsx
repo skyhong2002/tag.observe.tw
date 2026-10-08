@@ -89,8 +89,8 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
         <h2 id="period-events" className="text-lg font-semibold tracking-tight">
           過去 {days} 天的主要事件
         </h2>
-        <Link href={days === 1 ? '/event/' : '/event/archive/'} className="text-sm text-brand-700 hover:underline dark:text-brand-400">
-          {days === 1 ? '這小時的事件排行' : '每日事件存檔'} →
+        <Link href="/event/" className="text-sm text-brand-700 hover:underline dark:text-brand-400">
+          {days === 1 ? '今天的事件排行' : '每日事件表'} →
         </Link>
       </div>
       <ol className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">

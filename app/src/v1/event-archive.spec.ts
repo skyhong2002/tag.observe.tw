@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { bucketByHour, coverageWindow, dayRange, pickPeriodThreads, taipeiDay, trailsEnding } from './event-archive.ts';
+import {
+  bucketByHour,
+  coverageWindow,
+  dayRange,
+  dayRuns,
+  foldDayThreads,
+  pickPeriodThreads,
+  taipeiDay,
+  trailsEnding,
+} from './event-archive.ts';
 
 const cats = { blue: ['udn'], green: ['ltn'] };
 const t = (h: number, m = 0) => new Date(Date.UTC(2026, 8, 30, h, m));
@@ -74,5 +83,49 @@ describe('event archive', () => {
       { id: 4, weight: 1, hours: 1, bestRank: 9 },
     ]);
     expect(pickPeriodThreads(rows, majors, 1).map((p) => p.id)).toEqual([2]);
+  });
+  it("sums a thread's hours within the Taipei day on a 00:00-23:00 trail", () => {
+    const { from } = dayRange('2026-10-01'); // 2026-09-30T16:00Z
+    const rows = [
+      { threadId: 1, hourStart: t(15), score: 50, rank: 1 }, // the evening before
+      { threadId: 1, hourStart: t(16), score: 10, rank: 2 },
+      { threadId: 1, hourStart: t(16), score: 4, rank: 1 },
+      { threadId: 1, hourStart: t(18), score: 6, rank: 3 },
+      { threadId: 2, hourStart: new Date(Date.UTC(2026, 9, 1, 15)), score: 7, rank: 5 },
+    ];
+    const runs = dayRuns(rows, from);
+    expect(runs.get(1)).toMatchObject({ weight: 16, hours: 2, bestRank: 1 });
+    expect(runs.get(1)?.trail.slice(0, 3)).toEqual([1, null, 3]);
+    expect(runs.get(2)?.trail[23]).toBe(5);
+    expect(runs.get(2)?.trail).toHaveLength(24);
+  });
+  it('folds same-story threads into the heaviest and ranks stories by their sum', () => {
+    const story = (major: string[], urls: string[] = []) => ({ major, urls });
+    const majors = new Map([
+      [1, story(['蔡康永', '陳美鳳'])],
+      [2, story(['颱風', '氣象署'], ['a'])],
+      [3, story(['蔡康永', '台獨'])],
+      [4, story(['台股'])],
+      [5, story(['徐佳青', '僑委會', '民眾黨'])],
+      [6, story(['民眾黨', '黃國昌'])],
+      [7, story(['東北季風', '低溫'], ['b', 'a'])],
+    ]);
+    const weights = new Map([
+      [1, 10],
+      [2, 15],
+      [3, 8],
+      [4, 1],
+      [5, 9],
+      [6, 2],
+      [7, 3],
+    ]);
+    // 6 shares only 民眾黨 with 5: a different story that day.
+    expect(foldDayThreads(weights, majors)).toEqual([
+      { id: 1, weight: 18, folded: [3] },
+      { id: 2, weight: 18, folded: [7] },
+      { id: 5, weight: 9, folded: [] },
+      { id: 6, weight: 2, folded: [] },
+      { id: 4, weight: 1, folded: [] },
+    ]);
   });
 });

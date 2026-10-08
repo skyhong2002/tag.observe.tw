@@ -180,6 +180,74 @@ export function groupByHour(rows: readonly TimedArticle[]): HourGroup[] {
   return groups;
 }
 
+const DAY = 24 * HOUR,
+  TPE = 8 * HOUR;
+/** Days since the epoch, counted in Taipei time. */
+export const dayKey = (iso: string) => Math.floor((Date.parse(iso) + TPE) / DAY);
+/** The Taipei date of a dayKey, YYYY-MM-DD. */
+export const dayIso = (key: number) => new Date(key * DAY).toISOString().slice(0, 10);
+
+/** Reports grouped by publication day (Taipei), like groupByHour. */
+export function groupByDay(rows: readonly TimedArticle[]): HourGroup[] {
+  const groups: HourGroup[] = [];
+  for (const r of rows) {
+    const key = dayKey(r.publishedAt);
+    let g = groups.find((x) => x.key === key);
+    if (!g) {
+      g = { key, items: [], byCamp: { blue: [], green: [], other: [] } };
+      groups.push(g);
+    }
+    g.items.push(r);
+    g.byCamp[r.outlet.camp].push(r);
+  }
+  return groups;
+}
+
+export interface ThreadDay {
+  /** Taipei date, YYYY-MM-DD. */
+  day: string;
+  /** Hours on the table that day. */
+  hours: number;
+  bestRank: number;
+  /** The first hour the thread held its best rank that day. */
+  bestAt: string;
+  peak: number;
+  /** The day's most frequent major tags, then its other highest-scoring tags. */
+  major: string[];
+  tags: Array<[string, number]>;
+}
+
+/** One row per Taipei day of a thread's hours, newest first. */
+export function threadDays(hours: readonly ThreadHour[]): ThreadDay[] {
+  const byDay = new Map<number, ThreadHour[]>();
+  for (const h of hours) byDay.set(dayKey(h.hourStart), [...(byDay.get(dayKey(h.hourStart)) ?? []), h]);
+  return [...byDay]
+    .sort((a, b) => b[0] - a[0])
+    .map(([key, list]) => {
+      const sorted = [...list].sort((a, b) => a.hourStart.localeCompare(b.hourStart));
+      const bestRank = Math.min(...sorted.map((h) => h.rank));
+      const majorCount = new Map<string, number>();
+      const tagMax = new Map<string, number>();
+      for (const h of sorted) {
+        for (const m of h.major) majorCount.set(m, (majorCount.get(m) ?? 0) + 1);
+        for (const [t, v] of h.tags) tagMax.set(t, Math.max(tagMax.get(t) ?? 0, v));
+      }
+      const major = [...majorCount]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([t]) => t);
+      return {
+        day: dayIso(key),
+        hours: sorted.length,
+        bestRank,
+        bestAt: (sorted.find((h) => h.rank === bestRank) as ThreadHour).hourStart,
+        peak: Math.max(...sorted.map((h) => h.score)),
+        major,
+        tags: [...tagMax].filter(([t]) => !major.includes(t)).sort((a, b) => b[1] - a[1]),
+      };
+    });
+}
+
 /** The first report of each camp, for "who broke it". */
 export function firstReports(byOutlet: readonly CoverageOutlet[]): Array<{ camp: Camp; outlet: CoverageOutlet; article: CoverageArticle }> {
   const first = new Map<Camp, { outlet: CoverageOutlet; article: CoverageArticle }>();

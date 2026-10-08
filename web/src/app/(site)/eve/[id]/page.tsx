@@ -19,6 +19,7 @@ import {
   defaultDir,
   firstReports,
   flattenArticles,
+  groupByDay,
   groupByHour,
   hourKey,
   leadStories,
@@ -39,7 +40,18 @@ import { pageMetadata, pageSchema } from '@/lib/seo.mts';
 import ContinuationLinks from './ContinuationLinks';
 import HourTable from './HourTable';
 import OutletTable from './OutletTable';
-import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, LeadStories, LooseReports, SectionTitle, StatTiles, Timeline } from './sections';
+import {
+  ByOutlet,
+  CAMP_TEXT,
+  CampColumns,
+  CampDot,
+  type GroupSpan,
+  LeadStories,
+  LooseReports,
+  SectionTitle,
+  StatTiles,
+  Timeline,
+} from './sections';
 
 export const revalidate = 120;
 
@@ -122,7 +134,7 @@ export default async function EventThreadPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string; at?: string }>;
+  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string; at?: string; group?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -131,6 +143,8 @@ export default async function EventThreadPage({
   const dir: 'asc' | 'desc' = sp.dir === 'asc' || sp.dir === 'desc' ? sp.dir : defaultDir(sort);
   // Headlines run newest first unless the reader asks for the story in order.
   const order: 'asc' | 'desc' = sp.order === 'asc' ? 'asc' : 'desc';
+  // Headlines are grouped by day unless the reader asks for hours.
+  const span: GroupSpan = sp.group === 'hour' ? 'hour' : 'day';
   // Coverage and series are separate, heavier queries; the page still renders without them.
   const [data, cov, series] = await Promise.all([
     fetchThread(id),
@@ -161,7 +175,7 @@ export default async function EventThreadPage({
     ? splitByRelevance(cov.byOutlet, relevanceFloor(cov.byOutlet, cov.majorTags.length))
     : { core: [], fringe: [] };
   const coreCount = core.reduce((n, o) => n + o.articles.length, 0);
-  const groups = groupByHour(flattenArticles(core, order));
+  const groups = (span === 'hour' ? groupByHour : groupByDay)(flattenArticles(core, order));
   const loose = flattenArticles(fringe, order);
   // The headline's own report already sits at the top of the page.
   const leads = leadStories(core.map((o) => ({ ...o, articles: o.articles.filter((a) => a.id !== lead?.id) })));
@@ -175,6 +189,7 @@ export default async function EventThreadPage({
       at: sp.at,
       view: view === 'timeline' ? undefined : view,
       order: order === 'desc' ? undefined : order,
+      group: span === 'day' ? undefined : span,
       sort: sort === 'articles' ? undefined : sort,
       dir: sort === 'articles' && dir === 'desc' ? undefined : dir,
       ...q,
@@ -459,6 +474,24 @@ export default async function EventThreadPage({
                 </Link>
               ))}
               <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />
+              {view !== 'outlets' &&
+                (
+                  [
+                    ['day', '每日'],
+                    ['hour', '每小時'],
+                  ] as const
+                ).map(([g, name]) => (
+                  <Link
+                    key={g}
+                    href={href({ group: g === 'day' ? undefined : g }, 'headlines')}
+                    scroll={false}
+                    aria-current={g === span ? 'page' : undefined}
+                    className={`rounded-md px-3 py-1 ${g === span ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
+                  >
+                    {name}
+                  </Link>
+                ))}
+              {view !== 'outlets' && <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />}
               {VIEWS.map(([v, name]) => (
                 <Link
                   key={v}
@@ -475,9 +508,9 @@ export default async function EventThreadPage({
         </div>
         {coreCount > 0 ? (
           view === 'timeline' ? (
-            <Timeline groups={groups} rankAt={rankAt} />
+            <Timeline groups={groups} rankAt={rankAt} span={span} />
           ) : view === 'camps' ? (
-            <CampColumns groups={groups} rankAt={rankAt} />
+            <CampColumns groups={groups} rankAt={rankAt} span={span} />
           ) : (
             <ByOutlet byOutlet={core} order={order} />
           )

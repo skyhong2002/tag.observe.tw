@@ -275,7 +275,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const data = await loadDemo();
   const [lead, ...rest] = data.stories;
   const ranking = data.ranking;
-  const events = data.events?.events ?? [];
   const updated = data.events?.builtAt ?? ranking?.snapshot.computedAt;
   const date = updated
     ? new Date(updated).toLocaleDateString('zh-TW', {
@@ -329,7 +328,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <div className={styles.sectionHeading}>
               <h2>焦點事件</h2>
               <Link href="/event/">
-                本小時全部 {events.length || ''} 件 <Arrow />
+                {data.focus.daily ? '今天' : '本小時'}全部 {data.focus.count || ''} 件 <Arrow />
               </Link>
             </div>
             {lead ? (
@@ -411,7 +410,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <aside className={styles.right} aria-label="藍綠溫差與標題對照">
             <div className={styles.sectionHeading}>
               <h2>藍綠溫差</h2>
-              <Link href="/event/archive/">
+              <Link href="/event/">
                 今天全部事件 <Arrow />
               </Link>
             </div>
