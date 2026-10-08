@@ -2442,6 +2442,11 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | --- | --- | --- |
 | `generatedAt` | string (ISO 時間) |  |
 | `todayStart` | string (ISO 時間) |  |
+| `summaryWindow` | object |  |
+| `summaryWindow.since` | string (ISO 時間) |  |
+| `summaryWindow.until` | string (ISO 時間) |  |
+| `summaryWindow.hours` | integer | 摘要統計窗口，168 小時 |
+| `summaryWindow.basis` | string | 以出版時間界定窗口，published_at |
 | `totals` | object |  |
 | `totals.today` | integer |  |
 | `totals.last24h` | integer |  |
@@ -2479,6 +2484,11 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].crawler.links` | object[] |  |
 | `media[].crawler.links[].label` | string |  |
 | `media[].crawler.links[].url` | string | GitHub 設定或解析程式連結 |
+| `media[].summary` | object \| null | 文章發現入口為 null，摘要需查看原刊登媒體 |
+| `media[].summary.total` | integer | 窗口內已出版且日期已確認的本站文章數；不含議題／專題包裝頁 |
+| `media[].summary.withSummary` | integer | 目前存有非空 summary 的文章數；不表示全部欄位已人工驗證 |
+| `media[].summary.sources` | string[] |  |
+| `media[].summary.exampleId` | integer \| null | 有摘要的站內文章範例，優先選原文導言；不是最新文章保證 |
 | `media[].today` | integer |  |
 | `media[].last24h` | integer |  |
 | `media[].last7d` | integer |  |
