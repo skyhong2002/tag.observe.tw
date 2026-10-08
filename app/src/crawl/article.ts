@@ -8,6 +8,7 @@ import { globalVoicesCredits } from './news-globalvoices-credits.ts';
 import { huanqiuPublished } from './news-huanqiu-body.ts';
 import { huanqiuPeopleProvider } from './news-huanqiu-provider.ts';
 import { ownArticleAuthors } from './news-own-author.ts';
+import { ownReporterAuthors } from './news-own-reporter.ts';
 import { pansciArticle } from './news-pansci.ts';
 import { peopleCredits } from './news-people-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
@@ -204,7 +205,8 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     (site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw);
   // Body cleanup can remove caption/header evidence used by summary extraction.
   const summary = extractSummary($, url);
-  const ownAuthors = tpNewsArticle($, url)?.authors ?? cctvDeclaredAuthors($, url) ?? ownArticleAuthors($, url);
+  const ownAuthors =
+    tpNewsArticle($, url)?.authors ?? cctvDeclaredAuthors($, url) ?? ownArticleAuthors($, url) ?? ownReporterAuthors($, url);
   const content = extractArticleContent($, url, rules);
   return {
     ...summary,
