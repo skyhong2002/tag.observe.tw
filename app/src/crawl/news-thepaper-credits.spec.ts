@@ -53,7 +53,7 @@ it('keeps the corroborated partner writer separate from the explicitly declared 
     expect(extractAttributions(parsed.body ?? '', 'thepaper', parsed.provider)).toMatchObject([
       {
         media: provider === '经济日报' ? 'economic_daily_thepaper' : 'workers_daily',
-        countryCode: 'ZZ',
+        countryCode: provider === '经济日报' ? 'ZZ' : 'CN',
         evidence: `內容提供者：${provider}`,
       },
     ]);

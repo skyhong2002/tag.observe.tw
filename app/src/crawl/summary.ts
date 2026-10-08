@@ -6,6 +6,7 @@ import { bo6sSummary } from './news-editor-credits.ts';
 import { iMediaWriterSummary } from './news-i-media-writer.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaSummary } from './news-j-media-summary.ts';
+import { mdnKidsFullDescription } from './news-mdnkids.ts';
 import { newCongressFullDescription } from './news-newcongress.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
@@ -15,6 +16,8 @@ export interface ArticleSummary {
 }
 
 const boilerplate = new Set([
+  '基督教今日報',
+  '【彪網媒】追求專業、公正，深耕在地，匯流政府與民間資訊，反應輿情、開創自由表達與理性回饋的優質園地',
   // Reviewed news description imports a legal office's search keyword list.
   '高雄律師 台南律師 男律師 女律師 專業團隊 台灣律師 好的律師 推薦律師 認識律師 勝訴律師 訴訟律師 非訟律師 法律諮詢 法律問題 王瀚誼律師 莊曜隸律師 魏韻儒律師 民事案件 家事案件 刑事案件 行政案件 勞資案件 商務契約 公司法 保險法 證券交易法 民法 刑法 憲法 行政法 課程合作 保險法 證券交易法 公司',
   '觀策站',
@@ -172,6 +175,7 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (newCongressFullDescription($, url, result.summary)) continue;
+    if (mdnKidsFullDescription($, url, result.summary)) continue;
     const writerExcerpt = iMediaWriterSummary($, url, result.summary);
     if (writerExcerpt !== null) {
       result = publisherSummary(writerExcerpt, source);

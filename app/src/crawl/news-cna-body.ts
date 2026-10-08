@@ -1,6 +1,70 @@
 import type { CheerioAPI } from 'cheerio';
 import { urlKey } from './text.ts';
 
+/** Use own visible paragraphs when structured text omits a headline subject at a paragraph's start. */
+export function cnaVerifiedParagraphs($: CheerioAPI, value: string, node: Record<string, unknown>): string | null {
+  const body = node.articleBody;
+  if (typeof body !== 'string' || /<\/?[a-z][^>]*>/i.test(body) || typeof node.headline !== 'string') return null;
+  const url = new URL(value);
+  if (!['www.cna.com.tw', 'cna.com.tw'].includes(url.hostname) || !/^\/news\/[a-z]+\/\d{12}\.aspx$/.test(url.pathname)) return null;
+  const canonical = $('link[rel="canonical"]').attr('href');
+  try {
+    if (!canonical || urlKey(new URL(canonical, value).href) !== urlKey(value)) return null;
+  } catch {
+    return null;
+  }
+  const compact = (text: string) => text.replace(/\s/g, '');
+  const main = $('.centralContent');
+  const heading = main.children('h1');
+  const photo = main.children('.fullPic');
+  const leading = photo.children('figure').children('figcaption.picinfo');
+  const prose = photo.next('.paragraph');
+  if (
+    main.length !== 1 ||
+    heading.length !== 1 ||
+    compact(heading.text()) !== compact(node.headline) ||
+    photo.length !== 1 ||
+    leading.length !== 1 ||
+    prose.length !== 1 ||
+    !compact(body).startsWith(compact(leading.text()))
+  )
+    return null;
+  let structured = compact(body);
+  for (const caption of leading.add(prose.find('figure > figcaption.picinfo')).toArray()) {
+    const marked = compact($(caption).text());
+    const at = structured.indexOf(marked);
+    if (!marked || at < 0 || structured.indexOf(marked, at + 1) !== -1) return null;
+    structured = structured.slice(0, at) + structured.slice(at + marked.length);
+  }
+  const paragraphNodes = prose.children('p');
+  for (const element of paragraphNodes.add(paragraphNodes.find('*')).toArray()) {
+    const own = $(element);
+    if (
+      own.closest('[hidden], [aria-hidden="true"]').length ||
+      /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\s*(?:!important\s*)?(?:;|$)/i.test(own.attr('style') ?? '')
+    )
+      return null;
+  }
+  const paragraphs = paragraphNodes
+    .toArray()
+    .map((element) => $(element).text().trim())
+    .filter(Boolean);
+  const texts = paragraphs.map(compact);
+  if (texts.length < 2 || !structured.startsWith(texts[0]) || structured === texts.join('')) return null;
+  let matches = 0;
+  for (let index = 1; index < texts.length; index++) {
+    for (let length = 2; length <= 5; length++) {
+      const prefix = texts[index].slice(0, length);
+      if (!/^[\p{Script=Han}]{2,5}$/u.test(prefix) || !compact(node.headline).includes(prefix)) continue;
+      const candidate = [...texts];
+      candidate[index] = candidate[index].slice(length);
+      if (candidate.join('') === structured) matches++;
+    }
+  }
+  // The complete report must differ only by one explicitly visible headline subject, never inferred prose.
+  return matches === 1 ? paragraphs.join('\n\n') : null;
+}
+
 /** Own marked photo captions are separate from the CNA report's prose. */
 export function cnaStructuredBody($: CheerioAPI, value: string, node: Record<string, unknown>): unknown {
   const body = node.articleBody;

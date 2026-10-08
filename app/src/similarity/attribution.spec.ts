@@ -292,3 +292,12 @@ it('keeps The Paper ambiguous Economic Daily provider distinct through normaliza
   expect(normalizeAttributions(attributed, 'thepaper')).toEqual(attributed);
   expect(extractAttributions('本文內容。', 'udn', '经济日报')).toMatchObject([{ media: 'udnmoney', countryCode: 'TW' }]);
 });
+
+it('uses the independently checked Workers Daily home jurisdiction without changing the unverified Economic Daily source', () => {
+  expect(extractAttributions('本文內容。', 'thepaper', '工人日报')).toMatchObject([
+    { media: 'workers_daily', country: '中國', countryCode: 'CN' },
+  ]);
+  expect(extractAttributions('本文內容。', 'thepaper', '经济日报')).toMatchObject([
+    { media: 'economic_daily_thepaper', countryCode: 'ZZ' },
+  ]);
+});

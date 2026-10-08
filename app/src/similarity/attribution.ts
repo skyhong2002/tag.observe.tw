@@ -71,8 +71,8 @@ const outlets: Outlet[] = [
   outlet('yonhap', '韓聯社', 'KR', ['Yonhap', 'Yonhap News Agency', '韩联社']),
   outlet('xinhua', '新華社', 'CN', ['Xinhua', 'Xinhua News Agency', '新华社']),
   outlet('xinhuanet', '新華網', 'CN', ['新华网', '新华网客户端']),
-  // Own official newspaper archive corroborates the publication; jurisdiction review is pending.
-  outlet('workers_daily', '工人日报', 'ZZ', ['工人日報']),
+  // Own newspaper archive, publisher's about page and Beijing contact address corroborate its home jurisdiction.
+  outlet('workers_daily', '工人日报', 'CN', ['工人日報']),
   outlet('guancha', '觀察者網', 'CN', ['观察者网']),
   outlet('dw', '德國之聲', 'DE', ['DW', 'Deutsche Welle', '德国之声']),
   outlet('rfi', '法國國際廣播電台', 'FR', ['RFI', '法廣', '法广', 'RFI法廣', 'RFI法广']),

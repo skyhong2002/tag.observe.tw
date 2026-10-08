@@ -61,3 +61,31 @@ it('removes a separately marked trailing caption only when the entire remaining 
     ).body,
   ).toContain(trailing);
 });
+
+it('uses own visible paragraphs with explicit provenance when JSON-LD omits one headline subject at a paragraph opening', () => {
+  const title = '蔡英文：台灣是不可或缺的夥伴';
+  const intro = '（中央社記者葉素萍台北8日電）前總統蔡英文今天出席研討會並致詞。';
+  const second = '蔡英文辦公室發布新聞稿指出，民主夥伴應結合各自的產業能力。';
+  const photo = '前總統蔡英文演說。（辦公室提供）';
+  const ownNode = {
+    ...node,
+    headline: title,
+    articleBody: `${photo}${intro}辦公室發布新聞稿指出，民主夥伴應結合各自的產業能力。${rest}`,
+    author: { '@type': 'Person', name: '葉素萍' },
+  };
+  const html = `<head><link rel="canonical" href="${url}"><meta name="description" content="媒體提供的摘要。"><script type="application/ld+json">${JSON.stringify(ownNode)}</script></head><div class="centralContent"><h1>${title}</h1><div class="fullPic"><figure><figcaption class="picinfo">${photo}</figcaption></figure></div><div class="paragraph"><p>${intro}</p><p>${second}</p><p>${rest}</p></div><div class="paragraph appDownload"><p>下載 APP</p></div></div>`;
+  expect(extractArticle(html, url)).toMatchObject({
+    body: `${intro}\n\n${second}\n\n${rest}`,
+    bodySource: 'article:cna-paragraphs',
+    authors: ['葉素萍'],
+    summary: '媒體提供的摘要。',
+    publishedAt: new Date('2026-10-07T23:45:00Z'),
+  });
+  // Other content changes or a subject absent from the own headline do not prove this correction.
+  expect(extractArticle(html.replace(second, `${second}額外變動。`), url).bodySource).not.toBe('article:cna-paragraphs');
+  expect(extractArticle(html.replaceAll(title, '民主夥伴研討會'), url).bodySource).not.toBe('article:cna-paragraphs');
+  expect(extractArticle(html.replace(`<p>${second}</p>`, `<p hidden>${second}</p>`), url).bodySource).not.toBe('article:cna-paragraphs');
+  expect(
+    extractArticle(html.replace(`href="${url}"`, 'href="https://www.cna.com.tw/news/aipl/202610080022.aspx"'), url).bodySource,
+  ).not.toBe('article:cna-paragraphs');
+});

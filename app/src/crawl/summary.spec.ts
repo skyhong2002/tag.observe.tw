@@ -6,6 +6,16 @@ import { publisherSummary } from './summary.ts';
 
 const body = '這是新聞正文的事實、訪談及完整說明。'.repeat(30);
 describe('publisher summary metadata', () => {
+  it('skips the exact CDN publisher name and uses its supplied article OG excerpt', () => {
+    const excerpt = '英特爾執行長在專訪中談起自己的信仰與工作壓力。';
+    expect(
+      extractArticle(
+        `<meta name="description" content="基督教今日報"><meta property="og:description" content="${excerpt}">`,
+        'https://cdn-news.org/News.aspx?EntityID=News&PK=123',
+      ),
+    ).toMatchObject({ summary: excerpt, summarySource: 'meta:og:description' });
+    expect(publisherSummary('基督教今日報訪問多位企業領袖，介紹他們的信仰與生活。', 'meta:description').summary).not.toBeNull();
+  });
   it('removes an AMM incomplete dash entity only when the own article lead corroborates the excerpt', () => {
     const prefix = '申請情況反映各界對增加域名系統選擇的關注 洛杉磯2026年10月8日 /美通社/';
     const description = `${prefix} &amp;#821 […]`;
@@ -451,4 +461,10 @@ it('removes the reviewed AppleAlmond feed publication suffix only for the matchi
   expect(publisherSummary(credit, 'feed:description', title).summary).toBeNull();
   expect(publisherSummary(`${excerpt} ${credit}`, 'feed:description', '另一則文章').summary).toContain(credit);
   expect(publisherSummary(`${excerpt} ${credit}`, 'meta:description', title).summary).toContain(credit);
+});
+
+it('rejects the reviewed Biao publisher slogan while preserving an article-specific excerpt mentioning the publisher', () => {
+  const slogan = '【彪網媒】追求專業、公正，深耕在地，匯流政府與民間資訊，反應輿情、開創自由表達與理性回饋的優質園地';
+  expect(publisherSummary(slogan, 'meta:description').summary).toBeNull();
+  expect(publisherSummary('彪網媒報導飯店獲得旅遊大獎，地方政府公布相關資訊。', 'meta:description').summary).not.toBeNull();
 });

@@ -7,13 +7,16 @@ import {
   normalizeAuthorCredits,
   reporterNames,
 } from './byline.ts';
-import { cnaStructuredBody } from './news-cna-body.ts';
+import { cdnCorrespondent } from './news-cdn-credits.ts';
+import { cnaStructuredBody, cnaVerifiedParagraphs } from './news-cna-body.ts';
 import { bo6sEditorLead, tvbsContributorCredits } from './news-editor-credits.ts';
 import { iMediaWriter } from './news-i-media-writer.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaLead } from './news-j-media-summary.ts';
 import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
+import { mdnKidsArticle } from './news-mdnkids.ts';
 import { newCongressPost } from './news-newcongress.ts';
+import { nytChineseCredits } from './news-nyt-chinese-credits.ts';
 import { tnlFeatureDescription } from './news-tnl-feature.ts';
 import { tvbsHealthExhibition } from './news-tvbshealth-exhibition.ts';
 import { womanyCollectionDescription, womanyQuizDescription } from './news-womany-collection.ts';
@@ -412,6 +415,9 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const tvbsCredits = tvbsContributorCredits($, url);
   const congressAuthor = newCongressPost($, url)?.author;
   const mediaWriter = iMediaWriter($, url)?.author;
+  const nytCredits = nytChineseCredits($, url);
+  const mdnAuthor = mdnKidsArticle($, url)?.author;
+  const cdnAuthor = cdnCorrespondent($, url);
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
   const configuredValues = (tvbsCredits ?? (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : [])).flatMap(
@@ -450,6 +456,9 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       bodySource,
       bodyStatus,
       authors:
+        (cdnAuthor ? [cdnAuthor] : null) ??
+        (mdnAuthor ? [mdnAuthor] : null) ??
+        nytCredits ??
         (mediaWriter ? [mediaWriter] : null) ??
         (congressAuthor ? [congressAuthor] : null) ??
         tvbsCredits ??
@@ -477,10 +486,13 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     return result(tnlFeature.body, 'feature:tnl-description', contentLength(tnlFeature.body) >= 200 ? 'ok' : 'short', own, []);
   }
   const candidates: Candidate[] = nodes
-    .map((node) => ({
-      body: structuredBody(cnaStructuredBody($, url, { ...node, articleBody: marieclaireStructuredBody($, url, node) })),
-      source: 'ld+json',
-    }))
+    .map((node) => {
+      const cnaProse = cnaVerifiedParagraphs($, url, node);
+      return {
+        body: structuredBody(cnaProse ?? cnaStructuredBody($, url, { ...node, articleBody: marieclaireStructuredBody($, url, node) })),
+        source: cnaProse ? 'article:cna-paragraphs' : 'ld+json',
+      };
+    })
     .filter((candidate) => candidate.body);
   if (rules.bodyHtmlSelector) {
     for (const node of $(rules.bodyHtmlSelector).toArray()) {
