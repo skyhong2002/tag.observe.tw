@@ -584,3 +584,69 @@ it('replaces reviewed feed modification time with page publication and moves ran
   expect(await runArticles(ordinary.db, spec, { now: () => now, fetch })).toMatchObject({ updated: 1, failed: 0 });
   expect(ordinary.rows[0].publishedAt).toEqual(feedTime);
 });
+
+it('persists a Voicettank book excerpt without restoring its RSS category as creator', async () => {
+  discover([{ ...item, creator: '【書摘】', verifiedContent: { ...item.verifiedContent!, authors: [] } }]);
+  const inserted = memoryDb();
+  await runIndex(inserted.db, { ...spec, media: 'voicettank' }, { now: () => now });
+  expect(inserted.rows[0]).toMatchObject({ authors: [], creator: null, body: item.verifiedContent?.body });
+  const repaired = memoryDb([
+    {
+      id: 1,
+      media: 'voicettank',
+      urlKey: urlKey(item.url),
+      url: item.url,
+      title: item.title,
+      publishedAt,
+      crawledAt: now,
+      bodyStatus: 'blocked',
+      body: null,
+      authors: ['【書摘】'],
+      creator: '【書摘】',
+    },
+  ]);
+  await runIndex(repaired.db, { ...spec, media: 'voicettank' }, { now: () => now });
+  expect(repaired.rows[0]).toMatchObject({ authors: [], creator: null, body: item.verifiedContent?.body });
+});
+
+it('clears the known Voicettank category on article retry while preserving real historical contributors', async () => {
+  for (const [authors, creator, expected] of [
+    [['【書摘】'], '【書摘】', { authors: [], creator: null }],
+    [['王宏恩'], '王宏恩', { authors: ['王宏恩'], creator: '王宏恩' }],
+  ] as const) {
+    const seeded = memoryDb([
+      {
+        id: 1,
+        media: 'voicettank',
+        urlKey: urlKey(item.url),
+        url: item.url,
+        title: item.title,
+        publishedAt,
+        crawledAt: now,
+        fetchedAt: null,
+        contentFetchedAt: null,
+        authors: [...authors],
+        creator,
+        tags: [],
+      },
+    ]);
+    const fetch = async (url: string) => ({
+      status: 200,
+      url,
+      body: '<article><p>來源沒有具名記者，但正文仍可擷取；訪問其他人的姓名不能補成作者。</p></article>',
+      contentType: 'text/html',
+      ms: 1,
+    });
+    expect(await runArticles(seeded.db, { ...spec, media: 'voicettank' }, { now: () => now, fetch })).toMatchObject({
+      updated: 1,
+      failed: 0,
+    });
+    if (creator === '【書摘】') expect(seeded.rows[0]).toMatchObject(expected);
+    else {
+      // Drizzle ignores undefined assignments; the fluent double records them literally.
+      const update = seeded.writes.find((write) => write.table === articles && write.values.fetchStatus !== undefined);
+      expect(update?.values.authors).toBeUndefined();
+      expect(update?.values.creator).toBeUndefined();
+    }
+  }
+});

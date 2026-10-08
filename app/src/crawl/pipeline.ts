@@ -10,6 +10,7 @@ import { type FeedItem, parseFeed } from './feed.ts';
 import { fetchText, fetchViaCurl } from './fetch.ts';
 import { discoverLinks, parseMarkerList } from './html-list.ts';
 import { discoverNews } from './news-discovery.ts';
+import { voicettankCategoryRepair, voicettankFeedCreator } from './news-voicettank.ts';
 import type { SourceSpec } from './sources.ts';
 import { headlineFromPage, normalizeTag, stripTitleSuffix, TRACKING, urlKey } from './text.ts';
 import { type TitleVocab, tagsFromTitle } from './title-tags.ts';
@@ -186,7 +187,7 @@ export async function runIndex(
               title: trunc(stripTitleSuffix(it.title ?? '', spec.titleSuffix), 512) as string,
               image: trunc(it.image, 512),
               category: trunc(it.category, 64),
-              creator: trunc(content?.authors.length ? content.authors.join('、') : it.creator, 256),
+              creator: trunc(content?.authors.length ? content.authors.join('、') : voicettankFeedCreator(spec.media, it.creator), 256),
               description: trunc(it.description, 4000),
               summary: it.summary ?? null,
               summarySource: it.summary ? it.summarySource : null,
@@ -254,6 +255,8 @@ export async function runIndex(
                 publishedAt: articles.publishedAt,
                 crawledAt: articles.crawledAt,
                 bodyStatus: articles.bodyStatus,
+                authors: articles.authors,
+                creator: articles.creator,
                 contentFetchedAt: articles.contentFetchedAt,
               })
               .from(articles)
@@ -270,6 +273,7 @@ export async function runIndex(
                 ...content,
                 authors: content.authors.length ? content.authors : undefined,
                 creator: content.authors.length ? content.authors.join('、').slice(0, 256) : undefined,
+                ...(voicettankCategoryRepair(spec.media, existing, content.authors) ?? {}),
                 ...(correctedDate ? { publishedAt: correctedDate } : {}),
                 ...(correctedTitle ? { title: trunc(correctedTitle, 512) as string } : {}),
                 fetchedAt: started,
@@ -372,6 +376,8 @@ export async function runArticles(
         crawledAt: articles.crawledAt,
         title: articles.title,
         fetchStatus: articles.fetchStatus,
+        authors: articles.authors,
+        creator: articles.creator,
         urlKey: articles.urlKey,
       })
       .from(articles)
@@ -492,6 +498,7 @@ export async function runArticles(
               body: detail.body,
               authors: detail.authors.length ? detail.authors : undefined,
               creator: detail.authors.length ? detail.authors.join('、').slice(0, 256) : undefined,
+              ...(voicettankCategoryRepair(spec.media, row, detail.authors) ?? {}),
               bodyStatus: detail.bodyStatus,
               bodySource: detail.bodySource.slice(0, 128),
               contentFetchedAt: now(),

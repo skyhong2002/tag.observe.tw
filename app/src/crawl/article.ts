@@ -18,6 +18,7 @@ import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news
 import { taipeiTimesCredits } from './news-taipeitimes-credits.ts';
 import { thePaperCredits } from './news-thepaper-credits.ts';
 import { tpNewsArticle } from './news-tpnews.ts';
+import { voicettankAuthors } from './news-voicettank.ts';
 import { yesMediaArticle } from './news-yesmedia.ts';
 import { type ArticleSummary, extractSummary } from './summary.ts';
 import { between, decodeEntities, normalizeTag, resolveUrl } from './text.ts';
@@ -211,6 +212,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   // Body cleanup can remove caption/header evidence used by summary extraction.
   const summary = extractSummary($, url);
   const ownAuthors =
+    voicettankAuthors($, url) ??
     yesMedia?.authors ??
     tpNewsArticle($, url)?.authors ??
     cctvDeclaredAuthors($, url) ??
