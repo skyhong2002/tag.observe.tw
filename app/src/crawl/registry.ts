@@ -1,12 +1,16 @@
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import groups from '../../data/crawl-groups.json' with { type: 'json' };
 import { addNewsSources } from './news-sources.ts';
+import { sourceDispatchGroup } from './schedule.ts';
 import { overrides } from './sources/overrides.ts';
 import { loadSources, type SourceSpec } from './sources.ts';
 
 let cached: SourceSpec[] | null = null;
 export function allSources(): SourceSpec[] {
-  cached ??= addNewsSources(loadSources(overrides, groups as Record<string, 'news' | 'hourly'>));
+  cached ??= addNewsSources(loadSources(overrides, groups as Record<string, 'news' | 'hourly'>)).map((source) => ({
+    ...source,
+    group: sourceDispatchGroup(source.media, source.group),
+  }));
   return cached;
 }
 export function sourcesInGroup(group: 'news' | 'hourly'): SourceSpec[] {

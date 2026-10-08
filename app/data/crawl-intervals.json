@@ -1,6 +1,6 @@
 {
   "observedAt": "2026-10-08T14:51:09.303Z",
-  "policy": "觀察至少48小時；取7天日均與最近24小時較高值；每日72篇以上維持9分鐘、24篇以上30分鐘、3篇以上60分鐘、其餘180分鐘；只降低頻率，不加快原本每小時來源；近期全面失敗或觀察不足保留原間隔。",
+  "policy": "平衡即時性與負載：保留原先61家減頻設定；觀察至少48小時、近24小時至少72篇且近7天至少為24小時篇數兩倍、錯誤率低於50%的高更新來源加至每30分鐘；每日500篇以上每9分鐘。使用者指定新唐人亞太每30分鐘。accelerate 來源由新聞排程派工。設定固定，不依每小時波動自行變動。",
   "media": {
     "cnews": {
       "minutes": 30,
@@ -245,6 +245,192 @@
     "viewpointtaiwan": {
       "minutes": 180,
       "reason": "近7天 0 篇；有效觀察 7.0 天，近期每日約 0.0 篇"
+    },
+    "news_pchome": {
+      "minutes": 9,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 605 篇、近7天 3878 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "lifenews": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 205 篇、近7天 799 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "taisounds": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 203 篇、近7天 1308 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "technews": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 199 篇、近7天 1089 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "owlting": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 155 篇、近7天 878 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "rti": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 145 篇、近7天 920 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "worldjournal": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 140 篇、近7天 714 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "stheadline": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 139 篇、近7天 741 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "mknews": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 135 篇、近7天 680 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "firenews": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 129 篇、近7天 748 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "cdns": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 125 篇、近7天 627 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "upmedia": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 112 篇、近7天 664 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "ammtw": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 110 篇、近7天 397 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "msn": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 109 篇、近7天 586 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "scmp": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 109 篇、近7天 487 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "news_yahoo": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 106 篇、近7天 600 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "thehubnews": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 106 篇、近7天 507 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "taiwanpost": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 103 篇、近7天 448 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "oncc": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 101 篇、近7天 538 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "aboluowang": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 99 篇、近7天 455 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "right_media": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 97 篇、近7天 471 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "zaobao": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 91 篇、近7天 469 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "ntdtv": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 89 篇、近7天 477 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "sunmedia": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 89 篇、近7天 428 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "newstaiwan": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 88 篇、近7天 440 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "gamer": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 80 篇、近7天 299 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "yahoo": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 79 篇、近7天 283 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "today_line_me": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 78 篇、近7天 490 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "singular": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 76 篇、近7天 479 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "rise_mediacorp": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 76 篇、近7天 353 篇",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
+    },
+    "ntdtv_tw": {
+      "minutes": 30,
+      "accelerate": true,
+      "reason": "平衡更新即時性：近24小時 11 篇、近7天 64 篇；使用者指定優先巡查，收錄量不代表網站全部更新量",
+      "reviewedAt": "2026-10-08T15:58:29.649Z"
     }
   }
 }

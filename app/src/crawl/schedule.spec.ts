@@ -1,8 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { crawlTimestamp, groupPeriodMs, nextIndexEligibleAt, sourceSchedule } from './schedule.ts';
+import { crawlTimestamp, groupPeriodMs, nextIndexEligibleAt, sourceDispatchGroup, sourceSchedule } from './schedule.ts';
 
 afterEach(() => vi.unstubAllEnvs());
 describe('per-media crawl schedule', () => {
+  it('routes explicitly accelerated sources through the fast dispatcher and respects disabled registrations', () => {
+    vi.stubEnv('CRAWL_NEWS_MINUTES', '9');
+    vi.stubEnv('CRAWL_HOURLY_MINUTES', '60');
+    expect(sourceDispatchGroup('news_pchome', 'hourly')).toBe('news');
+    expect(sourceSchedule('news_pchome', 'hourly')).toMatchObject({ minutes: 9, dueAfterMinutes: 7.2 });
+    expect(sourceSchedule('ntdtv_tw', 'hourly')).toMatchObject({ minutes: 30, dueAfterMinutes: 30 });
+    expect(sourceDispatchGroup('news_pchome', 'off')).toBe('off');
+    expect(sourceDispatchGroup('unknown-media', 'hourly')).toBe('hourly');
+  });
   it('shares configured intervals and never accelerates an explicitly slower group', () => {
     vi.stubEnv('CRAWL_NEWS_MINUTES', '9');
     expect(sourceSchedule('pts', 'news')).toMatchObject({ minutes: 30, dueAfterMinutes: 30 });
