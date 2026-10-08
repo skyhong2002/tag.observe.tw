@@ -10,6 +10,7 @@ import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
 import { taipei, taipeiHour } from '@/lib/api';
+import { eventContinuations } from '@/lib/event-continuations.mts';
 import { eventThreadCover, eventThreadHeadline, eventThreadLead } from '@/lib/event-presentation.mts';
 import {
   bestRank,
@@ -35,6 +36,7 @@ import { mediaNames } from '@/lib/media-names.mts';
 import type { EventCoverage } from '@/lib/pages';
 import { articleHref } from '@/lib/reading.mts';
 import { pageMetadata, pageSchema } from '@/lib/seo.mts';
+import ContinuationLinks from './ContinuationLinks';
 import HourTable from './HourTable';
 import OutletTable from './OutletTable';
 import { ByOutlet, CAMP_TEXT, CampColumns, CampDot, LeadStories, LooseReports, SectionTitle, StatTiles, Timeline } from './sections';
@@ -61,6 +63,8 @@ interface Thread {
   maxTag: string | null;
   maxScore: number;
   hoursTotal: number | null;
+  combinedFrom?: number[];
+  combinedTo?: number[];
 }
 interface Coverage {
   majorTags: string[];
@@ -135,6 +139,8 @@ export default async function EventThreadPage({
   ]);
   if (!data) notFound();
   const t = data.thread;
+  const continuations = eventContinuations(t, data.related);
+  const continuationCount = new Set([...continuations.previous, ...continuations.next, ...continuations.other]).size;
   const headline = headlineOf(data);
   // The headline is a real report; its coverage row adds the outlet's summary.
   const lead = eventThreadLead(data.hours);
@@ -272,15 +278,10 @@ export default async function EventThreadPage({
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             {taipeiHour(t.firstTime)} 至 {taipeiHour(t.lastTime)} · 上榜 {t.hours} 小時
             {t.hoursTotal && t.hoursTotal > t.hours ? `（含延續事件共 ${t.hoursTotal} 小時）` : ''}
-            {data.related.length > 0 && (
-              <>
-                {' · 相關事件 '}
-                {data.related.map((r) => (
-                  <Link key={r} href={`/eve/${r}/`} className="mr-1 text-brand-700 hover:underline dark:text-brand-400">
-                    #{r}
-                  </Link>
-                ))}
-              </>
+            {continuationCount > 0 && (
+              <a href="#event-history" className="ml-2 text-brand-700 hover:underline dark:text-brand-400">
+                前後續與相關事件 {continuationCount} 件 ↓
+              </a>
             )}
           </p>
           <nav className="flex flex-wrap gap-1 text-xs" aria-label="頁內段落">
@@ -365,11 +366,15 @@ export default async function EventThreadPage({
             />
           </div>
         )}
-        <h3 className="text-sm font-medium">每小時名次與標籤</h3>
-        <HourTable
-          hours={data.hours.map((h) => ({ ...h, label: taipeiHour(h.hourStart) }))}
-          maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))}
-        />
+        <div key={t.id} id="event-history" className="scroll-mt-20 space-y-3">
+          <ContinuationLinks ids={continuations.next} label="後續事件" />
+          <HourTable
+            hours={data.hours.map((h) => ({ ...h, label: taipeiHour(h.hourStart) }))}
+            maxScore={Math.max(t.maxScore, ...data.hours.map((h) => h.score))}
+          />
+          <ContinuationLinks ids={continuations.previous} label="前因事件" />
+          <ContinuationLinks ids={continuations.other} label="其他相關事件" />
+        </div>
       </section>
 
       <section className="space-y-3">
