@@ -1,16 +1,20 @@
 import * as cheerio from 'cheerio';
 import { type ArticleContent, extractArticleContent } from './article-content.ts';
 import { bigMediaProvider } from './news-bigmedia-provider.ts';
+import { cctvDeclaredAuthors, cctvDeclaredProvider } from './news-cctv-provider.ts';
 import { foodNextCredits } from './news-foodnext-credits.ts';
 import { globalVoicesCredits } from './news-globalvoices-credits.ts';
 import { huanqiuPublished } from './news-huanqiu-body.ts';
 import { huanqiuPeopleProvider } from './news-huanqiu-provider.ts';
 import { ownArticleAuthors } from './news-own-author.ts';
+import { pansciArticle } from './news-pansci.ts';
 import { peopleCredits } from './news-people-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
+import { sinaDeclaredProvider } from './news-sina-provider.ts';
 import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 import { taipeiTimesCredits } from './news-taipeitimes-credits.ts';
 import { thePaperCredits } from './news-thepaper-credits.ts';
+import { tpNewsArticle } from './news-tpnews.ts';
 import { type ArticleSummary, extractSummary } from './summary.ts';
 import { between, decodeEntities, normalizeTag, resolveUrl } from './text.ts';
 
@@ -190,12 +194,16 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     peopleCredits($, url);
   const provider =
     credits?.provider ??
+    sinaDeclaredProvider($, url) ??
+    cctvDeclaredProvider($, url) ??
+    tpNewsArticle($, url)?.provider ??
+    pansciArticle($, url)?.provider ??
     huanqiuPeopleProvider($, url) ??
     bigMediaProvider($, url) ??
     (site?.providerPattern ? (site.providerPattern.exec(providerRaw ?? '')?.[1] ?? null) : providerRaw);
   // Body cleanup can remove caption/header evidence used by summary extraction.
   const summary = extractSummary($, url);
-  const ownAuthors = ownArticleAuthors($, url);
+  const ownAuthors = tpNewsArticle($, url)?.authors ?? cctvDeclaredAuthors($, url) ?? ownArticleAuthors($, url);
   const content = extractArticleContent($, url, rules);
   return {
     ...summary,

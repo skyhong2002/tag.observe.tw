@@ -9,7 +9,9 @@ import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaSummary } from './news-j-media-summary.ts';
 import { mdnKidsFullDescription } from './news-mdnkids.ts';
 import { newCongressFullDescription } from './news-newcongress.ts';
+import { ngmSummary } from './news-ngm-summary.ts';
 import { peopoSummary } from './news-peopo-credits.ts';
+import { tpNewsArticle, tpNewsSummary } from './news-tpnews.ts';
 import { decodeEntities, stripTags } from './text.ts';
 
 export interface ArticleSummary {
@@ -172,12 +174,17 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     ['meta[property="og:description"]', 'meta:og:description'],
   ])
     candidates.push([$(selector).first().attr('content'), source]);
-  if (isYahooJapanPickup) {
+  if (isYahooJapanPickup || tpNewsArticle($, url)) {
     for (const node of articleNodes($, url)) candidates.push([node.description, 'jsonld:description']);
   }
   for (const [value, source] of candidates) {
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
+    const suppliedExcerpt = tpNewsSummary($, url, result.summary) ?? ngmSummary($, url, result.summary);
+    if (suppliedExcerpt !== null) {
+      result = publisherSummary(suppliedExcerpt, source);
+      if (!result.summary) continue;
+    }
     const hsExcerpt = hsNewsSummary($, url, result.summary);
     if (hsExcerpt !== null) {
       result = publisherSummary(hsExcerpt, source);

@@ -19,8 +19,10 @@ import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
 import { mdnKidsArticle } from './news-mdnkids.ts';
 import { newCongressPost } from './news-newcongress.ts';
 import { nytChineseCredits } from './news-nyt-chinese-credits.ts';
+import { pansciArticle } from './news-pansci.ts';
 import { peopleCredits } from './news-people-credits.ts';
 import { peopoReporter } from './news-peopo-credits.ts';
+import { sinaOwnProse } from './news-sina-provider.ts';
 import { taiwanNewsWriter } from './news-taiwannews-credits.ts';
 import { tnlFeatureDescription } from './news-tnl-feature.ts';
 import { tvbsHealthExhibition } from './news-tvbshealth-exhibition.ts';
@@ -408,6 +410,16 @@ function publisherExcerpt($: cheerio.CheerioAPI, value: string): boolean {
 }
 
 export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules: ContentRules): ArticleContent {
+  const sina = sinaOwnProse($, url);
+  if (sina)
+    return {
+      body: sina,
+      authors: normalizeAuthorCredits($('meta[name="author"]').attr('content')?.split(',') ?? []),
+      bodySource: 'article:sina-own-paragraphs',
+      bodyStatus: 'ok',
+    };
+  const pansci = pansciArticle($, url);
+  if (pansci) return { body: pansci.body, authors: pansci.authors, bodySource: 'article:pansci-own-blocks', bodyStatus: 'ok' };
   const exhibition = tvbsHealthExhibition($, url);
   if (exhibition)
     return {

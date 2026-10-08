@@ -51,6 +51,11 @@ const outlets: Outlet[] = [
   outlet('kcna', '朝中社', 'ZZ', []),
   // Reviewed supplied-copy declarations; jurisdiction has not been established.
   outlet('mygopen', 'MyGoPen', 'ZZ', ['MyGoPen 事實查證網站']),
+  // PanSci's own linked original identifies this provider; jurisdiction has not been audited.
+  outlet('careonline', 'Care Online 照護線上', 'ZZ', ['Care Online', '照護線上']),
+  // Complete own supplied-copy and reporting declarations; jurisdiction awaits independent evidence.
+  outlet('yangcheng_daily', '羊城晚报', 'ZZ', ['羊城晚報']),
+  outlet('tidenews', '潮新闻', 'ZZ', ['潮新聞']),
   outlet('prnewswire', '美通社', 'ZZ', ['PR Newswire']),
   outlet('hkfp', '香港自由新聞', 'ZZ', ['Hong Kong Free Press', 'HKFP']),
   outlet('newsmaker', 'NewsMaker', 'ZZ', []),
