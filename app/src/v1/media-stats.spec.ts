@@ -19,6 +19,33 @@ vi.mock('../crawl/registry.ts', () => ({
 const now = Date.parse('2026-09-29T07:00:00Z'); // 15:00 Taipei
 const h = (x: number) => new Date(now - x * 3600e3);
 describe('media stats', () => {
+  it('shares concurrent reads and reuses the advertised short-lived snapshot', async () => {
+    const chain = {
+      innerJoin: () => chain,
+      where: () => chain,
+      orderBy: () => chain,
+      limit: async () => [],
+      groupBy: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return [];
+      },
+    };
+    const select = vi.fn(() => ({ from: () => chain }));
+    const db = { select } as unknown as Db;
+    const app = Fastify();
+    registerMediaStats(app, db);
+    try {
+      const [first, second] = await Promise.all([app.inject('/api/v1/media-stats'), app.inject('/api/v1/media-stats')]);
+      expect(first.statusCode).toBe(200);
+      expect(second.json()).toEqual(first.json());
+      const calls = select.mock.calls.length;
+      expect(calls).toBeGreaterThan(0);
+      expect((await app.inject('/api/v1/media-stats')).json()).toEqual(first.json());
+      expect(select.mock.calls.length).toBe(calls);
+    } finally {
+      await app.close();
+    }
+  });
   it('computes the start of the Taipei day', () => {
     expect(taipeiMidnight(now).toISOString()).toBe('2026-09-28T16:00:00.000Z');
     expect(taipeiMidnight(Date.parse('2026-09-28T16:30:00Z')).toISOString()).toBe('2026-09-28T16:00:00.000Z');
@@ -84,6 +111,13 @@ describe('media stats', () => {
       expect(result.media.find((row: { media: string }) => row.media === 'afp').topics).toBeNull();
       expect(result.totals.activeSources).toBe(2);
       expect(result.totals.disabledSources).toBe(result.media.length - 2);
+      expect(result.summaryWindow).toMatchObject({ hours: 168, basis: 'published_at' });
+      expect(result.media.find((row: { media: string }) => row.media === 'cna').summary).toEqual({
+        total: 0,
+        withSummary: 0,
+        sources: [],
+        exampleId: null,
+      });
     } finally {
       await app.close();
     }
@@ -91,7 +125,18 @@ describe('media stats', () => {
 
   it('counts discovery rows without double-counting original publications in site totals', async () => {
     const recent = new Date().toISOString().replace('T', ' ').replace('Z', '');
-    const counts = { pendingDate: 0, today: 2, last24h: 2, last7d: 2, tagged24h: 1, lastArticle: recent };
+    const counts = {
+      pendingDate: 0,
+      today: 2,
+      last24h: 2,
+      last7d: 2,
+      tagged24h: 1,
+      lastArticle: recent,
+      summaryTotal: 2,
+      summaryCount: 1,
+      summarySources: 'meta:description',
+      summaryExampleId: 9,
+    };
     const batches = [
       [{ media: 'cna', ...counts }],
       [{ media: 'cna', first: recent }],
@@ -126,6 +171,13 @@ describe('media stats', () => {
       });
       expect(result.media.find((row: { media: string }) => row.media === 'cna')).toMatchObject({ sourceKind: 'publisher', today: 2 });
       expect(result.totals).toMatchObject({ today: 2, last24h: 2, publishingMedia24h: 1, taggedShare24h: 0.5 });
+      expect(result.media.find((row: { media: string }) => row.media === 'google_news').summary).toBeNull();
+      expect(result.media.find((row: { media: string }) => row.media === 'cna').summary).toEqual({
+        total: 2,
+        withSummary: 1,
+        sources: ['meta:description'],
+        exampleId: 9,
+      });
     } finally {
       await app.close();
     }

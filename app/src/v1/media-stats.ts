@@ -56,15 +56,28 @@ export function statusFor(
 export const taipeiMidnight = (now: number) => new Date(Math.floor((now + 8 * HOUR) / (24 * HOUR)) * 24 * HOUR - 8 * HOUR);
 
 export function registerMediaStats(app: FastifyInstance, db: Db) {
-  app.get('/api/v1/media-stats', async (_request, reply) => {
+  const load = async () => {
     const now = Date.now();
     const today = taipeiMidnight(now),
       day = new Date(now - 24 * HOUR),
       week = new Date(now - 7 * 24 * HOUR),
       future = new Date(now + HOUR);
+    const dated = sql`NOT (${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`;
+    const summaryEligible = sql`${dated} AND ${articles.publishedAt} <= ${new Date(now)}`;
+    const hasSummary = sql`${articles.summary} IS NOT NULL AND CHAR_LENGTH(TRIM(${articles.summary})) > 0`;
     const counts = await db
       .select({
         media: articles.media,
+        summaryTotal: sql<number>`SUM(${summaryEligible})`,
+        summaryCount: sql<number>`SUM(${summaryEligible} AND ${hasSummary})`,
+        summarySources: sql<
+          string | null
+        >`GROUP_CONCAT(DISTINCT IF(${summaryEligible} AND ${hasSummary}, COALESCE(NULLIF(${articles.summarySource}, ''), 'unknown'), NULL))`,
+        // Prefer an editorial lead when one was actually collected. This is
+        // an example, not a claim that the largest ID is the newest report.
+        summaryExampleId: sql<
+          number | null
+        >`COALESCE(MAX(IF(${summaryEligible} AND ${hasSummary} AND ${articles.summarySource} = 'article:selector', ${articles.id}, NULL)), MAX(IF(${summaryEligible} AND ${hasSummary}, ${articles.id}, NULL)))`,
         // Rows whose publish time is still unknown (listing gave none, page not
         // fetched yet: published_at == crawled_at) are counted separately.
         pendingDate: sql<number>`SUM(${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`,
@@ -126,6 +139,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .groupBy(crawlRuns.media);
     const [topicChecks, topicCounts] = await Promise.all([topicSourceChecks(db, new Date(now)), topicCountPerMedia(db)]);
     const byCount = new Map([...counts, ...discoveries].map((c) => [c.media, c]));
+    const bySummary = new Map(counts.map((c) => [c.media, c]));
     const byRun = new Map(runs.map((r) => [r.media, r]));
     const off = disabled();
     // Aggregates come back as 'YYYY-MM-DD HH:MM:SS' strings; the DB stores UTC
@@ -136,6 +150,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .map((s) => {
         const c = byCount.get(s.media),
           r = byRun.get(s.media);
+        const summary = bySummary.get(s.media);
         const last24h = Number(c?.last24h ?? 0);
         const lastArticle = toDate(c?.lastArticle);
         const base = {
@@ -160,6 +175,14 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
             s.media,
             specs.find((source) => source.media === s.media),
           ),
+          summary: isDiscoverySource(s.media)
+            ? null
+            : {
+                total: Number(summary?.summaryTotal ?? 0),
+                withSummary: Number(summary?.summaryCount ?? 0),
+                sources: summary?.summarySources ? summary.summarySources.split(',').sort() : [],
+                exampleId: summary?.summaryExampleId ? Number(summary.summaryExampleId) : null,
+              },
           icon: iconUrl(s.media),
           category,
           categoryLabel: category ? (CATEGORY_LABELS[category] ?? category) : null,
@@ -193,10 +216,10 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     const publishers = rows.filter((r) => r.sourceKind === 'publisher');
     const sum = (k: 'today' | 'last24h') => publishers.reduce((s, r) => s + r[k], 0);
     const tagged = publishers.reduce((s, r) => s + (r.taggedShare24h ?? 0) * r.last24h, 0);
-    reply.header('cache-control', 'public, max-age=120');
     return {
       generatedAt: new Date(now).toISOString(),
       todayStart: today.toISOString(),
+      summaryWindow: { since: week.toISOString(), until: new Date(now).toISOString(), hours: 168, basis: 'published_at' },
       totals: {
         today: sum('today'),
         last24h: sum('last24h'),
@@ -209,5 +232,22 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       },
       media: rows,
     };
+  };
+  // The public response already advertises a two-minute cache. Share it on
+  // the server too, so concurrent directory readers do not repeat DB scans.
+  let cached: Awaited<ReturnType<typeof load>> | null = null;
+  let expires = 0;
+  let pending: ReturnType<typeof load> | null = null;
+  app.get('/api/v1/media-stats', async (_request, reply) => {
+    reply.header('cache-control', 'public, max-age=120');
+    if (cached && Date.now() < expires) return cached;
+    const request = (pending ??= load());
+    try {
+      cached = await request;
+      expires = Date.now() + 120_000;
+      return cached;
+    } finally {
+      if (pending === request) pending = null;
+    }
   });
 }

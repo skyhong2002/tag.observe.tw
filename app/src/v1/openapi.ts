@@ -1595,6 +1595,12 @@ export const ENDPOINTS: Endpoint[] = [
     response: obj({
       generatedAt: time(),
       todayStart: time(),
+      summaryWindow: obj({
+        since: time(),
+        until: time(),
+        hours: int('摘要統計窗口，168 小時'),
+        basis: str('以出版時間界定窗口，published_at'),
+      }),
       totals: obj({
         today: int(),
         last24h: int(),
@@ -1638,6 +1644,17 @@ export const ENDPOINTS: Endpoint[] = [
             lastVerifiedMethod: nullable(str('最近匹配目前入口的成功驗證方式')),
             links: arr(obj({ label: str(), url: str('GitHub 設定或解析程式連結') })),
           }),
+          summary: nullable(
+            obj(
+              {
+                total: int('窗口內已出版且日期已確認的本站文章數；不含議題／專題包裝頁'),
+                withSummary: int('目前存有非空 summary 的文章數；不表示全部欄位已人工驗證'),
+                sources: arr(str('實際取得的 summarySource；unknown 表示來源未記錄')),
+                exampleId: nullable(int('有摘要的站內文章範例，優先選原文導言；不是最新文章保證')),
+              },
+              '文章發現入口為 null，摘要需查看原刊登媒體',
+            ),
+          ),
           today: int(),
           last24h: int(),
           last7d: int(),

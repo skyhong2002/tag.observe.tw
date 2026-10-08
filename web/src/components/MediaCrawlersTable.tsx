@@ -32,6 +32,7 @@ const tagColors: Record<CrawlerGroup, string> = {
   methods: 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200',
   tools: 'border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-200',
   content: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200',
+  summary: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200',
 };
 const sourceKindColors: Record<TopicSourceKind, string> = {
   topic: 'border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-900 dark:bg-brand-950 dark:text-brand-200',
@@ -215,6 +216,22 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                             </button>
                           ))}
                         </div>
+                        {key === 'summary' && row.summary && (
+                          <div className="mt-1 flex items-center gap-3 text-zinc-500">
+                            <span title="近 7 天已出版且日期已確認的本站文章；有摘要篇數／總篇數">
+                              {row.summary.withSummary.toLocaleString('zh-TW')} / {row.summary.total.toLocaleString('zh-TW')} 篇
+                            </span>
+                            {row.summary.withSummary > 0 && row.summary.exampleId && (
+                              <a
+                                href={`/article/${row.summary.exampleId}/`}
+                                aria-label={`${row.title}：查看摘要範例`}
+                                className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                              >
+                                查看摘要
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </td>
                     ))}
                     <td className={`${table.cell} py-1.5`}>

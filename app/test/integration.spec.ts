@@ -555,4 +555,52 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
       await app.close();
     }
   });
+  it('counts real summary fields in a dated publication window and prefers an editorial example', async () => {
+    const at = (hours: number) => new Date(now.getTime() - hours * 3600e3);
+    const cases = [
+      { summary: '獨立導言', summarySource: 'article:selector', publishedAt: at(1) },
+      { summary: '   ', summarySource: 'meta:description', publishedAt: at(2) },
+      { summary: '媒體摘要', summarySource: 'meta:description', publishedAt: at(3) },
+      { summary: '來源未記錄的摘要', summarySource: null, publishedAt: at(4) },
+      { summary: '日期待確認', summarySource: 'feed:description', publishedAt: at(5), crawledAt: at(5), fetchedAt: null },
+      { summary: '未來文章', summarySource: 'feed:description', publishedAt: at(-0.5) },
+      { summary: '舊文章', summarySource: 'meta:description', publishedAt: at(8 * 24) },
+      { summary: '非本站來源', summarySource: 'meta:description', publishedAt: at(1), source: 'legacy' },
+      { summary: '專題包裝', summarySource: 'article:selector', publishedAt: at(1) },
+    ];
+    const fixtureUrl = (index: number) => `https://summary-fixture.example/${index}`;
+    await db.insert(articles).values(
+      cases.map((row, index) => ({
+        media: 'pts',
+        title: `摘要統計測試${index}`,
+        url: fixtureUrl(index),
+        tags: [],
+        crawledAt: now,
+        fetchedAt: now,
+        source: 'own',
+        ...row,
+      })),
+    );
+    await db.insert(topics).values({
+      media: 'pts',
+      url: fixtureUrl(8),
+      title: '專題包裝',
+      firstSeen: now,
+      lastSeen: now,
+      kind: 'feature',
+    });
+    const app = await buildApp({ tagDbUrl: null, uiOrigin: 'http://127.0.0.1:1', rateLimit: false }, { db });
+    try {
+      const response = await app.inject('/api/v1/media-stats');
+      expect(response.statusCode).toBe(200);
+      const result = response.json();
+      expect(result.summaryWindow).toMatchObject({ hours: 168, basis: 'published_at' });
+      const summary = result.media.find((row: { media: string }) => row.media === 'pts').summary;
+      expect(summary).toMatchObject({ total: 4, withSummary: 3, sources: ['article:selector', 'meta:description', 'unknown'] });
+      const [example] = await db.select({ url: articles.url }).from(articles).where(sql`${articles.id} = ${summary.exampleId}`);
+      expect(example.url).toBe(fixtureUrl(0));
+    } finally {
+      await app.close();
+    }
+  });
 });

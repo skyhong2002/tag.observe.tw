@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crawlerTags, emptyCrawlerFilters, type MediaCrawler, selectCrawlers } from '../../web/src/lib/media-crawlers.mts';
+import { crawlerTags, emptyCrawlerFilters, type MediaCrawler, selectCrawlers, summaryTags } from '../../web/src/lib/media-crawlers.mts';
 
 const rows: MediaCrawler[] = [
   {
@@ -57,5 +57,21 @@ describe('crawler directory filters and sorting', () => {
       expect(desc.map((row) => row.media)).toEqual(asc.map((row) => row.media).reverse());
     }
     expect(rows.map((row) => row.media)).toEqual(['alpha', 'beta', 'gamma']);
+  });
+
+  it('filters observed editorial leads independently of generic content capability tags', () => {
+    const summaries = [
+      { ...rows[0], summary: { total: 4, withSummary: 3, sources: ['article:selector', 'meta:description'], exampleId: 7 } },
+      { ...rows[1], summary: { total: 2, withSummary: 2, sources: ['feed:description'], exampleId: 8 } },
+      { ...rows[2], summary: { total: 2, withSummary: 0, sources: [], exampleId: null } },
+    ];
+    expect(selectCrawlers(summaries, '', { ...emptyCrawlerFilters(), summary: ['原文導言'] }, 'title', false).map((r) => r.media)).toEqual([
+      'alpha',
+    ]);
+    expect(selectCrawlers(summaries, '供稿摘要', emptyCrawlerFilters(), 'title', false).map((r) => r.media)).toEqual(['beta']);
+    expect(summaryTags(summaries[2])).toEqual(['未取得摘要']);
+    expect(summaryTags({ ...rows[2], summary: { total: 0, withSummary: 0, sources: [], exampleId: null } })).toEqual(['期間無文章']);
+    expect(summaryTags(rows[2])).toEqual(['尚無摘要統計']);
+    expect(summaryTags({ ...summaries[0], sourceKind: 'discovery' })).toEqual(['見原媒體']);
   });
 });

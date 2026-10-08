@@ -4,6 +4,8 @@ export interface MediaCrawler {
   country: string;
   countryCode: string;
   schedule: string;
+  sourceKind?: 'discovery' | 'publisher';
+  summary?: { total: number; withSummary: number; sources: string[]; exampleId: number | null } | null;
   crawler?: {
     methods: string[];
     transport: string | null;
@@ -30,11 +32,27 @@ export const crawlerGroups = [
   { key: 'methods', label: '抓取方式' },
   { key: 'tools', label: '工具' },
   { key: 'content', label: '收錄內容' },
+  { key: 'summary', label: '摘要來源' },
 ] as const;
 export type CrawlerGroup = (typeof crawlerGroups)[number]['key'];
 export type CrawlerFilters = Record<CrawlerGroup, string[]>;
 export type CrawlerSort = 'title' | CrawlerGroup | 'topics' | 'code';
-export const emptyCrawlerFilters = (): CrawlerFilters => ({ methods: [], tools: [], content: [] });
+export const emptyCrawlerFilters = (): CrawlerFilters => ({ methods: [], tools: [], content: [], summary: [] });
+
+export function summaryTags(row: MediaCrawler): string[] {
+  if (row.sourceKind === 'discovery') return ['見原媒體'];
+  if (!row.summary) return ['尚無摘要統計'];
+  if (!row.summary.total) return ['期間無文章'];
+  if (!row.summary.withSummary) return ['未取得摘要'];
+  const labels = row.summary.sources.map((source) => {
+    if (source === 'article:selector') return '原文導言';
+    if (source.startsWith('meta:') || source.startsWith('jsonld:')) return '文章頁摘要';
+    if (source.startsWith('feed:') || source.startsWith('api:')) return '供稿摘要';
+    if (source.startsWith('origin:')) return '原始供稿摘要';
+    return '來源未記錄／其他';
+  });
+  return [...new Set(labels.length ? labels : ['來源未記錄／其他'])];
+}
 
 const methodLabels: Record<string, string> = {
   '自動探索 RSS／Sitemap／HTML': '自動探索',
@@ -59,6 +77,7 @@ export function crawlerTags(row: MediaCrawler): Record<CrawlerGroup, string[]> {
     tools: tools.length ? tools : [transport || '未設定'],
     content:
       body === '擷取正文（逐篇驗證）' ? ['正文擷取'] : body === '標題／摘要／影片資料' ? ['標題', '摘要', '影片資料'] : [body || '未設定'],
+    summary: summaryTags(row),
   };
 }
 

@@ -18,7 +18,11 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
   const response = await fetch(`${API_ORIGIN}/api/v1/media-stats`, { next: { revalidate }, signal: AbortSignal.timeout(8000) }).catch(
     () => null,
   );
-  const data = response?.ok ? ((await response.json()) as { media: MediaCrawler[] }) : null;
+  const data = response?.ok
+    ? ((await response.json()) as { media: MediaCrawler[]; summaryWindow?: { since: string; until: string } })
+    : null;
+  const observed = data?.media.filter((row) => (row.summary?.total ?? 0) > 0) ?? [];
+  const withSummary = observed.filter((row) => (row.summary?.withSummary ?? 0) > 0).length;
   return (
     <div className="space-y-5">
       <MediaTabs current="crawlers" />
@@ -28,6 +32,18 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
           <MethodLink />
         </p>
       </header>
+      {data?.summaryWindow && (
+        <section aria-label="摘要統計範圍" className="rounded-lg bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-900">
+          <p>
+            近 7 天有文章的 {observed.length} 家刊登媒體中，{withSummary} 家至少一篇已取得摘要。
+          </p>
+          <p className="mt-1 text-xs leading-6 text-zinc-500">
+            「摘要來源」欄顯示有摘要篇數／總篇數與站內範例。原文導言、文章頁摘要及供稿摘要分開標示；均為媒體提供，未自行生成。
+            以已出版且日期已確認的本站文章為範圍，包含後續補抓的摘要；「未取得摘要」不代表不支援。 統計更新時間：
+            {new Date(data.summaryWindow.until).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}（台北）。
+          </p>
+        </section>
+      )}
       {data ? <MediaCrawlersTable key={q} media={data.media} initialQuery={q} /> : <p>爬蟲資訊暫時無法取得，請稍後再試。</p>}
     </div>
   );
