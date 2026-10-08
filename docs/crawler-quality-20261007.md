@@ -802,3 +802,12 @@ MSN 新取得 46373267／46373268 兩篇的公開 Detail abstract 仍未存入 s
 - 中央社 46415556 最新 HTML 與 JSON-LD 的第二段存在「蔡英文」三字差異，且新增尾端照片說明；不得直接以最新整篇覆寫歷史資料。此項保留後續審查，不能宣稱所有中央社歷史內文已修完。
 - 蘋果仁原始 feed 共 20 項回放全部僅改 summary：20 個完整匹配自己的標題與出版尾句，其餘 url／title／date／creator／原始 description／contentHtml 等欄位完全相同。歷史修復本批僅含已核對的抽樣文章 46445649。
 - 最後 1013 項爬蟲與引用測試、TypeScript、全專案 Biome 通過（2 項既有資訊提示）。metadata 三篇與中央社兩篇完整快照 dry-run 均通過，尚未 apply。此批共 5 篇，2 作者、4 摘要、2 內文、0 日期。
+
+### 2026-10-08 09:37 第 14 批已部署／第 19 批修復準備
+
+- 第 14 批 89160bd19a5e6dbc057ec5290a351cd852a6285d 已推送，CI 37713318139 通過，09:33:07 恢復 job 分派。實際 current 與三個服務程序版本、主機端首頁、worker、queue、公視兩篇原文／資料庫／API 摘要驗證通過。歷史修復依序完成 j-media 1、MSN 2、foodnext 2、Taipei Times 1、Sputnik 1、The Paper 12、wire-citations 6，全部 25 篇獨立核對通過；已產出 full-repairs-verification，無日期或內文覆寫。未使用 superseded cctv-citations 草案，未重套第 13 批。第 14 批服務探測仍在運行，觀測不是零停機證明。
+- 第 18 批固定為 62e7f24311cbce6a6b8bd46ea46d1636191f6910，本地提交且 gitleaks 一個 commit 通過；未推送、未部署。13:46 探測、13:51 發布已排定；必須第 17 批全部 5 篇驗證完畢且實際恢復後滿一小時才推送，7 個隔離 gate 契約檢查通過（不代表現在部署條件已滿足）。
+- 第 19 批愛傳媒 46443889：自己的 article.entry 主標題、title、OG title、分享目標完整網址交叉核對；原 OG URL 缺主機，不能當成 canonical 證據。第一個 p 的完整「楊渡/作家」明確署名被獨立擷取，並從媒體供應的摘要去掉完全相同的署名包裝，摘要剩餘文字由自己的段落佐證。未改內文與日期。
+- 第 19 批澎湃 46446850／46446851：自己 main h1、URL contId、NEXT_DATA contId／name／author／originalFlag、可見 header credit 一致。禹琳/经济日报、庞慧敏/工人日报 分成作者及提供來源。工人日報原始報紙 2026-10-08 第 6 版 news-1.html 已找到同標題與「本报记者 庞慧敏」，保存原文。來源國別暫 ZZ；不是以語言或事件地点推定。
+- 測試抓到经济日报 舊 alias 被誤歸台灣 udnmoney。針對澎湃這個明確提供者欄位保留獨立 economic_daily_thepaper 來源，原始名稱及來源證據不變，國別未知；其他發行者原有台灣 alias 行為不變。中國經濟日報原始紙本入口 HTTPS／HTTP 均 timeout，不能宣稱已直接核對禹琳原稿。此項來源身分與國別需後續獨立補證。
+- 2440 份 HTML 最終回放 vs 第 18 批僅上面 3 篇有 metadata／source 變動，0 body／date 變動。1018 項爬蟲／引用測試、TypeScript、全專案 Biome 通過（2 項既有資訊提示）。愛傳媒 1 篇與澎湃 2 篇新原文／完整資料列／配對／sketch／citation 快照 dry-run 通過，尚未 apply。澎湃 before 作者空陣列是第 13 批當時解析結果；第 18 批 parser 已會保留原始完整 credit，不能錯把 parser 現況當成歷史資料庫狀態。

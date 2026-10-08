@@ -71,6 +71,8 @@ const outlets: Outlet[] = [
   outlet('yonhap', '韓聯社', 'KR', ['Yonhap', 'Yonhap News Agency', '韩联社']),
   outlet('xinhua', '新華社', 'CN', ['Xinhua', 'Xinhua News Agency', '新华社']),
   outlet('xinhuanet', '新華網', 'CN', ['新华网', '新华网客户端']),
+  // Own official newspaper archive corroborates the publication; jurisdiction review is pending.
+  outlet('workers_daily', '工人日报', 'ZZ', ['工人日報']),
   outlet('guancha', '觀察者網', 'CN', ['观察者网']),
   outlet('dw', '德國之聲', 'DE', ['DW', 'Deutsche Welle', '德国之声']),
   outlet('rfi', '法國國際廣播電台', 'FR', ['RFI', '法廣', '法广', 'RFI法廣', 'RFI法广']),
@@ -213,9 +215,13 @@ function creditedOrganization(provider: string): string {
 }
 
 /** A provider field can be a byline, desk, or publisher. Do not invent media from people. */
-export function providerOutlet(provider: string): OutletIdentity | null {
+export function providerOutlet(provider: string, publisher?: string): OutletIdentity | null {
   const raw = provider.trim();
   if (!raw || reporterCredit(raw)) return null;
+  // The Paper's declared partner label is ambiguous with Taiwan's newspaper alias.
+  // Keep this source distinct until its original publication/jurisdiction is independently verified.
+  if (publisher === 'thepaper' && raw === '经济日报')
+    return { media: 'economic_daily_thepaper', name: raw, country: '未知', countryCode: 'ZZ' };
   const value = creditedOrganization(raw);
   // Yahoo's own desks/channels belong to the publisher, not external outlets.
   if (/^Yahoo(?:奇摩)?(?:新聞|即時新聞|名人娛樂|電影戲劇|股市|財經|遊戲|房地產|特別企劃)/i.test(value)) return outletIdentity('yahoo');
@@ -238,7 +244,7 @@ export function normalizeAttributions(values: Attribution[], publisher: string):
   const result = new Map<string, Attribution>();
   for (const value of values) {
     const provider = /^內容提供者[：:]\s*(.*)$/u.exec(value.evidence);
-    const identity = provider ? providerOutlet(provider[1]) : outletIdentity(value.media);
+    const identity = provider ? providerOutlet(provider[1], publisher) : outletIdentity(value.media);
     if (!identity || identity.media === own || reporterCredit(identity.media)) continue;
     if (!result.has(identity.media)) result.set(identity.media, { ...value, ...identity });
   }
@@ -258,7 +264,7 @@ export function extractAttributions(body: string, publisher: string, provider?: 
   // separate author link. Unrecognized labels retain no guessed identity.
   const providerValues = publisher === 'dw' && provider && /[、,]/.test(provider) ? provider.split(/[、,]/) : [provider];
   for (const value of providerValues) {
-    const providerIdentity = value ? providerOutlet(value.trim()) : null;
+    const providerIdentity = value ? providerOutlet(value.trim(), publisher) : null;
     if (providerIdentity) add(providerIdentity, `內容提供者：${value?.trim()}`);
   }
   // CNA syndicated copy commonly starts with its agency dispatch byline.

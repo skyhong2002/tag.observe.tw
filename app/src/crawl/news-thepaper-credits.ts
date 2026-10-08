@@ -41,10 +41,10 @@ export function thePaperCredits($: CheerioAPI, value: string): { authors: string
     if (detail.originalFlag !== '2') return null;
     if (credit === '新华社') return { authors: [credit], provider: credit };
     if (credit === '新华网客户端') return { authors: [credit], provider: '新华网' };
-    const partner = /^([\p{Script=Han}]{2,5})\/新华网客户端$/u.exec(credit);
+    const partner = /^([\p{Script=Han}]{2,5})\/(新华网客户端|经济日报|工人日报)$/u.exec(credit);
     if (partner) {
       const authors = reporterNames(`作者：${partner[1]}`);
-      return authors.length ? { authors, provider: '新华网' } : null;
+      return authors.length ? { authors, provider: partner[2] === '新华网客户端' ? '新华网' : partner[2] } : null;
     }
   } catch {
     // Malformed or unrelated embedded state never proves an author.

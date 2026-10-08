@@ -9,6 +9,7 @@ import {
 } from './byline.ts';
 import { cnaStructuredBody } from './news-cna-body.ts';
 import { bo6sEditorLead, tvbsContributorCredits } from './news-editor-credits.ts';
+import { iMediaWriter } from './news-i-media-writer.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaLead } from './news-j-media-summary.ts';
 import { marieclaireStructuredBody } from './news-marieclaire-body.ts';
@@ -410,6 +411,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const bo6sEditor = bo6sEditorLead($, url);
   const tvbsCredits = tvbsContributorCredits($, url);
   const congressAuthor = newCongressPost($, url)?.author;
+  const mediaWriter = iMediaWriter($, url)?.author;
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
   const configuredValues = (tvbsCredits ?? (rules.authorSelector ? scopedAuthorElements($, rules.authorSelector, true) : [])).flatMap(
@@ -448,6 +450,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       bodySource,
       bodyStatus,
       authors:
+        (mediaWriter ? [mediaWriter] : null) ??
         (congressAuthor ? [congressAuthor] : null) ??
         tvbsCredits ??
         (bo6sEditor ? [bo6sEditor.author] : jMedia ? [jMedia.author] : extractAuthors(authorDom, nodes, rules, authorBody, authorValues)),

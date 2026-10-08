@@ -42,3 +42,23 @@ it('does not normalize unmatched or incomplete The Paper embedded author records
   expect(thePaperCredits(load(page(`${credit}提供活動介紹`)), url)).toBeNull();
   expect(thePaperCredits(load(page(credit)), 'https://example.com/newsDetail_forward_34209759')).toBeNull();
 });
+
+it('keeps the corroborated partner writer separate from the explicitly declared newspaper provider', () => {
+  for (const [credit, author, provider] of [
+    ['禹琳/经济日报', '禹琳', '经济日报'],
+    ['庞慧敏/工人日报', '庞慧敏', '工人日报'],
+  ]) {
+    const parsed = extractArticle(page(credit), url);
+    expect(parsed).toMatchObject({ authors: [author], provider });
+    expect(extractAttributions(parsed.body ?? '', 'thepaper', parsed.provider)).toMatchObject([
+      {
+        media: provider === '经济日报' ? 'economic_daily_thepaper' : 'workers_daily',
+        countryCode: 'ZZ',
+        evidence: `內容提供者：${provider}`,
+      },
+    ]);
+    expect(thePaperCredits(load(page(credit, { originalFlag: '1' })), url)).toBeNull();
+    expect(thePaperCredits(load(page(credit, { author: '另一位/工人日报' })), url)).toBeNull();
+  }
+  expect(thePaperCredits(load(page('庞慧敏/未確認機構')), url)).toBeNull();
+});

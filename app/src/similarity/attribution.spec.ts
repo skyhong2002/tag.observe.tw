@@ -283,3 +283,12 @@ it('recognizes reviewed Sputnik reporting labels without treating satellite tech
   expect(extractAttributions('照片來源：衛星新聞', 'hk_crntt')).toEqual([]);
   expect(extractAttributions('新發射的衛星傳回影像，衛星新聞技術論壇發表研究。', 'hk_crntt')).toEqual([]);
 });
+
+it('keeps The Paper ambiguous Economic Daily provider distinct through normalization without changing the generic Taiwan alias', () => {
+  const attributed = extractAttributions('本文內容。', 'thepaper', '经济日报');
+  expect(attributed).toMatchObject([
+    { media: 'economic_daily_thepaper', name: '经济日报', countryCode: 'ZZ', evidence: '內容提供者：经济日报' },
+  ]);
+  expect(normalizeAttributions(attributed, 'thepaper')).toEqual(attributed);
+  expect(extractAttributions('本文內容。', 'udn', '经济日报')).toMatchObject([{ media: 'udnmoney', countryCode: 'TW' }]);
+});

@@ -3,6 +3,7 @@ import { articleNodes } from './article-content.ts';
 import { reporterNames } from './byline.ts';
 import { cool3cSummary } from './news-cool3c-summary.ts';
 import { bo6sSummary } from './news-editor-credits.ts';
+import { iMediaWriterSummary } from './news-i-media-writer.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaSummary } from './news-j-media-summary.ts';
 import { newCongressFullDescription } from './news-newcongress.ts';
@@ -171,6 +172,11 @@ export function extractSummary($: CheerioAPI, url: string, selector?: string): A
     let result = publisherSummary(value, source);
     if (!result.summary || titles.includes(result.summary)) continue;
     if (newCongressFullDescription($, url, result.summary)) continue;
+    const writerExcerpt = iMediaWriterSummary($, url, result.summary);
+    if (writerExcerpt !== null) {
+      result = publisherSummary(writerExcerpt, source);
+      if (!result.summary) continue;
+    }
     const cool3c = cool3cSummary($, url, result.summary);
     if (cool3c !== null) {
       result = publisherSummary(cool3c, source);
