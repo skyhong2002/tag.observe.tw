@@ -175,9 +175,9 @@ export async function loadThreadCoverage(
   thread: { majorTags: string[]; firstTime: Date; lastTime: Date },
   perDay = 400,
 ): Promise<Coverage> {
-  // Events are clustered over the previous 24h of articles, so reports that
-  // seeded the first hour can be older than first_time; look back a little.
-  const window = { from: new Date(thread.firstTime.getTime() - 6 * HOUR), to: new Date(thread.lastTime.getTime() + HOUR) };
+  // Events are clustered over the previous 24h of articles. Include that full
+  // seed window so a newly detected thread retains its earlier reports.
+  const window = { from: new Date(thread.firstTime.getTime() - 24 * HOUR), to: new Date(thread.lastTime.getTime() + HOUR) };
   // Threads accumulate major tags over their lifetime (typically 3–6).
   const majorTags = [...new Set(thread.majorTags.filter((t) => t.trim()))].slice(0, 8);
   if (majorTags.length === 0) return groupCoverage([], majorTags, window);

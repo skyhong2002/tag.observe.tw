@@ -19,6 +19,7 @@ import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
 import { runSimilarityJob } from '../src/jobs/similarity-job.ts';
 import { loadEvidence } from '../src/similarity/store.ts';
+import { loadThreadCoverage } from '../src/v1/coverage.ts';
 import { cachedIndexView, loadSimilarity, similarityParams } from '../src/v1/similarity.ts';
 
 const url = process.env.TEST_DB_URL;
@@ -622,5 +623,38 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     } finally {
       await app.close();
     }
+  });
+  it('shows reports from the full 24-hour window that seeded a newly detected event', async () => {
+    const firstTime = new Date('2026-10-08T18:00:00Z');
+    const hoursAgo = [25, 24, 20, 2, -2];
+    const tag = '新事件報導視窗';
+    const inserted = await db
+      .insert(articles)
+      .values(
+        hoursAgo.map((h, i) => ({
+          media: 'cna',
+          title: `新事件代表報導${i}`,
+          url: `https://coverage-fixture.example/${i}`,
+          publishedAt: new Date(firstTime.getTime() - h * 3600e3),
+          crawledAt: firstTime,
+          source: 'own',
+          tags: [tag],
+        })),
+      )
+      .$returningId();
+    await db.insert(articleTags).values(
+      inserted.map(({ id }, i) => ({
+        articleId: id,
+        tag,
+        publishedAt: new Date(firstTime.getTime() - hoursAgo[i] * 3600e3),
+      })),
+    );
+    const coverage = await loadThreadCoverage(db, { majorTags: [tag], firstTime, lastTime: firstTime });
+    expect(coverage.articles).toBe(3);
+    expect(coverage.byOutlet.flatMap((o) => o.articles.map((a) => a.url)).sort()).toEqual([
+      'https://coverage-fixture.example/1',
+      'https://coverage-fixture.example/2',
+      'https://coverage-fixture.example/3',
+    ]);
   });
 });
