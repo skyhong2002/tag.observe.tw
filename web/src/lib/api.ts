@@ -15,6 +15,27 @@ export interface RankingBasis {
   coverageFrom: string;
   validFrom: string;
 }
+export type RankingOrder = 'burst' | 'score' | 'growth';
+export type RankingGate = 'all' | 'early' | 'broad';
+export interface DiscoverySignals {
+  growth: number | null;
+  early: boolean;
+  broad: boolean;
+  earlyJump: boolean | null;
+  broadJump: boolean | null;
+}
+export interface FirstCollection {
+  at: string;
+  firstPublishedAt: string;
+  recent: boolean;
+}
+export interface DraftEvidence {
+  articles: number;
+  analyzed: number;
+  similarArticles: number;
+  groups: number;
+  threshold: number;
+}
 export interface RankingEntry {
   rank: number;
   position: number;
@@ -27,6 +48,9 @@ export interface RankingEntry {
   history: Record<string, number | null>;
   rank24h: number | null;
   new: boolean;
+  signals?: DiscoverySignals;
+  firstCollection?: FirstCollection | null;
+  drafts?: DraftEvidence;
   trend?: Array<{ t: string; hourlyCount: number | null; average24h: number | null }>;
   related?: Array<{ tag: string; count: number; share: number }>;
   /** Burst position per snapshot hour, oldest first (ranks=1). */
@@ -45,7 +69,10 @@ export interface Ranking {
     available: boolean;
     historyAvailable: number[];
   };
-  order: 'burst' | 'score';
+  order: RankingOrder;
+  gate?: RankingGate;
+  matchedCount?: number;
+  unknownGrowthCount?: number;
   entries: RankingEntry[];
 }
 export interface Article {
@@ -75,6 +102,7 @@ export interface TagStatus {
     basisMediaCount: number;
     rank24h: number | null;
     new: boolean;
+    signals?: DiscoverySignals;
   } | null;
   related: Array<{ tag: string; count: number; share: number }>;
   threads: Array<{
@@ -87,6 +115,8 @@ export interface TagStatus {
     maxScore: number;
   }>;
   history: { level: number; firstHour: string; lastHour: string; hoursCount: number; maxHour: string; maxCount: number } | null;
+  firstCollection?: FirstCollection | null;
+  drafts?: DraftEvidence | null;
 }
 
 async function get<T>(path: string, revalidate = 60): Promise<T> {
@@ -112,10 +142,19 @@ async function get<T>(path: string, revalidate = 60): Promise<T> {
 }
 export const fetchCategories = () => get<Category[]>('/api/v1/categories', 3600);
 export const fetchMedia = () => get<MediaInfo>('/api/v1/media', 3600);
-export const fetchRanking = (category: string, order: 'burst' | 'score', limit = 50, trend = false, related = false, ranks = false) =>
-  get<Ranking>(
-    `/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}${trend ? '&trend=1' : ''}${related ? '&related=1' : ''}${ranks ? '&ranks=1' : ''}`,
+export const fetchRanking = (
+  category: string,
+  order: RankingOrder,
+  limit = 50,
+  trend = false,
+  related = false,
+  options: { gate?: RankingGate; signals?: boolean; ranks?: boolean } | boolean = {},
+) => {
+  const params = typeof options === 'boolean' ? { ranks: options } : options;
+  return get<Ranking>(
+    `/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}${trend ? '&trend=1' : ''}${related ? '&related=1' : ''}${params.gate ? `&gate=${params.gate}` : ''}${params.signals ? '&signals=1' : ''}${params.ranks ? '&ranks=1' : ''}`,
   );
+};
 export const fetchTagArticles = (tag: string, hours = 48) =>
   get<{ tag: string; articles: Article[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/articles?hours=${hours}&limit=80`);
 export const fetchTagStatus = (tag: string) => get<TagStatus>(`/api/v1/tags/${encodeURIComponent(tag)}/status`);

@@ -1,7 +1,13 @@
 import { createHash } from 'node:crypto';
-import baseline from '../../data/ranking-baseline.json' with { type: 'json' };
+import { readFileSync } from 'node:fs';
+import bundledBaseline from '../../data/ranking-baseline.json' with { type: 'json' };
 import { isTagNoise } from '../tag-noise.ts';
 import type { RankingChart } from './ranking-compute.ts';
+
+// Previews can read an existing frozen cohort without rewriting its history.
+const baseline: typeof bundledBaseline = process.env.TAG_RANKING_BASELINE_FILE
+  ? JSON.parse(readFileSync(process.env.TAG_RANKING_BASELINE_FILE, 'utf8'))
+  : bundledBaseline;
 
 export interface RankingBasis {
   id: string;

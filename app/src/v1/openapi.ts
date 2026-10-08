@@ -20,7 +20,7 @@ const nullable = (s: Schema): Schema => {
   return { ...base, type: [base.type, 'null'] };
 };
 const arr = (items: Schema, description?: string): Schema => ({ type: 'array', items, ...d(description) });
-const ref = (name: string): Schema => ({ $ref: `#/components/schemas/${name}` });
+const ref = (name: string, description?: string): Schema => ({ $ref: `#/components/schemas/${name}`, ...d(description) });
 const map = (values: Schema, description?: string): Schema => ({ type: 'object', additionalProperties: values, ...d(description) });
 /** Object whose listed properties are all required unless named in `optional`. */
 const obj = (properties: Record<string, Schema>, description?: string, optional: string[] = []): Schema => ({
@@ -53,6 +53,12 @@ const eventCoverage = (span: string) =>
     tilt: nullable(str('明顯偏向的陣營（|lean| ≥ 0.8，約 1.75 倍，且藍綠合計 ≥ 5 家）')),
     blindspot: arr(str(), '盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事'),
   });
+
+const firstCollectionSchema = obj({
+  at: time('帶此標籤的現存文章紀錄最早收錄時間；不限分類、包含歷史匯入，不代表網路首次出現或精確取得標籤的時間'),
+  firstPublishedAt: time('現存已收錄報導的最早刊登時間'),
+  recent: bool('收錄時間與最早刊登時間都在快照以前 24 小時內；補收舊報導不標成新題'),
+});
 
 const schemas: Record<string, Schema> = {
   Error: obj({ error: str('錯誤代碼或說明') }, '錯誤回應', []),
@@ -87,6 +93,21 @@ const schemas: Record<string, Schema> = {
     coverageFrom: time('所有基準來源開始收錄後的第一個完整小時'),
     validFrom: time('收錄開始後滿 24 小時；更早的移動平均及分數為 null'),
   }),
+  DiscoverySignals: obj({
+    growth: nullable(num('升溫量＝爆發力－正規化分數；缺少任一步歷史時為 null')),
+    early: bool('至少 2 家媒體各有 2 篇以上'),
+    broad: bool('至少 3 家媒體、2 家各有 2 篇以上、1 家有 3 篇以上'),
+    earlyJump: nullable(bool('24 小時前未達早期線索門檻、現在達標；無法確認歷史時為 null')),
+    broadJump: nullable(bool('24 小時前未達多家跟進門檻、現在達標；無法確認歷史時為 null')),
+  }),
+  FirstCollection: firstCollectionSchema,
+  DraftEvidence: obj({
+    articles: int('同一視窗與基準媒體中、帶此標籤且已收錄的文章數'),
+    analyzed: int('截至快照時間已完成相似度比對的篇數'),
+    similarArticles: int('具有同標籤、同視窗、同基準媒體高度相似配對的去重篇數'),
+    groups: int('高度相似配對連通群數；不推定獨立稿源、轉載或抄襲'),
+    threshold: num('內文相似度門檻，目前為 0.85'),
+  }),
   RankingEntry: obj(
     {
       rank: int('依原始分數的名次'),
@@ -100,6 +121,12 @@ const schemas: Record<string, Schema> = {
       history: map(nullable(num()), 'N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料為 null）'),
       rank24h: nullable(int('24 小時前依原始分數的名次；沒有可比較快照、基準不同或當時不在榜上為 null')),
       new: bool('24 小時前的完整快照中沒有這個標籤'),
+      signals: ref('DiscoverySignals'),
+      firstCollection: nullable({
+        ...firstCollectionSchema,
+        description: 'signals=1 時回傳：近期首次見到的標籤收錄紀錄；已有舊報導或無法確認時為 null',
+      }),
+      drafts: ref('DraftEvidence', 'signals=1 時回傳：快照以前已完成的相似稿比對覆蓋'),
       related: arr(
         obj({
           tag: str('一起出現的標籤'),
@@ -127,7 +154,7 @@ const schemas: Record<string, Schema> = {
       ),
     },
     undefined,
-    ['trend', 'related', 'rankTrail'],
+    ['trend', 'related', 'rankTrail', 'firstCollection', 'drafts'],
   ),
   CoverageArticle: obj({
     id: int(),
@@ -987,14 +1014,26 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'ranking',
     summary: '標籤排行（每 10 分鐘更新）',
     description:
-      '過去 24 小時各媒體文章標籤的排行，每 10 分鐘重算一次、以整點小時存快照。`order=burst`（預設）依爆發力排序，`order=score` 依正規化分數排序。`at` 可取過去某個時間點的快照。',
+      '過去 24 小時各媒體文章標籤的排行，每 10 分鐘重算一次、以整點小時存快照。`order=burst`（預設）依爆發力、`order=score` 依正規化分數、`order=growth` 只列升溫量大於零的詞並依升溫量排序。`gate=early`／`broad` 篩跨媒體門檻，先篩選再取 limit；growth 預設 early，其他預設 all。只涵蓋目前保存的排行候選詞。`signals=1` 加入近期首次收錄與相似稿比對證據；`at` 可取過去某個時間點的快照，證據不使用快照以後的收錄或比對結果。',
     params: [
       categoryParam,
-      q('order', '排序：burst 爆發力／score 分數', { ...str(), enum: ['burst', 'score'], default: 'burst' }, 'score'),
+      q(
+        'order',
+        '排序：burst 爆發力／score 分數／growth 升溫量',
+        { ...str(), enum: ['burst', 'score', 'growth'], default: 'burst' },
+        'growth',
+      ),
+      q(
+        'gate',
+        '跨媒體門檻：all 不限／early 至少 2 家各 2 篇／broad 至少 3 家、2 家各 2 篇、1 家 3 篇；growth 預設 early，其他預設 all',
+        str('', { enum: ['all', 'early', 'broad'] }),
+        'early',
+      ),
       q('limit', '筆數', intIn(1, 500, 50), 20),
       q('at', '取這個時間（ISO 8601）以前最新的快照', time(), '2026-09-30T12:00:00+08:00'),
       q('trend', '1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時', str('', { enum: ['0', '1'] }), '1'),
       q('related', '1 表示附上每個標籤最常一起出現的標籤', str('', { enum: ['0', '1'] }), '1'),
+      q('signals', '1 表示附上近期首次收錄與相似稿比對證據', str('', { enum: ['0', '1'] }), '1'),
       q(
         'ranks',
         '1 表示附上每個標籤最近 24 小時的爆發力名次（由每小時快照重算，只在 order=burst 時提供）',
@@ -1015,10 +1054,13 @@ export const ENDPOINTS: Endpoint[] = [
         mediaCount: nullable(int('視窗內基準媒體中有發文的家數；舊快照為 null')),
         historyAvailable: arr(int(), '有歷史快照可比較的小時數'),
       }),
-      order: str(undefined, { enum: ['burst', 'score'] }),
+      order: str(undefined, { enum: ['burst', 'score', 'growth'] }),
+      gate: str(undefined, { enum: ['all', 'early', 'broad'] }),
+      matchedCount: int('目前保存的候選詞中符合排序與門檻條件的總數，尚未套用 limit'),
+      unknownGrowthCount: int('符合媒體門檻、但升溫量因歷史不足而未知的候選詞數'),
       entries: arr(ref('RankingEntry')),
     }),
-    errors: { '400': '`at` 格式錯誤', '404': '未知分類，或該時間以前沒有快照' },
+    errors: { '400': '`at` 格式錯誤，或 order／gate 不支援', '404': '未知分類，或該時間以前沒有快照' },
     example: '/api/v1/ranking?category=news&limit=20',
   },
   {
@@ -1179,7 +1221,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'tags',
     summary: '標籤目前狀態',
     description:
-      '關鍵字頁的摘要：這個標籤在新聞媒體排行榜上的名次、分數、爆發力、24 小時變動與報導媒體家數（不在榜上為 null）、最常一起出現的標籤、最近 72 小時含這個標籤的事件串，以及長期統計的首次上榜與高峰。',
+      '關鍵字頁的摘要：這個標籤在新聞媒體排行榜上的名次、分數、爆發力、升溫量、媒體門檻、跳升與新上榜（不在榜上為 null）、近期首次收錄、相似稿比對覆蓋、最常一起出現的標籤、最近 72 小時事件串，以及長期統計的首次上榜與高峰。',
     params: [p('tag', '標籤（URL 編碼）', str(), '賴清德')],
     response: obj({
       tag: str(),
@@ -1196,6 +1238,7 @@ export const ENDPOINTS: Endpoint[] = [
           basisMediaCount: int('基準媒體總數'),
           rank24h: nullable(int('24 小時前依分數的名次')),
           new: bool('24 小時前不在完整榜單上'),
+          signals: ref('DiscoverySignals'),
         }),
       ),
       related: arr(
@@ -1227,6 +1270,8 @@ export const ENDPOINTS: Endpoint[] = [
           'news 分類的長期統計',
         ),
       ),
+      firstCollection: nullable(ref('FirstCollection')),
+      drafts: nullable(ref('DraftEvidence')),
     }),
     example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/status',
   },

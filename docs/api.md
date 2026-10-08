@@ -280,16 +280,18 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 
 **標籤排行（每 10 分鐘更新）**
 
-過去 24 小時各媒體文章標籤的排行，每 10 分鐘重算一次、以整點小時存快照。`order=burst`（預設）依爆發力排序，`order=score` 依正規化分數排序。`at` 可取過去某個時間點的快照。
+過去 24 小時各媒體文章標籤的排行，每 10 分鐘重算一次、以整點小時存快照。`order=burst`（預設）依爆發力、`order=score` 依正規化分數、`order=growth` 只列升溫量大於零的詞並依升溫量排序。`gate=early`／`broad` 篩跨媒體門檻，先篩選再取 limit；growth 預設 early，其他預設 all。只涵蓋目前保存的排行候選詞。`signals=1` 加入近期首次收錄與相似稿比對證據；`at` 可取過去某個時間點的快照，證據不使用快照以後的收錄或比對結果。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `category` | query | string | 排行分類，見 /api/v1/categories，預設 `all`，例：`news` |
-| `order` | query | "burst" \| "score" | 排序：burst 爆發力／score 分數，預設 `burst`，例：`score` |
+| `order` | query | "burst" \| "score" \| "growth" | 排序：burst 爆發力／score 分數／growth 升溫量，預設 `burst`，例：`growth` |
+| `gate` | query | "all" \| "early" \| "broad" | 跨媒體門檻：all 不限／early 至少 2 家各 2 篇／broad 至少 3 家、2 家各 2 篇、1 家 3 篇；growth 預設 early，其他預設 all，例：`early` |
 | `limit` | query | integer | 筆數，1–500，預設 `50`，例：`20` |
 | `at` | query | string (ISO 時間) | 取這個時間（ISO 8601）以前最新的快照，例：`2026-09-30T12:00:00+08:00` |
 | `trend` | query | "0" \| "1" | 1 表示附上每小時篇數與 24 小時移動平均；截至快照計算時間前的最後完整小時，例：`1` |
 | `related` | query | "0" \| "1" | 1 表示附上每個標籤最常一起出現的標籤，例：`1` |
+| `signals` | query | "0" \| "1" | 1 表示附上近期首次收錄與相似稿比對證據，例：`1` |
 | `ranks` | query | "0" \| "1" | 1 表示附上每個標籤最近 24 小時的爆發力名次（由每小時快照重算，只在 order=burst 時提供），例：`1` |
 
 範例：
@@ -317,7 +319,10 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `snapshot.articleCount` | integer \| null | 視窗內基準媒體文章數；舊快照無法完整重建時為 null |
 | `snapshot.mediaCount` | integer \| null | 視窗內基準媒體中有發文的家數；舊快照為 null |
 | `snapshot.historyAvailable` | integer[] | 有歷史快照可比較的小時數 |
-| `order` | "burst" \| "score" |  |
+| `order` | "burst" \| "score" \| "growth" |  |
+| `gate` | "all" \| "early" \| "broad" |  |
+| `matchedCount` | integer | 目前保存的候選詞中符合排序與門檻條件的總數，尚未套用 limit |
+| `unknownGrowthCount` | integer | 符合媒體門檻、但升溫量因歷史不足而未知的候選詞數 |
 | `entries` | object[] |  |
 | `entries[].rank` | integer | 依原始分數的名次 |
 | `entries[].position` | integer | 在本次回應排序中的位置（從 1 起） |
@@ -330,6 +335,22 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].history` | {鍵: number \| null} | N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料為 null） |
 | `entries[].rank24h` | integer \| null | 24 小時前依原始分數的名次；沒有可比較快照、基準不同或當時不在榜上為 null |
 | `entries[].new` | boolean | 24 小時前的完整快照中沒有這個標籤 |
+| `entries[].signals` | object |  |
+| `entries[].signals.growth` | number \| null | 升溫量＝爆發力－正規化分數；缺少任一步歷史時為 null |
+| `entries[].signals.early` | boolean | 至少 2 家媒體各有 2 篇以上 |
+| `entries[].signals.broad` | boolean | 至少 3 家媒體、2 家各有 2 篇以上、1 家有 3 篇以上 |
+| `entries[].signals.earlyJump` | boolean \| null | 24 小時前未達早期線索門檻、現在達標；無法確認歷史時為 null |
+| `entries[].signals.broadJump` | boolean \| null | 24 小時前未達多家跟進門檻、現在達標；無法確認歷史時為 null |
+| `entries[].firstCollection` | object \| null | signals=1 時回傳：近期首次見到的標籤收錄紀錄；已有舊報導或無法確認時為 null |
+| `entries[].firstCollection.at` | string (ISO 時間) | 帶此標籤的現存文章紀錄最早收錄時間；不限分類、包含歷史匯入，不代表網路首次出現或精確取得標籤的時間 |
+| `entries[].firstCollection.firstPublishedAt` | string (ISO 時間) | 現存已收錄報導的最早刊登時間 |
+| `entries[].firstCollection.recent` | boolean | 收錄時間與最早刊登時間都在快照以前 24 小時內；補收舊報導不標成新題 |
+| `entries[].drafts` | object | signals=1 時回傳：快照以前已完成的相似稿比對覆蓋 |
+| `entries[].drafts.articles` | integer | 同一視窗與基準媒體中、帶此標籤且已收錄的文章數 |
+| `entries[].drafts.analyzed` | integer | 截至快照時間已完成相似度比對的篇數 |
+| `entries[].drafts.similarArticles` | integer | 具有同標籤、同視窗、同基準媒體高度相似配對的去重篇數 |
+| `entries[].drafts.groups` | integer | 高度相似配對連通群數；不推定獨立稿源、轉載或抄襲 |
+| `entries[].drafts.threshold` | number | 內文相似度門檻，目前為 0.85 |
 | `entries[].related` | object[] | related=1 時回傳：同一視窗、同一基準媒體中最常與這個標籤同時出現的標籤，最多 5 個，依共同文章數排序 |
 | `entries[].related[].tag` | string | 一起出現的標籤 |
 | `entries[].related[].count` | integer | 視窗內同時帶兩個標籤的文章數 |
@@ -344,7 +365,7 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].rankTrail[].t` | string (ISO 時間) | 快照所屬小時（UTC） |
 | `entries[].rankTrail[].position` | integer \| null | 該小時依爆發力排序的名次；沒有快照、不在榜上或當時爆發力無法比較為 null |
 
-錯誤：`400` `at` 格式錯誤；`404` 未知分類，或該時間以前沒有快照。
+錯誤：`400` `at` 格式錯誤，或 order／gate 不支援；`404` 未知分類，或該時間以前沒有快照。
 
 ## 文章搜尋
 
@@ -1529,7 +1550,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hou
 
 **標籤目前狀態**
 
-關鍵字頁的摘要：這個標籤在新聞媒體排行榜上的名次、分數、爆發力、24 小時變動與報導媒體家數（不在榜上為 null）、最常一起出現的標籤、最近 72 小時含這個標籤的事件串，以及長期統計的首次上榜與高峰。
+關鍵字頁的摘要：這個標籤在新聞媒體排行榜上的名次、分數、爆發力、升溫量、媒體門檻、跳升與新上榜（不在榜上為 null）、近期首次收錄、相似稿比對覆蓋、最常一起出現的標籤、最近 72 小時事件串，以及長期統計的首次上榜與高峰。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -1558,6 +1579,12 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/status'
 | `ranking.basisMediaCount` | integer | 基準媒體總數 |
 | `ranking.rank24h` | integer \| null | 24 小時前依分數的名次 |
 | `ranking.new` | boolean | 24 小時前不在完整榜單上 |
+| `ranking.signals` | object |  |
+| `ranking.signals.growth` | number \| null | 升溫量＝爆發力－正規化分數；缺少任一步歷史時為 null |
+| `ranking.signals.early` | boolean | 至少 2 家媒體各有 2 篇以上 |
+| `ranking.signals.broad` | boolean | 至少 3 家媒體、2 家各有 2 篇以上、1 家有 3 篇以上 |
+| `ranking.signals.earlyJump` | boolean \| null | 24 小時前未達早期線索門檻、現在達標；無法確認歷史時為 null |
+| `ranking.signals.broadJump` | boolean \| null | 24 小時前未達多家跟進門檻、現在達標；無法確認歷史時為 null |
 | `related` | object[] | 最多 8 個，依共同文章數排序 |
 | `related[].tag` | string |  |
 | `related[].count` | integer | 共同文章數 |
@@ -1577,6 +1604,16 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/status'
 | `history.hoursCount` | integer | 上榜小時數 |
 | `history.maxHour` | string (ISO 時間) | 文章數最多的小時 |
 | `history.maxCount` | integer | 該小時文章數 |
+| `firstCollection` | object \| null |  |
+| `firstCollection.at` | string (ISO 時間) | 帶此標籤的現存文章紀錄最早收錄時間；不限分類、包含歷史匯入，不代表網路首次出現或精確取得標籤的時間 |
+| `firstCollection.firstPublishedAt` | string (ISO 時間) | 現存已收錄報導的最早刊登時間 |
+| `firstCollection.recent` | boolean | 收錄時間與最早刊登時間都在快照以前 24 小時內；補收舊報導不標成新題 |
+| `drafts` | object \| null |  |
+| `drafts.articles` | integer | 同一視窗與基準媒體中、帶此標籤且已收錄的文章數 |
+| `drafts.analyzed` | integer | 截至快照時間已完成相似度比對的篇數 |
+| `drafts.similarArticles` | integer | 具有同標籤、同視窗、同基準媒體高度相似配對的去重篇數 |
+| `drafts.groups` | integer | 高度相似配對連通群數；不推定獨立稿源、轉載或抄襲 |
+| `drafts.threshold` | number | 內文相似度門檻，目前為 0.85 |
 
 <a id="api-v1-tags-tag-stats"></a>
 

@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { type TagStatus, taipei, taipeiHour } from '@/lib/api';
+import DraftEvidence from './DraftEvidence';
+import MethodLink from './MethodLink';
+import TagDiscoveryBadges from './TagDiscoveryBadges';
 
 // The ranking row for this tag, expanded: what the 關鍵字 table shows in one
 // line, plus co-occurring tags and long-term history. Rendered above the chart.
@@ -12,7 +15,7 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
   const change = !r
     ? null
     : r.new
-      ? { text: '新', tone: rising }
+      ? { text: '新上榜', tone: rising }
       : delta === null
         ? { text: '—', tone: 'text-zinc-400' }
         : delta > 0
@@ -47,6 +50,28 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
       ) : (
         <p className="text-zinc-600">目前不在新聞媒體排行榜上。</p>
       )}
+      {r && (
+        <div className="flex flex-wrap items-center gap-3">
+          <TagDiscoveryBadges isNew={r.new} signals={r.signals} firstCollection={status.firstCollection} />
+          {r.signals?.growth != null && (
+            <span className="text-xs text-zinc-500">
+              升溫量 {r.signals.growth > 0 ? '+' : ''}
+              {r.signals.growth.toFixed(1)}
+            </span>
+          )}
+          {r.signals && (
+            <span className="text-xs text-zinc-500">
+              {r.signals.broad ? '已達多家跟進門檻' : r.signals.early ? '已達早期線索門檻' : '尚未達跨媒體門檻'}
+            </span>
+          )}
+        </div>
+      )}
+      {status.firstCollection && (
+        <p className="text-xs text-zinc-500">
+          現存收錄紀錄首次見到：{taipei(status.firstCollection.at)} · 最早已收錄報導：{taipei(status.firstCollection.firstPublishedAt)}
+        </p>
+      )}
+      <DraftEvidence data={status.drafts} />
       {status.related.length > 0 && (
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-xs text-zinc-500">一起出現</span>
@@ -68,6 +93,8 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         {r && status.history && ' · '}
         {status.history &&
           `首次上榜 ${taipei(status.history.firstHour)} · 高峰 ${taipei(status.history.maxHour)}（24 小時 ${status.history.maxCount} 篇）`}
+        {(r || status.history) && ' · '}
+        <MethodLink />
       </p>
     </section>
   );

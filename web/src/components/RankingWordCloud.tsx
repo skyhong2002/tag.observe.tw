@@ -1,7 +1,7 @@
 import WordCloud from '@/components/WordCloud';
 
-// The ranking's keywords as a word cloud sized by score: the site's largest
-// cloud. Rising keywords (爆發力 above 分數) take the site's accent like in the table;
+// The ranking's keywords, sized by the selected score or growth measure.
+// Rising keywords (爆發力 above 分數) take the site's accent like in the table;
 // hovering or focusing a word opens a card with its numbers, and clicking goes
 // to the tag page.
 
@@ -9,23 +9,36 @@ export interface RankingCloudTerm {
   tag: string;
   score: number;
   burst: number | null;
+  growth?: number | null;
   count: number;
   media: number;
   isNew: boolean;
 }
 
-// A steep size curve keeps the long tail small, so the top keywords stay large
-// and both canvases keep a similar spread (about 5–6× from the smallest to the
-// largest word). The phone canvas is tall to hold that spread.
-const compact = { width: 340, height: 820, sizes: { min: 9, max: 76, floor: 9, budget: 1, curve: 1.6, words: 500 } };
-const wide = { width: 1120, height: 640, sizes: { min: 10, max: 88, floor: 10, budget: 0.7, curve: 1.5, words: 500 } };
-
 const rising = (t: RankingCloudTerm) => t.burst !== null && t.burst > t.score;
 
-export default function RankingWordCloud({ terms }: { terms: RankingCloudTerm[] }) {
+export default function RankingWordCloud({ terms, mode = 'score' }: { terms: RankingCloudTerm[]; mode?: 'score' | 'growth' }) {
   if (!terms.length) return null;
+  // Smaller candidate sets need less canvas and a gentler size curve. The
+  // dense 500-term profile stays the same in both modes.
+  const fill = Math.min(1, terms.length / 250);
+  const compact = {
+    width: 340,
+    height: Math.round(520 + 300 * fill),
+    sizes: { min: 12 - 3 * fill, max: 48 + 28 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
+  };
+  const wide = {
+    width: 1120,
+    height: Math.round(280 + 360 * fill),
+    sizes: { min: 16 - 6 * fill, max: 64 + 24 * fill, floor: 10, budget: 0.7, curve: 0.8 + 0.7 * fill, words: 500 },
+  };
   return (
     <section aria-label="關鍵字文字雲" className="rounded-xl border border-zinc-300 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-400">
+        {mode === 'growth' ? '升溫文字雲' : '熱門文字雲'}
+        {' · '}
+        {terms.length} 個候選詞
+      </p>
       <WordCloud
         compact={compact}
         wide={wide}
@@ -34,13 +47,14 @@ export default function RankingWordCloud({ terms }: { terms: RankingCloudTerm[] 
         title="關鍵字文字雲"
         words={terms.map((t) => ({
           label: t.tag,
-          count: t.score,
+          count: mode === 'growth' ? (t.growth ?? 0) : t.score,
           href: `/tag/${encodeURIComponent(t.tag)}`,
-          ariaLabel: `${t.tag}，分數 ${t.score.toFixed(1)}，${t.count} 篇`,
+          ariaLabel: `${t.tag}，${mode === 'growth' ? `升溫量 ${t.growth?.toFixed(1) ?? '—'}` : `分數 ${t.score.toFixed(1)}`}，${t.count} 篇`,
           tone: rising(t) ? 'brand' : 'strong',
           card: {
-            badge: t.isNew ? { text: '新上榜', tone: 'soft' } : rising(t) ? { text: '升溫中', tone: 'soft' } : undefined,
+            badge: t.isNew ? { text: '新上榜', tone: 'soft' } : undefined,
             rows: [
+              ...(mode === 'growth' ? [['升溫量', `+${t.growth?.toFixed(1) ?? '—'}`] as [string, string]] : []),
               ['分數', t.score.toFixed(1)],
               ['爆發力', t.burst?.toFixed(1) ?? '—'],
               ['篇數', `${t.count} 篇 · ${t.media} 家媒體`],

@@ -11,6 +11,13 @@ import { isTagNoise } from '../tag-noise.ts';
 import { campOf, loadThreadCoverage } from './coverage.ts';
 import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
+import {
+  discoverySignals,
+  loadDiscoveryEvidence,
+  type RankingGate,
+  type RankingOrder,
+  selectDiscoveryEntries,
+} from './ranking-discovery.ts';
 import { loadBurstTrails } from './ranking-history.ts';
 import { registerTagFlow } from './tag-flow.ts';
 import { loadRelatedTags } from './tag-related.ts';
@@ -65,7 +72,12 @@ export async function loadRanking(db: Db, category: string, { at }: { at?: Date 
   const ranks = new Map(comparable ? dayAgo.entries.filter((e) => !isTagNoise(e.tag)).map((e, i) => [e.tag, i + 1]) : []);
   const compared = entries.map((e) => {
     const rank24h = ranks.get(e.tag) ?? null;
-    return { ...e, rank24h, new: Boolean(comparable && dayAgo.truncated === false && rank24h === null) };
+    return {
+      ...e,
+      rank24h,
+      new: Boolean(comparable && dayAgo.truncated === false && rank24h === null),
+      signals: discoverySignals(e, comparable ? dayAgo : null, basis.id),
+    };
   });
   return {
     snapshot: {
@@ -103,27 +115,32 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     Querystring: {
       category?: string;
       order?: string;
+      gate?: string;
       limit?: string;
       at?: string;
       trend?: string;
       related?: string;
+      signals?: string;
       ranks?: string;
     };
   }>('/api/v1/ranking', async (request, reply) => {
     const category = request.query.category ?? 'all';
     if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
-    const order = request.query.order === 'score' ? 'score' : 'burst';
-    const limit = Math.min(500, Math.max(1, Number(request.query.limit) || 50));
+    const order = request.query.order ?? 'burst';
+    if (!['burst', 'score', 'growth'].includes(order)) return reply.code(400).send({ error: 'bad order' });
+    const gate = request.query.gate ?? (order === 'growth' ? 'early' : 'all');
+    if (!['all', 'early', 'broad'].includes(gate)) return reply.code(400).send({ error: 'bad gate' });
+    const limit = Math.min(500, Math.max(1, Math.floor(Number(request.query.limit) || 50)));
     const at = request.query.at ? new Date(request.query.at) : undefined;
     if (at && Number.isNaN(at.getTime())) return reply.code(400).send({ error: 'bad at' });
     const result = await loadRanking(db, category, { at });
     if (!result) return reply.code(404).send({ error: 'no snapshot' });
-    const entries = order === 'score' ? [...result.entries].sort((a, b) => b.normalized - a.normalized) : result.entries;
+    const entries = selectDiscoveryEntries(result.entries, order as RankingOrder, gate as RankingGate);
     const selected = entries.slice(0, limit);
     const window = completedHourWindow(new Date(result.snapshot.computedAt), 49);
-    const trends =
+    const [trends, related, evidence] = await Promise.all([
       request.query.trend === '1'
-        ? await loadHourlyTrends(
+        ? loadHourlyTrends(
             db,
             selected.map((e) => e.tag),
             RANKING_CATEGORIES[category].media,
@@ -131,18 +148,27 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
             window.to,
             result.snapshot.basis,
           )
-        : null;
-    const related =
+        : null,
       request.query.related === '1'
-        ? await loadRelatedTags(
+        ? loadRelatedTags(
             db,
             selected.map((e) => e.tag),
             result.snapshot.basis.media,
             new Date(new Date(result.snapshot.computedAt).getTime() - HOURS * 3600e3),
             new Date(result.snapshot.computedAt),
           )
-        : null;
-    // Burst positions are rebuilt from the stored hourly charts, so they follow the burst order only.
+        : null,
+      request.query.signals === '1'
+        ? loadDiscoveryEvidence(
+            db,
+            selected.map((e) => e.tag),
+            result.snapshot.basis.media,
+            new Date(result.snapshot.computedAt.getTime() - HOURS * 3600e3),
+            result.snapshot.computedAt,
+          )
+        : null,
+    ]);
+    // Existing liveboard trails use the unrestricted burst order.
     const trails =
       request.query.ranks === '1' && order === 'burst'
         ? await loadBurstTrails(db, category, {
@@ -154,11 +180,17 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     return {
       ...result,
       order,
+      gate,
+      matchedCount: entries.length,
+      unknownGrowthCount: result.entries.filter(
+        (e) => e.signals.growth === null && (gate === 'all' || e.signals[gate as 'early' | 'broad']),
+      ).length,
       entries: selected.map((e, i) => ({
         ...e,
         position: i + 1,
         ...(trends ? { trend: trends.get(e.tag) } : {}),
         ...(related ? { related: related.get(e.tag) ?? [] } : {}),
+        ...(evidence?.get(e.tag) ?? {}),
         ...(trails ? { rankTrail: trails.get(e.tag) ?? [] } : {}),
       })),
     };

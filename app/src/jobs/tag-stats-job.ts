@@ -6,6 +6,7 @@ import { and, eq, gte, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { articles, jobRuns, tagStats } from '../db/schema.ts';
 import { hourStart, RANKING_CATEGORIES } from './ranking-job.ts';
+import { qualifyTagMedia } from './tag-qualification.ts';
 
 export function qualifyTags(rows: Array<{ media: string; tags: string[] }>, category: string) {
   const perTag = new Map<string, { count: number; media: Map<string, number> }>();
@@ -20,11 +21,11 @@ export function qualifyTags(rows: Array<{ media: string; tags: string[] }>, cate
     level3: Array<[string, number]> = [];
   for (const [tag, e] of perTag) {
     const c1 = [...e.media.values()].filter((n) => n >= 1).length,
-      c2 = [...e.media.values()].filter((n) => n >= 2).length,
-      c3 = [...e.media.values()].filter((n) => n >= 3).length;
+      c2 = [...e.media.values()].filter((n) => n >= 2).length;
     if (category === 'news') {
-      if (c2 >= 2) level2.push([tag, e.count]);
-      if (c2 >= 2 && c3 >= 1 && c1 >= 3) level3.push([tag, e.count]);
+      const qualified = qualifyTagMedia(Object.fromEntries(e.media));
+      if (qualified.early) level2.push([tag, e.count]);
+      if (qualified.broad) level3.push([tag, e.count]);
     } else {
       if (c1 >= 2) level2.push([tag, e.count]);
       if (c1 >= 2 && c2 >= 1) level3.push([tag, e.count]);
