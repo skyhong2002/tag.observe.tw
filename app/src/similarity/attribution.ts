@@ -289,6 +289,11 @@ export function extractAttributions(body: string, publisher: string, provider?: 
       add(outletIdentity('people_daily'), `資料來源：${footer[1]}`);
       add(outletIdentity('xinhua'), `資料來源：${footer[1]}`);
     }
+    const plainFooter = /(?:^|\n\n)资料来源：(人民日报、新华社、《[^<>\n]{1,80}》等)\s*$/.exec(body);
+    if (plainFooter) {
+      add(outletIdentity('people_daily'), `資料來源：${plainFooter[1]}`);
+      add(outletIdentity('xinhua'), `資料來源：${plainFooter[1]}`);
+    }
   }
   if (publisher === 'people_cn') {
     const closing = body

@@ -3,6 +3,7 @@ import { type ArticleContent, extractArticleContent } from './article-content.ts
 import { bigMediaProvider } from './news-bigmedia-provider.ts';
 import { foodNextCredits } from './news-foodnext-credits.ts';
 import { globalVoicesCredits } from './news-globalvoices-credits.ts';
+import { huanqiuPublished } from './news-huanqiu-body.ts';
 import { peopleCredits } from './news-people-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
 import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
@@ -174,7 +175,8 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   const canonicalRaw = $('link[rel="canonical"]').first().attr('href')?.trim() || meta('meta[property="og:url"]');
   const printedTime = siteEvidence.correctUtcClock ? null : parsePublished(siteEvidence.publishedRaw);
   const declaredTime = correctPublicationClock(publishedTime($, html), siteEvidence);
-  const publishedAt = siteEvidence.preferPrintedPublication ? (printedTime ?? declaredTime) : (declaredTime ?? printedTime);
+  const publishedAt =
+    huanqiuPublished($, url) ?? (siteEvidence.preferPrintedPublication ? (printedTime ?? declaredTime) : (declaredTime ?? printedTime));
   const providerRaw = site?.providerSelector
     ? meta(site.providerSelector) || $(site.providerSelector).first().text().trim() || null
     : providerName(html);

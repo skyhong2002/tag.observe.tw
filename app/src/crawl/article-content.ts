@@ -7,9 +7,11 @@ import {
   normalizeAuthorCredits,
   reporterNames,
 } from './byline.ts';
+import { babyouVerifiedProse } from './news-babyou-body.ts';
 import { cdnCorrespondent } from './news-cdn-credits.ts';
 import { cnaStructuredBody, cnaVerifiedParagraphs } from './news-cna-body.ts';
 import { bo6sEditorLead, tvbsContributorCredits } from './news-editor-credits.ts';
+import { huanqiuArticleMarkup, huanqiuDeclaredReporters, huanqiuSpacedReporters } from './news-huanqiu-body.ts';
 import { iMediaWriter } from './news-i-media-writer.ts';
 import { ithomeFeatureDescription } from './news-ithome-feature.ts';
 import { jMediaLead } from './news-j-media-summary.ts';
@@ -425,6 +427,8 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const taiwanAuthor = taiwanNewsWriter($, url);
   const peopoAuthor = peopoReporter($, url)?.author;
   const people = peopleCredits($, url);
+  const huanqiuMarkup = huanqiuArticleMarkup($, url);
+  const huanqiuReporters = huanqiuSpacedReporters($, url) ?? (huanqiuMarkup ? huanqiuDeclaredReporters(huanqiuMarkup) : null);
   if (zMediaTechnicalCredit($, url)) $('meta[name="author"]').remove();
   // A header may hold both the dateline and the author; preserve its explicit
   // credit before removing header elements from the selected article prose.
@@ -464,6 +468,7 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
       bodySource,
       bodyStatus,
       authors:
+        huanqiuReporters ??
         people?.authors ??
         (peopoAuthor ? [peopoAuthor] : null) ??
         (taiwanAuthor ? [taiwanAuthor] : null) ??
@@ -477,6 +482,10 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
     };
   };
   if (isExcerpt) return result(null, 'publisher:excerpt', 'short');
+  if (huanqiuMarkup) {
+    const body = structuredBody(huanqiuMarkup);
+    return result(body || null, 'article:huanqiu-html', body ? (contentLength(body) >= 200 ? 'ok' : 'short') : 'missing');
+  }
   const feature = ithomeFeatureDescription($, url);
   if (feature) {
     const own = cheerio.load(($('head').html() ?? '') + $.html($(feature.selector)));
@@ -499,9 +508,12 @@ export function extractArticleContent($: cheerio.CheerioAPI, url: string, rules:
   const candidates: Candidate[] = nodes
     .map((node) => {
       const cnaProse = cnaVerifiedParagraphs($, url, node);
+      const babyouProse = babyouVerifiedProse($, url, node);
       return {
-        body: structuredBody(cnaProse ?? cnaStructuredBody($, url, { ...node, articleBody: marieclaireStructuredBody($, url, node) })),
-        source: cnaProse ? 'article:cna-paragraphs' : 'ld+json',
+        body: structuredBody(
+          cnaProse ?? babyouProse ?? cnaStructuredBody($, url, { ...node, articleBody: marieclaireStructuredBody($, url, node) }),
+        ),
+        source: cnaProse ? 'article:cna-paragraphs' : babyouProse ? 'article:babyou-paragraphs' : 'ld+json',
       };
     })
     .filter((candidate) => candidate.body);
