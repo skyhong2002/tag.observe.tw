@@ -38,7 +38,7 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
             近 7 天有文章的 {observed.length} 家刊登媒體中，{withSummary} 家至少一篇已取得摘要。
           </p>
           <p className="mt-1 text-xs leading-6 text-zinc-500">
-            「收錄內容」列出爬蟲收錄的內容；有取得摘要的媒體會顯示「摘要」、篇數與「查看摘要」範例。摘要是網站提供的文章簡介或導言，本站不自行生成。
+            「收錄內容」列出爬蟲收錄的內容；有取得摘要的媒體會顯示「摘要」標籤。摘要是網站提供的文章簡介或導言，本站不自行生成。
             以已出版且日期已確認的本站文章為範圍，包含後續補抓的摘要；沒有摘要標籤不代表網站不提供摘要。 統計更新時間：
             {new Date(data.summaryWindow.until).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}（台北）。
           </p>

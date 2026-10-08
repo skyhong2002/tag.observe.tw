@@ -12,7 +12,6 @@ import {
   type MediaCrawler,
   type MediaTopicSources,
   selectCrawlers,
-  summaryTags,
   type TopicSourceKind,
   topicSourceKindLabels,
 } from '@/lib/media-crawlers.mts';
@@ -194,9 +193,7 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                     {crawlerGroups.map(({ key, label }) => (
                       <td key={key} className={`${table.cell} py-1.5`}>
                         <div
-                          className={
-                            key === 'content' ? 'flex items-center gap-1' : 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-1'
-                          }
+                          className="flex items-center gap-1"
                           title={
                             key === 'methods'
                               ? `${row.crawler?.methods.join('、') ?? '尚無資料'}${row.crawler?.lastVerifiedMethod ? `；最近驗證：${row.crawler.lastVerifiedMethod}` : ''}`
@@ -218,26 +215,10 @@ export default function MediaCrawlersTable({ media, initialQuery }: { media: Med
                             </button>
                           ))}
                         </div>
-                        {key === 'content' && row.summary && row.summary.withSummary > 0 && (
-                          <div className="mt-1 flex items-center gap-3 text-zinc-500">
-                            <span title={`近 7 天有摘要篇數／總篇數；來源：${summaryTags(row).join('、')}`}>
-                              摘要 {row.summary.withSummary.toLocaleString('zh-TW')} / {row.summary.total.toLocaleString('zh-TW')} 篇
-                            </span>
-                            {row.summary.withSummary > 0 && row.summary.exampleId && (
-                              <a
-                                href={`/article/${row.summary.exampleId}/`}
-                                aria-label={`${row.title}：查看摘要範例`}
-                                className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
-                              >
-                                查看摘要
-                              </a>
-                            )}
-                          </div>
-                        )}
                       </td>
                     ))}
                     <td className={`${table.cell} py-1.5`}>
-                      <div className="grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-x-3 gap-y-1">
+                      <div className="flex items-center gap-3">
                         {row.crawler?.links.length ? (
                           row.crawler.links.map((link) => (
                             <a
