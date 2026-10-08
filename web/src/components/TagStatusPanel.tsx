@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { type TagStatus, taipei, taipeiHour } from '@/lib/api';
-import MethodLink from './MethodLink';
 
 // The ranking row for this tag, expanded: what the 關鍵字 table shows in one
 // line, plus co-occurring tags and long-term history. Rendered above the chart.
@@ -69,8 +68,6 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         {r && status.history && ' · '}
         {status.history &&
           `首次上榜 ${taipei(status.history.firstHour)} · 高峰 ${taipei(status.history.maxHour)}（24 小時 ${status.history.maxCount} 篇）`}
-        {(r || status.history) && ' · '}
-        <MethodLink />
       </p>
     </section>
   );

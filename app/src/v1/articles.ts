@@ -127,6 +127,9 @@ export async function searchArticles(db: Db, query: ArticleQuery) {
   const notInCamps = query.camp === 'other' ? [...campMedia('blue'), ...campMedia('green')] : null;
   const empty = media !== null && media.length === 0;
   const conds = [
+    // Bound the tag_published index before joining historical articles.
+    query.tag ? gte(articleTags.publishedAt, query.since) : undefined,
+    query.tag ? lt(articleTags.publishedAt, query.until) : undefined,
     gte(articles.publishedAt, query.since),
     lt(articles.publishedAt, query.until),
     sql`${articles.title} <> ''`,

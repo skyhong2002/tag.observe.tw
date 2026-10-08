@@ -2,14 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
-import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
-import MethodLink from '@/components/MethodLink';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
+import TagKeywordHistory from '@/components/TagKeywordHistory';
 import TagStatusPanel from '@/components/TagStatusPanel';
 import { fetchMedia, fetchTagArticles, fetchTagFlow, fetchTagSeries, fetchTagStatus, type MediaInfo, taipei } from '@/lib/api';
 import { countArticles, fetchArticleListing, isCamp, validCursor } from '@/lib/article-search';
-import { threadKeywordFlow } from '@/lib/keyword-flow.mts';
 import { decodeRouteParam, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import { tagHours } from '@/lib/tag-query';
 
@@ -75,7 +73,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     fetchTagStatus(tag).catch(() => null),
     // Reports that name the tag in their title or summary but were not tagged with it.
     cursor ? Promise.resolve(null) : countArticles({ q: tag, hours }),
-    fetchTagFlow(tag, flowSpan === 'day' ? FLOW_DAYS * 24 + hoursIntoToday() : hours).catch(() => null),
+    fetchTagFlow(tag, flowSpan === 'day' ? FLOW_DAYS * 24 + hoursIntoToday() : hours, flowSpan).catch(() => null),
   ]);
   const flowHref = (v: 'day' | 'hour') => {
     const q = new URLSearchParams(
@@ -85,15 +83,6 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     );
     return `/tag/${encodeURIComponent(tag)}/${q.size ? `?${q}` : ''}#keyword-flow`;
   };
-  const flow = flowData
-    ? threadKeywordFlow(
-        flowData.points.map((p) => ({ hourStart: p.t, tags: p.tags })),
-        [],
-        flowSpan,
-        20,
-        'sum',
-      )
-    : null;
   const tagged = facets?.total ?? 0;
   const untagged = mentions === null ? 0 : mentions - tagged;
   // The search range that covers the chart's window: the same one for 1, 3 and 7 days.
@@ -154,22 +143,17 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </div>
       </div>
       {status && <TagStatusPanel status={status} />}
-      <section className="rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 text-sm font-medium text-zinc-600">
-          每小時新聞數量與 24 小時移動平均（固定基準 {series.basis.media.length} 家媒體）
-          <MethodLink className="text-xs font-normal" />
-        </h2>
-        <TagChart points={series.points} />
+      <section
+        id="report-trend"
+        className="scroll-mt-20 rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+      >
+        <h2 className="mb-2 text-sm font-medium text-zinc-600">報導趨勢</h2>
+        <TagChart key={`${tag}:${hours}`} initial={series} />
       </section>
-      {flow && flow.rows.length > 0 && (
+      {flowData && (
         <section id="keyword-flow" className="scroll-mt-20 space-y-2">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">關鍵字變化</h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                {flowSpan === 'day' ? '過去 14 天' : span}標成 #{tag} 的報導，還一起帶了哪些關鍵字；從左往右看，話題在什麼時候轉向。
-              </p>
-            </div>
+            <h2 className="text-lg font-semibold tracking-tight">關鍵字變化</h2>
             <nav className="inline-flex rounded-md bg-zinc-100 p-0.5 text-xs dark:bg-zinc-800" aria-label="關鍵字變化的單位">
               {(
                 [
@@ -189,13 +173,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
               ))}
             </nav>
           </div>
-          <KeywordFlowLegend major={false}>
-            <span>
-              每欄是{flowSpan === 'day' ? '一天' : '一個小時'}，顏色越深表示越多篇同時帶到；點欄位看那{flowSpan === 'day' ? '天' : '小時'}
-              的事件表。
-            </span>
-          </KeywordFlowLegend>
-          <KeywordFlow {...flow} dense={flowSpan === 'hour'} unit="篇數" label={`和 #${tag} 一起出現的關鍵字`} />
+          <TagKeywordHistory key={`${tag}:${flowSpan}:${hours}`} initial={flowData} />
         </section>
       )}
       {!page ? (

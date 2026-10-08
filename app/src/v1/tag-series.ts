@@ -1,7 +1,9 @@
 import { and, eq, gte, inArray, lt, sql } from 'drizzle-orm';
+import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, rankingEntries, rankingSnapshots } from '../db/schema.ts';
-import type { RankingBasis } from '../jobs/ranking-basis.ts';
+import { type RankingBasis, rankingBasis } from '../jobs/ranking-basis.ts';
+import { RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
 
 const HOUR = 3600e3;
 export interface HourlyCount {
@@ -113,4 +115,38 @@ export async function loadHourlyRanks(db: Db, tag: string, category: string, fro
   const out = new Map<string, number>();
   for (const r of rows) if (r.tag === tag) out.set(r.hourStart.toISOString(), r.rank);
   return out;
+}
+
+export function registerTagSeries(app: FastifyInstance, db: Db) {
+  app.get<{ Params: { tag: string }; Querystring: { category?: string; hours?: string; until?: string } }>(
+    '/api/v1/tags/:tag/series',
+    async (request, reply) => {
+      const tag = request.params.tag.slice(0, 60);
+      const category = request.query.category ?? 'all';
+      if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
+      const hours = request.query.hours === undefined ? 72 : Number(request.query.hours);
+      const now = new Date();
+      const until = request.query.until === undefined ? now : new Date(request.query.until);
+      if (!Number.isInteger(hours) || hours < 1 || hours > 336) return reply.code(400).send({ error: 'bad hours' });
+      if (!Number.isFinite(until.getTime()) || until > now) return reply.code(400).send({ error: 'bad until' });
+      const { from, to } = completedHourWindow(until, hours);
+      const basis = rankingBasis(category);
+      const [trends, ranks] = await Promise.all([
+        loadHourlyTrends(db, [tag], basis.media, from, to, basis),
+        loadHourlyRanks(db, tag, category, from, to),
+      ]);
+      const points = (trends.get(tag) ?? []).map((p) => ({ ...p, rank: ranks.get(p.t) ?? null }));
+      reply.header('cache-control', 'public, max-age=300');
+      return {
+        tag,
+        category,
+        hours,
+        from: from.toISOString(),
+        to: to.toISOString(),
+        hasMore: from.getTime() > Date.parse(basis.coverageFrom),
+        basis,
+        points,
+      };
+    },
+  );
 }

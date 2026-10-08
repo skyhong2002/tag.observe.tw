@@ -12,9 +12,9 @@ import { campOf, loadThreadCoverage } from './coverage.ts';
 import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
 import { iconUrl } from './icons.ts';
 import { loadBurstTrails } from './ranking-history.ts';
-import { loadTagFlow } from './tag-flow.ts';
+import { registerTagFlow } from './tag-flow.ts';
 import { loadRelatedTags } from './tag-related.ts';
-import { completedHourWindow, loadHourlyRanks, loadHourlyTrends } from './tag-series.ts';
+import { completedHourWindow, loadHourlyTrends, registerTagSeries } from './tag-series.ts';
 import { loadTagStatus } from './tag-status.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -189,32 +189,10 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       return { tag, hours, articles: rows.map((r) => ({ ...r, mediaTitle: mediaInfo[r.media]?.title ?? r.media })) };
     },
   );
-  app.get<{ Params: { tag: string }; Querystring: { category?: string; hours?: string } }>(
-    '/api/v1/tags/:tag/series',
-    async (request, reply) => {
-      const tag = request.params.tag.slice(0, 60),
-        category = request.query.category ?? 'all';
-      if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
-      const hours = Math.min(24 * 14, Math.max(1, Math.floor(Number(request.query.hours) || 72)));
-      const { from, to } = completedHourWindow(new Date(), hours);
-      const basis = rankingBasis(category);
-      const [trends, ranks] = await Promise.all([
-        loadHourlyTrends(db, [tag], basis.media, from, to, basis),
-        loadHourlyRanks(db, tag, category, from, to),
-      ]);
-      const points = (trends.get(tag) ?? []).map((p) => ({ ...p, rank: ranks.get(p.t) ?? null }));
-      reply.header('cache-control', 'public, max-age=300');
-      return { tag, category, hours, basis, points };
-    },
-  );
+  registerTagSeries(app, db);
 
   // Which other keywords rode along with this one, hour by hour.
-  app.get<{ Params: { tag: string }; Querystring: { hours?: string } }>('/api/v1/tags/:tag/flow', async (request, reply) => {
-    const tag = request.params.tag.slice(0, 60);
-    const hours = Math.min(24 * 31, Math.max(1, Math.floor(Number(request.query.hours) || 24 * 14)));
-    reply.header('cache-control', 'public, max-age=300');
-    return loadTagFlow(db, tag, hours);
-  });
+  registerTagFlow(app, db);
 
   app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/status', async (request, reply) => {
     const tag = request.params.tag.slice(0, 60);

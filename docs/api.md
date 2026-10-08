@@ -1450,7 +1450,8 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/articles
 | --- | --- | --- | --- |
 | `tag` | 路徑 | string | 標籤（URL 編碼），例：`賴清德` |
 | `category` | query | string | 排行分類，見 /api/v1/categories，預設 `all`，例：`news` |
-| `hours` | query | integer | 往前幾小時，1–336，預設 `72`，例：`168` |
+| `hours` | query | integer | 每次往前幾小時，1–336，預設 `72`，例：`168` |
+| `until` | query | string (ISO 時間) | 不含的時間右界，向下取整到完整小時；省略時為目前完整小時，例：`2026-10-01T16:00:00Z` |
 
 範例：
 
@@ -1470,6 +1471,9 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 | `basis.media` | string[] |  |
 | `basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
 | `basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
+| `from` | string (ISO 時間) | 包含的時間左界 |
+| `to` | string (ISO 時間) | 不含的時間右界；查更早時傳入 from 作為 until |
+| `hasMore` | boolean | from 之前還有固定媒體基準的可比較期間 |
 | `points` | object[] |  |
 | `points[].t` | string (ISO 時間) | 完整小時起點（UTC） |
 | `points[].score` | number \| null | 24 小時正規化分數 |
@@ -1478,7 +1482,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 | `points[].hourlyCount` | integer \| null | 該小時收錄篇數；收錄開始前為 null |
 | `points[].average24h` | number \| null | 24 小時移動平均（篇／小時）；歷史不足為 null |
 
-錯誤：`404` 未知分類。
+錯誤：`400` 無效的 hours 或 until（含未來時間）；`404` 未知分類。
 
 <a id="api-v1-tags-tag-flow"></a>
 
@@ -1486,12 +1490,14 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?h
 
 **和這個標籤一起出現的關鍵字，逐小時**
 
-標了這個標籤的報導（依發布時間，最近的在前，最多 20000 篇），每小時統計它們還帶了哪些其他標籤：每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱，每小時保留至少 2 篇帶到的前 15 個。沒有報導的小時不列出。
+標了這個標籤的報導（每次最多讀取最新 20000 篇），統計同一小時至少 2 篇共同帶到的其他標籤。每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱。span=day 將每小時篇數按台北日期相加；沒有報導的時段不列出。until 是不含的右界；下一段傳入這次的 from，hasMore 表示 from 之前仍有收錄報導。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `tag` | 路徑 | string | 標籤（URL 編碼），例：`沈伯洋` |
-| `hours` | query | integer | 往前幾小時，1–744，預設 `336`，例：`336` |
+| `hours` | query | integer | 每次往前幾小時，1–744，預設 `336`，例：`336` |
+| `until` | query | string (ISO 時間) | 不含的時間右界；省略時為目前小時的結束，例：`2026-10-01T16:00:00Z` |
+| `span` | query | "hour" \| "day" | 逐小時或按台北日期合併，預設 `hour`，例：`day` |
 
 範例：
 
@@ -1508,10 +1514,14 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hou
 | `from` | string (ISO 時間) |  |
 | `to` | string (ISO 時間) |  |
 | `sampled` | boolean | 報導超過上限、只讀了最新的 20000 篇 |
+| `span` | "hour" \| "day" |  |
+| `hasMore` | boolean | from 之前仍有這個標籤的收錄報導 |
 | `points` | object[] |  |
 | `points[].t` | string (ISO 時間) | 小時起點（UTC） |
 | `points[].count` | integer | 該小時標了這個標籤的報導篇數 |
 | `points[].tags` | string[][] | [標籤, 同時帶到它的篇數]，多的在前 |
+
+錯誤：`400` hours、until 或 span 格式錯誤。
 
 <a id="api-v1-tags-tag-status"></a>
 

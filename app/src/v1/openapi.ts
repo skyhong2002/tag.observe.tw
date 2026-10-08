@@ -1115,12 +1115,20 @@ export const ENDPOINTS: Endpoint[] = [
     summary: '標籤每小時的分數與文章數',
     description:
       '每個完整小時一點。hourlyCount 從收錄文章按發布時間統計，average24h 為當小時及前 23 小時篇數總和 ÷ 24，無報導小時以 0 計，並讀取顯示範圍前 23 小時。整條曲線只使用 basis 的固定媒體，score/count 也從文章重算 24 小時加權分數／累計篇數。rank 是該小時排行快照中依原始分數的名次（同一分類）；該小時沒有快照或未進入儲存的榜單時為 null。coverageFrom 前的篇數、validFrom 前的平均與分數均為 null；收錄開始後的空小時以零計。歷史篇數反映目前資料庫收錄，可包含後來補抓的文章。',
-    params: [p('tag', '標籤（URL 編碼）', str(), '賴清德'), categoryParam, q('hours', '往前幾小時', intIn(1, 336, 72), 168)],
+    params: [
+      p('tag', '標籤（URL 編碼）', str(), '賴清德'),
+      categoryParam,
+      q('hours', '每次往前幾小時', intIn(1, 336, 72), 168),
+      q('until', '不含的時間右界，向下取整到完整小時；省略時為目前完整小時', time(), '2026-10-01T16:00:00Z'),
+    ],
     response: obj({
       tag: str(),
       category: str(),
       hours: int(),
       basis: ref('RankingBasis'),
+      from: time('包含的時間左界'),
+      to: time('不含的時間右界；查更早時傳入 from 作為 until'),
+      hasMore: bool('from 之前還有固定媒體基準的可比較期間'),
       points: arr(
         obj({
           t: time('完整小時起點（UTC）'),
@@ -1132,7 +1140,7 @@ export const ENDPOINTS: Endpoint[] = [
         }),
       ),
     }),
-    errors: { '404': '未知分類' },
+    errors: { '400': '無效的 hours 或 until（含未來時間）', '404': '未知分類' },
     example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/series?hours=168',
   },
   {
@@ -1140,14 +1148,21 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'tags',
     summary: '和這個標籤一起出現的關鍵字，逐小時',
     description:
-      '標了這個標籤的報導（依發布時間，最近的在前，最多 20000 篇），每小時統計它們還帶了哪些其他標籤：每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱，每小時保留至少 2 篇帶到的前 15 個。沒有報導的小時不列出。',
-    params: [p('tag', '標籤（URL 編碼）', str(), '沈伯洋'), q('hours', '往前幾小時', intIn(1, 744, 336), 336)],
+      '標了這個標籤的報導（每次最多讀取最新 20000 篇），統計同一小時至少 2 篇共同帶到的其他標籤。每篇只算一次，排除泛用詞、欄目詞、數字日期與媒體自家名稱。span=day 將每小時篇數按台北日期相加；沒有報導的時段不列出。until 是不含的右界；下一段傳入這次的 from，hasMore 表示 from 之前仍有收錄報導。',
+    params: [
+      p('tag', '標籤（URL 編碼）', str(), '沈伯洋'),
+      q('hours', '每次往前幾小時', intIn(1, 744, 336), 336),
+      q('until', '不含的時間右界；省略時為目前小時的結束', time(), '2026-10-01T16:00:00Z'),
+      q('span', '逐小時或按台北日期合併', str(undefined, { enum: ['hour', 'day'], default: 'hour' }), 'day'),
+    ],
     response: obj({
       tag: str(),
       hours: int(),
       from: time(),
       to: time(),
       sampled: bool('報導超過上限、只讀了最新的 20000 篇'),
+      span: str(undefined, { enum: ['hour', 'day'] }),
+      hasMore: bool('from 之前仍有這個標籤的收錄報導'),
       points: arr(
         obj({
           t: time('小時起點（UTC）'),
@@ -1156,6 +1171,7 @@ export const ENDPOINTS: Endpoint[] = [
         }),
       ),
     }),
+    errors: { '400': 'hours、until 或 span 格式錯誤' },
     example: '/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hours=336',
   },
   {

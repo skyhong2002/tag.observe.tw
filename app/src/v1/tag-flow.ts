@@ -1,4 +1,5 @@
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
+import type { FastifyInstance } from 'fastify';
 import noEqual from '../../data/no-equal-tags.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, articleTags } from '../db/schema.ts';
@@ -27,7 +28,7 @@ const usable = (term: string, media: string) =>
 export function tagFlowHours(
   tag: string,
   rows: ReadonlyArray<{ id: number; media: string; publishedAt: Date; tags: readonly string[] }>,
-  { perHour = 15, min = 2 } = {},
+  { perHour = Number.POSITIVE_INFINITY, min = 2 } = {},
 ) {
   const hours = new Map<number, { count: number; tags: Map<string, number> }>();
   const seen = new Set<number>();
@@ -52,8 +53,32 @@ export function tagFlowHours(
     }));
 }
 
-export async function loadTagFlow(db: Db, tag: string, hours: number, now = new Date()) {
-  const to = new Date(Math.floor(now.getTime() / HOUR) * HOUR + HOUR);
+export function mergeTagFlowDays(points: ReturnType<typeof tagFlowHours>) {
+  const days = new Map<number, { count: number; tags: Map<string, number> }>();
+  for (const point of points) {
+    const key = Math.floor((Date.parse(point.t) + 8 * HOUR) / (24 * HOUR)) * 24 * HOUR - 8 * HOUR;
+    const day = days.get(key) ?? { count: 0, tags: new Map<string, number>() };
+    day.count += point.count;
+    for (const [tag, n] of point.tags) day.tags.set(tag, (day.tags.get(tag) ?? 0) + n);
+    days.set(key, day);
+  }
+  return [...days]
+    .sort((a, b) => a[0] - b[0])
+    .map(([key, day]) => ({
+      t: new Date(key).toISOString(),
+      count: day.count,
+      tags: [...day.tags].sort((a, b) => b[1] - a[1]) as Array<[string, number]>,
+    }));
+}
+
+export async function loadTagFlow(
+  db: Db,
+  tag: string,
+  hours: number,
+  now = new Date(),
+  { until, span = 'hour' }: { until?: Date; span?: 'day' | 'hour' } = {},
+) {
+  const to = until ?? new Date(Math.floor(now.getTime() / HOUR) * HOUR + HOUR);
   const from = new Date(to.getTime() - hours * HOUR);
   const rows = await db
     .select({ id: articles.id, media: articles.media, publishedAt: articleTags.publishedAt, tags: articles.tags })
@@ -62,12 +87,40 @@ export async function loadTagFlow(db: Db, tag: string, hours: number, now = new 
     .where(and(eq(articleTags.tag, tag), gte(articleTags.publishedAt, from), lt(articleTags.publishedAt, to)))
     .orderBy(desc(articleTags.publishedAt))
     .limit(TAG_FLOW_ROWS);
+  // This index lookup distinguishes an empty fortnight from the end of history.
+  const earlier = await db
+    .select({ id: articleTags.articleId })
+    .from(articleTags)
+    .where(and(eq(articleTags.tag, tag), lt(articleTags.publishedAt, from)))
+    .limit(1);
+  const points = tagFlowHours(tag, rows);
   return {
     tag,
     hours,
     from: from.toISOString(),
     to: to.toISOString(),
     sampled: rows.length >= TAG_FLOW_ROWS,
-    points: tagFlowHours(tag, rows),
+    span,
+    hasMore: earlier.length > 0,
+    points: span === 'day' ? mergeTagFlowDays(points) : points,
   };
+}
+
+export function registerTagFlow(app: FastifyInstance, db: Db) {
+  app.get<{ Params: { tag: string }; Querystring: { hours?: string; until?: string; span?: string } }>(
+    '/api/v1/tags/:tag/flow',
+    async (request, reply) => {
+      const tag = request.params.tag.slice(0, 60);
+      const hours = request.query.hours === undefined ? 336 : Number(request.query.hours);
+      const span = request.query.span ?? 'hour';
+      const until = request.query.until === undefined ? undefined : new Date(request.query.until);
+      if (!Number.isInteger(hours) || hours < 1 || hours > 744) return reply.code(400).send({ error: 'bad hours' });
+      if (span !== 'day' && span !== 'hour') return reply.code(400).send({ error: 'bad span' });
+      if (until && (!Number.isFinite(until.getTime()) || until.getTime() < 0 || until.getTime() > Date.now() + HOUR)) {
+        return reply.code(400).send({ error: 'bad until' });
+      }
+      reply.header('cache-control', 'public, max-age=300');
+      return loadTagFlow(db, tag, hours, new Date(), { until, span });
+    },
+  );
 }

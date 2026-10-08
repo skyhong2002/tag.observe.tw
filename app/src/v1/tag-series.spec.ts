@@ -1,7 +1,8 @@
 import { MySqlDialect } from 'drizzle-orm/mysql-core';
+import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.ts';
-import { completedHourWindow, hourlyMovingAverage, loadHourlyRanks, loadHourlyTrends } from './tag-series.ts';
+import { completedHourWindow, hourlyMovingAverage, loadHourlyRanks, loadHourlyTrends, registerTagSeries } from './tag-series.ts';
 
 const HOUR = 3600e3;
 const start = new Date('2026-10-03T00:00:00Z');
@@ -94,5 +95,47 @@ describe('hourly ranks', () => {
     ]);
     const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
     expect(query.params).toEqual(['日本', 'news', '2026-10-03 00:00:00.000', '2026-10-03 03:00:00.000']);
+  });
+});
+
+describe('trend history API', () => {
+  it('returns an exclusive, complete-hour history window and its warmup queries', async () => {
+    const chain = {
+      from: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      groupBy: vi.fn().mockResolvedValue([]),
+    };
+    const ranks = { from: vi.fn().mockReturnThis(), innerJoin: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([]) };
+    const select = vi.fn().mockReturnValueOnce(chain).mockReturnValueOnce(ranks).mockReturnValueOnce(chain).mockReturnValueOnce(ranks);
+    const app = Fastify();
+    registerTagSeries(app, { select } as unknown as Db);
+    try {
+      const response = await app.inject('/api/v1/tags/test/series?hours=24&until=2026-10-03T00:35:00Z');
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body).toMatchObject({ from: '2026-10-02T00:00:00.000Z', to: '2026-10-03T00:00:00.000Z', hours: 24 });
+      expect(body.points).toHaveLength(24);
+      expect(body.points.at(-1).t).toBe('2026-10-02T23:00:00.000Z');
+      const query = new MySqlDialect().sqlToQuery(chain.where.mock.calls[0][0]);
+      expect(query.params.slice(-2)).toEqual(['2026-10-01 01:00:00.000', '2026-10-03 00:00:00.000']);
+      const oldest = await app.inject('/api/v1/tags/test/series?hours=24&until=2000-01-01T00:00:00Z');
+      expect(oldest.json().hasMore).toBe(false);
+    } finally {
+      await app.close();
+    }
+  });
+  it('rejects invalid history parameters before any query', async () => {
+    const select = vi.fn();
+    const app = Fastify();
+    registerTagSeries(app, { select } as unknown as Db);
+    try {
+      for (const query of ['until=garbage', 'until=2999-01-01', 'hours=abc', 'hours=0', 'hours=337', 'hours=1.5']) {
+        expect((await app.inject(`/api/v1/tags/test/series?${query}`)).statusCode).toBe(400);
+      }
+      expect(select).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
   });
 });
