@@ -251,7 +251,8 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
       .where(eq(events.threadId, id))
       .orderBy(desc(eventSnapshots.hourStart))
-      .limit(72);
+      // Two weeks of hours, so the page can read a long story day by day.
+      .limit(24 * 14);
     const related = [...new Set([...thread.combinedFrom, ...thread.combinedTo])];
     reply.header('cache-control', 'public, max-age=120');
     return {

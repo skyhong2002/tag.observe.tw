@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte } from 'drizzle-orm';
+import { and, eq, gte, inArray, lt } from 'drizzle-orm';
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
@@ -154,10 +154,26 @@ export function coverageDescription(description: string | null | undefined, titl
         .trimEnd()}…`
     : text;
 }
+/** The window cut at Taipei midnights, newest `max` days only, so a long
+ *  story's reports are capped per day rather than by whichever rows come first. */
+export function coverageDays(window: { from: Date; to: Date }, max = 14) {
+  const TPE = 8 * HOUR,
+    DAY = 24 * HOUR;
+  const out: Array<{ from: Date; to: Date }> = [];
+  let start = window.from.getTime();
+  while (start <= window.to.getTime()) {
+    const midnight = (Math.floor((start + TPE) / DAY) + 1) * DAY - TPE;
+    const end = Math.min(midnight, window.to.getTime() + 1);
+    out.push({ from: new Date(start), to: new Date(end) });
+    start = end;
+  }
+  return out.slice(-max);
+}
+
 export async function loadThreadCoverage(
   db: Db,
   thread: { majorTags: string[]; firstTime: Date; lastTime: Date },
-  limit = 400,
+  perDay = 400,
 ): Promise<Coverage> {
   // Events are clustered over the previous 24h of articles, so reports that
   // seeded the first hour can be older than first_time; look back a little.
@@ -165,20 +181,28 @@ export async function loadThreadCoverage(
   // Threads accumulate major tags over their lifetime (typically 3–6).
   const majorTags = [...new Set(thread.majorTags.filter((t) => t.trim()))].slice(0, 8);
   if (majorTags.length === 0) return groupCoverage([], majorTags, window);
-  const rows = await db
-    .selectDistinct({
-      id: articles.id,
-      media: articles.media,
-      title: articles.title,
-      url: articles.url,
-      image: articles.image,
-      publishedAt: articles.publishedAt,
-      tags: articles.tags,
-      description: articles.description,
-    })
-    .from(articleTags)
-    .innerJoin(articles, eq(articles.id, articleTags.articleId))
-    .where(and(inArray(articleTags.tag, majorTags), gte(articleTags.publishedAt, window.from), lte(articleTags.publishedAt, window.to)))
-    .limit(limit);
-  return groupCoverage(rows, majorTags, window);
+  const days = coverageDays(window);
+  const perDayRows = await Promise.all(
+    days.map((d) =>
+      db
+        .selectDistinct({
+          id: articles.id,
+          media: articles.media,
+          title: articles.title,
+          url: articles.url,
+          image: articles.image,
+          publishedAt: articles.publishedAt,
+          tags: articles.tags,
+          description: articles.description,
+        })
+        .from(articleTags)
+        .innerJoin(articles, eq(articles.id, articleTags.articleId))
+        .where(and(inArray(articleTags.tag, majorTags), gte(articleTags.publishedAt, d.from), lt(articleTags.publishedAt, d.to)))
+        .limit(perDay),
+    ),
+  );
+  // An article tagged twice can only fall in one day, but keep it once regardless.
+  const seen = new Set<number>();
+  const rows = perDayRows.flat().filter((r) => !seen.has(r.id) && seen.add(r.id));
+  return groupCoverage(rows, majorTags, { from: days[0]?.from ?? window.from, to: window.to });
 }

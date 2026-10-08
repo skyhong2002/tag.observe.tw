@@ -1324,7 +1324,7 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/events/threads/{id}',
     tag: 'events',
     summary: '單一事件串',
-    description: '事件串的整體資訊與逐小時紀錄（最多 72 小時，新到舊）。`thread.history` 的鍵是台北時間 `YYYY-MM-DD HH:00:00`。',
+    description: '事件串的整體資訊與逐小時紀錄（最近 336 小時，即 14 天，新到舊）。`thread.history` 的鍵是台北時間 `YYYY-MM-DD HH:00:00`。',
     params: [threadId],
     response: obj({
       thread: obj(
@@ -1392,7 +1392,8 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/events/threads/{id}/coverage',
     tag: 'events',
     summary: '同一事件的各家標題對照',
-    description: '帶有事件主要標籤的所有文章，依媒體與藍／綠／其他分組。`blindspot` 列出「對方陣營有報、這一方完全沒報」的陣營。',
+    description:
+      '帶有事件主要標籤的文章（最近 14 天，每個台北日最多 400 篇），依媒體與藍／綠／其他分組。`blindspot` 列出「對方陣營有報、這一方完全沒報」的陣營。',
     params: [threadId],
     response: obj({
       threadId: int(),
