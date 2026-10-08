@@ -161,6 +161,24 @@ describe('edh', () => {
 });
 
 describe('techorange', () => {
+  it('keeps homepage image fallback markup out of titles when merging listings', async () => {
+    const url = 'https://techorange.com/feature/2026-cloudmile-spencer/';
+    const title = '看懂 AI 巨頭戰略，台灣其實離「核心戰場」超級近？';
+    const home = `<a href="${url}"><noscript><img src="/cover.jpg" alt="${title}" srcset="${'cover.jpg 1024w, '.repeat(40)}"></noscript><img data-src="/cover.jpg" alt="${title}"></a><h2><a href="${url}">${title}</a></h2>`;
+    const index = `<div class="e-loop-item"><h2 class="elementor-heading-title"><a href="${url}">${title}</a></h2></div>`;
+    expect(extractTopics(home, listing('techorange', 'https://techorange.com/')).map((t) => [t.title, t.image])).toEqual([
+      [title, 'https://techorange.com/cover.jpg'],
+    ]);
+    const result = await fetchTopicListings(rule('techorange'), async (url) => ({
+      url,
+      body: url === 'https://techorange.com/' ? home : index,
+      status: 200,
+      contentType: 'text/html',
+      ms: 0,
+    }));
+    expect(result.items.map((t) => t.title)).toEqual([title]);
+  });
+
   it('names index cards by their heading, not the cover link’s noscript markup', () => {
     const html = `<div class="e-loop-item"><a href="https://techorange.com/feature/ai-agent/"><noscript><img src="/a.jpg" alt=""></noscript><img data-src="/a.jpg" alt=""></a>
       <h2 class="elementor-heading-title"><a href="https://techorange.com/feature/ai-agent/">AI Agent 上工中</a></h2></div>

@@ -79,7 +79,9 @@ export interface TopicRule {
 }
 
 const textOf = (a: cheerio.Cheerio<import('domhandler').AnyNode>) =>
-  decodeEntities(a.text().replace(/\s+/g, ' ').trim()) ||
+  // With scripting enabled, Cheerio treats noscript image HTML as text.
+  // Ignore hidden fallback markup without removing the cover used below.
+  decodeEntities(a.clone().find('noscript, script, style').remove().end().text().replace(/\s+/g, ' ').trim()) ||
   decodeEntities(a.attr('title') ?? '') ||
   decodeEntities(a.find('img').attr('alt') ?? '');
 // Card links whose visible text mixes date, counters and summary: take the heading.
