@@ -1,5 +1,7 @@
 # 母站資料近線封存 pipeline
 
+統一 metadata 查詢格式、SSD 索引與文章來源對應工具見 [nearline-query-index.md](nearline-query-index.md)。索引保留 SQL 原始格式與新站內容格式的差異；不取代下述逐檔取回與校驗。
+
 ## 用途與保證
 
 把母站 MySQL `tag` 分包保存到 `nas:Archive/tag.analysis.tw/nearline-v1`，需要哪張表／哪個主鍵範圍，再抓到本機 SSD 還原。NAS 不運行資料庫，也不存放使用中的 datadir。原本 `Archive/tag.analysis.tw/2026-10-04/` 的核心副本繼續保留。
