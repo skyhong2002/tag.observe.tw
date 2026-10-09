@@ -108,19 +108,29 @@ export async function refreshTraffic(
   let failures = 0;
   let blocked = false;
   let error: string | null = null;
+  let consecutiveFailures = 0;
+  const deadline = Date.now() + 5 * 60_000;
   const unique = [...new Set(domains)];
   for (const [index, domain] of unique.entries()) {
+    if (Date.now() >= deadline) {
+      failures++;
+      error = 'Similarweb batch time limit reached';
+      break;
+    }
     try {
       entries.set(domain, await fetchDomainTraffic(domain, request, now));
       successes++;
+      consecutiveFailures = 0;
     } catch (failure) {
       failures++;
+      consecutiveFailures++;
       error = failure instanceof TrafficFetchError ? failure.message : 'Similarweb data unavailable or invalid';
       // Stop a denied/rate-limited batch instead of hammering the provider.
       if (failure instanceof TrafficFetchError && [401, 403, 429].includes(failure.status)) {
         blocked = true;
         break;
       }
+      if (consecutiveFailures >= 3) break;
     }
     if (index < unique.length - 1) await delay(1000);
   }
@@ -129,6 +139,6 @@ export async function refreshTraffic(
     checkedAt: now.toISOString(),
     status: blocked ? 'blocked' : failures ? (successes ? 'partial' : 'failed') : successes ? 'ok' : 'failed',
     error,
-    domains: [...entries.values()].filter((row) => unique.includes(row.domain)),
+    domains: [...entries.values()],
   };
 }

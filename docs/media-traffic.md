@@ -6,7 +6,7 @@
 
 - 本站收錄固定顯示最新統計月份至今的已抓取篇數，欄頭列出年月；不是累計總量或媒體完整發稿量，不把缺資料當零。
 - Similarweb 預設最新匯入月份，表格同時顯示最近三個可取得月份，可切換排序月份；欄頭清楚標示期間與原表值。它與收錄量是不同指標、可能不同月份，不是精確 page views，不計算每篇閱讀量或全台市占。
-- 若 Similarweb 自動抓取器最近成功，表格改用外掛同源的 `EstimatedMonthlyVisits`，並在頁面標示「自動抓取」；抓取被拒絕、逾時或資料驗證失敗時，保留最後成功快照並回退原表，不把錯誤當成零。
+- 預設「自動抓取」只顯示外掛來源的 `EstimatedMonthlyVisits`（估算訪問次數），缺資料留白；失敗時保留各網域最後成功資料與更新日期。整理表需切換至「整理表歷史資料」，兩種來源與單位不混算或一起排序。
 - 比照 `/media/` 一次列出全部媒體，不分頁；所有媒體均可搜尋，三個欄頭可以排序，缺值排最後。預設依本站收錄篇數降冪（`sort=articles&dir=desc`）。搜尋、排序及非最新的流量月份保存在網址；最新月份不帶 `month`，舊圖表參數不再使用。
 - 缺少網域時，依來源對照表的官方網址及名稱登記檔的核對網址補顯示網域；不回寫歷史原表。未確認與已停用網域明確標註，發現來源也顯示網域。
 - 使用本站現有媒體 icon 與深色主題設定；尚無圖檔者使用名稱首字的佔位圖示。
@@ -33,21 +33,19 @@
 
 需要 Python 3，無額外套件：
 
-```sh
 `python3 tools/import-media-traffic.py --months auto` 會直接抓公開試算表，偵測最新的三個 `YYYYMM` 工作表並更新候選 JSON，同時保留既有歷史月份；也可明列月份：
 
 ```sh
 python3 tools/import-media-traffic.py --months 202608 202607 202606
 ```
-```
 
 可用 `--input /path/to/source.xlsx` 或 `--output /tmp/media-traffic.json` 先產生候選檔。`--months` 明列保留月份，不自行增加；完整驗證成功才寫入匯入時間、SHA-256、來源 URL 與月資料。
 
-這個更新器抓的是公開的 Similarweb 整理表，不是登入瀏覽器外掛。Similarweb 外掛頁面需要使用者登入狀態，且沒有穩定、授權給伺服器使用的公開端點；把瀏覽器 cookie 放進 worker 會讓資料來源失效也會暴露帳號。若要拿到官方近即時的 visits／page views，應改用 Similarweb API 金鑰（API 的 quota 與方案由 Similarweb 控制）。Cloudflare Radar 可做網域相對熱度趨勢，但不提供單站絕對瀏覽人次，因此不能替代 page views。
+這個整理表更新器仍依賴人工整理來源；自動抓取器則直接讀外掛資料。Similarweb 的 visits 是網域月訪問量估算，不是即時或逐篇 page views。Cloudflare Radar 的網域排名也不能換算為瀏覽人次。
 
 ### 自動抓取 Similarweb 外掛資料
 
-`app/src/jobs/media-traffic-job.ts` 每日 03:35（可用 `MEDIA_TRAFFIC_CRON` 調整）呼叫外掛使用的公開 `data.similarweb.com/api/v1/data?domain=…` 端點，逐一抓來源網域的 `EstimatedMonthlyVisits`，只保留近三個月份，結果寫在 Git 工作目錄外的 `TAG_MEDIA_TRAFFIC_FILE`（預設 `~/.local/share/tag-analysis/media-traffic-live.json`）。API `GET /api/v1/media-traffic-live` 提供目前狀態給頁面；`ok`／`partial` 才會覆蓋表格數值，`blocked`／`failed` 則保留最後成功內容。
+`app/src/jobs/media-traffic-job.ts` 每日 03:35（可用 `MEDIA_TRAFFIC_CRON` 調整）呼叫外掛使用的公開 `data.similarweb.com/api/v1/data?domain=…` 端點，逐一抓來源網域的 `EstimatedMonthlyVisits`，只保留近三個月份，結果寫在 Git 工作目錄外的 `TAG_MEDIA_TRAFFIC_FILE`（預設 `~/.local/share/tag-analysis/media-traffic-live.json`）。API `GET /api/v1/media-traffic-live` 提供狀態與各網域最近成功時間給頁面；預設自動抓取模式使用這份快照，`blocked`／`failed` 仍可顯示最後成功值。單網域驗證保留其他網域歷史快照。收到 401／403／429 即中止整批，其他連續三次失敗或批次超過五分鐘也停止。
 
 手動驗證單一網域：
 
@@ -55,7 +53,7 @@ python3 tools/import-media-traffic.py --months 202608 202607 202606
 node tools/media-traffic-once.ts udn.com
 ```
 
-目前主機實測回 HTTP 403（CloudFront），所以現場頁面仍會顯示整理表；這不是即時資料已成功的宣稱。部署到能通過 Similarweb 端點的網路後，worker 才會自動切換到抓取值。
+2026-10-09 此主機實測回 HTTP 403（CloudFront），尚未成功取得外掛流量；新介面的自動抓取模式顯示來源拒絕連線與空值。程式尚未部署，因此正式站不會因本地改動開始更新。
 
 檢查 diff 的月份、列數、缺值、人工調整及身份對照。原表插列可能改動對照表列號，必須核對，不能只覆蓋快照。分類或覆蓋率基準另行審核。
 

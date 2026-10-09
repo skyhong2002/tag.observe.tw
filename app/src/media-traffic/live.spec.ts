@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fetchDomainTraffic, refreshTraffic, trafficDomain } from './live.ts';
 
 describe('Similarweb live traffic source', () => {
@@ -34,6 +34,7 @@ describe('Similarweb live traffic source', () => {
   });
 
   it('stops a denied batch and preserves the previous snapshot', async () => {
+    const request = vi.fn(async () => new Response('', { status: 403 }));
     const result = await refreshTraffic(
       ['udn.com', 'ltn.com.tw'],
       {
@@ -44,9 +45,21 @@ describe('Similarweb live traffic source', () => {
         error: null,
         domains: [{ domain: 'udn.com', fetchedAt: '2026-10-08T00:00:00Z', monthly: [{ month: '202608', visits: 10 }] }],
       },
-      { request: async () => new Response('', { status: 403 }), delay: async () => {} },
+      { request, delay: async () => {} },
     );
     expect(result.status).toBe('blocked');
     expect(result.domains[0].monthly[0].visits).toBe(10);
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    { SiteName: 'other.example', EstimatedMonthlyVisits: { '2026-08-01': 10 } },
+    { SiteName: 'udn.com', EstimatedMonthlyVisits: { '2026-08-01': null } },
+    { SiteName: 'udn.com', EstimatedMonthlyVisits: { '2026-13-01': 10 } },
+    { SiteName: 'udn.com', EstimatedMonthlyVisits: { '2026-10-01': 10 } },
+    { SiteName: 'udn.com', EstimatedMonthlyVisits: {} },
+  ])('rejects wrong domains and invalid or missing visits', async (data) => {
+    await expect(
+      fetchDomainTraffic('udn.com', async () => new Response(JSON.stringify(data)), new Date('2026-10-09T00:00:00Z')),
+    ).rejects.toThrow();
   });
 });

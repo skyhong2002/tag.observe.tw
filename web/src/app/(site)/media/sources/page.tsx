@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
@@ -20,7 +21,7 @@ export const revalidate = 300;
 
 export default async function MediaSourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   let crawl: CrawlComparison | null = null;
-  let live: LiveTraffic | null = null;
+  let live: LiveTraffic | null = { status: 'failed', checkedAt: null, error: null, domains: [] };
   try {
     const [crawlResult, liveResult] = await Promise.allSettled([
       fetch(`${API_ORIGIN}/api/v1/media-traffic-comparison`, {
@@ -59,7 +60,27 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
           <MethodLink />
         </p>
       </header>
-      <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden, live)} initial={params} />
+      <nav aria-label="流量資料來源" className="flex gap-4 text-sm">
+        <Link
+          href="/media/sources/"
+          aria-current={params.source !== 'reference' ? 'page' : undefined}
+          className="underline underline-offset-4"
+        >
+          自動抓取
+        </Link>
+        <Link
+          href="/media/sources/?source=reference"
+          aria-current={params.source === 'reference' ? 'page' : undefined}
+          className="underline underline-offset-4"
+        >
+          整理表歷史資料
+        </Link>
+      </nav>
+      <TrafficComparison
+        key={params.source === 'reference' ? 'reference' : 'live'}
+        data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden, params.source === 'reference' ? null : live)}
+        initial={params}
+      />
     </div>
   );
 }

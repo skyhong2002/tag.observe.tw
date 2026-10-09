@@ -9,6 +9,13 @@ import { type ComparisonData, type ComparisonOutlet, collectionPoint, shortMonth
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
 type Sort = 'traffic' | 'articles' | 'name';
+const liveLabels = {
+  pending: '尚未抓取',
+  ok: '抓取完成',
+  partial: '部分網域未能更新',
+  blocked: '來源拒絕連線',
+  failed: '暫時無法取得資料',
+};
 
 function TrafficHistory({ outlet, months }: { outlet: ComparisonOutlet; months: string[] }) {
   const values = months.map((month) => outlet.traffic.find((point) => point.month === month)?.traffic ?? null);
@@ -36,9 +43,11 @@ function TrafficHistory({ outlet, months }: { outlet: ComparisonOutlet; months: 
         <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" />
         {points.map((point, index) => point && <circle key={months[index]} cx={point[0]} cy={point[1]} r="1.5" fill="currentColor" />)}
       </svg>
-      <div className="flex max-w-full gap-1 text-[10px] leading-4 text-zinc-500 dark:text-zinc-400">
+      <div className="flex max-w-full flex-wrap justify-end gap-x-2 text-[10px] leading-4 text-zinc-500 dark:text-zinc-400">
         {values.map((value, index) => (
-          <span key={months[index]}>{trafficNumber(value)}</span>
+          <span key={months[index]} className="whitespace-nowrap">
+            {months[index].slice(4)}月 {trafficNumber(value)}
+          </span>
         ))}
       </div>
       <span className="sr-only">{label}</span>
@@ -48,7 +57,7 @@ function TrafficHistory({ outlet, months }: { outlet: ComparisonOutlet; months: 
 
 export default function TrafficComparison({ data, initial }: { data: ComparisonData; initial: Record<string, string | undefined> }) {
   const [trafficMonth, setTrafficMonth] = useState(
-    data.trafficMonths.includes(initial.month ?? '') ? initial.month! : data.trafficMonths.at(-1)!,
+    data.trafficMonths.includes(initial.month ?? '') ? initial.month! : (data.trafficMonths.at(-1) ?? ''),
   );
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
   const [query, setQuery] = useState(initial.q ?? '');
@@ -56,7 +65,8 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     ['traffic', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'articles',
   );
   const [ascending, setAscending] = useState(initial.dir === 'asc');
-  const recentTrafficMonths = data.trafficMonths.slice(-3);
+  const recentTrafficMonths = data.trafficMonths.filter((month) => month <= trafficMonth).slice(-3);
+  const automatic = data.trafficSource === 'similarweb-extension';
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
@@ -71,10 +81,11 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   });
   useEffect(() => {
     const params = new URLSearchParams({ sort, dir: ascending ? 'asc' : 'desc' });
-    if (trafficMonth !== data.trafficMonths.at(-1)) params.set('month', trafficMonth);
+    if (!automatic) params.set('source', 'reference');
+    if (trafficMonth && trafficMonth !== data.trafficMonths.at(-1)) params.set('month', trafficMonth);
     if (query) params.set('q', query);
     window.history.replaceState(null, '', `/media/sources/?${params}`);
-  }, [trafficMonth, sort, ascending, query, data.trafficMonths]);
+  }, [trafficMonth, sort, ascending, query, data.trafficMonths, automatic]);
   const chooseSort = (value: Sort) => {
     setAscending(sort === value ? !ascending : value === 'name');
     setSort(value);
@@ -99,10 +110,12 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             aria-label="流量月份"
             className={control}
             value={trafficMonth}
+            disabled={!data.trafficMonths.length}
             onChange={(e) => {
               setTrafficMonth(e.target.value);
             }}
           >
+            {!data.trafficMonths.length && <option value="">尚無資料</option>}
             {data.trafficMonths.toReversed().map((month) => (
               <option key={month} value={month}>
                 {shortMonth(month)}
@@ -116,14 +129,18 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           目前無法取得本站收錄量。
         </p>
       )}
+      {automatic && (
+        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
+          每日自動更新 Similarweb 網域月訪問量估算；{data.liveTrafficStatus ? liveLabels[data.liveTrafficStatus] : '尚未抓取'}
+          {data.liveTrafficError?.match(/HTTP \d+/)?.[0] ? `（${data.liveTrafficError.match(/HTTP \d+/)?.[0]}）` : ''}。
+          {data.liveTrafficStatus && !['ok', 'pending'].includes(data.liveTrafficStatus) && '已有數值保留上次成功資料；缺資料顯示「—」。'}
+          {!data.trafficMonths.length && '目前尚未取得流量數字。'}
+        </p>
+      )}
       {recentTrafficMonths.length > 0 && (
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
           Similarweb 流量由左至右為 {recentTrafficMonths.map(shortMonth).join('、')}；
-          {data.trafficSource === 'similarweb-extension' ? '數值來自自動抓取，' : '目前使用整理表原表值，'}排序依 {shortMonth(trafficMonth)}
-          。
-          {data.liveTrafficStatus &&
-            data.liveTrafficStatus !== 'ok' &&
-            ` 自動抓取狀態：${data.liveTrafficStatus}${data.liveTrafficCheckedAt ? `（${data.liveTrafficCheckedAt.slice(0, 16).replace('T', ' ')}）` : ''}。`}
+          {automatic ? '單位為估算訪問次數，' : '單位依整理表原表值，'}排序依 {shortMonth(trafficMonth)}。
         </p>
       )}
       <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
@@ -134,7 +151,11 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                 [
                   { key: 'name', label: '媒體', sub: '' },
                   { key: 'articles', label: '本站收錄', sub: crawlMonth ? `${shortMonth(crawlMonth)} · 篇` : '篇' },
-                  { key: 'traffic', label: 'Similarweb 流量', sub: `${recentTrafficMonths.map(shortMonth).join(' · ')} · 原表值` },
+                  {
+                    key: 'traffic',
+                    label: automatic ? '估算月訪問量' : 'Similarweb 流量',
+                    sub: automatic ? '訪問次數 · 全網域' : '原表值',
+                  },
                 ] as const
               ).map(({ key, label, sub }) => (
                 <th
@@ -207,6 +228,9 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                     <div className="flex justify-end">
                       <TrafficHistory outlet={outlet} months={recentTrafficMonths} />
                     </div>
+                    {outlet.trafficFetchedAt && (
+                      <span className="block text-[10px] text-zinc-500">{outlet.trafficFetchedAt.slice(0, 10)} 更新</span>
+                    )}
                     {(point?.adjusted || point?.ambiguous) && (
                       <span className="block text-[10px] text-zinc-500">{point.adjusted ? '人工調整' : '待核對'}</span>
                     )}

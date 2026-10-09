@@ -53,6 +53,28 @@ const crawl: CrawlComparison = {
 };
 
 describe('traffic comparison publisher identity and adjustments', () => {
+  it('uses only direct visit counts and keeps missing direct domains blank', () => {
+    const second = { ...source, media: 'other-news', name: '另一媒體', websiteUrl: 'https://other.example/', referenceNames: ['另一媒體'] };
+    const snapshots = [
+      { month: '202608', sources: [row({ traffic: 30 }), row({ name: second.name, domain: 'other.example', traffic: 20 })] },
+    ];
+    const live = {
+      status: 'partial' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: 'timeout',
+      domains: [{ domain: 'local.example', fetchedAt: '2026-10-08T00:00:00Z', monthly: [{ month: '202609', visits: 120000 }] }],
+    };
+    const built = buildComparison(snapshots, [source, second], null, new Set(), live);
+    expect(built.trafficSource).toBe('similarweb-extension');
+    expect(built.trafficMonths).toEqual(['202609']);
+    expect(built.outlets.find((o) => o.media === source.media)?.traffic[0].traffic).toBe(120000);
+    expect(built.outlets.find((o) => o.media === second.media)?.traffic).toEqual([]);
+    const blocked = buildComparison(snapshots, [source, second], null, new Set(), { ...live, status: 'blocked' });
+    expect(blocked.outlets.find((o) => o.media === source.media)?.traffic[0].traffic).toBe(120000);
+    const empty = buildComparison(snapshots, [source], null, new Set(), { ...live, domains: [] });
+    expect(empty.trafficMonths).toEqual([]);
+    expect(empty.outlets.every((o) => o.traffic.length === 0)).toBe(true);
+  });
   it('deduplicates real catalog parent/channel rows using the named primary without summing their traffic', () => {
     const latest = traffic.snapshots.find((snapshot) => snapshot.month === '202608')!;
     const built = buildComparison([latest], catalog.sources, null);
