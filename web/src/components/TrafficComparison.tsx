@@ -118,7 +118,12 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
       )}
       {recentTrafficMonths.length > 0 && (
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-          Similarweb 流量由左至右為 {recentTrafficMonths.map(shortMonth).join('、')}；數值是原表估算值，排序依 {shortMonth(trafficMonth)}。
+          Similarweb 流量由左至右為 {recentTrafficMonths.map(shortMonth).join('、')}；
+          {data.trafficSource === 'similarweb-extension' ? '數值來自自動抓取，' : '目前使用整理表原表值，'}排序依 {shortMonth(trafficMonth)}
+          。
+          {data.liveTrafficStatus &&
+            data.liveTrafficStatus !== 'ok' &&
+            ` 自動抓取狀態：${data.liveTrafficStatus}${data.liveTrafficCheckedAt ? `（${data.liveTrafficCheckedAt.slice(0, 16).replace('T', ' ')}）` : ''}。`}
         </p>
       )}
       <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">

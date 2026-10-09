@@ -1827,6 +1827,28 @@ export const ENDPOINTS: Endpoint[] = [
     }),
   },
   {
+    path: '/api/v1/media-traffic-live',
+    tag: 'media',
+    summary: 'Similarweb 自動抓取流量狀態',
+    description:
+      '讀取 worker 最近一次從 Similarweb 外掛公開端點抓取的 EstimatedMonthlyVisits。被拒絕或失敗時保留最後成功的網域快照，status 可為 blocked、failed 或 partial；本端點不把缺值補成 0。',
+    response: obj({
+      version: int('資料格式版本'),
+      source: str('抓取來源', { enum: ['similarweb-extension'] }),
+      checkedAt: nullable(time('最近一次批次檢查時間')),
+      status: str('批次狀態', { enum: ['pending', 'ok', 'partial', 'blocked', 'failed'] }),
+      error: nullable(str('最近一次錯誤摘要')),
+      domains: arr(
+        obj({
+          domain: str('網域'),
+          fetchedAt: time('該網域最近成功抓取時間'),
+          monthly: arr(obj({ month: str('月份 YYYYMM'), visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量') })),
+        }),
+      ),
+    }),
+    cache: '1 分鐘',
+  },
+  {
     path: '/api/v1/liveboard',
     tag: 'articles',
     summary: '即時看板輪詢：新文章、相似報導組與發稿量',

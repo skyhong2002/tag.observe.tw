@@ -70,9 +70,9 @@ export function MediaSourcesMethod({ retrievedAt, camp = true }: { retrievedAt?:
       <h3 className={methodHeading}>Similar Web：流量與收錄比較</h3>
       <p>
         這一頁把各家媒體的本站收錄篇數與 Similarweb 流量並列，表格每列直接呈現最近三個可取得月份。Similarweb 資料來自 Gene Hong
-        維護的人工整理表（頁首的「原始流量表單」）
+        維護的人工整理表（頁首的「原始流量表單」）或每日自動抓取的 Similarweb `EstimatedMonthlyVisits`
         {retrievedAt ? `，匯入日期 ${retrievedAt.slice(0, 10)}` : ''}
-        。新聞欄的單位未明示，這是 Similarweb 的估算流量／訪問量原表值，不是本站或媒體後台的精確 page
+        。新聞欄的單位未明示，這是 Similarweb 的估算流量／訪問量，不是本站或媒體後台的精確 page
         views，也不推算造訪人數。人工調整過的數值另行標示（「人工調整」，滑鼠停留可看原表值）；同一媒體有多列流量、無法判定主來源時標「待核對」；缺值不補零，顯示「—」。品牌全站與新聞子頻道可能重疊，每家媒體採主來源，不相加，也不推算全台市占。
       </p>
       <p>

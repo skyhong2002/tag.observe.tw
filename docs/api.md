@@ -102,6 +102,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media/{media}`](#api-v1-media-media) | 單一媒體最近的文章與熱門標籤 |
 | [`GET /api/v1/media-traffic-comparison`](#api-v1-media-traffic-comparison) | 本站爬蟲跨月收錄量 |
 | [`GET /api/v1/media-stats`](#api-v1-media-stats) | 各媒體收錄量與爬蟲狀態 |
+| [`GET /api/v1/media-traffic-live`](#api-v1-media-traffic-live) | Similarweb 自動抓取流量狀態 |
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 
 ## API 本身
@@ -2656,6 +2657,60 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].topics.rulesUrl` | string | GitHub 上該媒體議題爬蟲規則的位置 |
 
 ## 封存索引與授權取回
+
+<a id="api-v1-media-traffic-live"></a>
+
+### `GET /api/v1/media-traffic-live`
+
+**Similarweb 自動抓取流量狀態**
+
+讀取 worker 最近一次從 Similarweb 外掛公開端點抓取的 EstimatedMonthlyVisits。被拒絕或失敗時保留最後成功的網域快照，status 可為 blocked、failed 或 partial；本端點不把缺值補成 0。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `version` | integer | 資料格式版本 |
+| `source` | "similarweb-extension" | 抓取來源 |
+| `checkedAt` | string (ISO 時間) \| null | 最近一次批次檢查時間 |
+| `status` | "pending" \| "ok" \| "partial" \| "blocked" \| "failed" | 批次狀態 |
+| `error` | string \| null | 最近一次錯誤摘要 |
+| `domains` | object[] |  |
+| `domains[].domain` | string | 網域 |
+| `domains[].fetchedAt` | string (ISO 時間) | 該網域最近成功抓取時間 |
+| `domains[].monthly` | object[] |  |
+| `domains[].monthly[].month` | string | 月份 YYYYMM |
+| `domains[].monthly[].visits` | number | Similarweb EstimatedMonthlyVisits 估算訪問量 |
+
+快取：1 分鐘。
+
+## 舊站 API 對照
+
+舊站 tag.analysis.tw 的 `/api/*.php` 是舊網頁自己用的 AJAX 端點，從未公開文件化；新站不再提供，呼叫會回 `410 Gone`，JSON 的 `replacement` 欄位指向下表的替代端點（舊 API 仍在舊網域運作）。
+
+| 舊端點 | 替代 |
+| --- | --- |
+| `/api/tag.php` | `/api/v1/ranking` |
+| `/api/tag_burst.php` | `/api/v1/ranking?order=burst` |
+| `/api/show_index.php` | `/api/v1/ranking?order=score` |
+| `/api/show_history.php` | `/api/v1/tags/{tag}/series` |
+| `/api/social.php` | 已淘汰（資料來源已不存在） |
+| `/api/social_rank.php` | 已淘汰（資料來源已不存在） |
+| `/api/news.php` | `/api/v1/media/{media}` |
+| `/api/news_data.php` | `/api/v1/tags/{tag}/articles` |
+| `/api/media.php` | `/api/v1/media` |
+| `/api/favicon.php` | `/api/v1/media` |
+| `/api/events.php` | `/api/v1/events` |
+| `/api/group.php` | 已淘汰（資料來源已不存在） |
+| `/api/youtube.php` | 已淘汰（資料來源已不存在） |
+| `/api/facebook_id.php` | 已淘汰（資料來源已不存在） |
+| `/api/queue.php` | 已淘汰（資料來源已不存在） |
 
 <a id="api-v1-nearline-archives"></a>
 

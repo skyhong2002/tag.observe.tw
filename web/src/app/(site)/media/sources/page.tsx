@@ -3,7 +3,7 @@ import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
 import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
-import { buildComparison, type CrawlComparison } from '@/lib/traffic-comparison.mts';
+import { buildComparison, type CrawlComparison, type LiveTraffic } from '@/lib/traffic-comparison.mts';
 import disabled from '../../../../../../app/data/crawl-disabled.json';
 import traffic from '../../../../../../app/data/media-traffic.json';
 import catalog from '../../../../../../app/data/news-source-catalog.json';
@@ -20,12 +20,20 @@ export const revalidate = 300;
 
 export default async function MediaSourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   let crawl: CrawlComparison | null = null;
+  let live: LiveTraffic | null = null;
   try {
-    const response = await fetch(`${API_ORIGIN}/api/v1/media-traffic-comparison`, {
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (response.ok) crawl = await response.json();
+    const [crawlResult, liveResult] = await Promise.allSettled([
+      fetch(`${API_ORIGIN}/api/v1/media-traffic-comparison`, {
+        next: { revalidate: 300 },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch(`${API_ORIGIN}/api/v1/media-traffic-live`, {
+        next: { revalidate: 60 },
+        signal: AbortSignal.timeout(8000),
+      }),
+    ]);
+    if (crawlResult.status === 'fulfilled' && crawlResult.value.ok) crawl = await crawlResult.value.json();
+    if (liveResult.status === 'fulfilled' && liveResult.value.ok) live = await liveResult.value.json();
   } catch {
     /* Traffic history remains readable when collection statistics are unavailable. */
   }
@@ -51,7 +59,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
           <MethodLink />
         </p>
       </header>
-      <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden)} initial={params} />
+      <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden, live)} initial={params} />
     </div>
   );
 }

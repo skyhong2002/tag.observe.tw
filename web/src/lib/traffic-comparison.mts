@@ -20,6 +20,12 @@ export interface TrafficPoint {
   adjusted: boolean;
   ambiguous: boolean;
 }
+export interface LiveTraffic {
+  status: 'pending' | 'ok' | 'partial' | 'blocked' | 'failed';
+  checkedAt: string | null;
+  error: string | null;
+  domains: Array<{ domain: string; fetchedAt: string; monthly: Array<{ month: string; visits: number }> }>;
+}
 export interface ComparisonOutlet {
   key: string;
   media: string | null;
@@ -37,6 +43,9 @@ export interface ComparisonData {
   outlets: ComparisonOutlet[];
   collectionStartedAt: string | null;
   generatedAt: string | null;
+  trafficSource: 'reference-sheet' | 'similarweb-extension';
+  liveTrafficStatus: LiveTraffic['status'] | null;
+  liveTrafficCheckedAt: string | null;
 }
 const identity = (s: string) => s.replace(/\s/g, '').toLowerCase();
 export const shortMonth = (month: string) => `${month.slice(0, 4)}/${month.slice(4)}`;
@@ -58,6 +67,7 @@ export function buildComparison(
   crawl: CrawlComparison | null,
   /** Outlets removed from the site on request; their spreadsheet rows are dropped too. */
   hidden: ReadonlySet<string> = new Set(),
+  live: LiveTraffic | null = null,
 ): ComparisonData {
   const outlets = new Map<string, ComparisonOutlet>();
   const collected = new Map(crawl?.media.map((m) => [m.media, m]) ?? []);
@@ -119,7 +129,28 @@ export function buildComparison(
     const website = safeWebsiteUrl(source?.websiteUrl) ?? safeWebsiteUrl(mediaNames[outlet.media]?.sourceUrl);
     outlet.domain = website ? new URL(website).hostname.replace(/^www\./, '') : null;
   }
-  const trafficMonths = snapshots.map((s) => s.month).sort();
+  const liveByDomain = new Map(live?.domains.map((row) => [row.domain, row]) ?? []);
+  const useLive = !!live && ['ok', 'partial'].includes(live.status) && liveByDomain.size > 0;
+  if (useLive) {
+    for (const outlet of outlets.values()) {
+      const current = outlet.domain ? liveByDomain.get(outlet.domain) : undefined;
+      if (current)
+        outlet.traffic = current.monthly.map((point) => ({
+          month: point.month,
+          traffic: point.visits,
+          rawTraffic: point.visits,
+          growth: null,
+          adjusted: false,
+          ambiguous: false,
+        }));
+    }
+  }
+  const trafficMonths = [
+    ...new Set([
+      ...snapshots.map((s) => s.month),
+      ...(useLive ? [...liveByDomain.values()].flatMap((r) => r.monthly.map((p) => p.month)) : []),
+    ]),
+  ].sort();
   return {
     months: [...new Set([...trafficMonths, ...(crawl?.months ?? [])])].sort(),
     trafficMonths,
@@ -127,6 +158,9 @@ export function buildComparison(
     outlets: [...outlets.values()].filter((outlet) => !outlet.media || !hidden.has(outlet.media)),
     collectionStartedAt: crawl?.collectionStartedAt ?? null,
     generatedAt: crawl?.generatedAt ?? null,
+    trafficSource: useLive ? 'similarweb-extension' : 'reference-sheet',
+    liveTrafficStatus: live?.status ?? null,
+    liveTrafficCheckedAt: live?.checkedAt ?? null,
   };
 }
 

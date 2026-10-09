@@ -8,6 +8,7 @@ import { runAnalyticsJob, runRealtimeJob } from './jobs/analytics-job.ts';
 import { runCrawlHealthJob } from './jobs/crawl-health-job.ts';
 import { crawlArticles, crawlGroup } from './jobs/crawl-job.ts';
 import { runEventsJob } from './jobs/events-job.ts';
+import { runMediaTrafficJob } from './jobs/media-traffic-job.ts';
 import { runProbeJob } from './jobs/probe-job.ts';
 import { runRankingJob } from './jobs/ranking-job.ts';
 import { runRetentionJob } from './jobs/retention-job.ts';
@@ -86,6 +87,11 @@ await queue.upsertJobScheduler(
   { every: 15 * 60e3 },
   { name: 'crawl-health', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+await queue.upsertJobScheduler(
+  'media-traffic-daily',
+  { pattern: process.env.MEDIA_TRAFFIC_CRON || '35 3 * * *' },
+  { name: 'media-traffic', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
 
 await queue.upsertJobScheduler(
   'retention-daily',
@@ -125,6 +131,7 @@ for (const job of [
   'analytics',
   'analytics-live',
   'crawl-health',
+  'media-traffic',
   'topics',
   'tag-stats',
   'similarity',
@@ -180,6 +187,11 @@ const worker = new Worker(
         return r;
       }
       if (job.name === 'crawl-health') return runCrawlHealthJob(db, { log: (o, m) => log.info(o, m) });
+      if (job.name === 'media-traffic') {
+        const r = await runMediaTrafficJob();
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
       if (job.name === 'topics') {
         const r = await runTopicsJob(db, { log: (o, m) => log.info(o, m) });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
