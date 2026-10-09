@@ -16,6 +16,7 @@ import uuid
 DOCKER = '/home/deck/.local/bin/docker'
 RCLONE = '/home/deck/.local/bin/rclone'
 GIB = 1024 ** 3
+RESERVE = 25 * GIB
 
 
 def run(args, **kwargs):
@@ -42,6 +43,51 @@ def source_sql(query):
                env=env, capture_output=True, text=True, timeout=60).stdout
 
 
+def source_storage_bytes(metadata_bytes):
+    # InnoDB statistics may underestimate allocated tablespaces. Measure the
+    # source too; neither number is treated as an exact restore size.
+    output = run([DOCKER, 'exec', 'tag-db', 'du', '-s', '-B1', '/var/lib/mysql/tag_observe'],
+                 capture_output=True, text=True, timeout=60).stdout
+    allocated = int(output.split()[0])
+    if allocated <= 0:
+        raise RuntimeError('Source storage measurement unavailable')
+    return max(metadata_bytes, allocated)
+
+
+def restore_required(storage_bytes):
+    return (storage_bytes * 115 + 99) // 100 + RESERVE
+
+
+def stop_process(process):
+    if process.poll() is None:
+        process.terminate()
+        try:
+            process.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=30)
+
+
+def wait_pipeline(processes, directory, *, timeout=12 * 3600):
+    """Keep production SSD headroom while long export/restore processes run."""
+    started = time.monotonic()
+    try:
+        while True:
+            codes = [process.poll() for process in processes]
+            if any(code not in (None, 0) for code in codes):
+                raise RuntimeError('Backup stream process failed')
+            if shutil.disk_usage(directory).free < RESERVE:
+                raise RuntimeError('Backup stopped below 25 GiB SSD reserve; existing backups preserved')
+            if all(code == 0 for code in codes):
+                return
+            if time.monotonic() - started > timeout:
+                raise RuntimeError('Backup stream exceeded time budget')
+            time.sleep(5)
+    finally:
+        for process in processes:
+            stop_process(process)
+
+
 def schema_signature():
     # Detect concurrent DDL without confusing normal row/index-statistic changes with DDL.
     tables = source_sql("SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE() ORDER BY TABLE_NAME").splitlines()
@@ -61,10 +107,7 @@ def export_database(path):
         try:
             compressed = subprocess.Popen(['zstd', '-T2', '-q'], stdin=dump.stdout, stdout=output)
             dump.stdout.close()
-            compression_code = compressed.wait()
-            dump_code = dump.wait()
-            if compression_code or dump_code:
-                raise RuntimeError('Logical export or compression failed')
+            wait_pipeline([compressed, dump], path.parent)
         finally:
             if dump.poll() is None:
                 dump.terminate()
@@ -82,7 +125,8 @@ def restore_drill(path, expected_tables):
         run([DOCKER, 'run', '-d', '--name', name, '--network', 'none', '--memory=2g', '--cpus=2',
              '-e', 'MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1', '-e', 'MARIADB_DATABASE=restore_check',
              'mariadb:11.4', '--skip-networking', '--event-scheduler=OFF', '--local-infile=0',
-             '--innodb-buffer-pool-size=1G'], capture_output=True)
+             '--innodb-buffer-pool-size=1G', '--innodb-log-file-size=1G',
+             '--innodb-flush-log-at-trx-commit=2', '--innodb-doublewrite=OFF'], capture_output=True)
         ready = False
         for _ in range(90):
             result = subprocess.run([DOCKER, 'exec', name, 'mariadb', '-uroot', 'restore_check', '-N', '-e', 'SELECT 1'],
@@ -98,10 +142,9 @@ def restore_drill(path, expected_tables):
             raise RuntimeError('Isolated restore database did not initialize')
         decompress = subprocess.Popen(['zstd', '-dc', str(path)], stdout=subprocess.PIPE)
         try:
-            run([DOCKER, 'exec', '-i', name, 'mariadb', '-uroot', '--binary-mode', 'restore_check'], stdin=decompress.stdout)
+            restore = subprocess.Popen([DOCKER, 'exec', '-i', name, 'mariadb', '-uroot', '--binary-mode', 'restore_check'], stdin=decompress.stdout)
             decompress.stdout.close()
-            if decompress.wait() != 0:
-                raise RuntimeError('Restore decompression failed')
+            wait_pipeline([restore, decompress], path.parent)
         finally:
             if decompress.poll() is None:
                 decompress.terminate()
@@ -175,7 +218,7 @@ def publish_restored(path, report_path, report, nas):
     return report
 
 
-def resume_backup(dest, report_path, nas):
+def resume_backup(dest, report_path, nas, *, trim_docker=False, reclaim_verified=False):
     dest, report_path = dest.resolve(), report_path.resolve()
     if report_path.parent != dest:
         raise ValueError('Resume receipt must be in the configured backup directory')
@@ -189,7 +232,21 @@ def resume_backup(dest, report_path, nas):
         if not re.fullmatch(r'\d{8}T\d{6}Z-[0-9a-f]{8}', report.get('backup_id', '')):
             raise ValueError('Invalid backup ID')
         try:
-            return publish_restored(path, report_path, report, nas)
+            if report.get('restore', {}).get('status') != 'passed':
+                if (report.get('export_status') != 'passed' or not isinstance(report.get('tables'), list)
+                        or not report['tables'] or path.stat().st_size != report.get('bytes')
+                        or digest(path) != report.get('sha256')):
+                    raise RuntimeError('A verified export receipt is required before resuming restore')
+                required = restore_required(report['source_storage_bytes'])
+                if shutil.disk_usage(dest).free < required:
+                    raise RuntimeError('Insufficient local space for isolated restore; exported backup preserved')
+                report.update(status='restoring', restore_started_at=dt.datetime.now(dt.timezone.utc).isoformat())
+                atomic_json(report_path, report)
+                report['restore'] = restore_drill(path, report['tables'])
+                atomic_json(report_path, report)
+            result = publish_restored(path, report_path, report, nas)
+            finish_capacity(dest, nas, result, trim_docker=trim_docker, reclaim_verified=reclaim_verified)
+            return result
         except Exception as error:
             report.update(status='failed', error=str(error))
             atomic_json(report_path, report)
@@ -269,6 +326,27 @@ def reclaim_for_capacity(dest, nas, required, report_path, report):
         atomic_json(report_path, report)
 
 
+def finish_capacity(dest, nas, report, *, trim_docker=False, reclaim_verified=False):
+    # Keep the published backup receipt immutable. A separate maintenance
+    # receipt records local expiry, so future remote receipt equality holds.
+    path = dest / ('capacity-after-' + report['backup_id'] + '.json')
+    maintenance = {'backup_id': report['backup_id'], 'status': 'running'}
+    try:
+        if trim_docker:
+            maintenance['docker_trim'] = trim_docker_storage()
+        required = restore_required(report.get('source_storage_bytes', 0)) + (report['bytes'] * 5 + 3) // 4
+        maintenance['required_for_next_backup'] = required
+        if reclaim_verified and report.get('source_storage_bytes'):
+            reclaim_for_capacity(dest, nas, required, path, maintenance)
+        maintenance.update(status='complete', free_bytes=shutil.disk_usage(dest).free)
+    except Exception:
+        # The full backup remains valid; expose failed maintenance separately.
+        maintenance['status'] = 'failed'
+        maintenance['error'] = 'Capacity maintenance failed; local copies preserved where unverified'
+    atomic_json(path, maintenance)
+    print(json.dumps({'capacity_maintenance': maintenance}), flush=True)
+
+
 def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
     dest.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (dest / '.backup.lock').open('a') as lock:
@@ -280,8 +358,12 @@ def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
         atomic_json(report_path, report)
         try:
             size = int(source_sql('SELECT COALESCE(SUM(DATA_LENGTH+INDEX_LENGTH),0) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()').strip())
-            required = size * 1.5 + 25 * GIB
-            report['required_free_bytes'] = int(required)
+            # Export and restore are separate phases. The compressed dump is
+            # already charged against free space before the restore check.
+            storage = source_storage_bytes(size)
+            required = size // 2 + RESERVE
+            report.update(capacity_policy='measured-phases-v1', source_storage_bytes=storage,
+                          required_free_bytes=required, restore_required_free_bytes=restore_required(storage))
             if trim_docker and shutil.disk_usage(dest).free < required:
                 report['docker_trim'] = trim_docker_storage()
                 atomic_json(report_path, report)
@@ -298,10 +380,24 @@ def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
             export_database(path)
             if schema_signature() != (tables, schema_hash):
                 raise RuntimeError('Source schema changed during export; retry without concurrent DDL')
-            report.update(file=path.name, bytes=path.stat().st_size, sha256=digest(path), schema_sha256=schema_hash)
+            report.update(file=path.name, bytes=path.stat().st_size, sha256=digest(path), schema_sha256=schema_hash,
+                          tables=tables, export_status='passed', status='exported')
+            atomic_json(report_path, report)
+            required = restore_required(storage)
+            if trim_docker and shutil.disk_usage(dest).free < required:
+                report['docker_trim_before_restore'] = trim_docker_storage()
+            if reclaim_verified and shutil.disk_usage(dest).free < required:
+                reclaim_for_capacity(dest, nas, required, report_path, report)
+            report['free_bytes_before_restore'] = shutil.disk_usage(dest).free
+            if report['free_bytes_before_restore'] < required:
+                raise RuntimeError('Insufficient local space for isolated restore; exported backup preserved')
+            report.update(status='restoring', restore_started_at=dt.datetime.now(dt.timezone.utc).isoformat())
             atomic_json(report_path, report)
             report['restore'] = restore_drill(path, tables)
-            return publish_restored(path, report_path, report, nas)
+            atomic_json(report_path, report)
+            result = publish_restored(path, report_path, report, nas)
+            finish_capacity(dest, nas, result, trim_docker=trim_docker, reclaim_verified=reclaim_verified)
+            return result
         except Exception as error:
             report.update(status='failed', error=str(error))
             atomic_json(report_path, report)
@@ -322,12 +418,12 @@ def main():
         raise RuntimeError('docker, rclone and zstd must be installed before starting a backup')
     dest, nas = Path(args.dest), Nas(args.remote, args.rclone_config)
     if args.resume:
-        resume_backup(dest, Path(args.resume), nas)
+        resume_backup(dest, Path(args.resume), nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure)
     else:
         for receipt in sorted(dest.glob('tag_observe-*.manifest.json')):
             old = json.loads(receipt.read_text())
-            if old.get('status') in ('failed', 'publishing') and old.get('restore', {}).get('status') == 'passed':
-                resume_backup(dest, receipt, nas)
+            if old.get('status') in ('failed', 'publishing', 'exported', 'restoring') and (old.get('restore', {}).get('status') == 'passed' or old.get('export_status') == 'passed'):
+                resume_backup(dest, receipt, nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure)
         backup(dest, nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure)
 
 

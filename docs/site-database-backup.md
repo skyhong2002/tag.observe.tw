@@ -24,3 +24,12 @@ python3 tools/nearline/backup-site.py --resume /home/deck/tag-analysis-private/b
 ```
 
 工作啟動前確認 docker、rclone、zstd 存在。rclone 使用明確安裝路徑；systemd unit 亦設定工具 PATH，避免登入 shell 與排程環境不同。
+
+
+## 容量壓力下的完整備份
+
+2026-10-09 改成分階段容量檢查。先量 MariaDB data+index 與正式 tablespace 實占；匯出前保留估計匯出空間及 25 GiB。壓縮檔完成後，它已計入 SSD 使用量，再檢查隔離還原所需空間：來源實占與 metadata 較大者 × 1.15 + 25 GiB。匯出與還原期間每五秒檢查 SSD，低於 25 GiB 即中止暫存工作，不犧牲正式 DB 空間。這不取消完整還原，也不僅靠調低舊的一次性估算。
+
+成功匯出但空間不足的 dump 保留 SHA、表名與來源空間證據。下次從同一份 dump 接續還原，不再製造另一份大檔。隔離容器使用較大的 redo log 與批次寫入設定以降低演練成本；只作用於無網路的拋棄式容器，正式 MariaDB 設定不變。
+
+成功上傳、還原及 NAS 讀回後，可在容量壓力下回收前一份本機已驗證副本，保留最新成功 dump。匿名還原 volume 移除後執行授權的 Docker trim，讓區塊回到 SSD。容量維護另寫 `capacity-after-<backup_id>.json`，不修改已發布 manifest，避免後續 receipt 比對失敗。維護失敗與完整備份成功分開記錄。

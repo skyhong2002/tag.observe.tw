@@ -99,17 +99,17 @@ class BackupTests(unittest.TestCase):
     def test_insufficient_capacity_after_trim_and_reclaim_never_exports(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, nas = Path(tmp), Mock(remote='nas:test')
-            with patch.object(module, 'source_sql', return_value='1000'), patch.object(module.shutil, 'disk_usage', return_value=Mock(free=0)), patch.object(module, 'trim_docker_storage', return_value={'output': 'trimmed'}) as trim, patch.object(module, 'export_database') as export:
+            with patch.object(module, 'source_sql', return_value='1000'), patch.object(module, 'source_storage_bytes', return_value=1000), patch.object(module.shutil, 'disk_usage', return_value=Mock(free=0)), patch.object(module, 'trim_docker_storage', return_value={'output': 'trimmed'}) as trim, patch.object(module, 'export_database') as export:
                 with self.assertRaisesRegex(RuntimeError, 'Insufficient local space'):
                     module.backup(root, nas, trim_docker=True, reclaim_verified=True)
                 trim.assert_called_once()
                 export.assert_not_called()
             report = json.loads(next(root.glob('*.manifest.json')).read_text())
             self.assertEqual(report['status'], 'failed')
-            self.assertEqual(report['required_free_bytes'], 1500 + 25 * module.GIB)
+            self.assertEqual(report['required_free_bytes'], 500 + 25 * module.GIB)
 
     def exercise(self, root, nas, restore):
-        with patch.object(module, 'source_sql', side_effect=['1000', '']), patch.object(module, 'schema_signature', return_value=(['articles'], 'schema')), patch.object(module.shutil, 'disk_usage', return_value=Mock(free=100*module.GIB)), patch.object(module, 'export_database', side_effect=lambda p: p.write_bytes(b'archive')), patch.object(module, 'restore_drill', restore):
+        with patch.object(module, 'source_sql', side_effect=['1000', '']), patch.object(module, 'source_storage_bytes', return_value=1000), patch.object(module, 'schema_signature', return_value=(['articles'], 'schema')), patch.object(module.shutil, 'disk_usage', return_value=Mock(free=100*module.GIB)), patch.object(module, 'export_database', side_effect=lambda p: p.write_bytes(b'archive')), patch.object(module, 'restore_drill', restore):
             return module.backup(root, nas)
 
     def test_failed_restore_preserves_files_and_never_publishes_success(self):
@@ -166,3 +166,33 @@ class BackupTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'changed since restore'):
                 module.resume_backup(root, receipt, nas)
             nas.publish.assert_not_called()
+
+
+class PhaseCapacityTests(unittest.TestCase):
+    def test_export_success_without_restore_capacity_preserves_dump_and_can_resume(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, nas = Path(tmp), Mock(remote='nas:test')
+            nas.command.return_value = Mock(stdout=json.dumps({'free': 200*module.GIB}))
+            nas.publish.side_effect = lambda p, relative: 'nas:test/' + relative
+            with patch.object(module, 'source_sql', side_effect=['1000', '']), patch.object(module, 'source_storage_bytes', return_value=80*module.GIB), patch.object(module, 'schema_signature', return_value=(['articles'], 'schema')), patch.object(module.shutil, 'disk_usage', return_value=Mock(free=60*module.GIB)), patch.object(module, 'export_database', side_effect=lambda p:p.write_bytes(b'archive')), patch.object(module, 'restore_drill') as restore:
+                with self.assertRaisesRegex(RuntimeError, 'isolated restore'):
+                    module.backup(root,nas)
+                restore.assert_not_called()
+                nas.publish.assert_not_called()
+            receipt = next(root.glob('*.manifest.json'))
+            self.assertEqual(json.loads(receipt.read_text())['export_status'],'passed')
+            with patch.object(module.shutil, 'disk_usage', return_value=Mock(free=150*module.GIB)), patch.object(module, 'restore_drill', return_value={'status':'passed'}) as restore, patch.object(module, 'export_database') as export:
+                result=module.resume_backup(root,receipt,nas)
+                self.assertEqual(result['status'],'verified')
+                restore.assert_called_once()
+                export.assert_not_called()
+
+    def test_space_loss_stops_stream_processes(self):
+        process=Mock(); process.poll.return_value=None
+        with patch.object(module.shutil,'disk_usage',return_value=Mock(free=module.RESERVE-1)):
+            with self.assertRaisesRegex(RuntimeError,'25 GiB SSD reserve'):
+                module.wait_pipeline([process],Path('/unused'))
+        process.terminate.assert_called_once()
+
+    def test_restore_estimate_keeps_all_headroom(self):
+        self.assertEqual(module.restore_required(80*module.GIB),92*module.GIB+25*module.GIB)
