@@ -1,5 +1,6 @@
 // Read-only DB adapters for the unified nearline metadata index.
 import { mkdir, open, rename, rm } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -103,7 +104,9 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+// The operations release is reached through a `current` symlink. Compare
+// real paths so the CLI still runs when invoked through that stable path.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(resolve(process.argv[1]))).href) {
   main().catch(() => {
     // DB errors can include credentials/SQL values; operator output stays bounded.
     console.error('Nearline metadata export failed. Check DB configuration and source receipts.');
