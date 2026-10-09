@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { isExcludedJournalist, setRequestedExclusions } from './names.ts';
-import { fetchRemovalRequests, parseRemovalRequests, requestedName, startRemovalRequestSync } from './removal-requests.ts';
+import {
+  fetchRemovalRequests,
+  parseRemovalRequests,
+  RESOLUTION_COMMENT,
+  requestedName,
+  resolveRemovalIssue,
+  startRemovalRequestSync,
+} from './removal-requests.ts';
 
 describe('removal requests', () => {
   it('reads the name from the pre-filled title with either colon', () => {
@@ -67,5 +74,42 @@ describe('removal requests', () => {
     expect(isExcludedJournalist('保留者')).toBe(true);
     expect(warnings).toHaveLength(1);
     setRequestedExclusions([]);
+  });
+
+  it('comments and closes an open request without duplicating an existing acknowledgement', async () => {
+    const previousToken = process.env.GITHUB_TOKEN;
+    const previousAutoResolve = process.env.JOURNALIST_REMOVAL_AUTO_RESOLVE;
+    process.env.GITHUB_TOKEN = 'test-token';
+    process.env.JOURNALIST_REMOVAL_AUTO_RESOLVE = '1';
+    const calls: Array<{ url: string; method: string; body?: string }> = [];
+    let acknowledged = false;
+    const fetchImpl = async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, method: init.method ?? 'GET', body: typeof init.body === 'string' ? init.body : undefined });
+      if (init.method === 'POST') {
+        acknowledged = true;
+        return { status: 201, json: async () => ({}) };
+      }
+      if (init.method === 'PATCH') return { status: 200, json: async () => ({}) };
+      return { status: 200, json: async () => (acknowledged ? [{ body: RESOLUTION_COMMENT }] : []) };
+    };
+    const issue = {
+      number: 3,
+      state: 'open',
+      title: '記者頁移除請求：測試記者',
+      labels: [],
+      comments_url: 'https://api.github.com/repos/skyhong2002/tag.observe.tw/issues/3/comments',
+      url: 'https://api.github.com/repos/skyhong2002/tag.observe.tw/issues/3',
+    };
+    await expect(resolveRemovalIssue(issue, fetchImpl)).resolves.toBe(true);
+    expect(calls.map(({ method }) => method)).toEqual(['GET', 'POST', 'PATCH']);
+    expect(JSON.parse(calls[1].body ?? '{}')).toEqual({ body: RESOLUTION_COMMENT });
+    const firstCallCount = calls.length;
+    issue.state = 'open';
+    await expect(resolveRemovalIssue(issue, fetchImpl)).resolves.toBe(true);
+    expect(calls.slice(firstCallCount).map(({ method }) => method)).toEqual(['GET', 'PATCH']);
+    if (previousToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = previousToken;
+    if (previousAutoResolve === undefined) delete process.env.JOURNALIST_REMOVAL_AUTO_RESOLVE;
+    else process.env.JOURNALIST_REMOVAL_AUTO_RESOLVE = previousAutoResolve;
   });
 });
