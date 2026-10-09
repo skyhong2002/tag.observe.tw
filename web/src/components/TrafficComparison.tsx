@@ -10,6 +10,42 @@ import { type ComparisonData, type ComparisonOutlet, collectionPoint, shortMonth
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
 type Sort = 'traffic' | 'articles' | 'name';
 
+function TrafficHistory({ outlet, months }: { outlet: ComparisonOutlet; months: string[] }) {
+  const values = months.map((month) => outlet.traffic.find((point) => point.month === month)?.traffic ?? null);
+  const known = values.filter((value): value is number => value !== null);
+  if (!known.length) return <span className="text-zinc-500">—</span>;
+  const min = Math.min(...known);
+  const span = Math.max(...known) - min || 1;
+  const points = values.map((value, index) =>
+    value === null ? null : [3 + (index * 42) / Math.max(1, values.length - 1), 17 - ((value - min) / span) * 12],
+  );
+  let path = '';
+  let gap = true;
+  for (const point of points) {
+    if (!point) {
+      gap = true;
+      continue;
+    }
+    path += `${gap ? 'M' : 'L'}${point[0]},${point[1]} `;
+    gap = false;
+  }
+  const label = months.map((month, index) => `${shortMonth(month)}：${trafficNumber(values[index])}`).join('；');
+  return (
+    <div className="flex min-w-0 flex-col items-end gap-0.5" title={label}>
+      <svg viewBox="0 0 48 20" className="h-5 w-12 text-brand-600 dark:text-brand-400" role="img" aria-label={`近三月流量：${label}`}>
+        <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" />
+        {points.map((point, index) => point && <circle key={months[index]} cx={point[0]} cy={point[1]} r="1.5" fill="currentColor" />)}
+      </svg>
+      <div className="flex max-w-full gap-1 text-[10px] leading-4 text-zinc-500 dark:text-zinc-400">
+        {values.map((value, index) => (
+          <span key={months[index]}>{trafficNumber(value)}</span>
+        ))}
+      </div>
+      <span className="sr-only">{label}</span>
+    </div>
+  );
+}
+
 export default function TrafficComparison({ data, initial }: { data: ComparisonData; initial: Record<string, string | undefined> }) {
   const [trafficMonth, setTrafficMonth] = useState(
     data.trafficMonths.includes(initial.month ?? '') ? initial.month! : data.trafficMonths.at(-1)!,
@@ -20,6 +56,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     ['traffic', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'articles',
   );
   const [ascending, setAscending] = useState(initial.dir === 'asc');
+  const recentTrafficMonths = data.trafficMonths.slice(-3);
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
@@ -79,6 +116,11 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           目前無法取得本站收錄量。
         </p>
       )}
+      {recentTrafficMonths.length > 0 && (
+        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
+          Similarweb 流量由左至右為 {recentTrafficMonths.map(shortMonth).join('、')}；數值是原表估算值，排序依 {shortMonth(trafficMonth)}。
+        </p>
+      )}
       <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
         <table className="w-full table-fixed text-sm tabular-nums">
           <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
@@ -87,7 +129,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                 [
                   { key: 'name', label: '媒體', sub: '' },
                   { key: 'articles', label: '本站收錄', sub: crawlMonth ? `${shortMonth(crawlMonth)} · 篇` : '篇' },
-                  { key: 'traffic', label: 'Similarweb', sub: `${shortMonth(trafficMonth)} · 原表值` },
+                  { key: 'traffic', label: 'Similarweb 流量', sub: `${recentTrafficMonths.map(shortMonth).join(' · ')} · 原表值` },
                 ] as const
               ).map(({ key, label, sub }) => (
                 <th
@@ -157,7 +199,9 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                     className="px-2 py-2 text-right sm:px-4"
                     title={point?.adjusted ? `原表人工調整值 ${trafficNumber(point.rawTraffic)}` : undefined}
                   >
-                    {trafficNumber(point?.traffic ?? null)}
+                    <div className="flex justify-end">
+                      <TrafficHistory outlet={outlet} months={recentTrafficMonths} />
+                    </div>
                     {(point?.adjusted || point?.ambiguous) && (
                       <span className="block text-[10px] text-zinc-500">{point.adjusted ? '人工調整' : '待核對'}</span>
                     )}

@@ -23,11 +23,30 @@ def workbook(header, rows, hyperlinks="", relationships=""):
     return output.getvalue()
 
 
+def workbook_with_months(months):
+    ns = importer.NS["s"]
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        sheets = "".join(f'<sheet name="{month}" sheetId="{i}" r:id="rId{i}"/>' for i, month in enumerate(months, 1))
+        relationships = "".join(
+            f'<Relationship Id="rId{i}" Target="worksheets/sheet{i}.xml"/>' for i, _ in enumerate(months, 1)
+        )
+        archive.writestr("xl/workbook.xml", f'<workbook xmlns="{ns}" xmlns:r="{importer.REL}"><sheets>{sheets}</sheets></workbook>')
+        archive.writestr("xl/_rels/workbook.xml.rels", f"<Relationships>{relationships}</Relationships>")
+        for i, _ in enumerate(months, 1):
+            archive.writestr(f"xl/worksheets/sheet{i}.xml", f'<worksheet xmlns="{ns}"/>')
+    return output.getvalue()
+
+
 def text_cell(ref, value):
     return f'<c r="{ref}" t="inlineStr"><is><t>{value}</t></is></c>'
 
 
 class ImportMediaTrafficTest(unittest.TestCase):
+    def test_available_months_discovers_newest_month_tabs(self):
+        payload = workbook_with_months(["202601", "notes", "202610", "202609", "2026-old"])
+        self.assertEqual(importer.available_months(payload), ["202610", "202609", "202601"])
+
     def test_hyperlinks_supply_website_without_fabricating_original_domain(self):
         header = ''.join(text_cell(ref, value) for ref, value in [("D1", "網站名"), ("E1", "流量"), ("F1", "成長")])
         rows = ''.join('<row r="%d">%s%s</row>' % (i, text_cell(f"B{i}", "新聞"), text_cell(f"D{i}", "媒體")) for i in [2, 3])

@@ -120,10 +120,35 @@ def parse_workbook(payload, months):
     return snapshots
 
 
+def available_months(payload):
+    """Return month-shaped worksheet names, newest first.
+
+    Public copies of the workbook sometimes expose a placeholder or copied
+    worksheet for a month that is not yet published.  The parser still does
+    the schema and row validation below; discovery only chooses which tabs to
+    pass to it.
+    """
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+        return sorted(
+            {
+                sheet.get("name")
+                for sheet in workbook.findall("s:sheets/s:sheet", NS)
+                if sheet.get("name") and re.fullmatch(r"20\d{2}(0[1-9]|1[0-2])", sheet.get("name"))
+            },
+            reverse=True,
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, help="Previously downloaded XLSX; otherwise fetch the public workbook")
-    parser.add_argument("--months", nargs="+", required=True, help="Explicit YYYYMM tabs, e.g. 202608 202607")
+    parser.add_argument(
+        "--months",
+        nargs="+",
+        required=True,
+        help="Explicit YYYYMM tabs, or auto to import the three newest month tabs",
+    )
     parser.add_argument("--output", type=Path, default=ROOT / "app/data/media-traffic.json")
     args = parser.parse_args()
     if args.input:
@@ -131,7 +156,31 @@ def main():
     else:
         with urllib.request.urlopen(SOURCE + "/export?format=xlsx", timeout=60) as response:
             payload = response.read()
-    snapshots = parse_workbook(payload, args.months)
+    if args.months == ["auto"]:
+        months = available_months(payload)[:3]
+        if len(months) < 1:
+            raise ValueError("No YYYYMM worksheets found; refusing an empty import")
+        print(f"Auto-selected worksheets: {' '.join(months)}")
+    elif "auto" in args.months:
+        raise ValueError("--months auto cannot be combined with explicit months")
+    else:
+        months = args.months
+    snapshots = parse_workbook(payload, months)
+    if args.months == ["auto"] and args.output.exists():
+        # Refresh only the newest tabs while retaining reviewed history that is
+        # no longer present in the workbook's rolling view.
+        try:
+            previous = json.loads(args.output.read_text())
+            previous_snapshots = {
+                snapshot.get("month"): snapshot
+                for snapshot in previous.get("snapshots", [])
+                if isinstance(snapshot, dict) and re.fullmatch(r"20\d{2}(0[1-9]|1[0-2])", str(snapshot.get("month")))
+            }
+            previous_snapshots.update({snapshot["month"]: snapshot for snapshot in snapshots})
+            snapshots = [previous_snapshots[month] for month in sorted(previous_snapshots, reverse=True)]
+        except (OSError, json.JSONDecodeError, TypeError):
+            # A malformed old file must not prevent a validated fresh import.
+            pass
     result = {
         "sourceUrl": SOURCE + "/edit?usp=sharing",
         "retrievedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
