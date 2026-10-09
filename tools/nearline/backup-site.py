@@ -232,6 +232,13 @@ def resume_backup(dest, report_path, nas, *, trim_docker=False, reclaim_verified
         if not re.fullmatch(r'\d{8}T\d{6}Z-[0-9a-f]{8}', report.get('backup_id', '')):
             raise ValueError('Invalid backup ID')
         try:
+            # Capacity maintenance may intentionally remove an unverified
+            # export after recording why it cannot be resumed.  A stale
+            # receipt must not prevent the next scheduled full backup.
+            if not path.is_file():
+                if report.get('local_dump_removed') or report.get('removal_reason'):
+                    return {'status': 'skipped_missing_local_dump', 'backup_id': report['backup_id']}
+                raise FileNotFoundError(path)
             if report.get('restore', {}).get('status') != 'passed':
                 if (report.get('export_status') != 'passed' or not isinstance(report.get('tables'), list)
                         or not report['tables'] or path.stat().st_size != report.get('bytes')
