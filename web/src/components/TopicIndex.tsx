@@ -57,7 +57,8 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{kind === 'feature' ? '專題' : '議題表'}</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          另見
+          {kind === 'feature' ? '彙整各家媒體針對特定主題持續製作與更新的系列報導。' : '彙整各家媒體關於同一議題的相關新聞報導。'}
+          {' 另見'}
           <Link
             href={kind === 'feature' ? '/topic/' : '/feature/'}
             className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
