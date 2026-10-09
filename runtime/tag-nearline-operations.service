@@ -1,0 +1,16 @@
+[Unit]
+Description=Authenticated nearline retrieval queue and metadata API
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/deck/.local/share/tag-nearline-operations/current/tools/nearline/operations.py --config /home/deck/.config/tag-nearline-operations/config.json
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
+Restart=on-failure
+RestartSec=5
+UMask=0077
+Nice=10
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

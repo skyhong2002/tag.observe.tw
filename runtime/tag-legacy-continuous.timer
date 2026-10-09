@@ -1,0 +1,10 @@
+[Unit]
+Description=Check mother-site generations for verified article synchronization
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=5min
+Unit=tag-legacy-continuous.service
+
+[Install]
+WantedBy=timers.target

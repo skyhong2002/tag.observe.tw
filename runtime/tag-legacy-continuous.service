@@ -1,0 +1,10 @@
+[Unit]
+Description=Import new mother-site generations in bounded verified batches
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/deck/.local/share/tag-nearline-operations/current/tools/nearline/sync-generations.py --config /home/deck/.config/tag-nearline-operations/config.json --mode sync
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
+Nice=15
+TimeoutStartSec=1h
+UMask=0077

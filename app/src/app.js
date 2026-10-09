@@ -14,6 +14,7 @@ import { registerLiveboard } from './v1/liveboard.ts';
 import { registerMediaKeywords } from './v1/media-keywords.ts';
 import { registerMediaStats } from './v1/media-stats.ts';
 import { registerMediaTrafficComparison } from './v1/media-traffic-comparison.ts';
+import { registerNearline } from './v1/nearline.ts';
 import { registerApiMeta } from './v1/openapi.ts';
 import { registerPageApis } from './v1/pages.ts';
 import { registerReaderPresence } from './v1/reader-presence.ts';
@@ -86,6 +87,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerLiveboard(app, own.db);
   }
   registerReaderPresence(app);
+  registerNearline(app);
   registerApiMeta(app);
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {

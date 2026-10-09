@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh all retained NAS generation and site archive metadata
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/deck/.local/share/tag-nearline-operations/current/tools/nearline/refresh-index.py --config /home/deck/.config/tag-nearline-operations/config.json
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
+TimeoutStartSec=30min
+Nice=15
+UMask=0077

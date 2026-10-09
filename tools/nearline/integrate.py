@@ -6,6 +6,7 @@ import gzip
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import time
@@ -80,11 +81,12 @@ def summarize(state):
     return {'completed_chunks': len(state['completed']), 'rows': sum(counts.values()), 'counts': counts}
 
 
-def needs_processing(previous, allow_recent, mapping_sha=None):
+def needs_processing(previous, allow_recent, mapping_sha=None, identity_policy=None):
     if previous is None:
         return True
     reasons = previous.get('quarantine_reasons', {})
-    return bool((allow_recent and not previous.get('allow_recent', False)
+    return bool((identity_policy and previous.get('identity_policy') != identity_policy and reasons.get('input_identity_collision', 0))
+                or (allow_recent and not previous.get('allow_recent', False)
                  and reasons.get('recent_requires_separate_review', 0))
                 or (mapping_sha and previous.get('mapping_sha256') != mapping_sha
                     and any(count and {'unreviewed_url_host', 'invalid_url'}.intersection(reason.split(','))
@@ -104,12 +106,15 @@ def integrate(config):
         if state['generation'] != plan['generation']:
             raise ValueError('Checkpoint generation mismatch')
         allow_recent = bool(config.get('allow_recent', False))
+        identity_policy = config.get('identity_policy')
+        if identity_policy and not re.fullmatch(r'[a-z0-9_-]{1,64}', identity_policy):
+            raise ValueError('Invalid identity policy')
         plan_hash = sha256(Path(config['plan']))
-        if state.get('status') == 'plan_complete' and state.get('plan_sha256') == plan_hash and state.get('allow_recent', False) == allow_recent:
+        if state.get('status') == 'plan_complete' and state.get('plan_sha256') == plan_hash and state.get('allow_recent', False) == allow_recent and state.get('identity_policy') == identity_policy:
             print('This fixed integration plan is already complete', flush=True)
             return
         manifest = pipeline.load_manifest(plan['generation'])
-        state.update(status='running', updated_at=now(), last_error=None, plan_sha256=plan_hash, allow_recent=allow_recent, code_version=Path(config['code_root']).name)
+        state.update(status='running', updated_at=now(), last_error=None, plan_sha256=plan_hash, allow_recent=allow_recent, identity_policy=identity_policy, code_version=Path(config['code_root']).name)
         write_json(checkpoint, state)
         repo = Path(config['code_root'])
         if plan.get('mappingSha256') and sha256(repo / 'app/data/legacy-media-mapping.json') != plan['mappingSha256']:
@@ -117,6 +122,7 @@ def integrate(config):
         work = root / 'work'
         work.mkdir(exist_ok=True)
         started = time.monotonic()
+        processed_chunks = 0
         try:
             for item in plan['tables']:
                 if item['action'] != 'import_articles':
@@ -128,9 +134,9 @@ def integrate(config):
                 for index, chunk in enumerate(table['chunks']):
                     key = table_name + '/' + chunk['sha256']
                     previous_result = state['completed'].get(key)
-                    if not needs_processing(previous_result, allow_recent, plan.get('mappingSha256')):
+                    if not needs_processing(previous_result, allow_recent, plan.get('mappingSha256'), identity_policy):
                         continue
-                    if time.monotonic() - started > config.get('max_run_seconds', 1800):
+                    if processed_chunks >= config.get('max_chunks', 1000000) or time.monotonic() - started > config.get('max_run_seconds', 1800):
                         state.update(status='batch_complete', updated_at=now(), summary=summarize(state))
                         write_json(checkpoint, state)
                         return
@@ -140,10 +146,14 @@ def integrate(config):
                     # A changed mapping must not reuse normalized output or apply receipts.
                     revision = plan.get('mappingSha256', 'unversioned')
                     package = work / revision / table_name / chunk['sha256']
+                    if identity_policy:
+                        package = work / revision / identity_policy / table_name / chunk['sha256']
                     package.mkdir(parents=True, exist_ok=True)
                     fetched = package / 'fetched'
                     prepared = package / 'prepared'
                     namespace = 'integration-v3/' + revision + ('/recent' if allow_recent else '/historical')
+                    if identity_policy:
+                        namespace += '/' + identity_policy
                     remote = backup_config['remote'].rstrip('/') + '/' + namespace + '/' + plan['generation'] + '/' + key
                     state.update(current={'table': table_name, 'chunk': index, 'object': chunk['sha256'], 'stage': 'fetch'}, updated_at=now())
                     write_json(checkpoint, state)
@@ -177,7 +187,7 @@ def integrate(config):
                     write_json(checkpoint, state)
                     if attempt is None:
                         attempt = package / ('apply-' + uuid.uuid4().hex[:12])
-                        run_checked(['node', '--env-file=' + config['env_file'], str(repo / 'tools/nearline/import-articles.ts'), '--package', str(prepared), '--out', str(attempt), '--apply'] + (['--allow-recent'] if allow_recent else []), timeout=1800, cwd=repo)
+                        run_checked(['node', '--env-file=' + config['env_file'], str(repo / 'tools/nearline/import-articles.ts'), '--package', str(prepared), '--out', str(attempt), '--apply'] + (['--allow-recent'] if allow_recent else []) + (['--allow-source-versions'] if config.get('allow_source_versions') else []), timeout=1800, cwd=repo)
                     report = json.loads((attempt / 'report.json').read_text())
                     if report['status'] != 'complete' or report['processed'] != report['rows']:
                         raise RuntimeError('Incomplete apply report')
@@ -192,13 +202,14 @@ def integrate(config):
                     archive = archive_directory(pipeline, attempt, remote + '/' + attempt.name)
                     if previous_result:
                         state.setdefault('previous_results', {}).setdefault(key, []).append(previous_result)
-                    state['completed'][key] = {'mapping_sha256': plan.get('mappingSha256'), 'allow_recent': allow_recent, 'table': table_name, 'chunk': index, 'object': chunk['sha256'], 'rows': report['rows'], 'counts': report['counts'], 'quarantine_reasons': reasons, 'verified_origins': report.get('verifiedOrigins'), 'prepared': remote + '/prepared', 'audit': archive['remote'], 'finished_at': now()}
+                    state['completed'][key] = {'mapping_sha256': plan.get('mappingSha256'), 'allow_recent': allow_recent, 'identity_policy': identity_policy, 'table': table_name, 'chunk': index, 'object': chunk['sha256'], 'rows': report['rows'], 'counts': report['counts'], 'quarantine_reasons': reasons, 'verified_origins': report.get('verifiedOrigins'), 'prepared': remote + '/prepared', 'audit': archive['remote'], 'finished_at': now()}
                     state.update(updated_at=now(), summary=summarize(state))
                     write_json(checkpoint, state)
                     publish_checkpoint(pipeline, checkpoint, plan['generation'])
                     # Every input is already archived; generated data and ID
                     # mappings have additionally passed NAS readback verification.
                     shutil.rmtree(package)
+                    processed_chunks += 1
                     time.sleep(config.get('pause_seconds', 2))
             pending_tables = [i['table'] for i in plan['tables'] if i['action'] == 'import_articles' and manifest['tables'][i['table']]['status'] != 'complete']
             state.update(status='waiting_for_backup' if pending_tables else 'plan_complete', waiting_tables=pending_tables, current=None, updated_at=now(), summary=summarize(state))

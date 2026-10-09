@@ -12,7 +12,7 @@ const v1 = new URL('app/src/v1/', root);
 // Every '/api/v1/…' route literal registered with app.get in app/src/v1.
 const registered = readdirSync(v1)
   .filter((f) => f.endsWith('.ts') && !f.endsWith('.spec.ts'))
-  .flatMap((f) => [...readFileSync(new URL(f, v1), 'utf8').matchAll(/app\.get(?:<[^(]*?>)?\(\s*'(\/api\/v1[^']*)'/g)].map((m) => m[1]))
+  .flatMap((f) => [...readFileSync(new URL(f, v1), 'utf8').matchAll(/app\.(?:get|post)(?:<[^(]*?>)?\(\s*'(\/api\/v1[^']*)'/g)].map((m) => m[1]))
   .map((r) => r.replace(/:(\w+)/g, '{$1}'));
 
 describe('OpenAPI description', () => {

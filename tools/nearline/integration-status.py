@@ -16,7 +16,7 @@ def status(config):
     same_generation = backup['generation'] == plan['generation']
     completed = state.get('completed', {})
     pending_replays = {key for key, result in completed.items()
-                       if needs_processing(result, config.get('allow_recent', False), plan.get('mappingSha256'))}
+                       if needs_processing(result, config.get('allow_recent', False), plan.get('mappingSha256'), config.get('identity_policy'))}
     reconciliation_path = root / 'reconciliation.json'
     reconciliation = json.loads(reconciliation_path.read_text()) if reconciliation_path.exists() else {}
     reconciled = reconciliation.get('chunks', {}) if reconciliation.get('generation') == state['generation'] else {}

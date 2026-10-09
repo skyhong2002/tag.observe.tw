@@ -1,0 +1,10 @@
+[Unit]
+Description=Review and replay equivalent duplicate quarantines one package at a time
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/deck/.local/share/tag-nearline-operations/current/tools/nearline/sync-generations.py --config /home/deck/.config/tag-nearline-operations/config.json --mode replay
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
+Nice=15
+TimeoutStartSec=1h
+UMask=0077

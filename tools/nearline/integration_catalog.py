@@ -11,7 +11,7 @@ from integrate import archive_directory, needs_processing
 from pipeline import Pipeline, now, write_json
 
 
-def catalog(plan, manifest, state, reconciliation, allow_recent):
+def catalog(plan, manifest, state, reconciliation, allow_recent, identity_policy=None):
     generation = plan['generation']
     if any(item.get('generation') != generation for item in [manifest, state, reconciliation]):
         raise ValueError('Catalog inputs belong to different generations')
@@ -39,7 +39,7 @@ def catalog(plan, manifest, state, reconciliation, allow_recent):
                 raise ValueError('Receipt references a different source chunk: ' + key)
             if sum(receipt['counts'].values()) != receipt['rows']:
                 raise ValueError('Receipt row accounting mismatch: ' + key)
-            replay = needs_processing(receipt, allow_recent, plan.get('mappingSha256'))
+            replay = needs_processing(receipt, allow_recent, plan.get('mappingSha256'), identity_policy)
             check = reconciliation.get('chunks', {}).get(key, {})
             checked = check.get('audit') == receipt['audit']
             if checked and any(check.get(field) != value for field, value in [
@@ -122,7 +122,7 @@ def main():
     manifest = pipeline.load_manifest(plan['generation'])
     state = json.loads((root / 'state.json').read_text())
     reconciliation = json.loads((root / 'reconciliation.json').read_text())
-    result = catalog(plan, manifest, state, reconciliation, config.get('allow_recent', False))
+    result = catalog(plan, manifest, state, reconciliation, config.get('allow_recent', False), config.get('identity_policy'))
     output = Path(args.out)
     output.mkdir(parents=True, exist_ok=False)
     write_json(output / 'catalog.json', result)

@@ -1,0 +1,10 @@
+[Unit]
+Description=Automatically refresh nearline metadata every 15 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=15min
+Unit=tag-nearline-index.service
+
+[Install]
+WantedBy=timers.target

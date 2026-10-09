@@ -1,0 +1,10 @@
+[Unit]
+Description=Gradual source identity quarantine review
+
+[Timer]
+OnBootSec=7min
+OnUnitInactiveSec=15min
+Unit=tag-legacy-quarantine.service
+
+[Install]
+WantedBy=timers.target

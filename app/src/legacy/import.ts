@@ -1,5 +1,6 @@
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import type { normalizeLegacyArticle } from './normalize.ts';
+import { reviewIdentityGroups } from './identity-review.ts';
 
 export type LegacyCandidate = ReturnType<typeof normalizeLegacyArticle>;
 export type ImportOutcome = { sourceKey: string; rawHash: string; action: string; reason?: string; articleId?: string };
@@ -28,6 +29,8 @@ export async function importCandidates(
     object: string;
     now: Date;
     onBatch?: (outcomes: ImportOutcome[]) => void;
+    identityReviewOnly?: boolean;
+    allowSourceVersions?: boolean;
   },
 ) {
   if (new Set(rows.map((row) => row.lineage.sourceKey)).size !== rows.length) throw new Error('Duplicate source keys in package');
@@ -51,7 +54,7 @@ export async function importCandidates(
     await c.query('SELECT content_accessed_at,content_archive_hash FROM articles LIMIT 0');
     const media = [...new Set(rows.map((r) => r.article.media))];
     if (!media.length || media.length > 500) throw new Error('Invalid media count in package');
-    if (!options.apply) {
+    if (!options.apply && !options.identityReviewOnly) {
       for (const [target, source] of [
         [names.articles, 'articles'],
         [names.origins, 'article_origins'],
@@ -90,13 +93,26 @@ export async function importCandidates(
     await c.query(
       'CREATE TEMPORARY TABLE legacy_dup_keys AS SELECT media,url_key FROM legacy_input GROUP BY media,url_key HAVING COUNT(*)>1',
     );
-    await c.query('ALTER TABLE legacy_dup_urls ADD INDEX dup_url(media,url)');
-    await c.query('ALTER TABLE legacy_dup_keys ADD INDEX dup_key(media,url_key)');
-    const duplicates = new Set(
-      (await query('SELECT i.seq FROM legacy_input i JOIN legacy_dup_urls d ON i.media=d.media AND i.url=d.url')).map((r) => Number(r.seq)),
-    );
-    for (const r of await query('SELECT i.seq FROM legacy_input i JOIN legacy_dup_keys d ON i.media=d.media AND i.url_key=d.url_key'))
-      duplicates.add(Number(r.seq));
+    await c.query('ALTER TABLE legacy_dup_urls ADD group_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, ADD INDEX dup_url(media,url)');
+    await c.query('ALTER TABLE legacy_dup_keys ADD group_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, ADD INDEX dup_key(media,url_key)');
+    const groups: number[][] = [];
+    for (const [table, field] of [['legacy_dup_urls', 'url'], ['legacy_dup_keys', 'url_key']]) {
+      const grouped = new Map<number, number[]>();
+      for (const row of await query(`SELECT i.seq,d.group_id FROM legacy_input i JOIN ${table} d ON i.media=d.media AND i.${field}=d.${field}`)) {
+        const group = Number(row.group_id);
+        grouped.set(group, [...(grouped.get(group) ?? []), Number(row.seq)]);
+      }
+      groups.push(...grouped.values());
+    }
+    const { conflicts: duplicates, equivalent } = reviewIdentityGroups(rows, groups);
+    const resolvedDuplicateArticles = new Map<number, string>();
+    if (options.identityReviewOnly) {
+      const reviewed: ImportOutcome[] = rows.map((row, i) => ({ sourceKey: row.lineage.sourceKey, rawHash: row.lineage.rawSha256,
+        action: importIssue(row, options.now, options.allowRecent) || duplicates.has(i) ? 'quarantine' : equivalent.has(i) ? 'equivalent_duplicate_reviewed' : 'review_candidate',
+        ...(importIssue(row, options.now, options.allowRecent) || duplicates.has(i) ? { reason: importIssue(row, options.now, options.allowRecent) ?? 'input_identity_collision' } : {}) }));
+      options.onBatch?.(reviewed);
+      return reviewed;
+    }
     for (let start = 0; start < rows.length; start += 100) {
       const batch: ImportOutcome[] = [];
       await c.beginTransaction();
@@ -152,16 +168,30 @@ export async function importCandidates(
           const origins = originsBySeq.get(i) ?? [];
           if (origins.length) {
             const origin = origins.find((r) => r.source_key === base.sourceKey && r.raw_hash === base.rawHash);
-            if (origin?.target_id != null) batch.push({ ...base, action: 'already_imported', articleId: String(origin.article_id) });
-            else batch.push({ ...base, action: 'quarantine', reason: origin ? 'missing_origin_article' : 'source_version_conflict' });
-            continue;
+            if (origin?.target_id != null) {
+              batch.push({ ...base, action: 'already_imported', articleId: String(origin.article_id) });
+              continue;
+            }
+            if (origin || !options.allowSourceVersions) {
+              batch.push({ ...base, action: 'quarantine', reason: origin ? 'missing_origin_article' : 'source_version_conflict' });
+              continue;
+            }
           }
           const byUrl = urlsBySeq.get(i) ?? [];
           const byKey = keysBySeq.get(i) ?? [];
           const matches = [...new Map([...byUrl, ...byKey].map((r) => [String(r.id), r])).values()];
+          const priorIds = [...new Set(origins.map((r) => String(r.article_id)))];
+          if (origins.length && (priorIds.length !== 1 || origins.some((r) => r.target_id == null) || matches.length !== 1 || String(matches[0].id) !== priorIds[0])) {
+            batch.push({ ...base, action: 'quarantine', reason: 'source_version_conflict' });
+            continue;
+          }
           let articleId: string;
           let action: string;
-          if (matches.length) {
+          const duplicateArticle = equivalent.has(i) ? resolvedDuplicateArticles.get(equivalent.get(i)!) : undefined;
+          if (duplicateArticle && matches.every((r) => String(r.id) === duplicateArticle)) {
+            articleId = duplicateArticle;
+            action = 'linked_existing';
+          } else if (matches.length) {
             const existing = matches[0];
             if (
               matches.length !== 1 ||
@@ -209,10 +239,11 @@ export async function importCandidates(
             action = 'inserted';
           }
           await c.query(
-            `INSERT INTO ${names.origins} (source_key,raw_hash,article_id,generation,source_object,adapter_version,linked_at) VALUES (?,?,?,?,?,'legacy-article-import-v3',?)`,
+            `INSERT INTO ${names.origins} (source_key,raw_hash,article_id,generation,source_object,adapter_version,linked_at) VALUES (?,?,?,?,?,'legacy-article-import-v4',?)`,
             [base.sourceKey, base.rawHash, articleId, options.generation, options.object, dateSql(options.now.toISOString())],
           );
           batch.push({ ...base, action, articleId });
+          if (equivalent.has(i)) resolvedDuplicateArticles.set(equivalent.get(i)!, articleId);
         }
         await c.commit();
       } catch (error) {

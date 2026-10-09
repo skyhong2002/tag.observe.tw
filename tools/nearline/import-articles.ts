@@ -17,6 +17,8 @@ const { values } = parseArgs({
     out: { type: 'string' },
     apply: { type: 'boolean', default: false },
     'allow-recent': { type: 'boolean', default: false },
+    'identity-review': { type: 'boolean', default: false },
+    'allow-source-versions': { type: 'boolean', default: false },
   },
 });
 if (!values.package || !values.out) throw new Error('--package and a new --out directory are required');
@@ -108,7 +110,7 @@ const summary = {
   packageSha256: report.compressedSha256,
   generation: manifest.generation,
   sourceObject: manifest.chunks[0].object,
-  adapter: 'legacy-article-import-v3',
+  adapter: 'legacy-article-import-v4',
   allowRecent: values['allow-recent'],
   requiredWorkerPolicy: values['allow-recent'] ? 'own-indexed-v2' : null,
   mappingVersion: legacyMappingVersion,
@@ -144,6 +146,8 @@ try {
       generation: manifest.generation,
       object: manifest.chunks[0].object,
       now,
+      identityReviewOnly: values['identity-review'],
+      allowSourceVersions: values['allow-source-versions'],
       onBatch(batch: ImportOutcome[]) {
         appendFileSync(auditPath, batch.map((r) => JSON.stringify(r) + '\n').join(''));
         for (const r of batch) summary.counts[r.action] = (summary.counts[r.action] ?? 0) + 1;

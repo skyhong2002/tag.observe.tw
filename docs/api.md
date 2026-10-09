@@ -57,6 +57,13 @@ for a in r.json()["articles"]:
 
 | 端點 | 說明 |
 | --- | --- |
+| [`GET /api/v1/nearline/archives`](#api-v1-nearline-archives) | 查詢封存 metadata 索引 |
+| [`GET /api/v1/nearline/status`](#api-v1-nearline-status) | 封存索引更新狀況 |
+| [`POST /api/v1/nearline/retrievals`](#api-v1-nearline-retrievals) | 排隊取回指定封存資料 |
+| [`GET /api/v1/nearline/retrievals/{id}`](#api-v1-nearline-retrievals-id) | 取回作業進度 |
+| [`GET /api/v1/nearline/retrievals/{id}/results`](#api-v1-nearline-retrievals-id-results) | 分頁讀取隔離轉換結果 |
+| [`GET /api/v1/nearline/retrievals/{id}/files/{role}`](#api-v1-nearline-retrievals-id-files-role) | 下載經驗證的封存 SQL 分包 |
+| [`POST /api/v1/nearline/retrievals/{id}/retry`](#api-v1-nearline-retrievals-id-retry) | 重試失敗的取回作業 |
 | [`GET /api/v1/reader-presence`](#api-v1-reader-presence) | 本站最近 90 秒的線上讀者估計 |
 | [`GET /api/v1/bylines`](#api-v1-bylines) | 所有新聞署名：個人、團隊、機構與待辨識 |
 | [`GET /api/v1/bylines/{key}`](#api-v1-bylines-key) | 單一署名的文章與原文角色 |
@@ -2613,6 +2620,238 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].topics.counts.topic` | integer | 累計議題數 |
 | `media[].topics.counts.feature` | integer | 累計專題數 |
 | `media[].topics.rulesUrl` | string | GitHub 上該媒體議題爬蟲規則的位置 |
+
+## 封存索引與授權取回
+
+<a id="api-v1-nearline-archives"></a>
+
+### `GET /api/v1/nearline/archives`
+
+**查詢封存 metadata 索引**
+
+查 SSD SQLite，不讀 NAS 內容。按 table／generation／來源主鍵或 hash 定位；不支援逐篇日期、關鍵字、正文搜尋。公開結果省略內部儲存路徑。取回時提交 entryId 與 indexRevision。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `source` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `kind` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `generation` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `table` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `legacyId` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `articleId` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `objectHash` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `id` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `cursor` | query | string | 封存查詢條件；ID／主鍵必須是十進位字串 |
+| `limit` | query | integer | 每頁筆數，1–100，預設 `50` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/nearline/archives?table=tag_cna&kind=sql_data&limit=1'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `format` | string |  |
+| `indexRevision` | string |  |
+| `indexBuiltAt` | string (ISO 時間) |  |
+| `count` | integer |  |
+| `entries` | {鍵: object}[] |  |
+| `nextCursor` | string \| null |  |
+| `sourceSnapshots` | {鍵: object}[] |  |
+
+錯誤：`400` 查詢條件無效；`503` 索引未配置或服務不可用。
+
+快取：不快取。
+
+<a id="api-v1-nearline-status"></a>
+
+### `GET /api/v1/nearline/status`
+
+**封存索引更新狀況**
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/nearline/status'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `indexRevision` | string |  |
+| `indexBuiltAt` | string (ISO 時間) |  |
+| `refresh` | {鍵: object} \| null |  |
+
+錯誤：`503` 服務不可用。
+
+快取：不快取。
+
+<a id="api-v1-nearline-retrievals"></a>
+
+### `POST /api/v1/nearline/retrievals`
+
+**排隊取回指定封存資料**
+
+需要管理端 Bearer token。每次一個 package，單一 worker；queue 上限 20。SQL 驗證後隔離還原，文章表正規化為 JSONL 結果；非文章及 programs 只提供經驗證的 SQL 檔，不自動執行。結果保存 24 小時，不寫入正式 DB，不改變正文七天公開期。
+
+授權：`Authorization: Bearer <管理端 token>`。
+
+JSON request body：
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entryId": {
+      "type": "string"
+    },
+    "indexRevision": {
+      "type": "string"
+    },
+    "selector": {
+      "type": "object",
+      "properties": {
+        "legacyId": {
+          "type": "string",
+          "description": "原始主鍵，十進位字串"
+        }
+      },
+      "required": [
+        "legacyId"
+      ]
+    }
+  },
+  "required": [
+    "entryId",
+    "indexRevision"
+  ]
+}
+```
+
+範例：
+
+```sh
+curl -s -X POST -H 'Content-Type: application/json' --data '{}' -H 'Authorization: Bearer <管理端 token>' 'https://tag.observe.tw/api/v1/nearline/retrievals'
+```
+
+錯誤：`400` 格式錯誤；`401` 需要授權；`404` entry 不存在；`409` 索引版本改變或來源缺口；`413` 超過隔離還原預算；`429` queue 已滿；`503` 空間不足或服務不可用。
+
+快取：不快取。
+
+<a id="api-v1-nearline-retrievals-id"></a>
+
+### `GET /api/v1/nearline/retrievals/{id}`
+
+**取回作業進度**
+
+授權：`Authorization: Bearer <管理端 token>`。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | string | 取回 job ID，例：`0123456789abcdef0123456789abcdef` |
+
+範例：
+
+```sh
+curl -s -H 'Authorization: Bearer <管理端 token>' 'https://tag.observe.tw/api/v1/nearline/retrievals/0123456789abcdef0123456789abcdef'
+```
+
+錯誤：`401` 需要授權；`404` 作業不存在。
+
+快取：不快取。
+
+<a id="api-v1-nearline-retrievals-id-results"></a>
+
+### `GET /api/v1/nearline/retrievals/{id}/results`
+
+**分頁讀取隔離轉換結果**
+
+授權：`Authorization: Bearer <管理端 token>`。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | string | 取回 job ID，例：`0123456789abcdef0123456789abcdef` |
+| `cursor` | query | string | 前頁 nextCursor |
+| `limit` | query | integer | 每頁筆數，1–100，預設 `50` |
+
+範例：
+
+```sh
+curl -s -H 'Authorization: Bearer <管理端 token>' 'https://tag.observe.tw/api/v1/nearline/retrievals/0123456789abcdef0123456789abcdef/results'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `jobId` | string |  |
+| `result` | {鍵: object} |  |
+| `count` | integer |  |
+| `entries` | {鍵: object}[] |  |
+| `nextCursor` | string \| null |  |
+
+錯誤：`400` 分頁參數錯誤；`401` 需要授權；`409` 結果尚未完成；`410` 結果已過期。
+
+快取：不快取。
+
+<a id="api-v1-nearline-retrievals-id-files-role"></a>
+
+### `GET /api/v1/nearline/retrievals/{id}/files/{role}`
+
+**下載經驗證的封存 SQL 分包**
+
+授權：`Authorization: Bearer <管理端 token>`。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | string | 取回 job ID，例：`0123456789abcdef0123456789abcdef` |
+| `role` | 路徑 | "schema" \| "data" \| "programs" | schema、data 或 programs，例：`schema` |
+
+範例：
+
+```sh
+curl -s -H 'Authorization: Bearer <管理端 token>' 'https://tag.observe.tw/api/v1/nearline/retrievals/0123456789abcdef0123456789abcdef/files/schema'
+```
+
+錯誤：`401` 需要授權；`404` 檔案不存在；`409` 校驗失敗；`410` 結果已過期。
+
+快取：不快取。
+
+<a id="api-v1-nearline-retrievals-id-retry"></a>
+
+### `POST /api/v1/nearline/retrievals/{id}/retry`
+
+**重試失敗的取回作業**
+
+授權：`Authorization: Bearer <管理端 token>`。
+
+JSON request body：
+
+```json
+{
+  "type": "object",
+  "properties": {},
+  "required": []
+}
+```
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | string | 取回 job ID，例：`0123456789abcdef0123456789abcdef` |
+
+範例：
+
+```sh
+curl -s -X POST -H 'Content-Type: application/json' --data '{}' -H 'Authorization: Bearer <管理端 token>' 'https://tag.observe.tw/api/v1/nearline/retrievals/0123456789abcdef0123456789abcdef/retry'
+```
+
+錯誤：`401` 需要授權；`409` 作業非失敗狀態或已達三次上限。
+
+快取：不快取。
 
 ## 舊站 API 對照
 

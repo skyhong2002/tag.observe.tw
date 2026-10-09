@@ -34,7 +34,7 @@ export function renderApiMarkdown() {
   out.push(
     table(
       ['端點', '說明'],
-      ENDPOINTS.map((e) => [`[\`GET ${e.path}\`](#${anchor(e.path)})`, e.summary]),
+      ENDPOINTS.map((e) => [`[\`${e.method ?? 'GET'} ${e.path}\`](#${anchor(e.path)})`, e.summary]),
     ),
     '',
   );
@@ -43,8 +43,10 @@ export function renderApiMarkdown() {
     if (!list.length) continue;
     out.push(`## ${tag.description}`, '');
     for (const e of list) {
-      out.push(`<a id="${anchor(e.path)}"></a>`, '', `### \`GET ${e.path}\``, '', `**${e.summary}**`, '');
+      out.push(`<a id="${anchor(e.path)}"></a>`, '', `### \`${e.method ?? 'GET'} ${e.path}\``, '', `**${e.summary}**`, '');
       if (e.description) out.push(e.description, '');
+      if(e.authorized) out.push('授權：`Authorization: Bearer <管理端 token>`。', '');
+      if(e.requestBody) out.push('JSON request body：', '', '```json', JSON.stringify(e.requestBody,null,2), '```', '');
       if (e.params?.length)
         out.push(
           table(
@@ -64,7 +66,7 @@ export function renderApiMarkdown() {
           ),
           '',
         );
-      out.push('範例：', '', '```sh', `curl -s '${ORIGIN}${examplePath(e)}'`, '```', '');
+      out.push('範例：', '', '```sh', `curl -s${e.method === 'POST' ? " -X POST -H 'Content-Type: application/json' --data '{}'" : ''}${e.authorized ? " -H 'Authorization: Bearer <管理端 token>'" : ''} '${ORIGIN}${examplePath(e)}'`, '```', '');
       const variants = e.response.oneOf ? (e.response.oneOf as Schema[]) : [e.response as Schema];
       for (const v of variants) {
         const rows = fieldRows(v);
