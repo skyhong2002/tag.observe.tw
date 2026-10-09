@@ -296,10 +296,12 @@
 .rankingRetry { margin-top: 8px; color: var(--accent); cursor: pointer; }
 .rankingRetry:disabled { opacity: .6; cursor: wait; }
 
-/* Reserve the collapsed directory height while its independent API streams. */
-.campDirectorySlot { flex-basis: 100%; min-width: 0; min-height: 129px; }
+/* Reserve space only while the directory loads; loaded content sets its own height. */
+.campDirectorySlot { flex-basis: 100%; min-width: 0; }
+.campDirectorySlot:has(> [role="status"]) { min-height: 129px; }
 @media (max-width: 640px) {
-  .campDirectorySlot { order: 2; min-height: 385px; }
+  .campDirectorySlot { order: 2; }
+  .campDirectorySlot:has(> [role="status"]) { min-height: 385px; }
 }
 
 /* The event link is the final row of the same card as the stories. */
