@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
 import EventDayNav from '@/components/EventDayNav';
-import { CampGap, EventIndex, ViewSwitch } from '@/components/EventOverview';
+import { EventIndex, ViewSwitch } from '@/components/EventOverview';
 import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
@@ -178,7 +178,6 @@ export default function EventDayView({ data, media, today }: { data: EventDay; m
             </div>
           </MediaSidebar>
           <div className="mt-5 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
-            {events.some((e) => e.coverage) && <CampGap events={events} scope={scope} />}
             {tiers.map(({ tier, items }) =>
               items.length === 0 ? null : tier === 'hero' ? (
                 <ol key={tier} className="space-y-4" aria-label={`${scope}頭條`}>

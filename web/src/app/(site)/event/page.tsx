@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { BaselineBar } from '@/components/CampBar';
 import EventCard, { type EventTier } from '@/components/EventCard';
 import EventDayView, { dayHref, hourHref, taipeiDay } from '@/components/EventDayView';
-import { CampGap, EventIndex, HourTimeline, ViewSwitch } from '@/components/EventOverview';
+import { EventIndex, HourTimeline, ViewSwitch } from '@/components/EventOverview';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { fetchMedia, type MediaInfo, taipei, taipeiHour } from '@/lib/api';
@@ -139,7 +139,6 @@ async function HourView({ sp }: { sp: Search }) {
             </div>
           </MediaSidebar>
           <div className="mt-5 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
-            <CampGap events={data.events} />
             {tiers.map(({ tier, items }) =>
               items.length === 0 ? null : tier === 'hero' ? (
                 <ol key={tier} className="space-y-4" aria-label="頭條">
