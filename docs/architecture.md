@@ -27,10 +27,11 @@ Cloudflare Tunnel → tag.observe.tw
 | `app/src/v1/` | 公開 API；`openapi.ts` 是端點說明的唯一來源（見 [api.md](api.md)） |
 | `app/src/feeds.ts` | robots.txt、sitemap.xml、RSS |
 | `app/src/crawl/` | 爬蟲引擎（見 [crawlers.md](crawlers.md)） |
-| `app/src/jobs/` | 排程工作：排行、事件分群、議題、標籤統計、健康檢查、資料保留、來源探測 |
+| `app/src/analytics/` | Google API 的唯讀連線設定與請求 |
+| `app/src/jobs/` | 排程工作：爬蟲、排行、事件分群、議題、標籤統計、相似度、分析、健康檢查、資料保留、來源探測 |
 | `app/src/db/` | Drizzle schema 與 migrations（`app/src/db/migrations`） |
 | `app/data/` | 媒體規格、分類（含藍綠名單 `media-catalog.json`）、停用清單、favicon |
-| `web/` | Next.js UI（SSR，ECharts） |
+| `web/` | Next.js UI（SSR，ECharts）；`web/src/app/liveboard/` 是獨立的常駐看板入口 |
 | `tools/` | 一次性工具與產生器（`gen-api-docs.ts`、`check-openapi.ts`、`gen-image-hosts.ts`、`gen-pwa-icons.py`、`brand-assets.py`…） |
 
 ## 排程（`app/src/worker.ts`）
@@ -46,6 +47,8 @@ Cloudflare Tunnel → tag.observe.tw
 | 標籤統計 `tag-stats` | 每小時 :53 |
 | 相似度索引 `similarity` | 每 10 分鐘（`SIMILARITY_INDEX_MINUTES`） |
 | 爬蟲健康 `crawl-health` | 每 15 分鐘 |
+| GA4／Search Console 彙整 `analytics` | 每小時 :20；未設定唯讀憑證時不排程 |
+| GA Realtime `analytics-live` | 每 2 分鐘；未設定唯讀憑證時不排程 |
 | 資料保留 `retention` | 每日 04:15 |
 | 停用來源探測 `source-probe` | 每週一 05:30 |
 
@@ -93,7 +96,7 @@ node --env-file=.env tools/topics-once.ts --apply
 - 新版只刪除 source=own、未抓取、無標籤、超過 14 天、沒有正文／摘要／封存版本／來源對照的文章；legacy 歷史文章保留。
 - 超過兩年的排行快照只留前 100 名。
 - `crawl_runs`、`job_runs`、`source_probes`、`rejected_urls` 保留 30 天；Prometheus、Loki 各 30 天。
-- 異地備份尚未設定。
+- 新站資料庫每日 04:30 由 `tag-backup.timer` 匯出、隔離還原、校驗後保存到 NAS；NAS 與主機同地，仍不等同異地災難備援。完整流程見 [新站資料庫的 NAS 備份](site-database-backup.md)。
 
 ## 開發
 

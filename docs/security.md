@@ -16,3 +16,13 @@
 維護：新媒體或新 CDN 的圖片不在白名單時不會顯示；重跑 `node --env-file=.env tools/gen-image-hosts.ts` 後提交即可。
 
 事故紀錄：第一次提交把 260 筆主機放進 `remotePatterns`，Next build 失敗；部署腳本在切換前中止，線上維持前一版，隔次提交修正。
+
+## 新增公開端點的邊界
+
+2026-10 新增的公開功能沿用 gateway 的速率限制、CORS 與外部請求判斷：
+
+- `/api/v1/liveboard` 只回傳已收錄文章的標題、來源、公開期限內可顯示的正文片段、相似配對與彙整發稿量；回應快取 15 秒，不把資料庫欄位或內部工作狀態直接暴露給瀏覽器。
+- `/api/v1/site-observation` 只讀 `site_metrics` 的彙整結果，網站程序不持有 Google 憑證；回應快取 60 秒，不保存搜尋字詞。
+- `/api/v1/reader-presence` 的 GET 只讀取單一 gateway 記憶體中的匿名計數，回應 `no-store`；POST 僅接受正式站同源請求、固定格式的 UUID、256 bytes body，並以 50,000 個在線識別碼為上限。識別碼與最後回報時間不寫入資料庫，最多 90 秒後清除。
+
+這些端點的測試分別覆蓋 `app/src/v1/` 的輸入驗證與快取標頭、`app/test/reader-presence.spec.ts` 的同源／容量限制，以及 `app/test/tracking-availability.spec.ts` 的防追蹤條件。新增 endpoint 仍需同步更新 `app/src/v1/openapi.ts`、`docs/api.md` 與 gateway 測試，不能只在前端加入呼叫。
