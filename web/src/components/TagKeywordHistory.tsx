@@ -33,7 +33,15 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
   const geometry = useRef({ width: view.columnWidth, atEnd: true });
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealRow = useRef<number | null>(null);
-  const columns = useMemo(() => tagFlowTimeline(data), [data]);
+  const columns = useMemo(() => {
+    const timeline = tagFlowTimeline(data);
+    const counts = new Map(data.points.map((point) => [point.t, point.count]));
+    for (const column of timeline) {
+      const count = counts.get(column.key);
+      if (count && count > 0) column.tags.set(data.tag, count);
+    }
+    return timeline;
+  }, [data]);
   const [order, setOrder] = useState(() => {
     const initialColumns = tagFlowTimeline(initial);
     return visibleFlowKeywords(initialColumns, 0, initialColumns.length, '');
@@ -41,9 +49,10 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
   const range = flowVisibleRange(view.left, view.width, view.columnWidth, columns.length);
   const terms = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase();
-    return needle ? order.filter((tag) => tag.toLocaleLowerCase().includes(needle)) : order;
-  }, [order, search]);
-  const visibleTerms = terms.slice(0, visibleCount);
+    return order.filter((tag) => tag !== data.tag && (!needle || tag.toLocaleLowerCase().includes(needle)));
+  }, [data.tag, order, search]);
+  const visibleRelatedTerms = terms.slice(0, visibleCount);
+  const visibleTerms = [data.tag, ...visibleRelatedTerms];
   const renderStart = Math.max(0, range.start - 2);
   const renderEnd = Math.min(columns.length, range.end + 2);
   const rendered = columns.slice(renderStart, renderEnd);
@@ -92,13 +101,13 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
     if (!ready || loading) return;
     settleTimer.current = setTimeout(() => {
       const stopped = flowVisibleRange(view.left, view.width, view.columnWidth, columns.length);
-      const ranked = visibleFlowKeywords(columns, stopped.start, stopped.end, '');
+      const ranked = visibleFlowKeywords(columns, stopped.start, stopped.end, '').filter((tag) => tag !== data.tag);
       setOrder((previous) => settledKeywordOrder(previous, ranked, visibleCount));
     }, 1000);
     return () => {
       if (settleTimer.current) clearTimeout(settleTimer.current);
     };
-  }, [ready, loading, columns, view.left, view.width, view.columnWidth, visibleCount]);
+  }, [ready, loading, columns, data.tag, view.left, view.width, view.columnWidth, visibleCount]);
 
   useEffect(() => {
     if (!added.length) return;
@@ -166,7 +175,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
   };
 
   const cellWidth = view.columnWidth;
-  const more = visibleTerms.length < terms.length;
+  const more = visibleRelatedTerms.length < terms.length;
   const startDate = columns[range.start]?.title.split(' ')[0];
   const endDate = columns[range.end - 1]?.title.split(' ')[0];
   const rangeEnd = startDate?.slice(0, 4) === endDate?.slice(0, 4) ? endDate?.slice(5) : endDate;
@@ -214,10 +223,10 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
         // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard access to the horizontal time axis.
         tabIndex={0}
         className="overflow-auto overscroll-x-contain focus-visible:outline-2 focus-visible:outline-brand-500"
-        style={{ height: Math.min(680, 40 + Math.max(KEYWORD_GROUP_SIZE, visibleTerms.length) * 32) }}
+        style={{ height: Math.min(680, 40 + (1 + Math.max(KEYWORD_GROUP_SIZE, visibleRelatedTerms.length)) * 32) }}
       >
         <table className="table-fixed border-collapse text-xs" style={{ width: LEAD + GUTTER + columns.length * cellWidth }}>
-          <caption className="sr-only">和 #{data.tag} 一起出現的關鍵字</caption>
+          <caption className="sr-only">#{data.tag} 與相關關鍵字的變化</caption>
           <colgroup>
             <col style={{ width: LEAD }} />
             <col style={{ width: GUTTER }} />
@@ -261,7 +270,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
                     href={`/tag/${encodeURIComponent(tag)}/`}
                     prefetch={false}
                     title={tag}
-                    className="block truncate text-zinc-700 hover:text-brand-700 dark:text-zinc-300 dark:hover:text-brand-400"
+                    className={`block truncate hover:text-brand-700 dark:hover:text-brand-400 ${tag === data.tag ? 'font-medium text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}`}
                   >
                     {tag}
                   </Link>
@@ -277,7 +286,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
                     <td key={column.key} className="px-0" title={count ? `${tag} · ${column.title} · ${count} 篇` : undefined}>
                       {count && (
                         <span
-                          className={`relative block h-3 ${left ? '' : 'ml-0.5 rounded-l-full'} ${right ? '' : 'mr-0.5 rounded-r-full'} bg-sky-600 dark:bg-sky-500`}
+                          className={`relative block h-3 ${left ? '' : 'ml-0.5 rounded-l-full'} ${right ? '' : 'mr-0.5 rounded-r-full'} ${tag === data.tag ? 'bg-brand-600 dark:bg-brand-500' : 'bg-sky-600 dark:bg-sky-500'}`}
                           style={{ opacity: Math.max(0.14, Math.min(1, Math.sqrt(count / peak))) }}
                         >
                           {index === first.get(tag) && index > 0 && (
@@ -293,16 +302,16 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
             ))}
           </tbody>
         </table>
-        {!visibleTerms.length && (
+        {!visibleRelatedTerms.length && (
           <div role="status" className="sticky left-0 flex h-96 items-center justify-center text-sm text-zinc-500">
-            {search ? '找不到符合的關鍵字' : '這段期間沒有共同關鍵字'}
+            {search ? '找不到符合的相關關鍵字' : '這段期間沒有共同關鍵字'}
           </div>
         )}
       </section>
       <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 border-t border-zinc-200 px-3 text-xs dark:border-zinc-800">
         <div className="flex items-center gap-3">
           <span className="tabular-nums text-zinc-500">
-            顯示 {visibleTerms.length} / {terms.length}
+            相關詞 {visibleRelatedTerms.length} / {terms.length}
           </span>
           {added.length > 0 && (
             <span role="status" className="text-sky-700 dark:text-sky-400">
@@ -330,12 +339,12 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
             onClick={() => {
               const next = Math.min(visibleCount + KEYWORD_GROUP_SIZE, terms.length);
               revealRow.current = visibleTerms.length;
-              setAdded(terms.slice(visibleTerms.length, next));
+              setAdded(terms.slice(visibleRelatedTerms.length, next));
               setVisibleCount(next);
             }}
             className="min-h-9 rounded px-3 text-zinc-600 hover:bg-zinc-100 disabled:opacity-30 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
-            {more ? `顯示更多（+${Math.min(KEYWORD_GROUP_SIZE, terms.length - visibleTerms.length)}）` : '已全部顯示'}
+            {more ? `顯示更多（+${Math.min(KEYWORD_GROUP_SIZE, terms.length - visibleRelatedTerms.length)}）` : '已全部顯示'}
           </button>
         </div>
       </div>
