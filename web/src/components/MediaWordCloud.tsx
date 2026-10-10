@@ -61,7 +61,6 @@ export default function MediaWordCloud({
               ? [['本站比例', percent(t.share)] as [string, string], ['同類媒體', percent(t.peerShare)] as [string, string]]
               : []),
           ],
-          hint: '點選篩選本站報導 →',
         },
       }))}
     />

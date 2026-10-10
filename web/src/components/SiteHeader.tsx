@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import AccountMenu from './AccountMenu';
-import NavPending, { NavPendingContext, NavProgressBar } from './NavPending';
+import NavPending, { LinkClickPending, NavPendingContext, NavProgressBar } from './NavPending';
 import SiteNavigation from './SiteNavigation';
 import SiteSearch, { isSearchPage, SiteSearchFromUrl } from './SiteSearch';
 import ThemeToggle from './ThemeToggle';
@@ -118,6 +118,9 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
             <AccountMenu />
           </div>
         </div>
+        <Suspense fallback={null}>
+          <LinkClickPending />
+        </Suspense>
         <NavProgressBar pending={navPending} />
       </header>
     </NavPendingContext>

@@ -31,7 +31,6 @@ export default function EventTagCloud({ stats, hours }: { stats: TagStat[]; hour
               ['最高分', s.peak > 0 ? `${s.peak.toFixed(1)}（${taipeiHour(s.peakAt)}）` : '未進入任何小時的前 12 名'],
               ['出現', `${s.hours} / ${hours} 小時`],
             ],
-            hint: '點選查看標籤頁 →',
           },
         }))}
       />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useLinkStatus } from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { createContext, useContext, useEffect } from 'react';
 
 // Header links report their pending navigation here so one loading bar can run
@@ -18,6 +19,50 @@ export default function NavPending() {
     return () => setPending(false);
   }, [pending, setPending]);
   return <span hidden data-pending={pending || undefined} />;
+}
+
+const sameRoute = (a: URL, b: URL) => a.pathname.replace(/\/$/, '') === b.pathname.replace(/\/$/, '') && a.search === b.search;
+
+// Links elsewhere on the page light the same bar: a plain left click on a
+// same-site link starts it, and the new URL rendering stops it. External
+// links, new tabs, downloads and same-page anchors are left alone; a timeout
+// covers clicks that never change the URL (a link that redirects back here).
+export function LinkClickPending() {
+  const setPending = useContext(NavPendingContext);
+  const route = `${usePathname()}?${useSearchParams()}`;
+  // A new route ends the click's navigation.
+  useEffect(() => setPending(false), [route, setPending]);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = () => {
+      clearTimeout(timer);
+      setPending(false);
+    };
+    function onClick(event: MouseEvent) {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = (event.target as Element | null)?.closest?.('a');
+      const href = link?.getAttribute('href');
+      if (!link || !href || link.hasAttribute('download')) return;
+      const target = link.getAttribute('target');
+      if (target && target !== '_self') return;
+      const here = new URL(window.location.href);
+      const url = new URL(href, here);
+      if (url.origin !== here.origin || sameRoute(url, here)) return;
+      clearTimeout(timer);
+      setPending(true);
+      timer = setTimeout(stop, 15_000);
+    }
+    // Capture runs before Next's <Link> handler calls preventDefault; pageshow
+    // clears a bar left over when the back button restores a cached page.
+    document.addEventListener('click', onClick, true);
+    window.addEventListener('pageshow', stop);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('pageshow', stop);
+      clearTimeout(timer);
+    };
+  }, [setPending]);
+  return null;
 }
 
 export function NavProgressBar({ pending }: { pending: boolean }) {

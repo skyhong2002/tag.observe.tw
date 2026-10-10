@@ -59,7 +59,6 @@ export default function RankingWordCloud({ terms, mode = 'score' }: { terms: Ran
               ['爆發力', t.burst?.toFixed(1) ?? '—'],
               ['篇數', `${t.count} 篇 · ${t.media} 家媒體`],
             ],
-            hint: '點選查看關鍵字頁 →',
           },
         }))}
       />

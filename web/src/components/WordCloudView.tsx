@@ -11,7 +11,6 @@ export type CloudTone = 'brand' | 'strong' | 'muted' | 'stone';
 export interface CloudCard {
   badge?: { text: string; tone: 'brand' | 'soft' | 'muted' };
   rows: Array<[string, string]>;
-  hint?: string;
 }
 export interface CloudWordInfo {
   label: string;
@@ -120,7 +119,6 @@ function Canvas({
               </div>
             ))}
           </dl>
-          {card.hint && <p className="mt-1 text-brand-700 dark:text-brand-400">{card.hint}</p>}
         </div>
       )}
     </div>
