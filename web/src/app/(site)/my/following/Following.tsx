@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { FOLLOW_NOUN, type Follow, type FollowKind, followHref, follows, setFollow } from '@/lib/reader';
 import { button, card, field, note } from '../ReaderGate';
+import { SuggestionPills } from '../Suggestions';
 
 const KINDS: FollowKind[] = ['tag', 'media', 'journalist', 'event'];
 
-// Everything the reader follows, by kind, with a way to stop following and to
-// add a tag by name (other kinds are followed from their own pages).
+// Everything the reader follows, by kind, with a way to stop following, a box
+// to add a tag by name, and suggested capsules to follow with one click.
 export default function Following() {
   const list = follows.useValue();
   const [tag, setTag] = useState('');
@@ -46,7 +47,8 @@ export default function Following() {
         </button>
       </form>
       {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
-      {!list?.length && <p className={note}>還沒有追蹤任何東西。媒體、記者與事件請到各自的頁面按「追蹤」。</p>}
+      <SuggestionPills />
+      {!list?.length && <p className={note}>還沒有追蹤任何東西。點上面的推薦，或在標籤、媒體、記者、事件頁按「追蹤」。</p>}
       {KINDS.map((kind) => {
         const ofKind = (list ?? []).filter((f) => f.kind === kind);
         return ofKind.length ? (

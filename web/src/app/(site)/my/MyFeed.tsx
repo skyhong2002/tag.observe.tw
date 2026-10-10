@@ -6,7 +6,7 @@ import SaveButton from '@/components/reader/SaveButton';
 import SourceLink from '@/components/SourceLink';
 import { type Follow, followHref, prefs, readerFetch, savePrefs, when } from '@/lib/reader';
 import { card, note } from './ReaderGate';
-import { Onboarding, Recommended, useSuggestions } from './Suggestions';
+import { OtherSideReports, useSuggestions } from './Suggestions';
 
 type FeedArticle = {
   id: number;
@@ -44,8 +44,6 @@ const label = (f: Follow, a?: FeedArticle) =>
 export default function MyFeed() {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [error, setError] = useState('');
-  // Set once the reader leaves the starter picks, so following the first item does not hide them.
-  const [onboarding, setOnboarding] = useState<boolean | null>(null);
   const suggestions = useSuggestions();
   const saved = prefs.useValue();
   const hidden = new Set(saved?.hiddenMedia ?? []);
@@ -58,14 +56,15 @@ export default function MyFeed() {
   }, []);
   if (error) return <p className={note}>{error}</p>;
   if (!feed) return <p className={note}>載入中…</p>;
-  if (onboarding ?? !feed.follows.length)
+  if (!feed.follows.length)
     return (
-      <Onboarding
-        onDone={() => {
-          setOnboarding(false);
-          load();
-        }}
-      />
+      <p className={note}>
+        還沒有追蹤任何東西。到
+        <Link href="/my/following/" className="mx-1 text-brand-700 underline dark:text-brand-400">
+          追蹤清單
+        </Link>
+        挑幾個開始。
+      </p>
     );
   const hide = async (media: string) => {
     await savePrefs({ hiddenMedia: [...hidden, media] });
@@ -144,7 +143,7 @@ export default function MyFeed() {
           </ul>
         )}
       </section>
-      {suggestions && <Recommended data={suggestions} />}
+      {suggestions?.reading?.otherSide && <OtherSideReports other={suggestions.reading.otherSide} />}
     </div>
   );
 }
