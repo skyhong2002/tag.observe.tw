@@ -163,6 +163,29 @@ export const fetchRanking = (
 export const fetchTagArticles = (tag: string, hours = 48) =>
   get<{ tag: string; articles: Article[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/articles?hours=${hours}&limit=80`);
 export const fetchTagStatus = (tag: string) => get<TagStatus>(`/api/v1/tags/${encodeURIComponent(tag)}/status`);
+
+/** The Wikidata person a tag names, with the sketch avatar (docs/tag-avatars.md). */
+export interface TagPerson {
+  wikidataId: string;
+  label: string | null;
+  description: string | null;
+  facts: {
+    citizenship: string[];
+    occupations: string[];
+    parties: string[];
+    positions: { label: string; current: boolean }[];
+  } | null;
+  avatar: {
+    url: string;
+    file: string;
+    pageUrl: string;
+    license: string | null;
+    licenseUrl: string | null;
+    artist: string | null;
+  } | null;
+}
+export const fetchTagPerson = (tag: string) =>
+  get<{ tag: string; person: TagPerson | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/person`, 300).then((r) => r.person);
 export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
   get<import('./tag-series-history.mts').TagSeries>(
     `/api/v1/tags/${encodeURIComponent(tag)}/series?category=${encodeURIComponent(category)}&hours=${hours}`,

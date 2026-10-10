@@ -13,6 +13,7 @@
 
 - [similarity.md](similarity.md)：正文保存、相似度、引用證據、記者統計與媒體關係圖
 - [tag-discovery.md](tag-discovery.md)：關鍵字升溫、跨媒體門檻與相似稿訊號
+- [tag-avatars.md](tag-avatars.md)：人物標籤比對 Wikidata、Commons 照片挑選與素描頭像
 - [media-reading.md](media-reading.md)：媒體列表、站內文章閱讀與內文期限
 - [liveboard-stability.md](liveboard-stability.md)：即時看板輪詢、資料缺口與穩定性
 - [media-traffic.md](media-traffic.md)：媒體流量與分類來源、月份快照及人工更新方式

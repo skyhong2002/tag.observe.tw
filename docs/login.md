@@ -35,6 +35,9 @@
 | `GET /auth/admin/reports/:id` | 管理員限定：單筆讀者回報（`/admin/media/?report=` 用）。 |
 | `GET /auth/admin/media/:media/taiwan-share` | 管理員限定：這家媒體目前的台灣占比修正與最近 20 筆修改紀錄。 |
 | `PUT /auth/admin/media/:media/taiwan-share` | 管理員限定、需本站 `Origin`：`{ share, note }` 以 0–1 的值取代 Similarweb 的台灣占比（理由必填），`share: null` 清除；寫入 `media_taiwan_share_log`（[媒體流量](media-traffic.md#台灣占比與台灣造訪)）。 |
+| `GET /auth/admin/avatars?status=review` | 管理員限定：人物標籤與每人最多三張素描候選（[人物頭像](tag-avatars.md)）；status 為 review、auto、chosen、hidden、nophoto。 |
+| `GET /auth/admin/avatars/:tag/candidates/:rank` | 管理員限定：候選素描圖檔（WebP），包含未顯示的候選。 |
+| `PUT /auth/admin/avatars/:tag` | 管理員限定、需本站 `Origin`：`{ rank }` 改用該候選，`{ rank: null }` 隱藏頭像；寫入 `tag_people_log`。 |
 
 ### 讀者端點
 

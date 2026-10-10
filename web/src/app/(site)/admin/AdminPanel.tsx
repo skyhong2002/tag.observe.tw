@@ -23,11 +23,27 @@ export default function AdminPanel() {
   return (
     <AdminGate next="/admin/">
       <Reports />
+      <Avatars />
       <Bookmarklet />
       <Outlets />
       <Accounts />
       <Database />
     </AdminGate>
+  );
+}
+
+function Avatars() {
+  return (
+    <section className="mt-8">
+      <h2 className="text-lg font-semibold">人物頭像</h2>
+      <p className={note}>人物標籤的素描頭像：確認自動挑選的結果、改用其他候選或隱藏。</p>
+      <a
+        href="/admin/avatars/"
+        className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
+      >
+        檢視人物頭像
+      </a>
+    </section>
   );
 }
 

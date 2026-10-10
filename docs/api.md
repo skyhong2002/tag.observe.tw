@@ -88,6 +88,8 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/articles`](#api-v1-tags-tag-articles) | 帶有某標籤的最新文章 |
 | [`GET /api/v1/tags/{tag}/series`](#api-v1-tags-tag-series) | 標籤每小時的分數與文章數 |
 | [`GET /api/v1/tags/{tag}/flow`](#api-v1-tags-tag-flow) | 和這個標籤一起出現的關鍵字，逐小時 |
+| [`GET /api/v1/tags/{tag}/person`](#api-v1-tags-tag-person) | 標籤代表的人物與素描頭像 |
+| [`GET /api/v1/tags/{tag}/avatar`](#api-v1-tags-tag-avatar) | 標籤人物的素描頭像圖檔 |
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
@@ -1606,6 +1608,74 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hou
 | `points[].tags` | string[][] | [標籤, 同時帶到它的篇數]，多的在前 |
 
 錯誤：`400` hours、until 或 span 格式錯誤。
+
+<a id="api-v1-tags-tag-person"></a>
+
+### `GET /api/v1/tags/{tag}/person`
+
+**標籤代表的人物與素描頭像**
+
+標籤名稱若正好是 Wikidata 上某位人物的名稱或別名，回傳該人物（Wikidata ID、說明、國籍、職業、政黨、職位）與素描頭像。頭像由 Wikimedia Commons 的照片自動挑選、去背、轉成素描，管理員可改用其他候選或隱藏；avatar 附原照片的授權與作者，引用時須一併標示。不是人物或尚未比對的標籤，person 為 null。同名人物取 Wikipedia 條目最多的一位。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`賴清德` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/person'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `person` | object \| null |  |
+| `person.wikidataId` | string | Wikidata 項目 ID，例如 Q3847080 |
+| `person.label` | string \| null | Wikidata 上的名稱（台灣正體優先） |
+| `person.description` | string \| null | Wikidata 說明 |
+| `person.facts` | object \| null |  |
+| `person.facts.citizenship` | string[] | 國籍 |
+| `person.facts.occupations` | string[] | 職業 |
+| `person.facts.parties` | string[] | 政黨 |
+| `person.facts.positions` | object[] | 擔任過的職位，現任在前 |
+| `person.facts.positions[].label` | string | 職位 |
+| `person.facts.positions[].current` | boolean | 沒有卸任日期 |
+| `person.avatar` | object \| null | 沒有可用照片或管理員隱藏時為 null |
+| `person.avatar.url` | string | 素描頭像（WebP，256×256） |
+| `person.avatar.file` | string | Commons 原檔名 |
+| `person.avatar.pageUrl` | string | Commons 檔案頁 |
+| `person.avatar.license` | string \| null | 授權，例如 CC BY-SA 4.0、Public domain |
+| `person.avatar.licenseUrl` | string \| null | 授權條款網址 |
+| `person.avatar.artist` | string \| null | 作者／來源 |
+
+錯誤：`400` 標籤超過 60 字。
+
+快取：5 分鐘。
+
+<a id="api-v1-tags-tag-avatar"></a>
+
+### `GET /api/v1/tags/{tag}/avatar`
+
+**標籤人物的素描頭像圖檔**
+
+256×256 的 WebP 素描頭像；網址請用 person 回應裡的 avatar.url（帶版本參數，換圖時會變）。沒有頭像時回 404。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`賴清德` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/avatar'
+```
+
+錯誤：`404` 沒有頭像。
+
+快取：1 天。
 
 <a id="api-v1-tags-tag-status"></a>
 

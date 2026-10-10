@@ -6,6 +6,7 @@ import { registerDbConsole } from './admin/db-console.ts';
 import { registerAdminRoutes } from './admin/routes.ts';
 import { registerLogin } from './auth/google-login.ts';
 import { dbLoginStore } from './auth/store.ts';
+import { registerAvatarAdmin } from './avatars/admin.ts';
 import { createDb } from './db/client.ts';
 import { registerFeeds } from './feeds.ts';
 import { isShareImage, legacyRoute } from './legacy-redirects.js';
@@ -31,6 +32,7 @@ import { registerReaderPresence } from './v1/reader-presence.ts';
 import { registerV1Routes } from './v1/routes.ts';
 import { registerSimilarity } from './v1/similarity.ts';
 import { registerSiteObservation } from './v1/site-observation.ts';
+import { registerTagPerson } from './v1/tag-person.ts';
 
 export async function buildApp(
   config,
@@ -66,7 +68,8 @@ export async function buildApp(
     await app.register(rateLimit, {
       global: true,
       timeWindow: '1 minute',
-      max: (request, key) => (key.startsWith('key:') ? API_KEY_MAX_PER_MINUTE : request.url.startsWith('/api/') ? API_MAX_PER_MINUTE : 1200),
+      max: (request, key) =>
+        key.startsWith('key:') ? API_KEY_MAX_PER_MINUTE : request.url.startsWith('/api/') ? API_MAX_PER_MINUTE : 1200,
       keyGenerator: async (request) => {
         const api = request.url.startsWith('/api/');
         const keyId = api && apiKeys ? await apiKeys.identify(request) : null;
@@ -113,6 +116,7 @@ export async function buildApp(
     registerArticleRelated(app, own.db);
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
+    registerTagPerson(app, own.db);
   }
   const login = registerLogin(app, loginStore ?? (own ? dbLoginStore(own.db) : null), config.login ?? null);
   // The worker's queue, opened on the first crawl an admin asks for.
@@ -128,6 +132,7 @@ export async function buildApp(
   if (own && config.login)
     registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
   if (own && config.login) registerTaiwanShares(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
+  if (own && config.login) registerAvatarAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own) apiKeys = apiKeyLookup(own.db);
   if (own && config.login && apiKeys)
     registerReaderRoutes(app, own.db, {

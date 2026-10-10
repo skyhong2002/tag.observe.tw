@@ -674,3 +674,75 @@ export const articleAuthorLog = mysqlTable(
   },
   (t) => [index('article_author_log_article').on(t.articleId, t.at)],
 );
+
+// Person tags matched to Wikidata, with a sketch avatar (docs/tag-avatars.md).
+// tools/tag-avatars.ts fills these; admins switch or hide avatars at
+// /admin/avatars/. status: auto = best candidate shown; review = shown but
+// an admin should look (low score, namesakes); chosen = an admin picked one;
+// hidden = an admin turned the avatar off; nophoto = a person with no usable
+// photo; none = no Wikidata person by this exact name.
+export type TagPersonStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'nophoto' | 'none';
+export type TagPersonFacts = {
+  citizenship: string[];
+  occupations: string[];
+  parties: string[];
+  positions: { label: string; current: boolean }[];
+};
+
+export const tagPeople = mysqlTable(
+  'tag_people',
+  {
+    tag: varchar('tag', { length: 60 }).primaryKey(),
+    wikidataId: varchar('wikidata_id', { length: 16 }),
+    label: varchar('label', { length: 120 }),
+    description: varchar('description', { length: 255 }),
+    facts: json('facts').$type<TagPersonFacts>(),
+    status: varchar('status', { length: 8 }).$type<TagPersonStatus>().notNull(),
+    // Why status is review/nophoto, e.g. 「最高分 0.42」「同名 2 人」.
+    note: varchar('note', { length: 120 }),
+    // tag_avatar_candidates.rank on show; null when nothing is shown.
+    shownRank: int('shown_rank'),
+    checkedAt: datetime('checked_at').notNull(),
+    reviewedBy: varchar('reviewed_by', { length: 255 }),
+    reviewedAt: datetime('reviewed_at'),
+  },
+  (t) => [index('tag_people_status').on(t.status, t.checkedAt), index('tag_people_wikidata').on(t.wikidataId)],
+);
+
+const imageBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'mediumblob' });
+
+// Up to three best photos per person tag, best first, each already rendered
+// as a 256px WebP sketch. The photo itself is not kept; page_url and the
+// license fields are the Commons attribution shown with the avatar.
+export const tagAvatarCandidates = mysqlTable(
+  'tag_avatar_candidates',
+  {
+    tag: varchar('tag', { length: 60 }).notNull(),
+    rank: int('rank').notNull(),
+    file: varchar('file', { length: 255 }).notNull(),
+    pageUrl: varchar('page_url', { length: 512 }).notNull(),
+    license: varchar('license', { length: 64 }),
+    licenseUrl: varchar('license_url', { length: 255 }),
+    artist: varchar('artist', { length: 255 }),
+    score: double('score').notNull(),
+    scores: json('scores').$type<Record<string, number>>().notNull(),
+    // ok, or bystander: another face sits inside the crop.
+    verdict: varchar('verdict', { length: 10 }).notNull(),
+    image: imageBytes('image').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tag, t.rank] })],
+);
+
+export const tagPeopleLog = mysqlTable(
+  'tag_people_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    tag: varchar('tag', { length: 60 }).notNull(),
+    action: varchar('action', { length: 8 }).$type<'show' | 'hide'>().notNull(),
+    fromRank: int('from_rank'),
+    toRank: int('to_rank'),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('tag_people_log_tag').on(t.tag, t.at)],
+);

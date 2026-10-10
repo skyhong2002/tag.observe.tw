@@ -7,6 +7,7 @@ const sharedDb = [
   'app/test/admin-media.spec.ts',
   'app/test/taiwan-share.spec.ts',
   'app/test/reader.spec.ts',
+  'app/test/tag-avatars.spec.ts',
 ];
 
 export default defineConfig({

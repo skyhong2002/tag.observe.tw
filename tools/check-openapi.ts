@@ -76,7 +76,7 @@ if (base) {
   };
 }
 
-const cases: Array<[string, string]> = ENDPOINTS.map((e) => [e.path, examplePath(e)]);
+const cases: Array<[string, string]> = ENDPOINTS.filter((e) => e.binary !== 'image/webp').map((e) => [e.path, examplePath(e)]);
 // Real ids for the event endpoints, plus the other shape of /topics.
 const events = (await get('/api/v1/events?limit=1')).body as { events: Array<{ threadId: number }> };
 const id = events.events[0]?.threadId;

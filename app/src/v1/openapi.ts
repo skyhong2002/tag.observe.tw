@@ -669,7 +669,8 @@ interface Endpoint {
   requestBody?: Schema;
   authorized?: boolean;
   status?: number;
-  binary?: boolean;
+  /** Not JSON: true = gzip, or the response's media type. */
+  binary?: true | 'image/webp';
   tag: string;
   summary: string;
   description?: string;
@@ -1409,6 +1410,58 @@ export const ENDPOINTS: Endpoint[] = [
     }),
     errors: { '400': 'hours、until 或 span 格式錯誤' },
     example: '/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hours=336',
+  },
+  {
+    path: '/api/v1/tags/{tag}/person',
+    tag: 'tags',
+    summary: '標籤代表的人物與素描頭像',
+    description:
+      '標籤名稱若正好是 Wikidata 上某位人物的名稱或別名，回傳該人物（Wikidata ID、說明、國籍、職業、政黨、職位）與素描頭像。頭像由 Wikimedia Commons 的照片自動挑選、去背、轉成素描，管理員可改用其他候選或隱藏；avatar 附原照片的授權與作者，引用時須一併標示。不是人物或尚未比對的標籤，person 為 null。同名人物取 Wikipedia 條目最多的一位。',
+    params: [p('tag', '標籤（URL 編碼）', str(), '賴清德')],
+    response: obj({
+      tag: str(),
+      person: nullable(
+        obj({
+          wikidataId: str('Wikidata 項目 ID，例如 Q3847080'),
+          label: nullable(str('Wikidata 上的名稱（台灣正體優先）')),
+          description: nullable(str('Wikidata 說明')),
+          facts: nullable(
+            obj({
+              citizenship: arr(str(), '國籍'),
+              occupations: arr(str(), '職業'),
+              parties: arr(str(), '政黨'),
+              positions: arr(obj({ label: str('職位'), current: bool('沒有卸任日期') }), '擔任過的職位，現任在前'),
+            }),
+          ),
+          avatar: nullable(
+            obj(
+              {
+                url: str('素描頭像（WebP，256×256）'),
+                file: str('Commons 原檔名'),
+                pageUrl: str('Commons 檔案頁'),
+                license: nullable(str('授權，例如 CC BY-SA 4.0、Public domain')),
+                licenseUrl: nullable(str('授權條款網址')),
+                artist: nullable(str('作者／來源')),
+              },
+              '沒有可用照片或管理員隱藏時為 null',
+            ),
+          ),
+        }),
+      ),
+    }),
+    errors: { '400': '標籤超過 60 字' },
+    cache: '5 分鐘',
+  },
+  {
+    path: '/api/v1/tags/{tag}/avatar',
+    tag: 'tags',
+    summary: '標籤人物的素描頭像圖檔',
+    description: '256×256 的 WebP 素描頭像；網址請用 person 回應裡的 avatar.url（帶版本參數，換圖時會變）。沒有頭像時回 404。',
+    binary: 'image/webp',
+    params: [p('tag', '標籤（URL 編碼）', str(), '賴清德')],
+    response: str('WebP 圖檔', { format: 'binary' }),
+    errors: { '404': '沒有頭像' },
+    cache: '1 天',
   },
   {
     path: '/api/v1/tags/{tag}/status',
@@ -2299,7 +2352,7 @@ export function buildOpenApi() {
         responses: {
           [String(e.status ?? 200)]: {
             description: 'OK',
-            content: { [e.binary ? 'application/gzip' : 'application/json']: { schema: e.response } },
+            content: { [e.binary === true ? 'application/gzip' : (e.binary ?? 'application/json')]: { schema: e.response } },
           },
           ...errors,
           '429': { description: '請求太頻繁', content: { 'application/json': { schema: ref('Error') } } },

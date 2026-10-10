@@ -6,8 +6,18 @@ import FollowButton from '@/components/reader/FollowButton';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
 import TagKeywordHistory from '@/components/TagKeywordHistory';
+import TagPerson from '@/components/TagPerson';
 import TagStatusPanel from '@/components/TagStatusPanel';
-import { fetchMedia, fetchTagArticles, fetchTagFlow, fetchTagSeries, fetchTagStatus, type MediaInfo, taipei } from '@/lib/api';
+import {
+  fetchMedia,
+  fetchTagArticles,
+  fetchTagFlow,
+  fetchTagPerson,
+  fetchTagSeries,
+  fetchTagStatus,
+  type MediaInfo,
+  taipei,
+} from '@/lib/api';
 import { countArticles, fetchArticleListing, isCamp, validCursor } from '@/lib/article-search';
 import { decodeRouteParam, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import { tagHours } from '@/lib/tag-query';
@@ -66,7 +76,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   };
   // Keywords riding along: by day over two weeks unless the reader asks for hours.
   const flowSpan: 'day' | 'hour' = sp.flow === 'hour' ? 'hour' : 'day';
-  const [series, { page, facets }, media, status, mentions, flowData] = await Promise.all([
+  const [series, { page, facets }, media, status, mentions, flowData, person] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     // The list and its camp split use the chart's window and every tagged article in it.
     fetchArticleListing({ tag, hours, camp, cursor }),
@@ -75,6 +85,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     // Reports that name the tag in their title or summary but were not tagged with it.
     cursor ? Promise.resolve(null) : countArticles({ q: tag, hours }),
     fetchTagFlow(tag, flowSpan === 'day' ? FLOW_DAYS * 24 + hoursIntoToday() : hours, flowSpan).catch(() => null),
+    fetchTagPerson(tag).catch(() => null),
   ]);
   const flowHref = (v: 'day' | 'hour') => {
     const q = new URLSearchParams(
@@ -118,6 +129,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
             {tag}
           </h1>
           <FollowButton kind="tag" target={tag} />
+          {person && <TagPerson person={person} />}
         </div>
         <div className="flex gap-1 text-sm">
           {[24, 72, 168].map((h) => (
