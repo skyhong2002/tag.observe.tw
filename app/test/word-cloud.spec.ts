@@ -69,4 +69,24 @@ describe('word-cloud size range', () => {
     expect(layoutWordCloud(terms, 760, 330, { min: 40, max: 20 })).toEqual([]);
     expect(layoutWordCloud(terms, 760, 330, { min: 0, max: 20 })).toEqual([]);
   });
+  it('keeps a masked centre, clear boxes and the requested spacing free of words', () => {
+    const terms = Array.from({ length: 30 }, (_, i) => ({ label: `詞${i}`, count: 30 - i }));
+    // A ring: the mask takes the border of a 100×100 centre box and leaves its middle open.
+    const mask = Array.from({ length: 10 }, (_, r) => (r === 0 || r === 9 ? '#'.repeat(10) : `#${'.'.repeat(8)}#`));
+    const sizes = { min: 10, max: 30, floor: 8, words: 30, gap: 8, markGap: 12, scatter: 400, irregular: 0.2 };
+    const box = { x: -60, y: 60, width: 120, height: 20 };
+    const placed = layoutWordCloud(terms, 600, 400, { ...sizes, hole: { width: 100, height: 100, mask, dy: -10 }, clear: [box] });
+    expect(placed.length).toBeGreaterThan(15);
+    expect(placed).toEqual(layoutWordCloud(terms, 600, 400, { ...sizes, hole: { width: 100, height: 100, mask, dy: -10 }, clear: [box] }));
+    const apart = (a: { x: number; y: number; width: number; height: number }, b: typeof a, by: number) =>
+      a.x + a.width + by <= b.x || b.x + b.width + by <= a.x || a.y + a.height + by <= b.y || b.y + b.height + by <= a.y;
+    // The ring's top edge and the clear box, in canvas coordinates; words stay markGap (less one grid cell) away.
+    const ringTop = { x: 250, y: 140, width: 100, height: 10 };
+    const clear = { x: 300 + box.x, y: 200 + box.y, width: box.width, height: box.height };
+    for (const [i, word] of placed.entries()) {
+      expect(apart(word, ringTop, 9)).toBe(true);
+      expect(apart(word, clear, 9)).toBe(true);
+      for (const other of placed.slice(i + 1)) expect(apart(word, other, 5)).toBe(true);
+    }
+  });
 });

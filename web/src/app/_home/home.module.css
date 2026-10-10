@@ -20,12 +20,8 @@
 .skip:focus { top: 12px; }
 .main { max-width: 1152px; margin: auto; padding: 24px 16px 0; }
 .edition { font-size: 12px; line-height: 1.7; margin-top: 6px; color: var(--muted); }
-/* Masthead: the square site mark centred where a page title would be, as on the parent site. */
-.masthead { display: flex; flex-direction: column; align-items: center; text-align: center; margin: 4px 0 28px; }
-.masthead h1 { line-height: 0; }
 .mastheadMark { width: 128px; height: 128px; color: var(--ink); }
-.mastheadTagline { margin-top: 14px; font-size: 14px; line-height: 1.6; color: var(--ink); letter-spacing: .04em; }
-.masthead .edition { margin-top: 4px; }
+.mastheadTagline { font-size: 14px; line-height: 1.6; color: var(--ink); letter-spacing: .04em; }
 .columns { display: grid; grid-template-columns: minmax(180px, .85fr) minmax(0, 2fr) minmax(210px, 1fr); align-items: start; gap: 20px; }
 .left, .center, .right { min-width: 0; }
 .sectionHeading, .gapHeading { margin-bottom: 12px; }
@@ -178,8 +174,6 @@
 /* Reserves the smallest canvas the cloud can have (RankingWordCloud's column
    layout: 760×220, and 340×240 below md) so the events below do not jump while
    it streams in; a taller cloud grows the box, a short one leaves no gap. */
-.growthCloud { aspect-ratio: 760 / 220; }
-@media (max-width: 767px) { .growthCloud { aspect-ratio: 340 / 240; } }
 
 
 /* Outlet icons folded away so the share bar stays one line. */
@@ -311,3 +305,18 @@
 
 /* The event link is the final row of the same card as the stories. */
 .storyList > .more { margin-top: 0; border: 0; border-top: 1px solid var(--soft-line); border-radius: 0; }
+
+/* Masthead cloud: the original masthead (mark and tagline, same sizes) at the
+ * centre of the 正在發酵 cloud. RankingWordCloud keeps the glyphs and the
+ * tagline clear (MastheadCloud's HOLE); the overlay lets the pointer through to
+ * the words pressed in around the strokes. */
+.mastheadCloud { text-align: center; margin: 0 0 28px; }
+.mastheadCloudFrame { position: relative; aspect-ratio: 1120 / 400; }
+.mastheadCloudCentre { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.mastheadCloudCentre h1 { line-height: 0; }
+.mastheadCloudCentre .mastheadTagline { margin-top: 4px; white-space: nowrap; }
+.mastheadCloudCentre .edition { margin-top: 2px; white-space: nowrap; }
+.mastheadCloudLink { font-size: 12px; line-height: 1.7; color: var(--accent); pointer-events: auto; }
+@media (max-width: 767px) {
+  .mastheadCloudFrame { aspect-ratio: 340 / 380; }
+}

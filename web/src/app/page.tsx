@@ -30,10 +30,9 @@ import CampOutletDirectory from './_home/CampOutletDirectory';
 import CampShareSummary from './_home/CampShareSummary';
 import EventRecovery from './_home/EventRecovery';
 import HeadlineSidebar from './_home/HeadlineSidebar';
-import HomeGrowthCloud, { HOME_CLOUD_HREF } from './_home/HomeGrowthCloud';
 import HomeRanking from './_home/HomeRanking';
 import styles from './_home/home.module.css';
-import Masthead from './_home/Masthead';
+import MastheadCloud from './_home/MastheadCloud';
 import NewsImage from './_home/NewsImage';
 import ReadersPanel from './_home/ReadersPanel';
 
@@ -293,7 +292,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </a>
       <SiteHeader mastheadId="masthead" />
       <main id="news-main" className={styles.main}>
-        <Masthead date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
+        <MastheadCloud date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
 
         {data.events?.stale && <p className={styles.notice}>事件分群更新延遲，目前顯示最近一次的結果。</p>}
 
@@ -327,17 +326,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
           <section className={styles.center} aria-label="焦點事件">
             <div className={styles.sectionHeading}>
-              <h2>正在發酵</h2>
-              <Link href={HOME_CLOUD_HREF}>
-                升溫排行 <Arrow />
-              </Link>
-            </div>
-            <div className={styles.growthCloud} data-vital-region="home-growth-cloud">
-              <Suspense fallback={<PanelLoading />}>
-                <HomeGrowthCloud />
-              </Suspense>
-            </div>
-            <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>焦點事件</h2>
               <Link href="/event/">
                 {data.focus.daily ? '今天' : '本小時'}全部 {data.focus.count || ''} 件 <Arrow />

@@ -4,7 +4,7 @@ import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 // 新聞總覽 (the home page, web/src/app/page.tsx). Its panels come from
 // web/src/lib/demo.ts: the event table's first 24 events (12 stories), today's
 // event archive (3 per 藍綠溫差 column), the news ranking by 分數 (8 shown), the all-outlet
-// 正在發酵 cloud (_home/HomeGrowthCloud.tsx, the ranking page's growth cloud),, journalists of the
+// 正在發酵 cloud around the masthead (_home/MastheadCloud.tsx, top 30 rising terms), journalists of the
 // past 48 hours (6 shown) and the similarity graph of the past 24 hours at
 // 0.65 (outlets with at least 20 analysed articles, 5 per column). 同題不同標
 // pairs are chosen in lib/compare-data.ts and lib/headline-compare.mts;
@@ -53,7 +53,9 @@ export function HomeMethod({
           <Link href="/ranking/?category=all&order=growth&gate=all" className={inlineLink}>
             關鍵字排行的「正在發酵」
           </Link>
-          相同：所有媒體、不限跨媒體門檻，只列升溫量（爆發力－分數）為正的關鍵字，字越大升溫量越高，因此全是橘字。點關鍵字可看該詞的報導。
+          相同：所有媒體、不限跨媒體門檻，取升溫量（爆發力－分數）為正的前 30
+          個關鍵字，圍繞在頁首標誌四周，字越大升溫量越高。升溫的關鍵字不足 30
+          個時，以當天分數最高的關鍵字補足，顯示為灰字且比所有橘字小。點關鍵字可看該詞的報導。
         </dd>
         <dt className={methodTerm}>記者動態</dt>
         <dd>
