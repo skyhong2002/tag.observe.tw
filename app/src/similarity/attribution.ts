@@ -18,7 +18,7 @@ export const ATTRIBUTION_RELATION_LABEL = '來源／引用';
 // writer; ordinary mentions of an agency reporter do not establish a source.
 const cnaDispatch = /^\s*[（(]\s*中央社(?:記者|记者)[\p{L}·．\s]{2,50}(?:\d{1,2}|[一二三四五六七八九十廿]{1,3})日(?:電|电)\s*[）)]/u;
 
-type Outlet = OutletIdentity & { aliases: string[] };
+type Outlet = OutletIdentity & { aliases: string[]; namesakePrefixes: string[] };
 const titles = favicons as Record<string, { title: string | null }>;
 const countries: Record<string, string> = {
   TW: '台灣',
@@ -30,12 +30,15 @@ const countries: Record<string, string> = {
   CN: '中國',
   DE: '德國',
 };
-const outlet = (media: string, name: string, countryCode: string, aliases: string[]): Outlet => ({
+// namesakePrefixes turn an alias into another outlet's name (香港 + 經濟日報),
+// so a mention right after one of them never cites this outlet.
+const outlet = (media: string, name: string, countryCode: string, aliases: string[], namesakePrefixes: string[] = []): Outlet => ({
   media,
   name,
   country: countries[countryCode] ?? '未知',
   countryCode,
   aliases: [...new Set([name, ...aliases])],
+  namesakePrefixes,
 });
 
 // Country describes the outlet's home jurisdiction, not the place where a story
@@ -90,7 +93,8 @@ const outlets: Outlet[] = [
   outlet('cna', '中央社', 'TW', ['CNA', '中央通訊社', '中央通讯社']),
   outlet('ltn', '自由時報', 'TW', ['自由时报', '自由時報電子報']),
   outlet('udn', '聯合新聞網', 'TW', ['UDN', '聯合報', '联合报', '聯合新聞', '联合新闻网']),
-  outlet('udnmoney', '經濟日報', 'TW', ['经济日报']),
+  // 香港經濟日報 (HKET), 首爾經濟日報 and 韓國經濟日報 are unrelated papers.
+  outlet('udnmoney', '經濟日報', 'TW', ['经济日报'], ['香港', '首爾', '首尔', '韓國', '韩国', '南韓', '南韩']),
   outlet('chinatimes', '中國時報', 'TW', ['中時新聞網', '中時電子報', '中時', '中国时报']),
   outlet('ctee', '工商時報', 'TW', ['工商时报']),
   outlet('ettoday', 'ETtoday新聞雲', 'TW', ['ETtoday', '東森新聞雲', 'ETtoday新聞']),
@@ -106,8 +110,10 @@ const outlets: Outlet[] = [
   outlet('pts', '公視新聞', 'TW', ['公視', '公视', '公視新聞網']),
   outlet('healthnews', '健康醫療網', 'TW', []),
   outlet('ctitv', '中天新聞', 'TW', ['中天新聞網', '中天新闻']),
-  outlet('mirror', '鏡週刊', 'TW', ['鏡周刊', '镜周刊']),
-  outlet('mirrordaily', '鏡報', 'TW', ['鏡報新聞網']),
+  // 明鏡週刊 is Der Spiegel.
+  outlet('mirror', '鏡週刊', 'TW', ['鏡周刊', '镜周刊'], ['明']),
+  // 每日鏡報 is the British Daily Mirror.
+  outlet('mirrordaily', '鏡報', 'TW', ['鏡報新聞網'], ['每日']),
   outlet('mnews', '鏡新聞', 'TW', ['鏡電視', '镜新闻']),
   outlet('upmedia', '上報', 'TW', ['上報新聞', '上报']),
   outlet('newtalk', 'Newtalk新聞', 'TW', ['新頭殼', 'Newtalk', '新头壳']),
@@ -121,7 +127,8 @@ const outlets: Outlet[] = [
   outlet('cnews', '匯流新聞網', 'TW', ['匯流新聞', '汇流新闻网', 'CNEWS', 'CNEWS匯流新聞網']),
   outlet('ftnn', 'FTNN新聞網', 'TW', ['FTNN', '鋒燦傳媒']),
   outlet('taisounds', '太報', 'TW', ['太报']),
-  outlet('reporter', '報導者', 'TW', ['报道者', 'The Reporter']),
+  // 好萊塢報導者 is The Hollywood Reporter.
+  outlet('reporter', '報導者', 'TW', ['报道者', 'The Reporter'], ['好萊塢', '好莱坞']),
   outlet('yam', '蕃新聞', 'TW', ['蕃薯藤新聞']),
   outlet('knews', '知新聞', 'TW', []),
   outlet('taipeitimes', 'Taipei Times', 'TW', ['台北時報']),
@@ -159,7 +166,7 @@ const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$
 const mentions = outlets.map((o) => ({
   outlet: o,
   pattern: new RegExp(
-    `(?<![A-Za-z0-9_])(?:${o.aliases
+    `(?<![A-Za-z0-9_])${o.namesakePrefixes.length ? `(?<!${o.namesakePrefixes.map(escapeRegex).join('|')})` : ''}(?:${o.aliases
       .sort((a, b) => b.length - a.length)
       .map((alias) => `${escapeRegex(alias)}${/\p{Script=Han}/u.test(alias) ? '(?![A-Za-z_])' : '(?![A-Za-z0-9_])'}`)
       .join('|')})`,

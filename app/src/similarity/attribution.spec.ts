@@ -168,6 +168,31 @@ describe('explicit media attribution', () => {
     expect(extractAttributions('AP報導指出，調查結束。', 'ltn')[0]?.media).toBe('ap');
   });
 
+  it('does not mistake foreign namesakes for 經濟日報', () => {
+    for (const text of [
+      '香港經濟日報報導，報告指出聖嬰現象增強。',
+      '《首爾經濟日報》報導，Solidigm對客戶發出通知。',
+      '綜合韓國「東亞日報」與首爾經濟日報（Seoul Economic Daily）報導，會議結束。',
+      '「韓國經濟日報」報導,當天晚宴結束。',
+      '據《香港經濟日報》報導，公司出售事項。',
+    ])
+      expect(extractAttributions(text, 'udn').map((a) => a.media)).not.toContain('udnmoney');
+    expect(extractAttributions('根據經濟日報報導，物價漲幅達標。', 'tvbs')[0]?.media).toBe('udnmoney');
+    expect(extractAttributions('據《經濟日報》報導，景碩大漲。', 'ftnn')[0]?.media).toBe('udnmoney');
+  });
+
+  it('does not mistake foreign namesakes for Taiwan outlets', () => {
+    for (const text of [
+      '德國《明鏡週刊》（Der Spiegel）報導指出，調查人員正追查此案。',
+      '「明鏡周刊」報導，他曾經長期與一名前中國高階將領保持聯繫。',
+      '英國《每日鏡報》報導，班機原訂從倫敦起飛。',
+      '據《好萊塢報導者》報導，該片可能虧損。',
+    ])
+      expect(extractAttributions(text, 'udn')).toEqual([]);
+    expect(extractAttributions('據《鏡週刊》報導，案件仍在調查。', 'udn')[0]?.media).toBe('mirror');
+    expect(extractAttributions('據《報導者》報導，案件仍在調查。', 'udn')[0]?.media).toBe('reporter');
+  });
+
   it('excludes the publishing outlet by key or name', () => {
     expect(extractAttributions('中央社報導，會議結束。來源：CNA', 'cna', '中央通訊社')).toEqual([]);
     expect(extractAttributions('聯合報報導，會議結束。', '聯合新聞網')).toEqual([]);
