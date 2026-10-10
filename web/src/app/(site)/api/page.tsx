@@ -34,7 +34,7 @@ interface Operation {
   summary: string;
   description?: string;
   parameters: Param[];
-  responses: Record<string, { description: string; content?: { 'application/json': { schema: Schema } } }>;
+  responses: Record<string, { description: string; content?: Record<string, { schema: Schema }> }>;
 }
 interface OpenApi {
   info: {
@@ -44,7 +44,7 @@ interface OpenApi {
     'x-quickstart': Array<{ label: string; lang: string; code: string }>;
   };
   tags: Array<{ name: string; description: string }>;
-  paths: Record<string, { get: Operation }>;
+  paths: Record<string, Record<string, Operation>>;
   components: { schemas: Record<string, Schema> };
 }
 interface IndexEntry {
@@ -94,6 +94,7 @@ const anchor = (path: string) =>
     .replace(/[{}]/g, '')
     .replace(/[/.]/g, '-')
     .replace(/-+$/, '');
+const endpointAnchor = (method: string, path: string) => `${anchor(path)}-${method.toLowerCase()}`;
 const h2Class = 'scroll-mt-24 text-lg font-semibold';
 const cellClass = 'border-b border-zinc-200 px-2 py-1.5 align-top dark:border-zinc-800';
 const linkClass = 'text-brand-700 underline decoration-brand-300 underline-offset-2 hover:decoration-brand-600 dark:text-brand-400';
@@ -106,15 +107,29 @@ function CodeBlock({ code }: { code: string }) {
   );
 }
 
-function Endpoint({ path, op, example, tools }: { path: string; op: Operation; example: string; tools: ReturnType<typeof schemaTools> }) {
-  const ok = op.responses['200']?.content?.['application/json'].schema;
+function Endpoint({
+  path,
+  method,
+  op,
+  example,
+  tools,
+}: {
+  path: string;
+  method: string;
+  op: Operation;
+  example: string;
+  tools: ReturnType<typeof schemaTools>;
+}) {
+  const successCode = Object.keys(op.responses).find((code) => code.startsWith('2')) ?? '200';
+  const success = op.responses[successCode];
+  const ok = success?.content?.['application/json']?.schema ?? success?.content?.['application/gzip']?.schema;
   const variants = ok?.oneOf ?? (ok ? [ok] : []);
-  const errors = Object.entries(op.responses).filter(([code]) => code !== '200' && code !== '429');
+  const errors = Object.entries(op.responses).filter(([code]) => code !== successCode && code !== '429');
   return (
-    <section id={anchor(path)} className="scroll-mt-24 border-t border-zinc-300 pt-5 dark:border-zinc-800">
+    <section id={endpointAnchor(method, path)} className="scroll-mt-24 border-t border-zinc-300 pt-5 dark:border-zinc-800">
       <h3 className="flex flex-wrap items-baseline gap-2 font-mono text-[15px]">
         <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
-          GET
+          {method}
         </span>
         <span className="break-all font-semibold">{path}</span>
       </h3>
@@ -231,7 +246,9 @@ export default async function ApiDocsPage() {
     );
   const { spec, examples } = data;
   const tools = schemaTools(spec.components.schemas);
-  const ops = Object.entries(spec.paths).map(([path, { get }]) => ({ path, op: get }));
+  const ops = Object.entries(spec.paths).flatMap(([path, methods]) =>
+    Object.entries(methods).map(([method, op]) => ({ path, method: method.toUpperCase(), op })),
+  );
   const rules = spec.info.description.split('\n').map((l) => l.replace(/^- /, ''));
   const groups = spec.tags
     .map((tag) => ({ tag, list: ops.filter(({ op }) => op.tags.includes(tag.name)) }))
@@ -244,9 +261,9 @@ export default async function ApiDocsPage() {
     ...groups.map(({ tag, list }) => ({
       id: `tag-${tag.name}`,
       title: tag.description,
-      children: list.map(({ path, op }) => ({
-        id: anchor(path),
-        title: path.replace(/^\/api\/v1(?=\/)/, ''),
+      children: list.map(({ path, method, op }) => ({
+        id: endpointAnchor(method, path),
+        title: `${method} ${path.replace(/^\/api\/v1(?=\/)/, '')}`,
         hint: op.summary,
         mono: true,
       })),
@@ -305,10 +322,10 @@ export default async function ApiDocsPage() {
             端點一覽
           </h2>
           <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-            {ops.map(({ path, op }) => (
-              <li key={path} className="flex min-w-0 gap-2">
-                <a href={`#${anchor(path)}`} className={`truncate font-mono ${linkClass}`}>
-                  {path}
+            {ops.map(({ path, method, op }) => (
+              <li key={`${method}:${path}`} className="flex min-w-0 gap-2">
+                <a href={`#${endpointAnchor(method, path)}`} className={`truncate font-mono ${linkClass}`}>
+                  {method} {path}
                 </a>
                 <span className="shrink-0 text-zinc-600 dark:text-zinc-400">{op.summary}</span>
               </li>
@@ -321,8 +338,8 @@ export default async function ApiDocsPage() {
             <h2 id={`tag-${tag.name}`} className={h2Class}>
               {tag.description}
             </h2>
-            {list.map(({ path, op }) => (
-              <Endpoint key={path} path={path} op={op} example={examples[path] ?? path} tools={tools} />
+            {list.map(({ path, method, op }) => (
+              <Endpoint key={`${method}:${path}`} path={path} method={method} op={op} example={examples[path] ?? path} tools={tools} />
             ))}
           </section>
         ))}
