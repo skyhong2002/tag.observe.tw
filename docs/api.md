@@ -605,6 +605,14 @@ curl -s 'https://tag.observe.tw/api/v1/similarity/evidence?hours=48&node=cna&mod
 | `items[].directPair.sharedShingles` | integer |  |
 | `items[].directPair.kind` | "identical" \| "high" |  |
 | `items[].directPair.evidence` | string | 最多 100 字的連續相同片段 |
+| `items[].diff` | object | origin 且有 directPair：本篇相對 sourceId 的修改 |
+| `items[].diff.title` | object[][] \| null | 完整標題，標出修改 |
+| `items[].diff.body` | object \| null |  |
+| `items[].diff.body.identical` | boolean | 正文除了站方固定字樣外一字未改 |
+| `items[].diff.body.hunks` | object[][][] | 修改處，依閱讀順序；每處前後附少量相同文字，其餘相同段落省略 |
+| `items[].diff.body.more` | integer | 未列出的修改處數 |
+| `items[].diff.body.removed` | integer | 只在較早文章的字數 |
+| `items[].diff.body.added` | integer | 只在本篇的字數 |
 | `items[].source` | object |  |
 | `items[].source.media` | string |  |
 | `items[].source.name` | string |  |
@@ -1458,6 +1466,15 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 | `pairs[].publicationUnknown` | boolean | 標示刊登時間尚未確認 |
 | `pairs[].ownCitesOther` | boolean | 自家文章明示引用對方媒體 |
 | `pairs[].otherCitesOwn` | boolean | 對方文章明示引用自家媒體 |
+| `pairs[].diff` | object | 只附在自家文章最新的 200 組配對 |
+| `pairs[].diff.earlier` | "own" \| "other" | 較早的一篇；修改由它讀到較晚的一篇 |
+| `pairs[].diff.title` | object[][] \| null | 較晚一篇的完整標題，標出修改 |
+| `pairs[].diff.body` | object \| null |  |
+| `pairs[].diff.body.identical` | boolean | 正文除了站方固定字樣外一字未改 |
+| `pairs[].diff.body.hunks` | object[][][] | 修改處，依閱讀順序；每處前後附少量相同文字，其餘相同段落省略 |
+| `pairs[].diff.body.more` | integer | 未列出的修改處數 |
+| `pairs[].diff.body.removed` | integer | 只在較早文章的字數 |
+| `pairs[].diff.body.added` | integer | 只在本篇的字數 |
 | `index` | object |  |
 | `index.compared` | integer | 已比對的自家文章數 |
 | `index.firstSeen` | integer | 已比對文章扣除明示引用、有較早相近版本及時間未確認的文章，依 ID 去重 |

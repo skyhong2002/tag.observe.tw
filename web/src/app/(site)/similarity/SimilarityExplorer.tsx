@@ -9,12 +9,13 @@ import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SourceLink from '@/components/SourceLink';
+import { VersionCompare } from '@/components/VersionDiff';
 import { ATTRIBUTION_RELATION_LABEL, attributionRole } from '@/lib/author-display.mts';
 import { edgeHasArrow } from '@/lib/graph-edge-style.mts';
 import { type CitationDirection, type GraphSelection, highlightedRelationship } from '@/lib/graph-evidence.mts';
 import { availableGraphTags, filterGraphMedia, type GraphFilters, graphEvidenceScope, type MediaTag } from '@/lib/graph-filters.mts';
 import { type MediaCamps, mainGraphEdges, nodeArticleCounts } from '@/lib/media-graph.mts';
-import { relationDetails, relationLabel } from '@/lib/relation-label.mts';
+import { delayLabel, originSummary } from '@/lib/relation-label.mts';
 import { readGraphState, relationshipQuery } from '@/lib/relationship-query.mts';
 import {
   type EvidenceQuery,
@@ -126,41 +127,66 @@ function CitationEvidence({ article, source }: { article: SimilarityArticle; sou
   );
 }
 
+/** One side's heading: role, outlet, time (with the delay on the later side) and byline. */
+function VersionHead({ role, article, delay }: { role: string; article: SimilarityArticle; delay?: string }) {
+  return (
+    <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-zinc-500">
+      <span className="rounded bg-zinc-200 px-1.5 py-px text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{role}</span>
+      <MediaHoverLink media={article.media} className={`${linkStyle} font-medium`}>
+        {article.mediaTitle}
+      </MediaHoverLink>
+      {article.countryCode !== 'TW' && <span>{article.country}</span>}
+      <time dateTime={article.publishedAt} className="tabular-nums">
+        {Number.isFinite(Date.parse(article.publishedAt)) ? taipei(article.publishedAt) : '刊登時間未取得'}
+      </time>
+      {delay && <span className="text-zinc-700 dark:text-zinc-300">{delay}</span>}
+      {article.authors.length > 0 && <AuthorCredits credits={article.authors} media={article.media} attributions={article.attributions} />}
+    </span>
+  );
+}
+
 function OriginEvidence({ origin }: { origin: StoryOrigin }) {
-  const { article, source, group, directPair } = origin;
+  const { article, source, group, directPair, diff } = origin;
   const [showGroup, setShowGroup] = useState(false);
   const [showPairs, setShowPairs] = useState(false);
   const toggle = `${linkStyle} underline-offset-2`;
+  const { sentence, roles } = originSummary(directPair?.relation, directPair, article, source);
   return (
-    <article className="min-w-0 space-y-1 py-3" data-testid="story-origin" data-source-id={source.id} data-article-id={article.id}>
+    <article className="min-w-0 space-y-2 py-4" data-testid="story-origin" data-source-id={source.id} data-article-id={article.id}>
       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-        {relationLabel(directPair?.relation)}
-        {relationDetails(directPair?.relation, directPair?.a.mediaTitle ?? '', directPair?.b.mediaTitle ?? '') &&
-          ` · ${relationDetails(directPair?.relation, directPair?.a.mediaTitle ?? '', directPair?.b.mediaTitle ?? '')}`}
+        {sentence}
+        {directPair && <span className="font-normal text-zinc-500"> · 相似度 {(directPair.score * 100).toFixed(1)}%</span>}
       </p>
-      <ArticleLine article={article} />
-      <ArticleLine article={source} badge="比對文章" dim />
-      {directPair ? (
-        <Passage
-          lead={<span className="font-medium text-brand-700 dark:text-brand-400">直接比對相似 {(directPair.score * 100).toFixed(1)}%</span>}
-          text={directPair.evidence}
-        />
+      <VersionCompare
+        heads={[
+          <VersionHead key="earlier" role={roles[0]} article={source} />,
+          <VersionHead key="later" role={roles[1]} article={article} delay={delayLabel(source.publishedAt, article.publishedAt)} />,
+        ]}
+        links={[
+          { href: `/article/${source.id}/`, title: source.title },
+          { href: `/article/${article.id}/`, title: article.title },
+        ]}
+        title={diff?.title}
+        body={diff?.body}
+      />
+      {diff?.body ? null : directPair ? (
+        <Passage lead={<span className="font-medium text-brand-700 dark:text-brand-400">共同段落</span>} text={directPair.evidence} />
       ) : (
         <p className="text-xs leading-5 text-zinc-500">
           這兩篇沒有直接比對分數，不能推定彼此相似或稿源。
           <MethodLink />
         </p>
       )}
-      <p className="flex flex-wrap gap-x-3 text-xs leading-5 text-zinc-500">
-        <span>
-          同組 {group.articles.length} 篇{group.tiedFirst > 1 && `（${group.tiedFirst} 篇同時最早刊登）`}
-        </span>
+      <p className="flex flex-wrap gap-x-4 text-xs leading-5 text-zinc-500">
         <button type="button" onClick={() => setShowGroup((value) => !value)} aria-expanded={showGroup} className={toggle}>
-          {showGroup ? '收合同組' : '同組全部新聞'}
+          {showGroup ? '收合' : `同一則新聞共 ${number(group.articles.length)} 篇`}
+          {!showGroup && group.tiedFirst > 1 && `（${group.tiedFirst} 篇同時最早）`}
         </button>
-        <button type="button" onClick={() => setShowPairs((value) => !value)} aria-expanded={showPairs} className={toggle}>
-          {showPairs ? '收合配對' : `分組依據 · ${number(group.pairCount)} 組相似配對`}
-        </button>
+        {group.pairCount > 1 && (
+          <button type="button" onClick={() => setShowPairs((value) => !value)} aria-expanded={showPairs} className={toggle}>
+            {showPairs ? '收合配對' : `${number(group.pairCount)} 組相似配對`}
+          </button>
+        )}
       </p>
       {showGroup && (
         <div className="space-y-2 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
@@ -798,13 +824,13 @@ export default function SimilarityExplorer({
           )}
           {view === 'evidence' && (
             <>
-              <div className="grid grid-cols-2 items-end gap-4 xl:grid-cols-4">
-                <label className="block text-sm">
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
                   媒體
                   <select
                     value={selection && 'node' in selection ? selection.node : selection ? '__edge__' : ''}
                     onChange={(event) => select(event.target.value ? { node: event.target.value } : null)}
-                    className={control}
+                    className={`${control} text-zinc-900 dark:text-zinc-100`}
                   >
                     <option value="">圖上全部媒體</option>
                     {selection && 'edge' in selection && <option value="__edge__">{selectedTitle}</option>}
@@ -815,119 +841,118 @@ export default function SimilarityExplorer({
                     ))}
                   </select>
                 </label>
-                <label className="block text-sm">
-                  關係類型
-                  <select value={mode} onChange={(event) => updateMode(event.target.value as typeof mode)} className={control}>
+                <label className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
+                  關係
+                  {/* One menu for the relation type and, for similar text, the source clue. */}
+                  <select
+                    value={mode === 'similarity' && relationFilter !== 'all' ? `similarity:${relationFilter}` : mode}
+                    onChange={(event) => {
+                      const [nextMode, nextRelation] = event.target.value.split(':');
+                      updateUrl({ mode: nextMode, relation: nextRelation, page: undefined });
+                    }}
+                    className={`${control} text-zinc-900 dark:text-zinc-100`}
+                  >
                     <option value="all">全部關係</option>
-                    <option value="similarity">內文相似</option>
+                    <option value="similarity">內文相似：全部</option>
+                    <option value="similarity:same-byline">內文相似：同署名跨站</option>
+                    <option value="similarity:attributed">內文相似：已註明來源</option>
+                    <option value="similarity:unattributed">內文相似：未辨識稿源</option>
                     <option value="citation">{ATTRIBUTION_RELATION_LABEL}</option>
                   </select>
                 </label>
-                <label className="block text-sm">
-                  來源線索
-                  <select
-                    value={relationFilter}
-                    disabled={mode === 'citation'}
-                    className={control}
-                    onChange={(event) => {
-                      updateUrl({ relation: event.target.value, page: undefined });
-                    }}
-                  >
-                    <option value="all">全部相似配對</option>
-                    <option value="attributed">已註明來源</option>
-                    <option value="same-byline">同署名跨站（無明示來源）</option>
-                    <option value="unattributed">未辨識稿源</option>
-                  </select>
-                </label>
-                <label className="block text-sm">
-                  搜尋文章
+                {mode !== 'similarity' && selection && 'node' in selection && (
+                  <label className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
+                    方向
+                    <select
+                      value={direction}
+                      onChange={(event) => setDirection(event.target.value as CitationDirection)}
+                      className={`${control} text-zinc-900 dark:text-zinc-100`}
+                    >
+                      <option value="all">雙向</option>
+                      <option value="outgoing">{selectedTitle} 採用／引用誰</option>
+                      <option value="incoming">誰採用／引用 {selectedTitle}</option>
+                    </select>
+                  </label>
+                )}
+                <label className="block min-w-48 flex-[2] text-xs text-zinc-500">
+                  搜尋
                   <input
                     type="search"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    className={control}
+                    className={`${control} text-zinc-900 dark:text-zinc-100`}
                     placeholder="標題、媒體、作者或共同段落"
                   />
                 </label>
-                <label className="block text-sm">
-                  來源／引用方向
-                  <select
-                    value={direction}
-                    disabled={mode === 'similarity' || !selection || !('node' in selection)}
-                    onChange={(event) => {
-                      setDirection(event.target.value as CitationDirection);
+                {(selection || mode !== 'all' || relationFilter !== 'all' || query) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateUrl({
+                        ...selectionPatch(null),
+                        mode: 'all',
+                        relation: undefined,
+                        direction: 'all',
+                        q: undefined,
+                        page: undefined,
+                      });
                     }}
-                    className={`${control} disabled:opacity-40`}
+                    className={`${linkStyle} pb-2 text-sm underline`}
                   >
-                    <option value="all">所有來源／引用方向</option>
-                    <option value="outgoing">採用／引用其他媒體</option>
-                    <option value="incoming">被其他媒體採用／引用</option>
-                  </select>
-                </label>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-semibold">{selectedTitle}</h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateUrl({ ...selectionPatch(null), mode: 'all', direction: 'all', q: undefined, page: undefined });
-                  }}
-                  className="text-sm text-brand-700 underline dark:text-brand-400"
-                >
-                  清除篩選
-                </button>
+                    清除篩選
+                  </button>
+                )}
               </div>
               {selection && 'node' in selection && (
-                <div className="space-y-3">
-                  <p className="text-xs text-zinc-500">
+                <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs leading-6 text-zinc-500">
+                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{selectedTitle}</span>
+                  <span>
                     {byId.get(selection.node)?.country} ·{' '}
                     {byId.get(selection.node)?.external
                       ? '僅作為來源／引用對象，未收錄本期內文'
                       : `已比對 ${number(byId.get(selection.node)?.articles ?? 0)} 篇`}
-                  </p>
-                  <div className="grid max-w-3xl grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
-                    {[
-                      [selectedCounts?.outgoing ?? 0, '採用／引用其他媒體'],
-                      [selectedCounts?.incoming ?? 0, '被其他媒體採用／引用'],
+                  </span>
+                  {(
+                    [
+                      [selectedCounts?.outgoing ?? 0, '採用／引用他台'],
+                      [selectedCounts?.incoming ?? 0, '被採用／引用'],
                       [selectedNode?.sameByline ?? 0, '同署名跨站'],
                       [selectedNode?.attributed ?? 0, '已註明來源'],
                       [selectedNode?.unattributed ?? 0, '未辨識稿源'],
-                    ].map(([n, label]) => (
-                      <div key={label} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
-                        <p className="mb-1 text-xl font-semibold">{number(Number(n))}</p>
-                        {label}
-                      </div>
-                    ))}
-                  </div>
+                    ] as const
+                  ).map(([n, label]) => (
+                    <span key={label}>
+                      {label} <strong className="font-semibold text-zinc-800 tabular-nums dark:text-zinc-200">{number(Number(n))}</strong>
+                    </span>
+                  ))}
                   {!byId.get(selection.node)?.external && (
-                    <MediaHoverLink media={selection.node} className={`${linkStyle} inline-block text-xs`}>
-                      查看這家媒體的站內報導 →
+                    <MediaHoverLink media={selection.node} className={linkStyle}>
+                      站內報導 →
                     </MediaHoverLink>
                   )}
-                </div>
-              )}
-              <p className="text-xs leading-6 text-zinc-500">
-                下方只列圖上媒體之間的關係。
-                <MethodLink />
-              </p>
-              {hiddenSources > 0 && (
-                <p className="text-xs leading-6 text-zinc-500">
-                  有 {hiddenSources} 篇報導的來源媒體未顯示，來源仍保持不變。
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ limit: 0, camp: 'all', tag: '' })}
-                    className={`${linkStyle} ml-2 underline`}
-                  >
-                    顯示全部媒體與來源
-                  </button>
                 </p>
               )}
-              <p role="status" aria-live="polite" className={`text-sm text-zinc-500 ${evidenceError ? 'sr-only' : ''}`}>
+              <p role="status" aria-live="polite" className={`text-xs leading-6 text-zinc-500 ${evidenceError ? 'sr-only' : ''}`}>
                 {evidenceError
                   ? '新聞對照資料載入失敗'
                   : evidenceLoading && !evidence
                     ? '載入關係證據中…'
-                    : `${number(total)} 筆關係證據 · 最新在前${total ? ` · 顯示 ${number(currentPage * pageSize + 1)}–${number(Math.min(total, (currentPage + 1) * pageSize))}` : ''}${evidenceLoading ? ' · 更新中…' : ''}`}
+                    : `${number(total)} 筆 · 最新在前${total ? ` · 顯示 ${number(currentPage * pageSize + 1)}–${number(Math.min(total, (currentPage + 1) * pageSize))}` : ''}${evidenceLoading ? ' · 更新中…' : ''} · 只列圖上媒體之間的關係`}
+                {!evidenceError && hiddenSources > 0 && (
+                  <>
+                    ，另有 {number(hiddenSources)} 篇的來源媒體不在圖上
+                    <button
+                      type="button"
+                      onClick={() => updateFilters({ limit: 0, camp: 'all', tag: '' })}
+                      className={`${linkStyle} ml-1.5 underline`}
+                    >
+                      顯示全部
+                    </button>
+                  </>
+                )}
+                <span className="ml-2">
+                  <MethodLink />
+                </span>
               </p>
               {evidenceError && (
                 <p role="alert" className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:bg-zinc-950">

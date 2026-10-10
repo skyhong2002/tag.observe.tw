@@ -21,7 +21,7 @@ import { journalistKey } from '../journalists/names.ts';
 import { startRemovalRequestSync } from '../journalists/removal-requests.ts';
 import { type Attribution, normalizeAttributions, outletIdentity } from '../similarity/attribution.ts';
 import { METHOD } from '../similarity/compute.ts';
-import { loadArticles, pairsOfArticles, toPair, WINDOW_DAYS } from '../similarity/store.ts';
+import { loadArticles, pairsOfArticles, toPair, versionDiffs, WINDOW_DAYS } from '../similarity/store.ts';
 import type { SimilarityIndexStats } from '../similarity/types.ts';
 import { type ContentStatus, contentStatus, publicContentState } from './article-content.ts';
 import { cachedIndexView, similarityParams } from './similarity.ts';
@@ -177,6 +177,22 @@ export async function loadJournalistIndex(
 
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, '\\$&');
 
+// Diffs cost a body read and an alignment each; the page lists newest stories first.
+const DIFF_LIMIT = 200;
+async function attachJournalistDiffs(db: Db, pairs: JournalistPair[], now: Date) {
+  const newest = [...pairs]
+    .sort((a, b) => Date.parse(b.own.publishedAt) - Date.parse(a.own.publishedAt))
+    .slice(0, DIFF_LIMIT)
+    .map((pair) => ({ pair, ownFirst: pair.minutes >= 0 }));
+  const diffs = await versionDiffs(
+    db,
+    newest.map(({ pair, ownFirst }) => (ownFirst ? { earlier: pair.own, later: pair.other } : { earlier: pair.other, later: pair.own })),
+    now,
+  );
+  newest.forEach(({ pair, ownFirst }, i) => {
+    pair.diff = { ...diffs[i]!, earlier: ownFirst ? 'own' : 'other' };
+  });
+}
 export async function loadJournalist(
   db: Db,
   name: string,
@@ -226,6 +242,7 @@ export async function loadJournalist(
     .map((pair) => orientPair(pair, (article) => indexed.has(article.id), name))
     .filter((pair): pair is JournalistPair => pair !== null)
     .sort((a, b) => b.score - a.score || Date.parse(b.own.publishedAt) - Date.parse(a.own.publishedAt));
+  await attachJournalistDiffs(db, pairs, now);
   const matches = new Map<number, number>();
   for (const pair of pairs) matches.set(pair.own.id, (matches.get(pair.own.id) ?? 0) + 1);
 

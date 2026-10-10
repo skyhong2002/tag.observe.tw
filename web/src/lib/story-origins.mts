@@ -1,5 +1,5 @@
 import type { Attribution } from '../../../app/src/similarity/attribution.ts';
-import type { SimilarityArticle, SimilarityEvidence, SimilarityPair } from '../../../app/src/similarity/types.ts';
+import type { SimilarityArticle, SimilarityEvidence, SimilarityPair, VersionDiff } from '../../../app/src/similarity/types.ts';
 
 export interface StoryGroup {
   id: string;
@@ -17,6 +17,8 @@ export interface StoryOrigin {
   source: SimilarityArticle;
   group: StoryGroup;
   directPair: SimilarityPair | null;
+  /** What `article` changed from `source`; absent without a direct pair. */
+  diff?: VersionDiff;
 }
 export type EvidenceItem =
   | { kind: 'origin'; key: string; publishedAt: string; origin: StoryOrigin }
@@ -60,7 +62,7 @@ export function evidenceItems(evidence: SimilarityEvidence): EvidenceItem[] {
       kind: 'origin',
       key: ref.key,
       publishedAt: ref.publishedAt,
-      origin: { id: `${ref.groupId}:${own.id}`, article: own, source, group: story, directPair: ref.directPair },
+      origin: { id: `${ref.groupId}:${own.id}`, article: own, source, group: story, directPair: ref.directPair, diff: ref.diff },
     });
   }
   return items;

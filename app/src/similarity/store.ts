@@ -1,11 +1,13 @@
 // Read side of the similarity index (jobs/similarity-job.ts). Everything here
 // reads stored pairs and citations; nothing compares bodies per request.
 import { and, between, eq, gte, inArray, or, sql } from 'drizzle-orm';
+import { bodyIsPublic } from '../article-retention.ts';
 import type { Db } from '../db/client.ts';
 import { articleCitations, articleSketches, articles, similarityPairs } from '../db/schema.ts';
 import { type Attribution, outletIdentity } from './attribution.ts';
 import { PAIR_WINDOW_MS, publicArticle } from './compute.ts';
 import { classifyRelation, similarityConnection } from './relation.ts';
+import { diffBody, diffTitle } from './text-diff.ts';
 import type {
   EvidenceRef,
   PairRelationInfo,
@@ -15,6 +17,7 @@ import type {
   SimilarityNode,
   SimilarityPair,
   StoryGroupData,
+  VersionDiff,
 } from './types.ts';
 
 export const GROUP_PAIR_LIMIT = 100;
@@ -500,6 +503,7 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
       });
     }
   }
+  await attachDiffs(db, refs, known);
   const groupData: Record<string, StoryGroupData> = {};
   for (const group of groups.values())
     groupData[group.id] = {
@@ -519,6 +523,50 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
     if (article) articleData[id] = article;
   }
   return { total: items.length, page, pageSize: EVIDENCE_PAGE_SIZE, hiddenSources, items: refs, articles: articleData, groups: groupData };
+}
+
+/**
+ * What each later article changed from its earlier counterpart. Bodies are read
+ * only while both are inside the public window, so a diff never reveals a body
+ * readers could not otherwise see.
+ */
+export async function versionDiffs(
+  db: Db,
+  versions: Array<{ earlier: SimilarityArticle; later: SimilarityArticle }>,
+  now = new Date(),
+): Promise<VersionDiff[]> {
+  const ids = new Set(
+    versions
+      .flatMap(({ earlier, later }) => [earlier, later])
+      .filter((article) => bodyIsPublic(new Date(article.publishedAt), now))
+      .map((article) => article.id),
+  );
+  const bodies = new Map<number, string>();
+  const list = [...ids];
+  for (let i = 0; i < list.length; i += CHUNK)
+    for (const row of await db
+      .select({ id: articles.id, body: articles.body, status: articles.bodyStatus })
+      .from(articles)
+      .where(inArray(articles.id, list.slice(i, i + CHUNK))))
+      if (row.status === 'ok' && row.body?.trim()) bodies.set(row.id, row.body);
+  return versions.map(({ earlier, later }) => {
+    const before = bodies.get(earlier.id),
+      after = bodies.get(later.id);
+    return { title: diffTitle(earlier.title, later.title), body: before && after ? diffBody(before, after) : null };
+  });
+}
+async function attachDiffs(db: Db, refs: EvidenceRef[], known: Map<number, SimilarityArticle>) {
+  const origins = (refs.filter((ref) => ref.kind === 'origin' && ref.directPair) as Extract<EvidenceRef, { kind: 'origin' }>[]).flatMap(
+    (ref) => {
+      const later = known.get(ref.articleId),
+        earlier = known.get(ref.sourceId);
+      return later && earlier ? [{ ref, earlier, later }] : [];
+    },
+  );
+  const diffs = await versionDiffs(db, origins);
+  origins.forEach(({ ref }, i) => {
+    ref.diff = diffs[i];
+  });
 }
 
 /** Pairs at or above `threshold` involving any of `ids`, hydrated. */

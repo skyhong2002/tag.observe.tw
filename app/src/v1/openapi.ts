@@ -368,6 +368,17 @@ schemas.StoryGroup = obj({
   pairCount: int('同組相似配對總數'),
   pairs: arr(ref('SimilarityPair'), '分數最高的最多 100 組'),
 });
+schemas.DiffSegment = arr(
+  { oneOf: [int(), str()] },
+  '[op, text]：op 0 為兩篇相同、-1 只在較早的 sourceId、1 只在本篇 articleId；寬窄字形與空白不算修改',
+);
+schemas.TextDiff = obj({
+  identical: bool('正文除了站方固定字樣外一字未改'),
+  hunks: arr(arr(ref('DiffSegment')), '修改處，依閱讀順序；每處前後附少量相同文字，其餘相同段落省略'),
+  more: int('未列出的修改處數'),
+  removed: int('只在較早文章的字數'),
+  added: int('只在本篇的字數'),
+});
 schemas.SimilarityEvidence = obj({
   total: int('符合條件的證據總數'),
   page: int(),
@@ -383,10 +394,17 @@ schemas.SimilarityEvidence = obj({
         sourceId: int('origin：直接比對的另一篇文章 id；不是稿源'),
         groupId: str('origin：同題報導組 id'),
         directPair: nullable(ref('SimilarityPair')),
+        diff: obj(
+          {
+            title: nullable(arr(ref('DiffSegment'), '完整標題，標出修改')),
+            body: nullable(ref('TextDiff', '兩篇正文都在刊登後七天公開期內才有；否則或改寫太多無法對齊時為 null')),
+          },
+          'origin 且有 directPair：本篇相對 sourceId 的修改',
+        ),
         source: ref('Attribution'),
       },
       'origin 有 sourceId／groupId／directPair；citation 有 source',
-      ['sourceId', 'groupId', 'directPair', 'source'],
+      ['sourceId', 'groupId', 'directPair', 'diff', 'source'],
     ),
   ),
   articles: map(ref('SimilarityArticle'), '以 id 為鍵，本頁用到的文章'),
@@ -492,22 +510,34 @@ schemas.JournalistSummary = obj({
   unmatched: int('已比對但未見達門檻相近文章的篇數；不代表原創'),
   similar: ref('JournalistSimilarity'),
 });
-schemas.JournalistPair = obj({
-  own: ref('SimilarityArticle'),
-  other: ref('SimilarityArticle'),
-  score: num('正規化內文五字片段的 Dice 相似度'),
-  containment: num(),
-  sharedShingles: int(),
-  kind: str(undefined, { enum: ['identical', 'high'] }),
-  evidence: str('最多 100 字的連續相同片段'),
-  minutes: int('對方刊登時間減自家刊登時間（分鐘）；正值表示自家較早'),
-  relation: str('later 自家較晚、earlier 自家較早、same 一分鐘內', { enum: ['later', 'earlier', 'same'] }),
-  sameAuthor: bool('對方文章署同一名字'),
-  attributed: bool('已有彼此引用或共同明示來源'),
-  publicationUnknown: bool('標示刊登時間尚未確認'),
-  ownCitesOther: bool('自家文章明示引用對方媒體'),
-  otherCitesOwn: bool('對方文章明示引用自家媒體'),
-});
+schemas.JournalistPair = obj(
+  {
+    own: ref('SimilarityArticle'),
+    other: ref('SimilarityArticle'),
+    score: num('正規化內文五字片段的 Dice 相似度'),
+    containment: num(),
+    sharedShingles: int(),
+    kind: str(undefined, { enum: ['identical', 'high'] }),
+    evidence: str('最多 100 字的連續相同片段'),
+    minutes: int('對方刊登時間減自家刊登時間（分鐘）；正值表示自家較早'),
+    relation: str('later 自家較晚、earlier 自家較早、same 一分鐘內', { enum: ['later', 'earlier', 'same'] }),
+    sameAuthor: bool('對方文章署同一名字'),
+    attributed: bool('已有彼此引用或共同明示來源'),
+    publicationUnknown: bool('標示刊登時間尚未確認'),
+    ownCitesOther: bool('自家文章明示引用對方媒體'),
+    otherCitesOwn: bool('對方文章明示引用自家媒體'),
+    diff: obj(
+      {
+        earlier: str('較早的一篇；修改由它讀到較晚的一篇', { enum: ['own', 'other'] }),
+        title: nullable(arr(ref('DiffSegment'), '較晚一篇的完整標題，標出修改')),
+        body: nullable(ref('TextDiff', '兩篇正文都在刊登後七天公開期內才有')),
+      },
+      '只附在自家文章最新的 200 組配對',
+    ),
+  },
+  undefined,
+  ['attributed', 'publicationUnknown', 'diff'],
+);
 schemas.JournalistArticle = obj({
   id: int(),
   media: ref('MediaKey'),

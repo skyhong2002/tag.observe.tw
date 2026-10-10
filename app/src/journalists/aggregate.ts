@@ -1,6 +1,6 @@
 import type { Attribution } from '../similarity/attribution.ts';
 import { classifyRelation } from '../similarity/relation.ts';
-import type { SimilarityArticle, SimilarityPair } from '../similarity/types.ts';
+import type { SimilarityArticle, SimilarityPair, VersionDiff } from '../similarity/types.ts';
 import { journalistNames } from './names.ts';
 
 // Pure aggregation over stored bylines and computed similarity pairs. Nothing
@@ -69,6 +69,8 @@ export interface JournalistPair {
   publicationUnknown?: boolean;
   ownCitesOther: boolean;
   otherCitesOwn: boolean;
+  /** What the later of the two changed from the earlier; only for the newest pairs inside the public window. */
+  diff?: VersionDiff & { earlier: 'own' | 'other' };
 }
 
 export function rowJournalists(row: { authors: string[] | null; creator: string | null }): string[] {

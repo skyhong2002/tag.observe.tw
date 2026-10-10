@@ -7,6 +7,7 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import FollowButton from '@/components/reader/FollowButton';
 import SourceLink from '@/components/SourceLink';
+import { BodyChanges, DiffText, invertDiff, invertSegments } from '@/components/VersionDiff';
 import { taipei } from '@/lib/api';
 import { CONTENT_STATUS } from '@/lib/article-content';
 import { clipHeadline } from '@/lib/event-presentation.mts';
@@ -39,42 +40,52 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
   );
 }
 
-// One neutral tone for every relation: order of publication is context, not a verdict.
-const relationTone = 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
-
 function PairRow({ pair }: { pair: JournalistPair }) {
   const other = readingTitle(pair.other.title);
+  // Read every difference against this journalist's own story in the card heading:
+  // red is only in the own story, green only in the other one. Order of
+  // publication stays in the relation label, not in the colours.
+  const flip = pair.diff?.earlier === 'other';
+  const title = pair.diff?.title && (flip ? invertSegments(pair.diff.title) : pair.diff.title);
+  const body = pair.diff?.body && (flip ? invertDiff(pair.diff.body) : pair.diff.body);
+  const sameTitle = !!title && title.every(([op]) => op === 0);
+  const sameBody = pair.kind === 'identical' || !!body?.identical;
+  const facts = [
+    relationLabel(pair),
+    `相似 ${percent(pair.score)}`,
+    sameTitle && sameBody ? '標題、內文相同' : sameTitle ? '標題相同' : sameBody ? '內文相同' : '',
+    pair.otherCitesOwn ? `對方註明引用${pair.own.mediaTitle}` : '',
+    pair.ownCitesOther ? `本篇註明引用${pair.other.mediaTitle}` : '',
+  ].filter(Boolean);
   return (
-    <li className="py-2.5">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        <span className={`rounded-full px-2 py-0.5 ${relationTone}`}>{relationLabel(pair)}</span>
-        <span className="tabular-nums text-zinc-500 dark:text-zinc-400">
-          相似 {percent(pair.score)}
-          {pair.kind === 'identical' ? '，內文相同' : ''}
-        </span>
-        {pair.otherCitesOwn && <span className="text-violet-700 dark:text-violet-400">對方註明引用{pair.own.mediaTitle}</span>}
-        {pair.ownCitesOther && <span className="text-violet-700 dark:text-violet-400">本篇註明引用{pair.other.mediaTitle}</span>}
-      </div>
-      <p className="mt-1 text-sm leading-6">
-        <MediaHoverLink media={pair.other.media} className={`${linkStyle} mr-1.5 text-xs font-medium`}>
+    <li id={`pair-${pair.own.id}-${pair.other.id}`} className="scroll-mt-20 space-y-1 py-3">
+      <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <MediaHoverLink media={pair.other.media} className={`${linkStyle} text-sm font-medium`}>
           {pair.other.mediaTitle}
         </MediaHoverLink>
-        <Link href={`/article/${pair.other.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
-          {other.title}
-        </Link>
+        <time dateTime={pair.other.publishedAt} className="tabular-nums">
+          {taipei(pair.other.publishedAt)}
+        </time>
+        {pair.other.authors.length > 0 && <AuthorCredits credits={pair.other.authors} media={pair.other.media} />}
+        <span>· {facts.join(' · ')}</span>
       </p>
-      <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-        <time dateTime={pair.other.publishedAt}>{taipei(pair.other.publishedAt)}</time>
-        {pair.other.authors.length > 0 && (
-          <AuthorCredits credits={pair.other.authors} media={pair.other.media} className="max-w-72 truncate" />
-        )}
-        <SourceLink url={pair.other.url} className="!min-h-5 !text-[11px]" />
-      </p>
-      {pair.evidence && (
-        <details className="mt-1 text-xs">
-          <summary className="cursor-pointer py-1 text-zinc-500 dark:text-zinc-400">共同片段</summary>
-          <p className="break-words leading-6 text-zinc-600 dark:text-zinc-400">{pair.evidence}</p>
-        </details>
+      {!sameTitle && (
+        <p className="text-sm leading-7">
+          <Link href={`/article/${pair.other.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
+            {title ? <DiffText segments={title} /> : other.title}
+          </Link>
+        </p>
+      )}
+      {body ? (
+        <BodyChanges diff={body} label="內文與本篇不同" removed="本篇有、對方無" added="對方多" />
+      ) : (
+        pair.evidence &&
+        !sameBody && (
+          <details className="text-xs">
+            <summary className="cursor-pointer py-1 text-zinc-500 dark:text-zinc-400">共同片段</summary>
+            <p className="break-words leading-6 text-zinc-600 dark:text-zinc-400">{pair.evidence}</p>
+          </details>
+        )
       )}
     </li>
   );

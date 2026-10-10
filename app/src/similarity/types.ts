@@ -1,4 +1,5 @@
 import type { Attribution } from './attribution.ts';
+import type { DiffSegment, TextDiff } from './text-diff.ts';
 
 export interface PairRelationInfo {
   kind: 'attributed' | 'same-byline' | 'unattributed';
@@ -127,6 +128,13 @@ export interface StoryGroupData {
   /** Highest-scoring pairs of the group (at most GROUP_PAIR_LIMIT). */
   pairs: SimilarityPair[];
 }
+/** What a later version changed from an earlier one. */
+export interface VersionDiff {
+  /** Whole title with changes marked; null if too different to align. */
+  title: DiffSegment[] | null;
+  /** Changed spots of the body; null when either body is unavailable, outside the public window, or rewritten beyond alignment. */
+  body: TextDiff | null;
+}
 export type EvidenceRef =
   | {
       kind: 'origin';
@@ -136,6 +144,8 @@ export type EvidenceRef =
       sourceId: number;
       groupId: string;
       directPair: SimilarityPair | null;
+      /** Changes from the source (earlier) to this article; only for direct pairs. */
+      diff?: VersionDiff;
     }
   | { kind: 'citation'; key: string; publishedAt: string; articleId: number; source: Attribution };
 export interface SimilarityEvidence {

@@ -194,8 +194,10 @@ it('clicking each colored line returns only its category and publication directi
     citations: [],
     analyzed: new Map<string, number>(),
   };
+  // Bodies for the change view; none stored here.
+  const db = { select: () => ({ from: () => ({ where: async () => [] }) }) } as unknown as Db;
   for (const edge of graph.edges) {
-    const result = await loadEvidence({} as Db, view, { mode: 'similarity', edge, direction: 'all', query: '', page: 0 });
+    const result = await loadEvidence(db, view, { mode: 'similarity', edge, direction: 'all', query: '', page: 0 });
     expect(result.total).toBe(1);
     expect(result.items).toHaveLength(1);
   }
