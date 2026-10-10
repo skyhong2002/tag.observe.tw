@@ -57,6 +57,7 @@ export default function AccountMenu() {
           role="menu"
           className="absolute right-0 top-full mt-2 w-60 rounded-lg border border-zinc-200 bg-white p-2 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
         >
+          {/* Items start under the name: pl-15 = px-2 + 40px avatar + gap-3. */}
           <div className="flex items-center gap-3 px-2 py-1.5">
             <Avatar src={user.picture} label={label} size={40} />
             <div className="min-w-0">
@@ -66,7 +67,7 @@ export default function AccountMenu() {
             </div>
           </div>
           {user.role === 'admin' && (
-            <Link role="menuitem" href="/admin/" className="block rounded-md px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            <Link role="menuitem" href="/admin/" className="block rounded-md py-1.5 pr-2 pl-15 hover:bg-zinc-100 dark:hover:bg-zinc-800">
               管理後台
             </Link>
           )}
@@ -74,7 +75,7 @@ export default function AccountMenu() {
             <button
               type="submit"
               role="menuitem"
-              className="block w-full rounded-md px-2 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="block w-full rounded-md py-1.5 pr-2 pl-15 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               登出
             </button>
