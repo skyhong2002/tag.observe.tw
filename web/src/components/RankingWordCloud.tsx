@@ -24,19 +24,19 @@ export default function RankingWordCloud({
 }: {
   terms: RankingCloudTerm[];
   mode?: 'score' | 'growth';
-  /** Lay out for the home page: a ~760px column, and a shorter canvas on phones. */
+  /** Lay out for the home page: a bare ~760px-column cloud without panel or caption, square at most on phones. */
   column?: boolean;
 }) {
   if (!terms.length) return null;
   // Smaller candidate sets need less canvas and a gentler size curve. The
   // dense 500-term profile stays the same in both modes.
   const fill = Math.min(1, terms.length / 250);
-  // On a phone the home page keeps the cloud short so its events stay near the top.
+  // On a phone the home page's cloud is at most square so its events stay near the top.
   const compact = column
     ? {
         width: 340,
-        height: Math.round(300 + 140 * fill),
-        sizes: { min: 11 - 2 * fill, max: 36 + 12 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
+        height: Math.round(Math.min(340, 280 + 120 * fill)),
+        sizes: { min: 11 - 2 * fill, max: 34 + 10 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
       }
     : {
         width: 340,
@@ -54,6 +54,32 @@ export default function RankingWordCloud({
         height: Math.round(280 + 360 * fill),
         sizes: { min: 16 - 6 * fill, max: 64 + 24 * fill, floor: 10, budget: 0.7, curve: 0.8 + 0.7 * fill, words: 500 },
       };
+  const cloud = (
+    <WordCloud
+      compact={compact}
+      wide={wide}
+      compactClassName={column ? 'w-full' : 'mx-auto w-full max-w-[420px]'}
+      label="關鍵字文字雲"
+      title="關鍵字文字雲"
+      words={terms.map((t) => ({
+        label: t.tag,
+        count: mode === 'growth' ? (t.growth ?? 0) : t.score,
+        href: `/tag/${encodeURIComponent(t.tag)}`,
+        ariaLabel: `${t.tag}，${mode === 'growth' ? `升溫量 ${t.growth?.toFixed(1) ?? '—'}` : `分數 ${t.score.toFixed(1)}`}，${t.count} 篇`,
+        tone: rising(t) ? 'brand' : 'strong',
+        card: {
+          badge: t.isNew ? { text: '新上榜', tone: 'soft' } : undefined,
+          rows: [
+            ...(mode === 'growth' ? [['升溫量', `+${t.growth?.toFixed(1) ?? '—'}`] as [string, string]] : []),
+            ['分數', t.score.toFixed(1)],
+            ['爆發力', t.burst?.toFixed(1) ?? '—'],
+            ['篇數', `${t.count} 篇 · ${t.media} 家媒體`],
+          ],
+        },
+      }))}
+    />
+  );
+  if (column) return cloud;
   return (
     <section aria-label="關鍵字文字雲" className="rounded-xl border border-zinc-300 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
       <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-400">
@@ -61,29 +87,7 @@ export default function RankingWordCloud({
         {' · '}
         {terms.length} 個候選詞
       </p>
-      <WordCloud
-        compact={compact}
-        wide={wide}
-        compactClassName="mx-auto w-full max-w-[420px]"
-        label="關鍵字文字雲"
-        title="關鍵字文字雲"
-        words={terms.map((t) => ({
-          label: t.tag,
-          count: mode === 'growth' ? (t.growth ?? 0) : t.score,
-          href: `/tag/${encodeURIComponent(t.tag)}`,
-          ariaLabel: `${t.tag}，${mode === 'growth' ? `升溫量 ${t.growth?.toFixed(1) ?? '—'}` : `分數 ${t.score.toFixed(1)}`}，${t.count} 篇`,
-          tone: rising(t) ? 'brand' : 'strong',
-          card: {
-            badge: t.isNew ? { text: '新上榜', tone: 'soft' } : undefined,
-            rows: [
-              ...(mode === 'growth' ? [['升溫量', `+${t.growth?.toFixed(1) ?? '—'}`] as [string, string]] : []),
-              ['分數', t.score.toFixed(1)],
-              ['爆發力', t.burst?.toFixed(1) ?? '—'],
-              ['篇數', `${t.count} 篇 · ${t.media} 家媒體`],
-            ],
-          },
-        }))}
-      />
+      {cloud}
     </section>
   );
 }
