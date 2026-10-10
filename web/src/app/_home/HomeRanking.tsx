@@ -72,7 +72,7 @@ export default function HomeRanking({ initialRanking }: { initialRanking: Rankin
         </button>
       </div>
     );
-  if (ranking.entries.length === 0) return <p className={styles.notice}>目前沒有可列出的升溫關鍵字。</p>;
+  if (ranking.entries.length === 0) return <p className={styles.notice}>目前沒有可列出的熱門關鍵字。</p>;
   return (
     <ol className={styles.ranking}>
       {ranking.entries.slice(0, 8).map((e, i) => (
@@ -89,7 +89,9 @@ export default function HomeRanking({ initialRanking }: { initialRanking: Rankin
             </span>
             <span className={styles.rankTrend}>
               {e.trend && e.trend.length > 1 && <Sparkline values={e.trend.map((p) => p.average24h)} className="h-6 w-14" />}
-              <span className={styles.burst}>{e.burst === null ? '歷史不足' : `↗ ${e.burst.toFixed(1)}`}</span>
+              <span className={styles.burst} title="分數">
+                {e.normalized.toFixed(1)}
+              </span>
             </span>
           </Link>
         </li>

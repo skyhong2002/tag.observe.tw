@@ -30,6 +30,7 @@ import CampOutletDirectory from './_home/CampOutletDirectory';
 import CampShareSummary from './_home/CampShareSummary';
 import EventRecovery from './_home/EventRecovery';
 import HeadlineSidebar from './_home/HeadlineSidebar';
+import HomeGrowthCloud, { HOME_CLOUD_HREF } from './_home/HomeGrowthCloud';
 import HomeRanking from './_home/HomeRanking';
 import styles from './_home/home.module.css';
 import Masthead from './_home/Masthead';
@@ -299,7 +300,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <div className={styles.columns}>
           <aside className={styles.left} aria-label="關鍵字排行、記者與讀者關注">
             <div className={styles.sectionHeading}>
-              <h2>關鍵字升溫榜</h2>
+              <h2>熱門關鍵字</h2>
               <Link href="/ranking/?category=news">
                 完整排行 <Arrow />
               </Link>
@@ -326,6 +327,17 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
           <section className={styles.center} aria-label="焦點事件">
             <div className={styles.sectionHeading}>
+              <h2>正在發酵</h2>
+              <Link href={HOME_CLOUD_HREF}>
+                升溫排行 <Arrow />
+              </Link>
+            </div>
+            <div className={styles.growthCloud} data-vital-region="home-growth-cloud">
+              <Suspense fallback={<PanelLoading />}>
+                <HomeGrowthCloud />
+              </Suspense>
+            </div>
+            <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>焦點事件</h2>
               <Link href="/event/">
                 {data.focus.daily ? '今天' : '本小時'}全部 {data.focus.count || ''} 件 <Arrow />

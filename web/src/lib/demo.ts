@@ -235,7 +235,7 @@ export async function loadDemo() {
   const [events, day, ranking, media, blue, green] = await Promise.all([
     fetchEvents(24),
     fetchEventDay(),
-    fetchRanking('news', 'burst', 16, true).catch(() => null),
+    fetchRanking('news', 'score', 16, true).catch(() => null),
     fetchMedia().catch((): MediaInfo => ({})),
     fetchRanking('blue', 'score', 1).catch(() => null),
     fetchRanking('green', 'score', 1).catch(() => null),

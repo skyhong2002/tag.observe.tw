@@ -3,7 +3,8 @@ import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
 // 新聞總覽 (the home page, web/src/app/page.tsx). Its panels come from
 // web/src/lib/demo.ts: the event table's first 24 events (12 stories), today's
-// event archive (3 per 藍綠溫差 column), the news ranking by 爆發力 (8 shown), journalists of the
+// event archive (3 per 藍綠溫差 column), the news ranking by 分數 (8 shown), the all-outlet
+// 正在發酵 cloud (_home/HomeGrowthCloud.tsx, the ranking page's growth cloud),, journalists of the
 // past 48 hours (6 shown) and the similarity graph of the past 24 hours at
 // 0.65 (outlets with at least 20 analysed articles, 5 per column). 同題不同標
 // pairs are chosen in lib/compare-data.ts and lib/headline-compare.mts;
@@ -37,15 +38,22 @@ export function HomeMethod({
           藍綠分布以整個事件分群計算，並非單篇新聞的報導分布：數的是過去 24
           小時寫過該事件主要關鍵字的媒體家數。只有差距明顯時才標示：「盲點」表示其中一營幾乎沒有報導，「重點」表示其中一營報導得比平常多很多；門檻見下方「事件表」的重點與盲點。
         </dd>
-        <dt className={methodTerm}>關鍵字升溫榜</dt>
+        <dt className={methodTerm}>熱門關鍵字</dt>
         <dd>
           新聞類
           <Link href="/ranking/?category=news" className={inlineLink}>
             關鍵字排行
           </Link>
-          依爆發力的前 8 名。爆發力＝分數＋Σ（現在分數 − N 小時前分數）× 權重（N 為 3、6、12、24、48
-          小時），缺少可比較的歷史時顯示「歷史不足」。▲▼ 是依分數的名次與 24 小時前相比，「新」表示 24
+          依分數的前 8 名，右側數字為分數。▲▼ 是名次與 24 小時前相比，「新」表示 24
           小時前不在榜上，「－」為名次不變或沒有可比較的快照。小圖是最近 48 小時每小時新聞篇數的 24 小時移動平均。
+        </dd>
+        <dt className={methodTerm}>正在發酵</dt>
+        <dd>
+          與
+          <Link href="/ranking/?category=all&order=growth&gate=all" className={inlineLink}>
+            關鍵字排行的「正在發酵」
+          </Link>
+          相同：所有媒體、不限跨媒體門檻，只列升溫量（爆發力－分數）為正的關鍵字，字越大升溫量越高，因此全是橘字。點關鍵字可看該詞的報導。
         </dd>
         <dt className={methodTerm}>記者動態</dt>
         <dd>
@@ -96,7 +104,7 @@ export function HomeMethod({
         </dd>
       </dl>
       <p id="basis">
-        {basisCount != null ? `升溫榜與「${basisCount} 家」篇數的媒體範圍：` : '升溫榜與篇數的媒體範圍：'}
+        {basisCount != null ? `熱門關鍵字與「${basisCount} 家」篇數的媒體範圍：` : '熱門關鍵字與篇數的媒體範圍：'}
         這是「新聞」類別中符合收錄條件的固定名單，並非預先設定家數，也不是依媒體品質或公信力評選。
       </p>
       <p>

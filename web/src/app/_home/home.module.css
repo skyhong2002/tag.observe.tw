@@ -175,6 +175,8 @@
 .sectionHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .sectionHeading > a { font-size: 12px; color: var(--accent); white-space: nowrap; }
 .sectionHeadingLater { margin-top: 28px; }
+/* Reserves the cloud's height while it streams in so the events below do not jump. */
+.growthCloud { min-height: 280px; }
 
 
 /* Outlet icons folded away so the share bar stays one line. */
