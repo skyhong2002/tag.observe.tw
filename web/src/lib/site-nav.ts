@@ -21,6 +21,8 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
     links: [
       { href: '/ranking/', label: '關鍵字排行', short: '關鍵字' },
       { href: '/similarity/', label: '新聞關係圖', short: '關係圖' },
+      { href: '/similarity/daily/', label: '每日趨勢', short: '每日' },
+      { href: '/observe/', label: '網站觀測', short: '讀者' },
     ],
   },
   {
@@ -28,6 +30,7 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
     links: [
       { href: '/media/', label: '媒體來源', short: '媒體' },
       { href: '/byline/', label: '新聞署名', short: '署名' },
+      { href: '/media/traffic/', label: '媒體流量與排名', short: '流量' },
     ],
   },
 ];

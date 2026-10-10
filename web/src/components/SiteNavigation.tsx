@@ -8,6 +8,10 @@ import NavPending from './NavPending';
 
 export default function SiteNavigation() {
   const pathname = usePathname();
+  // Nested sections (/similarity/daily/ under /similarity/) light only the deepest match.
+  const section = NAV_GROUPS.flatMap((group) => group.links.map((link) => link.href))
+    .filter((href) => `${pathname}/`.startsWith(href))
+    .sort((a, b) => b.length - a.length)[0];
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -74,14 +78,14 @@ export default function SiteNavigation() {
             <div className="flex flex-wrap gap-1">
               {group.links.map(({ href, short }) => {
                 const exact = pathname === href || `${pathname}/` === href;
-                const current = exact || pathname.startsWith(href) || (href === '/byline/' && pathname.startsWith('/journalist/'));
+                const current = exact || href === section || (href === '/byline/' && pathname.startsWith('/journalist/'));
                 return (
                   <Link
                     key={href}
                     href={href}
                     onClick={() => setOpen(false)}
                     aria-current={current ? (exact ? 'page' : 'location') : undefined}
-                    className={`flex min-h-10 items-center justify-center whitespace-nowrap rounded-md px-3 transition-colors [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 active:bg-brand-100 has-data-pending:bg-brand-50 has-data-pending:text-brand-800 dark:active:bg-brand-900 dark:has-data-pending:bg-brand-950 dark:has-data-pending:text-brand-300 ${
+                    className={`flex min-h-10 items-center justify-center whitespace-nowrap rounded-md px-3 transition-colors lg:px-2 xl:px-3 [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 active:bg-brand-100 has-data-pending:bg-brand-50 has-data-pending:text-brand-800 dark:active:bg-brand-900 dark:has-data-pending:bg-brand-950 dark:has-data-pending:text-brand-300 ${
                       current
                         ? 'bg-brand-50 font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-300'
                         : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
