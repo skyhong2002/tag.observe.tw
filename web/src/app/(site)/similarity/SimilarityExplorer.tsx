@@ -28,6 +28,7 @@ import {
   type SimilarityPeriod,
 } from '@/lib/similarity';
 import { evidenceItems, type StoryOrigin } from '@/lib/story-origins.mts';
+import type { TaiwanReaders } from '@/lib/traffic-comparison.mts';
 import { hoursLabel, number, periodLabel, taipei } from './format';
 import MediaComparison from './MediaComparison';
 import SimilarityTabs from './SimilarityTabs';
@@ -349,7 +350,18 @@ function ThresholdControl({ data }: { data: SimilarityData }) {
 type EvidenceState = { key: string; data: SimilarityEvidence | null; error: boolean };
 const emptyEvidence: SimilarityEvidence = { total: 0, page: 0, pageSize: 20, hiddenSources: 0, items: [], articles: {}, groups: {} };
 
-export default function SimilarityExplorer({ data, camps, tags }: { data: SimilarityData; camps: MediaCamps; tags: MediaTag[] }) {
+export default function SimilarityExplorer({
+  data,
+  camps,
+  tags,
+  readers,
+}: {
+  data: SimilarityData;
+  camps: MediaCamps;
+  tags: MediaTag[];
+  /** Estimated Taiwan visits per media id (/media/traffic/'s 台灣月造訪 column). */
+  readers: Record<string, TaiwanReaders>;
+}) {
   // Keep the tab in the URL so the browser's back button steps between tabs.
   const searchParams = useSearchParams();
   // Media pages link here with `node` to open one outlet's relationships.
@@ -771,6 +783,7 @@ export default function SimilarityExplorer({ data, camps, tags }: { data: Simila
           {view === 'media' && (
             <MediaComparison
               data={scopedData}
+              readers={readers}
               onSelect={(value, nextMode, nextDirection) => {
                 updateUrl({
                   ...selectionPatch(value),

@@ -1,13 +1,13 @@
 # 媒體流量與收錄
 
-`/media/traffic/`（「流量與排名」，舊網址 `/media/sources/` 轉址）同頁呈現媒體、本站收錄篇數、Similarweb 估算訪問量的月變化或數值、台灣占比、主要導流與 Cloudflare Radar 全球排名／級距；各媒體頁另有完整的國家、導流、互動與排名。各網域的抓取進度在 `/crawlers/traffic/`「資料蒐集：流量資料」。GeneHong 整理表經比對即 Similarweb 訪問量（百萬為單位），不再另列，仍作為藍綠分類來源保留。
+`/media/traffic/`（「流量與排名」，舊網址 `/media/sources/` 轉址）同頁呈現媒體、本站收錄篇數、Similarweb 估算造訪量的月變化或數值、台灣占比、主要導流與 Cloudflare Radar 全球排名／級距；各媒體頁另有完整的國家、導流、互動與排名。各網域的抓取進度在 `/crawlers/traffic/`「資料蒐集：流量資料」。GeneHong 整理表經比對即 Similarweb 造訪量（百萬為單位），不再另列，仍作為藍綠分類來源保留。
 
 ## 閱讀方式
 
 - 本站收錄固定顯示最新統計月份至今的已抓取篇數，欄頭列出年月；不是累計總量或媒體完整發稿量，不把缺資料當零。
 - Similarweb 與 GeneHong 各自預設最新可取得月份，可分別切換排序月份；欄頭標示各自單位。它們與收錄量是不同指標、可能不同月份，不是精確 page views，不計算每篇閱讀量或全台市占。
-- 自動抓取只顯示外掛來源的 `EstimatedMonthlyVisits`（估算訪問次數），缺資料留白；失敗時保留各網域最後成功資料與更新日期。GeneHong 原表歷史值在獨立欄顯示，不填入自動來源的缺值。舊 `source=reference` 網址也呈現全部來源。
-- Radar 顯示全球 POPULAR 名次或「前 N 名」級距，標明 API 回傳期間與成功抓取日期；同級距無法判定先後，不提供精確排序，也不合計、換算成訪問量或瀏覽數。
+- 自動抓取只顯示外掛來源的 `EstimatedMonthlyVisits`（估算造訪次數），缺資料留白；失敗時保留各網域最後成功資料與更新日期。GeneHong 原表歷史值在獨立欄顯示，不填入自動來源的缺值。舊 `source=reference` 網址也呈現全部來源。
+- Radar 顯示全球 POPULAR 名次或「前 N 名」級距，標明 API 回傳期間與成功抓取日期；同級距無法判定先後，不提供精確排序，也不合計、換算成造訪量或瀏覽數。
 - 比照 `/media/` 一次列出全部媒體，不分頁；搜尋與四個欄頭排序，缺值排最後。預設依本站收錄篇數降冪（`sort=articles&dir=desc`）。搜尋、排序及非最新月份保存在網址；Similarweb 使用 `month`，GeneHong 使用 `referenceMonth`。
 - 缺少網域時，依來源對照表的官方網址及名稱登記檔的核對網址補顯示網域；不回寫歷史原表。未確認與已停用網域明確標註，發現來源也顯示網域。
 - 使用本站現有媒體 icon 與深色主題設定；尚無圖檔者使用名稱首字的佔位圖示。
@@ -22,10 +22,10 @@
 - `news-source-catalog.json` 的明確別名對應歷月媒體身份，詳見[來源對照](news-source-references.md)。品牌全站與新聞子頻道可能重疊：使用對照表明確命名的主要列，不相加；沒有主要列且多筆值相異時標示「待核對」。
 - 流量匯入不修改政治分類；頁面亦不把人工政治標記當成 Similarweb 評分。既有覆蓋率的 29 家基準與排除規則仍由 `traffic-baseline.json` 控制。
 
-## 台灣占比與台灣讀者
+## 台灣占比與台灣造訪
 
 - 「台灣占比」取 Similarweb 最近一期前五大來源國家中的台灣；台灣不在前五大時只知道低於第五名，顯示「< N%」。
-- 「台灣讀者」= 所選月份的訪問量 × 台灣占比，是之後依台灣讀者排序、篩選媒體的依據。台灣不在前五大時只是上限（「< N」），排序時當作缺值。
+- 「台灣月造訪」= 所選月份的造訪量 × 台灣占比，是之後依台灣造訪排序、篩選媒體的依據。台灣不在前五大時只是上限（「< N」），排序時當作缺值。
 - Similarweb 的占比是整個網域的估算，有時不適用：msn.com 是全球網域（美國 34%，台灣不在前五）、tw.nextapple.com 樣本少而回 100%。管理員在 `/media/traffic/` 的台灣占比欄按鉛筆修正（`PUT /auth/admin/media/:media/taiwan-share`，`{ share: 0–1 | null, note }`，必填理由），修正值存在 `media_taiwan_shares`，每次修改記在 `media_taiwan_share_log`（誰、何時、前後數值、理由）。
 - 修正以媒體為單位，取代所有月份的 Similarweb 數字，直到按「改回 Similarweb」清除。表格與媒體頁標「人工」，提示列出 Similarweb 原值與理由；公開 API 為 `GET /api/v1/media-taiwan-shares`（`app/src/media-traffic/taiwan-share.ts`）。
 
@@ -49,7 +49,7 @@ python3 tools/import-media-traffic.py --months 202608 202607 202606
 
 可用 `--input /path/to/source.xlsx` 或 `--output /tmp/media-traffic.json` 先產生候選檔。`--months` 明列保留月份，不自行增加；完整驗證成功才寫入匯入時間、SHA-256、來源 URL 與月資料。
 
-這個整理表更新器仍依賴人工整理來源；自動抓取器則直接讀外掛資料。Similarweb 的 visits 是網域月訪問量估算，不是即時或逐篇 page views。Cloudflare Radar 的網域排名也不能換算為瀏覽人次。
+這個整理表更新器仍依賴人工整理來源；自動抓取器則直接讀外掛資料。Similarweb 的 visits 是網域月造訪量估算，不是即時或逐篇 page views。Cloudflare Radar 的網域排名也不能換算為瀏覽人次。
 
 ### 自動抓取 Similarweb 外掛資料
 
@@ -65,13 +65,13 @@ python3 tools/import-media-traffic.py --months 202608 202607 202606
 node tools/media-traffic-once.ts udn.com
 ```
 
-2026-10-09 不帶外掛標頭時此主機實測回 HTTP 403（CloudFront）。2026-10-10 補上外掛標頭後成功取得 udn.com、ettoday.net、news.ltn.com.tw 等網域 2026-07～09 的月訪問量估算；首輪抓到 22 個網域後被限流，其餘由每小時排程補齊。
+2026-10-09 不帶外掛標頭時此主機實測回 HTTP 403（CloudFront）。2026-10-10 補上外掛標頭後成功取得 udn.com、ettoday.net、news.ltn.com.tw 等網域 2026-07～09 的月造訪量估算；首輪抓到 22 個網域後被限流，其餘由每小時排程補齊。
 
 ### 歷史累積
 
 Similarweb 每次只回最近三個月與一份最新一期的國家／導流資料，Radar 每次只回最新一期排名，所以本站自己保存歷史，時間越久資料越多（作用和原本的 GeneHong 試算表相同）：
 
-- 資料庫表 `media_traffic_months`（網域 × 月份訪問量）、`media_traffic_profiles`（網域 × 月份的國家、導流、互動與排名）、`media_radar_ranks`（網域 × Radar 每一期）。每次 worker 批次結束都把整份快照寫入，只增不刪；同一月份或同一期再次抓到修正值時，以較新的抓取覆蓋，`first_seen_at` 保留第一次看到的時間，重放舊快照不會蓋掉新值。表格屬於 `tag_observe`，跟著每日資料庫備份上 NAS。
+- 資料庫表 `media_traffic_months`（網域 × 月份造訪量）、`media_traffic_profiles`（網域 × 月份的國家、導流、互動與排名）、`media_radar_ranks`（網域 × Radar 每一期）。每次 worker 批次結束都把整份快照寫入，只增不刪；同一月份或同一期再次抓到修正值時，以較新的抓取覆蓋，`first_seen_at` 保留第一次看到的時間，重放舊快照不會蓋掉新值。表格屬於 `tag_observe`，跟著每日資料庫備份上 NAS。
 - `~/.local/share/tag-analysis/` 的 JSON 快照只是最新批次與狀態，也會累積月份，但不在備份範圍；遺失時 API 會從資料庫補回各網域資料，下一輪排程再重建快照。
 - API `media-traffic-live` 的 `monthly`／`profiles` 與 `media-radar` 的 `history` 合併資料庫歷史；資料庫無法連線時退回只回快照。
 - `media_traffic_months.source` 為 `genehong` 的列來自 GeneHong 試算表（`tools/import-genehong-traffic.ts`，預設試算、`--write` 寫入），填補 worker 開始前的月份。只收：非人工除數、非待核對、非共用網域、原表網域與抓取網域相同，且與 Similarweb 重疊月份在四捨五入範圍內一致的媒體；沒有重疊月份的媒體等 Similarweb 抓到後重跑即可。Similarweb 的值一律覆蓋試算表，試算表不會覆蓋 Similarweb。2026-10-10 試算：39 家媒體、186 個月份（2026/01–06）；自由時報、TVBS、東森、壹蘋因原表用整站網域而略過。
@@ -81,7 +81,7 @@ Similarweb 每次只回最近三個月與一份最新一期的國家／導流資
 
 - [授權文件](https://developers.cloudflare.com/radar/get-started/first-request/)要求 Custom API Token 權限 **Account → Radar → Read**。設定伺服器端 `CLOUDFLARE_RADAR_API_TOKEN`，勿使用 `NEXT_PUBLIC_*` 或提交 Token。Gateway 與 worker 都須載入同一設定。未設定時 API 明確回 `unconfigured`；worker 不排程，頁面不偽造排名。
 - 端點是 `GET https://api.cloudflare.com/client/v4/radar/ranking/domain/{domain}?rankingType=POPULAR&format=JSON`，使用 Bearer Token。與 2026-10-10 官方 OpenAPI schema 核對 `result.details_0.rank`、`bucket` 與 `result.meta.dateRange[0]`。前 100 名以名次顯示，其餘 bucket 以「前 N 名」顯示；實測 `>200000` 另存為 `bucketLowerBound=200000`，顯示「未入前 200,000 名」，不能反轉成前 200,000 名。沒有排名與級距時留白。
-- [來源方法](https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/)主要基於 1.1.1.1 DNS 查詢。精確前 100 排名包含最近 24 小時、每日更新；全球級距資料包含最近七天、每週更新。本站每日檢查不代表上游資料即時，也不產生三個月訪問量。
+- [來源方法](https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/)主要基於 1.1.1.1 DNS 查詢。精確前 100 排名包含最近 24 小時、每日更新；全球級距資料包含最近七天、每週更新。本站每日檢查不代表上游資料即時，也不產生三個月造訪量。
 - `app/src/jobs/media-radar-job.ts` 使用與 Similarweb 相同的官方來源網域清單，排程預設 `MEDIA_RADAR_CRON=45 3 * * *`（worker 所在時區）。獨立快照為 `TAG_MEDIA_RADAR_FILE`，預設 `~/.local/share/tag-analysis/media-radar.json`，在 Git 工作目錄外。
 - API `GET /api/v1/media-radar` 僅讀快照，回 `scope=global`、批次狀態與各網域的資料期間、成功更新時間；過濾排除媒體與發現來源，不公開 Token。錯誤摘要不包含上游回應內容或授權標頭。
 - 每批先抓沒有資料的網域，再依上次成功時間由舊到新；網域清單約 300 個，單批五分鐘抓不完時，隔天從最舊的接著抓。

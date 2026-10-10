@@ -7,8 +7,11 @@ import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { API_ORIGIN, taipei } from '@/lib/api';
+import { trafficNumber } from '@/lib/media-traffic.mts';
 import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
+import { shortMonth, type TaiwanReaders } from '@/lib/traffic-comparison.mts';
+import { loadTaiwanReaders } from './traffic/load';
 
 export const revalidate = 120;
 export const metadata = pageMetadata(
@@ -43,6 +46,8 @@ interface MediaScope {
   roles: Array<{ role: string; label: string }>;
   coverage: string | null;
 }
+const discoveryBadge =
+  'shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800';
 const scopeBadge =
   'shrink-0 whitespace-nowrap rounded bg-zinc-100 px-1.5 py-px text-[11px] font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700';
 interface MediaRow {
@@ -66,6 +71,8 @@ interface MediaRow {
   lastArticle: string | null;
   lastCrawlOk: string | null;
   status: Status;
+  /** Joined from /media/traffic/'s load, not part of /api/v1/media-stats. */
+  readers?: TaiwanReaders;
 }
 interface Stats {
   generatedAt: string;
@@ -99,11 +106,35 @@ const SORTS = {
   last24h: (r: MediaRow) => r.last24h,
   last7d: (r: MediaRow) => r.last7d,
   tagged: (r: MediaRow) => r.taggedShare24h ?? -1,
+  // An upper bound (Taiwan outside the top five) does not rank, as on /media/traffic/.
+  readers: (r: MediaRow) => (r.readers && !r.readers.below ? r.readers.visits : -1),
+  perArticle: (r: MediaRow) => (r.readers?.perArticle && !r.readers.below ? r.readers.perArticle.visits : -1),
   latest: (r: MediaRow) => (r.lastArticle ? Date.parse(r.lastArticle) : 0),
   status: (r: MediaRow) => STATUS_ORDER.indexOf(r.status),
+  // Unknown values sort after every known one.
+  scope: (r: MediaRow) => (r.scope ? SCOPE_ORDER.indexOf(r.scope.scope) : SCOPE_ORDER.length) * 1000 + (r.countryCode.codePointAt(0) ?? 0),
+  language: (r: MediaRow) => r.scope?.languageLabel ?? '\uffff',
+  camp: (r: MediaRow) => CAMP_ORDER.indexOf(r.camp),
+  category: (r: MediaRow) => r.categoryLabel ?? '\uffff',
+  roles: (r: MediaRow) => roleLabels(r) || '\uffff',
+  schedule: (r: MediaRow) => scheduleMinutes(r.schedule),
 } satisfies Record<string, (r: MediaRow) => number | string>;
 type SortKey = keyof typeof SORTS;
-const ASC_FIRST = new Set<SortKey>(['name', 'status']);
+const ASC_FIRST = new Set<SortKey>(['name', 'status', 'scope', 'language', 'camp', 'category', 'roles', 'schedule']);
+const CAMP_ORDER: Camp[] = ['blue', 'green', 'other'];
+const roleLabels = (r: MediaRow) => r.scope?.roles.map(({ label }) => label).join('、') ?? '';
+/** `off`, `hourly` or `every N min` (app/src/crawl schedules); off sorts last. */
+function scheduleMinutes(schedule: string) {
+  if (schedule === 'hourly') return 60;
+  const every = /^every (\d+) min$/.exec(schedule);
+  return every ? Number(every[1]) : Number.POSITIVE_INFINITY;
+}
+function scheduleLabel(schedule: string) {
+  const minutes = scheduleMinutes(schedule);
+  if (!Number.isFinite(minutes)) return schedule === 'off' ? '未啟用' : schedule;
+  if (minutes === 60) return '每小時';
+  return minutes % 60 === 0 ? `每 ${minutes / 60} 小時` : `每 ${minutes} 分鐘`;
+}
 
 // Tolerates a cached response from before the API returned `camp`.
 const campBadge = (r: MediaRow) => (r.camp === 'blue' || r.camp === 'green' ? CAMPS[r.camp] : null);
@@ -129,11 +160,11 @@ function SevenDayCell({ value, since, partial }: { value: number; since: string 
     : null;
   return (
     <td
-      className={`${table.num} ${partial ? 'text-zinc-500 dark:text-zinc-500' : 'text-zinc-600'}`}
+      className={`${table.num} whitespace-nowrap ${partial ? 'text-zinc-500 dark:text-zinc-500' : 'text-zinc-600'}`}
       title={partial && md ? `新系統 ${md} 才開始抓這家媒體，還不滿 7 天` : undefined}
     >
       {value.toLocaleString()}
-      {partial && md && <div className="whitespace-nowrap text-[11px] leading-tight">{md} 起抓取</div>}
+      {partial && md && <span className="ml-1 text-[11px]">（{md} 起）</span>}
     </td>
   );
 }
@@ -154,7 +185,10 @@ export default async function MediaStatsPage({
   searchParams: Promise<{ sort?: string; dir?: string; status?: string; category?: string; camp?: string; scope?: string }>;
 }) {
   const sp = await searchParams;
-  const res = await fetch(`${API_ORIGIN}/api/v1/media-stats`, { next: { revalidate } }).catch(() => null);
+  const [res, readers] = await Promise.all([
+    fetch(`${API_ORIGIN}/api/v1/media-stats`, { next: { revalidate } }).catch(() => null),
+    loadTaiwanReaders().catch(() => ({}) as Record<string, TaiwanReaders>),
+  ]);
   if (!res?.ok)
     return (
       <>
@@ -175,13 +209,15 @@ export default async function MediaStatsPage({
   const categories = [
     ...new Map(data.media.filter((m) => m.category).map((m) => [m.category as string, m.categoryLabel ?? m.category])).entries(),
   ];
-  let rows = data.media.filter(
-    (m) =>
-      (!status || m.status === status) &&
-      (!category || m.category === category) &&
-      (!camp || m.camp === camp) &&
-      (!scope || m.scope?.scope === scope),
-  );
+  let rows = data.media
+    .map((m) => ({ ...m, readers: readers[m.media] }))
+    .filter(
+      (m) =>
+        (!status || m.status === status) &&
+        (!category || m.category === category) &&
+        (!camp || m.camp === camp) &&
+        (!scope || m.scope?.scope === scope),
+    );
   rows = [...rows].sort((a, b) => {
     const x = SORTS[sort](a),
       y = SORTS[sort](b);
@@ -198,13 +234,18 @@ export default async function MediaStatsPage({
     return s ? `/media/?${s}` : '/media/';
   };
   const t = data.totals;
+  const readersMonth = Object.values(readers)[0]?.month;
   const weekAgo = new Date(data.generatedAt).getTime() - 7 * 86400e3;
   const partialWeek = (r: MediaRow) => r.collectingSince != null && new Date(r.collectingSince).getTime() > weekAgo;
   const pct = (x: number | null) => (x == null ? '—' : `${Math.round(x * 100)}%`);
   const sortLink = (col: SortKey) =>
     link({ sort: col, dir: sort === col ? (dir === 'asc' ? 'desc' : 'asc') : ASC_FIRST.has(col) ? 'asc' : 'desc' });
-  const Th = ({ col, label, className = '' }: { col: SortKey; label: string; className?: string }) => (
-    <th className={`${table.cell} ${className}`} aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
+  const Th = ({ col, label, className = '', title }: { col: SortKey; label: string; className?: string; title?: string }) => (
+    <th
+      className={`${table.cell} ${className}`}
+      title={title}
+      aria-sort={sort === col ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}
+    >
       <Link
         href={sortLink(col)}
         scroll={false}
@@ -279,15 +320,28 @@ export default async function MediaStatsPage({
         ))}
       </div>
       <TableScroller card label="媒體與文章數表格，可左右捲動">
-        <table className="w-full min-w-[48rem] text-sm">
+        <table className="w-full min-w-[60rem] text-sm">
           <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950">
             <tr>
               <Th col="name" label="媒體" className={table.leadHead} />
+              <Th col="scope" label="範圍" />
+              <Th col="camp" label="傾向" />
               <Th col="today" label="今日" className="text-right" />
-              <Th col="last24h" label="24 小時" className="w-[32%] min-w-40" />
+              <Th col="last24h" label="24 小時" className="min-w-36" />
               <Th col="last7d" label="7 天" className="text-right" />
+              <Th
+                col="readers"
+                label="台灣月造訪"
+                className="text-right"
+                title={`Similarweb ${readersMonth ? shortMonth(readersMonth) : '最新一期'} 月造訪次數 × 台灣占比（估算）`}
+              />
+              <Th col="perArticle" label="每篇台灣造訪" className="text-right" title="台灣月造訪 ÷ 依近 7 天發稿速度推估的當月篇數" />
+              <Th col="category" label="分類" />
+              <Th col="language" label="語言" />
+              <Th col="roles" label="性質" />
               <Th col="tagged" label="標籤率" className="text-right" />
               <Th col="latest" label="最新文章" />
+              <Th col="schedule" label="抓取" />
               <Th col="status" label="狀態" />
             </tr>
           </thead>
@@ -300,45 +354,29 @@ export default async function MediaStatsPage({
                       media={r.media}
                       icon={false}
                       title={r.title}
-                      className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium hover:underline"
+                      className="flex min-w-0 items-center gap-2 whitespace-nowrap font-medium hover:underline"
                     >
-                      <span className="flex min-w-0 max-w-full items-center gap-2">
-                        <MediaIcon media={r.media} size={16} />
-                        <span className={table.leadText}>{r.title}</span>
-                      </span>
-                      <span className={`${table.leadExtra} flex flex-wrap items-center gap-x-2 gap-y-1`}>
-                        <CountryFlag code={r.countryCode} country={r.country} />
-                        {r.scope && r.scope.scope !== 'tw' && (
-                          <span className={scopeBadge} title={r.scope.coverage ?? undefined}>
-                            {r.scope.scopeLabel}
-                          </span>
-                        )}
-                        {r.scope && r.scope.language !== 'zh-Hant' && <span className={scopeBadge}>{r.scope.languageLabel}</span>}
-                        {r.scope?.roles
-                          .filter(({ role }) => role !== 'discovery')
-                          .map(({ role, label }) => (
-                            <span key={role} className={scopeBadge}>
-                              {label}
-                            </span>
-                          ))}
-                        {r.sourceKind === 'discovery' && (
-                          <span className="shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800">
-                            發現來源
-                          </span>
-                        )}
-                        {campBadge(r) && (
-                          <span
-                            className={`shrink-0 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset ${campBadge(r)?.badge}`}
-                          >
-                            {campBadge(r)?.short}
-                          </span>
-                        )}
-                      </span>
+                      <MediaIcon media={r.media} size={16} />
+                      <span className={table.leadText}>{r.title}</span>
                     </MediaHoverLink>
-                    <div className="hidden text-xs text-zinc-600 sm:block">
-                      {r.categoryLabel ?? '—'} · {r.schedule === 'off' ? '未啟用' : r.schedule === 'hourly' ? '每小時' : '每 9 分鐘'}
-                    </div>
                   </div>
+                </td>
+                <td className={`${table.cell} whitespace-nowrap`} title={r.scope?.coverage ?? r.country}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <CountryFlag code={r.countryCode} country={r.country} />
+                    {r.scope?.scopeLabel ?? r.country}
+                  </span>
+                </td>
+                <td className={`${table.cell} whitespace-nowrap`}>
+                  {campBadge(r) ? (
+                    <span
+                      className={`whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset ${campBadge(r)?.badge}`}
+                    >
+                      {campBadge(r)?.short}
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400">—</span>
+                  )}
                 </td>
                 <td className={table.num}>{r.today.toLocaleString()}</td>
                 <td
@@ -358,8 +396,33 @@ export default async function MediaStatsPage({
                   </div>
                 </td>
                 <SevenDayCell value={r.last7d} since={r.collectingSince} partial={partialWeek(r)} />
+                <td className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500' : ''}`} title={r.readers?.title}>
+                  {r.readers ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.visits)}` : '—'}
+                </td>
+                <td
+                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500' : ''}`}
+                  title={r.readers?.perArticle?.title}
+                >
+                  {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
+                </td>
+                <td className={`${table.cell} whitespace-nowrap`}>{r.categoryLabel ?? '—'}</td>
+                <td className={`${table.cell} whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
+                <td className={`${table.cell} whitespace-nowrap`}>
+                  {r.scope?.roles.length ? (
+                    <span className="flex gap-1">
+                      {r.scope.roles.map(({ role, label }) => (
+                        <span key={role} className={role === 'discovery' ? discoveryBadge : scopeBadge}>
+                          {label}
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400">—</span>
+                  )}
+                </td>
                 <td className={`${table.num} text-zinc-600`}>{pct(r.taggedShare24h)}</td>
                 <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600`}>{r.lastArticle ? taipei(r.lastArticle) : '—'}</td>
+                <td className={`${table.cell} whitespace-nowrap text-zinc-600`}>{scheduleLabel(r.schedule)}</td>
                 <td className={table.cell}>
                   <StatusBadge status={r.status} />
                 </td>

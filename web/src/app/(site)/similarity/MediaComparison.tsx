@@ -8,11 +8,13 @@ import TableScroller from '@/components/TableScroller';
 import { edgeCategory, edgeHasArrow, edgeLabel } from '@/lib/graph-edge-style.mts';
 import type { CitationDirection, GraphSelection, RelationshipMode } from '@/lib/graph-evidence.mts';
 import { nodeArticleCounts } from '@/lib/media-graph.mts';
+import { trafficNumber } from '@/lib/media-traffic.mts';
 import type { SimilarityEdge, SimilarityNode } from '@/lib/similarity';
 import { table } from '@/lib/table-styles';
+import type { TaiwanReaders } from '@/lib/traffic-comparison.mts';
 
-type SortKey = 'name' | 'articles' | 'sameByline' | 'attributed' | 'unattributed' | 'outgoing' | 'incoming';
-const columns: { key: SortKey; label: string }[] = [
+type SortKey = 'name' | 'articles' | 'readers' | 'perArticle' | 'sameByline' | 'attributed' | 'unattributed' | 'outgoing' | 'incoming';
+const columns: { key: SortKey; label: string; title?: string }[] = [
   { key: 'name', label: '媒體' },
   { key: 'articles', label: '分析篇數' },
   { key: 'sameByline', label: '同署名跨站' },
@@ -20,9 +22,11 @@ const columns: { key: SortKey; label: string }[] = [
   { key: 'unattributed', label: '未辨識稿源' },
   { key: 'outgoing', label: '引用' },
   { key: 'incoming', label: '被引用' },
+  { key: 'readers', label: '台灣月造訪', title: 'Similarweb 最新一期月造訪次數 × 台灣占比（估算）' },
+  { key: 'perArticle', label: '每篇台灣造訪', title: '台灣月造訪 ÷ 依近 7 天發稿速度推估的當月篇數' },
 ];
 const number = (value: number) => value.toLocaleString('zh-TW');
-type RelationshipKey = Exclude<SortKey, 'name' | 'articles'>;
+type RelationshipKey = Exclude<SortKey, 'name' | 'articles' | 'readers' | 'perArticle'>;
 const relationshipFilters: Record<
   RelationshipKey,
   {
@@ -60,10 +64,13 @@ const relationshipFilters: Record<
 
 export default function MediaComparison({
   data,
+  readers,
   onSelect,
 }: {
   /** Media on screen and the relationships between them. */
   data: { nodes: SimilarityNode[]; edges: SimilarityEdge[] };
+  /** Estimated Taiwan visits per media id (/media/traffic/'s 台灣月造訪 column). */
+  readers: Record<string, TaiwanReaders>;
   onSelect: (selection: GraphSelection, mode: RelationshipMode, direction: CitationDirection) => void;
 }) {
   const [query, setQuery] = useState('');
@@ -77,6 +84,10 @@ export default function MediaComparison({
       sameByline: node.sameByline ?? 0,
       attributed: node.attributed ?? 0,
       unattributed: node.unattributed ?? 0,
+      reach: readers[node.id],
+      // An upper bound (Taiwan outside the top five) does not rank, as on /media/traffic/.
+      readers: readers[node.id] && !readers[node.id].below ? readers[node.id].visits : -1,
+      perArticle: (!readers[node.id]?.below && readers[node.id]?.perArticle?.visits) || -1,
       relationships: data.edges
         .filter((edge) => edge.source === node.id || edge.target === node.id)
         .sort(
@@ -84,7 +95,7 @@ export default function MediaComparison({
             b.count - a.count || a.source.localeCompare(b.source) || a.target.localeCompare(b.target) || a.kind.localeCompare(b.kind),
         ),
     }));
-  }, [data]);
+  }, [data, readers]);
   const focus = sort in relationshipFilters ? relationshipFilters[sort as RelationshipKey] : null;
   const names = useMemo(() => new Map(data.nodes.map((node) => [node.id, node.name])), [data.nodes]);
   const filtered = useMemo(
@@ -119,13 +130,14 @@ export default function MediaComparison({
         符合 {filtered.length} 家 · 沿用圖上媒體篩選 · <MethodLink />
       </p>
       <TableScroller card label="各家媒體關係表格，可左右捲動">
-        <table className="w-full min-w-[880px] border-collapse text-sm">
+        <table className="w-full min-w-[1040px] border-collapse text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
                   scope="col"
+                  title={column.title}
                   aria-sort={sort === column.key ? (descending ? 'descending' : 'ascending') : 'none'}
                   className={`py-3 font-medium ${column.key === 'name' ? `${table.leadHead} text-left` : table.num}`}
                 >
@@ -199,6 +211,18 @@ export default function MediaComparison({
                       </td>
                     );
                   })}
+                  <td
+                    className={`${table.num} whitespace-nowrap py-2.5 ${row.reach?.below ? 'text-zinc-500' : ''}`}
+                    title={row.reach?.title}
+                  >
+                    {row.reach ? `${row.reach.below ? '< ' : ''}${trafficNumber(row.reach.visits)}` : '—'}
+                  </td>
+                  <td
+                    className={`${table.num} whitespace-nowrap py-2.5 ${row.reach?.below ? 'text-zinc-500' : ''}`}
+                    title={row.reach?.perArticle?.title}
+                  >
+                    {row.reach?.perArticle ? `${row.reach.below ? '< ' : ''}${trafficNumber(row.reach.perArticle.visits)}` : '—'}
+                  </td>
                   <td className={`${table.cell} py-2.5`}>
                     <div className="flex gap-1.5 whitespace-nowrap">
                       {relationships.slice(0, 3).map((edge) => {

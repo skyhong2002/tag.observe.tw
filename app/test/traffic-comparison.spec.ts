@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest';
 import type { NewsSource, TrafficSource } from '../../web/src/lib/media-traffic.mts';
 import {
   buildComparison,
+  type ComparisonData,
   type ComparisonOutlet,
   type CrawlComparison,
   collectionPoint,
   overrideTitle,
   primaryTraffic,
   rankValues,
+  taiwanReadersByMedia,
   taiwanShare,
   taiwanSortValue,
   taiwanVisits,
+  withPerArticle,
 } from '../../web/src/lib/traffic-comparison.mts';
 import traffic from '../data/media-traffic.json' with { type: 'json' };
 import catalog from '../data/news-source-catalog.json' with { type: 'json' };
@@ -433,5 +436,54 @@ describe('traffic list domain fallbacks', () => {
   it('drops outlets removed from the site, with their spreadsheet traffic', () => {
     const built = buildComparison([{ month: '202608', sources: [row({ traffic: 1 })] }], [source], crawl, new Set([source.media]));
     expect(built.outlets).toEqual([]);
+  });
+});
+
+describe('Taiwan readers outside /media/traffic/', () => {
+  const outlet = (media: string, patch: Partial<ComparisonOutlet>) =>
+    ({ media, name: media, traffic: [{ month: '202609', traffic: 1_000_000 }], ...patch }) as unknown as ComparisonOutlet;
+  const profile = (countries: Array<{ code: string; share: number }>) =>
+    ({ month: '202609', countries }) as unknown as ComparisonOutlet['trafficProfile'];
+  it('keys the latest month estimate by media id and skips shared or unknown figures', () => {
+    const data = {
+      trafficMonths: ['202608', '202609'],
+      outlets: [
+        outlet('local', { trafficProfile: profile([{ code: 'TW', share: 0.8 }]) }),
+        outlet('global', {
+          trafficProfile: profile([
+            { code: 'US', share: 0.5 },
+            { code: 'JP', share: 0.05 },
+          ]),
+        }),
+        outlet('fixed', {
+          trafficProfile: profile([{ code: 'US', share: 0.5 }]),
+          taiwanOverride: { share: 0.1, note: '全球網域', updatedAt: '2026-10-10T00:00:00Z' },
+        }),
+        outlet('channel', { trafficProfile: profile([{ code: 'TW', share: 0.9 }]), sharedWith: '母站' }),
+        outlet('noprofile', {}),
+      ],
+    } as unknown as ComparisonData;
+    const readers = taiwanReadersByMedia(data);
+    expect(Object.keys(readers).sort()).toEqual(['fixed', 'global', 'local']);
+    expect(readers.local).toMatchObject({ visits: 800_000 });
+    expect(readers.local.below).toBeUndefined();
+    expect(readers.local.title).toBe('Similarweb 估算：2026/09 月造訪量 × 台灣占比 80%');
+    expect(readers.global).toMatchObject({ visits: 50_000, below: true });
+    expect(readers.fixed).toMatchObject({ visits: 100_000 });
+    expect(readers.fixed.title).toContain('（人工修正）');
+  });
+  it('spreads the month over the past week pace of articles', () => {
+    // September: 70 articles in 7 days → 300 for the month.
+    const per = withPerArticle({ visits: 600_000, month: '202609', title: '' }, 70).perArticle;
+    expect(per?.visits).toBe(2000);
+    expect(per?.title).toBe('台灣月造訪 ÷ 2026/09 推估 300 篇（近 7 天 70 篇 ÷ 7 × 30 天）');
+    expect(withPerArticle({ visits: 50_000, below: true, month: '202602', title: '' }, 7).perArticle).toEqual({
+      visits: 1786,
+      title: '上限：台灣月造訪 ÷ 2026/02 推估 28 篇（近 7 天 7 篇 ÷ 7 × 28 天）',
+    });
+    expect(withPerArticle({ visits: 1, month: '202609', title: '' }, 0).perArticle).toBeUndefined();
+  });
+  it('is empty without traffic months', () => {
+    expect(taiwanReadersByMedia({ trafficMonths: [], outlets: [] } as unknown as ComparisonData)).toEqual({});
   });
 });

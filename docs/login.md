@@ -32,7 +32,7 @@
 | `GET /auth/admin/articles/:id/body` | 管理員限定：資料庫裡這篇的完整正文（不受讀者七天公開期限與節錄限制）、字數、`body_status`、`body_source` 與擷取時間；正文已移至封存時只回 `archived: true`，不會自動還原。文章頁對管理員顯示「顯示全文」。 |
 | `PUT /auth/admin/articles/:id/tags` | 管理員限定、需本站 `Origin`：`{ tags: [...] }`（最多 40 個、每個最多 60 字）整組取代這篇的標籤，同步 `articles.tags` 與 `article_tags`，寫入 `article_tag_log`，並在 `article_tag_edits` 標記為手動修改。 |
 | `GET /auth/admin/media/:media/taiwan-share` | 管理員限定：這家媒體目前的台灣占比修正與最近 20 筆修改紀錄。 |
-| `PUT /auth/admin/media/:media/taiwan-share` | 管理員限定、需本站 `Origin`：`{ share, note }` 以 0–1 的值取代 Similarweb 的台灣占比（理由必填），`share: null` 清除；寫入 `media_taiwan_share_log`（[媒體流量](media-traffic.md#台灣占比與台灣讀者)）。 |
+| `PUT /auth/admin/media/:media/taiwan-share` | 管理員限定、需本站 `Origin`：`{ share, note }` 以 0–1 的值取代 Similarweb 的台灣占比（理由必填），`share: null` 清除；寫入 `media_taiwan_share_log`（[媒體流量](media-traffic.md#台灣占比與台灣造訪)）。 |
 
 ### 讀者端點
 

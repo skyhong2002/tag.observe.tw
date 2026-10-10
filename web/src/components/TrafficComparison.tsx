@@ -26,10 +26,12 @@ import {
   taiwanShare,
   taiwanSortValue,
   taiwanVisits,
+  type WeeklyArticles,
+  withPerArticle,
 } from '@/lib/traffic-comparison.mts';
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
-type Sort = 'traffic' | 'taiwan' | 'readers' | 'radar' | 'articles' | 'name';
+type Sort = 'traffic' | 'taiwan' | 'readers' | 'perArticle' | 'radar' | 'articles' | 'week' | 'name';
 type View = 'value' | 'change';
 
 const radarPosition = (outlet: ComparisonOutlet) =>
@@ -59,14 +61,25 @@ function Change({ value }: { value: number | null }) {
   );
 }
 
-export default function TrafficComparison({ data, initial }: { data: ComparisonData; initial: Record<string, string | undefined> }) {
+export default function TrafficComparison({
+  data,
+  weekly,
+  initial,
+}: {
+  data: ComparisonData;
+  /** Past 7 days' articles per media id (/api/v1/media-stats). */
+  weekly: Record<string, WeeklyArticles>;
+  initial: Record<string, string | undefined>;
+}) {
   const [trafficMonth, setTrafficMonth] = useState(
     data.trafficMonths.includes(initial.month ?? '') ? initial.month! : (data.trafficMonths.at(-1) ?? ''),
   );
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
   const [query, setQuery] = useState(initial.q ?? '');
   const [sort, setSort] = useState<Sort>(
-    ['traffic', 'taiwan', 'readers', 'radar', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic',
+    ['traffic', 'taiwan', 'readers', 'perArticle', 'radar', 'articles', 'week', 'name'].includes(initial.sort ?? '')
+      ? (initial.sort as Sort)
+      : 'traffic',
   );
   const admin = useSession()?.user?.role === 'admin';
   // Corrections saved on this page since it loaded; null means cleared.
@@ -78,12 +91,21 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   const recentTrafficMonths = data.trafficMonths.filter((month) => month <= trafficMonth).slice(-3);
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
   const readersAt = (outlet: ComparisonOutlet) => taiwanVisits(trafficAt(outlet)?.traffic, taiwanOf(outlet));
+  const weekAt = (outlet: ComparisonOutlet) => (outlet.media ? weekly[outlet.media] : undefined);
+  // Same figure as /media/'s 每篇台灣造訪, following the chosen month and any correction made here.
+  const perArticleAt = (outlet: ComparisonOutlet) => {
+    const readers = readersAt(outlet),
+      week = weekAt(outlet);
+    return readers && week?.full ? withPerArticle({ ...readers, month: trafficMonth, title: '' }, week.last7d).perArticle : undefined;
+  };
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
   const filtered = data.outlets.filter((o) => `${o.name} ${o.domain ?? ''} ${o.media ?? ''}`.toLocaleLowerCase().includes(needle));
   const metric = (o: ComparisonOutlet): number | string | null => {
     if (sort === 'name') return o.name;
     if (sort === 'articles') return articlesAt(o);
+    if (sort === 'week') return weekAt(o)?.last7d ?? null;
+    if (sort === 'perArticle') return readersAt(o)?.below ? null : (perArticleAt(o)?.visits ?? null);
     if (sort === 'taiwan') return taiwanSortValue(taiwanOf(o));
     // An upper bound (Taiwan outside the top five) is not a figure to rank by.
     if (sort === 'readers') return readersAt(o)?.below ? null : (readersAt(o)?.visits ?? null);
@@ -112,18 +134,31 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     recentTrafficMonths.length > 1
       ? `走勢 ${Number(recentTrafficMonths[0].slice(4))}→${Number(recentTrafficMonths.at(-1)?.slice(4))}月`
       : '';
+  // One line per header; the month and basis of each column are in its hover text.
   const columns = [
     { key: 'name', label: '媒體', sub: '' },
-    { key: 'articles', label: '本站收錄', sub: crawlMonth ? `${shortMonth(crawlMonth)} · 篇` : '篇' },
+    {
+      key: 'articles',
+      label: crawlMonth ? `${Number(crawlMonth.slice(4))}月收錄` : '本站收錄',
+      sub: crawlMonth ? `${shortMonth(crawlMonth)} 本站收錄篇數` : '本站收錄篇數',
+    },
+    { key: 'week', label: '7 天', sub: '近 7 天本站收錄篇數' },
     {
       key: 'traffic',
-      label: 'Similarweb',
-      sub: [trafficMonth && shortMonth(trafficMonth), view === 'change' ? '較上月' : '月訪問次數', trend].filter(Boolean).join(' · '),
+      label: view === 'change' ? '月造訪變化' : '月造訪',
+      sub: ['Similarweb', trafficMonth && shortMonth(trafficMonth), view === 'change' ? '較上月' : '月造訪次數', trend]
+        .filter(Boolean)
+        .join(' · '),
     },
-    { key: 'taiwan', label: '台灣占比', sub: '訪問量 · 最新一期' },
-    { key: 'readers', label: '台灣讀者', sub: [trafficMonth && shortMonth(trafficMonth), '估算訪問次數'].filter(Boolean).join(' · ') },
+    { key: 'taiwan', label: '台灣占比', sub: '占造訪量比例 · 最新一期' },
+    {
+      key: 'readers',
+      label: '台灣月造訪',
+      sub: [trafficMonth && shortMonth(trafficMonth), '月造訪量 × 台灣占比'].filter(Boolean).join(' · '),
+    },
+    { key: 'perArticle', label: '每篇台灣造訪', sub: '台灣月造訪 ÷ 依近 7 天發稿速度推估的當月篇數' },
     { key: 'channel', label: '主要導流', sub: '最新一期' },
-    { key: 'radar', label: 'Cloudflare Radar', sub: '全球排名' },
+    { key: 'radar', label: 'Radar 排名', sub: 'Cloudflare Radar 全球排名' },
   ] as const;
 
   return (
@@ -189,17 +224,14 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                   scope="col"
                   key={key}
                   aria-sort={key === 'channel' ? undefined : sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
+                  title={sub || undefined}
                   className={key === 'name' ? `${table.leadHead} text-left` : `${table.cell} text-right`}
                 >
                   {key === 'channel' ? (
-                    <span className="font-medium whitespace-nowrap">
-                      {label}
-                      <span className="block text-[10px] font-normal">{sub}</span>
-                    </span>
+                    <span className="font-medium whitespace-nowrap">{label}</span>
                   ) : (
                     <button type="button" onClick={() => chooseSort(key)} className="min-h-8 font-medium whitespace-nowrap">
                       {label} <SortIndicator active={sort === key} descending={!ascending} />
-                      {sub && <span className="block text-[10px] font-normal">{sub}</span>}
                     </button>
                   )}
                 </th>
@@ -214,13 +246,15 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
               const profile = outlet.trafficProfile;
               const tw = taiwanOf(outlet);
               const readers = readersAt(outlet);
+              const week = weekAt(outlet),
+                perArticle = perArticleAt(outlet);
               const channels = channelShares(profile);
               const visitsAtProfile = profile && outlet.traffic.find((p) => p.month === profile.month)?.traffic;
               const taiwanTitle =
                 overrideTitle(tw) ??
                 (profile &&
                   (tw && 'share' in tw && visitsAtProfile
-                    ? `${shortMonth(profile.month)} 台灣估算約 ${Math.round(visitsAtProfile * tw.share).toLocaleString('zh-TW')} 次訪問`
+                    ? `${shortMonth(profile.month)} 台灣估算約 ${Math.round(visitsAtProfile * tw.share).toLocaleString('zh-TW')} 次造訪`
                     : tw && 'below' in tw
                       ? `台灣不在前五大來源國家，占比低於 ${percent(tw.below)}`
                       : undefined));
@@ -236,9 +270,9 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                       {outlet.name.slice(0, 1)}
                     </span>
                   )}
-                  <span className="min-w-0">
-                    <span className={`${table.leadText} block font-medium`}>{outlet.name}</span>
-                    <span className={`${table.leadExtra} ${table.leadText} block text-[10px] text-zinc-500`}>
+                  <span className="flex min-w-0 items-baseline gap-2 whitespace-nowrap">
+                    <span className={`${table.leadText} font-medium`}>{outlet.name}</span>
+                    <span className={`${table.leadExtra} ${table.leadText} shrink-[3] text-[11px] text-zinc-500`}>
                       {outlet.domain ??
                         (outlet.media && mediaNames[outlet.media]?.status === 'historical' ? '歷史來源・原網域已停用' : '網域待確認')}
                       {outlet.sourceKind === 'discovery' && ' · 文章發現來源'}
@@ -268,6 +302,12 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                   </td>
                   <td className={`${table.num} py-1.5`}>{count == null ? '—' : count.toLocaleString('zh-TW')}</td>
                   <td
+                    className={`${table.num} py-1.5 ${week && !week.full ? 'text-zinc-500' : ''}`}
+                    title={week && !week.full ? '開始收錄還不滿 7 天，數字只涵蓋那幾天' : undefined}
+                  >
+                    {week ? week.last7d.toLocaleString('zh-TW') : '—'}
+                  </td>
+                  <td
                     className={`${table.num} py-1.5`}
                     title={
                       shared ??
@@ -277,7 +317,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                     }
                   >
                     <div className="flex items-center justify-end gap-3 whitespace-nowrap">
-                      <TrafficSparkline traffic={outlet.traffic} months={recentTrafficMonths} label="Similarweb 估算月訪問量" />
+                      <TrafficSparkline traffic={outlet.traffic} months={recentTrafficMonths} label="Similarweb 估算月造訪量" />
                       <span className="min-w-16">
                         {view === 'change' ? (
                           <Change value={monthChange(outlet.traffic, data.trafficMonths, trafficMonth)} />
@@ -309,12 +349,18 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                       shared ??
                       (readers && tw
                         ? 'share' in tw
-                          ? `月訪問量 × 台灣占比 ${percent(tw.share)}`
+                          ? `月造訪量 × 台灣占比 ${percent(tw.share)}`
                           : '台灣不在前五大來源國家，最多約此數'
                         : undefined)
                     }
                   >
                     {readers == null ? '—' : `${readers.below ? '< ' : ''}${trafficNumber(readers.visits)}`}
+                  </td>
+                  <td
+                    className={`${table.num} py-1.5 whitespace-nowrap ${readers?.below ? 'text-zinc-500' : ''}`}
+                    title={shared ?? perArticle?.title}
+                  >
+                    {perArticle ? `${readers?.below ? '< ' : ''}${trafficNumber(perArticle.visits)}` : '—'}
                   </td>
                   <td
                     className={`${table.num} py-1.5 whitespace-nowrap`}

@@ -2673,7 +2673,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 
 **Cloudflare Radar 全球網域排名與級距**
 
-讀取 worker 透過官方 Radar API 取得的最新 POPULAR 網域排名。前 100 名有精確名次，其他可能只提供排名級距；不能換算為訪問量或 page views。未設定 Token 時為 unconfigured，失敗保留最後成功資料。GET 不呼叫上游。
+讀取 worker 透過官方 Radar API 取得的最新 POPULAR 網域排名。前 100 名有精確名次，其他可能只提供排名級距；不能換算為造訪量或 page views。未設定 Token 時為 unconfigured，失敗保留最後成功資料。GET 不呼叫上游。
 
 範例：
 
@@ -2737,13 +2737,13 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 | `domains[].fetchedAt` | string (ISO 時間) | 該網域最近成功抓取時間 |
 | `domains[].monthly` | object[] | 本站保存的所有月份，舊到新；Similarweb 每次只回最近三個月，較早月份來自本站紀錄 |
 | `domains[].monthly[].month` | string | 月份 YYYYMM |
-| `domains[].monthly[].visits` | number | Similarweb EstimatedMonthlyVisits 估算訪問量 |
+| `domains[].monthly[].visits` | number | Similarweb EstimatedMonthlyVisits 估算造訪量 |
 | `domains[].monthly[].source` | "genehong" | 只在數值來自 GeneHong 試算表時出現（Similarweb 以百萬計、四捨五入），本站開始抓取前的月份 |
 | `domains[].profiles` | {鍵: object} | 依月份（YYYYMM）保存的國家來源、導流來源、互動與排名；每次只取得最近一期，較早月份隨排程累積，最多 12 個月；舊資料列可能沒有此欄 |
 | `domains[].profiles.{鍵}.month` | string | 月份 YYYYMM |
 | `domains[].profiles.{鍵}.countries` | object[] | 前五大來源國家，由大到小 |
 | `domains[].profiles.{鍵}.countries[].code` | string | 國家代碼 ISO 3166-1 alpha-2 |
-| `domains[].profiles.{鍵}.countries[].share` | number | 占訪問量比例 0–1 |
+| `domains[].profiles.{鍵}.countries[].share` | number | 占造訪量比例 0–1 |
 | `domains[].profiles.{鍵}.channels` | {鍵: number} | 導流來源占比 0–1：Direct、SearchOrganic、SearchPaid、SocialOrganic、SocialPaid、Referrals、Mail、DisplayAds、GenAi、Affiliate |
 | `domains[].profiles.{鍵}.bounceRate` | number \| null | 跳出率 0–1 |
 | `domains[].profiles.{鍵}.pagesPerVisit` | number \| null | 每次造訪瀏覽頁數 |
@@ -2765,7 +2765,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 
 **台灣占比的人工修正**
 
-管理員在 /media/traffic/ 修正的台灣訪問占比，依媒體代碼列出。Similarweb 的台灣占比是整個網域的估算，全球共用網域（如 msn.com）或小網站會失準；有修正時本站一律以修正值取代 Similarweb 的數字（所有月份），台灣讀者估算 = 月訪問量 × 占比。沒有修正的媒體不列出。
+管理員在 /media/traffic/ 修正的台灣造訪占比，依媒體代碼列出。Similarweb 的台灣占比是整個網域的估算，全球共用網域（如 msn.com）或小網站會失準；有修正時本站一律以修正值取代 Similarweb 的數字（所有月份），台灣造訪估算 = 月造訪量 × 占比。沒有修正的媒體不列出。
 
 範例：
 
@@ -2778,7 +2778,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-taiwan-shares'
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `shares` | {鍵: object} | 依媒體代碼 |
-| `shares.{鍵}.share` | number | 台灣占訪問量比例，0–1（到 0.0001） |
+| `shares.{鍵}.share` | number | 台灣占造訪量比例，0–1（到 0.0001） |
 | `shares.{鍵}.note` | string | 修正理由 |
 | `shares.{鍵}.updatedAt` | string (ISO 時間) | 最近一次修改時間 |
 

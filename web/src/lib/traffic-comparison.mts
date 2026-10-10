@@ -165,6 +165,50 @@ export function taiwanVisits(visits: number | null | undefined, tw: TaiwanShare)
   if (visits == null || tw == null) return null;
   return 'share' in tw ? { visits: Math.round(visits * tw.share) } : { visits: Math.round(visits * tw.below), below: true };
 }
+/** Articles collected over the past 7 days (app/src/v1/media-stats); `full` once collected for a whole week. */
+export interface WeeklyArticles {
+  last7d: number;
+  full: boolean;
+}
+/** One outlet's estimated Taiwan readers, for tables outside /media/traffic/. */
+export interface TaiwanReaders {
+  visits: number;
+  /** Taiwan outside the top five: `visits` is only an upper bound and does not rank. */
+  below?: true;
+  month: string;
+  title: string;
+  /** Visits per collected article; set by withPerArticle. */
+  perArticle?: { visits: number; title: string };
+}
+/** Estimated Taiwan visits per media id in the latest traffic month, the same
+ *  figure as the 台灣月造訪 column on /media/traffic/. */
+export function taiwanReadersByMedia(data: ComparisonData): Record<string, TaiwanReaders> {
+  const month = data.trafficMonths.at(-1);
+  const out: Record<string, TaiwanReaders> = {};
+  if (!month) return out;
+  for (const outlet of data.outlets) {
+    if (!outlet.media || outlet.sharedWith) continue;
+    const tw = taiwanShare(outlet.trafficProfile, outlet.taiwanOverride);
+    const readers = taiwanVisits(outlet.traffic.find((p) => p.month === month)?.traffic, tw);
+    if (!readers || !tw) continue;
+    const basis =
+      'share' in tw
+        ? `${shortMonth(month)} 月造訪量 × 台灣占比 ${percent(tw.share)}${tw.override ? '（人工修正）' : ''}`
+        : `${shortMonth(month)} 台灣不在前五大來源國家，最多約此數`;
+    out[outlet.media] = { ...readers, month, title: `Similarweb 估算：${basis}` };
+  }
+  return out;
+}
+/** Taiwan visits per article we collected. Collection began 2026-09-28, so no month
+ *  of ours lines up with Similarweb's yet: the month's article count is the past
+ *  week's pace (`last7d`) over that month's days. */
+export function withPerArticle(readers: TaiwanReaders, last7d: number): TaiwanReaders {
+  if (last7d <= 0) return readers;
+  const days = new Date(Date.UTC(Number(readers.month.slice(0, 4)), Number(readers.month.slice(4)), 0)).getUTCDate();
+  const articles = Math.round((last7d / 7) * days);
+  const title = `${readers.below ? '上限：' : ''}台灣月造訪 ÷ ${shortMonth(readers.month)} 推估 ${articles.toLocaleString('zh-TW')} 篇（近 7 天 ${last7d.toLocaleString('zh-TW')} 篇 ÷ 7 × ${days} 天）`;
+  return { ...readers, perArticle: { visits: Math.round(readers.visits / articles), title } };
+}
 /** Hover text for a corrected share: Similarweb's own figure and the reason. */
 export function overrideTitle(tw: TaiwanShare) {
   if (!tw || !('override' in tw) || !tw.override) return undefined;

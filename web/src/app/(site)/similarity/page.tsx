@@ -3,6 +3,8 @@ import { fetchCategories } from '@/lib/api';
 import type { MediaCamps } from '@/lib/media-graph.mts';
 import { pageMetadata } from '@/lib/seo.mts';
 import { fetchSimilarity, periodQuery } from '@/lib/similarity';
+import type { TaiwanReaders } from '@/lib/traffic-comparison.mts';
+import { loadTaiwanReaders } from '../media/traffic/load';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from './query';
 import SimilarityExplorer from './SimilarityExplorer';
 
@@ -17,7 +19,11 @@ export default async function SimilarityPage({ searchParams }: { searchParams: P
   const period = similarityPeriod(query);
   const threshold = similarityThreshold(query);
   const params = periodQuery(period, threshold);
-  const [data, categories] = await Promise.all([fetchSimilarity(period, threshold).catch(() => null), fetchCategories().catch(() => [])]);
+  const [data, categories, readers] = await Promise.all([
+    fetchSimilarity(period, threshold).catch(() => null),
+    fetchCategories().catch(() => []),
+    loadTaiwanReaders().catch(() => ({}) as Record<string, TaiwanReaders>),
+  ]);
   if (data) {
     const members = (key: string) => categories.find((category) => category.key === key)?.members ?? [];
     const camps: MediaCamps = {};
@@ -28,7 +34,7 @@ export default async function SimilarityPage({ searchParams }: { searchParams: P
     const tags = categories
       .filter(({ key }) => key !== 'all' && key !== 'blue' && key !== 'green')
       .map((category) => ({ id: category.key, media: category.members, label: category.label }));
-    return <SimilarityExplorer key={`${params}-${data.generatedAt}`} data={data} camps={camps} tags={tags} />;
+    return <SimilarityExplorer key={`${params}-${data.generatedAt}`} data={data} camps={camps} tags={tags} readers={readers} />;
   }
   return (
     <div role="status" className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">

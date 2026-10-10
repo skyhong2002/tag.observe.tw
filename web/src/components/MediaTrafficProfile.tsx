@@ -77,7 +77,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
               )}
               {visits != null && (
                 <>
-                  ，約 <span className="font-semibold tabular-nums">{Math.round(visits * tw.share).toLocaleString('zh-TW')}</span> 次訪問
+                  ，約 <span className="font-semibold tabular-nums">{Math.round(visits * tw.share).toLocaleString('zh-TW')}</span> 次造訪
                 </>
               )}
             </>
@@ -108,7 +108,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
           ))}
         </dl>
       )}
-      <p className="mt-3 text-[11px] leading-4 text-zinc-500">整個網域的估算值，比例以訪問次數計，非精確 page views。</p>
+      <p className="mt-3 text-[11px] leading-4 text-zinc-500">整個網域的估算值，比例以造訪次數計，非精確 page views。</p>
     </section>
   );
 }

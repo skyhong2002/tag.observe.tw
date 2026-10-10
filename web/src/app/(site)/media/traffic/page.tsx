@@ -2,7 +2,7 @@ import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
 import { pageMetadata } from '@/lib/seo.mts';
-import { loadComparison } from './load';
+import { loadComparison, loadWeekly } from './load';
 
 export const metadata = pageMetadata(
   '/media/traffic/',
@@ -13,7 +13,7 @@ export const metadata = pageMetadata(
 export const revalidate = 300;
 
 export default async function MediaSourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const data = await loadComparison();
+  const [data, weekly] = await Promise.all([loadComparison(), loadWeekly().catch(() => ({}))]);
   const params = Object.fromEntries(
     Object.entries(await searchParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
   );
@@ -23,10 +23,10 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         <MediaTabs current="traffic" />
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與排名</h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Similarweb 估算月訪問量與 Cloudflare Radar 排名 <MethodLink />
+          Similarweb 估算月造訪量與 Cloudflare Radar 排名 <MethodLink />
         </p>
       </header>
-      <TrafficComparison data={data} initial={params} />
+      <TrafficComparison data={data} weekly={weekly} initial={params} />
     </div>
   );
 }

@@ -236,13 +236,13 @@ export default async function MediaPage({
               )}
               {visits && outlet && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">月訪問量</dt>
-                  <dd className="flex items-center justify-between gap-2" title="Similarweb 全網域估算月訪問次數，非 page views">
+                  <dt className="text-zinc-500 dark:text-zinc-400">月造訪量</dt>
+                  <dd className="flex items-center justify-between gap-2" title="Similarweb 全網域估算月造訪次數，非 page views">
                     <span className="tabular-nums">
                       {trafficNumber(visits.traffic)}
                       <span className="ml-1 text-zinc-500">{shortMonth(visits.month)}</span>
                     </span>
-                    <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月訪問量" ends />
+                    <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月造訪量" ends />
                   </dd>
                 </>
               )}

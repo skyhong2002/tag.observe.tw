@@ -90,7 +90,7 @@ export default function TaiwanShareEditor({
               : 'share' in similarweb
                 ? percent(similarweb.share)
                 : `不在前五大國家，低於 ${percent(similarweb.below)}`}
-            。修正值會取代所有月份的 Similarweb 數字，台灣讀者估算也跟著改。
+            。修正值會取代所有月份的 Similarweb 數字，台灣造訪估算也跟著改。
           </p>
           <label className="mt-3 block">
             台灣占比（%）
