@@ -13,7 +13,6 @@ export function traditionalizeFeedItem(item: FeedItem): FeedItem {
     ...(item.description ? { description: toTraditional(item.description) } : {}),
     ...(item.summary ? { summary: toTraditional(item.summary) } : {}),
     ...(item.creator ? { creator: toTraditional(item.creator) } : {}),
-    ...(item.contentHtml ? { contentHtml: toTraditional(item.contentHtml) } : {}),
     ...(item.verifiedContent
       ? {
           verifiedContent: {
@@ -33,7 +32,8 @@ export function traditionalizeArticle(detail: ArticleDetail): ArticleDetail {
     summary: detail.summary ? toTraditional(detail.summary) : detail.summary,
     body: detail.body ? toTraditional(detail.body) : detail.body,
     authors: detail.authors.map(toTraditional),
-    provider: detail.provider ? toTraditional(detail.provider) : detail.provider,
+    // Provider labels are evidence used to resolve publisher identity.
+    // For example, The Paper's 经济日报 must not become Taiwan's 經濟日報.
     tags: [...new Set(detail.tags.map(toTraditional))],
   };
 }

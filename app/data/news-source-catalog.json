@@ -830,12 +830,13 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.voachinese.com/rssfeeds",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-10 新抓取的文字欄位以 OpenCC cn → tw 轉為繁體中文；保留原文網址、發布日期與來源身分。",
       "feedUrls": [
         "https://www.voachinese.com/api/"
       ],
       "articlePattern": "/a/[^/]+/\\d+\\.html$",
-      "includeArchive": true
+      "includeArchive": true,
+      "traditional": true
     },
     {
       "media": "civilmedia",
@@ -951,9 +952,10 @@
       ],
       "existing": false,
       "websiteEvidence": "https://www.thepaper.cn/",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。",
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。 2026-10-10 新抓取的文字欄位以 OpenCC cn → tw 轉為繁體中文；保留原文網址、發布日期與來源身分。",
       "articlePattern": "/newsDetail_forward_\\d+$",
-      "includeArchive": true
+      "includeArchive": true,
+      "traditional": true
     },
     {
       "media": "winnews",
@@ -2761,10 +2763,11 @@
       ],
       "existing": false,
       "websiteEvidence": "http://rfa.org/",
-      "notes": "原表 RFA 全站流量；本站以華語新聞內容及官方 RSS 為抓取範圍。",
+      "notes": "原表 RFA 全站流量；本站以華語新聞內容及官方 RSS 為抓取範圍。 2026-10-10 新抓取的文字欄位以 OpenCC cn → tw 轉為繁體中文；保留原文網址、發布日期與來源身分。",
       "feedUrls": [
         "https://www.rfa.org/mandarin/RSS"
-      ]
+      ],
+      "traditional": true
     },
     {
       "media": "huanqiu",
@@ -3196,8 +3199,9 @@
       "referenceRows": [],
       "existing": false,
       "websiteEvidence": "https://www.news.cn/",
-      "notes": "2026-10-04 依使用者指定補入官方中文新聞來源。",
-      "articlePattern": "/\\d{8}/[a-f0-9]+/c\\.html"
+      "notes": "2026-10-04 依使用者指定補入官方中文新聞來源。 2026-10-10 新抓取的文字欄位以 OpenCC cn → tw 轉為繁體中文；保留原文網址、發布日期與來源身分。",
+      "articlePattern": "/\\d{8}/[a-f0-9]+/c\\.html",
+      "traditional": true
     },
     {
       "media": "kyodo",

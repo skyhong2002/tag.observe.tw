@@ -19,6 +19,21 @@
 
 來源規格常用欄位：`list.include`（網址路徑過濾）、`list.articleId`（同一篇多網址時的文章身分）、`list.titleInclude`、`titleSuffix`（去掉標題後的站名）、`article.provider`（聚合站只收自製內容，其餘記在 `rejected_urls`）、`article.jsonTags`、`tagSelector`、`skipMeta`。新增或替換來源時，也要更新 `app/data/media-catalog.json` 的分類。
 
+## 繁體收錄
+
+`news-source-catalog.json` 的 `traditional: true` 會傳給來源設定與文章探索流程；`traditional.ts` 使用 OpenCC `cn → tw`，轉換索引與文章的標題、摘要、正文、作者、分類及標籤。聯合早報已啟用；2026-10-10 的擴充設定加入 RFA 華語、VOA 中文、澎湃新聞與新華社。這是本站轉換後的收錄文字，不代表原站提供獨立繁體網址。
+
+原文網址、canonical、圖片網址、日期、抓取證據與供稿者標籤保留原值。供稿者標籤仍以原始文字解析來源身分，避免把澎湃的「经济日报」判為台灣「經濟日報」。RSS 的原始 HTML 保留到正文抽取完成，轉換不改寫其中的連結或屬性。既有歷史簡體文章、標籤與統計尚未回填；`media-scope.json` 的 coverage 明列這項差異。
+
+四站各兩篇公開文章的唯讀驗證均成功，RFA、VOA 使用 RSS，澎湃與新華社使用 HTML 探索，保留原始發布時間。轉換功能的線上生效時間仍以實際部署版本為準。
+
+| 來源 | 2026-10-10 驗證樣本（未寫入資料庫） |
+| --- | --- |
+| RFA 華語 | [賴清德主持國慶典禮](https://www.rfa.org/mandarin/yataibaodao/2026/10/10/taiwan-double10th-laiqinde/)；[金明日牧師獲蘭托斯人權獎](https://www.rfa.org/mandarin/xinwenkuaixun/2026/10/09/china-pastor-ezra-jin-lantos-prize/) |
+| VOA 中文 | [賴清德會美國會議員](https://www.voachinese.com/a/taiwan-president-to-say-strengthening-defense-not-a-provocation-as-members-of-congress-visited-island-ahead-its-national-day-20261009/8209700.html)；[中國民兵船現身臺灣東部海域](https://www.voachinese.com/a/us-called-chinese-actions-detablising-after-militia-boat-spotted-near-taiwan-east-coast-20261009/8209675.html) |
+| 澎湃新聞 | [海水倒灌專訪](https://www.thepaper.cn/newsDetail_forward_34218699)；[商業街區如廁問題](https://www.thepaper.cn/newsDetail_forward_34224652) |
+| 新華社 | [十個「沒想到」](http://www.news.cn/sci-tech/20261010/52c2ae21e4ac4510924cf5c10fbc5ad6/c.html)；[月壤「時間膠囊」](http://www.news.cn/sci-tech/20261010/b6eff6a7479c469c8632279786377630/c.html) |
+
 ## 工具
 
 - `node --env-file=.env tools/crawl-once.ts <media> index|articles`：單跑一個來源。

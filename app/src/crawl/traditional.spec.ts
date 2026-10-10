@@ -6,6 +6,20 @@ describe('Traditional Chinese source conversion', () => {
     expect(toTraditional('中欧就混动汽车贸易达成谅解')).toBe('中歐就混動汽車貿易達成諒解');
   });
 
+  it('preserves raw feed HTML so conversion cannot rewrite embedded links or evidence', () => {
+    const contentHtml = '<p>贸易消息<a href="https://example.com/简体路径">相关资料</a></p>';
+    const item = traditionalizeFeedItem({
+      url: 'https://example.com/news/123',
+      title: '贸易消息',
+      publishedAt: null,
+      contentHtml,
+      verifiedProvider: '经济日报',
+    });
+    expect(item.title).toBe('貿易消息');
+    expect(item.contentHtml).toBe(contentHtml);
+    expect(item.verifiedProvider).toBe('经济日报');
+  });
+
   it('converts feed and article text while preserving URLs and dates', () => {
     const url = 'https://www.zaobao.com.sg/news/china/story20261009-9812326';
     const publishedAt = new Date('2026-10-09T00:00:00Z');

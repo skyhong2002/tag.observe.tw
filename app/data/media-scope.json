@@ -256,7 +256,8 @@
     },
     "rfa": {
       "scope": "intl-zh",
-      "language": "zh-Hans"
+      "language": "zh-Hant",
+      "coverage": "新抓取文字以 OpenCC cn → tw 轉為繁體；保留原文網址與發布日期，先前收錄的簡體資料尚未回填。"
     },
     "rfi": {
       "scope": "intl-zh",
@@ -322,7 +323,8 @@
     },
     "thepaper": {
       "scope": "cn",
-      "language": "zh-Hans"
+      "language": "zh-Hant",
+      "coverage": "新抓取文字以 OpenCC cn → tw 轉為繁體；保留原文網址與發布日期，先前收錄的簡體資料尚未回填。"
     },
     "tkww": {
       "scope": "hkmo",
@@ -337,7 +339,8 @@
     },
     "voachinese": {
       "scope": "intl-zh",
-      "language": "zh-Hans"
+      "language": "zh-Hant",
+      "coverage": "新抓取文字以 OpenCC cn → tw 轉為繁體；保留原文網址與發布日期，先前收錄的簡體資料尚未回填。"
     },
     "wenweipo": {
       "scope": "hkmo",
@@ -349,10 +352,11 @@
     },
     "xinhua": {
       "scope": "cn",
-      "language": "zh-Hans",
+      "language": "zh-Hant",
       "roles": [
         "wire"
-      ]
+      ],
+      "coverage": "新抓取文字以 OpenCC cn → tw 轉為繁體；保留原文網址與發布日期，先前收錄的簡體資料尚未回填。"
     },
     "xinhuanet": {
       "scope": "cn",
