@@ -38,6 +38,7 @@ const STATUS: Record<string, string> = {
   ok: '有標籤',
   title: '從標題補標籤',
   notags: '頁面沒有標籤',
+  'title-none': '頁面和標題都沒有標籤',
   error: '抓取失敗（會重試）',
   failed: '抓取失敗',
 };
