@@ -533,3 +533,30 @@ export const articleTagLog = mysqlTable(
   },
   (t) => [index('article_tag_log_article').on(t.articleId, t.at)],
 );
+
+// Admin corrections to Similarweb's Taiwan share (app/src/media-traffic/taiwan-share.ts),
+// edited on /media/traffic/. One value per outlet, used for every month until
+// cleared; the log keeps every change with who made it and why.
+export const mediaTaiwanShares = mysqlTable('media_taiwan_shares', {
+  media: varchar('media', { length: 32 }).primaryKey(),
+  /** Taiwan's share of the outlet's visits, 0–1. */
+  share: double('share').notNull(),
+  note: varchar('note', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  updatedAt: datetime('updated_at').notNull(),
+});
+
+export const mediaTaiwanShareLog = mysqlTable(
+  'media_taiwan_share_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    media: varchar('media', { length: 32 }).notNull(),
+    /** null: no correction before / the correction was cleared. */
+    before: double('before'),
+    after: double('after'),
+    note: varchar('note', { length: 255 }).notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('media_taiwan_share_log_media').on(t.media, t.at)],
+);

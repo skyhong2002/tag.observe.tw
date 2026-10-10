@@ -22,6 +22,13 @@
 - `news-source-catalog.json` 的明確別名對應歷月媒體身份，詳見[來源對照](news-source-references.md)。品牌全站與新聞子頻道可能重疊：使用對照表明確命名的主要列，不相加；沒有主要列且多筆值相異時標示「待核對」。
 - 流量匯入不修改政治分類；頁面亦不把人工政治標記當成 Similarweb 評分。既有覆蓋率的 29 家基準與排除規則仍由 `traffic-baseline.json` 控制。
 
+## 台灣占比與台灣讀者
+
+- 「台灣占比」取 Similarweb 最近一期前五大來源國家中的台灣；台灣不在前五大時只知道低於第五名，顯示「< N%」。
+- 「台灣讀者」= 所選月份的訪問量 × 台灣占比，是之後依台灣讀者排序、篩選媒體的依據。台灣不在前五大時只是上限（「< N」），排序時當作缺值。
+- Similarweb 的占比是整個網域的估算，有時不適用：msn.com 是全球網域（美國 34%，台灣不在前五）、tw.nextapple.com 樣本少而回 100%。管理員在 `/media/traffic/` 的台灣占比欄按鉛筆修正（`PUT /auth/admin/media/:media/taiwan-share`，`{ share: 0–1 | null, note }`，必填理由），修正值存在 `media_taiwan_shares`，每次修改記在 `media_taiwan_share_log`（誰、何時、前後數值、理由）。
+- 修正以媒體為單位，取代所有月份的 Similarweb 數字，直到按「改回 Similarweb」清除。表格與媒體頁標「人工」，提示列出 Similarweb 原值與理由；公開 API 為 `GET /api/v1/media-taiwan-shares`（`app/src/media-traffic/taiwan-share.ts`）。
+
 ## 本站收錄資料
 
 - `/api/v1/media-traffic-comparison` 以台北時間的真實發布月份統計 `articles.source=own`，排除未取得日期而以抓取時間代填的紀錄及未來日期；不包含 legacy 匯入量。資料是目前已收錄紀錄，並非媒體完整發稿量。

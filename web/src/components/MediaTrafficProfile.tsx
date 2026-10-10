@@ -3,6 +3,7 @@ import {
   channelLabels,
   channelShares,
   countryName,
+  overrideTitle,
   percent,
   shortMonth,
   taiwanShare,
@@ -39,7 +40,7 @@ function Bars({ rows }: { rows: Array<{ label: string; share: number; strong?: b
 export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutlet }) {
   const profile = outlet.trafficProfile;
   if (!profile) return null;
-  const tw = taiwanShare(profile);
+  const tw = taiwanShare(profile, outlet.taiwanOverride);
   const visits = outlet.traffic.find((point) => point.month === profile.month)?.traffic;
   const channels = channelShares(profile);
   const engagement = [
@@ -66,6 +67,14 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
           {'share' in tw ? (
             <>
               台灣訪客占 <span className="font-semibold tabular-nums">{percent(tw.share)}</span>
+              {tw.override && (
+                <span
+                  title={overrideTitle(tw)}
+                  className="ml-1 rounded bg-amber-100 px-1 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                >
+                  人工修正
+                </span>
+              )}
               {visits != null && (
                 <>
                   ，約 <span className="font-semibold tabular-nums">{Math.round(visits * tw.share).toLocaleString('zh-TW')}</span> 次訪問

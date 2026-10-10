@@ -10,6 +10,7 @@ import { createDb } from './db/client.ts';
 import { registerFeeds } from './feeds.ts';
 import { isShareImage, legacyRoute } from './legacy-redirects.js';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
+import { registerTaiwanShares } from './media-traffic/taiwan-share.ts';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
@@ -116,6 +117,7 @@ export async function buildApp(
   };
   if (own && config.login)
     registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
+  if (own && config.login) registerTaiwanShares(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (config.login && config.adminer)
     registerDbConsole(app, { currentUser: login.currentUser, origin: config.login.origin, adminer: config.adminer });
   registerReaderPresence(app);

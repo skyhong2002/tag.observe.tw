@@ -685,34 +685,131 @@ const bylineFilters = [
 
 export const ENDPOINTS: Endpoint[] = [
   {
-    path: '/api/status', tag: 'meta', summary: 'API 回應狀態與各端點用途',
-    description: '瀏覽器以 HTML 顯示，程式以 JSON 讀取。API 表示本端點可回應，Nearline 表示封存服務可回應；不代表每個查詢或取回作業已成功。',
-    response: obj({ status: str(undefined, { enum: ['ok', 'degraded'] }), scope: str(), description: str(),
+    path: '/api/status',
+    tag: 'meta',
+    summary: 'API 回應狀態與各端點用途',
+    description:
+      '瀏覽器以 HTML 顯示，程式以 JSON 讀取。API 表示本端點可回應，Nearline 表示封存服務可回應；不代表每個查詢或取回作業已成功。',
+    response: obj({
+      status: str(undefined, { enum: ['ok', 'degraded'] }),
+      scope: str(),
+      description: str(),
       services: arr(obj({ name: str(), status: str(undefined, { enum: ['ok', 'unavailable'] }), description: str() })),
-      endpoints: arr(obj({ path: str(), method: str(), description: str() })) }), cache: '不快取',
+      endpoints: arr(obj({ path: str(), method: str(), description: str() })),
+    }),
+    cache: '不快取',
   },
   {
-    path: '/api/v1/nearline/archives', tag: 'nearline', summary: '查詢封存 metadata 索引',
-    description: '按 table／generation／來源主鍵或 hash 定位封存資料；不支援逐篇日期、關鍵字、正文搜尋。取回時提交 entryId 與 indexRevision。',
-    params: ['source', 'kind', 'generation', 'table', 'legacyId', 'articleId', 'objectHash', 'id', 'cursor'].map((name) => q(name, '封存查詢條件；ID／主鍵必須是十進位字串', str())).concat([q('limit', '每頁筆數', intIn(1,100,50))]),
-    response: obj({ format: str(), indexRevision: str(), indexBuiltAt: time(), count: int(), entries: arr({ type:'object', additionalProperties:true }), nextCursor: nullable(str()), sourceSnapshots: arr({ type:'object', additionalProperties:true }) }),
-    errors: { '400': '查詢條件無效', '503': '索引未配置或服務不可用' }, cache: '不快取',
+    path: '/api/v1/nearline/archives',
+    tag: 'nearline',
+    summary: '查詢封存 metadata 索引',
+    description:
+      '按 table／generation／來源主鍵或 hash 定位封存資料；不支援逐篇日期、關鍵字、正文搜尋。取回時提交 entryId 與 indexRevision。',
+    params: ['source', 'kind', 'generation', 'table', 'legacyId', 'articleId', 'objectHash', 'id', 'cursor']
+      .map((name) => q(name, '封存查詢條件；ID／主鍵必須是十進位字串', str()))
+      .concat([q('limit', '每頁筆數', intIn(1, 100, 50))]),
+    response: obj({
+      format: str(),
+      indexRevision: str(),
+      indexBuiltAt: time(),
+      count: int(),
+      entries: arr({ type: 'object', additionalProperties: true }),
+      nextCursor: nullable(str()),
+      sourceSnapshots: arr({ type: 'object', additionalProperties: true }),
+    }),
+    errors: { '400': '查詢條件無效', '503': '索引未配置或服務不可用' },
+    cache: '不快取',
     example: '/api/v1/nearline/archives?table=tag_cna&kind=sql_data&limit=1',
   },
-  { path:'/api/v1/nearline/status',tag:'nearline',summary:'封存索引更新狀況', response:obj({ indexRevision:str(),indexBuiltAt:time(),refresh:nullable({type:'object',additionalProperties:true}) }), errors:{'503':'服務不可用'},cache:'不快取' },
-  { path:'/api/v1/nearline/retrievals',method:'POST',tag:'nearline',summary:'排隊取回指定封存資料',authorized:true,status:202,
-    description:'需要 Bearer token。提交一個封存項目後，以作業 ID 查進度、讀取結果或下載檔案。結果保留 24 小時，不改變文章正文的公開期限。',
-    requestBody:obj({entryId:str(),indexRevision:str(),selector:obj({legacyId:str('原始主鍵，十進位字串')})},undefined,['selector']),
-    response:{type:'object',additionalProperties:true},errors:{'400':'格式錯誤','401':'需要授權','404':'entry 不存在','409':'索引版本改變或來源缺口','413':'超過隔離還原預算','429':'queue 已滿','503':'空間不足或服務不可用'},cache:'不快取' },
-  { path:'/api/v1/nearline/retrievals/{id}',tag:'nearline',summary:'取回作業進度',authorized:true,
-    params:[p('id','取回 job ID',str(),'0123456789abcdef0123456789abcdef')],response:{type:'object',additionalProperties:true},errors:{'401':'需要授權','404':'作業不存在'},cache:'不快取' },
-  { path:'/api/v1/nearline/retrievals/{id}/results',tag:'nearline',summary:'分頁讀取封存取回結果',authorized:true,
-    params:[p('id','取回 job ID',str(),'0123456789abcdef0123456789abcdef'),q('cursor','前頁 nextCursor',str()),q('limit','每頁筆數',intIn(1,100,50))],
-    response:obj({jobId:str(),result:{type:'object',additionalProperties:true},count:int(),entries:arr({type:'object',additionalProperties:true}),nextCursor:nullable(str())}),errors:{'400':'分頁參數錯誤','401':'需要授權','409':'結果尚未完成','410':'結果已過期'},cache:'不快取' },
-  { path:'/api/v1/nearline/retrievals/{id}/files/{role}',tag:'nearline',summary:'下載經驗證的封存 SQL 分包',authorized:true,binary:true,
-    params:[p('id','取回 job ID',str(),'0123456789abcdef0123456789abcdef'),p('role','schema、data 或 programs',str('檔案用途',{enum:['schema','data','programs']}),'schema')],response:str('gzip SQL',{format:'binary'}),errors:{'401':'需要授權','404':'檔案不存在','409':'校驗失敗','410':'結果已過期'},cache:'不快取' },
-  { path:'/api/v1/nearline/retrievals/{id}/retry',method:'POST',tag:'nearline',summary:'重試失敗的取回作業',authorized:true,status:202,
-    params:[p('id','取回 job ID',str(),'0123456789abcdef0123456789abcdef')],requestBody:obj({}),response:{type:'object',additionalProperties:true},errors:{'401':'需要授權','409':'作業非失敗狀態或已達三次上限'},cache:'不快取' },
+  {
+    path: '/api/v1/nearline/status',
+    tag: 'nearline',
+    summary: '封存索引更新狀況',
+    response: obj({ indexRevision: str(), indexBuiltAt: time(), refresh: nullable({ type: 'object', additionalProperties: true }) }),
+    errors: { '503': '服務不可用' },
+    cache: '不快取',
+  },
+  {
+    path: '/api/v1/nearline/retrievals',
+    method: 'POST',
+    tag: 'nearline',
+    summary: '排隊取回指定封存資料',
+    authorized: true,
+    status: 202,
+    description:
+      '需要 Bearer token。提交一個封存項目後，以作業 ID 查進度、讀取結果或下載檔案。結果保留 24 小時，不改變文章正文的公開期限。',
+    requestBody: obj({ entryId: str(), indexRevision: str(), selector: obj({ legacyId: str('原始主鍵，十進位字串') }) }, undefined, [
+      'selector',
+    ]),
+    response: { type: 'object', additionalProperties: true },
+    errors: {
+      '400': '格式錯誤',
+      '401': '需要授權',
+      '404': 'entry 不存在',
+      '409': '索引版本改變或來源缺口',
+      '413': '超過隔離還原預算',
+      '429': 'queue 已滿',
+      '503': '空間不足或服務不可用',
+    },
+    cache: '不快取',
+  },
+  {
+    path: '/api/v1/nearline/retrievals/{id}',
+    tag: 'nearline',
+    summary: '取回作業進度',
+    authorized: true,
+    params: [p('id', '取回 job ID', str(), '0123456789abcdef0123456789abcdef')],
+    response: { type: 'object', additionalProperties: true },
+    errors: { '401': '需要授權', '404': '作業不存在' },
+    cache: '不快取',
+  },
+  {
+    path: '/api/v1/nearline/retrievals/{id}/results',
+    tag: 'nearline',
+    summary: '分頁讀取封存取回結果',
+    authorized: true,
+    params: [
+      p('id', '取回 job ID', str(), '0123456789abcdef0123456789abcdef'),
+      q('cursor', '前頁 nextCursor', str()),
+      q('limit', '每頁筆數', intIn(1, 100, 50)),
+    ],
+    response: obj({
+      jobId: str(),
+      result: { type: 'object', additionalProperties: true },
+      count: int(),
+      entries: arr({ type: 'object', additionalProperties: true }),
+      nextCursor: nullable(str()),
+    }),
+    errors: { '400': '分頁參數錯誤', '401': '需要授權', '409': '結果尚未完成', '410': '結果已過期' },
+    cache: '不快取',
+  },
+  {
+    path: '/api/v1/nearline/retrievals/{id}/files/{role}',
+    tag: 'nearline',
+    summary: '下載經驗證的封存 SQL 分包',
+    authorized: true,
+    binary: true,
+    params: [
+      p('id', '取回 job ID', str(), '0123456789abcdef0123456789abcdef'),
+      p('role', 'schema、data 或 programs', str('檔案用途', { enum: ['schema', 'data', 'programs'] }), 'schema'),
+    ],
+    response: str('gzip SQL', { format: 'binary' }),
+    errors: { '401': '需要授權', '404': '檔案不存在', '409': '校驗失敗', '410': '結果已過期' },
+    cache: '不快取',
+  },
+  {
+    path: '/api/v1/nearline/retrievals/{id}/retry',
+    method: 'POST',
+    tag: 'nearline',
+    summary: '重試失敗的取回作業',
+    authorized: true,
+    status: 202,
+    params: [p('id', '取回 job ID', str(), '0123456789abcdef0123456789abcdef')],
+    requestBody: obj({}),
+    response: { type: 'object', additionalProperties: true },
+    errors: { '401': '需要授權', '409': '作業非失敗狀態或已達三次上限' },
+    cache: '不快取',
+  },
   {
     path: '/api/v1/reader-presence',
     tag: 'meta',
@@ -1913,7 +2010,9 @@ export const ENDPOINTS: Endpoint[] = [
                 {
                   month: str('月份 YYYYMM'),
                   visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量'),
-                  source: str('只在數值來自 GeneHong 試算表時出現（Similarweb 以百萬計、四捨五入），本站開始抓取前的月份', { enum: ['genehong'] }),
+                  source: str('只在數值來自 GeneHong 試算表時出現（Similarweb 以百萬計、四捨五入），本站開始抓取前的月份', {
+                    enum: ['genehong'],
+                  }),
                 },
                 undefined,
                 ['source'],
@@ -1923,7 +2022,10 @@ export const ENDPOINTS: Endpoint[] = [
             profiles: map(
               obj({
                 month: str('月份 YYYYMM'),
-                countries: arr(obj({ code: str('國家代碼 ISO 3166-1 alpha-2'), share: num('占訪問量比例 0–1') }), '前五大來源國家，由大到小'),
+                countries: arr(
+                  obj({ code: str('國家代碼 ISO 3166-1 alpha-2'), share: num('占訪問量比例 0–1') }),
+                  '前五大來源國家，由大到小',
+                ),
                 channels: map(
                   num(),
                   '導流來源占比 0–1：Direct、SearchOrganic、SearchPaid、SocialOrganic、SocialPaid、Referrals、Mail、DisplayAds、GenAi、Affiliate',
@@ -1943,6 +2045,24 @@ export const ENDPOINTS: Endpoint[] = [
         ),
       ),
       failedAt: map(time(), '網域最近一次抓取成功但 Similarweb 沒有資料或資料無效的時間；成功後移除，一天後重試'),
+    }),
+    cache: '1 分鐘',
+  },
+  {
+    path: '/api/v1/media-taiwan-shares',
+    tag: 'media',
+    summary: '台灣占比的人工修正',
+    description:
+      '管理員在 /media/traffic/ 修正的台灣訪問占比，依媒體代碼列出。Similarweb 的台灣占比是整個網域的估算，全球共用網域（如 msn.com）或小網站會失準；有修正時本站一律以修正值取代 Similarweb 的數字（所有月份），台灣讀者估算 = 月訪問量 × 占比。沒有修正的媒體不列出。',
+    response: obj({
+      shares: map(
+        obj({
+          share: num('台灣占訪問量比例，0–1（到 0.0001）'),
+          note: str('修正理由'),
+          updatedAt: time('最近一次修改時間'),
+        }),
+        '依媒體代碼',
+      ),
     }),
     cache: '1 分鐘',
   },
@@ -2141,9 +2261,12 @@ export function buildOpenApi() {
         ...(e.description ? { description: e.description } : {}),
         parameters: e.params ?? [],
         ...(e.authorized ? { security: [{ nearlineBearer: [] }] } : {}),
-        ...(e.requestBody ? { requestBody: { required:true, content:{'application/json':{schema:e.requestBody}} } } : {}),
+        ...(e.requestBody ? { requestBody: { required: true, content: { 'application/json': { schema: e.requestBody } } } } : {}),
         responses: {
-          [String(e.status ?? 200)]: { description: 'OK', content: { [e.binary ? 'application/gzip' : 'application/json']: { schema: e.response } } },
+          [String(e.status ?? 200)]: {
+            description: 'OK',
+            content: { [e.binary ? 'application/gzip' : 'application/json']: { schema: e.response } },
+          },
           ...errors,
           '429': { description: '請求太頻繁', content: { 'application/json': { schema: ref('Error') } } },
         },
@@ -2164,7 +2287,10 @@ export function buildOpenApi() {
     externalDocs: { description: 'API 文件', url: `${PUBLIC_ORIGIN}/api/` },
     tags: API_TAGS,
     paths,
-    components: { schemas, securitySchemes:{ nearlineBearer:{type:'http',scheme:'bearer',description:'管理端 nearline token；不放進網址或公開頁面'} } },
+    components: {
+      schemas,
+      securitySchemes: { nearlineBearer: { type: 'http', scheme: 'bearer', description: '管理端 nearline token；不放進網址或公開頁面' } },
+    },
   };
 }
 

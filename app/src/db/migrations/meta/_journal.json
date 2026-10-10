@@ -169,6 +169,13 @@
       "when": 1791635733501,
       "tag": "0023_article-tag-edits",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1791636312070,
+      "tag": "0024_media-taiwan-shares",
+      "breakpoints": true
     }
   ]
 }

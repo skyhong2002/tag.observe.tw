@@ -5,10 +5,12 @@ import {
   type ComparisonOutlet,
   type CrawlComparison,
   collectionPoint,
+  overrideTitle,
   primaryTraffic,
   rankValues,
   taiwanShare,
   taiwanSortValue,
+  taiwanVisits,
 } from '../../web/src/lib/traffic-comparison.mts';
 import traffic from '../data/media-traffic.json' with { type: 'json' };
 import catalog from '../data/news-source-catalog.json' with { type: 'json' };
@@ -216,8 +218,42 @@ describe('traffic comparison publisher identity and adjustments', () => {
     ]);
     expect(taiwanShare(abroad)).toEqual({ below: 0.03 });
     // Unknown shares sort after every known one, even a tiny known share.
-    expect(taiwanSortValue(abroad) as number).toBeLessThan(taiwanSortValue(profile('202609', [{ code: 'TW', share: 0.001 }])) as number);
+    expect(taiwanSortValue(taiwanShare(abroad)) as number).toBeLessThan(
+      taiwanSortValue(taiwanShare(profile('202609', [{ code: 'TW', share: 0.001 }]))) as number,
+    );
     expect(taiwanShare(undefined)).toBeNull();
+  });
+  it('lets an admin correction replace the Similarweb Taiwan share and the readers estimate', () => {
+    const source = { media: 'msn', name: 'MSN', websiteUrl: 'https://www.msn.com/' } as NewsSource;
+    const countries = [
+      { code: 'US', share: 0.34 },
+      { code: 'JP', share: 0.07 },
+    ];
+    const msnProfile = { month: '202609', countries, channels: {}, bounceRate: null, pagesPerVisit: null, timeOnSite: null };
+    const live = {
+      status: 'ok' as const,
+      checkedAt: null,
+      error: null,
+      domains: [
+        {
+          domain: 'msn.com',
+          fetchedAt: '2026-10-01T00:00:00Z',
+          monthly: [{ month: '202609', visits: 1_000_000 }],
+          profiles: { '202609': { ...msnProfile, globalRank: null, countryRank: null, categoryRank: null } },
+        },
+      ],
+    };
+    const override = { share: 0.02, note: '全球網域', updatedAt: '2026-10-10T00:00:00.000Z' };
+    const built = buildComparison([], [source], null, new Set(), live, null, { msn: override });
+    const outlet = built.outlets.find((o) => o.media === 'msn');
+    expect(outlet?.taiwanOverride).toEqual(override);
+    const tw = taiwanShare(outlet?.trafficProfile, outlet?.taiwanOverride);
+    expect(tw).toEqual({ share: 0.02, override, similarweb: { below: 0.07 } });
+    expect(taiwanVisits(1_000_000, tw)).toEqual({ visits: 20_000 });
+    expect(overrideTitle(tw)).toBe('人工修正（Similarweb 為 低於 7%）：全球網域・2026-10-10');
+    // Without the correction the estimate is only an upper bound.
+    expect(taiwanVisits(1_000_000, taiwanShare(outlet?.trafficProfile))).toEqual({ visits: 70_000, below: true });
+    expect(taiwanVisits(null, tw)).toBeNull();
   });
   it('deduplicates real catalog parent/channel rows using the named primary without summing their traffic', () => {
     const latest = traffic.snapshots.find((snapshot) => snapshot.month === '202608')!;

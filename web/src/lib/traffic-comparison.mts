@@ -102,6 +102,14 @@ export interface ComparisonOutlet {
   trafficProfile?: TrafficProfile;
   /** Set when another outlet owns this whole-domain figure (e.g. BBC 中文 under bbc.com); names that outlet. */
   sharedWith?: string;
+  /** An admin's correction of Similarweb's Taiwan share (/api/v1/media-taiwan-shares). */
+  taiwanOverride?: TaiwanShareOverride;
+}
+/** Mirrors app/src/media-traffic/taiwan-share.ts. */
+export interface TaiwanShareOverride {
+  share: number;
+  note: string;
+  updatedAt: string;
 }
 export interface ComparisonData {
   months: string[];
@@ -134,17 +142,36 @@ export const sourceStatusLabels = {
  * countries: when Taiwan is not among them its share is below the smallest
  * listed one, so `below` carries that bound instead of a guessed value.
  */
-export function taiwanShare(profile: TrafficProfile | undefined): { share: number } | { below: number } | null {
+export function similarwebTaiwanShare(profile: TrafficProfile | undefined): { share: number } | { below: number } | null {
   if (!profile?.countries.length) return null;
   const tw = profile.countries.find((c) => c.code === 'TW');
   return tw ? { share: tw.share } : { below: Math.min(...profile.countries.map((c) => c.share)) };
 }
+export type TaiwanShare =
+  | { share: number; override?: TaiwanShareOverride; similarweb?: ReturnType<typeof similarwebTaiwanShare> }
+  | { below: number }
+  | null;
+/** The share this site uses: an admin's correction when there is one, else Similarweb's. */
+export function taiwanShare(profile: TrafficProfile | undefined, override?: TaiwanShareOverride | null): TaiwanShare {
+  const similarweb = similarwebTaiwanShare(profile);
+  return override ? { share: override.share, override, similarweb } : similarweb;
+}
 /** Value for sorting: the share; an unknown share outside the top five sorts after
  *  every known one (negative), ordered by its bound. */
-export const taiwanSortValue = (profile: TrafficProfile | undefined) => {
-  const tw = taiwanShare(profile);
-  return tw == null ? null : 'share' in tw ? tw.share : tw.below - 1;
-};
+export const taiwanSortValue = (tw: TaiwanShare) => (tw == null ? null : 'share' in tw ? tw.share : tw.below - 1);
+/** Estimated Taiwan visits for a month: visits × share. Outside the top five it is
+ *  only an upper bound (`below`). */
+export function taiwanVisits(visits: number | null | undefined, tw: TaiwanShare): { visits: number; below?: true } | null {
+  if (visits == null || tw == null) return null;
+  return 'share' in tw ? { visits: Math.round(visits * tw.share) } : { visits: Math.round(visits * tw.below), below: true };
+}
+/** Hover text for a corrected share: Similarweb's own figure and the reason. */
+export function overrideTitle(tw: TaiwanShare) {
+  if (!tw || !('override' in tw) || !tw.override) return undefined;
+  const original =
+    tw.similarweb == null ? '無資料' : 'share' in tw.similarweb ? percent(tw.similarweb.share) : `低於 ${percent(tw.similarweb.below)}`;
+  return `人工修正（Similarweb 為 ${original}）：${tw.override.note}・${tw.override.updatedAt.slice(0, 10)}`;
+}
 /** Channels with a share, largest first. */
 export const channelShares = (profile: TrafficProfile | undefined) =>
   Object.entries(profile?.channels ?? {})
@@ -193,6 +220,7 @@ export function buildComparison(
   hidden: ReadonlySet<string> = new Set(),
   live: LiveTraffic | null = null,
   radar: RadarData | null = null,
+  taiwanShares: Record<string, TaiwanShareOverride> = {},
 ): ComparisonData {
   const outlets = new Map<string, ComparisonOutlet>();
   const collected = new Map(crawl?.media.map((m) => [m.media, m]) ?? []);
@@ -333,6 +361,7 @@ export function buildComparison(
       }));
     }
   }
+  for (const outlet of outlets.values()) if (outlet.media && taiwanShares[outlet.media]) outlet.taiwanOverride = taiwanShares[outlet.media];
   const trafficMonths = [
     ...new Set(
       useLive

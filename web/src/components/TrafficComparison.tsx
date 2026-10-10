@@ -5,9 +5,11 @@ import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
+import TaiwanShareEditor from '@/components/TaiwanShareEditor';
 import TrafficSparkline from '@/components/TrafficSparkline';
 import { mediaNames } from '@/lib/media-names.mts';
 import { trafficGrowth, trafficNumber } from '@/lib/media-traffic.mts';
+import { useSession } from '@/lib/session';
 import { table } from '@/lib/table-styles';
 import {
   type ComparisonData,
@@ -15,16 +17,19 @@ import {
   channelLabels,
   channelShares,
   collectionPoint,
+  overrideTitle,
   percent,
   radarText,
   shortMonth,
+  type TaiwanShareOverride,
   type TrafficPoint,
   taiwanShare,
   taiwanSortValue,
+  taiwanVisits,
 } from '@/lib/traffic-comparison.mts';
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
-type Sort = 'traffic' | 'taiwan' | 'radar' | 'articles' | 'name';
+type Sort = 'traffic' | 'taiwan' | 'readers' | 'radar' | 'articles' | 'name';
 type View = 'value' | 'change';
 
 const radarPosition = (outlet: ComparisonOutlet) =>
@@ -61,20 +66,27 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
   const [query, setQuery] = useState(initial.q ?? '');
   const [sort, setSort] = useState<Sort>(
-    ['traffic', 'taiwan', 'radar', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic',
+    ['traffic', 'taiwan', 'readers', 'radar', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic',
   );
+  const admin = useSession()?.user?.role === 'admin';
+  // Corrections saved on this page since it loaded; null means cleared.
+  const [edits, setEdits] = useState<Record<string, TaiwanShareOverride | null>>({});
+  const taiwanOf = (o: ComparisonOutlet) => taiwanShare(o.trafficProfile, o.media && o.media in edits ? edits[o.media] : o.taiwanOverride);
   // Month-on-month change first; the raw visit counts are one click away.
   const [view, setView] = useState<View>(initial.view === 'value' ? 'value' : 'change');
   const [ascending, setAscending] = useState(initial.dir === 'asc');
   const recentTrafficMonths = data.trafficMonths.filter((month) => month <= trafficMonth).slice(-3);
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
+  const readersAt = (outlet: ComparisonOutlet) => taiwanVisits(trafficAt(outlet)?.traffic, taiwanOf(outlet));
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
   const filtered = data.outlets.filter((o) => `${o.name} ${o.domain ?? ''} ${o.media ?? ''}`.toLocaleLowerCase().includes(needle));
   const metric = (o: ComparisonOutlet): number | string | null => {
     if (sort === 'name') return o.name;
     if (sort === 'articles') return articlesAt(o);
-    if (sort === 'taiwan') return taiwanSortValue(o.trafficProfile);
+    if (sort === 'taiwan') return taiwanSortValue(taiwanOf(o));
+    // An upper bound (Taiwan outside the top five) is not a figure to rank by.
+    if (sort === 'readers') return readersAt(o)?.below ? null : (readersAt(o)?.visits ?? null);
     // Smaller Radar positions are more popular, so negate them: descending lists the most popular first.
     if (sort === 'radar') return radarPosition(o) == null ? null : -(radarPosition(o) as number);
     return view === 'change' ? monthChange(o.traffic, data.trafficMonths, trafficMonth) : (trafficAt(o)?.traffic ?? null);
@@ -109,6 +121,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
       sub: [trafficMonth && shortMonth(trafficMonth), view === 'change' ? '較上月' : '月訪問次數', trend].filter(Boolean).join(' · '),
     },
     { key: 'taiwan', label: '台灣占比', sub: '訪問量 · 最新一期' },
+    { key: 'readers', label: '台灣讀者', sub: [trafficMonth && shortMonth(trafficMonth), '估算訪問次數'].filter(Boolean).join(' · ') },
     { key: 'channel', label: '主要導流', sub: '最新一期' },
     { key: 'radar', label: 'Cloudflare Radar', sub: '全球排名' },
   ] as const;
@@ -168,7 +181,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
         </label>
       </div>
       <TableScroller card label="媒體流量表格，可左右捲動">
-        <table className="w-full min-w-[34rem] text-sm tabular-nums">
+        <table className="w-full min-w-[40rem] text-sm tabular-nums">
           <thead className="text-xs text-zinc-500 dark:text-zinc-400">
             <tr>
               {columns.map(({ key, label, sub }) => (
@@ -199,16 +212,18 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
               const point = trafficAt(outlet),
                 count = articlesAt(outlet);
               const profile = outlet.trafficProfile;
-              const tw = taiwanShare(profile);
+              const tw = taiwanOf(outlet);
+              const readers = readersAt(outlet);
               const channels = channelShares(profile);
               const visitsAtProfile = profile && outlet.traffic.find((p) => p.month === profile.month)?.traffic;
               const taiwanTitle =
-                profile &&
-                (tw && 'share' in tw && visitsAtProfile
-                  ? `${shortMonth(profile.month)} 台灣估算約 ${Math.round(visitsAtProfile * tw.share).toLocaleString('zh-TW')} 次訪問`
-                  : tw && 'below' in tw
-                    ? `台灣不在前五大來源國家，占比低於 ${percent(tw.below)}`
-                    : undefined);
+                overrideTitle(tw) ??
+                (profile &&
+                  (tw && 'share' in tw && visitsAtProfile
+                    ? `${shortMonth(profile.month)} 台灣估算約 ${Math.round(visitsAtProfile * tw.share).toLocaleString('zh-TW')} 次訪問`
+                    : tw && 'below' in tw
+                      ? `台灣不在前五大來源國家，占比低於 ${percent(tw.below)}`
+                      : undefined));
               const identity = (
                 <>
                   {outlet.media ? (
@@ -273,7 +288,33 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                     </div>
                   </td>
                   <td className={`${table.num} py-1.5 whitespace-nowrap`} title={shared ?? taiwanTitle}>
+                    {tw && 'override' in tw && tw.override && (
+                      <span className="mr-1 rounded bg-amber-100 px-1 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                        人工
+                      </span>
+                    )}
                     {tw == null ? '—' : 'share' in tw ? percent(tw.share) : `< ${percent(tw.below)}`}
+                    {admin && outlet.media && (
+                      <TaiwanShareEditor
+                        media={outlet.media}
+                        name={outlet.name}
+                        share={tw}
+                        onSaved={(override) => setEdits((current) => ({ ...current, [outlet.media as string]: override }))}
+                      />
+                    )}
+                  </td>
+                  <td
+                    className={`${table.num} py-1.5 whitespace-nowrap`}
+                    title={
+                      shared ??
+                      (readers && tw
+                        ? 'share' in tw
+                          ? `月訪問量 × 台灣占比 ${percent(tw.share)}`
+                          : '台灣不在前五大來源國家，最多約此數'
+                        : undefined)
+                    }
+                  >
+                    {readers == null ? '—' : `${readers.below ? '< ' : ''}${trafficNumber(readers.visits)}`}
                   </td>
                   <td
                     className={`${table.num} py-1.5 whitespace-nowrap`}

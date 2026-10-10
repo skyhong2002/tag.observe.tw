@@ -104,6 +104,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media-stats`](#api-v1-media-stats) | 各媒體收錄量與爬蟲狀態 |
 | [`GET /api/v1/media-radar`](#api-v1-media-radar) | Cloudflare Radar 全球網域排名與級距 |
 | [`GET /api/v1/media-traffic-live`](#api-v1-media-traffic-live) | Similarweb 自動抓取流量狀態 |
+| [`GET /api/v1/media-taiwan-shares`](#api-v1-media-taiwan-shares) | 台灣占比的人工修正 |
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 
 ## API 本身
@@ -2755,6 +2756,31 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 | `domains[].profiles.{鍵}.categoryRank.category` | string |  |
 | `domains[].profiles.{鍵}.categoryRank.rank` | integer |  |
 | `failedAt` | {鍵: string (ISO 時間)} | 網域最近一次抓取成功但 Similarweb 沒有資料或資料無效的時間；成功後移除，一天後重試 |
+
+快取：1 分鐘。
+
+<a id="api-v1-media-taiwan-shares"></a>
+
+### `GET /api/v1/media-taiwan-shares`
+
+**台灣占比的人工修正**
+
+管理員在 /media/traffic/ 修正的台灣訪問占比，依媒體代碼列出。Similarweb 的台灣占比是整個網域的估算，全球共用網域（如 msn.com）或小網站會失準；有修正時本站一律以修正值取代 Similarweb 的數字（所有月份），台灣讀者估算 = 月訪問量 × 占比。沒有修正的媒體不列出。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/media-taiwan-shares'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `shares` | {鍵: object} | 依媒體代碼 |
+| `shares.{鍵}.share` | number | 台灣占訪問量比例，0–1（到 0.0001） |
+| `shares.{鍵}.note` | string | 修正理由 |
+| `shares.{鍵}.updatedAt` | string (ISO 時間) | 最近一次修改時間 |
 
 快取：1 分鐘。
 

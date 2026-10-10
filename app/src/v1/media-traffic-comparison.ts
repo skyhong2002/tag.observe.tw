@@ -9,6 +9,7 @@ import { publisherDomains } from '../jobs/media-traffic-job.ts';
 import { loadRadarHistory, loadTrafficHistory, withRadarHistory, withTrafficHistory } from '../media-traffic/history.ts';
 import { readLiveTraffic } from '../media-traffic/live.ts';
 import { readRadar } from '../media-traffic/radar.ts';
+import { loadTaiwanShares } from '../media-traffic/taiwan-share.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { listedMediaSources } from './media-stats.ts';
 
@@ -167,6 +168,11 @@ export function registerMediaTrafficComparison(app: FastifyInstance, db: Db) {
       domains: withTrafficHistory(snapshot.domains, await trafficHistory()).filter((row) => visible.has(row.domain)),
       failedAt: Object.fromEntries(Object.entries(failedAt).filter(([domain]) => visible.has(domain))),
     };
+  });
+  // Admins' corrections of Similarweb's Taiwan share (media-traffic/taiwan-share.ts).
+  app.get('/api/v1/media-taiwan-shares', async (_request, reply) => {
+    reply.header('cache-control', 'public, max-age=60');
+    return { shares: await loadTaiwanShares(db) };
   });
   app.get('/api/v1/media-traffic-comparison', async (_request, reply) => {
     const result = await load();
