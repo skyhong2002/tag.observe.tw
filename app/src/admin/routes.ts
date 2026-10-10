@@ -220,6 +220,36 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     return article ?? reply.code(404).send({ error: 'no such article' });
   });
 
+  // 全文: the stored body as crawled, outside the public seven-day window and
+  // without the reader excerpt. A body already moved to the archive is only
+  // reported as archived; reading it does not restore it.
+  app.get<{ Params: { id: string } }>('/auth/admin/articles/:id/body', async (request, reply) => {
+    if (!(await admin(request, reply))) return reply;
+    const id = Number(request.params.id);
+    const [row] = await db
+      .select({
+        id: articles.id,
+        body: articles.body,
+        bodyStatus: articles.bodyStatus,
+        bodySource: articles.bodySource,
+        contentFetchedAt: articles.contentFetchedAt,
+        archived: sql<number>`${articles.contentArchiveHash} IS NOT NULL`,
+      })
+      .from(articles)
+      .where(Number.isSafeInteger(id) && id > 0 ? eq(articles.id, id) : sql`FALSE`);
+    if (!row) return reply.code(404).send({ error: 'no such article' });
+    const body = row.body?.trim() ? row.body : null;
+    return {
+      id: row.id,
+      body,
+      chars: body ? Array.from(body).length : 0,
+      status: row.bodyStatus,
+      source: row.bodySource,
+      fetchedAt: row.contentFetchedAt,
+      archived: !body && Boolean(Number(row.archived)),
+    };
+  });
+
   // 單篇標籤增減: the whole list replaces the article's tags, in the JSON
   // column (ranking, events) and in article_tags (tag pages, search), and
   // marks the article so crawls keep the edit.
