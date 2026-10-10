@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { registerApiStatus } from './api-status.ts';
 import { MAX_LIMIT, MAX_SPAN_DAYS } from './articles.ts';
 
 // OpenAPI 3.1 description of the public /api/v1 endpoints. It is the single
@@ -684,8 +685,15 @@ const bylineFilters = [
 
 export const ENDPOINTS: Endpoint[] = [
   {
+    path: '/api/status', tag: 'meta', summary: 'API 回應狀態與各端點用途',
+    description: '瀏覽器以 HTML 顯示，程式以 JSON 讀取。API 表示本端點可回應，Nearline 表示封存服務可回應；不代表每個查詢或取回作業已成功。',
+    response: obj({ status: str(undefined, { enum: ['ok', 'degraded'] }), scope: str(), description: str(),
+      services: arr(obj({ name: str(), status: str(undefined, { enum: ['ok', 'unavailable'] }), description: str() })),
+      endpoints: arr(obj({ path: str(), method: str(), description: str() })) }), cache: '不快取',
+  },
+  {
     path: '/api/v1/nearline/archives', tag: 'nearline', summary: '查詢封存 metadata 索引',
-    description: '查 SSD SQLite，不讀 NAS 內容。按 table／generation／來源主鍵或 hash 定位；不支援逐篇日期、關鍵字、正文搜尋。公開結果省略內部儲存路徑。取回時提交 entryId 與 indexRevision。',
+    description: '按 table／generation／來源主鍵或 hash 定位封存資料；不支援逐篇日期、關鍵字、正文搜尋。取回時提交 entryId 與 indexRevision。',
     params: ['source', 'kind', 'generation', 'table', 'legacyId', 'articleId', 'objectHash', 'id', 'cursor'].map((name) => q(name, '封存查詢條件；ID／主鍵必須是十進位字串', str())).concat([q('limit', '每頁筆數', intIn(1,100,50))]),
     response: obj({ format: str(), indexRevision: str(), indexBuiltAt: time(), count: int(), entries: arr({ type:'object', additionalProperties:true }), nextCursor: nullable(str()), sourceSnapshots: arr({ type:'object', additionalProperties:true }) }),
     errors: { '400': '查詢條件無效', '503': '索引未配置或服務不可用' }, cache: '不快取',
@@ -693,12 +701,12 @@ export const ENDPOINTS: Endpoint[] = [
   },
   { path:'/api/v1/nearline/status',tag:'nearline',summary:'封存索引更新狀況', response:obj({ indexRevision:str(),indexBuiltAt:time(),refresh:nullable({type:'object',additionalProperties:true}) }), errors:{'503':'服務不可用'},cache:'不快取' },
   { path:'/api/v1/nearline/retrievals',method:'POST',tag:'nearline',summary:'排隊取回指定封存資料',authorized:true,status:202,
-    description:'需要管理端 Bearer token。每次一個 package，單一 worker；queue 上限 20。SQL 驗證後隔離還原，文章表正規化為 JSONL 結果；非文章及 programs 只提供經驗證的 SQL 檔，不自動執行。結果保存 24 小時，不寫入正式 DB，不改變正文七天公開期。',
+    description:'需要 Bearer token。提交一個封存項目後，以作業 ID 查進度、讀取結果或下載檔案。結果保留 24 小時，不改變文章正文的公開期限。',
     requestBody:obj({entryId:str(),indexRevision:str(),selector:obj({legacyId:str('原始主鍵，十進位字串')})},undefined,['selector']),
     response:{type:'object',additionalProperties:true},errors:{'400':'格式錯誤','401':'需要授權','404':'entry 不存在','409':'索引版本改變或來源缺口','413':'超過隔離還原預算','429':'queue 已滿','503':'空間不足或服務不可用'},cache:'不快取' },
   { path:'/api/v1/nearline/retrievals/{id}',tag:'nearline',summary:'取回作業進度',authorized:true,
     params:[p('id','取回 job ID',str(),'0123456789abcdef0123456789abcdef')],response:{type:'object',additionalProperties:true},errors:{'401':'需要授權','404':'作業不存在'},cache:'不快取' },
-  { path:'/api/v1/nearline/retrievals/{id}/results',tag:'nearline',summary:'分頁讀取隔離轉換結果',authorized:true,
+  { path:'/api/v1/nearline/retrievals/{id}/results',tag:'nearline',summary:'分頁讀取封存取回結果',authorized:true,
     params:[p('id','取回 job ID',str(),'0123456789abcdef0123456789abcdef'),q('cursor','前頁 nextCursor',str()),q('limit','每頁筆數',intIn(1,100,50))],
     response:obj({jobId:str(),result:{type:'object',additionalProperties:true},count:int(),entries:arr({type:'object',additionalProperties:true}),nextCursor:nullable(str())}),errors:{'400':'分頁參數錯誤','401':'需要授權','409':'結果尚未完成','410':'結果已過期'},cache:'不快取' },
   { path:'/api/v1/nearline/retrievals/{id}/files/{role}',tag:'nearline',summary:'下載經驗證的封存 SQL 分包',authorized:true,binary:true,
@@ -2065,6 +2073,7 @@ export function registerApiMeta(app: FastifyInstance) {
     openapi: `${PUBLIC_ORIGIN}/api/v1/openapi.json`,
     endpoints: ENDPOINTS.map((e) => ({ method: e.method ?? 'GET', path: e.path, summary: e.summary, example: examplePath(e) })),
   };
+  registerApiStatus(app, ENDPOINTS);
   for (const url of ['/api/v1', '/api/v1/'])
     app.get(url, async (_request, reply) => {
       reply.header('cache-control', 'public, max-age=3600');

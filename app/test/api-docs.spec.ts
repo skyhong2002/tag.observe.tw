@@ -9,10 +9,10 @@ import { buildOpenApi, ENDPOINTS, examplePath, operationId } from '../src/v1/ope
 
 const root = new URL('../../', import.meta.url);
 const v1 = new URL('app/src/v1/', root);
-// Every '/api/v1/…' route literal registered with app.get in app/src/v1.
+// Public API route literals registered in app/src/v1.
 const registered = readdirSync(v1)
   .filter((f) => f.endsWith('.ts') && !f.endsWith('.spec.ts'))
-  .flatMap((f) => [...readFileSync(new URL(f, v1), 'utf8').matchAll(/app\.(?:get|post)(?:<[^(]*?>)?\(\s*'(\/api\/v1[^']*)'/g)].map((m) => m[1]))
+  .flatMap((f) => [...readFileSync(new URL(f, v1), 'utf8').matchAll(/app\.(?:get|post)(?:<[^(]*?>)?\(\s*'(\/api\/(?:v1|status)[^']*)'/g)].map((m) => m[1]))
   .map((r) => r.replace(/:(\w+)/g, '{$1}'));
 
 describe('OpenAPI description', () => {
@@ -33,7 +33,7 @@ describe('OpenAPI description', () => {
           e.params?.find((x) => x.name === name && x.in === 'path'),
           `${e.path} ${name}`,
         ).toBeTruthy();
-      expect(examplePath(e), e.path).toMatch(/^\/api\/v1[^{}]*$/);
+      expect(examplePath(e), e.path).toMatch(/^\/api\/(?:v1|status)[^{}]*$/);
     }
   });
   it('docs/api.md is generated from the current spec (run: node tools/gen-api-docs.ts)', () => {
@@ -97,6 +97,18 @@ describe('public API gateway behaviour', () => {
     const spec = await app.inject('/api/v1/openapi.json');
     expect(spec.headers['content-type']).toMatch(/^application\/json/);
     expect(spec.json().openapi).toBe('3.1.0');
+  });
+  it('serves a public endpoint directory without runtime or storage state', async () => {
+    const r = await app.inject('/api/status');
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ status: 'degraded', scope: 'api_availability' });
+    const body = r.json();
+    expect(body.endpoints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: '/api/v1/nearline/archives' }),
+      expect.objectContaining({ path: '/api/v1/nearline/status' }),
+      expect.objectContaining({ path: '/api/v1/nearline/retrievals' }),
+    ]));
+    expect(JSON.stringify(body)).not.toMatch(/127\.0\.0\.1|nas:|disk|database|indexRevision|uptime/i);
   });
   it('allows cross-origin reads, including preflight and errors', async () => {
     const r = await app.inject('/api/v1/openapi.json');

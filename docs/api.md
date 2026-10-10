@@ -57,11 +57,12 @@ for a in r.json()["articles"]:
 
 | 端點 | 說明 |
 | --- | --- |
+| [`GET /api/status`](#-api-status) | API 回應狀態與各端點用途 |
 | [`GET /api/v1/nearline/archives`](#api-v1-nearline-archives) | 查詢封存 metadata 索引 |
 | [`GET /api/v1/nearline/status`](#api-v1-nearline-status) | 封存索引更新狀況 |
 | [`POST /api/v1/nearline/retrievals`](#api-v1-nearline-retrievals) | 排隊取回指定封存資料 |
 | [`GET /api/v1/nearline/retrievals/{id}`](#api-v1-nearline-retrievals-id) | 取回作業進度 |
-| [`GET /api/v1/nearline/retrievals/{id}/results`](#api-v1-nearline-retrievals-id-results) | 分頁讀取隔離轉換結果 |
+| [`GET /api/v1/nearline/retrievals/{id}/results`](#api-v1-nearline-retrievals-id-results) | 分頁讀取封存取回結果 |
 | [`GET /api/v1/nearline/retrievals/{id}/files/{role}`](#api-v1-nearline-retrievals-id-files-role) | 下載經驗證的封存 SQL 分包 |
 | [`POST /api/v1/nearline/retrievals/{id}/retry`](#api-v1-nearline-retrievals-id-retry) | 重試失敗的取回作業 |
 | [`GET /api/v1/reader-presence`](#api-v1-reader-presence) | 本站最近 90 秒的線上讀者估計 |
@@ -103,6 +104,38 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 
 ## API 本身
+
+<a id="-api-status"></a>
+
+### `GET /api/status`
+
+**API 回應狀態與各端點用途**
+
+瀏覽器以 HTML 顯示，程式以 JSON 讀取。API 表示本端點可回應，Nearline 表示封存服務可回應；不代表每個查詢或取回作業已成功。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/status'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `status` | "ok" \| "degraded" |  |
+| `scope` | string |  |
+| `description` | string |  |
+| `services` | object[] |  |
+| `services[].name` | string |  |
+| `services[].status` | "ok" \| "unavailable" |  |
+| `services[].description` | string |  |
+| `endpoints` | object[] |  |
+| `endpoints[].path` | string |  |
+| `endpoints[].method` | string |  |
+| `endpoints[].description` | string |  |
+
+快取：不快取。
 
 <a id="api-v1-reader-presence"></a>
 
@@ -2629,7 +2662,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 
 **查詢封存 metadata 索引**
 
-查 SSD SQLite，不讀 NAS 內容。按 table／generation／來源主鍵或 hash 定位；不支援逐篇日期、關鍵字、正文搜尋。公開結果省略內部儲存路徑。取回時提交 entryId 與 indexRevision。
+按 table／generation／來源主鍵或 hash 定位封存資料；不支援逐篇日期、關鍵字、正文搜尋。取回時提交 entryId 與 indexRevision。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -2696,7 +2729,7 @@ curl -s 'https://tag.observe.tw/api/v1/nearline/status'
 
 **排隊取回指定封存資料**
 
-需要管理端 Bearer token。每次一個 package，單一 worker；queue 上限 20。SQL 驗證後隔離還原，文章表正規化為 JSONL 結果；非文章及 programs 只提供經驗證的 SQL 檔，不自動執行。結果保存 24 小時，不寫入正式 DB，不改變正文七天公開期。
+需要 Bearer token。提交一個封存項目後，以作業 ID 查進度、讀取結果或下載檔案。結果保留 24 小時，不改變文章正文的公開期限。
 
 授權：`Authorization: Bearer <管理端 token>`。
 
@@ -2768,7 +2801,7 @@ curl -s -H 'Authorization: Bearer <管理端 token>' 'https://tag.observe.tw/api
 
 ### `GET /api/v1/nearline/retrievals/{id}/results`
 
-**分頁讀取隔離轉換結果**
+**分頁讀取封存取回結果**
 
 授權：`Authorization: Bearer <管理端 token>`。
 
