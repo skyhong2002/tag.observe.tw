@@ -30,10 +30,17 @@ describe('burstTrails', () => {
   it('leaves a gap for hours without a snapshot or without a comparable burst', () => {
     const all = charts(() => ({ alpha: 10, beta: 5 }));
     all.delete(end - HOUR);
-    // Six hours before the last point, a truncated chart without beta leaves beta's burst unknown there.
-    all.set(end - 6 * HOUR, chart({ alpha: 10 }, true));
+    // Six hours before the last point, an empty truncated chart leaves every burst unknown there.
+    all.set(end - 6 * HOUR, chart({}, true));
     const trails = burstTrails(all, [end - HOUR, end]);
-    expect(trails.get('alpha')?.map((p) => p.position)).toEqual([null, 1]);
+    expect(trails.get('alpha')?.map((p) => p.position)).toEqual([null, null]);
     expect(trails.get('beta')?.map((p) => p.position)).toEqual([null, null]);
+    // A truncated chart without beta caps beta at alpha's score instead.
+    all.set(end - 6 * HOUR, chart({ alpha: 10 }, true));
+    expect(
+      burstTrails(all, [end])
+        .get('beta')
+        ?.map((p) => p.position),
+    ).toEqual([2]);
   });
 });

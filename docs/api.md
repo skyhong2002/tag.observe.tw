@@ -377,8 +377,8 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].count` | integer | 過去 24 小時帶這個標籤的文章數 |
 | `entries[].media` | {鍵: integer} | 各媒體的文章數 |
 | `entries[].normalized` | number | 原始分數 ÷ 固定基準媒體數 × 50 |
-| `entries[].burst` | number \| null | 爆發力：與同一基準 3/6/12/24/48 小時前分數比較的加權差；缺值、舊榜截斷或基準不相容為 null |
-| `entries[].history` | {鍵: number \| null} | N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料為 null） |
+| `entries[].burst` | number \| null | 爆發力：與同一基準 3/6/12/24/48 小時前分數比較的加權差；不在截斷舊榜上的詞以該榜最低保存分數為上限估算（只會低估），缺少快照或基準不相容為 null |
+| `entries[].history` | {鍵: number \| null} | N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料，或只知道不超過截斷舊榜最低分時為 null） |
 | `entries[].rank24h` | integer \| null | 24 小時前依原始分數的名次；沒有可比較快照、基準不同或當時不在榜上為 null |
 | `entries[].new` | boolean | 24 小時前的完整快照中沒有這個標籤 |
 | `entries[].signals` | object |  |

@@ -110,10 +110,15 @@ export const normalizedScore = (chart: Pick<RankingChart, 'weight' | 'mediaCount
 export function computeBurst(current: RankingChart, history: ReadonlyMap<number, RankingChart | null>): BurstEntry[] {
   const norm = normalizedScore;
   const lookup = new Map<number, Map<string, number>>();
+  // A tag missing from an old chart scored at most that chart's lowest kept
+  // entry (0 when nothing was cut). Using that ceiling never overstates a rise.
+  const absent = new Map<number, number | null>();
   for (const [step] of BURST_STEPS) {
     const old = history.get(step) ?? null;
     const chart = old?.available !== false && old?.basis?.id === current.basis?.id ? old : null;
     lookup.set(step, new Map(chart ? chart.entries.map((e) => [e.tag, norm(chart, e.score)]) : []));
+    const floor = chart?.entries.at(-1);
+    absent.set(step, !chart ? null : chart.truncated === false ? 0 : floor ? norm(chart, floor.score) : null);
   }
   // Also filter stored snapshots so old noise does not return before a rebuild.
   const out: BurstEntry[] = current.entries
@@ -124,10 +129,10 @@ export function computeBurst(current: RankingChart, history: ReadonlyMap<number,
       let complete = current.available !== false;
       const hist: Record<number, number | null> = {};
       for (const [step, w] of BURST_STEPS) {
-        const chart = history.get(step);
-        const compatible = chart && chart.available !== false && chart.basis?.id === current.basis?.id;
-        const old = lookup.get(step)?.get(e.tag) ?? (compatible && chart.truncated === false ? 0 : null);
-        hist[step] = old;
+        const known = lookup.get(step)?.get(e.tag);
+        const old = known ?? absent.get(step) ?? null;
+        // history stays null when only the cut-off ceiling is known.
+        hist[step] = known ?? (absent.get(step) === 0 ? 0 : null);
         if (old === null) complete = false;
         else burst += (normalized - old) * w;
       }

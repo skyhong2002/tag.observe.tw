@@ -108,10 +108,18 @@ describe('computeBurst', () => {
     missing.delete(48);
     expect(computeBurst(current, missing).every((e) => e.burst === null && e.history[48] === null)).toBe(true);
   });
-  it('does not infer zero from top-500 omissions, incompatible cohorts, or warmup history', () => {
+  it('bounds a top-500 omission by the cut-off score instead of zero', () => {
     const truncated = history();
     truncated.set(3, { ...older, truncated: true });
-    expect(computeBurst(current, truncated).find((e) => e.tag === 'yy')?.burst).toBeNull();
+    const yy = computeBurst(current, truncated).find((e) => e.tag === 'yy')!;
+    // older keeps only xx (12.5), so yy scored at most 12.5 three hours ago.
+    expect(yy.history[3]).toBeNull();
+    expect(yy.burst).toBeCloseTo(12.5 + (12.5 - 12.5) * 0.92 + 12.5 * (0.84 + 0.7 + 0.5 + 0.25));
+    const empty = history();
+    empty.set(3, { ...older, entries: [], truncated: true });
+    expect(computeBurst(current, empty).every((e) => e.burst === null)).toBe(true);
+  });
+  it('does not infer anything from incompatible cohorts or warmup history', () => {
     for (const old of [
       { ...older, basis: { ...basis, id: 'other' } },
       { ...older, available: false },

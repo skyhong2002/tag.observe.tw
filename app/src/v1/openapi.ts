@@ -118,8 +118,12 @@ const schemas: Record<string, Schema> = {
       count: int('過去 24 小時帶這個標籤的文章數'),
       media: map(int(), '各媒體的文章數'),
       normalized: num('原始分數 ÷ 固定基準媒體數 × 50'),
-      burst: nullable(num('爆發力：與同一基準 3/6/12/24/48 小時前分數比較的加權差；缺值、舊榜截斷或基準不相容為 null')),
-      history: map(nullable(num()), 'N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料為 null）'),
+      burst: nullable(
+        num(
+          '爆發力：與同一基準 3/6/12/24/48 小時前分數比較的加權差；不在截斷舊榜上的詞以該榜最低保存分數為上限估算（只會低估），缺少快照或基準不相容為 null',
+        ),
+      ),
+      history: map(nullable(num()), 'N 小時前的正規化分數（鍵為 3、6、12、24、48；沒有可比較資料，或只知道不超過截斷舊榜最低分時為 null）'),
       rank24h: nullable(int('24 小時前依原始分數的名次；沒有可比較快照、基準不同或當時不在榜上為 null')),
       new: bool('24 小時前的完整快照中沒有這個標籤'),
       signals: ref('DiscoverySignals'),

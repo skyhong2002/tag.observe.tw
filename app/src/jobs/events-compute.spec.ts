@@ -51,7 +51,7 @@ describe('CoOccurrence', () => {
 });
 
 describe('clusterEvents', () => {
-  it('keeps new events whose tags follow more than 300 terms with complete burst history', () => {
+  it('ranks new events above 300 older terms using the cut-off ceiling of truncated history', () => {
     const background = Array.from({ length: 310 }, (_, i) => art(100 + i, 'a', [`既有主題${i}`]));
     const fresh = [
       art(1, 'a', ['大立光', 'CPO', '林恩平']),
@@ -72,25 +72,24 @@ describe('clusterEvents', () => {
         articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
         { hours: 24, basis },
       );
-    // An older top-500 snapshot cannot prove that the new story had zero reports.
+    // An older top-500 snapshot cannot prove zero, but it caps the new story at its lowest kept score.
     const older = { ...chart(background), truncated: true };
     const entries = computeBurst(chart([...background, ...fresh]), new Map(BURST_STEPS.map(([h]) => [h, older])));
     const cpo = entries.find((e) => e.tag === 'CPO')!;
-    expect(entries.indexOf(cpo)).toBeGreaterThanOrEqual(300);
-    expect(cpo.burst).toBeNull();
+    expect(entries.indexOf(cpo)).toBeLessThan(10);
+    expect(cpo.burst).toBeGreaterThan(cpo.normalized);
     expect(Object.values(cpo.history).every((score) => score === null)).toBe(true);
-    // This is the old failure: known-history terms consume every candidate slot.
-    expect(clusterEvents(entries, [...background, ...fresh], [], { now: t0, maxTags: 300 })).toHaveLength(0);
+    expect(clusterEvents(entries, [...background, ...fresh], [], { now: t0, maxTags: 300 })).toHaveLength(2);
 
     const events = clusterEvents(entries, [...background, ...fresh], [], { now: t0 });
     expect(events).toHaveLength(2);
     const financial = events.find((e) => e.major.includes('大立光'))!;
     expect(financial.tags.map(([tag]) => tag)).toEqual(expect.arrayContaining(['大立光', 'CPO', '林恩平']));
     expect(financial.memberIds.sort()).toEqual([1, 2, 3]);
-    expect(financial.score).toBe(cpo.normalized);
+    expect(financial.score).toBe(cpo.burst);
     expect(events.find((e) => e.major.includes('高虹安'))?.memberIds.sort()).toEqual([4, 5, 6]);
-    // Forming an event uses current scores without fabricating public burst history.
-    expect(cpo.burst).toBeNull();
+    // The ceiling feeds burst only; public history stays unknown.
+    expect(cpo.history[48]).toBeNull();
   });
   it('does not merge unrelated subjects through a category or year tag', () => {
     const articles = [
