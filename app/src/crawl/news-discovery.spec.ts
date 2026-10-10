@@ -46,6 +46,22 @@ describe('discoverNews', () => {
     expect(result.items[0].publishedAt?.toISOString()).toBe('2026-10-07T10:28:08.000Z');
   });
 
+  it('reads reviewed tag links while discovering, since the article stage never re-reads stored bodies', async () => {
+    const url = `${home}article/100476`;
+    const tagged = article().replace(
+      '<p>',
+      '<ul class="field--name-field-tags"><li><a href="/tags/1">技職教育</a></li><li><a href="/tags/2">技能競賽</a></li></ul><p>',
+    );
+    const f = fixture({ [home]: link(url), [url]: tagged });
+    const plain = await discoverNews({ homeUrl: home, maxArticles: 1 }, f.options);
+    expect(plain.items[0].tags ?? []).toEqual([]);
+    const result = await discoverNews(
+      { homeUrl: home, maxArticles: 1, tagSelector: '.field--name-field-tags a[href^="/tags/"]' },
+      f.options,
+    );
+    expect(result.items[0].tags).toEqual(['技職教育', '技能競賽']);
+  });
+
   it('carries a verified provider from the article to persistence independently of its reporter', async () => {
     const site = 'https://tw.aboluowang.com/';
     const url = `${site}2026/1002/2442777.html`;

@@ -39,6 +39,8 @@ export interface NewsDiscoveryConfig {
   /** Reviewed archive permalinks when a discontinued publisher has no listing. */
   articleUrls?: string[];
   traditional?: boolean;
+  /** Reviewed tag links on the publisher's article page (see ArticleRules.tagSelector). */
+  tagSelector?: string;
 }
 export interface NewsDiscoveryOptions {
   fetch?: typeof fetchText;
@@ -381,7 +383,7 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
       reject('publisher labels body as excerpt', url);
       return;
     }
-    const detail = extractArticle(articleHtml, response.url);
+    const detail = extractArticle(articleHtml, response.url, config.tagSelector ? { tagSelector: config.tagSelector } : {});
     const evidence = pageEvidence($, response.url, articleHtml);
     let canonical = detail.canonical ? absolute(detail.canonical, response.url) : response.url;
     const rawOgUrl = $('meta[property="og:url"]').attr('content') ?? '';

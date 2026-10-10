@@ -81,6 +81,8 @@ export function addNewsSources(
                   ...(source.providerBody ? { providerBody: source.providerBody } : {}),
                   ...(source.articleUrls ? { articleUrls: source.articleUrls } : {}),
                   ...(source.traditional ? { traditional: true } : {}),
+                  // Discovery stores the body, so the article stage never re-reads these pages.
+                  ...(source.tagSelector ? { tagSelector: source.tagSelector } : {}),
                   maxArticles: 12,
                 },
               }
