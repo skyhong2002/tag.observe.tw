@@ -2597,6 +2597,15 @@
       "status": "verified",
       "sourceUrl": "https://www.mnd.gov.tw/",
       "evidence": "官方網站新聞發布頁，2026-10-07 核對。"
+    },
+    "thinkingtaiwan": {
+      "name": "想想論壇",
+      "aliases": [
+        "想想Thinking Taiwan"
+      ],
+      "status": "verified",
+      "sourceUrl": "https://www.thinkingtaiwan.net/",
+      "evidence": "官方網站 og:site_name 與頁首，2026-10-10 核對。"
     }
   }
 }

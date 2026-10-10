@@ -71,4 +71,16 @@ export const EXTRA_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegEx
     publishedSelector: 'td[align="center"]:has(> font)',
     publicationPattern: /CRNTT\.com\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/i,
   },
+  {
+    // Drupal: no published meta or JSON-LD; the byline row prints the day only.
+    host: 'thinkingtaiwan.net',
+    path: /^\/(?:article|content)\/\d+\/?$/,
+    bodySelector: 'article.node .node-content > .field--name-body',
+    titleSelector: '#block-thinking-theme-page-title h1 .field--name-title',
+    publishedSelector: 'article.node .node__meta .post-date',
+    publicationPattern: /發佈於\s*｜\s*(\d{4}-\d{2}-\d{2})/,
+    // One item per writer; the expandable bio beside it is not part of the credit.
+    authorSelector:
+      'article.node .node__meta .field--name-field-writer.field__item, article.node .node__meta .field--name-field-writer .field__item',
+  },
 ];

@@ -81,3 +81,13 @@ it('prefers Watchout printed UTC publication over its zoneless JSONLD and reads 
   expect(extractArticle(html, url)).toMatchObject({ authors: ['薛翰駿 Sih Hān-Tsùn'], publishedAt: new Date('2026-10-07T11:03:50Z') });
   expect(extractArticle(html.replace('page read single', 'other-page'), url).authors).toEqual([]);
 });
+
+it('reads 想想論壇 day-only publication, writer and tags from the Drupal node, not the summary or related cards', () => {
+  const url = 'https://www.thinkingtaiwan.net/article/100476';
+  const html = `<meta property="og:title" content="真實新聞文章標題 - 想想Thinking Taiwan - 想想台灣，想想未來"><main><div id="block-thinking-theme-page-title"><h1 class="title"><span class="field field--name-title">真實新聞文章標題</span></h1></div><article class="node node--type-article"><div class="node__content"><div class="node__meta"><div class="node-meta-inner">作者<span class="divider">｜</span><span class="writer-name"><div class="field field--name-field-writer field__item">黃偉翔</div></span><div class="writer-info"><p>台灣技職教育議題工作者。</p></div><div class="post-date"><span>發佈於<span class="divider">｜</span>2026-10-09   </span></div><div class="field--name-field-tags"><ul><li><a href="/tags/100340">技職教育</a></li><li><a href="/tags/100503">技能競賽</a></li></ul></div></div></div><div class="node-content"><div class="field field--name-field-summary"><ul><li>不屬於這篇新聞的募款報告</li></ul></div><div class="field field--name-body">${article}</div></div></div></article><aside><div class="post-date"><span>發佈於<span class="divider">｜</span>2027-12-31</span></div></aside></main>`;
+  const result = extractArticle(html, url, { tagSelector: '.field--name-field-tags a[href^="/tags/"]' });
+  expect(result).toMatchObject({ title: '真實新聞文章標題', authors: ['黃偉翔'], tags: ['技職教育', '技能競賽'], bodyStatus: 'ok' });
+  expect(result.publishedAt?.toISOString()).toBe('2026-10-08T16:00:00.000Z');
+  expect(result.body).not.toContain('不屬於這篇新聞的募款報告');
+  expect(newsSiteRules('https://www.thinkingtaiwan.net/topics/ideas-policies')).toBeUndefined();
+});

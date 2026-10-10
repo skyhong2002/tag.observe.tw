@@ -1214,5 +1214,9 @@
   "mnd": {
     "title": "國防部",
     "icon": null
+  },
+  "thinkingtaiwan": {
+    "title": "想想論壇",
+    "icon": "https://www.thinkingtaiwan.net/sites/default/files/favicon.png"
   }
 }

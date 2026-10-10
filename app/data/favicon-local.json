@@ -2514,6 +2514,14 @@
     "note": "Best verified publisher mark available; original resolution is limited.",
     "dark": "outline"
   },
+  "thinkingtaiwan": {
+    "source": "https://www.thinkingtaiwan.net/sites/default/files/favicon.png",
+    "fetchedAt": "2026-10-10",
+    "sourceWidth": 32,
+    "sourceHeight": 32,
+    "transparent": true,
+    "revision": "c9812c4bb2e3"
+  },
   "tkww": {
     "source": "https://www.tkww.hk/images/202601/21/697028c1e4b0aa6cb371c706.png",
     "fetchedAt": "2026-10-03",

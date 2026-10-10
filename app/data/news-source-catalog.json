@@ -2415,7 +2415,9 @@
       "existing": false,
       "websiteEvidence": "http://zaobao.com.sg",
       "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。網站預設回傳簡體中文，由爬蟲轉為繁體中文。",
-      "feedUrls": ["https://www.zaobao.com.sg/googlenews.xml"],
+      "feedUrls": [
+        "https://www.zaobao.com.sg/googlenews.xml"
+      ],
       "traditional": true
     },
     {
@@ -3393,6 +3395,20 @@
       "websiteEvidence": "https://www.mnd.gov.tw/",
       "notes": "2026-10-07 補入官方政府新聞稿；原發布者為政府機關，非獨立媒體報導。",
       "articlePattern": "^/news/(?:mnd|pressrelease)/\\d+/?$"
+    },
+    {
+      "media": "thinkingtaiwan",
+      "name": "想想論壇",
+      "websiteUrl": "https://www.thinkingtaiwan.net/",
+      "referenceNames": [
+        "想想論壇"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.thinkingtaiwan.net/",
+      "notes": "2026-10-10 依使用者要求補入；舊站曾有內文爬蟲（thinkingtaiwan_tag.php），沿用同一媒體代碼。網站沒有 RSS，從首頁探索；同一篇有 /article/ 與 /content/ 兩種網址，canonical 為 /article/。",
+      "articlePattern": "^/(?:article|content)/\\d+/?$",
+      "tagSelector": ".field--name-field-tags a[href^=\"/tags/\"]"
     }
   ]
 }
