@@ -1,6 +1,8 @@
 import names from '../../data/media-names.json' with { type: 'json' };
 import catalog from '../../data/news-source-catalog.json' with { type: 'json' };
 import { excludedMedia } from '../crawl/registry.ts';
+import type { Db } from '../db/client.ts';
+import { saveTrafficHistory } from '../media-traffic/history.ts';
 import { readLiveTraffic, refreshTraffic, trafficDomain, writeLiveTraffic } from '../media-traffic/live.ts';
 
 /**
@@ -19,9 +21,11 @@ export const publisherDomains = () => {
   ];
   return [...new Set(urls.flatMap((url) => (url && trafficDomain(url)) || []))];
 };
-export async function runMediaTrafficJob(domains = publisherDomains()) {
+/** `db` records every month and profile in the snapshot (history.ts), so nothing Similarweb stops returning is lost. */
+export async function runMediaTrafficJob(domains = publisherDomains(), db?: Db) {
   const { updated, remaining, ...result } = await refreshTraffic(domains, await readLiveTraffic());
   await writeLiveTraffic(result);
+  if (db) await saveTrafficHistory(db, result.domains);
   // A rate-limited run that still made progress is expected; the next hourly run resumes.
   if (!updated && result.status !== 'ok') throw Error(result.error || 'No Similarweb traffic available');
   return { domains: result.domains.length, updated, remaining, status: result.status, checkedAt: result.checkedAt };

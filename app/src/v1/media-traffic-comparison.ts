@@ -6,6 +6,7 @@ import { allSources, excludedMedia } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
 import { publisherDomains } from '../jobs/media-traffic-job.ts';
+import { loadRadarHistory, loadTrafficHistory, withRadarHistory, withTrafficHistory } from '../media-traffic/history.ts';
 import { readLiveTraffic } from '../media-traffic/live.ts';
 import { readRadar } from '../media-traffic/radar.ts';
 import { isDiscoverySource } from './article-content.ts';
@@ -149,17 +150,21 @@ export function trafficComparisonCache<T>(load: () => Promise<T>, clock = Date.n
 export function registerMediaTrafficComparison(app: FastifyInstance, db: Db) {
   const load = trafficComparisonCache(() => loadMediaTrafficComparison(db));
   const visible = new Set(publisherDomains());
+  // Stored months and Radar periods (history.ts). A database outage degrades to the
+  // latest snapshot instead of failing the endpoint.
+  const trafficHistory = trafficComparisonCache(() => loadTrafficHistory(db).catch(() => new Map()), Date.now, 60_000);
+  const radarHistory = trafficComparisonCache(() => loadRadarHistory(db).catch(() => new Map()), Date.now, 60_000);
   app.get('/api/v1/media-radar', async (_request, reply) => {
     reply.header('cache-control', 'public, max-age=60');
     const snapshot = await readRadar();
-    return { ...snapshot, domains: snapshot.domains.filter((row) => visible.has(row.domain)) };
+    return { ...snapshot, domains: withRadarHistory(snapshot.domains, await radarHistory()).filter((row) => visible.has(row.domain)) };
   });
   app.get('/api/v1/media-traffic-live', async (_request, reply) => {
     reply.header('cache-control', 'public, max-age=60');
     const { failedAt = {}, ...snapshot } = await readLiveTraffic();
     return {
       ...snapshot,
-      domains: snapshot.domains.filter((row) => visible.has(row.domain)),
+      domains: withTrafficHistory(snapshot.domains, await trafficHistory()).filter((row) => visible.has(row.domain)),
       failedAt: Object.fromEntries(Object.entries(failedAt).filter(([domain]) => visible.has(domain))),
     };
   });

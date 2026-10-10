@@ -79,6 +79,8 @@ export interface RadarData {
     rank: number | null;
     bucket: number | null;
     bucketLowerBound?: number | null;
+    /** Every stored period, oldest first (app/src/media-traffic/history.ts). */
+    history?: Array<{ dateEnd: string; rank: number | null; bucket: number | null; bucketLowerBound: number | null }>;
   }>;
 }
 export interface ComparisonOutlet {

@@ -40,7 +40,7 @@ export interface DomainTraffic {
   domain: string;
   fetchedAt: string;
   monthly: VisitMonth[];
-  /** Profiles by month (YYYYMM), newest kept; see TrafficProfile. */
+  /** Profiles by month (YYYYMM), all kept; see TrafficProfile. */
   profiles?: Record<string, TrafficProfile>;
 }
 export interface LiveTraffic {
@@ -198,11 +198,23 @@ export function trafficProfile(data: Record<string, unknown>, currentMonth: stri
         : null,
   };
 }
-/** Keeps earlier months' profiles when a fetch brings the newest one. */
-export function mergeProfiles(previous: DomainTraffic | undefined, next: DomainTraffic, keep = 12): DomainTraffic {
+/** Folds a fetch into the stored row: Similarweb only returns the latest three
+ *  months and one profile, so earlier months and profiles are kept (a month the
+ *  fetch covers takes its revised value). The database keeps the same record
+ *  (history.ts); this keeps the snapshot from shrinking between runs. */
+export function mergeHistory(previous: DomainTraffic | undefined, next: DomainTraffic): DomainTraffic {
+  const months = new Map(previous?.monthly.map((point) => [point.month, point.visits]));
+  for (const point of next.monthly) months.set(point.month, point.visits);
   const profiles = { ...previous?.profiles, ...next.profiles };
-  const months = Object.keys(profiles).sort().slice(-keep);
-  return { ...next, profiles: Object.fromEntries(months.map((month) => [month, profiles[month]])) };
+  return {
+    ...next,
+    monthly: [...months].sort(([a], [b]) => a.localeCompare(b)).map(([month, visits]) => ({ month, visits })),
+    profiles: Object.fromEntries(
+      Object.keys(profiles)
+        .sort()
+        .map((month) => [month, profiles[month]]),
+    ),
+  };
 }
 const day = 24 * 60 * 60_000;
 /**
@@ -249,7 +261,7 @@ export async function refreshTraffic(
     }
     attempted++;
     try {
-      entries.set(domain, mergeProfiles(entries.get(domain), await fetchDomainTraffic(domain, request, now)));
+      entries.set(domain, mergeHistory(entries.get(domain), await fetchDomainTraffic(domain, request, now)));
       delete failedAt[domain];
       successes++;
       consecutiveFailures = 0;

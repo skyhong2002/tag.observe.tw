@@ -55,7 +55,7 @@ describe('monthly crawler and traffic comparison', () => {
       const response = await app.inject('/api/v1/media-radar');
       expect(response.statusCode).toBe(200);
       expect(response.headers['cache-control']).toBe('public, max-age=60');
-      expect(response.json().domains).toEqual([row]);
+      expect(response.json().domains).toEqual([{ ...row, history: [] }]);
       expect(response.body).not.toContain('test-token');
       expect(request).not.toHaveBeenCalled();
     } finally {

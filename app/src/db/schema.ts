@@ -463,3 +463,49 @@ export const mediaCategoryLog = mysqlTable(
   },
   (t) => [index('media_category_log_media').on(t.media, t.at)],
 );
+
+// Similarweb and Cloudflare Radar history (app/src/media-traffic/history.ts).
+// The JSON snapshots under ~/.local/share only hold the latest batch; these
+// tables keep every month and every Radar period ever seen, so the record
+// grows like the old GeneHong sheet and is covered by the database backup.
+// A revised value overwrites the row; first_seen_at keeps when it first appeared.
+export const mediaTrafficMonths = mysqlTable(
+  'media_traffic_months',
+  {
+    domain: varchar('domain', { length: 255 }).notNull(),
+    month: varchar('month', { length: 6 }).notNull(),
+    visits: bigint('visits', { mode: 'number' }).notNull(),
+    firstSeenAt: datetime('first_seen_at').notNull(),
+    fetchedAt: datetime('fetched_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.domain, t.month] }), index('media_traffic_months_month').on(t.month)],
+);
+
+export const mediaTrafficProfiles = mysqlTable(
+  'media_traffic_profiles',
+  {
+    domain: varchar('domain', { length: 255 }).notNull(),
+    month: varchar('month', { length: 6 }).notNull(),
+    /** TrafficProfile: countries, channels, engagement and ranks for the month. */
+    profile: json('profile').notNull(),
+    firstSeenAt: datetime('first_seen_at').notNull(),
+    fetchedAt: datetime('fetched_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.domain, t.month] })],
+);
+
+export const mediaRadarRanks = mysqlTable(
+  'media_radar_ranks',
+  {
+    domain: varchar('domain', { length: 255 }).notNull(),
+    /** End of the Radar reporting period; one row per period. */
+    dateEnd: datetime('date_end').notNull(),
+    dateStart: datetime('date_start').notNull(),
+    rank: int('rank'),
+    bucket: int('bucket'),
+    bucketLowerBound: int('bucket_lower_bound'),
+    firstSeenAt: datetime('first_seen_at').notNull(),
+    fetchedAt: datetime('fetched_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.domain, t.dateEnd] }), index('media_radar_ranks_date').on(t.dateEnd)],
+);

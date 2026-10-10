@@ -80,11 +80,7 @@ export default async function TrafficCollectionPage() {
         sharedWith: outlet.sharedWith ?? null,
         similarweb: shared ? 'shared' : outlet.trafficFetchedAt ? 'ok' : failedAt[domain] ? 'nodata' : 'waiting',
         similarwebAt: outlet.trafficFetchedAt ?? failedAt[domain] ?? null,
-        similarwebLabel: outlet.trafficFetchedAt
-          ? taipei(outlet.trafficFetchedAt)
-          : failedAt[domain]
-            ? taipei(failedAt[domain])
-            : null,
+        similarwebLabel: outlet.trafficFetchedAt ? taipei(outlet.trafficFetchedAt) : failedAt[domain] ? taipei(failedAt[domain]) : null,
         profileMonth: outlet.trafficProfile ? shortMonth(outlet.trafficProfile.month) : null,
         radar: shared ? 'shared' : outlet.radar ? 'ok' : 'waiting',
         radarAt: outlet.radar?.fetchedAt ?? null,
@@ -93,10 +89,9 @@ export default async function TrafficCollectionPage() {
       } satisfies CollectionRow;
     });
   const count = (field: 'similarweb' | 'radar') =>
-    Object.fromEntries((['ok', 'nodata', 'waiting', 'shared'] as const).map((s) => [s, rows.filter((r) => r[field] === s).length])) as Record<
-      CollectionState,
-      number
-    >;
+    Object.fromEntries(
+      (['ok', 'nodata', 'waiting', 'shared'] as const).map((s) => [s, rows.filter((r) => r[field] === s).length]),
+    ) as Record<CollectionState, number>;
   return (
     <div className="space-y-5">
       <CrawlerTabs current="traffic" />

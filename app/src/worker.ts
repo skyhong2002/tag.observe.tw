@@ -203,12 +203,12 @@ const worker = new Worker(
       }
       if (job.name === 'crawl-health') return runCrawlHealthJob(db, { log: (o, m) => log.info(o, m) });
       if (job.name === 'media-traffic') {
-        const r = await runMediaTrafficJob();
+        const r = await runMediaTrafficJob(undefined, db);
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }
       if (job.name === 'media-radar') {
-        const r = await runMediaRadarJob();
+        const r = await runMediaRadarJob(undefined, db);
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

@@ -94,7 +94,8 @@ export default async function MediaPage({
   clearQuery.delete('q');
   const reference = mediaReference(media);
   const outlet = comparison?.outlets.find((o) => o.media === media);
-  const trafficMonths = comparison?.trafficMonths.slice(-3) ?? [];
+  // The stored record grows by a month each month; the card shows up to a year of it.
+  const trafficMonths = comparison?.trafficMonths.slice(-12) ?? [];
   // Without a Similarweb snapshot, outlet.traffic falls back to the GeneHong sheet; show Similarweb only.
   const visits =
     comparison?.trafficSource !== 'similarweb-extension'

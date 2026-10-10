@@ -1875,6 +1875,17 @@ export const ENDPOINTS: Endpoint[] = [
           rank: nullable(int('精確名次（只接受前 100 名），無名次時為 null')),
           bucket: nullable(int('排名級距上界，例如 2000 表示前 2000 名，非第 2000 名')),
           bucketLowerBound: nullable(int('排名級距下界，例如 200000 表示未入前 200000 名；有此值時 bucket 為 null，舊快照可能省略此欄')),
+          history: arr(
+            obj({
+              fetchedAt: time('該期最近一次抓到的時間'),
+              dateStart: time(),
+              dateEnd: time('資料期間結束；每期一筆'),
+              rank: nullable(int()),
+              bucket: nullable(int()),
+              bucketLowerBound: nullable(int()),
+            }),
+            '本站保存的歷次排名，舊到新；資料庫不可用時為空陣列',
+          ),
         }),
       ),
     }),
@@ -1897,7 +1908,10 @@ export const ENDPOINTS: Endpoint[] = [
           {
             domain: str('網域'),
             fetchedAt: time('該網域最近成功抓取時間'),
-            monthly: arr(obj({ month: str('月份 YYYYMM'), visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量') })),
+            monthly: arr(
+              obj({ month: str('月份 YYYYMM'), visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量') }),
+              '本站保存的所有月份，舊到新；Similarweb 每次只回最近三個月，較早月份來自本站紀錄',
+            ),
             profiles: map(
               obj({
                 month: str('月份 YYYYMM'),

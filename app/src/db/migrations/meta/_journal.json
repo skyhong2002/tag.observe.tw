@@ -155,6 +155,13 @@
       "when": 1791633153906,
       "tag": "0021_media-categories",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1791634488054,
+      "tag": "0022_media-traffic-history",
+      "breakpoints": true
     }
   ]
 }

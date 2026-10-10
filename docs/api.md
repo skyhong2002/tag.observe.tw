@@ -2698,6 +2698,13 @@ curl -s 'https://tag.observe.tw/api/v1/media-radar'
 | `domains[].rank` | integer \| null | 精確名次（只接受前 100 名），無名次時為 null |
 | `domains[].bucket` | integer \| null | 排名級距上界，例如 2000 表示前 2000 名，非第 2000 名 |
 | `domains[].bucketLowerBound` | integer \| null | 排名級距下界，例如 200000 表示未入前 200000 名；有此值時 bucket 為 null，舊快照可能省略此欄 |
+| `domains[].history` | object[] | 本站保存的歷次排名，舊到新；資料庫不可用時為空陣列 |
+| `domains[].history[].fetchedAt` | string (ISO 時間) | 該期最近一次抓到的時間 |
+| `domains[].history[].dateStart` | string (ISO 時間) |  |
+| `domains[].history[].dateEnd` | string (ISO 時間) | 資料期間結束；每期一筆 |
+| `domains[].history[].rank` | integer \| null |  |
+| `domains[].history[].bucket` | integer \| null |  |
+| `domains[].history[].bucketLowerBound` | integer \| null |  |
 
 快取：1 分鐘。
 
@@ -2727,7 +2734,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 | `domains` | object[] |  |
 | `domains[].domain` | string | 網域 |
 | `domains[].fetchedAt` | string (ISO 時間) | 該網域最近成功抓取時間 |
-| `domains[].monthly` | object[] |  |
+| `domains[].monthly` | object[] | 本站保存的所有月份，舊到新；Similarweb 每次只回最近三個月，較早月份來自本站紀錄 |
 | `domains[].monthly[].month` | string | 月份 YYYYMM |
 | `domains[].monthly[].visits` | number | Similarweb EstimatedMonthlyVisits 估算訪問量 |
 | `domains[].profiles` | {鍵: object} | 依月份（YYYYMM）保存的國家來源、導流來源、互動與排名；每次只取得最近一期，較早月份隨排程累積，最多 12 個月；舊資料列可能沒有此欄 |

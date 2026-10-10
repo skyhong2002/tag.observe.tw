@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { dueDomains, emptyTraffic, extensionHeaders, fetchDomainTraffic, mergeProfiles, refreshTraffic, trafficDomain } from './live.ts';
+import { dueDomains, emptyTraffic, extensionHeaders, fetchDomainTraffic, mergeHistory, refreshTraffic, trafficDomain } from './live.ts';
 
 describe('Similarweb live traffic source', () => {
   it('normalizes only bare public domains', () => {
@@ -157,7 +157,7 @@ describe('Similarweb live traffic source', () => {
     expect(bare.profiles).toEqual({});
   });
 
-  it("keeps earlier months' profiles and refetches rows saved without profiles first", () => {
+  it('keeps earlier months and profiles and refetches rows saved without profiles first', () => {
     const profile = (month: string) => ({
       month,
       countries: [],
@@ -171,7 +171,29 @@ describe('Similarweb live traffic source', () => {
     });
     const old = { domain: 'a.com', fetchedAt: '2026-09-10T00:00:00Z', monthly: [], profiles: { '202608': profile('202608') } };
     const next = { domain: 'a.com', fetchedAt: '2026-10-10T00:00:00Z', monthly: [], profiles: { '202609': profile('202609') } };
-    expect(Object.keys(mergeProfiles(old, next).profiles ?? {})).toEqual(['202608', '202609']);
+    expect(Object.keys(mergeHistory(old, next).profiles ?? {})).toEqual(['202608', '202609']);
+    // Months the fetch no longer returns stay; a month it returns takes the revised value.
+    const kept = mergeHistory(
+      {
+        ...old,
+        monthly: [
+          { month: '202606', visits: 1 },
+          { month: '202607', visits: 2 },
+        ],
+      },
+      {
+        ...next,
+        monthly: [
+          { month: '202607', visits: 3 },
+          { month: '202608', visits: 4 },
+        ],
+      },
+    );
+    expect(kept.monthly).toEqual([
+      { month: '202606', visits: 1 },
+      { month: '202607', visits: 3 },
+      { month: '202608', visits: 4 },
+    ]);
     const now = new Date('2026-10-10T00:00:00Z');
     const fresh = '2026-10-09T00:00:00Z';
     const due = dueDomains(
