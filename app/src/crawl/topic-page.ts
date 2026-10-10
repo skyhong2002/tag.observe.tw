@@ -334,6 +334,36 @@ export function topicPageGroups(
   return groups.sort((a, b) => b.length - a.length);
 }
 
+/** PTS marks the topic's own timeline explicitly, including one-story topics.
+ * Use it instead of inferring a list from counts or cross-topic repetition:
+ * the same story can also appear in the site's popular-news menu. */
+export function ptsTopicStories(html: string, pageUrl: string, articleId?: string, now = new Date()): TopicStory[] | null {
+  const base = new URL(pageUrl);
+  if (base.hostname !== 'news.pts.org.tw' || !/^\/hotTopic\/\d+\/?$/.test(base.pathname)) return null;
+  const $ = cheerio.load(html);
+  // No timeline headings means the markup changed: fall back to the generic reading.
+  const links = $('article .news-list h2[id^="topic-link-"] a[href]');
+  if (!links.length) return null;
+  const stories = new Map<string, TopicStory>();
+  links.each((_, a) => {
+    const href = $(a).attr('href');
+    if (!href) return;
+    let url: URL;
+    try {
+      url = new URL(href, base);
+    } catch {
+      return;
+    }
+    if (url.origin !== base.origin || !/^\/article\/\d+\/?$/.test(url.pathname)) return;
+    const key = urlKey(url.href, articleId);
+    const title = $(a).text().replace(/\s+/g, ' ').trim();
+    if (!title) return;
+    const date = dateIn($, $(a).closest('li.news-list-li'), now);
+    stories.set(key, { key, title, url: url.href, ...(date ? { date: date.toISOString() } : {}) });
+  });
+  return [...stories.values()];
+}
+
 /** A group reads like a story list when most items have headline-length text. */
 export function looksLikeStories(group: TopicStory[]): boolean {
   const headlines = group.filter((s) => headline(s.title)).length;

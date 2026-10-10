@@ -7,7 +7,15 @@ import { carryStoryDates, fetchStoryDates, type KnownStoryDate, storiesToDate, s
 import { urlKey } from '../crawl/text.ts';
 import { standaloneTopicListing, standaloneTopicPage } from '../crawl/topic-article.ts';
 import { classifyTopic, firstRunEnd, storyDate } from '../crawl/topic-kind.ts';
-import { articleShapes, pickTopicStories, type TopicStory, topicPageDate, topicPageGroups, topicPageImage } from '../crawl/topic-page.ts';
+import {
+  articleShapes,
+  pickTopicStories,
+  ptsTopicStories,
+  type TopicStory,
+  topicPageDate,
+  topicPageGroups,
+  topicPageImage,
+} from '../crawl/topic-page.ts';
 import {
   childSelectorFor,
   fetchTopicListings,
@@ -258,6 +266,7 @@ export async function refreshTopicPages(
             standalone: ok && standaloneTopicPage(res.body, row.url, 0),
             article: ok ? extractFeatureArticle(res.body, row.url, sourceByMedia(articleMediaOf(row.media))?.article) : null,
             groups: ok ? topicPageGroups(res.body, res.url || row.url, articleId, { now: now() }) : [],
+            explicitStories: ok ? ptsTopicStories(res.body, res.url || row.url, articleId, now()) : null,
             pageDate: ok ? topicPageDate(res.body, res.url || row.url, now()) : null,
             image: ok && !row.image ? topicPageImage(res.body, res.url || row.url) : null,
             children: ok && childSelector ? topicChildren(res.body, res.url || row.url, childSelector) : [],
@@ -382,7 +391,7 @@ export async function refreshTopicPages(
   let classified = 0;
   // 1. Each readable page's own stories, with the dates stored for them before.
   const plans: Array<{ row: (typeof due)[number]; stories: TopicStory[]; piece: Date | null; crawledAt: Map<string, Date> }> = [];
-  for (const { row, ok, groups, pageDate } of pages) {
+  for (const { row, ok, groups, pageDate, explicitStories } of pages) {
     if (!ok) {
       // Keep the stored stories; only a page we could read may change them.
       await db
@@ -404,14 +413,16 @@ export async function refreshTopicPages(
     );
     const stored = storedOn.get(row.media);
     const family = (id: number) => id === row.id || id === row.parentId || stored?.parentOf.get(id) === row.id;
-    let stories = pickTopicStories(groups, {
-      furniture: (key) =>
-        (seenOn.get(`${row.media} ${key}`)?.size ?? 0) > 1 ||
-        [...(stored?.rowsOf.get(key) ?? [])].filter((id) => !family(id)).length >= 2 ||
-        !!stored?.topicPages.has(key),
-      crawled: (key) => crawledAt.has(key),
-      shapes: await shapesOf(row.media),
-    });
+    let stories =
+      explicitStories ??
+      pickTopicStories(groups, {
+        furniture: (key) =>
+          (seenOn.get(`${row.media} ${key}`)?.size ?? 0) > 1 ||
+          [...(stored?.rowsOf.get(key) ?? [])].filter((id) => !family(id)).length >= 2 ||
+          !!stored?.topicPages.has(key),
+        crawled: (key) => crawledAt.has(key),
+        shapes: await shapesOf(row.media),
+      });
     if (stories.length) found++;
     // Dates read earlier (on the topic page or the story's own) carry over.
     stories = carryStoryDates(stories.slice(0, 200), new Map((row.pageStories ?? []).map((s) => [s.key, s])));

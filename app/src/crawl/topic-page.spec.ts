@@ -5,6 +5,7 @@ import {
   keyShape,
   looksLikeStories,
   pickTopicStories,
+  ptsTopicStories,
   sharedTag,
   storyPageDate,
   type TopicStory,
@@ -12,6 +13,42 @@ import {
   topicPageGroups,
   topicPageImage,
 } from './topic-page.ts';
+
+describe('ptsTopicStories', () => {
+  const page = 'https://news.pts.org.tw/hotTopic/747';
+  const now = new Date('2026-10-05T06:00:00Z');
+  const card = (id: number) => `<li class="d-flex news-list-li">
+    <div><time datetime="2026-10-04 12:10:00">2026/10/4 12:10</time>
+    <h2 id="topic-link-${id}"><a href="/article/${id}">蔣萬安批以美沙冬遮掩說法 沈伯洋：毒品立場沒變</a></h2>
+    <ul><li><a href="/tag/9205/">蔣萬安</a></li></ul></div>
+    <figure><a href="/article/${id}"><img></a></figure></li>`;
+  const timeline = (cards: string) => `<article><ul class="list-unstyled news-list">${cards}</ul></article>`;
+
+  it('keeps a single story even when repeated in popular news, without tags or image duplicates', () => {
+    const html = `<div><a href="/article/829848">熱門新聞</a><a href="/article/123">其他熱門新聞</a></div>${timeline(card(829848))}`;
+    expect(ptsTopicStories(html, page, undefined, now)).toEqual([
+      {
+        key: 'news.pts.org.tw/article/829848',
+        url: 'https://news.pts.org.tw/article/829848',
+        title: '蔣萬安批以美沙冬遮掩說法 沈伯洋：毒品立場沒變',
+        date: '2026-10-04T04:10:00.000Z',
+      },
+    ]);
+  });
+  it('keeps both stories as the topic grows and respects article key normalization', () => {
+    expect(ptsTopicStories(timeline(card(829933) + card(829848)), page, '^/article/(\\d+)', now)?.map((s) => s.key)).toEqual([
+      'news.pts.org.tw#829933',
+      'news.pts.org.tw#829848',
+    ]);
+  });
+  it('limits extraction to PTS topic timelines and falls back when the timeline markup is missing', () => {
+    expect(ptsTopicStories(timeline(card(1)), 'https://other.example/hotTopic/747')).toBeNull();
+    expect(ptsTopicStories(timeline(card(1)), 'https://news.pts.org.tw/article/747')).toBeNull();
+    expect(ptsTopicStories('<div>unavailable</div>', page)).toBeNull();
+    expect(ptsTopicStories(timeline(''), page)).toBeNull();
+    expect(ptsTopicStories(timeline(card(1).replace('href="/article/1"', 'href="https://other.example/article/1"')), page)).toEqual([]);
+  });
+});
 
 describe('topicPageGroups', () => {
   it('groups same-site links by container and drops nav, footer and other sites', () => {
