@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
+import FollowButton from '@/components/reader/FollowButton';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
 import TagKeywordHistory from '@/components/TagKeywordHistory';
@@ -111,10 +112,13 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         )}
       />
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          <span className="text-zinc-500">#</span>
-          {tag}
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            <span className="text-zinc-500">#</span>
+            {tag}
+          </h1>
+          <FollowButton kind="tag" target={tag} />
+        </div>
         <div className="flex gap-1 text-sm">
           {[24, 72, 168].map((h) => (
             <Link

@@ -560,3 +560,95 @@ export const mediaTaiwanShareLog = mysqlTable(
   },
   (t) => [index('media_taiwan_share_log_media').on(t.media, t.at)],
 );
+
+// Reader accounts (app/src/reader/, docs/login.md#讀者功能): what a signed-in
+// reader follows, saves, prefers and reports. Every row belongs to one user.
+export const userFollows = mysqlTable(
+  'user_follows',
+  {
+    userId: int('user_id').notNull(),
+    kind: varchar('kind', { length: 16 }).$type<'tag' | 'media' | 'journalist' | 'event'>().notNull(),
+    /** Tag text, media key, journalist name, or event thread id as a string. */
+    target: varchar('target', { length: 255 }).notNull(),
+    createdAt: datetime('created_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind, t.target] })],
+);
+
+export const userSaves = mysqlTable(
+  'user_saves',
+  {
+    userId: int('user_id').notNull(),
+    kind: varchar('kind', { length: 8 }).$type<'article' | 'event'>().notNull(),
+    targetId: bigint('target_id', { mode: 'number' }).notNull(),
+    note: varchar('note', { length: 500 }),
+    createdAt: datetime('created_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind, t.targetId] }), index('user_saves_user_created').on(t.userId, t.createdAt)],
+);
+
+export const userPrefs = mysqlTable('user_prefs', {
+  userId: int('user_id').primaryKey(),
+  prefs: json('prefs').$type<Record<string, unknown>>().notNull(),
+  updatedAt: datetime('updated_at').notNull(),
+});
+
+// The token in a reader's private RSS URL. Kept as is so /my/settings/ can show
+// the URL again; it only reveals what the reader follows.
+export const userFeedTokens = mysqlTable(
+  'user_feed_tokens',
+  {
+    userId: int('user_id').primaryKey(),
+    token: varchar('token', { length: 64 }).notNull(),
+    createdAt: datetime('created_at').notNull(),
+  },
+  (t) => [uniqueIndex('user_feed_tokens_token').on(t.token)],
+);
+
+// Personal API keys: only a SHA-256 is stored; the key is shown once.
+export const userApiKeys = mysqlTable(
+  'user_api_keys',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    userId: int('user_id').notNull(),
+    keyHash: varchar('key_hash', { length: 64 }).notNull(),
+    /** The key's first characters, so the reader can tell keys apart. */
+    prefix: varchar('prefix', { length: 16 }).notNull(),
+    label: varchar('label', { length: 64 }).notNull(),
+    createdAt: datetime('created_at').notNull(),
+    lastUsedAt: datetime('last_used_at'),
+    revokedAt: datetime('revoked_at'),
+  },
+  (t) => [uniqueIndex('user_api_keys_hash').on(t.keyHash), index('user_api_keys_user').on(t.userId)],
+);
+
+// Opt-in reading history behind /my/reading/; turning it off deletes the rows.
+export const readerHistory = mysqlTable(
+  'reader_history',
+  {
+    userId: int('user_id').notNull(),
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    readAt: datetime('read_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.articleId] }), index('reader_history_user_read').on(t.userId, t.readAt)],
+);
+
+// Readers' corrections (wrong tags, byline, outlet…), reviewed at /admin/.
+export const readerReports = mysqlTable(
+  'reader_reports',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    userId: int('user_id').notNull(),
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    kind: varchar('kind', { length: 16 }).$type<'tags' | 'byline' | 'media' | 'other'>().notNull(),
+    /** For kind = tags: the full tag list the reader suggests. */
+    tags: json('tags').$type<string[]>(),
+    message: varchar('message', { length: 1000 }).notNull(),
+    status: varchar('status', { length: 10 }).$type<'open' | 'accepted' | 'rejected'>().notNull().default('open'),
+    createdAt: datetime('created_at').notNull(),
+    resolvedAt: datetime('resolved_at'),
+    resolvedBy: varchar('resolved_by', { length: 255 }),
+    resolution: varchar('resolution', { length: 255 }),
+  },
+  (t) => [index('reader_reports_status').on(t.status, t.createdAt), index('reader_reports_user').on(t.userId, t.createdAt)],
+);

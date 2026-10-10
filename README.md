@@ -18,11 +18,12 @@
 - **記者**（[`/journalist/`](https://tag.observe.tw/journalist/)）：從公開署名整理人名與筆名，列出刊登媒體、文章數、常寫主題，以及同期間的跨媒體相似報導。
 - **站內閱讀**：[`/media/<media>/`](https://tag.observe.tw/media/) 統一瀏覽媒體報導，[`/article/<id>/`](https://tag.observe.tw/article/) 閱讀仍在公開期限內的擷取正文；標示 ↗ 的連結才會離開本站回到原站。
 - **即時看板**（[`/liveboard/`](https://tag.observe.tw/liveboard/)）：適合常駐螢幕，輪播新進文章、事件、各家標題對照、相似報導組與近期發稿量，亦可安裝成獨立 Web App。
+- **讀者帳號**（[`/my/`](https://tag.observe.tw/my/)）：以 Google 帳號登入後，可以追蹤標籤、媒體、記者與事件，在「我的動態」或私人 RSS 閱讀；收藏文章與事件並加註記；跨裝置同步深淺色與統計設定；自願開啟閱讀報告；申請個人 API 金鑰；回報標籤、署名或媒體歸屬的錯誤。說明見 [docs/login.md](docs/login.md#讀者功能my)。
 - **網站觀測**（[`/observe/`](https://tag.observe.tw/observe/)）：公開每日瀏覽、來源管道、搜尋表現、熱門內容與近期使用體驗；頁面提供讓目前瀏覽器退出統計的選項。
 
 ## 資料取用
 
-- **公開 API**：<https://tag.observe.tw/api/>。免金鑰、唯讀、CORS 開放，每個 IP 每分鐘最多 240 次請求；[OpenAPI JSON](https://tag.observe.tw/api/v1/openapi.json) 與 [API 文件](docs/api.md) 均由程式產生。
+- **公開 API**：<https://tag.observe.tw/api/>。免金鑰、唯讀、CORS 開放，每個 IP 每分鐘最多 60 次請求（登入後可建立個人金鑰，每分鐘 1000 次）；[OpenAPI JSON](https://tag.observe.tw/api/v1/openapi.json) 與 [API 文件](docs/api.md) 均由程式產生。
 - **RSS**：新事件 <https://tag.observe.tw/feeds/events.xml>；單一標籤使用 `https://tag.observe.tw/feeds/tag/<標籤>.xml`（標籤需 URL 編碼）。
 - **網站地圖**：<https://tag.observe.tw/sitemap.xml>。
 - **Web App**：網站頁尾可以安裝一般網站 App；即時看板有自己的全螢幕 Web App。

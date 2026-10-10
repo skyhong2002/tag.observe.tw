@@ -41,6 +41,9 @@ export const robotsTxt = () =>
     'Disallow: /demo/',
     // An always-on screen for a wall tablet, not a page for readers.
     'Disallow: /liveboard/',
+    // A signed-in reader's own pages and private feeds.
+    'Disallow: /my/',
+    'Disallow: /feeds/u/',
     '',
     `Sitemap: ${ORIGIN}/sitemap.xml`,
     '',

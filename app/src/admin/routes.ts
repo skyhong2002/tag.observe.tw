@@ -57,7 +57,7 @@ const TAG_MAX = 60;
 const TAGS_MAX = 40;
 
 /** Every outlet an admin can label: the favicon catalog plus crawl sources. */
-const knownMedia = () =>
+export const knownMedia = () =>
   [...new Set([...Object.keys(info), ...allSources().map((s) => s.media)])].filter((m) => !excludedMedia.has(m)).sort();
 
 export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin, origin, queue }: Options) {

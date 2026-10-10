@@ -8,7 +8,7 @@
 | `/metrics` 公開（23 KB 內部指標） | curl 公開網址 | 帶 `cf-connecting-ip`（經 Cloudflare 進來）的請求回 404；Prometheus 本機抓取不受影響 | 404；Prometheus targets 全 up |
 | `/_migration/health` 對外揭露來源、讀取額度、每路由指標 | 同上 | 對外只回 `{"status":"ok"}` | 對外只剩 status |
 | 爬蟲會抓 feed／sitemap 中任意網址（SSRF） | 程式審查 | 每一跳（含轉址）解析 DNS，拒絕私有、loopback、link-local、CGNAT、metadata（169.254.169.254）、`.internal` 等；socket 釘在檢查過的位址（防 DNS rebinding）；curl 備援逐跳 `--resolve` 釘選 | 169.254.169.254 → EBLOCKED；本機服務 0 次命中；真實站台與轉址、Cloudflare→curl 正常 |
-| API 無速率限制 | 程式審查 | `@fastify/rate-limit`，以 `cf-connecting-ip` 為鍵：`/api` 240 次／分、其他 1200 次／分；本機呼叫（Next SSR、Prometheus）豁免 | 回應帶 `x-ratelimit-*`；測試第 241 次為 429 |
+| API 無速率限制 | 程式審查 | `@fastify/rate-limit`，以 `cf-connecting-ip` 為鍵：`/api` 60 次／分（帶有效個人 API 金鑰時改以金鑰計，1000 次／分）、其他 1200 次／分；本機呼叫（Next SSR、Prometheus）豁免 | 回應帶 `x-ratelimit-*`；測試第 61 次為 429 |
 | UI 缺安全標頭 | — | nosniff、Referrer-Policy、X-Frame-Options SAMEORIGIN、Permissions-Policy | 首頁回應已帶 |
 
 測試：`app/src/crawl/fetch.spec.ts`（位址分類、解析、拒絕本機）、`app/test/gateway.spec.ts`（metrics／health／速率限制、被拒圖片不會到達 Next）、`app/test/image-allowlist.spec.ts`（閘道與前端比對一致、重複 url 參數、`//` 協定相對網址）。

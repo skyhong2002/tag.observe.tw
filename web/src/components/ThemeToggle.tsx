@@ -1,5 +1,7 @@
 'use client';
 
+import { savePrefs } from '@/lib/reader';
+
 export default function ThemeToggle() {
   function toggle() {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -10,6 +12,8 @@ export default function ThemeToggle() {
       const system = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       if (next === system) localStorage.removeItem('theme');
       else localStorage.setItem('theme', next);
+      // A signed-in reader's choice follows them to other devices.
+      savePrefs({ theme: next === system ? null : next }).catch(() => {});
     } catch {}
   }
 

@@ -5,6 +5,7 @@ import AuthorCredits from '@/components/AuthorCredits';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
+import FollowButton from '@/components/reader/FollowButton';
 import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { CONTENT_STATUS } from '@/lib/article-content';
@@ -166,7 +167,10 @@ export default async function JournalistPage({
       </nav>
       <header className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-zinc-300 pb-4 dark:border-zinc-700">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{data.name}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">{data.name}</h1>
+            <FollowButton kind="journalist" target={data.name} />
+          </div>
           <Link
             href={`/byline/${encodeURIComponent(`person:${data.name}`)}/?hours=${hours}`}
             className="mt-2 inline-block text-sm text-brand-700 hover:underline dark:text-brand-400"

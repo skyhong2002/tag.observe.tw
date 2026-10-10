@@ -8,6 +8,7 @@ import MediaSidebar from '@/components/MediaSidebar';
 import MediaTrafficProfile from '@/components/MediaTrafficProfile';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import MethodLink from '@/components/MethodLink';
+import FollowButton from '@/components/reader/FollowButton';
 import SectionTabs from '@/components/SectionTabs';
 import SourceLink from '@/components/SourceLink';
 import SourceProfile from '@/components/SourceProfile';
@@ -127,6 +128,7 @@ export default async function MediaPage({
           <div className="flex items-center gap-2.5">
             <MediaIcon media={data.media} title={data.title} size={28} className="rounded" />
             <h1 className="text-2xl font-semibold tracking-tight">{data.title}</h1>
+            {!discovery && <FollowButton kind="media" target={data.media} className="ml-1" />}
           </div>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
             <span>{discovery ? '文章發現來源' : data.publisher?.country}</span>

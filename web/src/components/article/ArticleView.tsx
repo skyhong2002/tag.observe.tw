@@ -5,6 +5,9 @@ import AuthorCredits from '@/components/AuthorCredits';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
+import ReadingRecorder from '@/components/reader/ReadingRecorder';
+import ReportButton from '@/components/reader/ReportButton';
+import SaveButton from '@/components/reader/SaveButton';
 import SourceLink from '@/components/SourceLink';
 import { kindNoun, topicHref } from '@/components/TopicCard';
 import { taipei } from '@/lib/api';
@@ -73,6 +76,11 @@ export default function ArticleView({
         >
           ← {back.label}
         </Link>
+        <div className="flex flex-wrap gap-2">
+          <SaveButton kind="article" id={article.id} />
+          <ReportButton articleId={article.id} tags={article.tags ?? []} />
+        </div>
+        <ReadingRecorder articleId={article.id} />
       </nav>
       <header className="mb-7">
         <p className="mb-4 flex flex-wrap items-center gap-3 text-xs font-medium tracking-wide text-brand-700 dark:text-brand-400">

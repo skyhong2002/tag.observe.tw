@@ -5,6 +5,14 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { loginHref, useSession } from '@/lib/session';
 import Avatar from './Avatar';
+import PrefsSync from './reader/PrefsSync';
+
+const READER_LINKS = [
+  ['/my/', '我的動態'],
+  ['/my/saved/', '我的收藏'],
+  ['/my/reading/', '閱讀報告'],
+  ['/my/settings/', '設定'],
+] as const;
 
 // Sign-in entry in the header. Renders nothing until /auth/me answers, or at
 // all when Google login is not configured, so the header never jumps for
@@ -46,6 +54,7 @@ export default function AccountMenu() {
   const label = user.name ?? user.email;
   return (
     <div ref={box} className="relative flex">
+      <PrefsSync />
       <button
         type="button"
         aria-label={`帳號：${label}`}
@@ -69,6 +78,11 @@ export default function AccountMenu() {
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{user.role === 'admin' ? '管理員' : '讀者'}</p>
             </div>
           </div>
+          {READER_LINKS.map(([href, label]) => (
+            <Link key={href} role="menuitem" href={href} className="block rounded-md px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              {label}
+            </Link>
+          ))}
           {user.role === 'admin' && (
             <Link role="menuitem" href="/admin/" className="block rounded-md px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
               管理後台

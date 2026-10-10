@@ -12,6 +12,8 @@ import { isShareImage, legacyRoute } from './legacy-redirects.js';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
 import { registerTaiwanShares } from './media-traffic/taiwan-share.ts';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
+import { API_KEY_MAX_PER_MINUTE, API_MAX_PER_MINUTE, apiKeyLookup } from './reader/api-keys.ts';
+import { registerReaderRoutes } from './reader/routes.ts';
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
 import { registerArticleRelated } from './v1/article-related.ts';
@@ -56,12 +58,20 @@ export async function buildApp(
   app.addHook('onRequest', async (request, reply) => {
     if (request.url.startsWith('/api/')) reply.header('access-control-allow-origin', '*');
   });
+  // Personal API keys (app/src/reader/api-keys.ts) get their own budget; set
+  // once the database is open below.
+  /** @type {import('./reader/api-keys.ts').ApiKeyLookup | null} */
+  let apiKeys = null;
   if (config.rateLimit !== false) {
     await app.register(rateLimit, {
       global: true,
       timeWindow: '1 minute',
-      max: (request) => (request.url.startsWith('/api/') ? 240 : 1200),
-      keyGenerator: (request) => `${clientIp(request)}:${request.url.startsWith('/api/') ? 'api' : 'web'}`,
+      max: (request, key) => (key.startsWith('key:') ? API_KEY_MAX_PER_MINUTE : request.url.startsWith('/api/') ? API_MAX_PER_MINUTE : 1200),
+      keyGenerator: async (request) => {
+        const api = request.url.startsWith('/api/');
+        const keyId = api && apiKeys ? await apiKeys.identify(request) : null;
+        return keyId ? `key:${keyId}` : `${clientIp(request)}:${api ? 'api' : 'web'}`;
+      },
       allowList: (request) => !isExternal(request),
     });
   }
@@ -118,6 +128,14 @@ export async function buildApp(
   if (own && config.login)
     registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
   if (own && config.login) registerTaiwanShares(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
+  if (own) apiKeys = apiKeyLookup(own.db);
+  if (own && config.login && apiKeys)
+    registerReaderRoutes(app, own.db, {
+      currentUser: login.currentUser,
+      requireAdmin: login.requireAdmin,
+      origin: config.login.origin,
+      apiKeys,
+    });
   if (config.login && config.adminer)
     registerDbConsole(app, { currentUser: login.currentUser, origin: config.login.origin, adminer: config.adminer });
   registerReaderPresence(app);

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Avatar from '@/components/Avatar';
 import AdminGate, { adminFetch, note } from './AdminGate';
 import { type Definition, LabelChip, type Outlet, OutletIcon } from './media/labels';
+import Reports from './Reports';
 
 type Account = {
   email: string;
@@ -21,6 +22,7 @@ const card = 'mt-3 rounded-lg border border-zinc-200 bg-white text-sm dark:borde
 export default function AdminPanel() {
   return (
     <AdminGate next="/admin/">
+      <Reports />
       <Bookmarklet />
       <Outlets />
       <Accounts />

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { type AnalyticsBlock, analyticsBlock, OPT_OUT_EVENT, readOptOut, writeOptOut } from '@/lib/analytics-consent.mts';
+import { savePrefs } from '@/lib/reader';
 
 const STATUS: Record<NonNullable<AnalyticsBlock> | 'counted', { label: string; note: string }> = {
   counted: { label: '計入統計', note: '這個瀏覽器的造訪會送到 Google Analytics，可見頁面也會計入本站線上讀者。' },
@@ -50,6 +51,7 @@ export default function OptOutToggle() {
       if (!state.storage) throw Error('no storage');
       writeOptOut(state.storage, optedOut);
       window.dispatchEvent(new Event(OPT_OUT_EVENT));
+      savePrefs({ analyticsOptOut: optedOut }).catch(() => {});
       setError(false);
       setChanged(true);
       setState(current());

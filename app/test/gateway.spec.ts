@@ -144,9 +144,9 @@ describe('gateway', () => {
     expect((await app.inject('/_migration/health')).json()).toHaveProperty('uptimeSeconds');
   });
   it('rate-limits external callers per client IP, never local callers', async () => {
-    let last = 0;
-    for (let i = 0; i < 241; i++) last = (await app.inject({ url: '/api/x.php', headers: external('198.51.100.9') })).statusCode;
-    expect(last).toBe(429);
+    for (let i = 0; i < 60; i++)
+      expect((await app.inject({ url: '/api/x.php', headers: external('198.51.100.9') })).statusCode).toBe(410);
+    expect((await app.inject({ url: '/api/x.php', headers: external('198.51.100.9') })).statusCode).toBe(429);
     expect((await app.inject({ url: '/api/x.php', headers: external('198.51.100.10') })).statusCode).toBe(410);
     for (let i = 0; i < 300; i++) expect((await app.inject('/api/x.php')).statusCode).toBe(410);
   });

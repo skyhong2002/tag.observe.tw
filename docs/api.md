@@ -8,7 +8,7 @@
 
 - 基底網址 `https://tag.observe.tw`。查詢使用 `GET`（也接受 `HEAD`）；標記為 `POST` 的端點用於提交作業。預設回傳 UTF-8 JSON，檔案下載依端點提供檔案。
 - API 狀態頁：`/api/status`。瀏覽器以 HTML 顯示；以 `Accept: application/json` 取得 JSON。只顯示 API 回應狀態與端點用途。
-- 公開查詢不需要 API 金鑰；標記授權的封存作業需 Bearer token。每個 IP 每分鐘最多 240 次 API 請求，超過回 `429`；回應帶 `x-ratelimit-limit`、`x-ratelimit-remaining`、`x-ratelimit-reset` 標頭。
+- 公開查詢不需要 API 金鑰；標記授權的封存作業需 Bearer token。每個 IP 每分鐘最多 60 次 API 請求，超過回 `429`；回應帶 `x-ratelimit-limit`、`x-ratelimit-remaining`、`x-ratelimit-reset` 標頭。需要更多額度時，登入後在 `/my/settings/` 建立個人 API 金鑰（每人最多 3 把），請求帶 `x-api-key: tag_…` 標頭即改用該金鑰自己的額度：每分鐘 1000 次；無效或已撤銷的金鑰視同沒帶。
 - 允許跨網域（CORS `Access-Control-Allow-Origin: *`），瀏覽器前端可直接呼叫。
 - 時間一律是 UTC 的 ISO 8601（例如 `2026-09-30T21:00:00.000Z`）；「一天」指台北時間（UTC+8）的日曆日。
 - 回應帶 `cache-control`，資料本身每 10 分鐘（排行）到每小時（事件、議題）更新，請勿以高於此的頻率輪詢。

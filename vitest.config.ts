@@ -2,7 +2,12 @@ import { defineConfig } from 'vitest/config';
 
 // Specs that truncate and count tables in the shared TEST_DB_URL database
 // must not run at the same time; everything else stays parallel.
-const sharedDb = ['app/test/integration.spec.ts', 'app/test/admin-media.spec.ts', 'app/test/taiwan-share.spec.ts'];
+const sharedDb = [
+  'app/test/integration.spec.ts',
+  'app/test/admin-media.spec.ts',
+  'app/test/taiwan-share.spec.ts',
+  'app/test/reader.spec.ts',
+];
 
 export default defineConfig({
   test: {

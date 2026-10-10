@@ -33,12 +33,44 @@
 | `GET /auth/admin/media/:media/taiwan-share` | 管理員限定：這家媒體目前的台灣占比修正與最近 20 筆修改紀錄。 |
 | `PUT /auth/admin/media/:media/taiwan-share` | 管理員限定、需本站 `Origin`：`{ share, note }` 以 0–1 的值取代 Similarweb 的台灣占比（理由必填），`share: null` 清除；寫入 `media_taiwan_share_log`（[媒體流量](media-traffic.md#台灣占比與台灣讀者)）。 |
 
+### 讀者端點
+
+以下都需要登入（未登入回 401），寫入需本站 `Origin`，回應一律 `cache-control: no-store`（`app/src/reader/routes.ts`）。
+
+| 路徑 | 說明 |
+| --- | --- |
+| `GET/PUT /auth/me/follows` | 追蹤清單。`PUT { kind, target, follow }`：`kind` 為 `tag`、`media`、`journalist`、`event`（事件以 thread id），每人最多 200 項。 |
+| `GET /auth/me/feed` | 我的動態：近 7 天符合追蹤標籤、媒體、記者的報導（最多 150 篇，排除隱藏的媒體），加上追蹤事件的最新標題。 |
+| `GET/POST/DELETE /auth/me/feed-token` | 私人 RSS 網址 `/feeds/u/<token>.xml`；`POST` 建立或換新（舊網址立刻失效），`DELETE` 停用。 |
+| `GET/PUT /auth/me/saves` | 收藏。`PUT { kind: 'article' \| 'event', id, saved, note? }`，註記最多 500 字，每人最多 500 項。 |
+| `GET/PUT /auth/me/prefs` | 偏好（部分更新）：`theme`（`light`、`dark`、`null`）、`analyticsOptOut`、`hiddenMedia`、`history`。`history: false` 會刪除閱讀紀錄。 |
+| `POST /auth/me/history`、`DELETE /auth/me/history`、`GET /auth/me/history/report` | 閱讀紀錄（`history` 開啟才記錄 `{ articleId }`）、清除、近 30 天報告。 |
+| `GET/POST /auth/me/api-keys`、`DELETE /auth/me/api-keys/:id` | 個人 API 金鑰，每人最多 3 把；`POST { label }` 回傳的 `key` 只出現這一次。 |
+| `GET/POST /auth/me/reports` | 回報文章錯誤：`{ articleId, kind: 'tags' \| 'byline' \| 'media' \| 'other', tags?, message }`，每人每天最多 20 次。 |
+| `GET /auth/admin/reports?status=open` | 管理員限定：讀者回報與待處理數。 |
+| `PUT /auth/admin/reports/:id` | 管理員限定、需本站 `Origin`：`{ status: 'accepted' \| 'rejected' \| 'open', resolution? }`。套用建議標籤走 `PUT /auth/admin/articles/:id/tags`（`/admin/` 的「套用建議標籤並採納」兩個都會呼叫）。 |
+
 這些路徑不在 `/api/` 底下，因此沒有公開 API 的 `access-control-allow-origin: *`。
 
 ## 資料
 
 - `users`：Google `sub`、Email、名字、大頭貼網址、首次與最近登入時間。
 - `user_sessions`：只存 session cookie（`tag_session`，HttpOnly、SameSite=Lax、HTTPS 時 Secure）的 SHA-256；過期列在下次有人登入時清掉。
+
+## 讀者功能（`/my/`）
+
+讀者登入後，帳號選單多出「我的動態」「我的收藏」「閱讀報告」「設定」。頁面都是靜態的，資料在瀏覽器向上面的 `/auth/me/*` 取得；`/my/` 與 `/feeds/u/` 列在 robots.txt 的 Disallow，頁面也設 noindex。
+
+- **追蹤**：標籤、媒體、記者頁標題旁，以及事件頁有「追蹤」按鈕；未登入時按鈕會帶去登入再回到原頁。`/my/following/` 可以直接輸入標籤追蹤。
+- **我的動態**（`/my/`）：追蹤事件的現況，以及近 7 天的相關報導，每篇標出是哪個追蹤帶進來的；「隱藏這家」把媒體加進 `hiddenMedia`。
+- **私人 RSS**：`/my/settings/` 建立。token 以明文存在 `user_feed_tokens`，讓設定頁能再次顯示網址（外流頂多洩漏追蹤清單）；`cache-control: private`。
+- **收藏**：文章頁與事件頁的「收藏」，`/my/saved/` 可加註記。
+- **偏好同步**：右上角深淺色切換與 `/observe/opt-out/` 的統計退出，登入時存進 `user_prefs`。帳號裡已有值時以帳號為準，第一次則把這個瀏覽器的設定存上去（`web/src/components/reader/PrefsSync.tsx`）。
+- **閱讀報告**（`/my/reading/`）：預設關閉。開啟後，登入時打開本站文章頁（`/article/<id>/`）才會記錄，到原站閱讀不會；報告列出近 30 天的媒體、藍綠陣營（依媒體標籤，兩個都勾算藍營）、來源國家與常見標籤。關閉時刪除所有紀錄。
+- **API 金鑰**：只存 SHA-256（`user_api_keys`）。gateway 的 rate limit 遇到有效的 `x-api-key` 時改用 `key:<id>` 計數，每分鐘 1000 次（沒帶金鑰時每個 IP 60 次）；查詢結果快取 60 秒，所以撤銷最晚 1 分鐘後在其他程序生效（同一個程序立即生效），`last_used_at` 每 10 分鐘最多更新一次（`app/src/reader/api-keys.ts`）。
+- **回報錯誤**：文章頁「回報錯誤」可選標籤（附建議的完整標籤）、署名、媒體歸屬或其他。`/admin/` 最上方的「讀者回報」列出待處理項目，標籤回報會標示建議新增與移除的標籤；讀者在 `/my/settings/` 看得到處理結果與管理員的說明。
+
+資料表（migration `0025_reader-accounts`）：`user_follows`、`user_saves`、`user_prefs`、`user_feed_tokens`、`user_api_keys`、`reader_history`、`reader_reports`，全部以 `user_id` 對應 `users.id`。
 
 ## 媒體設定（`/admin/media/`）
 

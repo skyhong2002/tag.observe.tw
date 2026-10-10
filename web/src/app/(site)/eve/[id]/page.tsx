@@ -7,6 +7,8 @@ import EventTagCloud from '@/components/EventTagCloud';
 import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
+import FollowButton from '@/components/reader/FollowButton';
+import SaveButton from '@/components/reader/SaveButton';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
@@ -267,6 +269,10 @@ export default async function EventThreadPage({
             </Link>{' '}
             / 事件 #{t.id}
           </p>
+          <div className="flex flex-wrap gap-2">
+            <FollowButton kind="event" target={String(t.id)} />
+            <SaveButton kind="event" id={t.id} />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {lead ? (
               <Link href={articleHref(lead)} className="hover:underline">
