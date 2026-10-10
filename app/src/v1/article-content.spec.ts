@@ -249,6 +249,8 @@ describe('stored article content', () => {
     const app = Fastify();
     registerArticleContent(app, db);
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('upstream is gone'));
+    // The route reads the real clock; pin it inside the fixture's reading window.
+    vi.useFakeTimers({ toFake: ['Date'], now: soon });
     try {
       const response = await app.inject('/api/v1/articles/9/content');
       expect(response.statusCode).toBe(200);
@@ -269,6 +271,7 @@ describe('stored article content', () => {
       select.mockReturnValue({ from: () => ({ where: () => ({ limit: async () => [] }) }) });
       expect((await app.inject('/api/v1/articles/12/content')).statusCode).toBe(404);
     } finally {
+      vi.useRealTimers();
       fetchSpy.mockRestore();
       await app.close();
     }
