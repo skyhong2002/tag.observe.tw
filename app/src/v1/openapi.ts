@@ -976,7 +976,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'media',
     summary: '媒體報導關鍵字',
     description:
-      '統計期間內最新最多 2000 篇的標籤與標題關鍵詞，排除新聞分類與通用詞；每篇每詞計一次。標題詞彙沿用近 7 天跨媒體標籤字典。與文章列表分頁無關。',
+      '統計期間內最新最多 2000 篇的標籤與標題關鍵詞，排除新聞分類與通用詞；每篇每詞計一次。標題詞彙沿用近 7 天跨媒體標籤字典。與文章列表分頁無關。每個詞另與同類別排行榜基準媒體（不含本站）同期的報導比例比較：至少 3 篇且比例達同類媒體 3 倍以上者標為 distinctive。同類比較每個期間快取 10 分鐘，尚未算好時 comparison 為 null。',
     params: [p('media', '媒體代碼', str(), 'rti'), q('hours', '回溯刊登小時', intIn(1, 168, 168))],
     response: obj({
       media: str(),
@@ -985,7 +985,25 @@ export const ENDPOINTS: Endpoint[] = [
       to: time(),
       sampledArticles: int('實際取樣文章數'),
       capped: bool('期間文章超過 2000 篇，僅取最新文章'),
-      terms: arr(obj({ label: str(), count: int('包含此詞的文章數') })),
+      comparison: nullable(
+        obj(
+          {
+            group: str('比較的排行榜基準類別，例如 news、3c；本站類別沒有基準時用 news'),
+            articles: int('同類媒體的文章數'),
+            media: int('同類媒體家數'),
+          },
+          '同類媒體基準；尚未算好時為 null',
+        ),
+      ),
+      terms: arr(
+        obj({
+          label: str(),
+          count: int('包含此詞的文章數'),
+          share: num('包含此詞的文章占取樣文章的比例'),
+          peerShare: nullable(num('同類媒體同期包含此詞的文章比例')),
+          distinctive: bool('本站報導比例明顯高於同類媒體（至少 3 篇且達 3 倍）'),
+        }),
+      ),
     }),
     errors: { '400': '參數無效', '404': '媒體不存在' },
     cache: '2 分鐘',

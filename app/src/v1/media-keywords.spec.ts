@@ -3,7 +3,15 @@ import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { buildVocab } from '../crawl/title-tags.ts';
 import type { Db } from '../db/client.ts';
-import { KEYWORD_SAMPLE_LIMIT, loadMediaKeywords, mediaKeywordTerms, registerMediaKeywords } from './media-keywords.ts';
+import {
+  compareKeywords,
+  KEYWORD_SAMPLE_LIMIT,
+  keywordBaseline,
+  loadMediaKeywords,
+  mediaKeywordTerms,
+  peerGroup,
+  registerMediaKeywords,
+} from './media-keywords.ts';
 
 const vocab = buildVocab([
   { tag: '台積電', n: 50 },
@@ -68,5 +76,50 @@ describe('media keyword cloud', () => {
     } finally {
       await app.close();
     }
+  });
+  it('drops punctuation-only tags', () => {
+    expect(mediaKeywordTerms([{ title: '', tags: ['""', '--', '台積電'] }], vocab)).toEqual([{ label: '台積電', count: 1 }]);
+  });
+  it('compares an outlet with the baseline outlets of its own category only', () => {
+    expect(peerGroup('ltn')).toBe('news');
+    expect(peerGroup('bnext')).toBe('3c');
+    const rows = [
+      ...Array.from({ length: 10 }, (_, i) => ({ media: 'ltn', title: '', tags: i < 6 ? ['松山機場', 'AI'] : ['AI'] })),
+      ...Array.from({ length: 90 }, (_, i) => ({ media: i % 2 ? 'cna' : 'setn', title: '', tags: i < 3 ? ['松山機場'] : ['AI'] })),
+      // Not a baseline outlet, and a tech site: neither enters the news pool.
+      ...Array.from({ length: 50 }, () => ({ media: 'worldjournal', title: '', tags: ['AI'] })),
+      ...Array.from({ length: 50 }, () => ({ media: 'bnext', title: '', tags: ['松山機場'] })),
+    ];
+    const baseline = keywordBaseline(rows, vocab);
+    expect(baseline.get('news')).toMatchObject({ articles: 100 });
+    const result = compareKeywords(
+      [
+        { label: '松山機場', count: 6 },
+        { label: 'AI', count: 10 },
+      ],
+      { media: 'ltn', sampledArticles: 10 },
+      baseline,
+    );
+    expect(result.comparison).toEqual({ group: 'news', articles: 90, media: 2 });
+    expect(result.terms).toEqual([
+      { label: '松山機場', count: 6, share: 0.6, peerShare: 3 / 90, distinctive: true },
+      { label: 'AI', count: 10, share: 1, peerShare: 87 / 90, distinctive: false },
+    ]);
+  });
+  it('needs at least three articles and scales a capped sample before removing the outlet from its pool', () => {
+    const rows = [
+      ...Array.from({ length: 40 }, (_, i) => ({ media: 'ltn', title: '', tags: i < 20 ? ['罕見詞'] : [] })),
+      ...Array.from({ length: 100 }, (_, i) => ({ media: 'cna', title: '', tags: i < 2 ? ['罕見詞'] : [] })),
+    ];
+    // The page saw 10 of ltn's 40 articles, 5 of them with the keyword: 20 of the
+    // pool's 22 uses are ltn's own, leaving 2 among cna's 100 articles.
+    const capped = compareKeywords([{ label: '罕見詞', count: 5 }], { media: 'ltn', sampledArticles: 10 }, keywordBaseline(rows, vocab));
+    expect(capped.terms[0]).toMatchObject({ peerShare: 0.02, distinctive: true });
+    const rare = compareKeywords([{ label: '罕見詞', count: 2 }], { media: 'ltn', sampledArticles: 4 }, keywordBaseline(rows, vocab));
+    expect(rare.terms[0].distinctive).toBe(false);
+    expect(compareKeywords([{ label: '罕見詞', count: 5 }], { media: 'ltn', sampledArticles: 10 }, null)).toMatchObject({
+      comparison: null,
+      terms: [{ peerShare: null, distinctive: false }],
+    });
   });
 });

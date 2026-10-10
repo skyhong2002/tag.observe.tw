@@ -8,7 +8,8 @@ import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 // app/src/v1/media-stats.ts (stale after 6 h for news, 24 h otherwise; failing
 // when every index run of the last 3 h failed); news outlets are crawled every
 // 9 minutes, the rest hourly. The outlet page asks the similarity index for the
-// cloud's period at 0.65 (media/[media]/page.tsx). Monthly counts for Similar
+// cloud's period at 0.65 (media/[media]/page.tsx). Keyword colours:
+// compareKeywords in app/src/v1/media-keywords.ts. Monthly counts for Similar
 // Web: app/src/v1/media-traffic-comparison.ts and lib/traffic-comparison.mts.
 
 /** 收錄概況 (/media/). `camp: false` leaves out the camp basis where another block already states it. */
@@ -53,10 +54,19 @@ export function MediaMethod() {
       <p>
         各媒體頁的收錄量為本站抓取的報導，非媒體全部發稿量；標頭的今日收錄、近 24 小時、近 7
         天與狀態，和「收錄概況」依同一規則計算。「報導關鍵字」統計期間內文章的標籤與標題關鍵詞，排除新聞分類詞，每篇每詞計一次，最多取最新
-        2,000 篇；字越大，出現在越多篇報導。「媒體關係」取自新聞關係圖同一期間的比對結果（相似度門檻
+        2,000 篇；字越大，出現在越多篇報導，顏色的意思見下方。「媒體關係」取自新聞關係圖同一期間的比對結果（相似度門檻
         0.65），依文章去重計數：同組指直接比對的內文相近報導，不以刊登先後推定來源；引用指內文明示引用的媒體。沒有列出關係，不代表沒有相關新聞，只是比對未達門檻。報導關鍵字與媒體關係依文章列表選的期間計算，選「全部」時為近
         7 天。
       </p>
+      <dl className={methodList}>
+        <dt className={methodTerm}>關鍵字顏色</dt>
+        <dd>
+          橘字是這家媒體特別常報導的詞：同一期間內，本站用到這個詞的報導比例，達到同類媒體合計比例的 3 倍以上，且至少 3
+          篇。同類媒體是關鍵字排行榜同一分類的基準媒體（新聞媒體為 44
+          家，科技、女性等分類各自比較），不含本站；沒有基準的分類和新聞媒體比較。白字代表報導比例和同類媒體差不多，或篇數太少，不表示不重要。滑鼠停留或點一下可看本站比例與同類媒體比例。橘字只說明各家報導重心不同，不代表立場或報導品質；同一件事各家用詞不同（例如「2026九合一」與「2026九合一選舉」）時，少見的寫法也會被標成橘字。同類比較每
+          10 分鐘更新一次；系統更新後第一次載入、比較尚未算好時，會暫時全部顯示白字。
+        </dd>
+      </dl>
       <p>Google 新聞、動態網等發現來源的頁面，列出經該來源發現的文章，依原始刊登媒體收錄；點選標題可在本站閱讀，刊登時間保留原文日期。</p>
     </>
   );

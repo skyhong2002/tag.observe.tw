@@ -1,5 +1,12 @@
-import WordCloud, { type CloudTone } from '@/components/WordCloud';
+import WordCloud from '@/components/WordCloud';
 import type { CloudTerm } from '@/lib/word-cloud.mts';
+
+/** A keyword with its share here and at the outlet's peers (null until the API has compared). */
+export interface MediaKeywordTerm extends CloudTerm {
+  share?: number;
+  peerShare?: number | null;
+  distinctive?: boolean;
+}
 
 export interface MediaKeywords {
   media: string;
@@ -8,9 +15,11 @@ export interface MediaKeywords {
   to: string;
   sampledArticles: number;
   capped: boolean;
-  terms: CloudTerm[];
+  /** Same-category ranking baseline outlets the shares were compared with; null while uncomputed. */
+  comparison?: { group: string; articles: number; media: number } | null;
+  terms: MediaKeywordTerm[];
 }
-const tones: CloudTone[] = ['brand', 'strong', 'stone'];
+const percent = (value: number) => `${(value * 100).toFixed(value < 0.01 ? 2 : 1)}%`;
 // A compact canvas for the sidebar or narrow screens, and a wide one for the
 // article column: more room and a larger size range keep frequent and rare
 // terms visibly apart (the rarest few may not fit; the list below has them all).
@@ -37,13 +46,23 @@ export default function MediaWordCloud({
       compactClassName="mx-auto my-1 w-full max-w-[360px]"
       label="點選關鍵字篩選本站報導"
       title="報導關鍵字文字雲"
-      words={terms.map((t, index) => ({
+      words={terms.map((t) => ({
         label: t.label,
         count: t.count,
         href: href(t.label),
-        ariaLabel: `${t.label}，${t.count} 篇報導`,
-        tone: tones[index % tones.length],
-        card: { rows: [['報導', `${t.count} 篇`]], hint: '點選篩選本站報導 →' },
+        ariaLabel: `${t.label}，${t.count} 篇報導${t.distinctive ? '，本站特別常報導' : ''}`,
+        // Orange marks keywords this outlet covers far more than its peers.
+        tone: t.distinctive ? 'brand' : 'strong',
+        card: {
+          badge: t.distinctive ? { text: '本站特別常報導', tone: 'soft' } : undefined,
+          rows: [
+            ['報導', `${t.count} 篇`],
+            ...(t.share !== undefined && t.peerShare != null
+              ? [['本站比例', percent(t.share)] as [string, string], ['同類媒體', percent(t.peerShare)] as [string, string]]
+              : []),
+          ],
+          hint: '點選篩選本站報導 →',
+        },
       }))}
     />
   ) : null;

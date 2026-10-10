@@ -4,7 +4,7 @@ import catalog from '../data/favicon-catalog.json' with { type: 'json' };
 // aliases such as 自由/天下 and legacy annotations; do not treat those as tags.
 const aliases: Record<string, string[]> = {
   ftnn: ['鋒燦傳媒', '鋒燦 FTNN'],
-  ltn: ['自由時報電子報', '自由電子報', '自由評論', '自由財經', '自由廣場'],
+  ltn: ['自由時報電子報', '自由電子報', '自由評論', '自由財經', '自由廣場', 'Liberty Times Net', 'LTN'],
   setn: ['三立新聞網財經中心', '三立'],
   epochtimes: ['台灣大紀元', '洛杉磯大紀元'],
   commonhealth: ['康健雜誌'],

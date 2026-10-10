@@ -2356,7 +2356,7 @@ curl -s 'https://tag.observe.tw/api/v1/topics?limit=20'
 
 **媒體報導關鍵字**
 
-統計期間內最新最多 2000 篇的標籤與標題關鍵詞，排除新聞分類與通用詞；每篇每詞計一次。標題詞彙沿用近 7 天跨媒體標籤字典。與文章列表分頁無關。
+統計期間內最新最多 2000 篇的標籤與標題關鍵詞，排除新聞分類與通用詞；每篇每詞計一次。標題詞彙沿用近 7 天跨媒體標籤字典。與文章列表分頁無關。每個詞另與同類別排行榜基準媒體（不含本站）同期的報導比例比較：至少 3 篇且比例達同類媒體 3 倍以上者標為 distinctive。同類比較每個期間快取 10 分鐘，尚未算好時 comparison 為 null。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -2379,9 +2379,16 @@ curl -s 'https://tag.observe.tw/api/v1/media/rti/keywords'
 | `to` | string (ISO 時間) |  |
 | `sampledArticles` | integer | 實際取樣文章數 |
 | `capped` | boolean | 期間文章超過 2000 篇，僅取最新文章 |
+| `comparison` | object \| null | 同類媒體基準；尚未算好時為 null |
+| `comparison.group` | string | 比較的排行榜基準類別，例如 news、3c；本站類別沒有基準時用 news |
+| `comparison.articles` | integer | 同類媒體的文章數 |
+| `comparison.media` | integer | 同類媒體家數 |
 | `terms` | object[] |  |
 | `terms[].label` | string |  |
 | `terms[].count` | integer | 包含此詞的文章數 |
+| `terms[].share` | number | 包含此詞的文章占取樣文章的比例 |
+| `terms[].peerShare` | number \| null | 同類媒體同期包含此詞的文章比例 |
+| `terms[].distinctive` | boolean | 本站報導比例明顯高於同類媒體（至少 3 篇且達 3 倍） |
 
 錯誤：`400` 參數無效；`404` 媒體不存在。
 
