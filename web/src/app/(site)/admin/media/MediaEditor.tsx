@@ -18,6 +18,10 @@ type Article = {
   editedAt: string | null;
   editedBy: string | null;
   log: Array<{ id: number; tag: string; action: 'add' | 'remove'; email: string; at: string }>;
+  authors: string[];
+  bylineEditedAt: string | null;
+  bylineEditedBy: string | null;
+  bylineLog: Array<{ id: number; before: string[]; after: string[]; email: string; at: string }>;
 };
 type Lookup = { url: string; candidates: Array<Omit<Outlet, 'categories'>>; article: Article | null };
 type Run = {
@@ -308,7 +312,8 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
   // From this site's own /article/<id>/ page, fetch the outlet's original.
   const source = article?.url ?? url;
   async function refetch() {
-    if (article?.editedAt && !window.confirm('這篇的標籤有手動修改過。重抓會改用網頁上的標籤，手動修改會被取代。確定要重抓嗎？')) return;
+    const edited = [article?.editedAt && '標籤', article?.bylineEditedAt && '署名'].filter(Boolean).join('和');
+    if (edited && !window.confirm(`這篇的${edited}有手動修改過。重抓會改用網頁上的內容，手動修改會被取代。確定要重抓嗎？`)) return;
     setBusy(true);
     setStatus('正在抓取…');
     try {
@@ -350,6 +355,7 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
             <dt className="text-zinc-500">上次抓取</dt>
             <dd className="tabular-nums">{when(article.fetchedAt)}</dd>
           </dl>
+          <ArticleByline key={`by-${article.id}-${article.fetchedAt}`} article={article} onSaved={setArticle} />
           <ArticleTags key={`${article.id}-${article.fetchedAt}`} article={article} onSaved={setArticle} />
         </>
       ) : (
@@ -371,6 +377,88 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
 }
 
 // 單篇標籤增減: remove with ×, add by typing (several at once with 、 or ,).
+// 手動改署名: one name per line or separated by 、; empty means 未署名.
+function ArticleByline({ article, onSaved }: { article: Article; onSaved: (article: Article) => void }) {
+  const [text, setText] = useState(article.authors.join('、'));
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+  const authors = [
+    ...new Set(
+      text
+        .split(/[、,，;；\n]/)
+        .map((a) => a.replace(/\s+/g, ' ').trim())
+        .filter(Boolean),
+    ),
+  ];
+  const dirty = authors.join('、') !== article.authors.join('、');
+  async function save() {
+    setBusy(true);
+    setStatus('');
+    try {
+      const body = await adminFetch<{ article: Article }>(`/auth/admin/articles/${article.id}/authors`, {
+        method: 'PUT',
+        body: { authors },
+      });
+      onSaved(body.article);
+      setStatus('已儲存。之後的自動抓取和署名修復都不會再改這篇的署名。');
+    } catch (e) {
+      setStatus(`儲存失敗：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-4">
+      <p className="text-sm text-zinc-500">
+        署名
+        {article.bylineEditedAt && (
+          <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            {article.bylineEditedBy} 於 {when(article.bylineEditedAt)} 手動修改
+          </span>
+        )}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder="記者姓名，多位用、分隔；留空為未署名"
+          aria-label="署名"
+          className="w-72 max-w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        />
+        <button type="button" className={primary} disabled={!dirty || busy} onClick={save}>
+          儲存署名
+        </button>
+        {dirty && (
+          <button type="button" className={button} disabled={busy} onClick={() => setText(article.authors.join('、'))}>
+            還原
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+        {authors.length ? `會顯示為：${authors.join('、')}` : '會顯示為：未署名'}。只填記者本人，不填「政治中心」這類單位。
+      </p>
+      {status && (
+        <p role="status" className={note}>
+          {status}
+        </p>
+      )}
+      {article.bylineLog.length > 0 && (
+        <details className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <summary className="cursor-pointer">署名修改紀錄（{article.bylineLog.length}）</summary>
+          <ul className="mt-2 space-y-1">
+            {article.bylineLog.map((entry) => (
+              <li key={entry.id}>
+                <span className="tabular-nums">{when(entry.at)}</span> {entry.email}：{entry.before.join('、') || '未署名'} →{' '}
+                {entry.after.join('、') || '未署名'}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
 function ArticleTags({ article, onSaved }: { article: Article; onSaved: (article: Article) => void }) {
   const [tags, setTags] = useState(article.tags);
   const [text, setText] = useState('');

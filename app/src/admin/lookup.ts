@@ -5,7 +5,7 @@ import { allSources, excludedMedia } from '../crawl/registry.ts';
 import type { SourceSpec } from '../crawl/sources.ts';
 import { urlKey } from '../crawl/text.ts';
 import type { Db } from '../db/client.ts';
-import { articles, articleTagEdits, articleTagLog } from '../db/schema.ts';
+import { articleAuthorEdits, articleAuthorLog, articles, articleTagEdits, articleTagLog } from '../db/schema.ts';
 
 // Which outlet does a news page belong to? The /admin/media/ bookmarklet sends
 // whatever page the admin is reading. An article we already hold settles it;
@@ -63,7 +63,7 @@ export function hostCandidates(url: string, hosts = outletHosts()): string[] {
   return scored.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([media]) => media);
 }
 
-/** One article for the admin page, with who last edited its tags by hand. */
+/** One article for the admin page, with who last edited its tags or byline by hand. */
 export async function articleDetail(db: Db, id: number) {
   if (!Number.isSafeInteger(id) || id < 1) return null;
   const [article] = await db
@@ -78,9 +78,14 @@ export async function articleDetail(db: Db, id: number) {
       publishedAt: articles.publishedAt,
       editedAt: articleTagEdits.editedAt,
       editedBy: articleTagEdits.email,
+      authors: articles.authors,
+      creator: articles.creator,
+      bylineEditedAt: articleAuthorEdits.editedAt,
+      bylineEditedBy: articleAuthorEdits.email,
     })
     .from(articles)
     .leftJoin(articleTagEdits, eq(articleTagEdits.articleId, articles.id))
+    .leftJoin(articleAuthorEdits, eq(articleAuthorEdits.articleId, articles.id))
     .where(eq(articles.id, id));
   if (!article) return null;
   const log = await db
@@ -95,7 +100,21 @@ export async function articleDetail(db: Db, id: number) {
     .where(eq(articleTagLog.articleId, id))
     .orderBy(desc(articleTagLog.id))
     .limit(30);
-  return { ...article, log };
+  const bylineLog = await db
+    .select({
+      id: articleAuthorLog.id,
+      before: articleAuthorLog.before,
+      after: articleAuthorLog.after,
+      email: articleAuthorLog.email,
+      at: articleAuthorLog.at,
+    })
+    .from(articleAuthorLog)
+    .where(eq(articleAuthorLog.articleId, id))
+    .orderBy(desc(articleAuthorLog.id))
+    .limit(20);
+  const { creator, ...rest } = article;
+  // Older rows only carry the free-text creator.
+  return { ...rest, authors: article.authors?.length ? article.authors : creator ? [creator] : [], log, bylineLog };
 }
 
 /** `origin` is this site: its /article/<id>/ pages name the article directly. */

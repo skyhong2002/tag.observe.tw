@@ -142,25 +142,26 @@ export default function ArticleView({
         </section>
       )}
       <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} />
-      {content.body ? (
-        <>
-          {content.status !== 'ok' && (
-            <p className="mb-6 border-l-2 border-amber-500 pl-4 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
-          )}
-          <ArticleBody body={content.body} sourceUrl={article.url} />
-        </>
-      ) : !summary && article.description ? (
-        <ArticleBody body={article.description} sourceUrl={article.url} label="文章摘要" />
-      ) : (
-        <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
-          <h2 className="font-medium">{state.label}</h2>
-          <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
-          <div className="mt-4">
-            <SourceLink url={article.url} label="原站文章" showUrl />
-          </div>
-        </section>
-      )}
-      <AdminFullText id={article.id} />
+      <AdminFullText id={article.id} sourceUrl={article.url}>
+        {content.body ? (
+          <>
+            {content.status !== 'ok' && (
+              <p className="mb-6 border-l-2 border-amber-500 pl-4 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
+            )}
+            <ArticleBody body={content.body} sourceUrl={article.url} />
+          </>
+        ) : !summary && article.description ? (
+          <ArticleBody body={article.description} sourceUrl={article.url} label="文章摘要" />
+        ) : (
+          <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
+            <h2 className="font-medium">{state.label}</h2>
+            <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
+            <div className="mt-4">
+              <SourceLink url={article.url} label="原站文章" showUrl />
+            </div>
+          </section>
+        )}
+      </AdminFullText>
       <footer className="mt-12 space-y-7 border-t border-zinc-200 pt-7 dark:border-zinc-800">
         {extra}
         {content.attributions.length > 0 && (

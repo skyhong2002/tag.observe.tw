@@ -9,7 +9,7 @@ import { extractFeatureArticle } from '../app/src/crawl/feature-article.ts';
 import { fetchText } from '../app/src/crawl/fetch.ts';
 import { sourceByMedia } from '../app/src/crawl/registry.ts';
 import { createDb } from '../app/src/db/client.ts';
-import { articles } from '../app/src/db/schema.ts';
+import { articleAuthorEdits, articles } from '../app/src/db/schema.ts';
 
 // Refresh credits only; body retention, ranking, citations and fetch timestamps
 // are deliberately untouched. Use --after-id from the final summary to resume.
@@ -77,6 +77,8 @@ try {
         selected?.length ? inArray(articles.media, selected) : undefined,
         ids?.length ? inArray(articles.id, ids) : undefined,
         values['stored-body'] ? sql`${articles.body} IS NOT NULL` : undefined,
+        // Bylines an admin set by hand at /admin/media/ are not repaired.
+        sql`NOT EXISTS (SELECT 1 FROM ${articleAuthorEdits} WHERE ${articleAuthorEdits.articleId} = ${articles.id})`,
       ),
     )
     .orderBy(asc(articles.id))

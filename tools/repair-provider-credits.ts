@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 import { and, eq, sql } from 'drizzle-orm';
 import { normalizeAuthorCredits } from '../app/src/crawl/byline.ts';
 import { createDb } from '../app/src/db/client.ts';
-import { articles } from '../app/src/db/schema.ts';
+import { articleAuthorEdits, articles } from '../app/src/db/schema.ts';
 import { normalizeAttributions } from '../app/src/similarity/attribution.ts';
 
 // Dry-run by default; preserves body text and unrelated citations. Optimistic
@@ -20,7 +20,13 @@ try {
       attributions: articles.attributions,
     })
     .from(articles)
-    .where(sql`${articles.attributions} LIKE '%內容提供者%' OR ${articles.authors} LIKE '%記者%' OR ${articles.creator} LIKE '%記者%'`);
+    .where(
+      and(
+        sql`(${articles.attributions} LIKE '%內容提供者%' OR ${articles.authors} LIKE '%記者%' OR ${articles.creator} LIKE '%記者%')`,
+        // Bylines an admin set by hand at /admin/media/ stay as written.
+        sql`NOT EXISTS (SELECT 1 FROM ${articleAuthorEdits} WHERE ${articleAuthorEdits.articleId} = ${articles.id})`,
+      ),
+    );
   for (const row of rows) {
     const authors = row.authors === null ? null : normalizeAuthorCredits(row.authors);
     const creator = row.creator ? normalizeAuthorCredits([row.creator])[0] : row.creator;

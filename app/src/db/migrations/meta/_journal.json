@@ -183,6 +183,13 @@
       "when": 1791642127093,
       "tag": "0025_reader-accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1791653423702,
+      "tag": "0026_article-author-edits",
+      "breakpoints": true
     }
   ]
 }

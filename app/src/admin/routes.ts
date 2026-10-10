@@ -7,6 +7,8 @@ import { allSources, disabled, excludedMedia, sourceByMedia } from '../crawl/reg
 import { urlKey } from '../crawl/text.ts';
 import type { Db } from '../db/client.ts';
 import {
+  articleAuthorEdits,
+  articleAuthorLog,
   articles,
   articleTagEdits,
   articleTagLog,
@@ -55,6 +57,8 @@ const KEY = /^[a-z0-9][a-z0-9_-]{0,31}$/;
 const LABEL_MAX = 64;
 const TAG_MAX = 60;
 const TAGS_MAX = 40;
+const AUTHOR_MAX = 64;
+const AUTHORS_MAX = 10;
 
 /** Every outlet an admin can label: the favicon catalog plus crawl sources. */
 export const knownMedia = () =>
@@ -208,8 +212,9 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       row = await find();
       if (!row) return reply.code(422).send({ error: '無法收錄這個網址（可能曾被判定不是這家媒體的文章）' });
     }
-    // Re-fetching hands the tags back to the page, undoing a hand edit.
+    // Re-fetching hands the tags and byline back to the page, undoing hand edits.
     await db.delete(articleTagEdits).where(eq(articleTagEdits.articleId, row.id));
+    await db.delete(articleAuthorEdits).where(eq(articleAuthorEdits.articleId, row.id));
     const result = await runArticles(db, spec, { log: request.log, only: [row.id] });
     return { added, result, article: await articleDetail(db, row.id) };
   });
@@ -290,6 +295,40 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       if (changes.length) await tx.insert(articleTagLog).values(changes.map((c) => ({ ...c, articleId: id, email: user.email, at })));
     });
     return { added, removed, article: await articleDetail(db, id) };
+  });
+
+  // 手動改署名: the list replaces articles.authors (creator follows), is
+  // logged, and marks the article so crawls and author repairs keep it. An
+  // empty list means 未署名.
+  app.put<{ Params: { id: string }; Body: { authors?: unknown } }>('/auth/admin/articles/:id/authors', async (request, reply) => {
+    const user = await admin(request, reply, true);
+    if (!user) return reply;
+    const id = Number(request.params.id);
+    const wanted = request.body?.authors;
+    if (!Array.isArray(wanted) || wanted.length > AUTHORS_MAX || !wanted.every((a) => typeof a === 'string'))
+      return reply.code(400).send({ error: `authors 需為最多 ${AUTHORS_MAX} 個字串` });
+    const authors = [...new Set((wanted as string[]).map((a) => a.replace(/\s+/g, ' ').trim()).filter(Boolean))];
+    if (authors.some((a) => a.length > AUTHOR_MAX)) return reply.code(400).send({ error: `每個署名最多 ${AUTHOR_MAX} 字` });
+    const [row] = await db
+      .select({ id: articles.id, authors: articles.authors, creator: articles.creator })
+      .from(articles)
+      .where(Number.isSafeInteger(id) && id > 0 ? eq(articles.id, id) : sql`FALSE`);
+    if (!row) return reply.code(404).send({ error: 'no such article' });
+    const before = row.authors?.length ? row.authors : row.creator ? [row.creator] : [];
+    const at = new Date();
+    await db.transaction(async (tx) => {
+      await tx
+        .update(articles)
+        .set({ authors, creator: authors.length ? authors.join('、').slice(0, 256) : null })
+        .where(eq(articles.id, id));
+      await tx
+        .insert(articleAuthorEdits)
+        .values({ articleId: id, editedAt: at, email: user.email })
+        .onDuplicateKeyUpdate({ set: { editedAt: at, email: user.email } });
+      if (JSON.stringify(before) !== JSON.stringify(authors))
+        await tx.insert(articleAuthorLog).values({ articleId: id, before, after: authors, email: user.email, at });
+    });
+    return { article: await articleDetail(db, id) };
   });
 
   app.post<{ Params: { media: string }; Body: { stage?: unknown } }>('/auth/admin/media/:media/crawl', async (request, reply) => {

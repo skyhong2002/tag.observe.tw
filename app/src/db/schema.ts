@@ -652,3 +652,25 @@ export const readerReports = mysqlTable(
   },
   (t) => [index('reader_reports_status').on(t.status, t.createdAt), index('reader_reports_user').on(t.userId, t.createdAt)],
 );
+
+// Articles whose byline an admin set by hand at /admin/media/: crawls and the
+// author repair tools leave articles.authors/creator alone until an admin
+// re-fetches the page (app/src/admin/routes.ts).
+export const articleAuthorEdits = mysqlTable('article_author_edits', {
+  articleId: bigint('article_id', { mode: 'number' }).primaryKey(),
+  editedAt: datetime('edited_at').notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+});
+
+export const articleAuthorLog = mysqlTable(
+  'article_author_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    before: json('before').$type<string[]>().notNull(),
+    after: json('after').$type<string[]>().notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('article_author_log_article').on(t.articleId, t.at)],
+);

@@ -10,6 +10,7 @@ import { runArticles, runIndex } from '../src/crawl/pipeline.ts';
 import { sourceByMedia } from '../src/crawl/registry.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import {
+  articleAuthorLog,
   articles,
   articleTagEdits,
   articleTagLog,
@@ -27,7 +28,7 @@ vi.mock('../src/crawl/fetch.ts', async (original) => ({
     url,
     headers: {},
     body: `<html><head><title>測試新聞</title><meta name="keywords" content="颱風#停班停課"></head>
-      <body><article><p>${'內文。'.repeat(80)}</p></article></body></html>`,
+      <body><article>${url.includes('byline') ? '<p>政治中心／巫旻璇報導</p>' : ''}<p>${'內文。'.repeat(80)}</p></article></body></html>`,
   })),
 }));
 
@@ -42,6 +43,8 @@ const TABLES = [
   'crawl_runs',
   'article_tag_edits',
   'article_tag_log',
+  'article_author_edits',
+  'article_author_log',
 ];
 
 // Sessions keyed by cookie value: an admin and a reader.
@@ -290,5 +293,38 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
       .set({ body: null, contentArchiveHash: 'a'.repeat(64) })
       .where(eq(articles.id, id));
     expect((await body('admin')).json()).toMatchObject({ body: null, chars: 0, archived: true });
+  });
+
+  it('sets one article’s byline by hand and keeps it through crawls until a re-fetch', async () => {
+    const page = 'https://www.cna.com.tw/news/aipl/202610110001-byline.aspx';
+    const first = await app.inject({ method: 'POST', url: '/auth/admin/media/cna/refetch', headers: as('admin'), payload: { url: page } });
+    const id = first.json().article.id;
+    expect(first.json().article).toMatchObject({ authors: ['巫旻璇'], bylineEditedAt: null });
+    const edit = (authors: unknown, who = 'admin') =>
+      app.inject({ method: 'PUT', url: `/auth/admin/articles/${id}/authors`, headers: as(who), payload: { authors } });
+    expect((await edit(['x'], 'reader')).statusCode).toBe(403);
+    expect((await edit('王小明')).statusCode).toBe(400);
+    const saved = await edit([' 王小明 ', '巫旻璇', '王小明']);
+    expect(saved.json().article).toMatchObject({ authors: ['王小明', '巫旻璇'], bylineEditedBy: 'admin@example.com' });
+    const [row] = await db.select({ creator: articles.creator }).from(articles).where(eq(articles.id, id));
+    expect(row.creator).toBe('王小明、巫旻璇');
+    expect(await db.select({ before: articleAuthorLog.before, after: articleAuthorLog.after }).from(articleAuthorLog)).toEqual([
+      { before: ['巫旻璇'], after: ['王小明', '巫旻璇'] },
+    ]);
+
+    // A body retry reads 巫旻璇 from the page again, but keeps the hand edit.
+    const spec = sourceByMedia('cna');
+    if (!spec) throw Error('no cna');
+    await db.update(articles).set({ contentFetchedAt: null }).where(eq(articles.id, id));
+    await runArticles(db, spec, { limit: 5 });
+    const [kept] = await db.select({ authors: articles.authors }).from(articles).where(eq(articles.id, id));
+    expect(kept.authors).toEqual(['王小明', '巫旻璇']);
+
+    // Empty means 未署名.
+    expect((await edit([])).json().article.authors).toEqual([]);
+
+    // An admin re-fetch hands the byline back to the page.
+    const again = await app.inject({ method: 'POST', url: '/auth/admin/media/cna/refetch', headers: as('admin'), payload: { url: page } });
+    expect(again.json().article).toMatchObject({ authors: ['巫旻璇'], bylineEditedAt: null });
   });
 });

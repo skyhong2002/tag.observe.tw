@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import type { Db } from '../db/client.ts';
-import { articles, articleTagEdits, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
+import { articleAuthorEdits, articles, articleTagEdits, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
 import { isOwnMediaTag } from '../media-tags.ts';
 import { extractAttributions } from '../similarity/attribution.ts';
 import { runDiscoveryIndex } from './discovery-index.ts';
@@ -270,13 +270,14 @@ export async function runIndex(
             const correctedDate =
               item.publishedAt && existing.publishedAt.getTime() === existing.crawledAt.getTime() ? item.publishedAt : null;
             const correctedTitle = !existing.title.trim() && item.title ? stripTitleSuffix(item.title, spec.titleSuffix) : null;
+            const credited = !(await bylineEditedIds(tx, [existing.id])).size;
             await tx
               .update(articles)
               .set({
                 ...content,
-                authors: content.authors.length ? content.authors : undefined,
-                creator: content.authors.length ? content.authors.join('、').slice(0, 256) : undefined,
-                ...(voicettankCategoryRepair(spec.media, existing, content.authors) ?? {}),
+                authors: credited && content.authors.length ? content.authors : undefined,
+                creator: credited && content.authors.length ? content.authors.join('、').slice(0, 256) : undefined,
+                ...((credited && voicettankCategoryRepair(spec.media, existing, content.authors)) || {}),
                 ...(correctedDate ? { publishedAt: correctedDate } : {}),
                 ...(correctedTitle ? { title: trunc(correctedTitle, 512) as string } : {}),
                 fetchedAt: started,
@@ -325,6 +326,16 @@ export async function runIndex(
 export async function editedArticleIds(db: Db, ids: number[]): Promise<Set<number>> {
   if (!ids.length) return new Set();
   const rows = await db.select({ id: articleTagEdits.articleId }).from(articleTagEdits).where(inArray(articleTagEdits.articleId, ids));
+  return new Set(rows.map((r) => r.id));
+}
+
+/** Articles whose byline an admin set by hand: crawls must not change it. */
+export async function bylineEditedIds(db: Pick<Db, 'select'>, ids: number[]): Promise<Set<number>> {
+  if (!ids.length) return new Set();
+  const rows = await db
+    .select({ id: articleAuthorEdits.articleId })
+    .from(articleAuthorEdits)
+    .where(inArray(articleAuthorEdits.articleId, ids));
   return new Set(rows.map((r) => r.id));
 }
 
@@ -441,6 +452,12 @@ export async function runArticles(
         db,
         pending.map((row) => row.id),
       );
+  const bylined = only
+    ? new Set<number>()
+    : await bylineEditedIds(
+        db,
+        pending.map((row) => row.id),
+      );
   const [run] = await db
     .insert(crawlRuns)
     .values({ media: spec.media, stage: 'article', startedAt: started, status: 'running' })
@@ -525,9 +542,9 @@ export async function runArticles(
               description: detail.description ? trunc(detail.description, 4000) : undefined,
               ...(detail.summary ? { summary: detail.summary, summarySource: detail.summarySource } : {}),
               body: detail.body,
-              authors: detail.authors.length ? detail.authors : undefined,
-              creator: detail.authors.length ? detail.authors.join('、').slice(0, 256) : undefined,
-              ...(voicettankCategoryRepair(spec.media, row, detail.authors) ?? {}),
+              authors: !bylined.has(row.id) && detail.authors.length ? detail.authors : undefined,
+              creator: !bylined.has(row.id) && detail.authors.length ? detail.authors.join('、').slice(0, 256) : undefined,
+              ...((!bylined.has(row.id) && voicettankCategoryRepair(spec.media, row, detail.authors)) || {}),
               bodyStatus: detail.bodyStatus,
               bodySource: detail.bodySource.slice(0, 128),
               contentFetchedAt: now(),
