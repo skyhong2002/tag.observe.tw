@@ -52,6 +52,9 @@ export default function MediaHoverLink({
   icon?: number | false;
 }) {
   const [open, setOpen] = useState(false);
+  // Opened by a tap: the card takes taps too and offers a link to the media page,
+  // so a touch reader never has to guess that a second tap on the name follows it.
+  const [tapped, setTapped] = useState(false);
   const [profile, setProfile] = useState<Profile | null | undefined>();
   const [keywords, setKeywords] = useState<MediaKeywords | null | undefined>();
   const [position, setPosition] = useState({ left: 12, top: 12 });
@@ -113,20 +116,25 @@ export default function MediaHoverLink({
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
+    const inside = (target: EventTarget | null) =>
+      target instanceof Node && (!!anchor.current?.contains(target) || !!card.current?.contains(target));
     const outside = (event: PointerEvent) => {
-      if (!anchor.current?.contains(event.target as Node)) close();
+      if (!inside(event.target)) close();
+    };
+    const scrolled = (event: Event) => {
+      if (!card.current?.contains(event.target as Node)) close();
     };
     const dismiss = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
     };
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', dismiss);
-    window.addEventListener('scroll', close, true);
+    window.addEventListener('scroll', scrolled, true);
     window.addEventListener('resize', close);
     return () => {
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', dismiss);
-      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('scroll', scrolled, true);
       window.removeEventListener('resize', close);
     };
   }, [open]);
@@ -144,7 +152,10 @@ export default function MediaHoverLink({
         // Like the word clouds' cards: a display-only tooltip that never covers
         // a link it can't let through, closing as soon as the pointer leaves.
         onPointerEnter={(event) => {
-          if (event.pointerType !== 'touch') setOpen(true);
+          if (event.pointerType !== 'touch') {
+            setTapped(false);
+            setOpen(true);
+          }
         }}
         onPointerLeave={(event) => {
           if (event.pointerType !== 'touch') setOpen(false);
@@ -153,9 +164,15 @@ export default function MediaHoverLink({
           touch.current = event.pointerType === 'touch';
         }}
         onFocus={() => {
-          if (!touch.current) setOpen(true);
+          if (!touch.current) {
+            setTapped(false);
+            setOpen(true);
+          }
         }}
-        onBlur={() => setOpen(false)}
+        onBlur={(event) => {
+          // Moving focus into the tapped card's own link keeps it open.
+          if (!card.current?.contains(event.relatedTarget as Node)) setOpen(false);
+        }}
         onKeyDown={() => {
           touch.current = false;
         }}
@@ -163,6 +180,7 @@ export default function MediaHoverLink({
           // On touch the first tap shows the card and a second tap follows the link.
           if (touch.current && !open && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
             event.preventDefault();
+            setTapped(true);
             setOpen(true);
           } else setOpen(false);
         }}
@@ -172,7 +190,13 @@ export default function MediaHoverLink({
       </Link>
       {open &&
         createPortal(
-          <div ref={card} id={id} role="tooltip" className={styles.card} style={position}>
+          <div
+            ref={card}
+            id={id}
+            role={tapped ? 'dialog' : 'tooltip'}
+            className={tapped ? `${styles.card} ${styles.tapped}` : styles.card}
+            style={position}
+          >
             <strong className={styles.title}>{profile?.title ?? label}</strong>
             {profile && (
               <span className={styles.muted}>
@@ -216,6 +240,11 @@ export default function MediaHoverLink({
                   <p className={styles.note}>這段時間尚無足夠的關鍵字</p>
                 )}
               </div>
+            )}
+            {tapped && (
+              <Link href={href} className={styles.go} onClick={() => setOpen(false)}>
+                前往{profile?.title ?? label}媒體頁 →
+              </Link>
             )}
           </div>,
           document.body,
