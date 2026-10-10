@@ -182,25 +182,19 @@ export default function MediaComparison({
                     const similar = key !== 'outgoing' && key !== 'incoming';
                     return (
                       <td key={key} className={`${table.num} py-2.5`}>
-                        {similar ? (
-                          <span>{number(row[key])}</span>
-                        ) : row[key] ? (
+                        {!row[key] ? (
+                          <span className="text-zinc-400">0</span>
+                        ) : similar ? (
+                          <span className={relationshipFilters[key].className}>{number(row[key])}</span>
+                        ) : (
                           <button
                             type="button"
                             aria-label={`${row.name}：${columns.find((column) => column.key === key)?.label} ${row[key]} 篇，查看報導`}
-                            onClick={() =>
-                              onSelect(
-                                { node: row.id },
-                                similar ? 'similarity' : 'citation',
-                                similar ? 'all' : key === 'incoming' ? 'incoming' : 'outgoing',
-                              )
-                            }
-                            className={`underline decoration-dotted underline-offset-4 ${similar ? 'text-amber-700 dark:text-amber-400' : 'text-violet-700 dark:text-violet-400'}`}
+                            onClick={() => onSelect({ node: row.id }, 'citation', key)}
+                            className={`underline decoration-dotted underline-offset-4 ${relationshipFilters[key].className}`}
                           >
                             {number(row[key])}
                           </button>
-                        ) : (
-                          <span className="text-zinc-400">0</span>
                         )}
                       </td>
                     );
