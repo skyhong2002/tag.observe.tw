@@ -1,5 +1,7 @@
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { LogController } from 'fastify';
+import { registerLogin } from './auth/google-login.ts';
+import { dbLoginStore } from './auth/store.ts';
 import { createDb } from './db/client.ts';
 import { registerFeeds } from './feeds.ts';
 import { isShareImage, legacyRoute } from './legacy-redirects.js';
@@ -86,6 +88,7 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
   }
+  registerLogin(app, own ? dbLoginStore(own.db) : null, config.login ?? null);
   registerReaderPresence(app);
   registerNearline(app);
   const proxyToUi = createUiProxy(config.uiOrigin);

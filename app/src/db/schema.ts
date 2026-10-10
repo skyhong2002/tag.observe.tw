@@ -403,3 +403,31 @@ export const siteMetrics = mysqlTable(
   },
   (t) => [primaryKey({ columns: [t.day, t.source, t.metric, t.key] }), index('site_metrics_metric_day').on(t.source, t.metric, t.day)],
 );
+
+// Google sign-in (app/src/auth). Roles are not stored: admins are whoever is
+// listed in TAG_ADMIN_EMAILS at request time. Sessions keep only a SHA-256 of
+// the cookie value.
+export const users = mysqlTable(
+  'users',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    googleSub: varchar('google_sub', { length: 64 }).notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    name: varchar('name', { length: 255 }),
+    picture: varchar('picture', { length: 512 }),
+    createdAt: datetime('created_at').notNull(),
+    lastLoginAt: datetime('last_login_at').notNull(),
+  },
+  (t) => [uniqueIndex('users_google_sub').on(t.googleSub), index('users_email').on(t.email)],
+);
+
+export const userSessions = mysqlTable(
+  'user_sessions',
+  {
+    tokenHash: varchar('token_hash', { length: 64 }).primaryKey(),
+    userId: int('user_id').notNull(),
+    createdAt: datetime('created_at').notNull(),
+    expiresAt: datetime('expires_at').notNull(),
+  },
+  (t) => [index('user_sessions_user').on(t.userId), index('user_sessions_expires').on(t.expiresAt)],
+);

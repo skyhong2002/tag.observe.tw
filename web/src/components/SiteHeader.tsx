@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import AccountMenu from './AccountMenu';
 import NavPending, { NavPendingContext, NavProgressBar } from './NavPending';
 import SiteNavigation from './SiteNavigation';
 import SiteSearch, { isSearchPage, SiteSearchFromUrl } from './SiteSearch';
@@ -112,8 +113,9 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
               </Suspense>
             </div>
           </div>
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-1">
             <ThemeToggle />
+            <AccountMenu />
           </div>
         </div>
         <NavProgressBar pending={navPending} />

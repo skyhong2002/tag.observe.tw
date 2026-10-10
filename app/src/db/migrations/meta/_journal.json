@@ -141,6 +141,13 @@
       "when": 1791374121059,
       "tag": "0019_article-summary",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1791628788063,
+      "tag": "0020_google-login",
+      "breakpoints": true
     }
   ]
 }
