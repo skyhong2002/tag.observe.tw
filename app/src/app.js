@@ -88,12 +88,12 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
   }
   registerReaderPresence(app);
   registerNearline(app);
-  registerApiMeta(app);
+  const proxyToUi = createUiProxy(config.uiOrigin);
+  registerApiMeta(app, proxyToUi);
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {
     if (own) await own.close();
   });
-  const proxyToUi = createUiProxy(config.uiOrigin);
   const handler = async (request, reply) => {
     const legacy = legacyRoute(request.raw.url);
     if (legacy?.status === 301)

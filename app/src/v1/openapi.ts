@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { registerApiStatus } from './api-status.ts';
+import { registerApiStatus, type StatusPageRenderer } from './api-status.ts';
 import { MAX_LIMIT, MAX_SPAN_DAYS } from './articles.ts';
 
 // OpenAPI 3.1 description of the public /api/v1 endpoints. It is the single
@@ -2065,7 +2065,7 @@ export const examplePath = (e: Endpoint) =>
   e.example ??
   e.path.replace(/\{(\w+)\}/g, (_, name) => encodeURIComponent(String(e.params?.find((x) => x.name === name)?.example ?? name)));
 
-export function registerApiMeta(app: FastifyInstance) {
+export function registerApiMeta(app: FastifyInstance, renderStatusPage?: StatusPageRenderer) {
   const spec = JSON.stringify(buildOpenApi());
   const index = {
     name: API_INTRO.title,
@@ -2074,7 +2074,7 @@ export function registerApiMeta(app: FastifyInstance) {
     openapi: `${PUBLIC_ORIGIN}/api/v1/openapi.json`,
     endpoints: ENDPOINTS.map((e) => ({ method: e.method ?? 'GET', path: e.path, summary: e.summary, example: examplePath(e) })),
   };
-  registerApiStatus(app, ENDPOINTS);
+  registerApiStatus(app, ENDPOINTS, undefined, renderStatusPage);
   for (const url of ['/api/v1', '/api/v1/'])
     app.get(url, async (_request, reply) => {
       reply.header('cache-control', 'public, max-age=3600');

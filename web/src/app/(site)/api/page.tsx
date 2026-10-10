@@ -277,6 +277,7 @@ export default async function ApiDocsPage() {
           <p className="text-zinc-700 dark:text-zinc-300">{spec.info.summary}</p>
           <div className="flex flex-wrap gap-2 pt-1 text-sm">
             {[
+              ['/api/status/', 'API 狀態'],
               ['/api/v1/openapi.json', 'OpenAPI 3.1 規格'],
               ['/api/v1', '端點索引 JSON'],
               [GITHUB_DOC, 'Markdown 版文件'],

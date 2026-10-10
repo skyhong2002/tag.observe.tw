@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Fastify from 'fastify';
 import { afterEach, expect, it, vi } from 'vitest';
-import { nearlineAvailability, registerApiStatus } from './api-status.ts';
+import { nearlineAvailability, registerApiStatus, type StatusPageRenderer } from './api-status.ts';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -28,16 +28,29 @@ it('reports real service availability without claiming every endpoint was tested
   }
 });
 
-it('renders a browser page and escapes endpoint descriptions', async () => {
+it.each(['/api/status', '/api/status/'])('delegates HTML and Next navigation at %s without probing twice', async (url) => {
   const app = Fastify();
-  registerApiStatus(app, [{ path: '/api/status', summary: '<script>unsafe</script>' }], async () => 'ok');
+  const check = vi.fn<() => Promise<'ok' | 'unavailable'>>().mockResolvedValue('ok');
+  const render = vi.fn<StatusPageRenderer>(async (_request, reply) =>
+    reply.type('text/html').header('vary', 'RSC, Next-Router-State-Tree').send('site layout'),
+  );
+  registerApiStatus(app, [], check, render);
   try {
-    const response = await app.inject({ url: '/api/status', headers: { accept: 'text/html' } });
-    expect(response.headers['content-type']).toContain('text/html');
-    expect(response.headers['cache-control']).toBe('no-store');
-    expect(response.body).toContain('Nearline：正常');
-    expect(response.body).toContain('&lt;script&gt;');
-    expect(response.body).not.toContain('<script>unsafe');
+    for (const headers of [{ accept: 'text/html' }, { accept: '*/*', rsc: '1' }]) {
+      const response = await app.inject({ url, headers });
+      expect(response.headers['content-type']).toContain('text/html');
+      expect(response.headers['cache-control']).toBe('no-store');
+      expect(response.headers.vary).toContain('Accept');
+      expect(response.headers.vary).toContain('Next-Router-State-Tree');
+      expect(response.body).toBe('site layout');
+    }
+    expect(render).toHaveBeenCalledTimes(2);
+    expect(check).not.toHaveBeenCalled();
+    const json = await app.inject({ url, headers: { accept: 'application/json' } });
+    expect(json.json().status).toBe('ok');
+    expect(json.headers['cache-control']).toBe('no-store');
+    expect(check).toHaveBeenCalledTimes(1);
+    expect(render).toHaveBeenCalledTimes(2);
   } finally {
     await app.close();
   }

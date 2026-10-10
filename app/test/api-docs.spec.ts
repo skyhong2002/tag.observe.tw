@@ -12,7 +12,11 @@ const v1 = new URL('app/src/v1/', root);
 // Public API route literals registered in app/src/v1.
 const registered = readdirSync(v1)
   .filter((f) => f.endsWith('.ts') && !f.endsWith('.spec.ts'))
-  .flatMap((f) => [...readFileSync(new URL(f, v1), 'utf8').matchAll(/app\.(?:get|post)(?:<[^(]*?>)?\(\s*'(\/api\/(?:v1|status)[^']*)'/g)].map((m) => m[1]))
+  .flatMap((f) =>
+    [...readFileSync(new URL(f, v1), 'utf8').matchAll(/app\.(?:get|post)(?:<[^(]*?>)?\(\s*'(\/api\/(?:v1|status)[^']*)'/g)].map(
+      (m) => m[1],
+    ),
+  )
   .map((r) => r.replace(/:(\w+)/g, '{$1}'));
 
 describe('OpenAPI description', () => {
@@ -103,12 +107,26 @@ describe('public API gateway behaviour', () => {
     expect(r.statusCode).toBe(200);
     expect(r.json()).toMatchObject({ status: 'degraded', scope: 'api_availability' });
     const body = r.json();
-    expect(body.endpoints).toEqual(expect.arrayContaining([
-      expect.objectContaining({ path: '/api/v1/nearline/archives' }),
-      expect.objectContaining({ path: '/api/v1/nearline/status' }),
-      expect.objectContaining({ path: '/api/v1/nearline/retrievals' }),
-    ]));
+    expect(body.endpoints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: '/api/v1/nearline/archives' }),
+        expect.objectContaining({ path: '/api/v1/nearline/status' }),
+        expect.objectContaining({ path: '/api/v1/nearline/retrievals' }),
+      ]),
+    );
     expect(JSON.stringify(body)).not.toMatch(/127\.0\.0\.1|nas:|disk|database|indexRevision|uptime/i);
+  });
+  it('renders status through the site UI for browsers and Next navigation, preserving JSON access', async () => {
+    for (const url of ['/api/status', '/api/status/']) {
+      for (const headers of [{ accept: 'text/html' }, { rsc: '1' }]) {
+        const response = await app.inject({ url, headers });
+        expect(response.body).toBe(`next:${url}`);
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(response.headers.vary).toContain('Accept');
+      }
+      const json = await app.inject({ url, headers: { accept: 'application/json' } });
+      expect(json.json().scope).toBe('api_availability');
+    }
   });
   it('allows cross-origin reads, including preflight and errors', async () => {
     const r = await app.inject('/api/v1/openapi.json');

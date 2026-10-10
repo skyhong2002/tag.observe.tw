@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+
+export type StatusPageRenderer = (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 
 type Availability = 'ok' | 'unavailable';
 interface Endpoint {
@@ -28,22 +30,18 @@ export async function nearlineAvailability(): Promise<Availability> {
   }
 }
 
-const escapeHtml = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-      })[c]!,
-  );
-
-export function registerApiStatus(app: FastifyInstance, catalog: Endpoint[], checkNearline = nearlineAvailability) {
-  app.get('/api/status', async (request, reply) => {
-    reply.header('cache-control', 'no-store').header('vary', 'Accept');
+export function registerApiStatus(
+  app: FastifyInstance,
+  catalog: Endpoint[],
+  checkNearline = nearlineAvailability,
+  renderPage?: StatusPageRenderer,
+) {
+  const handler = async (request: FastifyRequest, reply: FastifyReply) => {
+    // Next renders the browser page inside the shared site layout. Its server
+    // fetch explicitly requests JSON, so only that request probes Nearline.
+    if (renderPage && (request.headers.accept?.includes('text/html') || request.headers.rsc === '1')) {
+      return renderPage(request, reply);
+    }
     const nearline = await checkNearline();
     const endpoints = catalog.map(({ path, method, summary }) => ({ path, method: method ?? 'GET', description: summary }));
     const body = {
@@ -56,20 +54,21 @@ export function registerApiStatus(app: FastifyInstance, catalog: Endpoint[], che
       ],
       endpoints,
     };
-    if (!request.headers.accept?.includes('text/html')) return body;
-    const label = (status: string) => (status === 'ok' ? '正常' : '無法使用');
-    return reply.type('text/html; charset=utf-8').send(`<!doctype html>
-<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>API 狀態 · 新文易數</title><style>
-body{font:16px/1.6 system-ui,sans-serif;max-width:1080px;margin:40px auto;padding:0 20px;color:#222}
-a{color:#1765aa}table{width:100%;border-collapse:collapse}th,td{padding:12px;text-align:left;border-bottom:1px solid #ddd}
-code{overflow-wrap:anywhere}.services{display:flex;gap:24px;flex-wrap:wrap}.services p{border:1px solid #ddd;border-radius:8px;padding:16px}
-@media(prefers-color-scheme:dark){body{background:#171717;color:#eee}a{color:#8dc4ff}th,td,.services p{border-color:#444}}
-</style><h1>API 狀態</h1><p>${escapeHtml(body.description)}</p>
-<div class="services">${body.services.map((s) => `<p><strong>${s.name}：${label(s.status)}</strong><br>${escapeHtml(s.description)}</p>`).join('')}</div>
-<p><a href="/api/">API 文件</a> · <a href="/api/v1/openapi.json">OpenAPI</a> · <a href="/api/status">重新整理狀態</a></p>
-<h2>端點用途</h2><table><thead><tr><th>方法</th><th>端點</th><th>用途</th></tr></thead><tbody>
-${endpoints.map((e) => `<tr><td>${escapeHtml(e.method)}</td><td><code>${escapeHtml(e.path)}</code></td><td>${escapeHtml(e.description)}</td></tr>`).join('')}
-</tbody></table></html>`);
-  });
+    return body;
+  };
+  const onSend = async (_request: FastifyRequest, reply: FastifyReply) => {
+    // Retain Next's navigation-related Vary headers along with negotiation.
+    const vary = new Set(
+      String(reply.getHeader('vary') ?? '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    );
+    vary.add('Accept');
+    vary.add('RSC');
+    reply.header('cache-control', 'no-store').header('vary', [...vary].join(', '));
+  };
+  app.get('/api/status', { onSend }, handler);
+  // The site uses trailing slashes; API callers can use either spelling.
+  app.route({ method: 'GET', url: '/api/status/', onSend, handler });
 }
