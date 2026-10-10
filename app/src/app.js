@@ -2,6 +2,7 @@ import rateLimit from '@fastify/rate-limit';
 import { Queue } from 'bullmq';
 import Fastify, { LogController } from 'fastify';
 import { Redis } from 'ioredis';
+import { registerDbConsole } from './admin/db-console.ts';
 import { registerAdminRoutes } from './admin/routes.ts';
 import { registerLogin } from './auth/google-login.ts';
 import { dbLoginStore } from './auth/store.ts';
@@ -115,6 +116,8 @@ export async function buildApp(
   };
   if (own && config.login)
     registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
+  if (config.login && config.adminer)
+    registerDbConsole(app, { currentUser: login.currentUser, origin: config.login.origin, adminer: config.adminer });
   registerReaderPresence(app);
   registerNearline(app);
   const proxyToUi = createUiProxy(config.uiOrigin);

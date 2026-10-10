@@ -1,0 +1,14 @@
+# MariaDB server audit log (docs/login.md): every connection and statement by
+# any account except the app's own (tag_observe) and the container healthcheck,
+# so each admin's Adminer account (scripts/adminer-account.sh) shows up by name.
+# The plugin itself is installed once with INSTALL SONAME 'server_audit' and
+# kept in mysql.plugin; these settings apply whenever it loads.
+[mariadb]
+loose_server_audit_logging = ON
+loose_server_audit_events = CONNECT,QUERY_DDL,QUERY_DML,QUERY_DCL
+loose_server_audit_excl_users = tag_observe,healthcheck
+loose_server_audit_output_type = file
+loose_server_audit_file_path = server_audit.log
+loose_server_audit_file_rotate_size = 100000000
+loose_server_audit_file_rotations = 9
+loose_server_audit_query_log_limit = 8192

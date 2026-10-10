@@ -11,16 +11,21 @@ services:
       MARIADB_PASSWORD: ${TAG_DB_PASSWORD}
     command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--innodb-buffer-pool-size=1G", "--max-allowed-packet=64M"]
     ports: ["127.0.0.1:13306:3306"]
-    volumes: ["./data/mariadb:/var/lib/mysql", "./db:/docker-entrypoint-initdb.d:ro"]
+    volumes: ["./data/mariadb:/var/lib/mysql", "./db:/docker-entrypoint-initdb.d:ro", "./mariadb/audit.cnf:/etc/mysql/conf.d/zz-audit.cnf:ro"]
     healthcheck: { test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"], interval: 10s, timeout: 5s, retries: 10 }
-  # Web UI for the DB; local port only, exposed tailnet-only via `tailscale serve --https=11443`.
+  # Web UI for the DB; local port only. Admins reach it at /admin/db/ through
+  # the gateway, signed in as their own DB account (adminer/tag-gateway.php);
+  # `tailscale serve --https=11443` also exposes it tailnet-only with the plain login form.
   adminer:
     image: adminer:4.8.1
     container_name: tag-adminer
     restart: unless-stopped
     environment:
       ADMINER_DEFAULT_SERVER: db
+      TAG_ADMINER_SECRET: ${TAG_ADMINER_SECRET:-}
+      TAG_ADMINER_ACCOUNTS: ${TAG_ADMINER_ACCOUNTS:-}
     ports: ["127.0.0.1:18134:8080"]
+    volumes: ["./adminer/tag-gateway.php:/var/www/html/plugins-enabled/tag-gateway.php:ro"]
     depends_on: [db]
   redis:
     image: redis:7-alpine

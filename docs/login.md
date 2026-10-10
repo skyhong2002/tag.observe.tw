@@ -42,6 +42,29 @@
 
 媒體標籤存在 `media_category_defs`（代碼、名稱、順序）與 `media_categories`（媒體 × 標籤）。資料表是空的時候，gateway 或 worker 啟動時會從 `app/data/media-catalog.json` 匯入一次，之後以資料庫為準。兩個程序每分鐘重新讀取一次，管理員存檔後 gateway 也會立刻重讀（`app/src/media-categories.ts`）。`blue`／`green` 決定陣營，兩個都勾時算藍營。新增的標籤沒有固定排行名單（`ranking-baseline.json`），所以不會出現在 `/ranking/`。
 
+## 資料庫（`/admin/db/`）
+
+`/admin/db/` 是 Adminer（`infra/compose.yml` 的 `tag-adminer`），由 gateway（`app/src/admin/db-console.ts`）轉送：沒登入導去登入，非管理員回 403，POST 需本站 `Origin`。轉送時只帶 `adminer_*` cookie（`tag_session` 不會送給 Adminer），並加上 `X-Tag-Admin-Email` 與共用密鑰 `X-Tag-Adminer-Secret`；Adminer 的 plugin（`infra/adminer/tag-gateway.php`）核對密鑰後，以這位管理員自己的 MariaDB 帳號登入。網址上改成別的帳號也一樣會用本人帳號連線；名單上沒有帳號的 Email 回 403。不帶密鑰的請求（tailnet 的 `:11443`）維持原本的 Adminer 登入表單。gateway log 記下每次開啟的頁面（`db console`，含管理員 Email）。
+
+每位管理員一個 DB 帳號（`adm_<Email 帳號名>`），密碼只存在 `infra/.env` 的 `TAG_ADMINER_ACCOUNTS`（`email=帳號:密碼`，逗號分隔），管理員不用輸入：
+
+```sh
+scripts/adminer-account.sh someone@example.com           # 唯讀（SELECT、SHOW VIEW）
+scripts/adminer-account.sh someone@example.com --write   # 加上 INSERT、UPDATE、DELETE
+scripts/adminer-account.sh someone@example.com --revoke  # 刪除帳號
+cd infra && docker compose up -d --no-deps adminer       # 讓 Adminer 讀到新名單
+```
+
+再跑一次同一個 Email 會換密碼並重設權限。DDL（`ALTER`、`DROP`…）不開放，結構變更走 migration。第一次執行時會產生 `TAG_ADMINER_SECRET`，同時寫進 `infra/.env` 與 `.env`，需重啟 gateway；`.env` 沒有這個值時 `/admin/db/` 不會掛上。
+
+### 稽核紀錄
+
+MariaDB 的 `server_audit` plugin 記下 `tag_observe`（應用程式）與 `healthcheck` 以外所有帳號的連線與 SQL（`infra/mariadb/audit.cnf`），寫在資料目錄的 `server_audit.log`（`infra/data/mariadb/`，100 MB 輪替、保留 10 份）。plugin 以 `INSTALL SONAME 'server_audit'` 安裝一次（存在 `mysql.plugin`），設定檔在 tag-db 下次重建時生效；在那之前用 `SET GLOBAL server_audit_*` 套用同樣的值。
+
+```sh
+docker exec tag-db tail -f /var/lib/mysql/server_audit.log   # 時間,主機,帳號,來源,連線,查詢編號,動作,資料庫,SQL,結果
+```
+
 ## 之後加管理功能
 
 新的管理端點在 handler 開頭呼叫 `registerLogin()` 回傳的 `requireAdmin(request, reply)`：未登入回 401、非管理員回 403，通過時回傳目前使用者。管理頁面放在 `web/src/app/(site)/admin/`。

@@ -24,7 +24,25 @@ export default function AdminPanel() {
       <Bookmarklet />
       <Outlets />
       <Accounts />
+      <Database />
     </AdminGate>
+  );
+}
+
+// Adminer behind the gateway (app/src/admin/db-console.ts), signed in as the
+// admin's own MariaDB account.
+function Database() {
+  return (
+    <section className="mt-8">
+      <h2 className="text-lg font-semibold">資料庫</h2>
+      <p className={note}>用 Adminer 直接查詢或修改資料。會自動以你自己的資料庫帳號登入，每一筆查詢都記在 MariaDB 的稽核紀錄裡。</p>
+      <a
+        href="/admin/db/"
+        className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
+      >
+        開啟資料庫
+      </a>
+    </section>
   );
 }
 
