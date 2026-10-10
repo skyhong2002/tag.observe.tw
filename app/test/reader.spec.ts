@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { articles, articleTags, events, eventThreads, users } from '../src/db/schema.ts';
+import { articles, articleTags, eventSnapshots, events, eventThreads, users } from '../src/db/schema.ts';
 import { looksLikeKey, newApiKey } from '../src/reader/api-keys.ts';
 import { readingReport } from '../src/reader/routes.ts';
 import { parseFollow, parsePrefs, parseReport, parseSave } from '../src/reader/validate.ts';
@@ -107,18 +107,16 @@ describe.skipIf(!url)('reader features (MariaDB)', () => {
       'users',
     ])
       await db.execute(sql.raw(`TRUNCATE TABLE \`${t}\``));
-    await db
-      .insert(users)
-      .values(
-        Object.entries(people).map(([name, p]) => ({
-          id: p.id,
-          googleSub: name,
-          email: p.email,
-          name,
-          createdAt: new Date(),
-          lastLoginAt: new Date(),
-        })),
-      );
+    await db.insert(users).values(
+      Object.entries(people).map(([name, p]) => ({
+        id: p.id,
+        googleSub: name,
+        email: p.email,
+        name,
+        createdAt: new Date(),
+        lastLoginAt: new Date(),
+      })),
+    );
     const article = (id: number, media: string, title: string, tags: string[], h: number, authors: string[] | null = null) => ({
       id,
       media,
@@ -293,6 +291,58 @@ describe.skipIf(!url)('reader features (MariaDB)', () => {
     expect((await call('PUT', `/auth/admin/reports/${id}`, { status: 'accepted', resolution: '已補上' }, 'admin')).statusCode).toBe(200);
     expect((await call('GET', '/auth/me/reports')).json().reports[0]).toMatchObject({ status: 'accepted', resolution: '已補上' });
     expect((await call('GET', '/auth/admin/reports', undefined, 'admin')).json().open).toBe(1);
+  });
+  it('suggests what to follow next: starter, related and reading', async () => {
+    const at = (h: number) => new Date(now - h * 3600e3);
+    const extra = [
+      { id: 5, media: 'udn', tags: ['颱風', '停班停課'], h: 5, authors: null },
+      { id: 6, media: 'udn', tags: ['颱風', '停班停課'], h: 6, authors: null },
+      { id: 7, media: 'udn', tags: ['颱風', '停班停課'], h: 7, authors: null },
+      { id: 8, media: 'ltn', tags: ['能源'], h: 8, authors: ['記者王小明／台北報導'] },
+      { id: 9, media: 'ltn', tags: ['能源'], h: 9, authors: ['記者王小明／台北報導'] },
+      { id: 10, media: 'ltn', tags: ['颱風'], h: 1, authors: null },
+      { id: 11, media: 'udn', tags: ['颱風'], h: 10, authors: null },
+    ];
+    await db.insert(articles).values(
+      extra.map((a) => ({
+        id: a.id,
+        media: a.media,
+        title: `報導 ${a.id}`,
+        tags: a.tags,
+        authors: a.authors,
+        url: `https://example.com/${a.media}/${a.id}`,
+        publishedAt: at(a.h),
+        crawledAt: at(a.h),
+      })),
+    );
+    await db.insert(articleTags).values(extra.flatMap((a) => a.tags.map((tag) => ({ articleId: a.id, tag, publishedAt: at(a.h) }))));
+    await db.execute(sql.raw('TRUNCATE TABLE `event_snapshots`'));
+    await db.insert(eventSnapshots).values({ id: 1, category: 'news', hourStart: at(1), computedAt: at(1), eventCount: 1, durationMs: 1 });
+
+    // Bob follows nothing: the starter lists today's events.
+    const fresh = (await call('GET', '/auth/me/suggestions', undefined, 'bob')).json();
+    expect(fresh.starter.events).toEqual([{ id: 9, title: '颱風來了', tags: ['颱風'] }]);
+    expect(fresh.reading).toBeNull();
+
+    // Alice follows 颱風, 王小明 and event 9.
+    const before = (await call('GET', '/auth/me/suggestions')).json();
+    expect(before.starter.events).toEqual([]);
+    expect(before.related).toEqual(
+      expect.arrayContaining([
+        { kind: 'tag', target: '停班停課', label: '#停班停課', because: '常和 #颱風 一起出現' },
+        { kind: 'tag', target: '能源', label: '#能源', because: '王小明 常寫' },
+      ]),
+    );
+    expect(before.related.some((s: { target: string }) => s.target === '颱風')).toBe(false);
+
+    // Reading only blue outlets brings the green side of the same topics.
+    await call('PUT', '/auth/me/prefs', { history: true });
+    for (const id of [1, 5, 6, 7, 11]) await call('POST', '/auth/me/history', { articleId: id });
+    const reading = (await call('GET', '/auth/me/suggestions')).json().reading;
+    expect(reading.tags).toEqual([{ kind: 'tag', target: '停班停課', label: '#停班停課', because: '近 30 天讀了 4 篇' }]);
+    expect(reading.otherSide).toMatchObject({ camp: 'blue', share: 1 });
+    expect(reading.otherSide.articles.map((a: { id: number }) => a.id)).toEqual([10, 2]);
+    await call('PUT', '/auth/me/prefs', { history: false });
   });
 });
 

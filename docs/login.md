@@ -41,6 +41,7 @@
 | --- | --- |
 | `GET/PUT /auth/me/follows` | 追蹤清單。`PUT { kind, target, follow }`：`kind` 為 `tag`、`media`、`journalist`、`event`（事件以 thread id），每人最多 200 項。 |
 | `GET /auth/me/feed` | 我的動態：近 7 天符合追蹤標籤、媒體、記者的報導（最多 150 篇，排除隱藏的媒體），加上追蹤事件的最新標題。 |
+| `GET /auth/me/suggestions` | 推薦追蹤：`starter`（焦點事件、升溫標籤、熱門媒體）、`related`（依已追蹤項目）、`reading`（只在開啟閱讀紀錄時有值，含 `otherSide`）。見下方〈推薦〉。 |
 | `GET/POST/DELETE /auth/me/feed-token` | 私人 RSS 網址 `/feeds/u/<token>.xml`；`POST` 建立或換新（舊網址立刻失效），`DELETE` 停用。 |
 | `GET/PUT /auth/me/saves` | 收藏。`PUT { kind: 'article' \| 'event', id, saved, note? }`，註記最多 500 字，每人最多 500 項。 |
 | `GET/PUT /auth/me/prefs` | 偏好（部分更新）：`theme`（`light`、`dark`、`null`）、`analyticsOptOut`、`hiddenMedia`、`history`。`history: false` 會刪除閱讀紀錄。 |
@@ -63,6 +64,12 @@
 
 - **追蹤**：標籤、媒體、記者頁標題旁，以及事件頁有「追蹤」按鈕；未登入時按鈕會帶去登入再回到原頁。`/my/following/` 可以直接輸入標籤追蹤。
 - **我的動態**（`/my/`）：追蹤事件的現況，以及近 7 天的相關報導，每篇標出是哪個追蹤帶進來的；「隱藏這家」把媒體加進 `hiddenMedia`。
+- **推薦**（`app/src/reader/suggestions.ts`）：還沒追蹤任何東西時，「我的動態」改成「從這裡開始」：最新一小時事件表的前 8 個事件、排行（新聞類）中至少 3 家媒體報導且爆發力最高的 12 個標籤，以及這些熱門標籤報導量最多的 12 家媒體；追蹤至少一項後按按鈕進入動態。這部分對所有人相同，快取 5 分鐘。已有追蹤時，動態下方列出：
+  - 你可能也想追蹤：已追蹤標籤近 7 天共同出現至少 3 篇的標籤（沿用 `loadRelatedTags`）、已追蹤記者近 14 天至少 2 篇的標籤（每個名字快取 6 小時，因為是 LIKE 掃描）、已追蹤事件的主要標籤。
+  - 你常讀但還沒追蹤（需開啟閱讀紀錄）：近 30 天讀過至少 2 篇的標籤。
+  - 換個角度看（需開啟閱讀紀錄）：近 30 天讀的藍綠報導至少 5 篇、其中一方占 75% 以上時，列出另一方媒體近 3 天對讀者最常讀的 10 個標籤的報導（排除讀過的，先每個標籤一篇，最多 6 篇）。
+  - 探索今天的熱門：同上方的開始清單，預設收合。
+  雜訊標籤（`isTagNoise`）與媒體自己的品牌標籤不推薦；已追蹤的項目不再出現。
 - **私人 RSS**：`/my/settings/` 建立。token 以明文存在 `user_feed_tokens`，讓設定頁能再次顯示網址（外流頂多洩漏追蹤清單）；`cache-control: private`。
 - **收藏**：文章頁與事件頁的「收藏」，`/my/saved/` 可加註記。
 - **偏好同步**：右上角深淺色切換與 `/observe/opt-out/` 的統計退出，登入時存進 `user_prefs`。帳號裡已有值時以帳號為準，第一次則把這個瀏覽器的設定存上去（`web/src/components/reader/PrefsSync.tsx`）。

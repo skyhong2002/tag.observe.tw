@@ -21,6 +21,7 @@ import { categoriesOf } from '../media-categories.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { API_KEYS_PER_USER, type ApiKeyLookup, newApiKey } from './api-keys.ts';
 import { feedRssItems, loadFollows, mediaTitle, readerFeed } from './feed.ts';
+import { loadSuggestions } from './suggestions.ts';
 import {
   FOLLOWS_MAX,
   type Follow,
@@ -116,6 +117,13 @@ export function registerReaderRoutes(app: FastifyInstance, db: Db, { currentUser
     if (!user) return reply;
     const [follows, prefs] = await Promise.all([loadFollows(db, user.id), loadPrefs(db, user.id)]);
     return readerFeed(db, follows, prefs.hiddenMedia);
+  });
+
+  app.get('/auth/me/suggestions', async (request, reply) => {
+    const user = await reader(request, reply);
+    if (!user) return reply;
+    const [follows, prefs] = await Promise.all([loadFollows(db, user.id), loadPrefs(db, user.id)]);
+    return loadSuggestions(db, user.id, follows, Boolean(prefs.history));
   });
 
   // ── Private RSS ─────────────────────────────────────────────────────────
@@ -502,15 +510,13 @@ export function readingReport(rows: HistoryRow[]) {
       .slice(0, 20)
       .map(([tag, n]) => ({ tag, count: n })),
     daily: [...days].sort().map(([day, n]) => ({ day, count: n })),
-    recent: rows
-      .slice(0, 30)
-      .map((r) => ({
-        id: r.id,
-        media: r.media,
-        mediaTitle: mediaTitle(r.media),
-        title: r.title,
-        url: r.url,
-        readAt: r.readAt.toISOString(),
-      })),
+    recent: rows.slice(0, 30).map((r) => ({
+      id: r.id,
+      media: r.media,
+      mediaTitle: mediaTitle(r.media),
+      title: r.title,
+      url: r.url,
+      readAt: r.readAt.toISOString(),
+    })),
   };
 }

@@ -6,6 +6,7 @@ import SaveButton from '@/components/reader/SaveButton';
 import SourceLink from '@/components/SourceLink';
 import { type Follow, followHref, prefs, readerFetch, savePrefs, when } from '@/lib/reader';
 import { card, note } from './ReaderGate';
+import { Onboarding, Recommended, useSuggestions } from './Suggestions';
 
 type FeedArticle = {
   id: number;
@@ -43,6 +44,9 @@ const label = (f: Follow, a?: FeedArticle) =>
 export default function MyFeed() {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [error, setError] = useState('');
+  // Set once the reader leaves the starter picks, so following the first item does not hide them.
+  const [onboarding, setOnboarding] = useState<boolean | null>(null);
+  const suggestions = useSuggestions();
   const saved = prefs.useValue();
   const hidden = new Set(saved?.hiddenMedia ?? []);
   const load = () =>
@@ -54,30 +58,14 @@ export default function MyFeed() {
   }, []);
   if (error) return <p className={note}>{error}</p>;
   if (!feed) return <p className={note}>載入中…</p>;
-  if (!feed.follows.length)
+  if (onboarding ?? !feed.follows.length)
     return (
-      <div className={note}>
-        <p>還沒有追蹤任何東西。</p>
-        <p className="mt-2">
-          在
-          <Link href="/ranking/" className="mx-1 text-brand-700 underline dark:text-brand-400">
-            標籤
-          </Link>
-          、
-          <Link href="/media/" className="mx-1 text-brand-700 underline dark:text-brand-400">
-            媒體
-          </Link>
-          、
-          <Link href="/journalist/" className="mx-1 text-brand-700 underline dark:text-brand-400">
-            記者
-          </Link>
-          或
-          <Link href="/event/" className="mx-1 text-brand-700 underline dark:text-brand-400">
-            事件
-          </Link>
-          頁面按「追蹤」，新的報導就會集中在這裡。
-        </p>
-      </div>
+      <Onboarding
+        onDone={() => {
+          setOnboarding(false);
+          load();
+        }}
+      />
     );
   const hide = async (media: string) => {
     await savePrefs({ hiddenMedia: [...hidden, media] });
@@ -156,6 +144,7 @@ export default function MyFeed() {
           </ul>
         )}
       </section>
+      {suggestions && <Recommended data={suggestions} />}
     </div>
   );
 }
