@@ -1,13 +1,14 @@
 # 新文易數 API
 
-台灣新聞媒體的標籤排行、事件分群、各家標題對照與議題追蹤資料，全部公開、免金鑰、唯讀。
+公開取用台灣新聞媒體的標籤排行、事件分群、各家標題對照與議題追蹤資料；封存取回作業另需授權。
 
 本文件由 `tools/gen-api-docs.ts` 依 `app/src/v1/openapi.ts` 產生，請勿手改。網站上的版本：<https://tag.observe.tw/api/>；機器可讀規格：<https://tag.observe.tw/api/v1/openapi.json>；端點索引：<https://tag.observe.tw/api/v1>。
 
 ## 使用規則
 
-- 基底網址 `https://tag.observe.tw`，所有端點都是 `GET`（也接受 `HEAD`），回傳 UTF-8 JSON。
-- 不需要 API 金鑰。每個 IP 每分鐘最多 240 次 API 請求，超過回 `429`；回應帶 `x-ratelimit-limit`、`x-ratelimit-remaining`、`x-ratelimit-reset` 標頭。
+- 基底網址 `https://tag.observe.tw`。查詢使用 `GET`（也接受 `HEAD`）；標記為 `POST` 的端點用於提交作業。預設回傳 UTF-8 JSON，檔案下載依端點提供檔案。
+- API 狀態頁：`/api/status`。瀏覽器以 HTML 顯示；以 `Accept: application/json` 取得 JSON。只顯示 API 回應狀態與端點用途。
+- 公開查詢不需要 API 金鑰；標記授權的封存作業需 Bearer token。每個 IP 每分鐘最多 240 次 API 請求，超過回 `429`；回應帶 `x-ratelimit-limit`、`x-ratelimit-remaining`、`x-ratelimit-reset` 標頭。
 - 允許跨網域（CORS `Access-Control-Allow-Origin: *`），瀏覽器前端可直接呼叫。
 - 時間一律是 UTC 的 ISO 8601（例如 `2026-09-30T21:00:00.000Z`）；「一天」指台北時間（UTC+8）的日曆日。
 - 回應帶 `cache-control`，資料本身每 10 分鐘（排行）到每小時（事件、議題）更新，請勿以高於此的頻率輪詢。
