@@ -77,8 +77,7 @@ function Prose({ text }: { text: string }) {
     <>
       {text.split(/(`[^`]+`)/).map((part, i) =>
         part.startsWith('`') && part.endsWith('`') ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: static split of a fixed string
-          <code key={i} className="rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800">
+          <code key={i} className="break-all whitespace-normal rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800">
             {part.slice(1, -1)}
           </code>
         ) : (
