@@ -3409,6 +3409,20 @@
       "notes": "2026-10-10 依使用者要求補入；舊站曾有內文爬蟲（thinkingtaiwan_tag.php），沿用同一媒體代碼。網站沒有 RSS，從首頁探索；同一篇有 /article/ 與 /content/ 兩種網址，canonical 為 /article/。",
       "articlePattern": "^/(?:article|content)/\\d+/?$",
       "tagSelector": ".field--name-field-tags a[href^=\"/tags/\"]"
+    },
+    {
+      "media": "xin",
+      "name": "欣傳媒",
+      "websiteUrl": "https://www.xinmedia.com/",
+      "referenceNames": [
+        "欣傳媒"
+      ],
+      "referenceRows": [],
+      "existing": false,
+      "websiteEvidence": "https://www.xinmedia.com/",
+      "notes": "2026-10-10 依使用者要求補入；舊站曾有內文爬蟲（xin_tag.php），沿用同一媒體代碼。/rss 是 HTML 頁面、年度文章 sitemap 只到 2025，從首頁探索 /article/<id>。",
+      "articlePattern": "^/article/\\d+/?$",
+      "titleSuffix": "\\s*-\\s*XINMEDIA欣傳媒｜最懂生活的咖$"
     }
   ]
 }

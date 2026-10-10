@@ -91,3 +91,17 @@ it('reads 想想論壇 day-only publication, writer and tags from the Drupal nod
   expect(result.body).not.toContain('不屬於這篇新聞的募款報告');
   expect(newsSiteRules('https://www.thinkingtaiwan.net/topics/ideas-policies')).toBeUndefined();
 });
+
+it('reads every 欣傳媒 section from the streamed hidden Next.js boundary, without the TOC, tags or related reads', () => {
+  const url = 'https://www.xinmedia.com/article/306524';
+  const section = (text: string) => `<div class="break-word min-w-full font-sans article"><h3>小標</h3><p>${text}</p></div>`;
+  const html = `<title>真實新聞文章標題 - XINMEDIA欣傳媒｜最懂生活的咖</title><meta property="article:published_time" content="2026-10-08T16:59:26+08:00"><body><template id="B:0"></template><div hidden id="S:0"><article><h1>真實新聞文章標題</h1><div class="my-8"><div>文章目錄</div><ul><li>不屬於這篇新聞的目錄</li></ul></div><div>${section('文章開頭第一段。')}<div></div>${section(body)}<div></div>${section('文章最後一段完整保留。')}</div><div class="article-tags"><a href="/search?type=article&amp;name=%23tag">標籤</a></div><div><div>延伸閱讀</div><a href="/article/1">不屬於這篇新聞的延伸閱讀</a></div></article></div></body>`;
+  const result = extractArticle(html, url);
+  expect(result).toMatchObject({ title: '真實新聞文章標題', bodyStatus: 'ok', bodySource: 'selector' });
+  expect(result.publishedAt?.toISOString()).toBe('2026-10-08T08:59:26.000Z');
+  expect(result.body).toMatch(/^文章開頭第一段。/);
+  expect(result.body).toContain(body);
+  expect(result.body).toMatch(/文章最後一段完整保留。$/);
+  expect(result.body).not.toMatch(/不屬於這篇新聞|標籤/);
+  expect(newsSiteRules('https://www.xinmedia.com/travel')).toBeUndefined();
+});

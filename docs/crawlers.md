@@ -44,7 +44,7 @@
 
 ## 來源範圍與驗證口徑（2026-10-07～10-09）
 
-`app/data/news-source-catalog.json` 目前列出 212 個新聞來源：202608 Similarweb 快照及歷史月份來源 196 個、2026-10-04 補入 6 個國際媒體、2026-10-07 補入 9 個政府機關、2026-10-10 補入想想論壇。這份名單描述「應核對的來源」，不等於每個來源都已成功抓取；逐站成功狀態、樣本、策略與時間以 `app/data/news-crawl-audit.json` 為準。完整對照與來源身份說明見 [Similarweb 新聞來源對照](news-source-references.md)。
+`app/data/news-source-catalog.json` 目前列出 213 個新聞來源：202608 Similarweb 快照及歷史月份來源 196 個、2026-10-04 補入 6 個國際媒體、2026-10-07 補入 9 個政府機關、2026-10-10 補入想想論壇與欣傳媒。這份名單描述「應核對的來源」，不等於每個來源都已成功抓取；逐站成功狀態、樣本、策略與時間以 `app/data/news-crawl-audit.json` 為準。完整對照與來源身份說明見 [Similarweb 新聞來源對照](news-source-references.md)。
 
 目前 registry 另有 284 個啟用設定，包含一般文章、專題入口、發現器與影片來源；不同設定不一定各自代表一個獨立新聞品牌。2026-10-06 的署名稽核對 286 個設定做限制請求的唯讀抽樣：279 個收到 HTTP 回應、4 個沒有有效文章樣本、3 個是發現器或影片來源而略過。HTTP 200 仍需再檢查正文與欄位，不能把回應碼當成抽取成功；詳見 [記者署名爬取稽核](reporter-crawl-audit.md)。
 
@@ -273,8 +273,10 @@ NHK 發布時間修正（同日）：NHK WORLD JSON 的 `public_at` 與文章頁
 
 部署不中斷（同日）：worker 停止時 crawl 工作只收尾進行中的來源、不再派新的，新 worker 啟動即補跑一輪到期來源；hourly 組改為每 30 分鐘啟動一輪、來源週期維持 60 分鐘。見 docs/architecture.md 排程一節。
 
-### 2026-10-10：新增想想論壇
+### 2026-10-10：新增想想論壇、欣傳媒
 
 - 依使用者要求加入 [想想論壇](https://www.thinkingtaiwan.net/)，沿用舊站內文爬蟲的媒體代碼 `thinkingtaiwan`（舊規格沒有列表入口，原本不會載入）。Drupal 站沒有 RSS，從首頁探索 `/article/<id>`；同一篇也以 `/content/<id>` 連結，canonical 統一為 `/article/`，英文版 `/en` 不收。
 - 文章頁沒有發布時間 meta 或 JSON-LD，改讀作者列的「發佈於｜YYYY-MM-DD」，只到日（以台北時間 00:00 記）。標題讀頁面 `h1`（`og:title` 帶站名尾綴），作者讀 `field-writer`，標籤讀 `field-tags`，正文只取 `field-body`，不含重點摘要。
 - `crawl:audit-news --media thinkingtaiwan --samples 3` 驗證 3 篇近期全文；另抽 4 篇確認標題、日期、作者、標籤皆正確。歸新聞類別、台灣媒體，未指定藍綠，沒有試算表流量列號。
+- 依使用者要求加入 [欣傳媒 XINMEDIA](https://www.xinmedia.com/)，同樣沿用舊站內文爬蟲代碼 `xin`。`/rss` 是一般 HTML 頁、年度文章 sitemap 只到 2025，從首頁探索 `/article/<id>`。日期、作者、關鍵字直接讀 `article:published_time`（含 +08:00）與 JSON-LD；JSON-LD 的 `datePublished` 沒有時區，不採用。
+- Next.js 串流渲染把整篇文章放在 `<div hidden id="S:0">`，再由腳本換到頁面上，所以站別規則用 `trustContainer` 保留這個隱藏祖先。導言與各小節是並列的 `div.article`，正文取它們共同的外層，排除文章目錄、標籤與延伸閱讀。審核驗證 3 篇近期全文，另抽 5 篇（生活、旅遊、美食、藝文、聯名）皆正確。內容以生活風格為主，但新聞來源目錄同步時一律歸新聞類別。

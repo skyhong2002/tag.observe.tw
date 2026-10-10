@@ -1,6 +1,6 @@
 # Similarweb 新聞來源對照
 
-`app/data/news-source-catalog.json` 以 [來源試算表](https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing) 已匯入快照的「新聞」類別為起點，並非只收錄 29 家流量基準媒體。202608 保留的 197 列對應 192 個來源，加上歷史月份獨有的 READr、上下游、緯來新聞及花花日報，共 196 個來源；2026-10-04 另補入 6 個國際媒體，2026-10-07 再補入 9 個政府機關，2026-10-10 依使用者要求補入想想論壇，合計 212 個來源。來源名單與爬蟲實際成功狀態分開保存；列入名單不代表已成功取得文章。
+`app/data/news-source-catalog.json` 以 [來源試算表](https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing) 已匯入快照的「新聞」類別為起點，並非只收錄 29 家流量基準媒體。202608 保留的 197 列對應 192 個來源，加上歷史月份獨有的 READr、上下游、緯來新聞及花花日報，共 196 個來源；2026-10-04 另補入 6 個國際媒體，2026-10-07 再補入 9 個政府機關，2026-10-10 依使用者要求補入想想論壇與欣傳媒，合計 213 個來源。來源名單與爬蟲實際成功狀態分開保存；列入名單不代表已成功取得文章。
 
 - `referenceRows` 僅指 202608 工作表列號；197 列各出現一次。
 - `referenceNames` 保留各月份原始名稱與別名；歷史獨有來源的 `referenceRows` 為空。

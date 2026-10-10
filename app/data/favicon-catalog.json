@@ -1218,5 +1218,9 @@
   "thinkingtaiwan": {
     "title": "想想論壇",
     "icon": "https://www.thinkingtaiwan.net/sites/default/files/favicon.png"
+  },
+  "xin": {
+    "title": "欣傳媒",
+    "icon": "https://www.xinmedia.com/common/favicon_48x48.svg"
   }
 }

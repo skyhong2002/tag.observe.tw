@@ -2606,6 +2606,16 @@
       "status": "verified",
       "sourceUrl": "https://www.thinkingtaiwan.net/",
       "evidence": "官方網站 og:site_name 與頁首，2026-10-10 核對。"
+    },
+    "xin": {
+      "name": "欣傳媒",
+      "aliases": [
+        "XINMEDIA",
+        "XINMEDIA欣傳媒"
+      ],
+      "status": "verified",
+      "sourceUrl": "https://www.xinmedia.com/",
+      "evidence": "官方網站 JSON-LD NewsMediaOrganization（XINMEDIA 欣傳媒、欣傳媒股份有限公司），2026-10-10 核對。"
     }
   }
 }

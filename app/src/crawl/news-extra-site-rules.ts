@@ -83,4 +83,15 @@ export const EXTRA_NEWS_SITES: Array<NewsSiteRules & { host: string; path: RegEx
     authorSelector:
       'article.node .node__meta .field--name-field-writer.field__item, article.node .node__meta .field--name-field-writer .field__item',
   },
+  {
+    // Next.js streams the whole article into <div hidden id="S:0"> and swaps
+    // it in with a script, so the hidden ancestor is expected. The lead and each
+    // table-of-contents section are sibling div.article blocks; read their
+    // shared wrapper, not the TOC, tags or 延伸閱讀.
+    host: 'xinmedia.com',
+    path: /^\/article\/\d+\/?$/,
+    bodySelector: 'div:has(> div.article.break-word)',
+    trustContainer: true,
+    titleSelector: 'h1',
+  },
 ];

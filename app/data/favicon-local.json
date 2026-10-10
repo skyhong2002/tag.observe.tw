@@ -2824,6 +2824,14 @@
     "transparent": true,
     "revision": "5fb1484edf61"
   },
+  "xin": {
+    "source": "https://www.xinmedia.com/common/favicon_48x48.svg",
+    "fetchedAt": "2026-10-10",
+    "sourceWidth": 48,
+    "sourceHeight": 48,
+    "transparent": false,
+    "revision": "e31ac4ebe7d5"
+  },
   "xinhua": {
     "source": "https://www.news.cn/2023homepro/images/logo.png",
     "fetchedAt": "2026-10-03",

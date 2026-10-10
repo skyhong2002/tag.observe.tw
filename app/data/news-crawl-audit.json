@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-10T10:56:31.611Z",
+  "checkedAt": "2026-10-10T11:11:33.875Z",
   "sourceUrl": "https://docs.google.com/spreadsheets/d/1B5RsSVZSrjKSUFDFZ-2VVlU3-tpTN49J1YzLGOohalM/edit?usp=sharing",
   "sourceMonth": "202608",
   "results": [
@@ -5170,6 +5170,36 @@
       "status": "verified",
       "strategy": "html",
       "listingUrl": "https://www.thinkingtaiwan.net/",
+      "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
+    },
+    {
+      "media": "xin",
+      "websiteUrl": "https://www.xinmedia.com/",
+      "checkedAt": "2026-10-10T11:11:33.003Z",
+      "articleCount": 3,
+      "samples": [
+        {
+          "url": "https://www.xinmedia.com/article/306524",
+          "title": "為何過了一夜大家都在唱〈Nicole Kidman〉？連本人都認證的現象級神曲， MV還暗藏妮可基嫚6部電影彩蛋",
+          "publishedAt": "2026-10-08T08:59:26.000Z",
+          "bodyLength": 1431
+        },
+        {
+          "url": "https://www.xinmedia.com/article/306523",
+          "title": "星野「界 奧飛驒」冬季限定！免自駕玩白川鄉合掌村，住進雪國泡露天溫泉、賞15公尺冰瀑",
+          "publishedAt": "2026-10-08T08:04:00.000Z",
+          "bodyLength": 2968
+        },
+        {
+          "url": "https://www.xinmedia.com/article/306522",
+          "title": "東京米其林職人級甜點「和甘 WAKAN」首度快閃台灣！體驗日本人最愛的生銅鑼燒、手作黑糖蕨餅、蕨餅抹茶拿鐵",
+          "publishedAt": "2026-10-08T07:39:00.000Z",
+          "bodyLength": 1078
+        }
+      ],
+      "status": "verified",
+      "strategy": "html",
+      "listingUrl": "https://www.xinmedia.com/",
       "detail": "以 html 驗證 3 篇近期文章的標題、日期與內文。"
     }
   ]
