@@ -66,6 +66,23 @@ describe('Cloudflare Radar official domain rankings', () => {
     expect(result.domains).toEqual([row]);
     expect(request).not.toHaveBeenCalled();
   });
+  it('fetches missing domains first, then the oldest', async () => {
+    const row = async (domain: string, fetchedAt: string) => ({
+      ...(await fetchRadarDomain(domain, 'test-token', respond(), now)),
+      fetchedAt,
+    });
+    const previous = {
+      ...emptyRadar(),
+      domains: [await row('udn.com', '2026-10-09T00:00:00Z'), await row('ltn.com.tw', '2026-10-01T00:00:00Z')],
+    };
+    const request = vi.fn(async (_url: RequestInfo | URL) => new Response(JSON.stringify(payload())));
+    await refreshRadar(['udn.com', 'ltn.com.tw', 'ettoday.net'], previous, { request, token: 'test-token', now, delay: async () => {} });
+    expect(request.mock.calls.map(([url]) => new URL(String(url)).pathname.split('/').pop())).toEqual([
+      'ettoday.net',
+      'ltn.com.tw',
+      'udn.com',
+    ]);
+  });
   it.each([400, 401, 403, 429])('handles HTTP %i without discarding old values', async (status) => {
     const row = await fetchRadarDomain('udn.com', 'test-token', respond(), now);
     const request = vi.fn(async () => new Response('private upstream body', { status }));

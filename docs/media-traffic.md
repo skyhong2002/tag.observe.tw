@@ -67,6 +67,7 @@ node tools/media-traffic-once.ts udn.com
 - [來源方法](https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/)主要基於 1.1.1.1 DNS 查詢。精確前 100 排名包含最近 24 小時、每日更新；全球級距資料包含最近七天、每週更新。本站每日檢查不代表上游資料即時，也不產生三個月訪問量。
 - `app/src/jobs/media-radar-job.ts` 使用與 Similarweb 相同的官方來源網域清單，排程預設 `MEDIA_RADAR_CRON=45 3 * * *`（worker 所在時區）。獨立快照為 `TAG_MEDIA_RADAR_FILE`，預設 `~/.local/share/tag-analysis/media-radar.json`，在 Git 工作目錄外。
 - API `GET /api/v1/media-radar` 僅讀快照，回 `scope=global`、批次狀態與各網域的資料期間、成功更新時間；過濾排除媒體與發現來源，不公開 Token。錯誤摘要不包含上游回應內容或授權標頭。
+- 每批先抓沒有資料的網域，再依上次成功時間由舊到新；網域清單約 300 個，單批五分鐘抓不完時，隔天從最舊的接著抓。
 - 失敗保留最後成功資料；401／403／429 停止整批，其他連續三次失敗或超過五分鐘亦停止。單網域驗證保留其他網域資料，不覆蓋 Similarweb 或 GeneHong。
 
 ```sh

@@ -132,7 +132,10 @@ export async function refreshRadar(
   let blocked = false;
   let error: string | null = null;
   const deadline = Date.now() + 5 * 60_000;
-  const unique = [...new Set(domains)];
+  // Missing domains first, then the oldest: a run cut short by the time limit
+  // leaves the freshest rows for later, so successive daily runs cover the whole list.
+  const fetched = (domain: string) => Date.parse(entries.get(domain)?.fetchedAt ?? '') || 0;
+  const unique = [...new Set(domains)].sort((a, b) => fetched(a) - fetched(b));
   for (const [index, domain] of unique.entries()) {
     if (Date.now() >= deadline) {
       failures++;
