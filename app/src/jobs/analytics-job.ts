@@ -61,7 +61,9 @@ export function pageRows(rows: Array<{ day: string; path: string; title: string;
     const p = pages.get(id) ?? { day: r.day, path, views: 0, users: 0, titles: new Map() };
     p.views += r.views;
     p.users = Math.max(p.users, r.users);
-    if (path !== '/search/' && r.title && r.title !== '(not set)') p.titles.set(r.title, (p.titles.get(r.title) ?? 0) + r.views);
+    // A title that is HTML markup was a crawl glitch on our page, not a name.
+    if (path !== '/search/' && r.title && r.title !== '(not set)' && !r.title.trimStart().startsWith('<'))
+      p.titles.set(r.title, (p.titles.get(r.title) ?? 0) + r.views);
     pages.set(id, p);
   }
   return [...pages.values()].flatMap((p) => {

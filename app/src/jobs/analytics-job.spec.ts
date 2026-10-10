@@ -27,6 +27,12 @@ describe('analytics page paths', () => {
     expect(rows).toContainEqual({ day: '2026-10-05', source: 'ga', metric: 'page_users', key: '/tag/蔡英文/', value: 2, label: null });
     expect(rows.find((r) => r.key === '/search/' && r.metric === 'page_views')?.label).toBeNull();
   });
+  it('drops titles that are HTML markup', () => {
+    const rows = pageRows([
+      { day: '2026-10-08', path: '/feature/techorange/456568/', title: '<img loading="lazy" src="x.jpg"> · 新文易數', views: 7, users: 5 },
+    ]);
+    expect(rows.find((r) => r.metric === 'page_views')?.label).toBeNull();
+  });
   it('strips the site suffix from titles', () => {
     expect(cleanTitle('蔡英文訪矽谷 · 新文易數')).toBe('蔡英文訪矽谷');
   });
