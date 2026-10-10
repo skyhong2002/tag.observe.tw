@@ -215,18 +215,38 @@ export function hubTags(
   const hubs = new Map<string, Set<string>>();
   for (const [u, kids] of callers) {
     if (kids.length < 2) continue;
-    const groups: string[][] = [];
-    for (const k of kids) {
-      const linked = groups.filter((g) => g.some((x) => co.together(x, k)));
-      for (const g of linked) groups.splice(groups.indexOf(g), 1);
-      groups.push([k, ...linked.flat()]);
-    }
+    const groups = storyGroups(co, kids);
     if (groups.length < 2) continue;
-    const weight = (g: string[]) => g.reduce((n, k) => n + co.shared(k, u), 0);
-    const home = groups.reduce((best, g) => (weight(g) > weight(best) ? g : best));
-    hubs.set(u, new Set(home));
+    hubs.set(u, new Set(homeGroup(co, u, groups)));
   }
   return hubs;
+}
+/** Tags split by whether they are written about together, transitively. */
+function storyGroups(co: CoOccurrence, tags: readonly string[]): string[][] {
+  const groups: string[][] = [];
+  for (const k of tags) {
+    const linked = groups.filter((g) => g.some((x) => co.together(x, k)));
+    for (const g of linked) groups.splice(groups.indexOf(g), 1);
+    groups.push([k, ...linked.flat()]);
+  }
+  return groups;
+}
+/** The group sharing the most articles with `tag`. */
+const homeGroup = (co: CoOccurrence, tag: string, groups: string[][]) => {
+  const weight = (g: string[]) => g.reduce((n, k) => n + co.shared(k, tag), 0);
+  return groups.reduce((best, g) => (weight(g) > weight(best) ? g : best));
+};
+// The reverse of a hub: a small tag equal to tags of two unrelated stories.
+// 吳思瑤 (8 articles) answered both 韓國瑜's 國慶 speech and the 李彥秀 毒品
+// row, and on 2026-10-10 made them one event, which carried the 國慶 story
+// into the 蔣萬安/沈伯洋 thread. Such a tag keeps the side it shares the most
+// articles with; the tags of the other sides are cut from its closure.
+export function bridgeCut(co: CoOccurrence, tag: string, blocked: ReadonlySet<string>): string[] {
+  const near = [...co.equal(tag).keys()].filter((u) => !blocked.has(u));
+  const groups = storyGroups(co, near);
+  if (groups.length < 2) return [];
+  const home = homeGroup(co, tag, groups);
+  return groups.filter((g) => g !== home).flat();
 }
 
 export function clusterEvents(
@@ -237,6 +257,7 @@ export function clusterEvents(
     maxTags = Number.POSITIVE_INFINITY,
     now = new Date(),
     hubs: detectHubs = true,
+    bridges: cutBridges = true,
     minShared = MIN_SHARED_TAGS,
     newsLimit = NEWS_LIMIT,
     siteTagMin = SITE_TAG_MIN,
@@ -277,6 +298,7 @@ export function clusterEvents(
   const blockedFor = (t: string) => {
     const out = new Set(noEqual);
     for (const [u, home] of hubs) if (u !== t && !home.has(t)) out.add(u);
+    if (cutBridges) for (const u of bridgeCut(co, t, out)) out.add(u);
     return out;
   };
   const blocked = new Map(order.map((t) => [t, blockedFor(t)]));

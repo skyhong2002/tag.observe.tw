@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type ArticleRow,
   aliasTags,
+  bridgeCut,
   CoOccurrence,
   clusterEvents,
   hubTags,
@@ -156,6 +157,33 @@ describe('clusterEvents', () => {
     expect(split.find((g) => g.includes('曾雅妮'))).not.toContain('握手');
     // The umbrella stays with one story instead of disappearing.
     expect(split.filter((g) => g.includes('亞運'))).toHaveLength(1);
+  });
+  it('keeps a small tag equal to two unrelated stories with one of them', () => {
+    // 吳思瑤 answered both the 國慶 speech and the 毒品 row; the stories never meet.
+    // One outlet per report, so no tag reads as an outlet's boilerplate.
+    const articles = [
+      ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => art(i, `m${i}`, ['韓國瑜', '國慶'])),
+      ...[21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32].map((i) => art(i, `m${i}`, ['蔣萬安', '李彥秀'])),
+      ...[41, 42, 43].map((i) => art(i, `m${i}`, ['吳思瑤', '韓國瑜', '國慶'])),
+      ...[44, 45].map((i) => art(i, `m${i}`, ['吳思瑤', '李彥秀', '蔣萬安'])),
+      ...[46, 47].map((i) => art(i, `m${i}`, ['吳思瑤', '韓國瑜', '李彥秀'])),
+    ];
+    const co = new CoOccurrence(articles);
+    expect([...co.closure('吳思瑤', new Set()).keys()].sort()).toEqual(['國慶', '李彥秀', '蔣萬安', '韓國瑜'].sort());
+    const cut = bridgeCut(co, '吳思瑤', new Set());
+    expect(cut).toEqual(['李彥秀']);
+    expect([...co.closure('吳思瑤', new Set(cut)).keys()].sort()).toEqual(['國慶', '韓國瑜'].sort());
+    const chart = computeRanking(
+      articles.map((r) => ({ media: r.media, tags: r.tags.map((t) => `[${t}]`).join('') })),
+      { hours: 24 },
+    );
+    const burst = computeBurst(chart, new Map());
+    const groups = (bridges: boolean) => clusterEvents(burst, articles, [], { now: t0, bridges }).map((e) => e.tags.map(([t]) => t).sort());
+    expect(groups(false)).toHaveLength(1);
+    const split = groups(true);
+    expect(split).toHaveLength(2);
+    expect(split.find((g) => g.includes('吳思瑤'))).toContain('韓國瑜');
+    expect(split.find((g) => g.includes('吳思瑤'))).not.toContain('蔣萬安');
   });
   it('flags a tag as a hub only when the tags reaching it are unrelated', () => {
     // 握手 and 網球 both lean on 謝淑薇 and are also reported together.
