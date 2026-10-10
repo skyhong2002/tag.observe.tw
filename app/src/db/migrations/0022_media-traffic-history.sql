@@ -14,6 +14,7 @@ CREATE TABLE `media_traffic_months` (
 	`domain` varchar(255) NOT NULL,
 	`month` varchar(6) NOT NULL,
 	`visits` bigint NOT NULL,
+	`source` varchar(16) NOT NULL DEFAULT 'similarweb',
 	`first_seen_at` datetime NOT NULL,
 	`fetched_at` datetime NOT NULL,
 	CONSTRAINT `media_traffic_months_domain_month_pk` PRIMARY KEY(`domain`,`month`)

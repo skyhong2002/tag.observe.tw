@@ -6,6 +6,7 @@ import {
   loadRadarHistory,
   loadTrafficHistory,
   saveRadarHistory,
+  saveSheetHistory,
   saveTrafficHistory,
   type TrafficHistory,
   withRadarHistory,
@@ -151,6 +152,20 @@ describe.skipIf(!testUrl)('traffic history in disposable MariaDB', () => {
     expect(Object.keys(stored?.profiles ?? {})).toEqual(['202608', '202609']);
     expect(stored?.profiles['202609'].countries[0]).toEqual({ code: 'TW', share: 0.9 });
     expect(stored?.fetchedAt).toBe('2026-10-10T00:00:00.000Z');
+  });
+
+  it('lets Similarweb replace a month seeded from the sheet and never the reverse', async () => {
+    const db = connection!.db;
+    await saveSheetHistory(db, [{ domain: 'seed.example', month: '202605', visits: 4_400_000 }], '2026-10-03T10:13:59Z');
+    let stored = (await loadTrafficHistory(db)).get('seed.example');
+    expect(stored?.monthly).toEqual([{ month: '202605', visits: 4_400_000, source: 'genehong' }]);
+    expect(stored?.fetchedAt).toBe(new Date(0).toISOString());
+    await saveTrafficHistory(db, [
+      { domain: 'seed.example', fetchedAt: '2026-10-11T00:00:00Z', monthly: [{ month: '202605', visits: 4_412_345 }] },
+    ]);
+    await saveSheetHistory(db, [{ domain: 'seed.example', month: '202605', visits: 1 }], '2026-10-03T10:13:59Z');
+    stored = (await loadTrafficHistory(db)).get('seed.example');
+    expect(stored?.monthly).toEqual([{ month: '202605', visits: 4_412_345 }]);
   });
 
   it('keeps one row per Radar period', async () => {

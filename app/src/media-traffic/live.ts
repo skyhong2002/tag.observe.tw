@@ -5,6 +5,8 @@ import { dirname, join } from 'node:path';
 export interface VisitMonth {
   month: string;
   visits: number;
+  /** Set only for months seeded from the GeneHong sheet (history.ts); absent means Similarweb. */
+  source?: 'genehong';
 }
 /** Similarweb's channel shares, keyed as in its TrafficSources object. */
 export const trafficChannels = [

@@ -31,7 +31,8 @@ export default function TrafficSparkline({
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
   }, [active]);
-  const values = months.map((month) => traffic.find((point) => point.month === month)?.traffic ?? null);
+  const found = months.map((month) => traffic.find((point) => point.month === month));
+  const values = found.map((point) => point?.traffic ?? null);
   const known = values.filter((value): value is number => value !== null);
   if (known.length < 2) return null;
   const min = Math.min(...known);
@@ -49,7 +50,8 @@ export default function TrafficSparkline({
     path += `${gap ? 'M' : 'L'}${point[0]},${point[1]} `;
     gap = false;
   }
-  const text = (index: number) => `${shortMonth(months[index])}：${format(values[index])}`;
+  const text = (index: number) =>
+    `${shortMonth(months[index])}：${format(values[index])}${found[index]?.fromSheet ? '（GeneHong 試算表）' : ''}`;
   const label = months.map((_, index) => text(index)).join('；');
   const monthLabel = (month: string) => `${Number(month.slice(4))}月`;
   return (

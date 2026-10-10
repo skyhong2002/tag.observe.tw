@@ -19,6 +19,7 @@ export async function saveTrafficHistory(db: Db, domains: DomainTraffic[]) {
       domain: row.domain,
       month: point.month,
       visits: Math.round(point.visits),
+      source: 'similarweb' as const,
       firstSeenAt: new Date(row.fetchedAt),
       fetchedAt: new Date(row.fetchedAt),
     })),
@@ -32,15 +33,18 @@ export async function saveTrafficHistory(db: Db, domains: DomainTraffic[]) {
       fetchedAt: new Date(row.fetchedAt),
     })),
   );
-  // Only a newer fetch may overwrite a value, so replaying an old snapshot never undoes a revision.
+  // Only a newer fetch may overwrite a value, so replaying an old snapshot never undoes a
+  // revision; a value seeded from the GeneHong sheet always gives way to Similarweb.
+  // MariaDB applies SET left to right with updated values, so source changes last.
   for (const rows of chunk(months))
     await db
       .insert(mediaTrafficMonths)
       .values(rows)
       .onDuplicateKeyUpdate({
         set: {
-          visits: sql`IF(VALUES(fetched_at) >= fetched_at, VALUES(visits), visits)`,
-          fetchedAt: sql`GREATEST(fetched_at, VALUES(fetched_at))`,
+          visits: sql`IF(source = 'genehong' OR VALUES(fetched_at) >= fetched_at, VALUES(visits), visits)`,
+          fetchedAt: sql`IF(source = 'genehong', VALUES(fetched_at), GREATEST(fetched_at, VALUES(fetched_at)))`,
+          source: sql`'similarweb'`,
         },
       });
   for (const rows of chunk(profiles))
@@ -54,6 +58,30 @@ export async function saveTrafficHistory(db: Db, domains: DomainTraffic[]) {
         },
       });
   return { months: months.length, profiles: profiles.length };
+}
+
+/** Months taken from the GeneHong sheet (see tools/import-genehong-traffic.ts). They
+ *  fill months before the worker existed and never replace a Similarweb row. */
+export async function saveSheetHistory(db: Db, rows: Array<{ domain: string; month: string; visits: number }>, retrievedAt: string) {
+  const at = new Date(retrievedAt);
+  const values = rows.map((row) => ({
+    ...row,
+    visits: Math.round(row.visits),
+    source: 'genehong' as const,
+    firstSeenAt: at,
+    fetchedAt: at,
+  }));
+  for (const part of chunk(values))
+    await db
+      .insert(mediaTrafficMonths)
+      .values(part)
+      .onDuplicateKeyUpdate({
+        set: {
+          visits: sql`IF(source = 'genehong', VALUES(visits), visits)`,
+          fetchedAt: sql`IF(source = 'genehong', VALUES(fetched_at), fetched_at)`,
+        },
+      });
+  return { months: values.length };
 }
 
 export async function saveRadarHistory(db: Db, domains: RadarDomain[]) {
@@ -95,6 +123,7 @@ export async function loadTrafficHistory(db: Db): Promise<Map<string, TrafficHis
         domain: mediaTrafficMonths.domain,
         month: mediaTrafficMonths.month,
         visits: mediaTrafficMonths.visits,
+        source: mediaTrafficMonths.source,
         fetchedAt: mediaTrafficMonths.fetchedAt,
       })
       .from(mediaTrafficMonths),
@@ -107,8 +136,9 @@ export async function loadTrafficHistory(db: Db): Promise<Map<string, TrafficHis
     out.get(domain) ?? (out.set(domain, { fetchedAt: new Date(0).toISOString(), monthly: [], profiles: {} }).get(domain) as TrafficHistory);
   for (const row of months) {
     const value = entry(row.domain);
-    value.monthly.push({ month: row.month, visits: row.visits });
-    if (row.fetchedAt.toISOString() > value.fetchedAt) value.fetchedAt = row.fetchedAt.toISOString();
+    value.monthly.push({ month: row.month, visits: row.visits, ...(row.source === 'genehong' ? { source: 'genehong' as const } : {}) });
+    // Sheet rows carry the sheet's import date, not a fetch; they do not count as fetched.
+    if (row.source !== 'genehong' && row.fetchedAt.toISOString() > value.fetchedAt) value.fetchedAt = row.fetchedAt.toISOString();
   }
   for (const row of profiles) {
     const profile = (typeof row.profile === 'string' ? JSON.parse(row.profile) : row.profile) as TrafficProfile;
@@ -148,17 +178,18 @@ export async function loadRadarHistory(db: Db): Promise<Map<string, RadarPeriod[
  *  for months it holds); domains only the database still has are added back. */
 export function withTrafficHistory(domains: DomainTraffic[], history: Map<string, TrafficHistory>): DomainTraffic[] {
   const seen = new Set(domains.map((row) => row.domain));
+  // A domain never fetched from Similarweb (sheet rows only) has no fetch time to report.
   const restored = [...history]
-    .filter(([domain]) => !seen.has(domain))
+    .filter(([domain, past]) => !seen.has(domain) && Date.parse(past.fetchedAt) > 0)
     .map(([domain, past]) => ({ domain, fetchedAt: past.fetchedAt, monthly: past.monthly, profiles: past.profiles }));
   return [...domains, ...restored].map((row) => {
     const past = history.get(row.domain);
     if (!past) return row;
-    const months = new Map(past.monthly.map((point) => [point.month, point.visits]));
-    for (const point of row.monthly) months.set(point.month, point.visits);
+    const months = new Map(past.monthly.map((point) => [point.month, point]));
+    for (const point of row.monthly) months.set(point.month, point);
     return {
       ...row,
-      monthly: [...months].sort(([a], [b]) => a.localeCompare(b)).map(([month, visits]) => ({ month, visits })),
+      monthly: [...months].sort(([a], [b]) => a.localeCompare(b)).map(([, point]) => point),
       profiles: { ...past.profiles, ...row.profiles },
     };
   });

@@ -475,6 +475,9 @@ export const mediaTrafficMonths = mysqlTable(
     domain: varchar('domain', { length: 255 }).notNull(),
     month: varchar('month', { length: 6 }).notNull(),
     visits: bigint('visits', { mode: 'number' }).notNull(),
+    /** similarweb: fetched by the worker; genehong: seeded from the GeneHong sheet
+     *  (millions, rounded) for months fetched before the worker existed. Similarweb wins. */
+    source: varchar('source', { length: 16 }).$type<'similarweb' | 'genehong'>().notNull().default('similarweb'),
     firstSeenAt: datetime('first_seen_at').notNull(),
     fetchedAt: datetime('fetched_at').notNull(),
   },

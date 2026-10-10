@@ -19,6 +19,8 @@ export interface TrafficPoint {
   growth: number | null;
   adjusted: boolean;
   ambiguous: boolean;
+  /** Seeded from the GeneHong sheet (Similarweb in millions, rounded) for a month the worker never fetched. */
+  fromSheet?: boolean;
 }
 /** Mirrors app/src/media-traffic/live.ts TrafficProfile: one month's audience
  *  countries, traffic channels, engagement and ranks from Similarweb. */
@@ -63,7 +65,7 @@ export interface LiveTraffic {
   domains: Array<{
     domain: string;
     fetchedAt: string;
-    monthly: Array<{ month: string; visits: number }>;
+    monthly: Array<{ month: string; visits: number; source?: 'genehong' }>;
     profiles?: Record<string, TrafficProfile>;
   }>;
 }
@@ -327,6 +329,7 @@ export function buildComparison(
         growth: null,
         adjusted: false,
         ambiguous: false,
+        ...(point.source === 'genehong' ? { fromSheet: true } : {}),
       }));
     }
   }

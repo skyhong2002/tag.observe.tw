@@ -254,7 +254,12 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                   <td className={`${table.num} py-1.5`}>{count == null ? '—' : count.toLocaleString('zh-TW')}</td>
                   <td
                     className={`${table.num} py-1.5`}
-                    title={shared ?? (outlet.trafficFetchedAt && `${outlet.trafficFetchedAt.slice(0, 10)} 更新`)}
+                    title={
+                      shared ??
+                      (point?.fromSheet
+                        ? `${shortMonth(trafficMonth)} 為 GeneHong 試算表的數值（Similarweb 以百萬計、取到小數兩位）`
+                        : outlet.trafficFetchedAt && `${outlet.trafficFetchedAt.slice(0, 10)} 更新`)
+                    }
                   >
                     <div className="flex items-center justify-end gap-3 whitespace-nowrap">
                       <TrafficSparkline traffic={outlet.traffic} months={recentTrafficMonths} label="Similarweb 估算月訪問量" />

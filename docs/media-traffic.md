@@ -67,6 +67,7 @@ Similarweb 每次只回最近三個月與一份最新一期的國家／導流資
 - 資料庫表 `media_traffic_months`（網域 × 月份訪問量）、`media_traffic_profiles`（網域 × 月份的國家、導流、互動與排名）、`media_radar_ranks`（網域 × Radar 每一期）。每次 worker 批次結束都把整份快照寫入，只增不刪；同一月份或同一期再次抓到修正值時，以較新的抓取覆蓋，`first_seen_at` 保留第一次看到的時間，重放舊快照不會蓋掉新值。表格屬於 `tag_observe`，跟著每日資料庫備份上 NAS。
 - `~/.local/share/tag-analysis/` 的 JSON 快照只是最新批次與狀態，也會累積月份，但不在備份範圍；遺失時 API 會從資料庫補回各網域資料，下一輪排程再重建快照。
 - API `media-traffic-live` 的 `monthly`／`profiles` 與 `media-radar` 的 `history` 合併資料庫歷史；資料庫無法連線時退回只回快照。
+- `media_traffic_months.source` 為 `genehong` 的列來自 GeneHong 試算表（`tools/import-genehong-traffic.ts`，預設試算、`--write` 寫入），填補 worker 開始前的月份。只收：非人工除數、非待核對、非共用網域、原表網域與抓取網域相同，且與 Similarweb 重疊月份在四捨五入範圍內一致的媒體；沒有重疊月份的媒體等 Similarweb 抓到後重跑即可。Similarweb 的值一律覆蓋試算表，試算表不會覆蓋 Similarweb。2026-10-10 試算：39 家媒體、186 個月份（2026/01–06）；自由時報、TVBS、東森、壹蘋因原表用整站網域而略過。
 - 這三張表由 migration `0022_media-traffic-history` 建立；部署含此功能的版本前，先在正式資料庫執行 `npm run db:migrate`。
 
 ### Cloudflare Radar 官方 API

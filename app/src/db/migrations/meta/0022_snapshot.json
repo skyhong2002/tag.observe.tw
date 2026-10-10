@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "71f1f5c8-605e-4e95-8c58-90a3b4c59244",
+  "id": "e959825c-ba68-4a09-8e9c-815f11ceb531",
   "prevId": "5f767745-85e0-4580-8a04-3b88c7339c0d",
   "tables": {
     "article_archives": {
@@ -1335,6 +1335,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'similarweb'"
         },
         "first_seen_at": {
           "name": "first_seen_at",

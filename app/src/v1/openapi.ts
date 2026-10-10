@@ -1909,7 +1909,15 @@ export const ENDPOINTS: Endpoint[] = [
             domain: str('網域'),
             fetchedAt: time('該網域最近成功抓取時間'),
             monthly: arr(
-              obj({ month: str('月份 YYYYMM'), visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量') }),
+              obj(
+                {
+                  month: str('月份 YYYYMM'),
+                  visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量'),
+                  source: str('只在數值來自 GeneHong 試算表時出現（Similarweb 以百萬計、四捨五入），本站開始抓取前的月份', { enum: ['genehong'] }),
+                },
+                undefined,
+                ['source'],
+              ),
               '本站保存的所有月份，舊到新；Similarweb 每次只回最近三個月，較早月份來自本站紀錄',
             ),
             profiles: map(

@@ -2737,6 +2737,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 | `domains[].monthly` | object[] | 本站保存的所有月份，舊到新；Similarweb 每次只回最近三個月，較早月份來自本站紀錄 |
 | `domains[].monthly[].month` | string | 月份 YYYYMM |
 | `domains[].monthly[].visits` | number | Similarweb EstimatedMonthlyVisits 估算訪問量 |
+| `domains[].monthly[].source` | "genehong" | 只在數值來自 GeneHong 試算表時出現（Similarweb 以百萬計、四捨五入），本站開始抓取前的月份 |
 | `domains[].profiles` | {鍵: object} | 依月份（YYYYMM）保存的國家來源、導流來源、互動與排名；每次只取得最近一期，較早月份隨排程累積，最多 12 個月；舊資料列可能沒有此欄 |
 | `domains[].profiles.{鍵}.month` | string | 月份 YYYYMM |
 | `domains[].profiles.{鍵}.countries` | object[] | 前五大來源國家，由大到小 |
