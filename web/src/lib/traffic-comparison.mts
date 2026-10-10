@@ -37,6 +37,7 @@ export interface RadarData {
     dateEnd: string;
     rank: number | null;
     bucket: number | null;
+    bucketLowerBound?: number | null;
   }>;
 }
 export interface ComparisonOutlet {

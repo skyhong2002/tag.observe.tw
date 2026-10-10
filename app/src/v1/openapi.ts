@@ -1847,6 +1847,7 @@ export const ENDPOINTS: Endpoint[] = [
           dateEnd: time('API 回傳資料期間結束'),
           rank: nullable(int('精確名次（只接受前 100 名），無名次時為 null')),
           bucket: nullable(int('排名級距上界，例如 2000 表示前 2000 名，非第 2000 名')),
+          bucketLowerBound: nullable(int('排名級距下界，例如 200000 表示未入前 200000 名；有此值時 bucket 為 null，舊快照可能省略此欄')),
         }),
       ),
     }),

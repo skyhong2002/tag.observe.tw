@@ -159,7 +159,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
       )}
       {
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-          每日自動更新 Similarweb 網域月訪問量估算；{data.liveTrafficStatus ? liveLabels[data.liveTrafficStatus] : '尚未抓取'}
+          每小時分批更新 Similarweb 網域月訪問量估算（每網域約每週重抓，被限流時下一輪續抓）；{data.liveTrafficStatus ? liveLabels[data.liveTrafficStatus] : '尚未抓取'}
           {data.liveTrafficError?.match(/HTTP \d+/)?.[0] ? `（${data.liveTrafficError.match(/HTTP \d+/)?.[0]}）` : ''}。
           {data.liveTrafficStatus && !['ok', 'pending'].includes(data.liveTrafficStatus) && '已有數值保留上次成功資料；缺資料顯示「—」。'}
           {!data.trafficMonths.length && '目前尚未取得流量數字。'}
@@ -293,11 +293,17 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                       ? `第 ${outlet.radar.rank.toLocaleString('zh-TW')} 名`
                       : outlet.radar?.bucket != null
                         ? `前 ${outlet.radar.bucket.toLocaleString('zh-TW')} 名`
-                        : '—'}
+                        : outlet.radar?.bucketLowerBound != null
+                          ? `未入前 ${outlet.radar.bucketLowerBound.toLocaleString('zh-TW')} 名`
+                          : '—'}
                     {outlet.radar && (
                       <>
                         <span className="block text-[10px] text-zinc-500">
-                          {outlet.radar.rank != null ? '精確名次' : outlet.radar.bucket != null ? '排名級距' : 'API 未提供排名'}
+                          {outlet.radar.rank != null
+                            ? '精確名次'
+                            : outlet.radar.bucket != null || outlet.radar.bucketLowerBound != null
+                              ? '排名級距'
+                              : 'API 未提供排名'}
                         </span>
                         <span className="block text-[10px] text-zinc-500" title={`${outlet.radar.dateStart} — ${outlet.radar.dateEnd}`}>
                           資料期末 {outlet.radar.dateEnd.slice(0, 10)}

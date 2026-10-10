@@ -29,11 +29,11 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         signal: AbortSignal.timeout(8000),
       }),
       fetch(`${API_ORIGIN}/api/v1/media-traffic-live`, {
-        next: { revalidate: 60 },
+        cache: 'no-store',
         signal: AbortSignal.timeout(8000),
       }),
       fetch(`${API_ORIGIN}/api/v1/media-radar`, {
-        next: { revalidate: 60 },
+        cache: 'no-store',
         signal: AbortSignal.timeout(8000),
       }),
     ]);

@@ -47,7 +47,7 @@ Cloudflare Tunnel → tag.observe.tw
 | 標籤統計 `tag-stats` | 每小時 :53 |
 | 相似度索引 `similarity` | 每 10 分鐘（`SIMILARITY_INDEX_MINUTES`） |
 | 爬蟲健康 `crawl-health` | 每 15 分鐘 |
-| Similarweb 流量 `media-traffic` | 每日 03:35（`MEDIA_TRAFFIC_CRON`）；結果寫入 Git 工作目錄外的快照檔 |
+| Similarweb 流量 `media-traffic` | 每小時第 35 分分批（`MEDIA_TRAFFIC_CRON`），每網域約每週重抓；結果寫入 Git 工作目錄外的快照檔 |
 | Radar 排名 `media-radar` | 有 `CLOUDFLARE_RADAR_API_TOKEN` 時每日 03:45（`MEDIA_RADAR_CRON`）；獨立全球排名／級距快照 |
 | GA4／Search Console 彙整 `analytics` | 每小時 :20；未設定唯讀憑證時不排程 |
 | GA Realtime `analytics-live` | 每 2 分鐘；未設定唯讀憑證時不排程 |

@@ -16,6 +16,15 @@ const respond =
 afterEach(() => vi.unstubAllEnvs());
 
 describe('Cloudflare Radar official domain rankings', () => {
+  it('keeps greater-than buckets as lower bounds rather than top-N rankings', async () => {
+    const row = await fetchRadarDomain(
+      'news.ltn.com.tw',
+      'test-token',
+      respond(payload({ rank: null, bucket: '>200000', categories: [] })),
+      now,
+    );
+    expect(row).toMatchObject({ rank: null, bucket: null, bucketLowerBound: 200000 });
+  });
   it('requests the official authenticated endpoint and keeps a bucket distinct from a rank', async () => {
     const request = vi.fn(respond());
     const result = await fetchRadarDomain('udn.com', 'test-token', request, now);

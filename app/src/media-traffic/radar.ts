@@ -10,6 +10,7 @@ export interface RadarDomain {
   dateEnd: string;
   rank: number | null;
   bucket: number | null;
+  bucketLowerBound?: number | null;
 }
 export interface RadarSnapshot {
   version: 1;
@@ -40,7 +41,8 @@ const validDomain = (row: RadarDomain) =>
   isTime(row.dateEnd) &&
   Date.parse(row.dateStart) <= Date.parse(row.dateEnd) &&
   (row.rank === null || (positiveInteger(row.rank) && row.rank <= 100)) &&
-  (row.bucket === null || positiveInteger(row.bucket));
+  (row.bucket === null || positiveInteger(row.bucket)) &&
+  (row.bucketLowerBound == null || (positiveInteger(row.bucketLowerBound) && row.bucket === null));
 
 export async function readRadar(file = radarFile()): Promise<RadarSnapshot> {
   try {
@@ -91,8 +93,23 @@ export async function fetchRadarDomain(domain: string, token: string, request = 
   const range = data.result.meta?.dateRange?.[0];
   const rank = details.rank ?? null;
   const bucket =
-    details.bucket == null ? null : typeof details.bucket === 'string' && /^\d+$/.test(details.bucket) ? Number(details.bucket) : NaN;
-  const row = { domain, fetchedAt: now.toISOString(), dateStart: range?.startTime, dateEnd: range?.endTime, rank, bucket };
+    details.bucket == null
+      ? null
+      : typeof details.bucket === 'string' && /^\d+$/.test(details.bucket)
+        ? Number(details.bucket)
+        : typeof details.bucket === 'string' && /^>\d+$/.test(details.bucket)
+          ? null
+          : NaN;
+  const bucketLowerBound = typeof details.bucket === 'string' && /^>\d+$/.test(details.bucket) ? Number(details.bucket.slice(1)) : null;
+  const row = {
+    domain,
+    fetchedAt: now.toISOString(),
+    dateStart: range?.startTime,
+    dateEnd: range?.endTime,
+    rank,
+    bucket,
+    bucketLowerBound,
+  };
   if (!validDomain(row) || Date.parse(row.dateEnd) > now.getTime()) throw Error('Invalid Radar ranking or reporting period');
   return row;
 }

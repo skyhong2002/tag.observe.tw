@@ -91,7 +91,7 @@ await queue.upsertJobScheduler(
 );
 await queue.upsertJobScheduler(
   'media-traffic-daily',
-  { pattern: process.env.MEDIA_TRAFFIC_CRON || '35 3 * * *' },
+  { pattern: process.env.MEDIA_TRAFFIC_CRON || '35 * * * *' },
   { name: 'media-traffic', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
 if (radarToken()) {

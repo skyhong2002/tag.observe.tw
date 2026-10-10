@@ -18,6 +18,8 @@ export interface LiveTraffic {
   status: 'pending' | 'ok' | 'partial' | 'blocked' | 'failed';
   error: string | null;
   domains: DomainTraffic[];
+  /** Last failed attempt per domain, so domains without Similarweb data rotate to the back. */
+  failedAt?: Record<string, string>;
 }
 export const emptyTraffic = (): LiveTraffic => ({
   version: 1,
@@ -66,11 +68,21 @@ export class TrafficFetchError extends Error {
     this.status = status;
   }
 }
+/**
+ * CloudFront answers 403 unless the request looks like the extension's own call:
+ * a browser user agent plus the extension origin and version headers (verified 2026-10-10).
+ */
+export const extensionHeaders = {
+  accept: 'application/json',
+  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+  origin: 'chrome-extension://hoklmmgfnpapgjgcpechhaamimifchmp',
+  'x-extension-version': '6.12.0',
+};
 /** The public endpoint used by the Similarweb extension. No account cookies. */
 export async function fetchDomainTraffic(domain: string, request = fetch, now = new Date()): Promise<DomainTraffic> {
   if (trafficDomain(domain) !== domain) throw Error('Invalid domain');
   const response = await request(`https://data.similarweb.com/api/v1/data?domain=${encodeURIComponent(domain)}`, {
-    headers: { accept: 'application/json' },
+    headers: extensionHeaders,
     signal: AbortSignal.timeout(20_000),
     redirect: 'error',
   });
@@ -98,47 +110,79 @@ export async function fetchDomainTraffic(domain: string, request = fetch, now = 
       .map(([month, visits]) => ({ month, visits })),
   };
 }
+const day = 24 * 60 * 60_000;
+/**
+ * Similarweb rate-limits bursts (403 after ~20 requests), so each run only fetches what is due:
+ * domains never fetched first, then the oldest; fresh successes and recent misses are skipped.
+ * Frequent scheduled runs fill the whole list gradually instead of one large daily burst.
+ */
+export function dueDomains(domains: string[], previous: LiveTraffic, now = new Date(), freshDays = 7) {
+  const fetched = new Map(previous.domains.map((row) => [row.domain, Date.parse(row.fetchedAt)]));
+  const failed = previous.failedAt ?? {};
+  const last = (domain: string) => Math.max(fetched.get(domain) ?? 0, Date.parse(failed[domain] ?? '') || 0);
+  return [...new Set(domains)]
+    .filter(
+      (domain) =>
+        now.getTime() - (fetched.get(domain) ?? 0) >= freshDays * day && now.getTime() - (Date.parse(failed[domain] ?? '') || 0) >= day,
+    )
+    .sort((a, b) => last(a) - last(b));
+}
 export async function refreshTraffic(
   domains: string[],
   previous: LiveTraffic,
-  { request = fetch, now = new Date(), delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)) } = {},
-): Promise<LiveTraffic> {
+  {
+    request = fetch,
+    now = new Date(),
+    pauseMs = 3000,
+    delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+  } = {},
+): Promise<LiveTraffic & { updated: number; remaining: number }> {
   const entries = new Map(previous.domains.map((row) => [row.domain, row]));
+  const failedAt = { ...previous.failedAt };
   let successes = 0;
   let failures = 0;
   let blocked = false;
   let error: string | null = null;
   let consecutiveFailures = 0;
   const deadline = Date.now() + 5 * 60_000;
-  const unique = [...new Set(domains)];
-  for (const [index, domain] of unique.entries()) {
+  const due = dueDomains(domains, previous, now);
+  let attempted = 0;
+  for (const [index, domain] of due.entries()) {
     if (Date.now() >= deadline) {
-      failures++;
       error = 'Similarweb batch time limit reached';
       break;
     }
+    attempted++;
     try {
       entries.set(domain, await fetchDomainTraffic(domain, request, now));
+      delete failedAt[domain];
       successes++;
       consecutiveFailures = 0;
     } catch (failure) {
-      failures++;
-      consecutiveFailures++;
-      error = failure instanceof TrafficFetchError ? failure.message : 'Similarweb data unavailable or invalid';
-      // Stop a denied/rate-limited batch instead of hammering the provider.
+      // Stop a denied/rate-limited batch instead of hammering the provider; the next run resumes here.
       if (failure instanceof TrafficFetchError && [401, 403, 429].includes(failure.status)) {
+        attempted--;
         blocked = true;
+        error = failure.message;
         break;
       }
+      failures++;
+      failedAt[domain] = now.toISOString();
+      error = failure instanceof TrafficFetchError ? failure.message : 'Similarweb data unavailable or invalid';
+      // Missing data for one small site is normal; repeated HTTP/network errors mean the provider is down.
+      if (failure instanceof TrafficFetchError || !(failure instanceof Error) || failure.name !== 'Error') consecutiveFailures++;
       if (consecutiveFailures >= 3) break;
     }
-    if (index < unique.length - 1) await delay(1000);
+    if (index < due.length - 1) await delay(pauseMs);
   }
   return {
     ...previous,
     checkedAt: now.toISOString(),
-    status: blocked ? 'blocked' : failures ? (successes ? 'partial' : 'failed') : successes ? 'ok' : 'failed',
-    error,
+    status: blocked ? 'blocked' : failures ? (successes ? 'partial' : 'failed') : 'ok',
+    error: blocked || failures ? error : null,
     domains: [...entries.values()],
+    failedAt,
+    updated: successes,
+    remaining: due.length - attempted,
   };
 }

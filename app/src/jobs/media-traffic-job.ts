@@ -13,8 +13,9 @@ export const publisherDomains = () => [
   ),
 ];
 export async function runMediaTrafficJob(domains = publisherDomains()) {
-  const result = await refreshTraffic(domains, await readLiveTraffic());
+  const { updated, remaining, ...result } = await refreshTraffic(domains, await readLiveTraffic());
   await writeLiveTraffic(result);
-  if (result.status !== 'ok') throw Error(result.error || 'No Similarweb traffic available');
-  return { domains: result.domains.length, checkedAt: result.checkedAt };
+  // A rate-limited run that still made progress is expected; the next hourly run resumes.
+  if (!updated && result.status !== 'ok') throw Error(result.error || 'No Similarweb traffic available');
+  return { domains: result.domains.length, updated, remaining, status: result.status, checkedAt: result.checkedAt };
 }
