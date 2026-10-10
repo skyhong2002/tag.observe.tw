@@ -162,6 +162,13 @@
       "when": 1791634883832,
       "tag": "0022_media-traffic-history",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1791635733501,
+      "tag": "0023_article-tag-edits",
+      "breakpoints": true
     }
   ]
 }

@@ -6,8 +6,18 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { JobQueue } from '../src/admin/routes.ts';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
+import { runArticles, runIndex } from '../src/crawl/pipeline.ts';
+import { sourceByMedia } from '../src/crawl/registry.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { articles, articleTags, mediaCategories, mediaCategoryDefs, mediaCategoryLog } from '../src/db/schema.ts';
+import {
+  articles,
+  articleTagEdits,
+  articleTagLog,
+  articleTags,
+  mediaCategories,
+  mediaCategoryDefs,
+  mediaCategoryLog,
+} from '../src/db/schema.ts';
 import { campOf } from '../src/v1/coverage.ts';
 
 vi.mock('../src/crawl/fetch.ts', async (original) => ({
@@ -23,7 +33,16 @@ vi.mock('../src/crawl/fetch.ts', async (original) => ({
 
 const url = process.env.TEST_DB_URL;
 const ORIGIN = 'https://tag.observe.tw';
-const TABLES = ['media_categories', 'media_category_defs', 'media_category_log', 'articles', 'article_tags', 'crawl_runs'];
+const TABLES = [
+  'media_categories',
+  'media_category_defs',
+  'media_category_log',
+  'articles',
+  'article_tags',
+  'crawl_runs',
+  'article_tag_edits',
+  'article_tag_log',
+];
 
 // Sessions keyed by cookie value: an admin and a reader.
 const people: Record<string, { email: string }> = { admin: { email: 'admin@example.com' }, reader: { email: 'reader@example.com' } };
@@ -201,5 +220,50 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
       (await app.inject({ method: 'POST', url: '/auth/admin/media/cna/crawl', headers: as('admin'), payload: { stage: 'all' } }))
         .statusCode,
     ).toBe(400);
+  });
+
+  it('edits one article’s tags by hand and keeps the edit through crawls until a re-fetch', async () => {
+    const page = 'https://www.cna.com.tw/news/aipl/202610100003.aspx';
+    const first = await app.inject({ method: 'POST', url: '/auth/admin/media/cna/refetch', headers: as('admin'), payload: { url: page } });
+    const id = first.json().article.id;
+    const tagsOf = async () =>
+      (await db.select({ tag: articleTags.tag }).from(articleTags).where(eq(articleTags.articleId, id))).map((r) => r.tag).sort();
+    const edit = (tags: unknown, who = 'admin') =>
+      app.inject({ method: 'PUT', url: `/auth/admin/articles/${id}/tags`, headers: as(who), payload: { tags } });
+    expect((await edit(['x'], 'reader')).statusCode).toBe(403);
+    expect((await edit('颱風')).statusCode).toBe(400);
+    expect((await edit(['a'.repeat(61)])).statusCode).toBe(400);
+    const saved = await edit(['颱風', ' 停班  停課 ', '台北市', '台北市']);
+    expect(saved.json()).toMatchObject({
+      added: ['停班 停課', '台北市'],
+      removed: ['停班停課'],
+      article: { tags: ['颱風', '停班 停課', '台北市'], editedBy: 'admin@example.com' },
+    });
+    expect(await tagsOf()).toEqual(['停班 停課', '台北市', '颱風'].sort());
+    expect((await db.select().from(articleTagLog).where(eq(articleTagLog.articleId, id))).length).toBe(3);
+
+    // The feed lists it again with its own tags; a body retry fetches it again.
+    const spec = sourceByMedia('cna');
+    if (!spec) throw Error('no cna');
+    await runIndex(db, spec, {
+      listed: { items: [{ url: page, title: '測試新聞', publishedAt: null, tags: ['停班停課', '颱風'] }], errors: [] },
+    });
+    await db.update(articles).set({ contentFetchedAt: null }).where(eq(articles.id, id));
+    await runArticles(db, spec, { limit: 5 });
+    const [kept] = await db.select({ tags: articles.tags }).from(articles).where(eq(articles.id, id));
+    expect(kept.tags).toEqual(['颱風', '停班 停課', '台北市']);
+    expect(await tagsOf()).toEqual(['停班 停課', '台北市', '颱風'].sort());
+
+    // An admin re-fetch hands the tags back to the page.
+    const again = await app.inject({ method: 'POST', url: '/auth/admin/media/cna/refetch', headers: as('admin'), payload: { url: page } });
+    expect(again.json().article).toMatchObject({ tags: ['颱風', '停班停課'], editedAt: null });
+    expect(await db.select().from(articleTagEdits).where(eq(articleTagEdits.articleId, id))).toEqual([]);
+
+    // This site's own article page names the article directly.
+    const own = await app.inject({
+      url: `/auth/admin/lookup?url=${encodeURIComponent(`${ORIGIN}/article/${id}/`)}`,
+      headers: as('admin', false),
+    });
+    expect(own.json()).toMatchObject({ candidates: [{ media: 'cna' }], article: { id, url: page } });
   });
 });

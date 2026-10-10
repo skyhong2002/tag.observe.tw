@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { SessionUser } from '../auth/google-login.ts';
@@ -6,10 +6,19 @@ import { runArticles, runIndex } from '../crawl/pipeline.ts';
 import { allSources, disabled, excludedMedia, sourceByMedia } from '../crawl/registry.ts';
 import { urlKey } from '../crawl/text.ts';
 import type { Db } from '../db/client.ts';
-import { articles, crawlRuns, mediaCategories, mediaCategoryDefs, mediaCategoryLog } from '../db/schema.ts';
+import {
+  articles,
+  articleTagEdits,
+  articleTagLog,
+  articleTags,
+  crawlRuns,
+  mediaCategories,
+  mediaCategoryDefs,
+  mediaCategoryLog,
+} from '../db/schema.ts';
 import { categoriesOf, categoryDefs, refreshMediaCategories } from '../media-categories.ts';
 import { iconUrl } from '../v1/icons.ts';
-import { hostOf, lookupUrl, outletSummary } from './lookup.ts';
+import { articleDetail, hostOf, lookupUrl, outletSummary } from './lookup.ts';
 
 // Admin tools behind /admin/media/ (docs/login.md): edit an outlet's labels
 // and crawl it on demand. Everything sits under /auth/admin/, outside the
@@ -44,6 +53,8 @@ type Options = {
 const info = favicons as unknown as Record<string, { icon: string | null; title: string | null }>;
 const KEY = /^[a-z0-9][a-z0-9_-]{0,31}$/;
 const LABEL_MAX = 64;
+const TAG_MAX = 60;
+const TAGS_MAX = 40;
 
 /** Every outlet an admin can label: the favicon catalog plus crawl sources. */
 const knownMedia = () =>
@@ -63,7 +74,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     if (!(await admin(request, reply))) return reply;
     const url = request.query.url ?? '';
     if (!hostOf(url) || url.length > 2048) return reply.code(400).send({ error: '需要一個 http(s) 網址' });
-    const found = await lookupUrl(db, url);
+    const found = await lookupUrl(db, url, origin);
     return { url, ...found, candidates: found.candidates.map((c) => ({ ...c, icon: iconUrl(c.media) })) };
   });
 
@@ -197,19 +208,58 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       row = await find();
       if (!row) return reply.code(422).send({ error: '無法收錄這個網址（可能曾被判定不是這家媒體的文章）' });
     }
+    // Re-fetching hands the tags back to the page, undoing a hand edit.
+    await db.delete(articleTagEdits).where(eq(articleTagEdits.articleId, row.id));
     const result = await runArticles(db, spec, { log: request.log, only: [row.id] });
-    const [article] = await db
-      .select({
-        id: articles.id,
-        title: articles.title,
-        tags: articles.tags,
-        fetchStatus: articles.fetchStatus,
-        fetchedAt: articles.fetchedAt,
-        publishedAt: articles.publishedAt,
-      })
+    return { added, result, article: await articleDetail(db, row.id) };
+  });
+
+  app.get<{ Params: { id: string } }>('/auth/admin/articles/:id', async (request, reply) => {
+    if (!(await admin(request, reply))) return reply;
+    const article = await articleDetail(db, Number(request.params.id));
+    return article ?? reply.code(404).send({ error: 'no such article' });
+  });
+
+  // 單篇標籤增減: the whole list replaces the article's tags, in the JSON
+  // column (ranking, events) and in article_tags (tag pages, search), and
+  // marks the article so crawls keep the edit.
+  app.put<{ Params: { id: string }; Body: { tags?: unknown } }>('/auth/admin/articles/:id/tags', async (request, reply) => {
+    const user = await admin(request, reply, true);
+    if (!user) return reply;
+    const id = Number(request.params.id);
+    const wanted = request.body?.tags;
+    if (!Array.isArray(wanted) || wanted.length > TAGS_MAX || !wanted.every((t) => typeof t === 'string'))
+      return reply.code(400).send({ error: `tags 需為最多 ${TAGS_MAX} 個字串` });
+    const tags = [...new Set((wanted as string[]).map((t) => t.replace(/\s+/g, ' ').trim()).filter(Boolean))];
+    if (tags.some((t) => t.length > TAG_MAX)) return reply.code(400).send({ error: `每個標籤最多 ${TAG_MAX} 字` });
+    const [row] = await db
+      .select({ id: articles.id, tags: articles.tags, publishedAt: articles.publishedAt })
       .from(articles)
-      .where(eq(articles.id, row.id));
-    return { added, result, article: article ?? null };
+      .where(Number.isSafeInteger(id) ? eq(articles.id, id) : sql`FALSE`);
+    if (!row) return reply.code(404).send({ error: 'no such article' });
+    const before = new Set(row.tags);
+    const added = tags.filter((t) => !before.has(t));
+    const removed = row.tags.filter((t) => !tags.includes(t));
+    const at = new Date();
+    await db.transaction(async (tx) => {
+      await tx.update(articles).set({ tags }).where(eq(articles.id, id));
+      if (removed.length) await tx.delete(articleTags).where(and(eq(articleTags.articleId, id), inArray(articleTags.tag, removed)));
+      if (added.length)
+        await tx
+          .insert(articleTags)
+          .values(added.map((tag) => ({ articleId: id, tag, publishedAt: row.publishedAt })))
+          .onDuplicateKeyUpdate({ set: { publishedAt: sql`VALUES(published_at)` } });
+      await tx
+        .insert(articleTagEdits)
+        .values({ articleId: id, editedAt: at, email: user.email })
+        .onDuplicateKeyUpdate({ set: { editedAt: at, email: user.email } });
+      const changes = [
+        ...added.map((tag) => ({ tag, action: 'add' as const })),
+        ...removed.map((tag) => ({ tag, action: 'remove' as const })),
+      ];
+      if (changes.length) await tx.insert(articleTagLog).values(changes.map((c) => ({ ...c, articleId: id, email: user.email, at })));
+    });
+    return { added, removed, article: await articleDetail(db, id) };
   });
 
   app.post<{ Params: { media: string }; Body: { stage?: unknown } }>('/auth/admin/media/:media/crawl', async (request, reply) => {

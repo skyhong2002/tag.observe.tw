@@ -6,8 +6,20 @@ import { useCallback, useEffect, useState } from 'react';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 import { type Definition, LabelToggle, type Outlet, OutletIcon } from './labels';
 
-type Article = { id: number; title: string; tags: string[]; fetchStatus: string | null; fetchedAt: string | null; publishedAt: string };
-type Lookup = { url: string; candidates: Array<Omit<Outlet, 'categories'>>; article: (Article & { media: string }) | null };
+type Article = {
+  id: number;
+  media: string;
+  url: string;
+  title: string;
+  tags: string[];
+  fetchStatus: string | null;
+  fetchedAt: string | null;
+  publishedAt: string;
+  editedAt: string | null;
+  editedBy: string | null;
+  log: Array<{ id: number; tag: string; action: 'add' | 'remove'; email: string; at: string }>;
+};
+type Lookup = { url: string; candidates: Array<Omit<Outlet, 'categories'>>; article: Article | null };
 type Run = {
   stage: string;
   status: string;
@@ -293,13 +305,16 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
   const [article, setArticle] = useState(initial);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  // From this site's own /article/<id>/ page, fetch the outlet's original.
+  const source = article?.url ?? url;
   async function refetch() {
+    if (article?.editedAt && !window.confirm('這篇的標籤有手動修改過。重抓會改用網頁上的標籤，手動修改會被取代。確定要重抓嗎？')) return;
     setBusy(true);
     setStatus('正在抓取…');
     try {
       const body = await adminFetch<{ added: boolean; article: Article | null; result: { failed: number; rejected: number } }>(
         `/auth/admin/media/${media}/refetch`,
-        { method: 'POST', body: { url } },
+        { method: 'POST', body: { url: source } },
       );
       setArticle(body.article);
       setStatus(
@@ -321,20 +336,26 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
     <section className={section}>
       <h3 className={heading}>這篇文章</h3>
       {article ? (
-        <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-zinc-500">標題</dt>
-          <dd>{article.title || '（尚未取得）'}</dd>
-          <dt className="text-zinc-500">標籤</dt>
-          <dd>{article.tags.length ? article.tags.join('、') : '（沒有）'}</dd>
-          <dt className="text-zinc-500">狀態</dt>
-          <dd>{article.fetchStatus ? (STATUS[article.fetchStatus] ?? article.fetchStatus) : '等待抓取'}</dd>
-          <dt className="text-zinc-500">上次抓取</dt>
-          <dd className="tabular-nums">{when(article.fetchedAt)}</dd>
-        </dl>
+        <>
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="text-zinc-500">標題</dt>
+            <dd>
+              {article.title || '（尚未取得）'}
+              <Link href={`/article/${article.id}/`} className="ml-2 text-brand-700 underline dark:text-brand-400">
+                本站頁面
+              </Link>
+            </dd>
+            <dt className="text-zinc-500">狀態</dt>
+            <dd>{article.fetchStatus ? (STATUS[article.fetchStatus] ?? article.fetchStatus) : '等待抓取'}</dd>
+            <dt className="text-zinc-500">上次抓取</dt>
+            <dd className="tabular-nums">{when(article.fetchedAt)}</dd>
+          </dl>
+          <ArticleTags key={`${article.id}-${article.fetchedAt}`} article={article} onSaved={setArticle} />
+        </>
       ) : (
         <p className={note}>本站還沒有收錄這篇。</p>
       )}
-      <div className="mt-3 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button type="button" className={button} disabled={busy || !canFetch} onClick={refetch}>
           {article ? '重抓這一篇' : '收錄這一篇'}
         </button>
@@ -346,6 +367,118 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
         )}
       </div>
     </section>
+  );
+}
+
+// 單篇標籤增減: remove with ×, add by typing (several at once with 、 or ,).
+function ArticleTags({ article, onSaved }: { article: Article; onSaved: (article: Article) => void }) {
+  const [tags, setTags] = useState(article.tags);
+  const [text, setText] = useState('');
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+  const dirty = tags.length !== article.tags.length || tags.some((t, i) => t !== article.tags[i]);
+  const add = () => {
+    const more = text
+      .split(/[、,，;；#\n]/)
+      .map((t) => t.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    setTags((now) => [...new Set([...now, ...more])]);
+    setText('');
+  };
+  async function save() {
+    setBusy(true);
+    setStatus('');
+    try {
+      const body = await adminFetch<{ article: Article }>(`/auth/admin/articles/${article.id}/tags`, { method: 'PUT', body: { tags } });
+      onSaved(body.article);
+      setStatus('已儲存。之後的自動抓取不會再改這篇的標籤；排行與事件下一輪更新時會用新標籤。');
+    } catch (e) {
+      setStatus(`儲存失敗：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const removed = article.tags.filter((t) => !tags.includes(t));
+  return (
+    <div className="mt-4">
+      <p className="text-sm text-zinc-500">
+        標籤
+        {article.editedAt && (
+          <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            {article.editedBy} 於 {when(article.editedAt)} 手動修改
+          </span>
+        )}
+      </p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <li
+            key={tag}
+            className={`inline-flex min-h-9 items-center gap-1 rounded-full border pl-3 text-sm ${
+              article.tags.includes(tag)
+                ? 'border-zinc-300 dark:border-zinc-700'
+                : 'border-brand-600 bg-brand-50 text-brand-800 dark:border-brand-400 dark:bg-brand-950 dark:text-brand-200'
+            }`}
+          >
+            {tag}
+            <button
+              type="button"
+              aria-label={`移除「${tag}」`}
+              onClick={() => setTags((now) => now.filter((t) => t !== tag))}
+              className="flex h-9 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-red-700 dark:hover:text-red-400"
+            >
+              ×
+            </button>
+          </li>
+        ))}
+        {!tags.length && <li className="text-sm text-zinc-500">（沒有標籤）</li>}
+      </ul>
+      {removed.length > 0 && <p className="mt-2 text-sm text-red-700 line-through dark:text-red-400">{removed.join('、')}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            add();
+          }}
+        >
+          <input
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="新增標籤，可用、分隔"
+            className="w-56 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+          <button type="submit" className={button} disabled={!text.trim()}>
+            加入
+          </button>
+        </form>
+        <button type="button" className={primary} disabled={!dirty || busy} onClick={save}>
+          儲存標籤
+        </button>
+        {dirty && (
+          <button type="button" className={button} disabled={busy} onClick={() => setTags(article.tags)}>
+            還原
+          </button>
+        )}
+      </div>
+      {status && (
+        <p role="status" className={note}>
+          {status}
+        </p>
+      )}
+      {article.log.length > 0 && (
+        <details className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+          <summary className="cursor-pointer">標籤修改紀錄（{article.log.length}）</summary>
+          <ul className="mt-2 space-y-1">
+            {article.log.map((entry) => (
+              <li key={entry.id}>
+                <span className="tabular-nums">{when(entry.at)}</span> {entry.email} {entry.action === 'add' ? '加上' : '移除'}「{entry.tag}
+                」
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
   );
 }
 

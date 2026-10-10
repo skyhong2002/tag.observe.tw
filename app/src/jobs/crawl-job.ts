@@ -6,7 +6,7 @@ import { crawlTimestamp, sourceSchedule } from '../crawl/schedule.ts';
 
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, crawlRuns } from '../db/schema.ts';
+import { articles, articleTagEdits, articleTags, crawlRuns } from '../db/schema.ts';
 
 export { groupPeriodMs } from '../crawl/schedule.ts';
 
@@ -160,6 +160,8 @@ export async function titleTagRecent(db: Db, vocab: TitleVocab, { hours = 72, li
         sql`JSON_LENGTH(${articles.tags}) = 0`,
         // Failed fetches were already title-tagged; keep their status for diagnosis.
         sql`${articles.fetchStatus} NOT IN ('title-none', 'error', 'failed')`,
+        // An admin removed every tag on purpose (/admin/media/).
+        sql`NOT EXISTS (SELECT 1 FROM ${articleTagEdits} WHERE ${articleTagEdits.articleId} = ${articles.id})`,
       ),
     )
     .limit(limit);

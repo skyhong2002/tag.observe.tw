@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
+import { articles, articleTagEdits, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
 import { isOwnMediaTag } from '../media-tags.ts';
 import { extractAttributions } from '../similarity/attribution.ts';
 import { runDiscoveryIndex } from './discovery-index.ts';
@@ -321,6 +321,13 @@ export async function runIndex(
   }
 }
 
+/** Articles whose tags an admin set by hand: crawls must not change them. */
+export async function editedArticleIds(db: Db, ids: number[]): Promise<Set<number>> {
+  if (!ids.length) return new Set();
+  const rows = await db.select({ id: articleTagEdits.articleId }).from(articleTagEdits).where(inArray(articleTagEdits.articleId, ids));
+  return new Set(rows.map((r) => r.id));
+}
+
 async function indexTags(db: Db, media: string, rows: Array<{ url: string; tags: string[]; publishedAt: Date }>) {
   const ids = await db
     .select({ id: articles.id, url: articles.url, publishedAt: articles.publishedAt })
@@ -334,7 +341,11 @@ async function indexTags(db: Db, media: string, rows: Array<{ url: string; tags:
         )})`,
       ),
     );
-  const byUrl = new Map(ids.map((r) => [r.url, r]));
+  const edited = await editedArticleIds(
+    db,
+    ids.map((r) => r.id),
+  );
+  const byUrl = new Map(ids.filter((r) => !edited.has(r.id)).map((r) => [r.url, r]));
   const values = rows.flatMap((r) => {
     const article = byUrl.get(r.url);
     return article
@@ -423,6 +434,13 @@ export async function runArticles(
       ]);
   const pending = [...new Map([...backlog, ...recent].map((row) => [row.id, row])).values()].slice(0, only?.length ?? limit);
   if (!pending.length) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
+  // Hand-edited tags survive body retries; an admin re-fetch (`only`) replaces them.
+  const edited = only
+    ? new Set<number>()
+    : await editedArticleIds(
+        db,
+        pending.map((row) => row.id),
+      );
   const [run] = await db
     .insert(crawlRuns)
     .values({ media: spec.media, stage: 'article', startedAt: started, status: 'running' })
@@ -499,7 +517,7 @@ export async function runArticles(
             .update(articles)
             .set({
               fetchedAt: now(),
-              fetchStatus: detail.tags.length ? 'ok' : titleTags.length ? 'title' : 'notags',
+              fetchStatus: edited.has(row.id) ? undefined : detail.tags.length ? 'ok' : titleTags.length ? 'title' : 'notags',
               ...(title ? { title: trunc(title, 512) as string } : {}),
               ...(publishedAt !== row.publishedAt ? { publishedAt } : {}),
               canonical: trunc(detail.canonical, 512),
@@ -515,13 +533,13 @@ export async function runArticles(
               contentFetchedAt: now(),
               contentAttempts: sql`${articles.contentAttempts} + 1`,
               attributions: extractAttributions(detail.body ?? '', spec.media, detail.provider),
-              tags: only ? tags : sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(tags)}, tags)`,
+              tags: edited.has(row.id) ? undefined : only ? tags : sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(tags)}, tags)`,
             })
             .where(eq(articles.id, row.id));
           if (only) await db.delete(articleTags).where(eq(articleTags.articleId, row.id));
           // Tags written at index time carry the listing time; move them with the article.
           if (publishedAt !== row.publishedAt) await db.update(articleTags).set({ publishedAt }).where(eq(articleTags.articleId, row.id));
-          if (tags.length) {
+          if (tags.length && !edited.has(row.id)) {
             const values = [...new Set(tags)].map((tag) => ({
               articleId: row.id,
               tag: tag.slice(0, 60),
@@ -537,7 +555,7 @@ export async function runArticles(
           failed++;
           errors.push(`${row.url} -> ${(error as Error).message}`);
           // Unreachable page: still tag from the title so the article counts.
-          const titleTags = vocab ? tagsFromTitle(row.title ?? '', vocab) : [];
+          const titleTags = vocab && !edited.has(row.id) ? tagsFromTitle(row.title ?? '', vocab) : [];
           await db
             .update(articles)
             .set({

@@ -3,7 +3,7 @@ import type { SQL } from 'drizzle-orm';
 import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
+import { articles, articleTagEdits, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
 import type { FeedItem } from './feed.ts';
 import { discoverNews } from './news-discovery.ts';
 import { runArticles, runIndex } from './pipeline.ts';
@@ -145,7 +145,7 @@ function memoryDb(
       return {
         from: (table: unknown) => ({
           where: (condition: SQL) => {
-            if (table === rejectedUrls) return Promise.resolve([]);
+            if (table === rejectedUrls || table === articleTagEdits) return Promise.resolve([]);
             selected.push(condition);
             return Object.assign(Promise.resolve(matching(condition).map((row) => ({ ...row }))), {
               limit: (limit: number) => ({

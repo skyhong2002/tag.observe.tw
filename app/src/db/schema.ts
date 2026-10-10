@@ -512,3 +512,24 @@ export const mediaRadarRanks = mysqlTable(
   },
   (t) => [primaryKey({ columns: [t.domain, t.dateEnd] }), index('media_radar_ranks_date').on(t.dateEnd)],
 );
+
+// Articles whose tags an admin set by hand at /admin/media/: crawls leave
+// their tags alone until an admin re-fetches the page (app/src/admin/routes.ts).
+export const articleTagEdits = mysqlTable('article_tag_edits', {
+  articleId: bigint('article_id', { mode: 'number' }).primaryKey(),
+  editedAt: datetime('edited_at').notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+});
+
+export const articleTagLog = mysqlTable(
+  'article_tag_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    articleId: bigint('article_id', { mode: 'number' }).notNull(),
+    tag: varchar('tag', { length: 60 }).notNull(),
+    action: varchar('action', { length: 8 }).$type<'add' | 'remove'>().notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('article_tag_log_article').on(t.articleId, t.at)],
+);

@@ -28,6 +28,8 @@
 | `POST /auth/admin/media/:media/refetch` | 管理員限定、需本站 `Origin`：`{ url }` 立刻抓這一篇（沒收錄就先收錄），並以新抓到的標籤取代舊的。 |
 | `POST /auth/admin/media/:media/crawl` | 管理員限定、需本站 `Origin`：`{ stage: 'index' \| 'articles' }` 排一個 worker 的 `crawl-media` 工作；同媒體同階段已在排隊就沿用。 |
 | `GET /auth/admin/jobs/:id` | 管理員限定：`crawl-media` 工作的狀態與結果。 |
+| `GET /auth/admin/articles/:id` | 管理員限定：單篇文章的標籤、抓取狀態、誰手動改過與標籤修改紀錄。 |
+| `PUT /auth/admin/articles/:id/tags` | 管理員限定、需本站 `Origin`：`{ tags: [...] }`（最多 40 個、每個最多 60 字）整組取代這篇的標籤，同步 `articles.tags` 與 `article_tags`，寫入 `article_tag_log`，並在 `article_tag_edits` 標記為手動修改。 |
 
 這些路徑不在 `/api/` 底下，因此沒有公開 API 的 `access-control-allow-origin: *`。
 
@@ -38,7 +40,7 @@
 
 ## 媒體設定（`/admin/media/`）
 
-`/admin/` 提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。沒登入時會先導去登入，登入後回到同一個網址。
+`/admin/` 提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇。沒登入時會先導去登入，登入後回到同一個網址。
 
 媒體標籤存在 `media_category_defs`（代碼、名稱、順序）與 `media_categories`（媒體 × 標籤）。資料表是空的時候，gateway 或 worker 啟動時會從 `app/data/media-catalog.json` 匯入一次，之後以資料庫為準。兩個程序每分鐘重新讀取一次，管理員存檔後 gateway 也會立刻重讀（`app/src/media-categories.ts`）。`blue`／`green` 決定陣營，兩個都勾時算藍營。新增的標籤沒有固定排行名單（`ranking-baseline.json`），所以不會出現在 `/ranking/`。
 
@@ -64,6 +66,8 @@ MariaDB 的 `server_audit` plugin 記下 `tag_observe`（應用程式）與 `hea
 ```sh
 docker exec tag-db tail -f /var/lib/mysql/server_audit.log   # 時間,主機,帳號,來源,連線,查詢編號,動作,資料庫,SQL,結果
 ```
+
+手動改過標籤的文章記在 `article_tag_edits`：排程的 index（feed 標籤）、內文重試和從標題補標籤都不會再改它的標籤。管理員按「重抓這一篇」時會清掉這個標記，改用網頁上的標籤。排行與事件在下一輪計算時使用新標籤，已存的快照不會回頭改。
 
 ## 之後加管理功能
 
