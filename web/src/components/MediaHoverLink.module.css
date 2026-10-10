@@ -15,7 +15,12 @@
 .terms > span span:first-child { overflow-wrap: anywhere; }
 .terms > span span:last-child { flex-shrink: 0; color: #71717a; font-variant-numeric: tabular-nums; }
 .note { font-size: 11px; margin: 0; }
+.tapped { pointer-events: auto; }
+.go { display: block; margin-top: 2px; padding: 10px 12px; border-radius: 8px; background: #f4f4f5; color: var(--color-brand-700); font-size: 14px; font-weight: 600; text-align: center; text-decoration: none; }
+.go:active { background: #e4e4e7; }
 :global([data-theme="dark"]) .card { background: #18181b; color: #f4f4f5; border-color: #3f3f46; }
 :global([data-theme="dark"]) .muted, :global([data-theme="dark"]) .note, :global([data-theme="dark"]) .counts > span, :global([data-theme="dark"]) .terms > span span:last-child { color: #a1a1aa; }
 :global([data-theme="dark"]) .counts b { color: #f4f4f5; }
 :global([data-theme="dark"]) .keywords { border-color: #3f3f46; }
+:global([data-theme="dark"]) .go { background: #27272a; color: var(--color-brand-400); }
+:global([data-theme="dark"]) .go:active { background: #3f3f46; }

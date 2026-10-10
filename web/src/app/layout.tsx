@@ -3,6 +3,7 @@ import ReaderPresence from '@/components/ReaderPresence';
 import SiteAnalytics from '@/components/SiteAnalytics';
 import StructuredData from '@/components/StructuredData';
 import ThemeSync from '@/components/ThemeSync';
+import TouchTitleHint from '@/components/TouchTitleHint';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from '@/lib/seo.mts';
 import './globals.css';
 
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             inLanguage: 'zh-Hant',
           }}
         />
+        <TouchTitleHint />
         <SiteAnalytics />
       </body>
     </html>

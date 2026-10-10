@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './WordCloudView.module.css';
 
 // Draws word clouds laid out on the server (WordCloud) and opens a card with a
-// word's numbers on hover or focus; clicking follows the word's link.
+// word's numbers on hover or focus; clicking follows the word's link. On touch
+// the first tap opens the card, which then carries its own link to follow.
 
 export type CloudTone = 'brand' | 'strong' | 'muted' | 'stone';
 export interface CloudCard {
@@ -59,11 +60,32 @@ function Canvas({
   title: string;
 }) {
   const [active, setActive] = useState<PlacedBox | null>(null);
+  const [tapped, setTapped] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const touch = useRef(false);
+  useEffect(() => {
+    if (!active || !tapped) return;
+    const close = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setActive(null);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [active, tapped]);
+  const show = (word: PlacedBox | null, byTap = false) => {
+    setTapped(byTap);
+    setActive(word);
+  };
   const { width, height, words, className } = layout;
   const card = active ? info[active.label]?.card : undefined;
   const pct = (n: number, of: number) => `${(n / of) * 100}%`;
   return (
-    <div className={`relative ${className}`} onPointerLeave={() => setActive(null)}>
+    <div
+      ref={root}
+      className={`relative ${className}`}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== 'touch') show(null);
+      }}
+    >
       <svg viewBox={`0 0 ${width} ${height}`} aria-label={label} className="block w-full">
         <title>{title}</title>
         {words.map((word) => {
@@ -75,9 +97,27 @@ function Canvas({
               href={w.href}
               aria-label={w.ariaLabel}
               className={styles.word}
-              onPointerEnter={() => setActive(word)}
-              onFocus={() => setActive(word)}
-              onBlur={() => setActive(null)}
+              onPointerEnter={(event) => {
+                if (event.pointerType !== 'touch') show(word);
+              }}
+              onPointerDown={(event) => {
+                touch.current = event.pointerType === 'touch';
+              }}
+              onKeyDown={() => {
+                touch.current = false;
+              }}
+              onFocus={() => {
+                if (!touch.current) show(word);
+              }}
+              onBlur={(event) => {
+                if (!tapped || !root.current?.contains(event.relatedTarget as Node)) show(null);
+              }}
+              onClick={(event) => {
+                if (!touch.current || !w.card || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                if (active?.label === word.label && tapped) return;
+                event.preventDefault();
+                show(word, true);
+              }}
             >
               <rect x={word.x - 1} y={word.y - 1} width={word.width + 2} height={word.height + 2} rx="3" />
               <text
@@ -97,8 +137,8 @@ function Canvas({
       </svg>
       {active && card && (
         <div
-          role="tooltip"
-          className="pointer-events-none absolute z-10 w-max max-w-[16rem] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          role={tapped ? 'dialog' : 'tooltip'}
+          className={`${tapped ? '' : 'pointer-events-none'} absolute z-10 w-max max-w-[16rem] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900`}
           style={{
             left: pct(active.x + active.width / 2, width),
             top: pct(active.y + active.height, height),
@@ -119,6 +159,15 @@ function Canvas({
               </div>
             ))}
           </dl>
+          {tapped && (
+            <Link
+              href={info[active.label].href}
+              className="mt-2 block rounded-md bg-zinc-100 px-3 py-2 text-center text-sm font-semibold text-brand-700 active:bg-zinc-200 dark:bg-zinc-800 dark:text-brand-400 dark:active:bg-zinc-700"
+              onClick={() => show(null)}
+            >
+              前往「{active.label}」→
+            </Link>
+          )}
         </div>
       )}
     </div>
