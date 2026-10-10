@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { markPreviewClick } from './NavPending';
 import styles from './WordCloudView.module.css';
 
 // Draws word clouds laid out on the server (WordCloud) and opens a card with a
@@ -62,6 +63,10 @@ function Canvas({
   const [active, setActive] = useState<PlacedBox | null>(null);
   const [tapped, setTapped] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  // Keeps the card inside the viewport: a sideways nudge, and flipped above the
+  // word when there is no room below.
+  const [fit, setFit] = useState({ shift: 0, above: false });
   const touch = useRef(false);
   useEffect(() => {
     if (!active || !tapped) return;
@@ -71,6 +76,26 @@ function Canvas({
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
   }, [active, tapped]);
+  useLayoutEffect(() => {
+    if (!active) return setFit({ shift: 0, above: false });
+    const element = cardRef.current;
+    if (!element) return;
+    const measure = () => {
+      const box = root.current?.getBoundingClientRect();
+      if (!box) return;
+      const { offsetWidth: w, offsetHeight: h } = element;
+      const centre = box.left + ((active.x + active.width / 2) / layout.width) * box.width;
+      // Not innerWidth: on phones a card poking out widens the page, and innerWidth with it.
+      const left = Math.max(12, Math.min(centre - w / 2, document.documentElement.clientWidth - 12 - w));
+      const bottom = box.top + ((active.y + active.height) / layout.height) * box.height + 4 + h;
+      setFit({ shift: left - (centre - w / 2), above: bottom > document.documentElement.clientHeight - 12 });
+    };
+    measure();
+    // The card settles its size after this first pass (and grows a link when tapped).
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [active, layout.width, layout.height]);
   const show = (word: PlacedBox | null, byTap = false) => {
     setTapped(byTap);
     setActive(word);
@@ -116,6 +141,7 @@ function Canvas({
                 if (!touch.current || !w.card || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 if (active?.label === word.label && tapped) return;
                 event.preventDefault();
+                markPreviewClick(event.nativeEvent);
                 show(word, true);
               }}
             >
@@ -137,12 +163,15 @@ function Canvas({
       </svg>
       {active && card && (
         <div
+          ref={cardRef}
           role={tapped ? 'dialog' : 'tooltip'}
           className={`${tapped ? '' : 'pointer-events-none'} absolute z-10 w-max max-w-[16rem] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900`}
           style={{
             left: pct(active.x + active.width / 2, width),
-            top: pct(active.y + active.height, height),
-            marginTop: 4,
+            top: pct(fit.above ? active.y : active.y + active.height, height),
+            marginTop: fit.above ? -4 : 4,
+            marginLeft: fit.shift,
+            transform: fit.above ? 'translateY(-100%)' : undefined,
           }}
         >
           <p className="text-sm font-semibold">

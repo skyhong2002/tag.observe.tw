@@ -21,6 +21,11 @@ export default function NavPending() {
   return <span hidden data-pending={pending || undefined} />;
 }
 
+// A tap that only opens a link's preview card (touch readers' stand-in for
+// hover) marks its click here so the bar below doesn't start for it.
+const previewClicks = new WeakSet<Event>();
+export const markPreviewClick = (event: Event) => previewClicks.add(event);
+
 const sameRoute = (a: URL, b: URL) => a.pathname.replace(/\/$/, '') === b.pathname.replace(/\/$/, '') && a.search === b.search;
 
 // Links elsewhere on the page light the same bar: a plain left click on a
@@ -48,11 +53,15 @@ export function LinkClickPending() {
       const here = new URL(window.location.href);
       const url = new URL(href, here);
       if (url.origin !== here.origin || sameRoute(url, here)) return;
-      clearTimeout(timer);
-      setPending(true);
-      timer = setTimeout(stop, 15_000);
+      // Wait until the link's own handlers have run: a preview tap marks the click.
+      setTimeout(() => {
+        if (previewClicks.has(event)) return;
+        clearTimeout(timer);
+        setPending(true);
+        timer = setTimeout(stop, 15_000);
+      });
     }
-    // Capture runs before Next's <Link> handler calls preventDefault; pageshow
+    // Capture still sees clicks whose handlers stop propagation; pageshow
     // clears a bar left over when the back button restores a cached page.
     document.addEventListener('click', onClick, true);
     window.addEventListener('pageshow', stop);

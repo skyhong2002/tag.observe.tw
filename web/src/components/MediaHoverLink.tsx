@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import styles from './MediaHoverLink.module.css';
 import MediaIcon from './MediaIcon';
 import type { MediaKeywords } from './MediaWordCloud';
+import { markPreviewClick } from './NavPending';
 
 type Profile = {
   media: string;
@@ -180,6 +181,7 @@ export default function MediaHoverLink({
           // On touch the first tap shows the card and a second tap follows the link.
           if (touch.current && !open && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
             event.preventDefault();
+            markPreviewClick(event.nativeEvent);
             setTapped(true);
             setOpen(true);
           } else setOpen(false);
