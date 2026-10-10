@@ -1,10 +1,14 @@
 import rateLimit from '@fastify/rate-limit';
+import { Queue } from 'bullmq';
 import Fastify, { LogController } from 'fastify';
+import { Redis } from 'ioredis';
+import { registerAdminRoutes } from './admin/routes.ts';
 import { registerLogin } from './auth/google-login.ts';
 import { dbLoginStore } from './auth/store.ts';
 import { createDb } from './db/client.ts';
 import { registerFeeds } from './feeds.ts';
 import { isShareImage, legacyRoute } from './legacy-redirects.js';
+import { keepMediaCategoriesFresh } from './media-categories.ts';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
@@ -24,7 +28,15 @@ import { registerV1Routes } from './v1/routes.ts';
 import { registerSimilarity } from './v1/similarity.ts';
 import { registerSiteObservation } from './v1/site-observation.ts';
 
-export async function buildApp(config, { logger = false, db = /** @type {import('./db/client.ts').Db | null} */ (null) } = {}) {
+export async function buildApp(
+  config,
+  {
+    logger = false,
+    db = /** @type {import('./db/client.ts').Db | null} */ (null),
+    loginStore = /** @type {import('./auth/google-login.ts').LoginStore | null} */ (null),
+    jobQueue = /** @type {(() => import('./admin/routes.ts').JobQueue) | null} */ (null),
+  } = {},
+) {
   const app = Fastify({
     logger,
     logController: new LogController({ disableRequestLogging: true }),
@@ -73,6 +85,8 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     httpDuration.observe({ route, outcome }, reply.elapsedTime / 1000);
   });
   const own = db ? { db, close: async () => {} } : config.tagDbUrl ? createDb(config.tagDbUrl) : null;
+  const labels = own ? keepMediaCategoriesFresh(own.db, { warn: (err) => app.log.warn({ err }, 'media labels refresh failed') }) : null;
+  await labels?.ready;
   if (own) {
     await registerV1Routes(app, own.db);
     registerPageApis(app, own.db);
@@ -88,13 +102,30 @@ export async function buildApp(config, { logger = false, db = /** @type {import(
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
   }
-  registerLogin(app, own ? dbLoginStore(own.db) : null, config.login ?? null);
+  const login = registerLogin(app, loginStore ?? (own ? dbLoginStore(own.db) : null), config.login ?? null);
+  // The worker's queue, opened on the first crawl an admin asks for.
+  /** @type {{ redis: Redis; queue: Queue } | null} */
+  let jobs = null;
+  const openQueue = () => {
+    if (!jobs) {
+      const redis = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:16379', { maxRetriesPerRequest: null });
+      jobs = { redis, queue: new Queue('tag-jobs', { connection: redis }) };
+    }
+    return /** @type {import('./admin/routes.ts').JobQueue} */ (/** @type {unknown} */ (jobs.queue));
+  };
+  if (own && config.login)
+    registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
   registerReaderPresence(app);
   registerNearline(app);
   const proxyToUi = createUiProxy(config.uiOrigin);
   registerApiMeta(app, proxyToUi);
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {
+    labels?.stop();
+    if (jobs) {
+      await jobs.queue.close();
+      await jobs.redis.quit();
+    }
     if (own) await own.close();
   });
   const handler = async (request, reply) => {

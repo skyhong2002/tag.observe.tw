@@ -1,5 +1,4 @@
 import type { MediaInfo } from '@/lib/api';
-import catalog from '../../../app/data/media-catalog.json';
 import MediaIconsView, { type MediaBadge } from './MediaIconsView';
 
 export default function MediaIcons({ media, info }: { media: Record<string, number>; info: MediaInfo }) {
@@ -7,7 +6,7 @@ export default function MediaIcons({ media, info }: { media: Record<string, numb
     media: key,
     title: info[key]?.title ?? key,
     count,
-    camp: catalog.categories.blue.includes(key) ? 'blue' : catalog.categories.green.includes(key) ? 'green' : 'other',
+    camp: info[key]?.camp ?? 'other',
   }));
   return <MediaIconsView entries={entries} />;
 }

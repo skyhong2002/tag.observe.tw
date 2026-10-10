@@ -2,7 +2,6 @@ import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
-import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import { allSources, disabled } from '../crawl/registry.ts';
 import { crawlTimestamp, nextIndexEligibleAt, sourceSchedule } from '../crawl/schedule.ts';
 import { codeLink, crawlerInfo } from '../crawl/source-info.ts';
@@ -10,18 +9,18 @@ import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles, crawlRuns, topics } from '../db/schema.ts';
 import { articleMediaOf, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
+import { categoryLabel, mediaCategories } from '../media-categories.ts';
 import { mediaScope } from '../media-scope.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
 import { iconUrl } from './icons.ts';
-import { CATEGORY_LABELS } from './routes.ts';
 
 // Per-media article counts and crawl health for the public /media/ dashboard.
 const info = favicons as unknown as Record<string, { icon: string | null; title: string | null }>;
-const categories = catalog.categories as Record<string, string[]>;
 const SKIP_CATEGORY = new Set(['blue', 'green', 'adct']); // overlays, not a media's home category
-const categoryOf = (m: string) => Object.entries(categories).find(([c, list]) => !SKIP_CATEGORY.has(c) && list.includes(m))?.[0] ?? null;
+const categoryOf = (m: string) =>
+  Object.entries(mediaCategories()).find(([c, list]) => !SKIP_CATEGORY.has(c) && list.includes(m))?.[0] ?? null;
 const HOUR = 3600e3;
 
 type ListedSource = { media: string; group: 'news' | 'hourly' | 'off' };
@@ -213,7 +212,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
               },
           icon: iconUrl(s.media),
           category,
-          categoryLabel: category ? (CATEGORY_LABELS[category] ?? category) : null,
+          categoryLabel: category ? categoryLabel(category) : null,
           camp: campOf(s.media),
           schedule: base.disabled ? 'off' : scheduling.minutes === 60 ? 'hourly' : `every ${scheduling.minutes} min`,
           crawlSchedule: {

@@ -364,13 +364,16 @@ export async function runArticles(
     hours = 90 * 24,
     vocab = null as TitleVocab | null,
     signal = undefined as AbortSignal | undefined,
+    /** Re-fetch exactly these rows now (admin 「重抓這一篇」), whatever their
+     *  state, and replace their tags instead of keeping earlier ones. */
+    only = undefined as number[] | undefined,
   } = {},
 ) {
   if (spec.discovery) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
   const started = now();
   // Every article needs body extraction, including previously tagged feeds.
   // Recent items go first, then the retained 90-day backlog is filled gradually.
-  const pendingQuery = () =>
+  const pendingQuery = (ids?: number[]) =>
     db
       .select({
         id: articles.id,
@@ -385,36 +388,40 @@ export async function runArticles(
       })
       .from(articles)
       .where(
-        and(
-          eq(articles.media, spec.media),
-          eq(articles.source, 'own'),
-          // HTTP errors retry after an hour; missing/blocked bodies retry after six hours, up to three attempts.
-          or(
-            isNull(articles.fetchedAt),
-            isNull(articles.contentFetchedAt),
-            and(
-              eq(articles.fetchStatus, 'error'),
-              lt(articles.contentAttempts, 3),
-              lt(articles.fetchedAt, new Date(now().getTime() - 3600e3)),
+        ids
+          ? and(eq(articles.media, spec.media), inArray(articles.id, ids))
+          : and(
+              eq(articles.media, spec.media),
+              eq(articles.source, 'own'),
+              // HTTP errors retry after an hour; missing/blocked bodies retry after six hours, up to three attempts.
+              or(
+                isNull(articles.fetchedAt),
+                isNull(articles.contentFetchedAt),
+                and(
+                  eq(articles.fetchStatus, 'error'),
+                  lt(articles.contentAttempts, 3),
+                  lt(articles.fetchedAt, new Date(now().getTime() - 3600e3)),
+                ),
+                and(
+                  inArray(articles.bodyStatus, ['missing', 'blocked', 'error']),
+                  lt(articles.contentAttempts, 3),
+                  lt(articles.contentFetchedAt, new Date(now().getTime() - 6 * 3600e3)),
+                ),
+              ),
+              gte(articles.crawledAt, new Date(now().getTime() - hours * 3600e3)),
             ),
-            and(
-              inArray(articles.bodyStatus, ['missing', 'blocked', 'error']),
-              lt(articles.contentAttempts, 3),
-              lt(articles.contentFetchedAt, new Date(now().getTime() - 6 * 3600e3)),
-            ),
-          ),
-          gte(articles.crawledAt, new Date(now().getTime() - hours * 3600e3)),
-        ),
       );
   // Reserve part of each batch for the oldest pending rows, so a busy outlet
   // cannot starve its retained backlog with a continuous stream of new links.
-  const [recent, backlog] = await Promise.all([
-    pendingQuery().orderBy(desc(articles.publishedAt), desc(articles.id)).limit(limit),
-    pendingQuery()
-      .orderBy(asc(articles.publishedAt), asc(articles.id))
-      .limit(Math.max(1, Math.floor(limit / 5))),
-  ]);
-  const pending = [...new Map([...backlog, ...recent].map((row) => [row.id, row])).values()].slice(0, limit);
+  const [recent, backlog] = only
+    ? [await pendingQuery(only).limit(only.length), []]
+    : await Promise.all([
+        pendingQuery().orderBy(desc(articles.publishedAt), desc(articles.id)).limit(limit),
+        pendingQuery()
+          .orderBy(asc(articles.publishedAt), asc(articles.id))
+          .limit(Math.max(1, Math.floor(limit / 5))),
+      ]);
+  const pending = [...new Map([...backlog, ...recent].map((row) => [row.id, row])).values()].slice(0, only?.length ?? limit);
   if (!pending.length) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
   const [run] = await db
     .insert(crawlRuns)
@@ -508,9 +515,10 @@ export async function runArticles(
               contentFetchedAt: now(),
               contentAttempts: sql`${articles.contentAttempts} + 1`,
               attributions: extractAttributions(detail.body ?? '', spec.media, detail.provider),
-              tags: sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(tags)}, tags)`,
+              tags: only ? tags : sql`IF(JSON_LENGTH(tags)=0, ${JSON.stringify(tags)}, tags)`,
             })
             .where(eq(articles.id, row.id));
+          if (only) await db.delete(articleTags).where(eq(articleTags.articleId, row.id));
           // Tags written at index time carry the listing time; move them with the article.
           if (publishedAt !== row.publishedAt) await db.update(articleTags).set({ publishedAt }).where(eq(articleTags.articleId, row.id));
           if (tags.length) {

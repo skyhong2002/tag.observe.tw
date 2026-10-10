@@ -1,10 +1,8 @@
 import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
-import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads } from '../db/schema.ts';
+import { mediaCategories } from '../media-categories.ts';
 import { type Camp, campOf } from './coverage.ts';
-
-const categories = catalog.categories as Record<string, string[]>;
 
 // Extra signal for the hourly event table: how widely each event is being
 // reported (outlets and camps, with blind spots), how it moved since the
@@ -103,7 +101,7 @@ const window = (hour: Date) => ({ from: new Date(hour.getTime() - 24 * HOUR), to
 
 /** Every outlet's article count in the event window, folded into camps. 其他
  *  is limited to the news outlets the rankings use, as on the home page. */
-export async function campBaseline(db: Db, hour: Date, cats: Record<string, string[]> = categories): Promise<CampBaseline> {
+export async function campBaseline(db: Db, hour: Date, cats: Record<string, string[]> = mediaCategories()): Promise<CampBaseline> {
   const { from, to } = window(hour);
   return campBaselineBetween(db, from, to, cats);
 }
@@ -113,7 +111,7 @@ export async function campBaselineBetween(
   db: Db,
   from: Date,
   to: Date,
-  cats: Record<string, string[]> = categories,
+  cats: Record<string, string[]> = mediaCategories(),
 ): Promise<CampBaseline> {
   const rows = await db
     .select({ media: articles.media, n: sql<number>`count(*)` })
@@ -123,7 +121,7 @@ export async function campBaselineBetween(
   return foldBaseline(rows, cats);
 }
 
-export function foldBaseline(rows: Array<{ media: string; n: number }>, cats: Record<string, string[]> = categories): CampBaseline {
+export function foldBaseline(rows: Array<{ media: string; n: number }>, cats: Record<string, string[]> = mediaCategories()): CampBaseline {
   const out: CampBaseline = { outlets: { blue: 0, green: 0, other: 0 }, articles: { blue: 0, green: 0, other: 0 } };
   const news = new Set(cats.news ?? []);
   for (const r of rows) {

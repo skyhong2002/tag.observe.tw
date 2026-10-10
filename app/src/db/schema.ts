@@ -431,3 +431,35 @@ export const userSessions = mysqlTable(
   },
   (t) => [index('user_sessions_user').on(t.userId), index('user_sessions_expires').on(t.expiresAt)],
 );
+
+// Media labels (藍營、綠營、新聞、非主流…), editable from /admin/media/.
+// Seeded once from app/data/media-catalog.json; the DB is the source of truth
+// afterwards (app/src/media-categories.ts).
+export const mediaCategoryDefs = mysqlTable('media_category_defs', {
+  key: varchar('key', { length: 32 }).primaryKey(),
+  label: varchar('label', { length: 64 }).notNull(),
+  sort: int('sort').notNull().default(0),
+  createdAt: datetime('created_at').notNull(),
+});
+
+export const mediaCategories = mysqlTable(
+  'media_categories',
+  {
+    media: varchar('media', { length: 32 }).notNull(),
+    category: varchar('category', { length: 32 }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.media, t.category] }), index('media_categories_category').on(t.category)],
+);
+
+export const mediaCategoryLog = mysqlTable(
+  'media_category_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    media: varchar('media', { length: 32 }).notNull(),
+    category: varchar('category', { length: 32 }).notNull(),
+    action: varchar('action', { length: 8 }).$type<'add' | 'remove' | 'create'>().notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('media_category_log_media').on(t.media, t.at)],
+);

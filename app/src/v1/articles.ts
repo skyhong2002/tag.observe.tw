@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, articleTags } from '../db/schema.ts';
-import { RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
+import { rankingCategories } from '../jobs/ranking-job.ts';
 import { type Camp, campOf } from './coverage.ts';
 
 // Public article search: every crawled article in a time window, filtered by
@@ -87,7 +87,7 @@ export function parseArticleQuery(raw: Raw, now = new Date()): ArticleQuery | { 
     if (media.length > 50) return { error: 'at most 50 media' };
   }
   const category = raw.category || null;
-  if (category && !RANKING_CATEGORIES[category]) return { error: 'unknown category' };
+  if (category && !rankingCategories()[category]) return { error: 'unknown category' };
   const tag = raw.tag?.trim().slice(0, 60) || null;
   const camp = raw.camp || null;
   if (camp && camp !== 'blue' && camp !== 'green' && camp !== 'other') return { error: 'unknown camp' };
@@ -114,12 +114,12 @@ const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 export async function searchArticles(db: Db, query: ArticleQuery) {
   let media = query.media;
   if (query.category) {
-    const inCategory = new Set(RANKING_CATEGORIES[query.category].media);
+    const inCategory = new Set(rankingCategories()[query.category].media);
     media = (media ?? [...inCategory]).filter((m) => inCategory.has(m));
   }
   // 'other' is everything outside the blue/green lists, so it filters by
   // exclusion rather than by a media list.
-  const campMedia = (c: Camp) => [...new Set(RANKING_CATEGORIES.all.media)].filter((m) => campOf(m) === c);
+  const campMedia = (c: Camp) => [...new Set(rankingCategories().all.media)].filter((m) => campOf(m) === c);
   if (query.camp && query.camp !== 'other') {
     const inCamp = new Set(campMedia(query.camp));
     media = (media ?? [...inCamp]).filter((m) => inCamp.has(m));

@@ -1,17 +1,14 @@
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
-import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, jobRuns, rankingEntries, rankingSnapshots } from '../db/schema.ts';
+import { rankingCategories } from '../media-categories.ts';
 import { rankingBasis } from './ranking-basis.ts';
 import { computeRanking, type RankingChart } from './ranking-compute.ts';
 
-const categories = catalog.categories as Record<string, string[]>;
-// Live catalog for collection and category validation. Ranking uses the
-// separately versioned, frozen roster from ranking-basis.ts.
-export const RANKING_CATEGORIES: Record<string, { media: string[] }> = {
-  all: { media: [...new Set(Object.values(categories).flat())] },
-  ...Object.fromEntries(Object.entries(categories).map(([name, media]) => [name, { media }])),
-};
+// Live media labels (media-categories.ts) for collection and category
+// validation. Ranking uses the separately versioned, frozen roster from
+// ranking-basis.ts.
+export { rankingCategories } from '../media-categories.ts';
 export const HOURS = 24;
 export const hourStart = (d: Date) => new Date(Math.floor(d.getTime() / 3600e3) * 3600e3);
 
@@ -84,10 +81,12 @@ export async function runRankingJob({ db, now = () => new Date(), log = () => {}
     }
     const hour = hourStart(started);
     const results: Record<string, { entries: number; articles: number }> = {};
-    for (const category of Object.keys(RANKING_CATEGORIES)) {
+    for (const category of Object.keys(rankingCategories())) {
       if (only && !only.includes(category)) continue;
       const t1 = performance.now();
       const basis = rankingBasis(category);
+      // Labels added from /admin/media/ have no frozen roster, so no ranking.
+      if (!basis.media.length) continue;
       const source = basis.media.flatMap((m) => byMedia.get(m) ?? []);
       const chart = computeRanking(source, { hours: HOURS, basis });
       chart.available = started >= new Date(basis.validFrom);

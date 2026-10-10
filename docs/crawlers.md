@@ -17,7 +17,7 @@
 | `pipeline.ts` | `runIndex`（列表 → upsert，feed 自帶標籤立即寫入）、`runArticles`（抓未抓過的文章，429 時停止該批） |
 | `topics.ts`、`topic-page.ts` | 議題表：各媒體專題頁 |
 
-來源規格常用欄位：`list.include`（網址路徑過濾）、`list.articleId`（同一篇多網址時的文章身分）、`list.titleInclude`、`titleSuffix`（去掉標題後的站名）、`article.provider`（聚合站只收自製內容，其餘記在 `rejected_urls`）、`article.jsonTags`、`tagSelector`、`skipMeta`。新增或替換來源時，也要更新 `app/data/media-catalog.json` 的分類。
+來源規格常用欄位：`list.include`（網址路徑過濾）、`list.articleId`（同一篇多網址時的文章身分）、`list.titleInclude`、`titleSuffix`（去掉標題後的站名）、`article.provider`（聚合站只收自製內容，其餘記在 `rejected_urls`）、`article.jsonTags`、`tagSelector`、`skipMeta`。新增或替換來源時，到 `/admin/media/` 設定它的標籤（`app/data/media-catalog.json` 只用來初始化空的資料庫，見 [login.md](login.md#媒體設定adminmedia)）。
 
 ## 繁體收錄
 

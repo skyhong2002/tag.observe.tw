@@ -5,7 +5,7 @@ import { articles, eventSnapshots, events, eventThreads, jobRuns, rankingSnapsho
 import { type ArticleRow, clusterEvents, matchThread, threadUpdate } from './events-compute.ts';
 import { applyRankingBasis, rankingBasis } from './ranking-basis.ts';
 import { BURST_STEPS, computeBurst, type RankingChart } from './ranking-compute.ts';
-import { hourStart, RANKING_CATEGORIES } from './ranking-job.ts';
+import { hourStart, rankingCategories } from './ranking-job.ts';
 
 const taipeiHour = (d: Date) => new Date(d.getTime() + 8 * 3600e3).toISOString().slice(0, 13).replace('T', ' ') + ':00:00';
 const VALID_HOURS = 6;
@@ -20,7 +20,7 @@ export interface EventsJobDeps {
  *  basis and every tagged article of the last 24 hours. Shared by the job and
  *  by tools/events-compare.ts, which replays clustering offline. */
 export async function loadEventInputs(db: Db, now: Date, category = 'news') {
-  const spec = RANKING_CATEGORIES[category];
+  const spec = rankingCategories()[category];
   if (!spec) throw Error('unknown category ' + category);
   // Legacy events.php computes on the "all" media list with weight 14 (type=news
   // is only used for the show_events row); mirror that by using the 'all' chart.
@@ -64,7 +64,7 @@ export async function loadEventInputs(db: Db, now: Date, category = 'news') {
 
 export async function runEventsJob({ db, now = () => new Date(), log = () => {} }: EventsJobDeps, category = 'news') {
   const started = now();
-  if (!RANKING_CATEGORIES[category]) throw Error('unknown category ' + category);
+  if (!rankingCategories()[category]) throw Error('unknown category ' + category);
   const [run] = await db.insert(jobRuns).values({ name: 'events', startedAt: started, status: 'running' }).$returningId();
   try {
     const t0 = performance.now();

@@ -1,21 +1,20 @@
 import { and, eq, gte, inArray, lt } from 'drizzle-orm';
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
-import catalog from '../../data/media-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
 import { articles, articleTags } from '../db/schema.ts';
+import { mediaCategories } from '../media-categories.ts';
 import { iconUrl } from './icons.ts';
 
 // Headline comparison for one event thread: every article that carries at
 // least one of the thread's major tags inside the thread's time window,
-// grouped by outlet and by political camp (藍營／綠營／其他 from media-catalog).
+// grouped by outlet and by political camp (藍營／綠營／其他 from the media labels).
 // This is the "same event, different headlines" view; the thread's stored
 // `news` JSON only keeps 5–6 picks per hour and is not enough for it.
 
 const info = favicons as unknown as Record<string, { icon: string | null; title: string | null }>;
-const categories = catalog.categories as Record<string, string[]>;
 export type Camp = 'blue' | 'green' | 'other';
 export const CAMP_LABELS: Record<Camp, string> = { blue: '藍營傾向', green: '綠營傾向', other: '其他媒體' };
-export const campOf = (media: string, cats: Record<string, string[]> = categories): Camp =>
+export const campOf = (media: string, cats: Record<string, string[]> = mediaCategories()): Camp =>
   cats.blue?.includes(media) ? 'blue' : cats.green?.includes(media) ? 'green' : 'other';
 
 export interface CoverageRow {
@@ -70,7 +69,7 @@ export function groupCoverage(
   rows: CoverageRow[],
   majorTags: string[],
   window: { from: Date; to: Date },
-  cats: Record<string, string[]> = categories,
+  cats: Record<string, string[]> = mediaCategories(),
 ): Coverage {
   // One row per article; an outlet that publishes the same headline under two
   // URLs (AMP/mobile duplicates) is shown once.

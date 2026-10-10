@@ -5,7 +5,7 @@
 import { and, eq, gte, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { articles, jobRuns, tagStats } from '../db/schema.ts';
-import { hourStart, RANKING_CATEGORIES } from './ranking-job.ts';
+import { hourStart, rankingCategories } from './ranking-job.ts';
 import { qualifyTagMedia } from './tag-qualification.ts';
 
 export function qualifyTags(rows: Array<{ media: string; tags: string[] }>, category: string) {
@@ -44,7 +44,7 @@ export async function runTagStatsJob(
   try {
     const summary: Record<string, { level2: number; level3: number }> = {};
     for (const category of categories) {
-      const spec = RANKING_CATEGORIES[category];
+      const spec = rankingCategories()[category];
       if (!spec) continue;
       const windowHours = category === 'news' ? 24 : 24 * 7;
       const rows = await db

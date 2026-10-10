@@ -30,7 +30,7 @@ Cloudflare Tunnel → tag.observe.tw
 | `app/src/analytics/` | Google API 的唯讀連線設定與請求 |
 | `app/src/jobs/` | 排程工作：爬蟲、排行、事件分群、議題、標籤統計、相似度、分析、健康檢查、資料保留、來源探測 |
 | `app/src/db/` | Drizzle schema 與 migrations（`app/src/db/migrations`） |
-| `app/data/` | 媒體規格、分類（含藍綠名單 `media-catalog.json`）、停用清單、favicon |
+| `app/data/` | 媒體規格、分類初始值（`media-catalog.json`，上線後由 `/admin/media/` 在資料庫維護）、停用清單、favicon |
 | `web/` | Next.js UI（SSR，ECharts）；`web/src/app/liveboard/` 是獨立的常駐看板入口 |
 | `tools/` | 一次性工具與產生器（`gen-api-docs.ts`、`check-openapi.ts`、`gen-image-hosts.ts`、`gen-pwa-icons.py`、`brand-assets.py`…） |
 
@@ -89,7 +89,7 @@ node --env-file=.env tools/topics-once.ts --apply
 - **歷史相容**：舊排行快照以保存的每媒體篇數重算同一基準的分子和分母，保留原快照不覆寫；未保存的 top-500 以外關鍵字無法恢復，所以舊榜仍可能漏詞且不能把缺值視為零。舊快照總文章數／活躍媒體數無法完整恢復時回 null。標籤頁與事件上方曲線則由文章資料重算固定名單的逐時分數，不受舊排行榜截斷影響；事件下方報導篇數仍涵蓋所有媒體。
 - **事件**（`jobs/events-compute.ts`）：排行榜保存的全部候選標籤（目前最多 500 個）都參與共現分群，再依事件分數排序；不再從依爆發力排序、歷史缺值排最後的清單額外截取前 300 個，避免漏掉新事件。歷史缺值時以目前分數作為事件分數，公開排行的爆發力仍保留 null，不把未知歷史當成零。取主要標籤與代表文章；與 6 小時內的事件串比對延續（`event_threads`）。某媒體（至少 8 篇）有 80% 以上文章都帶的標籤視為該站模板詞（青年日報的 國防部／國軍／空軍），只從該媒體的文章移除；只來自單一媒體且達 8 篇的標籤視為該站欄目／品牌詞（東網、Rti、盤中速報），不參與共現。包含較短標籤且有 30% 以上文章同時帶著它的較長標籤（名古屋亞運→亞運、天氣預報→天氣）併入較短標籤，no_equal 名單中的標籤不吸收他人；文章要同時帶有事件至少 2 個標籤才算該事件的文章；代表文章依所帶標籤的爆發力加總排序，先每家媒體一篇。`tools/events-compare.ts` 可唯讀比較修正前的候選截斷、舊規則近似版與現行規則，回報候選標籤數、歷史缺值數、全部事件數與前 N 件標題的凝聚度；舊規則近似版仍使用新站的資料與評分，並非母站結果。
 - **事件報導**（`v1/coverage.ts`）：詳情頁以主要標籤查詢從第一次上榜前 24 小時到最後一次上榜後 1 小時的報導，涵蓋建立事件的完整候選文章時間範圍；最多最近 14 天、每天 400 篇，同一媒體同標題去重。
-- **藍綠**：依 `app/data/media-catalog.json` 的 blue／green 名單，以媒體為單位，不判斷單篇立場。
+- **藍綠**：依媒體標籤的 blue／green（管理員在 `/admin/media/` 維護，初始值來自 `app/data/media-catalog.json`），以媒體為單位，不判斷單篇立場。
 
 ## 資料保留（每日 04:15，`jobs/retention-job.ts`）
 

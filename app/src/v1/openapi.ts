@@ -31,7 +31,7 @@ const obj = (properties: Record<string, Schema>, description?: string, optional:
   required: Object.keys(properties).filter((k) => !optional.includes(k)),
 });
 
-const camp = str('政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json）', {
+const camp = str('政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營）', {
   enum: ['blue', 'green', 'other'],
 });
 
@@ -1060,8 +1060,17 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/categories',
     tag: 'ranking',
     summary: '排行分類',
-    description: '可用於 `category` 參數的分類，含 blue／green 兩個政治傾向分類。',
-    response: arr(obj({ key: str('分類代碼'), label: str('中文名稱'), media: int('分類內媒體數') })),
+    description:
+      '媒體標籤（由管理員維護），可用於 `category` 參數，含 blue／green 兩個政治傾向分類。只列至少有一家媒體的標籤；`ranked` 為 false 的標籤沒有固定排行名單，/api/v1/ranking 不會有快照。',
+    response: arr(
+      obj({
+        key: str('分類代碼'),
+        label: str('中文名稱'),
+        media: int('分類內媒體數'),
+        members: arr(str(), '分類內的媒體代碼'),
+        ranked: bool('是否有標籤排行'),
+      }),
+    ),
   },
   {
     path: '/api/v1/ranking',

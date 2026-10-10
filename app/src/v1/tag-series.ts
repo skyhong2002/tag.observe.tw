@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, rankingEntries, rankingSnapshots } from '../db/schema.ts';
 import { type RankingBasis, rankingBasis } from '../jobs/ranking-basis.ts';
-import { RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
+import { rankingCategories } from '../jobs/ranking-job.ts';
 
 const HOUR = 3600e3;
 export interface HourlyCount {
@@ -123,7 +123,7 @@ export function registerTagSeries(app: FastifyInstance, db: Db) {
     async (request, reply) => {
       const tag = request.params.tag.slice(0, 60);
       const category = request.query.category ?? 'all';
-      if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
+      if (!rankingCategories()[category]) return reply.code(404).send({ error: 'unknown category' });
       const hours = request.query.hours === undefined ? 72 : Number(request.query.hours);
       const now = new Date();
       const until = request.query.until === undefined ? now : new Date(request.query.until);

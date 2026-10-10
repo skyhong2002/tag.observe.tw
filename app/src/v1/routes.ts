@@ -6,7 +6,8 @@ import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads, rankingSnapshots, tagStats } from '../db/schema.ts';
 import { applyRankingBasis, rankingBasis } from '../jobs/ranking-basis.ts';
 import { BURST_STEPS, computeBurst, effectiveWeight, type RankingChart } from '../jobs/ranking-compute.ts';
-import { HOURS, RANKING_CATEGORIES } from '../jobs/ranking-job.ts';
+import { HOURS, rankingCategories } from '../jobs/ranking-job.ts';
+import { categoryLabel } from '../media-categories.ts';
 import { isTagNoise } from '../tag-noise.ts';
 import { campOf, loadThreadCoverage } from './coverage.ts';
 import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
@@ -25,24 +26,6 @@ import { completedHourWindow, loadHourlyTrends, registerTagSeries } from './tag-
 import { loadTagStatus } from './tag-status.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
-export const CATEGORY_LABELS: Record<string, string> = {
-  all: '所有媒體',
-  news: '新聞媒體',
-  '3c': '科技與 3C',
-  women: '女性網站',
-  alt: '非主流媒體',
-  finance: '財經',
-  style: '風格',
-  movie: '影視',
-  health: '健康',
-  sports: '運動',
-  travel: '旅遊',
-  notag: '無標籤媒體',
-  game: '遊戲',
-  adct: '專題',
-  blue: '藍營傾向媒體',
-  green: '綠營傾向媒體',
-};
 
 export async function loadRanking(db: Db, category: string, { at }: { at?: Date } = {}) {
   const where = at
@@ -98,10 +81,12 @@ export async function loadRanking(db: Db, category: string, { at }: { at?: Date 
 
 export async function registerV1Routes(app: FastifyInstance, db: Db) {
   app.get('/api/v1/categories', async () =>
-    Object.keys(RANKING_CATEGORIES).map((key) => ({
+    Object.entries(rankingCategories()).map(([key, { media }]) => ({
       key,
-      label: CATEGORY_LABELS[key] ?? key,
-      media: RANKING_CATEGORIES[key].media.length,
+      label: categoryLabel(key),
+      media: media.length,
+      members: media,
+      ranked: rankingBasis(key).media.length > 0,
     })),
   );
   app.get('/api/v1/media', async () =>
@@ -125,7 +110,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     };
   }>('/api/v1/ranking', async (request, reply) => {
     const category = request.query.category ?? 'all';
-    if (!RANKING_CATEGORIES[category]) return reply.code(404).send({ error: 'unknown category' });
+    if (!rankingCategories()[category]) return reply.code(404).send({ error: 'unknown category' });
     const order = request.query.order ?? 'burst';
     if (!['burst', 'score', 'growth'].includes(order)) return reply.code(400).send({ error: 'bad order' });
     const gate = request.query.gate ?? (order === 'growth' ? 'early' : 'all');
@@ -143,7 +128,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
         ? loadHourlyTrends(
             db,
             selected.map((e) => e.tag),
-            RANKING_CATEGORIES[category].media,
+            rankingCategories()[category].media,
             window.from,
             window.to,
             result.snapshot.basis,

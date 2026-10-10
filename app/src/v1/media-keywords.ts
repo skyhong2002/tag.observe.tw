@@ -1,13 +1,13 @@
 import { and, desc, eq, gte, lt, lte } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
-import mediaCatalog from '../../data/media-catalog.json' with { type: 'json' };
 import noEqual from '../../data/no-equal-tags.json' with { type: 'json' };
 import rankingBaseline from '../../data/ranking-baseline.json' with { type: 'json' };
 import { excludedMedia } from '../crawl/registry.ts';
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
 import type { Db } from '../db/client.ts';
 import { articles } from '../db/schema.ts';
+import { mediaCategories } from '../media-categories.ts';
 import { isOwnMediaTag } from '../media-tags.ts';
 import { isTagNoise } from '../tag-noise.ts';
 import { parseContentId } from './article-content.ts';
@@ -44,9 +44,7 @@ const peerGroups = Object.entries(rankingBaseline.categories as Record<string, s
 const groupsOf = new Map<string, string[]>();
 for (const [group, list] of peerGroups) for (const media of list) groupsOf.set(media, [...(groupsOf.get(media) ?? []), group]);
 export function peerGroup(media: string) {
-  const category = Object.entries(mediaCatalog.categories as Record<string, string[]>).find(
-    ([key, list]) => !SKIP_GROUPS.has(key) && list.includes(media),
-  )?.[0];
+  const category = Object.entries(mediaCategories()).find(([key, list]) => !SKIP_GROUPS.has(key) && list.includes(media))?.[0];
   return category && peerGroups.some(([group]) => group === category) ? category : 'news';
 }
 

@@ -1,7 +1,7 @@
 import { and, eq, gte, inArray, isNotNull, max, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import { type Logger, runArticles, runIndex } from '../crawl/pipeline.ts';
-import { sourcesInGroup } from '../crawl/registry.ts';
+import { sourceByMedia, sourcesInGroup } from '../crawl/registry.ts';
 import { crawlTimestamp, sourceSchedule } from '../crawl/schedule.ts';
 
 import { loadTitleVocab, type TitleVocab, tagsFromTitle } from '../crawl/title-tags.ts';
@@ -127,6 +127,23 @@ export async function crawlArticles(
     updated: results.reduce((s, r) => s + r.updated, 0),
     failed: results.reduce((s, r) => s + r.failed, 0),
   };
+}
+
+/** One outlet, one stage, on demand (/admin/media/ 「跑 index」／「跑內文抓取」),
+ *  regardless of its schedule or crawl-disabled.json, like tools/crawl-once.ts. */
+export async function crawlMedia(
+  db: Db,
+  { media, stage, limit = 80 }: { media: string; stage: 'index' | 'articles'; limit?: number },
+  { log, signal }: { log: Logger; signal?: AbortSignal },
+) {
+  const spec = sourceByMedia(media);
+  if (!spec) throw Error('unknown media ' + media);
+  if (stage === 'index') {
+    const r = await runIndex(db, spec, { log });
+    return { media, stage, items: r.items, inserted: r.inserted, errors: r.errors.slice(0, 5) };
+  }
+  const vocab = await loadTitleVocab(db).catch(() => null);
+  return { media, stage, ...(await runArticles(db, spec, { log, limit, vocab, signal })) };
 }
 
 // Articles already fetched (or skipped) that still have no tags: tag from the

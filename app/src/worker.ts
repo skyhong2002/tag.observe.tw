@@ -6,7 +6,7 @@ import { googleConfigFromEnv } from './analytics/google.ts';
 import { createDb } from './db/client.ts';
 import { runAnalyticsJob, runRealtimeJob } from './jobs/analytics-job.ts';
 import { runCrawlHealthJob } from './jobs/crawl-health-job.ts';
-import { crawlArticles, crawlGroup } from './jobs/crawl-job.ts';
+import { crawlArticles, crawlGroup, crawlMedia } from './jobs/crawl-job.ts';
 import { runEventsJob } from './jobs/events-job.ts';
 import { runMediaRadarJob } from './jobs/media-radar-job.ts';
 import { runMediaTrafficJob } from './jobs/media-traffic-job.ts';
@@ -17,6 +17,7 @@ import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
 import { LEGACY_OWNERSHIP_POLICY } from './legacy/ownership-policy.ts';
+import { keepMediaCategoriesFresh } from './media-categories.ts';
 import { radarToken } from './media-traffic/radar.ts';
 import { jobDuration, jobRuns as jobRunsMetric, metricsContentType, metricsText, snapshotAge, snapshotArticles } from './metrics.ts';
 import { archiveStoreFromEnv } from './nearline/store.ts';
@@ -26,6 +27,9 @@ const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:16379';
 const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
 const { db, close: closeDb } = createDb();
 const queue = new Queue('tag-jobs', { connection });
+// Admins edit media labels at /admin/media/; ranking, events and tag stats read them.
+const labels = keepMediaCategoriesFresh(db, { warn: (err) => log.warn({ err: (err as Error).message }, 'media labels refresh failed') });
+await labels.ready;
 const intervalMinutes = Number(process.env.RANKING_INTERVAL_MINUTES || 10);
 await queue.upsertJobScheduler(
   'ranking-every',
@@ -147,6 +151,7 @@ for (const job of [
   'similarity',
   'crawl-index',
   'crawl-articles',
+  'crawl-media',
 ])
   for (const status of ['ok', 'failed']) jobRunsMetric.inc({ job, status }, 0);
 
@@ -234,6 +239,12 @@ const worker = new Worker(
         log.info({ job: job.name, ...r }, 'crawl articles finished');
         return r;
       }
+      if (job.name === 'crawl-media') {
+        const r = await crawlMedia(db, job.data, { log, signal: shutdown.signal });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        log.info({ job: job.name, ...r, errors: r.errors?.length }, 'crawl media finished');
+        return r;
+      }
       throw Error('Unknown job ' + job.name);
     } catch (error) {
       jobRunsMetric.inc({ job: job.name, status: 'failed' });
@@ -275,6 +286,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const)
       process.exit(1);
     }, 40000).unref();
     await worker.close();
+    labels.stop();
     await queue.close();
     await connection.quit();
 

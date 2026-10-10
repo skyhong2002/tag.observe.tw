@@ -8,16 +8,18 @@ import SortIndicator from '@/components/SortIndicator';
 import Sparkline from '@/components/Sparkline';
 import TableScroller from '@/components/TableScroller';
 import TagDiscoveryBadges from '@/components/TagDiscoveryBadges';
-import { fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
+import { type Category, fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
 import { rankingCategoryNote, rankingNotice } from '@/lib/ranking-notice.mts';
 import { type RankingSearch, rankingHref, rankingQuery } from '@/lib/ranking-query.mts';
 import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
 
 export const revalidate = 60;
+// Labels added at /admin/media/ have no frozen roster and so no ranking.
+const rankedCategories = (all: Category[]) => all.filter((c) => c.ranked !== false);
 export async function generateMetadata({ searchParams }: { searchParams: Promise<RankingSearch> }) {
   const { category, order, gate } = rankingQuery(await searchParams);
-  const categories = await fetchCategories();
+  const categories = rankedCategories(await fetchCategories());
   const selected = categories.find((c) => c.key === category);
   const key = selected?.key ?? 'all';
   return pageMetadata(
@@ -47,7 +49,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const sort: Col = COLS.includes(sp.sort as Col) ? (sp.sort as Col) : order;
   const dir = sp.dir === 'asc' || sp.dir === 'desc' ? sp.dir : sort === 'tag' ? 'asc' : 'desc';
   const [categories, media, ranking, cloud] = await Promise.all([
-    fetchCategories(),
+    fetchCategories().then(rankedCategories),
     fetchMedia(),
     fetchRanking(category, order, limit, true, true, { gate, signals: true }).catch(() => null),
     fetchRanking(category, emerging ? 'growth' : 'score', CLOUD_WORDS, false, false, { gate }).catch(() => null),

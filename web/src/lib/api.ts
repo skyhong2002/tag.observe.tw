@@ -8,6 +8,10 @@ export interface Category {
   key: string;
   label: string;
   media: number;
+  /** Member outlets; labels are edited by admins at /admin/media/. */
+  members: string[];
+  /** Has a frozen ranking roster, so /ranking/ can show it. */
+  ranked: boolean;
 }
 export interface RankingBasis {
   id: string;
@@ -140,8 +144,9 @@ async function get<T>(path: string, revalidate = 60): Promise<T> {
   if (!res.ok) throw new Error(`${path} -> ${res.status}`);
   return res.json() as Promise<T>;
 }
-export const fetchCategories = () => get<Category[]>('/api/v1/categories', 3600);
-export const fetchMedia = () => get<MediaInfo>('/api/v1/media', 3600);
+// Ten minutes, so label edits at /admin/media/ show up soon.
+export const fetchCategories = () => get<Category[]>('/api/v1/categories', 600);
+export const fetchMedia = () => get<MediaInfo>('/api/v1/media', 600);
 export const fetchRanking = (
   category: string,
   order: RankingOrder,

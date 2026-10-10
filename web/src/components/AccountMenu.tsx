@@ -34,6 +34,10 @@ export default function AccountMenu() {
     return (
       <a
         href={loginHref(path)}
+        // Keep the query too (/admin/media/?url=… from the bookmarklet).
+        onClick={(event) => {
+          event.currentTarget.href = loginHref(location.pathname + location.search);
+        }}
         className="block rounded-md px-2 py-1.5 text-sm whitespace-nowrap text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
       >
         登入

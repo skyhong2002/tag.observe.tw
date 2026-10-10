@@ -301,7 +301,7 @@ curl -s 'https://tag.observe.tw/api/v1/openapi.json'
 
 **排行分類**
 
-可用於 `category` 參數的分類，含 blue／green 兩個政治傾向分類。
+媒體標籤（由管理員維護），可用於 `category` 參數，含 blue／green 兩個政治傾向分類。只列至少有一家媒體的標籤；`ranked` 為 false 的標籤沒有固定排行名單，/api/v1/ranking 不會有快照。
 
 範例：
 
@@ -316,6 +316,8 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `[].key` | string | 分類代碼 |
 | `[].label` | string | 中文名稱 |
 | `[].media` | integer | 分類內媒體數 |
+| `[].members` | string[] | 分類內的媒體代碼 |
+| `[].ranked` | boolean | 是否有標籤排行 |
 
 <a id="api-v1-ranking"></a>
 
@@ -982,7 +984,7 @@ curl -s 'https://tag.observe.tw/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&li
 | `query.media` | string[] \| null |  |
 | `query.category` | string \| null |  |
 | `query.tag` | string \| null |  |
-| `query.camp` | "blue" \| "green" \| "other" \| null | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `query.camp` | "blue" \| "green" \| "other" \| null | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `query.since` | string (ISO 時間) |  |
 | `query.until` | string (ISO 時間) |  |
 | `query.limit` | integer |  |
@@ -1001,7 +1003,7 @@ curl -s 'https://tag.observe.tw/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&li
 | `articles[].id` | integer |  |
 | `articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `articles[].mediaTitle` | string | 媒體名稱 |
-| `articles[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `articles[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `articles[].title` | string |  |
 | `articles[].description` | string \| null | 媒體提供的 description |
 | `articles[].summary` | string \| null | 媒體摘要；未取得時為 null |
@@ -1048,7 +1050,7 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard'
 | `articles[].id` | integer |  |
 | `articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `articles[].mediaTitle` | string |  |
-| `articles[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `articles[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `articles[].title` | string |  |
 | `articles[].url` | string |  |
 | `articles[].image` | string \| null |  |
@@ -2048,7 +2050,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 | `articles` | integer | 文章總數 |
 | `outlets` | integer | 媒體數 |
 | `camps` | object[] |  |
-| `camps[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `camps[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `camps[].label` | string |  |
 | `camps[].outlets` | integer |  |
 | `camps[].articles` | integer |  |
@@ -2057,7 +2059,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 | `byOutlet[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `byOutlet[].title` | string |  |
 | `byOutlet[].icon` | string \| null |  |
-| `byOutlet[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `byOutlet[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `byOutlet[].articles` | object[] |  |
 | `byOutlet[].articles[].id` | integer |  |
 | `byOutlet[].articles[].title` | string |  |
@@ -2488,7 +2490,7 @@ curl -s 'https://tag.observe.tw/api/v1/media'
 | --- | --- | --- |
 | `{鍵}.title` | string \| null | 媒體名稱 |
 | `{鍵}.icon` | string \| null | favicon 網址；已存放在本站的為 https://tag.observe.tw/favicons/<媒體代碼>.png（64×64 PNG） |
-| `{鍵}.camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `{鍵}.camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 
 <a id="api-v1-media-media"></a>
 
@@ -2601,7 +2603,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].sourceKind` | "discovery" \| "publisher" | discovery 為文章發現來源，篇數透過關聯計算；publisher 為刊登媒體，全站文章總數不重複計入發現來源 |
 | `media[].category` | string \| null |  |
 | `media[].categoryLabel` | string \| null |  |
-| `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依 app/data/media-catalog.json） |
+| `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `media[].schedule` | string | 爬取頻率；hourly 或 every N min；未啟用時為 off |
 | `media[].crawlSchedule` | object |  |
 | `media[].crawlSchedule.intervalMinutes` | number \| null | 實際逐媒體最小巡查間隔（分鐘） |
