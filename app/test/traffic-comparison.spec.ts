@@ -132,6 +132,49 @@ describe('traffic comparison publisher identity and adjustments', () => {
     expect(empty.trafficMonths).toEqual([]);
     expect(empty.outlets.every((o) => o.traffic.length === 0)).toBe(true);
   });
+  it('lists a shared whole-domain figure once, on the outlet at the site root', () => {
+    const channel = {
+      ...source,
+      media: 'local-channel',
+      name: '地方中文頻道',
+      websiteUrl: 'https://local.example/zh/',
+      referenceNames: ['地方中文頻道'],
+    };
+    const live = {
+      status: 'ok' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: null,
+      domains: [{ domain: 'local.example', fetchedAt: '2026-10-08T00:00:00Z', monthly: [{ month: '202609', visits: 500 }] }],
+    };
+    const radar = {
+      status: 'ok' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: null,
+      domains: [
+        {
+          domain: 'local.example',
+          fetchedAt: '2026-10-09T00:00:00Z',
+          dateStart: '2026-10-05T00:00:00Z',
+          dateEnd: '2026-10-05T00:00:00Z',
+          rank: null,
+          bucket: 5000,
+        },
+      ],
+    };
+    const built = buildComparison([], [channel, source], null, new Set(), live, radar);
+    const root = built.outlets.find((o) => o.media === source.media);
+    const sub = built.outlets.find((o) => o.media === channel.media);
+    expect(root?.traffic[0].traffic).toBe(500);
+    expect(root?.radar?.bucket).toBe(5000);
+    expect(root?.sharedWith).toBeUndefined();
+    expect(sub?.traffic).toEqual([]);
+    expect(sub?.radar).toBeUndefined();
+    expect(sub?.sharedWith).toBe(root?.name);
+    // Two outlets at the same depth: neither gets the figure.
+    const twin = { ...channel, websiteUrl: 'https://local.example/' };
+    const tied = buildComparison([], [twin, source], null, new Set(), live, radar);
+    expect(tied.outlets.every((o) => o.traffic.length === 0 && !o.radar)).toBe(true);
+  });
   it('deduplicates real catalog parent/channel rows using the named primary without summing their traffic', () => {
     const latest = traffic.snapshots.find((snapshot) => snapshot.month === '202608')!;
     const built = buildComparison([latest], catalog.sources, null);

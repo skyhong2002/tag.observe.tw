@@ -53,6 +53,8 @@ export interface ComparisonOutlet {
   referenceTraffic?: TrafficPoint[];
   referenceDomain?: string | null;
   radar?: RadarData['domains'][number];
+  /** Set when another outlet owns this whole-domain figure (e.g. BBC 中文 under bbc.com); names that outlet. */
+  sharedWith?: string;
 }
 export interface ComparisonData {
   months: string[];
@@ -80,6 +82,15 @@ export const sourceStatusLabels = {
   failed: '暫時無法取得資料',
   unconfigured: '尚未設定 API Token',
 } as const;
+/** One-line Radar position: exact rank, a top-N bucket, or outside the largest bucket. */
+export const radarText = (radar: ComparisonOutlet['radar'] | null) =>
+  radar?.rank != null
+    ? `第 ${radar.rank.toLocaleString('zh-TW')} 名`
+    : radar?.bucket != null
+      ? `前 ${radar.bucket.toLocaleString('zh-TW')} 名`
+      : radar?.bucketLowerBound != null
+        ? `未入前 ${radar.bucketLowerBound.toLocaleString('zh-TW')} 名`
+        : '—';
 export const shortMonth = (month: string) => `${month.slice(0, 4)}/${month.slice(4)}`;
 export const taipeiMonth = (date: string) => new Date(Date.parse(date) + 8 * 3600e3).toISOString().slice(0, 7).replace('-', '');
 
@@ -182,6 +193,33 @@ export function buildComparison(
   const liveByDomain = new Map(live?.domains.map((row) => [row.domain, row]) ?? []);
   const radarByDomain = new Map(radar?.domains.map((row) => [row.domain, row]) ?? []);
   const useLive = live !== null;
+  // Similarweb and Radar only measure whole domains. When several outlets sit on one
+  // domain, the figure belongs to the one at the site root (or the shortest path);
+  // a tie leaves the figure unassigned rather than repeating it on several rows.
+  const official = (outlet: ComparisonOutlet) => {
+    const url = safeWebsiteUrl(catalog.find((s) => s.media === outlet.media)?.websiteUrl);
+    return url ? new URL(url) : null;
+  };
+  const owners = new Map<string, ComparisonOutlet[]>();
+  for (const outlet of outlets.values()) {
+    const url = official(outlet);
+    if (outlet.sourceKind !== 'publisher' || !url || (outlet.media && hidden.has(outlet.media))) continue;
+    const domain = url.hostname.replace(/^www\./, '');
+    owners.set(domain, [...(owners.get(domain) ?? []), outlet]);
+  }
+  const owner = new Map<string, ComparisonOutlet | null>();
+  for (const [domain, group] of owners) {
+    const depth = (o: ComparisonOutlet) => official(o)?.pathname.replace(/\/+$/, '').length ?? 0;
+    const best = Math.min(...group.map(depth));
+    const top = group.filter((o) => depth(o) === best);
+    owner.set(domain, top.length === 1 ? top[0] : null);
+  }
+  const ownsDomain = (outlet: ComparisonOutlet, domain: string) => {
+    const holder = owner.get(domain);
+    if (holder === undefined || holder === outlet) return true;
+    outlet.sharedWith = holder?.name ?? domain;
+    return false;
+  };
   // Preserve GeneHong's original scope and units before applying official-domain sources.
   for (const outlet of outlets.values()) {
     outlet.referenceTraffic = outlet.traffic;
@@ -189,14 +227,17 @@ export function buildComparison(
     const source = catalog.find((s) => s.media === outlet.media);
     const website = safeWebsiteUrl(source?.websiteUrl);
     const domain = website ? new URL(website).hostname.replace(/^www\./, '') : outlet.domain;
-    if (outlet.sourceKind === 'publisher' && domain) outlet.radar = radarByDomain.get(domain);
+    if (outlet.sourceKind === 'publisher' && domain && ownsDomain(outlet, domain)) outlet.radar = radarByDomain.get(domain);
   }
   if (useLive) {
     for (const outlet of outlets.values()) {
       const source = catalog.find((s) => s.media === outlet.media);
       const official = safeWebsiteUrl(source?.websiteUrl);
       if (official) outlet.domain = new URL(official).hostname.replace(/^www\./, '');
-      const current = outlet.sourceKind === 'publisher' && outlet.domain ? liveByDomain.get(outlet.domain) : undefined;
+      const current =
+        outlet.sourceKind === 'publisher' && outlet.domain && ownsDomain(outlet, outlet.domain)
+          ? liveByDomain.get(outlet.domain)
+          : undefined;
       outlet.trafficFetchedAt = current?.fetchedAt;
       outlet.traffic = (current?.monthly ?? []).map((point) => ({
         month: point.month,

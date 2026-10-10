@@ -11,14 +11,18 @@ import SectionTabs from '@/components/SectionTabs';
 import SourceLink from '@/components/SourceLink';
 import SourceProfile from '@/components/SourceProfile';
 import StructuredData from '@/components/StructuredData';
+import TrafficSparkline from '@/components/TrafficSparkline';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaContent } from '@/lib/article-content';
 import { mediaNames } from '@/lib/media-names.mts';
 import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
+import { trafficNumber } from '@/lib/media-traffic.mts';
 import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import type { SimilarityData } from '@/lib/similarity';
 import { outletIdentity } from '../../../../../../app/src/similarity/attribution';
+import { radarText, shortMonth } from '@/lib/traffic-comparison.mts';
+import { loadComparison } from '../sources/load';
 
 export const revalidate = 60;
 export async function generateMetadata({
@@ -55,7 +59,7 @@ export default async function MediaPage({
     keyword = query.get('q');
   const cloudHours = Number(hours ?? 168);
   const discoverySource = media === 'google_news' || media === 'dongtaiwang';
-  const [res, profile, keywords, similarity] = await Promise.all([
+  const [res, profile, keywords, similarity, comparison] = await Promise.all([
     fetch(`${API_ORIGIN}/api/v1/media/${encodeURIComponent(media)}/content?${apiQuery}`, {
       next: { revalidate },
       signal: AbortSignal.timeout(6000),
@@ -72,6 +76,8 @@ export default async function MediaPage({
         })
           .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
           .catch(() => null),
+    // Similarweb visits and Radar rank, from the same load as /media/sources/.
+    discoverySource ? null : loadComparison().catch(() => null),
   ]);
   if (res?.status === 400) notFound();
   if (res?.status === 404) return <SourceProfile media={media} query={Object.fromEntries(query)} />;
@@ -86,6 +92,13 @@ export default async function MediaPage({
   const clearQuery = new URLSearchParams(firstQuery);
   clearQuery.delete('q');
   const reference = mediaReference(media);
+  const outlet = comparison?.outlets.find((o) => o.media === media);
+  const trafficMonths = comparison?.trafficMonths.slice(-3) ?? [];
+  // Without a Similarweb snapshot, outlet.traffic falls back to the GeneHong sheet; show Similarweb only.
+  const visits =
+    comparison?.trafficSource !== 'similarweb-extension'
+      ? undefined
+      : outlet?.traffic.findLast((point) => point.traffic != null && trafficMonths.includes(point.month));
   const periodHref = (value: string | null) => {
     const next = new URLSearchParams(firstQuery);
     if (value) next.set('hours', value);
@@ -217,6 +230,32 @@ export default async function MediaPage({
                   </dd>
                 </>
               )}
+              {visits && outlet && (
+                <>
+                  <dt className="text-zinc-500 dark:text-zinc-400">月訪問量</dt>
+                  <dd className="flex items-center justify-between gap-2" title="Similarweb 全網域估算月訪問次數，非 page views">
+                    <span className="tabular-nums">
+                      {trafficNumber(visits.traffic)}
+                      <span className="ml-1 text-zinc-500">{shortMonth(visits.month)}</span>
+                    </span>
+                    <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月訪問量" />
+                  </dd>
+                </>
+              )}
+              {outlet?.sharedWith && (
+                <>
+                  <dt className="text-zinc-500 dark:text-zinc-400">網站流量</dt>
+                  <dd>
+                    與{outlet.sharedWith}共用 {outlet.domain}，整個網域的數字列在{outlet.sharedWith}
+                  </dd>
+                </>
+              )}
+              {outlet?.radar && (
+                <>
+                  <dt className="text-zinc-500 dark:text-zinc-400">Radar 排名</dt>
+                  <dd title={`Cloudflare Radar 全球熱門網域，資料期末 ${outlet.radar.dateEnd.slice(0, 10)}`}>{radarText(outlet.radar)}</dd>
+                </>
+              )}
               {!discovery && (
                 <>
                   <dt className="text-zinc-500 dark:text-zinc-400">開始收錄</dt>
@@ -236,7 +275,7 @@ export default async function MediaPage({
               href={`/media/sources/?${new URLSearchParams({ q: data.media })}`}
               className="mt-3 block border-t border-zinc-200 pt-2.5 text-brand-700 hover:underline dark:border-zinc-800 dark:text-brand-400"
             >
-              Similar Web →
+              流量與排名比較 →
             </Link>
           </section>
           {!discovery && <MediaRelations data={similarity} media={media} hours={cloudHours} />}
