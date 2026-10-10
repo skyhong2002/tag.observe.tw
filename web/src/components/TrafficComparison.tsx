@@ -12,14 +12,19 @@ import { table } from '@/lib/table-styles';
 import {
   type ComparisonData,
   type ComparisonOutlet,
+  channelLabels,
+  channelShares,
   collectionPoint,
+  percent,
   radarText,
   shortMonth,
   type TrafficPoint,
+  taiwanShare,
+  taiwanSortValue,
 } from '@/lib/traffic-comparison.mts';
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
-type Sort = 'traffic' | 'radar' | 'articles' | 'name';
+type Sort = 'traffic' | 'taiwan' | 'radar' | 'articles' | 'name';
 type View = 'value' | 'change';
 
 const radarPosition = (outlet: ComparisonOutlet) =>
@@ -56,7 +61,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
   const [query, setQuery] = useState(initial.q ?? '');
   const [sort, setSort] = useState<Sort>(
-    ['traffic', 'radar', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic',
+    ['traffic', 'taiwan', 'radar', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic',
   );
   // Month-on-month change first; the raw visit counts are one click away.
   const [view, setView] = useState<View>(initial.view === 'value' ? 'value' : 'change');
@@ -69,6 +74,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   const metric = (o: ComparisonOutlet): number | string | null => {
     if (sort === 'name') return o.name;
     if (sort === 'articles') return articlesAt(o);
+    if (sort === 'taiwan') return taiwanSortValue(o.trafficProfile);
     // Smaller Radar positions are more popular, so negate them: descending lists the most popular first.
     if (sort === 'radar') return radarPosition(o) == null ? null : -(radarPosition(o) as number);
     return view === 'change' ? monthChange(o.traffic, data.trafficMonths, trafficMonth) : (trafficAt(o)?.traffic ?? null);
@@ -102,6 +108,8 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
       label: 'Similarweb',
       sub: [trafficMonth && shortMonth(trafficMonth), view === 'change' ? '較上月' : '月訪問次數', trend].filter(Boolean).join(' · '),
     },
+    { key: 'taiwan', label: '台灣占比', sub: '訪問量 · 最新一期' },
+    { key: 'channel', label: '主要導流', sub: '最新一期' },
     { key: 'radar', label: 'Cloudflare Radar', sub: '全球排名' },
   ] as const;
 
@@ -167,13 +175,20 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                 <th
                   scope="col"
                   key={key}
-                  aria-sort={sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
+                  aria-sort={key === 'channel' ? undefined : sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
                   className={key === 'name' ? `${table.leadHead} text-left` : `${table.cell} text-right`}
                 >
-                  <button type="button" onClick={() => chooseSort(key)} className="min-h-8 font-medium whitespace-nowrap">
-                    {label} <SortIndicator active={sort === key} descending={!ascending} />
-                    {sub && <span className="block text-[10px] font-normal">{sub}</span>}
-                  </button>
+                  {key === 'channel' ? (
+                    <span className="font-medium whitespace-nowrap">
+                      {label}
+                      <span className="block text-[10px] font-normal">{sub}</span>
+                    </span>
+                  ) : (
+                    <button type="button" onClick={() => chooseSort(key)} className="min-h-8 font-medium whitespace-nowrap">
+                      {label} <SortIndicator active={sort === key} descending={!ascending} />
+                      {sub && <span className="block text-[10px] font-normal">{sub}</span>}
+                    </button>
+                  )}
                 </th>
               ))}
             </tr>
@@ -183,6 +198,17 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
               const shared = outlet.sharedWith && `與${outlet.sharedWith}共用 ${outlet.domain}；整個網域的數字只列在${outlet.sharedWith}`;
               const point = trafficAt(outlet),
                 count = articlesAt(outlet);
+              const profile = outlet.trafficProfile;
+              const tw = taiwanShare(profile);
+              const channels = channelShares(profile);
+              const visitsAtProfile = profile && outlet.traffic.find((p) => p.month === profile.month)?.traffic;
+              const taiwanTitle =
+                profile &&
+                (tw && 'share' in tw && visitsAtProfile
+                  ? `${shortMonth(profile.month)} 台灣估算約 ${Math.round(visitsAtProfile * tw.share).toLocaleString('zh-TW')} 次訪問`
+                  : tw && 'below' in tw
+                    ? `台灣不在前五大來源國家，占比低於 ${percent(tw.below)}`
+                    : undefined);
               const identity = (
                 <>
                   {outlet.media ? (
@@ -240,6 +266,17 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                         )}
                       </span>
                     </div>
+                  </td>
+                  <td className={`${table.num} py-1.5 whitespace-nowrap`} title={shared ?? taiwanTitle}>
+                    {tw == null ? '—' : 'share' in tw ? percent(tw.share) : `< ${percent(tw.below)}`}
+                  </td>
+                  <td
+                    className={`${table.num} py-1.5 whitespace-nowrap`}
+                    title={
+                      shared ?? (channels.length ? channels.map(([c, v]) => `${channelLabels[c]} ${percent(v)}`).join('、') : undefined)
+                    }
+                  >
+                    {channels.length ? `${channelLabels[channels[0][0]]} ${percent(channels[0][1])}` : '—'}
                   </td>
                   <td
                     className={`${table.num} py-1.5 whitespace-nowrap`}

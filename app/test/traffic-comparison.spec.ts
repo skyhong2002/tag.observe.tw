@@ -7,6 +7,8 @@ import {
   collectionPoint,
   primaryTraffic,
   rankValues,
+  taiwanShare,
+  taiwanSortValue,
 } from '../../web/src/lib/traffic-comparison.mts';
 import traffic from '../data/media-traffic.json' with { type: 'json' };
 import catalog from '../data/news-source-catalog.json' with { type: 'json' };
@@ -174,6 +176,48 @@ describe('traffic comparison publisher identity and adjustments', () => {
     const twin = { ...channel, websiteUrl: 'https://local.example/' };
     const tied = buildComparison([], [twin, source], null, new Set(), live, radar);
     expect(tied.outlets.every((o) => o.traffic.length === 0 && !o.radar)).toBe(true);
+  });
+  it('attaches the newest Similarweb profile and bounds Taiwan outside the top five', () => {
+    const profile = (month: string, countries: Array<{ code: string; share: number }>) => ({
+      month,
+      countries,
+      channels: { Direct: 0.4 },
+      bounceRate: 0.5,
+      pagesPerVisit: 2,
+      timeOnSite: 100,
+      globalRank: 1000,
+      countryRank: null,
+      categoryRank: null,
+    });
+    const live = {
+      status: 'ok' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: null,
+      domains: [
+        {
+          domain: 'local.example',
+          fetchedAt: '2026-10-08T00:00:00Z',
+          monthly: [{ month: '202609', visits: 1000 }],
+          profiles: {
+            '202608': profile('202608', [{ code: 'TW', share: 0.5 }]),
+            '202609': profile('202609', [{ code: 'TW', share: 0.9 }]),
+          },
+        },
+      ],
+    };
+    const built = buildComparison([], [source], null, new Set(), live);
+    const outlet = built.outlets.find((o) => o.media === source.media);
+    expect(outlet?.trafficProfile?.month).toBe('202609');
+    expect(taiwanShare(outlet?.trafficProfile)).toEqual({ share: 0.9 });
+    const abroad = profile('202609', [
+      { code: 'HK', share: 0.7 },
+      { code: 'US', share: 0.1 },
+      { code: 'SG', share: 0.03 },
+    ]);
+    expect(taiwanShare(abroad)).toEqual({ below: 0.03 });
+    // Unknown shares sort after every known one, even a tiny known share.
+    expect(taiwanSortValue(abroad) as number).toBeLessThan(taiwanSortValue(profile('202609', [{ code: 'TW', share: 0.001 }])) as number);
+    expect(taiwanShare(undefined)).toBeNull();
   });
   it('deduplicates real catalog parent/channel rows using the named primary without summing their traffic', () => {
     const latest = traffic.snapshots.find((snapshot) => snapshot.month === '202608')!;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { dueDomains, emptyTraffic, extensionHeaders, fetchDomainTraffic, refreshTraffic, trafficDomain } from './live.ts';
+import { dueDomains, emptyTraffic, extensionHeaders, fetchDomainTraffic, mergeProfiles, refreshTraffic, trafficDomain } from './live.ts';
 
 describe('Similarweb live traffic source', () => {
   it('normalizes only bare public domains', () => {
@@ -66,7 +66,7 @@ describe('Similarweb live traffic source', () => {
   });
   it('fetches missing domains first, then the oldest, and skips fresh successes and recent misses', () => {
     const now = new Date('2026-10-10T00:00:00Z');
-    const row = (domain: string, fetchedAt: string) => ({ domain, fetchedAt, monthly: [] });
+    const row = (domain: string, fetchedAt: string) => ({ domain, fetchedAt, monthly: [], profiles: {} });
     const due = dueDomains(
       ['fresh.com', 'old.com', 'older.com', 'new.com', 'nodata.com', 'retry.com'],
       {
@@ -112,6 +112,80 @@ describe('Similarweb live traffic source', () => {
     expect(request).toHaveBeenCalledTimes(4);
     expect(result).toMatchObject({ status: 'partial', updated: 1 });
     expect(Object.keys(result.failedAt ?? {})).toEqual(['a.com', 'b.com', 'c.com']);
+  });
+
+  it("stores the month's countries, channels, engagement and ranks, dropping malformed parts", async () => {
+    const body = {
+      SiteName: 'money.udn.com',
+      EstimatedMonthlyVisits: { '2026-08-01': 4915427, '2026-09-01': 4323489 },
+      Engagments: { BounceRate: '0.555', Month: '9', Year: '2026', PagePerVisit: '1.73', TimeOnSite: '121.95' },
+      TopCountryShares: [
+        { CountryCode: 'HK', Value: 0.019 },
+        { CountryCode: 'TW', Value: 0.9346 },
+        { CountryCode: 'bad', Value: 0.1 },
+        { CountryCode: 'US', Value: 7 },
+      ],
+      TrafficSources: { Direct: 0.39, SearchOrganic: 0.44, GenAi: 0.006, Affiliate: 0, Unknown: 0.5, Mail: 'x' },
+      GlobalRank: { Rank: 17750 },
+      CountryRank: { CountryCode: 'TW', Rank: 223 },
+      CategoryRank: { Category: 'News_and_Media', Rank: '29' },
+    };
+    const row = await fetchDomainTraffic('money.udn.com', async () => new Response(JSON.stringify(body)), new Date('2026-10-10T00:00:00Z'));
+    expect(row.profiles).toEqual({
+      '202609': {
+        month: '202609',
+        countries: [
+          { code: 'TW', share: 0.9346 },
+          { code: 'HK', share: 0.019 },
+        ],
+        channels: { Direct: 0.39, SearchOrganic: 0.44, GenAi: 0.006, Affiliate: 0 },
+        bounceRate: 0.555,
+        pagesPerVisit: 1.73,
+        timeOnSite: 121.95,
+        globalRank: 17750,
+        countryRank: { code: 'TW', rank: 223 },
+        categoryRank: { category: 'News_and_Media', rank: 29 },
+      },
+    });
+    // No reporting month: visits are kept, the profile is not.
+    const bare = await fetchDomainTraffic(
+      'money.udn.com',
+      async () => new Response(JSON.stringify({ ...body, Engagments: null })),
+      new Date('2026-10-10T00:00:00Z'),
+    );
+    expect(bare.monthly.length).toBe(2);
+    expect(bare.profiles).toEqual({});
+  });
+
+  it("keeps earlier months' profiles and refetches rows saved without profiles first", () => {
+    const profile = (month: string) => ({
+      month,
+      countries: [],
+      channels: {},
+      bounceRate: null,
+      pagesPerVisit: null,
+      timeOnSite: null,
+      globalRank: null,
+      countryRank: null,
+      categoryRank: null,
+    });
+    const old = { domain: 'a.com', fetchedAt: '2026-09-10T00:00:00Z', monthly: [], profiles: { '202608': profile('202608') } };
+    const next = { domain: 'a.com', fetchedAt: '2026-10-10T00:00:00Z', monthly: [], profiles: { '202609': profile('202609') } };
+    expect(Object.keys(mergeProfiles(old, next).profiles ?? {})).toEqual(['202608', '202609']);
+    const now = new Date('2026-10-10T00:00:00Z');
+    const fresh = '2026-10-09T00:00:00Z';
+    const due = dueDomains(
+      ['with.com', 'without.com'],
+      {
+        ...emptyTraffic(),
+        domains: [
+          { domain: 'with.com', fetchedAt: fresh, monthly: [], profiles: { '202609': profile('202609') } },
+          { domain: 'without.com', fetchedAt: fresh, monthly: [] },
+        ],
+      },
+      now,
+    );
+    expect(due).toEqual(['without.com']);
   });
 
   it.each([

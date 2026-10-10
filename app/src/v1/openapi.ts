@@ -1884,11 +1884,32 @@ export const ENDPOINTS: Endpoint[] = [
       status: str('批次狀態', { enum: ['pending', 'ok', 'partial', 'blocked', 'failed'] }),
       error: nullable(str('最近一次錯誤摘要')),
       domains: arr(
-        obj({
-          domain: str('網域'),
-          fetchedAt: time('該網域最近成功抓取時間'),
-          monthly: arr(obj({ month: str('月份 YYYYMM'), visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量') })),
-        }),
+        obj(
+          {
+            domain: str('網域'),
+            fetchedAt: time('該網域最近成功抓取時間'),
+            monthly: arr(obj({ month: str('月份 YYYYMM'), visits: num('Similarweb EstimatedMonthlyVisits 估算訪問量') })),
+            profiles: map(
+              obj({
+                month: str('月份 YYYYMM'),
+                countries: arr(obj({ code: str('國家代碼 ISO 3166-1 alpha-2'), share: num('占訪問量比例 0–1') }), '前五大來源國家，由大到小'),
+                channels: map(
+                  num(),
+                  '導流來源占比 0–1：Direct、SearchOrganic、SearchPaid、SocialOrganic、SocialPaid、Referrals、Mail、DisplayAds、GenAi、Affiliate',
+                ),
+                bounceRate: nullable(num('跳出率 0–1')),
+                pagesPerVisit: nullable(num('每次造訪瀏覽頁數')),
+                timeOnSite: nullable(num('平均造訪時間（秒）')),
+                globalRank: nullable(int('全球排名')),
+                countryRank: nullable(obj({ code: str(), rank: int() }, '主要國家排名')),
+                categoryRank: nullable(obj({ category: str(), rank: int() }, '類別排名')),
+              }),
+              '依月份（YYYYMM）保存的國家來源、導流來源、互動與排名；每次只取得最近一期，較早月份隨排程累積，最多 12 個月；舊資料列可能沒有此欄',
+            ),
+          },
+          undefined,
+          ['profiles'],
+        ),
       ),
     }),
     cache: '1 分鐘',

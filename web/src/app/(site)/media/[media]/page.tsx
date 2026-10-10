@@ -5,6 +5,7 @@ import CompactArticleList from '@/components/CompactArticleList';
 import MediaIcon from '@/components/MediaIcon';
 import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
+import MediaTrafficProfile from '@/components/MediaTrafficProfile';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import MethodLink from '@/components/MethodLink';
 import SectionTabs from '@/components/SectionTabs';
@@ -174,7 +175,7 @@ export default async function MediaPage({
         </div>
       )}
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
-        <MediaSidebar label={discovery ? '發現來源資料' : '媒體資料與媒體關係'}>
+        <MediaSidebar label={discovery ? '發現來源資料' : '媒體資料、流量與媒體關係'}>
           <section
             aria-label={discovery ? '發現來源資料' : '媒體基本資料'}
             className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800"
@@ -278,6 +279,7 @@ export default async function MediaPage({
               流量與排名比較 →
             </Link>
           </section>
+          {!discovery && outlet && <MediaTrafficProfile outlet={outlet} />}
           {!discovery && <MediaRelations data={similarity} media={media} hours={cloudHours} />}
         </MediaSidebar>
         <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1">

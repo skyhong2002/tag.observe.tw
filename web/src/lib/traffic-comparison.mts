@@ -20,11 +20,52 @@ export interface TrafficPoint {
   adjusted: boolean;
   ambiguous: boolean;
 }
+/** Mirrors app/src/media-traffic/live.ts TrafficProfile: one month's audience
+ *  countries, traffic channels, engagement and ranks from Similarweb. */
+export interface TrafficProfile {
+  month: string;
+  countries: Array<{ code: string; share: number }>;
+  channels: Partial<Record<TrafficChannel, number>>;
+  bounceRate: number | null;
+  pagesPerVisit: number | null;
+  timeOnSite: number | null;
+  globalRank: number | null;
+  countryRank: { code: string; rank: number } | null;
+  categoryRank: { category: string; rank: number } | null;
+}
+export type TrafficChannel =
+  | 'Direct'
+  | 'SearchOrganic'
+  | 'SearchPaid'
+  | 'SocialOrganic'
+  | 'SocialPaid'
+  | 'Referrals'
+  | 'Mail'
+  | 'DisplayAds'
+  | 'GenAi'
+  | 'Affiliate';
+export const channelLabels: Record<TrafficChannel, string> = {
+  Direct: '直接造訪',
+  SearchOrganic: '自然搜尋',
+  SearchPaid: '付費搜尋',
+  SocialOrganic: '社群',
+  SocialPaid: '付費社群',
+  Referrals: '其他網站連入',
+  Mail: '電子郵件',
+  DisplayAds: '展示廣告',
+  GenAi: '生成式 AI',
+  Affiliate: '聯盟行銷',
+};
 export interface LiveTraffic {
   status: 'pending' | 'ok' | 'partial' | 'blocked' | 'failed';
   checkedAt: string | null;
   error: string | null;
-  domains: Array<{ domain: string; fetchedAt: string; monthly: Array<{ month: string; visits: number }> }>;
+  domains: Array<{
+    domain: string;
+    fetchedAt: string;
+    monthly: Array<{ month: string; visits: number }>;
+    profiles?: Record<string, TrafficProfile>;
+  }>;
 }
 export interface RadarData {
   status: 'unconfigured' | LiveTraffic['status'];
@@ -53,6 +94,8 @@ export interface ComparisonOutlet {
   referenceTraffic?: TrafficPoint[];
   referenceDomain?: string | null;
   radar?: RadarData['domains'][number];
+  /** Newest Similarweb profile (countries, channels, engagement, ranks). */
+  trafficProfile?: TrafficProfile;
   /** Set when another outlet owns this whole-domain figure (e.g. BBC 中文 under bbc.com); names that outlet. */
   sharedWith?: string;
 }
@@ -82,6 +125,40 @@ export const sourceStatusLabels = {
   failed: '暫時無法取得資料',
   unconfigured: '尚未設定 API Token',
 } as const;
+/**
+ * Taiwan's share of a site's visits. Similarweb lists only the top five
+ * countries: when Taiwan is not among them its share is below the smallest
+ * listed one, so `below` carries that bound instead of a guessed value.
+ */
+export function taiwanShare(profile: TrafficProfile | undefined): { share: number } | { below: number } | null {
+  if (!profile?.countries.length) return null;
+  const tw = profile.countries.find((c) => c.code === 'TW');
+  return tw ? { share: tw.share } : { below: Math.min(...profile.countries.map((c) => c.share)) };
+}
+/** Value for sorting: the share; an unknown share outside the top five sorts after
+ *  every known one (negative), ordered by its bound. */
+export const taiwanSortValue = (profile: TrafficProfile | undefined) => {
+  const tw = taiwanShare(profile);
+  return tw == null ? null : 'share' in tw ? tw.share : tw.below - 1;
+};
+/** Channels with a share, largest first. */
+export const channelShares = (profile: TrafficProfile | undefined) =>
+  Object.entries(profile?.channels ?? {})
+    .filter(([, share]) => share > 0)
+    .sort(([, a], [, b]) => b - a) as Array<[TrafficChannel, number]>;
+export const percent = (value: number) => `${(value * 100).toLocaleString('zh-TW', { maximumFractionDigits: value < 0.1 ? 1 : 0 })}%`;
+const regionNames = new Intl.DisplayNames(['zh-TW'], { type: 'region' });
+// The locale's long forms (中國香港特別行政區…) do not fit a bar label.
+const shortRegions: Record<string, string> = { HK: '香港', MO: '澳門' };
+export const countryName = (code: string) => {
+  if (shortRegions[code]) return shortRegions[code];
+  try {
+    return regionNames.of(code) ?? code;
+  } catch {
+    return code;
+  }
+};
+
 /** One-line Radar position: exact rank, a top-N bucket, or outside the largest bucket. */
 export const radarText = (radar: ComparisonOutlet['radar'] | null) =>
   radar?.rank != null
@@ -239,6 +316,8 @@ export function buildComparison(
           ? liveByDomain.get(outlet.domain)
           : undefined;
       outlet.trafficFetchedAt = current?.fetchedAt;
+      const profileMonths = Object.keys(current?.profiles ?? {}).sort();
+      outlet.trafficProfile = profileMonths.length ? current?.profiles?.[profileMonths.at(-1) as string] : undefined;
       outlet.traffic = (current?.monthly ?? []).map((point) => ({
         month: point.month,
         traffic: point.visits,

@@ -6,10 +6,42 @@ export interface VisitMonth {
   month: string;
   visits: number;
 }
+/** Similarweb's channel shares, keyed as in its TrafficSources object. */
+export const trafficChannels = [
+  'Direct',
+  'SearchOrganic',
+  'SearchPaid',
+  'SocialOrganic',
+  'SocialPaid',
+  'Referrals',
+  'Mail',
+  'DisplayAds',
+  'GenAi',
+  'Affiliate',
+] as const;
+export type TrafficChannel = (typeof trafficChannels)[number];
+/** What Similarweb reports for one month besides visits: audience countries,
+ *  traffic channels, engagement and ranks. Only the latest month is returned
+ *  per request, so older months accumulate as the job keeps running. */
+export interface TrafficProfile {
+  month: string;
+  /** Top five countries (ISO 3166 alpha-2) and their share of visits, largest first. */
+  countries: Array<{ code: string; share: number }>;
+  channels: Partial<Record<TrafficChannel, number>>;
+  bounceRate: number | null;
+  pagesPerVisit: number | null;
+  /** Average visit duration in seconds. */
+  timeOnSite: number | null;
+  globalRank: number | null;
+  countryRank: { code: string; rank: number } | null;
+  categoryRank: { category: string; rank: number } | null;
+}
 export interface DomainTraffic {
   domain: string;
   fetchedAt: string;
   monthly: VisitMonth[];
+  /** Profiles by month (YYYYMM), newest kept; see TrafficProfile. */
+  profiles?: Record<string, TrafficProfile>;
 }
 export interface LiveTraffic {
   version: 1;
@@ -101,6 +133,7 @@ export async function fetchDomainTraffic(domain: string, request = fetch, now = 
     months.set(month, visits);
   }
   if (!months.size) throw Error('Similarweb has no monthly visits for this domain');
+  const profile = trafficProfile(data, current);
   return {
     domain,
     fetchedAt: now.toISOString(),
@@ -108,7 +141,68 @@ export async function fetchDomainTraffic(domain: string, request = fetch, now = 
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-3)
       .map(([month, visits]) => ({ month, visits })),
+    // Always present after a fetch (possibly empty), so only rows saved before profiles existed lack it.
+    profiles: profile ? { [profile.month]: profile } : {},
   };
+}
+
+const share = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null);
+const positive = (value: unknown) => {
+  const number = typeof value === 'string' ? Number(value) : value;
+  return typeof number === 'number' && Number.isFinite(number) && number > 0 ? number : null;
+};
+const rank = (value: unknown) => {
+  const number = positive(value);
+  return number !== null && Number.isInteger(number) ? number : null;
+};
+/** The month-specific extras; null when Similarweb gives no usable reporting month.
+ *  Malformed parts are dropped one by one rather than rejecting the visits. */
+export function trafficProfile(data: Record<string, unknown>, currentMonth: string): TrafficProfile | null {
+  const engagement = (data.Engagments ?? {}) as Record<string, unknown>;
+  const year = Number(engagement.Year);
+  const monthNumber = Number(engagement.Month);
+  if (!Number.isInteger(year) || !Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) return null;
+  const month = `${year}${String(monthNumber).padStart(2, '0')}`;
+  if (!/^20\d{4}$/.test(month) || month >= currentMonth) return null;
+  const countries = (Array.isArray(data.TopCountryShares) ? data.TopCountryShares : [])
+    .map((row: Record<string, unknown>) => ({ code: row?.CountryCode, share: share(row?.Value) }))
+    .filter(
+      (row): row is { code: string; share: number } => typeof row.code === 'string' && /^[A-Z]{2}$/.test(row.code) && row.share !== null,
+    )
+    .sort((a, b) => b.share - a.share)
+    .slice(0, 5);
+  const sources = (data.TrafficSources ?? {}) as Record<string, unknown>;
+  const channels: TrafficProfile['channels'] = {};
+  for (const channel of trafficChannels) {
+    const value = share(sources[channel]);
+    if (value !== null) channels[channel] = value;
+  }
+  const countryRank = data.CountryRank as Record<string, unknown> | null;
+  const categoryRank = data.CategoryRank as Record<string, unknown> | null;
+  const bounce = Number(engagement.BounceRate);
+  return {
+    month,
+    countries,
+    channels,
+    bounceRate: share(Number.isFinite(bounce) ? bounce : null),
+    pagesPerVisit: positive(engagement.PagePerVisit),
+    timeOnSite: positive(engagement.TimeOnSite),
+    globalRank: rank((data.GlobalRank as Record<string, unknown> | null)?.Rank),
+    countryRank:
+      typeof countryRank?.CountryCode === 'string' && rank(countryRank.Rank) !== null
+        ? { code: countryRank.CountryCode, rank: rank(countryRank.Rank) as number }
+        : null,
+    categoryRank:
+      typeof categoryRank?.Category === 'string' && rank(categoryRank.Rank) !== null
+        ? { category: categoryRank.Category, rank: rank(categoryRank.Rank) as number }
+        : null,
+  };
+}
+/** Keeps earlier months' profiles when a fetch brings the newest one. */
+export function mergeProfiles(previous: DomainTraffic | undefined, next: DomainTraffic, keep = 12): DomainTraffic {
+  const profiles = { ...previous?.profiles, ...next.profiles };
+  const months = Object.keys(profiles).sort().slice(-keep);
+  return { ...next, profiles: Object.fromEntries(months.map((month) => [month, profiles[month]])) };
 }
 const day = 24 * 60 * 60_000;
 /**
@@ -117,7 +211,8 @@ const day = 24 * 60 * 60_000;
  * Frequent scheduled runs fill the whole list gradually instead of one large daily burst.
  */
 export function dueDomains(domains: string[], previous: LiveTraffic, now = new Date(), freshDays = 7) {
-  const fetched = new Map(previous.domains.map((row) => [row.domain, Date.parse(row.fetchedAt)]));
+  // Rows saved before profiles were stored count as never fetched, so they are refetched first.
+  const fetched = new Map(previous.domains.filter((row) => row.profiles).map((row) => [row.domain, Date.parse(row.fetchedAt)]));
   const failed = previous.failedAt ?? {};
   const last = (domain: string) => Math.max(fetched.get(domain) ?? 0, Date.parse(failed[domain] ?? '') || 0);
   return [...new Set(domains)]
@@ -154,7 +249,7 @@ export async function refreshTraffic(
     }
     attempted++;
     try {
-      entries.set(domain, await fetchDomainTraffic(domain, request, now));
+      entries.set(domain, mergeProfiles(entries.get(domain), await fetchDomainTraffic(domain, request, now)));
       delete failedAt[domain];
       successes++;
       consecutiveFailures = 0;

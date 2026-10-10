@@ -2728,6 +2728,22 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 | `domains[].monthly` | object[] |  |
 | `domains[].monthly[].month` | string | 月份 YYYYMM |
 | `domains[].monthly[].visits` | number | Similarweb EstimatedMonthlyVisits 估算訪問量 |
+| `domains[].profiles` | {鍵: object} | 依月份（YYYYMM）保存的國家來源、導流來源、互動與排名；每次只取得最近一期，較早月份隨排程累積，最多 12 個月；舊資料列可能沒有此欄 |
+| `domains[].profiles.{鍵}.month` | string | 月份 YYYYMM |
+| `domains[].profiles.{鍵}.countries` | object[] | 前五大來源國家，由大到小 |
+| `domains[].profiles.{鍵}.countries[].code` | string | 國家代碼 ISO 3166-1 alpha-2 |
+| `domains[].profiles.{鍵}.countries[].share` | number | 占訪問量比例 0–1 |
+| `domains[].profiles.{鍵}.channels` | {鍵: number} | 導流來源占比 0–1：Direct、SearchOrganic、SearchPaid、SocialOrganic、SocialPaid、Referrals、Mail、DisplayAds、GenAi、Affiliate |
+| `domains[].profiles.{鍵}.bounceRate` | number \| null | 跳出率 0–1 |
+| `domains[].profiles.{鍵}.pagesPerVisit` | number \| null | 每次造訪瀏覽頁數 |
+| `domains[].profiles.{鍵}.timeOnSite` | number \| null | 平均造訪時間（秒） |
+| `domains[].profiles.{鍵}.globalRank` | integer \| null | 全球排名 |
+| `domains[].profiles.{鍵}.countryRank` | object \| null | 主要國家排名 |
+| `domains[].profiles.{鍵}.countryRank.code` | string |  |
+| `domains[].profiles.{鍵}.countryRank.rank` | integer |  |
+| `domains[].profiles.{鍵}.categoryRank` | object \| null | 類別排名 |
+| `domains[].profiles.{鍵}.categoryRank.category` | string |  |
+| `domains[].profiles.{鍵}.categoryRank.rank` | integer |  |
 
 快取：1 分鐘。
 
