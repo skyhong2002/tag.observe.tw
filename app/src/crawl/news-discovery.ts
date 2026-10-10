@@ -10,6 +10,7 @@ import { discoverPnn } from './news-pnn.ts';
 import { parsePublicJson, publicArticleHtml } from './news-public-html.ts';
 import { correctPublicationClock, newsSiteEvidence } from './news-site-rules.ts';
 import { decodeEntities } from './text.ts';
+import { toTraditional, traditionalizeArticle, traditionalizeFeedItem } from './traditional.ts';
 
 export interface NewsDiscoveryConfig {
   homeUrl: string;
@@ -37,6 +38,7 @@ export interface NewsDiscoveryConfig {
   providerBody?: string;
   /** Reviewed archive permalinks when a discontinued publisher has no listing. */
   articleUrls?: string[];
+  traditional?: boolean;
 }
 export interface NewsDiscoveryOptions {
   fetch?: typeof fetchText;
@@ -297,6 +299,9 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     bodySource = detail.bodySource,
   ) => {
     if (accepted.has(url) || !detail.body || detail.bodyStatus !== 'ok') return;
+    const convertedDetail = config.traditional ? traditionalizeArticle(detail) : detail;
+    const convertedCandidate = config.traditional ? traditionalizeFeedItem(candidate) : candidate;
+    const convertedTitle = config.traditional ? toTraditional(title) : title;
     if (provider && !provider.test(detail.provider ?? '')) {
       reject('article provider does not match source', url);
       return;
@@ -307,20 +312,20 @@ export async function discoverNews(config: NewsDiscoveryConfig, options: NewsDis
     }
     accepted.add(url);
     result.items.push({
-      ...candidate,
+      ...convertedCandidate,
       url,
-      title,
+      title: convertedTitle,
       publishedAt,
-      image: detail.image ?? candidate.image,
-      tags: detail.tags.length ? detail.tags : candidate.tags,
-      summary: detail.summary ?? candidate.summary,
-      summarySource: detail.summary ? detail.summarySource : candidate.summarySource,
-      verifiedProvider: detail.provider,
-      verifiedContent: { body: detail.body, authors: detail.authors, bodySource, bodyStatus: 'ok' },
+      image: convertedDetail.image ?? convertedCandidate.image,
+      tags: convertedDetail.tags.length ? convertedDetail.tags : convertedCandidate.tags,
+      summary: convertedDetail.summary ?? convertedCandidate.summary,
+      summarySource: convertedDetail.summary ? convertedDetail.summarySource : convertedCandidate.summarySource,
+      verifiedProvider: convertedDetail.provider,
+      verifiedContent: { body: convertedDetail.body!, authors: convertedDetail.authors, bodySource, bodyStatus: 'ok' },
     });
     result.samples.push({
       url,
-      title,
+      title: convertedTitle,
       publishedAt: publishedAt.toISOString(),
       bodyLength: Array.from(detail.body.replace(/\s/g, '')).length,
     });

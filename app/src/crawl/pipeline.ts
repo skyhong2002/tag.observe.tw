@@ -14,6 +14,7 @@ import { voicettankCategoryRepair, voicettankFeedCreator } from './news-voicetta
 import type { SourceSpec } from './sources.ts';
 import { headlineFromPage, normalizeTag, stripTitleSuffix, TRACKING, urlKey } from './text.ts';
 import { type TitleVocab, tagsFromTitle } from './title-tags.ts';
+import { traditionalizeArticle, traditionalizeFeedItem } from './traditional.ts';
 
 export interface Logger {
   info: (o: object, m: string) => void;
@@ -146,7 +147,9 @@ export async function runIndex(
     .values({ media: spec.media, stage: 'index', startedAt: started, status: 'running' })
     .$returningId();
   try {
-    const { items, errors } = listed ?? (await listSource(spec, fetch));
+    const listedResult = listed ?? (await listSource(spec, fetch));
+    const errors = listedResult.errors;
+    const items = spec.traditional ? listedResult.items.map(traditionalizeFeedItem) : listedResult.items;
     let inserted = 0;
     for (let i = 0; i < items.length; i += 100) {
       // Titleless items (plain sitemaps) get their title from the page in runArticles.
@@ -440,16 +443,17 @@ export async function runArticles(
             return;
           }
           if (res.status >= 400) throw Error('HTTP ' + res.status);
-          const detail = extractArticle(res.body, row.url, spec.article);
-          const providerMismatch = provider && !provider.test(detail.provider ?? '');
-          if (providerMismatch || (provider && providerBody && !providerBody.test(detail.body ?? ''))) {
+          const extracted = extractArticle(res.body, row.url, spec.article);
+          const detail = spec.traditional ? traditionalizeArticle(extracted) : extracted;
+          const providerMismatch = provider && !provider.test(extracted.provider ?? '');
+          if (providerMismatch || (provider && providerBody && !providerBody.test(extracted.body ?? ''))) {
             await db
               .insert(rejectedUrls)
               .ignore()
               .values({
                 media: spec.media,
                 urlKey: row.urlKey ?? urlKey(row.url, spec.list.articleId),
-                reason: (providerMismatch ? `provider:${detail.provider ?? 'none'}` : 'provider-body').slice(0, 64),
+                reason: (providerMismatch ? `provider:${extracted.provider ?? 'none'}` : 'provider-body').slice(0, 64),
                 createdAt: now(),
               });
             await db.delete(articleTags).where(eq(articleTags.articleId, row.id));

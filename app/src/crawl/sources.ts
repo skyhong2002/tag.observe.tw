@@ -15,6 +15,7 @@ export type SourceOverride = Omit<Partial<SourceSpec>, 'list' | 'article'> & {
 };
 export interface SourceSpec {
   media: string;
+  traditional?: boolean;
   /** Aggregators discover original publishers; they never own article rows. */
   discovery?: 'google_news' | 'dongtaiwang';
   group: 'news' | 'hourly' | 'off';

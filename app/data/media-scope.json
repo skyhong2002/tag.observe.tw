@@ -377,7 +377,8 @@
     },
     "zaobao": {
       "scope": "sgmy",
-      "language": "zh-Hans"
+      "language": "zh-Hant",
+      "coverage": "新抓取內容以 OpenCC cn → tw 轉為繁體，與網站繁體切換使用相同轉換模式；先前收錄的簡體資料尚未回填。"
     },
     "president": {
       "scope": "tw-gov",

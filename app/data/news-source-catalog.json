@@ -2412,7 +2412,9 @@
       ],
       "existing": false,
       "websiteEvidence": "http://zaobao.com.sg",
-      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。"
+      "notes": "原表新聞類別；以原表網址或官方新聞首頁對應。網站預設回傳簡體中文，由爬蟲轉為繁體中文。",
+      "feedUrls": ["https://www.zaobao.com.sg/googlenews.xml"],
+      "traditional": true
     },
     {
       "media": "mingpao",

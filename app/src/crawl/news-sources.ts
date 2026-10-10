@@ -24,6 +24,7 @@ export interface NewsSource {
   providerBody?: string;
   titleSuffix?: string;
   articleUrls?: string[];
+  traditional?: boolean;
   /** For pages without keyword meta: the elements whose text are the article's tags. */
   tagSelector?: string;
 }
@@ -58,6 +59,7 @@ export function addNewsSources(
       if (verified && proof.listingUrl && (proof.strategy === 'rss' || proof.strategy === 'sitemap')) feeds.unshift(proof.listingUrl);
       return {
         media: source.media,
+        ...(source.traditional ? { traditional: true } : {}),
         group: verified ? 'hourly' : 'off',
         ...(source.titleSuffix ? { titleSuffix: source.titleSuffix } : {}),
         list: {
@@ -78,6 +80,7 @@ export function addNewsSources(
                   ...(source.provider ? { provider: source.provider } : {}),
                   ...(source.providerBody ? { providerBody: source.providerBody } : {}),
                   ...(source.articleUrls ? { articleUrls: source.articleUrls } : {}),
+                  ...(source.traditional ? { traditional: true } : {}),
                   maxArticles: 12,
                 },
               }
