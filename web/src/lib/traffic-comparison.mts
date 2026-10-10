@@ -71,6 +71,15 @@ export interface ComparisonData {
   radarError: string | null;
 }
 const identity = (s: string) => s.replace(/\s/g, '').toLowerCase();
+/** Fetch status of the automatic sources (Similarweb, Cloudflare Radar). */
+export const sourceStatusLabels = {
+  pending: '尚未抓取',
+  ok: '抓取完成',
+  partial: '部分網域未能更新',
+  blocked: '來源拒絕連線',
+  failed: '暫時無法取得資料',
+  unconfigured: '尚未設定 API Token',
+} as const;
 export const shortMonth = (month: string) => `${month.slice(0, 4)}/${month.slice(4)}`;
 export const taipeiMonth = (date: string) => new Date(Date.parse(date) + 8 * 3600e3).toISOString().slice(0, 7).replace('-', '');
 

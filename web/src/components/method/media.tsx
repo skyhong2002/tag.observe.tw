@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { type ComparisonData, shortMonth, sourceStatusLabels } from '@/lib/traffic-comparison.mts';
 import { CampBasis } from './events';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
@@ -61,29 +62,94 @@ export function MediaMethod() {
   );
 }
 
+/** What the footer states about each source's latest fetch; omitted where the page data is unavailable. */
+export type MediaSourcesStatus = Pick<
+  ComparisonData,
+  | 'crawlMonths'
+  | 'trafficMonths'
+  | 'referenceMonths'
+  | 'liveTrafficStatus'
+  | 'liveTrafficCheckedAt'
+  | 'liveTrafficError'
+  | 'radarStatus'
+  | 'radarCheckedAt'
+  | 'radarError'
+>;
+
+const httpCode = (error: string | null) => error?.match(/HTTP \d+/)?.[0];
+function fetchState(status: keyof typeof sourceStatusLabels | null, checkedAt: string | null, error: string | null) {
+  const code = httpCode(error);
+  return `${status ? sourceStatusLabels[status] : '尚未抓取'}${code ? `（${code}）` : ''}${checkedAt ? `，最近檢查 ${checkedAt.slice(0, 10)}` : ''}${
+    status && !['ok', 'pending'].includes(status) ? '；已有數值保留上次成功資料' : ''
+  }。`;
+}
+const recent = (months: string[]) => months.slice(-3).map(shortMonth).join('、');
+
 /** Similar Web (/media/sources/). `retrievedAt` comes from the traffic sheet's
- *  import (app/data/media-traffic.json), passed in by the server so the
- *  client-side footer never bundles that file. */
-export function MediaSourcesMethod({ retrievedAt, camp = true }: { retrievedAt?: string; camp?: boolean }) {
+ *  import (app/data/media-traffic.json) and `status` from the page's own load,
+ *  both passed in by the server so the client-side footer never bundles them. */
+export function MediaSourcesMethod({
+  retrievedAt,
+  status,
+  camp = true,
+}: {
+  retrievedAt?: string;
+  status?: MediaSourcesStatus | null;
+  camp?: boolean;
+}) {
+  const crawlMonth = status?.crawlMonths.at(-1);
   return (
     <>
       <h3 className={methodHeading}>媒體流量、排名與收錄比較</h3>
       <p>
-        這一頁把本站收錄篇數、Similarweb 自動抓取、Cloudflare Radar 與 GeneHong 整理表分欄並列。 Similarweb 直接抓取外掛端點的
-        EstimatedMonthlyVisits，呈現最近三個可取得月份的全網域估算訪問次數，並非即時資料或精確 page views。 GeneHong
-        欄保留人工整理表原始值與網域{retrievedAt ? `，整理表匯入日期 ${retrievedAt.slice(0, 10)}` : ''}。
-        原表新聞流量欄的單位未明示，不推定百萬人次。兩欄可分別選擇月份與排序；缺值不補零，顯示「—」。
-        人工調整值另標「人工調整」，提示保留原值；同一媒體有多列而無法判定主來源時標「待核對」。品牌全站與新聞子頻道可能重疊，採主來源，不相加。
+        這一頁把本站收錄篇數、Similarweb 自動抓取、Cloudflare Radar 與 GeneHong
+        整理表分欄並列；各來源的數值與期間分別保留、分別排序，不合計，皆非精確 page
+        views。流量與篇數是不同指標，不能推算成每篇文章的實際閱讀量。
       </p>
-      <p>
-        Cloudflare Radar 透過官方 API 取得全球熱門網域的最新一期排名，主要依 Cloudflare 1.1.1.1 DNS 的觀測訊號。 前 100
-        名可有精確名次，其餘可能只有「前 N 名」級距；同級距無法判定先後，因此不提供跨級距的精確排序。
-        排名不是訪問次數、瀏覽量或全台市占，不能換算為 visits 或 page views。欄內保留 API 資料期間與最近成功更新日期。
-        自動來源每日抓取，有資料延遲；失敗時保留各來源上次成功資料與日期，不用整理表補值。未設定 Radar API Token 時明確顯示未設定。
-      </p>
-      <p>
-        本站文章數依真實發布月份（台北時間）統計目前已收錄紀錄，並非該媒體完整發稿量；表格顯示最近一個月的篇數。本月資料持續累積中，抓取也可能不完整。流量與篇數是不同指標，不能推算成每篇文章的實際閱讀量。發現來源以關聯計數，不改文章的原媒體歸屬。
-      </p>
+      {status && (
+        <dl className={methodList}>
+          <dt className={methodTerm}>目前狀態</dt>
+          <dd>
+            <ul className="space-y-1">
+              <li>
+                Similarweb：{fetchState(status.liveTrafficStatus, status.liveTrafficCheckedAt, status.liveTrafficError)}
+                {status.trafficMonths.length ? `最新三個月為 ${recent(status.trafficMonths)}。` : '目前尚未取得流量數字。'}
+              </li>
+              <li>Cloudflare Radar：{fetchState(status.radarStatus, status.radarCheckedAt, status.radarError)}</li>
+              <li>
+                GeneHong 整理表：{recent(status.referenceMonths) || '尚無資料'}
+                {retrievedAt ? `，匯入日期 ${retrievedAt.slice(0, 10)}` : ''}。
+              </li>
+              <li>本站收錄：{crawlMonth ? `表格顯示 ${shortMonth(crawlMonth)} 篇數。` : '目前無法取得本站收錄量。'}</li>
+            </ul>
+          </dd>
+        </dl>
+      )}
+      <dl className={methodList}>
+        <dt className={methodTerm}>Similarweb</dt>
+        <dd>
+          直接抓取 Similarweb 外掛端點的 EstimatedMonthlyVisits，呈現最近三個可取得月份的全網域估算訪問次數，並非即時資料或精確 page
+          views。欄內由左至右為舊到新的三個月，排序依「Similarweb
+          月份」選定的月份。每小時分批更新，每個網域約每週重抓；來源限流時停止該批，下一輪接著抓。
+        </dd>
+        <dt className={methodTerm}>Cloudflare Radar</dt>
+        <dd>
+          透過官方 API 取得全球熱門網域的最新一期排名，主要依 Cloudflare 1.1.1.1 DNS 的觀測訊號，每日更新。前 100
+          名可有精確名次，其餘只有「前 N 名」級距，數字越小越熱門；同級距無法判定先後，不提供跨級距的精確排序。「未入前 N
+          名」表示排在該名次之後。排名不是訪問次數、瀏覽量或全台市占，不能換算為 visits 或 page views。欄內保留 API
+          資料期間與最近成功更新日期；未設定 API Token 時明確顯示未設定。
+        </dd>
+        <dt className={methodTerm}>GeneHong</dt>
+        <dd>
+          保留人工整理表原始值與網域，可另選月份。原表新聞流量欄的單位未明示，不推定百萬人次。人工調整值另標「人工調整」，提示保留原值，不當成實際流量或零；同一媒體有多列而無法判定主來源時標「待核對」。品牌全站與新聞子頻道可能重疊，採主來源，不相加。
+        </dd>
+        <dt className={methodTerm}>本站收錄</dt>
+        <dd>
+          依真實發布月份（台北時間）統計目前已收錄紀錄，並非該媒體完整發稿量；表格顯示最近一個月的篇數。本月資料持續累積中，抓取也可能不完整。發現來源以關聯計數，不改文章的原媒體歸屬。
+        </dd>
+        <dt className={methodTerm}>缺值與失敗</dt>
+        <dd>缺值不補零，顯示「—」。自動來源抓取失敗時保留各來源上次成功資料與日期，不用整理表補值。</dd>
+      </dl>
       <p>原始整理表另有人工標記的分類欄，本站基準名單媒體的藍綠即依此標記（見下）；這不是 Similarweb 的政治傾向評分，本頁也不呈現分類。</p>
       {camp && <CampBasis />}
     </>

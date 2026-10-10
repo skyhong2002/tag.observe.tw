@@ -1,14 +1,9 @@
 import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
-import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
-import { buildComparison, type CrawlComparison, type LiveTraffic, type RadarData } from '@/lib/traffic-comparison.mts';
-import disabled from '../../../../../../app/data/crawl-disabled.json';
 import traffic from '../../../../../../app/data/media-traffic.json';
-import catalog from '../../../../../../app/data/news-source-catalog.json';
-
-const hidden = new Set(disabled.excludedMedia);
+import { loadComparison } from './load';
 
 export const metadata = pageMetadata(
   '/media/sources/',
@@ -19,30 +14,7 @@ export const metadata = pageMetadata(
 export const revalidate = 300;
 
 export default async function MediaSourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  let crawl: CrawlComparison | null = null;
-  let live: LiveTraffic | null = { status: 'failed', checkedAt: null, error: null, domains: [] };
-  let radar: RadarData = { status: 'failed', checkedAt: null, error: null, domains: [] };
-  try {
-    const [crawlResult, liveResult, radarResult] = await Promise.allSettled([
-      fetch(`${API_ORIGIN}/api/v1/media-traffic-comparison`, {
-        next: { revalidate: 300 },
-        signal: AbortSignal.timeout(8000),
-      }),
-      fetch(`${API_ORIGIN}/api/v1/media-traffic-live`, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(8000),
-      }),
-      fetch(`${API_ORIGIN}/api/v1/media-radar`, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(8000),
-      }),
-    ]);
-    if (crawlResult.status === 'fulfilled' && crawlResult.value.ok) crawl = await crawlResult.value.json();
-    if (liveResult.status === 'fulfilled' && liveResult.value.ok) live = await liveResult.value.json();
-    if (radarResult.status === 'fulfilled' && radarResult.value.ok) radar = await radarResult.value.json();
-  } catch {
-    /* Traffic history remains readable when collection statistics are unavailable. */
-  }
+  const data = await loadComparison();
   const params = Object.fromEntries(
     Object.entries(await searchParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
   );
@@ -51,9 +23,6 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
       <header>
         <MediaTabs current="sources" />
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與排名</h1>
-        <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Similarweb 月訪問量估算、Cloudflare Radar 網域排名與 GeneHong 整理表分欄顯示；各來源的數值與期間分別保留，皆非精確 page views。
-        </p>
         <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           <a
             href={traffic.sourceUrl}
@@ -68,7 +37,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
           <MethodLink />
         </p>
       </header>
-      <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden, live, radar)} initial={params} />
+      <TrafficComparison data={data} initial={params} />
     </div>
   );
 }

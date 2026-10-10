@@ -49,7 +49,7 @@ python3 tools/import-media-traffic.py --months 202608 202607 202606
 `app/src/jobs/media-traffic-job.ts` 每小時第 35 分（可用 `MEDIA_TRAFFIC_CRON` 調整）呼叫外掛使用的公開 `data.similarweb.com/api/v1/data?domain=…` 端點，抓來源網域的 `EstimatedMonthlyVisits`，只保留近三個月份，結果寫在 Git 工作目錄外的 `TAG_MEDIA_TRAFFIC_FILE`（預設 `~/.local/share/tag-analysis/media-traffic-live.json`）。API `GET /api/v1/media-traffic-live` 提供狀態與各網域最近成功時間給頁面；自動抓取欄使用這份快照，`blocked`／`failed` 仍可顯示最後成功值。
 
 - **請求標頭**：CloudFront 只放行外觀與外掛相同的請求，必須同時帶瀏覽器 User-Agent、`Origin: chrome-extension://hoklmmgfnpapgjgcpechhaamimifchmp` 與 `x-extension-version`（`extensionHeaders`）。缺任何一項都回 HTTP 403。外掛改版後若再度全面 403，先更新版本號重測。這是模仿外掛的非官方用法，Similarweb 可能隨時改變規則。
-- **分批輪替**：2026-10-10 實測連續約 20 次請求後被 403 限流。每次排程只抓「到期」網域：從未成功者優先，其次是最舊資料；7 天內成功的不重抓，無資料的網域（記在快照 `failedAt`，不對外公開）一天後才重試。請求間隔 3 秒，收到 401／403／429 立即停止，下一小時從未完成處續抓；連續三次 HTTP／網路錯誤或批次超過五分鐘也停止。限流但已有進度的批次不算 job 失敗。
+- **分批輪替**：2026-10-10 實測連續約 20 次請求後被 403 限流，約 11 分鐘後解除。每次排程只抓「到期」網域：從未成功者優先，其次是最舊資料；7 天內成功的不重抓，無資料的網域（記在快照 `failedAt`，不對外公開）一天後才重試。請求間隔 3 秒，收到 401／403／429 立即停止，下一小時從未完成處續抓；連續三次 HTTP／網路錯誤或批次超過五分鐘也停止。限流但已有進度的批次不算 job 失敗。
 - 單網域驗證保留其他網域歷史快照，不覆蓋 GeneHong。
 
 手動驗證單一網域：

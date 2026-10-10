@@ -9,14 +9,6 @@ import { type ComparisonData, type ComparisonOutlet, collectionPoint, shortMonth
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
 type Sort = 'traffic' | 'reference' | 'articles' | 'name';
-const liveLabels = {
-  pending: '尚未抓取',
-  ok: '抓取完成',
-  partial: '部分網域未能更新',
-  blocked: '來源拒絕連線',
-  failed: '暫時無法取得資料',
-  unconfigured: '尚未設定 API Token',
-};
 
 function TrafficHistory({ traffic, months, label: sourceLabel }: { traffic: TrafficPoint[]; months: string[]; label: string }) {
   const values = months.map((month) => traffic.find((point) => point.month === month)?.traffic ?? null);
@@ -152,40 +144,6 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           </select>
         </label>
       </div>
-      {!crawlMonth && (
-        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-          目前無法取得本站收錄量。
-        </p>
-      )}
-      {
-        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-          每小時分批更新 Similarweb 網域月訪問量估算（每網域約每週重抓，被限流時下一輪續抓）；{data.liveTrafficStatus ? liveLabels[data.liveTrafficStatus] : '尚未抓取'}
-          {data.liveTrafficError?.match(/HTTP \d+/)?.[0] ? `（${data.liveTrafficError.match(/HTTP \d+/)?.[0]}）` : ''}。
-          {data.liveTrafficStatus && !['ok', 'pending'].includes(data.liveTrafficStatus) && '已有數值保留上次成功資料；缺資料顯示「—」。'}
-          {!data.trafficMonths.length && '目前尚未取得流量數字。'}
-          {data.liveTrafficCheckedAt && ` 最近檢查 ${data.liveTrafficCheckedAt.slice(0, 10)}。`}
-        </p>
-      }
-      {recentTrafficMonths.length > 0 && (
-        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-          Similarweb 流量由左至右為 {recentTrafficMonths.map(shortMonth).join('、')}； 單位為估算訪問次數，排序依 {shortMonth(trafficMonth)}
-          。
-        </p>
-      )}
-      <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-        Cloudflare Radar：{data.radarStatus ? liveLabels[data.radarStatus] : '尚未抓取'}。
-        {data.radarError?.match(/HTTP \d+/)?.[0] ? `（${data.radarError.match(/HTTP \d+/)?.[0]}）` : ''}
-        每日更新全球熱門排名；「前 N 名」是級距，同級距無法判定先後，數字越小越熱門。這不是訪問量。
-        {data.radarCheckedAt && ` 最近檢查 ${data.radarCheckedAt.slice(0, 10)}。`}
-        {data.outlets.some((outlet) => outlet.radar) &&
-          data.radarStatus &&
-          !['ok', 'pending'].includes(data.radarStatus) &&
-          '已有數值保留上次成功資料。'}
-      </p>
-      <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-        GeneHong 整理表：{recentReferenceMonths.map(shortMonth).join('、') || '尚無資料'}
-        ，單位為原表值；人工調整值以提示保留，不當成實際流量或零。各來源分別排序，不合計。
-      </p>
       <div className="relative overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
         <table className="w-full min-w-[850px] table-fixed text-sm tabular-nums">
           <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
