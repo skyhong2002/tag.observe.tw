@@ -186,7 +186,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
         GeneHong 整理表：{recentReferenceMonths.map(shortMonth).join('、') || '尚無資料'}
         ，單位為原表值；人工調整值以提示保留，不當成實際流量或零。各來源分別排序，不合計。
       </p>
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="relative overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
         <table className="w-full min-w-[850px] table-fixed text-sm tabular-nums">
           <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
             <tr>
