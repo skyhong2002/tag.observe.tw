@@ -18,11 +18,12 @@ type Profile = {
 };
 const camps = { green: '綠營傾向', blue: '藍營傾向', other: '其他' };
 // Share in-flight requests across links, but let failed requests retry next time.
+// A cold API (just after a deploy) can take ~7 s for media-stats, so wait longer than that.
 const requests = new Map<string, { expires: number; value: Promise<unknown> }>();
 function get<T>(url: string): Promise<T> {
   const cached = requests.get(url);
   if (cached && cached.expires > Date.now()) return cached.value as Promise<T>;
-  const value = fetch(url, { signal: AbortSignal.timeout(6000) })
+  const value = fetch(url, { signal: AbortSignal.timeout(15000) })
     .then((response) => {
       if (!response.ok) throw new Error('Media data unavailable');
       return response.json() as Promise<T>;
@@ -56,21 +57,10 @@ export default function MediaHoverLink({
   const [position, setPosition] = useState({ left: 12, top: 12 });
   const anchor = useRef<HTMLAnchorElement>(null);
   const card = useRef<HTMLDivElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const touch = useRef(false);
   const id = useId();
   const label = title ?? (typeof children === 'string' ? children : media);
   const href = `/media/${encodeURIComponent(media)}/`;
-  const keepOpen = () => {
-    clearTimeout(closeTimer.current);
-    setOpen(true);
-  };
-  const scheduleClose = () => {
-    clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => setOpen(false), 180);
-  };
-
-  useEffect(() => () => clearTimeout(closeTimer.current), []);
   useEffect(() => {
     if (!open) return;
     let active = true;
@@ -124,24 +114,19 @@ export default function MediaHoverLink({
     if (!open) return;
     const close = () => setOpen(false);
     const outside = (event: PointerEvent) => {
-      if (!anchor.current?.contains(event.target as Node) && !card.current?.contains(event.target as Node)) close();
+      if (!anchor.current?.contains(event.target as Node)) close();
     };
     const dismiss = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (card.current?.contains(document.activeElement)) anchor.current?.focus();
-      close();
-    };
-    const scroll = (event: Event) => {
-      if (!card.current?.contains(event.target as Node)) close();
+      if (event.key === 'Escape') close();
     };
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', dismiss);
-    window.addEventListener('scroll', scroll, true);
+    window.addEventListener('scroll', close, true);
     window.addEventListener('resize', close);
     return () => {
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', dismiss);
-      window.removeEventListener('scroll', scroll, true);
+      window.removeEventListener('scroll', close, true);
       window.removeEventListener('resize', close);
     };
   }, [open]);
@@ -155,32 +140,30 @@ export default function MediaHoverLink({
         href={href}
         className={icon === false || /\bflex\b/.test(className ?? '') ? className : `inline-flex items-center gap-1 ${className ?? ''}`}
         aria-label={title}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? id : undefined}
+        aria-describedby={open ? id : undefined}
+        // Like the word clouds' cards: a display-only tooltip that never covers
+        // a link it can't let through, closing as soon as the pointer leaves.
         onPointerEnter={(event) => {
-          if (event.pointerType !== 'touch') keepOpen();
+          if (event.pointerType !== 'touch') setOpen(true);
         }}
-        onPointerLeave={scheduleClose}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== 'touch') setOpen(false);
+        }}
         onPointerDown={(event) => {
           touch.current = event.pointerType === 'touch';
         }}
         onFocus={() => {
-          if (!touch.current) keepOpen();
+          if (!touch.current) setOpen(true);
         }}
-        onBlur={scheduleClose}
-        onKeyDown={(event) => {
+        onBlur={() => setOpen(false)}
+        onKeyDown={() => {
           touch.current = false;
-          if (event.key === 'ArrowDown' || (open && event.key === 'Tab' && !event.shiftKey)) {
-            event.preventDefault();
-            keepOpen();
-            requestAnimationFrame(() => card.current?.querySelector<HTMLAnchorElement>('a')?.focus());
-          }
         }}
         onClick={(event) => {
-          if (touch.current && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+          // On touch the first tap shows the card and a second tap follows the link.
+          if (touch.current && !open && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
             event.preventDefault();
-            keepOpen();
+            setOpen(true);
           } else setOpen(false);
         }}
       >
@@ -189,33 +172,7 @@ export default function MediaHoverLink({
       </Link>
       {open &&
         createPortal(
-          <div
-            ref={card}
-            id={id}
-            role="dialog"
-            aria-label={`${profile?.title ?? label}媒體摘要`}
-            className={styles.card}
-            style={position}
-            onPointerEnter={keepOpen}
-            onPointerLeave={scheduleClose}
-            onFocus={keepOpen}
-            onKeyDown={(event) => {
-              if (event.key !== 'Tab') return;
-              const links = event.currentTarget.querySelectorAll('a');
-              if (event.shiftKey && event.target === links[0]) {
-                event.preventDefault();
-                anchor.current?.focus();
-              } else if (!event.shiftKey && event.target === links[links.length - 1]) {
-                // Resume the document's tab order after the trigger, not after
-                // the portal at the end of the body.
-                anchor.current?.focus();
-                setOpen(false);
-              }
-            }}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) scheduleClose();
-            }}
-          >
+          <div ref={card} id={id} role="tooltip" className={styles.card} style={position}>
             <strong className={styles.title}>{profile?.title ?? label}</strong>
             {profile && (
               <span className={styles.muted}>
@@ -246,14 +203,10 @@ export default function MediaHoverLink({
                   <>
                     <div className={styles.terms}>
                       {keywords.terms.slice(0, 5).map((term) => (
-                        <Link
-                          key={term.label}
-                          href={`${href}?${new URLSearchParams({ hours: '24', q: term.label })}`}
-                          onClick={() => setOpen(false)}
-                        >
+                        <span key={term.label}>
                           <span>{term.label}</span>
                           <span>{term.count.toLocaleString('zh-TW')} 篇</span>
-                        </Link>
+                        </span>
                       ))}
                     </div>
                     {/* How the keywords are counted is in SourceMethod (資料來源與計算方式). */}
@@ -264,9 +217,6 @@ export default function MediaHoverLink({
                 )}
               </div>
             )}
-            <Link className={styles.more} href={href} onClick={() => setOpen(false)}>
-              查看媒體報導 →
-            </Link>
           </div>,
           document.body,
         )}

@@ -175,8 +175,11 @@
 .sectionHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .sectionHeading > a { font-size: 12px; color: var(--accent); white-space: nowrap; }
 .sectionHeadingLater { margin-top: 28px; }
-/* Reserves the cloud's height while it streams in so the events below do not jump. */
-.growthCloud { min-height: 280px; }
+/* Reserves the smallest canvas the cloud can have (RankingWordCloud's column
+   layout: 760×220, and 340×240 below md) so the events below do not jump while
+   it streams in; a taller cloud grows the box, a short one leaves no gap. */
+.growthCloud { aspect-ratio: 760 / 220; }
+@media (max-width: 767px) { .growthCloud { aspect-ratio: 340 / 240; } }
 
 
 /* Outlet icons folded away so the share bar stays one line. */

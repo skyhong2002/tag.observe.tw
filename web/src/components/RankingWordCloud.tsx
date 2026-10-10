@@ -24,41 +24,36 @@ export default function RankingWordCloud({
 }: {
   terms: RankingCloudTerm[];
   mode?: 'score' | 'growth';
-  /** Lay out for the home page: a bare ~760px-column cloud without panel or caption, square at most on phones. */
+  /** Lay out for the home page's ~760px column rather than the full page width. */
   column?: boolean;
 }) {
   if (!terms.length) return null;
   // Smaller candidate sets need less canvas and a gentler size curve. The
   // dense 500-term profile stays the same in both modes.
   const fill = Math.min(1, terms.length / 250);
-  // On a phone the home page's cloud is at most square so its events stay near the top.
-  const compact = column
-    ? {
-        width: 340,
-        height: Math.round(Math.min(340, 280 + 120 * fill)),
-        sizes: { min: 11 - 2 * fill, max: 34 + 10 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
-      }
-    : {
-        width: 340,
-        height: Math.round(520 + 300 * fill),
-        sizes: { min: 12 - 3 * fill, max: 48 + 28 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
-      };
+  // On a phone every cloud is at most square so the content below stays near the top.
+  const compact = {
+    width: 340,
+    height: Math.round(Math.min(340, 240 + 100 * fill)),
+    sizes: { min: 11 - 2 * fill, max: 26 + 8 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
+  };
   const wide = column
     ? {
         width: 760,
-        height: Math.round(300 + 300 * fill),
-        sizes: { min: 14 - 3 * fill, max: 56 + 16 * fill, floor: 10, budget: 0.8, curve: 0.8 + 0.7 * fill, words: 500 },
+        height: Math.round(220 + 200 * fill),
+        sizes: { min: 13 - 3 * fill, max: 40 + 10 * fill, floor: 10, budget: 0.8, curve: 0.8 + 0.7 * fill, words: 500 },
       }
     : {
         width: 1120,
-        height: Math.round(280 + 360 * fill),
-        sizes: { min: 16 - 6 * fill, max: 64 + 24 * fill, floor: 10, budget: 0.7, curve: 0.8 + 0.7 * fill, words: 500 },
+        height: Math.round(220 + 220 * fill),
+        sizes: { min: 14 - 4 * fill, max: 40 + 16 * fill, floor: 10, budget: 0.7, curve: 0.8 + 0.7 * fill, words: 500 },
       };
-  const cloud = (
+  // Bare on the page background, without a panel or caption.
+  return (
     <WordCloud
       compact={compact}
       wide={wide}
-      compactClassName={column ? 'w-full' : 'mx-auto w-full max-w-[420px]'}
+      compactClassName="w-full"
       label="關鍵字文字雲"
       title="關鍵字文字雲"
       words={terms.map((t) => ({
@@ -78,16 +73,5 @@ export default function RankingWordCloud({
         },
       }))}
     />
-  );
-  if (column) return cloud;
-  return (
-    <section aria-label="關鍵字文字雲" className="rounded-xl border border-zinc-300 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-      <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-400">
-        {mode === 'growth' ? '升溫文字雲' : '熱門文字雲'}
-        {' · '}
-        {terms.length} 個候選詞
-      </p>
-      {cloud}
-    </section>
   );
 }
