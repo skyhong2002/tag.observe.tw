@@ -102,6 +102,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media/{media}`](#api-v1-media-media) | 單一媒體最近的文章與熱門標籤 |
 | [`GET /api/v1/media-traffic-comparison`](#api-v1-media-traffic-comparison) | 本站爬蟲跨月收錄量 |
 | [`GET /api/v1/media-stats`](#api-v1-media-stats) | 各媒體收錄量與爬蟲狀態 |
+| [`GET /api/v1/media-radar`](#api-v1-media-radar) | Cloudflare Radar 全球網域排名與級距 |
 | [`GET /api/v1/media-traffic-live`](#api-v1-media-traffic-live) | Similarweb 自動抓取流量狀態 |
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 
@@ -2656,7 +2657,40 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].topics.counts.feature` | integer | 累計專題數 |
 | `media[].topics.rulesUrl` | string | GitHub 上該媒體議題爬蟲規則的位置 |
 
-## 封存索引與授權取回
+<a id="api-v1-media-radar"></a>
+
+### `GET /api/v1/media-radar`
+
+**Cloudflare Radar 全球網域排名與級距**
+
+讀取 worker 透過官方 Radar API 取得的最新 POPULAR 網域排名。前 100 名有精確名次，其他可能只提供排名級距；不能換算為訪問量或 page views。未設定 Token 時為 unconfigured，失敗保留最後成功資料。GET 不呼叫上游。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/media-radar'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `version` | integer | 資料格式版本 |
+| `source` | "cloudflare-radar" | 抓取來源 |
+| `scope` | "global" | 排名範圍 |
+| `checkedAt` | string (ISO 時間) \| null | 最近一次批次檢查時間 |
+| `status` | "unconfigured" \| "pending" \| "ok" \| "partial" \| "blocked" \| "failed" | 批次狀態 |
+| `error` | string \| null | 最近一次錯誤摘要，不含 Token 或上游回應內容 |
+| `domains` | object[] |  |
+| `domains[].domain` | string | 網域 |
+| `domains[].fetchedAt` | string (ISO 時間) | 該網域最近成功抓取時間 |
+| `domains[].dateStart` | string (ISO 時間) | API 回傳資料期間開始 |
+| `domains[].dateEnd` | string (ISO 時間) | API 回傳資料期間結束 |
+| `domains[].rank` | integer \| null | 精確名次（只接受前 100 名），無名次時為 null |
+| `domains[].bucket` | integer \| null | 排名級距上界，例如 2000 表示前 2000 名，非第 2000 名 |
+| `domains[].bucketLowerBound` | integer \| null | 排名級距下界，例如 200000 表示未入前 200000 名；有此值時 bucket 為 null，舊快照可能省略此欄 |
+
+快取：1 分鐘。
 
 <a id="api-v1-media-traffic-live"></a>
 
@@ -2690,27 +2724,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 
 快取：1 分鐘。
 
-## 舊站 API 對照
-
-舊站 tag.analysis.tw 的 `/api/*.php` 是舊網頁自己用的 AJAX 端點，從未公開文件化；新站不再提供，呼叫會回 `410 Gone`，JSON 的 `replacement` 欄位指向下表的替代端點（舊 API 仍在舊網域運作）。
-
-| 舊端點 | 替代 |
-| --- | --- |
-| `/api/tag.php` | `/api/v1/ranking` |
-| `/api/tag_burst.php` | `/api/v1/ranking?order=burst` |
-| `/api/show_index.php` | `/api/v1/ranking?order=score` |
-| `/api/show_history.php` | `/api/v1/tags/{tag}/series` |
-| `/api/social.php` | 已淘汰（資料來源已不存在） |
-| `/api/social_rank.php` | 已淘汰（資料來源已不存在） |
-| `/api/news.php` | `/api/v1/media/{media}` |
-| `/api/news_data.php` | `/api/v1/tags/{tag}/articles` |
-| `/api/media.php` | `/api/v1/media` |
-| `/api/favicon.php` | `/api/v1/media` |
-| `/api/events.php` | `/api/v1/events` |
-| `/api/group.php` | 已淘汰（資料來源已不存在） |
-| `/api/youtube.php` | 已淘汰（資料來源已不存在） |
-| `/api/facebook_id.php` | 已淘汰（資料來源已不存在） |
-| `/api/queue.php` | 已淘汰（資料來源已不存在） |
+## 封存索引與授權取回
 
 <a id="api-v1-nearline-archives"></a>
 

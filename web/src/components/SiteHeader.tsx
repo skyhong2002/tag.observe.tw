@@ -76,7 +76,10 @@ export default function SiteHeader({ mastheadId }: { mastheadId?: string } = {})
   }
   return (
     <NavPendingContext value={setNavPending}>
-      <header className="sticky top-0 z-30 border-b border-zinc-300 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
+      <header
+        data-site-header
+        className="sticky top-0 z-30 border-b border-zinc-300 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80"
+      >
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 lg:gap-3">
           <HomeLink searchOpen={searchOpen} revealed={revealed} />
           <div className="order-3 lg:order-none">

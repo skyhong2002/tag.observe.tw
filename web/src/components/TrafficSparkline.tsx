@@ -4,19 +4,22 @@ import { useEffect, useRef, useState } from 'react';
 import { trafficNumber } from '@/lib/media-traffic.mts';
 import { shortMonth, type TrafficPoint } from '@/lib/traffic-comparison.mts';
 
-/** A few months of one source as a sparkline, oldest on the left, with the end
- *  months labelled underneath. A point's month and value appear on mouse hover
- *  or on tap; tapping elsewhere closes it. */
+/** A few months of one source as a sparkline, oldest on the left; `ends` labels
+ *  the first and last month underneath (tables say it in the column header
+ *  instead). A point's month and value appear on mouse hover or on tap;
+ *  tapping elsewhere closes it. */
 export default function TrafficSparkline({
   traffic,
   months,
   label: sourceLabel,
   format = trafficNumber,
+  ends = false,
 }: {
   traffic: TrafficPoint[];
   months: string[];
   label: string;
   format?: (value: number | null) => string;
+  ends?: boolean;
 }) {
   const [active, setActive] = useState<number | null>(null);
   const root = useRef<HTMLSpanElement>(null);
@@ -75,14 +78,16 @@ export default function TrafficSparkline({
             ),
         )}
       </svg>
-      <span aria-hidden="true" className="flex justify-between text-[9px] leading-3 text-zinc-500">
-        <span>{monthLabel(months[0])}</span>
-        <span>{monthLabel(months.at(-1) as string)}</span>
-      </span>
+      {ends && (
+        <span aria-hidden="true" className="flex justify-between text-[9px] leading-3 text-zinc-500">
+          <span>{monthLabel(months[0])}</span>
+          <span>{monthLabel(months.at(-1) as string)}</span>
+        </span>
+      )}
       {active !== null && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute right-0 bottom-full z-10 mb-1 whitespace-nowrap rounded bg-zinc-900 px-1.5 py-0.5 text-[11px] text-white shadow dark:bg-zinc-100 dark:text-zinc-900"
+          className="pointer-events-none absolute top-1/2 right-full z-20 mr-1.5 -translate-y-1/2 whitespace-nowrap rounded bg-zinc-900 px-1.5 py-0.5 text-[11px] text-white shadow dark:bg-zinc-100 dark:text-zinc-900"
         >
           {text(active)}
         </span>

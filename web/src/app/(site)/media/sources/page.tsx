@@ -2,7 +2,6 @@ import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
 import { pageMetadata } from '@/lib/seo.mts';
-import traffic from '../../../../../../app/data/media-traffic.json';
 import { loadComparison } from './load';
 
 export const metadata = pageMetadata(
@@ -23,18 +22,8 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
       <header>
         <MediaTabs current="sources" />
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與排名</h1>
-        <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          <a
-            href={traffic.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="開啟原始流量表單（外部連結，由 Gene Hong 維護）"
-            className="inline-flex items-center gap-1 text-brand-700 underline underline-offset-4 dark:text-brand-400"
-          >
-            GeneHong 原始流量表單 <span aria-hidden="true">↗</span>
-          </a>
-          <span>由 Gene Hong 維護</span>
-          <MethodLink />
+        <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+          Similarweb 估算月訪問量與 Cloudflare Radar 排名 <MethodLink />
         </p>
       </header>
       <TrafficComparison data={data} initial={params} />

@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
+import SortIndicator from '@/components/SortIndicator';
+import TableScroller from '@/components/TableScroller';
 import TrafficSparkline from '@/components/TrafficSparkline';
 import { mediaNames } from '@/lib/media-names.mts';
 import { trafficGrowth, trafficNumber } from '@/lib/media-traffic.mts';
+import { table } from '@/lib/table-styles';
 import {
   type ComparisonData,
   type ComparisonOutlet,
@@ -16,7 +19,7 @@ import {
 } from '@/lib/traffic-comparison.mts';
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
-type Sort = 'traffic' | 'radar' | 'reference' | 'articles' | 'name';
+type Sort = 'traffic' | 'radar' | 'articles' | 'name';
 type View = 'value' | 'change';
 
 const radarPosition = (outlet: ComparisonOutlet) =>
@@ -51,19 +54,15 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     data.trafficMonths.includes(initial.month ?? '') ? initial.month! : (data.trafficMonths.at(-1) ?? ''),
   );
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
-  const [referenceMonth, setReferenceMonth] = useState(
-    data.referenceMonths.includes(initial.referenceMonth ?? '') ? initial.referenceMonth! : (data.referenceMonths.at(-1) ?? ''),
-  );
   const [query, setQuery] = useState(initial.q ?? '');
   const [sort, setSort] = useState<Sort>(
-    ['traffic', 'radar', 'reference', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'articles',
+    ['traffic', 'radar', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'traffic',
   );
-  const [view, setView] = useState<View>(initial.view === 'change' ? 'change' : 'value');
+  // Month-on-month change first; the raw visit counts are one click away.
+  const [view, setView] = useState<View>(initial.view === 'value' ? 'value' : 'change');
   const [ascending, setAscending] = useState(initial.dir === 'asc');
   const recentTrafficMonths = data.trafficMonths.filter((month) => month <= trafficMonth).slice(-3);
-  const recentReferenceMonths = data.referenceMonths.filter((month) => month <= referenceMonth).slice(-3);
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
-  const referenceAt = (outlet: ComparisonOutlet) => outlet.referenceTraffic?.find((p) => p.month === referenceMonth);
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
   const filtered = data.outlets.filter((o) => `${o.name} ${o.domain ?? ''} ${o.media ?? ''}`.toLocaleLowerCase().includes(needle));
@@ -72,8 +71,6 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     if (sort === 'articles') return articlesAt(o);
     // Smaller Radar positions are more popular, so negate them: descending lists the most popular first.
     if (sort === 'radar') return radarPosition(o) == null ? null : -(radarPosition(o) as number);
-    if (sort === 'reference')
-      return view === 'change' ? monthChange(o.referenceTraffic, data.referenceMonths, referenceMonth) : (referenceAt(o)?.traffic ?? null);
     return view === 'change' ? monthChange(o.traffic, data.trafficMonths, trafficMonth) : (trafficAt(o)?.traffic ?? null);
   };
   filtered.sort((a, b) => {
@@ -85,19 +82,32 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   useEffect(() => {
     const params = new URLSearchParams({ sort, dir: ascending ? 'asc' : 'desc' });
     if (trafficMonth && trafficMonth !== data.trafficMonths.at(-1)) params.set('month', trafficMonth);
-    if (referenceMonth && referenceMonth !== data.referenceMonths.at(-1)) params.set('referenceMonth', referenceMonth);
     if (query) params.set('q', query);
-    if (view === 'change') params.set('view', view);
+    if (view === 'value') params.set('view', view);
     window.history.replaceState(null, '', `/media/sources/?${params}`);
-  }, [trafficMonth, referenceMonth, sort, ascending, query, view, data.trafficMonths, data.referenceMonths]);
+  }, [trafficMonth, sort, ascending, query, view, data.trafficMonths]);
   const chooseSort = (value: Sort) => {
     setAscending(sort === value ? !ascending : value === 'name');
     setSort(value);
   };
+  const trend =
+    recentTrafficMonths.length > 1
+      ? `走勢 ${Number(recentTrafficMonths[0].slice(4))}→${Number(recentTrafficMonths.at(-1)?.slice(4))}月`
+      : '';
+  const columns = [
+    { key: 'name', label: '媒體', sub: '' },
+    { key: 'articles', label: '本站收錄', sub: crawlMonth ? `${shortMonth(crawlMonth)} · 篇` : '篇' },
+    {
+      key: 'traffic',
+      label: 'Similarweb',
+      sub: [trafficMonth && shortMonth(trafficMonth), view === 'change' ? '較上月' : '月訪問次數', trend].filter(Boolean).join(' · '),
+    },
+    { key: 'radar', label: 'Cloudflare Radar', sub: '全球排名' },
+  ] as const;
 
   return (
     <section aria-label="媒體流量與收錄清單" className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <input
           aria-label="搜尋媒體或網域"
           type="search"
@@ -110,12 +120,11 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
         />
         <fieldset className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
           <legend className="sr-only">流量顯示方式</legend>
-          <span aria-hidden="true">顯示</span>
           <span className="inline-flex overflow-hidden rounded-md border border-zinc-300 dark:border-zinc-700">
             {(
               [
-                ['value', '數值'],
                 ['change', '月變化'],
+                ['value', '數值'],
               ] as const
             ).map(([value, text]) => (
               <button
@@ -131,7 +140,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           </span>
         </fieldset>
         <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          Similarweb 月份
+          月份
           <select
             aria-label="Similarweb 月份"
             className={control}
@@ -149,53 +158,20 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          GeneHong 月份
-          <select
-            aria-label="GeneHong 月份"
-            className={control}
-            value={referenceMonth}
-            disabled={!data.referenceMonths.length}
-            onChange={(e) => setReferenceMonth(e.target.value)}
-          >
-            {!data.referenceMonths.length && <option value="">尚無資料</option>}
-            {data.referenceMonths.toReversed().map((month) => (
-              <option key={month} value={month}>
-                {shortMonth(month)}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
-      <div className="relative overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[850px] table-fixed text-sm tabular-nums">
-          <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
+      <TableScroller card label="媒體流量表格，可左右捲動">
+        <table className="w-full min-w-[34rem] text-sm tabular-nums">
+          <thead className="text-xs text-zinc-500 dark:text-zinc-400">
             <tr>
-              {(
-                [
-                  { key: 'name', label: '媒體', sub: '' },
-                  { key: 'articles', label: '本站收錄', sub: crawlMonth ? `${shortMonth(crawlMonth)} · 篇` : '篇' },
-                  {
-                    key: 'traffic',
-                    label: 'Similarweb',
-                    sub: trafficMonth ? `${shortMonth(trafficMonth)} · ${view === 'change' ? '較上月' : '月訪問次數'}` : '月訪問次數',
-                  },
-                  { key: 'radar', label: 'Cloudflare Radar', sub: '全球排名' },
-                  {
-                    key: 'reference',
-                    label: 'GeneHong',
-                    sub: referenceMonth ? `${shortMonth(referenceMonth)} · ${view === 'change' ? '較上月' : '原表值'}` : '原表值',
-                  },
-                ] as const
-              ).map(({ key, label, sub }) => (
+              {columns.map(({ key, label, sub }) => (
                 <th
                   scope="col"
                   key={key}
                   aria-sort={sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
-                  className={`px-2 py-2 sm:px-4 ${key === 'name' ? 'w-[28%] text-left' : key === 'articles' ? 'w-[12%] text-right' : 'text-right'}`}
+                  className={key === 'name' ? `${table.leadHead} text-left` : `${table.cell} text-right`}
                 >
-                  <button type="button" onClick={() => chooseSort(key)} className="min-h-8 font-medium">
-                    {label} <span aria-hidden="true">{sort === key ? (ascending ? '↑' : '↓') : '↕'}</span>
+                  <button type="button" onClick={() => chooseSort(key)} className="min-h-8 font-medium whitespace-nowrap">
+                    {label} <SortIndicator active={sort === key} descending={!ascending} />
                     {sub && <span className="block text-[10px] font-normal">{sub}</span>}
                   </button>
                 </th>
@@ -206,23 +182,22 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             {filtered.map((outlet) => {
               const shared = outlet.sharedWith && `與${outlet.sharedWith}共用 ${outlet.domain}；整個網域的數字只列在${outlet.sharedWith}`;
               const point = trafficAt(outlet),
-                count = articlesAt(outlet),
-                reference = referenceAt(outlet);
+                count = articlesAt(outlet);
               const identity = (
                 <>
                   {outlet.media ? (
-                    <MediaIcon media={outlet.media} title={outlet.name} size={24} />
+                    <MediaIcon media={outlet.media} title={outlet.name} size={20} />
                   ) : (
                     <span
                       aria-hidden="true"
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-zinc-100 text-xs text-zinc-500 dark:bg-zinc-800"
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-zinc-100 text-xs text-zinc-500 dark:bg-zinc-800"
                     >
                       {outlet.name.slice(0, 1)}
                     </span>
                   )}
                   <span className="min-w-0">
-                    <span className="block truncate font-medium">{outlet.name}</span>
-                    <span className="block truncate text-[10px] text-zinc-500">
+                    <span className={`${table.leadText} block font-medium`}>{outlet.name}</span>
+                    <span className={`${table.leadExtra} ${table.leadText} block text-[10px] text-zinc-500`}>
                       {outlet.domain ??
                         (outlet.media && mediaNames[outlet.media]?.status === 'historical' ? '歷史來源・原網域已停用' : '網域待確認')}
                       {outlet.sourceKind === 'discovery' && ' · 文章發現來源'}
@@ -231,35 +206,33 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                 </>
               );
               return (
-                <tr
-                  key={outlet.key}
-                  data-media={outlet.key}
-                  className="border-t border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/60"
-                >
-                  <td className="px-2 py-2 sm:px-4">
-                    {outlet.media ? (
-                      <MediaHoverLink
-                        media={outlet.media}
-                        title={outlet.name}
-                        icon={false}
-                        className="flex items-center gap-2 hover:underline"
-                      >
-                        {identity}
-                      </MediaHoverLink>
-                    ) : (
-                      <div className="flex items-center gap-2" title={outlet.name}>
-                        {identity}
-                      </div>
-                    )}
+                <tr key={outlet.key} data-media={outlet.key} className={`${table.row} border-t border-zinc-200 dark:border-zinc-800`}>
+                  <td className={`${table.lead} py-1.5`}>
+                    <div className={table.leadBox}>
+                      {outlet.media ? (
+                        <MediaHoverLink
+                          media={outlet.media}
+                          title={outlet.name}
+                          icon={false}
+                          className="flex items-center gap-2 hover:underline"
+                        >
+                          {identity}
+                        </MediaHoverLink>
+                      ) : (
+                        <div className="flex items-center gap-2" title={outlet.name}>
+                          {identity}
+                        </div>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-2 py-2 text-right sm:px-4">{count == null ? '—' : count.toLocaleString('zh-TW')}</td>
+                  <td className={`${table.num} py-1.5`}>{count == null ? '—' : count.toLocaleString('zh-TW')}</td>
                   <td
-                    className="px-2 py-2 text-right sm:px-4"
+                    className={`${table.num} py-1.5`}
                     title={shared ?? (outlet.trafficFetchedAt && `${outlet.trafficFetchedAt.slice(0, 10)} 更新`)}
                   >
-                    <div className="flex flex-col-reverse items-end gap-1">
+                    <div className="flex items-center justify-end gap-3 whitespace-nowrap">
                       <TrafficSparkline traffic={outlet.traffic} months={recentTrafficMonths} label="Similarweb 估算月訪問量" />
-                      <span>
+                      <span className="min-w-16">
                         {view === 'change' ? (
                           <Change value={monthChange(outlet.traffic, data.trafficMonths, trafficMonth)} />
                         ) : (
@@ -269,7 +242,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                     </div>
                   </td>
                   <td
-                    className="px-2 py-2 text-right sm:px-4"
+                    className={`${table.num} py-1.5 whitespace-nowrap`}
                     title={
                       shared ??
                       (outlet.radar &&
@@ -278,37 +251,13 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                   >
                     {radarText(outlet.radar)}
                   </td>
-                  <td
-                    className="px-2 py-2 text-right sm:px-4"
-                    title={
-                      [
-                        reference?.adjusted && `原表人工調整值 ${trafficNumber(reference.rawTraffic)}`,
-                        reference?.ambiguous && '同一媒體有多列，待核對',
-                        outlet.referenceDomain && outlet.referenceDomain !== outlet.domain && `原表網域 ${outlet.referenceDomain}`,
-                      ]
-                        .filter(Boolean)
-                        .join('；') || undefined
-                    }
-                  >
-                    <div className="flex flex-col-reverse items-end gap-1">
-                      <TrafficSparkline traffic={outlet.referenceTraffic ?? []} months={recentReferenceMonths} label="GeneHong 整理表" />
-                      <span>
-                        {view === 'change' ? (
-                          <Change value={monthChange(outlet.referenceTraffic, data.referenceMonths, referenceMonth)} />
-                        ) : (
-                          trafficNumber(reference?.traffic ?? null)
-                        )}
-                        {(reference?.adjusted || reference?.ambiguous) && <sup className="text-zinc-500">*</sup>}
-                      </span>
-                    </div>
-                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
         {!filtered.length && <p className="p-8 text-center text-sm text-zinc-500">沒有符合條件的媒體。</p>}
-      </div>
+      </TableScroller>
     </section>
   );
 }

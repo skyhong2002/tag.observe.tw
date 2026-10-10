@@ -9,7 +9,7 @@ export default async function MediaSourcesNotes() {
   const status = await loadComparison().catch(() => null);
   return (
     <>
-      <MediaSourcesMethod retrievedAt={traffic.retrievedAt} status={status} />
+      <MediaSourcesMethod sheet={traffic} status={status} />
       <MediaCardMethod />
     </>
   );

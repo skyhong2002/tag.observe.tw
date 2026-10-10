@@ -67,7 +67,6 @@ export type MediaSourcesStatus = Pick<
   ComparisonData,
   | 'crawlMonths'
   | 'trafficMonths'
-  | 'referenceMonths'
   | 'liveTrafficStatus'
   | 'liveTrafficCheckedAt'
   | 'liveTrafficError'
@@ -85,15 +84,15 @@ function fetchState(status: keyof typeof sourceStatusLabels | null, checkedAt: s
 }
 const recent = (months: string[]) => months.slice(-3).map(shortMonth).join('、');
 
-/** Similar Web (/media/sources/). `retrievedAt` comes from the traffic sheet's
- *  import (app/data/media-traffic.json) and `status` from the page's own load,
- *  both passed in by the server so the client-side footer never bundles them. */
+/** Similar Web (/media/sources/). `sheet` is the GeneHong traffic sheet
+ *  (app/data/media-traffic.json) and `status` the page's own load, both passed
+ *  in by the server so the client-side footer never bundles them. */
 export function MediaSourcesMethod({
-  retrievedAt,
+  sheet,
   status,
   camp = true,
 }: {
-  retrievedAt?: string;
+  sheet?: { sourceUrl: string; retrievedAt: string };
   status?: MediaSourcesStatus | null;
   camp?: boolean;
 }) {
@@ -102,9 +101,7 @@ export function MediaSourcesMethod({
     <>
       <h3 className={methodHeading}>媒體流量、排名與收錄比較</h3>
       <p>
-        這一頁把本站收錄篇數、Similarweb 自動抓取、Cloudflare Radar 與 GeneHong
-        整理表分欄並列；各來源的數值與期間分別保留、分別排序，不合計，皆非精確 page
-        views。流量與篇數是不同指標，不能推算成每篇文章的實際閱讀量。
+        本站收錄篇數、Similarweb 估算月訪問量與 Cloudflare Radar 排名分欄並列，不合計，都不是精確 page views，也不能推算成每篇文章的閱讀量。
       </p>
       {status && (
         <dl className={methodList}>
@@ -116,10 +113,6 @@ export function MediaSourcesMethod({
                 {status.trafficMonths.length ? `最新三個月為 ${recent(status.trafficMonths)}。` : '目前尚未取得流量數字。'}
               </li>
               <li>Cloudflare Radar：{fetchState(status.radarStatus, status.radarCheckedAt, status.radarError)}</li>
-              <li>
-                GeneHong 整理表：{recent(status.referenceMonths) || '尚無資料'}
-                {retrievedAt ? `，匯入日期 ${retrievedAt.slice(0, 10)}` : ''}。
-              </li>
               <li>本站收錄：{crawlMonth ? `表格顯示 ${shortMonth(crawlMonth)} 篇數。` : '目前無法取得本站收錄量。'}</li>
             </ul>
           </dd>
@@ -128,32 +121,35 @@ export function MediaSourcesMethod({
       <dl className={methodList}>
         <dt className={methodTerm}>Similarweb</dt>
         <dd>
-          直接抓取 Similarweb 外掛端點的 EstimatedMonthlyVisits，呈現最近三個可取得月份的全網域估算訪問次數，並非即時資料或精確 page
-          views。欄內數字是選定月份，下方走勢線是最近三個月（左舊右新），游標移到點上或手機點一下顯示該月數值；切換「月變化」改顯示較上一個月的增減百分比，排序也依此計算。Similarweb
-          與 Radar 都只量整個網域：多個媒體共用同一網域時（例如 BBC 中文與
-          BBC），數字只列在網址位於網站根目錄的媒體，其他列顯示「—」。每小時分批更新，每個網域約每週重抓；來源限流時停止該批，下一輪接著抓。
+          抓取 Similarweb
+          瀏覽器外掛使用的資料端點，取得整個網域最近三個月的估算月訪問次數（visits）。預設顯示選定月份較上一個月的增減，切換「數值」看訪問次數；走勢線左舊右新，游標移到點上或手機點一下顯示該月數值。每小時分批更新，每個網域約每週重抓。
         </dd>
         <dt className={methodTerm}>Cloudflare Radar</dt>
         <dd>
-          透過官方 API 取得全球熱門網域的最新一期排名，主要依 Cloudflare 1.1.1.1 DNS 的觀測訊號，每日更新。前 100
-          名可有精確名次，其餘只有「前 N 名」級距，數字越小越熱門；同級距無法判定先後，排序時以名次或級距上限比較，同級距視為同名。「未入前
-          N 名」表示排在該名次之後。排名不是訪問次數、瀏覽量或全台市占，不能換算為 visits 或 page views。欄內保留 API
-          資料期間與最近成功更新日期；未設定 API Token 時明確顯示未設定。
+          官方 API 的全球熱門網域排名，依 1.1.1.1 DNS 觀測，每日更新。前 100 名有精確名次，其餘只有「前 N
+          名」級距，排序時同級距視為同名；「未入前 N 名」表示排在更後面。排名不能換算為訪問次數。
         </dd>
-        <dt className={methodTerm}>GeneHong</dt>
+        <dt className={methodTerm}>共用網域</dt>
         <dd>
-          保留人工整理表原始值與網域，可另選月份。原表沒有寫單位；2026 年 10 月逐筆比對，2026/07、2026/08 的值就是 Similarweb
-          估算月訪問量以百萬為單位、取到小數兩三位，人工調整列除外，更早月份 Similarweb
-          已不提供，無法比對。人工調整值的儲存格標「*」，游標移上去可看原值，不當成實際流量或零；同一媒體有多列而無法判定主來源時同樣標「*」並註明待核對。品牌全站與新聞子頻道可能重疊，採主來源，不相加。
+          兩個來源都只量整個網域。多個媒體共用同一網域時（例如 BBC 中文與 BBC），數字只列在網址位於網站根目錄的媒體，其他列顯示「—」。
         </dd>
         <dt className={methodTerm}>本站收錄</dt>
-        <dd>
-          依真實發布月份（台北時間）統計目前已收錄紀錄，並非該媒體完整發稿量；表格顯示最近一個月的篇數。本月資料持續累積中，抓取也可能不完整。發現來源以關聯計數，不改文章的原媒體歸屬。
-        </dd>
+        <dd>依真實發布月份（台北時間）統計已收錄篇數，並非該媒體完整發稿量；本月資料持續累積中。</dd>
         <dt className={methodTerm}>缺值與失敗</dt>
-        <dd>缺值不補零，顯示「—」。自動來源抓取失敗時保留各來源上次成功資料與日期，不用整理表補值。</dd>
+        <dd>缺值顯示「—」，不補零。抓取失敗時保留上次成功的資料與日期。</dd>
       </dl>
-      <p>原始整理表另有人工標記的分類欄，本站基準名單媒體的藍綠即依此標記（見下）；這不是 Similarweb 的政治傾向評分，本頁也不呈現分類。</p>
+      <p>
+        {sheet ? (
+          <a href={sheet.sourceUrl} target="_blank" rel="noreferrer" className={inlineLink}>
+            GeneHong 原始流量表單
+          </a>
+        ) : (
+          'GeneHong 原始流量表單'
+        )}
+        （由 Gene Hong 維護{sheet ? `，${sheet.retrievedAt.slice(0, 10)} 匯入` : ''}）的流量欄經逐筆比對，就是 Similarweb
+        的估算月訪問量以百萬為單位，因此本頁不另列。表單另有人工標記的分類欄，本站基準名單媒體的藍綠即依此標記（見下）；這不是 Similarweb
+        的政治傾向評分。
+      </p>
       {camp && <CampBasis />}
     </>
   );

@@ -20,8 +20,8 @@ import { trafficNumber } from '@/lib/media-traffic.mts';
 import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import type { SimilarityData } from '@/lib/similarity';
-import { outletIdentity } from '../../../../../../app/src/similarity/attribution';
 import { radarText, shortMonth } from '@/lib/traffic-comparison.mts';
+import { outletIdentity } from '../../../../../../app/src/similarity/attribution';
 import { loadComparison } from '../sources/load';
 
 export const revalidate = 60;
@@ -238,7 +238,7 @@ export default async function MediaPage({
                       {trafficNumber(visits.traffic)}
                       <span className="ml-1 text-zinc-500">{shortMonth(visits.month)}</span>
                     </span>
-                    <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月訪問量" />
+                    <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月訪問量" ends />
                   </dd>
                 </>
               )}

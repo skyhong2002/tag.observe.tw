@@ -196,8 +196,11 @@ export function buildComparison(
   // Similarweb and Radar only measure whole domains. When several outlets sit on one
   // domain, the figure belongs to the one at the site root (or the shortest path);
   // a tie leaves the figure unassigned rather than repeating it on several rows.
+  // The catalog's website, else the reviewed one in media-names (outlets the sheet never listed).
   const official = (outlet: ComparisonOutlet) => {
-    const url = safeWebsiteUrl(catalog.find((s) => s.media === outlet.media)?.websiteUrl);
+    const url =
+      safeWebsiteUrl(catalog.find((s) => s.media === outlet.media)?.websiteUrl) ??
+      (outlet.media ? safeWebsiteUrl(mediaNames[outlet.media]?.sourceUrl) : null);
     return url ? new URL(url) : null;
   };
   const owners = new Map<string, ComparisonOutlet[]>();
@@ -224,16 +227,13 @@ export function buildComparison(
   for (const outlet of outlets.values()) {
     outlet.referenceTraffic = outlet.traffic;
     outlet.referenceDomain = outlet.domain;
-    const source = catalog.find((s) => s.media === outlet.media);
-    const website = safeWebsiteUrl(source?.websiteUrl);
-    const domain = website ? new URL(website).hostname.replace(/^www\./, '') : outlet.domain;
+    const domain = official(outlet)?.hostname.replace(/^www\./, '') ?? outlet.domain;
     if (outlet.sourceKind === 'publisher' && domain && ownsDomain(outlet, domain)) outlet.radar = radarByDomain.get(domain);
   }
   if (useLive) {
     for (const outlet of outlets.values()) {
-      const source = catalog.find((s) => s.media === outlet.media);
-      const official = safeWebsiteUrl(source?.websiteUrl);
-      if (official) outlet.domain = new URL(official).hostname.replace(/^www\./, '');
+      const website = official(outlet);
+      if (website) outlet.domain = website.hostname.replace(/^www\./, '');
       const current =
         outlet.sourceKind === 'publisher' && outlet.domain && ownsDomain(outlet, outlet.domain)
           ? liveByDomain.get(outlet.domain)

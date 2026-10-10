@@ -94,7 +94,7 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
       <>
         <MediaOverviewMethod camp={false} />
         <MediaMethod />
-        <MediaSourcesMethod retrievedAt={traffic.retrievedAt} camp={false} />
+        <MediaSourcesMethod sheet={traffic} camp={false} />
         <CrawlerMethod />
       </>
     ),

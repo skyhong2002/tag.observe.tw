@@ -71,6 +71,30 @@ select:not([multiple]):not([size]) {
   --table-head-bg: var(--color-zinc-950);
   --table-hover-bg: var(--color-zinc-800);
 }
+/* The header row follows the page down a long table, staying under the site
+   header (TableScroller measures --head-start/--head-end/--head-travel). It sits
+   above the sticky lead cells; :where() leaves a table's own background classes in charge. */
+.table-head-follow,
+.table-head-shift {
+  position: relative;
+  z-index: 20;
+}
+:where(.table-head-follow, .table-head-shift) {
+  background-color: var(--table-head-bg);
+}
+.table-head-follow {
+  animation: table-head-follow linear both;
+  animation-timeline: scroll(root block);
+  animation-range: var(--head-start) var(--head-end);
+}
+@keyframes table-head-follow {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--head-travel));
+  }
+}
 /* Once the table has been scrolled, the sticky lead column casts a shadow over what slides under it. */
 .table-scroller[data-scroll-x="middle"] .table-lead,
 .table-scroller[data-scroll-x="end"] .table-lead {
