@@ -67,13 +67,19 @@ export function MediaMethod() {
 export function MediaSourcesMethod({ retrievedAt, camp = true }: { retrievedAt?: string; camp?: boolean }) {
   return (
     <>
-      <h3 className={methodHeading}>Similar Web：流量與收錄比較</h3>
+      <h3 className={methodHeading}>媒體流量、排名與收錄比較</h3>
       <p>
-        這一頁把各家媒體的本站收錄篇數與 Similarweb 流量並列，表格每列直接呈現最近三個可取得月份。Similarweb 資料來自 Gene Hong
-        維護的人工整理表（頁首的「原始流量表單」）或每日自動抓取的 Similarweb `EstimatedMonthlyVisits`
-        {retrievedAt ? `，匯入日期 ${retrievedAt.slice(0, 10)}` : ''}
-        。新聞欄的單位未明示，這是 Similarweb 的估算流量／訪問量，不是本站或媒體後台的精確 page
-        views，也不推算造訪人數。人工調整過的數值另行標示（「人工調整」，滑鼠停留可看原表值）；同一媒體有多列流量、無法判定主來源時標「待核對」；缺值不補零，顯示「—」。品牌全站與新聞子頻道可能重疊，每家媒體採主來源，不相加，也不推算全台市占。
+        這一頁把本站收錄篇數、Similarweb 自動抓取、Cloudflare Radar 與 GeneHong 整理表分欄並列。 Similarweb 直接抓取外掛端點的
+        EstimatedMonthlyVisits，呈現最近三個可取得月份的全網域估算訪問次數，並非即時資料或精確 page views。 GeneHong
+        欄保留人工整理表原始值與網域{retrievedAt ? `，整理表匯入日期 ${retrievedAt.slice(0, 10)}` : ''}。
+        原表新聞流量欄的單位未明示，不推定百萬人次。兩欄可分別選擇月份與排序；缺值不補零，顯示「—」。
+        人工調整值另標「人工調整」，提示保留原值；同一媒體有多列而無法判定主來源時標「待核對」。品牌全站與新聞子頻道可能重疊，採主來源，不相加。
+      </p>
+      <p>
+        Cloudflare Radar 透過官方 API 取得全球熱門網域的最新一期排名，主要依 Cloudflare 1.1.1.1 DNS 的觀測訊號。 前 100
+        名可有精確名次，其餘可能只有「前 N 名」級距；同級距無法判定先後，因此不提供跨級距的精確排序。
+        排名不是訪問次數、瀏覽量或全台市占，不能換算為 visits 或 page views。欄內保留 API 資料期間與最近成功更新日期。
+        自動來源每日抓取，有資料延遲；失敗時保留各來源上次成功資料與日期，不用整理表補值。未設定 Radar API Token 時明確顯示未設定。
       </p>
       <p>
         本站文章數依真實發布月份（台北時間）統計目前已收錄紀錄，並非該媒體完整發稿量；表格顯示最近一個月的篇數。本月資料持續累積中，抓取也可能不完整。流量與篇數是不同指標，不能推算成每篇文章的實際閱讀量。發現來源以關聯計數，不改文章的原媒體歸屬。

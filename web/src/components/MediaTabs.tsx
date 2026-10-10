@@ -7,7 +7,7 @@ export default function MediaTabs({ current }: { current: 'media' | 'sources' | 
       className="mb-5"
       tabs={[
         { key: 'media', href: '/media/', label: '收錄概況' },
-        { key: 'sources', href: '/media/sources/', label: 'Similar Web' },
+        { key: 'sources', href: '/media/sources/', label: '流量與排名' },
         { key: 'crawlers', href: '/media/crawlers/', label: '爬蟲資訊' },
       ].map((tab) => ({ ...tab, current: current === tab.key }))}
     />

@@ -1827,6 +1827,32 @@ export const ENDPOINTS: Endpoint[] = [
     }),
   },
   {
+    path: '/api/v1/media-radar',
+    tag: 'media',
+    summary: 'Cloudflare Radar 全球網域排名與級距',
+    description:
+      '讀取 worker 透過官方 Radar API 取得的最新 POPULAR 網域排名。前 100 名有精確名次，其他可能只提供排名級距；不能換算為訪問量或 page views。未設定 Token 時為 unconfigured，失敗保留最後成功資料。GET 不呼叫上游。',
+    response: obj({
+      version: int('資料格式版本'),
+      source: str('抓取來源', { enum: ['cloudflare-radar'] }),
+      scope: str('排名範圍', { enum: ['global'] }),
+      checkedAt: nullable(time('最近一次批次檢查時間')),
+      status: str('批次狀態', { enum: ['unconfigured', 'pending', 'ok', 'partial', 'blocked', 'failed'] }),
+      error: nullable(str('最近一次錯誤摘要，不含 Token 或上游回應內容')),
+      domains: arr(
+        obj({
+          domain: str('網域'),
+          fetchedAt: time('該網域最近成功抓取時間'),
+          dateStart: time('API 回傳資料期間開始'),
+          dateEnd: time('API 回傳資料期間結束'),
+          rank: nullable(int('精確名次（只接受前 100 名），無名次時為 null')),
+          bucket: nullable(int('排名級距上界，例如 2000 表示前 2000 名，非第 2000 名')),
+        }),
+      ),
+    }),
+    cache: '1 分鐘',
+  },
+  {
     path: '/api/v1/media-traffic-live',
     tag: 'media',
     summary: 'Similarweb 自動抓取流量狀態',

@@ -1,9 +1,13 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import catalog from '../../data/news-source-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
+import { emptyRadar, writeRadar } from '../media-traffic/radar.ts';
 import {
   assembleTrafficComparison,
   loadMediaTrafficComparison,
@@ -30,6 +34,37 @@ function fakeDb(results: unknown[][]) {
   return { db: { select } as unknown as Db, select, chains };
 }
 describe('monthly crawler and traffic comparison', () => {
+  it('serves Radar snapshots without upstream requests and filters hidden and non-catalog domains', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'radar-api-'));
+    const file = join(dir, 'radar.json');
+    vi.stubEnv('TAG_MEDIA_RADAR_FILE', file);
+    vi.stubEnv('CLOUDFLARE_RADAR_API_TOKEN', 'test-token');
+    const row = {
+      domain: 'udn.com',
+      fetchedAt: now.toISOString(),
+      dateStart: '2026-10-01T00:00:00Z',
+      dateEnd: '2026-10-02T00:00:00Z',
+      rank: null,
+      bucket: 2000,
+    };
+    await writeRadar({ ...emptyRadar(), status: 'ok', domains: [row, { ...row, domain: 'private.example' }] }, file);
+    const app = Fastify();
+    registerMediaTrafficComparison(app, fakeDb([]).db);
+    const request = vi.spyOn(globalThis, 'fetch').mockRejectedValue(Error('No upstream requests'));
+    try {
+      const response = await app.inject('/api/v1/media-radar');
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['cache-control']).toBe('public, max-age=60');
+      expect(response.json().domains).toEqual([row]);
+      expect(response.body).not.toContain('test-token');
+      expect(request).not.toHaveBeenCalled();
+    } finally {
+      request.mockRestore();
+      vi.unstubAllEnvs();
+      await app.close();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
   it('uses Taipei month boundaries across UTC dates and December/January', () => {
     expect(taipeiPublicationMonth(new Date('2026-09-30T15:59:59Z'))).toBe('202609');
     expect(taipeiPublicationMonth(new Date('2026-09-30T16:00:00Z'))).toBe('202610');

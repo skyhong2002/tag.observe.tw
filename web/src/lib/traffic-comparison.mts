@@ -26,6 +26,19 @@ export interface LiveTraffic {
   error: string | null;
   domains: Array<{ domain: string; fetchedAt: string; monthly: Array<{ month: string; visits: number }> }>;
 }
+export interface RadarData {
+  status: 'unconfigured' | LiveTraffic['status'];
+  checkedAt: string | null;
+  error: string | null;
+  domains: Array<{
+    domain: string;
+    fetchedAt: string;
+    dateStart: string;
+    dateEnd: string;
+    rank: number | null;
+    bucket: number | null;
+  }>;
+}
 export interface ComparisonOutlet {
   key: string;
   media: string | null;
@@ -36,6 +49,9 @@ export interface ComparisonOutlet {
   traffic: TrafficPoint[];
   monthly: Array<{ month: string; articles: number }> | null;
   trafficFetchedAt?: string;
+  referenceTraffic?: TrafficPoint[];
+  referenceDomain?: string | null;
+  radar?: RadarData['domains'][number];
 }
 export interface ComparisonData {
   months: string[];
@@ -48,6 +64,10 @@ export interface ComparisonData {
   liveTrafficStatus: LiveTraffic['status'] | null;
   liveTrafficCheckedAt: string | null;
   liveTrafficError: string | null;
+  referenceMonths: string[];
+  radarStatus: RadarData['status'] | null;
+  radarCheckedAt: string | null;
+  radarError: string | null;
 }
 const identity = (s: string) => s.replace(/\s/g, '').toLowerCase();
 export const shortMonth = (month: string) => `${month.slice(0, 4)}/${month.slice(4)}`;
@@ -70,6 +90,7 @@ export function buildComparison(
   /** Outlets removed from the site on request; their spreadsheet rows are dropped too. */
   hidden: ReadonlySet<string> = new Set(),
   live: LiveTraffic | null = null,
+  radar: RadarData | null = null,
 ): ComparisonData {
   const outlets = new Map<string, ComparisonOutlet>();
   const collected = new Map(crawl?.media.map((m) => [m.media, m]) ?? []);
@@ -123,6 +144,23 @@ export function buildComparison(
       traffic: [],
     });
   }
+  if (live || radar) {
+    // Direct source data remains visible even when the crawler API is unavailable
+    // and a publisher has never appeared in the reference spreadsheet.
+    for (const source of catalog) {
+      if (outlets.has(source.media)) continue;
+      outlets.set(source.media, {
+        key: source.media,
+        media: source.media,
+        name: mediaNames[source.media]?.name || source.name,
+        domain: null,
+        sourceKind: ['google_news', 'dongtaiwang'].includes(source.media) ? 'discovery' : 'publisher',
+        firstAcquiredAt: null,
+        monthly: crawl ? [] : null,
+        traffic: [],
+      });
+    }
+  }
   // Display fallback only: preserve the original spreadsheet domain and figures.
   // Crawler-only outlets also have reviewed websites in the name registry.
   for (const outlet of outlets.values()) {
@@ -132,7 +170,17 @@ export function buildComparison(
     outlet.domain = website ? new URL(website).hostname.replace(/^www\./, '') : null;
   }
   const liveByDomain = new Map(live?.domains.map((row) => [row.domain, row]) ?? []);
+  const radarByDomain = new Map(radar?.domains.map((row) => [row.domain, row]) ?? []);
   const useLive = live !== null;
+  // Preserve GeneHong's original scope and units before applying official-domain sources.
+  for (const outlet of outlets.values()) {
+    outlet.referenceTraffic = outlet.traffic;
+    outlet.referenceDomain = outlet.domain;
+    const source = catalog.find((s) => s.media === outlet.media);
+    const website = safeWebsiteUrl(source?.websiteUrl);
+    const domain = website ? new URL(website).hostname.replace(/^www\./, '') : outlet.domain;
+    if (outlet.sourceKind === 'publisher' && domain) outlet.radar = radarByDomain.get(domain);
+  }
   if (useLive) {
     for (const outlet of outlets.values()) {
       const source = catalog.find((s) => s.media === outlet.media);
@@ -168,6 +216,10 @@ export function buildComparison(
     liveTrafficStatus: live?.status ?? null,
     liveTrafficCheckedAt: live?.checkedAt ?? null,
     liveTrafficError: live?.error ?? null,
+    referenceMonths: snapshots.map((s) => s.month).sort(),
+    radarStatus: radar?.status ?? null,
+    radarCheckedAt: radar?.checkedAt ?? null,
+    radarError: radar?.error ?? null,
   };
 }
 

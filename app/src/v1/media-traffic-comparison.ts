@@ -6,6 +6,7 @@ import { allSources, excludedMedia } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles } from '../db/schema.ts';
 import { readLiveTraffic, trafficDomain } from '../media-traffic/live.ts';
+import { readRadar } from '../media-traffic/radar.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { listedMediaSources } from './media-stats.ts';
 
@@ -146,14 +147,19 @@ export function trafficComparisonCache<T>(load: () => Promise<T>, clock = Date.n
 }
 export function registerMediaTrafficComparison(app: FastifyInstance, db: Db) {
   const load = trafficComparisonCache(() => loadMediaTrafficComparison(db));
+  const visible = new Set(
+    catalog.sources
+      .filter((source) => !excludedMedia.has(source.media) && !isDiscoverySource(source.media))
+      .map((source) => (source.websiteUrl ? trafficDomain(source.websiteUrl) : null)),
+  );
+  app.get('/api/v1/media-radar', async (_request, reply) => {
+    reply.header('cache-control', 'public, max-age=60');
+    const snapshot = await readRadar();
+    return { ...snapshot, domains: snapshot.domains.filter((row) => visible.has(row.domain)) };
+  });
   app.get('/api/v1/media-traffic-live', async (_request, reply) => {
     reply.header('cache-control', 'public, max-age=60');
     const snapshot = await readLiveTraffic();
-    const visible = new Set(
-      catalog.sources
-        .filter((source) => !excludedMedia.has(source.media) && !isDiscoverySource(source.media))
-        .map((source) => (source.websiteUrl ? trafficDomain(source.websiteUrl) : null)),
-    );
     return { ...snapshot, domains: snapshot.domains.filter((row) => visible.has(row.domain)) };
   });
   app.get('/api/v1/media-traffic-comparison', async (_request, reply) => {

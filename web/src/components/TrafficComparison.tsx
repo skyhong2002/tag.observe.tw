@@ -5,20 +5,21 @@ import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import { mediaNames } from '@/lib/media-names.mts';
 import { trafficNumber } from '@/lib/media-traffic.mts';
-import { type ComparisonData, type ComparisonOutlet, collectionPoint, shortMonth } from '@/lib/traffic-comparison.mts';
+import { type ComparisonData, type ComparisonOutlet, collectionPoint, shortMonth, type TrafficPoint } from '@/lib/traffic-comparison.mts';
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
-type Sort = 'traffic' | 'articles' | 'name';
+type Sort = 'traffic' | 'reference' | 'articles' | 'name';
 const liveLabels = {
   pending: '尚未抓取',
   ok: '抓取完成',
   partial: '部分網域未能更新',
   blocked: '來源拒絕連線',
   failed: '暫時無法取得資料',
+  unconfigured: '尚未設定 API Token',
 };
 
-function TrafficHistory({ outlet, months }: { outlet: ComparisonOutlet; months: string[] }) {
-  const values = months.map((month) => outlet.traffic.find((point) => point.month === month)?.traffic ?? null);
+function TrafficHistory({ traffic, months, label: sourceLabel }: { traffic: TrafficPoint[]; months: string[]; label: string }) {
+  const values = months.map((month) => traffic.find((point) => point.month === month)?.traffic ?? null);
   const known = values.filter((value): value is number => value !== null);
   if (!known.length) return <span className="text-zinc-500">—</span>;
   const min = Math.min(...known);
@@ -39,7 +40,7 @@ function TrafficHistory({ outlet, months }: { outlet: ComparisonOutlet; months: 
   const label = months.map((month, index) => `${shortMonth(month)}：${trafficNumber(values[index])}`).join('；');
   return (
     <div className="flex min-w-0 flex-col items-end gap-0.5" title={label}>
-      <svg viewBox="0 0 48 20" className="h-5 w-12 text-brand-600 dark:text-brand-400" role="img" aria-label={`近三月流量：${label}`}>
+      <svg viewBox="0 0 48 20" className="h-5 w-12 text-brand-600 dark:text-brand-400" role="img" aria-label={`${sourceLabel}：${label}`}>
         <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" />
         {points.map((point, index) => point && <circle key={months[index]} cx={point[0]} cy={point[1]} r="1.5" fill="currentColor" />)}
       </svg>
@@ -60,19 +61,29 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     data.trafficMonths.includes(initial.month ?? '') ? initial.month! : (data.trafficMonths.at(-1) ?? ''),
   );
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
+  const [referenceMonth, setReferenceMonth] = useState(
+    data.referenceMonths.includes(initial.referenceMonth ?? '') ? initial.referenceMonth! : (data.referenceMonths.at(-1) ?? ''),
+  );
   const [query, setQuery] = useState(initial.q ?? '');
   const [sort, setSort] = useState<Sort>(
-    ['traffic', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'articles',
+    ['traffic', 'reference', 'articles', 'name'].includes(initial.sort ?? '') ? (initial.sort as Sort) : 'articles',
   );
   const [ascending, setAscending] = useState(initial.dir === 'asc');
   const recentTrafficMonths = data.trafficMonths.filter((month) => month <= trafficMonth).slice(-3);
-  const automatic = data.trafficSource === 'similarweb-extension';
+  const recentReferenceMonths = data.referenceMonths.filter((month) => month <= referenceMonth).slice(-3);
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
+  const referenceAt = (outlet: ComparisonOutlet) => outlet.referenceTraffic?.find((p) => p.month === referenceMonth);
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
   const filtered = data.outlets.filter((o) => `${o.name} ${o.domain ?? ''} ${o.media ?? ''}`.toLocaleLowerCase().includes(needle));
   const metric = (o: ComparisonOutlet): number | string | null =>
-    sort === 'name' ? o.name : sort === 'articles' ? articlesAt(o) : (trafficAt(o)?.traffic ?? null);
+    sort === 'name'
+      ? o.name
+      : sort === 'articles'
+        ? articlesAt(o)
+        : sort === 'reference'
+          ? (referenceAt(o)?.traffic ?? null)
+          : (trafficAt(o)?.traffic ?? null);
   filtered.sort((a, b) => {
     const x = metric(a),
       y = metric(b);
@@ -81,11 +92,11 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
   });
   useEffect(() => {
     const params = new URLSearchParams({ sort, dir: ascending ? 'asc' : 'desc' });
-    if (!automatic) params.set('source', 'reference');
     if (trafficMonth && trafficMonth !== data.trafficMonths.at(-1)) params.set('month', trafficMonth);
+    if (referenceMonth && referenceMonth !== data.referenceMonths.at(-1)) params.set('referenceMonth', referenceMonth);
     if (query) params.set('q', query);
     window.history.replaceState(null, '', `/media/sources/?${params}`);
-  }, [trafficMonth, sort, ascending, query, data.trafficMonths, automatic]);
+  }, [trafficMonth, referenceMonth, sort, ascending, query, data.trafficMonths, data.referenceMonths]);
   const chooseSort = (value: Sort) => {
     setAscending(sort === value ? !ascending : value === 'name');
     setSort(value);
@@ -105,9 +116,9 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           className={`${control} w-44 max-w-full`}
         />
         <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          流量月份
+          Similarweb 月份
           <select
-            aria-label="流量月份"
+            aria-label="Similarweb 月份"
             className={control}
             value={trafficMonth}
             disabled={!data.trafficMonths.length}
@@ -123,28 +134,60 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
             ))}
           </select>
         </label>
+        <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+          GeneHong 月份
+          <select
+            aria-label="GeneHong 月份"
+            className={control}
+            value={referenceMonth}
+            disabled={!data.referenceMonths.length}
+            onChange={(e) => setReferenceMonth(e.target.value)}
+          >
+            {!data.referenceMonths.length && <option value="">尚無資料</option>}
+            {data.referenceMonths.toReversed().map((month) => (
+              <option key={month} value={month}>
+                {shortMonth(month)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {!crawlMonth && (
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
           目前無法取得本站收錄量。
         </p>
       )}
-      {automatic && (
+      {
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
           每日自動更新 Similarweb 網域月訪問量估算；{data.liveTrafficStatus ? liveLabels[data.liveTrafficStatus] : '尚未抓取'}
           {data.liveTrafficError?.match(/HTTP \d+/)?.[0] ? `（${data.liveTrafficError.match(/HTTP \d+/)?.[0]}）` : ''}。
           {data.liveTrafficStatus && !['ok', 'pending'].includes(data.liveTrafficStatus) && '已有數值保留上次成功資料；缺資料顯示「—」。'}
           {!data.trafficMonths.length && '目前尚未取得流量數字。'}
+          {data.liveTrafficCheckedAt && ` 最近檢查 ${data.liveTrafficCheckedAt.slice(0, 10)}。`}
         </p>
-      )}
+      }
       {recentTrafficMonths.length > 0 && (
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
-          Similarweb 流量由左至右為 {recentTrafficMonths.map(shortMonth).join('、')}；
-          {automatic ? '單位為估算訪問次數，' : '單位依整理表原表值，'}排序依 {shortMonth(trafficMonth)}。
+          Similarweb 流量由左至右為 {recentTrafficMonths.map(shortMonth).join('、')}； 單位為估算訪問次數，排序依 {shortMonth(trafficMonth)}
+          。
         </p>
       )}
-      <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full table-fixed text-sm tabular-nums">
+      <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400" role="status">
+        Cloudflare Radar：{data.radarStatus ? liveLabels[data.radarStatus] : '尚未抓取'}。
+        {data.radarError?.match(/HTTP \d+/)?.[0] ? `（${data.radarError.match(/HTTP \d+/)?.[0]}）` : ''}
+        每日更新全球熱門排名；「前 N 名」是級距，同級距無法判定先後，數字越小越熱門。這不是訪問量。
+        {data.radarCheckedAt && ` 最近檢查 ${data.radarCheckedAt.slice(0, 10)}。`}
+        {data.outlets.some((outlet) => outlet.radar) &&
+          data.radarStatus &&
+          !['ok', 'pending'].includes(data.radarStatus) &&
+          '已有數值保留上次成功資料。'}
+      </p>
+      <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+        GeneHong 整理表：{recentReferenceMonths.map(shortMonth).join('、') || '尚無資料'}
+        ，單位為原表值；人工調整值以提示保留，不當成實際流量或零。各來源分別排序，不合計。
+      </p>
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <table className="w-full min-w-[850px] table-fixed text-sm tabular-nums">
           <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
             <tr>
               {(
@@ -153,21 +196,30 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                   { key: 'articles', label: '本站收錄', sub: crawlMonth ? `${shortMonth(crawlMonth)} · 篇` : '篇' },
                   {
                     key: 'traffic',
-                    label: automatic ? '估算月訪問量' : 'Similarweb 流量',
-                    sub: automatic ? '訪問次數 · 全網域' : '原表值',
+                    label: 'Similarweb 自動抓取',
+                    sub: '估算月訪問次數 · 全網域',
                   },
+                  { key: 'radar', label: 'Cloudflare Radar', sub: '全球排名／級距 · 最新期' },
+                  { key: 'reference', label: 'GeneHong 整理表', sub: '原表值 · 單位未明示' },
                 ] as const
               ).map(({ key, label, sub }) => (
                 <th
                   scope="col"
                   key={key}
-                  aria-sort={sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
-                  className={`px-2 py-2 sm:px-4 ${key === 'name' ? 'w-[44%] text-left sm:w-1/2' : 'text-right'}`}
+                  aria-sort={key === 'radar' ? undefined : sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
+                  className={`px-2 py-2 sm:px-4 ${key === 'name' ? 'w-[28%] text-left' : key === 'articles' ? 'w-[12%] text-right' : 'text-right'}`}
                 >
-                  <button type="button" onClick={() => chooseSort(key)} className="min-h-8 font-medium">
-                    {label} <span aria-hidden="true">{sort === key ? (ascending ? '↑' : '↓') : '↕'}</span>
-                    {sub && <span className="block text-[10px] font-normal">{sub}</span>}
-                  </button>
+                  {key === 'radar' ? (
+                    <span className="font-medium">
+                      {label}
+                      <span className="block text-[10px] font-normal">{sub}</span>
+                    </span>
+                  ) : (
+                    <button type="button" onClick={() => chooseSort(key)} className="min-h-8 font-medium">
+                      {label} <span aria-hidden="true">{sort === key ? (ascending ? '↑' : '↓') : '↕'}</span>
+                      {sub && <span className="block text-[10px] font-normal">{sub}</span>}
+                    </button>
+                  )}
                 </th>
               ))}
             </tr>
@@ -175,7 +227,8 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
           <tbody>
             {filtered.map((outlet) => {
               const point = trafficAt(outlet),
-                count = articlesAt(outlet);
+                count = articlesAt(outlet),
+                reference = referenceAt(outlet);
               const identity = (
                 <>
                   {outlet.media ? (
@@ -226,13 +279,51 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
                     title={point?.adjusted ? `原表人工調整值 ${trafficNumber(point.rawTraffic)}` : undefined}
                   >
                     <div className="flex justify-end">
-                      <TrafficHistory outlet={outlet} months={recentTrafficMonths} />
+                      <TrafficHistory traffic={outlet.traffic} months={recentTrafficMonths} label="Similarweb 估算月訪問量近三月" />
                     </div>
                     {outlet.trafficFetchedAt && (
                       <span className="block text-[10px] text-zinc-500">{outlet.trafficFetchedAt.slice(0, 10)} 更新</span>
                     )}
                     {(point?.adjusted || point?.ambiguous) && (
                       <span className="block text-[10px] text-zinc-500">{point.adjusted ? '人工調整' : '待核對'}</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-2 text-right sm:px-4">
+                    {outlet.radar?.rank != null
+                      ? `第 ${outlet.radar.rank.toLocaleString('zh-TW')} 名`
+                      : outlet.radar?.bucket != null
+                        ? `前 ${outlet.radar.bucket.toLocaleString('zh-TW')} 名`
+                        : '—'}
+                    {outlet.radar && (
+                      <>
+                        <span className="block text-[10px] text-zinc-500">
+                          {outlet.radar.rank != null ? '精確名次' : outlet.radar.bucket != null ? '排名級距' : 'API 未提供排名'}
+                        </span>
+                        <span className="block text-[10px] text-zinc-500" title={`${outlet.radar.dateStart} — ${outlet.radar.dateEnd}`}>
+                          資料期末 {outlet.radar.dateEnd.slice(0, 10)}
+                        </span>
+                        <span className="block text-[10px] text-zinc-500">{outlet.radar.fetchedAt.slice(0, 10)} 更新</span>
+                      </>
+                    )}
+                  </td>
+                  <td
+                    className="px-2 py-2 text-right sm:px-4"
+                    title={reference?.adjusted ? `GeneHong 原表人工調整值 ${trafficNumber(reference.rawTraffic)}` : undefined}
+                  >
+                    <div className="flex justify-end">
+                      <TrafficHistory
+                        traffic={outlet.referenceTraffic ?? []}
+                        months={recentReferenceMonths}
+                        label="GeneHong 整理表近三月"
+                      />
+                    </div>
+                    {outlet.referenceDomain && outlet.referenceDomain !== outlet.domain && (
+                      <span className="block truncate text-[10px] text-zinc-500" title={outlet.referenceDomain}>
+                        原表 {outlet.referenceDomain}
+                      </span>
+                    )}
+                    {(reference?.adjusted || reference?.ambiguous) && (
+                      <span className="block text-[10px] text-zinc-500">{reference.adjusted ? '人工調整' : '待核對'}</span>
                     )}
                   </td>
                 </tr>

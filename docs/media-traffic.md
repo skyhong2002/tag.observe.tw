@@ -1,13 +1,14 @@
 # 媒體流量與收錄
 
-`/media/sources/` 以清單呈現媒體 icon／名稱、本站收錄篇數與 Similarweb 流量；每列在流量欄顯示最近三個可取得月份的數值與迷你趨勢線。媒體名稱與 icon 連至站內；原表連結標示外連圖示。
+`/media/sources/` 同頁分欄呈現媒體、本站收錄篇數、Similarweb 自動抓取估算訪問量、Cloudflare Radar 全球排名／級距與 GeneHong 整理表。兩份月資料各自顯示最近三個可取得月份的數值與趨勢線；Radar 顯示最新一期排名。手機可橫向捲動表格。媒體名稱與 icon 連至站內；原表連結標示外連圖示。
 
 ## 閱讀方式
 
 - 本站收錄固定顯示最新統計月份至今的已抓取篇數，欄頭列出年月；不是累計總量或媒體完整發稿量，不把缺資料當零。
-- Similarweb 預設最新匯入月份，表格同時顯示最近三個可取得月份，可切換排序月份；欄頭清楚標示期間與原表值。它與收錄量是不同指標、可能不同月份，不是精確 page views，不計算每篇閱讀量或全台市占。
-- 預設「自動抓取」只顯示外掛來源的 `EstimatedMonthlyVisits`（估算訪問次數），缺資料留白；失敗時保留各網域最後成功資料與更新日期。整理表需切換至「整理表歷史資料」，兩種來源與單位不混算或一起排序。
-- 比照 `/media/` 一次列出全部媒體，不分頁；所有媒體均可搜尋，三個欄頭可以排序，缺值排最後。預設依本站收錄篇數降冪（`sort=articles&dir=desc`）。搜尋、排序及非最新的流量月份保存在網址；最新月份不帶 `month`，舊圖表參數不再使用。
+- Similarweb 與 GeneHong 各自預設最新可取得月份，可分別切換排序月份；欄頭標示各自單位。它們與收錄量是不同指標、可能不同月份，不是精確 page views，不計算每篇閱讀量或全台市占。
+- 自動抓取只顯示外掛來源的 `EstimatedMonthlyVisits`（估算訪問次數），缺資料留白；失敗時保留各網域最後成功資料與更新日期。GeneHong 原表歷史值在獨立欄顯示，不填入自動來源的缺值。舊 `source=reference` 網址也呈現全部來源。
+- Radar 顯示全球 POPULAR 名次或「前 N 名」級距，標明 API 回傳期間與成功抓取日期；同級距無法判定先後，不提供精確排序，也不合計、換算成訪問量或瀏覽數。
+- 比照 `/media/` 一次列出全部媒體，不分頁；搜尋與四個欄頭排序，缺值排最後。預設依本站收錄篇數降冪（`sort=articles&dir=desc`）。搜尋、排序及非最新月份保存在網址；Similarweb 使用 `month`，GeneHong 使用 `referenceMonth`。
 - 缺少網域時，依來源對照表的官方網址及名稱登記檔的核對網址補顯示網域；不回寫歷史原表。未確認與已停用網域明確標註，發現來源也顯示網域。
 - 使用本站現有媒體 icon 與深色主題設定；尚無圖檔者使用名稱首字的佔位圖示。
 
@@ -45,7 +46,7 @@ python3 tools/import-media-traffic.py --months 202608 202607 202606
 
 ### 自動抓取 Similarweb 外掛資料
 
-`app/src/jobs/media-traffic-job.ts` 每日 03:35（可用 `MEDIA_TRAFFIC_CRON` 調整）呼叫外掛使用的公開 `data.similarweb.com/api/v1/data?domain=…` 端點，逐一抓來源網域的 `EstimatedMonthlyVisits`，只保留近三個月份，結果寫在 Git 工作目錄外的 `TAG_MEDIA_TRAFFIC_FILE`（預設 `~/.local/share/tag-analysis/media-traffic-live.json`）。API `GET /api/v1/media-traffic-live` 提供狀態與各網域最近成功時間給頁面；預設自動抓取模式使用這份快照，`blocked`／`failed` 仍可顯示最後成功值。單網域驗證保留其他網域歷史快照。收到 401／403／429 即中止整批，其他連續三次失敗或批次超過五分鐘也停止。
+`app/src/jobs/media-traffic-job.ts` 每日 03:35（可用 `MEDIA_TRAFFIC_CRON` 調整）呼叫外掛使用的公開 `data.similarweb.com/api/v1/data?domain=…` 端點，逐一抓來源網域的 `EstimatedMonthlyVisits`，只保留近三個月份，結果寫在 Git 工作目錄外的 `TAG_MEDIA_TRAFFIC_FILE`（預設 `~/.local/share/tag-analysis/media-traffic-live.json`）。API `GET /api/v1/media-traffic-live` 提供狀態與各網域最近成功時間給頁面；自動抓取欄使用這份快照，`blocked`／`failed` 仍可顯示最後成功值。單網域驗證保留其他網域歷史快照。收到 401／403／429 即中止整批，其他連續三次失敗或批次超過五分鐘也停止。
 
 手動驗證單一網域：
 
@@ -53,11 +54,26 @@ python3 tools/import-media-traffic.py --months 202608 202607 202606
 node tools/media-traffic-once.ts udn.com
 ```
 
-2026-10-09 此主機實測回 HTTP 403（CloudFront），尚未成功取得外掛流量；新介面的自動抓取模式顯示來源拒絕連線與空值。程式尚未部署，因此正式站不會因本地改動開始更新。
+2026-10-09 此主機實測回 HTTP 403（CloudFront），尚未成功取得外掛流量；自動抓取欄顯示來源拒絕連線與空值。
+
+### Cloudflare Radar 官方 API
+
+- [授權文件](https://developers.cloudflare.com/radar/get-started/first-request/)要求 Custom API Token 權限 **Account → Radar → Read**。設定伺服器端 `CLOUDFLARE_RADAR_API_TOKEN`，勿使用 `NEXT_PUBLIC_*` 或提交 Token。Gateway 與 worker 都須載入同一設定。未設定時 API 明確回 `unconfigured`；worker 不排程，頁面不偽造排名。
+- 端點是 `GET https://api.cloudflare.com/client/v4/radar/ranking/domain/{domain}?rankingType=POPULAR&format=JSON`，使用 Bearer Token。與 2026-10-10 官方 OpenAPI schema 核對 `result.details_0.rank`、`bucket` 與 `result.meta.dateRange[0]`。前 100 名以名次顯示，其餘 bucket 以「前 N 名」顯示；沒有排名與級距時留白。
+- [來源方法](https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/)主要基於 1.1.1.1 DNS 查詢。精確前 100 排名包含最近 24 小時、每日更新；全球級距資料包含最近七天、每週更新。本站每日檢查不代表上游資料即時，也不產生三個月訪問量。
+- `app/src/jobs/media-radar-job.ts` 使用與 Similarweb 相同的官方來源網域清單，排程預設 `MEDIA_RADAR_CRON=45 3 * * *`（worker 所在時區）。獨立快照為 `TAG_MEDIA_RADAR_FILE`，預設 `~/.local/share/tag-analysis/media-radar.json`，在 Git 工作目錄外。
+- API `GET /api/v1/media-radar` 僅讀快照，回 `scope=global`、批次狀態與各網域的資料期間、成功更新時間；過濾排除媒體與發現來源，不公開 Token。錯誤摘要不包含上游回應內容或授權標頭。
+- 失敗保留最後成功資料；401／403／429 停止整批，其他連續三次失敗或超過五分鐘亦停止。單網域驗證保留其他網域資料，不覆蓋 Similarweb 或 GeneHong。
+
+```sh
+node --env-file-if-exists=.env tools/media-radar-once.ts udn.com
+```
+
+2026-10-10 此主機未提供 Radar Token。無授權呼叫回 HTTP 400、錯誤碼 9106（Missing Authorization headers）；已核對官方端點與 schema、以測試覆蓋解析及失敗處理，但尚未完成帶 Token 的真實排名驗證。預覽頁呈現未設定狀態。這些改動尚未部署正式站。
 
 檢查 diff 的月份、列數、缺值、人工調整及身份對照。原表插列可能改動對照表列號，必須核對，不能只覆蓋快照。分類或覆蓋率基準另行審核。
 
 ```sh
 python3 -m unittest discover -s tools -p 'test_import_media_traffic.py'
-npx vitest run app/test/media-traffic.spec.ts app/test/traffic-comparison.spec.ts app/src/v1/media-traffic-comparison.spec.ts app/src/crawl/traffic-coverage.spec.ts
+npx vitest run app/src/media-traffic/radar.spec.ts app/src/media-traffic/live.spec.ts app/test/media-traffic.spec.ts app/test/traffic-comparison.spec.ts app/src/v1/media-traffic-comparison.spec.ts app/src/crawl/traffic-coverage.spec.ts app/test/api-docs.spec.ts
 ```

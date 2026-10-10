@@ -1,10 +1,9 @@
-import Link from 'next/link';
 import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
 import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
-import { buildComparison, type CrawlComparison, type LiveTraffic } from '@/lib/traffic-comparison.mts';
+import { buildComparison, type CrawlComparison, type LiveTraffic, type RadarData } from '@/lib/traffic-comparison.mts';
 import disabled from '../../../../../../app/data/crawl-disabled.json';
 import traffic from '../../../../../../app/data/media-traffic.json';
 import catalog from '../../../../../../app/data/news-source-catalog.json';
@@ -22,8 +21,9 @@ export const revalidate = 300;
 export default async function MediaSourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   let crawl: CrawlComparison | null = null;
   let live: LiveTraffic | null = { status: 'failed', checkedAt: null, error: null, domains: [] };
+  let radar: RadarData = { status: 'failed', checkedAt: null, error: null, domains: [] };
   try {
-    const [crawlResult, liveResult] = await Promise.allSettled([
+    const [crawlResult, liveResult, radarResult] = await Promise.allSettled([
       fetch(`${API_ORIGIN}/api/v1/media-traffic-comparison`, {
         next: { revalidate: 300 },
         signal: AbortSignal.timeout(8000),
@@ -32,9 +32,14 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
         next: { revalidate: 60 },
         signal: AbortSignal.timeout(8000),
       }),
+      fetch(`${API_ORIGIN}/api/v1/media-radar`, {
+        next: { revalidate: 60 },
+        signal: AbortSignal.timeout(8000),
+      }),
     ]);
     if (crawlResult.status === 'fulfilled' && crawlResult.value.ok) crawl = await crawlResult.value.json();
     if (liveResult.status === 'fulfilled' && liveResult.value.ok) live = await liveResult.value.json();
+    if (radarResult.status === 'fulfilled' && radarResult.value.ok) radar = await radarResult.value.json();
   } catch {
     /* Traffic history remains readable when collection statistics are unavailable. */
   }
@@ -45,7 +50,10 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
     <div className="space-y-5">
       <header>
         <MediaTabs current="sources" />
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Similar Web</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與排名</h1>
+        <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+          Similarweb 月訪問量估算、Cloudflare Radar 網域排名與 GeneHong 整理表分欄顯示；各來源的數值與期間分別保留，皆非精確 page views。
+        </p>
         <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           <a
             href={traffic.sourceUrl}
@@ -54,33 +62,13 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
             aria-label="開啟原始流量表單（外部連結，由 Gene Hong 維護）"
             className="inline-flex items-center gap-1 text-brand-700 underline underline-offset-4 dark:text-brand-400"
           >
-            原始流量表單 <span aria-hidden="true">↗</span>
+            GeneHong 原始流量表單 <span aria-hidden="true">↗</span>
           </a>
           <span>由 Gene Hong 維護</span>
           <MethodLink />
         </p>
       </header>
-      <nav aria-label="流量資料來源" className="flex gap-4 text-sm">
-        <Link
-          href="/media/sources/"
-          aria-current={params.source !== 'reference' ? 'page' : undefined}
-          className="underline underline-offset-4"
-        >
-          自動抓取
-        </Link>
-        <Link
-          href="/media/sources/?source=reference"
-          aria-current={params.source === 'reference' ? 'page' : undefined}
-          className="underline underline-offset-4"
-        >
-          整理表歷史資料
-        </Link>
-      </nav>
-      <TrafficComparison
-        key={params.source === 'reference' ? 'reference' : 'live'}
-        data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden, params.source === 'reference' ? null : live)}
-        initial={params}
-      />
+      <TrafficComparison data={buildComparison(traffic.snapshots, catalog.sources, crawl, hidden, live, radar)} initial={params} />
     </div>
   );
 }

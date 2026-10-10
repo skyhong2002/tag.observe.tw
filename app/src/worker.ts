@@ -8,6 +8,7 @@ import { runAnalyticsJob, runRealtimeJob } from './jobs/analytics-job.ts';
 import { runCrawlHealthJob } from './jobs/crawl-health-job.ts';
 import { crawlArticles, crawlGroup } from './jobs/crawl-job.ts';
 import { runEventsJob } from './jobs/events-job.ts';
+import { runMediaRadarJob } from './jobs/media-radar-job.ts';
 import { runMediaTrafficJob } from './jobs/media-traffic-job.ts';
 import { runProbeJob } from './jobs/probe-job.ts';
 import { runRankingJob } from './jobs/ranking-job.ts';
@@ -16,6 +17,7 @@ import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
 import { LEGACY_OWNERSHIP_POLICY } from './legacy/ownership-policy.ts';
+import { radarToken } from './media-traffic/radar.ts';
 import { jobDuration, jobRuns as jobRunsMetric, metricsContentType, metricsText, snapshotAge, snapshotArticles } from './metrics.ts';
 import { archiveStoreFromEnv } from './nearline/store.ts';
 
@@ -92,6 +94,13 @@ await queue.upsertJobScheduler(
   { pattern: process.env.MEDIA_TRAFFIC_CRON || '35 3 * * *' },
   { name: 'media-traffic', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+if (radarToken()) {
+  await queue.upsertJobScheduler(
+    'media-radar-daily',
+    { pattern: process.env.MEDIA_RADAR_CRON || '45 3 * * *' },
+    { name: 'media-radar', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+  );
+} else await queue.removeJobScheduler('media-radar-daily');
 
 await queue.upsertJobScheduler(
   'retention-daily',
@@ -132,6 +141,7 @@ for (const job of [
   'analytics-live',
   'crawl-health',
   'media-traffic',
+  'media-radar',
   'topics',
   'tag-stats',
   'similarity',
@@ -189,6 +199,11 @@ const worker = new Worker(
       if (job.name === 'crawl-health') return runCrawlHealthJob(db, { log: (o, m) => log.info(o, m) });
       if (job.name === 'media-traffic') {
         const r = await runMediaTrafficJob();
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'media-radar') {
+        const r = await runMediaRadarJob();
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

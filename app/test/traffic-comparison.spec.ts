@@ -53,6 +53,63 @@ const crawl: CrawlComparison = {
 };
 
 describe('traffic comparison publisher identity and adjustments', () => {
+  it('retains direct-source-only publishers when crawler and reference data are unavailable', () => {
+    const live = {
+      status: 'ok' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: null,
+      domains: [{ domain: 'local.example', fetchedAt: '2026-10-09T00:00:00Z', monthly: [{ month: '202609', visits: 120000 }] }],
+    };
+    const built = buildComparison([], [source], null, new Set(), live);
+    expect(built.outlets).toHaveLength(1);
+    expect(built.outlets[0]).toMatchObject({ media: source.media, referenceTraffic: [], traffic: [{ traffic: 120000 }] });
+  });
+  it('keeps Similarweb visits, Radar buckets and GeneHong original values and domains independent', () => {
+    const snapshots = [{ month: '202608', sources: [row({ domain: 'channel.example', traffic: 30 })] }];
+    const live = {
+      status: 'ok' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: null,
+      domains: [{ domain: 'local.example', fetchedAt: '2026-10-09T00:00:00Z', monthly: [{ month: '202609', visits: 120000 }] }],
+    };
+    const radar = {
+      status: 'ok' as const,
+      checkedAt: live.checkedAt,
+      error: null,
+      domains: [
+        {
+          domain: 'local.example',
+          fetchedAt: live.checkedAt,
+          dateStart: '2026-10-07T00:00:00Z',
+          dateEnd: '2026-10-08T00:00:00Z',
+          rank: null,
+          bucket: 2000,
+        },
+      ],
+    };
+    const built = buildComparison(snapshots, [source], crawl, new Set(), live, radar);
+    expect(built.outlets[0]).toMatchObject({
+      domain: 'local.example',
+      referenceDomain: 'channel.example',
+      traffic: [{ month: '202609', traffic: 120000 }],
+      referenceTraffic: [{ month: '202608', traffic: 30 }],
+      radar: { rank: null, bucket: 2000 },
+    });
+    expect(built.referenceMonths).toEqual(['202608']);
+    expect(built.trafficMonths).toEqual(['202609']);
+    const unavailable = buildComparison(
+      snapshots,
+      [source],
+      crawl,
+      new Set(),
+      { ...live, status: 'blocked', domains: [] },
+      { ...radar, status: 'unconfigured', domains: [] },
+    );
+    expect(unavailable.outlets[0].traffic).toEqual([]);
+    expect(unavailable.outlets[0].radar).toBeUndefined();
+    expect(unavailable.outlets[0].referenceTraffic?.[0].traffic).toBe(30);
+    expect(buildComparison(snapshots, [source], crawl, new Set([source.media]), live, radar).outlets).toEqual([]);
+  });
   it('uses only direct visit counts and keeps missing direct domains blank', () => {
     const second = { ...source, media: 'other-news', name: '另一媒體', websiteUrl: 'https://other.example/', referenceNames: ['另一媒體'] };
     const snapshots = [
