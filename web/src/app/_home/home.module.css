@@ -20,7 +20,6 @@
 .skip:focus { top: 12px; }
 .main { max-width: 1152px; margin: auto; padding: 24px 16px 0; }
 .edition { font-size: 12px; line-height: 1.7; margin-top: 6px; color: var(--muted); }
-.mastheadMark { width: 128px; height: 128px; color: var(--ink); }
 .mastheadTagline { font-size: 14px; line-height: 1.6; color: var(--ink); letter-spacing: .04em; }
 .columns { display: grid; grid-template-columns: minmax(180px, .85fr) minmax(0, 2fr) minmax(210px, 1fr); align-items: start; gap: 20px; }
 .left, .center, .right { min-width: 0; }
@@ -146,7 +145,6 @@
 }
 @media (max-width: 640px) {
   .main { padding-top: 20px; }
-  .mastheadMark { width: 104px; height: 104px; }
   .campShare { flex-wrap: wrap; gap: 10px; }
   .campShareChart { flex-basis: 100%; order: 1; }
   .campShareChart .bar { height: 38px; }
@@ -306,17 +304,30 @@
 /* The event link is the final row of the same card as the stories. */
 .storyList > .more { margin-top: 0; border: 0; border-top: 1px solid var(--soft-line); border-radius: 0; }
 
-/* Masthead cloud: the original masthead (mark and tagline, same sizes) at the
- * centre of the 正在發酵 cloud. RankingWordCloud keeps the glyphs and the
- * tagline clear (MastheadCloud's HOLE); the overlay lets the pointer through to
- * the words pressed in around the strokes. */
+/* Masthead cloud: the masthead in the middle of the 正在發酵 cloud. One of three
+ * canvases shows per breakpoint (MastheadCloud's CANVASES; the numbers arrive
+ * as --compact-*, --medium-*, --wide-* on the frame). The frame is a size
+ * container, so the masthead scales with the cloud: --u is one canvas unit in
+ * px. The overlay lets the pointer through to the words around the mark. */
 .mastheadCloud { text-align: center; margin: 0 0 28px; }
-.mastheadCloudFrame { position: relative; aspect-ratio: 1120 / 280; }
-.mastheadCloudCentre { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.mastheadCloudFrame {
+  --cw: var(--wide-w); --ch: var(--wide-h); --logo: var(--wide-logo); --t: var(--wide-t); --e: var(--wide-e);
+  position: relative; container-type: inline-size; margin: 0 auto; max-width: var(--wide-max); aspect-ratio: var(--cw) / var(--ch);
+}
+.mastheadCloudCompact, .mastheadCloudMedium { display: none; }
+.mastheadCloudCentre { --u: calc(100cqw / var(--cw)); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .mastheadCloudCentre h1 { line-height: 0; }
-.mastheadCloudCentre .mastheadTagline { margin-top: 4px; white-space: nowrap; }
-.mastheadCloudCentre .edition { margin-top: 2px; white-space: nowrap; }
-.mastheadCloudLink { font-size: 12px; line-height: 1.7; color: var(--accent); pointer-events: auto; }
-@media (max-width: 767px) {
-  .mastheadCloudFrame { aspect-ratio: 340 / 300; }
+.mastheadCloudMark { display: block; width: calc(var(--logo) * var(--u)); height: calc(var(--logo) * var(--u)); color: var(--ink); }
+.mastheadCloudCentre .mastheadTagline { font-size: calc(var(--t) * var(--u)); margin-top: calc(var(--logo) * .03 * var(--u)); white-space: nowrap; }
+.mastheadCloudCentre .edition { font-size: calc(var(--e) * var(--u)); margin-top: calc(2 * var(--u)); white-space: nowrap; }
+.mastheadCloudLink { font-size: calc(var(--e) * var(--u)); line-height: 1.7; color: var(--accent); pointer-events: auto; }
+@media (max-width: 1023px) {
+  .mastheadCloudFrame { --cw: var(--medium-w); --ch: var(--medium-h); --logo: var(--medium-logo); --t: var(--medium-t); --e: var(--medium-e); max-width: var(--medium-max); }
+  .mastheadCloudWide { display: none; }
+  .mastheadCloudMedium { display: block; }
+}
+@media (max-width: 639px) {
+  .mastheadCloudFrame { --cw: var(--compact-w); --ch: var(--compact-h); --logo: var(--compact-logo); --t: var(--compact-t); --e: var(--compact-e); max-width: var(--compact-max); }
+  .mastheadCloudMedium { display: none; }
+  .mastheadCloudCompact { display: block; }
 }

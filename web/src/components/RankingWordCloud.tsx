@@ -1,5 +1,4 @@
-import WordCloud from '@/components/WordCloud';
-import type { CloudSizes } from '@/lib/word-cloud.mts';
+import WordCloud, { type CloudCanvas } from '@/components/WordCloud';
 
 // The ranking's keywords, sized by the selected score or growth measure.
 // Rising keywords (爆發力 above 分數) take the site's accent like in the table;
@@ -25,77 +24,42 @@ export default function RankingWordCloud({
   terms,
   mode = 'score',
   column = false,
-  hole,
+  canvases,
 }: {
   terms: RankingCloudTerm[];
   mode?: 'score' | 'growth';
   /** Lay out for the home page's ~760px column rather than the full page width. */
   column?: boolean;
-  /** Keep the centre of each canvas clear (phone and wide sizes) for a mark laid over it. */
-  hole?: Record<'compact' | 'wide', Pick<CloudSizes, 'hole' | 'clear'>>;
+  /** Explicit layouts, each shown by its own className, instead of the phone and wide canvases below. */
+  canvases?: Array<CloudCanvas & { className: string }>;
 }) {
   if (!terms.length) return null;
   // Smaller candidate sets need less canvas and a gentler size curve. The
   // dense 500-term profile stays the same in both modes.
   const fill = Math.min(1, terms.length / 250);
   // On a phone every cloud is at most square so the content below stays near the top.
-  const compact = hole
+  const compact = {
+    width: 340,
+    height: Math.round(Math.min(340, 240 + 100 * fill)),
+    sizes: { min: 11 - 2 * fill, max: 26 + 8 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
+  };
+  const wide = column
     ? {
-        width: 340,
-        height: 300,
-        sizes: {
-          min: 10,
-          max: 27,
-          floor: 9,
-          budget: 0.9,
-          curve: 0.85,
-          words: 30,
-          gap: 7,
-          markGap: 12,
-          ...hole.compact,
-          irregular: 0.2,
-          scatter: 900,
-        },
+        width: 760,
+        height: Math.round(220 + 200 * fill),
+        sizes: { min: 13 - 3 * fill, max: 40 + 10 * fill, floor: 10, budget: 0.8, curve: 0.8 + 0.7 * fill, words: 500 },
       }
     : {
-        width: 340,
-        height: Math.round(Math.min(340, 240 + 100 * fill)),
-        sizes: { min: 11 - 2 * fill, max: 26 + 8 * fill, floor: 9, budget: 1, curve: 0.9 + 0.7 * fill, words: 500 },
-      };
-  const wide = hole
-    ? {
         width: 1120,
-        height: 280,
-        sizes: {
-          min: 12,
-          max: 44,
-          floor: 11,
-          budget: 0.8,
-          curve: 0.85,
-          words: 30,
-          gap: 14,
-          markGap: 26,
-          ...hole.wide,
-          irregular: 0.2,
-          scatter: 2000,
-        },
-      }
-    : column
-      ? {
-          width: 760,
-          height: Math.round(220 + 200 * fill),
-          sizes: { min: 13 - 3 * fill, max: 40 + 10 * fill, floor: 10, budget: 0.8, curve: 0.8 + 0.7 * fill, words: 500 },
-        }
-      : {
-          width: 1120,
-          height: Math.round(220 + 220 * fill),
-          sizes: { min: 14 - 4 * fill, max: 40 + 16 * fill, floor: 10, budget: 0.7, curve: 0.8 + 0.7 * fill, words: 500 },
-        };
+        height: Math.round(220 + 220 * fill),
+        sizes: { min: 14 - 4 * fill, max: 40 + 16 * fill, floor: 10, budget: 0.7, curve: 0.8 + 0.7 * fill, words: 500 },
+      };
   // Bare on the page background, without a panel or caption.
   return (
     <WordCloud
       compact={compact}
       wide={wide}
+      canvases={canvases}
       compactClassName="w-full"
       label="關鍵字文字雲"
       title="關鍵字文字雲"
