@@ -3,7 +3,6 @@ import { Suspense } from 'react';
 import { API_ORIGIN } from '@/lib/api';
 import { METHOD_HREF } from '@/lib/site-nav';
 import BackToTop from './BackToTop';
-import FooterApiTabs from './FooterApiTabs';
 import FooterMethod from './FooterMethod';
 import InstallApp from './InstallApp';
 import Wordmark from './Wordmark';
@@ -18,7 +17,7 @@ export { methodHeading } from './MethodNotes';
 type FooterLink = { href: string; label: string; external?: boolean };
 // Only what the header does not already link: its sections stay up there, and
 // search has the header's box. Channels are the buttons under the brand.
-const COLUMNS: Array<{ label: string; apiTabs?: boolean; links: FooterLink[] }> = [
+const COLUMNS: Array<{ label: string; links: FooterLink[] }> = [
   {
     label: '資料與透明度',
     links: [
@@ -32,8 +31,8 @@ const COLUMNS: Array<{ label: string; apiTabs?: boolean; links: FooterLink[] }> 
   },
   {
     label: '開發與聯絡',
-    apiTabs: true,
     links: [
+      { href: '/api/', label: 'API 文件與狀態' },
       { href: 'https://github.com/skyhong2002/tag.observe.tw/issues/new', label: '聯絡與移除請求', external: true },
       { href: 'https://tag.analysis.tw', label: '母站 tag.analysis.tw', external: true },
     ],
@@ -142,7 +141,6 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
             {COLUMNS.map((col) => (
               <nav key={col.label} aria-label={col.label}>
                 <h2 className="mb-2.5 text-xs font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">{col.label}</h2>
-                {col.apiTabs && <FooterApiTabs />}
                 <ul className="space-y-0.5">
                   {col.links.map((l) => (
                     <li key={l.href}>

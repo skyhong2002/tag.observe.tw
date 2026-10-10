@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import ApiTabs from '@/components/ApiTabs';
 import PageOutline, { type OutlineEntry } from '@/components/PageOutline';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
@@ -230,6 +231,7 @@ export default async function ApiDocsPage() {
   if (!data)
     return (
       <div className="space-y-3">
+        <ApiTabs current="docs" />
         <h1 className="text-2xl font-semibold tracking-tight">新文易數 API</h1>
         <p className="text-zinc-600">
           文件暫時無法載入。規格檔：
@@ -270,14 +272,16 @@ export default async function ApiDocsPage() {
     })),
   ];
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-12">
+    <div className="space-y-6 lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-x-12 lg:gap-y-6 lg:space-y-0">
+      <div className="lg:col-span-2">
+        <ApiTabs current="docs" />
+      </div>
       <div className="min-w-0 space-y-8">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">{spec.info.title}</h1>
           <p className="text-zinc-700 dark:text-zinc-300">{spec.info.summary}</p>
           <div className="flex flex-wrap gap-2 pt-1 text-sm">
             {[
-              ['/api/status/', 'API 狀態'],
               ['/api/v1/openapi.json', 'OpenAPI 3.1 規格'],
               ['/api/v1', '端點索引 JSON'],
               [GITHUB_DOC, 'Markdown 版文件'],

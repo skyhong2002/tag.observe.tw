@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import ApiTabs from '@/components/ApiTabs';
 import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
@@ -32,14 +33,12 @@ export default async function ApiStatusPage() {
   await connection();
   const data = await loadStatus();
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <ApiTabs current="status" />
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">API 狀態</h1>
         <p className="text-zinc-700 dark:text-zinc-300">{data?.description ?? '查看公開 API 與 Nearline 的可用狀態及各端點用途。'}</p>
         <div className="flex flex-wrap gap-2 pt-1 text-sm">
-          <a href="/api/" className={pillClass}>
-            API 文件
-          </a>
           <a href="/api/v1/openapi.json" className={pillClass}>
             OpenAPI 3.1 規格
           </a>
