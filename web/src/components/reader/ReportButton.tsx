@@ -7,7 +7,8 @@ import { loginHref, useSession } from '@/lib/session';
 import { pill, pillOff } from './FollowButton';
 
 // 回報錯誤 on an article: wrong tags (with the list it should have), byline,
-// outlet, or anything else. Admins review reports at /admin/
+// outlet, or anything else. Admins get 「編輯這篇」 (/admin/media/) instead and
+// review reports at /admin/
 // (POST /auth/me/reports, app/src/reader/routes.ts).
 
 const KINDS = [
@@ -29,6 +30,17 @@ export default function ReportButton({ articleId, tags }: { articleId: number; t
   const [error, setError] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   if (!session?.enabled) return null;
+  // Admins fix the article themselves instead of filing a report.
+  if (session.user?.role === 'admin')
+    return (
+      <a
+        href={`/admin/media/?url=${encodeURIComponent(`${location.origin}/article/${articleId}/`)}`}
+        className={`${pill} ${pillOff}`}
+        title="管理員：改這篇的標籤、署名，或重抓"
+      >
+        編輯這篇
+      </a>
+    );
   if (!session.user)
     return (
       <a href={loginHref(path)} className={`${pill} ${pillOff}`} title="登入後回報這篇的錯誤">

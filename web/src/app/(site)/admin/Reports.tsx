@@ -39,7 +39,7 @@ export default function Reports() {
     load(status);
   }, [status]);
   return (
-    <section className="mt-8">
+    <section id="reports" className="mt-8 scroll-mt-20">
       <h2 className="text-lg font-semibold">讀者回報{data ? `（待處理 ${data.open}）` : ''}</h2>
       <div className="mt-2 flex gap-1 text-sm">
         {(Object.keys(STATUS) as Status[]).map((s) => (
@@ -140,9 +140,12 @@ function ReportRow({ report: r, onDone }: { report: Report; onDone: () => void }
           <button type="button" className={button} disabled={busy} onClick={() => resolve('rejected')}>
             不採納
           </button>
-          {r.article?.url && (
-            <Link href={`/admin/media/?url=${encodeURIComponent(r.article.url)}`} className={`${button} inline-flex items-center`}>
-              在媒體設定頁處理
+          {r.article && (
+            <Link
+              href={`/admin/media/?url=${encodeURIComponent(`${location.origin}/article/${r.article.id}/`)}&report=${r.id}`}
+              className={`${button} inline-flex items-center`}
+            >
+              打開編輯（標籤、署名、重抓）
             </Link>
           )}
         </div>

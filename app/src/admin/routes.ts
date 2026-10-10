@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { SessionUser } from '../auth/google-login.ts';
+import { fetchText } from '../crawl/fetch.ts';
 import { runArticles, runIndex } from '../crawl/pipeline.ts';
 import { allSources, disabled, excludedMedia, sourceByMedia } from '../crawl/registry.ts';
 import { urlKey } from '../crawl/text.ts';
@@ -57,6 +58,7 @@ const KEY = /^[a-z0-9][a-z0-9_-]{0,31}$/;
 const LABEL_MAX = 64;
 const TAG_MAX = 60;
 const TAGS_MAX = 40;
+export const REFETCH_MS = 15_000;
 const AUTHOR_MAX = 64;
 const AUTHORS_MAX = 10;
 
@@ -215,7 +217,12 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     // Re-fetching hands the tags and byline back to the page, undoing hand edits.
     await db.delete(articleTagEdits).where(eq(articleTagEdits.articleId, row.id));
     await db.delete(articleAuthorEdits).where(eq(articleAuthorEdits.articleId, row.id));
-    const result = await runArticles(db, spec, { log: request.log, only: [row.id] });
+    // An admin is waiting on the page: one try, at most REFETCH_MS, no retry.
+    const result = await runArticles(db, spec, {
+      log: request.log,
+      only: [row.id],
+      fetch: (url, options) => fetchText(url, { ...options, timeout: REFETCH_MS, retries: 0 }),
+    });
     return { added, result, article: await articleDetail(db, row.id) };
   });
 

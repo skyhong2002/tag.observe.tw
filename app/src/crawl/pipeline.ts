@@ -605,5 +605,5 @@ export async function runArticles(
     })
     .where(eq(crawlRuns.id, run.id));
   log.info({ media: spec.media, fetched: pending.length, updated, failed, rejected }, 'crawl articles');
-  return { fetched: pending.length, updated, failed, rejected };
+  return { fetched: pending.length, updated, failed, rejected, errors: errors.slice(0, 5) };
 }

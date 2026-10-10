@@ -3,9 +3,10 @@
 import { eq, sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { JobQueue } from '../src/admin/routes.ts';
+import { type JobQueue, REFETCH_MS } from '../src/admin/routes.ts';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
+import { fetchText } from '../src/crawl/fetch.ts';
 import { runArticles, runIndex } from '../src/crawl/pipeline.ts';
 import { sourceByMedia } from '../src/crawl/registry.ts';
 import { createDb, type Db } from '../src/db/client.ts';
@@ -23,13 +24,16 @@ import { campOf } from '../src/v1/coverage.ts';
 
 vi.mock('../src/crawl/fetch.ts', async (original) => ({
   ...(await original<typeof import('../src/crawl/fetch.ts')>()),
-  fetchText: vi.fn(async (url: string) => ({
-    status: 200,
-    url,
-    headers: {},
-    body: `<html><head><title>測試新聞</title><meta name="keywords" content="颱風#停班停課"></head>
+  fetchText: vi.fn(async (url: string) => {
+    if (url.includes('slow')) throw Error('The operation was aborted due to timeout');
+    return {
+      status: 200,
+      url,
+      headers: {},
+      body: `<html><head><title>測試新聞</title><meta name="keywords" content="颱風#停班停課"></head>
       <body><article>${url.includes('byline') ? '<p>政治中心／巫旻璇報導</p>' : ''}<p>${'內文。'.repeat(80)}</p></article></body></html>`,
-  })),
+    };
+  }),
 }));
 
 const url = process.env.TEST_DB_URL;
@@ -326,5 +330,19 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     // An admin re-fetch hands the byline back to the page.
     const again = await app.inject({ method: 'POST', url: '/auth/admin/media/cna/refetch', headers: as('admin'), payload: { url: page } });
     expect(again.json().article).toMatchObject({ authors: ['巫旻璇'], bylineEditedAt: null });
+  });
+
+  it('gives up a slow re-fetch after one short try and says why', async () => {
+    const page = 'https://www.cna.com.tw/news/aipl/202610110002-slow.aspx';
+    vi.mocked(fetchText).mockClear();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/auth/admin/media/cna/refetch',
+      headers: as('admin'),
+      payload: { url: page },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().result).toMatchObject({ failed: 1, errors: [expect.stringContaining('timeout')] });
+    expect(vi.mocked(fetchText)).toHaveBeenCalledWith(page, expect.objectContaining({ timeout: REFETCH_MS, retries: 0 }));
   });
 });

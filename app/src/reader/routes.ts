@@ -427,6 +427,21 @@ export function registerReaderRoutes(app: FastifyInstance, db: Db, { currentUser
       reports: rows.map((r) => ({ ...reportView(r), reporter: { email: r.email, name: r.name }, currentTags: r.currentTags ?? [] })),
     };
   });
+  // One report, for /admin/media/?report= (opened from the list above).
+  app.get<{ Params: { id: string } }>('/auth/admin/reports/:id', async (request, reply) => {
+    if (!(await requireAdmin(request, reply))) return reply;
+    const id = parseId(request.params.id);
+    const [row] = id
+      ? await db
+          .select({ ...reportFields, email: users.email, name: users.name, currentTags: articles.tags })
+          .from(readerReports)
+          .leftJoin(articles, eq(articles.id, readerReports.articleId))
+          .leftJoin(users, eq(users.id, readerReports.userId))
+          .where(eq(readerReports.id, id))
+      : [];
+    if (!row) return reply.code(404).send({ error: 'no such report' });
+    return { ...reportView(row), reporter: { email: row.email, name: row.name }, currentTags: row.currentTags ?? [] };
+  });
   // Resolving only records the decision; applying suggested tags goes through
   // PUT /auth/admin/articles/:id/tags, which keeps the tag log.
   app.put<{ Params: { id: string }; Body: { status?: unknown; resolution?: unknown } }>(

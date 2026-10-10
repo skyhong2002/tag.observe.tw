@@ -71,16 +71,17 @@ export default function MediaEditor() {
   const params = useSearchParams();
   const url = params.get('url') ?? '';
   const media = params.get('media') ?? '';
+  const report = Number(params.get('report')) || null;
   const query = params.toString();
   return (
     <AdminGate next={`/admin/media/${query ? `?${query}` : ''}`}>
-      <Resolver url={url} media={media} />
+      <Resolver url={url} media={media} report={report} />
     </AdminGate>
   );
 }
 
 // Works out the outlet from ?media= or the bookmarklet's ?url=.
-function Resolver({ url, media }: { url: string; media: string }) {
+function Resolver({ url, media, report }: { url: string; media: string; report: number | null }) {
   const router = useRouter();
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [error, setError] = useState('');
@@ -91,7 +92,8 @@ function Resolver({ url, media }: { url: string; media: string }) {
       .then(setLookup)
       .catch((e: Error) => setError(e.message));
   }, [url]);
-  const choose = (next: string) => router.replace(`/admin/media/?media=${next}${url ? `&url=${encodeURIComponent(url)}` : ''}`);
+  const choose = (next: string) =>
+    router.replace(`/admin/media/?media=${next}${url ? `&url=${encodeURIComponent(url)}` : ''}${report ? `&report=${report}` : ''}`);
   const chosen = media || lookup?.article?.media || lookup?.candidates[0]?.media || '';
   if (error) return <p className={note}>{error}</p>;
   if (url && !lookup && !media) return <p className={note}>正在辨認這是哪家媒體…</p>;
@@ -107,7 +109,9 @@ function Resolver({ url, media }: { url: string; media: string }) {
       )}
       {url && lookup && !lookup.candidates.length && !media && <p className={note}>認不出這個網址是哪家媒體，請從下面選。</p>}
       <OutletPicker current={chosen} others={lookup?.candidates.filter((c) => c.media !== chosen) ?? []} onPick={choose} />
-      {chosen && <Editor key={chosen} media={chosen} url={url} article={lookup?.article?.media === chosen ? lookup.article : null} />}
+      {chosen && (
+        <Editor key={chosen} media={chosen} url={url} report={report} article={lookup?.article?.media === chosen ? lookup.article : null} />
+      )}
     </>
   );
 }
@@ -184,7 +188,7 @@ function OutletPicker({
   );
 }
 
-function Editor({ media, url, article }: { media: string; url: string; article: Article | null }) {
+function Editor({ media, url, report, article }: { media: string; url: string; report: number | null; article: Article | null }) {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [error, setError] = useState('');
   const load = useCallback(
@@ -210,7 +214,15 @@ function Editor({ media, url, article }: { media: string; url: string; article: 
         </Link>
       </div>
       <Labels detail={detail} onSaved={load} />
-      {url && <ThisArticle media={media} url={url} initial={article} canFetch={Boolean(detail.crawler && !detail.crawler.aggregator)} />}
+      {url && (
+        <ThisArticle
+          media={media}
+          url={url}
+          report={report}
+          initial={article}
+          canFetch={Boolean(detail.crawler && !detail.crawler.aggregator)}
+        />
+      )}
       <Crawl detail={detail} onDone={load} />
       <ChangeLog detail={detail} />
     </>
@@ -305,28 +317,60 @@ function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
   );
 }
 
-function ThisArticle({ media, url, initial, canFetch }: { media: string; url: string; initial: Article | null; canFetch: boolean }) {
+/** runArticles errors read `<url> -> <message>`; say it in plain words. */
+function failureReason(error: string | undefined) {
+  const message = error?.split(' -> ').pop() ?? '';
+  if (/timeout|aborted/i.test(message)) return '原站 15 秒內沒有回應';
+  const http = /HTTP (\d{3})/.exec(message);
+  if (http) return http[1] === '404' ? '原站找不到這篇（HTTP 404）' : `原站回應 HTTP ${http[1]}`;
+  return message || '原因不明';
+}
+
+function ThisArticle({
+  media,
+  url,
+  report,
+  initial,
+  canFetch,
+}: {
+  media: string;
+  url: string;
+  report: number | null;
+  initial: Article | null;
+  canFetch: boolean;
+}) {
   const [article, setArticle] = useState(initial);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  // Opened for one article (its page, a report): bring its section into view.
+  const [scrolled, setScrolled] = useState(false);
+  const scrollOnce = (node: HTMLElement | null) => {
+    if (!node || scrolled || !initial) return;
+    setScrolled(true);
+    requestAnimationFrame(() => node.scrollIntoView({ block: 'start' }));
+  };
   // From this site's own /article/<id>/ page, fetch the outlet's original.
   const source = article?.url ?? url;
   async function refetch() {
     const edited = [article?.editedAt && '標籤', article?.bylineEditedAt && '署名'].filter(Boolean).join('和');
     if (edited && !window.confirm(`這篇的${edited}有手動修改過。重抓會改用網頁上的內容，手動修改會被取代。確定要重抓嗎？`)) return;
     setBusy(true);
-    setStatus('正在抓取…');
+    const started = Date.now();
+    const tick = () => setStatus(`正在抓取…已 ${Math.round((Date.now() - started) / 1000)} 秒（原站 15 秒內沒回應就放棄）`);
+    tick();
+    const timer = setInterval(tick, 1000);
     try {
-      const body = await adminFetch<{ added: boolean; article: Article | null; result: { failed: number; rejected: number } }>(
-        `/auth/admin/media/${media}/refetch`,
-        { method: 'POST', body: { url: source } },
-      );
+      const body = await adminFetch<{
+        added: boolean;
+        article: Article | null;
+        result: { failed: number; rejected: number; errors?: string[] };
+      }>(`/auth/admin/media/${media}/refetch`, { method: 'POST', body: { url: source } });
       setArticle(body.article);
       setStatus(
         body.result.rejected
           ? '這篇不是這家媒體自己的報導，已排除。'
           : body.result.failed
-            ? '抓取失敗，請稍後再試。'
+            ? `抓取失敗：${failureReason(body.result.errors?.[0])}。稍後可以再試一次。`
             : body.added
               ? '已新增並抓取完成。'
               : '已重新抓取。',
@@ -334,12 +378,14 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
     } catch (e) {
       setStatus(`失敗：${(e as Error).message}`);
     } finally {
+      clearInterval(timer);
       setBusy(false);
     }
   }
   return (
-    <section className={section}>
+    <section className={section} id="article" ref={(node) => scrollOnce(node)}>
       <h3 className={heading}>這篇文章</h3>
+      {report && article && <ReportPanel id={report} article={article} onTagsApplied={setArticle} />}
       {article ? (
         <>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
@@ -355,8 +401,8 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
             <dt className="text-zinc-500">上次抓取</dt>
             <dd className="tabular-nums">{when(article.fetchedAt)}</dd>
           </dl>
-          <ArticleByline key={`by-${article.id}-${article.fetchedAt}`} article={article} onSaved={setArticle} />
-          <ArticleTags key={`${article.id}-${article.fetchedAt}`} article={article} onSaved={setArticle} />
+          <ArticleByline key={`by-${article.id}-${article.fetchedAt}-${article.bylineEditedAt}`} article={article} onSaved={setArticle} />
+          <ArticleTags key={`${article.id}-${article.fetchedAt}-${article.editedAt}`} article={article} onSaved={setArticle} />
         </>
       ) : (
         <p className={note}>本站還沒有收錄這篇。</p>
@@ -377,6 +423,138 @@ function ThisArticle({ media, url, initial, canFetch }: { media: string; url: st
 }
 
 // 單篇標籤增減: remove with ×, add by typing (several at once with 、 or ,).
+type Report = {
+  id: number;
+  kind: 'tags' | 'byline' | 'media' | 'other';
+  tags: string[] | null;
+  message: string;
+  status: 'open' | 'accepted' | 'rejected';
+  createdAt: string;
+  resolution: string | null;
+  reporter: { email: string | null; name: string | null };
+  article: { id: number } | null;
+};
+const REPORT_KIND: Record<Report['kind'], string> = {
+  tags: '標籤不對',
+  byline: '署名或記者不對',
+  media: '媒體或來源歸屬不對',
+  other: '其他問題',
+};
+const REPORT_STATUS: Record<Report['status'], string> = { open: '待處理', accepted: '已採納', rejected: '未採納' };
+
+// The reader report this page was opened from (/admin/?report list): what
+// they said, the suggested tags, and the decision, next to the editors.
+function ReportPanel({ id, article, onTagsApplied }: { id: number; article: Article; onTagsApplied: (article: Article) => void }) {
+  const [report, setReport] = useState<Report | null>(null);
+  const [reply, setReply] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState('');
+  useEffect(() => {
+    adminFetch<Report>(`/auth/admin/reports/${id}`)
+      .then((r) => {
+        setReport(r);
+        setReply(r.resolution ?? '');
+      })
+      .catch((e: Error) => setStatus(e.message));
+  }, [id]);
+  if (!report)
+    return status ? (
+      <p className={note}>
+        回報 #{id}：{status}
+      </p>
+    ) : null;
+  if (report.article?.id !== article.id) return <p className={note}>回報 #{id} 是另一篇文章的回報。</p>;
+  const current = new Set(article.tags);
+  const suggested = new Set(report.tags ?? []);
+  const sameTags = suggested.size === current.size && [...suggested].every((t) => current.has(t));
+  async function applyTags() {
+    setBusy(true);
+    try {
+      const body = await adminFetch<{ article: Article }>(`/auth/admin/articles/${article.id}/tags`, {
+        method: 'PUT',
+        body: { tags: report?.tags },
+      });
+      onTagsApplied(body.article);
+      setStatus('已套用建議標籤。');
+    } catch (e) {
+      setStatus(`套用失敗：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function resolve(next: Report['status']) {
+    setBusy(true);
+    try {
+      await adminFetch(`/auth/admin/reports/${id}`, { method: 'PUT', body: { status: next, resolution: reply } });
+      setReport((r) => (r ? { ...r, status: next, resolution: next === 'open' ? null : reply || null } : r));
+      setStatus(next === 'open' ? '已改回待處理。' : `已標記為${REPORT_STATUS[next]}，讀者會在自己的回報紀錄看到。`);
+    } catch (e) {
+      setStatus(`失敗：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/40">
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">
+        讀者回報 #{report.id} · {REPORT_KIND[report.kind]} · {report.reporter.name ?? report.reporter.email ?? '已刪除帳號'} ·{' '}
+        {when(report.createdAt)} · {REPORT_STATUS[report.status]}
+      </p>
+      {report.tags && (
+        <p className="mt-2 flex flex-wrap items-center gap-1 text-xs">
+          <span className="text-zinc-600 dark:text-zinc-400">建議標籤：</span>
+          {[...new Set([...article.tags, ...report.tags])].map((t) => (
+            <span
+              key={t}
+              className={`rounded px-1.5 py-px ${!current.has(t) ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200' : !suggested.has(t) ? 'bg-red-100 text-red-900 line-through dark:bg-red-950 dark:text-red-200' : 'bg-white dark:bg-zinc-900'}`}
+              title={!current.has(t) ? '建議新增' : !suggested.has(t) ? '建議移除' : '不變'}
+            >
+              {t}
+            </span>
+          ))}
+        </p>
+      )}
+      {report.message && <p className="mt-2 whitespace-pre-wrap">{report.message}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {report.tags && !sameTags && (
+          <button type="button" className={button} disabled={busy} onClick={applyTags}>
+            套用建議標籤
+          </button>
+        )}
+        {report.status === 'open' ? (
+          <>
+            <input
+              value={reply}
+              onChange={(event) => setReply(event.target.value)}
+              maxLength={255}
+              placeholder="給讀者的說明（選填）"
+              className="min-w-48 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            />
+            <button type="button" className={primary} disabled={busy} onClick={() => resolve('accepted')}>
+              採納
+            </button>
+            <button type="button" className={button} disabled={busy} onClick={() => resolve('rejected')}>
+              不採納
+            </button>
+          </>
+        ) : (
+          <button type="button" className={button} disabled={busy} onClick={() => resolve('open')}>
+            改回待處理
+          </button>
+        )}
+        <Link href="/admin/#reports" className="text-brand-700 underline dark:text-brand-400">
+          回到回報列表
+        </Link>
+      </div>
+      {status && (
+        <p role="status" className="mt-2 text-zinc-600 dark:text-zinc-400">
+          {status}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // 手動改署名: one name per line or separated by 、; empty means 未署名.
 function ArticleByline({ article, onSaved }: { article: Article; onSaved: (article: Article) => void }) {
   const [text, setText] = useState(article.authors.join('、'));

@@ -287,6 +287,14 @@ describe.skipIf(!url)('reader features (MariaDB)', () => {
       article: { id: 3 },
     });
     const id = queue.reports[0].id;
+    expect((await call('GET', `/auth/admin/reports/${id}`, undefined, 'alice')).statusCode).toBe(403);
+    expect((await call('GET', `/auth/admin/reports/${id}`, undefined, 'admin')).json()).toMatchObject({
+      id,
+      kind: 'tags',
+      currentTags: ['股市'],
+      article: { id: 3 },
+    });
+    expect((await call('GET', '/auth/admin/reports/999999', undefined, 'admin')).statusCode).toBe(404);
     expect((await call('PUT', `/auth/admin/reports/${id}`, { status: 'accepted', resolution: '已補上' }, 'alice')).statusCode).toBe(403);
     expect((await call('PUT', `/auth/admin/reports/${id}`, { status: 'accepted', resolution: '已補上' }, 'admin')).statusCode).toBe(200);
     expect((await call('GET', '/auth/me/reports')).json().reports[0]).toMatchObject({ status: 'accepted', resolution: '已補上' });

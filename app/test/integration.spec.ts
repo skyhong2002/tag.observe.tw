@@ -1,7 +1,7 @@
 // End-to-end against a real MariaDB (TEST_DB_URL; CI uses a service container).
 // Covers: index dedupe by url_key, article stage with title fallback, ranking,
 // retention. Never point TEST_DB_URL at the production database: tables are truncated.
-import { sql } from 'drizzle-orm';
+import { desc, sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
@@ -411,7 +411,14 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
   });
 
   it('serves cached full bodies and computes real cross-media similarity without contacting upstream', async () => {
-    const [original] = await db.select().from(articles).where(sql`${articles.media} = 'setn' AND ${articles.bodyStatus} = 'ok'`).limit(1);
+    // The newest one: the retention test also leaves a 100-day-old setn body,
+    // which the public content API no longer serves.
+    const [original] = await db
+      .select()
+      .from(articles)
+      .where(sql`${articles.media} = 'setn' AND ${articles.bodyStatus} = 'ok'`)
+      .orderBy(desc(articles.publishedAt))
+      .limit(1);
     const [copy] = await db
       .insert(articles)
       .values({

@@ -32,6 +32,7 @@
 | `GET /auth/admin/articles/:id/body` | 管理員限定：資料庫裡這篇的完整正文（不受讀者七天公開期限與節錄限制）、字數、`body_status`、`body_source` 與擷取時間；正文已移至封存時只回 `archived: true`，不會自動還原。文章頁對管理員直接以全文取代讀者看到的節錄。 |
 | `PUT /auth/admin/articles/:id/tags` | 管理員限定、需本站 `Origin`：`{ tags: [...] }`（最多 40 個、每個最多 60 字）整組取代這篇的標籤，同步 `articles.tags` 與 `article_tags`，寫入 `article_tag_log`，並在 `article_tag_edits` 標記為手動修改。 |
 | `PUT /auth/admin/articles/:id/authors` | 管理員限定、需本站 `Origin`：`{ authors: [...] }`（最多 10 位、每位最多 64 字，空陣列為未署名）取代這篇的署名（`creator` 跟著改），寫入 `article_author_log`，並在 `article_author_edits` 標記為手動修改。 |
+| `GET /auth/admin/reports/:id` | 管理員限定：單筆讀者回報（`/admin/media/?report=` 用）。 |
 | `GET /auth/admin/media/:media/taiwan-share` | 管理員限定：這家媒體目前的台灣占比修正與最近 20 筆修改紀錄。 |
 | `PUT /auth/admin/media/:media/taiwan-share` | 管理員限定、需本站 `Origin`：`{ share, note }` 以 0–1 的值取代 Similarweb 的台灣占比（理由必填），`share: null` 清除；寫入 `media_taiwan_share_log`（[媒體流量](media-traffic.md#台灣占比與台灣造訪)）。 |
 
@@ -82,7 +83,7 @@
 
 ## 媒體設定（`/admin/media/`）
 
-`/admin/` 提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇。沒登入時會先導去登入，登入後回到同一個網址。
+`/admin/` 提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇；管理員在文章頁看到的「編輯這篇」（取代「回報錯誤」）也會開到這裡。從 `/admin/` 的讀者回報按「打開編輯」會帶 `&report=<id>`，頁面在「這篇文章」上方顯示回報內容，可套用建議標籤並直接採納或不採納。「重抓這一篇」只試一次、最多等 15 秒，失敗時顯示原因。沒登入時會先導去登入，登入後回到同一個網址。
 
 媒體標籤存在 `media_category_defs`（代碼、名稱、順序）與 `media_categories`（媒體 × 標籤）。資料表是空的時候，gateway 或 worker 啟動時會從 `app/data/media-catalog.json` 匯入一次，之後以資料庫為準。兩個程序每分鐘重新讀取一次，管理員存檔後 gateway 也會立刻重讀（`app/src/media-categories.ts`）。`blue`／`green` 決定陣營，兩個都勾時算藍營。新增的標籤沒有固定排行名單（`ranking-baseline.json`），所以不會出現在 `/ranking/`。
 
