@@ -350,26 +350,43 @@ export function buildComparison(
   // domain, the figure belongs to the one at the site root (or the shortest path);
   // a tie leaves the figure unassigned rather than repeating it on several rows.
   // The catalog's website, else the reviewed one in media-names (outlets the sheet never listed).
-  const official = (outlet: ComparisonOutlet) => {
-    const url =
-      safeWebsiteUrl(catalog.find((s) => s.media === outlet.media)?.websiteUrl) ??
-      (outlet.media ? safeWebsiteUrl(mediaNames[outlet.media]?.sourceUrl) : null);
-    return url ? new URL(url) : null;
+  const reviewed = (outlet: ComparisonOutlet) => (outlet.media ? safeWebsiteUrl(mediaNames[outlet.media]?.sourceUrl) : null);
+  const sites = new Map<ComparisonOutlet, URL | null>();
+  for (const outlet of outlets.values()) {
+    const url = safeWebsiteUrl(catalog.find((s) => s.media === outlet.media)?.websiteUrl) ?? reviewed(outlet);
+    sites.set(outlet, url ? new URL(url) : null);
+  }
+  const official = (outlet: ComparisonOutlet) => sites.get(outlet) ?? null;
+  const hostOf = (url: URL) => url.hostname.replace(/^www\./, '');
+  const owner = new Map<string, ComparisonOutlet | null>();
+  const assignOwners = () => {
+    const owners = new Map<string, ComparisonOutlet[]>();
+    for (const outlet of outlets.values()) {
+      const url = official(outlet);
+      if (outlet.sourceKind !== 'publisher' || !url || (outlet.media && hidden.has(outlet.media))) continue;
+      owners.set(hostOf(url), [...(owners.get(hostOf(url)) ?? []), outlet]);
+    }
+    owner.clear();
+    for (const [domain, group] of owners) {
+      const depth = (o: ComparisonOutlet) => official(o)?.pathname.replace(/\/+$/, '').length ?? 0;
+      const best = Math.min(...group.map(depth));
+      const top = group.filter((o) => depth(o) === best);
+      owner.set(domain, top.length === 1 ? top[0] : null);
+    }
   };
-  const owners = new Map<string, ComparisonOutlet[]>();
+  assignOwners();
+  // An outlet crawled through a host platform (三星傳媒 on n.yam.com, 路透社 on LINE TODAY)
+  // that loses the shared domain is measured on its own reviewed site instead.
+  let moved = false;
   for (const outlet of outlets.values()) {
     const url = official(outlet);
-    if (outlet.sourceKind !== 'publisher' || !url || (outlet.media && hidden.has(outlet.media))) continue;
-    const domain = url.hostname.replace(/^www\./, '');
-    owners.set(domain, [...(owners.get(domain) ?? []), outlet]);
+    const own = reviewed(outlet);
+    if (!url || !own || owner.get(hostOf(url)) === outlet || owner.get(hostOf(url)) === undefined) continue;
+    if (hostOf(new URL(own)) === hostOf(url)) continue;
+    sites.set(outlet, new URL(own));
+    moved = true;
   }
-  const owner = new Map<string, ComparisonOutlet | null>();
-  for (const [domain, group] of owners) {
-    const depth = (o: ComparisonOutlet) => official(o)?.pathname.replace(/\/+$/, '').length ?? 0;
-    const best = Math.min(...group.map(depth));
-    const top = group.filter((o) => depth(o) === best);
-    owner.set(domain, top.length === 1 ? top[0] : null);
-  }
+  if (moved) assignOwners();
   const ownsDomain = (outlet: ComparisonOutlet, domain: string) => {
     const holder = owner.get(domain);
     if (holder === undefined || holder === outlet) return true;

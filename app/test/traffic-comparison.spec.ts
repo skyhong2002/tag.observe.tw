@@ -182,6 +182,33 @@ describe('traffic comparison publisher identity and adjustments', () => {
     const tied = buildComparison([], [twin, source], null, new Set(), live, radar);
     expect(tied.outlets.every((o) => o.traffic.length === 0 && !o.radar)).toBe(true);
   });
+  it('measures an outlet crawled through a host platform on its own reviewed site', () => {
+    // 三星傳媒 is crawled from n.yam.com/realtime/tristarnews but has its own site.
+    const host = { ...source, media: 'yam', name: '蕃新聞', websiteUrl: 'https://n.yam.com/', referenceNames: ['蕃新聞'] };
+    const guest = {
+      ...source,
+      media: 'tristarnews',
+      name: '三星傳媒',
+      websiteUrl: 'https://n.yam.com/realtime/tristarnews',
+      referenceNames: ['三星傳媒'],
+    };
+    const live = {
+      status: 'ok' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: null,
+      domains: [
+        { domain: 'n.yam.com', fetchedAt: '2026-10-08T00:00:00Z', monthly: [{ month: '202609', visits: 900 }] },
+        { domain: 'tristarnews.com.tw', fetchedAt: '2026-10-08T00:00:00Z', monthly: [{ month: '202609', visits: 40 }] },
+      ],
+    };
+    const built = buildComparison([], [host, guest], null, new Set(), live, null);
+    const yam = built.outlets.find((o) => o.media === 'yam');
+    const tristar = built.outlets.find((o) => o.media === 'tristarnews');
+    expect(yam?.traffic[0].traffic).toBe(900);
+    expect(tristar?.domain).toBe('tristarnews.com.tw');
+    expect(tristar?.sharedWith).toBeUndefined();
+    expect(tristar?.traffic[0].traffic).toBe(40);
+  });
   it('attaches the newest Similarweb profile and bounds Taiwan outside the top five', () => {
     const profile = (month: string, countries: Array<{ code: string; share: number }>) => ({
       month,
