@@ -209,6 +209,7 @@ export function registerLogin(app: FastifyInstance, store: LoginStore | null, co
       users: users.map((user) => ({
         email: user.email,
         name: user.name,
+        picture: user.picture,
         role: roleOf(user.email),
         createdAt: user.createdAt.toISOString(),
         lastLoginAt: user.lastLoginAt.toISOString(),

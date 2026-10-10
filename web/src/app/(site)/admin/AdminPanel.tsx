@@ -1,9 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Avatar from '@/components/Avatar';
 import { loginHref, useSession } from '@/lib/session';
 
-type Account = { email: string; name: string | null; role: 'admin' | 'reader'; createdAt: string; lastLoginAt: string };
+type Account = {
+  email: string;
+  name: string | null;
+  picture: string | null;
+  role: 'admin' | 'reader';
+  createdAt: string;
+  lastLoginAt: string;
+};
 
 const when = (iso: string) => new Date(iso).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'short' });
 
@@ -46,7 +54,8 @@ export default function AdminPanel() {
         ) : (
           <ul className="mt-3 divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white text-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
             {accounts.map((account) => (
-              <li key={account.email} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2">
+              <li key={account.email} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+                <Avatar src={account.picture} label={account.name ?? account.email} size={28} />
                 <span className="font-medium">{account.name ?? account.email}</span>
                 {account.name && <span className="text-zinc-500 dark:text-zinc-400">{account.email}</span>}
                 <span className="text-xs text-zinc-500 dark:text-zinc-400">{account.role === 'admin' ? '管理員' : '讀者'}</span>

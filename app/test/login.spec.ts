@@ -52,6 +52,7 @@ async function setup(claims: Partial<Record<string, unknown>> = {}) {
         email: 'Admin@Example.com',
         email_verified: true,
         name: '管理員',
+        picture: 'https://lh3.googleusercontent.com/a/photo=s96-c',
         nonce: lastNonce,
         ...claims,
       };
@@ -92,10 +93,18 @@ describe('google login', () => {
     expect(me.headers['cache-control']).toBe('no-store');
     expect(me.json()).toEqual({
       enabled: true,
-      user: { id: 1, email: 'admin@example.com', name: '管理員', picture: null, role: 'admin' },
+      user: {
+        id: 1,
+        email: 'admin@example.com',
+        name: '管理員',
+        picture: 'https://lh3.googleusercontent.com/a/photo=s96-c',
+        role: 'admin',
+      },
     });
     const list = await app.inject({ url: '/auth/users', headers: { cookie } });
-    expect(list.json().users).toMatchObject([{ email: 'admin@example.com', role: 'admin' }]);
+    expect(list.json().users).toMatchObject([
+      { email: 'admin@example.com', picture: 'https://lh3.googleusercontent.com/a/photo=s96-c', role: 'admin' },
+    ]);
 
     expect((await app.inject({ method: 'POST', url: '/auth/logout', headers: { cookie } })).statusCode).toBe(403);
     const out = await app.inject({ method: 'POST', url: '/auth/logout', headers: { cookie, origin: 'https://tag.observe.tw' } });

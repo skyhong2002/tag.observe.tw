@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { loginHref, useSession } from '@/lib/session';
+import Avatar from './Avatar';
 
 // Sign-in entry in the header. Renders nothing until /auth/me answers, or at
 // all when Google login is not configured, so the header never jumps for
@@ -47,19 +48,22 @@ export default function AccountMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen(!open)}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-sm font-medium text-brand-800 hover:bg-brand-200 dark:bg-brand-900 dark:text-brand-200 dark:hover:bg-brand-800"
+        className="rounded-full hover:ring-2 hover:ring-brand-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:hover:ring-brand-800"
       >
-        {Array.from(label)[0]?.toUpperCase()}
+        <Avatar src={user.picture} label={label} />
       </button>
       {open && (
         <div
           role="menu"
           className="absolute right-0 top-full mt-2 w-60 rounded-lg border border-zinc-200 bg-white p-2 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
         >
-          <div className="px-2 py-1.5">
-            <p className="truncate font-medium">{label}</p>
-            {user.name && <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{user.email}</p>}
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{user.role === 'admin' ? '管理員' : '讀者'}</p>
+          <div className="flex items-center gap-3 px-2 py-1.5">
+            <Avatar src={user.picture} label={label} size={40} />
+            <div className="min-w-0">
+              <p className="truncate font-medium">{label}</p>
+              {user.name && <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{user.email}</p>}
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{user.role === 'admin' ? '管理員' : '讀者'}</p>
+            </div>
           </div>
           {user.role === 'admin' && (
             <Link role="menuitem" href="/admin/" className="block rounded-md px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
