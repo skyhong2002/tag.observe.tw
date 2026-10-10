@@ -144,6 +144,14 @@ describe('reporter identity from the selected article', () => {
     const narrative = `<article><p>社會中心／交通問題引起市民關注</p><p>${prose}</p></article>`;
     expect(extractArticle(narrative, url).authors).toEqual([]);
   });
+  it('reads 民視 desk bylines that name no place, but not report kinds', () => {
+    const page = (lead: string) => `<meta name="author" content="民間全民電視公司"><article><p>${lead}</p><p>${prose}</p></article>`;
+    expect(extractArticle(page('政治中心／巫旻璇報導'), url).authors).toEqual(['巫旻璇']);
+    expect(extractArticle(page('即時中心／徐子為報導'), url).authors).toEqual(['徐子為']);
+    expect(extractArticle(page('社會中心／王毓珺　黃柏榕報導'), url).authors).toEqual(['王毓珺', '黃柏榕']);
+    for (const lead of ['生活中心／綜合報導', '社會中心／調查報導', '產業中心/分析報導', '政治中心／記者會報導'])
+      expect(extractArticle(page(lead), url).authors, lead).not.toContain(lead.slice(5, -2));
+  });
   it('keeps the agency without treating its dispatch location as a reporter', () => {
     const html = `<span class="credit">中央社／ 台北7日電</span><article><p>${prose}</p></article>`;
     expect(extractArticle(html, url, { authorSelector: '.credit' }).authors).toEqual(['中央社']);

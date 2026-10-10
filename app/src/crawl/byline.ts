@@ -304,6 +304,14 @@ export function reporterNames(value: string): string[] {
     'u',
   ).exec(text);
   if (desk) return creditedNames(desk[1]);
+  // 民視 and 三立 often name no place: 「政治中心／巫旻璇報導」, 「即時中心／徐子為報導」.
+  // The words before 報導 that describe the report, not who wrote it.
+  const kind = '(?!(?:綜合|調查|分析|專題|特別|深度|獨家|外電|整理|編譯|聯合|即時|追蹤|直擊|現場)報)';
+  const deskOnly = new RegExp(
+    `^(?:社會|政治|生活|國際|財經|體育|娛樂|地方|新聞|即時|南部|中部|北部|影音|產業)中心\\s*/\\s*(${kind}\\p{Script=Han}{2,4}(?:[\\s、]+${kind}\\p{Script=Han}{2,4}){0,4})\\s*(?:報導|報道|报道)$`,
+    'u',
+  ).exec(text);
+  if (deskOnly) return creditedNames(deskOnly[1]);
   const prefix = rolePrefix.exec(text);
   if (prefix) {
     let rest = text.slice(prefix[0].length);
