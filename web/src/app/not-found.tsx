@@ -10,14 +10,14 @@ export const metadata: Metadata = { title: '找不到這個頁面', robots: { in
 
 export default function NotFound() {
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <NotFoundContent />
       </main>
-      <div className="mx-auto max-w-6xl px-4">
+      <div className="mx-auto w-full max-w-6xl px-4">
         <SiteFooter />
       </div>
-    </>
+    </div>
   );
 }
