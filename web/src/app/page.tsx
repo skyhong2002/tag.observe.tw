@@ -276,15 +276,22 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const [lead, ...rest] = data.stories;
   const ranking = data.ranking;
   const updated = data.events?.builtAt ?? ranking?.snapshot.computedAt;
-  const date = updated
-    ? new Date(updated).toLocaleDateString('zh-TW', {
-        timeZone: 'Asia/Taipei',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        weekday: 'long',
-      })
-    : '台灣新聞，即時觀察';
+  // Short enough to sit under the masthead inside the cloud: 10/10（六）23:34 更新.
+  const edition = updated
+    ? (() => {
+        const parts = new Intl.DateTimeFormat('zh-TW', {
+          timeZone: 'Asia/Taipei',
+          hourCycle: 'h23',
+          month: 'numeric',
+          day: 'numeric',
+          weekday: 'narrow',
+          hour: '2-digit',
+          minute: '2-digit',
+        }).formatToParts(new Date(updated));
+        const at = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '';
+        return `${at('month')}/${at('day')}（${at('weekday')}）${at('hour')}:${at('minute')} 更新`;
+      })()
+    : '等待資料更新';
   return (
     <div className={styles.home}>
       <a href="#news-main" className={styles.skip}>
@@ -292,7 +299,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </a>
       <SiteHeader mastheadId="masthead" />
       <main id="news-main" className={styles.main}>
-        <MastheadCloud date={date} updated={updated ? `${taipei(updated)} 更新` : '等待資料更新'} />
+        <MastheadCloud edition={edition} />
 
         {data.events?.stale && <p className={styles.notice}>事件分群更新延遲，目前顯示最近一次的結果。</p>}
 

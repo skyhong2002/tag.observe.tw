@@ -42,16 +42,16 @@ export default function RankingWordCloud({
   const compact = hole
     ? {
         width: 340,
-        height: 380,
+        height: 300,
         sizes: {
           min: 10,
-          max: 36,
+          max: 27,
           floor: 9,
           budget: 0.9,
           curve: 0.85,
           words: 30,
-          gap: 9,
-          markGap: 18,
+          gap: 7,
+          markGap: 12,
           ...hole.compact,
           irregular: 0.2,
           scatter: 900,
@@ -65,16 +65,16 @@ export default function RankingWordCloud({
   const wide = hole
     ? {
         width: 1120,
-        height: 400,
+        height: 280,
         sizes: {
           min: 12,
-          max: 60,
+          max: 44,
           floor: 11,
           budget: 0.8,
           curve: 0.85,
           words: 30,
-          gap: 16,
-          markGap: 32,
+          gap: 14,
+          markGap: 26,
           ...hole.wide,
           irregular: 0.2,
           scatter: 2000,

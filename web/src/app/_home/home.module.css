@@ -311,12 +311,12 @@
  * tagline clear (MastheadCloud's HOLE); the overlay lets the pointer through to
  * the words pressed in around the strokes. */
 .mastheadCloud { text-align: center; margin: 0 0 28px; }
-.mastheadCloudFrame { position: relative; aspect-ratio: 1120 / 400; }
+.mastheadCloudFrame { position: relative; aspect-ratio: 1120 / 280; }
 .mastheadCloudCentre { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .mastheadCloudCentre h1 { line-height: 0; }
 .mastheadCloudCentre .mastheadTagline { margin-top: 4px; white-space: nowrap; }
 .mastheadCloudCentre .edition { margin-top: 2px; white-space: nowrap; }
 .mastheadCloudLink { font-size: 12px; line-height: 1.7; color: var(--accent); pointer-events: auto; }
 @media (max-width: 767px) {
-  .mastheadCloudFrame { aspect-ratio: 340 / 380; }
+  .mastheadCloudFrame { aspect-ratio: 340 / 300; }
 }

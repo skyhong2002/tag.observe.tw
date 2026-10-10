@@ -10,7 +10,7 @@ import styles from './home.module.css';
 const HOME_CLOUD_HREF = '/ranking/?category=all&order=growth&gate=all';
 
 // The original masthead (the 128px mark, 104px on a phone) laid over the middle
-// of RankingWordCloud's masthead canvases (1120×400 wide, 340×380 on a phone;
+// of RankingWordCloud's masthead canvases (1120×280 wide, 340×300 on a phone;
 // about one unit per CSS pixel). The stack is centred: the mark sits dy above
 // the middle, with the tagline, the edition line and the link to the ranking
 // under it, each with its own clear box. The glyphs are kept clear by their
@@ -20,7 +20,7 @@ const HOLE = {
     hole: { width: 100, height: 100, mask: LOGO_MASK, dy: -33 },
     clear: [
       { x: -76, y: 20, width: 152, height: 24 },
-      { x: -122, y: 43, width: 244, height: 21 },
+      { x: -72, y: 43, width: 144, height: 21 },
       { x: -38, y: 62, width: 76, height: 22 },
     ],
   },
@@ -28,7 +28,7 @@ const HOLE = {
     hole: { width: 128, height: 128, mask: LOGO_MASK, dy: -35 },
     clear: [
       { x: -80, y: 32, width: 160, height: 26 },
-      { x: -130, y: 56, width: 260, height: 22 },
+      { x: -76, y: 56, width: 152, height: 22 },
       { x: -40, y: 77, width: 80, height: 22 },
     ],
   },
@@ -67,7 +67,7 @@ async function Cloud() {
 /** The home page's opening: the site mark in the middle of the 正在發酵 cloud,
  *  the day's rising keywords packed around it. SiteHeader hides its own
  *  wordmark while #masthead is in view, so one logo shows at a time. */
-export default function MastheadCloud({ date, updated }: { date: string; updated: string }) {
+export default function MastheadCloud({ edition }: { edition: string }) {
   return (
     <div className={styles.mastheadCloud}>
       <div className={styles.mastheadCloudFrame} data-vital-region="home-growth-cloud">
@@ -79,9 +79,7 @@ export default function MastheadCloud({ date, updated }: { date: string; updated
             <Logo className={styles.mastheadMark} />
           </h1>
           <p className={styles.mastheadTagline}>同一件事，各家怎麼說</p>
-          <p className={styles.edition}>
-            {date} · {updated}
-          </p>
+          <p className={styles.edition}>{edition}</p>
           <Link href={HOME_CLOUD_HREF} className={styles.mastheadCloudLink}>
             升溫排行 →
           </Link>
