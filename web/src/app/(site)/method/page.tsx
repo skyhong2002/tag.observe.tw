@@ -15,6 +15,7 @@ import {
   SourceMethod,
   TagMethod,
   TopicMethod,
+  TrafficCollectionMethod,
 } from '@/components/MethodNotes';
 import { pageMetadata } from '@/lib/seo.mts';
 import traffic from '../../../../../app/data/media-traffic.json';
@@ -87,8 +88,9 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     title: '媒體',
     pages: [
       ['/media/', '收錄概況'],
-      ['/media/sources/', 'Similar Web'],
-      ['/media/crawlers/', '爬蟲資訊'],
+      ['/media/traffic/', '流量與排名'],
+      ['/crawlers/', '資料蒐集'],
+      ['/crawlers/traffic/', '流量資料蒐集'],
     ],
     body: (
       <>
@@ -96,6 +98,7 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
         <MediaMethod />
         <MediaSourcesMethod sheet={traffic} camp={false} />
         <CrawlerMethod />
+        <TrafficCollectionMethod />
       </>
     ),
   },

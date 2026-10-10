@@ -1,14 +1,13 @@
 import SectionTabs from './SectionTabs';
 
-export default function MediaTabs({ current }: { current: 'media' | 'sources' | 'crawlers' }) {
+export default function MediaTabs({ current }: { current: 'media' | 'traffic' }) {
   return (
     <SectionTabs
       label="媒體資料"
       className="mb-5"
       tabs={[
         { key: 'media', href: '/media/', label: '收錄概況' },
-        { key: 'sources', href: '/media/sources/', label: '流量與排名' },
-        { key: 'crawlers', href: '/media/crawlers/', label: '爬蟲資訊' },
+        { key: 'traffic', href: '/media/traffic/', label: '流量與排名' },
       ].map((tab) => ({ ...tab, current: current === tab.key }))}
     />
   );

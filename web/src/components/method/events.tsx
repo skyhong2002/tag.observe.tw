@@ -13,8 +13,8 @@ export function CampBasis() {
   return (
     <p>
       藍綠以媒體為單位，不判斷單篇立場。本站基準名單的 29 家媒體依 Gene Hong 維護的流量試算表（見
-      <Link href="/media/sources/" className={inlineLink}>
-        「媒體流量與收錄比較」
+      <Link href="/media/traffic/" className={inlineLink}>
+        「媒體流量與排名」
       </Link>
       的「原始流量表單」）人工標記的分類標為藍營或綠營，標「多元」「內容」的不歸藍綠；其他既有媒體沿用原設定，新加入來源未另行標記政治傾向。各媒體的分類可在
       <Link href="/media/" className={inlineLink}>

@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { type ComparisonData, shortMonth, sourceStatusLabels } from '@/lib/traffic-comparison.mts';
+import { type ComparisonData, sourceStatusLabels } from '@/lib/traffic-comparison.mts';
 import { CampBasis } from './events';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
-// 媒體 (/media/), one outlet (/media/[media]/), Similar Web (/media/sources/)
-// and 爬蟲資訊 (/media/crawlers/). Statuses and counts come from
+// 媒體 (/media/), one outlet (/media/[media]/), 流量與排名 (/media/traffic/)
+// and 資料蒐集 (/crawlers/, /crawlers/traffic/). Statuses and counts come from
 // app/src/v1/media-stats.ts (stale after 6 h for news, 24 h otherwise; failing
 // when every index run of the last 3 h failed); news outlets are crawled every
 // 9 minutes, the rest hourly. The outlet page asks the similarity index for the
@@ -75,14 +75,7 @@ export function MediaMethod() {
 /** What the footer states about each source's latest fetch; omitted where the page data is unavailable. */
 export type MediaSourcesStatus = Pick<
   ComparisonData,
-  | 'crawlMonths'
-  | 'trafficMonths'
-  | 'liveTrafficStatus'
-  | 'liveTrafficCheckedAt'
-  | 'liveTrafficError'
-  | 'radarStatus'
-  | 'radarCheckedAt'
-  | 'radarError'
+  'liveTrafficStatus' | 'liveTrafficCheckedAt' | 'liveTrafficError' | 'radarStatus' | 'radarCheckedAt' | 'radarError'
 >;
 
 const httpCode = (error: string | null) => error?.match(/HTTP \d+/)?.[0];
@@ -92,9 +85,8 @@ function fetchState(status: keyof typeof sourceStatusLabels | null, checkedAt: s
     status && !['ok', 'pending'].includes(status) ? '；已有數值保留上次成功資料' : ''
   }。`;
 }
-const recent = (months: string[]) => months.slice(-3).map(shortMonth).join('、');
 
-/** Similar Web (/media/sources/). `sheet` is the GeneHong traffic sheet
+/** 流量與排名 (/media/traffic/). `sheet` is the GeneHong traffic sheet
  *  (app/data/media-traffic.json) and `status` the page's own load, both passed
  *  in by the server so the client-side footer never bundles them. */
 export function MediaSourcesMethod({
@@ -106,27 +98,22 @@ export function MediaSourcesMethod({
   status?: MediaSourcesStatus | null;
   camp?: boolean;
 }) {
-  const crawlMonth = status?.crawlMonths.at(-1);
   return (
     <>
-      <h3 className={methodHeading}>媒體流量、排名與收錄比較</h3>
+      <h3 className={methodHeading}>媒體流量與排名</h3>
       <p>
         本站收錄篇數、Similarweb 估算月訪問量與 Cloudflare Radar 排名分欄並列，不合計，都不是精確 page views，也不能推算成每篇文章的閱讀量。
       </p>
       {status && (
-        <dl className={methodList}>
-          <dt className={methodTerm}>目前狀態</dt>
-          <dd>
-            <ul className="space-y-1">
-              <li>
-                Similarweb：{fetchState(status.liveTrafficStatus, status.liveTrafficCheckedAt, status.liveTrafficError)}
-                {status.trafficMonths.length ? `最新三個月為 ${recent(status.trafficMonths)}。` : '目前尚未取得流量數字。'}
-              </li>
-              <li>Cloudflare Radar：{fetchState(status.radarStatus, status.radarCheckedAt, status.radarError)}</li>
-              <li>本站收錄：{crawlMonth ? `表格顯示 ${shortMonth(crawlMonth)} 篇數。` : '目前無法取得本站收錄量。'}</li>
-            </ul>
-          </dd>
-        </dl>
+        <p>
+          目前狀態：Similarweb {fetchState(status.liveTrafficStatus, status.liveTrafficCheckedAt, status.liveTrafficError)}
+          Cloudflare Radar {fetchState(status.radarStatus, status.radarCheckedAt, status.radarError)}
+          各網域的抓取進度見
+          <Link href="/crawlers/traffic/" className={inlineLink}>
+            資料蒐集：流量資料
+          </Link>
+          。
+        </p>
       )}
       <dl className={methodList}>
         <dt className={methodTerm}>Similarweb</dt>
@@ -171,13 +158,35 @@ export function MediaSourcesMethod({
   );
 }
 
-/** 爬蟲資訊 (/media/crawlers/). */
+/** 資料蒐集：流量資料 (/crawlers/traffic/). */
+export function TrafficCollectionMethod() {
+  return (
+    <>
+      <h3 className={methodHeading}>流量資料蒐集</h3>
+      <p>
+        「流量資料」列出
+        <Link href="/media/traffic/" className={inlineLink}>
+          流量與排名
+        </Link>
+        用到的每個媒體網域，在 Similarweb 與 Cloudflare Radar 的抓取狀態：「已取得」附最近成功日期，Similarweb
+        另附國家與導流資料的月份，Radar 附資料期末；「無資料」表示抓取成功但 Similarweb
+        沒有這個網域的數字，一天後重試；「等待抓取」表示還沒輪到；「共用網域」表示數字列在同網域的主站媒體。
+      </p>
+      <p>
+        Similarweb 每小時分批抓取，先抓等待中與最舊的網域，每個網域約每週重抓；連續請求過多會被拒絕（HTTP
+        403），此時整批停止，下一輪接著抓。Cloudflare Radar 透過官方 API 每日抓取一次，單批五分鐘內抓不完時隔天接著抓。
+      </p>
+    </>
+  );
+}
+
+/** 資料蒐集：新聞爬蟲 (/crawlers/). */
 export function CrawlerMethod() {
   return (
     <>
-      <h3 className={methodHeading}>爬蟲資訊</h3>
+      <h3 className={methodHeading}>新聞爬蟲</h3>
       <p>
-        「爬蟲資訊」列出各媒體的抓取方式、下載工具與程式碼；收錄篇數見
+        「新聞爬蟲」列出各媒體的抓取方式、下載工具與程式碼；收錄篇數見
         <Link href="/media/" className={inlineLink}>
           收錄概況
         </Link>

@@ -2746,6 +2746,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-traffic-live'
 | `domains[].profiles.{鍵}.categoryRank` | object \| null | 類別排名 |
 | `domains[].profiles.{鍵}.categoryRank.category` | string |  |
 | `domains[].profiles.{鍵}.categoryRank.rank` | integer |  |
+| `failedAt` | {鍵: string (ISO 時間)} | 網域最近一次抓取成功但 Similarweb 沒有資料或資料無效的時間；成功後移除，一天後重試 |
 
 快取：1 分鐘。
 

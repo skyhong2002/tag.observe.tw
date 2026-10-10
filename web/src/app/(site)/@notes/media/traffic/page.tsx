@@ -1,6 +1,6 @@
 import { MediaCardMethod, MediaSourcesMethod } from '@/components/MethodNotes';
 import traffic from '../../../../../../../app/data/media-traffic.json';
-import { loadComparison } from '../../../media/sources/load';
+import { loadComparison } from '../../../media/traffic/load';
 
 // Server-side so the footer can date the traffic sheet and state each source's
 // status without shipping the sheet or snapshots to the browser. loadComparison

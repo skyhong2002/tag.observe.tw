@@ -24,8 +24,8 @@ const COLUMNS: Array<{ label: string; links: FooterLink[] }> = [
       { href: '/observe/', label: '網站觀測' },
       // The always-on wall-screen board; not in the header since it is not a reading page.
       { href: '/liveboard/', label: '即時看板' },
-      { href: '/media/sources/', label: '媒體流量與收錄比較' },
-      { href: '/media/crawlers/', label: '爬蟲資訊' },
+      { href: '/media/traffic/', label: '媒體流量與排名' },
+      { href: '/crawlers/', label: '資料蒐集' },
       { href: METHOD_HREF, label: '資料來源與計算方式' },
     ],
   },

@@ -9,7 +9,7 @@ export { ArticleMethod } from './method/article';
 export { CampBasis, EventMethod, EventThreadMethod } from './method/events';
 export { HomeMethod } from './method/home';
 export { JournalistMethod } from './method/journalists';
-export { CrawlerMethod, MediaMethod, MediaOverviewMethod, MediaSourcesMethod } from './method/media';
+export { CrawlerMethod, MediaMethod, MediaOverviewMethod, MediaSourcesMethod, TrafficCollectionMethod } from './method/media';
 export { ObserveMethod } from './method/observe';
 export { RankingMethod, TagMethod } from './method/ranking';
 export { SearchMethod } from './method/search';

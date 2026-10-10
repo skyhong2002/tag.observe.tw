@@ -1920,6 +1920,7 @@ export const ENDPOINTS: Endpoint[] = [
           ['profiles'],
         ),
       ),
+      failedAt: map(time(), '網域最近一次抓取成功但 Similarweb 沒有資料或資料無效的時間；成功後移除，一天後重試'),
     }),
     cache: '1 分鐘',
   },

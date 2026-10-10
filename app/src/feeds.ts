@@ -223,7 +223,7 @@ export async function sitemapUrls(db: Db, now = new Date()): Promise<SitemapUrl[
     { loc: '/similarity/daily/', changefreq: 'daily', priority: 0.6 },
     { loc: '/similarity/about/', changefreq: 'weekly', priority: 0.3 },
     { loc: '/journalist/', changefreq: 'hourly', priority: 0.6 },
-    { loc: '/media/sources/', changefreq: 'weekly', priority: 0.5 },
+    { loc: '/media/traffic/', changefreq: 'weekly', priority: 0.5 },
     { loc: '/api/', changefreq: 'weekly', priority: 0.3 },
     { loc: '/method/', changefreq: 'weekly', priority: 0.3 },
     ...threads.map((t): SitemapUrl => ({ loc: `/eve/${t.id}/`, lastmod: t.lastTime, priority: 0.7 })),

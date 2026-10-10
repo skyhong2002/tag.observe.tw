@@ -90,7 +90,7 @@ export default function TrafficComparison({ data, initial }: { data: ComparisonD
     if (trafficMonth && trafficMonth !== data.trafficMonths.at(-1)) params.set('month', trafficMonth);
     if (query) params.set('q', query);
     if (view === 'value') params.set('view', view);
-    window.history.replaceState(null, '', `/media/sources/?${params}`);
+    window.history.replaceState(null, '', `/media/traffic/?${params}`);
   }, [trafficMonth, sort, ascending, query, view, data.trafficMonths]);
   const chooseSort = (value: Sort) => {
     setAscending(sort === value ? !ascending : value === 'name');

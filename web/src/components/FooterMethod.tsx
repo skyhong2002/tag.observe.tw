@@ -17,6 +17,7 @@ import {
   SimilarityMethod,
   SourceMethod,
   TopicMethod,
+  TrafficCollectionMethod,
 } from './MethodNotes';
 
 const inlineLink = 'text-brand-700 underline underline-offset-2 dark:text-brand-400';
@@ -81,9 +82,10 @@ function sectionsFor(pathname: string) {
       </>
     );
   }
-  // Similar Web: @notes/media/sources renders its block with the traffic sheet's import date.
-  if (/^\/media\/sources(\/|$)/.test(pathname)) return null;
-  if (/^\/media\/crawlers(\/|$)/.test(pathname)) {
+  // 流量與排名: @notes/media/traffic renders its block with the sheet and fetch status.
+  if (/^\/media\/traffic(\/|$)/.test(pathname)) return null;
+  if (/^\/crawlers\/traffic(\/|$)/.test(pathname)) return <TrafficCollectionMethod />;
+  if (/^\/crawlers(\/|$)/.test(pathname)) {
     return (
       <>
         <CrawlerMethod />

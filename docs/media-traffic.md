@@ -1,6 +1,6 @@
 # 媒體流量與收錄
 
-`/media/sources/` 同頁分欄呈現媒體、本站收錄篇數、Similarweb 自動抓取估算訪問量、Cloudflare Radar 全球排名／級距與 GeneHong 整理表。兩份月資料各自顯示最近三個可取得月份的數值與趨勢線；Radar 顯示最新一期排名。手機可橫向捲動表格。媒體名稱與 icon 連至站內；原表連結標示外連圖示。
+`/media/traffic/`（「流量與排名」，舊網址 `/media/sources/` 轉址）同頁呈現媒體、本站收錄篇數、Similarweb 估算訪問量的月變化或數值、台灣占比、主要導流與 Cloudflare Radar 全球排名／級距；各媒體頁另有完整的國家、導流、互動與排名。各網域的抓取進度在 `/crawlers/traffic/`「資料蒐集：流量資料」。GeneHong 整理表經比對即 Similarweb 訪問量（百萬為單位），不再另列，仍作為藍綠分類來源保留。
 
 ## 閱讀方式
 

@@ -23,7 +23,7 @@ import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import type { SimilarityData } from '@/lib/similarity';
 import { radarText, shortMonth } from '@/lib/traffic-comparison.mts';
 import { outletIdentity } from '../../../../../../app/src/similarity/attribution';
-import { loadComparison } from '../sources/load';
+import { loadComparison } from '../traffic/load';
 
 export const revalidate = 60;
 export async function generateMetadata({
@@ -77,7 +77,7 @@ export default async function MediaPage({
         })
           .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
           .catch(() => null),
-    // Similarweb visits and Radar rank, from the same load as /media/sources/.
+    // Similarweb visits and Radar rank, from the same load as /media/traffic/.
     discoverySource ? null : loadComparison().catch(() => null),
   ]);
   if (res?.status === 400) notFound();
@@ -270,10 +270,28 @@ export default async function MediaPage({
                 </>
               )}
               <dt className="text-zinc-500 dark:text-zinc-400">最近更新</dt>
-              <dd>{profile?.lastCrawlOk ? taipei(profile.lastCrawlOk) : '暫無資料'}</dd>
+              <dd>
+                <Link href={`/crawlers/?${new URLSearchParams({ q: data.media })}`} className="hover:underline">
+                  {profile?.lastCrawlOk ? taipei(profile.lastCrawlOk) : '暫無資料'}
+                </Link>
+              </dd>
+              {!discovery && outlet?.domain && (
+                <>
+                  <dt className="text-zinc-500 dark:text-zinc-400">流量資料</dt>
+                  <dd>
+                    <Link href="/crawlers/traffic/" className="hover:underline">
+                      {outlet.trafficFetchedAt
+                        ? `${new Date(outlet.trafficFetchedAt).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' })} 更新`
+                        : outlet.sharedWith
+                          ? `列在${outlet.sharedWith}`
+                          : '等待抓取'}
+                    </Link>
+                  </dd>
+                </>
+              )}
             </dl>
             <Link
-              href={`/media/sources/?${new URLSearchParams({ q: data.media })}`}
+              href={`/media/traffic/?${new URLSearchParams({ q: data.media })}`}
               className="mt-3 block border-t border-zinc-200 pt-2.5 text-brand-700 hover:underline dark:border-zinc-800 dark:text-brand-400"
             >
               流量與排名比較 →

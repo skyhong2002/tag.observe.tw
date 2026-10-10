@@ -156,8 +156,12 @@ export function registerMediaTrafficComparison(app: FastifyInstance, db: Db) {
   });
   app.get('/api/v1/media-traffic-live', async (_request, reply) => {
     reply.header('cache-control', 'public, max-age=60');
-    const { failedAt: _failedAt, ...snapshot } = await readLiveTraffic();
-    return { ...snapshot, domains: snapshot.domains.filter((row) => visible.has(row.domain)) };
+    const { failedAt = {}, ...snapshot } = await readLiveTraffic();
+    return {
+      ...snapshot,
+      domains: snapshot.domains.filter((row) => visible.has(row.domain)),
+      failedAt: Object.fromEntries(Object.entries(failedAt).filter(([domain]) => visible.has(domain))),
+    };
   });
   app.get('/api/v1/media-traffic-comparison', async (_request, reply) => {
     const result = await load();
