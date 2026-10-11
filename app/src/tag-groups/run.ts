@@ -104,7 +104,7 @@ export async function filePeople(db: Db) {
  *  namesakes as the avatars; namesakes wait for review). Run after
  *  fileSections: the type rules check the tag's topics. */
 export async function fileWikidata(db: Db, tags: string[], { force = false, log = (_o: object) => {} } = {}) {
-  if (!tags.length) return { checked: 0, added: 0 };
+  if (!tags.length) return { checked: 0, added: 0, errors: 0 };
   const people = new Set(
     (
       await db
@@ -118,8 +118,10 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
   const fresh = Date.now() - RECHECK_DAYS * 86_400_000;
   let checked = 0;
   let added = 0;
-  for (const tag of tags) {
-    if (people.has(tag)) continue;
+  let errors = 0;
+  // One tag at a time, so a Wikidata hiccup costs that tag, not the run.
+  const one = async (tag: string) => {
+    if (people.has(tag)) return;
     const row = cached.get(tag);
     let types = row?.types ?? [];
     const recent = !force && row?.checkedAt && row.checkedAt.getTime() >= fresh;
@@ -142,13 +144,13 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
     }
     if (types.some((t) => t.id === HUMAN)) {
       // A person's facts are not cached: asked again only with the item.
-      if (recent) continue;
+      if (recent) return;
       const person = await findPerson(tag);
-      if (!person || person.aliasOnly) continue;
+      if (!person || person.aliasOnly) return;
       const status = person.namesakes ? 'review' : 'auto';
       const picks = personGroups(person.facts).map((g) => ({ groupId: g.groupId, score: null, note: g.note, status }) as const);
       added += (await fileTag(db, tag, 'person', picks)).added;
-      continue;
+      return;
     }
     // Today's topics: the 2016 legacy counts are too old to back a type
     // (「失聯」 was a TV series then) unless an admin confirmed them.
@@ -173,8 +175,16 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
       status: g.review ? ('review' as const) : ('auto' as const),
     }));
     added += (await fileTag(db, tag, 'wikidata', picks)).added;
+  };
+  for (const tag of tags) {
+    try {
+      await one(tag);
+    } catch (err) {
+      errors++;
+      log({ tag, error: String(err) });
+    }
   }
-  return { checked, added };
+  return { checked, added, errors };
 }
 
 /** Topics from the sections the tag's outlets file it under, over `days`. */

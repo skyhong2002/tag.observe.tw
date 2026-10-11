@@ -108,7 +108,7 @@ export async function fileAi(
   config: AiConfig,
   { force = false, batch = 20, fetchImpl = fetch as typeof fetch, log = (_o: object) => {} } = {},
 ) {
-  if (!tags.length) return { asked: 0, added: 0 };
+  if (!tags.length) return { asked: 0, added: 0, errors: 0 };
   const groups = await db
     .select({ id: tagGroupDefs.id, label: tagGroupDefs.label, kind: tagGroupDefs.kind })
     .from(tagGroupDefs)
@@ -127,6 +127,7 @@ export async function fileAi(
   const todo = tags.filter((t) => (force || !asked.has(t)) && !(kinds(t).has('group') && kinds(t).has('topic')));
   const since = new Date(Date.now() - 30 * 86_400_000);
   let added = 0;
+  let errors = 0;
   for (let i = 0; i < todo.length; i += batch) {
     const chunk = todo.slice(i, i + batch);
     const items: Item[] = [];
@@ -140,7 +141,15 @@ export async function fileAi(
         .limit(8);
       items.push({ tag, titles: [...new Set(rows.map((r) => r.title.trim()))].slice(0, 4) });
     }
-    const reply = await suggest(config, groups, items, fetchImpl);
+    let reply: Awaited<ReturnType<typeof suggest>>;
+    try {
+      reply = await suggest(config, groups, items, fetchImpl);
+    } catch (err) {
+      // Left unasked, so the next run tries these tags again.
+      errors++;
+      log({ tags: chunk, error: String(err) });
+      continue;
+    }
     const at = new Date();
     for (const tag of chunk) {
       const ids = reply.groups.get(tag) ?? [];
@@ -159,5 +168,5 @@ export async function fileAi(
       log({ tag, groups: ids });
     }
   }
-  return { asked: todo.length, added };
+  return { asked: todo.length, added, errors };
 }

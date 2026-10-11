@@ -298,6 +298,13 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
     expect((await add('地名')).statusCode).toBe(409);
   });
 
+  it('leaves tags unasked when the gateway fails, so the next run retries', async () => {
+    const down = (async () => new Response('{}', { status: 401 })) as unknown as typeof fetch;
+    const config = { baseUrl: 'http://gw/v1', apiKey: 'bad', model: 'sky-fast' };
+    expect(await fileAi(db, ['罷免'], config, { fetchImpl: down })).toEqual({ asked: 1, added: 0, errors: 1 });
+    expect(await db.select().from(tagWikidata).where(sql`${tagWikidata.tag} = '罷免'`)).toEqual([]);
+  });
+
   it('files AI suggestions for review only, and asks once in 30 days', async () => {
     await fileTag(db, '總預算', 'section', [{ groupId: groupId('政治'), score: 0.5, note: '5 家媒體 50%' }]);
     let calls = 0;
@@ -311,7 +318,7 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
       return new Response(JSON.stringify({ model: 'gpt-test', choices: [{ message: { content } }] }));
     }) as unknown as typeof fetch;
     const config = { baseUrl: 'http://gw/v1', apiKey: 'k', model: 'sky-fast' };
-    expect(await fileAi(db, ['總預算', '川普'], config, { fetchImpl: fake })).toEqual({ asked: 1, added: 1 });
+    expect(await fileAi(db, ['總預算', '川普'], config, { fetchImpl: fake })).toEqual({ asked: 1, added: 1, errors: 0 });
     const rows = await db.select().from(tagGroupMembers).where(sql`${tagGroupMembers.tag} = '總預算'`);
     // the section row stays auto; the AI's new group waits for review
     expect(rows.map((r) => [r.groupId, r.source, r.status]).sort()).toEqual(
@@ -323,7 +330,7 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
     expect(await shown('總預算')).toEqual(['政治']);
     const [check] = await db.select().from(tagWikidata).where(sql`${tagWikidata.tag} = '總預算'`);
     expect(check.aiCheckedAt).toBeInstanceOf(Date);
-    expect(await fileAi(db, ['總預算'], config, { fetchImpl: fake })).toEqual({ asked: 0, added: 0 });
+    expect(await fileAi(db, ['總預算'], config, { fetchImpl: fake })).toEqual({ asked: 0, added: 0, errors: 0 });
     expect(calls).toBe(1);
   });
 });

@@ -126,12 +126,18 @@ try {
     if (steps.includes('person')) result.person = await filePeople(db);
     if (steps.includes('section')) result.section = await fileSections(db, tags);
     if (steps.includes('wikidata'))
-      result.wikidata = await fileWikidata(db, tags, { force: flags.includes('--force'), log: (o) => log.debug(o, 'wikidata') });
+      result.wikidata = await fileWikidata(db, tags, {
+        force: flags.includes('--force'),
+        log: (o) => ('error' in o ? log.warn(o, 'wikidata failed') : log.debug(o, 'wikidata')),
+      });
     // Last: only what the rules left without a group or a topic goes to the AI.
     const ai = aiConfig();
     if (steps.includes('ai'))
       result.ai = ai
-        ? await fileAi(db, tags, ai, { force: flags.includes('--force'), log: (o) => log.debug(o, 'ai') })
+        ? await fileAi(db, tags, ai, {
+            force: flags.includes('--force'),
+            log: (o) => ('error' in o ? log.warn(o, 'ai failed') : log.debug(o, 'ai')),
+          })
         : 'skipped: no TAG_AI_API_KEY';
     console.log(JSON.stringify({ tags: tags.length, ...result }));
   }
