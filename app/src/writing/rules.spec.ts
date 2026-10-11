@@ -71,6 +71,8 @@ describe('names', () => {
     expect(posterName('邱九十今天')).toBe('邱九十');
     expect(posterName('沈小明10日')).toBe('沈小明');
     expect(posterName('他日前')).toBeNull();
+    expect(posterName('鄰居平時經營自媒體')).toBeNull();
+    expect(posterName('男子曾酒後失控')).toBeNull();
     expect(stripTitle('科醫師沈小明')).toBe('沈小明');
   });
 

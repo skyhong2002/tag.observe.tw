@@ -9,7 +9,7 @@
 //
 // Changing any pattern changes results: bump VERSION so the job re-analyses
 // the bodies it still has and charts can mark the change.
-export const VERSION = 'writing-v3';
+export const VERSION = 'writing-v4';
 export const LEAD_CHARS = 250;
 export const MIN_BODY = 200;
 
@@ -119,7 +119,7 @@ export function posterName(clause: string): string | null {
     .at(-1);
   const name = run?.replace(/(?:臉書|粉專|本人|自己)$/u, '');
   // Clause fragments, not names: 「跟監一事」「讓小編急得」「頻頻交火」.
-  if (!name || name.length < 2 || COMMON.has(name) || /[了得才事頻針讓除]/u.test(name)) return null;
+  if (!name || name.length < 2 || COMMON.has(name) || /[了得才事頻針讓除]|經營|失控|酒後/u.test(name)) return null;
   if (NOT_NAME.test(name) || NOT_NAME.test(name.slice(-3))) return null;
   return name;
 }
