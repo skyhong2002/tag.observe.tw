@@ -5,6 +5,8 @@ import type { TagPersonFacts } from '../db/schema.ts';
 export const UA = 'tag.observe.tw-avatars/1.0 (https://tag.observe.tw/; tag avatars from Wikimedia Commons)';
 
 const HUMAN = 'Q5';
+// Disambiguation pages, categories, templates, list articles: not a rival meaning.
+const WIKIMEDIA = new Set(['Q4167410', 'Q22808320', 'Q15407973', 'Q4167836', 'Q11266439', 'Q13406463']);
 
 type Claim = { mainsnak: { datavalue?: { value: unknown } }; qualifiers?: Record<string, unknown[]> };
 type Entity = {
@@ -63,15 +65,18 @@ export type Person = {
   categories: string[];
   /** Other humans whose label or alias is exactly this tag. */
   namesakes: number;
+  /** The tag is only an alias (nickname, courtesy name…) of this person, not their name. */
+  aliasOnly: boolean;
 };
 
 /**
  * The human on Wikidata whose label or alias is exactly `tag`. Search hits
- * that only contain the name, or are not people (P31 = Q5), do not count.
- * With namesakes, the one with the most Wikipedia articles wins.
+ * that only contain the name, or are not people (P31 = Q5), do not count;
+ * a non-person with at least as many Wikipedia articles means the tag is
+ * about that instead. With namesakes, the one with the most articles wins.
  */
 export async function findPerson(tag: string): Promise<Person | null> {
-  const search = await api<{ search: { id: string; match: { text: string } }[] }>('www.wikidata.org', {
+  const search = await api<{ search: { id: string; match: { type: string; text: string } }[] }>('www.wikidata.org', {
     action: 'wbsearchentities',
     search: tag,
     language: 'zh-tw',
@@ -79,13 +84,21 @@ export async function findPerson(tag: string): Promise<Person | null> {
     type: 'item',
     limit: 10,
   });
-  const exact = search.search.filter((h) => h.match.text === tag).map((h) => h.id);
-  if (!exact.length) return null;
-  const found = await entities(exact, 'labels|descriptions|claims|sitelinks');
-  const humans = exact.map((q) => found[q]).filter((e) => e && ids(e.claims?.P31).includes(HUMAN));
+  const hits = search.search.filter((h) => h.match.text === tag);
+  if (!hits.length) return null;
+  const top = search.search[0].id;
+  const found = await entities([...new Set([top, ...hits.map((h) => h.id)])], 'labels|descriptions|claims|sitelinks');
+  const links = (q: Entity) => Object.keys(q.sitelinks ?? {}).length;
+  const items = hits.map((h) => found[h.id]).filter(Boolean);
+  const isHuman = (q: Entity) => ids(q.claims?.P31).includes(HUMAN);
+  const humans = items.filter(isHuman).sort((a, b) => links(b) - links(a));
   if (!humans.length) return null;
-  humans.sort((a, b) => Object.keys(b.sitelinks ?? {}).length - Object.keys(a.sitelinks ?? {}).length);
   const e = humans[0];
+  // 「AI」「高雄」: a singer and an actor share the name, but the concept and
+  // the city (「高雄市」, the top search result) are what the news means. A
+  // better-known non-person among the exact matches, or as the top result, wins.
+  const rival = (q: Entity | undefined) => q && !isHuman(q) && !ids(q.claims?.P31).some((c) => WIKIMEDIA.has(c)) && links(q) >= links(e);
+  if ([...items, found[top]].some(rival)) return null;
   const c = e.claims ?? {};
   // Positions without an end time (P582) are current.
   const positions = (c.P39 ?? []).map((cl) => ({
@@ -115,6 +128,8 @@ export async function findPerson(tag: string): Promise<Person | null> {
     photos: strings(c.P18),
     categories: strings(c.P373),
     namesakes: humans.length - 1,
+    // 「川普」 is part of 「唐納·川普」, a name; 「天氣」 for 柏木由紀 is a nickname.
+    aliasOnly: hits.find((h) => h.id === e.id)?.match.type !== 'label' && !(pick(e.labels) ?? '').includes(tag),
   };
 }
 

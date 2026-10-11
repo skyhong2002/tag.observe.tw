@@ -54,7 +54,7 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
   if (prior && !force && (prior.status === 'chosen' || prior.status === 'hidden')) return { tag, status: prior.status, skipped: true };
   const now = new Date();
   const person = await findPerson(tag);
-  const save = async (status: TagPersonStatus, note: string | null, rows: (typeof tagAvatarCandidates.$inferInsert)[]) => {
+  const save = async (status: TagPersonStatus, note: string | null, rows: (typeof tagAvatarCandidates.$inferInsert)[], show = true) => {
     const row = {
       tag,
       wikidataId: person?.qid ?? null,
@@ -63,7 +63,7 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
       facts: person?.facts ?? null,
       status,
       note,
-      shownRank: rows.length ? 1 : null,
+      shownRank: rows.length && show ? 1 : null,
       checkedAt: now,
       reviewedBy: null,
       reviewedAt: null,
@@ -131,6 +131,9 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
     });
   }
   const best = kept[0].score;
+  // 「天氣」 is a nickname of an idol, 「中秋」 a Song official's courtesy name:
+  // an alias-only match waits for an admin before anything is shown.
+  if (person.aliasOnly) return save('review', '只符合別名，選定後才顯示', rows, false);
   if (best < LOW) return save('review', `最高分 ${best.toFixed(2)}`, rows);
   if (person.namesakes) return save('review', `同名 ${person.namesakes + 1} 人，用條目最多的`, rows);
   return save('auto', null, rows);
