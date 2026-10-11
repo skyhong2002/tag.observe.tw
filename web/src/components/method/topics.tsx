@@ -106,6 +106,8 @@ function TopicOutletMethod({ kind }: { kind?: TopicKind }) {
       <dl className={methodList}>
         <dt className={methodTerm}>累計追蹤</dt>
         <dd>本站收錄到這家媒體的{noun}總數，含已停更。</dd>
+        <dt className={methodTerm}>新聞清單</dt>
+        <dd>單一{noun}頁的新聞清單累計本站從原站頁面發現的文章，不限報導日期；原站分頁或動態載入的文章可能尚未完整取得。</dd>
         <dt className={methodTerm}>對應站內標籤</dt>
         <dd>
           名稱比對得到站內標籤的{noun}數：標籤須構成名稱的主要部分；名稱比對不到時，改用這家媒體在{noun}

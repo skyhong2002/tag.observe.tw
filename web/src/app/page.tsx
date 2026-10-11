@@ -179,7 +179,7 @@ function GraphPanel({ graph }: { graph: GraphSummary | null }) {
       <p className={styles.panelFoot}>
         過去 {graph.hours} 小時比對 {graph.analyzed.toLocaleString()} 篇正文、{graph.citations.toLocaleString()} 筆明示引用 ·{' '}
         <a href="#method" className={styles.campShareMethod}>
-          怎麼算 ⓘ
+          本頁的資料來源與計算方式 ⓘ
         </a>
       </p>
     </div>
@@ -376,7 +376,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                       {c.label}
                     </span>
                   ))}
-                  <a href="#method">怎麼算 ⓘ</a>
+                  <a href="#method">本頁的資料來源與計算方式 ⓘ</a>
                 </div>
                 <div className={styles.storyList}>
                   {rest.map((s, i) => (

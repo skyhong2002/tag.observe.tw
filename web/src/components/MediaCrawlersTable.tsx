@@ -127,9 +127,6 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
             ))}
           </fieldset>
         ))}
-        <p className="text-xs text-zinc-500">
-          可多選；同組符合任一標籤，不同組交叉篩選。點欄名可切換升冪／降冪。執行頻率按媒體個別設定；下次可爬取是最早允許巡查的時間（台北），實際開始仍受佇列影響。近期失敗包含近24小時巡查與內文抓取的部分失敗；累計收錄是本站爬蟲儲存的歷史紀錄（含專題頁，不含歷史匯入），探索平台計發現紀錄。
-        </p>
       </section>
       <TableScroller card label="爬蟲資訊表格，可左右捲動">
         <table className="w-full whitespace-nowrap text-left text-xs">

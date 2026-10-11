@@ -72,10 +72,9 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
       ) : kind === 'topic' ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">尚未取得這個{noun}的新聞清單，可先前往原站查看。</p>
       ) : null}
-      <p className="text-xs text-zinc-500">
-        新聞清單累計本站從原站頁面發現的文章，不限報導日期；原站分頁或動態載入的文章可能尚未完整取得。
-        {data.checkedAt && ` 最近檢查：${new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。`}
-      </p>
+      {data.checkedAt && (
+        <p className="text-xs text-zinc-500">最近檢查：{new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。</p>
+      )}
     </div>
   );
 }

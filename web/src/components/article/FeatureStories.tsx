@@ -24,10 +24,9 @@ export default function FeatureStories({ data }: { data: TopicStoryIndex }) {
           ))}
         </ul>
       </CompactArticleList>
-      <p className="text-xs text-zinc-500">
-        清單累計本站從原站專題頁發現的文章，不限報導日期；原站分頁或動態載入的文章可能尚未完整取得。
-        {data.checkedAt && ` 最近檢查：${new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。`}
-      </p>
+      {data.checkedAt && (
+        <p className="text-xs text-zinc-500">最近檢查：{new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。</p>
+      )}
     </section>
   );
 }

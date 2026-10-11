@@ -29,14 +29,12 @@ function Batch({
   checkedAt,
   error,
   counts,
-  schedule,
 }: {
   name: string;
   status: keyof typeof sourceStatusLabels | null;
   checkedAt: string | null;
   error: string | null;
   counts: Record<CollectionState, number>;
-  schedule: string;
 }) {
   const code = error?.match(/HTTP \d+/)?.[0];
   const total = counts.ok + counts.nodata + counts.waiting;
@@ -54,7 +52,6 @@ function Batch({
         {counts.waiting > 0 && ` · 等待抓取 ${counts.waiting}`}
         {counts.shared > 0 && <span className="text-zinc-500"> · 共用網域 {counts.shared}</span>}
       </p>
-      <p className="mt-1 text-xs leading-5 text-zinc-500">{schedule}</p>
     </section>
   );
 }
@@ -108,7 +105,6 @@ export default async function TrafficCollectionPage() {
           checkedAt={data.liveTrafficCheckedAt}
           error={data.liveTrafficError}
           counts={count('similarweb')}
-          schedule="每小時分批抓取，先抓等待中與最舊的網域，每個網域約每週重抓；被限流（HTTP 403）時停止，下一輪接著抓。"
         />
         <Batch
           name="Cloudflare Radar"
@@ -116,7 +112,6 @@ export default async function TrafficCollectionPage() {
           checkedAt={data.radarCheckedAt}
           error={data.radarError}
           counts={count('radar')}
-          schedule="每日抓取一次，先抓等待中與最舊的網域；單批超過五分鐘時，隔天接著抓。"
         />
       </div>
       <TrafficCollectionTable rows={rows} />

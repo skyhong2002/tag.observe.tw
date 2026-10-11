@@ -85,7 +85,7 @@ export default function CampShareSummary({ initialShare, children }: { initialSh
       </div>
       <div className={styles.campShareLinks}>
         <Link href="/media/">媒體分類</Link>
-        <a href="#method">怎麼算 ⓘ</a>
+        <a href="#method">本頁的資料來源與計算方式 ⓘ</a>
       </div>
       {!share && (
         <div className={styles.campShareStatus}>

@@ -19,7 +19,7 @@ export function ArticleMethod({ feature = false }: { feature?: boolean }) {
         {feature && (
           <>
             <dt className={methodTerm}>專題相關新聞</dt>
-            <dd>原站專題頁上列出的報導，每小時檢查一次，累計所有發現過的文章；原站分頁或動態載入的部分可能尚未取得。</dd>
+            <dd>原站專題頁上列出的報導，每小時檢查一次，累計所有發現過的文章，不限報導日期；原站分頁或動態載入的部分可能尚未取得。</dd>
           </>
         )}
         <dt className={methodTerm}>內文狀態</dt>
