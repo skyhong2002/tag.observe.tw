@@ -9,6 +9,8 @@
 export interface CloudTerm {
   label: string;
   count: number;
+  /** Drawn as a square picture (a person's sketch) instead of text. */
+  square?: boolean;
 }
 export interface PlacedWord extends CloudTerm {
   x: number;
@@ -18,6 +20,10 @@ export interface PlacedWord extends CloudTerm {
   fontSize: number;
 }
 
+/** A picture's side, in font sizes: about the area of a three-character name (3 × 1.6). */
+export const SQUARE = 2.2;
+const boxOf = (term: CloudTerm, size: number): [number, number] =>
+  term.square ? [size * SQUARE, size * SQUARE] : [widthOf(term.label, size), size * 1.6];
 const widthOf = (label: string, size: number) =>
   Array.from(label).reduce(
     (n, char) => n + (/[^\u0000-\u00ff]/.test(char) ? 1 : /[ilI.,: ]/.test(char) ? 0.35 : /[MW@]/.test(char) ? 0.95 : 0.66),
@@ -57,7 +63,8 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
   const unique = new Map<string, CloudTerm>();
   for (const term of terms) {
     const label = term.label.trim();
-    if (label && Number.isFinite(term.count) && term.count > 0 && !unique.has(label)) unique.set(label, { label, count: term.count });
+    if (label && Number.isFinite(term.count) && term.count > 0 && !unique.has(label))
+      unique.set(label, { label, count: term.count, ...(term.square ? { square: true } : {}) });
   }
   const sorted = [...unique.values()]
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'zh-TW'))
@@ -65,8 +72,8 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
   const max = sorted[0]?.count ?? 1;
   const naturalSize = (count: number) => sizes.min + (sizes.max - sizes.min) * (count / max) ** (sizes.curve ?? 0.5);
   const requestedArea = sorted.reduce((sum, term) => {
-    const size = naturalSize(term.count);
-    return sum + widthOf(term.label, size) * size * 1.6;
+    const [w, h] = boxOf(term, naturalSize(term.count));
+    return sum + w * h;
   }, 0);
   const hole = sizes.hole;
   const holeCells = hole?.mask?.join('') ?? '';
@@ -139,8 +146,7 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
     const natural = Math.max(floor, Math.round(naturalSize(term.count) * scale));
     for (let fontSize = natural; fontSize >= floor && !done; fontSize--) {
       // CJK ascent/descent can exceed the nominal em box in system fonts.
-      const w = widthOf(term.label, fontSize),
-        h = fontSize * 1.6;
+      const [w, h] = boxOf(term, fontSize);
       if (w > width - 8 || h > height - 8 || failed.some(([fw, fh]) => w >= fw && h >= fh)) continue;
       const fits: Array<[number, number]> = [];
       let until = centres.length;

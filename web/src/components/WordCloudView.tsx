@@ -21,6 +21,8 @@ export interface CloudWordInfo {
   tone?: CloudTone;
   fontWeight?: number;
   card?: CloudCard;
+  /** A person's sketch avatar (/api/v1/tags/{tag}/avatar?v=…) drawn instead of the label. */
+  image?: string;
 }
 export interface PlacedBox {
   label: string;
@@ -146,17 +148,21 @@ function Canvas({
               }}
             >
               <rect x={word.x - 1} y={word.y - 1} width={word.width + 2} height={word.height + 2} rx="3" />
-              <text
-                x={word.x + 2}
-                y={word.y + word.fontSize * 1.25}
-                fontSize={word.fontSize}
-                fontWeight={w.fontWeight ?? 600}
-                textLength={word.width - 4}
-                lengthAdjust="spacingAndGlyphs"
-                className={tones[w.tone ?? 'strong']}
-              >
-                {word.label}
-              </text>
+              {w.image ? (
+                <Sketch url={w.image} x={word.x} y={word.y} size={word.width} />
+              ) : (
+                <text
+                  x={word.x + 2}
+                  y={word.y + word.fontSize * 1.25}
+                  fontSize={word.fontSize}
+                  fontWeight={w.fontWeight ?? 600}
+                  textLength={word.width - 4}
+                  lengthAdjust="spacingAndGlyphs"
+                  className={tones[w.tone ?? 'strong']}
+                >
+                  {word.label}
+                </text>
+              )}
             </Link>
           );
         })}
@@ -201,6 +207,15 @@ function Canvas({
       )}
     </div>
   );
+}
+
+/**
+ * A tag's sketch as on its page (components/TagPerson.tsx), already painted
+ * (?layer=color: orange strokes on the white person), so it reads the same on
+ * light and dark pages without SVG masks.
+ */
+function Sketch({ url, x, y, size }: { url: string; x: number; y: number; size: number }) {
+  return <image href={`${url}${url.includes('?') ? '&' : '?'}layer=color`} x={x} y={y} width={size} height={size} />;
 }
 
 export default function WordCloudView({

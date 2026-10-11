@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutWordCloud } from '../../web/src/lib/word-cloud.mts';
+import { layoutWordCloud, SQUARE } from '../../web/src/lib/word-cloud.mts';
 
 describe('word-cloud packing', () => {
   it('lays out mixed scripts deterministically without overlaps or clipped boxes', () => {
@@ -88,5 +88,20 @@ describe('word-cloud size range', () => {
       expect(apart(word, clear, 9)).toBe(true);
       for (const other of placed.slice(i + 1)) expect(apart(word, other, 5)).toBe(true);
     }
+  });
+
+  it('packs a person drawn as a sketch into a square among the words', () => {
+    const terms = Array.from({ length: 30 }, (_, i) => ({ label: `人物${i}號`, count: 30 - i, square: i % 5 === 0 }));
+    const placed = layoutWordCloud(terms, 680, 280, { min: 11, max: 36 });
+    const squares = placed.filter((w) => w.square);
+    expect(squares.length).toBeGreaterThan(3);
+    for (const w of squares) {
+      expect(w.width).toBe(w.height);
+      expect(w.width).toBeCloseTo(w.fontSize * SQUARE);
+    }
+    for (const w of placed.filter((p) => !p.square)) expect(w.height).toBeCloseTo(w.fontSize * 1.6);
+    for (const [i, a] of placed.entries())
+      for (const b of placed.slice(i + 1))
+        expect(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y).toBe(true);
   });
 });

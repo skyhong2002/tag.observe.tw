@@ -1446,6 +1446,15 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hours=336',
   },
   {
+    path: '/api/v1/tag-avatars',
+    tag: 'tags',
+    summary: '所有有素描頭像的人物標籤',
+    description:
+      '目前顯示素描頭像的人物標籤與頭像網址（同 /api/v1/tags/{tag}/person 的 avatar.url），首頁文字雲用來把最熱的幾位人物畫成頭像。沒有頭像、被管理員隱藏或只符合別名尚未確認的標籤不列出。',
+    response: obj({ avatars: map(str('頭像網址，帶版本參數'), '依標籤') }),
+    cache: '5 分鐘',
+  },
+  {
     path: '/api/v1/tags/{tag}/person',
     tag: 'tags',
     summary: '標籤代表的人物與素描頭像',
@@ -1495,7 +1504,11 @@ export const ENDPOINTS: Endpoint[] = [
     binary: 'image/webp',
     params: [
       p('tag', '標籤（URL 編碼）', str(), '賴清德'),
-      q('layer', 'ink（線條）或 fill（人物剪影）', str('預設 ink', { enum: ['ink', 'fill'] })),
+      q(
+        'layer',
+        'ink（線條）、fill（人物剪影）或 color（已上色：白色人物、橘色線條）',
+        str('預設 ink', { enum: ['ink', 'fill', 'color'] }),
+      ),
     ],
     response: str('WebP 圖檔', { format: 'binary' }),
     errors: { '404': '沒有頭像' },

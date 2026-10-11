@@ -176,6 +176,10 @@ export async function findItem(tag: string): Promise<Item | null> {
 }
 
 const IMAGE = /\.(jpe?g|png|webp)$/i;
+// Not the person: statues, wax figures, graves, posters, signatures (梅艷芳's Commons
+// category is mostly her statue, which passes face matching because it looks like her).
+const NOT_THEM =
+  /statue|sculpture|wax ?(figure|work)|madame tussauds|bust of|grave|tomb|mural|poster|signature|雕像|銅像|铜像|塑像|蠟像|蜡像|墓|海報|簽名/i;
 const PORTRAIT = /crop|portrait|肖像|headshot|official|大頭/i;
 
 /**
@@ -203,7 +207,7 @@ export async function candidateFiles(person: Person, limit = 20) {
     });
     files.push(...members.query.categorymembers.map((h) => h.title.replace(/^File:/, '')));
   }
-  const unique = [...new Set(files.map((f) => f.replace(/_/g, ' ')))].filter((f) => IMAGE.test(f));
+  const unique = [...new Set(files.map((f) => f.replace(/_/g, ' ')))].filter((f) => IMAGE.test(f) && !NOT_THEM.test(f));
   const [first, ...rest] = unique;
   const ordered = first ? [first, ...rest.filter((f) => PORTRAIT.test(f)), ...rest.filter((f) => !PORTRAIT.test(f))] : [];
   return [...new Set(ordered)].slice(0, limit);

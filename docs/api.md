@@ -89,6 +89,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/articles`](#api-v1-tags-tag-articles) | 帶有某標籤的最新文章 |
 | [`GET /api/v1/tags/{tag}/series`](#api-v1-tags-tag-series) | 標籤每小時的分數與文章數 |
 | [`GET /api/v1/tags/{tag}/flow`](#api-v1-tags-tag-flow) | 和這個標籤一起出現的關鍵字，逐小時 |
+| [`GET /api/v1/tag-avatars`](#api-v1-tag-avatars) | 所有有素描頭像的人物標籤 |
 | [`GET /api/v1/tags/{tag}/person`](#api-v1-tags-tag-person) | 標籤代表的人物與素描頭像 |
 | [`GET /api/v1/tags/{tag}/avatar`](#api-v1-tags-tag-avatar) | 標籤人物的素描頭像圖檔 |
 | [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
@@ -1655,6 +1656,28 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hou
 
 錯誤：`400` hours、until 或 span 格式錯誤。
 
+<a id="api-v1-tag-avatars"></a>
+
+### `GET /api/v1/tag-avatars`
+
+**所有有素描頭像的人物標籤**
+
+目前顯示素描頭像的人物標籤與頭像網址（同 /api/v1/tags/{tag}/person 的 avatar.url），首頁文字雲用來把最熱的幾位人物畫成頭像。沒有頭像、被管理員隱藏或只符合別名尚未確認的標籤不列出。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tag-avatars'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `avatars` | {鍵: string} | 依標籤 |
+
+快取：5 分鐘。
+
 <a id="api-v1-tags-tag-person"></a>
 
 ### `GET /api/v1/tags/{tag}/person`
@@ -1712,7 +1735,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/person'
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `tag` | 路徑 | string | 標籤（URL 編碼），例：`賴清德` |
-| `layer` | query | "ink" \| "fill" | ink（線條）或 fill（人物剪影） |
+| `layer` | query | "ink" \| "fill" \| "color" | ink（線條）、fill（人物剪影）或 color（已上色：白色人物、橘色線條） |
 
 範例：
 

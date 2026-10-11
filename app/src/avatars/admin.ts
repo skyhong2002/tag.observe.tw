@@ -84,7 +84,7 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
       return reply
         .header('content-type', 'image/webp')
         .header('cache-control', 'private, max-age=86400')
-        .send(await inkImage(row.image, request.query.layer === 'fill' ? 'fill' : 'ink'));
+        .send(await inkImage(row.image, (['fill', 'color'] as const).find((l) => l === request.query.layer) ?? 'ink'));
     },
   );
 

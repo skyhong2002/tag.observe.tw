@@ -195,6 +195,13 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
     // The white paper under the strokes: the person's silhouette.
     const fill = await app.inject({ url: `${p.avatar.url}&layer=fill` });
     expect(await alpha(fill.rawPayload)).toBeCloseTo(255, -1);
+    // Both painted, for the home page cloud: an opaque person, strokes tinting the white toward orange.
+    const color = await app.inject({ url: `${p.avatar.url}&layer=color` });
+    const [r, g, b, a] = await sharp(color.rawPayload).ensureAlpha().raw().toBuffer();
+    expect(a).toBeGreaterThan(245);
+    expect(r).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(b);
+    expect((await app.inject({ url: '/api/v1/tag-avatars' })).json().avatars).toEqual({ 賴清德: p.avatar.url });
     expect(await person('台北')).toBeNull();
     expect((await app.inject({ url: `/api/v1/tags/${encodeURIComponent('台北')}/avatar` })).statusCode).toBe(404);
   });

@@ -19,7 +19,7 @@
 
 ## 執行
 
-worker 每日 04:40（`TAG_AVATARS_CRON`）跑 `tag-avatars`（`jobs/tag-avatars-run.ts`，在子程序跑完即釋放記憶體）：取本週上過新聞排行、30 天內沒查過的標籤最多 40 個，跑滿 8 分鐘就停，剩下的隔天繼續；worker 同時只跑兩個工作、每個工作鎖 15 分鐘，所以不能久佔。worker 關閉時處理完手上這個標籤就停；跑完釋放模型（約 200 MB）。
+worker 每日 04:40（`TAG_AVATARS_CRON`）跑 `tag-avatars`（`jobs/tag-avatars-run.ts`，在子程序跑完即釋放記憶體）：先取首頁升溫文字雲的前 60 個詞，再取本週上過新聞排行的標籤，扣掉 30 天內查過的，最多 40 個，跑滿 8 分鐘就停，剩下的隔天繼續；worker 同時只跑兩個工作、每個工作鎖 15 分鐘，所以不能久佔。worker 關閉時處理完手上這個標籤就停；跑完釋放模型（約 200 MB）。
 
 手動補跑或指定標籤：
 
@@ -31,6 +31,8 @@ node --env-file=.env tools/tag-avatars.ts --top 100       # 最近 7 天上過�
 `--force` 連同管理員選定、隱藏過或 30 天內查過的標籤一起重跑。Wikimedia API 一律帶描述性 User-Agent，遇到 429／5xx 會退避重試。
 
 ## 管理與 API
+
+- 首頁升溫文字雲（`web/src/app/_home/MastheadCloud.tsx`）把前 30 個升溫詞中有頭像的前 6 位畫成頭像（`/api/v1/tag-avatars`），只畫臉、不寫名字；排版時佔一個邊長 2.2 倍字級的正方形（約等於三個字的面積），滑過或點一下仍顯示名字與數字卡。
 
 - `/admin/avatars/`：依狀態列出人物標籤，每人最多三張候選與分數；點候選圖改用那一張，「不顯示頭像」隱藏。每次變更寫入 `tag_people_log`。
 - 公開：`GET /api/v1/tags/{tag}/person`（人物、身分、頭像網址與授權）、`GET /api/v1/tags/{tag}/avatar`（WebP），見 [api.md](api.md)。

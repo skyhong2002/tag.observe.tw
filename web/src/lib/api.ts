@@ -184,6 +184,8 @@ export interface TagPerson {
     artist: string | null;
   } | null;
 }
+/** Every tag with a shown sketch avatar → its URL. */
+export const fetchTagAvatars = () => get<{ avatars: Record<string, string> }>('/api/v1/tag-avatars', 300).then((r) => r.avatars);
 export const fetchTagPerson = (tag: string) =>
   get<{ tag: string; person: TagPerson | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/person`, 300).then((r) => r.person);
 /** Groups and topics a tag is filed under (docs/tag-groups.md). */

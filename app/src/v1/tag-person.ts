@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { inkImage } from '../avatars/ink.ts';
 import type { Db } from '../db/client.ts';
@@ -9,7 +9,17 @@ import { tagAvatarCandidates, tagPeople } from '../db/schema.ts';
 const SHOWN = new Set(['auto', 'review', 'chosen']);
 
 // `v` changes whenever the shown image can change (a re-run or an admin switch), so the image itself can cache for a day.
-const avatarPath = (tag: string, version: string) => `/api/v1/tags/${encodeURIComponent(tag)}/avatar?v=${version}`;
+const avatarPath = (tag: string, at: Date, rank: number) =>
+  `/api/v1/tags/${encodeURIComponent(tag)}/avatar?v=${(at.getTime() / 1000).toString(36)}-${rank}`;
+
+/** Every tag with a shown avatar → its image URL (for the home page cloud). */
+export async function tagAvatars(db: Db) {
+  const rows = await db
+    .select({ tag: tagPeople.tag, rank: tagPeople.shownRank, checkedAt: tagPeople.checkedAt, reviewedAt: tagPeople.reviewedAt })
+    .from(tagPeople)
+    .where(and(inArray(tagPeople.status, [...SHOWN] as ('auto' | 'review' | 'chosen')[]), isNotNull(tagPeople.shownRank)));
+  return Object.fromEntries(rows.map((r) => [r.tag, avatarPath(r.tag, r.reviewedAt ?? r.checkedAt, r.rank as number)]));
+}
 
 export async function tagPerson(db: Db, tag: string) {
   const [person] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
@@ -35,7 +45,7 @@ export async function tagPerson(db: Db, tag: string) {
     facts: person.facts,
     avatar: avatar
       ? {
-          url: avatarPath(tag, `${((person.reviewedAt ?? person.checkedAt).getTime() / 1000).toString(36)}-${avatar.rank}`),
+          url: avatarPath(tag, person.reviewedAt ?? person.checkedAt, avatar.rank),
           file: avatar.file,
           pageUrl: avatar.pageUrl,
           license: avatar.license,
@@ -47,6 +57,11 @@ export async function tagPerson(db: Db, tag: string) {
 }
 
 export function registerTagPerson(app: FastifyInstance, db: Db) {
+  app.get('/api/v1/tag-avatars', async (_request, reply) => {
+    reply.header('cache-control', 'public, max-age=300');
+    return { avatars: await tagAvatars(db) };
+  });
+
   app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/person', async (request, reply) => {
     const { tag } = request.params;
     if (tag.length > 60) return reply.code(400).send({ error: 'tag too long' });
@@ -63,7 +78,7 @@ export function registerTagPerson(app: FastifyInstance, db: Db) {
       .innerJoin(tagAvatarCandidates, and(eq(tagAvatarCandidates.tag, tagPeople.tag), eq(tagAvatarCandidates.rank, tagPeople.shownRank)))
       .where(eq(tagPeople.tag, tag));
     if (!row || !SHOWN.has(row.status)) return reply.code(404).send({ error: 'no avatar' });
-    const layer = request.query.layer === 'fill' ? 'fill' : 'ink';
+    const layer = (['fill', 'color'] as const).find((l) => l === request.query.layer) ?? 'ink';
     return reply
       .header('content-type', 'image/webp')
       .header('cache-control', 'public, max-age=86400')
