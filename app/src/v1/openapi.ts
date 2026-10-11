@@ -1564,11 +1564,37 @@ export const ENDPOINTS: Endpoint[] = [
     cache: '5 分鐘',
   },
   {
+    path: '/api/v1/tag-groups/overview',
+    tag: 'tags',
+    summary: '各群組最近報導最多的標籤',
+    description:
+      '每個群組與主題（含子群組）最近 days 天達到關鍵字排行第一道門檻（24 小時內至少兩家新聞媒體各標了兩篇以上）的標籤：前 5 名的報導篇數、上新聞的標籤數與篇數合計，各附再之前 days 天的篇數。結果在伺服器保留 10 分鐘。',
+    params: [q('days', '期間天數：1、7 或 30', int('預設 7'))],
+    response: obj({
+      days: int('期間天數'),
+      groups: arr(
+        obj({
+          id: int(),
+          label: str(),
+          kind: str('', { enum: ['group', 'topic'] }),
+          parentId: nullable(int('上層群組 ID；最上層為 null')),
+          tags: int('群組（含子群組）裡的標籤數'),
+          active: int('其中這段期間上過新聞排行門檻的標籤數'),
+          recent: int('這些標籤最近 days 天的報導篇數合計（同一篇標了兩個標籤算兩次）'),
+          previous: int('再之前 days 天的篇數合計'),
+          top: arr(obj({ tag: str(), recent: int('最近 days 天篇數'), previous: int('再之前 days 天篇數') }), '篇數最多的 5 個標籤'),
+        }),
+      ),
+    }),
+    example: '/api/v1/tag-groups/overview?days=7',
+    cache: '5 分鐘',
+  },
+  {
     path: '/api/v1/tag-groups/{id}/ranking',
     tag: 'tags',
     summary: '群組標籤的報導量比較',
     description:
-      '群組（含子群組）裡，最近 days 天上過新聞排行第一道門檻（至少兩家媒體）的標籤，依這段期間標了它的報導篇數排序，最多 200 個，並附上再之前 days 天的篇數供比較。',
+      '群組（含子群組）裡，最近 days 天達到關鍵字排行第一道門檻（24 小時內至少兩家新聞媒體各標了兩篇以上）的標籤，依這段期間標了它的報導篇數排序，最多 200 個，並附上再之前 days 天的篇數供比較。',
     params: [p('id', '群組 ID', int(), '1'), q('days', '期間天數：1、7 或 30', int('預設 7'))],
     response: obj({
       id: int(),

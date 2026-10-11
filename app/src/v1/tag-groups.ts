@@ -43,12 +43,82 @@ const shownTagsOf = (db: Db, ids: number[]) =>
     .from(tagGroupMembers)
     .where(and(inArray(tagGroupMembers.groupId, ids), inArray(tagGroupMembers.status, [...SHOWN])));
 
+type Counted = { tag: string; recent: number; previous: number };
+const overviewCache = new Map<number, { at: number; value: Promise<unknown> }>();
+
+/** Every group with its busiest tags over `days` against the `days` before:
+ *  one count over all tags past the ranking's first bar (tag_stats level 2)
+ *  that sit in any group, shared out to the groups in memory. Kept for ten
+ *  minutes per `days`, as every group page and the index read it. */
+export function groupOverview(db: Db, days: number, top = 5) {
+  const hit = overviewCache.get(days);
+  if (hit && Date.now() - hit.at < 600e3) return hit.value as ReturnType<typeof computeOverview>;
+  const value = computeOverview(db, days, top);
+  overviewCache.set(days, { at: Date.now(), value });
+  value.catch(() => overviewCache.delete(days));
+  return value;
+}
+
+async function computeOverview(db: Db, days: number, top: number) {
+  const now = Date.now();
+  const since = new Date(now - days * 86_400_000);
+  const before = new Date(now - 2 * days * 86_400_000);
+  const [defs, members, active] = await Promise.all([
+    activeGroups(db),
+    db
+      .selectDistinct({ groupId: tagGroupMembers.groupId, tag: tagGroupMembers.tag })
+      .from(tagGroupMembers)
+      .where(inArray(tagGroupMembers.status, [...SHOWN])),
+    db
+      .selectDistinct({ tag: tagStats.tag })
+      .from(tagStats)
+      .where(and(eq(tagStats.category, 'news'), eq(tagStats.level, 2), gte(tagStats.lastHour, before))),
+  ]);
+  const grouped = new Set(members.map((m) => m.tag));
+  const candidates = active.map((a) => a.tag).filter((t) => grouped.has(t));
+  const counts = new Map<string, Counted>();
+  for (let i = 0; i < candidates.length; i += 1000) {
+    const recent = sql<number>`SUM(${articleTags.publishedAt} >= ${since})`;
+    const rows = await db
+      .select({ tag: articleTags.tag, recent, previous: sql<number>`SUM(${articleTags.publishedAt} < ${since})` })
+      .from(articleTags)
+      .where(and(inArray(articleTags.tag, candidates.slice(i, i + 1000)), gte(articleTags.publishedAt, before)))
+      .groupBy(articleTags.tag);
+    for (const r of rows) counts.set(r.tag, { tag: r.tag, recent: Number(r.recent), previous: Number(r.previous) });
+  }
+  const tagsIn = new Map<number, Set<string>>();
+  for (const m of members) (tagsIn.get(m.groupId) ?? tagsIn.set(m.groupId, new Set()).get(m.groupId))?.add(m.tag);
+  return defs.map((d) => {
+    const tags = new Set(descendants(defs, d.id).flatMap((g) => [...(tagsIn.get(g) ?? [])]));
+    const ranked = [...tags]
+      .map((t) => counts.get(t))
+      .filter((c): c is Counted => !!c && c.recent > 0)
+      .sort((a, b) => b.recent - a.recent || a.tag.localeCompare(b.tag));
+    return {
+      ...ref(d),
+      parentId: d.parentId,
+      tags: tags.size,
+      // Tags in the news this period, and their reports summed.
+      active: ranked.length,
+      recent: ranked.reduce((n, c) => n + c.recent, 0),
+      previous: ranked.reduce((n, c) => n + c.previous, 0),
+      top: ranked.slice(0, top),
+    };
+  });
+}
+
 export function registerTagGroups(app: FastifyInstance, db: Db) {
   app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/groups', async (request, reply) => {
     const { tag } = request.params;
     if (tag.length > 60) return reply.code(400).send({ error: 'tag too long' });
     reply.header('cache-control', 'public, max-age=300');
     return { tag, groups: await groupsOfTag(db, tag) };
+  });
+
+  app.get<{ Querystring: { days?: string } }>('/api/v1/tag-groups/overview', async (request, reply) => {
+    const days = [1, 7, 30].includes(Number(request.query.days)) ? Number(request.query.days) : 7;
+    reply.header('cache-control', 'public, max-age=300');
+    return { days, groups: await groupOverview(db, days) };
   });
 
   app.get('/api/v1/tag-groups', async (_request, reply) => {

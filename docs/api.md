@@ -94,6 +94,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
 | [`GET /api/v1/tag-groups`](#api-v1-tag-groups) | 標籤群組與主題大類一覽 |
 | [`GET /api/v1/tag-groups/{id}`](#api-v1-tag-groups-id) | 群組裡的標籤 |
+| [`GET /api/v1/tag-groups/overview`](#api-v1-tag-groups-overview) | 各群組最近報導最多的標籤 |
 | [`GET /api/v1/tag-groups/{id}/ranking`](#api-v1-tag-groups-id-ranking) | 群組標籤的報導量比較 |
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
@@ -1829,13 +1830,52 @@ curl -s 'https://tag.observe.tw/api/v1/tag-groups/24'
 
 快取：5 分鐘。
 
+<a id="api-v1-tag-groups-overview"></a>
+
+### `GET /api/v1/tag-groups/overview`
+
+**各群組最近報導最多的標籤**
+
+每個群組與主題（含子群組）最近 days 天達到關鍵字排行第一道門檻（24 小時內至少兩家新聞媒體各標了兩篇以上）的標籤：前 5 名的報導篇數、上新聞的標籤數與篇數合計，各附再之前 days 天的篇數。結果在伺服器保留 10 分鐘。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `days` | query | integer | 期間天數：1、7 或 30 |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tag-groups/overview?days=7'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `days` | integer | 期間天數 |
+| `groups` | object[] |  |
+| `groups[].id` | integer |  |
+| `groups[].label` | string |  |
+| `groups[].kind` | "group" \| "topic" |  |
+| `groups[].parentId` | integer \| null | 上層群組 ID；最上層為 null |
+| `groups[].tags` | integer | 群組（含子群組）裡的標籤數 |
+| `groups[].active` | integer | 其中這段期間上過新聞排行門檻的標籤數 |
+| `groups[].recent` | integer | 這些標籤最近 days 天的報導篇數合計（同一篇標了兩個標籤算兩次） |
+| `groups[].previous` | integer | 再之前 days 天的篇數合計 |
+| `groups[].top` | object[] | 篇數最多的 5 個標籤 |
+| `groups[].top[].tag` | string |  |
+| `groups[].top[].recent` | integer | 最近 days 天篇數 |
+| `groups[].top[].previous` | integer | 再之前 days 天篇數 |
+
+快取：5 分鐘。
+
 <a id="api-v1-tag-groups-id-ranking"></a>
 
 ### `GET /api/v1/tag-groups/{id}/ranking`
 
 **群組標籤的報導量比較**
 
-群組（含子群組）裡，最近 days 天上過新聞排行第一道門檻（至少兩家媒體）的標籤，依這段期間標了它的報導篇數排序，最多 200 個，並附上再之前 days 天的篇數供比較。
+群組（含子群組）裡，最近 days 天達到關鍵字排行第一道門檻（24 小時內至少兩家新聞媒體各標了兩篇以上）的標籤，依這段期間標了它的報導篇數排序，最多 200 個，並附上再之前 days 天的篇數供比較。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |

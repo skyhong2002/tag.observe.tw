@@ -3,6 +3,7 @@ import {
   ArticleMethod,
   CrawlerMethod,
   EventMethod,
+  GroupMethod,
   HomeMethod,
   JournalistMethod,
   MediaMethod,
@@ -70,6 +71,7 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     body: <SimilarityMethod camp={false} />,
   },
   { id: 'journalist', title: '記者', pages: [['/journalist/', '記者']], body: <JournalistMethod /> },
+  { id: 'group', title: '標籤群組', pages: [['/group/', '標籤群組']], body: <GroupMethod /> },
   {
     id: 'writing',
     title: '看寫法',

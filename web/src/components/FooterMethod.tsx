@@ -7,6 +7,7 @@ import {
   ArticleMethod,
   CrawlerMethod,
   EventMethod,
+  GroupMethod,
   JournalistMethod,
   MediaCardMethod,
   MediaMethod,
@@ -37,6 +38,7 @@ function sectionsFor(pathname: string) {
   }
   // One keyword's page: @notes/tag/[tag] renders its blocks with the chart's basis.
   if (/^\/tag(\/|$)/.test(pathname)) return null;
+  if (/^\/group(\/|$)/.test(pathname)) return <GroupMethod />;
   if (/^\/observe(\/|$)/.test(pathname)) return <ObserveMethod />;
   if (/^\/search(\/|$)/.test(pathname)) {
     return (

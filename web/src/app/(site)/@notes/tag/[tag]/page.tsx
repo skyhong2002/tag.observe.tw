@@ -1,4 +1,4 @@
-import { MediaCardMethod, RankingMethod, TagMethod } from '@/components/MethodNotes';
+import { GroupMethod, MediaCardMethod, RankingMethod, TagMethod } from '@/components/MethodNotes';
 import { RankingBasisText } from '@/components/RankingBasisNote';
 import { methodHeading } from '@/components/SiteFooter';
 import { fetchMedia, fetchTagSeries } from '@/lib/api';
@@ -28,6 +28,7 @@ export default async function TagNotes({
         </>
       )}
       <RankingMethod />
+      <GroupMethod />
       <MediaCardMethod />
     </>
   );

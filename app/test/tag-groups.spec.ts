@@ -415,6 +415,15 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
     expect((await app.inject({ url: '/api/v1/tag-groups/999/ranking' })).statusCode).toBe(404);
   });
 
+  it('sums up every group for the index, subgroups included', async () => {
+    const r = (await app.inject({ url: '/api/v1/tag-groups/overview?days=7' })).json();
+    expect(r.days).toBe(7);
+    const politician = r.groups.find((g: { id: number }) => g.id === groupId('政治人物'));
+    expect(politician.top[0]).toEqual({ tag: '川普', recent: 3, previous: 1 });
+    expect(politician).toMatchObject({ active: 1, recent: 3, previous: 1 });
+    expect(r.groups.find((g: { id: number }) => g.id === groupId('網紅'))).toMatchObject({ active: 0, top: [] });
+  });
+
   it('deletes a group: tags leave, subgroups move up, rules and seeds stay out', async () => {
     const foreign = groupId('外國政治人物');
     const child = await app.inject({

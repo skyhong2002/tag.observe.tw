@@ -201,6 +201,18 @@ export const fetchTagGroups = (tag: string) =>
   get<{ tag: string; groups: TagGroupRef[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/groups`, 300).then((r) => r.groups);
 export const fetchTagGroupList = () =>
   get<{ groups: Array<GroupRef & { parentId: number | null; tags: number }> }>('/api/v1/tag-groups', 300).then((r) => r.groups);
+export interface TagGroupSummary extends GroupRef {
+  parentId: number | null;
+  /** Tags in the group and its subgroups. */
+  tags: number;
+  /** Of those, tags past the news ranking's first bar this period, and their reports summed. */
+  active: number;
+  recent: number;
+  previous: number;
+  top: Array<{ tag: string; recent: number; previous: number }>;
+}
+export const fetchTagGroupOverview = (days: number) =>
+  get<{ days: number; groups: TagGroupSummary[] }>(`/api/v1/tag-groups/overview?days=${days}`, 300).then((r) => r.groups);
 export interface TagGroupRanking extends GroupRef {
   parents: GroupRef[];
   children: GroupRef[];

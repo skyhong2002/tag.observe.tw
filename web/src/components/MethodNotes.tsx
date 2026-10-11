@@ -7,6 +7,7 @@ import { inlineLink, methodHeading } from './method/styles';
 
 export { ArticleMethod } from './method/article';
 export { CampBasis, EventMethod, EventThreadMethod } from './method/events';
+export { GroupMethod } from './method/groups';
 export { HomeMethod } from './method/home';
 export { JournalistMethod } from './method/journalists';
 export { CrawlerMethod, MediaMethod, MediaOverviewMethod, MediaSourcesMethod, TrafficCollectionMethod } from './method/media';
