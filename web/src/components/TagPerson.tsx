@@ -19,18 +19,18 @@ export function personLine(person: Person) {
 const LICENSE: Record<string, string> = { Attribution: '須標示來源', 'Public domain': '公有領域' };
 
 /**
- * The sketch is ink on transparent, used as a mask over the site's orange, so
- * there is no frame. Dark pages get the reverse (the person filled, strokes
- * left open) so the drawing does not turn into a negative.
+ * Two masks, no frame: the person's silhouette in white, the sketch's strokes
+ * in the site's orange on top, so the person is white paper on light and dark
+ * pages alike.
  */
 export function TagAvatar({ url, size = 56 }: { url: string; size?: number }) {
-  const at = (theme: string) => `url("${url}${url.includes('?') ? '&' : '?'}theme=${theme}")`;
+  const layer = (name: string) => `url("${url}${url.includes('?') ? '&' : '?'}layer=${name}")`;
+  const mask = '[mask-image:var(--layer)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain] absolute inset-0';
   return (
-    <span
-      aria-hidden="true"
-      className="inline-block shrink-0 bg-brand-600 [mask-image:var(--ink-light)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain] dark:bg-brand-400 dark:[mask-image:var(--ink-dark)]"
-      style={{ width: size, height: size, '--ink-light': at('light'), '--ink-dark': at('dark') } as React.CSSProperties}
-    />
+    <span aria-hidden="true" className="relative inline-block shrink-0" style={{ width: size, height: size }}>
+      <span className={`${mask} bg-white`} style={{ '--layer': layer('fill') } as React.CSSProperties} />
+      <span className={`${mask} bg-brand-600`} style={{ '--layer': layer('ink') } as React.CSSProperties} />
+    </span>
   );
 }
 

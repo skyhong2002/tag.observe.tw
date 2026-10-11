@@ -1436,7 +1436,7 @@ export const ENDPOINTS: Endpoint[] = [
           avatar: nullable(
             obj(
               {
-                url: str('素描頭像（透明 WebP，256×256；加 theme=dark 取深色版）'),
+                url: str('素描頭像線條（透明 WebP，256×256；加 layer=fill 取人物剪影）'),
                 file: str('Commons 原檔名'),
                 pageUrl: str('Commons 檔案頁'),
                 license: nullable(str('授權，例如 CC BY-SA 4.0、Public domain')),
@@ -1457,9 +1457,12 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'tags',
     summary: '標籤人物的素描頭像圖檔',
     description:
-      '256×256 的 WebP 素描頭像，只有透明度：本站拿它當 CSS mask 填上網站橘色，所以沒有底色或外框。theme=light 是線條本身；theme=dark 是人物填滿、線條鏤空，在深色背景上才不會變成負片。網址請用 person 回應裡的 avatar.url（帶版本參數，換圖時會變）。沒有頭像時回 404。',
+      '256×256 的 WebP 素描頭像，只有透明度，拿來當 CSS mask：layer=ink 是線條，本站填網站橘色；layer=fill 是人物剪影，本站填白色墊在線條下面，所以淺色、深色頁面上人物都是白紙橘線，沒有外框。網址請用 person 回應裡的 avatar.url（帶版本參數，換圖時會變）。沒有頭像時回 404。',
     binary: 'image/webp',
-    params: [p('tag', '標籤（URL 編碼）', str(), '賴清德'), q('theme', 'light 或 dark', str('預設 light', { enum: ['light', 'dark'] }))],
+    params: [
+      p('tag', '標籤（URL 編碼）', str(), '賴清德'),
+      q('layer', 'ink（線條）或 fill（人物剪影）', str('預設 ink', { enum: ['ink', 'fill'] })),
+    ],
     response: str('WebP 圖檔', { format: 'binary' }),
     errors: { '404': '沒有頭像' },
     cache: '1 天',

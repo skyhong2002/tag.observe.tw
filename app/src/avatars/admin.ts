@@ -72,7 +72,7 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
   });
 
   // Every candidate, shown or not, for the review page only.
-  app.get<{ Params: { tag: string; rank: string }; Querystring: { theme?: string } }>(
+  app.get<{ Params: { tag: string; rank: string }; Querystring: { layer?: string } }>(
     '/auth/admin/avatars/:tag/candidates/:rank',
     async (request, reply) => {
       if (!(await requireAdmin(request, reply))) return reply;
@@ -84,7 +84,7 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
       return reply
         .header('content-type', 'image/webp')
         .header('cache-control', 'private, max-age=86400')
-        .send(await inkImage(row.image, request.query.theme === 'dark' ? 'dark' : 'light'));
+        .send(await inkImage(row.image, request.query.layer === 'fill' ? 'fill' : 'ink'));
     },
   );
 

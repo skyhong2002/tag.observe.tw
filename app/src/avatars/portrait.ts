@@ -161,18 +161,19 @@ export async function renderAvatar(img: Rgb, face: Face) {
     .toBuffer();
 }
 
+export type AvatarLayer = 'ink' | 'fill';
+
 /**
- * What the page masks with the site's orange (docs/tag-avatars.md): `light`
- * is the strokes alone on transparent; `dark` fills the person and leaves the
- * strokes as gaps, so on a dark page it still reads as a drawing, not a
- * negative.
+ * One mask layer of a stored avatar (docs/tag-avatars.md): `ink` is the
+ * strokes, painted orange; `fill` is the person's silhouette, painted white
+ * under them, so the person stays white paper on dark pages too.
  */
-export async function inkImage(stored: Buffer, theme: 'light' | 'dark') {
+export async function inkImage(stored: Buffer, layer: AvatarLayer) {
   const { data, info } = await sharp(stored).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = new Uint8Array(info.width * info.height * 4);
   for (let i = 0; i < info.width * info.height; i++) {
     const ink = data[i * 4 + 3];
-    out[i * 4 + 3] = theme === 'light' ? ink : Math.round((data[i * 4] * (255 - ink)) / 255);
+    out[i * 4 + 3] = layer === 'ink' ? ink : data[i * 4];
   }
   return sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } })
     .webp({ quality: 85, alphaQuality: 90 })

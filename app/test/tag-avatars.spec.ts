@@ -192,9 +192,9 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
     const img = await app.inject({ url: p.avatar.url });
     expect(img.headers['content-type']).toBe('image/webp');
     expect(await alpha(img.rawPayload)).toBeCloseTo(60, -1);
-    // Dark pages get the person filled and the strokes open.
-    const dark = await app.inject({ url: `${p.avatar.url}&theme=dark` });
-    expect(await alpha(dark.rawPayload)).toBeCloseTo(195, -1);
+    // The white paper under the strokes: the person's silhouette.
+    const fill = await app.inject({ url: `${p.avatar.url}&layer=fill` });
+    expect(await alpha(fill.rawPayload)).toBeCloseTo(255, -1);
     expect(await person('台北')).toBeNull();
     expect((await app.inject({ url: `/api/v1/tags/${encodeURIComponent('台北')}/avatar` })).statusCode).toBe(404);
   });
