@@ -71,10 +71,14 @@ export function lightnessMap(lightness: number[]) {
   };
 }
 
-/** Any image sharp reads → the recoloured logo, at most `size` px on its long side, as WebP with alpha. */
-export async function recolourLogo(input: Buffer | Uint8Array, size = 256) {
+/**
+ * Any image sharp reads → the recoloured logo as WebP with alpha, inside a
+ * `width` × `height` box: square emblems come out `height` px, wide
+ * wordmarks up to `width` px wide so their letters stay legible.
+ */
+export async function recolourLogo(input: Buffer | Uint8Array, width = 512, height = 192) {
   const { data, info } = await sharp(input, { density: 300 })
-    .resize(size, size, { fit: 'inside', withoutEnlargement: false })
+    .resize(width, height, { fit: 'inside', withoutEnlargement: false })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });

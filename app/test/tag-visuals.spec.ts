@@ -76,7 +76,7 @@ describe('one-hue logos', () => {
     const png = await sharp(raw, { raw: { width: 8, height: 8, channels: 4 } })
       .png()
       .toBuffer();
-    const out = await sharp(await recolourLogo(png, 8))
+    const out = await sharp(await recolourLogo(png, 8, 8))
       .ensureAlpha()
       .raw()
       .toBuffer();

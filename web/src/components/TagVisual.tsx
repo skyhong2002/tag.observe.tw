@@ -29,17 +29,10 @@ export function VisualPicture({ visual: v, size = 56 }: { visual: Visual; size?:
   if (v.kind === 'icon' && v.image) return <TagIcon url={v.image} size={size * 0.75} />;
   const src = v.kind === 'place' ? (v.large ?? v.image) : v.image;
   if (!src) return null;
-  return (
-    <img
-      src={src}
-      alt=""
-      aria-hidden="true"
-      height={size}
-      width={v.kind === 'logo' ? undefined : size}
-      className="shrink-0 object-contain"
-      style={{ height: size, maxWidth: size * 2 }}
-    />
-  );
+  // Wordmarks are wide: let them run to 3.5× the height rather than shrink to a sliver.
+  if (v.kind === 'logo')
+    return <img src={src} alt="" aria-hidden="true" className="h-auto w-auto shrink-0" style={{ maxHeight: size, maxWidth: size * 3.5 }} />;
+  return <img src={src} alt="" aria-hidden="true" width={size} height={size} className="shrink-0 object-contain" />;
 }
 
 export default function TagVisual({ visual: v }: { visual: Visual }) {
