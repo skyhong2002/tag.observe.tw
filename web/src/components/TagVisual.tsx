@@ -17,7 +17,7 @@ export function VisualPicture({ visual: v, size = 56 }: { visual: Visual; size?:
   const src = v.kind === 'place' ? (v.large ?? v.image) : v.image;
   if (!src) return null;
   // Wordmarks are wide: let them run to 3.5× the height rather than shrink to a sliver.
-  if (v.kind === 'logo')
+  if (v.kind === 'logo' || v.kind === 'flag')
     return <img src={src} alt="" aria-hidden="true" className="h-auto w-auto shrink-0" style={{ maxHeight: size, maxWidth: size * 3.5 }} />;
   return <img src={src} alt="" aria-hidden="true" width={size} height={size} className="shrink-0 object-contain" />;
 }
@@ -34,7 +34,7 @@ export default function TagVisual({ visual: v }: { visual: Visual }) {
             {v.kind === 'place' && PLACE_CREDIT}
             {s && (
               <>
-                標誌取自
+                {v.kind === 'flag' ? '國旗' : '標誌'}取自
                 <a href={s.pageUrl} className="mx-0.5 underline" rel="noopener noreferrer" target="_blank">
                   {s.artist ?? 'Wikimedia Commons'}
                 </a>

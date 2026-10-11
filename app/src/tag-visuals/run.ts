@@ -80,43 +80,57 @@ const placeCandidate = (p: Place, wikidataId: string | null = null): Candidate =
  * A place or a logo from the tag's Wikidata item (tag_wikidata, filled by
  * the tag-groups job), or null when the item is neither.
  */
-async function fromItem(qid: string): Promise<Candidate | null> {
+/** A Commons image (a logo or a flag) as a candidate, recoloured; null when Commons has no such file. */
+async function commonsCandidate(kind: 'logo' | 'flag', file: string, qid: string, label: string): Promise<Candidate | null> {
+  const [info] = await fileInfo([file], 512);
+  if (!info) return null;
+  return {
+    kind,
+    value: info.file.slice(0, 64),
+    label: label.slice(0, 120),
+    wikidataId: qid,
+    note: `Wikidata：${label}${kind === 'flag' ? '國旗' : ''}`.slice(0, 120),
+    // A flag is its whole rectangle (Japan's white field is not a background to cut).
+    image:
+      kind === 'flag'
+        ? await recolourLogo(await download(info.thumbUrl), 512, 256, { cut: false })
+        : await recolourLogo(await download(info.thumbUrl)),
+    pageUrl: info.pageUrl.slice(0, 512),
+    license: info.license,
+    licenseUrl: info.licenseUrl,
+    artist: info.artist,
+  };
+}
+
+/**
+ * The pictures the tag's Wikidata item gives, best first: a country's flag
+ * (P41) then its outline; a city's dot; an organisation's or work's logo.
+ * Empty when the item is none of these.
+ */
+export async function fromItem(qid: string): Promise<Candidate[]> {
   const found = await entities([qid], 'labels|claims');
   const e = found[qid];
-  if (!e?.claims) return null;
+  if (!e?.claims) return [];
   const c = e.claims;
   const label = ['zh-tw', 'zh-hant', 'zh', 'en'].map((l) => e.labels?.[l]?.value).find(Boolean) ?? qid;
   const iso = value<string>(c.P299);
   if (iso) {
     const p = country(iso, label);
-    if (p) return placeCandidate(p, qid);
+    const flagFile = value<string>(c.P41);
+    const flag = flagFile ? await commonsCandidate('flag', flagFile, qid, label) : null;
+    const all = [...(flag ? [flag] : []), ...(p ? [placeCandidate(p, qid)] : [])];
+    if (all.length) return all;
   }
   const at = value<{ latitude: number; longitude: number }>(c.P625);
   const home = value<{ id: string }>(c.P17)?.id;
   // A settlement or an area people live in: coordinates and a population.
   if (at && c.P1082?.length && home) {
     const homeIso = home === TAIWAN ? '158' : (value<string>((await entities([home], 'claims'))[home]?.claims?.P299) ?? null);
-    return placeCandidate(city(qid, label, [at.longitude, at.latitude], homeIso), qid);
+    return [placeCandidate(city(qid, label, [at.longitude, at.latitude], homeIso), qid)];
   }
   const logo = value<string>(c.P154);
-  if (logo) {
-    const [info] = await fileInfo([logo], 512);
-    if (info) {
-      return {
-        kind: 'logo',
-        value: info.file.slice(0, 64),
-        label: label.slice(0, 120),
-        wikidataId: qid,
-        note: `Wikidata：${label}`.slice(0, 120),
-        image: await recolourLogo(await download(info.thumbUrl)),
-        pageUrl: info.pageUrl.slice(0, 512),
-        license: info.license,
-        licenseUrl: info.licenseUrl,
-        artist: info.artist,
-      };
-    }
-  }
-  return null;
+  const logoCandidate = logo ? await commonsCandidate('logo', logo, qid, label) : null;
+  return logoCandidate ? [logoCandidate] : [];
 }
 
 /**
@@ -125,12 +139,12 @@ async function fromItem(qid: string): Promise<Candidate | null> {
  * means; else the AI's exact emoji, and last the item's picture marked as not
  * matching (an admin may still know better).
  */
-export function arrange(pick: Pick | undefined, model: string, item: Candidate | null) {
+export function arrange(pick: Pick | undefined, model: string, items: Candidate[]) {
   const ai = `AI（${model}）`;
   const why = pick?.why ? `${pick.why}・${ai}` : ai;
   const picks: Candidate[] = pick?.emoji ? [{ kind: 'emoji', value: pick.emoji, note: why }] : [];
-  if (item && pick?.same === true) return { status: 'auto' as const, candidates: [item, ...picks] };
-  const doubtful = item ? [{ ...item, note: `Wikidata 項目不符・${item.note ?? ''}`.slice(0, 120) }] : [];
+  if (items.length && pick?.same === true) return { status: 'auto' as const, candidates: [...items, ...picks] };
+  const doubtful = items.map((item) => ({ ...item, note: `Wikidata 項目不符・${item.note ?? ''}`.slice(0, 120) }));
   return { status: 'review' as const, candidates: [...picks, ...doubtful], note: why };
 }
 
@@ -170,7 +184,7 @@ export async function processTags(
   const persons = new Set(people.map((p) => p.tag));
   const item = new Map(items.map((i) => [i.tag, i]));
   const fresh = Date.now() - RECHECK_DAYS * 86_400_000;
-  const forAi: { tag: string; row: Awaited<ReturnType<typeof fromItem>>; candidate?: string }[] = [];
+  const forAi: { tag: string; rows: Candidate[]; candidate?: string }[] = [];
   for (const tag of tags) {
     if (stop()) break;
     const old = before.get(tag);
@@ -205,19 +219,19 @@ export async function processTags(
         continue;
       }
       // An item's place or logo waits for the AI to agree it is what the news means.
-      let row = wd?.wikidataId ? await itemImpl(wd.wikidataId) : null;
-      let candidate = row ? `${wd?.label ?? row.label}${wd?.description ? `（${wd.description}）` : ''}` : undefined;
+      let rows = wd?.wikidataId ? await itemImpl(wd.wikidataId) : [];
+      let candidate = rows.length ? `${wd?.label ?? rows[0].label}${wd?.description ? `（${wd.description}）` : ''}` : undefined;
       // No item is exactly the tag: Wikidata names 鴻海 「鴻海精密工業」. Try the
       // items whose name contains it; the AI's same-check guards these too.
       if (!wd?.wikidataId)
         for (const loose of await looseImpl(tag)) {
-          row = await itemImpl(loose.qid);
-          if (!row) continue;
-          row = { ...row, note: `名稱相近・${row.note ?? ''}`.slice(0, 120) };
+          rows = await itemImpl(loose.qid);
+          if (!rows.length) continue;
+          rows = rows.map((r) => ({ ...r, note: `名稱相近・${r.note ?? ''}`.slice(0, 120) }));
           candidate = `${loose.label ?? loose.qid}${loose.description ? `（${loose.description}）` : ''}`;
           break;
         }
-      forAi.push(row ? { tag, row, candidate } : { tag, row: null });
+      forAi.push({ tag, rows, candidate });
     } catch (err) {
       count('error');
       log({ tag, error: String(err) });
@@ -251,9 +265,9 @@ export async function processTags(
       log({ tags: chunk.map((c) => c.tag), error: String(err) });
       continue;
     }
-    for (const { tag, row } of chunk) {
+    for (const { tag, rows } of chunk) {
       const pick = reply.picks.get(tag);
-      const { status, candidates, note } = arrange(pick, reply.model, row);
+      const { status, candidates, note } = arrange(pick, reply.model, rows);
       const r = await save(db, tag, status, candidates, note);
       count(r.status === 'none' ? 'none' : `${r.kind}`);
       log(r);

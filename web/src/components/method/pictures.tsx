@@ -17,7 +17,7 @@ export function PictureMethod() {
         </dd>
         <dt className={methodTerm}>其他標籤</dt>
         <dd>
-          台灣縣市鄉鎮畫輪廓與位置（內政部國土測繪中心），國家與城市畫輪廓或定位點（Natural Earth）；組織與作品用 Wikidata
+          台灣縣市鄉鎮畫輪廓與位置（內政部國土測繪中心），國家用國旗、城市畫定位點（Natural Earth）；組織與作品用 Wikidata
           的標誌，去背、裁邊後只保留明暗、轉成網站橘的單色。Wikidata 的項目只靠名稱比對，常撞到同名的東西，所以要先由 AI
           依近期標題確認是新聞裡這個才顯示。只有某個 emoji 正好就是這個東西時才用 emoji。
         </dd>

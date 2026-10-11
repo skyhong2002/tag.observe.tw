@@ -33,26 +33,44 @@ function linearRgb(L: number, a: number, b: number) {
   ];
 }
 
-// The site's brand-600 (Tailwind orange-600).
-const [BRAND_L, BRAND_A, BRAND_B] = oklab(245, 73, 0);
-const BRAND_C = Math.hypot(BRAND_A, BRAND_B);
-const HUE = Math.atan2(BRAND_B, BRAND_A);
+/**
+ * An accent colour as the ramp's ends: its OKLab lightness, chroma and hue,
+ * and the darkest shade (a little below the accent, the user's pick). Very
+ * light accents (a pale yellow) still get a darkest shade dark enough to read.
+ */
+export type Accent = { hex: string; L: number; C: number; H: number; darkest: number };
+export function accentOf(hex: string): Accent {
+  const n = Number.parseInt(hex, 16);
+  const [L, a, b] = oklab((n >> 16) & 255, (n >> 8) & 255, n & 255);
+  return { hex: hex.toLowerCase(), L, C: Math.hypot(a, b), H: Math.atan2(b, a), darkest: Math.min(L - 0.08, 0.62) };
+}
+/** The site's brand-600 (Tailwind orange-600): every stored picture is in it. */
+export const BRAND_HEX = 'f54900';
+export const BRAND = accentOf(BRAND_HEX);
+/** `accent` query parameter: six hex digits, with or without #; null when absent, invalid or the brand's own. */
+export function parseAccent(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const hex = value.replace(/^#/, '').toLowerCase();
+  return /^[0-9a-f]{6}$/.test(hex) && hex !== BRAND_HEX ? hex : null;
+}
+
 /** The ramp: darkest a little below the brand orange (the user's pick), lightest near white. */
-export const DARKEST = BRAND_L - 0.08;
+export const DARKEST = BRAND.darkest;
 export const LIGHTEST = 0.97;
 // Lighter than this, with little colour: the logo's white parts, kept white.
 const WHITE_L = 0.93;
 
-/** sRGB of the brand hue at lightness `L`: full chroma at the brand's lightness, less toward white and black. */
-export function orangeAt(L: number): [number, number, number] {
-  let C = L >= BRAND_L ? BRAND_C * (1 - (L - BRAND_L) / (1 - BRAND_L)) : BRAND_C * (L / BRAND_L);
+/** sRGB of an accent's hue at lightness `L`: full chroma at the accent's lightness, less toward white and black. */
+export function accentAt(L: number, accent: Accent): [number, number, number] {
+  let C = L >= accent.L ? accent.C * (1 - (L - accent.L) / (1 - accent.L)) : accent.C * (L / accent.L);
   for (;;) {
-    const c = linearRgb(L, C * Math.cos(HUE), C * Math.sin(HUE));
+    const c = linearRgb(L, C * Math.cos(accent.H), C * Math.sin(accent.H));
     if (c.every((x) => x >= -1e-4 && x <= 1.0001) || C < 1e-3)
       return c.map((x) => Math.round(255 * gam(Math.min(1, Math.max(0, x))))) as [number, number, number];
     C *= 0.95;
   }
 }
+export const orangeAt = (L: number) => accentAt(L, BRAND);
 
 /** Per-logo mapping from a pixel's lightness to the ramp's. */
 export function lightnessMap(lightness: number[]) {
@@ -164,7 +182,14 @@ export function visibleBox({ data, info }: Raw) {
  * `height`: square emblems come out `height` px, wide wordmarks up to
  * `width` px wide so their letters stay legible. Raw RGBA.
  */
-async function cleanLogo(input: Buffer | Uint8Array, width: number, height: number): Promise<Raw> {
+async function cleanLogo(input: Buffer | Uint8Array, width: number, height: number, cut = true): Promise<Raw> {
+  // A flag is its whole rectangle: nothing to cut out or trim.
+  if (!cut)
+    return sharp(input, { density: 300 })
+      .resize(width, height, { fit: 'inside', withoutEnlargement: false })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
   const big = await sharp(input, { density: 300 })
     .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
     .ensureAlpha()
@@ -203,8 +228,8 @@ export async function recutLogo(stored: Buffer | Uint8Array, width = 512, height
  * Any image sharp reads → the logo cut out of a solid background, trimmed to
  * what it shows and recoloured, as WebP with alpha (see cleanLogo for the size).
  */
-export async function recolourLogo(input: Buffer | Uint8Array, width = 512, height = 192) {
-  const { data, info } = await cleanLogo(input, width, height);
+export async function recolourLogo(input: Buffer | Uint8Array, width = 512, height = 192, { cut = true } = {}) {
+  const { data, info } = await cleanLogo(input, width, height, cut);
   const n = info.width * info.height;
   const L = new Float32Array(n);
   const seen: number[] = [];
@@ -233,3 +258,34 @@ export async function recolourLogo(input: Buffer | Uint8Array, width = 512, heig
     .webp({ quality: 90, alphaQuality: 95 })
     .toBuffer();
 }
+
+/**
+ * A stored picture (in the brand orange) in another service's accent: each
+ * pixel keeps its place on the ramp (white stays white, the darkest stays the
+ * darkest), only the hue and the ramp's ends change. Alpha is kept.
+ */
+export async function reaccent(stored: Buffer | Uint8Array, hex: string) {
+  const accent = accentOf(hex);
+  const { data, info } = await sharp(stored).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const cache = new Map<number, [number, number, number]>();
+  for (let i = 0; i < data.length; i += 4) {
+    const [L, a, b] = oklab(data[i], data[i + 1], data[i + 2]);
+    if (L > WHITE_L && Math.hypot(a, b) < 0.02) continue;
+    const u = Math.min(1, Math.max(0, (L - BRAND.darkest) / (LIGHTEST - BRAND.darkest)));
+    const target = Math.round((accent.darkest + u * (LIGHTEST - accent.darkest)) * 500) / 500;
+    let c = cache.get(target);
+    if (!c) {
+      c = accentAt(target, accent);
+      cache.set(target, c);
+    }
+    data[i] = c[0];
+    data[i + 1] = c[1];
+    data[i + 2] = c[2];
+  }
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .webp({ quality: 90, alphaQuality: 95 })
+    .toBuffer();
+}
+
+/** A stored SVG (place outlines) in another accent: the brand orange swapped for it. */
+export const reaccentSvg = (svg: Buffer | string, hex: string) => Buffer.from(svg.toString().replaceAll(`#${BRAND_HEX}`, `#${hex}`));

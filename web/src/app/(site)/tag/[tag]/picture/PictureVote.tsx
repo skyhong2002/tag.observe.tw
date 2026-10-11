@@ -9,7 +9,7 @@ import { loginHref, useSession } from '@/lib/session';
 
 type Candidate = {
   rank: number;
-  kind: 'sketch' | 'place' | 'logo' | 'emoji';
+  kind: 'sketch' | 'place' | 'flag' | 'logo' | 'emoji';
   value: string | null;
   note: string | null;
   pageUrl: string | null;

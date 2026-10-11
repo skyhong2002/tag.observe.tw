@@ -33,7 +33,9 @@ function sinkToBottom(px: Uint8Array, width: number, height: number) {
   px.fill(0, 0, shift * width * 4);
 }
 
-export async function inkImage(stored: Buffer, layer: AvatarLayer) {
+export async function inkImage(stored: Buffer, layer: AvatarLayer, accent: string | null = null) {
+  // Another service's accent (six hex digits), for the painted layer.
+  const paint = accent ? [0, 8, 16].map((shift) => (Number.parseInt(accent, 16) >> (16 - shift)) & 255) : ORANGE;
   const { data, info } = await sharp(stored).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = new Uint8Array(info.width * info.height * 4);
   for (let i = 0; i < info.width * info.height; i++) {
@@ -47,7 +49,7 @@ export async function inkImage(stored: Buffer, layer: AvatarLayer) {
     const a = ink / 255;
     const f = fill / 255;
     const alpha = a + f * (1 - a);
-    for (let c = 0; c < 3; c++) out[i * 4 + c] = alpha ? Math.round((ORANGE[c] * a + 255 * f * (1 - a)) / alpha) : 0;
+    for (let c = 0; c < 3; c++) out[i * 4 + c] = alpha ? Math.round((paint[c] * a + 255 * f * (1 - a)) / alpha) : 0;
     out[i * 4 + 3] = Math.round(alpha * 255);
   }
   if (layer === 'color') sinkToBottom(out, info.width, info.height);

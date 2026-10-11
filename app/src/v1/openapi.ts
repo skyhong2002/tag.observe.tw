@@ -1451,6 +1451,13 @@ export const ENDPOINTS: Endpoint[] = [
     summary: '所有有素描頭像的人物標籤',
     description:
       '目前顯示素描頭像的人物標籤與頭像網址（同 /api/v1/tags/{tag}/person 的 avatar.url），首頁文字雲用來把雲裡的人物畫成頭像。沒有頭像、被管理員隱藏或只符合別名尚未確認的標籤不列出。',
+    params: [
+      q(
+        'accent',
+        '換成另一個強調色（6 位十六進位色碼，可加 #，例如 1d4ed8）：圖改成這個色相，深淺照舊、白色仍是白色；回應裡的圖片網址也會帶上這個參數。省略時是本站橘色',
+        str('例如 1d4ed8'),
+      ),
+    ],
     response: obj({ avatars: map(str('頭像網址，帶版本參數'), '依標籤') }),
     cache: '5 分鐘',
   },
@@ -1460,7 +1467,14 @@ export const ENDPOINTS: Endpoint[] = [
     summary: '標籤代表的人物與素描頭像',
     description:
       '標籤名稱若正好是 Wikidata 上某位人物的名稱或別名，回傳該人物（Wikidata ID、說明、國籍、職業、政黨、職位）與素描頭像。頭像由 Wikimedia Commons 的照片自動挑選、去背、轉成素描，管理員可改用其他候選或隱藏；avatar 附原照片的授權與作者，引用時須一併標示。不是人物或尚未比對的標籤，person 為 null。同名人物取 Wikipedia 條目最多的一位。',
-    params: [p('tag', '標籤（URL 編碼）', str(), '賴清德')],
+    params: [
+      p('tag', '標籤（URL 編碼）', str(), '賴清德'),
+      q(
+        'accent',
+        '換成另一個強調色（6 位十六進位色碼，可加 #，例如 1d4ed8）：圖改成這個色相，深淺照舊、白色仍是白色；回應裡的圖片網址也會帶上這個參數。省略時是本站橘色',
+        str('例如 1d4ed8'),
+      ),
+    ],
     response: obj({
       tag: str(),
       person: nullable(
@@ -1509,6 +1523,11 @@ export const ENDPOINTS: Endpoint[] = [
         'ink（線條）、fill（人物剪影）或 color（已上色：白色人物、橘色線條）',
         str('預設 ink', { enum: ['ink', 'fill', 'color'] }),
       ),
+      q(
+        'accent',
+        '換成另一個強調色（6 位十六進位色碼，可加 #，例如 1d4ed8）：layer=color 的線條改用這個顏色（ink、fill 只有透明度，由使用端自己上色）。省略時是本站橘色',
+        str('例如 1d4ed8'),
+      ),
     ],
     response: str('WebP 圖檔', { format: 'binary' }),
     errors: { '404': '沒有頭像' },
@@ -1519,15 +1538,22 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'tags',
     summary: '所有有小圖的非人物標籤',
     description:
-      '目前公開的非人物標籤小圖，首頁文字雲用來把標籤畫成圖（人物頭像見 /api/v1/tag-avatars）。台灣縣市鄉鎮給它在台灣或所屬縣市裡的位置圖，其他地方給輪廓，標誌給單色標誌，emoji 直接給字元。待確認、隱藏或沒有圖的標籤不列出。',
+      '目前公開的非人物標籤小圖，首頁文字雲用來把標籤畫成圖（人物頭像見 /api/v1/tag-avatars）。台灣縣市鄉鎮給它在台灣或所屬縣市裡的位置圖，其他地方給輪廓，國家給單色國旗，標誌給單色標誌，emoji 直接給字元。待確認、隱藏或沒有圖的標籤不列出。',
+    params: [
+      q(
+        'accent',
+        '換成另一個強調色（6 位十六進位色碼，可加 #，例如 1d4ed8）：圖改成這個色相，深淺照舊、白色仍是白色；回應裡的圖片網址也會帶上這個參數。省略時是本站橘色',
+        str('例如 1d4ed8'),
+      ),
+    ],
     response: obj({
       visuals: map(
         obj(
           {
-            kind: str('種類', { enum: ['place', 'logo', 'emoji'] }),
+            kind: str('種類', { enum: ['place', 'flag', 'logo', 'emoji'] }),
             image: nullable(str('圖檔網址，帶版本參數；emoji 為 null')),
             emoji: nullable(str('kind 為 emoji 時的 emoji')),
-            aspect: num('標誌的寬÷高，讓文字雲給長條形標誌較寬的位置；其他種類沒有這個欄位'),
+            aspect: num('標誌與國旗的寬÷高，讓文字雲給長條形的圖較寬的位置；其他種類沒有這個欄位'),
           },
           undefined,
           ['aspect'],
@@ -1542,13 +1568,20 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'tags',
     summary: '非人物標籤的小圖',
     description:
-      '人物以外的標籤配的圖（人物用 /api/v1/tags/{tag}/person 的素描頭像）。kind：place 是縣市、鄉鎮、國家的輪廓或城市的定位點（地圖資料：內政部國土測繪中心、Natural Earth），image 是輪廓，large 是它在台灣、所屬縣市或地球上的位置；logo 是 Wikidata 項目在 Wikimedia Commons 上的標誌，轉成網站橘色的單色（只保留原本的明暗），source 附原檔的授權與作者，管理員上傳的沒有 source；emoji 是完全就是這個東西的 emoji。地方與 AI 確認過的 Commons 標誌自動顯示；emoji 由 AI 挑選，管理員確認後才回傳。沒有圖、待確認或被隱藏時 visual 為 null。',
-    params: [p('tag', '標籤（URL 編碼）', str(), '台北')],
+      '人物以外的標籤配的圖（人物用 /api/v1/tags/{tag}/person 的素描頭像）。kind：place 是縣市、鄉鎮、國家的輪廓或城市的定位點（地圖資料：內政部國土測繪中心、Natural Earth），image 是輪廓，large 是它在台灣、所屬縣市或地球上的位置；flag 是國家的國旗（Wikidata P41，Commons），和標誌一樣轉成單色，國家的輪廓改列為第二張候選；logo 是 Wikidata 項目在 Wikimedia Commons 上的標誌，轉成網站橘色的單色（只保留原本的明暗），source 附原檔的授權與作者，管理員上傳的沒有 source；emoji 是完全就是這個東西的 emoji。地方與 AI 確認過的 Commons 標誌自動顯示；emoji 由 AI 挑選，管理員確認後才回傳。沒有圖、待確認或被隱藏時 visual 為 null。',
+    params: [
+      p('tag', '標籤（URL 編碼）', str(), '台北'),
+      q(
+        'accent',
+        '換成另一個強調色（6 位十六進位色碼，可加 #，例如 1d4ed8）：圖改成這個色相，深淺照舊、白色仍是白色；回應裡的圖片網址也會帶上這個參數。省略時是本站橘色',
+        str('例如 1d4ed8'),
+      ),
+    ],
     response: obj({
       tag: str(),
       visual: nullable(
         obj({
-          kind: str('種類', { enum: ['place', 'logo', 'emoji'] }),
+          kind: str('種類', { enum: ['place', 'flag', 'logo', 'emoji'] }),
           emoji: nullable(str('kind 為 emoji 時的 emoji')),
           label: nullable(str('地方的正式名稱或 Wikidata 名稱，例如 台北市')),
           wikidataId: nullable(str('Wikidata 項目 ID')),
@@ -1575,11 +1608,17 @@ export const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/tags/{tag}/visual-image',
     tag: 'tags',
     summary: '非人物標籤的小圖圖檔',
-    description: '地方輪廓是 SVG，標誌是透明背景的 WebP。網址請用 visual 回應裡的 image／large（帶版本參數，換圖時會變）。沒有圖時回 404。',
+    description:
+      '地方輪廓是 SVG，國旗與標誌是 WebP（標誌背景透明）。網址請用 visual 回應裡的 image／large（帶版本參數，換圖時會變）。沒有圖時回 404。',
     binary: 'image/svg+xml',
     params: [
       p('tag', '標籤（URL 編碼）', str(), '台北'),
-      q('size', 'small（輪廓、標誌）或 large（地方的位置圖）', str('預設 small', { enum: ['small', 'large'] })),
+      q('size', 'small（輪廓、國旗、標誌）或 large（地方的位置圖）', str('預設 small', { enum: ['small', 'large'] })),
+      q(
+        'accent',
+        '換成另一個強調色（6 位十六進位色碼，可加 #，例如 1d4ed8）：圖改成這個色相，深淺照舊、白色仍是白色。省略時是本站橘色',
+        str('例如 1d4ed8'),
+      ),
     ],
     response: str('SVG 或 WebP 圖檔', { format: 'binary' }),
     errors: { '404': '沒有圖' },

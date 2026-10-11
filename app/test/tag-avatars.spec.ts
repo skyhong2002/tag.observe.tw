@@ -250,6 +250,11 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
     expect(a).toBeGreaterThan(245);
     expect(r).toBeGreaterThan(g);
     expect(g).toBeGreaterThan(b);
+    // Another service's accent: the strokes take it (blue over white).
+    const blue = await app.inject({ url: `${p.avatar.url}&layer=color&accent=1d4ed8` });
+    const [br, , bb] = await sharp(blue.rawPayload).ensureAlpha().raw().toBuffer();
+    expect(bb).toBeGreaterThan(br);
+    expect((await app.inject({ url: '/api/v1/tag-avatars?accent=1d4ed8' })).json().avatars.賴清德).toContain('&accent=1d4ed8');
     expect((await app.inject({ url: '/api/v1/tag-avatars' })).json().avatars).toEqual({ 賴清德: p.avatar.url });
     expect(await person('台北')).toBeNull();
     expect((await app.inject({ url: `/api/v1/tags/${encodeURIComponent('台北')}/avatar` })).statusCode).toBe(404);

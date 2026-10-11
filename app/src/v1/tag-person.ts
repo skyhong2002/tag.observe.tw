@@ -3,25 +3,27 @@ import type { FastifyInstance } from 'fastify';
 import { inkImage } from '../avatars/ink.ts';
 import type { Db } from '../db/client.ts';
 import { tagAvatarCandidates, tagPeople } from '../db/schema.ts';
+import { parseAccent } from '../tag-visuals/recolour.ts';
 
 // The person behind a tag and their sketch avatar (docs/tag-avatars.md).
 
 const SHOWN = new Set(['auto', 'review', 'chosen', 'voted']);
 
 // `v` changes whenever the shown image can change (a re-run or an admin switch), so the image itself can cache for a day.
-const avatarPath = (tag: string, at: Date, rank: number) =>
-  `/api/v1/tags/${encodeURIComponent(tag)}/avatar?v=${(at.getTime() / 1000).toString(36)}-${rank}`;
+// `accent` (another service's colour, six hex digits) rides along so the painted layer comes in it.
+const avatarPath = (tag: string, at: Date, rank: number, accent: string | null = null) =>
+  `/api/v1/tags/${encodeURIComponent(tag)}/avatar?v=${(at.getTime() / 1000).toString(36)}-${rank}${accent ? `&accent=${accent}` : ''}`;
 
 /** Every tag with a shown avatar → its image URL (for the home page cloud). */
-export async function tagAvatars(db: Db) {
+export async function tagAvatars(db: Db, accent: string | null = null) {
   const rows = await db
     .select({ tag: tagPeople.tag, rank: tagPeople.shownRank, checkedAt: tagPeople.checkedAt, reviewedAt: tagPeople.reviewedAt })
     .from(tagPeople)
     .where(and(inArray(tagPeople.status, [...SHOWN] as ('auto' | 'review' | 'chosen' | 'voted')[]), isNotNull(tagPeople.shownRank)));
-  return Object.fromEntries(rows.map((r) => [r.tag, avatarPath(r.tag, r.reviewedAt ?? r.checkedAt, r.rank as number)]));
+  return Object.fromEntries(rows.map((r) => [r.tag, avatarPath(r.tag, r.reviewedAt ?? r.checkedAt, r.rank as number, accent)]));
 }
 
-export async function tagPerson(db: Db, tag: string) {
+export async function tagPerson(db: Db, tag: string, accent: string | null = null) {
   const [person] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
   if (!person?.wikidataId) return null;
   const shown = SHOWN.has(person.status) && person.shownRank ? person.shownRank : null;
@@ -45,7 +47,7 @@ export async function tagPerson(db: Db, tag: string) {
     facts: person.facts,
     avatar: avatar
       ? {
-          url: avatarPath(tag, person.reviewedAt ?? person.checkedAt, avatar.rank),
+          url: avatarPath(tag, person.reviewedAt ?? person.checkedAt, avatar.rank, accent),
           file: avatar.file,
           pageUrl: avatar.pageUrl,
           license: avatar.license,
@@ -57,31 +59,34 @@ export async function tagPerson(db: Db, tag: string) {
 }
 
 export function registerTagPerson(app: FastifyInstance, db: Db) {
-  app.get('/api/v1/tag-avatars', async (_request, reply) => {
+  app.get<{ Querystring: { accent?: string } }>('/api/v1/tag-avatars', async (request, reply) => {
     reply.header('cache-control', 'public, max-age=300');
-    return { avatars: await tagAvatars(db) };
+    return { avatars: await tagAvatars(db, parseAccent(request.query.accent)) };
   });
 
-  app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/person', async (request, reply) => {
+  app.get<{ Params: { tag: string }; Querystring: { accent?: string } }>('/api/v1/tags/:tag/person', async (request, reply) => {
     const { tag } = request.params;
     if (tag.length > 60) return reply.code(400).send({ error: 'tag too long' });
     reply.header('cache-control', 'public, max-age=300');
-    return { tag, person: await tagPerson(db, tag) };
+    return { tag, person: await tagPerson(db, tag, parseAccent(request.query.accent)) };
   });
 
   // The shown sketch (WebP, 256×256): ink on transparent, to mask a colour with.
-  app.get<{ Params: { tag: string }; Querystring: { layer?: string } }>('/api/v1/tags/:tag/avatar', async (request, reply) => {
-    const { tag } = request.params;
-    const [row] = await db
-      .select({ image: tagAvatarCandidates.image, status: tagPeople.status })
-      .from(tagPeople)
-      .innerJoin(tagAvatarCandidates, and(eq(tagAvatarCandidates.tag, tagPeople.tag), eq(tagAvatarCandidates.rank, tagPeople.shownRank)))
-      .where(eq(tagPeople.tag, tag));
-    if (!row || !SHOWN.has(row.status)) return reply.code(404).send({ error: 'no avatar' });
-    const layer = (['fill', 'color'] as const).find((l) => l === request.query.layer) ?? 'ink';
-    return reply
-      .header('content-type', 'image/webp')
-      .header('cache-control', 'public, max-age=86400')
-      .send(await inkImage(row.image, layer));
-  });
+  app.get<{ Params: { tag: string }; Querystring: { layer?: string; accent?: string } }>(
+    '/api/v1/tags/:tag/avatar',
+    async (request, reply) => {
+      const { tag } = request.params;
+      const [row] = await db
+        .select({ image: tagAvatarCandidates.image, status: tagPeople.status })
+        .from(tagPeople)
+        .innerJoin(tagAvatarCandidates, and(eq(tagAvatarCandidates.tag, tagPeople.tag), eq(tagAvatarCandidates.rank, tagPeople.shownRank)))
+        .where(eq(tagPeople.tag, tag));
+      if (!row || !SHOWN.has(row.status)) return reply.code(404).send({ error: 'no avatar' });
+      const layer = (['fill', 'color'] as const).find((l) => l === request.query.layer) ?? 'ink';
+      return reply
+        .header('content-type', 'image/webp')
+        .header('cache-control', 'public, max-age=86400')
+        .send(await inkImage(row.image, layer, parseAccent(request.query.accent)));
+    },
+  );
 }

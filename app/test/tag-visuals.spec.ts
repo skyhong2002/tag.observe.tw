@@ -15,7 +15,17 @@ import { leader } from '../src/pictures/votes.ts';
 import { parseReply, prompt } from '../src/tag-visuals/ai.ts';
 import { isEmoji } from '../src/tag-visuals/emoji.ts';
 import { city, country, taiwanPlace } from '../src/tag-visuals/places.ts';
-import { DARKEST, LIGHTEST, lightnessMap, oklab, orangeAt, recolourLogo } from '../src/tag-visuals/recolour.ts';
+import {
+  accentOf,
+  DARKEST,
+  LIGHTEST,
+  lightnessMap,
+  oklab,
+  orangeAt,
+  parseAccent,
+  reaccent,
+  recolourLogo,
+} from '../src/tag-visuals/recolour.ts';
 import { arrange, processTags } from '../src/tag-visuals/run.ts';
 
 describe('places', () => {
@@ -88,6 +98,33 @@ describe('one-hue logos', () => {
     expect(px(width >> 1, 8)[0]).toBeGreaterThan(px(width >> 1, 8)[2] + 100); // green became orange
     // WebP is lossy: near white.
     for (const c of px(width >> 1, out.info.height - 8).slice(0, 3)) expect(c).toBeGreaterThan(235);
+  });
+});
+
+describe('other accents', () => {
+  it('re-hues a stored picture: white stays white, shades keep their place on the ramp', async () => {
+    expect(parseAccent('#1D4ED8')).toBe('1d4ed8');
+    expect(parseAccent('1d4ed8')).toBe('1d4ed8');
+    expect(parseAccent('f54900')).toBeNull(); // the brand's own: nothing to change
+    expect(parseAccent('blue')).toBeNull();
+    // Stored: a brand-orange half (the darkest shade) and a white half.
+    const raw = Buffer.alloc(4 * 2 * 4);
+    const dark = orangeAt(DARKEST);
+    for (let i = 0; i < 8; i++) raw.set(i % 4 < 2 ? [...dark, 255] : [255, 255, 255, 255], i * 4);
+    const stored = await sharp(raw, { raw: { width: 4, height: 2, channels: 4 } })
+      .webp({ lossless: true })
+      .toBuffer();
+    const blue = await sharp(await reaccent(stored, '1d4ed8'))
+      .ensureAlpha()
+      .raw()
+      .toBuffer();
+    const px = (i: number) => [...blue.subarray(i * 4, i * 4 + 3)];
+    // The dark half is now the blue accent's darkest shade; the white half is still white.
+    const [L, a, b] = oklab(...(px(0) as [number, number, number]));
+    const want = accentOf('1d4ed8');
+    expect(L).toBeCloseTo(want.darkest, 1);
+    expect(Math.atan2(b, a)).toBeCloseTo(want.H, 1);
+    for (const c of px(3)) expect(c).toBeGreaterThan(245);
   });
 });
 
@@ -167,17 +204,21 @@ describe('AI picks', () => {
 
   it('orders candidates: an agreed item first, else the emoji and a doubtful item last', () => {
     const kinds = (a: ReturnType<typeof arrange>) => a.candidates.map((c) => `${c.kind} ${c.value}`);
-    const fireworks = arrange({ emoji: '🎆', same: null, why: '煙火' }, 'm', null);
+    const fireworks = arrange({ emoji: '🎆', same: null, why: '煙火' }, 'm', []);
     expect(fireworks.status).toBe('review');
     expect(kinds(fireworks)).toEqual(['emoji 🎆']);
     expect(fireworks.candidates[0].note).toBe('煙火・AI（m）');
-    expect(arrange(undefined, 'm', null).candidates).toEqual([]);
+    expect(arrange(undefined, 'm', []).candidates).toEqual([]);
     const item = { kind: 'logo' as const, value: 'GPU.svg', note: 'Wikidata：GPU' };
-    const agreed = arrange({ emoji: '💻', same: true, why: null }, 'm', item);
+    const agreed = arrange({ emoji: '💻', same: true, why: null }, 'm', [item]);
     expect([agreed.status, ...kinds(agreed)]).toEqual(['auto', 'logo GPU.svg', 'emoji 💻']);
-    const doubtful = arrange({ emoji: '💻', same: false, why: '晶片' }, 'm', item);
+    const doubtful = arrange({ emoji: '💻', same: false, why: '晶片' }, 'm', [item]);
     expect([doubtful.status, ...kinds(doubtful)]).toEqual(['review', 'emoji 💻', 'logo GPU.svg']);
     expect(doubtful.candidates[1].note).toBe('Wikidata 項目不符・Wikidata：GPU');
+    // A country: its flag first, then its outline.
+    const flag = { kind: 'flag' as const, value: 'Flag.svg', note: 'Wikidata：日本國旗' };
+    const outline = { kind: 'place' as const, value: 'country:392', note: 'Wikidata：日本' };
+    expect(kinds(arrange({ emoji: null, same: true, why: null }, 'm', [flag, outline]))).toEqual(['flag Flag.svg', 'place country:392']);
     // The candidate goes into the prompt.
     expect(prompt([{ tag: 'GPU', titles: ['輝達 GPU 出貨'], candidate: '國家政治保衛總局（蘇聯機構）' }])[1].content).toContain(
       'Wikidata 候選：國家政治保衛總局（蘇聯機構）',
@@ -281,7 +322,7 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     const tally = await processTags(db, ['台北', '高雄', '煙火', '停水', '賴清德', '某人', 'MLB', 'GPU', '鴻海'], {
       ai: { baseUrl: 'http://ai', apiKey: 'k', model: 'm' },
       fetchImpl: spy,
-      itemImpl: async (qid) => logo(qid),
+      itemImpl: async (qid) => [logo(qid)],
       findImpl: async () => null,
       looseImpl,
     });
@@ -317,6 +358,12 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     expect(img.headers['content-type']).toBe('image/svg+xml');
     expect(img.body).toContain('<svg');
     expect((await app.inject({ url: v.large })).statusCode).toBe(200);
+    // Another service's accent: the outline's orange becomes it, white stays.
+    const blue = await app.inject({ url: `${v.image}&accent=1d4ed8` });
+    expect(blue.body).toContain('#1d4ed8');
+    expect(blue.body).not.toContain('#f54900');
+    const withAccent = (await app.inject({ url: '/api/v1/tags/%E5%8F%B0%E5%8C%97/visual?accent=%231d4ed8' })).json().visual;
+    expect(withAccent.image).toContain('accent=1d4ed8');
     expect(await visual('煙火')).toBeNull();
     expect((await app.inject({ url: '/api/v1/tags/%E7%85%99%E7%81%AB/visual-image' })).statusCode).toBe(404);
     expect((await put('煙火', { action: 'confirm' }, as('reader'))).statusCode).toBe(403);

@@ -60,11 +60,12 @@ const TABS: [Status, string][] = [
 const KINDS: [Kind | 'none' | null, string][] = [
   [null, '全部'],
   ['place', '地方'],
+  ['flag', '國旗'],
   ['logo', '標誌'],
   ['emoji', 'emoji'],
   ['none', '沒有圖'],
 ];
-const KIND_LABEL: Record<Kind, string> = { place: '地方', logo: '標誌', emoji: 'emoji' };
+const KIND_LABEL: Record<Kind, string> = { place: '地方', flag: '國旗', logo: '標誌', emoji: 'emoji' };
 const pill = (on: boolean) =>
   `min-h-9 rounded-full px-3 ${on ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'border border-zinc-300 dark:border-zinc-700'}`;
 const button = 'min-h-9 rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 dark:border-zinc-700';

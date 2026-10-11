@@ -22,7 +22,7 @@ type Options = {
 };
 
 const STATUSES: TagVisualStatus[] = ['review', 'auto', 'voted', 'chosen', 'hidden', 'none'];
-const KINDS: (TagVisualKind | 'none')[] = ['place', 'logo', 'emoji', 'none'];
+const KINDS: (TagVisualKind | 'none')[] = ['place', 'flag', 'logo', 'emoji', 'none'];
 const kindIs = (kind: TagVisualKind | 'none'): SQL => (kind === 'none' ? isNull(tagVisuals.kind) : eq(tagVisuals.kind, kind));
 const PAGE = 60;
 // A logo upload, base64 in JSON: up to about 3 MB of image.

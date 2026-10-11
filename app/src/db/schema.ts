@@ -919,14 +919,14 @@ export const tagWikidata = mysqlTable('tag_wikidata', {
 
 // A picture for a non-person tag (docs/tag-visuals.md; people get sketch
 // avatars instead). kind: place = outline of a county, township, country or
-// a city's dot; logo = the item's Wikidata logo, recoloured to the site's
+// a city's dot; flag = a country's flag (Wikidata P41), recoloured like a logo; logo = the item's Wikidata logo, recoloured to the site's
 // orange; emoji = an emoji that is exactly the thing (line icons were tried
 // and dropped). status: auto = shown (places, Commons logos); review = an AI pick,
 // not shown until an admin confirms; chosen = an admin confirmed or set it;
 // hidden = an admin turned it off; none = nothing fits; voted = readers
 // uploaded or voted and the candidate with the most votes is shown
 // (docs/tag-pictures.md). Re-runs never overwrite chosen, hidden or voted.
-export type TagVisualKind = 'place' | 'logo' | 'emoji';
+export type TagVisualKind = 'place' | 'flag' | 'logo' | 'emoji';
 export type TagVisualStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'none' | 'voted';
 
 export const tagVisuals = mysqlTable(
