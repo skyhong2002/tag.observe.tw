@@ -100,6 +100,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
+| [`GET /api/v1/events/threads/suggest`](#api-v1-events-threads-suggest) | 輸入時的事件串建議 |
 | [`GET /api/v1/events/threads`](#api-v1-events-threads) | 某一天的所有事件串 |
 | [`GET /api/v1/events/threads/period`](#api-v1-events-threads-period) | 過去 1、3、7 或 31 天的主要事件串 |
 | [`GET /api/v1/events/threads/{id}`](#api-v1-events-threads-id) | 單一事件串 |
@@ -2126,6 +2127,36 @@ curl -s 'https://tag.observe.tw/api/v1/events?limit=10'
 | `events[].coverage.blindspot` | string[] | 盲點：幾乎沒報導的陣營（該陣營 ≤ 1 家而另一陣營 ≥ 4 家）。blue 表示藍營讀者看不到這件事 |
 
 錯誤：`400` `at` 格式錯誤；`404` 該時間以前沒有快照；`503` 尚無任何快照。
+
+<a id="api-v1-events-threads-suggest"></a>
+
+### `GET /api/v1/events/threads/suggest`
+
+**輸入時的事件串建議**
+
+最近 14 天的新聞事件串中，關鍵字包含查詢字串的：主要關鍵字（majorTags）相符的排前面，其次依最後出現時間（新的在前）、最高爆發力排序。事件串沒有標題，tags 即其主要關鍵字。名單每 10 分鐘更新一次。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `q` | query | string | 輸入的文字（最多 60 字），例：`國慶` |
+| `limit` | query | integer | 筆數，1–20，預設 `8`，例：`8` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/events/threads/suggest?q=%E5%9C%8B%E6%85%B6'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `q` | string |  |
+| `days` | integer | 涵蓋的天數 |
+| `threads` | object[] |  |
+| `threads[].id` | integer |  |
+| `threads[].tags` | string[] | 主要關鍵字 |
+| `threads[].lastTime` | string (ISO 時間) | 最後出現的小時 |
 
 <a id="api-v1-events-threads"></a>
 

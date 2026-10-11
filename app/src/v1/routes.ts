@@ -11,6 +11,7 @@ import { categoryLabel } from '../media-categories.ts';
 import { isTagNoise } from '../tag-noise.ts';
 import { campOf, loadThreadCoverage } from './coverage.ts';
 import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
+import { registerEventSuggest } from './event-suggest.ts';
 import { iconUrl } from './icons.ts';
 import {
   discoverySignals,
@@ -209,6 +210,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
   );
   registerTagSeries(app, db);
   registerTagSuggest(app, db);
+  registerEventSuggest(app, db);
 
   // Which other keywords rode along with this one, hour by hour.
   registerTagFlow(app, db);

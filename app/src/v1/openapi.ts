@@ -1750,6 +1750,20 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/events?limit=10',
   },
   {
+    path: '/api/v1/events/threads/suggest',
+    tag: 'events',
+    summary: '輸入時的事件串建議',
+    description:
+      '最近 14 天的新聞事件串中，關鍵字包含查詢字串的：主要關鍵字（majorTags）相符的排前面，其次依最後出現時間（新的在前）、最高爆發力排序。事件串沒有標題，tags 即其主要關鍵字。名單每 10 分鐘更新一次。',
+    params: [q('q', '輸入的文字（最多 60 字）', str(), '國慶'), q('limit', '筆數', intIn(1, 20, 8), 8)],
+    response: obj({
+      q: str(),
+      days: int('涵蓋的天數'),
+      threads: arr(obj({ id: int(), tags: arr(str(), '主要關鍵字'), lastTime: time('最後出現的小時') })),
+    }),
+    example: '/api/v1/events/threads/suggest?q=%E5%9C%8B%E6%85%B6',
+  },
+  {
     path: '/api/v1/events/threads',
     tag: 'events',
     summary: '某一天的所有事件串',
