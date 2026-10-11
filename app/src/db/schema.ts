@@ -945,6 +945,8 @@ export const tagVisuals = mysqlTable(
     license: varchar('license', { length: 64 }),
     licenseUrl: varchar('license_url', { length: 255 }),
     artist: varchar('artist', { length: 255 }),
+    // tag_visual_candidates.rank this row copies; null for an admin's own emoji, icon or upload.
+    shownRank: int('shown_rank'),
     checkedAt: datetime('checked_at').notNull(),
     reviewedBy: varchar('reviewed_by', { length: 255 }),
     reviewedAt: datetime('reviewed_at'),
@@ -952,12 +954,37 @@ export const tagVisuals = mysqlTable(
   (t) => [index('tag_visuals_status').on(t.status, t.checkedAt)],
 );
 
+// Every picture the run found for a tag, best first, for /admin/tag-visuals/
+// to pick from (like the avatars' three candidates): the Wikidata item's
+// place or logo, the AI's exact emoji and up to three icons. tag_visuals
+// holds a copy of the one in use.
+export const tagVisualCandidates = mysqlTable(
+  'tag_visual_candidates',
+  {
+    tag: varchar('tag', { length: 60 }).notNull(),
+    rank: int('rank').notNull(),
+    kind: varchar('kind', { length: 8 }).$type<TagVisualKind>().notNull(),
+    value: varchar('value', { length: 64 }),
+    wikidataId: varchar('wikidata_id', { length: 16 }),
+    label: varchar('label', { length: 120 }),
+    // Where it came from, e.g. 「Wikidata：中國國民黨」「AI：代表供水中斷」「Wikidata 項目不符」.
+    note: varchar('note', { length: 120 }),
+    image: imageBytes('image'),
+    large: imageBytes('large'),
+    pageUrl: varchar('page_url', { length: 512 }),
+    license: varchar('license', { length: 64 }),
+    licenseUrl: varchar('license_url', { length: 255 }),
+    artist: varchar('artist', { length: 255 }),
+  },
+  (t) => [primaryKey({ columns: [t.tag, t.rank] })],
+);
+
 export const tagVisualLog = mysqlTable(
   'tag_visual_log',
   {
     id: int('id').autoincrement().primaryKey(),
     tag: varchar('tag', { length: 60 }).notNull(),
-    action: varchar('action', { length: 8 }).$type<'confirm' | 'hide' | 'emoji' | 'icon' | 'upload'>().notNull(),
+    action: varchar('action', { length: 8 }).$type<'confirm' | 'pick' | 'hide' | 'emoji' | 'icon' | 'upload'>().notNull(),
     // What it was and became, e.g. 「icon flag → party-popper」.
     detail: varchar('detail', { length: 120 }),
     email: varchar('email', { length: 255 }).notNull(),

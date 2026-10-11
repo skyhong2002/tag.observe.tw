@@ -6,27 +6,49 @@ import { VisualPicture } from '@/components/TagVisual';
 import type { TagVisual } from '@/lib/api';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 
-// Pictures for non-person tags (docs/tag-visuals.md): place outlines and
-// Commons logos are shown automatically; the AI's emoji and icon picks wait
-// here until an admin confirms them. An admin can also set another emoji or
-// icon, upload a logo, or hide the picture; re-runs leave those alone.
+// Pictures for non-person tags (docs/tag-visuals.md), reviewed like the
+// person avatars (/admin/avatars/): each tag shows its candidates — the
+// Wikidata place or logo, the AI's exact emoji and up to three icons — and
+// clicking one puts it in use. Places and logos the AI agreed with show by
+// themselves; everything else waits here. Filter by status and by kind of
+// picture to review one kind at a time. Chosen and hidden tags survive re-runs.
 
 type Status = 'review' | 'auto' | 'chosen' | 'hidden' | 'none';
+type Kind = TagVisual['kind'];
+type Candidate = {
+  rank: number;
+  kind: Kind;
+  value: string | null;
+  label: string | null;
+  note: string | null;
+  pageUrl: string | null;
+  license: string | null;
+  image: string | null;
+  large: string | null;
+};
 type Row = {
   tag: string;
-  kind: TagVisual['kind'] | null;
+  kind: Kind | null;
   status: Status | null;
   value?: string | null;
   wikidataId?: string | null;
   label?: string | null;
   note?: string | null;
-  pageUrl?: string | null;
-  license?: string | null;
+  shownRank?: number | null;
   reviewedBy?: string | null;
   image: string | null;
   large: string | null;
+  candidates: Candidate[];
 };
-type Page = { status: Status; counts: Record<string, number>; offset: number; next: number | null; visuals: Row[] };
+type Page = {
+  status: Status;
+  kind: Kind | 'none' | null;
+  counts: Record<string, number>;
+  kinds: Record<string, number>;
+  offset: number;
+  next: number | null;
+  visuals: Row[];
+};
 
 const TABS: [Status, string][] = [
   ['review', '待確認'],
@@ -35,7 +57,17 @@ const TABS: [Status, string][] = [
   ['hidden', '已隱藏'],
   ['none', '沒有合適的'],
 ];
-const KIND: Record<TagVisual['kind'], string> = { place: '地方', logo: '標誌', emoji: 'emoji', icon: '圖示' };
+const KINDS: [Kind | 'none' | null, string][] = [
+  [null, '全部'],
+  ['place', '地方'],
+  ['logo', '標誌'],
+  ['emoji', 'emoji'],
+  ['icon', '線條圖示'],
+  ['none', '沒有圖'],
+];
+const KIND_LABEL: Record<Kind, string> = { place: '地方', logo: '標誌', emoji: 'emoji', icon: '圖示' };
+const pill = (on: boolean) =>
+  `min-h-9 rounded-full px-3 ${on ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'border border-zinc-300 dark:border-zinc-700'}`;
 const button = 'min-h-9 rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 dark:border-zinc-700';
 const input = 'min-h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900';
 
@@ -43,9 +75,9 @@ export default function TagVisualReview() {
   return (
     <AdminGate next="/admin/tag-visuals/">
       <p className={note}>
-        非人物標籤的小圖：縣市、鄉鎮、國家和城市畫輪廓或定位點，組織和作品用 Wikidata 的標誌（轉成網站橘的單色），這兩種自動顯示。 其餘由 AI
-        挑：只有完全就是那個東西時才給 emoji，否則挑一個 Lucide 線條圖示，放在「待確認」，按「採用」後才顯示。
-        改過或隱藏的標籤，之後重跑不會覆蓋。
+        非人物標籤的小圖。每個標籤列出找到的候選：Wikidata 的地方輪廓或標誌（轉成網站橘的單色），以及 AI 挑的
+        emoji（只在完全就是那個東西時）和最多三個線條圖示。 AI
+        確認過的地方與標誌自動顯示；其餘放在「待確認」，點一張候選圖就會改用並公開。選定或隱藏後，之後重跑也不會覆蓋。
       </p>
       <Review />
     </AdminGate>
@@ -54,20 +86,21 @@ export default function TagVisualReview() {
 
 function Review() {
   const [status, setStatus] = useState<Status>('review');
+  const [kind, setKind] = useState<Kind | 'none' | null>(null);
   const [offset, setOffset] = useState(0);
   const [lookup, setLookup] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState<Page | null>(null);
   const [error, setError] = useState('');
   const load = useCallback(() => {
-    const q = query ? `tag=${encodeURIComponent(query)}` : `status=${status}&offset=${offset}`;
+    const q = query ? `tag=${encodeURIComponent(query)}` : `status=${status}${kind ? `&kind=${kind}` : ''}&offset=${offset}`;
     adminFetch<Page>(`/auth/admin/tag-visuals?${q}`)
       .then((p) => {
         setPage(p);
         setError('');
       })
       .catch((e: Error) => setError(e.message));
-  }, [status, offset, query]);
+  }, [status, kind, offset, query]);
   useEffect(load, [load]);
   const act = async (call: () => Promise<unknown>) => {
     try {
@@ -77,6 +110,7 @@ function Review() {
       setError((e as Error).message);
     }
   };
+  const total = page ? Object.values(page.kinds).reduce((a, b) => a + b, 0) : 0;
   return (
     <>
       <div className="mt-4 flex flex-wrap items-center gap-1 text-sm">
@@ -86,10 +120,11 @@ function Review() {
             type="button"
             onClick={() => {
               setStatus(key);
+              setKind(null);
               setOffset(0);
               setQuery('');
             }}
-            className={`min-h-9 rounded-full px-3 ${key === status && !query ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'border border-zinc-300 dark:border-zinc-700'}`}
+            className={pill(key === status && !query)}
           >
             {label}
             <span className="ml-1 tabular-nums opacity-70">{page?.counts[key] ?? 0}</span>
@@ -108,6 +143,29 @@ function Review() {
           </button>
         </form>
       </div>
+      {!query && (
+        <div className="mt-2 flex flex-wrap items-center gap-1 text-sm">
+          <span className="mr-1 text-zinc-500">種類</span>
+          {KINDS.map(([key, label]) => {
+            const n = key === null ? total : (page?.kinds[key] ?? 0);
+            if (key !== null && !n) return null;
+            return (
+              <button
+                key={key ?? 'all'}
+                type="button"
+                onClick={() => {
+                  setKind(key);
+                  setOffset(0);
+                }}
+                className={pill(key === kind)}
+              >
+                {label}
+                <span className="ml-1 tabular-nums opacity-70">{n}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {error && <p className="mt-3 text-sm text-red-700 dark:text-red-400">{error}</p>}
       {!page ? (
         <p className={note}>載入中…</p>
@@ -144,42 +202,35 @@ function Review() {
   );
 }
 
-const asVisual = (r: Row): TagVisual | null =>
-  r.kind
-    ? {
-        kind: r.kind,
-        emoji: r.kind === 'emoji' ? (r.value ?? null) : null,
-        icon: r.kind === 'icon' ? (r.value ?? null) : null,
-        label: r.label ?? null,
-        wikidataId: r.wikidataId ?? null,
-        image: r.image,
-        large: r.large,
-        source: null,
-      }
-    : null;
+const asVisual = (c: {
+  kind: Kind;
+  value?: string | null;
+  label?: string | null;
+  image: string | null;
+  large: string | null;
+}): TagVisual => ({
+  kind: c.kind,
+  emoji: c.kind === 'emoji' ? (c.value ?? null) : null,
+  icon: c.kind === 'icon' ? (c.value ?? null) : null,
+  label: c.label ?? null,
+  wikidataId: null,
+  image: c.image,
+  large: c.large,
+  source: null,
+});
 
 function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknown>) => void }) {
-  const [emoji, setEmoji] = useState('');
-  const [iconQuery, setIconQuery] = useState('');
-  const [icons, setIcons] = useState<string[] | null>(null);
   const path = `/auth/admin/tag-visuals/${encodeURIComponent(r.tag)}`;
   const put = (body: object) => act(() => adminFetch(path, { method: 'PUT', body }));
-  const visual = asVisual(r);
-  const upload = (file: File) =>
-    act(async () => {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      let binary = '';
-      for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      await adminFetch(`${path}/logo`, { method: 'POST', body: { image: btoa(binary) } });
-    });
+  // In use and public: chosen or automatic. A review row's first candidate waits.
+  const live = r.status === 'auto' || r.status === 'chosen';
+  const own = live && r.kind && !r.shownRank;
   return (
     <li className="py-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <a href={`/tag/${encodeURIComponent(r.tag)}/`} className="font-medium underline">
           {r.tag}
         </a>
-        {r.kind && <span className="text-xs text-zinc-500">{KIND[r.kind]}</span>}
-        {r.label && <span className="text-sm text-zinc-600 dark:text-zinc-400">{r.label}</span>}
         {r.wikidataId && (
           <a
             href={`https://www.wikidata.org/wiki/${r.wikidataId}`}
@@ -190,29 +241,80 @@ function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknow
             {r.wikidataId}
           </a>
         )}
-        {r.note && (
-          <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">{r.note}</span>
-        )}
-        {r.pageUrl && (
-          <a href={r.pageUrl} className="text-xs text-zinc-500 underline" rel="noopener noreferrer" target="_blank">
-            {r.license ?? '原檔'}
-          </a>
-        )}
+        {r.label && <span className="text-sm text-zinc-600 dark:text-zinc-400">{r.label}</span>}
         {r.reviewedBy && <span className="text-xs text-zinc-500">{r.reviewedBy}</span>}
       </div>
+      <div className="mt-2 flex flex-wrap items-start gap-3">
+        {r.candidates.map((c) => {
+          const inUse = live && r.shownRank === c.rank;
+          return (
+            <button
+              key={c.rank}
+              type="button"
+              onClick={() => put({ rank: c.rank })}
+              aria-pressed={inUse}
+              title={c.note ?? undefined}
+              className={`w-32 rounded-lg border-2 p-1 text-left text-xs ${inUse ? 'border-brand-600' : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-700'}`}
+            >
+              <span className="flex h-[120px] items-center justify-center overflow-hidden [&_img]:!max-w-full">
+                <VisualPicture visual={asVisual(c)} size={96} />
+              </span>
+              <span className="mt-1 block">
+                #{c.rank} · {KIND_LABEL[c.kind]}
+                {c.kind === 'icon' && c.value ? ` · ${c.value}` : ''}
+                {inUse && ' · 使用中'}
+              </span>
+              {c.note && <span className="block truncate text-zinc-500">{c.note}</span>}
+              {c.pageUrl && (
+                <a
+                  href={c.pageUrl}
+                  className="block truncate text-zinc-500 underline"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {c.license ?? '原檔'}
+                </a>
+              )}
+            </button>
+          );
+        })}
+        {own && (
+          <div className="w-32 rounded-lg border-2 border-brand-600 p-1 text-xs">
+            <span className="flex h-[120px] items-center justify-center overflow-hidden [&_img]:!max-w-full">
+              <VisualPicture visual={asVisual({ ...r, kind: r.kind as Kind })} size={96} />
+            </span>
+            <span className="mt-1 block">管理員指定 · 使用中</span>
+          </div>
+        )}
+        {!r.candidates.length && !own && <span className="self-center text-sm text-zinc-500">沒有候選{r.note ? `：${r.note}` : ''}</span>}
+        {live && (
+          <button type="button" onClick={() => put({ action: 'hide' })} className={`${button} self-center hover:border-red-600`}>
+            不顯示圖
+          </button>
+        )}
+      </div>
+      <OwnPicture path={path} act={act} put={put} />
+    </li>
+  );
+}
+
+/** The admin's own emoji, icon or logo, for when no candidate fits. */
+function OwnPicture({ path, act, put }: { path: string; act: (call: () => Promise<unknown>) => void; put: (body: object) => void }) {
+  const [emoji, setEmoji] = useState('');
+  const [iconQuery, setIconQuery] = useState('');
+  const [icons, setIcons] = useState<string[] | null>(null);
+  const upload = (file: File) =>
+    act(async () => {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      await adminFetch(`${path}/logo`, { method: 'POST', body: { image: btoa(binary) } });
+    });
+  return (
+    <details className="mt-2 text-sm">
+      <summary className="cursor-pointer text-zinc-500">都不合適：自己指定</summary>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        {visual ? <VisualPicture visual={visual} size={64} /> : <span className="text-sm text-zinc-500">（沒有圖）</span>}
-        {visual?.kind === 'place' && r.image && <VisualPicture visual={{ ...visual, large: null }} size={40} />}
-        {visual && r.status !== 'chosen' && r.status !== 'auto' && (
-          <button type="button" className={button} onClick={() => put({ action: 'confirm' })}>
-            採用
-          </button>
-        )}
-        {visual && r.status !== 'hidden' && (
-          <button type="button" className={`${button} hover:border-red-600`} onClick={() => put({ action: 'hide' })}>
-            不顯示
-          </button>
-        )}
         <form
           className="flex gap-1"
           onSubmit={(e) => {
@@ -267,7 +369,7 @@ function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknow
       </div>
       {icons && (
         <div className="mt-2 flex flex-wrap gap-1">
-          {!icons.length && <span className="text-sm text-zinc-500">找不到圖示。</span>}
+          {!icons.length && <span className="text-zinc-500">找不到圖示。</span>}
           {icons.map((name) => (
             <button
               key={name}
@@ -289,6 +391,6 @@ function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknow
           ))}
         </div>
       )}
-    </li>
+    </details>
   );
 }

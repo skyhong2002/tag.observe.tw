@@ -232,6 +232,13 @@
       "when": 1791712664127,
       "tag": "0032_tag-visuals",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1791716478724,
+      "tag": "0033_tag-visual-candidates",
+      "breakpoints": true
     }
   ]
 }
