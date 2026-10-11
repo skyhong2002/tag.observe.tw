@@ -11,7 +11,7 @@ import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import { tagPeople, tagVisualCandidates, tagVisualLog, tagVisuals, tagWikidata } from '../src/db/schema.ts';
 import { parseReply, prompt } from '../src/tag-visuals/ai.ts';
-import { isEmoji, isIcon, searchIcons } from '../src/tag-visuals/icons.ts';
+import { isEmoji } from '../src/tag-visuals/emoji.ts';
 import { city, country, taiwanPlace } from '../src/tag-visuals/places.ts';
 import { DARKEST, LIGHTEST, lightnessMap, oklab, orangeAt, recolourLogo } from '../src/tag-visuals/recolour.ts';
 import { arrange, processTags } from '../src/tag-visuals/run.ts';
@@ -89,51 +89,41 @@ describe('one-hue logos', () => {
 });
 
 describe('AI picks', () => {
-  it('keeps only real emoji and known icons', () => {
+  it('keeps only real emoji', () => {
     expect(isEmoji('🎆')).toBe(true);
     expect(isEmoji('🇹🇼')).toBe(true);
     expect(isEmoji('🎆🎆')).toBe(false);
     expect(isEmoji('火')).toBe(false);
-    expect(isIcon('flame')).toBe(true);
-    expect(searchIcons('flame')[0]).toBe('flame');
     const picks = parseReply(
       JSON.stringify({
         tags: [
-          {
-            tag: '煙火',
-            emoji: '🎆',
-            icons: ['sparkles', 'party-popper', 'no-such-icon', 'sparkles', 'flame', 'star'],
-            same: null,
-            why: '煙火',
-          },
-          { tag: '地震', emoji: '地震', icons: ['no-such-icon'] },
-          // An older reply with one "icon".
-          { tag: '停水', emoji: null, icon: 'droplet-off' },
-          { tag: '別的', emoji: '🎆', icons: ['flame'] },
+          { tag: '煙火', emoji: '🎆', same: null, why: '煙火' },
+          { tag: '地震', emoji: '地震' },
+          { tag: 'GPU', emoji: null, same: false },
+          { tag: '別的', emoji: '🎆' },
         ],
       }),
-      ['煙火', '地震', '停水'],
+      ['煙火', '地震', 'GPU'],
     );
-    // Known icons only, no repeats, at most three.
-    expect(picks.get('煙火')).toEqual({ emoji: '🎆', icons: ['sparkles', 'party-popper', 'flame'], same: null, why: '煙火' });
-    expect(picks.get('地震')).toEqual({ emoji: null, icons: [], same: null, why: null });
-    expect(picks.get('停水')?.icons).toEqual(['droplet-off']);
+    expect(picks.get('煙火')).toEqual({ emoji: '🎆', same: null, why: '煙火' });
+    expect(picks.get('地震')).toEqual({ emoji: null, same: null, why: null });
+    expect(picks.get('GPU')?.same).toBe(false);
     expect(picks.has('別的')).toBe(false);
     expect(parseReply('not json', ['煙火']).size).toBe(0);
   });
 
-  it('orders candidates: an agreed item first, else emoji, icons and a doubtful item last', () => {
+  it('orders candidates: an agreed item first, else the emoji and a doubtful item last', () => {
     const kinds = (a: ReturnType<typeof arrange>) => a.candidates.map((c) => `${c.kind} ${c.value}`);
-    const fireworks = arrange({ emoji: '🎆', icons: ['sparkles', 'flame'], same: null, why: '煙火' }, 'm', null);
+    const fireworks = arrange({ emoji: '🎆', same: null, why: '煙火' }, 'm', null);
     expect(fireworks.status).toBe('review');
-    expect(kinds(fireworks)).toEqual(['emoji 🎆', 'icon sparkles', 'icon flame']);
+    expect(kinds(fireworks)).toEqual(['emoji 🎆']);
     expect(fireworks.candidates[0].note).toBe('煙火・AI（m）');
     expect(arrange(undefined, 'm', null).candidates).toEqual([]);
     const item = { kind: 'logo' as const, value: 'GPU.svg', note: 'Wikidata：GPU' };
-    const agreed = arrange({ emoji: null, icons: ['cpu'], same: true, why: null }, 'm', item);
-    expect([agreed.status, ...kinds(agreed)]).toEqual(['auto', 'logo GPU.svg', 'icon cpu']);
-    const doubtful = arrange({ emoji: null, icons: ['cpu'], same: false, why: '晶片' }, 'm', item);
-    expect([doubtful.status, ...kinds(doubtful)]).toEqual(['review', 'icon cpu', 'logo GPU.svg']);
+    const agreed = arrange({ emoji: '💻', same: true, why: null }, 'm', item);
+    expect([agreed.status, ...kinds(agreed)]).toEqual(['auto', 'logo GPU.svg', 'emoji 💻']);
+    const doubtful = arrange({ emoji: '💻', same: false, why: '晶片' }, 'm', item);
+    expect([doubtful.status, ...kinds(doubtful)]).toEqual(['review', 'emoji 💻', 'logo GPU.svg']);
     expect(doubtful.candidates[1].note).toBe('Wikidata 項目不符・Wikidata：GPU');
     // The candidate goes into the prompt.
     expect(prompt([{ tag: 'GPU', titles: ['輝達 GPU 出貨'], candidate: '國家政治保衛總局（蘇聯機構）' }])[1].content).toContain(
@@ -207,10 +197,10 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
       asked = [...user.matchAll(/標籤：(\S+)/g)].map((m) => m[1]);
       const content = JSON.stringify({
         tags: [
-          { tag: '煙火', emoji: '🎆', icons: ['sparkles'], why: '就是煙火' },
-          { tag: '停水', emoji: null, icons: ['droplet-off', 'droplet'], why: '供水中斷' },
-          { tag: 'MLB', emoji: null, icons: ['trophy'], same: true },
-          { tag: 'GPU', emoji: null, icons: ['cpu'], same: false, why: '顯示晶片' },
+          { tag: '煙火', emoji: '🎆', why: '就是煙火' },
+          { tag: '停水', emoji: null, why: '沒有完全對到的' },
+          { tag: 'MLB', emoji: '⚾', same: true },
+          { tag: 'GPU', emoji: null, same: false, why: '顯示晶片' },
         ],
       });
       return new Response(JSON.stringify({ model: 'test-model', choices: [{ message: { content } }] }));
@@ -239,14 +229,15 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     });
     expect(asked).toEqual(['煙火', '停水', 'MLB', 'GPU']);
     expect(user).toContain('Wikidata 候選：國家政治保衛總局（蘇聯機構）');
-    // MLB keeps its logo; GPU's namesake is dropped for the AI's icon, held for review.
-    expect(tally).toEqual({ place: 2, emoji: 1, icon: 2, logo: 1 });
+    // MLB keeps its logo (its emoji next); GPU's namesake waits for an admin who knows better; 停水 has nothing.
+    expect(tally).toEqual({ place: 2, emoji: 1, logo: 2, none: 1 });
     const [gpu] = await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'GPU'));
-    expect(gpu).toMatchObject({ status: 'review', kind: 'icon', value: 'cpu' });
-    // The namesake's logo is kept last, for an admin who knows better.
-    const gpuCandidates = await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, 'GPU'));
-    expect(gpuCandidates.map((c) => `${c.rank} ${c.kind}`)).toEqual(['1 icon', '2 logo']);
-    expect(gpuCandidates[1].note).toContain('Wikidata 項目不符');
+    expect(gpu).toMatchObject({ status: 'review', kind: 'logo', shownRank: 1 });
+    expect(gpu.note).toContain('Wikidata 項目不符');
+    const mlb = await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, 'MLB'));
+    expect(mlb.map((c) => `${c.rank} ${c.kind}`)).toEqual(['1 logo', '2 emoji']);
+    const [dry] = await db.select().from(tagVisuals).where(eq(tagVisuals.tag, '停水'));
+    expect(dry).toMatchObject({ status: 'none', kind: null });
     // Tags the tag-groups job had not looked up are looked up and kept.
     const [looked] = await db.select().from(tagWikidata).where(eq(tagWikidata.tag, '煙火'));
     expect(looked).toMatchObject({ wikidataId: null });
@@ -276,26 +267,22 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     expect(all['停水']).toBeUndefined();
   });
 
-  it('lets admins set an icon or emoji, upload a logo and hide, and logs it', async () => {
+  it('lets admins pick a candidate, set an emoji, upload a logo and hide, and logs it', async () => {
     // Picking a candidate shows it.
-    expect((await put('停水', { rank: 9 })).statusCode).toBe(404);
-    expect((await put('停水', { rank: 2 })).statusCode).toBe(200);
-    expect(await visual('停水')).toMatchObject({ kind: 'icon', icon: 'droplet' });
-    const page = (await app.inject({ url: '/auth/admin/tag-visuals?status=chosen&kind=icon', headers: as('admin', false) })).json();
-    const row = page.visuals.find((r: { tag: string }) => r.tag === '停水');
+    expect((await put('MLB', { rank: 9 })).statusCode).toBe(404);
+    expect((await put('MLB', { rank: 2 })).statusCode).toBe(200);
+    expect(await visual('MLB')).toMatchObject({ kind: 'emoji', emoji: '⚾' });
+    const page = (await app.inject({ url: '/auth/admin/tag-visuals?status=chosen&kind=emoji', headers: as('admin', false) })).json();
+    const row = page.visuals.find((r: { tag: string }) => r.tag === 'MLB');
     expect(row.shownRank).toBe(2);
-    expect(row.candidates.map((c: { value: string }) => c.value)).toEqual(['droplet-off', 'droplet']);
-    expect((await app.inject({ url: row.candidates[0].image, headers: as('admin', false) })).body).toContain('<svg');
-    expect(page.kinds).toMatchObject({ icon: 1, emoji: 1 });
-    expect((await put('停水', { icon: 'nope' })).statusCode).toBe(400);
+    expect(row.candidates.map((c: { kind: string }) => c.kind)).toEqual(['logo', 'emoji']);
+    expect(page.kinds).toMatchObject({ emoji: 2 });
+    // The admin's own emoji where nothing fit.
     expect((await put('停水', { emoji: '水' })).statusCode).toBe(400);
-    expect((await put('停水', { icon: 'droplet' })).statusCode).toBe(200);
-    const v = await visual('停水');
-    expect(v).toMatchObject({ kind: 'icon', icon: 'droplet' });
-    expect((await app.inject({ url: v.image })).body).toContain('stroke="currentColor"');
-    const cloud = (await app.inject({ url: '/api/v1/tag-visuals' })).json().visuals['停水'];
-    expect(cloud.image).toContain('tone=brand');
-    expect((await app.inject({ url: cloud.image })).body).toContain('stroke="#f54900"');
+    expect((await put('停水', { icon: 'droplet' })).statusCode).toBe(400);
+    expect((await put('停水', { emoji: '💧' })).statusCode).toBe(200);
+    expect(await visual('停水')).toMatchObject({ kind: 'emoji', emoji: '💧' });
+    expect((await app.inject({ url: '/api/v1/tag-visuals' })).json().visuals['停水']).toEqual({ kind: 'emoji', image: null, emoji: '💧' });
     // A tag with no row yet.
     const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: { r: 0, g: 0, b: 200, alpha: 1 } } })
       .png()
@@ -315,9 +302,9 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     // Re-runs leave hidden and chosen tags alone.
     expect(await processTags(db, ['台北'], { findImpl: async () => null })).toEqual({});
     const log = await db.select({ tag: tagVisualLog.tag, action: tagVisualLog.action }).from(tagVisualLog);
-    expect(log.map((l) => `${l.tag} ${l.action}`).sort()).toEqual(['停水 icon', '停水 pick', '台北 hide', '某公司 upload', '煙火 confirm']);
+    expect(log.map((l) => `${l.tag} ${l.action}`).sort()).toEqual(['MLB pick', '停水 emoji', '台北 hide', '某公司 upload', '煙火 confirm']);
     const list = (await app.inject({ url: '/auth/admin/tag-visuals?status=chosen', headers: as('admin', false) })).json();
-    expect(list.visuals.map((r: { tag: string }) => r.tag).sort()).toEqual(['停水', '某公司', '煙火']);
+    expect(list.visuals.map((r: { tag: string }) => r.tag).sort()).toEqual(['MLB', '停水', '某公司', '煙火']);
     const one = (
       await app.inject({ url: `/auth/admin/tag-visuals?tag=${encodeURIComponent('沒有的')}`, headers: as('admin', false) })
     ).json();

@@ -4,12 +4,12 @@ import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
 import { type TagVisualKind, type TagVisualStatus, tagVisualCandidates, tagVisualLog, tagVisuals } from '../db/schema.ts';
 import { visualMime } from '../v1/tag-visual.ts';
-import { iconSvg, isEmoji, isIcon, searchIcons } from './icons.ts';
+import { isEmoji } from './emoji.ts';
 import { recolourLogo } from './recolour.ts';
 
 // /admin/tag-visuals/: admins look over the pictures of non-person tags by
 // status and by kind, click one of each tag's candidates (like the avatars'
-// review), hide the picture, or set their own emoji, icon or logo
+// review), hide the picture, or set their own emoji or logo
 // (docs/tag-visuals.md). AI picks stay hidden until chosen here; every change
 // is logged in tag_visual_log, and re-runs leave chosen and hidden tags alone.
 
@@ -19,7 +19,7 @@ type Options = {
 };
 
 const STATUSES: TagVisualStatus[] = ['review', 'auto', 'chosen', 'hidden', 'none'];
-const KINDS: (TagVisualKind | 'none')[] = ['place', 'logo', 'emoji', 'icon', 'none'];
+const KINDS: (TagVisualKind | 'none')[] = ['place', 'logo', 'emoji', 'none'];
 const kindIs = (kind: TagVisualKind | 'none'): SQL => (kind === 'none' ? isNull(tagVisuals.kind) : eq(tagVisuals.kind, kind));
 const PAGE = 60;
 // A logo upload, base64 in JSON: up to about 3 MB of image.
@@ -191,18 +191,6 @@ export function registerTagVisualAdmin(app: FastifyInstance, db: Db, { requireAd
       .send(row.image);
   });
 
-  app.get<{ Querystring: { q?: string } }>('/auth/admin/tag-visuals/icons', async (request, reply) => {
-    if (!(await requireAdmin(request, reply))) return reply;
-    return { icons: searchIcons(request.query.q ?? '') };
-  });
-
-  app.get<{ Params: { name: string } }>('/auth/admin/tag-visuals/icons/:name', async (request, reply) => {
-    if (!(await requireAdmin(request, reply))) return reply;
-    const svg = iconSvg(request.params.name);
-    if (!svg) return reply.code(404).send({ error: 'no such icon' });
-    return reply.header('content-type', 'image/svg+xml').header('cache-control', 'private, max-age=86400').send(svg);
-  });
-
   const record = async (
     tag: string,
     action: (typeof tagVisualLog.$inferInsert)['action'],
@@ -223,8 +211,8 @@ export function registerTagVisualAdmin(app: FastifyInstance, db: Db, { requireAd
   };
 
   // { rank } shows that candidate; { action: 'confirm' } shows what is in use;
-  // { action: 'hide' } turns it off; { emoji } or { icon } sets the admin's own and shows it.
-  app.put<{ Params: { tag: string }; Body: { rank?: unknown; action?: unknown; emoji?: unknown; icon?: unknown } }>(
+  // { action: 'hide' } turns it off; { emoji } sets the admin's own and shows it.
+  app.put<{ Params: { tag: string }; Body: { rank?: unknown; action?: unknown; emoji?: unknown } }>(
     '/auth/admin/tag-visuals/:tag',
     async (request, reply) => {
       if (!sameOrigin(request, reply)) return reply;
@@ -278,24 +266,7 @@ export function registerTagVisualAdmin(app: FastifyInstance, db: Db, { requireAd
           artist: null,
         });
       }
-      const icon = typeof body.icon === 'string' ? body.icon.trim() : null;
-      if (icon !== null) {
-        if (!isIcon(icon)) return reply.code(400).send({ error: 'no such icon' });
-        return record(tag, 'icon', `${was} → ${icon}`, user.email, {
-          status: 'chosen',
-          kind: 'icon',
-          value: icon,
-          shownRank: null,
-          note: null,
-          image: Buffer.from(iconSvg(icon) as string),
-          large: null,
-          pageUrl: null,
-          license: null,
-          licenseUrl: null,
-          artist: null,
-        });
-      }
-      return reply.code(400).send({ error: 'send rank, action (confirm or hide), emoji or icon' });
+      return reply.code(400).send({ error: 'send rank, action (confirm or hide) or emoji' });
     },
   );
 

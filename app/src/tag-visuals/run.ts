@@ -4,15 +4,14 @@ import type { Db } from '../db/client.ts';
 import { articles, articleTags, type TagVisualStatus, tagPeople, tagVisualCandidates, tagVisuals, tagWikidata } from '../db/schema.ts';
 import type { AiConfig } from '../tag-groups/ai.ts';
 import { type Pick, pickVisuals, type VisualItem } from './ai.ts';
-import { iconSvg } from './icons.ts';
 import { city, country, type Place, taiwanPlace } from './places.ts';
 import { recolourLogo } from './recolour.ts';
 
 // Pictures for non-person tags (docs/tag-visuals.md), in this order: a
 // Taiwan county or township by name; the tag's Wikidata item as a country,
 // a city (a dot) or an organisation or work with a logo, shown once the AI
-// agrees it is what the news means; otherwise the AI's exact emoji and up to
-// three Lucide icons, held for review. Every picture found is kept as a
+// agrees it is what the news means; otherwise the AI's exact emoji, held for
+// review, or nothing (line icons were tried and dropped). Every picture found is kept as a
 // candidate for /admin/tag-visuals/; tag_visuals copies the one in use.
 // Person tags are left to the sketch avatars.
 
@@ -123,16 +122,13 @@ async function fromItem(qid: string): Promise<Candidate | null> {
 /**
  * The candidates in order, and whether the first may show without review:
  * the Wikidata item's picture first when the AI agrees it is what the news
- * means; else the AI's exact emoji, its icons, and last the item's picture
- * marked as not matching (an admin may still know better).
+ * means; else the AI's exact emoji, and last the item's picture marked as not
+ * matching (an admin may still know better).
  */
 export function arrange(pick: Pick | undefined, model: string, item: Candidate | null) {
   const ai = `AI（${model}）`;
   const why = pick?.why ? `${pick.why}・${ai}` : ai;
-  const picks: Candidate[] = [
-    ...(pick?.emoji ? [{ kind: 'emoji' as const, value: pick.emoji, note: why }] : []),
-    ...(pick?.icons ?? []).map((icon) => ({ kind: 'icon' as const, value: icon, note: why, image: Buffer.from(iconSvg(icon) ?? '') })),
-  ];
+  const picks: Candidate[] = pick?.emoji ? [{ kind: 'emoji', value: pick.emoji, note: why }] : [];
   if (item && pick?.same === true) return { status: 'auto' as const, candidates: [item, ...picks] };
   const doubtful = item ? [{ ...item, note: `Wikidata 項目不符・${item.note ?? ''}`.slice(0, 120) }] : [];
   return { status: 'review' as const, candidates: [...picks, ...doubtful], note: why };

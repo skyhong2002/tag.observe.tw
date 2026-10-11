@@ -21,7 +21,6 @@
       "!docs",
       "!artifacts",
       "!package-lock.json",
-      "!app/src/tag-visuals/lucide-icons.json",
       "!**/*.css"
     ],
     "ignoreUnknown": true

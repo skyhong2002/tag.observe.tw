@@ -190,12 +190,11 @@ export const fetchTagPerson = (tag: string) =>
   get<{ tag: string; person: TagPerson | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/person`, 300).then((r) => r.person);
 /** The picture of a non-person tag (docs/tag-visuals.md). */
 export interface TagVisual {
-  kind: 'place' | 'logo' | 'emoji' | 'icon';
+  kind: 'place' | 'logo' | 'emoji';
   emoji: string | null;
-  icon: string | null;
   label: string | null;
   wikidataId: string | null;
-  /** Outline, logo or icon (SVG or WebP). */
+  /** Outline or logo (SVG or WebP). */
   image: string | null;
   /** Places: where the place is. */
   large: string | null;

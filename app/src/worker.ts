@@ -140,6 +140,18 @@ await queue.upsertJobScheduler(
   { pattern: process.env.TAG_AVATARS_CRON || '40 4 * * *' },
   { name: 'tag-avatars', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+// Every hour, the home cloud's new rising words: sketches first, then the other
+// tags' pictures, so a word that just started rising is drawn within the hour.
+await queue.upsertJobScheduler(
+  'tag-avatars-hourly',
+  { pattern: process.env.TAG_AVATARS_HOURLY_CRON || '20 * * * *' },
+  { name: 'tag-avatars', data: { rising: true }, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
+await queue.upsertJobScheduler(
+  'tag-visuals-hourly',
+  { pattern: process.env.TAG_VISUALS_HOURLY_CRON || '27 * * * *' },
+  { name: 'tag-visuals', data: { rising: true }, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
 // Tag groups after the avatars, which match new person tags first (jobs/tag-groups-job.ts).
 await queue.upsertJobScheduler(
   'tag-groups-daily',
@@ -232,7 +244,7 @@ const worker = new Worker(
         return r;
       }
       if (job.name === 'tag-avatars') {
-        const r = await runTagAvatarsInChild({ signal: shutdown.signal });
+        const r = await runTagAvatarsInChild({ signal: shutdown.signal, rising: !!job.data?.rising });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }
@@ -242,7 +254,11 @@ const worker = new Worker(
         return r;
       }
       if (job.name === 'tag-visuals') {
-        const r = await runTagVisualsJob(db, { log: (o, m) => log.warn(o, m), signal: shutdown.signal });
+        const r = await runTagVisualsJob(db, {
+          log: (o, m) => log.warn(o, m),
+          signal: shutdown.signal,
+          ...(job.data?.rising ? { risingOnly: true, budgetMs: 4 * 60e3 } : {}),
+        });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

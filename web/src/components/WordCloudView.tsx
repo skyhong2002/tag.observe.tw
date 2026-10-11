@@ -216,7 +216,7 @@ function Canvas({
  * A tag's picture with its name under it: a person's sketch as on its page
  * (components/TagPerson.tsx), already painted (?layer=color: orange strokes
  * on the white person), so it reads the same on light and dark pages without
- * SVG masks; or another tag's place, logo or icon (already orange), or emoji.
+ * SVG masks; or another tag's place or logo (already orange) or emoji.
  */
 function Sketch({ url, emoji, word, tone }: { url?: string; emoji?: string; word: PlacedBox; tone: string }) {
   const { side, caption } = pictureBox(word.label, word.fontSize);

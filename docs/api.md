@@ -1757,7 +1757,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/avatar'
 
 **所有有小圖的非人物標籤**
 
-目前公開的非人物標籤小圖，首頁文字雲用來把標籤畫成圖（人物頭像見 /api/v1/tag-avatars）。台灣縣市鄉鎮給它在台灣或所屬縣市裡的位置圖，其他地方給輪廓，標誌給單色標誌，線條圖示給已塗成網站橘的 SVG（tone=brand），emoji 直接給字元。待確認、隱藏或沒有圖的標籤不列出。
+目前公開的非人物標籤小圖，首頁文字雲用來把標籤畫成圖（人物頭像見 /api/v1/tag-avatars）。台灣縣市鄉鎮給它在台灣或所屬縣市裡的位置圖，其他地方給輪廓，標誌給單色標誌，emoji 直接給字元。待確認、隱藏或沒有圖的標籤不列出。
 
 範例：
 
@@ -1770,7 +1770,7 @@ curl -s 'https://tag.observe.tw/api/v1/tag-visuals'
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `visuals` | {鍵: object} | 依標籤 |
-| `visuals.{鍵}.kind` | "place" \| "logo" \| "emoji" \| "icon" | 種類 |
+| `visuals.{鍵}.kind` | "place" \| "logo" \| "emoji" | 種類 |
 | `visuals.{鍵}.image` | string \| null | 圖檔網址，帶版本參數；emoji 為 null |
 | `visuals.{鍵}.emoji` | string \| null | kind 為 emoji 時的 emoji |
 
@@ -1782,7 +1782,7 @@ curl -s 'https://tag.observe.tw/api/v1/tag-visuals'
 
 **非人物標籤的小圖**
 
-人物以外的標籤配的圖（人物用 /api/v1/tags/{tag}/person 的素描頭像）。kind：place 是縣市、鄉鎮、國家的輪廓或城市的定位點（地圖資料：內政部國土測繪中心、Natural Earth），image 是輪廓，large 是它在台灣、所屬縣市或地球上的位置；logo 是 Wikidata 項目在 Wikimedia Commons 上的標誌，轉成網站橘色的單色（只保留原本的明暗），source 附原檔的授權與作者，管理員上傳的沒有 source；emoji 是完全就是這個東西的 emoji；icon 是 Lucide 線條圖示的名稱與 SVG。地方與 Commons 標誌自動顯示；emoji 與圖示由 AI 挑選，管理員確認後才回傳。沒有圖、待確認或被隱藏時 visual 為 null。
+人物以外的標籤配的圖（人物用 /api/v1/tags/{tag}/person 的素描頭像）。kind：place 是縣市、鄉鎮、國家的輪廓或城市的定位點（地圖資料：內政部國土測繪中心、Natural Earth），image 是輪廓，large 是它在台灣、所屬縣市或地球上的位置；logo 是 Wikidata 項目在 Wikimedia Commons 上的標誌，轉成網站橘色的單色（只保留原本的明暗），source 附原檔的授權與作者，管理員上傳的沒有 source；emoji 是完全就是這個東西的 emoji。地方與 AI 確認過的 Commons 標誌自動顯示；emoji 由 AI 挑選，管理員確認後才回傳。沒有圖、待確認或被隱藏時 visual 為 null。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -1800,9 +1800,8 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E5%8F%B0%E5%8C%97/visual'
 | --- | --- | --- |
 | `tag` | string |  |
 | `visual` | object \| null |  |
-| `visual.kind` | "place" \| "logo" \| "emoji" \| "icon" | 種類 |
+| `visual.kind` | "place" \| "logo" \| "emoji" | 種類 |
 | `visual.emoji` | string \| null | kind 為 emoji 時的 emoji |
-| `visual.icon` | string \| null | kind 為 icon 時的 Lucide 圖示名稱 |
 | `visual.label` | string \| null | 地方的正式名稱或 Wikidata 名稱，例如 台北市 |
 | `visual.wikidataId` | string \| null | Wikidata 項目 ID |
 | `visual.image` | string \| null | 小圖網址（SVG；標誌為 WebP），帶版本參數 |
@@ -1823,13 +1822,12 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E5%8F%B0%E5%8C%97/visual'
 
 **非人物標籤的小圖圖檔**
 
-地方輪廓與線條圖示是 SVG（圖示以 currentColor 描線，本站當 CSS mask 填網站橘色），標誌是透明背景的 WebP。網址請用 visual 回應裡的 image／large（帶版本參數，換圖時會變）。沒有圖時回 404。
+地方輪廓是 SVG，標誌是透明背景的 WebP。網址請用 visual 回應裡的 image／large（帶版本參數，換圖時會變）。沒有圖時回 404。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `tag` | 路徑 | string | 標籤（URL 編碼），例：`台北` |
-| `size` | query | "small" \| "large" | small（輪廓、標誌、圖示）或 large（地方的位置圖） |
-| `tone` | query | "brand" | brand：線條圖示直接塗成網站橘（不當 mask 用時） |
+| `size` | query | "small" \| "large" | small（輪廓、標誌）或 large（地方的位置圖） |
 
 範例：
 

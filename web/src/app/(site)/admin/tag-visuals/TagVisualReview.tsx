@@ -1,6 +1,5 @@
 'use client';
 
-import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { VisualPicture } from '@/components/TagVisual';
 import type { TagVisual } from '@/lib/api';
@@ -8,7 +7,7 @@ import AdminGate, { adminFetch, note } from '../AdminGate';
 
 // Pictures for non-person tags (docs/tag-visuals.md), reviewed like the
 // person avatars (/admin/avatars/): each tag shows its candidates — the
-// Wikidata place or logo, the AI's exact emoji and up to three icons — and
+// Wikidata place or logo and the AI's exact emoji — and
 // clicking one puts it in use. Places and logos the AI agreed with show by
 // themselves; everything else waits here. Filter by status and by kind of
 // picture to review one kind at a time. Chosen and hidden tags survive re-runs.
@@ -62,10 +61,9 @@ const KINDS: [Kind | 'none' | null, string][] = [
   ['place', '地方'],
   ['logo', '標誌'],
   ['emoji', 'emoji'],
-  ['icon', '線條圖示'],
   ['none', '沒有圖'],
 ];
-const KIND_LABEL: Record<Kind, string> = { place: '地方', logo: '標誌', emoji: 'emoji', icon: '圖示' };
+const KIND_LABEL: Record<Kind, string> = { place: '地方', logo: '標誌', emoji: 'emoji' };
 const pill = (on: boolean) =>
   `min-h-9 rounded-full px-3 ${on ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'border border-zinc-300 dark:border-zinc-700'}`;
 const button = 'min-h-9 rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 dark:border-zinc-700';
@@ -76,8 +74,9 @@ export default function TagVisualReview() {
     <AdminGate next="/admin/tag-visuals/">
       <p className={note}>
         非人物標籤的小圖。每個標籤列出找到的候選：Wikidata 的地方輪廓或標誌（轉成網站橘的單色），以及 AI 挑的
-        emoji（只在完全就是那個東西時）和最多三個線條圖示。 AI
-        確認過的地方與標誌自動顯示；其餘放在「待確認」，點一張候選圖就會改用並公開。選定或隱藏後，之後重跑也不會覆蓋。
+        emoji（只在完全就是那個東西時）。 AI
+        確認過的地方與標誌自動顯示；其餘放在「待確認」，點一張候選圖就會改用並公開。都不合適的可以自己輸入 emoji
+        或上傳標誌。選定或隱藏後，之後重跑也不會覆蓋。
       </p>
       <Review />
     </AdminGate>
@@ -211,7 +210,6 @@ const asVisual = (c: {
 }): TagVisual => ({
   kind: c.kind,
   emoji: c.kind === 'emoji' ? (c.value ?? null) : null,
-  icon: c.kind === 'icon' ? (c.value ?? null) : null,
   label: c.label ?? null,
   wikidataId: null,
   image: c.image,
@@ -261,7 +259,6 @@ function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknow
               </span>
               <span className="mt-1 block">
                 #{c.rank} · {KIND_LABEL[c.kind]}
-                {c.kind === 'icon' && c.value ? ` · ${c.value}` : ''}
                 {inUse && ' · 使用中'}
               </span>
               {c.note && <span className="block truncate text-zinc-500">{c.note}</span>}
@@ -299,11 +296,9 @@ function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknow
   );
 }
 
-/** The admin's own emoji, icon or logo, for when no candidate fits. */
+/** The admin's own emoji or logo, for when no candidate fits. */
 function OwnPicture({ path, act, put }: { path: string; act: (call: () => Promise<unknown>) => void; put: (body: object) => void }) {
   const [emoji, setEmoji] = useState('');
-  const [iconQuery, setIconQuery] = useState('');
-  const [icons, setIcons] = useState<string[] | null>(null);
   const upload = (file: File) =>
     act(async () => {
       const bytes = new Uint8Array(await file.arrayBuffer());
@@ -333,26 +328,6 @@ function OwnPicture({ path, act, put }: { path: string; act: (call: () => Promis
             改用
           </button>
         </form>
-        <form
-          className="flex gap-1"
-          onSubmit={(e) => {
-            e.preventDefault();
-            act(async () =>
-              setIcons((await adminFetch<{ icons: string[] }>(`/auth/admin/tag-visuals/icons?q=${encodeURIComponent(iconQuery)}`)).icons),
-            );
-          }}
-        >
-          <input
-            value={iconQuery}
-            onChange={(e) => setIconQuery(e.target.value)}
-            placeholder="找圖示（英文，如 fire）"
-            className={`${input} w-44`}
-            aria-label="找圖示"
-          />
-          <button type="submit" className={button}>
-            找
-          </button>
-        </form>
         <label className={`${button} inline-flex cursor-pointer items-center`}>
           上傳標誌
           <input
@@ -367,30 +342,6 @@ function OwnPicture({ path, act, put }: { path: string; act: (call: () => Promis
           />
         </label>
       </div>
-      {icons && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {!icons.length && <span className="text-zinc-500">找不到圖示。</span>}
-          {icons.map((name) => (
-            <button
-              key={name}
-              type="button"
-              title={name}
-              onClick={() => {
-                setIcons(null);
-                put({ icon: name });
-              }}
-              className="rounded-md border border-transparent p-1 hover:border-brand-600"
-            >
-              <span
-                aria-hidden="true"
-                className="block h-7 w-7 bg-brand-600 [mask-image:var(--icon)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain]"
-                style={{ '--icon': `url("/auth/admin/tag-visuals/icons/${name}")` } as React.CSSProperties}
-              />
-              <span className="sr-only">{name}</span>
-            </button>
-          ))}
-        </div>
-      )}
     </details>
   );
 }

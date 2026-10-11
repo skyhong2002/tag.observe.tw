@@ -104,7 +104,7 @@ const frameVars = Object.fromEntries(
 const WORDS = 30;
 // Every word with a picture is drawn as it, its name in small type under it:
 // people as their sketches (docs/tag-avatars.md), other tags as their place,
-// logo, icon or emoji (docs/tag-visuals.md). The rest stay words.
+// logo or emoji (docs/tag-visuals.md). The rest stay words.
 
 async function Cloud() {
   const [growth, score, avatars, visuals] = await Promise.all([

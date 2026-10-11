@@ -4,8 +4,9 @@ import { aiConfig } from '../tag-groups/ai.ts';
 import { rankedTags } from '../tag-groups/run.ts';
 import { processTags } from '../tag-visuals/run.ts';
 
-// Daily pictures for non-person tags (docs/tag-visuals.md): the home page
-// cloud's rising tags, then this week's 500 busiest ranking tags, after the tag-groups job has looked their Wikidata
+// Pictures for non-person tags (docs/tag-visuals.md). Hourly (`risingOnly`):
+// the home page cloud's rising tags not checked yet, so a new word gets its
+// picture within the hour. Daily: those, then this week's 500 busiest ranking tags, after the tag-groups job has looked their Wikidata
 // items up. Tags are checked again after 30 days, so a normal day handles a
 // few dozen. Stops between tags after `budgetMs`; the rest wait a day.
 
@@ -19,11 +20,20 @@ export async function runTagVisualsJob(
     limit = 500,
     budgetMs = 8 * 60e3,
     env = process.env,
-  }: { log?: Log; signal?: AbortSignal; limit?: number; budgetMs?: number; env?: Record<string, string | undefined> } = {},
+    risingOnly = false,
+  }: {
+    log?: Log;
+    signal?: AbortSignal;
+    limit?: number;
+    budgetMs?: number;
+    env?: Record<string, string | undefined>;
+    risingOnly?: boolean;
+  } = {},
 ) {
   const deadline = Date.now() + budgetMs;
   const stop = () => !!signal?.aborted || Date.now() > deadline;
-  const tags = [...new Set([...(await risingTags(db)), ...(await rankedTags(db, { limit }))])];
+  const rising = await risingTags(db);
+  const tags = risingOnly ? rising : [...new Set([...rising, ...(await rankedTags(db, { limit }))])];
   const tally = await processTags(db, tags, {
     ai: aiConfig(env),
     stop,

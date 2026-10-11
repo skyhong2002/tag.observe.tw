@@ -2,8 +2,9 @@ import { releaseModels } from '../avatars/models.ts';
 import { busyTags, processTag } from '../avatars/run.ts';
 import type { Db } from '../db/client.ts';
 
-// Daily sketch avatars for new person tags (docs/tag-avatars.md): the news
-// ranking's tags of the week not checked in 30 days, a few at a time. The
+// Sketch avatars for new person tags (docs/tag-avatars.md): daily, the news
+// ranking's tags of the week not checked in 30 days, a few at a time; hourly
+// (`risingOnly`), just the home cloud's rising tags not checked yet. The
 // worker runs two jobs at once, so this one stops after `budgetMs` (well
 // inside the 15-minute job lock) and leaves the rest for the next day.
 
@@ -16,10 +17,11 @@ export async function runTagAvatarsJob(
     signal,
     limit = 40,
     budgetMs = 8 * 60e3,
-  }: { log?: Log; signal?: AbortSignal; limit?: number; budgetMs?: number } = {},
+    risingOnly = false,
+  }: { log?: Log; signal?: AbortSignal; limit?: number; budgetMs?: number; risingOnly?: boolean } = {},
 ) {
   const deadline = Date.now() + budgetMs;
-  const tags = await busyTags(db, { limit });
+  const tags = await busyTags(db, { limit, risingOnly });
   const tally: Record<string, number> = {};
   let done = 0;
   try {

@@ -159,19 +159,22 @@ export const risingTags = (db: Db, limit = RISING) =>
  * The home page cloud's top rising tags, then tags that made the news ranking
  * in the last `days` days (tag_stats level 3: several outlets repeating it),
  * most hours first, minus those checked in the last 30 days (all of them with
- * `force`). tag_stats is small and indexed; grouping article_tags over a week
+ * `force`); with `risingOnly`, just the cloud's tags. tag_stats is small and indexed; grouping article_tags over a week
  * took minutes on production.
  */
-export async function busyTags(db: Db, { limit = 100, days = 7, force = false } = {}) {
+export async function busyTags(db: Db, { limit = 100, days = 7, force = false, risingOnly = false } = {}) {
   const since = new Date(Date.now() - days * 86_400_000);
   // The home page cloud's rising tags first (its faces come from here).
   const rising = await risingTags(db);
-  const ranked = await db
-    .select({ tag: tagStats.tag })
-    .from(tagStats)
-    .where(and(eq(tagStats.category, 'news'), eq(tagStats.level, 3), gte(tagStats.lastHour, since)))
-    .orderBy(desc(tagStats.hoursCount))
-    .limit(5000);
+  // The hourly run: only the cloud's words, so new faces show within the hour.
+  const ranked = risingOnly
+    ? []
+    : await db
+        .select({ tag: tagStats.tag })
+        .from(tagStats)
+        .where(and(eq(tagStats.category, 'news'), eq(tagStats.level, 3), gte(tagStats.lastHour, since)))
+        .orderBy(desc(tagStats.hoursCount))
+        .limit(5000);
   const fresh = force
     ? new Set<string>()
     : new Set(

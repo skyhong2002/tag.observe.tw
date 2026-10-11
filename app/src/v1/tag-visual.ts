@@ -4,12 +4,10 @@ import type { Db } from '../db/client.ts';
 import { type TagVisualKind, tagVisuals } from '../db/schema.ts';
 
 // The picture for a non-person tag (docs/tag-visuals.md): a place outline,
-// a logo in the site's orange, an emoji or a line icon. AI picks waiting for
+// a logo in the site's orange, or an emoji. AI picks waiting for
 // review and hidden ones are not served.
 
 export const SHOWN_VISUAL = ['auto', 'chosen'] as const;
-// The site's brand-600, as in the place outlines.
-const BRAND = '#f54900';
 export const visualMime = (kind: TagVisualKind | null) => (kind === 'logo' ? 'image/webp' : 'image/svg+xml');
 
 // `v` changes whenever the picture can change (a re-run or an admin edit), so the image itself caches for a day.
@@ -19,8 +17,7 @@ const imagePath = (tag: string, at: Date, size: 'small' | 'large') =>
 /**
  * Every shown picture that can stand in for its word in a cloud (the home
  * page draws them like the person sketches): Taiwan places as where they are
- * on the island, other places as their outline, logos, icons painted orange,
- * emoji as themselves.
+ * on the island, other places as their outline, logos, emoji as themselves.
  */
 export async function tagVisualsForCloud(db: Db) {
   const rows = await db
@@ -45,8 +42,7 @@ export async function tagVisualsForCloud(db: Db) {
     }
     const taiwan = r.kind === 'place' && r.value?.startsWith('tw-') && Number(r.hasLarge);
     if (!taiwan && !Number(r.hasImage)) continue;
-    const url = imagePath(r.tag, at, taiwan ? 'large' : 'small');
-    out[r.tag] = { kind: r.kind, image: r.kind === 'icon' ? `${url}&tone=brand` : url, emoji: null };
+    out[r.tag] = { kind: r.kind, image: imagePath(r.tag, at, taiwan ? 'large' : 'small'), emoji: null };
   }
   return out;
 }
@@ -74,7 +70,6 @@ export async function tagVisual(db: Db, tag: string) {
   return {
     kind: v.kind,
     emoji: v.kind === 'emoji' ? v.value : null,
-    icon: v.kind === 'icon' ? v.value : null,
     label: v.label,
     wikidataId: v.wikidataId,
     image: Number(v.hasImage) ? imagePath(tag, at, 'small') : null,
@@ -96,24 +91,18 @@ export function registerTagVisual(app: FastifyInstance, db: Db) {
     return { tag, visual: await tagVisual(db, tag) };
   });
 
-  // small: the outline, logo or icon (tag chips); large: where the place is (tag page).
-  // tone=brand paints an icon orange, for places that draw it as a plain image rather than a mask.
-  app.get<{ Params: { tag: string }; Querystring: { size?: string; tone?: string } }>(
-    '/api/v1/tags/:tag/visual-image',
-    async (request, reply) => {
-      const large = request.query.size === 'large';
-      const [row] = await db
-        .select({ kind: tagVisuals.kind, image: large ? tagVisuals.large : tagVisuals.image })
-        .from(tagVisuals)
-        .where(and(eq(tagVisuals.tag, request.params.tag), inArray(tagVisuals.status, [...SHOWN_VISUAL])));
-      if (!row?.image) return reply.code(404).send({ error: 'no picture' });
-      const body =
-        row.kind === 'icon' && request.query.tone === 'brand' ? row.image.toString().replaceAll('currentColor', BRAND) : row.image;
-      return reply
-        .header('content-type', visualMime(row.kind))
-        .header('cache-control', 'public, max-age=86400')
-        .header('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'")
-        .send(body);
-    },
-  );
+  // small: the outline or logo (tag chips); large: where the place is (tag page).
+  app.get<{ Params: { tag: string }; Querystring: { size?: string } }>('/api/v1/tags/:tag/visual-image', async (request, reply) => {
+    const large = request.query.size === 'large';
+    const [row] = await db
+      .select({ kind: tagVisuals.kind, image: large ? tagVisuals.large : tagVisuals.image })
+      .from(tagVisuals)
+      .where(and(eq(tagVisuals.tag, request.params.tag), inArray(tagVisuals.status, [...SHOWN_VISUAL])));
+    if (!row?.image) return reply.code(404).send({ error: 'no picture' });
+    return reply
+      .header('content-type', visualMime(row.kind))
+      .header('cache-control', 'public, max-age=86400')
+      .header('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'")
+      .send(row.image);
+  });
 }

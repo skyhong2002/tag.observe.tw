@@ -9,9 +9,9 @@ import type { runTagAvatarsJob } from './tag-avatars-run.ts';
  * so its memory is returned when it ends; `signal` (worker shutdown) asks the
  * child to stop after the current tag.
  */
-export function runTagAvatarsInChild({ signal }: { signal?: AbortSignal } = {}) {
+export function runTagAvatarsInChild({ signal, rising = false }: { signal?: AbortSignal; rising?: boolean } = {}) {
   return new Promise<Awaited<ReturnType<typeof runTagAvatarsJob>>>((resolve, reject) => {
-    const child = fork(new URL('./tag-avatars-child.ts', import.meta.url), { stdio: 'inherit' });
+    const child = fork(new URL('./tag-avatars-child.ts', import.meta.url), rising ? ['rising'] : [], { stdio: 'inherit' });
     let reply: { result?: Awaited<ReturnType<typeof runTagAvatarsJob>>; error?: string } = {};
     const stop = () => child.kill('SIGTERM');
     signal?.addEventListener('abort', stop, { once: true });
