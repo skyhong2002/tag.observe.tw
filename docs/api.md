@@ -1773,6 +1773,7 @@ curl -s 'https://tag.observe.tw/api/v1/tag-visuals'
 | `visuals.{鍵}.kind` | "place" \| "logo" \| "emoji" | 種類 |
 | `visuals.{鍵}.image` | string \| null | 圖檔網址，帶版本參數；emoji 為 null |
 | `visuals.{鍵}.emoji` | string \| null | kind 為 emoji 時的 emoji |
+| `visuals.{鍵}.aspect` | number | 標誌的寬÷高，讓文字雲給長條形標誌較寬的位置；其他種類沒有這個欄位 |
 
 快取：5 分鐘。
 

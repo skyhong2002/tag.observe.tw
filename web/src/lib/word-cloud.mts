@@ -11,6 +11,8 @@ export interface CloudTerm {
   count: number;
   /** Drawn as a square picture (a person's sketch) instead of text. */
   square?: boolean;
+  /** …or a picture this many times wider than tall (a wordmark logo). */
+  aspect?: number;
 }
 export interface PlacedWord extends CloudTerm {
   x: number;
@@ -27,15 +29,32 @@ export const CAPTION = 0.17;
 /** …but never smaller than this, in viewBox units, so a small face's name stays legible. */
 const CAPTION_MIN = 8.5;
 const CAPTION_LINE = 1.35;
-/** A picture with its name under it: the square, widened if the name is longer. */
-export const pictureBox = (label: string, size: number) => {
+/** Widest a picture may be drawn, as width ÷ height: a long wordmark is still squeezed this far. */
+const ASPECT_MAX = 4;
+/**
+ * A picture with its name under it. A square (a face) is `side` across; a
+ * wider picture (a wordmark logo) keeps the same area but takes its own
+ * shape, `pictureWidth` × `pictureHeight`, so its letters stay readable
+ * instead of shrinking to a line inside a square. The box widens if the name is longer.
+ */
+export const pictureBox = (label: string, size: number, aspect = 1) => {
   const side = size * SQUARE;
+  const stretch = Math.sqrt(Math.min(ASPECT_MAX, Math.max(1, aspect)));
+  const pictureWidth = side * stretch;
+  const pictureHeight = side / stretch;
   const caption = Math.max(side * CAPTION, CAPTION_MIN);
-  return { side, caption, width: Math.max(side, widthOf(label, caption)), height: side + caption * CAPTION_LINE };
+  return {
+    side,
+    pictureWidth,
+    pictureHeight,
+    caption,
+    width: Math.max(pictureWidth, widthOf(label, caption)),
+    height: pictureHeight + caption * CAPTION_LINE,
+  };
 };
 const boxOf = (term: CloudTerm, size: number): [number, number] => {
-  if (!term.square) return [widthOf(term.label, size), size * 1.6];
-  const { width, height } = pictureBox(term.label, size);
+  if (!term.square && !term.aspect) return [widthOf(term.label, size), size * 1.6];
+  const { width, height } = pictureBox(term.label, size, term.aspect);
   return [width, height];
 };
 const widthOf = (label: string, size: number) =>
@@ -78,7 +97,12 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
   for (const term of terms) {
     const label = term.label.trim();
     if (label && Number.isFinite(term.count) && term.count > 0 && !unique.has(label))
-      unique.set(label, { label, count: term.count, ...(term.square ? { square: true } : {}) });
+      unique.set(label, {
+        label,
+        count: term.count,
+        ...(term.square ? { square: true } : {}),
+        ...(term.aspect ? { aspect: term.aspect } : {}),
+      });
   }
   const sorted = [...unique.values()]
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'zh-TW'))

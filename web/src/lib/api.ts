@@ -203,7 +203,7 @@ export interface TagVisual {
 }
 /** Every shown non-person picture, as the home cloud draws it: an image URL or an emoji. */
 export const fetchTagVisuals = () =>
-  get<{ visuals: Record<string, { kind: TagVisual['kind']; image: string | null; emoji: string | null }> }>(
+  get<{ visuals: Record<string, { kind: TagVisual['kind']; image: string | null; emoji: string | null; aspect?: number }> }>(
     '/api/v1/tag-visuals',
     300,
   ).then((r) => r.visuals);

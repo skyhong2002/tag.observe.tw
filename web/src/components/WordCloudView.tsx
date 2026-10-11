@@ -26,6 +26,8 @@ export interface CloudWordInfo {
   image?: string;
   /** An emoji drawn the same way. */
   emoji?: string;
+  /** The picture's width ÷ height when it is not square (a wordmark logo). */
+  aspect?: number;
 }
 export interface PlacedBox {
   label: string;
@@ -152,7 +154,7 @@ function Canvas({
             >
               <rect x={word.x - 1} y={word.y - 1} width={word.width + 2} height={word.height + 2} rx="3" />
               {w.image || w.emoji ? (
-                <Sketch url={w.image} emoji={w.emoji} word={word} tone={tones[w.tone ?? 'strong']} />
+                <Sketch url={w.image} emoji={w.emoji} aspect={w.aspect} word={word} tone={tones[w.tone ?? 'strong']} />
               ) : (
                 <text
                   x={word.x + 2}
@@ -218,20 +220,20 @@ function Canvas({
  * on the white person), so it reads the same on light and dark pages without
  * SVG masks; or another tag's place or logo (already orange) or emoji.
  */
-function Sketch({ url, emoji, word, tone }: { url?: string; emoji?: string; word: PlacedBox; tone: string }) {
-  const { side, caption } = pictureBox(word.label, word.fontSize);
-  const x = word.x + (word.width - side) / 2;
+function Sketch({ url, emoji, aspect, word, tone }: { url?: string; emoji?: string; aspect?: number; word: PlacedBox; tone: string }) {
+  const { side, pictureWidth, pictureHeight, caption } = pictureBox(word.label, word.fontSize, aspect);
+  const x = word.x + (word.width - pictureWidth) / 2;
   return (
     <>
       {url ? (
-        <image href={`${url}${url.includes('?') ? '&' : '?'}layer=color`} x={x} y={word.y} width={side} height={side} />
+        <image href={`${url}${url.includes('?') ? '&' : '?'}layer=color`} x={x} y={word.y} width={pictureWidth} height={pictureHeight} />
       ) : (
         <text x={x + side / 2} y={word.y + side * 0.82} fontSize={side * 0.82} textAnchor="middle">
           {emoji}
         </text>
       )}
       {/* The name in small type under the face, in the word's own colour. */}
-      <text x={word.x + word.width / 2} y={word.y + side + caption * 1.05} fontSize={caption} textAnchor="middle" className={tone}>
+      <text x={word.x + word.width / 2} y={word.y + pictureHeight + caption * 1.05} fontSize={caption} textAnchor="middle" className={tone}>
         {word.label}
       </text>
     </>

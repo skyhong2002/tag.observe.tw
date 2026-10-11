@@ -297,6 +297,8 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     const logo = await visual('某公司');
     expect(logo).toMatchObject({ kind: 'logo', source: null });
     expect((await app.inject({ url: logo.image })).headers['content-type']).toBe('image/webp');
+    // A 2:1 logo tells the cloud its shape.
+    expect((await app.inject({ url: '/api/v1/tag-visuals' })).json().visuals['某公司'].aspect).toBeCloseTo(2, 1);
     expect((await put('台北', { action: 'hide' })).statusCode).toBe(200);
     expect(await visual('台北')).toBeNull();
     // Re-runs leave hidden and chosen tags alone.

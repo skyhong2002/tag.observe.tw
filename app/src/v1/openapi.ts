@@ -1522,11 +1522,16 @@ export const ENDPOINTS: Endpoint[] = [
       '目前公開的非人物標籤小圖，首頁文字雲用來把標籤畫成圖（人物頭像見 /api/v1/tag-avatars）。台灣縣市鄉鎮給它在台灣或所屬縣市裡的位置圖，其他地方給輪廓，標誌給單色標誌，emoji 直接給字元。待確認、隱藏或沒有圖的標籤不列出。',
     response: obj({
       visuals: map(
-        obj({
-          kind: str('種類', { enum: ['place', 'logo', 'emoji'] }),
-          image: nullable(str('圖檔網址，帶版本參數；emoji 為 null')),
-          emoji: nullable(str('kind 為 emoji 時的 emoji')),
-        }),
+        obj(
+          {
+            kind: str('種類', { enum: ['place', 'logo', 'emoji'] }),
+            image: nullable(str('圖檔網址，帶版本參數；emoji 為 null')),
+            emoji: nullable(str('kind 為 emoji 時的 emoji')),
+            aspect: num('標誌的寬÷高，讓文字雲給長條形標誌較寬的位置；其他種類沒有這個欄位'),
+          },
+          undefined,
+          ['aspect'],
+        ),
         '依標籤',
       ),
     }),

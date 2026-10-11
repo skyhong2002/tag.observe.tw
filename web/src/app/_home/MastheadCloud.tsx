@@ -129,7 +129,9 @@ async function Cloud() {
   const top = rising.reduce((n, t) => Math.max(n, t.growth ?? 0), 0);
   const picture = (tag: string) => {
     const v = visuals[tag];
-    return avatars[tag] ? { avatar: avatars[tag] } : v?.image ? { avatar: v.image } : v?.emoji ? { emoji: v.emoji } : {};
+    if (avatars[tag]) return { avatar: avatars[tag] };
+    if (v?.image) return { avatar: v.image, ...(v.aspect && v.aspect !== 1 ? { aspect: v.aspect } : {}) };
+    return v?.emoji ? { emoji: v.emoji } : {};
   };
   const shown = rising.slice(0, WORDS).map((t) => ({ ...t, ...picture(t.tag) }));
   const floor = shown.reduce((n, t) => Math.min(n, t.growth ?? n), top);

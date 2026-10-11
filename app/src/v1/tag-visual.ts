@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+import sharp from 'sharp';
 import type { Db } from '../db/client.ts';
 import { type TagVisualKind, tagVisuals } from '../db/schema.ts';
 
@@ -18,6 +19,8 @@ const imagePath = (tag: string, at: Date, size: 'small' | 'large') =>
  * Every shown picture that can stand in for its word in a cloud (the home
  * page draws them like the person sketches): Taiwan places as where they are
  * on the island, other places as their outline, logos, emoji as themselves.
+ * A logo also gets its width ÷ height, so the cloud can give a wordmark a
+ * wide slot instead of a square.
  */
 export async function tagVisualsForCloud(db: Db) {
   const rows = await db
@@ -32,7 +35,22 @@ export async function tagVisualsForCloud(db: Db) {
     })
     .from(tagVisuals)
     .where(inArray(tagVisuals.status, [...SHOWN_VISUAL]));
-  const out: Record<string, { kind: TagVisualKind; image: string | null; emoji: string | null }> = {};
+  const logos = new Map(
+    (
+      await db
+        .select({ tag: tagVisuals.tag, image: tagVisuals.image })
+        .from(tagVisuals)
+        .where(and(eq(tagVisuals.kind, 'logo'), inArray(tagVisuals.status, [...SHOWN_VISUAL])))
+    ).map((r) => [r.tag, r.image] as const),
+  );
+  const aspectOf = async (image: Buffer | null | undefined) => {
+    if (!image) return undefined;
+    const { width, height } = await sharp(image)
+      .metadata()
+      .catch(() => ({ width: 0, height: 0 }));
+    return width && height ? Math.round((width / height) * 100) / 100 : undefined;
+  };
+  const out: Record<string, { kind: TagVisualKind; image: string | null; emoji: string | null; aspect?: number }> = {};
   for (const r of rows) {
     if (!r.kind) continue;
     const at = r.reviewedAt ?? r.checkedAt;
@@ -42,7 +60,8 @@ export async function tagVisualsForCloud(db: Db) {
     }
     const taiwan = r.kind === 'place' && r.value?.startsWith('tw-') && Number(r.hasLarge);
     if (!taiwan && !Number(r.hasImage)) continue;
-    out[r.tag] = { kind: r.kind, image: imagePath(r.tag, at, taiwan ? 'large' : 'small'), emoji: null };
+    const aspect = r.kind === 'logo' ? await aspectOf(logos.get(r.tag)) : undefined;
+    out[r.tag] = { kind: r.kind, image: imagePath(r.tag, at, taiwan ? 'large' : 'small'), emoji: null, ...(aspect ? { aspect } : {}) };
   }
   return out;
 }

@@ -20,6 +20,8 @@ export interface RankingCloudTerm {
   avatar?: string;
   /** …or as an emoji that is exactly the thing. */
   emoji?: string;
+  /** The picture's width ÷ height when it is not square (a wordmark logo). */
+  aspect?: number;
 }
 
 const rising = (t: RankingCloudTerm) => t.burst !== null && t.burst > t.score;
@@ -73,6 +75,7 @@ export default function RankingWordCloud({
         href: `/tag/${encodeURIComponent(t.tag)}`,
         image: t.avatar,
         emoji: t.emoji,
+        aspect: t.aspect,
         ariaLabel: `${t.tag}，${mode === 'growth' && !t.quiet ? `升溫量 ${t.growth?.toFixed(1) ?? '—'}` : `分數 ${t.score.toFixed(1)}`}，${t.count} 篇`,
         tone: t.quiet ? 'stone' : rising(t) ? 'brand' : 'strong',
         card: {

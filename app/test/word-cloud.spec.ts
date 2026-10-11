@@ -107,4 +107,27 @@ describe('word-cloud size range', () => {
       for (const b of placed.slice(i + 1))
         expect(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y).toBe(true);
   });
+
+  it('gives a wide logo a wide slot of the same area as a face', () => {
+    const face = pictureBox('台積電', 20);
+    const wordmark = pictureBox('華爾街日報', 20, 4);
+    expect(wordmark.pictureWidth).toBeCloseTo(face.side * 2);
+    expect(wordmark.pictureHeight).toBeCloseTo(face.side / 2);
+    expect(wordmark.pictureWidth * wordmark.pictureHeight).toBeCloseTo(face.side ** 2);
+    // Longer than 4:1 is squeezed to 4:1; taller than wide stays square.
+    expect(pictureBox('x', 20, 34).pictureWidth).toBeCloseTo(wordmark.pictureWidth);
+    expect(pictureBox('x', 20, 0.5).pictureWidth).toBeCloseTo(face.side);
+    const placed = layoutWordCloud(
+      [
+        { label: '華爾街日報', count: 10, square: true, aspect: 4 },
+        { label: '鴻海', count: 9 },
+      ],
+      680,
+      280,
+      { min: 11, max: 36 },
+    );
+    const logo = placed.find((w) => w.label === '華爾街日報') as (typeof placed)[number];
+    expect(logo.width).toBeCloseTo(pictureBox(logo.label, logo.fontSize, 4).width);
+    expect(logo.width).toBeGreaterThan(logo.height);
+  });
 });
