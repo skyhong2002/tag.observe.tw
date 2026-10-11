@@ -71,17 +71,111 @@ export function lightnessMap(lightness: number[]) {
   };
 }
 
+type Raw = { data: Buffer; info: { width: number; height: number } };
+const distance = (d: Buffer, i: number, c: number[]) => Math.hypot(d[i] - c[0], d[i + 1] - c[1], d[i + 2] - c[2]);
+// Background colour distances: closer than CUT is background; up to SOFT, an
+// anti-aliased edge that fades out.
+const CUT = 28;
+const SOFT = 70;
+
 /**
- * Any image sharp reads → the recoloured logo as WebP with alpha, inside a
- * `width` × `height` box: square emblems come out `height` px, wide
- * wordmarks up to `width` px wide so their letters stay legible.
+ * Takes a solid background off a logo that has none transparent (an upload
+ * of a seal on white): the colour most of the border shares is flooded from
+ * the edges, so white inside the emblem, walled off by its ring, stays. A
+ * logo whose border is already mostly transparent is left as it is.
  */
-export async function recolourLogo(input: Buffer | Uint8Array, width = 512, height = 192) {
-  const { data, info } = await sharp(input, { density: 300 })
+export function cutOut({ data, info }: Raw) {
+  const { width: w, height: h } = info;
+  const border: number[] = [];
+  for (let x = 0; x < w; x++) border.push(x, (h - 1) * w + x);
+  for (let y = 1; y < h - 1; y++) border.push(y * w, y * w + w - 1);
+  if (border.filter((p) => data[p * 4 + 3] < 128).length > border.length / 2) return;
+  // The background: the median of the border, channel by channel.
+  const median = (k: number) => border.map((p) => data[p * 4 + k]).sort((a, b) => a - b)[border.length >> 1];
+  const bg = [median(0), median(1), median(2)];
+  const seen = new Uint8Array(w * h);
+  const queue = border.filter((p) => distance(data, p * 4, bg) < SOFT);
+  for (const p of queue) seen[p] = 1;
+  while (queue.length) {
+    const p = queue.pop() as number;
+    const d = distance(data, p * 4, bg);
+    data[p * 4 + 3] = Math.round(data[p * 4 + 3] * Math.max(0, Math.min(1, (d - CUT) / (SOFT - CUT))));
+    // Only background spreads; a soft edge pixel fades but goes no further.
+    if (d >= CUT) continue;
+    const x = p % w;
+    for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, p - w, p + w])
+      if (q >= 0 && q < w * h && !seen[q] && distance(data, q * 4, bg) < SOFT) {
+        seen[q] = 1;
+        queue.push(q);
+      }
+  }
+}
+
+/** The box around everything visible, with a 2% margin; null when nothing is. */
+export function visibleBox({ data, info }: Raw) {
+  const { width: w, height: h } = info;
+  let [left, top, right, bottom] = [w, h, -1, -1];
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++)
+      if (data[(y * w + x) * 4 + 3] > 16) {
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+        top = Math.min(top, y);
+        bottom = Math.max(bottom, y);
+      }
+  if (right < 0) return null;
+  const pad = Math.round(Math.max(right - left, bottom - top) * 0.02);
+  left = Math.max(0, left - pad);
+  top = Math.max(0, top - pad);
+  return { left, top, width: Math.min(w, right + pad + 1) - left, height: Math.min(h, bottom + pad + 1) - top };
+}
+
+/**
+ * A logo cut out and trimmed to what it shows, fitted inside `width` ×
+ * `height`: square emblems come out `height` px, wide wordmarks up to
+ * `width` px wide so their letters stay legible. Raw RGBA.
+ */
+async function cleanLogo(input: Buffer | Uint8Array, width: number, height: number): Promise<Raw> {
+  const big = await sharp(input, { density: 300 })
+    .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const before = Buffer.from(big.data);
+  cutOut(big);
+  // A logo that is one solid block (a coloured rectangle) would vanish: keep it whole.
+  let box = visibleBox(big);
+  if (!box) {
+    before.copy(big.data);
+    box = visibleBox(big);
+  }
+  if (!box) throw Error('logo is fully transparent');
+  // Two passes: within one pipeline sharp may reorder extract and resize.
+  const cropped = await sharp(big.data, { raw: { width: big.info.width, height: big.info.height, channels: 4 } })
+    .extract(box)
+    .png()
+    .toBuffer();
+  return sharp(cropped)
     .resize(width, height, { fit: 'inside', withoutEnlargement: false })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
+}
+
+/** A logo already in the site's orange (stored before cut-outs existed), cut out and trimmed again. */
+export async function recutLogo(stored: Buffer | Uint8Array, width = 512, height = 192) {
+  const { data, info } = await cleanLogo(stored, width, height);
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .webp({ quality: 90, alphaQuality: 95 })
+    .toBuffer();
+}
+
+/**
+ * Any image sharp reads → the logo cut out of a solid background, trimmed to
+ * what it shows and recoloured, as WebP with alpha (see cleanLogo for the size).
+ */
+export async function recolourLogo(input: Buffer | Uint8Array, width = 512, height = 192) {
+  const { data, info } = await cleanLogo(input, width, height);
   const n = info.width * info.height;
   const L = new Float32Array(n);
   const seen: number[] = [];

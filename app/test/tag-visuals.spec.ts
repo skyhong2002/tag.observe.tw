@@ -71,20 +71,58 @@ describe('one-hue logos', () => {
   });
 
   it('recolours an image, keeping its alpha', async () => {
-    const raw = Buffer.alloc(8 * 8 * 4);
-    for (let i = 0; i < 64; i++) raw.set(i < 32 ? [0, 128, 0, 255] : [255, 255, 255, i < 48 ? 255 : 0], i * 4);
-    const png = await sharp(raw, { raw: { width: 8, height: 8, channels: 4 } })
+    // 10×10, transparent round a 6×6 logo: green top half, white bottom half.
+    const raw = Buffer.alloc(10 * 10 * 4);
+    for (let y = 2; y < 8; y++) for (let x = 2; x < 8; x++) raw.set(y < 5 ? [0, 128, 0, 255] : [255, 255, 255, 255], (y * 10 + x) * 4);
+    const png = await sharp(raw, { raw: { width: 10, height: 10, channels: 4 } })
       .png()
       .toBuffer();
-    const out = await sharp(await recolourLogo(png, 8, 8))
+    const out = await sharp(await recolourLogo(png, 64, 64))
       .ensureAlpha()
       .raw()
-      .toBuffer();
-    const px = (i: number) => [...out.subarray(i * 4, i * 4 + 4)];
-    expect(px(0)[0]).toBeGreaterThan(px(0)[2] + 100); // green became orange
+      .toBuffer({ resolveWithObject: true });
+    const { width } = out.info;
+    const px = (x: number, y: number) => [...out.data.subarray((y * width + x) * 4, (y * width + x) * 4 + 4)];
+    expect(px(width >> 1, 8)[0]).toBeGreaterThan(px(width >> 1, 8)[2] + 100); // green became orange
     // WebP is lossy: near white.
-    for (const c of px(40).slice(0, 3)) expect(c).toBeGreaterThan(235);
-    expect(px(60)[3]).toBe(0);
+    for (const c of px(width >> 1, out.info.height - 8).slice(0, 3)) expect(c).toBeGreaterThan(235);
+  });
+});
+
+describe('logo cut-out', () => {
+  it('takes a solid background off, keeps white walled inside the emblem, and trims the margin', async () => {
+    // A 200×200 white square, an orange ring (r 40–60) round a white centre, at the middle.
+    const size = 200;
+    const raw = Buffer.alloc(size * size * 4);
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        const r = Math.hypot(x - 100, y - 100);
+        raw.set(r >= 40 && r <= 60 ? [220, 80, 20, 255] : [255, 255, 255, 255], (y * size + x) * 4);
+      }
+    const png = await sharp(raw, { raw: { width: size, height: size, channels: 4 } })
+      .png()
+      .toBuffer();
+    const out = await sharp(await recolourLogo(png, 512, 192))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const { width, height } = out.info;
+    // Trimmed to the ring (120 px across, plus 2%), then fitted to 192 px high.
+    expect(width).toBe(height);
+    expect(height).toBe(192);
+    const at = (x: number, y: number) => out.data[(Math.round(y) * width + Math.round(x)) * 4 + 3];
+    expect(at(1, 1)).toBe(0); // the old white corner is gone
+    expect(at(width / 2, height / 2)).toBeGreaterThan(240); // the white centre stays
+    expect(at(width / 2, height * 0.08)).toBeGreaterThan(240); // the ring
+    // A logo already transparent round the edge is left as it is.
+    const clear = await sharp({ create: { width: 40, height: 20, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([
+        { input: { create: { width: 20, height: 10, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } }, left: 10, top: 5 },
+      ])
+      .png()
+      .toBuffer();
+    const trimmed = await sharp(await recolourLogo(clear, 512, 192)).metadata();
+    expect((trimmed.width ?? 0) / (trimmed.height ?? 1)).toBeCloseTo(2, 0);
   });
 });
 
