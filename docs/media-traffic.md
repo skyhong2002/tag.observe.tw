@@ -29,6 +29,14 @@
 - Similarweb 的占比是整個網域的估算，有時不適用：msn.com 是全球網域（美國 34%，台灣不在前五）、tw.nextapple.com 樣本少而回 100%。管理員在 `/media/traffic/` 的台灣占比欄按鉛筆修正（`PUT /auth/admin/media/:media/taiwan-share`，`{ share: 0–1 | null, note }`，必填理由），修正值存在 `media_taiwan_shares`，每次修改記在 `media_taiwan_share_log`（誰、何時、前後數值、理由）。
 - 修正以媒體為單位，取代所有月份的 Similarweb 數字，直到按「改回 Similarweb」清除。表格與媒體頁標「人工」，提示列出 Similarweb 原值與理由；公開 API 為 `GET /api/v1/media-taiwan-shares`（`app/src/media-traffic/taiwan-share.ts`）。
 
+## 量測網域與每篇分攤造訪
+
+- Similarweb 分開量每個子網域（2026/09 自由 ltn.com.tw 2,556 萬、news.ltn.com.tw 1,104 萬）。文章放在另一個網域的媒體，流量改量文章所在的網域，清單與理由在 `app/data/media-traffic-hosts.json`（2026-10-11 依近 7 天文章網址審核：壹蘋、鉅亨、央視、鳳凰、新浪、日經中文改量新聞子網域；自由的文章分散在 news、ec、ent、sports 等子網域，改量整個 ltn.com.tw）。換網域後該媒體的月造訪自此改用新網域，舊網域的歷史留在資料庫但不再顯示。
+- 「每篇分攤造訪」= 台灣月造訪 ÷ 當月在同一網域上的發稿量，是相對指數，不是每篇讀者數（造訪含首頁、非新聞頁與舊文）。發稿量每天取兩者較大的：Google News sitemap 的前一天發布篇數（近 7 天平均），以及本站近 7 天收錄、網址在該網域或其子網域的篇數 ÷ 7。兩者都只會少算：news sitemap 最多 1,000 筆、兩天；本站可能沒收到每個分類。
+- 本站近 7 天收錄的文章不到三分之二在流量網域上（從 LINE TODAY、YouTube、合作平台收錄）時不計算，提示說明原因。發稿量統計尚未跑過時退回舊算法（本站全部收錄篇數）。
+- worker 工作 `media-output`（`app/src/jobs/media-output-job.ts`、`app/src/media-traffic/output.ts`）每 6 小時（`MEDIA_OUTPUT_CRON=50 */6 * * *`）讀各網域 robots.txt 列出的 news sitemap（或 sitemap index 裡名稱含 news 的子 sitemap），只記已結束的前一天，同一天讀到多次取較大值，保留 21 天。快照為 `TAG_MEDIA_OUTPUT_FILE`，預設 `~/.local/share/tag-analysis/media-output.json`；公開唯讀 API `GET /api/v1/media-output`。
+- 2026-10-11 抽查前 25 大：約一半有可用的 news sitemap；ETtoday 的 sitemap 沒有發布日期，MSN、鉅亨、風傳媒、LINE TODAY 等沒有 news sitemap，這些只用本站收錄。
+
 ## 本站收錄資料
 
 - `/api/v1/media-traffic-comparison` 以台北時間的真實發布月份統計 `articles.source=own`，排除未取得日期而以抓取時間代填的紀錄及未來日期；不包含 legacy 匯入量。資料是目前已收錄紀錄，並非媒體完整發稿量。
@@ -97,5 +105,5 @@ node --env-file-if-exists=.env tools/media-radar-once.ts udn.com
 
 ```sh
 python3 -m unittest discover -s tools -p 'test_import_media_traffic.py'
-npx vitest run app/src/media-traffic/radar.spec.ts app/src/media-traffic/live.spec.ts app/test/media-traffic.spec.ts app/test/traffic-comparison.spec.ts app/src/v1/media-traffic-comparison.spec.ts app/src/crawl/traffic-coverage.spec.ts app/test/api-docs.spec.ts
+npx vitest run app/src/media-traffic/output.spec.ts app/src/media-traffic/radar.spec.ts app/src/media-traffic/live.spec.ts app/test/media-traffic.spec.ts app/test/traffic-comparison.spec.ts app/src/v1/media-traffic-comparison.spec.ts app/src/crawl/traffic-coverage.spec.ts app/test/api-docs.spec.ts
 ```

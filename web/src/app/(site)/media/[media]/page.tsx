@@ -260,7 +260,7 @@ export default async function MediaPage({
               )}
               {outlet?.radar && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">Radar 排名</dt>
+                  <dt className="text-zinc-500 dark:text-zinc-400">Radar 全球</dt>
                   <dd title={`Cloudflare Radar 全球熱門網域，資料期末 ${outlet.radar.dateEnd.slice(0, 10)}`}>{radarText(outlet.radar)}</dd>
                 </>
               )}

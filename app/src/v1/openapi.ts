@@ -2235,6 +2235,32 @@ export const ENDPOINTS: Endpoint[] = [
     cache: '1 分鐘',
   },
   {
+    path: '/api/v1/media-output',
+    tag: 'media',
+    summary: '各媒體在流量網域上的發稿量',
+    description:
+      '「每篇分攤造訪」的分母。worker 每 6 小時讀各媒體流量網域的 Google News sitemap，依 news:publication_date 記下台北時間前一天的發稿篇數（同一天讀到多次取較大值，保留 21 天），並統計本站近 7 天收錄的文章有多少位在該網域或其子網域。兩者都只會少算：sitemap 最多 1,000 筆、兩天，本站收錄可能不全。GET 不呼叫上游。',
+    response: obj({
+      version: int('資料格式版本'),
+      checkedAt: nullable(time('最近一次批次檢查時間')),
+      status: str('批次狀態', { enum: ['pending', 'ok', 'partial', 'failed'] }),
+      error: nullable(str('最近一次錯誤摘要')),
+      media: arr(
+        obj({
+          media: str('媒體代碼'),
+          host: str('流量量測的網域（Similarweb 以此網域及其子網域計）'),
+          sitemaps: arr(str(), '上次成功讀到的 news sitemap；空陣列表示沒有可用的 news sitemap'),
+          days: map(int('該日發稿篇數'), '台北日期 YYYY-MM-DD → 發稿篇數，只含已結束的日子'),
+          capped: bool('sitemap 達 1,000 筆上限，篇數可能偏少'),
+          articles7d: int('本站近 7 天收錄篇數'),
+          onHost7d: int('其中網址位在 host 或其子網域的篇數'),
+          checkedAt: time('該媒體最近一次檢查時間'),
+        }),
+      ),
+    }),
+    cache: '5 分鐘',
+  },
+  {
     path: '/api/v1/liveboard',
     tag: 'articles',
     summary: '即時看板輪詢：新文章、相似報導組與發稿量',

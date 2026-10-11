@@ -49,13 +49,22 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
     profile.timeOnSite != null && ['平均停留', duration(profile.timeOnSite)],
   ].filter(Boolean) as Array<[string, string]>;
   const ranks = [
-    profile.countryRank && [`${countryName(profile.countryRank.code)}排名`, `第 ${profile.countryRank.rank.toLocaleString('zh-TW')} 名`],
-    profile.globalRank != null && ['全球排名', `第 ${profile.globalRank.toLocaleString('zh-TW')} 名`],
+    profile.countryRank && [
+      profile.countryRank.code === 'TW' ? '全台排名' : `${countryName(profile.countryRank.code)}排名`,
+      `第 ${profile.countryRank.rank.toLocaleString('zh-TW')} 名`,
+      `Similarweb：在${countryName(profile.countryRank.code)}所有網站中的名次（主要讀者所在地）`,
+    ],
+    profile.globalRank != null && [
+      '全球排名',
+      `第 ${profile.globalRank.toLocaleString('zh-TW')} 名`,
+      'Similarweb：在全世界所有網站中的名次',
+    ],
     profile.categoryRank && [
       '類別排名',
       `第 ${profile.categoryRank.rank.toLocaleString('zh-TW')} 名 · ${categoryName(profile.categoryRank.category)}`,
+      'Similarweb：在同類別網站中的名次',
     ],
-  ].filter(Boolean) as Array<[string, string]>;
+  ].filter(Boolean) as Array<[string, string, string]>;
   return (
     <section aria-label="網站流量來源" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
       <h2 className="mb-3 flex items-baseline justify-between gap-2 text-sm font-semibold">
@@ -100,10 +109,12 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
       )}
       {(engagement.length > 0 || ranks.length > 0) && (
         <dl className="mt-3 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-y-1.5 border-t border-zinc-200 pt-3 leading-5 dark:border-zinc-800">
-          {[...engagement, ...ranks].map(([term, value]) => (
+          {[...ranks, ...engagement].map(([term, value, hint]) => (
             <div key={term} className="contents">
               <dt className="text-zinc-500 dark:text-zinc-400">{term}</dt>
-              <dd className="tabular-nums">{value}</dd>
+              <dd className="tabular-nums" title={hint}>
+                {value}
+              </dd>
             </div>
           ))}
         </dl>

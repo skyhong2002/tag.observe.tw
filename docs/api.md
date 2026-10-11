@@ -111,6 +111,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media-radar`](#api-v1-media-radar) | Cloudflare Radar 全球網域排名與級距 |
 | [`GET /api/v1/media-traffic-live`](#api-v1-media-traffic-live) | Similarweb 自動抓取流量狀態 |
 | [`GET /api/v1/media-taiwan-shares`](#api-v1-media-taiwan-shares) | 台灣占比的人工修正 |
+| [`GET /api/v1/media-output`](#api-v1-media-output) | 各媒體在流量網域上的發稿量 |
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 | [`GET /api/v1/writing`](#api-v1-writing) | 寫法總覽：轉述社群貼文與標題用詞 |
 | [`GET /api/v1/writing/articles`](#api-v1-writing-articles) | 寫法：符合條件的文章 |
@@ -3003,6 +3004,40 @@ curl -s 'https://tag.observe.tw/api/v1/media-taiwan-shares'
 | `shares.{鍵}.updatedAt` | string (ISO 時間) | 最近一次修改時間 |
 
 快取：1 分鐘。
+
+<a id="api-v1-media-output"></a>
+
+### `GET /api/v1/media-output`
+
+**各媒體在流量網域上的發稿量**
+
+「每篇分攤造訪」的分母。worker 每 6 小時讀各媒體流量網域的 Google News sitemap，依 news:publication_date 記下台北時間前一天的發稿篇數（同一天讀到多次取較大值，保留 21 天），並統計本站近 7 天收錄的文章有多少位在該網域或其子網域。兩者都只會少算：sitemap 最多 1,000 筆、兩天，本站收錄可能不全。GET 不呼叫上游。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/media-output'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `version` | integer | 資料格式版本 |
+| `checkedAt` | string (ISO 時間) \| null | 最近一次批次檢查時間 |
+| `status` | "pending" \| "ok" \| "partial" \| "failed" | 批次狀態 |
+| `error` | string \| null | 最近一次錯誤摘要 |
+| `media` | object[] |  |
+| `media[].media` | string | 媒體代碼 |
+| `media[].host` | string | 流量量測的網域（Similarweb 以此網域及其子網域計） |
+| `media[].sitemaps` | string[] | 上次成功讀到的 news sitemap；空陣列表示沒有可用的 news sitemap |
+| `media[].days` | {鍵: integer} | 台北日期 YYYY-MM-DD → 發稿篇數，只含已結束的日子 |
+| `media[].capped` | boolean | sitemap 達 1,000 筆上限，篇數可能偏少 |
+| `media[].articles7d` | integer | 本站近 7 天收錄篇數 |
+| `media[].onHost7d` | integer | 其中網址位在 host 或其子網域的篇數 |
+| `media[].checkedAt` | string (ISO 時間) | 該媒體最近一次檢查時間 |
+
+快取：5 分鐘。
 
 ## 封存索引與授權取回
 

@@ -1,4 +1,5 @@
 import names from '../../data/media-names.json' with { type: 'json' };
+import trafficHosts from '../../data/media-traffic-hosts.json' with { type: 'json' };
 import catalog from '../../data/news-source-catalog.json' with { type: 'json' };
 import { excludedMedia } from '../crawl/registry.ts';
 import type { Db } from '../db/client.ts';
@@ -8,8 +9,9 @@ import { readLiveTraffic, refreshTraffic, trafficDomain, writeLiveTraffic } from
 /**
  * Publisher domains for Similarweb and Radar: the GeneHong-mapped catalog plus
  * every reviewed outlet in media-names.json, so outlets the sheet never listed
- * (經濟日報 on money.udn.com, 科技新報…) are fetched too. Discovery sources,
- * removed outlets and retired domains are left out.
+ * (經濟日報 on money.udn.com, 科技新報…) are fetched too, as are the article hosts
+ * in media-traffic-hosts.json. Discovery sources, removed outlets and retired
+ * domains are left out.
  */
 export const publisherDomains = () => {
   const skip = (media: string) => excludedMedia.has(media) || ['google_news', 'dongtaiwang'].includes(media);
@@ -18,6 +20,9 @@ export const publisherDomains = () => {
     ...Object.entries(names.media)
       .filter(([media, entry]) => !skip(media) && ['verified', 'retained'].includes(entry.status))
       .map(([, entry]) => (entry as { sourceUrl?: string }).sourceUrl),
+    ...Object.entries(trafficHosts.hosts)
+      .filter(([media]) => !skip(media))
+      .map(([, entry]) => entry.host),
   ];
   return [...new Set(urls.flatMap((url) => (url && trafficDomain(url)) || []))];
 };

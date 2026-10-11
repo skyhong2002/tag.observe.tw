@@ -18,6 +18,9 @@ import {
   channelLabels,
   channelShares,
   collectionPoint,
+  countryName,
+  dailyOutput,
+  type MediaOutput,
   overrideTitle,
   percent,
   radarText,
@@ -32,9 +35,12 @@ import {
 } from '@/lib/traffic-comparison.mts';
 
 const control = 'min-h-9 rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700';
-type Sort = 'traffic' | 'taiwan' | 'readers' | 'perArticle' | 'radar' | 'articles' | 'week' | 'name';
+type Sort = 'traffic' | 'taiwan' | 'readers' | 'perArticle' | 'twRank' | 'radar' | 'articles' | 'week' | 'name';
 type View = 'value' | 'change';
 
+/** Similarweb's rank among all sites in Taiwan; only sites whose largest audience is in Taiwan have one. */
+const taiwanRank = (outlet: ComparisonOutlet) =>
+  outlet.trafficProfile?.countryRank?.code === 'TW' ? outlet.trafficProfile.countryRank.rank : null;
 const radarPosition = (outlet: ComparisonOutlet) =>
   outlet.radar?.rank ?? outlet.radar?.bucket ?? (outlet.radar?.bucketLowerBound != null ? outlet.radar.bucketLowerBound + 1 : null);
 /** Change against the source's previous available month; null when either month is missing. */
@@ -65,11 +71,14 @@ function Change({ value }: { value: number | null }) {
 export default function TrafficComparison({
   data,
   weekly,
+  output,
   initial,
 }: {
   data: ComparisonData;
   /** Past 7 days' articles per media id (/api/v1/media-stats). */
   weekly: Record<string, WeeklyArticles>;
+  /** Articles per media id on its measured host (/api/v1/media-output); empty before the first count. */
+  output: Record<string, MediaOutput>;
   initial: Record<string, string | undefined>;
 }) {
   const [trafficMonth, setTrafficMonth] = useState(
@@ -78,7 +87,7 @@ export default function TrafficComparison({
   const crawlMonth = data.crawlMonths.at(-1) ?? null;
   const [query, setQuery] = useState(initial.q ?? '');
   const [sort, setSort] = useState<Sort>(
-    ['traffic', 'taiwan', 'readers', 'perArticle', 'radar', 'articles', 'week', 'name'].includes(initial.sort ?? '')
+    ['traffic', 'taiwan', 'readers', 'perArticle', 'twRank', 'radar', 'articles', 'week', 'name'].includes(initial.sort ?? '')
       ? (initial.sort as Sort)
       : 'traffic',
   );
@@ -93,12 +102,12 @@ export default function TrafficComparison({
   const trafficAt = (outlet: ComparisonOutlet) => outlet.traffic.find((p) => p.month === trafficMonth);
   const readersAt = (outlet: ComparisonOutlet) => taiwanVisits(trafficAt(outlet)?.traffic, taiwanOf(outlet));
   const weekAt = (outlet: ComparisonOutlet) => (outlet.media ? weekly[outlet.media] : undefined);
-  // Same figure as /media/'s 每篇台灣造訪, following the chosen month and any correction made here.
-  const perArticleAt = (outlet: ComparisonOutlet) => {
-    const readers = readersAt(outlet),
-      week = weekAt(outlet);
-    return readers && week?.full ? withPerArticle({ ...readers, month: trafficMonth, title: '' }, week.last7d).perArticle : undefined;
+  // Same figure as /media/'s 每篇分攤造訪, following the chosen month and any correction made here.
+  const perArticleOf = (outlet: ComparisonOutlet) => {
+    const readers = readersAt(outlet);
+    return readers && withPerArticle({ ...readers, month: trafficMonth, title: '' }, dailyOutput(output, outlet, weekAt(outlet)));
   };
+  const perArticleAt = (outlet: ComparisonOutlet) => perArticleOf(outlet)?.perArticle;
   const articlesAt = (outlet: ComparisonOutlet) => (crawlMonth ? collectionPoint(outlet, crawlMonth).articles : null);
   const needle = query.trim().toLocaleLowerCase();
   const filtered = data.outlets.filter((o) => `${o.name} ${o.domain ?? ''} ${o.media ?? ''}`.toLocaleLowerCase().includes(needle));
@@ -110,6 +119,7 @@ export default function TrafficComparison({
     if (sort === 'taiwan') return taiwanSortValue(taiwanOf(o));
     // An upper bound (Taiwan outside the top five) is not a figure to rank by.
     if (sort === 'readers') return readersAt(o)?.below ? null : (readersAt(o)?.visits ?? null);
+    if (sort === 'twRank') return taiwanRank(o) == null ? null : -(taiwanRank(o) as number);
     // Smaller Radar positions are more popular, so negate them: descending lists the most popular first.
     if (sort === 'radar') return radarPosition(o) == null ? null : -(radarPosition(o) as number);
     return view === 'change' ? monthChange(o.traffic, data.trafficMonths, trafficMonth) : (trafficAt(o)?.traffic ?? null);
@@ -157,9 +167,14 @@ export default function TrafficComparison({
       label: '台灣月造訪',
       sub: [trafficMonth && shortMonth(trafficMonth), '月造訪量 × 台灣占比'].filter(Boolean).join(' · '),
     },
-    { key: 'perArticle', label: '每篇台灣造訪', sub: '台灣月造訪 ÷ 依近 7 天發稿速度推估的當月篇數' },
+    {
+      key: 'perArticle',
+      label: '每篇分攤造訪',
+      sub: '台灣月造訪 ÷ 當月發稿量（news sitemap 與本站收錄取大者）· 含首頁與舊文，是指數不是讀者數',
+    },
+    { key: 'twRank', label: '全台排名', sub: 'Similarweb · 在台灣所有網站中的名次 · 最新一期' },
     { key: 'channel', label: '主要導流', sub: '最新一期' },
-    { key: 'radar', label: 'Radar 排名', sub: 'Cloudflare Radar 全球排名' },
+    { key: 'radar', label: 'Radar 全球', sub: 'Cloudflare Radar 全球排名' },
   ] as const;
 
   return (
@@ -247,7 +262,8 @@ export default function TrafficComparison({
               const tw = taiwanOf(outlet);
               const readers = readersAt(outlet);
               const week = weekAt(outlet),
-                perArticle = perArticleAt(outlet);
+                shareOut = perArticleOf(outlet),
+                perArticle = shareOut?.perArticle;
               const channels = channelShares(profile);
               const visitsAtProfile = profile && outlet.traffic.find((p) => p.month === profile.month)?.traffic;
               const taiwanTitle =
@@ -358,9 +374,22 @@ export default function TrafficComparison({
                   </td>
                   <td
                     className={`${table.num} py-1.5 whitespace-nowrap ${readers?.below ? 'text-zinc-500' : ''}`}
-                    title={shared ?? perArticle?.title}
+                    title={shared ?? perArticle?.title ?? shareOut?.perArticleNote}
                   >
                     {perArticle ? `${readers?.below ? '< ' : ''}${trafficNumber(perArticle.visits)}` : '—'}
+                  </td>
+                  <td
+                    className={`${table.num} py-1.5 whitespace-nowrap`}
+                    title={
+                      shared ??
+                      (profile?.countryRank && profile.countryRank.code !== 'TW'
+                        ? `主要讀者在${countryName(profile.countryRank.code)}（當地第 ${profile.countryRank.rank.toLocaleString('zh-TW')} 名），沒有台灣名次`
+                        : undefined)
+                    }
+                  >
+                    {outlet.sharedWith || taiwanRank(outlet) == null
+                      ? '—'
+                      : `第 ${(taiwanRank(outlet) as number).toLocaleString('zh-TW')} 名`}
                   </td>
                   <td
                     className={`${table.num} py-1.5 whitespace-nowrap`}

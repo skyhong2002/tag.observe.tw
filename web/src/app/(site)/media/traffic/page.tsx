@@ -2,7 +2,7 @@ import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
 import TrafficComparison from '@/components/TrafficComparison';
 import { pageMetadata } from '@/lib/seo.mts';
-import { loadComparison, loadWeekly } from './load';
+import { loadComparison, loadOutput, loadWeekly } from './load';
 
 export const metadata = pageMetadata(
   '/media/traffic/',
@@ -13,7 +13,7 @@ export const metadata = pageMetadata(
 export const revalidate = 300;
 
 export default async function MediaSourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const [data, weekly] = await Promise.all([loadComparison(), loadWeekly().catch(() => ({}))]);
+  const [data, weekly, output] = await Promise.all([loadComparison(), loadWeekly().catch(() => ({})), loadOutput()]);
   const params = Object.fromEntries(
     Object.entries(await searchParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
   );
@@ -26,7 +26,7 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
           Similarweb 估算月造訪量與 Cloudflare Radar 排名 <MethodLink />
         </p>
       </header>
-      <TrafficComparison data={data} weekly={weekly} initial={params} />
+      <TrafficComparison data={data} weekly={weekly} output={output} initial={params} />
     </div>
   );
 }

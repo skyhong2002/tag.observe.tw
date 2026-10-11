@@ -8,6 +8,7 @@ import { runAnalyticsJob, runRealtimeJob } from './jobs/analytics-job.ts';
 import { runCrawlHealthJob } from './jobs/crawl-health-job.ts';
 import { crawlArticles, crawlGroup, crawlMedia } from './jobs/crawl-job.ts';
 import { runEventsJob } from './jobs/events-job.ts';
+import { runMediaOutputJob } from './jobs/media-output-job.ts';
 import { runMediaRadarJob } from './jobs/media-radar-job.ts';
 import { runMediaTrafficJob } from './jobs/media-traffic-job.ts';
 import { runProbeJob } from './jobs/probe-job.ts';
@@ -112,6 +113,12 @@ await queue.upsertJobScheduler(
   { pattern: process.env.MEDIA_TRAFFIC_CRON || '35 * * * *' },
   { name: 'media-traffic', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+// Every 6 hours so yesterday is read several times (busy sites fill a news sitemap's 1,000 URLs in under two days).
+await queue.upsertJobScheduler(
+  'media-output',
+  { pattern: process.env.MEDIA_OUTPUT_CRON || '50 */6 * * *' },
+  { name: 'media-output', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
 if (radarToken()) {
   await queue.upsertJobScheduler(
     'media-radar-daily',
@@ -167,6 +174,7 @@ for (const job of [
   'crawl-health',
   'media-traffic',
   'media-radar',
+  'media-output',
   'topics',
   'tag-stats',
   'similarity',
@@ -232,6 +240,11 @@ const worker = new Worker(
       if (job.name === 'crawl-health') return runCrawlHealthJob(db, { log: (o, m) => log.info(o, m) });
       if (job.name === 'media-traffic') {
         const r = await runMediaTrafficJob(undefined, db);
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'media-output') {
+        const r = await runMediaOutputJob(db);
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

@@ -335,7 +335,12 @@ export default async function MediaStatsPage({
                 className="text-right"
                 title={`Similarweb ${readersMonth ? shortMonth(readersMonth) : '最新一期'} 月造訪次數 × 台灣占比（估算）`}
               />
-              <Th col="perArticle" label="每篇台灣造訪" className="text-right" title="台灣月造訪 ÷ 依近 7 天發稿速度推估的當月篇數" />
+              <Th
+                col="perArticle"
+                label="每篇分攤造訪"
+                className="text-right"
+                title="台灣月造訪 ÷ 當月發稿量（news sitemap 與本站收錄取大者）；含首頁與舊文，是指數不是讀者數"
+              />
               <Th col="category" label="分類" />
               <Th col="language" label="語言" />
               <Th col="roles" label="性質" />
@@ -401,7 +406,7 @@ export default async function MediaStatsPage({
                 </td>
                 <td
                   className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500' : ''}`}
-                  title={r.readers?.perArticle?.title}
+                  title={r.readers?.perArticle?.title ?? r.readers?.perArticleNote}
                 >
                   {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
                 </td>

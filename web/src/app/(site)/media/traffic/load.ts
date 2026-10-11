@@ -3,7 +3,9 @@ import { API_ORIGIN } from '@/lib/api';
 import {
   buildComparison,
   type CrawlComparison,
+  dailyOutput,
   type LiveTraffic,
+  type MediaOutput,
   type RadarData,
   type TaiwanShareOverride,
   taiwanReadersByMedia,
@@ -66,12 +68,21 @@ export const loadWeekly = cache(async (): Promise<Record<string, WeeklyArticles>
   );
 });
 
+/** Articles per media id on its measured host (/api/v1/media-output); empty until the first daily count. */
+export const loadOutput = cache(async (): Promise<Record<string, MediaOutput>> => {
+  const data = await fetch(`${API_ORIGIN}/api/v1/media-output`, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) })
+    .then((res) => (res.ok ? (res.json() as Promise<{ checkedAt: string | null; media: MediaOutput[] }>) : null))
+    .catch(() => null);
+  return data?.checkedAt ? Object.fromEntries(data.media.map((row) => [row.media, row])) : {};
+});
+
 /** Taiwan readers per media id for /media/ and /similarity/; empty when traffic is unavailable. */
 export const loadTaiwanReaders = cache(async () => {
-  const [comparison, weekly] = await Promise.all([loadComparison(), loadWeekly()]);
+  const [comparison, weekly, output] = await Promise.all([loadComparison(), loadWeekly(), loadOutput()]);
   const readers = taiwanReadersByMedia(comparison);
-  for (const [media, week] of Object.entries(weekly))
-    if (readers[media] && week.full) readers[media] = withPerArticle(readers[media], week.last7d);
+  for (const outlet of comparison.outlets)
+    if (outlet.media && readers[outlet.media])
+      readers[outlet.media] = withPerArticle(readers[outlet.media], dailyOutput(output, outlet, weekly[outlet.media]));
   return readers;
 });
 interface WeekStats {

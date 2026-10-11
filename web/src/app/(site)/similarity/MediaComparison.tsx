@@ -24,7 +24,11 @@ const columns: { key: SortKey; label: string; title?: string }[] = [
   { key: 'outgoing', label: '引用' },
   { key: 'incoming', label: '被引用' },
   { key: 'readers', label: '台灣月造訪', title: 'Similarweb 最新一期月造訪次數 × 台灣占比（估算）' },
-  { key: 'perArticle', label: '每篇台灣造訪', title: '台灣月造訪 ÷ 依近 7 天發稿速度推估的當月篇數' },
+  {
+    key: 'perArticle',
+    label: '每篇分攤造訪',
+    title: '台灣月造訪 ÷ 當月發稿量（news sitemap 與本站收錄取大者）；含首頁與舊文，是指數不是讀者數',
+  },
 ];
 const number = (value: number) => value.toLocaleString('zh-TW');
 type RelationshipKey = Exclude<SortKey, 'name' | 'articles' | 'readers' | 'perArticle'>;
@@ -223,7 +227,7 @@ export default function MediaComparison({
                   </td>
                   <td
                     className={`${table.num} whitespace-nowrap py-2.5 ${row.reach?.below ? 'text-zinc-500' : ''}`}
-                    title={row.reach?.perArticle?.title}
+                    title={row.reach?.perArticle?.title ?? row.reach?.perArticleNote}
                   >
                     {row.reach?.perArticle ? `${row.reach.below ? '< ' : ''}${trafficNumber(row.reach.perArticle.visits)}` : '—'}
                   </td>

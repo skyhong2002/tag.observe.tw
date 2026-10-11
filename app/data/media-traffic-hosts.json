@@ -1,0 +1,33 @@
+{
+  "note": "Similarweb measures each host separately. Where an outlet's articles live on another host than its catalog website, traffic is measured on the article host so visits and article counts cover the same pages. Reviewed 2026-10-11 from the past 7 days' article URLs; each host was checked to have Similarweb data.",
+  "hosts": {
+    "cctv": {
+      "host": "news.cctv.com",
+      "reason": "文章 100% 在 news.cctv.com；原量整個 cctv.com"
+    },
+    "cnyes": {
+      "host": "news.cnyes.com",
+      "reason": "文章 99% 在 news.cnyes.com；原量整個 cnyes.com"
+    },
+    "ifeng": {
+      "host": "news.ifeng.com",
+      "reason": "文章 75% 在 news.ifeng.com；原量整個 ifeng.com"
+    },
+    "ltn": {
+      "host": "ltn.com.tw",
+      "reason": "文章 61% 在 news.ltn.com.tw，其餘在 ec、ent、sports 等子網域；改量整個 ltn.com.tw（含所有子網域）"
+    },
+    "news_sina": {
+      "host": "news.sina.cn",
+      "reason": "文章 81% 在 news.sina.cn；原量 news.sina.com.cn"
+    },
+    "nextapple": {
+      "host": "news.nextapple.com",
+      "reason": "文章 100% 在 news.nextapple.com；原量 tw.nextapple.com"
+    },
+    "nikkei": {
+      "host": "cn.nikkei.com",
+      "reason": "文章 100% 在 cn.nikkei.com；原量 zh.cn.nikkei.com"
+    }
+  }
+}

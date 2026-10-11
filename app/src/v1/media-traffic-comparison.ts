@@ -8,6 +8,7 @@ import { articleDiscoveries, articles } from '../db/schema.ts';
 import { publisherDomains } from '../jobs/media-traffic-job.ts';
 import { loadRadarHistory, loadTrafficHistory, withRadarHistory, withTrafficHistory } from '../media-traffic/history.ts';
 import { readLiveTraffic } from '../media-traffic/live.ts';
+import { readOutput } from '../media-traffic/output.ts';
 import { readRadar } from '../media-traffic/radar.ts';
 import { loadTaiwanShares } from '../media-traffic/taiwan-share.ts';
 import { isDiscoverySource } from './article-content.ts';
@@ -168,6 +169,11 @@ export function registerMediaTrafficComparison(app: FastifyInstance, db: Db) {
       domains: withTrafficHistory(snapshot.domains, await trafficHistory()).filter((row) => visible.has(row.domain)),
       failedAt: Object.fromEntries(Object.entries(failedAt).filter(([domain]) => visible.has(domain))),
     };
+  });
+  // Articles each outlet publishes on its measured host (media-traffic/output.ts).
+  app.get('/api/v1/media-output', async (_request, reply) => {
+    reply.header('cache-control', 'public, max-age=300');
+    return readOutput();
   });
   // Admins' corrections of Similarweb's Taiwan share (media-traffic/taiwan-share.ts).
   app.get('/api/v1/media-taiwan-shares', async (_request, reply) => {

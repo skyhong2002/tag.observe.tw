@@ -6,6 +6,8 @@ import {
   type ComparisonOutlet,
   type CrawlComparison,
   collectionPoint,
+  dailyOutput,
+  type MediaOutput,
   overrideTitle,
   primaryTraffic,
   rankValues,
@@ -430,6 +432,56 @@ describe('traffic comparison competition ranks', () => {
   });
 });
 
+describe('daily output for visits per article', () => {
+  const now = Date.parse('2026-10-11T04:00:00Z');
+  const output = (patch: Partial<MediaOutput> = {}): MediaOutput => ({
+    media: 'm',
+    host: 'news.example.com',
+    sitemaps: ['https://news.example.com/news-sitemap.xml'],
+    days: { '2026-10-09': 300, '2026-10-10': 500, '2026-09-30': 9999 },
+    capped: false,
+    articles7d: 2100,
+    onHost7d: 2100,
+    ...patch,
+  });
+  const outlet = { media: 'm', domain: 'news.example.com' };
+  const week = { last7d: 2100, full: true };
+  it('takes the larger of the sitemap average over the past week and our own pace on the host', () => {
+    expect(dailyOutput({ m: output() }, outlet, week, now)).toMatchObject({ perDay: 400 });
+    expect(dailyOutput({ m: output({ days: { '2026-10-10': 100 } }) }, outlet, week, now)).toMatchObject({ perDay: 300 });
+    expect(dailyOutput({ m: output({ sitemaps: [], days: {} }) }, outlet, { ...week, full: false }, now)).toBeNull();
+  });
+  it('gives no figure when visits and articles are not the same pages', () => {
+    expect(dailyOutput({ m: output({ onHost7d: 600 }) }, outlet, week, now)).toMatchObject({ perDay: null });
+    expect(dailyOutput({ m: output() }, { media: 'm', domain: 'example.com' }, week, now)).toMatchObject({ perDay: null });
+    expect(dailyOutput({ other: output() }, outlet, week, now)).toMatchObject({ perDay: null });
+  });
+  it('falls back to our whole collection before the first count', () => {
+    expect(dailyOutput({}, outlet, { last7d: 70, full: true }, now)).toMatchObject({ perDay: 10 });
+    expect(dailyOutput({}, outlet, { last7d: 70, full: false }, now)).toBeNull();
+  });
+  it('measures outlets listed in media-traffic-hosts.json on their article host', () => {
+    const nextapple = {
+      ...source,
+      media: 'nextapple',
+      name: '壹蘋新聞網',
+      websiteUrl: 'https://tw.nextapple.com/',
+      referenceNames: ['壹蘋'],
+    };
+    const live = {
+      status: 'ok' as const,
+      checkedAt: '2026-10-09T00:00:00Z',
+      error: null,
+      domains: [
+        { domain: 'tw.nextapple.com', fetchedAt: '2026-10-08T00:00:00Z', monthly: [{ month: '202609', visits: 900 }] },
+        { domain: 'news.nextapple.com', fetchedAt: '2026-10-08T00:00:00Z', monthly: [{ month: '202609', visits: 400 }] },
+      ],
+    };
+    const built = buildComparison([], [nextapple], null, new Set(), live, null);
+    expect(built.outlets[0]).toMatchObject({ domain: 'news.nextapple.com', traffic: [{ month: '202609', traffic: 400 }] });
+  });
+});
+
 describe('traffic list domain fallbacks', () => {
   it('keeps a known spreadsheet domain even without traffic or a catalog match', () => {
     const built = buildComparison([{ month: '202608', sources: [row({ traffic: null })] }], [], null);
@@ -499,16 +551,18 @@ describe('Taiwan readers outside /media/traffic/', () => {
     expect(readers.fixed).toMatchObject({ visits: 100_000 });
     expect(readers.fixed.title).toContain('（人工修正）');
   });
-  it('spreads the month over the past week pace of articles', () => {
-    // September: 70 articles in 7 days → 300 for the month.
-    const per = withPerArticle({ visits: 600_000, month: '202609', title: '' }, 70).perArticle;
+  it('spreads the month over the daily output', () => {
+    // September: 10 articles a day → 300 for the month.
+    const per = withPerArticle({ visits: 600_000, month: '202609', title: '' }, { perDay: 10, title: '每天約 10 篇' }).perArticle;
     expect(per?.visits).toBe(2000);
-    expect(per?.title).toBe('台灣月造訪 ÷ 2026/09 推估 300 篇（近 7 天 70 篇 ÷ 7 × 30 天）');
-    expect(withPerArticle({ visits: 50_000, below: true, month: '202602', title: '' }, 7).perArticle).toEqual({
-      visits: 1786,
-      title: '上限：台灣月造訪 ÷ 2026/02 推估 28 篇（近 7 天 7 篇 ÷ 7 × 28 天）',
+    expect(per?.title).toMatch(/^台灣月造訪 ÷ 2026\/09 推估 300 篇。每天約 10 篇。.*不是每篇讀者數$/);
+    const bound = withPerArticle({ visits: 50_000, below: true, month: '202602', title: '' }, { perDay: 1, title: 'x' }).perArticle;
+    expect(bound?.visits).toBe(1786);
+    expect(bound?.title).toMatch(/^上限：.*推估 28 篇/);
+    expect(withPerArticle({ visits: 1, month: '202609', title: '' }, null).perArticle).toBeUndefined();
+    expect(withPerArticle({ visits: 1, month: '202609', title: '' }, { perDay: null, reason: '不同網域' })).toMatchObject({
+      perArticleNote: '不同網域',
     });
-    expect(withPerArticle({ visits: 1, month: '202609', title: '' }, 0).perArticle).toBeUndefined();
   });
   it('is empty without traffic months', () => {
     expect(taiwanReadersByMedia({ trafficMonths: [], outlets: [] } as unknown as ComparisonData)).toEqual({});

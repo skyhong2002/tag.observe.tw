@@ -1,3 +1,4 @@
+import trafficHosts from '../../../app/data/media-traffic-hosts.json' with { type: 'json' };
 import { mediaNames } from './media-names.mts';
 import { type NewsSource, resolveCatalogSource, safeWebsiteUrl, type TrafficSource } from './media-traffic.mts';
 
@@ -177,8 +178,10 @@ export interface TaiwanReaders {
   below?: true;
   month: string;
   title: string;
-  /** Visits per collected article; set by withPerArticle. */
+  /** Taiwan visits per article published on the measured host; set by withPerArticle. */
   perArticle?: { visits: number; title: string };
+  /** Why there is no per-article figure, when the reason is worth showing. */
+  perArticleNote?: string;
 }
 /** Estimated Taiwan visits per media id in the latest traffic month, the same
  *  figure as the 台灣月造訪 column on /media/traffic/. */
@@ -199,14 +202,72 @@ export function taiwanReadersByMedia(data: ComparisonData): Record<string, Taiwa
   }
   return out;
 }
-/** Taiwan visits per article we collected. Collection began 2026-09-28, so no month
- *  of ours lines up with Similarweb's yet: the month's article count is the past
- *  week's pace (`last7d`) over that month's days. */
-export function withPerArticle(readers: TaiwanReaders, last7d: number): TaiwanReaders {
-  if (last7d <= 0) return readers;
+/** Articles an outlet publishes on the host its visits are measured on (/api/v1/media-output). */
+export interface MediaOutput {
+  media: string;
+  host: string;
+  sitemaps: string[];
+  /** Taipei date → articles that day per its news sitemaps; finished days only. */
+  days: Record<string, number>;
+  capped: boolean;
+  articles7d: number;
+  onHost7d: number;
+}
+export type DailyOutput = { perDay: number; title: string } | { perDay: null; reason: string };
+/** Visits and articles must cover the same pages: below this share of our articles on the measured host, no figure. */
+const ON_HOST_MIN = 2 / 3;
+const DAY = 86400e3;
+/**
+ * Articles a day on the measured host: the larger of the news sitemap's daily
+ * average over the past week and our own 7-day pace on that host. Both only
+ * undercount (the sitemap holds at most 1,000 URLs; we may not collect every
+ * section), so the larger is the closer. An empty `counts` means the daily
+ * count has not run yet: our whole collection stands in, as before.
+ */
+export function dailyOutput(
+  counts: Record<string, MediaOutput>,
+  outlet: Pick<ComparisonOutlet, 'media' | 'domain'>,
+  week: WeeklyArticles | undefined,
+  now = Date.now(),
+): DailyOutput | null {
+  const output = outlet.media ? counts[outlet.media] : undefined;
+  const domain = outlet.domain;
+  if (!Object.keys(counts).length)
+    return week?.full && week.last7d > 0
+      ? { perDay: week.last7d / 7, title: `本站近 7 天收錄 ${week.last7d.toLocaleString('zh-TW')} 篇 ÷ 7（網域尚未核對）` }
+      : null;
+  if (!output || !domain || output.host !== domain) return { perDay: null, reason: '流量網域與發稿量統計的網域不同' };
+  if (output.articles7d > 0 && output.onHost7d / output.articles7d < ON_HOST_MIN)
+    return {
+      perDay: null,
+      reason: `近 7 天收錄的文章只有 ${percent(output.onHost7d / output.articles7d)} 在 ${output.host}，造訪量和篇數不是同一批頁面`,
+    };
+  const weekAgo = new Date(now + 8 * 3600e3 - 7 * DAY).toISOString().slice(0, 10);
+  const days = Object.entries(output.days).filter(([day]) => day >= weekAgo);
+  const sitemap = days.length ? days.reduce((sum, [, n]) => sum + n, 0) / days.length : null;
+  const ours = week?.full ? output.onHost7d / 7 : null;
+  const perDay = Math.max(sitemap ?? 0, ours ?? 0);
+  if (!perDay) return null;
+  const parts = [
+    sitemap != null &&
+      `Google News sitemap 近 ${days.length} 天平均 ${Math.round(sitemap).toLocaleString('zh-TW')} 篇${output.capped ? '（達 1,000 筆上限，可能偏少）' : ''}`,
+    ours != null && `本站收錄 ${output.host} 近 7 天 ${output.onHost7d.toLocaleString('zh-TW')} 篇 ÷ 7`,
+  ].filter(Boolean);
+  return {
+    perDay,
+    title: `每天約 ${Math.round(perDay).toLocaleString('zh-TW')} 篇：${parts.join('；')}${parts.length > 1 ? '，取較大者' : ''}`,
+  };
+}
+/**
+ * Taiwan visits shared out over the month's articles: an index, not readers per
+ * article. Visits include the home page, non-news pages and older articles.
+ */
+export function withPerArticle(readers: TaiwanReaders, daily: DailyOutput | null): TaiwanReaders {
+  if (!daily) return readers;
+  if (daily.perDay === null) return { ...readers, perArticleNote: daily.reason };
   const days = new Date(Date.UTC(Number(readers.month.slice(0, 4)), Number(readers.month.slice(4)), 0)).getUTCDate();
-  const articles = Math.round((last7d / 7) * days);
-  const title = `${readers.below ? '上限：' : ''}台灣月造訪 ÷ ${shortMonth(readers.month)} 推估 ${articles.toLocaleString('zh-TW')} 篇（近 7 天 ${last7d.toLocaleString('zh-TW')} 篇 ÷ 7 × ${days} 天）`;
+  const articles = Math.round(daily.perDay * days);
+  const title = `${readers.below ? '上限：' : ''}台灣月造訪 ÷ ${shortMonth(readers.month)} 推估 ${articles.toLocaleString('zh-TW')} 篇。${daily.title}。造訪含首頁、非新聞頁與舊文，是相對指數，不是每篇讀者數`;
   return { ...readers, perArticle: { visits: Math.round(readers.visits / articles), title } };
 }
 /** Hover text for a corrected share: Similarweb's own figure and the reason. */
@@ -349,11 +410,16 @@ export function buildComparison(
   // Similarweb and Radar only measure whole domains. When several outlets sit on one
   // domain, the figure belongs to the one at the site root (or the shortest path);
   // a tie leaves the figure unassigned rather than repeating it on several rows.
-  // The catalog's website, else the reviewed one in media-names (outlets the sheet never listed).
+  // The host its articles live on (media-traffic-hosts.json), else the catalog's website,
+  // else the reviewed one in media-names (outlets the sheet never listed).
   const reviewed = (outlet: ComparisonOutlet) => (outlet.media ? safeWebsiteUrl(mediaNames[outlet.media]?.sourceUrl) : null);
+  const articleHost = (outlet: ComparisonOutlet) =>
+    outlet.media && outlet.media in trafficHosts.hosts
+      ? `https://${trafficHosts.hosts[outlet.media as keyof typeof trafficHosts.hosts].host}/`
+      : null;
   const sites = new Map<ComparisonOutlet, URL | null>();
   for (const outlet of outlets.values()) {
-    const url = safeWebsiteUrl(catalog.find((s) => s.media === outlet.media)?.websiteUrl) ?? reviewed(outlet);
+    const url = articleHost(outlet) ?? safeWebsiteUrl(catalog.find((s) => s.media === outlet.media)?.websiteUrl) ?? reviewed(outlet);
     sites.set(outlet, url ? new URL(url) : null);
   }
   const official = (outlet: ComparisonOutlet) => sites.get(outlet) ?? null;
