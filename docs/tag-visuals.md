@@ -59,13 +59,13 @@
 
 ## 執行
 
-worker 每天 05:10（`TAG_VISUALS_CRON`，排在 04:55 的標籤群組之後，Wikidata 項目由它先查好）對本週新聞排行前 500 個標籤跑一次（`jobs/tag-visuals-job.ts`），至多 8 分鐘，時間到就在標籤之間停下。
+worker 每天 05:10（`TAG_VISUALS_CRON`，排在 04:55 的標籤群組之後，Wikidata 項目多由它先查好）先跑首頁升溫文字雲的前 60 個升溫詞，再跑本週新聞排行前 500 個標籤（`jobs/tag-visuals-job.ts`），至多 8 分鐘，時間到就在標籤之間停下。標籤群組還沒查過 Wikidata 的標籤（多半是雲裡剛冒出來的），這裡當場查並存進 `tag_wikidata`。
 
 手動補跑或指定標籤：
 
 ```sh
 node --env-file=.env tools/tag-visuals.ts 台北 國民黨 煙火   # 指定標籤
-node --env-file=.env tools/tag-visuals.ts --top 500         # 本週排行、30 天內沒查過的
+node --env-file=.env tools/tag-visuals.ts --top 500         # 首頁升溫詞與本週排行、30 天內沒查過的
 ```
 
 ## 資料與授權

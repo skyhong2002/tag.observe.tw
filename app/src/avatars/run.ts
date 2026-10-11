@@ -145,6 +145,16 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
   return save('auto', null, rows);
 }
 
+/** The home page cloud's top rising tags (it shows 30), with a margin for the next hours. */
+export const risingTags = (db: Db, limit = RISING) =>
+  loadRanking(db, 'all')
+    .then((r) =>
+      selectDiscoveryEntries(r?.entries ?? [], 'growth', 'all')
+        .slice(0, limit)
+        .map((e) => e.tag),
+    )
+    .catch(() => [] as string[]);
+
 /**
  * The home page cloud's top rising tags, then tags that made the news ranking
  * in the last `days` days (tag_stats level 3: several outlets repeating it),
@@ -155,13 +165,7 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
 export async function busyTags(db: Db, { limit = 100, days = 7, force = false } = {}) {
   const since = new Date(Date.now() - days * 86_400_000);
   // The home page cloud's rising tags first (its faces come from here).
-  const rising = await loadRanking(db, 'all')
-    .then((r) =>
-      selectDiscoveryEntries(r?.entries ?? [], 'growth', 'all')
-        .slice(0, RISING)
-        .map((e) => e.tag),
-    )
-    .catch(() => [] as string[]);
+  const rising = await risingTags(db);
   const ranked = await db
     .select({ tag: tagStats.tag })
     .from(tagStats)

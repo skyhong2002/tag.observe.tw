@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, inArray, isNotNull } from 'drizzle-orm';
-import { type Claim, download, entities, fileInfo } from '../avatars/wikidata.ts';
+import { type Claim, download, entities, fileInfo, findItem } from '../avatars/wikidata.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, tagPeople, tagVisuals, tagWikidata } from '../db/schema.ts';
 import type { AiConfig } from '../tag-groups/ai.ts';
@@ -125,6 +125,7 @@ export async function processTags(
     fetchImpl = fetch as typeof fetch,
     // Tests stand in for Wikidata here.
     itemImpl = fromItem,
+    findImpl = findItem,
     log = (() => {}) as Log,
     stop = (): boolean => false,
   } = {},
@@ -154,8 +155,24 @@ export async function processTags(
     if (stop()) break;
     const old = before.get(tag);
     if (!force && old && (old.status === 'chosen' || old.status === 'hidden' || old.checkedAt.getTime() >= fresh)) continue;
-    const wd = item.get(tag);
     try {
+      // Tags the tag-groups job has not looked up yet (the home cloud's newest): look up and keep, as it would.
+      let wd = item.get(tag);
+      if (!wd) {
+        const found = await findImpl(tag);
+        const values = {
+          wikidataId: found?.qid ?? null,
+          label: found?.label?.slice(0, 120) ?? null,
+          description: found?.description?.slice(0, 255) ?? null,
+          types: found?.types ?? null,
+          checkedAt: new Date(),
+        };
+        await db
+          .insert(tagWikidata)
+          .values({ tag, ...values })
+          .onDuplicateKeyUpdate({ set: values });
+        wd = { tag, ...values, aiCheckedAt: null };
+      }
       // A county name beats a namesake: 「高雄」 is also a Hong Kong actor on Wikidata.
       const place = taiwanPlace(tag);
       // Other people get sketch avatars (docs/tag-avatars.md).

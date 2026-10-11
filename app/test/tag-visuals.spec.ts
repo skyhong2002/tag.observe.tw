@@ -217,6 +217,7 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
       ai: { baseUrl: 'http://ai', apiKey: 'k', model: 'm' },
       fetchImpl: spy,
       itemImpl: async (qid) => logo(qid),
+      findImpl: async () => null,
     });
     expect(asked).toEqual(['煙火', '停水', 'MLB', 'GPU']);
     expect(user).toContain('Wikidata 候選：國家政治保衛總局（蘇聯機構）');
@@ -225,10 +226,13 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     const [gpu] = await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'GPU'));
     expect(gpu).toMatchObject({ status: 'review', kind: 'icon', value: 'cpu' });
     expect(gpu.note).toContain('Wikidata 項目不符');
+    // Tags the tag-groups job had not looked up are looked up and kept.
+    const [looked] = await db.select().from(tagWikidata).where(eq(tagWikidata.tag, '煙火'));
+    expect(looked).toMatchObject({ wikidataId: null });
     const rows = await db.select({ tag: tagVisuals.tag, status: tagVisuals.status, kind: tagVisuals.kind }).from(tagVisuals);
     expect(rows.map((r) => r.tag).sort()).toEqual(['GPU', 'MLB', '停水', '台北', '煙火', '高雄']);
     // Checked within 30 days: not again.
-    expect(await processTags(db, ['台北'], { fetchImpl })).toEqual({});
+    expect(await processTags(db, ['台北'], { fetchImpl, findImpl: async () => null })).toEqual({});
   });
 
   it('serves places; AI picks only after an admin confirms', async () => {
@@ -278,7 +282,7 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     expect((await put('台北', { action: 'hide' })).statusCode).toBe(200);
     expect(await visual('台北')).toBeNull();
     // Re-runs leave hidden and chosen tags alone.
-    expect(await processTags(db, ['台北'])).toEqual({});
+    expect(await processTags(db, ['台北'], { findImpl: async () => null })).toEqual({});
     const log = await db.select({ tag: tagVisualLog.tag, action: tagVisualLog.action }).from(tagVisualLog);
     expect(log.map((l) => `${l.tag} ${l.action}`).sort()).toEqual(['停水 icon', '台北 hide', '某公司 upload', '煙火 confirm']);
     const list = (await app.inject({ url: '/auth/admin/tag-visuals?status=chosen', headers: as('admin', false) })).json();
