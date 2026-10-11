@@ -7,10 +7,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { tagGroupMembers, tagWikidata } from '../src/db/schema.ts';
+import { articleTags, tagGroupDefs, tagGroupMembers, tagStats, tagWikidata } from '../src/db/schema.ts';
+import { runTagGroupsJob } from '../src/jobs/tag-groups-job.ts';
 import { aiConfig, fileAi, parseReply, prompt } from '../src/tag-groups/ai.ts';
 import { personGroups, SEED_GROUPS, sectionTopic, typeGroups, voteTopics } from '../src/tag-groups/rules.ts';
 import { fileTag, seedGroupDefs } from '../src/tag-groups/run.ts';
+import { ancestors, descendants, moveProblem } from '../src/tag-groups/tree.ts';
 
 const groupId = (label: string) => SEED_GROUPS.find((g) => g.label === label)?.id as number;
 const labels = (picks: { groupId: number }[]) => picks.map((p) => SEED_GROUPS.find((g) => g.id === p.groupId)?.label);
@@ -159,6 +161,27 @@ describe('AI fallback', () => {
   });
 });
 
+describe('group tree', () => {
+  const defs = [
+    { id: 1, label: '政治人物', kind: 'group' as const, sort: 0, parentId: null },
+    { id: 2, label: '現任立委', kind: 'group' as const, sort: 1, parentId: 1 },
+    { id: 9, label: '不分區', kind: 'group' as const, sort: 2, parentId: 2 },
+    { id: 101, label: '政治', kind: 'topic' as const, sort: 3, parentId: null },
+  ];
+  it('walks down and up', () => {
+    expect(descendants(defs, 1)).toEqual([1, 2, 9]);
+    expect(ancestors(defs, 9).map((d) => d.id)).toEqual([2, 1]);
+    expect(ancestors(defs, 1)).toEqual([]);
+  });
+  it('refuses cycles and mixed kinds', () => {
+    expect(moveProblem(defs, 1, 9)).toMatch(/itself/);
+    expect(moveProblem(defs, 2, 2)).toMatch(/itself/);
+    expect(moveProblem(defs, 2, 101)).toMatch(/same kind/);
+    expect(moveProblem(defs, 9, 1)).toBeNull();
+    expect(moveProblem(defs, 9, null)).toBeNull();
+  });
+});
+
 const url = process.env.TEST_DB_URL;
 const ORIGIN = 'https://tag.observe.tw';
 const people: Record<string, { email: string }> = { admin: { email: 'admin@example.com' }, reader: { email: 'reader@example.com' } };
@@ -195,7 +218,7 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
     if (/\/tag_observe$/.test(url ?? '')) throw Error('TEST_DB_URL points at the production database');
     ({ db, close } = createDb(url));
     await migrate(db, { migrationsFolder: 'app/src/db/migrations' });
-    for (const t of ['tag_group_defs', 'tag_group_members', 'tag_group_member_log', 'tag_wikidata'])
+    for (const t of ['tag_group_defs', 'tag_group_def_log', 'tag_group_members', 'tag_group_member_log', 'tag_wikidata'])
       await db.execute(sql.raw(`TRUNCATE TABLE \`${t}\``));
     await seedGroupDefs(db);
     app = await buildApp(
@@ -332,5 +355,88 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
     expect(check.aiCheckedAt).toBeInstanceOf(Date);
     expect(await fileAi(db, ['總預算'], config, { fetchImpl: fake })).toEqual({ asked: 0, added: 0, errors: 0 });
     expect(calls).toBe(1);
+  });
+
+  it('nests, renames and reorders groups, and shows a tag in the groups above', async () => {
+    const patch = (id: number, payload: object) =>
+      app.inject({ method: 'PATCH', url: `/auth/admin/tag-groups/${id}`, headers: as('admin'), payload });
+    const foreign = groupId('外國政治人物');
+    const politician = groupId('政治人物');
+    expect((await patch(foreign, { parentId: politician })).statusCode).toBe(200);
+    expect((await patch(politician, { parentId: foreign })).statusCode).toBe(400);
+    expect((await patch(foreign, { parentId: groupId('國際') })).statusCode).toBe(400);
+    expect((await patch(groupId('北市府'), { label: '臺北市府' })).json()).toMatchObject({ label: '臺北市府' });
+    expect((await patch(groupId('北市府'), { label: '政治人物' })).statusCode).toBe(409);
+    expect(
+      (await app.inject({ method: 'PATCH', url: `/auth/admin/tag-groups/${foreign}`, headers: as('reader'), payload: { label: 'x' } }))
+        .statusCode,
+    ).toBe(403);
+    // 川普 is filed under 外國政治人物 only; 政治人物 shows as its parent
+    const groups = (await app.inject({ url: `/api/v1/tags/${encodeURIComponent('川普')}/groups` })).json().groups;
+    expect(groups.find((g: { id: number }) => g.id === politician)).toMatchObject({ source: 'parent' });
+    expect(groups.find((g: { id: number }) => g.id === foreign)).toMatchObject({ source: 'person', parentId: politician });
+    const list = (await app.inject({ url: '/api/v1/tag-groups' })).json().groups;
+    expect(list.find((g: { id: number }) => g.id === politician).tags).toBeGreaterThanOrEqual(1);
+    // order: swap the first two identity groups
+    const order = await app.inject({ method: 'PUT', url: '/auth/admin/tag-groups/order', headers: as('admin'), payload: { ids: [2, 1] } });
+    expect(order.statusCode).toBe(200);
+    const ids = (await app.inject({ url: '/api/v1/tag-groups' })).json().groups.map((g: { id: number }) => g.id);
+    expect(ids.indexOf(2)).toBeLessThan(ids.indexOf(1));
+    const [{ n }] = (await db.execute(sql`SELECT COUNT(*) n FROM tag_group_def_log`))[0] as unknown as [{ n: number }];
+    // create (地名, earlier), move, rename, sort
+    expect(Number(n)).toBe(4);
+  });
+
+  it("ranks a group's tags by recent reports, subgroups included", async () => {
+    const day = 86_400_000;
+    await db.delete(articleTags).where(sql`${articleTags.articleId} BETWEEN 9900001 AND 9900010`);
+    await db.delete(tagStats).where(sql`${tagStats.tag} = '川普'`);
+    const now = new Date();
+    await db.insert(tagStats).values({
+      tag: '川普',
+      category: 'news',
+      level: 2,
+      firstHour: now,
+      lastHour: now,
+      hoursCount: 1,
+      maxHour: now,
+      maxCount: 1,
+      updatedAt: now,
+    });
+    await db.insert(articleTags).values([
+      { articleId: 9900001, tag: '川普', publishedAt: new Date(Date.now() - day) },
+      { articleId: 9900002, tag: '川普', publishedAt: new Date(Date.now() - 2 * day) },
+      { articleId: 9900003, tag: '川普', publishedAt: new Date(Date.now() - 3 * day) },
+      { articleId: 9900004, tag: '川普', publishedAt: new Date(Date.now() - 10 * day) },
+    ]);
+    const r = (await app.inject({ url: `/api/v1/tag-groups/${groupId('政治人物')}/ranking?days=7` })).json();
+    expect(r.subgroups.map((g: { id: number }) => g.id)).toContain(groupId('外國政治人物'));
+    expect(r.ranking).toContainEqual({ tag: '川普', recent: 3, previous: 1, groups: [groupId('外國政治人物')] });
+    expect((await app.inject({ url: '/api/v1/tag-groups/999/ranking' })).statusCode).toBe(404);
+  });
+
+  it('deletes a group: tags leave, subgroups move up, rules and seeds stay out', async () => {
+    const foreign = groupId('外國政治人物');
+    const child = await app.inject({
+      method: 'POST',
+      url: '/auth/admin/tag-groups',
+      headers: as('admin'),
+      payload: { label: '外國元首', kind: 'group', parentId: foreign },
+    });
+    const childId = child.json().id;
+    const del = await app.inject({ method: 'DELETE', url: `/auth/admin/tag-groups/${foreign}`, headers: as('admin') });
+    expect(del.json()).toMatchObject({ deleted: true, children: [childId] });
+    expect((await db.select().from(tagGroupMembers).where(sql`${tagGroupMembers.groupId} = ${foreign}`)).length).toBe(0);
+    const [moved] = await db.select().from(tagGroupDefs).where(sql`${tagGroupDefs.id} = ${childId}`);
+    expect(moved.parentId).toBe(groupId('政治人物'));
+    expect(await fileTag(db, '川普', 'person', [{ groupId: foreign, score: null, note: '美國政治人物' }])).toMatchObject({ added: 0 });
+    await seedGroupDefs(db);
+    expect((await app.inject({ url: '/api/v1/tag-groups' })).json().groups.some((g: { id: number }) => g.id === foreign)).toBe(false);
+    expect((await app.inject({ url: `/api/v1/tag-groups/${foreign}` })).statusCode).toBe(404);
+  });
+
+  it('runs as a daily job within its budget, skipping the AI without a key', async () => {
+    const r = await runTagGroupsJob(db, { budgetMs: 0, env: {} });
+    expect(r).toMatchObject({ ai: 'skipped: no TAG_AI_API_KEY', stopped: true });
   });
 });

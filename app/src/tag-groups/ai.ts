@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, type TagGroupKind, tagGroupDefs, tagGroupMembers, tagWikidata } from '../db/schema.ts';
+import { articles, articleTags, type TagGroupKind, tagGroupMembers, tagWikidata } from '../db/schema.ts';
 import { fileTag } from './run.ts';
+import { activeGroups } from './tree.ts';
 
 // AI fallback for tag groups (docs/tag-groups.md): tags the rules left
 // without an identity group or a topic go, with a few recent headlines, to
@@ -106,13 +107,10 @@ export async function fileAi(
   db: Db,
   tags: string[],
   config: AiConfig,
-  { force = false, batch = 20, fetchImpl = fetch as typeof fetch, log = (_o: object) => {} } = {},
+  { force = false, batch = 20, fetchImpl = fetch as typeof fetch, log = (_o: object) => {}, stop = (): boolean => false } = {},
 ) {
   if (!tags.length) return { asked: 0, added: 0, errors: 0 };
-  const groups = await db
-    .select({ id: tagGroupDefs.id, label: tagGroupDefs.label, kind: tagGroupDefs.kind })
-    .from(tagGroupDefs)
-    .orderBy(asc(tagGroupDefs.sort), asc(tagGroupDefs.id));
+  const groups = await activeGroups(db);
   const kindOf = new Map(groups.map((g) => [g.id, g.kind]));
   const [members, checks] = await Promise.all([
     db
@@ -129,6 +127,7 @@ export async function fileAi(
   let added = 0;
   let errors = 0;
   for (let i = 0; i < todo.length; i += batch) {
+    if (stop()) break;
     const chunk = todo.slice(i, i + batch);
     const items: Item[] = [];
     for (const tag of chunk) {

@@ -819,8 +819,28 @@ export const tagGroupDefs = mysqlTable('tag_group_defs', {
   label: varchar('label', { length: 32 }).notNull(),
   kind: varchar('kind', { length: 8 }).$type<TagGroupKind>().notNull(),
   sort: int('sort').notNull().default(0),
+  // A group inside another of the same kind (現任立委 in 政治人物): the
+  // parent's pages count the child's tags too.
+  parentId: int('parent_id'),
   createdAt: datetime('created_at').notNull(),
+  // Deleted by an admin. The row stays so the legacy seed does not bring
+  // the group back and the rules stop filing into it.
+  deletedAt: datetime('deleted_at'),
 });
+
+export const tagGroupDefLog = mysqlTable(
+  'tag_group_def_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    groupId: int('group_id').notNull(),
+    action: varchar('action', { length: 8 }).$type<'create' | 'rename' | 'move' | 'sort' | 'delete'>().notNull(),
+    // What changed, e.g. 「北市府 → 臺北市府」「上層：政治人物」.
+    detail: varchar('detail', { length: 120 }),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('tag_group_def_log_group').on(t.groupId, t.at)],
+);
 
 // legacy: copied from the legacy site; admin: added by hand; person: rules
 // on tag_people facts; wikidata: the tag's Wikidata type; section: the

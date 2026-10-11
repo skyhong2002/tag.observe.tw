@@ -94,6 +94,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
 | [`GET /api/v1/tag-groups`](#api-v1-tag-groups) | 標籤群組與主題大類一覽 |
 | [`GET /api/v1/tag-groups/{id}`](#api-v1-tag-groups-id) | 群組裡的標籤 |
+| [`GET /api/v1/tag-groups/{id}/ranking`](#api-v1-tag-groups-id-ranking) | 群組標籤的報導量比較 |
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
@@ -1722,7 +1723,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/avatar'
 
 **標籤所屬的群組與主題大類**
 
-一個標籤可以同時屬於多個群組，例如川普同時是「外國政治人物」與「國際」。群組沿用舊站的 28 個身分／類型群組與主題大類。來源 source：legacy 是舊站人工標記或 2016 年版別統計，admin 是管理員手動加入，person 依 Wikidata 的國籍、職業、現任職位與政黨判斷，wikidata 依 Wikidata 的項目類型，section 依各媒體把帶這個標籤的報導放在哪個版別（每家媒體一票），ai 是 AI 依近期標題提出、經管理員確認的建議。只回傳自動判斷或管理員確認的結果，待確認與已排除的不回傳。
+一個標籤可以同時屬於多個群組，例如川普同時是「外國政治人物」與「國際」。群組沿用舊站的 28 個身分／類型群組與主題大類，管理員可以再新增、改名、刪除，並把群組放進另一個群組底下。來源 source：legacy 是舊站人工標記或 2016 年版別統計，admin 是管理員手動加入，person 依 Wikidata 的國籍、職業、現任職位與政黨判斷，wikidata 依 Wikidata 的項目類型，section 依各媒體把帶這個標籤的報導放在哪個版別（每家媒體一票），ai 是 AI 依近期標題提出、經管理員確認的建議；parent 表示標籤不直接在這個群組，而是在它的子群組裡。只回傳自動判斷或管理員確認的結果，待確認與已排除的不回傳。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -1740,10 +1741,11 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/groups'
 | --- | --- | --- |
 | `tag` | string |  |
 | `groups` | object[] |  |
-| `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類 |
+| `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編 |
 | `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
 | `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
-| `groups[].source` | "legacy" \| "admin" \| "person" \| "wikidata" \| "section" \| "ai" | 判斷來源 |
+| `groups[].parentId` | integer \| null | 上層群組 ID；最上層為 null |
+| `groups[].source` | "legacy" \| "admin" \| "person" \| "wikidata" \| "section" \| "ai" \| "parent" | 判斷來源 |
 
 錯誤：`400` 標籤超過 60 字。
 
@@ -1755,7 +1757,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/groups'
 
 **標籤群組與主題大類一覽**
 
-所有群組與主題大類，以及各有多少個標籤（只算自動判斷或管理員確認的）。
+所有群組與主題大類（不含已刪除的），依管理員排的順序；用 parentId 組成樹狀。tags 是群組連同子群組裡的標籤數，只算自動判斷或管理員確認的。
 
 範例：
 
@@ -1768,10 +1770,11 @@ curl -s 'https://tag.observe.tw/api/v1/tag-groups'
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `groups` | object[] |  |
-| `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類 |
+| `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編 |
 | `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
 | `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
-| `groups[].tags` | integer | 標籤數 |
+| `groups[].parentId` | integer \| null | 上層群組 ID；最上層為 null |
+| `groups[].tags` | integer | 標籤數（含子群組） |
 
 快取：5 分鐘。
 
@@ -1781,12 +1784,12 @@ curl -s 'https://tag.observe.tw/api/v1/tag-groups'
 
 **群組裡的標籤**
 
-依標籤名稱排序，一次 1000 個，用 offset 翻頁。
+群組連同子群組裡的標籤，依標籤名稱排序，一次 1000 筆，用 offset 翻頁；同一個標籤在多個子群組時各列一筆。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `id` | 路徑 | integer | 群組 ID，例：`24` |
-| `offset` | query | integer | 略過前幾個 |
+| `offset` | query | integer | 略過前幾筆 |
 
 範例：
 
@@ -1801,11 +1804,70 @@ curl -s 'https://tag.observe.tw/api/v1/tag-groups/24'
 | `id` | integer |  |
 | `label` | string |  |
 | `kind` | "group" \| "topic" |  |
+| `parents` | object[] | 上層群組，最近的在前 |
+| `parents[].id` | integer |  |
+| `parents[].label` | string |  |
+| `parents[].kind` | "group" \| "topic" |  |
+| `children` | object[] | 直屬子群組 |
+| `children[].id` | integer |  |
+| `children[].label` | string |  |
+| `children[].kind` | "group" \| "topic" |  |
 | `offset` | integer |  |
 | `next` | integer \| null | 下一頁的 offset；沒有下一頁為 null |
 | `tags` | object[] |  |
 | `tags[].tag` | string |  |
+| `tags[].groupId` | integer | 標籤所在的群組（本群組或子群組） |
 | `tags[].source` | string | 判斷來源，見 /api/v1/tags/{tag}/groups |
+
+錯誤：`404` 沒有這個群組。
+
+快取：5 分鐘。
+
+<a id="api-v1-tag-groups-id-ranking"></a>
+
+### `GET /api/v1/tag-groups/{id}/ranking`
+
+**群組標籤的報導量比較**
+
+群組（含子群組）裡，最近 days 天上過新聞排行第一道門檻（至少兩家媒體）的標籤，依這段期間標了它的報導篇數排序，最多 200 個，並附上再之前 days 天的篇數供比較。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | integer | 群組 ID，例：`1` |
+| `days` | query | integer | 期間天數：1、7 或 30 |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tag-groups/1/ranking?days=7'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `id` | integer |  |
+| `label` | string |  |
+| `kind` | "group" \| "topic" |  |
+| `parents` | object[] | 上層群組，最近的在前 |
+| `parents[].id` | integer |  |
+| `parents[].label` | string |  |
+| `parents[].kind` | "group" \| "topic" |  |
+| `children` | object[] | 直屬子群組 |
+| `children[].id` | integer |  |
+| `children[].label` | string |  |
+| `children[].kind` | "group" \| "topic" |  |
+| `subgroups` | object[] | 所有子群組（含更下層） |
+| `subgroups[].id` | integer |  |
+| `subgroups[].label` | string |  |
+| `subgroups[].kind` | "group" \| "topic" |  |
+| `days` | integer | 期間天數 |
+| `tags` | integer | 群組（含子群組）裡的標籤總數 |
+| `ranking` | object[] |  |
+| `ranking[].tag` | string |  |
+| `ranking[].recent` | integer | 最近 days 天的報導篇數 |
+| `ranking[].previous` | integer | 再之前 days 天的報導篇數 |
+| `ranking[].groups` | integer[] | 標籤所在的子群組 ID；直接在本群組時不列 |
 
 錯誤：`404` 沒有這個群組。
 

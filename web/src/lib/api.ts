@@ -187,14 +187,30 @@ export interface TagPerson {
 export const fetchTagPerson = (tag: string) =>
   get<{ tag: string; person: TagPerson | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/person`, 300).then((r) => r.person);
 /** Groups and topics a tag is filed under (docs/tag-groups.md). */
-export interface TagGroupRef {
+export interface GroupRef {
   id: number;
   label: string;
   kind: 'group' | 'topic';
+}
+/** `source` is 'parent' for a group shown only because a subgroup holds the tag. */
+export interface TagGroupRef extends GroupRef {
+  parentId: number | null;
   source: string;
 }
 export const fetchTagGroups = (tag: string) =>
   get<{ tag: string; groups: TagGroupRef[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/groups`, 300).then((r) => r.groups);
+export const fetchTagGroupList = () =>
+  get<{ groups: Array<GroupRef & { parentId: number | null; tags: number }> }>('/api/v1/tag-groups', 300).then((r) => r.groups);
+export interface TagGroupRanking extends GroupRef {
+  parents: GroupRef[];
+  children: GroupRef[];
+  subgroups: GroupRef[];
+  days: number;
+  tags: number;
+  ranking: Array<{ tag: string; recent: number; previous: number; groups: number[] }>;
+}
+export const fetchTagGroupRanking = (id: number, days: number) =>
+  get<TagGroupRanking>(`/api/v1/tag-groups/${id}/ranking?days=${days}`, 300);
 export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
   get<import('./tag-series-history.mts').TagSeries>(
     `/api/v1/tags/${encodeURIComponent(tag)}/series?category=${encodeURIComponent(category)}&hours=${hours}`,

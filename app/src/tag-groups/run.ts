@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { findItem, findPerson } from '../avatars/wikidata.ts';
 import type { Db } from '../db/client.ts';
 import {
@@ -35,13 +35,19 @@ export type Row = { groupId: number; score: number | null; note: string | null; 
  *  admin confirmed or rejected stay as they are. An auto row from another
  *  source is taken over only by a higher score; a row another source left
  *  for review (a 2016 「現任立委」, a held-back type) becomes auto when this
- *  rule is sure of it. */
+ *  rule is sure of it. Deleted groups are skipped. */
 export async function fileTag(db: Db, tag: string, source: TagGroupSource, rows: Row[]) {
   const now = new Date();
-  const existing = await db.select().from(tagGroupMembers).where(eq(tagGroupMembers.tag, tag));
+  const [existing, live] = await Promise.all([
+    db.select().from(tagGroupMembers).where(eq(tagGroupMembers.tag, tag)),
+    db.select({ id: tagGroupDefs.id }).from(tagGroupDefs).where(isNull(tagGroupDefs.deletedAt)),
+  ]);
   const have = new Map(existing.map((r) => [r.groupId, r]));
+  // Groups an admin deleted take no new rows.
+  const open = new Set(live.map((g) => g.id));
+  const wanted = rows.filter((r) => open.has(r.groupId));
   let added = 0;
-  for (const row of rows) {
+  for (const row of wanted) {
     const old = have.get(row.groupId);
     const status = row.status ?? 'auto';
     if (!old) {
@@ -59,7 +65,7 @@ export async function fileTag(db: Db, tag: string, source: TagGroupSource, rows:
         .where(and(eq(tagGroupMembers.tag, tag), eq(tagGroupMembers.groupId, row.groupId)));
     }
   }
-  const keep = new Set(rows.map((r) => r.groupId));
+  const keep = new Set(wanted.map((r) => r.groupId));
   const stale = existing.filter((r) => r.source === source && r.status === 'auto' && !keep.has(r.groupId)).map((r) => r.groupId);
   if (stale.length)
     await db
@@ -103,7 +109,7 @@ export async function filePeople(db: Db) {
  *  person gets the person rules (same guards against nicknames and
  *  namesakes as the avatars; namesakes wait for review). Run after
  *  fileSections: the type rules check the tag's topics. */
-export async function fileWikidata(db: Db, tags: string[], { force = false, log = (_o: object) => {} } = {}) {
+export async function fileWikidata(db: Db, tags: string[], { force = false, log = (_o: object) => {}, stop = (): boolean => false } = {}) {
   if (!tags.length) return { checked: 0, added: 0, errors: 0 };
   const people = new Set(
     (
@@ -177,6 +183,7 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
     added += (await fileTag(db, tag, 'wikidata', picks)).added;
   };
   for (const tag of tags) {
+    if (stop()) break;
     try {
       await one(tag);
     } catch (err) {
@@ -188,10 +195,11 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
 }
 
 /** Topics from the sections the tag's outlets file it under, over `days`. */
-export async function fileSections(db: Db, tags: string[], { days = 90, batch = 100 } = {}) {
+export async function fileSections(db: Db, tags: string[], { days = 90, batch = 100, stop = (): boolean => false } = {}) {
   const since = new Date(Date.now() - days * 86_400_000);
   let added = 0;
   for (let i = 0; i < tags.length; i += batch) {
+    if (stop()) break;
     const chunk = tags.slice(i, i + batch);
     // The first three URL path segments (…/news/politics/123).
     const path = sql<string>`SUBSTRING_INDEX(SUBSTRING_INDEX(${articles.url}, '/', 6), '/', -3)`;

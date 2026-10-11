@@ -4,12 +4,12 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 
 // Tag groups (docs/tag-groups.md): look a tag up and tick its groups, or
-// open a group and confirm or reject what the rules filed there. A tag can
-// sit in any number of groups. Rejected rows stay rejected through later
-// automatic runs.
+// open a group and confirm or reject what the rules filed there, rename it,
+// nest it under another group, reorder or delete it. A tag can sit in any
+// number of groups. Rejected rows stay rejected through later automatic runs.
 
 type Status = 'review' | 'auto' | 'confirmed' | 'rejected';
-type Group = { id: number; label: string; kind: 'group' | 'topic'; counts: Partial<Record<Status, number>> };
+type Group = { id: number; label: string; kind: 'group' | 'topic'; parentId: number | null; counts: Partial<Record<Status, number>> };
 type Member = {
   tag: string;
   groupId: number;
@@ -46,6 +46,21 @@ const SOURCE: Record<string, string> = {
   ai: 'AI 建議',
 };
 const shown = (s: Status | undefined) => s === 'auto' || s === 'confirmed';
+
+/** One kind's groups depth-first, each with its depth, so subgroups follow their parent. */
+function treeOrder(groups: Group[], kind: Group['kind']) {
+  const ofKind = groups.filter((g) => g.kind === kind);
+  const ids = new Set(ofKind.map((g) => g.id));
+  const out: { group: Group; depth: number }[] = [];
+  const walk = (parentId: number | null, depth: number) => {
+    for (const g of ofKind.filter((x) => (parentId === null ? x.parentId === null || !ids.has(x.parentId) : x.parentId === parentId))) {
+      out.push({ group: g, depth });
+      walk(g.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return out;
+}
 const pill = 'min-h-9 rounded-full px-3 text-sm';
 const pillOff = 'border border-zinc-300 dark:border-zinc-700';
 const pillOn = 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900';
@@ -94,28 +109,40 @@ function Editor() {
           <h2 className="text-lg font-semibold">群組</h2>
           {(['group', 'topic'] as const).map((kind) => (
             <div key={kind} className="mt-3 flex flex-wrap gap-1">
-              {groups
-                .filter((g) => g.kind === kind)
-                .map((g) => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setGroupId(g.id === groupId ? null : g.id)}
-                    className={`${pill} ${g.id === groupId ? pillOn : pillOff}`}
-                  >
-                    {g.label}
-                    <span className="ml-1 tabular-nums opacity-70">{(g.counts.auto ?? 0) + (g.counts.confirmed ?? 0)}</span>
-                    {!!g.counts.review && (
-                      <span className="ml-1 rounded bg-amber-100 px-1 text-xs tabular-nums text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
-                        {g.counts.review}
-                      </span>
-                    )}
-                  </button>
-                ))}
+              {treeOrder(groups, kind).map(({ group: g, depth }) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setGroupId(g.id === groupId ? null : g.id)}
+                  className={`${pill} ${g.id === groupId ? pillOn : pillOff}`}
+                >
+                  {depth > 0 && <span className="mr-0.5 opacity-60">{'↳'.repeat(depth)}</span>}
+                  {g.label}
+                  <span className="ml-1 tabular-nums opacity-70">{(g.counts.auto ?? 0) + (g.counts.confirmed ?? 0)}</span>
+                  {!!g.counts.review && (
+                    <span className="ml-1 rounded bg-amber-100 px-1 text-xs tabular-nums text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+                      {g.counts.review}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           ))}
           <NewGroup onAdded={loadGroups} onError={setError} />
-          {groupId !== null && (
+          {groupId !== null && groups.some((g) => g.id === groupId) && (
+            <GroupSettings
+              key={`settings-${groupId}`}
+              group={groups.find((g) => g.id === groupId) as Group}
+              groups={groups}
+              onChanged={loadGroups}
+              onDeleted={() => {
+                setGroupId(null);
+                loadGroups();
+              }}
+              onError={setError}
+            />
+          )}
+          {groupId !== null && groups.some((g) => g.id === groupId) && (
             <GroupMembers
               key={groupId}
               group={groups.find((g) => g.id === groupId) as Group}
@@ -348,5 +375,112 @@ function NewGroup({ onAdded, onError }: { onAdded: () => void; onError: (message
         新增群組
       </button>
     </form>
+  );
+}
+
+/** Rename, nest, reorder or delete the open group. */
+function GroupSettings({
+  group,
+  groups,
+  onChanged,
+  onDeleted,
+  onError,
+}: {
+  group: Group;
+  groups: Group[];
+  onChanged: () => void;
+  onDeleted: () => void;
+  onError: (message: string) => void;
+}) {
+  const [label, setLabel] = useState(group.label);
+  const run = async (action: () => Promise<unknown>, after = onChanged) => {
+    try {
+      await action();
+      onError('');
+      after();
+    } catch (e) {
+      onError((e as Error).message);
+    }
+  };
+  const order = treeOrder(groups, group.kind).map((x) => x.group);
+  // Siblings: same parent, in the current order.
+  const siblings = order.filter((g) => g.parentId === group.parentId);
+  const at = siblings.findIndex((g) => g.id === group.id);
+  const move = (step: -1 | 1) => {
+    const other = siblings[at + step];
+    if (!other) return;
+    const ids = groups.filter((g) => g.kind === group.kind).map((g) => g.id);
+    const a = ids.indexOf(group.id);
+    const b = ids.indexOf(other.id);
+    [ids[a], ids[b]] = [ids[b], ids[a]];
+    run(() => adminFetch('/auth/admin/tag-groups/order', { method: 'PUT', body: { ids } }));
+  };
+  // Not itself or anything below it.
+  const below = new Set([group.id]);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const g of groups) if (g.parentId !== null && below.has(g.parentId) && !below.has(g.id)) grew = !!below.add(g.id);
+  }
+  const parents = order.filter((g) => !below.has(g.id));
+  const patch = (body: object) => run(() => adminFetch(`/auth/admin/tag-groups/${group.id}`, { method: 'PATCH', body }));
+  const remove = () => {
+    const n = (group.counts.auto ?? 0) + (group.counts.confirmed ?? 0) + (group.counts.review ?? 0) + (group.counts.rejected ?? 0);
+    if (!window.confirm(`刪除「${group.label}」？群組裡的 ${n} 筆標籤紀錄會一起移除，子群組會往上移一層。`)) return;
+    run(() => adminFetch(`/auth/admin/tag-groups/${group.id}`, { method: 'DELETE' }), onDeleted);
+  };
+  return (
+    <div className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (label.trim() && label.trim() !== group.label) patch({ label: label.trim() });
+        }}
+        className="flex gap-2"
+      >
+        <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={32} aria-label="群組名稱" className={`${input} w-40`} />
+        <button type="submit" className={`${pill} ${pillOff}`}>
+          改名
+        </button>
+      </form>
+      <label className="flex items-center gap-1">
+        上層
+        <select
+          value={group.parentId ?? ''}
+          onChange={(e) => patch({ parentId: e.target.value === '' ? null : Number(e.target.value) })}
+          className={input}
+        >
+          <option value="">（無，最上層）</option>
+          {parents.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        disabled={at <= 0}
+        onClick={() => move(-1)}
+        className={`${pill} ${pillOff} disabled:opacity-40`}
+        aria-label="往前移"
+      >
+        ←
+      </button>
+      <button
+        type="button"
+        disabled={at < 0 || at >= siblings.length - 1}
+        onClick={() => move(1)}
+        className={`${pill} ${pillOff} disabled:opacity-40`}
+        aria-label="往後移"
+      >
+        →
+      </button>
+      <a href={`/group/${group.id}/`} className="underline">
+        公開頁
+      </a>
+      <button type="button" onClick={remove} className={`${pill} ${pillOff} ml-auto hover:border-red-600`}>
+        刪除群組
+      </button>
+    </div>
   );
 }

@@ -16,6 +16,7 @@ import { runRankingJob } from './jobs/ranking-job.ts';
 import { runRetentionJob } from './jobs/retention-job.ts';
 import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagAvatarsInChild } from './jobs/tag-avatars-job.ts';
+import { runTagGroupsJob } from './jobs/tag-groups-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
 import { runWritingJob, runWritingPeopleJob } from './jobs/writing-job.ts';
@@ -138,6 +139,12 @@ await queue.upsertJobScheduler(
   { pattern: process.env.TAG_AVATARS_CRON || '40 4 * * *' },
   { name: 'tag-avatars', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+// Tag groups after the avatars, which match new person tags first (jobs/tag-groups-job.ts).
+await queue.upsertJobScheduler(
+  'tag-groups-daily',
+  { pattern: process.env.TAG_GROUPS_CRON || '55 4 * * *' },
+  { name: 'tag-groups', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
 await queue.upsertJobScheduler(
   'source-probe-weekly',
   { pattern: process.env.PROBE_CRON || '30 5 * * 1' },
@@ -168,6 +175,7 @@ for (const job of [
   'events',
   'retention',
   'tag-avatars',
+  'tag-groups',
   'source-probe',
   'analytics',
   'analytics-live',
@@ -217,6 +225,11 @@ const worker = new Worker(
       }
       if (job.name === 'tag-avatars') {
         const r = await runTagAvatarsInChild({ signal: shutdown.signal });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'tag-groups') {
+        const r = await runTagGroupsJob(db, { log: (o, m) => log.warn(o, m), signal: shutdown.signal });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }
