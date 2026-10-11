@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CampBasis } from './events';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
-// 新聞關係圖 (/similarity/), 每日趨勢 (/similarity/daily/) and 擷取狀態
+// 新聞關係圖 (/similarity/), 轉載統計 (/similarity/daily/) and 擷取狀態
 // (/similarity/about/). Comparison rules: app/src/similarity/compute.ts
 // (200 characters, 100 shared 5-character shingles, a consecutive passage,
 // 7-day window, thresholds 0.5–1); the default 0.65 is in app/src/v1/similarity.ts;
@@ -74,7 +74,7 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
       )}
       {(all || page === 'daily') && (
         <>
-          <h3 className={methodHeading}>每日趨勢</h3>
+          <h3 className={methodHeading}>轉載統計</h3>
           <p>
             每天的比對篇數、相似配對、內文相同與來源／引用，依所選相似度門檻計算。相似配對算在較晚刊登那篇的日期、來源／引用算在採用／引用文章的刊登日（台北時間）；當天數字仍會增加。「資料自」是比對篇數第一次達到期間最多那天十分之一的日子，更早只有少數媒體的零星文章。
           </p>

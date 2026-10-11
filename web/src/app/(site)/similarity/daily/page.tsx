@@ -8,7 +8,7 @@ import SimilarityTabs from '../SimilarityTabs';
 
 export const metadata = pageMetadata(
   '/similarity/daily/',
-  '每日趨勢 · 新聞關係圖',
+  '轉載統計 · 新聞關係圖',
   '逐日查看新聞比對篇數、相似配對與來源／引用，對照各媒體先刊、後續相似報導的篇數與比例。',
 );
 
@@ -23,7 +23,7 @@ export default async function SimilarityDailyPage({ searchParams }: { searchPara
           query={relationshipQuery({ ...query, ...Object.fromEntries(periodQuery(similarityPeriod(query), threshold)) }).toString()}
         />
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">每日趨勢</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">轉載統計</h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             相似度門檻 {threshold} · <MethodLink />
           </p>

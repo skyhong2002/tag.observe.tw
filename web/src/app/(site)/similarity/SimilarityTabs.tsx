@@ -10,7 +10,7 @@ export default function SimilarityTabs({ current, query }: { current: 'graph' | 
       {[
         { key: 'graph', href: '/similarity/', label: '關係探索' },
         { key: 'sources', href: '/similarity/sources/', label: '來源排行' },
-        { key: 'daily', href: '/similarity/daily/', label: '每日趨勢' },
+        { key: 'daily', href: '/similarity/daily/', label: '轉載統計' },
         { key: 'about', href: '/similarity/about/', label: '擷取狀態' },
       ].map((tab) => (
         <Link

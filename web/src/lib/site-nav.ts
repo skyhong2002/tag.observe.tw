@@ -21,7 +21,6 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
     links: [
       { href: '/ranking/', label: '關鍵字排行', short: '關鍵字' },
       { href: '/similarity/', label: '新聞關係圖', short: '關係圖' },
-      { href: '/similarity/daily/', label: '每日趨勢', short: '每日' },
       { href: '/observe/', label: '網站觀測', short: '讀者' },
     ],
   },
