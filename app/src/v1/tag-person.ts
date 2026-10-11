@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+import { inkImage } from '../avatars/portrait.ts';
 import type { Db } from '../db/client.ts';
 import { tagAvatarCandidates, tagPeople } from '../db/schema.ts';
 
@@ -53,8 +54,8 @@ export function registerTagPerson(app: FastifyInstance, db: Db) {
     return { tag, person: await tagPerson(db, tag) };
   });
 
-  // The shown sketch (WebP, 256×256).
-  app.get<{ Params: { tag: string } }>('/api/v1/tags/:tag/avatar', async (request, reply) => {
+  // The shown sketch (WebP, 256×256): ink on transparent, to mask a colour with.
+  app.get<{ Params: { tag: string }; Querystring: { theme?: string } }>('/api/v1/tags/:tag/avatar', async (request, reply) => {
     const { tag } = request.params;
     const [row] = await db
       .select({ image: tagAvatarCandidates.image, status: tagPeople.status })
@@ -62,6 +63,10 @@ export function registerTagPerson(app: FastifyInstance, db: Db) {
       .innerJoin(tagAvatarCandidates, and(eq(tagAvatarCandidates.tag, tagPeople.tag), eq(tagAvatarCandidates.rank, tagPeople.shownRank)))
       .where(eq(tagPeople.tag, tag));
     if (!row || !SHOWN.has(row.status)) return reply.code(404).send({ error: 'no avatar' });
-    return reply.header('content-type', 'image/webp').header('cache-control', 'public, max-age=86400').send(row.image);
+    const theme = request.query.theme === 'dark' ? 'dark' : 'light';
+    return reply
+      .header('content-type', 'image/webp')
+      .header('cache-control', 'public, max-age=86400')
+      .send(await inkImage(row.image, theme));
   });
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { TagAvatar } from '@/components/TagPerson';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 
 // Person tags matched to Wikidata, each with up to three sketch candidates
@@ -167,7 +168,7 @@ function PersonRow({ person: p, onChoose }: { person: Person; onChoose: (tag: st
                 .join('、')}`}
               className={`w-32 rounded-lg border-2 p-1 text-left text-xs ${shown === c.rank ? 'border-brand-600' : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-700'}`}
             >
-              <img src={c.image} alt={`${p.tag} 候選 ${c.rank}`} width={120} height={120} className="rounded-md bg-white" />
+              <TagAvatar url={c.image} size={120} />
               <span className="mt-1 block tabular-nums">
                 #{c.rank} · {c.score.toFixed(2)}
                 {c.verdict === 'bystander' && ' · 旁有他人'}

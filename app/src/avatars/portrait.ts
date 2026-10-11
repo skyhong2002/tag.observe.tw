@@ -98,7 +98,7 @@ export async function sameShot(a: Rgb, b: Rgb) {
 
 export const sameFace = (a: Float32Array, b: Float32Array) => cosine(a, b) >= SAME_PERSON;
 
-/** The pencil-sketch avatar (WebP): crop around the face, cut the person out onto white, colour-dodge sketch. */
+/** The pencil-sketch avatar (WebP, see inkImage): crop around the face, cut the person out, colour-dodge sketch. */
 export async function renderAvatar(img: Rgb, face: Face) {
   const { left, top, side } = cropBox(face);
   const pad = Math.ceil(side);
@@ -140,7 +140,41 @@ export async function renderAvatar(img: Rgb, face: Face) {
     const dodge = Math.min(255, (small[i] * 256) / Math.max(1, 255 - blurred[i]));
     sketch[i] = Math.min(255, Math.max(0, Math.round(dodge * 1.2 - 40)));
   }
-  return sharp(sketch, { raw: { width: AVATAR, height: AVATAR, channels: 1 } })
-    .webp({ quality: 80 })
+  // Pale photos give faint strokes: stretch so the darkest 1% is fully opaque
+  // (at most 3×), with a gentle gamma for the light lines.
+  const dark = Array.from(sketch, (v) => 255 - v).sort((x, y) => x - y);
+  const gain = Math.min(3, 255 / Math.max(1, dark[Math.floor(dark.length * 0.99)]));
+  const silhouette = await sharp(kept, { raw: { width: 512, height: 512, channels: 1 } })
+    .resize(AVATAR, AVATAR)
+    .toColourspace('b-w')
+    .raw()
+    .toBuffer();
+  // Stored as alpha = ink, grey = the person's silhouette; inkImage() makes
+  // the light and dark versions from it.
+  const px = new Uint8Array(AVATAR * AVATAR * 4);
+  for (let i = 0; i < sketch.length; i++) {
+    px.fill(silhouette[i], i * 4, i * 4 + 3);
+    px[i * 4 + 3] = Math.round(255 * Math.min(1, ((255 - sketch[i]) * gain) / 255) ** 0.8);
+  }
+  return sharp(px, { raw: { width: AVATAR, height: AVATAR, channels: 4 } })
+    .webp({ quality: 85, alphaQuality: 90, exact: true })
+    .toBuffer();
+}
+
+/**
+ * What the page masks with the site's orange (docs/tag-avatars.md): `light`
+ * is the strokes alone on transparent; `dark` fills the person and leaves the
+ * strokes as gaps, so on a dark page it still reads as a drawing, not a
+ * negative.
+ */
+export async function inkImage(stored: Buffer, theme: 'light' | 'dark') {
+  const { data, info } = await sharp(stored).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const out = new Uint8Array(info.width * info.height * 4);
+  for (let i = 0; i < info.width * info.height; i++) {
+    const ink = data[i * 4 + 3];
+    out[i * 4 + 3] = theme === 'light' ? ink : Math.round((data[i * 4] * (255 - ink)) / 255);
+  }
+  return sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .webp({ quality: 85, alphaQuality: 90 })
     .toBuffer();
 }

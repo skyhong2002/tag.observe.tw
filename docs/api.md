@@ -1644,7 +1644,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/person'
 | `person.facts.positions[].label` | string | 職位 |
 | `person.facts.positions[].current` | boolean | 沒有卸任日期 |
 | `person.avatar` | object \| null | 沒有可用照片或管理員隱藏時為 null |
-| `person.avatar.url` | string | 素描頭像（WebP，256×256） |
+| `person.avatar.url` | string | 素描頭像（透明 WebP，256×256；加 theme=dark 取深色版） |
 | `person.avatar.file` | string | Commons 原檔名 |
 | `person.avatar.pageUrl` | string | Commons 檔案頁 |
 | `person.avatar.license` | string \| null | 授權，例如 CC BY-SA 4.0、Public domain |
@@ -1661,11 +1661,12 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/person'
 
 **標籤人物的素描頭像圖檔**
 
-256×256 的 WebP 素描頭像；網址請用 person 回應裡的 avatar.url（帶版本參數，換圖時會變）。沒有頭像時回 404。
+256×256 的 WebP 素描頭像，只有透明度：本站拿它當 CSS mask 填上網站橘色，所以沒有底色或外框。theme=light 是線條本身；theme=dark 是人物填滿、線條鏤空，在深色背景上才不會變成負片。網址請用 person 回應裡的 avatar.url（帶版本參數，換圖時會變）。沒有頭像時回 404。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `tag` | 路徑 | string | 標籤（URL 編碼），例：`賴清德` |
+| `theme` | query | "light" \| "dark" | light 或 dark |
 
 範例：
 

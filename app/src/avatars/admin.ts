@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
 import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog } from '../db/schema.ts';
+import { inkImage } from './portrait.ts';
 
 // /admin/avatars/: admins look over person tags and their sketch avatars,
 // switch to another of the three candidates or hide the avatar
@@ -71,15 +72,21 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
   });
 
   // Every candidate, shown or not, for the review page only.
-  app.get<{ Params: { tag: string; rank: string } }>('/auth/admin/avatars/:tag/candidates/:rank', async (request, reply) => {
-    if (!(await requireAdmin(request, reply))) return reply;
-    const [row] = await db
-      .select({ image: tagAvatarCandidates.image })
-      .from(tagAvatarCandidates)
-      .where(and(eq(tagAvatarCandidates.tag, request.params.tag), eq(tagAvatarCandidates.rank, Number(request.params.rank) || 0)));
-    if (!row) return reply.code(404).send({ error: 'no such candidate' });
-    return reply.header('content-type', 'image/webp').header('cache-control', 'private, max-age=86400').send(row.image);
-  });
+  app.get<{ Params: { tag: string; rank: string }; Querystring: { theme?: string } }>(
+    '/auth/admin/avatars/:tag/candidates/:rank',
+    async (request, reply) => {
+      if (!(await requireAdmin(request, reply))) return reply;
+      const [row] = await db
+        .select({ image: tagAvatarCandidates.image })
+        .from(tagAvatarCandidates)
+        .where(and(eq(tagAvatarCandidates.tag, request.params.tag), eq(tagAvatarCandidates.rank, Number(request.params.rank) || 0)));
+      if (!row) return reply.code(404).send({ error: 'no such candidate' });
+      return reply
+        .header('content-type', 'image/webp')
+        .header('cache-control', 'private, max-age=86400')
+        .send(await inkImage(row.image, request.query.theme === 'dark' ? 'dark' : 'light'));
+    },
+  );
 
   // { rank: 1–3 } shows that candidate; { rank: null } hides the avatar.
   app.put<{ Params: { tag: string }; Body: { rank?: unknown } }>('/auth/admin/avatars/:tag', async (request, reply) => {

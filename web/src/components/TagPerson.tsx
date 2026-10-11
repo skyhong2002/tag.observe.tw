@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { TagPerson as Person } from '@/lib/api';
 
 // The person a tag names: a pencil-sketch avatar made from a Wikimedia Commons
@@ -17,15 +18,18 @@ export function personLine(person: Person) {
 // Commons' short names; government works often only ask for the source.
 const LICENSE: Record<string, string> = { Attribution: '須標示來源', 'Public domain': '公有領域' };
 
-export function TagAvatar({ person, size = 56 }: { person: Person; size?: number }) {
-  if (!person.avatar) return null;
+/**
+ * The sketch is ink on transparent, used as a mask over the site's orange, so
+ * there is no frame. Dark pages get the reverse (the person filled, strokes
+ * left open) so the drawing does not turn into a negative.
+ */
+export function TagAvatar({ url, size = 56 }: { url: string; size?: number }) {
+  const at = (theme: string) => `url("${url}${url.includes('?') ? '&' : '?'}theme=${theme}")`;
   return (
-    <img
-      src={person.avatar.url}
-      alt=""
-      width={size}
-      height={size}
-      className="shrink-0 rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:invert"
+    <span
+      aria-hidden="true"
+      className="inline-block shrink-0 bg-brand-600 [mask-image:var(--ink-light)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain] dark:bg-brand-400 dark:[mask-image:var(--ink-dark)]"
+      style={{ width: size, height: size, '--ink-light': at('light'), '--ink-dark': at('dark') } as React.CSSProperties}
     />
   );
 }
@@ -35,7 +39,7 @@ export default function TagPerson({ person }: { person: Person }) {
   const a = person.avatar;
   return (
     <div className="flex items-center gap-3">
-      <TagAvatar person={person} />
+      {a && <TagAvatar url={a.url} />}
       <div className="min-w-0 text-sm text-zinc-600 dark:text-zinc-400">
         {line && <p className="text-zinc-800 dark:text-zinc-200">{line}</p>}
         <p className="text-xs">

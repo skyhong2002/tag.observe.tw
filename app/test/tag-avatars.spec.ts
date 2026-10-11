@@ -3,6 +3,7 @@
 // TEST_DB_URL at the production database: tables are truncated.
 import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
@@ -94,6 +95,15 @@ describe('photo rules', () => {
   });
 });
 
+const stored = (ink: number) =>
+  sharp(
+    Buffer.alloc(16 * 16 * 4).map((_, i) => (i % 4 === 3 ? ink : 255)),
+    { raw: { width: 16, height: 16, channels: 4 } },
+  )
+    .webp({ lossless: true, exact: true })
+    .toBuffer();
+const alpha = async (webp: Buffer) => (await sharp(webp).ensureAlpha().raw().toBuffer())[3];
+
 const url = process.env.TEST_DB_URL;
 const ORIGIN = 'https://tag.observe.tw';
 const people: Record<string, { email: string }> = { admin: { email: 'admin@example.com' }, reader: { email: 'reader@example.com' } };
@@ -144,6 +154,8 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
       },
       { tag: '台北', status: 'none', checkedAt },
     ]);
+    // Stored avatars: grey = silhouette (all person here), alpha = ink; rank 1 light ink, rank 2 dark ink.
+    const images = await Promise.all([60, 200].map(stored));
     await db.insert(tagAvatarCandidates).values(
       [1, 2].map((rank) => ({
         tag: '賴清德',
@@ -156,7 +168,7 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
         score: 0.9 - rank / 10,
         scores: { size: 1 },
         verdict: 'ok',
-        image: Buffer.from(`webp-${rank}`),
+        image: images[rank - 1],
       })),
     );
     app = await buildApp(
@@ -179,7 +191,10 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
     expect(p).toMatchObject({ wikidataId: 'Q3847080', avatar: { file: '賴清德 1.jpg', license: 'CC BY 4.0', artist: '總統府' } });
     const img = await app.inject({ url: p.avatar.url });
     expect(img.headers['content-type']).toBe('image/webp');
-    expect(img.body).toBe('webp-1');
+    expect(await alpha(img.rawPayload)).toBeCloseTo(60, -1);
+    // Dark pages get the person filled and the strokes open.
+    const dark = await app.inject({ url: `${p.avatar.url}&theme=dark` });
+    expect(await alpha(dark.rawPayload)).toBeCloseTo(195, -1);
     expect(await person('台北')).toBeNull();
     expect((await app.inject({ url: `/api/v1/tags/${encodeURIComponent('台北')}/avatar` })).statusCode).toBe(404);
   });
@@ -199,7 +214,7 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
     const after = await person();
     expect(after.avatar.file).toBe('賴清德 2.jpg');
     expect(after.avatar.url).not.toBe(before);
-    expect((await app.inject({ url: after.avatar.url })).body).toBe('webp-2');
+    expect(await alpha((await app.inject({ url: after.avatar.url })).rawPayload)).toBeCloseTo(200, -1);
 
     expect((await choose(null)).json()).toMatchObject({ status: 'hidden', shownRank: null });
     expect((await person()).avatar).toBeNull();
@@ -210,7 +225,7 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
     expect(list.people[0].candidates.map((c: { rank: number }) => c.rank)).toEqual([1, 2]);
     // admins still see every candidate of a hidden avatar
     const candidate = await app.inject({ url: list.people[0].candidates[0].image, headers: as('admin', false) });
-    expect(candidate.body).toBe('webp-1');
+    expect(await alpha(candidate.rawPayload)).toBeCloseTo(60, -1);
     expect((await app.inject({ url: list.people[0].candidates[0].image, headers: as('reader', false) })).statusCode).toBe(403);
 
     const log = await db.execute(sql`SELECT action, from_rank, to_rank FROM tag_people_log ORDER BY id`);
