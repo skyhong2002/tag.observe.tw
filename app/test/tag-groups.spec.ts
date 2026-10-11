@@ -228,6 +228,25 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
     expect(await shown('川普')).toEqual(['外國政治人物', '國際']);
   });
 
+  it("lets a sure rule promote another source's review row, never an admin's", async () => {
+    await db.insert(tagGroupMembers).values([
+      { tag: '蔡易餘', groupId: groupId('現任立委'), source: 'legacy', status: 'review', updatedAt: new Date() },
+      { tag: '蔡易餘', groupId: groupId('民進黨'), source: 'admin', status: 'review', updatedAt: new Date() },
+    ]);
+    await fileTag(db, '蔡易餘', 'person', [
+      { groupId: groupId('現任立委'), score: null, note: '現任立法委員' },
+      { groupId: groupId('民進黨'), score: null, note: '民主進步黨黨員' },
+    ]);
+    const rows = await db.select().from(tagGroupMembers).where(sql`${tagGroupMembers.tag} = '蔡易餘'`);
+    expect(rows.find((r) => r.groupId === groupId('現任立委'))).toMatchObject({ source: 'person', status: 'auto', note: '現任立法委員' });
+    expect(rows.find((r) => r.groupId === groupId('民進黨'))).toMatchObject({ source: 'admin', status: 'review' });
+    // a review suggestion does not promote anything
+    await fileTag(db, '蔡易餘', 'ai', [{ groupId: groupId('民進黨'), score: 0, note: 'AI', status: 'review' }]);
+    expect(
+      (await db.select().from(tagGroupMembers).where(sql`${tagGroupMembers.tag} = '蔡易餘'`)).find((r) => r.groupId === groupId('民進黨')),
+    ).toMatchObject({ source: 'admin' });
+  });
+
   it('lets only admins decide, from the site itself', async () => {
     expect((await decide(groupId('政治'), '川普', 'confirmed', as(null))).statusCode).toBe(401);
     expect((await decide(groupId('政治'), '川普', 'confirmed', as('reader'))).statusCode).toBe(403);

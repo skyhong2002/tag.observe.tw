@@ -31,9 +31,11 @@ export async function seedGroupDefs(db: Db) {
 
 export type Row = { groupId: number; score: number | null; note: string | null; status?: TagGroupStatus };
 
-/** Replaces `source`'s automatic rows for `tag` with `rows`. Rows any
- *  source left for review, an admin confirmed or rejected stay as they are;
- *  an auto row from another source is taken over only by a higher score. */
+/** Replaces `source`'s automatic rows for `tag` with `rows`. Rows an
+ *  admin confirmed or rejected stay as they are. An auto row from another
+ *  source is taken over only by a higher score; a row another source left
+ *  for review (a 2016 「現任立委」, a held-back type) becomes auto when this
+ *  rule is sure of it. */
 export async function fileTag(db: Db, tag: string, source: TagGroupSource, rows: Row[]) {
   const now = new Date();
   const existing = await db.select().from(tagGroupMembers).where(eq(tagGroupMembers.tag, tag));
@@ -47,7 +49,10 @@ export async function fileTag(db: Db, tag: string, source: TagGroupSource, rows:
         .insert(tagGroupMembers)
         .values({ tag, groupId: row.groupId, source, status, score: row.score, note: row.note, updatedAt: now });
       added++;
-    } else if (old.status === 'auto' && (old.source === source || (row.score ?? 1) > (old.score ?? 1))) {
+    } else if (
+      (old.status === 'auto' && (old.source === source || (row.score ?? 1) > (old.score ?? 1))) ||
+      (old.status === 'review' && old.source !== source && old.source !== 'admin' && status === 'auto')
+    ) {
       await db
         .update(tagGroupMembers)
         .set({ source, status, score: row.score, note: row.note, updatedAt: now })
@@ -116,22 +121,28 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
   for (const tag of tags) {
     if (people.has(tag)) continue;
     const row = cached.get(tag);
-    if (!force && row?.checkedAt && row.checkedAt.getTime() >= fresh) continue;
-    const item = await findItem(tag);
-    checked++;
-    const values = {
-      wikidataId: item?.qid ?? null,
-      label: item?.label?.slice(0, 120) ?? null,
-      description: item?.description?.slice(0, 255) ?? null,
-      types: item?.types ?? null,
-      checkedAt: new Date(),
-    };
-    await db
-      .insert(tagWikidata)
-      .values({ tag, ...values })
-      .onDuplicateKeyUpdate({ set: values });
-    log({ tag, qid: values.wikidataId, types: values.types?.map((t) => t.label) });
-    if (item?.types.some((t) => t.id === HUMAN)) {
+    let types = row?.types ?? [];
+    const recent = !force && row?.checkedAt && row.checkedAt.getTime() >= fresh;
+    if (!recent) {
+      const item = await findItem(tag);
+      checked++;
+      const values = {
+        wikidataId: item?.qid ?? null,
+        label: item?.label?.slice(0, 120) ?? null,
+        description: item?.description?.slice(0, 255) ?? null,
+        types: item?.types ?? null,
+        checkedAt: new Date(),
+      };
+      await db
+        .insert(tagWikidata)
+        .values({ tag, ...values })
+        .onDuplicateKeyUpdate({ set: values });
+      log({ tag, qid: values.wikidataId, types: values.types?.map((t) => t.label) });
+      types = item?.types ?? [];
+    }
+    if (types.some((t) => t.id === HUMAN)) {
+      // A person's facts are not cached: asked again only with the item.
+      if (recent) continue;
       const person = await findPerson(tag);
       if (!person || person.aliasOnly) continue;
       const status = person.namesakes ? 'review' : 'auto';
@@ -139,9 +150,11 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
       added += (await fileTag(db, tag, 'person', picks)).added;
       continue;
     }
+    // Today's topics: the 2016 legacy counts are too old to back a type
+    // (「失聯」 was a TV series then) unless an admin confirmed them.
     const topics = (
       await db
-        .select({ groupId: tagGroupMembers.groupId })
+        .select({ groupId: tagGroupMembers.groupId, source: tagGroupMembers.source, status: tagGroupMembers.status })
         .from(tagGroupMembers)
         .where(
           and(
@@ -150,8 +163,10 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
             inArray(tagGroupMembers.status, ['auto', 'confirmed']),
           ),
         )
-    ).map((r) => r.groupId);
-    const picks = typeGroups(item?.types ?? [], topics).map((g) => ({
+    )
+      .filter((r) => r.source !== 'legacy' || r.status === 'confirmed')
+      .map((r) => r.groupId);
+    const picks = typeGroups(types, topics).map((g) => ({
       groupId: g.groupId,
       score: null,
       note: g.review ? `${g.note}，版別不符` : g.note,
