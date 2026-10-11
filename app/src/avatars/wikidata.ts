@@ -100,10 +100,13 @@ export async function findPerson(tag: string): Promise<Person | null> {
   const rival = (q: Entity | undefined) => q && !isHuman(q) && !ids(q.claims?.P31).some((c) => WIKIMEDIA.has(c)) && links(q) >= links(e);
   if ([...items, found[top]].some(rival)) return null;
   const c = e.claims ?? {};
-  // Positions without an end time (P582) are current.
-  const positions = (c.P39 ?? []).map((cl) => ({
+  // Current posts have a start time (P580) and no end time (P582); undated
+  // entries (川普 is still listed as a CEO) are not counted as current.
+  const positions = (c.P39 ?? []).map((cl): { id?: string; current: boolean; start: string } => ({
     id: (cl.mainsnak.datavalue?.value as { id?: string } | undefined)?.id,
-    current: !cl.qualifiers?.P582,
+    current: !!cl.qualifiers?.P580 && !cl.qualifiers?.P582,
+    // "+2025-01-20T00:00:00Z": compares as text within the same era.
+    start: ((cl.qualifiers?.P580?.[0] as { datavalue?: { value?: { time?: string } } } | undefined)?.datavalue?.value?.time ?? '').slice(1),
   }));
   const refs = [...new Set([...ids(c.P27), ...ids(c.P106), ...ids(c.P102), ...positions.map((p) => p.id).filter(Boolean)])] as string[];
   const labels = await entities(refs, 'labels');
@@ -120,8 +123,9 @@ export async function findPerson(tag: string): Promise<Person | null> {
       parties: ids((c.P102 ?? []).filter((cl) => !cl.qualifiers?.P582)).map(name),
       // Current posts first; one entry per post (P39 repeats a post per term).
       positions: positions
-        .filter((p): p is { id: string; current: boolean } => !!p.id)
-        .sort((a, b) => Number(b.current) - Number(a.current))
+        .filter((p): p is { id: string; current: boolean; start: string } => !!p.id)
+        // Current first, newest post first: 美國總統 (2025) before CEO (1971).
+        .sort((a, b) => Number(b.current) - Number(a.current) || b.start.localeCompare(a.start))
         .filter((p) => !seen.has(p.id) && seen.add(p.id))
         .map((p) => ({ label: name(p.id), current: p.current })),
     },
