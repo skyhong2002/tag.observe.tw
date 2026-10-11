@@ -2,8 +2,8 @@ import { and, desc, eq, gte, inArray, isNotNull } from 'drizzle-orm';
 import { type Claim, download, entities, fileInfo } from '../avatars/wikidata.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, tagPeople, tagVisuals, tagWikidata } from '../db/schema.ts';
-import type { AiConfig, Item } from '../tag-groups/ai.ts';
-import { pickVisuals } from './ai.ts';
+import type { AiConfig } from '../tag-groups/ai.ts';
+import { type Pick, pickVisuals, type VisualItem } from './ai.ts';
 import { iconSvg } from './icons.ts';
 import { city, country, type Place, taiwanPlace } from './places.ts';
 import { recolourLogo } from './recolour.ts';
@@ -107,8 +107,8 @@ async function fromItem(qid: string) {
 }
 
 /** An AI pick as a row held for review: the emoji if there is an exact one, else the icon. */
-export function aiRow(pick: { emoji: string | null; icon: string | null; why: string | null } | undefined, model: string) {
-  const why = [pick?.why, `AI（${model}）`].filter(Boolean).join('・').slice(0, 120);
+export function aiRow(pick: Omit<Pick, 'same'> | undefined, model: string, namesake = false) {
+  const why = [namesake && 'Wikidata 項目不符', pick?.why, `AI（${model}）`].filter(Boolean).join('・').slice(0, 120);
   if (pick?.emoji) return { status: 'review' as const, kind: 'emoji' as const, value: pick.emoji, note: why };
   if (pick?.icon)
     return { status: 'review' as const, kind: 'icon' as const, value: pick.icon, note: why, image: Buffer.from(iconSvg(pick.icon) ?? '') };
@@ -123,6 +123,8 @@ export async function processTags(
     ai = null as AiConfig | null,
     batch = 20,
     fetchImpl = fetch as typeof fetch,
+    // Tests stand in for Wikidata here.
+    itemImpl = fromItem,
     log = (() => {}) as Log,
     stop = (): boolean => false,
   } = {},
@@ -147,7 +149,7 @@ export async function processTags(
   const persons = new Set(people.map((p) => p.tag));
   const item = new Map(items.map((i) => [i.tag, i]));
   const fresh = Date.now() - RECHECK_DAYS * 86_400_000;
-  const forAi: string[] = [];
+  const forAi: { tag: string; row: Awaited<ReturnType<typeof fromItem>>; candidate?: string }[] = [];
   for (const tag of tags) {
     if (stop()) break;
     const old = before.get(tag);
@@ -158,12 +160,17 @@ export async function processTags(
       const place = taiwanPlace(tag);
       // Other people get sketch avatars (docs/tag-avatars.md).
       if (!place && (persons.has(tag) || wd?.types?.some((t) => t.id === HUMAN))) continue;
-      const row = place ? placeRow(place) : wd?.wikidataId ? await fromItem(wd.wikidataId) : null;
-      if (row) {
-        const r = await save(db, tag, row);
+      if (place) {
+        const r = await save(db, tag, placeRow(place));
         count(`${r.kind}`);
         log(r);
-      } else forAi.push(tag);
+        continue;
+      }
+      // An item's place or logo waits for the AI to agree it is what the news means.
+      const row = wd?.wikidataId ? await itemImpl(wd.wikidataId) : null;
+      forAi.push(
+        row ? { tag, row, candidate: `${wd?.label ?? row.label}${wd?.description ? `（${wd.description}）` : ''}` } : { tag, row: null },
+      );
     } catch (err) {
       count('error');
       log({ tag, error: String(err) });
@@ -178,8 +185,8 @@ export async function processTags(
   for (let i = 0; i < forAi.length; i += batch) {
     if (stop()) break;
     const chunk = forAi.slice(i, i + batch);
-    const asking: Item[] = [];
-    for (const tag of chunk) {
+    const asking: VisualItem[] = [];
+    for (const { tag, candidate } of chunk) {
       const rows = await db
         .select({ title: articles.title })
         .from(articleTags)
@@ -187,18 +194,20 @@ export async function processTags(
         .where(and(eq(articleTags.tag, tag), gte(articleTags.publishedAt, since)))
         .orderBy(desc(articleTags.publishedAt))
         .limit(8);
-      asking.push({ tag, titles: [...new Set(rows.map((r) => r.title.trim()))].slice(0, 4) });
+      asking.push({ tag, candidate, titles: [...new Set(rows.map((r) => r.title.trim()))].slice(0, 4) });
     }
     let reply: Awaited<ReturnType<typeof pickVisuals>>;
     try {
       reply = await pickVisuals(ai, asking, fetchImpl);
     } catch (err) {
       count('error');
-      log({ tags: chunk, error: String(err) });
+      log({ tags: chunk.map((c) => c.tag), error: String(err) });
       continue;
     }
-    for (const tag of chunk) {
-      const r = await save(db, tag, aiRow(reply.picks.get(tag), reply.model));
+    for (const { tag, row } of chunk) {
+      const pick = reply.picks.get(tag);
+      // Only a clear yes shows the item's picture; otherwise the AI's own pick, held for review.
+      const r = await save(db, tag, row && pick?.same === true ? row : aiRow(pick, reply.model, !!row));
       count(r.status === 'none' ? 'none' : `${r.kind}`);
       log(r);
     }

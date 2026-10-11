@@ -2,7 +2,7 @@
 // recolouring and the AI reply rules, then the run, the public and the admin
 // routes against a real MariaDB (TEST_DB_URL). Never point TEST_DB_URL at
 // the production database: tables are truncated.
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -10,7 +10,7 @@ import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import { tagPeople, tagVisualLog, tagVisuals, tagWikidata } from '../src/db/schema.ts';
-import { parseReply } from '../src/tag-visuals/ai.ts';
+import { parseReply, prompt } from '../src/tag-visuals/ai.ts';
 import { isEmoji, isIcon, searchIcons } from '../src/tag-visuals/icons.ts';
 import { city, country, taiwanPlace } from '../src/tag-visuals/places.ts';
 import { DARKEST, LIGHTEST, lightnessMap, oklab, orangeAt, recolourLogo } from '../src/tag-visuals/recolour.ts';
@@ -99,15 +99,15 @@ describe('AI picks', () => {
     const picks = parseReply(
       JSON.stringify({
         tags: [
-          { tag: '煙火', emoji: '🎆', icon: 'sparkles', why: '煙火' },
+          { tag: '煙火', emoji: '🎆', icon: 'sparkles', same: null, why: '煙火' },
           { tag: '地震', emoji: '地震', icon: 'no-such-icon' },
           { tag: '別的', emoji: '🎆', icon: 'flame' },
         ],
       }),
       ['煙火', '地震'],
     );
-    expect(picks.get('煙火')).toEqual({ emoji: '🎆', icon: 'sparkles', why: '煙火' });
-    expect(picks.get('地震')).toEqual({ emoji: null, icon: null, why: null });
+    expect(picks.get('煙火')).toEqual({ emoji: '🎆', icon: 'sparkles', same: null, why: '煙火' });
+    expect(picks.get('地震')).toEqual({ emoji: null, icon: null, same: null, why: null });
     expect(picks.has('別的')).toBe(false);
     expect(parseReply('not json', ['煙火']).size).toBe(0);
   });
@@ -116,6 +116,11 @@ describe('AI picks', () => {
     expect(aiRow({ emoji: '🎆', icon: 'sparkles', why: '煙火' }, 'm')).toMatchObject({ status: 'review', kind: 'emoji', value: '🎆' });
     expect(aiRow({ emoji: null, icon: 'flame', why: null }, 'm')).toMatchObject({ status: 'review', kind: 'icon', value: 'flame' });
     expect(aiRow(undefined, 'm')).toMatchObject({ status: 'none' });
+    expect(aiRow({ emoji: null, icon: 'cpu', why: '晶片' }, 'm', true).note).toBe('Wikidata 項目不符・晶片・AI（m）');
+    // The candidate goes into the prompt.
+    expect(prompt([{ tag: 'GPU', titles: ['輝達 GPU 出貨'], candidate: '國家政治保衛總局（蘇聯機構）' }])[1].content).toContain(
+      'Wikidata 候選：國家政治保衛總局（蘇聯機構）',
+    );
   });
 });
 
@@ -157,6 +162,9 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
       { tag: '某人', wikidataId: 'Q1', types: [{ id: 'Q5', label: '人類' }], checkedAt: at },
       // A namesake actor: the county still wins.
       { tag: '高雄', wikidataId: 'Q5336671', types: [{ id: 'Q5', label: '人類' }], checkedAt: at },
+      // Items with a logo: one the news means, one a namesake.
+      { tag: 'MLB', wikidataId: 'Q1163715', label: '美國職業棒球大聯盟', description: '職業棒球聯盟', types: [], checkedAt: at },
+      { tag: 'GPU', wikidataId: 'Q213213', label: '國家政治保衛總局', description: '蘇聯機構', types: [], checkedAt: at },
     ]);
     app = await buildApp(
       {
@@ -182,18 +190,43 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
         tags: [
           { tag: '煙火', emoji: '🎆', icon: 'sparkles', why: '就是煙火' },
           { tag: '停水', emoji: null, icon: 'droplet-off', why: '供水中斷' },
+          { tag: 'MLB', emoji: null, icon: 'trophy', same: true },
+          { tag: 'GPU', emoji: null, icon: 'cpu', same: false, why: '顯示晶片' },
         ],
       });
       return new Response(JSON.stringify({ model: 'test-model', choices: [{ message: { content } }] }));
     }) as unknown as typeof fetch;
-    const tally = await processTags(db, ['台北', '高雄', '煙火', '停水', '賴清德', '某人'], {
-      ai: { baseUrl: 'http://ai', apiKey: 'k', model: 'm' },
-      fetchImpl,
+    let user = '';
+    const spy = (async (u: string, init: { body: string }) => {
+      user = JSON.parse(init.body).messages[1].content;
+      return fetchImpl(u, init as RequestInit);
+    }) as unknown as typeof fetch;
+    const logo = (qid: string) => ({
+      status: 'auto' as const,
+      kind: 'logo' as const,
+      value: `${qid}.svg`,
+      label: qid,
+      wikidataId: qid,
+      image: Buffer.from('x'),
+      pageUrl: `https://commons.wikimedia.org/wiki/File:${qid}.svg`,
+      license: null,
+      licenseUrl: null,
+      artist: null,
     });
-    expect(asked).toEqual(['煙火', '停水']);
-    expect(tally).toEqual({ place: 2, emoji: 1, icon: 1 });
+    const tally = await processTags(db, ['台北', '高雄', '煙火', '停水', '賴清德', '某人', 'MLB', 'GPU'], {
+      ai: { baseUrl: 'http://ai', apiKey: 'k', model: 'm' },
+      fetchImpl: spy,
+      itemImpl: async (qid) => logo(qid),
+    });
+    expect(asked).toEqual(['煙火', '停水', 'MLB', 'GPU']);
+    expect(user).toContain('Wikidata 候選：國家政治保衛總局（蘇聯機構）');
+    // MLB keeps its logo; GPU's namesake is dropped for the AI's icon, held for review.
+    expect(tally).toEqual({ place: 2, emoji: 1, icon: 2, logo: 1 });
+    const [gpu] = await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'GPU'));
+    expect(gpu).toMatchObject({ status: 'review', kind: 'icon', value: 'cpu' });
+    expect(gpu.note).toContain('Wikidata 項目不符');
     const rows = await db.select({ tag: tagVisuals.tag, status: tagVisuals.status, kind: tagVisuals.kind }).from(tagVisuals);
-    expect(rows.map((r) => r.tag).sort()).toEqual(['停水', '台北', '煙火', '高雄']);
+    expect(rows.map((r) => r.tag).sort()).toEqual(['GPU', 'MLB', '停水', '台北', '煙火', '高雄']);
     // Checked within 30 days: not again.
     expect(await processTags(db, ['台北'], { fetchImpl })).toEqual({});
   });
