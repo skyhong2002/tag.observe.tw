@@ -1,0 +1,74 @@
+# 非人物標籤的小圖
+
+人物標籤用素描頭像（[tag-avatars.md](tag-avatars.md)），其他標籤依性質配一張小圖，顯示在標籤頁標題旁。所有圖都只用網站橘（`brand-600`）一個色相，人物以外的東西也是白底橘線。資料由 `tools/tag-visuals.ts` 與每日的 `tag-visuals` 工作產生，存在 `tag_visuals`；管理員在 `/admin/tag-visuals/` 確認、改圖或隱藏。
+
+## 依序判斷（`app/src/tag-visuals/run.ts`）
+
+人物標籤（`tag_people` 有 Wikidata 人物，或 `tag_wikidata` 的類型是人類 Q5）跳過。其餘標籤：
+
+1. **台灣的縣市、鄉鎮**（`places.ts`）：標籤是縣市名，有沒有「縣」「市」都可以（「台北」「高雄市」，台／臺不分）；鄉鎮市區要寫全名（「員山鄉」）。只寫「恆春」「信義」不算：常是別的意思，也有好幾個縣市都有同名的區。「新竹」「嘉義」同時是縣和市，也不算。小圖是這個地方的輪廓，大圖是它在台灣（鄉鎮則在所屬縣市）裡的位置。
+2. **標籤的 Wikidata 項目**（`tag_wikidata`，由[標籤群組](tag-groups.md)工作每天查好）：
+   - 有 ISO 3166-1 數字代碼（P299）→ **國家**：輪廓；大圖是轉到這個國家的地球。
+   - 有座標（P625）、人口（P1082）和所屬國家（P17）→ **城市**：在所屬國家的輪廓上點一個點；大圖是地球上的點。台灣的城市點在台灣島上。
+   - 有標誌（P154）→ **標誌**：取 Commons 512px 縮圖，轉成網站橘單色（見下方），附原檔頁、作者與授權。Commons 上沒有標誌的組織（多數球隊、獎項、機關）走下一步，管理員可以上傳。
+   - 遠方的離島（高雄的東沙、南沙，法國的海外省）不畫，主島才看得清楚。
+3. **AI**（`ai.ts`）：其餘標籤每 20 個一批，連同近期標題問 ai-gateway（`TAG_AI_*`，與標籤群組相同）。只有某個 emoji「正好就是」這個東西時才給 emoji（煙火 🎆、颱風 🌀；中秋不給 🥮，月餅只是聯想），否則從 Lucide 的 1,877 個線條圖示中挑一個；都不合適就記為 `none`。回覆的 emoji 要真的是一個 emoji、圖示名稱要存在，才會採用。Unicode CLDR 的中文名稱表不可靠（🎆 叫「爆竹」，「煙火」的關鍵字對到 🧨），所以不用來直接查表。
+
+30 天內查過的標籤不重查。沒有設定 AI 時，第 3 步的標籤留著不記，下次有設定再問。
+
+## 狀態（`tag_visuals.status`）
+
+| status | 意思 | 公開 |
+| --- | --- | --- |
+| `auto` | 地方、Commons 標誌 | 是 |
+| `review` | AI 挑的 emoji 或圖示 | 否，管理員按「採用」後才顯示 |
+| `chosen` | 管理員採用、改圖或上傳 | 是 |
+| `hidden` | 管理員隱藏 | 否 |
+| `none` | 沒有合適的圖 | 否 |
+
+`chosen`、`hidden` 之後重跑不會覆蓋（`--force` 除外）。管理員的每次變更記在 `tag_visual_log`。
+
+## 單色標誌（`recolour.ts`）
+
+所有標誌換成同一個色相，只保留明暗：
+
+- 每個像素取 OKLab 的亮度 L。
+- 把這個標誌自己最暗到最亮的範圍（不透明像素的第 2 到第 98 百分位）拉開，對應到網站橘的色階：最深是比網站橘暗一點（L − 0.08），最淺接近白色（0.97）。
+- 原本接近白色的部分維持白色；只有一種顏色的標誌整個是最深的橘色。
+- 顏色以 OKLCH 固定在網站橘的色相，超出 sRGB 時降低彩度。
+
+所以藍紅兩半的 MLB 變成一深一淺的橘，白色的打擊者仍是白色。只看透明度做遮罩會讓大多數標誌變成一整塊色塊，不用。
+
+## 顯示
+
+- 標籤頁標題旁（`web/src/components/TagVisual.tsx`）：地方顯示位置圖和正式名稱，附地圖資料來源；標誌附 Commons 原檔與授權；emoji 直接顯示；圖示以 CSS mask 填網站橘。人物標籤仍顯示素描頭像。
+- 地方 SVG 是白色填色、橘色線條，深色頁面上也是白紙橘線，與素描頭像一致。
+- API：`GET /api/v1/tags/{tag}/visual`、`GET /api/v1/tags/{tag}/visual-image`，見 [api.md](api.md)。圖檔網址帶版本參數，圖本身快取一天。
+
+## 管理
+
+`/admin/tag-visuals/` 依狀態列出標籤，也可以直接查一個標籤（還沒有紀錄的也行）：
+
+- 「採用」：顯示 AI 挑的圖。
+- 「不顯示」：隱藏。
+- 改用另一個 emoji。
+- 用英文關鍵字找 Lucide 圖示，點選後改用。
+- 上傳標誌（PNG、JPEG、WebP、SVG，最大約 3 MB），一樣轉成單色。
+
+## 執行
+
+worker 每天 05:10（`TAG_VISUALS_CRON`，排在 04:55 的標籤群組之後，Wikidata 項目由它先查好）對本週新聞排行前 500 個標籤跑一次（`jobs/tag-visuals-job.ts`），至多 8 分鐘，時間到就在標籤之間停下。
+
+手動補跑或指定標籤：
+
+```sh
+node --env-file=.env tools/tag-visuals.ts 台北 國民黨 煙火   # 指定標籤
+node --env-file=.env tools/tag-visuals.ts --top 500         # 本週排行、30 天內沒查過的
+```
+
+## 資料與授權
+
+- 縣市、鄉鎮界線：[taiwan-atlas](https://github.com/dkaoster/taiwan-atlas)（MIT），資料來自內政部國土測繪中心。
+- 國界：[world-atlas](https://github.com/topojson/world-atlas)（ISC），資料來自 Natural Earth（公有領域）。
+- 線條圖示：[Lucide](https://lucide.dev/)（ISC）。`app/src/tag-visuals/lucide-icons.json` 由 `node tools/gen-lucide-icons.ts` 從 `lucide-static` 產生，套件本身 66 MB，只作開發依賴；檔案內附授權全文。
+- 標誌：Commons 上的標誌多數是公有領域（純文字或簡單圖形），也有 CC BY-SA，所以一律連結原檔頁並標示授權。轉成單色是衍生作品；CC BY-SA 的單色版應以相同授權提供。

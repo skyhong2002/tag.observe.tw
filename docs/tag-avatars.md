@@ -1,6 +1,6 @@
 # 人物標籤與素描頭像
 
-標籤名稱正好是 Wikidata 上某位人物的名稱或別名時，標籤頁會顯示這個人的素描頭像和一行身分（現任職位、政黨），並附上原照片的作者與授權。資料由 `tools/tag-avatars.ts` 產生，管理員在 `/admin/avatars/` 確認、換圖或隱藏。
+標籤名稱正好是 Wikidata 上某位人物的名稱或別名時，標籤頁會顯示這個人的素描頭像和一行身分（現任職位、政黨），並附上原照片的作者與授權。資料由 `tools/tag-avatars.ts` 產生，管理員在 `/admin/avatars/` 確認、換圖或隱藏。人物以外的標籤配地圖輪廓、標誌或圖示，見 [tag-visuals.md](tag-visuals.md)。
 
 ## 流程（`app/src/avatars/`）
 

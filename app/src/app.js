@@ -16,6 +16,7 @@ import { httpDuration, httpRequests, metricsContentType, metricsText } from './m
 import { API_KEY_MAX_PER_MINUTE, API_MAX_PER_MINUTE, apiKeyLookup } from './reader/api-keys.ts';
 import { registerReaderRoutes } from './reader/routes.ts';
 import { registerTagGroupAdmin } from './tag-groups/admin.ts';
+import { registerTagVisualAdmin } from './tag-visuals/admin.ts';
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
 import { registerArticleRelated } from './v1/article-related.ts';
@@ -35,6 +36,7 @@ import { registerSimilarity } from './v1/similarity.ts';
 import { registerSiteObservation } from './v1/site-observation.ts';
 import { registerTagGroups } from './v1/tag-groups.ts';
 import { registerTagPerson } from './v1/tag-person.ts';
+import { registerTagVisual } from './v1/tag-visual.ts';
 import { registerWriting } from './v1/writing.ts';
 import { registerWritingAdmin } from './writing/admin.ts';
 
@@ -121,6 +123,7 @@ export async function buildApp(
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
     registerTagPerson(app, own.db);
+    registerTagVisual(app, own.db);
     registerWriting(app, own.db);
     registerTagGroups(app, own.db);
   }
@@ -141,6 +144,7 @@ export async function buildApp(
   if (own && config.login) registerAvatarAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerWritingAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerTagGroupAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
+  if (own && config.login) registerTagVisualAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own) apiKeys = apiKeyLookup(own.db);
   if (own && config.login && apiKeys)
     registerReaderRoutes(app, own.db, {

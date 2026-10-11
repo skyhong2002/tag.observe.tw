@@ -911,3 +911,57 @@ export const tagWikidata = mysqlTable('tag_wikidata', {
   checkedAt: datetime('checked_at'),
   aiCheckedAt: datetime('ai_checked_at'),
 });
+
+// A picture for a non-person tag (docs/tag-visuals.md; people get sketch
+// avatars instead). kind: place = outline of a county, township, country or
+// a city's dot; logo = the item's Wikidata logo, recoloured to the site's
+// orange; emoji = an emoji that is exactly the thing; icon = a Lucide line
+// icon. status: auto = shown (places, Commons logos); review = an AI pick,
+// not shown until an admin confirms; chosen = an admin confirmed or set it;
+// hidden = an admin turned it off; none = nothing fits. Re-runs never
+// overwrite chosen or hidden.
+export type TagVisualKind = 'place' | 'logo' | 'emoji' | 'icon';
+export type TagVisualStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'none';
+
+export const tagVisuals = mysqlTable(
+  'tag_visuals',
+  {
+    tag: varchar('tag', { length: 60 }).primaryKey(),
+    kind: varchar('kind', { length: 8 }).$type<TagVisualKind>(),
+    status: varchar('status', { length: 8 }).$type<TagVisualStatus>().notNull(),
+    // emoji: the emoji; icon: the Lucide name; place: e.g. tw-county:63000, country:392, city:Q649.
+    value: varchar('value', { length: 64 }),
+    wikidataId: varchar('wikidata_id', { length: 16 }),
+    // What it shows, e.g. 「臺北市」「中國國民黨」.
+    label: varchar('label', { length: 120 }),
+    // Why, e.g. the AI's reason, 「管理員上傳」.
+    note: varchar('note', { length: 120 }),
+    // Small picture (tag chips): place outline SVG, recoloured logo WebP, icon SVG.
+    image: imageBytes('image'),
+    // Larger picture for the tag page: where the place is (Taiwan, the county, the globe).
+    large: imageBytes('large'),
+    // The logo's Commons file page and terms; places credit their map data in the docs.
+    pageUrl: varchar('page_url', { length: 512 }),
+    license: varchar('license', { length: 64 }),
+    licenseUrl: varchar('license_url', { length: 255 }),
+    artist: varchar('artist', { length: 255 }),
+    checkedAt: datetime('checked_at').notNull(),
+    reviewedBy: varchar('reviewed_by', { length: 255 }),
+    reviewedAt: datetime('reviewed_at'),
+  },
+  (t) => [index('tag_visuals_status').on(t.status, t.checkedAt)],
+);
+
+export const tagVisualLog = mysqlTable(
+  'tag_visual_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    tag: varchar('tag', { length: 60 }).notNull(),
+    action: varchar('action', { length: 8 }).$type<'confirm' | 'hide' | 'emoji' | 'icon' | 'upload'>().notNull(),
+    // What it was and became, e.g. 「icon flag → party-popper」.
+    detail: varchar('detail', { length: 120 }),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('tag_visual_log_tag').on(t.tag, t.at)],
+);

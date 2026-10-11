@@ -18,6 +18,7 @@ import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagAvatarsInChild } from './jobs/tag-avatars-job.ts';
 import { runTagGroupsJob } from './jobs/tag-groups-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
+import { runTagVisualsJob } from './jobs/tag-visuals-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
 import { runWritingJob, runWritingPeopleJob } from './jobs/writing-job.ts';
 import { LEGACY_OWNERSHIP_POLICY } from './legacy/ownership-policy.ts';
@@ -145,6 +146,12 @@ await queue.upsertJobScheduler(
   { pattern: process.env.TAG_GROUPS_CRON || '55 4 * * *' },
   { name: 'tag-groups', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+// Pictures for non-person tags, after tag groups looked up their Wikidata items (jobs/tag-visuals-job.ts).
+await queue.upsertJobScheduler(
+  'tag-visuals-daily',
+  { pattern: process.env.TAG_VISUALS_CRON || '10 5 * * *' },
+  { name: 'tag-visuals', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
 await queue.upsertJobScheduler(
   'source-probe-weekly',
   { pattern: process.env.PROBE_CRON || '30 5 * * 1' },
@@ -176,6 +183,7 @@ for (const job of [
   'retention',
   'tag-avatars',
   'tag-groups',
+  'tag-visuals',
   'source-probe',
   'analytics',
   'analytics-live',
@@ -230,6 +238,11 @@ const worker = new Worker(
       }
       if (job.name === 'tag-groups') {
         const r = await runTagGroupsJob(db, { log: (o, m) => log.warn(o, m), signal: shutdown.signal });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'tag-visuals') {
+        const r = await runTagVisualsJob(db, { log: (o, m) => log.warn(o, m), signal: shutdown.signal });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

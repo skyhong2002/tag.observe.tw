@@ -188,6 +188,22 @@ export interface TagPerson {
 export const fetchTagAvatars = () => get<{ avatars: Record<string, string> }>('/api/v1/tag-avatars', 300).then((r) => r.avatars);
 export const fetchTagPerson = (tag: string) =>
   get<{ tag: string; person: TagPerson | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/person`, 300).then((r) => r.person);
+/** The picture of a non-person tag (docs/tag-visuals.md). */
+export interface TagVisual {
+  kind: 'place' | 'logo' | 'emoji' | 'icon';
+  emoji: string | null;
+  icon: string | null;
+  label: string | null;
+  wikidataId: string | null;
+  /** Outline, logo or icon (SVG or WebP). */
+  image: string | null;
+  /** Places: where the place is. */
+  large: string | null;
+  /** Logos: the Commons file and its terms. */
+  source: { pageUrl: string; license: string | null; licenseUrl: string | null; artist: string | null } | null;
+}
+export const fetchTagVisual = (tag: string) =>
+  get<{ tag: string; visual: TagVisual | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/visual`, 300).then((r) => r.visual);
 /** Groups and topics a tag is filed under (docs/tag-groups.md). */
 export interface GroupRef {
   id: number;

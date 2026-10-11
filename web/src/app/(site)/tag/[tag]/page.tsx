@@ -9,6 +9,7 @@ import TagGroupChips from '@/components/TagGroupChips';
 import TagKeywordHistory from '@/components/TagKeywordHistory';
 import TagPerson from '@/components/TagPerson';
 import TagStatusPanel from '@/components/TagStatusPanel';
+import TagVisual from '@/components/TagVisual';
 import {
   fetchMedia,
   fetchTagArticles,
@@ -17,6 +18,7 @@ import {
   fetchTagPerson,
   fetchTagSeries,
   fetchTagStatus,
+  fetchTagVisual,
   type MediaInfo,
   taipei,
 } from '@/lib/api';
@@ -78,7 +80,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   };
   // Keywords riding along: by day over two weeks unless the reader asks for hours.
   const flowSpan: 'day' | 'hour' = sp.flow === 'hour' ? 'hour' : 'day';
-  const [series, { page, facets }, media, status, mentions, flowData, person, groups] = await Promise.all([
+  const [series, { page, facets }, media, status, mentions, flowData, person, groups, visual] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     // The list and its camp split use the chart's window and every tagged article in it.
     fetchArticleListing({ tag, hours, camp, cursor }),
@@ -89,6 +91,8 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     fetchTagFlow(tag, flowSpan === 'day' ? FLOW_DAYS * 24 + hoursIntoToday() : hours, flowSpan).catch(() => null),
     fetchTagPerson(tag).catch(() => null),
     fetchTagGroups(tag).catch(() => []),
+    // Older gateways lack the route: no picture rather than an error.
+    fetchTagVisual(tag).catch(() => null),
   ]);
   const flowHref = (v: 'day' | 'hour') => {
     const q = new URLSearchParams(
@@ -132,7 +136,14 @@ export default async function TagPage({ params, searchParams }: { params: Promis
             {tag}
           </h1>
           <FollowButton kind="tag" target={tag} />
-          {person && <TagPerson person={person} />}
+          {/* A sketch first; a place or logo before a namesake's bare line (「高雄」 is also an actor). */}
+          {person?.avatar ? (
+            <TagPerson person={person} />
+          ) : visual ? (
+            <TagVisual visual={visual} />
+          ) : (
+            person && <TagPerson person={person} />
+          )}
           <TagGroupChips groups={groups} />
         </div>
         <div className="flex gap-1 text-sm">

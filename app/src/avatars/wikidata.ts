@@ -8,8 +8,8 @@ const HUMAN = 'Q5';
 // Disambiguation pages, categories, templates, list articles: not a rival meaning.
 const WIKIMEDIA = new Set(['Q4167410', 'Q22808320', 'Q15407973', 'Q4167836', 'Q11266439', 'Q13406463']);
 
-type Claim = { mainsnak: { datavalue?: { value: unknown } }; qualifiers?: Record<string, unknown[]> };
-type Entity = {
+export type Claim = { mainsnak: { datavalue?: { value: unknown } }; qualifiers?: Record<string, unknown[]>; rank?: string };
+export type Entity = {
   id: string;
   labels?: Record<string, { value: string }>;
   descriptions?: Record<string, { value: string }>;
@@ -42,7 +42,7 @@ const ids = (claims: Claim[] | undefined) =>
 const strings = (claims: Claim[] | undefined) =>
   (claims ?? []).map((c) => c.mainsnak.datavalue?.value).filter((v): v is string => typeof v === 'string');
 
-async function entities(qids: string[], props: string) {
+export async function entities(qids: string[], props: string) {
   const out: Record<string, Entity> = {};
   for (let i = 0; i < qids.length; i += 50) {
     const r = await api<{ entities: Record<string, Entity> }>('www.wikidata.org', {

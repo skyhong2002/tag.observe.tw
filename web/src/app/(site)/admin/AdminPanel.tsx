@@ -29,6 +29,7 @@ export default function AdminPanel() {
     <AdminGate next="/admin/">
       <Reports />
       <Avatars />
+      <TagVisualsLink />
       <WritingPeopleLink />
       <TagGroups />
       <Bookmarklet />
@@ -49,6 +50,21 @@ function Avatars() {
         className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
       >
         檢視人物頭像
+      </a>
+    </section>
+  );
+}
+
+function TagVisualsLink() {
+  return (
+    <section className="mt-8">
+      <h2 className="text-lg font-semibold">標籤圖像</h2>
+      <p className={note}>非人物標籤的地圖輪廓、標誌、emoji 與圖示：確認 AI 挑的圖、改用其他圖示或上傳標誌。</p>
+      <a
+        href="/admin/tag-visuals/"
+        className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
+      >
+        檢視標籤圖像
       </a>
     </section>
   );

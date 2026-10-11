@@ -16,7 +16,7 @@ export function personLine(person: Person) {
 }
 
 // Commons' short names; government works often only ask for the source.
-const LICENSE: Record<string, string> = { Attribution: '須標示來源', 'Public domain': '公有領域' };
+export const LICENSE: Record<string, string> = { Attribution: '須標示來源', 'Public domain': '公有領域' };
 
 /**
  * Two masks, no frame: the person's silhouette in white, the sketch's strokes

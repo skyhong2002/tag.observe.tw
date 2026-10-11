@@ -677,7 +677,7 @@ interface Endpoint {
   authorized?: boolean;
   status?: number;
   /** Not JSON: true = gzip, or the response's media type. */
-  binary?: true | 'image/webp';
+  binary?: true | 'image/webp' | 'image/svg+xml';
   tag: string;
   summary: string;
   description?: string;
@@ -1512,6 +1512,56 @@ export const ENDPOINTS: Endpoint[] = [
     ],
     response: str('WebP 圖檔', { format: 'binary' }),
     errors: { '404': '沒有頭像' },
+    cache: '1 天',
+  },
+  {
+    path: '/api/v1/tags/{tag}/visual',
+    tag: 'tags',
+    summary: '非人物標籤的小圖',
+    description:
+      '人物以外的標籤配的圖（人物用 /api/v1/tags/{tag}/person 的素描頭像）。kind：place 是縣市、鄉鎮、國家的輪廓或城市的定位點（地圖資料：內政部國土測繪中心、Natural Earth），image 是輪廓，large 是它在台灣、所屬縣市或地球上的位置；logo 是 Wikidata 項目在 Wikimedia Commons 上的標誌，轉成網站橘色的單色（只保留原本的明暗），source 附原檔的授權與作者，管理員上傳的沒有 source；emoji 是完全就是這個東西的 emoji；icon 是 Lucide 線條圖示的名稱與 SVG。地方與 Commons 標誌自動顯示；emoji 與圖示由 AI 挑選，管理員確認後才回傳。沒有圖、待確認或被隱藏時 visual 為 null。',
+    params: [p('tag', '標籤（URL 編碼）', str(), '台北')],
+    response: obj({
+      tag: str(),
+      visual: nullable(
+        obj({
+          kind: str('種類', { enum: ['place', 'logo', 'emoji', 'icon'] }),
+          emoji: nullable(str('kind 為 emoji 時的 emoji')),
+          icon: nullable(str('kind 為 icon 時的 Lucide 圖示名稱')),
+          label: nullable(str('地方的正式名稱或 Wikidata 名稱，例如 台北市')),
+          wikidataId: nullable(str('Wikidata 項目 ID')),
+          image: nullable(str('小圖網址（SVG；標誌為 WebP），帶版本參數')),
+          large: nullable(str('地方：位置圖網址（SVG）')),
+          source: nullable(
+            obj(
+              {
+                pageUrl: str('Commons 檔案頁'),
+                license: nullable(str('授權')),
+                licenseUrl: nullable(str('授權條款網址')),
+                artist: nullable(str('作者／來源')),
+              },
+              '標誌的原檔與授權',
+            ),
+          ),
+        }),
+      ),
+    }),
+    errors: { '400': '標籤超過 60 字' },
+    cache: '5 分鐘',
+  },
+  {
+    path: '/api/v1/tags/{tag}/visual-image',
+    tag: 'tags',
+    summary: '非人物標籤的小圖圖檔',
+    description:
+      '地方輪廓與線條圖示是 SVG（圖示以 currentColor 描線，本站當 CSS mask 填網站橘色），標誌是透明背景的 WebP。網址請用 visual 回應裡的 image／large（帶版本參數，換圖時會變）。沒有圖時回 404。',
+    binary: 'image/svg+xml',
+    params: [
+      p('tag', '標籤（URL 編碼）', str(), '台北'),
+      q('size', 'small（輪廓、標誌、圖示）或 large（地方的位置圖）', str('預設 small', { enum: ['small', 'large'] })),
+    ],
+    response: str('SVG 或 WebP 圖檔', { format: 'binary' }),
+    errors: { '404': '沒有圖' },
     cache: '1 天',
   },
   {

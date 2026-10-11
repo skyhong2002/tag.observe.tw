@@ -92,6 +92,8 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tag-avatars`](#api-v1-tag-avatars) | 所有有素描頭像的人物標籤 |
 | [`GET /api/v1/tags/{tag}/person`](#api-v1-tags-tag-person) | 標籤代表的人物與素描頭像 |
 | [`GET /api/v1/tags/{tag}/avatar`](#api-v1-tags-tag-avatar) | 標籤人物的素描頭像圖檔 |
+| [`GET /api/v1/tags/{tag}/visual`](#api-v1-tags-tag-visual) | 非人物標籤的小圖 |
+| [`GET /api/v1/tags/{tag}/visual-image`](#api-v1-tags-tag-visual-image) | 非人物標籤的小圖圖檔 |
 | [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
 | [`GET /api/v1/tag-groups`](#api-v1-tag-groups) | 標籤群組與主題大類一覽 |
 | [`GET /api/v1/tag-groups/{id}`](#api-v1-tag-groups-id) | 群組裡的標籤 |
@@ -1745,6 +1747,70 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/avatar'
 ```
 
 錯誤：`404` 沒有頭像。
+
+快取：1 天。
+
+<a id="api-v1-tags-tag-visual"></a>
+
+### `GET /api/v1/tags/{tag}/visual`
+
+**非人物標籤的小圖**
+
+人物以外的標籤配的圖（人物用 /api/v1/tags/{tag}/person 的素描頭像）。kind：place 是縣市、鄉鎮、國家的輪廓或城市的定位點（地圖資料：內政部國土測繪中心、Natural Earth），image 是輪廓，large 是它在台灣、所屬縣市或地球上的位置；logo 是 Wikidata 項目在 Wikimedia Commons 上的標誌，轉成網站橘色的單色（只保留原本的明暗），source 附原檔的授權與作者，管理員上傳的沒有 source；emoji 是完全就是這個東西的 emoji；icon 是 Lucide 線條圖示的名稱與 SVG。地方與 Commons 標誌自動顯示；emoji 與圖示由 AI 挑選，管理員確認後才回傳。沒有圖、待確認或被隱藏時 visual 為 null。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`台北` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E5%8F%B0%E5%8C%97/visual'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `visual` | object \| null |  |
+| `visual.kind` | "place" \| "logo" \| "emoji" \| "icon" | 種類 |
+| `visual.emoji` | string \| null | kind 為 emoji 時的 emoji |
+| `visual.icon` | string \| null | kind 為 icon 時的 Lucide 圖示名稱 |
+| `visual.label` | string \| null | 地方的正式名稱或 Wikidata 名稱，例如 台北市 |
+| `visual.wikidataId` | string \| null | Wikidata 項目 ID |
+| `visual.image` | string \| null | 小圖網址（SVG；標誌為 WebP），帶版本參數 |
+| `visual.large` | string \| null | 地方：位置圖網址（SVG） |
+| `visual.source` | object \| null | 標誌的原檔與授權 |
+| `visual.source.pageUrl` | string | Commons 檔案頁 |
+| `visual.source.license` | string \| null | 授權 |
+| `visual.source.licenseUrl` | string \| null | 授權條款網址 |
+| `visual.source.artist` | string \| null | 作者／來源 |
+
+錯誤：`400` 標籤超過 60 字。
+
+快取：5 分鐘。
+
+<a id="api-v1-tags-tag-visual-image"></a>
+
+### `GET /api/v1/tags/{tag}/visual-image`
+
+**非人物標籤的小圖圖檔**
+
+地方輪廓與線條圖示是 SVG（圖示以 currentColor 描線，本站當 CSS mask 填網站橘色），標誌是透明背景的 WebP。網址請用 visual 回應裡的 image／large（帶版本參數，換圖時會變）。沒有圖時回 404。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`台北` |
+| `size` | query | "small" \| "large" | small（輪廓、標誌、圖示）或 large（地方的位置圖） |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E5%8F%B0%E5%8C%97/visual-image'
+```
+
+錯誤：`404` 沒有圖。
 
 快取：1 天。
 

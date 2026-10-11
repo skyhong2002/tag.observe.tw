@@ -1,0 +1,207 @@
+import { and, desc, eq, gte, inArray, isNotNull } from 'drizzle-orm';
+import { type Claim, download, entities, fileInfo } from '../avatars/wikidata.ts';
+import type { Db } from '../db/client.ts';
+import { articles, articleTags, tagPeople, tagVisuals, tagWikidata } from '../db/schema.ts';
+import type { AiConfig, Item } from '../tag-groups/ai.ts';
+import { pickVisuals } from './ai.ts';
+import { iconSvg } from './icons.ts';
+import { city, country, type Place, taiwanPlace } from './places.ts';
+import { recolourLogo } from './recolour.ts';
+
+// Pictures for non-person tags (docs/tag-visuals.md), in this order: a
+// Taiwan county or township by name; the tag's Wikidata item as a country,
+// a city (a dot) or an organisation or work with a logo; otherwise the AI
+// names an exact emoji or picks a Lucide icon, held for review. Person tags
+// are left to the sketch avatars.
+
+const RECHECK_DAYS = 30;
+const HUMAN = 'Q5';
+const TAIWAN = 'Q865';
+
+type Log = (obj: object) => void;
+type Row = typeof tagVisuals.$inferInsert;
+
+/** The preferred statement, else the first one still current (no end time, P582): Moscow's P17 lists the Grand Duchy first. */
+const value = <T>(claims: Claim[] | undefined) => {
+  const live = (claims ?? []).filter((c) => c.rank !== 'deprecated');
+  const pick = live.find((c) => c.rank === 'preferred') ?? live.find((c) => !c.qualifiers?.P582) ?? live[0];
+  return pick?.mainsnak.datavalue?.value as T | undefined;
+};
+
+async function save(db: Db, tag: string, row: Omit<Row, 'tag' | 'checkedAt'>) {
+  const values = {
+    kind: null,
+    value: null,
+    wikidataId: null,
+    label: null,
+    note: null,
+    image: null,
+    large: null,
+    pageUrl: null,
+    license: null,
+    licenseUrl: null,
+    artist: null,
+    reviewedBy: null,
+    reviewedAt: null,
+    ...row,
+    checkedAt: new Date(),
+  };
+  await db
+    .insert(tagVisuals)
+    .values({ tag, ...values })
+    .onDuplicateKeyUpdate({ set: values });
+  return { tag, status: row.status, kind: row.kind ?? null, value: row.value ?? null };
+}
+
+const placeRow = (p: Place, wikidataId: string | null = null) => ({
+  status: 'auto' as const,
+  kind: 'place' as const,
+  value: p.value,
+  label: p.label.slice(0, 120),
+  wikidataId,
+  image: Buffer.from(p.image),
+  large: Buffer.from(p.large),
+});
+
+/**
+ * A place or a logo from the tag's Wikidata item (tag_wikidata, filled by
+ * the tag-groups job), or null when the item is neither.
+ */
+async function fromItem(qid: string) {
+  const found = await entities([qid], 'labels|claims');
+  const e = found[qid];
+  if (!e?.claims) return null;
+  const c = e.claims;
+  const label = ['zh-tw', 'zh-hant', 'zh', 'en'].map((l) => e.labels?.[l]?.value).find(Boolean) ?? qid;
+  const iso = value<string>(c.P299);
+  if (iso) {
+    const p = country(iso, label);
+    if (p) return placeRow(p, qid);
+  }
+  const at = value<{ latitude: number; longitude: number }>(c.P625);
+  const home = value<{ id: string }>(c.P17)?.id;
+  // A settlement or an area people live in: coordinates and a population.
+  if (at && c.P1082?.length && home) {
+    const homeIso = home === TAIWAN ? '158' : (value<string>((await entities([home], 'claims'))[home]?.claims?.P299) ?? null);
+    return placeRow(city(qid, label, [at.longitude, at.latitude], homeIso), qid);
+  }
+  const logo = value<string>(c.P154);
+  if (logo) {
+    const [info] = await fileInfo([logo], 512);
+    if (info) {
+      return {
+        status: 'auto' as const,
+        kind: 'logo' as const,
+        value: info.file.slice(0, 64),
+        label: label.slice(0, 120),
+        wikidataId: qid,
+        image: await recolourLogo(await download(info.thumbUrl)),
+        pageUrl: info.pageUrl.slice(0, 512),
+        license: info.license,
+        licenseUrl: info.licenseUrl,
+        artist: info.artist,
+      };
+    }
+  }
+  return null;
+}
+
+/** An AI pick as a row held for review: the emoji if there is an exact one, else the icon. */
+export function aiRow(pick: { emoji: string | null; icon: string | null; why: string | null } | undefined, model: string) {
+  const why = [pick?.why, `AI（${model}）`].filter(Boolean).join('・').slice(0, 120);
+  if (pick?.emoji) return { status: 'review' as const, kind: 'emoji' as const, value: pick.emoji, note: why };
+  if (pick?.icon)
+    return { status: 'review' as const, kind: 'icon' as const, value: pick.icon, note: why, image: Buffer.from(iconSvg(pick.icon) ?? '') };
+  return { status: 'none' as const, note: why };
+}
+
+export async function processTags(
+  db: Db,
+  tags: string[],
+  {
+    force = false,
+    ai = null as AiConfig | null,
+    batch = 20,
+    fetchImpl = fetch as typeof fetch,
+    log = (() => {}) as Log,
+    stop = (): boolean => false,
+  } = {},
+) {
+  const tally: Record<string, number> = {};
+  const count = (k: string) => {
+    tally[k] = (tally[k] ?? 0) + 1;
+  };
+  if (!tags.length) return tally;
+  const [prior, people, items] = await Promise.all([
+    db
+      .select({ tag: tagVisuals.tag, status: tagVisuals.status, checkedAt: tagVisuals.checkedAt })
+      .from(tagVisuals)
+      .where(inArray(tagVisuals.tag, tags)),
+    db
+      .select({ tag: tagPeople.tag })
+      .from(tagPeople)
+      .where(and(inArray(tagPeople.tag, tags), isNotNull(tagPeople.wikidataId))),
+    db.select().from(tagWikidata).where(inArray(tagWikidata.tag, tags)),
+  ]);
+  const before = new Map(prior.map((p) => [p.tag, p]));
+  const persons = new Set(people.map((p) => p.tag));
+  const item = new Map(items.map((i) => [i.tag, i]));
+  const fresh = Date.now() - RECHECK_DAYS * 86_400_000;
+  const forAi: string[] = [];
+  for (const tag of tags) {
+    if (stop()) break;
+    const old = before.get(tag);
+    if (!force && old && (old.status === 'chosen' || old.status === 'hidden' || old.checkedAt.getTime() >= fresh)) continue;
+    const wd = item.get(tag);
+    try {
+      // A county name beats a namesake: 「高雄」 is also a Hong Kong actor on Wikidata.
+      const place = taiwanPlace(tag);
+      // Other people get sketch avatars (docs/tag-avatars.md).
+      if (!place && (persons.has(tag) || wd?.types?.some((t) => t.id === HUMAN))) continue;
+      const row = place ? placeRow(place) : wd?.wikidataId ? await fromItem(wd.wikidataId) : null;
+      if (row) {
+        const r = await save(db, tag, row);
+        count(`${r.kind}`);
+        log(r);
+      } else forAi.push(tag);
+    } catch (err) {
+      count('error');
+      log({ tag, error: String(err) });
+    }
+  }
+  // Without the gateway these tags stay unchecked, so a later run asks.
+  if (!ai) {
+    if (forAi.length) tally.unasked = forAi.length;
+    return tally;
+  }
+  const since = new Date(Date.now() - 30 * 86_400_000);
+  for (let i = 0; i < forAi.length; i += batch) {
+    if (stop()) break;
+    const chunk = forAi.slice(i, i + batch);
+    const asking: Item[] = [];
+    for (const tag of chunk) {
+      const rows = await db
+        .select({ title: articles.title })
+        .from(articleTags)
+        .innerJoin(articles, eq(articles.id, articleTags.articleId))
+        .where(and(eq(articleTags.tag, tag), gte(articleTags.publishedAt, since)))
+        .orderBy(desc(articleTags.publishedAt))
+        .limit(8);
+      asking.push({ tag, titles: [...new Set(rows.map((r) => r.title.trim()))].slice(0, 4) });
+    }
+    let reply: Awaited<ReturnType<typeof pickVisuals>>;
+    try {
+      reply = await pickVisuals(ai, asking, fetchImpl);
+    } catch (err) {
+      count('error');
+      log({ tags: chunk, error: String(err) });
+      continue;
+    }
+    for (const tag of chunk) {
+      const r = await save(db, tag, aiRow(reply.picks.get(tag), reply.model));
+      count(r.status === 'none' ? 'none' : `${r.kind}`);
+      log(r);
+    }
+  }
+  return tally;
+}
