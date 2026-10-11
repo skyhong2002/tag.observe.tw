@@ -223,7 +223,7 @@ function CampHeadlines({ pair: { blue, green }, media }: { pair: { blue: EventNe
     </div>
   );
   return (
-    <div className="grid gap-3 rounded-lg bg-zinc-50 p-3 sm:grid-cols-2 dark:bg-zinc-800/60">
+    <div className="grid grid-cols-1 gap-3 rounded-lg bg-zinc-50 p-3 sm:grid-cols-2 dark:bg-zinc-800/60">
       {side(blue, b, 'blue')}
       {side(green, g, 'green')}
     </div>
@@ -307,7 +307,7 @@ export default function EventCard({
     return (
       <li
         id={eventAnchor(e.rank)}
-        className="grid scroll-mt-20 gap-4 rounded-xl border border-zinc-300 bg-white p-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] dark:border-zinc-800 dark:bg-zinc-900"
+        className="grid grid-cols-1 scroll-mt-20 gap-4 rounded-xl border border-zinc-300 bg-white p-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] dark:border-zinc-800 dark:bg-zinc-900"
       >
         {img && (
           <Link

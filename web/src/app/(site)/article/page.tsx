@@ -53,7 +53,7 @@ export default async function ArticleIndexPage({ searchParams }: { searchParams:
       {!page ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">文章列表暫時無法使用，請稍後再試。</p>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           {facets && (
             <aside className="lg:order-2">
               <div className="lg:sticky lg:top-20">

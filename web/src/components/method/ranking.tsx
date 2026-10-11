@@ -15,7 +15,7 @@ export function RankingMethod() {
     <>
       <h3 className={methodHeading}>關鍵字排行的指標</h3>
       <p>每 10 分鐘以過去 24 小時的文章重算一次。</p>
-      <dl className="grid gap-x-4 gap-y-2 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
+      <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
         <dt className={methodTerm}>正在發酵</dt>
         <dd>
           升溫量＝爆發力－分數，只列升溫量大於零的關鍵字，由高到低排列。這是與 3、6、12、24、48

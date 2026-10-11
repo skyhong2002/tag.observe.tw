@@ -79,7 +79,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           {relatedEvents.length > 0 && (
             <section className="space-y-2" aria-label="相關焦點事件">
               <h2 className="text-sm font-medium text-zinc-600">相關焦點事件</h2>
-              <ul className="grid gap-2 md:grid-cols-3">
+              <ul className="grid grid-cols-1 gap-2 md:grid-cols-3">
                 {relatedEvents.map((e) => {
                   const lead = selectEventLead(e.news, e.major);
                   return (
@@ -98,7 +98,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             </section>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
             {facets && (
               <aside className="lg:order-2">
                 <div className="lg:sticky lg:top-20">

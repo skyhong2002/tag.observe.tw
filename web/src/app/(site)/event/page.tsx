@@ -147,7 +147,7 @@ async function HourView({ sp }: { sp: Search }) {
                   ))}
                 </ol>
               ) : tier === 'card' ? (
-                <ol key={tier} className="grid gap-4 md:grid-cols-2" aria-label="重要事件">
+                <ol key={tier} className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-label="重要事件">
                   {items.map((e) => (
                     <EventCard at={data.hour} key={e.rank} e={e} tier={tier} max={max} media={media} />
                   ))}

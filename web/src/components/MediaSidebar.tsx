@@ -15,7 +15,7 @@ export default function MediaSidebar({ children, label = '媒體資料與媒體�
         {label}
         <span aria-hidden="true">{open ? '−' : '+'}</span>
       </button>
-      <div id={id} className={`${open ? 'grid' : 'hidden'} mt-3 gap-3 sm:grid-cols-2 lg:mt-0 lg:grid lg:grid-cols-1`}>
+      <div id={id} className={`${open ? 'grid' : 'hidden'} mt-3 grid-cols-1 gap-3 sm:grid-cols-2 lg:mt-0 lg:grid lg:grid-cols-1`}>
         {children}
       </div>
     </aside>

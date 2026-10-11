@@ -177,7 +177,7 @@ export default async function MediaPage({
           />
         </div>
       )}
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
         <MediaSidebar label={discovery ? '發現來源資料' : '媒體資料、流量與媒體關係'}>
           <section
             aria-label={discovery ? '發現來源資料' : '媒體基本資料'}

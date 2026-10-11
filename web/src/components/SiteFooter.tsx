@@ -99,7 +99,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
       <FooterMethod notes={notes} />
 
       <div className={`${band} mt-10 pt-12 pb-6`}>
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20">
           <div className="space-y-5">
             <Link href="/" aria-label="新文易數 首頁" className="inline-block text-zinc-900 dark:text-zinc-100">
               <Wordmark className="h-9 w-auto" />

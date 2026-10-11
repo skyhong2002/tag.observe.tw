@@ -251,7 +251,7 @@ export default async function EventThreadPage({
   return (
     <div className="space-y-8">
       <StructuredData data={pageSchema(`/eve/${t.id}/`, headline, [['/event/', '事件表']])} />
-      <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(240px,320px)] md:items-start">
+      <header className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(240px,320px)] md:items-start">
         {cover && (
           <Link
             href={articleHref(cover)}
@@ -469,7 +469,7 @@ export default async function EventThreadPage({
           各媒體報導量{cov ? `（${cov.outlets} 家 · ${cov.articles} 篇）` : ''}
         </SectionTitle>
         {cov && cov.articles > 0 && (
-          <div className="grid gap-3 rounded-xl border border-zinc-300 bg-white p-4 text-sm md:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="grid grid-cols-1 gap-3 rounded-xl border border-zinc-300 bg-white p-4 text-sm md:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="space-y-1.5">
               <p className="text-xs text-zinc-600 dark:text-zinc-400">依媒體家數</p>
               <FullBar c={asEventCoverage(cov, 'outlets')} />
@@ -481,7 +481,7 @@ export default async function EventThreadPage({
             {breaking.length > 0 && (
               <div className="md:col-span-2">
                 <p className="mb-1 text-xs text-zinc-600 dark:text-zinc-400">各陣營最早報導</p>
-                <ul className="grid gap-2 md:grid-cols-3">
+                <ul className="grid grid-cols-1 gap-2 md:grid-cols-3">
                   {breaking.map((f) => (
                     <li key={f.camp} className="min-w-0">
                       <p className={`flex items-center gap-1.5 text-xs ${CAMP_TEXT[f.camp]}`}>

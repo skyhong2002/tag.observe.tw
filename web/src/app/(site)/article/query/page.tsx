@@ -56,7 +56,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
 
       <form
         action="/article/query/"
-        className="grid gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3"
+        className="grid grid-cols-1 gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3"
       >
         <label className="text-xs text-zinc-500">
           標題、摘要或標籤

@@ -228,7 +228,7 @@ export default async function JournalistPage({
           ))}
         </dl>
       </header>
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-6">
         <MediaSidebar label="主題與比對篇數">
           <section aria-label="常寫主題" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
             <h2 className="mb-2 text-sm font-semibold">常寫主題</h2>

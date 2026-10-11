@@ -101,7 +101,7 @@ export default async function TrafficCollectionPage() {
           「流量與排名」頁各媒體網域的 Similarweb 與 Cloudflare Radar 抓取狀態 <MethodLink />
         </p>
       </header>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Batch
           name="Similarweb"
           status={data.liveTrafficStatus}

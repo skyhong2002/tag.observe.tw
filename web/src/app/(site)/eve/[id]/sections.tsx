@@ -88,7 +88,7 @@ function HeadlineRow({
  *  runs across the row. */
 export function LeadStories({ items }: { items: TimedArticle[] }) {
   return (
-    <ul className="grid gap-3 md:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {items.map((a, i) => (
         <li key={a.id} className={`${card} flex gap-3 p-3 ${i === 0 ? 'md:col-span-2 md:p-4' : ''}`}>
           <div className="min-w-0 flex-1 space-y-1">
@@ -236,7 +236,7 @@ export function CampColumns({ groups, rankAt, span }: { groups: HourGroup[]; ran
       {groups.map((g) => (
         <li key={g.key}>
           <HourHeading g={g} rankAt={rankAt} span={span} />
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {CAMP_ORDER.map((c) => (
               <div
                 key={c}
@@ -262,7 +262,7 @@ export function CampColumns({ groups, rankAt, span }: { groups: HourGroup[]; ran
 /** Grouped by outlet, most prolific first, with each outlet's full run. */
 export function ByOutlet({ byOutlet, order }: { byOutlet: CoverageOutlet[]; order: 'asc' | 'desc' }) {
   return (
-    <ul className="grid gap-3 md:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {byOutlet.map((o) => (
         <li key={o.media} className={`${card} p-3`}>
           <div className="mb-1 flex items-center gap-1.5 text-sm font-medium">

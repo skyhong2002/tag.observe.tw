@@ -325,7 +325,7 @@ export default async function ApiDocsPage() {
           <h2 id="endpoints" className={h2Class}>
             端點一覽
           </h2>
-          <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {ops.map(({ path, method, op }) => (
               <li key={`${method}:${path}`} className="flex min-w-0 gap-2">
                 <a href={`#${endpointAnchor(method, path)}`} className={`truncate font-mono ${linkClass}`}>

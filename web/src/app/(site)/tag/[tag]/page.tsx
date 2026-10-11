@@ -183,7 +183,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
       {!page ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">報導列表暫時無法使用，請稍後再試。</p>
       ) : (
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <aside className="space-y-4 lg:order-2">
             {facets && <ArticleFacets facets={facets} subject={`#${tag} `} span={span} camp={camp} link={link} media={media} />}
             {status && status.threads.length > 0 && (

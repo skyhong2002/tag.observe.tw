@@ -93,11 +93,11 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
           {days === 1 ? '今天的事件排行' : '每日事件表'} →
         </Link>
       </div>
-      <ol className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <ol className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         <li className="md:col-span-2 lg:col-span-3">
           <Link
             href={threadHref(lead)}
-            className="group grid overflow-hidden rounded-xl border border-zinc-300 bg-white hover:border-brand-700 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-500"
+            className="group grid grid-cols-1 overflow-hidden rounded-xl border border-zinc-300 bg-white hover:border-brand-700 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-500"
           >
             <Cover t={lead} className="aspect-video md:aspect-auto md:h-full" sizes="(max-width: 768px) 100vw, 480px" />
             <span className="flex min-w-0 flex-col justify-center gap-2 p-4">

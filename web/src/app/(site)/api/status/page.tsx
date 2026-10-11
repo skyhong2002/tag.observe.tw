@@ -57,7 +57,7 @@ export default async function ApiStatusPage() {
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               {data.status === 'ok' ? 'API 與 Nearline 目前皆可使用。' : '部分服務目前無法使用。'}
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {data.services.map((service) => (
                 <div key={service.name} className="rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="flex flex-wrap items-center justify-between gap-2">

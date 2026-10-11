@@ -121,7 +121,7 @@ export function CampGap({ events, scope = '本小時' }: { events: EventItem[]; 
         藍綠溫差
         <MethodLink className="text-xs font-normal" />
       </h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {cols.map((col) => (
           <div key={col.camp} className="rounded-lg bg-white p-3 text-sm dark:bg-zinc-900">
             <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">

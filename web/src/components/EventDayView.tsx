@@ -184,7 +184,7 @@ export default function EventDayView({ data, media, today }: { data: EventDay; m
                   {items.map((e) => card(e, tier))}
                 </ol>
               ) : tier === 'card' ? (
-                <ol key={tier} className="grid gap-4 md:grid-cols-2" aria-label="重要事件">
+                <ol key={tier} className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-label="重要事件">
                   {items.map((e) => card(e, tier))}
                 </ol>
               ) : (
