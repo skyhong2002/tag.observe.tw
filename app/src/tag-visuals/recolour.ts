@@ -78,11 +78,39 @@ const distance = (d: Buffer, i: number, c: number[]) => Math.hypot(d[i] - c[0], 
 const CUT = 28;
 const SOFT = 70;
 
+// A border colour counts as background when this share of the border has it.
+const BACKGROUND_SHARE = 0.12;
+
+/**
+ * The colours the border is made of, most common first: each colour that
+ * covers at least BACKGROUND_SHARE of the border (a two-tone backdrop has
+ * two), as the mean of its pixels. Colours are grouped coarsely (32 levels a
+ * channel) so JPEG noise and gentle shading fall together.
+ */
+export function borderColours(data: Buffer, border: number[]) {
+  const groups = new Map<number, { n: number; sum: [number, number, number] }>();
+  for (const p of border) {
+    const i = p * 4;
+    const key = ((data[i] >> 5) << 6) | ((data[i + 1] >> 5) << 3) | (data[i + 2] >> 5);
+    const g = groups.get(key) ?? { n: 0, sum: [0, 0, 0] };
+    g.n++;
+    g.sum[0] += data[i];
+    g.sum[1] += data[i + 1];
+    g.sum[2] += data[i + 2];
+    groups.set(key, g);
+  }
+  return [...groups.values()]
+    .filter((g) => g.n >= border.length * BACKGROUND_SHARE)
+    .sort((a, b) => b.n - a.n)
+    .map((g) => g.sum.map((v) => v / g.n));
+}
+
 /**
  * Takes a solid background off a logo that has none transparent (an upload
- * of a seal on white): the colour most of the border shares is flooded from
- * the edges, so white inside the emblem, walled off by its ring, stays. A
- * logo whose border is already mostly transparent is left as it is.
+ * of a seal on white, a wordmark on a two-tone panel): every colour a good
+ * share of the border has is flooded from the edges, so white inside the
+ * emblem, walled off by its ring, stays. A logo whose border is already
+ * mostly transparent is left as it is.
  */
 export function cutOut({ data, info }: Raw) {
   const { width: w, height: h } = info;
@@ -90,21 +118,22 @@ export function cutOut({ data, info }: Raw) {
   for (let x = 0; x < w; x++) border.push(x, (h - 1) * w + x);
   for (let y = 1; y < h - 1; y++) border.push(y * w, y * w + w - 1);
   if (border.filter((p) => data[p * 4 + 3] < 128).length > border.length / 2) return;
-  // The background: the median of the border, channel by channel.
-  const median = (k: number) => border.map((p) => data[p * 4 + k]).sort((a, b) => a - b)[border.length >> 1];
-  const bg = [median(0), median(1), median(2)];
+  const backgrounds = borderColours(data, border);
+  if (!backgrounds.length) return;
+  // How far a pixel is from the nearest background colour.
+  const far = (i: number) => Math.min(...backgrounds.map((bg) => distance(data, i, bg)));
   const seen = new Uint8Array(w * h);
-  const queue = border.filter((p) => distance(data, p * 4, bg) < SOFT);
+  const queue = border.filter((p) => far(p * 4) < SOFT);
   for (const p of queue) seen[p] = 1;
   while (queue.length) {
     const p = queue.pop() as number;
-    const d = distance(data, p * 4, bg);
+    const d = far(p * 4);
     data[p * 4 + 3] = Math.round(data[p * 4 + 3] * Math.max(0, Math.min(1, (d - CUT) / (SOFT - CUT))));
     // Only background spreads; a soft edge pixel fades but goes no further.
     if (d >= CUT) continue;
     const x = p % w;
     for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, p - w, p + w])
-      if (q >= 0 && q < w * h && !seen[q] && distance(data, q * 4, bg) < SOFT) {
+      if (q >= 0 && q < w * h && !seen[q] && far(q * 4) < SOFT) {
         seen[q] = 1;
         queue.push(q);
       }

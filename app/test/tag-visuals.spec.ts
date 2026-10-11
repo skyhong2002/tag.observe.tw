@@ -116,6 +116,19 @@ describe('logo cut-out', () => {
     expect(at(1, 1)).toBe(0); // the old white corner is gone
     expect(at(width / 2, height / 2)).toBeGreaterThan(240); // the white centre stays
     expect(at(width / 2, height * 0.08)).toBeGreaterThan(240); // the ring
+    // A two-tone backdrop (white left, peach right): both colours go, the mark stays.
+    const two = Buffer.alloc(200 * 100 * 4);
+    for (let y = 0; y < 100; y++)
+      for (let x = 0; x < 200; x++) {
+        const mark = x >= 80 && x < 120 && y >= 30 && y < 70;
+        two.set(mark ? [220, 80, 20, 255] : x < 100 ? [255, 255, 255, 255] : [250, 220, 205, 255], (y * 200 + x) * 4);
+      }
+    const twoPng = await sharp(two, { raw: { width: 200, height: 100, channels: 4 } })
+      .png()
+      .toBuffer();
+    const cut = await sharp(await recolourLogo(twoPng, 512, 192)).metadata();
+    // Trimmed to the 40×40 mark: square, not the 2:1 panel.
+    expect((cut.width ?? 0) / (cut.height ?? 1)).toBeCloseTo(1, 1);
     // A logo already transparent round the edge is left as it is.
     const clear = await sharp({ create: { width: 40, height: 20, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
       .composite([
