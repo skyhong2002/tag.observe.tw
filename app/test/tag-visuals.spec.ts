@@ -239,6 +239,7 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
           { tag: '停水', emoji: null, why: '沒有完全對到的' },
           { tag: 'MLB', emoji: '⚾', same: true },
           { tag: 'GPU', emoji: null, same: false, why: '顯示晶片' },
+          { tag: '鴻海', emoji: null, same: true },
         ],
       });
       return new Response(JSON.stringify({ model: 'test-model', choices: [{ message: { content } }] }));
@@ -259,16 +260,25 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
       licenseUrl: null,
       artist: null,
     });
-    const tally = await processTags(db, ['台北', '高雄', '煙火', '停水', '賴清德', '某人', 'MLB', 'GPU'], {
+    // No item is exactly 「鴻海」; one whose name contains it is; 煙火 and 停水 match nothing.
+    const looseImpl = async (tag: string) =>
+      tag === '鴻海' ? [{ qid: 'Q463094', label: '鴻海精密工業', description: '台灣電子代工企業' }] : [];
+    const tally = await processTags(db, ['台北', '高雄', '煙火', '停水', '賴清德', '某人', 'MLB', 'GPU', '鴻海'], {
       ai: { baseUrl: 'http://ai', apiKey: 'k', model: 'm' },
       fetchImpl: spy,
       itemImpl: async (qid) => logo(qid),
       findImpl: async () => null,
+      looseImpl,
     });
-    expect(asked).toEqual(['煙火', '停水', 'MLB', 'GPU']);
+    expect(asked).toEqual(['煙火', '停水', 'MLB', 'GPU', '鴻海']);
     expect(user).toContain('Wikidata 候選：國家政治保衛總局（蘇聯機構）');
-    // MLB keeps its logo (its emoji next); GPU's namesake waits for an admin who knows better; 停水 has nothing.
-    expect(tally).toEqual({ place: 2, emoji: 1, logo: 2, none: 1 });
+    expect(user).toContain('Wikidata 候選：鴻海精密工業（台灣電子代工企業）');
+    // MLB keeps its logo (its emoji next); GPU's namesake waits for an admin who knows better; 停水 has nothing;
+    // 鴻海 gets the logo of the item whose name contains it, once the AI agrees.
+    expect(tally).toEqual({ place: 2, emoji: 1, logo: 3, none: 1 });
+    const [hon] = await db.select().from(tagVisuals).where(eq(tagVisuals.tag, '鴻海'));
+    expect(hon).toMatchObject({ status: 'auto', kind: 'logo', wikidataId: 'Q463094' });
+    expect(hon.note).toContain('名稱相近');
     const [gpu] = await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'GPU'));
     expect(gpu).toMatchObject({ status: 'review', kind: 'logo', shownRank: 1 });
     expect(gpu.note).toContain('Wikidata 項目不符');
@@ -280,9 +290,9 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     const [looked] = await db.select().from(tagWikidata).where(eq(tagWikidata.tag, '煙火'));
     expect(looked).toMatchObject({ wikidataId: null });
     const rows = await db.select({ tag: tagVisuals.tag, status: tagVisuals.status, kind: tagVisuals.kind }).from(tagVisuals);
-    expect(rows.map((r) => r.tag).sort()).toEqual(['GPU', 'MLB', '停水', '台北', '煙火', '高雄']);
+    expect(rows.map((r) => r.tag).sort()).toEqual(['GPU', 'MLB', '停水', '台北', '煙火', '高雄', '鴻海']);
     // Checked within 30 days: not again.
-    expect(await processTags(db, ['台北'], { fetchImpl, findImpl: async () => null })).toEqual({});
+    expect(await processTags(db, ['台北'], { fetchImpl, findImpl: async () => null, looseImpl })).toEqual({});
   });
 
   it('serves places; AI picks only after an admin confirms', async () => {
@@ -340,7 +350,7 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     expect((await put('台北', { action: 'hide' })).statusCode).toBe(200);
     expect(await visual('台北')).toBeNull();
     // Re-runs leave hidden and chosen tags alone.
-    expect(await processTags(db, ['台北'], { findImpl: async () => null })).toEqual({});
+    expect(await processTags(db, ['台北'], { findImpl: async () => null, looseImpl: async () => [] })).toEqual({});
     const log = await db.select({ tag: tagVisualLog.tag, action: tagVisualLog.action }).from(tagVisualLog);
     expect(log.map((l) => `${l.tag} ${l.action}`).sort()).toEqual(['MLB pick', '停水 emoji', '台北 hide', '某公司 upload', '煙火 confirm']);
     const list = (await app.inject({ url: '/auth/admin/tag-visuals?status=chosen', headers: as('admin', false) })).json();

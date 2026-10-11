@@ -175,6 +175,35 @@ export async function findItem(tag: string): Promise<Item | null> {
   };
 }
 
+/**
+ * Items whose name or alias contains the tag without being exactly it
+ * (「台達電」 → 台達電子工業), most Wikipedia articles first: candidates for a
+ * picture when no item is exactly the tag. Callers must confirm the match.
+ */
+export async function looseItems(tag: string, limit = 3): Promise<{ qid: string; label: string | null; description: string | null }[]> {
+  const search = await api<{ search: { id: string; match: { text: string } }[] }>('www.wikidata.org', {
+    action: 'wbsearchentities',
+    search: tag,
+    language: 'zh-tw',
+    uselang: 'zh-tw',
+    type: 'item',
+    limit: 10,
+  });
+  const t = tag.toLowerCase();
+  const hits = search.search.filter((h) => h.match.text.toLowerCase() !== t && h.match.text.toLowerCase().includes(t));
+  if (!hits.length) return [];
+  const found = await entities(
+    hits.map((h) => h.id),
+    'labels|descriptions|claims|sitelinks',
+  );
+  const links = (q: Entity) => Object.keys(q.sitelinks ?? {}).length;
+  return Object.values(found)
+    .filter((q) => !ids(q.claims?.P31).some((c) => WIKIMEDIA.has(c) || c === HUMAN))
+    .sort((a, b) => links(b) - links(a))
+    .slice(0, limit)
+    .map((e) => ({ qid: e.id, label: pick(e.labels), description: pick(e.descriptions) }));
+}
+
 const IMAGE = /\.(jpe?g|png|webp)$/i;
 // Not the person: statues, wax figures, graves, posters, signatures (梅艷芳's Commons
 // category is mostly her statue, which passes face matching because it looks like her).

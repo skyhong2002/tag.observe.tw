@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, inArray, isNotNull } from 'drizzle-orm';
-import { type Claim, download, entities, fileInfo, findItem } from '../avatars/wikidata.ts';
+import { type Claim, download, entities, fileInfo, findItem, looseItems } from '../avatars/wikidata.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, type TagVisualStatus, tagPeople, tagVisualCandidates, tagVisuals, tagWikidata } from '../db/schema.ts';
 import type { AiConfig } from '../tag-groups/ai.ts';
@@ -145,6 +145,7 @@ export async function processTags(
     // Tests stand in for Wikidata here.
     itemImpl = fromItem,
     findImpl = findItem,
+    looseImpl = looseItems,
     log = (() => {}) as Log,
     stop = (): boolean => false,
   } = {},
@@ -203,10 +204,19 @@ export async function processTags(
         continue;
       }
       // An item's place or logo waits for the AI to agree it is what the news means.
-      const row = wd?.wikidataId ? await itemImpl(wd.wikidataId) : null;
-      forAi.push(
-        row ? { tag, row, candidate: `${wd?.label ?? row.label}${wd?.description ? `（${wd.description}）` : ''}` } : { tag, row: null },
-      );
+      let row = wd?.wikidataId ? await itemImpl(wd.wikidataId) : null;
+      let candidate = row ? `${wd?.label ?? row.label}${wd?.description ? `（${wd.description}）` : ''}` : undefined;
+      // No item is exactly the tag: Wikidata names 鴻海 「鴻海精密工業」. Try the
+      // items whose name contains it; the AI's same-check guards these too.
+      if (!wd?.wikidataId)
+        for (const loose of await looseImpl(tag)) {
+          row = await itemImpl(loose.qid);
+          if (!row) continue;
+          row = { ...row, note: `名稱相近・${row.note ?? ''}`.slice(0, 120) };
+          candidate = `${loose.label ?? loose.qid}${loose.description ? `（${loose.description}）` : ''}`;
+          break;
+        }
+      forAi.push(row ? { tag, row, candidate } : { tag, row: null });
     } catch (err) {
       count('error');
       log({ tag, error: String(err) });
