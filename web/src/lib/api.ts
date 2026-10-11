@@ -186,6 +186,15 @@ export interface TagPerson {
 }
 export const fetchTagPerson = (tag: string) =>
   get<{ tag: string; person: TagPerson | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/person`, 300).then((r) => r.person);
+/** Groups and topics a tag is filed under (docs/tag-groups.md). */
+export interface TagGroupRef {
+  id: number;
+  label: string;
+  kind: 'group' | 'topic';
+  source: string;
+}
+export const fetchTagGroups = (tag: string) =>
+  get<{ tag: string; groups: TagGroupRef[] }>(`/api/v1/tags/${encodeURIComponent(tag)}/groups`, 300).then((r) => r.groups);
 export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
   get<import('./tag-series-history.mts').TagSeries>(
     `/api/v1/tags/${encodeURIComponent(tag)}/series?category=${encodeURIComponent(category)}&hours=${hours}`,

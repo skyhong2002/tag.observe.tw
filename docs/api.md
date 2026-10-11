@@ -91,6 +91,9 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/flow`](#api-v1-tags-tag-flow) | 和這個標籤一起出現的關鍵字，逐小時 |
 | [`GET /api/v1/tags/{tag}/person`](#api-v1-tags-tag-person) | 標籤代表的人物與素描頭像 |
 | [`GET /api/v1/tags/{tag}/avatar`](#api-v1-tags-tag-avatar) | 標籤人物的素描頭像圖檔 |
+| [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
+| [`GET /api/v1/tag-groups`](#api-v1-tag-groups) | 標籤群組與主題大類一覽 |
+| [`GET /api/v1/tag-groups/{id}`](#api-v1-tag-groups-id) | 群組裡的標籤 |
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
@@ -1711,6 +1714,101 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/avatar'
 錯誤：`404` 沒有頭像。
 
 快取：1 天。
+
+<a id="api-v1-tags-tag-groups"></a>
+
+### `GET /api/v1/tags/{tag}/groups`
+
+**標籤所屬的群組與主題大類**
+
+一個標籤可以同時屬於多個群組，例如川普同時是「外國政治人物」與「國際」。群組沿用舊站的 28 個身分／類型群組與主題大類。來源 source：legacy 是舊站人工標記或 2016 年版別統計，admin 是管理員手動加入，person 依 Wikidata 的國籍、職業、現任職位與政黨判斷，wikidata 依 Wikidata 的項目類型，section 依各媒體把帶這個標籤的報導放在哪個版別（每家媒體一票），ai 是 AI 依近期標題提出、經管理員確認的建議。只回傳自動判斷或管理員確認的結果，待確認與已排除的不回傳。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`賴清德` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/groups'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `groups` | object[] |  |
+| `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類 |
+| `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
+| `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
+| `groups[].source` | "legacy" \| "admin" \| "person" \| "wikidata" \| "section" \| "ai" | 判斷來源 |
+
+錯誤：`400` 標籤超過 60 字。
+
+快取：5 分鐘。
+
+<a id="api-v1-tag-groups"></a>
+
+### `GET /api/v1/tag-groups`
+
+**標籤群組與主題大類一覽**
+
+所有群組與主題大類，以及各有多少個標籤（只算自動判斷或管理員確認的）。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tag-groups'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `groups` | object[] |  |
+| `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類 |
+| `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
+| `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
+| `groups[].tags` | integer | 標籤數 |
+
+快取：5 分鐘。
+
+<a id="api-v1-tag-groups-id"></a>
+
+### `GET /api/v1/tag-groups/{id}`
+
+**群組裡的標籤**
+
+依標籤名稱排序，一次 1000 個，用 offset 翻頁。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | integer | 群組 ID，例：`24` |
+| `offset` | query | integer | 略過前幾個 |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tag-groups/24'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `id` | integer |  |
+| `label` | string |  |
+| `kind` | "group" \| "topic" |  |
+| `offset` | integer |  |
+| `next` | integer \| null | 下一頁的 offset；沒有下一頁為 null |
+| `tags` | object[] |  |
+| `tags[].tag` | string |  |
+| `tags[].source` | string | 判斷來源，見 /api/v1/tags/{tag}/groups |
+
+錯誤：`404` 沒有這個群組。
+
+快取：5 分鐘。
 
 <a id="api-v1-tags-tag-status"></a>
 

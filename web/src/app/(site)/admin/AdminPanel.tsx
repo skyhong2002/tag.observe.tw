@@ -25,6 +25,7 @@ export default function AdminPanel() {
       <Reports />
       <Avatars />
       <WritingPeopleLink />
+      <TagGroups />
       <Bookmarklet />
       <Outlets />
       <Accounts />
@@ -58,6 +59,21 @@ function WritingPeopleLink() {
         className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
       >
         檢視發文者
+      </a>
+    </section>
+  );
+}
+
+function TagGroups() {
+  return (
+    <section className="mt-8">
+      <h2 className="text-lg font-semibold">標籤群組</h2>
+      <p className={note}>把標籤歸進身分群組（政治人物、現任立委、藝人…）與主題大類，確認或排除自動判斷的結果。</p>
+      <a
+        href="/admin/tag-groups/"
+        className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
+      >
+        編輯標籤群組
       </a>
     </section>
   );

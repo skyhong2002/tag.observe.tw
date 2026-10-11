@@ -1490,6 +1490,61 @@ export const ENDPOINTS: Endpoint[] = [
     cache: '1 天',
   },
   {
+    path: '/api/v1/tags/{tag}/groups',
+    tag: 'tags',
+    summary: '標籤所屬的群組與主題大類',
+    description:
+      '一個標籤可以同時屬於多個群組，例如川普同時是「外國政治人物」與「國際」。群組沿用舊站的 28 個身分／類型群組與主題大類。來源 source：legacy 是舊站人工標記或 2016 年版別統計，admin 是管理員手動加入，person 依 Wikidata 的國籍、職業、現任職位與政黨判斷，wikidata 依 Wikidata 的項目類型，section 依各媒體把帶這個標籤的報導放在哪個版別（每家媒體一票），ai 是 AI 依近期標題提出、經管理員確認的建議。只回傳自動判斷或管理員確認的結果，待確認與已排除的不回傳。',
+    params: [p('tag', '標籤（URL 編碼）', str(), '賴清德')],
+    response: obj({
+      tag: str(),
+      groups: arr(
+        obj({
+          id: int('群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類'),
+          label: str('名稱，例如 政治人物、現任立委、政治、體育'),
+          kind: str('group 是身分／類型群組，topic 是主題大類', { enum: ['group', 'topic'] }),
+          source: str('判斷來源', { enum: ['legacy', 'admin', 'person', 'wikidata', 'section', 'ai'] }),
+        }),
+      ),
+    }),
+    errors: { '400': '標籤超過 60 字' },
+    cache: '5 分鐘',
+  },
+  {
+    path: '/api/v1/tag-groups',
+    tag: 'tags',
+    summary: '標籤群組與主題大類一覽',
+    description: '所有群組與主題大類，以及各有多少個標籤（只算自動判斷或管理員確認的）。',
+    response: obj({
+      groups: arr(
+        obj({
+          id: int('群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類'),
+          label: str('名稱，例如 政治人物、現任立委、政治、體育'),
+          kind: str('group 是身分／類型群組，topic 是主題大類', { enum: ['group', 'topic'] }),
+          tags: int('標籤數'),
+        }),
+      ),
+    }),
+    cache: '5 分鐘',
+  },
+  {
+    path: '/api/v1/tag-groups/{id}',
+    tag: 'tags',
+    summary: '群組裡的標籤',
+    description: '依標籤名稱排序，一次 1000 個，用 offset 翻頁。',
+    params: [p('id', '群組 ID', int(), '24'), q('offset', '略過前幾個', int('預設 0'))],
+    response: obj({
+      id: int(),
+      label: str(),
+      kind: str('', { enum: ['group', 'topic'] }),
+      offset: int(),
+      next: nullable(int('下一頁的 offset；沒有下一頁為 null')),
+      tags: arr(obj({ tag: str(), source: str('判斷來源，見 /api/v1/tags/{tag}/groups') })),
+    }),
+    errors: { '404': '沒有這個群組' },
+    cache: '5 分鐘',
+  },
+  {
     path: '/api/v1/tags/{tag}/status',
     tag: 'tags',
     summary: '標籤目前狀態',

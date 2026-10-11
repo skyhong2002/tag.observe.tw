@@ -137,6 +137,44 @@ export async function findPerson(tag: string): Promise<Person | null> {
   };
 }
 
+export type Item = { qid: string; label: string | null; description: string | null; types: { id: string; label: string }[] };
+
+/**
+ * The item whose label or alias is exactly `tag` and that has the most
+ * Wikipedia articles, with its types (P31), for tag groups
+ * (docs/tag-groups.md). Disambiguation and other Wikimedia pages do not
+ * count; null when no item matches.
+ */
+export async function findItem(tag: string): Promise<Item | null> {
+  const search = await api<{ search: { id: string; match: { text: string } }[] }>('www.wikidata.org', {
+    action: 'wbsearchentities',
+    search: tag,
+    language: 'zh-tw',
+    uselang: 'zh-tw',
+    type: 'item',
+    limit: 10,
+  });
+  const hits = search.search.filter((h) => h.match.text.toLowerCase() === tag.toLowerCase());
+  if (!hits.length) return null;
+  const found = await entities(
+    hits.map((h) => h.id),
+    'labels|descriptions|claims|sitelinks',
+  );
+  const links = (q: Entity) => Object.keys(q.sitelinks ?? {}).length;
+  const [e] = Object.values(found)
+    .filter((q) => !ids(q.claims?.P31).some((c) => WIKIMEDIA.has(c)))
+    .sort((a, b) => links(b) - links(a));
+  if (!e) return null;
+  const typeIds = [...new Set(ids(e.claims?.P31))];
+  const labels = await entities(typeIds, 'labels');
+  return {
+    qid: e.id,
+    label: pick(e.labels),
+    description: pick(e.descriptions),
+    types: typeIds.map((id) => ({ id, label: pick(labels[id]?.labels) ?? id })),
+  };
+}
+
 const IMAGE = /\.(jpe?g|png|webp)$/i;
 const PORTRAIT = /crop|portrait|肖像|headshot|official|大頭/i;
 

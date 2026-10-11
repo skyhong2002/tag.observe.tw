@@ -5,6 +5,7 @@ import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/co
 import FollowButton from '@/components/reader/FollowButton';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
+import TagGroupChips from '@/components/TagGroupChips';
 import TagKeywordHistory from '@/components/TagKeywordHistory';
 import TagPerson from '@/components/TagPerson';
 import TagStatusPanel from '@/components/TagStatusPanel';
@@ -12,6 +13,7 @@ import {
   fetchMedia,
   fetchTagArticles,
   fetchTagFlow,
+  fetchTagGroups,
   fetchTagPerson,
   fetchTagSeries,
   fetchTagStatus,
@@ -76,7 +78,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   };
   // Keywords riding along: by day over two weeks unless the reader asks for hours.
   const flowSpan: 'day' | 'hour' = sp.flow === 'hour' ? 'hour' : 'day';
-  const [series, { page, facets }, media, status, mentions, flowData, person] = await Promise.all([
+  const [series, { page, facets }, media, status, mentions, flowData, person, groups] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     // The list and its camp split use the chart's window and every tagged article in it.
     fetchArticleListing({ tag, hours, camp, cursor }),
@@ -86,6 +88,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     cursor ? Promise.resolve(null) : countArticles({ q: tag, hours }),
     fetchTagFlow(tag, flowSpan === 'day' ? FLOW_DAYS * 24 + hoursIntoToday() : hours, flowSpan).catch(() => null),
     fetchTagPerson(tag).catch(() => null),
+    fetchTagGroups(tag).catch(() => []),
   ]);
   const flowHref = (v: 'day' | 'hour') => {
     const q = new URLSearchParams(
@@ -130,6 +133,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           </h1>
           <FollowButton kind="tag" target={tag} />
           {person && <TagPerson person={person} />}
+          <TagGroupChips groups={groups} />
         </div>
         <div className="flex gap-1 text-sm">
           {[24, 72, 168].map((h) => (

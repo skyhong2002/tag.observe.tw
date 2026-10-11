@@ -807,3 +807,72 @@ export const writingPeopleLog = mysqlTable(
   },
   (t) => [index('writing_people_log_name').on(t.name, t.at)],
 );
+
+// Tag groups (docs/tag-groups.md): the legacy site's 28 identity groups
+// (政治人物、現任立委、藝人…) and its topic catalogue (政治、體育…). A tag
+// belongs to any number of groups. Ids 1–28 are the legacy tag_group ids,
+// 101–110 the legacy catalogue ids + 100.
+export type TagGroupKind = 'group' | 'topic';
+
+export const tagGroupDefs = mysqlTable('tag_group_defs', {
+  id: int('id').autoincrement().primaryKey(),
+  label: varchar('label', { length: 32 }).notNull(),
+  kind: varchar('kind', { length: 8 }).$type<TagGroupKind>().notNull(),
+  sort: int('sort').notNull().default(0),
+  createdAt: datetime('created_at').notNull(),
+});
+
+// legacy: copied from the legacy site; admin: added by hand; person: rules
+// on tag_people facts; wikidata: the tag's Wikidata type; section: the
+// sections of the outlets that use the tag; ai: suggested by the AI gateway,
+// always held for review.
+export type TagGroupSource = 'legacy' | 'admin' | 'person' | 'wikidata' | 'section' | 'ai';
+// auto and confirmed are shown; review waits for an admin; rejected stays
+// out, and automatic runs never bring it back.
+export type TagGroupStatus = 'auto' | 'review' | 'confirmed' | 'rejected';
+
+export const tagGroupMembers = mysqlTable(
+  'tag_group_members',
+  {
+    tag: varchar('tag', { length: 60 }).notNull(),
+    groupId: int('group_id').notNull(),
+    source: varchar('source', { length: 10 }).$type<TagGroupSource>().notNull(),
+    status: varchar('status', { length: 10 }).$type<TagGroupStatus>().notNull(),
+    // Rule strength, 0–1 (share of outlet votes for section); null for hand-made rows.
+    score: double('score'),
+    // Why, e.g. 「現任立法委員」「上市公司」「12 家媒體 64%」.
+    note: varchar('note', { length: 120 }),
+    updatedAt: datetime('updated_at').notNull(),
+    reviewedBy: varchar('reviewed_by', { length: 255 }),
+    reviewedAt: datetime('reviewed_at'),
+  },
+  (t) => [primaryKey({ columns: [t.tag, t.groupId] }), index('tag_group_members_group').on(t.groupId, t.status)],
+);
+
+export const tagGroupMemberLog = mysqlTable(
+  'tag_group_member_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    tag: varchar('tag', { length: 60 }).notNull(),
+    groupId: int('group_id').notNull(),
+    action: varchar('action', { length: 8 }).$type<'confirm' | 'reject'>().notNull(),
+    fromStatus: varchar('from_status', { length: 10 }),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('tag_group_member_log_tag').on(t.tag, t.at)],
+);
+
+// What Wikidata says a non-person tag is (instance of, P31), so the
+// wikidata rule does not ask again for 30 days. Null wikidata_id: no item
+// whose label or alias is exactly the tag. ai_checked_at: when the AI step
+// last suggested groups for the tag (same 30 days).
+export const tagWikidata = mysqlTable('tag_wikidata', {
+  tag: varchar('tag', { length: 60 }).primaryKey(),
+  wikidataId: varchar('wikidata_id', { length: 16 }),
+  label: varchar('label', { length: 120 }),
+  description: varchar('description', { length: 255 }),
+  types: json('types').$type<{ id: string; label: string }[]>(),
+  checkedAt: datetime('checked_at'),
+  aiCheckedAt: datetime('ai_checked_at'),
+});

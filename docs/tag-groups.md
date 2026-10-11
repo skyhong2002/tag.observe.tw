@@ -1,0 +1,101 @@
+# 標籤群組
+
+標籤可以歸進群組，一個標籤可以同時屬於多個群組。例如川普同時在「外國政治人物」與「國際」，柯文哲在「政治人物」與舊站的「現任縣市長」。
+
+群組分兩種（`tag_group_defs.kind`）：
+
+- `group`：舊站的 28 個身分／類型群組，編號沿用舊站 `tag_group`（1 政治人物、2 現任立委、3 現任縣市長、4 民進黨、5 國民黨……24 外國政治人物、25 電視電影、27 網紅、28 六都市長候選人）。
+- `topic`：舊站的主題大類，編號是舊站 `catalogue` 加 100（101 政治、102 體育、103 娛樂、104 社會、105 國際、106 生活、107 科技、108 動物、109 健康醫療、110 產業金融）。舊站 catalogue 11–15 是編輯的工作佇列，不是主題，沒有沿用。
+
+管理員可以在 `/admin/tag-groups/` 新增群組。
+
+## 狀態與來源（`tag_group_members`）
+
+| status | 意思 | 公開 |
+| --- | --- | --- |
+| `auto` | 規則自動判斷 | 是 |
+| `confirmed` | 管理員確認或手動加入，或舊站人工標記 | 是 |
+| `review` | 等管理員確認 | 否 |
+| `rejected` | 管理員排除，之後自動重跑也不會加回來 | 否 |
+
+| source | 怎麼判斷 |
+| --- | --- |
+| `legacy` | 舊站資料，由 `tools/tag-groups.ts legacy` 匯入一次 |
+| `admin` | 管理員手動加入 |
+| `person` | 人物的 Wikidata 資料：國籍、職業、現任職位（沒有卸任日期 P582）、現任政黨 |
+| `wikidata` | 非人物標籤的 Wikidata 項目類型（P31） |
+| `section` | 各媒體把帶這個標籤的報導放在哪個版別 |
+| `ai` | AI 依近期標題提出的建議，一律列為 `review` |
+
+每條規則重跑時，只換掉自己來源的 `auto` 列。`review`、`confirmed`、`rejected` 一律不動。別的來源已有的 `auto` 列，只有分數更高才會被取代。管理員的每次決定都記在 `tag_group_member_log`。
+
+## 舊站資料
+
+- **`tag_group_log`（1,845 筆，人工標記）**：取自 2026-09-26 的唯讀快照（`~/tag-analysis-private/group-snapshot/selected.sql`）。
+  - `del_flag=1` 的不匯入。
+  - 「現任立委」「現任縣市長」「內閣」「北市府」「六都市長候選人」是 2016–2022 年標的，可能已經過時，匯入為 `review`。
+  - 其他群組匯入為 `confirmed`。
+- **`catalogue_tag`（2016 年 6–8 月）**：舊站排程依版別算出來的，不是人工標記。
+  - 每個標籤取占比 30% 以上的最多兩個主題，匯入為 `auto`。
+
+匯入用 `INSERT IGNORE`，已經存在的列（管理員決定過的、規則先寫的）不覆蓋。
+
+## 自動規則（`app/src/tag-groups/`）
+
+1. **人物**（`rules.ts` 的 `personGroups`）
+   - 對象：頭像流程比對到的人物（`tag_people`），以及 Wikidata 步驟發現是人類（P31=Q5）的標籤。
+   - 是不是同一個人，沿用頭像流程的判斷（`findPerson`）：只是別名或暱稱的（「鳳山」「恆春」）略過；有同名人物的列為 `review`。
+   - 規則：
+     - 台灣國籍的政治人物歸「政治人物」，其他國籍的歸「外國政治人物」。
+     - 台灣國籍的人再看現任職位：立法委員歸「現任立委」，縣市長（不含副）歸「現任縣市長」，議員歸「縣市議員」，行政院長、各部會首長、政務委員歸「內閣」。
+     - 現任政黨對應民進黨、國民黨、時代力量、親民黨。
+     - 演員、歌手、主持人依國籍歸「藝人」「中港藝人」「外語藝人」，台灣歌手另歸「歌手樂團」；政治人物不歸藝人群組，因為 Wikidata 把川普也列為演員。
+     - 運動員歸「運動明星」或「外國運動員」，YouTuber 歸「網紅」，非政治人物的企業家歸「商場經理人」。
+2. **版別**（`sectionTopic`、`voteTopics`）
+   - 取近 90 天帶這個標籤的報導，用 `articles.category`，或網址前三段路徑，對應主題。
+   - 中文版別名稱用子字串比對；英文只比對完整單字，避免 `pet` 誤中 `competition`。
+   - **每家媒體一票**，依它各版別的篇數分配，所以鉅亨網上千則台股快訊也只算一票。
+   - 至少 3 家媒體有版別資料；主題占比 30% 以上、且至少 2 家媒體放在該主題，才算數。每個標籤最多兩個主題。
+3. **Wikidata 類型**（`typeGroups`）
+   - 取名稱或別名與標籤完全相同、Wikipedia 條目最多的項目，結果存在 `tag_wikidata`，30 天內不重查。
+   - 只看直接類型，例如上市公司→公司廠商、政府機關→政府部門單位、電影或電視劇→電視電影、政黨→政治、疾病→健康醫療、職業體育聯盟或球隊→體育。
+   - 一般名詞常和作品或公司同名（「失聯」是電視節目），所以除非版別也落在預期主題（例如電視電影要有娛樂），否則列為 `review`。
+
+4. **AI 補漏**（`ai.ts`）
+   - 前三條規則跑完後，還缺身分群組或主題的標籤，連同最近 30 天至多 4 則標題，每 20 個一批送到共用的 ai-gateway（OpenAI 相容的 `/chat/completions`，預設模型別名 `sky-fast`）。
+   - 回覆只收清單裡有的群組編號；建議一律列為 `review`，管理員確認前不公開。分數記 0，所以不會取代其他來源的 `auto` 列。
+   - 問過的時間記在 `tag_wikidata.ai_checked_at`，30 天內不重問。
+   - 設定：`TAG_AI_BASE_URL`、`TAG_AI_API_KEY`、`TAG_AI_MODEL`（預設 `sky-fast`）。沒有 key 時略過這一步。
+
+順序是人物 → 版別 → Wikidata → AI：版別要先跑，Wikidata 類型才查得到主題；AI 只處理前面沒分到的。目前只有命令列工具，worker 還沒排程。
+
+## 執行
+
+```sh
+# 舊站資料（一次）
+node --env-file=.env tools/tag-groups.ts legacy ~/tag-analysis-private/group-snapshot/selected.sql ~/tag-analysis-private/legacy-2026-10-04/core.sql.gz
+# 本週排行上的 500 個標籤：人物、版別、Wikidata、AI
+node --env-file=.env tools/tag-groups.ts auto --top 500
+# 只跑某一步、或指定標籤
+node --env-file=.env tools/tag-groups.ts section 台積電 颱風
+```
+
+`--force` 讓 Wikidata 與 AI 步驟重查 30 天內問過的標籤。
+
+## API
+
+- `GET /api/v1/tags/{tag}/groups`：標籤所屬的群組與主題（只回傳 `auto`、`confirmed`）。
+- `GET /api/v1/tag-groups`：群組一覽與各群組的標籤數。
+- `GET /api/v1/tag-groups/{id}`：群組裡的標籤，一次 1000 個。
+
+詳見 [api.md](api.md)。
+
+## 前台
+
+標籤頁標題旁顯示標籤的群組（實心）與主題（外框），資料來自 `/api/v1/tags/{tag}/groups`。
+
+## 還沒做
+
+- 群組改名、刪除、排序，以及上下層（例如「現任立委」屬於「政治人物」）。
+- 公開的群組頁，例如列出某群組所有標籤並比較聲量。
+- worker 排程。
