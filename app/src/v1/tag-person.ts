@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { inkImage } from '../avatars/portrait.ts';
+import { inkImage } from '../avatars/ink.ts';
 import type { Db } from '../db/client.ts';
 import { tagAvatarCandidates, tagPeople } from '../db/schema.ts';
 

@@ -25,8 +25,9 @@ export const shotName = (file: string) =>
 
 type Seen = {
   info: FileInfo;
-  bytes: Uint8Array;
-  img: Rgb;
+  // Decoded photos are ~6 MB each: kept only for the first (the reference
+  // faces) and for photos that may be rendered.
+  img: Rgb | null;
   verdict: Verdict | 'other';
   insp: Awaited<ReturnType<typeof inspect>>;
 };
@@ -36,7 +37,7 @@ async function reference(seen: Seen[]) {
   const mains = seen.slice(1).flatMap((s) => (s.insp.embedding ? [s.insp.embedding] : []));
   const [first] = seen;
   const options = first?.insp.faces.length
-    ? await Promise.all(first.insp.faces.slice(0, 4).map((f) => embed(alignFace(first.img, f))))
+    ? await Promise.all(first.insp.faces.slice(0, 4).map((f) => embed(alignFace(first.img as Rgb, f))))
     : mains;
   let best: Float32Array | null = null;
   let votes = -1;
@@ -84,7 +85,8 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
       const bytes = await download(info.thumbUrl);
       const img = await decode(bytes);
       const insp = await inspect(img);
-      seen.push({ info, bytes, img, verdict: insp.verdict, insp });
+      const keep = !seen.length || insp.verdict === 'ok' || insp.verdict === 'bystander';
+      seen.push({ info, img: keep ? img : null, verdict: insp.verdict, insp });
     } catch (err) {
       log({ tag, file: info.file, err: String(err) }, 'avatar photo skipped');
     }
@@ -127,7 +129,7 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
       score: k.score,
       scores: k.parts,
       verdict: k.verdict,
-      image: await renderAvatar(k.img, k.insp.main as NonNullable<Seen['insp']['main']>),
+      image: await renderAvatar(k.img as Rgb, k.insp.main as NonNullable<Seen['insp']['main']>),
     });
   }
   const best = kept[0].score;

@@ -52,6 +52,7 @@ Cloudflare Tunnel → tag.observe.tw
 | GA4／Search Console 彙整 `analytics` | 每小時 :20；未設定唯讀憑證時不排程 |
 | GA Realtime `analytics-live` | 每 2 分鐘；未設定唯讀憑證時不排程 |
 | 資料保留 `retention` | 每日 04:15 |
+| 人物頭像 `tag-avatars` | 每日 04:40（`TAG_AVATARS_CRON`）；本週上過新聞排行、30 天內沒查過的標籤最多 40 個，至多 8 分鐘，見 [tag-avatars.md](tag-avatars.md) |
 | 停用來源探測 `source-probe` | 每週一 05:30 |
 
 時間都可用環境變數覆寫（`CRAWL_NEWS_MINUTES`、`EVENTS_CRON`…）。

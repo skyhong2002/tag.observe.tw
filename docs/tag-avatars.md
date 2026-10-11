@@ -19,6 +19,10 @@
 
 ## 執行
 
+worker 每日 04:40（`TAG_AVATARS_CRON`）跑 `tag-avatars`（`jobs/tag-avatars-run.ts`，在子程序跑完即釋放記憶體）：取本週上過新聞排行、30 天內沒查過的標籤最多 40 個，跑滿 8 分鐘就停，剩下的隔天繼續；worker 同時只跑兩個工作、每個工作鎖 15 分鐘，所以不能久佔。worker 關閉時處理完手上這個標籤就停；跑完釋放模型（約 200 MB）。
+
+手動補跑或指定標籤：
+
 ```sh
 node --env-file=.env tools/tag-avatars.ts 賴清德 苗博雅   # 指定標籤
 node --env-file=.env tools/tag-avatars.ts --top 100       # 最近 7 天上過新聞排行（tag_stats 第 3 級）、30 天內沒查過的 100 個標籤

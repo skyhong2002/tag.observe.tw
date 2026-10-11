@@ -57,11 +57,20 @@ export function session(name: ModelName) {
   let s = sessions.get(name);
   if (!s) {
     // Keep inference off most cores: the same host serves the site.
-    s = modelBytes(name).then((buf) => ort.InferenceSession.create(buf, { intraOpNumThreads: 2, interOpNumThreads: 1 }));
+    s = modelBytes(name).then((buf) =>
+      ort.InferenceSession.create(buf, { intraOpNumThreads: 2, interOpNumThreads: 1, enableCpuMemArena: false, enableMemPattern: false }),
+    );
     s.catch(() => sessions.delete(name));
     sessions.set(name, s);
   }
   return s;
+}
+
+/** Free the sessions (~200 MB) between runs; the next session() call loads them again. */
+export async function releaseModels() {
+  const open = [...sessions.values()];
+  sessions.clear();
+  for (const s of await Promise.allSettled(open)) if (s.status === 'fulfilled') await s.value.release();
 }
 
 export { ort };

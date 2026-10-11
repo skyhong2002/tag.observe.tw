@@ -3,7 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
 import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog } from '../db/schema.ts';
-import { inkImage } from './portrait.ts';
+import { inkImage } from './ink.ts';
 
 // /admin/avatars/: admins look over person tags and their sketch avatars,
 // switch to another of the three candidates or hide the avatar

@@ -14,6 +14,7 @@ import { runProbeJob } from './jobs/probe-job.ts';
 import { runRankingJob } from './jobs/ranking-job.ts';
 import { runRetentionJob } from './jobs/retention-job.ts';
 import { runSimilarityJob } from './jobs/similarity-job.ts';
+import { runTagAvatarsInChild } from './jobs/tag-avatars-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
 import { LEGACY_OWNERSHIP_POLICY } from './legacy/ownership-policy.ts';
@@ -111,6 +112,12 @@ await queue.upsertJobScheduler(
   { pattern: process.env.RETENTION_CRON || '15 4 * * *' },
   { name: 'retention', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+// Sketch avatars for new person tags; capped at a few minutes (jobs/tag-avatars-job.ts).
+await queue.upsertJobScheduler(
+  'tag-avatars-daily',
+  { pattern: process.env.TAG_AVATARS_CRON || '40 4 * * *' },
+  { name: 'tag-avatars', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
 await queue.upsertJobScheduler(
   'source-probe-weekly',
   { pattern: process.env.PROBE_CRON || '30 5 * * 1' },
@@ -140,6 +147,7 @@ for (const job of [
   'ranking',
   'events',
   'retention',
+  'tag-avatars',
   'source-probe',
   'analytics',
   'analytics-live',
@@ -181,6 +189,11 @@ const worker = new Worker(
           contentBatch: Number(process.env.TAG_CONTENT_ARCHIVE_BATCH ?? 5000),
           log: (o, m) => log.info(o, m),
         });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'tag-avatars') {
+        const r = await runTagAvatarsInChild({ signal: shutdown.signal });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }
