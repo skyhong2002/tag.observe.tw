@@ -16,6 +16,7 @@ import {
   TagMethod,
   TopicMethod,
   TrafficCollectionMethod,
+  WritingMethod,
 } from '@/components/MethodNotes';
 import { pageMetadata } from '@/lib/seo.mts';
 import traffic from '../../../../../app/data/media-traffic.json';
@@ -69,6 +70,15 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     body: <SimilarityMethod camp={false} />,
   },
   { id: 'journalist', title: '記者', pages: [['/journalist/', '記者']], body: <JournalistMethod /> },
+  {
+    id: 'writing',
+    title: '看寫法',
+    pages: [
+      ['/writing/', '轉述社群貼文'],
+      ['/writing/titles/', '標題用詞'],
+    ],
+    body: <WritingMethod />,
+  },
   {
     id: 'topic',
     title: '議題表與專題',

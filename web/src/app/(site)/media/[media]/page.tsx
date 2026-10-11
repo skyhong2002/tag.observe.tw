@@ -8,6 +8,7 @@ import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
 import MediaTrafficProfile from '@/components/MediaTrafficProfile';
 import MediaWordCloud from '@/components/MediaWordCloud';
+import MediaWritingCard from '@/components/MediaWritingCard';
 import MethodLink from '@/components/MethodLink';
 import FollowButton from '@/components/reader/FollowButton';
 import SectionTabs from '@/components/SectionTabs';
@@ -24,6 +25,7 @@ import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/readin
 import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
 import type { SimilarityData } from '@/lib/similarity';
 import { radarText, shortMonth } from '@/lib/traffic-comparison.mts';
+import { fetchMediaWriting } from '@/lib/writing';
 import { outletIdentity } from '../../../../../../app/src/similarity/attribution';
 import { loadComparison } from '../traffic/load';
 
@@ -62,7 +64,7 @@ export default async function MediaPage({
     keyword = query.get('q');
   const cloudHours = Number(hours ?? 168);
   const discoverySource = media === 'google_news' || media === 'dongtaiwang';
-  const [res, profile, keywords, similarity, comparison] = await Promise.all([
+  const [res, profile, keywords, similarity, comparison, writing] = await Promise.all([
     fetch(`${API_ORIGIN}/api/v1/media/${encodeURIComponent(media)}/content?${apiQuery}`, {
       next: { revalidate },
       signal: AbortSignal.timeout(6000),
@@ -81,6 +83,7 @@ export default async function MediaPage({
           .catch(() => null),
     // Similarweb visits and Radar rank, from the same load as /media/traffic/.
     discoverySource ? null : loadComparison().catch(() => null),
+    discoverySource ? null : fetchMediaWriting(media),
   ]);
   if (res?.status === 400) notFound();
   if (res?.status === 404) return <SourceProfile media={media} query={Object.fromEntries(query)} />;
@@ -301,6 +304,7 @@ export default async function MediaPage({
               流量與排名比較 →
             </Link>
           </section>
+          {!discovery && <MediaWritingCard data={writing} />}
           {!discovery && outlet && <MediaTrafficProfile outlet={outlet} />}
           {!discovery && <MediaRelations data={similarity} media={media} hours={cloudHours} />}
         </MediaSidebar>

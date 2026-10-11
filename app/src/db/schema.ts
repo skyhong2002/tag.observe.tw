@@ -746,3 +746,64 @@ export const tagPeopleLog = mysqlTable(
   },
   (t) => [index('tag_people_log_tag').on(t.tag, t.at)],
 );
+
+// How each article was written (app/src/writing/, /writing/): whether its lead
+// retells a social-media post, who posted, and its headline wording. One row
+// per analysed article, kept after the body expires so trends stay comparable;
+// `version` names the rule set (writing/rules.ts) that produced the row.
+export const articleWriting = mysqlTable(
+  'article_writing',
+  {
+    articleId: bigint('article_id', { mode: 'number' }).primaryKey(),
+    media: varchar('media', { length: 32 }).notNull(),
+    publishedAt: datetime('published_at').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    version: varchar('version', { length: 16 }).notNull(),
+    /** null: the lead does not retell a post. */
+    platform: varchar('platform', { length: 16 }),
+    /** The clause naming the poster plus the posting phrase, as printed. */
+    evidence: varchar('evidence', { length: 200 }),
+    poster: varchar('poster', { length: 40 }),
+    role: varchar('role', { length: 16 }),
+    /** clause: title words next to the post; people: writing_people. */
+    roleSource: varchar('role_source', { length: 8 }).$type<'clause' | 'people'>(),
+    titleTags: json('title_tags').$type<string[]>().notNull(),
+    analyzedAt: datetime('analyzed_at').notNull(),
+  },
+  (t) => [
+    index('article_writing_day').on(t.day, t.media),
+    index('article_writing_media').on(t.media, t.day),
+    index('article_writing_poster').on(t.poster),
+    index('article_writing_version').on(t.version, t.publishedAt),
+  ],
+);
+
+// Poster names and the role they usually carry in article text (「前立委邱毅」),
+// so a bare 「邱毅今天在臉書…」 can still be classified. source 'auto' rows are
+// rebuilt daily from recent bodies; 'admin' rows are corrections and win.
+export const writingPeople = mysqlTable('writing_people', {
+  name: varchar('name', { length: 40 }).primaryKey(),
+  role: varchar('role', { length: 16 }).notNull(),
+  source: varchar('source', { length: 8 }).$type<'auto' | 'admin'>().notNull(),
+  /** auto: mentions carrying the winning role / all titled mentions. */
+  hits: int('hits').notNull().default(0),
+  total: int('total').notNull().default(0),
+  note: varchar('note', { length: 255 }),
+  email: varchar('email', { length: 255 }),
+  updatedAt: datetime('updated_at').notNull(),
+});
+
+export const writingPeopleLog = mysqlTable(
+  'writing_people_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    name: varchar('name', { length: 40 }).notNull(),
+    /** null: no admin correction before / the correction was cleared. */
+    before: varchar('before', { length: 16 }),
+    after: varchar('after', { length: 16 }),
+    note: varchar('note', { length: 255 }).notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('writing_people_log_name').on(t.name, t.at)],
+);

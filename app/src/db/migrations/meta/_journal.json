@@ -197,6 +197,13 @@
       "when": 1791655175075,
       "tag": "0027_tag-avatars",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1791696141409,
+      "tag": "0028_writing-signals",
+      "breakpoints": true
     }
   ]
 }

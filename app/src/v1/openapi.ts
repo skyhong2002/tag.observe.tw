@@ -63,6 +63,13 @@ const firstCollectionSchema = obj({
 
 const schemas: Record<string, Schema> = {
   Error: obj({ error: str('錯誤代碼或說明') }, '錯誤回應', []),
+  WritingCounts: obj({
+    articles: int('已分析篇數'),
+    social: int('轉述社群貼文篇數'),
+    roles: map(int(), '依發文者身分'),
+    platforms: map(int(), '依平台'),
+    titleTags: map(int(), '標題用詞：懸念、反應、攻擊'),
+  }),
   MediaKey: str('媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media', { pattern: '^[a-z0-9_]+$' }),
   Headline: obj(
     {
@@ -692,6 +699,7 @@ export const API_TAGS = [
   { name: 'topics', description: '各媒體的議題／專題' },
   { name: 'media', description: '媒體與爬蟲狀態' },
   { name: 'nearline', description: '封存索引與授權取回' },
+  { name: 'writing', description: '寫法：轉述社群貼文與標題用詞' },
 ];
 
 const observationPage = obj({
@@ -2286,6 +2294,115 @@ export const ENDPOINTS: Endpoint[] = [
         ),
       ),
     }),
+  },
+  {
+    path: '/api/v1/writing',
+    tag: 'writing',
+    summary: '寫法總覽：轉述社群貼文與標題用詞',
+    description:
+      '分母是已分析的文章（取得內文者）。轉述社群貼文：內文前 250 字寫明某人在臉書、Threads、X、節目等發文；發文者身分依該句的頭銜詞，或這個名字在其他報導最常搭配的頭銜。轉載站不列入媒體表與總數。規則版本見 version。',
+    params: [q('days', '最近幾天（台北日期）', intIn(7, 90, 30))],
+    example: '/api/v1/writing?days=30',
+    response: obj({
+      generatedAt: time(),
+      version: str('規則版本'),
+      days: int(),
+      from: str('起始日（含）'),
+      totals: ref('WritingCounts'),
+      daily: arr({ allOf: [obj({ day: str() }), ref('WritingCounts')] }, '逐日'),
+      media: arr({ allOf: [obj({ media: ref('MediaKey'), name: str() }), ref('WritingCounts')] }, `分析篇數 ≥ 100 的媒體，依轉述比例排序`),
+      posters: arr(
+        obj({ name: str(), role: str(), articles: int(), outlets: int('幾家媒體轉述') }),
+        '最常被轉述的發文者（不含網友民眾），最多 40 人',
+      ),
+    }),
+    cache: '5 分鐘',
+  },
+  {
+    path: '/api/v1/writing/articles',
+    tag: 'writing',
+    summary: '寫法：符合條件的文章',
+    description: '沒有 tag 時只列轉述社群貼文的文章；指定 tag 時列標題含該類用詞的文章。新的在前，用 next 傳給 before 取下一頁。',
+    params: [
+      q(
+        'role',
+        '發文者身分',
+        str(undefined, {
+          enum: ['公職政治', '前任公職', '評論名嘴', '專家企業', '醫療健康', '氣象', '藝人網紅', '機構', '網友民眾', '未知'],
+        }),
+      ),
+      q(
+        'platform',
+        '平台',
+        str(undefined, { enum: ['Facebook', 'Threads', 'Instagram', 'X', 'YouTube', '節目直播', 'PTT', 'Dcard', '社群'] }),
+      ),
+      q('tag', '標題用詞', str(undefined, { enum: ['懸念', '反應', '攻擊'] })),
+      q('media', '刊登媒體', str()),
+      q('poster', '發文者名字', str()),
+      q('days', '最近幾天', intIn(1, 90, 30)),
+      q('limit', '筆數', intIn(1, 100, 30)),
+      q('before', '只列 id 小於此值的文章', { type: 'integer', minimum: 1 }),
+    ],
+    example: '/api/v1/writing/articles?role=醫療健康&limit=5',
+    response: obj({
+      articles: arr(
+        obj({
+          id: int(),
+          media: ref('MediaKey'),
+          name: str(),
+          title: str(),
+          url: str(),
+          publishedAt: time(),
+          platform: nullable(str()),
+          poster: nullable(str()),
+          role: nullable(str()),
+          evidence: nullable(str('判斷依據：內文中點名發文者的句子')),
+          titleTags: arr(str()),
+        }),
+      ),
+      next: nullable(int('下一頁的 before')),
+    }),
+    cache: '2 分鐘',
+  },
+  {
+    path: '/api/v1/media/{media}/writing',
+    tag: 'writing',
+    summary: '單一媒體的寫法統計與逐日趨勢',
+    params: [p('media', '媒體代碼', ref('MediaKey'), 'chinatimes'), q('days', '最近幾天', intIn(7, 365, 90))],
+    response: obj({
+      media: ref('MediaKey'),
+      name: str(),
+      version: str(),
+      days: int(),
+      from: str(),
+      excludedFromStatistics: bool('轉載站，不列入跨媒體統計'),
+      totals: ref('WritingCounts'),
+      daily: arr(obj({ day: str(), articles: int(), social: int() })),
+    }),
+    cache: '5 分鐘',
+  },
+  {
+    path: '/api/v1/articles/{id}/writing',
+    tag: 'writing',
+    summary: '單篇文章的寫法標記',
+    params: [p('id', '文章 id', { type: 'integer', minimum: 1 }, 50878324)],
+    response: obj({
+      articleId: int(),
+      version: str(),
+      analyzedAt: time(),
+      social: nullable(
+        obj({
+          platform: str(),
+          poster: nullable(str()),
+          role: nullable(str()),
+          roleSource: nullable(str('clause：句中頭銜；people：名字對照表；null：判斷不出')),
+          evidence: nullable(str()),
+        }),
+      ),
+      titleTags: arr(str()),
+    }),
+    errors: { '400': '文章 id 無效', '404': '尚未分析（沒有內文或還沒輪到）' },
+    cache: '5 分鐘',
   },
 ];
 

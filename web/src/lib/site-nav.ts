@@ -4,8 +4,8 @@
 export type NavLink = { href: string; label: string; short: string };
 
 // Grouped by what a reader does there: read reports (four groupings of the
-// same articles, finest first), measure (what rises, who matches whom), then
-// the sources.
+// same articles, finest first), measure (what rises, who matches whom), the
+// sources, then how the sources write.
 export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
   {
     label: '看新聞',
@@ -30,6 +30,13 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
       { href: '/media/', label: '媒體來源', short: '媒體' },
       { href: '/byline/', label: '新聞署名', short: '署名' },
       { href: '/media/traffic/', label: '媒體流量與排名', short: '流量' },
+    ],
+  },
+  {
+    label: '看寫法',
+    links: [
+      { href: '/writing/', label: '轉述社群貼文', short: '轉述' },
+      { href: '/writing/titles/', label: '標題用詞', short: '標題' },
     ],
   },
 ];

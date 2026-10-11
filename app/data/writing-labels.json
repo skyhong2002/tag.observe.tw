@@ -1,0 +1,434 @@
+{
+ "_comment": "Hand-checked labels for tools/writing-eval.ts (2026-10-11, articles from 2026-10-04 to 10-11). Article ids and expected answers only; bodies stay in the database until they expire (about 90 days), after which those rows are skipped. Add newer labels when fewer than 50 remain.",
+ "labels": [
+  {
+   "id": 9196832,
+   "social": false
+  },
+  {
+   "id": 50764156,
+   "social": true,
+   "platform": "Facebook",
+   "role": "專家企業"
+  },
+  {
+   "id": 43661056,
+   "social": true,
+   "platform": "Facebook",
+   "role": "公職政治"
+  },
+  {
+   "id": 48637550,
+   "social": true,
+   "platform": "Facebook",
+   "role": "評論名嘴"
+  },
+  {
+   "id": 48258720,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 48536829,
+   "social": true,
+   "platform": "Facebook",
+   "role": "網友民眾"
+  },
+  {
+   "id": 9303281,
+   "social": true,
+   "platform": "Facebook",
+   "role": "醫療健康"
+  },
+  {
+   "id": 50132723,
+   "social": true,
+   "platform": "Facebook",
+   "role": "專家企業"
+  },
+  {
+   "id": 47409240,
+   "social": true,
+   "platform": "Instagram",
+   "role": "藝人網紅"
+  },
+  {
+   "id": 48702336,
+   "social": true,
+   "platform": "社群",
+   "role": "藝人網紅"
+  },
+  {
+   "id": 49273696,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 47448130,
+   "social": true,
+   "platform": "社群",
+   "role": "藝人網紅"
+  },
+  {
+   "id": 51344290,
+   "social": true,
+   "platform": "Dcard",
+   "role": "網友民眾"
+  },
+  {
+   "id": 44749686,
+   "social": true,
+   "platform": "Facebook",
+   "role": "醫療健康"
+  },
+  {
+   "id": 39816886,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 10854572,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 46978909,
+   "social": true,
+   "platform": "社群",
+   "role": "藝人網紅"
+  },
+  {
+   "id": 10875444,
+   "social": true,
+   "platform": "Facebook",
+   "role": "評論名嘴"
+  },
+  {
+   "id": 9013359,
+   "social": true,
+   "platform": "Instagram",
+   "role": "藝人網紅"
+  },
+  {
+   "id": 10865168,
+   "social": true,
+   "platform": "Facebook",
+   "role": "醫療健康"
+  },
+  {
+   "id": 50162419,
+   "social": true,
+   "platform": "Facebook",
+   "role": "醫療健康"
+  },
+  {
+   "id": 43152398,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 50851541,
+   "social": true,
+   "platform": "Instagram",
+   "role": "機構"
+  },
+  {
+   "id": 44602363,
+   "social": true,
+   "platform": "社群",
+   "role": "公職政治"
+  },
+  {
+   "id": 51445909,
+   "social": true,
+   "platform": "Dcard",
+   "role": "網友民眾"
+  },
+  {
+   "id": 43300712,
+   "social": true,
+   "platform": "節目直播",
+   "role": "評論名嘴"
+  },
+  {
+   "id": 45231672,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 49992339,
+   "social": true,
+   "platform": "社群",
+   "role": "公職政治"
+  },
+  {
+   "id": 46687131,
+   "social": true,
+   "platform": "社群",
+   "role": "評論名嘴"
+  },
+  {
+   "id": 48345828,
+   "social": true,
+   "platform": "Facebook",
+   "role": "氣象"
+  },
+  {
+   "id": 45477927,
+   "social": true,
+   "platform": "社群",
+   "role": "評論名嘴"
+  },
+  {
+   "id": 46503619,
+   "social": true,
+   "platform": "社群",
+   "role": "網友民眾"
+  },
+  {
+   "id": 9117025,
+   "social": true,
+   "platform": "Facebook",
+   "role": "公職政治"
+  },
+  {
+   "id": 49957691,
+   "social": true,
+   "platform": "Instagram",
+   "role": "藝人網紅"
+  },
+  {
+   "id": 45017985,
+   "social": true,
+   "platform": "Dcard",
+   "role": "網友民眾"
+  },
+  {
+   "id": 10492479,
+   "social": true,
+   "platform": "Dcard",
+   "role": "網友民眾"
+  },
+  {
+   "id": 48637450,
+   "social": true,
+   "platform": "Facebook",
+   "role": "公職政治"
+  },
+  {
+   "id": 43344546,
+   "social": true,
+   "platform": "Facebook",
+   "role": "公職政治"
+  },
+  {
+   "id": 10339289,
+   "social": true,
+   "platform": "Facebook",
+   "role": "氣象"
+  },
+  {
+   "id": 39507218,
+   "social": true,
+   "platform": "X",
+   "role": "公職政治"
+  },
+  {
+   "id": 50326383,
+   "social": true,
+   "platform": "Facebook",
+   "role": "前任公職"
+  },
+  {
+   "id": 48822597,
+   "social": true,
+   "platform": "Facebook",
+   "role": "氣象"
+  },
+  {
+   "id": 43548810,
+   "social": true,
+   "platform": "社群",
+   "role": "評論名嘴"
+  },
+  {
+   "id": 47683001,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 49356062,
+   "social": true,
+   "role": "網友民眾"
+  },
+  {
+   "id": 43589048,
+   "social": true,
+   "platform": "社群",
+   "role": "網友民眾"
+  },
+  {
+   "id": 48448198,
+   "social": true,
+   "platform": "Facebook",
+   "role": "氣象"
+  },
+  {
+   "id": 10920383,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 48785748,
+   "social": true,
+   "platform": "Facebook",
+   "role": "前任公職"
+  },
+  {
+   "id": 9669651,
+   "social": true,
+   "platform": "Facebook",
+   "role": "公職政治"
+  },
+  {
+   "id": 43576089,
+   "social": true,
+   "platform": "Threads",
+   "role": "前任公職"
+  },
+  {
+   "id": 44820265,
+   "social": true,
+   "platform": "社群",
+   "role": "評論名嘴"
+  },
+  {
+   "id": 50124433,
+   "social": true,
+   "platform": "Threads",
+   "role": "專家企業"
+  },
+  {
+   "id": 48558734,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 10892778,
+   "social": true,
+   "platform": "Facebook",
+   "role": "專家企業"
+  },
+  {
+   "id": 44897480,
+   "social": true,
+   "platform": "Threads",
+   "role": "網友民眾"
+  },
+  {
+   "id": 51509000,
+   "social": true,
+   "platform": "社群",
+   "role": "前任公職"
+  },
+  {
+   "id": 51173425,
+   "social": false
+  },
+  {
+   "id": 50683958,
+   "social": false
+  },
+  {
+   "id": 50549339,
+   "social": false
+  },
+  {
+   "id": 9343329,
+   "social": false
+  },
+  {
+   "id": 45160283,
+   "social": false
+  },
+  {
+   "id": 10589341,
+   "social": false
+  },
+  {
+   "id": 46589775,
+   "social": true,
+   "platform": "社群",
+   "role": "公職政治"
+  },
+  {
+   "id": 50432647,
+   "social": true,
+   "platform": "Facebook",
+   "role": "機構"
+  },
+  {
+   "id": 51249953,
+   "social": true,
+   "platform": "Facebook",
+   "role": "醫療健康"
+  },
+  {
+   "id": 8990772,
+   "social": false
+  },
+  {
+   "id": 43672837,
+   "social": false
+  },
+  {
+   "id": 14748690,
+   "social": false
+  },
+  {
+   "id": 43509235,
+   "social": false
+  },
+  {
+   "id": 45190573,
+   "social": true,
+   "platform": "Facebook",
+   "role": "藝人網紅"
+  },
+  {
+   "id": 45382608,
+   "social": true,
+   "platform": "社群",
+   "role": "公職政治"
+  },
+  {
+   "id": 46967545,
+   "social": false
+  },
+  {
+   "id": 46731436,
+   "social": false
+  },
+  {
+   "id": 50558677,
+   "social": false
+  },
+  {
+   "id": 9755932,
+   "social": false
+  },
+  {
+   "id": 45408497,
+   "social": false
+  }
+ ]
+}

@@ -109,6 +109,10 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media-traffic-live`](#api-v1-media-traffic-live) | Similarweb 自動抓取流量狀態 |
 | [`GET /api/v1/media-taiwan-shares`](#api-v1-media-taiwan-shares) | 台灣占比的人工修正 |
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
+| [`GET /api/v1/writing`](#api-v1-writing) | 寫法總覽：轉述社群貼文與標題用詞 |
+| [`GET /api/v1/writing/articles`](#api-v1-writing-articles) | 寫法：符合條件的文章 |
+| [`GET /api/v1/media/{media}/writing`](#api-v1-media-media-writing) | 單一媒體的寫法統計與逐日趨勢 |
+| [`GET /api/v1/articles/{id}/writing`](#api-v1-articles-id-writing) | 單篇文章的寫法標記 |
 
 ## API 本身
 
@@ -3133,6 +3137,183 @@ curl -s -X POST -H 'Content-Type: application/json' --data '{}' -H 'Authorizatio
 錯誤：`401` 需要授權；`409` 作業非失敗狀態或已達三次上限。
 
 快取：不快取。
+
+## 寫法：轉述社群貼文與標題用詞
+
+<a id="api-v1-writing"></a>
+
+### `GET /api/v1/writing`
+
+**寫法總覽：轉述社群貼文與標題用詞**
+
+分母是已分析的文章（取得內文者）。轉述社群貼文：內文前 250 字寫明某人在臉書、Threads、X、節目等發文；發文者身分依該句的頭銜詞，或這個名字在其他報導最常搭配的頭銜。轉載站不列入媒體表與總數。規則版本見 version。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `days` | query | integer | 最近幾天（台北日期），7–90，預設 `30` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/writing?days=30'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `version` | string | 規則版本 |
+| `days` | integer |  |
+| `from` | string | 起始日（含） |
+| `totals` | object |  |
+| `totals.articles` | integer | 已分析篇數 |
+| `totals.social` | integer | 轉述社群貼文篇數 |
+| `totals.roles` | {鍵: integer} | 依發文者身分 |
+| `totals.platforms` | {鍵: integer} | 依平台 |
+| `totals.titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
+| `daily` | object[] | 逐日 |
+| `daily[].day` | string |  |
+| `daily[].articles` | integer | 已分析篇數 |
+| `daily[].social` | integer | 轉述社群貼文篇數 |
+| `daily[].roles` | {鍵: integer} | 依發文者身分 |
+| `daily[].platforms` | {鍵: integer} | 依平台 |
+| `daily[].titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
+| `media` | object[] | 分析篇數 ≥ 100 的媒體，依轉述比例排序 |
+| `media[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `media[].name` | string |  |
+| `media[].articles` | integer | 已分析篇數 |
+| `media[].social` | integer | 轉述社群貼文篇數 |
+| `media[].roles` | {鍵: integer} | 依發文者身分 |
+| `media[].platforms` | {鍵: integer} | 依平台 |
+| `media[].titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
+| `posters` | object[] | 最常被轉述的發文者（不含網友民眾），最多 40 人 |
+| `posters[].name` | string |  |
+| `posters[].role` | string |  |
+| `posters[].articles` | integer |  |
+| `posters[].outlets` | integer | 幾家媒體轉述 |
+
+快取：5 分鐘。
+
+<a id="api-v1-writing-articles"></a>
+
+### `GET /api/v1/writing/articles`
+
+**寫法：符合條件的文章**
+
+沒有 tag 時只列轉述社群貼文的文章；指定 tag 時列標題含該類用詞的文章。新的在前，用 next 傳給 before 取下一頁。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `role` | query | "公職政治" \| "前任公職" \| "評論名嘴" \| "專家企業" \| "醫療健康" \| "氣象" \| "藝人網紅" \| "機構" \| "網友民眾" \| "未知" | 發文者身分 |
+| `platform` | query | "Facebook" \| "Threads" \| "Instagram" \| "X" \| "YouTube" \| "節目直播" \| "PTT" \| "Dcard" \| "社群" | 平台 |
+| `tag` | query | "懸念" \| "反應" \| "攻擊" | 標題用詞 |
+| `media` | query | string | 刊登媒體 |
+| `poster` | query | string | 發文者名字 |
+| `days` | query | integer | 最近幾天，1–90，預設 `30` |
+| `limit` | query | integer | 筆數，1–100，預設 `30` |
+| `before` | query | integer | 只列 id 小於此值的文章 |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/writing/articles?role=醫療健康&limit=5'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `articles` | object[] |  |
+| `articles[].id` | integer |  |
+| `articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `articles[].name` | string |  |
+| `articles[].title` | string |  |
+| `articles[].url` | string |  |
+| `articles[].publishedAt` | string (ISO 時間) |  |
+| `articles[].platform` | string \| null |  |
+| `articles[].poster` | string \| null |  |
+| `articles[].role` | string \| null |  |
+| `articles[].evidence` | string \| null | 判斷依據：內文中點名發文者的句子 |
+| `articles[].titleTags` | string[] |  |
+| `next` | integer \| null | 下一頁的 before |
+
+快取：2 分鐘。
+
+<a id="api-v1-media-media-writing"></a>
+
+### `GET /api/v1/media/{media}/writing`
+
+**單一媒體的寫法統計與逐日趨勢**
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `media` | 路徑 | string | 媒體代碼，例：`chinatimes` |
+| `days` | query | integer | 最近幾天，7–365，預設 `90` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/media/chinatimes/writing'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `name` | string |  |
+| `version` | string |  |
+| `days` | integer |  |
+| `from` | string |  |
+| `excludedFromStatistics` | boolean | 轉載站，不列入跨媒體統計 |
+| `totals` | object |  |
+| `totals.articles` | integer | 已分析篇數 |
+| `totals.social` | integer | 轉述社群貼文篇數 |
+| `totals.roles` | {鍵: integer} | 依發文者身分 |
+| `totals.platforms` | {鍵: integer} | 依平台 |
+| `totals.titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
+| `daily` | object[] |  |
+| `daily[].day` | string |  |
+| `daily[].articles` | integer |  |
+| `daily[].social` | integer |  |
+
+快取：5 分鐘。
+
+<a id="api-v1-articles-id-writing"></a>
+
+### `GET /api/v1/articles/{id}/writing`
+
+**單篇文章的寫法標記**
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | integer | 文章 id，例：`50878324` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/articles/50878324/writing'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `articleId` | integer |  |
+| `version` | string |  |
+| `analyzedAt` | string (ISO 時間) |  |
+| `social` | object \| null |  |
+| `social.platform` | string |  |
+| `social.poster` | string \| null |  |
+| `social.role` | string \| null |  |
+| `social.roleSource` | string \| null | clause：句中頭銜；people：名字對照表；null：判斷不出 |
+| `social.evidence` | string \| null |  |
+| `titleTags` | string[] |  |
+
+錯誤：`400` 文章 id 無效；`404` 尚未分析（沒有內文或還沒輪到）。
+
+快取：5 分鐘。
 
 ## 舊站 API 對照
 

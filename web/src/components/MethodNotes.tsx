@@ -16,6 +16,7 @@ export { SearchMethod } from './method/search';
 export { SimilarityMethod } from './method/similarity';
 export { methodHeading } from './method/styles';
 export { TopicMethod } from './method/topics';
+export { WritingMethod } from './method/writing';
 
 export function SourceMethod() {
   return (

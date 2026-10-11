@@ -33,6 +33,8 @@ import { registerV1Routes } from './v1/routes.ts';
 import { registerSimilarity } from './v1/similarity.ts';
 import { registerSiteObservation } from './v1/site-observation.ts';
 import { registerTagPerson } from './v1/tag-person.ts';
+import { registerWriting } from './v1/writing.ts';
+import { registerWritingAdmin } from './writing/admin.ts';
 
 export async function buildApp(
   config,
@@ -117,6 +119,7 @@ export async function buildApp(
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
     registerTagPerson(app, own.db);
+    registerWriting(app, own.db);
   }
   const login = registerLogin(app, loginStore ?? (own ? dbLoginStore(own.db) : null), config.login ?? null);
   // The worker's queue, opened on the first crawl an admin asks for.
@@ -133,6 +136,7 @@ export async function buildApp(
     registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
   if (own && config.login) registerTaiwanShares(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerAvatarAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
+  if (own && config.login) registerWritingAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own) apiKeys = apiKeyLookup(own.db);
   if (own && config.login && apiKeys)
     registerReaderRoutes(app, own.db, {

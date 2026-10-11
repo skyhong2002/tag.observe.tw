@@ -18,6 +18,7 @@ import {
   SourceMethod,
   TopicMethod,
   TrafficCollectionMethod,
+  WritingMethod,
 } from './MethodNotes';
 
 const inlineLink = 'text-brand-700 underline underline-offset-2 dark:text-brand-400';
@@ -51,7 +52,16 @@ function sectionsFor(pathname: string) {
     return (
       <>
         <ArticleMethod />
+        <WritingMethod brief />
         <SourceMethod />
+      </>
+    );
+  }
+  if (/^\/writing(\/|$)/.test(pathname)) {
+    return (
+      <>
+        <WritingMethod />
+        <MediaCardMethod />
       </>
     );
   }
@@ -101,6 +111,7 @@ function sectionsFor(pathname: string) {
     return (
       <>
         <MediaMethod />
+        <WritingMethod brief />
         <SourceMethod />
       </>
     );

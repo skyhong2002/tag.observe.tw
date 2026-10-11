@@ -1,11 +1,13 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import ArticleView from '@/components/article/ArticleView';
+import ArticleWriting from '@/components/article/ArticleWriting';
 import { API_ORIGIN } from '@/lib/api';
 import type { StoredContent } from '@/lib/article-content';
 import { featurePathOf } from '@/lib/article-metadata';
 import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { fetchArticleRelated } from '@/lib/related';
 import { fetchArticleSimilarity } from '@/lib/similarity';
+import { fetchArticleWriting } from '@/lib/writing';
 
 export const revalidate = 60;
 export default async function ArticleContentPage({
@@ -21,13 +23,19 @@ export default async function ArticleContentPage({
   // Started alongside the content request; they resolve to null on failure.
   const similarRequest = fetchArticleSimilarity(Number(id));
   const relatedRequest = fetchArticleRelated(Number(id));
+  const writingRequest = fetchArticleWriting(Number(id));
   const res = await fetch(`${API_ORIGIN}/api/v1/articles/${id}/content`, {
     next: { revalidate },
     signal: AbortSignal.timeout(6000),
   }).catch(() => null);
   if (res?.status === 404 || res?.status === 400) notFound();
   if (!res?.ok) return <p className="py-12 text-zinc-600 dark:text-zinc-400">暫時無法取得文章內容，請稍後重新整理。</p>;
-  const [content, similar, related] = await Promise.all([res.json() as Promise<StoredContent>, similarRequest, relatedRequest]);
+  const [content, similar, related, writing] = await Promise.all([
+    res.json() as Promise<StoredContent>,
+    similarRequest,
+    relatedRequest,
+    writingRequest,
+  ]);
   const featurePath = featurePathOf(content.article);
   if (featurePath) permanentRedirect(featurePath);
   const mediaHref = `/media/${encodeURIComponent(content.article.media)}/`;
@@ -36,6 +44,7 @@ export default async function ArticleContentPage({
       content={content}
       related={related}
       similar={similar}
+      extra={<ArticleWriting data={writing} />}
       back={{ href: `${withReadingQuery(mediaHref, query)}#article-${id}`, label: `${content.article.mediaTitle}報導` }}
     />
   );

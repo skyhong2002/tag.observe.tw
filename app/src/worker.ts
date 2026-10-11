@@ -17,6 +17,7 @@ import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagAvatarsInChild } from './jobs/tag-avatars-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
+import { runWritingJob, runWritingPeopleJob } from './jobs/writing-job.ts';
 import { LEGACY_OWNERSHIP_POLICY } from './legacy/ownership-policy.ts';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
 import { radarToken } from './media-traffic/radar.ts';
@@ -89,6 +90,18 @@ await queue.upsertJobScheduler(
   { every: Number(process.env.SIMILARITY_INDEX_MINUTES || 10) * 60e3 },
   { name: 'similarity', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
 );
+// How each article was written (jobs/writing-job.ts, /writing/): new bodies,
+// then once a day the roles of bare poster names.
+await queue.upsertJobScheduler(
+  'writing-signals',
+  { every: Number(process.env.WRITING_MINUTES || 10) * 60e3 },
+  { name: 'writing', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
+);
+await queue.upsertJobScheduler(
+  'writing-people-daily',
+  { pattern: process.env.WRITING_PEOPLE_CRON || '25 3 * * *' },
+  { name: 'writing-people', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
+);
 await queue.upsertJobScheduler(
   'crawl-health',
   { every: 15 * 60e3 },
@@ -157,6 +170,8 @@ for (const job of [
   'topics',
   'tag-stats',
   'similarity',
+  'writing',
+  'writing-people',
   'crawl-index',
   'crawl-articles',
   'crawl-media',
@@ -237,6 +252,16 @@ const worker = new Worker(
       }
       if (job.name === 'similarity') {
         const r = await runSimilarityJob(db, { log: (o, m) => log.info(o, m) });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'writing') {
+        const r = await runWritingJob(db, { log: (o, m) => log.info(o, m) });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'writing-people') {
+        const r = await runWritingPeopleJob(db, { log: (o, m) => log.info(o, m) });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }
