@@ -19,7 +19,7 @@
 
 ```sh
 node --env-file=.env tools/tag-avatars.ts 賴清德 苗博雅   # 指定標籤
-node --env-file=.env tools/tag-avatars.ts --top 100       # 最近 7 天最多文章、30 天內沒查過的 100 個標籤
+node --env-file=.env tools/tag-avatars.ts --top 100       # 最近 7 天上過新聞排行（tag_stats 第 3 級）、30 天內沒查過的 100 個標籤
 ```
 
 `--force` 連同管理員選定、隱藏過或 30 天內查過的標籤一起重跑。Wikimedia API 一律帶描述性 User-Agent，遇到 429／5xx 會退避重試。

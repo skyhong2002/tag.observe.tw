@@ -4,7 +4,7 @@ import { createDb } from '../app/src/db/client.ts';
 
 // Sketch avatars for person tags (docs/tag-avatars.md).
 //   node --env-file=.env tools/tag-avatars.ts 賴清德 苗博雅      # these tags
-//   node --env-file=.env tools/tag-avatars.ts --top 100          # busiest tags of the week not checked in 30 days
+//   node --env-file=.env tools/tag-avatars.ts --top 100          # tags on the news ranking this week, not checked in 30 days
 // --force also re-runs tags an admin chose or hid, and recently checked ones.
 const log = pino({ level: 'info' });
 const args = process.argv.slice(2);

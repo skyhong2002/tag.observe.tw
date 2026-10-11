@@ -1,6 +1,6 @@
-import { and, count, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { articleTags, type TagPersonStatus, tagAvatarCandidates, tagPeople } from '../db/schema.ts';
+import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagStats } from '../db/schema.ts';
 import { inspect, quality, renderAvatar, sameFace, sameShot, type Verdict } from './portrait.ts';
 import { alignFace, cosine, decode, embed, type Rgb } from './vision.ts';
 import { candidateFiles, download, type FileInfo, fileInfo, findPerson } from './wikidata.ts';
@@ -136,35 +136,29 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
   return save('auto', null, rows);
 }
 
-/** The most-tagged tags of the last `days` days not checked in the last 30 (all of them with `force`). */
+/**
+ * Tags that made the news ranking in the last `days` days (tag_stats level 3:
+ * several outlets repeating it), most hours first, minus those checked in the
+ * last 30 days (all of them with `force`). tag_stats is small and indexed;
+ * grouping article_tags over a week took minutes on production.
+ */
 export async function busyTags(db: Db, { limit = 100, days = 7, force = false } = {}) {
   const since = new Date(Date.now() - days * 86_400_000);
-  const top = await db
-    .select({ tag: articleTags.tag, n: count() })
-    .from(articleTags)
-    .where(gte(articleTags.publishedAt, since))
-    .groupBy(articleTags.tag)
-    .orderBy(desc(count()))
-    .limit(limit * 3);
-  if (force) return top.slice(0, limit).map((t) => t.tag);
-  const fresh = new Set(
-    (
-      await db
-        .select({ tag: tagPeople.tag })
-        .from(tagPeople)
-        .where(
-          and(
-            inArray(
-              tagPeople.tag,
-              top.map((t) => t.tag),
-            ),
-            gte(tagPeople.checkedAt, sql`NOW() - INTERVAL ${RECHECK_DAYS} DAY`),
-          ),
-        )
-    ).map((r) => r.tag),
-  );
-  return top
-    .map((t) => t.tag)
-    .filter((t) => !fresh.has(t))
-    .slice(0, limit);
+  const ranked = await db
+    .select({ tag: tagStats.tag })
+    .from(tagStats)
+    .where(and(eq(tagStats.category, 'news'), eq(tagStats.level, 3), gte(tagStats.lastHour, since)))
+    .orderBy(desc(tagStats.hoursCount))
+    .limit(5000);
+  const fresh = force
+    ? new Set<string>()
+    : new Set(
+        (
+          await db
+            .select({ tag: tagPeople.tag })
+            .from(tagPeople)
+            .where(gte(tagPeople.checkedAt, new Date(Date.now() - RECHECK_DAYS * 86_400_000)))
+        ).map((r) => r.tag),
+      );
+  return [...new Set(ranked.map((r) => r.tag))].filter((t) => !fresh.has(t)).slice(0, limit);
 }
