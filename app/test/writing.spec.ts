@@ -136,6 +136,11 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
     expect((await app.inject({ url: `/api/v1/articles/${ids[0]}/writing` })).json().social.role).toBe('評論名嘴');
     const listed = await app.inject({ url: '/auth/admin/writing/people', headers: { cookie: 'tag_session=admin' } });
     expect(listed.json().log[0]).toMatchObject({ name: '沈小明', before: null, after: '評論名嘴' });
+    // The list shows each poster's most common role and the split, not an arbitrary one.
+    expect(listed.json().posters.find((p: { name: string }) => p.name === '沈小明')).toMatchObject({
+      role: '評論名嘴',
+      roles: [{ role: '評論名嘴', n: 1 }],
+    });
     expect((await put('沈小明', { role: null })).json().relabelled).toBe(1);
     expect((await app.inject({ url: `/api/v1/articles/${ids[0]}/writing` })).json().social.role).toBe('未知');
   });

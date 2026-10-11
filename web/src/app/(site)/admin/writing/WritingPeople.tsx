@@ -8,12 +8,23 @@ import AdminGate, { adminFetch, note } from '../AdminGate';
 // applies to every analysed article naming that poster and is logged
 // (app/src/writing/admin.ts).
 
-type Poster = { name: string; role: Role; articles: number; outlets: number; source: 'auto' | 'admin' | null; note: string | null };
+type Poster = {
+  name: string;
+  /** The most common role among the poster's articles; roles has the split. */
+  role: Role;
+  roles: Array<{ role: Role; n: number }>;
+  /** What decided most of them: clause = the article's own words, people = the name list. */
+  basis: 'clause' | 'people' | null;
+  articles: number;
+  outlets: number;
+  source: 'auto' | 'admin' | null;
+  note: string | null;
+};
 type LogRow = { id: number; name: string; before: Role | null; after: Role | null; note: string; email: string; at: string };
 const EDITABLE = ROLES.filter((r) => r !== '未知');
 const when = (iso: string) => new Date(iso).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'short', timeStyle: 'short' });
 const sourceLabel = (p: Poster) =>
-  p.source === 'admin' ? '管理員修正' : p.source === 'auto' ? '名字對照' : p.role === '未知' ? '—' : '句中頭銜';
+  p.source === 'admin' ? '管理員修正' : p.basis === 'clause' ? '文中頭銜' : p.basis === 'people' ? '名字對照' : '—';
 
 export default function WritingPeople() {
   return (
@@ -124,6 +135,11 @@ function Row({ poster, onSaved }: { poster: Poster; onSaved: () => void }) {
       <td className="py-2 pr-3 text-right tabular-nums">{poster.articles}</td>
       <td className="py-2 pr-3">
         {ROLE_LABEL[poster.role] ?? poster.role}
+        {poster.roles.length > 1 && (
+          <span className="block text-xs text-zinc-500">
+            {poster.roles.map((r) => `${ROLE_LABEL[r.role] ?? r.role} ${r.n}`).join('・')}
+          </span>
+        )}
         <span className="block text-xs text-zinc-500">
           {sourceLabel(poster)}
           {poster.note ? `：${poster.note}` : ''}

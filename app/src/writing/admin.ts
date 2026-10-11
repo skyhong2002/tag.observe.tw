@@ -35,13 +35,50 @@ export function registerWritingAdmin(app: FastifyInstance, db: Db, { requireAdmi
     reply.header('cache-control', 'no-store');
     const since = taipeiDay(new Date(Date.now() - 30 * 86400e3));
     const q = typeof request.query.q === 'string' ? request.query.q.trim().slice(0, 40) : '';
-    const [posters] = await db.execute(sql`
-      SELECT w.poster AS name, MAX(w.role) AS role, COUNT(*) AS articles, COUNT(DISTINCT w.media) AS outlets,
-        MAX(p.source) AS source, MAX(p.note) AS note
+    // One row per poster and role: a poster's articles can carry different
+    // roles (by the article's own words), so the list shows the most common one
+    // and the split, never an arbitrary pick.
+    const [rows] = await db.execute(sql`
+      SELECT w.poster AS name, w.role, w.role_source AS basis, COUNT(*) AS n
+      FROM article_writing w
+      WHERE w.day >= ${since} AND w.poster IS NOT NULL AND w.role <> '網友民眾'
+        ${q ? sql`AND w.poster LIKE ${`%${q}%`}` : sql``}
+      GROUP BY w.poster, w.role, w.role_source`);
+    const [outletRows] = await db.execute(sql`
+      SELECT w.poster AS name, COUNT(DISTINCT w.media) AS outlets, MAX(p.source) AS source, MAX(p.note) AS note
       FROM article_writing w LEFT JOIN writing_people p ON p.name = w.poster
       WHERE w.day >= ${since} AND w.poster IS NOT NULL AND w.role <> '網友民眾'
         ${q ? sql`AND w.poster LIKE ${`%${q}%`}` : sql``}
-      GROUP BY w.poster ORDER BY articles DESC LIMIT 200`);
+      GROUP BY w.poster`);
+    const extra = new Map(
+      (outletRows as unknown as Array<{ name: string; outlets: number; source: string | null; note: string | null }>).map((r) => [
+        r.name,
+        r,
+      ]),
+    );
+    const byName = new Map<string, { roles: Map<string, number>; bases: Map<string, number>; articles: number }>();
+    for (const r of rows as unknown as Array<{ name: string; role: string; basis: string | null; n: number }>) {
+      const e = byName.get(r.name) ?? { roles: new Map(), bases: new Map(), articles: 0 };
+      const n = Number(r.n);
+      e.articles += n;
+      e.roles.set(r.role, (e.roles.get(r.role) ?? 0) + n);
+      e.bases.set(r.basis ?? '', (e.bases.get(r.basis ?? '') ?? 0) + n);
+      byName.set(r.name, e);
+    }
+    const top = <K>(m: Map<K, number>) => [...m].sort((a, b) => b[1] - a[1]);
+    const posters = [...byName]
+      .sort((a, b) => b[1].articles - a[1].articles)
+      .slice(0, 200)
+      .map(([name, e]) => ({
+        name,
+        role: top(e.roles)[0][0],
+        roles: top(e.roles).map(([role, n]) => ({ role, n })),
+        basis: top(e.bases)[0][0] || null,
+        articles: e.articles,
+        outlets: Number(extra.get(name)?.outlets ?? 0),
+        source: extra.get(name)?.source ?? null,
+        note: extra.get(name)?.note ?? null,
+      }));
     const log = await db.select().from(writingPeopleLog).orderBy(desc(writingPeopleLog.id)).limit(30);
     return { since, posters, log };
   });
