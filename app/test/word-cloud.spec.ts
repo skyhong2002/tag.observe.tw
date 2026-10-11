@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutWordCloud, SQUARE } from '../../web/src/lib/word-cloud.mts';
+import { layoutWordCloud, pictureBox } from '../../web/src/lib/word-cloud.mts';
 
 describe('word-cloud packing', () => {
   it('lays out mixed scripts deterministically without overlaps or clipped boxes', () => {
@@ -90,14 +90,17 @@ describe('word-cloud size range', () => {
     }
   });
 
-  it('packs a person drawn as a sketch into a square among the words', () => {
+  it('packs a person drawn as a sketch, with the name under it, among the words', () => {
     const terms = Array.from({ length: 30 }, (_, i) => ({ label: `人物${i}號`, count: 30 - i, square: i % 5 === 0 }));
     const placed = layoutWordCloud(terms, 680, 280, { min: 11, max: 36 });
     const squares = placed.filter((w) => w.square);
     expect(squares.length).toBeGreaterThan(3);
     for (const w of squares) {
-      expect(w.width).toBe(w.height);
-      expect(w.width).toBeCloseTo(w.fontSize * SQUARE);
+      // The face's square plus a line for the name under it.
+      const box = pictureBox(w.label, w.fontSize);
+      expect(w.width).toBeCloseTo(box.width);
+      expect(w.height).toBeCloseTo(box.height);
+      expect(w.height).toBeGreaterThan(box.side);
     }
     for (const w of placed.filter((p) => !p.square)) expect(w.height).toBeCloseTo(w.fontSize * 1.6);
     for (const [i, a] of placed.entries())

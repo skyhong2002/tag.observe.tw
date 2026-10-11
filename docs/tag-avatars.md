@@ -32,7 +32,7 @@ node --env-file=.env tools/tag-avatars.ts --top 100       # 最近 7 天上過�
 
 ## 管理與 API
 
-- 首頁升溫文字雲（`web/src/app/_home/MastheadCloud.tsx`）把前 30 個升溫詞中有頭像的前 6 位畫成頭像（`/api/v1/tag-avatars`），只畫臉、不寫名字；排版時佔一個邊長 2.2 倍字級的正方形（約等於三個字的面積），滑過或點一下仍顯示名字與數字卡。
+- 首頁升溫文字雲（`web/src/app/_home/MastheadCloud.tsx`）把前 30 個升溫詞中有頭像的前 6 位畫成頭像（`/api/v1/tag-avatars`），臉下方以小字（臉寬的 0.17 倍）寫名字；排版時佔一個邊長 2.2 倍字級的正方形（約等於三個字的面積）加一行小字，滑過或點一下仍顯示數字卡。
 
 - `/admin/avatars/`：依狀態列出人物標籤，每人最多三張候選與分數；點候選圖改用那一張，「不顯示頭像」隱藏。每次變更寫入 `tag_people_log`。
 - 公開：`GET /api/v1/tags/{tag}/person`（人物、身分、頭像網址與授權）、`GET /api/v1/tags/{tag}/avatar`（WebP），見 [api.md](api.md)。

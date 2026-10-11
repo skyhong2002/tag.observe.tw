@@ -22,8 +22,22 @@ export interface PlacedWord extends CloudTerm {
 
 /** A picture's side, in font sizes: about the area of a three-character name (3 × 1.6). */
 export const SQUARE = 2.2;
-const boxOf = (term: CloudTerm, size: number): [number, number] =>
-  term.square ? [size * SQUARE, size * SQUARE] : [widthOf(term.label, size), size * 1.6];
+/** The name under a picture, in picture sides: its font size, and the line it takes. */
+export const CAPTION = 0.17;
+/** …but never smaller than this, in viewBox units, so a small face's name stays legible. */
+const CAPTION_MIN = 8.5;
+const CAPTION_LINE = 1.35;
+/** A picture with its name under it: the square, widened if the name is longer. */
+export const pictureBox = (label: string, size: number) => {
+  const side = size * SQUARE;
+  const caption = Math.max(side * CAPTION, CAPTION_MIN);
+  return { side, caption, width: Math.max(side, widthOf(label, caption)), height: side + caption * CAPTION_LINE };
+};
+const boxOf = (term: CloudTerm, size: number): [number, number] => {
+  if (!term.square) return [widthOf(term.label, size), size * 1.6];
+  const { width, height } = pictureBox(term.label, size);
+  return [width, height];
+};
 const widthOf = (label: string, size: number) =>
   Array.from(label).reduce(
     (n, char) => n + (/[^\u0000-\u00ff]/.test(char) ? 1 : /[ilI.,: ]/.test(char) ? 0.35 : /[MW@]/.test(char) ? 0.95 : 0.66),
