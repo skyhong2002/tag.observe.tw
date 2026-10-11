@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
+import { inkImage } from '../src/avatars/ink.ts';
 import { judge, MIN_FACE, quality } from '../src/avatars/portrait.ts';
 import { shotName } from '../src/avatars/run.ts';
 import { type Face, keepLargest, laplacianVariance, similarity } from '../src/avatars/vision.ts';
@@ -79,6 +80,30 @@ describe('photo rules', () => {
     expect(shotName('Lee Da-hye in Nan Ji Chang Night Market (cropped).jpg')).toBe(shotName('Lee Da-hye in Nan Ji Chang Night Market.jpg'));
     expect(shotName('柯文哲 IMG 9322-1 (cropped 2).jpg')).toBe(shotName('柯文哲 IMG 9322-1 (cropped).JPG'));
     expect(shotName('賴清德總統 1.jpg')).not.toBe(shotName('賴清德總統 2.jpg'));
+  });
+
+  it('sinks the painted sketch to the bottom edge, so the name sits right under the shoulders', async () => {
+    // A photo cut off at the chest: the person fills only the top half of the square.
+    const half = await sharp(
+      Buffer.alloc(16 * 16 * 4).map((_, i) => (Math.floor(i / 4 / 16) < 8 ? (i % 4 === 3 ? 120 : 255) : 0)),
+      { raw: { width: 16, height: 16, channels: 4 } },
+    )
+      .webp({ lossless: true, exact: true })
+      .toBuffer();
+    const rows = async (layer: 'color' | 'ink') => {
+      const px = await sharp(await inkImage(half, layer))
+        .ensureAlpha()
+        .raw()
+        .toBuffer();
+      return [px[3], px[15 * 16 * 4 + 3]];
+    };
+    const [colorTop, colorBottom] = await rows('color');
+    expect(colorTop).toBe(0);
+    expect(colorBottom).toBeGreaterThan(200);
+    // The tag page's mask layers keep the original framing.
+    const [inkTop, inkBottom] = await rows('ink');
+    expect(inkTop).toBeGreaterThan(100);
+    expect(inkBottom).toBe(0);
   });
 
   it('keeps only the largest region of a mask', () => {

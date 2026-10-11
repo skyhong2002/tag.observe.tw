@@ -15,6 +15,24 @@ const ORANGE = [245, 73, 0];
  * person, transparent around), one picture for places that cannot mask, such
  * as the home page cloud's SVG.
  */
+/**
+ * Move the picture down so the person's shoulders touch the bottom edge: a
+ * photo cut off at the chest leaves the bottom of the crop empty, which under
+ * the home cloud put a gap between the face and its name.
+ */
+function sinkToBottom(px: Uint8Array, width: number, height: number) {
+  let last = height - 1;
+  const visible = (row: number) => {
+    for (let x = 0; x < width; x++) if (px[(row * width + x) * 4 + 3] > 24) return true;
+    return false;
+  };
+  while (last > 0 && !visible(last)) last--;
+  const shift = height - 1 - last;
+  if (!shift || last <= 0) return;
+  px.copyWithin(shift * width * 4, 0, (last + 1) * width * 4);
+  px.fill(0, 0, shift * width * 4);
+}
+
 export async function inkImage(stored: Buffer, layer: AvatarLayer) {
   const { data, info } = await sharp(stored).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = new Uint8Array(info.width * info.height * 4);
@@ -32,6 +50,7 @@ export async function inkImage(stored: Buffer, layer: AvatarLayer) {
     for (let c = 0; c < 3; c++) out[i * 4 + c] = alpha ? Math.round((ORANGE[c] * a + 255 * f * (1 - a)) / alpha) : 0;
     out[i * 4 + 3] = Math.round(alpha * 255);
   }
+  if (layer === 'color') sinkToBottom(out, info.width, info.height);
   return sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } })
     .webp({ quality: 85, alphaQuality: 90 })
     .toBuffer();

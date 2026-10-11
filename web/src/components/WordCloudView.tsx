@@ -150,7 +150,7 @@ function Canvas({
             >
               <rect x={word.x - 1} y={word.y - 1} width={word.width + 2} height={word.height + 2} rx="3" />
               {w.image ? (
-                <Sketch url={w.image} word={word} />
+                <Sketch url={w.image} word={word} tone={tones[w.tone ?? 'strong']} />
               ) : (
                 <text
                   x={word.x + 2}
@@ -215,20 +215,14 @@ function Canvas({
  * (?layer=color: orange strokes on the white person), so it reads the same on
  * light and dark pages without SVG masks.
  */
-function Sketch({ url, word }: { url: string; word: PlacedBox }) {
+function Sketch({ url, word, tone }: { url: string; word: PlacedBox; tone: string }) {
   const { side, caption } = pictureBox(word.label, word.fontSize);
   const x = word.x + (word.width - side) / 2;
   return (
     <>
       <image href={`${url}${url.includes('?') ? '&' : '?'}layer=color`} x={x} y={word.y} width={side} height={side} />
-      {/* The name in small type under the face. */}
-      <text
-        x={word.x + word.width / 2}
-        y={word.y + side + caption * 1.05}
-        fontSize={caption}
-        textAnchor="middle"
-        className="fill-zinc-600 dark:fill-zinc-400"
-      >
+      {/* The name in small type under the face, in the word's own colour. */}
+      <text x={word.x + word.width / 2} y={word.y + side + caption * 1.05} fontSize={caption} textAnchor="middle" className={tone}>
         {word.label}
       </text>
     </>
