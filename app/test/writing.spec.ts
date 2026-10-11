@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { articles, articleTags, articleWriting } from '../src/db/schema.ts';
+import { articles, articleWriting } from '../src/db/schema.ts';
 import { runWritingJob, runWritingPeopleJob } from '../src/jobs/writing-job.ts';
 import { VERSION } from '../src/writing/rules.ts';
 
@@ -40,6 +40,8 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
     const bodies = [
       ['名醫看了反應驚人', '精神科醫師沈小明10日在臉書貼文表示，致詞罵得太好。'],
       ['邱九十發文', '邱九十今天在臉書發文質疑。'],
+      ['周十一發文', '周十一今天在臉書發文。'],
+      ['學生發文', '有學生深夜在臉書發文。'],
       ['颱風動態', '颱風今天接近，氣象署發布海上警報。'],
       ...[1, 2, 3].map((i) => [`前立委談選情${i}`, `前立委邱九十${i}日接受專訪時說明。`]),
     ];
@@ -56,9 +58,15 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
         source: 'own',
       })),
     );
-    ids = (await db.select({ id: articles.id }).from(articles).where(sql`url LIKE 'https://writing.test/%'`)).map((r) => r.id);
-    await db.delete(articleTags).where(sql`tag = '邱九十'`);
-    await db.insert(articleTags).values({ articleId: ids[0], tag: '邱九十', publishedAt: now });
+    ids = (await db.select({ id: articles.id }).from(articles).where(sql`url LIKE 'https://writing.test/%'`).orderBy(articles.id)).map(
+      (r) => r.id,
+    );
+    // Only known people get a learned role: 邱九十 by the text, 周十一 by group.
+    await db.execute(sql`DELETE FROM tag_group_members WHERE group_id = 9901`);
+    await db.execute(sql`DELETE FROM tag_group_defs WHERE id = 9901`);
+    await db.execute(sql`INSERT INTO tag_group_defs (id, label, kind, sort, created_at) VALUES (9901, '名嘴', 'group', 0, NOW())`);
+    await db.execute(sql`INSERT INTO tag_group_members (tag, group_id, source, status, updated_at)
+      VALUES ('邱九十', 9901, 'admin', 'confirmed', NOW()), ('周十一', 9901, 'admin', 'confirmed', NOW())`);
     app = await buildApp(
       {
         tagDbUrl: null,
@@ -74,7 +82,8 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
     await app?.close();
     if (ids.length) {
       await db.delete(articles).where(inArray(articles.id, ids));
-      await db.delete(articleTags).where(sql`tag = '邱九十'`);
+      await db.execute(sql`DELETE FROM tag_group_members WHERE group_id = 9901`);
+      await db.execute(sql`DELETE FROM tag_group_defs WHERE id = 9901`);
     }
     await close?.();
   });
@@ -82,7 +91,7 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
   it('analyses bodies, resolves bare names and serves the result', async () => {
     const first = await runWritingJob(db);
     // Other specs leave bodies in the shared test database; count only ours below.
-    expect(first.articles).toBeGreaterThanOrEqual(6);
+    expect(first.articles).toBeGreaterThanOrEqual(8);
     expect((await runWritingJob(db)).articles).toBe(0);
     // Datetimes stay in UTC end to end (raw rows would come back as local-time strings).
     const [stored] = await db.select().from(articleWriting).where(eq(articleWriting.articleId, ids[0]));
@@ -98,7 +107,12 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
     const bare = await app.inject({ url: `/api/v1/articles/${ids[1]}/writing` });
     expect(bare.json().social).toMatchObject({ poster: '邱九十', role: '未知' });
 
-    expect(await runWritingPeopleJob(db)).toMatchObject({ resolved: 1, relabelled: 1 });
+    expect(await runWritingPeopleJob(db)).toMatchObject({ resolved: 2, relabelled: 2 });
+    expect((await app.inject({ url: `/api/v1/articles/${ids[2]}/writing` })).json().social).toMatchObject({
+      poster: '周十一',
+      role: '評論名嘴',
+    });
+    expect((await app.inject({ url: `/api/v1/articles/${ids[3]}/writing` })).json().social.poster).toBeNull();
     expect((await app.inject({ url: `/api/v1/articles/${ids[1]}/writing` })).json().social).toMatchObject({
       role: '前任公職',
       roleSource: 'people',
@@ -106,7 +120,7 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
 
     const overview = (await app.inject({ url: '/api/v1/writing?days=7' })).json();
     expect(overview.totals.social).toBeGreaterThanOrEqual(2);
-    expect(overview.posters.map((p: { name: string }) => p.name)).toEqual(expect.arrayContaining(['沈小明', '邱九十']));
+    expect(overview.posters.map((p: { name: string }) => p.name)).toEqual(expect.arrayContaining(['沈小明', '邱九十', '周十一']));
     const list = (await app.inject({ url: '/api/v1/writing/articles?role=醫療健康&poster=沈小明' })).json();
     expect(list.articles.map((a: { id: number }) => a.id)).toEqual([ids[0]]);
     const media = (await app.inject({ url: '/api/v1/media/chinatimes/writing?days=7' })).json();

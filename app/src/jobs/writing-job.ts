@@ -8,10 +8,19 @@ import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql } from 'driz
 import type { Pool } from 'mysql2/promise';
 import { BODY_RETENTION_MS } from '../article-retention.ts';
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, articleWriting, jobRuns, writingPeople } from '../db/schema.ts';
+import { articles, articleWriting, jobRuns, tagGroupDefs, tagGroupMembers, tagPeople, writingPeople } from '../db/schema.ts';
 import { taipeiDay } from '../v1/event-archive.ts';
 import { analyzeArticle } from '../writing/analyze.ts';
-import { lookupPerson, nameMatcher, type Person, resolveTally, type Tally, tallyMentions } from '../writing/people.ts';
+import {
+  groupRole,
+  lookupPerson,
+  nameMatcher,
+  PERSON_GROUPS,
+  type Person,
+  resolveTally,
+  type Tally,
+  tallyMentions,
+} from '../writing/people.ts';
 import { nameCandidates, type Role, VERSION } from '../writing/rules.ts';
 
 const CHUNK = 500;
@@ -169,13 +178,13 @@ export async function runWritingPeopleJob(db: Db, { now = () => new Date(), log 
           await yieldToLoop();
         }
       }
-      const tagRows = tally.size
-        ? await db
-            .selectDistinct({ tag: articleTags.tag })
-            .from(articleTags)
-            .where(and(inArray(articleTags.tag, [...tally.keys()].slice(0, 20000)), gt(articleTags.publishedAt, since)))
-        : [];
-      const resolved = resolveTally(tally, new Set(tagRows.map((r) => r.tag)));
+      const { persons, groups } = await knownPeople(db, runs.flatMap(nameCandidates));
+      const resolved = resolveTally(tally, persons);
+      // People the text does not settle still get the role of their person groups.
+      for (const [name, labels] of groups) {
+        const role = resolved.has(name) ? null : groupRole(labels);
+        if (role) resolved.set(name, { name, role, hits: 0, total: 0, note: `分組：${labels.join('、')}` });
+      }
       const people = await loadPeople(db);
       const updatedAt = now();
       const fresh = [...resolved.values()].filter((r) => people.get(r.name)?.source !== 'admin');
@@ -183,19 +192,76 @@ export async function runWritingPeopleJob(db: Db, { now = () => new Date(), log 
         await db
           .insert(writingPeople)
           .values(
-            fresh
-              .slice(i, i + CHUNK)
-              .map((r) => ({ name: r.name, role: r.role, source: 'auto' as const, hits: r.hits, total: r.total, updatedAt })),
+            fresh.slice(i, i + CHUNK).map((r) => ({
+              name: r.name,
+              role: r.role,
+              source: 'auto' as const,
+              hits: r.hits,
+              total: r.total,
+              note: r.note ?? null,
+              updatedAt,
+            })),
           )
           .onDuplicateKeyUpdate({
-            set: { role: sql`VALUES(role)`, hits: sql`VALUES(hits)`, total: sql`VALUES(total)`, updatedAt: sql`VALUES(updated_at)` },
+            set: {
+              role: sql`VALUES(role)`,
+              hits: sql`VALUES(hits)`,
+              total: sql`VALUES(total)`,
+              note: sql`VALUES(note)`,
+              updatedAt: sql`VALUES(updated_at)`,
+            },
           });
       }
+      // Learned entries for words that are not people (「深夜」「學生」) go.
+      await db.execute(sql`DELETE p FROM writing_people p
+        WHERE p.source = 'auto'
+          AND NOT EXISTS (SELECT 1 FROM tag_people t WHERE t.tag = p.name AND t.wikidata_id IS NOT NULL)
+          AND NOT EXISTS (SELECT 1 FROM tag_group_members m JOIN tag_group_defs d ON d.id = m.group_id
+            WHERE m.tag = p.name AND m.status IN ('auto', 'confirmed') AND d.deleted_at IS NULL
+              AND d.label IN (${sql.join(
+                PERSON_GROUPS.map((g) => sql`${g}`),
+                sql`, `,
+              )}))`);
       for (const r of fresh) people.set(r.name, { role: r.role, source: 'auto' });
       const relabelled = await relabel(db, open as Array<{ articleId: number; poster: string }>, people);
       return { names: runs.length, resolved: fresh.length, relabelled, skipped: false };
     }),
   );
+}
+
+/**
+ * Which names are people: tags in a person group (tag-groups) or matched to a
+ * Wikidata human (tag_people), with the person groups each tag is filed in.
+ */
+export async function knownPeople(db: Db, names: string[]) {
+  const persons = new Set<string>();
+  const groups = new Map<string, string[]>();
+  const list = [...new Set(names)];
+  for (let i = 0; i < list.length; i += CHUNK) {
+    const chunk = list.slice(i, i + CHUNK);
+    const filed = await db
+      .select({ tag: tagGroupMembers.tag, label: tagGroupDefs.label })
+      .from(tagGroupMembers)
+      .innerJoin(tagGroupDefs, eq(tagGroupDefs.id, tagGroupMembers.groupId))
+      .where(
+        and(
+          inArray(tagGroupMembers.tag, chunk),
+          inArray(tagGroupMembers.status, ['auto', 'confirmed']),
+          isNull(tagGroupDefs.deletedAt),
+          inArray(tagGroupDefs.label, PERSON_GROUPS),
+        ),
+      );
+    for (const r of filed) {
+      persons.add(r.tag);
+      groups.set(r.tag, [...(groups.get(r.tag) ?? []), r.label]);
+    }
+    const humans = await db
+      .select({ tag: tagPeople.tag })
+      .from(tagPeople)
+      .where(and(inArray(tagPeople.tag, chunk), isNotNull(tagPeople.wikidataId)));
+    for (const r of humans) persons.add(r.tag);
+  }
+  return { persons, groups };
 }
 
 /** Applies person entries to rows still labelled 未知. */
