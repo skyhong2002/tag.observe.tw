@@ -194,6 +194,7 @@ for (const job of [
   'events',
   'retention',
   'tag-avatars',
+  'tag-avatar-photo',
   'tag-groups',
   'tag-visuals',
   'source-probe',
@@ -241,6 +242,14 @@ const worker = new Worker(
           log: (o, m) => log.info(o, m),
         });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      // An admin's photo for a person tag (docs/tag-avatars.md), from /admin/avatars/.
+      if (job.name === 'tag-avatar-photo') {
+        const r = await runTagAvatarsInChild({ signal: shutdown.signal, photo: job.data as { tag: string; image: string; email: string } });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        // The photo itself is not kept with the finished job.
+        await job.updateData({ ...(job.data as object), image: null });
         return r;
       }
       if (job.name === 'tag-avatars') {

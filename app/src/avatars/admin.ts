@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import sharp from 'sharp';
+import type { JobQueue } from '../admin/routes.ts';
 import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
 import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog } from '../db/schema.ts';
@@ -7,12 +9,20 @@ import { inkImage } from './ink.ts';
 
 // /admin/avatars/: admins look over person tags and their sketch avatars,
 // switch to another of the three candidates or hide the avatar
-// (docs/tag-avatars.md). Every change is logged in tag_people_log.
+// (docs/tag-avatars.md). Every change is logged in tag_people_log. For a
+// person Commons has no usable photo of, an admin uploads one: the gateway
+// only shrinks it and queues it, and the worker sketches it in its own
+// process (the face models do not belong in the gateway).
 
 type Options = {
   requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<SessionUser | null>;
   origin: string;
+  queue: () => JobQueue;
 };
+
+// A phone photo, base64 in JSON: up to about 11 MB of image.
+const PHOTO_LIMIT = 15 * 1024 * 1024;
+const PHOTO_JOB = 'tag-avatar-photo';
 
 const STATUSES: TagPersonStatus[] = ['review', 'auto', 'chosen', 'hidden', 'nophoto'];
 const PAGE = 60;
@@ -20,8 +30,9 @@ const PAGE = 60;
 const imagePath = (tag: string, rank: number, version: number) =>
   `/auth/admin/avatars/${encodeURIComponent(tag)}/candidates/${rank}?v=${version.toString(36)}`;
 
-export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin }: Options) {
-  app.get<{ Querystring: { status?: string; offset?: string } }>('/auth/admin/avatars', async (request, reply) => {
+export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin, queue }: Options) {
+  // ?tag= looks one person tag up (the tag page's 「換圖」 link).
+  app.get<{ Querystring: { status?: string; offset?: string; tag?: string } }>('/auth/admin/avatars', async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return reply;
     reply.header('cache-control', 'no-store');
     const status = STATUSES.find((s) => s === request.query.status) ?? 'review';
@@ -35,7 +46,7 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
     const people = await db
       .select()
       .from(tagPeople)
-      .where(eq(tagPeople.status, status))
+      .where(request.query.tag?.trim() ? eq(tagPeople.tag, request.query.tag.trim()) : eq(tagPeople.status, status))
       .orderBy(desc(tagPeople.checkedAt), asc(tagPeople.tag))
       .limit(PAGE)
       .offset(offset);
@@ -123,5 +134,47 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
         .values({ tag, action: rank === null ? 'hide' : 'show', fromRank: person.shownRank, toRank: rank, email: user.email, at });
     });
     return { tag, ...set };
+  });
+
+  // { image: base64 } → a queued sketch job; poll GET /auth/admin/avatars/jobs/:id.
+  app.post<{ Params: { tag: string }; Body: { image?: unknown } }>(
+    '/auth/admin/avatars/:tag/photo',
+    { bodyLimit: PHOTO_LIMIT },
+    async (request, reply) => {
+      if (request.headers.origin !== origin) {
+        reply.header('cache-control', 'no-store').code(403).send({ error: 'same-origin requests only' });
+        return reply;
+      }
+      const user = await requireAdmin(request, reply);
+      if (!user) return reply;
+      const { tag } = request.params;
+      const [person] = await db.select({ tag: tagPeople.tag }).from(tagPeople).where(eq(tagPeople.tag, tag));
+      if (!person) return reply.code(404).send({ error: '這個標籤還沒比對到人物' });
+      const raw = typeof request.body?.image === 'string' ? Buffer.from(request.body.image, 'base64') : null;
+      if (!raw?.length) return reply.code(400).send({ error: 'image (base64) required' });
+      // The size the Commons photos come in (1200px), so the face rules mean the same.
+      let photo: Buffer;
+      try {
+        photo = await sharp(raw).rotate().resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 92 }).toBuffer();
+      } catch (err) {
+        return reply.code(400).send({ error: `讀不了這張圖：${(err as Error).message}` });
+      }
+      const job = await queue().add(
+        PHOTO_JOB,
+        { tag, image: photo.toString('base64'), email: user.email },
+        { jobId: `${PHOTO_JOB}-${Date.now()}`, removeOnComplete: { age: 86400 }, removeOnFail: { age: 86400 } },
+      );
+      return reply.code(202).send({ jobId: job.id });
+    },
+  );
+
+  app.get<{ Params: { id: string } }>('/auth/admin/avatars/jobs/:id', async (request, reply) => {
+    if (!(await requireAdmin(request, reply))) return reply;
+    reply.header('cache-control', 'no-store');
+    if (!request.params.id.startsWith(`${PHOTO_JOB}-`)) return reply.code(404).send({ error: 'no such job' });
+    const job = await queue().getJob(request.params.id);
+    if (!job) return reply.code(404).send({ error: 'no such job' });
+    const result = (job.returnvalue ?? null) as { error?: string } | null;
+    return { id: job.id, state: await job.getState(), result, error: job.failedReason ?? result?.error ?? null };
   });
 }

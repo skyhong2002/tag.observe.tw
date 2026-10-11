@@ -144,6 +144,8 @@ const store: LoginStore = {
   },
 };
 
+const queued: { name: string; data: { tag: string; image: string; email: string }; id: string }[] = [];
+
 describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
   let db: Db;
   let close: () => Promise<void>;
@@ -204,7 +206,28 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
         rateLimit: false,
         login: { clientId: 'id', clientSecret: 'secret', origin: ORIGIN, admins: new Set(['admin@example.com']) },
       },
-      { db, loginStore: store, jobQueue: () => ({ add: async () => ({}), getJob: async () => null, getJobs: async () => [] }) },
+      {
+        db,
+        loginStore: store,
+        jobQueue: () => ({
+          add: async (name, data, opts) => {
+            queued.push({ name, data: data as { tag: string; image: string; email: string }, id: opts.jobId });
+            return { id: opts.jobId };
+          },
+          getJob: async (id) =>
+            id === queued[0]?.id
+              ? {
+                  id,
+                  name: 'tag-avatar-photo',
+                  data: {},
+                  returnvalue: { tag: '台北', error: '照片裡找不到臉' },
+                  timestamp: 0,
+                  getState: async () => 'completed',
+                }
+              : null,
+          getJobs: async () => [],
+        }),
+      },
     );
   });
   afterAll(async () => {
@@ -266,5 +289,29 @@ describe.skipIf(!url)('tag avatar routes (MariaDB)', () => {
       ['show', 1, 2],
       ['hide', 2, null],
     ]);
+  });
+
+  it('queues an admin photo for the worker and reports what became of it', async () => {
+    const post = (tag: string, payload: object, headers = as('admin')) =>
+      app.inject({ method: 'POST', url: `/auth/admin/avatars/${encodeURIComponent(tag)}/photo`, headers, payload });
+    const photo = await sharp({ create: { width: 3000, height: 2000, channels: 3, background: { r: 200, g: 180, b: 160 } } })
+      .png()
+      .toBuffer();
+    expect((await post('台北', { image: photo.toString('base64') }, as('reader'))).statusCode).toBe(403);
+    expect((await post('沒有這個人', { image: photo.toString('base64') })).statusCode).toBe(404);
+    expect((await post('台北', { image: 'bm90IGFuIGltYWdl' })).statusCode).toBe(400);
+    const res = await post('台北', { image: photo.toString('base64') });
+    expect(res.statusCode).toBe(202);
+    const [job] = queued;
+    expect(job).toMatchObject({ name: 'tag-avatar-photo', data: { tag: '台北', email: 'admin@example.com' } });
+    // Shrunk to the Commons photos' 1200px before it is queued.
+    const meta = await sharp(Buffer.from(job.data.image, 'base64')).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(['jpeg', 1200, 800]);
+    const status = (await app.inject({ url: `/auth/admin/avatars/jobs/${res.json().jobId}`, headers: as('admin', false) })).json();
+    expect(status).toMatchObject({ state: 'completed', error: '照片裡找不到臉' });
+    expect((await app.inject({ url: '/auth/admin/avatars/jobs/crawl-media-x', headers: as('admin', false) })).statusCode).toBe(404);
+    // ?tag= shows the one person, whatever its status.
+    const one = (await app.inject({ url: `/auth/admin/avatars?tag=${encodeURIComponent('台北')}`, headers: as('admin', false) })).json();
+    expect(one.people.map((p: { tag: string }) => p.tag)).toEqual(['台北']);
   });
 });

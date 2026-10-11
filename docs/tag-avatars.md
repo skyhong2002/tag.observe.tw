@@ -32,6 +32,16 @@ node --env-file=.env tools/tag-avatars.ts --top 100       # 最近 7 天上過�
 
 `--force` 連同管理員選定、隱藏過或 30 天內查過的標籤一起重跑。Wikimedia API 一律帶描述性 User-Agent，遇到 429／5xx 會退避重試。
 
+## 管理員上傳照片
+
+Commons 沒有可用照片的人（狀態 `nophoto`，例如照片都是雕像或臉太小），管理員可以在 `/admin/avatars/` 按「上傳照片」：
+
+- 閘道只把照片縮到 1200px（和 Commons 縮圖一樣大，臉的大小規則才一致）、轉成 JPEG，排進 worker 的 `tag-avatar-photo` 工作；人臉模型不在閘道裡跑。
+- worker 在子程序裡照同樣的規則找臉（找不到臉、臉太小、兩張差不多大的臉都會退回並說明原因）、去背、轉素描，存成下一個候選並直接改用（狀態 `chosen`），記在 `tag_people_log`。不比對是不是本人，由管理員負責選對照片。
+- 原照片不保存；工作完成後連工作資料裡的照片也清掉。標籤頁的來源寫「素描依管理員提供的照片」。
+- 頁面每 3 秒查一次工作狀態（`GET /auth/admin/avatars/jobs/:id`），通常一兩分鐘內完成。
+- 標籤頁標題旁的「換圖」：人物連到 `/admin/avatars/?tag=標籤`，其他標籤連到 `/admin/tag-visuals/?tag=標籤`。
+
 ## 管理與 API
 
 - 首頁升溫文字雲（`web/src/app/_home/MastheadCloud.tsx`）把前 30 個升溫詞中所有有頭像的人物畫成頭像（`/api/v1/tag-avatars`；非人物標籤的小圖也一樣畫，見 [tag-visuals.md](tag-visuals.md)），臉下方以小字（臉寬的 0.17 倍，與該詞同色）寫名字；`layer=color` 的圖把人物往下移到底邊，照片只拍到胸口時名字不會和肩膀隔一段空白；排版時佔一個邊長 2.2 倍字級的正方形（約等於三個字的面積）加一行小字，滑過或點一下仍顯示數字卡。

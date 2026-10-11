@@ -145,7 +145,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           ) : (
             person && <TagPerson person={person} />
           )}
-          {!person?.avatar && <AdminVisualLink tag={tag} has={!!visual} />}
+          <AdminVisualLink tag={tag} has={!!(person?.avatar ?? visual)} person={!!person?.avatar || (!!person && !visual)} />
           <TagGroupChips groups={groups} />
         </div>
         <div className="flex gap-1 text-sm">

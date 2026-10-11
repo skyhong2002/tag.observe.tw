@@ -141,7 +141,8 @@ export async function buildApp(
   if (own && config.login)
     registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
   if (own && config.login) registerTaiwanShares(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
-  if (own && config.login) registerAvatarAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
+  if (own && config.login)
+    registerAvatarAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
   if (own && config.login) registerWritingAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerTagGroupAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerTagVisualAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });

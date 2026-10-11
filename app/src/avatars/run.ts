@@ -1,6 +1,6 @@
-import { and, desc, eq, gte } from 'drizzle-orm';
+import { and, desc, eq, gte, max } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagStats } from '../db/schema.ts';
+import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog, tagStats } from '../db/schema.ts';
 import { selectDiscoveryEntries } from '../v1/ranking-discovery.ts';
 import { loadRanking } from '../v1/routes.ts';
 import { inspect, quality, renderAvatar, sameFace, sameShot, type Verdict } from './portrait.ts';
@@ -154,6 +154,57 @@ export const risingTags = (db: Db, limit = RISING) =>
         .map((e) => e.tag),
     )
     .catch(() => [] as string[]);
+
+/** Why an uploaded photo was turned down, in the admin's words. */
+export const PHOTO_REJECTED: Partial<Record<Verdict, string>> = {
+  noface: '照片裡找不到臉',
+  small: '臉太小（裁切後臉寬要至少 80px，請用比較近的照片）',
+  group: '照片裡有兩張差不多大的臉，請用只有這個人的照片',
+};
+
+/**
+ * An admin's own photo of a person tag, for people Commons has no usable
+ * photo of (docs/tag-avatars.md): the same face checks and sketch as a
+ * Commons photo, minus the identity check (the admin chose the person). It
+ * becomes the next candidate and is shown at once, as if chosen.
+ */
+export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: string) {
+  const [person] = await db.select({ shownRank: tagPeople.shownRank }).from(tagPeople).where(eq(tagPeople.tag, tag));
+  if (!person) return { tag, error: '這個標籤還沒比對到人物' };
+  const img = await decode(photo);
+  const insp = await inspect(img);
+  if (insp.verdict !== 'ok' && insp.verdict !== 'bystander') return { tag, error: PHOTO_REJECTED[insp.verdict] ?? insp.verdict };
+  const main = insp.main as NonNullable<typeof insp.main>;
+  const { score, parts } = quality(main, insp.aligned as Rgb, 1, insp.verdict);
+  const image = await renderAvatar(img, main);
+  const [{ top }] = await db
+    .select({ top: max(tagAvatarCandidates.rank) })
+    .from(tagAvatarCandidates)
+    .where(eq(tagAvatarCandidates.tag, tag));
+  const rank = (top ?? 0) + 1;
+  const at = new Date();
+  await db.transaction(async (tx) => {
+    await tx.insert(tagAvatarCandidates).values({
+      tag,
+      rank,
+      file: '管理員上傳',
+      pageUrl: '',
+      license: null,
+      licenseUrl: null,
+      artist: null,
+      score,
+      scores: parts,
+      verdict: insp.verdict,
+      image,
+    });
+    await tx
+      .update(tagPeople)
+      .set({ status: 'chosen', shownRank: rank, note: null, reviewedBy: email, reviewedAt: at })
+      .where(eq(tagPeople.tag, tag));
+    await tx.insert(tagPeopleLog).values({ tag, action: 'show', fromRank: person.shownRank, toRank: rank, email, at });
+  });
+  return { tag, rank, score, verdict: insp.verdict };
+}
 
 /**
  * The home page cloud's top rising tags, then tags that made the news ranking

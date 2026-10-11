@@ -46,7 +46,8 @@ export default function TagPerson({ person }: { person: Person }) {
           <a href={`https://www.wikidata.org/wiki/${person.wikidataId}`} className="underline" rel="noopener noreferrer" target="_blank">
             Wikidata
           </a>
-          {a && (
+          {a && !a.pageUrl && ' · 素描依管理員提供的照片'}
+          {a?.pageUrl && (
             <>
               {' · '}素描依
               <a href={a.pageUrl} className="mx-0.5 underline" rel="noopener noreferrer" target="_blank">

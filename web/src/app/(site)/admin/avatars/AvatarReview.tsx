@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { TagAvatar } from '@/components/TagPerson';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 
@@ -48,7 +48,8 @@ export default function AvatarReview() {
     <AdminGate next="/admin/avatars/">
       <p className={note}>
         標籤名稱正好是 Wikidata 上某位人物時，從 Wikimedia Commons 找照片、去背、轉成素描，自動用分數最高的一張，另外保留兩張候選。
-        「待確認」是分數偏低或有同名人物的標籤。點候選圖就會改用那一張；選定或隱藏後，之後重跑也不會覆蓋。
+        「待確認」是分數偏低或有同名人物的標籤。點候選圖就會改用那一張；選定或隱藏後，之後重跑也不會覆蓋。 Commons
+        沒有可用照片的人（「沒有可用照片」），可以「上傳照片」：一樣找臉、去背、轉素描後改用，原照片不保存。
       </p>
       <Review />
     </AdminGate>
@@ -60,14 +61,24 @@ function Review() {
   const [offset, setOffset] = useState(0);
   const [page, setPage] = useState<Page | null>(null);
   const [error, setError] = useState('');
+  // /admin/avatars/?tag=… (the tag page's 「換圖」 link) shows that one person.
+  const [only, setOnly] = useState('');
+  useEffect(() => {
+    setOnly(new URLSearchParams(window.location.search).get('tag')?.trim() ?? '');
+  }, []);
+  // Only the latest request may fill the page.
+  const latest = useRef(0);
   const load = useCallback(() => {
-    adminFetch<Page>(`/auth/admin/avatars?status=${status}&offset=${offset}`)
+    const id = ++latest.current;
+    const q = only ? `tag=${encodeURIComponent(only)}` : `status=${status}&offset=${offset}`;
+    adminFetch<Page>(`/auth/admin/avatars?${q}`)
       .then((p) => {
+        if (id !== latest.current) return;
         setPage(p);
         setError('');
       })
       .catch((e: Error) => setError(e.message));
-  }, [status, offset]);
+  }, [status, offset, only]);
   useEffect(load, [load]);
   const choose = async (tag: string, rank: number | null) => {
     try {
@@ -87,8 +98,10 @@ function Review() {
             onClick={() => {
               setStatus(key);
               setOffset(0);
+              setOnly('');
+              window.history.replaceState(null, '', window.location.pathname);
             }}
-            className={`min-h-9 rounded-full px-3 ${key === status ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'border border-zinc-300 dark:border-zinc-700'}`}
+            className={`min-h-9 rounded-full px-3 ${key === status && !only ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'border border-zinc-300 dark:border-zinc-700'}`}
           >
             {label}
             <span className="ml-1 tabular-nums opacity-70">{page?.counts[key] ?? 0}</span>
@@ -103,7 +116,7 @@ function Review() {
       ) : (
         <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
           {page.people.map((p) => (
-            <PersonRow key={p.tag} person={p} onChoose={choose} />
+            <PersonRow key={p.tag} person={p} onChoose={choose} onUploaded={load} />
           ))}
         </ul>
       )}
@@ -131,7 +144,15 @@ function Review() {
   );
 }
 
-function PersonRow({ person: p, onChoose }: { person: Person; onChoose: (tag: string, rank: number | null) => void }) {
+function PersonRow({
+  person: p,
+  onChoose,
+  onUploaded,
+}: {
+  person: Person;
+  onChoose: (tag: string, rank: number | null) => void;
+  onUploaded: () => void;
+}) {
   const shown = p.status === 'hidden' || p.status === 'nophoto' ? null : p.shownRank;
   return (
     <li className="py-4">
@@ -174,16 +195,20 @@ function PersonRow({ person: p, onChoose }: { person: Person; onChoose: (tag: st
                 {c.verdict === 'bystander' && ' · 旁有他人'}
                 {shown === c.rank && ' · 使用中'}
               </span>
-              <a
-                href={c.pageUrl}
-                className="block truncate text-zinc-500 underline"
-                rel="noopener noreferrer"
-                target="_blank"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {c.license ?? '原圖'}
-                {c.artist ? ` · ${c.artist}` : ''}
-              </a>
+              {c.pageUrl ? (
+                <a
+                  href={c.pageUrl}
+                  className="block truncate text-zinc-500 underline"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {c.license ?? '原圖'}
+                  {c.artist ? ` · ${c.artist}` : ''}
+                </a>
+              ) : (
+                <span className="block truncate text-zinc-500">{c.file}</span>
+              )}
             </button>
           ))}
           {shown !== null && (
@@ -197,6 +222,70 @@ function PersonRow({ person: p, onChoose }: { person: Person; onChoose: (tag: st
           )}
         </div>
       )}
+      <PhotoUpload tag={p.tag} onDone={onUploaded} />
     </li>
+  );
+}
+
+type PhotoJob = { state: string; error: string | null };
+
+/**
+ * An admin's own photo, for people Commons has no usable photo of: the
+ * worker finds the face, cuts the person out and sketches it like a Commons
+ * photo, then shows it. Takes a minute or two; this polls until it is done.
+ */
+function PhotoUpload({ tag, onDone }: { tag: string; onDone: () => void }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'working'>('idle');
+  const [message, setMessage] = useState('');
+  const upload = async (file: File) => {
+    setState('sending');
+    setMessage('');
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const { jobId } = await adminFetch<{ jobId: string }>(`/auth/admin/avatars/${encodeURIComponent(tag)}/photo`, {
+        method: 'POST',
+        body: { image: btoa(binary) },
+      });
+      setState('working');
+      for (;;) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const job = await adminFetch<PhotoJob>(`/auth/admin/avatars/jobs/${encodeURIComponent(jobId)}`);
+        if (job.state === 'completed' || job.state === 'failed') {
+          setState('idle');
+          if (job.error) setMessage(`沒有用上：${job.error}`);
+          else {
+            setMessage('已轉成素描並改用。');
+            onDone();
+          }
+          return;
+        }
+      }
+    } catch (e) {
+      setState('idle');
+      setMessage((e as Error).message);
+    }
+  };
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+      <label
+        className={`inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-3 hover:border-brand-600 dark:border-zinc-700 ${state === 'idle' ? 'cursor-pointer' : 'pointer-events-none opacity-60'}`}
+      >
+        {state === 'idle' ? '上傳照片' : state === 'sending' ? '上傳中…' : '轉素描中…（約一兩分鐘）'}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          disabled={state !== 'idle'}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) upload(file);
+            e.target.value = '';
+          }}
+        />
+      </label>
+      {message && <span className="text-zinc-600 dark:text-zinc-400">{message}</span>}
+    </div>
   );
 }
