@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import AdminVisualLink from '@/components/AdminVisualLink';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
+import PictureLink from '@/components/PictureLink';
 import FollowButton from '@/components/reader/FollowButton';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
@@ -145,7 +145,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           ) : (
             person && <TagPerson person={person} />
           )}
-          <AdminVisualLink tag={tag} has={!!(person?.avatar ?? visual)} person={!!person?.avatar || (!!person && !visual)} />
+          <PictureLink tag={tag} has={!!(person?.avatar ?? visual)} />
           <TagGroupChips groups={groups} />
         </div>
         <div className="flex gap-1 text-sm">

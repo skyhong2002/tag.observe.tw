@@ -8,7 +8,7 @@ import AdminGate, { adminFetch, note } from '../AdminGate';
 // scored from Commons photos (docs/tag-avatars.md). The best is shown
 // automatically; an admin can switch to another or hide the avatar.
 
-type Status = 'review' | 'auto' | 'chosen' | 'hidden' | 'nophoto';
+type Status = 'review' | 'auto' | 'voted' | 'chosen' | 'hidden' | 'nophoto';
 type Candidate = {
   rank: number;
   file: string;
@@ -37,6 +37,7 @@ type Page = { status: Status; counts: Record<string, number>; offset: number; ne
 const TABS: [Status, string][] = [
   ['review', '待確認'],
   ['auto', '自動'],
+  ['voted', '投票決定'],
   ['chosen', '已選定'],
   ['hidden', '已隱藏'],
   ['nophoto', '沒有可用照片'],
@@ -46,11 +47,7 @@ const SCORE_LABEL: Record<string, string> = { size: '臉大小', front: '正面'
 export default function AvatarReview() {
   return (
     <AdminGate next="/admin/avatars/">
-      <p className={note}>
-        標籤名稱正好是 Wikidata 上某位人物時，從 Wikimedia Commons 找照片、去背、轉成素描，自動用分數最高的一張，另外保留兩張候選。
-        「待確認」是分數偏低或有同名人物的標籤。點候選圖就會改用那一張；選定或隱藏後，之後重跑也不會覆蓋。 Commons
-        沒有可用照片的人（「沒有可用照片」），可以「上傳照片」：一樣找臉、去背、轉素描後改用，原照片不保存。
-      </p>
+      <p className={note}>點一張候選就改用並鎖定；沒有可用照片的人可以上傳照片。做法見頁尾「本頁的資料來源與計算方式」。</p>
       <Review />
     </AdminGate>
   );
@@ -159,6 +156,9 @@ function PersonRow({
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <a href={`/tag/${encodeURIComponent(p.tag)}/`} className="font-medium underline">
           {p.tag}
+        </a>
+        <a href={`/tag/${encodeURIComponent(p.tag)}/picture/`} className="text-xs text-zinc-500 underline">
+          票數
         </a>
         {p.wikidataId && (
           <a

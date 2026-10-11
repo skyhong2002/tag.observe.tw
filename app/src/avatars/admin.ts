@@ -24,7 +24,7 @@ type Options = {
 const PHOTO_LIMIT = 15 * 1024 * 1024;
 const PHOTO_JOB = 'tag-avatar-photo';
 
-const STATUSES: TagPersonStatus[] = ['review', 'auto', 'chosen', 'hidden', 'nophoto'];
+const STATUSES: TagPersonStatus[] = ['review', 'auto', 'voted', 'chosen', 'hidden', 'nophoto'];
 const PAGE = 60;
 
 const imagePath = (tag: string, rank: number, version: number) =>

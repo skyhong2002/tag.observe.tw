@@ -1,6 +1,7 @@
-import { and, desc, eq, gte, max } from 'drizzle-orm';
+import { and, desc, eq, gte, max, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog, tagStats } from '../db/schema.ts';
+import { castVote } from '../pictures/votes.ts';
 import { selectDiscoveryEntries } from '../v1/ranking-discovery.ts';
 import { loadRanking } from '../v1/routes.ts';
 import { inspect, quality, renderAvatar, sameFace, sameShot, type Verdict } from './portrait.ts';
@@ -56,7 +57,9 @@ async function reference(seen: Seen[]) {
 
 export async function processTag(db: Db, tag: string, { log = (() => {}) as Log, force = false } = {}) {
   const [prior] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
-  if (prior && !force && (prior.status === 'chosen' || prior.status === 'hidden')) return { tag, status: prior.status, skipped: true };
+  // An admin's choice and readers' votes (docs/tag-pictures.md) outlive re-runs.
+  if (prior && !force && (prior.status === 'chosen' || prior.status === 'hidden' || prior.status === 'voted'))
+    return { tag, status: prior.status, skipped: true };
   const now = new Date();
   const person = await findPerson(tag);
   const save = async (status: TagPersonStatus, note: string | null, rows: (typeof tagAvatarCandidates.$inferInsert)[], show = true) => {
@@ -163,12 +166,14 @@ export const PHOTO_REJECTED: Partial<Record<Verdict, string>> = {
 };
 
 /**
- * An admin's own photo of a person tag, for people Commons has no usable
- * photo of (docs/tag-avatars.md): the same face checks and sketch as a
- * Commons photo, minus the identity check (the admin chose the person). It
- * becomes the next candidate and is shown at once, as if chosen.
+ * An uploaded photo of a person tag, for people Commons has no usable photo
+ * of (docs/tag-avatars.md): the same face checks and sketch as a Commons
+ * photo, minus the identity check (the uploader chose the person). It
+ * becomes the next candidate. An admin's upload is shown at once, as if
+ * chosen; a reader's (`userId`) counts as the reader's vote and is shown
+ * when it has the most votes (docs/tag-pictures.md).
  */
-export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: string) {
+export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: string, userId?: number) {
   const [person] = await db.select({ shownRank: tagPeople.shownRank }).from(tagPeople).where(eq(tagPeople.tag, tag));
   if (!person) return { tag, error: '這個標籤還沒比對到人物' };
   const img = await decode(photo);
@@ -183,6 +188,29 @@ export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: st
     .where(eq(tagAvatarCandidates.tag, tag));
   const rank = (top ?? 0) + 1;
   const at = new Date();
+  if (userId !== undefined) {
+    await db.insert(tagAvatarCandidates).values({
+      tag,
+      rank,
+      file: '讀者上傳',
+      pageUrl: '',
+      license: null,
+      licenseUrl: null,
+      artist: null,
+      score,
+      scores: parts,
+      verdict: insp.verdict,
+      image,
+      uploadedBy: userId,
+      uploadedAt: at,
+    });
+    await db
+      .update(tagPeople)
+      .set({ status: 'voted' })
+      .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} NOT IN ('chosen', 'hidden')`));
+    const shown = await castVote(db, tag, 'avatar', userId, rank);
+    return { tag, rank, score, verdict: insp.verdict, shown: shown === rank };
+  }
   await db.transaction(async (tx) => {
     await tx.insert(tagAvatarCandidates).values({
       tag,

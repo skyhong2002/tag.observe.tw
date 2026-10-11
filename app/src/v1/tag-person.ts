@@ -6,7 +6,7 @@ import { tagAvatarCandidates, tagPeople } from '../db/schema.ts';
 
 // The person behind a tag and their sketch avatar (docs/tag-avatars.md).
 
-const SHOWN = new Set(['auto', 'review', 'chosen']);
+const SHOWN = new Set(['auto', 'review', 'chosen', 'voted']);
 
 // `v` changes whenever the shown image can change (a re-run or an admin switch), so the image itself can cache for a day.
 const avatarPath = (tag: string, at: Date, rank: number) =>
@@ -17,7 +17,7 @@ export async function tagAvatars(db: Db) {
   const rows = await db
     .select({ tag: tagPeople.tag, rank: tagPeople.shownRank, checkedAt: tagPeople.checkedAt, reviewedAt: tagPeople.reviewedAt })
     .from(tagPeople)
-    .where(and(inArray(tagPeople.status, [...SHOWN] as ('auto' | 'review' | 'chosen')[]), isNotNull(tagPeople.shownRank)));
+    .where(and(inArray(tagPeople.status, [...SHOWN] as ('auto' | 'review' | 'chosen' | 'voted')[]), isNotNull(tagPeople.shownRank)));
   return Object.fromEntries(rows.map((r) => [r.tag, avatarPath(r.tag, r.reviewedAt ?? r.checkedAt, r.rank as number)]));
 }
 

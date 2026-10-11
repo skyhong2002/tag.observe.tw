@@ -13,6 +13,7 @@ import { isShareImage, legacyRoute } from './legacy-redirects.js';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
 import { registerTaiwanShares } from './media-traffic/taiwan-share.ts';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
+import { registerPictureRoutes } from './pictures/routes.ts';
 import { API_KEY_MAX_PER_MINUTE, API_MAX_PER_MINUTE, apiKeyLookup } from './reader/api-keys.ts';
 import { registerReaderRoutes } from './reader/routes.ts';
 import { registerTagGroupAdmin } from './tag-groups/admin.ts';
@@ -146,6 +147,8 @@ export async function buildApp(
   if (own && config.login) registerWritingAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerTagGroupAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerTagVisualAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
+  if (own && config.login)
+    registerPictureRoutes(app, own.db, { currentUser: login.currentUser, origin: config.login.origin, queue: jobQueue ?? openQueue });
   if (own) apiKeys = apiKeyLookup(own.db);
   if (own && config.login && apiKeys)
     registerReaderRoutes(app, own.db, {

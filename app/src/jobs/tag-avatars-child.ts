@@ -16,10 +16,9 @@ const { db, close } = createDb();
 try {
   const mode = process.argv[2];
   if (mode === 'photo') {
-    const photo = await new Promise<{ tag: string; image: string; email: string }>((resolve) =>
-      process.once('message', (m) => resolve(m as { tag: string; image: string; email: string })),
-    );
-    const result = await addPhoto(db, photo.tag, Buffer.from(photo.image, 'base64'), photo.email);
+    type Photo = { tag: string; image: string; email: string; userId?: number };
+    const photo = await new Promise<Photo>((resolve) => process.once('message', (m) => resolve(m as Photo)));
+    const result = await addPhoto(db, photo.tag, Buffer.from(photo.image, 'base64'), photo.email, photo.userId);
     await releaseModels();
     process.send?.({ result });
   } else {

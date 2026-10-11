@@ -246,7 +246,10 @@ const worker = new Worker(
       }
       // An admin's photo for a person tag (docs/tag-avatars.md), from /admin/avatars/.
       if (job.name === 'tag-avatar-photo') {
-        const r = await runTagAvatarsInChild({ signal: shutdown.signal, photo: job.data as { tag: string; image: string; email: string } });
+        const r = await runTagAvatarsInChild({
+          signal: shutdown.signal,
+          photo: job.data as { tag: string; image: string; email: string; userId?: number },
+        });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         // The photo itself is not kept with the finished job.
         await job.updateData({ ...(job.data as object), image: null });

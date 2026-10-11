@@ -8,7 +8,7 @@ import { type TagVisualKind, tagVisuals } from '../db/schema.ts';
 // a logo in the site's orange, or an emoji. AI picks waiting for
 // review and hidden ones are not served.
 
-export const SHOWN_VISUAL = ['auto', 'chosen'] as const;
+export const SHOWN_VISUAL = ['auto', 'chosen', 'voted'] as const;
 export const visualMime = (kind: TagVisualKind | null) => (kind === 'logo' ? 'image/webp' : 'image/svg+xml');
 
 // `v` changes whenever the picture can change (a re-run or an admin edit), so the image itself caches for a day.

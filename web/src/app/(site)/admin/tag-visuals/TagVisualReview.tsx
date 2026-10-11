@@ -12,7 +12,7 @@ import AdminGate, { adminFetch, note } from '../AdminGate';
 // themselves; everything else waits here. Filter by status and by kind of
 // picture to review one kind at a time. Chosen and hidden tags survive re-runs.
 
-type Status = 'review' | 'auto' | 'chosen' | 'hidden' | 'none';
+type Status = 'review' | 'auto' | 'voted' | 'chosen' | 'hidden' | 'none';
 type Kind = TagVisual['kind'];
 type Candidate = {
   rank: number;
@@ -52,6 +52,7 @@ type Page = {
 const TABS: [Status, string][] = [
   ['review', '待確認'],
   ['auto', '自動'],
+  ['voted', '投票決定'],
   ['chosen', '已選定'],
   ['hidden', '已隱藏'],
   ['none', '沒有合適的'],
@@ -72,12 +73,7 @@ const input = 'min-h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm d
 export default function TagVisualReview() {
   return (
     <AdminGate next="/admin/tag-visuals/">
-      <p className={note}>
-        非人物標籤的小圖。每個標籤列出找到的候選：Wikidata 的地方輪廓或標誌（轉成網站橘的單色），以及 AI 挑的
-        emoji（只在完全就是那個東西時）。 AI
-        確認過的地方與標誌自動顯示；其餘放在「待確認」，點一張候選圖就會改用並公開。都不合適的可以自己輸入 emoji
-        或上傳標誌。選定或隱藏後，之後重跑也不會覆蓋。
-      </p>
+      <p className={note}>點一張候選就改用並鎖定；讀者的投票與上傳在各標籤的「換圖」頁。做法見頁尾「本頁的資料來源與計算方式」。</p>
       <Review />
     </AdminGate>
   );
@@ -239,13 +235,16 @@ function VisualRow({ row: r, act, single }: { row: Row; act: (call: () => Promis
   const path = `/auth/admin/tag-visuals/${encodeURIComponent(r.tag)}`;
   const put = (body: object) => act(() => adminFetch(path, { method: 'PUT', body }));
   // In use and public: chosen or automatic. A review row's first candidate waits.
-  const live = r.status === 'auto' || r.status === 'chosen';
+  const live = r.status === 'auto' || r.status === 'chosen' || r.status === 'voted';
   const own = live && r.kind && !r.shownRank;
   return (
     <li className="py-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <a href={`/tag/${encodeURIComponent(r.tag)}/`} className="font-medium underline">
           {r.tag}
+        </a>
+        <a href={`/tag/${encodeURIComponent(r.tag)}/picture/`} className="text-xs text-zinc-500 underline">
+          票數
         </a>
         {r.wikidataId && (
           <a

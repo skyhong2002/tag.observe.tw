@@ -695,8 +695,10 @@ export const articleAuthorLog = mysqlTable(
 // /admin/avatars/. status: auto = best candidate shown; review = shown but
 // an admin should look (low score, namesakes); chosen = an admin picked one;
 // hidden = an admin turned the avatar off; nophoto = a person with no usable
-// photo; none = no Wikidata person by this exact name.
-export type TagPersonStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'nophoto' | 'none';
+// photo; none = no Wikidata person by this exact name; voted = readers
+// uploaded or voted, and the candidate with the most votes is shown
+// (docs/tag-pictures.md). chosen and hidden are an admin's override.
+export type TagPersonStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'nophoto' | 'none' | 'voted';
 export type TagPersonFacts = {
   citizenship: string[];
   occupations: string[];
@@ -744,6 +746,9 @@ export const tagAvatarCandidates = mysqlTable(
     // ok, or bystander: another face sits inside the crop.
     verdict: varchar('verdict', { length: 10 }).notNull(),
     image: imageBytes('image').notNull(),
+    // A reader's upload (users.id); null for Commons photos and admin uploads.
+    uploadedBy: int('uploaded_by'),
+    uploadedAt: datetime('uploaded_at'),
   },
   (t) => [primaryKey({ columns: [t.tag, t.rank] })],
 );
@@ -918,10 +923,11 @@ export const tagWikidata = mysqlTable('tag_wikidata', {
 // orange; emoji = an emoji that is exactly the thing (line icons were tried
 // and dropped). status: auto = shown (places, Commons logos); review = an AI pick,
 // not shown until an admin confirms; chosen = an admin confirmed or set it;
-// hidden = an admin turned it off; none = nothing fits. Re-runs never
-// overwrite chosen or hidden.
+// hidden = an admin turned it off; none = nothing fits; voted = readers
+// uploaded or voted and the candidate with the most votes is shown
+// (docs/tag-pictures.md). Re-runs never overwrite chosen, hidden or voted.
 export type TagVisualKind = 'place' | 'logo' | 'emoji';
-export type TagVisualStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'none';
+export type TagVisualStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'none' | 'voted';
 
 export const tagVisuals = mysqlTable(
   'tag_visuals',
@@ -975,6 +981,9 @@ export const tagVisualCandidates = mysqlTable(
     license: varchar('license', { length: 64 }),
     licenseUrl: varchar('license_url', { length: 255 }),
     artist: varchar('artist', { length: 255 }),
+    // A reader's upload (users.id); null for found pictures and admin uploads.
+    uploadedBy: int('uploaded_by'),
+    uploadedAt: datetime('uploaded_at'),
   },
   (t) => [primaryKey({ columns: [t.tag, t.rank] })],
 );
@@ -992,4 +1001,20 @@ export const tagVisualLog = mysqlTable(
     at: datetime('at').notNull(),
   },
   (t) => [index('tag_visual_log_tag').on(t.tag, t.at)],
+);
+
+// Readers' votes for a tag's picture (docs/tag-pictures.md): one per user per
+// tag, for a candidate rank in tag_avatar_candidates (kind avatar, person
+// tags) or tag_visual_candidates (kind visual, every other tag). The
+// candidate with the most votes is shown unless an admin chose or hid one.
+export const tagPictureVotes = mysqlTable(
+  'tag_picture_votes',
+  {
+    tag: varchar('tag', { length: 60 }).notNull(),
+    kind: varchar('kind', { length: 8 }).$type<'avatar' | 'visual'>().notNull(),
+    userId: int('user_id').notNull(),
+    rank: int('rank').notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tag, t.kind, t.userId] }), index('tag_picture_votes_rank').on(t.tag, t.kind, t.rank)],
 );

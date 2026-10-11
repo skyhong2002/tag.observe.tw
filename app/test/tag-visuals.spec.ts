@@ -9,7 +9,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { tagPeople, tagVisualCandidates, tagVisualLog, tagVisuals, tagWikidata } from '../src/db/schema.ts';
+import { tagPeople, tagPictureVotes, tagVisualCandidates, tagVisualLog, tagVisuals, tagWikidata } from '../src/db/schema.ts';
+import { leader } from '../src/pictures/votes.ts';
 import { parseReply, prompt } from '../src/tag-visuals/ai.ts';
 import { isEmoji } from '../src/tag-visuals/emoji.ts';
 import { city, country, taiwanPlace } from '../src/tag-visuals/places.ts';
@@ -181,7 +182,7 @@ const store: LoginStore = {
   setAdmin: async () => false,
   sessionUser: async (hash) => {
     const name = Object.keys(accounts).find((key) => hashToken(key) === hash);
-    return name ? { id: 1, sub: name, email: accounts[name].email, name, picture: null } : null;
+    return name ? { id: name === 'admin' ? 1 : 2, sub: name, email: accounts[name].email, name, picture: null } : null;
   },
 };
 
@@ -201,7 +202,7 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     if (/\/tag_observe$/.test(url ?? '')) throw Error('TEST_DB_URL points at the production database');
     ({ db, close } = createDb(url));
     await migrate(db, { migrationsFolder: 'app/src/db/migrations' });
-    for (const t of ['tag_visuals', 'tag_visual_candidates', 'tag_visual_log', 'tag_people', 'tag_wikidata'])
+    for (const t of ['tag_visuals', 'tag_visual_candidates', 'tag_visual_log', 'tag_people', 'tag_wikidata', 'tag_picture_votes'])
       await db.execute(sql.raw(`TRUNCATE TABLE \`${t}\``));
     const at = new Date('2026-10-11T00:00:00Z');
     await db.insert(tagPeople).values({ tag: '賴清德', wikidataId: 'Q3847080', status: 'auto', checkedAt: at });
@@ -359,5 +360,80 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
       await app.inject({ url: `/auth/admin/tag-visuals?tag=${encodeURIComponent('沒有的')}`, headers: as('admin', false) })
     ).json();
     expect(one.visuals).toEqual([{ tag: '沒有的', kind: null, status: null, image: null, large: null, candidates: [] }]);
+  });
+
+  it('lets any signed-in reader upload and vote; the most votes win unless an admin locks', async () => {
+    const path = (tag: string, rest = '') => `/auth/pictures/${encodeURIComponent(tag)}${rest}`;
+    const state = async (tag: string, who = 'reader') => (await app.inject({ url: path(tag), headers: as(who, false) })).json();
+    const png = await sharp({ create: { width: 30, height: 10, channels: 4, background: { r: 200, g: 0, b: 0, alpha: 1 } } })
+      .png()
+      .toBuffer();
+    const upload = (tag: string, who: string, agree = true) =>
+      app.inject({ method: 'POST', url: path(tag, '/upload'), headers: as(who), payload: { image: png.toString('base64'), agree } });
+    expect((await app.inject({ url: path('台股') })).statusCode).toBe(401);
+    expect((await upload('台股', 'reader', false)).statusCode).toBe(400);
+    // A tag with no picture at all: the reader's upload is its vote, so it shows at once.
+    const up = await upload('台股', 'reader');
+    expect(up.statusCode).toBe(200);
+    expect(up.json()).toMatchObject({ kind: 'visual', rank: 1 });
+    expect(await visual('台股')).toMatchObject({ kind: 'logo' });
+    let s = await state('台股');
+    expect(s).toMatchObject({ kind: 'visual', shownRank: 1, myVote: 1, locked: false, uploadsLeft: 19 });
+    expect(s.candidates[0]).toMatchObject({ rank: 1, votes: 1, uploaded: true, mine: true });
+    // A second upload by the admin as a reader, then the vote moves with the majority; a tie keeps what is shown.
+    expect((await upload('台股', 'admin')).json().rank).toBe(2);
+    s = await state('台股');
+    expect(s.shownRank).toBe(1);
+    const vote = (who: string, rank: number | null) =>
+      app.inject({ method: 'PUT', url: path('台股', '/vote'), headers: as(who), payload: { rank } });
+    expect((await vote('reader', 2)).json().shownRank).toBe(2);
+    expect((await vote('reader', 9)).statusCode).toBe(404);
+    // Admin lock: votes still count, the picture stays; unlock goes back to the votes.
+    const lock = (rank: number | null, who = 'admin') =>
+      app.inject({ method: 'PUT', url: path('台股', '/lock'), headers: as(who), payload: { rank } });
+    expect((await lock(1, 'reader')).statusCode).toBe(403);
+    expect((await lock(1)).statusCode).toBe(200);
+    expect((await vote('reader', 2)).json().shownRank).toBe(1);
+    expect(await state('台股')).toMatchObject({ locked: true, shownRank: 1 });
+    expect((await lock(null)).json().shownRank).toBe(2);
+    const votes = await db.select().from(tagPictureVotes).where(eq(tagPictureVotes.tag, '台股'));
+    expect(votes.map((v) => v.rank).sort()).toEqual([2, 2]);
+    // Re-runs leave a voted tag alone.
+    expect(await processTags(db, ['台股'], { findImpl: async () => null, looseImpl: async () => [] })).toEqual({});
+    // Candidate images for signed-in readers only.
+    expect((await app.inject({ url: s.candidates[0].image, headers: as('reader', false) })).headers['content-type']).toBe('image/webp');
+    expect((await app.inject({ url: s.candidates[0].image })).statusCode).toBe(401);
+  });
+
+  it('picks the most votes, a tie keeping what is shown', () => {
+    expect(leader(new Map(), 1)).toBeNull();
+    expect(leader(new Map([[1, 0]]), 1)).toBeNull();
+    expect(
+      leader(
+        new Map([
+          [1, 1],
+          [2, 2],
+        ]),
+        1,
+      ),
+    ).toBe(2);
+    expect(
+      leader(
+        new Map([
+          [1, 2],
+          [2, 2],
+        ]),
+        2,
+      ),
+    ).toBe(2);
+    expect(
+      leader(
+        new Map([
+          [3, 2],
+          [2, 2],
+        ]),
+        1,
+      ),
+    ).toBe(2);
   });
 });

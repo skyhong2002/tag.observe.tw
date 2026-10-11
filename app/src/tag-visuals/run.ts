@@ -174,7 +174,8 @@ export async function processTags(
   for (const tag of tags) {
     if (stop()) break;
     const old = before.get(tag);
-    if (!force && old && (old.status === 'chosen' || old.status === 'hidden' || old.checkedAt.getTime() >= fresh)) continue;
+    // An admin's choice and readers' votes (docs/tag-pictures.md) outlive re-runs.
+    if (!force && old && (['chosen', 'hidden', 'voted'].includes(old.status) || old.checkedAt.getTime() >= fresh)) continue;
     try {
       // Tags the tag-groups job has not looked up yet (the home cloud's newest): look up and keep, as it would.
       let wd = item.get(tag);

@@ -5,7 +5,7 @@ import type { runTagAvatarsJob } from './tag-avatars-run.ts';
 // Imports nothing that loads the image models: the worker only forks
 // tag-avatars-child.ts, which runs tag-avatars-run.ts and exits.
 
-type Photo = { tag: string; image: string; email: string };
+type Photo = { tag: string; image: string; email: string; userId?: number };
 
 /**
  * The worker's entry: runs the job in a child process (tag-avatars-child.ts)

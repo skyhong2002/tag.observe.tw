@@ -18,7 +18,7 @@ type Options = {
   origin: string;
 };
 
-const STATUSES: TagVisualStatus[] = ['review', 'auto', 'chosen', 'hidden', 'none'];
+const STATUSES: TagVisualStatus[] = ['review', 'auto', 'voted', 'chosen', 'hidden', 'none'];
 const KINDS: (TagVisualKind | 'none')[] = ['place', 'logo', 'emoji', 'none'];
 const kindIs = (kind: TagVisualKind | 'none'): SQL => (kind === 'none' ? isNull(tagVisuals.kind) : eq(tagVisuals.kind, kind));
 const PAGE = 60;
