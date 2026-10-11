@@ -29,11 +29,19 @@ describe('socialPost', () => {
     ['經常對時事發表看法的施七八，7日在個人臉書分享看法。', 'Facebook', '未知', '施七八'],
     ['該名駕駛在社群平台 Threads 上發文抱怨。', 'Threads', '網友民眾', null],
     ['衛福部次長林九十也接連在臉書發文。', 'Facebook', '公職政治', '林九十'],
+    ['吳十二在氣象應用推廣基金會專欄發文指出，冷空氣將南下。', '社群', '氣象', '吳十二'],
+    ['政治工作者周十三今日在臉書發文。', 'Facebook', '評論名嘴', '周十三'],
+    ['南韓總統李在明今天在社群平台X發文。', 'X', '公職政治', '李在明'],
+    ['多名議員今天就總統之子遭跟監一事在社群媒體發文。', '社群', '公職政治', null],
     ['王小妤在影片曝光後甜蜜發文寫道，一起加油。', '社群', '未知', '王小妤'],
     ['美國總統特使威小夫9日在社交媒體發文說，局勢緩和。', '社群', '公職政治', '威小夫'],
   ])('%s', (lead, platform, role, name) => {
     const post = socialPost(pad(lead));
     expect(post).toMatchObject({ platform, role, name });
+  });
+
+  it('does not take an interview on a named programme for a post', () => {
+    expect(socialPost(pad('副市長李四川接受節目「少康戰情室」專訪表示，選情穩定。'))).toBeNull();
   });
 
   it('does not take 「在臉書上可以說」 or 前往 for a post or a former title', () => {

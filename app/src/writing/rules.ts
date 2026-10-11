@@ -9,7 +9,7 @@
 //
 // Changing any pattern changes results: bump VERSION so the job re-analyses
 // the bodies it still has and charts can mark the change.
-export const VERSION = 'writing-v2';
+export const VERSION = 'writing-v3';
 export const LEAD_CHARS = 250;
 export const MIN_BODY = 200;
 
@@ -33,13 +33,18 @@ const PLATFORM_WORDS: Array<[Platform, string]> = [
 ];
 const platformAlt = PLATFORM_WORDS.map(([, w]) => w).join('|');
 const postAlt = '發文|PO文|po文|貼文|撰文|發布|發佈|分享|留言|上傳|中表示|中指出|中直言|中透露|上表示|上指出|上直言';
-// 「在／於／透過 … 臉書（粉專「…」）… 發文」; the platform must sit inside one clause.
+// 「在／於／透過 … 臉書（粉專「…」）… 發文」; the platform must sit inside one clause,
+// and the 在 nearest to it starts the phrase (「李在明今天在社群平台…」).
 const SOCIAL = new RegExp(
-  `(?:在|於|透過|經營的|個人)[^。，,\\n]{0,12}?(?:${platformAlt})(?:「[^」]{0,24}」)?[^。\\n]{0,8}?(?:${postAlt})`,
+  `(?:在|於|透過|經營的|個人)[^。，,\\n在於]{0,12}?(?:${platformAlt})(?:「[^」]{0,24}」)?[^。\\n]{0,8}?(?:${postAlt})`,
   'u',
 );
-// A named page speaking: 「氣象粉專「台灣颱風論壇」指出」.
-const PAGE = new RegExp(`(?:${platformAlt})「([^」]{1,24})」[^。\\n]{0,6}?(?:${postAlt}|指出|表示|提醒|宣布)`, 'u');
+// A named page speaking: 「氣象粉專「台灣颱風論壇」指出」. Not programmes:
+// 「接受節目「少康戰情室」專訪」 is an interview.
+const pageAlt = PLATFORM_WORDS.filter(([p]) => p !== '節目直播')
+  .map(([, w]) => w)
+  .join('|');
+const PAGE = new RegExp(`(?:${pageAlt})「([^」]{1,24})」[^。\\n]{0,6}?(?:${postAlt}|指出|表示|提醒|宣布)`, 'u');
 // 「吳靜怡發文指出」: a post without the platform named.
 const BARE = /(?:PO文|po文|發文)(?:指出|表示|說|直言|稱|強調|批評?|嗆|回應|提到|質疑|分享|寫道|透露)/u;
 
@@ -56,19 +61,19 @@ const ROLE_WORDS: Array<[Exclude<Role, '未知'>, RegExp]> = [
     '前任公職',
     /(?<![之日先目提眼])前(?![往來面後夕天年日晚])\p{Script=Han}{0,4}?(?:總統|院長|部長|立委|立法委員|議員|市長|縣長|主席|發言人|國安會|大使|主委|局長|署長|次長|首相|總理|檢察總長)/u,
   ],
-  ['評論名嘴', /名嘴|媒體人|評論員|政論|作家|主持人|製作人|退將|退役|時事評論|專欄/u],
-  ['醫療健康', /醫師|醫生|名醫|營養師|藥師|心理師|護理師|中醫|診所|醫院|牙醫|治療師|科主任|內科|外科|醫學|營養/u],
   ['氣象', /氣象|天氣|氣候|颱風論壇/u],
+  ['評論名嘴', /名嘴|媒體人|政治工作者|評論員|政論|作家|主持人|製作人|退將|退役|時事評論|專欄/u],
+  ['醫療健康', /醫師|醫生|名醫|營養師|藥師|心理師|護理師|中醫|診所|醫院|牙醫|治療師|科主任|內科|外科|醫學|營養/u],
   [
     '公職政治',
-    /總統|院長|部長|次長|署長|局長|處長|首長|市長|縣長|鎮長|鄉長|區長|立委|立法委員|議員|議長|主席|黨|候選人|參選人|發言人|主委|秘書長|大使|總理|首相|國務卿|官員|政府|市府|縣府|國防部|外交部|競辦|競總|國會|白宮|府方|議會|里長|州長|參議員|眾議員|政委|特使|檢察官|法官|警方|警察局|分局/u,
+    /總統|院長|部長|次長|署長|局長|處長|首長|市長|縣長|鎮長|鄉長|區長|立委|立法委員|議員|議長|主席|黨|候選人|參選人|發言人|主委|秘書長|大使|總理|首相|國務卿|官員|政府|市府|縣府|國防部|外交部|競辦|競總|國會|白宮|府方|議會|里長|州長|參議員|眾議員|政委|特使|檢察官|法官|警方|警察局|分局|衛福部|內政部|經濟部|交通部|教育部|法務部|外交部|國防部|財政部|農業部|環境部|文化部|勞動部|數位部|國發會|陸委會|海委會|疾管署|國安局|移民署/u,
   ],
   [
     '藝人網紅',
-    /藝人|歌手|演員|女星|男星|偶像|天后|天王|女神|網紅|YouTuber|youtuber|部落客|KOL|創作者|女團|男團|樂團|諧星|導演|主播|模特|啦啦隊|球員|選手|投手|球星|達人|命理|星座/u,
+    /藝人|歌手|演員|女星|男星|偶像|天后|天王|女神|網紅|YouTuber|youtuber|部落客|KOL|創作者|女團|男團|樂團|諧星|導演|主播|模特|啦啦隊|球員|選手|投手|球星|達人|命理|星座|塔羅/u,
   ],
-  ['專家企業', /律師|教授|學者|博士|專家|分析師|研究員|講師|顧問|會計師|理財|經濟學家|執行長|董事長|創辦人|總經理/u],
-  ['機構', /公司|集團|官方|協會|基金會|出版|業者|品牌|聯盟|工會|大學|店家|餐廳|超商|銀行|歌迷會|後援會|粉絲團/u],
+  ['專家企業', /律師|教授|學者|博士|專家|分析師|研究員|講師|顧問|會計師|理財|經濟學家|執行長|董事長|創辦人|總經理|校長|事務所|地政士/u],
+  ['機構', /公司|集團|官方|協會|基金會|出版|業者|品牌|聯盟|工會|大學|店家|餐廳|超商|銀行|歌迷會|後援會|粉絲團|機場/u],
 ];
 
 /** The first role whose title words appear in text, or null. */
@@ -78,11 +83,12 @@ export function roleOf(text: string): Exclude<Role, '未知'> | null {
 
 // Trailing time and adverb words between a name and 「在臉書」.
 const TAIL =
-  /(?:今天|今日|昨天|昨日|昨晚|今晚|今早|前晚|前天|昨夜|稍晚|深夜|半夜|清晨|一早|日前|稍早|稍後|隨後|近日|先前|隨即|則|也|再度|再次|更|又|親自|特別|上午|下午|晚間|凌晨|中午|今|昨|就|曾|[0-9０-９]+[日月]|接連|紛紛|也都|亦|卻是|卻|還|仍|原本|事後|平時會|平時|經常|時常|常|會|都)+$/u;
-const NOT_NAME = /^(?:有|他|她|其|對此|此外|同時|另外|因此|而|並|由|本人|對方|當事人|該|這名|那名|此|甚至|至於)|[他她其們]$/u;
+  /(?:今天|今日|昨天|昨日|昨晚|今晚|今早|前晚|前天|昨夜|稍晚|深夜|半夜|清晨|一早|傍晚|月底|早前|不時|才|日前|稍早|稍後|隨後|近日|先前|隨即|則|也|再度|再次|更|又|親自|特別|上午|下午|晚間|凌晨|中午|今|昨|就|曾|[0-9０-９]+[日月]|接連|紛紛|也都|亦|卻是|卻|還|仍|原本|事後|平時會|平時|經常|時常|常|會|都)+$/u;
+const NOT_NAME =
+  /^(?:有|不少|多名|許多|他|她|其|對此|此外|同時|另外|因此|而|並|由|本人|對方|當事人|該|這名|那名|此|甚至|至於)|[他她其們]$/u;
 // Words that end a clause like a name but name nobody (「以…為題」「家屬」).
 const COMMON = new Set(
-  '為題 一事 本人 兩人 友人 家屬 居民 目擊者 粉絲 影迷 學生 政治 今年 去年 過去 深夜 涉嫌 賽後 不時 網路 小編 官方 當局 外界 雙方 女方 男方 團隊 校方 院方 警方 記者 媒體 總統 市長 立委 議員 醫師 專家 業者 網紅 藝人 鄰居 同學 同事 老師 家人 親友 少女 少年 孩子 兒子 女兒 太太 老公 老婆 丈夫 妻子 母親 父親 網民 群組 社團 中國部 國人 台灣 中國 美國 日本'.split(
+  '為題 一事 樓主 本人 兩人 友人 家屬 居民 目擊者 粉絲 影迷 學生 政治 今年 去年 過去 深夜 涉嫌 賽後 不時 網路 小編 官方 當局 外界 雙方 女方 男方 團隊 校方 院方 警方 記者 媒體 總統 市長 立委 議員 醫師 專家 業者 網紅 藝人 鄰居 同學 同事 老師 家人 親友 少女 少年 孩子 兒子 女兒 太太 老公 老婆 丈夫 妻子 母親 父親 網民 群組 社團 中國部 國人 台灣 中國 美國 日本'.split(
     ' ',
   ),
 );
@@ -103,15 +109,17 @@ export function posterClause(body: string, at: number) {
 /** The Han-character run that ends the clause, without time words: a candidate name. */
 export function posterName(clause: string): string | null {
   // 「發表看法的施景中」: a name starts after 的 or a conjunction; 「王妤嫻在影片曝光後
-  // 甜蜜發文」: the poster comes before 在／於.
+  // 甜蜜發文」: the poster comes before a 在／於 phrase (but 李在明 stays whole).
   const run = clause
-    .replace(/(?:在|於)[^，,]*$/u, '')
+    .replace(TAIL, '')
+    .replace(/(?:在|於)[^，,]{3,}$/u, '')
     .replace(TAIL, '')
     .match(/[\p{Script=Han}·．A-Za-z]{2,8}$/u)?.[0]
     .split(/[的與和及]/u)
     .at(-1);
   const name = run?.replace(/(?:臉書|粉專|本人|自己)$/u, '');
-  if (!name || name.length < 2 || COMMON.has(name)) return null;
+  // Clause fragments, not names: 「跟監一事」「讓小編急得」「頻頻交火」.
+  if (!name || name.length < 2 || COMMON.has(name) || /[了得才事頻針讓除]/u.test(name)) return null;
   if (NOT_NAME.test(name) || NOT_NAME.test(name.slice(-3))) return null;
   return name;
 }
