@@ -91,6 +91,19 @@ function Review() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState<Page | null>(null);
   const [error, setError] = useState('');
+  // /admin/tag-visuals/?tag=… (the tag page's 「換圖」 link) opens that one tag.
+  useEffect(() => {
+    const tag = new URLSearchParams(window.location.search).get('tag')?.trim();
+    if (tag) {
+      setLookup(tag);
+      setQuery(tag);
+    }
+  }, []);
+  // Keep the address in step, so a looked-up tag can be bookmarked or shared.
+  useEffect(() => {
+    const url = query ? `?tag=${encodeURIComponent(query)}` : window.location.pathname;
+    window.history.replaceState(null, '', url);
+  }, [query]);
   const load = useCallback(() => {
     const q = query ? `tag=${encodeURIComponent(query)}` : `status=${status}${kind ? `&kind=${kind}` : ''}&offset=${offset}`;
     adminFetch<Page>(`/auth/admin/tag-visuals?${q}`)
@@ -173,7 +186,7 @@ function Review() {
       ) : (
         <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
           {page.visuals.map((v) => (
-            <VisualRow key={v.tag} row={v} act={act} />
+            <VisualRow key={v.tag} row={v} act={act} single={!!query} />
           ))}
         </ul>
       )}
@@ -217,7 +230,7 @@ const asVisual = (c: {
   source: null,
 });
 
-function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknown>) => void }) {
+function VisualRow({ row: r, act, single }: { row: Row; act: (call: () => Promise<unknown>) => void; single: boolean }) {
   const path = `/auth/admin/tag-visuals/${encodeURIComponent(r.tag)}`;
   const put = (body: object) => act(() => adminFetch(path, { method: 'PUT', body }));
   // In use and public: chosen or automatic. A review row's first candidate waits.
@@ -291,13 +304,24 @@ function VisualRow({ row: r, act }: { row: Row; act: (call: () => Promise<unknow
           </button>
         )}
       </div>
-      <OwnPicture path={path} act={act} put={put} />
+      <OwnPicture path={path} act={act} put={put} open={single} />
     </li>
   );
 }
 
 /** The admin's own emoji or logo, for when no candidate fits. */
-function OwnPicture({ path, act, put }: { path: string; act: (call: () => Promise<unknown>) => void; put: (body: object) => void }) {
+function OwnPicture({
+  path,
+  act,
+  put,
+  open,
+}: {
+  path: string;
+  act: (call: () => Promise<unknown>) => void;
+  put: (body: object) => void;
+  /** Opened already when the page shows one looked-up tag. */
+  open: boolean;
+}) {
   const [emoji, setEmoji] = useState('');
   const upload = (file: File) =>
     act(async () => {
@@ -307,7 +331,7 @@ function OwnPicture({ path, act, put }: { path: string; act: (call: () => Promis
       await adminFetch(`${path}/logo`, { method: 'POST', body: { image: btoa(binary) } });
     });
   return (
-    <details className="mt-2 text-sm">
+    <details className="mt-2 text-sm" open={open}>
       <summary className="cursor-pointer text-zinc-500">都不合適：自己指定</summary>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <form
