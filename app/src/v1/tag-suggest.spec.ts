@@ -37,4 +37,18 @@ describe('tag suggestions', () => {
       await app.close();
     }
   });
+  it('builds the vocabulary as soon as the server listens', async () => {
+    const where = vi.fn().mockResolvedValue([{ tags: ['台積電'] }, { tags: ['台積電'] }]);
+    const select = vi.fn(() => ({ from: () => ({ where }) }));
+    const app = Fastify();
+    registerTagSuggest(app, { select } as unknown as Db);
+    try {
+      await app.listen({ port: 0, host: '127.0.0.1' });
+      await vi.waitFor(() => expect(where).toHaveBeenCalledTimes(1));
+      expect((await app.inject('/api/v1/tags/suggest?q=台')).json().tags).toEqual([{ tag: '台積電', articles: 2 }]);
+      expect(where).toHaveBeenCalledTimes(1);
+    } finally {
+      await app.close();
+    }
+  });
 });

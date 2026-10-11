@@ -46,6 +46,11 @@ export function registerEventSuggest(app: FastifyInstance, db: Db) {
     }
     return cache.rows;
   };
+  // Build the list when the server starts listening (not under inject), so the
+  // first reader after a deploy does not wait for it.
+  app.addHook('onListen', async () => {
+    Promise.resolve(load()).catch(() => {});
+  });
   app.get<{ Querystring: { q?: string; limit?: string } }>('/api/v1/events/threads/suggest', async (request, reply) => {
     const q = (request.query.q ?? '').trim().slice(0, 60);
     const limit = Math.min(20, Math.max(1, Math.floor(Number(request.query.limit) || 8)));

@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
-import { fetchTagSuggestions } from '@/components/FormSuggestInput';
+import { useCallback, useEffect, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
 import SuggestInput, { type Suggestion } from '@/components/SuggestInput';
 import { FOLLOW_NOUN, type Follow, type FollowKind, followHref, follows, setFollow } from '@/lib/reader';
@@ -11,7 +10,8 @@ import { SuggestionPills } from '../Suggestions';
 
 const KINDS: FollowKind[] = ['tag', 'media', 'journalist', 'event'];
 
-// Outlet names for the box, fetched once on the first search.
+// Outlet names for the box, fetched once when the page opens so outlets match
+// as soon as they are typed, without a round trip.
 let outletList: Promise<Array<{ media: string; name: string }>> | null = null;
 const outlets = () => {
   outletList ??= fetch('/api/v1/media')
@@ -23,56 +23,85 @@ const outlets = () => {
     });
   return outletList;
 };
-const getJson = async <T,>(path: string, signal: AbortSignal): Promise<T | null> => {
-  const response = await fetch(path, { signal });
-  return response.ok ? ((await response.json()) as T) : null;
+// Each request crosses the public edge (about half a second), so answers are
+// kept for the page's lifetime: deleting back to an earlier prefix is instant.
+const answers = new Map<string, Promise<unknown>>();
+const getJson = <T,>(path: string): Promise<T | null> => {
+  let answer = answers.get(path) as Promise<T | null> | undefined;
+  if (!answer) {
+    answer = fetch(path)
+      .then((response) => (response.ok ? (response.json() as Promise<T>) : null))
+      .catch(() => null);
+    answer.then((value) => value === null && answers.delete(path));
+    if (answers.size > 300) answers.delete(answers.keys().next().value as string);
+    answers.set(path, answer);
+  }
+  return answer;
 };
 const day = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric' });
 
-/** Everything followable that matches: a few keywords, outlets, journalists and events, in that order. */
-async function followSuggestions(
-  typed: string,
-  signal: AbortSignal,
-): Promise<Array<Follow & { label: string; hint: string; icon?: string }>> {
+type Found = Follow & { label: string; hint: string; icon?: string };
+const KIND_ORDER: FollowKind[] = ['tag', 'media', 'journalist', 'event'];
+
+/** Everything followable that matches: a few keywords, outlets, journalists and events,
+ *  always in that order. Each source shows as soon as it answers (`emit`). */
+async function followSuggestions(typed: string, signal: AbortSignal, emit: (items: Found[]) => void): Promise<Found[]> {
   const needle = typed.toLocaleLowerCase();
-  const [tags, media, people, events] = await Promise.allSettled([
-    fetchTagSuggestions(typed, signal),
-    outlets(),
-    getJson<{ bylines: Array<{ name: string; articles: number; outlets: Array<{ media: string; name: string }> }> }>(
-      `/api/v1/bylines?${new URLSearchParams({ q: typed, kind: 'person', hours: '168' })}`,
-      signal,
+  const found: Record<FollowKind, Found[]> = { tag: [], media: [], journalist: [], event: [] };
+  const all = () => KIND_ORDER.flatMap((kind) => found[kind]);
+  const fill = async <T,>(kind: FollowKind, source: Promise<T>, toItems: (value: T) => Found[]) => {
+    const value = await source;
+    if (signal.aborted) return;
+    found[kind] = toItems(value);
+    emit(all());
+  };
+  await Promise.allSettled([
+    fill('media', outlets(), (list) =>
+      list
+        .filter((outlet) => outlet.name.toLocaleLowerCase().includes(needle) || outlet.media.includes(needle))
+        .slice(0, 3)
+        .map((outlet) => ({ kind: 'media' as const, target: outlet.media, label: outlet.name, hint: '媒體', icon: outlet.media })),
     ),
-    getJson<{ threads: Array<{ id: number; tags: string[]; lastTime: string }> }>(
-      `/api/v1/events/threads/suggest?${new URLSearchParams({ q: typed, limit: '3' })}`,
-      signal,
+    fill(
+      'tag',
+      getJson<{ tags: Array<{ tag: string; articles: number }> }>(`/api/v1/tags/suggest?${new URLSearchParams({ q: typed })}`),
+      (data) =>
+        (data?.tags ?? []).slice(0, 4).map((row) => ({
+          kind: 'tag' as const,
+          target: row.tag,
+          label: `#${row.tag}`,
+          hint: `標籤 · ${row.articles.toLocaleString('zh-TW')} 篇`,
+        })),
+    ),
+    fill(
+      'journalist',
+      getJson<{ bylines: Array<{ name: string; articles: number; outlets: Array<{ media: string; name: string }> }> }>(
+        `/api/v1/bylines?${new URLSearchParams({ q: typed, kind: 'person', hours: '168' })}`,
+      ),
+      (data) =>
+        (data?.bylines ?? []).slice(0, 3).map((entry) => ({
+          kind: 'journalist' as const,
+          target: entry.name,
+          label: entry.name,
+          hint: `記者 · ${entry.outlets[0]?.name ?? ''} ${entry.articles.toLocaleString('zh-TW')} 篇`,
+          icon: entry.outlets[0]?.media,
+        })),
+    ),
+    fill(
+      'event',
+      getJson<{ threads: Array<{ id: number; tags: string[]; lastTime: string }> }>(
+        `/api/v1/events/threads/suggest?${new URLSearchParams({ q: typed, limit: '3' })}`,
+      ),
+      (data) =>
+        (data?.threads ?? []).map((thread) => ({
+          kind: 'event' as const,
+          target: String(thread.id),
+          label: thread.tags.join('、'),
+          hint: `事件 · ${day(thread.lastTime)}`,
+        })),
     ),
   ]);
-  const ok = <T,>(result: PromiseSettledResult<T>) => (result.status === 'fulfilled' ? result.value : null);
-  return [
-    ...(ok(tags) ?? []).slice(0, 4).map((row) => ({
-      kind: 'tag' as const,
-      target: row.tag,
-      label: `#${row.tag}`,
-      hint: `標籤 · ${row.articles.toLocaleString('zh-TW')} 篇`,
-    })),
-    ...(ok(media) ?? [])
-      .filter((outlet) => outlet.name.toLocaleLowerCase().includes(needle) || outlet.media.includes(needle))
-      .slice(0, 3)
-      .map((outlet) => ({ kind: 'media' as const, target: outlet.media, label: outlet.name, hint: '媒體', icon: outlet.media })),
-    ...(ok(people)?.bylines ?? []).slice(0, 3).map((entry) => ({
-      kind: 'journalist' as const,
-      target: entry.name,
-      label: entry.name,
-      hint: `記者 · ${entry.outlets[0]?.name ?? ''} ${entry.articles.toLocaleString('zh-TW')} 篇`,
-      icon: entry.outlets[0]?.media,
-    })),
-    ...(ok(events)?.threads ?? []).map((thread) => ({
-      kind: 'event' as const,
-      target: String(thread.id),
-      label: thread.tags.join('、'),
-      hint: `事件 · ${day(thread.lastTime)}`,
-    })),
-  ];
+  return all();
 }
 
 // Everything the reader follows, by kind, with a way to stop following, a box
@@ -84,20 +113,25 @@ export default function Following() {
   const [error, setError] = useState('');
   const [found, setFound] = useState(new Map<string, Follow>());
   const followedKey = (list ?? []).map((f) => `${f.kind}:${f.target}`).join('|');
+  useEffect(() => {
+    void outlets();
+  }, []);
   const suggest = useCallback(
-    async (typed: string, signal: AbortSignal): Promise<Suggestion[]> => {
+    async (typed: string, signal: AbortSignal, partial: (items: Suggestion[]) => void): Promise<Suggestion[]> => {
       const followed = new Set(followedKey.split('|'));
-      const items = await followSuggestions(typed, signal);
-      setFound(new Map(items.map((item) => [`${item.kind}:${item.target}`, { kind: item.kind, target: item.target }])));
-      return items.map((item) => {
-        const key = `${item.kind}:${item.target}`;
-        return {
-          key,
-          label: item.label,
-          hint: followed.has(key) ? `已追蹤 · ${item.hint}` : item.hint,
-          icon: item.icon ? <MediaIcon media={item.icon} size={14} /> : undefined,
-        };
-      });
+      const show = (items: Found[]) => {
+        setFound(new Map(items.map((item) => [`${item.kind}:${item.target}`, { kind: item.kind, target: item.target }])));
+        return items.map((item) => {
+          const key = `${item.kind}:${item.target}`;
+          return {
+            key,
+            label: item.label,
+            hint: followed.has(key) ? `已追蹤 · ${item.hint}` : item.hint,
+            icon: item.icon ? <MediaIcon media={item.icon} size={14} /> : undefined,
+          };
+        });
+      };
+      return show(await followSuggestions(typed, signal, (items) => partial(show(items))));
     },
     [followedKey],
   );
@@ -125,7 +159,7 @@ export default function Following() {
           value={text}
           onValueChange={setText}
           suggest={suggest}
-          delay={150}
+          delay={60}
           limit={13}
           onPick={async (item) => {
             const follow = found.get(item.key);

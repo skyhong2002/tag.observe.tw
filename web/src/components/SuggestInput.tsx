@@ -12,8 +12,9 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'defaultValue
   ref?: Ref<HTMLInputElement>;
   value: string;
   onValueChange: (value: string) => void;
-  /** Must be stable (useCallback); async sources get an abort signal. */
-  suggest: (text: string, signal: AbortSignal) => Suggestion[] | Promise<Suggestion[]>;
+  /** Must be stable (useCallback); async sources get an abort signal, and may call
+   *  `partial` with what they have so far so fast sources show before slow ones. */
+  suggest: (text: string, signal: AbortSignal, partial: (items: Suggestion[]) => void) => Suggestion[] | Promise<Suggestion[]>;
   onPick: (suggestion: Suggestion) => void;
   /** Also list suggestions when the box is focused but empty. */
   showOnEmpty?: boolean;
@@ -63,7 +64,10 @@ export default function SuggestInput({
     const abort = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const next = await suggest(text, abort.signal);
+        const partial = (some: Suggestion[]) => {
+          if (!abort.signal.aborted) setItems(some.slice(0, limit));
+        };
+        const next = await suggest(text, abort.signal, partial);
         if (!abort.signal.aborted) {
           setItems(next.slice(0, limit));
           setActive(-1);
