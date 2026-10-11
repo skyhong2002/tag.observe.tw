@@ -5,3 +5,5 @@
 - This preference is persistent project guidance, not confirmation that any particular preview port is running. Recheck the current server and port each session.
 
 - Every task completion report must explicitly state commit status (hash and whether pushed, or not committed) and deployment status (deployed version and verification, or not deployed / failed / blocked). Never imply that a local edit is live. This reporting preference persists across sessions.
+
+- Several agent sessions (Claude Code and Codex) share the checkout at `/home/deck/Projects/tag.analysis.tw`, and its local `main` often lags behind `origin/main`. Before building demos, previews, worktrees, or comparisons against what is live, run `git fetch origin` and base the work on `origin/main` (e.g. `git worktree add --detach ~/.cache/<name> origin/main`), never on local `main`. Do not pull or reset the shared checkout yourself; other sessions keep uncommitted files there. State the base commit in reports.
