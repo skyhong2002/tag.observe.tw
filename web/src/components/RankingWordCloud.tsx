@@ -16,8 +16,10 @@ export interface RankingCloudTerm {
   /** Overrides the size measure; with `quiet`, a filler term drawn in grey between the coloured ones. */
   weight?: number;
   quiet?: boolean;
-  /** Draw the tag as its person's sketch (docs/tag-avatars.md) instead of text. */
+  /** Draw the tag as a picture instead of text: a person's sketch (docs/tag-avatars.md) or another tag's picture (docs/tag-visuals.md). */
   avatar?: string;
+  /** …or as an emoji that is exactly the thing. */
+  emoji?: string;
 }
 
 const rising = (t: RankingCloudTerm) => t.burst !== null && t.burst > t.score;
@@ -70,6 +72,7 @@ export default function RankingWordCloud({
         count: t.weight ?? (mode === 'growth' ? (t.growth ?? 0) : t.score),
         href: `/tag/${encodeURIComponent(t.tag)}`,
         image: t.avatar,
+        emoji: t.emoji,
         ariaLabel: `${t.tag}，${mode === 'growth' && !t.quiet ? `升溫量 ${t.growth?.toFixed(1) ?? '—'}` : `分數 ${t.score.toFixed(1)}`}，${t.count} 篇`,
         tone: t.quiet ? 'stone' : rising(t) ? 'brand' : 'strong',
         card: {

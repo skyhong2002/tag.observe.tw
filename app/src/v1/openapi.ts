@@ -1450,7 +1450,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'tags',
     summary: '所有有素描頭像的人物標籤',
     description:
-      '目前顯示素描頭像的人物標籤與頭像網址（同 /api/v1/tags/{tag}/person 的 avatar.url），首頁文字雲用來把最熱的幾位人物畫成頭像。沒有頭像、被管理員隱藏或只符合別名尚未確認的標籤不列出。',
+      '目前顯示素描頭像的人物標籤與頭像網址（同 /api/v1/tags/{tag}/person 的 avatar.url），首頁文字雲用來把雲裡的人物畫成頭像。沒有頭像、被管理員隱藏或只符合別名尚未確認的標籤不列出。',
     response: obj({ avatars: map(str('頭像網址，帶版本參數'), '依標籤') }),
     cache: '5 分鐘',
   },
@@ -1515,6 +1515,24 @@ export const ENDPOINTS: Endpoint[] = [
     cache: '1 天',
   },
   {
+    path: '/api/v1/tag-visuals',
+    tag: 'tags',
+    summary: '所有有小圖的非人物標籤',
+    description:
+      '目前公開的非人物標籤小圖，首頁文字雲用來把標籤畫成圖（人物頭像見 /api/v1/tag-avatars）。台灣縣市鄉鎮給它在台灣或所屬縣市裡的位置圖，其他地方給輪廓，標誌給單色標誌，線條圖示給已塗成網站橘的 SVG（tone=brand），emoji 直接給字元。待確認、隱藏或沒有圖的標籤不列出。',
+    response: obj({
+      visuals: map(
+        obj({
+          kind: str('種類', { enum: ['place', 'logo', 'emoji', 'icon'] }),
+          image: nullable(str('圖檔網址，帶版本參數；emoji 為 null')),
+          emoji: nullable(str('kind 為 emoji 時的 emoji')),
+        }),
+        '依標籤',
+      ),
+    }),
+    cache: '5 分鐘',
+  },
+  {
     path: '/api/v1/tags/{tag}/visual',
     tag: 'tags',
     summary: '非人物標籤的小圖',
@@ -1559,6 +1577,7 @@ export const ENDPOINTS: Endpoint[] = [
     params: [
       p('tag', '標籤（URL 編碼）', str(), '台北'),
       q('size', 'small（輪廓、標誌、圖示）或 large（地方的位置圖）', str('預設 small', { enum: ['small', 'large'] })),
+      q('tone', 'brand：線條圖示直接塗成網站橘（不當 mask 用時）', str('預設以 currentColor 描線', { enum: ['brand'] })),
     ],
     response: str('SVG 或 WebP 圖檔', { format: 'binary' }),
     errors: { '404': '沒有圖' },

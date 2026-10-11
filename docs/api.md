@@ -92,6 +92,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tag-avatars`](#api-v1-tag-avatars) | 所有有素描頭像的人物標籤 |
 | [`GET /api/v1/tags/{tag}/person`](#api-v1-tags-tag-person) | 標籤代表的人物與素描頭像 |
 | [`GET /api/v1/tags/{tag}/avatar`](#api-v1-tags-tag-avatar) | 標籤人物的素描頭像圖檔 |
+| [`GET /api/v1/tag-visuals`](#api-v1-tag-visuals) | 所有有小圖的非人物標籤 |
 | [`GET /api/v1/tags/{tag}/visual`](#api-v1-tags-tag-visual) | 非人物標籤的小圖 |
 | [`GET /api/v1/tags/{tag}/visual-image`](#api-v1-tags-tag-visual-image) | 非人物標籤的小圖圖檔 |
 | [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
@@ -1665,7 +1666,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E6%B2%88%E4%BC%AF%E6%B4%8B/flow?hou
 
 **所有有素描頭像的人物標籤**
 
-目前顯示素描頭像的人物標籤與頭像網址（同 /api/v1/tags/{tag}/person 的 avatar.url），首頁文字雲用來把最熱的幾位人物畫成頭像。沒有頭像、被管理員隱藏或只符合別名尚未確認的標籤不列出。
+目前顯示素描頭像的人物標籤與頭像網址（同 /api/v1/tags/{tag}/person 的 avatar.url），首頁文字雲用來把雲裡的人物畫成頭像。沒有頭像、被管理員隱藏或只符合別名尚未確認的標籤不列出。
 
 範例：
 
@@ -1750,6 +1751,31 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/avatar'
 
 快取：1 天。
 
+<a id="api-v1-tag-visuals"></a>
+
+### `GET /api/v1/tag-visuals`
+
+**所有有小圖的非人物標籤**
+
+目前公開的非人物標籤小圖，首頁文字雲用來把標籤畫成圖（人物頭像見 /api/v1/tag-avatars）。台灣縣市鄉鎮給它在台灣或所屬縣市裡的位置圖，其他地方給輪廓，標誌給單色標誌，線條圖示給已塗成網站橘的 SVG（tone=brand），emoji 直接給字元。待確認、隱藏或沒有圖的標籤不列出。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tag-visuals'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `visuals` | {鍵: object} | 依標籤 |
+| `visuals.{鍵}.kind` | "place" \| "logo" \| "emoji" \| "icon" | 種類 |
+| `visuals.{鍵}.image` | string \| null | 圖檔網址，帶版本參數；emoji 為 null |
+| `visuals.{鍵}.emoji` | string \| null | kind 為 emoji 時的 emoji |
+
+快取：5 分鐘。
+
 <a id="api-v1-tags-tag-visual"></a>
 
 ### `GET /api/v1/tags/{tag}/visual`
@@ -1803,6 +1829,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E5%8F%B0%E5%8C%97/visual'
 | --- | --- | --- | --- |
 | `tag` | 路徑 | string | 標籤（URL 編碼），例：`台北` |
 | `size` | query | "small" \| "large" | small（輪廓、標誌、圖示）或 large（地方的位置圖） |
+| `tone` | query | "brand" | brand：線條圖示直接塗成網站橘（不當 mask 用時） |
 
 範例：
 

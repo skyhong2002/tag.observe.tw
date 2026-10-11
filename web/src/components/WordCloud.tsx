@@ -36,7 +36,7 @@ export default function WordCloud({
   label: string;
   title: string;
 }) {
-  const terms = words.map((w) => ({ label: w.label.trim(), count: w.count, square: !!w.image }));
+  const terms = words.map((w) => ({ label: w.label.trim(), count: w.count, square: !!(w.image || w.emoji) }));
   const lay = (canvas: CloudCanvas, className: string): CloudCanvasLayout => ({
     width: canvas.width,
     height: canvas.height,

@@ -202,6 +202,12 @@ export interface TagVisual {
   /** Logos: the Commons file and its terms. */
   source: { pageUrl: string; license: string | null; licenseUrl: string | null; artist: string | null } | null;
 }
+/** Every shown non-person picture, as the home cloud draws it: an image URL or an emoji. */
+export const fetchTagVisuals = () =>
+  get<{ visuals: Record<string, { kind: TagVisual['kind']; image: string | null; emoji: string | null }> }>(
+    '/api/v1/tag-visuals',
+    300,
+  ).then((r) => r.visuals);
 export const fetchTagVisual = (tag: string) =>
   get<{ tag: string; visual: TagVisual | null }>(`/api/v1/tags/${encodeURIComponent(tag)}/visual`, 300).then((r) => r.visual);
 /** Groups and topics a tag is filed under (docs/tag-groups.md). */

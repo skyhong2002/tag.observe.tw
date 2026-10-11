@@ -42,6 +42,7 @@
 
 ## 顯示
 
+- 首頁文字雲（`web/src/app/_home/MastheadCloud.tsx`）：雲裡的每個字只要有圖就畫成圖、名字縮成小字放在下面，和人物素描頭像一樣，沒有張數上限。人物用素描頭像；台灣縣市鄉鎮畫它在台灣（或所屬縣市）裡的位置，其他地方畫輪廓或定位點，標誌、線條圖示（已塗成網站橘）與 emoji 直接畫。資料來自 `GET /api/v1/tag-visuals`。待確認的 AI 圖示要管理員採用後才會出現在雲裡。
 - 標籤頁標題旁（`web/src/components/TagVisual.tsx`）：地方顯示位置圖和正式名稱，附地圖資料來源；標誌附 Commons 原檔與授權；emoji 直接顯示；圖示以 CSS mask 填網站橘。人物標籤仍顯示素描頭像。
 - 地方 SVG 是白色填色、橘色線條，深色頁面上也是白紙橘線，與素描頭像一致。
 - API：`GET /api/v1/tags/{tag}/visual`、`GET /api/v1/tags/{tag}/visual-image`，見 [api.md](api.md)。圖檔網址帶版本參數，圖本身快取一天。

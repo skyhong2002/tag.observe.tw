@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import Logo from '@/components/Logo';
 import RankingWordCloud from '@/components/RankingWordCloud';
-import { fetchRanking, fetchTagAvatars } from '@/lib/api';
+import { fetchRanking, fetchTagAvatars, fetchTagVisuals } from '@/lib/api';
 import { LOGO_MASK } from '@/lib/logo-mask.mts';
 import styles from './home.module.css';
 
@@ -102,15 +102,17 @@ const frameVars = Object.fromEntries(
 // At most 30 terms, the top rising ones; on a quiet day the day's top keywords
 // by score make up the count in grey, sized below every rising term.
 const WORDS = 30;
-// The hottest rising people with a sketch avatar are drawn as their faces
-// (docs/tag-avatars.md); the rest of the cloud stays words.
-const FACES = 6;
+// Every word with a picture is drawn as it, its name in small type under it:
+// people as their sketches (docs/tag-avatars.md), other tags as their place,
+// logo, icon or emoji (docs/tag-visuals.md). The rest stay words.
 
 async function Cloud() {
-  const [growth, score, avatars] = await Promise.all([
+  const [growth, score, avatars, visuals] = await Promise.all([
     fetchRanking('all', 'growth', 500, false, false, { gate: 'all' }).catch(() => null),
     fetchRanking('all', 'score', 500, false, false, { gate: 'all' }).catch(() => null),
     fetchTagAvatars().catch((): Record<string, string> => ({})),
+    // Older gateways lack the route: words only.
+    fetchTagVisuals().catch((): Awaited<ReturnType<typeof fetchTagVisuals>> => ({})),
   ]);
   if (!growth?.entries.length) return null;
   const term = (e: (typeof growth.entries)[number]) => ({
@@ -125,14 +127,11 @@ async function Cloud() {
   const rising = growth.entries.map(term);
   const seen = new Set(rising.map((t) => t.tag));
   const top = rising.reduce((n, t) => Math.max(n, t.growth ?? 0), 0);
-  const faces = new Set(
-    rising
-      .slice(0, WORDS)
-      .filter((t) => avatars[t.tag])
-      .slice(0, FACES)
-      .map((t) => t.tag),
-  );
-  const shown = rising.slice(0, WORDS).map((t) => (faces.has(t.tag) ? { ...t, avatar: avatars[t.tag] } : t));
+  const picture = (tag: string) => {
+    const v = visuals[tag];
+    return avatars[tag] ? { avatar: avatars[tag] } : v?.image ? { avatar: v.image } : v?.emoji ? { emoji: v.emoji } : {};
+  };
+  const shown = rising.slice(0, WORDS).map((t) => ({ ...t, ...picture(t.tag) }));
   const floor = shown.reduce((n, t) => Math.min(n, t.growth ?? n), top);
   const others = (score?.entries ?? []).filter((e) => !seen.has(e.tag)).slice(0, WORDS - shown.length);
   const best = others[0]?.normalized || 1;

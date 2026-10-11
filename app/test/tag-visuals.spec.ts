@@ -244,6 +244,11 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     expect((await put('煙火', { action: 'confirm' }, as('admin', false))).statusCode).toBe(403);
     expect((await put('煙火', { action: 'confirm' })).statusCode).toBe(200);
     expect(await visual('煙火')).toMatchObject({ kind: 'emoji', emoji: '🎆', image: null });
+    // The home cloud's list: Taiwan places as where they are, emoji as themselves; review picks left out.
+    const all = (await app.inject({ url: '/api/v1/tag-visuals' })).json().visuals;
+    expect(all['台北'].image).toContain('size=large');
+    expect(all['煙火']).toEqual({ kind: 'emoji', image: null, emoji: '🎆' });
+    expect(all['停水']).toBeUndefined();
   });
 
   it('lets admins set an icon or emoji, upload a logo and hide, and logs it', async () => {
@@ -253,6 +258,9 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     const v = await visual('停水');
     expect(v).toMatchObject({ kind: 'icon', icon: 'droplet' });
     expect((await app.inject({ url: v.image })).body).toContain('stroke="currentColor"');
+    const cloud = (await app.inject({ url: '/api/v1/tag-visuals' })).json().visuals['停水'];
+    expect(cloud.image).toContain('tone=brand');
+    expect((await app.inject({ url: cloud.image })).body).toContain('stroke="#f54900"');
     // A tag with no row yet.
     const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: { r: 0, g: 0, b: 200, alpha: 1 } } })
       .png()
