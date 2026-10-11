@@ -66,7 +66,11 @@ function sectionsFor(pathname: string) {
   }
   if (/^\/journalist(\/|$)/.test(pathname)) return <JournalistMethod />;
   if (/^\/similarity(\/|$)/.test(pathname)) {
-    const page = /^\/similarity\/daily(\/|$)/.test(pathname) ? 'daily' : /^\/similarity\/about(\/|$)/.test(pathname) ? 'status' : 'graph';
+    const page = /^\/similarity\/reposts(\/|$)/.test(pathname)
+      ? 'reposts'
+      : /^\/similarity\/about(\/|$)/.test(pathname)
+        ? 'status'
+        : 'graph';
     return (
       <>
         <SimilarityMethod page={page} />

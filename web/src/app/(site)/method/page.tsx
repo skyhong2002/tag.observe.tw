@@ -63,7 +63,7 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     title: '新聞關係圖',
     pages: [
       ['/similarity/', '關係圖'],
-      ['/similarity/daily/', '轉載統計'],
+      ['/similarity/reposts/', '轉載統計'],
       ['/similarity/about/', '擷取狀態'],
     ],
     body: <SimilarityMethod camp={false} />,

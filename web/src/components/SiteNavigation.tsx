@@ -8,7 +8,7 @@ import NavPending from './NavPending';
 
 export default function SiteNavigation() {
   const pathname = usePathname();
-  // Nested sections (/similarity/daily/ under /similarity/) light only the deepest match.
+  // Nested sections (/media/traffic/ under /media/) light only the deepest match.
   const section = NAV_GROUPS.flatMap((group) => group.links.map((link) => link.href))
     .filter((href) => `${pathname}/`.startsWith(href))
     .sort((a, b) => b.length - a.length)[0];

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CampBasis } from './events';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
-// 新聞關係圖 (/similarity/), 轉載統計 (/similarity/daily/) and 擷取狀態
+// 新聞關係圖 (/similarity/), 轉載統計 (/similarity/reposts/) and 擷取狀態
 // (/similarity/about/). Comparison rules: app/src/similarity/compute.ts
 // (200 characters, 100 shared 5-character shingles, a consecutive passage,
 // 7-day window, thresholds 0.5–1); the default 0.65 is in app/src/v1/similarity.ts;
@@ -12,7 +12,7 @@ import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 // each outlet's strongest two (lib/media-graph.mts mainGraphEdges). Daily
 // counts: loadDaily in app/src/v1/similarity.ts.
 
-export type SimilarityMethodPage = 'graph' | 'daily' | 'status';
+export type SimilarityMethodPage = 'graph' | 'reposts' | 'status';
 
 /** Without `page` (the /method/ page) every part is shown; `camp: false` leaves
  *  out the camp basis where another block already states it. */
@@ -72,7 +72,7 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
           </dd>
         </dl>
       )}
-      {(all || page === 'daily') && (
+      {(all || page === 'reposts') && (
         <>
           <h3 className={methodHeading}>轉載統計</h3>
           <p>

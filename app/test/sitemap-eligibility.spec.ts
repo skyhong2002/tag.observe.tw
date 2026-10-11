@@ -12,7 +12,7 @@ describe('sitemap eligibility', () => {
     const db = { select: () => query } as unknown as Db;
     const urls = (await sitemapUrls(db)).map((entry) => entry.loc);
     expect(urls).toEqual(
-      expect.arrayContaining(['/similarity/', '/similarity/daily/', '/similarity/about/', '/topic/cna/', '/feature/eld/']),
+      expect.arrayContaining(['/similarity/', '/similarity/reposts/', '/similarity/about/', '/topic/cna/', '/feature/eld/']),
     );
     expect(urls).not.toContain('/topic/eld/');
     expect(urls).not.toContain('/feature/cna/');

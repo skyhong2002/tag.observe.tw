@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 /** Sub-pages of the relationship graph; the period and threshold carry across. */
-export default function SimilarityTabs({ current, query }: { current: 'graph' | 'sources' | 'daily' | 'about'; query: string }) {
+export default function SimilarityTabs({ current, query }: { current: 'graph' | 'sources' | 'reposts' | 'about'; query: string }) {
   return (
     <nav
       aria-label="新聞關係圖"
@@ -10,7 +10,7 @@ export default function SimilarityTabs({ current, query }: { current: 'graph' | 
       {[
         { key: 'graph', href: '/similarity/', label: '關係探索' },
         { key: 'sources', href: '/similarity/sources/', label: '來源排行' },
-        { key: 'daily', href: '/similarity/daily/', label: '轉載統計' },
+        { key: 'reposts', href: '/similarity/reposts/', label: '轉載統計' },
         { key: 'about', href: '/similarity/about/', label: '擷取狀態' },
       ].map((tab) => (
         <Link
