@@ -9,13 +9,15 @@ import SuggestInput from '@/components/SuggestInput';
 // the outlet's name (or its id) to narrow the list. Clearing the box means all
 // outlets; leaving it with unmatched text restores the current choice.
 
-export type OutletOption = { media: string; name: string; count?: number };
+/** `noIcon` for entries that are not an outlet (e.g. a selected pair on the graph). */
+export type OutletOption = { media: string; name: string; count?: number; noIcon?: boolean };
 
 export default function OutletPicker({
   outlets,
   value,
   onChange,
   unit = '人',
+  placeholder = '全部媒體',
   className = '',
   id,
 }: {
@@ -23,6 +25,7 @@ export default function OutletPicker({
   value: string;
   onChange: (media: string) => void;
   unit?: string;
+  placeholder?: string;
   className?: string;
   id?: string;
 }) {
@@ -39,7 +42,7 @@ export default function OutletPicker({
       return matches.map((outlet) => ({
         key: outlet.media,
         label: outlet.name,
-        icon: <MediaIcon media={outlet.media} title={outlet.name} size={14} />,
+        icon: outlet.noIcon ? undefined : <MediaIcon media={outlet.media} title={outlet.name} size={14} />,
         hint: outlet.count === undefined ? undefined : `${outlet.count.toLocaleString('zh-TW')} ${unit}`,
       }));
     },
@@ -50,7 +53,7 @@ export default function OutletPicker({
       type="search"
       id={id}
       value={text}
-      placeholder="全部媒體"
+      placeholder={placeholder}
       showOnEmpty
       limit={outlets.length}
       className={className}

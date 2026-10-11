@@ -9,6 +9,7 @@ import FilterSuggestInput from '@/components/FilterSuggestInput';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
+import OutletPicker from '@/components/OutletPicker';
 import SourceLink from '@/components/SourceLink';
 import { VersionCompare } from '@/components/VersionDiff';
 import { ATTRIBUTION_RELATION_LABEL, attributionRole } from '@/lib/author-display.mts';
@@ -826,21 +827,23 @@ export default function SimilarityExplorer({
           {view === 'evidence' && (
             <>
               <div className="flex flex-wrap items-end gap-3">
-                <label className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
+                <label htmlFor="similarity-media" className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
                   媒體
-                  <select
+                  <OutletPicker
+                    id="similarity-media"
+                    placeholder="圖上全部媒體"
+                    unit="篇"
                     value={selection && 'node' in selection ? selection.node : selection ? '__edge__' : ''}
-                    onChange={(event) => select(event.target.value ? { node: event.target.value } : null)}
+                    outlets={[
+                      // A pair picked on the graph stays listed so the box can show it.
+                      ...(selection && 'edge' in selection ? [{ media: '__edge__', name: selectedTitle ?? '', noIcon: true }] : []),
+                      ...graph.nodes.map((node) => ({ media: node.id, name: node.name, count: node.articles, noIcon: node.external })),
+                    ]}
+                    onChange={(value) => {
+                      if (value !== '__edge__') select(value ? { node: value } : null);
+                    }}
                     className={`${control} text-zinc-900 dark:text-zinc-100`}
-                  >
-                    <option value="">圖上全部媒體</option>
-                    {selection && 'edge' in selection && <option value="__edge__">{selectedTitle}</option>}
-                    {graph.nodes.map((node) => (
-                      <option key={node.id} value={node.id}>
-                        {node.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </label>
                 <label className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
                   關係
