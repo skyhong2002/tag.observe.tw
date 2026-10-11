@@ -65,7 +65,8 @@ export function legacyRoute(rawUrl) {
   }
   if ((m = /^\/cat\/([^/]+)\/event(\/.*)?$/.exec(path))) return { status: 301, location: '/event/' };
   if ((m = /^\/cat\/([^/]+)\/.+$/.exec(path))) return { status: 301, location: `/ranking/?category=${seg(m[1])}` };
-  if ((m = /^\/tag\/([^/]+)\/.+$/.exec(path))) return { status: 301, location: `/tag/${seg(m[1])}/` };
+  // Old sub-pages of a tag fold into it; /tag/{tag}/picture/ is the new page for voting on its picture.
+  if ((m = /^\/tag\/([^/]+)\/(?!picture\/?$).+$/.exec(path))) return { status: 301, location: `/tag/${seg(m[1])}/` };
   if (
     path === '/event.php' ||
     path === '/events.php' ||
