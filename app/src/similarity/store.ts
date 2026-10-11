@@ -357,12 +357,58 @@ export interface EvidenceFilter {
   focus?: Set<string>;
   query: string;
   page: number;
+  /** Direct-pair similarity bounds (0–1); explicit citations have no score and drop out. */
+  minScore?: number;
+  maxScore?: number;
+  /** Whether the articles carry a byline: both, at least one without, or neither. */
+  bylines?: 'both' | 'missing' | 'none';
+  /** Gap between the two publication times: same minute, within an hour, or more. */
+  gap?: 'same' | 'hour' | 'later';
+  /** Same-story groups with at least this many articles. */
+  minGroup?: number;
+  sort?: 'latest' | 'score';
 }
 type LightItem =
   | { kind: 'origin'; key: string; at: number; origin: Origin }
   | { kind: 'citation'; key: string; at: number; citation: CitationRow };
 
-/** Browse the complete evidence; the selection narrows it, newest first, one page at a time. */
+const MINUTE = 60_000;
+/** The finer filters (score range, bylines, time gap, story size). Pair-only filters drop explicit citations. */
+async function narrowEvidence(db: Db, items: LightItem[], filter: EvidenceFilter, known: Map<number, SimilarityArticle>) {
+  const pairOnly = filter.minScore !== undefined || filter.maxScore !== undefined || filter.gap || filter.minGroup;
+  if (!pairOnly && !filter.bylines) return items;
+  if (filter.bylines) {
+    const ids = items.flatMap((item) =>
+      item.kind === 'citation' ? [item.citation.articleId] : [item.origin.article.id, item.origin.source.id],
+    );
+    const missing = ids.filter((id) => !known.has(id));
+    for (const [id, article] of await loadArticles(db, missing)) known.set(id, article);
+  }
+  const signed = (id: number) => (known.get(id)?.authors.length ?? 0) > 0;
+  return items.filter((item) => {
+    if (item.kind === 'citation') {
+      if (pairOnly) return false;
+      const on = signed(item.citation.articleId);
+      return filter.bylines === 'both' ? on : !on;
+    }
+    const { origin } = item;
+    const score = origin.directPair?.score;
+    if (filter.minScore !== undefined && (score === undefined || score < filter.minScore)) return false;
+    if (filter.maxScore !== undefined && (score === undefined || score > filter.maxScore)) return false;
+    if (filter.minGroup && origin.group.members.length < filter.minGroup) return false;
+    if (filter.gap) {
+      const gap = Math.abs(origin.article.at - origin.source.at);
+      if (filter.gap === 'same' ? gap >= MINUTE : filter.gap === 'hour' ? gap > 60 * MINUTE : gap <= 60 * MINUTE) return false;
+    }
+    if (filter.bylines) {
+      const count = Number(signed(origin.article.id)) + Number(signed(origin.source.id));
+      if (filter.bylines === 'both' ? count < 2 : filter.bylines === 'missing' ? count === 2 : count > 0) return false;
+    }
+    return true;
+  });
+}
+
+/** Browse the complete evidence; the selection narrows it, newest first unless sorted by score, one page at a time. */
 export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilter): Promise<SimilarityEvidence> {
   const includes = (source: string, target: string) =>
     (!filter.scope || (filter.scope.has(source) && filter.scope.has(target))) &&
@@ -457,7 +503,9 @@ export async function loadEvidence(db: Db, view: IndexView, filter: EvidenceFilt
       );
     });
   }
-  items.sort((a, b) => b.at - a.at || a.key.localeCompare(b.key));
+  items = await narrowEvidence(db, items, filter, known);
+  const score = (item: LightItem) => (item.kind === 'origin' ? (item.origin.directPair?.score ?? 0) : -1);
+  items.sort((a, b) => (filter.sort === 'score' ? score(b) - score(a) : 0) || b.at - a.at || a.key.localeCompare(b.key));
   const pageCount = Math.max(1, Math.ceil(items.length / EVIDENCE_PAGE_SIZE));
   const page = Math.min(filter.page, pageCount - 1);
   const shown = items.slice(page * EVIDENCE_PAGE_SIZE, (page + 1) * EVIDENCE_PAGE_SIZE);

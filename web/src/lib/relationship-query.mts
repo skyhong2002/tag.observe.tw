@@ -19,6 +19,12 @@ export const GRAPH_QUERY_KEYS = [
   'q',
   'page',
   'showAll',
+  'minScore',
+  'maxScore',
+  'bylines',
+  'gap',
+  'minGroup',
+  'sort',
 ] as const;
 export function relationshipQuery(input: URLSearchParams | Record<string, string | undefined>): URLSearchParams {
   const source =
@@ -50,6 +56,13 @@ export function readGraphState(params: URLSearchParams): {
   page: number;
   q: string;
   showAll: boolean;
+  /** 新聞對照 finer filters; scores are whole percents in the URL. */
+  minScore: number | null;
+  maxScore: number | null;
+  bylines: 'all' | 'both' | 'missing' | 'none';
+  gap: 'all' | 'same' | 'hour' | 'later';
+  minGroup: number;
+  sort: 'latest' | 'score';
 } {
   const limit = Number(params.get('limit') ?? 30);
   const relation = params.get('relation');
@@ -67,5 +80,17 @@ export function readGraphState(params: URLSearchParams): {
     page: Number.isInteger(page) && page >= 0 ? page : 0,
     q: (params.get('q') ?? '').slice(0, 120),
     showAll: params.get('showAll') === '1',
+    minScore: percent(params.get('minScore')),
+    maxScore: percent(params.get('maxScore')),
+    bylines: oneOf(params.get('bylines'), ['both', 'missing', 'none'] as const) ?? 'all',
+    gap: oneOf(params.get('gap'), ['same', 'hour', 'later'] as const) ?? 'all',
+    minGroup: [3, 5, 10].includes(Number(params.get('minGroup'))) ? Number(params.get('minGroup')) : 0,
+    sort: params.get('sort') === 'score' ? 'score' : 'latest',
   };
 }
+
+const percent = (value: string | null) => {
+  const number = value === null || value === '' ? Number.NaN : Number(value);
+  return Number.isFinite(number) && number >= 0 && number <= 100 ? Math.round(number) : null;
+};
+const oneOf = <T extends string>(value: string | null, options: readonly T[]) => (options.includes(value as T) ? (value as T) : undefined);

@@ -144,6 +144,16 @@ export function evidenceFilter(query: Record<string, string | undefined>): Evide
     q = query.q ?? '';
   if (!['all', 'similarity', 'citation'].includes(mode) || !['all', 'outgoing', 'incoming'].includes(direction)) return null;
   if (!Number.isInteger(page) || page < 0 || page > 100_000 || q.length > 100) return null;
+  const ratio = (value: string | undefined) => (value === undefined || value === '' ? undefined : Number(value));
+  const minScore = ratio(query.minScore),
+    maxScore = ratio(query.maxScore),
+    minGroup = query.minGroup ? Number(query.minGroup) : undefined;
+  for (const value of [minScore, maxScore]) if (value !== undefined && !(value >= 0 && value <= 1)) return null;
+  if (minScore !== undefined && maxScore !== undefined && minScore > maxScore) return null;
+  if (minGroup !== undefined && !(Number.isInteger(minGroup) && minGroup >= 2 && minGroup <= 1000)) return null;
+  if (query.bylines && !['both', 'missing', 'none'].includes(query.bylines)) return null;
+  if (query.gap && !['same', 'hour', 'later'].includes(query.gap)) return null;
+  if (query.sort && !['latest', 'score'].includes(query.sort)) return null;
   let edge: EvidenceFilter['edge'];
   if (query.edgeKind !== undefined || query.source !== undefined || query.target !== undefined) {
     if ((query.edgeKind !== 'similarity' && query.edgeKind !== 'citation') || !query.source || !query.target || query.node) return null;
@@ -165,6 +175,12 @@ export function evidenceFilter(query: Record<string, string | undefined>): Evide
     focus: mediaList(query.focus),
     query: q,
     page,
+    minScore,
+    maxScore,
+    bylines: query.bylines as EvidenceFilter['bylines'],
+    gap: query.gap as EvidenceFilter['gap'],
+    minGroup,
+    sort: query.sort as EvidenceFilter['sort'],
   };
 }
 
@@ -384,8 +400,28 @@ export function registerSimilarity(app: FastifyInstance, db: Db) {
     return data;
   });
   app.get<{ Querystring: Record<string, string | undefined> }>('/api/v1/similarity/evidence', async (request, reply) => {
-    const { mode, relation, node, edgeKind, edgeRelation, edgeDirected, source, target, direction, scope, focus, q, page, ...window } =
-      request.query;
+    const {
+      mode,
+      relation,
+      node,
+      edgeKind,
+      edgeRelation,
+      edgeDirected,
+      source,
+      target,
+      direction,
+      scope,
+      focus,
+      q,
+      page,
+      minScore,
+      maxScore,
+      bylines,
+      gap,
+      minGroup,
+      sort,
+      ...window
+    } = request.query;
     const params = similarityParams(window);
     const filter = evidenceFilter({
       mode,
@@ -401,6 +437,12 @@ export function registerSimilarity(app: FastifyInstance, db: Db) {
       focus,
       q,
       page,
+      minScore,
+      maxScore,
+      bylines,
+      gap,
+      minGroup,
+      sort,
     });
     if (!params || !filter) return reply.code(400).send({ error: `${PARAMS_ERROR}; see the OpenAPI document for evidence filters` });
     const data = await loadEvidence(db, await cachedIndexView(db, params), filter);

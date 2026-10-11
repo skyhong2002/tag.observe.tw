@@ -518,7 +518,7 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 
 **相似與引用證據（分頁）**
 
-與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為直接比對的相似文章配對，不推定稿源；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選。
+與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為直接比對的相似文章配對，不推定稿源；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選，也可限定相似度範圍、署名有無、刊登時間差與同一則新聞篇數，或依相似度排序。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -538,6 +538,12 @@ curl -s 'https://tag.observe.tw/api/v1/similarity'
 | `focus` | query | string | 逗號分隔的媒體；至少一端在內 |
 | `relation` | query | "attributed" \| "same-byline" \| "unattributed" | 相似配對來源線索，指定時只回相似配對 |
 | `q` | query | string | 關鍵字（最多 100 字元） |
+| `minScore` | query | number | 直接比對相似度下限（0–1）；指定時不列明示引用，0–1 |
+| `maxScore` | query | number | 直接比對相似度上限（0–1）；指定時不列明示引用，0–1 |
+| `bylines` | query | "both" \| "missing" \| "none" | 署名：both 兩篇都有、missing 至少一篇沒有、none 都沒有；明示引用只看引用方 |
+| `gap` | query | "same" \| "hour" \| "later" | 兩篇刊登時間差：same 1 分鐘內、hour 1 小時內、later 超過 1 小時；指定時不列明示引用 |
+| `minGroup` | query | integer | 同一則新聞至少幾篇；指定時不列明示引用，2–1000 |
+| `sort` | query | "latest" \| "score" | 排序：latest 最新在前、score 相似度高到低，預設 `latest` |
 | `page` | query | integer | 頁碼，從 0 開始，預設 `0` |
 
 範例：

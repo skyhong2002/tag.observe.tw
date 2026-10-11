@@ -32,6 +32,7 @@ import {
 } from '@/lib/similarity';
 import { evidenceItems, type StoryOrigin } from '@/lib/story-origins.mts';
 import type { TaiwanReaders } from '@/lib/traffic-comparison.mts';
+import EvidenceMoreFilters, { clearMoreFilters, moreFilterCount } from './EvidenceMoreFilters';
 import { hoursLabel, number, periodLabel, taipei } from './format';
 import MediaComparison from './MediaComparison';
 import SimilarityTabs from './SimilarityTabs';
@@ -562,6 +563,12 @@ export default function SimilarityExplorer({
       focus: graph.focus ? [...graph.focus] : undefined,
       q: searchText.trim(),
       page,
+      minScore: state.minScore ?? undefined,
+      maxScore: state.maxScore ?? undefined,
+      bylines: state.bylines === 'all' ? undefined : state.bylines,
+      gap: state.gap === 'all' ? undefined : state.gap,
+      minGroup: state.minGroup || undefined,
+      sort: state.sort === 'score' ? 'score' : undefined,
     } satisfies EvidenceQuery,
     retry,
   });
@@ -890,7 +897,7 @@ export default function SimilarityExplorer({
                     placeholder="標題、媒體、作者或共同段落"
                   />
                 </label>
-                {(selection || mode !== 'all' || relationFilter !== 'all' || query) && (
+                {(selection || mode !== 'all' || relationFilter !== 'all' || query || moreFilterCount(state) > 0) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -901,6 +908,7 @@ export default function SimilarityExplorer({
                         direction: 'all',
                         q: undefined,
                         page: undefined,
+                        ...clearMoreFilters,
                       });
                     }}
                     className={`${linkStyle} pb-2 text-sm underline`}
@@ -909,6 +917,7 @@ export default function SimilarityExplorer({
                   </button>
                 )}
               </div>
+              <EvidenceMoreFilters state={state} threshold={data.threshold} onChange={(patch) => updateUrl(patch)} />
               {selection && 'node' in selection && (
                 <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs leading-6 text-zinc-500">
                   <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{selectedTitle}</span>
@@ -943,7 +952,7 @@ export default function SimilarityExplorer({
                   ? '新聞對照資料載入失敗'
                   : evidenceLoading && !evidence
                     ? '載入關係證據中…'
-                    : `${number(total)} 筆 · 最新在前${total ? ` · 顯示 ${number(currentPage * pageSize + 1)}–${number(Math.min(total, (currentPage + 1) * pageSize))}` : ''}${evidenceLoading ? ' · 更新中…' : ''} · 只列圖上媒體之間的關係`}
+                    : `${number(total)} 筆 · ${state.sort === 'score' ? '相似度高到低' : '最新在前'}${total ? ` · 顯示 ${number(currentPage * pageSize + 1)}–${number(Math.min(total, (currentPage + 1) * pageSize))}` : ''}${evidenceLoading ? ' · 更新中…' : ''} · 只列圖上媒體之間的關係`}
                 {!evidenceError && hiddenSources > 0 && (
                   <>
                     ，另有 {number(hiddenSources)} 篇的來源媒體不在圖上

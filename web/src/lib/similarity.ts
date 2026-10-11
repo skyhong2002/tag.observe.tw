@@ -49,6 +49,13 @@ export interface EvidenceQuery {
   focus?: string[];
   q: string;
   page: number;
+  /** Whole percents; sent to the API as 0–1. */
+  minScore?: number;
+  maxScore?: number;
+  bylines?: 'both' | 'missing' | 'none';
+  gap?: 'same' | 'hour' | 'later';
+  minGroup?: number;
+  sort?: 'score';
 }
 /** Browser-side: one page of evidence from the full index, newest first. */
 export async function fetchEvidence(period: SimilarityPeriod, threshold: number, query: EvidenceQuery, signal?: AbortSignal) {
@@ -68,6 +75,9 @@ export async function fetchEvidence(period: SimilarityPeriod, threshold: number,
   }
   if (query.scope) params.set('scope', query.scope.join(','));
   if (query.focus) params.set('focus', query.focus.join(','));
+  if (query.minScore !== undefined) params.set('minScore', String(query.minScore / 100));
+  if (query.maxScore !== undefined) params.set('maxScore', String(query.maxScore / 100));
+  for (const key of ['bylines', 'gap', 'minGroup', 'sort'] as const) if (query[key]) params.set(key, String(query[key]));
   const response = await fetch(`/api/v1/similarity/evidence?${params}`, { headers: { accept: 'application/json' }, signal });
   if (!response.ok) throw new Error(`similarity evidence: ${response.status}`);
   return response.json() as Promise<SimilarityEvidence>;

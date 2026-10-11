@@ -202,3 +202,43 @@ it('clicking each colored line returns only its category and publication directi
     expect(result.items).toHaveLength(1);
   }
 });
+
+it('narrows evidence by score range, bylines, time gap and story size, and sorts by score', async () => {
+  const at = (minute: number) => `2026-10-05T11:${String(minute).padStart(2, '0')}:00Z`;
+  const signed = article(1, 'a', { authors: ['記者甲'], publishedAt: at(0) });
+  const copy = article(2, 'b', { authors: ['記者乙'], publishedAt: at(0) });
+  const unsigned = article(3, 'c', { publishedAt: '2026-10-05T13:30:00Z' });
+  const loose = article(4, 'd', { authors: ['記者丙'], publishedAt: at(20) });
+  const lone = article(5, 'e', { publishedAt: at(10) });
+  const pairs = [
+    { ...stored(signed, copy), score: 0.95 },
+    { ...stored(signed, unsigned), score: 0.7 },
+    { ...stored(signed, loose), score: 0.8 },
+    { ...stored(lone, article(6, 'f', { publishedAt: at(40) })), score: 0.66 },
+  ];
+  const known = new Map([signed, copy, unsigned, loose, lone, article(6, 'f', { publishedAt: at(40) })].map((x) => [x.id, x]));
+  const view = {
+    ...aggregateRelations(pairs, known, new Map(), []),
+    ...storyGroups(pairs),
+    pairs,
+    articleById: known,
+    from: new Date('2026-10-05'),
+    to: new Date('2026-10-06'),
+    threshold: 0.65,
+    citations: [],
+    analyzed: new Map<string, number>(),
+  };
+  const db = { select: () => ({ from: () => ({ where: async () => [] }) }) } as unknown as Db;
+  const ids = async (patch: Record<string, unknown>) => {
+    const result = await loadEvidence(db, view, { mode: 'all', direction: 'all', query: '', page: 0, ...patch });
+    return result.items.map((item) => (item.kind === 'origin' ? `${item.articleId}<${item.sourceId}` : 'citation'));
+  };
+  expect(await ids({ minScore: 0.75, maxScore: 0.9 })).toEqual(['4<1']);
+  expect(await ids({ bylines: 'both' })).toEqual(['4<1', '2<1']);
+  expect(await ids({ bylines: 'none' })).toEqual(['6<5']);
+  expect((await ids({ bylines: 'missing' })).sort()).toEqual(['3<1', '6<5']);
+  expect(await ids({ gap: 'same' })).toEqual(['2<1']);
+  expect(await ids({ gap: 'later' })).toEqual(['3<1']);
+  expect((await ids({ minGroup: 4 })).sort()).toEqual(['2<1', '3<1', '4<1']);
+  expect(await ids({ sort: 'score' })).toEqual(['2<1', '4<1', '3<1', '6<5']);
+});

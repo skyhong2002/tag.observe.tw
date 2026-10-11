@@ -989,7 +989,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'articles',
     summary: '相似與引用證據（分頁）',
     description:
-      '與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為直接比對的相似文章配對，不推定稿源；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選。',
+      '與 /api/v1/similarity 相同期間與門檻的全部證據，最新在前，每頁 20 則。origin 為直接比對的相似文章配對，不推定稿源；citation 為明示引用。可依媒體、連線、方向與關鍵字（標題、媒體、署名、相同片段）篩選，也可限定相似度範圍、署名有無、刊登時間差與同一則新聞篇數，或依相似度排序。',
     params: [
       q('hours', '回溯小時；與 from／to 擇一', intIn(1, 168, 48)),
       q('from', '起始台北日期 YYYY-MM-DD（與 to 一起使用，最多 31 天）', str()),
@@ -1011,6 +1011,18 @@ export const ENDPOINTS: Endpoint[] = [
       q('focus', '逗號分隔的媒體；至少一端在內', str()),
       q('relation', '相似配對來源線索，指定時只回相似配對', str(undefined, { enum: ['attributed', 'same-byline', 'unattributed'] })),
       q('q', '關鍵字（最多 100 字元）', str()),
+      q('minScore', '直接比對相似度下限（0–1）；指定時不列明示引用', { type: 'number', minimum: 0, maximum: 1 }),
+      q('maxScore', '直接比對相似度上限（0–1）；指定時不列明示引用', { type: 'number', minimum: 0, maximum: 1 }),
+      q('bylines', '署名：both 兩篇都有、missing 至少一篇沒有、none 都沒有；明示引用只看引用方', {
+        type: 'string',
+        enum: ['both', 'missing', 'none'],
+      }),
+      q('gap', '兩篇刊登時間差：same 1 分鐘內、hour 1 小時內、later 超過 1 小時；指定時不列明示引用', {
+        type: 'string',
+        enum: ['same', 'hour', 'later'],
+      }),
+      q('minGroup', '同一則新聞至少幾篇；指定時不列明示引用', { type: 'integer', minimum: 2, maximum: 1000 }),
+      q('sort', '排序：latest 最新在前、score 相似度高到低', { type: 'string', enum: ['latest', 'score'], default: 'latest' }),
       q('page', '頁碼，從 0 開始', { type: 'integer', minimum: 0, default: 0 }),
     ],
     response: ref('SimilarityEvidence'),
