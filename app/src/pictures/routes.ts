@@ -8,6 +8,7 @@ import type { Db } from '../db/client.ts';
 import { tagAvatarCandidates, tagPeople, tagPictureVotes, tagVisualCandidates, tagVisuals } from '../db/schema.ts';
 import { recolourLogo } from '../tag-visuals/recolour.ts';
 import { visualMime } from '../v1/tag-visual.ts';
+import { refreshPages } from './refresh.ts';
 import { addVisualUpload, applyVotes, castVote, type PictureKind, pictureKind, tally, uploadsToday } from './votes.ts';
 
 // /tag/{tag}/picture/: any signed-in reader votes for a tag's picture or
@@ -21,6 +22,8 @@ type Options = {
   currentUser: (request: FastifyRequest) => Promise<SessionUser | null>;
   origin: string;
   queue: () => JobQueue;
+  /** The web server, told to rebuild the home and tag pages when a picture changes. */
+  uiOrigin?: string | null;
 };
 
 // A phone photo, base64 in JSON: up to about 11 MB of image.
@@ -31,7 +34,7 @@ const PHOTO_JOB = 'tag-avatar-photo';
 const imagePath = (tag: string, rank: number, size: 'small' | 'large' = 'small') =>
   `/auth/pictures/${encodeURIComponent(tag)}/candidates/${rank}${size === 'large' ? '?size=large' : ''}`;
 
-export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUser, origin, queue }: Options) {
+export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUser, origin, queue, uiOrigin = null }: Options) {
   const signedIn = async (request: FastifyRequest, reply: FastifyReply, write = false) => {
     reply.header('cache-control', 'no-store');
     if (write && request.headers.origin !== origin) {
@@ -184,7 +187,9 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
         .where(and(eq(table.tag, tag), eq(table.rank, rank)));
       if (!c) return reply.code(404).send({ error: 'no such candidate' });
     }
-    return { tag, shownRank: await castVote(db, tag, kind, user.id, rank) };
+    const shownRank = await castVote(db, tag, kind, user.id, rank);
+    refreshPages(uiOrigin, tag);
+    return { tag, shownRank };
   });
 
   // { image: base64, agree: true }: a person's photo is queued for the worker
@@ -218,7 +223,9 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
           return reply.code(202).send({ kind, jobId: job.id });
         }
         const image = await recolourLogo(raw);
-        return { kind, ...(await addVisualUpload(db, tag, image, user.id)) };
+        const added = await addVisualUpload(db, tag, image, user.id);
+        refreshPages(uiOrigin, tag);
+        return { kind, ...added };
       } catch (err) {
         return reply.code(400).send({ error: `讀不了這張圖：${(err as Error).message}` });
       }
@@ -233,8 +240,11 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     const job = await queue().getJob(request.params.id);
     if (!job || (user.role !== 'admin' && (job.data as { userId?: number }).userId !== user.id))
       return reply.code(404).send({ error: 'no such job' });
-    const result = (job.returnvalue ?? null) as { error?: string } | null;
-    return { id: job.id, state: await job.getState(), result, error: job.failedReason ?? result?.error ?? null };
+    const result = (job.returnvalue ?? null) as { tag?: string; error?: string } | null;
+    const state = await job.getState();
+    // The sketch is in: rebuild the pages (once is enough, but polling twice does no harm).
+    if (state === 'completed' && result?.tag && !result.error) refreshPages(uiOrigin, result.tag);
+    return { id: job.id, state, result, error: job.failedReason ?? result?.error ?? null };
   });
 
   // Admins: { rank } locks that candidate in (votes keep counting but do not
@@ -253,7 +263,9 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
       if (kind === 'avatar')
         await db.update(tagPeople).set({ status: 'voted', reviewedBy: user.email, reviewedAt: at }).where(eq(tagPeople.tag, tag));
       else await db.update(tagVisuals).set({ status: 'voted', reviewedBy: user.email, reviewedAt: at }).where(eq(tagVisuals.tag, tag));
-      return { tag, shownRank: await applyVotes(db, tag, kind) };
+      const shownRank = await applyVotes(db, tag, kind);
+      refreshPages(uiOrigin, tag);
+      return { tag, shownRank };
     }
     if (kind === 'avatar') {
       const [c] = await db
@@ -277,6 +289,7 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
         .set({ ...picture, status: 'chosen', shownRank: rank, reviewedBy: user.email, reviewedAt: at })
         .where(eq(tagVisuals.tag, tag));
     }
+    refreshPages(uiOrigin, tag);
     return { tag, shownRank: rank };
   });
 }

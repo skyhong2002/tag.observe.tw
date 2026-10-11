@@ -10,6 +10,7 @@ import { buildApp } from '../src/app.js';
 import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import { tagPeople, tagPictureVotes, tagVisualCandidates, tagVisualLog, tagVisuals, tagWikidata } from '../src/db/schema.ts';
+import { refreshPages, tagPaths } from '../src/pictures/refresh.ts';
 import { leader } from '../src/pictures/votes.ts';
 import { parseReply, prompt } from '../src/tag-visuals/ai.ts';
 import { isEmoji } from '../src/tag-visuals/emoji.ts';
@@ -403,6 +404,21 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     // Candidate images for signed-in readers only.
     expect((await app.inject({ url: s.candidates[0].image, headers: as('reader', false) })).headers['content-type']).toBe('image/webp');
     expect((await app.inject({ url: s.candidates[0].image })).statusCode).toBe(401);
+  });
+
+  it('tells the web server to rebuild the home and tag pages, and keeps /internal/ to itself', async () => {
+    const calls: { url: string; body: string }[] = [];
+    const fetchImpl = (async (url: string, init: { body: string }) => {
+      calls.push({ url, body: init.body });
+      return new Response('{}');
+    }) as unknown as typeof fetch;
+    refreshPages('http://127.0.0.1:18132', '張士綸', fetchImpl);
+    refreshPages(null, '張士綸', fetchImpl);
+    expect(calls).toEqual([{ url: 'http://127.0.0.1:18132/internal/revalidate/', body: JSON.stringify({ paths: tagPaths('張士綸') }) }]);
+    expect(tagPaths('張士綸')).toEqual(['/', '/tag/張士綸', '/tag/%E5%BC%B5%E5%A3%AB%E7%B6%B8']);
+    // From outside, the gateway answers /internal/ itself instead of passing it to the web server.
+    const outside = await app.inject({ method: 'POST', url: '/internal/revalidate/', payload: { paths: ['/'] } });
+    expect(outside.statusCode).toBe(404);
   });
 
   it('picks the most votes, a tie keeping what is shown', () => {

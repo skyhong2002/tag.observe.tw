@@ -143,12 +143,23 @@ export async function buildApp(
     registerAdminRoutes(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
   if (own && config.login) registerTaiwanShares(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login)
-    registerAvatarAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, queue: jobQueue ?? openQueue });
+    registerAvatarAdmin(app, own.db, {
+      requireAdmin: login.requireAdmin,
+      origin: config.login.origin,
+      queue: jobQueue ?? openQueue,
+      uiOrigin: config.uiOrigin,
+    });
   if (own && config.login) registerWritingAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerTagGroupAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
-  if (own && config.login) registerTagVisualAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login)
-    registerPictureRoutes(app, own.db, { currentUser: login.currentUser, origin: config.login.origin, queue: jobQueue ?? openQueue });
+    registerTagVisualAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, uiOrigin: config.uiOrigin });
+  if (own && config.login)
+    registerPictureRoutes(app, own.db, {
+      currentUser: login.currentUser,
+      origin: config.login.origin,
+      queue: jobQueue ?? openQueue,
+      uiOrigin: config.uiOrigin,
+    });
   if (own) apiKeys = apiKeyLookup(own.db);
   if (own && config.login && apiKeys)
     registerReaderRoutes(app, own.db, {
@@ -196,6 +207,12 @@ export async function buildApp(
     return proxyToUi(request, reply);
   };
   app.route({ method: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], url: '/', handler });
+  // The web server's internal routes (page rebuilds, app/src/pictures/refresh.ts) are for the gateway only.
+  app.route({
+    method: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    url: '/internal/*',
+    handler: (_request, reply) => reply.code(404).send({ error: 'not found' }),
+  });
   app.route({ method: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], url: '/*', handler });
   await app.ready();
   return app;

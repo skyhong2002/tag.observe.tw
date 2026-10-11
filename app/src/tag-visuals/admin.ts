@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
 import { type TagVisualKind, type TagVisualStatus, tagVisualCandidates, tagVisualLog, tagVisuals } from '../db/schema.ts';
+import { refreshPages } from '../pictures/refresh.ts';
 import { visualMime } from '../v1/tag-visual.ts';
 import { isEmoji } from './emoji.ts';
 import { recolourLogo } from './recolour.ts';
@@ -16,6 +17,8 @@ import { recolourLogo } from './recolour.ts';
 type Options = {
   requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<SessionUser | null>;
   origin: string;
+  /** The web server, told to rebuild the home and tag pages when a picture changes. */
+  uiOrigin?: string | null;
 };
 
 const STATUSES: TagVisualStatus[] = ['review', 'auto', 'voted', 'chosen', 'hidden', 'none'];
@@ -63,7 +66,7 @@ const present = ({ hasImage, hasLarge, ...r }: Listed) => {
   };
 };
 
-export function registerTagVisualAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin }: Options) {
+export function registerTagVisualAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin, uiOrigin = null }: Options) {
   const sameOrigin = (request: FastifyRequest, reply: FastifyReply) => {
     if (request.headers.origin === origin) return true;
     reply.header('cache-control', 'no-store').code(403).send({ error: 'same-origin requests only' });
@@ -207,6 +210,7 @@ export function registerTagVisualAdmin(app: FastifyInstance, db: Db, { requireAd
         .onDuplicateKeyUpdate({ set: values });
       await tx.insert(tagVisualLog).values({ tag, action, detail: detail.slice(0, 120), email, at });
     });
+    refreshPages(uiOrigin, tag);
     return { tag, status: set.status, kind: set.kind, value: set.value, shownRank: set.shownRank, reviewedBy: email, reviewedAt: at };
   };
 

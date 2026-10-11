@@ -5,6 +5,7 @@ import type { JobQueue } from '../admin/routes.ts';
 import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
 import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog } from '../db/schema.ts';
+import { refreshPages } from '../pictures/refresh.ts';
 import { inkImage } from './ink.ts';
 
 // /admin/avatars/: admins look over person tags and their sketch avatars,
@@ -18,6 +19,8 @@ type Options = {
   requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<SessionUser | null>;
   origin: string;
   queue: () => JobQueue;
+  /** The web server, told to rebuild the home and tag pages when an avatar changes. */
+  uiOrigin?: string | null;
 };
 
 // A phone photo, base64 in JSON: up to about 11 MB of image.
@@ -30,7 +33,7 @@ const PAGE = 60;
 const imagePath = (tag: string, rank: number, version: number) =>
   `/auth/admin/avatars/${encodeURIComponent(tag)}/candidates/${rank}?v=${version.toString(36)}`;
 
-export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin, queue }: Options) {
+export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin, queue, uiOrigin = null }: Options) {
   // ?tag= looks one person tag up (the tag page's 「換圖」 link).
   app.get<{ Querystring: { status?: string; offset?: string; tag?: string } }>('/auth/admin/avatars', async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return reply;
@@ -133,6 +136,7 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
         .insert(tagPeopleLog)
         .values({ tag, action: rank === null ? 'hide' : 'show', fromRank: person.shownRank, toRank: rank, email: user.email, at });
     });
+    refreshPages(uiOrigin, tag);
     return { tag, ...set };
   });
 
@@ -174,7 +178,9 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
     if (!request.params.id.startsWith(`${PHOTO_JOB}-`)) return reply.code(404).send({ error: 'no such job' });
     const job = await queue().getJob(request.params.id);
     if (!job) return reply.code(404).send({ error: 'no such job' });
-    const result = (job.returnvalue ?? null) as { error?: string } | null;
-    return { id: job.id, state: await job.getState(), result, error: job.failedReason ?? result?.error ?? null };
+    const result = (job.returnvalue ?? null) as { tag?: string; error?: string } | null;
+    const state = await job.getState();
+    if (state === 'completed' && result?.tag && !result.error) refreshPages(uiOrigin, result.tag);
+    return { id: job.id, state, result, error: job.failedReason ?? result?.error ?? null };
   });
 }
