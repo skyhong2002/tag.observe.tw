@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { VisualPicture } from '@/components/TagVisual';
 import type { TagVisual } from '@/lib/api';
 import AdminGate, { adminFetch, note } from '../AdminGate';
@@ -104,10 +104,15 @@ function Review() {
     const url = query ? `?tag=${encodeURIComponent(query)}` : window.location.pathname;
     window.history.replaceState(null, '', url);
   }, [query]);
+  // Only the latest request may fill the page: on ?tag=… the default list's
+  // request can come back after the one tag's and would cover it.
+  const latest = useRef(0);
   const load = useCallback(() => {
     const q = query ? `tag=${encodeURIComponent(query)}` : `status=${status}${kind ? `&kind=${kind}` : ''}&offset=${offset}`;
+    const id = ++latest.current;
     adminFetch<Page>(`/auth/admin/tag-visuals?${q}`)
       .then((p) => {
+        if (id !== latest.current) return;
         setPage(p);
         setError('');
       })
