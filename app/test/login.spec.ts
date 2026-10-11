@@ -1,6 +1,14 @@
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
-import { type LoginConfig, type LoginStore, loginConfig, registerLogin, type StoredUser, safeNext } from '../src/auth/google-login.ts';
+import {
+  hashToken,
+  type LoginConfig,
+  type LoginStore,
+  loginConfig,
+  registerLogin,
+  type StoredUser,
+  safeNext,
+} from '../src/auth/google-login.ts';
 
 const config: LoginConfig = {
   clientId: 'client.apps.googleusercontent.com',
@@ -16,7 +24,7 @@ function memoryStore() {
     async upsertUser(identity, at) {
       const found = users.find((user) => user.sub === identity.sub);
       if (found) return Object.assign(found, identity, { lastLoginAt: at }).id;
-      users.push({ ...identity, id: users.length + 1, createdAt: at, lastLoginAt: at });
+      users.push({ ...identity, id: users.length + 1, createdAt: at, lastLoginAt: at, grant: null });
       return users.length;
     },
     async createSession(hash, userId, expiresAt) {
@@ -31,6 +39,11 @@ function memoryStore() {
     },
     async listUsers() {
       return users;
+    },
+    async setAdmin(userId, admin, by, at) {
+      const user = users.find((u) => u.id === userId);
+      if (user) user.grant = admin ? { by, at } : null;
+      return Boolean(user);
     },
   };
   return { store, users, sessions };
@@ -119,6 +132,37 @@ describe('google login', () => {
     expect((await app.inject({ url: '/auth/me', headers: { cookie } })).json().user.role).toBe('reader');
     expect((await app.inject({ url: '/auth/users', headers: { cookie } })).statusCode).toBe(403);
     expect((await app.inject({ url: '/auth/users' })).statusCode).toBe(401);
+  });
+
+  it('lets an admin promote and demote other accounts, but not config admins or themselves', async () => {
+    const { app, memory, signIn, sessionCookie } = await setup();
+    const adminCookie = sessionCookie(await signIn());
+    await memory.store.upsertUser({ sub: '99', email: 'reader@example.com', name: null, picture: null }, new Date());
+    const origin = 'https://tag.observe.tw';
+    const put = (id: number, role: string, headers: Record<string, string> = { cookie: adminCookie, origin }) =>
+      app.inject({ method: 'PUT', url: `/auth/users/${id}/role`, headers, payload: { role } });
+
+    expect((await put(2, 'admin', { cookie: adminCookie })).statusCode).toBe(403);
+    expect((await put(2, 'owner')).statusCode).toBe(400);
+    expect((await put(1, 'reader')).statusCode).toBe(400);
+    expect((await put(7, 'admin')).statusCode).toBe(404);
+    expect((await put(2, 'admin')).json()).toEqual({ ok: true, role: 'admin' });
+    expect(memory.users[1].grant?.by).toBe('admin@example.com');
+    const list = (await app.inject({ url: '/auth/users', headers: { cookie: adminCookie } })).json().users;
+    expect(list).toMatchObject([
+      { id: 1, role: 'admin', adminSource: 'config', grantedBy: null },
+      { id: 2, role: 'admin', adminSource: 'granted', grantedBy: 'admin@example.com' },
+    ]);
+
+    // The promoted account is an admin on its next request, but can't demote a config admin.
+    memory.sessions.set(hashToken('reader-token'), { userId: 2, expiresAt: new Date(Date.now() + 60_000) });
+    const readerCookie = 'tag_session=reader-token';
+    expect((await app.inject({ url: '/auth/me', headers: { cookie: readerCookie } })).json().user.role).toBe('admin');
+    expect((await put(1, 'reader', { cookie: readerCookie, origin })).statusCode).toBe(409);
+
+    expect((await put(2, 'reader')).statusCode).toBe(200);
+    expect((await app.inject({ url: '/auth/me', headers: { cookie: readerCookie } })).json().user.role).toBe('reader');
+    expect((await put(1, 'reader', { cookie: readerCookie, origin })).statusCode).toBe(403);
   });
 
   it('rejects a mismatched state, unverified email, foreign audience or replayed nonce', async () => {

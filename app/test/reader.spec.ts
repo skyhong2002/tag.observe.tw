@@ -74,6 +74,7 @@ describe.skipIf(!url)('reader features (MariaDB)', () => {
     createSession: async () => {},
     deleteSession: async () => {},
     listUsers: async () => [],
+    setAdmin: async () => false,
     sessionUser: async (hash) => {
       const name = Object.keys(people).find((key) => hashToken(key) === hash);
       return name ? { id: people[name].id, sub: name, email: people[name].email, name, picture: null } : null;
@@ -370,6 +371,7 @@ describe.skipIf(!url)('API key rate limit (MariaDB)', () => {
           createSession: async () => {},
           deleteSession: async () => {},
           listUsers: async () => [],
+          setAdmin: async () => false,
           sessionUser: async () => ({ id: 2, sub: 'alice', email: 'alice@example.com', name: null, picture: null }),
         },
       },

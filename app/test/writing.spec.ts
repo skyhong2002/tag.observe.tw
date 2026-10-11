@@ -19,6 +19,7 @@ const store: LoginStore = {
   createSession: async () => {},
   deleteSession: async () => {},
   listUsers: async () => [],
+  setAdmin: async () => false,
   sessionUser: async (hash) =>
     hash === hashToken('admin') ? { id: 1, sub: 'admin', email: 'admin@example.com', name: 'admin', picture: null } : null,
 };

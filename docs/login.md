@@ -10,7 +10,7 @@
 | --- | --- |
 | `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET` | Google Cloud 的 Web application OAuth client。兩者都不設就關閉登入（`/auth/me` 回 `enabled: false`，header 不顯示登入）。 |
 | `TAG_PUBLIC_ORIGIN` | 預設 `https://tag.observe.tw`。callback 為 `$TAG_PUBLIC_ORIGIN/auth/google/callback`，必須登錄在 OAuth client 的「已授權的重新導向 URI」。 |
-| `TAG_ADMIN_EMAILS` | 逗號分隔的管理員 Email（不分大小寫）。角色不存進資料庫，每次請求依此名單判斷，改名單後重啟 gateway 即生效。 |
+| `TAG_ADMIN_EMAILS` | 逗號分隔的基本管理員 Email（不分大小寫），每次請求依此名單判斷，改名單後重啟 gateway 即生效。這些人在 `/admin/` 不能被取消管理員。其他管理員由管理員在 `/admin/` 指派（見下方「指派管理員」）。 |
 
 ## 端點
 
@@ -20,7 +20,8 @@
 | `GET /auth/google/callback` | 換 token、檢查 ID token（iss、aud、exp、nonce、`email_verified`），建立 30 天 session 後導回 `next`；失敗導到 `/login/?error=…`。 |
 | `POST /auth/logout` | 需本站 `Origin`；刪除 session。 |
 | `GET /auth/me` | `{ enabled, user: { id, email, name, picture, role } \| null }`，`role` 為 `admin` 或 `reader`。 |
-| `GET /auth/users` | 管理員限定：登入過的帳號清單（`/admin/` 頁使用）。 |
+| `GET /auth/users` | 管理員限定：登入過的帳號清單（`/admin/` 頁使用），含 `id`、`role`、`adminSource`（`config` = `TAG_ADMIN_EMAILS`、`granted` = 在 `/admin/` 指派、`null`）與 `grantedBy`。 |
+| `PUT /auth/users/:id/role` | 管理員限定、需本站 `Origin`：`{ role: 'admin' \| 'reader' }` 指派或取消管理員，寫入 `user_role_log`。不能改自己（400），`TAG_ADMIN_EMAILS` 裡的人不能改（409）。 |
 | `GET /auth/admin/lookup?url=` | 管理員限定：新聞網址屬於哪家媒體（已收錄的文章優先，其次比對各媒體已知網域，含子網域），並回傳本站收錄的這篇文章。 |
 | `GET /auth/admin/media`、`GET /auth/admin/media/:media` | 管理員限定：所有媒體與標籤；單一媒體的標籤、爬蟲排程、最近幾次 crawl_runs 與修改紀錄。 |
 | `PUT /auth/admin/media/:media/categories` | 管理員限定、需本站 `Origin`：`{ categories: [...] }` 整組取代這家媒體的標籤，寫入 `media_category_log`。 |
@@ -61,7 +62,8 @@
 
 ## 資料
 
-- `users`：Google `sub`、Email、名字、大頭貼網址、首次與最近登入時間。
+- `users`：Google `sub`、Email、名字、大頭貼網址、首次與最近登入時間；`admin_granted_by`／`admin_granted_at` 記錄誰在何時把他設為管理員（取消時清空）。
+- `user_role_log`：每次在 `/admin/` 指派或取消管理員的紀錄（對象、新角色、操作的管理員 Email、時間）。
 - `user_sessions`：只存 session cookie（`tag_session`，HttpOnly、SameSite=Lax、HTTPS 時 Secure）的 SHA-256；過期列在下次有人登入時清掉。
 
 ## 讀者功能（`/my/`）
@@ -83,6 +85,10 @@
 - **回報錯誤**：文章頁「回報錯誤」可選標籤（附建議的完整標籤）、署名、媒體歸屬或其他。`/admin/` 最上方的「讀者回報」列出待處理項目，標籤回報會標示建議新增與移除的標籤；讀者在 `/my/settings/` 看得到處理結果與管理員的說明。
 
 資料表（migration `0025_reader-accounts`）：`user_follows`、`user_saves`、`user_prefs`、`user_feed_tokens`、`user_api_keys`、`reader_history`、`reader_reports`，全部以 `user_id` 對應 `users.id`。
+
+## 指派管理員
+
+對方先用 Google 登入一次，`/admin/` 的「登入過的帳號」就會列出他，按「設為管理員」即可（「取消管理員」反之）。角色每次請求都重新判斷，所以對方重新載入頁面就生效，不用重新登入。資料庫主控台（`/admin/db/`）另外需要一個 DB 帳號（見下方 `scripts/adminer-account.sh`），沒有帳號的管理員開啟會得到 403。
 
 ## 媒體設定（`/admin/media/`）
 

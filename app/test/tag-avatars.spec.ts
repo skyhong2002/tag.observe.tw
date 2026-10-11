@@ -112,6 +112,7 @@ const store: LoginStore = {
   createSession: async () => {},
   deleteSession: async () => {},
   listUsers: async () => [],
+  setAdmin: async () => false,
   sessionUser: async (hash) => {
     const name = Object.keys(people).find((key) => hashToken(key) === hash);
     return name ? { id: 1, sub: name, email: people[name].email, name, picture: null } : null;

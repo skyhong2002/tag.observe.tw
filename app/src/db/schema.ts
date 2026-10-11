@@ -404,9 +404,9 @@ export const siteMetrics = mysqlTable(
   (t) => [primaryKey({ columns: [t.day, t.source, t.metric, t.key] }), index('site_metrics_metric_day').on(t.source, t.metric, t.day)],
 );
 
-// Google sign-in (app/src/auth). Roles are not stored: admins are whoever is
-// listed in TAG_ADMIN_EMAILS at request time. Sessions keep only a SHA-256 of
-// the cookie value.
+// Google sign-in (app/src/auth). Admins are whoever is listed in
+// TAG_ADMIN_EMAILS at request time, plus accounts another admin promoted from
+// /admin/ (admin_granted_*). Sessions keep only a SHA-256 of the cookie value.
 export const users = mysqlTable(
   'users',
   {
@@ -417,8 +417,23 @@ export const users = mysqlTable(
     picture: varchar('picture', { length: 512 }),
     createdAt: datetime('created_at').notNull(),
     lastLoginAt: datetime('last_login_at').notNull(),
+    adminGrantedBy: varchar('admin_granted_by', { length: 255 }),
+    adminGrantedAt: datetime('admin_granted_at'),
   },
   (t) => [uniqueIndex('users_google_sub').on(t.googleSub), index('users_email').on(t.email)],
+);
+
+// Every promotion or demotion made from /admin/.
+export const userRoleLog = mysqlTable(
+  'user_role_log',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    userId: int('user_id').notNull(),
+    role: varchar('role', { length: 8 }).notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('user_role_log_user').on(t.userId, t.at)],
 );
 
 export const userSessions = mysqlTable(

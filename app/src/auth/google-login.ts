@@ -3,21 +3,25 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 // Google sign-in for readers and admins (docs/login.md). The gateway owns the
 // whole flow, so the Next.js app only reads /auth/me from the browser and
-// stays cacheable. Admins are the verified emails in TAG_ADMIN_EMAILS;
-// everyone else who signs in is a reader.
+// stays cacheable. Admins are the verified emails in TAG_ADMIN_EMAILS plus
+// accounts an admin promoted from /admin/; everyone else is a reader.
 
 export type Role = 'admin' | 'reader';
 export type LoginConfig = { clientId: string; clientSecret: string; origin: string; admins: Set<string> };
 export type GoogleIdentity = { sub: string; email: string; name: string | null; picture: string | null };
-export type StoredUser = GoogleIdentity & { id: number; createdAt: Date; lastLoginAt: Date };
+/** Set when another admin promoted this account from /admin/. */
+export type AdminGrant = { by: string; at: Date } | null;
+export type StoredUser = GoogleIdentity & { id: number; createdAt: Date; lastLoginAt: Date; grant?: AdminGrant };
 export type SessionUser = { id: number; email: string; name: string | null; picture: string | null; role: Role };
 
 export interface LoginStore {
   upsertUser(identity: GoogleIdentity, at: Date): Promise<number>;
   createSession(tokenHash: string, userId: number, expiresAt: Date): Promise<void>;
-  sessionUser(tokenHash: string, at: Date): Promise<(GoogleIdentity & { id: number }) | null>;
+  sessionUser(tokenHash: string, at: Date): Promise<(GoogleIdentity & { id: number; grant?: AdminGrant }) | null>;
   deleteSession(tokenHash: string): Promise<void>;
   listUsers(): Promise<StoredUser[]>;
+  /** Grants (by = the acting admin) or revokes admin; false when the user does not exist. */
+  setAdmin(userId: number, admin: boolean, by: string, at: Date): Promise<boolean>;
 }
 
 /** Exchanges an authorization code for the ID token's claims. */
@@ -115,13 +119,14 @@ export function registerLogin(app: FastifyInstance, store: LoginStore | null, co
   const secure = config?.origin.startsWith('https:') ? '; Secure' : '';
   const cookie = (name: string, value: string, maxAge: number) =>
     `${name}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
-  const roleOf = (email: string): Role => (config?.admins.has(email) ? 'admin' : 'reader');
+  const fromConfig = (email: string) => Boolean(config?.admins.has(email));
+  const roleOf = (email: string, grant: AdminGrant | undefined): Role => (fromConfig(email) || grant ? 'admin' : 'reader');
 
   async function currentUser(request: FastifyRequest): Promise<SessionUser | null> {
     const value = readCookie(request, SESSION_COOKIE);
     if (!store || !value || value.length > 64) return null;
     const user = await store.sessionUser(hashToken(value), new Date(now()));
-    return user && { id: user.id, email: user.email, name: user.name, picture: user.picture, role: roleOf(user.email) };
+    return user && { id: user.id, email: user.email, name: user.name, picture: user.picture, role: roleOf(user.email, user.grant) };
   }
   // Future admin endpoints call this first: it answers 401/403 itself and
   // returns null, or returns the signed-in admin.
@@ -207,14 +212,35 @@ export function registerLogin(app: FastifyInstance, store: LoginStore | null, co
     const users = await store.listUsers();
     return {
       users: users.map((user) => ({
+        id: user.id,
         email: user.email,
         name: user.name,
         picture: user.picture,
-        role: roleOf(user.email),
+        role: roleOf(user.email, user.grant),
+        // 'config' admins come from TAG_ADMIN_EMAILS and can't be changed here.
+        adminSource: fromConfig(user.email) ? 'config' : user.grant ? 'granted' : null,
+        grantedBy: user.grant?.by ?? null,
         createdAt: user.createdAt.toISOString(),
         lastLoginAt: user.lastLoginAt.toISOString(),
       })),
     };
+  });
+
+  app.put<{ Params: { id: string }; Body: { role?: unknown } }>('/auth/users/:id/role', async (request, reply) => {
+    const admin = await requireAdmin(request, reply);
+    if (!admin) return reply;
+    if (request.headers.origin !== config.origin) return reply.code(403).send({ error: 'same-origin requests only' });
+    const id = Number(request.params.id);
+    const role = request.body?.role;
+    if (!Number.isInteger(id) || id <= 0 || (role !== 'admin' && role !== 'reader'))
+      return reply.code(400).send({ error: 'role must be admin or reader' });
+    if (id === admin.id) return reply.code(400).send({ error: 'cannot change your own role' });
+    const target = (await store.listUsers()).find((user) => user.id === id);
+    if (!target) return reply.code(404).send({ error: 'no such user' });
+    if (fromConfig(target.email)) return reply.code(409).send({ error: 'listed in TAG_ADMIN_EMAILS' });
+    await store.setAdmin(id, role === 'admin', admin.email, new Date(now()));
+    request.log.info({ by: admin.email, user: target.email, role }, 'user role changed');
+    return { ok: true, role };
   });
 
   return { currentUser, requireAdmin };

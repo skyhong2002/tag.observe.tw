@@ -3,15 +3,20 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Avatar from '@/components/Avatar';
+import { useSession } from '@/lib/session';
 import AdminGate, { adminFetch, note } from './AdminGate';
 import { type Definition, LabelChip, type Outlet, OutletIcon } from './media/labels';
 import Reports from './Reports';
 
 type Account = {
+  id: number;
   email: string;
   name: string | null;
   picture: string | null;
   role: 'admin' | 'reader';
+  // 'config' = TAG_ADMIN_EMAILS in .env, which only the server config can change.
+  adminSource: 'config' | 'granted' | null;
+  grantedBy: string | null;
   createdAt: string;
   lastLoginAt: string;
 };
@@ -200,15 +205,39 @@ function Outlets() {
 }
 
 function Accounts() {
+  const me = useSession()?.user;
   const [accounts, setAccounts] = useState<Account[] | null>(null);
-  useEffect(() => {
+  const [busy, setBusy] = useState<number | null>(null);
+  const [error, setError] = useState('');
+  const load = () =>
     adminFetch<{ users: Account[] }>('/auth/users')
       .then((body) => setAccounts(body.users))
       .catch(() => setAccounts([]));
+  useEffect(() => {
+    load();
   }, []);
+  async function setRole(account: Account, role: Account['role']) {
+    const who = account.name ?? account.email;
+    if (!confirm(role === 'admin' ? `把 ${who} 設為管理員？` : `取消 ${who} 的管理員權限？`)) return;
+    setBusy(account.id);
+    setError('');
+    try {
+      await adminFetch(`/auth/users/${account.id}/role`, { method: 'PUT', body: { role } });
+      await load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
   return (
     <section className="mt-8">
       <h2 className="text-lg font-semibold">登入過的帳號{accounts ? `（${accounts.length}）` : ''}</h2>
+      <p className={note}>
+        對方先用 Google 登入一次，就能在這裡設為管理員；下一次載入頁面即生效。標「設定檔」的管理員寫在伺服器的
+        TAG_ADMIN_EMAILS，這裡不能取消。
+      </p>
+      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
       {!accounts ? (
         <p className={note}>載入中…</p>
       ) : (
@@ -218,8 +247,23 @@ function Accounts() {
               <Avatar src={account.picture} label={account.name ?? account.email} size={28} />
               <span className="font-medium">{account.name ?? account.email}</span>
               {account.name && <span className="text-zinc-500 dark:text-zinc-400">{account.email}</span>}
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">{account.role === 'admin' ? '管理員' : '讀者'}</span>
+              <span
+                className="text-xs text-zinc-500 dark:text-zinc-400"
+                title={account.grantedBy ? `由 ${account.grantedBy} 設為管理員` : undefined}
+              >
+                {account.role === 'admin' ? (account.adminSource === 'config' ? '管理員（設定檔）' : '管理員') : '讀者'}
+              </span>
               <span className="ml-auto text-xs text-zinc-500 tabular-nums dark:text-zinc-400">最近登入 {when(account.lastLoginAt)}</span>
+              {account.adminSource !== 'config' && account.id !== me?.id && (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => setRole(account, account.role === 'admin' ? 'reader' : 'admin')}
+                  className="min-h-8 rounded-full border border-zinc-300 px-3 text-xs hover:border-brand-600 disabled:opacity-50 dark:border-zinc-700"
+                >
+                  {busy === account.id ? '處理中…' : account.role === 'admin' ? '取消管理員' : '設為管理員'}
+                </button>
+              )}
             </li>
           ))}
         </ul>

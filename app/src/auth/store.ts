@@ -1,6 +1,6 @@
 import { and, desc, eq, gt, lt } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { userSessions, users } from '../db/schema.ts';
+import { userRoleLog, userSessions, users } from '../db/schema.ts';
 import type { LoginStore } from './google-login.ts';
 
 export function dbLoginStore(db: Db): LoginStore {
@@ -28,18 +28,41 @@ export function dbLoginStore(db: Db): LoginStore {
     },
     async sessionUser(tokenHash, at) {
       const [row] = await db
-        .select({ id: users.id, sub: users.googleSub, email: users.email, name: users.name, picture: users.picture })
+        .select({
+          id: users.id,
+          sub: users.googleSub,
+          email: users.email,
+          name: users.name,
+          picture: users.picture,
+          grantedBy: users.adminGrantedBy,
+          grantedAt: users.adminGrantedAt,
+        })
         .from(userSessions)
         .innerJoin(users, eq(users.id, userSessions.userId))
         .where(and(eq(userSessions.tokenHash, tokenHash), gt(userSessions.expiresAt, at)));
-      return row ?? null;
+      if (!row) return null;
+      const { grantedBy, grantedAt, ...user } = row;
+      return { ...user, grant: grantOf(grantedBy, grantedAt) };
     },
     async deleteSession(tokenHash) {
       await db.delete(userSessions).where(eq(userSessions.tokenHash, tokenHash));
     },
     async listUsers() {
       const rows = await db.select().from(users).orderBy(desc(users.lastLoginAt)).limit(500);
-      return rows.map((row) => ({ ...row, sub: row.googleSub }));
+      return rows.map((row) => ({ ...row, sub: row.googleSub, grant: grantOf(row.adminGrantedBy, row.adminGrantedAt) }));
+    },
+    async setAdmin(userId, admin, by, at) {
+      return db.transaction(async (tx) => {
+        const [result] = await tx
+          .update(users)
+          .set(admin ? { adminGrantedBy: by, adminGrantedAt: at } : { adminGrantedBy: null, adminGrantedAt: null })
+          .where(eq(users.id, userId));
+        if (!result.affectedRows) return false;
+        await tx.insert(userRoleLog).values({ userId, role: admin ? 'admin' : 'reader', email: by, at });
+        return true;
+      });
     },
   };
 }
+
+const grantOf = (by: string | null, at: Date | null) => (by && at ? { by, at } : null);
