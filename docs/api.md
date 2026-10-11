@@ -85,6 +85,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/categories`](#api-v1-categories) | 排行分類 |
 | [`GET /api/v1/ranking`](#api-v1-ranking) | 標籤排行（每 10 分鐘更新） |
 | [`GET /api/v1/articles`](#api-v1-articles) | 文章搜尋 |
+| [`GET /api/v1/tags/suggest`](#api-v1-tags-suggest) | 輸入時的關鍵字建議 |
 | [`GET /api/v1/tags/{tag}/articles`](#api-v1-tags-tag-articles) | 帶有某標籤的最新文章 |
 | [`GET /api/v1/tags/{tag}/series`](#api-v1-tags-tag-series) | 標籤每小時的分數與文章數 |
 | [`GET /api/v1/tags/{tag}/flow`](#api-v1-tags-tag-flow) | 和這個標籤一起出現的關鍵字，逐小時 |
@@ -1489,6 +1490,35 @@ curl -s 'https://tag.observe.tw/api/v1/journalists/%E5%BD%AD%E5%B7%A7%E8%93%81?h
 快取：5 分鐘。
 
 ## 單一標籤
+
+<a id="api-v1-tags-suggest"></a>
+
+### `GET /api/v1/tags/suggest`
+
+**輸入時的關鍵字建議**
+
+詞庫是最近 14 天至少 2 篇文章帶到的標籤（每篇只算一次），排除泛用詞、欄目詞、數字日期與超過 16 字的長句；每 30 分鐘重算一次。包含查詢字串的標籤中，開頭相符優先，其次依文章數排序。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `q` | query | string | 輸入的文字（最多 60 字），例：`台積` |
+| `limit` | query | integer | 筆數，1–20，預設 `8`，例：`8` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/suggest?q=%E5%8F%B0%E7%A9%8D'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `q` | string |  |
+| `days` | integer | 詞庫涵蓋的天數 |
+| `tags` | object[] |  |
+| `tags[].tag` | string |  |
+| `tags[].articles` | integer | 期間內帶到這個標籤的文章數 |
 
 <a id="api-v1-tags-tag-articles"></a>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FilterSuggestInput from '@/components/FilterSuggestInput';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SortIndicator from '@/components/SortIndicator';
@@ -164,13 +165,12 @@ export default function TrafficComparison({
   return (
     <section aria-label="媒體流量與收錄清單" className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
-        <input
+        <FilterSuggestInput
           aria-label="搜尋媒體或網域"
           type="search"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-          }}
+          items={data.outlets.map((o) => ({ value: o.name, media: o.media ?? undefined, hint: o.domain ?? undefined }))}
+          onValueChange={setQuery}
           placeholder="搜尋媒體或網域"
           className={`${control} w-44 max-w-full`}
         />

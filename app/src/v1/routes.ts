@@ -24,6 +24,7 @@ import { registerTagFlow } from './tag-flow.ts';
 import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyTrends, registerTagSeries } from './tag-series.ts';
 import { loadTagStatus } from './tag-status.ts';
+import { registerTagSuggest } from './tag-suggest.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { icon: string | null; title: string | null }>;
 
@@ -207,6 +208,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     },
   );
   registerTagSeries(app, db);
+  registerTagSuggest(app, db);
 
   // Which other keywords rode along with this one, hour by hour.
   registerTagFlow(app, db);

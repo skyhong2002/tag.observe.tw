@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FormSuggestInput from './FormSuggestInput';
 
 const ENTRIES = [
   { href: '/', label: '首頁', note: '今天的新聞總覽' },
@@ -19,12 +20,14 @@ export default function NotFoundContent() {
         <p className="text-zinc-600 dark:text-zinc-400">網址可能打錯了，或這個頁面已經不存在。可以搜尋新聞，或從下面的入口繼續瀏覽。</p>
       </div>
       <form action="/search/" className="flex gap-2">
-        <input
+        <FormSuggestInput
+          source={{ kind: 'tags', go: true }}
           name="q"
           maxLength={60}
           placeholder="搜尋標題、摘要與標籤"
           aria-label="搜尋標題、摘要與標籤"
-          className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-700 dark:border-zinc-700 dark:bg-zinc-900"
+          wrapperClassName="min-w-0 flex-1"
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-700 dark:border-zinc-700 dark:bg-zinc-900"
         />
         <button type="submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900">
           搜尋

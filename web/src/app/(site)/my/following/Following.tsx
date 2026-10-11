@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { fetchTagSuggestions } from '@/components/FormSuggestInput';
+import SuggestInput from '@/components/SuggestInput';
 import { FOLLOW_NOUN, type Follow, type FollowKind, followHref, follows, setFollow } from '@/lib/reader';
 import { button, card, field, note } from '../ReaderGate';
 import { SuggestionPills } from '../Suggestions';
@@ -9,11 +11,20 @@ import { SuggestionPills } from '../Suggestions';
 const KINDS: FollowKind[] = ['tag', 'media', 'journalist', 'event'];
 
 // Everything the reader follows, by kind, with a way to stop following, a box
-// to add a tag by name, and suggested capsules to follow with one click.
+// to add a tag by name (picking a suggested keyword follows it at once), and suggested capsules to follow with one click.
 export default function Following() {
   const list = follows.useValue();
   const [tag, setTag] = useState('');
   const [error, setError] = useState('');
+  const suggest = useCallback(
+    async (typed: string, signal: AbortSignal) =>
+      (await fetchTagSuggestions(typed, signal)).map((row) => ({
+        key: row.tag,
+        label: row.tag,
+        hint: `${row.articles.toLocaleString('zh-TW')} 篇`,
+      })),
+    [],
+  );
   if (list === undefined) return <p className={note}>載入中…</p>;
   const run = async (follow: Follow, on: boolean) => {
     setError('');
@@ -34,13 +45,20 @@ export default function Following() {
           if (tag.trim() && (await run({ kind: 'tag', target: tag.trim() }, true))) setTag('');
         }}
       >
-        <input
+        <SuggestInput
           value={tag}
-          onChange={(e) => setTag(e.target.value)}
+          onValueChange={setTag}
+          suggest={suggest}
+          delay={150}
+          onPick={async (item) => {
+            setTag(item.key);
+            if (await run({ kind: 'tag', target: item.key }, true)) setTag('');
+          }}
+          wrapperClassName="w-full max-w-xs"
           maxLength={60}
           placeholder="輸入標籤，例如：颱風"
           aria-label="要追蹤的標籤"
-          className={`${field} w-full max-w-xs`}
+          className={`${field} w-full`}
         />
         <button type="submit" className={button} disabled={!tag.trim()}>
           追蹤這個標籤

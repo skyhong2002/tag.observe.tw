@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import FilterSuggestInput from '@/components/FilterSuggestInput';
 import {
   flowVisibleRange,
   KEYWORD_GROUP_SIZE,
@@ -51,6 +52,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
     const needle = search.trim().toLocaleLowerCase();
     return order.filter((tag) => tag !== data.tag && (!needle || tag.toLocaleLowerCase().includes(needle)));
   }, [data.tag, order, search]);
+  const keywordItems = useMemo(() => order.filter((tag) => tag !== data.tag).map((tag) => ({ value: tag })), [data.tag, order]);
   const visibleRelatedTerms = terms.slice(0, visibleCount);
   const visibleTerms = [data.tag, ...visibleRelatedTerms];
   const renderStart = Math.max(0, range.start - 2);
@@ -195,14 +197,15 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
             {startDate?.replaceAll('-', '/')} — {rangeEnd?.replaceAll('-', '/')}
           </span>
         </div>
-        <input
+        <FilterSuggestInput
           type="search"
           aria-label="搜尋圖表關鍵字"
           placeholder="搜尋關鍵字"
           value={search}
           disabled={!ready}
-          onChange={(event) => {
-            setSearch(event.target.value);
+          items={keywordItems}
+          onValueChange={(value) => {
+            setSearch(value);
             setVisibleCount(KEYWORD_GROUP_SIZE);
             setAdded([]);
             if (scroller.current) scroller.current.scrollTop = 0;

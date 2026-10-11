@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import FilterSuggestInput from '@/components/FilterSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
@@ -115,14 +116,17 @@ export default function MediaComparison({
           <h3 className="font-semibold">各家媒體，怎麼報、採用或引用誰？</h3>
           <p className="mt-1 text-xs leading-6 text-zinc-500">點欄位排序，點數字查看報導，點關係對象比較兩家媒體。</p>
         </div>
-        <label className="text-xs text-zinc-500">
+        <label htmlFor="media-comparison-q" className="text-xs text-zinc-500">
           搜尋媒體
-          <input
+          <FilterSuggestInput
+            id="media-comparison-q"
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            items={data.nodes.map((node) => ({ value: node.name, media: node.external ? undefined : node.id }))}
+            onValueChange={setQuery}
             placeholder="媒體名稱"
-            className="mt-1 block w-56 max-w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            wrapperClassName="mt-1"
+            className="block w-56 max-w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           />
         </label>
       </div>

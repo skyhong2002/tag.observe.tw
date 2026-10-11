@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useId, useMemo, useState } from 'react';
 import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
+import OutletPicker from '@/components/OutletPicker';
 import SortIndicator from '@/components/SortIndicator';
+import SuggestInput from '@/components/SuggestInput';
 import TableScroller from '@/components/TableScroller';
 import { type Metric, matchesFilters, metricCount, metricShare, metrics, type SortKey, sortValue } from '@/lib/journalist-table.mts';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
@@ -50,6 +53,8 @@ export default function JournalistTable({
   initialQuery?: string;
   initialMedia?: string;
 }) {
+  const router = useRouter();
+  const id = useId();
   const [detailed, setDetailed] = useState(false);
   const displayMetrics = metrics.filter(({ key }) => detailed || ['firstSeen', 'matched', 'cited'].includes(key));
   const columns = allColumns.filter(({ key }) => detailed || ['name', 'media', 'articles', 'firstSeen', 'matched', 'cited'].includes(key));
@@ -79,8 +84,24 @@ export default function JournalistTable({
     const names = new Map<string, { name: string; count: number }>();
     for (const row of rows)
       for (const outlet of row.media) names.set(outlet.media, { name: outlet.name, count: (names.get(outlet.media)?.count ?? 0) + 1 });
-    return [...names].sort((a, b) => b[1].count - a[1].count);
+    return [...names].sort((a, b) => b[1].count - a[1].count).map(([media, outlet]) => ({ media, ...outlet }));
   }, [rows]);
+  // Rows are already sorted by article count, so the first matches are the busiest names.
+  const suggestNames = useCallback(
+    (typed: string) => {
+      const needle = typed.toLowerCase();
+      return rows
+        .filter((row) => row.name.toLowerCase().includes(needle))
+        .slice(0, 8)
+        .map((row) => ({
+          key: row.name,
+          label: row.name,
+          icon: row.media[0] && <MediaIcon media={row.media[0].media} title={row.media[0].name} size={14} />,
+          hint: `${row.media[0]?.name ?? ''} ${number(row.articles)} 篇`,
+        }));
+    },
+    [rows],
+  );
   const filtered = useMemo(() => {
     return rows
       .filter((row) => matchesFilters(row, { query, media, relation, minArticles, minCoverage, metric, minShare, maxShare }))
@@ -137,36 +158,34 @@ export default function JournalistTable({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
-        <label className="flex flex-col gap-1">
+        <label htmlFor={`${id}-q`} className="flex flex-col gap-1">
           <span className="text-zinc-500 dark:text-zinc-400">搜尋名字</span>
-          <input
+          <SuggestInput
+            id={`${id}-q`}
             type="search"
             value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
+            onValueChange={(value) => {
+              setQuery(value);
               setShown(PAGE);
             }}
+            suggest={suggestNames}
+            onPick={(item) => router.push(journalistHref(item.key))}
             placeholder="例如 周辰陽"
             className="w-44 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
           />
         </label>
-        <label className="flex flex-col gap-1">
+        <label htmlFor={`${id}-media`} className="flex flex-col gap-1">
           <span className="text-zinc-500 dark:text-zinc-400">媒體</span>
-          <select
+          <OutletPicker
+            id={`${id}-media`}
+            outlets={outlets}
             value={media}
-            onChange={(event) => {
-              setMedia(event.target.value);
+            onChange={(value) => {
+              setMedia(value);
               setShown(PAGE);
             }}
-            className="max-w-56 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-          >
-            <option value="">全部媒體</option>
-            {outlets.map(([key, outlet]) => (
-              <option key={key} value={key}>
-                {outlet.name}（{outlet.count} 人）
-              </option>
-            ))}
-          </select>
+            className="w-44 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          />
         </label>
         <p role="status" className="py-2 text-zinc-500 dark:text-zinc-400">
           符合 {number(filtered.length)} 人

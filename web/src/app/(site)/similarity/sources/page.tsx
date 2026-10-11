@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FormSuggestInput from '@/components/FormSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
 import { relationshipQuery } from '@/lib/relationship-query.mts';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -53,13 +54,25 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
         {[...params].map(([key, value]) => (
           <input key={key} type="hidden" name={key} value={value} />
         ))}
-        <label className="text-xs text-zinc-500">
+        <label htmlFor="sources-q" className="text-xs text-zinc-500">
           搜尋來源
-          <input
+          <FormSuggestInput
+            id="sources-q"
+            source={{
+              kind: 'list',
+              items: data
+                ? sourceRanking(data).map((node) => ({
+                    value: node.name,
+                    media: node.external ? undefined : node.id,
+                    hint: `${node.incoming.toLocaleString('zh-TW')} 篇`,
+                  }))
+                : [],
+            }}
             name="sourceQ"
             defaultValue={sp.sourceQ}
             placeholder="媒體、通訊社或機構"
-            className="mt-1 block rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            wrapperClassName="mt-1"
+            className="block rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
           />
         </label>
         <label className="text-xs text-zinc-500">

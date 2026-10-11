@@ -1331,6 +1331,20 @@ export const ENDPOINTS: Endpoint[] = [
     example: '/api/v1/articles?q=%E9%A2%B1%E9%A2%A8&hours=72&limit=20',
   },
   {
+    path: '/api/v1/tags/suggest',
+    tag: 'tags',
+    summary: '輸入時的關鍵字建議',
+    description:
+      '詞庫是最近 14 天至少 2 篇文章帶到的標籤（每篇只算一次），排除泛用詞、欄目詞、數字日期與超過 16 字的長句；每 30 分鐘重算一次。包含查詢字串的標籤中，開頭相符優先，其次依文章數排序。',
+    params: [q('q', '輸入的文字（最多 60 字）', str(), '台積'), q('limit', '筆數', intIn(1, 20, 8), 8)],
+    response: obj({
+      q: str(),
+      days: int('詞庫涵蓋的天數'),
+      tags: arr(obj({ tag: str(), articles: int('期間內帶到這個標籤的文章數') })),
+    }),
+    example: '/api/v1/tags/suggest?q=%E5%8F%B0%E7%A9%8D',
+  },
+  {
     path: '/api/v1/tags/{tag}/articles',
     tag: 'tags',
     summary: '帶有某標籤的最新文章',

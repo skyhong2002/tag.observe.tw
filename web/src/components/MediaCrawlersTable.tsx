@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { Fragment, useMemo, useState } from 'react';
+import FilterSuggestInput from '@/components/FilterSuggestInput';
 import { taipei } from '@/lib/api';
 import {
   type CrawlerGroup,
@@ -66,6 +67,14 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
       })),
     [media],
   );
+  // Outlet names first, then the countries, methods and tools the filter also matches.
+  const suggestions = useMemo(
+    () => [
+      ...media.map((row) => ({ value: row.title, media: row.media, hint: row.country })),
+      ...[...new Set(options.flatMap((group) => group.tags))].map((tag) => ({ value: tag, hint: '條件' })),
+    ],
+    [media, options],
+  );
   const rows = useMemo(() => selectCrawlers(media, query, filters, sort, descending), [media, query, filters, sort, descending]);
   const filtered = !!query || crawlerGroups.some(({ key }) => filters[key].length);
   const toggle = (group: CrawlerGroup, tag: string) =>
@@ -77,11 +86,11 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
-        <input
+        <FilterSuggestInput
           type="search"
-          name="q"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          items={suggestions}
+          onValueChange={setQuery}
           aria-label="搜尋媒體或爬蟲資訊"
           placeholder="搜尋媒體、國家、抓取方式或工具"
           className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
+import FormSuggestInput from '@/components/FormSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
 import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
@@ -328,14 +329,16 @@ export default async function MediaPage({
             </div>
             <form action={base} className="mb-1 flex gap-2">
               {hours && <input type="hidden" name="hours" value={hours} />}
-              <input
+              <FormSuggestInput
                 key={keyword ?? ''}
+                source={{ kind: 'tags', local: keywords?.terms.map((term) => term.label) }}
                 name="q"
                 defaultValue={keyword ?? ''}
                 maxLength={60}
                 aria-label={discovery ? '搜尋此來源發現的文章' : '搜尋這家媒體的報導'}
                 placeholder={discovery ? '搜尋此來源發現的文章' : '搜尋這家媒體的報導'}
-                className="min-w-0 flex-1 rounded border border-zinc-200 bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-600 dark:border-zinc-700"
+                wrapperClassName="min-w-0 flex-1"
+                className="w-full rounded border border-zinc-200 bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-600 dark:border-zinc-700"
               />
               <button
                 type="submit"

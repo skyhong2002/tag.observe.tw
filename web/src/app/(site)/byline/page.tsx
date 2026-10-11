@@ -7,6 +7,7 @@ import { BYLINE_HOURS, bylineHours, bylineHref, CREDIT_KINDS, fetchBylines, peri
 import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
 import JournalistOverview from '../journalist/JournalistOverview';
+import BylineFilters from './BylineFilters';
 
 export const metadata = pageMetadata(
   '/byline/',
@@ -57,43 +58,15 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
           </Link>
         ))}
       </nav>
-      <form action="/byline/" className="flex flex-wrap items-end gap-3">
-        <input type="hidden" name="hours" value={hours} />
-        <input type="hidden" name="kind" value={query.kind} />
-        <label className="text-xs text-zinc-500">
-          搜尋署名
-          <input
-            name="q"
-            defaultValue={query.q}
-            maxLength={120}
-            placeholder="姓名、筆名或團隊名稱"
-            className="mt-1 block w-64 max-w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          />
-        </label>
-        <label className="text-xs text-zinc-500">
-          刊登媒體
-          <select
-            name="media"
-            defaultValue={query.media ?? ''}
-            className="mt-1 block max-w-64 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
-          >
-            <option value="">全部媒體</option>
-            {data?.outlets.map((outlet) => (
-              <option key={outlet.media} value={outlet.media}>
-                {outlet.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="min-h-10 rounded-lg bg-brand-700 px-4 text-sm font-medium text-white">
-          查詢
-        </button>
-        {(query.q || query.media) && (
-          <Link href={href({ q: undefined, media: undefined })} className="py-2 text-sm text-brand-700 dark:text-brand-400">
-            清除篩選
-          </Link>
-        )}
-      </form>
+      <BylineFilters
+        key={`${hours}:${query.kind}:${query.q ?? ''}:${query.media ?? ''}`}
+        hours={hours}
+        kind={query.kind}
+        q={query.q}
+        media={query.media}
+        outlets={data?.outlets ?? []}
+        clearHref={href({ q: undefined, media: undefined })}
+      />
       {!data ? (
         <p role="status" className="py-8 text-zinc-500">
           暫時無法取得署名資料，請稍後重新整理。

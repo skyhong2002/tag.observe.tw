@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AuthorCredits from '@/components/AuthorCredits';
+import FilterSuggestInput from '@/components/FilterSuggestInput';
 import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
@@ -874,12 +875,14 @@ export default function SimilarityExplorer({
                     </select>
                   </label>
                 )}
-                <label className="block min-w-48 flex-[2] text-xs text-zinc-500">
+                <label htmlFor="similarity-q" className="block min-w-48 flex-[2] text-xs text-zinc-500">
                   搜尋
-                  <input
+                  <FilterSuggestInput
+                    id="similarity-q"
                     type="search"
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
+                    items={graph.nodes.map((node) => ({ value: node.name, media: node.external ? undefined : node.id, hint: '媒體' }))}
+                    onValueChange={setQuery}
                     className={`${control} text-zinc-900 dark:text-zinc-100`}
                     placeholder="標題、媒體、作者或共同段落"
                   />

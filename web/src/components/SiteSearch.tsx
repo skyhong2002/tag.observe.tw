@@ -2,10 +2,12 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { Ref } from 'react';
+import FormSuggestInput from './FormSuggestInput';
 
 // The site's one search box, in the header. On the results page (/search/) it
 // holds the current query and keeps the chosen range, so refining a search
-// happens in the same place it started.
+// happens in the same place it started. Typing lists matching keywords; picking
+// one opens its keyword page, Enter alone searches the typed text.
 
 export const isSearchPage = (pathname: string | null) => pathname === '/search/' || pathname === '/search';
 
@@ -19,20 +21,20 @@ export default function SiteSearch({ inputRef, onEscape, q = '', days = null }: 
         className="flex min-w-0 items-center rounded-md border border-zinc-300 bg-zinc-50 focus-within:border-brand-600 dark:border-zinc-700 dark:bg-zinc-900"
       >
         {days && <input type="hidden" name="days" value={days} />}
-        <input
+        <FormSuggestInput
           key={q}
-          ref={inputRef}
+          inputRef={inputRef}
           defaultValue={q}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') onEscape?.();
-          }}
+          onEscape={onEscape}
+          source={{ kind: 'tags', go: true }}
           name="q"
           type="search"
           aria-label="搜尋所有新聞的標題、摘要與標籤"
           placeholder="搜尋新聞"
           maxLength={60}
           required
-          className="min-w-0 flex-1 bg-transparent py-2 pl-3 text-base text-zinc-900 outline-none dark:text-zinc-100 lg:text-sm"
+          wrapperClassName="min-w-0 flex-1"
+          className="w-full bg-transparent py-2 pl-3 text-base text-zinc-900 outline-none dark:text-zinc-100 lg:text-sm"
         />
         <button
           type="submit"

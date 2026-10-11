@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FormSuggestInput from '@/components/FormSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
@@ -179,14 +180,16 @@ function KeywordBar({
       )}
       <form action={base} className="flex max-w-md gap-2">
         {active && <input type="hidden" name="tag" value={active} />}
-        <input
+        <FormSuggestInput
           key={q ?? ''}
+          source={{ kind: 'topics', topicKind: kind }}
           name="q"
           defaultValue={q ?? ''}
           maxLength={50}
           aria-label={`搜尋${kindNoun(kind)}名稱`}
           placeholder={`搜尋${kindNoun(kind)}名稱`}
-          className="min-w-0 flex-1 rounded border border-zinc-200 bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-600 dark:border-zinc-700"
+          wrapperClassName="min-w-0 flex-1"
+          className="w-full rounded border border-zinc-200 bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-brand-600 dark:border-zinc-700"
         />
         <button
           type="submit"

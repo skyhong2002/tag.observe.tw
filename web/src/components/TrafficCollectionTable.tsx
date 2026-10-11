@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import FilterSuggestInput from '@/components/FilterSuggestInput';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SortIndicator from '@/components/SortIndicator';
@@ -75,11 +76,12 @@ export default function TrafficCollectionTable({ rows }: { rows: CollectionRow[]
   ];
   return (
     <section aria-label="流量資料抓取狀態" className="space-y-3">
-      <input
+      <FilterSuggestInput
         aria-label="搜尋媒體或網域"
         type="search"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        items={rows.map((row) => ({ value: row.name, media: row.media ?? undefined, hint: row.domain }))}
+        onValueChange={setQuery}
         placeholder="搜尋媒體或網域"
         className="min-h-9 w-44 max-w-full rounded-md border border-zinc-300 bg-transparent px-2 text-sm dark:border-zinc-700"
       />

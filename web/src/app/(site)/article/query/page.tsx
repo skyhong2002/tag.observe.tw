@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ArticleList } from '@/components/ArticleResults';
 import ArticleTabs from '@/components/ArticleTabs';
+import FormSuggestInput from '@/components/FormSuggestInput';
+import { FormOutletPicker } from '@/components/OutletPicker';
 import { fetchMedia } from '@/lib/api';
 import { rangeDays, searchArticles, validCursor } from '@/lib/article-search';
 import { fetchSimilarity } from '@/lib/similarity';
@@ -20,7 +22,8 @@ type Query = {
   to?: string;
   cursor?: string;
 };
-const input = 'mt-1 block w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700';
+const input =
+  'mt-1 block w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:text-zinc-100';
 const validDay = (value: string) =>
   /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().startsWith(value);
 export default async function ArticleQueryPage({ searchParams }: { searchParams: Promise<Query> }) {
@@ -58,47 +61,69 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
         action="/article/query/"
         className="grid grid-cols-1 gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3"
       >
-        <label className="text-xs text-zinc-500">
+        <label htmlFor="query-q" className="text-xs text-zinc-500">
           標題、摘要或標籤
-          <input name="q" defaultValue={sp.q} maxLength={60} placeholder="搜尋字詞" className={input} />
+          <FormSuggestInput
+            id="query-q"
+            source={{ kind: 'tags' }}
+            submitOnPick={false}
+            name="q"
+            defaultValue={sp.q}
+            maxLength={60}
+            placeholder="搜尋字詞"
+            className={input}
+          />
         </label>
-        <label className="text-xs text-zinc-500">
+        <label htmlFor="query-credit" className="text-xs text-zinc-500">
           原文署名包含
-          <input name="credit" defaultValue={sp.credit} maxLength={120} placeholder="姓名、筆名或編輯部" className={input} />
+          <FormSuggestInput
+            id="query-credit"
+            source={{ kind: 'credits', hours: Math.min(days * 24, 720) }}
+            submitOnPick={false}
+            name="credit"
+            defaultValue={sp.credit}
+            maxLength={120}
+            placeholder="姓名、筆名或編輯部"
+            className={input}
+          />
         </label>
-        <label className="text-xs text-zinc-500">
+        <label htmlFor="query-media" className="text-xs text-zinc-500">
           刊登媒體
-          <select name="media" defaultValue={sp.media ?? ''} className={input}>
-            <option value="">全部媒體</option>
-            {Object.entries(media)
-              .sort((a, b) => (a[1].title ?? a[0]).localeCompare(b[1].title ?? b[0], 'zh-Hant'))
-              .map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value.title ?? key}
-                </option>
-              ))}
-          </select>
+          <FormOutletPicker
+            id="query-media"
+            name="media"
+            defaultValue={sp.media ?? ''}
+            outlets={Object.entries(media)
+              .map(([key, value]) => ({ media: key, name: value.title ?? key }))
+              .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'))}
+            className={input}
+          />
         </label>
-        <label className="text-xs text-zinc-500">
+        <label htmlFor="query-source" className="text-xs text-zinc-500">
           明示來源／引用
-          <input
+          <FormSuggestInput
+            id="query-source"
+            source={{ kind: 'list', items: sources.map((source) => ({ value: source.id, label: source.name, hint: source.id })) }}
+            submitOnPick={false}
+            showOnEmpty
             name="source"
-            list="citation-sources"
             defaultValue={sp.source}
             placeholder="選擇或輸入來源代碼，如 cna"
             className={input}
           />
-          <datalist id="citation-sources">
-            {sources.map((source) => (
-              <option key={source.id} value={source.id}>
-                {source.name}
-              </option>
-            ))}
-          </datalist>
         </label>
-        <label className="text-xs text-zinc-500">
+        <label htmlFor="query-tag" className="text-xs text-zinc-500">
           完整標籤
-          <input name="tag" defaultValue={sp.tag} maxLength={60} placeholder="例如：台積電" className={input} />
+          <FormSuggestInput
+            id="query-tag"
+            source={{ kind: 'tags' }}
+            submitOnPick={false}
+            name="tag"
+            defaultValue={sp.tag}
+            maxLength={60}
+            placeholder="例如：台積電"
+            className={input}
+          />
         </label>
         <label className="text-xs text-zinc-500">
           原站分類（完整名稱）
