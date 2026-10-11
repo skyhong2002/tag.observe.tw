@@ -32,12 +32,11 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
       { href: '/media/traffic/', label: '媒體流量與排名', short: '流量' },
     ],
   },
+  // One header link: the desktop row has no room for more, and /writing/'s
+  // tabs lead to 標題用詞.
   {
     label: '看寫法',
-    links: [
-      { href: '/writing/', label: '轉述社群貼文', short: '轉述' },
-      { href: '/writing/titles/', label: '標題用詞', short: '標題' },
-    ],
+    links: [{ href: '/writing/', label: '看寫法', short: '寫法' }],
   },
 ];
 
