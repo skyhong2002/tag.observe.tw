@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 
 // Tag groups (docs/tag-groups.md): look a tag up and tick its groups, or
@@ -66,22 +66,24 @@ const pillOff = 'border border-zinc-300 dark:border-zinc-700';
 const pillOn = 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900';
 const input = 'min-h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900';
 
-export default function TagGroupEditor() {
+export default function TagGroupEditor({ initialTag = '' }: { initialTag?: string }) {
   return (
-    <AdminGate next="/admin/tag-groups/">
+    <AdminGate next={`/admin/tags/?${new URLSearchParams({ tag: initialTag })}`}>
       <p className={note}>
-        群組沿用舊站的 28 個身分／類型群組與主題大類，一個標籤可以同時屬於多個群組。自動判斷的來源有舊站標記、人物的 Wikidata
-        資料（國籍、現任職位、政黨）、Wikidata 項目類型與各媒體的版別。「待確認」的不會公開；排除後，之後自動重跑也不會再加回來。
+        分類適用於人物、機構、地點、事件與概念，一個標籤可以同時屬於多個分類。分類可再放入上層分類；相關角色與背景也會用於「看寫法」的統計。自動判斷的來源有舊站標記、人物的
+        Wikidata 資料（國籍、現任職位、政黨）、Wikidata 項目類型與各媒體的版別。「待確認」的不會公開；排除後，之後自動重跑也不會再加回來。
       </p>
-      <Editor />
+      <Editor initialTag={initialTag} />
     </AdminGate>
   );
 }
 
-function Editor() {
+function Editor({ initialTag }: { initialTag: string }) {
+  const saving = useRef(false);
+  const [busy, setBusy] = useState(false);
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [error, setError] = useState('');
-  const [tag, setTag] = useState('');
+  const tag = initialTag;
   const [groupId, setGroupId] = useState<number | null>(null);
   const loadGroups = useCallback(() => {
     adminFetch<{ groups: Group[] }>('/auth/admin/tag-groups')
@@ -90,6 +92,9 @@ function Editor() {
   }, []);
   useEffect(loadGroups, [loadGroups]);
   const decide = async (group: number, name: string, status: 'confirmed' | 'rejected') => {
+    if (saving.current) return false;
+    saving.current = true;
+    setBusy(true);
     try {
       await adminFetch(`/auth/admin/tag-groups/${group}/tags/${encodeURIComponent(name)}`, { method: 'PUT', body: { status } });
       setError('');
@@ -98,12 +103,15 @@ function Editor() {
     } catch (e) {
       setError((e as Error).message);
       return false;
+    } finally {
+      saving.current = false;
+      setBusy(false);
     }
   };
   return (
-    <>
+    <fieldset disabled={busy} aria-label="分類管理" className="min-w-0">
       {error && <p className="mt-3 text-sm text-red-700 dark:text-red-400">{error}</p>}
-      <TagLookup groups={groups} tag={tag} setTag={setTag} decide={decide} />
+      <TagLookup groups={groups} tag={tag} decide={decide} />
       {groups && (
         <section className="mt-8">
           <h2 className="text-lg font-semibold">群組</h2>
@@ -148,20 +156,19 @@ function Editor() {
               group={groups.find((g) => g.id === groupId) as Group}
               decide={decide}
               openTag={(t) => {
-                setTag(t);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.location.assign(`/admin/tags/?tag=${encodeURIComponent(t)}`);
               }}
             />
           )}
         </section>
       )}
-    </>
+    </fieldset>
   );
 }
 
 type Decide = (group: number, tag: string, status: 'confirmed' | 'rejected') => Promise<boolean>;
 
-function TagLookup({ groups, tag, setTag, decide }: { groups: Group[] | null; tag: string; setTag: (t: string) => void; decide: Decide }) {
+function TagLookup({ groups, tag, decide }: { groups: Group[] | null; tag: string; decide: Decide }) {
   const [draft, setDraft] = useState(tag);
   const [page, setPage] = useState<TagPage | null>(null);
   const load = useCallback(() => {
@@ -170,10 +177,6 @@ function TagLookup({ groups, tag, setTag, decide }: { groups: Group[] | null; ta
   }, [tag]);
   useEffect(load, [load]);
   useEffect(() => setDraft(tag), [tag]);
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    setTag(draft.trim());
-  };
   const byGroup = new Map(page?.members.map((m) => [m.groupId, m]));
   const toggle = async (g: Group) => {
     if (await decide(g.id, tag, shown(byGroup.get(g.id)?.status) ? 'rejected' : 'confirmed')) load();
@@ -182,12 +185,15 @@ function TagLookup({ groups, tag, setTag, decide }: { groups: Group[] | null; ta
   return (
     <section className="mt-6">
       <h2 className="text-lg font-semibold">查標籤</h2>
-      <form onSubmit={submit} className="mt-2 flex gap-2">
+      <form action="/admin/tags/" className="mt-2 flex flex-wrap gap-2">
         <input
+          name="tag"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={60}
-          placeholder="例如 川普"
+          required
+          aria-label="標籤名稱"
+          placeholder="例如 台積電、台北市、川普"
           className={`${input} w-56`}
         />
         <button type="submit" className={`${pill} ${pillOff}`}>
@@ -212,7 +218,12 @@ function TagLookup({ groups, tag, setTag, decide }: { groups: Group[] | null; ta
             )}
             {types && <span className="ml-2 text-zinc-600 dark:text-zinc-400">{types}</span>}
           </p>
-          <p className={note}>點群組加入或移出；橘框是待確認，刪除線是已排除。</p>
+          <p className={note}>
+            點選分類加入或移出，可複選；橘框是待確認，刪除線是已排除。{' '}
+            <a className="underline" href={`/admin/tags/?${new URLSearchParams({ view: 'relations', tag })}`}>
+              檢視文章關係
+            </a>
+          </p>
           {(['group', 'topic'] as const).map((kind) => (
             <div key={kind} className="mt-2 flex flex-wrap gap-1">
               {groups
@@ -368,8 +379,8 @@ function NewGroup({ onAdded, onError }: { onAdded: () => void; onError: (message
     <form onSubmit={submit} className="mt-4 flex flex-wrap gap-2">
       <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={32} placeholder="新群組名稱" className={`${input} w-40`} />
       <select value={kind} onChange={(e) => setKind(e.target.value as 'group' | 'topic')} className={input}>
-        <option value="group">身分／類型群組</option>
-        <option value="topic">主題大類</option>
+        <option value="group">類型／角色分類</option>
+        <option value="topic">主題分類</option>
       </select>
       <button type="submit" className={`${pill} ${pillOff}`}>
         新增群組

@@ -28,10 +28,7 @@ export default function AdminPanel() {
   return (
     <AdminGate next="/admin/">
       <Reports />
-      <Avatars />
-      <TagVisualsLink />
-      <WritingPeopleLink />
-      <TagGroups />
+      <TagManagement />
       <Bookmarklet />
       <Outlets />
       <Accounts />
@@ -40,62 +37,17 @@ export default function AdminPanel() {
   );
 }
 
-function Avatars() {
+function TagManagement() {
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold">人物頭像</h2>
-      <p className={note}>人物標籤的素描頭像：確認自動挑選的結果、改用其他候選或隱藏。</p>
-      <a
-        href="/admin/avatars/"
+      <h2 className="text-lg font-semibold">標籤管理</h2>
+      <p className={note}>管理人物、機構、地點、事件與概念的分類、上下層、圖像及文章關係。</p>
+      <Link
+        href="/admin/tags/"
         className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
       >
-        檢視人物頭像
-      </a>
-    </section>
-  );
-}
-
-function TagVisualsLink() {
-  return (
-    <section className="mt-8">
-      <h2 className="text-lg font-semibold">標籤圖像</h2>
-      <p className={note}>非人物標籤的地圖輪廓、標誌、emoji 與圖示：確認 AI 挑的圖、改用其他圖示或上傳標誌。</p>
-      <a
-        href="/admin/tag-visuals/"
-        className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
-      >
-        檢視標籤圖像
-      </a>
-    </section>
-  );
-}
-
-function WritingPeopleLink() {
-  return (
-    <section className="mt-8">
-      <h2 className="text-lg font-semibold">發言者標籤</h2>
-      <p className={note}>「看寫法」裡被轉述的發言者：設定角色或背景標籤，同一位發言者可有多個標籤。</p>
-      <a
-        href="/admin/writing/"
-        className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
-      >
-        檢視發言者
-      </a>
-    </section>
-  );
-}
-
-function TagGroups() {
-  return (
-    <section className="mt-8">
-      <h2 className="text-lg font-semibold">標籤群組</h2>
-      <p className={note}>把標籤歸進身分群組（政治人物、現任立委、藝人…）與主題大類，確認或排除自動判斷的結果。</p>
-      <a
-        href="/admin/tag-groups/"
-        className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
-      >
-        編輯標籤群組
-      </a>
+        管理標籤
+      </Link>
     </section>
   );
 }

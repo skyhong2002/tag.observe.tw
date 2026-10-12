@@ -73,7 +73,7 @@ const input = 'min-h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm d
 
 export default function TagVisualReview() {
   return (
-    <AdminGate next="/admin/tag-visuals/">
+    <AdminGate next="/admin/tags/?view=visuals">
       <p className={note}>點一張候選就改用並鎖定；讀者的投票與上傳在各標籤的「換圖」頁。做法見頁尾「本頁的資料來源與計算方式」。</p>
       <Review />
     </AdminGate>

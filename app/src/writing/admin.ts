@@ -1,30 +1,18 @@
-import { and, desc, eq, like, or, sql } from 'drizzle-orm';
+import { desc, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
-import { articleWriting, writingPeople, writingPeopleLog } from '../db/schema.ts';
+import { writingPeopleLog } from '../db/schema.ts';
 import { taipeiDay } from '../v1/event-archive.ts';
-import { parseRoles, roleTags } from './roles.ts';
-import { ROLES } from './rules.ts';
+import { roleTags } from './roles.ts';
 
-// Admins correct the labels of a speaker name on /admin/writing/. A correction
-// wins over title words in the article and over the learned role, applies to
-// every analysed article naming that poster, and is logged with who and why.
-// Clearing it hands the name back to the daily people job.
+// Read-only list of detected retelling subjects for unified tag management.
+// Manual classifications are edited through tag-groups/admin.ts.
 
 type Options = {
   requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<SessionUser | null>;
   origin: string;
 };
-const NOTE_MAX = 255;
-
-/** Rows that name this poster: exactly, or as the end of an unresolved name run. */
-const naming = (name: string) =>
-  or(
-    eq(articleWriting.poster, name),
-    and(eq(articleWriting.role, '未知'), like(articleWriting.poster, `%${name.replace(/[\\%_]/g, '\\$&')}`)),
-  );
-
 export function registerWritingAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin }: Options) {
   app.get<{ Querystring: { q?: string } }>('/auth/admin/writing/people', async (request, reply) => {
     if (!(await requireAdmin(request, reply))) return reply;
@@ -82,58 +70,14 @@ export function registerWritingAdmin(app: FastifyInstance, db: Db, { requireAdmi
     };
   });
 
-  app.put<{ Params: { name: string }; Body: { roles?: unknown; role?: unknown; note?: unknown } }>(
-    '/auth/admin/writing/people/:name',
-    async (request, reply) => {
-      if (request.headers.origin !== origin) {
-        reply.header('cache-control', 'no-store').code(403).send({ error: 'same-origin requests only' });
-        return reply;
-      }
-      const user = await requireAdmin(request, reply);
-      if (!user) return reply;
-      const name = request.params.name.trim();
-      if (name.length < 2 || name.length > 40) return reply.code(400).send({ error: 'name must be 2–40 characters' });
-      // Accept the legacy single-role payload during a rolling frontend upgrade.
-      const roles = parseRoles(
-        request.body?.roles !== undefined ? request.body.roles : request.body?.role === null ? null : [request.body?.role],
-      );
-      if (roles === undefined)
-        return reply
-          .code(400)
-          .send({ error: `roles must be a non-empty array of ${ROLES.filter((r) => r !== '未知').join('、')}, or null to clear` });
-      const role = roles?.[0] ?? null;
-      const note = typeof request.body?.note === 'string' ? request.body.note.trim() : '';
-      if (role !== null && !note) return reply.code(400).send({ error: 'note: say why the role is corrected' });
-      if (note.length > NOTE_MAX) return reply.code(400).send({ error: `note must be at most ${NOTE_MAX} characters` });
-      const at = new Date();
-      const result = await db.transaction(async (tx) => {
-        const [current] = await tx.select().from(writingPeople).where(eq(writingPeople.name, name));
-        const before = current?.source === 'admin' ? current.role : null;
-        const beforeRoles = current?.source === 'admin' ? roleTags(current.roles, current.role) : null;
-        let relabelled = 0;
-        if (role === null) {
-          if (current?.source === 'admin') await tx.delete(writingPeople).where(eq(writingPeople.name, name));
-          // Back to 未知 until the people job or the clause decides again.
-          const [r] = await tx
-            .update(articleWriting)
-            .set({ role: '未知', roles: ['未知'], roleSource: null })
-            .where(and(eq(articleWriting.poster, name), eq(articleWriting.roleSource, 'people')));
-          relabelled = r.affectedRows;
-        } else {
-          await tx
-            .insert(writingPeople)
-            .values({ name, role, roles, source: 'admin', note, email: user.email, updatedAt: at })
-            .onDuplicateKeyUpdate({ set: { role, roles, source: 'admin', note, email: user.email, updatedAt: at } });
-          const [r] = await tx.update(articleWriting).set({ role, roles, poster: name, roleSource: 'people' }).where(naming(name));
-          relabelled = r.affectedRows;
-        }
-        if (before !== null || role !== null)
-          await tx
-            .insert(writingPeopleLog)
-            .values({ name, before, after: role, beforeRoles, afterRoles: roles, note, email: user.email, at });
-        return { relabelled };
-      });
-      return { name, role, roles, note, ...result };
-    },
-  );
+  // Old clients must not create a second, competing classification source.
+  app.put<{ Params: { name: string } }>('/auth/admin/writing/people/:name', async (request, reply) => {
+    reply.header('cache-control', 'no-store');
+    if (request.headers.origin !== origin) return reply.code(403).send({ error: 'same-origin requests only' });
+    if (!(await requireAdmin(request, reply))) return reply;
+    return reply.code(409).send({
+      error: '請至「標籤管理」編輯共用分類。',
+      manageUrl: `/admin/tags/?tag=${encodeURIComponent(request.params.name)}`,
+    });
+  });
 }

@@ -844,6 +844,8 @@ export const tagGroupDefs = mysqlTable('tag_group_defs', {
   id: int('id').autoincrement().primaryKey(),
   label: varchar('label', { length: 32 }).notNull(),
   kind: varchar('kind', { length: 8 }).$type<TagGroupKind>().notNull(),
+  /** Optional projection into the stable /writing statistics categories. */
+  writingRole: varchar('writing_role', { length: 16 }),
   sort: int('sort').notNull().default(0),
   // A group inside another of the same kind (現任立委 in 政治人物): the
   // parent's pages count the child's tags too.

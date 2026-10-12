@@ -3,7 +3,9 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { SessionUser } from '../auth/google-login.ts';
 import type { Db } from '../db/client.ts';
 import { type TagGroupStatus, tagGroupDefLog, tagGroupDefs, tagGroupMemberLog, tagGroupMembers, tagWikidata } from '../db/schema.ts';
-import { activeGroups, moveProblem } from './tree.ts';
+import { registerTagRelationsAdmin } from './relations.ts';
+import { activeGroups, descendants, moveProblem } from './tree.ts';
+import { syncWritingTag, tagsInGroups } from './writing.ts';
 
 // /admin/tag-groups/: admins confirm or reject what the rules filed, put a
 // tag in any group by hand, and add, rename, nest, reorder or delete groups
@@ -19,6 +21,7 @@ const STATUSES: TagGroupStatus[] = ['review', 'auto', 'confirmed', 'rejected'];
 const PAGE = 100;
 
 export function registerTagGroupAdmin(app: FastifyInstance, db: Db, { requireAdmin, origin }: Options) {
+  registerTagRelationsAdmin(app, db, requireAdmin);
   const sameOrigin = (request: FastifyRequest, reply: FastifyReply) => {
     if (request.headers.origin === origin) return true;
     reply.header('cache-control', 'no-store').code(403).send({ error: 'same-origin requests only' });
@@ -119,6 +122,7 @@ export function registerTagGroupAdmin(app: FastifyInstance, db: Db, { requireAdm
           email: user.email,
           at,
         });
+        await syncWritingTag(tx, tag, user.email);
       });
       return { tag, groupId, status };
     },
@@ -170,7 +174,11 @@ export function registerTagGroupAdmin(app: FastifyInstance, db: Db, { requireAdm
         if (body.parentId !== group.parentId) set.parentId = body.parentId;
       }
       if (!Object.keys(set).length) return { id, label: group.label, parentId: group.parentId };
-      await db.update(tagGroupDefs).set(set).where(eq(tagGroupDefs.id, id));
+      const affected = set.parentId !== undefined ? await tagsInGroups(db, descendants(defs, id)) : [];
+      await db.transaction(async (tx) => {
+        await tx.update(tagGroupDefs).set(set).where(eq(tagGroupDefs.id, id));
+        for (const tag of affected) await syncWritingTag(tx, tag, user.email);
+      });
       if (set.label) await logDef(id, 'rename', `${group.label} → ${set.label}`, user.email);
       if (set.parentId !== undefined) {
         const parent = defs.find((d) => d.id === set.parentId);
@@ -215,12 +223,14 @@ export function registerTagGroupAdmin(app: FastifyInstance, db: Db, { requireAdm
     const group = defs.find((d) => d.id === id);
     if (!group) return reply.code(404).send({ error: 'no such group' });
     const children = defs.filter((d) => d.parentId === id).map((d) => d.id);
+    const affected = await tagsInGroups(db, descendants(defs, id));
     let removed = 0;
     await db.transaction(async (tx) => {
       await tx.update(tagGroupDefs).set({ deletedAt: new Date(), parentId: null }).where(eq(tagGroupDefs.id, id));
       if (children.length) await tx.update(tagGroupDefs).set({ parentId: group.parentId }).where(inArray(tagGroupDefs.id, children));
       const [res] = await tx.delete(tagGroupMembers).where(eq(tagGroupMembers.groupId, id));
       removed = res.affectedRows;
+      for (const tag of affected) await syncWritingTag(tx, tag, user.email);
     });
     await logDef(id, 'delete', `${group.label}（${removed} 個標籤）`, user.email);
     return { id, deleted: true, tags: removed, children };
