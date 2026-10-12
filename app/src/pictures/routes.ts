@@ -17,14 +17,15 @@ import {
 import { recolourLogo } from '../tag-visuals/recolour.ts';
 import { visualMime } from '../v1/tag-visual.ts';
 import { refreshPages } from './refresh.ts';
-import { addVisualUpload, applyVotes, castVote, type PictureKind, pictureKind, tally, uploadsToday } from './votes.ts';
+import { submitPicture } from './submissions.ts';
+import { applyVotes, castVote, type PictureKind, pictureKind, tally, uploadsToday } from './votes.ts';
 
 // /tag/{tag}/picture/: any signed-in reader votes for a tag's picture or
 // uploads one (docs/tag-pictures.md). A person tag's photo is sketched by the
 // worker (the face models stay out of the gateway); any other tag's picture
-// is cut out, trimmed and recoloured here. An upload counts as its
-// uploader's vote; the most-voted candidate is shown unless an admin chose
-// or hid one, and admins can lock a candidate or let the votes decide again.
+// is cut out, trimmed and recoloured here. Uploads wait for administrator
+// approval before becoming candidates or counting as the uploader's vote.
+// The most-voted candidate is shown unless an admin chose or hid one.
 
 type Options = {
   currentUser: (request: FastifyRequest) => Promise<SessionUser | null>;
@@ -272,9 +273,8 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
           return reply.code(202).send({ kind, jobId: job.id });
         }
         const image = await recolourLogo(raw);
-        const added = await addVisualUpload(db, tag, image, user.id);
-        refreshPages(uiOrigin, tag);
-        return { kind, ...added };
+        const added = await submitPicture(db, { tag, pictureKind: kind, image, userId: user.id });
+        return reply.code(202).send({ kind, ...added });
       } catch (err) {
         return reply.code(400).send({ error: `讀不了這張圖：${(err as Error).message}` });
       }
@@ -291,8 +291,7 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
       return reply.code(404).send({ error: 'no such job' });
     const result = (job.returnvalue ?? null) as { tag?: string; error?: string } | null;
     const state = await job.getState();
-    // The sketch is in: rebuild the pages (once is enough, but polling twice does no harm).
-    if (state === 'completed' && result?.tag && !result.error) refreshPages(uiOrigin, result.tag);
+    // Reader jobs only create private submissions; approval triggers public revalidation.
     return { id: job.id, state, result, error: job.failedReason ?? result?.error ?? null };
   });
 

@@ -99,6 +99,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tag-visuals`](#api-v1-tag-visuals) | 所有有小圖的非人物標籤 |
 | [`GET /api/v1/tags/{tag}/visual`](#api-v1-tags-tag-visual) | 非人物標籤的小圖 |
 | [`GET /api/v1/tags/{tag}/visual-image`](#api-v1-tags-tag-visual-image) | 非人物標籤的小圖圖檔 |
+| [`GET /api/v1/tags/{tag}/relations`](#api-v1-tags-tag-relations) | 經審核的標籤語義關係與既有上位分類 |
 | [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
 | [`GET /api/v1/tag-groups`](#api-v1-tag-groups) | 標籤群組與主題大類一覽 |
 | [`GET /api/v1/tag-groups/{id}`](#api-v1-tag-groups-id) | 群組裡的標籤 |
@@ -2077,6 +2078,49 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E5%8F%B0%E5%8C%97/visual-image'
 錯誤：`404` 沒有圖。
 
 快取：1 天。
+
+<a id="api-v1-tags-tag-relations"></a>
+
+### `GET /api/v1/tags/{tag}/relations`
+
+**經審核的標籤語義關係與既有上位分類**
+
+is-a 是有方向、可多重的上位分類；related 和 alias 是對稱關係，別名不會合併或改寫標籤 ID。只公開已核准的投稿，以及既有公開群組分類（含祖先）；不把共現統計當成語義關係。tagId 是原始 UTF-8 字串的 SHA-256，與完整詞庫一致；群組沿用 group:<既有ID>。投稿者與審核者的帳號、說明只在有權限的後台提供。舊分類沒有建立時間，createdAt 如實為 null。單頁最多200筆新關係，truncated 表示尚有其他關係。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`柯文哲` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E6%9F%AF%E6%96%87%E5%93%B2/relations'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `tagId` | string |  |
+| `truncated` | boolean |  |
+| `relations` | object[] |  |
+| `relations[].id` | string | 穩定關係 ID |
+| `relations[].type` | "is-a" \| "related" \| "alias" | 關係型別 |
+| `relations[].target` | object |  |
+| `relations[].target.id` | string |  |
+| `relations[].target.label` | string |  |
+| `relations[].target.href` | string | 本站相對路徑 |
+| `relations[].source` | string | manual、rule 或 submission |
+| `relations[].sourceDetail` | string | 既有分類保留原來源 |
+| `relations[].createdAt` | string (ISO 時間) \| null |  |
+| `relations[].status` | string | 僅公開核准結果 |
+| `relations[].inherited` | boolean | 既有分類祖先 |
+| `relations[].depth` | integer | 直接分類為1，祖先逐層遞增 |
+
+錯誤：`400` 標籤格式不正確。
+
+快取：1 分鐘；帶 Cookie、Authorization、X-Service-Token 或 X-Api-Key 一律 private, no-store。
 
 <a id="api-v1-tags-tag-groups"></a>
 
