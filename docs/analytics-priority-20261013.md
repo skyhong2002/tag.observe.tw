@@ -1,5 +1,7 @@
 # GA 優先驗收：實際切頁與去識別 Network
 
+> **驗收方式已撤回。** 本文件的 Google Network 紀錄是先前的合成測試，不能當作自然訪客流量，也不能僅憑 HTTP 204 證明 GA 報表已收到。後續維持 DNT／GPC／自動化／opt-out 防護，不再送合成事件。更正與不外送證據見 [撤回後驗收](analytics-offline-20261013.md)。
+
 UTC 2026-10-12 **17:54:10–17:56:41**，正式 release `adf47ee84fda870592bdf50d42694a1e396bcb5c`，包含4aa4d41；`git diff 4aa4d41..adf47ee -- web/src/lib/analytics* web/src/components/SiteAnalytics.tsx web/src/components/ReaderPresence.tsx` 為空。沒有為驗收降版。依使用者指示採主機上的獨立 Chromium、一般 UA、DNT=0/GPC=false 測試設定檔，沒有修改正式 DNT 判斷。
 
 以下均為真實 Google g/collect，回應 HTTP 204。只保存 en、dl 的 path+query、dt、dr 的 path+query、UTC 和 HTTP 狀態；cid/sid 在擷取時直接丟棄，不寫入任何報告。完整逐筆紀錄（包括公開頁的自訂事件和無欄位連線探測）見 [Network JSON](analytics-priority-network-20261013.json)。

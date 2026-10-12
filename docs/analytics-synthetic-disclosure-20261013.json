@@ -1,0 +1,316 @@
+{
+  "classification": "Historical synthetic requests. Method withdrawn; do not repeat. HTTP status is not evidence of GA report ingestion.",
+  "requestsWithUtc": [
+    {
+      "utc": "2026-10-12T17:17:24.257Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-network-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:17:30.976Z",
+      "en": "web_vital",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-network-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:17:35.976Z",
+      "en": "page_view",
+      "dl": "/article/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-network-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:17:41.037Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/article/",
+      "httpStatus": 204,
+      "source": "tag-ga-network-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:18:57.775Z",
+      "en": "page_view",
+      "dl": "/ranking/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-network-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:19:04.090Z",
+      "en": "page_view",
+      "dl": "/liveboard/setting/",
+      "dt": "即時看板",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-network-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:20:14.074Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-navigation-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:20:16.291Z",
+      "en": "web_vital",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-navigation-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:20:21.291Z",
+      "en": "page_view",
+      "dl": "/article/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-navigation-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:20:27.384Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/article/",
+      "httpStatus": 204,
+      "source": "tag-ga-navigation-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:20:44.611Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-navigation-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:21:01.451Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-navigation-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:23:15.189Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-anonymous-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:23:16.014Z",
+      "en": "page_view",
+      "dl": "/liveboard/setting/",
+      "dt": "即時看板",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-anonymous-evidence.json"
+    },
+    {
+      "utc": "2026-10-12T17:54:11.041Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:54:12.809Z",
+      "en": "select_content",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:54:13.819Z",
+      "en": null,
+      "dl": null,
+      "dt": null,
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:54:16.044Z",
+      "en": "web_vital",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:54:21.044Z",
+      "en": "page_view",
+      "dl": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:54:28.630Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:54:40.818Z",
+      "en": null,
+      "dl": null,
+      "dt": null,
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:55:24.676Z",
+      "en": "page_view",
+      "dl": "/liveboard/",
+      "dt": "即時看板",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:55:27.560Z",
+      "en": null,
+      "dl": null,
+      "dt": null,
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-20261013.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:03.285Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:04.991Z",
+      "en": "select_content",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:06.059Z",
+      "en": null,
+      "dl": null,
+      "dt": null,
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:06.782Z",
+      "en": "web_vital",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:11.782Z",
+      "en": "page_view",
+      "dl": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+      "dt": "新文易數",
+      "dr": "/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:19.352Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:37.271Z",
+      "en": null,
+      "dl": null,
+      "dt": null,
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    },
+    {
+      "utc": "2026-10-12T17:56:39.387Z",
+      "en": "page_view",
+      "dl": "/",
+      "dt": "新文易數",
+      "dr": null,
+      "httpStatus": 204,
+      "source": "tag-ga-priority-navigation.json"
+    }
+  ],
+  "additionalDebugRequests": {
+    "log": "/tmp/tag-ga-back-debug.log",
+    "logLastModifiedUtc": "2026-10-12T17:16:13.785Z",
+    "perRequestUtc": "not recorded; exact sending time unknown",
+    "requests": [
+      {
+        "en": "page_view",
+        "dl": "/",
+        "dt": "新文易數",
+        "dr": null
+      },
+      {
+        "en": null,
+        "dl": null,
+        "dt": null,
+        "dr": null
+      },
+      {
+        "en": "web_vital",
+        "dl": "/",
+        "dt": "新文易數",
+        "dr": "/"
+      },
+      {
+        "en": "page_view",
+        "dl": "/",
+        "dt": "新文易數",
+        "dr": "/article/"
+      }
+    ]
+  },
+  "completeness": "Recovered from retained logs; additional unsaved requests cannot be excluded. cid/sid omitted at capture."
+}

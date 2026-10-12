@@ -1,5 +1,7 @@
 # GA 隱私修正驗證紀錄
 
+> **驗收方式已撤回。** 本文件的 Google Network 紀錄是先前的合成測試，不能當作自然訪客流量，也不能僅憑 HTTP 204 證明 GA 報表已收到。後續維持 DNT／GPC／自動化／opt-out 防護，不再送合成事件。更正與不外送證據見 [撤回後驗收](analytics-offline-20261013.md)。
+
 基底 origin/main：c862552b5eea503f8947aa2206be53a1bf1af9a4。僅修改獨立 tag-vocabulary-release worktree，未修改主 checkout、其他站、release 或備份。
 
 UTC 2026-10-12 15:26:46–15:26:49：42 項測試通過（analytics-consent、analytics-runtime、tracking-availability、reader-presence、cache-control），前端 TypeScript 檢查通過。涵蓋私人落地、私人進出、搜尋返回、公開切頁／上一頁、StrictMode 重掛、腳本延遲期間轉私人頁、看板設定固定標題、opt-out、DNT/GPC 與自訂事件共用防護。純 runtime 測試驗證 config 只一次且沒有手動 page_view；不把 mock 當成 Google 網路驗證。

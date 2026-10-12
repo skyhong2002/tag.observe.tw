@@ -1,0 +1,249 @@
+{
+  "utc": "2026-10-12T18:06:36.206Z",
+  "mode": "in-memory mocks only; no Google script or network transport; not proof of GA receipt",
+  "measurementId": "MOCK_ONLY",
+  "results": [
+    {
+      "scenario": "public landing",
+      "path": "/",
+      "blocked": false,
+      "mockScriptLoads": 1,
+      "commands": [
+        {
+          "command": "set",
+          "fields": {
+            "page_location": "https://tag.observe.tw/",
+            "page_title": "新文易數",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        },
+        {
+          "command": "config",
+          "target": "MOCK_ONLY"
+        }
+      ]
+    },
+    {
+      "scenario": "public history push",
+      "path": "/tag/AI/",
+      "blocked": false,
+      "mockScriptLoads": 1,
+      "commands": [
+        {
+          "command": "set",
+          "fields": {
+            "page_location": "https://tag.observe.tw/tag/AI/",
+            "page_title": "新文易數",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "public popstate",
+      "path": "/",
+      "blocked": false,
+      "mockScriptLoads": 1,
+      "commands": [
+        {
+          "command": "set",
+          "fields": {
+            "page_location": "https://tag.observe.tw/",
+            "page_title": "新文易數",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "private search entered",
+      "path": "/search",
+      "blocked": true,
+      "mockScriptLoads": 1,
+      "commands": []
+    },
+    {
+      "scenario": "same document search back: remains disabled",
+      "path": "/",
+      "blocked": true,
+      "mockScriptLoads": 1,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /admin/",
+      "path": "/admin/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /login/",
+      "path": "/login/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /me/",
+      "path": "/me/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /my/reading/",
+      "path": "/my/reading/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /observe/opt-out/",
+      "path": "/observe/opt-out/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /search?q=PRIVATE",
+      "path": "/search",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /article/query/",
+      "path": "/article/query/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private landing /article?q=PRIVATE",
+      "path": "/article",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "private before first configuration",
+      "path": "/search",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "first public after private landing",
+      "path": "/",
+      "blocked": false,
+      "mockScriptLoads": 1,
+      "commands": [
+        {
+          "command": "set",
+          "fields": {
+            "page_location": "https://tag.observe.tw/",
+            "page_title": "新文易數",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        },
+        {
+          "command": "config",
+          "target": "MOCK_ONLY"
+        }
+      ]
+    },
+    {
+      "scenario": "fixed liveboard title",
+      "path": "/liveboard/",
+      "blocked": false,
+      "mockScriptLoads": 1,
+      "commands": [
+        {
+          "command": "set",
+          "fields": {
+            "page_location": "https://tag.observe.tw/liveboard/",
+            "page_title": "即時看板",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        },
+        {
+          "command": "config",
+          "target": "MOCK_ONLY"
+        },
+        {
+          "command": "event",
+          "en": "liveboard_activity",
+          "fields": {
+            "page_location": "https://tag.observe.tw/liveboard/",
+            "page_title": "即時看板",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fixed liveboard title",
+      "path": "/liveboard/setting/",
+      "blocked": false,
+      "mockScriptLoads": 1,
+      "commands": [
+        {
+          "command": "set",
+          "fields": {
+            "page_location": "https://tag.observe.tw/liveboard/setting/",
+            "page_title": "即時看板",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        },
+        {
+          "command": "config",
+          "target": "MOCK_ONLY"
+        },
+        {
+          "command": "event",
+          "en": "liveboard_activity",
+          "fields": {
+            "page_location": "https://tag.observe.tw/liveboard/setting/",
+            "page_title": "即時看板",
+            "page_referrer": "https://tag.observe.tw"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "DNT guard",
+      "path": "/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "GPC guard",
+      "path": "/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "webdriver guard",
+      "path": "/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "bot guard",
+      "path": "/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    },
+    {
+      "scenario": "optout guard",
+      "path": "/",
+      "blocked": true,
+      "mockScriptLoads": 0,
+      "commands": []
+    }
+  ]
+}
