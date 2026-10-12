@@ -103,9 +103,9 @@ describe.skipIf(process.env.VOCABULARY_INTEGRATION !== '1')('read-only MariaDB s
       const second = await runVocabulary(reader, { ...opts, mode: 'fast' });
       expect(second.status).toBe('published');
       const head = (await store.changes(base.id)).snapshot.id;
-      expect((await store.changes(base.id, head)).entries).toContainEqual({
+      expect((await store.changes(base.id, head)).entries[0]).toMatchObject({
         action: 'upsert',
-        active: true,
+        active: false,
         term: { ...vocabularyTerm(term('最新事件', 2)), lastPublishedAt: '2026-10-02T00:00:00.000Z' },
       });
       // A lower id commits after the higher id was already observed.
@@ -202,17 +202,28 @@ it.skipIf(process.env.VOCABULARY_INTEGRATION !== '1')(
   30000,
 );
 
-it('emits an inactive upsert when a low-frequency term ages out without a source edit', async () => {
+it('queues a recount when the final article exits the active 30-day window', async () => {
   const d = await setup(),
     a = new VocabularyAggregate(join(d, 'aggregate.sqlite')),
     at = new Date('2026-01-01T00:00:00.000Z');
   try {
-    a.replace(null, null, [{ ...term('短期事件'), firstPublishedAt: at.toISOString(), lastPublishedAt: at.toISOString(), groupKey: '01' }]);
+    a.replace(null, null, [
+      {
+        ...term('短期事件', 3),
+        recentArticleCount: 3,
+        recentArticleCounts: { '30': 3, '90': 3, '180': 3 },
+        recentCountsAsOf: at.toISOString(),
+        firstPublishedAt: at.toISOString(),
+        lastPublishedAt: at.toISOString(),
+        groupKey: '01',
+      },
+    ]);
     a.db.exec('DELETE FROM changes');
-    a.queueActiveExpiry(new Date(at.getTime() + 180 * 86400000 - 1));
+    a.queueActiveExpiry(new Date(at.getTime() + 30 * 86400000 - 1));
     expect(a.db.prepare('SELECT COUNT(*) n FROM changes').get()!.n).toBe(0);
-    a.queueActiveExpiry(new Date(at.getTime() + 180 * 86400000 + 1));
-    expect(a.db.prepare('SELECT COUNT(*) n FROM changes').get()!.n).toBe(1);
+    a.queueActiveExpiry(new Date(at.getTime() + 30 * 86400000 + 1));
+    expect(a.db.prepare('SELECT COUNT(*) n FROM changes').get()!.n).toBe(0);
+    expect(a.db.prepare('SELECT COUNT(*) n FROM pending').get()!.n).toBe(1);
     const s = new VocabularySnapshots(d),
       base = await s.publish(async () => []);
     await s.publishDelta(
@@ -230,3 +241,48 @@ it('emits an inactive upsert when a low-frequency term ages out without a source
     a.close();
   }
 });
+
+it.skipIf(process.env.VOCABULARY_INTEGRATION !== '1')(
+  'counts each publication window inclusively and excludes future publications',
+  async () => {
+    const { aggregateRange } = await import('../src/vocabulary/source.ts');
+    const connection = await mysql.createConnection({
+      host: '127.0.0.1',
+      port: 18306,
+      user: 'root',
+      password: 'vocabulary-fixture',
+      database: 'vocabulary_fixture',
+      dateStrings: true,
+    });
+    const asOf = new Date('2026-10-12T00:00:00.000Z');
+    try {
+      await connection.query('DELETE FROM article_tags');
+      for (const [i, days] of [0, 30, 31, 90, 91, 180, 181, -1].entries()) {
+        const at = new Date(asOf.getTime() - days * 86400000).toISOString().slice(0, 19).replace('T', ' ');
+        await connection.query('INSERT INTO article_tags VALUES(?,?,?)', [i + 1, '窗口測試', at]);
+      }
+      const [r] = await aggregateRange(connection, null, '窗口測試', true, asOf);
+      expect(r).toMatchObject({
+        articleCount: 8,
+        recentArticleCount: 6,
+        recentArticleCounts: { '30': 2, '90': 4, '180': 6 },
+        recentCountsAsOf: asOf.toISOString(),
+      });
+      const directory = await setup(),
+        a = new VocabularyAggregate(join(directory, 'aggregate.sqlite'));
+      try {
+        a.set('startedAt', asOf.toISOString());
+        a.set('recentCountsReady', true);
+        a.replace(null, null, [r]);
+        expect([...a.terms()][0]).toMatchObject({ recentArticleCounts: { '30': 2, '90': 4, '180': 6 } });
+        a.db.exec('DELETE FROM changes');
+        a.replaceExact(r.groupKey, [{ ...r, recentArticleCount: 5, recentArticleCounts: { '30': 1, '90': 3, '180': 5 } }]);
+        expect(a.db.prepare('SELECT COUNT(*) n FROM changes').get()!.n).toBe(1);
+      } finally {
+        a.close();
+      }
+    } finally {
+      await connection.end();
+    }
+  },
+);

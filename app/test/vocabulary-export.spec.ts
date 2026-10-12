@@ -17,6 +17,9 @@ async function setup() {
 const row = (tag: string): SourceTerm => ({
   tag,
   articleCount: 3,
+  recentArticleCount: 3,
+  recentArticleCounts: { '30': 3, '90': 3, '180': 3 },
+  recentCountsAsOf: '2026-10-12T00:00:00.000Z',
   firstPublishedAt: '2026-09-01T00:00:00.000Z',
   lastPublishedAt: '2026-10-01T00:00:00.000Z',
 });
@@ -181,4 +184,33 @@ it('serves verified 5000-term compact pages and negotiated gzip for full and act
   expect(JSON.parse(gunzipSync(r.rawPayload).toString()).entries).toHaveLength(5000);
   expect((await app.inject(`/api/v1/vocabulary/snapshots/${manifest.id}?limit=5001`)).statusCode).toBe(400);
   await app.close();
+});
+
+it('counts actual recent articles, excludes noise and single-code-point terms in every tier', async () => {
+  const { store } = await setup();
+  const measured = (tag: string, total: number, r30: number, r90: number, r180: number): SourceTerm => ({
+    ...row(tag),
+    articleCount: total,
+    recentArticleCount: r180,
+    recentArticleCounts: { '30': r30, '90': r90, '180': r180 },
+  });
+  const manifest = await store.publish(async () => [
+    measured('歷史常見詞', 100, 0, 0, 1),
+    measured('近期單次詞', 1, 1, 1, 1),
+    measured('穩定事件', 5, 2, 3, 5),
+    measured('短期事件', 3, 3, 3, 3),
+    measured('新聞', 20, 10, 10, 10),
+    measured('甲', 20, 10, 10, 10),
+  ]);
+  expect(manifest.active).toMatchObject({ total: 1, days: 30, policy: 'recent-article-count', minRecentArticleCount: 3 });
+  expect(manifest.tiers).toMatchObject({
+    measuredTerms: 4,
+    missingRecentCounts: 0,
+    articleCountAtLeast: { '3': 3, '5': 2, '10': 1, '20': 1 },
+    recentArticleCountAtLeast: { '30': { '2': 2, '3': 1, '5': 0 }, '90': { '2': 2, '3': 2, '5': 0 }, '180': { '2': 2, '3': 2, '5': 1 } },
+  });
+  expect(manifest.tiers!.intersections['180']['3']['5']).toBe(1);
+  const next = await store.publishStream([measured('穩定事件', 5, 2, 3, 5)], new Date(), { changes: [], resetChain: true });
+  expect(next.previousId).toBeNull();
+  await expect(store.changes(manifest.id, next.id)).rejects.toMatchObject({ code: 'resnapshot-required' });
 });

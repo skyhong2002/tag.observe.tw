@@ -17,7 +17,12 @@ export const MAX_MANIFEST_BYTES = 16_000_000;
 export const ORIGIN = 'https://tag.observe.tw';
 const SHA = /^[0-9a-f]{64}$/;
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-export interface Term {
+export interface RecentCounts {
+  recentArticleCount?: number;
+  recentArticleCounts?: { '30': number; '90': number; '180': number };
+  recentCountsAsOf?: string;
+}
+export interface Term extends RecentCounts {
   id: string;
   label: string;
   articleCount: number;
@@ -29,7 +34,7 @@ export interface Term {
   noiseReasons: TagNoiseReason[];
   noEqual: boolean;
 }
-export interface SourceTerm {
+export interface SourceTerm extends RecentCounts {
   tag: string;
   articleCount: number;
   firstPublishedAt: string;
@@ -64,11 +69,14 @@ export interface Manifest {
     fileBytes?: number;
     pages: string[];
     sha256: string;
-    days: 180;
-    minArticleCount: 3;
+    days: 30 | 180;
+    minArticleCount?: number;
+    minRecentArticleCount?: 3;
+    policy?: 'recent-article-count';
     minLength: 2;
     excludeNoise: true;
   };
+  tiers?: VocabularyTiers;
   statistics?: {
     noise: number;
     noEqual: number;
@@ -140,7 +148,20 @@ export function vocabularyTerm(row: SourceTerm): Term {
     Date.parse(row.firstPublishedAt) > Date.parse(row.lastPublishedAt)
   )
     throw new SnapshotError('invalid');
+  const counts = row.recentArticleCounts;
+  if (
+    counts &&
+    (!strictIso(row.recentCountsAsOf ?? '') ||
+      ![counts['30'], counts['90'], counts['180']].every((n) => Number.isSafeInteger(n) && n >= 0) ||
+      counts['30'] > counts['90'] ||
+      counts['90'] > counts['180'] ||
+      counts['180'] > row.articleCount ||
+      row.recentArticleCount !== counts['180'])
+  )
+    throw new SnapshotError('invalid');
+  if (!counts && (row.recentArticleCount !== undefined || row.recentCountsAsOf !== undefined)) throw new SnapshotError('invalid');
   return {
+    ...(counts ? { recentArticleCount: counts['180'], recentArticleCounts: counts, recentCountsAsOf: row.recentCountsAsOf } : {}),
     id: digest(row.tag),
     label: row.tag,
     articleCount: row.articleCount,
@@ -154,13 +175,48 @@ export function vocabularyTerm(row: SourceTerm): Term {
   };
 }
 
-export const isActive = (entry: Term, now: Date) =>
-  !entry.noise &&
-  [...entry.label].length >= 2 &&
-  (entry.articleCount >= 3 || Date.parse(entry.lastPublishedAt) >= now.getTime() - 180 * 86400000);
+export const isActive = (entry: Term, _now?: Date) =>
+  !entry.noise && [...entry.label].length >= 2 && (entry.recentArticleCounts?.['30'] ?? 0) >= 3;
+export interface VocabularyTiers {
+  excludeNoise: true;
+  minLength: 2;
+  measuredTerms: number;
+  missingRecentCounts: number;
+  articleCountAtLeast: Record<string, number>;
+  recentArticleCountAtLeast: Record<string, Record<string, number>>;
+  intersections: Record<string, Record<string, Record<string, number>>>;
+}
+export function newVocabularyTiers(): VocabularyTiers {
+  const totals = () => Object.fromEntries([3, 5, 10, 20].map((n) => [n, 0]));
+  return {
+    excludeNoise: true,
+    minLength: 2,
+    measuredTerms: 0,
+    missingRecentCounts: 0,
+    articleCountAtLeast: totals(),
+    recentArticleCountAtLeast: Object.fromEntries([30, 90, 180].map((d) => [d, Object.fromEntries([2, 3, 5].map((n) => [n, 0]))])),
+    intersections: Object.fromEntries([30, 90, 180].map((d) => [d, Object.fromEntries([2, 3, 5].map((n) => [n, totals()]))])),
+  };
+}
+export function countVocabularyTier(tiers: VocabularyTiers, entry: Term) {
+  if (entry.noise || [...entry.label].length < 2) return;
+  tiers.measuredTerms++;
+  for (const n of Object.keys(tiers.articleCountAtLeast)) if (entry.articleCount >= +n) tiers.articleCountAtLeast[n]++;
+  if (!entry.recentArticleCounts) {
+    tiers.missingRecentCounts++;
+    return;
+  }
+  for (const days of ['30', '90', '180'] as const)
+    for (const n of ['2', '3', '5']) {
+      if (entry.recentArticleCounts[days] < +n) continue;
+      tiers.recentArticleCountAtLeast[days][n]++;
+      for (const total of Object.keys(tiers.articleCountAtLeast)) if (entry.articleCount >= +total) tiers.intersections[days][n][total]++;
+    }
+}
 function publicChange(c: Change, now = new Date()): Change {
   if (c.action === 'upsert') {
     const term = vocabularyTerm({
+      ...c.term,
       tag: c.term.label,
       articleCount: c.term.articleCount,
       firstPublishedAt: c.term.firstPublishedAt,
@@ -248,8 +304,8 @@ export class VocabularySnapshots {
         a.pages.length !== Math.ceil(a.total / PAGE_SIZE) ||
         a.pages.some((h) => typeof h !== 'string' || !SHA.test(h)) ||
         !SHA.test(a.sha256) ||
-        a.days !== 180 ||
-        a.minArticleCount !== 3 ||
+        (a.policy === 'recent-article-count' ? a.days !== 30 : a.days !== 180) ||
+        (a.policy === 'recent-article-count' ? a.minRecentArticleCount !== 3 : a.minArticleCount !== 3) ||
         a.minLength !== 2 ||
         a.excludeNoise !== true
       )
@@ -501,7 +557,7 @@ export class VocabularySnapshots {
   async publishStream(
     rows: Iterable<SourceTerm> | AsyncIterable<SourceTerm>,
     now = new Date(),
-    options?: { changes: Iterable<Change> | AsyncIterable<Change>; sourceAsOf?: Record<string, unknown> },
+    options?: { changes: Iterable<Change> | AsyncIterable<Change>; sourceAsOf?: Record<string, unknown>; resetChain?: boolean },
   ): Promise<Manifest> {
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
     const release = await this.acquire();
@@ -514,6 +570,7 @@ export class VocabularySnapshots {
       } catch (error) {
         if (!(error instanceof SnapshotError && error.code === 'not-found')) throw error;
       }
+      if (options?.resetChain) previous = null;
       await mkdir(staging, { mode: 0o700 });
       let fileBytes = 0;
       const writer = (name: string) => {
@@ -584,6 +641,7 @@ export class VocabularySnapshots {
         activeFileBytes: 0,
         changeFileBytes: 0,
       };
+      const tiers = newVocabularyTiers();
       const recentSince = now.getTime() - 180 * 86400_000;
       for await (const row of rows) {
         const entry = vocabularyTerm(row),
@@ -599,6 +657,7 @@ export class VocabularySnapshots {
           prior = await old!.next();
         } else if (!options) await changes.add({ action: 'upsert', term: entry, active: isActive(entry, now) });
         await terms.add(entry);
+        countVocabularyTier(tiers, entry);
         const recent = Date.parse(entry.lastPublishedAt) >= recentSince,
           eligible = !entry.noise && [...entry.label].length >= 2;
         if (entry.noise) stats.noise++;
@@ -609,7 +668,7 @@ export class VocabularySnapshots {
           if (entry.articleCount >= Number(threshold) && recent) stats.articleCountAndRecent[threshold]++;
           if (eligible && (entry.articleCount >= Number(threshold) || recent)) stats.eligibleAtThreshold[threshold]++;
         }
-        if (eligible && (entry.articleCount >= 3 || recent)) await active.add(entry);
+        if (isActive(entry)) await active.add(entry);
       }
       while (prior && !prior.done) {
         await changes.add({ action: 'absent-from-index', id: prior.value.id, label: prior.value.label, active: false });
@@ -649,12 +708,15 @@ export class VocabularySnapshots {
           largePages: active.largeHashes,
           fileBytes: active.bytes,
           sha256: active.full.digest('hex'),
-          days: 180,
-          minArticleCount: 3,
+          days: 30,
+          minArticleCount: 0,
+          minRecentArticleCount: 3,
+          policy: 'recent-article-count',
           minLength: 2,
           excludeNoise: true,
         },
         statistics: stats,
+        tiers,
         sourceConsistency: 'read-only-watermark-overlap; rolling-key-range-reconciliation-within-7-days',
         sourceAsOf: options?.sourceAsOf,
       };

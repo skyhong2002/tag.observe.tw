@@ -78,7 +78,8 @@ export async function buildApp(
   // Header presence is enough: invalid credentials must not enter a shared cache.
   app.addHook('onSend', async (request, reply, payload) => {
     if (reply.statusCode >= 400) reply.header('cache-control', 'no-store');
-    else if (request.headers['x-api-key'] !== undefined) reply.header('cache-control', 'private, no-store');
+    else if (request.headers['x-api-key'] !== undefined || request.headers.authorization !== undefined)
+      reply.header('cache-control', 'private, no-store');
     return payload;
   });
   // Personal API keys (app/src/reader/api-keys.ts) get their own budget; set

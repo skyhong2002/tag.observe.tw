@@ -33,6 +33,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
   }
   const aggregate = new VocabularyAggregate(join(directory, 'aggregate.sqlite'));
   const started = Date.now();
+  const countedAt = new Date();
   let size = options.batchSize ?? 1000;
   const rest = options.restMs ?? 100,
     log = options.log ?? (() => {});
@@ -79,11 +80,12 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
   const workBudget = Math.max(0, (options.maxDurationMs ?? (options.mode === 'fast' ? 180000 : 6 * 3600000)) - 30000);
   const exact = async (tag: string) => {
     try {
-      return await query(() => aggregateRange(db, null, tag, true));
+      return await query(() => aggregateRange(db, null, tag, true, countedAt));
     } catch (e) {
       if (!isQueryTimeout(e)) throw e;
     }
-    const saved = aggregate.get<{ tag: string; cursor: { at: string; id: string } | null }>('largeGroup');
+    const saved = aggregate.get<{ tag: string; cursor: { at: string; id: string } | null; asOf?: string }>('largeGroup');
+    const groupAsOf = saved?.tag === tag && saved.asOf ? new Date(saved.asOf) : countedAt;
     let cursor = saved?.tag === tag ? saved.cursor : null;
     if (saved?.tag !== tag) aggregate.beginGroup();
     while (true) {
@@ -91,7 +93,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       if (!rows.length) break;
       const last = rows.at(-1)!;
       cursor = { at: last.published_at, id: String(last.article_id) };
-      aggregate.stageGroup(rows, { tag, cursor });
+      aggregate.stageGroup(rows, { tag, cursor, asOf: groupAsOf.toISOString() }, groupAsOf);
       metrics.rowsRead += rows.length;
     }
     aggregate.set('largeGroup', null);
@@ -110,7 +112,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       }
       let terms: AggregateTerm[];
       try {
-        terms = await query(() => aggregateRange(db, cursor?.tag ?? null, upper!));
+        terms = await query(() => aggregateRange(db, cursor?.tag ?? null, upper!, false, countedAt));
         if (size < 2000) size = Math.min(2000, size * 2);
       } catch (e) {
         if (!isQueryTimeout(e)) throw e;
@@ -137,10 +139,14 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       aggregate.set('baseline', id);
     }
     const initial = !aggregate.get('bootstrapComplete');
-    const needsFull = !aggregate.get('publishedId');
+    if (!initial && !aggregate.get('recentCountsReady') && !aggregate.get('recentHydrationComplete'))
+      throw new VocabularyPaused('recent-count-hydration-required');
+    const resetChain = aggregate.get('activePolicyVersion') !== 3;
+    const needsFull = !aggregate.get('publishedId') || resetChain;
     if (initial) {
       await sweep('bootstrapCursor', Infinity);
       aggregate.set('bootstrapComplete', true);
+      aggregate.set('recentCountsReady', true);
       aggregate.db.exec('DELETE FROM changes');
     }
     let target = aggregate.get<string>('targetId');
@@ -164,6 +170,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       aggregate.set('newCursor', null);
       aggregate.db.prepare('DELETE FROM seen WHERE article_id<?').run(lower);
     });
+    aggregate.queueActiveExpiry(new Date());
     while (true) {
       if (!needsFull && Date.now() - started >= workBudget) break;
       const pending = aggregate.db.prepare('SELECT group_key,tag FROM pending ORDER BY priority DESC LIMIT 1').get();
@@ -174,7 +181,6 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
     if (!initial && options.mode === 'reconcile') {
       await sweep('reconcileCursor', Math.max(1000, Math.ceil(aggregate.count() / 7)));
     }
-    aggregate.queueActiveExpiry(new Date());
     const store = new VocabularySnapshots(directory);
     async function* terms(): AsyncGenerator<SourceTerm> {
       let n = 0;
@@ -202,18 +208,20 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       lastFullReconcileAt: aggregate.get('lastFullReconcileAt'),
       reconciliationLagDays: 7,
       overlapArticleIds: 2000,
+      recentCountsReconciliationLagDays: 7,
     };
     let manifest: Generation;
     if ((options.mode === 'fast' || options.mode === 'reconcile') && !needsFull) {
       manifest = await store.publishDelta(changes(), aggregate.count(), new Date(), sourceAsOf);
     } else {
-      manifest = await store.publishStream(terms(), new Date(), { changes: changes(), sourceAsOf });
+      manifest = await store.publishStream(terms(), new Date(), { changes: changes(), sourceAsOf, resetChain });
     }
     const firstObserved = aggregate.get<number>('firstNewTagObservedAt');
     const firstObservedToPublishedMs = firstObserved === null ? null : Date.now() - firstObserved;
     aggregate.db.exec('DELETE FROM changes');
     if (!pendingTags) aggregate.set('firstNewTagObservedAt', null);
     aggregate.set('publishedId', manifest.id);
+    aggregate.set('activePolicyVersion', 3);
     await store.prune();
     const result = {
       status: 'published',

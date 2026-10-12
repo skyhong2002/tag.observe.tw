@@ -175,7 +175,9 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/current'
 | `active.fileBytes` | integer | 活躍500詞分頁gzip實體位元組 |
 | `active.sha256` | string | 活躍詞逐筆 JSON 加 LF 的 SHA-256 |
 | `active.days` | integer |  |
-| `active.minArticleCount` | integer |  |
+| `active.minArticleCount` | integer | 總篇數下限，現行為0 |
+| `active.minRecentArticleCount` | integer | days指定窗口的實際文章數下限，現行為30天3篇 |
+| `active.policy` | string | recent-article-count |
 | `active.minLength` | integer |  |
 | `active.excludeNoise` | boolean |  |
 | `sourceConsistency` | string | 唯讀水位線加重讀；舊文與刪除依 tag 範圍在七天內對帳，不是全表同一時刻的交易快照 |
@@ -187,6 +189,15 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/current'
 | `sourceAsOf.lastFullReconcileAt` | string (ISO 時間) \| null |  |
 | `sourceAsOf.reconciliationLagDays` | integer |  |
 | `sourceAsOf.overlapArticleIds` | integer |  |
+| `sourceAsOf.recentCountsReconciliationLagDays` | integer |  |
+| `tiers` | object |  |
+| `tiers.excludeNoise` | boolean |  |
+| `tiers.minLength` | integer |  |
+| `tiers.measuredTerms` | integer |  |
+| `tiers.missingRecentCounts` | integer |  |
+| `tiers.articleCountAtLeast` | {鍵: integer} |  |
+| `tiers.recentArticleCountAtLeast` | {鍵: {鍵: integer}} |  |
+| `tiers.intersections` | {鍵: {鍵: {鍵: integer}}} |  |
 | `statistics` | object |  |
 | `statistics.noise` | integer |  |
 | `statistics.noEqual` | integer |  |
@@ -233,6 +244,12 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 | `entries[].id` | string | 原始 UTF-8 標籤字串的 SHA-256，大小寫及字形不合併 |
 | `entries[].label` | string | 原標籤 |
 | `entries[].articleCount` | integer | 快照時目前索引包含此詞的文章數 |
+| `entries[].recentArticleCount` | integer | 截至 recentCountsAsOf，近180天的實際文章數 |
+| `entries[].recentArticleCounts` | object |  |
+| `entries[].recentArticleCounts.30` | integer |  |
+| `entries[].recentArticleCounts.90` | integer |  |
+| `entries[].recentArticleCounts.180` | integer |  |
+| `entries[].recentCountsAsOf` | string (ISO 時間) | 本詞窗口計數截至時間；不以最後刊登日推估篇數，舊詞最多七天對帳延遲 |
 | `entries[].firstPublishedAt` | string (ISO 時間) | 這些現存文章最早刊登時間，不是詞彙建立時間 |
 | `entries[].lastPublishedAt` | string (ISO 時間) | 這些現存文章最晚刊登時間 |
 | `entries[].origin` | string | 混合原文關鍵字、編輯、規則補標 |
@@ -279,6 +296,12 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 | `entries[].id` | string | 原始 UTF-8 標籤字串的 SHA-256，大小寫及字形不合併 |
 | `entries[].label` | string | 原標籤 |
 | `entries[].articleCount` | integer | 快照時目前索引包含此詞的文章數 |
+| `entries[].recentArticleCount` | integer | 截至 recentCountsAsOf，近180天的實際文章數 |
+| `entries[].recentArticleCounts` | object |  |
+| `entries[].recentArticleCounts.30` | integer |  |
+| `entries[].recentArticleCounts.90` | integer |  |
+| `entries[].recentArticleCounts.180` | integer |  |
+| `entries[].recentCountsAsOf` | string (ISO 時間) | 本詞窗口計數截至時間；不以最後刊登日推估篇數，舊詞最多七天對帳延遲 |
 | `entries[].firstPublishedAt` | string (ISO 時間) | 這些現存文章最早刊登時間，不是詞彙建立時間 |
 | `entries[].lastPublishedAt` | string (ISO 時間) | 這些現存文章最晚刊登時間 |
 | `entries[].origin` | string | 混合原文關鍵字、編輯、規則補標 |

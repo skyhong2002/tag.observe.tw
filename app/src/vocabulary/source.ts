@@ -37,17 +37,28 @@ export async function tagKey(db: Connection, tag: string) {
   );
   return String(rows[0].k);
 }
-export async function aggregateRange(db: Connection, after: string | null, until: string, exact = false): Promise<AggregateTerm[]> {
+export async function aggregateRange(
+  db: Connection,
+  after: string | null,
+  until: string,
+  exact = false,
+  asOf = new Date(),
+): Promise<AggregateTerm[]> {
   const where = exact ? 'tag=?' : after === null ? 'tag<=?' : 'tag>? AND tag<=?';
   const params = exact ? [until] : after === null ? [until] : [after, until];
+  const sqlTime = (value: number) => new Date(value).toISOString().slice(0, 19).replace('T', ' ');
+  const bounds = [30, 90, 180].flatMap((days) => [sqlTime(asOf.getTime() - days * 86400000), sqlTime(asOf.getTime())]);
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT CONVERT(BINARY tag USING utf8mb4) tag,${keySql} groupKey,COUNT(*) n,MIN(published_at) firstAt,MAX(published_at) lastAt FROM article_tags FORCE INDEX(tag_published) WHERE ${where} GROUP BY BINARY tag`,
-    params,
+    `SELECT CONVERT(BINARY tag USING utf8mb4) tag,${keySql} groupKey,COUNT(*) n,SUM(published_at>=? AND published_at<=?) r30,SUM(published_at>=? AND published_at<=?) r90,SUM(published_at>=? AND published_at<=?) r180,MIN(published_at) firstAt,MAX(published_at) lastAt FROM article_tags FORCE INDEX(tag_published) WHERE ${where} GROUP BY BINARY tag`,
+    [...bounds, ...params],
   );
   return rows.map((r) => ({
     tag: r.tag,
     groupKey: r.groupKey,
     articleCount: Number(r.n),
+    recentArticleCount: Number(r.r180),
+    recentArticleCounts: { '30': Number(r.r30), '90': Number(r.r90), '180': Number(r.r180) },
+    recentCountsAsOf: asOf.toISOString(),
     firstPublishedAt: new Date(r.firstAt.replace(' ', 'T') + 'Z').toISOString(),
     lastPublishedAt: new Date(r.lastAt.replace(' ', 'T') + 'Z').toISOString(),
   }));

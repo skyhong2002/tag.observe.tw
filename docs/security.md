@@ -27,4 +27,4 @@
 
 這些端點的測試分別覆蓋 `app/src/v1/` 的輸入驗證與快取標頭、`app/test/reader-presence.spec.ts` 的同源／容量限制，以及 `app/test/tracking-availability.spec.ts` 的防追蹤條件。新增 endpoint 仍需同步更新 `app/src/v1/openapi.ts`、`docs/api.md` 與 gateway 測試，不能只在前端加入呼叫。
 
-2026-10-12：gateway 在 onSend 統一將所有4xx/5xx（含限流429、legacy410）設定 `Cache-Control: no-store`；帶 `x-api-key` 的成功回應為 `private, no-store`，不論金鑰是否有效。匿名成功仍沿用各路由的cache政策。Cloudflare白名單規則須遵守來源Cache-Control，並排除Cookie、Authorization、x-api-key、x-service-token及RSC請求。整合測試見 `app/test/cache-control.spec.ts`。
+2026-10-12：gateway 在 onSend 統一將所有4xx/5xx（含限流429、legacy410）設定 `Cache-Control: no-store`；帶 `x-api-key` 或 `Authorization` 的成功回應為 `private, no-store`，不論金鑰是否有效。匿名成功仍沿用各路由的cache政策。Cloudflare白名單規則須遵守來源Cache-Control，並排除Cookie、Authorization、x-api-key、x-service-token及RSC請求。整合測試見 `app/test/cache-control.spec.ts`。

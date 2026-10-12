@@ -7,7 +7,7 @@ Type=oneshot
 WorkingDirectory=/home/deck/.local/share/tag-analysis/current
 EnvironmentFile=/home/deck/Projects/tag.analysis.tw/.env
 EnvironmentFile=/home/deck/.config/tag-vocabulary-export.env
-Environment=TAG_VOCABULARY_MAX_DURATION_MS=175000
+Environment=TAG_VOCABULARY_MAX_DURATION_MS=535000
 ExecStart=/home/deck/.local/bin/node tools/vocabulary-export.ts --execute
 UMask=0077
 Nice=15
@@ -15,6 +15,6 @@ IOSchedulingClass=idle
 CPUWeight=10
 IOWeight=10
 MemoryMax=1G
-TimeoutStartSec=180
+TimeoutStartSec=540
 NoNewPrivileges=yes
 PrivateTmp=yes

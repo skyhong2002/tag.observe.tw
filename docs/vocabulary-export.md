@@ -48,9 +48,15 @@
 ## 活躍子集與容量統計
 
 完整 manifest 的 `active` 提供另一組分頁目錄與 checksum；讀取 `/snapshots/{id}/active?cursor=N`。
-條件為非 noise、至少兩個 Unicode code points，且 articleCount≥3 **或** lastPublishedAt在180天內。不另計昂貴的逐詞180天COUNT；活躍子集由本地完整資料串流產生，無額外 SQL。
+預設條件為非 noise、至少兩個 Unicode code points，且 **30天內的實際文章數 ≥3**。不再使用「總篇數≥3 或最後刊登日在180天內」。完整池仍保留全部詞，活躍子集不截斷。`active.policy=recent-article-count`、`days=30`、`minRecentArticleCount=3`，既有 `minArticleCount=0` 表示沒有額外總篇數下限。
 
-`statistics` 列出 noise、noEqual、recent180、articleCount≥2/3/5、各門檻與最近180天的交集、各門檻或近期的合格比對詞數，以及 gzip頁面實體位元組。活躍子集只是便利索引，不改變完整詞庫。下游依自己記憶體預算由articleCount降序取用，未進集的詞仍保留可查，標示低頻或預算限制。
+每詞新增 `recentArticleCount`（180天）、`recentArticleCounts`（鍵30/90/180）、`recentCountsAsOf`。以來源 `published_at` 在 `[asOf-days, asOf]` 範圍內的實際關聯篇數計算，不把一篇近期報導視為整個歷史篇數都在近期。來源每文章每tag唯一；BINARY label各自計數。未完成窗口補算的舊彙總拒絕發布，不以0猜測缺值。
+
+`tiers` 全部排除noise及不足2字：`articleCountAtLeast` 為總篇數≥3/5/10/20；`recentArticleCountAtLeast[30|90|180][2|3|5]` 為窗口篇數；`intersections[days][recentThreshold][totalThreshold]` 為兩者交集（包括180天≥3且總數≥5）。`measuredTerms` 與 `missingRecentCounts` 揭露計數完整性。這些是完整統計，不是5萬詞的截斷結果。
+
+窗口計數與總數一樣由唯讀分批查詢更新。新文影響的詞每10分鐘重算；舊詞的局部窗口老化、舊文改標或日期修改由七天輪轉對帳更新，`recentCountsAsOf` 明示各詞觀測時間。最後一篇文章離開30天窗口時，快速層排入重算並補發active=false；其他門檻變動最多七天（保護暫停會延長）。每日完整檔不代表所有窗口都剛重新查過。
+
+`statistics` 保留舊版 lastPublishedAt 與總篇數統計供相容，`recent180` 指最後刊登日在180天內，**不是近180天至少3篇**；門檻決策請使用 `tiers`。另列 noise、noEqual 與 gzip頁面實體位元組。活躍子集只是便利索引，不改變完整詞庫。下游依自己記憶體預算由articleCount降序取用，未進集的詞仍保留可查，標示低頻或預算限制。
 
 ## 操作與負載保護
 
@@ -73,7 +79,7 @@ SQL逐句900ms上限、每句後休息100ms、程序nice15、idle I/O、低cgrou
 
 基底：origin/main `aeab494be88c04fb02293f05fd437fa733cca92d`。首次有界preview 507詞/29ms；60秒續跑測試保存274,256詞、SQL累計10,710ms、最慢589ms、27次首頁TTFB最大541ms。最終完整容量與部署驗證另記於交付報告，這些有界數字不能冒充完整詞數。
 
-正式排程：快速層每個整10分鐘（單輪175秒），舊資料對帳台北04:01（535秒、最多約七分之一詞），完整檔台北04:17（175秒）。三者共用防重入鎖，busy的快速層30秒後重試，最多5次/10分鐘。完整快照只讀本地彙總；每日對帳另用 `--reconcile`，避免每次產檔再掃來源。首次建置由operator以較長時間上限手動續跑，尚未建完前不啟用正式timers。
+正式排程：快速層每個整10分鐘（單輪175秒），舊資料對帳台北04:01（535秒、最多約七分之一詞），完整檔台北04:17（535秒）。三者共用防重入鎖，busy的快速層30秒後重試，最多5次/10分鐘。完整快照只讀本地彙總；每日對帳另用 `--reconcile`，避免每次產檔再掃來源。首次建置由operator以較長時間上限手動續跑，尚未建完前不啟用正式timers。
 
 大詞庫建議分頁帶 `limit=5000&compact=1`（完整頁及active頁皆支援）：回應 snapshot 僅含 id/generatedAt/total/pageSize/sha256，避免每一頁重傳完整 checksum 目錄；entries/cursor/hash完全相同。先保存current完整manifest，再以它驗證精簡頁。這是可選的加法，未帶compact的既有500詞頁面契約保持不變。
 
@@ -83,8 +89,14 @@ SQL逐句900ms上限、每句後休息100ms、程序nice15、idle I/O、低cgrou
 
 完整與active分頁均支援 `limit=5000&compact=1`，預設仍500，相容舊客戶端；目前只接受500或5000，不接受任意中間值。`totalPages` 是預設500詞的頁數，`largePages.length` 是5000詞頁數，其內容是大頁checksum。使用active時讀active.largePages。cursor是所選limit的頁號，不能跨limit重用。HTTP提供 `Accept-Encoding: gzip` 協商壓縮，須解壓後再核對JSON checksum；磁碟仍只保留500詞gzip分頁，沒有重複一份5000詞檔案。
 
-每筆changes增加 `active`：upsert按該世代發布時的同一180天/頻率/噪音條件判定，absence固定false。下游仍可把所有changes存DB，但只對active=true更新比對索引；active=false必須移出比對集。低頻詞僅因超過180天而失去資格，也會在下一次快速層補發active=false的upsert，沒有新來源文章也能正確退場。
+每筆changes增加 `active`：upsert按該世代發布時的同一30天/頻率/噪音條件判定，absence固定false。下游仍可把所有changes存DB，但只對active=true更新比對索引；active=false必須移出比對集。全數文章超過30天者在快速層重新查核並補發active=false；部分文章跨過窗口造成的門檻變化依上述窗口對帳延遲反映。
 
 manifest.statistics另列 fullFileBytes / activeFileBytes / changeFileBytes（gzip實體分頁大小）；不把邏輯JSON大小或估計值當作磁碟大小。
 
 快速層保留最後30秒發布已完成的changes；若大量新詞仍在pending，會先發布已重算部分、其餘下輪續跑，避免一直重算卻永不發布。日誌與sourceAsOf.pendingTags揭露積壓量；水位代表已掃描的文章ID，不代表所有pending詞都已重算。正常負載需維持pendingTags=0。
+
+### 既有彙總的窗口補算
+
+`tools/vocabulary-recent-preview.ts` 依私有SQLite的既有tag key排序分批讀取正式 `tag_published` 索引，固定窗口截止時間，可中斷續跑；每句900ms上限、批次間休息100ms、首頁TTFB超過1秒即暫停，持有同一runner鎖。只寫私有recent_counts及checkpoint，不發布、不改正式DB。補算完成後才允許新版runner產檔。公開服務在分布審查期間不掛載詞庫目錄，排程暫不啟用；使用者已選30天≥3篇，驗證完成後照平常流程部署。
+
+門檻選擇的實測分布與負載紀錄見 [2026-10-12 分布報告](vocabulary-distribution-20261012.md)。

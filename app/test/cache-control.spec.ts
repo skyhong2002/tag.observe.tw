@@ -8,8 +8,13 @@ describe('gateway cache boundaries', () => {
       const anonymous = await app.inject('/api/v1/openapi.json');
       expect(anonymous.statusCode).toBe(200);
       expect(anonymous.headers['cache-control']).toBe('public, max-age=3600');
-      for (const key of ['cache-header-fixture', '']) {
-        const response = await app.inject({ url: '/api/v1/openapi.json', headers: { 'x-api-key': key } });
+      for (const headers of [
+        { 'x-api-key': 'cache-header-fixture' },
+        { 'x-api-key': '' },
+        { authorization: 'Bearer cache-header-fixture' },
+        { authorization: '' },
+      ]) {
+        const response = await app.inject({ url: '/api/v1/openapi.json', headers });
         expect(response.statusCode).toBe(200);
         expect(response.headers['cache-control']).toBe('private, no-store');
       }
