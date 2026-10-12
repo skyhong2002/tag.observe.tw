@@ -26,7 +26,7 @@
 4. 固定第一頁回傳的 `snapshot.id` 為 target，繼續 `changes?after=LOCAL_ID&target=TARGET&cursor=N`，直到 nextCursor=null。整批完成才把 LOCAL_ID 改為 TARGET。
 5. `snapshot` 可以是完整 manifest，或 `kind: "delta"` 的增量 metadata。後者有 id、previousId、baseSnapshotId、generatedAt、total、pageSize、changeCount、changePages、noisePolicyVersion、sourceAsOf，**沒有完整 pages / sha256**。delta ID 不可拿去下載完整 snapshot pages。
 6. changes 可跨多個世代；按世代時間及頁序依序套用。每頁最多500筆，在世代交界可能不足500筆。upsert 是絕對值，同詞可能重複；刪除為 `absent-from-index`，不推論編輯意圖。回應 snapshot.changeCount/changePages 描述目標單一世代，**不是整条跨代鏈的總頁數**，跨代讀取依 nextCursor。
-7. 保留最近三份每日完整快照與其後所有 delta（最多600世代的安全邊界）。超出保存範圍回409及 `resnapshotRequired:true`，重新載入 current。每天讀活躍子集對帳，完整池初次匯入後以changes維護；完整重抓用於封存/按需對帳及409復原，再接最新changes。
+7. 保留最近三份每日完整快照、最近七份活躍子集，以及三份完整快照範圍內的 delta（最多600世代的安全邊界）。超出保存範圍回409及 `resnapshotRequired:true`，重新載入 current。每天讀活躍子集對帳，完整池初次匯入後以changes維護；完整重抓用於封存/按需對帳及409復原，再接最新changes。
 
 每頁 checksum：`SHA256(JSON.stringify(entries) + "\n")`。完整 checksum：依 UTF-8 排序，逐詞 `JSON.stringify(term) + "\n"` 串接後 SHA256。驗證時包含新增欄位，不得自行移除 noise 欄位。檔案內部以 gzip 儲存，HTTP JSON 與 checksum 不受壓縮方式影響。
 
@@ -71,7 +71,7 @@ TAG_VOCABULARY_EXPORT_ENABLED=true node tools/vocabulary-export.ts --execute --f
 
 執行需 `TAG_DB_URL`、`TAG_VOCABULARY_EXPORT_DIR`。私有目錄 `/home/deck/tag-analysis-private/vocabulary` 權限0700，檔案0600，獨立於不可變release，不能放public/uploads。SQLite以OS檔鎖防重入；程序死亡自動釋放，不以過期秒數搶鎖。檔案與staging目錄fsync後rename，最後原子切換pointer。尚未成功發布的partial檔不會公開，SQLite保留續跑進度。
 
-SQL逐句900ms上限、每句後休息100ms、程序nice15、idle I/O、低cgroup weight。首次建置與產出期間每約2秒量測正式首頁；HTTP非200、TTFB>1000ms、磁碟可用低於4GiB就暫停。nice/ionice無法降低DB server內優先權，故不能取代SQL上限與首頁監測。
+SQL逐句900ms上限、每句後休息100ms、程序nice15、idle I/O、低cgroup weight。首次建置與產出期間每約2秒量測正式首頁；HTTP非200、TTFB>1000ms、開始前及執行中磁碟可用低於10GiB就暫停。nice/ionice無法降低DB server內優先權，故不能取代SQL上限與首頁監測。
 
 快速層單輪時間有限，排程與慢速層共用鎖。日誌記錄耗時、SQL回傳列數（不是InnoDB實際掃描頁數）、新觀測關聯、query時間、首頁TTFB，以及第一次觀測新關聯至發布的時間。來源沒有commit時間欄位，**不能把 published_at/crawledAt 當成 DB commit 時間**；端到端寫入延遲以隔離fixture實測，正式流量只報可觀測延遲。
 
@@ -100,3 +100,9 @@ manifest.statistics另列 fullFileBytes / activeFileBytes / changeFileBytes（gz
 `tools/vocabulary-recent-preview.ts` 依私有SQLite的既有tag key排序分批讀取正式 `tag_published` 索引，固定窗口截止時間，可中斷續跑；每句900ms上限、批次間休息100ms、首頁TTFB超過1秒即暫停，持有同一runner鎖。只寫私有recent_counts及checkpoint，不發布、不改正式DB。補算完成後才允許新版runner產檔。公開服務在分布審查期間不掛載詞庫目錄，排程暫不啟用；使用者已選30天≥3篇，驗證完成後照平常流程部署。
 
 門檻選擇的實測分布與負載紀錄見 [2026-10-12 分布報告](vocabulary-distribution-20261012.md)。
+
+### 磁碟與保留上限
+
+開始快照、補算、release建置前必須確認 `/home` 至少10 GiB可用，執行期間匯出器也維持此保護線；不足就保留進度並暫停。清理限本次自己的暫存與staging；releases、worktree、備份或node_modules須先取得使用者同意。完整快照保留最近3份、活躍子集7份。第4–7份仍保留active分頁及不可變manifest，完整分頁與過期changes移除，請求過期完整頁或changes回409並要求重讀。7份以外移除目錄。
+
+詞條與changes以500筆有界串流在記憶體編碼/壓縮後直接寫入gzip頁；不先寫整份未壓縮資料。manifest、pointer與小型保留註記仍為JSON。舊active回應的manifest統計描述原發布時大小，不表示該版本的完整檔案仍留存。

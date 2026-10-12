@@ -261,7 +261,7 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 | `nextCursor` | string \| null |  |
 | `sha256` | string | 本頁 entries 的 JSON 陣列加 LF checksum |
 
-錯誤：`400` 快照 id 或 cursor 無效；`404` 快照不存在；`503` 匯出不可用/校驗失敗。
+錯誤：`400` 快照 id 或 cursor 無效；`404` 快照不存在；`409` 完整分頁已超出3份保留範圍，請重讀current；`503` 匯出不可用/校驗失敗。
 
 快取：不可變，1 天。
 
@@ -271,7 +271,7 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 
 **固定版本的活躍比對子集**
 
-完整詞庫不刪詞。此子集只選非 noise、至少兩字，且 articleCount≥3 或最後刊登在快照前180天內者；不套下游記憶體上限。
+完整詞庫不刪詞。此子集只選非 noise、至少兩字，且近30天實際文章數至少3篇；不套下游記憶體上限。完整分頁保留3份，活躍子集保留7份。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |

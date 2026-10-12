@@ -20,6 +20,11 @@ if [[ "$commit_id" != "$(git rev-parse origin/main)" ]]; then
 fi
 release_root=/home/deck/.local/share/tag-analysis
 release_dir="$release_root/releases/$commit_id"
+available_bytes=$(node -e "const s=require('node:fs').statfsSync('/home');process.stdout.write(String(s.bavail*s.bsize))")
+if (( available_bytes < 10 * 1024 * 1024 * 1024 )); then
+  echo 'Deployment paused: at least 10 GiB must be free on /home before creating release files.' >&2
+  exit 1
+fi
 mkdir -p "$release_root/releases" "$HOME/.config/systemd/user"
 exec 9>"$release_root/deploy.lock"
 flock -n 9 || { echo 'Another preview deployment is running.' >&2; exit 1; }

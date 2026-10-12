@@ -214,3 +214,21 @@ it('counts actual recent articles, excludes noise and single-code-point terms in
   expect(next.previousId).toBeNull();
   await expect(store.changes(manifest.id, next.id)).rejects.toMatchObject({ code: 'resnapshot-required' });
 });
+
+it('retains three full snapshots and seven active subsets with explicit expiry for old chains', async () => {
+  const { store, directory } = await setup();
+  const ids: string[] = [];
+  for (let i = 0; i < 8; i++) {
+    ids.push((await store.publish(async () => [row(`留存詞${i}`)], new Date(Date.UTC(2026, 9, 1 + i)))).id);
+    await store.prune();
+  }
+  await expect(store.page(ids[0], '0', 'active')).rejects.toMatchObject({ code: 'not-found' });
+  expect((await store.page(ids[1], '0', 'active')).entries).toHaveLength(1);
+  await expect(store.page(ids[1])).rejects.toMatchObject({ code: 'resnapshot-required' });
+  await expect(store.changes(ids[1], ids[7])).rejects.toMatchObject({ code: 'resnapshot-required' });
+  await expect(store.changes(ids[1], ids[1])).rejects.toMatchObject({ code: 'resnapshot-required' });
+  for (const id of ids.slice(5)) expect((await store.page(id)).entries).toHaveLength(1);
+  expect((await store.changes(ids[6], ids[7])).entries.length).toBeGreaterThan(0);
+  const { readdir } = await import('node:fs/promises');
+  expect((await readdir(join(directory, ids[1]))).some((file) => file.startsWith('terms-') || file.startsWith('changes-'))).toBe(false);
+});

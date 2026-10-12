@@ -855,14 +855,20 @@ export const ENDPOINTS: Endpoint[] = [
     }),
     description:
       '預設每頁500詞，可用limit=5000；5000頁核對largePages。接受Accept-Encoding:gzip。下載端須核對每頁與完整快照 checksum、筆數，再原子發布。不同快照的 cursor 不得混用。',
-    errors: { '400': '快照 id 或 cursor 無效', '404': '快照不存在', '503': '匯出不可用/校驗失敗' },
+    errors: {
+      '400': '快照 id 或 cursor 無效',
+      '404': '快照不存在',
+      '409': '完整分頁已超出3份保留範圍，請重讀current',
+      '503': '匯出不可用/校驗失敗',
+    },
     cache: '不可變，1 天',
   },
   {
     path: '/api/v1/vocabulary/snapshots/{id}/active',
     tag: 'vocabulary',
     summary: '固定版本的活躍比對子集',
-    description: '完整詞庫不刪詞。此子集只選非 noise、至少兩字，且 articleCount≥3 或最後刊登在快照前180天內者；不套下游記憶體上限。',
+    description:
+      '完整詞庫不刪詞。此子集只選非 noise、至少兩字，且近30天實際文章數至少3篇；不套下游記憶體上限。完整分頁保留3份，活躍子集保留7份。',
     params: [
       p('id', '完整快照 id', str(), '12345678-1234-4234-8234-123456789abc'),
       q('cursor', '起始0；使用 nextCursor 續讀', str(), '0'),

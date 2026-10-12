@@ -34,8 +34,8 @@ const guard = async () => {
   metrics.homeTotalMs += home.ttfbMs;
   console.log(JSON.stringify({ phase: 'home', ...home }));
   if (home.status !== 200 || home.ttfbMs > 1000) throw Error('home-ttfb');
-  const disk = await statfs(directory);
-  if (disk.bavail * disk.bsize < 4 * 1024 ** 3) throw Error('disk-reserve');
+  const disk = await statfs('/home');
+  if (disk.bavail * disk.bsize < 10 * 1024 ** 3) throw Error('disk-reserve');
   lastProbe = Date.now();
 };
 try {

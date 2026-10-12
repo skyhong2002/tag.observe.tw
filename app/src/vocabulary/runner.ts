@@ -50,8 +50,8 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       } catch {
         throw new VocabularyPaused('home-probe-failed');
       }
-      const disk = await statfs(directory);
-      if (disk.bavail * disk.bsize < 4 * 1024 ** 3) throw new VocabularyPaused('disk-reserve');
+      const disk = await statfs('/home');
+      if (disk.bavail * disk.bsize < 10 * 1024 ** 3) throw new VocabularyPaused('disk-reserve');
       lastProbe = Date.now();
       metrics.homeSamples++;
       metrics.homeTotalMs += p.ttfbMs;

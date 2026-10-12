@@ -322,10 +322,21 @@ export class VocabularySnapshots {
       }
     return result;
   }
+  private async retention(id: string): Promise<{ fullExpired?: boolean; changesExpired?: boolean }> {
+    try {
+      return (await this.json(join(this.directory, id, '.retention.json'))) as { fullExpired?: boolean; changesExpired?: boolean };
+    } catch (e) {
+      if (e instanceof SnapshotError && e.code === 'not-found') return {};
+      throw e;
+    }
+  }
   async page(id: string, cursor = '0', kind: 'terms' | 'changes' | 'active' = 'terms', compact = false, limit = PAGE_SIZE) {
     if (typeof cursor !== 'string' || !/^(0|[1-9]\d{0,5})$/.test(cursor) || ![500, 5000].includes(limit))
       throw new SnapshotError('invalid');
     const manifest = await this.manifest(id);
+    const retained = await this.retention(id);
+    if ((kind === 'terms' && retained.fullExpired) || (kind === 'changes' && retained.changesExpired))
+      throw new SnapshotError('resnapshot-required');
     const catalog = kind === 'active' ? manifest.active : manifest;
     const small = kind === 'changes' ? manifest.changePages : catalog?.pages;
     const checksums = limit === 500 ? small : catalog?.largePages;
@@ -368,7 +379,9 @@ export class VocabularySnapshots {
   private async generation(id: string): Promise<Generation> {
     if (!ID.test(id)) throw new SnapshotError('invalid');
     try {
-      return await this.manifest(id);
+      const manifest = await this.manifest(id);
+      if ((await this.retention(id)).changesExpired) throw new SnapshotError('resnapshot-required');
+      return manifest;
     } catch (e) {
       if (!(e instanceof SnapshotError && e.code === 'not-found')) throw e;
     }
@@ -512,27 +525,62 @@ export class VocabularySnapshots {
       release();
     }
   }
-  /** Keep three complete bases and every subsequent delta; pinned older chains expire with 409. */
+  /** Retain three full bases, seven active subsets, and changes reachable from the retained bases. */
   async prune() {
     const release = await this.acquire();
     try {
       const p = await this.pointer();
+      const names = (await readdir(this.directory)).filter((name) => ID.test(name));
+      const bases: Manifest[] = [];
+      for (const id of names) {
+        try {
+          bases.push(await this.manifest(id));
+        } catch (e) {
+          if (!(e instanceof SnapshotError && e.code === 'not-found')) throw e;
+        }
+      }
+      bases.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt));
+      const ordered = [p.id, ...bases.filter((b) => b.id !== p.id).map((b) => b.id)];
+      const fullKeep = new Set(ordered.slice(0, 3)),
+        activeKeep = new Set(ordered.slice(0, 7));
       let g = await this.generation(p.headId ?? p.id),
         full = 0;
-      const keep = new Set<string>([p.id]);
+      const changeKeep = new Set<string>();
       for (let n = 0; n < 600; n++) {
-        keep.add(g.id);
+        changeKeep.add(g.id);
         if (!('kind' in g) && ++full === 3) break;
         if (!g.previousId) break;
         try {
           g = await this.generation(g.previousId);
         } catch (e) {
-          if (e instanceof SnapshotError && e.code === 'not-found') break;
+          if (e instanceof SnapshotError && ['not-found', 'resnapshot-required'].includes(e.code)) break;
           throw e;
         }
       }
-      for (const name of await readdir(this.directory))
-        if (ID.test(name) && !keep.has(name)) await rm(join(this.directory, name), { recursive: true, force: true });
+      for (const id of names) {
+        const path = join(this.directory, id);
+        if (!fullKeep.has(id) && !activeKeep.has(id) && !changeKeep.has(id)) {
+          await rm(path, { recursive: true, force: true });
+          continue;
+        }
+        if (!bases.some((b) => b.id === id)) continue;
+        const flags = { fullExpired: !fullKeep.has(id), changesExpired: !changeKeep.has(id) };
+        const previous = await this.retention(id);
+        if (Boolean(previous.fullExpired) !== flags.fullExpired || Boolean(previous.changesExpired) !== flags.changesExpired) {
+          const temporary = join(path, `.retention-${randomUUID()}.json`);
+          await durableWrite(temporary, encode(flags));
+          await rename(temporary, join(path, '.retention.json'));
+          await syncDirectory(path);
+        }
+        for (const file of await readdir(path)) {
+          if (
+            (flags.fullExpired && /^terms-\d+\.json(?:\.gz)?$/.test(file)) ||
+            (flags.changesExpired && /^changes-\d+\.json(?:\.gz)?$/.test(file)) ||
+            (!activeKeep.has(id) && /^active-\d+\.json(?:\.gz)?$/.test(file))
+          )
+            await rm(join(path, file));
+        }
+      }
     } finally {
       release();
     }
