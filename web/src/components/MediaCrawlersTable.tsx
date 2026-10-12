@@ -335,16 +335,12 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
                 </Fragment>
               );
             })}
-            {!rows.length && (
-              <tr>
-                <td colSpan={columns.length} className="px-2 py-8 text-center text-zinc-500 sm:px-3">
-                  沒有符合條件的媒體，請調整或清除篩選。
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </TableScroller>
+      {!rows.length && (
+        <p className="px-2 py-8 text-center text-sm text-zinc-600 dark:text-zinc-400">沒有符合條件的媒體，請調整或清除篩選。</p>
+      )}
     </div>
   );
 }
