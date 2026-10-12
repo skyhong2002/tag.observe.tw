@@ -1,0 +1,169 @@
+// Keep builds subordinate to the public services on this shared Linux host.
+import { execFile, spawn } from 'node:child_process';
+import { appendFileSync, mkdirSync } from 'node:fs';
+import { loadavg } from 'node:os';
+import { dirname, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
+
+const execute = promisify(execFile);
+const sites = ['https://tag.observe.tw/', 'https://blog.observe.tw/'];
+
+export function buildDecision(sample, paused) {
+  const unavailable = sample.probeError || sample.sites.some((site) => site.exitCode !== 0 || site.status === 0 || site.status >= 500);
+  if (unavailable || !Number.isFinite(sample.load1) || sample.load1 > 16) return 'pause';
+  if (paused && sample.load1 >= 10) return 'wait';
+  return 'run';
+}
+
+export async function probeServices() {
+  const startedAt = new Date().toISOString();
+  const responses = await Promise.all(
+    sites.map(async (url) => {
+      let stdout;
+      let exitCode = 0;
+      try {
+        ({ stdout } = await execute(
+          'curl',
+          ['-sS', '--max-time', '10', '-o', '/dev/null', '-w', '%{http_code} %{time_starttransfer} %{time_total}', url],
+          { timeout: 12000 },
+        ));
+      } catch (error) {
+        stdout = error.stdout ?? '';
+        exitCode = typeof error.code === 'number' ? error.code : 1;
+      }
+      const [status, ttfb, total] = stdout.trim().split(/\s+/).map(Number);
+      return {
+        url,
+        status: status || 0,
+        ttfb: Number.isFinite(ttfb) ? ttfb : null,
+        total: Number.isFinite(total) ? total : null,
+        exitCode,
+      };
+    }),
+  );
+  return { startedAt, finishedAt: new Date().toISOString(), load1: loadavg()[0], sites: responses };
+}
+
+export async function guardedBuild({ command, args, cwd, record, probe = probeServices, intervalMs = 30000 }) {
+  let child;
+  let result;
+  let paused = false;
+  let interrupted = false;
+  let forceTimer;
+  let wake;
+  const completed = new Promise((done) => {
+    wake = done;
+  });
+  const signalGroup = (signal) => {
+    if (!child || result) return;
+    try {
+      process.kill(-child.pid, signal);
+    } catch (error) {
+      if (error.code !== 'ESRCH') throw error;
+    }
+    record({ event: 'signal', signal, processGroup: child.pid });
+  };
+  const interrupt = (signal) => {
+    if (interrupted) return;
+    interrupted = true;
+    try {
+      // A stopped process cannot handle TERM until continued.
+      signalGroup('SIGCONT');
+      signalGroup('SIGTERM');
+      record({ event: 'interrupted', signal });
+    } catch {
+      // Even a failed audit write must not strand the build after interruption.
+      try {
+        if (child?.pid) process.kill(-child.pid, 'SIGKILL');
+      } catch {
+        /* already exited */
+      }
+    }
+    if (child && !result) forceTimer = setTimeout(() => signalGroup('SIGKILL'), 10000);
+    else wake();
+  };
+  const onInt = () => interrupt('SIGINT');
+  const onTerm = () => interrupt('SIGTERM');
+  process.on('SIGINT', onInt);
+  process.on('SIGTERM', onTerm);
+  try {
+    while (!result && !interrupted) {
+      const tick = Date.now();
+      let sample;
+      try {
+        sample = await probe();
+      } catch (error) {
+        sample = { load1: loadavg()[0], sites: [], probeError: String(error.message) };
+      }
+      if (result || interrupted) break;
+      const decision = buildDecision(sample, paused);
+      record({ event: 'probe', ...sample, paused, decision });
+      if (decision === 'pause') {
+        if (!paused) signalGroup('SIGSTOP');
+        paused = true;
+      } else if (decision === 'run') {
+        if (!child) {
+          child = spawn('ionice', ['-c', '3', 'nice', '-n', '19', command, ...args], {
+            cwd,
+            detached: true,
+            stdio: 'inherit',
+            env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+          });
+          child.once('error', (error) => {
+            result = { code: 1, error: error.message };
+            wake();
+          });
+          child.once('close', (code, signal) => {
+            result = { code: code ?? 1, signal };
+            wake();
+          });
+          record({ event: 'started', processGroup: child.pid, nice: 19, ioClass: 'idle' });
+        } else if (paused) signalGroup('SIGCONT');
+        paused = false;
+      }
+      let timer;
+      await Promise.race([
+        completed,
+        new Promise((done) => {
+          timer = setTimeout(done, Math.max(0, intervalMs - (Date.now() - tick)));
+        }),
+      ]);
+      clearTimeout(timer);
+    }
+    if (interrupted && child && !result) await completed;
+    const exitCode = interrupted ? 130 : (result?.code ?? 1);
+    record({ event: 'finished', ...result, exitCode });
+    return exitCode;
+  } finally {
+    clearTimeout(forceTimer);
+    process.off('SIGINT', onInt);
+    process.off('SIGTERM', onTerm);
+    // A leader may exit before its workers. Always reap the dedicated group,
+    // even after a successful leader exit; never leave unmonitored descendants.
+    if (child?.pid) {
+      try {
+        process.kill(-child.pid, 'SIGKILL');
+      } catch (error) {
+        if (error.code !== 'ESRCH') {
+          // biome-ignore lint/correctness/noUnsafeFinally: Failed worker cleanup must fail even a successful leader exit.
+          throw error;
+        }
+      }
+    }
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const [webDirectory, logPath] = process.argv.slice(2);
+  if (!webDirectory || !logPath) throw new Error('Usage: node tools/guard-next-build.js WEB_DIRECTORY PRIVATE_LOG_JSONL');
+  mkdirSync(dirname(resolve(logPath)), { recursive: true, mode: 0o700 });
+  const record = (entry) => appendFileSync(logPath, `${JSON.stringify({ utc: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 });
+  record({ event: 'configuration', webDirectory: resolve(webDirectory), intervalMs: 30000, stopLoadAbove: 16, resumeLoadBelow: 10, sites });
+  process.exitCode = await guardedBuild({
+    command: process.execPath,
+    args: [resolve(webDirectory, 'node_modules/next/dist/bin/next'), 'build'],
+    cwd: resolve(webDirectory),
+    record,
+  });
+}

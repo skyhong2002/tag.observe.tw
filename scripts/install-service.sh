@@ -35,7 +35,8 @@ if [[ ! -d "$release_dir" ]]; then
   npm ci --prefix "$staging_dir" --omit=dev --ignore-scripts --no-audit --no-fund
   # SSR frontend: build once per release, then run the standalone server.
   npm ci --prefix "$staging_dir/web" --ignore-scripts --no-audit --no-fund
-  (cd "$staging_dir/web" && NEXT_TELEMETRY_DISABLED=1 npx next build >/dev/null)
+  build_guard_log="$release_root/build-logs/$commit_id-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
+  node "$project_dir/tools/guard-next-build.js" "$staging_dir/web" "$build_guard_log"
   cp -r "$staging_dir/web/.next/static" "$staging_dir/web/.next/standalone/web/.next/static"
   cp -r "$staging_dir/web/public" "$staging_dir/web/.next/standalone/web/public"
   # The release is made read-only below; Next's runtime cache (optimized
