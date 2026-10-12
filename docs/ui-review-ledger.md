@@ -178,8 +178,14 @@ Known evidence gaps：部分擷取是loading、503、500、API暫不可用或錯
 
 ## 20:39 UTC 負載暫停與未完成新建置
 
-主agent原始gate：`/home/deck/tag-analysis-private/f1-release/resource-gates/2026-10-12T20-39-00-929981+00-00-build-failure-pause.json`。load1=14.292、實際capture browser parents0，tag/blog/youtube首頁HTTP200/500/200、TTFB0.417190/0.021783/0.091995秒；productionCaptureAllowed=false。所有thread捕捉暫停，本輪ledger/因果稽核純offline，沒有以browser slot空閒繞過負載/服務健康暫停。
+主agent原始gate：`/home/deck/tag-analysis-private/f1-release/resource-gates/2026-10-12T20-39-00-929981+00-00-build-failure-pause.json`。load1=14.292、實際capture browser parents0，tag/blog/youtube首頁HTTP200/500/200、TTFB0.417190/0.021783/0.091995秒；productionCaptureAllowed=false。本 thread 的所有捕捉暫停，本輪ledger/因果稽核純offline，沒有以browser slot空閒繞過負載/服務健康暫停。
 
 `e0eb4dd`新build原始log：`/home/deck/tag-analysis-private/f1-release/f1-build-e0eb4dd.log`。TypeScript完成後，11worker靜態產生多route超過60秒重試；最終admin/media三次失敗、Next worker exit1，**build failed**。不能據此認定各頁產品bug，也不把它與blog500/load上升宣稱已證因果。後續source HEAD `821711c`已提交2worker×1page限制（主agent回報），但此處未以新source代替已受測frontend：UI仍225fa38，正式仍0dd38b6；002/020/027修正仍issues待新build真圖復驗，route計數57pending/3issues/5pass不變。
 
 離線privacy原始13步再次核對：`privacy-browser-2026-10-12T19-34-32-548Z/report.json`全部localoptout1/DNT1/webdrivertrue/disabledtrue、commands/scripts空、Google attempted/completed0。hotfix文件已清楚限制這只能證拒絕保留、共同guards有效，非soleoptout因果或GA收件；未改原始證據。預取原始request檔精確為869request＋828response＋185failed＝1882事件、867HAR，不混定義；文件修正與429/AB干擾詳見analytics/rsc audit文件。
+
+## 後續建置與操作工具（不增加 route 數）
+
+- `dba9325442e7c8afc59b3be3990fb5f2ab9fcb0b` 候選建置已成功，最後 log write `2026-10-12T20:48:51.868Z`；TypeScript 通過、2 workers × 每 worker 1 page，有一次靜態頁重試。這不是新 UI 的 screenshot review pass，002／020／027 仍待真圖復驗。
+- `98734e2` 建置資源監控為 **n/a-ui**：`tools/guard-next-build.test.js` 三項本機測試、GPT-6.1 Sol 獨立 source／程序測試通過。nice19、ionice3、30秒探測、STOP/CONT 與退出清理的實證／時間界線見 `build-resource-guard-20261013.md`；不是另一個 route，也不是正式部署。
+- `20:55:35.788Z` gate：load15.27；tag/YT200、blog只有103後15秒timeout（curl28），不可將早期提示的0.027秒當完整首頁。原檔：`/home/deck/tag-analysis-private/f1-release/resource-gates/2026-10-12T20-55-35-787924+00-00-candidate-start-preflight.json`。本thread沒有新增capture，完整route仍57pending／3issues／5pass。
