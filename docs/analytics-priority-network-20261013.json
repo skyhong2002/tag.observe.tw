@@ -1,0 +1,248 @@
+{
+  "release": "adf47ee84fda870592bdf50d42694a1e396bcb5c",
+  "startedAt": "2026-10-12T17:54:09.947Z",
+  "finishedAt": "2026-10-12T17:56:41.269Z",
+  "settings": {
+    "generalUA": true,
+    "dnt": "0",
+    "gpc": false,
+    "productionGuardsUnchanged": true,
+    "identifiers": "cid/sid not collected"
+  },
+  "cases": [
+    {
+      "name": "home → tag → back → search?q=測試 → back",
+      "startedAt": "2026-10-12T17:56:02.332Z",
+      "steps": [
+        {
+          "action": "home landing",
+          "utc": "2026-10-12T17:56:04.905Z",
+          "views": 1
+        },
+        {
+          "action": "tag link",
+          "path": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+          "sameDocument": true,
+          "utc": "2026-10-12T17:56:13.300Z",
+          "views": 1
+        },
+        {
+          "action": "back to home",
+          "utc": "2026-10-12T17:56:21.026Z",
+          "views": 1
+        },
+        {
+          "action": "search submit",
+          "path": "/search/?q=%E6%B8%AC%E8%A9%A6",
+          "utc": "2026-10-12T17:56:34.148Z",
+          "collectsOnPrivatePage": 0
+        },
+        {
+          "action": "search back",
+          "path": "/",
+          "utc": "2026-10-12T17:56:41.252Z",
+          "collects": 2,
+          "tainted": false
+        }
+      ],
+      "hits": [
+        {
+          "utc": "2026-10-12T17:56:03.285Z",
+          "phase": "landing",
+          "requestPath": "/",
+          "en": "page_view",
+          "dl": "/",
+          "dt": "新文易數",
+          "dr": null,
+          "property": "tag",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:56:04.991Z",
+          "phase": "tag",
+          "requestPath": "/",
+          "en": "select_content",
+          "dl": "/",
+          "dt": "新文易數",
+          "dr": "/",
+          "property": "tag",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:56:06.059Z",
+          "phase": "tag",
+          "requestPath": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+          "en": null,
+          "dl": null,
+          "dt": null,
+          "dr": null,
+          "property": "probe",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:56:06.782Z",
+          "phase": "tag",
+          "requestPath": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+          "en": "web_vital",
+          "dl": "/",
+          "dt": "新文易數",
+          "dr": "/",
+          "property": "tag",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:56:11.782Z",
+          "phase": "tag",
+          "requestPath": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+          "en": "page_view",
+          "dl": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+          "dt": "新文易數",
+          "dr": "/",
+          "property": "tag",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:56:19.352Z",
+          "phase": "public back",
+          "requestPath": "/",
+          "en": "page_view",
+          "dl": "/",
+          "dt": "新文易數",
+          "dr": "/tag/%E6%B2%88%E4%BC%AF%E6%B4%8B/",
+          "property": "tag",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:56:37.271Z",
+          "phase": "search back",
+          "requestPath": "/",
+          "en": null,
+          "dl": null,
+          "dt": null,
+          "dr": null,
+          "property": "probe",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:56:39.387Z",
+          "phase": "search back",
+          "requestPath": "/",
+          "en": "page_view",
+          "dl": "/",
+          "dt": "新文易數",
+          "dr": null,
+          "property": "tag",
+          "status": 204
+        }
+      ],
+      "ok": true,
+      "finishedAt": "2026-10-12T17:56:41.259Z"
+    },
+    {
+      "name": "private landing /search?q=測試",
+      "startedAt": "2026-10-12T17:54:51.003Z",
+      "steps": [
+        {
+          "action": "private landing",
+          "path": "/search/?q=%E6%B8%AC%E8%A9%A6",
+          "utc": "2026-10-12T17:54:59.016Z",
+          "collects": 0,
+          "googleScripts": 0
+        }
+      ],
+      "hits": [],
+      "ok": true,
+      "finishedAt": "2026-10-12T17:54:59.032Z"
+    },
+    {
+      "name": "private landing /admin",
+      "startedAt": "2026-10-12T17:54:59.055Z",
+      "steps": [
+        {
+          "action": "private landing",
+          "path": "/admin/",
+          "utc": "2026-10-12T17:55:06.978Z",
+          "collects": 0,
+          "googleScripts": 0
+        }
+      ],
+      "hits": [],
+      "ok": true,
+      "finishedAt": "2026-10-12T17:55:06.997Z"
+    },
+    {
+      "name": "private landing /login",
+      "startedAt": "2026-10-12T17:55:07.021Z",
+      "steps": [
+        {
+          "action": "private landing",
+          "path": "/login/",
+          "utc": "2026-10-12T17:55:14.917Z",
+          "collects": 0,
+          "googleScripts": 0
+        }
+      ],
+      "hits": [],
+      "ok": true,
+      "finishedAt": "2026-10-12T17:55:14.937Z"
+    },
+    {
+      "name": "private landing /observe/opt-out/",
+      "startedAt": "2026-10-12T17:55:14.955Z",
+      "steps": [
+        {
+          "action": "private landing",
+          "path": "/observe/opt-out/",
+          "utc": "2026-10-12T17:55:22.504Z",
+          "collects": 0,
+          "googleScripts": 0
+        }
+      ],
+      "hits": [],
+      "ok": true,
+      "finishedAt": "2026-10-12T17:55:22.518Z"
+    },
+    {
+      "name": "liveboard",
+      "startedAt": "2026-10-12T17:55:22.537Z",
+      "steps": [
+        {
+          "action": "liveboard",
+          "utc": "2026-10-12T17:55:31.683Z",
+          "views": 1
+        }
+      ],
+      "hits": [
+        {
+          "utc": "2026-10-12T17:55:24.676Z",
+          "phase": "liveboard",
+          "en": "page_view",
+          "dl": "/liveboard/",
+          "dt": "即時看板",
+          "dr": null,
+          "property": "tag",
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:55:27.560Z",
+          "phase": "liveboard",
+          "en": null,
+          "dl": null,
+          "dt": null,
+          "dr": null,
+          "property": "probe",
+          "status": 204
+        }
+      ],
+      "ok": true,
+      "finishedAt": "2026-10-12T17:55:31.683Z"
+    }
+  ],
+  "notes": [
+    "All GA query/body fields other than the listed fields were discarded at capture time; cid/sid are never stored.",
+    "An initial navigation test counted from form submission before URL arrival, without requestPath; its ambiguous empty endpoint probe was not treated as a verified private-page hit. The navigation rerun records the actual path for every request.",
+    "Empty probes have no measurement ID, client ID, event, URL, title, cookies or referrer; they are listed separately instead of being hidden. No probe or measurement was observed on the private pages.",
+    "Search was submitted through the real form; home-to-tag used a real Next Link and remained in the same document. Back buttons were actual browser history navigation.",
+    "Production DNT/GPC guard code was unchanged. Only the isolated test profile sets DNT=0/GPC=false and a general browser UA."
+  ]
+}
