@@ -75,7 +75,7 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
         if (ownGroups.some((g) => g.label === tag))
           return reply.code(409).send({ error: '這個名稱已有分類，請在「分類與群組」調整上層，以保留既有分類 ID' });
       }
-      const dedupeKey = relationKey(tag, type as RelationType, groups[0] ? `group:${groups[0].id}` : target);
+      const dedupeKey = relationKey(tag, type as RelationType, groups[0] ? { groupId: groups[0].id } : target);
       const result = await db.transaction(async (tx) => {
         await tx.select({ id: users.id }).from(users).where(eq(users.id, user.id)).for('update');
         const [existing] = await tx

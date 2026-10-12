@@ -40,6 +40,11 @@ describe('semantic identity and validation', () => {
       expect(validSemanticTag(value)).toBe(false);
     expect(validSemanticTag('𠀀'.repeat(60))).toBe(true);
   });
+  it('does not merge a stable group ID with a valid label resembling that ID', () => {
+    expect(relationKey('甲', 'is-a', { groupId: 811 })).not.toBe(relationKey('甲', 'is-a', 'group:811'));
+    expect(relationKey('甲', 'is-a', { groupId: 811 })).not.toBe(relationKey('甲', 'is-a', '811'));
+    expect(relationKey('甲', 'is-a', { groupId: 811 })).not.toBe(relationKey('甲', 'is-a', { groupId: 812 }));
+  });
 });
 
 describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {

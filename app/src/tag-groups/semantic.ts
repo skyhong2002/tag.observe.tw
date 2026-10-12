@@ -13,8 +13,15 @@ export const validSemanticTag = (tag: unknown): tag is string =>
 
 /** Symmetric related/alias edges share one key. Labels remain byte-exact:
  * neither case folding nor synonym merging changes vocabulary IDs. */
-export function relationKey(tag: string, type: RelationType, target: string) {
-  const ends = type === 'is-a' ? [tag, target] : [tag, target].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
+export function relationKey(tag: string, type: RelationType, target: string | { groupId: number }) {
+  // A literal label such as "group:811" is valid vocabulary. Keep identity
+  // kinds in the serialized structure, never in a user-controllable prefix.
+  const from = ['tag', tag] as const;
+  const to = typeof target === 'string' ? (['tag', target] as const) : (['group', target.groupId] as const);
+  const ends =
+    type === 'is-a'
+      ? [from, to]
+      : [from, to].sort((a, b) => Buffer.compare(Buffer.from(JSON.stringify(a)), Buffer.from(JSON.stringify(b))));
   return tagId(JSON.stringify(['relation', type, ...ends]));
 }
 
