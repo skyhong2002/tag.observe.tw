@@ -79,7 +79,7 @@ async function FooterStats() {
   const totals: Totals | undefined = response?.ok ? (await response.json()).totals : undefined;
   if (!totals?.today) return null;
   return (
-    <Link href="/media/" className="group inline-flex items-center gap-2 text-[13px] text-zinc-600 dark:text-zinc-400">
+    <Link prefetch={false} href="/media/" className="group inline-flex items-center gap-2 text-[13px] text-zinc-600 dark:text-zinc-400">
       <span className="relative flex h-2 w-2" aria-hidden="true">
         <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 motion-safe:animate-ping" />
         <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -101,7 +101,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
       <div className={`${band} mt-10 pt-12 pb-6`}>
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20">
           <div className="space-y-5">
-            <Link href="/" aria-label="新文易數 首頁" className="inline-block text-zinc-900 dark:text-zinc-100">
+            <Link prefetch={false} href="/" aria-label="新文易數 首頁" className="inline-block text-zinc-900 dark:text-zinc-100">
               <Wordmark className="h-9 w-auto" />
             </Link>
             <div className="space-y-1.5">
@@ -150,7 +150,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
                           </span>
                         </a>
                       ) : (
-                        <Link href={l.href} className={link}>
+                        <Link prefetch={false} href={l.href} className={link}>
                           {l.label}
                         </Link>
                       )}

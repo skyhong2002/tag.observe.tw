@@ -77,7 +77,7 @@ export default function HomeRanking({ initialRows }: { initialRows: HomeRankingR
     <ol className={styles.ranking}>
       {rows.map((e, i) => (
         <li key={e.tag}>
-          <Link href={`/tag/${encodeURIComponent(e.tag)}/`}>
+          <Link prefetch={false} href={`/tag/${encodeURIComponent(e.tag)}/`}>
             <span className={styles.rank}>{String(i + 1).padStart(2, '0')}</span>
             <span className={styles.rankBody}>
               <strong>

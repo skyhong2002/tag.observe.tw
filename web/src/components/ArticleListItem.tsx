@@ -47,7 +47,7 @@ export default function ArticleListItem({
         <div className="min-w-0 flex-1">
           <h3 className="text-[15px] font-medium leading-6">
             {href ? (
-              <Link href={href} className="hover:text-brand-700 dark:hover:text-brand-400">
+              <Link prefetch={false} href={href} className="hover:text-brand-700 dark:hover:text-brand-400">
                 {title}
               </Link>
             ) : (
@@ -78,6 +78,7 @@ export default function ArticleListItem({
               {article.tags.slice(0, 6).map((tag) => (
                 <li key={tag}>
                   <Link
+                    prefetch={false}
                     href={`/tag/${encodeURIComponent(tag)}/`}
                     className="text-zinc-500 hover:text-brand-700 hover:underline dark:text-zinc-400 dark:hover:text-brand-400"
                   >

@@ -20,6 +20,7 @@ export default function TagRelationsPanel({ tag, data }: { tag: string; data: Ta
           標籤關係
         </h2>
         <Link
+          prefetch={false}
           href={`/tag/${encodeURIComponent(tag)}/picture/`}
           className="inline-flex min-h-11 items-center text-sm text-brand-700 underline dark:text-brand-400"
         >
@@ -42,6 +43,7 @@ export default function TagRelationsPanel({ tag, data }: { tag: string; data: Ta
                       {entries.map((r) => (
                         <li key={r.id}>
                           <Link
+                            prefetch={false}
                             href={r.target.href}
                             className="inline-flex min-h-11 max-w-full items-center gap-1 break-words rounded-full border border-zinc-300 px-3 text-sm text-brand-700 hover:border-brand-600 dark:border-zinc-700 dark:text-brand-400"
                           >

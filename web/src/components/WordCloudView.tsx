@@ -125,6 +125,7 @@ function Canvas({
           if (!w) return null;
           return (
             <Link
+              prefetch={false}
               key={word.label}
               href={w.href}
               aria-label={w.ariaLabel}
@@ -201,6 +202,7 @@ function Canvas({
           </dl>
           {tapped && (
             <Link
+              prefetch={false}
               href={info[active.label].href}
               className="mt-2 block rounded-md bg-zinc-100 px-3 py-2 text-center text-sm font-semibold text-brand-700 active:bg-zinc-200 dark:bg-zinc-800 dark:text-brand-400 dark:active:bg-zinc-700"
               onClick={() => show(null)}

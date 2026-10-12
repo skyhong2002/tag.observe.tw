@@ -101,7 +101,9 @@ function CampGaps({ gaps }: { gaps: CampGap[] }) {
                 const href = eventHref(e) ?? `/event/#event-${e.rank}`;
                 return (
                   <li key={e.rank}>
-                    <Link href={href}>{eventHeadline(e)}</Link>
+                    <Link prefetch={false} href={href}>
+                      {eventHeadline(e)}
+                    </Link>
                     <p>{e.coverage && <CampBadge c={e.coverage} />}</p>
                   </li>
                 );
@@ -120,7 +122,7 @@ function JournalistPanel({ brief }: { brief: JournalistBrief | null }) {
     <ol className={styles.journalists}>
       {brief.top.map((j) => (
         <li key={j.name}>
-          <Link href={journalistHref(j.name)}>
+          <Link prefetch={false} href={journalistHref(j.name)}>
             <span className={styles.journalistName}>{j.name}</span>
             <span className={styles.journalistOutlets} title={j.media.map((m) => `${m.name} ${m.count} 篇`).join('、')}>
               {j.media.slice(0, 3).map((m) => (
@@ -237,12 +239,14 @@ function TopicPanel({ topics }: { topics: { outlets: number; today: number; late
         const updated = updatedAtOf(t);
         return (
           <li key={`${t.media}-${t.id}`}>
-            <Link href={href} className={styles.topicCover} tabIndex={-1} aria-hidden="true">
+            <Link prefetch={false} href={href} className={styles.topicCover} tabIndex={-1} aria-hidden="true">
               <NewsImage src={image} />
             </Link>
             <div className={styles.topicBody}>
               <h3>
-                <Link href={href}>{t.title}</Link>
+                <Link prefetch={false} href={href}>
+                  {t.title}
+                </Link>
               </h3>
               <p>
                 <MediaIcon media={t.media} title={t.mediaTitle} size={12} />
@@ -300,7 +304,7 @@ export default async function HomePage() {
           <aside className={styles.left} aria-label="關鍵字排行、記者與讀者關注">
             <div className={styles.sectionHeading}>
               <h2>熱門關鍵字</h2>
-              <Link href="/ranking/?category=news">
+              <Link prefetch={false} href="/ranking/?category=news">
                 完整排行 <Arrow />
               </Link>
             </div>
@@ -308,7 +312,7 @@ export default async function HomePage() {
 
             <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>記者動態</h2>
-              <Link href="/journalist/">
+              <Link prefetch={false} href="/journalist/">
                 全部記者 <Arrow />
               </Link>
             </div>
@@ -327,14 +331,14 @@ export default async function HomePage() {
           <section className={styles.center} aria-label="焦點事件">
             <div className={styles.sectionHeading}>
               <h2>焦點事件</h2>
-              <Link href="/event/">
+              <Link prefetch={false} href="/event/">
                 {data.focus.daily ? '今天' : '本小時'}全部 {data.focus.count || ''} 件 <Arrow />
               </Link>
             </div>
             {lead ? (
               <>
                 <article className={styles.hero} data-vital-region="home-hero">
-                  <Link href={lead.href} className={styles.heroImage} tabIndex={-1} aria-hidden="true">
+                  <Link prefetch={false} href={lead.href} className={styles.heroImage} tabIndex={-1} aria-hidden="true">
                     <NewsImage src={lead.image} priority />
                   </Link>
                   <div className={styles.heroContent}>
@@ -342,7 +346,7 @@ export default async function HomePage() {
                       焦點 01 {lead.tags.length > 0 && <span>／ {lead.tags.slice(0, 2).join(' · ')}</span>}
                     </span>
                     <h3>
-                      <Link href={lead.href} className={styles.heroLink}>
+                      <Link prefetch={false} href={lead.href} className={styles.heroLink}>
                         {lead.title}
                       </Link>
                     </h3>
@@ -356,7 +360,7 @@ export default async function HomePage() {
                     )}
                     <div className={styles.heroFoot}>
                       <span>{!lead.coverage && `精選報導來自 ${lead.sampleOutlets} 家媒體`}</span>
-                      <Link href={lead.href}>
+                      <Link prefetch={false} href={lead.href}>
                         比較各家標題 <Arrow />
                       </Link>
                     </div>
@@ -380,17 +384,19 @@ export default async function HomePage() {
                           {s.tags.slice(0, 3).join(' / ')}
                         </p>
                         <h3>
-                          <Link href={s.href}>{s.title}</Link>
+                          <Link prefetch={false} href={s.href}>
+                            {s.title}
+                          </Link>
                         </h3>
                         <StoryMeta story={s} />
                         <Distribution coverage={s.coverage} compact />
                       </div>
-                      <Link href={s.href} className={styles.thumbnail} aria-label={`查看事件：${s.title}`} tabIndex={-1}>
+                      <Link prefetch={false} href={s.href} className={styles.thumbnail} aria-label={`查看事件：${s.title}`} tabIndex={-1}>
                         <NewsImage src={s.image} />
                       </Link>
                     </article>
                   ))}
-                  <Link href="/event/" className={styles.more}>
+                  <Link prefetch={false} href="/event/" className={styles.more}>
                     探索更多事件 <Arrow />
                   </Link>
                 </div>
@@ -400,7 +406,7 @@ export default async function HomePage() {
                 <span aria-hidden="true">◎</span>
                 <h2>焦點事件載入中</h2>
                 <EventRecovery />
-                <Link href="/event/">
+                <Link prefetch={false} href="/event/">
                   前往事件表 <Arrow />
                 </Link>
               </div>
@@ -410,7 +416,7 @@ export default async function HomePage() {
           <aside className={styles.right} aria-label="藍綠溫差與標題對照">
             <div className={styles.sectionHeading}>
               <h2>藍綠溫差</h2>
-              <Link href="/event/">
+              <Link prefetch={false} href="/event/">
                 今天全部事件 <Arrow />
               </Link>
             </div>
@@ -429,7 +435,7 @@ export default async function HomePage() {
           <section className={styles.panel} aria-label="新聞關係圖摘要">
             <div className={styles.sectionHeading}>
               <h2>新聞關係圖</h2>
-              <Link href="/similarity/">
+              <Link prefetch={false} href="/similarity/">
                 看整張圖 <Arrow />
               </Link>
             </div>
@@ -442,7 +448,7 @@ export default async function HomePage() {
           <section className={styles.panel} aria-label="最近更新的議題">
             <div className={styles.sectionHeading}>
               <h2>最近更新的議題</h2>
-              <Link href="/topic/">
+              <Link prefetch={false} href="/topic/">
                 議題表 <Arrow />
               </Link>
             </div>

@@ -81,6 +81,7 @@ export default function SiteNavigation() {
                 const current = exact || href === section || (href === '/byline/' && pathname.startsWith('/journalist/'));
                 return (
                   <Link
+                    prefetch={false}
                     key={href}
                     href={href}
                     onClick={() => setOpen(false)}

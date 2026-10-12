@@ -596,7 +596,7 @@ export default function LiveBoard({
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-2 short:gap-4 short:px-4 short:py-1 portrait:gap-4 portrait:px-3">
           <div className="relative flex shrink-0 items-end">
             {/* The wordmark leads to the board's settings (/liveboard/setting/). */}
-            <Link href="/liveboard/setting/" aria-label="即時看板設定">
+            <Link prefetch={false} href="/liveboard/setting/" aria-label="即時看板設定">
               <Wordmark className={`h-9 w-auto text-zinc-100 short:h-7 ${online ? '' : 'invisible'}`} />
             </Link>
             <span role="status" className="pointer-events-none absolute inset-0 flex items-center justify-center text-rose-400">

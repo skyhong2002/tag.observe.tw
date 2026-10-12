@@ -135,12 +135,18 @@ function Tags({ e, limit, size = 'text-xs' }: { e: EventItem; limit: number; siz
   return (
     <div className={`flex flex-wrap gap-1 ${size}`}>
       {e.major.map((t) => (
-        <Link key={t} href={`/tag/${encodeURIComponent(t)}`} className="rounded-full bg-brand-700 px-2 py-0.5 font-medium text-white">
+        <Link
+          prefetch={false}
+          key={t}
+          href={`/tag/${encodeURIComponent(t)}`}
+          className="rounded-full bg-brand-700 px-2 py-0.5 font-medium text-white"
+        >
           {t}
         </Link>
       ))}
       {others.map((t) => (
         <Link
+          prefetch={false}
           key={t.tag}
           href={`/tag/${encodeURIComponent(t.tag)}`}
           className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
@@ -176,7 +182,7 @@ function Headlines({
             <span className="sr-only">{media[n.media]?.title ?? n.media}</span>
           </MediaHoverLink>
           <div className="min-w-0 flex-1">
-            <Link href={articleHref(n)} className="line-clamp-1 hover:underline">
+            <Link prefetch={false} href={articleHref(n)} className="line-clamp-1 hover:underline">
               {n.title}
             </Link>
             <SourceLink url={n.url} showUrl className="!min-h-5" />
@@ -213,7 +219,7 @@ function CampHeadlines({ pair: { blue, green }, media }: { pair: { blue: EventNe
           {media[n.media]?.title ?? n.media}
         </MediaHoverLink>
       </p>
-      <Link href={articleHref(n)} className="block text-sm leading-snug hover:underline">
+      <Link prefetch={false} href={articleHref(n)} className="block text-sm leading-snug hover:underline">
         {parts.map((part, i) => (
           <span key={String(i)} className={part.different ? 'underline decoration-zinc-400 decoration-1 underline-offset-4' : undefined}>
             {part.text}
@@ -246,7 +252,7 @@ function Title({ e, className, at }: { e: EventItem; className: string; at?: str
   return (
     <h2 className={className}>
       {href ? (
-        <Link href={at ? `${href}?at=${encodeURIComponent(at)}` : href} className="hover:underline">
+        <Link prefetch={false} href={at ? `${href}?at=${encodeURIComponent(at)}` : href} className="hover:underline">
           {text}
         </Link>
       ) : (
@@ -311,6 +317,7 @@ export default function EventCard({
       >
         {img && (
           <Link
+            prefetch={false}
             href={articleHref(img)}
             tabIndex={-1}
             aria-hidden
@@ -361,6 +368,7 @@ export default function EventCard({
       <div className="flex gap-3">
         {img && (
           <Link
+            prefetch={false}
             href={articleHref(img)}
             tabIndex={-1}
             aria-hidden

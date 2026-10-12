@@ -523,7 +523,7 @@ export default function SimpleBoard({
     <main className={styles.board} style={{ '--ui': settings.scale / 100 } as React.CSSProperties}>
       <header className={styles.header}>
         {/* The wordmark leads to the board's settings. */}
-        <Link href="/liveboard/setting/" className={styles.brand} aria-label="即時看板設定">
+        <Link prefetch={false} href="/liveboard/setting/" className={styles.brand} aria-label="即時看板設定">
           <Wordmark className={styles.wordmark} />
           <span>同一件事，各家怎麼說</span>
         </Link>
@@ -693,7 +693,7 @@ function Word({ word, picture, colour, index }: { word: Shown; picture?: Picture
   );
 
   return (
-    <Link href={href} aria-label={word.label} className={styles.link} tabIndex={word.phase === 'exit' ? -1 : undefined}>
+    <Link prefetch={false} href={href} aria-label={word.label} className={styles.link} tabIndex={word.phase === 'exit' ? -1 : undefined}>
       <g className={styles.word} style={style}>
         <rect x={image ? -word.width / 2 / k : -2 / k} width={word.width / k} height={word.height / k} fill="transparent" />
         {box && <Picture box={box} picture={picture} />}

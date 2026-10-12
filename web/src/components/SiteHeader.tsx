@@ -26,6 +26,7 @@ function HomeLink({ searchOpen, revealed }: { searchOpen: boolean; revealed: boo
   useEffect(() => () => window.clearTimeout(release.current), []);
   return (
     <Link
+      prefetch={false}
       href="/"
       aria-label="新文易數 首頁"
       onPointerDown={press}

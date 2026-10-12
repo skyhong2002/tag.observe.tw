@@ -41,6 +41,7 @@
 
 ## 快取與載入
 
+- 導覽、頁尾、字雲與大量重複的文章／事件／媒體連結使用 `prefetch={false}`，避免只瀏覽一頁就替多個目的頁發起 RSC 查詢。保留點擊時的 Next Link 導覽；若個別頁要預取少數連結，需說明預算並量測實際請求數。候選修正與原始請求盤點見 `rsc-prefetch-audit-20261013.md`。
 - 公開資料 SSR 平行取得，互動部分才使用 client component；`web/src/lib/api.ts` 的匿名 GET 有短期 revalidate 與失敗重試。不要讓使用者 Cookie/token 進入共用 SSR fetch。
 - 所有 `/api/v1` 請求若帶 Cookie、Authorization、X-Service-Token 或 X-Api-Key，回應為 `private, no-store`；錯誤與限流回應 `no-store`。只有匿名成功回應能公開快取。下游遵守實際回應標頭，不另猜 TTL。
 - `/auth/*`、管理與投稿一律 `cache: 'no-store'`、同源 credentials；寫入要求同源 Origin 與後端權限。前端 `AdminGate` 僅控制呈現，不能代替授權。

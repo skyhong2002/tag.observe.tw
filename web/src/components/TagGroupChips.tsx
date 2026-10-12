@@ -14,6 +14,7 @@ export default function TagGroupChips({ groups }: { groups: TagGroupRef[] }) {
       {ordered.map((g) => (
         <li key={g.id}>
           <Link
+            prefetch={false}
             href={`/group/${g.id}/`}
             className={`block rounded-full px-2 py-0.5 hover:underline ${
               g.kind === 'group'
