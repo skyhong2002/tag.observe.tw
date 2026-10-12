@@ -32,7 +32,13 @@ const nextConfig: NextConfig = {
   // not write regenerated pages back into .next/server: the writes failed with
   // EACCES and every revalidating page stayed at its build-time render. Keep
   // regenerated pages in memory instead (cacheMaxMemorySize, 50 MB default).
-  experimental: { isrFlushToDisk: false },
+  experimental: {
+    isrFlushToDisk: false,
+    // This host also serves the API and other sites. Bound build-time page
+    // generation so a release cannot fan out dozens of simultaneous API reads.
+    cpus: 2,
+    staticGenerationMaxConcurrency: 1,
+  },
   async rewrites() {
     if (process.env.NODE_ENV !== 'development') return [];
     const origin = process.env.TAG_API_ORIGIN ?? 'http://127.0.0.1:18130';
