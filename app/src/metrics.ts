@@ -15,6 +15,12 @@ export const httpDuration = new Histogram({
   buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 4, 8],
   registers: [registry],
 });
+export const serviceRequests = new Counter({
+  name: 'tag_service_requests_total',
+  help: 'Requests from allowlisted observe services (app/src/service-clients.ts)',
+  labelNames: ['service', 'via', 'outcome'] as const,
+  registers: [registry],
+});
 export const sourceQueries = new Counter({
   name: 'tag_source_queries_total',
   help: 'Legacy source reads',

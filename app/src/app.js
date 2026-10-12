@@ -13,10 +13,11 @@ import { isShareImage, legacyRoute } from './legacy-redirects.js';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
 import { registerExternalTraffic } from './media-traffic/external-routes.ts';
 import { registerTaiwanShares } from './media-traffic/taiwan-share.ts';
-import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
+import { httpDuration, httpRequests, metricsContentType, metricsText, serviceRequests } from './metrics.ts';
 import { registerPictureRoutes } from './pictures/routes.ts';
 import { API_KEY_MAX_PER_MINUTE, API_MAX_PER_MINUTE, apiKeyLookup } from './reader/api-keys.ts';
 import { registerReaderRoutes } from './reader/routes.ts';
+import { serviceClients } from './service-clients.ts';
 import { registerTagGroupAdmin } from './tag-groups/admin.ts';
 import { registerTagVisualAdmin } from './tag-visuals/admin.ts';
 import { createUiProxy } from './ui-proxy.js';
@@ -51,6 +52,8 @@ export async function buildApp(
     jobQueue = /** @type {(() => import('./admin/routes.ts').JobQueue) | null} */ (null),
     // Service tokens for the Similarweb request API (tests); the environment otherwise.
     externalTokens = /** @type {Map<string, Buffer> | null} */ (null),
+    // Allowlisted observe services for the rate limit (tests); the environment otherwise.
+    services = /** @type {import('./service-clients.ts').ServiceClients | null} */ (null),
   } = {},
 ) {
   const app = Fastify({
@@ -75,17 +78,56 @@ export async function buildApp(
   /** @type {import('./reader/api-keys.ts').ApiKeyLookup | null} */
   let apiKeys = null;
   if (config.rateLimit !== false) {
+    // Our own services (youtube/blog.observe.tw, app/src/service-clients.ts)
+    // get a budget of their own per service (the limiter below), and all of
+    // them together a shared cap (preHandler, so only requests within their
+    // own budget count and one runaway service cannot starve the others).
+    const clients = services ?? serviceClients();
+    if (clients.names.length) app.log.info({ services: clients.names }, 'service allowlist');
+    app.decorateRequest('serviceClient', null);
+    app.addHook('onRequest', async (request) => {
+      const client = clients.identify(request);
+      if (client === false) {
+        serviceRequests.inc({ service: 'unknown', via: 'token', outcome: 'bad-token' });
+        if (clients.firstThisMinute('log:bad-token')) request.log.warn({ ip: clientIp(request) }, 'unknown service token');
+        return;
+      }
+      if (client) request.serviceClient = client;
+    });
+    app.addHook('preHandler', async (request, reply) => {
+      const client = request.serviceClient;
+      if (!client || clients.take()) return;
+      if (clients.firstThisMinute('log:total')) request.log.warn({ service: client.service }, 'service requests over the shared cap');
+      return reply.code(429).header('retry-after', '60').send({ error: 'too many requests', scope: 'services' });
+    });
+    app.addHook('onResponse', async (request, reply) => {
+      const client = request.serviceClient;
+      if (!client) return;
+      const outcome = reply.statusCode === 429 ? 'limited' : 'ok';
+      serviceRequests.inc({ service: client.service, via: client.via, outcome });
+      if (outcome === 'limited' && clients.firstThisMinute(`log:service:${client.service}`))
+        request.log.warn({ service: client.service, via: client.via }, 'service rate-limited');
+    });
     await app.register(rateLimit, {
       global: true,
       timeWindow: '1 minute',
       max: (request, key) =>
-        key.startsWith('key:') ? API_KEY_MAX_PER_MINUTE : request.url.startsWith('/api/') ? API_MAX_PER_MINUTE : 1200,
+        request.serviceClient
+          ? clients.perServiceMax
+          : key.startsWith('key:')
+            ? API_KEY_MAX_PER_MINUTE
+            : request.url.startsWith('/api/')
+              ? API_MAX_PER_MINUTE
+              : 1200,
       keyGenerator: async (request) => {
+        if (request.serviceClient) return `svc:${request.serviceClient.service}`;
         const api = request.url.startsWith('/api/');
         const keyId = api && apiKeys ? await apiKeys.identify(request) : null;
         return keyId ? `key:${keyId}` : `${clientIp(request)}:${api ? 'api' : 'web'}`;
       },
-      allowList: (request) => !isExternal(request),
+      // Local callers are free, except a service token from loopback, which
+      // still counts so a runaway local sync cannot flood the app.
+      allowList: (request) => !isExternal(request) && !request.serviceClient,
     });
   }
   app.get('/_migration/health', async (request, reply) => {

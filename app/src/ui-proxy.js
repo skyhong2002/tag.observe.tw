@@ -16,7 +16,7 @@ const HOP = new Set([
 // Credentials stay with the gateway: the Next app reads no cookies or
 // authorization (sessions are checked by the gateway's /auth routes), so it
 // never needs them, and a forwarding mistake can never leak them.
-const CREDENTIALS = new Set(['cookie', 'authorization']);
+const CREDENTIALS = new Set(['cookie', 'authorization', 'x-service-token']);
 
 /**
  * The UI URL for a request path, or null when the path could leave the UI
