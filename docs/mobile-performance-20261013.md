@@ -16,7 +16,7 @@ T3 協作瀏覽器 412px 寬驗證：完整媒體清單已呈現、331 張圖片
 
 ## 三次量測
 
-使用主機 Lighthouse mobile 預設模擬；只跑改完後的量測。Google Analytics／Google Tag Manager URL 明確 block，沒有繞過 automation、DNT 或其他隱私防護，三份 network audit 均無 Google 分析請求。
+使用主機 Lighthouse mobile 預設模擬；只跑改完後的量測。三份 network audit 均無 Google 分析請求，沒有繞過 automation、DNT 或其他隱私防護。補查 raw config 發現 CLI 的逗號串接被當成單一 blockedUrlPatterns 字串，不能當作有效 URL 封鎖；先前「明確 block」的說法在此更正。本次零請求的證據是原始 network audit 與保留的 automation guard，沒有因此補送任何測試事件。
 
 | UTC 2026-10-12 | 分數 | LCP | FCP | CLS | TBT | 無障礙 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |

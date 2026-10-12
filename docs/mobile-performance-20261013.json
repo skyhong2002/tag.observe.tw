@@ -63,6 +63,132 @@
       "reason": "media directory placeholder during cold cache"
     }
   ],
-  "ga": "Lighthouse Google Analytics and Google Tag Manager URLs explicitly blocked. No privacy guard bypass.",
-  "caveat": "Dynamic production news changes between runs. Local Lighthouse differs from remote PSI; not a controlled causal estimate."
+  "ga": "All three network audits contain zero Google Analytics/Tag Manager requests; production automation guards were unchanged. The comma-joined blockedUrlPatterns CLI argument was retained as ONE string, so it is not evidence of working URL blocking. Earlier statement corrected.",
+  "caveat": "Dynamic production news changes between runs. Local Lighthouse differs from remote PSI; not a controlled causal estimate.",
+  "rawReports": [
+    {
+      "run": 3,
+      "path": "/home/deck/tag-analysis-private/performance/20261013/lighthouse-mobile-1.json",
+      "originalPath": "/tmp/tag-psi-after-3.json",
+      "sha256": "256a179318ab2ff1391fd8b81afd5f54c439bd4c829b7ebb24064f96787236e0",
+      "fetchTime": "2026-10-12T17:48:03.951Z",
+      "release": "adf47ee84fda870592bdf50d42694a1e396bcb5c",
+      "lighthouseVersion": "13.5.0",
+      "configSettings": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        },
+        "emulatedUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36",
+        "blockedUrlPatterns": [
+          "*googletagmanager.com/*,*google-analytics.com/*"
+        ]
+      },
+      "environment": {
+        "networkUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+        "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "benchmarkIndex": 3337,
+        "credits": {
+          "axe-core": "4.14.0"
+        }
+      },
+      "googleRequestsInAudit": 0
+    },
+    {
+      "run": 4,
+      "path": "/home/deck/tag-analysis-private/performance/20261013/lighthouse-mobile-2.json",
+      "originalPath": "/tmp/tag-psi-after-4.json",
+      "sha256": "5e7a83d23c345c2f28546f7928e12d8f38103831ce4fd9aeebdc6d8838d63a33",
+      "fetchTime": "2026-10-12T17:49:32.319Z",
+      "release": "adf47ee84fda870592bdf50d42694a1e396bcb5c",
+      "lighthouseVersion": "13.5.0",
+      "configSettings": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        },
+        "emulatedUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36",
+        "blockedUrlPatterns": [
+          "*googletagmanager.com/*,*google-analytics.com/*"
+        ]
+      },
+      "environment": {
+        "networkUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+        "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "benchmarkIndex": 3464,
+        "credits": {
+          "axe-core": "4.14.0"
+        }
+      },
+      "googleRequestsInAudit": 0
+    },
+    {
+      "run": 5,
+      "path": "/home/deck/tag-analysis-private/performance/20261013/lighthouse-mobile-3.json",
+      "originalPath": "/tmp/tag-psi-after-5.json",
+      "sha256": "2c9ed8d5198193c716174421011d46535b8bd1ac16e94d6050a511f38e1d60b9",
+      "fetchTime": "2026-10-12T18:07:18.298Z",
+      "release": "adf47ee84fda870592bdf50d42694a1e396bcb5c",
+      "lighthouseVersion": "13.5.0",
+      "configSettings": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        },
+        "emulatedUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36",
+        "blockedUrlPatterns": [
+          "*googletagmanager.com/*,*google-analytics.com/*"
+        ]
+      },
+      "environment": {
+        "networkUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36",
+        "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "benchmarkIndex": 3690.5,
+        "credits": {
+          "axe-core": "4.14.0"
+        }
+      },
+      "googleRequestsInAudit": 0
+    }
+  ],
+  "baselineComparability": "No original PSI configSettings or CPU benchmark was supplied. Local simulated mobile results cannot be treated as a directly comparable PSI rerun."
 }

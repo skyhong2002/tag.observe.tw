@@ -26,3 +26,5 @@ UTC 2026-10-12 18:05:47–18:05:50：analytics-consent、analytics-runtime、tra
 這些是程式行為證據，**不是 Google 實際收到事件的證據**。Google 腳本自己的 enhanced history 事件數與欄位不可由 mock 證明；GA 實際收到與否沿用後台既有 Realtime 驗證，以及後續未開 DNT 的自然訪客流量。本次沒有新送 g/collect。
 
 程式來源：`web/src/lib/analytics-consent.mts`、`analytics-runtime.mts`；單測來源：`app/test/analytics-consent.spec.ts`、`analytics-runtime.spec.ts`、`tracking-availability.spec.ts`、`reader-presence.spec.ts`。4aa4d41 admin 修正來源與事後審查仍見 [原驗收紀錄](analytics-privacy-20261012.md#4aa4d41來源與補審)：共用 Git 作者無法識別 thread，主 checkout 五個未提交檔案沒有混入。
+
+補充還原：debug log birth 與程式的五次 4 秒等待將那 4 筆的整輪執行時間限於 UTC 17:15:51.857–17:16:13.785。它們只記錄 request，沒有 response，2xx 未知；逐筆推算界線見 [補交稽核](audit-supplement-20261013.md)。沒有刪改 GA 資料。

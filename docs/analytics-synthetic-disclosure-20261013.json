@@ -290,27 +290,72 @@
         "en": "page_view",
         "dl": "/",
         "dt": "新文易數",
-        "dr": null
+        "dr": null,
+        "utcRange": [
+          "2026-10-12T17:15:51.857Z",
+          "2026-10-12T17:16:13.785Z"
+        ],
+        "browserRequestObserved": true,
+        "httpStatus": null,
+        "received2xx": "unknown: no response listener in this script",
+        "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
+        "cid": "redacted/not recorded",
+        "sid": "redacted/not recorded"
       },
       {
         "en": null,
         "dl": null,
         "dt": null,
-        "dr": null
+        "dr": null,
+        "utcRange": [
+          "2026-10-12T17:15:51.857Z",
+          "2026-10-12T17:16:13.785Z"
+        ],
+        "browserRequestObserved": true,
+        "httpStatus": null,
+        "received2xx": "unknown: no response listener in this script",
+        "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
+        "cid": "redacted/not recorded",
+        "sid": "redacted/not recorded"
       },
       {
         "en": "web_vital",
         "dl": "/",
         "dt": "新文易數",
-        "dr": "/"
+        "dr": "/",
+        "utcRange": [
+          "2026-10-12T17:15:51.857Z",
+          "2026-10-12T17:16:13.785Z"
+        ],
+        "browserRequestObserved": true,
+        "httpStatus": null,
+        "received2xx": "unknown: no response listener in this script",
+        "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
+        "cid": "redacted/not recorded",
+        "sid": "redacted/not recorded"
       },
       {
         "en": "page_view",
         "dl": "/",
         "dt": "新文易數",
-        "dr": "/article/"
+        "dr": "/article/",
+        "utcRange": [
+          "2026-10-12T17:15:51.857Z",
+          "2026-10-12T17:16:13.785Z"
+        ],
+        "browserRequestObserved": true,
+        "httpStatus": null,
+        "received2xx": "unknown: no response listener in this script",
+        "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
+        "cid": "redacted/not recorded",
+        "sid": "redacted/not recorded"
       }
-    ]
+    ],
+    "testExecutionWindowUtc": {
+      "earliest": "2026-10-12T17:15:51.857Z",
+      "latest": "2026-10-12T17:16:13.785Z",
+      "basis": "log filesystem birth and final modification times; script created at 17:15:51.851Z and uses five 4-second waits, compatible with 21.928s window; not per-hit timestamps"
+    }
   },
   "completeness": "Recovered from retained logs; additional unsaved requests cannot be excluded. cid/sid omitted at capture."
 }
