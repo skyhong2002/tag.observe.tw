@@ -13,7 +13,7 @@ describe('reader preference store across navigation and delayed requests', () =>
         return Response.json({ prefs: { analyticsOptOut: saved } });
       }),
     );
-    const { prefs, savePrefs } = await import('../../web/src/lib/reader.ts');
+    const { prefs, savePrefs } = await import('../src/lib/reader.ts');
     expect(await prefs.get()).toEqual({ analyticsOptOut: true });
     await savePrefs({ analyticsOptOut: false });
     expect(await prefs.get()).toEqual({ analyticsOptOut: false });
@@ -30,7 +30,7 @@ describe('reader preference store across navigation and delayed requests', () =>
         });
       }),
     );
-    const { prefs, savePrefs } = await import('../../web/src/lib/reader.ts');
+    const { prefs, savePrefs } = await import('../src/lib/reader.ts');
     const initial = prefs.get();
     await vi.waitFor(() => expect(resolveGet).toBeTypeOf('function'));
     await savePrefs({ analyticsOptOut: false });
@@ -39,10 +39,10 @@ describe('reader preference store across navigation and delayed requests', () =>
     expect(await prefs.get()).toEqual({ analyticsOptOut: false });
   });
   it('keeps the explicit-choice marker when a preference component remounts', async () => {
-    const a = await import('../../web/src/lib/analytics-preference.mts');
+    const a = await import('../src/lib/analytics-preference.mts');
     expect(a.analyticsChoiceWasExplicit()).toBe(false);
     a.rememberAnalyticsChoice();
-    const remount = await import('../../web/src/lib/analytics-preference.mts');
+    const remount = await import('../src/lib/analytics-preference.mts');
     expect(remount.analyticsChoiceWasExplicit()).toBe(true);
     expect(remount.reconcileAnalyticsPreference(false, true, remount.analyticsChoiceWasExplicit())).toEqual({});
   });
