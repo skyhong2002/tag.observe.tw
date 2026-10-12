@@ -1,0 +1,530 @@
+{
+  "baseCommit": "1068b2d1c95a294cea4f4f7f9bfc94e39c3dd5c4",
+  "noiseCommits": [
+    "ca8662c",
+    "e363b71"
+  ],
+  "producerRelease": "7685825a6101644af2a2d576f176447d10346910",
+  "manifest": {
+    "noisePolicyVersion": "b3cd41d01742acb6f0b534a77db4ee8f313ad028a0b398c2e8e8e495efc49088",
+    "schemaVersion": 1,
+    "id": "724f4e57-a077-49d6-a2f0-4075d46e8341",
+    "previousId": "704eca9c-4a63-4803-8228-384abc092a81",
+    "generatedAt": "2026-10-12T18:16:48.596Z",
+    "source": "https://tag.observe.tw",
+    "attribution": "新文易數 tag.observe.tw",
+    "coverage": "all-current-indexed-article-tags",
+    "provenance": "mixed-native-edited-and-rule-derived; per-term assignment unknown",
+    "identity": "sha256-exact-utf8-label",
+    "total": 4733121,
+    "pageSize": 500,
+    "totalPages": 9467,
+    "sha256": "83947aa497af0fbdb39dd172d5a8802c39975a7bebbc6a44a004e87ebe81dd9a",
+    "changeCount": 1148,
+    "statistics": {
+      "noise": 4432,
+      "noEqual": 297,
+      "recent180": 548119,
+      "articleCountAtLeast": {
+        "2": 1621337,
+        "3": 1033279,
+        "5": 651384
+      },
+      "articleCountAndRecent": {
+        "2": 344745,
+        "3": 292515,
+        "5": 243301
+      },
+      "eligibleAtThreshold": {
+        "2": 1820705,
+        "3": 1285596,
+        "5": 953513
+      },
+      "fileBytes": 346676553,
+      "fullFileBytes": 342766901,
+      "activeFileBytes": 3817382,
+      "changeFileBytes": 92270
+    },
+    "tiers": {
+      "excludeNoise": true,
+      "minLength": 2,
+      "measuredTerms": 4725692,
+      "missingRecentCounts": 0,
+      "articleCountAtLeast": {
+        "3": 1030237,
+        "5": 649019,
+        "10": 372416,
+        "20": 221967
+      },
+      "recentArticleCountAtLeast": {
+        "30": {
+          "2": 70468,
+          "3": 44865,
+          "5": 28124
+        },
+        "90": {
+          "2": 119803,
+          "3": 78445,
+          "5": 49568
+        },
+        "180": {
+          "2": 195192,
+          "3": 127662,
+          "5": 81039
+        }
+      },
+      "intersections": {
+        "30": {
+          "2": {
+            "3": 65052,
+            "5": 60451,
+            "10": 54774,
+            "20": 49225
+          },
+          "3": {
+            "3": 44865,
+            "5": 42416,
+            "10": 39288,
+            "20": 36373
+          },
+          "5": {
+            "3": 28124,
+            "5": 28124,
+            "10": 26463,
+            "20": 24948
+          }
+        },
+        "90": {
+          "2": {
+            "3": 110609,
+            "5": 101749,
+            "10": 90310,
+            "20": 78224
+          },
+          "3": {
+            "3": 78445,
+            "5": 73954,
+            "10": 67698,
+            "20": 61035
+          },
+          "5": {
+            "3": 49568,
+            "5": 49568,
+            "10": 46476,
+            "20": 43231
+          }
+        },
+        "180": {
+          "2": {
+            "3": 176122,
+            "5": 157702,
+            "10": 133977,
+            "20": 109857
+          },
+          "3": {
+            "3": 127662,
+            "5": 118355,
+            "10": 105166,
+            "20": 90801
+          },
+          "5": {
+            "3": 81039,
+            "5": 81039,
+            "10": 74795,
+            "20": 67814
+          }
+        }
+      }
+    },
+    "sourceConsistency": "read-only-watermark-overlap; rolling-key-range-reconciliation-within-7-days",
+    "sourceAsOf": {
+      "pendingTags": 0,
+      "newArticleWatermark": "53647359",
+      "observedAt": "2026-10-12T18:16:48.596Z",
+      "bootstrapStartedAt": "2026-10-12T13:31:21.455Z",
+      "lastFullReconcileAt": "2026-10-12T14:04:36.203Z",
+      "reconciliationLagDays": 7,
+      "overlapArticleIds": 2000,
+      "recentCountsReconciliationLagDays": 7
+    }
+  },
+  "fullPages500": 9467,
+  "fullPages5000": 947,
+  "active": {
+    "total": 44865,
+    "totalPages": 90,
+    "fileBytes": 3817382,
+    "sha256": "ae1205158902f4029043d06057687944267d6d219149d4ecda5ae737c5464131",
+    "days": 30,
+    "minArticleCount": 0,
+    "minRecentArticleCount": 3,
+    "policy": "recent-article-count",
+    "minLength": 2,
+    "excludeNoise": true
+  },
+  "activePages500": 90,
+  "activePages5000": 9,
+  "build": {
+    "status": "published",
+    "elapsedMs": 201207,
+    "firstObservedToPublishedMs": 462603,
+    "pendingTags": 0,
+    "terms": 4733121,
+    "startedAt": "2026-10-12T13:31:21.455Z",
+    "lastFullReconcileAt": "2026-10-12T14:04:36.203Z",
+    "queries": 342,
+    "queryMs": 11368,
+    "maxQueryMs": 902,
+    "rowsRead": 496277,
+    "newRows": 165,
+    "homeSamples": 96,
+    "homeTotalMs": 6994,
+    "homeMaxMs": 661,
+    "policyLabelsRead": 4733121,
+    "controlTagsQueued": 891
+  },
+  "publishedAtUtc": "2026-10-12T18:19:11.647007+00:00",
+  "notes": [
+    "FirstObservedToPublished includes intentionally interrupted prior round and NUL code deployment; not normal fast-layer latency or DB commit timestamp.",
+    "Initial attempt manually aborted before pointer change; existing full snapshot stayed live.",
+    "Private SQLite read-only check found zero embedded NUL labels. All 891 existing control-character labels are replayed through changes."
+  ],
+  "fastRoundAfterDeployment": [
+    {
+      "status": "published",
+      "elapsedMs": 35325,
+      "firstObservedToPublishedMs": 34389,
+      "pendingTags": 0,
+      "terms": 4733121,
+      "startedAt": "2026-10-12T13:31:21.455Z",
+      "lastFullReconcileAt": "2026-10-12T14:04:36.203Z",
+      "queries": 183,
+      "queryMs": 9009,
+      "maxQueryMs": 906,
+      "rowsRead": 562472,
+      "newRows": 63,
+      "homeSamples": 16,
+      "homeTotalMs": 1334,
+      "homeMaxMs": 572,
+      "policyLabelsRead": 0,
+      "controlTagsQueued": 0
+    }
+  ],
+  "httpVerification": {
+    "id": "724f4e57-a077-49d6-a2f0-4075d46e8341",
+    "total": 4733121,
+    "statistics": {
+      "noise": 4432,
+      "noEqual": 297,
+      "recent180": 548119,
+      "articleCountAtLeast": {
+        "2": 1621337,
+        "3": 1033279,
+        "5": 651384
+      },
+      "articleCountAndRecent": {
+        "2": 344745,
+        "3": 292515,
+        "5": 243301
+      },
+      "eligibleAtThreshold": {
+        "2": 1820705,
+        "3": 1285596,
+        "5": 953513
+      },
+      "fileBytes": 346676553,
+      "fullFileBytes": 342766901,
+      "activeFileBytes": 3817382,
+      "changeFileBytes": 92270
+    },
+    "active": 44865,
+    "verified": [
+      {
+        "kind": "terms",
+        "count": 4733121,
+        "pages": 947,
+        "sha256": "83947aa497af0fbdb39dd172d5a8802c39975a7bebbc6a44a004e87ebe81dd9a",
+        "decodedBytes": 2025853440
+      },
+      {
+        "kind": "active",
+        "count": 44865,
+        "pages": 9,
+        "sha256": "ae1205158902f4029043d06057687944267d6d219149d4ecda5ae737c5464131",
+        "decodedBytes": 19150497
+      }
+    ],
+    "home": [
+      {
+        "status": 200,
+        "ttfbMs": 43
+      },
+      {
+        "status": 200,
+        "ttfbMs": 425
+      },
+      {
+        "status": 200,
+        "ttfbMs": 25
+      },
+      {
+        "status": 200,
+        "ttfbMs": 30
+      },
+      {
+        "status": 200,
+        "ttfbMs": 47
+      },
+      {
+        "status": 200,
+        "ttfbMs": 32
+      },
+      {
+        "status": 200,
+        "ttfbMs": 439
+      },
+      {
+        "status": 200,
+        "ttfbMs": 58
+      },
+      {
+        "status": 200,
+        "ttfbMs": 34
+      },
+      {
+        "status": 200,
+        "ttfbMs": 45
+      },
+      {
+        "status": 200,
+        "ttfbMs": 423
+      },
+      {
+        "status": 200,
+        "ttfbMs": 41
+      },
+      {
+        "status": 200,
+        "ttfbMs": 31
+      },
+      {
+        "status": 200,
+        "ttfbMs": 37
+      },
+      {
+        "status": 200,
+        "ttfbMs": 40
+      },
+      {
+        "status": 200,
+        "ttfbMs": 36
+      },
+      {
+        "status": 200,
+        "ttfbMs": 452
+      },
+      {
+        "status": 200,
+        "ttfbMs": 32
+      },
+      {
+        "status": 200,
+        "ttfbMs": 35
+      },
+      {
+        "status": 200,
+        "ttfbMs": 34
+      },
+      {
+        "status": 200,
+        "ttfbMs": 35
+      },
+      {
+        "status": 200,
+        "ttfbMs": 36
+      },
+      {
+        "status": 200,
+        "ttfbMs": 460
+      },
+      {
+        "status": 200,
+        "ttfbMs": 36
+      },
+      {
+        "status": 200,
+        "ttfbMs": 27
+      },
+      {
+        "status": 200,
+        "ttfbMs": 34
+      },
+      {
+        "status": 200,
+        "ttfbMs": 25
+      },
+      {
+        "status": 200,
+        "ttfbMs": 483
+      },
+      {
+        "status": 200,
+        "ttfbMs": 44
+      },
+      {
+        "status": 200,
+        "ttfbMs": 46
+      },
+      {
+        "status": 200,
+        "ttfbMs": 26
+      },
+      {
+        "status": 200,
+        "ttfbMs": 421
+      },
+      {
+        "status": 200,
+        "ttfbMs": 38
+      },
+      {
+        "status": 200,
+        "ttfbMs": 29
+      },
+      {
+        "status": 200,
+        "ttfbMs": 30
+      },
+      {
+        "status": 200,
+        "ttfbMs": 37
+      },
+      {
+        "status": 200,
+        "ttfbMs": 421
+      },
+      {
+        "status": 200,
+        "ttfbMs": 27
+      },
+      {
+        "status": 200,
+        "ttfbMs": 36
+      }
+    ],
+    "controlCharacters": {
+      "count": 891,
+      "samples": [
+        {
+          "label": "\u0003比基尼",
+          "id": "78bc62eccc04f41cc9d3196b6b1e3a414144655abad437571f04d2c93b525c53",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b",
+          "id": "beead77994cf573341ec17b58bbf7eb34d2711c993c1d976b128b3188dc1829a",
+          "articleCount": 14,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\b2020高雄市長罷免",
+          "id": "7d11cff90d93b51898622e997965b9069f4c7e0bb90c14f66e54c251e65acd2d",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\bL'Oréal",
+          "id": "08c7c2700b4dc8a072d076afd281b7be2a91bab87f6f24f1551af25b3a119eaa",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\bToken",
+          "id": "ff3b3753d61ce1b57ffe4a515a7b235276a7196c3c310f5cdb89c80336a4060c",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\b動物",
+          "id": "8c2c6680c2fd5f65be37698a0bd9f95ac05c911b3de855c8f8b13038d8e5b7cf",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\b張兆志女友",
+          "id": "2c570ad8262f042250225f587e8c737bb60e1a5c148ee716931b2f7a6693c829",
+          "articleCount": 2,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\b水果刀",
+          "id": "16d5e7804a6e82c0c0a4a46bc34d335b02b95c13ef3e9a9ac96958b34b067e08",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\b江豚",
+          "id": "99088aaa70e1a7ed5295e6a0c80d8bc54f3970d6f12c3cbdad80374de00ac91b",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\b疫情",
+          "id": "9d0ad1a72e6cfb13afdb260e9d50c7a5c98694ec2f733484366ef15549175822",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b\b蘇貞昌",
+          "id": "3b198701f1e94629f1fc58bb9d71d17a1b95d291679a3664a421bdcb005a864a",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        },
+        {
+          "label": "\b Minari",
+          "id": "fdc1a03067c2d3ae84dda0d2c27950b0f0162c3c20b402b5af1fb35ece7a815d",
+          "articleCount": 1,
+          "noise": true,
+          "noiseReasons": [
+            "control-character"
+          ]
+        }
+      ]
+    },
+    "elapsedMs": 484524
+  }
+}

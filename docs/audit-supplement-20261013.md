@@ -45,9 +45,9 @@
 
 ## 4aa4d41 admin 修正來源與補審
 
-完整 SHA `4aa4d41624adf46be21f2735e5afe12fc131a638`，Git author／committer 都是共用 **Sky Hong**，提交时间 UTC 2026-10-12 17:10:19。此提交不是本工作建立；Git 無 thread/session 身分，不能可靠指出是哪位協助者。使用者轉達它於 17:14 正式部署，但沒有可用證據說明另一 thread 部署前做過什麼審查。
+完整 SHA `4aa4d41624adf46be21f2735e5afe12fc131a638`，Git author／committer 都是共用 **Sky Hong**，提交時間 UTC 2026-10-12 17:10:19。此提交不是本工作建立；Git 無 thread/session 身分，不能可靠指出是哪位協助者。使用者轉達它於 17:14 正式部署，但沒有可用證據說明另一 thread 部署前做過什麼審查。
 
-它只改 `app/src/tag-groups/relations.ts`，15 行 diff（9 增、6 刪）：從符合標籤的 article_tags／article_writing 先取候選文章 ID，下推 cursor 條件，再 STRAIGHT_JOIN articles。事後補審確認 requireAdmin 先於 SQL、參數綁定、UNION 去重、30 筆游標分頁與 no-store 保留。熱門標籤候選仍可能很多，沒有宣称查詢是常數成本。
+它只改 `app/src/tag-groups/relations.ts`，15 行 diff（9 增、6 刪）：從符合標籤的 article_tags／article_writing 先取候選文章 ID，下推 cursor 條件，再 STRAIGHT_JOIN articles。事後補審確認 requireAdmin 先於 SQL、參數綁定、UNION 去重、30 筆游標分頁與 no-store 保留。熱門標籤候選仍可能很多，沒有宣稱查詢是常數成本。
 
 UTC **17:18:30**，獨立 MariaDB fixture `tag_admin_review_20261013` 的 writing.spec.ts **6 項通過**，包含未授權拒絕、游標、關係種類、唯一 ID 與跨頁去重。這是本工作的事後補審，不能冒稱另一工作事前已審。
 

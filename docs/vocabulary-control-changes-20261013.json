@@ -1,0 +1,35 @@
+{
+  "utc": "2026-10-12T18:22:02.207Z",
+  "after": "704eca9c-4a63-4803-8228-384abc092a81",
+  "target": "724f4e57-a077-49d6-a2f0-4075d46e8341",
+  "pages": 3,
+  "count": 1148,
+  "controlLabels": 891,
+  "allControlsNoise": true,
+  "allControlsInactive": true,
+  "allControlIdsVerified": true,
+  "comparisons": [
+    {
+      "label": "\b",
+      "id": "beead77994cf573341ec17b58bbf7eb34d2711c993c1d976b128b3188dc1829a",
+      "articleCount": 14,
+      "noiseBefore": false,
+      "noiseAfter": true,
+      "noiseReasons": [
+        "control-character"
+      ],
+      "active": false
+    },
+    {
+      "label": "\u0003比基尼",
+      "id": "78bc62eccc04f41cc9d3196b6b1e3a414144655abad437571f04d2c93b525c53",
+      "articleCount": 1,
+      "noiseBefore": false,
+      "noiseAfter": true,
+      "noiseReasons": [
+        "control-character"
+      ],
+      "active": false
+    }
+  ]
+}

@@ -300,7 +300,11 @@
         "received2xx": "unknown: no response listener in this script",
         "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
         "cid": "redacted/not recorded",
-        "sid": "redacted/not recorded"
+        "sid": "redacted/not recorded",
+        "inferredBoundsUtc": [
+          "2026-10-12T17:15:51.857Z",
+          "2026-10-12T17:15:57.785Z"
+        ]
       },
       {
         "en": null,
@@ -316,7 +320,11 @@
         "received2xx": "unknown: no response listener in this script",
         "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
         "cid": "redacted/not recorded",
-        "sid": "redacted/not recorded"
+        "sid": "redacted/not recorded",
+        "inferredBoundsUtc": [
+          "2026-10-12T17:15:51.857Z",
+          "2026-10-12T17:15:57.785Z"
+        ]
       },
       {
         "en": "web_vital",
@@ -332,7 +340,11 @@
         "received2xx": "unknown: no response listener in this script",
         "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
         "cid": "redacted/not recorded",
-        "sid": "redacted/not recorded"
+        "sid": "redacted/not recorded",
+        "inferredBoundsUtc": [
+          "2026-10-12T17:15:55.857Z",
+          "2026-10-12T17:16:01.785Z"
+        ]
       },
       {
         "en": "page_view",
@@ -348,7 +360,11 @@
         "received2xx": "unknown: no response listener in this script",
         "googleEndpointDelivery": "not independently verifiable per request: full destination URL and response were not retained; script/page expected Google collect",
         "cid": "redacted/not recorded",
-        "sid": "redacted/not recorded"
+        "sid": "redacted/not recorded",
+        "inferredBoundsUtc": [
+          "2026-10-12T17:15:59.857Z",
+          "2026-10-12T17:16:05.785Z"
+        ]
       }
     ],
     "testExecutionWindowUtc": {

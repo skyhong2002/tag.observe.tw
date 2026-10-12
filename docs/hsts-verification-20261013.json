@@ -1,0 +1,173 @@
+{
+  "release": "48083b58c4ee3d16f2072206f1da3df332f34143",
+  "rows": [
+    {
+      "utc": "2026-10-12T18:20:49.054582+00:00",
+      "path": "/",
+      "status": 200,
+      "hsts": [],
+      "cfCacheStatus": [
+        "HIT"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:20:50.386522+00:00",
+      "path": "/api/v1/openapi.json",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "MISS"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:20:50.965718+00:00",
+      "path": "/__hsts_verify_20261013__/",
+      "status": 404,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "DYNAMIC"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:20:51.074105+00:00",
+      "path": "/_next/static/chunks/1dwrsqsqh4qkg.css",
+      "status": 200,
+      "hsts": [],
+      "cfCacheStatus": [
+        "HIT"
+      ]
+    }
+  ],
+  "followup": [
+    {
+      "utc": "2026-10-12T18:22:20.027778+00:00",
+      "path": "/",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "HIT"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:22:20.070396+00:00",
+      "path": "/api/v1/openapi.json",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "HIT"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:22:21.018342+00:00",
+      "path": "/__hsts_verify_20261013__/",
+      "status": 404,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "DYNAMIC"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:22:21.060318+00:00",
+      "path": "/_next/static/chunks/1dwrsqsqh4qkg.css",
+      "status": 200,
+      "hsts": [],
+      "cfCacheStatus": [
+        "HIT"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:22:21.496141+00:00",
+      "path": "/_next/static/chunks/1dwrsqsqh4qkg.css?hsts-verification=20261013",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "MISS"
+      ]
+    }
+  ],
+  "postHostnamePurge": [
+    {
+      "utc": "2026-10-12T18:23:34.598425+00:00",
+      "path": "/",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "HIT"
+      ],
+      "cacheControl": [
+        "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:23:35.702476+00:00",
+      "path": "/api/v1/openapi.json",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "MISS"
+      ],
+      "cacheControl": [
+        "public, max-age=3600"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:23:37.330545+00:00",
+      "path": "/__hsts_verify_20261013__/",
+      "status": 404,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "DYNAMIC"
+      ],
+      "cacheControl": [
+        "no-store"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:23:37.761264+00:00",
+      "path": "/_next/static/chunks/1dwrsqsqh4qkg.css",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "MISS"
+      ],
+      "cacheControl": [
+        "public, max-age=31536000, immutable"
+      ]
+    },
+    {
+      "utc": "2026-10-12T18:23:37.802142+00:00",
+      "path": "/_next/static/chunks/1dwrsqsqh4qkg.css",
+      "status": 200,
+      "hsts": [
+        "max-age=86400"
+      ],
+      "cfCacheStatus": [
+        "HIT"
+      ],
+      "cacheControl": [
+        "public, max-age=31536000, immutable"
+      ]
+    }
+  ],
+  "cachePurge": "User reports another authorized Codex helper purged tag.observe.tw only. This thread made no Cloudflare dashboard changes."
+}
