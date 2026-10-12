@@ -1,0 +1,302 @@
+{
+  "deployment": "4aa4d41624adf46be21f2735e5afe12fc131a638",
+  "privacyCommit": "8df28289cf1c7d55c08a5dfec272479ab1864cdd",
+  "startedAt": "2026-10-12T17:17:22.445Z",
+  "finishedAt": "2026-10-12T17:23:16.107Z",
+  "cases": [
+    {
+      "name": "private landing /admin/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/admin/",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing /login/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/login/",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing /me/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/me/",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing /my/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/my/",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing /observe/opt-out/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/observe/opt-out/",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing /search/?q=PRIVACY_FIXTURE",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/search/?q=PRIVACY_FIXTURE",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing /article/query/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/article/query/",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing /article/?q=PRIVACY_FIXTURE",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/article/?q=PRIVACY_FIXTURE",
+      "hits": [],
+      "probeCount": 0
+    },
+    {
+      "name": "private landing to public",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/ranking/",
+      "hits": [
+        {
+          "utc": "2026-10-12T17:18:57.775Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/ranking/",
+          "dr": "https://tag.observe.tw",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        }
+      ],
+      "probeCount": 0
+    },
+    {
+      "name": "liveboard settings title",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/liveboard/setting/",
+      "hits": [
+        {
+          "utc": "2026-10-12T17:19:04.090Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/liveboard/setting/",
+          "dr": "",
+          "dt": "即時看板",
+          "_dbg": null,
+          "status": 204
+        }
+      ],
+      "probeCount": 1
+    },
+    {
+      "name": "dnt",
+      "ok": true,
+      "hits": []
+    },
+    {
+      "name": "gpc",
+      "ok": true,
+      "hits": []
+    },
+    {
+      "name": "optout",
+      "ok": true,
+      "hits": []
+    },
+    {
+      "name": "public landing, Next navigation, back, search and return",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/",
+      "hits": [
+        {
+          "utc": "2026-10-12T17:20:14.074Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/",
+          "dr": "",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:20:16.291Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "web_vital",
+          "dl": "https://tag.observe.tw/",
+          "dr": "https://tag.observe.tw",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:20:21.291Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/article/",
+          "dr": "https://tag.observe.tw/",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        },
+        {
+          "utc": "2026-10-12T17:20:27.384Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/",
+          "dr": "https://tag.observe.tw/article/",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        }
+      ],
+      "probeCount": 1
+    },
+    {
+      "name": "public to private and return /admin/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/",
+      "hits": [
+        {
+          "utc": "2026-10-12T17:20:44.611Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/",
+          "dr": "",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        }
+      ],
+      "probeCount": 1
+    },
+    {
+      "name": "public to private and return /login/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/",
+      "hits": [
+        {
+          "utc": "2026-10-12T17:21:01.451Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/",
+          "dr": "",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        }
+      ],
+      "probeCount": 1
+    },
+    {
+      "name": "anonymous CDN /",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/",
+      "hits": [
+        {
+          "utc": "2026-10-12T17:23:15.189Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/",
+          "dr": "",
+          "dt": "新文易數",
+          "_dbg": null,
+          "status": 204
+        }
+      ],
+      "probeCount": 0
+    },
+    {
+      "name": "anonymous CDN /liveboard/setting/",
+      "ok": true,
+      "finalUrl": "https://tag.observe.tw/liveboard/setting/",
+      "hits": [
+        {
+          "utc": "2026-10-12T17:23:16.014Z",
+          "method": "POST",
+          "tid": "G-D1E1CZSX7L",
+          "en": "page_view",
+          "dl": "https://tag.observe.tw/liveboard/setting/",
+          "dr": "",
+          "dt": "即時看板",
+          "_dbg": null,
+          "status": 204
+        }
+      ],
+      "probeCount": 0
+    }
+  ],
+  "api": {
+    "utc": "2026-10-12T17:15:53.153698+00:00",
+    "cases": [
+      {
+        "request": "anonymous",
+        "headers": [
+          "HTTP/2 200 ",
+          "cache-control: public, max-age=60",
+          "cf-cache-status: EXPIRED"
+        ],
+        "exit": 0
+      },
+      {
+        "request": "Cookie",
+        "headers": [
+          "HTTP/2 200 ",
+          "cache-control: private, no-store",
+          "cf-cache-status: DYNAMIC"
+        ],
+        "exit": 0
+      },
+      {
+        "request": "Authorization",
+        "headers": [
+          "HTTP/2 200 ",
+          "cache-control: private, no-store",
+          "cf-cache-status: DYNAMIC"
+        ],
+        "exit": 0
+      },
+      {
+        "request": "X-Service-Token",
+        "headers": [
+          "HTTP/2 200 ",
+          "cache-control: private, no-store",
+          "cf-cache-status: DYNAMIC"
+        ],
+        "exit": 0
+      },
+      {
+        "request": "X-Api-Key",
+        "utc": "2026-10-12T17:18:31.743033+00:00",
+        "headers": [
+          "HTTP/2 200 ",
+          "cache-control: private, no-store"
+        ]
+      }
+    ]
+  },
+  "notes": [
+    "Network request metadata only; no client IDs or cookies recorded.",
+    "Private transition tests wait for the previous public hit before counting, because GA batches requests.",
+    "Empty /search/ redirects to public /article/; real search uses the nonempty fixture query.",
+    "Cookie ga-privacy-validation=1 bypassed CDN cached HTML; no account or session cookie used.",
+    "Realtime/DebugView UI was not accessed; g/collect responses were HTTP 204.",
+    "Additional fresh anonymous contexts without the validation cookie also received one public home/liveboard-settings page_view each with fixed titles."
+  ]
+}
