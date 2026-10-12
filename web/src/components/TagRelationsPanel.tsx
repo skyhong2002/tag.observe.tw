@@ -33,7 +33,7 @@ export default function TagRelationsPanel({ tag, data }: { tag: string; data: Ta
           {TYPES.map(({ type, label, description }) => {
             const entries = data.relations.filter((r) => r.type === type);
             return (
-              <div key={type}>
+              <div key={type} className="min-w-0">
                 <dt className="text-sm font-semibold" title={description}>
                   {label}
                 </dt>
@@ -41,14 +41,14 @@ export default function TagRelationsPanel({ tag, data }: { tag: string; data: Ta
                   {entries.length ? (
                     <ul className="flex flex-wrap gap-1.5">
                       {entries.map((r) => (
-                        <li key={r.id}>
+                        <li key={r.id} className="max-w-full">
                           <Link
                             prefetch={false}
                             href={r.target.href}
                             className="inline-flex min-h-11 max-w-full items-center gap-1 break-words rounded-full border border-zinc-300 px-3 text-sm text-brand-700 hover:border-brand-600 dark:border-zinc-700 dark:text-brand-400"
                           >
-                            {r.target.label}
-                            {r.inherited && <span className="text-xs text-zinc-600 dark:text-zinc-400">（上層）</span>}
+                            <span className="min-w-0 break-words">{r.target.label}</span>
+                            {r.inherited && <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">（上層）</span>}
                           </Link>
                         </li>
                       ))}
