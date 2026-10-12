@@ -13,7 +13,7 @@
 | 標籤分類與關係 | `TagGroupChips.tsx`、`TagRelationsPanel.tsx` | 分開顯示上位分類（is-a）、相關詞（related）、同義或別名（alias）。父分類可多個、可有上層；共現只屬統計。 |
 | 圖片與頭像 | `ArticleThumbnail.tsx`、`SafeImage.tsx`、`TagPerson.tsx`、`TagVisual.tsx` | 使用既有處理後的圖片 URL、正確尺寸；原作者、來源連結與授權不可省略。人物素描和標誌不要當新聞現場照片。畫面外圖片延遲載入。 |
 | 本頁資料來源與計算方式 | `MethodNotes.tsx`、`components/method/`、`app/(site)/@notes/` | 使用平行 `@notes` slot 對應本頁，將定義、來源、計算範圍與限制放在固定頁尾；不要每站另創同義指標。 |
-| 管理表格、審核 | `app/(site)/admin/AdminGate.tsx`、`Reports.tsx`、`tags/TagSubmissions.tsx`、`tag-groups/TagGroupEditor.tsx` | 登入與 admin 權限沿用 gateway；待審、已通過、未採納必須明示，留來源與審核理由；只在成功回應後更新畫面。 |
+| 管理表格、審核 | `app/(site)/admin/AdminGate.tsx`、`web/src/app/(site)/admin/Reports.tsx`、`web/src/app/(site)/admin/tags/TagSubmissions.tsx`、`web/src/app/(site)/admin/tag-groups/TagGroupEditor.tsx` | 登入與 admin 權限沿用 gateway；待審、已通過、未採納必須明示，留來源與審核理由；只在成功回應後更新畫面。 |
 | 使用者投稿 | `components/reader/TagRelationSubmission.tsx`、`app/(site)/tag/[tag]/picture/PictureVote.tsx` | 未登入提供登入返回路徑；成功提示「送交審核」，不暗示立即公開；驗證錯誤保留使用者輸入。 |
 
 可沿用的 Tailwind 組合（色票由 `web/src/app/globals.css` 的 theme 定義；不要自行選近似橘色）：
