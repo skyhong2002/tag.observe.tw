@@ -77,6 +77,11 @@ export async function buildApp(
   // Apply after handlers and the limiter, including early 429 responses.
   // Header presence is enough: invalid credentials must not enter a shared cache.
   app.addHook('onSend', async (request, reply, payload) => {
+    // TLS terminates at Cloudflare; only the loopback tunnel's external
+    // requests carry cf-connecting-ip and its normalized forwarded protocol.
+    if (request.protocol === 'https' || (isExternal(request) && request.headers['x-forwarded-proto'] === 'https'))
+      reply.header('strict-transport-security', 'max-age=86400');
+    else reply.removeHeader('strict-transport-security');
     if (reply.statusCode >= 400) reply.header('cache-control', 'no-store');
     else if (
       request.headers['x-api-key'] !== undefined ||
