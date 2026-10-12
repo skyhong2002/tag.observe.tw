@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fetchRanking, type Ranking } from '../src/lib/api.ts';
-import { fetchHomeRanking, rankingReady } from '../src/lib/home-ranking.mts';
+import { fetchHomeRanking, homeRankingRows, rankingReady } from '../src/lib/home-ranking.mts';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -71,5 +71,45 @@ describe('home ranking availability', () => {
         vi.fn<typeof fetch>(async () => Response.json({})),
       ),
     ).rejects.toThrow('not ready');
+  });
+});
+
+describe('home ranking rows', () => {
+  it('keeps only what the panel draws, for its eight rows', () => {
+    const entry = (i: number) => ({
+      tag: `t${i}`,
+      rank: i,
+      rank24h: i === 1 ? null : i + 1,
+      new: i === 2,
+      count: 10 * i,
+      normalized: 12.345,
+      score: 1,
+      position: i,
+      burst: null,
+      history: { 3: 1 },
+      media: { cna: 3, ltn: 1 },
+      trend: [
+        { t: 'a', hourlyCount: 1, average24h: 1.23456 },
+        { t: 'b', hourlyCount: null, average24h: null },
+      ],
+    });
+    const rows = homeRankingRows({
+      snapshot: { available: true },
+      entries: Array.from({ length: 16 }, (_, i) => entry(i + 1)),
+    } as unknown as Ranking);
+    expect(rows).toHaveLength(8);
+    expect(rows[0]).toEqual({
+      tag: 't1',
+      rank: 1,
+      rank24h: null,
+      new: false,
+      mediaCount: 2,
+      count: 10,
+      normalized: 12.345,
+      trend: [1.23, null],
+    });
+    expect(homeRankingRows({ snapshot: { available: true }, entries: [{ tag: 'x', media: {} }] } as unknown as Ranking)[0].trend).toEqual(
+      [],
+    );
   });
 });

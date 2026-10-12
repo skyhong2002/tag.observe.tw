@@ -42,6 +42,20 @@ export function uiTarget(rawUrl, base) {
   return target;
 }
 
+/**
+ * Next marks ISR pages `s-maxage=<revalidate>, stale-while-revalidate=<about a
+ * year>`. A shared cache (Cloudflare) honouring that could serve a day-old
+ * page from a quiet edge, so cap it: a minute fresh, five more minutes stale
+ * while it refetches. Browsers always revalidate (max-age=0). Dynamic pages
+ * (no-store) are left alone. Cookies never reach Next (CREDENTIALS), so ISR
+ * pages carry no per-reader content.
+ */
+export function edgeCacheControl(status, value) {
+  return status === 200 && typeof value === 'string' && /\bs-maxage=\d+/.test(value) && !/\b(?:private|no-store)\b/.test(value)
+    ? 'public, max-age=0, s-maxage=60, stale-while-revalidate=300'
+    : value;
+}
+
 export function createUiProxy(origin, { request = undiciRequest, timeout = 15000 } = {}) {
   const base = new URL(origin);
   return async function proxyToUi(req, reply) {
@@ -69,6 +83,8 @@ export function createUiProxy(origin, { request = undiciRequest, timeout = 15000
     }
     reply.code(upstream.statusCode);
     for (const [key, value] of Object.entries(upstream.headers)) if (!HOP.has(key)) reply.header(key, value);
+    const cacheControl = edgeCacheControl(upstream.statusCode, upstream.headers['cache-control']);
+    if (cacheControl) reply.header('cache-control', cacheControl);
     reply.header('x-tag-outcome', 'ui');
     if (req.method === 'HEAD') {
       await upstream.body.dump();

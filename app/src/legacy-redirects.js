@@ -32,7 +32,27 @@ function safeDecode(s) {
 /** A page's generated share image (any route segment), e.g. /media/sources/opengraph-image-190gsc. */
 export const isShareImage = (/** @type {string} */ path) => /^(?:\/[^/]+)+\/opengraph-image(?:-[a-z0-9]+)?\/?$/.test(path);
 
-/** @returns {null | { status: 301, location: string } | { status: 410, body: object }} */
+const RANKING_PARAMS = ['category', 'order', 'limit', 'sort', 'dir'];
+
+/**
+ * Query strings on the home page, which itself takes none, so Next can serve
+ * it from its ISR cache (web/src/app/page.tsx): bookmarks to the former
+ * ranking home page keep their sort state, and the old event filter box now
+ * searches every article.
+ * @returns {null | { status: 307 | 308, location: string }}
+ */
+export function homeQueryRoute(/** @type {URLSearchParams} */ params) {
+  const q = params.getAll('q');
+  if (!(q.length > 1 || q[0]) && RANKING_PARAMS.some((key) => params.has(key))) {
+    const kept = new URLSearchParams();
+    for (const key of RANKING_PARAMS) if (params.has(key)) kept.set(key, params.get(key) ?? '');
+    return { status: 308, location: `/ranking/?${kept}` };
+  }
+  const text = (q[0] ?? '').trim().slice(0, 60);
+  return text ? { status: 307, location: `/search/?${new URLSearchParams({ q: text })}` } : null;
+}
+
+/** @returns {null | { status: 301 | 307 | 308, location: string } | { status: 410, body: object }} */
 export function legacyRoute(rawUrl) {
   const q = rawUrl.indexOf('?');
   const path = q < 0 ? rawUrl : rawUrl.slice(0, q);
@@ -53,6 +73,7 @@ export function legacyRoute(rawUrl) {
       },
     };
   }
+  if (path === '/') return homeQueryRoute(params);
   if (path === '/index.php' || path === '/index.html')
     return { status: 301, location: params.get('type') ? `/ranking/?category=${encodeURIComponent(params.get('type'))}` : '/' };
   if (path === '/tag.php' && params.get('tag')) return { status: 301, location: `/tag/${encodeURIComponent(params.get('tag'))}/` };

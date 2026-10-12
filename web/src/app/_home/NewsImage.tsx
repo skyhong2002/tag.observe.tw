@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import SafeImage from '@/components/SafeImage';
-import Wordmark from '@/components/Wordmark';
 import styles from './home.module.css';
 
 export default function NewsImage({ src, priority = false }: { src: string | null; priority?: boolean }) {
   const [failed, setFailed] = useState(false);
   return (
     <span className={styles.picture} aria-hidden="true">
+      {/* The wordmark as a CSS mask, not inline SVG: a page has a dozen of these and the paths are 4 KB each. */}
       <span className={styles.pictureFallback}>
-        <Wordmark />
+        <span className={styles.pictureMark} />
       </span>
       {src && !failed && (
         <SafeImage

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { permanentRedirect, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { CampBadge, FullBar, SplitBar } from '@/components/CampBar';
 import { eventHeadline, eventHref, Movement, OutletStrip, RankTrail } from '@/components/EventCard';
@@ -21,6 +20,7 @@ import {
   loadHomeJournalists,
   loadHomeTopics,
 } from '@/lib/demo';
+import { homeRankingRows, rankingReady } from '@/lib/home-ranking.mts';
 import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
 import type { EventCoverage, FeedTopic } from '@/lib/pages';
@@ -37,6 +37,10 @@ import NewsImage from './_home/NewsImage';
 import ReadersPanel from './_home/ReadersPanel';
 
 export const revalidate = 120;
+// Stay ISR even when an API call fails while rendering: the fresh retry in
+// lib/api.ts (cache: 'no-store') would otherwise turn the whole page dynamic,
+// for the rest of the release if it happens during the build.
+export const dynamic = 'force-static';
 export const metadata = pageMetadata(
   '/',
   '新文易數',
@@ -254,21 +258,10 @@ function TopicPanel({ topics }: { topics: { outlets: number; today: number; late
   );
 }
 
-export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const query = await searchParams;
-  // Preserve bookmarks to the former ranking homepage, including its sort state.
-  const rankingParams = ['category', 'order', 'limit', 'sort', 'dir'];
-  if (!query.q && rankingParams.some((key) => query[key] !== undefined)) {
-    const params = new URLSearchParams();
-    for (const key of rankingParams) {
-      const value = query[key];
-      if (value !== undefined) params.set(key, Array.isArray(value) ? value[0] : value);
-    }
-    permanentRedirect(`/ranking/?${params}`);
-  }
-  // The box used to filter this page's events; it now searches every article.
-  const q = (Array.isArray(query.q) ? query.q[0] : (query.q ?? '')).trim().slice(0, 60);
-  if (q) redirect(`/search/?${new URLSearchParams({ q })}`);
+// No searchParams: reading them would make this page dynamic and skip the
+// ISR cache. The gateway answers the home page's legacy query strings
+// (app/src/legacy-redirects.js, homeQueryRoute).
+export default async function HomePage() {
   const journalists = loadHomeJournalists();
   const graph = loadHomeGraph();
   const topics = loadHomeTopics();
@@ -311,7 +304,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 完整排行 <Arrow />
               </Link>
             </div>
-            <HomeRanking initialRanking={ranking} />
+            <HomeRanking initialRows={rankingReady(ranking) ? homeRankingRows(ranking) : null} />
 
             <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>記者動態</h2>

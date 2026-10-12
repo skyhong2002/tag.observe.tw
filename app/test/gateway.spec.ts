@@ -3,7 +3,19 @@ import { createServer } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { legacyRoute } from '../src/legacy-redirects.js';
-import { uiTarget } from '../src/ui-proxy.js';
+import { edgeCacheControl, uiTarget } from '../src/ui-proxy.js';
+
+describe('edgeCacheControl', () => {
+  it('caps ISR pages for shared caches and leaves everything else alone', () => {
+    const edge = 'public, max-age=0, s-maxage=60, stale-while-revalidate=300';
+    expect(edgeCacheControl(200, 's-maxage=120, stale-while-revalidate=31535880')).toBe(edge);
+    expect(edgeCacheControl(404, 's-maxage=120, stale-while-revalidate=31535880')).toBe('s-maxage=120, stale-while-revalidate=31535880');
+    const dynamic = 'private, no-cache, no-store, max-age=0, must-revalidate';
+    expect(edgeCacheControl(200, dynamic)).toBe(dynamic);
+    expect(edgeCacheControl(200, 'public, max-age=31536000, immutable')).toBe('public, max-age=31536000, immutable');
+    expect(edgeCacheControl(200, undefined)).toBeUndefined();
+  });
+});
 
 describe('legacyRoute', () => {
   it('maps old tag.analysis.tw URL shapes onto new pages', () => {
@@ -35,10 +47,20 @@ describe('legacyRoute', () => {
     expect(r).toMatchObject({ status: 410, body: { error: 'gone', replacement: '/api/v1/ranking' } });
     expect(legacyRoute('/api/unknown.php')).toMatchObject({ status: 410, body: { replacement: null } });
   });
+  it('answers the home page query strings the page itself no longer reads', () => {
+    expect(legacyRoute('/?category=3c&sort=tag&dir=asc&extra=1')).toEqual({
+      status: 308,
+      location: '/ranking/?category=3c&sort=tag&dir=asc',
+    });
+    expect(legacyRoute('/?limit=')).toEqual({ status: 308, location: '/ranking/?limit=' });
+    expect(legacyRoute('/?q=%20%E9%A2%B1%E9%A2%A8%20&category=3c')).toEqual({ status: 307, location: '/search/?q=%E9%A2%B1%E9%A2%A8' });
+    expect(legacyRoute('/?q=&order=burst')).toEqual({ status: 308, location: '/ranking/?order=burst' });
+    expect(legacyRoute(`/?q=${'x'.repeat(80)}`)).toEqual({ status: 307, location: `/search/?q=${'x'.repeat(60)}` });
+    for (const url of ['/', '/?q=', '/?q=%20', '/?utm_source=x', '/?fbclid=1']) expect(legacyRoute(url), url).toBeNull();
+  });
   it('leaves new-site paths alone', () => {
     for (const p of [
       '/',
-      '/?category=news',
       '/ranking/?category=news',
       '/tag/x/',
       '/event/',
@@ -178,6 +200,19 @@ describe('gateway', () => {
       expect(response.body, path).toBe(`<h1>next:${path}</h1>`);
     }
     expect(hits).toEqual(paths.map((path) => `GET ${path}`));
+  });
+  it('redirects home page queries before Next, with the right status and caching', async () => {
+    hits = [];
+    const ranking = await app.inject('/?category=news&sort=tag');
+    expect(ranking.statusCode).toBe(308);
+    expect(ranking.headers.location).toBe('/ranking/?category=news&sort=tag');
+    expect(ranking.headers['cache-control']).toBe('public, max-age=86400');
+    const search = await app.inject('/?q=%E9%A2%B1%E9%A2%A8');
+    expect(search.statusCode).toBe(307);
+    expect(search.headers.location).toBe('/search/?q=%E9%A2%B1%E9%A2%A8');
+    expect(search.headers['cache-control']).toBeUndefined();
+    expect(hits).toHaveLength(0);
+    expect((await app.inject('/?utm_source=x')).body).toBe('<h1>next:/?utm_source=x</h1>');
   });
   it('rejects non-GET methods on pages', async () => {
     expect((await app.inject({ method: 'POST', url: '/' })).statusCode).toBe(405);

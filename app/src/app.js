@@ -232,8 +232,11 @@ export async function buildApp(
   });
   const handler = async (request, reply) => {
     const legacy = legacyRoute(request.raw.url);
-    if (legacy?.status === 301)
-      return reply.code(301).header('location', legacy.location).header('cache-control', 'public, max-age=86400').send();
+    if (legacy && 'location' in legacy) {
+      // 307 carries a search query; only the permanent ones are cacheable.
+      if (legacy.status !== 307) reply.header('cache-control', 'public, max-age=86400');
+      return reply.code(legacy.status).header('location', legacy.location).send();
+    }
     if (legacy?.status === 410) return reply.code(410).header('cache-control', 'public, max-age=86400').send(legacy.body);
     const path = request.url.split('?')[0];
     // /api/ itself is the docs page (Next) with its share image; anything else under /api/ is JSON.

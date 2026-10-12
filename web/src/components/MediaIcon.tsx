@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
 
 // The single place that turns a media id into its mark. Logos live in
@@ -23,13 +22,16 @@ export default function MediaIcon({
   const box = { width: px(size), height: px(size) };
   if (src) {
     return (
-      <Image
+      // A plain img: these are tiny local files Next would not optimise anyway
+      // (unoptimized), and next/image adds a client component per icon to the
+      // page payload; the home page alone draws a few hundred.
+      <img
         src={src}
         alt=""
         width={size}
         height={size}
-        unoptimized
         loading="lazy"
+        decoding="async"
         style={box}
         className={`shrink-0 rounded-sm object-contain ${mediaIconClass(media)} ${className}`}
       />

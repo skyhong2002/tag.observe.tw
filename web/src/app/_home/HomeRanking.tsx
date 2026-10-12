@@ -3,11 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Sparkline from '@/components/Sparkline';
-import type { Ranking, RankingEntry } from '@/lib/api';
-import { fetchHomeRanking, rankingReady } from '@/lib/home-ranking.mts';
+import { fetchHomeRanking, type HomeRankingRow, homeRankingRows } from '@/lib/home-ranking.mts';
 import styles from './home.module.css';
 
-function RankChange({ e }: { e: RankingEntry }) {
+function RankChange({ e }: { e: HomeRankingRow }) {
   if (e.new) return <span className={styles.rankNew}>新</span>;
   if (e.rank24h === null || e.rank24h === e.rank) return <span className={styles.rankSame}>－</span>;
   const up = e.rank24h > e.rank;
@@ -19,15 +18,16 @@ function RankChange({ e }: { e: RankingEntry }) {
   );
 }
 
-export default function HomeRanking({ initialRanking }: { initialRanking: Ranking | null }) {
-  const [recovered, setRecovered] = useState<Ranking | null>(null);
+/** `initialRows` is null when the server render could not get a ready snapshot; the panel then retries on its own. */
+export default function HomeRanking({ initialRows }: { initialRows: HomeRankingRow[] | null }) {
+  const [recovered, setRecovered] = useState<HomeRankingRow[] | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [retryKey, setRetryKey] = useState(0);
   const [pending, setPending] = useState(false);
-  const ranking = rankingReady(initialRanking) ? initialRanking : recovered;
+  const rows = initialRows ?? recovered;
 
   useEffect(() => {
-    if (ranking || attempt >= 3) return;
+    if (rows || attempt >= 3) return;
     let active = true;
     const controller = new AbortController();
     let deadline: ReturnType<typeof setTimeout> | undefined;
@@ -37,7 +37,7 @@ export default function HomeRanking({ initialRanking }: { initialRanking: Rankin
         deadline = setTimeout(() => controller.abort(), 8000);
         try {
           const result = await fetchHomeRanking(controller.signal);
-          if (active) setRecovered(result);
+          if (active) setRecovered(homeRankingRows(result));
         } catch {
           if (active) setAttempt((value) => value + 1);
         } finally {
@@ -53,9 +53,9 @@ export default function HomeRanking({ initialRanking }: { initialRanking: Rankin
       clearTimeout(deadline);
       controller.abort();
     };
-  }, [ranking, attempt, retryKey]);
+  }, [rows, attempt, retryKey]);
 
-  if (!ranking)
+  if (!rows)
     return (
       <div className={styles.notice}>
         <p role="status">{pending || attempt < 3 ? '排行暫時無法取得，正在自動重試…' : '排行暫時無法取得，請稍後再試。'}</p>
@@ -72,10 +72,10 @@ export default function HomeRanking({ initialRanking }: { initialRanking: Rankin
         </button>
       </div>
     );
-  if (ranking.entries.length === 0) return <p className={styles.notice}>目前沒有可列出的熱門關鍵字。</p>;
+  if (rows.length === 0) return <p className={styles.notice}>目前沒有可列出的熱門關鍵字。</p>;
   return (
     <ol className={styles.ranking}>
-      {ranking.entries.slice(0, 8).map((e, i) => (
+      {rows.map((e, i) => (
         <li key={e.tag}>
           <Link href={`/tag/${encodeURIComponent(e.tag)}/`}>
             <span className={styles.rank}>{String(i + 1).padStart(2, '0')}</span>
@@ -84,11 +84,11 @@ export default function HomeRanking({ initialRanking }: { initialRanking: Rankin
                 {e.tag} <RankChange e={e} />
               </strong>
               <small>
-                {Object.keys(e.media).length} 家媒體 · {e.count} 篇
+                {e.mediaCount} 家媒體 · {e.count} 篇
               </small>
             </span>
             <span className={styles.rankTrend}>
-              {e.trend && e.trend.length > 1 && <Sparkline values={e.trend.map((p) => p.average24h)} className="h-6 w-14" />}
+              {e.trend.length > 1 && <Sparkline values={e.trend} className="h-6 w-14" />}
               <span className={styles.burst} title="分數">
                 {e.normalized.toFixed(1)}
               </span>
