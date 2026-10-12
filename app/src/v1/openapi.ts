@@ -108,6 +108,7 @@ const schemas: Record<string, Schema> = {
     active: ref('VocabularyActive'),
     sourceConsistency: str('唯讀水位線加重讀；舊文與刪除依 tag 範圍在七天內對帳，不是全表同一時刻的交易快照'),
     sourceAsOf: obj({
+      pendingTags: int('尚待重算的詞群；正常輪次應為0'),
       newArticleWatermark: str(),
       observedAt: time(),
       bootstrapStartedAt: time(),

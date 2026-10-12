@@ -86,3 +86,5 @@ SQL逐句900ms上限、每句後休息100ms、程序nice15、idle I/O、低cgrou
 每筆changes增加 `active`：upsert按該世代發布時的同一180天/頻率/噪音條件判定，absence固定false。下游仍可把所有changes存DB，但只對active=true更新比對索引；active=false必須移出比對集。低頻詞僅因超過180天而失去資格，也會在下一次快速層補發active=false的upsert，沒有新來源文章也能正確退場。
 
 manifest.statistics另列 fullFileBytes / activeFileBytes / changeFileBytes（gzip實體分頁大小）；不把邏輯JSON大小或估計值當作磁碟大小。
+
+快速層保留最後30秒發布已完成的changes；若大量新詞仍在pending，會先發布已重算部分、其餘下輪續跑，避免一直重算卻永不發布。日誌與sourceAsOf.pendingTags揭露積壓量；水位代表已掃描的文章ID，不代表所有pending詞都已重算。正常負載需維持pendingTags=0。

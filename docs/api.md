@@ -180,6 +180,7 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/current'
 | `active.excludeNoise` | boolean |  |
 | `sourceConsistency` | string | 唯讀水位線加重讀；舊文與刪除依 tag 範圍在七天內對帳，不是全表同一時刻的交易快照 |
 | `sourceAsOf` | object |  |
+| `sourceAsOf.pendingTags` | integer | 尚待重算的詞群；正常輪次應為0 |
 | `sourceAsOf.newArticleWatermark` | string |  |
 | `sourceAsOf.observedAt` | string (ISO 時間) |  |
 | `sourceAsOf.bootstrapStartedAt` | string (ISO 時間) |  |

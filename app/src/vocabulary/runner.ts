@@ -76,6 +76,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
     if (ms > 1000) throw new VocabularyPaused('query-latency');
     return result;
   };
+  const workBudget = Math.max(0, (options.maxDurationMs ?? (options.mode === 'fast' ? 180000 : 6 * 3600000)) - 30000);
   const exact = async (tag: string) => {
     try {
       return await query(() => aggregateRange(db, null, tag, true));
@@ -99,6 +100,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
   const sweep = async (key: string, quota: number) => {
     let processed = 0;
     while (processed < quota) {
+      if (key !== 'bootstrapCursor' && Date.now() - started >= workBudget) return false;
       const cursor = aggregate.get<{ tag: string; key: string }>(key);
       const upper = await query(() => upperTag(db, cursor?.tag ?? null, size));
       if (upper === undefined) {
@@ -163,6 +165,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       aggregate.db.prepare('DELETE FROM seen WHERE article_id<?').run(lower);
     });
     while (true) {
+      if (!needsFull && Date.now() - started >= workBudget) break;
       const pending = aggregate.db.prepare('SELECT group_key,tag FROM pending ORDER BY priority DESC LIMIT 1').get();
       if (!pending) break;
       const terms = await exact(String(pending.tag));
@@ -190,7 +193,9 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
           : { action: 'absent-from-index', label: payload.label, id: createHash('sha256').update(payload.label).digest('hex') };
       }
     }
+    const pendingTags = Number(aggregate.db.prepare('SELECT COUNT(*) n FROM pending').get()!.n);
     const sourceAsOf = {
+      pendingTags,
       newArticleWatermark: aggregate.get('watermark'),
       observedAt: new Date().toISOString(),
       bootstrapStartedAt: aggregate.get('startedAt'),
@@ -207,7 +212,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
     const firstObserved = aggregate.get<number>('firstNewTagObservedAt');
     const firstObservedToPublishedMs = firstObserved === null ? null : Date.now() - firstObserved;
     aggregate.db.exec('DELETE FROM changes');
-    aggregate.set('firstNewTagObservedAt', null);
+    if (!pendingTags) aggregate.set('firstNewTagObservedAt', null);
     aggregate.set('publishedId', manifest.id);
     await store.prune();
     const result = {
@@ -215,6 +220,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       manifest,
       elapsedMs: Date.now() - started,
       firstObservedToPublishedMs,
+      pendingTags,
       terms: aggregate.count(),
       startedAt: aggregate.get('startedAt'),
       lastFullReconcileAt: aggregate.get('lastFullReconcileAt'),

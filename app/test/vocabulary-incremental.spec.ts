@@ -115,12 +115,22 @@ describe.skipIf(process.env.VOCABULARY_INTEGRATION !== '1')('read-only MariaDB s
       expect((await store.changes(head, late)).entries[0]).toMatchObject({ term: { label: '爆紅事件', articleCount: 1 } });
       await runVocabulary(reader, { ...opts, mode: 'fast' });
       expect((await store.changes(late)).snapshot.id).toBe(late);
+      await writer.query('INSERT INTO articles VALUES(18),(19),(20)');
+      await writer.query(
+        "INSERT INTO article_tags VALUES(18,'新事件甲','2026-10-02'),(19,'新事件乙','2026-10-02'),(20,'新事件丙','2026-10-02')",
+      );
+      expect(await runVocabulary(reader, { ...opts, mode: 'fast', maxDurationMs: 30000 })).toMatchObject({
+        status: 'published',
+        pendingTags: 3,
+      });
+      expect(await runVocabulary(reader, { ...opts, mode: 'fast' })).toMatchObject({ status: 'published', pendingTags: 0 });
+      const beforeReconcile = (await store.changes(late)).snapshot.id;
       await writer.query("DELETE FROM article_tags WHERE BINARY tag=BINARY 'AI'");
       await writer.query("UPDATE article_tags SET published_at='2026-10-03' WHERE BINARY tag=BINARY 'ai'");
       await runVocabulary(reader, { ...opts, mode: 'reconcile' });
       await runVocabulary(reader, opts);
       const daily = await store.current();
-      const changes = await store.changes(late, daily.id);
+      const changes = await store.changes(beforeReconcile, daily.id);
       expect(changes.entries).toContainEqual({
         action: 'absent-from-index',
         active: false,
