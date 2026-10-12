@@ -1,0 +1,761 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useReaderPresence } from '@/components/ReaderPresence';
+import Wordmark from '@/components/Wordmark';
+import type { RankingEntry } from '@/lib/api';
+import { type CloudSizes, type PlacedWord, pictureBox } from '@/lib/word-cloud.mts';
+import { layoutCloud } from './cloud-layout';
+import { type Lens, type LiveboardSettings, pickLenses } from './settings';
+import styles from './simple.module.css';
+
+// The simple liveboard: the whole screen is the home page's cloud, the lens's
+// name in the middle and the keywords packed around it; the wordmark sits in
+// the corner. A lens (what is rising, what the blue-leaning or green-leaning
+// outlets write about, …) plays its last few hourly snapshots forward to now:
+// each word that stays drifts slowly as it grows or shrinks, staying near its
+// place; words that drop out shrink away and new ones grow in. Then the next
+// lens cross-fades in over the last. Tapping a word opens its tag page.
+// Settings: settings.ts, /liveboard/setting/.
+
+const SECOND = 1000;
+const HOUR = 3600 * SECOND;
+/** Keywords fetched per snapshot: enough for the largest `words` setting. */
+const WORDS = 80;
+/** The present snapshot is fetched again after this long; past ones never change. */
+const STALE = 2 * 60 * SECOND;
+/** How long a word takes to shrink away (keep in step with .word's transitions). */
+const LEAVE = 3200;
+/** Words are drawn at this size and scaled, so a change of size animates with the move. */
+const BASE = 40;
+
+export type Pictures = Record<string, { image?: string; emoji?: string; aspect?: number }>;
+interface Term {
+  tag: string;
+  weight: number;
+}
+/** One hourly snapshot of a lens. */
+interface Frame {
+  id: number;
+  computedAt: string;
+  terms: Term[];
+  /** Hours before now it was asked for (0 is the present); set when a lens's frames are gathered. */
+  back?: number;
+}
+interface RankingResponse {
+  snapshot: { id: number; computedAt: string };
+  entries: RankingEntry[];
+}
+
+const rankingUrl = (lens: Lens, at?: Date) =>
+  `/api/v1/ranking?category=${lens.category}&order=${lens.order}&limit=${WORDS + 8}${lens.order === 'growth' ? '&gate=all' : ''}${at ? `&at=${encodeURIComponent(at.toISOString())}` : ''}`;
+
+function frameOf(lens: Lens, ranking: RankingResponse): Frame {
+  const weight = (e: RankingEntry) =>
+    lens.order === 'growth' ? (e.signals?.growth ?? 0) : lens.order === 'burst' ? (e.burst ?? 0) : e.normalized;
+  const terms = ranking.entries
+    .map((e) => ({ tag: e.tag, weight: weight(e) }))
+    .filter((t) => t.weight > 0)
+    .slice(0, WORDS);
+  return { id: ranking.snapshot.id, computedAt: ranking.snapshot.computedAt, terms };
+}
+
+async function getJson<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(path, { cache: 'no-store', signal: AbortSignal.timeout(10 * SECOND) });
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Canvas units for a screen of this shape: 1200 across in landscape, 420 in portrait, at 100%. */
+function canvasFor(px: { width: number; height: number }, scale: number) {
+  const portrait = px.height > px.width * 1.1;
+  // A smaller scale lays out on a wider canvas, so every word and the centre come out smaller.
+  const width = Math.round(((portrait ? 420 : 1200) * 100) / scale);
+  const height = Math.round((width * px.height) / Math.max(1, px.width));
+  const short = Math.min(width, height);
+  const sizes: CloudSizes = {
+    min: portrait ? 12 : 16,
+    max: portrait ? 40 : Math.round(Math.min(84, short / 7)),
+    floor: portrait ? 10 : 13,
+    budget: 0.62,
+    curve: 0.85,
+    gap: portrait ? 8 : 14,
+    markGap: portrait ? 12 : 24,
+    irregular: 0.2,
+    scatter: portrait ? 900 : 2400,
+  };
+  return { width, height, title: Math.round(portrait ? 30 : Math.min(64, short * 0.09)), sizes };
+}
+
+/** Width of a line of text in font sizes (CJK one each, Latin a little over half). */
+const ems = (text: string) => Array.from(text).reduce((n, c) => n + (/[^\u0000-\u00ff]/.test(c) ? 1 : 0.6), 0);
+/** The lens's name, note and hour line in the middle of the cloud, and the box the words keep clear of. */
+function centreOf(lens: Lens, hours: string[], title: number, room: number) {
+  const note = Math.round(title * 0.4);
+  // The time line, one slot per step, each with its own stretch of the progress bar under it;
+  // smaller type when many long labels would not fit across.
+  const natural = ems(hours.join('')) + 1.4 * hours.length;
+  const hour = Math.min(Math.round(title * 0.36), (room * 0.9) / Math.max(1, natural));
+  const gap = hour * 1.4;
+  let x = 0;
+  const slots = hours.map((label) => {
+    const width = ems(label) * hour + gap;
+    const slot = { label, x, width };
+    x += width;
+    return slot;
+  });
+  const line = x;
+  for (const slot of slots) slot.x -= line / 2;
+  const width = Math.max(ems(lens.title) * title * 1.04, ems(lens.note) * note, line) + title * 0.6;
+  const height = title * 1.3 + note * 1.7 + (hours.length > 1 ? hour * 2.9 : 0);
+  return { title, note, hour, slots, width, height, clear: [{ x: -width / 2, y: -height / 2, width, height }] };
+}
+
+interface Badge {
+  text: string;
+  up: boolean;
+  /** Smaller type for a wide label (New), so its pill stays about as wide as the others. */
+  small?: boolean;
+}
+/** Room a change badge takes beside a word or a picture's name, in font sizes of that text. */
+const BADGE_ROOM = 1.3;
+/** Each word's change from the previous step: its place (▲3 / ▼2) or score (+12% / −8%); New when it was not ranked. */
+function badgesFor(change: LiveboardSettings['change'], terms: Term[], before: Term[] | undefined) {
+  const out = new Map<string, Badge>();
+  if (change === 'off' || !before) return out;
+  const was = new Map(before.map((t, i) => [t.tag, { rank: i, weight: t.weight }]));
+  for (const [rank, t] of terms.entries()) {
+    const prev = was.get(t.tag);
+    if (!prev) out.set(t.tag, { text: 'New', up: true, small: true });
+    else if (change === 'rank') {
+      const moved = prev.rank - rank;
+      if (moved) out.set(t.tag, { text: `${moved > 0 ? '▲' : '▼'}${Math.abs(moved)}`, up: moved > 0 });
+    } else {
+      const pct = prev.weight ? ((t.weight - prev.weight) / prev.weight) * 100 : 0;
+      if (Math.abs(pct) >= 1) out.set(t.tag, { text: `${pct > 0 ? '+' : '−'}${Math.round(Math.abs(pct))}%`, up: pct > 0 });
+    }
+  }
+  return out;
+}
+
+const hhmm = (iso: string) =>
+  new Date(iso).toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+/** "6 小時前", or in days once it is whole days. */
+const ago = (hours: number) => (hours % 24 ? `${hours} 小時前` : `${hours / 24} 天前`);
+
+type Phase = 'enter' | 'live' | 'exit';
+interface Shown extends PlacedWord {
+  /** The element's key: a word that has to move far leaves as one element and arrives as another. */
+  key: string;
+  /** Its lens, whose colour it keeps while it fades out under the next one. */
+  lens: Lens;
+  phase: Phase;
+  /** Enters or leaves by fading alone, without growing or shrinking (a change of lens). */
+  fade?: boolean;
+  /** How far it moved or grew in the latest change, in canvas units; settling waits longer for more. */
+  moved?: number;
+  /** Its change since the previous step, drawn beside it once the step has settled. */
+  badge?: Badge;
+}
+/** When a newcomer starts appearing, in seconds after the change: on a new lens soon and close
+ *  together; on a new hour once the words that stay have mostly moved. Word and settleMs share it. */
+const enterDelay = (fade: boolean | undefined, index: number) => (fade ? 0.4 + (index % 12) * 0.06 : 1 + (index % 12) * 0.08);
+/** Share of an eased transition after which the eye sees no more change: a word travelling or
+ *  resizing is watched for most of it; a newcomer only grows from a small size, so it looks
+ *  done sooner still (measured: the stay then starts within ~0.3 s of the last visible change). */
+const SEEN = { move: 0.65, grow: 0.42 };
+/** How long until the words look settled, in ms, so an hour's stay starts counting then rather than
+ *  at the very end of the eased tails (keep in step with Word's transitions and .word). */
+function settleMs(words: Shown[], first = false) {
+  if (first) return 1.8 * SEEN.grow * SECOND;
+  let end = 0;
+  words.forEach((w, i) => {
+    const seconds =
+      w.phase === 'enter'
+        ? enterDelay(w.fade, i) + (w.fade ? 1 : 3) * SEEN.grow
+        : w.phase === 'exit'
+          ? (w.fade ? 1.2 : 1.8) * SEEN.grow
+          : // A nudge of a few units looks done long before the 3 s are up; a long move takes most of it.
+            w.moved
+            ? Math.min(3 * SEEN.move, 0.6 + w.moved / 40)
+            : 0;
+    end = Math.max(end, seconds);
+  });
+  return end * SECOND;
+}
+/** A word that would travel further than this share of the canvas width fades out and in instead. */
+const FAR = 0.25;
+/** What is on screen: a lens, its frames, and which frame is showing. `run` changes with every lens. */
+interface Playing {
+  run: number;
+  lens: Lens;
+  frames: Frame[];
+  frame: number;
+}
+
+/** Whether the site's dark theme is on: <html data-theme>, set by the root layout and ThemeSync. */
+function useDarkTheme() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () => setDark(root.dataset.theme === 'dark');
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
+}
+
+function Clock() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 10 * SECOND);
+    return () => clearInterval(id);
+  }, []);
+  if (!now) return null;
+  const parts = new Intl.DateTimeFormat('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return (
+    <span className="tabular-nums">
+      {get('month')}/{get('day')}（{get('weekday').replace('週', '')}） {get('hour')}:{get('minute')}
+    </span>
+  );
+}
+
+export default function SimpleBoard({
+  initial,
+  pictures: allPictures,
+  today: initialToday,
+  settings,
+}: {
+  /** A lens's present ranking, fetched with the page. */
+  initial: { lens: string; ranking: RankingResponse } | null;
+  pictures: Pictures;
+  /** Articles collected today (/api/v1/media-stats), refreshed every two minutes. */
+  today: number | null;
+  settings: LiveboardSettings;
+}) {
+  const presence = useReaderPresence();
+  const [today, setToday] = useState(initialToday);
+  useEffect(() => {
+    const id = setInterval(
+      async () => {
+        if (document.hidden) return;
+        const stats = await getJson<{ totals: { today: number } }>('/api/v1/media-stats');
+        if (stats) setToday(stats.totals.today);
+      },
+      2 * 60 * SECOND,
+    );
+    return () => clearInterval(id);
+  }, []);
+  const lenses = useMemo(() => pickLenses(settings.lenses), [settings.lenses]);
+  const dark = useDarkTheme();
+  const tint = (lens: Lens) => (dark ? lens.dark : lens.accent);
+  const pictures = settings.pictures ? allPictures : NO_PICTURES;
+  const frame = useRef<HTMLDivElement>(null);
+  const [px, setPx] = useState<{ width: number; height: number } | null>(null);
+  const [playing, setPlaying] = useState<Playing | null>(null);
+  const [words, setWords] = useState<Shown[]>([]);
+  const cache = useRef(new Map<string, { at: number; frame: Frame | null }>());
+  const seeded = useRef(false);
+  if (!seeded.current) {
+    seeded.current = true;
+    const lens = lenses.find((l) => l.key === initial?.lens);
+    if (lens && initial?.ranking.entries.length)
+      cache.current.set(`${lens.key}@now`, { at: Date.now(), frame: frameOf(lens, initial.ranking) });
+  }
+
+  useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setPx((old) => (old && Math.abs(old.width - width) < 2 && Math.abs(old.height - height) < 2 ? old : { width, height }));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // Plays the lenses in turn: fetch a lens's frames (the next one is fetched
+  // while the present one holds), cross-fade to the oldest frame, step forward
+  // to now, hold, and go on.
+  useEffect(() => {
+    let cancelled = false;
+    let wake: () => void = () => {};
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const id = setTimeout(resolve, ms);
+        wake = () => {
+          clearTimeout(id);
+          resolve();
+        };
+      });
+    const snapshot = async (lens: Lens, hoursBack: number, now: number) => {
+      // Past snapshots are filed under their hour, so a later turn reuses them.
+      const key = hoursBack ? `${lens.key}@${Math.floor((now - hoursBack * HOUR) / HOUR)}` : `${lens.key}@now`;
+      const hit = cache.current.get(key);
+      if (hit && (hoursBack || Date.now() - hit.at < STALE)) return hit.frame;
+      const ranking = await getJson<RankingResponse>(rankingUrl(lens, hoursBack ? new Date(now - hoursBack * HOUR) : undefined));
+      const got = ranking?.entries.length ? frameOf(lens, ranking) : null;
+      if (got || !hit) cache.current.set(key, { at: Date.now(), frame: got });
+      return got ?? hit?.frame ?? null;
+    };
+    const framesOf = async (lens: Lens) => {
+      const now = Date.now();
+      const all = await Promise.all(
+        Array.from({ length: settings.history + 1 }, async (_, i): Promise<Frame | null> => {
+          const back = (settings.history - i) * settings.interval;
+          const f = await snapshot(lens, back, now);
+          return f && { ...f, back };
+        }),
+      );
+      // Oldest first, one per snapshot, words only.
+      return all.filter((f, i): f is Frame => !!f?.terms.length && all.findIndex((g) => g?.id === f.id) === i);
+    };
+    // Resolves once a frame's animation is over (or after 15 s, should its layout never come).
+    const settled = (key: string) =>
+      settledFrames.current.has(key)
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            const id = setTimeout(resolve, 15 * SECOND);
+            settleWaiters.current.set(key, () => {
+              clearTimeout(id);
+              resolve();
+            });
+          });
+    const play = async () => {
+      let run = 0;
+      let index = 0;
+      let next = framesOf(lenses[0]);
+      let empty = 0;
+      while (!cancelled) {
+        const lens = lenses[index];
+        const frames = await next;
+        if (cancelled) return;
+        const after = (index + 1) % lenses.length;
+        if (!frames.length) {
+          // Nothing for this lens (or the API is down): try the next, resting after a full round.
+          index = after;
+          next = framesOf(lenses[index]);
+          if (++empty >= lenses.length) {
+            empty = 0;
+            await sleep(30 * SECOND);
+          }
+          continue;
+        }
+        empty = 0;
+        run += 1;
+        setPlaying({ run, lens, frames, frame: 0 });
+        // Each frame: let the animation finish, then stay `step` seconds (`hold` for the present).
+        for (let f = 0; f < frames.length; f++) {
+          if (f) setPlaying((p) => (p && p.run === run ? { ...p, frame: f } : p));
+          await settled(`${run}:${f}`);
+          if (cancelled) return;
+          if (f === frames.length - 1) next = framesOf(lenses[after]);
+          await sleep((f === frames.length - 1 ? settings.hold : settings.step) * SECOND);
+          if (cancelled) return;
+        }
+        index = after;
+      }
+    };
+    if (lenses.length) play();
+    return () => {
+      cancelled = true;
+      wake();
+    };
+  }, [lenses, settings.history, settings.interval, settings.step, settings.hold]);
+
+  const canvas = useMemo(() => (px ? canvasFor(px, settings.scale) : null), [px, settings.scale]);
+  const shownWords = useRef(words);
+  shownWords.current = words;
+  const serial = useRef(0);
+  /** The run (lens turn) the words on screen were laid out for. */
+  const laidRun = useRef(0);
+  // Frames (`run:frame`) whose animation has finished, so their stay may start counting; the
+  // player waits on these, and the progress bar fills only from then.
+  const [settledFrame, setSettledFrame] = useState<string | null>(null);
+  const settledFrames = useRef(new Set<string>());
+  const settleWaiters = useRef(new Map<string, () => void>());
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const settleAfter = (key: string, ms: number) => {
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      if (settledFrames.current.size > 50) settledFrames.current.clear();
+      settledFrames.current.add(key);
+      setSettledFrame(key);
+      settleWaiters.current.get(key)?.();
+      settleWaiters.current.delete(key);
+    }, ms);
+  };
+
+  // Each frame is the snapshot that stood that many hours ago (the hour's last one).
+  const hourLabels = useMemo(
+    () => (playing?.frames ?? []).map((f, i, all) => (i === all.length - 1 || !f.back ? '現在' : ago(f.back))),
+    [playing?.frames],
+  );
+  const centre = useMemo(
+    () => (canvas && playing ? centreOf(playing.lens, hourLabels, canvas.title, canvas.width) : null),
+    [canvas, playing?.lens, hourLabels],
+  );
+
+  // Lays the frame out around the centre and hands out phases. A new hour of
+  // the same lens keeps each word near where it was: words still there move
+  // and resize, new ones grow in, gone ones shrink away. A new lens only
+  // fades: the old words fade out where they are and the new lens's words
+  // fade in just after, so the screen is never empty and the two clouds
+  // barely overlap. Words keep their order in the list, newcomers at the
+  // end: moving an element in the DOM would cut its transition short and
+  // make it jump.
+  useEffect(() => {
+    if (!canvas || !playing || !centre) return;
+    const { terms } = playing.frames[playing.frame];
+    const badges = badgesFor(settings.change, terms, playing.frames[playing.frame - 1]?.terms);
+    const room = settings.change === 'off' ? 0 : BADGE_ROOM;
+    const newLens = laidRun.current !== 0 && laidRun.current !== playing.run;
+    const before = shownWords.current.filter((w) => w.phase !== 'exit');
+    const anchors =
+      before.length && !newLens ? new Map(before.map((w) => [w.label, { x: w.x + w.width / 2, y: w.y + w.height / 2 }])) : undefined;
+    let live = true;
+    layoutCloud(
+      terms.slice(0, settings.words).map((t) => {
+        const p = pictures[t.tag];
+        return { label: t.tag, count: t.weight, square: !!(p?.image || p?.emoji), aspect: p?.image ? p.aspect : undefined, extra: room };
+      }),
+      canvas.width,
+      canvas.height,
+      { ...canvas.sizes, words: settings.words, clear: centre.clear, anchors },
+    ).then((placed) => {
+      if (!live || !placed.length) return;
+      laidRun.current = playing.run;
+      const old = shownWords.current;
+      const kept = old.filter((w) => w.phase !== 'exit');
+      const fresh = !kept.length;
+      const shown = (w: PlacedWord, phase: Phase, key = `${w.label}~${++serial.current}`): Shown => ({
+        ...w,
+        key,
+        lens: playing.lens,
+        phase,
+        badge: badges.get(w.label),
+      });
+      const frameKey = `${playing.run}:${playing.frame}`;
+      if (fresh) {
+        setWords(placed.map((w) => shown(w, 'live')));
+        settleAfter(frameKey, settleMs([], true));
+      } else if (newLens) {
+        const leaving = old.flatMap((w): Shown[] => (w.phase === 'enter' ? [] : [{ ...w, phase: 'exit', fade: true }]));
+        const all = [...leaving, ...placed.map((w) => ({ ...shown(w, 'enter'), fade: true }))];
+        setWords(all);
+        settleAfter(frameKey, settleMs(all));
+      } else {
+        const at = new Map(placed.map((w) => [w.label, w]));
+        const showing = new Set(kept.map((w) => w.label));
+        const done = new Set<string>();
+        const far = canvas.width * FAR;
+        const arrivals: Shown[] = [];
+        const next = old.flatMap((w): Shown[] => {
+          const now = at.get(w.label);
+          if (w.phase === 'exit') {
+            // A word coming back grows in where it now belongs (it is invisible on the way).
+            if (!now || showing.has(w.label) || done.has(w.label)) return [w];
+            done.add(w.label);
+            return [shown(now, 'enter', w.key)];
+          }
+          if (!now) return w.phase === 'live' ? [{ ...w, phase: 'exit', fade: false }] : [];
+          done.add(w.label);
+          const distance = Math.hypot(now.x + now.width / 2 - (w.x + w.width / 2), now.y + now.height / 2 - (w.y + w.height / 2));
+          if (distance > far) {
+            arrivals.push(shown(now, 'enter'));
+            return [{ ...w, phase: 'exit', fade: false }];
+          }
+          const moved = Math.max(
+            Math.abs(now.x - w.x),
+            Math.abs(now.y - w.y),
+            Math.abs(now.width - w.width),
+            Math.abs(now.height - w.height),
+          );
+          return [{ ...shown(now, w.phase, w.key), moved }];
+        });
+        // Newcomers go at the end so no element already drawn moves in the DOM.
+        const all = [...next, ...arrivals, ...placed.filter((w) => !done.has(w.label)).map((w) => shown(w, 'enter'))];
+        setWords(all);
+        settleAfter(frameKey, settleMs(all));
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, [canvas, playing, pictures, centre, settings.words, settings.change]);
+
+  // Newcomers mount small and clear, then turn live on the next frames so they
+  // grow in; the leavers are dropped once they have shrunk away.
+  useEffect(() => {
+    if (!words.some((w) => w.phase === 'enter' || w.phase === 'exit')) return;
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => setWords((ws) => ws.map((w) => (w.phase === 'enter' ? { ...w, phase: 'live' } : w))));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [words]);
+  const leaving = words.some((w) => w.phase === 'exit');
+  useEffect(() => {
+    if (!leaving) return;
+    const drop = setTimeout(() => setWords((ws) => ws.filter((w) => w.phase !== 'exit')), LEAVE);
+    return () => clearTimeout(drop);
+  }, [leaving]);
+
+  const lens = playing?.lens ?? lenses[0];
+  const updated = playing?.frames.at(-1)?.computedAt;
+  return (
+    <main className={styles.board} style={{ '--ui': settings.scale / 100 } as React.CSSProperties}>
+      <header className={styles.header}>
+        {/* The wordmark leads to the board's settings. */}
+        <Link href="/liveboard/setting/" className={styles.brand} aria-label="即時看板設定">
+          <Wordmark className={styles.wordmark} />
+          <span>同一件事，各家怎麼說</span>
+        </Link>
+        <div className={styles.side}>
+          {/* As on the full board: who is reading now, the day's articles, and when this lens was last ranked. */}
+          <div className={styles.stats}>
+            <span title={presence.status}>
+              <span className={styles.live} data-on={presence.counted || undefined} aria-hidden />
+              此刻在線 <b>{presence.count ?? '—'}</b> 人
+            </span>
+            <span className={styles.wide}>
+              今日收錄 <b>{today?.toLocaleString() ?? '—'}</b> 篇
+            </span>
+            {updated && (
+              <span>
+                排行更新 <b>{hhmm(updated)}</b>
+              </span>
+            )}
+            <Clock />
+          </div>
+          <div className={styles.dots} aria-hidden>
+            {lenses.map((l) => (
+              <span key={l.key} style={l.key === lens?.key ? { background: tint(lens), width: 18 } : undefined} />
+            ))}
+          </div>
+        </div>
+      </header>
+      <div ref={frame} className={styles.frame}>
+        {canvas && (
+          <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} className={styles.cloud} aria-label={`${lens?.title ?? ''}文字雲`}>
+            {playing && centre && (
+              <g
+                key={`centre-${playing.run}`}
+                className={styles.fadeIn}
+                transform={`translate(${canvas.width / 2} ${canvas.height / 2 - centre.height / 2})`}
+              >
+                <text
+                  y={centre.title * 1.0}
+                  fontSize={centre.title}
+                  textAnchor="middle"
+                  fontWeight={700}
+                  fill={tint(playing.lens)}
+                  letterSpacing="0.04em"
+                >
+                  {playing.lens.title}
+                </text>
+                <text y={centre.title * 1.3 + centre.note * 1.25} fontSize={centre.note} textAnchor="middle" className={styles.note}>
+                  {playing.lens.note}
+                </text>
+                {centre.slots.length > 1 && (
+                  <g transform={`translate(0 ${centre.title * 1.3 + centre.note * 1.7})`} className={styles.hours}>
+                    {centre.slots.map((slot, i) => {
+                      const now = i === playing.frame;
+                      const bar = {
+                        x: slot.x + centre.hour * 0.35,
+                        width: slot.width - centre.hour * 0.7,
+                        y: centre.hour * 2.05,
+                        height: centre.hour * 0.22,
+                      };
+                      return (
+                        <g key={slot.label} opacity={i > playing.frame ? 0.45 : 1}>
+                          <text
+                            x={slot.x + slot.width / 2}
+                            y={centre.hour * 1.3}
+                            fontSize={centre.hour}
+                            textAnchor="middle"
+                            fill={now ? tint(playing.lens) : undefined}
+                            fontWeight={now ? 700 : 400}
+                          >
+                            {slot.label}
+                          </text>
+                          <rect {...bar} rx={bar.height / 2} className={styles.track} />
+                          {i < playing.frame && <rect {...bar} rx={bar.height / 2} fill={tint(playing.lens)} opacity={0.35} />}
+                          {now && settledFrame === `${playing.run}:${i}` && (
+                            // Fills over the time this hour (or the present) stays, once its animation is over.
+                            <rect
+                              key={`${playing.run}-${i}`}
+                              {...bar}
+                              rx={bar.height / 2}
+                              fill={tint(playing.lens)}
+                              className={styles.fill}
+                              style={{ animationDuration: `${i === centre.slots.length - 1 ? settings.hold : settings.step}s` }}
+                            />
+                          )}
+                        </g>
+                      );
+                    })}
+                  </g>
+                )}
+              </g>
+            )}
+            <g className={styles.fadeIn}>
+              {words.map((w, i) => (
+                <Word key={w.key} word={w} picture={pictures[w.label]} colour={tint(w.lens)} index={i} />
+              ))}
+            </g>
+          </svg>
+        )}
+      </div>
+    </main>
+  );
+}
+const NO_PICTURES: Pictures = {};
+
+function Word({ word, picture, colour, index }: { word: Shown; picture?: Pictures[string]; colour?: string; index: number }) {
+  const k = word.fontSize / BASE;
+  const image = picture?.image || picture?.emoji;
+  // Text sits at its box's left edge, a picture at its centre, so both scale in place.
+  const x = image ? word.x + word.width / 2 : word.x + 2;
+  const small = word.phase !== 'live';
+  // Text grows from its middle rather than its corner when it enters or leaves.
+  const cx = image ? 0 : (word.width - 4) / 2;
+  const cy = image ? word.height / 2 : (word.fontSize * 1.6) / 2;
+  const s = small && !word.fade ? 0.3 : 1;
+  const style = {
+    transform: `translate(${x + cx * (1 - s)}px, ${word.y + cy * (1 - s)}px) scale(${k * s})`,
+    opacity: small ? 0 : 1,
+    // A change of lens: the old words fade out over 1.2 s and the new ones start fading in before they are gone, a little apart.
+    ...(word.fade
+      ? {
+          transitionProperty: 'opacity',
+          transitionDuration: word.phase === 'enter' ? '1s' : '1.2s',
+          transitionTimingFunction: 'ease',
+          transitionDelay: word.phase === 'enter' ? `${enterDelay(true, index)}s` : '0s',
+        }
+      : // Moves first; newcomers grow in once the leavers have mostly gone, a little apart.
+        { transitionDelay: word.phase === 'enter' ? `${enterDelay(false, index)}s` : '0s' }),
+  };
+  const href = `/tag/${encodeURIComponent(word.label)}/`;
+  // Text leaves the room it was given for the badge free.
+  const textWidth = (word.width - 4 - (image ? 0 : (word.extra ?? 0) * word.fontSize)) / k;
+  // The word (or a picture's name under it) and its change badge, centred together: a word in the
+  // room it was given, a name under its picture. The pair slides as the badge's width changes.
+  const box = image ? pictureBox(word.label, BASE, picture?.aspect) : null;
+  // A picture's name keeps at least ~9 units on screen however small the face is drawn.
+  const caption = box ? Math.max(box.caption, 9 / k) : 0;
+  // The badge is a small pill (tinted for up and new, grey for down) so it never reads as part of the word.
+  const size = box ? Math.max(caption * 0.68, 7 / k) : Math.max(BASE * 0.26, 8 / k);
+  const gap = box ? caption * 0.3 : BASE * 0.14;
+  const pad = size * 0.4;
+  const textSize = word.badge?.small ? size * 0.8 : size;
+  const badgeText = word.badge ? ems(word.badge.text) * textSize : 0;
+  const badgeWidth = word.badge ? gap + badgeText + 2 * pad : 0;
+  const shift = box ? -badgeWidth / 2 : Math.max(0, ((word.extra ?? 0) * BASE - badgeWidth) / 2);
+  const label = box ? (
+    <text y={box.pictureHeight + caption * 1.05} fontSize={caption} textAnchor="middle" fill={colour ?? 'currentColor'}>
+      {word.label}
+    </text>
+  ) : (
+    <text y={BASE * 1.25} fontSize={BASE} textLength={textWidth} lengthAdjust="spacingAndGlyphs" fill={colour ?? 'currentColor'}>
+      {word.label}
+    </text>
+  );
+  const mark = word.badge && (
+    <BadgePill
+      text={word.badge.text}
+      up={word.badge.up}
+      colour={colour}
+      x={(box ? (ems(word.label) * caption) / 2 : textWidth) + gap}
+      // Level with the middle of the word, or of the picture's name.
+      middle={box ? box.pictureHeight + caption * 0.65 : BASE * 0.8}
+      size={size}
+      textSize={textSize}
+      width={badgeText + 2 * pad}
+      shown={word.phase === 'live'}
+    />
+  );
+
+  return (
+    <Link href={href} aria-label={word.label} className={styles.link} tabIndex={word.phase === 'exit' ? -1 : undefined}>
+      <g className={styles.word} style={style}>
+        <rect x={image ? -word.width / 2 / k : -2 / k} width={word.width / k} height={word.height / k} fill="transparent" />
+        {box && <Picture box={box} picture={picture} />}
+        <g className={styles.shift} style={{ transform: `translate(${shift}px, 0px)` }}>
+          {label}
+          {mark}
+        </g>
+      </g>
+    </Link>
+  );
+}
+
+function BadgePill({
+  text,
+  up,
+  colour,
+  x,
+  middle,
+  size,
+  textSize,
+  width,
+  shown,
+}: {
+  text: string;
+  up: boolean;
+  colour?: string;
+  x: number;
+  middle: number;
+  size: number;
+  /** The label's type size; the pill keeps the height `size` gives every badge. */
+  textSize: number;
+  width: number;
+  shown: boolean;
+}) {
+  const height = size * 1.45;
+  return (
+    <g className={`${styles.badge} ${up ? '' : styles.down}`} opacity={shown ? 1 : 0}>
+      <rect x={x} y={middle - height / 2} width={width} height={height} rx={height / 2} fill={up ? colour : undefined} fillOpacity={0.14} />
+      <text x={x + width / 2} y={middle + textSize * 0.36} fontSize={textSize} textAnchor="middle" fill={up ? colour : undefined}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
+/**
+ * A tag's picture (its name is drawn by Word): a person's sketch as on its page
+ * (components/TagPerson.tsx), already painted (?layer=color: orange strokes on
+ * the white person), so it reads the same on light and dark pages; or another
+ * tag's place or logo (already orange) or emoji.
+ */
+function Picture({ box, picture }: { box: ReturnType<typeof pictureBox>; picture?: Pictures[string] }) {
+  return picture?.image ? (
+    <image
+      href={`${picture.image}${picture.image.includes('?') ? '&' : '?'}layer=color`}
+      x={-box.pictureWidth / 2}
+      width={box.pictureWidth}
+      height={box.pictureHeight}
+    />
+  ) : (
+    <text y={box.side * 0.82} fontSize={box.side * 0.82} textAnchor="middle">
+      {picture?.emoji}
+    </text>
+  );
+}

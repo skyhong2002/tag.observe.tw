@@ -130,4 +130,21 @@ describe('word-cloud size range', () => {
     expect(logo.width).toBeCloseTo(pictureBox(logo.label, logo.fontSize, 4).width);
     expect(logo.width).toBeGreaterThan(logo.height);
   });
+  it('puts anchored words back near where they were', () => {
+    const terms = Array.from({ length: 24 }, (_, i) => ({ label: `詞${i}`, count: 24 - i }));
+    const first = layoutWordCloud(terms, 600, 300, { min: 12, max: 32, words: 24 });
+    const centre = (w: (typeof first)[number]) => ({ x: w.x + w.width / 2, y: w.y + w.height / 2 });
+    const anchors = new Map(first.map((w) => [w.label, centre(w)]));
+    // The order shuffles (as from one hour to the next); without anchors the words move far.
+    const next = terms.map((t, i) => ({ ...t, count: i % 2 ? t.count + 6 : t.count }));
+    const moved = layoutWordCloud(next, 600, 300, { min: 12, max: 32, words: 24, anchors, anchorReach: 100 });
+    const near = moved.filter((w) => {
+      const a = anchors.get(w.label);
+      return a && Math.hypot(centre(w).x - a.x, centre(w).y - a.y) <= 100;
+    });
+    expect(near.length).toBeGreaterThanOrEqual(moved.length * 0.75);
+    for (const a of moved)
+      for (const b of moved)
+        if (a !== b) expect(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y).toBe(true);
+  });
 });

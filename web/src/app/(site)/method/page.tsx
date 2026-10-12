@@ -6,6 +6,7 @@ import {
   GroupMethod,
   HomeMethod,
   JournalistMethod,
+  LiveboardMethod,
   MediaMethod,
   MediaOverviewMethod,
   MediaSourcesMethod,
@@ -73,6 +74,15 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
   },
   { id: 'journalist', title: '記者', pages: [['/journalist/', '記者']], body: <JournalistMethod /> },
   { id: 'group', title: '標籤群組', pages: [['/group/', '標籤群組']], body: <GroupMethod /> },
+  {
+    id: 'liveboard',
+    title: '即時看板',
+    pages: [
+      ['/liveboard/', '即時看板'],
+      ['/liveboard/setting/', '看板設定'],
+    ],
+    body: <LiveboardMethod />,
+  },
   { id: 'picture', title: '標籤的圖', pages: [['/', '首頁文字雲']], body: <PictureMethod /> },
   {
     id: 'writing',

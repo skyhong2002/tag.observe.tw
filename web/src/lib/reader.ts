@@ -19,7 +19,14 @@ export type Save = {
   article?: { id: number; media: string; mediaTitle: string; title: string; url: string; publishedAt: string } | null;
   event?: { id: number; tags: string[]; lastTime: string } | null;
 };
-export type Prefs = { theme?: 'light' | 'dark' | null; analyticsOptOut?: boolean; hiddenMedia?: string[]; history?: boolean };
+export type Prefs = {
+  theme?: 'light' | 'dark' | null;
+  analyticsOptOut?: boolean;
+  hiddenMedia?: string[];
+  history?: boolean;
+  /** /liveboard/'s settings (app/liveboard/settings.ts). */
+  liveboard?: Record<string, unknown> | null;
+};
 
 export const FOLLOW_NOUN: Record<FollowKind, string> = { tag: '標籤', media: '媒體', journalist: '記者', event: '事件' };
 

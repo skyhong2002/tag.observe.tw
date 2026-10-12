@@ -32,6 +32,26 @@ describe('reader request parsing', () => {
     expect(parsePrefs({ theme: 'dark', hiddenMedia: ['udn', 'udn'] }, known)).toEqual({ theme: 'dark', hiddenMedia: ['udn'] });
     expect(typeof parsePrefs({ hiddenMedia: ['nope'] }, known)).toBe('string');
     expect(typeof parsePrefs({ colour: 'red' }, known)).toBe('string');
+    const board = {
+      mode: 'simple',
+      lenses: ['growth', 'blue', 'growth'],
+      pictures: false,
+      history: 3,
+      interval: 6,
+      step: 4,
+      hold: 12,
+      words: 32,
+      scale: 100,
+      change: 'rank',
+    };
+    expect(parsePrefs({ liveboard: board }, known)).toEqual({ liveboard: { ...board, lenses: ['growth', 'blue'] } });
+    expect(parsePrefs({ liveboard: null }, known)).toEqual({ liveboard: null });
+    expect(typeof parsePrefs({ liveboard: { ...board, hold: 1 } }, known)).toBe('string');
+    expect(typeof parsePrefs({ liveboard: { ...board, scale: 200 } }, known)).toBe('string');
+    expect(typeof parsePrefs({ liveboard: { ...board, interval: 5 } }, known)).toBe('string');
+    expect(typeof parsePrefs({ liveboard: { ...board, change: 'both' } }, known)).toBe('string');
+    expect(typeof parsePrefs({ liveboard: { ...board, lenses: [] } }, known)).toBe('string');
+    expect(typeof parsePrefs({ liveboard: { ...board, extra: 1 } }, known)).toBe('string');
     expect(parseReport({ articleId: 1, kind: 'tags', tags: [' a ', 'a', 'b'], message: '' })).toEqual({
       articleId: 1,
       kind: 'tags',

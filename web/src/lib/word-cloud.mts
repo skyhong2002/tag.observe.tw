@@ -13,6 +13,9 @@ export interface CloudTerm {
   square?: boolean;
   /** …or a picture this many times wider than tall (a wordmark logo). */
   aspect?: number;
+  /** Room kept after a term's text, in font sizes of that text, for something drawn beside it (a change
+   *  badge): after a word, or on both sides of a picture's centred name. */
+  extra?: number;
 }
 export interface PlacedWord extends CloudTerm {
   x: number;
@@ -53,9 +56,9 @@ export const pictureBox = (label: string, size: number, aspect = 1) => {
   };
 };
 const boxOf = (term: CloudTerm, size: number): [number, number] => {
-  if (!term.square && !term.aspect) return [widthOf(term.label, size), size * 1.6];
-  const { width, height } = pictureBox(term.label, size, term.aspect);
-  return [width, height];
+  if (!term.square && !term.aspect) return [widthOf(term.label, size) + (term.extra ?? 0) * size, size * 1.6];
+  const { width, height, caption } = pictureBox(term.label, size, term.aspect);
+  return [term.extra ? Math.max(width, widthOf(term.label, caption) + 2 * term.extra * caption) : width, height];
 };
 const widthOf = (label: string, size: number) =>
   Array.from(label).reduce(
@@ -90,6 +93,12 @@ export interface CloudSizes {
   gap?: number;
   /** Space kept between words and the hole/clear boxes (0 by default: words may touch the mark). */
   markGap?: number;
+  /** Where words sat in the previous frame (their box centres): each one listed is put back as near
+   *  there as it fits (shrinking up to 30% to stay), within `anchorReach`, before the usual centre-out search, so an animated
+   *  cloud reads as the same cloud changing rather than a new one. */
+  anchors?: ReadonlyMap<string, { x: number; y: number }>;
+  /** How far from its anchor a word may land, in viewBox units (a fifth of the canvas width by default). */
+  anchorReach?: number;
 }
 export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, sizes: CloudSizes = { min: 12, max: 29 }): PlacedWord[] {
   if (width < 40 || height < 30 || !(sizes.max >= sizes.min && sizes.min > 0)) return [];
@@ -102,6 +111,7 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
         count: term.count,
         ...(term.square ? { square: true } : {}),
         ...(term.aspect ? { aspect: term.aspect } : {}),
+        ...(term.extra ? { extra: term.extra } : {}),
       });
   }
   const sorted = [...unique.values()]
@@ -127,22 +137,47 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
   // Words keep `gap` from each other (1) and `markGap` from the mark's cells (2).
   const span = (from: number, to: number, n: number) => [Math.max(0, Math.floor(from / CELL)), Math.min(n, Math.ceil(to / CELL))];
   const gap = sizes.gap ?? GAP,
-    markGap = sizes.markGap ?? 0,
-    reach = Math.max(gap, markGap);
-  const free = (x: number, y: number, w: number, h: number) => {
-    const [c0, c1] = span(x - reach, x + w + reach, cols),
-      [r0, r1] = span(y - reach, y + h + reach, rows);
-    const [i0, i1] = span(x - gap, x + w + gap, cols),
-      [j0, j1] = span(y - gap, y + h + gap, rows);
-    const [m0, m1] = span(x - markGap, x + w + markGap, cols),
-      [n0, n1] = span(y - markGap, y + h + markGap, rows);
-    for (let r = r0; r < r1; r++)
-      for (let c = c0; c < c1; c++) {
+    markGap = sizes.markGap ?? 0;
+  // Summed-area tables of the two kinds of taken cell, so testing a box costs four lookups however
+  // large it is; rebuilt (one pass over the grid) only after a word has been placed.
+  const stride = cols + 1;
+  const words1 = new Int32Array(stride * (rows + 1)),
+    marks2 = new Int32Array(stride * (rows + 1));
+  let stale = true;
+  const index = () => {
+    for (let r = 0; r < rows; r++) {
+      let a = 0,
+        b = 0;
+      for (let c = 0; c < cols; c++) {
         const t = taken[r * cols + c];
-        if (t === 1 && r >= j0 && r < j1 && c >= i0 && c < i1) return false;
-        if (t === 2 && r >= n0 && r < n1 && c >= m0 && c < m1) return false;
+        if (t === 1) a++;
+        else if (t === 2) b++;
+        const at = (r + 1) * stride + c + 1;
+        words1[at] = words1[at - stride] + a;
+        marks2[at] = marks2[at - stride] + b;
       }
-    return true;
+    }
+    stale = false;
+  };
+  // Inlined cell spans (as in `span`), since this runs for every candidate point.
+  const lo = (v: number) => Math.max(0, Math.floor(v / CELL));
+  const free = (x: number, y: number, w: number, h: number) => {
+    if (stale) index();
+    const i0 = lo(x - gap),
+      i1 = Math.min(cols, Math.ceil((x + w + gap) / CELL)),
+      j0 = lo(y - gap),
+      j1 = Math.min(rows, Math.ceil((y + h + gap) / CELL));
+    if (i1 > i0 && j1 > j0 && words1[j1 * stride + i1] - words1[j0 * stride + i1] - words1[j1 * stride + i0] + words1[j0 * stride + i0])
+      return false;
+    const m0 = lo(x - markGap),
+      m1 = Math.min(cols, Math.ceil((x + w + markGap) / CELL)),
+      n0 = lo(y - markGap),
+      n1 = Math.min(rows, Math.ceil((y + h + markGap) / CELL));
+    return !(
+      m1 > m0 &&
+      n1 > n0 &&
+      marks2[n1 * stride + m1] - marks2[n0 * stride + m1] - marks2[n1 * stride + m0] + marks2[n0 * stride + m0]
+    );
   };
   if (hole) {
     const left = (width - hole.width) / 2,
@@ -182,10 +217,31 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
   for (const term of sorted) {
     let done = false;
     const natural = Math.max(floor, Math.round(naturalSize(term.count) * scale));
-    for (let fontSize = natural; fontSize >= floor && !done; fontSize--) {
-      // CJK ascent/descent can exceed the nominal em box in system fonts.
+    // An anchored word would rather stay near its old place a little smaller (down to 70%) than move far.
+    const anchor = sizes.anchors?.get(term.label);
+    if (anchor) {
+      const near = nearby(sizes.anchorReach ?? width / 5);
+      for (let fontSize = natural; fontSize >= Math.max(floor, Math.round(natural * 0.7)) && !done; fontSize--) {
+        const [w, h] = boxOf(term, fontSize);
+        for (let i = 0; i < near.length; i += 2) {
+          const x = Math.round(anchor.x + near[i] - w / 2),
+            y = Math.round(anchor.y + near[i + 1] - h / 2);
+          if (x < 4 || y < 4 || x + w > width - 4 || y + h > height - 4 || !free(x, y, w, h)) continue;
+          const [c0, c1] = span(x, x + w, cols),
+            [r0, r1] = span(y, y + h, rows);
+          for (let r = r0; r < r1; r++) taken.fill(1, r * cols + c0, r * cols + c1);
+          stale = true;
+          placed.push({ ...term, x, y, width: w, height: h, fontSize });
+          done = true;
+          break;
+        }
+      }
+    }
+    if (done) continue;
+    // The fits at one size, centre-out, or null. CJK ascent/descent can exceed the nominal em box in system fonts.
+    const fitsAt = (fontSize: number) => {
       const [w, h] = boxOf(term, fontSize);
-      if (w > width - 8 || h > height - 8 || failed.some(([fw, fh]) => w >= fw && h >= fh)) continue;
+      if (w > width - 8 || h > height - 8 || failed.some(([fw, fh]) => w >= fw && h >= fh)) return null;
       const fits: Array<[number, number]> = [];
       let until = centres.length;
       for (let i = 0; i < until && fits.length < 12; i += 2) {
@@ -197,15 +253,30 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
         fits.push([x, y]);
         if (fits.length === 1) until = Math.min(centres.length, i + 2 * (scatter + 1));
       }
-      if (fits.length) {
-        const [x, y] = fits[hash(term.label) % fits.length];
-        const [c0, c1] = span(x, x + w, cols),
-          [r0, r1] = span(y, y + h, rows);
-        for (let r = r0; r < r1; r++) taken.fill(1, r * cols + c0, r * cols + c1);
-        placed.push({ ...term, x, y, width: w, height: h, fontSize });
-        done = true;
+      if (fits.length) return { fontSize, w, h, fits };
+      failed.push([w, h]);
+      return null;
+    };
+    // The largest size that fits: most words fit at their natural size; for the rest a smaller box
+    // fits wherever a larger one does, so a binary search finds it in a few passes rather than one per size.
+    let best = fitsAt(natural);
+    if (!best)
+      for (let lo = floor, hi = natural - 1; lo <= hi; ) {
+        const mid = (lo + hi) >> 1;
+        const got = fitsAt(mid);
+        if (got) {
+          best = got;
+          lo = mid + 1;
+        } else hi = mid - 1;
       }
-      if (!done) failed.push([w, h]);
+    if (best) {
+      const { fontSize, w, h, fits } = best;
+      const [x, y] = fits[hash(term.label) % fits.length];
+      const [c0, c1] = span(x, x + w, cols),
+        [r0, r1] = span(y, y + h, rows);
+      for (let r = r0; r < r1; r++) taken.fill(1, r * cols + c0, r * cols + c1);
+      stale = true;
+      placed.push({ ...term, x, y, width: w, height: h, fontSize });
     }
   }
   return placed;
@@ -213,6 +284,20 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
 
 const CELL = 3,
   GAP = 3;
+/** Offsets within `reach` of a point as flat [dx, dy] pairs, nearest first (one grid per reach, kept). */
+const offsets = new Map<number, Float64Array>();
+function nearby(reach: number) {
+  const r = Math.max(CELL, Math.round(reach / CELL) * CELL);
+  let flat = offsets.get(r);
+  if (!flat) {
+    const points: Array<[number, number]> = [];
+    for (let dy = -r; dy <= r; dy += CELL) for (let dx = -r; dx <= r; dx += CELL) if (dx * dx + dy * dy <= r * r) points.push([dx, dy]);
+    points.sort((a, b) => a[0] ** 2 + a[1] ** 2 - (b[0] ** 2 + b[1] ** 2));
+    flat = new Float64Array(points.flat());
+    offsets.set(r, flat);
+  }
+  return flat;
+}
 /** A stable small number per label (FNV-1a), for choices that should not change between renders. */
 function hash(label: string) {
   let h = 2166136261;
@@ -221,7 +306,18 @@ function hash(label: string) {
 }
 /** Grid points as flat [x, y] pairs, nearest the centre first on an ellipse shaped like the canvas,
  *  its radius wobbling with the angle when `irregular` is set (fixed waves, so a layout is repeatable). */
+const centresCache = new Map<string, Float64Array>();
 function gridCentres(width: number, height: number, irregular: number) {
+  // The same canvas always gives the same order; an animated cloud lays out the same canvas again and again.
+  const key = `${width}x${height}~${irregular}`;
+  const hit = centresCache.get(key);
+  if (hit) return hit;
+  if (centresCache.size > 16) centresCache.clear();
+  const flat = sortedCentres(width, height, irregular);
+  centresCache.set(key, flat);
+  return flat;
+}
+function sortedCentres(width: number, height: number, irregular: number) {
   const points: Array<[number, number, number]> = [];
   for (let y = CELL / 2; y < height; y += CELL)
     for (let x = CELL / 2; x < width; x += CELL) {

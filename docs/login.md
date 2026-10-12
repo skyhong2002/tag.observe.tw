@@ -51,7 +51,7 @@
 | `GET /auth/me/suggestions` | 推薦追蹤：`starter`（焦點事件、升溫標籤、熱門媒體）、`related`（依已追蹤項目）、`reading`（只在開啟閱讀紀錄時有值，含 `otherSide`）。見下方〈推薦〉。 |
 | `GET/POST/DELETE /auth/me/feed-token` | 私人 RSS 網址 `/feeds/u/<token>.xml`；`POST` 建立或換新（舊網址立刻失效），`DELETE` 停用。 |
 | `GET/PUT /auth/me/saves` | 收藏。`PUT { kind: 'article' \| 'event', id, saved, note? }`，註記最多 500 字，每人最多 500 項。 |
-| `GET/PUT /auth/me/prefs` | 偏好（部分更新）：`theme`（`light`、`dark`、`null`）、`analyticsOptOut`、`hiddenMedia`、`history`。`history: false` 會刪除閱讀紀錄。 |
+| `GET/PUT /auth/me/prefs` | 偏好（部分更新）：`theme`（`light`、`dark`、`null`）、`analyticsOptOut`、`hiddenMedia`、`history`、`liveboard`（`/liveboard/setting/` 的看板設定：`mode`、`lenses`、`pictures`、`history`、`interval`、`step`、`hold`、`words`、`scale`、`change`，整組取代，`null` 清除）。`history: false` 會刪除閱讀紀錄。 |
 | `POST /auth/me/history`、`DELETE /auth/me/history`、`GET /auth/me/history/report` | 閱讀紀錄（`history` 開啟才記錄 `{ articleId }`）、清除、近 30 天報告。 |
 | `GET/POST /auth/me/api-keys`、`DELETE /auth/me/api-keys/:id` | 個人 API 金鑰，每人最多 3 把；`POST { label }` 回傳的 `key` 只出現這一次。 |
 | `GET/POST /auth/me/reports` | 回報文章錯誤：`{ articleId, kind: 'tags' \| 'byline' \| 'media' \| 'other', tags?, message }`，每人每天最多 20 次。 |

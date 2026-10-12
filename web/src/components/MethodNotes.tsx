@@ -10,6 +10,7 @@ export { CampBasis, EventMethod, EventThreadMethod } from './method/events';
 export { GroupMethod } from './method/groups';
 export { HomeMethod } from './method/home';
 export { JournalistMethod } from './method/journalists';
+export { LiveboardMethod } from './method/liveboard';
 export { CrawlerMethod, MediaMethod, MediaOverviewMethod, MediaSourcesMethod, TrafficCollectionMethod } from './method/media';
 export { ObserveMethod } from './method/observe';
 export { PictureMethod } from './method/pictures';

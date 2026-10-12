@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CAMP_FILL, CAMP_LABEL } from '@/components/CampBar';
 import { CampDot } from '@/components/EventCampDot';
@@ -594,8 +595,11 @@ export default function LiveBoard({
       <header className="shrink-0 border-b border-zinc-800">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-2 short:gap-4 short:px-4 short:py-1 portrait:gap-4 portrait:px-3">
           <div className="relative flex shrink-0 items-end">
-            <Wordmark className={`h-9 w-auto text-zinc-100 short:h-7 ${online ? '' : 'invisible'}`} />
-            <span role="status" className="absolute inset-0 flex items-center justify-center text-rose-400">
+            {/* The wordmark leads to the board's settings (/liveboard/setting/). */}
+            <Link href="/liveboard/setting/" aria-label="即時看板設定">
+              <Wordmark className={`h-9 w-auto text-zinc-100 short:h-7 ${online ? '' : 'invisible'}`} />
+            </Link>
+            <span role="status" className="pointer-events-none absolute inset-0 flex items-center justify-center text-rose-400">
               {!online && (
                 <>
                   <span className="sr-only">離線中嗚嗚嗚</span>
