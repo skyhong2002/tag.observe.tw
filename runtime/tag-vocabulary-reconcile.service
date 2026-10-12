@@ -1,0 +1,20 @@
+[Unit]
+Description=Read-only rolling tag vocabulary reconciliation (one seventh per day)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/deck/.local/share/tag-analysis/current
+EnvironmentFile=/home/deck/Projects/tag.analysis.tw/.env
+EnvironmentFile=/home/deck/.config/tag-vocabulary-export.env
+Environment=TAG_VOCABULARY_MAX_DURATION_MS=535000
+ExecStart=/home/deck/.local/bin/node tools/vocabulary-export.ts --execute --reconcile
+UMask=0077
+Nice=15
+IOSchedulingClass=idle
+CPUWeight=10
+IOWeight=10
+MemoryMax=1G
+TimeoutStartSec=540
+NoNewPrivileges=yes
+PrivateTmp=yes

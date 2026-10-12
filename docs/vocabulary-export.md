@@ -1,89 +1,88 @@
-# 共用詞彙快照（待完成容量審查，尚未部署）
+# 共用詞庫：唯讀增量與完整快照
 
-供 YouTube Board 等觀測工具同步 tag.observe.tw 維護的文章標籤。包含目前所有 `article_tags` 與現存 `articles` 的關聯，不限排名或最近窗口。這不是新建人工詞典：來源可能是文章關鍵字、編輯或規則補標，逐詞記者指派未知。封存且移出目前索引的文章不在涵蓋範圍。
+此 API 提供新文易數目前 `article_tags` 索引維護的**整個**標籤池：原文關鍵字、編輯修改與規則補充一律保留。沒有排名、日期或噪音過濾，也不假設每個詞由記者指派。來源是現有索引（不包含已移出索引的封存關聯），統計使用 `article_tags.published_at`。不讀取全文、作者聯絡資訊等私人資料。
 
-每個詞條以原始 UTF-8 字串的 SHA-256 作穩定 ID，大小寫/Unicode 字形不合併。字串改名是新 ID；沒有別名或人工 merge 的資訊時不自行推論。比對系統應另外保留詞庫版本及字串正規化規則。
+詞條 ID 為原始 UTF-8 字串 SHA-256，大小寫、Unicode 字形、空白原樣保留；噪音空字串也不靜默刪除。每詞保留 `articleCount`、`firstPublishedAt`、`lastPublishedAt`、`noise`、`noiseReasons`、`noEqual`。`noise` 沿用 `isTagNoise`；`noEqual` 依既有 no-equal-tags 完整字串規則，與噪音分開。沒有新增同義詞或自行合併字形。
 
-## 產生與服務
+## 不碰爬蟲寫入路徑
+
+採「水位線增量加週期對帳」，**不建 trigger，不改正式 schema，不在爬蟲交易寫 dirty table**。來源連線設定 `TRANSACTION READ ONLY`、單句 `max_statement_time=0.9` 秒。所有中間狀態、佇列、進度均在私有持久 volume 的 SQLite，沒有新增 DB 帳號或權限需求。
+
+首次建置沿 `tag_published(tag,published_at)` 的 tag key 範圍，從 1,000 個 collation 群組開始、最多 2,000；900 ms 超時就減半，單一大詞群改為 `(published_at,article_id)` keyset 分頁。統計對原始 BINARY tag 分組，保留同一 collation 群組中的大小寫變體。SQLite 以相同 MariaDB collation 的 weight key 對帳，checkpoint 與結果同一交易提交，可續跑。沒有整表 JOIN 或全量排序 SQL。安全閥目前 10,000,000 詞；超限中止並保留舊快照，**絕不發布截斷結果**。
+
+快速層每 10 分鐘讀取 `article_tags` 的 `article_tag(article_id,tag)` 索引。以上次文章 ID 水位倒退 2,000 個 ID 重讀，以 `(article_id,tag,published_at)` 本地記錄冪等去重；MAX(id) 只設定掃描上界，不宣稱它是 commit 順序。受影響詞群以索引重算絕對統計，再發布增量世代。水位線、重讀游標、待重算詞及尚未發布的 changes 都可續跑。保護條件下暫停會保留舊世代，下次補做。
+
+延後 commit 但仍在重讀區間的低 ID 可於下一輪補進；超過 2,000 個 ID 的長交易、對舊文章補標、刊登時間修改與刪除依慢速對帳修正。這是有界 overlap 的限制，不是 CDC 的即時保證。十分快速層的目標是一次輪詢加執行時間；首頁過慢、DB 超時或積壓時會延後，不宣稱故障期間仍有硬性 10 分鐘 SLA。
+
+慢速層每日離峰處理約七分之一詞條的 tag 範圍，游標跨日續跑，正常運作下約七天完成一輪。刪除與舊文修改最晚在該範圍下次對帳反映；連續暫停會延後，須監測 `lastFullReconcileAt`。完整快照仍每天產生，不等同每天重掃來源。
+
+`sourceAsOf` 提供本輪 `observedAt`、新文章水位、首次建置起點與最近完整對帳時間。這是分批觀測的彙總，**不是整個來源在單一時刻的一致性交易快照**。
+
+## 完整快照與增量契約
+
+1. GET `/api/v1/vocabulary/snapshots/current` 取得最近一份**每日完整快照** manifest。它保持不可變，不因快速層發布而改 ID 或欄位。
+2. 固定 id，GET `/api/v1/vocabulary/snapshots/{id}?cursor=0`，依 `nextCursor` 逐頁落入本地 DB。每頁最多 500 詞。核對總詞數與完整 checksum 後原子切換。
+3. 每 10 分鐘 GET `/api/v1/vocabulary/changes?after=LOCAL_ID`，省略 target 才會取得**最新增量世代**。不要只比較 current.id，否則會漏掉日內新詞。
+4. 固定第一頁回傳的 `snapshot.id` 為 target，繼續 `changes?after=LOCAL_ID&target=TARGET&cursor=N`，直到 nextCursor=null。整批完成才把 LOCAL_ID 改為 TARGET。
+5. `snapshot` 可以是完整 manifest，或 `kind: "delta"` 的增量 metadata。後者有 id、previousId、baseSnapshotId、generatedAt、total、pageSize、changeCount、changePages、noisePolicyVersion、sourceAsOf，**沒有完整 pages / sha256**。delta ID 不可拿去下載完整 snapshot pages。
+6. changes 可跨多個世代；按世代時間及頁序依序套用。每頁最多500筆，在世代交界可能不足500筆。upsert 是絕對值，同詞可能重複；刪除為 `absent-from-index`，不推論編輯意圖。回應 snapshot.changeCount/changePages 描述目標單一世代，**不是整条跨代鏈的總頁數**，跨代讀取依 nextCursor。
+7. 保留最近三份每日完整快照與其後所有 delta（最多600世代的安全邊界）。超出保存範圍回409及 `resnapshotRequired:true`，重新載入 current。每天讀活躍子集對帳，完整池初次匯入後以changes維護；完整重抓用於封存/按需對帳及409復原，再接最新changes。
+
+每頁 checksum：`SHA256(JSON.stringify(entries) + "\n")`。完整 checksum：依 UTF-8 排序，逐詞 `JSON.stringify(term) + "\n"` 串接後 SHA256。驗證時包含新增欄位，不得自行移除 noise 欄位。檔案內部以 gzip 儲存，HTTP JSON 與 checksum 不受壓縮方式影響。
+
+公開 API 只讀取靜態檔，不觸發 SQL。錯誤不快取；current/未指定target的changes快取60秒，固定版本一天。500詞儲存頁最多2MB；5000詞HTTP回應建議18MB安全上限，manifest上限16MB；由於頁面包含 manifest，HTTP response body 的下游安全上限須至少18MB，不能維持舊2MB總回應上限。下游逐頁存DB，勿把全部詞放入記憶體。
+
+### 下游需配合的契約調整
+
+使用者已同意兩站支援大詞庫與分批匯入。相較原本250,000詞版本，下游須同步：
+
+- 容量安全閥10,000,000詞，最多20,000完整頁；changes單世代最多20,000,000筆，最多40,000頁。這是拒絕損毀輸入的安全閥，並非預期常態資料量。
+- 接受上述 noise、active、statistics、sourceAsOf 欄位，以及 kind=delta 的增量回應。
+- 不以完整 manifest validator 驗證 delta metadata；不要要求 current.id 每10分鐘改變。
+- 空標籤屬 noise，保留在資料庫但不進比對集。
+- 每頁/完整 hash 必須包含原始全部欄位。當地索引的大小寫合併不可改動來源 ID。
+- 使用既有服務白名單 token，遵守每服務6000次/分與合計9000次/分限流，遇429依Retry-After退避。
+
+兩個下游的程式修改由各自 thread 處理。本 repo 不修改它們的工作目錄。
+
+## 活躍子集與容量統計
+
+完整 manifest 的 `active` 提供另一組分頁目錄與 checksum；讀取 `/snapshots/{id}/active?cursor=N`。
+條件為非 noise、至少兩個 Unicode code points，且 articleCount≥3 **或** lastPublishedAt在180天內。不另計昂貴的逐詞180天COUNT；活躍子集由本地完整資料串流產生，無額外 SQL。
+
+`statistics` 列出 noise、noEqual、recent180、articleCount≥2/3/5、各門檻與最近180天的交集、各門檻或近期的合格比對詞數，以及 gzip頁面實體位元組。活躍子集只是便利索引，不改變完整詞庫。下游依自己記憶體預算由articleCount降序取用，未進集的詞仍保留可查，標示低頻或預算限制。
+
+## 操作與負載保護
 
 ```sh
-node tools/vocabulary-export.ts
-# 先檢查 preview；只有 operator 核准後才執行以下命令。
+# 唯讀有界樣本，不建立公開世代
+node --env-file=/home/deck/Projects/tag.analysis.tw/.env tools/vocabulary-export.ts
+# 首次完整建置 / 每日完整快照
 TAG_VOCABULARY_EXPORT_ENABLED=true node tools/vocabulary-export.ts --execute
+# 快速增量
+TAG_VOCABULARY_EXPORT_ENABLED=true node tools/vocabulary-export.ts --execute --fast
 ```
 
-執行時須提供 `TAG_DB_URL` 與 `TAG_VOCABULARY_EXPORT_DIR`。DB 使用唯讀交易，要求 InnoDB source、repeatable-read consistent snapshot。preview 先以 10 秒上限檢查引擎、EXPLAIN 與 covering-index 詞數探測；候選標籤超過 250000 時立即結束，退出碼 2，不執行全量 JOIN/filesort，也不寫檔。小型來源的實際聚合上限 30 秒、250000 詞；超限/失敗不發布半套資料。單一標籤不符合 schema、空值或不合法日期會拒絕整批並保留目前版本，避免靜默遺漏；需修復上游來源後重跑。已附離峰 systemd service/timer 範本但未安裝或啟用；production env 未修改。2026-10-12 僅執行下述有界唯讀 production preview。
+執行需 `TAG_DB_URL`、`TAG_VOCABULARY_EXPORT_DIR`。私有目錄 `/home/deck/tag-analysis-private/vocabulary` 權限0700，檔案0600，獨立於不可變release，不能放public/uploads。SQLite以OS檔鎖防重入；程序死亡自動釋放，不以過期秒數搶鎖。檔案與staging目錄fsync後rename，最後原子切換pointer。尚未成功發布的partial檔不會公開，SQLite保留續跑進度。
 
-export 目錄必須位於私有持久 volume，由產生器與 API 服務以相同受控使用者讀寫；檔案 0600。不要設為可任意上傳/修改的目錄。所有歷史快照保留以便證據回溯；清理策略另行審查。各頁寫到 staging，完成後 rename 目錄，最後原子替換 current pointer。各檔案及發布目錄會 fsync，再原子替換 pointer。鎖使用 exclusive file，內容記錄 pid、hostname、startedAt、snapshot id；程序異常退出留下鎖時，先依記錄在對應主機確認 pid 不存在、停用其他 publisher，再由 operator 手動刪除 `.publish.lock`；不要在仍有程序或容器使用該 volume 時清除，不能依時間自動搶鎖。原快照維持可讀，殘留 staging 目錄不會被 API 服務。
+SQL逐句900ms上限、每句後休息100ms、程序nice15、idle I/O、低cgroup weight。首次建置與產出期間每約2秒量測正式首頁；HTTP非200、TTFB>1000ms、磁碟可用低於4GiB就暫停。nice/ionice無法降低DB server內優先權，故不能取代SQL上限與首頁監測。
 
-正式啟用前需檢查查詢負載、volume 與可回退部署。回退可停用 export gate 並將 API env 移除（503），已下載的固定版本與歷史 evidence 不需刪除。
+快速層單輪時間有限，排程與慢速層共用鎖。日誌記錄耗時、SQL回傳列數（不是InnoDB實際掃描頁數）、新觀測關聯、query時間、首頁TTFB，以及第一次觀測新關聯至發布的時間。來源沒有commit時間欄位，**不能把 published_at/crawledAt 當成 DB commit 時間**；端到端寫入延遲以隔離fixture實測，正式流量只報可觀測延遲。
 
-## 同步契約
+部署使用 `scripts/install-service.sh`：先備份服務設定/current連結/私有SQLite，再建立不可變release、smoke test、原子切換、ready check；失敗回滾。此功能不改正式DB。回滾先停用詞庫timers，再還原gateway drop-in與前一release；不要刪除來源資料或共用checkout的未提交修改。
 
-1. GET `/api/v1/vocabulary/snapshots/current` 取得 manifest。
-2. 固定 id，依 `/api/v1/vocabulary/snapshots/{id}?cursor=0` 的 nextCursor 讀完。
-3. 每頁核对 SHA-256：JSON.stringify(entries) 加 LF；完整 checksum 則依快照排序，把每個 JSON.stringify(term) 加 LF 串接。
-4. 驗證總數/來源/schemaVersion/固定 id 後，再原子替換本機 current。途中錯誤繼續使用前一版本。
-5. 直接前一版本可用 `/api/v1/vocabulary/changes?after=OLD&target=NEW`；落後多版本回 409，重新全量讀取。
+基底：origin/main `aeab494be88c04fb02293f05fd437fa733cca92d`。首次有界preview 507詞/29ms；60秒續跑測試保存274,256詞、SQL累計10,710ms、最慢589ms、27次首頁TTFB最大541ms。最終完整容量與部署驗證另記於交付報告，這些有界數字不能冒充完整詞數。
 
-`absent-from-index` 只表示某词目前没有索引關聯，不代表記者/編輯刪除。保留歷史快照與既有影片證據。新增/更正統計也會出現在 upsert。
+正式排程：快速層每個整10分鐘（單輪175秒），舊資料對帳台北04:01（535秒、最多約七分之一詞），完整檔台北04:17（175秒）。三者共用防重入鎖，busy的快速層30秒後重試，最多5次/10分鐘。完整快照只讀本地彙總；每日對帳另用 `--reconcile`，避免每次產檔再掃來源。首次建置由operator以較長時間上限手動續跑，尚未建完前不啟用正式timers。
 
-公開端點僅讀受驗證分頁檔，每頁 500 詞，不在 HTTP request 中做全量 DB 聚合。未設定目錄回 503；尚未產生快照回 404。完整 OpenAPI 與 API 文件由既有 generator 產生。
+大詞庫建議分頁帶 `limit=5000&compact=1`（完整頁及active頁皆支援）：回應 snapshot 僅含 id/generatedAt/total/pageSize/sha256，避免每一頁重傳完整 checksum 目錄；entries/cursor/hash完全相同。先保存current完整manifest，再以它驗證精簡頁。這是可選的加法，未帶compact的既有500詞頁面契約保持不變。
 
+## 大詞庫的主要同步來源
 
-## 噪音欄位與相容性
+兩個下游主要下載 **active 子集**，完整快照仍保留供封存及低頻对帳（不必兩站每日重新抓完全部長尾詞）。每日讀active作比對索引對帳，完整池可首次匯入後持續用全部changes維護，完整重抓按需或409復原時進行。讀取一律使用已配置的服務白名單token。
 
-詞條新增 `noise`、`noiseReasons`、`noEqual`；manifest 新增 `noisePolicyVersion`。
-`noise` 完全沿用 `isTagNoise`：原因為 `empty`、`category`、`english-function-word`、`section-label`、`bare-year`。
-`noEqual` 用修剪前後空白的完整字串查 `no-equal-tags.json`，與既有標題補標邏輯一致。
-no-equal 中的人物、國家、政黨不一定是顯示噪音，兩種判定分開提供。所有標記詞仍完整保留。
-規則版本為 tag-noise 規則版本與 no-equal 清單的 SHA-256；修改判定邏輯需更新 `TAG_NOISE_RULE_VERSION`。
-標籤原字串、ID、大小寫、Unicode、500 詞分頁、checksum 演算法及 changes 契約均維持。
-兩個下游現有 validator 都保留並允許附加欄位，checksum 仍以整個詞條 JSON 驗證。
+完整與active分頁均支援 `limit=5000&compact=1`，預設仍500，相容舊客戶端；目前只接受500或5000，不接受任意中間值。`totalPages` 是預設500詞的頁數，`largePages.length` 是5000詞頁數，其內容是大頁checksum。使用active時讀active.largePages。cursor是所選limit的頁號，不能跨limit重用。HTTP提供 `Accept-Encoding: gzip` 協商壓縮，須解壓後再核對JSON checksum；磁碟仍只保留500詞gzip分頁，沒有重複一份5000詞檔案。
 
-## 2026-10-12 上線前檢查
+每筆changes增加 `active`：upsert按該世代發布時的同一180天/頻率/噪音條件判定，absence固定false。下游仍可把所有changes存DB，但只對active=true更新比對索引；active=false必須移出比對集。低頻詞僅因超過180天而失去資格，也會在下一次快速層補發active=false的upsert，沒有新來源文章也能正確退場。
 
-基底 `origin/main aeab494be88c04fb02293f05fd437fa733cca92d`；獨立 worktree `tag-vocabulary-release`。
-有界索引 probe 取得 250001 個 distinct 標籤後停止，耗時連 metadata/EXPLAIN 共 1234ms。
-此數字是候選 `article_tags` 字串數的截限結果，不是已驗證完整快照的精確詞數：資料庫 collation
-可能合併大小寫/字形，且尚未檢查孤立關聯。不能據此宣稱完整詞數或完整匯出檔案大小。
-EXPLAIN 估計掃描約 92148867 筆標籤關聯，使用 filesort，再逐筆 join `articles`。
-因此原本的單一全量聚合 SQL 不適合直接在正式服務執行；候選程式在聚合前中止，未發布快照。
-preview 前後首頁均 HTTP200，TTFB 分別 812ms／210ms；首次 probe 太短，沒有取得中途第二筆樣本。
-這些數字只能證明有界 probe 的負載，不能證明全量匯出負載合格。
-
-目前 producer 與 YouTube/Blog validators 都限制 250000 詞；YouTube 另有 2000000 字元 trie 預算，
-Blog 另有 64MB 快照及 1000000 trie nodes 預算。增加 producer cap 並不足以讓下游使用完整詞库。
-必須協調兩個下游的分批儲存與比對容量，並改成有界、可續跑的完整來源匯出，再實测完整詞數、
-頁數、檔案量及匯出期間首頁 TTFB。不可只放寬 timeout 或去除 cap，更不可過濾噪音來湊進容量。
-
-## 排程、私有儲存與部署前置條件
-
-`runtime/tag-vocabulary-export.timer` 固定台北 04:17（另加最多 180 秒隨機延遲），每日一次，
-`Persistent=false` 避免重開機在尖峰補跑。service 使用 Nice=15、idle I/O、低 cgroup weight、
-1GiB 記憶體上限與 5 分鐘程序上限；publisher 的 exclusive lock 防止同機/共用 volume 重入。
-注意 nice/ionice 只限制匯出程序，不會降低 MariaDB server 內查詢優先權；不能取代 SQL 負載驗證。
-
-容量與負載過關後才設定獨立私有環境檔 `/home/deck/.config/tag-vocabulary-export.env`（0600），
-含 `TAG_DB_URL`、`TAG_VOCABULARY_EXPORT_ENABLED=true`、`TAG_VOCABULARY_EXPORT_DIR`。
-目錄建議 `/home/deck/tag-analysis-private/vocabulary`（0700），與 release 分離；gateway 只需相同
-`TAG_VOCABULARY_EXPORT_DIR`，不需要 export gate。不得放在 public/、Next assets 或任意上傳目錄。
-以既有帳號也只執行 READ ONLY transaction；正式排程宜配置僅能讀兩個來源表的 DB 帳號。
-
-`scripts/install-service.sh` 已將 `tools/vocabulary-export.ts` 納入不可變 release；
-正式部署先備份 service/env/current pointer 再切換。
-timer 不可在第一份完整快照 checksum、下游相容性與負載驗收前啟用。回滾停用 timer，還原 gateway
-設定與上一個 current release；私有歷史 snapshot 檔案保持，不修改來源資料庫。
-
-本次未改 schema 或 DB 內容。既有最近成功完整備份為 2026-10-09T20:38:16Z（2026-10-10
-完成還原/NAS驗證）；2026-10-10T20:33:41Z 那份因隔離還原空間不足而標記 failed，不能當作驗證
-成功的備份。上線前須重新確認備份/可用空間；不因這份 API 候選而改寫現有備份政策。
-
-
-補測：加入期間取樣後，第二次低優先權 preview 的 preflight 為 1339ms、總計 1629ms，
-依舊在 250001 候選標籤停止。首頁 before/during/after 均 200，TTFB 分別 270/160/171ms。
-全量查詢並未執行，完整詞數、頁數、實體檔案大小與噪音總數尚無有效數字。
-
-候選驗證：unit project 1935 passed、29 skipped（未配置 DB 的既有整合案例）；TypeScript 通過。
-其中 API 文件、狀態頁、噪音與快照 27 項全通過。以 506 詞／2 頁合成快照直接跑兩站現有
-`validateManifest`／`validatePage` 均通過；這是附加欄位相容證據，不代表實際完整詞庫可匯入。
+manifest.statistics另列 fullFileBytes / activeFileBytes / changeFileBytes（gzip實體分頁大小）；不把邏輯JSON大小或估計值當作磁碟大小。

@@ -1,0 +1,9 @@
+[Unit]
+Description=Tag vocabulary new-article changes every ten minutes
+[Timer]
+OnCalendar=*-*-* *:0/10:00 Asia/Taipei
+AccuracySec=1s
+Persistent=false
+Unit=tag-vocabulary-fast.service
+[Install]
+WantedBy=timers.target

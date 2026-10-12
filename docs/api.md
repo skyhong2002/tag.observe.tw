@@ -60,7 +60,8 @@ for a in r.json()["articles"]:
 | --- | --- |
 | [`GET /api/v1/vocabulary/snapshots/current`](#api-v1-vocabulary-snapshots-current) | 目前完整索引詞彙快照 |
 | [`GET /api/v1/vocabulary/snapshots/{id}`](#api-v1-vocabulary-snapshots-id) | 讀取固定版本詞彙分頁 |
-| [`GET /api/v1/vocabulary/changes`](#api-v1-vocabulary-changes) | 直接前後版本的詞彙變更 |
+| [`GET /api/v1/vocabulary/snapshots/{id}/active`](#api-v1-vocabulary-snapshots-id-active) | 固定版本的活躍比對子集 |
+| [`GET /api/v1/vocabulary/changes`](#api-v1-vocabulary-changes) | 跨世代的詞彙增量變更 |
 | [`GET /api/status`](#-api-status) | API 回應狀態與各端點用途 |
 | [`GET /api/v1/nearline/archives`](#api-v1-nearline-archives) | 查詢封存 metadata 索引 |
 | [`GET /api/v1/nearline/status`](#api-v1-nearline-status) | 封存索引更新狀況 |
@@ -154,16 +155,48 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/current'
 | `generatedAt` | string (ISO 時間) |  |
 | `source` | string |  |
 | `attribution` | string |  |
-| `coverage` | string | 全期間目前 article_tags 與現存 articles 關聯，不包含已移出索引/封存資料 |
+| `coverage` | string | 全期間目前 article_tags 索引關聯，不包含已移出索引/封存資料 |
 | `provenance` | string |  |
 | `identity` | string |  |
 | `total` | integer |  |
 | `pageSize` | integer |  |
 | `pages` | string[] |  |
+| `totalPages` | integer | 500詞頁數 |
+| `largePages` | string[] |  |
 | `sha256` | string | 所有依 UTF-8 排序詞條 JSON 各加 LF 串接後 SHA-256 |
 | `changeCount` | integer |  |
 | `changePages` | string[] |  |
 | `noisePolicyVersion` | string | tag 噪音規則版本與 no-equal-tags 清單的 SHA-256；詞條判定固定於此快照 |
+| `active` | object |  |
+| `active.total` | integer |  |
+| `active.pages` | string[] |  |
+| `active.totalPages` | integer | 500詞頁數 |
+| `active.largePages` | string[] |  |
+| `active.fileBytes` | integer | 活躍500詞分頁gzip實體位元組 |
+| `active.sha256` | string | 活躍詞逐筆 JSON 加 LF 的 SHA-256 |
+| `active.days` | integer |  |
+| `active.minArticleCount` | integer |  |
+| `active.minLength` | integer |  |
+| `active.excludeNoise` | boolean |  |
+| `sourceConsistency` | string | 唯讀水位線加重讀；舊文與刪除依 tag 範圍在七天內對帳，不是全表同一時刻的交易快照 |
+| `sourceAsOf` | object |  |
+| `sourceAsOf.newArticleWatermark` | string |  |
+| `sourceAsOf.observedAt` | string (ISO 時間) |  |
+| `sourceAsOf.bootstrapStartedAt` | string (ISO 時間) |  |
+| `sourceAsOf.lastFullReconcileAt` | string (ISO 時間) \| null |  |
+| `sourceAsOf.reconciliationLagDays` | integer |  |
+| `sourceAsOf.overlapArticleIds` | integer |  |
+| `statistics` | object |  |
+| `statistics.noise` | integer |  |
+| `statistics.noEqual` | integer |  |
+| `statistics.recent180` | integer |  |
+| `statistics.articleCountAtLeast` | {鍵: integer} |  |
+| `statistics.articleCountAndRecent` | {鍵: integer} |  |
+| `statistics.eligibleAtThreshold` | {鍵: integer} |  |
+| `statistics.fileBytes` | integer | 完整／變更／活躍分頁 gzip 檔案合計位元組，不含 manifest |
+| `statistics.fullFileBytes` | integer | 完整分頁gzip大小 |
+| `statistics.activeFileBytes` | integer | 活躍分頁gzip大小 |
+| `statistics.changeFileBytes` | integer | 變更分頁gzip大小 |
 
 錯誤：`404` 尚無快照；`503` 匯出未設定或不可用。
 
@@ -175,12 +208,14 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/current'
 
 **讀取固定版本詞彙分頁**
 
-固定每頁最多 500 詞。下載端須核對每頁與完整快照 checksum、筆數，再原子發布。不同快照的 cursor 不得混用。
+預設每頁500詞，可用limit=5000；5000頁核對largePages。接受Accept-Encoding:gzip。下載端須核對每頁與完整快照 checksum、筆數，再原子發布。不同快照的 cursor 不得混用。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
 | `id` | 路徑 | string | current 回傳的快照 id，例：`12345678-1234-4234-8234-123456789abc` |
 | `cursor` | query | string | 上一頁 nextCursor；起始 0，例：`0` |
+| `limit` | query | integer | 500或5000；預設500。跨頁必須固定limit；5000請核對largePages，例：`5000` |
+| `compact` | query | string | 1：省略重複的完整 manifest，只回 snapshot id/時間/總數/pageSize/sha256；預設回完整manifest，例：`1` |
 
 範例：
 
@@ -193,22 +228,6 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `snapshot` | object |  |
-| `snapshot.schemaVersion` | integer |  |
-| `snapshot.id` | string | 不可變快照 UUID |
-| `snapshot.previousId` | string \| null | 直接前一版本 |
-| `snapshot.generatedAt` | string (ISO 時間) |  |
-| `snapshot.source` | string |  |
-| `snapshot.attribution` | string |  |
-| `snapshot.coverage` | string | 全期間目前 article_tags 與現存 articles 關聯，不包含已移出索引/封存資料 |
-| `snapshot.provenance` | string |  |
-| `snapshot.identity` | string |  |
-| `snapshot.total` | integer |  |
-| `snapshot.pageSize` | integer |  |
-| `snapshot.pages` | string[] |  |
-| `snapshot.sha256` | string | 所有依 UTF-8 排序詞條 JSON 各加 LF 串接後 SHA-256 |
-| `snapshot.changeCount` | integer |  |
-| `snapshot.changePages` | string[] |  |
-| `snapshot.noisePolicyVersion` | string | tag 噪音規則版本與 no-equal-tags 清單的 SHA-256；詞條判定固定於此快照 |
 | `entries` | object[] |  |
 | `entries[].id` | string | 原始 UTF-8 標籤字串的 SHA-256，大小寫及字形不合併 |
 | `entries[].label` | string | 原標籤 |
@@ -228,18 +247,64 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 
 快取：不可變，1 天。
 
+<a id="api-v1-vocabulary-snapshots-id-active"></a>
+
+### `GET /api/v1/vocabulary/snapshots/{id}/active`
+
+**固定版本的活躍比對子集**
+
+完整詞庫不刪詞。此子集只選非 noise、至少兩字，且 articleCount≥3 或最後刊登在快照前180天內者；不套下游記憶體上限。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | string | 完整快照 id，例：`12345678-1234-4234-8234-123456789abc` |
+| `cursor` | query | string | 起始0；使用 nextCursor 續讀，例：`0` |
+| `limit` | query | integer | 500或5000；預設500；大頁核對active.largePages，例：`5000` |
+| `compact` | query | string | 1：使用精簡快照資訊，例：`1` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8234-123456789abc/active'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshot` | object |  |
+| `subset` | object |  |
+| `entries` | object[] |  |
+| `entries[].id` | string | 原始 UTF-8 標籤字串的 SHA-256，大小寫及字形不合併 |
+| `entries[].label` | string | 原標籤 |
+| `entries[].articleCount` | integer | 快照時目前索引包含此詞的文章數 |
+| `entries[].firstPublishedAt` | string (ISO 時間) | 這些現存文章最早刊登時間，不是詞彙建立時間 |
+| `entries[].lastPublishedAt` | string (ISO 時間) | 這些現存文章最晚刊登時間 |
+| `entries[].origin` | string | 混合原文關鍵字、編輯、規則補標 |
+| `entries[].journalistAssigned` |  \| null | 目前無逐詞記者指派證據 |
+| `entries[].noise` | boolean | tag 的 isTagNoise 判定；標記但不刪除詞條 |
+| `entries[].noiseReasons` | string[] |  |
+| `entries[].noEqual` | boolean | 修剪前後空白後命中 no-equal-tags；不宜連結事件，並不等同顯示噪音 |
+| `cursor` | string |  |
+| `nextCursor` | string \| null |  |
+| `sha256` | string |  |
+
+錯誤：`400` id/cursor 無效；`404` 快照或活躍子集不存在；`503` 匯出不可用。
+
+快取：不可變，1 天。
+
 <a id="api-v1-vocabulary-changes"></a>
 
 ### `GET /api/v1/vocabulary/changes`
 
-**直接前後版本的詞彙變更**
+**跨世代的詞彙增量變更**
 
-只接受 target 的直接 previousId 或 target 本身。upsert 為新增/統計修正；absent-from-index 只代表不再出現在現存索引，不推論編輯刪除或停用。跨多個版本回 409，請下載完整快照。
+每十分鐘增量，依世代先後串接 changes；每頁最多500筆，世代交界可少於500筆。同詞可重複 upsert，為絕對統計值，按頁序冪等套用。snapshot 可為完整 manifest 或 kind=delta 的世代資訊，delta 沒有完整 pages。完整快照每天一次；保留最近三份完整快照及其間增量，過期鏈回409後重新下載 current。absent-from-index 不推論編輯刪除。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
-| `after` | query | string | 已持有的快照 id，必填，例：`12345678-1234-4234-8234-123456789abc` |
-| `target` | query | string | 目標快照；第一頁可省略，後續頁須固定回傳 snapshot.id |
+| `after` | query | string | 已套用的完整快照或增量世代 id，必填，例：`12345678-1234-4234-8234-123456789abc` |
+| `target` | query | string | 目標世代；第一頁省略讀取最新增量，後續頁固定回傳 snapshot.id |
 | `cursor` | query | string | 上一頁 nextCursor，例：`0` |
 
 範例：
@@ -253,22 +318,6 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/changes'
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `snapshot` | object |  |
-| `snapshot.schemaVersion` | integer |  |
-| `snapshot.id` | string | 不可變快照 UUID |
-| `snapshot.previousId` | string \| null | 直接前一版本 |
-| `snapshot.generatedAt` | string (ISO 時間) |  |
-| `snapshot.source` | string |  |
-| `snapshot.attribution` | string |  |
-| `snapshot.coverage` | string | 全期間目前 article_tags 與現存 articles 關聯，不包含已移出索引/封存資料 |
-| `snapshot.provenance` | string |  |
-| `snapshot.identity` | string |  |
-| `snapshot.total` | integer |  |
-| `snapshot.pageSize` | integer |  |
-| `snapshot.pages` | string[] |  |
-| `snapshot.sha256` | string | 所有依 UTF-8 排序詞條 JSON 各加 LF 串接後 SHA-256 |
-| `snapshot.changeCount` | integer |  |
-| `snapshot.changePages` | string[] |  |
-| `snapshot.noisePolicyVersion` | string | tag 噪音規則版本與 no-equal-tags 清單的 SHA-256；詞條判定固定於此快照 |
 | `entries` | object[] |  |
 | `cursor` | string |  |
 | `nextCursor` | string \| null |  |

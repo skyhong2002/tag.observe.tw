@@ -1,0 +1,9 @@
+[Unit]
+Description=Off-peak rolling tag reconciliation (Taipei 04:01)
+[Timer]
+OnCalendar=*-*-* 04:01:00 Asia/Taipei
+AccuracySec=1s
+Persistent=false
+Unit=tag-vocabulary-reconcile.service
+[Install]
+WantedBy=timers.target

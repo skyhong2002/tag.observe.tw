@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { gunzipSync } from 'node:zlib';
 import Fastify from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { registerVocabulary } from '../src/v1/vocabulary.ts';
@@ -48,7 +49,7 @@ describe('immutable full indexed vocabulary export', () => {
     expect(changes.entries.filter((entry) => 'action' in entry && entry.action === 'upsert')).toHaveLength(1);
     expect((await store.changes(second.id)).entries).toEqual([]);
     const third = await store.publish(async () => [row('AI')]);
-    await expect(store.changes(first.id, third.id)).rejects.toMatchObject({ code: 'resnapshot-required' });
+    expect((await store.changes(first.id, third.id)).nextCursor).toBe('1');
     expect((await store.changes(first.id, second.id)).entries).toEqual(changes.entries);
   });
   it('never replaces current on source failure, duplicate rows or invalid metadata', async () => {
@@ -90,7 +91,7 @@ describe('immutable full indexed vocabulary export', () => {
     for (const cursor of ['1', '-1', '1.2', '1e2', '../x'])
       await expect(store.page(manifest.id, cursor)).rejects.toMatchObject({ code: 'invalid' });
     const path = join(directory, manifest.id, 'terms-0.json');
-    const rows = JSON.parse(await readFile(path, 'utf8'));
+    const rows = JSON.parse(gunzipSync(await readFile(path + '.gz')).toString('utf8'));
     rows[0].label = 'B';
     await writeFile(path, `${JSON.stringify(rows)}\n`);
     await expect(store.page(manifest.id)).rejects.toMatchObject({ code: 'unavailable' });
@@ -105,9 +106,18 @@ describe('immutable full indexed vocabulary export', () => {
     expect(r.statusCode).toBe(200);
     expect(r.json().entries).toEqual([]);
     expect(r.headers['cache-control']).toContain('immutable');
+    const compact = await app.inject(`/api/v1/vocabulary/snapshots/${first.id}?compact=1`);
+    expect(compact.statusCode).toBe(200);
+    expect(compact.json().snapshot).toEqual({
+      id: first.id,
+      generatedAt: first.generatedAt,
+      total: first.total,
+      pageSize: first.pageSize,
+      sha256: first.sha256,
+    });
     await store.publish(async () => [row('A')]);
     await store.publish(async () => [row('B')]);
-    const changes = await app.inject(`/api/v1/vocabulary/changes?after=${first.id}`);
+    const changes = await app.inject(`/api/v1/vocabulary/changes?after=${randomUUID()}`);
     expect(changes.statusCode).toBe(409);
     expect(changes.json().resnapshotRequired).toBe(true);
     expect(changes.headers['cache-control']).toBe('no-store');
@@ -145,4 +155,30 @@ describe('shared noise policy and safe public projection', () => {
     await writeFile(join(directory, manifest.id, 'manifest.json'), JSON.stringify({ ...manifest, total: 501 }));
     await expect(store.current()).rejects.toMatchObject({ code: 'invalid' });
   });
+});
+
+it('serves verified 5000-term compact pages and negotiated gzip for full and active snapshots', async () => {
+  const { store, directory } = await setup(),
+    manifest = await store.publish(async () => Array.from({ length: 5001 }, (_, i) => row(`詞${i}`)));
+  expect(manifest).toMatchObject({ totalPages: 11, active: { total: 5001, totalPages: 11 } });
+  expect(manifest.largePages).toHaveLength(2);
+  const first = await store.page(manifest.id, '0', 'terms', true, 5000),
+    last = await store.page(manifest.id, '1', 'terms', true, 5000);
+  expect(first.entries).toHaveLength(5000);
+  expect(last.entries).toHaveLength(1);
+  expect(last.nextCursor).toBeNull();
+  expect(first.sha256).toBe(manifest.largePages![0]);
+  expect((await store.page(manifest.id, '0', 'active', true, 5000)).sha256).toBe(manifest.active!.largePages![0]);
+  const app = Fastify();
+  registerVocabulary(app, directory);
+  const r = await app.inject({
+    url: `/api/v1/vocabulary/snapshots/${manifest.id}/active?limit=5000&compact=1`,
+    headers: { 'accept-encoding': 'gzip' },
+  });
+  expect(r.statusCode).toBe(200);
+  expect(r.headers['content-encoding']).toBe('gzip');
+  expect(r.headers.vary).toBe('accept-encoding');
+  expect(JSON.parse(gunzipSync(r.rawPayload).toString()).entries).toHaveLength(5000);
+  expect((await app.inject(`/api/v1/vocabulary/snapshots/${manifest.id}?limit=5001`)).statusCode).toBe(400);
+  await app.close();
 });

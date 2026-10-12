@@ -1,11 +1,9 @@
 [Unit]
-Description=Daily off-peak tag vocabulary snapshot (Taipei 04:17)
-
+Description=Daily tag vocabulary full snapshot (Taipei 04:17)
 [Timer]
 OnCalendar=*-*-* 04:17:00 Asia/Taipei
-RandomizedDelaySec=180
+AccuracySec=1s
 Persistent=false
 Unit=tag-vocabulary-export.service
-
 [Install]
 WantedBy=timers.target
