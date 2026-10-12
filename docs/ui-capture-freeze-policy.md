@@ -1,5 +1,17 @@
 # UI capture during the backup retention freeze
 
+## Current override: no new capture
+
+The coordinator's subsequent notice reports 107.80 GiB free and explicitly
+prohibits **all new screenshots and captures**, regardless of load or the older
+small-batch thresholds below. Only existing-image offline review and small
+source/document edits are allowed. There must be no build output, export, large
+write, deletion or interference with `tag-backup`. A recovered disk reading does
+not lift this restriction; wait for the coordinator's explicit notice.
+
+The guard design below is retained as historical implementation documentation,
+not permission to start a batch under the current override.
+
 The coordinator has **not lifted the freeze**. No new build, image, Docker layer,
 data export, release copy or deployment is authorized by this document. Existing
 screenshots can continue to receive independent offline review. Screenshot
