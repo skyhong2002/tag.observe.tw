@@ -128,8 +128,12 @@ export class VocabularyAggregate {
     // Partial count changes remain covered by rolling reconciliation.
     this.transaction(() => {
       const cutoff = new Date(now.getTime() - 30 * 86400000).toISOString();
-      const previous = this.get<string>('active30CheckedAt');
-      const lower = previous ? new Date(Date.parse(previous) - 30 * 86400000).toISOString() : '';
+      const previous =
+        this.get<string>('active30CheckedAt') ??
+        this.get<string>('recentHydrationAsOf') ??
+        this.get<string>('startedAt') ??
+        now.toISOString();
+      const lower = new Date(Date.parse(previous) - 30 * 86400000).toISOString();
       const queue = this.db.prepare('INSERT INTO pending VALUES(?,?,0) ON CONFLICT(group_key) DO NOTHING');
       for (const row of this.db
         .prepare('SELECT t.label,group_key FROM terms t JOIN recent_counts r ON r.label=t.label WHERE r30>0 AND last_at>=? AND last_at<?')
