@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import AdminGate from '../AdminGate';
 import AvatarReview from '../avatars/AvatarReview';
 import TagGroupEditor from '../tag-groups/TagGroupEditor';
 import TagVisualReview from '../tag-visuals/TagVisualReview';
@@ -44,10 +45,10 @@ export default async function TagsPage({ searchParams }: { searchParams: Promise
       {view === 'submissions' && <TagSubmissions />}
       {view === 'groups' && <TagGroupEditor key={tag} initialTag={tag} />}
       {view === 'relations' && (
-        <>
+        <AdminGate next={`/admin/tags/?${new URLSearchParams({ view: 'relations', ...(tag ? { tag } : {}) })}`}>
           <TagArticles initialTag={tag} />
           <WritingPeople />
-        </>
+        </AdminGate>
       )}
       {view === 'avatars' && <AvatarReview />}
       {view === 'visuals' && <TagVisualReview />}
