@@ -5,7 +5,15 @@ import type { JobQueue } from '../admin/routes.ts';
 import type { SessionUser } from '../auth/google-login.ts';
 import { inkImage } from '../avatars/ink.ts';
 import type { Db } from '../db/client.ts';
-import { tagAvatarCandidates, tagPeople, tagPictureVotes, tagVisualCandidates, tagVisuals } from '../db/schema.ts';
+import {
+  tagAvatarCandidates,
+  tagGroupMembers,
+  tagPeople,
+  tagPeopleLog,
+  tagPictureVotes,
+  tagVisualCandidates,
+  tagVisuals,
+} from '../db/schema.ts';
 import { recolourLogo } from '../tag-visuals/recolour.ts';
 import { visualMime } from '../v1/tag-visual.ts';
 import { refreshPages } from './refresh.ts';
@@ -85,7 +93,7 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
             value: null,
             note: c.pageUrl ? (c.license ?? 'Wikimedia Commons') : c.file,
             pageUrl: c.pageUrl || null,
-            image: imagePath(tag, c.rank),
+            image: `${imagePath(tag, c.rank)}?kind=avatar`,
             large: null,
             uploadedBy: c.uploadedBy,
           }))
@@ -110,7 +118,7 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
             value: c.value,
             note: c.note,
             pageUrl: c.pageUrl,
-            image: Number(c.hasImage) ? imagePath(tag, c.rank) : null,
+            image: Number(c.hasImage) ? `${imagePath(tag, c.rank)}?kind=visual` : null,
             large: Number(c.hasLarge) ? imagePath(tag, c.rank, 'large') : null,
             uploadedBy: c.uploadedBy,
           }));
@@ -169,6 +177,47 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
         .send(c.image);
     },
   );
+
+  // Identity corrections survive automatic rechecks; keep historical portraits
+  // and votes separate from the non-person picture candidates.
+  app.put<{ Params: { tag: string }; Body: { kind?: unknown } }>('/auth/pictures/:tag/kind', async (request, reply) => {
+    const user = await signedIn(request, reply, true);
+    if (!user) return reply;
+    if (user.role !== 'admin') return reply.code(403).send({ error: '只有管理員可以更正標籤種類' });
+    const { tag } = request.params;
+    if (tag.length > 60) return reply.code(400).send({ error: 'tag too long' });
+    if (request.body?.kind !== 'visual') return reply.code(400).send({ error: 'kind must be visual' });
+    const changed = await db.transaction(async (tx) => {
+      const [person] = await tx.select().from(tagPeople).where(eq(tagPeople.tag, tag)).for('update');
+      if (person?.status === 'nonhuman') return true;
+      if (!person?.wikidataId) return false;
+      const at = new Date();
+      await tx
+        .update(tagPeople)
+        .set({
+          status: 'nonhuman',
+          wikidataId: null,
+          label: null,
+          description: null,
+          facts: null,
+          shownRank: null,
+          note: `管理員更正為非人物；原比對：${person.wikidataId} ${person.label ?? ''}`.slice(0, 120),
+          reviewedBy: user.email,
+          reviewedAt: at,
+        })
+        .where(eq(tagPeople.tag, tag));
+      await tx
+        .delete(tagGroupMembers)
+        .where(
+          and(eq(tagGroupMembers.tag, tag), eq(tagGroupMembers.source, 'person'), sql`${tagGroupMembers.status} IN ('auto', 'review')`),
+        );
+      await tx.insert(tagPeopleLog).values({ tag, action: 'nonhuman', fromRank: person.shownRank, toRank: null, email: user.email, at });
+      return true;
+    });
+    if (!changed) return reply.code(409).send({ error: '這個標籤目前沒有比對到人物' });
+    refreshPages(uiOrigin, tag);
+    return { tag, kind: 'visual' };
+  });
 
   // { rank } votes for that candidate; { rank: null } takes the vote back.
   app.put<{ Params: { tag: string }; Body: { rank?: unknown } }>('/auth/pictures/:tag/vote', async (request, reply) => {
@@ -261,7 +310,10 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     const at = new Date();
     if (rank === null) {
       if (kind === 'avatar')
-        await db.update(tagPeople).set({ status: 'voted', reviewedBy: user.email, reviewedAt: at }).where(eq(tagPeople.tag, tag));
+        await db
+          .update(tagPeople)
+          .set({ status: 'voted', reviewedBy: user.email, reviewedAt: at })
+          .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} <> 'nonhuman'`));
       else await db.update(tagVisuals).set({ status: 'voted', reviewedBy: user.email, reviewedAt: at }).where(eq(tagVisuals.tag, tag));
       const shownRank = await applyVotes(db, tag, kind);
       refreshPages(uiOrigin, tag);
@@ -276,7 +328,7 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
       await db
         .update(tagPeople)
         .set({ status: 'chosen', shownRank: rank, reviewedBy: user.email, reviewedAt: at })
-        .where(eq(tagPeople.tag, tag));
+        .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} <> 'nonhuman'`));
     } else {
       const [c] = await db
         .select()

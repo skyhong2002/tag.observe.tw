@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, max, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, max, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog, tagStats } from '../db/schema.ts';
 import { castVote } from '../pictures/votes.ts';
@@ -57,6 +57,7 @@ async function reference(seen: Seen[]) {
 
 export async function processTag(db: Db, tag: string, { log = (() => {}) as Log, force = false } = {}) {
   const [prior] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
+  if (prior?.status === 'nonhuman') return { tag, status: prior.status, skipped: true };
   // An admin's choice and readers' votes (docs/tag-pictures.md) outlive re-runs.
   if (prior && !force && (prior.status === 'chosen' || prior.status === 'hidden' || prior.status === 'voted'))
     return { tag, status: prior.status, skipped: true };
@@ -76,11 +77,15 @@ export async function processTag(db: Db, tag: string, { log = (() => {}) as Log,
       reviewedBy: null,
       reviewedAt: null,
     };
-    await db.transaction(async (tx) => {
+    const saved = await db.transaction(async (tx) => {
+      const [current] = await tx.select({ status: tagPeople.status }).from(tagPeople).where(eq(tagPeople.tag, tag)).for('update');
+      if (current?.status === 'nonhuman') return false;
       await tx.insert(tagPeople).values(row).onDuplicateKeyUpdate({ set: row });
       await tx.delete(tagAvatarCandidates).where(eq(tagAvatarCandidates.tag, tag));
       if (rows.length) await tx.insert(tagAvatarCandidates).values(rows);
+      return true;
     });
+    if (!saved) return { tag, status: 'nonhuman' as const, skipped: true };
     return { tag, qid: person?.qid ?? null, status, note, kept: rows.length };
   };
   if (!person) return save('none', null, []);
@@ -174,7 +179,11 @@ export const PHOTO_REJECTED: Partial<Record<Verdict, string>> = {
  * when it has the most votes (docs/tag-pictures.md).
  */
 export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: string, userId?: number) {
-  const [person] = await db.select({ shownRank: tagPeople.shownRank }).from(tagPeople).where(eq(tagPeople.tag, tag));
+  const [person] = await db
+    .select({ shownRank: tagPeople.shownRank, wikidataId: tagPeople.wikidataId, status: tagPeople.status })
+    .from(tagPeople)
+    .where(eq(tagPeople.tag, tag));
+  if (person?.status === 'nonhuman') return { tag, error: '這個標籤已更正為非人物，請重新上傳一般圖片' };
   if (!person) return { tag, error: '這個標籤還沒比對到人物' };
   const img = await decode(photo);
   const insp = await inspect(img);
@@ -182,36 +191,42 @@ export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: st
   const main = insp.main as NonNullable<typeof insp.main>;
   const { score, parts } = quality(main, insp.aligned as Rgb, 1, insp.verdict);
   const image = await renderAvatar(img, main);
-  const [{ top }] = await db
-    .select({ top: max(tagAvatarCandidates.rank) })
-    .from(tagAvatarCandidates)
-    .where(eq(tagAvatarCandidates.tag, tag));
-  const rank = (top ?? 0) + 1;
-  const at = new Date();
-  if (userId !== undefined) {
-    await db.insert(tagAvatarCandidates).values({
-      tag,
-      rank,
-      file: '讀者上傳',
-      pageUrl: '',
-      license: null,
-      licenseUrl: null,
-      artist: null,
-      score,
-      scores: parts,
-      verdict: insp.verdict,
-      image,
-      uploadedBy: userId,
-      uploadedAt: at,
-    });
-    await db
-      .update(tagPeople)
-      .set({ status: 'voted' })
-      .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} NOT IN ('chosen', 'hidden')`));
-    const shown = await castVote(db, tag, 'avatar', userId, rank);
-    return { tag, rank, score, verdict: insp.verdict, shown: shown === rank };
-  }
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ wikidataId: tagPeople.wikidataId, status: tagPeople.status })
+      .from(tagPeople)
+      .where(eq(tagPeople.tag, tag))
+      .for('update');
+    if (!current || current.status === 'nonhuman') return { tag, error: '這個標籤已更正為非人物，請重新上傳一般圖片' };
+    const [{ top }] = await tx
+      .select({ top: max(tagAvatarCandidates.rank) })
+      .from(tagAvatarCandidates)
+      .where(eq(tagAvatarCandidates.tag, tag));
+    const rank = (top ?? 0) + 1;
+    const at = new Date();
+    if (userId !== undefined) {
+      await tx.insert(tagAvatarCandidates).values({
+        tag,
+        rank,
+        file: '讀者上傳',
+        pageUrl: '',
+        license: null,
+        licenseUrl: null,
+        artist: null,
+        score,
+        scores: parts,
+        verdict: insp.verdict,
+        image,
+        uploadedBy: userId,
+        uploadedAt: at,
+      });
+      await tx
+        .update(tagPeople)
+        .set({ status: 'voted' })
+        .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} NOT IN ('chosen', 'hidden')`));
+      const shown = await castVote(tx as unknown as Db, tag, 'avatar', userId, rank);
+      return { tag, rank, score, verdict: insp.verdict, shown: shown === rank };
+    }
     await tx.insert(tagAvatarCandidates).values({
       tag,
       rank,
@@ -230,8 +245,8 @@ export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: st
       .set({ status: 'chosen', shownRank: rank, note: null, reviewedBy: email, reviewedAt: at })
       .where(eq(tagPeople.tag, tag));
     await tx.insert(tagPeopleLog).values({ tag, action: 'show', fromRank: person.shownRank, toRank: rank, email, at });
+    return { tag, rank, score, verdict: insp.verdict };
   });
-  return { tag, rank, score, verdict: insp.verdict };
 }
 
 /**
@@ -261,7 +276,7 @@ export async function busyTags(db: Db, { limit = 100, days = 7, force = false, r
           await db
             .select({ tag: tagPeople.tag })
             .from(tagPeople)
-            .where(gte(tagPeople.checkedAt, new Date(Date.now() - RECHECK_DAYS * 86_400_000)))
+            .where(or(eq(tagPeople.status, 'nonhuman'), gte(tagPeople.checkedAt, new Date(Date.now() - RECHECK_DAYS * 86_400_000))))
         ).map((r) => r.tag),
       );
   return [...new Set([...rising, ...ranked.map((r) => r.tag)])].filter((t) => !fresh.has(t)).slice(0, limit);

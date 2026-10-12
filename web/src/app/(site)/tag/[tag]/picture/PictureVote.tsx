@@ -98,6 +98,18 @@ function Board({ tag }: { tag: string }) {
             ? '管理員選定了目前的圖；票數照算，解除選定後由票數決定。'
             : '票數最多的那張就是這個標籤的圖。每人一票，可以改投。'}
       </p>
+      {state.admin && state.kind === 'avatar' && (
+        <div className={note}>
+          <p>如果這個標籤指的是品牌、組織或其他事物，可以更正種類後上傳 logo。</p>
+          <button
+            type="button"
+            className={`${button} mt-2`}
+            onClick={() => act(() => call(`${path}/kind`, { method: 'PUT', body: { kind: 'visual' } }))}
+          >
+            這不是人物，改用一般圖片
+          </button>
+        </div>
+      )}
       {error && <p className="mt-3 text-sm text-red-700 dark:text-red-400">{error}</p>}
       {state.candidates.length ? (
         <div className="mt-4 flex flex-wrap items-start gap-3">
@@ -113,7 +125,7 @@ function Board({ tag }: { tag: string }) {
           解除選定，改由票數決定
         </button>
       )}
-      <Upload tag={tag} kind={state.kind} left={state.uploadsLeft} onDone={load} />
+      <Upload key={state.kind} tag={tag} kind={state.kind} left={state.uploadsLeft} onDone={load} />
     </>
   );
 }

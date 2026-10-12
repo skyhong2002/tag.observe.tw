@@ -695,10 +695,11 @@ export const articleAuthorLog = mysqlTable(
 // /admin/avatars/. status: auto = best candidate shown; review = shown but
 // an admin should look (low score, namesakes); chosen = an admin picked one;
 // hidden = an admin turned the avatar off; nophoto = a person with no usable
-// photo; none = no Wikidata person by this exact name; voted = readers
+// photo; none = no Wikidata person by this exact name; nonhuman = admin
+// rejected the person identity (even forced rechecks preserve it); voted = readers
 // uploaded or voted, and the candidate with the most votes is shown
 // (docs/tag-pictures.md). chosen and hidden are an admin's override.
-export type TagPersonStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'nophoto' | 'none' | 'voted';
+export type TagPersonStatus = 'auto' | 'review' | 'chosen' | 'hidden' | 'nophoto' | 'none' | 'voted' | 'nonhuman';
 export type TagPersonFacts = {
   citizenship: string[];
   occupations: string[];
@@ -758,7 +759,7 @@ export const tagPeopleLog = mysqlTable(
   {
     id: int('id').autoincrement().primaryKey(),
     tag: varchar('tag', { length: 60 }).notNull(),
-    action: varchar('action', { length: 8 }).$type<'show' | 'hide'>().notNull(),
+    action: varchar('action', { length: 8 }).$type<'show' | 'hide' | 'nonhuman'>().notNull(),
     fromRank: int('from_rank'),
     toRank: int('to_rank'),
     email: varchar('email', { length: 255 }).notNull(),

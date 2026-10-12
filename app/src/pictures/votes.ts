@@ -46,10 +46,13 @@ export async function applyVotes(db: Db, tag: string, kind: PictureKind) {
       .select({ status: tagPeople.status, shownRank: tagPeople.shownRank })
       .from(tagPeople)
       .where(eq(tagPeople.tag, tag));
-    if (!row || row.status === 'chosen' || row.status === 'hidden') return row?.shownRank ?? null;
+    if (!row || row.status === 'chosen' || row.status === 'hidden' || row.status === 'nonhuman') return row?.shownRank ?? null;
     const rank = leader(votes, row.shownRank);
     if (rank === null) return row.shownRank;
-    await db.update(tagPeople).set({ status: 'voted', shownRank: rank, note: null }).where(eq(tagPeople.tag, tag));
+    await db
+      .update(tagPeople)
+      .set({ status: 'voted', shownRank: rank, note: null })
+      .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} <> 'nonhuman'`));
     return rank;
   }
   const [row] = await db

@@ -119,6 +119,14 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
         .where(and(inArray(tagPeople.tag, tags), isNotNull(tagPeople.wikidataId)))
     ).map((r) => r.tag),
   );
+  const nonhuman = new Set(
+    (
+      await db
+        .select({ tag: tagPeople.tag })
+        .from(tagPeople)
+        .where(and(inArray(tagPeople.tag, tags), eq(tagPeople.status, 'nonhuman')))
+    ).map((r) => r.tag),
+  );
   const cached = new Map((await db.select().from(tagWikidata).where(inArray(tagWikidata.tag, tags))).map((r) => [r.tag, r] as const));
   const topicIds = SEED_GROUPS.filter((g) => g.kind === 'topic').map((g) => g.id);
   const fresh = Date.now() - RECHECK_DAYS * 86_400_000;
@@ -149,6 +157,7 @@ export async function fileWikidata(db: Db, tags: string[], { force = false, log 
       types = item?.types ?? [];
     }
     if (types.some((t) => t.id === HUMAN)) {
+      if (nonhuman.has(tag)) return;
       // A person's facts are not cached: asked again only with the item.
       if (recent) return;
       const person = await findPerson(tag);

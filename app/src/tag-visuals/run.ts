@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import { type Claim, download, entities, fileInfo, findItem, looseItems } from '../avatars/wikidata.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, type TagVisualStatus, tagPeople, tagVisualCandidates, tagVisuals, tagWikidata } from '../db/schema.ts';
@@ -175,13 +175,14 @@ export async function processTags(
       .from(tagVisuals)
       .where(inArray(tagVisuals.tag, tags)),
     db
-      .select({ tag: tagPeople.tag })
+      .select({ tag: tagPeople.tag, wikidataId: tagPeople.wikidataId, status: tagPeople.status })
       .from(tagPeople)
-      .where(and(inArray(tagPeople.tag, tags), isNotNull(tagPeople.wikidataId))),
+      .where(inArray(tagPeople.tag, tags)),
     db.select().from(tagWikidata).where(inArray(tagWikidata.tag, tags)),
   ]);
   const before = new Map(prior.map((p) => [p.tag, p]));
-  const persons = new Set(people.map((p) => p.tag));
+  const persons = new Set(people.filter((p) => p.wikidataId).map((p) => p.tag));
+  const nonhuman = new Set(people.filter((p) => p.status === 'nonhuman').map((p) => p.tag));
   const item = new Map(items.map((i) => [i.tag, i]));
   const fresh = Date.now() - RECHECK_DAYS * 86_400_000;
   const forAi: { tag: string; rows: Candidate[]; candidate?: string }[] = [];
@@ -211,7 +212,8 @@ export async function processTags(
       // A county name beats a namesake: 「高雄」 is also a Hong Kong actor on Wikidata.
       const place = taiwanPlace(tag);
       // Other people get sketch avatars (docs/tag-avatars.md).
-      if (!place && (persons.has(tag) || wd?.types?.some((t) => t.id === HUMAN))) continue;
+      const humanItem = wd?.types?.some((t) => t.id === HUMAN);
+      if (!place && !nonhuman.has(tag) && (persons.has(tag) || humanItem)) continue;
       if (place) {
         const r = await save(db, tag, 'auto', [placeCandidate(place)]);
         count(`${r.kind}`);
@@ -219,11 +221,11 @@ export async function processTags(
         continue;
       }
       // An item's place or logo waits for the AI to agree it is what the news means.
-      let rows = wd?.wikidataId ? await itemImpl(wd.wikidataId) : [];
+      let rows = wd?.wikidataId && !humanItem ? await itemImpl(wd.wikidataId) : [];
       let candidate = rows.length ? `${wd?.label ?? rows[0].label}${wd?.description ? `（${wd.description}）` : ''}` : undefined;
       // No item is exactly the tag: Wikidata names 鴻海 「鴻海精密工業」. Try the
       // items whose name contains it; the AI's same-check guards these too.
-      if (!wd?.wikidataId)
+      if (!wd?.wikidataId || (nonhuman.has(tag) && humanItem))
         for (const loose of await looseImpl(tag)) {
           rows = await itemImpl(loose.qid);
           if (!rows.length) continue;

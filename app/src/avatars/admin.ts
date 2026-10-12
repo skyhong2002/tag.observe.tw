@@ -115,7 +115,7 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
     if (rank !== null && !(typeof rank === 'number' && Number.isInteger(rank)))
       return reply.code(400).send({ error: 'rank must be a candidate rank, or null to hide' });
     const [person] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
-    if (!person) return reply.code(404).send({ error: 'no such person tag' });
+    if (!person || person.status === 'nonhuman') return reply.code(404).send({ error: 'no such person tag' });
     if (rank !== null) {
       const [exists] = await db
         .select({ rank: tagAvatarCandidates.rank })
@@ -130,12 +130,16 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
       reviewedBy: user.email,
       reviewedAt: at,
     };
-    await db.transaction(async (tx) => {
+    const changed = await db.transaction(async (tx) => {
+      const [current] = await tx.select({ status: tagPeople.status }).from(tagPeople).where(eq(tagPeople.tag, tag)).for('update');
+      if (!current || current.status === 'nonhuman') return false;
       await tx.update(tagPeople).set(set).where(eq(tagPeople.tag, tag));
       await tx
         .insert(tagPeopleLog)
         .values({ tag, action: rank === null ? 'hide' : 'show', fromRank: person.shownRank, toRank: rank, email: user.email, at });
+      return true;
     });
+    if (!changed) return reply.code(409).send({ error: '這個標籤已更正為非人物' });
     refreshPages(uiOrigin, tag);
     return { tag, ...set };
   });
@@ -152,8 +156,8 @@ export function registerAvatarAdmin(app: FastifyInstance, db: Db, { requireAdmin
       const user = await requireAdmin(request, reply);
       if (!user) return reply;
       const { tag } = request.params;
-      const [person] = await db.select({ tag: tagPeople.tag }).from(tagPeople).where(eq(tagPeople.tag, tag));
-      if (!person) return reply.code(404).send({ error: '這個標籤還沒比對到人物' });
+      const [person] = await db.select({ status: tagPeople.status }).from(tagPeople).where(eq(tagPeople.tag, tag));
+      if (!person || person.status === 'nonhuman') return reply.code(404).send({ error: '這個標籤還沒比對到人物' });
       const raw = typeof request.body?.image === 'string' ? Buffer.from(request.body.image, 'base64') : null;
       if (!raw?.length) return reply.code(400).send({ error: 'image (base64) required' });
       // The size the Commons photos come in (1200px), so the face rules mean the same.
