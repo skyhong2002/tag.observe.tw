@@ -1,0 +1,68 @@
+{
+  "release": "adf47ee84fda870592bdf50d42694a1e396bcb5c",
+  "codeCommit": "c2f3233",
+  "base": "eac82fa6f9dcfc81b2922edb3f40d9d6140ec30e",
+  "baseline": {
+    "source": "user supplied PSI mobile",
+    "performance": 69,
+    "LCP_ms": 7800,
+    "FCP_ms": null,
+    "CLS": null,
+    "TBT_ms": null
+  },
+  "runs": [
+    {
+      "run": 3,
+      "utc": "2026-10-12T17:48:03.951Z",
+      "performance": 78,
+      "accessibility": 100,
+      "LCP_ms": 4127.8945,
+      "FCP_ms": 2368.5985,
+      "CLS": 0.000801893365067731,
+      "TBT_ms": 284,
+      "dom": 2303
+    },
+    {
+      "run": 4,
+      "utc": "2026-10-12T17:49:32.319Z",
+      "performance": 72,
+      "accessibility": 100,
+      "LCP_ms": 4438.5515,
+      "FCP_ms": 2417.8135,
+      "CLS": 0.000801893365067731,
+      "TBT_ms": 386.4999999999998,
+      "dom": 3569
+    },
+    {
+      "run": 5,
+      "utc": "2026-10-12T18:07:18.298Z",
+      "performance": 73,
+      "accessibility": 100,
+      "LCP_ms": 4690.889,
+      "FCP_ms": 3098.127,
+      "CLS": 0.000801893365067731,
+      "TBT_ms": 233,
+      "dom": 2615
+    }
+  ],
+  "medians": {
+    "performance": 73,
+    "accessibility": 100,
+    "LCP_ms": 4438.5515,
+    "FCP_ms": 2417.8135,
+    "CLS": 0.000801893365067731,
+    "TBT_ms": 284
+  },
+  "excludedRuns": [
+    {
+      "run": 1,
+      "reason": "media directory placeholder during cold cache"
+    },
+    {
+      "run": 2,
+      "reason": "media directory placeholder during cold cache"
+    }
+  ],
+  "ga": "Lighthouse Google Analytics and Google Tag Manager URLs explicitly blocked. No privacy guard bypass.",
+  "caveat": "Dynamic production news changes between runs. Local Lighthouse differs from remote PSI; not a controlled causal estimate."
+}

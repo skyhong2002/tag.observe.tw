@@ -1,0 +1,45 @@
+{
+  "utc": "2026-10-12T18:11:26.529795+00:00",
+  "release": "ba1900698d1d2368a4a70117784a9b86b9f175ec",
+  "cache": [
+    {
+      "name": "anonymous",
+      "status": 200,
+      "cacheControl": "public, max-age=60"
+    },
+    {
+      "name": "Cookie",
+      "status": 200,
+      "cacheControl": "private, no-store"
+    },
+    {
+      "name": "Authorization",
+      "status": 200,
+      "cacheControl": "private, no-store"
+    },
+    {
+      "name": "X-Service-Token",
+      "status": 200,
+      "cacheControl": "private, no-store"
+    },
+    {
+      "name": "X-Api-Key",
+      "status": 200,
+      "cacheControl": "private, no-store"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://tag.observe.tw/",
+      "status": 200
+    },
+    {
+      "url": "https://youtube.observe.tw/",
+      "status": 200
+    },
+    {
+      "url": "https://blog.observe.tw/healthz",
+      "status": 200
+    }
+  ]
+}
