@@ -267,3 +267,22 @@ export const taipei = (iso: string) =>
   });
 // Without minutes, zh-TW renders the hour as "18時"; format with minutes instead.
 export const taipeiHour = (iso: string) => taipei(iso).replace(/:\d\d$/, ':00');
+
+export type TagRelationType = 'is-a' | 'related' | 'alias';
+export interface TagRelation {
+  id: string;
+  type: TagRelationType;
+  target: { id: string; label: string; href: string };
+  source: string;
+  createdAt: string | null;
+  status: 'approved';
+  inherited?: boolean;
+}
+export interface TagRelations {
+  tag: string;
+  tagId: string;
+  relations: TagRelation[];
+  pictures: unknown[];
+  truncated?: boolean;
+}
+export const fetchTagRelations = (tag: string) => get<TagRelations>(`/api/v1/tags/${encodeURIComponent(tag)}/relations`, 60);
