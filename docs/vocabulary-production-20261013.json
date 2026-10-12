@@ -1,0 +1,511 @@
+{
+  "release": "4aa4d41624adf46be21f2735e5afe12fc131a638",
+  "base": "eac82fa6f9dcfc81b2922edb3f40d9d6140ec30e",
+  "snapshot": {
+    "noisePolicyVersion": "99691dbd9171afdaab179dddd1581e51d37735c98afd3494dd2b933175f23443",
+    "schemaVersion": 1,
+    "id": "e8a99a56-3008-4da8-86c6-64d1ff468b3f",
+    "previousId": null,
+    "generatedAt": "2026-10-12T17:29:51.650Z",
+    "source": "https://tag.observe.tw",
+    "attribution": "新文易數 tag.observe.tw",
+    "coverage": "all-current-indexed-article-tags",
+    "provenance": "mixed-native-edited-and-rule-derived; per-term assignment unknown",
+    "identity": "sha256-exact-utf8-label",
+    "total": 4733073,
+    "pageSize": 500,
+    "totalPages": 9467,
+    "sha256": "bf86ecc0e9e082020596d8e79d8e938d355fe2945b775e850f823e1fb2848089",
+    "changeCount": 4321,
+    "active": {
+      "total": 44852,
+      "totalPages": 90,
+      "fileBytes": 3813205,
+      "sha256": "e9e34a99b9a218c356815502eed5f0de4d123366a82e96b6d5b947c90a84f6be",
+      "days": 30,
+      "minArticleCount": 0,
+      "minRecentArticleCount": 3,
+      "policy": "recent-article-count",
+      "minLength": 2,
+      "excludeNoise": true
+    },
+    "statistics": {
+      "noise": 3542,
+      "noEqual": 297,
+      "recent180": 548073,
+      "articleCountAtLeast": {
+        "2": 1621327,
+        "3": 1033268,
+        "5": 651380
+      },
+      "articleCountAndRecent": {
+        "2": 344721,
+        "3": 292493,
+        "5": 243289
+      },
+      "eligibleAtThreshold": {
+        "2": 1820879,
+        "3": 1285692,
+        "5": 953567
+      },
+      "fileBytes": 346926925,
+      "fullFileBytes": 342731078,
+      "activeFileBytes": 3813205,
+      "changeFileBytes": 382642
+    },
+    "tiers": {
+      "excludeNoise": true,
+      "minLength": 2,
+      "measuredTerms": 4726533,
+      "missingRecentCounts": 0,
+      "articleCountAtLeast": {
+        "3": 1030352,
+        "5": 649101,
+        "10": 372477,
+        "20": 222013
+      },
+      "recentArticleCountAtLeast": {
+        "30": {
+          "2": 70439,
+          "3": 44852,
+          "5": 28122
+        },
+        "90": {
+          "2": 119782,
+          "3": 78432,
+          "5": 49559
+        },
+        "180": {
+          "2": 195171,
+          "3": 127657,
+          "5": 81034
+        }
+      },
+      "intersections": {
+        "30": {
+          "2": {
+            "3": 65027,
+            "5": 60433,
+            "10": 54762,
+            "20": 49214
+          },
+          "3": {
+            "3": 44852,
+            "5": 42407,
+            "10": 39281,
+            "20": 36366
+          },
+          "5": {
+            "3": 28122,
+            "5": 28122,
+            "10": 26461,
+            "20": 24948
+          }
+        },
+        "90": {
+          "2": {
+            "3": 110591,
+            "5": 101738,
+            "10": 90305,
+            "20": 78220
+          },
+          "3": {
+            "3": 78432,
+            "5": 73945,
+            "10": 67691,
+            "20": 61028
+          },
+          "5": {
+            "3": 49559,
+            "5": 49559,
+            "10": 46467,
+            "20": 43225
+          }
+        },
+        "180": {
+          "2": {
+            "3": 176104,
+            "5": 157692,
+            "10": 133973,
+            "20": 109854
+          },
+          "3": {
+            "3": 127657,
+            "5": 118353,
+            "10": 105166,
+            "20": 90800
+          },
+          "5": {
+            "3": 81034,
+            "5": 81034,
+            "10": 74790,
+            "20": 67809
+          }
+        }
+      }
+    },
+    "sourceConsistency": "read-only-watermark-overlap; rolling-key-range-reconciliation-within-7-days",
+    "sourceAsOf": {
+      "pendingTags": 0,
+      "newArticleWatermark": "53589484",
+      "observedAt": "2026-10-12T17:29:51.650Z",
+      "bootstrapStartedAt": "2026-10-12T13:31:21.455Z",
+      "lastFullReconcileAt": "2026-10-12T14:04:36.203Z",
+      "reconciliationLagDays": 7,
+      "overlapArticleIds": 2000,
+      "recentCountsReconciliationLagDays": 7
+    }
+  },
+  "pages": {
+    "full500": 9467,
+    "full5000": 947,
+    "active500": 90,
+    "active5000": 9
+  },
+  "build": {
+    "status": "published",
+    "manifest": {
+      "id": "e8a99a56-3008-4da8-86c6-64d1ff468b3f",
+      "generatedAt": "2026-10-12T17:29:51.650Z",
+      "total": 4733073,
+      "changeCount": 4321,
+      "pages": 9467,
+      "statistics": {
+        "noise": 3542,
+        "noEqual": 297,
+        "recent180": 548073,
+        "articleCountAtLeast": {
+          "2": 1621327,
+          "3": 1033268,
+          "5": 651380
+        },
+        "articleCountAndRecent": {
+          "2": 344721,
+          "3": 292493,
+          "5": 243289
+        },
+        "eligibleAtThreshold": {
+          "2": 1820879,
+          "3": 1285692,
+          "5": 953567
+        },
+        "fileBytes": 346926925,
+        "fullFileBytes": 342731078,
+        "activeFileBytes": 3813205,
+        "changeFileBytes": 382642
+      },
+      "active": 44852
+    },
+    "elapsedMs": 583745,
+    "firstObservedToPublishedMs": 10009407,
+    "pendingTags": 0,
+    "terms": 4733073,
+    "startedAt": "2026-10-12T13:31:21.455Z",
+    "lastFullReconcileAt": "2026-10-12T14:04:36.203Z",
+    "queries": 3406,
+    "queryMs": 67837,
+    "maxQueryMs": 902,
+    "rowsRead": 1074421,
+    "newRows": 5805,
+    "homeSamples": 274,
+    "homeTotalMs": 19961,
+    "homeMaxMs": 659
+  },
+  "httpVerification": {
+    "id": "e8a99a56-3008-4da8-86c6-64d1ff468b3f",
+    "total": 4733073,
+    "statistics": {
+      "noise": 3542,
+      "noEqual": 297,
+      "recent180": 548073,
+      "articleCountAtLeast": {
+        "2": 1621327,
+        "3": 1033268,
+        "5": 651380
+      },
+      "articleCountAndRecent": {
+        "2": 344721,
+        "3": 292493,
+        "5": 243289
+      },
+      "eligibleAtThreshold": {
+        "2": 1820879,
+        "3": 1285692,
+        "5": 953567
+      },
+      "fileBytes": 346926925,
+      "fullFileBytes": 342731078,
+      "activeFileBytes": 3813205,
+      "changeFileBytes": 382642
+    },
+    "active": 44852,
+    "verified": [
+      {
+        "kind": "terms",
+        "count": 4733073,
+        "pages": 947,
+        "sha256": "bf86ecc0e9e082020596d8e79d8e938d355fe2945b775e850f823e1fb2848089",
+        "decodedBytes": 2025816719
+      },
+      {
+        "kind": "active",
+        "count": 44852,
+        "pages": 9,
+        "sha256": "e9e34a99b9a218c356815502eed5f0de4d123366a82e96b6d5b947c90a84f6be",
+        "decodedBytes": 19144956
+      }
+    ],
+    "home": [
+      {
+        "status": 200,
+        "ttfbMs": 43
+      },
+      {
+        "status": 200,
+        "ttfbMs": 35
+      },
+      {
+        "status": 200,
+        "ttfbMs": 37
+      },
+      {
+        "status": 200,
+        "ttfbMs": 430
+      },
+      {
+        "status": 200,
+        "ttfbMs": 33
+      },
+      {
+        "status": 200,
+        "ttfbMs": 37
+      },
+      {
+        "status": 200,
+        "ttfbMs": 34
+      },
+      {
+        "status": 200,
+        "ttfbMs": 31
+      },
+      {
+        "status": 200,
+        "ttfbMs": 438
+      },
+      {
+        "status": 200,
+        "ttfbMs": 39
+      },
+      {
+        "status": 200,
+        "ttfbMs": 31
+      },
+      {
+        "status": 200,
+        "ttfbMs": 41
+      },
+      {
+        "status": 200,
+        "ttfbMs": 38
+      },
+      {
+        "status": 200,
+        "ttfbMs": 418
+      },
+      {
+        "status": 200,
+        "ttfbMs": 35
+      },
+      {
+        "status": 200,
+        "ttfbMs": 45
+      },
+      {
+        "status": 200,
+        "ttfbMs": 44
+      },
+      {
+        "status": 200,
+        "ttfbMs": 39
+      },
+      {
+        "status": 200,
+        "ttfbMs": 36
+      },
+      {
+        "status": 200,
+        "ttfbMs": 64
+      },
+      {
+        "status": 200,
+        "ttfbMs": 38
+      },
+      {
+        "status": 200,
+        "ttfbMs": 62
+      },
+      {
+        "status": 200,
+        "ttfbMs": 45
+      },
+      {
+        "status": 200,
+        "ttfbMs": 36
+      },
+      {
+        "status": 200,
+        "ttfbMs": 411
+      },
+      {
+        "status": 200,
+        "ttfbMs": 28
+      },
+      {
+        "status": 200,
+        "ttfbMs": 32
+      },
+      {
+        "status": 200,
+        "ttfbMs": 39
+      },
+      {
+        "status": 200,
+        "ttfbMs": 36
+      },
+      {
+        "status": 200,
+        "ttfbMs": 855
+      },
+      {
+        "status": 200,
+        "ttfbMs": 33
+      },
+      {
+        "status": 200,
+        "ttfbMs": 54
+      },
+      {
+        "status": 200,
+        "ttfbMs": 31
+      },
+      {
+        "status": 200,
+        "ttfbMs": 39
+      },
+      {
+        "status": 200,
+        "ttfbMs": 37
+      },
+      {
+        "status": 200,
+        "ttfbMs": 431
+      },
+      {
+        "status": 200,
+        "ttfbMs": 34
+      },
+      {
+        "status": 200,
+        "ttfbMs": 46
+      },
+      {
+        "status": 200,
+        "ttfbMs": 46
+      }
+    ],
+    "elapsedMs": 483717
+  },
+  "changesVerification": {
+    "utc": "2026-10-12T17:35:08.393Z",
+    "after": "e8a99a56-3008-4da8-86c6-64d1ff468b3f",
+    "target": "3b3008bf-0fc9-4e10-bd0f-3ca1e5ab9372",
+    "kind": "delta",
+    "status": 200,
+    "count": 62,
+    "active": 51,
+    "sha256": "57b82ed7de2321a67ba0ca04236abdec7e461fcc0da152f19b9f1af4c74820c9",
+    "encoding": "gzip",
+    "cacheControl": "private, no-store",
+    "expiredStatus": 409,
+    "expiredBody": {
+      "error": "resnapshot-required",
+      "resnapshotRequired": true
+    }
+  },
+  "crossGenerationVerification": {
+    "utc": "2026-10-12T17:40:27.173Z",
+    "after": "e8a99a56-3008-4da8-86c6-64d1ff468b3f",
+    "target": "817c1feb-a9e0-44d6-8de4-eca87c96e3c4",
+    "pages": [
+      {
+        "cursor": "0",
+        "count": 62,
+        "sha256": "57b82ed7de2321a67ba0ca04236abdec7e461fcc0da152f19b9f1af4c74820c9"
+      },
+      {
+        "cursor": "1",
+        "count": 99,
+        "sha256": "4f45b9584eeebdd0e29411ab94facd9d2c00c6f6c3c62159b7482b55b6a194dd"
+      }
+    ],
+    "total": 161,
+    "active": 133
+  },
+  "fastRuns": [
+    {
+      "status": "published",
+      "manifest": {
+        "id": "3b3008bf-0fc9-4e10-bd0f-3ca1e5ab9372",
+        "generatedAt": "2026-10-12T17:34:04.314Z",
+        "total": 4733076,
+        "changeCount": 62,
+        "kind": "delta"
+      },
+      "elapsedMs": 23415,
+      "firstObservedToPublishedMs": 23041,
+      "pendingTags": 0,
+      "terms": 4733076,
+      "startedAt": "2026-10-12T13:31:21.455Z",
+      "lastFullReconcileAt": "2026-10-12T14:04:36.203Z",
+      "queries": 137,
+      "queryMs": 4362,
+      "maxQueryMs": 904,
+      "rowsRead": 312365,
+      "newRows": 75,
+      "homeSamples": 11,
+      "homeTotalMs": 988,
+      "homeMaxMs": 443
+    },
+    {
+      "status": "published",
+      "manifest": {
+        "id": "817c1feb-a9e0-44d6-8de4-eca87c96e3c4",
+        "generatedAt": "2026-10-12T17:39:02.404Z",
+        "total": 4733076,
+        "changeCount": 99,
+        "kind": "delta"
+      },
+      "elapsedMs": 31699,
+      "firstObservedToPublishedMs": 30788,
+      "pendingTags": 0,
+      "terms": 4733076,
+      "startedAt": "2026-10-12T13:31:21.455Z",
+      "lastFullReconcileAt": "2026-10-12T14:04:36.203Z",
+      "queries": 184,
+      "queryMs": 6464,
+      "maxQueryMs": 903,
+      "rowsRead": 403205,
+      "newRows": 123,
+      "homeSamples": 15,
+      "homeTotalMs": 1458,
+      "homeMaxMs": 642
+    }
+  ],
+  "timers": {
+    "enabledAt": "2026-10-12T17:43:05.412Z",
+    "timeZone": "Asia/Taipei",
+    "fast": "every 10 minutes",
+    "reconcile": "04:01",
+    "full": "04:17"
+  }
+}
