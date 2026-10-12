@@ -11,7 +11,7 @@ export const revalidate = 300;
 export const metadata = pageMetadata(
   '/writing/',
   '轉述社群貼文 · 看寫法',
-  '哪些報導的開頭是在轉述某人的臉書、Threads 或節目發言，發文者是誰、各家媒體的比例與變化。',
+  '哪些報導的開頭是在轉述某人的臉書、Threads 或節目發言，發言者是誰、各家媒體的比例與變化。',
 );
 
 type Query = { days?: string; role?: string; media?: string; poster?: string; platform?: string; before?: string };
@@ -37,8 +37,8 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
   const mediaName = overview?.media.find((m) => m.media === filters.media)?.name ?? filters.media;
   const active = [
     filters.media && `媒體：${mediaName}`,
-    filters.role && `發文者：${ROLE_LABEL[filters.role]}`,
-    filters.poster && `發文者：${filters.poster}`,
+    filters.role && `標籤：${ROLE_LABEL[filters.role]}`,
+    filters.poster && `發言者：${filters.poster}`,
     filters.platform && `平台：${PLATFORM_LABEL[filters.platform] ?? filters.platform}`,
   ].filter(Boolean);
   return (
@@ -49,7 +49,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
           <h1 className="text-2xl font-semibold tracking-tight">轉述社群貼文</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
             內文開頭寫明「某人在臉書、Threads、X
-            或節目上發文／表示」的報導，以及發文者的身分。這是描述寫法，不評斷報導好壞：轉述官員發文本來就是常見的新聞來源。
+            或節目上發文／表示」的報導，以及發言者的角色或背景標籤。這是描述寫法，不評斷報導好壞：轉述官員發文本來就是常見的新聞來源。
           </p>
           <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
             <DayPicker days={days} path="/writing/" params={{ ...filters, platform: filters.platform }} />
@@ -116,7 +116,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
                 })}
               </ul>
               <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                「身分未標明」是句子裡只有名字、本站也還對照不出身分的發文者。
+                「尚未標記」表示目前無法辨識角色或背景。同一位發言者可有多個標籤，各標籤篇數與比例可能重疊，不可直接相加。
               </p>
             </div>
           </section>
@@ -129,7 +129,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
               比例的分母是各家已分析的文章；近 {days} 天分析不到 100 篇的媒體與轉載站不列入。點比例看那些報導。
             </p>
             <OutletTable
-              caption="各媒體轉述社群貼文的比例，依發文者身分分列"
+              caption="各媒體轉述社群貼文的比例，依發言者標籤分列"
               path="/writing/"
               query={Object.fromEntries(Object.entries(keep).filter((e): e is [string, string] => !!e[1]))}
               rows={overview.media.map((m) => ({
@@ -148,16 +148,26 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
           {overview.posters.length > 0 && (
             <section aria-labelledby="posters" className="space-y-3">
               <h2 id="posters" className="text-lg font-semibold">
-                最常被轉述的發文者
+                最常被轉述的發言者
               </h2>
               <ol className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 {overview.posters.map((p, i) => (
-                  <li key={`${p.name}-${p.role}`} className="flex items-baseline gap-2">
+                  <li key={p.name} className="flex flex-wrap items-baseline gap-2">
                     <span className="w-6 text-right text-xs tabular-nums text-zinc-400">{i + 1}</span>
                     <Link href={filterHref({ poster: p.name })} className="font-medium hover:underline">
                       {p.name}
                     </Link>
-                    <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">{p.role === '未知' ? '' : ROLE_LABEL[p.role]}</span>
+                    {(p.roles ?? [p.role])
+                      .filter((r) => r !== '未知')
+                      .map((r) => (
+                        <Link
+                          key={r}
+                          href={filterHref({ role: r })}
+                          className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 hover:underline dark:bg-zinc-800 dark:text-zinc-400"
+                        >
+                          {ROLE_LABEL[r]}
+                        </Link>
+                      ))}
                     <span className="ml-auto whitespace-nowrap text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
                       {p.articles} 篇 · {p.outlets} 家
                     </span>
@@ -186,7 +196,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
               </Link>
             </>
           ) : (
-            '最新的在前；點上方的身分、媒體或發文者可以篩選。'
+            '最新的在前；點上方的標籤、媒體或發言者可以篩選。'
           )}
         </p>
         <WritingList articles={list?.articles ?? []} />

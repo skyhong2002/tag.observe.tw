@@ -90,7 +90,7 @@ describe('names', () => {
 describe('analyzeArticle', () => {
   const people = new Map<string, Person>([
     ['邱九十', { role: '前任公職', source: 'auto' }],
-    ['沈小明', { role: '評論名嘴', source: 'admin' }],
+    ['沈小明', { role: '評論名嘴', roles: ['評論名嘴', '醫療健康'], source: 'admin' }],
   ]);
   it('resolves bare names, and admin corrections win over the clause', () => {
     expect(analyzeArticle('標題', pad('邱九十今天在臉書發文。'), people)).toMatchObject({
@@ -98,7 +98,11 @@ describe('analyzeArticle', () => {
       poster: '邱九十',
       roleSource: 'people',
     });
-    expect(analyzeArticle('標題', pad('精神科醫師沈小明在臉書發文。'), people)).toMatchObject({ role: '評論名嘴', roleSource: 'people' });
+    expect(analyzeArticle('標題', pad('精神科醫師沈小明在臉書發文。'), people)).toMatchObject({
+      role: '評論名嘴',
+      roles: ['評論名嘴', '醫療健康'],
+      roleSource: 'people',
+    });
     expect(analyzeArticle('標題', pad('今天天氣晴。'), people)).toMatchObject({ platform: null, role: null });
   });
 });

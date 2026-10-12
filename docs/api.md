@@ -3771,7 +3771,7 @@ curl -s -X POST -H 'Content-Type: application/json' --data '{}' -H 'Authorizatio
 
 **寫法總覽：轉述社群貼文與標題用詞**
 
-分母是已分析的文章（取得內文者）。轉述社群貼文：內文前 250 字寫明某人在臉書、Threads、X、節目等發文；發文者身分依該句的頭銜詞，或這個名字在其他報導最常搭配的頭銜。轉載站不列入媒體表與總數。規則版本見 version。
+分母是已分析的文章（取得內文者）。轉述社群貼文：內文前 250 字寫明某人在臉書、Threads、X、節目等發文；發言者標籤依該句的頭銜詞，或這個名字在其他報導最常搭配的頭銜，管理員可設定多個角色或背景標籤；各標籤統計可重疊，文章總數不重複計算。轉載站不列入媒體表與總數。規則版本見 version。
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
@@ -3794,14 +3794,14 @@ curl -s 'https://tag.observe.tw/api/v1/writing?days=30'
 | `totals` | object |  |
 | `totals.articles` | integer | 已分析篇數 |
 | `totals.social` | integer | 轉述社群貼文篇數 |
-| `totals.roles` | {鍵: integer} | 依發文者身分 |
+| `totals.roles` | {鍵: integer} | 依發言者標籤；一篇可計入多個標籤，不可直接相加 |
 | `totals.platforms` | {鍵: integer} | 依平台 |
 | `totals.titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
 | `daily` | object[] | 逐日 |
 | `daily[].day` | string |  |
 | `daily[].articles` | integer | 已分析篇數 |
 | `daily[].social` | integer | 轉述社群貼文篇數 |
-| `daily[].roles` | {鍵: integer} | 依發文者身分 |
+| `daily[].roles` | {鍵: integer} | 依發言者標籤；一篇可計入多個標籤，不可直接相加 |
 | `daily[].platforms` | {鍵: integer} | 依平台 |
 | `daily[].titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
 | `media` | object[] | 分析篇數 ≥ 100 的媒體，依轉述比例排序 |
@@ -3809,12 +3809,13 @@ curl -s 'https://tag.observe.tw/api/v1/writing?days=30'
 | `media[].name` | string |  |
 | `media[].articles` | integer | 已分析篇數 |
 | `media[].social` | integer | 轉述社群貼文篇數 |
-| `media[].roles` | {鍵: integer} | 依發文者身分 |
+| `media[].roles` | {鍵: integer} | 依發言者標籤；一篇可計入多個標籤，不可直接相加 |
 | `media[].platforms` | {鍵: integer} | 依平台 |
 | `media[].titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
-| `posters` | object[] | 最常被轉述的發文者（不含網友民眾），最多 40 人 |
+| `posters` | object[] | 最常被轉述的發言者（不含網友民眾），最多 40 人 |
 | `posters[].name` | string |  |
-| `posters[].role` | string |  |
+| `posters[].role` | string | 相容舊版的第一個標籤 |
+| `posters[].roles` | string[] | 全部發言者標籤 |
 | `posters[].articles` | integer |  |
 | `posters[].outlets` | integer | 幾家媒體轉述 |
 
@@ -3830,11 +3831,11 @@ curl -s 'https://tag.observe.tw/api/v1/writing?days=30'
 
 | 參數 | 位置 | 型別 | 說明 |
 | --- | --- | --- | --- |
-| `role` | query | "公職政治" \| "前任公職" \| "評論名嘴" \| "專家企業" \| "醫療健康" \| "氣象" \| "藝人網紅" \| "機構" \| "網友民眾" \| "未知" | 發文者身分 |
+| `role` | query | "公職政治" \| "前任公職" \| "評論名嘴" \| "專家企業" \| "醫療健康" \| "氣象" \| "藝人網紅" \| "機構" \| "網友民眾" \| "未知" | 發言者標籤 |
 | `platform` | query | "Facebook" \| "Threads" \| "Instagram" \| "X" \| "YouTube" \| "節目直播" \| "PTT" \| "Dcard" \| "社群" | 平台 |
 | `tag` | query | "懸念" \| "反應" \| "攻擊" | 標題用詞 |
 | `media` | query | string | 刊登媒體 |
-| `poster` | query | string | 發文者名字 |
+| `poster` | query | string | 發言者名字 |
 | `days` | query | integer | 最近幾天，1–90，預設 `30` |
 | `limit` | query | integer | 筆數，1–100，預設 `30` |
 | `before` | query | integer | 只列 id 小於此值的文章 |
@@ -3858,8 +3859,9 @@ curl -s 'https://tag.observe.tw/api/v1/writing/articles?role=醫療健康&limit=
 | `articles[].publishedAt` | string (ISO 時間) |  |
 | `articles[].platform` | string \| null |  |
 | `articles[].poster` | string \| null |  |
-| `articles[].role` | string \| null |  |
-| `articles[].evidence` | string \| null | 判斷依據：內文中點名發文者的句子 |
+| `articles[].role` | string \| null | 相容舊版的第一個標籤 |
+| `articles[].roles` | string[] | 全部發言者標籤 |
+| `articles[].evidence` | string \| null | 判斷依據：內文中點名發言者的句子 |
 | `articles[].titleTags` | string[] |  |
 | `next` | integer \| null | 下一頁的 before |
 
@@ -3895,7 +3897,7 @@ curl -s 'https://tag.observe.tw/api/v1/media/chinatimes/writing'
 | `totals` | object |  |
 | `totals.articles` | integer | 已分析篇數 |
 | `totals.social` | integer | 轉述社群貼文篇數 |
-| `totals.roles` | {鍵: integer} | 依發文者身分 |
+| `totals.roles` | {鍵: integer} | 依發言者標籤；一篇可計入多個標籤，不可直接相加 |
 | `totals.platforms` | {鍵: integer} | 依平台 |
 | `totals.titleTags` | {鍵: integer} | 標題用詞：懸念、反應、攻擊 |
 | `daily` | object[] |  |
@@ -3931,7 +3933,8 @@ curl -s 'https://tag.observe.tw/api/v1/articles/50878324/writing'
 | `social` | object \| null |  |
 | `social.platform` | string |  |
 | `social.poster` | string \| null |  |
-| `social.role` | string \| null |  |
+| `social.role` | string \| null | 相容舊版的第一個標籤 |
+| `social.roles` | string[] | 全部發言者標籤 |
 | `social.roleSource` | string \| null | clause：句中頭銜；people：名字對照表；null：判斷不出 |
 | `social.evidence` | string \| null |  |
 | `titleTags` | string[] |  |

@@ -87,6 +87,7 @@ export function resolveTally(tally: Tally, persons: Set<string>): Map<string, Re
 
 export interface Person {
   role: Role;
+  roles?: Role[];
   source: 'auto' | 'admin';
 }
 

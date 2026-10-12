@@ -786,6 +786,8 @@ export const articleWriting = mysqlTable(
     evidence: varchar('evidence', { length: 200 }),
     poster: varchar('poster', { length: 40 }),
     role: varchar('role', { length: 16 }),
+    /** Multiple speaker labels; null falls back to the legacy role. */
+    roles: json('roles').$type<string[]>(),
     /** clause: title words next to the post; people: writing_people. */
     roleSource: varchar('role_source', { length: 8 }).$type<'clause' | 'people'>(),
     titleTags: json('title_tags').$type<string[]>().notNull(),
@@ -805,6 +807,7 @@ export const articleWriting = mysqlTable(
 export const writingPeople = mysqlTable('writing_people', {
   name: varchar('name', { length: 40 }).primaryKey(),
   role: varchar('role', { length: 16 }).notNull(),
+  roles: json('roles').$type<string[]>(),
   source: varchar('source', { length: 8 }).$type<'auto' | 'admin'>().notNull(),
   /** auto: mentions carrying the winning role / all titled mentions. */
   hits: int('hits').notNull().default(0),
@@ -822,6 +825,8 @@ export const writingPeopleLog = mysqlTable(
     /** null: no admin correction before / the correction was cleared. */
     before: varchar('before', { length: 16 }),
     after: varchar('after', { length: 16 }),
+    beforeRoles: json('before_roles').$type<string[]>(),
+    afterRoles: json('after_roles').$type<string[]>(),
     note: varchar('note', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).notNull(),
     at: datetime('at').notNull(),

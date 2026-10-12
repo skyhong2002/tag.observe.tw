@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import WritingPeople from './WritingPeople';
 
-export const metadata: Metadata = { title: '發文者身分 · 管理後台', robots: { index: false } };
+export const metadata: Metadata = { title: '發言者標籤 · 管理後台', robots: { index: false } };
 
 export default function AdminWritingPage() {
   return (
@@ -12,7 +12,7 @@ export default function AdminWritingPage() {
           管理後台
         </Link>
       </p>
-      <h1 className="mt-1 text-2xl font-bold">發文者身分</h1>
+      <h1 className="mt-1 text-2xl font-bold">發言者標籤</h1>
       <WritingPeople />
     </div>
   );

@@ -8,6 +8,7 @@ import type { Db } from '../db/client.ts';
 import { articles, articleWriting } from '../db/schema.ts';
 import { syndicationMedia } from '../jobs/similarity-job.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
+import { roleTags } from '../writing/roles.ts';
 import { PLATFORMS, ROLES, TITLE_TAGS, VERSION } from '../writing/rules.ts';
 import { taipeiDay } from './event-archive.ts';
 
@@ -39,14 +40,15 @@ type Counts = {
 async function counts(db: Db, from: string, mediaFilter: string | null) {
   const where = mediaFilter ? sql`media = ${mediaFilter}` : sql`1 = 1 ${excluded()}`;
   const [rows] = await db.execute(sql`
-    SELECT media, day, role, platform, COUNT(*) AS n,
+    SELECT media, day, role, roles, platform, COUNT(*) AS n,
       SUM(JSON_CONTAINS(title_tags, '"懸念"')) AS t1, SUM(JSON_CONTAINS(title_tags, '"反應"')) AS t2, SUM(JSON_CONTAINS(title_tags, '"攻擊"')) AS t3
     FROM article_writing WHERE day >= ${from} AND ${where}
-    GROUP BY media, day, role, platform`);
+    GROUP BY media, day, role, roles, platform`);
   return rows as unknown as Array<{
     media: string;
     day: string | Date;
     role: string | null;
+    roles: unknown;
     platform: string | null;
     n: number;
     t1: number;
@@ -58,13 +60,16 @@ async function counts(db: Db, from: string, mediaFilter: string | null) {
 function empty(): Counts {
   return { articles: 0, social: 0, roles: zero(ROLES), platforms: zero(PLATFORMS), titleTags: zero(TITLE_TAGS) };
 }
-function add(c: Counts, r: { role: string | null; platform: string | null; n: number; t1: number; t2: number; t3: number }) {
+function add(
+  c: Counts,
+  r: { role: string | null; roles: unknown; platform: string | null; n: number; t1: number; t2: number; t3: number },
+) {
   const n = Number(r.n);
   c.articles += n;
   if (r.platform) {
     c.social += n;
     c.platforms[r.platform] = (c.platforms[r.platform] ?? 0) + n;
-    if (r.role) c.roles[r.role] = (c.roles[r.role] ?? 0) + n;
+    for (const role of roleTags(r.roles, r.role)) c.roles[role] = (c.roles[role] ?? 0) + n;
   }
   c.titleTags['懸念'] += Number(r.t1);
   c.titleTags['反應'] += Number(r.t2);
@@ -90,9 +95,9 @@ export async function writingOverview(db: Db, days: number, now = Date.now()) {
     byDay.set(k, d);
   }
   const [posterRows] = await db.execute(sql`
-    SELECT poster, role, COUNT(*) AS n, COUNT(DISTINCT media) AS outlets FROM article_writing
-    WHERE day >= ${from} AND poster IS NOT NULL AND role <> '網友民眾' ${excluded()}
-    GROUP BY poster, role ORDER BY n DESC LIMIT 40`);
+    SELECT poster, JSON_ARRAYAGG(DISTINCT COALESCE(roles, JSON_ARRAY(role))) AS role_sets, COUNT(*) AS n, COUNT(DISTINCT media) AS outlets FROM article_writing
+    WHERE day >= ${from} AND poster IS NOT NULL AND (role <> '網友民眾' OR JSON_LENGTH(roles) > 1) ${excluded()}
+    GROUP BY poster ORDER BY n DESC LIMIT 40`);
   return {
     generatedAt: new Date(now).toISOString(),
     version: VERSION,
@@ -104,12 +109,11 @@ export async function writingOverview(db: Db, days: number, now = Date.now()) {
       .filter(([, c]) => c.articles >= MIN_MEDIA_ARTICLES)
       .map(([media, c]) => ({ media, name: outletIdentity(media).name, ...c }))
       .sort((a, b) => b.social / b.articles - a.social / a.articles),
-    posters: (posterRows as unknown as Array<{ poster: string; role: string; n: number; outlets: number }>).map((r) => ({
-      name: r.poster,
-      role: r.role,
-      articles: Number(r.n),
-      outlets: Number(r.outlets),
-    })),
+    posters: (posterRows as unknown as Array<{ poster: string; role_sets: string | unknown[]; n: number; outlets: number }>).map((r) => {
+      const sets = typeof r.role_sets === 'string' ? JSON.parse(r.role_sets) : r.role_sets;
+      const roles = roleTags(sets.flatMap((set: unknown) => roleTags(set)));
+      return { name: r.poster, role: roles[0] ?? '未知', roles, articles: Number(r.n), outlets: Number(r.outlets) };
+    }),
   };
 }
 
@@ -150,7 +154,8 @@ export interface WritingListQuery {
 
 export async function writingArticles(db: Db, q: WritingListQuery, now = Date.now()) {
   const conds = [gte(articleWriting.day, fromDay(q.days, now))];
-  if (q.role) conds.push(eq(articleWriting.role, q.role));
+  if (q.role)
+    conds.push(sql`JSON_CONTAINS(COALESCE(${articleWriting.roles}, JSON_ARRAY(${articleWriting.role})), ${JSON.stringify(q.role)})`);
   if (q.platform) conds.push(eq(articleWriting.platform, q.platform));
   if (q.media) conds.push(eq(articleWriting.media, q.media));
   // Syndication sites repeat other outlets' articles; list them only when asked for.
@@ -167,6 +172,7 @@ export async function writingArticles(db: Db, q: WritingListQuery, now = Date.no
       platform: articleWriting.platform,
       poster: articleWriting.poster,
       role: articleWriting.role,
+      roles: articleWriting.roles,
       evidence: articleWriting.evidence,
       titleTags: articleWriting.titleTags,
       title: articles.title,
@@ -178,7 +184,12 @@ export async function writingArticles(db: Db, q: WritingListQuery, now = Date.no
     .orderBy(desc(articleWriting.articleId))
     .limit(q.limit);
   return {
-    articles: rows.map((r) => ({ ...r, name: outletIdentity(r.media).name, publishedAt: r.publishedAt.toISOString() })),
+    articles: rows.map((r) => ({
+      ...r,
+      roles: roleTags(r.roles, r.role),
+      name: outletIdentity(r.media).name,
+      publishedAt: r.publishedAt.toISOString(),
+    })),
     next: rows.length === q.limit ? rows[rows.length - 1].id : null,
   };
 }
@@ -191,7 +202,14 @@ export async function articleWritingOf(db: Db, id: number) {
     version: row.version,
     analyzedAt: row.analyzedAt.toISOString(),
     social: row.platform
-      ? { platform: row.platform, poster: row.poster, role: row.role, roleSource: row.roleSource, evidence: row.evidence }
+      ? {
+          platform: row.platform,
+          poster: row.poster,
+          role: row.role,
+          roles: roleTags(row.roles, row.role),
+          roleSource: row.roleSource,
+          evidence: row.evidence,
+        }
       : null,
     titleTags: row.titleTags,
   };

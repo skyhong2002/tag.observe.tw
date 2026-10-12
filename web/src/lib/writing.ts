@@ -18,7 +18,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   藝人網紅: '藝人、網紅',
   機構: '公司、團體',
   網友民眾: '網友、民眾',
-  未知: '身分未標明',
+  未知: '尚未標記',
 };
 export const PLATFORM_LABEL: Record<string, string> = {
   Facebook: '臉書',
@@ -52,7 +52,7 @@ export interface WritingOverview {
   totals: WritingCounts;
   daily: Array<WritingCounts & { day: string }>;
   media: Array<WritingCounts & { media: string; name: string }>;
-  posters: Array<{ name: string; role: Role; articles: number; outlets: number }>;
+  posters: Array<{ name: string; role: Role; roles: Role[]; articles: number; outlets: number }>;
 }
 export interface MediaWriting {
   media: string;
@@ -74,6 +74,7 @@ export interface WritingArticle {
   platform: string | null;
   poster: string | null;
   role: Role | null;
+  roles: Role[];
   evidence: string | null;
   titleTags: TitleTag[];
 }
@@ -85,6 +86,7 @@ export interface ArticleWriting {
     platform: string;
     poster: string | null;
     role: Role | null;
+    roles: Role[];
     roleSource: 'clause' | 'people' | null;
     evidence: string | null;
   } | null;
@@ -119,10 +121,10 @@ export const share = (part: number, whole: number) => (whole ? `${((100 * part) 
 /** 「沈政男（醫療健康）的臉書貼文」 */
 export function postPhrase(s: NonNullable<ArticleWriting['social']>) {
   const platform = PLATFORM_LABEL[s.platform] ?? s.platform;
-  const who = s.poster
-    ? `${s.poster}${s.role && s.role !== '未知' ? `（${ROLE_LABEL[s.role]}）` : ''}`
-    : s.role && s.role !== '未知'
-      ? ROLE_LABEL[s.role]
-      : '';
+  const labels = (s.roles ?? (s.role ? [s.role] : []))
+    .filter((r) => r !== '未知')
+    .map((r) => ROLE_LABEL[r])
+    .join('、');
+  const who = s.poster ? `${s.poster}${labels ? `（${labels}）` : ''}` : labels;
   return { who, platform };
 }

@@ -61,8 +61,10 @@ async function recorded<T extends object>(db: Db, name: string, now: () => Date,
 }
 
 export async function loadPeople(db: Db): Promise<Map<string, Person>> {
-  const rows = await db.select({ name: writingPeople.name, role: writingPeople.role, source: writingPeople.source }).from(writingPeople);
-  return new Map(rows.map((r) => [r.name, { role: r.role as Role, source: r.source }]));
+  const rows = await db
+    .select({ name: writingPeople.name, role: writingPeople.role, roles: writingPeople.roles, source: writingPeople.source })
+    .from(writingPeople);
+  return new Map(rows.map((r) => [r.name, { role: r.role as Role, roles: (r.roles ?? [r.role]) as Role[], source: r.source }]));
 }
 
 export async function runWritingJob(
@@ -133,6 +135,7 @@ export async function analyzeBatch(db: Db, limit: number, people: Map<string, Pe
           evidence: sql`VALUES(evidence)`,
           poster: sql`VALUES(poster)`,
           role: sql`VALUES(role)`,
+          roles: sql`VALUES(roles)`,
           roleSource: sql`VALUES(role_source)`,
           titleTags: sql`VALUES(title_tags)`,
           analyzedAt: sql`VALUES(analyzed_at)`,
@@ -195,6 +198,7 @@ export async function runWritingPeopleJob(db: Db, { now = () => new Date(), log 
             fresh.slice(i, i + CHUNK).map((r) => ({
               name: r.name,
               role: r.role,
+              roles: [r.role],
               source: 'auto' as const,
               hits: r.hits,
               total: r.total,
@@ -205,6 +209,7 @@ export async function runWritingPeopleJob(db: Db, { now = () => new Date(), log 
           .onDuplicateKeyUpdate({
             set: {
               role: sql`VALUES(role)`,
+              roles: sql`VALUES(roles)`,
               hits: sql`VALUES(hits)`,
               total: sql`VALUES(total)`,
               note: sql`VALUES(note)`,
@@ -280,7 +285,7 @@ export async function relabel(db: Db, rows: Array<{ articleId: number; poster: s
       for (let i = 0; i < ids.length; i += CHUNK) {
         await db
           .update(articleWriting)
-          .set({ role, poster: name, roleSource: 'people' })
+          .set({ role, roles: people.get(name)?.roles ?? [role], poster: name, roleSource: 'people' })
           .where(inArray(articleWriting.articleId, ids.slice(i, i + CHUNK)));
         n += Math.min(CHUNK, ids.length - i);
       }

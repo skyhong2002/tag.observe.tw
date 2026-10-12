@@ -28,7 +28,7 @@ export default function MediaWritingCard({ data }: { data: MediaWriting | null }
         </dd>
         {roles.length > 0 && (
           <>
-            <dt className="text-zinc-500 dark:text-zinc-400">發文者</dt>
+            <dt className="text-zinc-500 dark:text-zinc-400">發言者</dt>
             <dd>
               {roles.slice(0, 4).map((r) => (
                 <Link

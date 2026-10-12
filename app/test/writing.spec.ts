@@ -10,6 +10,7 @@ import { hashToken, type LoginStore } from '../src/auth/google-login.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import { articles, articleWriting } from '../src/db/schema.ts';
 import { runWritingJob, runWritingPeopleJob } from '../src/jobs/writing-job.ts';
+import { writingOverview } from '../src/v1/writing.ts';
 import { VERSION } from '../src/writing/rules.ts';
 
 const url = process.env.TEST_DB_URL;
@@ -144,5 +145,66 @@ describe.skipIf(!url)('writing signals (MariaDB)', () => {
     });
     expect((await put('沈小明', { role: null })).json().relabelled).toBe(1);
     expect((await app.inject({ url: `/api/v1/articles/${ids[0]}/writing` })).json().social.role).toBe('未知');
+  });
+  it('persists multiple labels through editing, analysis, filtering, counts and removal', async () => {
+    const put = (roles: unknown, note = '具醫師背景，也從事評論') =>
+      app.inject({
+        method: 'PUT',
+        url: '/auth/admin/writing/people/沈小明',
+        headers: { cookie: 'tag_session=admin', origin: ORIGIN },
+        payload: { roles, note },
+      });
+    const before = await writingOverview(db, 7);
+    for (const invalid of [[], ['未知'], ['不存在'], ['評論名嘴', null], '評論名嘴']) {
+      expect((await put(invalid)).statusCode).toBe(400);
+    }
+    expect((await put(['評論名嘴', '醫療健康'], '')).statusCode).toBe(400);
+    const saved = await put(['醫療健康', '評論名嘴', '醫療健康']);
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json()).toMatchObject({ roles: ['評論名嘴', '醫療健康'], relabelled: 1 });
+
+    // Re-analysis and the daily people job must preserve every manual label.
+    await db.update(articleWriting).set({ version: 'old' }).where(eq(articleWriting.articleId, ids[0]));
+    await runWritingJob(db);
+    await runWritingPeopleJob(db);
+    const article = (await app.inject({ url: `/api/v1/articles/${ids[0]}/writing` })).json();
+    expect(article.social).toMatchObject({ roles: ['評論名嘴', '醫療健康'], roleSource: 'people' });
+    for (const role of ['評論名嘴', '醫療健康']) {
+      const list = (await app.inject({ url: `/api/v1/writing/articles?role=${role}&poster=沈小明` })).json();
+      expect(list.articles).toHaveLength(1);
+      expect(list.articles[0]).toMatchObject({ id: ids[0], roles: ['評論名嘴', '醫療健康'] });
+    }
+    const after = await writingOverview(db, 7);
+    expect(after.totals.articles).toBe(before.totals.articles);
+    expect(after.totals.social).toBe(before.totals.social);
+    expect(after.totals.roles['評論名嘴']).toBe(before.totals.roles['評論名嘴'] + 1);
+    expect(after.totals.roles['醫療健康']).toBe(before.totals.roles['醫療健康'] + 1);
+    expect(after.posters.filter((p) => p.name === '沈小明')).toEqual([
+      expect.objectContaining({ roles: ['評論名嘴', '醫療健康'], articles: 1, outlets: 1 }),
+    ]);
+    const adminList = () => app.inject({ url: '/auth/admin/writing/people', headers: { cookie: 'tag_session=admin' } });
+    expect((await adminList()).json().posters.find((p: { name: string }) => p.name === '沈小明')).toMatchObject({
+      tags: ['評論名嘴', '醫療健康'],
+      articles: 1,
+      roles: [
+        { role: '評論名嘴', n: 1 },
+        { role: '醫療健康', n: 1 },
+      ],
+    });
+    await put(['醫療健康']);
+    expect((await adminList()).json().log[0]).toMatchObject({ beforeRoles: ['評論名嘴', '醫療健康'], afterRoles: ['醫療健康'] });
+    const removed = (await app.inject({ url: '/api/v1/writing/articles?role=評論名嘴&poster=沈小明' })).json();
+    expect(removed.articles).toEqual([]);
+    await put(null);
+    expect((await app.inject({ url: `/api/v1/articles/${ids[0]}/writing` })).json().social.roles).toEqual(['未知']);
+    expect((await adminList()).json().log[0]).toMatchObject({ beforeRoles: ['醫療健康'], afterRoles: [] });
+  });
+
+  it('reads and filters legacy rows without a roles array', async () => {
+    await db.update(articleWriting).set({ role: '醫療健康', roles: null }).where(eq(articleWriting.articleId, ids[0]));
+    expect((await app.inject({ url: `/api/v1/articles/${ids[0]}/writing` })).json().social.roles).toEqual(['醫療健康']);
+    const list = (await app.inject({ url: '/api/v1/writing/articles?role=醫療健康&poster=沈小明' })).json();
+    expect(list.articles.map((a: { id: number }) => a.id)).toEqual([ids[0]]);
+    expect((await writingOverview(db, 7)).posters.find((p) => p.name === '沈小明')?.roles).toEqual(['醫療健康']);
   });
 });

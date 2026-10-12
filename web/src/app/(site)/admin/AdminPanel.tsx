@@ -73,13 +73,13 @@ function TagVisualsLink() {
 function WritingPeopleLink() {
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold">發文者身分</h2>
-      <p className={note}>「看寫法」裡被轉述的發文者：修正分錯的身分，或補上身分未標明的名字。</p>
+      <h2 className="text-lg font-semibold">發言者標籤</h2>
+      <p className={note}>「看寫法」裡被轉述的發言者：設定角色或背景標籤，同一位發言者可有多個標籤。</p>
       <a
         href="/admin/writing/"
         className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"
       >
-        檢視發文者
+        檢視發言者
       </a>
     </section>
   );

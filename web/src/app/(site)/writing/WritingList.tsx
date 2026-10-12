@@ -32,7 +32,18 @@ export default function WritingList({ articles, evidence = true }: { articles: W
                       {a.poster}
                     </Link>
                   ) : null}
-                  {a.role && a.role !== '未知' ? `（${ROLE_LABEL[a.role]}）` : ''}·{PLATFORM_LABEL[a.platform] ?? a.platform}
+                  {(a.roles ?? (a.role ? [a.role] : []))
+                    .filter((r) => r !== '未知')
+                    .map((r) => (
+                      <Link
+                        key={r}
+                        href={`/writing/?role=${encodeURIComponent(r)}`}
+                        className="ml-1 inline-block rounded-full bg-zinc-100 px-2 dark:bg-zinc-800 hover:underline"
+                      >
+                        {ROLE_LABEL[r]}
+                      </Link>
+                    ))}{' '}
+                  ·{PLATFORM_LABEL[a.platform] ?? a.platform}
                 </span>
               )}
               {!evidence && a.titleTags.map((t) => <span key={t}>{TITLE_TAG_LABEL[t].label}</span>)}

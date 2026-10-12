@@ -164,7 +164,7 @@ const schemas: Record<string, Schema> = {
   WritingCounts: obj({
     articles: int('已分析篇數'),
     social: int('轉述社群貼文篇數'),
-    roles: map(int(), '依發文者身分'),
+    roles: map(int(), '依發言者標籤；一篇可計入多個標籤，不可直接相加'),
     platforms: map(int(), '依平台'),
     titleTags: map(int(), '標題用詞：懸念、反應、攻擊'),
   }),
@@ -2777,7 +2777,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'writing',
     summary: '寫法總覽：轉述社群貼文與標題用詞',
     description:
-      '分母是已分析的文章（取得內文者）。轉述社群貼文：內文前 250 字寫明某人在臉書、Threads、X、節目等發文；發文者身分依該句的頭銜詞，或這個名字在其他報導最常搭配的頭銜。轉載站不列入媒體表與總數。規則版本見 version。',
+      '分母是已分析的文章（取得內文者）。轉述社群貼文：內文前 250 字寫明某人在臉書、Threads、X、節目等發文；發言者標籤依該句的頭銜詞，或這個名字在其他報導最常搭配的頭銜，管理員可設定多個角色或背景標籤；各標籤統計可重疊，文章總數不重複計算。轉載站不列入媒體表與總數。規則版本見 version。',
     params: [q('days', '最近幾天（台北日期）', intIn(7, 90, 30))],
     example: '/api/v1/writing?days=30',
     response: obj({
@@ -2789,8 +2789,14 @@ export const ENDPOINTS: Endpoint[] = [
       daily: arr({ allOf: [obj({ day: str() }), ref('WritingCounts')] }, '逐日'),
       media: arr({ allOf: [obj({ media: ref('MediaKey'), name: str() }), ref('WritingCounts')] }, `分析篇數 ≥ 100 的媒體，依轉述比例排序`),
       posters: arr(
-        obj({ name: str(), role: str(), articles: int(), outlets: int('幾家媒體轉述') }),
-        '最常被轉述的發文者（不含網友民眾），最多 40 人',
+        obj({
+          name: str(),
+          role: str('相容舊版的第一個標籤'),
+          roles: arr(str(), '全部發言者標籤'),
+          articles: int(),
+          outlets: int('幾家媒體轉述'),
+        }),
+        '最常被轉述的發言者（不含網友民眾），最多 40 人',
       ),
     }),
     cache: '5 分鐘',
@@ -2803,7 +2809,7 @@ export const ENDPOINTS: Endpoint[] = [
     params: [
       q(
         'role',
-        '發文者身分',
+        '發言者標籤',
         str(undefined, {
           enum: ['公職政治', '前任公職', '評論名嘴', '專家企業', '醫療健康', '氣象', '藝人網紅', '機構', '網友民眾', '未知'],
         }),
@@ -2815,7 +2821,7 @@ export const ENDPOINTS: Endpoint[] = [
       ),
       q('tag', '標題用詞', str(undefined, { enum: ['懸念', '反應', '攻擊'] })),
       q('media', '刊登媒體', str()),
-      q('poster', '發文者名字', str()),
+      q('poster', '發言者名字', str()),
       q('days', '最近幾天', intIn(1, 90, 30)),
       q('limit', '筆數', intIn(1, 100, 30)),
       q('before', '只列 id 小於此值的文章', { type: 'integer', minimum: 1 }),
@@ -2832,8 +2838,9 @@ export const ENDPOINTS: Endpoint[] = [
           publishedAt: time(),
           platform: nullable(str()),
           poster: nullable(str()),
-          role: nullable(str()),
-          evidence: nullable(str('判斷依據：內文中點名發文者的句子')),
+          role: nullable(str('相容舊版的第一個標籤')),
+          roles: arr(str(), '全部發言者標籤'),
+          evidence: nullable(str('判斷依據：內文中點名發言者的句子')),
           titleTags: arr(str()),
         }),
       ),
@@ -2871,7 +2878,8 @@ export const ENDPOINTS: Endpoint[] = [
         obj({
           platform: str(),
           poster: nullable(str()),
-          role: nullable(str()),
+          role: nullable(str('相容舊版的第一個標籤')),
+          roles: arr(str(), '全部發言者標籤'),
           roleSource: nullable(str('clause：句中頭銜；people：名字對照表；null：判斷不出')),
           evidence: nullable(str()),
         }),
