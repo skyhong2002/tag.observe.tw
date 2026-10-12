@@ -79,7 +79,7 @@
   雜訊標籤（`isTagNoise`）與媒體自己的品牌標籤不推薦；已追蹤的項目不再出現。
 - **私人 RSS**：`/my/settings/` 建立。token 以明文存在 `user_feed_tokens`，讓設定頁能再次顯示網址（外流頂多洩漏追蹤清單）；`cache-control: private`。
 - **收藏**：文章頁與事件頁的「收藏」，`/my/saved/` 可加註記。
-- **偏好同步**：右上角深淺色切換與 `/observe/opt-out/` 的統計退出，登入時存進 `user_prefs`。帳號裡已有值時以帳號為準，第一次則把這個瀏覽器的設定存上去（`web/src/components/reader/PrefsSync.tsx`）。
+- **偏好同步**：右上角深淺色切換與 `/observe/opt-out/` 的統計退出，登入時存進 `user_prefs`。主題以帳號已有值為準；統計退出採隱私優先，帳號的 `false` 不會清除本機退出設定，較晚回來的舊偏好不覆蓋使用者的新選擇。第一次則把這個瀏覽器的設定存上去（`web/src/components/reader/PrefsSync.tsx`）。只有使用者明確操作才能恢復本機設定；DNT／GPC 等 guard 仍然有效。
 - **閱讀報告**（`/my/reading/`）：預設關閉。開啟後，登入時打開本站文章頁（`/article/<id>/`）才會記錄，到原站閱讀不會；報告列出近 30 天的媒體、藍綠陣營（依媒體標籤，兩個都勾算藍營）、來源國家與常見標籤。關閉時刪除所有紀錄。
 - **API 金鑰**：只存 SHA-256（`user_api_keys`）。gateway 的 rate limit 遇到有效的 `x-api-key` 時改用 `key:<id>` 計數，每分鐘 1000 次（沒帶金鑰時每個 IP 60 次）；查詢結果快取 60 秒，所以撤銷最晚 1 分鐘後在其他程序生效（同一個程序立即生效），`last_used_at` 每 10 分鐘最多更新一次（`app/src/reader/api-keys.ts`）。
 - **回報錯誤**：文章頁「回報錯誤」可選標籤（附建議的完整標籤）、署名、媒體歸屬或其他。`/admin/` 最上方的「讀者回報」列出待處理項目，標籤回報會標示建議新增與移除的標籤；讀者在 `/my/settings/` 看得到處理結果與管理員的說明。
