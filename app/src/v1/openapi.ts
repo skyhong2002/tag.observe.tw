@@ -62,6 +62,36 @@ const firstCollectionSchema = obj({
 });
 
 const schemas: Record<string, Schema> = {
+  VocabularyTerm: obj({
+    id: str('原始 UTF-8 標籤字串的 SHA-256，大小寫及字形不合併'),
+    label: str('原標籤'),
+    articleCount: int('快照時目前索引包含此詞的文章數'),
+    firstPublishedAt: time('這些現存文章最早刊登時間，不是詞彙建立時間'),
+    lastPublishedAt: time('這些現存文章最晚刊登時間'),
+    origin: str('混合原文關鍵字、編輯、規則補標', { const: 'article-tags-mixed' }),
+    journalistAssigned: { type: 'null', description: '目前無逐詞記者指派證據' },
+    noise: bool('tag 的 isTagNoise 判定；標記但不刪除詞條'),
+    noiseReasons: arr(str('empty、category、english-function-word、section-label 或 bare-year')),
+    noEqual: bool('修剪前後空白後命中 no-equal-tags；不宜連結事件，並不等同顯示噪音'),
+  }),
+  VocabularyManifest: obj({
+    schemaVersion: int(),
+    id: str('不可變快照 UUID'),
+    previousId: nullable(str('直接前一版本')),
+    generatedAt: time(),
+    source: str(),
+    attribution: str(),
+    coverage: str('全期間目前 article_tags 與現存 articles 關聯，不包含已移出索引/封存資料', { const: 'all-current-indexed-article-tags' }),
+    provenance: str(),
+    identity: str(),
+    total: int(),
+    pageSize: int(),
+    pages: arr(str('對應分頁 JSON 陣列加 LF 的 SHA-256')),
+    sha256: str('所有依 UTF-8 排序詞條 JSON 各加 LF 串接後 SHA-256'),
+    changeCount: int(),
+    changePages: arr(str('變更分頁 checksum')),
+    noisePolicyVersion: str('tag 噪音規則版本與 no-equal-tags 清單的 SHA-256；詞條判定固定於此快照'),
+  }),
   Error: obj({ error: str('錯誤代碼或說明') }, '錯誤回應', []),
   WritingCounts: obj({
     articles: int('已分析篇數'),
@@ -690,6 +720,7 @@ interface Endpoint {
 }
 
 export const API_TAGS = [
+  { name: 'vocabulary', description: '共用標籤詞彙快照' },
   { name: 'meta', description: 'API 本身' },
   { name: 'ranking', description: '標籤排行與分類' },
   { name: 'articles', description: '文章搜尋' },
@@ -727,6 +758,61 @@ const bylineFilters = [
 ];
 
 export const ENDPOINTS: Endpoint[] = [
+  {
+    path: '/api/v1/vocabulary/snapshots/current',
+    tag: 'vocabulary',
+    summary: '目前完整索引詞彙快照',
+    description:
+      '由受控匯出命令產生，HTTP 請求不查詢全量文章或寫入。涵蓋全部現存文章索引的標籤，不限排名或時間窗；不是人工 canonical 詞典，也不保證記者指派。尚未設定或產生快照時不可用。',
+    response: ref('VocabularyManifest'),
+    errors: { '404': '尚無快照', '503': '匯出未設定或不可用' },
+    cache: '60 秒',
+  },
+  {
+    path: '/api/v1/vocabulary/snapshots/{id}',
+    tag: 'vocabulary',
+    summary: '讀取固定版本詞彙分頁',
+    params: [
+      p('id', 'current 回傳的快照 id', str(), '12345678-1234-4234-8234-123456789abc'),
+      q('cursor', '上一頁 nextCursor；起始 0', str(), '0'),
+    ],
+    response: obj({
+      snapshot: ref('VocabularyManifest'),
+      entries: arr(ref('VocabularyTerm')),
+      cursor: str(),
+      nextCursor: nullable(str()),
+      sha256: str('本頁 entries 的 JSON 陣列加 LF checksum'),
+    }),
+    description: '固定每頁最多 500 詞。下載端須核對每頁與完整快照 checksum、筆數，再原子發布。不同快照的 cursor 不得混用。',
+    errors: { '400': '快照 id 或 cursor 無效', '404': '快照不存在', '503': '匯出不可用/校驗失敗' },
+    cache: '不可變，1 天',
+  },
+  {
+    path: '/api/v1/vocabulary/changes',
+    tag: 'vocabulary',
+    summary: '直接前後版本的詞彙變更',
+    params: [
+      q('after', '已持有的快照 id，必填', str(), '12345678-1234-4234-8234-123456789abc'),
+      q('target', '目標快照；第一頁可省略，後續頁須固定回傳 snapshot.id', str()),
+      q('cursor', '上一頁 nextCursor', str(), '0'),
+    ],
+    response: obj({
+      snapshot: ref('VocabularyManifest'),
+      entries: arr({
+        oneOf: [
+          obj({ action: str('', { const: 'upsert' }), term: ref('VocabularyTerm') }),
+          obj({ action: str('', { const: 'absent-from-index' }), id: str(), label: str() }),
+        ],
+      }),
+      cursor: str(),
+      nextCursor: nullable(str()),
+      sha256: str(),
+    }),
+    description:
+      '只接受 target 的直接 previousId 或 target 本身。upsert 為新增/統計修正；absent-from-index 只代表不再出現在現存索引，不推論編輯刪除或停用。跨多個版本回 409，請下載完整快照。',
+    errors: { '400': '參數無效', '404': '目標快照不存在', '409': 'resnapshotRequired=true，需全量重同步', '503': '匯出不可用' },
+    cache: '60 秒',
+  },
   {
     path: '/api/status',
     tag: 'meta',

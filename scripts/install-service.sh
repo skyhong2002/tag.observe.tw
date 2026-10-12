@@ -26,7 +26,7 @@ flock -n 9 || { echo 'Another preview deployment is running.' >&2; exit 1; }
 if [[ ! -d "$release_dir" ]]; then
   staging_dir=$(mktemp -d "$release_root/releases/.staging-$commit_id-XXXXXX")
   trap 'if [[ -n ${staging_dir:-} && -d "$staging_dir" ]]; then chmod -R u+w "$staging_dir"; rm -rf -- "$staging_dir"; fi' EXIT
-  git archive "$commit_id" app/src app/data package.json package-lock.json web | tar -x -C "$staging_dir"
+  git archive "$commit_id" app/src app/data tools/vocabulary-export.ts package.json package-lock.json web | tar -x -C "$staging_dir"
   npm ci --prefix "$staging_dir" --omit=dev --ignore-scripts --no-audit --no-fund
   # SSR frontend: build once per release, then run the standalone server.
   npm ci --prefix "$staging_dir/web" --ignore-scripts --no-audit --no-fund

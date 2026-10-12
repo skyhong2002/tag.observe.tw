@@ -71,12 +71,23 @@ const ENGLISH_FUNCTION_WORDS = new Set([
 const SECTION_SUFFIX = /(?:新聞|要聞|匯流|總覽)$/;
 const SUBJECTS = new Set(['假新聞']);
 
-export function isTagNoise(tag: string): boolean {
+export const TAG_NOISE_RULE_VERSION = '1';
+export type TagNoiseReason = 'empty' | 'category' | 'english-function-word' | 'section-label' | 'bare-year';
+
+export function tagNoiseReasons(tag: string): TagNoiseReason[] {
   const t = tag.normalize('NFKC').trim().toLowerCase();
-  if (!t || CATEGORIES.has(t) || ENGLISH_FUNCTION_WORDS.has(t)) return true;
-  if (SECTION_SUFFIX.test(t) && !SUBJECTS.has(t)) return true;
+  if (!t) return ['empty'];
+  if (CATEGORIES.has(t)) return ['category'];
+  if (ENGLISH_FUNCTION_WORDS.has(t)) return ['english-function-word'];
+  if (SECTION_SUFFIX.test(t) && !SUBJECTS.has(t)) return ['section-label'];
   // Whole terms only: keep 0050, 0056, 3C, 2026大選 and named historical events.
   return /^(?:(?:西元|公元)?(?:19|20|21)\d{2}(?:年(?:度)?)?|(?:民國)?[1-9]\d{1,2}年(?:度)?|民國[1-9]\d{1,2}|(?:民國|西元|公元)?[〇零○一二三四五六七八九]{2,4}年(?:度)?)$/.test(
     t,
-  );
+  )
+    ? ['bare-year']
+    : [];
+}
+
+export function isTagNoise(tag: string): boolean {
+  return tagNoiseReasons(tag).length > 0;
 }

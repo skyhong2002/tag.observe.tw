@@ -58,6 +58,9 @@ for a in r.json()["articles"]:
 
 | 端點 | 說明 |
 | --- | --- |
+| [`GET /api/v1/vocabulary/snapshots/current`](#api-v1-vocabulary-snapshots-current) | 目前完整索引詞彙快照 |
+| [`GET /api/v1/vocabulary/snapshots/{id}`](#api-v1-vocabulary-snapshots-id) | 讀取固定版本詞彙分頁 |
+| [`GET /api/v1/vocabulary/changes`](#api-v1-vocabulary-changes) | 直接前後版本的詞彙變更 |
 | [`GET /api/status`](#-api-status) | API 回應狀態與各端點用途 |
 | [`GET /api/v1/nearline/archives`](#api-v1-nearline-archives) | 查詢封存 metadata 索引 |
 | [`GET /api/v1/nearline/status`](#api-v1-nearline-status) | 封存索引更新狀況 |
@@ -124,6 +127,156 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/writing/articles`](#api-v1-writing-articles) | 寫法：符合條件的文章 |
 | [`GET /api/v1/media/{media}/writing`](#api-v1-media-media-writing) | 單一媒體的寫法統計與逐日趨勢 |
 | [`GET /api/v1/articles/{id}/writing`](#api-v1-articles-id-writing) | 單篇文章的寫法標記 |
+
+## 共用標籤詞彙快照
+
+<a id="api-v1-vocabulary-snapshots-current"></a>
+
+### `GET /api/v1/vocabulary/snapshots/current`
+
+**目前完整索引詞彙快照**
+
+由受控匯出命令產生，HTTP 請求不查詢全量文章或寫入。涵蓋全部現存文章索引的標籤，不限排名或時間窗；不是人工 canonical 詞典，也不保證記者指派。尚未設定或產生快照時不可用。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/current'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `schemaVersion` | integer |  |
+| `id` | string | 不可變快照 UUID |
+| `previousId` | string \| null | 直接前一版本 |
+| `generatedAt` | string (ISO 時間) |  |
+| `source` | string |  |
+| `attribution` | string |  |
+| `coverage` | string | 全期間目前 article_tags 與現存 articles 關聯，不包含已移出索引/封存資料 |
+| `provenance` | string |  |
+| `identity` | string |  |
+| `total` | integer |  |
+| `pageSize` | integer |  |
+| `pages` | string[] |  |
+| `sha256` | string | 所有依 UTF-8 排序詞條 JSON 各加 LF 串接後 SHA-256 |
+| `changeCount` | integer |  |
+| `changePages` | string[] |  |
+| `noisePolicyVersion` | string | tag 噪音規則版本與 no-equal-tags 清單的 SHA-256；詞條判定固定於此快照 |
+
+錯誤：`404` 尚無快照；`503` 匯出未設定或不可用。
+
+快取：60 秒。
+
+<a id="api-v1-vocabulary-snapshots-id"></a>
+
+### `GET /api/v1/vocabulary/snapshots/{id}`
+
+**讀取固定版本詞彙分頁**
+
+固定每頁最多 500 詞。下載端須核對每頁與完整快照 checksum、筆數，再原子發布。不同快照的 cursor 不得混用。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `id` | 路徑 | string | current 回傳的快照 id，例：`12345678-1234-4234-8234-123456789abc` |
+| `cursor` | query | string | 上一頁 nextCursor；起始 0，例：`0` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8234-123456789abc'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshot` | object |  |
+| `snapshot.schemaVersion` | integer |  |
+| `snapshot.id` | string | 不可變快照 UUID |
+| `snapshot.previousId` | string \| null | 直接前一版本 |
+| `snapshot.generatedAt` | string (ISO 時間) |  |
+| `snapshot.source` | string |  |
+| `snapshot.attribution` | string |  |
+| `snapshot.coverage` | string | 全期間目前 article_tags 與現存 articles 關聯，不包含已移出索引/封存資料 |
+| `snapshot.provenance` | string |  |
+| `snapshot.identity` | string |  |
+| `snapshot.total` | integer |  |
+| `snapshot.pageSize` | integer |  |
+| `snapshot.pages` | string[] |  |
+| `snapshot.sha256` | string | 所有依 UTF-8 排序詞條 JSON 各加 LF 串接後 SHA-256 |
+| `snapshot.changeCount` | integer |  |
+| `snapshot.changePages` | string[] |  |
+| `snapshot.noisePolicyVersion` | string | tag 噪音規則版本與 no-equal-tags 清單的 SHA-256；詞條判定固定於此快照 |
+| `entries` | object[] |  |
+| `entries[].id` | string | 原始 UTF-8 標籤字串的 SHA-256，大小寫及字形不合併 |
+| `entries[].label` | string | 原標籤 |
+| `entries[].articleCount` | integer | 快照時目前索引包含此詞的文章數 |
+| `entries[].firstPublishedAt` | string (ISO 時間) | 這些現存文章最早刊登時間，不是詞彙建立時間 |
+| `entries[].lastPublishedAt` | string (ISO 時間) | 這些現存文章最晚刊登時間 |
+| `entries[].origin` | string | 混合原文關鍵字、編輯、規則補標 |
+| `entries[].journalistAssigned` |  \| null | 目前無逐詞記者指派證據 |
+| `entries[].noise` | boolean | tag 的 isTagNoise 判定；標記但不刪除詞條 |
+| `entries[].noiseReasons` | string[] |  |
+| `entries[].noEqual` | boolean | 修剪前後空白後命中 no-equal-tags；不宜連結事件，並不等同顯示噪音 |
+| `cursor` | string |  |
+| `nextCursor` | string \| null |  |
+| `sha256` | string | 本頁 entries 的 JSON 陣列加 LF checksum |
+
+錯誤：`400` 快照 id 或 cursor 無效；`404` 快照不存在；`503` 匯出不可用/校驗失敗。
+
+快取：不可變，1 天。
+
+<a id="api-v1-vocabulary-changes"></a>
+
+### `GET /api/v1/vocabulary/changes`
+
+**直接前後版本的詞彙變更**
+
+只接受 target 的直接 previousId 或 target 本身。upsert 為新增/統計修正；absent-from-index 只代表不再出現在現存索引，不推論編輯刪除或停用。跨多個版本回 409，請下載完整快照。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `after` | query | string | 已持有的快照 id，必填，例：`12345678-1234-4234-8234-123456789abc` |
+| `target` | query | string | 目標快照；第一頁可省略，後續頁須固定回傳 snapshot.id |
+| `cursor` | query | string | 上一頁 nextCursor，例：`0` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/vocabulary/changes'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshot` | object |  |
+| `snapshot.schemaVersion` | integer |  |
+| `snapshot.id` | string | 不可變快照 UUID |
+| `snapshot.previousId` | string \| null | 直接前一版本 |
+| `snapshot.generatedAt` | string (ISO 時間) |  |
+| `snapshot.source` | string |  |
+| `snapshot.attribution` | string |  |
+| `snapshot.coverage` | string | 全期間目前 article_tags 與現存 articles 關聯，不包含已移出索引/封存資料 |
+| `snapshot.provenance` | string |  |
+| `snapshot.identity` | string |  |
+| `snapshot.total` | integer |  |
+| `snapshot.pageSize` | integer |  |
+| `snapshot.pages` | string[] |  |
+| `snapshot.sha256` | string | 所有依 UTF-8 排序詞條 JSON 各加 LF 串接後 SHA-256 |
+| `snapshot.changeCount` | integer |  |
+| `snapshot.changePages` | string[] |  |
+| `snapshot.noisePolicyVersion` | string | tag 噪音規則版本與 no-equal-tags 清單的 SHA-256；詞條判定固定於此快照 |
+| `entries` | object[] |  |
+| `cursor` | string |  |
+| `nextCursor` | string \| null |  |
+| `sha256` | string |  |
+
+錯誤：`400` 參數無效；`404` 目標快照不存在；`409` resnapshotRequired=true，需全量重同步；`503` 匯出不可用。
+
+快取：60 秒。
 
 ## API 本身
 

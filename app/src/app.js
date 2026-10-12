@@ -40,6 +40,7 @@ import { registerSiteObservation } from './v1/site-observation.ts';
 import { registerTagGroups } from './v1/tag-groups.ts';
 import { registerTagPerson } from './v1/tag-person.ts';
 import { registerTagVisual } from './v1/tag-visual.ts';
+import { registerVocabulary } from './v1/vocabulary.ts';
 import { registerWriting } from './v1/writing.ts';
 import { registerWritingAdmin } from './writing/admin.ts';
 
@@ -218,6 +219,7 @@ export async function buildApp(
   if (config.login && config.adminer)
     registerDbConsole(app, { currentUser: login.currentUser, origin: config.login.origin, adminer: config.adminer });
   registerReaderPresence(app);
+  registerVocabulary(app);
   registerNearline(app);
   const proxyToUi = createUiProxy(config.uiOrigin);
   registerApiMeta(app, proxyToUi);
