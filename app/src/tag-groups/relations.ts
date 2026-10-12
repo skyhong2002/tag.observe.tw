@@ -18,18 +18,21 @@ export function registerTagRelationsAdmin(
     if (!tag || tag.length > 60) return reply.code(400).send({ error: 'tag must be 1–60 characters' });
     const before = request.query.before === undefined ? null : Number(request.query.before);
     if (before !== null && (!Number.isSafeInteger(before) || before < 1)) return reply.code(400).send({ error: 'invalid before' });
-    // Both lookups are indexed. UNION deduplicates ids before pagination, so
-    // an article carrying both relationships still occupies just one row.
+    // Materialize the indexed lookups before joining articles. IN (UNION ...)
+    // can make MariaDB scan the entire articles table for a rare tag.
+    // UNION deduplicates ids, so both relationships still occupy one row.
     const [result] = await db.execute(sql`
       SELECT a.id, a.title, a.url, a.media, DATE_FORMAT(a.published_at, '%Y-%m-%dT%H:%i:%s.000Z') AS publishedAt,
         EXISTS(SELECT 1 FROM article_tags t WHERE t.article_id = a.id AND t.tag = ${tag}) AS tagged,
         w.poster, w.platform, w.evidence, w.version
-      FROM articles a
-      LEFT JOIN article_writing w ON w.article_id = a.id AND w.poster = ${tag}
-      WHERE a.id IN (
+      FROM (
         SELECT article_id FROM article_tags WHERE tag = ${tag}
+          ${before === null ? sql`` : sql`AND article_id < ${before}`}
         UNION SELECT article_id FROM article_writing WHERE poster = ${tag} AND platform IS NOT NULL
-      ) ${before === null ? sql`` : sql`AND a.id < ${before}`}
+          ${before === null ? sql`` : sql`AND article_id < ${before}`}
+      ) matches
+      STRAIGHT_JOIN articles a ON a.id = matches.article_id
+      LEFT JOIN article_writing w ON w.article_id = a.id AND w.poster = ${tag}
       ORDER BY a.id DESC LIMIT 31`);
     type Row = {
       id: number;
