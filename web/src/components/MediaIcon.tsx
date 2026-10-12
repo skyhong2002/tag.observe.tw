@@ -1,3 +1,4 @@
+import { getImageProps } from 'next/image';
 import { localMediaIcon, mediaIconClass } from '@/lib/media-icons';
 
 // The single place that turns a media id into its mark. Logos live in
@@ -21,20 +22,12 @@ export default function MediaIcon({
   const px = (n: number) => (rem ? `${n / 16}rem` : n);
   const box = { width: px(size), height: px(size) };
   if (src) {
+    // Keep a plain server-renderable img while sizing the original outlet PNG
+    // for its tiny display box. The shared optimizer supplies cached WebP.
+    const { props } = getImageProps({ src, alt: '', width: size, height: size, loading: 'lazy', fetchPriority: 'low' });
     return (
-      // A plain img: these are tiny local files Next would not optimise anyway
-      // (unoptimized), and next/image adds a client component per icon to the
-      // page payload; the home page alone draws a few hundred.
-      <img
-        src={src}
-        alt=""
-        width={size}
-        height={size}
-        loading="lazy"
-        decoding="async"
-        style={box}
-        className={`shrink-0 rounded-sm object-contain ${mediaIconClass(media)} ${className}`}
-      />
+      // biome-ignore lint/performance/noImgElement: getImageProps applies the Next image optimizer without a stateful Image component
+      <img {...props} alt="" style={box} className={`shrink-0 rounded-sm object-contain ${mediaIconClass(media)} ${className}`} />
     );
   }
   return (

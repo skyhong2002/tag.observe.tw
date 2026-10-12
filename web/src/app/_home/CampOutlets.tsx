@@ -18,7 +18,7 @@ export default function CampOutlets({ total, columns, children }: { total: numbe
       </div>
       <button
         type="button"
-        className={`${styles.campOutletsMore} ${open ? '' : styles.campOutletsMoreOverlay}`}
+        className={styles.campOutletsMore}
         aria-expanded={open}
         aria-controls="camp-outlets"
         onClick={() => setOpen((v) => !v)}

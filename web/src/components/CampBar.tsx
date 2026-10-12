@@ -12,6 +12,8 @@ export const CAMP_FILL: Record<Camp, string> = {
   green: 'bg-emerald-600 dark:bg-emerald-500',
   other: 'bg-zinc-400 dark:bg-zinc-500',
 };
+// The labelled bar needs at least 4.5:1 against its small white text in both themes.
+const CAMP_LABEL_FILL: Record<Camp, string> = { blue: 'bg-blue-700', green: 'bg-emerald-700', other: 'bg-zinc-600' };
 const CAMP_TEXT: Record<Camp, string> = {
   blue: 'text-blue-700 dark:text-blue-300',
   green: 'text-emerald-700 dark:text-emerald-300',
@@ -103,7 +105,7 @@ export function FullBar({ c }: { c: EventCoverage }) {
         .map((k) => (
           <span
             key={k}
-            className={`flex items-center justify-center overflow-hidden whitespace-nowrap ${CAMP_FILL[k]}`}
+            className={`flex items-center justify-center overflow-hidden whitespace-nowrap ${CAMP_LABEL_FILL[k]}`}
             style={{ flexGrow: c.camps[k] }}
             aria-hidden
           >

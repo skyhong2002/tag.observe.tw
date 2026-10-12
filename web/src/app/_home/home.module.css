@@ -177,12 +177,16 @@
 /* Outlet icons folded away so the share bar stays one line. */
 /* Two rows of icons per camp until expanded (26px icons, 6px gaps). */
 .campOutletsWrap { position: relative; flex-basis: 100%; min-width: 0; }
-/* Collapsed: three rows per camp, fading out towards the bottom, with the expand button sitting on the last row. */
+/* Collapsed: three rows per camp; the expand button stays below the links. */
 .campOutletsCollapsed .campOutletGroup ul { max-height: 90px; overflow: hidden; }
 .campOutletsCollapsed { mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); }
-.campOutletsMore { display: flex; align-items: center; gap: 6px; margin: 10px auto 0; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 12px; cursor: pointer; }
-.campOutletsMoreOverlay { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); margin: 0; box-shadow: 0 1px 4px rgb(0 0 0 / .08); }
+.campOutletsMore { display: flex; align-items: center; gap: 6px; min-height: 44px; margin: 10px auto 0; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 12px; cursor: pointer; }
 .campOutletsMore:hover { color: var(--accent); border-color: var(--accent); }
+@media (pointer: coarse) {
+  .campOutletGroup ul { grid-template-columns: repeat(auto-fill, 44px); }
+  .campOutletLink { width: 44px; height: 44px; }
+  .campOutletsCollapsed .campOutletGroup ul { max-height: 144px; }
+}
 
 /* Ranking rows: change since yesterday and a 48h trend line. */
 .rankTrend { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; flex-shrink: 0; }

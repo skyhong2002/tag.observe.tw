@@ -5,7 +5,7 @@ import { Children, type ReactNode, useEffect, useLayoutEffect, useRef, useState 
 // One line of same-size items: as many as the width allows, then "+N". The
 // rest open in a floating panel so expanding never pushes the layout down.
 
-const MORE = 32; // room kept for the "+N" button, px
+const MORE = 44; // same as the button's minimum width, including on touch screens
 
 export default function FitRow({ children, label }: { children: ReactNode; label: string }) {
   const items = Children.toArray(children);
@@ -62,7 +62,7 @@ export default function FitRow({ children, label }: { children: ReactNode; label
             aria-expanded={open}
             aria-label={`${label}：另外 ${rest} 家`}
             onClick={() => setOpen((v) => !v)}
-            className="shrink-0 cursor-pointer rounded px-1 tabular-nums hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="min-h-6 min-w-11 shrink-0 cursor-pointer rounded px-1 tabular-nums hover:bg-zinc-100 pointer-coarse:min-h-11 dark:hover:bg-zinc-800"
           >
             +{rest}
           </button>
