@@ -70,3 +70,49 @@ Both batches closed normally with complete HAR and raw request/response/failure 
 This fragment now completes4 actual routes (016/018/019/022), retains020 issues and021 pending. Other001–025 routes keep their previous scoped screenshot reviews and explicit remaining-state matrix; this is not a25-route blanket pass.
 
 Commit status: this fragment is included in the specifically authorized documentation commit with the ledger and RSC audit; parent handles integration/push. The hash is reported in the handoff and Git history. Deployment status: not deployed by this reviewer; candidate UI evidence only.
+
+
+## Offline historical image review update — 2026-10-12 21:41 UTC
+
+Reviewer: GPT-6.1 Sol. No browser, capture, build, deployment or image mutation was performed. Actual original-image inputs and their read times are recorded in `/home/deck/tag-analysis-private/ui-review/f1/completion-001-025-review.log`; this update uses historical SHA `48083b58c4ee3d16f2072206f1da3df332f34143`, not current candidate source HEAD or a revalidation of its fixes.
+
+Newly read historical section full-page pairs: 001,002,004,005,006,007,008,009,010,011,012,013 (24 PNGs). Four stable-state 023 images were also actually input: unknown article query and reversed date interval, each at1280/390. Exact filenames and UTC are retained in the log. Source directory is private `playwright-sections-001-025/`; 023 uses `playwright-stable-states-v2/`. Path mentions in a capture index are not proof of visual review. The log includes an explicit correction to the preliminary inventory: only actual image-read records and identical SHA256 reuse count as reviewed evidence.
+
+001 mobile historical full image contains actual broken-image glyphs in the word-cloud region. This is a confirmed **historical pictured-state issue**, not a proof that current candidate dba9325 still has it. Recommendation for the current candidate main row is **pending**, with this historical issue carried as an unresolved image-loading check; do not silently turn old evidence into a current-build issues/pass result. Blank charts and lazy placeholders on other images remain observations requiring stable-load evidence, rather than being asserted as product failures.
+
+Very long originals (010 media,012 topic,013 feature and005 mobile event) were actual image inputs, but the renderer reduces long-image text. Their overall spacing/footer can be assessed; not every tiny row/metadata label can be read. Continuous readable viewport evidence remains missing. Existing middle/bottom images cover only their actual regions. HTTP200 or full-page PNG existence does not complete this gap.
+
+| Route index | This update's evidence / explicit remaining evidence | Current candidate recommendation |
+|---|---|---|
+| 001 | Historical whole-page hierarchy and footer read; mobile broken word-cloud images. Need candidate stable image loading, notes/navigation, many/few/empty/error states applicable to datasets. Public permission N/A: no admin account gate. | pending; historical issue noted |
+| 002 | Historical full list/matrix/footer read; trend frame blank. Candidate long-label issue is independently recorded in last reviewer fragment; source fix is not revalidation. Need stable trend, matrix scroll/modes, pagination/follow and many/few/empty/error. FollowButton, signed-in PictureLink and TagRelationSubmission loading/disabled/anonymous/signed-in/error interactions remain pending; public readability is not account-workflow acceptance. | issues (existing candidate long-label evidence) |
+| 003 | Existing first-screen/section evidence remains bounded; no new full-picture input this update. Need complete readable picture layout and candidate normal/few/empty/error, navigation. Permission branches remain pending: PictureVote session loading, sign-in disabled, anonymous login prompt, signed-in voting/upload/review-result workflow. No new login/account or write operation was performed. | pending |
+| 004 | Historical50 ranking rows read; right-hand mobile table columns and sort/filter/more/state interactions not covered. Public permission N/A. | pending |
+| 005 | Whole-page event layout input; long mobile tiny fields not fully readable. Need continuous segments, date/index filters and many/few/empty/error. Public permission N/A. | pending |
+| 006 | Event details/KPIs/chart/matrix/headlines/footer read; mobile right columns, expand controls, stable chart and valid many/few/empty/error instances missing. Public read has no permission gate, but FollowButton/SaveButton session-disabled/anonymous/signed-in and busy/error branches remain pending. | pending |
+| 007 | Historical44 grouped headlines read. Need expand/highlight toggle and meaningful few/empty/error instance evidence. Public permission N/A. | pending |
+| 008 | Both widths show temporary article-content failure, not loaded article or genuine404. Need valid loaded article, absent article distinction and recovery. Many/few N/A for a single article resource; public read has no gate, but ArticleView SaveButton/ReportButton reader permissions and AdminFullText admin/nonadmin branches remain pending. | pending |
+| 009 | No-query destination article layout read; real GET query submit, clear, results/empty/error not covered. Public permission N/A. | pending |
+| 010 | Long media table overview only; readable complete row segments/right scroll/sort/filter/many/few/empty/error missing. Public permission N/A. | pending |
+| 011 | Historical30 latest articles and footer read; date/filter/more and many/few/empty/error missing. Public permission N/A. | pending |
+| 012 | Long topic overview only; readable complete body, query/filter/sidebar, many/few/empty/error missing. Public permission N/A. | pending |
+| 013 | Long feature overview only; readable complete body, filters/related expansion, many/few/empty/error missing. Public permission N/A. | pending |
+| 014 | Existing anonymous gate only; candidate admin collection workflows, existing authorized/nonadmin permissions and many/few/empty/error remain missing. No new account/login performed. | pending |
+| 015 | Existing anonymous admin gate only; authorized/nonadmin/session-error branches remain missing. Many/few N/A for the gate itself; dataset workflows belong to their routes. | pending |
+| 016 | Complete pure redirect scope already independently passed at225fa38; destination dataset branches belong to014. No new revalidation this update. | retain pass at recorded225 SHA |
+| 017 | Existing anonymous admin-media gate only; actual authorized/nonadmin/session-error and media dataset states missing. | pending |
+| 018 | Complete pure redirect scope already passed225fa38; destination workflows tracked014. | retain pass at recorded225 SHA |
+| 019 | Complete pure redirect scope already passed225fa38; destination workflows tracked014. | retain pass at recorded225 SHA |
+| 020 | Duplicate anonymous gates confirmed225fa38; fixed source is unreviewed candidate, and author must not self-review fix. Pure alias cardinality N/A; destination workflows tracked014. | issues until independent new-build revalidation |
+| 021 | Candidate225 normal document116 readable segments already reviewed. Code horizontal scroll, lower expanded response fields and isolated cold-cache schema failure still missing. Many/few N/A for generated fixed schema contract; public permission N/A. | pending |
+| 022 | Meaningful healthy/degraded/unavailable, notes/refresh/tab navigation already completed225fa38; cardinality and public permission N/A per fixed contract/source. | retain pass at recorded225 SHA |
+| 023 | Unknown-query desktop is query failure, not proven empty result. Reversed date desktop has clear red validation with retained values. Both mobile images are English503 fallback, not mobile validation evidence. Need actual mobile form, valid normal/few/empty/error and clear/navigation. Public permission N/A. | pending |
+| 024 | Existing screenshots only; no newly read evidence this update. Need remaining readable body/control interactions and source-applicable dynamic normal/few/empty/error. No completion inferred from shared components. | pending |
+| 025 | Existing screenshots only; no newly read evidence this update. Need remaining readable body/control interactions and source-applicable dynamic normal/few/empty/error. No completion inferred from shared components. | pending |
+
+Unreviewed historical formal captures, unread section primary/full images and additional-state images remain pending; this small offline batch does not claim their coverage. Their source48083 cannot substitute for candidate dba9325 acceptance. No main-ledger counts are changed by this historical update. Resource gate: parent reports2026-10-12 21:42UTC free112.756GiB below its current113GiB capture threshold; capture remains paused. This reviewer did not independently rerun the resource gate or produce new artifacts.
+
+Commit status for this update: not committed by this reviewer; parent will integrate the owned fragment. Deployment status: none; historical48083 and candidate225 evidence only, no claim of new candidate or formal deployment acceptance.
+
+
+Permission applicability correction — source-only review: 003 is not permission N/A. `web/src/app/(site)/tag/[tag]/picture/PictureVote.tsx:50–62` explicitly distinguishes session loading, sign-in disabled, anonymous login prompt and signed-in Board; voting/upload outcomes remain unreviewed. Also corrected002(tag follow/picture/relation submission),006(event follow/save),008(article save/report/admin full text). “Public permission N/A” elsewhere means only ungated page data/read scope; shared AccountMenu session branches are not implicitly passed by these rows. No login, account creation, write request or screenshot capture occurred in this correction. Source inspection does not elevate any route status or revalidate a source fix.

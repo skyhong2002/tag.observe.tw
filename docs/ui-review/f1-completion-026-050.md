@@ -2,7 +2,7 @@
 
 Reviewer：`/root/ui_review_completion_middle`／GPT-6.1 Sol。獨立 UI review，未編寫受審 UI。既有基準 `48083b58c4ee3d16f2072206f1da3df332f34143` 的 50 張 1280×800／390×844 首屏已於本輪逐張重新使用 `functions.exec/tools.view_image` 觀看；基準只有首屏，不沿用為完整 pass。候選目標 `225fa38a08fb4c3ecd4733b75266a0dbf11830e8`，正式 frontend 仍為 `0dd38b6`；候選與正式不可混稱。
 
-私有 review log：`/home/deck/tag-analysis-private/ui-review/f1/completion-026-050-review.log`。所有 PNG、raw network、HAR、browser profile 留在私有目錄，未進 repository。此檔持續補審中；第一批026–032已真capture並closed，後續等待主agent完成必要新build，不將離線source/discovery當真UIpass。
+私有 review log：`/home/deck/tag-analysis-private/ui-review/f1/completion-026-050-review.log`。所有 PNG、raw network、HAR、browser profile 留在私有目錄，未進 repository。此檔持續補審中；第一批026–032已真capture並closed，全部151張既有候選PNG已完成實際讀圖。後續新capture等root放行，不將離線source/discovery當真UIpass。
 
 本輪來源盤點：`TopicMediaView` 有 empty/notFound；feature detail 有 ArticleView 與 TopicStoriesView 兩分支；group detail 有 ranking/empty/notFound；journalist detail 有 pairs/empty/missing/暫不可取得；media content 有記事列表/搜尋 empty/暫不可取得/SourceProfile fallback；SourceProfile 有 incoming/outgoing、unknown notFound、全文資料或 evidence 不可取得兩類錯誤。公共閱讀分支沒有頁級角色門檻；追蹤、收藏與回報的動作才受匿名 gate。`ReaderGate` 則明確區分 loading/disabled/anonymous/reader，session GET error 被映射至 disabled。
 
@@ -32,7 +32,7 @@ Reviewer／UTC／版本：GPT-6.1 Sol；review `2026-10-12T20:33:46.529071+00:00
 
 ## 028 /crawlers/traffic/
 
-已真看兩寬標題、兩batch狀態卡、表格中段、shared domain末列與footer；cnews少筆、零結果empty文案兩寬完整可讀，搜尋suggestion popup正常。手機Cloudflare欄位需右捲且無提示，與基準相同。桌209 domains／手機294 domains是本批資料差異，未判因；不能用此對宣稱內容完全相同。多/少/空UI scope pass；SSR不可取得/排序/右捲互動pending，公開權限N/A（TrafficCollectionPage無gate）。
+已真看兩寬標題、兩batch狀態卡、表格中段、shared domain末列與footer；cnews少筆、零結果empty文案兩寬完整可讀，搜尋suggestion內容可讀；focused-scroll遮住navbar的新增issue見本輪補審。手機Cloudflare欄位需右捲且無提示，與基準相同。桌209 domains／手機294 domains是本批資料差異，未判因；不能用此對宣稱內容完全相同。多/少/空UI scope pass；SSR不可取得/排序/右捲互動pending，公開權限N/A（TrafficCollectionPage無gate）。
 
 Reviewer／UTC／版本：GPT-6.1 Sol；review `2026-10-12T20:33:46.529071+00:00`；capture `2026-10-12T20:28:29.891Z`–`2026-10-12T20:28:58.365Z`；UI `225fa38a08fb4c3ecd4733b75266a0dbf11830e8`。URL：`http://127.0.0.1:18180/crawlers/traffic/`。Viewport：1280×800、390×844。
 
@@ -190,4 +190,57 @@ Source適用性：`web/src/app/(site)/my/ReaderGate.tsx；following/Following.ts
 
 ## 049 穩定匿名gate補審
 
-基準：`/home/deck/tag-analysis-private/ui-review/f1/playwright-internal-current-live/049-*.png`，1280／390 首屏已真看；capture JSON 與對應 `*-network.json`、`network.har` 保留。候選完整內容、互動與適用分支補審：pending，待 slot。
+舊基準SHA `48083b58c4ee3d16f2072206f1da3df332f34143`：`/home/deck/tag-analysis-private/ui-review/f1/playwright-stable-states-v2/003-my-1280.png` 與 `003-my-390.png`，已於 `2026-10-12T19:47:53.209259+00:00` 真看；原capture `003-my.json`、兩寬 `003-my-*-network.json` 與 `review-middle.log` 保留。雙寬穩定匿名六條用途說明／方法折疊列／footer可讀，沒有授權內容驗證。此輪只引用既有review，不增加新看圖計數；候選gate與feed完整scope仍pending。
+
+## 離線補審（不增加capture）
+
+UTC `2026-10-12T21:32:48.691049+00:00`；GPT-6.1 Sol；UI `225fa38a08fb4c3ecd4733b75266a0dbf11830e8`。離線新補看8張full PNG：026可見50列和顯示更多／footer；029/030可見焦點12件、熱詞／記者／讀者、同題不同稿、關係與議題、陣營／媒體群、footer完整順序，單欄／多欄沒有整頁級溢位。029桌頂部broken圖與部分下方圖片placeholder／陣營bar等待仍保留，030已有colored camp bar；不把首拍不同readiness當穩定loaded parity。031看到9張展開事件卡後59筆緊湊列表至68、footer與兩寬垂直流。非常長的full PNG在image工具中縮到總覽，無法逐字判讀下方文字，因此只追加全頁結構觀察，不將目的route互動或全狀態提升pass。
+
+新真看PNG：`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/026-1280-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/026-390-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/029-1280-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/029-390-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/030-1280-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/030-390-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/031-1280-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/031-390-initial-full.png`。原始network／HAR／capture UTC與URL逐項如appendlog；僅新增真viewed證據，不以文件或截圖存在代替觀看。
+
+027離線補審／UTC `2026-10-12T21:34:04.314653+00:00`／GPT-6.1 Sol／UI `225fa38a08fb4c3ecd4733b75266a0dbf11830e8`：補看027其餘14張：四筆篩選列表末尾／empty後方法accordion及完整footer，桌手機皆沒有新增頁尾重疊；390 empty説明仍橫向被裁、不能pass。initial-full在總覽可見297列與footer完整順序，文字因過長縮圖不足逐字判讀；既有首/中/末segment已可判模板。action full PNG中的sticky navbar位於中段，與同state viewport段圖navbar固定頂端相對照，是fullPage在保留scrollY時的擷取位置限制，不當產品navbar跳位缺陷。段1/2常是同內容不同動畫frame，不當額外互動state。多/少/空原scope未擴成完整routepass；新e0/dba修正尚無本reviewer復驗圖。
+
+新真看PNG：`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-1280-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-1280-action-0-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-1280-action-0-segment-1.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-1280-action-0-segment-2.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-1280-action-1-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-1280-action-1-segment-1.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-1280-action-1-segment-2.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-390-initial-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-390-action-0-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-390-action-0-segment-1.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-390-action-0-segment-2.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-390-action-1-full.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-390-action-1-segment-1.png`；`/home/deck/tag-analysis-private/ui-review/f1/completion-middle-2026-10-12T20-26-13-759Z/027-390-action-1-segment-2.png`。原始證據沿用同批report/network/HAR。
+
+
+## 離線逐圖盤點完成與剩餘缺口
+
+本次補審 UTC `2026-10-12T21:42:23.187953+00:00`，GPT-6.1 Sol；候選 UI 固定 `225fa38a08fb4c3ecd4733b75266a0dbf11830e8`。先逐項對比 PNG 與實際 view_image transcript／appendlog，再補看未觀看者：026/029/030/031 full 共8張、027其餘14張、028其餘20張、032其餘66張，共108張新補看；原已看43張不重複充數。第一批151張全部有真正 image input，逐檔路徑、capture UTC、兩寬、URL、raw network/HAR 皆在私有 appendlog；不是151個獨立狀態。
+
+| route | 本批既有 PNG | 真看完成 | 新候選缺少的圖或互動 |
+| --- | ---: | ---: | --- |
+| 026 /cat/news/ | 4 | 4 | 純redirect scope完成；目的ranking業務分支由其主列另審 |
+| 027 /crawlers/ | 24 | 24 | 新修正版本的normal/empty雙寬復驗；排序、水平捲與復原、SSR不可取得、method展開 |
+| 028 /crawlers/traffic/ | 33 | 33 | SSR不可取得、排序、水平捲與復原、suggestion選取/Escape/blur、method展開；新增focused-scroll遮擋觀察 |
+| 029 /demo/ | 4 | 4 | q query兩寬redirect；目的首頁圖片500的穩定復驗歸首頁主列 |
+| 030 /demo/compare/ | 4 | 4 | event有效query兩寬redirect／query忽略分支 |
+| 031 /event/archive/ | 4 | 4 | day query兩寬redirect及日期保留 |
+| 032 /feature/setn/ | 78 | 78 | 少筆/空/不存在/SSRerror雙寬；方法link/展開與列表導覽 |
+| 033 /feature/setn/50/ | 0 | 0 | 候選正常ArticleView整頁、無content TopicStoriesView/0stories、wrong media/missing、kind article/topic redirect；匿名收藏/回報 |
+| 034 /group/ | 0 | 0 | 候選整頁busy/quiet、days1/7/30；真正空資料與讀取失敗分開；links |
+| 035 /group/1/ | 0 | 0 | 候選ranking多/少/空、missing、days、排序/子group；fixture現只有1tag/0ranking，不能假造多筆pass |
+| 036 /journalist/ | 0 | 0 | 候選整頁多/少/空/不可取得；搜尋/媒體/排序/關係/進階filter/更多 |
+| 037 /journalist/方承業/ | 0 | 0 | 候選整頁、多/0pairs、少文章、missing/不可取得；sidebar/索引、匿名追蹤 |
+| 038 /liveboard/ | 0 | 0 | simple/full、saved mode、輪播後穩定frame、歷史/鏡頭/資料空frame/poll失敗，手機真可讀性 |
+| 039 /liveboard/setting/ | 0 | 0 | simple/full整頁、draft/排序/停播/restore、至少一鏡頭validation、匿名localStorage save/restore；account寫入超本次read-only scope |
+| 040 /liveboard/settings/ | 0 | 0 | 純redirect兩寬真navigate，含query忽略；設定業務分支歸039 |
+| 041 /login/ | 0 | 0 | loading/disabled/anonymous/既有reader fixture；五種error query與session GETerror；禁止OAuth真登入 |
+| 042 /media/cnews/ | 0 | 0 | 候選整頁、多/少/qempty/invalid query/不可取得/SourceProfile fallback；query clear/pagination/摘要/匿名追蹤 |
+| 043 /media/cnews/articles/ | 0 | 0 | 純alias正常與hours/cursor/q保留、invalid query雙寬；目的media業務分支歸042 |
+| 044 /media/cnews/references/ | 0 | 0 | incoming/outgoing多/少/0則、unknown、graph/evidence不可取得；pagination/切向 |
+| 045 /media/crawlers/ | 0 | 0 | 正常與多值query兩寬redirect；舊基準React#418不能替候選pass |
+| 046 /media/sources/ | 0 | 0 | 正常與多值query兩寬redirect；目的traffic分支歸047 |
+| 047 /media/traffic/ | 0 | 0 | 候選整頁多/少/空及資料fallback；月份/數值vs月變化/排序/水平捲、method與恢復 |
+| 048 /method/ | 0 | 0 | 候選全部固定正文兩寬與TOC/錨點/內鏈；main資料多/少/空/錯/permission source N/A，不免除整頁視覺 |
+| 049 /my/ | 0 | 0 | 候選loading/disabled/anonymous/reader；feed多/少/no follows/no articles/error與hidden media；全部GET fixture精確標示 |
+| 050 /my/following/ | 0 | 0 | 候選gate各態與following多/少/empty、suggestions、GETfailure持續loading確認；追蹤寫入超read-only scope |
+
+032此次逐段補看段2–35（扣已看18）共66張：兩寬34筆專題的已載入thumbnail、標題、時間、原站URL、有/無關聯摘要與媒體來源，從首段到列表最後皆無新增重疊或頁級溢位。390關聯標題截略仍保留來源獨立靠右；method僅折疊，不聲稱展開互動。這些scroll段是同一個多筆state，少/空/error仍pending。
+
+028此次補20張：few/empty的method折疊列與完整footer兩寬可讀，空結果說明完整。新增focused-scroll issue：`028-1280-action-0-segment-2.png` 與 `segment-3.png` 的開啟suggestions在 y約27–144蓋住navbar；這是viewport圖，不是fullPage保留scrollY時的navbar中段假象。390 footer段3/4未見popup蓋navbar。UI225的 `SuggestInput.tsx` 有absolute/z-30及blur/Escape關閉source，尚無恢復互動圖；不能靠source宣稱實際恢復pass。本觀察不判新版本已修。
+
+基準補充states盤點：049穩定匿名 `playwright-stable-states-v2/003-my-{1280,390}.png` 已於 `2026-10-12T19:47:53.209259+00:00` 真看，SHA `48083b58c4ee3d16f2072206f1da3df332f34143`，原log `review-middle.log`／capture `003-my.json`／各寬 `*-network.json`。047展開方法notes的5張 `playwright-notes-states/70-*` 已由last於 `2026-10-12T19:27:20.157520+00:00` 逐張真看，同SHA，原log `review-last.log`／capture `70.json`／兩寬 `70-*-network.json`；基準有sticky遮首段總標題觀察。兩組已review者只引用，不重看充數，不當225或dba候選pass。notes69實際是 `/feature/` 主表、71是 `/ranking/`、72是 `/tag/柯文哲/`，不能錯貼為032/033/048完整scope。
+
+目標026–050中除了上述兩組基準補充，未找到額外未review的target state圖；`playwright-dynamic-current-live` 為tag/eve/byline，`playwright-sections-001-025` 為其他主列，沒有033–050下方補圖。middle批沒有獨立命名loaded-full/focus PNG，loaded與focus證據是initial逐段與action逐段；不以未存在檔案承諾驗收。
+
+本輪僅離線圖片讀取與兩個小文字檔增補，沒有browser、capture、build、deploy、刪檔或新probe。後續capture仍等root放行，hard load≤12，磁碟不得逼近111.5GiB且freeze限制持續有效。新候選dba版本未在此輪看圖，027等修正不可宣稱已復驗。提交仍由root整合，reviewer未自行commit／push；正式部署狀態仍無本reviewer新部署驗證。
