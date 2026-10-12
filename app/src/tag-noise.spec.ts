@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { isTagNoise } from './tag-noise.ts';
+import { isTagNoise, tagNoiseReasons } from './tag-noise.ts';
 
 describe('analysis noise', () => {
+  it('marks C0, DEL and C1 controls before normalization without treating ZWJ as a control', () => {
+    for (const tag of ['\b', '\u0003比基尼', '比\u0000基尼', '\tAI', 'AI\n', 'A\u007fI', 'A\u0085I', 'A\u009fI']) {
+      expect(tagNoiseReasons(tag)).toEqual(['control-character']);
+      expect(isTagNoise(tag)).toBe(true);
+    }
+    expect(isTagNoise('比基尼')).toBe(false);
+    expect(isTagNoise('👩‍💻工程師')).toBe(false);
+  });
   it('excludes categories and standalone Gregorian/ROC years in common forms', () => {
     for (const tag of [
       '地方',

@@ -138,15 +138,27 @@ describe('shared noise policy and safe public projection', () => {
       row('AI'),
       row('The'),
       row('2026'),
+      row('\b'),
+      row('\u0003比基尼'),
       { ...row('假新聞'), body: 'private article body', email: 'private@example.invalid' },
     ]);
     const entries = (await store.page(manifest.id)).entries;
-    expect(entries).toHaveLength(6);
+    expect(entries).toHaveLength(8);
     expect(entries.find((t) => 'label' in t && t.label === '新聞')).toMatchObject({ noise: true, noiseReasons: ['category'] });
     expect(entries.find((t) => 'label' in t && t.label === '台灣')).toMatchObject({ noise: false, noEqual: true });
     expect(entries.find((t) => 'label' in t && t.label === 'The')).toMatchObject({ noise: true, noiseReasons: ['english-function-word'] });
     expect(entries.find((t) => 'label' in t && t.label === '2026')).toMatchObject({ noise: true, noiseReasons: ['bare-year'] });
     expect(entries.find((t) => 'label' in t && t.label === '假新聞')).toMatchObject({ noise: false });
+    for (const label of ['\b', '\u0003比基尼']) {
+      expect(entries.find((t) => 'label' in t && t.label === label)).toMatchObject({
+        id: createHash('sha256').update(label).digest('hex'),
+        label,
+        articleCount: 3,
+        noise: true,
+        noiseReasons: ['control-character'],
+      });
+      expect((await store.page(manifest.id, '0', 'active')).entries.some((t) => 'label' in t && t.label === label)).toBe(false);
+    }
     expect(JSON.stringify(entries)).not.toContain('private');
     expect(manifest.noisePolicyVersion).toMatch(/^[a-f0-9]{64}$/);
   });

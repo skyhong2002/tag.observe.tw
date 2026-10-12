@@ -74,7 +74,10 @@ const schemas: Record<string, Schema> = {
     origin: str('混合原文關鍵字、編輯、規則補標', { const: 'article-tags-mixed' }),
     journalistAssigned: { type: 'null', description: '目前無逐詞記者指派證據' },
     noise: bool('tag 的 isTagNoise 判定；標記但不刪除詞條'),
-    noiseReasons: arr(str('empty、category、english-function-word、section-label 或 bare-year')),
+    noiseReasons: arr(
+      str(),
+      'control-character（含 C0／DEL／C1 控制字元）、empty、category、english-function-word、section-label 或 bare-year',
+    ),
     noEqual: bool('修剪前後空白後命中 no-equal-tags；不宜連結事件，並不等同顯示噪音'),
   }),
   VocabularyActive: obj({

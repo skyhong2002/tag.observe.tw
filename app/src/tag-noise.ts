@@ -71,10 +71,15 @@ const ENGLISH_FUNCTION_WORDS = new Set([
 const SECTION_SUFFIX = /(?:新聞|要聞|匯流|總覽)$/;
 const SUBJECTS = new Set(['假新聞']);
 
-export const TAG_NOISE_RULE_VERSION = '1';
-export type TagNoiseReason = 'empty' | 'category' | 'english-function-word' | 'section-label' | 'bare-year';
+export const TAG_NOISE_RULE_VERSION = '2';
+export type TagNoiseReason = 'control-character' | 'empty' | 'category' | 'english-function-word' | 'section-label' | 'bare-year';
+
+export const hasTagControlCharacters = (tag: string): boolean => /\p{Cc}/u.test(tag);
 
 export function tagNoiseReasons(tag: string): TagNoiseReason[] {
+  // Check the original label before trim/NFKC can hide tabs or line breaks.
+  // Format characters (e.g. emoji ZWJ) are not control characters.
+  if (hasTagControlCharacters(tag)) return ['control-character'];
   const t = tag.normalize('NFKC').trim().toLowerCase();
   if (!t) return ['empty'];
   if (CATEGORIES.has(t)) return ['category'];

@@ -24,6 +24,35 @@ async function setup() {
 afterEach(async () => {
   for (const d of dirs.splice(0)) await rm(d, { recursive: true, force: true });
 });
+it('resumes control-noise flag backfill without source changes or deleting the labels', async () => {
+  const d = await setup(),
+    path = join(d, 'aggregate.sqlite');
+  let a = new VocabularyAggregate(path);
+  const labels = ['\b', '\u0003比基尼', '正常詞', '標籤\u009f'];
+  a.replace(
+    null,
+    null,
+    labels.map((tag, i) => ({ ...term(tag, 4), groupKey: String(i) })),
+  );
+  a.db.exec('DELETE FROM changes');
+  expect(a.queueControlNoiseBatch(1)).toMatchObject({ examined: 1, queued: 1, complete: false });
+  a.close();
+  a = new VocabularyAggregate(path);
+  while (!a.queueControlNoiseBatch(1).complete) {}
+  const changed = a.db
+    .prepare('SELECT action,payload FROM changes ORDER BY label')
+    .all()
+    .map((r) => ({
+      action: r.action,
+      term: vocabularyTerm(JSON.parse(String(r.payload))),
+    }));
+  expect(changed).toHaveLength(3);
+  expect(changed.every((c) => c.action === 'upsert' && c.term.noise && c.term.noiseReasons.includes('control-character'))).toBe(true);
+  expect(changed.every((c) => c.term.articleCount === 4)).toBe(true);
+  expect([...a.terms()].map((t) => t.tag).sort()).toEqual([...labels].sort());
+  expect(a.queueControlNoiseBatch()).toEqual({ examined: 0, queued: 0, complete: true });
+  a.close();
+});
 it('keeps only delta files between daily bases and replays across daily generations', async () => {
   const d = await setup(),
     s = new VocabularySnapshots(d),

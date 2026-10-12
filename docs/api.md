@@ -255,7 +255,7 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 | `entries[].origin` | string | 混合原文關鍵字、編輯、規則補標 |
 | `entries[].journalistAssigned` |  \| null | 目前無逐詞記者指派證據 |
 | `entries[].noise` | boolean | tag 的 isTagNoise 判定；標記但不刪除詞條 |
-| `entries[].noiseReasons` | string[] |  |
+| `entries[].noiseReasons` | string[] | control-character（含 C0／DEL／C1 控制字元）、empty、category、english-function-word、section-label 或 bare-year |
 | `entries[].noEqual` | boolean | 修剪前後空白後命中 no-equal-tags；不宜連結事件，並不等同顯示噪音 |
 | `cursor` | string |  |
 | `nextCursor` | string \| null |  |
@@ -307,7 +307,7 @@ curl -s 'https://tag.observe.tw/api/v1/vocabulary/snapshots/12345678-1234-4234-8
 | `entries[].origin` | string | 混合原文關鍵字、編輯、規則補標 |
 | `entries[].journalistAssigned` |  \| null | 目前無逐詞記者指派證據 |
 | `entries[].noise` | boolean | tag 的 isTagNoise 判定；標記但不刪除詞條 |
-| `entries[].noiseReasons` | string[] |  |
+| `entries[].noiseReasons` | string[] | control-character（含 C0／DEL／C1 控制字元）、empty、category、english-function-word、section-label 或 bare-year |
 | `entries[].noEqual` | boolean | 修剪前後空白後命中 no-equal-tags；不宜連結事件，並不等同顯示噪音 |
 | `cursor` | string |  |
 | `nextCursor` | string \| null |  |

@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { RowDataPacket } from 'mysql2/promise';
+import { hasTagControlCharacters } from '../tag-noise.ts';
 import type { SourceTerm } from './snapshots.ts';
 import type { AggregateTerm } from './source.ts';
 export class VocabularyAggregate {
@@ -177,14 +178,37 @@ export class VocabularyAggregate {
         lastPublishedAt: String(r.last_at),
       }));
   }
-  *terms(): Generator<SourceTerm> {
+  /** One-time local rule migration: preserve labels/counts and replay flags through changes. */
+  queueControlNoiseBatch(limit = 5000) {
+    if (this.get('controlNoiseBackfilled')) return { examined: 0, queued: 0, complete: true };
+    const cursor = this.get<string>('controlNoiseCursor');
+    const labels = this.db
+      .prepare(`SELECT label FROM terms ${cursor === null ? '' : 'WHERE label>?'} ORDER BY label COLLATE BINARY LIMIT ?`)
+      .all(...(cursor === null ? [limit] : [cursor, limit]));
+    let queued = 0;
+    const complete = labels.length < limit;
+    this.transaction(() => {
+      const put = this.db.prepare('INSERT OR REPLACE INTO changes VALUES(?,?,?)');
+      for (const row of labels) {
+        const label = String(row.label);
+        if (!hasTagControlCharacters(label)) continue;
+        const [term] = this.terms(label);
+        put.run(label, 'upsert', JSON.stringify(term));
+        queued++;
+      }
+      if (labels.length) this.set('controlNoiseCursor', String(labels.at(-1)!.label));
+      if (complete) this.set('controlNoiseBackfilled', true);
+    });
+    return { examined: labels.length, queued, complete };
+  }
+  *terms(label?: string): Generator<SourceTerm> {
     const fallback = this.get<string>('recentHydrationAsOf') ?? this.get<string>('startedAt');
     const complete = this.get('recentHydrationComplete') || this.get('recentCountsReady');
     for (const r of this.db
       .prepare(
-        'SELECT t.label,n,first_at,last_at,r30,r90,r180,as_of FROM terms t LEFT JOIN recent_counts r ON r.label=t.label ORDER BY t.label COLLATE BINARY',
+        `SELECT t.label,n,first_at,last_at,r30,r90,r180,as_of FROM terms t LEFT JOIN recent_counts r ON r.label=t.label ${label === undefined ? '' : 'WHERE t.label=?'} ORDER BY t.label COLLATE BINARY`,
       )
-      .iterate())
+      .iterate(...(label === undefined ? [] : [label])))
       yield {
         tag: String(r.label),
         articleCount: Number(r.n),

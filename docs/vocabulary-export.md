@@ -106,3 +106,9 @@ manifest.statistics另列 fullFileBytes / activeFileBytes / changeFileBytes（gz
 開始快照、補算、release建置前必須確認 `/home` 至少10 GiB可用，執行期間匯出器也維持此保護線；不足就保留進度並暫停。清理限本次自己的暫存與staging；releases、worktree、備份或node_modules須先取得使用者同意。完整快照保留最近3份、活躍子集7份。第4–7份仍保留active分頁及不可變manifest，完整分頁與過期changes移除，請求過期完整頁或changes回409並要求重讀。7份以外移除目錄。
 
 詞條與changes以500筆有界串流在記憶體編碼/壓縮後直接寫入gzip頁；不先寫整份未壓縮資料。manifest、pointer與小型保留註記仍為JSON。舊active回應的manifest統計描述原發布時大小，不表示該版本的完整檔案仍留存。
+
+### 控制字元噪音（規則第 2 版）
+
+原始詞串只要含 Unicode `Cc`（C0、DEL、C1 控制字元），例如 JSON 表示的 `"\b"`、`"\u0003比基尼"`，就標成 `noise: true`、`noiseReasons: ["control-character"]`。判斷在 trim／NFKC 前，避免 tab 或換行被修剪而漏標；emoji 的 ZWJ 等 `Cf` 格式字元不因此視為控制字元。完整池中的原始 label、SHA-256 ID、篇數与時間完全保留，不刪除或改寫標籤。
+
+已發布池的修正不能只等文章再次異動：匯出器執行一次私有 SQLite label 掃描，每批 5,000 詞、有 checkpoint 及既有首頁／磁碟／時限保護。只把含控制字元的既有詞排入 upsert changes，沿用既有統計；不額外掃正式 DB、不建立 trigger。中途暫停保留佇列與游標，完成後發布新 noisePolicyVersion；每日完整檔也會套用新標記。下游可沿原世代接收 changes，無須因本修正強制重新匯入整池。

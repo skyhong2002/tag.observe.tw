@@ -38,7 +38,18 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
   const rest = options.restMs ?? 100,
     log = options.log ?? (() => {});
   let lastProbe = 0;
-  const metrics = { queries: 0, queryMs: 0, maxQueryMs: 0, rowsRead: 0, newRows: 0, homeSamples: 0, homeTotalMs: 0, homeMaxMs: 0 };
+  const metrics = {
+    queries: 0,
+    queryMs: 0,
+    maxQueryMs: 0,
+    rowsRead: 0,
+    newRows: 0,
+    homeSamples: 0,
+    homeTotalMs: 0,
+    homeMaxMs: 0,
+    policyLabelsRead: 0,
+    controlTagsQueued: 0,
+  };
   const guard = async (force = false) => {
     options.signal?.throwIfAborted();
     if (Date.now() - started > (options.maxDurationMs ?? (options.mode === 'fast' ? 180000 : 6 * 3600000)))
@@ -148,6 +159,7 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
       aggregate.set('bootstrapComplete', true);
       aggregate.set('recentCountsReady', true);
       aggregate.db.exec('DELETE FROM changes');
+      aggregate.set('controlNoiseBackfilled', true);
     }
     let target = aggregate.get<string>('targetId');
     if (target === null) {
@@ -180,6 +192,14 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
     }
     if (!initial && options.mode === 'reconcile') {
       await sweep('reconcileCursor', Math.max(1000, Math.ceil(aggregate.count() / 7)));
+    }
+    // Local SQLite only; checkpoint each bounded batch. Existing downstream
+    // databases must receive changed flags even when no source article changed.
+    while (!aggregate.get('controlNoiseBackfilled')) {
+      await guard();
+      const batch = aggregate.queueControlNoiseBatch();
+      metrics.policyLabelsRead += batch.examined;
+      metrics.controlTagsQueued += batch.queued;
     }
     const store = new VocabularySnapshots(directory);
     async function* terms(): AsyncGenerator<SourceTerm> {
