@@ -5,12 +5,10 @@ import TagGroupEditor from '../tag-groups/TagGroupEditor';
 import TagVisualReview from '../tag-visuals/TagVisualReview';
 import WritingPeople from '../writing/WritingPeople';
 import TagArticles from './TagArticles';
-import TagSubmissions from './TagSubmissions';
 
 export const metadata: Metadata = { title: '標籤管理 · 管理後台', robots: { index: false } };
 const VIEWS = [
   ['groups', '分類與群組'],
-  ['submissions', '投稿審核'],
   ['relations', '文章關係'],
   ['avatars', '人物頭像'],
   ['visuals', '其他標籤圖像'],
@@ -41,7 +39,6 @@ export default async function TagsPage({ searchParams }: { searchParams: Promise
           </Link>
         ))}
       </nav>
-      {view === 'submissions' && <TagSubmissions />}
       {view === 'groups' && <TagGroupEditor key={tag} initialTag={tag} />}
       {view === 'relations' && (
         <>

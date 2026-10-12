@@ -9,7 +9,6 @@ import TagChart from '@/components/TagChart';
 import TagGroupChips from '@/components/TagGroupChips';
 import TagKeywordHistory from '@/components/TagKeywordHistory';
 import TagPerson from '@/components/TagPerson';
-import TagRelationsPanel from '@/components/TagRelationsPanel';
 import TagStatusPanel from '@/components/TagStatusPanel';
 import TagVisual from '@/components/TagVisual';
 import {
@@ -18,7 +17,6 @@ import {
   fetchTagFlow,
   fetchTagGroups,
   fetchTagPerson,
-  fetchTagRelations,
   fetchTagSeries,
   fetchTagStatus,
   fetchTagVisual,
@@ -83,7 +81,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   };
   // Keywords riding along: by day over two weeks unless the reader asks for hours.
   const flowSpan: 'day' | 'hour' = sp.flow === 'hour' ? 'hour' : 'day';
-  const [series, { page, facets }, media, status, mentions, flowData, person, groups, visual, relations] = await Promise.all([
+  const [series, { page, facets }, media, status, mentions, flowData, person, groups, visual] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     // The list and its camp split use the chart's window and every tagged article in it.
     fetchArticleListing({ tag, hours, camp, cursor }),
@@ -96,7 +94,6 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     fetchTagGroups(tag).catch(() => []),
     // Older gateways lack the route: no picture rather than an error.
     fetchTagVisual(tag).catch(() => null),
-    fetchTagRelations(tag).catch(() => null),
   ]);
   const flowHref = (v: 'day' | 'hour') => {
     const q = new URLSearchParams(
@@ -114,7 +111,6 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   // A tag the site has never recorded: no articles, no counts, no ranking, history or events.
   if (
     status &&
-    !relations?.relations.length &&
     !status.ranking &&
     !status.history &&
     status.threads.length === 0 &&
@@ -179,7 +175,6 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           </a>
         </div>
       </div>
-      <TagRelationsPanel key={tag} tag={tag} data={relations} />
       {status && <TagStatusPanel status={status} />}
       <section
         id="report-trend"

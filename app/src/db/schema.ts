@@ -729,59 +729,6 @@ export const tagPeople = mysqlTable(
 
 const imageBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'mediumblob' });
 
-// Semantic relations and reader pictures share the existing tag admin's review
-// queue. No writes or triggers on crawl tables. Private author/review details
-// are deliberately separate from the public projection.
-export const tagSubmissions = mysqlTable(
-  'tag_submissions',
-  {
-    id: int('id').autoincrement().primaryKey(),
-    kind: varchar('kind', { length: 16 }).$type<'relation' | 'picture'>().notNull(),
-    tag: varchar('tag', { length: 60 }).notNull(),
-    relationType: varchar('relation_type', { length: 16 }).$type<'is-a' | 'related' | 'alias'>(),
-    target: varchar('target', { length: 60 }),
-    targetGroupId: int('target_group_id'),
-    reason: varchar('reason', { length: 1000 }),
-    status: varchar('status', { length: 16 }).$type<'pending' | 'approved' | 'rejected'>().notNull(),
-    source: varchar('source', { length: 16 }).$type<'submission' | 'manual' | 'rule'>().notNull(),
-    createdBy: int('created_by').notNull(),
-    createdAt: datetime('created_at').notNull(),
-    reviewedBy: int('reviewed_by'),
-    reviewedAt: datetime('reviewed_at'),
-    reviewReason: varchar('review_reason', { length: 1000 }),
-    dedupeKey: varchar('dedupe_key', { length: 64 }).notNull(),
-    pictureKind: varchar('picture_kind', { length: 16 }).$type<'avatar' | 'visual'>(),
-    image: imageBytes('image'),
-    pictureMeta: json('picture_meta').$type<{ score: number; scores: Record<string, number>; verdict: string }>(),
-    rightsConfirmed: boolean('rights_confirmed').notNull().default(false),
-    candidateRank: int('candidate_rank'),
-  },
-  (t) => [
-    uniqueIndex('tag_submission_dedupe').on(t.dedupeKey),
-    index('tag_submission_queue').on(t.status, t.id),
-    index('tag_submission_outgoing').on(t.tag, t.kind, t.status),
-    index('tag_submission_incoming').on(t.target, t.kind, t.status),
-    index('tag_submission_author').on(t.createdBy, t.createdAt),
-  ],
-);
-
-export const tagSubmissionLog = mysqlTable(
-  'tag_submission_log',
-  {
-    id: int('id').autoincrement().primaryKey(),
-    submissionId: int('submission_id').notNull(),
-    action: varchar('action', { length: 16 }).$type<'submit' | 'approved' | 'rejected'>().notNull(),
-    userId: int('user_id').notNull(),
-    at: datetime('at').notNull(),
-    reason: varchar('reason', { length: 1000 }),
-  },
-  (t) => [index('tag_submission_history').on(t.submissionId, t.id)],
-);
-
-// Serializes only semantic edge approval, so simultaneous A→B / B→A reviews
-// cannot introduce a cycle. It never participates in crawler transactions.
-export const tagRelationLock = mysqlTable('tag_relation_lock', { id: int('id').primaryKey() });
-
 // Up to three best photos per person tag, best first, each already rendered
 // as a 256px WebP sketch. The photo itself is not kept; page_url and the
 // license fields are the Commons attribution shown with the avatar.

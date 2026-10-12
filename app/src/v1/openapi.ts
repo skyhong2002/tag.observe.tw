@@ -1813,34 +1813,6 @@ export const ENDPOINTS: Endpoint[] = [
     cache: '1 天',
   },
   {
-    path: '/api/v1/tags/{tag}/relations',
-    tag: 'tags',
-    summary: '經審核的標籤語義關係與既有上位分類',
-    description:
-      'is-a 是有方向、可多重的上位分類；related 和 alias 是對稱關係，別名不會合併或改寫標籤 ID。只公開已核准的投稿，以及既有公開群組分類（含祖先）；不把共現統計當成語義關係。tagId 是原始 UTF-8 字串的 SHA-256，與完整詞庫一致；群組沿用 group:<既有ID>。投稿者與審核者的帳號、說明只在有權限的後台提供。舊分類沒有建立時間，createdAt 如實為 null。單頁最多200筆新關係，truncated 表示尚有其他關係。',
-    params: [p('tag', '標籤（URL 編碼）', str(), '柯文哲')],
-    response: obj({
-      tag: str(),
-      tagId: str(),
-      truncated: bool(),
-      relations: arr(
-        obj({
-          id: str('穩定關係 ID'),
-          type: str('關係型別', { enum: ['is-a', 'related', 'alias'] }),
-          target: obj({ id: str(), label: str(), href: str('本站相對路徑') }),
-          source: str('manual、rule 或 submission'),
-          sourceDetail: str('既有分類保留原來源'),
-          createdAt: nullable(time()),
-          status: str('僅公開核准結果', { const: 'approved' }),
-          inherited: bool('既有分類祖先'),
-          depth: int('直接分類為1，祖先逐層遞增'),
-        }),
-      ),
-    }),
-    errors: { '400': '標籤格式不正確' },
-    cache: '1 分鐘；帶 Cookie、Authorization、X-Service-Token 或 X-Api-Key 一律 private, no-store',
-  },
-  {
     path: '/api/v1/tags/{tag}/groups',
     tag: 'tags',
     summary: '標籤所屬的群組與主題大類',

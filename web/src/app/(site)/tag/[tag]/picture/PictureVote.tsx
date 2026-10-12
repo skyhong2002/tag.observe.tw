@@ -32,7 +32,7 @@ type State = {
 };
 
 const note = 'mt-3 text-sm text-zinc-600 dark:text-zinc-400';
-const button = 'min-h-11 rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 dark:border-zinc-700';
+const button = 'min-h-9 rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 dark:border-zinc-700';
 
 async function call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const response = await fetch(path, {
@@ -56,7 +56,7 @@ export default function PictureVote({ tag }: { tag: string }) {
         <a href={loginHref(`/tag/${encodeURIComponent(tag)}/picture/`)} className="text-brand-700 underline dark:text-brand-400">
           登入
         </a>
-        後可以投票選這個標籤的圖，或上傳一張交給管理員審核。
+        後可以投票選這個標籤的圖，或上傳一張。
       </p>
     );
   return <Board tag={tag} />;
@@ -118,7 +118,7 @@ function Board({ tag }: { tag: string }) {
           ))}
         </div>
       ) : (
-        <p className={note}>還沒有任何圖，可以上傳第一張交給管理員審核。</p>
+        <p className={note}>還沒有任何圖，上傳第一張吧。</p>
       )}
       {state.admin && state.locked && (
         <button type="button" className={`${button} mt-4`} onClick={() => lock(null)}>
@@ -187,32 +187,19 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
       const bytes = new Uint8Array(await file.arrayBuffer());
       let binary = '';
       for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      const sent = await call<{ jobId?: string; status?: 'pending' | 'approved' | 'rejected' }>(`${path}/upload`, {
-        method: 'POST',
-        body: { image: btoa(binary), agree: true },
-      });
+      const sent = await call<{ jobId?: string }>(`${path}/upload`, { method: 'POST', body: { image: btoa(binary), agree: true } });
       if (sent.jobId) {
         setBusy('轉素描中…（通常一兩分鐘內）');
         for (;;) {
           await new Promise((r) => setTimeout(r, 3000));
-          const job = await call<{ state: string; error: string | null; result?: { status?: 'pending' | 'approved' | 'rejected' } }>(
-            `/auth/pictures/jobs/${encodeURIComponent(sent.jobId)}`,
-          );
+          const job = await call<{ state: string; error: string | null }>(`/auth/pictures/jobs/${encodeURIComponent(sent.jobId)}`);
           if (job.state === 'completed' || job.state === 'failed') {
             if (job.error) throw Error(`沒有用上：${job.error}`);
-            if (job.state === 'failed') throw Error('圖片處理未完成，請稍後再試。');
-            sent.status = job.result?.status;
             break;
           }
         }
       }
-      setMessage(
-        sent.status === 'approved'
-          ? '這張圖片已經通過審核，毋須重複上傳。'
-          : sent.status === 'rejected'
-            ? '這張圖片已有未採納的審核紀錄，這次沒有新增投稿。'
-            : '已送交管理員審核，通過後才會公開並加入投票候選。',
-      );
+      setMessage('已加入候選，並算你投它一票。');
       onDone();
     } catch (e) {
       setMessage((e as Error).message);
@@ -225,7 +212,7 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
       <h2 className="font-semibold">上傳一張</h2>
       <p className={note}>
         {kind === 'avatar' ? '人物的照片會轉成素描；請用只有這個人、臉清楚的照片。' : '圖會去背、裁邊並轉成網站的單色。'}
-        圖片須經管理員審核後才公開。今天還能上傳 {left} 張。
+        今天還能上傳 {left} 張。
       </p>
       <label className="mt-3 flex items-start gap-2">
         <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-1" />
@@ -247,11 +234,7 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
           }}
         />
       </label>
-      {message && (
-        <p role="status" className="mt-2 text-zinc-600 dark:text-zinc-400">
-          {message}
-        </p>
-      )}
+      {message && <p className="mt-2 text-zinc-600 dark:text-zinc-400">{message}</p>}
     </section>
   );
 }

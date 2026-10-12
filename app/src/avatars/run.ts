@@ -1,7 +1,7 @@
-import { and, desc, eq, gte, max, or } from 'drizzle-orm';
+import { and, desc, eq, gte, max, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { type TagPersonStatus, tagAvatarCandidates, tagPeople, tagPeopleLog, tagStats } from '../db/schema.ts';
-import { submitPicture } from '../pictures/submissions.ts';
+import { castVote } from '../pictures/votes.ts';
 import { selectDiscoveryEntries } from '../v1/ranking-discovery.ts';
 import { loadRanking } from '../v1/routes.ts';
 import { inspect, quality, renderAvatar, sameFace, sameShot, type Verdict } from './portrait.ts';
@@ -175,8 +175,8 @@ export const PHOTO_REJECTED: Partial<Record<Verdict, string>> = {
  * of (docs/tag-avatars.md): the same face checks and sketch as a Commons
  * photo, minus the identity check (the uploader chose the person). It
  * becomes the next candidate. An admin's upload is shown at once, as if
- * chosen; a reader's (`userId`) stays in a private submission until reviewed
- * (docs/tag-pictures.md).
+ * chosen; a reader's (`userId`) counts as the reader's vote and is shown
+ * when it has the most votes (docs/tag-pictures.md).
  */
 export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: string, userId?: number) {
   const [person] = await db
@@ -191,19 +191,6 @@ export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: st
   const main = insp.main as NonNullable<typeof insp.main>;
   const { score, parts } = quality(main, insp.aligned as Rgb, 1, insp.verdict);
   const image = await renderAvatar(img, main);
-  if (userId !== undefined) {
-    try {
-      return await submitPicture(db, {
-        tag,
-        pictureKind: 'avatar',
-        image,
-        userId,
-        pictureMeta: { score, scores: parts, verdict: insp.verdict },
-      });
-    } catch (error) {
-      return { tag, error: (error as Error).message };
-    }
-  }
   return db.transaction(async (tx) => {
     const [current] = await tx
       .select({ wikidataId: tagPeople.wikidataId, status: tagPeople.status })
@@ -217,6 +204,29 @@ export async function addPhoto(db: Db, tag: string, photo: Uint8Array, email: st
       .where(eq(tagAvatarCandidates.tag, tag));
     const rank = (top ?? 0) + 1;
     const at = new Date();
+    if (userId !== undefined) {
+      await tx.insert(tagAvatarCandidates).values({
+        tag,
+        rank,
+        file: '讀者上傳',
+        pageUrl: '',
+        license: null,
+        licenseUrl: null,
+        artist: null,
+        score,
+        scores: parts,
+        verdict: insp.verdict,
+        image,
+        uploadedBy: userId,
+        uploadedAt: at,
+      });
+      await tx
+        .update(tagPeople)
+        .set({ status: 'voted' })
+        .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} NOT IN ('chosen', 'hidden')`));
+      const shown = await castVote(tx as unknown as Db, tag, 'avatar', userId, rank);
+      return { tag, rank, score, verdict: insp.verdict, shown: shown === rank };
+    }
     await tx.insert(tagAvatarCandidates).values({
       tag,
       rank,

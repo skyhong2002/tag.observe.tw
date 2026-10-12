@@ -1,6 +1,6 @@
 import { and, eq, gte, isNotNull, max, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { tagAvatarCandidates, tagPeople, tagPictureVotes, tagSubmissions, tagVisualCandidates, tagVisuals } from '../db/schema.ts';
+import { tagAvatarCandidates, tagPeople, tagPictureVotes, tagVisualCandidates, tagVisuals } from '../db/schema.ts';
 
 // Readers' votes on a tag's picture (docs/tag-pictures.md). Every tag has
 // candidates: a person tag's sketches (tag_avatar_candidates), any other
@@ -100,6 +100,25 @@ export async function nextRank(db: Db, tag: string, kind: PictureKind) {
   return (top ?? 0) + 1;
 }
 
+/**
+ * A reader's picture for a non-person tag, already recoloured (recolourLogo):
+ * the next candidate, voted for by the uploader, so it is shown at once
+ * unless more readers voted for another or an admin chose one.
+ */
+export async function addVisualUpload(db: Db, tag: string, image: Buffer, userId: number) {
+  const at = new Date();
+  const rank = await nextRank(db, tag, 'visual');
+  await db.insert(tagVisualCandidates).values({ tag, rank, kind: 'logo', note: '讀者上傳', image, uploadedBy: userId, uploadedAt: at });
+  // A tag nothing was found for has no row yet.
+  await db.insert(tagVisuals).ignore().values({ tag, status: 'voted', checkedAt: at });
+  await db
+    .update(tagVisuals)
+    .set({ status: 'voted' })
+    .where(and(eq(tagVisuals.tag, tag), sql`${tagVisuals.status} NOT IN ('chosen', 'hidden')`));
+  await castVote(db, tag, 'visual', userId, rank);
+  return { tag, rank };
+}
+
 /** Uploads by `userId` over the last day, both kinds. */
 export async function uploadsToday(db: Db, userId: number) {
   const since = new Date(Date.now() - 86_400_000);
@@ -109,22 +128,8 @@ export async function uploadsToday(db: Db, userId: number) {
         await db
           .select({ n: sql<number>`COUNT(*)` })
           .from(table)
-          .where(
-            and(
-              eq(table.uploadedBy, userId),
-              gte(table.uploadedAt, since),
-              sql`NOT EXISTS (
-            SELECT 1 FROM ${tagSubmissions} WHERE ${tagSubmissions.kind} = 'picture'
-              AND ${tagSubmissions.tag} = ${table.tag} AND ${tagSubmissions.candidateRank} = ${table.rank}
-              AND ${tagSubmissions.pictureKind} = ${table === tagAvatarCandidates ? 'avatar' : 'visual'}
-          )`,
-            ),
-          )
+          .where(and(eq(table.uploadedBy, userId), gte(table.uploadedAt, since)))
       )[0]?.n ?? 0,
     );
-  const [submissions] = await db
-    .select({ n: sql<number>`COUNT(*)` })
-    .from(tagSubmissions)
-    .where(and(eq(tagSubmissions.kind, 'picture'), eq(tagSubmissions.createdBy, userId), gte(tagSubmissions.createdAt, since)));
-  return Number(submissions?.n ?? 0) + (await count(tagAvatarCandidates)) + (await count(tagVisualCandidates));
+  return (await count(tagAvatarCandidates)) + (await count(tagVisualCandidates));
 }

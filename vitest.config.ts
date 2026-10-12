@@ -9,8 +9,6 @@ const sharedDb = [
   'app/test/reader.spec.ts',
   'app/test/tag-avatars.spec.ts',
   'app/test/picture-kind.spec.ts',
-  'app/test/picture-submissions.spec.ts',
-  'app/test/tag-semantic.spec.ts',
   'app/test/writing.spec.ts',
 ];
 
