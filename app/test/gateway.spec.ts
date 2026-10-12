@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { legacyRoute } from '../src/legacy-redirects.js';
+import { uiTarget } from '../src/ui-proxy.js';
 
 describe('legacyRoute', () => {
   it('maps old tag.analysis.tw URL shapes onto new pages', () => {
@@ -64,8 +65,10 @@ describe('legacyRoute', () => {
 
 describe('gateway', () => {
   let hits: string[] = [];
+  let seenHeaders: Record<string, unknown> = {};
   const ui = createServer((req, res) => {
     hits.push(`${req.method} ${req.url}`);
+    seenHeaders = req.headers;
     res.setHeader('content-type', 'text/html');
     res.end(`<h1>next:${req.url}</h1>`);
   });
@@ -92,6 +95,48 @@ describe('gateway', () => {
     const head = await app.inject({ method: 'HEAD', url: '/' });
     expect(head.statusCode).toBe(200);
     expect(head.body).toBe('');
+  });
+  it('builds UI URLs from the origin and the path only', () => {
+    const base = new URL('http://127.0.0.1:18132');
+    // light-my-request rewrites backslashes, so these are checked here; real sockets were checked by hand.
+    for (const raw of ['/\\evil.example/x', '/\\\\evil.example/x', '/a\\b', '//evil.example', 'http://evil/x', '/%E0%A4%A'])
+      expect(uiTarget(raw, base), raw).toBeNull();
+    expect(uiTarget('/tag/%E5%8F%B0/?q=//x', base)?.href).toBe('http://127.0.0.1:18132/tag/%E5%8F%B0/?q=//x');
+  });
+  it('never lets a request path pick another host, and keeps credentials from the UI', async () => {
+    // A second loopback service the proxy must never reach (the SSRF the review found).
+    let reached = 0;
+    const other = createServer((_req, res) => {
+      reached++;
+      res.end('{"ok":true}');
+    });
+    other.listen(0, '127.0.0.1');
+    await once(other, 'listening');
+    const port = (other.address() as { port: number }).port;
+    try {
+      hits = [];
+      for (const url of [
+        `//127.0.0.1:${port}/healthz`,
+        '//evil.example/x',
+        `/%2F%2F127.0.0.1:${port}/healthz`,
+        '/%2f/evil.example',
+        '/%5Cevil.example',
+        '/%5C%5Cevil.example',
+        '/%252F%252Fevil.example',
+      ]) {
+        const r = await app.inject({ method: 'GET', url, headers: { cookie: 'tag_session=secret' } });
+        expect(r.statusCode, url).toBe(400);
+      }
+      expect(reached).toBe(0);
+      expect(hits).toEqual([]);
+      // A normal page still goes through, without the session cookie or authorization.
+      const ok = await app.inject({ url: '/tag/x/?q=//evil', headers: { cookie: 'tag_session=secret', authorization: 'Bearer x' } });
+      expect(ok.body).toBe('<h1>next:/tag/x/?q=//evil</h1>');
+      expect(seenHeaders.cookie).toBeUndefined();
+      expect(seenHeaders.authorization).toBeUndefined();
+    } finally {
+      other.close();
+    }
   });
   it('redirects legacy URLs and never contacts the old site', async () => {
     hits = [];
@@ -144,8 +189,7 @@ describe('gateway', () => {
     expect((await app.inject('/_migration/health')).json()).toHaveProperty('uptimeSeconds');
   });
   it('rate-limits external callers per client IP, never local callers', async () => {
-    for (let i = 0; i < 60; i++)
-      expect((await app.inject({ url: '/api/x.php', headers: external('198.51.100.9') })).statusCode).toBe(410);
+    for (let i = 0; i < 60; i++) expect((await app.inject({ url: '/api/x.php', headers: external('198.51.100.9') })).statusCode).toBe(410);
     expect((await app.inject({ url: '/api/x.php', headers: external('198.51.100.9') })).statusCode).toBe(429);
     expect((await app.inject({ url: '/api/x.php', headers: external('198.51.100.10') })).statusCode).toBe(410);
     for (let i = 0; i < 300; i++) expect((await app.inject('/api/x.php')).statusCode).toBe(410);

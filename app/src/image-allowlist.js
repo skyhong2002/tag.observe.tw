@@ -33,6 +33,7 @@ export function imageRequestAllowed(rawUrl) {
   const target = params.getAll('url');
   if (target.length !== 1) return false;
   const value = target[0];
-  if (value.startsWith('/') && !value.startsWith('//')) return true;
+  // Same-site images only: `//host` and `/\host` are other hosts once parsed.
+  if (value.startsWith('/') && !/^\/[/\\]/.test(value)) return true;
   return isAllowedImage(value);
 }

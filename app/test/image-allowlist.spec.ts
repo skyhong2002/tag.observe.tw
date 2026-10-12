@@ -36,6 +36,9 @@ describe('image allowlist', () => {
   });
   it('checks the /_next/image url parameter, including duplicates and local paths', () => {
     expect(imageRequestAllowed('/_next/image?url=%2Fimg%2Ftag.png&w=64&q=75')).toBe(true);
+    // Protocol-relative and backslash forms are other hosts.
+    expect(imageRequestAllowed('/_next/image/?url=%2F%2Fevil.example%2Fa.png&w=64')).toBe(false);
+    expect(imageRequestAllowed('/_next/image/?url=%2F%5Cevil.example%2Fa.png&w=64')).toBe(false);
     expect(imageRequestAllowed('/_next/image/?url=https%3A%2F%2Fattach.setn.com%2Fa.jpg&w=64&q=75')).toBe(true);
     expect(imageRequestAllowed('/_next/image?url=https%3A%2F%2Fwww.google.com%2Ffavicon.ico&w=64')).toBe(false);
     expect(imageRequestAllowed('/_next/image?url=%2F%2Fevil.com%2Fa.png&w=64')).toBe(false);
