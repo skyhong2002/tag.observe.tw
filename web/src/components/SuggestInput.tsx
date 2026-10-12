@@ -131,11 +131,13 @@ export default function SuggestInput({
         }}
       />
       {expanded && (
+        // Page suggestions stay below SiteHeader's z-30; header search stays
+        // inside the header's own stacking context.
         <div
           ref={listRef}
           id={`${id}-list`}
           role="listbox"
-          className="absolute top-full left-0 z-30 mt-1 max-h-80 w-max min-w-full max-w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-zinc-200 bg-white py-1 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          className="absolute top-full left-0 z-20 mt-1 max-h-80 w-max min-w-full max-w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-zinc-200 bg-white py-1 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
         >
           {items.map((item, index) => (
             // biome-ignore lint/a11y/useKeyWithClickEvents: The combobox input handles arrow keys and Enter for every option.
