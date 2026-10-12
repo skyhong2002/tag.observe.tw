@@ -11,6 +11,7 @@ import { createDb } from './db/client.ts';
 import { registerFeeds } from './feeds.ts';
 import { isShareImage, legacyRoute } from './legacy-redirects.js';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
+import { registerExternalTraffic } from './media-traffic/external-routes.ts';
 import { registerTaiwanShares } from './media-traffic/taiwan-share.ts';
 import { httpDuration, httpRequests, metricsContentType, metricsText } from './metrics.ts';
 import { registerPictureRoutes } from './pictures/routes.ts';
@@ -48,6 +49,8 @@ export async function buildApp(
     db = /** @type {import('./db/client.ts').Db | null} */ (null),
     loginStore = /** @type {import('./auth/google-login.ts').LoginStore | null} */ (null),
     jobQueue = /** @type {(() => import('./admin/routes.ts').JobQueue) | null} */ (null),
+    // Service tokens for the Similarweb request API (tests); the environment otherwise.
+    externalTokens = /** @type {Map<string, Buffer> | null} */ (null),
   } = {},
 ) {
   const app = Fastify({
@@ -125,6 +128,8 @@ export async function buildApp(
     registerLiveboard(app, own.db);
     registerTagPerson(app, own.db);
     registerTagVisual(app, own.db);
+    // Similarweb lookups for other services on this machine: loopback and a service token only.
+    registerExternalTraffic(app, own.db, externalTokens ? { tokens: externalTokens } : {});
     registerWriting(app, own.db);
     registerTagGroups(app, own.db);
   }

@@ -112,8 +112,13 @@ export const extensionHeaders = {
   origin: 'chrome-extension://hoklmmgfnpapgjgcpechhaamimifchmp',
   'x-extension-version': '6.12.0',
 };
-/** The public endpoint used by the Similarweb extension. No account cookies. */
-export async function fetchDomainTraffic(domain: string, request = fetch, now = new Date()): Promise<DomainTraffic> {
+/**
+ * The public endpoint used by the Similarweb extension, raw. No account
+ * cookies. Every data.similarweb.com request in tag goes through here, from
+ * the media-traffic job only (external requests share its budget,
+ * external.ts).
+ */
+export async function requestSimilarweb(domain: string, request = fetch): Promise<Record<string, unknown>> {
   if (trafficDomain(domain) !== domain) throw Error('Invalid domain');
   const response = await request(`https://data.similarweb.com/api/v1/data?domain=${encodeURIComponent(domain)}`, {
     headers: extensionHeaders,
@@ -121,7 +126,13 @@ export async function fetchDomainTraffic(domain: string, request = fetch, now = 
     redirect: 'error',
   });
   if (!response.ok) throw new TrafficFetchError(response.status, `Similarweb HTTP ${response.status}`);
-  const data = await response.json();
+  return (await response.json()) as Record<string, unknown>;
+}
+export async function fetchDomainTraffic(domain: string, request = fetch, now = new Date()): Promise<DomainTraffic> {
+  return parseDomainTraffic(await requestSimilarweb(domain, request), domain, now);
+}
+// biome-ignore lint/suspicious/noExplicitAny: the provider's JSON, checked field by field below.
+export function parseDomainTraffic(data: any, domain: string, now = new Date()): DomainTraffic {
   if (typeof data.SiteName !== 'string' || trafficDomain(data.SiteName) !== domain) throw Error('Similarweb returned a different domain');
   if (!data.EstimatedMonthlyVisits || typeof data.EstimatedMonthlyVisits !== 'object' || Array.isArray(data.EstimatedMonthlyVisits))
     throw Error('Similarweb monthly visits missing');
@@ -245,7 +256,7 @@ export async function refreshTraffic(
     pauseMs = 3000,
     delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
   } = {},
-): Promise<LiveTraffic & { updated: number; remaining: number }> {
+): Promise<LiveTraffic & { updated: number; remaining: number; attempted: number }> {
   const entries = new Map(previous.domains.map((row) => [row.domain, row]));
   const failedAt = { ...previous.failedAt };
   let successes = 0;
@@ -293,5 +304,7 @@ export async function refreshTraffic(
     failedAt,
     updated: successes,
     remaining: due.length - attempted,
+    // Requests sent this run (a refused one included), for the external budget.
+    attempted: attempted + (blocked ? 1 : 0),
   };
 }

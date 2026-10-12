@@ -1018,3 +1018,59 @@ export const tagPictureVotes = mysqlTable(
   },
   (t) => [primaryKey({ columns: [t.tag, t.kind, t.userId] }), index('tag_picture_votes_rank').on(t.tag, t.kind, t.rank)],
 );
+
+// Similarweb lookups other observe services ask tag to make
+// (docs/similarweb-requests.md). tag's media-traffic job is the only thing
+// that calls data.similarweb.com; after its own outlets it spends what is
+// left of the run's budget on these rows, oldest first. One row per
+// requester, domain and kind (traffic or similar_sites); one request fills
+// both kinds for a domain. status: pending (waiting or retrying), ok,
+// no-data (Similarweb has nothing for it), blocked (refused 401/403/429,
+// retried after next_attempt_at).
+export type ExternalTrafficKind = 'traffic' | 'similar_sites';
+export type ExternalTrafficStatus = 'pending' | 'ok' | 'no-data' | 'blocked';
+export type ExternalTrafficResult = {
+  /** Monthly visits, oldest first (Similarweb gives the last three). */
+  monthly: { month: string; visits: number }[];
+  globalRank: number | null;
+  countryRank: { code: string; rank: number } | null;
+  category: string | null;
+  topCountries: { code: string; share: number }[];
+  /** Similarweb's TopSimilarityCompetitors domains. */
+  similarSites: string[];
+};
+export const trafficExternalRequests = mysqlTable(
+  'traffic_external_requests',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    requester: varchar('requester', { length: 16 }).notNull(),
+    domain: varchar('domain', { length: 253 }).notNull(),
+    kind: varchar('kind', { length: 16 }).$type<ExternalTrafficKind>().notNull(),
+    requestedAt: datetime('requested_at').notNull(),
+    status: varchar('status', { length: 8 }).$type<ExternalTrafficStatus>().notNull(),
+    attempts: int('attempts').notNull().default(0),
+    nextAttemptAt: datetime('next_attempt_at'),
+    lastAttemptAt: datetime('last_attempt_at'),
+    lastError: varchar('last_error', { length: 255 }),
+    fetchedAt: datetime('fetched_at'),
+    // The last 401/403/429 for this domain: no external lookup goes out for six hours after any.
+    refusedAt: datetime('refused_at'),
+    result: json('result').$type<ExternalTrafficResult>(),
+  },
+  (t) => [
+    uniqueIndex('traffic_external_requests_key').on(t.requester, t.domain, t.kind),
+    index('traffic_external_requests_due').on(t.status, t.nextAttemptAt),
+    index('traffic_external_requests_refused').on(t.refusedAt),
+  ],
+);
+
+// One row per Similarweb request sent for another service, for the daily cap.
+export const trafficExternalSends = mysqlTable(
+  'traffic_external_sends',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    domain: varchar('domain', { length: 253 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [index('traffic_external_sends_at').on(t.at)],
+);
