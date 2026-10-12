@@ -8,3 +8,13 @@ export function reconcileAnalyticsPreference(local: boolean, saved: boolean | un
   if (saved === undefined) return { upload: false };
   return {};
 }
+
+// A client navigation can remount PrefsSync before its PUT settles. Remember
+// explicit choices for this document, separately from account-applied values.
+let explicitlyChosen = false;
+export function rememberAnalyticsChoice() {
+  explicitlyChosen = true;
+}
+export function analyticsChoiceWasExplicit() {
+  return explicitlyChosen;
+}

@@ -47,16 +47,27 @@ export async function readerFetch<T>(path: string, init: { method?: string; body
 function store<T>(load: () => Promise<T>) {
   let value: T | undefined;
   let pending: Promise<T> | null = null;
+  let revision = 0;
   const listeners = new Set<(value: T) => void>();
   const set = (next: T) => {
+    revision++;
     value = next;
     for (const listener of listeners) listener(next);
   };
   const get = () => {
-    pending ??= load().then((v) => {
-      set(v);
-      return v;
-    });
+    if (value !== undefined) return Promise.resolve(value);
+    const startedAt = revision;
+    pending ??= load()
+      .then((v) => {
+        // A mutation completed while the first GET was in flight. Its newer
+        // value must win both the subscriber state and this GET's result.
+        if (revision === startedAt) set(v);
+        return value === undefined ? v : value;
+      })
+      .catch((error) => {
+        pending = null;
+        throw error;
+      });
     return pending;
   };
   function useValue(): T | undefined {

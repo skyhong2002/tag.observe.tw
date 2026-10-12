@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { OPT_OUT_EVENT, OPT_OUT_KEY, readOptOut, writeOptOut } from '@/lib/analytics-consent.mts';
-import { reconcileAnalyticsPreference } from '@/lib/analytics-preference.mts';
+import { analyticsChoiceWasExplicit, reconcileAnalyticsPreference } from '@/lib/analytics-preference.mts';
 import { prefs, savePrefs } from '@/lib/reader';
 
 // Carries a signed-in reader's theme and analytics choice between devices
@@ -38,7 +38,11 @@ export default function PrefsSync() {
           const local = storage.getItem('theme');
           upload.theme = local === 'dark' || local === 'light' ? local : null;
         }
-        const privacy = reconcileAnalyticsPreference(readOptOut(storage), saved.analyticsOptOut, choiceChanged);
+        const privacy = reconcileAnalyticsPreference(
+          readOptOut(storage),
+          saved.analyticsOptOut,
+          choiceChanged || analyticsChoiceWasExplicit(),
+        );
         if (privacy.apply !== undefined) {
           writeOptOut(storage, privacy.apply);
           window.dispatchEvent(new Event(OPT_OUT_EVENT));

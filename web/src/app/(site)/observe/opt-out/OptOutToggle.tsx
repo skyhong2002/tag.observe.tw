@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { type AnalyticsBlock, analyticsBlock, OPT_OUT_EVENT, readOptOut, writeOptOut } from '@/lib/analytics-consent.mts';
+import { rememberAnalyticsChoice } from '@/lib/analytics-preference.mts';
 import { savePrefs } from '@/lib/reader';
 
 const STATUS: Record<NonNullable<AnalyticsBlock> | 'counted', { label: string; note: string }> = {
@@ -55,6 +56,7 @@ export default function OptOutToggle() {
     try {
       if (!state.storage) throw Error('no storage');
       writeOptOut(state.storage, optedOut);
+      rememberAnalyticsChoice();
       window.dispatchEvent(new Event(OPT_OUT_EVENT));
       savePrefs({ analyticsOptOut: optedOut }).catch(() => {});
       setError(false);
