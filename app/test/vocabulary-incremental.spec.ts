@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import mysql, { type Connection } from 'mysql2/promise';
+import mysql, { type Connection, type RowDataPacket } from 'mysql2/promise';
 import { afterEach, describe, expect, it } from 'vitest';
 import { VocabularyAggregate } from '../src/vocabulary/aggregate.ts';
 import { runVocabulary, VocabularyPaused } from '../src/vocabulary/runner.ts';
@@ -28,7 +28,7 @@ it('resumes control-noise flag backfill without source changes or deleting the l
   const d = await setup(),
     path = join(d, 'aggregate.sqlite');
   let a = new VocabularyAggregate(path);
-  const labels = ['\b', '\u0003比基尼', '正常詞', '標籤\u009f'];
+  const labels = ['\b', '\u0003比基尼', '正常詞', '標籤\u009f', '\u0000', 'prefix\u0000suffix', 'prefix'];
   a.replace(
     null,
     null,
@@ -46,11 +46,29 @@ it('resumes control-noise flag backfill without source changes or deleting the l
       action: r.action,
       term: vocabularyTerm(JSON.parse(String(r.payload))),
     }));
-  expect(changed).toHaveLength(3);
+  expect(changed).toHaveLength(5);
   expect(changed.every((c) => c.action === 'upsert' && c.term.noise && c.term.noiseReasons.includes('control-character'))).toBe(true);
   expect(changed.every((c) => c.term.articleCount === 4)).toBe(true);
   expect([...a.terms()].map((t) => t.tag).sort()).toEqual([...labels].sort());
   expect(a.queueControlNoiseBatch()).toEqual({ examined: 0, queued: 0, complete: true });
+  a.close();
+});
+it('preserves embedded NUL through pending queries, group aggregation and removal changes', async () => {
+  const a = new VocabularyAggregate(join(await setup(), 'aggregate.sqlite'));
+  const label = 'prefix\u0000suffix';
+  a.stageGroup([{ tag: label, groupKey: 'AB', article_id: 1, published_at: '2026-10-01 00:00:00' }] as RowDataPacket[], {});
+  const rows = a.groupTerms();
+  expect(rows[0].tag).toBe(label);
+  a.replace(null, null, rows);
+  a.db.prepare('INSERT INTO pending VALUES(?,?,?)').run('AB', label, 1);
+  expect(a.nextPending()).toEqual({ groupKey: 'AB', tag: label });
+  expect([...a.terms(label)][0].tag).toBe(label);
+  a.replaceExact('AB', []);
+  const change = a.db.prepare('SELECT action,payload FROM changes').get()!;
+  expect(change.action).toBe('absent-from-index');
+  expect(JSON.parse(String(change.payload))).toEqual({ label });
+  expect(a.nextPending()).toBeNull();
+  expect(a.count()).toBe(0);
   a.close();
 });
 it('keeps only delta files between daily bases and replays across daily generations', async () => {

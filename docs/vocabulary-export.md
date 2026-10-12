@@ -112,3 +112,5 @@ manifest.statistics另列 fullFileBytes / activeFileBytes / changeFileBytes（gz
 原始詞串只要含 Unicode `Cc`（C0、DEL、C1 控制字元），例如 JSON 表示的 `"\b"`、`"\u0003比基尼"`，就標成 `noise: true`、`noiseReasons: ["control-character"]`。判斷在 trim／NFKC 前，避免 tab 或換行被修剪而漏標；emoji 的 ZWJ 等 `Cf` 格式字元不因此視為控制字元。完整池中的原始 label、SHA-256 ID、篇數与時間完全保留，不刪除或改寫標籤。
 
 已發布池的修正不能只等文章再次異動：匯出器執行一次私有 SQLite label 掃描，每批 5,000 詞、有 checkpoint 及既有首頁／磁碟／時限保護。只把含控制字元的既有詞排入 upsert changes，沿用既有統計；不額外掃正式 DB、不建立 trigger。中途暫停保留佇列與游標，完成後發布新 noisePolicyVersion；每日完整檔也會套用新標記。下游可沿原世代接收 changes，無須因本修正強制重新匯入整池。
+
+SQLite 的 Node TEXT 解碼會在嵌入 NUL 處截斷；詞條、待處理標籤與 keyset 游標一律以 `CAST(... AS BLOB)` 取出原始 UTF-8 再解碼。單測涵蓋 NUL 的原樣讀取、續跑、分組彙總、pending 查詢及刪除異動，避免混到相同前綴的正常標籤。此次私有彙總唯讀檢查沒有現存 NUL 詞；補標發布前仍修正這個邊界，不等待來源出現此資料。

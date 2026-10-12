@@ -3,6 +3,10 @@ import type { RowDataPacket } from 'mysql2/promise';
 import { hasTagControlCharacters } from '../tag-noise.ts';
 import type { SourceTerm } from './snapshots.ts';
 import type { AggregateTerm } from './source.ts';
+
+// Node SQLite TEXT decoding stops at embedded NUL. Read labels as bytes so
+// identity, keyset cursors and changes preserve the exact original UTF-8.
+const labelText = (value: unknown) => Buffer.from(value as Uint8Array).toString('utf8');
 export class VocabularyAggregate {
   readonly db: DatabaseSync;
   constructor(path: string) {
@@ -42,9 +46,9 @@ export class VocabularyAggregate {
       const where =
         afterKey === null ? (upperKey === null ? '1' : 'group_key<=?') : upperKey === null ? 'group_key>?' : 'group_key>? AND group_key<=?';
       const args = [afterKey, upperKey].filter((x) => x !== null);
-      const old = this.db.prepare('SELECT label FROM terms WHERE ' + where).all(...args);
+      const old = this.db.prepare('SELECT CAST(label AS BLOB) label_bytes FROM terms WHERE ' + where).all(...args);
       this.recordChanges(
-        old.map((r) => String(r.label)),
+        old.map((r) => labelText(r.label_bytes)),
         terms,
       );
       this.db.prepare('DELETE FROM terms WHERE ' + where).run(...args);
@@ -56,9 +60,9 @@ export class VocabularyAggregate {
   }
   replaceExact(key: string, terms: AggregateTerm[]) {
     this.transaction(() => {
-      const old = this.db.prepare('SELECT label FROM terms WHERE group_key=?').all(key);
+      const old = this.db.prepare('SELECT CAST(label AS BLOB) label_bytes FROM terms WHERE group_key=?').all(key);
       this.recordChanges(
-        old.map((r) => String(r.label)),
+        old.map((r) => labelText(r.label_bytes)),
         terms,
       );
       this.db.prepare('DELETE FROM terms WHERE group_key=?').run(key);
@@ -137,9 +141,11 @@ export class VocabularyAggregate {
       const lower = new Date(Date.parse(previous) - 30 * 86400000).toISOString();
       const queue = this.db.prepare('INSERT INTO pending VALUES(?,?,0) ON CONFLICT(group_key) DO NOTHING');
       for (const row of this.db
-        .prepare('SELECT t.label,group_key FROM terms t JOIN recent_counts r ON r.label=t.label WHERE r30>0 AND last_at>=? AND last_at<?')
+        .prepare(
+          'SELECT CAST(t.label AS BLOB) label_bytes,group_key FROM terms t JOIN recent_counts r ON r.label=t.label WHERE r30>0 AND last_at>=? AND last_at<?',
+        )
         .all(lower, cutoff))
-        queue.run(String(row.group_key), String(row.label));
+        queue.run(String(row.group_key), labelText(row.label_bytes));
       this.set('active30CheckedAt', now.toISOString());
     });
   }
@@ -165,10 +171,10 @@ export class VocabularyAggregate {
   }
   groupTerms(): AggregateTerm[] {
     return this.db
-      .prepare('SELECT * FROM group_work LEFT JOIN group_recent USING(label)')
+      .prepare('SELECT *,CAST(group_work.label AS BLOB) label_bytes FROM group_work LEFT JOIN group_recent USING(label)')
       .all()
       .map((r) => ({
-        tag: String(r.label),
+        tag: labelText(r.label_bytes),
         groupKey: String(r.group_key),
         articleCount: Number(r.n),
         recentArticleCount: Number(r.r180),
@@ -183,20 +189,22 @@ export class VocabularyAggregate {
     if (this.get('controlNoiseBackfilled')) return { examined: 0, queued: 0, complete: true };
     const cursor = this.get<string>('controlNoiseCursor');
     const labels = this.db
-      .prepare(`SELECT label FROM terms ${cursor === null ? '' : 'WHERE label>?'} ORDER BY label COLLATE BINARY LIMIT ?`)
+      .prepare(
+        `SELECT CAST(label AS BLOB) label_bytes FROM terms ${cursor === null ? '' : 'WHERE label>?'} ORDER BY label COLLATE BINARY LIMIT ?`,
+      )
       .all(...(cursor === null ? [limit] : [cursor, limit]));
     let queued = 0;
     const complete = labels.length < limit;
     this.transaction(() => {
       const put = this.db.prepare('INSERT OR REPLACE INTO changes VALUES(?,?,?)');
       for (const row of labels) {
-        const label = String(row.label);
+        const label = labelText(row.label_bytes);
         if (!hasTagControlCharacters(label)) continue;
         const [term] = this.terms(label);
         put.run(label, 'upsert', JSON.stringify(term));
         queued++;
       }
-      if (labels.length) this.set('controlNoiseCursor', String(labels.at(-1)!.label));
+      if (labels.length) this.set('controlNoiseCursor', labelText(labels.at(-1)!.label_bytes));
       if (complete) this.set('controlNoiseBackfilled', true);
     });
     return { examined: labels.length, queued, complete };
@@ -206,11 +214,11 @@ export class VocabularyAggregate {
     const complete = this.get('recentHydrationComplete') || this.get('recentCountsReady');
     for (const r of this.db
       .prepare(
-        `SELECT t.label,n,first_at,last_at,r30,r90,r180,as_of FROM terms t LEFT JOIN recent_counts r ON r.label=t.label ${label === undefined ? '' : 'WHERE t.label=?'} ORDER BY t.label COLLATE BINARY`,
+        `SELECT CAST(t.label AS BLOB) label_bytes,n,first_at,last_at,r30,r90,r180,as_of FROM terms t LEFT JOIN recent_counts r ON r.label=t.label ${label === undefined ? '' : 'WHERE t.label=?'} ORDER BY t.label COLLATE BINARY`,
       )
       .iterate(...(label === undefined ? [] : [label])))
       yield {
-        tag: String(r.label),
+        tag: labelText(r.label_bytes),
         articleCount: Number(r.n),
         firstPublishedAt: String(r.first_at),
         lastPublishedAt: String(r.last_at),
@@ -222,6 +230,10 @@ export class VocabularyAggregate {
             }
           : {}),
       };
+  }
+  nextPending() {
+    const row = this.db.prepare('SELECT group_key,CAST(tag AS BLOB) tag_bytes FROM pending ORDER BY priority DESC LIMIT 1').get();
+    return row ? { groupKey: String(row.group_key), tag: labelText(row.tag_bytes) } : null;
   }
   count() {
     return Number(this.db.prepare('SELECT COUNT(*) n FROM terms').get()!.n);

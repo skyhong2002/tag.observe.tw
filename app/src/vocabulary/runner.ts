@@ -185,10 +185,10 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
     aggregate.queueActiveExpiry(new Date());
     while (true) {
       if (!needsFull && Date.now() - started >= workBudget) break;
-      const pending = aggregate.db.prepare('SELECT group_key,tag FROM pending ORDER BY priority DESC LIMIT 1').get();
+      const pending = aggregate.nextPending();
       if (!pending) break;
-      const terms = await exact(String(pending.tag));
-      aggregate.replaceExact(String(pending.group_key), terms);
+      const terms = await exact(pending.tag);
+      aggregate.replaceExact(pending.groupKey, terms);
     }
     if (!initial && options.mode === 'reconcile') {
       await sweep('reconcileCursor', Math.max(1000, Math.ceil(aggregate.count() / 7)));
