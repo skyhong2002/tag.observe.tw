@@ -1,8 +1,8 @@
 'use client';
 
-import { sendGAEvent } from '@next/third-parties/google';
 import { useEffect } from 'react';
 import type { MetricWithAttribution } from 'web-vitals/attribution';
+import { sendAnalyticsEvent } from '@/lib/analytics-runtime.mts';
 
 let started = false;
 /** Document-level metrics; SPA navigations do not become new page-load samples. */
@@ -38,7 +38,7 @@ export default function WebVitals() {
         } else if (metric.name === 'CLS') {
           detail.metric_target = metric.attribution.largestShiftTarget ?? 'none';
         }
-        sendGAEvent('event', 'web_vital', {
+        sendAnalyticsEvent('web_vital', {
           metric_name: name,
           metric_value: name === 'CLS' ? Math.round(value * 1000) / 1000 : Math.round(value),
           metric_rating: rating,

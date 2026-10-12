@@ -35,6 +35,8 @@ export default function ReaderPresence({ children }: { children: ReactNode }) {
         globalPrivacyControl: (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl,
         userAgent: navigator.userAgent,
         optedOut: readOptOut(storage),
+        pathname: location.pathname,
+        search: location.search,
       });
       const visible = document.visibilityState === 'visible';
       setState((s) => ({ ...s, counted: false, status: visible ? '正在確認追蹤' : '背景頁面暫停計入' }));

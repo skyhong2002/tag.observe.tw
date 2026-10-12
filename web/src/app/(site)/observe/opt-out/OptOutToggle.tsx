@@ -6,6 +6,7 @@ import { savePrefs } from '@/lib/reader';
 const STATUS: Record<NonNullable<AnalyticsBlock> | 'counted', { label: string; note: string }> = {
   counted: { label: '計入統計', note: '這個瀏覽器的造訪會送到 Google Analytics，可見頁面也會計入本站線上讀者。' },
   'opt-out': { label: '不計入統計', note: '已在這個瀏覽器關閉，Google Analytics 不會載入，也不再回報線上讀者心跳。' },
+  page: { label: '此頁不計入統計', note: '私人頁、功能頁與查詢頁不送出統計。' },
   privacy: { label: '不計入統計', note: '瀏覽器已要求不要追蹤，不送出統計或線上讀者心跳。' },
   automation: { label: '不計入統計', note: '偵測到自動化測試瀏覽器，預設不送統計。' },
   environment: { label: '不計入統計', note: '這不是正式網站（tag.observe.tw），本來就不送統計。' },

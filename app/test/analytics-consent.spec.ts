@@ -27,7 +27,7 @@ describe('who sends GA data', () => {
     expect(analyticsBlock({ ...reader, optedOut: true })).toBe('opt-out');
     expect(analyticsBlock({ ...reader, hostname: 'localhost' })).toBe('environment');
     expect(analyticsBlock({ ...reader, production: false })).toBe('environment');
-    expect(analyticsBlock({ ...reader, pathname: '/liveboards/' })).toBeNull();
+    expect(analyticsBlock({ ...reader, pathname: '/liveboards/' })).toBe('page');
   });
   it('counts liveboard readers while respecting their opt-out and excluding automation', () => {
     for (const pathname of ['/liveboard', '/liveboard/']) {

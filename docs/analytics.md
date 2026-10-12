@@ -14,7 +14,15 @@
 - `rss_click`：點擊本站 RSS 連結；不代表訂閱成功。
 - `app_installed`：瀏覽器發出 `appinstalled`，不以按安裝按鈕或接受提示代替。未提供此事件的瀏覽器無法量到。
 
-自訂事件不送標題、搜尋字詞、完整外連 URL 或使用者識別碼。但 GA 加強型評估仍會收集網頁網址、標題、外連與站內搜尋等資料；上線管理時需檢查資料刪改設定（電子郵件及 URL 查詢參數，例如 `q`），若不需要搜尋字詞報表可關閉站內搜尋評估。URL 刪改不會自動清理頁面標題，搜尋頁標題也應避免帶入敏感輸入。
+自訂事件不送搜尋字詞、完整外連 URL 或使用者識別碼。`analytics-runtime.mts` 在載入 Google tag 前包住 history.pushState／replaceState，並以 capture popstate 處理上一頁。每次切頁先決定是否禁止，再讓 GA 看見網址；不依賴後台查詢參數遮蔽。
+
+- 公開頁採路徑白名單；`/admin/*`、`/login`、`/me`、`/my/*`、`/observe/opt-out/`、`/search`、`/article/query`、未知路徑及所有帶 query string 的頁面均不送 page_view 或事件。此版與 blog 相同，參數白名單為空，包含 category 等篩選頁也暫不量測。
+- `page_location` 僅有 origin + path，移除 fragment；`page_title` 固定「新文易數」，`/liveboard` 與本機設定頁固定「即時看板」；不讀 document.title。初次 `page_referrer` 僅保留 origin。
+- Google 已載入後，只要進過私人頁或查詢頁，該 document 後續均停送，返回公開頁也一樣；完整重載公開頁才恢復。原因是 GA 加強型評估可能覆寫 history hit 的 page_referrer 為前一頁原始 URL。私人落地尚未載入 Google 時，首次切到公開頁可安全開始一次 config。
+- 點擊、看板心跳、安裝與延遲的 web_vital 共用當下的停送檢查。Google 腳本載入前的自訂事件先暫存；若期間進入被排除頁即丟棄，不於稍後回放。
+- DNT=1/yes、GPC=true、opt-out、自動化與非正式環境的保護維持生效。React remount 不重送 config；程式不自行增加 page_view。
+
+單設 `send_page_view: false` 無法停掉 history 的加強型評估，見 [Google pageview 文件](https://developers.google.com/analytics/devguides/collection/ga4/views)。因此沿用單一自動 pageview 來源，搭配切頁前的停送與 document 保護，避免重複與 referrer 洩漏。
 
 ## 不送統計的瀏覽器
 
