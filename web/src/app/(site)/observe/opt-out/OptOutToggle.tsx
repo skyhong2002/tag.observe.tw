@@ -38,7 +38,11 @@ export default function OptOutToggle() {
     setState(current());
     const refresh = () => setState(current());
     window.addEventListener('storage', refresh);
-    return () => window.removeEventListener('storage', refresh);
+    window.addEventListener(OPT_OUT_EVENT, refresh);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener(OPT_OUT_EVENT, refresh);
+    };
   }, []);
   if (!state)
     return (
