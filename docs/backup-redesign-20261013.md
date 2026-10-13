@@ -190,3 +190,24 @@ trusted channel, verify available headroom and MariaDB 11.4, and configure revie
 NAS/export/manifest/restore adapters plus the independent missed-run alert and
 catch-up mechanism. Source snapshot binding is an explicit remaining gate; do not
 replace it with an unverified configuration flag.
+
+## Latest backup publication and capacity report (provided by babysit)
+
+The coordinator reports that backup `e4fc4ecb` was resumed for NAS publication with
+`--resume`, without reclaim or trim. Its manifest is `verified`; the reported NAS
+object `objects/340c0beb….sql.zst` is **8,893,984,375 bytes**, with a complete NAS
+readback matching SHA-256. `manifests/20261010T203341Z-e4fc4ecb.json` was also
+published. The abbreviated object name above is copied from the coordinator's
+message; no full object key/hash is inferred here. This proposal did not perform
+or independently rerun that upload.
+
+`capacity-after` reported no reclaim. Both local dumps `d41406ee` and `e4fc4ecb`
+remain. The old workflow requires **111.5 GiB** for the next backup, against only
+**65.2 GiB** currently reported free: a **46.3 GiB** shortfall. It therefore cannot
+start another cycle under its existing capacity rule. Keep the user-disabled
+`tag-backup.timer` disabled; this note neither changes it nor starts a job.
+
+This supports removing the 76 GiB full-restore allocation from the production
+host. It does not authorize deleting either dump or enabling the v2 flow before
+its remote host, snapshot, adapter and monitoring gates are verified and the user
+approves application.
