@@ -185,7 +185,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         id="report-trend"
         className="scroll-mt-20 rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
       >
-        <h2 className="mb-2 text-sm font-medium text-zinc-600">報導趨勢</h2>
+        <h2 className="mb-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">報導趨勢</h2>
         <TagChart key={`${tag}:${hours}`} initial={series} />
       </section>
       {flowData && (

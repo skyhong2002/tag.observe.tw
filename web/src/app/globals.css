@@ -170,3 +170,12 @@ select:not([multiple]):not([size]) {
     animation: none;
   }
 }
+
+/* ECharts reads this computed colour for every trend label, including inactive legends. */
+.tag-trend-chart {
+  --tag-chart-label: var(--color-zinc-600);
+  color: var(--tag-chart-label);
+}
+[data-theme="dark"] .tag-trend-chart {
+  --tag-chart-label: var(--color-zinc-300);
+}
