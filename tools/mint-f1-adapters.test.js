@@ -64,3 +64,14 @@ test('known-host paths forbid SSH expansion and unknown libc never establishes A
   assert.throws(() => validateHostSnapshot({ ...mint(), libc: 'unknown' }, receipt, 5, now));
   assert.equal(sample().localSmBuildCount, 0); assert.equal(sample().globalBuildCount, undefined);
 });
+
+test('npm shebang cannot use a different first Node from noninteractive PATH', async () => {
+ const receipt = hostReceipt(); receipt.noninteractivePath = '/rogue/bin:/opt/node/bin:/usr/bin';
+ let commands = 0;
+ await assert.rejects(verifyHost({ receipt, candidateParent: '/candidate', estimateGiB: 5, now,
+  runtime: { execPath: receipt.mint.nodePath },
+  io: { existsSync: p => ['/rogue/bin/node', '/opt/node/bin/node', '/opt/node/bin/npm'].includes(p), realpathSync: p => p.endsWith('/npm') ? receipt.mint.npmPath : p },
+  executeCommand: async () => { commands++; return { stdout: '11.1.0' }; }
+ }), /Noninteractive/);
+ assert.equal(commands, 0);
+});
