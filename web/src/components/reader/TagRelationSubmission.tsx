@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import type { TagRelationType } from '@/lib/api';
 import { loginHref, useSession } from '@/lib/session';
 
@@ -14,8 +14,24 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const pending = useRef(false);
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (pending.current) return;
+    const normalized = target.trim();
+    if (normalized === tag || [...normalized].length > 60 || /[\p{Cc}\p{Cs}]/u.test(normalized)) {
+      setError('請填寫不同的有效標籤（最多 60 字）。');
+      return;
+    }
+    if (!normalized || !reason.trim() || !['related', 'is-a', 'alias'].includes(type)) return;
+    pending.current = true;
     setBusy(true);
     setMessage('');
     setError('');
@@ -29,6 +45,7 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error ?? `送出失敗（${response.status}）`);
+      if (!live.current) return;
       setMessage(
         body.status === 'approved'
           ? '這筆關係已經通過審核，毋須重複投稿。'
@@ -39,9 +56,10 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
       setTarget('');
       setReason('');
     } catch (err) {
-      setError((err as Error).message);
+      if (live.current) setError((err as Error).message);
     } finally {
-      setBusy(false);
+      pending.current = false;
+      if (live.current) setBusy(false);
     }
   };
   return (
@@ -62,7 +80,7 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
           後可以提出相關詞、上位分類或別名。投稿經管理員審核後公開。
         </p>
       ) : (
-        <form onSubmit={submit} className="space-y-3 pb-2">
+        <form aria-busy={busy} onSubmit={submit} className="space-y-3 pb-2">
           <p className="text-zinc-600 dark:text-zinc-400">請說明關聯與可查證的來源。一起出現在新聞中，不一定代表有分類或同義關係。</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label>
@@ -79,7 +97,7 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 required
-                maxLength={60}
+                maxLength={120}
                 className={field}
                 disabled={busy}
                 placeholder={type === 'is-a' ? '例如：政治人物' : '要關聯的關鍵字'}

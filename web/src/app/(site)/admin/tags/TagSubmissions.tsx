@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AdminGate, { adminFetch } from '../AdminGate';
 
 type Status = 'pending' | 'approved' | 'rejected';
@@ -125,7 +125,17 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const pending = useRef(false);
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
   const review = async (status: 'approved' | 'rejected') => {
+    if (pending.current || !reason.trim() || (status === 'approved' && item.kind === 'picture' && !item.rightsConfirmed)) return;
+    pending.current = true;
     setBusy(true);
     setError('');
     try {
@@ -133,15 +143,16 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
         method: 'PUT',
         body: { status, reason: reason.trim() },
       });
-      onDone();
+      if (live.current) onDone();
     } catch (err) {
-      setError((err as Error).message);
+      if (live.current) setError((err as Error).message);
     } finally {
-      setBusy(false);
+      pending.current = false;
+      if (live.current) setBusy(false);
     }
   };
   return (
-    <li className="space-y-3 break-words p-4 text-sm">
+    <li aria-busy={busy} className="space-y-3 break-words p-4 text-sm">
       <p className="text-xs text-zinc-600 dark:text-zinc-400">
         #{item.id} · {item.kind === 'picture' ? '圖片投稿' : '關係投稿'} · {item.createdBy ?? '帳號已移除'} ·{' '}
         <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</time>
@@ -183,7 +194,12 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
             />
           </label>
           <div className="flex flex-wrap gap-2">
-            <button type="button" className={button} disabled={busy || !reason.trim()} onClick={() => review('approved')}>
+            <button
+              type="button"
+              className={button}
+              disabled={busy || !reason.trim() || (item.kind === 'picture' && !item.rightsConfirmed)}
+              onClick={() => review('approved')}
+            >
               {busy ? '處理中…' : '通過並公開'}
             </button>
             <button type="button" className={button} disabled={busy || !reason.trim()} onClick={() => review('rejected')}>

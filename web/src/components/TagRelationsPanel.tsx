@@ -65,7 +65,7 @@ export default function TagRelationsPanel({ tag, data }: { tag: string; data: Ta
         <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">標籤關係暫時無法載入，請稍後再試。</p>
       )}
       {data?.truncated && <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">關係較多，目前僅列出部分已核准關係。</p>}
-      <TagRelationSubmission tag={tag} />
+      <TagRelationSubmission key={tag} tag={tag} />
     </section>
   );
 }
