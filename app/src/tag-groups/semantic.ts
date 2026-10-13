@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto';
-import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { tagGroupDefs, tagGroupMembers, tagSubmissions } from '../db/schema.ts';
-import { ancestors } from './tree.ts';
 
 export const RELATION_TYPES = ['is-a', 'related', 'alias'] as const;
 export type RelationType = (typeof RELATION_TYPES)[number];
@@ -41,12 +40,51 @@ export type PublicRelation = {
  * semantic edges add what that system lacks, without copying the vocabulary.
  * Topics are not is-a; co-occurrence is never read here. */
 export async function publicRelations(db: Db, tag: string) {
-  const [defs, memberships, direct] = await Promise.all([
-    db.select().from(tagGroupDefs).where(isNull(tagGroupDefs.deletedAt)),
+  const LIMIT = 200;
+  const MAX_DEPTH = 8;
+  const relations: PublicRelation[] = [];
+  const groupRelations = new Map<number, PublicRelation>();
+  const definitions = new Map<number, { id: number; label: string; kind: string; parentId: number | null } | null>();
+  let truncated = false;
+  const append = (relation: PublicRelation) => {
+    if (relations.some((r) => r.type === relation.type && r.target.id === relation.target.id)) return;
+    if (relations.length >= LIMIT) {
+      truncated = true;
+      return;
+    }
+    relations.push(relation);
+  };
+  const loadGroups = async (ids: number[]) => {
+    const missing = [...new Set(ids)].filter((id) => !definitions.has(id));
+    if (!missing.length) return;
+    const admitted = missing.slice(0, relations.length >= LIMIT ? 0 : LIMIT - definitions.size);
+    if (admitted.length < missing.length) truncated = true;
+    if (!admitted.length) return;
+    for (const id of admitted) definitions.set(id, null);
+    const rows = await db
+      .select({ id: tagGroupDefs.id, label: tagGroupDefs.label, kind: tagGroupDefs.kind, parentId: tagGroupDefs.parentId })
+      .from(tagGroupDefs)
+      .where(and(inArray(tagGroupDefs.id, admitted), isNull(tagGroupDefs.deletedAt)))
+      .limit(201);
+    for (const row of rows) if (definitions.has(row.id)) definitions.set(row.id, row);
+  };
+  const membershipsFor = (tags: string[]) =>
     db
-      .select()
+      .select({ tag: tagGroupMembers.tag, groupId: tagGroupMembers.groupId, source: tagGroupMembers.source })
       .from(tagGroupMembers)
-      .where(and(eq(tagGroupMembers.tag, tag), inArray(tagGroupMembers.status, ['auto', 'confirmed']))),
+      .where(
+        and(
+          // Keep the indexed collation predicate, but enforce exact vocabulary
+          // identity before LIMIT so near-equivalent labels cannot consume it.
+          inArray(tagGroupMembers.tag, tags),
+          or(...tags.map((label) => sql`BINARY ${tagGroupMembers.tag} = BINARY ${label}`)),
+          inArray(tagGroupMembers.status, ['auto', 'confirmed']),
+        ),
+      )
+      .orderBy(asc(tagGroupMembers.groupId), asc(tagGroupMembers.tag))
+      .limit(201);
+  const [memberships, direct] = await Promise.all([
+    membershipsFor([tag]),
     db
       .select({
         id: tagSubmissions.id,
@@ -68,129 +106,137 @@ export async function publicRelations(db: Db, tag: string) {
       .orderBy(asc(tagSubmissions.id))
       .limit(201),
   ]);
-  const relations: PublicRelation[] = direct
-    .slice(0, 200)
-    .filter((r) => r.target && r.type && r.groupId === null)
-    .map((r) => ({
-      id: `relation:${r.id}`,
-      type: r.type as RelationType,
-      target: tagRef(r.tag === tag ? (r.target as string) : r.tag),
-      source: r.source,
-      sourceDetail: r.source,
-      createdAt: r.at.toISOString(),
+  if (memberships.length > LIMIT || direct.length > LIMIT) truncated = true;
+  type GroupStep = { id: number; source: string; sourceDetail: string; createdAt: string | null; originTag: string; depth: number };
+  const projectGroups = async (steps: GroupStep[]) => {
+    let frontier = steps;
+    for (let round = 0; frontier.length && round < MAX_DEPTH; round++) {
+      // Each membership query is bounded and each tree level loads only its IDs.
+      await loadGroups(frontier.map((step) => step.id));
+      const next: GroupStep[] = [];
+      for (const step of frontier) {
+        const group = definitions.get(step.id);
+        if (group?.kind !== 'group') continue;
+        const previous = groupRelations.get(group.id);
+        if (previous && previous.depth <= step.depth) continue;
+        const relation: PublicRelation = {
+          id: `group-membership:${tagId(step.originTag)}:${group.id}`,
+          type: 'is-a',
+          target: { id: `group:${group.id}`, label: group.label, href: `/group/${group.id}/` },
+          source: step.source,
+          sourceDetail: step.sourceDetail,
+          createdAt: step.createdAt,
+          status: 'approved',
+          inherited: step.depth > 1,
+          depth: step.depth,
+        };
+        if (previous) {
+          Object.assign(previous, relation);
+        } else {
+          const before = relations.length;
+          append(relation);
+          if (relations.length === before) continue;
+          groupRelations.set(group.id, relation);
+        }
+        if (group.parentId !== null) {
+          if (step.depth >= MAX_DEPTH) truncated = true;
+          else next.push({ ...step, id: group.parentId, depth: step.depth + 1 });
+        }
+      }
+      frontier = next;
+    }
+  };
+  await projectGroups(
+    memberships
+      .slice(0, LIMIT)
+      .filter((m) => m.tag === tag)
+      .map((m) => {
+        const submitted = direct.find((r) => r.groupId === m.groupId && r.tag === tag);
+        return {
+          id: m.groupId,
+          source: submitted?.source ?? (m.source === 'admin' ? 'manual' : 'rule'),
+          sourceDetail: m.source,
+          createdAt: submitted?.at.toISOString() ?? null,
+          originTag: tag,
+          depth: 1,
+        };
+      }),
+  );
+  for (const row of direct.slice(0, LIMIT)) {
+    if (!row.target || !row.type || row.groupId !== null) continue;
+    append({
+      id: `relation:${row.id}`,
+      type: row.type as RelationType,
+      target: tagRef(row.tag === tag ? row.target : row.tag),
+      source: row.source,
+      sourceDetail: row.source,
+      createdAt: row.at.toISOString(),
       status: 'approved',
       inherited: false,
       depth: 1,
-    }));
-  const grouped = new Map<number, PublicRelation>();
-  for (const membership of memberships.filter((m) => m.tag === tag)) {
-    const own = defs.find((d) => d.id === membership.groupId && d.kind === 'group');
-    if (!own) continue;
-    const submitted = direct.find((r) => r.groupId === own.id && r.tag === tag);
-    const path = [own, ...ancestors(defs, own.id)];
-    for (let i = 0; i < path.length; i++) {
-      const group = path[i];
-      const previous = grouped.get(group.id);
-      if (previous && previous.depth <= i + 1) continue;
-      grouped.set(group.id, {
-        id: `group-membership:${tagId(tag)}:${group.id}`,
-        type: 'is-a',
-        target: { id: `group:${group.id}`, label: group.label, href: `/group/${group.id}/` },
-        source: submitted?.source ?? (membership.source === 'admin' ? 'manual' : 'rule'),
-        sourceDetail: membership.source,
-        // Legacy rows have updated_at, not a creation timestamp. Do not invent one.
-        createdAt: submitted?.at.toISOString() ?? null,
-        status: 'approved',
-        inherited: i > 0,
-        depth: i + 1,
-      });
-    }
+    });
   }
-  // Follow reviewed tag→tag classifications too. Each edge keeps its own ID
-  // and provenance; depth makes inferred ancestors distinguishable from direct
-  // membership. Bounds protect the public endpoint, with explicit truncation.
-  let truncated = direct.length > 200;
-  let frontier = relations.filter((r) => r.type === 'is-a').map((r) => r.target.label);
+  let frontier = relations.filter((r) => r.type === 'is-a' && !r.target.id.startsWith('group:')).map((r) => r.target.label);
   const seen = new Set([tag]);
-  for (let depth = 2; frontier.length && depth <= 8; depth++) {
-    frontier = [...new Set(frontier)].filter((t) => !seen.has(t));
+  for (let depth = 2; frontier.length && depth <= MAX_DEPTH; depth++) {
+    frontier = [...new Set(frontier)].filter((label) => !seen.has(label));
     if (!frontier.length) break;
-    for (const t of frontier) seen.add(t);
-    const inheritedMemberships = await db
-      .select()
-      .from(tagGroupMembers)
-      .where(and(inArray(tagGroupMembers.tag, frontier), inArray(tagGroupMembers.status, ['auto', 'confirmed'])))
-      .limit(201);
-    if (inheritedMemberships.length > 200) truncated = true;
-    for (const membership of inheritedMemberships.slice(0, 200).filter((m) => frontier.includes(m.tag))) {
-      const own = defs.find((d) => d.id === membership.groupId && d.kind === 'group');
-      if (!own) continue;
-      const path = [own, ...ancestors(defs, own.id)];
-      for (let i = 0; i < path.length; i++) {
-        const group = path[i];
-        if (grouped.has(group.id)) continue;
-        grouped.set(group.id, {
-          id: `group-membership:${tagId(membership.tag)}:${group.id}`,
-          type: 'is-a',
-          target: { id: `group:${group.id}`, label: group.label, href: `/group/${group.id}/` },
-          source: membership.source === 'admin' ? 'manual' : 'rule',
-          sourceDetail: membership.source,
-          createdAt: null,
-          status: 'approved',
-          inherited: true,
-          depth: depth + i,
-        });
-      }
+    if (relations.length >= LIMIT) {
+      truncated = true;
+      break;
     }
-    const rows = await db
-      .select({
-        id: tagSubmissions.id,
-        target: tagSubmissions.target,
-        groupId: tagSubmissions.targetGroupId,
-        source: tagSubmissions.source,
-        at: tagSubmissions.createdAt,
-      })
-      .from(tagSubmissions)
-      .where(
-        and(
-          inArray(tagSubmissions.tag, frontier),
-          eq(tagSubmissions.kind, 'relation'),
-          eq(tagSubmissions.relationType, 'is-a'),
-          isNull(tagSubmissions.targetGroupId),
-          eq(tagSubmissions.status, 'approved'),
-        ),
-      )
-      .orderBy(asc(tagSubmissions.id))
-      .limit(201);
-    const next: string[] = [];
-    for (const row of rows) {
-      if (relations.length >= 200) {
-        truncated = true;
-        break;
-      }
-      if (!row.target) continue;
-      const group = row.groupId === null ? null : defs.find((d) => d.id === row.groupId);
-      if (row.groupId !== null && !group) continue;
-      const target = group ? { id: `group:${group.id}`, label: group.label, href: `/group/${group.id}/` } : tagRef(row.target);
-      if (!relations.some((r) => r.type === 'is-a' && r.target.id === target.id))
-        relations.push({
-          id: `relation:${row.id}`,
-          type: 'is-a',
-          target,
-          source: row.source,
-          sourceDetail: row.source,
-          createdAt: row.at.toISOString(),
-          status: 'approved',
-          inherited: true,
+    for (const label of frontier) seen.add(label);
+    const [inheritedMemberships, rows] = await Promise.all([
+      membershipsFor(frontier),
+      db
+        .select({ id: tagSubmissions.id, target: tagSubmissions.target, source: tagSubmissions.source, at: tagSubmissions.createdAt })
+        .from(tagSubmissions)
+        .where(
+          and(
+            inArray(tagSubmissions.tag, frontier),
+            eq(tagSubmissions.kind, 'relation'),
+            eq(tagSubmissions.relationType, 'is-a'),
+            isNull(tagSubmissions.targetGroupId),
+            eq(tagSubmissions.status, 'approved'),
+          ),
+        )
+        .orderBy(asc(tagSubmissions.id))
+        .limit(201),
+    ]);
+    if (inheritedMemberships.length > LIMIT || rows.length > LIMIT) truncated = true;
+    await projectGroups(
+      inheritedMemberships
+        .slice(0, LIMIT)
+        .filter((m) => frontier.includes(m.tag))
+        .map((m) => ({
+          id: m.groupId,
+          source: m.source === 'admin' ? 'manual' : 'rule',
+          sourceDetail: m.source,
+          createdAt: null,
+          originTag: m.tag,
           depth,
-        });
-      if (!group && !seen.has(row.target)) next.push(row.target);
+        })),
+    );
+    const next: string[] = [];
+    for (const row of rows.slice(0, LIMIT)) {
+      if (!row.target) continue;
+      append({
+        id: `relation:${row.id}`,
+        type: 'is-a',
+        target: tagRef(row.target),
+        source: row.source,
+        sourceDetail: row.source,
+        createdAt: row.at.toISOString(),
+        status: 'approved',
+        inherited: true,
+        depth,
+      });
+      if (!seen.has(row.target)) next.push(row.target);
     }
     frontier = next;
-    if (truncated) break;
   }
   if (frontier.length) truncated = true;
-  return { tag, tagId: tagId(tag), relations: [...grouped.values(), ...relations], truncated };
+  return { tag, tagId: tagId(tag), relations, truncated };
 }
 
 /** Run while holding tag_relation_lock. Bounded graph walk fails closed;

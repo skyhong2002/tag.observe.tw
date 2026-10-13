@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { MySqlDialect } from 'drizzle-orm/mysql-core';
 import type { FastifyInstance, FastifyServerOptions } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { renderApiMarkdown } from '../../tools/gen-api-docs.ts';
@@ -30,6 +31,7 @@ function objectFields(value: unknown): Record<string, unknown> {
 // Promise-like query builders only: no application startup, pool, socket or Redis.
 function mockDb(batches: unknown[][]) {
   let calls = 0;
+  const predicates: string[] = [];
   return {
     db: {
       select() {
@@ -39,7 +41,8 @@ function mockDb(batches: unknown[][]) {
           from() {
             return query;
           },
-          where() {
+          where(condition: Parameters<MySqlDialect['sqlToQuery']>[0]) {
+            predicates.push(new MySqlDialect().sqlToQuery(condition).sql);
             return query;
           },
           orderBy() {
@@ -57,6 +60,7 @@ function mockDb(batches: unknown[][]) {
       },
     } as never,
     calls: () => calls,
+    predicates,
   };
 }
 const row = (id: number, type = 'related', target = '乙') => ({
@@ -81,7 +85,7 @@ describe('F1 offline public contracts', () => {
     for (const label of ['', ' 甲', '甲\n', '𠀀'.repeat(61)]) expect(validSemanticTag(label)).toBe(false);
   });
   it('projects approved rows without private fields and does not query co-occurrence', async () => {
-    const mock = mockDb([[], [], [row(1), row(2, 'alias')]]);
+    const mock = mockDb([[], [row(1), row(2, 'alias')]]);
     const result = await publicRelations(mock.db, '甲');
     expect(result.relations.map((r) => r.type)).toEqual(['related', 'alias']);
     expect(result.relations[0]).toMatchObject({
@@ -92,10 +96,10 @@ describe('F1 offline public contracts', () => {
       status: 'approved',
     });
     expect(JSON.stringify(result)).not.toMatch(/private|email|reason/);
-    expect(mock.calls()).toBe(3);
+    expect(mock.calls()).toBe(2);
   });
   it('signals truncation after the 200th new edge', async () => {
-    const mock = mockDb([[], [], Array.from({ length: 201 }, (_, i) => row(i + 1))]);
+    const mock = mockDb([[], Array.from({ length: 201 }, (_, i) => row(i + 1, 'related', `目標${i}`))]);
     const result = await publicRelations(mock.db, '甲');
     expect(result.relations).toHaveLength(200);
     expect(result.truncated).toBe(true);
@@ -103,22 +107,97 @@ describe('F1 offline public contracts', () => {
   it('uses existing group IDs and excludes topic membership', async () => {
     const mock = mockDb([
       [
-        { id: 1, kind: 'group', label: '父', parentId: null },
-        { id: 2, kind: 'group', label: '子', parentId: 1 },
-        { id: 3, kind: 'topic', label: '議題', parentId: null },
-      ],
-      [
         { tag: '甲', groupId: 2, source: 'admin' },
         { tag: '甲', groupId: 3, source: 'admin' },
       ],
       [],
+      [
+        { id: 2, kind: 'group', label: '子', parentId: 1 },
+        { id: 3, kind: 'topic', label: '議題', parentId: null },
+      ],
+      [{ id: 1, kind: 'group', label: '父', parentId: null }],
     ]);
     const result = await publicRelations(mock.db, '甲');
     expect(result.relations.map((r) => r.target.id)).toEqual(['group:2', 'group:1']);
     expect(result.relations[1]).toMatchObject({ inherited: true, depth: 2, createdAt: null });
   });
+  it('shares the 200 budget with legacy groups and marks overflow', async () => {
+    const members = Array.from({ length: 201 }, (_, i) => ({ tag: '甲', groupId: i + 1, source: 'admin' }));
+    const defs = members.slice(0, 200).map((m) => ({ id: m.groupId, kind: 'group', label: `分類${m.groupId}`, parentId: null }));
+    const mock = mockDb([members, [row(1)], defs]);
+    const result = await publicRelations(mock.db, '甲');
+    expect(result.relations).toHaveLength(200);
+    expect(result.truncated).toBe(true);
+    expect(mock.predicates[0]).toContain('BINARY');
+    expect(mock.predicates[2]).toContain('`tag_group_defs`.`id` in');
+  });
+  it('bounds group ancestors at depth eight and caches IDs across memberships', async () => {
+    const mock = mockDb([
+      [
+        { tag: '甲', groupId: 1, source: 'admin' },
+        { tag: '甲', groupId: 2, source: 'admin' },
+      ],
+      [],
+      [
+        { id: 1, kind: 'group', label: '一', parentId: 2 },
+        { id: 2, kind: 'group', label: '二', parentId: 3 },
+      ],
+      ...Array.from({ length: 7 }, (_, i) => [{ id: i + 3, kind: 'group', label: `祖先${i}`, parentId: i + 4 }]),
+    ]);
+    const result = await publicRelations(mock.db, '甲');
+    expect(Math.max(...result.relations.map((r) => r.depth))).toBe(8);
+    expect(result.relations).toHaveLength(9);
+    expect(result.truncated).toBe(true);
+    expect(mock.calls()).toBe(10);
+  });
+  it('caps the total definition cache including missing and topic IDs', async () => {
+    const members = Array.from({ length: 200 }, (_, i) => ({ tag: '甲', groupId: i + 1, source: 'admin' }));
+    // Only one group exists; the other 199 keys still consume cache budget.
+    const mock = mockDb([members, [], [{ id: 1, kind: 'group', label: '一', parentId: 201 }]]);
+    const result = await publicRelations(mock.db, '甲');
+    expect(result.relations).toHaveLength(1);
+    expect(result.truncated).toBe(true);
+    expect(mock.calls()).toBe(3);
+  });
+  it('stops parent definition reads once the shared relation budget is full', async () => {
+    const members = Array.from({ length: 200 }, (_, i) => ({ tag: '甲', groupId: i + 1, source: 'admin' }));
+    const defs = members.map((m) => ({ id: m.groupId, kind: 'group', label: `分類${m.groupId}`, parentId: m.groupId + 200 }));
+    const mock = mockDb([members, [], defs]);
+    const result = await publicRelations(mock.db, '甲');
+    expect(result.relations).toHaveLength(200);
+    expect(result.truncated).toBe(true);
+    expect(mock.calls()).toBe(3);
+  });
+  it('replaces all provenance when an inherited tag provides a shorter group path', async () => {
+    const mock = mockDb([
+      [{ tag: '甲', groupId: 1, source: 'admin' }],
+      [{ ...row(1, 'is-a', '舊分類'), groupId: 1 }, row(2, 'is-a', '中介')],
+      [{ id: 1, kind: 'group', label: '一', parentId: 2 }],
+      [{ id: 2, kind: 'group', label: '二', parentId: 3 }],
+      [{ id: 3, kind: 'group', label: '三', parentId: null }],
+      [{ tag: '中介', groupId: 3, source: 'person' }],
+      [],
+    ]);
+    const result = await publicRelations(mock.db, '甲');
+    expect(result.relations.find((r) => r.target.id === 'group:3')).toMatchObject({
+      id: `group-membership:${tagId('中介')}:3`,
+      depth: 2,
+      inherited: true,
+      source: 'rule',
+      sourceDetail: 'person',
+      createdAt: null,
+    });
+    expect(mock.calls()).toBe(7);
+  });
+  it('uses exact indexed membership predicates for inherited classifications', async () => {
+    const mock = mockDb([[], [row(1, 'is-a', '中介')], [], []]);
+    const result = await publicRelations(mock.db, '甲');
+    expect(result.truncated).toBe(false);
+    expect(mock.predicates[2]).toContain('BINARY');
+    expect(mock.predicates[2]).toContain('`tag_group_members`.`tag` in');
+  });
   it('runs the real relation route and gateway cache guard through injection only', async () => {
-    const mock = mockDb(Array.from({ length: 9 }, () => [[], [], [row(1)]]).flat());
+    const mock = mockDb(Array.from({ length: 9 }, () => [[], [row(1)]]).flat());
     // No tagDbUrl, injected db, login or job queue: buildApp opens no resources.
     construction.register = (app) => registerSemanticRelations(app, mock.db);
     const app = await buildApp({ uiOrigin: 'https://unused.invalid', rateLimit: false });
