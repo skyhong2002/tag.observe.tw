@@ -178,3 +178,11 @@ not installed globally. Source tests are mock/parser evidence; no download,
 extraction, native mutation or new Next run has occurred. The implementation and
 real guarded packaging adapter require independent review and admission before
 execution. All 65 UI routes remain pending, no production deployment occurred.
+
+The native repair helper is now prepare-only: it cannot publish
+`mint-artifact.json`. A separate parent publisher checks the completed worker,
+exact APP/OPS/BUILD and driver/input checksums, rehashes the new inventory and
+verifies its ELF proof before fresh live gates, input and kernel checks and a
+single exclusive private manifest write. False and asynchronous final proof
+verifiers are rejected. The related source/mock suite has 58 passing tests;
+this is not evidence that native repair, loader smoke or UI review has run.

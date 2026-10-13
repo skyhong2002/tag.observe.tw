@@ -112,8 +112,10 @@ export function repairSharpRuntime(input, dependencies = {}) {
   const elf = (dependencies.collectElfProof || ((root, artifact) => collectElfProof(root, artifact, run, io)))(plan.destination, artifact);
   (dependencies.verifyElfProof || verifyElfProof)(artifact, elf);
   gate('return-pending'); syncCallback(dependencies.verifyOriginal, plan.source, input.identity); if (JSON.stringify(scan(plan.source)) !== JSON.stringify(original)) throw new Error('Original changed during ELF verification');
-  // Publish the pending inventory only after every potentially failing verifier.
-  io.writeFileSync(join(plan.destination, 'mint-artifact.json'), JSON.stringify({ ...artifact, nativeElfProof: elf }, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+  // Long final source hashes may outlive a lease: gate again afterwards.
+  gate('prepared-return');
+  // Only the parent controller may publish after worker completion, fresh
+  // probes, input/source checksum binding and full validation. No final write.
   // No smoke or deployment eligibility: new inventory invalidates old smoke.
-  return { root: plan.destination, receipt, artifact, elf, deployEligible: false, nativeStatus: 'pending-new-target-smoke', ui: 'not reviewed' };
+  return { root: plan.destination, receipt, artifact, elf, manifestPublished: false, deployEligible: false, nativeStatus: 'pending-new-target-smoke', ui: 'not reviewed' };
 }
