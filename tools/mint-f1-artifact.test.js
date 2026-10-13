@@ -8,7 +8,7 @@ const webLock = readFileSync(new URL('../web/package-lock.json', import.meta.url
 const sha = value => createHash('sha256').update(value).digest('hex');
 import { createArtifactManifest, writeArtifactManifest, verifyArtifact, sourceReceiptFromGit } from './mint-f1-artifact.js';
 import { initialAppSha } from './mint-f1-candidate-plan.js';
-const identity = () => ({ appSha: initialAppSha, opsSha: 'a'.repeat(40), platform: 'linux', arch: 'x64', nodeVersion: '24.1.0', nodeModulesAbi: '137', libc: 'glibc-2.39', smAbi: { platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.39' }, nativeAbiVerified: true, nativeAbiReceiptId: 'native-review', sourceVerified: true, sourceReceiptId: 'source-review', expectedSourceArchiveSha256: sha('mock archive'), expectedLockfiles: { 'package-lock.json': sha(rootLock), 'web/package-lock.json': sha(webLock) }, expectedSourceFiles: { 'app/src/server.js': sha('server'), 'app/src/worker.ts': sha('worker'), 'app/data/vocab.json': sha('{}'), 'package.json': sha('{"dependencies":{"fastify":"1"}}'), 'package-lock.json': sha(rootLock), 'web/package-lock.json': sha(webLock) } });
+const identity = () => ({ nativeTargetRuntime: { machineId: 'sm-id', platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.39' }, nativePolicy: { schema: 'mint-f1-native-policy-v1', reviewed: true, buildAllowed: true, strategy: 'elf-requirements-and-sm-target-smoke', reviewReceiptId: 'mock-native-policy', maxGlibcRequired: '2.39' }, appSha: initialAppSha, opsSha: 'a'.repeat(40), platform: 'linux', arch: 'x64', nodeVersion: '24.1.0', nodeModulesAbi: '137', libc: 'glibc-2.39', smAbi: { platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.39' }, nativeAbiVerified: true, nativeAbiReceiptId: 'native-review', sourceVerified: true, sourceReceiptId: 'source-review', expectedSourceArchiveSha256: sha('mock archive'), expectedLockfiles: { 'package-lock.json': sha(rootLock), 'web/package-lock.json': sha(webLock) }, expectedSourceFiles: { 'app/src/server.js': sha('server'), 'app/src/worker.ts': sha('worker'), 'app/data/vocab.json': sha('{}'), 'package.json': sha('{"dependencies":{"fastify":"1"}}'), 'package-lock.json': sha(rootLock), 'web/package-lock.json': sha(webLock) } });
 function fixture() {
   const files = new Map(Object.entries({ 'COMMIT': initialAppSha + '\n', 'source.tar': 'mock archive', 'package-lock.json': rootLock, 'web/package-lock.json': webLock, 'package.json': '{"dependencies":{"fastify":"1"}}', 'node_modules/.package-lock.json': '{}', 'node_modules/fastify/package.json': '{}', 'app/src/worker.ts': 'worker', 'web/.next/standalone/package.json': '{}', 'web/.next/standalone/.next/BUILD_ID': 'candidate-1', 'web/.next/standalone/node_modules/next/package.json': '{}', 'web/.next/BUILD_ID': 'candidate-1', 'app/src/server.js': 'server', 'app/data/vocab.json': '{}', 'web/.next/static/a.js': 'static', 'web/public/logo.png': 'public', 'web/.next/standalone/server.js': 'server', 'web/.next/standalone/.next/static/a.js': 'static', 'web/.next/standalone/public/logo.png': 'public' }));
   const types = new Map(); const path = p => p.replace(/^\/candidate\/?/, '');
@@ -28,7 +28,7 @@ test('full identity, lockfile, source archive and artifact inventory survive rou
 });
 test('reject incomplete static/public/appdata, incompatible ABI and wrong source', () => {
   for (const name of ['app/data/vocab.json', 'web/.next/static/a.js', 'web/.next/standalone/public/logo.png', 'package-lock.json']) { const f = fixture(); f.files.delete(name); assert.throws(() => createArtifactManifest('/candidate', identity(), f.io)); }
-  for (const delta of [{ platform: 'darwin' }, { libc: 'unknown' }, { nodeModulesAbi: '115' }, { appSha: 'b'.repeat(40) }, { nativeAbiVerified: false }]) assert.throws(() => createArtifactManifest('/candidate', { ...identity(), ...delta }, fixture().io));
+  for (const delta of [{ platform: 'darwin' }, { libc: 'unknown' }, { nodeModulesAbi: '115' }, { appSha: 'b'.repeat(40) }]) assert.throws(() => createArtifactManifest('/candidate', { ...identity(), ...delta }, fixture().io));
   const f = fixture(); f.files.set('COMMIT', 'b'.repeat(40)); assert.throws(() => createArtifactManifest('/candidate', identity(), f.io));
 });
 test('reject symlinks, environment secrets, tampering, unexpected files and wrong OPS', () => {
@@ -86,4 +86,10 @@ test('manifest exception never follows an external manifest symlink', () => {
  const f = fixture(); writeArtifactManifest('/candidate', identity(), f.io); f.types.set('mint-artifact.json', 'link');
  assert.throws(() => verifyArtifact('/candidate', identity(), f.io), /regular non-symlink/);
  assert.throws(() => createArtifactManifest('/candidate', identity(), f.io), /regular non-symlink/);
+});
+test('cross-glibc artifact remains pending actual target smoke despite caller verification claims', () => {
+ const i = identity(); i.smAbi.libc = 'glibc-2.41'; i.nativeTargetRuntime.libc = 'glibc-2.41'; i.nativeAbiVerified = true;
+ const manifest = createArtifactManifest('/candidate', i, fixture().io);
+ assert.equal(manifest.nativeStatus, 'pending-native-target-smoke'); assert.equal(manifest.nativeAbiVerified, false); assert.equal(manifest.deployEligible, false);
+ delete i.nativePolicy; assert.throws(() => createArtifactManifest('/candidate', i, fixture().io), /policy/);
 });

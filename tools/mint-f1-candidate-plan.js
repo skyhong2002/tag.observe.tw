@@ -1,3 +1,4 @@
+import { validateNativePolicy } from './native-elf-proof.js';
 // Reviewable plan only. No subprocess, network, build, capture or deployment.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -23,9 +24,10 @@ export function validatePlanInput(input) {
   validateMintIdentity(input.mint);
   if (!input.sm || !nonempty(input.sm.machineId) || input.sm.machineId === input.mint.machineId || input.sm.platform !== 'linux'
     || input.sm.arch !== input.mint.arch || !input.sm.nodeModulesAbi || !input.sm.libc
-    || input.sm.nodeModulesAbi !== input.mint.nodeModulesAbi || input.sm.libc !== input.mint.libc) {
+    || input.sm.nodeModulesAbi !== input.mint.nodeModulesAbi) {
     throw new Error('Distinct SM identity and matching Linux architecture/native Node ABI/libc required');
   }
+  validateNativePolicy(input.nativePolicy, input.mint, input.sm);
   const api = new URL(input.apiOrigin);
   if (api.protocol !== 'http:' || !['127.0.0.1', '[::1]'].includes(api.hostname)
     || !api.port || api.username || api.password || api.pathname !== '/' || api.search || api.hash

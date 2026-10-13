@@ -47,8 +47,8 @@ export function transportArgs(receipt, now = Date.now()) {
     '-o', 'ClearAllForwardings=yes', '-o', 'RequestTTY=no', '-p', String(receipt.port),
     `${receipt.user}@${receipt.host}`, `python3 -c ${quotedScript}`];
 }
-export function validateSample(raw, receipt, now = Date.now()) {
-  transportArgs(receipt, now);
+export function validateSample(raw, receipt, now = Date.now(), validateTransport = transportArgs) {
+  validateTransport(receipt, now);
   const sample = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (!sample || sample.observedHost !== 'SM' || sample.machineId !== receipt.smMachineId
     || sample.measuredFromMachineId !== receipt.smMachineId

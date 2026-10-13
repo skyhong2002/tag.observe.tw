@@ -1,3 +1,4 @@
+import { validateNativePolicy, verifyElfProof } from './native-elf-proof.js';
 // Offline artifact identity/integrity only. Does not run builds or deploy.
 import { createHash } from 'node:crypto';
 import { lstatSync, readdirSync, readFileSync, writeFileSync, readlinkSync, realpathSync } from 'node:fs';
@@ -42,7 +43,7 @@ export function inventory(root, io = defaultIo) {
         continue;
       }
       if (stat.isDirectory()) { entries.push({ path, type: 'directory', mode: stat.mode & 0o777 }); walk(path); }
-      else if (stat.isFile()) { const bytes = io.readFileSync(full); entries.push({ path, type: 'file', mode: stat.mode & 0o777, size: bytes.length, sha256: digest(bytes) }); }
+      else if (stat.isFile()) { const bytes = io.readFileSync(full); entries.push({ path, type: 'file', mode: stat.mode & 0o777, size: bytes.length, sha256: digest(bytes), binaryKind: bytes.subarray(0, 4).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46])) ? 'elf' : path.endsWith('.node') ? 'node-non-elf' : 'regular' }); }
       else throw new Error(`Unsupported artifact file: ${path}`);
     }
   };
@@ -54,13 +55,16 @@ function validateIdentity(identity) {
     || !/^24\./.test(identity.nodeVersion || '') || !/^\d+$/.test(identity.nodeModulesAbi || '')
     || !/^glibc-\d+\.\d+$/.test(identity.libc || '') || !identity.smAbi
     || identity.smAbi.platform !== 'linux' || identity.smAbi.arch !== identity.arch
-    || identity.smAbi.nodeModulesAbi !== identity.nodeModulesAbi || identity.smAbi.libc !== identity.libc
-    || identity.nativeAbiVerified !== true || !nonempty(identity.nativeAbiReceiptId)
+    || identity.smAbi.nodeModulesAbi !== identity.nodeModulesAbi
+
     || identity.sourceVerified !== true || !nonempty(identity.sourceReceiptId)
+    || !identity.nativeTargetRuntime || !nonempty(identity.nativeTargetRuntime.machineId)
+    || ['platform', 'arch', 'nodeModulesAbi', 'libc'].some(key => identity.nativeTargetRuntime[key] !== identity.smAbi[key])
     || !sha256(identity.expectedSourceArchiveSha256) || !identity.expectedLockfiles
     || JSON.stringify(identity.expectedLockfiles) !== JSON.stringify(appLockfilePins)
     || !identity.expectedSourceFiles || typeof identity.expectedSourceFiles !== 'object'
-    || !Object.keys(identity.expectedSourceFiles).length) throw new Error('Verified exact source and compatible Linux native ABI identities required');
+    || !Object.keys(identity.expectedSourceFiles).length) throw new Error('Verified source and compatible Linux architecture/Node ABI required');
+  validateNativePolicy(identity.nativePolicy, identity, identity.smAbi);
 }
 export function createArtifactManifest(root, identity, io = defaultIo) {
   validateIdentity(identity);
@@ -107,10 +111,10 @@ export function createArtifactManifest(root, identity, io = defaultIo) {
   const sourceArchiveSha256 = file('source.tar').sha256;
   if (sourceArchiveSha256 !== identity.expectedSourceArchiveSha256
     || JSON.stringify(lockfiles) !== JSON.stringify(identity.expectedLockfiles)) throw new Error('Pinned source archive/lockfile checksum mismatch');
-  return { schema: 'mint-f1-artifact-v1', status: 'prepared', review: 'pending independent candidate UI review', deployment: 'not deployed',
+  return { schema: 'mint-f1-artifact-v1', status: 'prepared', nativeStatus: 'pending-native-target-smoke', nativeAbiVerified: false, deployEligible: false, review: 'pending independent candidate UI review', deployment: 'not deployed',
     appSha: identity.appSha, opsSha: identity.opsSha, platform: identity.platform, arch: identity.arch,
     nodeVersion: identity.nodeVersion, nodeModulesAbi: identity.nodeModulesAbi, libc: identity.libc, smAbi: identity.smAbi,
-    nativeAbiReceiptId: identity.nativeAbiReceiptId, sourceReceiptId: identity.sourceReceiptId, buildId, standalone, lockfiles, sourceArchiveSha256, inventorySha256: digest(JSON.stringify(files)), files };
+    nativePolicy: identity.nativePolicy, nativeTargetRuntime: identity.nativeTargetRuntime, sourceReceiptId: identity.sourceReceiptId, buildId, standalone, lockfiles, sourceArchiveSha256, inventorySha256: digest(JSON.stringify(files)), files };
 }
 export function writeArtifactManifest(root, identity, io = defaultIo) {
   const manifest = createArtifactManifest(resolve(root), identity, io);
@@ -122,6 +126,7 @@ export function verifyArtifact(root, expectedIdentity, io = defaultIo) {
   if (!metadata.isFile() || metadata.isSymbolicLink()) throw new Error('Manifest must be a regular non-symlink file');
   const expected = JSON.parse(io.readFileSync(join(root, manifestName), 'utf8'));
   const actual = createArtifactManifest(root, expectedIdentity, io);
+  if (expected.nativeElfProof) { verifyElfProof(actual, expected.nativeElfProof); actual.nativeElfProof = expected.nativeElfProof; }
   if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error('Artifact identity/inventory/checksum mismatch');
   return actual; // Integrity/ABI success is never candidate UI or deployment approval.
 }

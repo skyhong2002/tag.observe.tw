@@ -1,3 +1,4 @@
+import { validateNativePolicy } from './native-elf-proof.js';
 // Read-only Mint checks. No build, provisioning, API request or .env reads.
 import { readFileSync, realpathSync, statSync, statfsSync, existsSync } from 'node:fs';
 import { hostname, platform, arch, cpus } from 'node:os';
@@ -37,7 +38,8 @@ export function validateHostSnapshot(snapshot, receipt, estimateGiB, now = Date.
     || snapshot.candidateAvailableBytes / 1024 ** 3 - estimateGiB < 30) throw new Error('Mint platform/CPU or separate candidate disk estimate failed');
   const sm = receipt.smAbi;
   if (!sm || sm.platform !== 'linux' || sm.arch !== snapshot.arch
-    || sm.nodeModulesAbi !== snapshot.nodeModulesAbi || sm.libc !== snapshot.libc) throw new Error('SM deployment native ABI mismatch');
+    || sm.nodeModulesAbi !== snapshot.nodeModulesAbi) throw new Error('SM deployment native ABI mismatch');
+  validateNativePolicy(receipt.nativePolicy, snapshot, sm);
   return { verified: true, host: 'Mint', snapshot, apiOrigin: receipt.api.origin, receiptId: receipt.reviewReceiptId, slotReceiptId: receipt.slotReceiptId };
 }
 export async function verifyHost({ receipt, candidateParent, estimateGiB, executeCommand = execute,

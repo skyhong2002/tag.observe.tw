@@ -1,3 +1,6 @@
+import { deriveRuntimePackage } from './mint-f1-runtime-package.js';
+import { probeSmRelay, relayGate } from './mint-f1-sm-relay.js';
+import { collectElfProof } from './native-elf-proof.js';
 // Mint-only candidate preparation. Default CLI is plan-only; never deploys.
 import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, lstatSync, mkdirSync, appendFileSync, writeFileSync, statfsSync } from 'node:fs';
@@ -11,7 +14,7 @@ import { runStage, competingBuilds } from './prepare-f1-candidate.js';
 import { guardedBuild } from './guard-next-build.js';
 import { sourceReceiptFromGit, createArtifactManifest } from './mint-f1-artifact.js';
 export const globalLockPath = '/run/lock/mint-global-build.lock';
-const modulePaths = ['mint-f1-execution.js', 'mint-f1-artifact.js', 'mint-f1-host-adapter.js', 'mint-f1-sm-adapter.js', 'mint-f1-candidate-plan.js', 'prepare-f1-candidate.js', 'guard-next-build.js', 'shared-host-baseline.cjs'].map(p => `tools/${p}`);
+const modulePaths = ['mint-f1-runtime-package.js', 'mint-f1-sm-relay.js', 'native-elf-proof.js', 'mint-f1-execution.js', 'mint-f1-artifact.js', 'mint-f1-host-adapter.js', 'mint-f1-sm-adapter.js', 'mint-f1-candidate-plan.js', 'prepare-f1-candidate.js', 'guard-next-build.js', 'shared-host-baseline.cjs'].map(p => `tools/${p}`);
 function command(bin, args, cwd, env = { PATH: '/usr/bin:/bin', LANG: 'C' }) {
   const result = spawnSync(bin, args, { cwd, env, encoding: 'utf8', maxBuffer: 512 * 1024 ** 2 });
   if (result.error || result.status !== 0) throw new Error(`${bin} failed (${result.error?.message || result.status})`);
@@ -27,11 +30,13 @@ export function validateExecutionInput(input) {
     if (!object || typeof object !== 'object' || Array.isArray(object) || Object.keys(object).some(key => !names.includes(key))) throw new Error('Unexpected execution input fields; credentials are forbidden');
   };
   only(input, ['appSha', 'opsSha', 'repo', 'candidate', 'estimateGiB', 'hostReceipt', 'smReceipt']);
-  only(input.hostReceipt, ['schema', 'reviewed', 'mintReady', 'globalBuildSlot', 'reviewReceiptId', 'slotReceiptId', 'executionReviewed', 'executionReviewReceiptId', 'globalLockPath', 'expiresAt', 'smMachineId', 'mint', 'noninteractivePath', 'api', 'smAbi']);
+  only(input.hostReceipt, ['schema', 'reviewed', 'mintReady', 'globalBuildSlot', 'reviewReceiptId', 'slotReceiptId', 'executionReviewed', 'executionReviewReceiptId', 'globalLockPath', 'expiresAt', 'smMachineId', 'mint', 'noninteractivePath', 'api', 'smAbi', 'nativePolicy']);
+  only(input.hostReceipt.nativePolicy, ['schema', 'reviewed', 'buildAllowed', 'strategy', 'reviewReceiptId', 'maxGlibcRequired']);
   only(input.hostReceipt.mint, ['machineId', 'hostname', 'platform', 'arch', 'cpuCount', 'nodeVersion', 'nodeModulesAbi', 'libc', 'nodePath', 'npmPath', 'npmVersion']);
   only(input.hostReceipt.api, ['origin', 'isolatedDatabase', 'productionDatabase', 'machineId', 'isolationReceiptId']);
   only(input.hostReceipt.smAbi, ['platform', 'arch', 'nodeModulesAbi', 'libc']);
-  only(input.smReceipt, ['schema', 'reviewed', 'reviewReceiptId', 'slotReceiptId', 'globalBuildSlot', 'expiresAt', 'host', 'user', 'port', 'smMachineId', 'mintMachineId', 'knownHostsPath', 'knownHostsSha256']);
+  only(input.smReceipt, ['schema', 'reviewed', 'reviewReceiptId', 'slotReceiptId', 'globalBuildSlot', 'expiresAt', 'host', 'user', 'port', 'smMachineId', 'mintMachineId', 'knownHostsPath', 'knownHostsSha256', 'transportMode', 'authorization', 'channel', 'channelReceiptId', 'relayPath']);
+  if (![undefined, 'ssh', 'sm-origin-relay'].includes(input.smReceipt.transportMode)) throw new Error('Unsupported reviewed SM transport mode');
   if (!Number.isFinite(input.estimateGiB) || input.estimateGiB <= 0 || !isAbsolute(input.repo || '') || !isAbsolute(input.candidate || '')) throw new Error('Absolute isolated paths and positive estimate required');
   return input;
 }
@@ -130,7 +135,7 @@ export function mintSample(candidateParent, ownGroup = 0, io = { statfsSync, rea
   return { mintLoad1: load()[0], mintAvailableBytes: Number(disk.bavail) * Number(disk.bsize), localMintBuildCount: foreign.length };
 }
 export function combineGates(sm, mint, input, options) {
-  const smResult = smGate(sm, input.smReceipt, options);
+  const smResult = input.smReceipt.transportMode === 'sm-origin-relay' ? relayGate(sm, input.smReceipt, options) : smGate(sm, input.smReceipt, options);
   if (smResult !== 'run') return smResult;
   if (!mint || !Number.isFinite(mint.mintLoad1) || mint.mintLoad1 < 0 || mint.mintLoad1 > 12
     || mint.localMintBuildCount !== 0 || !Number.isFinite(mint.mintAvailableBytes)
@@ -169,6 +174,7 @@ export async function stage(input, dependencies = {}, lockPid = 0, privateInputP
   });
   (dependencies.assertLock || assertGlobalLock)(lockPid);
   run(verified.snapshot.nodePath, ['-e', "require('sharp');require('onnxruntime-node');"], input.candidate, env);
+  return (dependencies.deriveRuntime || deriveRuntimePackage)(input.candidate, `${input.candidate}.runtime`, { apiOrigin: verified.apiOrigin, assertLock: () => (dependencies.assertLock || assertGlobalLock)(lockPid) });
 }
 export async function executeCandidate(input, dependencies = {}) {
   validateExecutionInput(input);
@@ -212,7 +218,7 @@ export async function executeCandidate(input, dependencies = {}) {
           return { sites: [], probeError: 'Fatal global lock loss' };
         }
         await (dependencies.verifyApi || verifyIsolatedApi)(input, verified);
-        const sm = await (dependencies.probeSM || probeSM)({ receipt: input.smReceipt });
+        const sm = await (dependencies.probeSM || (input.smReceipt.transportMode === 'sm-origin-relay' ? probeSmRelay : probeSM))({ receipt: input.smReceipt });
         const mint = (dependencies.mintSample || mintSample)(dirname(candidate), group);
         const decision = lock.alive() ? combineGates(sm, mint, input, { starting: group === 0, paused, estimatedUsageGiB: input.estimateGiB }) : 'pause';
         // Existing guard can pause/wait while keeping SM load/disk untouched.
@@ -222,9 +228,11 @@ export async function executeCandidate(input, dependencies = {}) {
     if (code !== 0) throw new Error(`Candidate failed (${code}); retained for inspection`);
     if (!lock.alive()) throw new Error('Global lock lost');
     (dependencies.assertLock || assertGlobalLock)(lock.pid);
-    const artifact = (dependencies.artifactFactory || createArtifactManifest)(candidate, { ...source, opsSha: input.opsSha, platform: host.snapshot.platform, arch: host.snapshot.arch,
+    const runtimeRoot = `${candidate}.runtime`;
+    const artifact = (dependencies.artifactFactory || createArtifactManifest)(runtimeRoot, { ...source, opsSha: input.opsSha, platform: host.snapshot.platform, arch: host.snapshot.arch,
       nodeVersion: host.snapshot.nodeVersion, nodeModulesAbi: host.snapshot.nodeModulesAbi, libc: host.snapshot.libc, smAbi: input.hostReceipt.smAbi,
-      nativeAbiVerified: true, nativeAbiReceiptId: input.hostReceipt.executionReviewReceiptId, sourceVerified: true, sourceReceiptId: input.hostReceipt.executionReviewReceiptId });
+      nativePolicy: input.hostReceipt.nativePolicy, nativeTargetRuntime: { machineId: input.hostReceipt.smMachineId, ...input.hostReceipt.smAbi }, sourceVerified: true, sourceReceiptId: input.hostReceipt.executionReviewReceiptId });
+    artifact.nativeElfProof = (dependencies.elfProof || collectElfProof)(runtimeRoot, artifact);
     try {
       if (!lock.alive()) throw new Error('Global lock holder lost during artifact hashing');
       (dependencies.assertLock || assertGlobalLock)(lock.pid);
@@ -233,18 +241,20 @@ export async function executeCandidate(input, dependencies = {}) {
       throw new Error('Global lock lost during artifact hashing; candidate retained without final artifact');
     }
     await (dependencies.verifyApi || verifyIsolatedApi)(input, verified);
-    const finalSm = await (dependencies.probeSM || probeSM)({ receipt: input.smReceipt });
+    const finalSm = await (dependencies.probeSM || (input.smReceipt.transportMode === 'sm-origin-relay' ? probeSmRelay : probeSM))({ receipt: input.smReceipt });
     const finalMint = (dependencies.mintSample || mintSample)(dirname(candidate), 0);
     if (combineGates(finalSm, finalMint, input, { starting: false, paused: false, estimatedUsageGiB: input.estimateGiB }) !== 'run') throw new Error('Fresh final Mint/SM gate failed; no final artifact');
     (dependencies.assertLock || assertGlobalLock)(lock.pid);
     if (!lock.alive()) throw new Error('Global lock lost before final artifact publication');
-    io.writeFileSync(join(candidate, 'mint-artifact.json'), JSON.stringify(artifact, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+    io.writeFileSync(join(runtimeRoot, 'mint-artifact.json'), JSON.stringify(artifact, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
     return artifact;
   } finally { await lock.release(); }
 }
 export async function main(argv = process.argv.slice(2)) {
   if (!argv.length || argv[0] === '--plan') { console.log(JSON.stringify({ status: 'plan-only', execution: 'Requires reviewed private current Mint-ready/slot/identity/API/OPS source receipts; no deployment', validationScope: 'Native smoke only loads sharp/onnx modules; no model inference, image transformation or independent candidate UI approval', pendingInfrastructure: ['Mint host readiness', 'common host-wide lock', 'isolated API /internal/mint-f1-readiness endpoint'] })); return; }
   if (argv.length !== 2 || argv[0] !== '--execute') throw new Error('Usage: node tools/mint-f1-execution.js [--plan | --execute PRIVATE_INPUT_JSON]');
-  await executeCandidate(readPrivateInput(resolve(argv[1])));
+  const input = readPrivateInput(resolve(argv[1]));
+  const artifact = await executeCandidate(input);
+  console.log(JSON.stringify({ appSha: artifact.appSha, opsSha: artifact.opsSha, buildId: artifact.buildId, artifactInventorySha256: artifact.inventorySha256, runtimeRoot: `${resolve(input.candidate)}.runtime`, nativeStatus: artifact.nativeStatus, deployEligible: false }));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch(error => { console.error(error.message); process.exitCode = 1; });

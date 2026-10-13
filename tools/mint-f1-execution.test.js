@@ -7,7 +7,7 @@ import { executeCandidate, verifySource, safeEnvironment, verifyIsolatedApi, com
 import { initialAppSha } from './mint-f1-candidate-plan.js';
 const mint = () => ({ machineId: 'mint-id', hostname: 'mint', platform: 'linux', arch: 'x64', cpuCount: 4, nodeVersion: '24.15.0', nodeModulesAbi: '137', libc: 'glibc-2.41', nodePath: '/opt/node/bin/node', npmPath: '/opt/node/lib/npm-cli.js', npmVersion: '11.1.0' });
 function input() { const expiresAt = new Date(Date.now() + 60000).toISOString(); return { appSha: initialAppSha, opsSha: 'a'.repeat(40), repo: resolve(new URL('..', import.meta.url).pathname), candidate: '/candidate/new', estimateGiB: 5,
- hostReceipt: { schema: 'mint-f1-host-v1', reviewed: true, mintReady: true, globalBuildSlot: true, reviewReceiptId: 'review', slotReceiptId: 'slot', executionReviewed: true, executionReviewReceiptId: 'execution-review', globalLockPath, expiresAt, smMachineId: 'sm-id', mint: mint(), noninteractivePath: '/opt/node/bin:/usr/bin:/bin', api: { origin: 'http://127.0.0.1:18131', isolatedDatabase: true, productionDatabase: false, machineId: 'mint-id', isolationReceiptId: 'api-review' }, smAbi: { platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.41' } },
+ hostReceipt: { nativePolicy: { schema: 'mint-f1-native-policy-v1', reviewed: true, buildAllowed: true, strategy: 'elf-requirements-and-sm-target-smoke', reviewReceiptId: 'mock-native-policy', maxGlibcRequired: '2.39' }, schema: 'mint-f1-host-v1', reviewed: true, mintReady: true, globalBuildSlot: true, reviewReceiptId: 'review', slotReceiptId: 'slot', executionReviewed: true, executionReviewReceiptId: 'execution-review', globalLockPath, expiresAt, smMachineId: 'sm-id', mint: mint(), noninteractivePath: '/opt/node/bin:/usr/bin:/bin', api: { origin: 'http://127.0.0.1:18131', isolatedDatabase: true, productionDatabase: false, machineId: 'mint-id', isolationReceiptId: 'api-review' }, smAbi: { platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.41' } },
  smReceipt: { schema: 'mint-f1-sm-transport-v1', reviewed: true, reviewReceiptId: 'review', slotReceiptId: 'slot', globalBuildSlot: true, expiresAt, host: 'sm.example', user: 'gate', port: 22, smMachineId: 'sm-id', mintMachineId: 'mint-id', knownHostsPath: '/private/known_hosts', knownHostsSha256: 'a'.repeat(64) } }; }
 const host = i => ({ verified: true, snapshot: mint(), apiOrigin: i.hostReceipt.api.origin, receipt: i.hostReceipt });
 const sample = () => ({ observedHost: 'SM', machineId: 'sm-id', measuredFromMachineId: 'sm-id', startedAtMs: Date.now() - 100, finishedAtMs: Date.now() - 10, ageMs: 100, load1: 2, homeAvailableBytes: 45 * 1024 ** 3, localSmBuildCount: 0, sites: ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'].map(url => ({ url, exitCode: 0, status: 200, total: 0.2, ttfb: 0.1 })) });
@@ -44,18 +44,18 @@ test('mock execution holds common lock through guard and artifact and preserves 
  io: { mkdirSync: p => { events.push('mkdir'); }, appendFileSync: () => {}, writeFileSync: () => {} }, assertLock: () => true, probeSM: async () => sample(), mintSample: () => local(),
  spawnBuild: (bin, args, opts) => { assert.equal(opts.env.GOOGLE_API_KEY, undefined); assert.equal(opts.env.TAG_API_ORIGIN, i.hostReceipt.api.origin); return {}; },
  guard: async options => { assert.equal(released, false); events.push('guard'); assert.equal((await options.probe()).probeError, undefined); options.spawnBuild('ionice', ['-c', '3'], { env: { GOOGLE_API_KEY: 'mock' } }); return 0; },
- artifactFactory: (root, identity) => { assert.equal(released, false); assert.equal(identity.opsSha, i.opsSha); events.push('artifact'); return { status: 'prepared' }; } });
+ elfProof: () => ({ status: 'inspected', mock: true }), artifactFactory: (root, identity) => { assert.equal(released, false); assert.equal(root, i.candidate + '.runtime'); assert.equal(identity.opsSha, i.opsSha); events.push('artifact'); return { status: 'prepared' }; } });
  assert.equal(result.status, 'prepared'); assert.deepEqual(events.filter(e => e !== 'mkdir'), ['lock', 'guard', 'artifact', 'release']);
 });
 test('failures retain candidate, release lock and never mark artifact prepared', async () => {
  const i = input(); let released = 0; let artifacts = 0;
- const dependencies = { verifyHost: async () => host(i), verifyApi: async () => true, verifySource: () => true, sourceReceipt: () => ({}), acquireLock: async () => ({ pid: 123, alive: () => true, release: async () => released++ }), io: { mkdirSync: () => {}, appendFileSync: () => {}, writeFileSync: () => {} }, assertLock: () => true, guard: async () => 1, artifactFactory: () => artifacts++ };
+ const dependencies = { verifyHost: async () => host(i), verifyApi: async () => true, verifySource: () => true, sourceReceipt: () => ({}), acquireLock: async () => ({ pid: 123, alive: () => true, release: async () => released++ }), io: { mkdirSync: () => {}, appendFileSync: () => {}, writeFileSync: () => {} }, assertLock: () => true, guard: async () => 1, elfProof: () => ({ status: 'inspected', mock: true }), artifactFactory: () => artifacts++ };
  await assert.rejects(executeCandidate(i, dependencies), /retained/); assert.equal(released, 1); assert.equal(artifacts, 0);
  const notReady = input(); notReady.hostReceipt.mintReady = false; await assert.rejects(executeCandidate(notReady, dependencies)); assert.equal(released, 1);
 });
 test('runStage callback discards its inherited env and records only safe stage context', async () => {
  const i = input(); const calls = [];
- await stage(i, { verifyHost: async () => host(i), verifyApi: async () => true, assertLock: () => true, readPrivateInput: () => i, verifySource: () => true, stageRecord: e => assert.equal(e.appSha, initialAppSha), appendLog: () => {},
+ await stage(i, { verifyHost: async () => host(i), verifyApi: async () => true, assertLock: () => true, readPrivateInput: () => i, verifySource: () => true, deriveRuntime: () => ({ status: 'mock derived' }), stageRecord: e => assert.equal(e.appSha, initialAppSha), appendLog: () => {},
  runStage: (options, sha, run) => run('npm', ['ci'], '/candidate/new', '/candidate/new/log', { GOOGLE_API_KEY: 'mock', TAG_API_ORIGIN: 'http://production' }),
  runCommand: (bin, args, cwd, env) => { assert.equal(env.GOOGLE_API_KEY, undefined); assert.equal(env.TAG_API_ORIGIN, i.hostReceipt.api.origin); calls.push(bin); return ''; } }, 123, '/private/input.json');
  assert.equal(calls.length, 2); // Stage plus explicit native-loader smoke check.
@@ -107,7 +107,7 @@ test('live holder with replaced lock inode is fatal and never produces artifact'
   verifyHost: async () => host(i), verifyApi: async () => true, verifySource: () => true, sourceReceipt: () => ({}),
   acquireLock: async () => ({ pid: 123, alive: () => true, release: async () => { released++; } }),
   io: { mkdirSync: () => {}, appendFileSync: () => {}, writeFileSync: () => {} }, assertLock: () => { throw new Error('inode replaced'); }, abortGuard: () => { aborted++; },
-  probeSM: async () => { probes++; return sample(); }, artifactFactory: () => { artifacts++; },
+  probeSM: async () => { probes++; return sample(); }, elfProof: () => ({ status: 'inspected', mock: true }), artifactFactory: () => { artifacts++; },
   guard: async options => { const result = await options.probe(); assert.match(result.probeError, /Fatal/); return 0; }
  }), /Fatal global lock loss/);
  assert.equal(aborted, 1); assert.equal(artifacts, 0); assert.equal(probes, 0); assert.equal(released, 1);
@@ -131,7 +131,7 @@ test('lock replacement during artifact hashing fails before final artifact write
   verifyHost: async () => host(i), verifyApi: async () => true, verifySource: () => true, sourceReceipt: () => ({}),
   acquireLock: async () => ({ pid: 123, alive: () => true, release: async () => { released = true; } }),
   io: { mkdirSync: () => {}, appendFileSync: (p, data) => audits.push(data), writeFileSync: p => writes.push(p) },
-  assertLock: () => { if (++asserts === 2) throw new Error('inode changed'); }, guard: async () => 0, artifactFactory: () => ({ status: 'prepared' })
+  assertLock: () => { if (++asserts === 2) throw new Error('inode changed'); }, guard: async () => 0, elfProof: () => ({ status: 'inspected', mock: true }), artifactFactory: () => ({ status: 'prepared' })
  }), /without final artifact/);
  assert.equal(released, true); assert.equal(writes.some(p => p.endsWith('mint-artifact.json')), false); assert.ok(audits.some(text => text.includes('fatal-post-artifact-lock-loss')));
 });
@@ -142,7 +142,7 @@ test('fresh post-hash service gate must pass before final writer', async () => {
   verifyHost: async () => host(i), verifyApi: async () => true, verifySource: () => true, sourceReceipt: () => ({}),
   acquireLock: async () => ({ pid: 123, alive: () => true, release: async () => {} }),
   io: { mkdirSync: () => {}, appendFileSync: () => {}, writeFileSync: p => writes.push(p) }, assertLock: () => true,
-  guard: async () => 0, artifactFactory: () => ({ status: 'prepared' }), probeSM: async () => ({ probeError: 'unavailable', sites: [] }), mintSample: () => local()
+  guard: async () => 0, elfProof: () => ({ status: 'inspected', mock: true }), artifactFactory: () => ({ status: 'prepared' }), probeSM: async () => ({ probeError: 'unavailable', sites: [] }), mintSample: () => local()
  }), /Fresh final/);
  assert.equal(writes.some(p => p.endsWith('mint-artifact.json')), false);
 });
@@ -153,7 +153,7 @@ test('fatal kernel lock loss makes existing guard exit and reap only mocked cand
   verifyHost: async () => host(i), verifyApi: async () => true, verifySource: () => true, sourceReceipt: () => ({}),
   acquireLock: async () => ({ pid: 123, alive: () => true, release: async () => { released = true; } }),
   io: { mkdirSync: () => {}, appendFileSync: () => {}, writeFileSync: () => {} }, assertLock: () => { if (++checks > 1) throw new Error('lock replaced'); },
-  probeSM: async () => sample(), mintSample: () => local(), spawnBuild: () => child, artifactFactory: () => { artifacts++; },
+  probeSM: async () => sample(), mintSample: () => local(), spawnBuild: () => child, elfProof: () => ({ status: 'inspected', mock: true }), artifactFactory: () => { artifacts++; },
   guard: options => guardedBuild({ ...options, intervalMs: 1, killGroup: (pid, signal) => { signals.push([pid, signal]); if (signal === 'SIGTERM') queueMicrotask(() => child.emit('close', 143)); } })
  }), /Fatal global lock loss/);
  assert.equal(artifacts, 0); assert.equal(released, true);

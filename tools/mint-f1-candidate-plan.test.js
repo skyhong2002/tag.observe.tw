@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createPlan, initialAppSha, main, smDecision } from './mint-f1-candidate-plan.js';
 import { GiB, siteBudgetsSeconds } from './guard-next-build.js';
 const input = () => ({
-  appSha: initialAppSha, opsSha: 'a'.repeat(40),
+  nativePolicy: { schema: 'mint-f1-native-policy-v1', reviewed: true, buildAllowed: true, strategy: 'elf-requirements-and-sm-target-smoke', reviewReceiptId: 'mock-native-policy', maxGlibcRequired: '2.39' }, appSha: initialAppSha, opsSha: 'a'.repeat(40),
   mint: { role: 'Mint', hostname: 'mint', machineId: 'mint-id', platform: 'linux', arch: 'x64', cpus: 4, nodeVersion: '24.1.0', npmPathVerified: true, operatorVerified: true, nodeModulesAbi: '137', libc: 'glibc-2.39' },
   sm: { machineId: 'sm-id', platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.39' },
   apiOrigin: 'http://127.0.0.1:18131', apiIsolationVerified: true, apiUsesProductionDatabase: false,
@@ -48,4 +48,8 @@ test('missing identities, truthy attestations and different handoff SHA fail clo
   const i = input(); delete i.sm.machineId;
   const missing = sample(); delete missing.machineId; delete missing.measuredFromMachineId;
   assert.equal(smDecision(missing, i), 'pause');
+});
+test('Mint2.39 to SM2.41 plans only under explicit pending native policy', () => {
+ const i = input(); i.sm.libc = 'glibc-2.41'; assert.equal(createPlan(i).status, 'plan-only');
+ delete i.nativePolicy; assert.throws(() => createPlan(i), /policy/);
 });

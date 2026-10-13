@@ -5,7 +5,7 @@ import { validateHostSnapshot, verifyHost } from './mint-f1-host-adapter.js';
 import { transportArgs, validateSample, probeSM, smGate, remoteScript, verifyKnownHosts } from './mint-f1-sm-adapter.js';
 const now = 1700000000000;
 const mint = () => ({ machineId: 'mint-id', hostname: 'mint', platform: 'linux', arch: 'x64', cpuCount: 4, nodeVersion: '24.1.0', nodeModulesAbi: '137', libc: 'glibc-2.39', nodePath: '/opt/node/bin/node', npmPath: '/opt/node/lib/npm-cli.js', npmVersion: '11.1.0', candidateAvailableBytes: 45 * 1024 ** 3 });
-const hostReceipt = () => ({ schema: 'mint-f1-host-v1', reviewed: true, mintReady: true, globalBuildSlot: true, reviewReceiptId: 'review', slotReceiptId: 'slot', expiresAt: new Date(now + 60000).toISOString(), smMachineId: 'sm-id', mint: mint(), noninteractivePath: '/opt/node/bin:/usr/bin:/bin', api: { origin: 'http://127.0.0.1:18131', isolatedDatabase: true, productionDatabase: false, machineId: 'mint-id', isolationReceiptId: 'api-review' }, smAbi: { platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.39' } });
+const hostReceipt = () => ({ nativePolicy: { schema: 'mint-f1-native-policy-v1', reviewed: true, buildAllowed: true, strategy: 'elf-requirements-and-sm-target-smoke', reviewReceiptId: 'mock-native-policy', maxGlibcRequired: '2.39' }, schema: 'mint-f1-host-v1', reviewed: true, mintReady: true, globalBuildSlot: true, reviewReceiptId: 'review', slotReceiptId: 'slot', expiresAt: new Date(now + 60000).toISOString(), smMachineId: 'sm-id', mint: mint(), noninteractivePath: '/opt/node/bin:/usr/bin:/bin', api: { origin: 'http://127.0.0.1:18131', isolatedDatabase: true, productionDatabase: false, machineId: 'mint-id', isolationReceiptId: 'api-review' }, smAbi: { platform: 'linux', arch: 'x64', nodeModulesAbi: '137', libc: 'glibc-2.39' } });
 const transport = () => ({ schema: 'mint-f1-sm-transport-v1', reviewed: true, reviewReceiptId: 'review', slotReceiptId: 'slot', globalBuildSlot: true, expiresAt: new Date(now + 60000).toISOString(), host: 'sm.example', user: 'gate', port: 22, smMachineId: 'sm-id', mintMachineId: 'mint-id', knownHostsPath: '/private/known_hosts', knownHostsSha256: 'a'.repeat(64) });
 const sample = () => ({ observedHost: 'SM', machineId: 'sm-id', measuredFromMachineId: 'sm-id', startedAtMs: now - 100, finishedAtMs: now - 10, load1: 2, homeAvailableBytes: 45 * 1024 ** 3, localSmBuildCount: 0, sites: ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'].map(url => ({ url, exitCode: 0, status: 200, total: 0.2, ttfb: 0.1 })) });
 test('Mint live identity, readiness and separate disk estimate fail closed', () => {
@@ -74,4 +74,9 @@ test('npm shebang cannot use a different first Node from noninteractive PATH', a
   executeCommand: async () => { commands++; return { stdout: '11.1.0' }; }
  }), /Noninteractive/);
  assert.equal(commands, 0);
+});
+test('pre-build cross-glibc policy is required and does not claim final native verification', () => {
+ const receipt = hostReceipt(); receipt.smAbi.libc = 'glibc-2.41';
+ const result = validateHostSnapshot(mint(), receipt, 5, now); assert.equal(result.verified, true); assert.equal(result.nativeAbiVerified, undefined);
+ delete receipt.nativePolicy; assert.throws(() => validateHostSnapshot(mint(), receipt, 5, now), /policy/);
 });
