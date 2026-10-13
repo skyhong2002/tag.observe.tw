@@ -287,3 +287,56 @@ smoke-only retry will use the already-copied runtime and a new exclusive `-r2`
 job; no second rsync or deletion. New exact hashes/command/fresh gate receipt
 require babysit admission before retry. Mint-only prior smoke remains valid;
 SM native/UI/deploy remain pending, 65 main UI routes /0 complete passes.
+
+## SM clock-envelope source repair; smoke-only r2 awaiting admission
+
+The admitted first copy completed at `2026-10-13T14:09:16.310Z`, but
+the worker failed before inventory/native loading. The old target and all
+failed evidence remain; neither SM native loading nor its whole inventory
+has passed. The missing failed RPC bytes cannot be reconstructed.
+
+The existing separate writer prepared the SM v6 fix. Root independently
+reviewed this code and ran 25/25 pure source/mock tests at UTC
+`2026-10-13T14:36:57.093965+00:00`; evidence:
+`/tmp/babysit/mint-queue/tag-sm-guarded-clock-source-independent-review-20261013-v6.json`,
+raw `/tmp/babysit/mint-queue/tag-sm-r2-root-source-test-output-v6.txt`.
+This is n/a-ui source evidence, not an executed retry.
+
+Every RPC saves bounded original stdout/stderr bytes, exit status and local
+SM start/end times before validation. Mint timestamps are retained unchanged.
+The transport is source/input-bound; same-Mint controller lease age plus
+the complete SM RPC and cached-reply duration must remain at most 30 seconds.
+This conservative sum rejects the previously separable 29-second lease plus
+9-second cache. Exact 30-second boundaries and positive/negative host clock
+offsets are covered without changing system clocks or relaxing lock, expiry
+or resource checks.
+
+The proposed new controller reuses the existing isolated SM runtime and creates
+exclusive `native-smoke-job-r2` evidence. It performs no rsync, Next build,
+npm install, browser capture, inference, production action or deletion.
+Whole inventories before/after and the unchanged manifest are prerequisites
+for acceptance; Mint's full post-operation verification must also pass.
+New receipt budget is 0.05 GiB; deployEligible and manifestPublished stay false.
+The original driver and every failed job remain. The actual retry command
+and new fresh real probe require babysit admission before execution.
+
+Final independent source review by existing nonauthor reviewer completed
+at `2026-10-13T14:40:12.353770+00:00`: 25/25 pure tests, Node syntax checks
+and five embedded Python compile-only checks. Receipt `/tmp/babysit/mint-queue/tag-sm-r2-controller-final-independent-source-review-20261013T1439Z.json`,
+SHA256 `20c814d3e1bb394b4dd89671b5c7f6658db9d9555d781bb25a82864144fed075`. Root reviewed the separate writer's SM source;
+the nonauthor reviewer reviewed root's Mint controller. Both fixed drivers
+were passively copied to Mint with mode 0600 and identical hashes:
+controller `f26cc070ce8624905739914ff0510d0688e104999b8c48ae0c9a9b9b53c8d62f`,
+pure contract `2076ccc55d3e49feb7a4eff006272c9ea2adc63f7da0bed8d16a8973274cfc40`. No execution, lock, native
+or browser operation occurred during this source review/upload.
+
+The genuine admission probe `/tmp/babysit/mint-queue/tag-sm-smoke-r2-admission-probe-20261013T143715Z.json`
+(SHA256 `f5234758a2a376620d6d4994502d0b79e533191afd586491fa426442cf327d33`) observed all three sites 200/curl0 at UTC
+14:37:15.001: tag 1.652168s, blog 3.507840s, YT 0.870980s; Mint load1
+1.15 with 143.36 GiB free, no lock holder/build/browser; SM load1 2.847
+with 61.48 GiB free and no local build. Actual isolated API returned 200.
+This remains observationOnly/executionPermission=false; execution guard
+must measure again. Exact conditional command and pending-false inputs
+are in `/tmp/babysit/mint-queue/tag.md` and
+`/tmp/babysit/mint-queue/tag-sm-smoke-r2-retry-packet.json`.
+New retry admission is pending; SM native, UI and deployment are not passed.

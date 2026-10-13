@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**SM smoke-only r2 source 修正（未執行）**：跨時鐘直接比較已改成同 Mint lease age 加上 SM RPC／快取耗時，總計 ≤30 秒；原始 RPC bytes 在驗證前保存，原時間不重寫。Root 獨立閱讀既有 writer 的 v6、25／25 source/mock 測試通過；新的 controller 已由既有非作者 reviewer 於 UTC14:40:12 完成 source PASS（25／25 tests＋5 Python compile-only），receipt 見完整證據文件。新命令仍另待 babysit 核對，不再 rsync，不跑 Next／npm／瀏覽器。這些是 **n/a-ui source 證據**；SM inventory／native 實載仍未通過，**APP677：65 主 routes／0 完整 pass／65 pending**，本批未部署。
+
 **最新 SM 隔離執行（UTC 2026-10-13 14:09，未通過）**：copy退出0，但native task在 `before-inventory` guard退出1，沒有進到任何8個 `.node`；SM完整inventory與Mint操作後重驗也未達成，**不能標成SM smoke／f166 PASS**。已保留所有target/原始log，鎖釋放；12次唯讀clock診斷重現SM／Mint時鐘直接比較缺陷，當次失敗raw缺失不補造，既有非作者離線核對見 [完整證據與界線](mint-native-independent-audit-20261013.md)。修正及新exclusive smoke-only `-r2`仍source準備／另待核對；Mint13:13 loader證據不因此變成SM驗收。**65主routes／0完整pass／65pending**，本批未部署。
 
 **最新 Mint-only native loader（UTC 2026-10-13 13:13）**：babysit 放行後 guard 真實執行退出0，APP `677a0c79`／OPS `c70425b0`／BUILD_ID `PmjYScQDDoJKBr43SLkhd`；8個 target `.node`、Sharp／ONNX Runtime module imports，以及記憶體內16×12 WebP／AVIF smoke 通過。前後完整 inventory 都是 `f1660cad…`、manifest 都是 `76142c…`，鎖已釋放；[實際 raw／receipts 與八檔清單](mint-native-independent-audit-20261013.md)。這是 **n/a-ui Mint native／codec 證據**，不是 SM loader、圖片投稿 pipeline、模型推論、Next optimizer 或 UI review；SM guarded adapter 尚待接線／核對，`deployEligible:false`。**65主 routes／0完整pass／65pending**，本批未部署。
