@@ -127,3 +127,70 @@ The SM worker preparation separately passed independent source review and
 three pure tests; its actual Mint guarded SSH adapter is not connected and
 there is no executable admission claim. No SM transfer or loader took place.
 Mint and SM loaders, codec, UI and deployment remain pending.
+
+
+## Actual Mint-only loader and small Sharp codec smoke
+
+Babysit explicitly admitted the reviewed driver775ebd8a. The guarded task
+acquired the nonblocking shared Mint kernel lock and exited0. Worker UTC
+**2026-10-13T13:13:34.994Z**, parent acceptance **13:13:39.979Z**. A subsequent
+read-only kernel-lock observation at **13:14:17.543Z** found no lock holders.
+APP677 / OPSc704 / BUILD_ID `PmjYScQDDoJKBr43SLkhd` and the final target bytes
+remain the same; no Next or npm task was run.
+
+Actual Mint runtime: Linux x64, Node24.15.0 / modules ABI137 / glibc2.39,
+machine `f80413057e6d4a179e248e5f8c08cac6`. This is not SM glibc2.41 proof.
+All eight target `.node` bindings below were actually required successfully,
+followed by `sharp` and `onnxruntime-node` module imports:
+
+| Actual loaded target binding | SHA256 | Outcome |
+|---|---|---|
+| `node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.5.node` | `424b1b51429833b1147fceec1cbdda04fecea5aadab964c43239394e6aaf8333` | loaded |
+| `node_modules/@msgpackr-extract/msgpackr-extract-linux-x64/node.napi.glibc.node` | `48bb0acaf5881374699e37ead45dd7aa867ec8b31591d99425eb8b925c9c8deb` | loaded |
+| `node_modules/onnxruntime-node/bin/napi-v6/linux/x64/onnxruntime_binding.node` | `ccdc60b981d93a490cf9513d3f583547252b6e285b72988a96a494f2f006c7b8` | loaded |
+| `web/.next/standalone/web/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.5.node` | `424b1b51429833b1147fceec1cbdda04fecea5aadab964c43239394e6aaf8333` | loaded |
+| `web/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.5.node` | `424b1b51429833b1147fceec1cbdda04fecea5aadab964c43239394e6aaf8333` | loaded |
+| `web/node_modules/@next/swc-linux-x64-gnu/next-swc.linux-x64-gnu.node` | `656b65a26c717add90617027b410977dde62234c350e33b972b776bc41f1113e` | loaded |
+| `web/node_modules/@tailwindcss/oxide-linux-x64-gnu/tailwindcss-oxide.linux-x64-gnu.node` | `cc1d852b9d8bdca43db28aff578de9628ca54a960e10297a3f100a32bf5a9be3` | loaded |
+| `web/node_modules/lightningcss-linux-x64-gnu/lightningcss.linux-x64-gnu.node` | `2024f99789a601c7438b387117032ba07594cbba9b784064b47cdc60a0972326` | loaded |
+
+A self-generated32×24 RGBA PNG was resized to16×12 and encoded/decoded in
+memory as WebP (**98 bytes**) and AVIF (**464 bytes**). WebP metadata reported
+`webp`; AVIF metadata reported `heif` and the output had the `ftypavif` brand.
+Width/height assertions passed for both. No image file was written. This
+validates tiny codec operations, **not user image upload, avatar queue worker,
+ONNX model inference, Next image optimizer, PSI or candidate UI**.
+
+The driver performed full `verifyArtifact` before and after module/codec
+loading and asserted manifest bytes unchanged:
+- Before and after inventory: `f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7`.
+- Before and after manifest SHA256: `76142c7930cbd2e471f02cf68130fa01acbfb54d2c6a4309fc8198185987e7e0`.
+
+Private actual evidence directory:
+`/tmp/babysit/mint-queue/tag-mint-loader-actual-20261013T1313Z/`:
+- `result.json`: `acc0841d5498b7ab2946d42365ce0e2466ab2d9569b93b727ebe5db67ef8f299`.
+- `acceptance.json`: `87b65aae655487ab780bcd3a486872eb482035bc8885e9bc36e159307e818edd`.
+- `native-loader.raw.json`: `91a45ebef570eb5cd9043f8fe13496ef13dacd1144251297f65b8b032105732b` (actual subprocess status0, no signal/error).
+- `guard.jsonl`, `lease.json`, `stage.log`: actual gates and execution record.
+- Reviewed driver: `775ebd8ae71182eb2b5e3ce1bdbe1ebc4b947e90cb3d98777baf6f4b5e98d9bb`.
+- Authorized input: `55603860ac08d91eff1bf42322025774fdc7a405a19930d885de393680bf304e`.
+
+No artifact was modified, Google transport/browser was started, account or
+permission added, or deployment performed. SM native loader still requires
+its connected guarded adapter, independent source review and separate babysit
+command admission. `deployEligible:false`; candidate UI remains65 main
+routes /0 complete passes /65 pending for APP677. The existing reviewer is
+separately inspecting these actual raw receipts without rerunning the loader.
+
+
+UTC13:16:29.340449Z: the existing nonauthor reviewer independently read the
+actual Mint raw/receipts offline, matched driver/input hashes, the receipt hash
+chain, exact eight binding paths/hashes against the immutable manifest and
+earlier independently audited target, and parsed the original single JSON
+marker. Actual status0, empty stderr, codec metadata/bytes and guarded exit0
+matched. The source assertions cover full pre/post inventory and unchanged
+manifest; no loader or host probe was rerun by the reviewer. Independent PASS
+receipt:
+`/tmp/babysit/mint-queue/tag-mint-loader-offline-independent-review-2026-10-13T13-16-29-340449+00-00.json`.
+The UTC13:14:17 lock observation is attributed to the owner, not the reviewer.
+This accepts only Mint loader/tiny codec evidence; SM/UI/deploy remain pending.
