@@ -1,7 +1,7 @@
 import { initialAppSha } from './mint-f1-candidate-plan.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { repairSharpRuntime, validateRepairPlan, assertOnlyRpathChanged, bindingPaths, originalRpath, preSha, repairedRpath, buildId, hash } from './sharp-native-runtime-repair.js';
+import { repairSharpRuntime, validateRepairPlan, assertOnlyRpathChanged, bindingPaths, originalRpath, preSha, repairedRpath, buildId, hash, extractTextBytes, snapshotElf } from './sharp-native-runtime-repair.js';
 const snapshot = () => ({ tag: 'RPATH', runpath: null, rpath: originalRpath.join(':'), arch: 'x64', needed: ['libvips-cpp.so.8.18.7'], soname: [], versions: ['GLIBC_2.17','GLIBCXX_3.4'], symbols: ['symbol@GLIBCXX_3.4'], textDigest: 'text', rawReadelfSha256: 'raw' });
 function fixture() {
  const source = '/artifact.original.runtime', destination = '/artifact.original.native-runtime';
@@ -45,4 +45,35 @@ test('lease expiring during either final hash cannot return prepared or publish'
   assert.throws(()=>repairSharpRuntime(f.input,f.deps),/expired final lease/);
   assert.equal(f.bytes.has(f.destination+'/mint-artifact.json'),false);
  }
+});
+
+test('GNU readelf fixed 35-character hex field never consumes ASCII', () => {
+ const full='  0x00012820 554889e5 41554154 4c8d65d0 534889fb UH..AUATL.e.SH..';
+ const tail='  0x00012830 '+'aabbccdd eeff'.padEnd(35)+' deadbeef cafe';
+ assert.equal(extractTextBytes(full),'554889e5415541544c8d65d0534889fb');
+ assert.equal(extractTextBytes(tail),'aabbccddeeff');
+ assert.equal(extractTextBytes('  0x00012820 '+'deadbeef cafebabe 01020304 aabbccdd'+' deadbeef'),'deadbeefcafebabe01020304aabbccdd');
+ for(const raw of ['', '  0x01 aabbccdd ascii', '  0x01 '+'aabbccdd f'.padEnd(35)+' ascii','  0x01 '+'aabb ccdd'.padEnd(35)+' ascii',full.replace(' UH','UH')]) assert.throws(()=>extractTextBytes(raw));
+ assert.notEqual(hash(extractTextBytes(full)),hash(extractTextBytes(full.replace('554889e5','554889e4'))));
+});
+test('new attempt requires explicit reviewed same-parent suffix', () => {
+ const f=fixture(); const destination=f.destination+'-r2';
+ assert.throws(()=>validateRepairPlan({...f.input,destination}));
+ assert.equal(validateRepairPlan({...f.input,destination,reviewedAttemptSuffix:'-r2'}).destination,destination);
+ for(const suffix of ['-r1','-r3','-r10','-other','/x','-r02']) assert.throws(()=>validateRepairPlan({...f.input,destination:f.destination+suffix,reviewedAttemptSuffix:suffix}));
+ assert.throws(()=>validateRepairPlan({...f.input,destination:'/other/file.native-runtime-r2',reviewedAttemptSuffix:'-r2'}));
+});
+test('snapshotElf consumes real readelf row format and detects before/after text change', () => {
+ const full='  0x00012820 554889e5 41554154 4c8d65d0 534889fb UH..AUATL.e.SH..';
+ const reader=(rpath,text)=>(bin,args)=>({
+  '--file-header':'  Class: ELF64\n  Machine: Advanced Micro Devices X86-64',
+  '--dynamic':`Dynamic section\n  0x000000000000000f (RPATH) Library rpath: [${rpath}]\n  0x1 (NEEDED) [libvips-cpp.so.8.18.7]`,
+  '--version-info':'Version needs section\n  0x0010: Name: GLIBC_2.17 Flags: none Version: 2',
+  '--dyn-syms':'  1: 0000000000000000 0 FUNC GLOBAL DEFAULT UND memcpy@GLIBC_2.17 (2)',
+  '--hex-dump=.text':`Hex dump of section '.text':\n${text}\n`
+ }[args[0]]);
+ const before=snapshotElf('/mock',reader(originalRpath.join(':'),full));
+ const after=snapshotElf('/mock',reader(repairedRpath,full));assertOnlyRpathChanged(before,after);
+ const changed=snapshotElf('/mock',reader(repairedRpath,full.replace('554889e5','554889e4')));
+ assert.throws(()=>assertOnlyRpathChanged(before,changed),/textDigest/);
 });

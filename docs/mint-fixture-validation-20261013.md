@@ -186,3 +186,12 @@ verifies its ELF proof before fresh live gates, input and kernel checks and a
 single exclusive private manifest write. False and asynchronous final proof
 verifiers are rejected. The related source/mock suite has 58 passing tests;
 this is not evidence that native repair, loader smoke or UI review has run.
+
+The admitted OPS 9710259b native attempt failed before patching with
+`Unparseable text bytes`: real GNU readelf separates its hex and printable ASCII
+columns with one space, whereas the previous parser expected two spaces.
+Read-only post-failure checks found all three Sharp bindings still at the
+original pinned checksum and no final manifest. The failed derived tree and
+private log remain retained. Parsing now uses the fixed 35-column hex area with
+real-format regressions, and a separately admitted retry may use only an
+explicit same-parent `-r2` destination. No retry has been executed yet.

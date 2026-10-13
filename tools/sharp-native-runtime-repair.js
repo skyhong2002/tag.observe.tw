@@ -19,6 +19,21 @@ export function assertOnlyRpathChanged(before, after) {
   if (before.tag !== 'RPATH' || after.tag !== 'RPATH' || before.runpath || after.runpath || after.rpath !== repairedRpath) throw new Error('Unexpected loader tag or repaired RPATH');
   for (const key of ['arch', 'needed', 'soname', 'versions', 'symbols', 'textDigest']) if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) throw new Error(`Non-RPATH ELF change: ${key}`);
 }
+export function extractTextBytes(raw) {
+  const rows = raw.split('\n').filter(line => /^\s*0x/i.test(line));
+  if (!rows.length) throw new Error('Missing text bytes');
+  return rows.map(line => {
+    const match = /^\s*0x[\da-f]+ (.*)$/i.exec(line);
+    if (!match || match[1].length < 35) throw new Error('Unparseable fixed-width text row');
+    const field = match[1].slice(0, 35), ascii = match[1].slice(35);
+    if (ascii && !ascii.startsWith(' ')) throw new Error('Ambiguous hex/ASCII boundary');
+    const trimmed = field.trimEnd();
+    const groups = trimmed.split(' ');
+    if (!groups.length || groups.length > 4 || groups.some((group, index) => !/^[\da-f]+$/i.test(group) || group.length % 2 !== 0 || group.length > 8 || (index < groups.length - 1 && group.length !== 8))) throw new Error('Unparseable text bytes');
+    if (field !== trimmed.padEnd(35, ' ')) throw new Error('Malformed hex field padding');
+    return groups.join('').toLowerCase();
+  }).join('');
+}
 export function snapshotElf(path, run = execute) {
   const header = run('/usr/bin/readelf', ['--file-header', '--', path]);
   const dynamic = run('/usr/bin/readelf', ['--dynamic', '--', path]);
@@ -33,14 +48,15 @@ export function snapshotElf(path, run = execute) {
   if (!/Version (?:symbols|needs|definition) section|No version information found in this file\./.test(versions)) throw new Error('Missing full version evidence');
   const versionRows = versions.replace(/(Addr:|Offset:)\s*0x[\da-f]+/gi, '$1<relocated>').split('\n');
   const symbolRows = symbols.split('\n').filter(l => /^\s*\d+:/.test(l)).map(l => l.trim().split(/\s+/).slice(1));
-  const textBytes = text.split('\n').filter(line => /^\s*0x[\da-f]+\s/i.test(line)).map(line => line.replace(/^\s*0x[\da-f]+\s+/i, '').split(/\s{2,}/)[0].trim()).map(row => { if (!/^[\da-f]{2,8}(?: [\da-f]{2,8}){0,3}$/i.test(row)) throw new Error('Unparseable text bytes'); return row.replace(/ /g, ''); }).join('');
+  const textBytes = extractTextBytes(text);
   if (!symbolRows.length || !textBytes) throw new Error('Missing native symbols/text evidence');
   return { arch: header.split('\n').filter(line => /^\s*(?:Class|Data|Version|OS\/ABI|ABI Version|Type|Machine|Flags):/.test(line)), needed: [...dynamic.matchAll(/\(NEEDED\)[^\[]*\[([^\]]*)\]/g)].map(m => m[1]), soname: [...dynamic.matchAll(/\(SONAME\)[^\[]*\[([^\]]*)\]/g)].map(m => m[1]), versions: versionRows, symbols: symbolRows, textDigest: hash(textBytes), tag: 'RPATH', runpath: null, rpath: rpaths[0][1], rawReadelfSha256: hash(JSON.stringify({ header, dynamic, versions, symbols, text })) };
 }
-export function validateRepairPlan({ source, destination, bindingPaths: paths = bindingPaths, originalRpath: pathsRpath = originalRpath, originalInventorySha256 }) {
+export function validateRepairPlan({ source, destination, bindingPaths: paths = bindingPaths, originalRpath: pathsRpath = originalRpath, originalInventorySha256, reviewedAttemptSuffix = '' }) {
   source = resolve(source); destination = resolve(destination);
   const bindingPaths = paths, originalRpath = pathsRpath;
-  if (destination !== source.replace(/\.runtime$/, '.native-runtime') || !source.endsWith('.runtime') || dirname(source) !== dirname(destination)) throw new Error('Exclusive same-parent .native-runtime required');
+  if (typeof reviewedAttemptSuffix !== 'string' || reviewedAttemptSuffix !== '' && reviewedAttemptSuffix !== '-r2') throw new Error('Explicit reviewed attempt suffix required');
+  if (destination !== source.replace(/\.runtime$/, '.native-runtime') + reviewedAttemptSuffix || !source.endsWith('.runtime') || dirname(source) !== dirname(destination)) throw new Error('Exclusive same-parent .native-runtime required');
   if (!/^[a-f0-9]{64}$/.test(originalInventorySha256 || '') || !Array.isArray(bindingPaths) || bindingPaths.length !== 3 || new Set(bindingPaths).size !== 3 || !Array.isArray(originalRpath) || originalRpath.length !== 5) throw new Error('Pinned paths/RPATH/inventory required');
   if (JSON.stringify(paths) !== JSON.stringify(pinnedBindings) || JSON.stringify(pathsRpath) !== JSON.stringify(pinnedRpath)) throw new Error('Unknown reviewed Sharp paths/RPATH');
   // Exact constants are supplied by reviewed owner policy, never discovered from

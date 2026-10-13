@@ -9,6 +9,13 @@ publication is run, and every return has `deployEligible: false` and
 
 Input: `{ source, destination, originalInventorySha256, identity }`. Optional
 `bindingPaths`/`originalRpath` must equal the exported exact reviewed constants.
+An explicitly reviewed `reviewedAttemptSuffix: '-r2'` permits only the same-parent
+`.native-runtime-r2` retry. An existing failed tree is never overwritten or
+removed. Other attempt suffixes and arbitrary destination paths are rejected.
+
+GNU readelf's `.text` output has a fixed 35-column hex area followed by printable
+ASCII, sometimes separated by just one space. Only that hex area is decoded;
+odd-byte groups, malformed padding and ambiguous boundaries fail closed.
 The three fixed Sharp x64 0.35.5 bindings require the pinned original SHA and
 DT_RPATH (not RUNPATH); only the first libvips directory is retained.
 
