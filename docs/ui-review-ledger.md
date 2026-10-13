@@ -1,8 +1,8 @@
 # F1 UI 逐頁審查 ledger
 
-**Mint Next 實測更新（UTC 2026-10-13）**：APP `677a0c79`／建置 OPS `a0911a78` 已完成 Next compile、TypeScript 與64頁生成，BUILD_ID `PmjYScQDDoJKBr43SLkhd`。原runtime inventory `831dc44f130c96d039e1747e300135987aeeb229df89df76151004ddcc9d9edb`；嚴格ELF檢查擋Sharp套件越界fallback，原生衍生修復／SM smoke未完成，**沒有final eligible artifact、capture或部署**。source/runtime記錄皆n/a-ui；此APP仍 **65主route／0完整pass／65pending**，待同BUILD修復產物雙寬亮暗色重拍。較早「Mint未建置」只是歷史，不再代表目前Next階段。
+**Mint 新 bytes 獨立 static audit（UTC 2026-10-13 12:07）**：APP `677a0c79`／Next 建置 OPS `a0911a78`／原生修補 OPS `51c2db60`，BUILD_ID `PmjYScQDDoJKBr43SLkhd`。既有非作者 reviewer 本人重新計算 `-r2` inventory **`5bfc700a09b63d8144f77df8aa6e65f36f783c9d2296b0643de6979b5eb9c714`**，15 ELF／45 readelf 全數通過、最高 GLIBC_2.30、RPATH 不越界；raw／receipts 見 [獨立 audit 紀錄](mint-native-independent-audit-20261013.md)。原 runtime 的 `831dc44f…` 不可驗新 bytes。這一步是 **n/a-ui static 證據**；Mint／SM native loader、圖片處理、capture 與部署仍未完成，`deployEligible:false`。此 APP 仍 **65 主 route／0 完整 pass／65 pending**，每頁各狀態都待同一份最終產物雙寬亮暗色截圖及獨立 review。source-prep `c70425b0` 的 target 選擇與 frontdoor 工具尚未啟動，不是新 UI 驗收。
 
-**Mint 隔離 runtime 更新（UTC 2026-10-13 10:03）**：APP `677a0c79`／OPS `8e183c35` 真實 SQL／API readiness 與 14/14 投稿／審核整合案例通過，記錄見 [mint-fixture-validation-20261013.md](mint-fixture-validation-20261013.md)。這是 **n/a-ui runtime／source 證據**，不代表 UI pass；同 APP 仍 **0 完整 pass／65 pending**，沒有 BUILD_ID、capture 或部署。首次建置待 babysit 核對 actual receipts，API ready 不等於 build slot 授權。
+**歷史 Mint 隔離 runtime 更新（UTC 2026-10-13 10:03）**：APP `677a0c79`／OPS `8e183c35` 真實 SQL／API readiness 與 14/14 投稿／審核整合案例通過，記錄見 [mint-fixture-validation-20261013.md](mint-fixture-validation-20261013.md)。這是 **n/a-ui runtime／source 證據**，不代表 UI pass；同 APP 仍 **0 完整 pass／65 pending**，沒有 BUILD_ID、capture 或部署。首次建置待 babysit 核對 actual receipts，API ready 不等於 build slot 授權。
 
 **最新授權（Mint 排隊，原 18:50 截止取消）**：SM 不新增 build／capture／restore；tag 原 SM 名額取消，改為第一個等待 Mint 的建置。交付 APP_SHA `677a0c793eeda0c4d850c81ac574c95508d08e0a` 尚未建置，**0 review／0 完整 pass／65 pending**。交接與能力缺口見 [mint-tag-handoff-20261013.md](mint-tag-handoff-20261013.md) 和 `/tmp/babysit/mint-queue/tag.md`；工作持續至原 scope 全部完成，沒有新截止或縮減範圍。以下正常節奏／18:50／SM 建置排隊文字保留為歷史；不可當現行開跑許可。
 
@@ -30,7 +30,7 @@
 | `e68987f`（PSI source freeze，未建置） | **0 review、0 pass，65 pending／missing，全部待重拍**。 | 最新原始碼與source review，沒有新candidate或正式畫面；詳見展開矩陣。 |
 | `ae9e18e`（已建置，待candidate完整驗收） | **1 route loaded scope受審、0完整pass、65完整pending**；002 light loaded無blocking，dark中度可讀性issues。 | 48張實圖不涵蓋全部投稿／審核／錯誤／鍵盤狀態，不能宣稱整站完成。 |
 | `49cdad0`（暗色source修正，未建置） | **0 review、0 pass，65待重拍**。 | 新source/tests PASS不是新UI驗收；不能搬ae9圖替代。 |
-| `677a0c79`（Mint 交付 APP_SHA，未建置） | **0 review、0 完整 pass，65 pending／missing**。 | 原 SM 建置名額已取消，Mint 能力與新產物尚待核對；所有歷史圖不跨 SHA 計 pass。 |
+| `677a0c79`（Mint 已建置，BUILD_ID `PmjYScQDDoJKBr43SLkhd`） | **0 UI review、0 完整 pass，65 pending／missing**。 | 原生 `-r2` 新 inventory 5bfc／15 ELF 獨立重算通過是 n/a-ui；actual loader、最終產物及逐頁截圖尚待完成，不繼承舊圖。 |
 | `0dd38b6`（正式站版本紀錄） | **F1頁面未review**。055只有該SHA的privacy限定scope pass，完整route仍pending。 | privacy限定證據不是F1或全站UI pass；本輪未probe正式站。 |
 
 前一批目標完整 SHA：`2331fa8a136ed0271d1f001cf8a2e780a1b8377d`；65頁逐列待重拍清單見 [f1-recapture-queue.md](ui-review/f1-recapture-queue.md)。本轮未 build／capture／probe／部署。
