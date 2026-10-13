@@ -141,3 +141,40 @@ normalizing trailing-slash candidate inputs. It does not use the account home,
 inherit credentials, or change APP, Next commands, API identity or resource
 gates. Another guarded build is pending independent review and babysit admission;
 no repeated blind retry has been launched.
+
+## Next completed; original runtime native proof blocked
+
+With explicitly admitted OPS a0911a78 and unchanged APP 677a0c79, Next compiled
+in 9.8 seconds, completed TypeScript in 14.9 seconds and generated 64/64 static
+pages in 3.1 seconds. Actual BUILD_ID: `PmjYScQDDoJKBr43SLkhd`. The stage's Mint
+Sharp/ONNX imports completed before runtime derivation. Work tree size is
+1,513,406,464 bytes; exclusive runtime size is 1,004,961,792 bytes. Previous
+failed trees remain retained.
+
+Strict full-artifact ELF inspection rejects Sharp 0.35.5's upstream alternative
+Yarn RPATH escaping the artifact. The actual Mint loader selected its internal
+libvips, but this does not relax the strict proof or prove the SM target. No
+final artifact manifest was published; no SM native loader or browser ran.
+
+A separate reviewed read-only operation acquired the common lock, confirmed
+fresh real Mint/API/SM gates, recomputed Git-pinned source and runtime inventory,
+and released the lock. Observation is retained at Mint
+`/var/lib/observe-worker/tag/private/built-artifact-observation-1791887860520.json`
+and its byte-identical 0600 SM copy
+`/tmp/babysit/mint-queue/tag-built-artifact-observation.json` (8,705,059 bytes).
+Receipt SHA-256: `4ab410dccd3e777654030ba99fb4ae9fd8f541d9c027623ac94220edf493f7e6`.
+Original unmodified runtime inventory SHA-256:
+`831dc44f130c96d039e1747e300135987aeeb229df89df76151004ddcc9d9edb`
+(32,460 entries). This is an observed checksum, not native/UI/deployment approval.
+Final observation gates: all three homepages HTTP 200 and totals
+0.249894/2.734888/0.180161 seconds; Mint load 0.38 and available about 146 GiB.
+
+Next build slot was returned to babysit. Source-only repair tooling preserves
+all originals and makes a new exclusive same-BUILD native runtime, shortens only
+the three exact reviewed Sharp RPATHs, verifies unchanged dependency/version/
+symbol/text contracts, and reruns strict full ELF plus actual Mint/SM loaders.
+The portable tool uses signed Ubuntu metadata and private extraction; it is
+not installed globally. Source tests are mock/parser evidence; no download,
+extraction, native mutation or new Next run has occurred. The implementation and
+real guarded packaging adapter require independent review and admission before
+execution. All 65 UI routes remain pending, no production deployment occurred.
