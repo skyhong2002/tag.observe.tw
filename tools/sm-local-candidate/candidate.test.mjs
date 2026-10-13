@@ -67,3 +67,23 @@ test('installed mysql2 Query and PromisePool work through guards without connect
  const pool=new PromisePool(raw);guardReadOnlyPool(pool,{onFailure:()=>failed++});const result=await pool.query('SELECT 1');assert.deepEqual(result,[[{n:1}],[]]);assert.equal(calls,1);assert.equal(failed,0);
  assert.equal(raw.query('SELECT 1',()=>{}),command);assert.equal(calls,2);assert.throws(()=>pool.query('UPDATE tags SET name=?',['no']));assert.equal(calls,2);assert.equal(failed,1);
 });
+test('Next exact argv may become only pinned title; stable identity never accepts PID reuse or foreign ownership',async()=>{
+ const {runtime,nextTitle,stableChildIdentity,ownIdentity}=await import('./core.mjs');const cwd=runtime+'/web/.next/standalone/web';
+ const owner={name:'next',pid:123,startTicks:'111',uid:1000,parentPid:77,processGroup:77,exe:'/canonical/node',cwd,expectedArgs:['/home/deck/.local/bin/node',cwd+'/server.js']};
+ const actual={pid:123,startTicks:'111',uids:[1000,1000,1000,1000],parentPid:77,processGroup:77,exe:'/canonical/node',cwd,argv:[...owner.expectedArgs]};
+ assert.equal(ownIdentity(owner,actual),true);assert.equal(ownIdentity(owner,{...actual,argv:[nextTitle]}),true);
+ for(const title of ['next-server','next-server (v16.3.7)','next-server (v16.3.6) extra','node'])assert.equal(ownIdentity(owner,{...actual,argv:[title]}),false);
+ assert.equal(ownIdentity({...owner,name:'api'},{...actual,argv:[nextTitle]}),false);
+ for(const patch of [{pid:124},{startTicks:'222'},{parentPid:1},{processGroup:1},{uids:[1000,0,1000,1000]},{exe:'/foreign/node'},{cwd:'/foreign'}]){assert.equal(stableChildIdentity(owner,{...actual,...patch}),false);assert.equal(ownIdentity(owner,{...actual,...patch}),false);}
+ // Cleanup uses proven spawn ownership, independently of a later malformed process.title.
+ assert.equal(stableChildIdentity(owner,{...actual,argv:['wrong-title']}),true);
+});
+test('proc identity reread catches PID reuse during observation without real proc access',async()=>{const {readChildIdentity}=await import('./core.mjs');let reads=0;const fields=Array(20).fill('0');fields[0]='S';fields[1]='77';fields[2]='77';fields[19]='111';const io={readFileSync:p=>{if(p.endsWith('/stat')){reads++;return '123 (node) '+fields.map((v,i)=>i===19&&reads>1?'222':v).join(' ');}if(p.endsWith('/status'))return 'Uid: 1000 1000 1000 1000';if(p.endsWith('/cmdline'))return Buffer.from('next-server (v16.3.6)');assert.fail('unknown proc field');},realpathSync:p=>p.endsWith('/exe')?'/canonical/node':'/canonical/cwd'};assert.throws(()=>readChildIdentity(123,io),/changed/);});
+test('cleanup error still cleans other children then forces worker exit and promptly notifies parent before close',async()=>{
+ const {observeWorkerExit,finishWorkerFailure}=await import('./runner.mjs');const children=[1,2,3].map(pid=>({pid,exitCode:null,signalCode:null})),events=[];
+ try{await cleanupAll(children,{signal:(c,kind)=>{if(c.pid===1)throw Error('wrong stable binding');events.push([c.pid,kind]);},wait:async()=>{for(const child of children.slice(1))child.signalCode='SIGTERM';},record:()=>{}});assert.fail('must failclosed');}catch{finishWorkerFailure({record:()=>events.push('failure-evidence'),exit:code=>events.push(['worker-exit',code])});}
+ assert.deepEqual(events.slice(0,2),[[2,'SIGTERM'],[3,'SIGTERM']]);assert.ok(events.includes('failure-evidence'));assert.deepEqual(events.at(-1),['worker-exit',1]);
+ const child=new EventEmitter();let parentInterrupted=0;observeWorkerExit(child,()=>{parentInterrupted++;});child.emit('exit',1,null);assert.equal(parentInterrupted,1); // No close event: descendants still hold pipes.
+ let code;assert.throws(()=>finishWorkerFailure({record:()=>{throw Error('private write failed');},exit:n=>{code=n;}}),/private write/);assert.equal(code,1);
+ const source=fs.readFileSync(new URL('./runner.mjs',import.meta.url),'utf8');assert.ok(source.includes('observeWorkerExit(child,terminate)'));assert.ok(source.includes('if(!stableChildIdentity(child))'));assert.ok(!source.includes('child.cmdlineSha256=sha(cmd)'));
+});

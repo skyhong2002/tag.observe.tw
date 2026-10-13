@@ -1,5 +1,7 @@
 # F1 SM local resumption — proposed execution only
 
+Actual SM attempts001 and002 failed and were stopped; no capture or deployment resulted. Attempt002 did pass real isolated API readiness and start Next, but process.title invalidated cached argv identity and prevented worker cleanup. Owner verified its exact parent identity and used the existing guard to stop only the dedicated group; all owned PIDs/ports are absent and immutable f166/761 inventory is unchanged. See [actual002 evidence and limits](sm-candidate-next-title-failure-20261014.md). The following source/command plan is not a successful candidate admission.
+
 The user moved build/capture back to SM. APP677/Pmj/f166/761 has already passed actual independently reviewed SM native loader smoke; no rebuild or native rerun is required. All Mint/release/rollback/backup/worktree artifacts remain. Backup timer stays disabled; no restore is run on SM.
 
 Active clean-source checkout: `/home/deck/Projects/tag-sm-f1-release`, based on committed `d68c4fd2408f313f0a707e89723724d14fac176a`, with remote-default ancestor `a89908a650c42a1224d657e6c908d5fd3c7be5a0` fetched before creation. The old incomplete Mint source was preserved/pushed as `816acb78daeb11b6080a87555cd2b4145b21aba7` on `paused/mint-api-additive-20261014`; it is unreviewed/not execution-authorized and is not merged here. Product APP/web/lockfiles stay unchanged from the exact built APP677.
