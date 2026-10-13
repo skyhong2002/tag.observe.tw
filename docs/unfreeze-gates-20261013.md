@@ -31,9 +31,27 @@ blog 超過2秒，因此沒有啟動 build/capture。須等 blog → YT → tag 
 
 1. 在新目標SHA建置成功前，不使用 dba9325 runtime 代驗 e68987f；manifest記錄完整commit、BUILD_ID、frontend PID/cwd、API/worker來源與fixture資料庫身分。矩陣是待拍計畫，所有狀態仍pending。
 2. 沿用隔離fixtures與既有授權，不新增帳號/權限，不登入admin。投稿與審核以隔離fixture/API契約驗證並標示邊界；不能冒充正常帳號或正式DB操作通過。
-3. 新capture runner要在啟動瀏覽器前準備網路層GA/GTM拒絕規則；context routing於任何page/navigation之前安裝，並以瀏覽器外的egress限制涵蓋啟動階段。舊persistent collector在launch後才route，尚不足證明啟動前全程阻擋，**不可直接復用**。不改navigator、webdriver、UA、opt-out/cookie去繞過guard；原生DNT1，保留GPC與所有產品判斷。
+3. 新capture runner使用啟動前已listen的HTTP proxy，僅允許指定http candidate origin；context routing於任何page/navigation之前安裝。舊persistent collector在launch後才route，尚不足證明啟動前全程阻擋，**不可直接復用**。新工具source與loopback測試完成後仍需實際瀏覽器證據，不把proxy程式存在當成已完成零外送capture。不改navigator、webdriver、UA、opt-out/cookie去繞過guard；原生DNT1，保留GPC與所有產品判斷。
 4. 保存完整私有raw network evidence、SHA/BUILD_ID manifest、每批前後uptime及三站TTFB/total、1280×800與390×844及亮暗色截圖；log截斷、capture不完整、版本無法核對均不得pass。network零外送是UI capture防護證據，不是GA收件證據。
 5. 由未撰寫該頁的GPT-6.1 Sol/Opus instance實際看圖，保存model、UTC、SHA、截圖輸入與transcript。65 route逐列記錄，不以source review替代。首頁candidate Lighthouse3次後取score、FCP、LCP、CLS、TBT中位數，保留設定/原始JSON，不量INP、不發合成GA。
 6. review通過後走原有worker先行、私有pending image admission與本機藍綠路由計畫，先可驗證備份與回滾；不更動Cloudflare/WAF。部署後交babysit看正式畫面。只清理本輪新產生且確定不需保留的暫存，所有既有release、rollback、backup、worktree與證據保留。
 
 本批guard與capture budget測試 **16/16通過**，包含本機tiny process group真實STOP/CONT、nice19與orphan cleanup；沒有Next build。installer `bash -n`、helper `node --check`通過。獨立非作者GPT-6.1 Sol source/tool review通過，log：`/home/deck/tag-analysis-private/f1-release/unfreeze-guards-independent-review-20261013.log`，含基底、UTC及逐檔SHA256。此為n/a-ui工具證據；沒有新build、candidate screenshot、Lighthouse或deployment。
+
+
+## 啟動前網路防護準備（第二小批）
+
+`tools/candidate-capture-proxy.cjs` 在瀏覽器啟動前建立127.0.0.1隨機埠proxy，只允許明確指定的canonical HTTP candidate origin。其他host、HTTPS CONNECT、WebSocket upgrade、非GET/HEAD均拒絕；redirect不跟隨。僅串流回應、固定upstream Host、移除hop/proxy headers，10秒exchange timeout。log不含URL、query、Cookie或Authorization。logger失敗會關閉gate與現有連線，後續request不得外送。
+
+只供本機腳本使用的私有新collector（舊檔全部保留）：
+
+- `/home/deck/tag-analysis-private/ui-review/f1/safe-capture-unfreeze-20261013.cjs`
+- `/home/deck/tag-analysis-private/ui-review/f1/unfreeze-resource-gate.mjs`
+
+collector先建立proxy再launch persistent context，設定proxy與`<-loopback>`、禁用QUIC及非proxy WebRTC UDP；保留原生DNT1 Preferences、Sec-GPC、webdriver與產品guards。context.route另阻擋GA/GTM及非同源傳輸。每次budget檢查確認network evidence仍完整；健康sample過20秒刷新、超30秒拒絕。啟動前browser parents必須少於2，過程不得超過2；build不得超過1。它們是抽樣與人工名額交接，不是跨thread原子鎖。
+
+manifest與每筆capture包括UI SHA、BUILD_ID、viewport、light/dark、navigation HTTP/status與耗時；網路上限／log failure／其他操作錯誤會停止並標記networkComplete=false。只讀fixture可供顯示審查，**這個collector不執行真登入、投稿或審核mutation**；完整投稿流程仍需既有隔離candidate測試與獨立畫面review。
+
+獨立review找到並已修正：proxy吞log錯誤仍forward、collector prelaunch log failure後仍可導航、舊/proc掃描吞錯而低估build。回歸測試包含logger always throws時candidate收到0個request及重複close。3/3測試只用loopback mock，未啟動Chromium或接觸Google，不能當成瀏覽器實際零外送證據。獨立非作者GPT-6.1 Sol transcript：`/home/deck/tag-analysis-private/f1-release/unfreeze-proxy-independent-review-20261013.log`，保留初版BLOCKED與修復後判讀，最終source／loopback review為PASS（非UI pass）。
+
+05:04 UTC gate檔：`/home/deck/tag-analysis-private/f1-release/resource-gates/unfreeze-preparation-2026-10-13T05-04-04-784Z.json`。三站200，tag total0.614931秒、blog **4.193238秒**、YT0.300109秒；load3.86、/home73,394,184,192 bytes。仍未通過服務延遲門檻。使用者已明確回覆blog/YT尚未交接，因此本批繼續準備，沒有build/capture/deploy。
