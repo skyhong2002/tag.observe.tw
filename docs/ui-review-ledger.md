@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**匿名唯讀隔離 candidate 已完成啟停（UTC16:15:58–16:28:41；n/a-ui）**：更新期限後真實 guard 執行退出0、兩端完整 inventory `f1660cad…`／manifest `76142c…`不變，自己的3個socket／PID已移除、既有loopback18196保留、鎖釋放。首頁驗證曾拒絕一筆而暫停2.948秒，失敗raw缺口無法確診具體站／值；停止檢查比計畫晚9.726秒，確切關閉毫秒未記錄，不宣稱恰好提前120秒。既有非作者 GPT-6.1 Sol 已核對原始26檔hash、SM PID/socket與本人Mint kernel釋放；review SHA `bb20283c…`、transcript SHA `39219bad…`，結果是有證據限制的服務啟停核對。完整紀錄見[完整紀錄](mint-first-sm-candidate-admission-20261013.md)。未啟動browser／capture／GA；**65主routes／0完整pass／65pending；本批未部署**。下方歷史source與native紀錄不代表UI驗收。
+
 **下一步候選服務 source 已獨立 review（未開跑）**：SM launcher v3＋Mint controller由不同既有 instance 編寫，Root GPT-6.1 Sol獨立source review、16／16 source/mock測試與7 Python compile-only通過；[接線、固定hash與候選命令](mint-first-sm-candidate-admission-20261013.md)。只送匿名唯讀service scope核對，尚無listener／HTTP／browser／截圖證據，不計任何UI pass。**APP677：65 主 routes／0 完整 pass／65 pending；本批未部署**。
 
 **SM 隔離 native r2 已實際通過並獨立複核（UTC14:47–14:51）**：controller `f26cc070…` 依明確核對放行執行退出0；8個 `.node`、Sharp／ONNX 實載成功。SM前後完整 inventory `f1660cad…`／manifest `76142c…` 不變；Mint post驗證亦一致，kernel已釋放。既有非作者本人再唯讀重算SM全部32,459筆，raw／receipt chain／32次RPC與probe驗證通過，詳見 [實際證據](mint-native-independent-audit-20261013.md)。這是 **n/a-ui actual native 證據**，不是圖片完整管線、candidate、截圖或部署；**APP677：65 主 routes／0 完整 pass／65 pending**。下方未執行／失敗內容為各原批次歷史，不代表此次r2結果。本批未部署；candidate與capture命令另待核對。
