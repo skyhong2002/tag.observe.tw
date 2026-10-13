@@ -94,11 +94,71 @@ test('missing or failed readonly cancellation proof never enables accumulating q
  assert.equal((await invoke()).status, 503); assert.equal(calls, 1);
 });
 
-test('concurrent readiness requests cannot start a second identity query', async () => {
- const f = fixture(); let calls = 0; let resolveQuery;
+function shared(f, { timeout = 2000, now = Date.now, getRuntime = () => f.runtime, onDiagnostic, system = { platform: () => 'linux', hostname: () => 'mint', nodeVersion: () => '24.15.0' } } = {}) {
+ const handler = createMintReadinessHandler({ receiptPath: '/private/receipt.json', getRuntime, databaseTimeoutMs: timeout, onDiagnostic }, { io: f.io, uid: 1000, system, now });
+ return async (request = f.request) => { const result = {}; await handler(request, { writeHead: status => { result.status = status; }, end: data => { result.body = JSON.parse(data); } }); return result; };
+}
+const rows = [{ databaseName: 'tag_f1_semantic_test', serverPort: 3306 }];
+const turn = () => new Promise(resolve => setImmediate(resolve));
+test('same verified concurrent requests share one live query and both200; next request starts fresh query', async () => {
+ const f = fixture(); let calls = 0, resolveQuery;
  f.runtime.queryDatabaseIdentity = () => { calls++; return new Promise(resolve => { resolveQuery = resolve; }); };
- const handler = createMintReadinessHandler({ receiptPath: '/private/receipt.json', getRuntime: () => f.runtime }, { io: f.io, uid: 1000, system: { platform: () => 'linux', hostname: () => 'mint', nodeVersion: () => '24.15.0' } });
- const invoke = async () => { let status; await handler(f.request, { writeHead: code => { status = code; }, end: () => {} }); return status; };
- const first = invoke(); await Promise.resolve(); assert.equal(await invoke(), 503); assert.equal(calls, 1);
- resolveQuery([{ databaseName: 'tag_f1_semantic_test', serverPort: 3306 }]); assert.equal(await first, 200);
+ // Bootstrap creates a fresh wrapper per call; stable adapter function identities remain the same.
+ const invoke = shared(f, { getRuntime: () => ({ ...f.runtime, serverAddress: { ...f.runtime.serverAddress } }) });
+ const first = invoke(), second = invoke(); await turn(); assert.equal(calls, 1);
+ resolveQuery(rows); assert.deepEqual((await Promise.all([first, second])).map(r => r.status), [200, 200]);
+ const next = invoke(); await turn(); assert.equal(calls, 2); resolveQuery(rows); assert.equal((await next).status, 200);
 });
+test('same flight has bounded eight waiters; invalid own loopback/source never joins', async () => {
+ const f = fixture(); let calls = 0, resolveQuery;
+ f.runtime.queryDatabaseIdentity = () => { calls++; return new Promise(resolve => { resolveQuery = resolve; }); };
+ const invoke = shared(f), pending = Array.from({ length: 8 }, () => invoke()); await turn();
+ assert.equal((await invoke()).status, 503); assert.equal(calls, 1);
+ assert.equal((await invoke({ ...f.request, socket: { ...f.request.socket, remoteAddress: '100.64.0.1' } })).status, 503);
+ f.files.set('/source/app/src/server.js', 'tampered'); assert.equal((await invoke()).status, 503); f.files.set('/source/app/src/server.js', 'server');
+ resolveQuery(rows); assert.ok((await Promise.all(pending)).every(r => r.status === 200));
+});
+test('different reviewed receipt/DB/runtime identities do not share or queue another SQL query', async () => {
+ for (const kind of ['receipt','metadata','adapter','node']) {
+  const f = fixture(); let calls = 0, resolveQuery, node = '24.15.0';
+  f.runtime.queryDatabaseIdentity = () => { calls++; return new Promise(resolve => { resolveQuery = resolve; }); };
+  const invoke = shared(f, { system: { platform: () => 'linux', hostname: () => 'mint', nodeVersion: () => node } });
+  const first = invoke(); await turn();
+  if (kind === 'receipt') f.receipt.sourceReceiptId = 'another-reviewed-source';
+  if (kind === 'metadata') { f.receipt.database.port = 18307; f.runtime.getConnectionMetadata = () => ({ host: '127.0.0.1', port: 18307, database: 'tag_f1_semantic_test' }); }
+  if (kind === 'adapter') f.runtime.queryDatabaseIdentity = async () => { calls++; return rows; };
+  if (kind === 'node') node = '24.16.0';
+  assert.equal((await invoke()).status, 503); assert.equal(calls, 1);
+  resolveQuery(rows); assert.equal((await first).status, 503);
+ }
+});
+test('all timeout waiters503, one cancellation; no late green or accumulating SQL before query AND cancellation settle', async () => {
+ const f = fixture(); let calls = 0, cancels = 0, resolveQuery, resolveCancel, signal;
+ f.runtime.queryDatabaseIdentity = (sql, options) => { calls++; signal = options.signal; return new Promise(resolve => { resolveQuery = resolve; }); };
+ f.runtime.cancelReadonlyIdentity = options => { cancels++; assert.equal(options.signal, signal); assert.equal(signal.aborted, true); return new Promise(resolve => { resolveCancel = resolve; }); };
+ const invoke = shared(f, { timeout: 5 }), pending = [invoke(), invoke()];
+ const timed = await Promise.all(pending); assert.deepEqual(timed.map(r => r.status), [503,503]); assert.equal(calls,1); assert.equal(cancels,1);
+ assert.equal((await invoke()).status,503); resolveQuery(rows); await turn(); assert.equal((await invoke()).status,503); assert.equal(calls,1);
+ resolveCancel(true); await turn(); f.runtime.queryDatabaseIdentity = async () => { calls++; return rows; };
+ assert.equal((await invoke()).status,200); assert.equal(calls,2); assert.ok(timed.every(r => r.body.ready === false));
+});
+test('failed shared query is not cached; fresh healthy flight recovers', async () => {
+ const f = fixture(); let calls = 0, rejectQuery;
+ f.runtime.queryDatabaseIdentity = () => { calls++; return new Promise((resolve,reject) => { rejectQuery = reject; }); };
+ const invoke = shared(f), pending = [invoke(), invoke()]; await turn(); rejectQuery(Error('private credential never sent'));
+ const failed = await Promise.all(pending); assert.ok(failed.every(r => r.status ===503)); assert.ok(failed.every(r => !JSON.stringify(r.body).includes('credential'))); assert.equal(calls,1);
+ f.runtime.queryDatabaseIdentity = async () => { calls++; return rows; }; const good = await Promise.all([invoke(),invoke()]); assert.ok(good.every(r => r.status===200)); assert.equal(calls,2);
+});
+test('each waiter rechecks current source/bridge/loopback/receipt expiry after shared await', async () => {
+ for (const change of ['source','bridge','loopback','expiry']) {
+  const f=fixture(); let resolveQuery,clock=Date.now(); f.runtime.queryDatabaseIdentity=()=>new Promise(resolve=>resolveQuery=resolve);
+  const invoke=shared(f,{now:()=>clock}),pending=[invoke(),invoke()]; await turn();
+  if(change==='source')f.files.set('/source/app/src/server.js','changed');
+  if(change==='bridge')f.files.set('/bridge/fixture.js','changed');
+  if(change==='loopback')f.runtime.serverAddress.address='0.0.0.0';
+  if(change==='expiry')clock=Date.parse(f.receipt.expiresAt);
+  resolveQuery(rows); assert.ok((await Promise.all(pending)).every(r=>r.status===503));
+ }
+});
+
+test('optional owner enum diagnostics identify private failure phase without credentials/SQL/metadata or new HTTP details',async()=>{const f=fixture(),events=[];f.runtime.queryDatabaseIdentity=async()=>{throw Error('password=mock-private-secret SQL connection metadata');};const invoke=shared(f,{onDiagnostic:e=>events.push(e)});const result=await invoke();assert.deepEqual(result.body,{ready:false,error:'readiness-unavailable'});assert.deepEqual(events,[{schema:'mint-f1-readiness-diagnostic-v1',phase:'database-identity',reason:'identity-query-failed'}]);assert.ok(!JSON.stringify(events).includes('password'));const timeout=fixture(),timeoutEvents=[];timeout.runtime.queryDatabaseIdentity=()=>new Promise(()=>{});await shared(timeout,{timeout:1,onDiagnostic:e=>timeoutEvents.push(e)})();assert.equal(timeoutEvents[0].reason,'identity-timeout');const broken=fixture();broken.runtime.queryDatabaseIdentity=async()=>{throw Error('not-real-secret');};assert.equal((await shared(broken,{onDiagnostic:()=>{throw Error('private sink failed');}})()).status,503);assert.equal((await shared(broken,{onDiagnostic:async()=>{throw Error('async private sink failed');}})()).status,503);await turn();});

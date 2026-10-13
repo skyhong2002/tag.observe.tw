@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {join} from 'node:path';
 import {createServer} from 'node:net';
-import {digest,privateBytes,sourceRoot} from './candidate-contract.mjs';
+import {digest,privateBytes,sourceRoot,validatedAttemptSuffix} from './candidate-contract.mjs';
 import {inventory} from '../mint-f1-artifact.js';
 import {nativeEligibility} from '../native-elf-proof.js';
 export const runtimeRoot='/home/deck/tag-analysis-private/f1-release/mint-native-target-c70425b0/runtime';
@@ -44,8 +44,8 @@ export function candidateTiming(expiresAtMs,now=Date.now()){const cleanupReserve
 export function outerGuardedInvocation(workerArgs){return {bin:'/usr/bin/ionice',args:['-c','3','/usr/bin/nice','-n','19','/home/deck/.local/bin/node',...workerArgs]};}
 
 export const candidateReceiptPins=Object.freeze({app:'677a0c793eeda0c4d850c81ac574c95508d08e0a',ops:'c70425b007bdac9fdbef62b935811ee0d7f30d18',build:'PmjYScQDDoJKBr43SLkhd',inventory:inventoryPin,manifest:manifestPin});
-export function candidateReceiptBinding(input,inputSha256){if(!/^[a-f0-9]{64}$/.test(inputSha256||'')||input.appSha!==candidateReceiptPins.app||input.opsSha!==candidateReceiptPins.ops)throw Error('Fixed input/artifact receipt identity required');return {sessionId:input.sessionId,controlOpsSha:input.controlOpsSha,inputSha256,driverPins:{...input.driverPins},pins:{...candidateReceiptPins}};}
-export function verifyOwnerSessionReceipt(receipt,input,inputSha256){const expected=candidateReceiptBinding(input,inputSha256);const exactMap=(actual,map)=>actual&&Object.keys(actual).length===Object.keys(map).length&&Object.keys(map).every(key=>actual[key]===map[key]);if(receipt.sessionId!==expected.sessionId||receipt.controlOpsSha!==expected.controlOpsSha||receipt.inputSha256!==expected.inputSha256||!exactMap(receipt.driverPins,expected.driverPins)||!exactMap(receipt.pins,expected.pins)||receipt.status!=='owner-session-ended'||receipt.scope!=='SM isolated candidate supervision ended; no Mint capture or UI review'||receipt.deployEligible!==false||receipt.manifestPublished!==false||receipt.uiReview!=='not reviewed'||receipt.originalRuntimeUnchanged!==true||receipt.timing?.cleanupReserveMs!==120000)throw Error('Candidate ended receipt input/source/artifact/scope mismatch');return true;}
+export function candidateReceiptBinding(input,inputSha256){if(!/^[a-f0-9]{64}$/.test(inputSha256||'')||input.appSha!==candidateReceiptPins.app||input.opsSha!==candidateReceiptPins.ops)throw Error('Fixed input/artifact receipt identity required');return {sessionId:input.sessionId,attemptSuffix:validatedAttemptSuffix(input.attemptSuffix),controlOpsSha:input.controlOpsSha,inputSha256,driverPins:{...input.driverPins},pins:{...candidateReceiptPins}};}
+export function verifyOwnerSessionReceipt(receipt,input,inputSha256){const expected=candidateReceiptBinding(input,inputSha256);const exactMap=(actual,map)=>actual&&Object.keys(actual).length===Object.keys(map).length&&Object.keys(map).every(key=>actual[key]===map[key]);if((receipt.attemptSuffix??'')!==expected.attemptSuffix||receipt.sessionId!==expected.sessionId||receipt.controlOpsSha!==expected.controlOpsSha||receipt.inputSha256!==expected.inputSha256||!exactMap(receipt.driverPins,expected.driverPins)||!exactMap(receipt.pins,expected.pins)||receipt.status!=='owner-session-ended'||receipt.scope!=='SM isolated candidate supervision ended; no Mint capture or UI review'||receipt.deployEligible!==false||receipt.manifestPublished!==false||receipt.uiReview!=='not reviewed'||receipt.originalRuntimeUnchanged!==true||receipt.timing?.cleanupReserveMs!==120000)throw Error('Candidate ended receipt input/source/artifact/scope mismatch');return true;}
 
 export async function stopBeforeCheckpoint(stop,checkpoint){await stop();return checkpoint('planned-stop');}
 

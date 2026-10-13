@@ -3,7 +3,9 @@ export const origin='http://100.85.214.25:18196';
 export const MiB=1024**2,GiB=1024**3;
 export const pins=Object.freeze({app:'677a0c793eeda0c4d850c81ac574c95508d08e0a',ops:'c70425b007bdac9fdbef62b935811ee0d7f30d18',build:'PmjYScQDDoJKBr43SLkhd',inventory:'f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7',manifest:'76142c7930cbd2e471f02cf68130fa01acbfb54d2c6a4309fc8198185987e7e0'});
 export const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+export function validatedAttemptSuffix(value=''){if(typeof value!=='string'||! /^(?:|-r(?:[2-9]|[1-9][0-9]{1,2}))$/.test(value))throw Error('Strict optional retry suffix required');return value;}
 export function validateInput(input,now=Date.now()){
+ validatedAttemptSuffix(input.attemptSuffix);
  const hex=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
  if(input.schema!=='mint-anonymous-batch-capture-v1'||input.reviewed!==true||input.actor!=='anonymous'||input.origin!==origin||JSON.stringify(input.pins)!==JSON.stringify(pins)||!Number.isFinite(input.expiresAtMs)||input.expiresAtMs<=now||input.expiresAtMs-now>9*60000||!/^batch-(?!000)[0-9]{3}$/.test(input.newCandidateSessionId)||!Number.isFinite(input.candidatePlannedStopAtMs)||input.expiresAtMs+60000>input.candidatePlannedStopAtMs)throw Error('Fresh independent capture/new candidate session admission required');
  if(!Array.isArray(input.paths)||input.paths.length<1||input.paths.length>4||new Set(input.paths).size!==input.paths.length||input.paths.some(path=>!validRoute(path))||!Array.isArray(input.ledgerPaths)||input.paths.some(path=>!input.ledgerPaths.includes(path)))throw Error('Only reviewed existing anonymous ledger routes permitted');

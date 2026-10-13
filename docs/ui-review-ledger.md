@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**最新執行／部署策略（2026-10-13 UTC19:31–19:36）**：babysit放行batch001後，scope不變重新生成期限；a4713d9c guard取鎖並開始隔離candidate，但在before-next時真API readiness unavailable使lease pause，SM只啟動tunnel後收尾。未啟動Next／frontdoor／Chromium，沒有16圖、HAR或UI成功證據。原始223檔副本、退出與owner實際PID／socket／鎖收尾已由既有非作者離線核對，詳見[batch001失敗證據](mint-batch001-failure-20261014.md)。**APP677仍65主routes／0完整pass／65pending，未部署**。依使用者最新決定：同一產物的native、privacy/no-store與SSR/RSC技術检查，以及首頁與主要新功能candidate實圖非作者無阻擋後，即送exact部署／回滾命令＋fresh probe給babysit；其餘頁面部署後續審，維持pending，不宣稱整體完成。尚未取得部署許可。
+
 **下一批匿名截圖計畫（尚未授權開跑）**：依65個主route逐列盤點，53個匿名頁各拍1280／390×light／dark，共212張，按每批4頁估14批。12個admin／ReaderGate會員頁另列pending；003圖片頁只拍匿名登入提示，投稿／投票仍pending。完整route、例URL、redirect與動態資料缺口見[`mint-anonymous-capture-plan.json`](ui-review/mint-anonymous-capture-plan.json)。每批實測新probe與新15分鐘期限、DNT=1、GA/GTM啟動前網路拒絕、實際GPC／SHA／BUILD_ID／原始網路紀錄，完成後另由既有非作者逐圖review；目前無新截圖、無UI pass。硬上限14×96MiB＝1.3125GiB，典型圖檔估106MiB，另留profile與network空間。**65主routes／0完整pass／65pending；未部署。**
 
 **匿名唯讀隔離 candidate 已完成啟停（UTC16:15:58–16:28:41；n/a-ui）**：更新期限後真實 guard 執行退出0、兩端完整 inventory `f1660cad…`／manifest `76142c…`不變，自己的3個socket／PID已移除、既有loopback18196保留、鎖釋放。首頁驗證曾拒絕一筆而暫停2.948秒，失敗raw缺口無法確診具體站／值；停止檢查比計畫晚9.726秒，確切關閉毫秒未記錄，不宣稱恰好提前120秒。既有非作者 GPT-6.1 Sol 已核對原始26檔hash、SM PID/socket與本人Mint kernel釋放；review SHA `bb20283c…`、transcript SHA `39219bad…`，結果是有證據限制的服務啟停核對。完整紀錄見[完整紀錄](mint-first-sm-candidate-admission-20261013.md)。未啟動browser／capture／GA；**65主routes／0完整pass／65pending；本批未部署**。下方歷史source與native紀錄不代表UI驗收。
