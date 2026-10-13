@@ -50,7 +50,7 @@ test('absent private receipt does not become simulated candidate evidence',()=>a
 test('capture stop request uses actual candidate identity, not arbitrary PID or input',()=>{
  const r={schema:'sm-f1-candidate-started-v1',sessionId:'sm-batch-001',inputSha256:'a'.repeat(64),owner:{pid:123,startTicks:'456'}};
  assert.deepEqual(ownStopRequest(r,now),{schema:'sm-f1-candidate-stop-v1',sessionId:r.sessionId,inputSha256:r.inputSha256,ownerPid:123,ownerStartTicks:'456',requestedAtMs:now});
- assert.throws(()=>ownStopRequest({...r,sessionId:'sm-batch-002'},now));assert.throws(()=>ownStopRequest({...r,inputSha256:'invalid'},now));
+ assert.throws(()=>ownStopRequest({...r,sessionId:'../sm-batch-002'},now));assert.throws(()=>ownStopRequest({...r,inputSha256:'invalid'},now));
 });
 
 test('browser watchdog lease binds original start, exact input/parent and age',()=>{
@@ -79,4 +79,10 @@ test('capture and watchdog health gates use three originals and reject one hidde
  const s=sample(),i=s.sites.findIndex(r=>r.url.includes('blog'));s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,8,3],{startedAtMs:now});requireGate(s,{now});
  s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,8,9],{startedAtMs:now});assert.throws(()=>requireGate(s,{now}));
  for(const patch of [{status:500},{status:301},{exitCode:28}]){s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,3,3],{startedAtMs:now,patches:[{},patch]});assert.throws(()=>requireGate(s,{now}));}
+});
+
+test('retry uses a new three-digit namespace and binds all evidence paths to it',()=>{
+ const q=input(),id='sm-batch-002',next={...q,sessionId:id,job:q.job.replace('sm-batch-001',id),startedReceiptPath:q.startedReceiptPath.replace('sm-batch-001',id)};validateInput(next,now);
+ assert.throws(()=>validateInput({...next,startedReceiptPath:q.startedReceiptPath},now));assert.throws(()=>validateInput({...next,job:q.job},now));
+ for(const bad of ['sm-batch-000','sm-batch-1000','../sm-batch-002'])assert.throws(()=>validateInput({...next,sessionId:bad},now));
 });

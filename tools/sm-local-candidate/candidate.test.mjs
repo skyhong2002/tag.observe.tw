@@ -47,3 +47,23 @@ test('median3 permits one slow200 but rejects slow median and any non200/curl er
  const forged={...good,sites:[...good.sites]};forged.sites[1]={...good.sites[1],total:2};assert.throws(()=>validateGate(forged));
 });
 test('shared median collector pure mock records all9 attempts raw-first with at most3 simultaneous curls',async()=>{const {collectHomepageTrials,requireHomepageMedian}=await import('../homepage-median-probe.mjs');let active=0,peak=0,clock=0;const commands=[],events=[];const rows=await collectHomepageTrials({urls:Object.keys(budgets),now:()=>clock++,record:r=>{events.push(r);},executeCommand:async(bin,args)=>{active++;peak=Math.max(peak,active);commands.push({bin,args});await Promise.resolve();active--;return {stdout:Buffer.from(homepage(args.at(-1)).trials[0].raw.stdoutBase64,'base64'),stderr:Buffer.alloc(0)};}});assert.equal(commands.length,9);assert.ok(peak<=3);for(const command of commands){assert.equal(command.bin,'/usr/bin/curl');assert.ok(command.args.includes('DNT: 1'));assert.ok(command.args.includes('Accept: text/html'));assert.ok(!command.args.includes('-L'));}for(const row of rows){requireHomepageMedian(row,budgets[row.url]);for(let index=1;index<=3;index++){const raw=events.findIndex(e=>e.type==='homepage-trial-raw'&&e.url===row.url&&e.index===index),decoded=events.findIndex(e=>e.type==='homepage-trial'&&e.url===row.url&&e.index===index);assert.ok(raw>=0&&raw<decoded);assert.equal(row.trials[index-1].cfCacheStatus,'HIT');assert.equal(row.trials[index-1].bytes,1234);}}assert.equal(events.length,18);});
+
+test('mysql2 callback Query then/catch traps are not treated as promises',async()=>{
+ const {guardReadOnlyPool}=await import('./api.mjs');let trapCalls=0,failures=0,callbackCalls=0;
+ const command={then(){trapCalls++;throw Error('mysql2 callback Query is not a promise');},catch(){trapCalls++;throw Error('mysql2 callback Query is not a promise');}};
+ const raw={query(sql,callback){callback(null,[[{n:1}],[]]);return command;},execute(sql,params,callback){callback(null,[[{n:1}],[]]);return command;}};
+ const pool={pool:raw,query(sql){return new Promise((ok,fail)=>raw.query(sql,(error,value)=>error?fail(error):ok(value)));}};guardReadOnlyPool(pool,{onFailure:()=>failures++});
+ assert.equal(raw.query('SELECT 1',()=>callbackCalls++),command);assert.equal(raw.execute('SELECT ?', [1],()=>callbackCalls++),command);assert.equal(callbackCalls,2);
+ const value=await pool.query('SELECT 1');assert.equal(value[0][0].n,1);assert.equal(trapCalls,0);assert.equal(failures,0);
+ assert.throws(()=>raw.query('INSERT INTO tags VALUES (1)',()=>{}));assert.equal(failures,1);
+});
+
+test('installed mysql2 Query and PromisePool work through guards without connecting SQL',async()=>{
+ const {createRequire}=await import('node:module'),{runtime}=await import('./core.mjs'),{guardReadOnlyPool}=await import('./api.mjs');
+ const require=createRequire(runtime+'/package.json'),Query=require(runtime+'/node_modules/mysql2/lib/commands/query.js'),PromisePool=require(runtime+'/node_modules/mysql2/lib/promise/pool.js');
+ const raw=new EventEmitter();raw.config={connectionConfig:{trace:false}};let calls=0,failed=0;
+ const command=new Query({sql:'SELECT 1',values:[]},()=>{});assert.equal(typeof command.then,'function');assert.equal(typeof command.catch,'function');
+ raw.query=function(sql,args,callback){calls++;const done=typeof args==='function'?args:callback;done(null,[{n:1}],[]);return command;};
+ const pool=new PromisePool(raw);guardReadOnlyPool(pool,{onFailure:()=>failed++});const result=await pool.query('SELECT 1');assert.deepEqual(result,[[{n:1}],[]]);assert.equal(calls,1);assert.equal(failed,0);
+ assert.equal(raw.query('SELECT 1',()=>{}),command);assert.equal(calls,2);assert.throws(()=>pool.query('UPDATE tags SET name=?',['no']));assert.equal(calls,2);assert.equal(failed,1);
+});

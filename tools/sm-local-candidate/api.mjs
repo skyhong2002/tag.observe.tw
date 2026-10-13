@@ -1,4 +1,5 @@
 // Anonymous SM isolated fixture API: no production relay, real login or queue.
+import{types}from'node:util';
 import http from'node:http';import * as fs from'node:fs';import{createRequire}from'node:module';import{join,resolve}from'node:path';import{pathToFileURL}from'node:url';
 import{runtime,pins,dbPath,privateBytes,sha,validateInput,verifyControl,ticks}from'./core.mjs';
 export function validateDatabase(c){if(!c||Object.keys(c).some(k=>!['user','password','host','port','database'].includes(k))||!['127.0.0.1','localhost'].includes(c.host)||Number(c.port)!==18306||c.database!=='tag_f1_semantic_test'||typeof c.user!=='string'||!c.user||typeof c.password!=='string')throw Error('Existing isolated fixture SQL configuration required');return c;}
@@ -12,7 +13,7 @@ export function guardReadOnlyPool(pool,{onFailure=()=>{}}={}){
  const guarded=new WeakSet();
  const wrap=target=>{
   if(!target||typeof target!=='object'||guarded.has(target))return target;guarded.add(target);
-  for(const name of ['query','execute'])if(typeof target[name]==='function'){const original=target[name];target[name]=function(...args){try{assertSelect(args[0]);const callback=typeof args.at(-1)==='function'?args.at(-1):null;if(callback)args[args.length-1]=function(error,...rest){if(error)onFailure();return callback(error,...rest);};const value=original.apply(this,args);return value?.then?value.catch(error=>{onFailure();throw error;}):value;}catch(error){onFailure();throw error;}};}
+  for(const name of ['query','execute'])if(typeof target[name]==='function'){const original=target[name];target[name]=function(...args){try{assertSelect(args[0]);const callback=typeof args.at(-1)==='function'?args.at(-1):null;if(callback)args[args.length-1]=function(error,...rest){if(error)onFailure();return callback(error,...rest);};const value=original.apply(this,args);return types.isPromise(value)?value.catch(error=>{onFailure();throw error;}):value;}catch(error){onFailure();throw error;}};}
   if(typeof target.getConnection==='function'){const original=target.getConnection;target.getConnection=function(...args){
    if(typeof args.at(-1)==='function'){const callback=args.pop();return original.apply(this,[...args,(error,connection)=>{if(error)return callback(error);let guardedConnection;try{guardedConnection=wrap(connection);}catch(failure){return callback(failure);}return callback(null,guardedConnection);}]);}
    return Promise.resolve(original.apply(this,args)).then(wrap);

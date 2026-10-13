@@ -32,7 +32,7 @@ export function validateInput(q, now = Date.now()) {
       !/^[a-f0-9]{40}$/.test(q.controlOpsSha || '') || !/^[a-f0-9]{64}$/.test(q.startedReceiptSha256 || '') ||
       !Number.isFinite(q.expiresAtMs) || q.expiresAtMs <= now || q.expiresAtMs - now > 540000 ||
       q.actor !== 'anonymous' || q.origin !== ORIGIN || JSON.stringify(q.routes) !== JSON.stringify(ROUTES) ||
-      !/^sm-batch-001$/.test(q.sessionId || '') ||
+      !/^sm-batch-(?!000)[0-9]{3}$/.test(q.sessionId || '') ||
       q.job !== ROOT + '/sm-capture-' + q.sessionId ||
       q.startedReceiptPath !== ROOT + '/mint-native-target-c70425b0/local-candidate-' + q.sessionId + '/candidate-started.json' ||
       !Number.isInteger(q.additionalBuilds) || q.additionalBuilds < 0 || q.additionalBuilds > 1 ||
@@ -66,7 +66,7 @@ export function requireCandidate(q) {
   return r;
 }
 export function ownStopRequest(r,now=Date.now()) {
-  if(r.schema!=='sm-f1-candidate-started-v1'||r.sessionId!=='sm-batch-001'||!/^[a-f0-9]{64}$/.test(r.inputSha256||'')||!Number.isInteger(r.owner?.pid)||!/^[0-9]+$/.test(String(r.owner.startTicks)))throw Error('Actual bound session stop only');
+  if(r.schema!=='sm-f1-candidate-started-v1'||!/^sm-batch-(?!000)[0-9]{3}$/.test(r.sessionId||'')||!/^[a-f0-9]{64}$/.test(r.inputSha256||'')||!Number.isInteger(r.owner?.pid)||!/^[0-9]+$/.test(String(r.owner.startTicks)))throw Error('Actual bound session stop only');
   return {schema:'sm-f1-candidate-stop-v1',inputSha256:r.inputSha256,sessionId:r.sessionId,ownerPid:r.owner.pid,ownerStartTicks:r.owner.startTicks,requestedAtMs:now};
 }
 export function assertSocketOwner(child) {
@@ -180,7 +180,7 @@ export async function capture(inputPath, expectedInputSha) {
     await check(true);
     // Independent watchdog exists before Chromium. It can only stop this new profile.
     const wd=join(q.job,'watchdog.json');
-    fs.writeFileSync(wd,JSON.stringify({schema:'sm-capture-watchdog-v1',job:q.job,inputPath:resolve(inputPath),inputSha256:expectedInputSha,profile,parent:{pid:parent.pid,startTicks:parent.startTicks},expiresAtMs:q.expiresAtMs}),{flag:'wx',mode:0o600});
+    fs.writeFileSync(wd,JSON.stringify({schema:'sm-capture-watchdog-v1',sessionId:q.sessionId,job:q.job,inputPath:resolve(inputPath),inputSha256:expectedInputSha,profile,parent:{pid:parent.pid,startTicks:parent.startTicks},expiresAtMs:q.expiresAtMs}),{flag:'wx',mode:0o600});
     watchdog=spawn(process.execPath,[fileURLToPath(import.meta.url),'--watchdog',wd],{stdio:'ignore',env:{PATH:'/home/deck/.local/bin:/usr/bin:/bin',HOME:'/nonexistent',LANG:'C'}});
     watchdog.on('error',stop);
     await waitWatchdog(watchdog,()=>{
@@ -276,7 +276,7 @@ export async function watchdogLifecycle({step,stop,record=()=>{},sleep=ms=>new P
 }
 async function watchdog(path){
   const q=JSON.parse(privateBytes(path));
-  if(q.schema!=='sm-capture-watchdog-v1'||q.job!==ROOT+'/sm-capture-sm-batch-001'||q.profile!==q.job+'/profile'||path!==q.job+'/watchdog.json'||!/^[a-f0-9]{64}$/.test(q.inputSha256||'')||!Number.isFinite(q.expiresAtMs)||q.expiresAtMs<=Date.now()||q.expiresAtMs-Date.now()>540000)throw Error('Own new profile only');
+  if(q.schema!=='sm-capture-watchdog-v1'||!/^sm-batch-(?!000)[0-9]{3}$/.test(q.sessionId||'')||q.job!==ROOT+'/sm-capture-'+q.sessionId||q.profile!==q.job+'/profile'||path!==q.job+'/watchdog.json'||!/^[a-f0-9]{64}$/.test(q.inputSha256||'')||!Number.isFinite(q.expiresAtMs)||q.expiresAtMs<=Date.now()||q.expiresAtMs-Date.now()>540000)throw Error('Own new profile only');
   const me=processIdentity(process.pid),parent=processIdentity(q.parent.pid);if(parent.pid!==process.ppid||parent.uid!==process.getuid()||parent.startTicks!==q.parent.startTicks)throw Error('Own capture parent required');
   const registry=ownershipRegistry(q.profile);let admitted,ready=false,signalled=false;
   const record=row=>fs.appendFileSync(join(q.job,'watchdog.raw.jsonl'),JSON.stringify({utc:new Date().toISOString(),...row})+'\n',{mode:0o600});
@@ -284,7 +284,7 @@ async function watchdog(path){
   try{await watchdogLifecycle({
     step:async()=>{
       const input=privateBytes(q.inputPath);if(sha(input)!==q.inputSha256)throw Error('Watchdog input changed');
-      if(!admitted)admitted=validateInput(JSON.parse(input));
+      if(!admitted){admitted=validateInput(JSON.parse(input));if(admitted.sessionId!==q.sessionId||admitted.job!==q.job)throw Error('Watchdog input namespace differs');}
       registry.snapshot();
       const p=processIdentity(q.parent.pid);
       if(signalled||p.uid!==process.getuid()||p.startTicks!==String(q.parent.startTicks)||['Z','X','T','t'].includes(p.state)||Date.now()>=q.expiresAtMs){record({event:'own-watchdog-stop',reason:'parent-signal-identity-state-or-deadline'});return false;}
