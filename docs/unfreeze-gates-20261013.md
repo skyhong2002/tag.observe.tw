@@ -1,5 +1,7 @@
 # F1 / PSI 解凍後的 candidate 準備
 
+> **最新優先**：使用者取消衝刺期限並明確批准blog6.17秒/tagYT2秒相對閘門，但全站仍1build、2browser，順序blog→YT→tag等通知。以下兩build訊息已撤回，只作歷史；目前來源／驗收／缺口以 [candidate-normal-handoff-20261013.md](candidate-normal-handoff-20261013.md) 為準。
+
 > **Sprint override:** 使用者於2026-10-13再次明確授權立即建置，到UTC07:10。本機tag/blog最多2個建置，YT遠端不計；三站門檻tag2秒/blog6秒/YT2秒。舊名額順序及blog2秒門檻不再適用。其餘disk40/30、load12、browser2、DNT與隱私規則維持。
 
 使用者於台北 2026-10-13 12:5x 明確解凍；本文件取代舊文件的「仍全面凍結」、113 GiB capture floor、10 GiB build floor 及 load 16 規則。歷史量測和截圖不改寫。解凍不等於 tag 已取得建置名額。

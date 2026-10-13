@@ -44,7 +44,6 @@
     "planning_upper_bound": 10848,
     "final_evidence_headroom": 8
   },
-  "freeze": "not lifted",
   "applicability_cells": {
     "applicable": 496,
     "conditional": 1300,
@@ -53,6 +52,13 @@
   "capture_plan_upper_bound": 1796,
   "source_read": "65 route page source files and named delegated components; classifications do not authorize capture",
   "independent_review": "/home/deck/tag-analysis-private/performance/20261013/psi-independent-review.log",
-  "source_binding_utc": "2026-10-13T04:37:32.401380+00:00",
-  "matrix_sha256": "245e65e26b6a7366d4ff35ae0c579b3e1e3a850161ab1f7a8a2834003ad5f4eb"
+  "source_binding_utc": "2026-10-13T05:44:48.075952+00:00",
+  "matrix_sha256": "42ada93475fae7b98fd8d9706290ca66e9afa5c18ff097f1260f1f7edc5a953f",
+  "latest_source_sha": "49cdad0bd1000fe69d2281fd312fc18d89fab2bc",
+  "latest_source_update_utc": "2026-10-13T05:44:48.075952+00:00",
+  "latest_source_status": "unbuilt; all cells pending; bind actual next candidate commit/BUILD_ID separately; no ae9 UI pass transferred",
+  "historical_source_sha": "e68987fb2e5adaf92c07a92931b04ebb089710a6",
+  "original_evidence_scope": "utc/base_sha/source_sha/operation/validation/independent_review/freeze describe the original historical matrix; latest_source_* and matrix_sha256 describe the current pending rebind",
+  "historical_freeze": "not lifted",
+  "current_policy": "explicit user baseline max(2,2*baseline): 2/6.17/2; global one build including remote; blog then YT then tag; no current disk freeze"
 }
