@@ -1,6 +1,6 @@
 # F1 解凍後待重拍清單（不是 review 證據）
 
-目標 source SHA：`2331fa8a136ed0271d1f001cf8a2e780a1b8377d`。此清單只排程缺少的驗收；沒有新增 capture、build、probe 或任何 pass。歷史圖仍保留在主 ledger，不能替代本 SHA。
+前一批 source SHA：`2331fa8a136ed0271d1f001cf8a2e780a1b8377d`（以下65列保留歷史排程）。最新目標 `e68987fb2e5adaf92c07a92931b04ebb089710a6` 的展開矩陣與預算見後文。此清單只排程缺少的驗收；沒有新增 capture、build、probe 或任何 pass。歷史圖仍保留在主 ledger，不能替代本 SHA。
 
 **65 個主 route：0 review、0 pass、65 pending／missing（待重拍）。** 9 個平行 notes 實作與 3 個邊界狀態另外列在主 ledger，不增加 route 數。每個 route 都需要 1280 與 390 真圖、實際 URL／SHA／UTC、啟動前網路層封鎖 GA/GTM 與原始 network artifact，以及非作者的獨立 GPT-6.1 Sol／Opus review transcript。
 
@@ -84,3 +84,32 @@
 - 每頁：首屏到頁尾、導航、responsive、資料來源／計算方式、loading／empty／error、鍵盤操作及圖片載入；notes 與 404／framework error 另驗。共用 component review 不取代逐頁。
 
 非 UI 項目只列 n/a-ui：`app/test/f1-offline-contract.spec.ts`、`app/test/picture-vote-race.spec.ts`、`web/test/f1-frontend-flow.spec.ts`、`web/test/four-issue-ui.spec.ts` 等 mock/source 證據，不算此表完成數。
+
+
+## 離線展開矩陣與解凍後容量計畫（2026-10-13）
+
+新增計畫 source：`e68987fb2e5adaf92c07a92931b04ebb089710a6`，本轮已凍結此產品source（未建置）；本節沒有修改上方 `2331fa8` 未建置歷史紀錄。離線盤點基底為 `ed1607b8f9a695b3035238375842d80defb76948`。逐格清單：[f1-recapture-matrix.csv](f1-recapture-matrix.csv)。
+
+主 route 仍為 **65**；CSV共2312個計畫格：route 2180、notes 108、邊界24。逐格新增 `applicability`、`source_path`、`applicability_reason`、`capture_scope`，回讀65個page source及列名子元件後分類為 **496 applicable、1300 conditional、516 n/a**。applicable僅表示source確定有對應UI／導航義務；conditional表示待最終source與既有fixture逐格確認，**尚不能認定可capture**；n/a不擷取、不給pass。0 review、0 pass。每個state均列1280×800／390×844 × light／dark四格。
+
+14個直接redirect（含既有admin aliases與media articles）原本自身loading／empty／error／image／many等格保留但改n/a，另列導航與query保留驗證及目的地UI；`capture_scope=destination-ui`必須歸屬目的地route與SHA，不能宣稱redirect有自身UI。條件redirect的article/search/feature維持本身UI狀態conditional。固定API文件／方法頁的非同步集合狀態為n/a，設定／opt-out無empty集合及自身圖片狀態為n/a，其表單error等仍conditional。公開動態page無page role gate者permission-insufficient為n/a；tag投稿與picture分支另conditional。
+
+notes catch-all `NoNotes`實際return null，anchor內容／自身replacement為n/a，只保留條件式切頁clear驗證；其餘8個notes的實際內容applicable，切頁兩端選例conditional。3個not-found/framework邊界均conditional，必須先證明fixture真正觸發對應邊界。Admin只用已授權fixture或既有session，不新增帳號／權限。分類不是UI驗收，正常loaded不得用error圖替代。
+
+### 僅 metadata 的歷史容量樣本
+
+私人根目錄 `/home/deck/tag-analysis-private/ui-review/f1/`，只列目錄及 stat 既有正常檔案（跳過symlink），不讀圖、HAR或network內容、不hash大檔。PNG/JPG/JPEG/WebP與HAR／檔名含network的JSON/JSONL分組；p50/p95採nearest-rank。這是歷史混合版本／分段／批次樣本，不能當每格等尺寸或HAR每張分攤。
+
+| 樣本 | 檔數 | 總bytes | p50 bytes | p95 bytes | 最大bytes |
+|---|---:|---:|---:|---:|---:|
+| image | 1067 | 261758636 | 102988 | 957399 | 5322787 |
+| HAR | 20 | 51766842 | 330339 | 7385313 | 31304899 |
+| network JSON/JSONL | 237 | 8073728 | 20855 | 77377 | 797124 |
+
+總樣本1324檔／321599206 bytes（306.701 MiB）。HAR最大29.855 MiB且歷史圖最大5.076 MiB，表示p95不是硬上限；使用現有小批guard的 **每張4 MiB上限、超限拒存並分段重規劃**，每批最多16張。每批保留32 MiB profile／network／logs＋16×4 MiB圖片＝**96 MiB**，另依既有工具保留8 MiB final-evidence headroom，不計為可消耗額度。未來每批須實測artifact總量並驗完整network證據；歷史HAR的p95 7.043 MiB不表示允許本模式新增HAR，凍結小批模式原規定2 MiB append-only raw log、無HAR仍保留。
+
+容量只作規劃上限，不能稱2312格全可capture或最低136批。排除516個n/a，496個source確定義務的單張配置為31批／2976 MiB（2.906 GiB）；再把1300個尚未確認conditional全部計入，規劃範圍上限1796格，ceil(1796÷16)＝113批，每批96 MiB，共 **10848 MiB（10.594 GiB）配置上限**。這是假設每格一張的估算配置，不是實際artifact硬上限：條件不成立會減少，長頁分段／重試／新增狀態會增加，屆時必須重算。redirect導航artifact與目的地UI分別記錄、可去重但不預先抵扣。image p95的純圖比較為1796×957399＝1719488604 bytes（1.601 GiB），不替代保守批額。build／release／Docker／匯出皆未計入。
+
+**目前全面凍結未解除。10 GiB最低線不能替代協調者明確解凍、當時磁碟可用量／backup保留線、batch budget、全域browser/build數量、load與三站HTTP/TTFB重新gate。** 本節未做df、capture、build、probe、DB、清理、staging或backup操作；没有新UI review。解凍後須用即時headroom及本批預算決定可否執行，不能以本文件或歷史112.756／107.80 GiB樣本當當前許可。
+
+首頁PSI候選另加7個conditional狀態各兩寬×兩色（28格）：camp-summary pending／unavailable-retry、圖片missing/error fallback、rankNew/rankUp與hover、topic72／story65／hero75圖片高DPR清晰度及載入先後；fixture及最終source仍待確認，無新增capture或UI pass。

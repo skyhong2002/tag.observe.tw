@@ -27,3 +27,5 @@
 先關新投稿 admission並阻止新 avatar job產生，drain新 worker；將公開閱讀流量切回健康舊 gateway+web，同時保留新 pending-image worker或暫停 avatar consumer。**不得在含新投稿job的queue直接恢復舊worker**：舊發布政策可能直接 publish。確定所有待審job及候選仍私有、隔離/處置方案已審核後，才允許舊 consumer處理相容工作；否則保持該consumer停用，明示功能降級。回切後驗舊SHA、服務可用、cache/privacy與新資料保留，記錄失敗原因及下一次重新freeze所需項目。
 
 提交狀態：本分工未 commit／未 push，由主協調者整合。部署狀態：未部署；這是解凍後計畫，沒有新runtime／browser／正式驗證。
+
+後續 PSI 離線批已整合至產品 source `e68987fb2e5adaf92c07a92931b04ebb089710a6`（未建置）。目前候選目標以此版為準；若解凍後整合新的遠端修改，再重新鎖定唯一 SHA。逐頁兩寬／亮暗色及條件狀態以 `docs/ui-review/f1-recapture-matrix.csv` 為準，仍為 pending；容量配置與條件限制見主 ledger，不能拿 source review 當作縮減頁面驗收的依據。PSI 只在解凍後同 SHA candidate 跑3次，原始設定及指標要求见 `docs/psi-mobile-offline-20261013.md`。
