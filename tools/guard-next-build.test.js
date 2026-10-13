@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { EventEmitter } from 'node:events';
 import test from 'node:test';
-import { buildDecision, guardedBuild, probeServices, sites, GiB } from './guard-next-build.js';
+import { buildDecision, guardedBuild, probeServices, sites, siteBudgetsSeconds, GiB } from './guard-next-build.js';
 
 const sample = (overrides = {}) => ({
   load1: 5, homeAvailableBytes: 50 * GiB,
@@ -19,7 +19,9 @@ test('load, disk and time boundaries; resume requires healthy probes, load <10, 
     assert.equal(buildDecision(sample({ load1, homeAvailableBytes: disk * GiB }), true), decision);
   }
   for (const url of sites) {
-    for (const [patch, decision] of [[{ total: 2 }, 'run'], [{ total: 2.001 }, 'pause'], [{ status: 500 }, 'pause'], [{ exitCode: 28 }, 'pause']]) {
+    const budget = url === 'https://blog.observe.tw/' ? 6 : 2;
+    assert.equal(siteBudgetsSeconds[url], budget);
+    for (const [patch, decision] of [[{ total: budget }, 'run'], [{ total: budget + 0.001 }, 'pause'], [{ status: 500 }, 'pause'], [{ exitCode: 28 }, 'pause']]) {
       const s = sample(); Object.assign(s.sites.find((entry) => entry.url === url), patch);
       assert.equal(buildDecision(s, false), decision);
     }
@@ -200,5 +202,13 @@ test('a successful leader exit cannot leave a worker running without the guard',
       /* no remaining group */
     }
     rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+
+test('blog may take up to six seconds while tag and YouTube retain two seconds', () => {
+  for (const url of sites) {
+    const s = sample(); s.sites.find((entry) => entry.url === url).total = 3;
+    assert.equal(buildDecision(s, false), url === 'https://blog.observe.tw/' ? 'run' : 'pause');
   }
 });

@@ -1,5 +1,7 @@
 # F1 / PSI 解凍後的 candidate 準備
 
+> **Sprint override:** 使用者於2026-10-13再次明確授權立即建置，到UTC07:10。本機tag/blog最多2個建置，YT遠端不計；三站門檻tag2秒/blog6秒/YT2秒。舊名額順序及blog2秒門檻不再適用。其餘disk40/30、load12、browser2、DNT與隱私規則維持。
+
 使用者於台北 2026-10-13 12:5x 明確解凍；本文件取代舊文件的「仍全面凍結」、113 GiB capture floor、10 GiB build floor 及 load 16 規則。歷史量測和截圖不改寫。解凍不等於 tag 已取得建置名額。
 
 ## 來源與目前狀態
@@ -55,3 +57,10 @@ manifest與每筆capture包括UI SHA、BUILD_ID、viewport、light/dark、naviga
 獨立review找到並已修正：proxy吞log錯誤仍forward、collector prelaunch log failure後仍可導航、舊/proc掃描吞錯而低估build。回歸測試包含logger always throws時candidate收到0個request及重複close。3/3測試只用loopback mock，未啟動Chromium或接觸Google，不能當成瀏覽器實際零外送證據。獨立非作者GPT-6.1 Sol transcript：`/home/deck/tag-analysis-private/f1-release/unfreeze-proxy-independent-review-20261013.log`，保留初版BLOCKED與修復後判讀，最終source／loopback review為PASS（非UI pass）。
 
 05:04 UTC gate檔：`/home/deck/tag-analysis-private/f1-release/resource-gates/unfreeze-preparation-2026-10-13T05-04-04-784Z.json`。三站200，tag total0.614931秒、blog **4.193238秒**、YT0.300109秒；load3.86、/home73,394,184,192 bytes。仍未通過服務延遲門檻。使用者已明確回覆blog/YT尚未交接，因此本批繼續準備，沒有build/capture/deploy。
+
+
+## Sprint runner source review
+
+`tools/prepare-f1-candidate.js` 將archive、npm ci（ignore hooks）、Next與static/public複製放同一自有低優先process group監控，使用tag既有flock；private sprint授權證據、remote ancestor、tracked clean、新目錄exclusive。Next開始前重驗本機建置數，只有prepared不啟worker或切正式路由。
+
+獨立GPT-6.1 Sol review通過，24/24測試與3語法檢查：`/home/deck/tag-analysis-private/f1-release/sprint-source-review-20261013.log`。修正了monorepo standalone複製位置、初始建置競態；這是source/tool證據，不是UI pass。candidate仍需實際同SHA／BUILD_ID截圖與另一instance看圖。

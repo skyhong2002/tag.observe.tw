@@ -7,7 +7,11 @@ const path = require('node:path');
 const MiB = 1024 ** 2;
 const FLOOR = 30 * 1024 ** 3;
 const START_FLOOR = 40 * 1024 ** 3;
-const SERVICE_URLS = ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'];
+const SERVICE_LIMITS = new Map([
+  ['https://tag.observe.tw/', 2],
+  ['https://blog.observe.tw/', 6],
+  ['https://youtube.observe.tw/', 2],
+]);
 const MAX_BATCH = 100 * MiB;
 const fail = (message) => Object.assign(new Error(message), { code: 'CAPTURE_BUDGET_STOP' });
 
@@ -23,12 +27,12 @@ function checkServiceSample(sample, nowMs = Date.now()) {
   if (!Number.isFinite(nowMs) || !Number.isFinite(finished) || finished > nowMs || nowMs - finished > 30_000 || sample.probeError)
     throw fail('Cannot verify fresh service health from recorded probes.');
   if (!Array.isArray(sample.sites)) throw fail('Missing recorded service probes.');
-  for (const url of SERVICE_URLS) {
+  for (const [url, totalLimit] of SERVICE_LIMITS) {
     const matches = sample.sites.filter((site) => site?.url === url);
     const site = matches[0];
     if (matches.length !== 1 || site.exitCode !== 0 || site.probeError ||
         !Number.isInteger(site.status) || site.status < 200 || site.status >= 400 ||
-        !Number.isFinite(site.total) || site.total < 0 || site.total > 2)
+        !Number.isFinite(site.total) || site.total < 0 || site.total > totalLimit)
       throw fail(`Capture paused: cannot verify healthy service ${url}`);
   }
 }

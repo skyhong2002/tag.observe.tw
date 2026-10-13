@@ -8,7 +8,12 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 const execute = promisify(execFile);
-export const sites = ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'];
+export const siteBudgetsSeconds = Object.freeze({
+  'https://tag.observe.tw/': 2,
+  'https://blog.observe.tw/': 6,
+  'https://youtube.observe.tw/': 2,
+});
+export const sites = Object.keys(siteBudgetsSeconds);
 export const GiB = 1024 ** 3;
 
 export function buildDecision(sample, paused, { starting = false, estimatedUsageGiB } = {}) {
@@ -17,7 +22,7 @@ export function buildDecision(sample, paused, { starting = false, estimatedUsage
       const site = sample.sites.find((entry) => entry?.url === url);
       return !site || site.exitCode !== 0 || !Number.isInteger(site.status)
         || site.status < 200 || site.status >= 400 || !Number.isFinite(site.total)
-        || site.total < 0 || site.total > 2 || !Number.isFinite(site.ttfb) || site.ttfb < 0;
+        || site.total < 0 || site.total > siteBudgetsSeconds[url] || !Number.isFinite(site.ttfb) || site.ttfb < 0;
     });
   if (unavailable || !Number.isFinite(sample.load1) || sample.load1 < 0
     || sample.load1 > 12 || !Number.isFinite(sample.homeAvailableBytes)
@@ -176,7 +181,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   if (!webDirectory || !logPath || !Number.isFinite(estimatedUsageGiB) || estimatedUsageGiB <= 0) throw new Error('Usage: node tools/guard-next-build.js WEB_DIRECTORY PRIVATE_LOG_JSONL ESTIMATED_USAGE_GIB (positive number)');
   mkdirSync(dirname(resolve(logPath)), { recursive: true, mode: 0o700 });
   const record = (entry) => appendFileSync(logPath, `${JSON.stringify({ utc: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 });
-  record({ event: 'configuration', webDirectory: resolve(webDirectory), intervalMs: 30000, stopLoadAbove: 12, resumeLoadBelow: 10, startAvailableGiB: 40, stopAvailableBelowGiB: 30, resumeAvailableGiB: 40, maxTotalSeconds: 2, estimatedUsageGiB, sites });
+  record({ event: 'configuration', webDirectory: resolve(webDirectory), intervalMs: 30000, stopLoadAbove: 12, resumeLoadBelow: 10, startAvailableGiB: 40, stopAvailableBelowGiB: 30, resumeAvailableGiB: 40, siteBudgetsSeconds, estimatedUsageGiB, sites });
   process.exitCode = await guardedBuild({
     command: process.execPath,
     args: [resolve(webDirectory, 'node_modules/next/dist/bin/next'), 'build'],
