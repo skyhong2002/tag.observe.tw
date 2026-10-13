@@ -1,4 +1,6 @@
-# PSI 後續離線準備盤點
+# PSI 後續離線準備盤點（上一批歷史紀錄）
+
+後續已接續來源碼修補，見 [PSI 行動版離線實作](psi-mobile-offline-20261013.md)。下文「本輪」指先前b8d030c盤點，保留當時沒有產品改動的紀錄。
 
 基準 `b8d030c747f87c997800371e33e1ab2d168ad257`；只讀source及既有 Lighthouse JSON，沒有新 Lighthouse／PSI、browser、build或正式 probe。此清單不實作產品修正。
 

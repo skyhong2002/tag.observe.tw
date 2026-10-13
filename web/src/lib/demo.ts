@@ -232,14 +232,21 @@ export interface JournalistBrief {
 }
 
 export async function loadDemo() {
-  const [events, day, ranking, media, blue, green] = await Promise.all([
-    fetchEvents(24),
-    fetchEventDay(),
-    fetchRanking('news', 'score', 16, true).catch(() => null),
-    fetchMedia().catch((): MediaInfo => ({})),
+  const eventsRequest = fetchEvents(24);
+  const dayRequest = fetchEventDay();
+  const rankingRequest = fetchRanking('news', 'score', 16, true).catch(() => null);
+  const mediaRequest = fetchMedia().catch((): MediaInfo => ({}));
+  // The volume summary sits below the news. Start its requests now, but do
+  // not let slow category rankings hold back the server-rendered LCP image.
+  // Reuse the news request; all optional failures remain a recoverable null.
+  const share = Promise.all([
+    rankingRequest,
     fetchRanking('blue', 'score', 1).catch(() => null),
     fetchRanking('green', 'score', 1).catch(() => null),
-  ]);
+  ])
+    .then(([news, blue, green]) => campShare(news, blue, green))
+    .catch(() => null);
+  const [events, day, ranking, media] = await Promise.all([eventsRequest, dayRequest, rankingRequest, mediaRequest]);
   const unique = [...new Map((events?.events ?? []).map((e) => [e.relatedEventPk ?? `rank-${e.rank}`, e])).values()];
   // 焦點事件 follow the event table's default: today's stories by whole-day
   // weight, falling back to this hour's table before the day has any.
@@ -256,7 +263,7 @@ export async function loadDemo() {
     ranking,
     media,
     stories,
-    campShare: campShare(ranking, blue, green),
+    campShare: share,
     // The whole day, not just this hour: a camp's blind spots show up over hours.
     // This hour's events too, so the column is not empty just after midnight.
     gaps: campGaps([

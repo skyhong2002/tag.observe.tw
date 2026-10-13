@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
     localPatterns: [{ pathname: '**', search: '' }, { pathname: '/favicons/*.png' }],
     minimumCacheTTL: 3600,
     formats: ['image/webp'],
+    // Homepage thumbnails use 65; other images keep the existing quality 75.
+    qualities: [65, 75],
+    // 192 avoids rounding ~90px phone thumbnails at 2x all the way to 256.
+    imageSizes: [32, 48, 64, 96, 128, 192, 256, 384],
   },
   // Releases are read-only snapshots (scripts/install-service.sh), so ISR must
   // not write regenerated pages back into .next/server: the writes failed with

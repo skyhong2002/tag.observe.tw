@@ -217,6 +217,16 @@ async function DeferredHomeMethod({
   return <HomeMethod basisCount={basisCount} journalistHours={j?.hours} graphHours={g?.hours} />;
 }
 
+async function DeferredCampShare({ data }: { data: Awaited<ReturnType<typeof loadDemo>>['campShare'] }) {
+  return (
+    <CampShareSummary initialShare={await data}>
+      <Suspense fallback={<PanelLoading />}>
+        <CampOutletDirectory />
+      </Suspense>
+    </CampShareSummary>
+  );
+}
+
 function PanelLoading() {
   return (
     <p className={styles.notice} role="status">
@@ -240,7 +250,7 @@ function TopicPanel({ topics }: { topics: { outlets: number; today: number; late
         return (
           <li key={`${t.media}-${t.id}`}>
             <Link prefetch={false} href={href} className={styles.topicCover} tabIndex={-1} aria-hidden="true">
-              <NewsImage src={image} />
+              <NewsImage src={image} variant="topic" />
             </Link>
             <div className={styles.topicBody}>
               <h3>
@@ -460,17 +470,15 @@ export default async function HomePage() {
           </section>
         </div>
 
-        <CampShareSummary initialShare={data.campShare}>
-          <Suspense
-            fallback={
-              <p className={styles.notice} role="status">
-                媒體清單載入中…
-              </p>
-            }
-          >
-            <CampOutletDirectory />
-          </Suspense>
-        </CampShareSummary>
+        <Suspense
+          fallback={
+            <section className={`${styles.campShare} min-h-64 max-sm:min-h-[34rem]`} aria-label="過去 24 小時新聞量藍綠分布">
+              <p role="status">新聞量分布載入中…</p>
+            </section>
+          }
+        >
+          <DeferredCampShare data={data.campShare} />
+        </Suspense>
 
         <SiteFooter
           notes={
