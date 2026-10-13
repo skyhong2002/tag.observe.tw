@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { guardedBuild } from './guard-next-build.js';
 import { EventEmitter } from 'node:events';
-import { resolve } from 'node:path';
+import { resolve, relative, isAbsolute } from 'node:path';
 import { mkdtempSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { executeCandidate, verifySource, safeEnvironment, verifyIsolatedApi, combineGates, readPrivateInput, stage, globalLockPath, acquireGlobalLock, assertGlobalLock, loggedStageCommand } from './mint-f1-execution.js';
@@ -36,6 +36,16 @@ test('private input and safe child environment never inherit credentials', () =>
  const io = { lstatSync: () => ({ isFile: () => true, uid: 1000, mode: 0o100600 }), readFileSync: () => JSON.stringify(i) };
  assert.equal(readPrivateInput('/private/input', io, 1000).appSha, initialAppSha);
  for (const stat of [{ isFile: () => false, uid: 1000, mode: 0o120600 }, { isFile: () => true, uid: 1001, mode: 0o100600 }, { isFile: () => true, uid: 1000, mode: 0o100644 }]) assert.throws(() => readPrivateInput('/private/input', { ...io, lstatSync: () => stat }, 1000));
+});
+test('isolated HOME never sits inside Next workspace, including trailing-slash inputs', () => {
+ const i = input();
+ for (const candidate of [i.candidate, i.candidate + '/']) {
+  const env = safeEnvironment(host(i), candidate);
+  const homeFromWorkspace = relative(resolve(candidate), env.HOME);
+  assert.ok(homeFromWorkspace.startsWith('../') || isAbsolute(homeFromWorkspace));
+  assert.equal(env.HOME, resolve(i.candidate) + '.home');
+  assert.notEqual(env.HOME, process.env.HOME);
+ }
 });
 test('exact source fresh fetch, ancestry, clean checkout and OPS blob checks are explicit', () => {
  const i = input(); const calls = [];

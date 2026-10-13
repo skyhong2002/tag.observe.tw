@@ -113,3 +113,31 @@ stdout/stderr preservation on failure. These are not another Next build.
 The logging fix requires its own exact OPS commit and a new admission handoff
 before another guarded build. There has been no fallback build, capture,
 production deployment or new account/permission creation.
+
+## Logging-enabled retry: confirmed Next root boundary
+
+Babysit explicitly acknowledged OPS f4438e76 / unchanged APP 677a0c79. The
+reviewed guard acquired its own lock and fresh gates, then retained the retry at
+`/var/lib/observe-worker/tag/candidate-677a0c79-retry-logging`. Compile exited 1;
+no BUILD_ID, artifact or native smoke was produced. Both failed trees remain.
+The private failure inventory is
+`/tmp/babysit/mint-queue/tag-logging-retry-failure.json`.
+
+This time the retained compiler log identifies the problem: Next 16.3.6 rejects
+the root lockfile because the executor placed HOME within the candidate. It
+selects web/ as the workspace root, then fails to resolve sibling app/src and
+app/data imports. The referenced files were checked and exist in the archive.
+No missing-file or APP workaround is applied.
+
+UTC 10:21:12.949Z: a read-only call to the **installed Next root-finder** reproduces
+both cases on the same retained tree: candidate/.home gives root=web and a home
+boundary; candidate.home (exclusive sibling) gives root=candidate, both lockfiles,
+and no boundary. This invokes no compiler or build. Receipt:
+`/tmp/babysit/mint-queue/tag-next-root-cause-reproduction.json`, SHA-256
+`d3184e45cae25b82cc820aa90cb624c4aed2a4f48b12b5daa30c9d67f5934a9a`.
+
+The source fix gives the low-priority child an exclusive 0700 sibling HOME,
+normalizing trailing-slash candidate inputs. It does not use the account home,
+inherit credentials, or change APP, Next commands, API identity or resource
+gates. Another guarded build is pending independent review and babysit admission;
+no repeated blind retry has been launched.

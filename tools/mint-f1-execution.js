@@ -53,7 +53,9 @@ export function validateExecutionInput(input) {
   return input;
 }
 export function safeEnvironment(verified, candidate) {
-  return { PATH: verified.receipt.noninteractivePath, HOME: join(candidate, '.home'), LANG: 'C', NODE_ENV: 'production',
+  // Next excludes a workspace root containing HOME. Use an exclusive sibling
+  // instead, so the root lockfile and app/ imports remain within its boundary.
+  return { PATH: verified.receipt.noninteractivePath, HOME: `${resolve(candidate)}.home`, LANG: 'C', NODE_ENV: 'production',
     TAG_API_ORIGIN: verified.apiOrigin, NEXT_TELEMETRY_DISABLED: '1', NPM_CONFIG_UPDATE_NOTIFIER: 'false', NPM_CONFIG_CACHE: join(candidate, '.npm-cache') };
 }
 export function verifySource(input, run = command, read = readFileSync) {
@@ -207,7 +209,7 @@ export async function executeCandidate(input, dependencies = {}) {
   try {
     if (!Number.isInteger(lock.pid) || lock.pid <= 0) throw new Error('Kernel lock holder identity required');
     io.mkdirSync(candidate, { mode: 0o700 }); // Exclusive; never delete or overwrite artifacts.
-    io.mkdirSync(join(candidate, '.home'), { mode: 0o700 });
+    io.mkdirSync(`${candidate}.home`, { mode: 0o700 });
     const stageInput = { ...input, candidate };
     const privateStagePath = join(candidate, 'mint-execution-input.json');
     io.writeFileSync(privateStagePath, JSON.stringify(stageInput) + '\n', { flag: 'wx', mode: 0o600 });
