@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { guardedBuild } from './guard-next-build.js';
 import { EventEmitter } from 'node:events';
 import { resolve } from 'node:path';
-import { executeCandidate, verifySource, safeEnvironment, verifyIsolatedApi, combineGates, readPrivateInput, stage, globalLockPath, acquireGlobalLock, assertGlobalLock } from './mint-f1-execution.js';
+import { mkdtempSync, readFileSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { executeCandidate, verifySource, safeEnvironment, verifyIsolatedApi, combineGates, readPrivateInput, stage, globalLockPath, acquireGlobalLock, assertGlobalLock, loggedStageCommand } from './mint-f1-execution.js';
 import { initialAppSha } from './mint-f1-candidate-plan.js';
 const mint = () => ({ machineId: 'mint-id', hostname: 'mint', platform: 'linux', arch: 'x64', cpuCount: 4, nodeVersion: '24.15.0', nodeModulesAbi: '137', libc: 'glibc-2.41', nodePath: '/opt/node/bin/node', npmPath: '/opt/node/lib/npm-cli.js', npmVersion: '11.1.0' });
 function input() { const expiresAt = new Date(Date.now() + 60000).toISOString(); return { appSha: initialAppSha, opsSha: 'a'.repeat(40), repo: resolve(new URL('..', import.meta.url).pathname), candidate: '/candidate/new', estimateGiB: 5,
@@ -12,6 +14,23 @@ function input() { const expiresAt = new Date(Date.now() + 60000).toISOString();
 const host = i => ({ verified: true, snapshot: mint(), apiOrigin: i.hostReceipt.api.origin, receipt: i.hostReceipt });
 const sample = () => ({ observedHost: 'SM', machineId: 'sm-id', measuredFromMachineId: 'sm-id', startedAtMs: Date.now() - 100, finishedAtMs: Date.now() - 10, ageMs: 100, load1: 2, homeAvailableBytes: 45 * 1024 ** 3, localSmBuildCount: 0, sites: ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'].map(url => ({ url, exitCode: 0, status: 200, total: 0.2, ttfb: 0.1 })) });
 const local = () => ({ mintLoad1: 2, mintAvailableBytes: 45 * 1024 ** 3, localMintBuildCount: 0 });
+test('failed compiler stdout and stderr survive in a private append-only stage log', () => {
+ const dir = mkdtempSync(resolve(tmpdir(), 'tag-stage-log-'));
+ const log = resolve(dir, 'stage.log');
+ loggedStageCommand(process.execPath, ['-e', "process.stdout.write('first-stage\\n')"], dir, { PATH: '/usr/bin:/bin' }, log);
+ assert.throws(() => loggedStageCommand(process.execPath, ['-e', "process.stdout.write('compile-start\\n');process.stderr.write('compiler-diagnostic\\n');process.exit(7)"], dir, { PATH: '/usr/bin:/bin' }, log), /failed \(7\); see private stage log/);
+ const text = readFileSync(log, 'utf8');
+ assert.match(text, /first-stage\n/); assert.match(text, /compile-start\n/); assert.match(text, /compiler-diagnostic\n/);
+ assert.equal(statSync(log).mode & 0o777, 0o600);
+});
+test('stage spawn failure closes its own log and avoids echoing sensitive child errors', () => {
+ const closed = [];
+ assert.throws(() => loggedStageCommand('/node', [], '/candidate', {}, '/candidate/log', (_bin, _args, options) => {
+  assert.deepEqual(options.stdio, ['ignore', 91, 91]);
+  return { error: new Error('sensitive-error'), status: null };
+ }, { openSync: () => 91, closeSync: fd => closed.push(fd) }), error => /spawn error/.test(error.message) && !error.message.includes('sensitive-error'));
+ assert.deepEqual(closed, [91]);
+});
 test('private input and safe child environment never inherit credentials', () => {
  const i = input(); const env = safeEnvironment(host(i), i.candidate); assert.equal(env.TAG_API_ORIGIN, i.hostReceipt.api.origin); assert.equal(env.GOOGLE_API_KEY, undefined); assert.equal(env.DATABASE_URL, undefined);
  const io = { lstatSync: () => ({ isFile: () => true, uid: 1000, mode: 0o100600 }), readFileSync: () => JSON.stringify(i) };

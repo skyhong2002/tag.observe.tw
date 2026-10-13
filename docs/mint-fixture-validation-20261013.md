@@ -88,3 +88,28 @@ foreign ONNX platform exclusion, actual ELF inventory and isolated SM native
 smoke remain required for the artifact. No BUILD_ID or built artifact exists yet.
 Candidate capture/review and same-artifact deployment are still pending.
 The APP UI ledger remains **65 main routes, 0 complete passes, 65 pending**.
+
+## First build attempt and diagnostic fix
+
+Following the explicit babysit slot acknowledgement at UTC 10:10, exact OPS
+8e183c35 / APP 677a0c79 obtained the common kernel lock and fresh Mint/SM gates.
+The recorded start probe has all three sites HTTP 200 and within their budgets.
+The first Next 16.3.6 Turbopack compile exited 1; no BUILD_ID or native artifact
+was produced. The guard released its own lock. The failed directory remains
+`/var/lib/observe-worker/tag/candidate-677a0c79-first` and is not reused, removed
+or overwritten. Byte-identical original stage/guard/trace/diagnostics evidence
+and checksums are indexed in `/tmp/babysit/mint-queue/tag-first-build-failure.json`.
+
+The old executor buffered but discarded child stdout/stderr on failure, so the
+compiler diagnostic is unavailable. The error's underlying cause is **not yet
+established**. A small source fix now streams both outputs to the private stage
+log before checking exit status, preserving prior log entries and closing its
+own descriptor on spawn/exit failures. Error summaries do not echo child output
+or inherited environment secrets. It changes no APP, Next command, slot, API
+identity or resource gate. Existing independent reviewer source PASS, UTC
+10:15:12; relevant execution/artifact tests 29/29, including actual tiny child
+stdout/stderr preservation on failure. These are not another Next build.
+
+The logging fix requires its own exact OPS commit and a new admission handoff
+before another guarded build. There has been no fallback build, capture,
+production deployment or new account/permission creation.

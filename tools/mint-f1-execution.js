@@ -3,7 +3,7 @@ import { probeSmRelay, relayGate } from './mint-f1-sm-relay.js';
 import { collectElfProof } from './native-elf-proof.js';
 // Mint-only candidate preparation. Default CLI is plan-only; never deploys.
 import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync, lstatSync, mkdirSync, appendFileSync, writeFileSync, statfsSync } from 'node:fs';
+import { readFileSync, lstatSync, mkdirSync, appendFileSync, writeFileSync, statfsSync, openSync, closeSync } from 'node:fs';
 import { loadavg } from 'node:os';
 import { dirname, resolve, relative, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -19,6 +19,18 @@ function command(bin, args, cwd, env = { PATH: '/usr/bin:/bin', LANG: 'C' }) {
   const result = spawnSync(bin, args, { cwd, env, encoding: 'utf8', maxBuffer: 512 * 1024 ** 2 });
   if (result.error || result.status !== 0) throw new Error(`${bin} failed (${result.error?.message || result.status})`);
   return result.stdout;
+}
+// Stream both child outputs to the private audit log before checking exit status.
+// Do not interpolate compiler output or environment values into error messages.
+export function loggedStageCommand(bin, args, cwd, env, log, run = spawnSync,
+  io = { openSync, closeSync }) {
+  if (!isAbsolute(log || '')) throw new Error('Absolute private stage log required');
+  const fd = io.openSync(log, 'a', 0o600);
+  try {
+    const result = run(bin, args, { cwd, env, stdio: ['ignore', fd, fd] });
+    if (result.error || result.status !== 0) throw new Error(`Stage command failed (${result.error ? 'spawn error' : result.status}); see private stage log`);
+    return '';
+  } finally { io.closeSync(fd); }
 }
 export function readPrivateInput(path, io = { lstatSync, readFileSync }, uid = process.getuid()) {
   const stat = io.lstatSync(path);
@@ -157,23 +169,23 @@ export async function stage(input, dependencies = {}, lockPid = 0, privateInputP
   await (dependencies.verifyApi || verifyIsolatedApi)(input, verified);
   (dependencies.verifySource || verifySource)(input);
   const env = safeEnvironment(verified, input.candidate);
-  const run = dependencies.runCommand || ((bin, args, cwd) => {
+  const run = dependencies.runCommand || ((bin, args, cwd, _env, log) => {
     if (bin === 'npm') {
       const npmArgs = cwd === join(input.candidate, 'web') ? [...args, '--include=dev'] : args;
-      return command(verified.snapshot.nodePath, [verified.snapshot.npmPath, ...npmArgs], cwd, env);
+      return loggedStageCommand(verified.snapshot.nodePath, [verified.snapshot.npmPath, ...npmArgs], cwd, env, log);
     }
-    return command(bin, args, cwd, env);
+    return loggedStageCommand(bin, args, cwd, env, log);
   });
   // Ignore runStage's inherited process.env argument: only verified safe env above.
   (dependencies.runStage || runStage)({ repo: input.repo, candidate: input.candidate, api: verified.apiOrigin }, initialAppSha, (bin, args, cwd, log, _inherited) => {
     (dependencies.stageRecord || ((entry) => appendFileSync(join(input.candidate, 'mint-stage.jsonl'), JSON.stringify(entry) + '\n', { mode: 0o600 })))({ event: 'stage', bin, args, appSha: initialAppSha, opsSha: input.opsSha });
     (dependencies.assertLock || assertGlobalLock)(lockPid);
-    const output = run(bin, args, cwd, env);
+    const output = run(bin, args, cwd, env, log);
     (dependencies.appendLog || ((path, value) => appendFileSync(path, value, { mode: 0o600 })))(log, `${output || ''}\n`);
     return output;
   });
   (dependencies.assertLock || assertGlobalLock)(lockPid);
-  run(verified.snapshot.nodePath, ['-e', "require('sharp');require('onnxruntime-node');"], input.candidate, env);
+  run(verified.snapshot.nodePath, ['-e', "require('sharp');require('onnxruntime-node');"], input.candidate, env, join(input.candidate, 'stage.log'));
   return (dependencies.deriveRuntime || deriveRuntimePackage)(input.candidate, `${input.candidate}.runtime`, { apiOrigin: verified.apiOrigin, assertLock: () => (dependencies.assertLock || assertGlobalLock)(lockPid) });
 }
 export async function executeCandidate(input, dependencies = {}) {
