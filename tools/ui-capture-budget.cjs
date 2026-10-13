@@ -1,10 +1,13 @@
-// Temporary conservative capture policy while backup cleanup is frozen.
-// Removing this policy requires the coordinator's explicit unfreeze notice.
+// Capture policy after the user's explicit 2026-10-13 unfreeze.
+// The 40/30 GiB disk limits are conservative tool policy aligned with builds;
+// they are not disk thresholds specified by the user's capture gate.
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const MiB = 1024 ** 2;
-const FLOOR = 113 * 1024 ** 3; // Leave 1.5 GiB above the backup deletion threshold.
+const FLOOR = 30 * 1024 ** 3;
+const START_FLOOR = 40 * 1024 ** 3;
+const SERVICE_URLS = ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'];
 const MAX_BATCH = 100 * MiB;
 const fail = (message) => Object.assign(new Error(message), { code: 'CAPTURE_BUDGET_STOP' });
 
@@ -15,13 +18,29 @@ function estimateCaptureBytes(screenshots) {
   return 32 * MiB + screenshots * 4 * MiB; // Profile/network/log reserve + conservative PNG estimate.
 }
 
-function checkCaptureBudget({ freeBytes, load1, plannedBytes, batchBytes = 0, beforeLaunch = false }) {
-  if (!Number.isFinite(load1) || load1 > 12) throw fail('All captures paused: load exceeds 12.');
-  if (!Number.isFinite(plannedBytes) || plannedBytes > MAX_BATCH) throw fail('Batch exceeds freeze budget.');
-  if (batchBytes > MAX_BATCH - 8 * MiB) throw fail('Stop capture and reserve space for final network/log flush.');
+function checkServiceSample(sample, nowMs = Date.now()) {
+  const finished = typeof sample?.finishedAt === 'string' ? Date.parse(sample.finishedAt) : NaN;
+  if (!Number.isFinite(nowMs) || !Number.isFinite(finished) || finished > nowMs || nowMs - finished > 30_000 || sample.probeError)
+    throw fail('Cannot verify fresh service health from recorded probes.');
+  if (!Array.isArray(sample.sites)) throw fail('Missing recorded service probes.');
+  for (const url of SERVICE_URLS) {
+    const matches = sample.sites.filter((site) => site?.url === url);
+    const site = matches[0];
+    if (matches.length !== 1 || site.exitCode !== 0 || site.probeError ||
+        !Number.isInteger(site.status) || site.status < 200 || site.status >= 400 ||
+        !Number.isFinite(site.total) || site.total < 0 || site.total > 2)
+      throw fail(`Capture paused: cannot verify healthy service ${url}`);
+  }
+}
+
+function checkCaptureBudget({ freeBytes, load1, plannedBytes, batchBytes = 0, beforeLaunch = false, serviceSample, nowMs }) {
+  checkServiceSample(serviceSample, nowMs);
+  if (!Number.isFinite(load1) || load1 < 0 || load1 > 12) throw fail('All captures paused: load exceeds 12 or is invalid.');
+  if (!Number.isFinite(plannedBytes) || plannedBytes < 0 || plannedBytes > MAX_BATCH) throw fail('Batch exceeds capture budget.');
+  if (!Number.isFinite(batchBytes) || batchBytes < 0 || batchBytes > MAX_BATCH - 8 * MiB) throw fail('Stop capture and reserve space for final network/log flush.');
   const reserve = beforeLaunch ? plannedBytes : 8 * MiB;
-  if (!Number.isFinite(freeBytes) || freeBytes - reserve < FLOOR)
-    throw fail('Capture would approach backup retention floor; use offline review.');
+  if (!Number.isFinite(freeBytes) || (beforeLaunch && freeBytes < START_FLOOR) || freeBytes - reserve < FLOOR)
+    throw fail('Capture would approach the conservative disk floor; use offline review.');
 }
 
 function directoryBytes(directory) {
@@ -34,7 +53,8 @@ function directoryBytes(directory) {
   return size;
 }
 
-function createCaptureBudget(directory, screenshots) {
+function createCaptureBudget(directory, screenshots, getServiceSample) {
+  if (typeof getServiceSample !== 'function') throw fail('Supply a synchronous callback for the latest recorded service sample.');
   const plannedBytes = estimateCaptureBytes(screenshots);
   let captured = 0;
   const check = (beforeLaunch = false, pendingBytes = 0) => {
@@ -48,6 +68,7 @@ function createCaptureBudget(directory, screenshots) {
         batchBytes: directoryBytes(directory) + pendingBytes,
         beforeLaunch,
         captured,
+        serviceSample: getServiceSample(),
       };
       fs.appendFileSync(path.join(directory, 'capture-budget.jsonl'), `${JSON.stringify(sample)}\n`);
       checkCaptureBudget(sample);
@@ -81,4 +102,4 @@ function createCaptureBudget(directory, screenshots) {
   };
 }
 
-module.exports = { estimateCaptureBytes, checkCaptureBudget, createCaptureBudget };
+module.exports = { estimateCaptureBytes, checkServiceSample, checkCaptureBudget, createCaptureBudget };

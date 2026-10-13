@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**2026-10-13解凍更新**：已獲恢復授權，但tag建置排blog／YT之後；04:56 UTC blog time_total 4.002459秒超門檻，本批未build/capture。新40／30 GiB、三站整頁2秒、load12門檻及前置缺口見 [unfreeze-gates-20261013.md](unfreeze-gates-20261013.md)。以下各歷史「凍結未解除」只描述當時，沒有把解凍當作UI pass。仍65主route、最新產品版0完成／65pending。
+
 最新產品source：`e68987fb2e5adaf92c07a92931b04ebb089710a6`，未建置／未部署；65個主route，0本版review、65待重拍。route×state×1280/390×light/dark及容量預算見文末。
 
 整合UTC：`2026-10-12T23:11:39.778933+00:00`。此檔整合三個GPT-6.1 Sol獨立reviewer的**已實際看圖紀錄**，不是未審模板；沒有把HTTP200、擷取完成或共用元件当作逐頁pass。

@@ -2,21 +2,115 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
-import { buildDecision, guardedBuild } from './guard-next-build.js';
+import { EventEmitter } from 'node:events';
+import test from 'node:test';
+import { buildDecision, guardedBuild, probeServices, sites, GiB } from './guard-next-build.js';
 
-const sample = (load1, status = 200, exitCode = 0) => ({ load1, sites: [{ status, exitCode }] });
-test('pause on service failure/load >16; resume only below 10 with healthy probes', () => {
-  assert.equal(buildDecision(sample(16), false), 'run');
-  assert.equal(buildDecision(sample(16.01), false), 'pause');
-  assert.equal(buildDecision(sample(5, 500), false), 'pause');
-  assert.equal(buildDecision(sample(5, 503), false), 'pause');
-  assert.equal(buildDecision(sample(5, 103, 28), false), 'pause');
-  assert.equal(buildDecision(sample(10), true), 'wait');
-  assert.equal(buildDecision(sample(9.99), true), 'run');
-  assert.equal(buildDecision(sample(9, 500), true), 'pause');
-  assert.equal(buildDecision({ ...sample(5), probeError: 'failed' }, false), 'pause');
+const sample = (overrides = {}) => ({
+  load1: 5, homeAvailableBytes: 50 * GiB,
+  sites: sites.map((url) => ({ url, status: 200, ttfb: 0.1, total: 0.5, exitCode: 0 })), ...overrides,
+});
+
+test('load, disk and time boundaries; resume requires healthy probes, load <10, disk >=40 GiB', () => {
+  for (const [load1, decision] of [[12, 'run'], [12.01, 'pause']]) assert.equal(buildDecision(sample({ load1 }), false), decision);
+  for (const [disk, decision] of [[30, 'run'], [29.99, 'pause']]) assert.equal(buildDecision(sample({ homeAvailableBytes: disk * GiB }), false), decision);
+  for (const [load1, disk, decision] of [[10, 40, 'wait'], [9.99, 39.99, 'wait'], [9.99, 40, 'run']]) {
+    assert.equal(buildDecision(sample({ load1, homeAvailableBytes: disk * GiB }), true), decision);
+  }
+  for (const url of sites) {
+    for (const [patch, decision] of [[{ total: 2 }, 'run'], [{ total: 2.001 }, 'pause'], [{ status: 500 }, 'pause'], [{ exitCode: 28 }, 'pause']]) {
+      const s = sample(); Object.assign(s.sites.find((entry) => entry.url === url), patch);
+      assert.equal(buildDecision(s, false), decision);
+    }
+  }
+});
+
+test('missing and malformed probe fields fail closed', () => {
+  for (const s of [undefined, {}, sample({ sites: [] }), sample({ load1: NaN }), sample({ homeAvailableBytes: undefined }), sample({ probeError: 'failed' })]) {
+    assert.equal(buildDecision(s, false), 'pause');
+  }
+  for (const field of ['url', 'status', 'ttfb', 'total', 'exitCode']) {
+    const s = sample(); delete s.sites[2][field];
+    assert.equal(buildDecision(s, false), 'pause');
+  }
+  const s = sample(); s.sites[2] = { ...s.sites[0] };
+  assert.equal(buildDecision(s, false), 'pause');
+});
+
+test('start needs >=40 GiB and estimated usage must leave >=30 GiB', () => {
+  for (const [disk, estimate, expected] of [[39.99, 1, 'pause'], [40, 10, 'run'], [40, 10.01, 'pause'], [50, 20, 'run'], [50, 0, 'pause'], [50, undefined, 'pause']]) {
+    assert.equal(buildDecision(sample({ homeAvailableBytes: disk * GiB }), false, { starting: true, estimatedUsageGiB: estimate }), expected);
+  }
+});
+
+test('service and /home probes are mocked, and collect curl total for all three sites', async () => {
+  const calls = [];
+  const s = await probeServices({
+    executeProbe: async (command, args) => { calls.push({ command, args }); return { stdout: '200 0.1 0.2' }; },
+    diskProbe: async (path) => { assert.equal(path, '/home'); return { bavail: 40, bsize: GiB }; },
+    loadProbe: () => [3],
+  });
+  assert.equal(s.homeAvailableBytes, 40 * GiB);
+  assert.deepEqual(calls.map(({ args }) => args.at(-1)), sites);
+  assert.equal(buildDecision(s, false), 'run');
+  await assert.rejects(probeServices({ executeProbe: async () => ({ stdout: '200 0.1 0.2' }), diskProbe: async () => { throw new Error('disk failed'); } }), /disk failed/);
+});
+
+test('mock child uses dedicated low priority group; STOP/CONT and cleanup never target another group', async () => {
+  const child = new EventEmitter(); child.pid = 43210;
+  const signals = []; const records = []; let tick = 0; let spawned = 0;
+  const code = await guardedBuild({
+    command: 'node', args: ['next', 'build'], cwd: '/mock', estimatedUsageGiB: 5, intervalMs: 0,
+    record: (entry) => records.push(entry),
+    spawnBuild: (command, args, options) => {
+      spawned++; assert.equal(command, 'ionice');
+      assert.deepEqual(args, ['-c', '3', 'nice', '-n', '19', 'node', 'next', 'build']);
+      assert.equal(options.detached, true); return child;
+    },
+    killGroup: (pid, signal) => { assert.equal(pid, -child.pid); signals.push(signal); },
+    probe: async () => {
+      tick++;
+      if (tick === 1) return sample({ homeAvailableBytes: 39 * GiB });
+      if (tick === 3) return sample({ load1: 13 });
+      if (tick === 4) return sample({ homeAvailableBytes: 39 * GiB });
+      if (tick === 6) { child.emit('close', 0, null); }
+      return sample();
+    },
+  });
+  assert.equal(code, 0); assert.equal(spawned, 1);
+  assert.deepEqual(signals, ['SIGSTOP', 'SIGCONT', 'SIGKILL']);
+  assert.equal(records[0].decision, 'pause');
+  assert.ok(records.some((entry) => entry.decision === 'wait'));
+});
+
+test('probe exceptions pause and spawn errors still reclaim the mocked group', async () => {
+  const child = new EventEmitter(); child.pid = 43211; const signals = []; let tick = 0;
+  const code = await guardedBuild({ command: 'node', args: [], estimatedUsageGiB: 1, intervalMs: 0, record: () => {},
+    killGroup: (pid, signal) => signals.push([pid, signal]),
+    spawnBuild: () => { queueMicrotask(() => child.emit('error', new Error('spawn failed'))); return child; },
+    probe: async () => { if (++tick === 1) throw new Error('probe failed'); return sample(); },
+  });
+  assert.equal(code, 1); assert.deepEqual(signals, [[-child.pid, 'SIGKILL']]);
+});
+
+
+test('interruption continues a stopped group before TERM and always cleans it up', async () => {
+  const child = new EventEmitter(); child.pid = 43212; const signals = []; let tick = 0;
+  const code = await guardedBuild({ command: 'node', args: [], estimatedUsageGiB: 1, intervalMs: 0, record: () => {},
+    spawnBuild: () => child,
+    killGroup: (pid, signal) => {
+      assert.equal(pid, -child.pid); signals.push(signal);
+      if (signal === 'SIGTERM') queueMicrotask(() => child.emit('close', null, 'SIGTERM'));
+    },
+    probe: async () => {
+      if (++tick === 2) return sample({ load1: 13 });
+      if (tick === 3) process.emit('SIGINT');
+      return sample();
+    },
+  });
+  assert.equal(code, 130);
+  assert.deepEqual(signals, ['SIGSTOP', 'SIGCONT', 'SIGTERM', 'SIGKILL']);
 });
 
 test('STOP and CONT cover a worker descendant; low-priority job exits cleanly', { timeout: 10000 }, async () => {
@@ -29,6 +123,7 @@ test('STOP and CONT cover a worker descendant; low-priority job exits cleanly', 
   const parent = `const {spawn}=require('node:child_process');const fs=require('node:fs');fs.writeFileSync(${JSON.stringify(join(directory, 'nice'))},String(require('node:os').getPriority()));const p=spawn(process.execPath,['-e',${JSON.stringify(worker)}]);setTimeout(()=>{p.kill();process.exit(0)},1500)`;
   try {
     const code = await guardedBuild({
+      estimatedUsageGiB: 1,
       command: process.execPath,
       args: ['-e', parent],
       cwd: directory,
@@ -37,30 +132,30 @@ test('STOP and CONT cover a worker descendant; low-priority job exits cleanly', 
       probe: async () => {
         if (stage === 0) {
           stage++;
-          return sample(5);
+          return sample();
         }
         if (stage === 1) {
           for (let i = 0; i < 100 && !existsSync(pulse); i++) await delay(10);
           assert.ok(existsSync(pulse), 'child worker started');
           stage++;
-          return sample(17);
+          return sample({ load1: 13 });
         }
         if (stage === 2) {
           frozen = readFileSync(pulse).length;
           stage++;
-          return sample(12);
+          return sample({ load1: 12 });
         }
         if (stage === 3) {
           assert.equal(readFileSync(pulse).length, frozen, 'descendant stays stopped while load is 12');
           stage++;
-          return sample(9);
+          return sample({ load1: 9 });
         }
         if (stage === 4) {
           assert.ok(readFileSync(pulse).length > frozen, 'descendant resumes below 10');
           stage++;
-          return sample(5);
+          return sample();
         }
-        return sample(5);
+        return sample();
       },
     });
     assert.equal(code, 0);
@@ -83,11 +178,12 @@ test('a successful leader exit cannot leave a worker running without the guard',
     const worker = "process.on('SIGTERM',()=>{});setInterval(()=>{},20)";
     const parent = `const p=require('node:child_process').spawn(process.execPath,['-e',${JSON.stringify(worker)}],{stdio:'ignore'});require('node:fs').writeFileSync(${JSON.stringify(pidPath)},String(p.pid));setTimeout(()=>process.exit(0),150)`;
     const code = await guardedBuild({
+      estimatedUsageGiB: 1,
       command: process.execPath,
       args: ['-e', parent],
       cwd: directory,
       intervalMs: 50,
-      probe: async () => sample(5),
+      probe: async () => sample(),
       record: (entry) => {
         if (entry.event === 'started') group = entry.processGroup;
       },

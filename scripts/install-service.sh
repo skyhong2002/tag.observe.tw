@@ -21,14 +21,24 @@ fi
 release_root=/home/deck/.local/share/tag-analysis
 release_dir="$release_root/releases/$commit_id"
 available_bytes=$(node -e "const s=require('node:fs').statfsSync('/home');process.stdout.write(String(s.bavail*s.bsize))")
-if (( available_bytes < 10 * 1024 * 1024 * 1024 )); then
-  echo 'Deployment paused: at least 10 GiB must be free on /home before creating release files.' >&2
+if (( available_bytes < 40 * 1024 * 1024 * 1024 )); then
+  echo 'Deployment paused: at least 40 GiB must be free on /home before creating release files.' >&2
   exit 1
 fi
 mkdir -p "$release_root/releases" "$HOME/.config/systemd/user"
 exec 9>"$release_root/deploy.lock"
 flock -n 9 || { echo 'Another preview deployment is running.' >&2; exit 1; }
 if [[ ! -d "$release_dir" ]]; then
+  # Require the operator's estimate before dependency install or staging writes.
+  # The guard also checks actual free space throughout Next compilation.
+  node --input-type=module - "${TAG_BUILD_ESTIMATE_GIB:-}" "$available_bytes" <<'JS'
+const estimate = Number(process.argv[2]);
+const available = Number(process.argv[3]);
+if (!Number.isFinite(estimate) || estimate <= 0 || available - estimate * 1024 ** 3 < 30 * 1024 ** 3) {
+  console.error('Set TAG_BUILD_ESTIMATE_GIB to a positive measured estimate; it must leave at least 30 GiB.');
+  process.exit(1);
+}
+JS
   staging_dir=$(mktemp -d "$release_root/releases/.staging-$commit_id-XXXXXX")
   trap 'if [[ -n ${staging_dir:-} && -d "$staging_dir" ]]; then chmod -R u+w "$staging_dir"; rm -rf -- "$staging_dir"; fi' EXIT
   git archive "$commit_id" app/src app/data tools/vocabulary-export.ts package.json package-lock.json web | tar -x -C "$staging_dir"
@@ -36,7 +46,7 @@ if [[ ! -d "$release_dir" ]]; then
   # SSR frontend: build once per release, then run the standalone server.
   npm ci --prefix "$staging_dir/web" --ignore-scripts --no-audit --no-fund
   build_guard_log="$release_root/build-logs/$commit_id-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
-  node "$project_dir/tools/guard-next-build.js" "$staging_dir/web" "$build_guard_log"
+  node "$project_dir/tools/guard-next-build.js" "$staging_dir/web" "$build_guard_log" "$TAG_BUILD_ESTIMATE_GIB"
   cp -r "$staging_dir/web/.next/static" "$staging_dir/web/.next/standalone/web/.next/static"
   cp -r "$staging_dir/web/public" "$staging_dir/web/.next/standalone/web/public"
   # The release is made read-only below; Next's runtime cache (optimized

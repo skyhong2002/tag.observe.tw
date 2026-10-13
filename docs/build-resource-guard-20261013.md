@@ -1,6 +1,8 @@
 # Shared-host build guard and observed service timing
 
-## Enforced build path
+> Updated policy after the explicit 2026-10-13 unfreeze: see [unfreeze-gates-20261013.md](unfreeze-gates-20261013.md). The older two-site/load-16 behavior below is historical. Current code requires a space estimate, probes all three sites, and stops above load 12, total time 2 seconds, or below 30 GiB available.
+
+## Historical enforced build path
 
 `scripts/install-service.sh` now runs `tools/guard-next-build.js` instead of an unguarded `next build`. The current task's private candidate runner v3 uses the same guard. The wrapper starts a dedicated Linux process group under `ionice -c3 nice -n19`; it never signals another session's build or service. `web/next.config.ts` (`821711c`) limits static generation to two workers and one page per worker. This does not bound every fetch within a page or every compiler thread.
 

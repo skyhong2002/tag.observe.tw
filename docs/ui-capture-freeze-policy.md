@@ -1,6 +1,8 @@
 # UI capture during the backup retention freeze
 
-## Current override: no new capture
+> **Superseded 2026-10-13:** the user explicitly lifted the freeze. Current thresholds, queue order, tool interfaces and remaining capture-runner requirements are in [unfreeze-gates-20261013.md](unfreeze-gates-20261013.md). The text below preserves historical restrictions and evidence; it does not describe current authorization.
+
+## Historical override: no new capture
 
 The coordinator's subsequent notice reports 107.80 GiB free and explicitly
 prohibits **all new screenshots and captures**, regardless of load or the older

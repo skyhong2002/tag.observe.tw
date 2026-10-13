@@ -3,7 +3,7 @@ const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { estimateCaptureBytes, checkCaptureBudget } = require('./ui-capture-budget.cjs');
+const { estimateCaptureBytes, checkServiceSample, checkCaptureBudget } = require('./ui-capture-budget.cjs');
 const GiB = 1024 ** 3;
 const MiB = 1024 ** 2;
 
@@ -13,15 +13,53 @@ test('small batches explicitly budget both screenshots and browser/network artif
   for (const value of [undefined, 0, 1.5, 17]) assert.throws(() => estimateCaptureBytes(value));
 });
 
-test('freeze guard applies load and disk reserve before launch and during capture', () => {
-  const sample = { freeBytes: 113.5 * GiB, load1: 12, plannedBytes: estimateCaptureBytes(8), beforeLaunch: true };
+const nowMs = Date.parse('2026-10-13T00:00:00Z');
+function healthySample() {
+  return { finishedAt: new Date(nowMs).toISOString(), sites: ['tag', 'blog', 'youtube'].map((name) => ({
+    url: `https://${name}.observe.tw/`, status: 200, exitCode: 0, total: 2, ttfb: 0.1,
+  })) };
+}
+
+test('capture guard applies conservative disk boundaries and finite resource budgets', () => {
+  const sample = { freeBytes: 40 * GiB, load1: 12, plannedBytes: estimateCaptureBytes(8), beforeLaunch: true, serviceSample: healthySample(), nowMs };
   assert.doesNotThrow(() => checkCaptureBudget(sample));
-  assert.throws(() => checkCaptureBudget({ ...sample, load1: 12.01 }));
-  assert.throws(() => checkCaptureBudget({ ...sample, load1: NaN }));
-  assert.throws(() => checkCaptureBudget({ ...sample, freeBytes: 113.01 * GiB }));
-  assert.throws(() => checkCaptureBudget({ ...sample, beforeLaunch: false, freeBytes: 113 * GiB }));
-  assert.throws(() => checkCaptureBudget({ ...sample, batchBytes: 93 * MiB }));
-  assert.throws(() => checkCaptureBudget({ ...sample, plannedBytes: 501 * MiB }));
+  for (const change of [{ load1: 12.01 }, { load1: NaN }, { freeBytes: 40 * GiB - 1 },
+    { beforeLaunch: false, freeBytes: 30 * GiB + 8 * MiB - 1 },
+    { batchBytes: 92 * MiB + 1 }, { batchBytes: NaN }, { plannedBytes: NaN }, { plannedBytes: 101 * MiB }, { freeBytes: NaN }]) {
+    assert.throws(() => checkCaptureBudget({ ...sample, ...change }), { code: 'CAPTURE_BUDGET_STOP' });
+  }
+  assert.doesNotThrow(() => checkCaptureBudget({ ...sample, beforeLaunch: false, freeBytes: 30 * GiB + 8 * MiB, batchBytes: 92 * MiB }));
+  assert.doesNotThrow(() => checkCaptureBudget({ ...sample, plannedBytes: 100 * MiB }));
+  assert.throws(() => checkCaptureBudget({ ...sample, freeBytes: 30 * GiB + sample.plannedBytes - 1 }));
+});
+
+test('all three recorded services must have fresh successful probes and total time at most 2s', () => {
+  assert.doesNotThrow(() => checkServiceSample(healthySample(), nowMs));
+  const slowFirstByte = healthySample();
+  slowFirstByte.sites[0].ttfb = 99;
+  assert.doesNotThrow(() => checkServiceSample(slowFirstByte, nowMs));
+  const atBoundary = healthySample();
+  atBoundary.finishedAt = new Date(nowMs - 30_000).toISOString();
+  assert.doesNotThrow(() => checkServiceSample(atBoundary, nowMs));
+  for (const name of ['tag', 'blog', 'youtube']) {
+    for (const change of [{ total: 2.001 }, { total: NaN }, { total: undefined }, { status: 103 }, { status: 404 }, { status: 500 }, { status: 0 }, { status: NaN }, { exitCode: 1 }, { exitCode: undefined }, { probeError: 'timeout' }]) {
+      const sample = healthySample();
+      Object.assign(sample.sites.find((site) => site.url.includes(`//${name}.`)), change);
+      assert.throws(() => checkServiceSample(sample, nowMs), { code: 'CAPTURE_BUDGET_STOP' });
+    }
+    const missing = healthySample();
+    missing.sites = missing.sites.filter((site) => !site.url.includes(`//${name}.`));
+    assert.throws(() => checkServiceSample(missing, nowMs));
+  }
+  for (const sample of [undefined, {}, { ...healthySample(), probeError: 'failure' },
+    { ...healthySample(), finishedAt: new Date(nowMs - 30_001).toISOString() },
+    { ...healthySample(), finishedAt: new Date(nowMs + 1).toISOString() },
+    { ...healthySample(), finishedAt: 'invalid' }, { ...healthySample(), sites: [] }]) {
+    assert.throws(() => checkServiceSample(sample, nowMs), { code: 'CAPTURE_BUDGET_STOP' });
+  }
+  const duplicate = healthySample();
+  duplicate.sites.push(duplicate.sites[0]);
+  assert.throws(() => checkServiceSample(duplicate, nowMs));
 });
 
 function mockBudget() {
@@ -43,7 +81,10 @@ function mockBudget() {
     require: (name) => (name === 'node:fs' ? fakeFs : name === 'node:os' ? { loadavg: () => [1] } : require(name)),
   };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'ui-capture-budget.cjs'), 'utf8'), context);
-  const budget = context.module.exports.createCaptureBudget('/mock', 1);
+  const create = context.module.exports.createCaptureBudget;
+  assert.throws(() => create('/mock', 1), { code: 'CAPTURE_BUDGET_STOP' });
+  state.serviceSample = { ...healthySample(), finishedAt: new Date().toISOString() };
+  const budget = create('/mock', 1, () => state.serviceSample);
   const page = {
     evaluate: async () => state.pixels,
     screenshot: async () => {
@@ -86,4 +127,13 @@ test('a saved screenshot uses exclusive creation and the next capture cannot exc
   assert.equal(state.writes[0].flag, 'wx');
   await assert.rejects(budget.screenshot(page, { path: '/mock/next.png' }), { code: 'CAPTURE_BUDGET_STOP' });
   assert.equal(state.captures, 1);
+});
+
+test('recorded health is rechecked before every capture without issuing probes', async () => {
+  const { state, budget, page } = mockBudget();
+  state.serviceSample.sites[2].total = 3;
+  await assert.rejects(budget.screenshot(page, { path: '/mock/image.png' }), { code: 'CAPTURE_BUDGET_STOP' });
+  assert.equal(state.captures, 0);
+  state.serviceSample = Promise.resolve(healthySample());
+  assert.throws(() => budget.check(), { code: 'CAPTURE_BUDGET_STOP' });
 });

@@ -1,5 +1,7 @@
 # F1 解凍後部署與回滾計畫（離線，尚未执行）
 
+> 2026-10-13 使用者已明確解凍。執行門檻與建置交接以 [unfreeze-gates-20261013.md](unfreeze-gates-20261013.md) 為準；下列舊容量/load門檻已被取代。Worker順序及回滾限制仍適用。尚未執行新部署。
+
 盤點基準 `b8d030c747f87c997800371e33e1ab2d168ad257`。此文件只讀既有 source／artifact；未 build、capture、probe、備份、部署或清理。既有正式版本依 release 記錄為 `0dd38b629621e27ccb40260a27b27cf2d7202519`，不是本次重新查驗。最初遠端基底為 `430cc019b41f769f361b4759f4a4651068aad328`，後合併 `a89908a`；解凍後必須重新 fetch、比較遠端 default branch，使用隔離 worktree，不能 reset 共用 checkout。
 
 ## 按順序解除 gate

@@ -1,29 +1,43 @@
 // Keep builds subordinate to the public services on this shared Linux host.
 import { execFile, spawn } from 'node:child_process';
 import { appendFileSync, mkdirSync } from 'node:fs';
+import { statfs } from 'node:fs/promises';
 import { loadavg } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 const execute = promisify(execFile);
-const sites = ['https://tag.observe.tw/', 'https://blog.observe.tw/'];
+export const sites = ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'];
+export const GiB = 1024 ** 3;
 
-export function buildDecision(sample, paused) {
-  const unavailable = sample.probeError || sample.sites.some((site) => site.exitCode !== 0 || site.status === 0 || site.status >= 500);
-  if (unavailable || !Number.isFinite(sample.load1) || sample.load1 > 16) return 'pause';
-  if (paused && sample.load1 >= 10) return 'wait';
+export function buildDecision(sample, paused, { starting = false, estimatedUsageGiB } = {}) {
+  const unavailable = !sample || sample.probeError || !Array.isArray(sample.sites)
+    || sample.sites.length !== sites.length || sites.some((url) => {
+      const site = sample.sites.find((entry) => entry?.url === url);
+      return !site || site.exitCode !== 0 || !Number.isInteger(site.status)
+        || site.status < 200 || site.status >= 400 || !Number.isFinite(site.total)
+        || site.total < 0 || site.total > 2 || !Number.isFinite(site.ttfb) || site.ttfb < 0;
+    });
+  if (unavailable || !Number.isFinite(sample.load1) || sample.load1 < 0
+    || sample.load1 > 12 || !Number.isFinite(sample.homeAvailableBytes)
+    || sample.homeAvailableBytes < 30 * GiB) return 'pause';
+  if (starting && (!Number.isFinite(estimatedUsageGiB) || estimatedUsageGiB <= 0
+    || sample.homeAvailableBytes < 40 * GiB
+    || sample.homeAvailableBytes - estimatedUsageGiB * GiB < 30 * GiB)) return 'pause';
+  // Resume only with all three healthy services, load <10 and /home >=40 GiB.
+  if (paused && (sample.load1 >= 10 || sample.homeAvailableBytes < 40 * GiB)) return 'wait';
   return 'run';
 }
 
-export async function probeServices() {
+export async function probeServices({ executeProbe = execute, diskProbe = statfs, loadProbe = loadavg } = {}) {
   const startedAt = new Date().toISOString();
   const responses = await Promise.all(
     sites.map(async (url) => {
       let stdout;
       let exitCode = 0;
       try {
-        ({ stdout } = await execute(
+        ({ stdout } = await executeProbe(
           'curl',
           ['-sS', '--max-time', '10', '-o', '/dev/null', '-w', '%{http_code} %{time_starttransfer} %{time_total}', url],
           { timeout: 12000 },
@@ -42,10 +56,12 @@ export async function probeServices() {
       };
     }),
   );
-  return { startedAt, finishedAt: new Date().toISOString(), load1: loadavg()[0], sites: responses };
+  const disk = await diskProbe('/home');
+  const homeAvailableBytes = Number(disk.bavail) * Number(disk.bsize);
+  return { startedAt, finishedAt: new Date().toISOString(), load1: loadProbe()[0], homeAvailableBytes, sites: responses };
 }
 
-export async function guardedBuild({ command, args, cwd, record, probe = probeServices, intervalMs = 30000 }) {
+export async function guardedBuild({ command, args, cwd, record, probe = probeServices, intervalMs = 30000, estimatedUsageGiB, spawnBuild = spawn, killGroup = process.kill.bind(process) }) {
   let child;
   let result;
   let paused = false;
@@ -58,7 +74,7 @@ export async function guardedBuild({ command, args, cwd, record, probe = probeSe
   const signalGroup = (signal) => {
     if (!child || result) return;
     try {
-      process.kill(-child.pid, signal);
+      killGroup(-child.pid, signal);
     } catch (error) {
       if (error.code !== 'ESRCH') throw error;
     }
@@ -75,7 +91,7 @@ export async function guardedBuild({ command, args, cwd, record, probe = probeSe
     } catch {
       // Even a failed audit write must not strand the build after interruption.
       try {
-        if (child?.pid) process.kill(-child.pid, 'SIGKILL');
+        if (child?.pid) killGroup(-child.pid, 'SIGKILL');
       } catch {
         /* already exited */
       }
@@ -97,14 +113,14 @@ export async function guardedBuild({ command, args, cwd, record, probe = probeSe
         sample = { load1: loadavg()[0], sites: [], probeError: String(error.message) };
       }
       if (result || interrupted) break;
-      const decision = buildDecision(sample, paused);
+      const decision = buildDecision(sample, paused, { starting: !child, estimatedUsageGiB });
       record({ event: 'probe', ...sample, paused, decision });
       if (decision === 'pause') {
         if (!paused) signalGroup('SIGSTOP');
         paused = true;
       } else if (decision === 'run') {
         if (!child) {
-          child = spawn('ionice', ['-c', '3', 'nice', '-n', '19', command, ...args], {
+          child = spawnBuild('ionice', ['-c', '3', 'nice', '-n', '19', command, ...args], {
             cwd,
             detached: true,
             stdio: 'inherit',
@@ -143,7 +159,7 @@ export async function guardedBuild({ command, args, cwd, record, probe = probeSe
     // even after a successful leader exit; never leave unmonitored descendants.
     if (child?.pid) {
       try {
-        process.kill(-child.pid, 'SIGKILL');
+        killGroup(-child.pid, 'SIGKILL');
       } catch (error) {
         if (error.code !== 'ESRCH') {
           // biome-ignore lint/correctness/noUnsafeFinally: Failed worker cleanup must fail even a successful leader exit.
@@ -155,15 +171,17 @@ export async function guardedBuild({ command, args, cwd, record, probe = probeSe
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const [webDirectory, logPath] = process.argv.slice(2);
-  if (!webDirectory || !logPath) throw new Error('Usage: node tools/guard-next-build.js WEB_DIRECTORY PRIVATE_LOG_JSONL');
+  const [webDirectory, logPath, estimate] = process.argv.slice(2);
+  const estimatedUsageGiB = Number(estimate);
+  if (!webDirectory || !logPath || !Number.isFinite(estimatedUsageGiB) || estimatedUsageGiB <= 0) throw new Error('Usage: node tools/guard-next-build.js WEB_DIRECTORY PRIVATE_LOG_JSONL ESTIMATED_USAGE_GIB (positive number)');
   mkdirSync(dirname(resolve(logPath)), { recursive: true, mode: 0o700 });
   const record = (entry) => appendFileSync(logPath, `${JSON.stringify({ utc: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 });
-  record({ event: 'configuration', webDirectory: resolve(webDirectory), intervalMs: 30000, stopLoadAbove: 16, resumeLoadBelow: 10, sites });
+  record({ event: 'configuration', webDirectory: resolve(webDirectory), intervalMs: 30000, stopLoadAbove: 12, resumeLoadBelow: 10, startAvailableGiB: 40, stopAvailableBelowGiB: 30, resumeAvailableGiB: 40, maxTotalSeconds: 2, estimatedUsageGiB, sites });
   process.exitCode = await guardedBuild({
     command: process.execPath,
     args: [resolve(webDirectory, 'node_modules/next/dist/bin/next'), 'build'],
     cwd: resolve(webDirectory),
     record,
+    estimatedUsageGiB,
   });
 }
