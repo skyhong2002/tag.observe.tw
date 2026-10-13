@@ -144,7 +144,7 @@ export async function startApi(config, dependencies = {}) {
       serverAddress: server.address(), loadedSourceModuleUrl: appUrl, loadedBridgeModuleUrl: import.meta.url,
       productionRelayDisabled: true, publicDataSource: 'in-process-fixture', upstreamOrigins: [], isolationReceiptId: receipt.isolationReceiptId,
       mode: 'isolated-database', databaseConnectionPresent: true, identityConnectionScope: 'dedicated-readonly', ...identityAdapter,
-    }) }, { io, system, uid: process.getuid() });
+    }), ...(dependencies.onReadinessDiagnostic === undefined ? {} : { onDiagnostic: dependencies.onReadinessDiagnostic }) }, { io, system, uid: process.getuid() });
     server = (dependencies.http || http).createServer(async (request, response) => {
       const send = (status, data) => { response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'private, no-store' }); response.end(JSON.stringify(data)); };
       try {
