@@ -101,3 +101,29 @@ all candidate screenshot/UI review and deployment remain pending.** There
 are still 65 main UI routes, 0 complete passes and 65 pending for APP677.
 Actual loader commands will be independently source-reviewed and handed to
 babysit before execution; no new Next build is planned.
+
+
+## Next loader admission — source evidence only
+
+The owner-private Mint loader driver was independently reviewed by the same
+existing nonauthor reviewer at UTC12:58:16.595Z. SHA256:
+`775ebd8ae71182eb2b5e3ce1bdbe1ebc4b947e90cb3d98777baf6f4b5e98d9bb`.
+Mock evidence:
+`/tmp/babysit/mint-queue/tag-mint-loader-source-mock-review-2026-10-13T12-58-16-595Z.json`.
+Outer/embedded syntax, eight fake addon calls and JSON-marker parsing passed;
+no real native loader or image codec was executed. The proposed actual step
+requires all eight target addons, Sharp and ONNX Runtime, then only a tiny
+self-generated in-memory PNG/WebP/AVIF codec test. Full artifact hashes remain
+unchanged; actual Mint glibc2.39 will be recorded separately from SM2.41.
+
+Read-only probe UTC12:58:55 had blog curl exit56 despite HTTP200 and was
+rejected. A new probe at UTC13:00:32.365 passed all three HTTP200/curl0 checks:
+tag1.024416s, blog5.102216s, YT0.903499s; Mint load0.31/free143.37GiB, no
+lock holder/build/browser. All raw probe files are preserved in the private
+queue; observation does not grant execution. Exact command, pending input
+and source hashes are in `/tmp/babysit/mint-queue/tag.md` for babysit admission.
+
+The SM worker preparation separately passed independent source review and
+three pure tests; its actual Mint guarded SSH adapter is not connected and
+there is no executable admission claim. No SM transfer or loader took place.
+Mint and SM loaders, codec, UI and deployment remain pending.
