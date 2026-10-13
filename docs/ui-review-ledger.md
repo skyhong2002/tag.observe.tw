@@ -278,6 +278,8 @@ PSI source commit `e68987fb2e5adaf92c07a92931b04ebb089710a6`：LCP資料等待�
 
 ## ae9e18e 候選實圖（loaded scope，非整頁完整驗收）
 
+實際審查 manifest：`/home/deck/tag-analysis-private/ui-review/f1/sprint-independent-review/002-actual-review-manifest-ae9e18e.json`。由下列已看圖 transcript 與原始 capture report 整理，逐圖保存路徑、SHA-256、實際 viewport、看圖 UTC、reviewer/model，並指向原始網路紀錄；不是準備檔或新的 capture。manifest 狀態為 `partial-issues`，完整 route pass 仍為 0；不得套用到尚未建置的 `49cdad0`。
+
 002 柯文哲多筆文章已看全頁頭尾，reviewer `/root/f1_sprint_ui_review`／GPT-6.1 Sol，受審完整SHA `ae9e18e581ec274b756995edbfe3c8cb9533ee5b`、BUILD_ID `gNEog_mFcTUWnCAhMbI0C`；capture 05:21與05:29–05:30 UTC，actual看圖UTC與每张inputhash在transcript。共48張：1280/light11、390/light13、390/dark13、1280/dark11（重複尾段不增加覆蓋）。
 
 | scope | screenshots／raw network artifact directory | actual independent review log | 結果 |
