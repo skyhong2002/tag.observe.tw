@@ -116,6 +116,29 @@ Final owner handoff `/tmp/babysit/mint-queue/tag-candidate-reviewed-completion-1
 browser navigation, 65-route reviews and deployment remain unverified.
 No screenshot, browser, synthetic GA event or production DB operation ran.
 
+## Follow-up source evidence (not admitted or launched)
+
+An existing writer produced a separate private v4 source packet, preserving
+all v3 files and actual jobs. Root GPT-6.1 Sol independently reviewed the
+changes and reran13/13 pure tests. Review
+`/tmp/babysit/mint-queue/tag-candidate-v4-root-independent-source-review-20261013.json`
+SHA `874b96be6e6f0478fb9c2663e13b1fa81630a2ed7c0cbc2581262fa5e4247ad1`.
+The fixes save bounded raw SM probe bytes/status before validation, stop own
+children before the planned-stop checkpoint, preserve actual exit times,
+and continue attempting other owned children after one identity/signal
+failure before rejecting the session. A wrong/reused PID is never signalled.
+
+This is SOURCE_PASS for these functions, not permission or runtime evidence.
+The private prototype is not integrated/committed as executable repository
+code because its inherited namespace still refers to the completed job1.
+A new controller/namespace/pin bundle and reviewed owned-browser watchdog
+must be finalized before separate candidate/capture admission. Synchronous
+heartbeat/sleep may still delay deadline detection, so no exact120-second
+shutdown promise is made. No v4 SSH/probe/browser/service operation ran.
+The real fixture's many/sparse content and image pipeline are still missing
+UI evidence. The next browser batch must include pre-launch network denial,
+DNT1, raw request lists and SHA/BUILD_ID/viewport identity, not just settings.
+
 ## Original preparation history (retained)
 
 ### Proposed first scope
