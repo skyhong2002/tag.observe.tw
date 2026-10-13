@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateOptions, validateEvidence, stagePlan, competingBuilds } from './prepare-f1-candidate.js';
-const evidence = { owner: 'tag', authorizedAt: '2026-10-13T05:10:00Z', sourceMessage: '2026-10-13 two-hour sprint; tag may build alongside blog' };
+const evidence = { owner: 'tag', authorizedAt: '2026-10-13T05:10:00Z', sourceMessage: '2026-10-13 explicit relative gates; single global build slot confirmed for tag', globalBuildSlotConfirmed: true };
 const metadata = { isFile: () => true, uid: 42, mode: 0o100600 };
-test('private explicit sprint authorization fails closed', () => {
+test('private explicit global-slot handoff fails closed', () => {
   validateEvidence(evidence, metadata, 42);
-  for (const bad of [{}, { ...evidence, owner: 'blog' }, { ...evidence, authorizedAt: 'today' }, { ...evidence, sourceMessage: 'generated' }]) assert.throws(() => validateEvidence(bad, metadata, 42));
+  for (const bad of [{}, { ...evidence, owner: 'blog' }, { ...evidence, authorizedAt: 'today' }, { ...evidence, sourceMessage: 'generated' }, { ...evidence, globalBuildSlotConfirmed: false }, { ...evidence, sourceMessage: '2026-10-13 two-hour sprint; tag may build alongside blog' }]) assert.throws(() => validateEvidence(bad, metadata, 42));
   assert.throws(() => validateEvidence(evidence, { ...metadata, mode: 0o100644 }, 42));
   assert.throws(() => validateEvidence(evidence, metadata, 43));
 });
@@ -43,10 +43,10 @@ test('mock stage covers every command then static copy and prepared manifest wit
   assert.throws(() => runStage({ candidate: '/new' }, 'a'.repeat(40), () => { throw new Error('fake failure'); }, io, () => []), /fake failure/);
   assert.ok(events.some((e) => e[0] === 'appendFileSync' && e[2].includes('fake failure')));
 });
-test('stage refuses Next when two external builds appeared during npm installs', async () => {
+test('stage refuses Next when another external build appeared during npm installs', async () => {
   const { runStage } = await import('./prepare-f1-candidate.js');
   const calls = []; const errors = []; let scans = 0;
-  assert.throws(() => runStage({ repo: '/repo', candidate: '/new', api: 'http://127.0.0.1:3999' }, 'a'.repeat(40), (bin) => calls.push(bin), { appendFileSync: (...args) => errors.push(args) }, () => ++scans === 1 ? [] : [{ pid: '1' }, { pid: '2' }]), /No local build slot/);
+  assert.throws(() => runStage({ repo: '/repo', candidate: '/new', api: 'http://127.0.0.1:3999' }, 'a'.repeat(40), (bin) => calls.push(bin), { appendFileSync: (...args) => errors.push(args) }, () => ++scans === 1 ? [] : [{ pid: '1' }]), /No local build slot/);
   assert.deepEqual(calls, ['git', 'tar', 'npm', 'npm']);
   assert.equal(errors.length, 1);
 });

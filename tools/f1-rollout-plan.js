@@ -2,6 +2,7 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import baseline from './shared-host-baseline.cjs';
 export const image = 'sha256:9d3b7cdc11c490a3e2a6193b71adc184eb38c7a996c654503b5394ca71c595bb';
 export function routeCommands(sha) {
   if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('Full SHA required');
@@ -32,6 +33,6 @@ export function main(args = process.argv.slice(2)) {
   const standaloneWeb = realpathSync(manifest.standaloneWeb);
   if (!standaloneWeb.startsWith(candidate + '/') || !existsSync(join(standaloneWeb, 'server.js')) || readFileSync(join(candidate, 'web/.next/BUILD_ID'), 'utf8').trim() !== manifest.buildId) throw new Error('Candidate standalone/build identity mismatch');
   const envFile = realpathSync(resolve(envArg));
-  console.log(JSON.stringify({ mode: 'plan-only', sha, candidate, buildId: manifest.buildId, buildApiOrigin: manifest.apiOrigin, runtimeApiOrigin: 'http://127.0.0.1:18194', requiredGates: ['independent source and actual candidate UI review', 'private runtime/config backup and verified existing 0038 backup', 'old worker drained; new pending-image policy worker verified before public admission', 'old pool healthy and retained; exact-rule rollback ready'], runtime: runtimeCommands({ sha, candidate, standaloneWeb, envFile }), route: routeCommands(sha) }, null, 2));
+  console.log(JSON.stringify({ mode: 'plan-only', gates: { ...baseline, globalBuildLimit: 1, globalBrowserLimit: 2, load1Limit: 12, startAvailableGiB: 40, stopAvailableBelowGiB: 30 }, sha, candidate, buildId: manifest.buildId, buildApiOrigin: manifest.apiOrigin, runtimeApiOrigin: 'http://127.0.0.1:18194', requiredGates: ['independent source and actual candidate UI review', 'private runtime/config backup and verified existing 0038 backup', 'old worker drained; new pending-image policy worker verified before public admission', 'old pool healthy and retained; exact-rule rollback ready'], runtime: runtimeCommands({ sha, candidate, standaloneWeb, envFile }), route: routeCommands(sha) }, null, 2));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main();

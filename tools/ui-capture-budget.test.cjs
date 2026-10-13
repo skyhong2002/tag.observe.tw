@@ -42,7 +42,7 @@ test('all three recorded services must have fresh successful probes and per-site
   atBoundary.finishedAt = new Date(nowMs - 30_000).toISOString();
   assert.doesNotThrow(() => checkServiceSample(atBoundary, nowMs));
   for (const name of ['tag', 'blog', 'youtube']) {
-    for (const change of [{ total: name === 'blog' ? 6.001 : 2.001 }, { total: NaN }, { total: undefined }, { status: 103 }, { status: 404 }, { status: 500 }, { status: 0 }, { status: NaN }, { exitCode: 1 }, { exitCode: undefined }, { probeError: 'timeout' }]) {
+    for (const change of [{ total: name === 'blog' ? 6.171 : 2.001 }, { total: NaN }, { total: undefined }, { status: 103 }, { status: 404 }, { status: 500 }, { status: 0 }, { status: NaN }, { exitCode: 1 }, { exitCode: undefined }, { probeError: 'timeout' }]) {
       const sample = healthySample();
       Object.assign(sample.sites.find((site) => site.url.includes(`//${name}.`)), change);
       assert.throws(() => checkServiceSample(sample, nowMs), { code: 'CAPTURE_BUDGET_STOP' });
@@ -138,15 +138,15 @@ test('recorded health is rechecked before every capture without issuing probes',
   assert.throws(() => budget.check(), { code: 'CAPTURE_BUDGET_STOP' });
 });
 
-test('sprint allows blog total up to 6s while tag and youtube remain at 2s', () => {
+test('explicit relative gates allow blog total up to 6.17s while tag and youtube remain at 2s', () => {
   const sample = healthySample();
-  sample.sites[1].total = 6;
+  sample.sites[1].total = 6.17;
   assert.doesNotThrow(() => checkServiceSample(sample, nowMs));
   for (const index of [0, 2]) {
     const slow = healthySample();
     slow.sites[index].total = 2.001;
     assert.throws(() => checkServiceSample(slow, nowMs), { code: 'CAPTURE_BUDGET_STOP' });
   }
-  sample.sites[1].total = 6.001;
+  sample.sites[1].total = 6.171;
   assert.throws(() => checkServiceSample(sample, nowMs), { code: 'CAPTURE_BUDGET_STOP' });
 });

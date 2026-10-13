@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { appendFileSync, closeSync, cpSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { guardedBuild, probeServices } from './guard-next-build.js';
+import { guardedBuild, probeServices, siteBudgetsSeconds, siteBaselinesSeconds, baselineMeasurement } from './guard-next-build.js';
 
 export const lockPath = '/home/deck/.local/share/tag-analysis/deploy.lock';
 export function validateOptions(options) {
@@ -14,7 +14,7 @@ export function validateOptions(options) {
 }
 export function validateEvidence(evidence, metadata, uid = process.getuid()) {
   if (!metadata.isFile() || metadata.uid !== uid || (metadata.mode & 0o077)) throw new Error('Handoff evidence must be a private regular file owned by the current user');
-  if (evidence.owner !== 'tag' || evidence.sourceMessage !== '2026-10-13 two-hour sprint; tag may build alongside blog' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(evidence.authorizedAt) || !Number.isFinite(Date.parse(evidence.authorizedAt))) throw new Error('Explicit sprint authorization evidence is required');
+  if (evidence.owner !== 'tag' || evidence.sourceMessage !== '2026-10-13 explicit relative gates; single global build slot confirmed for tag' || evidence.globalBuildSlotConfirmed !== true || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(evidence.authorizedAt) || !Number.isFinite(Date.parse(evidence.authorizedAt))) throw new Error('Explicit current global-slot handoff evidence is required');
   // Format validation cannot authenticate a user message; the operator must
   // supply the actual authorization. This tool never creates evidence.
 }
@@ -48,9 +48,9 @@ function command(command, args, cwd, log, env = process.env) {
 export function runStage(options, sha, run = command, io = { mkdirSync, cpSync, existsSync, readFileSync, writeFileSync, appendFileSync }, scan = competingBuilds) {
   const log = join(options.candidate, 'stage.log');
   try {
-    if (scan().length >= 2) throw new Error('Another Next/Docker build is running');
+    if (scan().length >= 1) throw new Error('Another Next/Docker build is running');
     for (const [bin, args, cwd] of stagePlan(options.repo, options.candidate, sha)) {
-      if (args.at(-1) === 'build' && scan().length >= 2) throw new Error('No local build slot available before Next start');
+      if (args.at(-1) === 'build' && scan().length >= 1) throw new Error('No local build slot available before Next start');
       run(bin, args, cwd, log, { ...process.env, TAG_API_ORIGIN: options.api, NEXT_TELEMETRY_DISABLED: '1' });
     }
     const web = join(options.candidate, 'web');
@@ -86,7 +86,7 @@ export async function main(argv = process.argv.slice(2)) {
   const commit = command('git', ['rev-parse', 'HEAD'], options.repo);
   command('git', ['merge-base', '--is-ancestor', 'origin/main', commit], options.repo);
   if (command('git', ['status', '--porcelain', '--untracked-files=no'], options.repo)) throw new Error('Tracked checkout must be clean');
-  if (competingBuilds().length >= 2) throw new Error('Another Next/Docker build is running');
+  if (competingBuilds().length >= 1) throw new Error('Another Next/Docker build is running');
   mkdirSync(options.candidate, { mode: 0o700 }); // Exclusive: existing artifacts are never overwritten or removed.
   const log = join(options.candidate, 'guard.jsonl');
   let started = false;
@@ -94,7 +94,8 @@ export async function main(argv = process.argv.slice(2)) {
     if (entry.event === 'started') started = true;
     appendFileSync(log, `${JSON.stringify({ utc: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 });
   };
-  const code = await guardedBuild({ command: process.execPath, args: [resolve(process.argv[1]), '--stage', options.evidence, options.candidate, String(options.estimate), options.api, commit], cwd: options.repo, record, estimatedUsageGiB: options.estimate, probe: async () => { const sample = await probeServices(); if (competingBuilds().length > (started ? 2 : 1)) sample.probeError = 'Local build concurrency exceeds two'; return sample; } });
+  record({ event: 'configuration', policy: 'single-global-build-relative-homepage', commit, estimatedUsageGiB: options.estimate, siteBudgetsSeconds, siteBaselinesSeconds, baselineMeasurement, startAvailableGiB: 40, stopAvailableBelowGiB: 30, globalSlotConfirmedBy: JSON.parse(readFileSync(evidencePath, 'utf8')).sourceMessage, remoteYtCoordination: 'manual; remote builds cannot be inferred from local /proc' });
+  const code = await guardedBuild({ command: process.execPath, args: [resolve(process.argv[1]), '--stage', options.evidence, options.candidate, String(options.estimate), options.api, commit], cwd: options.repo, record, estimatedUsageGiB: options.estimate, probe: async () => { const sample = await probeServices(); if (competingBuilds().length > (started ? 1 : 0)) sample.probeError = 'Local build concurrency exceeds one'; return sample; } });
   if (code !== 0) { record({ event: 'error', exitCode: code }); throw new Error(`Candidate preparation failed (${code}); artifacts retained`); }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch((error) => { console.error(error.message); process.exitCode = 1; });

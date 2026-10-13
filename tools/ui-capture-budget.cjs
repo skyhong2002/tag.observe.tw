@@ -7,11 +7,8 @@ const path = require('node:path');
 const MiB = 1024 ** 2;
 const FLOOR = 30 * 1024 ** 3;
 const START_FLOOR = 40 * 1024 ** 3;
-const SERVICE_LIMITS = new Map([
-  ['https://tag.observe.tw/', 2],
-  ['https://blog.observe.tw/', 6],
-  ['https://youtube.observe.tw/', 2],
-]);
+const { siteBudgetsSeconds, baselineMeasurement } = require('./shared-host-baseline.cjs');
+const SERVICE_LIMITS = new Map(Object.entries(siteBudgetsSeconds));
 const MAX_BATCH = 100 * MiB;
 const fail = (message) => Object.assign(new Error(message), { code: 'CAPTURE_BUDGET_STOP' });
 
@@ -69,6 +66,8 @@ function createCaptureBudget(directory, screenshots, getServiceSample) {
         freeBytes: disk.bavail * disk.bsize - pendingBytes,
         load1: os.loadavg()[0],
         plannedBytes,
+        baselineMeasurement,
+        siteBudgetsSeconds,
         batchBytes: directoryBytes(directory) + pendingBytes,
         beforeLaunch,
         captured,

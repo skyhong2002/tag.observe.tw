@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { EventEmitter } from 'node:events';
 import test from 'node:test';
-import { buildDecision, guardedBuild, probeServices, sites, siteBudgetsSeconds, GiB } from './guard-next-build.js';
+import { buildDecision, guardedBuild, probeServices, sites, siteBudgetsSeconds, siteBaselinesSeconds, baselineMeasurement, GiB } from './guard-next-build.js';
 
 const sample = (overrides = {}) => ({
   load1: 5, homeAvailableBytes: 50 * GiB,
@@ -19,7 +19,7 @@ test('load, disk and time boundaries; resume requires healthy probes, load <10, 
     assert.equal(buildDecision(sample({ load1, homeAvailableBytes: disk * GiB }), true), decision);
   }
   for (const url of sites) {
-    const budget = url === 'https://blog.observe.tw/' ? 6 : 2;
+    const budget = url === 'https://blog.observe.tw/' ? 6.17 : 2;
     assert.equal(siteBudgetsSeconds[url], budget);
     for (const [patch, decision] of [[{ total: budget }, 'run'], [{ total: budget + 0.001 }, 'pause'], [{ status: 500 }, 'pause'], [{ exitCode: 28 }, 'pause']]) {
       const s = sample(); Object.assign(s.sites.find((entry) => entry.url === url), patch);
@@ -55,6 +55,7 @@ test('service and /home probes are mocked, and collect curl total for all three 
   });
   assert.equal(s.homeAvailableBytes, 40 * GiB);
   assert.deepEqual(calls.map(({ args }) => args.at(-1)), sites);
+  for(const {args} of calls){assert.ok(args.includes('DNT: 1'));assert.ok(args.includes('Accept: text/html'));}
   assert.equal(buildDecision(s, false), 'run');
   await assert.rejects(probeServices({ executeProbe: async () => ({ stdout: '200 0.1 0.2' }), diskProbe: async () => { throw new Error('disk failed'); } }), /disk failed/);
 });
@@ -206,9 +207,19 @@ test('a successful leader exit cannot leave a worker running without the guard',
 });
 
 
-test('blog may take up to six seconds while tag and YouTube retain two seconds', () => {
+test('blog may take up to 6.17 seconds while tag and YouTube retain two seconds', () => {
   for (const url of sites) {
     const s = sample(); s.sites.find((entry) => entry.url === url).total = 3;
     assert.equal(buildDecision(s, false), url === 'https://blog.observe.tw/' ? 'run' : 'pause');
   }
+});
+
+test('approved baseline receipt is pinned and computes exact relative limits without rebasing', () => {
+  assert.deepEqual(siteBaselinesSeconds, {'https://tag.observe.tw/':0.256,'https://blog.observe.tw/':3.085,'https://youtube.observe.tw/':0.289});
+  assert.deepEqual(siteBudgetsSeconds, {'https://tag.observe.tw/':2,'https://blog.observe.tw/':6.17,'https://youtube.observe.tw/':2});
+  assert.equal(baselineMeasurement.startedUTC,'2026-10-13T05:47:30Z');
+  assert.equal(baselineMeasurement.finishedUTC,'2026-10-13T05:48:30Z');
+  assert.match(baselineMeasurement.method,/Five homepage HTML/);
+  assert.match(baselineMeasurement.sourceReceiptSha256,/^[0-9a-f]{64}$/);
+  assert.ok(Object.isFrozen(siteBudgetsSeconds));
 });
