@@ -237,3 +237,53 @@ Executable operational drivers stay in private evidence directories, bound by
 independent review and exact SHA256. Repository changes in this batch document
 these proofs; APP677 and artifact OPSc704 remain unchanged. SM loader and all65
 UI routes remain pending; no production release was switched.
+
+
+## First SM copy succeeded; native task failed before module load
+
+With explicit babysit SM copy/native approval, frozen controller48679391 and
+inputd9c30118 took the real Mint kernel lock and fresh gates. Limited rsync
+completed at UTC **14:09:16.310Z**, status0. The new isolated runtime and all
+original/failed files remain retained; no release or backup was removed.
+
+SM worker exited1 at `before-inventory`; outer guard finished at
+**14:09:26.610Z**, exit1. There is no `native-evidence` directory, so the eight
+`.node`, Sharp and ONNX module loads were **not reached**. Full SM inventory
+verification and Mint post-operation verification were also not reached. Do
+not label this a SM f166 inventory or native PASS merely because copy exited0.
+The owner subsequently observed no common kernel-lock holders.
+
+The original worker logged only successfully validated Mint proofs. It rejected
+one proof before logging its raw response, so the actual failing timestamp is
+unavailable and must not be invented. Earlier successful worker/parent proofs
+match the specific kernel PID/device/inode/startticks/cmdline/admission, plus
+controller self/input/plan/lease bindings. The failing stack is the generic
+`verifyMintObservation` predicate, which directly compares a raw Mint timestamp
+with the SM clock and rejects any positive remote offset.
+
+A separate **readonly clock-only SSH diagnostic** retained twelve raw replies;
+all status0, round trips228–245ms. Every Mint timestamp was2–4ms ahead of the SM
+receipt clock. This proves a reproducible cross-clock source defect and is
+strongly consistent with the failure. It does **not** record the missing failed
+RPC's delta or prove its exact rejected predicate by itself. No clocks were
+changed, kernel lock acquired, artifact modified or native loader rerun by the
+diagnostic.
+
+Actual retained evidence:
+- `/tmp/babysit/mint-queue/tag-sm-native-failure-20261013T1409Z/failure-summary.json`
+  indexes all original logs/raw bytes/hashes; SM originals remain in its private
+  `native-smoke-job`, Mint originals in `native-sm-target-job-c70425b0`.
+- `/tmp/babysit/mint-queue/tag-sm-mint-clock-readonly-diagnostic-20261013.json`,
+  SHA256 `5bc9aa5ace05e6ca4c29cd62e2e08144c5fce2a21284c9efa43bc74aa78fe266`.
+- Existing nonauthor offline review UTC14:21:43.833864Z:
+  `/tmp/babysit/mint-queue/tag-sm-native-failure-offline-independent-review-2026-10-13T14-21-43-833864+00-00.json`.
+
+The proposed repair keeps raw remote timestamps intact, saves every raw proof
+**before** validation, measures RPC age using local SM before/after timestamps,
+and measures controller lease age using Mint's own clock. Identity, private
+source hashes, API readiness, timeouts and expiry remain strict. It does not add
+an arbitrary clock-skew allowance or change system clocks. A separately reviewed
+smoke-only retry will use the already-copied runtime and a new exclusive `-r2`
+job; no second rsync or deletion. New exact hashes/command/fresh gate receipt
+require babysit admission before retry. Mint-only prior smoke remains valid;
+SM native/UI/deploy remain pending, 65 main UI routes /0 complete passes.

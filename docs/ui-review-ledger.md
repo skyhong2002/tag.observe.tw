@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**最新 SM 隔離執行（UTC 2026-10-13 14:09，未通過）**：copy退出0，但native task在 `before-inventory` guard退出1，沒有進到任何8個 `.node`；SM完整inventory與Mint操作後重驗也未達成，**不能標成SM smoke／f166 PASS**。已保留所有target/原始log，鎖釋放；12次唯讀clock診斷重現SM／Mint時鐘直接比較缺陷，當次失敗raw缺失不補造，既有非作者離線核對見 [完整證據與界線](mint-native-independent-audit-20261013.md)。修正及新exclusive smoke-only `-r2`仍source準備／另待核對；Mint13:13 loader證據不因此變成SM驗收。**65主routes／0完整pass／65pending**，本批未部署。
+
 **最新 Mint-only native loader（UTC 2026-10-13 13:13）**：babysit 放行後 guard 真實執行退出0，APP `677a0c79`／OPS `c70425b0`／BUILD_ID `PmjYScQDDoJKBr43SLkhd`；8個 target `.node`、Sharp／ONNX Runtime module imports，以及記憶體內16×12 WebP／AVIF smoke 通過。前後完整 inventory 都是 `f1660cad…`、manifest 都是 `76142c…`，鎖已釋放；[實際 raw／receipts 與八檔清單](mint-native-independent-audit-20261013.md)。這是 **n/a-ui Mint native／codec 證據**，不是 SM loader、圖片投稿 pipeline、模型推論、Next optimizer 或 UI review；SM guarded adapter 尚待接線／核對，`deployEligible:false`。**65主 routes／0完整pass／65pending**，本批未部署。
 
 **最新 target bytes 獨立 static audit（UTC 2026-10-13 12:44–12:45）**：APP `677a0c79`／OPS `c70425b0`／BUILD_ID `PmjYScQDDoJKBr43SLkhd`。既有非作者 reviewer 本人重算 `-r2.target-runtime` inventory **`f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7`**，12 ELF／8 `.node`／36 readelf 通過，最高 GLIBC_2.30、RPATH 不越界；三個省略 variants 的原檔與 hash 都保留，NAPI/glibc binding 未變。完整原始證據與各 SHA 見 [獨立 audit 紀錄](mint-native-independent-audit-20261013.md)。這是 **n/a-ui static 證據**；Mint／SM loader、codec、capture、UI review 與部署仍 pending，`deployEligible:false`；**65 主 routes／0 完整 pass／65 pending**。下方 `-r2` 15 ELF 與尚未建置文字是歷史狀態，不可驗這份新 bytes 或代表目前進度。
