@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**SM 隔離 native r2 已實際通過並獨立複核（UTC14:47–14:51）**：controller `f26cc070…` 依明確核對放行執行退出0；8個 `.node`、Sharp／ONNX 實載成功。SM前後完整 inventory `f1660cad…`／manifest `76142c…` 不變；Mint post驗證亦一致，kernel已釋放。既有非作者本人再唯讀重算SM全部32,459筆，raw／receipt chain／32次RPC與probe驗證通過，詳見 [實際證據](mint-native-independent-audit-20261013.md)。這是 **n/a-ui actual native 證據**，不是圖片完整管線、candidate、截圖或部署；**APP677：65 主 routes／0 完整 pass／65 pending**。下方未執行／失敗內容為各原批次歷史，不代表此次r2結果。本批未部署；candidate與capture命令另待核對。
+
 **SM smoke-only r2 source 修正（未執行）**：跨時鐘直接比較已改成同 Mint lease age 加上 SM RPC／快取耗時，總計 ≤30 秒；原始 RPC bytes 在驗證前保存，原時間不重寫。Root 獨立閱讀既有 writer 的 v6、25／25 source/mock 測試通過；新的 controller 已由既有非作者 reviewer 於 UTC14:40:12 完成 source PASS（25／25 tests＋5 Python compile-only），receipt 見完整證據文件。新命令仍另待 babysit 核對，不再 rsync，不跑 Next／npm／瀏覽器。這些是 **n/a-ui source 證據**；SM inventory／native 實載仍未通過，**APP677：65 主 routes／0 完整 pass／65 pending**，本批未部署。
 
 **最新 SM 隔離執行（UTC 2026-10-13 14:09，未通過）**：copy退出0，但native task在 `before-inventory` guard退出1，沒有進到任何8個 `.node`；SM完整inventory與Mint操作後重驗也未達成，**不能標成SM smoke／f166 PASS**。已保留所有target/原始log，鎖釋放；12次唯讀clock診斷重現SM／Mint時鐘直接比較缺陷，當次失敗raw缺失不補造，既有非作者離線核對見 [完整證據與界線](mint-native-independent-audit-20261013.md)。修正及新exclusive smoke-only `-r2`仍source準備／另待核對；Mint13:13 loader證據不因此變成SM驗收。**65主routes／0完整pass／65pending**，本批未部署。

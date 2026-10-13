@@ -340,3 +340,49 @@ must measure again. Exact conditional command and pending-false inputs
 are in `/tmp/babysit/mint-queue/tag.md` and
 `/tmp/babysit/mint-queue/tag-sm-smoke-r2-retry-packet.json`.
 New retry admission is pending; SM native, UI and deployment are not passed.
+
+## Actual SM loader r2 passed, independently reviewed (UTC14:47–14:51)
+
+Babysit explicitly admitted controller `f26cc070…`. The exact guarded command
+completed with exit 0, exclusive job
+`/var/lib/observe-worker/tag/native-sm-smoke-job-c70425b0-r2`. SM native child
+finished `2026-10-13T14:47:50.543Z`, worker full-result at
+`2026-10-13T14:48:11.192Z`, SM parent acceptance `2026-10-13T14:48:22.281Z`;
+Mint parent acceptance `2026-10-13T14:48:29.267Z`. The kernel lock was released:
+readonly observation `2026-10-13T14:53:30.854434+00:00`, holders `[]`; raw observation retained.
+
+All eight target `.node` files, Sharp and ONNX Runtime modules actually loaded
+on SM Linux/x64, Node ABI137, glibc2.41, in the existing private isolated
+runtime. Raw command status0, stdout `NATIVE_LOADED`, empty stderr. No Next,
+npm install, browser, inference, production service/DB access or deletion;
+no second copy. The original failed job and both runtime sources remain.
+SM complete before/after inventories equal
+`f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7`;
+manifest `76142c7930cbd2e471f02cf68130fa01acbfb54d2c6a4309fc8198185987e7e0` unchanged.
+The frozen Mint controller's successful final acceptance also binds its
+full post-operation `verifyArtifact` to the unchanged original f166/761 bytes.
+
+Existing nonauthor reviewer personally recomputed all 32,459 SM runtime
+entries with the exact same f166 inventory and 761 manifest, and independently
+checked the raw/base64 hashes, receipt chain, exact eight paths/hashes, actual
+runtime and nativeEligibility. All 32 RPC/probe pure-validator checks passed:
+13 parent RPC, 6 worker RPC, 13 actual probes. Effective lease ages at receipt
+were parent687–6940ms / worker3732–10365ms, all below 30s; all recorded
+SM site/resource gates passed. Reviewer did not rerun loader or probe, and
+did not separately rehash Mint; the Mint post-hash conclusion is the frozen
+controller/actual successful acceptance evidence.
+
+Independent receipt `/tmp/babysit/mint-queue/tag-sm-r2-actual-independent-review-20261013T1455Z.json`
+SHA256 `e9ba6d3f3638f298d12e41dbacae08eb4ca5b0ef8f3ae50c126682a9f863ea9f`,
+actual review UTC14:51:26.753018Z (filename1455 is only a namespace).
+Original evidence and bounded private copies: `/tmp/babysit/mint-queue/tag-sm-native-r2-actual-20261013T1448Z`;
+owner completion `/tmp/babysit/mint-queue/tag-sm-native-r2-completion-c70425b0.json`.
+Mint result SHA `66395c53f43ded822a40cd2b821c9ab27bb5732893d5b439bc8ab3c15df781a0`;
+Mint acceptance SHA `b1f84c41ac45e92171f460702dacf2f43b43302eebec5bc7f72c390249031c7c`;
+SM acceptance SHA `4ee826957aa8b62904c8f529fddf319cb4328a9588f2ef97bd582842b210f985`.
+
+This completes isolated SM native compatibility, not SM candidate, WebP/AVIF
+processing on SM, model inference, user image pipeline, UI review or deployment.
+Mint-only tiny codec smoke remains separately documented. APP677 still has
+65 main routes / 0 complete UI pass / 65 pending. Candidate and capture commands
+require their separate admission; source preparation may continue offline.
