@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**Mint 隔離 runtime 更新（UTC 2026-10-13 10:03）**：APP `677a0c79`／OPS `8e183c35` 真實 SQL／API readiness 與 14/14 投稿／審核整合案例通過，記錄見 [mint-fixture-validation-20261013.md](mint-fixture-validation-20261013.md)。這是 **n/a-ui runtime／source 證據**，不代表 UI pass；同 APP 仍 **0 完整 pass／65 pending**，沒有 BUILD_ID、capture 或部署。首次建置待 babysit 核對 actual receipts，API ready 不等於 build slot 授權。
+
 **最新授權（Mint 排隊，原 18:50 截止取消）**：SM 不新增 build／capture／restore；tag 原 SM 名額取消，改為第一個等待 Mint 的建置。交付 APP_SHA `677a0c793eeda0c4d850c81ac574c95508d08e0a` 尚未建置，**0 review／0 完整 pass／65 pending**。交接與能力缺口見 [mint-tag-handoff-20261013.md](mint-tag-handoff-20261013.md) 和 `/tmp/babysit/mint-queue/tag.md`；工作持續至原 scope 全部完成，沒有新截止或縮減範圍。以下正常節奏／18:50／SM 建置排隊文字保留為歷史；不可當現行開跑許可。
 
 **最新狀態（2026-10-13，正常節奏）**：產品暗色修正 `49cdad0` 尚未建置，65主route皆待新版重拍。上一已建置候選 `ae9e18e`／BUILD_ID `gNEog_mFcTUWnCAhMbI0C`，1個route已完成loaded狀態的雙寬／亮暗色實際review；**0個完整route pass、65完整route pending**。002暗色可讀性issue由該版實圖發現，source已修、重拍未完成。日期15:10期限取消，18:50窗口以品質為主；全站1build含任何遠端建置、2browser，blog6.17秒／tag與YT2秒、load12、disk40/30。建置順序blog→YT→tag等通知。詳見 [candidate-normal-handoff-20261013.md](candidate-normal-handoff-20261013.md)。以下舊版狀態與政策保留作歷史，不能跨SHA計pass。
