@@ -1,4 +1,4 @@
-import { and, eq, gte, isNotNull, max, sql } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, isNull, max, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { tagAvatarCandidates, tagPeople, tagPictureVotes, tagSubmissions, tagVisualCandidates, tagVisuals } from '../db/schema.ts';
 
@@ -49,10 +49,22 @@ export async function applyVotes(db: Db, tag: string, kind: PictureKind) {
     if (!row || row.status === 'chosen' || row.status === 'hidden' || row.status === 'nonhuman') return row?.shownRank ?? null;
     const rank = leader(votes, row.shownRank);
     if (rank === null) return row.shownRank;
-    await db
+    const [updated] = await db
       .update(tagPeople)
       .set({ status: 'voted', shownRank: rank, note: null })
-      .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} <> 'nonhuman'`));
+      .where(
+        and(
+          eq(tagPeople.tag, tag),
+          eq(tagPeople.status, row.status),
+          row.shownRank === null ? isNull(tagPeople.shownRank) : eq(tagPeople.shownRank, row.shownRank),
+        ),
+      );
+    // A reviewer may have chosen/hidden a picture after the read above.
+    // Compare-and-set must preserve that decision; return the current display.
+    if (!updated.affectedRows) {
+      const [current] = await db.select({ shownRank: tagPeople.shownRank }).from(tagPeople).where(eq(tagPeople.tag, tag));
+      return current?.shownRank ?? null;
+    }
     return rank;
   }
   const [row] = await db
@@ -70,10 +82,20 @@ export async function applyVotes(db: Db, tag: string, kind: PictureKind) {
   const { tag: _, rank: __, uploadedBy: ___, uploadedAt: ____, ...picture } = c;
   if (rank === row.shownRank && row.status === 'voted') return rank;
   // checkedAt moves the image URL's version, so browsers fetch the new picture.
-  await db
+  const [updated] = await db
     .update(tagVisuals)
     .set({ ...picture, status: 'voted', shownRank: rank, checkedAt: new Date() })
-    .where(eq(tagVisuals.tag, tag));
+    .where(
+      and(
+        eq(tagVisuals.tag, tag),
+        eq(tagVisuals.status, row.status),
+        row.shownRank === null ? isNull(tagVisuals.shownRank) : eq(tagVisuals.shownRank, row.shownRank),
+      ),
+    );
+  if (!updated.affectedRows) {
+    const [current] = await db.select({ shownRank: tagVisuals.shownRank }).from(tagVisuals).where(eq(tagVisuals.tag, tag));
+    return current?.shownRank ?? null;
+  }
   return rank;
 }
 
