@@ -194,3 +194,46 @@ receipt:
 `/tmp/babysit/mint-queue/tag-mint-loader-offline-independent-review-2026-10-13T13-16-29-340449+00-00.json`.
 The UTC13:14:17 lock observation is attributed to the owner, not the reviewer.
 This accepts only Mint loader/tiny codec evidence; SM/UI/deploy remain pending.
+
+
+## Reviewed combined SM staging/loader source — not executed
+
+The existing writer completed the isolated SM guarded parent/worker and root
+independently reviewed its fixed v4 sources. The existing nonauthor reviewer
+independently reviewed root's Mint controller and pure evidence contract at
+UTC13:53:26.518Z: **19/19 pure/source tests passed**, Node syntax and four
+Python templates compiled only, hashes reread after testing. All are source
+evidence; no SM transfer, native execution or candidate UI capture occurred.
+
+Frozen Mint controller SHA256:
+`486793910f255844730e58a640f0f95587dce716bb608a40310e8d0ec08f0b00`;
+pure contract SHA256:
+`c8af3708d703a26a348166a2278686114435ffd6b2b683a3d8470eafe694ab99`.
+Independent source receipt:
+`/tmp/babysit/mint-queue/tag-mint-sm-controller-source-independent-review-2026-10-13T13-53-26-518380+00-00.json`.
+SM source review:
+`/tmp/babysit/mint-queue/tag-sm-guarded-source-independent-review-20261013-v4.json`.
+
+The planned operation copies unchanged f166 bytes via limited8MiB/s rsync into
+a new exclusive private SM target (4GiB reserved), retaining all originals.
+Both hosts measure actual resources; Mint reads its candidate volume at
+`/var/lib/observe-worker`. SM independently checks the real specific Mint
+kernel lock and self/input/plan/PID-bound current controller lease, including
+API readiness. Paused/stale control lease stops SM's own native group; fatal
+source/expiry errors terminate only that group. Four-minute native admission
+expires before the five-minute SSH wait; final controller deadline forbids
+late acceptance. SHA bytes are locally recomputed from returned original raw
+files, with complete nativeEligibility and pre/post inventory validation.
+
+True admission is **not created**: pending plan reviewedfalse and execution
+input permissionfalse remain in `/tmp/babysit/mint-queue/tag.md`, alongside the
+exact conditional command/source hashes and read-only probe at UTC13:54:48.559Z.
+That probe has three HTTP200/curl0 totals1.399661/3.162408/1.058198s, Mint load0.43
+and143.36GiB free, no holder/build/browser. It is an observation, not permission.
+The actual caller must reacquire nonblocking lock and fresh gates after separate
+babysit SM-scope approval. Mint-only approval does not authorize this step.
+
+Executable operational drivers stay in private evidence directories, bound by
+independent review and exact SHA256. Repository changes in this batch document
+these proofs; APP677 and artifact OPSc704 remain unchanged. SM loader and all65
+UI routes remain pending; no production release was switched.
