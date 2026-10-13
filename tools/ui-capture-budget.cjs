@@ -8,6 +8,7 @@ const MiB = 1024 ** 2;
 const FLOOR = 30 * 1024 ** 3;
 const START_FLOOR = 40 * 1024 ** 3;
 const { siteBudgetsSeconds, baselineMeasurement } = require('./shared-host-baseline.cjs');
+const {requireHomepageMedian,gateMeasurement} = require('./homepage-median-probe.mjs');
 const SERVICE_LIMITS = new Map(Object.entries(siteBudgetsSeconds));
 const MAX_BATCH = 100 * MiB;
 const fail = (message) => Object.assign(new Error(message), { code: 'CAPTURE_BUDGET_STOP' });
@@ -27,10 +28,8 @@ function checkServiceSample(sample, nowMs = Date.now()) {
   for (const [url, totalLimit] of SERVICE_LIMITS) {
     const matches = sample.sites.filter((site) => site?.url === url);
     const site = matches[0];
-    if (matches.length !== 1 || site.exitCode !== 0 || site.probeError ||
-        !Number.isInteger(site.status) || site.status < 200 || site.status >= 400 ||
-        !Number.isFinite(site.total) || site.total < 0 || site.total > totalLimit)
-      throw fail(`Capture paused: cannot verify healthy service ${url}`);
+    try{if(matches.length!==1||site.probeError)throw Error('Missing site');requireHomepageMedian(site,totalLimit,{startedAtMs:nowMs-30000,endedAtMs:finished});}
+    catch{throw fail(`Capture paused: cannot verify three healthy original trials for ${url}`);}
   }
 }
 
@@ -66,7 +65,7 @@ function createCaptureBudget(directory, screenshots, getServiceSample) {
         freeBytes: disk.bavail * disk.bsize - pendingBytes,
         load1: os.loadavg()[0],
         plannedBytes,
-        baselineMeasurement,
+        baselineMeasurement,gateMeasurement,
         siteBudgetsSeconds,
         batchBytes: directoryBytes(directory) + pendingBytes,
         beforeLaunch,

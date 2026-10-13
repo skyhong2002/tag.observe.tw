@@ -1,14 +1,13 @@
 // Keep builds subordinate to the public services on this shared Linux host.
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { statfs } from 'node:fs/promises';
 import { loadavg } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { promisify } from 'node:util';
 import baseline from './shared-host-baseline.cjs';
 
-const execute = promisify(execFile);
+import {collectHomepageTrials,requireHomepageMedian,gateMeasurement} from './homepage-median-probe.mjs';
 export const { siteBaselinesSeconds, siteBudgetsSeconds, baselineMeasurement } = baseline;
 export const sites = Object.keys(siteBudgetsSeconds);
 export const GiB = 1024 ** 3;
@@ -17,9 +16,7 @@ export function buildDecision(sample, paused, { starting = false, estimatedUsage
   const unavailable = !sample || sample.probeError || !Array.isArray(sample.sites)
     || sample.sites.length !== sites.length || sites.some((url) => {
       const site = sample.sites.find((entry) => entry?.url === url);
-      return !site || site.exitCode !== 0 || !Number.isInteger(site.status)
-        || site.status < 200 || site.status >= 400 || !Number.isFinite(site.total)
-        || site.total < 0 || site.total > siteBudgetsSeconds[url] || !Number.isFinite(site.ttfb) || site.ttfb < 0;
+      try{requireHomepageMedian(site,siteBudgetsSeconds[url]);return false;}catch{return true;}
     });
   if (unavailable || !Number.isFinite(sample.load1) || sample.load1 < 0
     || sample.load1 > 12 || !Number.isFinite(sample.homeAvailableBytes)
@@ -32,38 +29,16 @@ export function buildDecision(sample, paused, { starting = false, estimatedUsage
   return 'run';
 }
 
-export async function probeServices({ executeProbe = execute, diskProbe = statfs, loadProbe = loadavg } = {}) {
+export async function probeServices({ executeProbe, diskProbe = statfs, loadProbe = loadavg, record=()=>{} } = {}) {
   const startedAt = new Date().toISOString();
-  const responses = await Promise.all(
-    sites.map(async (url) => {
-      let stdout;
-      let exitCode = 0;
-      try {
-        ({ stdout } = await executeProbe(
-          'curl',
-          ['-sS', '-H', 'DNT: 1', '-H', 'Accept: text/html', '--max-time', '10', '-o', '/dev/null', '-w', '%{http_code} %{time_starttransfer} %{time_total}', url],
-          { timeout: 12000 },
-        ));
-      } catch (error) {
-        stdout = error.stdout ?? '';
-        exitCode = typeof error.code === 'number' ? error.code : 1;
-      }
-      const [status, ttfb, total] = stdout.trim().split(/\s+/).map(Number);
-      return {
-        url,
-        status: status || 0,
-        ttfb: Number.isFinite(ttfb) ? ttfb : null,
-        total: Number.isFinite(total) ? total : null,
-        exitCode,
-      };
-    }),
-  );
+  const responses=await collectHomepageTrials({urls:sites,executeCommand:executeProbe,record});
   const disk = await diskProbe('/home');
   const homeAvailableBytes = Number(disk.bavail) * Number(disk.bsize);
-  return { startedAt, finishedAt: new Date().toISOString(), load1: loadProbe()[0], homeAvailableBytes, sites: responses };
+  return { startedAt, finishedAt: new Date().toISOString(), load1: loadProbe()[0], homeAvailableBytes, sites: responses,gateMeasurement };
 }
 
-export async function guardedBuild({ command, args, cwd, record, probe = probeServices, intervalMs = 30000, estimatedUsageGiB, spawnBuild = spawn, killGroup = process.kill.bind(process) }) {
+export async function guardedBuild({ command, args, cwd, record, probe, intervalMs = 30000, estimatedUsageGiB, spawnBuild = spawn, killGroup = process.kill.bind(process) }) {
+  probe ??=()=>probeServices({record:row=>record({event:'probe-trial',...row})});
   let child;
   let result;
   let paused = false;
@@ -178,7 +153,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   if (!webDirectory || !logPath || !Number.isFinite(estimatedUsageGiB) || estimatedUsageGiB <= 0) throw new Error('Usage: node tools/guard-next-build.js WEB_DIRECTORY PRIVATE_LOG_JSONL ESTIMATED_USAGE_GIB (positive number)');
   mkdirSync(dirname(resolve(logPath)), { recursive: true, mode: 0o700 });
   const record = (entry) => appendFileSync(logPath, `${JSON.stringify({ utc: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 });
-  record({ event: 'configuration', webDirectory: resolve(webDirectory), intervalMs: 30000, stopLoadAbove: 12, resumeLoadBelow: 10, startAvailableGiB: 40, stopAvailableBelowGiB: 30, resumeAvailableGiB: 40, siteBaselinesSeconds, siteBudgetsSeconds, baselineMeasurement, estimatedUsageGiB, sites });
+  record({ event: 'configuration', webDirectory: resolve(webDirectory), intervalMs: 30000, stopLoadAbove: 12, resumeLoadBelow: 10, startAvailableGiB: 40, stopAvailableBelowGiB: 30, resumeAvailableGiB: 40, siteBaselinesSeconds, siteBudgetsSeconds, baselineMeasurement, gateMeasurement, estimatedUsageGiB, sites });
   process.exitCode = await guardedBuild({
     command: process.execPath,
     args: [resolve(webDirectory, 'node_modules/next/dist/bin/next'), 'build'],

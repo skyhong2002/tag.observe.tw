@@ -1,10 +1,8 @@
 // SM-local observation only. No SSH, lock acquisition, service or browser launch.
 import * as fs from 'node:fs';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { loadavg } from 'node:os';
 import baseline from '../shared-host-baseline.cjs';
-const execute = promisify(execFile);
+import {collectHomepageTrials,requireHomepageMedian,gateMeasurement} from '../homepage-median-probe.mjs';
 export const GiB = 1024 ** 3;
 export function processIdentity(pid) {
   const p = '/proc/' + pid, text = fs.readFileSync(p + '/stat', 'utf8');
@@ -34,26 +32,14 @@ export function localResources() {
 }
 export async function observeSM(record = () => {}) {
   const startedAtMs = Date.now();
-  const sites = await Promise.all(Object.keys(baseline.siteBudgetsSeconds).map(async url => {
-    let status = 0, result;
-    try {
-      result = await execute('/usr/bin/curl', ['-sS', '-H', 'DNT: 1', '-H', 'Accept: text/html', '--max-time', '10',
-        '-o', '/dev/null', '-w', '%{http_code} %{time_starttransfer} %{time_total}', url], { timeout: 12000, maxBuffer: 4096, env:{PATH:'/usr/bin:/bin',LANG:'C'} });
-    } catch (e) { status = typeof e.code === 'number' ? e.code : 1; result = e; }
-    // Preserve the original transport, including failures, before parsing.
-    record({ type: 'curl-raw', utc: new Date().toISOString(), url, exitCode: status,
-      stdout: String(result.stdout ?? ''), stderr: String(result.stderr ?? '') });
-    const [http, ttfb, total] = String(result.stdout ?? '').trim().split(/\s+/).map(Number);
-    return { url, status: http || 0, ttfb: Number.isFinite(ttfb) ? ttfb : null,
-      total: Number.isFinite(total) ? total : null, exitCode: status };
-  }));
-  const sample = { startedAtMs, finishedAtMs: Date.now(), sites, ...localResources(), measuredOn: 'SM', baselineMeasurement: baseline.baselineMeasurement,
+  const sites = await collectHomepageTrials({urls:Object.keys(baseline.siteBudgetsSeconds),record});
+  const sample = { startedAtMs, finishedAtMs: Date.now(), sites, ...localResources(), measuredOn: 'SM', baselineMeasurement: baseline.baselineMeasurement, gateMeasurement,
     remoteSlotScope: 'Global remote build/browser admission remains babysit coordinated; this is local /proc only.' };
   record({ type: 'sm-gate', ...sample });
   return sample;
 }
 export function requireGate(s, { starting = false, additionalBuilds = 0, additionalBrowsers = 0, now = Date.now() } = {}) {
-  if (!s || !Number.isFinite(s.finishedAtMs) || now - s.finishedAtMs < 0 || now - s.finishedAtMs > 30000 || !Number.isFinite(s.startedAtMs) || s.startedAtMs>s.finishedAtMs || now-s.startedAtMs>30000 ||
+  if (!s || !Array.isArray(s.sites) || s.sites.length!==3 || !Number.isFinite(s.finishedAtMs) || now - s.finishedAtMs < 0 || now - s.finishedAtMs > 30000 || !Number.isFinite(s.startedAtMs) || s.startedAtMs>s.finishedAtMs || now-s.startedAtMs>30000 ||
       !Number.isFinite(s.resourceObservedAtMs) || now-s.resourceObservedAtMs<0 || now-s.resourceObservedAtMs>5000 ||
       !Number.isFinite(s.load1) || s.load1 > 12 || s.load1 < 0 ||
       !Number.isFinite(s.availableBytes) || s.availableBytes < (starting ? 40 : 30) * GiB ||
@@ -65,8 +51,7 @@ export function requireGate(s, { starting = false, additionalBuilds = 0, additio
     throw Error('SM resources or coordinated global slots do not permit capture');
   for (const [url, cap] of Object.entries(baseline.siteBudgetsSeconds)) {
     const rows = s.sites?.filter(x => x.url === url);
-    if (rows?.length !== 1 || rows[0].status !== 200 || rows[0].exitCode !== 0 ||
-        !Number.isFinite(rows[0].total) || rows[0].total < 0 || rows[0].total > cap)
-      throw Error('SM homepage health gate rejected');
+    if(rows?.length!==1)throw Error('Exactly three site medians required');
+    requireHomepageMedian(rows[0],cap,{startedAtMs:s.startedAtMs,endedAtMs:s.finishedAtMs});
   }
 }

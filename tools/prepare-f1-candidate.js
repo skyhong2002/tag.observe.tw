@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { appendFileSync, closeSync, cpSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {gateMeasurement} from './homepage-median-probe.mjs';
 import { guardedBuild, probeServices, siteBudgetsSeconds, siteBaselinesSeconds, baselineMeasurement } from './guard-next-build.js';
 
 export const lockPath = '/home/deck/.local/share/tag-analysis/deploy.lock';
@@ -94,8 +95,8 @@ export async function main(argv = process.argv.slice(2)) {
     if (entry.event === 'started') started = true;
     appendFileSync(log, `${JSON.stringify({ utc: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 });
   };
-  record({ event: 'configuration', policy: 'single-global-build-relative-homepage', commit, estimatedUsageGiB: options.estimate, siteBudgetsSeconds, siteBaselinesSeconds, baselineMeasurement, startAvailableGiB: 40, stopAvailableBelowGiB: 30, globalSlotConfirmedBy: JSON.parse(readFileSync(evidencePath, 'utf8')).sourceMessage, remoteYtCoordination: 'manual; remote builds cannot be inferred from local /proc' });
-  const code = await guardedBuild({ command: process.execPath, args: [resolve(process.argv[1]), '--stage', options.evidence, options.candidate, String(options.estimate), options.api, commit], cwd: options.repo, record, estimatedUsageGiB: options.estimate, probe: async () => { const sample = await probeServices(); if (competingBuilds().length > (started ? 1 : 0)) sample.probeError = 'Local build concurrency exceeds one'; return sample; } });
+  record({ event: 'configuration', policy: 'single-global-build-relative-homepage', commit, estimatedUsageGiB: options.estimate, siteBudgetsSeconds, siteBaselinesSeconds, baselineMeasurement, gateMeasurement, startAvailableGiB: 40, stopAvailableBelowGiB: 30, globalSlotConfirmedBy: JSON.parse(readFileSync(evidencePath, 'utf8')).sourceMessage, remoteYtCoordination: 'manual; remote builds cannot be inferred from local /proc' });
+  const code = await guardedBuild({ command: process.execPath, args: [resolve(process.argv[1]), '--stage', options.evidence, options.candidate, String(options.estimate), options.api, commit], cwd: options.repo, record, estimatedUsageGiB: options.estimate, probe: async () => { const sample = await probeServices({record:entry=>record({event:'probe-trial',...entry})}); if (competingBuilds().length > (started ? 1 : 0)) sample.probeError = 'Local build concurrency exceeds one'; return sample; } });
   if (code !== 0) { record({ event: 'error', exitCode: code }); throw new Error(`Candidate preparation failed (${code}); artifacts retained`); }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch((error) => { console.error(error.message); process.exitCode = 1; });

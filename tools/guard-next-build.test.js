@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import{homepageSiteFixture,curlStdoutFixture}from'./test-fixtures/homepage-probe.mjs';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,7 +10,7 @@ import { buildDecision, guardedBuild, probeServices, sites, siteBudgetsSeconds, 
 
 const sample = (overrides = {}) => ({
   load1: 5, homeAvailableBytes: 50 * GiB,
-  sites: sites.map((url) => ({ url, status: 200, ttfb: 0.1, total: 0.5, exitCode: 0 })), ...overrides,
+  sites: sites.map((url) => homepageSiteFixture(url)), ...overrides,
 });
 
 test('load, disk and time boundaries; resume requires healthy probes, load <10, disk >=40 GiB', () => {
@@ -22,7 +23,8 @@ test('load, disk and time boundaries; resume requires healthy probes, load <10, 
     const budget = url === 'https://blog.observe.tw/' ? 6.17 : 2;
     assert.equal(siteBudgetsSeconds[url], budget);
     for (const [patch, decision] of [[{ total: budget }, 'run'], [{ total: budget + 0.001 }, 'pause'], [{ status: 500 }, 'pause'], [{ exitCode: 28 }, 'pause']]) {
-      const s = sample(); Object.assign(s.sites.find((entry) => entry.url === url), patch);
+      const s = sample(),i=s.sites.findIndex(r=>r.url===url);
+      s.sites[i]=homepageSiteFixture(url,[patch.total??.5,patch.total??.5,patch.total??.5],{patches:[patch,patch,patch]});
       assert.equal(buildDecision(s, false), decision);
     }
   }
@@ -49,15 +51,15 @@ test('start needs >=40 GiB and estimated usage must leave >=30 GiB', () => {
 test('service and /home probes are mocked, and collect curl total for all three sites', async () => {
   const calls = [];
   const s = await probeServices({
-    executeProbe: async (command, args) => { calls.push({ command, args }); return { stdout: '200 0.1 0.2' }; },
+    executeProbe: async (command, args) => { calls.push({ command, args }); return { stdout: curlStdoutFixture({total:.2}) }; },
     diskProbe: async (path) => { assert.equal(path, '/home'); return { bavail: 40, bsize: GiB }; },
     loadProbe: () => [3],
   });
   assert.equal(s.homeAvailableBytes, 40 * GiB);
-  assert.deepEqual(calls.map(({ args }) => args.at(-1)), sites);
+  assert.equal(calls.length,9);for(const url of sites)assert.equal(calls.filter(c=>c.args.at(-1)===url).length,3);
   for(const {args} of calls){assert.ok(args.includes('DNT: 1'));assert.ok(args.includes('Accept: text/html'));}
   assert.equal(buildDecision(s, false), 'run');
-  await assert.rejects(probeServices({ executeProbe: async () => ({ stdout: '200 0.1 0.2' }), diskProbe: async () => { throw new Error('disk failed'); } }), /disk failed/);
+  await assert.rejects(probeServices({ executeProbe: async () => ({ stdout: curlStdoutFixture({total:.2}) }), diskProbe: async () => { throw new Error('disk failed'); } }), /disk failed/);
 });
 
 test('mock child uses dedicated low priority group; STOP/CONT and cleanup never target another group', async () => {
@@ -209,7 +211,7 @@ test('a successful leader exit cannot leave a worker running without the guard',
 
 test('blog may take up to 6.17 seconds while tag and YouTube retain two seconds', () => {
   for (const url of sites) {
-    const s = sample(); s.sites.find((entry) => entry.url === url).total = 3;
+    const s = sample(),i=s.sites.findIndex(r=>r.url===url);s.sites[i]=homepageSiteFixture(url,[3,3,3]);
     assert.equal(buildDecision(s, false), url === 'https://blog.observe.tw/' ? 'run' : 'pause');
   }
 });
@@ -222,4 +224,10 @@ test('approved baseline receipt is pinned and computes exact relative limits wit
   assert.match(baselineMeasurement.method,/Five homepage HTML/);
   assert.match(baselineMeasurement.sourceReceiptSha256,/^[0-9a-f]{64}$/);
   assert.ok(Object.isFrozen(siteBudgetsSeconds));
+});
+
+test('build guard uses median while any HTTP/curl error pauses the group',()=>{
+ const s=sample(),i=s.sites.findIndex(r=>r.url.includes('blog'));s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,8,3]);assert.equal(buildDecision(s,false),'run');
+ s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,8,9]);assert.equal(buildDecision(s,false),'pause');
+ for(const patch of [{status:500},{status:301},{status:404},{exitCode:28}]){s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,3,3],{patches:[{},patch]});assert.equal(buildDecision(s,false),'pause');}
 });

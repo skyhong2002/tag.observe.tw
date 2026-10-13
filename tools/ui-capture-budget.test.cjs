@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const { estimateCaptureBytes, checkServiceSample, checkCaptureBudget } = require('./ui-capture-budget.cjs');
 const GiB = 1024 ** 3;
 const MiB = 1024 ** 2;
+const {homepageSiteFixture}=require('./test-fixtures/homepage-probe.mjs');
 
 test('small batches explicitly budget both screenshots and browser/network artifacts', () => {
   assert.equal(estimateCaptureBytes(8), 64 * MiB);
@@ -14,10 +15,8 @@ test('small batches explicitly budget both screenshots and browser/network artif
 });
 
 const nowMs = Date.parse('2026-10-13T00:00:00Z');
-function healthySample() {
-  return { finishedAt: new Date(nowMs).toISOString(), sites: ['tag', 'blog', 'youtube'].map((name) => ({
-    url: `https://${name}.observe.tw/`, status: 200, exitCode: 0, total: 2, ttfb: 0.1,
-  })) };
+function healthySample(at=nowMs) {
+ return {finishedAt:new Date(at).toISOString(),sites:['tag','blog','youtube'].map(name=>homepageSiteFixture(`https://${name}.observe.tw/`,[2,2,2],{startedAtMs:at}))};
 }
 
 test('capture guard applies conservative disk boundaries and finite resource budgets', () => {
@@ -35,11 +34,8 @@ test('capture guard applies conservative disk boundaries and finite resource bud
 
 test('all three recorded services must have fresh successful probes and per-site total time limits', () => {
   assert.doesNotThrow(() => checkServiceSample(healthySample(), nowMs));
-  const slowFirstByte = healthySample();
-  slowFirstByte.sites[0].ttfb = 99;
-  assert.doesNotThrow(() => checkServiceSample(slowFirstByte, nowMs));
-  const atBoundary = healthySample();
-  atBoundary.finishedAt = new Date(nowMs - 30_000).toISOString();
+  const malformedFirstByte=healthySample();malformedFirstByte.sites[0].ttfb=99;assert.throws(()=>checkServiceSample(malformedFirstByte,nowMs));
+  const atBoundary = healthySample(nowMs-30000);
   assert.doesNotThrow(() => checkServiceSample(atBoundary, nowMs));
   for (const name of ['tag', 'blog', 'youtube']) {
     for (const change of [{ total: name === 'blog' ? 6.171 : 2.001 }, { total: NaN }, { total: undefined }, { status: 103 }, { status: 404 }, { status: 500 }, { status: 0 }, { status: NaN }, { exitCode: 1 }, { exitCode: undefined }, { probeError: 'timeout' }]) {
@@ -83,7 +79,7 @@ function mockBudget() {
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'ui-capture-budget.cjs'), 'utf8'), context);
   const create = context.module.exports.createCaptureBudget;
   assert.throws(() => create('/mock', 1), { code: 'CAPTURE_BUDGET_STOP' });
-  state.serviceSample = { ...healthySample(), finishedAt: new Date().toISOString() };
+  state.serviceSample = healthySample(Date.now());
   const budget = create('/mock', 1, () => state.serviceSample);
   const page = {
     evaluate: async () => state.pixels,
@@ -140,13 +136,18 @@ test('recorded health is rechecked before every capture without issuing probes',
 
 test('explicit relative gates allow blog total up to 6.17s while tag and youtube remain at 2s', () => {
   const sample = healthySample();
-  sample.sites[1].total = 6.17;
+  sample.sites[1]=homepageSiteFixture(sample.sites[1].url,[1,6.17,8],{startedAtMs:nowMs});
   assert.doesNotThrow(() => checkServiceSample(sample, nowMs));
   for (const index of [0, 2]) {
     const slow = healthySample();
     slow.sites[index].total = 2.001;
     assert.throws(() => checkServiceSample(slow, nowMs), { code: 'CAPTURE_BUDGET_STOP' });
   }
-  sample.sites[1].total = 6.171;
+  sample.sites[1]=homepageSiteFixture(sample.sites[1].url,[1,6.171,8],{startedAtMs:nowMs});
   assert.throws(() => checkServiceSample(sample, nowMs), { code: 'CAPTURE_BUDGET_STOP' });
+});
+
+test('generic capture policy also admits a spike but rejects any failed trial',()=>{
+ const s=healthySample();s.sites[1]=homepageSiteFixture(s.sites[1].url,[3,8,3],{startedAtMs:nowMs});assert.doesNotThrow(()=>checkServiceSample(s,nowMs));
+ for(const patch of [{status:500},{status:301},{exitCode:28}]){s.sites[1]=homepageSiteFixture(s.sites[1].url,[3,3,3],{startedAtMs:nowMs,patches:[{},patch]});assert.throws(()=>checkServiceSample(s,nowMs));}
 });

@@ -5,9 +5,10 @@ import {admittedTarget,stripHop,ORIGIN} from './proxy.cjs';
 import {requireGate,GiB} from './probe.mjs';
 import {validateInput,ROUTES,networkCounts,googleURL,bounded,privateBytes,ownStopRequest,validateBrowserLease,waitWatchdog,watchdogLifecycle} from './capture.mjs';
 import baseline from '../shared-host-baseline.cjs';
+import{homepageSiteFixture}from'../test-fixtures/homepage-probe.mjs';
 const now=1000000;
 const input=()=>({schema:'sm-f1-capture-input-v1',reviewed:true,executionPermission:true,globalSlotAcknowledged:true,controlOpsSha:'a'.repeat(40),startedReceiptSha256:'b'.repeat(64),expiresAtMs:now+500000,actor:'anonymous',origin:ORIGIN,routes:ROUTES,sessionId:'sm-batch-001',job:'/home/deck/tag-analysis-private/f1-release/sm-capture-sm-batch-001',startedReceiptPath:'/home/deck/tag-analysis-private/f1-release/mint-native-target-c70425b0/local-candidate-sm-batch-001/candidate-started.json',additionalBuilds:0,additionalBrowsers:0});
-const sample=()=>({startedAtMs:now,finishedAtMs:now,resourceObservedAtMs:now,load1:2,availableBytes:50*GiB,memoryAvailableBytes:3*GiB,localBuildRoots:0,localBrowserRoots:0,sites:Object.keys(baseline.siteBudgetsSeconds).map(url=>({url,status:200,exitCode:0,total:.2}))});
+const sample=()=>({startedAtMs:now,finishedAtMs:now,resourceObservedAtMs:now,load1:2,availableBytes:50*GiB,memoryAvailableBytes:3*GiB,localBuildRoots:0,localBrowserRoots:0,sites:Object.keys(baseline.siteBudgetsSeconds).map(url=>homepageSiteFixture(url,[.2,.2,.2],{startedAtMs:now}))});
 test('pre-launch proxy admits only literal anonymous candidate GET/HEAD',()=>{
  for(const path of ['/','/tag/%E6%9F%AF/','/_next/static/a.js'])for(const method of ['GET','HEAD'])assert.equal(admittedTarget(ORIGIN+path,method)?.origin,ORIGIN);
  for(const value of ['https://google-analytics.com/g/collect','http://127.0.0.1:18199.evil/','http://localhost:18199/','http://127.1:18199/','http://127.0.0.1:18199@evil/','http://user@127.0.0.1:18199/','http://127.0.0.1:18199/#x','/relative','http://127.0.0.1:18199\\@evil/'])assert.equal(admittedTarget(value,'GET'),null);
@@ -22,8 +23,8 @@ test('exact capture approval rejects redirects, expiry, namespaces and excess sl
  for(const patch of [{reviewed:false},{executionPermission:false},{globalSlotAcknowledged:false},{actor:'admin'},{origin:'https://tag.observe.tw'},{sessionId:'sm-batch-001-r2'},{expiresAtMs:now},{expiresAtMs:now+540001},{additionalBrowsers:2},{routes:['/']},{controlOpsSha:'bad'},{startedReceiptSha256:'bad'}])assert.throws(()=>validateInput({...input(),...patch},now));
 });
 test('site baselines are end-to-end caps 2 / 6.17 / 2',()=>{
- const s=sample();s.sites.find(r=>r.url.includes('blog')).total=6.17;requireGate(s,{starting:true,now});
- s.sites.find(r=>r.url.includes('blog')).total=6.171;assert.throws(()=>requireGate(s,{starting:true,now}));
+ const s=sample(),i=s.sites.findIndex(r=>r.url.includes('blog'));s.sites[i]=homepageSiteFixture(s.sites[i].url,[1,6.17,8],{startedAtMs:now});requireGate(s,{starting:true,now});
+ s.sites[i]=homepageSiteFixture(s.sites[i].url,[1,6.171,8],{startedAtMs:now});assert.throws(()=>requireGate(s,{starting:true,now}));
 });
 test('transport errors, 5xx and stale samples reject admission',()=>{
  for(const patch of [{finishedAtMs:now-30001},{resourceObservedAtMs:now-5001},{startedAtMs:now-30001},{finishedAtMs:now+1},{load1:12.01},{memoryAvailableBytes:GiB},{availableBytes:39.99*GiB},{localBrowserRoots:2},{localBuildRoots:2}])assert.throws(()=>requireGate({...sample(),...patch},{starting:true,now}));
@@ -72,4 +73,10 @@ test('watchdog always attempts owned cleanup after scan/check error despite a st
 });
 test('watchdog retains both original and cleanup errors without authorizing capture',async()=>{
  await assert.rejects(watchdogLifecycle({step:async()=>{throw Error('scan');},stop:async()=>{throw Error('stop');}}),e=>e instanceof AggregateError&&e.errors.length===2&&e.errors[0].message==='scan'&&e.errors[1].message==='stop');
+});
+
+test('capture and watchdog health gates use three originals and reject one hidden failed trial',()=>{
+ const s=sample(),i=s.sites.findIndex(r=>r.url.includes('blog'));s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,8,3],{startedAtMs:now});requireGate(s,{now});
+ s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,8,9],{startedAtMs:now});assert.throws(()=>requireGate(s,{now}));
+ for(const patch of [{status:500},{status:301},{exitCode:28}]){s.sites[i]=homepageSiteFixture(s.sites[i].url,[3,3,3],{startedAtMs:now,patches:[{},patch]});assert.throws(()=>requireGate(s,{now}));}
 });

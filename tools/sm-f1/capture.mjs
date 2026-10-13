@@ -144,7 +144,7 @@ function verifyControl(q) {
     const r = spawnSync('/usr/bin/git',['-C',repo,'show',q.controlOpsSha+':'+p],{timeout:5000,maxBuffer:MiB});
     if(r.status!==0 || sha(r.stdout)!==d || sha(fs.readFileSync(join(repo,p)))!==d)throw Error('Control module changed');
   }
-  for (const p of ['tools/sm-f1/capture.mjs','tools/sm-f1/probe.mjs','tools/sm-f1/proxy.cjs','tools/mint-capture/browser-owner.mjs','tools/mint-capture/evidence.mjs','tools/mint-capture/evidence-lifecycle.mjs','tools/mint-f1-artifact.js','tools/shared-host-baseline.cjs','tools/sm-local-candidate/core.mjs','tools/native-elf-proof.js','tools/mint-f1-candidate-plan.js'])
+  for (const p of ['tools/sm-f1/capture.mjs','tools/sm-f1/probe.mjs','tools/sm-f1/proxy.cjs','tools/mint-capture/browser-owner.mjs','tools/mint-capture/evidence.mjs','tools/mint-capture/evidence-lifecycle.mjs','tools/mint-f1-artifact.js','tools/shared-host-baseline.cjs','tools/homepage-median-probe.mjs','tools/sm-local-candidate/core.mjs','tools/native-elf-proof.js','tools/mint-f1-candidate-plan.js'])
     if(!q.sourceHashes?.[p])throw Error('Missing executable source pin');
 }
 export async function capture(inputPath, expectedInputSha) {
