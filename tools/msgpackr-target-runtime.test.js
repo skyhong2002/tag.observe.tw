@@ -1,0 +1,37 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {initialAppSha} from './mint-f1-candidate-plan.js';
+import {validateMsgpackrSelection,prepareMsgpackrTargetRuntime,planTargetRuntime,packageRoot,removedNames,retainedName,packageVersion,pinnedBuildId} from './msgpackr-target-runtime.js';
+const hash=b=>createHash('sha256').update(b).digest('hex');
+const selected=()=>[...removedNames,retainedName,'package.json','index.js','README.md'].map(name=>({path:packageRoot+'/'+name,type:'file',binaryKind:name.endsWith('.node')?'elf':'regular',sha256:hash(name),mode:0o644}));
+const pkg=()=>({name:'@msgpackr-extract/msgpackr-extract-linux-x64',version:packageVersion,os:['linux'],cpu:['x64']});
+const lock=()=>({packages:{[packageRoot]:{version:packageVersion}}});
+test('exact four-binding layout removes only three incompatible variants with hash/reason audit',()=>{const audit=validateMsgpackrSelection(selected(),lock(),pkg());assert.deepEqual(audit.map(e=>e.path),removedNames.map(n=>packageRoot+'/'+n));assert.ok(audit.every(e=>e.sha256&&e.reason));assert.ok(!audit.some(e=>e.path.endsWith(retainedName)));});
+test('unknown package/version/layout/symlink/binary fail closed',()=>{
+ for(const delta of [{version:'3.0.5'},{name:'other'},{cpu:['arm64']},{os:['linux','darwin']}])assert.throws(()=>validateMsgpackrSelection(selected(),lock(),{...pkg(),...delta}));
+ assert.throws(()=>validateMsgpackrSelection(selected(),{packages:{[packageRoot]:{version:'3.0.3'}}},pkg()));
+ for(const entries of [selected().slice(1),[...selected(),{path:packageRoot+'/unknown.node',type:'file'}],selected().map((e,i)=>i===0?{...e,type:'symlink'}:e),selected().map((e,i)=>i===0?{...e,binaryKind:'node-non-elf'}:e)])assert.throws(()=>validateMsgpackrSelection(entries,lock(),pkg()));
+});
+function fixture(){const source='/work.native-runtime-r2',destination=source+'.target-runtime';const bytes=new Map();const entries=selected().map(e=>{bytes.set(source+'/'+e.path,e.path);return {...e,sha256:hash(e.path)};});const manifest={commit:initialAppSha,buildId:pinnedBuildId,standaloneWeb:source+'/web/.next/standalone/web',appSource:source+'/app/src',appData:source+'/app/data'};bytes.set(source+'/manifest.json',JSON.stringify(manifest));entries.push({path:'manifest.json',type:'file',mode:0o600,sha256:hash(bytes.get(source+'/manifest.json'))});
+ const io={mkdirSync:p=>{if(bytes.has(p))throw Error('exclusive exists');bytes.set(p,'directory');},readFileSync:p=>bytes.get(p),copyFileSync:(a,b)=>{assert.ok(!bytes.has(b));bytes.set(b,bytes.get(a));},chmodSync:()=>{},writeFileSync:(p,b,o)=>{if(o.flag==='wx'&&bytes.has(p))throw Error('exclusive write');bytes.set(p,b);}};
+ const deps={io,plan:()=>({source,destination,entries,rootManifest:manifest,excluded:validateMsgpackrSelection(entries,lock(),pkg())}),verifyOriginal:()=>{},assertLock:()=>{},assertKernel:()=>{},currentGuard:()=>{},inventory:root=>root===source?structuredClone(entries):[...entries.filter(e=>bytes.has(root+'/'+e.path)).map(e=>({...e,sha256:hash(bytes.get(root+'/'+e.path))})),...(bytes.has(root+'/msgpackr-target-selection.json')?[{path:'msgpackr-target-selection.json',type:'file'}]:[])],createManifest:()=>({files:[],inventorySha256:'new'}),collectElfProof:()=>({status:'inspected'}),verifyElfProof:()=>{}};return {source,destination,bytes,entries,deps,input:{source,destination,identity:{appSha:initialAppSha,arch:'x64',nodeModulesAbi:'137',smAbi:{libc:'glibc-2.41'}}}};}
+test('mock copy retains originals/excludes exact three, rebases paths, never publishes or native-green',()=>{const f=fixture();const original=[...f.bytes];const result=prepareMsgpackrTargetRuntime(f.input,f.deps);assert.equal(result.deployEligible,false);assert.equal(result.manifestPublished,false);assert.equal(result.nativeStatus,'pending-new-target-loader');assert.equal(f.bytes.has(f.destination+'/mint-artifact.json'),false);for(const name of removedNames)assert.equal(f.bytes.has(f.destination+'/'+packageRoot+'/'+name),false);assert.ok(f.bytes.has(f.destination+'/'+packageRoot+'/'+retainedName));assert.equal(JSON.parse(f.bytes.get(f.destination+'/manifest.json')).appSource,f.destination+'/app/src');assert.deepEqual([...f.bytes].filter(([p])=>p.startsWith(f.source+'/')),original);assert.throws(()=>prepareMsgpackrTargetRuntime(f.input,f.deps),/exclusive/);});
+test('lost lock/async verifier/final source change/late lease fail without publish',()=>{
+ for(const change of [f=>{let n=0;f.deps.assertLock=()=>{if(++n===4)throw Error('lost lock');};},f=>{f.deps.currentGuard=async()=>{throw Error('async');};},f=>{let n=0;f.deps.verifyOriginal=()=>{if(++n===2)f.entries[0]={...f.entries[0],sha256:'changed'};};},f=>{f.deps.currentGuard=({phase})=>{if(phase==='prepared-return')throw Error('expired');};}]){const f=fixture();change(f);assert.throws(()=>prepareMsgpackrTargetRuntime(f.input,f.deps));assert.equal(f.bytes.has(f.destination+'/mint-artifact.json'),false);}
+});
+test('pure planning rejects arbitrary destination/APP/ABI before filesystem or ELF',()=>{for(const patch of [{destination:'/other'}, {source:'/other.runtime'}, {identity:{appSha:'a'.repeat(40),arch:'x64',nodeModulesAbi:'137'}},{identity:{appSha:initialAppSha,arch:'x64',nodeModulesAbi:'115'}}])assert.throws(()=>planTargetRuntime({...fixture().input,...patch},{},()=>[]));});
+test('all mandatory callbacks reject thenables; expiry during final source scan cannot return prepared',()=>{
+ for(const name of ['verifyOriginal','assertLock','assertKernel','currentGuard']){const f=fixture();f.deps[name]=async()=>{throw Error('async rejected');};assert.throws(()=>prepareMsgpackrTargetRuntime(f.input,f.deps),/Synchronous/);assert.equal(f.bytes.has(f.destination+'/mint-artifact.json'),false);}
+ const f=fixture();const scan=f.deps.inventory;let count=0,expired=false;f.deps.inventory=root=>{const result=scan(root);if(root===f.source&&++count===2)expired=true;return result;};f.deps.assertLock=()=>{if(expired)throw Error('lease expired during final source hash');};assert.throws(()=>prepareMsgpackrTargetRuntime(f.input,f.deps),/lease expired/);assert.equal(f.bytes.has(f.destination+'/mint-artifact.json'),false);
+});
+test('default plan rejects wrong original inventory and noncanonical source before reads/copy',()=>{
+ const f=fixture();const io={lstatSync:()=>({isDirectory:()=>true,isSymbolicLink:()=>false}),realpathSync:p=>p};assert.throws(()=>planTargetRuntime(f.input,io,()=>[]),/Pinned original runtime inventory/);
+ assert.throws(()=>planTargetRuntime(f.input,{...io,realpathSync:()=>'/foreign'},()=>[]),/Canonical/);
+});
+test('false from any mandatory verifier cannot return prepared or publish',()=>{
+ for(const name of ['verifyOriginal','assertLock','assertKernel','currentGuard']){const f=fixture();f.deps[name]=()=>false;assert.throws(()=>prepareMsgpackrTargetRuntime(f.input,f.deps),/explicitly rejected/);assert.equal(f.bytes.has(f.destination+'/mint-artifact.json'),false);}
+});
+test('ELF validator false or resolving/rejecting promise cannot return prepared or publish',()=>{
+ for(const validator of [()=>false,()=>Promise.resolve(true),()=>Promise.reject(Error('ELF rejected'))]){const f=fixture();f.deps.verifyElfProof=validator;assert.throws(()=>prepareMsgpackrTargetRuntime(f.input,f.deps),/explicitly rejected|Synchronous/);assert.equal(f.bytes.has(f.destination+'/mint-artifact.json'),false);assert.ok(f.bytes.has(f.destination));}
+});

@@ -195,3 +195,31 @@ original pinned checksum and no final manifest. The failed derived tree and
 private log remain retained. Parsing now uses the fixed 35-column hex area with
 real-format regressions, and a separately admitted retry may use only an
 explicit same-parent `-r2` destination. No retry has been executed yet.
+
+The separately admitted `-r2` attempt subsequently completed with OPS
+51c2db60 and unchanged APP/BUILD_ID. Its new inventory SHA-256 is
+`5bfc700a09b63d8144f77df8aa6e65f36f783c9d2296b0643de6979b5eb9c714`;
+the previous `831dc44f…` inventory is not valid evidence for these bytes.
+Its 15 ELF files passed the owner-run static inspection with highest requirement
+GLIBC_2.30. Private manifest copy:
+`/tmp/babysit/mint-queue/tag-native-repaired-artifact-51c2db60.json`, SHA-256
+`648eac2ef76f05aa23561379b0ea68bd2d40761a97c30d61c460d6dcadf41f47`.
+Independent inventory/readelf recalculation and actual Mint/SM native loading
+are still pending; deployment eligibility remains false and all UI routes await
+capture/review. No loader or browser has run on this derivative.
+
+The installed public msgpackr loader was invoked in resolve-only mode on Mint
+at UTC 11:50:36.602Z: Node24/ABI137/glibc2.39 selects `node.napi.glibc.node`.
+Three ABI115/musl alternatives are not target-selected. A prepare-only source
+helper proposes copying into another exclusive target derivative, retaining
+the NAPI glibc binding and auditing only those three exact omissions. This does
+not change or delete an existing artifact; the proposed copy has not run and
+will require new inventory/ELF and actual-loader evidence.
+
+Candidate frontdoor source preparation keeps the isolated API and Next on one
+Tailscale origin, strips external credentials, restricts fixture mutation and
+enforces no-store. Candidate-only CSP and an image-optimizer allowlist prevent
+server-side foreign fetches; this does not replace pre-launch transport blocking
+or actual browser network evidence. External-image, disabled-avatar-queue and
+GET/HEAD-only capture-proxy limits are documented. The new target/frontdoor
+source/mock tests total 20 passing cases; no listener or capture was started.
