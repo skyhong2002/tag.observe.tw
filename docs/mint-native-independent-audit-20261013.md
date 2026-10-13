@@ -56,3 +56,48 @@ The common lock was released. No artifact was modified, loader/browser started,
 production traffic switched or GA event sent. Deployment eligibility remains
 false; actual Mint/SM loader and all 65 UI routes remain pending. Each next
 execution command requires babysit admission; no new build is required.
+
+
+## Final Node24/glibc target copy — actual independent audit
+
+The same existing nonauthor reviewer personally recalculated the exclusive
+`-r2.target-runtime` copy. Worker UTC **12:44:51.496Z**, final acceptance
+**12:44:54.418Z**; original/target variant checks UTC **12:45:29.628Z**.
+Execution OPS is `c70425b007bdac9fdbef62b935811ee0d7f30d18`; APP and BUILD_ID
+remain as above. The target inventory is
+`f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7`;
+manifest SHA256 is
+`76142c7930cbd2e471f02cf68130fa01acbfb54d2c6a4309fc8198185987e7e0`.
+Neither the original `831dc44f…` nor the `-r2` `5bfc700a…` verifies this copy.
+
+**12 ELF files / 8 .node bindings / 36 real readelf calls passed.** The
+reviewer independently reparsed all raw outputs; maximum GLIBC requirement
+is 2.30 and every RPATH/RUNPATH resolves within this target artifact. The
+above 15-row table describes `-r2`; the target has those same entries except
+the three explicitly excluded msgpackr variants below.
+
+| Not copied into target | Original SHA256 | Reason |
+|---|---|---|
+| `node_modules/@msgpackr-extract/msgpackr-extract-linux-x64/node.abi115.glibc.node` | `c40b24b5dddd16128ff070cf1a0f3b0647622ec039e20419b4cb80e7f11b39b6` | ABI115 differs from Node24 ABI137 |
+| `node_modules/@msgpackr-extract/msgpackr-extract-linux-x64/node.abi115.musl.node` | `19ec49a6e7b3b9d61ae81232a05851bffa142ac9d3cb509190579341b82a4a9b` | Wrong ABI and libc |
+| `node_modules/@msgpackr-extract/msgpackr-extract-linux-x64/node.napi.musl.node` | `dff6aa6f86cc3e36d7e9bf34abda45a9120a42e66b863b1ae067061ca09471f6` | musl differs from target glibc |
+
+All three original files remain present and hash-identical in `-r2`.
+`node.napi.glibc.node` remains in the target, unchanged at
+`48bb0acaf5881374699e37ead45dd7aa867ec8b31591d99425eb8b925c9c8deb`.
+No artifact was modified during independent audit.
+
+Actual private evidence:
+`/tmp/babysit/mint-queue/tag-target-independent-audit-reviewer-20261013T1245Z/`.
+- result SHA256: `31d02b011d81d97b4f07a97ba3fed6fdce1c5d8c0e0789f94dbcdd3800e56491`.
+- acceptance SHA256: `ae435dd0ffd324e461501442c6d0bbc5a9951a3f42d29c1900f77bcca838be1b`.
+- raw-readelf.jsonl: 394,987 bytes; SHA256
+  `a401d9adac8ab3dc8389ef901c7163f15cad1ac3b347b1c7e563e512a828a960`.
+- `actual-variant-preservation.json`: reviewer personally checked preserved
+  originals, omitted target variants and retained NAPI/glibc hash.
+
+The shared lock is released. **Mint and SM native loaders, image processing,
+all candidate screenshot/UI review and deployment remain pending.** There
+are still 65 main UI routes, 0 complete passes and 65 pending for APP677.
+Actual loader commands will be independently source-reviewed and handed to
+babysit before execution; no new Next build is planned.
