@@ -13,6 +13,14 @@ test('public Next assets and API/me same origin; external credentials stripped a
  assert.equal(p.headers['x-f1-fixture-actor'],'admin');for(const name of ['cookie','authorization','x-api-key','x-service-token','x-forwarded-for','forwarded',batchHeader,'x-private'])assert.equal(p.headers[name],undefined);assert.equal(p.headers.dnt,'1');
  assert.throws(()=>requestPlan(config('admin'),request('/'),now));assert.throws(()=>requestPlan(config('admin'),request('/','GET',{[batchHeader]:'b'.repeat(64)}),now));
 });
+test('status HTML stays on Next while its JSON data request stays on the isolated API',()=>{
+ for(const method of ['GET','HEAD']){
+  assert.equal(requestPlan(config(),request('/api/status/',method),now).origin,config().nextOrigin);
+  assert.equal(requestPlan(config(),request('/api/status',method),now).origin,config().apiOrigin);
+ }
+ assert.throws(()=>requestPlan(config(),request('/api/unknown/'),now));
+ assert.throws(()=>requestPlan(config(),request('/api/status/','POST'),now));
+});
 test('reject foreign authority/URL/traversal and real auth/jobs/users',()=>{for(const path of ['http://foreign/x','//foreign/x','/%2e%2e/x','/a/../x','/a%2fb','/%252e%252e/x','/x\\y','/auth/google','/auth/logout','/auth/admin/users','/auth/admin/jobs','/auth/me/prefs','/auth/pictures/jobs/1'])assert.throws(()=>requestPlan(config(),request(path),now),path);assert.throws(()=>requestPlan(config(),request('/','GET',{host:'foreign'}),now));});
 test('mutations opt-in narrow methods/routes actor+origin+batch; admin review is PUT not POST',()=>{
  const h={[batchHeader]:'a'.repeat(64),origin:'http://100.108.108.109:18196'};

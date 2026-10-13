@@ -55,8 +55,10 @@ export function requestPlan(c, request, now=Date.now()) {
  const mutation=!readonly&&c.allowMutations&&c.actor!=='anonymous'&&request.headers.origin===origin&&!url.search&&mutationRoute(path,method,c.actor);
  if(!readonly&&!mutation)throw Error('Method/fixture mutation not enabled');
  if(auth&&!apiRead(path)&&!mutation)throw Error('Auth route not allowed');
- const api=apiRead(path)||mutation;
- if(path.startsWith('/api/')&&!api)throw Error('Unknown API path');
+ // The trailing slash is the Next status page; its data request has no slash.
+ const statusPage=readonly&&url.pathname==='/api/status/';
+ const api=!statusPage&&(apiRead(path)||mutation);
+ if(path.startsWith('/api/')&&!api&&!statusPage)throw Error('Unknown API path');
  const forwardedNames=new Set(['accept','accept-language','accept-encoding','user-agent','content-type','origin','referer','dnt','sec-gpc','range','if-none-match','if-modified-since','rsc','next-router-state-tree','next-router-prefetch','next-url']);
  const headers={};for(const [name,value]of Object.entries(request.headers)){
   const key=name.toLowerCase();if(!forwardedNames.has(key)||hop.includes(key)||['host','cookie','authorization','x-api-key','x-service-token','x-f1-fixture-actor',batchHeader,'forwarded','via','content-length'].includes(key)||key.startsWith('x-forwarded-')||key.startsWith('cf-')||key.startsWith('proxy-')||key.includes('api-token')||key.includes('service-token'))continue;
