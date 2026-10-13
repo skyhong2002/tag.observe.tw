@@ -1,5 +1,7 @@
 # F1 / PSI 正常節奏交接（2026-10-13）
 
+**最新授權 supersedes 本文件舊排隊/窗口：**18:50 截止取消，持續到原 scope 全部完成。SM 不開新 build/capture/restore，tag 改為第一個等待 Mint 的建置；原本 blog→YT→tag 的 SM 名額已取消。Mint 固定 APP_SHA／環境／fixture／傳回同份產物見 [mint-tag-handoff-20261013.md](mint-tag-handoff-20261013.md)。下面正常節奏紀錄保留為歷史，不是 SM 開跑許可；既有實圖和未完成範圍不變。
+
 15:10衝刺期限已由使用者取消；18:50仍是工作窗口，以品質為主。使用者最後**明確**批准首頁相對閘門 `max(2秒,目前基準×2)`：blog基準3.085秒／上限6.17秒，tag及YT上限2秒；不得自行把慢速的新量測上調成新基準。全站**1個build**（任何遠端建置，包含skyhong-blog，都算）、2個capturebrowser，load>12或任何5xx即停止新build/capture；/home≥40GiB開始、<30GiB暫停自己buildgroup。nice19/ionice3/Next≤2。建置順序blog→YT→tag，下一輪tag等明確通知。沒有以期限豁免或以local /proc 0推論remote已停止。
 
 ## 已執行與目前來源
