@@ -4,7 +4,7 @@ import {promisify} from 'node:util';
 import {join,resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {digest,privateBytes,verifyInput,verifySources,verifyMintObservation,verifySshFiles,sshArgs,sourceRoot,smJob,mintRpcReceipt,classifyProbeFailure,verifyPhaseRequest,validateSmProbe,saveSmProbeReply} from './candidate-contract.mjs';
-import {validateSample,validateRuntime,verifyRuntime,runtimeRoot as target,candidateTiming,outerGuardedInvocation,candidateReceiptBinding,verifyOwnerSessionReceipt} from './candidate-core.mjs';
+import {validateSample,validateRuntime,verifyRuntime,runtimeRoot as target,candidateTiming,outerGuardedInvocation,candidateReceiptBinding,verifyOwnerSessionReceipt,armCandidateTimer,candidateTimerExpired} from './candidate-core.mjs';
 const execute=promisify(execFile);const [inputPath,jobArg,expectedInputSha]=process.argv.slice(2);
 if(!inputPath||!jobArg||!/^[a-f0-9]{64}$/.test(expectedInputSha||''))throw Error('Usage: /home/deck/.local/bin/node candidate-parent.mjs PRIVATE_ADMISSION_JSON NEW_PRIVATE_JOB_DIRECTORY REVIEWED_INPUT_SHA256');
 if(fs.realpathSync(process.execPath)!==fs.realpathSync('/home/deck/.local/bin/node'))throw Error('Exact SM node required');
@@ -15,7 +15,7 @@ const {guardedBuild}=await import(pathToFileURL(join(sourceRoot,'../guard-next-b
 
 const timing=candidateTiming(input.expiresAtMs);
 let group=null,started=false,guardActive=false,fatalError=null;
-const taskDeadlineMs=Math.min(input.expiresAtMs,Date.now()+20*60*1000);
+let elapsedDeadline;
 const fatal=error=>{fatalError=error;if(guardActive)process.emit('SIGTERM');};
 const verifyImmutable=()=>{if(digest(privateBytes(inputPath,65536))!==inputSha)throw Error('Admission changed');verifyInput(input);verifySources(input);if(digest(privateBytes(input.frontdoorConfigPath,65536))!==input.frontdoorConfigSha256)throw Error('Private frontdoor config changed');validateRuntime(process,fs.readFileSync('/etc/machine-id','utf8').trim());};
 const mint=async()=>{
@@ -40,7 +40,7 @@ const smProbeReply=async()=>{
 };
 const probe=async()=>{
  const tick=Date.now();try{
-  if(fatalError)throw fatalError;if(Date.now()>=taskDeadlineMs)throw Error('Task/admission deadline expired');verifyImmutable();
+  if(fatalError)throw fatalError;if(!elapsedDeadline||candidateTimerExpired(elapsedDeadline)||Date.now()>=input.expiresAtMs)throw Error('Task/admission deadline expired');verifyImmutable();
   const [smResult,mintResult]=await Promise.all([smProbeReply(),mint()]);
   const sm={...JSON.parse(smResult.stdout),dnt:'1'};validateSmProbe(sm,validateSample,{starting:!started});verifyMintObservation(mintResult,input,Date.now(),{starting:!started});verifyImmutable();
   const sample={...sm,finishedAt:new Date(sm.finishedAtMs).toISOString(),sites:sm.sites,mintObservation:mintResult};
@@ -58,8 +58,8 @@ const probe=async()=>{
  }
 };
 const record=entry=>{if(entry.event==='started'){group=entry.processGroup;started=true;}fs.appendFileSync(join(job,'guard.jsonl'),JSON.stringify({utc:new Date().toISOString(),...entry})+'\n',{mode:0o600});};
-let code;const workerLogFd=fs.openSync(join(job,'worker-stage.log'),'wx',0o600);guardActive=true;const deadlineTimer=setTimeout(()=>fatal(Error('Task/admission deadline expired')),Math.max(1,taskDeadlineMs-Date.now()));
-try{code=await guardedBuild({command:'/home/deck/.local/bin/node',args:[join(sourceRoot,'candidate-worker.mjs'),resolve(inputPath),job,String(process.pid),inputSha],cwd:sourceRoot,record,probe,intervalMs:5000,estimatedUsageGiB:0.05,spawnBuild:(command,args,options)=>{if(command!=='ionice'||JSON.stringify(args.slice(0,5))!==JSON.stringify(['-c','3','nice','-n','19'])||args[5]!=='/home/deck/.local/bin/node')throw Error('Unexpected guard priority/group launch');const exact=outerGuardedInvocation(args.slice(6));return spawn(exact.bin,exact.args,{...options,env:{PATH:'/usr/bin:/bin',HOME:'/nonexistent',LANG:'C',DNT:'1',NEXT_TELEMETRY_DISABLED:'1'},stdio:['ignore',workerLogFd,workerLogFd]});}});}finally{guardActive=false;clearTimeout(deadlineTimer);fs.closeSync(workerLogFd);}
+let code;const workerLogFd=fs.openSync(join(job,'worker-stage.log'),'wx',0o600);guardActive=true;const deadlineTimer=armCandidateTimer(input.expiresAtMs,()=>fatal(Error('Task/admission elapsed deadline expired')));elapsedDeadline=deadlineTimer;
+try{code=await guardedBuild({command:'/home/deck/.local/bin/node',args:[join(sourceRoot,'candidate-worker.mjs'),resolve(inputPath),job,String(process.pid),inputSha],cwd:sourceRoot,record,probe,intervalMs:5000,estimatedUsageGiB:0.05,spawnBuild:(command,args,options)=>{if(command!=='ionice'||JSON.stringify(args.slice(0,5))!==JSON.stringify(['-c','3','nice','-n','19'])||args[5]!=='/home/deck/.local/bin/node')throw Error('Unexpected guard priority/group launch');const exact=outerGuardedInvocation(args.slice(6));return spawn(exact.bin,exact.args,{...options,env:{PATH:'/usr/bin:/bin',HOME:'/nonexistent',LANG:'C',DNT:'1',NEXT_TELEMETRY_DISABLED:'1'},stdio:['ignore',workerLogFd,workerLogFd]});}});}finally{guardActive=false;clearTimeout(deadlineTimer.timer);fs.closeSync(workerLogFd);}
 if(fatalError)throw fatalError;
 if(code!==0)throw Error('SM worker failed; all private evidence retained');
 // Candidate session stopped; never label HTTP listen as capture/UI/native proof.

@@ -60,3 +60,18 @@ export async function stopOwnChildren(children,{killOwn,wait,record}){
  if(!confirmed)errors.push(Error('Own candidate shutdown not confirmed'));
  if(errors.length)throw new AggregateError(errors,'Own child cleanup failed; all children attempted');
 }
+
+// The actual SM parent timer has an elapsed upper bound independent of wall-clock changes.
+export const candidateMaximumElapsedMs=900000;
+export const candidateMonotonicMs=()=>Number(process.hrtime.bigint()/1000000n);
+export function armCandidateTimer(expiresAtMs,onExpired,{wallNow=Date.now,monotonicNow=candidateMonotonicMs,setTimer=setTimeout}={}){
+ const wallObservedAtMs=wallNow(),armedMonoMs=monotonicNow();
+ if(!Number.isFinite(expiresAtMs)||!Number.isFinite(wallObservedAtMs)||!Number.isFinite(armedMonoMs)||armedMonoMs<0||typeof onExpired!=='function')throw Error('Actual candidate elapsed deadline required');
+ const delayMs=Math.max(1,Math.min(candidateMaximumElapsedMs,expiresAtMs-wallObservedAtMs));
+ const timer=setTimer(onExpired,delayMs);
+ return Object.freeze({timer,delayMs,wallObservedAtMs,armedMonoMs,deadlineMonoMs:armedMonoMs+delayMs,maximumMs:candidateMaximumElapsedMs});
+}
+export function candidateTimerExpired(state,{monotonicNow=candidateMonotonicMs}={}){
+ if(state?.maximumMs!==candidateMaximumElapsedMs||!Number.isFinite(state.armedMonoMs)||!Number.isFinite(state.deadlineMonoMs)||state.deadlineMonoMs-state.armedMonoMs<1||state.deadlineMonoMs-state.armedMonoMs>candidateMaximumElapsedMs)throw Error('Fixed900s elapsed timer state required');
+ return monotonicNow()>=state.deadlineMonoMs;
+}

@@ -1,6 +1,6 @@
 # Anonymous candidate and Mint capture admission preparation
 
-Status: **source preparation; no execution permission, browser or UI PASS**.
+Status: **independent source/mock PASS; no execution permission, browser or UI PASS**.
 The existing runtime remains APP `677a0c793eeda0c4d850c81ac574c95508d08e0a`,
 artifact OPS `c70425b007bdac9fdbef62b935811ee0d7f30d18`, BUILD_ID
 `PmjYScQDDoJKBr43SLkhd`, inventory
@@ -77,6 +77,43 @@ SHA256 `68996973f723e6f9adb8e1f7e9db43fde4bfd3d6b42171a41cfc8698a932f013`.
 Actual test transcript has the same basename with `.transcript.txt`, SHA256
 `b6e1c5fb19f7046dd6e97a78cb38db53e9f44cfd17691d894dbb88e70b90f856`.
 These offline evidence counts do not represent actual screenshots or UI PASS.
+
+## Final independent source review
+
+Repair4 passed independent exact-source/mock review at UTC
+`2026-10-13T18:46:41.355682+00:00`: 59/59 tests, 25 syntax checks and all 26 frozen
+file hashes matched. The source base was
+`a255c995e28082b9f1c40c6735043701756e5b85`. The existing nonauthor GPT-6.1 Sol
+reviewer directly checked the actual SM parent's timer constructor/call site:
+one wall-clock read, a real delay capped at 900,000ms, monotonic expiry, arm before
+worker launch and correct handle cleanup. The historical d4ad31f7 source review
+does not substitute for this changed SM timer source.
+
+Final JSON:
+`/home/deck/tag-analysis-private/f1-release/mint-capture-source-independent-final-repair4-20261014.transcript.json`
+SHA256 `56658dfecec03294feb2b0d81487ef905113c6263d07b6cb0a86555d0075ddb2`.
+Actual transcript has the same basename ending `.transcript.txt`, SHA256
+`cf3a8ea0a29763824a67fad21725f7441556126e585f03b3c400ae6656a520d9`.
+Initial and intermediate ISSUES receipts remain unchanged and available.
+
+All source findings were resolved: network callback/close/HAR failures cannot
+complete; browser descendants retain verified identity after the root exits;
+the outer parent owns remote shutdown; only exact owned endpoints or covering
+wildcards count, with the legacy loopback18196 preserved; conservative waiting
+uses an actual source/input/PID-bound started/timer-owner proof and Mint monotonic
+time, never a remote epoch or worker-close assumption.
+
+**Operational limitation:** an unknown/partial startup without trusted actual
+start or stop proof does not release the kernel automatically. Active cleanup
+RPCs/logging are bounded, samplers are stopped/reaped, and the owned holder remains
+idle with `needsOwnerResolution`. The owner must independently confirm its own
+remote processes/listeners before resolving that holder; it cannot claim clean
+shutdown, keep retrying indefinitely or kill any legacy listener. This condition
+must stay explicit in the admission packet.
+
+This PASS authorizes source pinning only. Actual SSH/gates/kernel, remote cleanup,
+Chromium/DNT/zero outgoing traffic, screenshots and UI remain unverified by this
+review. It is not actual capture readiness or deployment acceptance.
 
 ## Gates and shutdown
 
