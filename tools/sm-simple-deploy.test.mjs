@@ -9,17 +9,17 @@ const plan=new URL('../docs/deploy/d1LV/',import.meta.url);
 const old='0dd38b629621e27ccb40260a27b27cf2d7202519';
 const app='aff5c0289c4863fedb37368b4942884ccc068d77';
 const build='d1LVsC3sk6p04uOyWUx5T';
-const releaseName=`${app}-${build}-simple-001`;
+const releaseName=`${app}-${build}-simple-002`;
 const script=fs.readFileSync(new URL('deploy.sh',plan),'utf8');
 const rollback=fs.readFileSync(new URL('rollback.sh',plan),'utf8');
 function write(p,text,mode=0o600){fs.mkdirSync(path.dirname(p),{recursive:true,mode:0o700});fs.writeFileSync(p,text,{mode});}
-function scenario({failUrl='',failRestart=false,failProbe=0,failCurl=false,failCleanup=false,failWorkerStop=false,slowWarmReady=false}={}){
+function scenario({failUrl='',failRestart=false,failProbe=0,failCurl=false,failCleanup=false,failWorkerStop=false,slowWarmReady=false,retainedUnits=false,mismatchedUnit=false,failGit=false,lateGitFailure=false}={}){
   // Tiny fresh fixture files retained; no host services/ports/network/DB are used.
   const root=fs.mkdtempSync(path.join(tmpdir(),'tag-simple-deploy-test-'));
   const home=root+'/home/deck',bin=root+'/bin',control=home+'/Projects/tag-sm-f1-release';
   const units=home+'/.config/systemd/user',base=home+'/.local/share/tag-analysis';
   const source=home+'/tag-analysis-private/f1-release/deployable-d1LV-cache-free-001';
-  const backup=home+'/tag-analysis-private/f1-release/deploy-backup-d1LV-simple-001';
+  const backup=home+'/tag-analysis-private/f1-release/deploy-backup-d1LV-simple-002';
   const release=base+'/releases/'+releaseName,log=root+'/commands.log';
   for(const name of fs.readdirSync(plan)){
     const file=new URL(name,plan);if(!fs.statSync(file).isFile())continue;
@@ -35,6 +35,30 @@ function scenario({failUrl='',failRestart=false,failProbe=0,failCurl=false,failC
   for(const service of ['tag-analysis','tag-web','tag-worker'])write(units+'/'+service+'.service','original '+service+' unit');
   write(units+'/tag-analysis.service.d/nearline.conf','original nonsecret nearline reference');
   write(units+'/tag-analysis.service.d/vocabulary.conf','original nonsecret volume reference');
+  const approved='b448432b5554df6c042d654d31a88cc2eea35ee7';
+  for(const name of ['tag-f1-api-d1lv','tag-f1-web-d1lv']){
+    const blob=spawnSync('git',['show',approved+':docs/deploy/d1LV/'+name+'.service'],{cwd:new URL('..',import.meta.url),encoding:'utf8'});
+    assert.equal(blob.status,0,blob.stderr);
+    const content=blob.stdout.replaceAll('/home/deck/',home+'/');
+    write(root+'/approved/'+name+'.service',content);
+    if(retainedUnits)write(units+'/'+name+'.service',mismatchedUnit&&name==='tag-f1-api-d1lv'?content+'\n# unexpected modification\n':content);
+  }
+  if(retainedUnits){
+    write(units+'/tag-f1-api-d1lv.service.d/nearline.conf','original nonsecret nearline reference');
+    write(units+'/tag-f1-api-d1lv.service.d/vocabulary.conf','original nonsecret volume reference');
+    write(base+'/releases/'+app+'-'+build+'-simple-001/retained','original001 release');
+    write(home+'/tag-analysis-private/f1-release/deploy-backup-d1LV-simple-001/retained','original001 backup');
+  }
+  write(bin+'/git',String.raw`#!/usr/bin/python3
+import sys,os,pathlib
+expected='b448432b5554df6c042d654d31a88cc2eea35ee7:docs/deploy/d1LV/'
+if len(sys.argv)!=5 or sys.argv[3]!='show' or not sys.argv[4].startswith(expected):sys.exit(1)
+name=sys.argv[4][len(expected):]
+if name not in ['tag-f1-api-d1lv.service','tag-f1-web-d1lv.service']:sys.exit(1)
+if os.environ.get('FAIL_GIT')=='1':sys.exit(1)
+sys.stdout.write((pathlib.Path(os.environ['MOCK_ROOT'])/'approved'/name).read_text())
+if os.environ.get('LATE_GIT_FAILURE')=='1':sys.exit(1)
+`,0o700);
   write(bin+'/nice','#!/bin/bash\nshift 2\nexec "$@"\n',0o700);
   write(bin+'/ionice','#!/bin/bash\nshift\nexec "$@"\n',0o700);
   write(bin+'/flock','#!/bin/bash\nexit 0\n',0o700);
@@ -89,7 +113,7 @@ if sys.argv[-1].endswith(('before-copy','before-worker','before-cutover')):
 sys.exit(0)
 `,0o700);
   const result=spawnSync('/usr/bin/bash',[control+'/docs/deploy/d1LV/deploy.sh'],{
-    env:{PATH:bin+':/usr/bin:/bin',HOME:home,MOCK_ROOT:root,MOCK_LOG:log,FAIL_URL:failUrl,FAIL_RESTART:failRestart?'1':'0',FAIL_PROBE:String(failProbe),FAIL_CURL:failCurl?'1':'0',FAIL_CLEANUP:failCleanup?'1':'0',FAIL_WORKER_STOP:failWorkerStop?'1':'0',SLOW_WARM_READY:slowWarmReady?'1':'0'},encoding:'utf8',timeout:15000});
+    env:{PATH:bin+':/usr/bin:/bin',HOME:home,MOCK_ROOT:root,MOCK_LOG:log,FAIL_URL:failUrl,FAIL_RESTART:failRestart?'1':'0',FAIL_PROBE:String(failProbe),FAIL_CURL:failCurl?'1':'0',FAIL_CLEANUP:failCleanup?'1':'0',FAIL_WORKER_STOP:failWorkerStop?'1':'0',SLOW_WARM_READY:slowWarmReady?'1':'0',FAIL_GIT:failGit?'1':'0',LATE_GIT_FAILURE:lateGitFailure?'1':'0'},encoding:'utf8',timeout:15000});
   return {root,units,source,backup,release,base,result,commands:fs.existsSync(log)?fs.readFileSync(log,'utf8').trim().split('\n'):[]};
 }
 
@@ -208,3 +232,30 @@ test('private API120s timeout aborts before public cutover',()=>{
   assert.notEqual(s.result.status,0);assert.ok(!s.commands.includes('systemctl --user restart tag-analysis.service'));
   assert.ok(!s.commands.includes('systemctl --user stop tag-worker.service'));
 });
+
+
+test('retained approved001 units are compared, backed up and updated to002; old release/backup remain',()=>{
+  const s=scenario({retainedUnits:true});assert.equal(s.result.status,0,s.result.stderr);
+  for(const name of ['tag-f1-api-d1lv','tag-f1-web-d1lv']){
+    assert.match(fs.readFileSync(s.backup+'/'+name+'.service','utf8'),/-simple-001/);
+    assert.match(fs.readFileSync(s.units+'/'+name+'.service','utf8'),/-simple-002/);
+  }
+  assert.equal(fs.readFileSync(s.backup+'/tag-f1-api-d1lv.service.d/nearline.conf','utf8'),'original nonsecret nearline reference');
+  assert.equal(fs.readFileSync(s.base+'/releases/'+app+'-'+build+'-simple-001/retained','utf8'),'original001 release');
+  assert.equal(fs.readFileSync(s.backup.replace('-simple-002','-simple-001')+'/retained','utf8'),'original001 backup');
+});
+
+test('unexpected retained unit content stops before backup/copy/service changes',()=>{
+  const s=scenario({retainedUnits:true,mismatchedUnit:true});assert.notEqual(s.result.status,0);
+  assert.ok(!fs.existsSync(s.backup));assert.ok(!fs.existsSync(s.release));
+  assert.ok(!s.commands.some(x=>x.startsWith('rsync ')||/^systemctl .* (start|stop|restart|enable|disable) /.test(x)));
+});
+
+
+for(const options of [{failGit:true},{lateGitFailure:true}]){
+  test('retained-unit check refuses Git failure even with matching output: '+JSON.stringify(options),()=>{
+    const s=scenario({retainedUnits:true,...options});assert.notEqual(s.result.status,0);
+    assert.ok(!fs.existsSync(s.backup));assert.ok(!fs.existsSync(s.release));
+    assert.ok(!s.commands.some(x=>x.startsWith('rsync ')||/^systemctl .* (start|stop|restart|enable|disable) /.test(x)));
+  });
+}

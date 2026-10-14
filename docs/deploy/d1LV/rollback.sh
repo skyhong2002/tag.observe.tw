@@ -3,7 +3,7 @@ set -euo pipefail
 umask 077
 # May also be called by deploy.sh while its deployment lock is already held.
 units=/home/deck/.config/systemd/user
-backup=/home/deck/tag-analysis-private/f1-release/deploy-backup-d1LV-simple-001
+backup=/home/deck/tag-analysis-private/f1-release/deploy-backup-d1LV-simple-002
 old=/home/deck/.local/share/tag-analysis/releases/0dd38b629621e27ccb40260a27b27cf2d7202519
 systemctl --user is-active --quiet tag-web.service
 [[ $(readlink -f /home/deck/.local/share/tag-analysis/current) == "$old" ]]

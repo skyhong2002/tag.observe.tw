@@ -4,8 +4,8 @@ umask 077
 # Execute only after babysit admits the exact files/commit and a fresh probe.
 control=/home/deck/Projects/tag-sm-f1-release
 source_root=/home/deck/tag-analysis-private/f1-release/deployable-d1LV-cache-free-001
-release=/home/deck/.local/share/tag-analysis/releases/aff5c0289c4863fedb37368b4942884ccc068d77-d1LVsC3sk6p04uOyWUx5T-simple-001
-backup=/home/deck/tag-analysis-private/f1-release/deploy-backup-d1LV-simple-001
+release=/home/deck/.local/share/tag-analysis/releases/aff5c0289c4863fedb37368b4942884ccc068d77-d1LVsC3sk6p04uOyWUx5T-simple-002
+backup=/home/deck/tag-analysis-private/f1-release/deploy-backup-d1LV-simple-002
 old=/home/deck/.local/share/tag-analysis/releases/0dd38b629621e27ccb40260a27b27cf2d7202519
 units=/home/deck/.config/systemd/user
 gateway_override=$units/tag-analysis.service.d/zz-f1-d1lv.conf
@@ -89,8 +89,13 @@ test ! -e "$release"
 test ! -e "$backup"
 test ! -e "$gateway_override"
 test ! -e "$worker_override"
-test ! -e "$units/tag-f1-api-d1lv.service"
-test ! -e "$units/tag-f1-web-d1lv.service"
+# Existing disabled units must match the previously admitted repository bytes.
+# Their new WorkingDirectory changes from001 to002 after backing up originals.
+for name in tag-f1-api-d1lv tag-f1-web-d1lv; do
+  if [[ -e "$units/$name.service" ]]; then
+    git -C "$control" show "b448432b5554df6c042d654d31a88cc2eea35ee7:docs/deploy/d1LV/$name.service" | cmp - "$units/$name.service"
+  fi
+done
 systemctl --user is-enabled --quiet tag-analysis.service
 systemctl --user is-enabled --quiet tag-worker.service
 # A rejected gate retains its raw receipt without creating a poisoned backup
@@ -100,6 +105,11 @@ fresh_gate "$start_probe"
 mkdir -m 700 "$backup"
 cp --archive "$units/tag-analysis.service" "$units/tag-web.service" "$units/tag-worker.service" "$backup/"
 for name in tag-analysis tag-web tag-worker; do
+  if [[ -d "$units/$name.service.d" ]]; then cp --archive "$units/$name.service.d" "$backup/"; fi
+done
+# Preserve retained private unit sources and drop-ins before installing002.
+for name in tag-f1-api-d1lv tag-f1-web-d1lv; do
+  if [[ -e "$units/$name.service" ]]; then cp --archive "$units/$name.service" "$backup/"; fi
   if [[ -d "$units/$name.service.d" ]]; then cp --archive "$units/$name.service.d" "$backup/"; fi
 done
 readlink /home/deck/.local/share/tag-analysis/current > "$backup/current-target.txt"
@@ -112,7 +122,7 @@ nice -n 19 ionice -c3 rsync --archive --no-owner --no-group "$source_root/" "$re
 nice -n 19 ionice -c3 rsync --archive --ignore-existing --no-owner --no-group \
   "$old/web/.next/standalone/web/.next/static/" "$release/web/.next/standalone/web/.next/static/"
 install -m 644 "$control/docs/deploy/d1LV/tag-f1-web-d1lv.service" "$control/docs/deploy/d1LV/tag-f1-api-d1lv.service" "$units/"
-mkdir -m 700 "$units/tag-f1-api-d1lv.service.d"
+mkdir -p -m 700 "$units/tag-f1-api-d1lv.service.d"
 cp --archive "$units/tag-analysis.service.d/." "$units/tag-f1-api-d1lv.service.d/"
 systemctl --user daemon-reload
 private_services=1

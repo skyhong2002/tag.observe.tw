@@ -16,7 +16,7 @@ APP `aff5c0289c4863fedb37368b4942884ccc068d77`, BUILD_ID `d1LVsC3sk6p04uOyWUx5T`
 
 After babysit admission, run `bash docs/deploy/d1LV/deploy.sh` from the pinned clean control checkout. The script:
 
-1. Takes the existing tag deployment lock and creates new exclusive backup/release paths; saves three unit sources, existing drop-in directories, readlink target and timer state.
+1. Takes the existing tag deployment lock and creates new exclusive `-simple-002` backup/release paths. If the two retained private units exist, cmp requires their exact previously admitted b448432b repository content before proceeding. Saves original three units plus retained private units/drop-ins, readlink target and timer state before installing new002 units. The001 release/backup remain untouched.
 2. Uses the reviewed three-trial median probe before copying, again before worker changes and again immediately before public cutover. Every raw trial is saved privately. A failed trial or resource gate stops the script; an initial gate rejection preserves timestamped raw receipts without creating a backup/release that blocks a clean retry.
 3. Copies cache-free source into a new release and merges only old immutable static assets with `--ignore-existing`. No stale HTML/RSC/cache is copied; no new asset is overwritten.
 4. Enables/starts new private API/web; serially checks the16 main homepage API keys for200, then privately warms homepage/tag/relations (max120s). A repeated full homepage must finish<=2s before worker replacement. Public six checks retain20s. See `docs/f1-warm-diagnostic-20261014.md` for measured cold-process limits and prior internal500s.
@@ -41,4 +41,4 @@ Independent source review and syntax checks are recorded in the new admission pa
 
 ## Warm revision after aborted prepared release
 
-The failed first attempt retained its new release, backup and disabled API/web unit files. The warm-only revision does not relax exclusive-path preflight or overwrite that evidence. Do not rerun the initial deploy command: a separately admitted continuation of the prepared release is required. This document/source/mock review is not a deployment or warm-readiness pass.
+The failed first attempt retained its001 release, backup and disabled API/web unit files. The002 namespace revision uses a new exclusive release/backup; it compares retained units to Git commit b448432b before backing them up and installing updated002 WorkingDirectory versions. Existing private API drop-in directory is reused with mkdir -p and backed up first. No001 release/backup is overwritten or deleted. Deploy and rollback logs use new002 filenames. The exact namespace diff/checksums must be admitted before execution; no additional diagnostic, capture or build is required. This remains source/mock evidence, not a deployment or warm-readiness pass.

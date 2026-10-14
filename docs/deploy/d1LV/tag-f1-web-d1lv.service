@@ -4,7 +4,7 @@ After=network-online.target tag-f1-api-d1lv.service
 Wants=tag-f1-api-d1lv.service
 [Service]
 Type=simple
-WorkingDirectory=/home/deck/.local/share/tag-analysis/releases/aff5c0289c4863fedb37368b4942884ccc068d77-d1LVsC3sk6p04uOyWUx5T-simple-001/web/.next/standalone/web
+WorkingDirectory=/home/deck/.local/share/tag-analysis/releases/aff5c0289c4863fedb37368b4942884ccc068d77-d1LVsC3sk6p04uOyWUx5T-simple-002/web/.next/standalone/web
 ExecStart=/home/deck/.local/bin/node server.js
 Environment=NODE_ENV=production
 Environment=PORT=18232
