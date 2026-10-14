@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**最新流程：直接Next CLI、人工閘門（n/a-ui，未執行）**：使用者明確取消建置wrapper；僅既有隔離API＋nice19／ionice3直接Next、workers2，人工每1–2分鐘量median3與resources、異常TERM ownbuild不續跑。005已停止且全部原件保留；[簡化exact命令與獨立recipe review](sm-simple-next-build-plan-20261014.md)。沒有新BUILD／UI／部署，65主route／0完整pass／65完整scope pending。
+
 **API-only004名額通知下主動收尾（n/a-ui）**：OPS e44639d9／APPaff5，真API已就緒但沒有web建置；UTC04:43:25僅停自有parent，04:43:58三PID／ports／holder全退，所有原件保留。[停止證據與後續更正](sm-api-only-build-004-slot-stop-20261014.md)。最新授權讓tag續跑，005只換exclusive識別，不增加guard。65主route／0完整pass／65完整scope pending，未部署。
 
 **API-only／web003實際失敗（n/a-ui，UTC04:31–04:32）**：OPS1c7824fa／APPaff5；真API就緒、archive／extract／dependency copy已發生，但目錄模式775→755與原strictproof不符，stage1、沒有Next compile／新BUILD_ID／部署。既有非作者原件複核，原f166/761不變、五PID／ports／holder全退；7buildsample RSSmax203.637MiB不當真peak，API起動亦有memory pause；API serving失敗分類非唯一HTTP/syscall證據。[原件與界線](sm-api-only-build-003-completion-20261014.md)。**65主route／0完整pass／65完整scope pending，004未執行。**
