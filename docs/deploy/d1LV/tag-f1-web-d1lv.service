@@ -1,0 +1,18 @@
+[Unit]
+Description=tag F1 reviewed d1LV frontend (blue/green candidate)
+After=network-online.target
+[Service]
+Type=simple
+WorkingDirectory=/home/deck/.local/share/tag-analysis/releases/aff5c0289c4863fedb37368b4942884ccc068d77-d1LVsC3sk6p04uOyWUx5T/web/.next/standalone/web
+ExecStart=/home/deck/.local/bin/node server.js
+Environment=NODE_ENV=production
+Environment=PORT=18232
+Environment=HOSTNAME=127.0.0.1
+Environment=TAG_API_ORIGIN=http://127.0.0.1:18230
+Environment=NEXT_TELEMETRY_DISABLED=1
+Restart=always
+RestartSec=3
+PrivateTmp=yes
+NoNewPrivileges=yes
+[Install]
+WantedBy=default.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=tag F1 reviewed d1LV gateway (blue/green candidate)
+After=network-online.target
+[Service]
+Type=simple
+WorkingDirectory=/home/deck/.local/share/tag-analysis/releases/aff5c0289c4863fedb37368b4942884ccc068d77-d1LVsC3sk6p04uOyWUx5T
+ExecStart=/usr/bin/env PORT=18230 UI_ORIGIN=http://127.0.0.1:18232 /home/deck/.local/bin/node app/src/server.js
+Environment=NODE_ENV=production
+EnvironmentFile=/home/deck/Projects/tag.analysis.tw/.env
+Restart=always
+RestartSec=3
+PrivateTmp=yes
+NoNewPrivileges=yes
+[Install]
+WantedBy=default.target

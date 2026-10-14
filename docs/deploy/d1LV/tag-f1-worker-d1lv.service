@@ -1,0 +1,18 @@
+[Unit]
+Description=tag F1 worker preserving private image submission policy
+After=network-online.target
+[Service]
+Type=simple
+WorkingDirectory=/home/deck/.local/share/tag-analysis/releases/aff5c0289c4863fedb37368b4942884ccc068d77-d1LVsC3sk6p04uOyWUx5T
+ExecStart=/usr/bin/env WORKER_METRICS_PORT=18133 /home/deck/.local/bin/node app/src/worker.ts
+Environment=NODE_ENV=production
+Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=RANKING_INTERVAL_MINUTES=10
+EnvironmentFile=/home/deck/Projects/tag.analysis.tw/.env
+TimeoutStopSec=300
+Restart=always
+RestartSec=5
+PrivateTmp=yes
+NoNewPrivileges=yes
+[Install]
+WantedBy=default.target

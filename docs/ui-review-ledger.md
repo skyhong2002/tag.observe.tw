@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**d1LV 部署前技術檢查（n/a-ui，未部署）**：same APPaff5／BUILDd1LV、隱私35/35與cache/gateway19/19、實際匿名SSR/RSC/no-store、0038正式metadata對照（不需要migration）已通過限縮技術核對；cache-free副本只省略339generatedcache/prerender entries，compiledJS/CSS/native原bytes不變，新inventory59468c40…不能冒用原103b。[技術原件與部署指令提案](f1-deployment-technical-handoff-20261014.md)。正式入口無中斷切換與權限仍待核定，未部署；不提升任何route UI狀態，65main／0complete／65scopepending，012四route現有state實圖partial-pass維持。這不是B0競態、正式資料或GA收件驗收。
+
 **012主要頁現有state實圖獨審通過（partial-scope，未部署）**：APPaff5／BUILDd1LV，GPT-6.1 Sol非作者本人看16new＋8refs＋2舊dark issue圖，四匿名route／兩寬兩色無新blocking；tag兩dark文案實像素AA修正已重驗。actualreview `/home/deck/tag-analysis-private/f1-release/sm-paired-012-four-page-ui-independent-20261014.json` SHA87f1d16b…與同名txt transcript2e50a8b2…，逐圖時間/sha/model記錄及實manifest7598b970…、HAR363c137e…均見[012](sm-paired-012-completion-20261014.md)。恢復／login／empty狀態未替代normal loaded/admin/投稿流程完整驗收；65main route仍0complete／65scopepending。網路raw/closedstats Google0核對通過，不是GA收件；B0/SSR/RSC等技術檢查仍pending。
 
 **012 actual candidate＋16圖成功（待獨立實圖審查，未部署）**：OPS62ce7f24／APPaff5／BUILDd1LV，同bytes inventory103b／f50前後同，三stage exit0、captured-pending-review。四頁1280／390 light／dark16PNG、manifest7598b970…、HAR363c137e…與rawGoogle計數0、eventdrain成功、DNT1/GPCnull。[逐圖路徑/hash/UTC與人工量測界線](sm-paired-012-completion-20261014.md)。complete route仍0／65pending；main states看圖中，no B0/SSR/fullroute/deployment pass。
