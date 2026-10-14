@@ -1,3 +1,4 @@
+<!-- 2026-10-14 LIVE: APP aff5c028 / BUILD_ID d1LVsC3sk6p04uOyWUx5T, gateway switched UTC13:46. Six origin/public GETs200; formal browser review/admin-flow/full65-route scope remain pending. Old0dd web retained. See docs/f1-direct-deployment-completion-20261014.md. -->
 <!-- 2026-10-14 d1LV002 deployment aborted before worker/gateway: warm gates passed, before-worker load16.77>12 rejected. Formal0dd38b6 unchanged; no production F1 pass. See docs/f1-simple-002-deployment-abort-20261014.md. -->
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
