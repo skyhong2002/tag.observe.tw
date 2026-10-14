@@ -1,5 +1,9 @@
 # F1 UI 逐頁審查 ledger
 
+**012主要頁現有state實圖獨審通過（partial-scope，未部署）**：APPaff5／BUILDd1LV，GPT-6.1 Sol非作者本人看16new＋8refs＋2舊dark issue圖，四匿名route／兩寬兩色無新blocking；tag兩dark文案實像素AA修正已重驗。actualreview `/home/deck/tag-analysis-private/f1-release/sm-paired-012-four-page-ui-independent-20261014.json` SHA87f1d16b…與同名txt transcript2e50a8b2…，逐圖時間/sha/model記錄及實manifest7598b970…、HAR363c137e…均見[012](sm-paired-012-completion-20261014.md)。恢復／login／empty狀態未替代normal loaded/admin/投稿流程完整驗收；65main route仍0complete／65scopepending。網路raw/closedstats Google0核對通過，不是GA收件；B0/SSR/RSC等技術檢查仍pending。
+
+**012 actual candidate＋16圖成功（待獨立實圖審查，未部署）**：OPS62ce7f24／APPaff5／BUILDd1LV，同bytes inventory103b／f50前後同，三stage exit0、captured-pending-review。四頁1280／390 light／dark16PNG、manifest7598b970…、HAR363c137e…與rawGoogle計數0、eventdrain成功、DNT1/GPCnull。[逐圖路徑/hash/UTC與人工量測界線](sm-paired-012-completion-20261014.md)。complete route仍0／65pending；main states看圖中，no B0/SSR/fullroute/deployment pass。
+
 **011 actual 啟動後停止，0圖（n/a-ui，未部署）**：OPS9b780a4a／APPaff5／BUILDd1LV，真API/Next/frontdoor ready後先candidate清理，再watchdog報failed；gen2已30.519秒且gen3尚pending支持stale線索，原generic不唯一定位。0Chromium／0PNG／無HAR，profile新flags未实际Chrome驗；same103b／f50、ownPID/ports/locks退。[時序與原件](sm-paired-011-completion-20261014.md)。依user工具再擋共同回報，不自行續修／重試；65主route／0完整pass／65scopepending。
 
 **d1LV首頁 partial 實際看圖（010，非完整route pass）**：既有非作者GPT-6.1 Sol真看3target＋4homepage references，1280light/dark、390light恢复狀態無明顯溢位；390dark/normal loaded/其餘3主頁仍missing。actualreview JSON `/home/deck/tag-analysis-private/f1-release/sm-paired-010-partial-ui-independent-20261014.json` SHA31b41a63…、同名txt transcript bd06e2b9…，其中逐圖UTC/hash/viewport與APPaff5／BUILDd1LV；captured manifest b088905f…及HAR e44135a8…路徑在[完成紀錄](sm-paired-010-completion-20261014.md)。event-drain與CodeCache競態仍issues，不完整network/privacy PASS。65主route／0完整pass／65完整scope pending；未部署。
