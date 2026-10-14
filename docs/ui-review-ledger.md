@@ -1,5 +1,9 @@
 # F1 UI 逐頁審查 ledger
 
+**d1LV首頁 partial 實際看圖（010，非完整route pass）**：既有非作者GPT-6.1 Sol真看3target＋4homepage references，1280light/dark、390light恢复狀態無明顯溢位；390dark/normal loaded/其餘3主頁仍missing。actualreview JSON `/home/deck/tag-analysis-private/f1-release/sm-paired-010-partial-ui-independent-20261014.json` SHA31b41a63…、同名txt transcript bd06e2b9…，其中逐圖UTC/hash/viewport與APPaff5／BUILDd1LV；captured manifest b088905f…及HAR e44135a8…路徑在[完成紀錄](sm-paired-010-completion-20261014.md)。event-drain與CodeCache競態仍issues，不完整network/privacy PASS。65主route／0完整pass／65完整scope pending；未部署。
+
+**010 actual candidate就緒／capture partial（未部署）**：OPSf40662ff／APPaff5／BUILDd1LV，API/Next/frontdoor真ready；只三張首頁1280light/dark、390light，profile Code Cache lstat ENOENT停止，沒有主要F1頁重拍。[原件、hash及停止結果](sm-paired-010-completion-20261014.md)。HAR/request可見Google0、proxyoutgoing0，DNT1／GPCnull；不是16圖或完整privacy/B0 PASS。ownPID/ports/holder退、inventory103b／f50不變；依user工具再擋即回報babysit，未自行重試。65主route／0完整pass／65完整scope pending。
+
 **009 actual 啟動失敗（n/a-ui，未部署）**：OPS55a8a83f／APPaff5／BUILDd1LV，candidate exit1、0browser／0PNG；worker啟動health有效但cleanup時35.367秒已超30，原generic不能唯一倒填首錯。自有PID／listener／鎖全退、產物103b／f50不變；[原件與後續最小修正](sm-paired-009-completion-20261014.md)。65主route／0完整pass／65完整scope pending。
 
 **d1LV native 實際通過／009 綁定 source 通過（n/a-ui，未部署）**：12ELF最高GLIBC2.30、RPATH內、8.node／ONNX載入、root與standalone Sharp WebP／AVIF通過，前後inventory103b不變；非作者複核原件，009 artifact-only綁定79pure／4syntax通過。[原件與界線](sm-native-d1LV-completion-20261014.md)。009 尚未capture，不給任何route UI pass；65主route／0完整pass／65完整scope pending。
