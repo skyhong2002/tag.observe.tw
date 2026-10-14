@@ -4,6 +4,15 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
+## Current deployed status (2026-10-15 Taipei)
+
+- Backend `dc7b814e` ranking-pools API is live; web APP `79ab873b` / BUILD_ID `Plhg1ikqckL3KpTvPiwbs` replaced d1LV on2026-10-14 UTC16:46. [Web rollout, artifacts, actual screenshot inputs and rollback](home-outlet-grid-rollout-20261015.md).
+- Babysit accepted the requested390/coarse26×26 outlet-grid change at UTC16:50. Eight production and eight candidate screenshot inputs actually viewed by GPT-6.1 Sol `/root`; transcript/paths/hashes are in the linked rollout. This is a limited homepage/grid pass on79, not a full homepage or65-route pass.
+- Main route count remains65; full route/state completion0, pending65. Previous225fa38 passes do not apply to this SHA. Admin/login/state coverage remains pending.
+- [Homepage topics failure/empty whitespace](home-topics-diagnosis-20261015.md): source fix pending build/candidate/deploy; accepted79 web is still live. No promotion of this state to pass.
+- Earlier accepted F1home/tag1280/390 on aff5/d1LV and API n/a-ui test evidence remain historical, with their original SHA. The records below are historical attempts, including failures before successful rollout; their “未部署” text does not describe the current version.
+
+
 **d1LV實際部署嘗試在暖機停止（n/a-ui，未部署）**：核可packet8ea5bd3a／runtimeOPS61fd537c，sourceaff5／BUILDd1。warm-home18232超過20秒curl28，尚未切worker/gateway；新API/web已停止、原gateway114409／web325597／worker114174保持、formal/current0dd。後驗證九trial200、median0.932118／5.063242／1.001206通過。[實際失敗與原件](f1-simple-deployment-abort-20261014.md)。不給正式F1或任一UIroute pass；65main／0complete／65scopepending。沒有盲目續跑或新capture。
 
 **入口切換提案更新（n/a-ui，未部署）**：使用者接受gateway數秒中斷，舊NAT提案83f5cf29作廢。改用普通Bash＋persistent user-unit drop-in，保留legacy current／18132 web；sameAPPaff5／BUILDd1LV，無rebuild。[簡化部署與回滾](f1-simple-deployment-admission-20261014.md)。尚待exact hash／fresh probe核可，不提升任何UIroute狀態；65main／0complete／65scopepending。

@@ -239,7 +239,15 @@ function PanelLoading() {
 const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
 
 function TopicPanel({ topics }: { topics: { outlets: number; today: number; latest: FeedTopic[] } | null }) {
-  if (!topics) return <p className={styles.notice}>議題資料整理中。</p>;
+  if (!topics)
+    return (
+      <p className={styles.notice}>
+        議題資料暫時無法取得。
+        <Link prefetch={false} href="/topic/">
+          查看議題表
+        </Link>
+      </p>
+    );
   if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有更新的議題。</p>;
   return (
     <ul className={styles.topicList}>
@@ -462,7 +470,7 @@ export default async function HomePage() {
                 議題表 <Arrow />
               </Link>
             </div>
-            <div className="min-h-80" data-vital-region="home-topics">
+            <div className={styles.topicPanel} data-vital-region="home-topics">
               <Suspense fallback={<PanelLoading />}>
                 <DeferredTopics data={topics} />
               </Suspense>

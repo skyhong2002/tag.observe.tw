@@ -78,13 +78,53 @@ export interface FeedTopic extends Topic {
 }
 async function get<T>(path: string, revalidate: number): Promise<T | null> {
   // null on any failure (API down during a build, 503 before the first snapshot).
+  const topicsRequest = path.startsWith('/api/v1/topics?');
+  const started = performance.now();
+  let status: number | undefined;
+  let firstFailure: string | undefined;
   try {
-    let res = await fetch(API_ORIGIN + path, { next: { revalidate } });
+    let res: Response | undefined;
+    try {
+      res = await fetch(API_ORIGIN + path, { next: { revalidate } });
+    } catch (error) {
+      // Topic panels also recover from one interrupted connection. Keep the
+      // other page fetchers' transport-failure behaviour unchanged.
+      if (!topicsRequest) throw error;
+      firstFailure = 'transport';
+    }
     // A 502/503 caught while the API restarts (every deploy) would otherwise be
     // served from the data cache for the whole revalidate window.
-    if (!res.ok) res = await fetch(API_ORIGIN + path, { cache: 'no-store' });
-    return res.ok ? ((await res.json()) as T) : null;
-  } catch {
+    if (!res?.ok) {
+      if (res) {
+        firstFailure = `http-${res.status}`;
+        status = res.status;
+        await res.body?.cancel().catch(() => {});
+      }
+      res = await fetch(API_ORIGIN + path, { cache: 'no-store' });
+    }
+    status = res.status;
+    const data = res.ok ? ((await res.json()) as T) : null;
+    if (!res.ok) await res.body?.cancel().catch(() => {});
+    if (topicsRequest) {
+      const diagnostic = {
+        outcome: res.ok ? (firstFailure ? 'recovered' : 'ok') : 'unavailable',
+        firstFailure,
+        status,
+        elapsedMs: Math.round(performance.now() - started),
+      };
+      if (!res.ok || firstFailure) console.warn('topics SSR request', diagnostic);
+      else console.info('topics SSR request', diagnostic);
+    }
+    return data;
+  } catch (error) {
+    if (topicsRequest)
+      console.warn('topics SSR request', {
+        outcome: 'unavailable',
+        firstFailure,
+        status,
+        failure: error instanceof SyntaxError ? 'invalid-json' : 'transport',
+        elapsedMs: Math.round(performance.now() - started),
+      });
     return null;
   }
 }
