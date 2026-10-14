@@ -106,7 +106,7 @@ export function ArticleFacets({
         來自 {facets.media.length} 家媒體
       </p>
       <div className="space-y-1.5">
-        <div className="flex items-baseline justify-between text-xs text-zinc-500">
+        <div className="flex items-baseline justify-between text-xs text-zinc-500 dark:text-zinc-400">
           <span>藍綠分布（點選只看一邊）</span>
           {camp && (
             <Link href={link({ camp: null, cursor: null })} scroll={false} className="text-brand-700 hover:underline dark:text-brand-400">
@@ -148,7 +148,7 @@ export function ArticleFacets({
         </ul>
       </div>
       <div className="space-y-1.5">
-        <p className="text-xs text-zinc-500">發稿最多的媒體</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">發稿最多的媒體</p>
         <ol className="space-y-1 text-xs">
           {facets.media.slice(0, OUTLETS).map((m, i) => (
             // Above the list on phones, so only the first five there.
@@ -162,11 +162,11 @@ export function ArticleFacets({
               <Link href={`/media/${encodeURIComponent(m.media)}/`} className="relative min-w-0 flex-1 truncate hover:underline">
                 {media[m.media]?.title ?? m.media}
               </Link>
-              <span className="relative tabular-nums text-zinc-500">{m.count.toLocaleString()}</span>
+              <span className="relative tabular-nums text-zinc-500 dark:text-zinc-400">{m.count.toLocaleString()}</span>
             </li>
           ))}
         </ol>
-        {facets.media.length > OUTLETS && <p className="text-xs text-zinc-500">另有 {facets.media.length - OUTLETS} 家</p>}
+        {facets.media.length > OUTLETS && <p className="text-xs text-zinc-500 dark:text-zinc-400">另有 {facets.media.length - OUTLETS} 家</p>}
       </div>
     </section>
   );
@@ -205,7 +205,7 @@ function ArticleRow({ a, q, thread }: { a: Hit; q: string; thread: PeriodThread 
           </p>
         )}
         {(thread || a.tags.length > 0) && (
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
             {thread && (
               <Link
                 href={threadHref(thread)}
@@ -253,7 +253,7 @@ export function ArticleList({
     <div className="space-y-4">
       {sectionByTime(page.articles, byHour).map((s) => (
         <section key={s.key} aria-label={s.label}>
-          <h2 className="sticky top-14 z-10 flex items-center gap-2 bg-zinc-50/95 py-1.5 text-xs font-medium text-zinc-500 backdrop-blur dark:bg-zinc-950/95">
+          <h2 className="sticky top-14 z-10 flex items-center gap-2 bg-zinc-50/95 py-1.5 text-xs font-medium text-zinc-500 backdrop-blur dark:bg-zinc-950/95 dark:text-zinc-400">
             <span className="tabular-nums text-zinc-900 dark:text-zinc-100">{s.label}</span>
             <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" aria-hidden />
           </h2>

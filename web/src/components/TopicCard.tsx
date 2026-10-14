@@ -113,7 +113,7 @@ export function Coverage({ c }: { c: TopicCoverage }) {
             <Link href={articleHref(a)} className="line-clamp-1 flex-1 text-zinc-700 hover:underline dark:text-zinc-400">
               {a.title}
             </Link>
-            <span className="shrink-0 text-zinc-500">{a.mediaTitle}</span>
+            <span className="shrink-0 text-zinc-500 dark:text-zinc-400">{a.mediaTitle}</span>
           </li>
         ))}
       </ul>

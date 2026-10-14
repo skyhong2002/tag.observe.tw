@@ -70,7 +70,7 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
         </p>
       </div>
       {!data && !found ? (
-        <p className="text-zinc-600">{noun}資料目前無法取得。</p>
+        <p className="text-zinc-600 dark:text-zinc-400">{noun}資料目前無法取得。</p>
       ) : (
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-8">
           <MediaSidebar label={`依媒體瀏覽（${media.length} 家）`}>
@@ -82,7 +82,7 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
               <SearchResults kind={kind} found={found} tag={tag} q={q} />
             ) : (
               <>
-                {groups.length === 0 && <p className="text-sm text-zinc-600">目前沒有最近更新的{noun}。</p>}
+                {groups.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">目前沒有最近更新的{noun}。</p>}
                 {groups.map((g) => (
                   <section key={g.key} aria-labelledby={`group-${g.key}`}>
                     <h2
@@ -90,7 +90,7 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
                       className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
                     >
                       {g.label}
-                      <span className="text-xs font-normal text-zinc-500">{g.items.length} 個</span>
+                      <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{g.items.length} 個</span>
                     </h2>
                     <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
                       {g.items.map((t) => (
@@ -210,7 +210,7 @@ const KIND_BADGE: Record<TopicKind, string> = {
 /** The current kind for a keyword or title filter: for a keyword, outlets in the order
  *  they opened one (TagRace); for a title filter alone, one block per outlet (the API sends them grouped). */
 function SearchResults({ found, tag, q, kind }: { found: TopicSearch | null; tag?: string; q?: string; kind: TopicKind }) {
-  if (!found) return <p className="text-sm text-zinc-600">篩選結果目前無法取得。</p>;
+  if (!found) return <p className="text-sm text-zinc-600 dark:text-zinc-400">篩選結果目前無法取得。</p>;
   const label = [tag && `「${tag}」`, q && `名稱含「${q}」`].filter(Boolean).join('、');
   const outlets: Array<{ media: string; title: string; items: FeedTopic[] }> = [];
   for (const t of found.topics) {
@@ -245,7 +245,7 @@ function SearchResults({ found, tag, q, kind }: { found: TopicSearch | null; tag
             <h3 className="flex items-center gap-1.5 border-b border-zinc-300 pb-1 text-sm font-semibold dark:border-zinc-800">
               <MediaIcon media={o.media} title={o.title} />
               {o.title}
-              <span className="text-xs font-normal text-zinc-500">{o.items.length} 個</span>
+              <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{o.items.length} 個</span>
             </h3>
             <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
               {o.items.map((t) => {
@@ -258,7 +258,7 @@ function SearchResults({ found, tag, q, kind }: { found: TopicSearch | null; tag
                       <Link href={topicHref(t.media, t.id, k)} className="hover:underline">
                         {t.title}
                       </Link>
-                      <span className="ml-2 whitespace-nowrap text-xs text-zinc-500">
+                      <span className="ml-2 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400">
                         {updated ? `最後更新 ${taipeiDate(updated)}` : '更新時間不明（追蹤前已上架）'}
                         {t.status === 'ended' && ' · 已停更'}
                       </span>
@@ -393,7 +393,7 @@ function MediaList({ media, kind }: { media: TopicMedia[]; kind: TopicKind }) {
               <Link href={topicMediaHref(m.media, kind)} className="flex items-center gap-2 py-1.5 hover:underline">
                 <MediaIcon media={m.media} title={m.title} />
                 <span className="min-w-0 flex-1 truncate">{m.title}</span>
-                {count != null && <span className="text-xs text-zinc-500">{count}</span>}
+                {count != null && <span className="text-xs text-zinc-500 dark:text-zinc-400">{count}</span>}
                 <span
                   className={`h-2 w-2 shrink-0 rounded-full ${problem ? 'bg-amber-500' : 'bg-emerald-500'}`}
                   role="img"
@@ -404,7 +404,7 @@ function MediaList({ media, kind }: { media: TopicMedia[]; kind: TopicKind }) {
           );
         })}
       </ul>
-      <details className="mt-2 text-xs text-zinc-500">
+      <details className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
         <summary className="cursor-pointer">更新狀態詳情</summary>
         <ul className="mt-2 space-y-1">
           {media.map((m) => (
