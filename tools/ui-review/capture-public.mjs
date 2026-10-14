@@ -11,7 +11,9 @@ const { chromium } = require('playwright');
 const [inputFile, outputDir] = process.argv.slice(2);
 const input = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
 const root = path.resolve(outputDir);
-const origin = 'https://tag.observe.tw';
+const origin = input.origin ?? 'https://tag.observe.tw';
+if (!['https://tag.observe.tw', 'http://127.0.0.1:18334'].includes(origin)) throw Error('Unreviewed origin');
+const candidate = origin !== 'https://tag.observe.tw';
 const google = (host) => /(^|\.)(google-analytics\.com|analytics\.google\.com|googletagmanager\.com|googleadservices\.com|doubleclick\.net)$/.test(host);
 const sha = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const write = (name, value) => fs.writeFileSync(path.join(root, name), JSON.stringify(value, null, 2), { mode: 0o600 });
@@ -27,11 +29,29 @@ write('input.json', input);
 // This proxy exists BEFORE Chromium: every external host, including Google,
 // is denied at transport level. TLS is preserved for the actual public host.
 const proxy = http.createServer((req, res) => {
+  // Candidate transport uses the same prelaunch barrier, with one fixed
+  // loopback frontdoor. It never grants arbitrary upstreams or credentials.
+  if (candidate) {
+    let url; try { url = new URL(req.url); } catch { /* deny below */ }
+    if (url?.origin === origin && !url.username && !url.password && ['GET', 'HEAD'].includes(req.method)) {
+      transport.push({ utc: new Date().toISOString(), event: 'admitted-candidate-http', method: req.method });
+      const headers = { ...req.headers, host: '127.0.0.1:18334', dnt: '1' };
+      for (const name of Object.keys(headers)) if (/cookie|authorization|token|api[-_]key|proxy-/i.test(name)) delete headers[name];
+      const up = http.request(url, { method: req.method, headers }, (incoming) => {
+        const out = { ...incoming.headers }; delete out['set-cookie'];
+        res.writeHead(incoming.statusCode, out); incoming.pipe(res);
+      });
+      sockets.add(up); up.on('close', () => sockets.delete(up));
+      up.setTimeout(120000, () => up.destroy());
+      up.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
+      res.on('close', () => up.destroy()); req.resume(); up.end(); return;
+    }
+  }
   transport.push({ utc: new Date().toISOString(), event: 'denied-http', method: req.method });
   req.resume(); res.writeHead(403); res.end();
 });
 proxy.on('connect', (req, client, head) => {
-  const admitted = req.url === 'tag.observe.tw:443';
+  const admitted = !candidate && req.url === 'tag.observe.tw:443';
   transport.push({ utc: new Date().toISOString(), event: admitted ? 'admitted-connect' : 'denied-connect', target: req.url });
   if (!admitted) { client.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return; }
   const up = net.connect({ host: 'tag.observe.tw', port: 443 }, () => {
@@ -75,7 +95,7 @@ try {
         await page.emulateMedia({ colorScheme: 'light' });
         const response = await page.goto(origin + route.path, { waitUntil: 'domcontentloaded', timeout: 120000 });
         if (response.status() !== (route.expectedStatus ?? 200)) throw Error('Unexpected route status ' + route.id + ': ' + response.status());
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(Math.max(1500, Math.min(30000, Number(input.settleMs) || 1500)));
         const html = await page.content();
         if (!html.includes(input.buildId)) throw Error('Different BUILD_ID on ' + route.id);
         // Scroll in measured steps to load images, then return to the first fold.
@@ -112,7 +132,7 @@ try {
   try { await new Promise((ok, no) => proxy.close((error) => error ? no(error) : ok())); } catch { cleanupErrors.push('proxy-close'); }
   completed = completed && cleanupErrors.length === 0;
   write('requests.json', requests); write('transport.json', transport);
-  write('manifest.json', { ...input, surface: 'production-public-HTTPS', candidate: false, tool: 'Playwright, native DNT profile, prelaunch host-only transport proxy', completed,
+  write('manifest.json', { ...input, surface: candidate ? 'candidate-loopback-anonymous' : 'production-public-HTTPS', candidate, tool: 'Playwright, native DNT profile, prelaunch host-only transport proxy', completed,
     shots, pages, googleRequests: requests.filter((r) => r.google).length, googleOutgoing: transport.filter((r) => r.event === 'admitted-connect' && r.target !== 'tag.observe.tw:443').length,
     transportClosed: !cleanupErrors.includes('proxy-close'), cleanupErrors, endedUtc: new Date().toISOString(),
     limitations: 'Anonymous actual production states only. Google counts are browser HAR/request and proxy host-admission evidence, not TLS packet inspection. No fixture/auth account, GA receipt or complete dynamic-state coverage claimed.' });
