@@ -44,7 +44,7 @@ export async function execute(p,expected){const q=check(p,expected);if(q.expires
  try{lock=await acquire(q);fs.mkdirSync(job,{mode:0o700});fs.writeFileSync(join(job,'runtime-before.json'),JSON.stringify(pre),{flag:'wx',mode:0o600});fs.writeFileSync(join(job,'owner-launch.json'),JSON.stringify({inputSha256:expected,controlOpsSha:q.controlOpsSha,parentPid:process.pid,parentStartTicks:ticks(process.pid),parentCmdlineSha256:sha(fs.readFileSync('/proc/'+process.pid+'/cmdline')),lockPid:lock.pid,lockStartTicks:ticks(lock.pid)}),{flag:'wx',mode:0o600});
  const terminate=e=>{fatal=e;if(active)process.emit('SIGTERM');};timer=setTimeout(()=>terminate(Error('Hard admitted deadline')),Math.max(1,q.expiresAtMs-Date.now()));
  let healthSequence=0;const parentStartTicks=ticks(process.pid);
- // One bounded parent producer.15s refresh target leaves room for12s curls; original age>30s rejects.
+ // One bounded parent producer.15s refresh target leaves room for12s curls; runtime age>180s rejects; initial probe remains fresh.
  const healthCache=createHealthCache({identity:{inputSha256:expected,parentPid:process.pid,parentStartTicks},sampleFresh:()=>sample(job,{starting:group===0,group}),sampleResources:health=>sample(job,{starting:group===0,group,health}),publish:h=>{
   const raw=JSON.stringify(h)+'\n';fs.writeFileSync(join(job,'health-generation-'+(++healthSequence)+'.json'),raw,{flag:'wx',mode:0o600});
   const pending=join(job,'health-cache.pending.json');fs.writeFileSync(pending,raw,{flag:'wx',mode:0o600});fs.renameSync(pending,join(job,'health-cache.json'));

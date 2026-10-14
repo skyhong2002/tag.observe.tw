@@ -15,3 +15,9 @@ APP `aff5c0289c4863fedb37368b4942884ccc068d77`／BUILD `d1LVsC3sk6p04uOyWUx5T`�
 UTC06:20:25核對七ownPID均無。後驗證 raw kernel `/home/deck/tag-analysis-private/f1-release/paired-sm-batch-011/owner-poststop-kernel.raw.json` SHA256 `528a4b0fa62f57a97d2927c3969ef610974f6ac275a80c12b3fee5c591aef422`，保存全netTCP／TCP6／locks與ownPID結果；06:22:18.017全inventory仍 `103b9e671f66c6fe8af530db40fb9e0e9f5b8a38c0822af30404b398e26ac9fc`，manifest f50不變，原件同job `owner-poststop-inventory-summary.json`。所有失敗原件／runtime／profile／release／回滾版本／備份／worktree保留，未碰正式DB／Cloudflare／WAF／backup timer。65主route0完整pass／65完整scope pending。
 
 既有非作者 `/root/unfreeze_independent_review`／GPT-6.1 Sol離線核對原件：JSON `/home/deck/tag-analysis-private/f1-release/sm-paired-011-failure-independent-20261014.json` SHA256 `90ce674f55b0ef57f472bf7c387b23cbc0406ecd53274c2c48a167a93d1a42b4`；同名txt transcript `4eccf4ebc3f8273dbc87afeda1993c6d5eaa5ec82301e71213248c5831426734`。核 saved raw kernel／時序／0圖／after-stop du，沒有由reviewer重跑loader／inventory／browser，也沒有把owner canonicalhash冒稱reviewer重算。
+
+## 012 明確授權最小 freshness 調整
+
+Babysit預先放行existingcached freshness改180秒，其他guard不變；只candidatecache／browserlease／runtimeSM cache30→180，initialSM freshness仍30秒、實體resources時效仍5秒、原始timestamps/binding/HTTP錯誤/resource閘門/絕對期限不變，012exclusive namespace。Operator開跑freshprobe9trials、MemAvailable>=2.5GiB、load<12，期間每1–2分鐘手工fresh量，超標停止自己的browser/candidate。
+
+本次root作者，既有獨立非作者GPT-6.1 Sol本人82/82pure＋5syntax通過。freeze `9391734d3b7250ac6ff56166d8a34ea4041e6e3e85e946181efbc7123f5180ee`；review `/home/deck/tag-analysis-private/f1-release/sm012-health-window-independent-v1-20261014.json` SHA256 `0a37666e0fc141a923be87344098050675073dc108aba9fc75972422a6a9da40`；同名txt `2b9b6bad2118bb3b9b6cd9a2b5ceddd687b6962fa7a3b2fd181d75c553df9ccb`。這是source/mock，不是actual012/UI/B0或部署PASS。

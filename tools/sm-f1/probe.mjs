@@ -39,7 +39,7 @@ export async function observeSM(record = () => {}) {
   return sample;
 }
 export function requireGate(s, { starting = false, additionalBuilds = 0, additionalBrowsers = 0, now = Date.now() } = {}) {
-  if (!s || !Array.isArray(s.sites) || s.sites.length!==3 || !Number.isFinite(s.finishedAtMs) || now - s.finishedAtMs < 0 || now - s.finishedAtMs > 30000 || !Number.isFinite(s.startedAtMs) || s.startedAtMs>s.finishedAtMs || now-s.startedAtMs>30000 ||
+  if (!s || !Array.isArray(s.sites) || s.sites.length!==3 || !Number.isFinite(s.finishedAtMs) || now - s.finishedAtMs < 0 || now - s.finishedAtMs > (starting ? 30000 : 180000) || !Number.isFinite(s.startedAtMs) || s.startedAtMs>s.finishedAtMs || now-s.startedAtMs>(starting ? 30000 : 180000) ||
       !Number.isFinite(s.resourceObservedAtMs) || now-s.resourceObservedAtMs<0 || now-s.resourceObservedAtMs>5000 ||
       !Number.isFinite(s.load1) || s.load1 > 12 || s.load1 < 0 ||
       !Number.isFinite(s.availableBytes) || s.availableBytes < (starting ? 40 : 30) * GiB ||

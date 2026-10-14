@@ -94,8 +94,8 @@ export function waitWatchdog(child,readReady,ms=3000) {
   });
 }
 export function validateBrowserLease(lease,{inputSha256,parent,now=Date.now()}) {
-  if(lease?.schema!=='sm-f1-browser-lease-v1'||lease.inputSha256!==inputSha256||lease.parentPid!==parent.pid||lease.parentStartTicks!==parent.startTicks||!Number.isFinite(lease.observedAtMs)||lease.observedAtMs>now||now-lease.observedAtMs>30000)throw Error('Fresh exact browser lease required');
-  if(!Number.isFinite(lease.sample?.startedAtMs)||lease.sample.startedAtMs>now||now-lease.sample.startedAtMs>30000)throw Error('Original browser health age rejected');return lease;
+  if(lease?.schema!=='sm-f1-browser-lease-v1'||lease.inputSha256!==inputSha256||lease.parentPid!==parent.pid||lease.parentStartTicks!==parent.startTicks||!Number.isFinite(lease.observedAtMs)||lease.observedAtMs>now||now-lease.observedAtMs>180000)throw Error('Fresh exact browser lease required');
+  if(!Number.isFinite(lease.sample?.startedAtMs)||lease.sample.startedAtMs>now||now-lease.sample.startedAtMs>180000)throw Error('Original browser health age rejected');return lease;
 }
 export async function bounded(task, ms=5000) {
   let timer;
