@@ -4,11 +4,11 @@
 
 ## 目前可對齊的正式基準（2026-10-15 台北）
 
-- 正式 web：`7dc59c3c17f6d6420354c3d4df733549071f2bb4`，BUILD_ID `4nl3B-BcT4mA9uh47rm0Z`；API：`dc7b814e220606202a408d21e73b1d6e7c61fe16`。此文件後續 commit 是文件或截圖工具更新，不代表重建了前端。
+- 正式 web：`9eb733706f70dccfa5b9ea5ebf59be7b3cbab0a4`，BUILD_ID `VhzeqqvJy2S0rYlvetwKX`；API：`dc7b814e220606202a408d21e73b1d6e7c61fe16`。此文件後續 commit 是文件或截圖工具更新，不代表重建了前端。
 - 範例：[首頁](https://tag.observe.tw/)、[標籤與關係](https://tag.observe.tw/tag/柯文哲/)、[排行](https://tag.observe.tw/ranking/)、[事件表](https://tag.observe.tw/event/)。事件頁 canonical 是 `/event/`，不是 `/events/`。
 - 正式與 candidate 審查分開；實際版本、圖片路徑、raw network 和非作者看圖 transcript 放在 `docs/ui-review-ledger.md`。舊 APP677 的截圖只供歷史參考，不用來驗現在的 UI。全站65 route 的各狀態尚未全部完成。
 - 原始碼可直接從上述 web commit 複製元件；一起帶它的相對 import 依賴。資料取得、路由和同源 auth 接上各站自己的 API，不能把 tag 的私有 SSR origin、服務 token 或帳號設定複製進 browser bundle。
-- 已知問題不作為模仿目標：正式版部分排行、關鍵字歷史與事件時間的小字缺少深色 override，實圖低於 WCAG AA。source `58cdab2d` 已補 `dark:text-zinc-400`，尚待新產物看圖驗證與部署；下游可沿既有可讀的 `dark:text-zinc-300/400` 約定修正，不要直接複製已知低對比。正式資料載入失敗也不能拿來當合法空集合的呈現範例。
+- 深色次要文字：`58cdab2d`／`72491ab8` 與看圖發現的共用區塊遺漏已收斂於正式 `9eb73370`。候選八頁指定文字實圖取樣對比6.75–7.59:1；正式逐頁 review 獨立記錄，不代表所有頁或狀態都通過。沿 `dark:text-zinc-300/400`，不要複製歷史低對比；資料載入失敗不等於合法空集合。
 
 ## 首頁可複用元件與 CSS module
 
