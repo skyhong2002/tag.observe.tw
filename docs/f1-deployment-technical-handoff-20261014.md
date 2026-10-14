@@ -1,5 +1,7 @@
 # F1：同產物部署前技術交接（2026-10-14）
 
+**後續使用者決定：接受gateway數秒中斷，NAT提案／packet83f5cf29作廢。** 下方技術原件保持有效；入口切換改見[簡化部署提案](f1-simple-deployment-admission-20261014.md)。此檔的舊NAT阻擋與指令僅為歷史紀錄，不能再執行。
+
 本批未部署。APP `aff5c0289c4863fedb37368b4942884ccc068d77`、BUILD_ID `d1LVsC3sk6p04uOyWUx5T`；來源基底為已 fetch 的 `origin/main a89908a650c42a1224d657e6c908d5fd3c7be5a0`。正式站仍是 `0dd38b629621e27ccb40260a27b27cf2d7202519`。不重建、不 npm install、不登入、不送 GA、不改 Cloudflare／WAF。
 
 ## 已完成的技術檢查

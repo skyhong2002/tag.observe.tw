@@ -1,3 +1,2 @@
-create table ip tag_f1_d1lv
-add chain ip tag_f1_d1lv output { type nat hook output priority -101; policy accept; }
-add rule ip tag_f1_d1lv output ip daddr 127.0.0.1 tcp dport 18130 redirect to :18230 comment "tag d1LV origin blue-green switch"
+# Withdrawn by user decision: no privileged origin routing.
+# Historical proposal remains in git commit 2214064c; this file has no commands.

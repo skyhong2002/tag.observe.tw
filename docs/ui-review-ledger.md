@@ -1,5 +1,9 @@
 # F1 UI 逐頁審查 ledger
 
+**入口切換提案更新（n/a-ui，未部署）**：使用者接受gateway數秒中斷，舊NAT提案83f5cf29作廢。改用普通Bash＋persistent user-unit drop-in，保留legacy current／18132 web；sameAPPaff5／BUILDd1LV，無rebuild。[簡化部署與回滾](f1-simple-deployment-admission-20261014.md)。尚待exact hash／fresh probe核可，不提升任何UIroute狀態；65main／0complete／65scopepending。
+
+**簡化部署 source／mock 複審通過（n/a-ui，未部署）**：既有非作者 GPT-6.1 Sol 本人15/15隔離mock、Bash／Node／systemd syntax exit0；cleanup兩項問題已修、原ISSUES原件保留。review `/home/deck/tag-analysis-private/f1-release/sm-simple-deploy-independent-r2-20261014.json` SHA `280c2e35f5c53e98f7eddd83a50205fd2e070bf0147b8f2d3407081b57029794`，reviewer記錄9個受審source/doc/test檔案SHA。不能當成實際切換、重開機、停機秒數或正式UI驗收；仍待babysit核對exact命令／fresh probe。
+
 **d1LV 部署前技術檢查（n/a-ui，未部署）**：same APPaff5／BUILDd1LV、隱私35/35與cache/gateway19/19、實際匿名SSR/RSC/no-store、0038正式metadata對照（不需要migration）已通過限縮技術核對；cache-free副本只省略339generatedcache/prerender entries，compiledJS/CSS/native原bytes不變，新inventory59468c40…不能冒用原103b。[技術原件與部署指令提案](f1-deployment-technical-handoff-20261014.md)。正式入口無中斷切換與權限仍待核定，未部署；不提升任何route UI狀態，65main／0complete／65scopepending，012四route現有state實圖partial-pass維持。這不是B0競態、正式資料或GA收件驗收。
 
 **012主要頁現有state實圖獨審通過（partial-scope，未部署）**：APPaff5／BUILDd1LV，GPT-6.1 Sol非作者本人看16new＋8refs＋2舊dark issue圖，四匿名route／兩寬兩色無新blocking；tag兩dark文案實像素AA修正已重驗。actualreview `/home/deck/tag-analysis-private/f1-release/sm-paired-012-four-page-ui-independent-20261014.json` SHA87f1d16b…與同名txt transcript2e50a8b2…，逐圖時間/sha/model記錄及實manifest7598b970…、HAR363c137e…均見[012](sm-paired-012-completion-20261014.md)。恢復／login／empty狀態未替代normal loaded/admin/投稿流程完整驗收；65main route仍0complete／65scopepending。網路raw/closedstats Google0核對通過，不是GA收件；B0/SSR/RSC等技術檢查仍pending。

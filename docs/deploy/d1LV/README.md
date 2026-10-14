@@ -1,15 +1,39 @@
-# d1LV conditional origin switch proposal — not executed
+# d1LV simple user-service deployment proposal — awaiting admission
 
-Exact APP `aff5c0289c4863fedb37368b4942884ccc068d77`, BUILD_ID `d1LVsC3sk6p04uOyWUx5T`. These are ordinary shell/systemd proposal files, not a new executor or guard. Current public release is `0dd38b629621e27ccb40260a27b27cf2d7202519`.
+User decision: brief gateway interruption is accepted. Packet `83f5cf29…` and its NAT proposal are withdrawn. **No privileged routing or sudo is used.** The old proposal is retained in Git history; `switch.nft` now contains comments only and is never used by either script.
 
-Do not execute until babysit admits the exact files and a fresh median3 probe AND the existing routing owner supplies a reviewed, available, reboot-safe origin switch. `sudo -n nft` currently fails because it requires a password; no firewall/routing mutation or NFT dry-run has occurred. The proposed NFT file only redirects local origin connections; it does not change Cloudflare or filter public traffic. Its persistence and old keep-alive drain remain unresolved, so this is **not deployment ready**.
+APP `aff5c0289c4863fedb37368b4942884ccc068d77`, BUILD_ID `d1LVsC3sk6p04uOyWUx5T` are unchanged. No rebuild, dependency install, migration, Cloudflare/WAF change, backup timer action, or cleanup is included.
 
-- `deploy.sh`: root routing preflight first, own deployment lock, new exclusive release/backup, preserve all old bytes; no build/install/migration; reuse existing environment file and gateway drop-ins without copying secrets into release. Start private new gateway/web and perform DNT1 GETs. Stop old worker before starting F1 worker. Only then propose an atomic local routing change.
-- `rollback.sh`: propose removal of just the newly named table, verify old API/web remain alive and stop new gateway connections. Keep F1 worker to safely handle already-enqueued private image jobs. No table/data/release deletion.
-- The runtime `current` pointer remains the old release in this provisional proposal; this is intentional rollback protection, **not** a claim that reboot runs the new release.
-- Allocate at most 1 GiB for the new copy and retained old immutable static files. The source cache-free copy is approximately 0.803 GiB allocated; the old static directory is approximately 3.1 MiB. No stale generated page/cache data is copied from the old release.
-- Run `bash -n deploy.sh rollback.sh` and `systemd-analyze --user verify ./*.service` offline. These checks passed; they do not prove privileged routing, production startup, or production data prewarm.
+## Persistent topology
 
-Migration is **not needed**: the production 0038 journal/schema was inspected read-only and matches this APP. No backup timer, restore, DDL/down, account/permission change, or removal of backups/worktrees is part of this proposal.
+- Existing gateway `tag-analysis.service`, port18130: a new `zz-f1-d1lv.conf` pins the new release and `UI_ORIGIN=18232` via explicit ExecStart environment. Existing nearline/vocabulary drop-ins are preserved. Only this gateway restarts at cutover.
+- New frontend `tag-f1-web-d1lv.service`, loopback18232: enabled user unit, exact reviewed standalone build. Old `tag-web.service` stays running at18132 and keeps its old current/release.
+- New loopback data API `tag-f1-api-d1lv.service`, port18230: same APP and production DB/environment. It is needed to warm the relations endpoint before public gateway cutover because 0dd has no F1 relations route. This is an ordinary existing API unit, not a new adapter or controller. Only anonymous DNT1 GETs are issued during deployment.
+- Existing enabled worker `tag-worker.service`: stop the old consumer, add a release/metrics override, then start F1 before exposing uploads. The new private image policy persists after reboot. The historical `tag-f1-worker-d1lv.service` file is not installed.
+- `current` remains the original 0dd target. Actual deployed gateway/worker release is determined by their drop-ins and WorkingDirectory, not by the legacy current symlink. Gateway Wants/After and enabled API/web units make the topology survive a reboot. No reboot is performed for this test.
 
-Full technical evidence and limitations: [handoff](../../f1-deployment-technical-handoff-20261014.md).
+## Exact steps
+
+After babysit admission, run `bash docs/deploy/d1LV/deploy.sh` from the pinned clean control checkout. The script:
+
+1. Takes the existing tag deployment lock and creates new exclusive backup/release paths; saves three unit sources, existing drop-in directories, readlink target and timer state.
+2. Uses the reviewed three-trial median probe before copying, again before worker changes and again immediately before public cutover. Every raw trial is saved privately. A failed trial or resource gate stops the script; an initial gate rejection preserves timestamped raw receipts without creating a backup/release that blocks a clean retry.
+3. Copies cache-free source into a new release and merges only old immutable static assets with `--ignore-existing`. No stale HTML/RSC/cache is copied; no new asset is overwritten.
+4. Enables/starts new private API/web; anonymously warms homepage, tag and relations from production data. Stops/replaces the worker via its persistent drop-in.
+5. Installs only its own gateway override, daemon-reloads and **restarts tag-analysis.service once**. No stop/restart/disable of legacy tag-web.service appears in either script.
+6. Immediately GETs homepage, tag and relations both at18130 and at public HTTPS. Every one must be200/curl0, without acceptance retries. Any failure invokes rollback immediately. Startup only retries ECONNREFUSED, at most40×250ms; actual HTTP/curl errors fail.
+7. Saves headers/bodies/UTC/results, unit WorkingDirectory/PID and full deployed inventory after old static assets were added. The source59468 hash is not reused as the final release hash.
+
+Allocation: approximately0.803 GiB source plus3.1 MiB old static, capped planning estimate1 GiB. All old/new artifacts, releases, backups and test evidence are retained.
+
+## Downtime and rollback
+
+`restart-started.utc`, `restart-ready.utc` and `restart-to-first-200-upper-bound.ns` record restart request → first successful origin OpenAPI response. This is a **measured upper bound**, including service startup/polling, not an invented exact outage duration. Post-switch route bodies/headers and each request's UTC/exit/status are in `http.tsv`.
+
+`bash docs/deploy/d1LV/rollback.sh` rewrites only our gateway override to absolute0dd release and `UI_ORIGIN18132`, reloads and restarts gateway once. Legacy web never stopped. It validates old origin then disables/stops only the newly introduced API/web; their unit sources/releases/evidence stay on disk. F1 worker override remains enabled to safely drain already-enqueued userId/private image jobs. No table/data rollback or current change occurs.
+
+## Verification scope
+
+`tools/sm-simple-deploy.test.mjs` uses tiny fresh private files and command mocks only; it never binds ports, calls network/DB, or manages real services. It covers successful sequencing/static preservation/persistence configuration, six independent HTTP failure points, curl timeout, gateway restart failure, prewarm failure, and gate failures. Temporary fixtures are retained. Pre-cutover cleanup errors are reported as failed/unconfirmed with exit2; a partly failed worker stop still attempts recovery.
+
+Independent source review and syntax checks are recorded in the new admission packet. Actual deployment/readiness/downtime/reboot behavior remain unexecuted until babysit admission. Prior54 same-artifact privacy/cache tests, original native smoke and012 actual main-page review remain applicable; none of these prove full65-route UI completion or GA receipt.

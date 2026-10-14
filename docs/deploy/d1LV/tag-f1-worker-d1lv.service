@@ -1,3 +1,5 @@
+# Historical unused proposal. Do not install this unit.
+# The simple plan updates the existing enabled tag-worker.service via worker-d1lv.conf.
 [Unit]
 Description=tag F1 worker preserving private image submission policy
 After=network-online.target
