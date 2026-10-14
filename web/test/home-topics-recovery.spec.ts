@@ -33,6 +33,7 @@ it('recovers once from an interrupted SSR connection without caching the retry',
   expect(await fetchTopics()).toEqual(data);
   expect(fetcher).toHaveBeenCalledTimes(2);
   expect(fetcher.mock.calls[1][1]).toMatchObject({ cache: 'no-store' });
+  expect(fetcher.mock.calls[1][1]?.signal).toBeInstanceOf(AbortSignal);
   expect(log).toHaveBeenCalledWith(
     'topics SSR request',
     expect.objectContaining({ outcome: 'recovered', firstFailure: 'transport', status: 200, elapsedMs: expect.any(Number) }),
@@ -76,4 +77,22 @@ it('records invalid JSON as unavailable rather than claiming recovery', async ()
     'topics SSR request',
     expect.objectContaining({ outcome: 'unavailable', failure: 'invalid-json', status: 200 }),
   );
+});
+
+it('does not wait for cancellation of a Next cloned error body before retrying', async () => {
+  const { createRequire } = await import('node:module');
+  const requireWeb = createRequire(new URL('../package.json', import.meta.url));
+  const { cloneResponse } = requireWeb('next/dist/server/lib/clone-response');
+  const [response, retained] = cloneResponse(new Response('candidate failure', { status: 500 }));
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(response).mockResolvedValueOnce(Response.json(data));
+  vi.stubGlobal('fetch', fetcher);
+  const work = fetchTopics();
+  try {
+    const result = await Promise.race([work, new Promise((resolve) => setTimeout(() => resolve('blocked-by-clone'), 200))]);
+    expect(result).toEqual(data);
+  } finally {
+    await retained.text();
+    await work;
+  }
 });

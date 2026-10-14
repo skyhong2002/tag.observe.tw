@@ -98,13 +98,18 @@ async function get<T>(path: string, revalidate: number): Promise<T | null> {
       if (res) {
         firstFailure = `http-${res.status}`;
         status = res.status;
-        await res.body?.cancel().catch(() => {});
       }
-      res = await fetch(API_ORIGIN + path, { cache: 'no-store' });
+      // Next memoizes identical GETs even when only `cache` changes. A signal
+      // makes this topics retry reach the origin instead of replaying the
+      // failed response. Do not await cancel on Next's tee-cloned error body:
+      // its retained memoization branch can keep that promise pending.
+      res = await fetch(API_ORIGIN + path, {
+        cache: 'no-store',
+        ...(topicsRequest ? { signal: AbortSignal.timeout(10000) } : {}),
+      });
     }
     status = res.status;
     const data = res.ok ? ((await res.json()) as T) : null;
-    if (!res.ok) await res.body?.cancel().catch(() => {});
     if (topicsRequest) {
       const diagnostic = {
         outcome: res.ok ? (firstFailure ? 'recovered' : 'ok') : 'unavailable',
