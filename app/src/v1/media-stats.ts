@@ -57,6 +57,68 @@ export function statusFor(
 export const taipeiMidnight = (now: number) => new Date(Math.floor((now + 8 * HOUR) / (24 * HOUR)) * 24 * HOUR - 8 * HOUR);
 
 export function registerMediaStats(app: FastifyInstance, db: Db) {
+  // A backend-only rollout may share the retained public stats producer. Do
+  // not launch another historical full scan just to warm an identical UI.
+  const shared = process.env.TAG_MEDIA_STATS_SHARED_ORIGIN;
+  if (shared) {
+    const origin = new URL(shared);
+    if (
+      origin.protocol !== 'http:' ||
+      origin.hostname !== '127.0.0.1' ||
+      origin.username ||
+      origin.password ||
+      origin.pathname !== '/' ||
+      origin.search ||
+      origin.hash ||
+      origin.port !== '18230' ||
+      origin.port === process.env.PORT
+    )
+      throw Error('invalid loopback media-stats origin');
+    let pending: Promise<unknown> | null = null;
+    app.get('/api/v1/media-stats', async (_request, reply) => {
+      reply.header('cache-control', 'public, max-age=120');
+      const request = (pending ??= (async () => {
+        // No Cookie, Authorization, API/service token or caller URL is forwarded.
+        const res = await fetch(origin.origin + '/api/v1/media-stats', {
+          headers: { DNT: '1' },
+          redirect: 'error',
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (res.status !== 200) {
+          await res.body?.cancel();
+          throw Error('shared media stats unavailable');
+        }
+        const reader = res.body?.getReader();
+        if (!reader) throw Error('shared media stats empty');
+        const parts: Uint8Array[] = [];
+        let bytes = 0;
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            bytes += value.byteLength;
+            if (bytes > 2 * 1024 ** 2) throw Error('shared media stats oversized');
+            parts.push(value);
+          }
+        } finally {
+          await reader.cancel();
+        }
+        const text = Buffer.concat(parts).toString();
+        const value = JSON.parse(text);
+        if (!value || typeof value.generatedAt !== 'string' || !Array.isArray(value.media) || !value.totals)
+          throw Error('invalid shared media stats');
+        return value;
+      })());
+      try {
+        return await request;
+      } catch {
+        return reply.code(503).header('cache-control', 'no-store').send({ error: 'shared media stats unavailable' });
+      } finally {
+        if (pending === request) pending = null;
+      }
+    });
+    return;
+  }
   const load = async () => {
     const now = Date.now();
     const today = taipeiMidnight(now),

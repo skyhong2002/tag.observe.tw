@@ -12,7 +12,9 @@ units=/home/deck/.config/systemd/user
 [[ $(git -C "$control" rev-parse HEAD) == "$sha" ]]
 test -z "$(git -C "$control" status --porcelain)"
 test ! -e "$release"; test ! -e "$backup"
-test ! -e "$units/tag-ranking-pool-api.service"; test ! -e "$units/tag-ranking-pool-web.service"
+for name in tag-ranking-pool-api tag-ranking-pool-web; do
+ [[ $(systemctl --user show "$name.service" -p MainPID --value 2>/dev/null || printf 0) == 0 ]]
+done
 [[ $(systemctl --user show tag-analysis.service -p WorkingDirectory --value) == "$old" ]]
 # This copies ~0.81GiB, no build/npm/migration. Preserve every previous directory.
 [[ $(df --output=avail -B1 /home | tail -1) -ge $((40*1024**3)) ]]
@@ -22,6 +24,10 @@ mkdir -m 700 "$backup"
 cp --archive "$units/tag-analysis.service" "$backup/"
 cp --archive "$units/tag-analysis.service.d/zz-f1-d1lv.conf" "$backup/"
 cp --archive "$units/tag-analysis.service.d" "$backup/"
+for name in tag-ranking-pool-api tag-ranking-pool-web; do
+ if [[ -f "$units/$name.service" ]]; then cp --archive "$units/$name.service" "$backup/"; fi
+ if [[ -d "$units/$name.service.d" ]]; then cp --archive "$units/$name.service.d" "$backup/"; fi
+done
 readlink /home/deck/.local/share/tag-analysis/current > "$backup/current-target.txt"
 cutover=0; started=0
 cleanup() {
@@ -56,6 +62,7 @@ Environment=NODE_ENV=production
 EnvironmentFile=/home/deck/Projects/tag.analysis.tw/.env
 Environment=UV_THREADPOOL_SIZE=2
 Environment=VIPS_CONCURRENCY=1
+Environment=TAG_MEDIA_STATS_SHARED_ORIGIN=http://127.0.0.1:18230
 Restart=always
 RestartSec=3
 PrivateTmp=yes
@@ -63,12 +70,12 @@ NoNewPrivileges=yes
 [Install]
 WantedBy=default.target
 UNIT
-# Preserve existing vocabulary/nearline env settings; neither changes PORT.
-cp --archive "$units/tag-analysis.service.d" "$units/tag-ranking-pool-api.service.d"
-# The gateway WorkingDirectory override is not appropriate for the API service.
-# Keep the retained copy in backup; copy only known Environment drop-ins instead.
-# Move the freshly copied override aside inside this new private backup (no deletion).
-mv "$units/tag-ranking-pool-api.service.d/zz-f1-d1lv.conf" "$backup/api-copied-gateway-override.conf"
+# Copy Environment-only drop-ins, preserving existing ones and their backup.
+mkdir -p "$units/tag-ranking-pool-api.service.d"
+for file in "$units/tag-analysis.service.d/"*.conf; do
+ [[ $(basename "$file") != zz-f1-d1lv.conf ]] || continue
+ cp --archive "$file" "$units/tag-ranking-pool-api.service.d/"
+done
 cat > "$units/tag-ranking-pool-web.service" <<UNIT
 [Unit]
 Description=tag retained d1LV frontend with window-pool API
@@ -141,7 +148,7 @@ After=tag-ranking-pool-api.service tag-ranking-pool-web.service
 [Service]
 WorkingDirectory=$release
 ExecStart=
-ExecStart=/usr/bin/env PORT=18130 UI_ORIGIN=http://127.0.0.1:18332 /home/deck/.local/bin/node app/src/server.js
+ExecStart=/usr/bin/env PORT=18130 UI_ORIGIN=http://127.0.0.1:18332 TAG_MEDIA_STATS_SHARED_ORIGIN=http://127.0.0.1:18230 /home/deck/.local/bin/node app/src/server.js
 UNIT
 systemctl --user daemon-reload
 date -u +%FT%T.%NZ > "$backup/switch-start.utc"

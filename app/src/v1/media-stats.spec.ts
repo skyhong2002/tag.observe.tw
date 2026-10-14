@@ -2,10 +2,12 @@ import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
+import { buildApp } from '../app.js';
 import type { Db } from '../db/client.ts';
 import { listedMediaSources, registerMediaStats, statusFor, taipeiMidnight } from './media-stats.ts';
 
-vi.mock('../crawl/registry.ts', () => ({
+vi.mock('../crawl/registry.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../crawl/registry.ts')>()),
   allSources: () => [
     { media: 'cna', group: 'news' },
     { media: 'bigmedia', group: 'off' },
@@ -242,5 +244,77 @@ describe('media stats', () => {
     } finally {
       await app.close();
     }
+  });
+});
+
+describe('retained public statistics producer', () => {
+  it('shares concurrent reads, forwards only DNT, retains credential no-store and does not scan DB', async () => {
+    vi.stubEnv('TAG_MEDIA_STATS_SHARED_ORIGIN', 'http://127.0.0.1:18230');
+    const body = { generatedAt: new Date().toISOString(), totals: { today: 1 }, media: [] };
+    const fetching = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+      return new Response(JSON.stringify(body));
+    });
+    const db = {
+      select: vi.fn(() => {
+        throw Error('unexpected historical scan');
+      }),
+    };
+    const app = await buildApp({ uiOrigin: 'http://127.0.0.1:9' }, { db: db as never });
+    await app.ready();
+    await new Promise((resolve) => setImmediate(resolve));
+    const bootstrapCalls = db.select.mock.calls.length;
+    try {
+      const r = await Promise.all(
+        ['cookie', 'authorization', 'x-service-token', 'x-api-key'].map((h) =>
+          app.inject({ url: '/api/v1/media-stats', headers: { [h]: 'private-canary' } }),
+        ),
+      );
+      expect(fetching).toHaveBeenCalledOnce();
+      for (const reply of r) {
+        expect(reply.statusCode).toBe(200);
+        expect(reply.json()).toEqual(body);
+        expect(reply.headers['cache-control']).toBe('private, no-store');
+      }
+      expect(fetching.mock.calls[0][0]).toBe('http://127.0.0.1:18230/api/v1/media-stats');
+      expect(fetching.mock.calls[0][1]?.headers).toEqual({ DNT: '1' });
+      expect(fetching.mock.calls[0][1]?.redirect).toBe('error');
+      expect(db.select.mock.calls.length).toBe(bootstrapCalls);
+      const anonymous = await app.inject('/api/v1/media-stats');
+      expect(anonymous.headers['cache-control']).toBe('public, max-age=120');
+    } finally {
+      await app.close();
+      fetching.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+  it('rejects a failed or oversized upstream without falling back to another DB scan', async () => {
+    vi.stubEnv('TAG_MEDIA_STATS_SHARED_ORIGIN', 'http://127.0.0.1:18230');
+    const fetching = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 500 }));
+    const app = Fastify();
+    registerMediaStats(app, {} as Db);
+    try {
+      expect((await app.inject('/api/v1/media-stats')).statusCode).toBe(503);
+      fetching.mockResolvedValue(new Response(' '.repeat(2 * 1024 ** 2 + 1)));
+      const reply = await app.inject('/api/v1/media-stats');
+      expect(reply.statusCode).toBe(503);
+      expect(reply.headers['cache-control']).toBe('no-store');
+    } finally {
+      await app.close();
+      fetching.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+  it('rejects external/private-service origins and cycles', () => {
+    for (const origin of [
+      'https://example.com',
+      'http://127.0.0.1:13306',
+      'http://127.0.0.1:18230/admin',
+      'http://secret@127.0.0.1:18230',
+    ]) {
+      vi.stubEnv('TAG_MEDIA_STATS_SHARED_ORIGIN', origin);
+      expect(() => registerMediaStats(Fastify(), {} as Db)).toThrow('invalid loopback');
+    }
+    vi.unstubAllEnvs();
   });
 });
