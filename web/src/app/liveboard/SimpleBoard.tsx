@@ -584,7 +584,7 @@ export default function SimpleBoard({
                         height: centre.hour * 0.22,
                       };
                       return (
-                        <g key={slot.label} opacity={i > playing.frame ? 0.45 : 1}>
+                        <g key={slot.label}>
                           <text
                             x={slot.x + slot.width / 2}
                             y={centre.hour * 1.3}
@@ -595,7 +595,7 @@ export default function SimpleBoard({
                           >
                             {slot.label}
                           </text>
-                          <rect {...bar} rx={bar.height / 2} className={styles.track} />
+                          <rect {...bar} rx={bar.height / 2} className={styles.track} opacity={i > playing.frame ? 0.45 : 1} />
                           {i < playing.frame && <rect {...bar} rx={bar.height / 2} fill={tint(playing.lens)} opacity={0.35} />}
                           {now && settledFrame === `${playing.run}:${i}` && (
                             // Fills over the time this hour (or the present) stays, once its animation is over.
