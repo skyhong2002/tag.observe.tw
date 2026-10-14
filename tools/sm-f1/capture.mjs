@@ -104,6 +104,9 @@ export async function bounded(task, ms=5000) {
 }
 export async function observeNativeBeforeGoto(page,record,metadata){const state=await page.evaluate(()=>({DNT:navigator.doNotTrack,GPC:{present:'globalPrivacyControl'in navigator,value:navigator.globalPrivacyControl??null},webdriver:navigator.webdriver}));record({...metadata,state});if(state.DNT!=='1')throw Error('Native pre-navigation DNT required');return state;}
 export function requireProxyRaw(rows,stats){if(rows.filter(x=>x.event==='admitted').length!==stats.admitted||rows.filter(x=>x.event==='denied').length!==stats.denied)throw Error('Proxy counters disagree with raw');return true;}
+export async function closeBrowserEvidence({closeContext,stopProfile,drain,flush,closeProxy,onError,record=()=>{}}){for(const [phase,action]of [['context-close',closeContext],['profile-stop',stopProfile],['event-drain',drain],['journal-flush',flush],['proxy-close',closeProxy]]){try{record({phase,event:'started',observedAtMs:Date.now()});}catch(error){onError(error);}let failed=false;try{await action();}catch(error){failed=true;onError(error);}try{record({phase,event:'ended',failed,observedAtMs:Date.now()});}catch(error){onError(error);}}}
+export function evidenceFailureClass(error,root){const p=typeof error?.path==='string'?error.path:'',profile=join(root,'profile');return {operation:['lstat','stat','scandir','readlink','realpath','open','write'].includes(error?.syscall)?error.syscall:'unknown',pathClass:p===root?'evidence-root':p===profile?'profile-root':['SingletonLock','SingletonCookie','SingletonSocket'].some(n=>p===join(profile,n))?'profile-singleton':p.startsWith(profile+'/Default/Cache/')?'profile-cache':p.startsWith(profile+'/')?'profile-other':p.startsWith(root+'/')?'evidence-other':'unknown'};}
+export function cleanupJournal(append,{maxBytes=1024**2}={}){let buffering=false,bytes=0;const rows=[];return {begin(){buffering=true;},record(file,raw){if(!buffering)return false;const n=Buffer.byteLength(raw);if(bytes+n>maxBytes)throw Error('Cleanup raw evidence buffer cap');rows.push({file,raw});bytes+=n;return true;},flush(){const errors=[],failed=[];for(const row of rows.splice(0))try{append(row.file,row.raw);}catch(error){errors.push(error);failed.push(row);}rows.push(...failed);buffering=false;if(errors.length)throw new AggregateError(errors,'Cleanup raw flush failed',{cause:errors[0]});},get pending(){return rows.map(row=>({...row}));},get bufferedBytes(){return bytes;}};}
 export function bytesIn(path,{io=fs,uid=process.getuid(),maxBytes=96*MiB}={}) {
  const root=resolve(path),profile=join(root,'profile');let total=0;
  const secure=stat=>{if(stat.uid!==uid||(!stat.isSymbolicLink()&&(stat.mode&0o022)))throw Error('Evidence ownership or permissions differ');};
@@ -115,7 +118,7 @@ export function bytesIn(path,{io=fs,uid=process.getuid(),maxBytes=96*MiB}={}) {
    else if(entry.isSymbolicLink()&&stat.isSymbolicLink()&&['SingletonLock','SingletonCookie','SingletonSocket'].some(n=>p===join(profile,n)))count(Buffer.byteLength(io.readlinkSync(p)));
    else throw Error('Unexpected or replaced evidence entry');
   }
- };walk(root);return total;
+ };try{walk(root);return total;}catch(error){error.evidenceFailure=evidenceFailureClass(error,root);throw error;}
 }
 function verifyWhole() {
   if (sha(JSON.stringify(inventory(RUNTIME))) !== PINS.inventory || sha(fs.readFileSync(RUNTIME + '/mint-artifact.json')) !== PINS.manifest)
@@ -157,12 +160,13 @@ export async function capture(inputPath, expectedInputSha) {
   if(getPriority(0)!==19||!/^idle(?:\s|$)/.test(spawnSync('/usr/bin/ionice',['-p',String(process.pid)],{encoding:'utf8',timeout:3000,maxBuffer:128}).stdout?.trim()||''))throw Error('Entire capture requires nice19/ionice3');
   verifyControl(q); requireCandidate(q); verifyWhole(); const tool = installedToolProof();
   fs.mkdirSync(q.job,{mode:0o700});
-  const log = (file,x) => {try{if(bytesIn(q.job)>88*MiB)throw Error('Evidence reserve exceeded');fs.appendFileSync(join(q.job,file),JSON.stringify({utc:new Date().toISOString(),...x})+'\n',{mode:0o600});}catch(error){try{fs.writeFileSync(join(q.job,'first-evidence-write-failure.json'),JSON.stringify({schema:'sm-capture-log-failure-v1',observedAtMs:Date.now(),phase:'budget-scan-or-log-append',errorCode:['ENOENT','EACCES','EPERM','ENOSPC','EIO'].includes(error?.code)?error.code:'unknown'})+'\n',{flag:'wx',mode:0o600});}catch{}throw error;} };
+  const journal=cleanupJournal((file,raw)=>fs.appendFileSync(join(q.job,file),raw,{mode:0o600}));
+  const log = (file,x) => {const raw=JSON.stringify({utc:new Date().toISOString(),...x})+'\n';try{if(journal.record(file,raw))return;if(bytesIn(q.job)>88*MiB)throw Error('Evidence reserve exceeded');fs.appendFileSync(join(q.job,file),raw,{mode:0o600});}catch(error){try{fs.writeFileSync(join(q.job,'first-evidence-write-failure.json'),JSON.stringify({schema:'sm-capture-log-failure-v1',observedAtMs:Date.now(),phase:'budget-scan-or-log-append',...(error.evidenceFailure||evidenceFailureClass(error,q.job)),errorCode:['ENOENT','EACCES','EPERM','ENOSPC','EIO'].includes(error?.code)?error.code:'unknown'})+'\n',{flag:'wx',mode:0o600});}catch{}throw error;} };
   const profile=join(q.job,'profile'); fs.mkdirSync(join(profile,'Default'),{recursive:true,mode:0o700});
   fs.writeFileSync(join(profile,'Default','Preferences'),JSON.stringify({enable_do_not_track:true}),{flag:'wx',mode:0o600});
   const registry=ownershipRegistry(profile), errors=[],shots=[]; let proxy,context,watchdog,fatal,monitor,checking,health,sampling,closingContext,network,candidate;
   const closeContext=()=>closingContext??=(context?bounded(context.close()):Promise.resolve());
-  const stop = error => { fatal ??= error; if(context)closeContext().catch(e=>errors.push(e)); };
+  const stop = error => { fatal ??= error;journal.begin();if(proxy)try{proxy.quiesce();}catch(e){errors.push(e);} if(context)closeContext().catch(e=>errors.push(e)); };
   const emit=(file,x)=>{try{log(file,x);}catch(e){stop(e);throw e;}};
   const tasks=evidenceTasks(stop);
   const refresh=()=> sampling??=(observeSM(x=>log('gates.raw.jsonl',x)).then(s=>{health=s;}).finally(()=>{sampling=null;}));
@@ -226,16 +230,14 @@ export async function capture(inputPath, expectedInputSha) {
       if(png.length>8*MiB||bytesIn(q.job)+png.length>88*MiB)throw Error('PNG reserve');
       fs.writeFileSync(join(q.job,file),png,{flag:'wx',mode:0o600});
       shots.push({path,viewport,colorScheme,file,sha256:sha(png),bytes:png.length,utc:new Date().toISOString(),status:response?.status(),state,lazy,review:'pending'});
-      await page.close();await check();
+      if(shots.length===16){journal.begin();proxy.quiesce();clearInterval(monitor);if(checking)await checking;await page.close();}else{await page.close();await check();}
     }
     await tasks.drain();
   } catch(e) {fatal??=e;} finally {
     clearTimeout(timeout);clearInterval(monitor);if(checking)await checking;
+    journal.begin();if(proxy)try{proxy.quiesce();}catch(e){errors.push(e);}
     try{registry.snapshot();}catch(e){errors.push(e);}
-    if(context)try{await closeContext();}catch(e){errors.push(e);}
-    try{await bounded(tasks.drain());}catch(e){errors.push(e);}
-    try{await stopProfile(profile,{records:registry.records});}catch(e){errors.push(e);}
-    if(proxy)try{await bounded(proxy.close());}catch(e){errors.push(e);}
+    await closeBrowserEvidence({closeContext:()=>context?closeContext():Promise.resolve(),stopProfile:()=>stopProfile(profile,{records:registry.records}),drain:()=>bounded(tasks.drain()),flush:()=>{try{journal.flush();}catch(error){try{fs.writeFileSync(join(q.job,'cleanup-unflushed.raw.json'),JSON.stringify(journal.pending)+'\n',{flag:'wx',mode:0o600});}catch(evidenceError){throw new AggregateError([error,evidenceError],'Cleanup flush and retained evidence failed',{cause:error});}throw error;}},closeProxy:()=>proxy?bounded(proxy.close()):Promise.resolve(),onError:error=>errors.push(error),record:row=>log('cleanup.raw.jsonl',row)});
     if(watchdog && watchdog.exitCode===null){
       watchdog.kill('SIGTERM');
       try{await bounded(new Promise(resolve=>{if(watchdog.exitCode!==null)resolve();else watchdog.once('close',resolve);}));}catch(e){errors.push(e);if(watchdog.exitCode===null){watchdog.kill('SIGKILL');try{await bounded(new Promise(ok=>watchdog.once('close',ok)),2000);}catch(x){errors.push(x);}}}
@@ -266,7 +268,7 @@ export async function capture(inputPath, expectedInputSha) {
     const manifest={schema:'sm-f1-capture-manifest-v1',utc:new Date().toISOString(),status:!fatal&&!errors.length&&shots.length===16?'captured-pending-review':'partial',
       appSha:PINS.app,buildId:PINS.build,inventorySha256:PINS.inventory,manifestSha256:PINS.manifest,controlOpsSha:q.controlOpsSha,inputSha256:expectedInputSha,toolProof:tool,
       origin:ORIGIN,actor:'anonymous',sessionId:q.sessionId,shots,network,networkArtifacts:['network.har','network.redacted.har','requests.raw.jsonl','proxy.raw.jsonl'].filter(n=>fs.existsSync(join(q.job,n))).map(n=>({path:join(q.job,n),sha256:sha(fs.readFileSync(join(q.job,n))),bytes:fs.statSync(join(q.job,n)).size})),proxyStats:proxy?.stats,zeroGoogleOutgoing:proxy?.stats.googleOutgoing===0,
-      diagnosticArtifacts:['native-before-goto.jsonl','first-evidence-write-failure.json','proxy-failure.jsonl','proxy-closed.jsonl'].filter(n=>fs.existsSync(join(q.job,n))).map(n=>({path:join(q.job,n),sha256:sha(fs.readFileSync(join(q.job,n))),bytes:fs.statSync(join(q.job,n)).size})),
+      diagnosticArtifacts:['native-before-goto.jsonl','first-evidence-write-failure.json','proxy-failure.jsonl','proxy-closed.jsonl','cleanup-unflushed.raw.json','cleanup.raw.jsonl'].filter(n=>fs.existsSync(join(q.job,n))).map(n=>({path:join(q.job,n),sha256:sha(fs.readFileSync(join(q.job,n))),bytes:fs.statSync(join(q.job,n)).size})),
       errors:[fatal,...errors].filter(Boolean).map(e=>String(e.message).slice(0,256)),uiReview:'pending independent image review',deployEligible:false};
     if(bytesIn(q.job)+Buffer.byteLength(JSON.stringify(manifest,null,2))+4096>96*MiB){manifest.status='partial';errors.push(Error('Final evidence reserve'));manifest.errors.push('Final evidence reserve');}
     fs.writeFileSync(join(q.job,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx',mode:0o600});

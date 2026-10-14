@@ -6,7 +6,7 @@ import {dirname,resolve,join} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 export const ROOT='/home/deck/tag-analysis-private/f1-release';
-export const SESSION='sm-batch-007';
+export const SESSION='sm-batch-008';
 export const NODE='/home/deck/.local/bin/node';
 export const SOURCE_ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
 export const PATHS=Object.freeze({pairJob:ROOT+'/paired-'+SESSION,candidateJob:ROOT+'/mint-native-target-c70425b0/local-candidate-'+SESSION,captureJob:ROOT+'/sm-capture-'+SESSION});
@@ -19,7 +19,7 @@ const LOG_CAP=1024**2,hex=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x),same=
 export const sha=x=>createHash('sha256').update(x).digest('hex');
 function only(q,keys){if(!q||typeof q!=='object'||Array.isArray(q)||Object.keys(q).some(k=>!keys.includes(k)))throw Error('Unknown paired input fields');}
 export function validateProposalPaths(pairPath,candidatePath){
- const match=/^\/tmp\/babysit\/mint-queue\/tag-sm-paired-007-admission-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\/paired-input\.json$/.exec(pairPath||'');
+ const match=/^\/tmp\/babysit\/mint-queue\/tag-sm-paired-008-admission-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\/paired-input\.json$/.exec(pairPath||'');
  if(!match)throw Error('Exclusive approved proposal namespace required');const [year,month,day,hour,minute,second]=match.slice(1).map(Number),stamp=new Date(Date.UTC(year,month-1,day,hour,minute,second));
  if(stamp.getUTCFullYear()!==year||stamp.getUTCMonth()!==month-1||stamp.getUTCDate()!==day||stamp.getUTCHours()!==hour||stamp.getUTCMinutes()!==minute||stamp.getUTCSeconds()!==second||candidatePath!==join(dirname(pairPath),'candidate-input.json'))throw Error('Same canonical proposal directory and fixed basenames required');return true;
 }
