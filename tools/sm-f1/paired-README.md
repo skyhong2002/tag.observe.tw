@@ -1,0 +1,32 @@
+# SM paired candidate and capture (source proposal only)
+
+Base source review: `592103ade8e9c49aa2b39e8d7f66ccf092682958`. These new files need an independent review and a new committed control OPS before execution. No candidate, browser, probe, lock, database query, or native loader has been run by this implementation task.
+
+The single entry point admits **both** original commands together. Importing the module performs no I/O. `--template` emits an unapproved template with all permission flags false; it is not an execution permission. The exact operator command, after a separately reviewed proposal and fresh babysit admission, is:
+
+```sh
+/usr/bin/nice -n 19 /usr/bin/ionice -c 3 /usr/bin/env -i PATH=/usr/bin:/bin HOME=/nonexistent LANG=C DNT=1 NEXT_TELEMETRY_DISABLED=1 UV_THREADPOOL_SIZE=2 VIPS_CONCURRENCY=1 /home/deck/.local/bin/node CONTROL_ROOT/tools/sm-f1/paired-run.mjs --execute /tmp/babysit/mint-queue/tag-sm-paired-004-admission-YYYYMMDDTHHMMSSZ/paired-input.json APPROVED_PAIR_INPUT_SHA256
+```
+
+`CONTROL_ROOT`, UTC generation, and SHA must be concrete values in the approved packet. The proposal directory must be canonical, owned by the current UID, mode 0700; the pair and candidate JSON files must be mode 0600 and use the fixed basenames `paired-input.json` and `candidate-input.json`. An expired but unexecuted proposal can be renewed in a new generation directory, preserving the original bytes. No proposal is overwritten. The three actual job directories remain exclusive and fixed to `sm-batch-004`; an existing actual directory rejects execution, so this does not authorize a retry.
+
+The pair input binds the clean control HEAD, actual Node bytes, all 18 source/blob hashes, APP677 / artifact OPS c704 / BUILD Pmj / f166 inventory / 761 manifest, and the complete preapproved candidate input bytes. The original candidate validator checks its 11-source closure. Both input expiries must agree and be at most 900 seconds away; at least 450 seconds must remain before starting. Git checks are bounded read-only local commands, with no fetch or network. The ionice check only reads this owner's priority. The only operational child commands spawned by the pair are the pinned Node running the original candidate runner and the original capture module.
+
+The candidate retains its original global lock, health/resource guards, fixture-only database 18306, and loopback ports 18197–18199. The pair does not take another lock or run homepage probes. The original capture retains native DNT, GPC observation, browser watchdog, network proxy, Google/foreign rejection, fresh guards, raw requests and HAR. The approved capture template is anonymous, read-only, four fixed routes, 1280/390 light/dark, 16 PNGs, at most 96 MiB, and zero additional acknowledged build/browser slots. It does not add fixture data or cover empty article/avatar-queue cases.
+
+Actual started bytes must arrive within 90 seconds. The receipt is bound to the spawned candidate parent's PID, start ticks and original cmdline through `owner-launch.json`, and to the candidate input, session and artifact. The original capture `requireCandidate` independently checks the live owner/children and sockets. The private capture input is created exclusively only after these checks. Its started SHA is computed from the actual raw receipt; its deadline is `min(now + 540 seconds, candidate planned stop - 60 seconds)`, with at least 180 seconds remaining. There is no deadline extension or fabricated PID/receipt SHA.
+
+Each spawned handle is registered for central cleanup before any await, snapshot or started-receipt write. A failed initial snapshot may only be recovered by a fresh complete own-Node proof; mismatched or unreadable ownership remains unconfirmed and is never signaled. Log close errors do not escape event handlers: both FDs and every child finalizer are independently attempted, and errors remain fatal. Stop-request and audit errors are retained while cleanup continues. Primary errors remain the cause of an aggregate containing secondary evidence/finalizer errors; failed evidence writing cannot turn a failure into success.
+
+Each stage retains exclusive mode-0600 stdout/stderr logs, a combined 1 MiB prefix limit, observed byte counts, hashes, exact argv and input SHA. Operator abort, log failure/cap, and nonzero exit or signal fail promptly even when inherited pipes have not closed. Cleanup drains pipes only within the original deadline. Evidence is never deleted or overwritten.
+
+After capture, the pair requests the original candidate's bound own-stop and allows up to 45 seconds for normal cleanup, then can SIGTERM only its verified own candidate Node to invoke the existing guard's cleanup. It never SIGKILLs the candidate parent or signals a process group. A failed capture can receive SIGTERM and, as a last bounded fallback, SIGKILL only its own fully verified capture Node. This does **not** prove Chromium/profile cleanup; any forced capture termination makes the pair fail with cleanup unconfirmed. PID reuse, wrong UID/parent/exe/cwd/cmdline rejects signaling. Unknown ownership is retained as failure, not adopted or killed. Cleanup cannot exceed the original candidate expiry.
+
+A successful paired result requires capture exit 0, its complete pending-review manifest with zero Google outgoing and actual network counters, candidate exit 0, its bound whole-runtime-unchanged ended receipt, and fresh source/input verification. The result is `stages-ended-pending-review`, `deployEligible:false`; it does not declare image/UI/privacy review passed. Cross-machine preview and deployment are outside this command.
+
+```sh
+node --test tools/sm-f1/paired-run.test.mjs
+node --check tools/sm-f1/paired-run.mjs
+```
+
+Tests use injected in-memory processes, clocks, Git and bytes; no real listener, child, browser, SQL, native load or probe. Production/runtime bytes and existing evidence remain unchanged. Before execution, the owner must commit/review the source, fill and hash both approved inputs in a new private proposal directory, obtain the actual fresh global slot/resource admission, and have babysit review the exact single command. This source-only handoff grants no execution permission.
