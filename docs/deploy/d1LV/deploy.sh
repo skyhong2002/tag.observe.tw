@@ -119,9 +119,48 @@ private_services=1
 systemctl --user enable --now tag-f1-api-d1lv.service tag-f1-web-d1lv.service
 wait_listening 18230
 wait_listening 18232 /favicon.ico
-get_200 warm-home http://127.0.0.1:18232/
-get_200 warm-tag http://127.0.0.1:18232/tag/%E6%9F%AF%E6%96%87%E5%93%B2/
-get_200 warm-relations http://127.0.0.1:18230/api/v1/tags/%E6%9F%AF%E6%96%87%E5%93%B2/relations
+# Private warmup only. The public acceptance helper remains max-time 20.
+warm_200() {
+  local name=$1 url=$2 timeout=${3:-120} metrics status elapsed rc=0 started ended
+  case "$url" in http://127.0.0.1:18230/*|http://127.0.0.1:18232/*) ;; *) return 1 ;; esac
+  started=$(date -u +%FT%T.%NZ)
+  metrics=$(curl --silent --show-error --max-time "$timeout" -H 'DNT: 1' \
+    -D "$backup/$name.headers" -o "$backup/$name.body" -w '%{http_code}\t%{time_total}' "$url") || rc=$?
+  IFS=$'\t' read -r status elapsed <<< "$metrics"
+  ended=$(date -u +%FT%T.%NZ)
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$started" "$ended" "$rc" "$status" "$url" >> "$backup/http.tsv"
+  printf '%s\t%s\t%s\n' "$name" "$elapsed" "$timeout" >> "$backup/warm-timings.tsv"
+  [[ $rc == 0 && $status == 200 && "$elapsed" =~ ^[0-9]+([.][0-9]+)?$ ]] &&
+    awk -v elapsed="$elapsed" -v timeout="$timeout" 'BEGIN { exit !(elapsed <= timeout) }'
+}
+# Serial requests prime the cold DB/cache without the homepage's fan-out.
+# Check real HTTP status; a recoverable SSR panel failure is still a failed warmup.
+warm_paths=(
+  '/api/v1/media'
+  '/api/v1/media-stats'
+  '/api/v1/events?limit=24'
+  '/api/v1/events?limit=30'
+  '/api/v1/events/threads'
+  '/api/v1/topics?limit=120&kind=topic'
+  '/api/v1/journalists?hours=48&threshold=0.65&limit=6'
+  '/api/v1/similarity?hours=24&threshold=0.65'
+  '/api/v1/ranking?category=news&order=score&limit=16&trend=1'
+  '/api/v1/ranking?category=blue&order=score&limit=1'
+  '/api/v1/ranking?category=green&order=score&limit=1'
+  '/api/v1/ranking?category=all&order=growth&limit=500&gate=all'
+  '/api/v1/ranking?category=all&order=score&limit=500&gate=all'
+  '/api/v1/tag-avatars'
+  '/api/v1/tag-visuals'
+  '/api/v1/site-observation?days=7'
+)
+for index in "${!warm_paths[@]}"; do
+  warm_200 "warm-api-$index" "http://127.0.0.1:18230${warm_paths[$index]}"
+done
+warm_200 warm-home http://127.0.0.1:18232/
+warm_200 warm-tag http://127.0.0.1:18232/tag/%E6%9F%AF%E6%96%87%E5%93%B2/
+warm_200 warm-relations http://127.0.0.1:18230/api/v1/tags/%E6%9F%AF%E6%96%87%E5%93%B2/relations
+# Full HTML download (not just TTFB) must finish within two seconds.
+warm_200 warm-home-ready http://127.0.0.1:18232/ 2
 fresh_gate "$backup/before-worker"
 # The existing enabled worker receives a persistent release override.
 # Never expose new uploads to the old consumer.

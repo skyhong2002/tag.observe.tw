@@ -13,7 +13,7 @@ const releaseName=`${app}-${build}-simple-001`;
 const script=fs.readFileSync(new URL('deploy.sh',plan),'utf8');
 const rollback=fs.readFileSync(new URL('rollback.sh',plan),'utf8');
 function write(p,text,mode=0o600){fs.mkdirSync(path.dirname(p),{recursive:true,mode:0o700});fs.writeFileSync(p,text,{mode});}
-function scenario({failUrl='',failRestart=false,failProbe=0,failCurl=false,failCleanup=false,failWorkerStop=false}={}){
+function scenario({failUrl='',failRestart=false,failProbe=0,failCurl=false,failCleanup=false,failWorkerStop=false,slowWarmReady=false}={}){
   // Tiny fresh fixture files retained; no host services/ports/network/DB are used.
   const root=fs.mkdtempSync(path.join(tmpdir(),'tag-simple-deploy-test-'));
   const home=root+'/home/deck',bin=root+'/bin',control=home+'/Projects/tag-sm-f1-release';
@@ -64,6 +64,7 @@ for p in src.rglob('*'):
 import sys,os,pathlib
 args=sys.argv[1:];url=args[-1]
 with open(os.environ['MOCK_LOG'],'a') as f:f.write('curl '+url+'\n')
+with open(os.environ['MOCK_ROOT']+'/curl-options.log','a') as f:f.write(url+' '+args[args.index('--max-time')+1]+'\n')
 p=pathlib.Path(os.environ['MOCK_ROOT'])/'http-failure-triggered'
 failed=url==os.environ.get('FAIL_URL') and not p.exists()
 if failed:p.write_text('one-shot new-origin failure')
@@ -73,7 +74,8 @@ for flag,body in [('-D','HTTP/1.1 '+code+'\r\nCache-Control: no-store\r\n\r\n'),
  if flag in args:
   p=args[args.index(flag)+1]
   if p!='/dev/null':pathlib.Path(p).write_text(body)
-print(code,end='')
+elapsed='3.0' if os.environ.get('SLOW_WARM_READY')=='1' and args[args.index('--max-time')+1]=='2' else '0.1'
+print(code+'\t'+elapsed if '%{time_total}' in args[args.index('-w')+1] else code,end='')
 `,0o700);
   write(home+'/.local/bin/node',String.raw`#!/usr/bin/python3
 import os,sys,pathlib
@@ -87,7 +89,7 @@ if sys.argv[-1].endswith(('before-copy','before-worker','before-cutover')):
 sys.exit(0)
 `,0o700);
   const result=spawnSync('/usr/bin/bash',[control+'/docs/deploy/d1LV/deploy.sh'],{
-    env:{PATH:bin+':/usr/bin:/bin',HOME:home,MOCK_ROOT:root,MOCK_LOG:log,FAIL_URL:failUrl,FAIL_RESTART:failRestart?'1':'0',FAIL_PROBE:String(failProbe),FAIL_CURL:failCurl?'1':'0',FAIL_CLEANUP:failCleanup?'1':'0',FAIL_WORKER_STOP:failWorkerStop?'1':'0'},encoding:'utf8',timeout:15000});
+    env:{PATH:bin+':/usr/bin:/bin',HOME:home,MOCK_ROOT:root,MOCK_LOG:log,FAIL_URL:failUrl,FAIL_RESTART:failRestart?'1':'0',FAIL_PROBE:String(failProbe),FAIL_CURL:failCurl?'1':'0',FAIL_CLEANUP:failCleanup?'1':'0',FAIL_WORKER_STOP:failWorkerStop?'1':'0',SLOW_WARM_READY:slowWarmReady?'1':'0'},encoding:'utf8',timeout:15000});
   return {root,units,source,backup,release,base,result,commands:fs.existsSync(log)?fs.readFileSync(log,'utf8').trim().split('\n'):[]};
 }
 
@@ -176,4 +178,33 @@ test('partially failed old-worker stop attempts recovery before returning failur
   assert.ok(s.commands.indexOf('systemctl --user start tag-worker.service')>s.commands.indexOf('systemctl --user stop tag-worker.service'));
   assert.ok(!s.commands.includes('systemctl --user restart tag-analysis.service'));
   assert.ok(!fs.existsSync(s.units+'/tag-worker.service.d/zz-f1-d1lv.conf'));
+});
+
+
+test('serial API warming uses private 120s only; hot full home must be <=2s; six public checks keep20s',()=>{
+  const s=scenario();assert.equal(s.result.status,0,s.result.stderr);
+  const opts=fs.readFileSync(s.root+'/curl-options.log','utf8').trim().split('\n');
+  for(const row of opts.filter(x=>x.endsWith(' 120')))assert.match(row,/^http:\/\/127\.0\.0\.1:1823[02]\//);
+  assert.ok(opts.includes('http://127.0.0.1:18232/ 2'));
+  for(const row of opts.filter(x=>/^https:|^http:\/\/127\.0\.0\.1:18130\//.test(x)&&!x.includes('/openapi.json ')))assert.ok(row.endsWith(' 20'),row);
+  const firstHome=s.commands.indexOf('curl http://127.0.0.1:18232/');
+  for(const path of ['/api/v1/media-stats','/api/v1/topics?limit=120&kind=topic','/api/v1/journalists?hours=48&threshold=0.65&limit=6','/api/v1/ranking?category=news&order=score&limit=16&trend=1'])assert.ok(s.commands.indexOf('curl http://127.0.0.1:18230'+path)<firstHome);
+});
+
+test('warm API HTTP500 aborts before worker or gateway changes',()=>{
+  const s=scenario({failUrl:'http://127.0.0.1:18230/api/v1/topics?limit=120&kind=topic'});
+  assert.notEqual(s.result.status,0);assert.ok(!s.commands.includes('systemctl --user stop tag-worker.service'));assert.ok(!s.commands.includes('systemctl --user restart tag-analysis.service'));
+});
+
+test('hot homepage exceeding2s aborts even when HTTP200',()=>{
+  const s=scenario({slowWarmReady:true});assert.notEqual(s.result.status,0);
+  assert.ok(!s.commands.includes('systemctl --user stop tag-worker.service'));assert.ok(!s.commands.includes('systemctl --user restart tag-analysis.service'));
+  assert.ok(s.commands.includes('systemctl --user disable --now tag-f1-web-d1lv.service tag-f1-api-d1lv.service'));
+});
+
+
+test('private API120s timeout aborts before public cutover',()=>{
+  const s=scenario({failUrl:'http://127.0.0.1:18230/api/v1/media-stats',failCurl:true});
+  assert.notEqual(s.result.status,0);assert.ok(!s.commands.includes('systemctl --user restart tag-analysis.service'));
+  assert.ok(!s.commands.includes('systemctl --user stop tag-worker.service'));
 });

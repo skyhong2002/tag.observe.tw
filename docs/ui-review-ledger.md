@@ -1,3 +1,4 @@
+<!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
 **d1LV實際部署嘗試在暖機停止（n/a-ui，未部署）**：核可packet8ea5bd3a／runtimeOPS61fd537c，sourceaff5／BUILDd1。warm-home18232超過20秒curl28，尚未切worker/gateway；新API/web已停止、原gateway114409／web325597／worker114174保持、formal/current0dd。後驗證九trial200、median0.932118／5.063242／1.001206通過。[實際失敗與原件](f1-simple-deployment-abort-20261014.md)。不給正式F1或任一UIroute pass；65main／0complete／65scopepending。沒有盲目續跑或新capture。

@@ -19,7 +19,7 @@ After babysit admission, run `bash docs/deploy/d1LV/deploy.sh` from the pinned c
 1. Takes the existing tag deployment lock and creates new exclusive backup/release paths; saves three unit sources, existing drop-in directories, readlink target and timer state.
 2. Uses the reviewed three-trial median probe before copying, again before worker changes and again immediately before public cutover. Every raw trial is saved privately. A failed trial or resource gate stops the script; an initial gate rejection preserves timestamped raw receipts without creating a backup/release that blocks a clean retry.
 3. Copies cache-free source into a new release and merges only old immutable static assets with `--ignore-existing`. No stale HTML/RSC/cache is copied; no new asset is overwritten.
-4. Enables/starts new private API/web; anonymously warms homepage, tag and relations from production data. Stops/replaces the worker via its persistent drop-in.
+4. Enables/starts new private API/web; serially checks the16 main homepage API keys for200, then privately warms homepage/tag/relations (max120s). A repeated full homepage must finish<=2s before worker replacement. Public six checks retain20s. See `docs/f1-warm-diagnostic-20261014.md` for measured cold-process limits and prior internal500s.
 5. Installs only its own gateway override, daemon-reloads and **restarts tag-analysis.service once**. No stop/restart/disable of legacy tag-web.service appears in either script.
 6. Immediately GETs homepage, tag and relations both at18130 and at public HTTPS. Every one must be200/curl0, without acceptance retries. Any failure invokes rollback immediately. Startup only retries ECONNREFUSED, at most40×250ms; actual HTTP/curl errors fail.
 7. Saves headers/bodies/UTC/results, unit WorkingDirectory/PID and full deployed inventory after old static assets were added. The source59468 hash is not reused as the final release hash.
@@ -37,3 +37,8 @@ Allocation: approximately0.803 GiB source plus3.1 MiB old static, capped plannin
 `tools/sm-simple-deploy.test.mjs` uses tiny fresh private files and command mocks only; it never binds ports, calls network/DB, or manages real services. It covers successful sequencing/static preservation/persistence configuration, six independent HTTP failure points, curl timeout, gateway restart failure, prewarm failure, and gate failures. Temporary fixtures are retained. Pre-cutover cleanup errors are reported as failed/unconfirmed with exit2; a partly failed worker stop still attempts recovery.
 
 Independent source review and syntax checks are recorded in the new admission packet. Actual deployment/readiness/downtime/reboot behavior remain unexecuted until babysit admission. Prior54 same-artifact privacy/cache tests, original native smoke and012 actual main-page review remain applicable; none of these prove full65-route UI completion or GA receipt.
+
+
+## Warm revision after aborted prepared release
+
+The failed first attempt retained its new release, backup and disabled API/web unit files. The warm-only revision does not relax exclusive-path preflight or overwrite that evidence. Do not rerun the initial deploy command: a separately admitted continuation of the prepared release is required. This document/source/mock review is not a deployment or warm-readiness pass.
