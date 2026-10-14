@@ -132,7 +132,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{emerging ? '正在發酵的新聞關鍵字' : '新聞關鍵字排行榜'}</h1>
           {ranking && (
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
               {taipeiHour(ranking.snapshot.hourStart)} 時段 · {current?.label}{' '}
               {ranking.snapshot.mediaCount ? `${ranking.snapshot.mediaCount} 家媒體 · ` : ''}
               {ranking.snapshot.articleCount !== null ? `${ranking.snapshot.articleCount.toLocaleString()} 篇 · ` : ''}更新於{' '}
@@ -166,7 +166,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         ))}
       </nav>
       <nav aria-label="跨媒體門檻" className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="mr-1 text-xs text-zinc-500">跨媒體門檻</span>
+        <span className="mr-1 text-xs text-zinc-500 dark:text-zinc-400">跨媒體門檻</span>
         {(
           [
             { value: 'all', label: '不限媒體' },
@@ -195,7 +195,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               scroll={false}
               aria-label={note ? `${c.label}，${note}` : c.label}
               aria-current={c.key === category ? 'page' : undefined}
-              className={`whitespace-nowrap rounded-full px-3 py-1 ${c.key === category ? 'bg-brand-700 text-white' : note ? 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-500 dark:hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
+              className={`whitespace-nowrap rounded-full px-3 py-1 ${c.key === category ? 'bg-brand-700 text-white' : note ? 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
             >
               {c.label}
               {note && <span className="ml-1.5 text-[10px]">{note}</span>}
@@ -218,7 +218,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         />
       )}
       {ranking?.snapshot.available && (
-        <p role="status" className="text-sm text-zinc-600">
+        <p role="status" className="text-sm text-zinc-600 dark:text-zinc-400">
           符合條件 {ranking.matchedCount ?? ranking.entries.length} 個關鍵字
           {emerging && !!ranking.unknownGrowthCount && ` · ${ranking.unknownGrowthCount} 個因歷史不足，暫不列入升溫榜`}
         </p>
@@ -243,7 +243,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           }
         >
           <table className="w-full min-w-[80rem] text-sm">
-            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950">
+            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
               <tr>
                 {/* On phones the rank moves into the sticky keyword cell. */}
                 <th className={`hidden w-10 text-right sm:table-cell ${table.cell}`}>#</th>
@@ -265,11 +265,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 const related = (e.related ?? []).slice(0, RELATED_SHOWN);
                 return (
                   <tr key={e.tag} className={table.row}>
-                    <td className={`hidden text-zinc-500 sm:table-cell ${table.num}`}>{e.position}</td>
+                    <td className={`hidden text-zinc-500 dark:text-zinc-400 sm:table-cell ${table.num}`}>{e.position}</td>
                     <td className={table.lead}>
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <div className={`${table.leadBox} flex items-center gap-2`}>
-                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 sm:hidden">{e.position}</span>
+                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 sm:hidden">{e.position}</span>
                           <Link
                             href={`/tag/${encodeURIComponent(e.tag)}`}
                             className={`${table.leadText} font-medium text-brand-700 hover:underline dark:text-brand-400`}
@@ -287,7 +287,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       </div>
                     </td>
                     <td
-                      className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'font-medium text-brand-700 dark:text-brand-400' : 'text-zinc-600'}`}
+                      className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'font-medium text-brand-700 dark:text-brand-400' : 'text-zinc-600 dark:text-zinc-400'}`}
                     >
                       {emerging ? `+${e.signals?.growth?.toFixed(1) ?? '—'}` : (e.burst?.toFixed(1) ?? '—')}
                     </td>
@@ -306,7 +306,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       )}
                     </td>
                     <td className={table.num}>{e.normalized.toFixed(1)}</td>
-                    <td className={`${table.num} text-zinc-600`}>{e.count}</td>
+                    <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{e.count}</td>
                     <td className="px-2 py-1 sm:px-3">
                       <Sparkline values={trend.map((p) => p.average24h)} />
                     </td>

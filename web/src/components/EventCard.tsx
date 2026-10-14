@@ -43,11 +43,12 @@ export function Movement({ e, className = '' }: { e: EventItem; className?: stri
     const n = Math.abs(e.prevRank - e.rank);
     parts.push({
       text: `${up ? '↑' : '↓'}${n}`,
-      tone: up ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500',
+      tone: up ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400',
       label: `較前一小時${up ? '上升' : '下降'} ${n} 名`,
     });
   }
-  if (e.hours && e.hours >= 2) parts.push({ text: `上榜 ${e.hours} 小時`, tone: 'text-zinc-500', label: `累計上榜 ${e.hours} 小時` });
+  if (e.hours && e.hours >= 2)
+    parts.push({ text: `上榜 ${e.hours} 小時`, tone: 'text-zinc-500 dark:text-zinc-400', label: `累計上榜 ${e.hours} 小時` });
   if (parts.length === 0) return null;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs tabular-nums ${className}`}>
