@@ -64,7 +64,7 @@ function Angles({ t, media }: { t: PeriodThread; media: MediaInfo }) {
     <ul className="mt-1 space-y-1 border-t border-zinc-200 pt-2 text-sm dark:border-zinc-800">
       {picked.slice(0, 3).map((n) => (
         <li key={n.url} className="flex min-w-0 items-baseline gap-2">
-          <span className={`shrink-0 text-xs font-medium ${n.camp ? CAMP_TEXT[n.camp] : 'text-zinc-500'}`}>
+          <span className={`shrink-0 text-xs font-medium ${n.camp ? CAMP_TEXT[n.camp] : 'text-zinc-500 dark:text-zinc-400'}`}>
             {media[n.media]?.title ?? n.media}
           </span>
           <span className="truncate text-zinc-700 dark:text-zinc-300">{clipHeadline(cleanEventHeadline(n.title))}</span>
@@ -103,7 +103,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
             <span className="flex min-w-0 flex-col justify-center gap-2 p-4">
               <span className="text-xs font-medium text-brand-700 dark:text-brand-400">最受關注</span>
               <span className="text-xl font-semibold leading-snug group-hover:underline">{threadHeadline(lead)}</span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
                 {lead.majorTags
                   .slice(0, 5)
                   .map((tag) => `#${tag}`)

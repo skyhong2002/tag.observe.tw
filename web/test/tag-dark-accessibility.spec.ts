@@ -28,7 +28,7 @@ it('uses AA text tokens against dark trend, event/status panels and related-tag 
       expect((luminance(foreground) + 0.05) / (luminance(background) + 0.05)).toBeGreaterThanOrEqual(4.5);
     }
   }
-  for (const source of ['../src/components/EventCard.tsx', '../src/components/EventDayView.tsx', '../src/app/(site)/event/page.tsx']) {
+  for (const source of ['../src/components/EventCard.tsx', '../src/components/EventDayView.tsx', '../src/components/PeriodEvents.tsx', '../src/components/EventOverview.tsx', '../src/components/article/ArticleTags.tsx', '../src/app/(site)/event/page.tsx']) {
     expect(read(source).match(/text-zinc-500(?! dark:text-zinc-400)/g)).toBeNull();
   }
   const status = read('../src/components/TagStatusPanel.tsx');

@@ -15,7 +15,7 @@ export default function ArticleTags({ data, tags }: { data: ArticleRelated | nul
             >
               #{entry.tag}
               {entry.articles > 1 && (
-                <span className="ml-1.5 text-xs text-zinc-500 dark:text-zinc-500">
+                <span className="ml-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                   {entry.media} 家 · {entry.articles} 篇
                 </span>
               )}
