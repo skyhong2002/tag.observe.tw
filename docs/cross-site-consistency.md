@@ -2,6 +2,25 @@
 
 以新文易數既有元件為基準；blog 與 YouTube 應盡可能直接沿用實作與外觀。只有功能目標不同時才偏離，並在各站的 `docs/ui-review-ledger.md` 逐頁寫明理由。同一資料的名稱、來源、時間範圍與狀態應有相同含義。元件與樣式參考均列出相對儲存庫根目錄的完整路徑。此文件描述沿用約定，並非宣告 F1 已完成瀏覽器驗收或部署。
 
+## 目前可對齊的正式基準（2026-10-15 台北）
+
+- 正式 web：`7dc59c3c17f6d6420354c3d4df733549071f2bb4`，BUILD_ID `4nl3B-BcT4mA9uh47rm0Z`；API：`dc7b814e220606202a408d21e73b1d6e7c61fe16`。此文件後續 commit 是文件或截圖工具更新，不代表重建了前端。
+- 範例：[首頁](https://tag.observe.tw/)、[標籤與關係](https://tag.observe.tw/tag/柯文哲/)、[排行](https://tag.observe.tw/ranking/)、[事件表](https://tag.observe.tw/event/)。事件頁 canonical 是 `/event/`，不是 `/events/`。
+- 正式與 candidate 審查分開；實際版本、圖片路徑、raw network 和非作者看圖 transcript 放在 `docs/ui-review-ledger.md`。舊 APP677 的截圖只供歷史參考，不用來驗現在的 UI。全站65 route 的各狀態尚未全部完成。
+- 原始碼可直接從上述 web commit 複製元件；一起帶它的相對 import 依賴。資料取得、路由和同源 auth 接上各站自己的 API，不能把 tag 的私有 SSR origin、服務 token 或帳號設定複製進 browser bundle。
+
+## 首頁可複用元件與 CSS module
+
+| 實作路徑 | 可沿用的 class／元件／token | 使用與偏離約定 |
+| --- | --- | --- |
+| `web/src/app/_home/home.module.css` | `.home`：`--paper`、`--panel`、`--line`、`--soft-line`、`--ink`、`--muted`、`--accent`、`--tint`、`--chip`；亮／暗值在同一檔內 | 以這些 semantic token 套用卡片、邊框與文字；不要只複製亮色值或更換各站近似色。首頁使用品牌橘，藍／綠專指資料中的媒體陣營。 |
+| `web/src/app/_home/home.module.css` | `.main`、`.columns`、`.left`、`.center`、`.right`、`.sectionHeading`、`.brief`、`.ranking`、`.rankBody`、`.notice` | 最大寬1152px、內距16px、欄間20px；手機堆疊和中尺寸雙欄沿檔末 media rules。若 blog／YT 沒有第三個資料欄，可以減欄，需在該頁 ledger 說明其功能差異。 |
+| `web/src/app/_home/TopicPanel.tsx`、`web/src/app/_home/HomeTopicsRecovery.tsx`、`web/src/lib/home-topics.mts` | `.topicPanel`、`.topicList`、`.topicCover`、`.topicBody`、`.topicRecoveryNotice` | 有代表圖就顯示原議題圖片；載入、空資料和失敗分開。只有 SSR 缺資料才做一次 public recovery；失敗 notice 不保留320px空白。下游複用呈現時換成自己的資料型別，不硬套 tag 的篇數。 |
+| `web/src/app/_home/NewsImage.tsx`、`web/src/lib/home-images.mts`、`web/src/components/SafeImage.tsx`、`web/src/lib/images.ts`、`web/src/lib/image-hosts.json` | `.picture`、`.pictureFallback`、`.pictureMark`、`.photo`；`homeImageSizes.hero/story/topic` | 圖片位置／sizes 和 CSS 尺寸一起複製；既有 topic72px、縮圖 quality65、Next WebP、lazy/low，LCP hero eager/high。無圖或載入失敗才 fallback，不能換成無關圖片；每站的圖片 host allowlist 由自己的 gateway 同步驗證。 |
+| `web/src/app/_home/home.module.css` | `.campOutletLink`、`.campOutletsMore` | 正式媒體格26×26，符合24px最低觸控目標；展開按鈕44px。這是密集媒體索引的既有設計，不要再用 coarse-pointer rule 把每格放大為44px。一般操作按鈕仍以44px為預設。 |
+
+F4 對齊應包含共用的 header/footer、method notes、表格 loading／empty／error 和兩種寬度、亮暗色。只複製首頁的一張截圖不等於逐頁對齊；資料不可用時不能顯示成0，也不能省略本頁的資料來源與計算方式。
+
 ## 元件與可直接沿用的樣式
 
 | 場景 | 實作參考 | 呈現約定 |
