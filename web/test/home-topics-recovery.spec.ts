@@ -97,7 +97,7 @@ it('does not wait for cancellation of a Next cloned error body before retrying',
   }
 });
 
-it('recovers a missing SSR panel through the public API without browser caching or credentials', async () => {
+it('recovers a missing SSR panel through the same-origin public API without browser caching', async () => {
   const { fetchHomeTopics } = await import('../src/lib/home-topics.mts');
   const fetcher = vi.fn<typeof fetch>(async () => Response.json(data));
   const signal = new AbortController().signal;
