@@ -1,6 +1,8 @@
 # F1 UI 逐頁審查 ledger
 
-**新產物已建置／未部署（n/a-ui，UTC2026-10-14 05:20）**：APPaff5c028／controlOPS2d710921／BUILD_ID `d1LVsC3sk6p04uOyWUx5T`，directNext exit0、64staticpages，sameoutput已標準包入static/public；既有非作者本人重算32453rows/hash與雙BUILD match。[實際build原件與界線](sm-direct-next-build-r2-completion-20261014.md)。API／ownPGID／ports全退、名額交回；maxRSS未取得，不偽稱peak。新bytes native／B0／SSR／RSC／主要頁重拍及逐頁review pending，fixture prerender不能直接公開；**本BUILD0完整UIpass／65完整scope pending，未部署。**
+**d1LV native 實際通過／009 綁定 source 通過（n/a-ui，未部署）**：12ELF最高GLIBC2.30、RPATH內、8.node／ONNX載入、root與standalone Sharp WebP／AVIF通過，前後inventory103b不變；非作者複核原件，009 artifact-only綁定79pure／4syntax通過。[原件與界線](sm-native-d1LV-completion-20261014.md)。009 尚未capture，不給任何route UI pass；65主route／0完整pass／65完整scope pending。
+
+**新產物已建置／未部署（n/a-ui，UTC2026-10-14 05:20）**：APPaff5c028／controlOPS2d710921／BUILD_ID `d1LVsC3sk6p04uOyWUx5T`，directNext exit0、64staticpages，sameoutput已標準包入static/public；既有非作者本人重算32453rows/hash與雙BUILD match。[實際build原件與界線](sm-direct-next-build-r2-completion-20261014.md)。API／ownPGID／ports全退、名額交回；maxRSS未取得，不偽稱peak。新bytes native 已實際通過及獨立複核；B0／SSR／RSC／主要頁重拍及逐頁review pending，fixture prerender不能直接公開；**本BUILD0完整UIpass／65完整scope pending，未部署。**
 
 **最新流程：直接Next CLI、人工閘門（n/a-ui，未執行）**：使用者明確取消建置wrapper；僅既有隔離API＋nice19／ionice3直接Next、workers2，人工每1–2分鐘量median3與resources、異常TERM ownbuild不續跑。005已停止且全部原件保留；[簡化exact命令與獨立recipe review](sm-simple-next-build-plan-20261014.md)。沒有新BUILD／UI／部署，65主route／0完整pass／65完整scope pending。
 

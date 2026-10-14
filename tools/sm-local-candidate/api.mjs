@@ -1,7 +1,7 @@
 // Anonymous SM isolated fixture API: no production relay, real login or queue.
 import{types}from'node:util';
 import http from'node:http';import * as fs from'node:fs';import{createRequire}from'node:module';import{join,resolve}from'node:path';import{pathToFileURL}from'node:url';
-import{runtime,pins,dbPath,privateBytes,sha,validateInput,verifyControl,ticks}from'./core.mjs';
+import{runtime,pins,manifestPath,validateRuntimeManifest,dbPath,privateBytes,sha,validateInput,verifyControl,ticks}from'./core.mjs';
 export function validateDatabase(c){if(!c||Object.keys(c).some(k=>!['user','password','host','port','database'].includes(k))||!['127.0.0.1','localhost'].includes(c.host)||Number(c.port)!==18306||c.database!=='tag_f1_semantic_test'||typeof c.user!=='string'||!c.user||typeof c.password!=='string')throw Error('Existing isolated fixture SQL configuration required');return c;}
 export function validateActors(rows){if(rows.length!==3||rows.map(r=>Number(r.id)).sort((a,b)=>a-b).join(',')!=='701,702,703')throw Error('Existing fixture actors701/702/703 required');return true;}
 export function publicPath(path,method){return ['GET','HEAD'].includes(method)&&(/^\/api\/v1(?:\/|$)/.test(path)||path==='/api/status'||path==='/auth/me');}
@@ -50,8 +50,8 @@ export async function rethrowFixtureStartup(error,close){try{await close();}catc
 export async function closeFixtureOwned({scheduler,server,app,db},primary){const errors=primary?[primary]:[],phases=[];const attempt=async(phase,fn)=>{try{await fn();}catch(error){errors.push(error);phases.push(phase);}};await attempt('scheduler-abort',()=>scheduler?.abort());await attempt('server-connections',()=>{if(server?.listening)server.closeAllConnections?.();});await attempt('server-close',()=>{if(server?.listening)return new Promise((done,fail)=>server.close(error=>error?fail(error):done()));});await attempt('app-close',()=>app?.close());await attempt('scheduler-drain',()=>scheduler?.close());await attempt('database-close',()=>db?.close());if(errors.length){const failure=new AggregateError(errors,'Owned fixture cleanup failed',{cause:primary||errors[0]});failure.cleanupPhases=phases;throw failure;}}
 export async function startFixture(q,job,{importModule=u=>import(u),requireModule=createRequire(join(runtime,'package.json')),httpModule=http}={}){
  const raw=privateBytes(dbPath);if(sha(raw)!==q.dbConfigSha256)throw Error('Pinned existing private DB configuration differs');const c=validateDatabase(JSON.parse(raw));
- const manifestBytes=privateBytes(join(runtime,'mint-artifact.json'),16*1024**2);if(sha(manifestBytes)!==pins.manifest)throw Error('Immutable APP manifest differs');
- // Imports are physical APP677 files inside the independently whole-hashed runtime.
+ const manifestBytes=privateBytes(manifestPath,16*1024**2);if(sha(manifestBytes)!==pins.manifest)throw Error('Immutable APP manifest differs');validateRuntimeManifest(JSON.parse(manifestBytes));
+ // Imports are physical APPaff5 files inside the independently whole-hashed runtime.
  const {buildApp}=await importModule(pathToFileURL(join(runtime,'app/src/app.js')).href);const {createDb}=await importModule(pathToFileURL(join(runtime,'app/src/db/client.ts')).href);
  // Resolve dependency before listener creation; it must already exist in this runtime.
  requireModule.resolve('mysql2/promise');

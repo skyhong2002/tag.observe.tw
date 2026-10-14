@@ -6,11 +6,11 @@ import {dirname,resolve,join} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 export const ROOT='/home/deck/tag-analysis-private/f1-release';
-export const SESSION='sm-batch-008';
+export const SESSION='sm-batch-009';
 export const NODE='/home/deck/.local/bin/node';
 export const SOURCE_ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
-export const PATHS=Object.freeze({pairJob:ROOT+'/paired-'+SESSION,candidateJob:ROOT+'/mint-native-target-c70425b0/local-candidate-'+SESSION,captureJob:ROOT+'/sm-capture-'+SESSION});
-export const PINS=Object.freeze({app:'677a0c793eeda0c4d850c81ac574c95508d08e0a',artifactOps:'c70425b007bdac9fdbef62b935811ee0d7f30d18',build:'PmjYScQDDoJKBr43SLkhd',inventory:'f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7',manifest:'76142c7930cbd2e471f02cf68130fa01acbfb54d2c6a4309fc8198185987e7e0'});
+export const PATHS=Object.freeze({pairJob:ROOT+'/paired-'+SESSION,candidateJob:ROOT+'/simple-web-aff5c028-001/local-candidate-'+SESSION,captureJob:ROOT+'/sm-capture-'+SESSION});
+export const PINS=Object.freeze({app:'aff5c0289c4863fedb37368b4942884ccc068d77',artifactOps:'2d71092132bcb4433c1041c01563132e4a31c7c1',build:'d1LVsC3sk6p04uOyWUx5T',inventory:'103b9e671f66c6fe8af530db40fb9e0e9f5b8a38c0822af30404b398e26ac9fc',manifest:'f50f8fcd1a25fc775c9261c41ecdc08cc4d973b42d92bca4ff46718a0b091914'});
 export const ROUTES=Object.freeze(['/','/tag/柯文哲/','/tag/柯文哲/picture/','/ranking/']);
 export const SOURCE_NAMES=Object.freeze(['tools/sm-f1/paired-run.mjs','tools/sm-f1/capture.mjs','tools/sm-f1/probe.mjs','tools/sm-f1/proxy.cjs','tools/mint-capture/browser-owner.mjs','tools/mint-capture/evidence.mjs','tools/mint-capture/evidence-lifecycle.mjs','tools/sm-local-candidate/core.mjs','tools/sm-local-candidate/runner.mjs','tools/sm-local-candidate/api.mjs','tools/sm-local-candidate/frontdoor.mjs','tools/guard-next-build.js','tools/shared-host-baseline.cjs','tools/homepage-median-probe.mjs','tools/mint-f1-artifact.js','tools/native-elf-proof.js','tools/mint-f1-candidate-plan.js','package.json']);
 export const CANDIDATE_NAMES=Object.freeze(['tools/sm-local-candidate/core.mjs','tools/sm-local-candidate/runner.mjs','tools/sm-local-candidate/api.mjs','tools/sm-local-candidate/frontdoor.mjs','tools/guard-next-build.js','tools/shared-host-baseline.cjs','tools/homepage-median-probe.mjs','tools/mint-f1-artifact.js','tools/native-elf-proof.js','tools/mint-f1-candidate-plan.js','package.json']);
@@ -19,7 +19,7 @@ const LOG_CAP=1024**2,hex=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x),same=
 export const sha=x=>createHash('sha256').update(x).digest('hex');
 function only(q,keys){if(!q||typeof q!=='object'||Array.isArray(q)||Object.keys(q).some(k=>!keys.includes(k)))throw Error('Unknown paired input fields');}
 export function validateProposalPaths(pairPath,candidatePath){
- const match=/^\/tmp\/babysit\/mint-queue\/tag-sm-paired-008-admission-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\/paired-input\.json$/.exec(pairPath||'');
+ const match=/^\/tmp\/babysit\/mint-queue\/tag-sm-paired-009-admission-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\/paired-input\.json$/.exec(pairPath||'');
  if(!match)throw Error('Exclusive approved proposal namespace required');const [year,month,day,hour,minute,second]=match.slice(1).map(Number),stamp=new Date(Date.UTC(year,month-1,day,hour,minute,second));
  if(stamp.getUTCFullYear()!==year||stamp.getUTCMonth()!==month-1||stamp.getUTCDate()!==day||stamp.getUTCHours()!==hour||stamp.getUTCMinutes()!==minute||stamp.getUTCSeconds()!==second||candidatePath!==join(dirname(pairPath),'candidate-input.json'))throw Error('Same canonical proposal directory and fixed basenames required');return true;
 }

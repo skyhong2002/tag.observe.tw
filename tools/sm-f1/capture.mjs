@@ -11,13 +11,13 @@ import { ownershipRegistry, stopProfile } from '../mint-capture/browser-owner.mj
 import { progressiveScroll, redactHar } from '../mint-capture/evidence.mjs';
 import { evidenceTasks } from '../mint-capture/evidence-lifecycle.mjs';
 import { inventory } from '../mint-f1-artifact.js';
-import {assertLock} from '../sm-local-candidate/core.mjs';
-export const PINS = Object.freeze({ app: '677a0c793eeda0c4d850c81ac574c95508d08e0a',
-  build: 'PmjYScQDDoJKBr43SLkhd', inventory: 'f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7',
-  manifest: '76142c7930cbd2e471f02cf68130fa01acbfb54d2c6a4309fc8198185987e7e0' });
+import {assertLock,manifestPath,validateRuntimeManifest} from '../sm-local-candidate/core.mjs';
+export const PINS = Object.freeze({ app: 'aff5c0289c4863fedb37368b4942884ccc068d77',
+  build: 'd1LVsC3sk6p04uOyWUx5T', inventory: '103b9e671f66c6fe8af530db40fb9e0e9f5b8a38c0822af30404b398e26ac9fc',
+  manifest: 'f50f8fcd1a25fc775c9261c41ecdc08cc4d973b42d92bca4ff46718a0b091914' });
 export const ROUTES = ['/', '/tag/柯文哲/', '/tag/柯文哲/picture/', '/ranking/'];
 const ROOT = '/home/deck/tag-analysis-private/f1-release';
-const RUNTIME = ROOT + '/mint-native-target-c70425b0/runtime';
+const RUNTIME = ROOT + '/simple-web-aff5c028-001/artifact';
 const TOOLROOT = RUNTIME + '/node_modules';
 const BROWSER = '/home/deck/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome';
 const BROWSER_SHA = '8c599d43aec53f2460a31ae2f4af6bd863f8258b34ff519564bc5d4726bfaa1e';
@@ -34,7 +34,7 @@ export function validateInput(q, now = Date.now()) {
       q.actor !== 'anonymous' || q.origin !== ORIGIN || JSON.stringify(q.routes) !== JSON.stringify(ROUTES) ||
       !/^sm-batch-(?!000)[0-9]{3}$/.test(q.sessionId || '') ||
       q.job !== ROOT + '/sm-capture-' + q.sessionId ||
-      q.startedReceiptPath !== ROOT + '/mint-native-target-c70425b0/local-candidate-' + q.sessionId + '/candidate-started.json' ||
+      q.startedReceiptPath !== ROOT + '/simple-web-aff5c028-001/local-candidate-' + q.sessionId + '/candidate-started.json' ||
       !Number.isInteger(q.additionalBuilds) || q.additionalBuilds < 0 || q.additionalBuilds > 1 ||
       !Number.isInteger(q.additionalBrowsers) || q.additionalBrowsers < 0 || q.additionalBrowsers > 1)
     throw Error('Separate exact local capture admission required');
@@ -121,8 +121,9 @@ export function bytesIn(path,{io=fs,uid=process.getuid(),maxBytes=96*MiB}={}) {
  };try{walk(root);return total;}catch(error){error.evidenceFailure=evidenceFailureClass(error,root);throw error;}
 }
 function verifyWhole() {
-  if (sha(JSON.stringify(inventory(RUNTIME))) !== PINS.inventory || sha(fs.readFileSync(RUNTIME + '/mint-artifact.json')) !== PINS.manifest)
+  if (sha(JSON.stringify(inventory(RUNTIME))) !== PINS.inventory || sha(fs.readFileSync(manifestPath)) !== PINS.manifest)
     throw Error('Same artifact bytes changed');
+  validateRuntimeManifest(JSON.parse(fs.readFileSync(manifestPath)));
 }
 export function installedToolProof() {
   const guard=fs.lstatSync(ROOT);if(!guard.isDirectory()||guard.isSymbolicLink()||guard.uid!==process.getuid()||guard.mode&0o077||fs.realpathSync(ROOT)!==ROOT)throw Error('Private immutable tool ancestor required');
