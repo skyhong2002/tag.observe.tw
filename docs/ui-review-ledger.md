@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**新產物已建置／未部署（n/a-ui，UTC2026-10-14 05:20）**：APPaff5c028／controlOPS2d710921／BUILD_ID `d1LVsC3sk6p04uOyWUx5T`，directNext exit0、64staticpages，sameoutput已標準包入static/public；既有非作者本人重算32453rows/hash與雙BUILD match。[實際build原件與界線](sm-direct-next-build-r2-completion-20261014.md)。API／ownPGID／ports全退、名額交回；maxRSS未取得，不偽稱peak。新bytes native／B0／SSR／RSC／主要頁重拍及逐頁review pending，fixture prerender不能直接公開；**本BUILD0完整UIpass／65完整scope pending，未部署。**
+
 **最新流程：直接Next CLI、人工閘門（n/a-ui，未執行）**：使用者明確取消建置wrapper；僅既有隔離API＋nice19／ionice3直接Next、workers2，人工每1–2分鐘量median3與resources、異常TERM ownbuild不續跑。005已停止且全部原件保留；[簡化exact命令與獨立recipe review](sm-simple-next-build-plan-20261014.md)。沒有新BUILD／UI／部署，65主route／0完整pass／65完整scope pending。
 
 **API-only004名額通知下主動收尾（n/a-ui）**：OPS e44639d9／APPaff5，真API已就緒但沒有web建置；UTC04:43:25僅停自有parent，04:43:58三PID／ports／holder全退，所有原件保留。[停止證據與後續更正](sm-api-only-build-004-slot-stop-20261014.md)。最新授權讓tag續跑，005只換exclusive識別，不增加guard。65主route／0完整pass／65完整scope pending，未部署。
