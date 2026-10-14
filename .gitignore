@@ -31,3 +31,6 @@ infra/data/
 
 # Drizzle schema migrations are source code, not dumps.
 !app/src/db/migrations/*.sql
+
+# Also ignore a local symlink to retained dependencies.
+/node_modules

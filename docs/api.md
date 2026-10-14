@@ -87,6 +87,8 @@ for a in r.json()["articles"]:
 | [`GET /api/v1`](#api-v1) | API 索引 |
 | [`GET /api/v1/openapi.json`](#api-v1-openapi-json) | OpenAPI 3.1 規格 |
 | [`GET /api/v1/categories`](#api-v1-categories) | 排行分類 |
+| [`GET /api/v1/ranking-pools`](#api-v1-ranking-pools) | 指定刊登時間窗的完整合格詞池快照 |
+| [`GET /api/v1/ranking-pools/{snapshotId}`](#api-v1-ranking-pools-snapshotId) | 讀取不可變時間窗詞池的完整分頁 |
 | [`GET /api/v1/ranking`](#api-v1-ranking) | 標籤排行（每 10 分鐘更新） |
 | [`GET /api/v1/articles`](#api-v1-articles) | 文章搜尋 |
 | [`GET /api/v1/tags/suggest`](#api-v1-tags-suggest) | 輸入時的關鍵字建議 |
@@ -564,6 +566,161 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `[].media` | integer | 分類內媒體數 |
 | `[].members` | string[] | 分類內的媒體代碼 |
 | `[].ranked` | boolean | 是否有標籤排行 |
+
+<a id="api-v1-ranking-pools"></a>
+
+### `GET /api/v1/ranking-pools`
+
+**指定刊登時間窗的完整合格詞池快照**
+
+嚴格半開 UTC [since,until)，最多7天且until不得在未來。沿用固定媒體基準、noise/媒體自名排除、跨媒體資格及分數公式；先依文章去重、資格篩選後才排名，沒有500詞截斷。唯讀一致性快照，依媒體時間索引分批；完整空池available=true，缺覆盖/來源失敗/安全上限回503 unavailable。相同條件重用10分鐘；每程序最多一個生成中、每分鐘2份新快照，超限429。私有持久gzip頁檔，24小時過期；512MiB初期容量上限回503，保留舊檔不自動刪除。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `category` | query | string | 固定排行分類，預設news，見 /api/v1/categories，預設 `news`，例：`news` |
+| `since` | query | string (ISO 時間) | 含起點，嚴格UTC ISO8601，例：`2026-10-13T16:00:00Z` |
+| `until` | query | string (ISO 時間) | 不含終點，兩站共用相同cutoff，例：`2026-10-14T12:00:00Z` |
+| `gate` | query | "all" \| "early" \| "broad" | all／early 至少2家各2篇／broad 至少3家、2家各2篇、1家3篇，預設 `early`，例：`early` |
+| `order` | query | "score" | 目前score；burst/growth拒絕，不替換成24h結果，預設 `score`，例：`score` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/ranking-pools?category=news&since=2026-10-13T16%3A00%3A00Z&until=2026-10-14T12%3A00%3A00Z&gate=early&order=score'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshotId` | string |  |
+| `schemaVersion` | string |  |
+| `policyVersion` | string |  |
+| `available` | boolean |  |
+| `incompleteReason` | string \| null |  |
+| `window` | object |  |
+| `window.since` | string (ISO 時間) |  |
+| `window.until` | string (ISO 時間) |  |
+| `window.basis` | string | published_at |
+| `window.timezone` | string | UTC |
+| `category` | string |  |
+| `order` | string | 目前僅支援 score |
+| `gate` | string |  |
+| `computedAt` | string (ISO 時間) |  |
+| `asOf` | string (ISO 時間) | 唯讀一致性資料快照開始時間 |
+| `expiresAt` | string (ISO 時間) | 24 小時後過期，讀取回409 |
+| `basis` | object |  |
+| `basis.id` | string | 固定媒體名單版本 |
+| `basis.media` | string[] |  |
+| `basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
+| `basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
+| `upstreamVocabularyId` | string \| null | 此資料直接來自文章標籤，未依詞庫快照截斷 |
+| `noiseFilterVersion` | string | noise/media-tag/qualification 原始碼指紋 |
+| `qualification` | object |  |
+| `qualification.gate` | string |  |
+| `qualification.distinctArticles` | boolean |  |
+| `qualification.minTwiceMedia` | integer |  |
+| `qualification.minMedia` | integer |  |
+| `qualification.minArticlesAtOneMedia` | integer |  |
+| `sourceCoverage` | object |  |
+| `sourceCoverage.kind` | string |  |
+| `sourceCoverage.collectionCoverageFrom` | string (ISO 時間) |  |
+| `sourceCoverage.sourceArticleCount` | integer |  |
+| `sourceCoverage.firstPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.lastPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.candidateTotal` | integer |  |
+| `sourceCoverage.elapsedMs` | integer |  |
+| `pageChecksums` | string[] |  |
+| `eligibleTotal` | integer |  |
+| `truncated` | boolean | 成功快照一定false；觸發安全上限回503/unavailable，不發布截斷快照 |
+| `defaultPageSize` | integer |  |
+| `totalPages` | integer |  |
+| `checksum` | object |  |
+| `checksum.algorithm` | string | sha256 |
+| `checksum.serialization` | string | canonical-entry-jsonl-v1 |
+| `checksum.value` | string | 完整詞池校驗碼，不是單頁校驗碼 |
+
+<a id="api-v1-ranking-pools-snapshotId"></a>
+
+### `GET /api/v1/ranking-pools/{snapshotId}`
+
+**讀取不可變時間窗詞池的完整分頁**
+
+所有頁綁同一snapshot/window/basis。cursor為opaque，跨快照409、錯誤400、過期409、不存在404。limit1..5000，gzip。checksum為依rank逐筆canonical JSON加\n的UTF-8 SHA256；property順序tag,tagId,rank,score,articleCount,mediaCount,media，media keys按UTF-8字節排序，最後一筆仍有換行，空池校驗空字串。完整掃到nextCursor=null再驗總數與checksum。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `snapshotId` | 路徑 | string | 快照SHA256 ID，例：`0000000000000000000000000000000000000000000000000000000000000000` |
+| `cursor` | query | string | 上一頁nextCursor |
+| `limit` | query | integer | 每頁筆數，1–5000，預設 `500`，例：`500` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/ranking-pools/0000000000000000000000000000000000000000000000000000000000000000'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshotId` | string |  |
+| `schemaVersion` | string |  |
+| `policyVersion` | string |  |
+| `available` | boolean |  |
+| `incompleteReason` | string \| null |  |
+| `window` | object |  |
+| `window.since` | string (ISO 時間) |  |
+| `window.until` | string (ISO 時間) |  |
+| `window.basis` | string | published_at |
+| `window.timezone` | string | UTC |
+| `category` | string |  |
+| `order` | string | 目前僅支援 score |
+| `gate` | string |  |
+| `computedAt` | string (ISO 時間) |  |
+| `asOf` | string (ISO 時間) | 唯讀一致性資料快照開始時間 |
+| `expiresAt` | string (ISO 時間) | 24 小時後過期，讀取回409 |
+| `basis` | object |  |
+| `basis.id` | string | 固定媒體名單版本 |
+| `basis.media` | string[] |  |
+| `basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
+| `basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
+| `upstreamVocabularyId` | string \| null | 此資料直接來自文章標籤，未依詞庫快照截斷 |
+| `noiseFilterVersion` | string | noise/media-tag/qualification 原始碼指紋 |
+| `qualification` | object |  |
+| `qualification.gate` | string |  |
+| `qualification.distinctArticles` | boolean |  |
+| `qualification.minTwiceMedia` | integer |  |
+| `qualification.minMedia` | integer |  |
+| `qualification.minArticlesAtOneMedia` | integer |  |
+| `sourceCoverage` | object |  |
+| `sourceCoverage.kind` | string |  |
+| `sourceCoverage.collectionCoverageFrom` | string (ISO 時間) |  |
+| `sourceCoverage.sourceArticleCount` | integer |  |
+| `sourceCoverage.firstPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.lastPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.candidateTotal` | integer |  |
+| `sourceCoverage.elapsedMs` | integer |  |
+| `pageChecksums` | string[] |  |
+| `eligibleTotal` | integer |  |
+| `truncated` | boolean | 成功快照一定false；觸發安全上限回503/unavailable，不發布截斷快照 |
+| `defaultPageSize` | integer |  |
+| `totalPages` | integer |  |
+| `checksum` | object |  |
+| `checksum.algorithm` | string | sha256 |
+| `checksum.serialization` | string | canonical-entry-jsonl-v1 |
+| `checksum.value` | string | 完整詞池校驗碼，不是單頁校驗碼 |
+| `offset` | integer |  |
+| `limit` | integer |  |
+| `entries` | object[] |  |
+| `entries[].tag` | string | 原始完整 Unicode 標籤，不做別名猜測或子字串比對 |
+| `entries[].tagId` | string | 原標籤 UTF-8 SHA256 |
+| `entries[].rank` | integer | 完整合格詞池內名次 |
+| `entries[].score` | number | 沿用各媒體 2×(1−0.5^篇數) 加總 |
+| `entries[].articleCount` | integer | 不同文章數；同篇重複標籤只計一次 |
+| `entries[].mediaCount` | integer | 不同媒體數 |
+| `entries[].media` | {鍵: integer} |  |
+| `nextCursor` | string \| null |  |
 
 <a id="api-v1-ranking"></a>
 

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import bundledBaseline from '../../data/ranking-baseline.json' with { type: 'json' };
 import { isTagNoise } from '../tag-noise.ts';
-import type { RankingChart } from './ranking-compute.ts';
+import { mediaRankingScore, type RankingChart } from './ranking-compute.ts';
 
 // Previews can read an existing frozen cohort without rewriting its history.
 const baseline: typeof bundledBaseline = process.env.TAG_RANKING_BASELINE_FILE
@@ -46,7 +46,7 @@ export function applyRankingBasis(chart: RankingChart, basis: RankingBasis, at: 
         ...e,
         media,
         count: Object.values(media).reduce((a, n) => a + n, 0),
-        score: Object.values(media).reduce((a, n) => a + 2 * (1 - 0.5 ** n), 0),
+        score: mediaRankingScore(media),
       };
     })
     .filter((e) => e.count > 0)

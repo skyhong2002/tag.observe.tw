@@ -34,6 +34,7 @@ import { registerMediaTrafficComparison } from './v1/media-traffic-comparison.ts
 import { registerNearline } from './v1/nearline.ts';
 import { registerApiMeta } from './v1/openapi.ts';
 import { registerPageApis } from './v1/pages.ts';
+import { registerRankingPools } from './v1/ranking-pools.ts';
 import { registerReaderPresence } from './v1/reader-presence.ts';
 import { registerV1Routes } from './v1/routes.ts';
 import { registerSimilarity } from './v1/similarity.ts';
@@ -50,6 +51,7 @@ export async function buildApp(
   config,
   {
     logger = false,
+    rankingPools = /** @type {Parameters<typeof registerRankingPools>[2]} */ (undefined),
     db = /** @type {import('./db/client.ts').Db | null} */ (null),
     loginStore = /** @type {import('./auth/google-login.ts').LoginStore | null} */ (null),
     jobQueue = /** @type {(() => import('./admin/routes.ts').JobQueue) | null} */ (null),
@@ -177,6 +179,7 @@ export async function buildApp(
   await labels?.ready;
   if (own) {
     await registerV1Routes(app, own.db);
+    registerRankingPools(app, own.db, rankingPools);
     registerPageApis(app, own.db);
     registerMediaStats(app, own.db);
     registerMediaTrafficComparison(app, own.db);

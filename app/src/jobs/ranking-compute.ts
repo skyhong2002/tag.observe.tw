@@ -28,6 +28,9 @@ export interface RankingChart {
   entries: RankingEntry[];
 }
 
+/** Shared geometric score from per-media article counts. */
+export const mediaRankingScore = (media: Record<string, number>) => Object.values(media).reduce((a, n) => a + 2 * (1 - 0.5 ** n), 0);
+
 export function splitLegacyTags(tags: string): string[] {
   // PHP: explode("]") then strip "[" and keep strlen(tag) > 1 (bytes).
   return tags

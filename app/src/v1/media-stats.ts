@@ -11,6 +11,7 @@ import { articleDiscoveries, articles, crawlRuns, topics } from '../db/schema.ts
 import { articleMediaOf, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
 import { categoryLabel, mediaCategories } from '../media-categories.ts';
 import { mediaScope } from '../media-scope.ts';
+import { mediaStatsQueryDuration } from '../metrics.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
@@ -65,6 +66,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     const dated = sql`NOT (${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`;
     const summaryEligible = sql`${dated} AND ${articles.publishedAt} <= ${new Date(now)}`;
     const hasSummary = sql`${articles.summary} IS NOT NULL AND CHAR_LENGTH(TRIM(${articles.summary})) > 0`;
+    const durations: Record<string, number> = {};
+    let stageStart = performance.now();
     const counts = await db
       .select({
         media: articles.media,
@@ -101,6 +104,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
         ),
       )
       .groupBy(articles.media);
+    durations.recentArticles = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
     // When our own crawler first stored an article for each media: the 7-day
     // column only covers that much until a full week has passed.
     const firsts = await db
@@ -112,6 +117,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .from(articles)
       .where(sql`${articles.source} = 'own'`)
       .groupBy(articles.media);
+    durations.historicalArticles = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
     const firstBy = new Map(firsts.map((f) => [f.media, f.first]));
     const totalBy = new Map(firsts.map((f) => [f.media, Number(f.totalCollected)]));
     // Aggregators expose discoveries under the original article identity. Their
@@ -132,6 +139,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .innerJoin(articles, eq(articles.id, articleDiscoveries.articleId))
       .where(lte(articles.publishedAt, future))
       .groupBy(articleDiscoveries.media);
+    durations.discoveries = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
     for (const row of discoveries) {
       firstBy.set(row.media, row.first);
       totalBy.set(row.media, Number(row.totalCollected));
@@ -157,7 +166,12 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .from(crawlRuns)
       .where(sql`${crawlRuns.stage} IN ('index', 'article')`)
       .groupBy(crawlRuns.media);
+    durations.crawlRuns = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
     const [topicChecks, topicCounts] = await Promise.all([topicSourceChecks(db, new Date(now)), topicCountPerMedia(db)]);
+    durations.topics = Math.round(performance.now() - stageStart);
+    for (const [stage, ms] of Object.entries(durations)) mediaStatsQueryDuration.observe({ stage }, ms / 1000);
+    app.log.info({ durationsMs: durations }, 'media-stats query timings');
     const byCount = new Map([...counts, ...discoveries].map((c) => [c.media, c]));
     const bySummary = new Map(counts.map((c) => [c.media, c]));
     const byRun = new Map(runs.map((r) => [r.media, r]));
