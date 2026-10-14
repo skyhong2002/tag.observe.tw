@@ -22,11 +22,14 @@ function luminance(token: string) {
   return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
 }
 
-it('uses AA text tokens against both dark trend/status panels and related-tag chips', () => {
+it('uses AA text tokens against dark trend, event/status panels and related-tag chips', () => {
   for (const foreground of ['zinc-300', 'zinc-400']) {
     for (const background of ['zinc-900', 'zinc-800']) {
       expect((luminance(foreground) + 0.05) / (luminance(background) + 0.05)).toBeGreaterThanOrEqual(4.5);
     }
+  }
+  for (const source of ['../src/components/EventCard.tsx', '../src/app/(site)/event/page.tsx']) {
+    expect(read(source).match(/text-zinc-500(?! dark:text-zinc-400)/g)).toBeNull();
   }
   const status = read('../src/components/TagStatusPanel.tsx');
   const evidence = read('../src/components/DraftEvidence.tsx');

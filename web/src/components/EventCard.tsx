@@ -213,7 +213,7 @@ function CampHeadlines({ pair: { blue, green }, media }: { pair: { blue: EventNe
   const [b, g] = headlineDiff(blue.title, green.title);
   const side = (n: EventNews, parts: typeof b, camp: Camp) => (
     <div className="min-w-0 space-y-0.5">
-      <p className="flex items-center gap-1 text-[11px] text-zinc-500">
+      <p className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
         <span className={`h-1.5 w-1.5 rounded-full ${CAMP_FILL[camp]}`} aria-hidden />
         {CAMP_LABEL[camp]}
         <MediaHoverLink media={n.media} icon={12} className="hover:underline">
@@ -288,11 +288,11 @@ export default function EventCard({
 }) {
   const img = cover(e);
   const pair = tier === 'hero' ? campPair(e) : null;
-  const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
+  const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>;
   if (tier === 'row') {
     return (
       <li id={eventAnchor(e.rank)} className="grid scroll-mt-20 grid-cols-[2rem_minmax(0,1fr)] gap-x-2 gap-y-1 py-2.5">
-        <span className="text-base font-semibold tabular-nums text-zinc-500">{e.rank}</span>
+        <span className="text-base font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <Title e={e} at={at} className="font-medium leading-snug" />
