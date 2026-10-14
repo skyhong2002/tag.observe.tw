@@ -104,16 +104,18 @@ export async function bounded(task, ms=5000) {
 }
 export async function observeNativeBeforeGoto(page,record,metadata){const state=await page.evaluate(()=>({DNT:navigator.doNotTrack,GPC:{present:'globalPrivacyControl'in navigator,value:navigator.globalPrivacyControl??null},webdriver:navigator.webdriver}));record({...metadata,state});if(state.DNT!=='1')throw Error('Native pre-navigation DNT required');return state;}
 export function requireProxyRaw(rows,stats){if(rows.filter(x=>x.event==='admitted').length!==stats.admitted||rows.filter(x=>x.event==='denied').length!==stats.denied)throw Error('Proxy counters disagree with raw');return true;}
-export function bytesIn(path) {
-  let total = 0;
-  for (const entry of fs.readdirSync(path, { withFileTypes: true })) {
-    const p = join(path, entry.name);
-    if (entry.isDirectory()) total += bytesIn(p);
-    else if (entry.isFile()) total += fs.statSync(p).size;
-    else if (entry.isSymbolicLink() && p.includes('/profile/')) total += Buffer.byteLength(fs.readlinkSync(p));
-    else throw Error('Unexpected evidence entry');
+export function bytesIn(path,{io=fs,uid=process.getuid(),maxBytes=96*MiB}={}) {
+ const root=resolve(path),profile=join(root,'profile');let total=0;
+ const secure=stat=>{if(stat.uid!==uid||(!stat.isSymbolicLink()&&(stat.mode&0o022)))throw Error('Evidence ownership or permissions differ');};
+ const count=size=>{if(!Number.isSafeInteger(size)||size<0||(total+=size)>maxBytes)throw Error('Evidence size cap');};
+ const walk=dir=>{const dirStat=io.lstatSync(dir);secure(dirStat);if(!dirStat.isDirectory()||dirStat.isSymbolicLink()||io.realpathSync(dir)!==dir)throw Error('Evidence directory changed');
+  for(const entry of io.readdirSync(dir,{withFileTypes:true})){const p=join(dir,entry.name);let stat;try{stat=io.lstatSync(p);}catch(error){if(error.code==='ENOENT'&&entry.isFile()&&/^Default\/Cache\/Cache_Data\/todelete_[a-f0-9]{16}_\d+_\d+$/.test(p.startsWith(profile+'/')?p.slice(profile.length+1):''))continue;throw error;}secure(stat);
+   if(entry.isDirectory()&&stat.isDirectory()&&!stat.isSymbolicLink())walk(p);
+   else if(entry.isFile()&&stat.isFile()&&!stat.isSymbolicLink())count(stat.size);
+   else if(entry.isSymbolicLink()&&stat.isSymbolicLink()&&['SingletonLock','SingletonCookie','SingletonSocket'].some(n=>p===join(profile,n)))count(Buffer.byteLength(io.readlinkSync(p)));
+   else throw Error('Unexpected or replaced evidence entry');
   }
-  return total;
+ };walk(root);return total;
 }
 function verifyWhole() {
   if (sha(JSON.stringify(inventory(RUNTIME))) !== PINS.inventory || sha(fs.readFileSync(RUNTIME + '/mint-artifact.json')) !== PINS.manifest)
