@@ -102,6 +102,8 @@ export async function bounded(task, ms=5000) {
   try { return await Promise.race([task, new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Bounded local cleanup timeout')),ms);})]); }
   finally {clearTimeout(timer);}
 }
+export async function observeNativeBeforeGoto(page,record,metadata){const state=await page.evaluate(()=>({DNT:navigator.doNotTrack,GPC:{present:'globalPrivacyControl'in navigator,value:navigator.globalPrivacyControl??null},webdriver:navigator.webdriver}));record({...metadata,state});if(state.DNT!=='1')throw Error('Native pre-navigation DNT required');return state;}
+export function requireProxyRaw(rows,stats){if(rows.filter(x=>x.event==='admitted').length!==stats.admitted||rows.filter(x=>x.event==='denied').length!==stats.denied)throw Error('Proxy counters disagree with raw');return true;}
 export function bytesIn(path) {
   let total = 0;
   for (const entry of fs.readdirSync(path, { withFileTypes: true })) {
@@ -153,7 +155,7 @@ export async function capture(inputPath, expectedInputSha) {
   if(getPriority(0)!==19||!/^idle(?:\s|$)/.test(spawnSync('/usr/bin/ionice',['-p',String(process.pid)],{encoding:'utf8',timeout:3000,maxBuffer:128}).stdout?.trim()||''))throw Error('Entire capture requires nice19/ionice3');
   verifyControl(q); requireCandidate(q); verifyWhole(); const tool = installedToolProof();
   fs.mkdirSync(q.job,{mode:0o700});
-  const log = (file,x) => { if(bytesIn(q.job)>88*MiB)throw Error('Evidence reserve exceeded'); fs.appendFileSync(join(q.job,file),JSON.stringify({utc:new Date().toISOString(),...x})+'\n',{mode:0o600}); };
+  const log = (file,x) => {try{if(bytesIn(q.job)>88*MiB)throw Error('Evidence reserve exceeded');fs.appendFileSync(join(q.job,file),JSON.stringify({utc:new Date().toISOString(),...x})+'\n',{mode:0o600});}catch(error){try{fs.writeFileSync(join(q.job,'first-evidence-write-failure.json'),JSON.stringify({schema:'sm-capture-log-failure-v1',observedAtMs:Date.now(),phase:'budget-scan-or-log-append',errorCode:['ENOENT','EACCES','EPERM','ENOSPC','EIO'].includes(error?.code)?error.code:'unknown'})+'\n',{flag:'wx',mode:0o600});}catch{}throw error;} };
   const profile=join(q.job,'profile'); fs.mkdirSync(join(profile,'Default'),{recursive:true,mode:0o700});
   fs.writeFileSync(join(profile,'Default','Preferences'),JSON.stringify({enable_do_not_track:true}),{flag:'wx',mode:0o600});
   const registry=ownershipRegistry(profile), errors=[],shots=[]; let proxy,context,watchdog,fatal,monitor,checking,health,sampling,closingContext,network,candidate;
@@ -209,6 +211,7 @@ export async function capture(inputPath, expectedInputSha) {
     for(const path of ROUTES)for(const viewport of [{width:1280,height:800},{width:390,height:844}])for(const colorScheme of ['light','dark']){
       await check();await context.clearCookies();
       const page=await context.newPage();await page.setViewportSize(viewport);await page.emulateMedia({colorScheme});
+      await observeNativeBeforeGoto(page,row=>log('native-before-goto.jsonl',row),{path,viewport,colorScheme});
       const response=await page.goto(ORIGIN+path,{waitUntil:'domcontentloaded',timeout:30000});
       await page.evaluate(()=>document.fonts.ready);const lazy=await progressiveScroll(page);await tasks.drain();
       const size=await page.evaluate(()=>({width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight}));
@@ -249,18 +252,19 @@ export async function capture(inputPath, expectedInputSha) {
       if(bytesIn(q.job)+Buffer.byteLength(sanitized)>95*MiB)throw Error('Redacted HAR reserve');
       fs.writeFileSync(join(q.job,'network.redacted.har'),sanitized,{flag:'wx',mode:0o600});
     }catch(e){errors.push(e);}
-    if(!fs.existsSync(har)||!proxy||proxy.failed||proxy.stats.admitted<1||proxy.stats.googleOutgoing!==0)errors.push(Error('Actual HAR/proxy evidence missing'));
+    if(!fs.existsSync(har))errors.push(Error('Actual HAR evidence missing'));if(!proxy||proxy.stats.admitted<1||proxy.stats.googleOutgoing!==0)errors.push(Error('Actual proxy evidence missing'));if(proxy?.failed){errors.push(Error('Proxy audit failed'));try{log('proxy-failure.jsonl',proxy.failureEvidence||{schema:'sm-proxy-audit-failure-v1',event:'unknown',errorCode:'unknown'});}catch(error){errors.push(error);}}if(proxy?.closedStats)try{log('proxy-closed.jsonl',{schema:'sm-proxy-closed-v1',stats:proxy.closedStats});}catch(error){errors.push(error);}
     try{
       const h=JSON.parse(privateBytes(har,88*MiB));
       if(!h.log?.entries?.length||h.log.entries.length>5000)throw Error('Actual HAR entries absent/budget');
       const requestRows=privateBytes(join(q.job,'requests.raw.jsonl'),16*MiB).toString().trim().split('\n').map(JSON.parse);
       network=networkCounts(h,requestRows);
       const proxyRows=privateBytes(join(q.job,'proxy.raw.jsonl'),16*MiB).toString().trim().split('\n').map(JSON.parse);
-      if(proxyRows.filter(x=>x.event==='admitted').length!==proxy.stats.admitted||proxyRows.filter(x=>x.event==='denied').length!==proxy.stats.denied)throw Error('Proxy counters disagree with raw');
+      requireProxyRaw(proxyRows,proxy.closedStats||proxy.stats);
     }catch(e){errors.push(e);}
     const manifest={schema:'sm-f1-capture-manifest-v1',utc:new Date().toISOString(),status:!fatal&&!errors.length&&shots.length===16?'captured-pending-review':'partial',
       appSha:PINS.app,buildId:PINS.build,inventorySha256:PINS.inventory,manifestSha256:PINS.manifest,controlOpsSha:q.controlOpsSha,inputSha256:expectedInputSha,toolProof:tool,
       origin:ORIGIN,actor:'anonymous',sessionId:q.sessionId,shots,network,networkArtifacts:['network.har','network.redacted.har','requests.raw.jsonl','proxy.raw.jsonl'].filter(n=>fs.existsSync(join(q.job,n))).map(n=>({path:join(q.job,n),sha256:sha(fs.readFileSync(join(q.job,n))),bytes:fs.statSync(join(q.job,n)).size})),proxyStats:proxy?.stats,zeroGoogleOutgoing:proxy?.stats.googleOutgoing===0,
+      diagnosticArtifacts:['native-before-goto.jsonl','first-evidence-write-failure.json','proxy-failure.jsonl','proxy-closed.jsonl'].filter(n=>fs.existsSync(join(q.job,n))).map(n=>({path:join(q.job,n),sha256:sha(fs.readFileSync(join(q.job,n))),bytes:fs.statSync(join(q.job,n)).size})),
       errors:[fatal,...errors].filter(Boolean).map(e=>String(e.message).slice(0,256)),uiReview:'pending independent image review',deployEligible:false};
     if(bytesIn(q.job)+Buffer.byteLength(JSON.stringify(manifest,null,2))+4096>96*MiB){manifest.status='partial';errors.push(Error('Final evidence reserve'));manifest.errors.push('Final evidence reserve');}
     fs.writeFileSync(join(q.job,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx',mode:0o600});

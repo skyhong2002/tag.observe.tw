@@ -9,17 +9,21 @@ export function assertSelect(sqlOrOptions){
  const sql=typeof sqlOrOptions==='string'?sqlOrOptions:sqlOrOptions?.sql;
  if(typeof sql!=='string'||!/^\s*SELECT\b/i.test(sql)||sqlOrOptions?.multipleStatements===true||/[;\0]|\/\*|\*\/|--|#|:=|\b(?:INTO|OUTFILE|DUMPFILE|FOR|LOCK|PROCEDURE|SLEEP|BENCHMARK|GET_LOCK|RELEASE_LOCK|LOAD_FILE)\b/i.test(sql))throw Error('Only single isolated SELECT is admitted');return sql;
 }
+export function sqlFailureEvidence({operation,phase,error}={}){return {schema:'sm-fixture-readonly-failure-v1',operation:['query','execute','prepare','unprepare','beginTransaction','commit','rollback','changeUser'].includes(operation)?operation:'unknown',phase:['admission','driver','forbidden-operation'].includes(phase)?phase:'unknown',driverCode:['ER_NO_SUCH_TABLE','ER_BAD_FIELD_ERROR','ER_PARSE_ERROR','ER_ACCESS_DENIED_ERROR','ER_TABLEACCESS_DENIED_ERROR','ECONNREFUSED','ECONNRESET','ETIMEDOUT','PROTOCOL_CONNECTION_LOST'].includes(error?.code)?error.code:'unknown'};}
+export function boundedSqlFailureSink(append,{now=Date.now,maxBytes=65536}={}){let bytes=0,index=0;return evidence=>{const raw=JSON.stringify({...sqlFailureEvidence(evidence),index:++index,observedAtMs:now()})+'\n';if(bytes+Buffer.byteLength(raw)>maxBytes)throw Error('Private SQL failure evidence cap');append(raw);bytes+=Buffer.byteLength(raw);};}
+export function apiUnavailableEvidence(cause,path,index){return {schema:'sm-fixture-unavailable-v1',cause:['sql-latched','expired','handler-error'].includes(cause)?cause:'unknown',routeClass:path==='/auth/me'?'anonymous-auth':path==='/api/v1/reader-presence'?'reader-presence':path==='/internal/sm-fixture-readiness'?'readiness':/^\/api\/v1(?:\/|$)/.test(path||'')?'public-api':'other',requestIndex:index};}
+export function boundedApiFailureSink(append,{now=Date.now,maxBytes=65536}={}){let bytes=0;return value=>{const row=apiUnavailableEvidence(value.cause,value.path,value.index),raw=JSON.stringify({...row,observedAtMs:now()})+'\n';if(bytes+Buffer.byteLength(raw)>maxBytes)throw Error('Private API failure evidence cap');append(raw);bytes+=Buffer.byteLength(raw);};}
 export function guardReadOnlyPool(pool,{onFailure=()=>{}}={}){
  const guarded=new WeakSet();
  const wrap=target=>{
   if(!target||typeof target!=='object'||guarded.has(target))return target;guarded.add(target);
-  for(const name of ['query','execute'])if(typeof target[name]==='function'){const original=target[name];target[name]=function(...args){try{assertSelect(args[0]);const callback=typeof args.at(-1)==='function'?args.at(-1):null;if(callback)args[args.length-1]=function(error,...rest){if(error)onFailure();return callback(error,...rest);};const value=original.apply(this,args);return types.isPromise(value)?value.catch(error=>{onFailure();throw error;}):value;}catch(error){onFailure();throw error;}};}
+  for(const name of ['query','execute'])if(typeof target[name]==='function'){const original=target[name];target[name]=function(...args){try{assertSelect(args[0]);}catch(error){onFailure({operation:name,phase:'admission',error});throw error;}const report=error=>onFailure({operation:name,phase:'driver',error});const callback=typeof args.at(-1)==='function'?args.at(-1):null;if(callback)args[args.length-1]=function(error,...rest){if(error)report(error);return callback(error,...rest);};try{const value=original.apply(this,args);return types.isPromise(value)?value.catch(error=>{report(error);throw error;}):value;}catch(error){report(error);throw error;}};}
   if(typeof target.getConnection==='function'){const original=target.getConnection;target.getConnection=function(...args){
    if(typeof args.at(-1)==='function'){const callback=args.pop();return original.apply(this,[...args,(error,connection)=>{if(error)return callback(error);let guardedConnection;try{guardedConnection=wrap(connection);}catch(failure){return callback(failure);}return callback(null,guardedConnection);}]);}
    return Promise.resolve(original.apply(this,args)).then(wrap);
   };}
   if(typeof target.promise==='function'){const original=target.promise;target.promise=function(...args){return wrap(original.apply(this,args));};}
-  for(const name of ['prepare','unprepare','beginTransaction','commit','rollback','changeUser'])if(typeof target[name]==='function')target[name]=()=>{onFailure();throw Error('Isolated non-SELECT operation forbidden');};
+  for(const name of ['prepare','unprepare','beginTransaction','commit','rollback','changeUser'])if(typeof target[name]==='function')target[name]=()=>{const error=Error('Isolated non-SELECT operation forbidden');onFailure({operation:name,phase:'forbidden-operation',error});throw error;};
   // mysql2 promise wrappers expose underlying callback clients; guard both surfaces in place.
   if(target.pool)wrap(target.pool);if(target.connection)wrap(target.connection);return target;
  };return wrap(pool);
@@ -37,7 +41,7 @@ export async function startFixture(q,job,{importModule=u=>import(u),requireModul
  const {buildApp}=await importModule(pathToFileURL(join(runtime,'app/src/app.js')).href);const {createDb}=await importModule(pathToFileURL(join(runtime,'app/src/db/client.ts')).href);
  // Resolve dependency before listener creation; it must already exist in this runtime.
  requireModule.resolve('mysql2/promise');
- const db=createDb(`mysql://${encodeURIComponent(c.user)}:${encodeURIComponent(c.password)}@127.0.0.1:18306/tag_f1_semantic_test`,{poolSize:2});let sqlFailed=false;guardReadOnlyPool(db.pool,{onFailure:()=>{sqlFailed=true;}});let app,server;let closing;
+ const db=createDb(`mysql://${encodeURIComponent(c.user)}:${encodeURIComponent(c.password)}@127.0.0.1:18306/tag_f1_semantic_test`,{poolSize:2});let sqlFailed=false;const diagnosticPath=join(job,'api-readonly-failures.jsonl');fs.writeFileSync(diagnosticPath,'',{flag:'wx',mode:0o600});const failureSink=boundedSqlFailureSink(raw=>fs.appendFileSync(diagnosticPath,raw));guardReadOnlyPool(db.pool,{onFailure:evidence=>{sqlFailed=true;failureSink(evidence);}});let app,server;let closing;
  const close=()=>closing??=(async()=>{if(server?.listening){server.closeAllConnections?.();await new Promise(done=>server.close(done));}if(app)await app.close();await db.close();})();
  try{
   const [[actual]]=await db.pool.query('SELECT DATABASE() AS databaseName, VERSION() AS serverVersion, @@port AS serverPort');if(actual.databaseName!=='tag_f1_semantic_test'||!Number.isInteger(Number(actual.serverPort))||Number(actual.serverPort)<1||Number(actual.serverPort)>65535||!/^11\.4\..*MariaDB/.test(actual.serverVersion))throw Error('Actual isolated MariaDB11.4 identity required');
@@ -47,7 +51,8 @@ export async function startFixture(q,job,{importModule=u=>import(u),requireModul
   const forbidden=async()=>{throw Error('Anonymous fixture mutation disabled');};const loginStore={upsertUser:forbidden,createSession:forbidden,deleteSession:forbidden,listUsers:forbidden,setAdmin:forbidden,sessionUser:async()=>null};
   const disabledQueue=()=>({add:async()=>{throw Error('Isolated worker disabled; no image workflow pass');},getJob:async()=>null,getJobs:async()=>[]});
   app=await buildApp({uiOrigin:'http://127.0.0.1:18199',login:{clientId:'isolated-fixture',clientSecret:'isolated-fixture',origin:'http://127.0.0.1:18199',admins:new Set()}},{db:db.db,loginStore,jobQueue:disabledQueue});await app.ready();if(sqlFailed)throw Error('Readonly fixture SQL startup failed; no fallback admitted');
-  server=httpModule.createServer(async(req,res)=>{const send=(status,value)=>{res.writeHead(status,{'content-type':'application/json','cache-control':'private, no-store'});res.end(JSON.stringify(value));};try{
+  const unavailablePath=join(job,'api-unavailable.jsonl');fs.writeFileSync(unavailablePath,'',{flag:'wx',mode:0o600});const unavailableSink=boundedApiFailureSink(raw=>fs.appendFileSync(unavailablePath,raw));let requestIndex=0;
+  server=httpModule.createServer(async(req,res)=>{const index=++requestIndex;const send=(status,value)=>{if(status===503){try{unavailableSink({index,path:typeof req.url==='string'?req.url.split('?')[0]:'',cause:value.error==='readonly-fixture-unavailable'?'sql-latched':value.error==='session-expired'?'expired':'handler-error'});}catch{sqlFailed=true;res.destroy();return;}}res.writeHead(status,{'content-type':'application/json','cache-control':'private, no-store'});res.end(JSON.stringify(value));};try{
    if(!['127.0.0.1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)||typeof req.url!=='string'||!req.url.startsWith('/')||req.url.startsWith('//'))return send(403,{error:'fixture-only'});
    if(sqlFailed)return send(503,{error:'readonly-fixture-unavailable'});
    if(Date.now()>=q.expiresAtMs)return send(503,{error:'session-expired'});
@@ -55,7 +60,7 @@ export async function startFixture(q,job,{importModule=u=>import(u),requireModul
    if(!publicPath(url.pathname,req.method))return send(403,{error:'anonymous-readonly'});
    if(req.headers['content-length']&&req.headers['content-length']!=='0')return send(400,{error:'no-body'});for await(const chunk of req)if(chunk.length)return send(400,{error:'no-body'});
    const headers={};for(const k of ['accept','accept-language','range','if-none-match','if-modified-since','dnt','sec-gpc'])if(typeof req.headers[k]==='string')headers[k]=req.headers[k];
-   const result=await app.inject({method:req.method==='HEAD'?'GET':req.method,url:req.url,headers});deliverReadonly(result,{response:res,failed:()=>sqlFailed,head:req.method==='HEAD'});
+   const result=await app.inject({method:req.method==='HEAD'?'GET':req.method,url:req.url,headers});if(sqlFailed)return send(503,{error:'readonly-fixture-unavailable'});deliverReadonly(result,{response:res,failed:()=>sqlFailed,head:req.method==='HEAD'});
   }catch{if(!res.headersSent)send(503,{error:'fixture-unavailable'});else res.destroy();}});
   server.headersTimeout=10000;server.requestTimeout=10000;server.timeout=10000;server.on('connect',(_req,socket)=>socket.destroy());server.on('upgrade',(_req,socket)=>socket.destroy());
   await new Promise((done,fail)=>{server.once('error',fail);server.listen(18197,'127.0.0.1',done);});
