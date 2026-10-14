@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**009 actual 啟動失敗（n/a-ui，未部署）**：OPS55a8a83f／APPaff5／BUILDd1LV，candidate exit1、0browser／0PNG；worker啟動health有效但cleanup時35.367秒已超30，原generic不能唯一倒填首錯。自有PID／listener／鎖全退、產物103b／f50不變；[原件與後續最小修正](sm-paired-009-completion-20261014.md)。65主route／0完整pass／65完整scope pending。
+
 **d1LV native 實際通過／009 綁定 source 通過（n/a-ui，未部署）**：12ELF最高GLIBC2.30、RPATH內、8.node／ONNX載入、root與standalone Sharp WebP／AVIF通過，前後inventory103b不變；非作者複核原件，009 artifact-only綁定79pure／4syntax通過。[原件與界線](sm-native-d1LV-completion-20261014.md)。009 尚未capture，不給任何route UI pass；65主route／0完整pass／65完整scope pending。
 
 **新產物已建置／未部署（n/a-ui，UTC2026-10-14 05:20）**：APPaff5c028／controlOPS2d710921／BUILD_ID `d1LVsC3sk6p04uOyWUx5T`，directNext exit0、64staticpages，sameoutput已標準包入static/public；既有非作者本人重算32453rows/hash與雙BUILD match。[實際build原件與界線](sm-direct-next-build-r2-completion-20261014.md)。API／ownPGID／ports全退、名額交回；maxRSS未取得，不偽稱peak。新bytes native 已實際通過及獨立複核；B0／SSR／RSC／主要頁重拍及逐頁review pending，fixture prerender不能直接公開；**本BUILD0完整UIpass／65完整scope pending，未部署。**
