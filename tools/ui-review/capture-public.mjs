@@ -38,8 +38,15 @@ const proxy = http.createServer((req, res) => {
       const headers = { ...req.headers, host: '127.0.0.1:18334', dnt: '1' };
       for (const name of Object.keys(headers)) if (/cookie|authorization|token|api[-_]key|proxy-/i.test(name)) delete headers[name];
       const up = http.request(url, { method: req.method, headers }, (incoming) => {
-        const out = { ...incoming.headers }; delete out['set-cookie'];
-        res.writeHead(incoming.statusCode, out); incoming.pipe(res);
+        const failed = () => {
+          transport.push({ utc: new Date().toISOString(), event: 'candidate-response-failed' });
+          incoming.destroy(); up.destroy(); res.destroy();
+        };
+        incoming.on('error', failed); incoming.on('aborted', failed);
+        try {
+          const out = { ...incoming.headers }; delete out['set-cookie'];
+          res.writeHead(incoming.statusCode, out); incoming.pipe(res);
+        } catch { failed(); }
       });
       sockets.add(up); up.on('close', () => sockets.delete(up));
       up.setTimeout(120000, () => up.destroy());
@@ -135,7 +142,7 @@ try {
   write('manifest.json', { ...input, surface: candidate ? 'candidate-loopback-anonymous' : 'production-public-HTTPS', candidate, tool: 'Playwright, native DNT profile, prelaunch host-only transport proxy', completed,
     shots, pages, googleRequests: requests.filter((r) => r.google).length, googleOutgoing: transport.filter((r) => r.event === 'admitted-connect' && r.target !== 'tag.observe.tw:443').length,
     transportClosed: !cleanupErrors.includes('proxy-close'), cleanupErrors, endedUtc: new Date().toISOString(),
-    limitations: 'Anonymous actual production states only. Google counts are browser HAR/request and proxy host-admission evidence, not TLS packet inspection. No fixture/auth account, GA receipt or complete dynamic-state coverage claimed.' });
+    limitations: `Anonymous ${candidate ? 'loopback candidate' : 'actual production'} states only. Google counts are browser HAR/request and proxy host-admission evidence, not TLS packet inspection. No auth account, GA receipt or complete dynamic-state coverage claimed.` });
   console.log(JSON.stringify({ completed, shots: shots.length, pages: pages.length, googleRequests: requests.filter((r) => r.google).length, googleOutgoing: 0 }));
 }
 if (runError) throw runError;
