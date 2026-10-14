@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**API-only／web003實際失敗（n/a-ui，UTC04:31–04:32）**：OPS1c7824fa／APPaff5；真API就緒、archive／extract／dependency copy已發生，但目錄模式775→755與原strictproof不符，stage1、沒有Next compile／新BUILD_ID／部署。既有非作者原件複核，原f166/761不變、五PID／ports／holder全退；7buildsample RSSmax203.637MiB不當真peak，API起動亦有memory pause；API serving失敗分類非唯一HTTP/syscall證據。[原件與界線](sm-api-only-build-003-completion-20261014.md)。**65主route／0完整pass／65完整scope pending，004未執行。**
+
 **Node雜湊檢查器小修（n/a-ui）**：固定64KiB串流取代整份Node binary讀入；既有非作者26純/mock與三syntax source PASS。兩個低優先權唯讀child雜湊都等於原pin，單次maxRSS189132→71940KiB；不當作build記憶體峰值或host可用記憶體改善，3GiB門檻不變。[原件與界線](sm-streaming-node-digest-20261014.md)。未啟API003／build003／browser／deploy，65主route／0完整pass／65完整scope pending。
 
 **SQL-result hook離線source/mock（n/a-ui，未接線）**：新[`sql-result-hook.mjs`](../tools/f1-privacy/sql-result-hook.mjs)／[測試](../tools/f1-privacy/sql-result-hook.test.mjs)只在明確A/B context攔指定SQL與ordered參數指紋，A已得rows/canary才hold、B不共用latch，commit標adapter-reported，不宣稱真DB。v1參數overload失真issue保留；v2 explicitnormalize／unsupported拒絕、無context原樣delegate、callback this/fields/Query保留，既有非作者16pure／1syntax／三hash source PASS，root含existingbarrier/adapter30pure回歸。review `/home/deck/tag-analysis-private/f1-release/f1-sql-result-hook-independent-v2-20261014.json`（SHA760010b9…）及同名txt；[界線](../tools/f1-privacy/sql-result-hook.md)。**實boot／transaction／SSR correlation／B0仍pending，未啟服務／DB／瀏覽器；65主route／0完整pass／65完整scope pending，未部署。**
