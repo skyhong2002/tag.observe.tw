@@ -27,3 +27,9 @@ manifest SHA256 `b088905f41a1018b2be28277a2260beb71660aff45fbcb65054b250229a5c25
 完整owner raw kernel `/home/deck/tag-analysis-private/f1-release/paired-sm-batch-010/owner-poststop-kernel.raw.json` UTC06:07:41.441，SHA256 `ed7c2c4f6ffb6e26c6934129cdb7d3555b0ea8843c50115113cc733637fe816d`，包含全nettcp／nettcp6／locks及7ownPID缺席，browser/build root0；當時load6.36、MemAvailable3.341GiB。收尾較早曾load12.21超閘門，沒有啟新build/capture，不拿它當初始ENOENT的根因。06:07:46.814全inventory仍 `103b9e671f66c6fe8af530db40fb9e0e9f5b8a38c0822af30404b398e26ac9fc`，manifest仍f50，原件 `owner-poststop-inventory-summary.json`。
 
 全部產物、失敗job、PNG／HAR／profile、正式release、回滾版本、備份與worktree保留。native實際PASS仍成立；未部署F1，沒有Cloudflare／WAF／正式DB／backup timer操作。
+
+## Babysit 預放行的011最小繞法（source/mock）
+
+只把 fixed job/profile 從 evidence budget 的逐檔掃描排除，PNG/HAR/raw仍96MiB與原安全檢查；此capture獨有Chrome args加 `--disk-cache-size=1`、`--disable-gpu-shader-disk-cache`，shared browser-owner不改。profile在launch前／verified stop後各一次固定du aggregate total/status，只記總量不列檔案；失敗status先存，errors／partial不抹去。同aff5/d1LV與四頁16張、DNT／prelaunchproxy／HAR及期限不变，namespace011。
+
+既有非作者本人81/81pure與2syntax通過；source freeze `c35d23ba7dd519505ac8d3c53ea8ef6869bb7652185e1fadf6ec530504dd8c1f`；review `/home/deck/tag-analysis-private/f1-release/sm011-profile-budget-independent-v1-20261014.json` SHA256 `6cb10d039f6a24f510bac4ec7f8847913afab6706d92304268ec929af3facaed`，同名txt transcript `94a91f3c94fb921da080d7d73e385a1d34594d014eeb2550079bc771ea3a468f`。source PASS不算actual011；依babysit預先放行，freshgates符合即重跑，hash記tag.md。

@@ -112,14 +112,15 @@ export function bytesIn(path,{io=fs,uid=process.getuid(),maxBytes=96*MiB}={}) {
  const secure=stat=>{if(stat.uid!==uid||(!stat.isSymbolicLink()&&(stat.mode&0o022)))throw Error('Evidence ownership or permissions differ');};
  const count=size=>{if(!Number.isSafeInteger(size)||size<0||(total+=size)>maxBytes)throw Error('Evidence size cap');};
  const walk=dir=>{const dirStat=io.lstatSync(dir);secure(dirStat);if(!dirStat.isDirectory()||dirStat.isSymbolicLink()||io.realpathSync(dir)!==dir)throw Error('Evidence directory changed');
-  for(const entry of io.readdirSync(dir,{withFileTypes:true})){const p=join(dir,entry.name);let stat;try{stat=io.lstatSync(p);}catch(error){if(error.code==='ENOENT'&&entry.isFile()&&/^Default\/Cache\/Cache_Data\/todelete_[a-f0-9]{16}_\d+_\d+$/.test(p.startsWith(profile+'/')?p.slice(profile.length+1):''))continue;throw error;}secure(stat);
+  for(const entry of io.readdirSync(dir,{withFileTypes:true})){const p=join(dir,entry.name);if(p===profile)continue;const stat=io.lstatSync(p);secure(stat);
    if(entry.isDirectory()&&stat.isDirectory()&&!stat.isSymbolicLink())walk(p);
    else if(entry.isFile()&&stat.isFile()&&!stat.isSymbolicLink())count(stat.size);
-   else if(entry.isSymbolicLink()&&stat.isSymbolicLink()&&['SingletonLock','SingletonCookie','SingletonSocket'].some(n=>p===join(profile,n)))count(Buffer.byteLength(io.readlinkSync(p)));
    else throw Error('Unexpected or replaced evidence entry');
   }
  };try{walk(root);return total;}catch(error){error.evidenceFailure=evidenceFailureClass(error,root);throw error;}
 }
+export const captureCacheArgs=Object.freeze(['--disk-cache-size=1','--disable-gpu-shader-disk-cache']);
+export function profileTotal(profile,{io=fs,execute=spawnSync,uid=process.getuid(),phase,record=()=>{}}={}){if(!['before-launch','after-stop'].includes(phase)||!/^\/home\/deck\/tag-analysis-private\/f1-release\/sm-capture-sm-batch-(?!000)[0-9]{3}\/profile$/.test(profile))throw Error('Fixed owned profile total phase required');const stat=io.lstatSync(profile);if(!stat.isDirectory()||stat.isSymbolicLink()||stat.uid!==uid||(stat.mode&0o077)||io.realpathSync(profile)!==profile)throw Error('Private canonical profile required');const r=execute('/usr/bin/du',['-sx','--block-size=1','--',profile],{encoding:'utf8',timeout:10000,maxBuffer:4096,env:{PATH:'/usr/bin:/bin',LANG:'C'}});const match=/^(\d+)\t[^\r\n]+\n?$/.exec(r.stdout||''),bytes=match?Number(match[1]):NaN;const row={schema:'sm-profile-total-v1',phase,status:r.status,totalBytes:Number.isSafeInteger(bytes)&&bytes>=0?bytes:null};const saved=record(row);if(saved===false||saved?.then)throw Error('Synchronous profile total receipt required');if(r.status!==0||r.error||!match||row.totalBytes===null)throw Error('Profile total measurement failed');return row;}
 function verifyWhole() {
   if (sha(JSON.stringify(inventory(RUNTIME))) !== PINS.inventory || sha(fs.readFileSync(manifestPath)) !== PINS.manifest)
     throw Error('Same artifact bytes changed');
@@ -198,8 +199,9 @@ export async function capture(inputPath, expectedInputSha) {
     });
     proxy=await startProxy(x=>log('proxy.raw.jsonl',x));
     const { chromium }=await import(pathToFileURL(TOOLROOT+'/playwright/index.mjs').href);
+    profileTotal(profile,{phase:'before-launch',record:row=>log('profile-totals.jsonl',row)});
     context=await chromium.launchPersistentContext(profile,{headless:true,env:{PATH:'/usr/bin:/bin',HOME:profile,LANG:'C',TZ:'UTC',DNT:'1'},deviceScaleFactor:1,executablePath:BROWSER,proxy:{server:proxy.address,bypass:'<-loopback>'},serviceWorkers:'block',
-      extraHTTPHeaders:{DNT:'1'},args:['--disable-gpu','--disable-dev-shm-usage','--proxy-bypass-list=<-loopback>','--disable-background-networking','--disable-sync','--no-first-run','--disable-default-apps','--disable-quic','--force-webrtc-ip-handling-policy=disable_non_proxied_udp','--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'],recordHar:{path:join(q.job,'network.har'),mode:'minimal',content:'omit'}});
+      extraHTTPHeaders:{DNT:'1'},args:[...captureCacheArgs,'--disable-gpu','--disable-dev-shm-usage','--proxy-bypass-list=<-loopback>','--disable-background-networking','--disable-sync','--no-first-run','--disable-default-apps','--disable-quic','--force-webrtc-ip-handling-policy=disable_non_proxied_udp','--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'],recordHar:{path:join(q.job,'network.har'),mode:'minimal',content:'omit'}});
     registry.snapshot();
     const roots=registry.records.filter(r=>!r.args.some(a=>a.startsWith('--type=')));
     if(roots.length!==1||roots[0].nice!==19)throw Error('One actual low-priority Chromium root required');
@@ -238,7 +240,7 @@ export async function capture(inputPath, expectedInputSha) {
     clearTimeout(timeout);clearInterval(monitor);if(checking)await checking;
     journal.begin();if(proxy)try{proxy.quiesce();}catch(e){errors.push(e);}
     try{registry.snapshot();}catch(e){errors.push(e);}
-    await closeBrowserEvidence({closeContext:()=>context?closeContext():Promise.resolve(),stopProfile:()=>stopProfile(profile,{records:registry.records}),drain:()=>bounded(tasks.drain()),flush:()=>{try{journal.flush();}catch(error){try{fs.writeFileSync(join(q.job,'cleanup-unflushed.raw.json'),JSON.stringify(journal.pending)+'\n',{flag:'wx',mode:0o600});}catch(evidenceError){throw new AggregateError([error,evidenceError],'Cleanup flush and retained evidence failed',{cause:error});}throw error;}},closeProxy:()=>proxy?bounded(proxy.close()):Promise.resolve(),onError:error=>errors.push(error),record:row=>log('cleanup.raw.jsonl',row)});
+    await closeBrowserEvidence({closeContext:()=>context?closeContext():Promise.resolve(),stopProfile:async()=>{await stopProfile(profile,{records:registry.records});profileTotal(profile,{phase:'after-stop',record:row=>log('profile-totals.jsonl',row)});},drain:()=>bounded(tasks.drain()),flush:()=>{try{journal.flush();}catch(error){try{fs.writeFileSync(join(q.job,'cleanup-unflushed.raw.json'),JSON.stringify(journal.pending)+'\n',{flag:'wx',mode:0o600});}catch(evidenceError){throw new AggregateError([error,evidenceError],'Cleanup flush and retained evidence failed',{cause:error});}throw error;}},closeProxy:()=>proxy?bounded(proxy.close()):Promise.resolve(),onError:error=>errors.push(error),record:row=>log('cleanup.raw.jsonl',row)});
     if(watchdog && watchdog.exitCode===null){
       watchdog.kill('SIGTERM');
       try{await bounded(new Promise(resolve=>{if(watchdog.exitCode!==null)resolve();else watchdog.once('close',resolve);}));}catch(e){errors.push(e);if(watchdog.exitCode===null){watchdog.kill('SIGKILL');try{await bounded(new Promise(ok=>watchdog.once('close',ok)),2000);}catch(x){errors.push(x);}}}
