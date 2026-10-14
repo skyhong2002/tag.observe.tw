@@ -96,3 +96,38 @@ it('does not wait for cancellation of a Next cloned error body before retrying',
     await work;
   }
 });
+
+it('recovers a missing SSR panel through the public API without browser caching or credentials', async () => {
+  const { fetchHomeTopics } = await import('../src/lib/home-topics.mts');
+  const fetcher = vi.fn<typeof fetch>(async () => Response.json(data));
+  const signal = new AbortController().signal;
+  expect(await fetchHomeTopics(signal, fetcher)).toEqual({ outlets: 1, today: 0, latest: [] });
+  expect(fetcher.mock.calls[0]).toEqual([
+    '/api/v1/topics?limit=120&kind=topic',
+    { cache: 'no-store', signal, headers: { accept: 'application/json' } },
+  ]);
+});
+
+it('keeps a public API failure distinct from a valid empty list without exposing its body', async () => {
+  const { fetchHomeTopics } = await import('../src/lib/home-topics.mts');
+  await expect(
+    fetchHomeTopics(new AbortController().signal, async () => new Response('private error details', { status: 503 })),
+  ).rejects.toThrow('Topics temporarily unavailable');
+  await expect(fetchHomeTopics(new AbortController().signal, async () => Response.json({ error: 'wrong schema' }))).rejects.toThrow(
+    'Invalid topics response',
+  );
+});
+
+it('preserves the first five distinct outlets and the existing recent-update count', async () => {
+  const { summarizeHomeTopics } = await import('../src/lib/home-topics.mts');
+  const now = Date.parse('2026-10-14T17:00:00Z');
+  const feed = ['cna', 'cna', 'udn', 'ltn', 'tvbs', 'ctv', 'pts'].map((media, i) => ({
+    media,
+    id: String(i),
+    title: 'Public topic',
+    updatedAt: new Date(now - i * 3600000).toISOString(),
+  }));
+  const result = summarizeHomeTopics({ media: [], feed } as Parameters<typeof summarizeHomeTopics>[0], now);
+  expect(result?.today).toBe(7);
+  expect(result?.latest.map((x) => x.media)).toEqual(['cna', 'udn', 'ltn', 'tvbs', 'ctv']);
+});

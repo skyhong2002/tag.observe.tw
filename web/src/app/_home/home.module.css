@@ -231,6 +231,8 @@
 .topicPanel { min-height: 20rem; }
 /* Reserve the loading/list space, but don't leave a 320px hole after an empty/error result. */
 .topicPanel:has(> .notice:not([role="status"])) { min-height: 0; }
+.topicPanel:has(> .topicRecoveryNotice) { min-height: 0; }
+.topicRecoveryNotice { margin-bottom: 0; }
 .topicPanel > .notice:not([role="status"]) { margin-bottom: 0; }
 .topicPanel > .notice a { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; margin-left: 4px; }
 .topicList { list-style: none; padding: 0; margin: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }

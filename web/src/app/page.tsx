@@ -21,20 +21,20 @@ import {
   loadHomeTopics,
 } from '@/lib/demo';
 import { homeRankingRows, rankingReady } from '@/lib/home-ranking.mts';
-import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
-import type { EventCoverage, FeedTopic } from '@/lib/pages';
+import type { EventCoverage } from '@/lib/pages';
 import { pageMetadata } from '@/lib/seo.mts';
-import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletDirectory from './_home/CampOutletDirectory';
 import CampShareSummary from './_home/CampShareSummary';
 import EventRecovery from './_home/EventRecovery';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import HomeRanking from './_home/HomeRanking';
+import HomeTopicsRecovery from './_home/HomeTopicsRecovery';
 import styles from './_home/home.module.css';
 import MastheadCloud from './_home/MastheadCloud';
 import NewsImage from './_home/NewsImage';
 import ReadersPanel from './_home/ReadersPanel';
+import TopicPanel from './_home/TopicPanel';
 
 export const revalidate = 120;
 // Stay ISR even when an API call fails while rendering: the fresh retry in
@@ -201,7 +201,8 @@ async function DeferredGraph({ data }: { data: ReturnType<typeof loadHomeGraph> 
 }
 
 async function DeferredTopics({ data }: { data: ReturnType<typeof loadHomeTopics> }) {
-  return <TopicPanel topics={await data} />;
+  const topics = await data;
+  return topics ? <TopicPanel topics={topics} /> : <HomeTopicsRecovery />;
 }
 
 async function DeferredHomeMethod({
@@ -232,51 +233,6 @@ function PanelLoading() {
     <p className={styles.notice} role="status">
       資料載入中…
     </p>
-  );
-}
-
-// Story dates can be old: date with the year, no time (as on TopicCard).
-const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-
-function TopicPanel({ topics }: { topics: { outlets: number; today: number; latest: FeedTopic[] } | null }) {
-  if (!topics)
-    return (
-      <p className={styles.notice}>
-        議題資料暫時無法取得。
-        <Link prefetch={false} href="/topic/">
-          查看議題表
-        </Link>
-      </p>
-    );
-  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有更新的議題。</p>;
-  return (
-    <ul className={styles.topicList}>
-      {topics.latest.map((t) => {
-        const image = isAllowedImage(t.image) ? t.image : null;
-        const href = `/topic/${encodeURIComponent(t.media)}/#topic-${t.id}`;
-        const updated = updatedAtOf(t);
-        return (
-          <li key={`${t.media}-${t.id}`}>
-            <Link prefetch={false} href={href} className={styles.topicCover} tabIndex={-1} aria-hidden="true">
-              <NewsImage src={image} variant="topic" />
-            </Link>
-            <div className={styles.topicBody}>
-              <h3>
-                <Link prefetch={false} href={href}>
-                  {t.title}
-                </Link>
-              </h3>
-              <p>
-                <MediaIcon media={t.media} title={t.mediaTitle} size={12} />
-                {t.mediaTitle}
-                {updated && ` · 最後更新 ${taipeiDate(updated)}`}
-                {t.coverage && ` · 近 3 天 ${t.coverage.count}${t.coverage.capped ? '+' : ''} 篇相關`}
-              </p>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
   );
 }
 

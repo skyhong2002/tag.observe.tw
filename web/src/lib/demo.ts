@@ -4,6 +4,7 @@ import { type CampOutlet, type CampShare, campShareCounts, type DemoCamp } from 
 export type { CampOutlet, CampShare, DemoCamp } from './camp-share.mts';
 
 import { clipHeadline, headlineTags, selectEventCover, selectEventLead } from './event-presentation.mts';
+import { summarizeHomeTopics } from './home-topics.mts';
 import { isAllowedImage } from './images';
 import { fetchJournalists, type JournalistSummary } from './journalists';
 import {
@@ -11,14 +12,12 @@ import {
   dayStoryAsEvent,
   type EventCoverage,
   type EventItem,
-  type FeedTopic,
   fetchEventDay,
   fetchEvents,
   fetchTopics,
   threadAsEvent,
 } from './pages';
 import { fetchSimilarity, type SimilarityData, type SimilarityEdge } from './similarity';
-import { updatedAtOf } from './topic-update.mts';
 
 export const DEMO_CAMPS: Array<{ key: DemoCamp; label: string; short: string }> = [
   { key: 'green', label: '綠營傾向', short: '綠' },
@@ -285,12 +284,5 @@ export async function loadHomeGraph() {
 }
 
 export async function loadHomeTopics() {
-  const topics = await fetchTopics(120);
-  if (!topics) return null;
-  const feed: FeedTopic[] = (topics.feed ?? []).filter((t) => updatedAtOf(t) && t.title);
-  return {
-    outlets: topics.media.length,
-    today: feed.filter((t) => Date.now() - Date.parse(updatedAtOf(t) ?? '') < 86400e3).length,
-    latest: feed.filter((t, i) => feed.findIndex((u) => u.media === t.media) === i).slice(0, 5),
-  };
+  return summarizeHomeTopics(await fetchTopics(120));
 }
