@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**d1LV實際部署嘗試在暖機停止（n/a-ui，未部署）**：核可packet8ea5bd3a／runtimeOPS61fd537c，sourceaff5／BUILDd1。warm-home18232超過20秒curl28，尚未切worker/gateway；新API/web已停止、原gateway114409／web325597／worker114174保持、formal/current0dd。後驗證九trial200、median0.932118／5.063242／1.001206通過。[實際失敗與原件](f1-simple-deployment-abort-20261014.md)。不給正式F1或任一UIroute pass；65main／0complete／65scopepending。沒有盲目續跑或新capture。
+
 **入口切換提案更新（n/a-ui，未部署）**：使用者接受gateway數秒中斷，舊NAT提案83f5cf29作廢。改用普通Bash＋persistent user-unit drop-in，保留legacy current／18132 web；sameAPPaff5／BUILDd1LV，無rebuild。[簡化部署與回滾](f1-simple-deployment-admission-20261014.md)。尚待exact hash／fresh probe核可，不提升任何UIroute狀態；65main／0complete／65scopepending。
 
 **簡化部署 source／mock 複審通過（n/a-ui，未部署）**：既有非作者 GPT-6.1 Sol 本人15/15隔離mock、Bash／Node／systemd syntax exit0；cleanup兩項問題已修、原ISSUES原件保留。review `/home/deck/tag-analysis-private/f1-release/sm-simple-deploy-independent-r2-20261014.json` SHA `280c2e35f5c53e98f7eddd83a50205fd2e070bf0147b8f2d3407081b57029794`，reviewer記錄9個受審source/doc/test檔案SHA。不能當成實際切換、重開機、停機秒數或正式UI驗收；仍待babysit核對exact命令／fresh probe。
