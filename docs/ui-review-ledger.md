@@ -1,5 +1,7 @@
 # F1 UI 逐頁審查 ledger
 
+**API-only004名額通知下主動收尾（n/a-ui）**：OPS e44639d9／APPaff5，真API已就緒但沒有web建置；UTC04:43:25僅停自有parent，04:43:58三PID／ports／holder全退，所有原件保留。[停止證據與後續更正](sm-api-only-build-004-slot-stop-20261014.md)。最新授權讓tag續跑，005只換exclusive識別，不增加guard。65主route／0完整pass／65完整scope pending，未部署。
+
 **API-only／web003實際失敗（n/a-ui，UTC04:31–04:32）**：OPS1c7824fa／APPaff5；真API就緒、archive／extract／dependency copy已發生，但目錄模式775→755與原strictproof不符，stage1、沒有Next compile／新BUILD_ID／部署。既有非作者原件複核，原f166/761不變、五PID／ports／holder全退；7buildsample RSSmax203.637MiB不當真peak，API起動亦有memory pause；API serving失敗分類非唯一HTTP/syscall證據。[原件與界線](sm-api-only-build-003-completion-20261014.md)。**65主route／0完整pass／65完整scope pending，004未執行。**
 
 **Node雜湊檢查器小修（n/a-ui）**：固定64KiB串流取代整份Node binary讀入；既有非作者26純/mock與三syntax source PASS。兩個低優先權唯讀child雜湊都等於原pin，單次maxRSS189132→71940KiB；不當作build記憶體峰值或host可用記憶體改善，3GiB門檻不變。[原件與界線](sm-streaming-node-digest-20261014.md)。未啟API003／build003／browser／deploy，65主route／0完整pass／65完整scope pending。
