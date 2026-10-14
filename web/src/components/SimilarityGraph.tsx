@@ -432,7 +432,7 @@ export default function SimilarityGraph({
           aria-label={`媒體關係圖，${nodes.length} 家媒體。可拖曳整張圖、滾輪或雙指縮放；媒體相對位置固定。點選圖示固定高亮相關連線，文章可在圖表下方瀏覽。`}
         />
       ) : (
-        <div key="graph-empty" className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500">
+        <div key="graph-empty" className="flex h-full items-center justify-center p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
           目前沒有符合媒體篩選的資料，請調整上方藍綠分類或媒體 tag。
         </div>
       )}

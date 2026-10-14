@@ -100,7 +100,7 @@ export default function MyFeed() {
       )}
       <section>
         <h2 className="text-lg font-semibold">
-          近 {feed.days} 天的報導<span className="ml-2 text-sm font-normal text-zinc-500">{articles.length} 篇</span>
+          近 {feed.days} 天的報導<span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">{articles.length} 篇</span>
         </h2>
         {!articles.length ? (
           <p className={note}>這段期間沒有符合追蹤條件的報導。</p>
@@ -131,7 +131,7 @@ export default function MyFeed() {
                       type="button"
                       onClick={() => hide(a.media)}
                       title={`我的動態與私人 RSS 不再顯示${a.mediaTitle}（可在設定取消）`}
-                      className="min-h-7 rounded-full px-2 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                      className="min-h-7 rounded-full px-2 text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                     >
                       隱藏這家
                     </button>

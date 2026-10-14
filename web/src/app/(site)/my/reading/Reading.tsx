@@ -151,7 +151,7 @@ export default function Reading() {
                       className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 hover:text-brand-700 dark:bg-zinc-800"
                     >
                       #{t.tag}
-                      <span className="text-xs tabular-nums text-zinc-500">{t.count}</span>
+                      <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{t.count}</span>
                     </Link>
                   </li>
                 ))}

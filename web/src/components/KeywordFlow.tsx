@@ -34,7 +34,7 @@ export default function KeywordFlow({
     <TableScroller card startAtEnd label={`${label}，可左右捲動`}>
       <table className={`${dense ? 'w-max' : 'w-full'} border-separate border-spacing-0 text-xs`}>
         <caption className="sr-only">{label}</caption>
-        <thead className="text-zinc-500">
+        <thead className="text-zinc-500 dark:text-zinc-400">
           <tr className="bg-(--table-head-bg)">
             <th scope="col" className={`${table.leadHead} w-28 !py-1.5 text-left font-medium`}>
               關鍵字
@@ -104,7 +104,7 @@ export default function KeywordFlow({
 /** One line under the chart saying how to read it. */
 export function KeywordFlowLegend({ children, major = true }: { children?: React.ReactNode; major?: boolean }) {
   return (
-    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
       <span className="inline-flex items-center gap-1">
         <span className="h-2 w-2 rounded-full bg-zinc-900 ring-2 ring-white dark:bg-zinc-100 dark:ring-zinc-900" aria-hidden />
         關鍵字加入的時間

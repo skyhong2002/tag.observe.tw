@@ -163,7 +163,7 @@ export default async function MediaPage({
               <dt className="text-[11px] text-zinc-500 dark:text-zinc-400">{item.label}</dt>
               <dd className="mt-0.5 text-xl font-semibold tabular-nums">
                 {item.value?.toLocaleString('zh-TW') ?? '—'}
-                <span className="ml-1 text-[10px] font-normal text-zinc-500">篇</span>
+                <span className="ml-1 text-[10px] font-normal text-zinc-500 dark:text-zinc-400">篇</span>
               </dd>
             </div>
           ))}
@@ -244,7 +244,7 @@ export default async function MediaPage({
                   <dd className="flex items-center justify-between gap-2" title="Similarweb 全網域估算月造訪次數，非 page views">
                     <span className="tabular-nums">
                       {trafficNumber(visits.traffic)}
-                      <span className="ml-1 text-zinc-500">{shortMonth(visits.month)}</span>
+                      <span className="ml-1 text-zinc-500 dark:text-zinc-400">{shortMonth(visits.month)}</span>
                     </span>
                     <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月造訪量" ends />
                   </dd>

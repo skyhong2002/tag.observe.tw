@@ -41,7 +41,7 @@ export default async function SimilarityAboutPage({
               {periodLabel(data)} · 更新於 {taipei(data.generatedAt)}（台北） · <MethodLink />
             </p>
           ) : (
-            <p role="status" className="mt-1 text-sm text-zinc-500">
+            <p role="status" className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               暫時無法取得本期統計，請稍後
               <Link href={`/similarity/about/?${params}`} className={linkStyle}>
                 重新載入
@@ -112,11 +112,11 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
         <h2 id="coverage-title" className="scroll-mt-20 text-base font-semibold">
           各媒體擷取狀態
         </h2>
-        <p className="mt-1 text-xs text-zinc-600">點欄名可排序。</p>
+        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">點欄名可排序。</p>
       </div>
       <TableScroller card label="各媒體擷取狀態表格，可左右捲動">
         <table className="w-full min-w-[48rem] text-sm">
-          <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950">
+          <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:text-zinc-400 dark:bg-zinc-950">
             <tr>
               <Th col="name" label="媒體" className={table.leadHead} />
               <Th col="total" label="本期文章" className="text-right" />
@@ -132,7 +132,7 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
               const value = share(row);
               const low = value >= 0 && value < 0.8;
               return (
-                <tr key={row.media} className={`${table.row} ${row.excludedFromStatistics ? 'text-zinc-500' : ''}`}>
+                <tr key={row.media} className={`${table.row} ${row.excludedFromStatistics ? 'text-zinc-500 dark:text-zinc-400' : ''}`}>
                   <td className={table.lead}>
                     <MediaHoverLink
                       media={row.media}

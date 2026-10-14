@@ -121,7 +121,7 @@ export default function OutletTable({
           ))}
         </tbody>
       </table>
-      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500">這段期間還沒有足夠的分析資料。</p>}
+      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">這段期間還沒有足夠的分析資料。</p>}
     </TableScroller>
   );
 }

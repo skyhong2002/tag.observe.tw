@@ -215,27 +215,27 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </section>
       )}
       {!page ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">報導列表暫時無法使用，請稍後再試。</p>
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">報導列表暫時無法使用，請稍後再試。</p>
       ) : (
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <aside className="space-y-4 lg:order-2">
             {facets && <ArticleFacets facets={facets} subject={`#${tag} `} span={span} camp={camp} link={link} media={media} />}
             {status && status.threads.length > 0 && (
               <div className="space-y-2">
-                <h2 className="text-sm font-medium text-zinc-600">相關事件</h2>
+                <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">相關事件</h2>
                 <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white text-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                   {status.threads.map((t) => (
                     <li key={t.id} className="px-3 py-2">
                       <Link href={`/eve/${t.id}/`} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
                         {t.maxTag ?? t.majorTags[0] ?? `事件 ${t.id}`}
                       </Link>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
+                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
                         {t.majorTags
                           .filter((x) => x !== t.maxTag)
                           .slice(0, 4)
                           .join('、')}
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
                         {taipei(t.firstTime)} 起 · 在榜 {t.hours} 小時
                       </p>
                     </li>

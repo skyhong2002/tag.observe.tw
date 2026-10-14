@@ -156,7 +156,7 @@ function Endpoint({
                   <tr key={`${p.in}:${p.name}`}>
                     <td className={`${cellClass} whitespace-nowrap font-mono`} data-label="參數">
                       {p.name}
-                      {p.in === 'path' && <span className="ml-1 font-sans text-xs text-zinc-500">（路徑）</span>}
+                      {p.in === 'path' && <span className="ml-1 font-sans text-xs text-zinc-500 dark:text-zinc-400">（路徑）</span>}
                     </td>
                     <td className={`${cellClass} font-mono text-xs text-zinc-600 dark:text-zinc-400`} data-label="型別">
                       {tools.typeLabel(s)}
@@ -191,7 +191,7 @@ function Endpoint({
           <details key={label} className="mt-3 rounded-md border border-zinc-300 dark:border-zinc-800">
             <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
               {label}
-              <span className="ml-2 text-xs font-normal text-zinc-500">{rows.length} 個</span>
+              <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{rows.length} 個</span>
             </summary>
             <div className="overflow-x-auto px-3 pb-3">
               <table className={`w-full text-left text-sm sm:min-w-[36rem] ${table.stack}`}>
@@ -232,7 +232,7 @@ export default async function ApiDocsPage() {
       <div className="space-y-3">
         <ApiTabs current="docs" />
         <h1 className="text-2xl font-semibold tracking-tight">新文易數 API</h1>
-        <p className="text-zinc-600">
+        <p className="text-zinc-600 dark:text-zinc-400">
           文件暫時無法載入。規格檔：
           <a href="/api/v1/openapi.json" className={linkClass}>
             /api/v1/openapi.json

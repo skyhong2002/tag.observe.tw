@@ -137,7 +137,7 @@ function PageList({ pages, value }: { pages: Array<Omit<ObservedPage, 'views'>>;
     <ol className="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
       {pages.map((p, i) => (
         <li key={p.path} className="flex items-baseline gap-3 py-2">
-          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500">{i + 1}</span>
+          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</span>
           <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
             {KIND_LABELS[p.kind]}
           </span>
@@ -151,7 +151,7 @@ function PageList({ pages, value }: { pages: Array<Omit<ObservedPage, 'views'>>;
   );
 }
 
-const Empty = ({ children }: { children: React.ReactNode }) => <p className="py-6 text-center text-sm text-zinc-500">{children}</p>;
+const Empty = ({ children }: { children: React.ReactNode }) => <p className="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">{children}</p>;
 
 /** Every day of the period; days before tracking began have no bar. */
 function series(data: Observation, pick: (d: NonNullable<Observation['traffic']>['daily'][number]) => number) {
@@ -229,7 +229,7 @@ export default async function ObservePage({ searchParams }: { searchParams: Prom
       </nav>
 
       {!data ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:border-zinc-700">
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
           觀測資料暫時無法取得，請稍後再試。
         </p>
       ) : (

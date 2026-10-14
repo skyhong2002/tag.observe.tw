@@ -95,7 +95,7 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
           placeholder="搜尋媒體、國家、抓取方式或工具"
           className="w-full max-w-sm rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
         />
-        <span role="status" className="text-xs text-zinc-500">
+        <span role="status" className="text-xs text-zinc-500 dark:text-zinc-400">
           {rows.length} / {media.length} 個來源
         </span>
         {filtered && (
@@ -115,7 +115,7 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
         {options.map(({ key, label, tags }) => (
           <fieldset key={key} className="flex min-w-0 flex-wrap items-center gap-1.5">
             <legend className="sr-only">{label}</legend>
-            <span aria-hidden="true" className="w-16 shrink-0 text-xs text-zinc-500">
+            <span aria-hidden="true" className="w-16 shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
               {label}
             </span>
             {tags.map((tag) => (
@@ -292,7 +292,7 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
                             </a>
                           ))
                         ) : (
-                          <span className="text-zinc-500">未設定爬蟲</span>
+                          <span className="text-zinc-500 dark:text-zinc-400">未設定爬蟲</span>
                         )}
                       </div>
                     </td>
@@ -350,7 +350,7 @@ function TopicSources({ title, topics }: { title: string; topics: MediaTopicSour
   return (
     // Sticky so it stays in view when the table is scrolled to this far-right column.
     <div className="sticky left-3 w-fit max-w-[calc(100vw-4rem)] space-y-1.5 lg:max-w-5xl">
-      <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-zinc-500">
+      <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-zinc-500 dark:text-zinc-400">
         <span className={topicProblem(topics) ? 'text-amber-700 dark:text-amber-400' : undefined}>
           {topicStatusLabels[topics.status] ?? topics.status}
         </span>
@@ -386,7 +386,7 @@ function TopicSources({ title, topics }: { title: string; topics: MediaTopicSour
               >
                 {source.url.replace(/^https?:\/\//, '')}
               </a>
-              <span className="text-zinc-500">{source.items} 筆</span>
+              <span className="text-zinc-500 dark:text-zinc-400">{source.items} 筆</span>
               {source.error && (
                 <span className="min-w-0 max-w-full truncate text-amber-700 dark:text-amber-400 sm:max-w-sm" title={source.error}>
                   {source.error}
@@ -396,7 +396,7 @@ function TopicSources({ title, topics }: { title: string; topics: MediaTopicSour
           ))}
         </ul>
       ) : (
-        <p className="text-zinc-500">尚未設定議題／專題入口。</p>
+        <p className="text-zinc-500 dark:text-zinc-400">尚未設定議題／專題入口。</p>
       )}
     </div>
   );

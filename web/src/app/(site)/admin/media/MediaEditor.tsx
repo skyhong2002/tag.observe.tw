@@ -176,7 +176,7 @@ function OutletPicker({
                   >
                     <OutletIcon outlet={o} />
                     {o.title}
-                    <span className="text-xs text-zinc-500">{o.media}</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{o.media}</span>
                   </button>
                 </li>
               ))}
@@ -389,16 +389,16 @@ function ThisArticle({
       {article ? (
         <>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="text-zinc-500">標題</dt>
+            <dt className="text-zinc-500 dark:text-zinc-400">標題</dt>
             <dd>
               {article.title || '（尚未取得）'}
               <Link href={`/article/${article.id}/`} className="ml-2 text-brand-700 underline dark:text-brand-400">
                 本站頁面
               </Link>
             </dd>
-            <dt className="text-zinc-500">狀態</dt>
+            <dt className="text-zinc-500 dark:text-zinc-400">狀態</dt>
             <dd>{article.fetchStatus ? (STATUS[article.fetchStatus] ?? article.fetchStatus) : '等待抓取'}</dd>
-            <dt className="text-zinc-500">上次抓取</dt>
+            <dt className="text-zinc-500 dark:text-zinc-400">上次抓取</dt>
             <dd className="tabular-nums">{when(article.fetchedAt)}</dd>
           </dl>
           <ArticleByline key={`by-${article.id}-${article.fetchedAt}-${article.bylineEditedAt}`} article={article} onSaved={setArticle} />
@@ -411,7 +411,7 @@ function ThisArticle({
         <button type="button" className={button} disabled={busy || !canFetch} onClick={refetch}>
           {article ? '重抓這一篇' : '收錄這一篇'}
         </button>
-        {!canFetch && <span className="text-sm text-zinc-500">這家媒體沒有可用的爬蟲設定。</span>}
+        {!canFetch && <span className="text-sm text-zinc-500 dark:text-zinc-400">這家媒體沒有可用的爬蟲設定。</span>}
         {status && (
           <span role="status" className="text-sm text-zinc-600 dark:text-zinc-400">
             {status}
@@ -587,7 +587,7 @@ function ArticleByline({ article, onSaved }: { article: Article; onSaved: (artic
   }
   return (
     <div className="mt-4">
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
         署名
         {article.bylineEditedAt && (
           <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
@@ -667,7 +667,7 @@ function ArticleTags({ article, onSaved }: { article: Article; onSaved: (article
   const removed = article.tags.filter((t) => !tags.includes(t));
   return (
     <div className="mt-4">
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
         標籤
         {article.editedAt && (
           <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
@@ -696,7 +696,7 @@ function ArticleTags({ article, onSaved }: { article: Article; onSaved: (article
             </button>
           </li>
         ))}
-        {!tags.length && <li className="text-sm text-zinc-500">（沒有標籤）</li>}
+        {!tags.length && <li className="text-sm text-zinc-500 dark:text-zinc-400">（沒有標籤）</li>}
       </ul>
       {removed.length > 0 && <p className="mt-2 text-sm text-red-700 line-through dark:text-red-400">{removed.join('、')}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-2">

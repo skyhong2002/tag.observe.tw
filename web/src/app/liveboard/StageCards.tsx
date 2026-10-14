@@ -352,7 +352,7 @@ function HeadlineStage({ card }: { card: Extract<Card, { kind: 'headline' }> }) 
         <Go href={eventHref(card.event)} className="text-xl font-semibold text-zinc-200">
           {compare.label}
         </Go>
-        <span className="text-base text-zinc-500">標示處為與第一則不同的用字</span>
+        <span className="text-base text-zinc-400">標示處為與第一則不同的用字</span>
       </div>
       {/*
         Every tile keeps room for its outlet and three lines of headline; a stage
@@ -379,7 +379,7 @@ function HeadlineStage({ card }: { card: Extract<Card, { kind: 'headline' }> }) 
               <Go href={articleHref(a)} className="truncate text-zinc-200">
                 {a.title}
               </Go>
-              <span className="ml-auto shrink-0 text-sm tabular-nums text-zinc-500">{clock(a.publishedAt)}</span>
+              <span className="ml-auto shrink-0 text-sm tabular-nums text-zinc-400">{clock(a.publishedAt)}</span>
             </li>
           ))}
         </ul>
@@ -455,13 +455,13 @@ function CopyStage({ card }: { card: Extract<Card, { kind: 'copy' }> }) {
               ? '兩站標示同時刊登'
               : `標示刊登${gapLabel(featured.gapMinutes)}`}
         </span>
-        <span className="text-base text-zinc-500">
+        <span className="text-base text-zinc-400">
           {bodies ? <mark className="bg-sky-500/20 px-1 text-sky-50">藍底</mark> : null}
           {bodies ? '為兩篇相同的文字' : `共同段落：…${featured.evidence}…`}
           {sameTitle ? '，標題相同' : '，黃底為標題不同處'}
         </span>
         {others.length + story.more > 0 && (
-          <span className="ml-auto flex items-center gap-1 text-sm text-zinc-500">
+          <span className="ml-auto flex items-center gap-1 text-sm text-zinc-400">
             另 {others.length + story.more} 篇
             {others.slice(0, 6).map((f) => (
               <Go key={f.article.id} href={articleHref(f.article)} className="shrink-0">

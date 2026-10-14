@@ -237,7 +237,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                         aria-label={`${column.label}比例排序`}
                         onClick={() => sortBy(shareKey)}
                         className={`inline-flex items-center gap-0.5 rounded px-1 hover:text-brand-700 dark:hover:text-brand-400 ${
-                          sort === shareKey ? 'text-brand-800 dark:text-brand-300' : 'text-zinc-400 dark:text-zinc-500'
+                          sort === shareKey ? 'text-brand-800 dark:text-brand-300' : 'text-zinc-400 dark:text-zinc-400'
                         }`}
                       >
                         %
@@ -271,7 +271,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
           ))}
         </tbody>
       </table>
-      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500">這段期間沒有媒體資料。</p>}
+      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">這段期間沒有媒體資料。</p>}
     </TableScroller>
   );
 }

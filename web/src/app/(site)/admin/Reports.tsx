@@ -104,7 +104,7 @@ function ReportRow({ report: r, onDone }: { report: Report; onDone: () => void }
           <SourceLink url={r.article.url} showUrl className="!min-h-5 !text-[11px]" />
         </div>
       ) : (
-        <p className="text-zinc-500">文章已不在本站。</p>
+        <p className="text-zinc-500 dark:text-zinc-400">文章已不在本站。</p>
       )}
       {r.tags && (
         <p className="flex flex-wrap gap-1 text-xs">
@@ -150,7 +150,7 @@ function ReportRow({ report: r, onDone }: { report: Report; onDone: () => void }
           )}
         </div>
       ) : (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
           {STATUS[r.status]}
           {r.resolution && `：${r.resolution}`}
           <button type="button" className={button} disabled={busy} onClick={() => resolve('open')}>

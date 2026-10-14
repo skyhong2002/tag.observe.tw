@@ -150,6 +150,9 @@ select:not([multiple]):not([size]) {
     font-family: var(--font-sans);
     color: var(--color-zinc-500);
   }
+  [data-theme="dark"] .table-stack td[data-label]::before {
+    color: var(--color-zinc-400);
+  }
 }
 
 /* Header loading bar shown by NavPending while a header link is navigating. */

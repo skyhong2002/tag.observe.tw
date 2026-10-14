@@ -59,7 +59,7 @@ export default function BylineFilters({
       <input type="hidden" name="hours" value={hours} />
       <input type="hidden" name="kind" value={kind} />
       {media && <input type="hidden" name="media" value={media} />}
-      <label htmlFor={`${id}-q`} className="text-xs text-zinc-500">
+      <label htmlFor={`${id}-q`} className="text-xs text-zinc-500 dark:text-zinc-400">
         搜尋署名
         <SuggestInput
           id={`${id}-q`}
@@ -75,7 +75,7 @@ export default function BylineFilters({
           className="block w-64 max-w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
         />
       </label>
-      <label htmlFor={`${id}-media`} className="text-xs text-zinc-500">
+      <label htmlFor={`${id}-media`} className="text-xs text-zinc-500 dark:text-zinc-400">
         刊登媒體
         <OutletPicker
           id={`${id}-media`}

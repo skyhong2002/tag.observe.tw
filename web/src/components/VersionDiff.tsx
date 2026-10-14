@@ -87,7 +87,7 @@ export function BodyChanges({
           </li>
         ))}
       </ol>
-      {diff.more > 0 && <p className="text-xs text-zinc-500">另有 {number(diff.more)} 處未列出</p>}
+      {diff.more > 0 && <p className="text-xs text-zinc-500 dark:text-zinc-400">另有 {number(diff.more)} 處未列出</p>}
     </div>
   );
 }
@@ -179,7 +179,7 @@ export function VersionCompare({
               </p>
             </div>
           ))}
-          {body.more > 0 && <p className="text-xs text-zinc-500 sm:col-span-2">另有 {number(body.more)} 處未列出</p>}
+          {body.more > 0 && <p className="text-xs text-zinc-500 dark:text-zinc-400 sm:col-span-2">另有 {number(body.more)} 處未列出</p>}
         </div>
       )}
     </div>

@@ -70,7 +70,7 @@ function ArticleLine({ article, badge, dim = false }: { article: SimilarityArtic
         <MediaHoverLink media={article.media} className={`${linkStyle} font-medium`}>
           {article.mediaTitle}
         </MediaHoverLink>
-        {article.countryCode !== 'TW' && <span className="text-zinc-500">{article.country}</span>}
+        {article.countryCode !== 'TW' && <span className="text-zinc-500 dark:text-zinc-400">{article.country}</span>}
       </span>
       <Link
         href={`/article/${article.id}/`}
@@ -78,7 +78,7 @@ function ArticleLine({ article, badge, dim = false }: { article: SimilarityArtic
       >
         {article.title}
       </Link>
-      <span className="shrink-0 text-xs text-zinc-500 tabular-nums">
+      <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
         <time dateTime={article.publishedAt}>{when}</time>
         {article.authors.length > 0 && (
           <AuthorCredits credits={article.authors} media={article.media} attributions={article.attributions} />
@@ -101,7 +101,7 @@ function Passage({ lead, text }: { lead: ReactNode; text: string }) {
     if (el && !full) setOverflows(el.scrollHeight > el.clientHeight + 1);
   }, [full]);
   return (
-    <div className="flex items-start gap-3 text-xs leading-5 text-zinc-500">
+    <div className="flex items-start gap-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
       <p ref={ref} className={`min-w-0 flex-1 break-words ${full ? '' : 'line-clamp-2'}`}>
         {lead} {text}
       </p>
@@ -133,7 +133,7 @@ function CitationEvidence({ article, source }: { article: SimilarityArticle; sou
 /** One side's heading: role, outlet, time (with the delay on the later side) and byline. */
 function VersionHead({ role, article, delay }: { role: string; article: SimilarityArticle; delay?: string }) {
   return (
-    <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-zinc-500">
+    <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-zinc-500 dark:text-zinc-400">
       <span className="rounded bg-zinc-200 px-1.5 py-px text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{role}</span>
       <MediaHoverLink media={article.media} className={`${linkStyle} font-medium`}>
         {article.mediaTitle}
@@ -158,7 +158,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
     <article className="min-w-0 space-y-2 py-4" data-testid="story-origin" data-source-id={source.id} data-article-id={article.id}>
       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
         {sentence}
-        {directPair && <span className="font-normal text-zinc-500"> · 相似度 {(directPair.score * 100).toFixed(1)}%</span>}
+        {directPair && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · 相似度 {(directPair.score * 100).toFixed(1)}%</span>}
       </p>
       <VersionCompare
         heads={[
@@ -175,12 +175,12 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
       {diff?.body ? null : directPair ? (
         <Passage lead={<span className="font-medium text-brand-700 dark:text-brand-400">共同段落</span>} text={directPair.evidence} />
       ) : (
-        <p className="text-xs leading-5 text-zinc-500">
+        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
           這兩篇沒有直接比對分數，不能推定彼此相似或稿源。
           <MethodLink />
         </p>
       )}
-      <p className="flex flex-wrap gap-x-4 text-xs leading-5 text-zinc-500">
+      <p className="flex flex-wrap gap-x-4 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
         <button type="button" onClick={() => setShowGroup((value) => !value)} aria-expanded={showGroup} className={toggle}>
           {showGroup ? '收合' : `同一則新聞共 ${number(group.articles.length)} 篇`}
           {!showGroup && group.tiedFirst > 1 && `（${group.tiedFirst} 篇同時最早）`}
@@ -193,7 +193,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
       </p>
       {showGroup && (
         <div className="space-y-2 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
-          <p className="text-zinc-500">完整分組，包含未顯示在圖上的媒體。</p>
+          <p className="text-zinc-500 dark:text-zinc-400">完整分組，包含未顯示在圖上的媒體。</p>
           <ol className="max-h-80 space-y-1 overflow-y-auto">
             {group.articles.map((member) => (
               <li key={member.id}>
@@ -206,7 +206,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
       {showPairs && (
         <div className="max-h-80 space-y-3 overflow-y-auto rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
           {group.pairCount > group.pairs.length && (
-            <p className="text-zinc-500">
+            <p className="text-zinc-500 dark:text-zinc-400">
               共 {number(group.pairCount)} 組，顯示分數最高的 {number(group.pairs.length)} 組。
             </p>
           )}
@@ -222,7 +222,7 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
                 </Link>{' '}
                 · {(pair.score * 100).toFixed(1)}%
               </p>
-              <p className="break-words leading-5 text-zinc-500">{pair.evidence}</p>
+              <p className="break-words leading-5 text-zinc-500 dark:text-zinc-400">{pair.evidence}</p>
             </div>
           ))}
         </div>
@@ -367,7 +367,7 @@ function ThresholdControl({ data }: { data: SimilarityData }) {
             className={control}
           />
         </label>
-        <p className="text-[11px] leading-5 text-zinc-500">0.5–1，預設 0.65</p>
+        <p className="text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">0.5–1，預設 0.65</p>
         <button type="submit" className="rounded-lg bg-brand-700 px-3 py-1.5 text-white">
           套用
         </button>
@@ -633,7 +633,7 @@ export default function SimilarityExplorer({
             />
             <div>
               <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                 {periodLabel(data)} · {nodes.length}／{graph.available} 家媒體 · {number(data.index.analyzed)} 篇全部比對
               </p>
             </div>
@@ -689,7 +689,7 @@ export default function SimilarityExplorer({
                     ))}
                   </select>
                 </label>
-                <p className="text-[11px] leading-5 text-zinc-500">依本期納入分析篇數排序</p>
+                <p className="text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">依本期納入分析篇數排序</p>
                 {(filters.camp !== 'all' || filters.tag) && (
                   <button
                     type="button"
@@ -733,7 +733,7 @@ export default function SimilarityExplorer({
                 >
                   {showAll ? '回到主要連線' : '顯示全部連線'}
                 </button>
-                <button type="button" onClick={openBrowser} className="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:text-brand-700">
+                <button type="button" onClick={openBrowser} className="rounded-md px-2 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-brand-700">
                   媒體比較 ↓
                 </button>
               </div>
@@ -754,7 +754,7 @@ export default function SimilarityExplorer({
             />
           </div>
           {!fullscreen && (
-            <div className="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800 sm:min-h-12">
+            <div className="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500 dark:text-zinc-400 dark:border-zinc-800 sm:min-h-12">
               <p>
                 <span className="text-orange-600 dark:text-orange-400">未辨識稿源：較早 → 較晚</span>
                 <span className="ml-3 text-violet-600 dark:text-violet-400">引用：來源 → 引用方</span>
@@ -778,7 +778,7 @@ export default function SimilarityExplorer({
           )}
         </section>
         {!fullscreen && (
-          <p className="shrink-0 text-[11px] leading-4 text-zinc-500">
+          <p className="shrink-0 text-[11px] leading-4 text-zinc-500 dark:text-zinc-400">
             本期 {number(data.index.pairs)} 組相似配對、{number(data.index.citations)} 則來源／引用
             {data.index.pending > 0 ? `（另有 ${number(data.index.pending)} 篇尚待比對）` : ''} · <MethodLink />
           </p>
@@ -834,7 +834,7 @@ export default function SimilarityExplorer({
           {view === 'evidence' && (
             <>
               <div className="flex flex-wrap items-end gap-3">
-                <label htmlFor="similarity-media" className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
+                <label htmlFor="similarity-media" className="block min-w-40 flex-1 text-xs text-zinc-500 dark:text-zinc-400 sm:max-w-56">
                   媒體
                   <OutletPicker
                     id="similarity-media"
@@ -852,7 +852,7 @@ export default function SimilarityExplorer({
                     className={`${control} text-zinc-900 dark:text-zinc-100`}
                   />
                 </label>
-                <label className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
+                <label className="block min-w-40 flex-1 text-xs text-zinc-500 dark:text-zinc-400 sm:max-w-56">
                   關係
                   {/* One menu for the relation type and, for similar text, the source clue. */}
                   <select
@@ -872,7 +872,7 @@ export default function SimilarityExplorer({
                   </select>
                 </label>
                 {mode !== 'similarity' && selection && 'node' in selection && (
-                  <label className="block min-w-40 flex-1 text-xs text-zinc-500 sm:max-w-56">
+                  <label className="block min-w-40 flex-1 text-xs text-zinc-500 dark:text-zinc-400 sm:max-w-56">
                     方向
                     <select
                       value={direction}
@@ -885,7 +885,7 @@ export default function SimilarityExplorer({
                     </select>
                   </label>
                 )}
-                <label htmlFor="similarity-q" className="block min-w-48 flex-[2] text-xs text-zinc-500">
+                <label htmlFor="similarity-q" className="block min-w-48 flex-[2] text-xs text-zinc-500 dark:text-zinc-400">
                   搜尋
                   <FilterSuggestInput
                     id="similarity-q"
@@ -919,7 +919,7 @@ export default function SimilarityExplorer({
               </div>
               <EvidenceMoreFilters state={state} threshold={data.threshold} onChange={(patch) => updateUrl(patch)} />
               {selection && 'node' in selection && (
-                <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs leading-6 text-zinc-500">
+                <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
                   <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{selectedTitle}</span>
                   <span>
                     {byId.get(selection.node)?.country} ·{' '}
@@ -947,7 +947,7 @@ export default function SimilarityExplorer({
                   )}
                 </p>
               )}
-              <p role="status" aria-live="polite" className={`text-xs leading-6 text-zinc-500 ${evidenceError ? 'sr-only' : ''}`}>
+              <p role="status" aria-live="polite" className={`text-xs leading-6 text-zinc-500 dark:text-zinc-400 ${evidenceError ? 'sr-only' : ''}`}>
                 {evidenceError
                   ? '新聞對照資料載入失敗'
                   : evidenceLoading && !evidence
@@ -970,7 +970,7 @@ export default function SimilarityExplorer({
                 </span>
               </p>
               {evidenceError && (
-                <p role="alert" className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:bg-zinc-950">
+                <p role="alert" className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:text-zinc-400 dark:bg-zinc-950">
                   暫時無法取得新聞對照資料，請稍後再試。這不代表沒有相關文章。
                   <button type="button" onClick={() => setRetry((n) => n + 1)} className={`${linkStyle} ml-2 underline`}>
                     重新載入
@@ -978,7 +978,7 @@ export default function SimilarityExplorer({
                 </p>
               )}
               {!evidenceLoading && !evidenceError && evidence && !total && (
-                <p className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:bg-zinc-950">
+                <p className="rounded-lg bg-zinc-50 p-6 text-sm text-zinc-500 dark:text-zinc-400 dark:bg-zinc-950">
                   目前篩選沒有符合的文章，可調整圖上媒體數、分類或文章篩選。這不代表媒體沒有其他新聞。
                 </p>
               )}

@@ -209,7 +209,7 @@ function TagLookup({ groups, tag, decide }: { groups: Group[] | null; tag: strin
             {page.wikidata?.wikidataId && (
               <a
                 href={`https://www.wikidata.org/wiki/${page.wikidata.wikidataId}`}
-                className="ml-2 text-xs text-zinc-500 underline"
+                className="ml-2 text-xs text-zinc-500 dark:text-zinc-400 underline"
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -318,9 +318,9 @@ function GroupMembers({ group, decide, openTag }: { group: Group; decide: Decide
               <button type="button" onClick={() => openTag(m.tag)} className="font-medium underline">
                 {m.tag}
               </button>
-              <span className="text-xs text-zinc-500">{SOURCE[m.source] ?? m.source}</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">{SOURCE[m.source] ?? m.source}</span>
               {m.note && <span className="text-zinc-600 dark:text-zinc-400">{m.note}</span>}
-              {m.reviewedBy && <span className="text-xs text-zinc-500">{m.reviewedBy}</span>}
+              {m.reviewedBy && <span className="text-xs text-zinc-500 dark:text-zinc-400">{m.reviewedBy}</span>}
               <span className="ml-auto flex gap-1">
                 {m.status !== 'confirmed' && (
                   <button type="button" onClick={() => act(m.tag, 'confirmed')} className={`${pill} ${pillOff} hover:border-brand-600`}>

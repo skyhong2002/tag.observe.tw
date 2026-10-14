@@ -26,7 +26,7 @@ function PartnerRow({ partner, max }: { partner: MediaPartner; max: number }) {
         </MediaHoverLink>
         <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-400">
           {number(partner.total)}
-          <span className="ml-0.5 text-[10px] text-zinc-500">筆關係</span>
+          <span className="ml-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">筆關係</span>
         </span>
       </div>
       <div

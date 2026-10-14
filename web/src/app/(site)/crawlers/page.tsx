@@ -37,7 +37,7 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
           {/* What counts as 摘要 is in the footer's 資料來源與計算方式 (CrawlerMethod). */}
           <p>
             近 7 天有文章的 {observed.length} 家刊登媒體中，{withSummary} 家至少一篇已取得摘要。
-            <span className="text-xs text-zinc-500"> 更新於 {taipei(data.summaryWindow.until)}（台北）</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400"> 更新於 {taipei(data.summaryWindow.until)}（台北）</span>
           </p>
         </section>
       )}

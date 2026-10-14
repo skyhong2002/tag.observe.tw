@@ -67,7 +67,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       </div>
 
       {!page ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">搜尋暫時無法使用，請稍後再試。</p>
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">搜尋暫時無法使用，請稍後再試。</p>
       ) : (
         <>
           <RangeChips days={days} defaultDays={31} link={link} />
@@ -78,7 +78,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
           {relatedEvents.length > 0 && (
             <section className="space-y-2" aria-label="相關焦點事件">
-              <h2 className="text-sm font-medium text-zinc-600">相關焦點事件</h2>
+              <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">相關焦點事件</h2>
               <ul className="grid grid-cols-1 gap-2 md:grid-cols-3">
                 {relatedEvents.map((e) => {
                   const lead = selectEventLead(e.news, e.major);
@@ -88,7 +88,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         href={`/eve/${e.relatedEventPk}/`}
                         className="block h-full rounded-xl border border-zinc-300 bg-white p-3 text-sm hover:border-brand-700 dark:border-zinc-800 dark:bg-zinc-900"
                       >
-                        <span className="text-xs text-zinc-500">{e.major.slice(0, 3).join(' · ')}</span>
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">{e.major.slice(0, 3).join(' · ')}</span>
                         <span className="mt-1 line-clamp-2 block font-medium">{lead ? clipHeadline(lead.title) : e.major.join('、')}</span>
                       </Link>
                     </li>

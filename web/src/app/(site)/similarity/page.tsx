@@ -39,7 +39,7 @@ export default async function SimilarityPage({ searchParams }: { searchParams: P
   return (
     <div role="status" className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
       <h1 className="text-xl font-semibold">新聞關係圖</h1>
-      <p className="my-4 text-sm text-zinc-500">暫時無法取得分析資料，請稍後重新載入。這不代表沒有相似文章。</p>
+      <p className="my-4 text-sm text-zinc-500 dark:text-zinc-400">暫時無法取得分析資料，請稍後重新載入。這不代表沒有相似文章。</p>
       <Link href={`/similarity/?${params}`} className="text-sm text-brand-700 underline dark:text-brand-400">
         重新載入
       </Link>

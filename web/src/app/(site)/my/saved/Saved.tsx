@@ -56,14 +56,14 @@ function SavedRow({ save }: { save: Save }) {
             <SourceLink url={a.url} showUrl className="!min-h-5 !text-[11px]" />
           </>
         ) : (
-          <p className="mt-1 text-zinc-500">這篇文章已不在本站。</p>
+          <p className="mt-1 text-zinc-500 dark:text-zinc-400">這篇文章已不在本站。</p>
         )
       ) : e ? (
         <Link href={`/eve/${e.id}/`} className="mt-1 block font-medium hover:underline">
           {e.tags.join('、') || `事件 #${e.id}`}
         </Link>
       ) : (
-        <p className="mt-1 text-zinc-500">這個事件已不在本站。</p>
+        <p className="mt-1 text-zinc-500 dark:text-zinc-400">這個事件已不在本站。</p>
       )}
       {editing ? (
         <form

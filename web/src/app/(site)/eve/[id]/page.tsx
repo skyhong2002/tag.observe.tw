@@ -487,7 +487,7 @@ export default async function EventThreadPage({
                       <p className={`flex items-center gap-1.5 text-xs ${CAMP_TEXT[f.camp]}`}>
                         <CampDot camp={f.camp} />
                         {f.outlet.title}
-                        <span className="tabular-nums text-zinc-500">{taipei(f.article.publishedAt)}</span>
+                        <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{taipei(f.article.publishedAt)}</span>
                       </p>
                       <Link href={articleHref(f.article)} className="line-clamp-2 leading-snug hover:underline">
                         {f.article.title}

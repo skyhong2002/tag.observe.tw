@@ -83,7 +83,7 @@ export default function TaiwanShareEditor({
           }}
         >
           <h2 className="text-base font-semibold">{name}的台灣占比</h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             Similarweb：
             {similarweb == null
               ? '無資料'

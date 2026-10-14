@@ -24,13 +24,15 @@ function luminance(token: string) {
 
 it('uses AA text tokens against dark trend, event/status panels and related-tag chips', () => {
   for (const foreground of ['zinc-300', 'zinc-400']) {
-    for (const background of ['zinc-900', 'zinc-800']) {
+    for (const background of ['zinc-950', 'zinc-900', 'zinc-800']) {
       expect((luminance(foreground) + 0.05) / (luminance(background) + 0.05)).toBeGreaterThanOrEqual(4.5);
     }
   }
-  for (const source of ['../src/components/EventCard.tsx', '../src/components/EventDayView.tsx', '../src/components/PeriodEvents.tsx', '../src/components/EventOverview.tsx', '../src/components/article/ArticleTags.tsx', '../src/app/(site)/event/page.tsx']) {
+  for (const source of ['../src/components/EventCard.tsx', '../src/components/EventDayView.tsx', '../src/components/PeriodEvents.tsx', '../src/components/EventOverview.tsx', '../src/components/article/ArticleTags.tsx', '../src/app/(site)/group/page.tsx', '../src/app/(site)/group/[id]/page.tsx', '../src/app/(site)/event/page.tsx']) {
     expect(read(source).match(/text-zinc-500(?! dark:text-zinc-400)/g)).toBeNull();
   }
+  const css = read('../src/app/globals.css');
+  expect(css).toMatch(/\[data-theme="dark"\] \.table-stack td\[data-label\]::before \{\s*color: var\(--color-zinc-400\)/);
   const status = read('../src/components/TagStatusPanel.tsx');
   const evidence = read('../src/components/DraftEvidence.tsx');
   // Every secondary label must have a readable dark override, including counts on zinc-800 chips.

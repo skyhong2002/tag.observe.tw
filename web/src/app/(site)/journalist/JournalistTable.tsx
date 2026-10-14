@@ -191,7 +191,7 @@ export default function JournalistTable({
           符合 {number(filtered.length)} 人
         </p>
         <fieldset className="flex items-center gap-1 py-1" aria-label="排序依據">
-          <span className="mr-1 text-zinc-500">排序</span>
+          <span className="mr-1 text-zinc-500 dark:text-zinc-400">排序</span>
           <button
             type="button"
             className={chip(sortMode === 'count')}
@@ -398,7 +398,7 @@ export default function JournalistTable({
           </button>
         </div>
       )}
-      {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500">沒有符合的記者。</p>}
+      {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合的記者。</p>}
     </div>
   );
 }

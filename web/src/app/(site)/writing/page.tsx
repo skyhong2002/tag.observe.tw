@@ -86,7 +86,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
                   .sort((a, b) => b[1] - a[1])
                   .map(([p, n]) => (
                     <Link key={p} href={filterHref({ platform: p })} className="hover:underline">
-                      {PLATFORM_LABEL[p] ?? p} <span className="tabular-nums text-zinc-500">{share(n, totals.social)}</span>
+                      {PLATFORM_LABEL[p] ?? p} <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(n, totals.social)}</span>
                     </Link>
                   ))}
               </p>

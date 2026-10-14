@@ -148,7 +148,7 @@ export default function SettingsForm() {
                 );
               })}
               {off.map((lens) => (
-                <li key={lens.key} className="flex items-center gap-3 px-3 py-2 text-zinc-400 dark:text-zinc-500">
+                <li key={lens.key} className="flex items-center gap-3 px-3 py-2 text-zinc-400 dark:text-zinc-400">
                   <input type="checkbox" checked={false} onChange={() => toggle(lens.key)} aria-label={`播放「${lens.title}」`} />
                   <span className="w-1.5 self-stretch rounded-full bg-zinc-200 dark:bg-zinc-700" aria-hidden />
                   <span className="min-w-0 flex-1">

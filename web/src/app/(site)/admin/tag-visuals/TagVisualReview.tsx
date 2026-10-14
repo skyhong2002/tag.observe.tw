@@ -159,7 +159,7 @@ function Review() {
       </div>
       {!query && (
         <div className="mt-2 flex flex-wrap items-center gap-1 text-sm">
-          <span className="mr-1 text-zinc-500">種類</span>
+          <span className="mr-1 text-zinc-500 dark:text-zinc-400">種類</span>
           {KINDS.map(([key, label]) => {
             const n = key === null ? total : (page?.kinds[key] ?? 0);
             if (key !== null && !n) return null;
@@ -244,13 +244,13 @@ function VisualRow({ row: r, act, single }: { row: Row; act: (call: () => Promis
         <a href={`/tag/${encodeURIComponent(r.tag)}/`} className="font-medium underline">
           {r.tag}
         </a>
-        <a href={`/tag/${encodeURIComponent(r.tag)}/picture/`} className="text-xs text-zinc-500 underline">
+        <a href={`/tag/${encodeURIComponent(r.tag)}/picture/`} className="text-xs text-zinc-500 dark:text-zinc-400 underline">
           票數
         </a>
         {r.wikidataId && (
           <a
             href={`https://www.wikidata.org/wiki/${r.wikidataId}`}
-            className="text-xs text-zinc-500 underline"
+            className="text-xs text-zinc-500 dark:text-zinc-400 underline"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -258,7 +258,7 @@ function VisualRow({ row: r, act, single }: { row: Row; act: (call: () => Promis
           </a>
         )}
         {r.label && <span className="text-sm text-zinc-600 dark:text-zinc-400">{r.label}</span>}
-        {r.reviewedBy && <span className="text-xs text-zinc-500">{r.reviewedBy}</span>}
+        {r.reviewedBy && <span className="text-xs text-zinc-500 dark:text-zinc-400">{r.reviewedBy}</span>}
       </div>
       <div className="mt-2 flex flex-wrap items-start gap-3">
         {r.candidates.map((c) => {
@@ -279,11 +279,11 @@ function VisualRow({ row: r, act, single }: { row: Row; act: (call: () => Promis
                 #{c.rank} · {KIND_LABEL[c.kind]}
                 {inUse && ' · 使用中'}
               </span>
-              {c.note && <span className="block truncate text-zinc-500">{c.note}</span>}
+              {c.note && <span className="block truncate text-zinc-500 dark:text-zinc-400">{c.note}</span>}
               {c.pageUrl && (
                 <a
                   href={c.pageUrl}
-                  className="block truncate text-zinc-500 underline"
+                  className="block truncate text-zinc-500 dark:text-zinc-400 underline"
                   rel="noopener noreferrer"
                   target="_blank"
                   onClick={(e) => e.stopPropagation()}
@@ -302,7 +302,7 @@ function VisualRow({ row: r, act, single }: { row: Row; act: (call: () => Promis
             <span className="mt-1 block">管理員指定 · 使用中</span>
           </div>
         )}
-        {!r.candidates.length && !own && <span className="self-center text-sm text-zinc-500">沒有候選{r.note ? `：${r.note}` : ''}</span>}
+        {!r.candidates.length && !own && <span className="self-center text-sm text-zinc-500 dark:text-zinc-400">沒有候選{r.note ? `：${r.note}` : ''}</span>}
         {live && (
           <button type="button" onClick={() => put({ action: 'hide' })} className={`${button} self-center hover:border-red-600`}>
             不顯示圖
@@ -337,7 +337,7 @@ function OwnPicture({
     });
   return (
     <details className="mt-2 text-sm" open={open}>
-      <summary className="cursor-pointer text-zinc-500">都不合適：自己指定</summary>
+      <summary className="cursor-pointer text-zinc-500 dark:text-zinc-400">都不合適：自己指定</summary>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <form
           className="flex gap-1"

@@ -51,7 +51,7 @@ export default async function ArticleIndexPage({ searchParams }: { searchParams:
       <RangeChips days={days} defaultDays={DEFAULT_DAYS} link={link} />
       {!cursor && <PeriodEvents threads={threads} days={days} media={media} />}
       {!page ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">文章列表暫時無法使用，請稍後再試。</p>
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">文章列表暫時無法使用，請稍後再試。</p>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           {facets && (

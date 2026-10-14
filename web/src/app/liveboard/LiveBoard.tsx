@@ -165,7 +165,7 @@ function Stat({
 }) {
   return (
     <div className={`flex shrink-0 flex-col ${className}`}>
-      <span className="whitespace-nowrap text-xs text-zinc-500">{label}</span>
+      <span className="whitespace-nowrap text-xs text-zinc-400">{label}</span>
       <span className="flex items-baseline gap-1 whitespace-nowrap text-2xl font-bold tabular-nums short:text-xl">
         {value}
         {unit && <span className="text-sm font-normal text-zinc-400">{unit}</span>}
@@ -213,7 +213,7 @@ function CampBars({
   const average = full.length ? Math.round(full.reduce((n, v) => n + v, 0) / full.length) : 0;
   return (
     <figure className="flex min-w-0 flex-1 flex-col gap-1">
-      <figcaption className="flex items-center gap-3 whitespace-nowrap text-xs text-zinc-500">
+      <figcaption className="flex items-center gap-3 whitespace-nowrap text-xs text-zinc-400">
         <span className="shrink-0 text-sm font-semibold text-zinc-300">{label}</span>
         {!compact &&
           CAMPS.map((c) => (
@@ -238,7 +238,7 @@ function CampBars({
           >
             {(i % valueEvery === 0 || i === peak || i === last) && (
               <span
-                className={`text-center text-[0.625rem] leading-none tabular-nums ${i === last ? 'font-bold text-brand-400' : i === peak ? 'text-zinc-200' : 'text-zinc-500'}`}
+                className={`text-center text-[0.625rem] leading-none tabular-nums ${i === last ? 'font-bold text-brand-400' : i === peak ? 'text-zinc-200' : 'text-zinc-400'}`}
               >
                 {totals[i]}
               </span>
@@ -255,7 +255,7 @@ function CampBars({
           </div>
         ))}
       </div>
-      <div className="flex shrink-0 gap-[0.125rem] text-[0.625rem] leading-none tabular-nums text-zinc-500" aria-hidden>
+      <div className="flex shrink-0 gap-[0.125rem] text-[0.625rem] leading-none tabular-nums text-zinc-400" aria-hidden>
         {buckets.map((b, i) => (
           <span
             key={b.t}
@@ -289,7 +289,7 @@ function ActivityStrip({ activity }: { activity: LiveActivity }) {
   const crawls = activity.crawls;
   return (
     <div className="flex items-center gap-3 border-t border-zinc-800/70 px-6 py-1 text-sm short:px-4 short:py-0.5 portrait:hidden">
-      <span className="shrink-0 text-xs font-semibold text-zinc-500">爬蟲 · 近 10 分鐘 {crawls.length} 次</span>
+      <span className="shrink-0 text-xs font-semibold text-zinc-400">爬蟲 · 近 10 分鐘 {crawls.length} 次</span>
       <CrawlMarquee crawls={crawls} />
       {activity.running.map((r) => (
         <span key={r.job} className="inline-flex shrink-0 items-center gap-1 rounded bg-emerald-900/60 px-1.5 text-xs text-emerald-300">
@@ -297,7 +297,7 @@ function ActivityStrip({ activity }: { activity: LiveActivity }) {
           {r.job} 執行中
         </span>
       ))}
-      <span className="shrink-0 text-xs font-semibold text-zinc-500">接下來</span>
+      <span className="shrink-0 text-xs font-semibold text-zinc-400">接下來</span>
       <span className="flex shrink-0 items-center gap-3 text-xs text-zinc-400">
         {activity.upcoming.slice(0, 4).map((u) => (
           <span key={u.job} className="inline-flex items-center gap-1">
@@ -661,7 +661,7 @@ export default function LiveBoard({
             ) : (
               <div className="flex flex-1 items-center justify-center text-2xl text-zinc-500">等待新資料…</div>
             )}
-            <div className="mt-2 flex shrink-0 items-center gap-3 whitespace-nowrap text-xs text-zinc-500">
+            <div className="mt-2 flex shrink-0 items-center gap-3 whitespace-nowrap text-xs text-zinc-400">
               {shown && (
                 <span className="h-1 w-40 overflow-hidden rounded-full bg-zinc-800">
                   <span
@@ -695,7 +695,7 @@ export default function LiveBoard({
           </section>
 
           <section className="flex h-[17dvh] shrink-0 flex-col short:hidden portrait:hidden gap-1 overflow-hidden rounded-3xl bg-zinc-900/60 px-4 py-2.5 ring-1 ring-zinc-800">
-            <div className="flex shrink-0 items-center gap-2 text-xs text-zinc-500">
+            <div className="flex shrink-0 items-center gap-2 text-xs text-zinc-400">
               {PANES.map((p, i) => (
                 <span key={p} className={`inline-flex items-center gap-1 ${i === pane ? 'font-semibold text-zinc-200' : ''}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${i === pane ? 'bg-brand-500' : 'bg-zinc-700'}`} aria-hidden />
@@ -713,7 +713,7 @@ export default function LiveBoard({
                     { label: '在發稿的媒體', value: String(stats?.activeMedia1h ?? '—'), unit: '家' },
                   ].map((m) => (
                     <div key={m.label} className="flex flex-col justify-center gap-1">
-                      <span className="text-sm text-zinc-500">{m.label}</span>
+                      <span className="text-sm text-zinc-400">{m.label}</span>
                       <span className="flex items-baseline gap-1.5">
                         <span
                           key={m.hot ? m.value : undefined}
@@ -749,7 +749,7 @@ export default function LiveBoard({
                         key={`${r.tag}:${move === 0 ? 0 : rankSerial}`}
                         className={`flex min-w-0 items-center gap-1.5 rounded-md px-1.5 transition-colors duration-700 ${lit ? 'bg-brand-600/30 ring-1 ring-brand-500' : ''} ${move !== 0 ? styles.flash : ''}`}
                       >
-                        <span className="w-4 shrink-0 text-right text-xs tabular-nums text-zinc-500">{i + 1}</span>
+                        <span className="w-4 shrink-0 text-right text-xs tabular-nums text-zinc-400">{i + 1}</span>
                         <Go href={tagHref(r.tag)} className={`truncate text-base font-medium ${lit ? 'text-white' : ''}`}>
                           {r.tag}
                         </Go>
@@ -758,7 +758,7 @@ export default function LiveBoard({
                         ) : move > 0 ? (
                           <span className="shrink-0 text-xs text-emerald-400">↑{move}</span>
                         ) : move < 0 ? (
-                          <span className="shrink-0 text-xs text-zinc-500">↓{-move}</span>
+                          <span className="shrink-0 text-xs text-zinc-400">↓{-move}</span>
                         ) : (
                           r.new && <span className="shrink-0 rounded bg-zinc-700 px-1 text-[0.625rem] text-zinc-200">新</span>
                         )}
@@ -790,7 +790,7 @@ export default function LiveBoard({
                         key={e.relatedEventPk ?? e.rank}
                         className={`flex min-w-0 items-center gap-2 rounded-md px-1.5 ${lit ? 'bg-brand-600/30 ring-1 ring-brand-500' : ''}`}
                       >
-                        <span className="w-5 shrink-0 text-right font-bold tabular-nums text-zinc-500">{e.rank}</span>
+                        <span className="w-5 shrink-0 text-right font-bold tabular-nums text-zinc-400">{e.rank}</span>
                         <Go href={eventHref(e)} className="min-w-0 truncate text-base">
                           {eventHeadline(e)}
                         </Go>
@@ -844,7 +844,7 @@ export default function LiveBoard({
                     {reading.mediaTitle}
                   </Go>
                   <CampDot camp={reading.camp} />
-                  <span className="ml-auto shrink-0 tabular-nums text-zinc-500">{clock(reading.publishedAt)} 發布</span>
+                  <span className="ml-auto shrink-0 tabular-nums text-zinc-400">{clock(reading.publishedAt)} 發布</span>
                 </div>
                 <div className="flex shrink-0 gap-3">
                   {isAllowedImage(reading.image) && (
@@ -876,13 +876,13 @@ export default function LiveBoard({
                 </span>
               </article>
             ) : (
-              <div className="flex flex-1 items-center justify-center text-zinc-500">等待內文…</div>
+              <div className="flex flex-1 items-center justify-center text-zinc-400">等待內文…</div>
             )}
           </div>
           <div className="flex min-h-0 flex-[2] flex-col overflow-hidden rounded-3xl bg-zinc-900/60 ring-1 ring-zinc-800 short:rounded-2xl">
             <h2 className="flex items-center gap-2 px-4 pt-2.5 text-sm font-semibold text-zinc-400 short:px-3 short:pt-2">
               新進新聞
-              <span className="ml-auto font-normal tabular-nums text-zinc-500">
+              <span className="ml-auto font-normal tabular-nums text-zinc-400">
                 {stats ? `24 小時 ${stats.total24h.toLocaleString()} 篇` : ''}
               </span>
             </h2>

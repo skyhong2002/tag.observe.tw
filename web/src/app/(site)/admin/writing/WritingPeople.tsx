@@ -50,7 +50,7 @@ function Subjects() {
             >
               {s.name}
             </Link>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
               {s.articles} 篇 · {s.outlets} 家
             </span>
             <Link href={`/admin/tags/?tag=${encodeURIComponent(s.name)}`} className="ml-auto underline">

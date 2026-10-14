@@ -21,7 +21,7 @@ export default async function BylinePage({ params, searchParams }: Props) {
   if (data === 'missing') notFound();
   if (!data)
     return (
-      <p role="status" className="py-8 text-zinc-500">
+      <p role="status" className="py-8 text-zinc-500 dark:text-zinc-400">
         暫時無法取得署名文章，請稍後重新整理。
       </p>
     );
@@ -30,7 +30,7 @@ export default async function BylinePage({ params, searchParams }: Props) {
     `/byline/${encodeURIComponent(key)}/?${new URLSearchParams({ hours: String(hours), page: String(page), ...(media ? { media } : {}) })}`;
   return (
     <div className="space-y-5 pb-8">
-      <nav aria-label="麵包屑" className="text-xs text-zinc-500">
+      <nav aria-label="麵包屑" className="text-xs text-zinc-500 dark:text-zinc-400">
         <Link href={`/byline/?hours=${hours}&kind=${byline.kind}`} className="hover:underline">
           署名 · {CREDIT_LABELS[byline.kind]}
         </Link>
@@ -48,7 +48,7 @@ export default async function BylinePage({ params, searchParams }: Props) {
           <h1 className="text-2xl font-semibold">{byline.name}</h1>
           <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs dark:bg-zinc-800">{CREDIT_LABELS[byline.kind]}</span>
         </div>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
           本期 {byline.articles.toLocaleString('zh-TW')} 篇署名文章 · {byline.outlets.length} 家刊登媒體
           {byline.roles.length > 0 && ` · 原文角色：${byline.roles.join('、')}`}
         </p>
@@ -110,13 +110,13 @@ export default async function BylinePage({ params, searchParams }: Props) {
           </Link>
         ))}
       </nav>
-      <p role="status" className="text-xs text-zinc-500">
+      <p role="status" className="text-xs text-zinc-500 dark:text-zinc-400">
         符合 {data.total.toLocaleString('zh-TW')} 篇 · 依刊登時間排序
       </p>
       <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
         {data.articles.map((article) => (
           <li key={article.id} className="space-y-2 py-4">
-            <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
+            <div className="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
               <Link
                 href={`/media/${article.media}/?hours=${Math.min(hours, 168)}`}
                 className="text-brand-700 hover:underline dark:text-brand-400"
@@ -130,12 +130,12 @@ export default async function BylinePage({ params, searchParams }: Props) {
                 {article.title}
               </Link>
             </h2>
-            <p className="text-xs text-zinc-500">原文署名：{article.credits.join('、')}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">原文署名：{article.credits.join('、')}</p>
             <div className="text-xs">
               <AuthorCredits credits={article.credits} media={article.media} hours={hours} />
             </div>
             {article.attributions.length > 0 && (
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 明示引用：
                 {article.attributions.map((source) => (
                   <Link
@@ -152,7 +152,7 @@ export default async function BylinePage({ params, searchParams }: Props) {
           </li>
         ))}
       </ul>
-      {!data.articles.length && <p className="py-8 text-center text-zinc-500">這一頁沒有文章。</p>}
+      {!data.articles.length && <p className="py-8 text-center text-zinc-500 dark:text-zinc-400">這一頁沒有文章。</p>}
       <nav aria-label="署名文章分頁" className="flex justify-between text-sm">
         {data.page > 0 ? (
           <Link href={href(data.page - 1)} className="py-2 text-brand-700 dark:text-brand-400">
@@ -161,7 +161,7 @@ export default async function BylinePage({ params, searchParams }: Props) {
         ) : (
           <span />
         )}
-        <span className="py-2 text-zinc-500">第 {data.page + 1} 頁</span>
+        <span className="py-2 text-zinc-500 dark:text-zinc-400">第 {data.page + 1} 頁</span>
         {(data.page + 1) * data.pageSize < data.total ? (
           <Link href={href(data.page + 1)} className="py-2 text-brand-700 dark:text-brand-400">
             下一頁 →

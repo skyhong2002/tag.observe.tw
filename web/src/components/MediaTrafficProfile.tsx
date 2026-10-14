@@ -69,7 +69,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
     <section aria-label="網站流量來源" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
       <h2 className="mb-3 flex items-baseline justify-between gap-2 text-sm font-semibold">
         網站流量來源
-        <span className="text-[11px] font-normal text-zinc-500">Similarweb · {shortMonth(profile.month)}</span>
+        <span className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">Similarweb · {shortMonth(profile.month)}</span>
       </h2>
       {tw && (
         <p className="mb-3 leading-5">
@@ -119,7 +119,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
           ))}
         </dl>
       )}
-      <p className="mt-3 text-[11px] leading-4 text-zinc-500">整個網域的估算值，比例以造訪次數計，非精確 page views。</p>
+      <p className="mt-3 text-[11px] leading-4 text-zinc-500 dark:text-zinc-400">整個網域的估算值，比例以造訪次數計，非精確 page views。</p>
     </section>
   );
 }

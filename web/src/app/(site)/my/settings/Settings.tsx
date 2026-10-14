@@ -91,7 +91,7 @@ function HiddenMedia() {
       <h2 className="text-lg font-semibold">隱藏的媒體</h2>
       <p className={note}>在「我的動態」按「隱藏這家」的媒體，不會出現在動態與私人 RSS 裡。</p>
       {!hidden.length ? (
-        <p className="mt-2 text-sm text-zinc-500">沒有隱藏任何媒體。</p>
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">沒有隱藏任何媒體。</p>
       ) : (
         <ul className="mt-3 flex flex-wrap gap-2">
           {hidden.map((m) => (
@@ -102,7 +102,7 @@ function HiddenMedia() {
               {names[m] ?? m}
               <button
                 type="button"
-                className="rounded-full px-2 text-xs text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="rounded-full px-2 text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 onClick={() => savePrefs({ hiddenMedia: hidden.filter((x) => x !== m) })}
               >
                 取消隱藏
@@ -188,8 +188,8 @@ function ApiKeys() {
           {keys.keys.map((k) => (
             <li key={k.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
               <span className="font-medium">{k.label}</span>
-              <code className="text-xs text-zinc-500">{k.prefix}…</code>
-              <span className="text-xs text-zinc-500 tabular-nums">
+              <code className="text-xs text-zinc-500 dark:text-zinc-400">{k.prefix}…</code>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
                 建立 {when(k.createdAt)} · {k.lastUsedAt ? `最近使用 ${when(k.lastUsedAt)}` : '尚未使用'}
               </span>
               <button type="button" className={`${button} ml-auto`} onClick={() => revoke(k)}>
@@ -248,12 +248,12 @@ function MyReports() {
     <section>
       <h2 className="text-lg font-semibold">我的回報</h2>
       <p className={note}>在文章頁按「回報錯誤」送出的內容與處理結果。</p>
-      {reports && !reports.length && <p className="mt-2 text-sm text-zinc-500">還沒有回報。</p>}
+      {reports && !reports.length && <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">還沒有回報。</p>}
       {reports && reports.length > 0 && (
         <ul className={`${card} mt-3 divide-y divide-zinc-200 dark:divide-zinc-800`}>
           {reports.map((r) => (
             <li key={r.id} className="px-3 py-2">
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {when(r.createdAt)} · {REPORT_KIND[r.kind] ?? r.kind} · <span className="font-medium">{REPORT_STATUS[r.status]}</span>
               </p>
               {r.article && (

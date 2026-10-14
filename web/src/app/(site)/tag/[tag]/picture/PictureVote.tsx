@@ -200,7 +200,7 @@ function Card({
       <span className="mt-1 block tabular-nums">
         {c.votes} 票{shown && ' · 使用中'}
       </span>
-      <span className="block truncate text-zinc-500" title={c.note ?? undefined}>
+      <span className="block truncate text-zinc-500 dark:text-zinc-400" title={c.note ?? undefined}>
         {c.uploaded ? (c.mine ? '你上傳的' : '讀者上傳') : (c.note ?? '自動找到')}
       </span>
       <button
@@ -217,7 +217,7 @@ function Card({
           type="button"
           disabled={busy}
           onClick={() => onLock(c.rank)}
-          className="mt-1 w-full rounded-full px-2 py-1 text-zinc-500 underline"
+          className="mt-1 w-full rounded-full px-2 py-1 text-zinc-500 dark:text-zinc-400 underline"
         >
           管理員選定
         </button>
