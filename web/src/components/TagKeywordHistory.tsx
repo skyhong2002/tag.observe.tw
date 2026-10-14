@@ -306,7 +306,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
           </tbody>
         </table>
         {!visibleRelatedTerms.length && (
-          <div role="status" className="sticky left-0 flex h-96 items-center justify-center text-sm text-zinc-500">
+          <div role="status" className="sticky left-0 flex h-96 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
             {search ? '找不到符合的相關關鍵字' : '這段期間沒有共同關鍵字'}
           </div>
         )}

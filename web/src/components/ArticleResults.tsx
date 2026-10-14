@@ -248,7 +248,7 @@ export function ArticleList({
   threads?: PeriodThread[];
 }) {
   if (page.articles.length === 0)
-    return <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">{empty}</p>;
+    return <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">{empty}</p>;
   return (
     <div className="space-y-4">
       {sectionByTime(page.articles, byHour).map((s) => (
