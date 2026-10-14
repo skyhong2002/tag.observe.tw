@@ -4,7 +4,7 @@
 
 ## 目前可對齊的正式基準（2026-10-15 台北）
 
-- 正式 web：`9eb733706f70dccfa5b9ea5ebf59be7b3cbab0a4`，BUILD_ID `VhzeqqvJy2S0rYlvetwKX`；API：`dc7b814e220606202a408d21e73b1d6e7c61fe16`。此文件後續 commit 是文件或截圖工具更新，不代表重建了前端。
+- 正式 web：`8cf7c94aac3b92df6e51656623893ac1f4930c4f`，BUILD_ID `QyaaKSDvYTbRplSFmJ_kU`；API：`dc7b814e220606202a408d21e73b1d6e7c61fe16`。此文件後續 commit 是文件或截圖工具更新，不代表重建了前端。
 - 範例：[首頁](https://tag.observe.tw/)、[標籤與關係](https://tag.observe.tw/tag/柯文哲/)、[排行](https://tag.observe.tw/ranking/)、[事件表](https://tag.observe.tw/event/)。事件頁 canonical 是 `/event/`，不是 `/events/`。
 - 正式與 candidate 審查分開；實際版本、圖片路徑、raw network 和非作者看圖 transcript 放在 `docs/ui-review-ledger.md`。舊 APP677 的截圖只供歷史參考，不用來驗現在的 UI。全站65 route 的各狀態尚未全部完成。
 - 原始碼可直接從上述 web commit 複製元件；一起帶它的相對 import 依賴。資料取得、路由和同源 auth 接上各站自己的 API，不能把 tag 的私有 SSR origin、服務 token 或帳號設定複製進 browser bundle。
@@ -68,3 +68,5 @@ F4 對齊應包含共用的 header/footer、method notes、表格 loading／empt
 - loading 顯示「載入中…」；空集合說明「尚未收錄」或「沒有待審投稿」；失敗顯示獨立錯誤且可重試。切換篩選／分頁要忽略過期請求，不把舊頁誤畫到新狀態。
 - 圖片審核通過後才可進公開候選與投票；重用既有轉檔、授權確認、上傳額度和重新驗證頁面機制。
 - GA 的 DNT、GPC、自動化、bot 與 opt-out guards 全部保留；管理、搜尋與私人頁不送事件。開發、測試與跨站驗收不得送合成 GA 事件。
+
+最新8cf次要深色字沿zinc400，mobile `.table-stack td[data-label]::before` 明確dark override。現有liveboard timeline opacity仍有已知AA issue；T-ref不宣稱每頁UI已通過。主要candidate與正式review分開記錄。
