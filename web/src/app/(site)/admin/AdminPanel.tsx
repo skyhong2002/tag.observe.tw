@@ -51,7 +51,7 @@ function TagManagement() {
       <p className={note}>管理人物、機構、地點、事件與概念的分類、上下層、圖像及文章關係。</p>
       {summary && (
         <p className={note}>
-          近 7 天讀者投稿（送出即公開，可撤下）：
+          近 7 天讀者投稿（不需審核，可撤下）：
           <Link href="/admin/tags/?view=pictures" className={linkClass}>
             配圖 {summary.picture.approved} 張
           </Link>

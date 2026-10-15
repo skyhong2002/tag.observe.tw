@@ -65,7 +65,7 @@ export default function PictureVote({ tag }: { tag: string }) {
         <a href={loginHref(`/tag/${encodeURIComponent(tag)}/picture/`)} className="text-brand-700 underline dark:text-brand-400">
           登入
         </a>
-        後可以投票選這個標籤的圖，或上傳一張（立即公開）。
+        後可以投票選這個標籤的圖，或上傳一張成為候選（由大家投票決定顯示哪一張）。
       </p>
     );
   return <Board key={tag} tag={tag} />;
@@ -203,15 +203,22 @@ function Card({
       <span className="block truncate text-zinc-500 dark:text-zinc-400" title={c.note ?? undefined}>
         {c.uploaded ? (c.mine ? '你上傳的' : '讀者上傳') : (c.note ?? '自動找到')}
       </span>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => onVote(mine ? null : c.rank)}
-        aria-pressed={mine}
-        className={`mt-1.5 w-full rounded-full px-2 py-1 ${mine ? 'bg-brand-600 text-white' : 'border border-zinc-300 hover:border-brand-600 dark:border-zinc-700'}`}
-      >
-        {mine ? '已投（再按取消）' : '投這張'}
-      </button>
+      {c.mine && !mine ? (
+        // Other readers decide whether an upload is shown; its uploader cannot vote for it.
+        <p className="mt-1.5 rounded-full border border-dashed border-zinc-300 px-2 py-1 text-center text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+          由其他讀者投票
+        </p>
+      ) : (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onVote(mine ? null : c.rank)}
+          aria-pressed={mine}
+          className={`mt-1.5 w-full rounded-full px-2 py-1 ${mine ? 'bg-brand-600 text-white' : 'border border-zinc-300 hover:border-brand-600 dark:border-zinc-700'}`}
+        >
+          {mine ? '已投（再按取消）' : '投這張'}
+        </button>
+      )}
       {state.admin && !(state.locked && shown) && (
         <button
           type="button"
@@ -303,7 +310,7 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
           ? '這張圖片先前已被管理員撤下，這次沒有新增。'
           : sent.status === 'rejected'
             ? '這張圖片先前未被採納，這次沒有新增。'
-            : '已公開並加入投票候選；你的票已投給它。管理員如發現不適合會撤下。',
+            : '已加入候選。顯示哪一張由其他讀者投票決定（你不能投自己上傳的圖）；不適合的圖管理員會撤下。',
       );
       onDone();
     } catch (e) {
@@ -320,7 +327,7 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
       <h2 className="font-semibold">上傳一張</h2>
       <p className={note}>
         {kind === 'avatar' ? '人物的照片會轉成素描；請用只有這個人、臉清楚的照片。' : '圖會去背、裁邊並轉成網站的單色。'}
-        上傳後立即公開，管理員可撤下不適合的圖。今天還能上傳 {left} 張。
+        上傳後立即成為候選，由大家投票決定顯示哪一張；管理員可撤下不適合的圖。今天還能上傳 {left} 張。
       </p>
       <label className="mt-3 flex items-start gap-2">
         <input type="checkbox" disabled={!!busy} checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-1" />

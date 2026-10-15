@@ -347,7 +347,9 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
       expect(harness.setters[4]).toHaveBeenLastCalledWith('');
       expect(vi.getTimerCount()).toBe(0);
       expect(onDone).not.toHaveBeenCalled();
-      expect(harness.setters[5]).not.toHaveBeenCalledWith('已公開並加入投票候選；你的票已投給它。管理員如發現不適合會撤下。');
+      expect(harness.setters[5]).not.toHaveBeenCalledWith(
+        '已加入候選。顯示哪一張由其他讀者投票決定（你不能投自己上傳的圖）；不適合的圖管理員會撤下。',
+      );
     } finally {
       vi.useRealTimers();
     }

@@ -68,7 +68,7 @@ function Queue({ kind }: { kind: Kind }) {
       </h2>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
         {kind === 'picture'
-          ? '讀者上傳的圖送出後立即公開並加入投票。不適合或授權有疑慮的圖，填寫理由後撤下，標籤會回到原本的配圖。'
+          ? '讀者上傳的圖不需審核，送出後立即成為投票候選；顯示哪一張由其他讀者投票決定（上傳者不能投自己的圖）。不適合或授權有疑慮的圖，填寫理由後撤下，標籤會回到原本的配圖。'
           : '讀者提出的關係送出後立即公開。不正確的關係填寫理由後撤下，它新增的分類成員會一併還原。'}
       </p>
       <fieldset className="mt-3 flex flex-wrap gap-2">
