@@ -378,3 +378,49 @@ Network recomputed: `{"requests": 1619, "dnt": {"1": 1619}, "googleBrowserReques
 
 Batch009 actual manifest/review recorded as routes043/044/045/047 (media subpages), despite the planned input filename. Redirects 307/308 and actual URLs are retained; 32 observed routes total. Interactive/search/sort/date/error/empty states pending.
 Batch010 capture completed 32 original PNGs with browser/transport Google 0; independent review pending.
+
+## batch010 — actual independent production review
+
+/root/unfreeze_independent_review, GPT-6.1 Sol, UTC2026-10-15T01:21:11.842328+00:00. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010-independent-ui-review.json` SHA256 `3a668d3305d5935d9fb228faf68f458a1cdcade8262485e3ad1a50748745fcfd`, same-nameTXT has actual image/view timestamps. Verdict: PASS scoped.
+
+- 048: PASS — 資料來源與摘要說明可讀 Pending: 互動、其他時間、空錯誤、full65
+- 056: PASS — 網站觀測圖表與統計可讀 Pending: 互動、其他時間、空錯誤、full65
+- 064: PASS — 轉述社群貼文比例與分類可讀 Pending: 互動、其他時間、空錯誤、full65
+- 065: PASS — 標題用詞比例卡與媒體列表可讀 Pending: 互動、其他時間、空錯誤、full65
+
+Network recomputed: `{"requests": 1185, "dnt": 1185, "google": 0, "transport": 94}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-1280-light-viewport.png` — `a6276a949849d27b9b13581aef53b7226c4f3268c6bb8cc34dbf0ef7603fdaaf`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-1280-light-full.png` — `3e530611d3b14ca527b7371a28253b48d0ecfddd827cefb88a48ecd62aadbf99`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-1280-dark-viewport.png` — `64ce682f573050bd82cf75830c700e11834b9339d411fac5c57648f99bde0542`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-1280-dark-full.png` — `31fac3a6d16e75c68fcdcef142f7e11d98e8f98ec6fc1c250c66799f56a85100`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-1280-light-viewport.png` — `b03b53aad7305c0a6a55a4d8c56c3b8428c691c18bc42a82b4a3fddd2cf03bad`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-1280-light-full.png` — `f3af0089f69737b3ee7787cf4b1dd0755b187f02bea78e3b0a42d4866e8238ea`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-1280-dark-viewport.png` — `024038a1dc4800192f39242bf584932a9d33ff27473aa9f980c2d316dd929aa8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-1280-dark-full.png` — `c6713565f7fd8aca987ee244535d89fb3d8e6129598f6e3c8c45def2d5a48782`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-1280-light-viewport.png` — `f44c77b9fa4b58e91e012a0576f7bd11def98e791e0a2d85c5080d2d8e79dfb5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-1280-light-full.png` — `b2cb5ce0752948727d254838def7587a47c96c1023e977e85faed7367f000039`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-1280-dark-viewport.png` — `2eda631f8df8823a96333b5e5ed3a92d20690368bfc2d0fa72eb1390b2bda9b8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-1280-dark-full.png` — `ffb39252ac97770c383040a31b23e2d253e72b4154fddd833bbe6db21aa15dd2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-1280-light-viewport.png` — `28a98dba35cf2f4433f7b06dbe25d9d093625a4301e70a9396c284975972a8b2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-1280-light-full.png` — `7d585b4768092f30fe34d649a888ef34b965ca9aaba54f30527c854b52632d45`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-1280-dark-viewport.png` — `ae51ddb8026c01484d9e8370c689109718f8b1d294c1880795c9534cca912a91`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-1280-dark-full.png` — `d5e3e00ce7366674771991633467ff8691d113f72801d7607fa25982e6a789b3`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-390-light-viewport.png` — `226d0b8d4523949d7f1abd00ea9f6e807a376ba3df8baf2befbe23a080614a4e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-390-light-full.png` — `f312ad3ae2762c97e2aee5c209e7a1f31dff9b9ab8f3e2c27ca0258de03f5000`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-390-dark-viewport.png` — `0b0e0228bc09ee57e4744dc38048ad960bb7ad104d4790ff0e2b84b96d5c4733`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/048-390-dark-full.png` — `89d70dbae9577a28cf3851e66c9f2945306bcc477ff7b2312656f6e54799b61d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-390-light-viewport.png` — `216d80fb50e5ed269377190b369669ebfbbb45dc9b68a635caf6b4b94f2c4085`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-390-light-full.png` — `4550aa1f8a14aacef5588bc654d25c7f23c91e3415348ca682bc060a377f42af`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-390-dark-viewport.png` — `7e16564024869f1f8a305939e9ec7b13baa36004ccf27da6a4d9628f4d2e0a3a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/056-390-dark-full.png` — `ce0238748abf3a578077ce4d983a57b5506720a5c392c0c99e7d23d07f637497`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-390-light-viewport.png` — `7d4118f49cc38689204bca32b6673a35fd2aaa07bd6f5c7af6224aac94aeea7c`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-390-light-full.png` — `25527ca2ffe93b822aa9d9ff9ea70aa324223722db35aeb08dbdaf00d0670ac0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-390-dark-viewport.png` — `48ca38dac898c8470d7a0e7ea43d7e78644765e6280b13a936dbefd36aadc0f8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/064-390-dark-full.png` — `458ed4ab21019a0e0c120b30d8972b404528769efee4da8ed43ac07f23eb415f`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-390-light-viewport.png` — `6aa1ffe09634d3db39c0337acd471e8ce6f79e7bc432798cf6354413103ad9b5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-390-light-full.png` — `3550f59eaef8ef0cc5363a168b3c02b43c9a54692eb01de755518e8d526fde7d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-390-dark-viewport.png` — `d94e5abdd62644c94becdfd38f34e1b136af1bc9095a33c5ac751a3238d0c372`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch010/065-390-dark-full.png` — `baacbf29aed5d60aeb9ca7477e26aaa362160a7220775b25a0f9affdb7048f48`
+
+Batch010 actual formal review recorded: method/readers/writing/writing-titles bounded normal presentations PASS; interaction, alternate time/data, empty/error/auth states and full-route coverage remain pending.
