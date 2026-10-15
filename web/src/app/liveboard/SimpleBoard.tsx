@@ -17,6 +17,9 @@ import styles from './simple.module.css';
 // each word that stays drifts slowly as it grows or shrinks, staying near its
 // place; words that drop out shrink away and new ones grow in. Then the next
 // lens cross-fades in over the last. Tapping a word opens its tag page.
+// ← / → (or PageUp / PageDown, as a presenter remote sends), a swipe, or the
+// ‹ › beside the time line step to the previous or next hour, and past either
+// end to the neighbouring lens; tapping an hour goes straight to it.
 // Settings: settings.ts, /liveboard/setting/.
 
 const SECOND = 1000;
@@ -110,9 +113,18 @@ function centreOf(lens: Lens, hours: string[], title: number, room: number) {
   });
   const line = x;
   for (const slot of slots) slot.x -= line / 2;
-  const width = Math.max(ems(lens.title) * title * 1.04, ems(lens.note) * note, line) + title * 0.6;
-  const height = title * 1.3 + note * 1.7 + (hours.length > 1 ? hour * 2.9 : 0);
-  return { title, note, hour, slots, width, height, clear: [{ x: -width / 2, y: -height / 2, width, height }] };
+  // The ‹ › that skip a frame flank the time line, or the name when there is only the present.
+  const timeline = hours.length > 1;
+  // No smaller than a fingertip on a phone, where the hour labels shrink to fit across.
+  const arrow = timeline ? Math.max(hour * 1.6, title * 0.6) : title * 0.7;
+  const arrows = {
+    size: arrow,
+    x: (timeline ? line / 2 : (ems(lens.title) * title * 1.04) / 2) + arrow * 0.9,
+    y: timeline ? title * 1.3 + note * 1.7 + hour * 0.85 : title * 0.62,
+  };
+  const width = Math.max(ems(lens.title) * title * 1.04, ems(lens.note) * note, 2 * arrows.x + arrow * 1.2) + title * 0.6;
+  const height = title * 1.3 + note * 1.7 + (timeline ? hour * 2.9 : 0);
+  return { title, note, hour, slots, arrows, width, height, clear: [{ x: -width / 2, y: -height / 2, width, height }] };
 }
 
 interface Badge {
@@ -190,12 +202,21 @@ function settleMs(words: Shown[], first = false) {
 }
 /** A word that would travel further than this share of the canvas width fades out and in instead. */
 const FAR = 0.25;
+/** A horizontal drag at least this long (px), and mostly sideways, is a swipe to the next or previous hour. */
+const SWIPE = 50;
 /** What is on screen: a lens, its frames, and which frame is showing. `run` changes with every lens. */
 interface Playing {
   run: number;
   lens: Lens;
   frames: Frame[];
   frame: number;
+  /** Changes with every frame shown, a frame skipped back to included: its animation settles under `run:visit`. */
+  visit: number;
+}
+/** A place a skip goes to: a lens and its frame (`last` is its present, however many frames it turns out to have). */
+interface Spot {
+  lens: number;
+  frame: number | 'last';
 }
 
 /** Whether the site's dark theme is on: <html data-theme>, set by the root layout and ThemeSync. */
@@ -272,6 +293,8 @@ export default function SimpleBoard({
   const [playing, setPlaying] = useState<Playing | null>(null);
   const [words, setWords] = useState<Shown[]>([]);
   const cache = useRef(new Map<string, { at: number; frame: Frame | null }>());
+  /** Skips to the next (1) or previous (-1) frame, or to one frame of the lens; set by the player. */
+  const skip = useRef<{ step: (by: number) => void; to: (frame: number) => void }>({ step: () => {}, to: () => {} });
   const seeded = useRef(false);
   if (!seeded.current) {
     seeded.current = true;
@@ -293,18 +316,43 @@ export default function SimpleBoard({
 
   // Plays the lenses in turn: fetch a lens's frames (the next one is fetched
   // while the present one holds), cross-fade to the oldest frame, step forward
-  // to now, hold, and go on.
+  // to now, hold, and go on. A skip cuts whatever it is waiting on short: a
+  // step goes to the neighbouring frame, past either end to the neighbouring
+  // lens (its oldest frame going forward, its present going back).
   useEffect(() => {
     let cancelled = false;
+    /** Where a skip asked to go, until the player takes it up. */
+    let wanted: Spot | null = null;
+    /** Where the board is: the lens on screen (or being fetched), its frame and how many it has. */
+    let here = { lens: 0, frame: 0, frames: 0 };
+    let index = 0;
+    let next: Promise<Frame[]>;
     let wake: () => void = () => {};
-    const sleep = (ms: number) =>
-      new Promise<void>((resolve) => {
-        const id = setTimeout(resolve, ms);
-        wake = () => {
-          clearTimeout(id);
-          resolve();
-        };
-      });
+    /** Waits for `promise`, or less should the board be skipped or closed meanwhile. */
+    const until = <T,>(promise: Promise<T>) =>
+      Promise.race([promise, new Promise<undefined>((resolve) => (wake = () => resolve(undefined)))]);
+    const sleep = (ms: number) => {
+      let id: ReturnType<typeof setTimeout> | undefined;
+      return until(new Promise<void>((resolve) => (id = setTimeout(resolve, ms)))).finally(() => clearTimeout(id));
+    };
+    const wrap = (lens: number) => ((lens % lenses.length) + lenses.length) % lenses.length;
+    const go = (spot: Spot) => {
+      wanted = spot;
+      wake();
+    };
+    skip.current = {
+      step: (by) => {
+        if (!lenses.length) return;
+        // From a lens still being fetched (or not yet played) a step goes on to the next lens.
+        const from = wanted ?? here;
+        const frame = from.lens === here.lens && from.frame !== 'last' ? from.frame + by : by > 0 ? Infinity : -1;
+        if (from.lens === here.lens && frame >= 0 && frame < here.frames) go({ lens: here.lens, frame });
+        else go(by > 0 ? { lens: wrap(from.lens + 1), frame: 0 } : { lens: wrap(from.lens - 1), frame: 'last' });
+      },
+      to: (frame) => {
+        if (frame !== here.frame || wanted) go({ lens: here.lens, frame });
+      },
+    };
     const snapshot = async (lens: Lens, hoursBack: number, now: number) => {
       // Past snapshots are filed under their hour, so a later turn reuses them.
       const key = hoursBack ? `${lens.key}@${Math.floor((now - hoursBack * HOUR) / HOUR)}` : `${lens.key}@now`;
@@ -338,47 +386,131 @@ export default function SimpleBoard({
               resolve();
             });
           });
+    /** Takes up a skip to another lens: it is the one to fetch and play next, from the frame asked for. */
+    let start: Spot['frame'] = 0;
+    const toLens = () => {
+      if (!wanted) return;
+      index = here.lens = wanted.lens;
+      start = wanted.frame;
+      wanted = null;
+      next = framesOf(lenses[index]);
+    };
     const play = async () => {
       let run = 0;
-      let index = 0;
-      let next = framesOf(lenses[0]);
+      let visit = 0;
+      next = framesOf(lenses[0]);
       let empty = 0;
       while (!cancelled) {
         const lens = lenses[index];
-        const frames = await next;
+        here = { lens: index, frame: 0, frames: 0 };
+        const frames = await until(next);
         if (cancelled) return;
+        if (wanted && wanted.lens === index) {
+          start = wanted.frame;
+          wanted = null;
+        }
+        if (wanted || !frames) {
+          toLens();
+          continue;
+        }
         const after = (index + 1) % lenses.length;
         if (!frames.length) {
           // Nothing for this lens (or the API is down): try the next, resting after a full round.
           index = after;
+          start = 0;
           next = framesOf(lenses[index]);
           if (++empty >= lenses.length) {
             empty = 0;
             await sleep(30 * SECOND);
+            if (cancelled) return;
+            toLens();
           }
           continue;
         }
         empty = 0;
         run += 1;
-        setPlaying({ run, lens, frames, frame: 0 });
+        let f = start === 'last' ? frames.length - 1 : Math.min(start, frames.length - 1);
+        start = 0;
+        visit += 1;
+        setPlaying({ run, lens, frames, frame: f, visit });
+        const show = (frame: number) => {
+          const v = ++visit;
+          setPlaying((p) => (p && p.run === run ? { ...p, frame, visit: v } : p));
+        };
         // Each frame: let the animation finish, then stay `step` seconds (`hold` for the present).
-        for (let f = 0; f < frames.length; f++) {
-          if (f) setPlaying((p) => (p && p.run === run ? { ...p, frame: f } : p));
-          await settled(`${run}:${f}`);
+        // A skip within the lens goes to the frame asked for; one to another lens ends the turn.
+        const skipped = () => {
+          if (!wanted || wanted.lens !== index) return !!wanted;
+          f = wanted.frame === 'last' ? frames.length - 1 : wanted.frame;
+          wanted = null;
+          show(f);
+          return false;
+        };
+        for (;;) {
+          here = { lens: index, frame: f, frames: frames.length };
+          const shown = f;
+          await until(settled(`${run}:${visit}`));
           if (cancelled) return;
-          if (f === frames.length - 1) next = framesOf(lenses[after]);
-          await sleep((f === frames.length - 1 ? settings.hold : settings.step) * SECOND);
+          if (skipped()) break;
+          if (f !== shown) continue;
+          const last = f === frames.length - 1;
+          if (last) next = framesOf(lenses[after]);
+          await sleep((last ? settings.hold : settings.step) * SECOND);
           if (cancelled) return;
+          if (skipped()) break;
+          if (f !== shown) continue;
+          if (last) break;
+          f += 1;
+          show(f);
         }
-        index = after;
+        if (wanted) toLens();
+        else index = after;
       }
     };
     if (lenses.length) play();
     return () => {
       cancelled = true;
+      skip.current = { step: () => {}, to: () => {} };
       wake();
     };
   }, [lenses, settings.history, settings.interval, settings.step, settings.hold]);
+
+  // The keys a keyboard or a presenter remote skips with.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const by = e.key === 'ArrowRight' || e.key === 'PageDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'PageUp' ? -1 : 0;
+      if (!by) return;
+      e.preventDefault();
+      skip.current.step(by);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  // A swipe across the cloud: right to left for the next hour, left to right for the previous.
+  // The click that ends a swipe over a word must not open it.
+  const swipe = useRef<{ x: number; y: number; id: number } | null>(null);
+  const swiped = useRef(false);
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.isPrimary) swipe.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    swiped.current = false;
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const start = swipe.current;
+    swipe.current = null;
+    if (!start || start.id !== e.pointerId) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) < SWIPE || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+    swiped.current = true;
+    skip.current.step(dx < 0 ? 1 : -1);
+  };
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (!swiped.current) return;
+    swiped.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   const canvas = useMemo(() => (px ? canvasFor(px, settings.scale) : null), [px, settings.scale]);
   const shownWords = useRef(words);
@@ -452,7 +584,7 @@ export default function SimpleBoard({
         phase,
         badge: badges.get(w.label),
       });
-      const frameKey = `${playing.run}:${playing.frame}`;
+      const frameKey = `${playing.run}:${playing.visit}`;
       if (fresh) {
         setWords(placed.map((w) => shown(w, 'live')));
         settleAfter(frameKey, settleMs([], true));
@@ -551,7 +683,16 @@ export default function SimpleBoard({
           </div>
         </div>
       </header>
-      <div ref={frame} className={styles.frame}>
+      <div
+        ref={frame}
+        className={styles.frame}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => {
+          swipe.current = null;
+        }}
+        onClickCapture={onClickCapture}
+      >
         {canvas && (
           <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} className={styles.cloud} aria-label={`${lens?.title ?? ''}文字雲`}>
             {playing && centre && (
@@ -584,7 +725,12 @@ export default function SimpleBoard({
                         height: centre.hour * 0.22,
                       };
                       return (
-                        <g key={slot.label}>
+                        <Hit
+                          key={slot.label}
+                          label={`跳到${slot.label}`}
+                          onHit={() => skip.current.to(i)}
+                          box={{ x: slot.x, y: 0, width: slot.width, height: centre.hour * 2.6 }}
+                        >
                           <text
                             x={slot.x + slot.width / 2}
                             y={centre.hour * 1.3}
@@ -597,7 +743,7 @@ export default function SimpleBoard({
                           </text>
                           <rect {...bar} rx={bar.height / 2} className={styles.track} opacity={i > playing.frame ? 0.45 : 1} />
                           {i < playing.frame && <rect {...bar} rx={bar.height / 2} fill={tint(playing.lens)} opacity={0.35} />}
-                          {now && settledFrame === `${playing.run}:${i}` && (
+                          {now && settledFrame === `${playing.run}:${playing.visit}` && (
                             // Fills over the time this hour (or the present) stays, once its animation is over.
                             <rect
                               key={`${playing.run}-${i}`}
@@ -608,11 +754,35 @@ export default function SimpleBoard({
                               style={{ animationDuration: `${i === centre.slots.length - 1 ? settings.hold : settings.step}s` }}
                             />
                           )}
-                        </g>
+                        </Hit>
                       );
                     })}
                   </g>
                 )}
+                {(lenses.length > 1 || centre.slots.length > 1) &&
+                  ([-1, 1] as const).map((by) => (
+                    <Hit
+                      key={by}
+                      label={by > 0 ? '下一個時間點' : '上一個時間點'}
+                      onHit={() => skip.current.step(by)}
+                      className={styles.arrow}
+                      box={{
+                        x: by * centre.arrows.x - centre.arrows.size * 0.8,
+                        y: centre.arrows.y - centre.arrows.size * 0.9,
+                        width: centre.arrows.size * 1.6,
+                        height: centre.arrows.size * 1.8,
+                      }}
+                    >
+                      <text
+                        x={by * centre.arrows.x}
+                        y={centre.arrows.y + centre.arrows.size * 0.36}
+                        fontSize={centre.arrows.size}
+                        textAnchor="middle"
+                      >
+                        {by > 0 ? '›' : '‹'}
+                      </text>
+                    </Hit>
+                  ))}
               </g>
             )}
             <g className={styles.fadeIn}>
@@ -627,6 +797,43 @@ export default function SimpleBoard({
   );
 }
 const NO_PICTURES: Pictures = {};
+
+/** A tappable part of the centre (a time point, a ‹ ›): a clear box over it takes the tap, and Enter or Space works too. */
+function Hit({
+  label,
+  onHit,
+  box,
+  className,
+  opacity,
+  children,
+}: {
+  label: string;
+  onHit: () => void;
+  box: { x: number; y: number; width: number; height: number };
+  className?: string;
+  opacity?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: SVG has no <button>; this is one in role and keys.
+    <g
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      className={`${styles.hit} ${className ?? ''}`}
+      opacity={opacity}
+      onClick={onHit}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        onHit();
+      }}
+    >
+      <rect {...box} fill="transparent" />
+      {children}
+    </g>
+  );
+}
 
 function Word({ word, picture, colour, index }: { word: Shown; picture?: Pictures[string]; colour?: string; index: number }) {
   const k = word.fontSize / BASE;
