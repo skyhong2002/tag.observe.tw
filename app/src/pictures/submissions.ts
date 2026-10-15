@@ -11,7 +11,7 @@ import {
   tagVisuals,
   users,
 } from '../db/schema.ts';
-import { applyVotes, castVote, nextRank, type PictureKind, uploadsToday } from './votes.ts';
+import { applyVotes, nextRank, type PictureKind, uploadsToday } from './votes.ts';
 
 export type PictureMetadata = { score: number; scores: Record<string, number>; verdict: string };
 /** What the tag showed before a reader's picture went public, so taking it down restores it. */
@@ -24,8 +24,9 @@ export const pictureSubmissionKey = (tag: string, kind: PictureKind, image: Buff
     .digest('hex');
 
 /**
- * Readers' pictures go public as soon as they are submitted (owner's decision,
- * 2026-10-15); an administrator can take one down afterwards (revokePicture).
+ * Readers' pictures become public candidates as soon as they are submitted, with
+ * no review (owner's decision, 2026-10-15): other readers' votes decide whether
+ * one is shown, and an administrator can take one down (revokePicture).
  */
 export async function submitPicture(
   db: Db,
@@ -121,10 +122,6 @@ export async function approvePicture(db: Db, row: typeof tagSubmissions.$inferSe
       uploadedBy: row.createdBy,
       uploadedAt: row.createdAt,
     });
-    await db
-      .update(tagPeople)
-      .set({ status: 'voted' })
-      .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} NOT IN ('chosen', 'hidden', 'nonhuman')`));
   } else {
     await db.insert(tagVisualCandidates).values({
       tag,
@@ -136,8 +133,9 @@ export async function approvePicture(db: Db, row: typeof tagSubmissions.$inferSe
       uploadedAt: row.createdAt,
     });
   }
-  // Approval enables the existing vote mechanism; before this point no vote/candidate existed.
-  const shownRank = await castVote(db, tag, kind, row.createdBy, rank);
+  // A new candidate carries no votes, not even the uploader's (who cannot vote
+  // for it): it is shown only once other readers' votes put it ahead.
+  const shownRank = await applyVotes(db, tag, kind);
   return { rank, shownRank, previous };
 }
 

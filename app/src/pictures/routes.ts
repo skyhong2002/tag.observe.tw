@@ -232,10 +232,12 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     if (rank !== null) {
       const table = kind === 'avatar' ? tagAvatarCandidates : tagVisualCandidates;
       const [c] = await db
-        .select({ rank: table.rank })
+        .select({ rank: table.rank, uploadedBy: table.uploadedBy })
         .from(table)
         .where(and(eq(table.tag, tag), eq(table.rank, rank)));
       if (!c) return reply.code(404).send({ error: 'no such candidate' });
+      // Others decide whether a reader's upload is shown; nobody puts up their own picture.
+      if (c.uploadedBy === user.id) return reply.code(403).send({ error: '不能投自己上傳的圖，請讓其他讀者決定' });
     }
     const shownRank = await castVote(db, tag, kind, user.id, rank);
     refreshPages(uiOrigin, tag);

@@ -16,7 +16,7 @@ import {
 } from '../src/db/schema.ts';
 import { registerPictureRoutes } from '../src/pictures/routes.ts';
 import { pictureSubmissionKey, revokePicture, submitPicture } from '../src/pictures/submissions.ts';
-import { uploadsToday } from '../src/pictures/votes.ts';
+import { castVote, uploadsToday } from '../src/pictures/votes.ts';
 
 it('separates image fingerprints by exact tag and picture kind', () => {
   const image = Buffer.from('processed webp');
@@ -87,25 +87,28 @@ describe.skipIf(!url)('reader picture submissions, public on arrival (MariaDB)',
     expect(await db.select().from(tagSubmissions)).toHaveLength(0);
   });
   let submissionId: number;
-  it('publishes a processed upload at once, votable and deduplicated', async () => {
+  it('makes a processed upload a public candidate at once; other readers decide whether it shows', async () => {
     const response = await upload({ origin, 'x-user': 'reader' });
     expect(response.statusCode).toBe(201);
     expect(response.json()).toMatchObject({ kind: 'visual', status: 'approved' });
     submissionId = response.json().submissionId;
     expect(response.headers['cache-control']).toBe('no-store');
     expect(await db.select().from(tagVisualCandidates)).toMatchObject([{ uploadedBy: user.id, rank: 1, note: '讀者上傳' }]);
-    expect(await db.select().from(tagVisuals)).toMatchObject([{ status: 'voted', shownRank: 1 }]);
+    // No vote comes with an upload, so nothing is shown yet.
+    expect(await db.select().from(tagVisuals)).toMatchObject([{ status: 'none', shownRank: null }]);
+    expect(await db.select().from(tagPictureVotes)).toHaveLength(0);
     expect((await app.inject({ url: '/auth/pictures/F1-test', headers: { 'x-user': 'reader' } })).json().candidates).toHaveLength(1);
-    expect(
-      (
-        await app.inject({
-          method: 'PUT',
-          url: '/auth/pictures/F1-test/vote',
-          headers: { origin, 'x-user': 'reader' },
-          payload: { rank: 1 },
-        })
-      ).statusCode,
-    ).toBe(200);
+    // The uploader cannot vote their own picture up.
+    const own = await app.inject({
+      method: 'PUT',
+      url: '/auth/pictures/F1-test/vote',
+      headers: { origin, 'x-user': 'reader' },
+      payload: { rank: 1 },
+    });
+    expect(own.statusCode).toBe(403);
+    expect(own.json().error).toContain('自己上傳');
+    expect(await castVote(db, 'F1-test', 'visual', 602, 1)).toBe(1);
+    expect(await db.select().from(tagVisuals)).toMatchObject([{ status: 'voted', shownRank: 1 }]);
     expect((await upload({ origin, 'x-user': 'reader' })).json().submissionId).toBe(submissionId);
     expect(await db.select().from(tagSubmissions)).toMatchObject([{ status: 'approved', candidateRank: 1 }]);
     expect((await db.select().from(tagSubmissionLog)).map((l) => l.action)).toEqual(['submit', 'auto-approved']);
@@ -115,6 +118,8 @@ describe.skipIf(!url)('reader picture submissions, public on arrival (MariaDB)',
     await db.insert(tagVisuals).values({ tag: 'F1-restore', status: 'auto', shownRank: 1, kind: 'logo', checkedAt: new Date() });
     await db.insert(tagVisualCandidates).values({ tag: 'F1-restore', rank: 1, kind: 'logo', note: 'AI' });
     const result = await submitPicture(db, { tag: 'F1-restore', pictureKind: 'visual', image, userId: user.id });
+    expect(await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'F1-restore'))).toMatchObject([{ status: 'auto', shownRank: 1 }]);
+    await castVote(db, 'F1-restore', 'visual', 602, 2);
     expect(await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'F1-restore'))).toMatchObject([{ status: 'voted', shownRank: 2 }]);
     await revoke(result.submissionId);
     expect(await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'F1-restore'))).toMatchObject([{ status: 'auto', shownRank: 1 }]);
@@ -166,6 +171,8 @@ describe.skipIf(!url)('reader picture submissions, public on arrival (MariaDB)',
     expect(await db.select().from(tagAvatarCandidates)).toMatchObject([
       { score: 0.9, scores: meta.scores, verdict: 'ok', uploadedBy: user.id },
     ]);
+    expect(await db.select().from(tagPeople).where(eq(tagPeople.tag, 'F1-person'))).toMatchObject([{ status: 'auto', shownRank: null }]);
+    await castVote(db, 'F1-person', 'avatar', 602, 1);
     expect(await db.select().from(tagPeople).where(eq(tagPeople.tag, 'F1-person'))).toMatchObject([{ status: 'voted', shownRank: 1 }]);
     await revoke(result.submissionId);
     expect(await db.select().from(tagPeople).where(eq(tagPeople.tag, 'F1-person'))).toMatchObject([{ status: 'auto', shownRank: null }]);
