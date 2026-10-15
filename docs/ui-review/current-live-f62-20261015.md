@@ -331,3 +331,50 @@ Network recomputed: `{"requests": 1037, "requestDNT1": 1037, "requestGoogleURL":
 Batch007 actual formal review recorded: SETN routes032/033 and Newtalk062/063 have normal observed presentation PASS, no layout blocker; search/details/empty/error/interaction pending. Reviewer retained HAR with 5x504 and 1x500 resources despite successful page captures; this does not establish route-wide failure or a root cause.
 
 Batch009 capture completed 32 original PNGs (routes 030/009/023/055), DNT1, browser Google 0, proxy admitted Google 0; independent review pending. Fresh/monitor gate remained within limits.
+
+## batch009 — actual independent production review
+
+/root/f1_frontend_independent_sol, gpt-6.1-sol, UTC2026-10-15T01:13:56.353488+00:00. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009-independent-ui-review.json` SHA256 `d2a2e35286e4a8e7a672020abdb2d8758028e13afde6934e21fca309125135a0`, same-nameTXT has actual image/view timestamps. Verdict: PARTIAL / fullScopePending.
+
+- 043: PASS（靜態已見） — 媒體收錄頁（匯流新聞網）正常；收錄文章、關鍵字雲、側欄統計及手機折疊可見。 Pending: 追蹤、分頁、搜尋、摘要切換、全部60篇逐字、錯誤/空資料/重試
+- 044: PASS（靜態已見） — 關係圖來源/引用頁正常；30篇被引用、0篇引用其他來源、來源說明及長列可見。 Pending: 兩個說明按鈕、關係圖導向、分頁/長列逐字、錯誤/空資料
+- 045: PASS（靜態已見） — 新聞爬蟲公開牌正常；297/297來源、工具與錯誤計數表可見，手機表格橫向內容未全見。 Pending: 搜尋、排序、工具操作、所有來源逐列、爬蟲狀態切換、錯誤恢復
+- 047: PASS（靜態已見） — 媒體流量與排名正常；月變化/數值切換、2026/09及桌面完整表格可見，手機僅左側欄位。 Pending: 月份/數值切換、搜尋、排序、橫向欄位、全部長列、錯誤/空資料
+
+Network recomputed: `{"requests": 1619, "dnt": {"1": 1619}, "googleBrowserRequests": 0, "transport": {"denied-http": 2, "denied-connect": 124, "admitted-connect": 6}, "googleDenied": 0, "googleAdmitted": 0, "har": [{"width": 1280, "entries": 823, "dnt": {"1": 823}, "google": 0, "status": {"307": 1, "200": 800, "-1": 21, "308": 1}, "redirects": [{"url": "https://tag.observe.tw/media/cnews/articles/", "status": 307, "to": "https://tag.observe.tw/media/cnews/"}, {"url": "https://tag.observe.tw/media/crawlers/", "status": 308, "to": "https://tag.observe.tw/crawlers/"}]}, {"width": 390, "entries": 796, "dnt": {"1": 796}, "google": 0, "status": {"307": 1, "200": 730, "-1": 64, "308": 1}, "redirects": [{"url": "https://tag.observe.tw/media/cnews/articles/", "status": 307, "to": "https://tag.observe.tw/media/cnews/"}, {"url": "https://tag.observe.tw/media/crawlers/", "status": 308, "to": "https://tag.observe.tw/crawlers/"}]}]}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-1280-light-viewport.png` — `b8d601b18a50a0458e6ad88635088867fea6852597001fe08597ac07e8ec0d80`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-1280-light-full.png` — `4b8061cac0fe440805282d7dfa1486546a025c5e3120b60f75a5aa3775023f9d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-1280-dark-viewport.png` — `2ebc85632bd757ee69d5174448329f4def899e49cb2e9f001b737ebfb216fb24`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-1280-dark-full.png` — `21670a56e183f41be31af8c3536b01374c710e264b940e33115a1c5b67163b30`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-1280-light-viewport.png` — `68f1314643be45f5a2937b03b19df806fba2a16bcadf1bb418d5ac2e29ccb685`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-1280-light-full.png` — `ecc35ad6e644c1cf406ccf43f8c7b8b424329848363a82fe1845f4e251f8bda6`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-1280-dark-viewport.png` — `6100d7e9e23ca144b5c419d021aeaa4ea2102abdc061322922721309498f6e98`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-1280-dark-full.png` — `a9ed504c64b704319660012fdc6de12e9c2dfe5b4ba75a772305b4a7d9922402`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-1280-light-viewport.png` — `ba229dae859be57c17f6b25d4a0ad236bd28cd8a1f13555bda4efaf827b28cdd`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-1280-light-full.png` — `6acc9b0b7961657b2e7a2c443fc5f234d8f32f89dbc1b0ea0caaea0c63feb67b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-1280-dark-viewport.png` — `999f1806214669451eeb6aba1897fe6f8cac5e777a70494ae62c714546ec9af2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-1280-dark-full.png` — `3afa892c44f4dec3be8a952927d4a17111e1e7df5f14b59a6f60ff104c3bfaf4`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-1280-light-viewport.png` — `ac7478e9acc3952feff707e29f8cab81daf6e20cd764406bde79b6638a57cb79`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-1280-light-full.png` — `066586a4e0fb160da40b9fd0ca34ec86d5b3f104aa629eb5de67b053092a74b2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-1280-dark-viewport.png` — `7ef6a8554f7e6a1f88834d63c22afc71b6d6784a17ffcea52732550703ed2287`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-1280-dark-full.png` — `5b11ba2ff619a6bf6748ea30801dc9296ce6428f7a22f391976ce2ce099cac78`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-390-light-viewport.png` — `e6759ad4f82b9800b61f586385ea36da4e52f714c8dd2f37341e973f329ff38a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-390-light-full.png` — `dfe9966ad8cff6112dadf8b0c31d9c9c832b8178b435b7dd5caf90cefe8f2d4a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-390-dark-viewport.png` — `11a6d181facbeae0f875892c6b8565bd463a51a4c6cc537166c85544df5bdac8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/043-390-dark-full.png` — `e5b47ac10c7a7a0229b1bd644cc67486537980c41a8f25c7c2b3e9aa84c26fbf`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-390-light-viewport.png` — `ad96c3fa8dc85d86b52b4614874e80e9595ac5c7d0b5df7fee16e8634d7ed320`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-390-light-full.png` — `39564abe4d9fa82da5e3e5ff6374f89432e9e9df7feb59c17016ff7ca74dd187`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-390-dark-viewport.png` — `c17518106dd40ff86a12c5117b7369bccf8d509606fdb10c28bc53a9cd2ba6e0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/044-390-dark-full.png` — `28161eebab7d9108c852e8c9a1c39da6d269adb6bb25434eb5382ab04bed641e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-390-light-viewport.png` — `74055a447a33b714c4811939c0cca3026c983423d60e890f580b35e2ca54c2ee`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-390-light-full.png` — `bd87fc7b0517273f7108cc0bd507e5e33550ccb2c3118b855566ec52812f0891`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-390-dark-viewport.png` — `fab38061bf996bcc5e5f82a38b4cced59d38203f643424aa4d1bd14c01d0aac0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/045-390-dark-full.png` — `76b3eec80ffaab71c09a614e7e0c5e149543e38dfc42d2622199b0cc255aaf8a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-390-light-viewport.png` — `b76e64410b87ffc1fcb4e0af69c39630a6ea21d9b7db7fa54267bef53a1adb24`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-390-light-full.png` — `e17895289e446e51d0c5b9df03a79d1557a1f2cba2a9a1baa4c2d95e32c8d90f`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-390-dark-viewport.png` — `e4842626abaf1af7645151b5ee0762ca70ecdefaab9d0b8459c146f54f2f499a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch009/047-390-dark-full.png` — `b60f2a80167cae32c0dbcf0590df09fc5b01745efc0ada02aeca6585cc054ef1`
+
+Batch009 actual manifest/review recorded as routes043/044/045/047 (media subpages), despite the planned input filename. Redirects 307/308 and actual URLs are retained; 32 observed routes total. Interactive/search/sort/date/error/empty states pending.
+Batch010 capture completed 32 original PNGs with browser/transport Google 0; independent review pending.
