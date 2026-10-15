@@ -13,7 +13,8 @@ import {
   users,
 } from '../db/schema.ts';
 import { refreshPages } from '../pictures/refresh.ts';
-import { AUTO_PUBLISHED, approvePicture, type PictureMetadata, revokePicture } from '../pictures/submissions.ts';
+import { approvePicture, type PictureMetadata, revokePicture } from '../pictures/submissions.ts';
+import { castRelationVote, relationCandidates, VoteRefused } from './relation-votes.ts';
 import { isACycle, RELATION_TYPES, type RelationType, relationKey, validSemanticTag } from './semantic.ts';
 import { syncWritingTag } from './writing.ts';
 
@@ -193,16 +194,8 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
             .for('update');
           if (!(inserted.affectedRows === 1 && inserted.insertId)) return { ...row, duplicate: true };
           await tx.insert(tagSubmissionLog).values({ submissionId: row.id, action: 'submit', userId: user.id, at });
-          // Published right away (owner's decision, 2026-10-15); an administrator can revoke it.
-          const [full] = await tx.select().from(tagSubmissions).where(eq(tagSubmissions.id, row.id)).for('update');
-          await applyRelation(tx as unknown as Db, full, user.email);
-          const done = new Date();
-          await tx
-            .update(tagSubmissions)
-            .set({ status: 'approved', reviewedAt: done, reviewReason: AUTO_PUBLISHED })
-            .where(eq(tagSubmissions.id, row.id));
-          await tx.insert(tagSubmissionLog).values({ submissionId: row.id, action: 'auto-approved', userId: user.id, at: done });
-          return { id: row.id, status: 'approved' as const, duplicate: false };
+          // Other readers vote on it at /tag/<tag>/relations/ (relation-votes.ts).
+          return { id: row.id, status: 'pending' as const, duplicate: false };
         })
         .catch((err) => {
           if (err instanceof ReviewConflict) return { error: err.message };
@@ -210,11 +203,59 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
         });
       if (!result) return reply.code(429).send({ error: '每人每天最多提出 20 筆關係' });
       if ('error' in result) return reply.code(409).send({ error: result.error });
-      if (!result.duplicate) {
-        refreshPages(uiOrigin ?? null, tag);
-        refreshPages(uiOrigin ?? null, target as string);
-      }
+      if (!result.duplicate) refreshPages(uiOrigin ?? null, tag);
       return reply.code(result.duplicate ? 200 : 201).send(result);
+    },
+  );
+
+  // The relations page: candidates with counts; signed-in readers also get their own votes.
+  app.get<{ Params: { tag: string } }>('/auth/tags/:tag/relations/candidates', async (request, reply) => {
+    reply.header('cache-control', 'private, no-store');
+    const { tag } = request.params;
+    if (!validSemanticTag(tag)) return reply.code(400).send({ error: '標籤須為 1–60 字且不含控制字元或前後空白' });
+    const user = await currentUser(request);
+    return {
+      tag,
+      signedIn: !!user,
+      admin: user?.role === 'admin',
+      candidates: await relationCandidates(db, tag, user?.id ?? null),
+    };
+  });
+
+  app.put<{ Params: { tag: string }; Body: { key?: unknown; value?: unknown } }>(
+    '/auth/tags/:tag/relations/vote',
+    { bodyLimit: 1024 },
+    async (request, reply) => {
+      const user = await guard(request, reply, false, true);
+      if (!user) return reply;
+      const { tag } = request.params;
+      const { key, value } = request.body ?? {};
+      if (!validSemanticTag(tag) || typeof key !== 'string' || !/^[0-9a-f]{64}$/.test(key) || ![1, 0, -1].includes(value as number))
+        return reply.code(400).send({ error: '請選擇同意、不同意或取消' });
+      try {
+        await db.transaction(async (tx) => {
+          const [lock] = await tx.select().from(tagRelationLock).where(eq(tagRelationLock.id, 1)).for('update');
+          if (!lock) throw new VoteRefused('投票暫時無法處理，請稍後再試', 409);
+          try {
+            await castRelationVote(
+              tx as unknown as Db,
+              { apply: applyRelation, revoke: revokeRelation },
+              user.id,
+              tag,
+              key,
+              value as -1 | 0 | 1,
+            );
+          } catch (err) {
+            if (err instanceof ReviewConflict) throw new VoteRefused(err.message, 409);
+            throw err;
+          }
+        });
+      } catch (err) {
+        if (err instanceof VoteRefused) return reply.code(err.code).send({ error: err.message });
+        throw err;
+      }
+      refreshPages(uiOrigin ?? null, tag);
+      return { tag, candidates: await relationCandidates(db, tag, user.id) };
     },
   );
 
@@ -282,7 +323,7 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
     const count = (kind: string, status: string) => Number(rows.find((r) => r.kind === kind && r.status === status)?.n ?? 0);
     return {
       since: since.toISOString(),
-      relation: { approved: count('relation', 'approved'), revoked: count('relation', 'revoked') },
+      relation: { pending: count('relation', 'pending'), approved: count('relation', 'approved'), revoked: count('relation', 'revoked') },
       picture: { approved: count('picture', 'approved'), revoked: count('picture', 'revoked') },
     };
   });

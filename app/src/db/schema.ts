@@ -743,7 +743,7 @@ export const tagSubmissions = mysqlTable(
     targetGroupId: int('target_group_id'),
     reason: varchar('reason', { length: 1000 }),
     status: varchar('status', { length: 16 }).$type<'pending' | 'approved' | 'rejected' | 'revoked'>().notNull(),
-    source: varchar('source', { length: 16 }).$type<'submission' | 'manual' | 'rule'>().notNull(),
+    source: varchar('source', { length: 16 }).$type<'submission' | 'manual' | 'rule' | 'cooccur'>().notNull(),
     createdBy: int('created_by').notNull(),
     createdAt: datetime('created_at').notNull(),
     reviewedBy: int('reviewed_by'),
@@ -770,12 +770,30 @@ export const tagSubmissionLog = mysqlTable(
   {
     id: int('id').autoincrement().primaryKey(),
     submissionId: int('submission_id').notNull(),
-    action: varchar('action', { length: 16 }).$type<'submit' | 'approved' | 'rejected' | 'auto-approved' | 'revoked'>().notNull(),
+    action: varchar('action', { length: 16 })
+      .$type<'submit' | 'approved' | 'rejected' | 'auto-approved' | 'revoked' | 'vote-approved' | 'vote-reverted'>()
+      .notNull(),
     userId: int('user_id').notNull(),
     at: datetime('at').notNull(),
     reason: varchar('reason', { length: 1000 }),
   },
   (t) => [index('tag_submission_history').on(t.submissionId, t.id)],
+);
+
+// Readers' votes on proposed tag relations (2026-10-15): one row per reader and
+// relation, keyed by the same symmetric key as tag_submissions.dedupe_key, so a
+// reader proposal, a classification suggestion and a co-occurrence candidate
+// for the same relation share their votes.
+export const tagRelationVotes = mysqlTable(
+  'tag_relation_votes',
+  {
+    relationKey: varchar('relation_key', { length: 64 }).notNull(),
+    userId: int('user_id').notNull(),
+    value: int('value').notNull(),
+    tag: varchar('tag', { length: 60 }).notNull(),
+    at: datetime('at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.relationKey, t.userId] }), index('tag_relation_votes_tag').on(t.tag)],
 );
 
 // Serializes only semantic edge approval, so simultaneous A→B / B→A reviews
