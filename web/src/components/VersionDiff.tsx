@@ -68,15 +68,15 @@ export function BodyChanges({
   return (
     <div className="space-y-1 border-l-2 border-zinc-200 pl-3 dark:border-zinc-700" data-testid="body-changes">
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+        <span className="whitespace-nowrap font-medium text-zinc-700 dark:text-zinc-300">
           {label} {number(diff.hunks.length + diff.more)} 處
         </span>
         <span className="mx-1.5">·</span>
-        <span className="text-rose-700 dark:text-rose-400">
+        <span className="whitespace-nowrap text-rose-700 dark:text-rose-400">
           {removed} {number(diff.removed)} 字
         </span>
         <span className="mx-1.5">·</span>
-        <span className="text-emerald-700 dark:text-emerald-400">
+        <span className="whitespace-nowrap text-emerald-700 dark:text-emerald-400">
           {added} {number(diff.added)} 字
         </span>
       </p>
@@ -154,15 +154,15 @@ export function VersionCompare({
           data-testid="body-changes"
         >
           <p className="text-xs text-zinc-500 sm:col-span-2 dark:text-zinc-400">
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="whitespace-nowrap font-medium text-zinc-700 dark:text-zinc-300">
               {label} {number(body.hunks.length + body.more)} 處
             </span>
             <span className="mx-1.5">·</span>
-            <span className="text-rose-700 dark:text-rose-400">
+            <span className="whitespace-nowrap text-rose-700 dark:text-rose-400">
               {removed} {number(body.removed)} 字
             </span>
             <span className="mx-1.5">·</span>
-            <span className="text-emerald-700 dark:text-emerald-400">
+            <span className="whitespace-nowrap text-emerald-700 dark:text-emerald-400">
               {added} {number(body.added)} 字
             </span>
           </p>

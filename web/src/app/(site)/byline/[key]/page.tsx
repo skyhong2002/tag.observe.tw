@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import AuthorCredits from '@/components/AuthorCredits';
 import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
+import { authorCreditParts } from '@/lib/author-display.mts';
 import { BYLINE_HOURS, type BylineDetail, bylineHours, bylineHref, CREDIT_LABELS, fetchBylines, periodLabel } from '@/lib/bylines';
 import { graphHref } from '@/lib/relationship-query.mts';
 import { decodeRouteParam } from '@/lib/seo.mts';
@@ -131,9 +132,12 @@ export default async function BylinePage({ params, searchParams }: Props) {
               </Link>
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">原文署名：{article.credits.join('、')}</p>
-            <div className="text-xs">
-              <AuthorCredits credits={article.credits} media={article.media} hours={hours} />
-            </div>
+            {/* An outlet's own name in the byline leaves no author role; the raw line above already says it. */}
+            {authorCreditParts(article.credits, { media: article.media })[0].text !== '未署名' && (
+              <div className="text-xs">
+                <AuthorCredits credits={article.credits} media={article.media} hours={hours} />
+              </div>
+            )}
             {article.attributions.length > 0 && (
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 明示引用：

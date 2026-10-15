@@ -29,6 +29,10 @@ const percent = (value: number) => `${(value * 100).toFixed(0)}%`;
 const periodLabel = (value: number) => (value < 48 ? `${value} 小時` : `${value / 24} 天`);
 const parseHours = (value: string | undefined) => ((DETAIL_HOURS as readonly number[]).includes(Number(value)) ? Number(value) : 168);
 const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
+// A prolific byline can have hundreds of similar pairs, each with a full diff;
+// rendering them all made pages 200,000px tall. Show the newest first.
+const SIMILAR_SHOWN = 20;
+const ARTICLES_SHOWN = 100;
 
 export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
   const { name } = await params;
@@ -91,17 +95,19 @@ function PairRow({ pair }: { pair: JournalistPair }) {
   );
 }
 
-function SimilarSection({ data }: { data: JournalistDetail }) {
+function SimilarSection({ data, all, allHref }: { data: JournalistDetail; all: boolean; allHref: string }) {
   const groups = new Map<number, JournalistPair[]>();
   for (const pair of data.pairs) (groups.get(pair.own.id) ?? groups.set(pair.own.id, []).get(pair.own.id)!).push(pair);
   // Newest first. Ranking by how many counterparts were earlier would read as a suspicion score.
   const ordered = [...groups.values()].sort((a, b) => Date.parse(b[0].own.publishedAt) - Date.parse(a[0].own.publishedAt));
+  const shown = all ? ordered : ordered.slice(0, SIMILAR_SHOWN);
   return (
     <section aria-labelledby="similar-heading" className="mb-6">
       <h2 id="similar-heading" className="text-base font-semibold">
         與其他媒體內文相近的文章
         <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
-          {number(data.stats.similar.articles)} 篇有相近文章，共 {number(data.stats.similar.pairs)} 組
+          <span className="whitespace-nowrap">{number(data.stats.similar.articles)} 篇有相近文章，</span>
+          <span className="whitespace-nowrap">共 {number(data.stats.similar.pairs)} 組</span>
         </span>
       </h2>
       <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
@@ -112,7 +118,7 @@ function SimilarSection({ data }: { data: JournalistDetail }) {
       </p>
       {!ordered.length && <p className="py-6 text-sm text-zinc-500 dark:text-zinc-400">這段期間內沒有找到與他站內文相近的文章。</p>}
       <ul className="mt-3 space-y-4">
-        {ordered.map((pairs) => {
+        {shown.map((pairs) => {
           const own = pairs[0].own;
           const headline = readingTitle(own.title);
           return (
@@ -138,6 +144,14 @@ function SimilarSection({ data }: { data: JournalistDetail }) {
           );
         })}
       </ul>
+      {shown.length < ordered.length && (
+        <p className="mt-3 text-sm">
+          <Link href={allHref} className={linkStyle}>
+            顯示全部 {number(ordered.length)} 篇的相近文章
+          </Link>
+          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">目前列出最新 {number(shown.length)} 篇</span>
+        </p>
+      )}
     </section>
   );
 }
@@ -147,16 +161,20 @@ export default async function JournalistPage({
   searchParams,
 }: {
   params: Promise<{ name: string }>;
-  searchParams: Promise<{ hours?: string }>;
+  searchParams: Promise<{ hours?: string; all?: string }>;
 }) {
   const { name: raw } = await params;
   const name = decodeURIComponent(raw);
-  const hours = parseHours((await searchParams).hours);
+  const query = await searchParams;
+  const hours = parseHours(query.hours);
+  const all = query.all === '1';
   const data = await fetchJournalist(name, hours);
   if (data === 'missing') notFound();
   if (!data) return <p className="py-8 text-sm text-zinc-600 dark:text-zinc-400">暫時無法取得這位記者的資料，請稍後重新整理。</p>;
   const { stats } = data;
   const periodHref = (value: number) => (value === 168 ? journalistHref(data.name) : `${journalistHref(data.name)}?hours=${value}`);
+  const allHref = (anchor: string) => `${journalistHref(data.name)}?${hours === 168 ? '' : `hours=${hours}&`}all=1#${anchor}`;
+  const articles = all ? data.articles : data.articles.slice(0, ARTICLES_SHOWN);
   const summary = [
     { label: '署名文章', value: number(stats.articles), unit: '篇' },
     { label: '有正文', value: number(stats.withBody), unit: '篇' },
@@ -281,14 +299,14 @@ export default async function JournalistPage({
           </section>
         </MediaSidebar>
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
-          <SimilarSection data={data} />
+          <SimilarSection data={data} all={all} allHref={allHref('similar-heading')} />
           <section aria-labelledby="articles-heading">
             <h2 id="articles-heading" className="border-b border-zinc-200 pb-1.5 text-base font-semibold dark:border-zinc-800">
               署名文章
               <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{number(data.articles.length)} 篇，最新在前</span>
             </h2>
             <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {data.articles.map((article) => {
+              {articles.map((article) => {
                 const headline = readingTitle(article.title);
                 const readable = article.bodyChars > 0;
                 return (
@@ -342,6 +360,14 @@ export default async function JournalistPage({
                 );
               })}
             </ul>
+            {articles.length < data.articles.length && (
+              <p className="mt-3 text-sm">
+                <Link href={allHref('articles-heading')} className={linkStyle}>
+                  顯示全部 {number(data.articles.length)} 篇署名文章
+                </Link>
+                <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">目前列出最新 {number(articles.length)} 篇</span>
+              </p>
+            )}
           </section>
         </div>
       </div>

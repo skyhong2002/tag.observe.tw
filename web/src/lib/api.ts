@@ -256,15 +256,21 @@ export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
 export const fetchTagFlow = (tag: string, hours = 336, span: 'day' | 'hour' = 'hour') =>
   get<TagFlow>(`/api/v1/tags/${encodeURIComponent(tag)}/flow?hours=${hours}&span=${span}`, 300);
 
-export const taipei = (iso: string) =>
-  new Date(iso).toLocaleString('zh-TW', {
+const taipeiYear = (date: Date) => new Date(date.getTime() + 8 * 3600e3).getUTCFullYear();
+// Month/day alone reads as this year: an old article from 2017 dated "10/27"
+// looked like a future date. Show the year whenever it is not this year.
+export const taipei = (iso: string) => {
+  const date = new Date(iso);
+  return date.toLocaleString('zh-TW', {
     timeZone: 'Asia/Taipei',
     hour12: false,
+    ...(taipeiYear(date) !== taipeiYear(new Date()) && { year: 'numeric' }),
     month: 'numeric',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   });
+};
 // Without minutes, zh-TW renders the hour as "18時"; format with minutes instead.
 export const taipeiHour = (iso: string) => taipei(iso).replace(/:\d\d$/, ':00');
 
