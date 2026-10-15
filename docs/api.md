@@ -3032,6 +3032,10 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `events[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `events[].counts.previous` | integer | 再前一小時收錄的文章數 |
 | `events[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+| `events[].newest` | string (ISO 時間) \| null | 最新一篇報導的收錄時間 |
+| `events[].hours` | integer \| null | 事件串累計上榜小時數 |
+| `events[].rankTrail` | integer \| null[] \| null | 最近 24 份快照的名次，舊的在前，null 為不在榜上 |
+| `events[].coverage` | object | 24 小時內報導的媒體與陣營，同 /api/v1/events 的 coverage |
 | `events[].articles` | object[] | 近一小時收錄的文章，再接今天稍早的，各依發布時間新的在前；同一篇的轉載併在最早的一篇下，每家媒體先列兩篇，最多 8 篇 |
 | `events[].articles[].id` | integer |  |
 | `events[].articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |

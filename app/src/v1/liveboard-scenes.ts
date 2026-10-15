@@ -7,7 +7,7 @@ import { latestEvents } from '../jobs/events-job.ts';
 import { articleMediaOf } from '../jobs/topic-stories.ts';
 import type { Attribution } from '../similarity/attribution.ts';
 import { activeGroups, descendants } from '../tag-groups/tree.ts';
-import { eventsAt, matchPrev } from './event-feed.ts';
+import { campBaseline, type EventFeedCoverage, eventsAt, feedCoverage, hoursSoFar, matchPrev, rankTrail } from './event-feed.ts';
 import { articleCols, liveArticle } from './liveboard.ts';
 import { taipeiMidnight } from './media-stats.ts';
 import { SHOWN } from './tag-groups.ts';
@@ -89,6 +89,13 @@ export interface SceneEvent {
   news: SceneNews[];
   href: string | null;
   counts: SceneCounts;
+  /** When its newest report came in, so a quiet hour still says how long ago (null with none today). */
+  newest: string | null;
+  /** Hours its thread has been on the table, and its rank in each of the last 24 snapshots (as /api/v1/events). */
+  hours: number | null;
+  rankTrail: Array<number | null> | null;
+  /** Outlets and camps on it over the day, with blind spots (as /api/v1/events). */
+  coverage: EventFeedCoverage;
   /** The articles collected in the last hour, then today's earlier ones, each the latest published first. */
   articles: SceneArticle[];
 }
@@ -142,6 +149,12 @@ export function countSeen(seen: Iterable<Seen>, w: Windows): SceneCounts {
     if (t.crawled >= w.trail) out.hours[Math.min(TRAIL - 1, Math.floor((t.crawled - w.trail) / HOUR))]++;
   }
   return out;
+}
+/** The latest collection time among reports published today or collected in the trail. */
+export function newestOf(seen: Iterable<Seen>, w: Windows): string | null {
+  let at = 0;
+  for (const t of seen) if (t.crawled <= w.now && (t.crawled >= w.trail || (t.published ?? 0) >= w.today)) at = Math.max(at, t.crawled);
+  return at ? new Date(at).toISOString() : null;
 }
 const seenOf = (r: { publishedAt: Date; crawledAt: Date; pending: number | string | boolean }): Seen => ({
   published: Number(r.pending) ? null : r.publishedAt.getTime(),
@@ -325,7 +338,20 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
     .where(and(eq(eventSnapshots.category, 'news'), lt(eventSnapshots.hourStart, latest.snapshot.hourStart)))
     .orderBy(desc(eventSnapshots.hourStart))
     .limit(1);
-  const prev = await eventsAt(db, 'news', prevHour?.h ?? null);
+  const hour = latest.snapshot.hourStart;
+  const threadIds = latest.events.flatMap((e) => (e.threadId ? [e.threadId] : []));
+  const [prev, baseline, onTable, trails] = await Promise.all([
+    eventsAt(db, 'news', prevHour?.h ?? null),
+    campBaseline(db, hour),
+    hoursSoFar(db, 'news', threadIds, hour),
+    rankTrail(db, 'news', threadIds, hour),
+  ]);
+  const coverage = await feedCoverage(
+    db,
+    hour,
+    latest.events.map((e) => e.major),
+    baseline,
+  );
   const members = latest.events.map((e) => index.carrying(e.major, storyNeed(e.major)));
   // Every event's articles, fetched together: the last hour's, then today's
   // earlier ones, each newest first. One whose date is not read yet sorts by
@@ -379,6 +405,10 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
       news: newsOf(e),
       href: e.threadId ? `/eve/${e.threadId}/` : null,
       counts: countSeen(index.seen(members[i]), w),
+      newest: newestOf(index.seen(members[i]), w),
+      hours: e.threadId ? (onTable.get(e.threadId) ?? null) : null,
+      rankTrail: e.threadId ? (trails.get(e.threadId) ?? null) : null,
+      coverage: coverage[i],
       articles: picked[i].flatMap(({ id, copies }) => {
         const a = byId.get(id);
         if (!a) return [];

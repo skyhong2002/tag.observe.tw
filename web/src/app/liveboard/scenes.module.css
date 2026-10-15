@@ -69,7 +69,16 @@
 .figures dd b { font-size: 1.7em; font-weight: 700; }
 .sub { color: #71717a; font-size: 0.8em; }
 .trend { margin: 0; display: flex; flex-direction: column; gap: 0.25em; }
-.trend figcaption { display: flex; justify-content: space-between; }
+.trend figcaption { display: flex; justify-content: space-between; gap: 1em; white-space: nowrap; }
+.trendStats { overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.trendStats b { color: inherit; font-weight: 700; }
+.trendStats b:first-child { color: var(--tint); }
+.rankTrail { display: inline-flex; align-items: center; gap: 0.4em; }
+.rankLine { display: block; width: 5em; height: 1.4em; }
+/* The events page's camp bar and badge (CampBar), sized up from its card scale. */
+.camps { display: flex; align-items: center; gap: 0.8em; }
+.camps > div { flex: 1; height: 1.5em; font-size: 0.7em; border-radius: 0.4em; }
+.camps > span { font-size: 0.7em; padding: 0.15em 0.6em; flex-shrink: 0; }
 .trendLine { display: block; width: 100%; height: 3.6em; }
 .trendEnds { display: flex; justify-content: space-between; color: #a1a1aa; font-size: 0.75em; }
 .trendEnds b { color: var(--tint); font-variant-numeric: tabular-nums; }
@@ -83,8 +92,6 @@
   /* A list longer than the screen fades out rather than ending in half a row. */
   mask-image: linear-gradient(to bottom, #000 calc(100% - 3em), transparent);
 }
-.section { margin: 0 0 0.45em; font-size: 0.8em; font-weight: 600; color: #71717a; }
-.section:not(:first-child) { margin-top: 0.9em; }
 .articles { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.6em; }
 .articles li { display: grid; grid-template-columns: 7em minmax(0, 1fr); align-items: center; gap: 0.9em; }
 .thumb { display: flex; align-items: center; justify-content: center; width: 7em; aspect-ratio: 16 / 9; border-radius: 0.35em; overflow: hidden; background: #f4f4f5; }
@@ -101,8 +108,8 @@
 .reportTags { display: flex; gap: 0.7em; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 0.75em; color: #a1a1aa; }
 .reportTags a[data-event] { color: var(--tint); font-weight: 600; }
 .media { color: #71717a; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.time { color: #a1a1aa; font-variant-numeric: tabular-nums; }
-.empty { margin: 0 0 0.3em; color: #a1a1aa; }
+.time { color: #a1a1aa; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.time[data-recent] { color: var(--tint); font-weight: 600; }
 
 /* A change: up in the lens's colour, down in grey. */
 .change {
@@ -168,7 +175,6 @@
 [data-theme="dark"] .arrow:focus-visible { color: #d4d4d8; }
 [data-theme="dark"] .track { background: #3f3f46; }
 [data-theme="dark"] .board td { border-color: #27272a; }
-[data-theme="dark"] .section,
 [data-theme="dark"] .sub,
 [data-theme="dark"] .byline { color: #a1a1aa; }
 [data-theme="dark"] .thumb { background: #27272a; }

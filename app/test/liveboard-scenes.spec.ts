@@ -3,6 +3,7 @@ import { matchPrev } from '../src/v1/event-feed.ts';
 import {
   countSeen,
   headlineDice,
+  newestOf,
   pickReports,
   rankBoard,
   type SceneRow,
@@ -151,5 +152,16 @@ describe('copies by headline', () => {
     const picked = pickReports([c(1, 'pchome'), c(2, 'pchome'), c(3, 'pchome'), c(4, 'pchome'), c(5, 'udn'), c(6, 'cna')], [], 4);
     // One of each outlet first, then PChome's second; its third and fourth wait for room that never comes.
     expect(picked.map((p) => p.id)).toEqual([1, 5, 6, 2]);
+  });
+});
+
+describe('newestOf', () => {
+  it('names the latest arrival, so a quiet hour still says how long ago', () => {
+    const seen = [
+      { published: now - 3 * HOUR, crawled: now - 90 * 60e3 },
+      { published: now - 5 * HOUR, crawled: now - 4 * HOUR },
+    ];
+    expect(newestOf(seen, w)).toBe(new Date(now - 90 * 60e3).toISOString());
+    expect(newestOf([], w)).toBeNull();
   });
 });

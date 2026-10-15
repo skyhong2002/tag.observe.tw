@@ -2,6 +2,7 @@
 // lenses (app/src/v1/liveboard-scenes.ts), and how the screen words it.
 
 import { cleanEventHeadline, clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
+import type { EventCoverage } from '@/lib/pages';
 import type { LiveboardSettings } from './settings';
 
 export interface SceneCounts {
@@ -46,6 +47,12 @@ export interface SceneEvent {
   news: SceneNews[];
   href: string | null;
   counts: SceneCounts;
+  /** When its newest report came in. */
+  newest: string | null;
+  /** Hours on the table, and rank in each of the last 24 snapshots. */
+  hours: number | null;
+  rankTrail: Array<number | null> | null;
+  coverage: EventCoverage;
   articles: SceneArticle[];
 }
 export interface SceneRow {
@@ -92,3 +99,12 @@ export function stayOf(scene: 'cloud' | 'events' | 'board', last: boolean, s: Pi
 /** hh:mm in Taipei. */
 export const clock = (iso: string) =>
   new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso));
+
+/** How long ago, as a screen says it: 剛剛, 12 分鐘前, 1 小時 5 分前. */
+export function since(iso: string, now = Date.now()) {
+  const minutes = Math.max(0, Math.floor((now - Date.parse(iso)) / 60e3));
+  if (minutes < 1) return '剛剛';
+  if (minutes < 60) return `${minutes} 分鐘前`;
+  const hours = Math.floor(minutes / 60);
+  return minutes % 60 ? `${hours} 小時 ${minutes % 60} 分前` : `${hours} 小時前`;
+}

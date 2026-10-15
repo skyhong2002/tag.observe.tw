@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { CampBadge, FullBar } from '@/components/CampBar';
 import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
 import Sparkline from '@/components/Sparkline';
@@ -8,7 +9,7 @@ import { authorCreditParts } from '@/lib/author-display.mts';
 import { selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { isAllowedImage } from '@/lib/images';
 import { articleHref } from '@/lib/reading.mts';
-import { clock, type SceneArticle, type SceneEvent, type SceneRow, signed, storyHeadline } from './scenes';
+import { clock, type SceneArticle, type SceneEvent, type SceneRow, signed, since, storyHeadline } from './scenes';
 import styles from './scenes.module.css';
 import type { BoardLens, EventLens } from './settings';
 
@@ -18,7 +19,8 @@ import type { BoardLens, EventLens } from './settings';
 // leaderboard of the day's topics. Both put the lens's name in a slim row on
 // top with the ‹ › that step through the frames (and on to the next lens),
 // and a bar that fills over the time the frame stays. Trends over the hours
-// are lines, as the site's other sparklines.
+// are lines, as the site's other sparklines. Links do not prefetch: a wall
+// screen changes frame every few seconds and nobody is about to open them.
 
 export default function SceneView({
   lens,
@@ -109,20 +111,31 @@ function Change({ value, digits = 0, unit = '' }: { value: number; digits?: numb
   );
 }
 
-/** The last hours' new reports as a line, oldest at the left; the busiest and the present hour named. */
+/** The last hours' new reports as a line, oldest at the left. As the full board's
+ *  charts do, the caption sets this hour against the one before, the average and the
+ *  busiest, so a quiet hour reads as quiet rather than as a bare 0. */
 function Trend({ hours, colour }: { hours: number[]; colour: string }) {
   const top = Math.max(...hours);
+  const peak = hours.lastIndexOf(top);
+  const full = hours.slice(0, -1);
+  const average = full.length ? Math.round(full.reduce((n, v) => n + v, 0) / full.length) : 0;
+  // Bucket i is the hour ending (hours.length - 1 - i) hours ago.
+  const peakAt = new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', hour: 'numeric', hourCycle: 'h23' }).format(
+    new Date(Date.now() - (hours.length - peak) * 3600e3),
+  );
   return (
     <figure className={styles.trend} aria-label={`近 ${hours.length} 小時每小時新報導：${hours.join('、')}`}>
       <figcaption className={styles.sub}>
-        近 {hours.length} 小時每小時新報導<span>最多 {top} 篇</span>
+        <span>近 {hours.length} 小時每小時新報導</span>
+        <span className={styles.trendStats}>
+          這小時 <b>{hours.at(-1)}</b> · 上小時 <b>{hours.at(-2) ?? 0}</b> · 平均 <b>{average}</b> · 最高 <b>{top}</b>
+          {top > 0 && `（${peakAt} 點起）`}
+        </span>
       </figcaption>
       <Sparkline values={hours} color={colour} className={styles.trendLine} />
       <span className={styles.trendEnds}>
         <span>{hours.length} 小時前</span>
-        <span>
-          這一小時 <b>{hours.at(-1)}</b> 篇
-        </span>
+        <span>現在</span>
       </span>
     </figure>
   );
@@ -138,6 +151,7 @@ function Keywords({ tags, major }: { tags: SceneEvent['tags']; major: string[] }
     <p className={styles.keywords}>
       {ordered.map((t) => (
         <Link
+          prefetch={false}
           key={t.tag}
           href={`/tag/${encodeURIComponent(t.tag)}/`}
           data-major={majors.has(t.tag) || undefined}
@@ -154,10 +168,9 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   const moved = event.prevRank === null ? null : event.prevRank - event.rank;
   const headline = storyHeadline(event.news, event.major);
   const cover = selectEventCover(event.news, selectEventLead(event.news, event.major), isAllowedImage);
-  const recent = event.articles.filter((a) => a.recent);
-  const earlier = event.articles.filter((a) => !a.recent);
   const tags = event.tags.length ? event.tags : event.major.map((tag) => ({ tag, burst: 1 }));
   const keywords = new Set(tags.map((t) => t.tag));
+  const trail = (event.rankTrail ?? []).filter((r): r is number => r !== null);
   return (
     <article className={styles.event}>
       <div className={styles.story}>
@@ -175,8 +188,23 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
               {moved > 0 ? `↑ ${moved}` : `↓ ${-moved}`}
             </span>
           ) : null}
+          {event.hours && event.hours >= 2 ? <span className={styles.sub}>上榜 {event.hours} 小時</span> : null}
+          {trail.length >= 2 && (
+            <span className={styles.rankTrail} title={`最近 24 小時名次：${(event.rankTrail ?? []).map((r) => r ?? '－').join(' ')}`}>
+              <Sparkline values={event.rankTrail ?? []} rank color={colour} className={styles.rankLine} />
+              <span className={styles.sub}>24 小時名次，最高第 {Math.min(...trail)} 名</span>
+            </span>
+          )}
         </p>
-        <h3 className={styles.headline}>{event.href ? <Link href={event.href}>{headline}</Link> : headline}</h3>
+        <h3 className={styles.headline}>
+          {event.href ? (
+            <Link prefetch={false} href={event.href}>
+              {headline}
+            </Link>
+          ) : (
+            headline
+          )}
+        </h3>
         <Keywords tags={tags} major={event.major} />
       </div>
       <div className={styles.numbers}>
@@ -194,30 +222,30 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
             <dd className={styles.sub}>{event.prevScore === null ? '上一小時不在榜上' : `上一小時 ${event.prevScore.toFixed(1)}`}</dd>
           </div>
           <div>
-            <dt>近一小時新報導</dt>
+            <dt>最新報導</dt>
             <dd>
-              <b>{event.counts.hour}</b> 篇
-              <Change value={event.counts.hour - event.counts.previous} />
+              <b>{event.newest ? since(event.newest) : '—'}</b>
             </dd>
-            <dd className={styles.sub}>前一小時 {event.counts.previous} 篇</dd>
+            <dd className={styles.sub}>
+              近一小時 {event.counts.hour} 篇 · 前一小時 {event.counts.previous} 篇
+            </dd>
           </div>
           <div>
             <dt>今天</dt>
             <dd>
               <b>{event.counts.today}</b> 篇
             </dd>
+            <dd className={styles.sub}>24 小時內 {event.coverage.outlets.length} 家媒體</dd>
           </div>
         </dl>
+        {/* The events page's camp split and blind-spot badge, larger for the screen. */}
+        <div className={styles.camps}>
+          <FullBar c={event.coverage} />
+          <CampBadge c={event.coverage} />
+        </div>
         <Trend hours={event.counts.hours} colour={colour} />
         <div className={styles.reports}>
-          <h4 className={styles.section}>近一小時新報導</h4>
-          {recent.length ? <Articles list={recent} keywords={keywords} /> : <p className={styles.empty}>這一小時還沒有新報導</p>}
-          {earlier.length > 0 && (
-            <>
-              <h4 className={styles.section}>今天稍早</h4>
-              <Articles list={earlier} keywords={keywords} />
-            </>
-          )}
+          <Articles list={event.articles} keywords={keywords} />
         </div>
       </div>
     </article>
@@ -241,7 +269,7 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
               )}
             </span>
             <span className={styles.articleText}>
-              <Link href={articleHref(a)} className={styles.articleTitle}>
+              <Link prefetch={false} href={articleHref(a)} className={styles.articleTitle}>
                 {a.title}
               </Link>
               <span className={styles.byline}>
@@ -257,7 +285,10 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
                     ))}
                   </span>
                 )}
-                <time className={styles.time}>{clock(a.publishedAt)}</time>
+                {/* The last hour's arrivals say how long ago, in the lens's colour; earlier ones their time. */}
+                <time className={styles.time} data-recent={a.recent || undefined}>
+                  {a.recent ? since(a.publishedAt) : clock(a.publishedAt)}
+                </time>
                 {a.copies.length > 0 && (
                   <span className={styles.copies} title={a.copies.map((c) => c.mediaTitle).join('、')}>
                     {a.copies.slice(0, 3).map((c) => (
@@ -270,7 +301,7 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
               {a.tags.length > 0 && (
                 <span className={styles.reportTags}>
                   {a.tags.slice(0, 5).map((tag) => (
-                    <Link key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-event={keywords.has(tag) || undefined}>
+                    <Link prefetch={false} key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-event={keywords.has(tag) || undefined}>
                       #{tag}
                     </Link>
                   ))}
@@ -309,7 +340,9 @@ function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | Boa
               <span className={styles.nameCell}>
                 {r.media && <MediaIcon media={r.media} title={r.mediaTitle} size={20} />}
                 {r.mediaTitle && <span className={styles.media}>{r.mediaTitle}</span>}
-                <Link href={r.href}>{thread ? storyHeadline(r.news, r.major) : r.title}</Link>
+                <Link prefetch={false} href={r.href}>
+                  {thread ? storyHeadline(r.news, r.major) : r.title}
+                </Link>
                 {thread && r.major?.length ? <span className={styles.rowTags}>{r.major.join('・')}</span> : null}
               </span>
             </td>

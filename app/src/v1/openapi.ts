@@ -2939,6 +2939,10 @@ export const ENDPOINTS: Endpoint[] = [
           ),
           href: nullable(str('事件串頁')),
           counts: ref('LiveSceneCounts'),
+          newest: nullable(time('最新一篇報導的收錄時間')),
+          hours: nullable(int('事件串累計上榜小時數')),
+          rankTrail: nullable(arr(nullable(int()), '最近 24 份快照的名次，舊的在前，null 為不在榜上')),
+          coverage: obj({}, '24 小時內報導的媒體與陣營，同 /api/v1/events 的 coverage'),
           articles: arr(
             obj({
               id: int(),
