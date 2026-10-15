@@ -329,3 +329,5 @@ Network recomputed: `{"requests": 1037, "requestDNT1": 1037, "requestGoogleURL":
 - `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-390-dark-full.png` — `84a956b2d424ec822054db45db67ad39b6176b13abec84a781bc5158b0c947fc`
 
 Batch007 actual formal review recorded: SETN routes032/033 and Newtalk062/063 have normal observed presentation PASS, no layout blocker; search/details/empty/error/interaction pending. Reviewer retained HAR with 5x504 and 1x500 resources despite successful page captures; this does not establish route-wide failure or a root cause.
+
+Batch009 capture completed 32 original PNGs (routes 030/009/023/055), DNT1, browser Google 0, proxy admitted Google 0; independent review pending. Fresh/monitor gate remained within limits.
