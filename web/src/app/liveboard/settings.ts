@@ -4,7 +4,7 @@
 // localStorage, so a wall tablet opens on its own board without signing in.
 // Query parameters override both for one visit: ?mode=simple (or the older
 // ?simple=1), ?lens=growth,blue, ?pictures=0, ?history=3, ?interval=6, ?step=5, ?hold=10, ?words=48, ?scale=80, ?change=rank.
-// A lens is a keyword cloud, the top events, or a leaderboard of the day's
+// A lens is a keyword cloud, two camps' clouds side by side, the top events, or a leaderboard of the day's
 // topics (/api/v1/liveboard/scenes); each is one of SimpleBoard's scenes.
 // Plain data, so the server page can read it too.
 
@@ -23,6 +23,12 @@ export interface CloudLens extends LensBase {
   category: string;
   order: 'growth' | 'burst' | 'score';
 }
+/** Two camps' keyword clouds at once, left and right, the words both write about between them. */
+export interface CompareLens extends LensBase {
+  scene: 'compare';
+  /** The cloud lenses on the left and on the right. */
+  sides: [string, string];
+}
 /** The top events, one at a time: score against the previous hour, and the last hour's articles. */
 export interface EventLens extends LensBase {
   scene: 'events';
@@ -34,7 +40,7 @@ export interface BoardLens extends LensBase {
   scene: 'board';
   board: BoardKey;
 }
-export type Lens = CloudLens | EventLens | BoardLens;
+export type Lens = CloudLens | CompareLens | EventLens | BoardLens;
 const cloud = (lens: Omit<CloudLens, 'scene'>): CloudLens => ({ scene: 'cloud', ...lens });
 export const LENSES: Lens[] = [
   // All outlets together, in plain ink (white on the dark theme).
@@ -111,6 +117,16 @@ export const LENSES: Lens[] = [
     accent: '#a16207',
     dark: '#fbbf24',
   }),
+  {
+    key: 'camps',
+    scene: 'compare',
+    // Green on the left and blue on the right, as the site's camp bars run.
+    sides: ['green', 'blue'],
+    title: '藍綠對照',
+    note: '綠營、藍營媒體各自在講，與兩邊都在講的關鍵字',
+    accent: '#27272a',
+    dark: '#f4f4f5',
+  },
   { key: 'events', scene: 'events', title: '事件', note: '比上一小時的分數，與這一小時的新報導', accent: '#b91c1c', dark: '#f87171' },
   {
     key: 'threads',
@@ -174,11 +190,11 @@ export interface LiveboardSettings {
 /** What a device that has never saved settings shows: the last day in 6-hour steps, with each word's change in place. */
 export const DEFAULTS: LiveboardSettings = {
   mode: 'simple',
-  // Overview, then what happened, the two camps side by side (same layout, same
-  // time), the day's threads, what is rising, and the outlets outside the camps.
-  // The rest (新聞熱詞 repeats 綜合, 突然爆量 is close to 正在發酵, the topic and
+  // Overview, then what happened, the two camps at once (藍綠對照), the day's
+  // threads, what is rising, and the outlets outside the camps. The rest (each
+  // camp alone, 新聞熱詞 repeats 綜合, 突然爆量 is close to 正在發酵, the topic and
   // category boards, the trade lenses) are one tick away in the settings.
-  lenses: ['all', 'events', 'blue', 'green', 'threads', 'growth', 'alt'],
+  lenses: ['all', 'events', 'camps', 'threads', 'growth', 'alt'],
   pictures: true,
   history: 4,
   interval: 6,
@@ -253,5 +269,7 @@ export const QUERY_KEYS = ['mode', 'simple', 'lens', 'pictures', 'history', 'int
 
 export const pickLenses = (keys: string[]) => keys.map((key) => LENSES.find((l) => l.key === key)).filter((l) => l !== undefined);
 /** The first keyword cloud of these lenses (the page fetches its present ranking with the page). */
+/** A cloud lens by key, for a compare lens's sides. */
+export const cloudLens = (key: string) => LENSES.find((l): l is CloudLens => l.key === key && l.scene === 'cloud');
 export const firstCloud = (keys: string[]) =>
   pickLenses(keys).find((l): l is CloudLens => l.scene === 'cloud') ?? (LENSES.find((l) => l.scene === 'cloud') as CloudLens);

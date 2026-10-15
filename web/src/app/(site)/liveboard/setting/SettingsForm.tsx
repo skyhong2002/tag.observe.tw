@@ -67,7 +67,7 @@ export default function SettingsForm() {
   const perScene = (scene: 'events' | 'board') => (scene === 'events' ? EVENT_FRAMES : 1) * (1 + stayOf(scene, true, draft));
   const round = draft.lenses.reduce((n, key) => {
     const lens = lensOf(key);
-    return n + (!lens ? 0 : lens.scene === 'cloud' ? perLens : perScene(lens.scene));
+    return n + (!lens ? 0 : lens.scene === 'cloud' || lens.scene === 'compare' ? perLens : perScene(lens.scene));
   }, 0);
   const user = session?.user;
   const dirty = JSON.stringify(draft) !== JSON.stringify(stored);

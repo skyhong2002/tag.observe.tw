@@ -104,7 +104,7 @@ export const signed = (n: number, digits = 0) => {
 
 /** How long a frame stays once it has faded in: a keyword cloud's past hour `step` and its present `hold`;
  *  an event `hold`, since its articles are read; a leaderboard half as long again, for its ten rows. */
-export function stayOf(scene: 'cloud' | 'events' | 'board', last: boolean, s: Pick<LiveboardSettings, 'step' | 'hold'>) {
+export function stayOf(scene: 'cloud' | 'compare' | 'events' | 'board', last: boolean, s: Pick<LiveboardSettings, 'step' | 'hold'>) {
   if (scene === 'board') return Math.round(s.hold * 1.5);
   if (scene === 'events') return s.hold;
   return last ? s.hold : s.step;
