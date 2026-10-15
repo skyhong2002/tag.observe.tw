@@ -28,7 +28,7 @@ export const C = {
 
 export async function cardJson<T>(path: string, revalidate = 900): Promise<T | null> {
   try {
-    const res = await fetch(`${API_ORIGIN}${path}`, { next: { revalidate }, signal: AbortSignal.timeout(15000) });
+    const res = await fetch(`${API_ORIGIN}${path}`, { next: { revalidate }, signal: AbortSignal.timeout(13_000) });
     return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;

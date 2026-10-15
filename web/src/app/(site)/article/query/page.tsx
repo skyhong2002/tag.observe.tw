@@ -47,7 +47,12 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
   }
   const [media, similarity, result] = await Promise.all([
     fetchMedia().catch(() => ({})),
-    fetchSimilarity({ hours: 168 }, 0.65).catch(() => null),
+    // Only the source list needs the week's graph (2.4 MB, above Next's cache
+    // limit, so refetched); the gateway gives up on headers after 15 s.
+    Promise.race([
+      fetchSimilarity({ hours: 168 }, 0.65).catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10_000)),
+    ]),
     error ? null : searchArticles({ ...filters, limit: '30', facets: '1', ...(cursor ? { cursor } : {}) }),
   ]);
   const sources = similarity ? sourceRanking(similarity) : [];

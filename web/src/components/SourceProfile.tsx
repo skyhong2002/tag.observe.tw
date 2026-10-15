@@ -32,7 +32,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
     try {
       const response = await fetch(`${API_ORIGIN}/api/v1/similarity/evidence?${evidenceQuery}`, {
         next: { revalidate: 60 },
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(13_000),
       });
       if (response.ok) evidence = (await response.json()) as SimilarityEvidence;
     } catch {

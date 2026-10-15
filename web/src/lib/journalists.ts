@@ -73,7 +73,7 @@ export async function fetchJournalists(hours: number, threshold = 0.65, limit = 
     const response = await fetch(`${API_ORIGIN}/api/v1/journalists?hours=${hours}&threshold=${threshold}&limit=${limit}`, {
       next: { revalidate: 120 },
       headers: { accept: 'application/json' },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(13_000),
     });
     return response.ok ? ((await response.json()) as JournalistIndex) : null;
   } catch {
@@ -86,7 +86,7 @@ export async function fetchJournalist(name: string, hours: number, threshold = 0
     const response = await fetch(`${API_ORIGIN}/api/v1/journalists/${encodeURIComponent(name)}?hours=${hours}&threshold=${threshold}`, {
       next: { revalidate: 300 },
       headers: { accept: 'application/json' },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(13_000),
     });
     if (response.status === 404 || response.status === 400) return 'missing';
     return response.ok ? ((await response.json()) as JournalistDetail) : null;
