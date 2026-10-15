@@ -313,7 +313,7 @@ function TagRace({ topics }: { topics: FeedTopic[] }) {
               return (
                 <li key={o.media} className="py-2.5">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-400" aria-hidden>
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400" aria-hidden>
                       {o.start ? i + 1 : ''}
                     </span>
                     <Link

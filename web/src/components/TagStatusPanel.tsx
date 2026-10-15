@@ -17,12 +17,12 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
     : r.new
       ? { text: '新上榜', tone: rising }
       : delta === null
-        ? { text: '—', tone: 'text-zinc-400' }
+        ? { text: '—', tone: 'text-zinc-500 dark:text-zinc-400' }
         : delta > 0
           ? { text: `▲${delta}`, tone: 'text-rose-600', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
           : delta < 0
             ? { text: `▼${-delta}`, tone: 'text-sky-600', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
-            : { text: '＝', tone: 'text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
+            : { text: '＝', tone: 'text-zinc-500 dark:text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
   const tiles: Array<{ label: string; value: string; tone?: string; title?: string }> = r
     ? [
         { label: '名次', value: `#${r.position}` },

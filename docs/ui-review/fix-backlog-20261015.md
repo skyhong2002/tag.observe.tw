@@ -33,3 +33,7 @@ Status: open / fixed@<sha> / wontfix (reason).
 | 26 | 022 `/api/status/` | minor | (f3c verify) 390px stacked card: wrapped path lines fell back under the 「端點」 label. | fixed in source (inline-block path) |
 | 27 | 023 `/article/query/` | minor | (f3c verify) One 鉅亨網 summary shows 「&amp;#10;」: the source double-encodes the entity and the crawler decodes once. | open (crawler/data) |
 | 28 | 060 `/similarity/reposts/` | minor | (f3c verify) 390px: the lower chart's axis title sits on the upper chart's zero line. | fixed in source (lower grid lower on phones) |
+| 29 | 027 `/crawlers/` (and 045 → 308 there) | minor | (state audit) React #418 hydration text mismatch on every load; React re-renders on the client, no visible defect. Midnight formatting ruled out (Node and Chromium both print 00:05). | open |
+| 30 | 031 `/event/archive/`, 032/033 `/feature/setn/` | minor | (state audit) Viewport prefetch of many links got 429 from the rate limiter during the audit; a real reader scrolling a long list could hit it too. | open |
+| 31 | 006/013/062 | minor | (state audit) `/_next/image` 404/500 for some upstream pictures. | open |
+| 32 | 004/010/024/026/027 tables | minor | (state audit) Light-theme placeholder 「—」 and secondary numbers at contrast 2.62 (below AA 4.5). | fixed in source: bare text-zinc-400 → text-zinc-500 dark:text-zinc-400 in 11 files (liveboard excluded, always dark) |

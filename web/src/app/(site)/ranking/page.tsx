@@ -269,7 +269,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     <td className={table.lead}>
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <div className={`${table.leadBox} flex items-center gap-2`}>
-                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 sm:hidden">{e.position}</span>
+                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 sm:hidden">
+                            {e.position}
+                          </span>
                           <Link
                             href={`/tag/${encodeURIComponent(e.tag)}`}
                             className={`${table.leadText} font-medium text-brand-700 hover:underline dark:text-brand-400`}
@@ -296,13 +298,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       title={delta === null || e.new ? undefined : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`}
                     >
                       {delta === null ? (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
                       ) : delta > 0 ? (
                         <span className="text-rose-600">▲{delta}</span>
                       ) : delta < 0 ? (
                         <span className="text-sky-600">▼{-delta}</span>
                       ) : (
-                        <span className="text-zinc-400">＝</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">＝</span>
                       )}
                     </td>
                     <td className={table.num}>{e.normalized.toFixed(1)}</td>
@@ -321,7 +323,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {related.length ? (
                         related.map((r, i) => (
                           <span key={r.tag}>
-                            {i > 0 && <span className="text-zinc-400">、</span>}
+                            {i > 0 && <span className="text-zinc-500 dark:text-zinc-400">、</span>}
                             <Link
                               href={`/tag/${encodeURIComponent(r.tag)}`}
                               className="text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
@@ -331,7 +333,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                           </span>
                         ))
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
                       )}
                     </td>
                     <td className={`max-w-0 ${table.cell}`}>
@@ -341,7 +343,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {e.drafts?.articles ? (
                         <DraftEvidence data={e.drafts} singleLine />
                       ) : (
-                        <span className="text-xs text-zinc-400">暫無比對資料</span>
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">暫無比對資料</span>
                       )}
                     </td>
                   </tr>

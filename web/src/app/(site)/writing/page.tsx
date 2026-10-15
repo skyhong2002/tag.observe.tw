@@ -86,7 +86,8 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
                   .sort((a, b) => b[1] - a[1])
                   .map(([p, n]) => (
                     <Link key={p} href={filterHref({ platform: p })} className="hover:underline">
-                      {PLATFORM_LABEL[p] ?? p} <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(n, totals.social)}</span>
+                      {PLATFORM_LABEL[p] ?? p}{' '}
+                      <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(n, totals.social)}</span>
                     </Link>
                   ))}
               </p>
@@ -153,7 +154,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
               <ol className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 {overview.posters.map((p, i) => (
                   <li key={p.name} className="flex flex-wrap items-baseline gap-2">
-                    <span className="w-6 text-right text-xs tabular-nums text-zinc-400">{i + 1}</span>
+                    <span className="w-6 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</span>
                     <Link href={filterHref({ poster: p.name })} className="font-medium hover:underline">
                       {p.name}
                     </Link>

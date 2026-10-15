@@ -193,7 +193,9 @@ export default function MediaComparison({
                         <span className={`${table.leadText} font-medium`}>{row.name}</span>
                       </span>
                       {row.external && (
-                        <span className={`${table.leadExtra} whitespace-nowrap text-[11px] text-zinc-500 dark:text-zinc-400`}>僅來源／引用對象</span>
+                        <span className={`${table.leadExtra} whitespace-nowrap text-[11px] text-zinc-500 dark:text-zinc-400`}>
+                          僅來源／引用對象
+                        </span>
                       )}
                     </button>
                   </th>
@@ -203,7 +205,7 @@ export default function MediaComparison({
                     return (
                       <td key={key} className={`${table.num} py-2.5`}>
                         {!row[key] ? (
-                          <span className="text-zinc-400">0</span>
+                          <span className="text-zinc-500 dark:text-zinc-400">0</span>
                         ) : similar ? (
                           <span className={relationshipFilters[key].className}>{number(row[key])}</span>
                         ) : (
@@ -255,7 +257,7 @@ export default function MediaComparison({
                         );
                       })}
                       {!relationships.length && (
-                        <span className="text-xs text-zinc-400">{focus ? '目前篩選無此類關係' : '目前篩選無關係'}</span>
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">{focus ? '目前篩選無此類關係' : '目前篩選無關係'}</span>
                       )}
                     </div>
                   </td>
@@ -265,7 +267,9 @@ export default function MediaComparison({
           </tbody>
         </table>
       </TableScroller>
-      {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>}
+      {!filtered.length && (
+        <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>
+      )}
     </div>
   );
 }

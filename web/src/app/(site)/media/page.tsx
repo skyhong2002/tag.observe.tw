@@ -380,7 +380,7 @@ export default async function MediaStatsPage({
                       {campBadge(r)?.short}
                     </span>
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
                   )}
                 </td>
                 <td className={table.num}>{r.today.toLocaleString()}</td>
@@ -401,7 +401,10 @@ export default async function MediaStatsPage({
                   </div>
                 </td>
                 <SevenDayCell value={r.last7d} since={r.collectingSince} partial={partialWeek(r)} />
-                <td className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`} title={r.readers?.title}>
+                <td
+                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                  title={r.readers?.title}
+                >
                   {r.readers ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.visits)}` : '—'}
                 </td>
                 <td
@@ -422,11 +425,13 @@ export default async function MediaStatsPage({
                       ))}
                     </span>
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
                   )}
                 </td>
                 <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{pct(r.taggedShare24h)}</td>
-                <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400`}>{r.lastArticle ? taipei(r.lastArticle) : '—'}</td>
+                <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400`}>
+                  {r.lastArticle ? taipei(r.lastArticle) : '—'}
+                </td>
                 <td className={`${table.cell} whitespace-nowrap text-zinc-600 dark:text-zinc-400`}>{scheduleLabel(r.schedule)}</td>
                 <td className={table.cell}>
                   <StatusBadge status={r.status} />

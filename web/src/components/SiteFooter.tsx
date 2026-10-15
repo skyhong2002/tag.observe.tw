@@ -145,7 +145,7 @@ export default function SiteFooter({ notes }: { notes?: React.ReactNode }) {
                       {l.external ? (
                         <a href={l.href} target="_blank" rel="noopener noreferrer" className={link}>
                           {l.label}
-                          <span aria-hidden="true" className="ml-0.5 text-zinc-400">
+                          <span aria-hidden="true" className="ml-0.5 text-zinc-500 dark:text-zinc-400">
                             ↗
                           </span>
                         </a>

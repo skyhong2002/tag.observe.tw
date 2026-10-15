@@ -316,12 +316,12 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
                             className={`size-1.5 shrink-0 rounded-full ${topicProblem(row.topics) ? 'bg-amber-500' : 'bg-emerald-500'}`}
                           />
                           議題 {row.topics.counts.topic}・專題 {row.topics.counts.feature}
-                          <span aria-hidden="true" className="text-zinc-400">
+                          <span aria-hidden="true" className="text-zinc-500 dark:text-zinc-400">
                             {expanded.includes(row.media) ? '▾' : '▸'}
                           </span>
                         </button>
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
                       )}
                     </td>
                   </tr>
