@@ -197,6 +197,15 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
       payload: { type: 'related', target: '乙', reason: 'x'.repeat(1001) },
     });
     expect(response.statusCode).toBe(400);
+    // The reason is optional.
+    const bare = await app.inject({
+      method: 'POST',
+      url: '/auth/tags/甲/relations',
+      headers: headers(),
+      payload: { type: 'related', target: '丙' },
+    });
+    expect(bare.statusCode).toBe(201);
+    expect(await db.select({ reason: tagSubmissions.reason }).from(tagSubmissions)).toEqual([{ reason: null }]);
   });
   it('deduplicates symmetric submissions, including concurrent authors, and keeps a revocation', async () => {
     const both = await Promise.all([submit('甲', '乙', 'alias'), submit('乙', '甲', 'alias', 'other')]);
@@ -387,12 +396,17 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
     await db.insert(tagGroupDefs).values([
       { id: 821, label: '建議分類', kind: 'group', sort: 1, createdAt: new Date() },
       { id: 822, label: '既有分類', kind: 'group', sort: 2, createdAt: new Date() },
+      { id: 823, label: 'AI 猜的分類', kind: 'group', sort: 3, createdAt: new Date() },
     ]);
     await db.insert(tagGroupMembers).values([
-      { tag: '候選人物', groupId: 821, source: 'ai', status: 'review', note: '曾任某職', updatedAt: new Date() },
+      { tag: '候選人物', groupId: 821, source: 'wikidata', status: 'review', note: '曾任某職', updatedAt: new Date() },
       { tag: '候選人物', groupId: 822, source: 'legacy', status: 'confirmed', updatedAt: new Date() },
+      // Readers are never asked about an AI guess (owner's decision, 2026-10-16).
+      { tag: '候選人物', groupId: 823, source: 'ai', status: 'review', note: 'AI', updatedAt: new Date() },
     ]);
-    expect((await candidates('候選人物')).map((c) => c.target)).toEqual(['建議分類']);
+    const offered = await candidates('候選人物');
+    expect(offered.map((c) => c.target)).toEqual(['建議分類']);
+    expect(offered[0]).toMatchObject({ origin: 'suggestion', evidence: [{ text: '曾任某職' }] });
     const key = relationKey('候選人物', 'is-a', { groupId: 821 });
     expect((await vote('候選人物', key, 1, 'reader')).statusCode).toBe(200);
     expect(await db.select().from(tagGroupMembers).where(eq(tagGroupMembers.groupId, 821))).toMatchObject([

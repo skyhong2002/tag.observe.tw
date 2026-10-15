@@ -3,7 +3,7 @@ import type React from 'react';
 import type { TagGroupRef, TagRelation } from '@/lib/api';
 
 // The groups a tag is filed under (docs/tag-groups.md): identity groups
-// (政治人物、現任立委…) first, then topics (政治、體育…) in a lighter style.
+// (政治人物、2024 立委…) first, then topics (政治、體育…) in a lighter style.
 // Groups above a subgroup the tag is in are listed too. Each links to the
 // group's comparison page. Relations readers established that are not one of
 // those groups (相關詞、別名、a tag as a category) follow, then `after`

@@ -2261,6 +2261,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E6%9F%AF%E6%96%87%E5%93%B2/relation
 | `tag` | string |  |
 | `tagId` | string |  |
 | `truncated` | boolean |  |
+| `voting` | integer \| null | 在 /tag/{標籤}/relations/ 等讀者回答的候選數；暫時算不出來時為 null |
 | `relations` | object[] |  |
 | `relations[].id` | string | 穩定關係 ID |
 | `relations[].type` | "is-a" \| "related" \| "alias" | 關係型別 |
@@ -2304,7 +2305,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/groups'
 | `tag` | string |  |
 | `groups` | object[] |  |
 | `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編 |
-| `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
+| `groups[].label` | string | 名稱，例如 政治人物、2024 立委、政治、體育 |
 | `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
 | `groups[].parentId` | integer \| null | 上層群組 ID；最上層為 null |
 | `groups[].source` | "legacy" \| "admin" \| "person" \| "wikidata" \| "section" \| "ai" \| "parent" | 判斷來源 |
@@ -2333,10 +2334,11 @@ curl -s 'https://tag.observe.tw/api/v1/tag-groups'
 | --- | --- | --- |
 | `groups` | object[] |  |
 | `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編 |
-| `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
+| `groups[].label` | string | 名稱，例如 政治人物、2024 立委、政治、體育 |
 | `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
 | `groups[].parentId` | integer \| null | 上層群組 ID；最上層為 null |
 | `groups[].tags` | integer | 標籤數（含子群組） |
+| `groups[].curated` | boolean | 依官方名單維護的任期名冊（立委、縣市長…），不開放讀者投票 |
 
 快取：5 分鐘。
 

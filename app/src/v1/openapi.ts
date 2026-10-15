@@ -1909,6 +1909,7 @@ export const ENDPOINTS: Endpoint[] = [
       tag: str(),
       tagId: str(),
       truncated: bool(),
+      voting: nullable(int('在 /tag/{標籤}/relations/ 等讀者回答的候選數；暫時算不出來時為 null')),
       relations: arr(
         obj({
           id: str('穩定關係 ID'),
@@ -1938,7 +1939,7 @@ export const ENDPOINTS: Endpoint[] = [
       groups: arr(
         obj({
           id: int('群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編'),
-          label: str('名稱，例如 政治人物、現任立委、政治、體育'),
+          label: str('名稱，例如 政治人物、2024 立委、政治、體育'),
           kind: str('group 是身分／類型群組，topic 是主題大類', { enum: ['group', 'topic'] }),
           parentId: nullable(int('上層群組 ID；最上層為 null')),
           source: str('判斷來源', { enum: ['legacy', 'admin', 'person', 'wikidata', 'section', 'ai', 'parent'] }),
@@ -1958,10 +1959,11 @@ export const ENDPOINTS: Endpoint[] = [
       groups: arr(
         obj({
           id: int('群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編'),
-          label: str('名稱，例如 政治人物、現任立委、政治、體育'),
+          label: str('名稱，例如 政治人物、2024 立委、政治、體育'),
           kind: str('group 是身分／類型群組，topic 是主題大類', { enum: ['group', 'topic'] }),
           parentId: nullable(int('上層群組 ID；最上層為 null')),
           tags: int('標籤數（含子群組）'),
+          curated: bool('依官方名單維護的任期名冊（立委、縣市長…），不開放讀者投票'),
         }),
       ),
     }),

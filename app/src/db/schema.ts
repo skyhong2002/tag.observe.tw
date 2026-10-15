@@ -705,6 +705,8 @@ export type TagPersonFacts = {
   occupations: string[];
   parties: string[];
   positions: { label: string; current: boolean }[];
+  /** Wikidata's Chinese aliases (looked up since 2026-10-16; absent before). */
+  aliases?: string[];
 };
 
 export const tagPeople = mysqlTable(
@@ -743,7 +745,7 @@ export const tagSubmissions = mysqlTable(
     targetGroupId: int('target_group_id'),
     reason: varchar('reason', { length: 1000 }),
     status: varchar('status', { length: 16 }).$type<'pending' | 'approved' | 'rejected' | 'revoked'>().notNull(),
-    source: varchar('source', { length: 16 }).$type<'submission' | 'manual' | 'rule' | 'cooccur'>().notNull(),
+    source: varchar('source', { length: 16 }).$type<'submission' | 'manual' | 'rule' | 'cooccur' | 'wikidata'>().notNull(),
     createdBy: int('created_by').notNull(),
     createdAt: datetime('created_at').notNull(),
     reviewedBy: int('reviewed_by'),

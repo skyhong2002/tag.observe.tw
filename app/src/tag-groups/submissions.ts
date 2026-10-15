@@ -14,7 +14,8 @@ import {
 } from '../db/schema.ts';
 import { refreshPages } from '../pictures/refresh.ts';
 import { approvePicture, type PictureMetadata, revokePicture } from '../pictures/submissions.ts';
-import { castRelationVote, relationCandidates, VoteRefused } from './relation-votes.ts';
+import { castRelationVote, forgetVotingCount, relationCandidates, VoteRefused } from './relation-votes.ts';
+import { CURATED_GROUPS } from './rules.ts';
 import { isACycle, RELATION_TYPES, type RelationType, relationKey, validSemanticTag } from './semantic.ts';
 import { syncWritingTag } from './writing.ts';
 
@@ -124,11 +125,10 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
         !validSemanticTag(target) ||
         tag === target ||
         !RELATION_TYPES.includes(type as RelationType) ||
-        typeof reason !== 'string' ||
-        !reason.trim() ||
-        reason.length > 1000
+        (reason !== undefined && reason !== null && (typeof reason !== 'string' || reason.length > 1000))
       )
-        return reply.code(400).send({ error: '請選擇關係，填寫不同的有效標籤與 1–1000 字的說明' });
+        return reply.code(400).send({ error: '請選擇關係，填寫不同的有效標籤；說明可留空，最多 1000 字' });
+      const why = typeof reason === 'string' && reason.trim() ? reason.trim() : null;
       const groups =
         type === 'is-a'
           ? (
@@ -139,6 +139,10 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
             ).filter((g) => g.label === target)
           : [];
       if (groups.length > 1) return reply.code(409).send({ error: '有多個同名分類，請管理員先整理分類' });
+      if (groups[0] && CURATED_GROUPS.has(groups[0].id))
+        return reply
+          .code(409)
+          .send({ error: `「${groups[0].label}」依官方名單維護，不開放投票；名單有誤請從頁尾「聯絡與移除請求」告訴我們` });
       if (type === 'is-a') {
         const ownGroups = await db
           .select({ label: tagGroupDefs.label })
@@ -179,7 +183,7 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
               relationType: type as RelationType,
               target,
               targetGroupId: groups[0]?.id ?? null,
-              reason: reason.trim(),
+              reason: why,
               source: user.role === 'admin' ? 'manual' : 'submission',
               status: 'pending',
               createdBy: user.id,
@@ -203,7 +207,10 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
         });
       if (!result) return reply.code(429).send({ error: '每人每天最多提出 20 筆關係' });
       if ('error' in result) return reply.code(409).send({ error: result.error });
-      if (!result.duplicate) refreshPages(uiOrigin ?? null, tag);
+      if (!result.duplicate) {
+        forgetVotingCount(tag);
+        refreshPages(uiOrigin ?? null, tag);
+      }
       return reply.code(result.duplicate ? 200 : 201).send(result);
     },
   );
@@ -394,6 +401,8 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
           return { id, tag: row.tag, target: row.target, status };
         });
         if (!result) return reply.code(404).send({ error: 'no such submission' });
+        forgetVotingCount(result.tag);
+        if (result.target) forgetVotingCount(result.target);
         refreshPages(uiOrigin ?? null, result.tag);
         if (result.target) refreshPages(uiOrigin ?? null, result.target);
         return result;

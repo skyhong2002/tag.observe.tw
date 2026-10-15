@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, type TagGroupKind, tagGroupMembers, tagWikidata } from '../db/schema.ts';
+import { CURATED_GROUPS } from './rules.ts';
 import { fileTag } from './run.ts';
 import { activeGroups } from './tree.ts';
 
@@ -110,7 +111,8 @@ export async function fileAi(
   { force = false, batch = 20, fetchImpl = fetch as typeof fetch, log = (_o: object) => {}, stop = (): boolean => false } = {},
 ) {
   if (!tags.length) return { asked: 0, added: 0, errors: 0 };
-  const groups = await activeGroups(db);
+  // Rosters (立委、縣市長…) come from official lists, never from a guess.
+  const groups = (await activeGroups(db)).filter((g) => !CURATED_GROUPS.has(g.id));
   const kindOf = new Map(groups.map((g) => [g.id, g.kind]));
   const [members, checks] = await Promise.all([
     db

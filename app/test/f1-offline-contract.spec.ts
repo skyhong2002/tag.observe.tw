@@ -199,7 +199,8 @@ describe('F1 offline public contracts', () => {
   it('runs the real relation route and gateway cache guard through injection only', async () => {
     const mock = mockDb(Array.from({ length: 9 }, () => [[], [row(1)]]).flat());
     // No tagDbUrl, injected db, login or job queue: buildApp opens no resources.
-    construction.register = (app) => registerSemanticRelations(app, mock.db);
+    // The ballot count has its own queries (relation-votes.ts); this checks the projection.
+    construction.register = (app) => registerSemanticRelations(app, mock.db, { count: async () => 0 });
     const app = await buildApp({ uiOrigin: 'https://unused.invalid', rateLimit: false });
     construction.register = null;
     try {

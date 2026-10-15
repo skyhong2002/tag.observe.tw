@@ -6,7 +6,7 @@ export const revalidate = 300;
 export const metadata = pageMetadata(
   '/group/',
   '標籤群組',
-  '把新聞標籤歸成身分群組（政治人物、現任立委、藝人…）與主題大類（政治、體育…），看每個群組最近誰最常上新聞。',
+  '把新聞標籤歸成身分群組（政治人物、2024 立委、藝人…）與主題大類（政治、體育…），看每個群組最近誰最常上新聞。',
 );
 
 const DAYS = [1, 7, 30] as const;
@@ -18,7 +18,11 @@ function Change({ recent, previous }: { recent: number; previous: number }) {
   const d = recent - previous;
   if (!previous) return <span className="text-zinc-500 dark:text-zinc-400">新</span>;
   return (
-    <span className={d > 0 ? 'text-red-700 dark:text-red-400' : d < 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'}>
+    <span
+      className={
+        d > 0 ? 'text-red-700 dark:text-red-400' : d < 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'
+      }
+    >
       {d > 0 ? '▲' : d < 0 ? '▼' : '–'}
       {d ? n(Math.abs(d)) : ''}
     </span>

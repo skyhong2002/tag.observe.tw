@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client.ts';
 import { articleTags, tagGroupMembers, tagStats } from '../db/schema.ts';
+import { CURATED_GROUPS } from '../tag-groups/rules.ts';
 import { activeGroups, ancestors, type Def, descendants } from '../tag-groups/tree.ts';
 
 // Tag groups (docs/tag-groups.md): only rows the rules filed (auto) or an
@@ -133,7 +134,7 @@ export function registerTagGroups(app: FastifyInstance, db: Db) {
     for (const r of rows) (tagsIn.get(r.groupId) ?? tagsIn.set(r.groupId, new Set()).get(r.groupId))?.add(r.tag);
     const count = (id: number) => new Set(descendants(defs, id).flatMap((g) => [...(tagsIn.get(g) ?? [])])).size;
     reply.header('cache-control', 'public, max-age=300');
-    return { groups: defs.map((d) => ({ ...ref(d), parentId: d.parentId, tags: count(d.id) })) };
+    return { groups: defs.map((d) => ({ ...ref(d), parentId: d.parentId, tags: count(d.id), curated: CURATED_GROUPS.has(d.id) })) };
   });
 
   app.get<{ Params: { id: string }; Querystring: { offset?: string } }>('/api/v1/tag-groups/:id', async (request, reply) => {

@@ -63,6 +63,9 @@ const session = (user: unknown) => ({
     useSession: () => ({ enabled: true, user }),
     loginHref: (next: string) => `/auth/google?next=${encodeURIComponent(next)}`,
   },
+  // The proposal box's suggestions; not exercised here.
+  '@/components/FormSuggestInput': { fetchTagSuggestions: async () => [] },
+  '@/components/SuggestInput': { default: () => null },
 });
 
 describe('F1 isolated frontend state and markup contracts (not browser UI approval)', () => {

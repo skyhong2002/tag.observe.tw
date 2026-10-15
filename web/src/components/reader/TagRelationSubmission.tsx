@@ -1,34 +1,31 @@
 'use client';
 
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { fetchTagSuggestions } from '@/components/FormSuggestInput';
+import SuggestInput, { type Suggestion } from '@/components/SuggestInput';
 import type { TagRelationType } from '@/lib/api';
 import { loginHref, useSession } from '@/lib/session';
 
 const field = 'mt-1 min-h-11 w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700';
+const pill = 'min-h-9 flex-1 rounded-full border px-2 text-sm disabled:opacity-50';
 
-const NAMES: Record<TagRelationType, string> = { 'is-a': '分類', related: '相關詞', alias: '別名' };
+type Group = { id: number; label: string; kind: 'group' | 'topic'; curated?: boolean };
 
 /**
- * Propose a relation; it joins the vote on /tag/<tag>/relations/. That page
- * passes the type its tabs chose (fixedType) and reloads after a proposal.
+ * Propose a relation; it joins the vote on /tag/<tag>/relations/. The box
+ * suggests existing categories (curated rosters such as 2024 立委 are not
+ * offered: they follow official lists) and keywords; picking a category asks
+ * 「屬於」, a keyword 「相關」. The reason is optional.
  */
-export default function TagRelationSubmission({
-  tag,
-  fixedType,
-  onDone,
-}: {
-  tag: string;
-  fixedType?: TagRelationType;
-  onDone?: () => void;
-}) {
+export default function TagRelationSubmission({ tag, onDone }: { tag: string; onDone?: () => void }) {
   const session = useSession();
-  const [chosenType, setType] = useState<TagRelationType>('related');
-  const type = fixedType ?? chosenType;
+  const [type, setType] = useState<TagRelationType>('related');
   const [target, setTarget] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [groups, setGroups] = useState<Group[]>([]);
   const pending = useRef(false);
   const live = useRef(true);
   useEffect(() => {
@@ -37,6 +34,30 @@ export default function TagRelationSubmission({
       live.current = false;
     };
   }, []);
+  useEffect(() => {
+    fetch('/api/v1/tag-groups')
+      .then((r) => (r.ok ? r.json() : { groups: [] }))
+      .then((body: { groups: Group[] }) => live.current && setGroups(body.groups.filter((g) => g.kind === 'group' && !g.curated)))
+      .catch(() => {});
+  }, []);
+  const suggest = useCallback(
+    async (typed: string, signal: AbortSignal, partial: (items: Suggestion[]) => void) => {
+      const needle = typed.toLocaleLowerCase();
+      const categories = groups
+        .filter((g) => g.label.toLocaleLowerCase().includes(needle))
+        .slice(0, 4)
+        .map((g) => ({ key: `group:${g.label}`, label: g.label, hint: '分類' }));
+      partial(categories);
+      const tags = await fetchTagSuggestions(typed, signal);
+      return [
+        ...categories,
+        ...tags
+          .filter((t) => t.tag !== tag && !categories.some((c) => c.label === t.tag))
+          .map((t) => ({ key: `tag:${t.tag}`, label: t.tag, hint: `${t.articles} 篇` })),
+      ];
+    },
+    [groups, tag],
+  );
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (pending.current) return;
@@ -45,7 +66,7 @@ export default function TagRelationSubmission({
       setError('請填寫不同的有效標籤（最多 60 字）。');
       return;
     }
-    if (!normalized || !reason.trim() || !['related', 'is-a', 'alias'].includes(type)) return;
+    if (!normalized || !['related', 'is-a', 'alias'].includes(type)) return;
     pending.current = true;
     setBusy(true);
     setMessage('');
@@ -56,7 +77,7 @@ export default function TagRelationSubmission({
         credentials: 'same-origin',
         cache: 'no-store',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ type, target: target.trim(), reason: reason.trim() }),
+        body: JSON.stringify({ type, target: normalized, ...(reason.trim() ? { reason: reason.trim() } : {}) }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error ?? `送出失敗（${response.status}）`);
@@ -82,9 +103,14 @@ export default function TagRelationSubmission({
       if (live.current) setBusy(false);
     }
   };
+  const types: [TagRelationType, string][] = [
+    ['is-a', `${tag}屬於它`],
+    ['related', '相關'],
+    ['alias', '是別名'],
+  ];
   return (
-    <section className="mt-6 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-800">
-      <h2 className="font-semibold">提出一個{NAMES[type]}</h2>
+    <section className="mt-8 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-800">
+      <h2 className="text-base font-semibold">加一個</h2>
       {!session ? (
         <p role="status">正在確認登入狀態…</p>
       ) : !session.enabled ? (
@@ -97,53 +123,56 @@ export default function TagRelationSubmission({
           >
             登入
           </a>
-          後可以投票，或提出新的分類、相關詞或別名。
+          後可以回答問題，或提出新的分類、相關詞或別名。
         </p>
       ) : (
-        <form aria-busy={busy} onSubmit={submit} className="space-y-3 pb-2">
-          <p className="text-zinc-600 dark:text-zinc-400">
-            送出後成為候選，其他讀者同意就會成立。一起出現在新聞中，不一定代表有分類或同義關係。
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {!fixedType && (
-              <label>
-                關係類型
-                <select value={type} onChange={(e) => setType(e.target.value as TagRelationType)} className={field} disabled={busy}>
-                  <option value="related">相關詞</option>
-                  <option value="is-a">上位分類（此標籤屬於…）</option>
-                  <option value="alias">同義或別名</option>
-                </select>
-              </label>
-            )}
-            <label>
-              關鍵字
-              <input
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                required
-                maxLength={120}
-                className={field}
-                disabled={busy}
-                placeholder={type === 'is-a' ? '例如：政治人物' : '要關聯的關鍵字'}
-              />
-            </label>
-          </div>
-          <label className="block">
-            理由與來源
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+        <form aria-busy={busy} onSubmit={submit} className="mt-2 space-y-3 pb-2">
+          <div>
+            <SuggestInput
+              aria-label="分類或關鍵字"
+              value={target}
+              onValueChange={setTarget}
+              suggest={suggest}
+              onPick={(picked) => {
+                setTarget(picked.label);
+                setType(picked.key.startsWith('group:') ? 'is-a' : 'related');
+              }}
+              delay={200}
               required
-              maxLength={1000}
-              rows={3}
+              maxLength={120}
               className={field}
               disabled={busy}
-              placeholder="請附上可查證的說明或來源網址，勿填寫私人資料。"
+              placeholder="輸入分類或關鍵字，例如：民進黨"
+            />
+          </div>
+          <fieldset className="flex gap-1.5" disabled={busy}>
+            <legend className="sr-only">關係</legend>
+            {types.map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={type === value}
+                onClick={() => setType(value)}
+                className={`${pill} ${type === value ? 'border-brand-700 bg-brand-700 text-white' : 'border-zinc-300 dark:border-zinc-700'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </fieldset>
+          <label className="block">
+            <span className="text-zinc-600 dark:text-zinc-400">理由或來源（選填）</span>
+            <input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={1000}
+              className={field}
+              disabled={busy}
+              placeholder="可附網址，勿填寫私人資料"
             />
           </label>
           <button
             type="submit"
-            disabled={busy || !target.trim() || !reason.trim()}
+            disabled={busy || !target.trim()}
             className="min-h-11 rounded-full bg-brand-700 px-4 text-white disabled:opacity-50"
           >
             {busy ? '送出中…' : '加入投票'}
