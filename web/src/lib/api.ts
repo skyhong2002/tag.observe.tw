@@ -1,3 +1,4 @@
+import { plainSpaces } from './plain-spaces';
 import type { TagFlow } from './tag-flow-history.mts';
 
 export type { TagFlow } from './tag-flow-history.mts';
@@ -261,15 +262,17 @@ const taipeiYear = (date: Date) => new Date(date.getTime() + 8 * 3600e3).getUTCF
 // looked like a future date. Show the year whenever it is not this year.
 export const taipei = (iso: string) => {
   const date = new Date(iso);
-  return date.toLocaleString('zh-TW', {
-    timeZone: 'Asia/Taipei',
-    hour12: false,
-    ...(taipeiYear(date) !== taipeiYear(new Date()) && { year: 'numeric' }),
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return plainSpaces(
+    date.toLocaleString('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      hour12: false,
+      ...(taipeiYear(date) !== taipeiYear(new Date()) && { year: 'numeric' }),
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  );
 };
 // Without minutes, zh-TW renders the hour as "18時"; format with minutes instead.
 export const taipeiHour = (iso: string) => taipei(iso).replace(/:\d\d$/, ':00');
