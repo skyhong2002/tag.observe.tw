@@ -1,5 +1,6 @@
 import type React from 'react';
 import type { TagPerson as Person } from '@/lib/api';
+import AvatarGuard from './AvatarGuard';
 
 // The person a tag names: a pencil-sketch avatar made from a Wikimedia Commons
 // photo, and one line on who they are (docs/tag-avatars.md). The photo's
@@ -39,16 +40,20 @@ export default function TagPerson({ person }: { person: Person }) {
   const a = person.avatar;
   return (
     <div className="flex items-center gap-3">
-      {a && <TagAvatar url={a.url} />}
+      {a && (
+        <AvatarGuard url={a.url}>
+          <TagAvatar url={a.url} />
+        </AvatarGuard>
+      )}
       <div className="min-w-0 text-sm text-zinc-600 dark:text-zinc-400">
         {line && <p className="text-zinc-800 dark:text-zinc-200">{line}</p>}
         <p className="text-xs">
           <a href={`https://www.wikidata.org/wiki/${person.wikidataId}`} className="underline" rel="noopener noreferrer" target="_blank">
             Wikidata
           </a>
-          {a && !a.pageUrl && ' · 素描依管理員提供的照片'}
+          {a && !a.pageUrl && <AvatarGuard url={a.url}> · 素描依管理員提供的照片</AvatarGuard>}
           {a?.pageUrl && (
-            <>
+            <AvatarGuard url={a.url}>
               {' · '}素描依
               <a href={a.pageUrl} className="mx-0.5 underline" rel="noopener noreferrer" target="_blank">
                 {a.artist ?? 'Wikimedia Commons'}
@@ -62,7 +67,7 @@ export default function TagPerson({ person }: { person: Person }) {
                 ) : (
                   <span className="ml-1">{LICENSE[a.license] ?? a.license}</span>
                 ))}
-            </>
+            </AvatarGuard>
           )}
         </p>
       </div>
