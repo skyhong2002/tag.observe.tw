@@ -50,12 +50,13 @@ export async function generateMetadata({
 
 // The relations come from the whole news graph (/similarity, ~2 MB for 7 days,
 // several seconds to build when the API cache is cold). Stream them in rather
-// than holding the page, and give the graph time instead of showing a failure.
+// than holding the page. The gateway drops a response that sends nothing for
+// 15 s (app/src/ui-proxy.js bodyTimeout), so give up before that.
 async function Relations({ media, hours }: { media: string; hours: number }) {
   const data = await fetch(`${API_ORIGIN}/api/v1/similarity?${new URLSearchParams({ hours: String(hours), threshold: '0.65' })}`, {
     next: { revalidate },
     headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(25_000),
+    signal: AbortSignal.timeout(12_000),
   })
     .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
     .catch(() => null);
