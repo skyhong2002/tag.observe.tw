@@ -16,7 +16,7 @@
 - Tests: unit 2,088 + 1 new (2 vocabulary-export tests timed out at load 13.5 and pass alone); DB integration on 18306: relations 24, pictures 9, writing 6, tag-groups 24.
 - Rollback: `bash /home/deck/tag-analysis-private/f1-release/web-fixes-c124aa68-20261016/rollback.sh` (web → c6375622, API/gateway → 9414f6a4-api, worker → 1271a2dd-worker). Roster data in the DB stays (the old code just shows the new labels).
 - Retention now: web c124aa68 + c6375622; API 16402500-api + 9414f6a4-api; worker 16402500-worker + 1271a2dd-worker; aff5 (18230/18232); 0dd38b6 (`current`); dc7b814e. Deleted: c8bac7f2-web, 1271a2dd-api, the never-deployed 6519b114 packages.
-- For the owner: the worker's daily tag-groups job still asks the AI gateway for suggestions (shown to admins only) and the tag-visuals job uses AI picks for admin review — both automatic, not admin-triggered.
+- The worker's daily tag-groups AI suggestions and tag-visuals AI picks (admin review only) stay as they are — owner's decision 10/16.
 
 ### Earlier (2026-10-16 01:03 Taipei)
 
