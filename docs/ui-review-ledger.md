@@ -4,7 +4,11 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-15 18:08 Taipei)
+## Current deployed status (2026-10-15 19:28 Taipei)
+
+- **Web `f3c943ae` / BUILD_ID `wnFvUHMO_gj9jQ67KUUw-` + API/gateway `f3c943ae-api-observe-daily` (UTC 2026-10-15T11:27–11:28Z)**: review fixes from the fix backlog (journalist page bounded, byline 未署名, streamed media relations, year on old dates, API doc paths, opt-out wording, daily stats timeout/retry and 30-day cache, /observe/ names, admin gate text, tab wrapping). Web gap ≈57 s (old process slow to exit), API 2.5 s, gateway 2.2 s. 14 local/public GETs 200 incl. `/`, `/tag/柯文哲/`, relations; public home has the new BUILD_ID; 0 error logs. Rollback: `bash /home/deck/tag-analysis-private/f1-release/web-fixes-f3c943ae-20261015/rollback.sh` (web → f62abfb5, API/gateway → e2769539). [Rollout](review-fixes-rollout-20261015.md).
+
+### Earlier today (18:08)
 
 - **API/gateway `e2769539` media first-crawl (UTC 2026-10-15T10:07Z)**: `tag-ranking-pool-api` (18330) and gateway `tag-analysis` (18130) now run release `e2769539-media-firstcrawl-20261015-001` (= cb4ef914 + commits e2769539/52282ea5) and compute media-stats themselves; the 18230 forward is gone. Historical stage 50–60 s → 0.13–0.21 s cold. Web unchanged `f62abfb5` / BUILD_ID `08ItzUxu99m4XSoNcfGsu`. Gateway gap 5.36 s. Public `/`, `/tag/柯文哲/`, relations, media-stats, `/media/` all 200, 0 error logs. Rollback: `bash /home/deck/tag-analysis-private/f1-release/media-firstcrawl-api-20261015/rollback.sh`. [Rollout](media-firstcrawl-rollout-20261015.md).
 - Release retention (10/15 17:19): deleted `79ab873b-web`, `7dc59c3c-web` (read-only files fixed with chmod), five `.candidate-f1-*`, `.prepared-f1-225fa38` (its idle 61 h candidate API `tag-f1-prepared-api` on 18184 stopped first; four failed transient units reset). Kept: dc7b814e (rollback for gateway), cb4ef914 (rollback for API), e2769539 (live API/gateway), f62 (live web), 8cf7c94 (web rollback), aff5 (worker, 18230/18232), 0dd38b6 (`current`, legacy 18132 web, vocabulary export).
