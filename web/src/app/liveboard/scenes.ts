@@ -36,6 +36,7 @@ export interface SceneEvent {
   score: number;
   prevScore: number | null;
   major: string[];
+  tags: Array<{ tag: string; burst: number }>;
   news: SceneNews[];
   href: string | null;
   counts: SceneCounts;

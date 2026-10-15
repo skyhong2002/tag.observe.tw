@@ -31,6 +31,8 @@ const LATE = 8 * HOUR;
 /** Hours of collection counts behind each event and row, for its trail. */
 const TRAIL = 12;
 const EVENTS = 10;
+/** Keywords sent with each event. */
+const EVENT_TAGS = 14;
 /** An event's articles: the last hour's, then today's earlier ones. */
 const EVENT_ARTICLES = 8;
 const BOARD = 10;
@@ -70,6 +72,8 @@ export interface SceneEvent {
   score: number;
   prevScore: number | null;
   major: string[];
+  /** The keywords the event gathers, strongest first, with their burst. */
+  tags: Array<{ tag: string; burst: number }>;
   /** Its stored best headlines, which the screen picks the lead from. */
   news: SceneNews[];
   href: string | null;
@@ -262,6 +266,7 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
       score: e.score / 1e6,
       prevScore: before ? before.score / 1e6 : null,
       major: e.major,
+      tags: e.tags.slice(0, EVENT_TAGS).map(([tag, burst]) => ({ tag, burst })),
       news: newsOf(e),
       href: e.threadId ? `/eve/${e.threadId}/` : null,
       counts: countSeen(index.seen(members[i]), w),

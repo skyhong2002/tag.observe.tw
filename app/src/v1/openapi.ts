@@ -2932,6 +2932,7 @@ export const ENDPOINTS: Endpoint[] = [
           score: num(),
           prevScore: nullable(num('上一份快照的分數')),
           major: arr(str(), '主要標籤'),
+          tags: arr(obj({ tag: str(), burst: num('爆發力') }), '事件聚集的關鍵字，強的在前，最多 14 個'),
           news: arr(
             obj({ title: str(), media: ref('MediaKey'), image: nullable(str()) }),
             '事件的代表標題（最多 6 則），用來選出主標題與封面',

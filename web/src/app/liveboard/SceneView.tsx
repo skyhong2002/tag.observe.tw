@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
+import Sparkline from '@/components/Sparkline';
 import { selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { isAllowedImage } from '@/lib/images';
 import { articleHref } from '@/lib/reading.mts';
@@ -13,9 +14,10 @@ import type { BoardLens, EventLens } from './settings';
 // The simple board's scenes other than the keyword cloud (SimpleBoard plays
 // them): an event a frame, with its score against the previous hour's
 // snapshot and the articles collected for it in the last hour; or a
-// leaderboard of the day's topics. Both put the lens's name on top with the
-// ‹ › that step through the frames (and on to the next lens), and a bar that
-// fills over the time the frame stays.
+// leaderboard of the day's topics. Both put the lens's name in a slim row on
+// top with the ‹ › that step through the frames (and on to the next lens),
+// and a bar that fills over the time the frame stays. Trends over the hours
+// are lines, as the site's other sparklines.
 
 export default function SceneView({
   lens,
@@ -53,13 +55,10 @@ export default function SceneView({
   return (
     <div className={styles.scene} style={style}>
       <header className={styles.head}>
-        <div className={styles.titleRow}>
-          <Arrow by={-1} onStep={onStep} />
-          <div>
-            <h2 className={styles.title}>{lens.title}</h2>
-            <p className={styles.note}>{lens.note}</p>
-          </div>
-          <Arrow by={1} onStep={onStep} />
+        <Arrow by={-1} onStep={onStep} />
+        <div className={styles.label}>
+          <h2 className={styles.title}>{lens.title}</h2>
+          <p className={styles.note}>{lens.note}</p>
         </div>
         <div className={styles.slots}>
           {labels.length > 1 ? (
@@ -81,10 +80,11 @@ export default function SceneView({
             <span className={styles.single}>{bar(0)}</span>
           )}
         </div>
+        <Arrow by={1} onStep={onStep} />
       </header>
       <div key={`${lens.key}-${frame}`} className={styles.body}>
-        {event && <EventFrame event={event} />}
-        {rows && <Board rows={rows} lens={lens} />}
+        {event && <EventFrame event={event} colour={colour} />}
+        {rows && <Board rows={rows} lens={lens} colour={colour} />}
       </div>
     </div>
   );
@@ -108,30 +108,60 @@ function Change({ value, digits = 0, unit = '' }: { value: number; digits?: numb
   );
 }
 
-/** Collection counts for each of the last hours as bars, the present one in full colour. */
-function Trail({ hours, label }: { hours: number[]; label?: string }) {
-  const top = Math.max(1, ...hours);
+/** The last hours' new reports as a line, oldest at the left; the busiest and the present hour named. */
+function Trend({ hours, colour }: { hours: number[]; colour: string }) {
+  const top = Math.max(...hours);
   return (
-    <div className={styles.trail} role="img" aria-label={label ?? `近 ${hours.length} 小時每小時報導：${hours.join('、')}`}>
-      {hours.map((n, i) => (
-        <i key={i} data-now={i === hours.length - 1 || undefined} style={{ height: `${Math.max(n ? 6 : 0, (n / top) * 100)}%` }} />
-      ))}
-    </div>
+    <figure className={styles.trend} aria-label={`近 ${hours.length} 小時每小時新報導：${hours.join('、')}`}>
+      <figcaption className={styles.sub}>
+        近 {hours.length} 小時每小時新報導<span>最多 {top} 篇</span>
+      </figcaption>
+      <Sparkline values={hours} color={colour} className={styles.trendLine} />
+      <span className={styles.trendEnds}>
+        <span>{hours.length} 小時前</span>
+        <span>
+          這一小時 <b>{hours.at(-1)}</b> 篇
+        </span>
+      </span>
+    </figure>
   );
 }
 
-function EventFrame({ event }: { event: SceneEvent }) {
+/** The event's keywords, larger for a stronger burst; its major ones filled in. */
+function Keywords({ tags, major }: { tags: SceneEvent['tags']; major: string[] }) {
+  const top = Math.max(...tags.map((t) => t.burst), 1e-9);
+  const majors = new Set(major);
+  // The major ones lead, even when another keyword bursts harder.
+  const ordered = [...tags.filter((t) => majors.has(t.tag)), ...tags.filter((t) => !majors.has(t.tag))];
+  return (
+    <p className={styles.keywords}>
+      {ordered.map((t) => (
+        <Link
+          key={t.tag}
+          href={`/tag/${encodeURIComponent(t.tag)}/`}
+          data-major={majors.has(t.tag) || undefined}
+          style={{ fontSize: `${(0.8 + 0.55 * Math.sqrt(Math.max(0, t.burst) / top)).toFixed(2)}em` }}
+        >
+          {t.tag}
+        </Link>
+      ))}
+    </p>
+  );
+}
+
+function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   const moved = event.prevRank === null ? null : event.prevRank - event.rank;
   const headline = storyHeadline(event.news, event.major);
   const cover = selectEventCover(event.news, selectEventLead(event.news, event.major), isAllowedImage);
   const recent = event.articles.filter((a) => a.recent);
   const earlier = event.articles.filter((a) => !a.recent);
+  const tags = event.tags.length ? event.tags : event.major.map((tag) => ({ tag, burst: 1 }));
   return (
     <article className={styles.event}>
-      <div className={styles.lead}>
+      <div className={styles.story}>
         {cover?.image && (
           <div className={styles.cover}>
-            <SafeImage src={cover.image} alt="" width={640} height={360} />
+            <SafeImage src={cover.image} alt="" width={960} height={540} />
           </div>
         )}
         <p className={styles.rank}>
@@ -145,13 +175,9 @@ function EventFrame({ event }: { event: SceneEvent }) {
           ) : null}
         </p>
         <h3 className={styles.headline}>{event.href ? <Link href={event.href}>{headline}</Link> : headline}</h3>
-        <p className={styles.tags}>
-          {event.major.map((tag) => (
-            <Link key={tag} href={`/tag/${encodeURIComponent(tag)}/`}>
-              {tag}
-            </Link>
-          ))}
-        </p>
+        <Keywords tags={tags} major={event.major} />
+      </div>
+      <div className={styles.numbers}>
         <dl className={styles.figures}>
           <div>
             <dt>分數</dt>
@@ -180,24 +206,17 @@ function EventFrame({ event }: { event: SceneEvent }) {
             </dd>
           </div>
         </dl>
-        <div className={styles.trailBox}>
-          <span className={styles.sub}>近 {event.counts.hours.length} 小時每小時新報導</span>
-          <Trail hours={event.counts.hours} />
-          <span className={styles.trailEnds}>
-            <span>{event.counts.hours.length} 小時前</span>
-            <span>現在</span>
-          </span>
+        <Trend hours={event.counts.hours} colour={colour} />
+        <div className={styles.reports}>
+          <h4 className={styles.section}>近一小時新報導</h4>
+          {recent.length ? <Articles list={recent} /> : <p className={styles.empty}>這一小時還沒有新報導</p>}
+          {earlier.length > 0 && (
+            <>
+              <h4 className={styles.section}>今天稍早</h4>
+              <Articles list={earlier} />
+            </>
+          )}
         </div>
-      </div>
-      <div className={styles.reports}>
-        <h4 className={styles.section}>近一小時新報導</h4>
-        {recent.length ? <Articles list={recent} /> : <p className={styles.empty}>這一小時還沒有新報導</p>}
-        {earlier.length > 0 && (
-          <>
-            <h4 className={styles.section}>今天稍早</h4>
-            <Articles list={earlier} />
-          </>
-        )}
       </div>
     </article>
   );
@@ -231,7 +250,7 @@ function Articles({ list }: { list: SceneArticle[] }) {
   );
 }
 
-function Board({ rows, lens }: { rows: SceneRow[]; lens: EventLens | BoardLens }) {
+function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | BoardLens; colour: string }) {
   const board = lens.scene === 'board' ? lens.board : null;
   const thread = board === 'threads';
   return (
@@ -257,10 +276,11 @@ function Board({ rows, lens }: { rows: SceneRow[]; lens: EventLens | BoardLens }
                 {r.media && <MediaIcon media={r.media} title={r.mediaTitle} size={20} />}
                 {r.mediaTitle && <span className={styles.media}>{r.mediaTitle}</span>}
                 <Link href={r.href}>{thread ? storyHeadline(r.news, r.major) : r.title}</Link>
+                {thread && r.major?.length ? <span className={styles.rowTags}>{r.major.join('・')}</span> : null}
               </span>
             </td>
             <td className={styles.trailCell}>
-              <Trail hours={r.counts.hours} />
+              <Sparkline values={r.counts.hours} color={colour} className={styles.rowLine} />
             </td>
             <td className={styles.count}>{r.counts.today.toLocaleString()}</td>
             <td className={styles.count}>{r.counts.hour ? `+${r.counts.hour.toLocaleString()}` : '—'}</td>

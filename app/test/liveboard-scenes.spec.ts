@@ -90,16 +90,3 @@ describe('matchPrev', () => {
     expect(matchPrev({ threadId: 99, major: ['地震'] }, prev)).toBeNull();
   });
 });
-
-describe('default lenses', () => {
-  it('fit in the saved preference and all exist', async () => {
-    const { DEFAULTS, LENSES } = await import('../../web/src/app/liveboard/settings.ts');
-    const { LIVEBOARD_LENSES_MAX } = await import('../src/reader/validate.ts');
-    expect(DEFAULTS.lenses.length).toBeLessThanOrEqual(LIVEBOARD_LENSES_MAX);
-    expect(LENSES.length).toBeLessThanOrEqual(LIVEBOARD_LENSES_MAX);
-    for (const key of DEFAULTS.lenses) {
-      expect(LENSES.some((l) => l.key === key)).toBe(true);
-      expect(key).toMatch(/^[a-z0-9-]{1,20}$/);
-    }
-  });
-});

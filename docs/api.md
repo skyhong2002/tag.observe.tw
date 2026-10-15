@@ -3019,6 +3019,9 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `events[].score` | number |  |
 | `events[].prevScore` | number \| null | 上一份快照的分數 |
 | `events[].major` | string[] | 主要標籤 |
+| `events[].tags` | object[] | 事件聚集的關鍵字，強的在前，最多 14 個 |
+| `events[].tags[].tag` | string |  |
+| `events[].tags[].burst` | number | 爆發力 |
 | `events[].news` | object[] | 事件的代表標題（最多 6 則），用來選出主標題與封面 |
 | `events[].news[].title` | string |  |
 | `events[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
