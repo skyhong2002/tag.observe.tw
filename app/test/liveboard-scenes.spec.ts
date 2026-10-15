@@ -3,6 +3,7 @@ import { matchPrev } from '../src/v1/event-feed.ts';
 import {
   countSeen,
   headlineDice,
+  newestIds,
   newestOf,
   pickReports,
   rankBoard,
@@ -163,5 +164,12 @@ describe('newestOf', () => {
     ];
     expect(newestOf(seen, w)).toBe(new Date(now - 90 * 60e3).toISOString());
     expect(newestOf([], w)).toBeNull();
+  });
+});
+
+describe('newestIds', () => {
+  it('keeps the newest few, newest first, nothing from the future', () => {
+    const at = (id: number) => ({ published: id === 9 ? now + HOUR : now - id * 60e3, crawled: now - id * 60e3 });
+    expect(newestIds([5, 1, 9, 3, 2, 8], at, w, 3)).toEqual([1, 2, 3]);
   });
 });

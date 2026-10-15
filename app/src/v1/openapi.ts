@@ -227,6 +227,21 @@ const schemas: Record<string, Schema> = {
     },
     '不重複的本站爬取文章數',
   ),
+  LiveSceneBrief: obj(
+    {
+      id: int(),
+      media: ref('MediaKey'),
+      mediaTitle: str(),
+      title: str(),
+      url: str(),
+      image: nullable(str()),
+      publishedAt: time(),
+      tags: arr(str()),
+      authors: arr(str()),
+      attributions: arr(ref('Attribution')),
+    },
+    '報導本身：媒體、時間、署名、來源與引用、標籤',
+  ),
   LiveSceneRow: obj(
     {
       key: str('topic:、thread: 或 group: 加上 id'),
@@ -234,12 +249,23 @@ const schemas: Record<string, Schema> = {
       href: str('本站頁面'),
       media: nullable(str('媒體代碼，媒體自己的議題才有')),
       mediaTitle: nullable(str()),
-      news: arr(obj({ title: str(), media: ref('MediaKey'), image: nullable(str()) }), '事件串的代表標題，用來選出主標題'),
+      news: arr(
+        obj({
+          id: nullable(int()),
+          title: str(),
+          media: ref('MediaKey'),
+          image: nullable(str()),
+          brief: ref('LiveSceneBrief', '報導本身，找不到時為 null'),
+        }),
+        '事件串的代表標題，用來選出主標題',
+      ),
+      keywords: arr(str(), '標籤群組今天報導最多的標籤'),
+      latest: ref('LiveSceneBrief', '標籤群組或媒體議題最新的一篇報導，沒有時為 null'),
       major: arr(str(), '事件串的主要標籤'),
       counts: ref('LiveSceneCounts'),
     },
     '議題排行的一列',
-    ['news', 'major'],
+    ['news', 'major', 'keywords', 'latest'],
   ),
   Headline: obj(
     {
@@ -2934,8 +2960,14 @@ export const ENDPOINTS: Endpoint[] = [
           major: arr(str(), '主要標籤'),
           tags: arr(obj({ tag: str(), burst: num('爆發力') }), '事件聚集的關鍵字，強的在前，最多 14 個'),
           news: arr(
-            obj({ title: str(), media: ref('MediaKey'), image: nullable(str()) }),
-            '事件的代表標題（最多 6 則），用來選出主標題與封面',
+            obj({
+              id: nullable(int()),
+              title: str(),
+              media: ref('MediaKey'),
+              image: nullable(str()),
+              brief: nullable(ref('LiveSceneBrief')),
+            }),
+            '事件的代表標題（最多 6 則），用來選出主標題與封面；brief 是報導本身',
           ),
           href: nullable(str('事件串頁')),
           counts: ref('LiveSceneCounts'),

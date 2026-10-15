@@ -8,7 +8,7 @@ import { articleMediaOf } from '../jobs/topic-stories.ts';
 import type { Attribution } from '../similarity/attribution.ts';
 import { activeGroups, descendants } from '../tag-groups/tree.ts';
 import { campBaseline, type EventFeedCoverage, eventsAt, feedCoverage, hoursSoFar, matchPrev, rankTrail } from './event-feed.ts';
-import { articleCols, liveArticle } from './liveboard.ts';
+import { articleCols, type LiveArticle, liveArticle } from './liveboard.ts';
 import { taipeiMidnight } from './media-stats.ts';
 import { SHOWN } from './tag-groups.ts';
 
@@ -42,6 +42,8 @@ const POOL = 80;
 const BOARD = 10;
 /** Topics of one outlet on its leaderboard (some outlets keep a page per section). */
 const PER_MEDIA = 2;
+/** A group's busiest tags shown on its row. */
+const GROUP_KEYWORDS = 6;
 const CACHE_MS = 60e3;
 
 export interface SceneCounts {
@@ -53,7 +55,8 @@ export interface SceneCounts {
   /** Collected in each of the last TRAIL hours, oldest first (the last one is `hour`). */
   hours: number[];
 }
-export interface SceneArticle {
+/** A report as the screen names it, as any news row does: headline, outlet, when, bylines and credits, tags. */
+export interface SceneBrief {
   id: number;
   media: string;
   mediaTitle: string;
@@ -61,20 +64,25 @@ export interface SceneArticle {
   url: string;
   image: string | null;
   publishedAt: string;
-  /** Collected in the last hour (else earlier today). */
-  recent: boolean;
   /** Its site tags, first eight. */
   tags: string[];
   /** Bylines, and the outlets it names as its source or cites (as on the full liveboard). */
   authors: string[];
   attributions: Attribution[];
+}
+export interface SceneArticle extends SceneBrief {
+  /** Collected in the last hour (else earlier today). */
+  recent: boolean;
   /** Other outlets that ran the same text (similarity pairs) or headline, listed under this one. */
   copies: Array<{ media: string; mediaTitle: string }>;
 }
 export interface SceneNews {
+  id: number | null;
   title: string;
   media: string;
   image: string | null;
+  /** The report itself, for the headline the screen leads with. */
+  brief: SceneBrief | null;
 }
 export interface SceneEvent {
   rank: number;
@@ -109,8 +117,16 @@ export interface SceneRow {
   /** A thread's stored headlines and major tags, for its lead headline. */
   news?: SceneNews[];
   major?: string[];
+  /** A group's busiest tags today, most first. */
+  keywords?: string[];
+  /** The newest report of a group or an outlet's topic. */
+  latest?: SceneBrief | null;
   counts: SceneCounts;
 }
+/** A row before its reports are fetched: its newest few, newest first. */
+type Pending = SceneRow & { latestIds?: number[] };
+/** Newest reports kept per row, so rows sharing their newest one can show different ones. */
+const LATEST_CHOICES = 4;
 export interface LiveScenes {
   generatedAt: string;
   /** Start of today (Asia/Taipei), of the last hour and of the hour before it. */
@@ -195,7 +211,7 @@ export const storyNeed = (major: readonly string[]) => Math.min(2, major.length)
 
 /** The day's leaderboard: rows with articles today, most first, then the busiest last hour;
  *  with `perMedia`, no more than that many of one outlet. */
-export function rankBoard(rows: SceneRow[], { limit = BOARD, perMedia = Infinity } = {}): SceneRow[] {
+export function rankBoard<R extends SceneRow>(rows: R[], { limit = BOARD, perMedia = Infinity } = {}): R[] {
   const taken = new Map<string, number>();
   return rows
     .filter((r) => r.counts.today > 0)
@@ -315,9 +331,44 @@ const inWindow = (w: Windows) =>
     gte(articles.publishedAt, new Date(Math.min(w.today, w.trail - LATE))),
     lte(articles.publishedAt, new Date(w.now)),
   );
-type Stored = { title: string; media: string; image: string | null };
+type Stored = { id?: number; title: string; media: string; image: string | null };
 const newsOf = (e: { news: Stored[]; majorNews: Stored[] }): SceneNews[] =>
-  (e.majorNews.length ? e.majorNews : e.news).slice(0, 6).map((n) => ({ title: n.title, media: n.media, image: n.image ?? null }));
+  (e.majorNews.length ? e.majorNews : e.news)
+    .slice(0, 6)
+    .map((n) => ({ id: n.id ?? null, title: n.title, media: n.media, image: n.image ?? null, brief: null }));
+const briefOf = (a: LiveArticle): SceneBrief => ({
+  id: a.id,
+  media: a.media,
+  mediaTitle: a.mediaTitle,
+  title: a.title,
+  url: a.url,
+  image: a.image,
+  publishedAt: a.publishedAt,
+  tags: a.tags,
+  authors: a.authors,
+  attributions: a.attributions ?? [],
+});
+async function briefsOf(db: Db, ids: Iterable<number>): Promise<Map<number, SceneBrief>> {
+  const wanted = [...new Set(ids)];
+  if (!wanted.length) return new Map();
+  const rows = await db.select(articleCols(0)).from(articles).where(inArray(articles.id, wanted));
+  return new Map(rows.map((r) => [r.id, briefOf(liveArticle(r))]));
+}
+/** The newest few of these reports by publish time (collection time while pending), up to now. */
+export function newestIds(ids: Iterable<number>, at: (id: number) => Seen | undefined, w: Windows, n = LATEST_CHOICES): number[] {
+  const top: Array<{ id: number; time: number }> = [];
+  for (const id of ids) {
+    const t = at(id);
+    const time = t ? (t.published ?? t.crawled) : 0;
+    if (!t || time > w.now) continue;
+    if (top.length < n || time > top[top.length - 1].time) {
+      top.push({ id, time });
+      top.sort((a, b) => b.time - a.time || b.id - a.id);
+      if (top.length > n) top.pop();
+    }
+  }
+  return top.map((x) => x.id);
+}
 const mediaTitle = (media: string) => mediaInfo[media]?.title ?? media;
 
 async function loadIndex(db: Db, w: Windows): Promise<TagIndex> {
@@ -413,22 +464,7 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
         const a = byId.get(id);
         if (!a) return [];
         const copied = [...new Set(copies.flatMap((c) => head.get(c)?.media ?? []))];
-        return [
-          {
-            id,
-            media: a.media,
-            mediaTitle: a.mediaTitle,
-            title: a.title,
-            url: a.url,
-            image: a.image,
-            publishedAt: a.publishedAt,
-            recent: isRecent(id),
-            tags: a.tags,
-            authors: a.authors,
-            attributions: a.attributions ?? [],
-            copies: copied.map((media) => ({ media, mediaTitle: mediaTitle(media) })),
-          },
-        ];
+        return [{ ...briefOf(a), recent: isRecent(id), copies: copied.map((media) => ({ media, mediaTitle: mediaTitle(media) })) }];
       }),
     };
   });
@@ -499,20 +535,23 @@ async function mediaBoard(db: Db, w: Windows) {
     const media = articleMediaOf(t.media);
     for (const st of t.pageStories ?? []) (keys.get(media) ?? keys.set(media, []).get(media))?.push(st.key);
   }
-  const at = new Map<string, Seen>();
+  const at = new Map<string, Seen & { id: number }>();
   for (const [media, list] of keys)
     for (let i = 0; i < list.length; i += 1000) {
       const found = await db
-        .select({ urlKey: articles.urlKey, publishedAt: articles.publishedAt, crawledAt: articles.crawledAt, pending })
+        .select({ id: articles.id, urlKey: articles.urlKey, publishedAt: articles.publishedAt, crawledAt: articles.crawledAt, pending })
         .from(articles)
         .where(and(inWindow(w), eq(articles.media, media), inArray(articles.urlKey, list.slice(i, i + 1000))));
-      for (const a of found) if (a.urlKey) at.set(`${media}|${a.urlKey}`, seenOf(a));
+      for (const a of found) if (a.urlKey) at.set(`${media}|${a.urlKey}`, { ...seenOf(a), id: a.id });
     }
+  const byId = new Map([...at.values()].map((v) => [v.id, v]));
   return rankBoard(
-    rows.map((t): SceneRow => {
+    rows.map((t): Pending => {
       const media = articleMediaOf(t.media);
       const stories = new Set<string>((t.pageStories ?? []).map((st) => `${media}|${st.key}`));
+      const ids = [...stories].flatMap((k) => at.get(k)?.id ?? []);
       return {
+        latestIds: newestIds(ids, (id) => byId.get(id), w),
         key: `topic:${t.id}`,
         title: t.title,
         href: `/${t.kind === 'feature' ? 'feature' : 'topic'}/${encodeURIComponent(t.media)}/${t.id}/`,
@@ -541,15 +580,34 @@ async function groupBoards(db: Db, index: TagIndex, w: Windows) {
   ]);
   const tagsIn = new Map<number, string[]>();
   for (const m of members) (tagsIn.get(m.groupId) ?? tagsIn.set(m.groupId, []).get(m.groupId))?.push(m.tag);
+  // Each tag's reports today, counted once for every group that has it.
+  const today = new Map<string, number>();
+  const todayOf = (tag: string) => {
+    let n = today.get(tag);
+    if (n === undefined) {
+      n = index.seen(index.carrying([tag])).filter((t) => t.published !== null && t.published >= w.today && t.published <= w.now).length;
+      today.set(tag, n);
+    }
+    return n;
+  };
   const rows = defs.map((d) => {
-    const tags = descendants(defs, d.id).flatMap((g) => tagsIn.get(g) ?? []);
-    const row: SceneRow = {
+    const tags = [...new Set(descendants(defs, d.id).flatMap((g) => tagsIn.get(g) ?? []))];
+    const ids = index.carrying(tags);
+    const row: Pending = {
       key: `group:${d.id}`,
       title: d.label,
       href: `/group/${d.id}/`,
       media: null,
       mediaTitle: null,
-      counts: countSeen(index.seen(index.carrying(tags)), w),
+      counts: countSeen(index.seen(ids), w),
+      keywords: tags
+        .map((tag) => ({ tag, n: todayOf(tag) }))
+        // A category's own name (生活 under 生活) says nothing on its row.
+        .filter((t) => t.n > 0 && t.tag !== d.label)
+        .sort((a, b) => b.n - a.n || a.tag.localeCompare(b.tag))
+        .slice(0, GROUP_KEYWORDS)
+        .map((t) => t.tag),
+      latestIds: newestIds(ids, (id) => index.at.get(id), w),
     };
     return { kind: d.kind, row };
   });
@@ -564,12 +622,38 @@ export async function loadScenes(db: Db, now = Date.now()): Promise<LiveScenes> 
   const [index, media] = await Promise.all([loadIndex(db, w), mediaBoard(db, w)]);
   const ev = await loadEvents(db, index, w);
   const [threads, groups] = await Promise.all([threadBoard(db, index, w, ev.latest), groupBoards(db, index, w)]);
+  // The reports the screen names (an event's or thread's headlines, a row's
+  // newest one), fetched together once the boards are cut to size.
+  const boards = { media, threads, ...groups };
+  const rows: Pending[] = Object.values(boards).flat();
+  const newsIds = [...ev.events.flatMap((e) => e.news), ...rows.flatMap((r) => r.news ?? [])].flatMap((n) => n.id ?? []);
+  const briefs = await briefsOf(db, [...newsIds, ...rows.flatMap((r) => r.latestIds ?? [])]);
+  const withBriefs = (news: SceneNews[]) => news.map((n) => ({ ...n, brief: (n.id && briefs.get(n.id)) || null }));
+  // One report is often newest in several categories: down each board, a row
+  // shows the newest one no row above it shows.
+  const finish = (board: Pending[]): SceneRow[] => {
+    const used = new Set<number>();
+    return board.map(({ latestIds, ...row }) => {
+      const pick = latestIds?.find((id) => !used.has(id) && briefs.has(id)) ?? latestIds?.find((id) => briefs.has(id));
+      if (pick !== undefined) used.add(pick);
+      return {
+        ...row,
+        ...(row.news ? { news: withBriefs(row.news) } : {}),
+        ...(latestIds ? { latest: pick === undefined ? null : (briefs.get(pick) ?? null) } : {}),
+      };
+    });
+  };
   return {
     generatedAt: new Date(now).toISOString(),
     windows: { today: new Date(w.today).toISOString(), hour: new Date(w.hour).toISOString(), previous: new Date(w.previous).toISOString() },
     eventHour: ev.hour,
-    events: ev.events,
-    boards: { media, threads, ...groups },
+    events: ev.events.map((e) => ({ ...e, news: withBriefs(e.news) })),
+    boards: {
+      media: finish(boards.media),
+      threads: finish(boards.threads),
+      categories: finish(boards.categories),
+      groups: finish(boards.groups),
+    },
   };
 }
 

@@ -3022,10 +3022,28 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `events[].tags` | object[] | 事件聚集的關鍵字，強的在前，最多 14 個 |
 | `events[].tags[].tag` | string |  |
 | `events[].tags[].burst` | number | 爆發力 |
-| `events[].news` | object[] | 事件的代表標題（最多 6 則），用來選出主標題與封面 |
+| `events[].news` | object[] | 事件的代表標題（最多 6 則），用來選出主標題與封面；brief 是報導本身 |
+| `events[].news[].id` | integer \| null |  |
 | `events[].news[].title` | string |  |
 | `events[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `events[].news[].image` | string \| null |  |
+| `events[].news[].brief` | object \| null | 報導本身：媒體、時間、署名、來源與引用、標籤 |
+| `events[].news[].brief.id` | integer |  |
+| `events[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].brief.mediaTitle` | string |  |
+| `events[].news[].brief.title` | string |  |
+| `events[].news[].brief.url` | string |  |
+| `events[].news[].brief.image` | string \| null |  |
+| `events[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `events[].news[].brief.tags` | string[] |  |
+| `events[].news[].brief.authors` | string[] |  |
+| `events[].news[].brief.attributions` | object[] |  |
+| `events[].news[].brief.attributions[].media` | string |  |
+| `events[].news[].brief.attributions[].name` | string |  |
+| `events[].news[].brief.attributions[].country` | string |  |
+| `events[].news[].brief.attributions[].countryCode` | string |  |
+| `events[].news[].brief.attributions[].evidence` | string |  |
+| `events[].news[].brief.attributions[].kind` | "explicit" |  |
 | `events[].href` | string \| null | 事件串頁 |
 | `events[].counts` | object | 不重複的本站爬取文章數 |
 | `events[].counts.today` | integer | 今天（台北時間）發布的文章數 |
@@ -3065,9 +3083,45 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.media[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
 | `boards.media[].mediaTitle` | string \| null |  |
 | `boards.media[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.media[].news[].id` | integer \| null |  |
 | `boards.media[].news[].title` | string |  |
 | `boards.media[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `boards.media[].news[].image` | string \| null |  |
+| `boards.media[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.media[].news[].brief.id` | integer |  |
+| `boards.media[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.media[].news[].brief.mediaTitle` | string |  |
+| `boards.media[].news[].brief.title` | string |  |
+| `boards.media[].news[].brief.url` | string |  |
+| `boards.media[].news[].brief.image` | string \| null |  |
+| `boards.media[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.media[].news[].brief.tags` | string[] |  |
+| `boards.media[].news[].brief.authors` | string[] |  |
+| `boards.media[].news[].brief.attributions` | object[] |  |
+| `boards.media[].news[].brief.attributions[].media` | string |  |
+| `boards.media[].news[].brief.attributions[].name` | string |  |
+| `boards.media[].news[].brief.attributions[].country` | string |  |
+| `boards.media[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.media[].news[].brief.attributions[].evidence` | string |  |
+| `boards.media[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.media[].keywords` | string[] | 標籤群組今天報導最多的標籤 |
+| `boards.media[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.media[].latest.id` | integer |  |
+| `boards.media[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.media[].latest.mediaTitle` | string |  |
+| `boards.media[].latest.title` | string |  |
+| `boards.media[].latest.url` | string |  |
+| `boards.media[].latest.image` | string \| null |  |
+| `boards.media[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.media[].latest.tags` | string[] |  |
+| `boards.media[].latest.authors` | string[] |  |
+| `boards.media[].latest.attributions` | object[] |  |
+| `boards.media[].latest.attributions[].media` | string |  |
+| `boards.media[].latest.attributions[].name` | string |  |
+| `boards.media[].latest.attributions[].country` | string |  |
+| `boards.media[].latest.attributions[].countryCode` | string |  |
+| `boards.media[].latest.attributions[].evidence` | string |  |
+| `boards.media[].latest.attributions[].kind` | "explicit" |  |
 | `boards.media[].major` | string[] | 事件串的主要標籤 |
 | `boards.media[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.media[].counts.today` | integer | 今天（台北時間）發布的文章數 |
@@ -3081,9 +3135,45 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.threads[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
 | `boards.threads[].mediaTitle` | string \| null |  |
 | `boards.threads[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.threads[].news[].id` | integer \| null |  |
 | `boards.threads[].news[].title` | string |  |
 | `boards.threads[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `boards.threads[].news[].image` | string \| null |  |
+| `boards.threads[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.threads[].news[].brief.id` | integer |  |
+| `boards.threads[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.threads[].news[].brief.mediaTitle` | string |  |
+| `boards.threads[].news[].brief.title` | string |  |
+| `boards.threads[].news[].brief.url` | string |  |
+| `boards.threads[].news[].brief.image` | string \| null |  |
+| `boards.threads[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.threads[].news[].brief.tags` | string[] |  |
+| `boards.threads[].news[].brief.authors` | string[] |  |
+| `boards.threads[].news[].brief.attributions` | object[] |  |
+| `boards.threads[].news[].brief.attributions[].media` | string |  |
+| `boards.threads[].news[].brief.attributions[].name` | string |  |
+| `boards.threads[].news[].brief.attributions[].country` | string |  |
+| `boards.threads[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.threads[].news[].brief.attributions[].evidence` | string |  |
+| `boards.threads[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.threads[].keywords` | string[] | 標籤群組今天報導最多的標籤 |
+| `boards.threads[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.threads[].latest.id` | integer |  |
+| `boards.threads[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.threads[].latest.mediaTitle` | string |  |
+| `boards.threads[].latest.title` | string |  |
+| `boards.threads[].latest.url` | string |  |
+| `boards.threads[].latest.image` | string \| null |  |
+| `boards.threads[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.threads[].latest.tags` | string[] |  |
+| `boards.threads[].latest.authors` | string[] |  |
+| `boards.threads[].latest.attributions` | object[] |  |
+| `boards.threads[].latest.attributions[].media` | string |  |
+| `boards.threads[].latest.attributions[].name` | string |  |
+| `boards.threads[].latest.attributions[].country` | string |  |
+| `boards.threads[].latest.attributions[].countryCode` | string |  |
+| `boards.threads[].latest.attributions[].evidence` | string |  |
+| `boards.threads[].latest.attributions[].kind` | "explicit" |  |
 | `boards.threads[].major` | string[] | 事件串的主要標籤 |
 | `boards.threads[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.threads[].counts.today` | integer | 今天（台北時間）發布的文章數 |
@@ -3097,9 +3187,45 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.categories[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
 | `boards.categories[].mediaTitle` | string \| null |  |
 | `boards.categories[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.categories[].news[].id` | integer \| null |  |
 | `boards.categories[].news[].title` | string |  |
 | `boards.categories[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `boards.categories[].news[].image` | string \| null |  |
+| `boards.categories[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.categories[].news[].brief.id` | integer |  |
+| `boards.categories[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.categories[].news[].brief.mediaTitle` | string |  |
+| `boards.categories[].news[].brief.title` | string |  |
+| `boards.categories[].news[].brief.url` | string |  |
+| `boards.categories[].news[].brief.image` | string \| null |  |
+| `boards.categories[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.categories[].news[].brief.tags` | string[] |  |
+| `boards.categories[].news[].brief.authors` | string[] |  |
+| `boards.categories[].news[].brief.attributions` | object[] |  |
+| `boards.categories[].news[].brief.attributions[].media` | string |  |
+| `boards.categories[].news[].brief.attributions[].name` | string |  |
+| `boards.categories[].news[].brief.attributions[].country` | string |  |
+| `boards.categories[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.categories[].news[].brief.attributions[].evidence` | string |  |
+| `boards.categories[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.categories[].keywords` | string[] | 標籤群組今天報導最多的標籤 |
+| `boards.categories[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.categories[].latest.id` | integer |  |
+| `boards.categories[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.categories[].latest.mediaTitle` | string |  |
+| `boards.categories[].latest.title` | string |  |
+| `boards.categories[].latest.url` | string |  |
+| `boards.categories[].latest.image` | string \| null |  |
+| `boards.categories[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.categories[].latest.tags` | string[] |  |
+| `boards.categories[].latest.authors` | string[] |  |
+| `boards.categories[].latest.attributions` | object[] |  |
+| `boards.categories[].latest.attributions[].media` | string |  |
+| `boards.categories[].latest.attributions[].name` | string |  |
+| `boards.categories[].latest.attributions[].country` | string |  |
+| `boards.categories[].latest.attributions[].countryCode` | string |  |
+| `boards.categories[].latest.attributions[].evidence` | string |  |
+| `boards.categories[].latest.attributions[].kind` | "explicit" |  |
 | `boards.categories[].major` | string[] | 事件串的主要標籤 |
 | `boards.categories[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.categories[].counts.today` | integer | 今天（台北時間）發布的文章數 |
@@ -3113,9 +3239,45 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.groups[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
 | `boards.groups[].mediaTitle` | string \| null |  |
 | `boards.groups[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.groups[].news[].id` | integer \| null |  |
 | `boards.groups[].news[].title` | string |  |
 | `boards.groups[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `boards.groups[].news[].image` | string \| null |  |
+| `boards.groups[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.groups[].news[].brief.id` | integer |  |
+| `boards.groups[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.groups[].news[].brief.mediaTitle` | string |  |
+| `boards.groups[].news[].brief.title` | string |  |
+| `boards.groups[].news[].brief.url` | string |  |
+| `boards.groups[].news[].brief.image` | string \| null |  |
+| `boards.groups[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.groups[].news[].brief.tags` | string[] |  |
+| `boards.groups[].news[].brief.authors` | string[] |  |
+| `boards.groups[].news[].brief.attributions` | object[] |  |
+| `boards.groups[].news[].brief.attributions[].media` | string |  |
+| `boards.groups[].news[].brief.attributions[].name` | string |  |
+| `boards.groups[].news[].brief.attributions[].country` | string |  |
+| `boards.groups[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.groups[].news[].brief.attributions[].evidence` | string |  |
+| `boards.groups[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.groups[].keywords` | string[] | 標籤群組今天報導最多的標籤 |
+| `boards.groups[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.groups[].latest.id` | integer |  |
+| `boards.groups[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.groups[].latest.mediaTitle` | string |  |
+| `boards.groups[].latest.title` | string |  |
+| `boards.groups[].latest.url` | string |  |
+| `boards.groups[].latest.image` | string \| null |  |
+| `boards.groups[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.groups[].latest.tags` | string[] |  |
+| `boards.groups[].latest.authors` | string[] |  |
+| `boards.groups[].latest.attributions` | object[] |  |
+| `boards.groups[].latest.attributions[].media` | string |  |
+| `boards.groups[].latest.attributions[].name` | string |  |
+| `boards.groups[].latest.attributions[].country` | string |  |
+| `boards.groups[].latest.attributions[].countryCode` | string |  |
+| `boards.groups[].latest.attributions[].evidence` | string |  |
+| `boards.groups[].latest.attributions[].kind` | "explicit" |  |
 | `boards.groups[].major` | string[] | 事件串的主要標籤 |
 | `boards.groups[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.groups[].counts.today` | integer | 今天（台北時間）發布的文章數 |

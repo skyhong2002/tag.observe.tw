@@ -9,7 +9,17 @@ import { authorCreditParts } from '@/lib/author-display.mts';
 import { selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { isAllowedImage } from '@/lib/images';
 import { articleHref } from '@/lib/reading.mts';
-import { clock, type SceneArticle, type SceneEvent, type SceneRow, signed, since, storyHeadline } from './scenes';
+import {
+  clock,
+  type SceneArticle,
+  type SceneBrief,
+  type SceneEvent,
+  type SceneRow,
+  signed,
+  since,
+  storyHeadline,
+  storyLead,
+} from './scenes';
 import styles from './scenes.module.css';
 import type { BoardLens, EventLens } from './settings';
 
@@ -171,6 +181,8 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   const tags = event.tags.length ? event.tags : event.major.map((tag) => ({ tag, burst: 1 }));
   const keywords = new Set(tags.map((t) => t.tag));
   const trail = (event.rankTrail ?? []).filter((r): r is number => r !== null);
+  const lead = storyLead(event.news, event.major);
+  const leadHits = lead ? event.major.filter((tag) => lead.title.includes(tag)) : [];
   return (
     <article className={styles.event}>
       <div className={styles.story}>
@@ -205,6 +217,17 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
             headline
           )}
         </h3>
+        {lead?.brief && (
+          <div className={styles.leadMeta}>
+            <Byline brief={lead.brief} recent={Date.now() - Date.parse(lead.brief.publishedAt) < 3600e3} />
+            <ReportTags tags={lead.brief.tags} keywords={keywords} />
+            {/* Why this report heads the event (selectEventLead over the event's stored best reports). */}
+            <span className={styles.why}>
+              代表標題：事件最相關的 {event.news.length} 篇報導中
+              {leadHits.length ? `，標題提到最多主要標籤（${leadHits.join('、')}）` : ''}的一篇
+            </span>
+          </div>
+        )}
         <Keywords tags={tags} major={event.major} />
       </div>
       <div className={styles.numbers}>
@@ -252,13 +275,53 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   );
 }
 
+/** A report's line under its headline, as on every news row: outlet, its reporters and the
+ *  outlets it names as source or cites (authorCreditParts, as the full board), and when — how
+ *  long ago, in the lens's colour, for the last hour's arrivals. */
+function Byline({ brief, recent = false, children }: { brief: SceneBrief; recent?: boolean; children?: React.ReactNode }) {
+  const credits = authorCreditParts(brief.authors, brief).filter((part) => part.text !== '未署名');
+  return (
+    <span className={styles.byline}>
+      <MediaIcon media={brief.media} size={14} />
+      <span className={styles.outlet}>{brief.mediaTitle}</span>
+      {credits.length > 0 && (
+        <span className={styles.credits} title={credits.map((part) => part.evidence ?? `${part.label} ${part.text}`).join('\n')}>
+          {credits.map((part) => (
+            <span key={`${part.label}-${part.text}`} data-source={part.media ? true : undefined}>
+              {part.label && `${part.label} `}
+              {part.text}
+            </span>
+          ))}
+        </span>
+      )}
+      <time className={styles.time} data-recent={recent || undefined}>
+        {recent ? since(brief.publishedAt) : clock(brief.publishedAt)}
+      </time>
+      {children}
+    </span>
+  );
+}
+
+/** A report's site tags, the event's own keywords in the lens's colour. */
+function ReportTags({ tags, keywords, max = 5 }: { tags: string[]; keywords: ReadonlySet<string>; max?: number }) {
+  if (!tags.length) return null;
+  return (
+    <span className={styles.reportTags}>
+      {tags.slice(0, max).map((tag) => (
+        <Link prefetch={false} key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-event={keywords.has(tag) || undefined}>
+          #{tag}
+        </Link>
+      ))}
+    </span>
+  );
+}
+
 /** Each report: its headline; outlet, reporters and the outlets it names as source or cites, and
  *  when; its site tags (the event's own keywords in the lens's colour); and who else ran it. */
 function Articles({ list, keywords }: { list: SceneArticle[]; keywords: ReadonlySet<string> }) {
   return (
     <ul className={styles.articles}>
       {list.map((a) => {
-        const credits = authorCreditParts(a.authors, a).filter((part) => part.text !== '未署名');
         return (
           <li key={a.id}>
             <span className={styles.thumb}>
@@ -272,23 +335,7 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
               <Link prefetch={false} href={articleHref(a)} className={styles.articleTitle}>
                 {a.title}
               </Link>
-              <span className={styles.byline}>
-                <MediaIcon media={a.media} size={14} />
-                <span className={styles.outlet}>{a.mediaTitle}</span>
-                {credits.length > 0 && (
-                  <span className={styles.credits} title={credits.map((part) => part.evidence ?? `${part.label} ${part.text}`).join('\n')}>
-                    {credits.map((part) => (
-                      <span key={`${part.label}-${part.text}`} data-source={part.media ? true : undefined}>
-                        {part.label && `${part.label} `}
-                        {part.text}
-                      </span>
-                    ))}
-                  </span>
-                )}
-                {/* The last hour's arrivals say how long ago, in the lens's colour; earlier ones their time. */}
-                <time className={styles.time} data-recent={a.recent || undefined}>
-                  {a.recent ? since(a.publishedAt) : clock(a.publishedAt)}
-                </time>
+              <Byline brief={a} recent={a.recent}>
                 {a.copies.length > 0 && (
                   <span className={styles.copies} title={a.copies.map((c) => c.mediaTitle).join('、')}>
                     {a.copies.slice(0, 3).map((c) => (
@@ -297,16 +344,8 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
                     另有 {a.copies.length} 家刊出
                   </span>
                 )}
-              </span>
-              {a.tags.length > 0 && (
-                <span className={styles.reportTags}>
-                  {a.tags.slice(0, 5).map((tag) => (
-                    <Link prefetch={false} key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-event={keywords.has(tag) || undefined}>
-                      #{tag}
-                    </Link>
-                  ))}
-                </span>
-              )}
+              </Byline>
+              <ReportTags tags={a.tags} keywords={keywords} />
             </span>
           </li>
         );
@@ -343,8 +382,8 @@ function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | Boa
                 <Link prefetch={false} href={r.href}>
                   {thread ? storyHeadline(r.news, r.major) : r.title}
                 </Link>
-                {thread && r.major?.length ? <span className={styles.rowTags}>{r.major.join('・')}</span> : null}
               </span>
+              <RowDetail row={r} thread={thread} />
             </td>
             <td className={styles.trailCell}>
               <Sparkline values={r.counts.hours} color={colour} className={styles.rowLine} />
@@ -358,5 +397,37 @@ function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | Boa
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** A row's second line, so a short name does not leave the row empty: a thread's lead report
+ *  (outlet, bylines, when) and its major tags; a group's busiest tags today and its newest
+ *  report; an outlet topic's newest report. */
+function RowDetail({ row, thread }: { row: SceneRow; thread: boolean }) {
+  const none: ReadonlySet<string> = new Set();
+  if (thread) {
+    const lead = storyLead(row.news, row.major)?.brief;
+    return (
+      <span className={styles.rowDetail}>
+        {lead && <Byline brief={lead} />}
+        {row.major?.length ? <ReportTags tags={row.major} keywords={new Set(row.major)} /> : null}
+      </span>
+    );
+  }
+  const latest = row.latest;
+  if (!row.keywords?.length && !latest) return null;
+  return (
+    <span className={styles.rowDetail}>
+      {row.keywords?.length ? <ReportTags tags={row.keywords} keywords={none} max={6} /> : null}
+      {latest && (
+        <span className={styles.latest}>
+          <span className={styles.latestLabel}>最新</span>
+          <Link prefetch={false} href={articleHref(latest)} className={styles.latestTitle}>
+            {latest.title}
+          </Link>
+          <Byline brief={latest} recent={Date.now() - Date.parse(latest.publishedAt) < 3600e3} />
+        </span>
+      )}
+    </span>
   );
 }

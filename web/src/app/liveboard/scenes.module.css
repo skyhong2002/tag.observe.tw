@@ -139,6 +139,16 @@
 .nameCell a { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .nameCell .media { flex-shrink: 0; }
 .rowLine { display: block; width: 100%; height: 1.7em; }
+/* The row's second line: a thread's lead report, a group's busiest tags and newest report. */
+.rowDetail { display: flex; align-items: baseline; gap: 1.2em; min-width: 0; margin-top: 0.25em; overflow: hidden; white-space: nowrap; }
+.rowDetail .byline, .rowDetail .reportTags { flex-shrink: 0; }
+.latest { display: flex; align-items: baseline; gap: 0.5em; min-width: 0; font-size: 0.85em; }
+.latestLabel { flex-shrink: 0; color: #a1a1aa; font-size: 0.85em; }
+.latestTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #52525b; }
+.latest .byline { font-size: 0.85em; }
+/* The event's lead report, named as any news row is, and why it leads. */
+.leadMeta { display: flex; flex-direction: column; gap: 0.3em; margin-top: -0.2em; }
+.why { color: #a1a1aa; font-size: 0.72em; }
 .rowTags { flex-shrink: 0; color: #a1a1aa; font-size: 0.75em; }
 .place { color: var(--tint); font-weight: 700; text-align: center; }
 .count { text-align: right; }
@@ -154,7 +164,7 @@
   .figures { grid-template-columns: repeat(3, auto); column-gap: 1.2em; }
   .board th { width: 4.4em; }
   .board th.trailHead, .board td.trailCell { display: none; }
-  .nameCell .media, .rowTags { display: none; }
+  .nameCell .media, .rowTags, .latest { display: none; }
   .thumb { width: 5em; }
   .articles li { grid-template-columns: 5em minmax(0, 1fr); }
 }
@@ -181,4 +191,7 @@
 [data-theme="dark"] .credits { color: #d4d4d8; }
 [data-theme="dark"] .copies { background: #27272a; }
 [data-theme="dark"] .reportTags { color: #71717a; }
+[data-theme="dark"] .latestTitle { color: #d4d4d8; }
+[data-theme="dark"] .why,
+[data-theme="dark"] .latestLabel { color: #71717a; }
 [data-theme="dark"] .change[data-down] { color: #a1a1aa; background: #27272a; }

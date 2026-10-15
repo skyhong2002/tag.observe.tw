@@ -15,12 +15,8 @@ export interface SceneCounts {
   /** Collected in each of the last 12 hours, oldest first. */
   hours: number[];
 }
-export interface SceneNews {
-  title: string;
-  media: string;
-  image: string | null;
-}
-export interface SceneArticle {
+/** A report as any news row names it: outlet, when, bylines and the outlets it names as source or cites, tags. */
+export interface SceneBrief {
   id: number;
   media: string;
   mediaTitle: string;
@@ -28,12 +24,20 @@ export interface SceneArticle {
   url: string;
   image: string | null;
   publishedAt: string;
-  /** Collected in the last hour (else earlier today). */
-  recent: boolean;
   tags: string[];
-  /** Bylines, and the outlets it names as its source or cites. */
   authors: string[];
   attributions: Array<{ media: string; name: string; evidence: string }>;
+}
+export interface SceneNews {
+  id: number | null;
+  title: string;
+  media: string;
+  image: string | null;
+  brief: SceneBrief | null;
+}
+export interface SceneArticle extends SceneBrief {
+  /** Collected in the last hour (else earlier today). */
+  recent: boolean;
   /** Other outlets that ran the same report. */
   copies: Array<{ media: string; mediaTitle: string }>;
 }
@@ -63,6 +67,10 @@ export interface SceneRow {
   mediaTitle: string | null;
   news?: SceneNews[];
   major?: string[];
+  /** A group's busiest tags today. */
+  keywords?: string[];
+  /** The newest report of a group or an outlet's topic. */
+  latest?: SceneBrief | null;
   counts: SceneCounts;
 }
 export interface LiveScenes {
@@ -76,9 +84,12 @@ export interface LiveScenes {
 /** Events the event lens steps through, one a frame. */
 export const EVENT_FRAMES = 6;
 
+/** The report a story leads with, as the events page picks it (selectEventLead). */
+export const storyLead = (news: readonly SceneNews[] | undefined, major: readonly string[] | undefined) =>
+  selectEventLead(news ?? [], major ?? []);
 /** A story's lead headline from its stored best ones, or its major tags. */
 export function storyHeadline(news: readonly SceneNews[] | undefined, major: readonly string[] | undefined): string {
-  const lead = selectEventLead(news ?? [], major ?? []);
+  const lead = storyLead(news, major);
   return lead ? clipHeadline(cleanEventHeadline(lead.title)) : (major ?? []).join('、');
 }
 
