@@ -28,7 +28,16 @@ it('uses AA text tokens against dark trend, event/status panels and related-tag 
       expect((luminance(foreground) + 0.05) / (luminance(background) + 0.05)).toBeGreaterThanOrEqual(4.5);
     }
   }
-  for (const source of ['../src/components/EventCard.tsx', '../src/components/EventDayView.tsx', '../src/components/PeriodEvents.tsx', '../src/components/EventOverview.tsx', '../src/components/article/ArticleTags.tsx', '../src/app/(site)/group/page.tsx', '../src/app/(site)/group/[id]/page.tsx', '../src/app/(site)/event/page.tsx']) {
+  for (const source of [
+    '../src/components/EventCard.tsx',
+    '../src/components/EventDayView.tsx',
+    '../src/components/PeriodEvents.tsx',
+    '../src/components/EventOverview.tsx',
+    '../src/components/article/ArticleTags.tsx',
+    '../src/app/(site)/group/page.tsx',
+    '../src/app/(site)/group/[id]/page.tsx',
+    '../src/app/(site)/event/page.tsx',
+  ]) {
     expect(read(source).match(/text-zinc-500(?! dark:text-zinc-400)/g)).toBeNull();
   }
   const css = read('../src/app/globals.css');
@@ -62,15 +71,21 @@ it('keeps informational timeline labels readable before their frame is played', 
   const css = read('../src/app/liveboard/simple.module.css');
   // Dimming the entire SVG group also dims text to about 1.8:1 in dark mode.
   // Only the future progress track is muted; its time label remains readable.
-  expect(board).toContain('<g key={slot.label}>');
-  expect(board).not.toMatch(/<g key=\{slot\.label\}[^>]*opacity=/);
+  // Each time point is a tappable Hit (a <g> with a clear box), never dimmed as a whole.
+  const slot = board.match(/<Hit\s+key=\{slot\.label\}[^>]*>/)?.[0] ?? '';
+  expect(slot).not.toBe('');
+  expect(slot).not.toContain('opacity=');
   expect(board).toContain('className={styles.track} opacity={i > playing.frame ? 0.45 : 1}');
   expect(css).toContain('[data-theme="dark"] .hours { fill: #a1a1aa; }');
   expect((luminance('zinc-400') + 0.05) / (luminance('zinc-950') + 0.05)).toBeGreaterThanOrEqual(4.5);
 });
 
 it('keeps zero values and selectable evidence readable while preserving stale-result and selection cues', () => {
-  for (const source of ['../src/app/(site)/similarity/DailyTrend.tsx', '../src/app/(site)/similarity/about/page.tsx', '../src/app/(site)/writing/OutletTable.tsx']) {
+  for (const source of [
+    '../src/app/(site)/similarity/DailyTrend.tsx',
+    '../src/app/(site)/similarity/about/page.tsx',
+    '../src/app/(site)/writing/OutletTable.tsx',
+  ]) {
     expect(read(source)).toContain('text-zinc-600 dark:text-zinc-400');
     expect(read(source)).not.toContain('dark:text-zinc-700');
   }
@@ -83,6 +98,6 @@ it('keeps zero values and selectable evidence readable while preserving stale-re
   expect(results).toContain("aria-current={camp === c.key ? 'true' : undefined}");
   expect(results).toContain("camp === c.key ? 'ring-2 ring-inset ring-current'");
   expect(results).not.toContain("camp && camp !== c.key ? 'opacity-30'");
-  expect((1.05) / (luminance('orange-700') + 0.05)).toBeGreaterThanOrEqual(4.5);
+  expect(1.05 / (luminance('orange-700') + 0.05)).toBeGreaterThanOrEqual(4.5);
   expect(read('../src/components/EventDayNav.tsx')).not.toContain('dark:bg-brand-600');
 });
