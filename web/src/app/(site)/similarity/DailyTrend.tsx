@@ -49,6 +49,8 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
+    // On phones the legend wraps to three lines; leave room so it does not cover the axis title.
+    const narrow = ref.current.clientWidth < 520;
     const ink = dark ? '#a1a1aa' : '#71717a',
       grid = dark ? '#27272a' : '#f4f4f5',
       surface = dark ? '#18181b' : '#ffffff';
@@ -68,6 +70,8 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
       gridIndex: i,
       min: 0,
       minInterval: 1,
+      // The lower panel is short: two intervals keep its labels apart.
+      splitNumber: i === 1 ? 2 : narrow ? 3 : 5,
       name,
       nameTextStyle: { color: ink, align: 'left' },
       axisLabel: { color: ink },
@@ -86,7 +90,7 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
       },
       legend: { top: 0, left: 0, textStyle: { color: ink }, inactiveColor: ink, data: [...SERIES.map((s) => s.name), '比對篇數'] },
       grid: [
-        { left: 48, right: 24, top: 64, height: '46%' },
+        { left: 48, right: 24, top: narrow ? 104 : 64, height: narrow ? '40%' : '46%' },
         { left: 48, right: 24, top: '72%', bottom: 26 },
       ],
       xAxis: [axis(0), axis(1)],
