@@ -2,11 +2,13 @@ import { and, desc, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { Db } from '../db/client.ts';
-import { articles, articleTags, eventSnapshots, events, eventThreads, tagGroupMembers, topics } from '../db/schema.ts';
+import { articles, articleTags, eventSnapshots, events, eventThreads, similarityPairs, tagGroupMembers, topics } from '../db/schema.ts';
 import { latestEvents } from '../jobs/events-job.ts';
 import { articleMediaOf } from '../jobs/topic-stories.ts';
+import type { Attribution } from '../similarity/attribution.ts';
 import { activeGroups, descendants } from '../tag-groups/tree.ts';
 import { eventsAt, matchPrev } from './event-feed.ts';
+import { articleCols, liveArticle } from './liveboard.ts';
 import { taipeiMidnight } from './media-stats.ts';
 import { SHOWN } from './tag-groups.ts';
 
@@ -35,6 +37,8 @@ const EVENTS = 10;
 const EVENT_TAGS = 14;
 /** An event's articles: the last hour's, then today's earlier ones. */
 const EVENT_ARTICLES = 8;
+/** Newest reports of an event considered for its list. */
+const POOL = 80;
 const BOARD = 10;
 /** Topics of one outlet on its leaderboard (some outlets keep a page per section). */
 const PER_MEDIA = 2;
@@ -59,6 +63,13 @@ export interface SceneArticle {
   publishedAt: string;
   /** Collected in the last hour (else earlier today). */
   recent: boolean;
+  /** Its site tags, first eight. */
+  tags: string[];
+  /** Bylines, and the outlets it names as its source or cites (as on the full liveboard). */
+  authors: string[];
+  attributions: Attribution[];
+  /** Other outlets that ran the same text (similarity pairs) or headline, listed under this one. */
+  copies: Array<{ media: string; mediaTitle: string }>;
 }
 export interface SceneNews {
   title: string;
@@ -185,6 +196,103 @@ export function rankBoard(rows: SceneRow[], { limit = BOARD, perMedia = Infinity
     .slice(0, limit);
 }
 
+export interface ReportCandidate {
+  id: number;
+  media: string;
+  title: string;
+  /** Publish time (collection time while it is pending), for the order. */
+  date: number;
+  recent: boolean;
+}
+/** Headline as compared for copies: no spaces or punctuation. */
+const headlineKey = (title: string) => title.replace(/[\s\p{P}\p{S}]+/gu, '');
+/** Headlines this alike (Dice over character pairs) are one report rewritten by another outlet. */
+const SAME_HEADLINE = 0.7;
+const bigrams = (key: string) => {
+  const out = new Map<string, number>();
+  for (let i = 0; i < key.length - 1; i++) out.set(key.slice(i, i + 2), (out.get(key.slice(i, i + 2)) ?? 0) + 1);
+  return out;
+};
+export function headlineDice(a: string, b: string): number {
+  const x = bigrams(headlineKey(a)),
+    y = bigrams(headlineKey(b));
+  let shared = 0,
+    total = 0;
+  for (const n of x.values()) total += n;
+  for (const n of y.values()) total += n;
+  for (const [g, n] of x) shared += Math.min(n, y.get(g) ?? 0);
+  return total ? (2 * shared) / total : 0;
+}
+/** Reports of one outlet in an event's list before the rest are let in. */
+const OUTLET_SHARE = 2;
+/**
+ * An event's reports for the screen: copies of one report (the same text,
+ * by similarity pair, or a nearly identical headline) fold into the earliest of them
+ * in the section, the others listed as its copies; then the last hour's
+ * reports, newest first, one per outlet before any outlet gets a second,
+ * and today's earlier ones the same way, `limit` in all, no outlet past
+ * OUTLET_SHARE while there are others to show.
+ */
+export function pickReports(
+  candidates: readonly ReportCandidate[],
+  pairs: ReadonlyArray<{ aId: number; bId: number }>,
+  limit: number,
+): Array<{ id: number; copies: number[] }> {
+  const parent = new Map<number, number>();
+  const find = (x: number): number => {
+    let root = x;
+    while ((parent.get(root) ?? root) !== root) root = parent.get(root) as number;
+    parent.set(x, root);
+    return root;
+  };
+  const join = (a: number, b: number) => {
+    const ra = find(a),
+      rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+  const ids = new Set(candidates.map((c) => c.id));
+  for (const p of pairs) if (ids.has(p.aId) && ids.has(p.bId)) join(p.aId, p.bId);
+  for (let i = 0; i < candidates.length; i++)
+    for (let j = i + 1; j < candidates.length; j++)
+      if (headlineDice(candidates[i].title, candidates[j].title) >= SAME_HEADLINE) join(candidates[i].id, candidates[j].id);
+  const section = (recent: boolean) => {
+    const groups = new Map<number, ReportCandidate[]>();
+    for (const c of candidates)
+      if (c.recent === recent) {
+        const g = find(c.id);
+        groups.set(g, [...(groups.get(g) ?? []), c]);
+      }
+    const all = [...groups.values()].map((members) => {
+      const byDate = [...members].sort((a, b) => a.date - b.date || a.id - b.id);
+      // The story's newest member orders it; its earliest one stands for it.
+      return { lead: byDate[0], newest: byDate.at(-1)?.date ?? 0, copies: byDate.slice(1) };
+    });
+    all.sort((a, b) => b.newest - a.newest || b.lead.id - a.lead.id);
+    const outlets = new Set<string>();
+    const first = all.filter((g) => !outlets.has(g.lead.media) && outlets.add(g.lead.media));
+    return [...first, ...all.filter((g) => !first.includes(g))];
+  };
+  // A report copied into both sections stays in the one it first reached.
+  const recent = section(true);
+  const seen = new Set(recent.flatMap((g) => [g.lead.id, ...g.copies.map((c) => c.id)].map(find)));
+  const earlier = section(false).filter((g) => !seen.has(find(g.lead.id)));
+  // No outlet past its share while others are waiting; the rest only fill what is left.
+  const ordered = [...recent, ...earlier];
+  const count = new Map<string, number>();
+  const fair = ordered.filter((g) => {
+    const n = (count.get(g.lead.media) ?? 0) + 1;
+    count.set(g.lead.media, n);
+    return n <= OUTLET_SHARE;
+  });
+  const chosen = new Set([...fair, ...ordered.filter((g) => !fair.includes(g))].slice(0, limit));
+  return ordered
+    .filter((g) => chosen.has(g))
+    .map((g) => ({
+      id: g.lead.id,
+      copies: [...new Set(g.copies.filter((c) => c.media !== g.lead.media).map((c) => c.id))],
+    }));
+}
+
 /** Its publish time is a placeholder until its page is read. */
 const pending = sql<number>`(${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`;
 /** Own articles published today, or late enough to have been collected in the trail's hours. */
@@ -227,37 +335,38 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
     return t ? (t.published ?? t.crawled) : 0;
   };
   const isRecent = (id: number) => (index.at.get(id)?.crawled ?? 0) >= w.hour;
-  const picked = members.map((ids) => {
-    const byDate = [...ids].sort((a, b) => dateOf(b) - dateOf(a) || b - a);
-    const earlier = byDate.filter((id) => !isRecent(id) && dateOf(id) >= w.today);
-    return [...byDate.filter(isRecent), ...earlier].slice(0, EVENT_ARTICLES + 4);
-  });
-  const wanted = [...new Set(picked.flat())];
-  const found = wanted.length
-    ? await db
-        .select({
-          id: articles.id,
-          media: articles.media,
-          title: articles.title,
-          url: articles.url,
-          image: articles.image,
-          publishedAt: articles.publishedAt,
-        })
-        .from(articles)
-        .where(inArray(articles.id, wanted))
-    : [];
-  const byId = new Map(found.map((a) => [a.id, a]));
-  // An outlet sometimes files one report under two addresses: list it once.
-  const once = (ids: number[]) => {
-    const seen = new Set<string>();
-    return ids.filter((id) => {
-      const a = byId.get(id);
-      const key = a ? `${a.media}|${a.title.replace(/\s+/g, '')}` : '';
-      if (!a || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  };
+  // Each event's candidates: the last hour's and today's, newest first, a
+  // bounded pool; copies among them are found in one pass over the pairs.
+  const pools = members.map((ids) =>
+    [...ids]
+      .filter((id) => isRecent(id) || dateOf(id) >= w.today)
+      .sort((a, b) => dateOf(b) - dateOf(a) || b - a)
+      .slice(0, POOL),
+  );
+  const pooled = [...new Set(pools.flat())];
+  const [heads, pairs] = pooled.length
+    ? await Promise.all([
+        db.select({ id: articles.id, media: articles.media, title: articles.title }).from(articles).where(inArray(articles.id, pooled)),
+        db
+          .select({ aId: similarityPairs.aId, bId: similarityPairs.bId })
+          .from(similarityPairs)
+          .where(and(inArray(similarityPairs.aId, pooled), inArray(similarityPairs.bId, pooled))),
+      ])
+    : [[], []];
+  const head = new Map(heads.map((h) => [h.id, h]));
+  const picked = pools.map((pool) =>
+    pickReports(
+      pool.flatMap((id) => {
+        const h = head.get(id);
+        return h ? [{ id, media: h.media, title: h.title, date: dateOf(id), recent: isRecent(id) }] : [];
+      }),
+      pairs,
+      EVENT_ARTICLES,
+    ),
+  );
+  const wanted = [...new Set(picked.flatMap((list) => list.map((p) => p.id)))];
+  const found = wanted.length ? await db.select(articleCols(0)).from(articles).where(inArray(articles.id, wanted)) : [];
+  const byId = new Map(found.map((a) => [a.id, liveArticle(a)]));
   const list = latest.events.map((e, i): SceneEvent => {
     const before = matchPrev(e, prev);
     return {
@@ -270,25 +379,27 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
       news: newsOf(e),
       href: e.threadId ? `/eve/${e.threadId}/` : null,
       counts: countSeen(index.seen(members[i]), w),
-      articles: once(picked[i])
-        .slice(0, EVENT_ARTICLES)
-        .flatMap((id) => {
-          const a = byId.get(id);
-          return a
-            ? [
-                {
-                  id,
-                  media: a.media,
-                  mediaTitle: mediaTitle(a.media),
-                  title: a.title,
-                  url: a.url,
-                  image: a.image,
-                  publishedAt: a.publishedAt.toISOString(),
-                  recent: isRecent(id),
-                },
-              ]
-            : [];
-        }),
+      articles: picked[i].flatMap(({ id, copies }) => {
+        const a = byId.get(id);
+        if (!a) return [];
+        const copied = [...new Set(copies.flatMap((c) => head.get(c)?.media ?? []))];
+        return [
+          {
+            id,
+            media: a.media,
+            mediaTitle: a.mediaTitle,
+            title: a.title,
+            url: a.url,
+            image: a.image,
+            publishedAt: a.publishedAt,
+            recent: isRecent(id),
+            tags: a.tags,
+            authors: a.authors,
+            attributions: a.attributions ?? [],
+            copies: copied.map((media) => ({ media, mediaTitle: mediaTitle(media) })),
+          },
+        ];
+      }),
     };
   });
   return { hour: latest.snapshot.hourStart.toISOString(), events: list, latest: latest.events };

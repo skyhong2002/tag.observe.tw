@@ -29,6 +29,12 @@ export interface SceneArticle {
   publishedAt: string;
   /** Collected in the last hour (else earlier today). */
   recent: boolean;
+  tags: string[];
+  /** Bylines, and the outlets it names as its source or cites. */
+  authors: string[];
+  attributions: Array<{ media: string; name: string; evidence: string }>;
+  /** Other outlets that ran the same report. */
+  copies: Array<{ media: string; mediaTitle: string }>;
 }
 export interface SceneEvent {
   rank: number;

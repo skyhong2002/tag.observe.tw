@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { matchPrev } from '../src/v1/event-feed.ts';
-import { countSeen, rankBoard, type SceneRow, storyNeed, TagIndex, windowsAt } from '../src/v1/liveboard-scenes.ts';
+import {
+  countSeen,
+  headlineDice,
+  pickReports,
+  rankBoard,
+  type SceneRow,
+  storyNeed,
+  TagIndex,
+  windowsAt,
+} from '../src/v1/liveboard-scenes.ts';
 
 const HOUR = 3600e3;
 // 2026-10-15 17:30 in Taipei.
@@ -88,5 +97,59 @@ describe('matchPrev', () => {
     expect(matchPrev({ threadId: 7, major: [] }, prev)?.score).toBe(31_500_000);
     expect(matchPrev({ threadId: 99, major: ['颱風', '停班'] }, prev)?.rank).toBe(1);
     expect(matchPrev({ threadId: 99, major: ['地震'] }, prev)).toBeNull();
+  });
+});
+
+describe('pickReports', () => {
+  const c = (id: number, media: string, title: string, minutesAgo: number, recent = minutesAgo <= 60) => ({
+    id,
+    media,
+    title,
+    date: now - minutesAgo * 60e3,
+    recent,
+  });
+  it('folds copies into the earliest, one outlet before a second, the last hour first', () => {
+    const picked = pickReports(
+      [
+        c(1, 'ctwant', '僑委會專報僅138字', 5),
+        c(2, 'ctwant', '葉元之質疑護航', 10),
+        c(3, 'ctwant', '羅智強酸：撒檸檬水', 15),
+        c(4, 'cna', '僑委會出國報告遭批', 40),
+        // The same dispatch run by two outlets, by text…
+        c(5, 'udn', '僑委會出國報告遭批（轉載）', 30),
+        // …and the same headline once more, spaced and punctuated differently.
+        c(6, 'chinatimes', '僑委會 出國報告遭批！', 20),
+        c(7, 'ltn', '外交部回應', 200),
+      ],
+      [{ aId: 4, bId: 5 }],
+      10,
+    );
+    expect(picked).toEqual([
+      // CTWANT's newest leads, then each other outlet once (the CNA dispatch with its copies), then CTWANT's others.
+      { id: 1, copies: [] },
+      { id: 4, copies: [5, 6] },
+      { id: 2, copies: [] },
+      { id: 3, copies: [] },
+      { id: 7, copies: [] },
+    ]);
+  });
+  it('lists a report filed twice by one outlet once, without calling it a copy', () => {
+    expect(pickReports([c(1, 'udn', '同一篇', 5), c(2, 'udn', '同一篇', 6)], [], 5)).toEqual([{ id: 2, copies: [] }]);
+  });
+});
+
+describe('copies by headline', () => {
+  it('takes a lightly rewritten headline for the same report, not a different one on the story', () => {
+    expect(headlineDice('台股重挫1655點外資賣超創新高！融資減51億', '台股跌1655點外資賣超創新高　融資減51.8億')).toBeGreaterThanOrEqual(
+      0.7,
+    );
+    expect(headlineDice('外資狂倒3,000億元誰在接？台股ETF爆量', '台股重挫1655點外資賣超創新高！融資減51億')).toBeLessThan(0.7);
+  });
+  it('lets no outlet past two while others wait', () => {
+    const titles = ['', '颱風逼近東部', '台股收盤重挫', '立院審預算', '大谷敲安打', '油價下週調漲', '流感疫苗開打'];
+    const c = (id: number, media: string) => ({ id, media, title: titles[id], date: now - id * 60e3, recent: true });
+    const picked = pickReports([c(1, 'pchome'), c(2, 'pchome'), c(3, 'pchome'), c(4, 'pchome'), c(5, 'udn'), c(6, 'cna')], [], 4);
+    // One of each outlet first, then PChome's second; its third and fourth wait for room that never comes.
+    expect(picked.map((p) => p.id)).toEqual([1, 5, 6, 2]);
   });
 });

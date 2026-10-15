@@ -4,6 +4,7 @@ import Link from 'next/link';
 import MediaIcon from '@/components/MediaIcon';
 import SafeImage from '@/components/SafeImage';
 import Sparkline from '@/components/Sparkline';
+import { authorCreditParts } from '@/lib/author-display.mts';
 import { selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { isAllowedImage } from '@/lib/images';
 import { articleHref } from '@/lib/reading.mts';
@@ -156,6 +157,7 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   const recent = event.articles.filter((a) => a.recent);
   const earlier = event.articles.filter((a) => !a.recent);
   const tags = event.tags.length ? event.tags : event.major.map((tag) => ({ tag, burst: 1 }));
+  const keywords = new Set(tags.map((t) => t.tag));
   return (
     <article className={styles.event}>
       <div className={styles.story}>
@@ -209,11 +211,11 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
         <Trend hours={event.counts.hours} colour={colour} />
         <div className={styles.reports}>
           <h4 className={styles.section}>近一小時新報導</h4>
-          {recent.length ? <Articles list={recent} /> : <p className={styles.empty}>這一小時還沒有新報導</p>}
+          {recent.length ? <Articles list={recent} keywords={keywords} /> : <p className={styles.empty}>這一小時還沒有新報導</p>}
           {earlier.length > 0 && (
             <>
               <h4 className={styles.section}>今天稍早</h4>
-              <Articles list={earlier} />
+              <Articles list={earlier} keywords={keywords} />
             </>
           )}
         </div>
@@ -222,30 +224,62 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   );
 }
 
-function Articles({ list }: { list: SceneArticle[] }) {
+/** Each report: its headline; outlet, reporters and the outlets it names as source or cites, and
+ *  when; its site tags (the event's own keywords in the lens's colour); and who else ran it. */
+function Articles({ list, keywords }: { list: SceneArticle[]; keywords: ReadonlySet<string> }) {
   return (
     <ul className={styles.articles}>
-      {list.map((a) => (
-        <li key={a.id}>
-          <span className={styles.thumb}>
-            {isAllowedImage(a.image) ? (
-              <SafeImage src={a.image} alt="" width={192} height={108} />
-            ) : (
-              <MediaIcon media={a.media} size={28} />
-            )}
-          </span>
-          <span className={styles.articleText}>
-            <Link href={articleHref(a)} className={styles.articleTitle}>
-              {a.title}
-            </Link>
-            <span className={styles.byline}>
-              <MediaIcon media={a.media} size={14} />
-              {a.mediaTitle}
-              <time className={styles.time}>{clock(a.publishedAt)}</time>
+      {list.map((a) => {
+        const credits = authorCreditParts(a.authors, a).filter((part) => part.text !== '未署名');
+        return (
+          <li key={a.id}>
+            <span className={styles.thumb}>
+              {isAllowedImage(a.image) ? (
+                <SafeImage src={a.image} alt="" width={192} height={108} />
+              ) : (
+                <MediaIcon media={a.media} size={28} />
+              )}
             </span>
-          </span>
-        </li>
-      ))}
+            <span className={styles.articleText}>
+              <Link href={articleHref(a)} className={styles.articleTitle}>
+                {a.title}
+              </Link>
+              <span className={styles.byline}>
+                <MediaIcon media={a.media} size={14} />
+                <span className={styles.outlet}>{a.mediaTitle}</span>
+                {credits.length > 0 && (
+                  <span className={styles.credits} title={credits.map((part) => part.evidence ?? `${part.label} ${part.text}`).join('\n')}>
+                    {credits.map((part) => (
+                      <span key={`${part.label}-${part.text}`} data-source={part.media ? true : undefined}>
+                        {part.label && `${part.label} `}
+                        {part.text}
+                      </span>
+                    ))}
+                  </span>
+                )}
+                <time className={styles.time}>{clock(a.publishedAt)}</time>
+                {a.copies.length > 0 && (
+                  <span className={styles.copies} title={a.copies.map((c) => c.mediaTitle).join('、')}>
+                    {a.copies.slice(0, 3).map((c) => (
+                      <MediaIcon key={c.media} media={c.media} title={c.mediaTitle} size={14} />
+                    ))}
+                    另有 {a.copies.length} 家刊出
+                  </span>
+                )}
+              </span>
+              {a.tags.length > 0 && (
+                <span className={styles.reportTags}>
+                  {a.tags.slice(0, 5).map((tag) => (
+                    <Link key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-event={keywords.has(tag) || undefined}>
+                      #{tag}
+                    </Link>
+                  ))}
+                </span>
+              )}
+            </span>
+          </li>
+        );
+      })}
     </ul>
   );
 }

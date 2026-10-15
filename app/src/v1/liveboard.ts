@@ -111,7 +111,7 @@ export type PairRow = {
   computedAt: Date;
 };
 
-const articleCols = (textChars: number) => ({
+export const articleCols = (textChars: number) => ({
   id: articles.id,
   media: articles.media,
   title: articles.title,

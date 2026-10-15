@@ -3032,7 +3032,7 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `events[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `events[].counts.previous` | integer | 再前一小時收錄的文章數 |
 | `events[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
-| `events[].articles` | object[] | 近一小時收錄的文章，再接今天稍早的，各依發布時間新的在前，最多 8 篇 |
+| `events[].articles` | object[] | 近一小時收錄的文章，再接今天稍早的，各依發布時間新的在前；同一篇的轉載併在最早的一篇下，每家媒體先列兩篇，最多 8 篇 |
 | `events[].articles[].id` | integer |  |
 | `events[].articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `events[].articles[].mediaTitle` | string |  |
@@ -3041,6 +3041,18 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `events[].articles[].image` | string \| null |  |
 | `events[].articles[].publishedAt` | string (ISO 時間) |  |
 | `events[].articles[].recent` | boolean | 近一小時收錄；false 為今天稍早 |
+| `events[].articles[].tags` | string[] | 前 8 個標籤 |
+| `events[].articles[].authors` | string[] | 原始作者署名（包含具名作者與機構） |
+| `events[].articles[].attributions` | object[] | 原文明示的內容提供者或引用媒體及證據 |
+| `events[].articles[].attributions[].media` | string |  |
+| `events[].articles[].attributions[].name` | string |  |
+| `events[].articles[].attributions[].country` | string |  |
+| `events[].articles[].attributions[].countryCode` | string |  |
+| `events[].articles[].attributions[].evidence` | string |  |
+| `events[].articles[].attributions[].kind` | "explicit" |  |
+| `events[].articles[].copies` | object[] | 刊出同一篇（正文相似或標題幾乎相同）的其他媒體 |
+| `events[].articles[].copies[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].articles[].copies[].mediaTitle` | string |  |
 | `boards` | object |  |
 | `boards.media` | object[] | 各媒體的議題／專題 |
 | `boards.media[].key` | string | topic:、thread: 或 group: 加上 id |

@@ -91,7 +91,15 @@
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .articleText { display: flex; flex-direction: column; gap: 0.2em; min-width: 0; }
 .articleTitle { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
-.byline { display: flex; align-items: center; gap: 0.4em; color: #71717a; font-size: 0.75em; }
+.byline { display: flex; align-items: center; gap: 0.45em; min-width: 0; color: #71717a; font-size: 0.75em; white-space: nowrap; }
+.outlet { flex-shrink: 0; }
+/* Reporters, then the outlets it names as source or cites, as on the full board. */
+.credits { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #52525b; }
+.credits > span + span::before { content: ' · '; color: #a1a1aa; }
+.credits > span[data-source] { color: var(--tint); }
+.copies { display: inline-flex; align-items: center; gap: 0.25em; flex-shrink: 0; padding: 0 0.45em; border-radius: 1em; background: #f4f4f5; }
+.reportTags { display: flex; gap: 0.7em; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 0.75em; color: #a1a1aa; }
+.reportTags a[data-event] { color: var(--tint); font-weight: 600; }
 .media { color: #71717a; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .time { color: #a1a1aa; font-variant-numeric: tabular-nums; }
 .empty { margin: 0 0 0.3em; color: #a1a1aa; }
@@ -164,4 +172,7 @@
 [data-theme="dark"] .sub,
 [data-theme="dark"] .byline { color: #a1a1aa; }
 [data-theme="dark"] .thumb { background: #27272a; }
+[data-theme="dark"] .credits { color: #d4d4d8; }
+[data-theme="dark"] .copies { background: #27272a; }
+[data-theme="dark"] .reportTags { color: #71717a; }
 [data-theme="dark"] .change[data-down] { color: #a1a1aa; background: #27272a; }
