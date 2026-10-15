@@ -7,6 +7,7 @@ import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import type { DiscoverySource } from '@/lib/article-content';
 import { clipHeadline } from '@/lib/event-presentation.mts';
+import { leftoverEntities } from '@/lib/plain-spaces';
 import { readingTitle } from '@/lib/reading.mts';
 
 interface ListArticle {
@@ -56,7 +57,7 @@ export default function ArticleListItem({
           </h3>
           {article.description && (
             <p className="mt-1 hidden text-xs leading-5 text-zinc-500 group-data-[summaries=true]/list:line-clamp-2 dark:text-zinc-400">
-              {article.description}
+              {leftoverEntities(article.description)}
             </p>
           )}
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">

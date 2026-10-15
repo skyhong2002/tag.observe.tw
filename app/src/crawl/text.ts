@@ -12,7 +12,13 @@ const NAMED: Record<string, string> = {
   raquo: '»',
   copy: '©',
 };
+// Some feeds encode twice (「&amp;#10;」); decode a second time when the first
+// pass still leaves an entity behind.
 export function decodeEntities(s: string): string {
+  const once = decodeEntitiesOnce(s);
+  return once !== s && /&(#x[0-9a-f]+|#\d+|[a-z]+);/i.test(once) ? decodeEntitiesOnce(once) : once;
+}
+function decodeEntitiesOnce(s: string): string {
   return s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
     if (e[0] === '#') {
       const code = e[1].toLowerCase() === 'x' ? Number.parseInt(e.slice(2), 16) : Number.parseInt(e.slice(1), 10);
