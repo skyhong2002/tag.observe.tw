@@ -84,7 +84,7 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
         formatter: (items: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) =>
           [days[items[0]?.dataIndex ?? 0], ...items.map((it) => `${it.marker}${it.seriesName}　${number(Number(it.value))}`)].join('<br/>'),
       },
-      legend: { top: 0, left: 0, textStyle: { color: ink }, data: [...SERIES.map((s) => s.name), '比對篇數'] },
+      legend: { top: 0, left: 0, textStyle: { color: ink }, inactiveColor: ink, data: [...SERIES.map((s) => s.name), '比對篇數'] },
       grid: [
         { left: 48, right: 24, top: 64, height: '46%' },
         { left: 48, right: 24, top: '72%', bottom: 26 },
@@ -157,7 +157,7 @@ const share = (row: Row, key: Metric) => (row.articles > 0 ? row[key] / row.arti
 function Share({ row, metric }: { row: Row; metric: Metric }) {
   const value = row[metric],
     ratio = share(row, metric);
-  if (!value) return <span className="text-zinc-300 dark:text-zinc-700">0</span>;
+  if (!value) return <span className="text-zinc-600 dark:text-zinc-400">0</span>;
   return (
     <>
       {number(value)}
@@ -200,7 +200,7 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
     }
   };
   const cell = table.num;
-  const muted = (value: number) => (value ? '' : 'text-zinc-300 dark:text-zinc-700');
+  const muted = (value: number) => (value ? '' : 'text-zinc-600 dark:text-zinc-400');
   return (
     <TableScroller label="各媒體每日比對表格，可左右捲動">
       <table className="w-full min-w-[40rem] border-collapse text-sm">

@@ -301,7 +301,7 @@ function PeriodControls({ data }: { data: SimilarityData }) {
           <button type="submit" disabled={!!rangeError} className="rounded-lg bg-brand-700 px-3 py-1.5 text-white disabled:opacity-40">
             套用
           </button>
-          <span className={rangeError ? 'text-red-600 dark:text-red-400' : 'text-zinc-500'} role={rangeError ? 'alert' : undefined}>
+          <span className={rangeError ? 'text-red-600 dark:text-red-400' : 'text-zinc-500 dark:text-zinc-400'} role={rangeError ? 'alert' : undefined}>
             {rangeError || `台北時間整日，共 ${rangeDays(from, to)} 天`}
           </span>
         </form>
@@ -982,8 +982,13 @@ export default function SimilarityExplorer({
                   目前篩選沒有符合的文章，可調整圖上媒體數、分類或文章篩選。這不代表媒體沒有其他新聞。
                 </p>
               )}
+              {evidenceList.length > 0 && (evidenceLoading || evidenceError) && (
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  以下保留先前載入的對照結果；最新資料目前尚未載入。
+                </p>
+              )}
               <div
-                className={`divide-y divide-zinc-200 dark:divide-zinc-800 ${evidenceLoading || evidenceError ? 'opacity-50' : ''}`}
+                className="divide-y divide-zinc-200 dark:divide-zinc-800"
                 aria-busy={evidenceLoading}
                 data-testid="graph-evidence-results"
               >

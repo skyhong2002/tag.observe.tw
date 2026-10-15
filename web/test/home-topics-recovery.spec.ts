@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { loadHomeTopics } from '../src/lib/demo.ts';
 import { fetchTopicSearch, fetchTopics } from '../src/lib/pages.ts';
+import type { FeedTopic } from '../src/lib/pages.ts';
 
 const data = { media: [{ media: 'cna' }], feed: [] };
 afterEach(() => {
@@ -121,13 +122,18 @@ it('keeps a public API failure distinct from a valid empty list without exposing
 it('preserves the first five distinct outlets and the existing recent-update count', async () => {
   const { summarizeHomeTopics } = await import('../src/lib/home-topics.mts');
   const now = Date.parse('2026-10-14T17:00:00Z');
-  const feed = ['cna', 'cna', 'udn', 'ltn', 'tvbs', 'ctv', 'pts'].map((media, i) => ({
+  const feed: FeedTopic[] = ['cna', 'cna', 'udn', 'ltn', 'tvbs', 'ctv', 'pts'].map((media, i) => ({
     media,
+    mediaTitle: media,
+    icon: null,
     id: String(i),
     title: 'Public topic',
+    time: new Date(now - i * 3600000).toISOString(),
+    url: `https://example.test/topic/${i}`,
+    image: null,
     updatedAt: new Date(now - i * 3600000).toISOString(),
   }));
-  const result = summarizeHomeTopics({ media: [], feed } as Parameters<typeof summarizeHomeTopics>[0], now);
+  const result = summarizeHomeTopics({ media: [], feed }, now);
   expect(result?.today).toBe(7);
   expect(result?.latest.map((x) => x.media)).toEqual(['cna', 'udn', 'ltn', 'tvbs', 'ctv']);
 });

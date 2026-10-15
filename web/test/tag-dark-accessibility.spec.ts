@@ -68,3 +68,21 @@ it('keeps informational timeline labels readable before their frame is played', 
   expect(css).toContain('[data-theme="dark"] .hours { fill: #a1a1aa; }');
   expect((luminance('zinc-400') + 0.05) / (luminance('zinc-950') + 0.05)).toBeGreaterThanOrEqual(4.5);
 });
+
+it('keeps zero values and selectable evidence readable while preserving stale-result and selection cues', () => {
+  for (const source of ['../src/app/(site)/similarity/DailyTrend.tsx', '../src/app/(site)/similarity/about/page.tsx', '../src/app/(site)/writing/OutletTable.tsx']) {
+    expect(read(source)).toContain('text-zinc-600 dark:text-zinc-400');
+    expect(read(source)).not.toContain('dark:text-zinc-700');
+  }
+  const evidence = read('../src/app/(site)/similarity/SimilarityExplorer.tsx');
+  expect(evidence).toContain('aria-busy={evidenceLoading}');
+  expect(evidence).toContain('evidenceList.length > 0 && (evidenceLoading || evidenceError)');
+  expect(evidence).toContain('以下保留先前載入的對照結果；最新資料目前尚未載入。');
+  expect(evidence).not.toContain("evidenceLoading || evidenceError ? 'opacity-50'");
+  const results = read('../src/components/ArticleResults.tsx');
+  expect(results).toContain("aria-current={camp === c.key ? 'true' : undefined}");
+  expect(results).toContain("camp === c.key ? 'ring-2 ring-inset ring-current'");
+  expect(results).not.toContain("camp && camp !== c.key ? 'opacity-30'");
+  expect((1.05) / (luminance('orange-700') + 0.05)).toBeGreaterThanOrEqual(4.5);
+  expect(read('../src/components/EventDayNav.tsx')).not.toContain('dark:bg-brand-600');
+});

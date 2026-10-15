@@ -71,7 +71,7 @@ const SORTS = {
 } satisfies Record<string, (row: CoverageRow) => number | string>;
 type SortKey = keyof typeof SORTS;
 const cell = table.num;
-const count = (value: number) => <span className={value ? '' : 'text-zinc-400 dark:text-zinc-600'}>{number(value)}</span>;
+const count = (value: number) => <span className={value ? '' : 'text-zinc-600 dark:text-zinc-400'}>{number(value)}</span>;
 const percent = (value: number) => (value < 0 ? '—' : `${Math.round(value * 100)}%`);
 
 function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: CoverageRow[]; params: string; sort?: string; dir?: string }) {

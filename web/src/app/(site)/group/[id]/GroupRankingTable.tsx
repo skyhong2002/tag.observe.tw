@@ -78,7 +78,7 @@ export default function GroupRankingTable({
                 <td className={`${table.num} !py-1.5 font-medium`}>{r.recent.toLocaleString('zh-TW')}</td>
                 <td className={`${table.num} !py-1.5 text-zinc-500 dark:text-zinc-400`}>{r.previous.toLocaleString('zh-TW')}</td>
                 <td
-                  className={`${table.num} !py-1.5 ${delta > 0 ? 'text-red-700 dark:text-red-400' : delta < 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500'}`}
+                  className={`${table.num} !py-1.5 ${delta > 0 ? 'text-red-700 dark:text-red-400' : delta < 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'}`}
                 >
                   {delta > 0 ? `+${delta.toLocaleString('zh-TW')}` : delta.toLocaleString('zh-TW')}
                 </td>

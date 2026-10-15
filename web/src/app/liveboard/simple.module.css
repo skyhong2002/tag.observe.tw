@@ -50,9 +50,8 @@
 .badge { font-weight: 700; font-variant-numeric: tabular-nums; transition: opacity 0.6s ease; }
 .down rect, .down text { fill: #71717a; }
 .link { cursor: pointer; }
-.link { transition: opacity 0.2s; }
-.link:hover, .link:focus-visible { opacity: 0.7; }
-.link:focus { outline: none; }
+.link:hover text, .link:focus-visible text { text-decoration: underline; }
+.link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .fadeIn { animation: fade 1.8s ease both; }
 @keyframes fade {
   from { opacity: 0; }

@@ -669,7 +669,7 @@ function Word({ word, picture, colour, index }: { word: Shown; picture?: Picture
   const badgeWidth = word.badge ? gap + badgeText + 2 * pad : 0;
   const shift = box ? -badgeWidth / 2 : Math.max(0, ((word.extra ?? 0) * BASE - badgeWidth) / 2);
   const label = box ? (
-    <text y={box.pictureHeight + caption * 1.05} fontSize={caption} textAnchor="middle" fill={colour ?? 'currentColor'}>
+    <text y={box.pictureHeight + caption * 1.05} fontSize={caption} textAnchor="middle" fill="currentColor">
       {word.label}
     </text>
   ) : (

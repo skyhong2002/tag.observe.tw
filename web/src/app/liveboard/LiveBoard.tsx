@@ -233,7 +233,7 @@ function CampBars({
         {buckets.map((b, i) => (
           <div
             key={b.t}
-            className={`flex h-full min-w-0 flex-1 flex-col justify-end gap-[0.125rem] ${i === last ? styles.pulse : ''}`}
+            className="flex h-full min-w-0 flex-1 flex-col justify-end gap-[0.125rem]"
             title={`${tick(b.t)}　${CAMPS.map((c) => `${CAMP_LABEL[c]} ${b[c]}`).join('、')}　共 ${totals[i]} 篇`}
           >
             {(i % valueEvery === 0 || i === peak || i === last) && (
@@ -247,7 +247,7 @@ function CampBars({
               b[c] ? (
                 <span
                   key={c}
-                  className={`${CAMP_FILL[c]} transition-[height] duration-1000 ${c === 'other' ? 'rounded-t-[0.25rem]' : ''}`}
+                  className={`${CAMP_FILL[c]} transition-[height] duration-1000 ${c === 'other' ? 'rounded-t-[0.25rem]' : ''} ${i === last ? styles.pulse : ''}`}
                   style={{ height: `${(b[c] / max) * 80}%` }}
                 />
               ) : null,
@@ -659,7 +659,7 @@ export default function LiveBoard({
                 <StageCard card={shown.card} media={media} now={now} coverage={coverage} />
               </div>
             ) : (
-              <div className="flex flex-1 items-center justify-center text-2xl text-zinc-500">等待新資料…</div>
+              <div className="flex flex-1 items-center justify-center text-2xl text-zinc-400">等待新資料…</div>
             )}
             <div className="mt-2 flex shrink-0 items-center gap-3 whitespace-nowrap text-xs text-zinc-400">
               {shown && (

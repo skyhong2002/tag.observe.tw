@@ -125,7 +125,7 @@ export function ArticleFacets({
                 scroll={false}
                 aria-current={camp === c.key ? 'true' : undefined}
                 title={`${c.label} ${n.toLocaleString()} 篇（${pct}%）`}
-                className={`flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap ${c.bar} ${camp && camp !== c.key ? 'opacity-30' : ''}`}
+                className={`flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap ${c.bar} ${camp === c.key ? 'ring-2 ring-inset ring-current' : ''}`}
                 style={{ flexGrow: n, flexBasis: 0 }}
               >
                 {pct >= 12 && `${pct}%`}

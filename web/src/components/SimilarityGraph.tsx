@@ -167,7 +167,7 @@ export default function SimilarityGraph({
             (!!focused && ('node' in focused ? focused.node === n.id : focused.edge.source === n.id || focused.edge.target === n.id)) ||
             labels.has(n.id),
           color: mediaLabelColor(camps[n.id], dark),
-          opacity: !focused || neighbors.has(n.id) ? 1 : 0.4,
+          opacity: 1,
         },
       }));
     };
@@ -282,7 +282,7 @@ export default function SimilarityGraph({
             center: savedCamera?.center ?? null,
             ...layoutBounds(),
             emphasis: { disabled: true },
-            blur: { itemStyle: { opacity: 0.18 }, lineStyle: { opacity: 0.04 }, label: { opacity: 0.2 } },
+            blur: { itemStyle: { opacity: 0.18 }, lineStyle: { opacity: 0.04 }, label: { opacity: 1 } },
             label: {
               show: true,
               silent: true,

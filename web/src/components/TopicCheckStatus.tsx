@@ -16,7 +16,7 @@ export default function TopicCheckStatus({ check }: { check?: TopicCheck }) {
               ? '更新延遲'
               : '更新正常';
   return (
-    <span className={problem ? 'text-amber-700 dark:text-amber-400' : 'text-zinc-500'}>
+    <span className={problem ? 'text-amber-700 dark:text-amber-400' : 'text-zinc-500 dark:text-zinc-400'}>
       {label}
       {check?.checkedAt ? ` · ${taipei(check.checkedAt)} 檢查` : ''}
       {check?.status === 'ok' ? ` · 抓到 ${check.fetched} 筆` : ''}

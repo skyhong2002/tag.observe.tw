@@ -87,11 +87,11 @@ export default function EventDayNav({
                     aria-current={here ? 'page' : undefined}
                     className={`flex h-12 w-14 flex-col items-center justify-center rounded-lg tabular-nums leading-tight ${
                       here
-                        ? 'bg-brand-700 text-white shadow-sm dark:bg-brand-600'
+                        ? 'bg-brand-700 text-white shadow-sm dark:bg-brand-700'
                         : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
                     }`}
                   >
-                    <span className={`text-[11px] ${here ? 'text-white/80' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                    <span className={`text-[11px] ${here ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`}>
                       {d === today ? '今天' : `週${weekday(d)}`}
                     </span>
                     <span className="font-medium">{mmdd(d)}</span>
