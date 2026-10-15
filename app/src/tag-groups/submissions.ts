@@ -13,7 +13,7 @@ import {
   users,
 } from '../db/schema.ts';
 import { refreshPages } from '../pictures/refresh.ts';
-import { approvePicture } from '../pictures/submissions.ts';
+import { AUTO_PUBLISHED, approvePicture, type PictureMetadata, revokePicture } from '../pictures/submissions.ts';
 import { isACycle, RELATION_TYPES, type RelationType, relationKey, validSemanticTag } from './semantic.ts';
 import { syncWritingTag } from './writing.ts';
 
@@ -25,6 +25,77 @@ type Options = {
 };
 class ReviewConflict extends Error {}
 const idOf = (raw: string) => (/^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) && Number(raw) > 0 ? Number(raw) : null);
+
+type SubmissionRow = typeof tagSubmissions.$inferSelect;
+
+/** Makes a locked relation row take effect; throws ReviewConflict when it cannot. Caller holds tag_relation_lock. */
+async function applyRelation(tx: Db, row: SubmissionRow, email: string) {
+  if (row.relationType === 'is-a' && row.targetGroupId !== null) {
+    const [group] = await tx
+      .select()
+      .from(tagGroupDefs)
+      .where(and(eq(tagGroupDefs.id, row.targetGroupId), isNull(tagGroupDefs.deletedAt)))
+      .for('update');
+    if (!group) throw new ReviewConflict('這個分類已刪除，請重新提出關係');
+    const [previous] = await tx
+      .select()
+      .from(tagGroupMembers)
+      .where(and(eq(tagGroupMembers.tag, row.tag), eq(tagGroupMembers.groupId, group.id)))
+      .for('update');
+    const at = new Date();
+    const values = { status: 'confirmed' as const, reviewedBy: email, reviewedAt: at, updatedAt: at };
+    await tx
+      .insert(tagGroupMembers)
+      .values({ tag: row.tag, groupId: group.id, source: 'admin', ...values })
+      .onDuplicateKeyUpdate({ set: values });
+    await tx.insert(tagGroupMemberLog).values({
+      tag: row.tag,
+      groupId: group.id,
+      action: 'confirm',
+      fromStatus: previous?.status ?? null,
+      email,
+      at,
+    });
+    await syncWritingTag(tx, row.tag, email);
+  }
+  if (row.relationType === 'is-a' && row.targetGroupId === null) {
+    try {
+      if (!row.target || (await isACycle(tx, row.tag, row.target))) throw new ReviewConflict('上位分類不能形成循環');
+    } catch (err) {
+      throw new ReviewConflict((err as Error).message);
+    }
+  }
+}
+
+/** Undoes applyRelation: a group membership it confirmed goes back to its earlier state. Other relations simply stop being approved. */
+async function revokeRelation(tx: Db, row: SubmissionRow, email: string) {
+  if (row.relationType !== 'is-a' || row.targetGroupId === null) return;
+  const [confirmed] = await tx
+    .select({ fromStatus: tagGroupMemberLog.fromStatus })
+    .from(tagGroupMemberLog)
+    .where(
+      and(eq(tagGroupMemberLog.tag, row.tag), eq(tagGroupMemberLog.groupId, row.targetGroupId), eq(tagGroupMemberLog.action, 'confirm')),
+    )
+    .orderBy(desc(tagGroupMemberLog.id))
+    .limit(1);
+  const at = new Date();
+  const where = and(eq(tagGroupMembers.tag, row.tag), eq(tagGroupMembers.groupId, row.targetGroupId));
+  if (!confirmed?.fromStatus) await tx.delete(tagGroupMembers).where(where);
+  else
+    await tx
+      .update(tagGroupMembers)
+      .set({ status: confirmed.fromStatus as typeof tagGroupMembers.$inferSelect.status, reviewedBy: email, reviewedAt: at, updatedAt: at })
+      .where(where);
+  await tx.insert(tagGroupMemberLog).values({
+    tag: row.tag,
+    groupId: row.targetGroupId,
+    action: 'revoke',
+    fromStatus: 'confirmed',
+    email,
+    at,
+  });
+  await syncWritingTag(tx, row.tag, email);
+}
 
 export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUser, requireAdmin, origin, uiOrigin }: Options) {
   const guard = async (request: FastifyRequest, reply: FastifyReply, admin = false, write = false) => {
@@ -76,61 +147,88 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
           return reply.code(409).send({ error: '這個名稱已有分類，請在「分類與群組」調整上層，以保留既有分類 ID' });
       }
       const dedupeKey = relationKey(tag, type as RelationType, groups[0] ? { groupId: groups[0].id } : target);
-      const result = await db.transaction(async (tx) => {
-        await tx.select({ id: users.id }).from(users).where(eq(users.id, user.id)).for('update');
-        const [existing] = await tx
-          .select({ id: tagSubmissions.id, status: tagSubmissions.status })
-          .from(tagSubmissions)
-          .where(eq(tagSubmissions.dedupeKey, dedupeKey));
-        if (existing) return { ...existing, duplicate: true };
-        const [{ n }] = await tx
-          .select({ n: sql<number>`COUNT(*)` })
-          .from(tagSubmissions)
-          .where(
-            and(
-              eq(tagSubmissions.createdBy, user.id),
-              eq(tagSubmissions.kind, 'relation'),
-              gte(tagSubmissions.createdAt, new Date(Date.now() - 86_400_000)),
-            ),
-          );
-        if (Number(n) >= 20) return null;
-        const at = new Date();
-        const [inserted] = await tx
-          .insert(tagSubmissions)
-          .values({
-            kind: 'relation',
-            tag,
-            relationType: type as RelationType,
-            target,
-            targetGroupId: groups[0]?.id ?? null,
-            reason: reason.trim(),
-            source: user.role === 'admin' ? 'manual' : 'submission',
-            status: 'pending',
-            createdBy: user.id,
-            createdAt: at,
-            dedupeKey,
-          })
-          .onDuplicateKeyUpdate({ set: { dedupeKey } });
-        const [row] = await tx
-          .select({ id: tagSubmissions.id, status: tagSubmissions.status })
-          .from(tagSubmissions)
-          .where(eq(tagSubmissions.dedupeKey, dedupeKey))
-          .for('update');
-        if (inserted.affectedRows === 1 && inserted.insertId)
+      const result = await db
+        .transaction(async (tx) => {
+          // Same lock order as the admin endpoint: relation graph first, then rows.
+          const [lock] = await tx.select().from(tagRelationLock).where(eq(tagRelationLock.id, 1)).for('update');
+          if (!lock) throw new ReviewConflict('投稿暫時無法處理，請稍後再試');
+          await tx.select({ id: users.id }).from(users).where(eq(users.id, user.id)).for('update');
+          const [existing] = await tx
+            .select({ id: tagSubmissions.id, status: tagSubmissions.status })
+            .from(tagSubmissions)
+            .where(eq(tagSubmissions.dedupeKey, dedupeKey));
+          if (existing) return { ...existing, duplicate: true };
+          const [{ n }] = await tx
+            .select({ n: sql<number>`COUNT(*)` })
+            .from(tagSubmissions)
+            .where(
+              and(
+                eq(tagSubmissions.createdBy, user.id),
+                eq(tagSubmissions.kind, 'relation'),
+                gte(tagSubmissions.createdAt, new Date(Date.now() - 86_400_000)),
+              ),
+            );
+          if (Number(n) >= 20) return null;
+          const at = new Date();
+          const [inserted] = await tx
+            .insert(tagSubmissions)
+            .values({
+              kind: 'relation',
+              tag,
+              relationType: type as RelationType,
+              target,
+              targetGroupId: groups[0]?.id ?? null,
+              reason: reason.trim(),
+              source: user.role === 'admin' ? 'manual' : 'submission',
+              status: 'pending',
+              createdBy: user.id,
+              createdAt: at,
+              dedupeKey,
+            })
+            .onDuplicateKeyUpdate({ set: { dedupeKey } });
+          const [row] = await tx
+            .select({ id: tagSubmissions.id, status: tagSubmissions.status })
+            .from(tagSubmissions)
+            .where(eq(tagSubmissions.dedupeKey, dedupeKey))
+            .for('update');
+          if (!(inserted.affectedRows === 1 && inserted.insertId)) return { ...row, duplicate: true };
           await tx.insert(tagSubmissionLog).values({ submissionId: row.id, action: 'submit', userId: user.id, at });
-        return { ...row, duplicate: !inserted.insertId };
-      });
+          // Published right away (owner's decision, 2026-10-15); an administrator can revoke it.
+          const [full] = await tx.select().from(tagSubmissions).where(eq(tagSubmissions.id, row.id)).for('update');
+          await applyRelation(tx as unknown as Db, full, user.email);
+          const done = new Date();
+          await tx
+            .update(tagSubmissions)
+            .set({ status: 'approved', reviewedAt: done, reviewReason: AUTO_PUBLISHED })
+            .where(eq(tagSubmissions.id, row.id));
+          await tx.insert(tagSubmissionLog).values({ submissionId: row.id, action: 'auto-approved', userId: user.id, at: done });
+          return { id: row.id, status: 'approved' as const, duplicate: false };
+        })
+        .catch((err) => {
+          if (err instanceof ReviewConflict) return { error: err.message };
+          throw err;
+        });
       if (!result) return reply.code(429).send({ error: '每人每天最多提出 20 筆關係' });
-      return reply.code(result.duplicate ? 200 : 202).send(result);
+      if ('error' in result) return reply.code(409).send({ error: result.error });
+      if (!result.duplicate) {
+        refreshPages(uiOrigin ?? null, tag);
+        refreshPages(uiOrigin ?? null, target as string);
+      }
+      return reply.code(result.duplicate ? 200 : 201).send(result);
     },
   );
 
-  app.get<{ Querystring: { before?: string; status?: string } }>('/auth/admin/tag-submissions', async (request, reply) => {
+  app.get<{ Querystring: { before?: string; status?: string; kind?: string } }>('/auth/admin/tag-submissions', async (request, reply) => {
     if (!(await guard(request, reply, true))) return reply;
-    const status = request.query.status ?? 'pending';
+    const status = request.query.status ?? 'approved';
+    const kind = request.query.kind;
     const before = request.query.before === undefined ? undefined : idOf(request.query.before);
-    if (!['pending', 'approved', 'rejected'].includes(status) || before === null)
-      return reply.code(400).send({ error: 'invalid status or cursor' });
+    if (
+      !['pending', 'approved', 'rejected', 'revoked'].includes(status) ||
+      before === null ||
+      (kind && !['relation', 'picture'].includes(kind))
+    )
+      return reply.code(400).send({ error: 'invalid status, kind or cursor' });
     // Never SELECT the image blobs into the list; the guarded image endpoint
     // streams one candidate only when a reviewer actually opens it.
     const rows = await db
@@ -153,7 +251,13 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
         rightsConfirmed: tagSubmissions.rightsConfirmed,
       })
       .from(tagSubmissions)
-      .where(and(eq(tagSubmissions.status, status as 'pending'), before ? lt(tagSubmissions.id, before) : undefined))
+      .where(
+        and(
+          eq(tagSubmissions.status, status as 'pending'),
+          kind ? eq(tagSubmissions.kind, kind as 'relation') : undefined,
+          before ? lt(tagSubmissions.id, before) : undefined,
+        ),
+      )
       .orderBy(desc(tagSubmissions.id))
       .limit(31);
     return {
@@ -163,6 +267,23 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
         imageUrl: row.kind === 'picture' ? `/auth/admin/tag-submissions/${row.id}/image` : null,
       })),
       next: rows.length > 30 ? rows[29].id : null,
+    };
+  });
+
+  // The admin overview's counts: what readers published in the last week, by kind.
+  app.get('/auth/admin/tag-submissions/summary', async (request, reply) => {
+    if (!(await guard(request, reply, true))) return reply;
+    const since = new Date(Date.now() - 7 * 86_400_000);
+    const rows = await db
+      .select({ kind: tagSubmissions.kind, status: tagSubmissions.status, n: sql<number>`COUNT(*)` })
+      .from(tagSubmissions)
+      .where(gte(tagSubmissions.createdAt, since))
+      .groupBy(tagSubmissions.kind, tagSubmissions.status);
+    const count = (kind: string, status: string) => Number(rows.find((r) => r.kind === kind && r.status === status)?.n ?? 0);
+    return {
+      since: since.toISOString(),
+      relation: { approved: count('relation', 'approved'), revoked: count('relation', 'revoked') },
+      picture: { approved: count('picture', 'approved'), revoked: count('picture', 'revoked') },
     };
   });
 
@@ -190,8 +311,14 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
       if (!user) return reply;
       const id = idOf(request.params.id);
       const { status, reason } = request.body ?? {};
-      if (!id || (status !== 'approved' && status !== 'rejected') || typeof reason !== 'string' || !reason.trim() || reason.length > 1000)
-        return reply.code(400).send({ error: '請填寫審核結果與 1–1000 字的理由' });
+      if (
+        !id ||
+        (status !== 'approved' && status !== 'rejected' && status !== 'revoked') ||
+        typeof reason !== 'string' ||
+        !reason.trim() ||
+        reason.length > 1000
+      )
+        return reply.code(400).send({ error: '請填寫處理結果與 1–1000 字的理由' });
       try {
         const result = await db.transaction(async (tx) => {
           // Lock graph before the individual row: one consistent lock order
@@ -200,57 +327,27 @@ export function registerTagSubmissions(app: FastifyInstance, db: Db, { currentUs
           if (!lock) throw new ReviewConflict('審核鎖尚未就緒，請稍後再試');
           const [row] = await tx.select().from(tagSubmissions).where(eq(tagSubmissions.id, id)).for('update');
           if (!row) return null;
-          if (row.status !== 'pending') throw new ReviewConflict('這筆投稿已審核，請重新整理');
+          // Submissions are public on arrival; revoking takes one down. Pending rows predate that.
+          if (status === 'revoked' ? row.status !== 'approved' : row.status !== 'pending')
+            throw new ReviewConflict(status === 'revoked' ? '只能撤下公開中的投稿，請重新整理' : '這筆投稿已處理，請重新整理');
           let rank = row.candidateRank;
-          if (status === 'approved') {
-            if (row.kind === 'relation' && row.relationType === 'is-a' && row.targetGroupId !== null) {
-              const [group] = await tx
-                .select()
-                .from(tagGroupDefs)
-                .where(and(eq(tagGroupDefs.id, row.targetGroupId), isNull(tagGroupDefs.deletedAt)))
-                .for('update');
-              if (!group) throw new ReviewConflict('這個分類已刪除，請重新提出關係');
-              const [previous] = await tx
-                .select()
-                .from(tagGroupMembers)
-                .where(and(eq(tagGroupMembers.tag, row.tag), eq(tagGroupMembers.groupId, group.id)))
-                .for('update');
-              const at = new Date();
-              const values = { status: 'confirmed' as const, reviewedBy: user.email, reviewedAt: at, updatedAt: at };
-              await tx
-                .insert(tagGroupMembers)
-                .values({ tag: row.tag, groupId: group.id, source: 'admin', ...values })
-                .onDuplicateKeyUpdate({ set: values });
-              await tx.insert(tagGroupMemberLog).values({
-                tag: row.tag,
-                groupId: group.id,
-                action: 'confirm',
-                fromStatus: previous?.status ?? null,
-                email: user.email,
-                at,
-              });
-              await syncWritingTag(tx, row.tag, user.email);
+          let pictureMeta = row.pictureMeta;
+          try {
+            if (status === 'approved' && row.kind === 'relation') await applyRelation(tx as unknown as Db, row, user.email);
+            if (status === 'approved' && row.kind === 'picture') {
+              const published = await approvePicture(tx as unknown as Db, row);
+              rank = published.rank;
+              pictureMeta = { ...(row.pictureMeta ?? {}), previous: published.previous } as PictureMetadata;
             }
-            if (row.kind === 'relation' && row.relationType === 'is-a' && row.targetGroupId === null) {
-              try {
-                if (!row.target || (await isACycle(tx as unknown as Db, row.tag, row.target)))
-                  throw new ReviewConflict('上位分類不能形成循環');
-              } catch (err) {
-                throw new ReviewConflict((err as Error).message);
-              }
-            }
-            if (row.kind === 'picture') {
-              try {
-                rank = (await approvePicture(tx as unknown as Db, row)).rank;
-              } catch (err) {
-                throw new ReviewConflict((err as Error).message);
-              }
-            }
+            if (status === 'revoked' && row.kind === 'relation') await revokeRelation(tx as unknown as Db, row, user.email);
+            if (status === 'revoked' && row.kind === 'picture') await revokePicture(tx as unknown as Db, row);
+          } catch (err) {
+            throw err instanceof ReviewConflict ? err : new ReviewConflict((err as Error).message);
           }
           const at = new Date();
           await tx
             .update(tagSubmissions)
-            .set({ status, reviewedBy: user.id, reviewedAt: at, reviewReason: reason.trim(), candidateRank: rank })
+            .set({ status, reviewedBy: user.id, reviewedAt: at, reviewReason: reason.trim(), candidateRank: rank, pictureMeta })
             .where(eq(tagSubmissions.id, id));
           await tx.insert(tagSubmissionLog).values({ submissionId: id, action: status, userId: user.id, at, reason: reason.trim() });
           return { id, tag: row.tag, target: row.target, status };

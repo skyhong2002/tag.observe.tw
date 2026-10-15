@@ -15,7 +15,7 @@ import {
   users,
 } from '../src/db/schema.ts';
 import { registerPictureRoutes } from '../src/pictures/routes.ts';
-import { approvePicture, pictureSubmissionKey, submitPicture } from '../src/pictures/submissions.ts';
+import { pictureSubmissionKey, revokePicture, submitPicture } from '../src/pictures/submissions.ts';
 import { uploadsToday } from '../src/pictures/votes.ts';
 
 it('separates image fingerprints by exact tag and picture kind', () => {
@@ -26,22 +26,18 @@ it('separates image fingerprints by exact tag and picture kind', () => {
 });
 
 const url = process.env.TEST_DB_URL;
-describe.skipIf(!url)('private picture submission queue (MariaDB)', () => {
+describe.skipIf(!url)('reader picture submissions, public on arrival (MariaDB)', () => {
   let db: Db;
   let close: () => Promise<void>;
   const app = Fastify();
   const origin = 'https://tag.observe.tw';
   const user = { id: 601, email: 'picture-fixture@example.test', name: null, picture: null, role: 'reader' as const };
   let image: Buffer;
-  const approve = async (id: number) =>
+  const revoke = async (id: number) =>
     db.transaction(async (tx) => {
       const [row] = await tx.select().from(tagSubmissions).where(eq(tagSubmissions.id, id)).for('update');
-      const approved = await approvePicture(tx as unknown as Db, row);
-      await tx
-        .update(tagSubmissions)
-        .set({ status: 'approved', candidateRank: approved.rank, reviewedBy: 602, reviewedAt: new Date() })
-        .where(eq(tagSubmissions.id, id));
-      return approved;
+      await revokePicture(tx as unknown as Db, row);
+      await tx.update(tagSubmissions).set({ status: 'revoked', reviewedBy: 602, reviewedAt: new Date() }).where(eq(tagSubmissions.id, id));
     });
   beforeAll(async () => {
     if (new URL(url!).pathname === '/tag_observe') throw Error('Refusing production database');
@@ -91,16 +87,15 @@ describe.skipIf(!url)('private picture submission queue (MariaDB)', () => {
     expect(await db.select().from(tagSubmissions)).toHaveLength(0);
   });
   let submissionId: number;
-  it('keeps a processed upload private and unvotable until review, including deduplication', async () => {
+  it('publishes a processed upload at once, votable and deduplicated', async () => {
     const response = await upload({ origin, 'x-user': 'reader' });
-    expect(response.statusCode).toBe(202);
-    expect(response.json()).toMatchObject({ kind: 'visual', status: 'pending' });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({ kind: 'visual', status: 'approved' });
     submissionId = response.json().submissionId;
     expect(response.headers['cache-control']).toBe('no-store');
-    expect(await db.select().from(tagVisualCandidates)).toHaveLength(0);
-    expect(await db.select().from(tagVisuals)).toHaveLength(0);
-    expect(await db.select().from(tagPictureVotes)).toHaveLength(0);
-    expect((await app.inject({ url: '/auth/pictures/F1-test', headers: { 'x-user': 'reader' } })).json().candidates).toEqual([]);
+    expect(await db.select().from(tagVisualCandidates)).toMatchObject([{ uploadedBy: user.id, rank: 1, note: '讀者上傳' }]);
+    expect(await db.select().from(tagVisuals)).toMatchObject([{ status: 'voted', shownRank: 1 }]);
+    expect((await app.inject({ url: '/auth/pictures/F1-test', headers: { 'x-user': 'reader' } })).json().candidates).toHaveLength(1);
     expect(
       (
         await app.inject({
@@ -110,57 +105,60 @@ describe.skipIf(!url)('private picture submission queue (MariaDB)', () => {
           payload: { rank: 1 },
         })
       ).statusCode,
-    ).toBe(404);
+    ).toBe(200);
     expect((await upload({ origin, 'x-user': 'reader' })).json().submissionId).toBe(submissionId);
-    expect(await db.select().from(tagSubmissions)).toHaveLength(1);
-    expect(await db.select().from(tagSubmissionLog)).toHaveLength(1);
+    expect(await db.select().from(tagSubmissions)).toMatchObject([{ status: 'approved', candidateRank: 1 }]);
+    expect((await db.select().from(tagSubmissionLog)).map((l) => l.action)).toEqual(['submit', 'auto-approved']);
     expect(await uploadsToday(db, user.id)).toBe(1);
   });
-  it('approval enables the existing vote mechanism and counts the upload only once', async () => {
-    expect(await approve(submissionId)).toEqual({ rank: 1, shownRank: 1 });
-    expect(await db.select().from(tagVisualCandidates)).toMatchObject([{ uploadedBy: user.id, rank: 1 }]);
-    expect(await db.select().from(tagVisuals)).toMatchObject([{ status: 'voted', shownRank: 1 }]);
-    expect(await uploadsToday(db, user.id)).toBe(1);
-    await expect(approve(submissionId)).rejects.toThrow('已經審核');
+  it('revoking takes the upload down and restores what the tag showed before', async () => {
+    await db.insert(tagVisuals).values({ tag: 'F1-restore', status: 'auto', shownRank: 1, kind: 'logo', checkedAt: new Date() });
+    await db.insert(tagVisualCandidates).values({ tag: 'F1-restore', rank: 1, kind: 'logo', note: 'AI' });
+    const result = await submitPicture(db, { tag: 'F1-restore', pictureKind: 'visual', image, userId: user.id });
+    expect(await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'F1-restore'))).toMatchObject([{ status: 'voted', shownRank: 2 }]);
+    await revoke(result.submissionId);
+    expect(await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'F1-restore'))).toMatchObject([{ status: 'auto', shownRank: 1 }]);
+    expect(await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, 'F1-restore'))).toMatchObject([{ rank: 1 }]);
+    expect(await db.select().from(tagPictureVotes).where(eq(tagPictureVotes.tag, 'F1-restore'))).toHaveLength(0);
+    // A revoked picture stays down when another reader uploads the same file.
+    expect(await submitPicture(db, { tag: 'F1-restore', pictureKind: 'visual', image, userId: 602 })).toMatchObject({
+      submissionId: result.submissionId,
+      status: 'revoked',
+    });
+    expect(await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, 'F1-restore'))).toHaveLength(1);
   });
-  it('preserves rejection across a duplicate upload from another reader', async () => {
-    const input = { tag: 'F1-rejected', pictureKind: 'visual' as const, image, userId: user.id };
-    const result = await submitPicture(db, input);
-    await db.update(tagSubmissions).set({ status: 'rejected' }).where(eq(tagSubmissions.id, result.submissionId));
-    expect(await submitPicture(db, { ...input, userId: 602 })).toMatchObject({ submissionId: result.submissionId, status: 'rejected' });
-    expect(await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, input.tag))).toHaveLength(0);
-  });
-  it('keeps administrator picture locks when an uploaded candidate is approved', async () => {
+  it('keeps administrator picture locks when an upload is published', async () => {
     await db.insert(tagVisuals).values({ tag: 'F1-locked', status: 'hidden', checkedAt: new Date() });
-    const result = await submitPicture(db, { tag: 'F1-locked', pictureKind: 'visual', image, userId: user.id });
-    await approve(result.submissionId);
+    await submitPicture(db, { tag: 'F1-locked', pictureKind: 'visual', image, userId: user.id });
     expect(await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'F1-locked'))).toMatchObject([
       { status: 'hidden', shownRank: null },
     ]);
   });
-  it('preserves avatar quality and rejects a portrait after a non-person correction', async () => {
+  it('publishes a portrait with its quality and refuses one after a non-person correction', async () => {
     await db.insert(tagPeople).values({ tag: 'F1-person', wikidataId: 'Q42', status: 'auto', checkedAt: new Date() });
     const meta = { score: 0.9, scores: { face: 0.9 }, verdict: 'ok' };
     const result = await submitPicture(db, { tag: 'F1-person', pictureKind: 'avatar', image, userId: user.id, pictureMeta: meta });
-    expect(await db.select().from(tagAvatarCandidates)).toHaveLength(0);
-    await db.update(tagPeople).set({ status: 'nonhuman', wikidataId: null }).where(eq(tagPeople.tag, 'F1-person'));
-    await expect(approve(result.submissionId)).rejects.toThrow('非人物');
-    await db.update(tagPeople).set({ status: 'auto', wikidataId: 'Q42' }).where(eq(tagPeople.tag, 'F1-person'));
-    await approve(result.submissionId);
     expect(await db.select().from(tagAvatarCandidates)).toMatchObject([
       { score: 0.9, scores: meta.scores, verdict: 'ok', uploadedBy: user.id },
     ]);
+    expect(await db.select().from(tagPeople).where(eq(tagPeople.tag, 'F1-person'))).toMatchObject([{ status: 'voted', shownRank: 1 }]);
+    await revoke(result.submissionId);
+    expect(await db.select().from(tagPeople).where(eq(tagPeople.tag, 'F1-person'))).toMatchObject([{ status: 'auto', shownRank: null }]);
+    expect(await db.select().from(tagAvatarCandidates)).toHaveLength(0);
+    await db.update(tagPeople).set({ status: 'nonhuman', wikidataId: null }).where(eq(tagPeople.tag, 'F1-person'));
+    await expect(
+      submitPicture(db, { tag: 'F1-person', pictureKind: 'avatar', image: Buffer.from('other'), userId: user.id, pictureMeta: meta }),
+    ).rejects.toThrow('非人物');
   });
-  it('serialises concurrent approvals for the same tag and preserves cross-reader deduplication', async () => {
+  it('serialises concurrent uploads for the same tag and deduplicates across readers', async () => {
     const input = { tag: 'F1-concurrent', pictureKind: 'visual' as const, image, userId: user.id };
     const duplicates = await Promise.all([submitPicture(db, input), submitPicture(db, { ...input, userId: 602 })]);
     expect(duplicates[0].submissionId).toBe(duplicates[1].submissionId);
-    const other = await submitPicture(db, { ...input, image: Buffer.from('another processed image') });
-    const ranks = await Promise.all([approve(duplicates[0].submissionId), approve(other.submissionId)]);
-    expect(ranks.map((r) => r.rank).sort()).toEqual([1, 2]);
-    expect(await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, input.tag))).toHaveLength(2);
+    await submitPicture(db, { ...input, image: Buffer.from('another processed image') });
+    const ranks = (await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, input.tag))).map((c) => c.rank).sort();
+    expect(ranks).toEqual([1, 2]);
     const submissionLogs = await db.select().from(tagSubmissionLog).where(eq(tagSubmissionLog.submissionId, duplicates[0].submissionId));
-    expect(submissionLogs).toHaveLength(1);
+    expect(submissionLogs.map((l) => l.action)).toEqual(['submit', 'auto-approved']);
   });
 
   it('enforces the daily quota for pending and rejected submissions', async () => {

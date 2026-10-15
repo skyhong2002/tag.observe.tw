@@ -274,7 +274,8 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
         }
         const image = await recolourLogo(raw);
         const added = await submitPicture(db, { tag, pictureKind: kind, image, userId: user.id });
-        return reply.code(202).send({ kind, ...added });
+        if (added.status === 'approved') refreshPages(uiOrigin, tag);
+        return reply.code(201).send({ kind, ...added });
       } catch (err) {
         return reply.code(400).send({ error: `讀不了這張圖：${(err as Error).message}` });
       }
@@ -289,9 +290,10 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     const job = await queue().getJob(request.params.id);
     if (!job || (user.role !== 'admin' && (job.data as { userId?: number }).userId !== user.id))
       return reply.code(404).send({ error: 'no such job' });
-    const result = (job.returnvalue ?? null) as { tag?: string; error?: string } | null;
+    const result = (job.returnvalue ?? null) as { tag?: string; error?: string; status?: string } | null;
     const state = await job.getState();
-    // Reader jobs only create private submissions; approval triggers public revalidation.
+    // A finished photo job has published the sketch; refresh the tag's pages once the reader sees it.
+    if (state === 'completed' && result?.status === 'approved' && result.tag) refreshPages(uiOrigin, result.tag);
     return { id: job.id, state, result, error: job.failedReason ?? result?.error ?? null };
   });
 

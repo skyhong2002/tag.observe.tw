@@ -67,11 +67,11 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
     });
   const publicRead = (tag: string, h: Record<string, string> = {}) =>
     app.inject({ url: `/api/v1/tags/${encodeURIComponent(tag)}/relations`, headers: h });
+  // Submissions are public on arrival (owner's decision, 2026-10-15).
   const approved = async (tag: string, target: string, type = 'is-a') => {
     const proposed = await submit(tag, target, type);
-    expect(proposed.statusCode).toBe(202);
-    const response = await review(proposed.json().id);
-    expect(response.statusCode, response.body).toBe(200);
+    expect(proposed.statusCode, proposed.body).toBe(201);
+    expect(proposed.json().status).toBe('approved');
     return proposed.json().id as number;
   };
   beforeAll(async () => {
@@ -150,14 +150,14 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
       expect(response.headers['cache-control']).toContain('no-store');
     }
     const row = await submit('甲', '乙');
-    expect((await review(row.json().id, 'approved', 'reader')).statusCode).toBe(403);
+    expect((await review(row.json().id, 'revoked', 'reader')).statusCode).toBe(403);
     expect(
       (
         await app.inject({
           method: 'PUT',
           url: `/auth/admin/tag-submissions/${row.json().id}`,
           headers: { cookie: 'tag_session=admin', origin: 'https://evil.test' },
-          payload: { status: 'approved', reason: '理由' },
+          payload: { status: 'revoked', reason: '理由' },
         })
       ).statusCode,
     ).toBe(403);
@@ -180,26 +180,23 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
     });
     expect(response.statusCode).toBe(400);
   });
-  it('deduplicates symmetric submissions, including concurrent authors, and preserves rejection', async () => {
+  it('deduplicates symmetric submissions, including concurrent authors, and keeps a revocation', async () => {
     const both = await Promise.all([submit('甲', '乙', 'alias'), submit('乙', '甲', 'alias', 'other')]);
-    expect(
-      both.every((r) => [200, 202].includes(r.statusCode)),
-      both.map((r) => r.body).join('\n'),
-    ).toBe(true);
+    expect(both.map((r) => r.statusCode).sort(), both.map((r) => r.body).join('\n')).toEqual([200, 201]);
     expect(both[0].json().id).toBe(both[1].json().id);
     expect(await db.select().from(tagSubmissions)).toHaveLength(1);
-    expect(await db.select().from(tagSubmissionLog)).toHaveLength(1);
-    expect((await review(both[0].json().id, 'rejected')).statusCode).toBe(200);
+    expect((await db.select().from(tagSubmissionLog)).map((l) => l.action)).toEqual(['submit', 'auto-approved']);
+    expect((await publicRead('甲')).json().relations).toHaveLength(1);
+    expect((await review(both[0].json().id, 'revoked')).statusCode).toBe(200);
     const repeated = await submit('甲', '乙', 'alias');
     expect(repeated.statusCode).toBe(200);
-    expect(repeated.json().status).toBe('rejected');
+    expect(repeated.json().status).toBe('revoked');
     expect((await publicRead('甲')).json().relations).toEqual([]);
   });
   it('publishes only approved edges, reverses symmetric lookup, and exposes no private audit fields', async () => {
     await approved('公開甲', '公開乙', 'related');
-    await submit('公開甲', '待審詞');
-    const rejected = await submit('公開甲', '退回詞');
-    await review(rejected.json().id, 'rejected');
+    const revoked = await submit('公開甲', '撤下詞');
+    expect((await review(revoked.json().id, 'revoked')).statusCode).toBe(200);
     const result = await publicRead('公開甲');
     expect(result.json().relations).toHaveLength(1);
     expect(result.json().relations[0]).toMatchObject({
@@ -237,8 +234,8 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
       depth: 2,
     });
     const cycle = await submit('專業身分', '人物甲', 'is-a');
-    expect((await review(cycle.json().id)).statusCode).toBe(409);
-    expect((await db.select().from(tagSubmissions).where(eq(tagSubmissions.id, cycle.json().id)))[0].status).toBe('pending');
+    expect(cycle.statusCode).toBe(409);
+    expect(await db.select().from(tagSubmissions).where(eq(tagSubmissions.tag, '專業身分'))).toHaveLength(0);
   });
   it('projects existing multi-parent groups and ancestors without mislabelling topics or unreviewed membership', async () => {
     await db.insert(tagGroupDefs).values([
@@ -274,7 +271,7 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
     const [proposal] = await db.select().from(tagSubmissions).where(eq(tagSubmissions.id, submissionId));
     expect(proposal).toMatchObject({ targetGroupId: 811, source: 'submission' });
     expect(await db.select().from(tagGroupMembers)).toMatchObject([
-      { tag: '政治人物fixture', groupId: 811, status: 'confirmed', reviewedBy: actors.admin.email },
+      { tag: '政治人物fixture', groupId: 811, status: 'confirmed', reviewedBy: actors.reader.email },
     ]);
     expect(await db.select().from(tagGroupMemberLog)).toMatchObject([{ action: 'confirm', tag: '政治人物fixture', groupId: 811 }]);
     expect(await db.select().from(writingPeople).where(eq(writingPeople.name, '政治人物fixture'))).toMatchObject([
@@ -285,6 +282,19 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
     expect(relations[0]).toMatchObject({ target: { id: 'group:811', href: '/group/811/' }, source: 'submission', inherited: false });
     expect(relations[0].createdAt).not.toBeNull();
     expect((await submit('既有政治分類', '新分類', 'is-a')).statusCode).toBe(409);
+    // Revoking returns the membership to what it was (here: none).
+    expect((await review(submissionId, 'revoked')).statusCode).toBe(200);
+    expect(await db.select().from(tagGroupMembers)).toHaveLength(0);
+    expect((await db.select().from(tagGroupMemberLog)).map((l) => l.action)).toEqual(['confirm', 'revoke']);
+    expect((await publicRead('政治人物fixture')).json().relations).toEqual([]);
+  });
+  it('restores an earlier membership status when its confirmation is revoked', async () => {
+    await db.insert(tagGroupDefs).values({ id: 814, label: '待審分類', kind: 'group', sort: 1, createdAt: new Date() });
+    await db.insert(tagGroupMembers).values({ tag: '既有成員', groupId: 814, source: 'ai', status: 'review', updatedAt: new Date() });
+    const id = await approved('既有成員', '待審分類');
+    expect(await db.select().from(tagGroupMembers)).toMatchObject([{ status: 'confirmed' }]);
+    expect((await review(id, 'revoked')).statusCode).toBe(200);
+    expect(await db.select().from(tagGroupMembers)).toMatchObject([{ tag: '既有成員', groupId: 814, status: 'review' }]);
   });
   it('does not resurrect revoked group membership through inherited classifications', async () => {
     await db.insert(tagGroupDefs).values({ id: 812, label: '可撤銷分類', kind: 'group', sort: 1, createdAt: new Date() });
@@ -297,42 +307,39 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
       false,
     );
   });
-  it('refuses a pending bridge after its target group was deleted', async () => {
+  it('still revokes a membership after its group was deleted', async () => {
     await db.insert(tagGroupDefs).values({ id: 813, label: '即將刪除分類', kind: 'group', sort: 1, createdAt: new Date() });
-    const proposal = await submit('候選分類詞', '即將刪除分類', 'is-a');
+    const id = await approved('候選分類詞', '即將刪除分類');
     await db.update(tagGroupDefs).set({ deletedAt: new Date() }).where(eq(tagGroupDefs.id, 813));
-    expect((await review(proposal.json().id)).statusCode).toBe(409);
+    expect((await review(id, 'revoked')).statusCode).toBe(200);
     expect(await db.select().from(tagGroupMembers)).toHaveLength(0);
   });
 
-  it('serializes opposite-edge reviews so exactly one can close no cycle', async () => {
-    const a = await submit('並行甲', '並行乙', 'is-a');
-    const b = await submit('並行乙', '並行甲', 'is-a', 'other');
-    const responses = await Promise.all([review(a.json().id), review(b.json().id)]);
-    expect(responses.map((r) => r.statusCode).sort()).toEqual([200, 409]);
+  it('serializes opposite-edge submissions so exactly one can close no cycle', async () => {
+    const responses = await Promise.all([submit('並行甲', '並行乙', 'is-a'), submit('並行乙', '並行甲', 'is-a', 'other')]);
+    expect(responses.map((r) => r.statusCode).sort()).toEqual([201, 409]);
     expect((await db.select().from(tagSubmissions)).filter((r) => r.status === 'approved')).toHaveLength(1);
   });
   it('fails closed when the graph lock row is missing', async () => {
-    const proposal = await submit('缺鎖甲', '缺鎖乙', 'is-a');
     await db.delete(tagRelationLock).where(eq(tagRelationLock.id, 1));
     try {
-      const response = await review(proposal.json().id);
+      const response = await submit('缺鎖甲', '缺鎖乙', 'is-a');
       expect(response.statusCode).toBe(409);
-      expect((await db.select().from(tagSubmissions))[0].status).toBe('pending');
-      expect(await db.select().from(tagSubmissionLog)).toHaveLength(1);
+      expect(await db.select().from(tagSubmissions)).toHaveLength(0);
+      expect(await db.select().from(tagSubmissionLog)).toHaveLength(0);
     } finally {
       await db.insert(tagRelationLock).ignore().values({ id: 1 });
     }
   });
 
-  it('serializes approval versus rejection for the same submission and keeps exactly one review audit', async () => {
+  it('serializes two revocations of the same submission and keeps exactly one audit', async () => {
     const submitted = await submit('競爭甲', '競爭乙');
-    const responses = await Promise.all([review(submitted.json().id), review(submitted.json().id, 'rejected')]);
+    const responses = await Promise.all([review(submitted.json().id, 'revoked'), review(submitted.json().id, 'revoked')]);
     expect(responses.map((r) => r.statusCode).sort()).toEqual([200, 409]);
-    expect(await db.select().from(tagSubmissionLog)).toHaveLength(2);
+    expect((await db.select().from(tagSubmissionLog)).map((l) => l.action)).toEqual(['submit', 'auto-approved', 'revoked']);
   });
   it('enforces 20 proposals per rolling day while allowing existing deduplication', async () => {
-    for (let i = 0; i < 20; i++) expect((await submit('額度甲', `額度${i}`)).statusCode).toBe(202);
+    for (let i = 0; i < 20; i++) expect((await submit('額度甲', `額度${i}`)).statusCode).toBe(201);
     const over = await submit('額度甲', '額度20');
     expect(over.statusCode).toBe(429);
     expect(over.headers['cache-control']).toContain('no-store');
@@ -341,7 +348,7 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
   it('does not exceed the quota under simultaneous requests by the same reader', async () => {
     for (let i = 0; i < 19; i++) await submit('並行額度', `已有${i}`);
     const last = await Promise.all([submit('並行額度', '最後甲'), submit('並行額度', '最後乙'), submit('並行額度', '最後丙')]);
-    expect(last.map((r) => r.statusCode).sort()).toEqual([202, 429, 429]);
+    expect(last.map((r) => r.statusCode).sort()).toEqual([201, 429, 429]);
     expect(await db.select().from(tagSubmissions)).toHaveLength(20);
   });
 
@@ -359,7 +366,7 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
     expect(missing.headers['cache-control']).toBe('no-store');
     expect((await review(999999)).statusCode).toBe(404);
   });
-  it('protects pending image blobs behind the administrator gate and omits blobs from the list', async () => {
+  it('protects submitted image blobs behind the administrator gate and omits blobs from the list', async () => {
     const proposal = await submitPicture(db, {
       tag: '私人圖',
       pictureKind: 'visual',

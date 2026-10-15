@@ -17,7 +17,6 @@ import {
   tagWikidata,
 } from '../src/db/schema.ts';
 import { registerPictureRoutes } from '../src/pictures/routes.ts';
-import { approvePicture } from '../src/pictures/submissions.ts';
 import { applyVotes } from '../src/pictures/votes.ts';
 import { fileWikidata } from '../src/tag-groups/run.ts';
 import { processTags } from '../src/tag-visuals/run.ts';
@@ -126,7 +125,7 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
     expect(await db.select().from(tagPeopleLog)).toMatchObject([{ action: 'nonhuman', email: admin.email }]);
     expect(await db.select().from(tagPeopleLog)).toHaveLength(1);
   });
-  it('accepts a logo without a face, waits for review, then serves the approved picture', async () => {
+  it('accepts a logo without a face and serves it at once', async () => {
     const image = await sharp(Buffer.from('<svg width="80" height="80"><path fill="red" d="M10 10h60v20H50v40H30V30H10z"/></svg>'))
       .png()
       .toBuffer();
@@ -136,14 +135,8 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
       headers,
       payload: { image: image.toString('base64'), agree: true },
     });
-    expect(uploaded.statusCode).toBe(202);
-    expect(uploaded.json()).toMatchObject({ kind: 'visual', status: 'pending' });
-    expect((await app.inject({ url: path, headers })).json().candidates).toEqual([]);
-    await db.transaction(async (tx) => {
-      const [submission] = await tx.select().from(tagSubmissions).where(eq(tagSubmissions.id, uploaded.json().submissionId)).for('update');
-      const approved = await approvePicture(tx as unknown as Db, submission);
-      await tx.update(tagSubmissions).set({ status: 'approved', candidateRank: approved.rank }).where(eq(tagSubmissions.id, submission.id));
-    });
+    expect(uploaded.statusCode).toBe(201);
+    expect(uploaded.json()).toMatchObject({ kind: 'visual', status: 'approved' });
     expect(queued).not.toHaveBeenCalled();
     const state = (await app.inject({ url: path, headers })).json();
     expect(state).toMatchObject({ kind: 'visual', shownRank: 1, myVote: 1, candidates: [{ kind: 'logo', votes: 1 }] });
@@ -186,14 +179,14 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
     expect(await pending).toMatchObject({ error: expect.stringContaining('非人物') });
     expect(await db.select().from(tagAvatarCandidates)).toHaveLength(1);
   });
-  it('keeps a successfully processed reader portrait in the private review queue', async () => {
+  it('publishes a successfully processed reader portrait at once', async () => {
     await seed();
     stubs.inspect.mockResolvedValueOnce({ verdict: 'ok', main: {}, aligned: {} });
     const result = await addPhoto(db, tag, Buffer.from('reader upload'), admin.email, 1);
-    expect(result).toMatchObject({ tag, status: 'pending' });
-    expect(await db.select().from(tagAvatarCandidates)).toHaveLength(1);
+    expect(result).toMatchObject({ tag, status: 'approved' });
+    expect(await db.select().from(tagAvatarCandidates)).toHaveLength(2);
     const [person] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
-    expect(person).toMatchObject({ status: 'auto', shownRank: 1 });
+    expect(person).toMatchObject({ status: 'voted', shownRank: 2 });
     const [submission] = await db
       .select()
       .from(tagSubmissions)
@@ -202,8 +195,9 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
       kind: 'picture',
       pictureKind: 'avatar',
       rightsConfirmed: true,
-      status: 'pending',
-      pictureMeta: { score: 1, verdict: 'ok' },
+      status: 'approved',
+      candidateRank: 2,
+      pictureMeta: { score: 1, verdict: 'ok', previous: { status: 'auto', shownRank: 1 } },
     });
   });
   it('honors a correction made during an automatic identity lookup', async () => {

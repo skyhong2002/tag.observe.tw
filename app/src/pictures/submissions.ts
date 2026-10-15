@@ -1,17 +1,32 @@
 import { createHash } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { tagAvatarCandidates, tagPeople, tagSubmissionLog, tagSubmissions, tagVisualCandidates, tagVisuals, users } from '../db/schema.ts';
-import { castVote, nextRank, type PictureKind, uploadsToday } from './votes.ts';
+import {
+  tagAvatarCandidates,
+  tagPeople,
+  tagPictureVotes,
+  tagSubmissionLog,
+  tagSubmissions,
+  tagVisualCandidates,
+  tagVisuals,
+  users,
+} from '../db/schema.ts';
+import { applyVotes, castVote, nextRank, type PictureKind, uploadsToday } from './votes.ts';
 
 export type PictureMetadata = { score: number; scores: Record<string, number>; verdict: string };
+/** What the tag showed before a reader's picture went public, so taking it down restores it. */
+type Previous = { status: string | null; shownRank: number | null };
+export const AUTO_PUBLISHED = '投稿即公開（管理員可撤下）';
 export const pictureSubmissionKey = (tag: string, kind: PictureKind, image: Buffer) =>
   createHash('sha256')
     .update(JSON.stringify(['picture', tag, kind]))
     .update(image)
     .digest('hex');
 
-/** Processed images stay private until an administrator approves the submission. */
+/**
+ * Readers' pictures go public as soon as they are submitted (owner's decision,
+ * 2026-10-15); an administrator can take one down afterwards (revokePicture).
+ */
 export async function submitPicture(
   db: Db,
   input: { tag: string; pictureKind: PictureKind; image: Buffer; userId: number; pictureMeta?: PictureMetadata },
@@ -58,6 +73,9 @@ export async function submitPicture(
       .for('update');
     if (inserted.affectedRows === 1 && inserted.insertId) {
       await tx.insert(tagSubmissionLog).values({ submissionId: row.id, action: 'submit', userId, at: new Date() });
+      const [full] = await tx.select().from(tagSubmissions).where(eq(tagSubmissions.id, row.id)).for('update');
+      await publishPicture(tx as unknown as Db, full, null, AUTO_PUBLISHED);
+      return { tag, submissionId: row.id, status: 'approved' as const };
     }
     return { tag, submissionId: row.id, status: row.status };
   });
@@ -68,17 +86,24 @@ export async function approvePicture(db: Db, row: typeof tagSubmissions.$inferSe
   if (row.kind !== 'picture' || !row.pictureKind || !row.image || !row.rightsConfirmed) throw Error('圖片投稿不完整');
   if (row.status !== 'pending' || row.candidateRank !== null) throw Error('這筆投稿已經審核');
   const { tag, pictureKind: kind } = row;
+  let previous: Previous;
   if (kind === 'avatar') {
     const [person] = await db
-      .select({ status: tagPeople.status, wikidataId: tagPeople.wikidataId })
+      .select({ status: tagPeople.status, wikidataId: tagPeople.wikidataId, shownRank: tagPeople.shownRank })
       .from(tagPeople)
       .where(eq(tagPeople.tag, tag))
       .for('update');
     if (!person?.wikidataId || person.status === 'nonhuman') throw Error('這個標籤已更正為非人物，請重新投稿一般圖片');
+    previous = { status: person.status, shownRank: person.shownRank };
   } else {
     // The row is also the per-tag rank allocation lock. Never replace an administrator's choice.
     await db.insert(tagVisuals).ignore().values({ tag, status: 'none', checkedAt: new Date() });
-    await db.select({ tag: tagVisuals.tag }).from(tagVisuals).where(eq(tagVisuals.tag, tag)).for('update');
+    const [visual] = await db
+      .select({ status: tagVisuals.status, shownRank: tagVisuals.shownRank })
+      .from(tagVisuals)
+      .where(eq(tagVisuals.tag, tag))
+      .for('update');
+    previous = { status: visual?.status ?? null, shownRank: visual?.shownRank ?? null };
   }
   const rank = await nextRank(db, tag, kind);
   if (kind === 'avatar') {
@@ -87,7 +112,7 @@ export async function approvePicture(db: Db, row: typeof tagSubmissions.$inferSe
     await db.insert(tagAvatarCandidates).values({
       tag,
       rank,
-      file: '讀者上傳（已審核）',
+      file: '讀者上傳',
       pageUrl: '',
       score: meta.score,
       scores: meta.scores,
@@ -105,7 +130,7 @@ export async function approvePicture(db: Db, row: typeof tagSubmissions.$inferSe
       tag,
       rank,
       kind: 'logo',
-      note: '讀者上傳（已審核）',
+      note: '讀者上傳',
       image: row.image,
       uploadedBy: row.createdBy,
       uploadedAt: row.createdAt,
@@ -113,5 +138,76 @@ export async function approvePicture(db: Db, row: typeof tagSubmissions.$inferSe
   }
   // Approval enables the existing vote mechanism; before this point no vote/candidate existed.
   const shownRank = await castVote(db, tag, kind, row.createdBy, rank);
-  return { rank, shownRank };
+  return { rank, shownRank, previous };
+}
+
+/** Puts a locked pending picture row in public and records who/why; `reviewer` null means automatic. */
+export async function publishPicture(db: Db, row: typeof tagSubmissions.$inferSelect, reviewer: number | null, reason: string) {
+  const { rank, previous } = await approvePicture(db, row);
+  const at = new Date();
+  await db
+    .update(tagSubmissions)
+    .set({
+      status: 'approved',
+      reviewedBy: reviewer,
+      reviewedAt: at,
+      reviewReason: reason,
+      candidateRank: rank,
+      pictureMeta: { ...(row.pictureMeta ?? {}), previous } as PictureMetadata,
+    })
+    .where(eq(tagSubmissions.id, row.id));
+  await db.insert(tagSubmissionLog).values({
+    submissionId: row.id,
+    action: reviewer === null ? 'auto-approved' : 'approved',
+    userId: reviewer ?? row.createdBy,
+    at,
+    reason,
+  });
+  return rank;
+}
+
+/**
+ * Takes a published reader picture down: its candidate and the votes for it go,
+ * and the tag goes back to what it showed before, or what the remaining votes pick.
+ * Caller holds the submission row lock.
+ */
+export async function revokePicture(db: Db, row: typeof tagSubmissions.$inferSelect) {
+  const { tag, pictureKind: kind, candidateRank: rank } = row;
+  if (row.kind !== 'picture' || !kind || rank === null) throw Error('這筆圖片投稿沒有公開中的候選圖');
+  const previous = (row.pictureMeta as { previous?: Previous } | null)?.previous ?? { status: null, shownRank: null };
+  await db.delete(tagPictureVotes).where(and(eq(tagPictureVotes.tag, tag), eq(tagPictureVotes.kind, kind), eq(tagPictureVotes.rank, rank)));
+  if (kind === 'avatar') {
+    const [person] = await db.select({ shownRank: tagPeople.shownRank }).from(tagPeople).where(eq(tagPeople.tag, tag)).for('update');
+    await db.delete(tagAvatarCandidates).where(and(eq(tagAvatarCandidates.tag, tag), eq(tagAvatarCandidates.rank, rank)));
+    if (person?.shownRank === rank)
+      await db
+        .update(tagPeople)
+        .set({ status: (previous.status ?? 'voted') as typeof tagPeople.$inferSelect.status, shownRank: previous.shownRank })
+        .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} <> 'nonhuman'`));
+  } else {
+    const [visual] = await db.select({ shownRank: tagVisuals.shownRank }).from(tagVisuals).where(eq(tagVisuals.tag, tag)).for('update');
+    await db.delete(tagVisualCandidates).where(and(eq(tagVisualCandidates.tag, tag), eq(tagVisualCandidates.rank, rank)));
+    if (visual?.shownRank === rank) {
+      const [before] =
+        previous.shownRank === null
+          ? []
+          : await db
+              .select()
+              .from(tagVisualCandidates)
+              .where(and(eq(tagVisualCandidates.tag, tag), eq(tagVisualCandidates.rank, previous.shownRank)));
+      if (before) {
+        const { tag: _, rank: __, uploadedBy: ___, uploadedAt: ____, ...picture } = before;
+        await db
+          .update(tagVisuals)
+          .set({
+            ...picture,
+            status: (previous.status ?? 'voted') as typeof tagVisuals.$inferSelect.status,
+            shownRank: previous.shownRank,
+            checkedAt: new Date(),
+          })
+          .where(eq(tagVisuals.tag, tag));
+      } else await db.update(tagVisuals).set({ status: 'none', shownRank: null, checkedAt: new Date() }).where(eq(tagVisuals.tag, tag));
+    }
+  }
+  await applyVotes(db, tag, kind);
 }
