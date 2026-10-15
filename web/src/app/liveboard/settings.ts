@@ -174,22 +174,11 @@ export interface LiveboardSettings {
 /** What a device that has never saved settings shows: the last day in 6-hour steps, with each word's change in place. */
 export const DEFAULTS: LiveboardSettings = {
   mode: 'simple',
-  lenses: [
-    'all',
-    'events',
-    'day',
-    'growth',
-    'threads',
-    'blue',
-    'green',
-    'media',
-    'burst',
-    'categories',
-    'alt',
-    'groups',
-    'tech',
-    'finance',
-  ],
+  // Overview, then what happened, the two camps side by side (same layout, same
+  // time), the day's threads, what is rising, and the outlets outside the camps.
+  // The rest (新聞熱詞 repeats 綜合, 突然爆量 is close to 正在發酵, the topic and
+  // category boards, the trade lenses) are one tick away in the settings.
+  lenses: ['all', 'events', 'blue', 'green', 'threads', 'growth', 'alt'],
   pictures: true,
   history: 4,
   interval: 6,

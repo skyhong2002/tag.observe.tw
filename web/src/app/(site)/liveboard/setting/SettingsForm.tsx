@@ -79,7 +79,7 @@ export default function SettingsForm() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {(
             [
-              ['simple', '精簡版', '只有文字雲，一個鏡頭接一個鏡頭播放（預設）'],
+              ['simple', '精簡版', '文字雲、事件與議題排行，一個鏡頭接一個鏡頭播放（預設）'],
               ['full', '完整版', '新進新聞、事件、標題對照與轉載比對輪流顯示'],
             ] as const
           ).map(([mode, label, text]) => (
@@ -280,8 +280,8 @@ export default function SettingsForm() {
 
             <p className={note}>
               每個關鍵字鏡頭約 {perLens} 秒，事件約 {Math.round(perScene('events'))} 秒（{EVENT_FRAMES} 個事件），每張排行約{' '}
-              {Math.round(perScene('board'))} 秒；{draft.lenses.length} 個鏡頭一輪約 {Math.round(round / 6) / 10} 分鐘。按 ← →
-              或左右滑動可以跳過。
+              {Math.round(perScene('board'))} 秒；{draft.lenses.length} 個鏡頭一輪約 {Math.round(round / 6) / 10} 分鐘。按 ↑ ↓
+              或上下滑動換時間點，按 ← → 或左右滑動換鏡頭。
             </p>
           </>
         )}
