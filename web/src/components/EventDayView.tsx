@@ -43,11 +43,10 @@ function DayRun({ e, t, day }: { e: EventItem; t: ArchivedThread; day: string })
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs tabular-nums">
       <Link
+        prefetch={false}
         href={hourHref(hourOf(day, bestAt))}
         className={
-          best === 1
-            ? 'rounded bg-brand-700 px-1 py-px text-white hover:underline dark:bg-brand-500'
-            : 'text-zinc-600 hover:underline dark:text-zinc-400'
+          best === 1 ? 'rounded bg-brand-700 px-1 py-px text-white hover:underline' : 'text-zinc-600 hover:underline dark:text-zinc-400'
         }
         title={`${pad(bestAt)}:00 的事件表`}
       >
@@ -74,7 +73,7 @@ function Folded({ threads }: { threads: ArchivedThread[] }) {
         {threads.map((t) => (
           <li key={t.id} className="flex min-w-0 items-baseline gap-1.5">
             <span aria-hidden>↳</span>
-            <Link href={`/eve/${t.id}/`} className="line-clamp-1 text-zinc-700 hover:underline dark:text-zinc-300">
+            <Link prefetch={false} href={`/eve/${t.id}/`} className="line-clamp-1 text-zinc-700 hover:underline dark:text-zinc-300">
               {headline(t)}
             </Link>
             {t.hoursOnDay ? <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">{t.hoursOnDay} 小時</span> : null}

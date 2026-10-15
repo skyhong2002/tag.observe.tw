@@ -96,6 +96,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
       <ol className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         <li className="md:col-span-2 lg:col-span-3">
           <Link
+            prefetch={false}
             href={threadHref(lead)}
             className="group grid grid-cols-1 overflow-hidden rounded-xl border border-zinc-300 bg-white hover:border-brand-700 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-500"
           >
@@ -119,6 +120,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
           // Phones get the lead and three more, so the stream is not six screens down.
           <li key={t.id} className={i >= 3 ? 'hidden md:block' : undefined}>
             <Link
+              prefetch={false}
               href={threadHref(t)}
               className="group flex h-full gap-3 rounded-xl border border-zinc-300 bg-white p-3 hover:border-brand-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-500"
             >
