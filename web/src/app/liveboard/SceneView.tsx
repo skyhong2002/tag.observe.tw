@@ -262,9 +262,9 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
             </dd>
           </div>
           <div>
-            <dt>今天</dt>
+            <dt>24 小時</dt>
             <dd>
-              <b>{event.counts.today}</b> 篇
+              <b>{event.counts.day}</b> 篇
             </dd>
             <dd className={styles.sub}>24 小時內 {event.coverage.outlets.length} 家媒體</dd>
           </div>
@@ -380,7 +380,7 @@ function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | Boa
             {board === 'threads' ? '事件' : board === 'categories' ? '分類' : board === 'groups' ? '群組' : '議題'}
           </th>
           <th className={styles.trailHead}>近 12 小時</th>
-          <th>今天</th>
+          <th>24 小時</th>
           <th>近一小時</th>
           <th>比前一小時</th>
         </tr>
@@ -402,7 +402,7 @@ function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | Boa
             <td className={styles.trailCell}>
               <Sparkline values={r.counts.hours} color={colour} className={styles.rowLine} />
             </td>
-            <td className={styles.count}>{r.counts.today.toLocaleString()}</td>
+            <td className={styles.count}>{r.counts.day.toLocaleString()}</td>
             <td className={styles.count}>{r.counts.hour ? `+${r.counts.hour.toLocaleString()}` : '—'}</td>
             <td className={styles.count}>
               {r.counts.hour || r.counts.previous ? <Change value={r.counts.hour - r.counts.previous} /> : '—'}
@@ -415,7 +415,7 @@ function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | Boa
 }
 
 /** A row's second line, so a short name does not leave the row empty: a thread's lead report
- *  (outlet, bylines, when) and its major tags; a group's busiest tags today and its newest
+ *  (outlet, bylines, when) and its major tags; a group's busiest tags over the day and its newest
  *  report; an outlet topic's newest report. */
 function RowDetail({ row, thread }: { row: SceneRow; thread: boolean }) {
   const none: ReadonlySet<string> = new Set();

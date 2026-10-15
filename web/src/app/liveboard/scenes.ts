@@ -6,8 +6,8 @@ import type { EventCoverage } from '@/lib/pages';
 import type { LiveboardSettings } from './settings';
 
 export interface SceneCounts {
-  /** Articles published today (Asia/Taipei)… */
-  today: number;
+  /** Articles published in the last 24 hours… */
+  day: number;
   /** …collected in the last hour… */
   hour: number;
   /** …and in the hour before it. */
@@ -39,7 +39,7 @@ export interface SceneNews {
   source: { id: number; media: string; mediaTitle: string; title: string; publishedAt: string } | null;
 }
 export interface SceneArticle extends SceneBrief {
-  /** Collected in the last hour (else earlier today). */
+  /** Collected in the last hour (else earlier in the day). */
   recent: boolean;
   /** Other outlets that ran the same report. */
   copies: Array<{ media: string; mediaTitle: string }>;
@@ -70,7 +70,7 @@ export interface SceneRow {
   mediaTitle: string | null;
   news?: SceneNews[];
   major?: string[];
-  /** A group's busiest tags today. */
+  /** A group's busiest tags over the last 24 hours. */
   keywords?: string[];
   /** The newest report of a group or an outlet's topic. */
   latest?: SceneBrief | null;
@@ -78,7 +78,7 @@ export interface SceneRow {
 }
 export interface LiveScenes {
   generatedAt: string;
-  windows: { today: string; hour: string; previous: string };
+  windows: { day: string; hour: string; previous: string };
   eventHour: string | null;
   events: SceneEvent[];
   boards: { media: SceneRow[]; threads: SceneRow[]; categories: SceneRow[]; groups: SceneRow[] };

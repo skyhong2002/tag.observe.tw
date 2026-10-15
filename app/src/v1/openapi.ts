@@ -220,7 +220,7 @@ const schemas: Record<string, Schema> = {
   MediaKey: str('媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media', { pattern: '^[a-z0-9_]+$' }),
   LiveSceneCounts: obj(
     {
-      today: int('今天（台北時間）發布的文章數'),
+      day: int('近 24 小時發布的文章數'),
       hour: int('近一小時收錄的文章數'),
       previous: int('再前一小時收錄的文章數'),
       hours: arr(int(), '近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour'),
@@ -259,7 +259,7 @@ const schemas: Record<string, Schema> = {
         }),
         '事件串的代表標題，用來選出主標題',
       ),
-      keywords: arr(str(), '標籤群組今天報導最多的標籤'),
+      keywords: arr(str(), '標籤群組近 24 小時報導最多的標籤'),
       latest: ref('LiveSceneBrief', '標籤群組或媒體議題最新的一篇報導，沒有時為 null'),
       major: arr(str(), '事件串的主要標籤'),
       counts: ref('LiveSceneCounts'),
@@ -2945,11 +2945,11 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'events',
     summary: '即時看板的事件與議題鏡頭',
     description:
-      '給精簡版 /liveboard/ 的事件鏡頭與議題排行。events 是最新一小時事件快照的前 10 名，附上一份快照的名次與分數，以及帶有該事件兩個主要標籤的文章（近一小時收錄的在前，再接今天稍早的）。boards 是今天有文章的議題排行（依今天發布的文章數，最多各 10 個）：media 為各媒體自己的議題／專題頁（每家最多 2 個；成員是頁面上列出的文章；專題頁每幾小時才重讀一次，近一小時的數字會晚到），threads 為今天出現過的跨媒體事件串，categories 與 groups 為標籤群組（分類，以及人物、政黨等群組，含子群組的標籤）。counts.today 依發布時間；hour 與 previous 依收錄時間，是到現在為止的一小時與再前一小時，因為許多文章發布後才收錄，依發布時間算的最近一小時永遠不完整。',
+      '給精簡版 /liveboard/ 的事件鏡頭與議題排行。events 是最新一小時事件快照的前 10 名，附上一份快照的名次與分數，以及帶有該事件兩個主要標籤的文章（近一小時收錄的在前，再接近 24 小時內稍早的）。boards 是近 24 小時有文章的議題排行（依近 24 小時發布的文章數，最多各 10 個）：media 為各媒體自己的議題／專題頁（每家最多 2 個；成員是頁面上列出的文章；專題頁每幾小時才重讀一次，近一小時的數字會晚到），threads 為近 24 小時出現過的跨媒體事件串，categories 與 groups 為標籤群組（分類，以及人物、政黨等群組，含子群組的標籤）。counts.day 依發布時間（近 24 小時，而不是從午夜算起，免得剛過午夜時全是 0）；hour 與 previous 依收錄時間，是到現在為止的一小時與再前一小時，因為許多文章發布後才收錄，依發布時間算的最近一小時永遠不完整。',
     cache: '60 秒',
     response: obj({
       generatedAt: time(),
-      windows: obj({ today: time('今天（台北時間）0 時'), hour: time('近一小時的起點'), previous: time('再前一小時的起點') }),
+      windows: obj({ day: time('近 24 小時的起點'), hour: time('近一小時的起點'), previous: time('再前一小時的起點') }),
       eventHour: nullable(time('事件快照的小時')),
       events: arr(
         obj({
@@ -2991,13 +2991,13 @@ export const ENDPOINTS: Endpoint[] = [
               url: str(),
               image: nullable(str()),
               publishedAt: time(),
-              recent: bool('近一小時收錄；false 為今天稍早'),
+              recent: bool('近一小時收錄；false 為 24 小時內稍早'),
               tags: arr(str(), '前 8 個標籤'),
               authors: arr(str(), '原始作者署名（包含具名作者與機構）'),
               attributions: arr(ref('Attribution'), '原文明示的內容提供者或引用媒體及證據'),
               copies: arr(obj({ media: ref('MediaKey'), mediaTitle: str() }), '刊出同一篇（正文相似或標題幾乎相同）的其他媒體'),
             }),
-            '近一小時收錄的文章，再接今天稍早的，各依發布時間新的在前；同一篇的轉載併在最早的一篇下，每家媒體先列兩篇，最多 8 篇',
+            '近一小時收錄的文章，再接 24 小時內稍早的，各依發布時間新的在前；同一篇的轉載併在最早的一篇下，每家媒體先列兩篇，最多 8 篇',
           ),
         }),
         '最多 10 個',

@@ -9,18 +9,18 @@ import { type Attribution, normalizeAttributions } from '../similarity/attributi
 import { activeGroups, descendants } from '../tag-groups/tree.ts';
 import { campBaseline, type EventFeedCoverage, eventsAt, feedCoverage, hoursSoFar, matchPrev, rankTrail } from './event-feed.ts';
 import { articleCols, type LiveArticle, liveArticle } from './liveboard.ts';
-import { taipeiMidnight } from './media-stats.ts';
 import { SHOWN } from './tag-groups.ts';
 
 // The simple liveboard's event and topic scenes (web/src/app/liveboard/):
 // the top events with their score against the previous hour's snapshot and
 // the articles that joined them in the last hour, and leaderboards of the
-// day's topics, each with its articles today, in the last hour and in the
+// day's topics, each with its articles over the last 24 hours, in the last hour and in the
 // hour before. Topics are an outlet's own 議題／專題 pages, the cross-outlet
 // event threads, and the tag groups (categories, and groups of people and
 // parties). Counts are distinct own articles by publish time; an article
 // joins an event or thread when it carries two of its major tags, and a
-// group when it carries any of its tags. Today counts by publish time; the
+// group when it carries any of its tags. The day (the last 24 hours, not the
+// calendar day, which is all but empty just past midnight) counts by publish time; the
 // two hours count by when the articles were collected, since many land well
 // after they were published and a last hour by publish time is never whole.
 // An outlet's topic page is re-read every few hours, so its last-hour count
@@ -28,6 +28,7 @@ import { SHOWN } from './tag-groups.ts';
 
 const mediaInfo = catalog as unknown as Record<string, { title: string | null }>;
 const HOUR = 3600e3;
+const DAY = 24 * HOUR;
 /** Articles collected in the last two hours were published at most this long before (a few stragglers aside). */
 const LATE = 8 * HOUR;
 /** Hours of collection counts behind each event and row, for its trail. */
@@ -35,7 +36,7 @@ const TRAIL = 12;
 const EVENTS = 10;
 /** Keywords sent with each event. */
 const EVENT_TAGS = 14;
-/** An event's articles: the last hour's, then today's earlier ones. */
+/** An event's articles: the last hour's, then the day's earlier ones. */
 const EVENT_ARTICLES = 8;
 /** Newest reports of an event considered for its list. */
 const POOL = 80;
@@ -47,8 +48,9 @@ const GROUP_KEYWORDS = 6;
 const CACHE_MS = 60e3;
 
 export interface SceneCounts {
-  today: number;
-  /** In the hour up to now… */
+  /** Published in the last 24 hours (a rolling day, so just past midnight is not empty)… */
+  day: number;
+  /** …collected in the hour up to now… */
   hour: number;
   /** …and the hour before it. */
   previous: number;
@@ -71,7 +73,7 @@ export interface SceneBrief {
   attributions: Attribution[];
 }
 export interface SceneArticle extends SceneBrief {
-  /** Collected in the last hour (else earlier today). */
+  /** Collected in the last hour (else earlier in the day). */
   recent: boolean;
   /** Other outlets that ran the same text (similarity pairs) or headline, listed under this one. */
   copies: Array<{ media: string; mediaTitle: string }>;
@@ -101,14 +103,14 @@ export interface SceneEvent {
   news: SceneNews[];
   href: string | null;
   counts: SceneCounts;
-  /** When its newest report came in, so a quiet hour still says how long ago (null with none today). */
+  /** When its newest report came in, so a quiet hour still says how long ago (null with none in the day). */
   newest: string | null;
   /** Hours its thread has been on the table, and its rank in each of the last 24 snapshots (as /api/v1/events). */
   hours: number | null;
   rankTrail: Array<number | null> | null;
   /** Outlets and camps on it over the day, with blind spots (as /api/v1/events). */
   coverage: EventFeedCoverage;
-  /** The articles collected in the last hour, then today's earlier ones, each the latest published first. */
+  /** The articles collected in the last hour, then the day's earlier ones, each the latest published first. */
   articles: SceneArticle[];
 }
 export interface SceneRow {
@@ -121,7 +123,7 @@ export interface SceneRow {
   /** A thread's stored headlines and major tags, for its lead headline. */
   news?: SceneNews[];
   major?: string[];
-  /** A group's busiest tags today, most first. */
+  /** A group's busiest tags over the day, most first. */
   keywords?: string[];
   /** The newest report of a group or an outlet's topic. */
   latest?: SceneBrief | null;
@@ -133,8 +135,8 @@ type Pending = SceneRow & { latestIds?: number[] };
 const LATEST_CHOICES = 4;
 export interface LiveScenes {
   generatedAt: string;
-  /** Start of today (Asia/Taipei), of the last hour and of the hour before it. */
-  windows: { today: string; hour: string; previous: string };
+  /** Start of the 24 hours counted, of the last hour and of the hour before it. */
+  windows: { day: string; hour: string; previous: string };
   /** The event snapshot the events come from. */
   eventHour: string | null;
   events: SceneEvent[];
@@ -143,14 +145,15 @@ export interface LiveScenes {
 
 export interface Windows {
   now: number;
-  today: number;
+  /** Start of the rolling day the counts cover. */
+  day: number;
   hour: number;
   previous: number;
   /** Start of the trail's first hour. */
   trail: number;
 }
 export function windowsAt(now: number): Windows {
-  return { now, today: taipeiMidnight(now).getTime(), hour: now - HOUR, previous: now - 2 * HOUR, trail: now - TRAIL * HOUR };
+  return { now, day: now - DAY, hour: now - HOUR, previous: now - 2 * HOUR, trail: now - TRAIL * HOUR };
 }
 
 /** When an article was published (null while its page has not been read for the date) and collected. */
@@ -158,11 +161,11 @@ export interface Seen {
   published: number | null;
   crawled: number;
 }
-/** Distinct articles published today, and collected in the last hour, the hour before and each hour of the trail. */
+/** Distinct articles published in the last 24 hours, and collected in the last hour, the hour before and each hour of the trail. */
 export function countSeen(seen: Iterable<Seen>, w: Windows): SceneCounts {
-  const out = { today: 0, hour: 0, previous: 0, hours: new Array<number>(TRAIL).fill(0) };
+  const out = { day: 0, hour: 0, previous: 0, hours: new Array<number>(TRAIL).fill(0) };
   for (const t of seen) {
-    if (t.published !== null && t.published >= w.today && t.published <= w.now) out.today++;
+    if (t.published !== null && t.published >= w.day && t.published <= w.now) out.day++;
     if (t.crawled > w.now) continue;
     if (t.crawled >= w.hour) out.hour++;
     else if (t.crawled >= w.previous) out.previous++;
@@ -170,10 +173,10 @@ export function countSeen(seen: Iterable<Seen>, w: Windows): SceneCounts {
   }
   return out;
 }
-/** The latest collection time among reports published today or collected in the trail. */
+/** The latest collection time among reports published in the day or collected in the trail. */
 export function newestOf(seen: Iterable<Seen>, w: Windows): string | null {
   let at = 0;
-  for (const t of seen) if (t.crawled <= w.now && (t.crawled >= w.trail || (t.published ?? 0) >= w.today)) at = Math.max(at, t.crawled);
+  for (const t of seen) if (t.crawled <= w.now && (t.crawled >= w.trail || (t.published ?? 0) >= w.day)) at = Math.max(at, t.crawled);
   return at ? new Date(at).toISOString() : null;
 }
 const seenOf = (r: { publishedAt: Date; crawledAt: Date; pending: number | string | boolean }): Seen => ({
@@ -213,13 +216,13 @@ export class TagIndex {
 /** An event or thread: two of its major tags (all of them when it has fewer). */
 export const storyNeed = (major: readonly string[]) => Math.min(2, major.length);
 
-/** The day's leaderboard: rows with articles today, most first, then the busiest last hour;
+/** The day's leaderboard: rows with articles in the last 24 hours, most first, then the busiest last hour;
  *  with `perMedia`, no more than that many of one outlet. */
 export function rankBoard<R extends SceneRow>(rows: R[], { limit = BOARD, perMedia = Infinity } = {}): R[] {
   const taken = new Map<string, number>();
   return rows
-    .filter((r) => r.counts.today > 0)
-    .sort((a, b) => b.counts.today - a.counts.today || b.counts.hour - a.counts.hour || a.title.localeCompare(b.title))
+    .filter((r) => r.counts.day > 0)
+    .sort((a, b) => b.counts.day - a.counts.day || b.counts.hour - a.counts.hour || a.title.localeCompare(b.title))
     .filter((r) => {
       if (!r.media) return true;
       const n = taken.get(r.media) ?? 0;
@@ -268,7 +271,7 @@ const OUTLET_SHARE = 2;
  * by similarity pair, or a nearly identical headline) fold into the earliest of them
  * in the section, the others listed as its copies; then the last hour's
  * reports, newest first, one per outlet before any outlet gets a second,
- * and today's earlier ones the same way, `limit` in all, no outlet past
+ * and the day's earlier ones the same way, `limit` in all, no outlet past
  * OUTLET_SHARE while there are others to show.
  */
 export function pickReports(
@@ -333,11 +336,11 @@ export function pickReports(
 
 /** Its publish time is a placeholder until its page is read. */
 const pending = sql<number>`(${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`;
-/** Own articles published today, or late enough to have been collected in the trail's hours. */
+/** Own articles published in the day, or late enough to have been collected in the trail's hours. */
 const inWindow = (w: Windows) =>
   and(
     eq(articles.source, 'own'),
-    gte(articles.publishedAt, new Date(Math.min(w.today, w.trail - LATE))),
+    gte(articles.publishedAt, new Date(Math.min(w.day, w.trail - LATE))),
     lte(articles.publishedAt, new Date(w.now)),
   );
 type Stored = { id?: number; title: string; media: string; image: string | null };
@@ -413,7 +416,7 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
     baseline,
   );
   const members = latest.events.map((e) => index.carrying(e.major, storyNeed(e.major)));
-  // Every event's articles, fetched together: the last hour's, then today's
+  // Every event's articles, fetched together: the last hour's, then the day's
   // earlier ones, each newest first. One whose date is not read yet sorts by
   // when it was collected.
   const dateOf = (id: number) => {
@@ -421,11 +424,11 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
     return t ? (t.published ?? t.crawled) : 0;
   };
   const isRecent = (id: number) => (index.at.get(id)?.crawled ?? 0) >= w.hour;
-  // Each event's candidates: the last hour's and today's, newest first, a
+  // Each event's candidates: the last hour's and the day's, newest first, a
   // bounded pool; copies among them are found in one pass over the pairs.
   const pools = members.map((ids) =>
     [...ids]
-      .filter((id) => isRecent(id) || dateOf(id) >= w.today)
+      .filter((id) => isRecent(id) || dateOf(id) >= w.day)
       .sort((a, b) => dateOf(b) - dateOf(a) || b - a)
       .slice(0, POOL),
   );
@@ -549,10 +552,10 @@ async function threadBoard(db: Db, index: TagIndex, w: Windows, latest: Array<{ 
   const threads = await db
     .select({ id: eventThreads.id, majorTags: eventThreads.majorTags, combinedTo: eventThreads.combinedTo })
     .from(eventThreads)
-    .where(and(eq(eventThreads.category, 'news'), gte(eventThreads.lastTime, new Date(w.today))));
+    .where(and(eq(eventThreads.category, 'news'), gte(eventThreads.lastTime, new Date(w.day))));
   if (!threads.length) return [];
   const ids = new Set(threads.map((t) => t.id));
-  // A thread carried on by a later one of today's threads is shown as that one.
+  // A thread carried on by a later one of the day's threads is shown as that one.
   const shown = threads.filter((t) => !t.combinedTo.some((to) => ids.has(to)));
   const rows = await db
     .select({ threadId: events.threadId, news: events.news, majorNews: events.majorNews, major: events.major })
@@ -561,7 +564,7 @@ async function threadBoard(db: Db, index: TagIndex, w: Windows, latest: Array<{ 
     .where(
       and(
         eq(eventSnapshots.category, 'news'),
-        gte(eventSnapshots.hourStart, new Date(w.today - HOUR)),
+        gte(eventSnapshots.hourStart, new Date(w.day - HOUR)),
         inArray(
           events.threadId,
           shown.map((t) => t.id),
@@ -592,7 +595,7 @@ async function threadBoard(db: Db, index: TagIndex, w: Windows, latest: Array<{ 
 }
 
 async function mediaBoard(db: Db, w: Windows) {
-  const recent = new Date(Math.min(w.today, w.previous) - 3 * 24 * HOUR);
+  const recent = new Date(w.day - 3 * DAY);
   const rows = await db
     .select({ id: topics.id, media: topics.media, title: topics.title, kind: topics.kind, pageStories: topics.pageStories })
     .from(topics)
@@ -654,13 +657,13 @@ async function groupBoards(db: Db, index: TagIndex, w: Windows) {
   ]);
   const tagsIn = new Map<number, string[]>();
   for (const m of members) (tagsIn.get(m.groupId) ?? tagsIn.set(m.groupId, []).get(m.groupId))?.push(m.tag);
-  // Each tag's reports today, counted once for every group that has it.
-  const today = new Map<string, number>();
-  const todayOf = (tag: string) => {
-    let n = today.get(tag);
+  // Each tag's reports over the day, counted once for every group that has it.
+  const perTag = new Map<string, number>();
+  const dayCount = (tag: string) => {
+    let n = perTag.get(tag);
     if (n === undefined) {
-      n = index.seen(index.carrying([tag])).filter((t) => t.published !== null && t.published >= w.today && t.published <= w.now).length;
-      today.set(tag, n);
+      n = index.seen(index.carrying([tag])).filter((t) => t.published !== null && t.published >= w.day && t.published <= w.now).length;
+      perTag.set(tag, n);
     }
     return n;
   };
@@ -675,7 +678,7 @@ async function groupBoards(db: Db, index: TagIndex, w: Windows) {
       mediaTitle: null,
       counts: countSeen(index.seen(ids), w),
       keywords: tags
-        .map((tag) => ({ tag, n: todayOf(tag) }))
+        .map((tag) => ({ tag, n: dayCount(tag) }))
         // A category's own name (生活 under 生活) says nothing on its row.
         .filter((t) => t.n > 0 && t.tag !== d.label)
         .sort((a, b) => b.n - a.n || a.tag.localeCompare(b.tag))
@@ -719,7 +722,7 @@ export async function loadScenes(db: Db, now = Date.now()): Promise<LiveScenes> 
   };
   return {
     generatedAt: new Date(now).toISOString(),
-    windows: { today: new Date(w.today).toISOString(), hour: new Date(w.hour).toISOString(), previous: new Date(w.previous).toISOString() },
+    windows: { day: new Date(w.day).toISOString(), hour: new Date(w.hour).toISOString(), previous: new Date(w.previous).toISOString() },
     eventHour: ev.hour,
     events: ev.events.map((e) => ({ ...e, news: withBriefs(e.news) })),
     boards: {

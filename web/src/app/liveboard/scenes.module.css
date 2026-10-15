@@ -84,7 +84,9 @@
 .trendEnds b { color: var(--tint); font-variant-numeric: tabular-nums; }
 
 .reports {
-  flex-shrink: 1 !important;
+  /* Fills what is left of the column, so the fade sits at the screen's foot and only
+     touches a list that runs that far. */
+  flex: 1 1 0 !important;
   display: flex;
   flex-direction: column;
   min-height: 0;

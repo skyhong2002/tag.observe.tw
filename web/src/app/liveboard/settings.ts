@@ -29,7 +29,7 @@ export interface EventLens extends LensBase {
 }
 /** Which of /api/v1/liveboard/scenes' leaderboards a board lens shows. */
 export type BoardKey = 'media' | 'threads' | 'categories' | 'groups';
-/** A leaderboard of the day's topics: articles today, in the last hour, and the change from the hour before. */
+/** A leaderboard of the day's topics: articles over the last 24 hours, in the last hour, and the change from the hour before. */
 export interface BoardLens extends LensBase {
   scene: 'board';
   board: BoardKey;
@@ -116,8 +116,8 @@ export const LENSES: Lens[] = [
     key: 'threads',
     scene: 'board',
     board: 'threads',
-    title: '今日事件串',
-    note: '今天有新報導的跨媒體事件',
+    title: '事件串',
+    note: '24 小時內有新報導的跨媒體事件',
     accent: '#be123c',
     dark: '#fb7185',
   },
