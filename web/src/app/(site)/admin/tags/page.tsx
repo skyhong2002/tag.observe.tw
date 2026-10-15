@@ -11,15 +11,18 @@ import TagSubmissions from './TagSubmissions';
 export const metadata: Metadata = { title: '標籤管理 · 管理後台', robots: { index: false } };
 const VIEWS = [
   ['groups', '分類與群組'],
-  ['submissions', '投稿審核'],
+  ['submissions', '關係投稿'],
   ['relations', '文章關係'],
-  ['avatars', '人物頭像'],
-  ['visuals', '其他標籤圖像'],
+  ['pictures', '標籤配圖'],
 ] as const;
+// One picture per tag: a person's sketch or any other tag's image are the same
+// thing to readers and reviewers. Older links still land on the merged view.
+const ALIASES: Record<string, string> = { avatars: 'pictures', visuals: 'pictures' };
 
 export default async function TagsPage({ searchParams }: { searchParams: Promise<{ view?: string; tag?: string }> }) {
   const query = await searchParams;
-  const view = VIEWS.some(([key]) => key === query.view) ? query.view : 'groups';
+  const requested = ALIASES[query.view ?? ''] ?? query.view;
+  const view = VIEWS.some(([key]) => key === requested) ? requested : 'groups';
   const tag = query.tag?.trim().slice(0, 60) ?? '';
   return (
     <div className="min-w-0 py-4">
@@ -42,7 +45,7 @@ export default async function TagsPage({ searchParams }: { searchParams: Promise
           </Link>
         ))}
       </nav>
-      {view === 'submissions' && <TagSubmissions />}
+      {view === 'submissions' && <TagSubmissions kind="relation" next="/admin/tags/?view=submissions" />}
       {view === 'groups' && <TagGroupEditor key={tag} initialTag={tag} />}
       {view === 'relations' && (
         <AdminGate next={`/admin/tags/?${new URLSearchParams({ view: 'relations', ...(tag ? { tag } : {}) })}`}>
@@ -50,8 +53,18 @@ export default async function TagsPage({ searchParams }: { searchParams: Promise
           <WritingPeople />
         </AdminGate>
       )}
-      {view === 'avatars' && <AvatarReview />}
-      {view === 'visuals' && <TagVisualReview />}
+      {view === 'pictures' && (
+        <>
+          <TagSubmissions kind="picture" next="/admin/tags/?view=pictures" />
+          <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
+            人物標籤（對到 Wikidata 的人）的圖會轉成素描，其他標籤的圖轉成單色；由系統依標籤自動判斷，不必手動分類。
+          </p>
+          <h2 className="mt-6 text-lg font-semibold">人物標籤的配圖（素描）</h2>
+          <AvatarReview />
+          <h2 className="mt-10 text-lg font-semibold">其他標籤的配圖</h2>
+          <TagVisualReview />
+        </>
+      )}
     </div>
   );
 }

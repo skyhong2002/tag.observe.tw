@@ -47,11 +47,13 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
       if (!response.ok) throw new Error(body.error ?? `送出失敗（${response.status}）`);
       if (!live.current) return;
       setMessage(
-        body.status === 'approved'
-          ? '這筆關係已經通過審核，毋須重複投稿。'
+        body.status === 'revoked'
+          ? '這筆關係先前已被管理員撤下，這次沒有新增投稿。'
           : body.status === 'rejected'
-            ? '這筆關係已有未採納的審核紀錄，這次沒有新增投稿。'
-            : '已送交管理員審核，通過後會公開顯示。',
+            ? '這筆關係先前未被採納，這次沒有新增投稿。'
+            : body.duplicate
+              ? '這筆關係已經公開，毋須重複投稿。'
+              : '已公開。管理員如發現不正確會撤下。',
       );
       setTarget('');
       setReason('');
@@ -77,7 +79,7 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
           >
             登入
           </a>
-          後可以提出相關詞、上位分類或別名。投稿經管理員審核後公開。
+          後可以提出相關詞、上位分類或別名。送出後立即公開，管理員可撤下不正確的關係。
         </p>
       ) : (
         <form aria-busy={busy} onSubmit={submit} className="space-y-3 pb-2">
@@ -122,7 +124,7 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
             disabled={busy || !target.trim() || !reason.trim()}
             className="min-h-11 rounded-full bg-brand-700 px-4 text-white disabled:opacity-50"
           >
-            {busy ? '送出中…' : '送交審核'}
+            {busy ? '送出中…' : '送出並公開'}
           </button>
           {message && (
             <p role="status" className="text-zinc-700 dark:text-zinc-300">

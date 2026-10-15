@@ -37,11 +37,31 @@ export default function AdminPanel() {
   );
 }
 
+type SubmissionSummary = { relation: { approved: number; revoked: number }; picture: { approved: number; revoked: number } };
+
 function TagManagement() {
+  const [summary, setSummary] = useState<SubmissionSummary | null>(null);
+  useEffect(() => {
+    adminFetch<SubmissionSummary>('/auth/admin/tag-submissions/summary').then(setSummary, () => setSummary(null));
+  }, []);
+  const linkClass = 'text-brand-700 underline dark:text-brand-400';
   return (
     <section className="mt-8">
       <h2 className="text-lg font-semibold">標籤管理</h2>
       <p className={note}>管理人物、機構、地點、事件與概念的分類、上下層、圖像及文章關係。</p>
+      {summary && (
+        <p className={note}>
+          近 7 天讀者投稿（送出即公開，可撤下）：
+          <Link href="/admin/tags/?view=pictures" className={linkClass}>
+            配圖 {summary.picture.approved} 張
+          </Link>
+          {summary.picture.revoked > 0 && `（已撤下 ${summary.picture.revoked}）`}、
+          <Link href="/admin/tags/?view=submissions" className={linkClass}>
+            關係 {summary.relation.approved} 筆
+          </Link>
+          {summary.relation.revoked > 0 && `（已撤下 ${summary.relation.revoked}）`}。
+        </p>
+      )}
       <Link
         href="/admin/tags/"
         className="mt-3 inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-4 text-sm hover:border-brand-600 dark:border-zinc-700"

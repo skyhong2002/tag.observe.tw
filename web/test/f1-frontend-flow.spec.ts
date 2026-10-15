@@ -97,9 +97,9 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
       target: '分類',
       reason: '查證',
     });
-    resolve({ ok: true, json: async () => ({ status: 'pending' }) });
+    resolve({ ok: true, json: async () => ({ status: 'approved', duplicate: false }) });
     await first;
-    expect(harness.setters[4]).toHaveBeenCalledWith('已送交管理員審核，通過後會公開顯示。');
+    expect(harness.setters[4]).toHaveBeenCalledWith('已公開。管理員如發現不正確會撤下。');
   });
   it('rejects self relation before network and leaves form values intact', async () => {
     const harness = load(
@@ -347,7 +347,7 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
       expect(harness.setters[4]).toHaveBeenLastCalledWith('');
       expect(vi.getTimerCount()).toBe(0);
       expect(onDone).not.toHaveBeenCalled();
-      expect(harness.setters[5]).not.toHaveBeenCalledWith('已送交管理員審核，通過後才會公開並加入投票候選。');
+      expect(harness.setters[5]).not.toHaveBeenCalledWith('已公開並加入投票候選；你的票已投給它。管理員如發現不適合會撤下。');
     } finally {
       vi.useRealTimers();
     }

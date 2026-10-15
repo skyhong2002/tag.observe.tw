@@ -65,7 +65,7 @@ export default function PictureVote({ tag }: { tag: string }) {
         <a href={loginHref(`/tag/${encodeURIComponent(tag)}/picture/`)} className="text-brand-700 underline dark:text-brand-400">
           登入
         </a>
-        後可以投票選這個標籤的圖，或上傳一張交給管理員審核。
+        後可以投票選這個標籤的圖，或上傳一張（立即公開）。
       </p>
     );
   return <Board key={tag} tag={tag} />;
@@ -161,7 +161,7 @@ function Board({ tag }: { tag: string }) {
           ))}
         </div>
       ) : (
-        <p className={note}>還沒有任何圖，可以上傳第一張交給管理員審核。</p>
+        <p className={note}>還沒有任何圖，可以上傳第一張。</p>
       )}
       {state.admin && state.locked && (
         <button type="button" disabled={busy} className={`${button} mt-4`} onClick={() => lock(null)}>
@@ -259,7 +259,7 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
       let binary = '';
       for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
       if (!active.current) return;
-      const sent = await call<{ jobId?: string; status?: 'pending' | 'approved' | 'rejected' }>(`${path}/upload`, {
+      const sent = await call<{ jobId?: string; status?: 'pending' | 'approved' | 'rejected' | 'revoked' }>(`${path}/upload`, {
         method: 'POST',
         body: { image: btoa(binary), agree: true },
         signal: request.signal,
@@ -282,10 +282,11 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
             else request.signal.addEventListener('abort', aborted, { once: true });
           });
           if (!active.current) return;
-          const job = await call<{ state: string; error: string | null; result?: { status?: 'pending' | 'approved' | 'rejected' } }>(
-            `/auth/pictures/jobs/${encodeURIComponent(sent.jobId)}`,
-            { signal: request.signal },
-          );
+          const job = await call<{
+            state: string;
+            error: string | null;
+            result?: { status?: 'pending' | 'approved' | 'rejected' | 'revoked' };
+          }>(`/auth/pictures/jobs/${encodeURIComponent(sent.jobId)}`, { signal: request.signal });
           if (!active.current) return;
           if (job.state === 'completed' || job.state === 'failed') {
             if (job.error) throw Error(`沒有用上：${job.error}`);
@@ -298,11 +299,11 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
       }
       if (!active.current) return;
       setMessage(
-        sent.status === 'approved'
-          ? '這張圖片已經通過審核，毋須重複上傳。'
+        sent.status === 'revoked'
+          ? '這張圖片先前已被管理員撤下，這次沒有新增。'
           : sent.status === 'rejected'
-            ? '這張圖片已有未採納的審核紀錄，這次沒有新增投稿。'
-            : '已送交管理員審核，通過後才會公開並加入投票候選。',
+            ? '這張圖片先前未被採納，這次沒有新增。'
+            : '已公開並加入投票候選；你的票已投給它。管理員如發現不適合會撤下。',
       );
       onDone();
     } catch (e) {
@@ -319,7 +320,7 @@ function Upload({ tag, kind, left, onDone }: { tag: string; kind: State['kind'];
       <h2 className="font-semibold">上傳一張</h2>
       <p className={note}>
         {kind === 'avatar' ? '人物的照片會轉成素描；請用只有這個人、臉清楚的照片。' : '圖會去背、裁邊並轉成網站的單色。'}
-        圖片須經管理員審核後才公開。今天還能上傳 {left} 張。
+        上傳後立即公開，管理員可撤下不適合的圖。今天還能上傳 {left} 張。
       </p>
       <label className="mt-3 flex items-start gap-2">
         <input type="checkbox" disabled={!!busy} checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-1" />

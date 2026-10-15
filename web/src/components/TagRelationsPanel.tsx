@@ -27,7 +27,9 @@ export default function TagRelationsPanel({ tag, data }: { tag: string; data: Ta
           提供相關圖片
         </Link>
       </div>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">依共用分類與審核通過的投稿整理；報導中一起出現的詞另列於共現統計。</p>
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        依共用分類與讀者投稿整理（管理員可撤下）；報導中一起出現的詞另列於共現統計。
+      </p>
       {data ? (
         <dl className="mt-4 grid gap-4 sm:grid-cols-3">
           {TYPES.map(({ type, label, description }) => {

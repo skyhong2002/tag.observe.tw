@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import AdminGate, { adminFetch } from '../AdminGate';
 
-type Status = 'pending' | 'approved' | 'rejected';
+type Status = 'pending' | 'approved' | 'revoked' | 'rejected';
+type Kind = 'relation' | 'picture';
 type Submission = {
   id: number | string;
   kind: 'relation' | 'picture';
@@ -20,21 +21,23 @@ type Submission = {
   reviewReason?: string | null;
 };
 type Result = { items: Submission[]; next: number | string | null };
-const STATUS: Record<Status, string> = { pending: '待審核', approved: '已通過', rejected: '未採納' };
+const STATUS: Record<Status, string> = { pending: '待審核', approved: '已公開', revoked: '已撤下', rejected: '未採納' };
+// Submissions are public on arrival (2026-10-15); pending only exists for older rows.
+const TABS: Status[] = ['approved', 'revoked', 'rejected'];
 const TYPES = { 'is-a': '上位分類', related: '相關詞', alias: '同義或別名' };
 const button =
   'inline-flex min-h-11 items-center rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 disabled:opacity-50 dark:border-zinc-700';
 
-export default function TagSubmissions() {
+export default function TagSubmissions({ kind, next }: { kind: Kind; next: string }) {
   return (
-    <AdminGate next="/admin/tags/?view=submissions">
-      <Queue />
+    <AdminGate next={next}>
+      <Queue kind={kind} />
     </AdminGate>
   );
 }
 
-function Queue() {
-  const [status, setStatus] = useState<Status>('pending');
+function Queue({ kind }: { kind: Kind }) {
+  const [status, setStatus] = useState<Status>('approved');
   const [before, setBefore] = useState<Result['next']>(null);
   const [revision, setRevision] = useState(0);
   const [data, setData] = useState<Result | null>(null);
@@ -45,7 +48,7 @@ function Queue() {
     let current = true;
     setData(null);
     setError('');
-    const query = new URLSearchParams({ status, ...(before === null ? {} : { before: String(before) }) });
+    const query = new URLSearchParams({ status, kind, ...(before === null ? {} : { before: String(before) }) });
     adminFetch<Result>(`/auth/admin/tag-submissions?${query}`).then(
       (result) => {
         if (current) setData(result);
@@ -57,18 +60,20 @@ function Queue() {
     return () => {
       current = false;
     };
-  }, [status, before, revision]);
+  }, [status, kind, before, revision]);
   return (
     <section className="mt-6" aria-labelledby="tag-submissions-title">
       <h2 id="tag-submissions-title" className="text-lg font-semibold">
-        標籤投稿審核
+        {kind === 'picture' ? '讀者上傳的配圖' : '讀者提出的關係'}
       </h2>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        關鍵字關係與讀者圖片須通過審核才公開。請核對語義、來源與圖片授權，並留下處理理由。
+        {kind === 'picture'
+          ? '讀者上傳的圖送出後立即公開並加入投票。不適合或授權有疑慮的圖，填寫理由後撤下，標籤會回到原本的配圖。'
+          : '讀者提出的關係送出後立即公開。不正確的關係填寫理由後撤下，它新增的分類成員會一併還原。'}
       </p>
       <fieldset className="mt-3 flex flex-wrap gap-2">
         <legend className="sr-only">投稿狀態</legend>
-        {(Object.keys(STATUS) as Status[]).map((value) => (
+        {TABS.map((value) => (
           <button
             key={value}
             type="button"
@@ -133,7 +138,7 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
       live.current = false;
     };
   }, []);
-  const review = async (status: 'approved' | 'rejected') => {
+  const review = async (status: 'approved' | 'rejected' | 'revoked') => {
     if (pending.current || !reason.trim() || (status === 'approved' && item.kind === 'picture' && !item.rightsConfirmed)) return;
     pending.current = true;
     setBusy(true);
@@ -166,7 +171,7 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
       {item.imageUrl && (
         <img
           src={item.imageUrl}
-          alt={`${item.tag}的待審圖片`}
+          alt={`讀者為 ${item.tag} 上傳的圖片`}
           width={160}
           height={160}
           loading="lazy"
@@ -206,6 +211,28 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
               不採納
             </button>
           </div>
+        </div>
+      ) : item.status === 'approved' ? (
+        <div className="space-y-2">
+          <p className="text-zinc-600 dark:text-zinc-400">
+            已公開
+            {item.reviewReason && `：${item.reviewReason}`}
+          </p>
+          <label className="block">
+            撤下理由
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={1000}
+              rows={2}
+              disabled={busy}
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
+              placeholder="為什麼撤下（例如授權不明、關係不正確）"
+            />
+          </label>
+          <button type="button" className={button} disabled={busy || !reason.trim()} onClick={() => review('revoked')}>
+            {busy ? '處理中…' : '撤下'}
+          </button>
         </div>
       ) : (
         <p className="text-zinc-600 dark:text-zinc-400">

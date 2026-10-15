@@ -46,7 +46,7 @@ const SCORE_LABEL: Record<string, string> = { size: '臉大小', front: '正面'
 
 export default function AvatarReview() {
   return (
-    <AdminGate next="/admin/tags/?view=avatars">
+    <AdminGate next="/admin/tags/?view=pictures">
       <p className={note}>點一張候選就改用並鎖定；沒有可用照片的人可以上傳照片。做法見頁尾「本頁的資料來源與計算方式」。</p>
       <Review />
     </AdminGate>

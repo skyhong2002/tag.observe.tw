@@ -73,7 +73,7 @@ const input = 'min-h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm d
 
 export default function TagVisualReview() {
   return (
-    <AdminGate next="/admin/tags/?view=visuals">
+    <AdminGate next="/admin/tags/?view=pictures">
       <p className={note}>點一張候選就改用並鎖定；讀者的投票與上傳在各標籤的「換圖」頁。做法見頁尾「本頁的資料來源與計算方式」。</p>
       <Review />
     </AdminGate>
@@ -302,7 +302,9 @@ function VisualRow({ row: r, act, single }: { row: Row; act: (call: () => Promis
             <span className="mt-1 block">管理員指定 · 使用中</span>
           </div>
         )}
-        {!r.candidates.length && !own && <span className="self-center text-sm text-zinc-500 dark:text-zinc-400">沒有候選{r.note ? `：${r.note}` : ''}</span>}
+        {!r.candidates.length && !own && (
+          <span className="self-center text-sm text-zinc-500 dark:text-zinc-400">沒有候選{r.note ? `：${r.note}` : ''}</span>
+        )}
         {live && (
           <button type="button" onClick={() => put({ action: 'hide' })} className={`${button} self-center hover:border-red-600`}>
             不顯示圖
