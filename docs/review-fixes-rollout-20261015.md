@@ -44,3 +44,11 @@ bash /home/deck/tag-analysis-private/f1-release/web-fixes-f3c943ae-20261015/roll
 - `/api/v1/similarity?hours=168` is now 2.4 MB, over Next's 2 MB data-cache limit, so each media page refetches it
   (several seconds, now streamed). A per-outlet relations endpoint would remove that.
 - Next waits for in-flight requests on SIGTERM; a quieter moment or a shorter stop timeout would shorten the web gap.
+
+## Follow-up web releases (same day)
+
+- 12:28 UTC `cc543603` / `KClFU3fu-61DF6X-z4oni`: deploy check failed on `/media/cnews/` (gateway 15 s idle cut of the streamed
+  relations box), automatic rollback to f3c943ae.
+- 12:32 UTC `bb024f18` / `lkf-h1scTTyzw6QcXDm8Y` (web only): relations capped at 12 s plus all cc543603 changes. Cold media page
+  8.2 s complete on the loopback candidate; web gap 2.7 s with `TimeoutStopSec=10`; 14 GETs 200. Rollback:
+  `bash /home/deck/tag-analysis-private/f1-release/web-fixes-bb024f18-20261015/rollback.sh`.
