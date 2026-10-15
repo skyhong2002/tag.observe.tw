@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
 export default async function TagRelationsPage({ params }: { params: Promise<{ tag: string }> }) {
   const tag = decodeRouteParam((await params).tag);
   return (
-    <div className="py-4">
+    <div className="max-w-2xl py-4">
       <p className="text-sm">
         <Link href={`/tag/${encodeURIComponent(tag)}/`} className="text-brand-700 underline dark:text-brand-400">
           #{tag}

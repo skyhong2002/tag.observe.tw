@@ -112,7 +112,8 @@ async function aliasesInTitles(db: Db, tag: string) {
       const hits = titles.filter((t) => t.title.includes(alias));
       return { alias, count: hits.length, sample: hits[0] ?? null };
     })
-    .filter((a) => a.count > 0);
+    // One headline can be a stranger (「遭在地阿伯嗆聲」); two make it worth asking.
+    .filter((a) => a.count >= 2);
 }
 
 async function candidatesOf(db: Db, tag: string, userId: number | null): Promise<Internal[]> {
@@ -240,7 +241,7 @@ async function candidatesOf(db: Db, tag: string, userId: number | null): Promise
       note: `近 ${COOCCUR_DAYS} 天一起出現在 ${c.count} 篇`,
       evidence: [
         { text: `近 ${COOCCUR_DAYS} 天一起出現在 ${c.count} 篇` },
-        ...(sample ? [{ text: `「${sample.title}」`, href: `/article/${sample.id}/` }] : []),
+        ...(sample ? [{ text: `例：「${sample.title}」`, href: `/article/${sample.id}/` }] : []),
       ],
       submissionId: null,
       groupId: null,
@@ -265,7 +266,7 @@ async function candidatesOf(db: Db, tag: string, userId: number | null): Promise
       evidence: [
         { text: `Wikidata 列為「${tag}」的別名` },
         { text: `近 ${ALIAS_DAYS} 天 ${a.count} 則標題寫「${a.alias}」` },
-        ...(a.sample ? [{ text: `「${a.sample.title}」`, href: `/article/${a.sample.id}/` }] : []),
+        ...(a.sample ? [{ text: `例：「${a.sample.title}」`, href: `/article/${a.sample.id}/` }] : []),
       ],
       submissionId: null,
       groupId: null,
