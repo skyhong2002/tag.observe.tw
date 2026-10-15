@@ -468,3 +468,284 @@ Network recomputed: `{"requests": 1975, "requestDNT1": 1975, "requestGoogleURL":
 - `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch008-r3/042-390-light-full.png` — `9e35ace9a9fe9b372c4f23f0f1d11d1e5ee26107f8fac72198ea2531d6fe121e`
 - `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch008-r3/042-390-dark-viewport.png` — `f3b846d5071404701fb69ba567854de8a56e01ec0d70f9bd1e2acc886a1a0327`
 - `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch008-r3/042-390-dark-full.png` — `f3f2d1053c266408fee6d789b17388ad45f61d17baecd49b839edeb8ceaf87e2`
+
+## batch011 — actual independent production review
+
+claude-subagent non-author (fresh context), claude-opus-5-5, UTC2026-10-15T10:18:39Z. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-independent-ui-review.json` SHA256 `2b39354a1ecc3c1598bbf6dfd3c8ec43d5d44b18dc304599a43ee9763bef67a5`, same-nameTXT has actual image/view timestamps. Verdict: ISSUES (沒有 blocking；4 條路由都有 minor：/api/ 端點一覽截斷與行動版過長、/api/status/ 390 斷行、/crawlers/traffic/ 390 Radar 欄在畫面外、首頁讀者關注重複「新文易數」；/demo/→/ 轉址合理。附註：manifest/input 的 apiSha 是 dc7b814e…，與指定的 API e2769539 不同).
+
+- 021: ISSUES: 端點一覽連結截斷到無法辨識路徑；行動版極長且大綱不在前段；程式字串斷行在字中間 — 200，無轉址。1280 有右側「本頁大綱」，使用規則、快速開始、端點一覽與各端點參數表／curl 範例在亮暗模式都清楚可讀，沒有頁面層級橫向溢出（scrollWidth 1280/390）。全頁截圖在 20000px 截斷（實高 33865／49914），後段與頁尾未看到。 Pending: 實高 20000px 以下的章節與頁尾（全頁截圖被截斷）; 展開「回應欄位」; 「在瀏覽器開啟這個範例」連結; 登入後的 API 金鑰流程 Issue[minor/1280/dark]: 「端點一覽」兩欄連結被截斷得太短，例如「GET /api/v1/arti…」「GET /api/v1/li…」「GET /api/v1/media-r…」「GET /api/v1/tags/{t…」，只能靠旁邊的中文說明猜是哪個端點；亮色模式一樣。 Issue[minor/390/light]: 390 寬時端點一覽截斷更嚴重，有好幾列只剩「GET /api…」「GET /ap…」，完全看不出路徑；暗色模式（021-390-dark-full-part01）相同。 Issue[minor/390/light]: 行動版頁面高 49914px，頂部沒有大綱或跳轉；manifest 標題順序顯示「本頁大綱」排在所有章節之後，前 20000px 內也沒看到，所以手機讀者要捲很久才找得到特定端點。 Issue[minor/390/light]: 行內程式碼在字元中間斷行，例如「x-ratelim / it-remaining」「/ap / i/v1/tags/…/article / s」；1280 的右側大綱也一樣（「/vocabulary/snapsho / ts/current」「/similarity/evidenc / e」，見 021-1280-light-full-part00）。
+- 022: ISSUES: 390 寬時端點路徑在字元中間斷行，留下 1～4 個字元的孤行 — 200，無轉址。API 與 Nearline 兩張卡片都顯示「正常」，下方是完整的端點用途表（1280 是三欄表格，390 改成卡片堆疊）。頁尾正常，亮暗模式都可讀。高度 3502／8122px。 Pending: 服務異常時的顯示; 「重新整理狀態」按鈕的互動; 以 Accept: application/json 取得的 JSON Issue[minor/390/light]: 端點路徑在任意字元處斷開，留下很短的孤行：「…/snapshots/curren」+「t」、「…/{id}/a」+「ctive」、「…/{id}/re」+「sults」；part01 有「/re」+「try」、「/fi」+「les/{role}」，part03 有「/coverag」+「e」。暗色模式相同。
+- 028: ISSUES: 390 寬時 Cloudflare Radar 欄位完全在畫面外，唯一的捲動線索是被切掉的「202」 — 200，無轉址。上方兩張摘要卡（Similarweb 抓取完成 293/294；Cloudflare Radar 部分網域未能更新 293/294）、一個搜尋框，以及依 Similarweb 排序的 294 個網域表格；排在最前面的是「等待抓取」，「共用網域」BBC 在最後。1280 版面整齊，亮暗模式對比足夠。高度 16124／16565px，以全部網域列表來說合理。 Pending: 排序切換; 搜尋框篩選; 「本頁的資料來源與計算方式」展開; 抓取失敗的列狀態 Issue[minor/390/light]: 表格在 390 寬時只看得到「媒體」欄和 Similarweb 的狀態＋日期；Similarweb 的月份被切成「202」，Cloudflare Radar 整欄要在表格內橫向捲動才看得到，畫面上除了被切的字沒有任何捲動提示。暗色模式（028-390-dark-full-part00）相同。
+- 029: ISSUES: 轉址到首頁是合理的；首頁「讀者關注」出現三筆「新文易數」 — /demo/ 轉址到 https://tag.observe.tw/（首頁，status 200），舊的展示頁導回首頁是合理的。首頁有字雲 hero、熱門關鍵字、焦點事件、藍綠溫差、同題不同標、新聞關係圖、最近更新的議題、24 小時新聞量與媒體 logo 牆，1280 三欄、390 單欄都沒有溢出，亮暗模式都可讀。高度 4379／約 9000px。 Pending: 字雲與卡片的 hover／觸控; 「顯示全部 211 家媒體」展開; 「本頁的資料來源與計算方式」展開; 登入後的狀態 Issue[minor/1280/light]: 「讀者關注」第 01、04 名是「新文易數｜標籤」，第 05 名是「新文易數｜事件」，網站自己的名字出現三次。看起來這些頁面的名稱退回成站名，而不是實際的標籤或事件名稱，讀者點不出內容。390 寬與暗色模式（029-390-light-full-part02、029-390-dark-full-part02）相同。 Issue[minor/390/light]: 390 寬「最近更新的議題」的媒體 favicon 單獨佔一行，媒體名稱掉到下一行，「篇相關」還被斷成「篇相 / 關」；焦點事件卡片的趨勢小圖也常常自成一行（例如 part00 的台視新聞網、FTNN）。暗色模式相同。
+
+Network recomputed: `{"requests": 1068, "requestDNT1": 1068, "requestGoogleURL": 0}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-1280-light-viewport.png` — `a1a64899e3bc93ff48485a45ab7ee3d749f195a7fe80ac780fef34448c00029d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-1280-light-full.png` — `2773f05c21e822253fd7980ba989de807d58d1d0fbd0c38453da209e34c355fe`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-1280-dark-viewport.png` — `3f043dc1acb7b8743b9af29084f7e6d3f099544678161a7098ff60fd2c058585`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-1280-dark-full.png` — `99119dc87b25a3549dee1f5022df999637eca3d09fcad29d9f9ef6622b6535e9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-1280-light-viewport.png` — `a14db3bff85989b16b94bcaf9ea1bda006bce7c9c1936b6022d55532481d8410`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-1280-light-full.png` — `73394c1a269cf2af012a2c923ff8a400a93eceb3d2e08f77e4b4a3af2949c3a5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-1280-dark-viewport.png` — `972afccc40eb2797c029c56d67d1b26828ff14ebe4b889a2e53bf9b8789ef179`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-1280-dark-full.png` — `19a6574d028960b5b721bf8447bd15f9c162e44188667c60391efd209e5ba77a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-1280-light-viewport.png` — `221ff4adde8a3407cadb93a53e58f1553d5db46d441e65a43db44dc050582956`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-1280-light-full.png` — `dc0e7fa811cb66e71ddf2c4ff725ddbddd359322f17df6754a78ef40f9320694`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-1280-dark-viewport.png` — `27c6bf1e21310247a439db3deeb1c4a67cf99d009531b172e49504609f431061`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-1280-dark-full.png` — `40d73b8a6f3d3794b26918afb8db371d741286f6a90efba1e99858fcf74ee2b1`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-1280-light-viewport.png` — `3be48518c719214a2893daf1a538c6dcd9d7a3d38db9f3f7060fbbc8a373e3cd`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-1280-light-full.png` — `42fd61b29b2848bbee238479977b0db3b4a459b2d55f177ef2a1d5b5fa7a7565`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-1280-dark-viewport.png` — `722d58662d1c2d980e368093707b8a92865f8fd7eb616b979929bc79f7d519a5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-1280-dark-full.png` — `e84e9f6df0ac99a2f513953870968678702ea7188d9193cf67302722c782edf4`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-390-light-viewport.png` — `41fd71edfcfba20ff9a9468c3adfdf118d81db1bec2f26a0d3a2185e7abfb0fb`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-390-light-full.png` — `dd94aa746d61c47d96418e2e3d1935d98c820712e3fb926c303818cc3cce30c8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-390-dark-viewport.png` — `789460d832053a7c31438da602c5ed05f7a822a839aabc3c6eca323094b755c2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/021-390-dark-full.png` — `776bdb20f83d74cf6bee2498bcc0df88fff10b647669810962e43fbcd332c236`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-390-light-viewport.png` — `caf55788583ff7a207737f786bd3cfe3075a5444edc97577109ae25f2ad155d5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-390-light-full.png` — `7ff1733f0db84a9b2ee7345b6782b59c18dc6be81c0c1958ef36a1e596f8ed03`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-390-dark-viewport.png` — `57d2f5923545a958c5d2feff51d09083dce70d229bcf06accbc028672ff86cb2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/022-390-dark-full.png` — `b576dbd323bf24ff6bdbd228450554ad2b5653d5c39b0eb8063ea3ba02812864`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-390-light-viewport.png` — `baa0fb6bfea01c7693145ceef3240ad8daf02dc07f4321c86fc4f48c2c26b734`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-390-light-full.png` — `2484fa4127e3b286e4509c85d65277029e6e74e6551362223b36130f3204e34f`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-390-dark-viewport.png` — `cf685580d0c973e848ccfc1c19b76af5cbb6694f4af3f7a8922c49c74204f455`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/028-390-dark-full.png` — `1bf296cd584c43b483f58957bb9eb992468b1cf0081c3983010cd64b567a64a0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-390-light-viewport.png` — `5c07a99fac69e72c0ae0bc85c955d2818f982b0233d0c0b9d1e301e7915809d9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-390-light-full.png` — `06bcb161ae288e036e184d5343a8810542a092913400a20e629ca62812ee2cfc`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-390-dark-viewport.png` — `f5aede8e2a0a49fcf1b85fd27d40b2b60d840dbfdd4d8a625dd67d2385950ecd`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch011-r2/029-390-dark-full.png` — `d1016574ac894bdc6d2e65becc7fc386da8620890aa5471631ab615f3c068e36`
+
+## batch012 — actual independent production review
+
+claude-subagent non-author (fresh context), claude-opus-5-5, UTC2026-10-15T10:21:27Z. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012-independent-ui-review.json` SHA256 `18cf8563b4086b26194491993782e90e25b545e396276c772fd95fc63488aba5`, same-nameTXT has actual image/view timestamps. Verdict: ISSUES (4 條路由皆無 blocking；minor：首頁讀者關注重複列與 390 議題圖示斷行、文章頁各處 24h 統計不一致、進階查詢 390 按鈕斷字與知新聞標題混入內文、opt-out 按鈕文案含糊與 1280 頁尾舊統計).
+
+- 030: ISSUES: 轉址到首頁合理；讀者關注重複出現兩列「新文易數·標籤」、390 議題列的媒體圖示單獨佔一行 — /demo/compare/ 轉址到首頁 https://tag.observe.tw/（200，scrollWidth 等於寬度，無橫向溢出）。首頁的文字雲、熱門關鍵字、焦點事件、藍綠溫差、同題不同標、新聞關係圖、最近更新的議題、媒體分布和頁尾，在 1280／390、淺色／深色下都完整顯示，沒有錯誤訊息或破圖。 Pending: 文字雲點擊／hover 卡片互動; 「顯示全部 211 家媒體」展開; 資料來源說明展開; 登入狀態 Issue[minor/390/light]: 「讀者關注」第 01 與第 04 列都是「新文易數 · 標籤」（22 次與 13 次瀏覽），第 05 列是「新文易數 · 事件」。兩列同名同類型、看不出差別，讀者無法分辨；1280 與深色版也一樣（030-1280-light-full-part01.png 頂端）。 Issue[minor/390/light]: 390 寬的「最近更新的議題」每列，媒體 favicon 自成一行，下方才是「TVBS新聞網 · 最後更新…」文字，圖示和名稱斷開、看起來像排版失誤；深色同（030-390-dark-full-part04.png）。1280 上圖示與文字在同一行，正常。
+- 009: ISSUES: 轉址到 /article/ 合理；同為「過去 24 小時」的文章數與媒體數，在各處數字互相對不上 — /search/ 轉址到 /article/（最新文章，1 天）。頁面依序顯示主要事件大卡、6 張（390 為 3 張）次要事件卡、「所有文章」時間列表，側欄是全站統計與發稿最多的媒體，最後是「更早的文章」連結和頁尾。兩種寬度、兩種主題都沒有溢出、截字或破圖。 Pending: 切換 3／7／31 天; 側欄藍綠分布點選篩選; 「更早的文章」分頁; 登入狀態 Issue[minor/1280/light]: 側欄寫「全站過去 1 天 18,269 篇，來自 244 家媒體」，同頁頁尾寫「24 小時內 245 家媒體發稿」，首頁的「過去 24 小時新聞量」則是 8,440 篇，藍綠比例也完全不同（23/58/20 對 44/14/42）。三處都標成同一個時間窗，但數字不一致，畫面上也沒說明計算範圍的差別。
+- 023: ISSUES: 390 的「查詢文章」按鈕與「清除條件」斷行成兩行；知新聞的標題混入導言／記者署名 — 進階查詢表單：1280 為三欄，390 為單欄。預設「最近 7 天」，顯示「符合 110,661 篇文章 · 依刊登時間排序」和當日列表，接著是「更早的文章」與頁尾。1280 版面整齊、無溢出。 Pending: 輸入條件後的查詢結果; 查無結果的空狀態; 錯誤或超過 31 天的提示; 媒體／來源下拉選單; 登入狀態 Issue[minor/390/light]: 390 寬時，送出按鈕斷成「查詢文／章」兩行，「清除條件」也斷成「清除條／件」，因為右側的說明文字把同一列擠窄了；深色同（023-390-dark-full-part00.png）。按鈕標籤不應從字中間斷開，可把說明文字移到下一行。 Issue[minor/1280/light]: 知新聞兩則的標題含有內文：「信義區週年慶大戰開打！…黃金大單成交 【記者劉沛妘／台北報導】新光三越台北信義新天地週…」，導言和記者署名被當成標題顯示並截斷；390 版同（023-390-light-full-part01.png）。
+- 055: ISSUES: 狀態已是「不計入統計」，按鈕卻寫同一句、看不出按了會怎樣；1280 頁尾的今日統計是舊數字 — 頁面偵測到自動化瀏覽器，顯示「這個瀏覽器目前 · 不計入統計」，下面有橘色按鈕和四點說明，再來是資料來源說明與頁尾。內容很短（1280 高 1016px、390 高 1451px），沒有溢出或截字，深色對比也正常。 Pending: 一般（非自動化）瀏覽器的計入狀態; 按鈕點擊後的切換結果; Safari 情境; 登入狀態 Issue[minor/1280/light]: 目前狀態已是「不計入統計」，主要按鈕卻也寫「這個瀏覽器不計入統計」，讀者分不出按下後是維持、切換還是恢復計入；導言寫「關閉後…」，但頁面上看不到可「關閉」的開關。所有寬度與主題都一樣。 Issue[minor/1280/light]: 1280 頁尾顯示「今天已收錄 2,203 篇 · 24 小時內 227 家媒體發稿」，但一分鐘後擷取的 390 版（055-390-light-full-part00.png）和本批其他頁面都是 13,967 篇／245 家，可見此頁的頁尾統計是舊快取；深色 1280 同（055-1280-dark-full-part00.png）。
+
+Network recomputed: `{"requests": 693, "requestDNT1": 693, "requestGoogleURL": 0}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-1280-light-viewport.png` — `da419ed7943ea1aa059b16289a6a3e31927e5f6b554a20180efd1996c8dd6b0b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-1280-light-full.png` — `178596ecf13600c536a6a01c0c8d502f42b4b28a55924415572b6f5b027b99d0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-1280-dark-viewport.png` — `97e68d3630cedf146f281062223337966645e2ed07a89bffbd718abbd4a25956`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-1280-dark-full.png` — `97763b44d6534b5c5e92944fc832ad1068c7a4fbe351da05a5d1e6ca9e7bf697`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-1280-light-viewport.png` — `7dd1396dc772d8ac452eace3a52acc512849ed4bfc9ddaca963cf4b28aa3e1b2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-1280-light-full.png` — `9f512e1fea9fa143368cdceca623a93d5bb358c28749ba24b81a0f3fbc625ed4`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-1280-dark-viewport.png` — `dd8492b39c2cf685f796514b387c03b67403c47ac8e5c8b93cabdb813435b04b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-1280-dark-full.png` — `eb048d59004f6597988e001cb3636fcf6f49e5af439210fec6523853f3a4322a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-1280-light-viewport.png` — `61cbf09bdedd5bdf30a80d91a4d759c15bf09b8da8b6cc75123598007c82ed17`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-1280-light-full.png` — `61577d043194c6ce039cf1001e158da4f2c71ff97861bf3dbb1a2016dd257867`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-1280-dark-viewport.png` — `8c77f17a971d934ef36231aca47988181f3bbb1d7a614de7c330c283c544a6fe`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-1280-dark-full.png` — `82c5348b05bbb3eb9039832dd58322b8b0b5ad1dacd54990705a23d812428158`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-1280-light-viewport.png` — `ffd757d1f486a84f55132b3023eba690eb984e5683f5058510716fe139356245`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-1280-light-full.png` — `19c41371a9dfbbca1b64637bd063f8397618098555189580d6c576a3a9de6974`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-1280-dark-viewport.png` — `2ed43396f92d21cb53a2a7ed8d7d07f88253cd0892bcec97b6f1d205d39d3341`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-1280-dark-full.png` — `6814978c8b2c84c8343a142d5fcc21da2a5012073508704ff23dfa423c9641e1`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-390-light-viewport.png` — `41c2ec3b9dc8523f70649d627da26e9e97e05037a0676f3a1c96888391874fee`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-390-light-full.png` — `429c7e2846d6c316de76597651a8eeaaacaf7c28b6b9b59a44cf13f318d46836`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-390-dark-viewport.png` — `f5aede8e2a0a49fcf1b85fd27d40b2b60d840dbfdd4d8a625dd67d2385950ecd`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/030-390-dark-full.png` — `b3b2db4bef5955f876994ed04a330a7c6bc169b691a5d19c3be791e0a1d2aa55`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-390-light-viewport.png` — `60eabfc284d9c4b1eecdfd64a3e9ce0eb633baed18f03344740a8edb8b650304`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-390-light-full.png` — `57d0cc8c23c06653a9b8ccdc18739cac9bcc3c6293657d1bdd5254c8724a65de`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-390-dark-viewport.png` — `ea5f37eac3ef76b58733ccbc38c463fd2ae3e5f1e02d137a4612dc3470cbc43f`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/009-390-dark-full.png` — `12f449a54e05b370a2f5c23f8c3470f46e7ba663c9da974b4ea02729a6a65ea9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-390-light-viewport.png` — `eef3b8771e904c3d0654e73f9b36337d998a8e9138c20ed7ce21a50ccd156b2d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-390-light-full.png` — `98720227a45fff429b26db3154152ef4dbd9133af56aae5190a368540ec786b7`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-390-dark-viewport.png` — `704c6d3e7f4811bfb1934ddca0478b20ee5e9ab8eb666f7939ce9dd6aa913031`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/023-390-dark-full.png` — `04de6316daac943ba0b8d39bc839faa183c9f9dd64e6148f830d0d8fe8a40e43`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-390-light-viewport.png` — `aae948a621ba0851d5615100571f3acd16e00e641832e23517ec908c85e4b398`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-390-light-full.png` — `91c2eafc4e8721b232a8b7a192e77f4e61285d1c943ee012b5fd7ac52b1d868d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-390-dark-viewport.png` — `c1702fe5538f31653bab373da72602d72521c3676aaf200ddcf70cbb48260ea4`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch012/055-390-dark-full.png` — `459df2af64f11bce011775636dba8fea4992cede72acad0101bf7580e3ac39bd`
+
+## batch013 — actual independent production review
+
+claude-subagent non-author (fresh context), claude-opus-5-5, UTC2026-10-15T10:24:00Z. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013-independent-ui-review.json` SHA256 `385000ba80080f1ff2d46278ae375d2a7aa3e6cbabd8bac60fba38184af86b11`, same-nameTXT has actual image/view timestamps. Verdict: ISSUES (/observe/ 熱門頁面與讀者關注多列標題全是「新文易數」；/similarity/reposts/ 在 1280 卡在載入中且沒有錯誤狀態；看板設定頁尾收錄數前後不一致；390 轉載統計圖例重疊、頁面過長).
+
+- 039: ISSUES: 頁尾「今天已收錄」數字首屏顯示 2,203 篇，15 秒後同頁變 13,967 篇 — 即時看板設定頁：精簡版/完整版選擇卡、開啟看板與預覽按鈕、9 個鏡頭的勾選與上下排序、時間跨度/往前幾格/停留秒數、變化量、大小滑桿、顯示圖片、存檔/恢復預設，以及未登入時「設定只存在這台裝置，登入後可存到帳號」說明。1280/390 兩種主題都沒有溢出（scrollWidth 等於寬度）、重疊或裁切，390 版欄位改成單欄也很順。 Pending: 切換完整版; 變更設定並存檔; 登入後存到帳號; 預覽目前設定; 開啟看板後的播放畫面 Issue[minor/1280/light]: 10:17:41Z 的 1280 截圖頁尾寫「今天已收錄 2,203 篇・24 小時內 227 家」，15 秒後同一頁（040 轉址後）寫「13,967 篇・245 家」，10:19Z 變 14,092 篇；兩種主題的 1280 截圖都是 2,203。首屏的統計值看起來是過期快取或算法不同，兩者差了六倍，讀者會看到互相矛盾的數字。
+- 040: PASS — /liveboard/settings/ 轉址到 /liveboard/setting/（manifest url），把複數拼法導向正確頁面，合理。四張 viewport 圖的 sha256 和 039 完全相同；full 圖做了逐像素比對，1280 只有頁尾統計列不同（列 1814–1827，數字是 13,967/245，比 039 首屏的 2,203 新），390 只有頁尾少數像素不同。我看過的 1280 淺色與 390 深色頁尾切片都正常。 Pending: 轉址狀態碼沒有在截圖中顯示（只看了 manifest 的 url）; 互動狀態同 039
+- 054: ISSUES: 熱門頁面/讀者關注多數列都只顯示「新文易數」無法分辨；Google 搜尋全為 0 也沒有說明；0 位讀者卻有 1 次瀏覽 — 網站觀測頁：最近 30 分鐘即時卡、瀏覽 1,290/造訪 294/Google 點擊 0/曝光 0、28 天每日瀏覽長條圖、讀者關注、從哪裡來、裝置、熱門頁面、讀者做了什麼、Google 搜尋圖、Core Web Vitals。版面在 1280 與 390、淺色與深色都完整，沒有溢出；高度 3032/4307，合理。 Pending: 近 7 天/近 90 天切換; 有 Google 搜尋資料時的圖表; 登入或管理員狀態; 資料來源說明展開 Issue[blocking/1280/light]: 「熱門頁面」第 1、3–8 名七列的標題都是「新文易數」（220、61、56、55、51、50、48 次），「讀者關注」第 2、4、5、7、10 名的標籤或事件也都叫「新文易數」。不同頁面全掛同一個站名（像是拿網站預設 title 當標題），讀者分不出是哪一頁，這兩個排行等於大半失去用途。四種寬度與主題都一樣（390 見 054-390-light-full-part00/01）。 Issue[minor/1280/light]: 即時卡顯示「最近 30 分鐘 0 位讀者・1 次瀏覽」，有瀏覽卻沒有讀者，彼此矛盾；可能是排除了 DNT 或機器人但瀏覽仍有計入，頁面上沒有解釋。 Issue[minor/1280/light]: Google 搜尋點擊與曝光整段期間都是 0，兩張圖只有 0–1 的空軸、看不到資料線，日期也只到 10/3–10/14（選的是近 28 天）；但「從哪裡來」卻有「Google 等搜尋 9 次」。右側雖有「還沒有頁面獲得搜尋點擊。」，但沒有說明 Search Console 資料是否已接上，連曝光也是 0 看起來比較像資料沒進來，而不是真的沒有。
+- 059: ISSUES: 1280 卡在「載入每日統計中…」沒有錯誤處理；390 圖例重疊、Y 軸擠在一起、表格很長且有媒體名稱解析殘渣 — /similarity/daily/ 以 308 轉址到 /similarity/reposts/（轉載統計分頁），每日統計就在這個分頁，轉址合理。390 版有載入完成：四個數字、相似配對折線圖、比對篇數長條圖，以及各媒體排序表。1280 兩種主題在 10 秒等待後只看到「載入每日統計中…」。 Pending: 1280 載入完成後的圖表與表格; 最近 90/365 天; 表格排序切換; API 失敗時的錯誤狀態 Issue[blocking/1280/light]: 1280 淺色與深色主體都只有「載入每日統計中…」，頁高只有 938。HAR 顯示 /api/v1/similarity/daily?from=2026-09-16&to=2026-10-15&threshold=0.65 在 10:18:13Z 發出，到 10:18:25Z 截圖時仍沒有回應（status -1），頁面沒有逾時、錯誤訊息或重試按鈕。一分鐘後 390 同一支 API 330 ms 就回了 236 KB，所以可能是暫時性問題，但載入失敗時讀者只會看到永遠在轉的狀態。 Issue[minor/390/light]: 圖例換行後第二行的「比對篇數」和下面折線圖的 Y 軸標題「配對／篇」疊在一起（約 y=424–436），深色也一樣。 Issue[minor/390/light]: 比對篇數長條圖的 Y 軸在約 70px 高度內塞了 18,000/15,000/12,000/9,000/6,000/3,000 六個刻度，文字幾乎互相貼住，難以閱讀。 Issue[minor/390/light]: 390 頁高 13,632px：各媒體表把所有來源全列出來，包括整整一段比對篇數為 0 的長尾（part06 末到 part07 整片都是 0），沒有收合或分頁。 Issue[minor/390/light]: 媒體名稱有解析殘渣：「・以上言論由東森…」、「《新聞直擊》製作組」（part06），「作者：財訊雙週刊」、「民視新聞 徐婉寧」、「economic_daily_t…」（part07），看起來是把署名或免責文字當成媒體名稱。
+
+Network recomputed: `{"requests": 549, "requestDNT1": 549, "requestGoogleURL": 0}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-1280-light-viewport.png` — `3db1322a673bcf1f32e3739c48ffa0f9244c646a2227d832fd4b29a389c10786`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-1280-light-full.png` — `f593220d0dc4372738255d06df38897f16f648e1be78e1fa3bcb513d684c6d9e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-1280-dark-viewport.png` — `cddc23842e4cf59c38e7007958ed38d40fd5009a3e9c95603fd3cc22668c44ec`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-1280-dark-full.png` — `49f38cbbad09aae74c64207f663c0d01096d7264c0c4e6325ed508e7781b1abc`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-1280-light-viewport.png` — `3db1322a673bcf1f32e3739c48ffa0f9244c646a2227d832fd4b29a389c10786`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-1280-light-full.png` — `0b48e239cc0a8048dfa3aaa4e629589787584dc9b798e1097c1db5d6b4af738b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-1280-dark-viewport.png` — `cddc23842e4cf59c38e7007958ed38d40fd5009a3e9c95603fd3cc22668c44ec`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-1280-dark-full.png` — `7002be28468a4b304dc9ab254f50ef65e21ab18c96fc68c6d62deb42c945fc3e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-1280-light-viewport.png` — `ec59aca0ad010055366fc79f261ad12630fffad929b189c55a9c66fd3369fe10`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-1280-light-full.png` — `096610eb992bb98a273f7955db3dbba0c8fb3ccfd8f5bfa57ba4a5425128aadc`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-1280-dark-viewport.png` — `cdca64632fd57886249027a90d4cc11cfe2458ec32f8d5269f6db9778dfc884c`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-1280-dark-full.png` — `07d6788feea0147f5f1a3b15003e9213dd79172a95eb979244f70365ee621a23`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-1280-light-viewport.png` — `5cf5b679d2062759d927ace1b223d81b629708f4a2056f951489eded660da3a0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-1280-light-full.png` — `6751ab0275ea9218ea5eba6f1cc1288f48bc29f0f2494d721fdbc56e2ab80073`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-1280-dark-viewport.png` — `71b826d17fb6a15b085a718b04646d1da801d5c4879d3cc9d49ccb6d64ec2772`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-1280-dark-full.png` — `854f0f4b9a8d96148347e1d51ea4a1c472ebc298e420fcdb5925c5099b278933`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-390-light-viewport.png` — `d0dfb977362cd624adf30a282fc8547348aa36d1d608ba98a3bcd73cfc2254ec`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-390-light-full.png` — `13eac74957c1d5d85337305ce282be23dd1dcb232aee6f3c8ac095cc5f9e37bd`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-390-dark-viewport.png` — `f3c426ddd10b6c7d9187c8bc273ef0d4d35e9a1d636eff2cc8242306a483c311`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/039-390-dark-full.png` — `65f57772fece3150dc882b6d9db745ea5b1534c5610f6435cdee8924b3cf866b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-390-light-viewport.png` — `d0dfb977362cd624adf30a282fc8547348aa36d1d608ba98a3bcd73cfc2254ec`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-390-light-full.png` — `92ee34d44528b231847f3747ce7645f32301c199aad007c2863f9889fce0d82b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-390-dark-viewport.png` — `f3c426ddd10b6c7d9187c8bc273ef0d4d35e9a1d636eff2cc8242306a483c311`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/040-390-dark-full.png` — `f494055f3c72027401ad1111ca365eb2f0818b5ac033009b2de3a9bbe51bb606`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-390-light-viewport.png` — `7318ae272fae67b78451519ae763bf5e05d113f18a0fc24828f2fd21d5e5d9cc`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-390-light-full.png` — `8a5a66fbfad9f4ef74d4d57e6db086f5ea359b65ec2892a02c3ad71a789d5a2b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-390-dark-viewport.png` — `87daad7e8f37e1faf3a47125cc5006e56f6a7cc223e0752a47160b694c1d6a11`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/054-390-dark-full.png` — `d6c7cd5e88d28ca7e1ff34009af9d44f1a9c824a98b54de29b557b058af70890`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-390-light-viewport.png` — `181dc4f028a41f865c9b3da7236db6116da6cbe76692e63a2d8ccb17cefdd567`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-390-light-full.png` — `64da19d1a1da8d87f0c0dc05a49ba1a5e5ce53091248b68492ecbd9f0a589830`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-390-dark-viewport.png` — `03f134a38bc9b7f9411df5d7d0022e7ae6aac3c459896fc2d99c0a57bc449492`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch013/059-390-dark-full.png` — `aa55507709a4fab9f13f18e029b6b974584569a593c4d2694e1b498527d61bce`
+
+## batch014 — actual independent production review
+
+claude-subagent non-author (fresh context), claude-opus-5-5, UTC2026-10-15T10:23:52Z. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014-independent-ui-review.json` SHA256 `2163882337b3e4d492802ea8be3bc9cda5e35948ad5449552333812f5bb9ae62`, same-nameTXT has actual image/view timestamps. Verdict: ISSUES (/my/ 三頁：1280 擷取拿到 STALE ISR 快取，頁尾統計過期；390 分頁列最後一格被切邊。/login/ PASS。匿名狀態皆有清楚說明與登入入口，無版面破損).
+
+- 041: PASS — 四種組合都顯示「登入新文易數」標題、說明只取得名字與 Email，以及清楚的「使用 Google 登入」按鈕；深色模式對比足夠，390 寬無溢出（scrollWidth 390），頁高 870/1185。頁尾數字 14,092 篇／245 家與其他新鮮頁一致。 Pending: 點擊 Google 登入後的流程; 登入失敗／錯誤狀態; 已登入時造訪 /login/
+- 049: ISSUES: 1280 首次載入拿到 STALE ISR 快取，頁尾統計過期（2,203 vs 14,092）；390 分頁列「設定」被切邊 — 匿名時顯示「我的新文易數」標題、五個分頁（我的動態為選取），以及「用 Google 帳號 登入 後，可以：」與六項功能列表，說明清楚且有登入連結。版面在 1280/390、淺色/深色皆正常，無整頁溢出。 Pending: 已登入狀態; 摺疊區展開內容; 點擊「登入」後的 OAuth 流程; 收藏／設定分頁（不在本批） Issue[minor/1280/light]: 頁尾統計顯示「今天已收錄 2,203 篇・24 小時內 227 家媒體發稿」，同一分鐘內 /login/ 與 390 寬版本顯示 14,092 篇／245 家。HAR 顯示此頁 1280 擷取回應 x-nextjs-cache: STALE（s-maxage=60, stale-while-revalidate=300），第一位訪客會看到過期數小時的頁尾數字；1280 dark 同樣。 Issue[minor/390/light]: 390 寬時分頁列（我的動態／追蹤清單／收藏／閱讀報告／設定）最後一個「設定」貼齊容器右緣、右側內距被切掉，看不出可橫向捲動；dark 同樣。scrollWidth 仍為 390，沒有整頁溢出。
+- 050: ISSUES: 同 /my/：1280 頁尾統計過期（STALE 快取）；390 分頁列「設定」被切邊 — 「追蹤清單」分頁正確被標為選取，內容為同一段匿名登入說明與功能列表；版面正常、深色對比足夠。 Pending: 已登入狀態; 摺疊區展開內容; 點擊「登入」後的 OAuth 流程; 收藏／設定分頁（不在本批） Issue[minor/1280/light]: 頁尾統計顯示「今天已收錄 2,203 篇・24 小時內 227 家媒體發稿」，同一分鐘內 /login/ 與 390 寬版本顯示 14,092 篇／245 家。HAR 顯示此頁 1280 擷取回應 x-nextjs-cache: STALE（s-maxage=60, stale-while-revalidate=300），第一位訪客會看到過期數小時的頁尾數字；1280 dark 同樣。 Issue[minor/390/light]: 390 寬時分頁列（我的動態／追蹤清單／收藏／閱讀報告／設定）最後一個「設定」貼齊容器右緣、右側內距被切掉，看不出可橫向捲動；dark 同樣。scrollWidth 仍為 390，沒有整頁溢出。
+- 051: ISSUES: 同 /my/：1280 頁尾統計過期（STALE 快取）；390 分頁列「設定」被切邊 — 「閱讀報告」分頁正確被標為選取，內容為同一段匿名登入說明（含「自願開啟閱讀報告」一項）；版面正常、深色對比足夠。 Pending: 已登入狀態; 摺疊區展開內容; 點擊「登入」後的 OAuth 流程; 收藏／設定分頁（不在本批） Issue[minor/1280/light]: 頁尾統計顯示「今天已收錄 2,203 篇・24 小時內 227 家媒體發稿」，同一分鐘內 /login/ 與 390 寬版本顯示 14,092 篇／245 家。HAR 顯示此頁 1280 擷取回應 x-nextjs-cache: STALE（s-maxage=60, stale-while-revalidate=300），第一位訪客會看到過期數小時的頁尾數字；1280 dark 同樣。 Issue[minor/390/light]: 390 寬時分頁列（我的動態／追蹤清單／收藏／閱讀報告／設定）最後一個「設定」貼齊容器右緣、右側內距被切掉，看不出可橫向捲動；dark 同樣。scrollWidth 仍為 390，沒有整頁溢出。
+
+Network recomputed: `{"requests": 307, "requestDNT1": 307, "requestGoogleURL": 0}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-1280-light-viewport.png` — `544f925fd2e2139fe14c6584e92575750e7937697fecd911b851023f3b715222`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-1280-light-full.png` — `70ce5ad8b818733d15a8454d0b42216992db6395d02a49767566c9a0bb3bddc0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-1280-dark-viewport.png` — `585374ecb922e1658a0d98cbeafcdf1eff2528b628d7aa5f04f055c699f9a6cb`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-1280-dark-full.png` — `dc7bc6276e06f95004501d2e1bb14ff456a9a847d5a895bade26b5b09cca4df6`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-1280-light-viewport.png` — `e12a2846365791cbfa916f062b31b9480d5c9a018f73b14d30e52a0868569ba5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-1280-light-full.png` — `f22bb3e568c18eaa114ef8c8467506c1686d0fb9a05ce3dbaf87f65522743cec`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-1280-dark-viewport.png` — `f992505124120ec2f9310799c60e1b83f5bf80a03f40e885f0059193d12e505c`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-1280-dark-full.png` — `740a39753058443525cb761de894c4e323ccddf112dc30a486be6e5ed6c4417e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-1280-light-viewport.png` — `1920037a00df6b699e71fa96be6946e507fc16e3906eee3fe95bbe3fa6a4bdc4`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-1280-light-full.png` — `03bad6478146c5151fb4fd277aad36d50faf9977a21c524d61fa250dd9934813`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-1280-dark-viewport.png` — `abcfc20f4d913141ae73e5c7d9e11a255d507e20d69ba5bf84f202b22e9f3c07`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-1280-dark-full.png` — `9c82118fce9fc3e570ff1d70fb10ba6fa3ad0ca1fdfdeabdba99bfc62ebcaf51`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-1280-light-viewport.png` — `9f933fef9889a04707b7fca8a9960b226feb57949c2ce8762a3c7fa62ef3356b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-1280-light-full.png` — `baa4759797cedb6d71df43723570f13b3726877dfb01560a00a2c4f643062e49`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-1280-dark-viewport.png` — `7bbb8a45c86f23be67f774dd07ba37cc99a474134b227bb2715c0218c9ba9a7d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-1280-dark-full.png` — `dac7f0dd15353604eebdefb353295a0ba58d94b9bc20b3ca1871c978332b07a9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-390-light-viewport.png` — `5513b3b3382265495fc6b980794a43339b9eed985fb0d69e04f74c556141c5fe`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-390-light-full.png` — `6a7234d9d7d7c4086dc726cccff1bb8280c65f33154f6db22d3870a5473bbf2d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-390-dark-viewport.png` — `1116ac38d2515cca209e0c2ea234ed4179ee3af830a8387a718a38d88e835171`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/041-390-dark-full.png` — `47db99c17ac673c074cb17d6feb26ba921a79c313fb395e8c38ebfc27116418e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-390-light-viewport.png` — `c3df866e7760d212b3b7a7f3e2992513165ade554d46fa2171ad2568f0c31147`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-390-light-full.png` — `9b1f1c5de6900eaf612ac8bc06c6950c469cda03a90cef5abfcdd5c0f6fa7a56`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-390-dark-viewport.png` — `53522d44f30531a3cfac5c9c4695d779ecb756ade3d78d44a636e357432d3ec2`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/049-390-dark-full.png` — `23409173e56003bbf46a314320d690f008a47c5a54145ea3d70ac712e4248f0d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-390-light-viewport.png` — `436fabc1f396137c79259876c461f2a44977b8fe92546a6837f48886b848e0ea`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-390-light-full.png` — `249fd5db7a0819516dd5c0ca04be717fce3fae1e32f1e8fb594735ee65ca2308`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-390-dark-viewport.png` — `383f840125f653f8ed2506561c6cd917219eedb6cfe4f73b4e875920f966968c`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/050-390-dark-full.png` — `f894114c51fefc5783ce991474f023cdd5f41cdd22a43d45c417d912378314ae`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-390-light-viewport.png` — `a08d97289593e9b394e59c12a9200dd3711a8e8683dc5799fa32fd4d19d09517`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-390-light-full.png` — `6d7bbc55c2dd5c2b4985e935c9121a0b948a5600e960590a98f0be9048f191f0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-390-dark-viewport.png` — `823bf83b69bc18152c65a531b2692edf340a624ffff4a8b1343460c3ba12d5f0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch014/051-390-dark-full.png` — `1a99d21c96a2957cc454b3a9b6300da51b44ffdfbc10ce2e35974119611640c2`
+
+## batch015 — actual independent production review
+
+claude-subagent non-author (fresh context), claude-opus-5-5, UTC2026-10-15T10:25:46Z. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015-independent-ui-review.json` SHA256 `681f7252d38ba382ca655bd9885dd5ffaf3aede007b9dd4800bd8a63f89d12ff`, same-nameTXT has actual image/view timestamps. Verdict: ISSUES (沒有阻斷性問題；/my/ 頁在 1280 的頁尾統計 2,203 篇與其他頁的 14,092 篇不一致；390 分頁列右緣被切到；後台權限提示太簡短且有多餘空白；後台沒有洩漏資料).
+
+- 052: ISSUES: 1280 頁尾統計數字與其他頁不一致（2,203 vs 14,092）；390 分頁列最右邊的「設定」被切到 — 匿名狀態顯示「我的新文易數」標題、五個分頁（我的動態／追蹤清單／收藏／閱讀報告／設定），「收藏」為目前分頁，下方說明用 Google 帳號登入後可以使用的六項功能，並附上登入連結。四種寬度與主題的版面都正常，沒有橫向溢出（scrollWidth=寬度），深色模式文字也清楚可讀。 Pending: 登入後的收藏列表; 空收藏狀態; 收藏載入錯誤; 分頁切換互動; 資料來源摺疊區展開 Issue[minor/1280/light]: 頁尾即時統計顯示「今天已收錄 2,203 篇・24 小時內 227 家媒體發稿」，但 13 秒後擷取的 /admin/tags/ 與 1 分鐘後的 390 寬同一頁都顯示「14,092 篇・245 家」。同一時段兩組數字差距極大，代表 /my/ 頁面的頁尾數字可能是過期快取或來自不同計算來源。 Issue[minor/1280/dark]: 同上：深色 1280 也顯示 2,203 篇／227 家，與其他頁的 14,092 篇／245 家不一致。 Issue[minor/390/light]: 390 寬的分頁列可以橫向捲動，但最後一個「設定」緊貼右邊被切到，容器右側沒有內距，也沒有漸層或箭頭提示還能捲動。
+- 053: ISSUES: 1280 頁尾統計數字與其他頁不一致；390 目前分頁「設定」貼齊右緣被切到 — 匿名狀態與 /my/saved/ 相同：「設定」分頁為選取狀態，下方是登入說明與好處清單，並附上登入連結。版面正常，沒有橫向溢出，淺色與深色模式都清楚可讀。 Pending: 登入後的設定表單; 儲存成功／失敗狀態; 本機偏好設定; 分頁切換互動 Issue[minor/1280/light]: 頁尾即時統計顯示「今天已收錄 2,203 篇・24 小時內 227 家媒體發稿」，但 13 秒後擷取的 /admin/tags/ 與 1 分鐘後的 390 寬同一頁都顯示「14,092 篇・245 家」。同一時段兩組數字差距極大，代表 /my/ 頁面的頁尾數字可能是過期快取或來自不同計算來源。 Issue[minor/1280/dark]: 同上：深色 1280 也顯示 2,203 篇／227 家，與其他頁的 14,092 篇／245 家不一致。 Issue[minor/390/light]: 390 寬時目前選取的「設定」分頁按鈕貼齊畫面右緣，按鈕右側邊框被分頁容器切掉，看起來像被截斷。
+- 014: ISSUES: 權限提示「請先 登入 。」過於簡短且有多餘空白；沒有洩漏管理資料 — 匿名狀態顯示「管理後台」麵包屑、「標籤管理」標題、一行功能說明，以及五個子頁籤（分類與群組／投稿審核／文章關係／人物頭像／其他標籤圖像），下方只有「請先 登入 。」。沒有出現任何標籤資料、審核佇列、表格或可操作的編輯控制項。390 寬時頁籤正常換成兩行，沒有溢出。 Pending: 管理員登入後的內容; 非管理員帳號登入後的拒絕訊息; 子頁籤點擊後的匿名狀態 Issue[minor/1280/light]: 權限提示只有「請先 登入 。」：「登入」連結與全形句號之間多了一個空白，排版不自然；文字也沒有說明需要管理員權限（一般帳號登入後仍無法使用）。
+- 015: ISSUES: 權限提示「請先 登入 。」過於簡短且有多餘空白；沒有洩漏管理資料 — 匿名狀態只顯示「管理後台」標題和「請先 登入 。」，接著就是資料來源摺疊區與頁尾。沒有任何管理連結、統計或控制項外洩。版面在四種寬度與主題下都正常，沒有溢出。 Pending: 管理員登入後的後台首頁; 非管理員帳號登入後的拒絕訊息 Issue[minor/1280/light]: 權限提示只有「請先 登入 。」：「登入」連結與全形句號之間多了一個空白，排版不自然；文字也沒有說明需要管理員權限（一般帳號登入後仍無法使用）。
+
+Network recomputed: `{"requests": 284, "requestDNT1": 284, "requestGoogleURL": 0}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-1280-light-viewport.png` — `4d3d36cf4026d3c99875f031cdda88f6f32b0d1b9c7e39f44f435f5134d4c7b0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-1280-light-full.png` — `96cead4b0b47b2df486ed58b9a5c07d9ac4a41a5ce11180e2e427619aa0b2c74`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-1280-dark-viewport.png` — `d528dfbbc389570d5e7b143df532330831cff7aee864c00f91bc6d9c75f50c3d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-1280-dark-full.png` — `f57b58b435786723cb589b5190092cc80dac42b00d5bdb3b82a04c4ef568c73a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-1280-light-viewport.png` — `e3013ad2e2d4694c7229c033feeb17f572c08fa5038455c2fa6b3710a989472b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-1280-light-full.png` — `e89b6edf8ec59b324b5801e79b4432ec9e4e02a6b1c60a4e0aed96c7a246f8cf`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-1280-dark-viewport.png` — `7a0025fcdbeb6cb6400b0dc1a43a73a18d08d3446285d276e3ef616611896228`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-1280-dark-full.png` — `f0cc5c19e6389b8f745870b1737d7a62a9f4cdb3a120de976f16b072499447be`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-1280-light-viewport.png` — `b8b97fc204bf7571b7739ad5504325b71797866b59c0f76da2ab3dd8b7e9603c`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-1280-light-full.png` — `ed5ebf71686c218695df95883f54f49c0e2bc56eb942fa12888bad94217433df`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-1280-dark-viewport.png` — `bb06cefe358dd9d30d5a1baae748695e65fb47d0f57e2afb7721d3a954c85d0a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-1280-dark-full.png` — `cb91113a654dde5e421e1c9af77971b7263bfb0cef9511eb9e5e999c1f972c23`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-1280-light-viewport.png` — `ec25c18d92365ed0974535f5891dc1b770cf9d7e0ab92875b020743f07b30a46`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-1280-light-full.png` — `a2420622b96bc5686b6a08da62f0c666afd1f34ed4d573dc04f531a07884f437`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-1280-dark-viewport.png` — `0baba8596a4042e05fc91e82db35a097cfc45f6828e3afa40957a8b2c330f6b1`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-1280-dark-full.png` — `d60345aeddf35de023e98ff67daac9a548f1ef1ef30345d34892b262e8e49f40`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-390-light-viewport.png` — `6e37325d3b48a87f03fe6bcf20df59c10afb148f4b1decb02d99e9c93ae43630`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-390-light-full.png` — `bffb1d5e8b7932dece326d3ff31f14131e399c1f18699f57f48b0a85da3eeda9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-390-dark-viewport.png` — `4f62e2c92b76f0a275163596f246dcd18bc440c9efe3c95ef24929abca37f87d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/052-390-dark-full.png` — `42928a2e70eaf31e3f6e9a280a823701a5301dd6d92c787c1e4c40c9793a42e4`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-390-light-viewport.png` — `9f2e13fcc5af9398d93d255ed9efade1ba98bd1dcac7855f04c2ff5075ce8710`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-390-light-full.png` — `3777d96d33036e42a626483d987e60c0f75a3da0724f63f1499e0c93d3e9f470`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-390-dark-viewport.png` — `2d8f3160c23eb6988ce426170e91b16b695d06529460a0333d90c2f92714efac`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/053-390-dark-full.png` — `aaed7d6f017b4a38ec3f4662c91d5d182b1d0a5927b7383a486ea965d8e41c49`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-390-light-viewport.png` — `9237f8017ecdac858b3a8d5317f4d0191489579a5b6309eabe1e59dc8359160a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-390-light-full.png` — `83612baa85775f6b9b34f9151dd809d47e4ec30ff8625f06357ccf60e3c3d27d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-390-dark-viewport.png` — `3a838a0c4e6ea0f3dff1534f35aacb096f52e27bf9b03b282932c43ce763ab70`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/014-390-dark-full.png` — `d1a1bbd56722cc7a3fbb01701e9e4443b366b3b9e96bab8aae7cad3738a23033`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-390-light-viewport.png` — `c5dc1e930d9eff2d6e8140ca5e65e187490e6bacbc9f492b52f8bf07ec581524`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-390-light-full.png` — `26c654f3d32482edf69750bb285bd10d41c95f20c0576adc7063958fe396bc64`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-390-dark-viewport.png` — `2808fdb03611de205599234ade05de8c1767142e3bf20fc389105147439eca33`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch015/015-390-dark-full.png` — `f661a575693427a4d6c564ef05ad01ad85122b4b793a15de90071070ba1be9d5`
+
+## batch017 — actual independent production review
+
+claude-subagent non-author (fresh context), claude-opus-5-5, UTC2026-10-15T10:27:09Z. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017-independent-ui-review.json` SHA256 `39c1c901bcbae411126aa35711d238bd6f4b03268d9bb73e41b3779be529679f`, same-nameTXT has actual image/view timestamps. Verdict: PASS (匿名狀態只顯示登入提示，未見管理資料或操作控制；僅有 note 級觀察).
+
+- 020: PASS — 四張截圖皆已依預期轉址到 /admin/tags/?view=relations（標題「標籤管理 · 管理後台」，「文章關係」分頁為選取狀態），內容區只有一句「請先 登入 。」，沒有任何標籤、文章關係資料或編輯/核准按鈕。1280 與 390、淺色與深色版面都正常，scrollWidth 等於寬度、頁高 856/1263 合理，深色模式文字對比足夠。 Pending: 已登入管理員狀態（文章關係實際資料表）; 已登入但非管理員狀態; 點擊分頁後的互動/預取內容; 展開「本頁的資料來源與計算方式」; 錯誤/空資料狀態
+
+Network recomputed: `{"requests": 68, "requestDNT1": 68, "requestGoogleURL": 0}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-1280-light-viewport.png` — `a00a22c48285250720502ae311b3b2c58b2e3a45d84a94e49844d4082e398d07`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-1280-light-full.png` — `7f5ed57c4248f85d3f464bd915762ef376ccf0e47ee25f5d592ca6e60afe57c0`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-1280-dark-viewport.png` — `50ba782cca3c219d2cc89dc183e7f72d7895fef5de4f05ae8ef28f790b46444a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-1280-dark-full.png` — `b75bbd1f035769ab593f73fa7b2dacc34622e13a777bbf3c8fc23fd7e52c508d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-390-light-viewport.png` — `42e7008786ccfd3e6d96cbbad673722fe8834c04d7b0a2c888df6e4eeca30fe7`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-390-light-full.png` — `5841d0a065f83f091511c040b7734522d643e4df69b140ee46f92638a3c7ad7a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-390-dark-viewport.png` — `d2741f84e66d89318b83765b17275e4e715342c587218b37758e79b4b882a19f`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch017/020-390-dark-full.png` — `0b668671f697e972d1492fab34e3bf818b04d835058f6799a387123d5d528a1b`
+
+## batch016 — actual independent production review
+
+claude-subagent non-author (fresh context), claude-opus-5-5, UTC2026-10-15T10:27:52.550Z. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016-independent-ui-review.json` SHA256 `5f448dcda1cc08f5cf2dde7490d60118750e4080836d81d13366803e7a974ac1`, same-nameTXT has actual image/view timestamps. Verdict: PASS（四條路由都沒有洩漏管理資料，皆顯示登入提示；沒有新的 blocking/minor 問題，只有觀察）.
+
+- 016: PASS — 307 轉址到 /admin/tags/?view=avatars（manifest 確認）；頁面標題為「標籤管理」，對應分頁標籤以橘色顯示為選取狀態，主內容只有「請先 登入 。」，沒有洩漏任何管理資料或控制項。四種寬度與主題組合版面都正常，scrollWidth 等於視窗寬度，沒有水平溢出，深色模式文字也讀得清楚。 Pending: 已登入但非管理員; 已登入管理員（實際資料／操作）; 互動（分頁切換、展開資料來源說明）
+- 017: PASS — 沒有轉址，頁面標題為「媒體設定」，主內容只有「請先 登入 。」，沒有洩漏任何管理資料或控制項。四種寬度與主題組合版面都正常，scrollWidth 等於視窗寬度，沒有水平溢出，深色模式文字也讀得清楚。 Pending: 已登入但非管理員; 已登入管理員（實際資料／操作）; 互動（分頁切換、展開資料來源說明）
+- 018: PASS — 307 轉址到 /admin/tags/?view=groups（manifest 確認）；頁面標題為「標籤管理」，對應分頁標籤以橘色顯示為選取狀態，主內容只有「請先 登入 。」，沒有洩漏任何管理資料或控制項。四種寬度與主題組合版面都正常，scrollWidth 等於視窗寬度，沒有水平溢出，深色模式文字也讀得清楚。 Pending: 已登入但非管理員; 已登入管理員（實際資料／操作）; 互動（分頁切換、展開資料來源說明）
+- 019: PASS — 307 轉址到 /admin/tags/?view=visuals（manifest 確認）；頁面標題為「標籤管理」，對應分頁標籤以橘色顯示為選取狀態，主內容只有「請先 登入 。」，沒有洩漏任何管理資料或控制項。四種寬度與主題組合版面都正常，scrollWidth 等於視窗寬度，沒有水平溢出，深色模式文字也讀得清楚。 Pending: 已登入但非管理員; 已登入管理員（實際資料／操作）; 互動（分頁切換、展開資料來源說明）
+
+Network recomputed: `{"requests": 256, "requestDNT1": 256, "requestGoogleURL": 0}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-1280-light-viewport.png` — `e6b916c82582ea40126979a94e91388e82e87353ac0dbc0815cd18e996fc6837`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-1280-light-full.png` — `839a491932692c7103991205f90ebdb4bedc4dd979a7fccca6bd8dfe1842d8d9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-1280-dark-viewport.png` — `19aab3d4ba22125d722483af36e80c5df1a1de8857341b2658001bb2b5cf6897`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-1280-dark-full.png` — `d7261f1a5eec04dd04177b97826897c73f1fea1740e625026f16bc0e42f58311`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-1280-light-viewport.png` — `a00086ab4b157664b2f0f1d5d239b802ff2d5efe4450d9db782d84a68bd85c2d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-1280-light-full.png` — `024215b0c92454582410d13b63a5e0b5d113ac89f5e862bceae10b7d4f33cb8a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-1280-dark-viewport.png` — `87d79116f4b69d65bfe9e94af842201dbbbbbb8488775874bc3295cf2e2bc871`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-1280-dark-full.png` — `f54dc6151801fdaf2e38199b391ac5a010eeac4266c0d6d3c1fe3a38eb545498`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-1280-light-viewport.png` — `05cf0fb84e958331f1810145257f693d130b683e87752f983b680d43b4e305f9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-1280-light-full.png` — `d3e3ce46bdb033b10275ce7019441590489ff0524cac6281445252a56906fae1`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-1280-dark-viewport.png` — `ebba6c6b7c8ce5a425ea13868f96c40cea2fedd312bee3a2778188f142fb576f`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-1280-dark-full.png` — `ba6ef74ae71d24be869dbbea219be5b3e6555cd87d00a976bcbfb140f4510115`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-1280-light-viewport.png` — `87894af8ad99f63bf61b7c541bf667204d126e8ed14c319cde036d1c4ed61085`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-1280-light-full.png` — `402fd50597f224876b17d4ca62535182e92b0d8d16d7c4708ae6cb314dca317a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-1280-dark-viewport.png` — `d829f2d870ab51f5926dc9c3950329105b598825dc183789f9b6b2e2ce1d61bf`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-1280-dark-full.png` — `9ee26ee69f437b33111bb84277eb7e17208afc1710145caed12c573706d4b8f9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-390-light-viewport.png` — `709acd9a08cedd5ae9914adaa4c64ff95f9cfec484ec55867112b5ceffc224e7`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-390-light-full.png` — `e7085169f98e704b864def1d4b1b67813b47f57cfef526bd46faf0553a5477cc`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-390-dark-viewport.png` — `7c072078420dc2b4e9d31e1fe83ca38acfe011ef5640fb372c9ffdb14fbe53ac`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/016-390-dark-full.png` — `3ce4227d8edc02cc14ce7917b471f2b0deb6aef5633659eeeccf973151fd3b62`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-390-light-viewport.png` — `61873e790007ace9840ae415708eb65bc48cd629f1bbbc2d4bc86df2f00efd71`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-390-light-full.png` — `357a5d0372f4e196945dc6539e08d228beca5461cf8b560517aba0c92c5b0903`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-390-dark-viewport.png` — `47893e7834337762468b7ca5fd083aa9f9f8b41f5ba17147a1d09f02b7b6de53`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/017-390-dark-full.png` — `b287e713014b5a647eca1280e7f3ccf672f50e3250f0e83ff931ac20810aeff8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-390-light-viewport.png` — `9d98cb298ecb9cb60528d1bc2750f9cc6563e6680410aeef9df5f2fbb148f3f4`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-390-light-full.png` — `95d0bad18a9c8dc4a4766b8bbbda1ddd8671d6992df5c0a9ccc7a3fe19fee71e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-390-dark-viewport.png` — `ee76ea068bc17fa04ebf2cde3b5fe8e8a13c4a4c0813c7a2041f092d24c11813`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/018-390-dark-full.png` — `aa22243936c1ac47d5295a8b4da8606e253e1d5b2ccedf693c50fd620846fe30`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-390-light-viewport.png` — `a4e2f225a75af1a4e61efe2a594c2c2d800cbb0cd97e30e8cb976f8e5610c151`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-390-light-full.png` — `18ddff5622aa29dc4cd03d5ccc14a97ecfc55f014b33661c1dadf271196e4abf`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-390-dark-viewport.png` — `054c6020ca24f8805f1fd368ca058775ef53f606a1fdf10cf566e8731db8e11e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch016/019-390-dark-full.png` — `297b0c2879f4db42c39f32ee212c8568d2c93ac4cc5d670ac11ba8e7262c514a`
