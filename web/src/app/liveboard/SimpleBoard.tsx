@@ -7,7 +7,7 @@ import Wordmark from '@/components/Wordmark';
 import type { RankingEntry } from '@/lib/api';
 import { type CloudSizes, type PlacedWord, pictureBox } from '@/lib/word-cloud.mts';
 import { layoutCloud } from './cloud-layout';
-import { type Panel, type Panels, panelRects, type Rect, splitCamps } from './compare.mts';
+import { campColour, type Spread, spreadCamps, spreadX } from './compare.mts';
 import SceneView from './SceneView';
 import { EVENT_FRAMES, type LiveScenes, type SceneEvent, type SceneRow, stayOf } from './scenes';
 import { type CloudLens, cloudLens, type Lens, type LiveboardSettings, pickLenses } from './settings';
@@ -20,8 +20,9 @@ import styles from './simple.module.css';
 // each word that stays drifts slowly as it grows or shrinks, staying near its
 // place; words that drop out shrink away and new ones grow in. Then the next
 // lens cross-fades in over the last. Tapping a word opens its tag page.
-// 藍綠對照 plays two camps' rankings at once: three clouds under the centre,
-// one camp's own words on each side and the words both write about between.
+// 藍綠對照 plays two camps' rankings on one spectrum under the centre: each
+// word sits left (green) or right (blue) by how much more that camp writes
+// it, its colour drifting from green through ink to blue the same way.
 // Other lenses are scenes (SceneView): the top events one a frame, or a
 // leaderboard of the day's topics, from /api/v1/liveboard/scenes.
 // ↑ / ↓ (or PageUp / PageDown, as a presenter remote sends), a swipe up or
@@ -47,6 +48,8 @@ export type Pictures = Record<string, { image?: string; emoji?: string; aspect?:
 interface Term {
   tag: string;
   weight: number;
+  /** Its articles in the ranking's window, for 藍綠對照's share of voice. */
+  count?: number;
 }
 /** One hourly snapshot of a cloud lens, or one frame of a scene (its terms empty). */
 interface Frame {
@@ -55,8 +58,8 @@ interface Frame {
   terms: Term[];
   /** Hours before now it was asked for (0 is the present); set when a lens's frames are gathered. */
   back?: number;
-  /** A compare lens's three clouds, and each side's whole ranking (for its change badges)… */
-  camps?: { panels: Panels; sides: { left: Term[]; right: Term[] } };
+  /** A compare lens's words on the spectrum (compare.mts)… */
+  camps?: Spread[];
   /** …an event lens's event… */
   event?: SceneEvent;
   /** …or a leaderboard's rows. */
@@ -74,7 +77,7 @@ function frameOf(lens: CloudLens, ranking: RankingResponse): Frame {
   const weight = (e: RankingEntry) =>
     lens.order === 'growth' ? (e.signals?.growth ?? 0) : lens.order === 'burst' ? (e.burst ?? 0) : e.normalized;
   const terms = ranking.entries
-    .map((e) => ({ tag: e.tag, weight: weight(e) }))
+    .map((e) => ({ tag: e.tag, weight: weight(e), count: e.count }))
     .filter((t) => t.weight > 0)
     .slice(0, WORDS);
   return { id: ranking.snapshot.id, computedAt: ranking.snapshot.computedAt, terms };
@@ -189,8 +192,8 @@ interface Shown extends PlacedWord {
   moved?: number;
   /** Its change since the previous step, drawn beside it once the step has settled. */
   badge?: Badge;
-  /** Which of a compare lens's clouds it is in. */
-  panel?: Panel;
+  /** On a compare lens, blue's share of it (0 only green, 1 only blue), for its colour. */
+  blue?: number;
 }
 /** When a newcomer starts appearing, in seconds after the change: on a new lens soon and close
  *  together; on a new hour once the words that stay have mostly moved. Word and settleMs share it. */
@@ -218,11 +221,15 @@ function settleMs(words: Shown[], first = false) {
   });
   return end * SECOND;
 }
-/** Words in each of a compare lens's three clouds, from the `words` setting for one. */
-const perPanel = (words: number) => Math.max(8, Math.round(words * 0.4));
-/** One cloud to lay out: the whole canvas, or one of a compare lens's three. */
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+/** A cloud to lay out in `rect`; on a compare lens, each word held to its place on the spectrum. */
 interface Job {
-  panel?: Panel;
+  spread?: Map<string, number>;
   lens: Lens;
   terms: Term[];
   badges: Map<string, Badge>;
@@ -324,6 +331,17 @@ export default function SimpleBoard({
   const lenses = useMemo(() => pickLenses(settings.lenses), [settings.lenses]);
   const dark = useDarkTheme();
   const tint = (lens: Lens) => (dark ? lens.dark : lens.accent);
+  /** A compare lens's three anchor colours: its green side, its ink for the even middle, its blue side. */
+  const spectrumOf = (lens: Lens) => {
+    if (lens.scene !== 'compare') return null;
+    const [g, b] = lens.sides.map(cloudLens);
+    return g && b ? { green: tint(g), ink: tint(lens), blue: tint(b) } : null;
+  };
+  /** A word's colour: its lens's, or on a compare lens its place between the two camps'. */
+  const colourOf = (w: Shown) => {
+    const sp = w.blue === undefined ? null : spectrumOf(w.lens);
+    return sp && w.blue !== undefined ? campColour(w.blue, sp.green, sp.ink, sp.blue) : tint(w.lens);
+  };
   const pictures = settings.pictures ? allPictures : NO_PICTURES;
   const frame = useRef<HTMLDivElement>(null);
   const [px, setPx] = useState<{ width: number; height: number } | null>(null);
@@ -438,7 +456,7 @@ export default function SimpleBoard({
       // Oldest first, one per snapshot, words only.
       return all.filter((f, i): f is Frame => !!f?.terms.length && all.findIndex((g) => g?.id === f.id) === i);
     };
-    // Both camps' snapshots for each step, split three ways (compare.mts).
+    // Both camps' snapshots for each step, on one spectrum (compare.mts).
     const compareFrames = async ([leftKey, rightKey]: [string, string]): Promise<Frame[]> => {
       const left = cloudLens(leftKey);
       const right = cloudLens(rightKey);
@@ -449,13 +467,13 @@ export default function SimpleBoard({
           const back = (settings.history - i) * settings.interval;
           const [a, b] = await Promise.all([snapshot(left, back, now), snapshot(right, back, now)]);
           if (!a?.terms.length || !b?.terms.length) return null;
-          const panels = splitCamps(a.terms, b.terms, perPanel(settings.words));
+          const spread = spreadCamps(a.terms, b.terms, settings.words);
           return {
             id: a.id * 1_000_003 + b.id,
             computedAt: a.computedAt > b.computedAt ? a.computedAt : b.computedAt,
-            terms: [...panels.left, ...panels.middle, ...panels.right],
+            terms: spread.map(({ tag, weight }) => ({ tag, weight })),
             back,
-            camps: { panels, sides: { left: a.terms, right: b.terms } },
+            camps: spread,
           };
         }),
       );
@@ -638,7 +656,7 @@ export default function SimpleBoard({
   const centre = useMemo(
     () =>
       canvas && playing && cloudy
-        ? // A compare lens's centre is a band over three clouds: smaller, so the clouds get the height.
+        ? // A compare lens's centre is a band over the spectrum: smaller, so the words get the height.
           centreOf(
             playing.lens,
             hourLabels,
@@ -648,14 +666,14 @@ export default function SimpleBoard({
         : null,
     [canvas, playing?.lens, cloudy, hourLabels],
   );
-  // A compare lens puts its centre in a band on top and its three clouds under it.
-  const rects = useMemo(
-    () =>
-      canvas && centre && playing?.lens.scene === 'compare'
-        ? panelRects(canvas.width, canvas.height, centre.height + canvas.title * 0.5, canvas.title * 0.75, canvas.title * 0.6)
-        : null,
-    [canvas, centre, playing?.lens],
-  );
+  const spectrum = playing ? spectrumOf(playing.lens) : null;
+  // A compare lens puts its centre in a band on top, the spectrum under it and its axis at the foot.
+  const band = useMemo(() => {
+    if (!canvas || !centre || playing?.lens.scene !== 'compare') return null;
+    const top = centre.height + canvas.title * 0.5;
+    const axis = canvas.title * 0.9;
+    return { x: 0, y: top, width: canvas.width, height: Math.max(0, canvas.height - top - axis), axis };
+  }, [canvas, centre, playing?.lens]);
 
   // A scene has no words: the cloud's fade out where they are, and the scene's
   // frame counts as settled once it has faded in.
@@ -686,41 +704,44 @@ export default function SimpleBoard({
     const newLens = laidRun.current !== 0 && laidRun.current !== playing.run;
     const before = shownWords.current.filter((w) => w.phase !== 'exit');
     // What to lay out where: the whole canvas round the centre, or a compare
-    // lens's three clouds, each in its own rect with its own camp's colour and
-    // badges (the shared middle has none: its words rank in both).
+    // lens's spectrum under it, each word held to its blue share across.
     const lens = playing.lens;
     const camps = frame.camps;
-    const jobs: Job[] =
-      lens.scene === 'compare' && camps && rects
-        ? (['left', 'middle', 'right'] as const).map((panel) => ({
-            panel,
-            lens: (panel === 'middle' ? lens : cloudLens(lens.sides[panel === 'left' ? 0 : 1])) ?? lens,
-            terms: camps.panels[panel],
-            badges:
-              panel === 'middle' ? new Map<string, Badge>() : badgesFor(settings.change, camps.sides[panel], previous?.camps?.sides[panel]),
-            rect: rects[panel],
-            words: perPanel(settings.words),
-          }))
-        : [
-            {
-              lens,
-              terms: frame.terms,
-              badges: badgesFor(settings.change, frame.terms, previous?.terms),
-              rect: { x: 0, y: 0, width: canvas.width, height: canvas.height },
-              clear: centre.clear,
-              words: settings.words,
-            },
-          ];
+    const job: Job =
+      lens.scene === 'compare' && camps && band
+        ? {
+            spread: new Map(camps.map((t) => [t.tag, t.blue])),
+            lens,
+            terms: frame.terms,
+            badges: badgesFor(settings.change, frame.terms, previous?.terms),
+            rect: band,
+            words: settings.words,
+          }
+        : {
+            lens,
+            terms: frame.terms,
+            badges: badgesFor(settings.change, frame.terms, previous?.terms),
+            rect: { x: 0, y: 0, width: canvas.width, height: canvas.height },
+            clear: centre.clear,
+            words: settings.words,
+          };
+    const jobs = [job];
     let live = true;
     Promise.all(
       jobs.map((job) => {
-        const anchors =
-          before.length && !newLens
-            ? new Map(
-                before
-                  .filter((w) => w.panel === job.panel)
-                  .map((w) => [w.label, { x: w.x + w.width / 2 - job.rect.x, y: w.y + w.height / 2 - job.rect.y }]),
-              )
+        // On the spectrum a word's x is its blue share, found up or down from the middle line
+        // (a step sideways costs as much as `stretch` up or down), and left out rather than
+        // placed where its x would be wrong; elsewhere it stays near where it was.
+        const reach = job.rect.width * 0.1;
+        const anchors = job.spread
+          ? new Map(
+              [...job.spread].map(([label, blue]) => [
+                label,
+                { x: spreadX(blue, job.rect.width, job.rect.width * 0.07), y: job.rect.height / 2 },
+              ]),
+            )
+          : before.length && !newLens
+            ? new Map(before.map((w) => [w.label, { x: w.x + w.width / 2 - job.rect.x, y: w.y + w.height / 2 - job.rect.y }]))
             : undefined;
         return layoutCloud(
           job.terms.slice(0, job.words).map((t) => {
@@ -737,11 +758,12 @@ export default function SimpleBoard({
           job.rect.height,
           {
             ...canvas.sizes,
-            // A third of the screen cannot take the full cloud's largest words.
-            max: job.panel ? Math.round(canvas.sizes.max * 0.8) : canvas.sizes.max,
+            // The spectrum is shorter than the whole canvas.
+            max: job.spread ? Math.round(canvas.sizes.max * 0.85) : canvas.sizes.max,
             words: job.words,
             clear: job.clear,
             anchors,
+            ...(job.spread ? { anchorOnly: true, anchorReach: reach, anchorStretch: job.rect.height / 2 / reach } : {}),
           },
         ).then((placed) => placed.map((w): Laid => ({ ...w, x: w.x + job.rect.x, y: w.y + job.rect.y, job })));
       }),
@@ -757,7 +779,7 @@ export default function SimpleBoard({
           ...w,
           key,
           lens: job.lens,
-          panel: job.panel,
+          blue: job.spread?.get(w.label),
           phase,
           badge: job.badges.get(w.label),
         });
@@ -787,8 +809,7 @@ export default function SimpleBoard({
             if (!now) return w.phase === 'live' ? [{ ...w, phase: 'exit', fade: false }] : [];
             done.add(w.label);
             const distance = Math.hypot(now.x + now.width / 2 - (w.x + w.width / 2), now.y + now.height / 2 - (w.y + w.height / 2));
-            // A word that changes cloud (one camp's own to shared) leaves and arrives too.
-            if (distance > far || w.panel !== now.job.panel) {
+            if (distance > far) {
               arrivals.push(shown(now, 'enter'));
               return [{ ...w, phase: 'exit', fade: false }];
             }
@@ -809,7 +830,7 @@ export default function SimpleBoard({
     return () => {
       live = false;
     };
-  }, [canvas, playing, pictures, centre, rects, settings.words, settings.change]);
+  }, [canvas, playing, pictures, centre, band, settings.words, settings.change]);
 
   // Newcomers mount small and clear, then turn live on the next frames so they
   // grow in; the leavers are dropped once they have shrunk away.
@@ -898,7 +919,7 @@ export default function SimpleBoard({
                 key={`centre-${playing.run}`}
                 className={styles.fadeIn}
                 // A compare lens's centre heads its band on top; a cloud's sits in its middle.
-                transform={`translate(${canvas.width / 2} ${rects ? canvas.title * 0.25 : canvas.height / 2 - centre.height / 2})`}
+                transform={`translate(${canvas.width / 2} ${band ? canvas.title * 0.25 : canvas.height / 2 - centre.height / 2})`}
               >
                 <text
                   y={centre.title * 1.0}
@@ -984,43 +1005,47 @@ export default function SimpleBoard({
                   ))}
               </g>
             )}
-            {playing?.lens.scene === 'compare' && rects && (
-              // Each cloud's name over it, in its camp's colour (the shared one in the lens's ink).
-              <g key={`panels-${playing.run}`} className={styles.fadeIn}>
-                {(['left', 'middle', 'right'] as const).map((panel) => {
-                  const side =
-                    playing.lens.scene === 'compare' && panel !== 'middle' ? cloudLens(playing.lens.sides[panel === 'left' ? 0 : 1]) : null;
-                  const r = rects[panel];
-                  const size = canvas.title * 0.42;
+            {playing?.lens.scene === 'compare' && band && spectrum && (
+              // The spectrum's axis at the foot: green to blue through the ink, as the words are coloured.
+              <g key={`axis-${playing.run}`} className={styles.fadeIn}>
+                <defs>
+                  <linearGradient id="camp-axis" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0" stopColor={spectrum.green} />
+                    <stop offset="0.5" stopColor={spectrum.ink} />
+                    <stop offset="1" stopColor={spectrum.blue} />
+                  </linearGradient>
+                </defs>
+                {(() => {
+                  const pad = band.width * 0.07;
+                  const y = band.y + band.height + band.axis * 0.3;
+                  const size = canvas.title * 0.36;
                   return (
-                    <g key={panel}>
-                      <text
-                        x={r.x + r.width / 2}
-                        y={r.y - size * 0.55}
-                        fontSize={size}
-                        textAnchor="middle"
-                        fontWeight={700}
-                        fill={tint(side ?? playing.lens)}
-                      >
-                        {side ? side.title : '兩邊都在講'}
-                      </text>
+                    <>
                       <rect
-                        x={r.x + r.width * 0.3}
-                        y={r.y - size * 0.3}
-                        width={r.width * 0.4}
-                        height={Math.max(1, size * 0.08)}
-                        rx={size * 0.04}
-                        fill={tint(side ?? playing.lens)}
-                        opacity={0.35}
+                        x={pad}
+                        y={y}
+                        width={band.width - 2 * pad}
+                        height={Math.max(2, size * 0.18)}
+                        rx={size * 0.09}
+                        fill="url(#camp-axis)"
                       />
-                    </g>
+                      <text x={pad} y={y + size * 1.35} fontSize={size} fontWeight={700} fill={spectrum.green}>
+                        ← 綠營媒體提得多
+                      </text>
+                      <text x={band.width / 2} y={y + size * 1.35} fontSize={size} textAnchor="middle" className={styles.note}>
+                        兩邊差不多
+                      </text>
+                      <text x={band.width - pad} y={y + size * 1.35} fontSize={size} fontWeight={700} textAnchor="end" fill={spectrum.blue}>
+                        藍營媒體提得多 →
+                      </text>
+                    </>
                   );
-                })}
+                })()}
               </g>
             )}
             <g className={styles.fadeIn}>
               {words.map((w, i) => (
-                <Word key={w.key} word={w} picture={pictures[w.label]} colour={tint(w.lens)} index={i} />
+                <Word key={w.key} word={w} picture={pictures[w.label]} colour={colourOf(w)} index={i} />
               ))}
             </g>
           </svg>

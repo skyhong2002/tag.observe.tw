@@ -23,7 +23,7 @@ export interface CloudLens extends LensBase {
   category: string;
   order: 'growth' | 'burst' | 'score';
 }
-/** Two camps' keyword clouds at once, left and right, the words both write about between them. */
+/** Two camps' keywords on one spectrum: each word left or right by which camp writes it more (compare.mts). */
 export interface CompareLens extends LensBase {
   scene: 'compare';
   /** The cloud lenses on the left and on the right. */
@@ -123,7 +123,7 @@ export const LENSES: Lens[] = [
     // Green on the left and blue on the right, as the site's camp bars run.
     sides: ['green', 'blue'],
     title: '藍綠對照',
-    note: '綠營、藍營媒體各自在講，與兩邊都在講的關鍵字',
+    note: '越靠左綠營媒體提得越多，越靠右藍營媒體提得越多',
     accent: '#27272a',
     dark: '#f4f4f5',
   },

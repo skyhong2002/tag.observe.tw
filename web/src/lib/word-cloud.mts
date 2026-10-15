@@ -99,6 +99,12 @@ export interface CloudSizes {
   anchors?: ReadonlyMap<string, { x: number; y: number }>;
   /** How far from its anchor a word may land, in viewBox units (a fifth of the canvas width by default). */
   anchorReach?: number;
+  /** How much further it may move up or down than sideways (1 by default: a circle); the search
+   *  prefers vertical moves by the same factor, so a word placed by its x keeps it. */
+  anchorStretch?: number;
+  /** An anchored word that finds no room near its anchor, even at the smallest size, is left out
+   *  instead of placed centre-out, where its position would say something false. */
+  anchorOnly?: boolean;
 }
 export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, sizes: CloudSizes = { min: 12, max: 29 }): PlacedWord[] {
   if (width < 40 || height < 30 || !(sizes.max >= sizes.min && sizes.min > 0)) return [];
@@ -220,8 +226,9 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
     // An anchored word would rather stay near its old place a little smaller (down to 70%) than move far.
     const anchor = sizes.anchors?.get(term.label);
     if (anchor) {
-      const near = nearby(sizes.anchorReach ?? width / 5);
-      for (let fontSize = natural; fontSize >= Math.max(floor, Math.round(natural * 0.7)) && !done; fontSize--) {
+      const near = nearby(sizes.anchorReach ?? width / 5, sizes.anchorStretch ?? 1);
+      const smallest = sizes.anchorOnly ? floor : Math.max(floor, Math.round(natural * 0.7));
+      for (let fontSize = natural; fontSize >= smallest && !done; fontSize--) {
         const [w, h] = boxOf(term, fontSize);
         for (let i = 0; i < near.length; i += 2) {
           const x = Math.round(anchor.x + near[i] - w / 2),
@@ -237,7 +244,7 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
         }
       }
     }
-    if (done) continue;
+    if (done || (anchor && sizes.anchorOnly)) continue;
     // The fits at one size, centre-out, or null. CJK ascent/descent can exceed the nominal em box in system fonts.
     const fitsAt = (fontSize: number) => {
       const [w, h] = boxOf(term, fontSize);
@@ -285,16 +292,21 @@ export function layoutWordCloud(terms: CloudTerm[], width = 300, height = 230, s
 const CELL = 3,
   GAP = 3;
 /** Offsets within `reach` of a point as flat [dx, dy] pairs, nearest first (one grid per reach, kept). */
-const offsets = new Map<number, Float64Array>();
-function nearby(reach: number) {
+const offsets = new Map<string, Float64Array>();
+function nearby(reach: number, stretch = 1) {
   const r = Math.max(CELL, Math.round(reach / CELL) * CELL);
-  let flat = offsets.get(r);
+  const ry = Math.max(CELL, Math.round((reach * stretch) / CELL) * CELL);
+  const key = `${r}:${ry}`;
+  let flat = offsets.get(key);
   if (!flat) {
     const points: Array<[number, number]> = [];
-    for (let dy = -r; dy <= r; dy += CELL) for (let dx = -r; dx <= r; dx += CELL) if (dx * dx + dy * dy <= r * r) points.push([dx, dy]);
-    points.sort((a, b) => a[0] ** 2 + a[1] ** 2 - (b[0] ** 2 + b[1] ** 2));
+    // Within the ellipse, nearest first, a step sideways costing `stretch` steps up or down.
+    for (let dy = -ry; dy <= ry; dy += CELL)
+      for (let dx = -r; dx <= r; dx += CELL) if ((dx / r) ** 2 + (dy / ry) ** 2 <= 1) points.push([dx, dy]);
+    const cost = ([dx, dy]: [number, number]) => (dx * stretch) ** 2 + dy ** 2;
+    points.sort((a, b) => cost(a) - cost(b));
     flat = new Float64Array(points.flat());
-    offsets.set(r, flat);
+    offsets.set(key, flat);
   }
   return flat;
 }

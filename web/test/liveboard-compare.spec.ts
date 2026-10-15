@@ -1,52 +1,77 @@
 import { describe, expect, it } from 'vitest';
-import { panelRects, splitCamps } from '../src/app/liveboard/compare.mts';
+import { campColour, mixHex, spreadCamps, spreadX } from '../src/app/liveboard/compare.mts';
+import { layoutWordCloud } from '../src/lib/word-cloud.mts';
 
-const terms = (...tags: string[]) => tags.map((tag, i) => ({ tag, weight: 10 - i }));
-
-describe('splitCamps', () => {
-  it('puts what only one camp writes on its side and what both write between', () => {
-    const green = terms('沈伯洋', '蔣萬安', '罷免', '台積電');
-    const blue = [
-      { tag: '蔣萬安', weight: 12 },
-      { tag: '黃國昌', weight: 9 },
-      { tag: '台積電', weight: 5 },
-    ];
-    expect(splitCamps(green, blue, 10)).toEqual({
-      left: [
-        { tag: '沈伯洋', weight: 10 },
-        { tag: '罷免', weight: 8 },
-      ],
-      // Shared words take the larger weight, strongest first.
-      middle: [
-        { tag: '蔣萬安', weight: 12 },
-        { tag: '台積電', weight: 7 },
-      ],
-      right: [{ tag: '黃國昌', weight: 9 }],
-    });
+describe('spreadCamps', () => {
+  // Green ranks twice as many articles in all; share of voice evens that out.
+  const green = [
+    { tag: '沈伯洋', weight: 84, count: 300 },
+    { tag: '蔣萬安', weight: 82, count: 200 },
+    { tag: '中國', weight: 70, count: 100 },
+  ];
+  const blue = [
+    { tag: '蔣萬安', weight: 81, count: 100 },
+    { tag: '徐佳青', weight: 72, count: 80 },
+    { tag: '沈伯洋', weight: 80, count: 20 },
+  ];
+  const at = new Map(spreadCamps(green, blue, 10).map((t) => [t.tag, t]));
+  it('puts an even share of voice in the middle, whatever each camp wrote in all', () => {
+    // 200/600 against 100/200: a third against a half.
+    expect(at.get('蔣萬安')?.blue).toBeGreaterThan(0.5);
+    // 300/600 against 20/200: five times as much from green, past the edge.
+    expect(at.get('沈伯洋')?.blue).toBe(0);
   });
-  it('only counts a word as shared when both have it in their top', () => {
-    const green = terms('甲', '乙', '丙');
-    const blue = terms('丁', '戊', '甲');
-    expect(splitCamps(green, blue, 10, 2).middle).toEqual([]);
-    expect(splitCamps(green, blue, 10, 3).middle.map((t) => t.tag)).toEqual(['甲']);
+  it('counts a word one camp did not rank as half its smallest', () => {
+    // 徐佳青 0.4 of blue against green's 50/600: well past four times.
+    expect(at.get('徐佳青')?.blue).toBe(1);
+    // 中國 100/600 against blue's 10/200: over three times green's.
+    expect(at.get('中國')?.blue).toBeLessThan(0.15);
   });
-  it('keeps at most `per` in each cloud', () => {
-    const many = terms('a', 'b', 'c', 'd', 'e');
-    expect(splitCamps(many, [], 2).left.map((t) => t.tag)).toEqual(['a', 'b']);
+  it('is twice either way at a quarter from the middle', () => {
+    // x is a quarter of green's and half of blue's.
+    const even = spreadCamps(
+      [
+        { tag: 'x', weight: 1, count: 1 },
+        { tag: 'y', weight: 1, count: 3 },
+      ],
+      [
+        { tag: 'x', weight: 1, count: 2 },
+        { tag: 'y', weight: 1, count: 2 },
+      ],
+      2,
+    );
+    expect(even.find((t) => t.tag === 'x')?.blue).toBeCloseTo(0.75);
+  });
+  it('sizes by the larger score and keeps the heaviest `words`', () => {
+    expect(at.get('沈伯洋')?.weight).toBe(84);
+    expect(spreadCamps(green, blue, 2).map((t) => t.tag)).toEqual(['沈伯洋', '蔣萬安']);
   });
 });
 
-describe('panelRects', () => {
-  it('sets the clouds side by side under the band on a wide screen', () => {
-    const r = panelRects(1200, 600, 100, 20, 30);
-    expect(r.left).toEqual({ x: 0, y: 120, width: 380, height: 480 });
-    expect(r.middle.x).toBe(410);
-    expect(r.right.x + r.right.width).toBe(1200);
+describe('spectrum placement and colour', () => {
+  it('runs green to blue across, inside the padding', () => {
+    expect(spreadX(0, 1000, 70)).toBe(70);
+    expect(spreadX(0.5, 1000, 70)).toBe(500);
+    expect(spreadX(1, 1000, 70)).toBe(930);
   });
-  it('stacks them on a tall one', () => {
-    const r = panelRects(420, 900, 100, 20, 30);
-    expect(r.left.width).toBe(420);
-    expect(r.middle.y).toBeGreaterThan(r.left.y + r.left.height);
-    expect(r.right.y + r.right.height).toBeCloseTo(900);
+  it('passes through the ink, not a mix of the two hues', () => {
+    expect(campColour(0, '#15803d', '#27272a', '#1d4ed8')).toBe('#15803d');
+    expect(campColour(0.5, '#15803d', '#27272a', '#1d4ed8')).toBe('#27272a');
+    expect(campColour(1, '#15803d', '#27272a', '#1d4ed8')).toBe('#1d4ed8');
+    expect(mixHex('#000000', '#ffffff', 0.5)).toBe('#808080');
+  });
+  it('keeps each word near its x, never placing it somewhere else', () => {
+    const terms = Array.from({ length: 20 }, (_, i) => ({ label: `詞${i}`, count: 20 - i }));
+    const anchors = new Map(terms.map((t, i) => [t.label, { x: i % 2 ? 150 : 850, y: 150 }]));
+    const placed = layoutWordCloud(terms, 1000, 300, {
+      min: 14,
+      max: 40,
+      anchors,
+      anchorOnly: true,
+      anchorReach: 80,
+      anchorStretch: 150 / 80,
+    });
+    expect(placed.length).toBeGreaterThan(10);
+    for (const w of placed) expect(Math.abs(w.x + w.width / 2 - (anchors.get(w.label)?.x ?? 0))).toBeLessThanOrEqual(81);
   });
 });
