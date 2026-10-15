@@ -4,7 +4,19 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-16 03:19 Taipei)
+## Current deployed status (2026-10-16 03:50 Taipei)
+
+- **Web `7c1c21c7` / BUILD_ID `iQO9WZtApDrxtUm1jZpz-` + API/gateway `7c1c21c7-api-liveboard-scenes` (UTC 2026-10-15T19:49:40–19:50:03Z); worker unchanged on `16402500-worker-rosters`**: the simple /liveboard/ (14 commits from session tag-analysis-tw-01, cherry-picked onto 193a5550).
+  - ↑ ↓ (and PageUp / PageDown, swipes up/down, the ‹ › and tappable time points) step through the hours; ← → and sideways swipes change lens.
+  - New scenes from `GET /api/v1/liveboard/scenes` (app/src/v1/liveboard-scenes.ts, read-only, cached 60 s, no migration): 此刻焦點 (top 6 events one a frame: score and rank vs the previous snapshot, camp split, 12-hour trend, keyword set, reports with copies folded and bylines/credits/tags, lead's other outlets and likely source) and leaderboards 24 小時最多報導 / 媒體議題 / 分類 / 人物與政黨 (rolling 24 h, last hour vs the hour before).
+  - 藍綠對照: green and blue on one spectrum (log2 share-of-voice ratio, ±4× at the edges; colour green → ink → blue). word-cloud.mts gains opt-in `anchorStretch` / `anchorOnly`.
+  - New-device default round: 綜合, 此刻焦點, 藍綠對照, 24 小時最多報導, 正在發酵, 非主流 (~5 min). Saved settings untouched; account lens cap 12 → 24.
+- Checks: web first 200 16.6 s, API 2.3 s, gateway 2.8 s. 20 local/public GETs 200 incl. `/liveboard/`, `/liveboard/setting/`, `/api/v1/liveboard/scenes` (public 0.61 s); public home has the new BUILD_ID; 0 error-level logs after the switch. Loopback (API 18340, web 18338) and public browser round: all six default lenses render, 0 page errors. Gate before deploy: load1 8.24, tag 0.06 s, blog 3.38 s.
+- Tests: unit 2,103 pass on the merge; tag-visuals.spec only failed for d3-geo missing in the test copy's node_modules. `web/test/tag-dark-accessibility.spec.ts` now finds the time point as `<Hit key={slot.label}>` and still asserts no group opacity.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/liveboard-scenes-7c1c21c7-20261016/rollback.sh` (web → c124aa68, API/gateway → 16402500-api; worker untouched).
+- Retention now: web 7c1c21c7 + c124aa68; API 7c1c21c7-api + 16402500-api; worker 16402500-worker + 1271a2dd-worker; aff5 (18230/18232); 0dd38b6 (`current`); dc7b814e. Deleted: c6375622-web, 9414f6a4-api.
+
+### Earlier (2026-10-16 03:19 Taipei)
 
 - **Web `c124aa68` / BUILD_ID `DuPWp9QPHU702wr3jSKr3` + API/gateway `16402500-api-rosters` + worker `16402500-worker-rosters` (UTC 2026-10-15T19:18:57–19:19:06Z)**: owner's decisions of 10/16.
   - `/tag/<tag>/relations/` asks one question at a time (是／不是／不確定) with its evidence (proposer's reason, rule note, an example headline both tags share, a Wikidata alias that ≥2 recent headlines use); 「全部候選與你的回答」 lists the rest; proposals pick from existing categories or keywords, reason optional; page capped at max-w-2xl.
