@@ -5,7 +5,7 @@ import type { Db } from '../db/client.ts';
 import { articles, articleTags, eventSnapshots, events, eventThreads, similarityPairs, tagGroupMembers, topics } from '../db/schema.ts';
 import { latestEvents } from '../jobs/events-job.ts';
 import { articleMediaOf } from '../jobs/topic-stories.ts';
-import type { Attribution } from '../similarity/attribution.ts';
+import { type Attribution, normalizeAttributions } from '../similarity/attribution.ts';
 import { activeGroups, descendants } from '../tag-groups/tree.ts';
 import { campBaseline, type EventFeedCoverage, eventsAt, feedCoverage, hoursSoFar, matchPrev, rankTrail } from './event-feed.ts';
 import { articleCols, type LiveArticle, liveArticle } from './liveboard.ts';
@@ -83,6 +83,10 @@ export interface SceneNews {
   image: string | null;
   /** The report itself, for the headline the screen leads with. */
   brief: SceneBrief | null;
+  /** Other outlets that ran it (the same text by similarity pair, or nearly the same headline)… */
+  copies: Array<{ media: string; mediaTitle: string }>;
+  /** …and the earliest of them, when another outlet ran it first: where it probably came from. */
+  source: { id: number; media: string; mediaTitle: string; title: string; publishedAt: string } | null;
 }
 export interface SceneEvent {
   rank: number;
@@ -252,6 +256,11 @@ export function headlineDice(a: string, b: string): number {
   for (const [g, n] of x) shared += Math.min(n, y.get(g) ?? 0);
   return total ? (2 * shared) / total : 0;
 }
+/** How much earlier another outlet's copy must be to be named as the likely source: outlets
+ *  stamp times differently (some to the hour), so a copy a few minutes apart says nothing. */
+const SOURCE_LEAD = 15 * 60e3;
+/** A time at Taipei midnight on the dot is a date without a time (some outlets give no more). */
+const dateOnly = (at: Date) => (at.getTime() + 8 * HOUR) % (24 * HOUR) === 0;
 /** Reports of one outlet in an event's list before the rest are let in. */
 const OUTLET_SHARE = 2;
 /**
@@ -335,7 +344,7 @@ type Stored = { id?: number; title: string; media: string; image: string | null 
 const newsOf = (e: { news: Stored[]; majorNews: Stored[] }): SceneNews[] =>
   (e.majorNews.length ? e.majorNews : e.news)
     .slice(0, 6)
-    .map((n) => ({ id: n.id ?? null, title: n.title, media: n.media, image: n.image ?? null, brief: null }));
+    .map((n) => ({ id: n.id ?? null, title: n.title, media: n.media, image: n.image ?? null, brief: null, copies: [], source: null }));
 const briefOf = (a: LiveArticle): SceneBrief => ({
   id: a.id,
   media: a.media,
@@ -468,7 +477,72 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
       }),
     };
   });
-  return { hour: latest.snapshot.hourStart.toISOString(), events: list, latest: latest.events };
+  // Who else ran each stored headline: its similarity pairs, and the event's
+  // reports with nearly the same headline. The earliest of them, when another
+  // outlet's and clearly earlier (SOURCE_LEAD), is where it probably came from;
+  // a source the report names itself shows in its byline already.
+  const stored = latest.events.map((e) => newsOf(e));
+  const storedIds = [...new Set(stored.flat().flatMap((n) => n.id ?? []))];
+  // Two lookups, each on its own index (the primary key leads with a_id, pairs_b with b_id).
+  const pairsWith = (column: typeof similarityPairs.aId | typeof similarityPairs.bId) =>
+    db.select({ aId: similarityPairs.aId, bId: similarityPairs.bId }).from(similarityPairs).where(inArray(column, storedIds));
+  const partners = storedIds.length ? (await Promise.all([pairsWith(similarityPairs.aId), pairsWith(similarityPairs.bId)])).flat() : [];
+  const linked = new Map<number, Set<number>>();
+  const link = (a: number, b: number) => (linked.get(a) ?? linked.set(a, new Set()).get(a))?.add(b);
+  for (const p of partners) {
+    link(p.aId, p.bId);
+    link(p.bId, p.aId);
+  }
+  stored.forEach((news, i) => {
+    for (const n of news)
+      if (n.id)
+        for (const id of pools[i]) if (id !== n.id && headlineDice(head.get(id)?.title ?? '', n.title) >= SAME_HEADLINE) link(n.id, id);
+  });
+  const otherIds = [...new Set([...storedIds, ...[...linked.values()].flatMap((set) => [...set])])];
+  const others = otherIds.length
+    ? await db
+        .select({
+          id: articles.id,
+          media: articles.media,
+          title: articles.title,
+          publishedAt: articles.publishedAt,
+          attributions: articles.attributions,
+        })
+        .from(articles)
+        .where(inArray(articles.id, otherIds))
+    : [];
+  const other = new Map(others.map((o) => [o.id, o]));
+  const copied = (n: SceneNews): SceneNews => {
+    const self = n.id ? other.get(n.id) : undefined;
+    if (!n.id || !self) return n;
+    const runs = [...(linked.get(n.id) ?? [])]
+      .flatMap((id) => other.get(id) ?? [])
+      .filter((o) => o.media !== self.media)
+      .sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
+    // A copy only dated to the day, or one that names this outlet as its own source, did not come first.
+    const first = runs.find(
+      (o) => !dateOnly(o.publishedAt) && !normalizeAttributions(o.attributions ?? [], o.media).some((a) => a.media === self.media),
+    );
+    return {
+      ...n,
+      copies: [...new Set(runs.map((o) => o.media))].map((media) => ({ media, mediaTitle: mediaTitle(media) })),
+      source:
+        first && first.publishedAt.getTime() <= self.publishedAt.getTime() - SOURCE_LEAD
+          ? {
+              id: first.id,
+              media: first.media,
+              mediaTitle: mediaTitle(first.media),
+              title: first.title,
+              publishedAt: first.publishedAt.toISOString(),
+            }
+          : null,
+    };
+  };
+  return {
+    hour: latest.snapshot.hourStart.toISOString(),
+    events: list.map((e, i) => ({ ...e, news: stored[i].map(copied) })),
+    latest: latest.events,
+  };
 }
 
 async function threadBoard(db: Db, index: TagIndex, w: Windows, latest: Array<{ threadId: number | null; major: string[] }>) {

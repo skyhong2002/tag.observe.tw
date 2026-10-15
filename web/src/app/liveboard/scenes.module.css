@@ -146,9 +146,11 @@
 .latestLabel { flex-shrink: 0; color: #a1a1aa; font-size: 0.85em; }
 .latestTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #52525b; }
 .latest .byline { font-size: 0.85em; }
-/* The event's lead report, named as any news row is, and why it leads. */
+/* The event's lead report, named as any news row is: who else ran it and where it probably came from. */
 .leadMeta { display: flex; flex-direction: column; gap: 0.3em; margin-top: -0.2em; }
-.why { color: #a1a1aa; font-size: 0.72em; }
+.source { display: flex; align-items: center; gap: 0.4em; min-width: 0; color: #71717a; font-size: 0.75em; white-space: nowrap; }
+.source time { color: #a1a1aa; font-variant-numeric: tabular-nums; }
+.sourceTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #52525b; }
 .rowTags { flex-shrink: 0; color: #a1a1aa; font-size: 0.75em; }
 .place { color: var(--tint); font-weight: 700; text-align: center; }
 .count { text-align: right; }
@@ -192,6 +194,7 @@
 [data-theme="dark"] .copies { background: #27272a; }
 [data-theme="dark"] .reportTags { color: #71717a; }
 [data-theme="dark"] .latestTitle { color: #d4d4d8; }
-[data-theme="dark"] .why,
 [data-theme="dark"] .latestLabel { color: #71717a; }
+[data-theme="dark"] .source { color: #a1a1aa; }
+[data-theme="dark"] .sourceTitle { color: #d4d4d8; }
 [data-theme="dark"] .change[data-down] { color: #a1a1aa; background: #27272a; }

@@ -3044,6 +3044,15 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `events[].news[].brief.attributions[].countryCode` | string |  |
 | `events[].news[].brief.attributions[].evidence` | string |  |
 | `events[].news[].brief.attributions[].kind` | "explicit" |  |
+| `events[].news[].copies` | object[] | 刊出同一篇的其他媒體 |
+| `events[].news[].copies[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].copies[].mediaTitle` | string |  |
+| `events[].news[].source` | object \| null | 比這篇早 15 分鐘以上刊出同一篇的媒體，可能的來源 |
+| `events[].news[].source.id` | integer |  |
+| `events[].news[].source.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].source.mediaTitle` | string |  |
+| `events[].news[].source.title` | string |  |
+| `events[].news[].source.publishedAt` | string (ISO 時間) |  |
 | `events[].href` | string \| null | 事件串頁 |
 | `events[].counts` | object | 不重複的本站爬取文章數 |
 | `events[].counts.today` | integer | 今天（台北時間）發布的文章數 |

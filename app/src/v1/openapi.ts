@@ -2966,6 +2966,13 @@ export const ENDPOINTS: Endpoint[] = [
               media: ref('MediaKey'),
               image: nullable(str()),
               brief: nullable(ref('LiveSceneBrief')),
+              copies: arr(obj({ media: ref('MediaKey'), mediaTitle: str() }), '刊出同一篇的其他媒體'),
+              source: nullable(
+                obj(
+                  { id: int(), media: ref('MediaKey'), mediaTitle: str(), title: str(), publishedAt: time() },
+                  '比這篇早 15 分鐘以上刊出同一篇的媒體，可能的來源',
+                ),
+              ),
             }),
             '事件的代表標題（最多 6 則），用來選出主標題與封面；brief 是報導本身',
           ),

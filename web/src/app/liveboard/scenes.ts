@@ -34,6 +34,9 @@ export interface SceneNews {
   media: string;
   image: string | null;
   brief: SceneBrief | null;
+  /** Other outlets that ran it, and the one that probably ran it first. */
+  copies: Array<{ media: string; mediaTitle: string }>;
+  source: { id: number; media: string; mediaTitle: string; title: string; publishedAt: string } | null;
 }
 export interface SceneArticle extends SceneBrief {
   /** Collected in the last hour (else earlier today). */

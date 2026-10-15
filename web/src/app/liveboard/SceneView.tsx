@@ -182,7 +182,6 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   const keywords = new Set(tags.map((t) => t.tag));
   const trail = (event.rankTrail ?? []).filter((r): r is number => r !== null);
   const lead = storyLead(event.news, event.major);
-  const leadHits = lead ? event.major.filter((tag) => lead.title.includes(tag)) : [];
   return (
     <article className={styles.event}>
       <div className={styles.story}>
@@ -218,14 +217,23 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
           )}
         </h3>
         {lead?.brief && (
+          // The lead is a report like those on the right: who ran it, who else ran it, and where it probably came from.
           <div className={styles.leadMeta}>
-            <Byline brief={lead.brief} recent={Date.now() - Date.parse(lead.brief.publishedAt) < 3600e3} />
+            <Byline brief={lead.brief} recent={Date.now() - Date.parse(lead.brief.publishedAt) < 3600e3}>
+              <Copies copies={lead.copies} />
+            </Byline>
             <ReportTags tags={lead.brief.tags} keywords={keywords} />
-            {/* Why this report heads the event (selectEventLead over the event's stored best reports). */}
-            <span className={styles.why}>
-              代表標題：事件最相關的 {event.news.length} 篇報導中
-              {leadHits.length ? `，標題提到最多主要標籤（${leadHits.join('、')}）` : ''}的一篇
-            </span>
+            {lead.source && (
+              <span className={styles.source}>
+                可能來自
+                <MediaIcon media={lead.source.media} size={14} />
+                {lead.source.mediaTitle}
+                <time>{clock(lead.source.publishedAt)}</time>
+                <Link prefetch={false} href={articleHref(lead.source)} className={styles.sourceTitle}>
+                  {lead.source.title}
+                </Link>
+              </span>
+            )}
           </div>
         )}
         <Keywords tags={tags} major={event.major} />
@@ -302,6 +310,19 @@ function Byline({ brief, recent = false, children }: { brief: SceneBrief; recent
   );
 }
 
+/** Who else ran a report, by their icons and a count. */
+function Copies({ copies }: { copies: Array<{ media: string; mediaTitle: string }> }) {
+  if (!copies.length) return null;
+  return (
+    <span className={styles.copies} title={copies.map((c) => c.mediaTitle).join('、')}>
+      {copies.slice(0, 3).map((c) => (
+        <MediaIcon key={c.media} media={c.media} title={c.mediaTitle} size={14} />
+      ))}
+      另有 {copies.length} 家刊出
+    </span>
+  );
+}
+
 /** A report's site tags, the event's own keywords in the lens's colour. */
 function ReportTags({ tags, keywords, max = 5 }: { tags: string[]; keywords: ReadonlySet<string>; max?: number }) {
   if (!tags.length) return null;
@@ -336,14 +357,7 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
                 {a.title}
               </Link>
               <Byline brief={a} recent={a.recent}>
-                {a.copies.length > 0 && (
-                  <span className={styles.copies} title={a.copies.map((c) => c.mediaTitle).join('、')}>
-                    {a.copies.slice(0, 3).map((c) => (
-                      <MediaIcon key={c.media} media={c.media} title={c.mediaTitle} size={14} />
-                    ))}
-                    另有 {a.copies.length} 家刊出
-                  </span>
-                )}
+                <Copies copies={a.copies} />
               </Byline>
               <ReportTags tags={a.tags} keywords={keywords} />
             </span>
