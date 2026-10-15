@@ -104,6 +104,7 @@ export function ArticleFacets({
           {facets.total.toLocaleString()} 篇
         </strong>
         來自 {facets.media.length} 家媒體
+        <span className="block text-xs text-zinc-500 dark:text-zinc-400">本站收錄的全部媒體，首頁新聞量只算「新聞媒體」類別</span>
       </p>
       <div className="space-y-1.5">
         <div className="flex items-baseline justify-between text-xs text-zinc-500 dark:text-zinc-400">
@@ -192,8 +193,8 @@ function ArticleRow({ a, q, thread }: { a: Hit; q: string; thread: PeriodThread 
           <span aria-hidden>·</span>
           <time dateTime={a.publishedAt} title={taipei(a.publishedAt)} className="tabular-nums">
             {taipeiClock(a.publishedAt)}
-            {a.datePending && ' *'}
           </time>
+          {a.datePending && <span title="原站沒有標示刊登時間，這是本站第一次收到這篇的時間">首見</span>}
           <SourceLink url={a.url} iconOnly className="!min-h-5" />
         </p>
         <h3 className="mt-1 text-[15px] font-medium leading-6">

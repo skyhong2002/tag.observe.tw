@@ -242,6 +242,7 @@
 .topicBody { min-width: 0; }
 .topicBody h3 { font-size: 14px; line-height: 1.6; font-weight: 500; }
 .topicBody p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; color: var(--muted); }
+.campShareScope { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
 .topicMetaItem { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 
 @media (max-width: 1000px) {
