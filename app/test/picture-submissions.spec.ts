@@ -127,6 +127,31 @@ describe.skipIf(!url)('reader picture submissions, public on arrival (MariaDB)',
     });
     expect(await db.select().from(tagVisualCandidates).where(eq(tagVisualCandidates.tag, 'F1-restore'))).toHaveLength(1);
   });
+  it('revokes an older approval without a snapshot by showing the best remaining candidate', async () => {
+    await db.insert(tagVisuals).values({ tag: 'F1-legacy', status: 'voted', shownRank: 2, kind: 'logo', checkedAt: new Date() });
+    await db.insert(tagVisualCandidates).values([
+      { tag: 'F1-legacy', rank: 1, kind: 'logo', note: 'Wikidata' },
+      { tag: 'F1-legacy', rank: 2, kind: 'logo', note: '讀者上傳（已審核）', image, uploadedBy: user.id, uploadedAt: new Date() },
+    ]);
+    const [legacy] = await db
+      .insert(tagSubmissions)
+      .values({
+        kind: 'picture',
+        tag: 'F1-legacy',
+        source: 'submission',
+        status: 'approved',
+        createdBy: user.id,
+        createdAt: new Date(),
+        dedupeKey: 'legacy-approved-without-snapshot',
+        pictureKind: 'visual',
+        image,
+        rightsConfirmed: true,
+        candidateRank: 2,
+      })
+      .$returningId();
+    await revoke(legacy.id);
+    expect(await db.select().from(tagVisuals).where(eq(tagVisuals.tag, 'F1-legacy'))).toMatchObject([{ status: 'auto', shownRank: 1 }]);
+  });
   it('keeps administrator picture locks when an upload is published', async () => {
     await db.insert(tagVisuals).values({ tag: 'F1-locked', status: 'hidden', checkedAt: new Date() });
     await submitPicture(db, { tag: 'F1-locked', pictureKind: 'visual', image, userId: user.id });

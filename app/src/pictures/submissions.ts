@@ -174,7 +174,19 @@ export async function publishPicture(db: Db, row: typeof tagSubmissions.$inferSe
 export async function revokePicture(db: Db, row: typeof tagSubmissions.$inferSelect) {
   const { tag, pictureKind: kind, candidateRank: rank } = row;
   if (row.kind !== 'picture' || !kind || rank === null) throw Error('這筆圖片投稿沒有公開中的候選圖');
-  const previous = (row.pictureMeta as { previous?: Previous } | null)?.previous ?? { status: null, shownRank: null };
+  const recorded = (row.pictureMeta as { previous?: Previous } | null)?.previous;
+  // Pictures approved before 2026-10-15 kept no snapshot: fall back to the best remaining candidate.
+  const remaining = async () => {
+    const table = kind === 'avatar' ? tagAvatarCandidates : tagVisualCandidates;
+    const [first] = await db
+      .select({ rank: table.rank })
+      .from(table)
+      .where(and(eq(table.tag, tag), sql`${table.rank} <> ${rank}`))
+      .orderBy(table.rank)
+      .limit(1);
+    return first?.rank ?? null;
+  };
+  const previous: Previous = recorded ?? { status: 'auto', shownRank: await remaining() };
   await db.delete(tagPictureVotes).where(and(eq(tagPictureVotes.tag, tag), eq(tagPictureVotes.kind, kind), eq(tagPictureVotes.rank, rank)));
   if (kind === 'avatar') {
     const [person] = await db.select({ shownRank: tagPeople.shownRank }).from(tagPeople).where(eq(tagPeople.tag, tag)).for('update');
