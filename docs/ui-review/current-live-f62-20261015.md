@@ -281,3 +281,5 @@ Network recomputed: `{"requests": 1318, "dnt": {"1": 1318}, "googleBrowserReques
 - `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch006/031-390-dark-full.png` — `e7c3f2a6c00e5f76e5a00777862676b8be859703849d1c756f26218433f4aa06`
 
 Batch006 actual formal review recorded: event1775/headlines normal bounded presentation; `/cat/news/` redirects 308 to ranking category and `/event/archive/` redirects 308 to `/event/`, so those are not independent templates. Missing interaction/auth/loading/error/full-list states remain pending. Reviewer report retained with actual 32-image hashes and raw network.
+
+Batch008 partial capture: capture-public exited nonzero at screenshot font wait timeout after 9 shots/5 pages; `batch008-partial-receipt.json` and raw manifest remain. It is not submitted for review or counted as route PASS; no retry started.
