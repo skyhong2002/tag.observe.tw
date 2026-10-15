@@ -19,6 +19,7 @@ const sha = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).
 const write = (name, value) => fs.writeFileSync(path.join(root, name), JSON.stringify(value, null, 2), { mode: 0o600 });
 const requests = [], transport = [], shots = [], pages = [], sockets = new Set();
 let context, completed = false, runError;
+const MAX_FULL = 20000;
 if (!input.webSha || !input.apiSha || !input.buildId || !Array.isArray(input.routes)) throw Error('Missing version/routes');
 for (const row of input.routes) {
   if (!/^\d{3}$/.test(row.id) || new URL(row.path, origin).origin !== origin || !row.path.startsWith('/') || row.path.startsWith('//')) throw Error('Invalid route');
@@ -122,8 +123,10 @@ try {
           pages.push({ id: route.id, path: route.path, url: page.url(), width, theme, status: response.status(), utc: new Date().toISOString(), ...state });
           for (const kind of ['viewport', 'full']) {
             const filename = `${route.id}-${width}-${theme}-${kind}.png`, file = path.join(root, filename);
-            await page.screenshot({ path: file, fullPage: kind === 'full' }); fs.chmodSync(file, 0o600);
-            shots.push({ id: route.id, url: page.url(), width, viewportHeight: width === 390 ? 844 : 800, theme, kind, path: file, sha256: sha(file), utc: new Date().toISOString() });
+            // Very long pages exceed what Chromium can raster in one shot; keep the top and say so.
+            const truncated = kind === 'full' && state.height > MAX_FULL;
+            await page.screenshot({ path: file, fullPage: kind === 'full', timeout: 120000, ...(truncated && { clip: { x: 0, y: 0, width, height: MAX_FULL } }) }); fs.chmodSync(file, 0o600);
+            shots.push({ id: route.id, url: page.url(), width, viewportHeight: width === 390 ? 844 : 800, theme, kind, path: file, sha256: sha(file), utc: new Date().toISOString(), ...(truncated && { truncatedFrom: state.height }) });
           }
         }
       } finally { await page.close(); }
