@@ -23,8 +23,10 @@ describe('search and social metadata', () => {
       expect(legacyRoute(path)).toBeNull();
     expect(legacyRoute('/event/opengraph')).toEqual({ status: 301, location: '/event/' });
     expect(legacyRoute('/tag/test/old-chart/')).toEqual({ status: 301, location: '/tag/test/' });
-    // The picture vote page is new, not a legacy path.
+    // The picture and relation vote pages are new, not legacy paths.
     expect(legacyRoute('/tag/test/picture/')).toBeNull();
+    expect(legacyRoute('/tag/test/relations/')).toBeNull();
+    expect(legacyRoute('/tag/test/relations/x')).toEqual({ status: 301, location: '/tag/test/' });
     expect(legacyRoute('/tag/test/picture/x')).toEqual({ status: 301, location: '/tag/test/' });
   });
   it('decodes page parameters once, including tags containing a percent sign', () => {
