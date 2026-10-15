@@ -10,7 +10,7 @@ import { activeGroups, ancestors, type Def, descendants } from '../tag-groups/tr
 // tags include its subgroups' tags, and a tag in a subgroup is shown in the
 // groups above it too.
 
-const SHOWN = ['auto', 'confirmed'] as const;
+export const SHOWN = ['auto', 'confirmed'] as const;
 const PAGE = 1000;
 const RANKED = 200;
 

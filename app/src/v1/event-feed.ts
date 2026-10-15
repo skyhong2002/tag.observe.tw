@@ -168,13 +168,15 @@ export async function coverageBetween(
 export interface PrevEvent {
   threadId: number | null;
   rank: number;
+  /** Score in millionths, as stored. */
+  score: number;
   major: string[];
 }
 /** Events of the snapshot at `hour` (the previous one, for rank deltas). */
 export async function eventsAt(db: Db, category: string, hour: Date | null): Promise<PrevEvent[]> {
   if (!hour) return [];
   return db
-    .select({ threadId: events.threadId, rank: events.rank, major: events.major })
+    .select({ threadId: events.threadId, rank: events.rank, score: events.score, major: events.major })
     .from(events)
     .innerJoin(eventSnapshots, eq(eventSnapshots.id, events.snapshotId))
     .where(and(eq(eventSnapshots.category, category), eq(eventSnapshots.hourStart, hour)));
@@ -185,19 +187,24 @@ export async function eventsAt(db: Db, category: string, hour: Date | null): Pro
  *  table under another id, so fall back to major-tag overlap: the best-ranked
  *  previous event sharing at least half of the smaller major set, or the same
  *  leading tag (the strongest one, which names the story). */
-export function matchPrevRank(e: { threadId: number | null; major: string[] }, prev: readonly PrevEvent[]): number | null {
+type Linkable = Pick<PrevEvent, 'threadId' | 'rank' | 'major'>;
+export function matchPrevRank(e: { threadId: number | null; major: string[] }, prev: readonly Linkable[]): number | null {
+  return matchPrev(e, prev)?.rank ?? null;
+}
+/** The previous snapshot's event matchPrevRank finds, for its score too. */
+export function matchPrev<P extends Linkable>(e: { threadId: number | null; major: string[] }, prev: readonly P[]): P | null {
   if (e.threadId != null) {
     const same = prev.find((p) => p.threadId === e.threadId);
-    if (same) return same.rank;
+    if (same) return same;
   }
   const majors = new Set(e.major);
   if (majors.size === 0) return null;
-  let best: number | null = null;
+  let best: P | null = null;
   for (const p of prev) {
     const shared = p.major.filter((t) => majors.has(t)).length;
     const need = Math.ceil(Math.min(majors.size, p.major.length) / 2);
     const linked = shared >= need || (p.major[0] !== undefined && p.major[0] === e.major[0]);
-    if (shared >= 1 && linked && (best === null || p.rank < best)) best = p.rank;
+    if (shared >= 1 && linked && (best === null || p.rank < best.rank)) best = p;
   }
   return best;
 }

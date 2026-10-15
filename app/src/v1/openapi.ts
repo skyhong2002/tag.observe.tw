@@ -218,6 +218,28 @@ const schemas: Record<string, Schema> = {
     titleTags: map(int(), '標題用詞：懸念、反應、攻擊'),
   }),
   MediaKey: str('媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media', { pattern: '^[a-z0-9_]+$' }),
+  LiveSceneCounts: obj(
+    {
+      today: int('今天（台北時間）發布的文章數'),
+      hour: int('近一小時收錄的文章數'),
+      previous: int('再前一小時收錄的文章數'),
+    },
+    '不重複的本站爬取文章數',
+  ),
+  LiveSceneRow: obj(
+    {
+      key: str('topic:、thread: 或 group: 加上 id'),
+      title: str('議題名稱；事件串為主要標籤'),
+      href: str('本站頁面'),
+      media: nullable(str('媒體代碼，媒體自己的議題才有')),
+      mediaTitle: nullable(str()),
+      news: arr(obj({ title: str(), media: ref('MediaKey') }), '事件串的代表標題，用來選出主標題'),
+      major: arr(str(), '事件串的主要標籤'),
+      counts: ref('LiveSceneCounts'),
+    },
+    '議題排行的一列',
+    ['news', 'major'],
+  ),
   Headline: obj(
     {
       id: nullable(int('文章 id（舊資料可能為 null）')),
@@ -2889,6 +2911,42 @@ export const ENDPOINTS: Endpoint[] = [
           '本站 GA 即時資料；即時工作停擺時為 null',
         ),
       ),
+    }),
+  },
+  {
+    path: '/api/v1/liveboard/scenes',
+    tag: 'events',
+    summary: '即時看板的事件與議題鏡頭',
+    description:
+      '給精簡版 /liveboard/ 的事件鏡頭與議題排行。events 是最新一小時事件快照的前 10 名，附上一份快照的名次與分數，以及近一小時收錄、帶有該事件兩個主要標籤的文章。boards 是今天有文章的議題排行（依今天發布的文章數，最多各 10 個）：media 為各媒體自己的議題／專題頁（成員是頁面上列出的文章；專題頁每幾小時才重讀一次，近一小時的數字會晚到），threads 為今天出現過的跨媒體事件串，categories 與 groups 為標籤群組（分類，以及人物、政黨等群組，含子群組的標籤）。counts.today 依發布時間；hour 與 previous 依收錄時間，是到現在為止的一小時與再前一小時，因為許多文章發布後才收錄，依發布時間算的最近一小時永遠不完整。',
+    cache: '60 秒',
+    response: obj({
+      generatedAt: time(),
+      windows: obj({ today: time('今天（台北時間）0 時'), hour: time('近一小時的起點'), previous: time('再前一小時的起點') }),
+      eventHour: nullable(time('事件快照的小時')),
+      events: arr(
+        obj({
+          rank: int(),
+          prevRank: nullable(int('上一份快照的名次，null 表示新上榜')),
+          score: num(),
+          prevScore: nullable(num('上一份快照的分數')),
+          major: arr(str(), '主要標籤'),
+          news: arr(obj({ title: str(), media: ref('MediaKey') }), '事件的代表標題（最多 6 則），用來選出主標題'),
+          href: nullable(str('事件串頁')),
+          counts: ref('LiveSceneCounts'),
+          articles: arr(
+            obj({ id: int(), media: ref('MediaKey'), mediaTitle: str(), title: str(), url: str(), publishedAt: time() }),
+            '近一小時收錄的文章，依發布時間新的在前，最多 5 篇',
+          ),
+        }),
+        '最多 10 個',
+      ),
+      boards: obj({
+        media: arr(ref('LiveSceneRow'), '各媒體的議題／專題'),
+        threads: arr(ref('LiveSceneRow'), '跨媒體事件串'),
+        categories: arr(ref('LiveSceneRow'), '標籤群組：分類'),
+        groups: arr(ref('LiveSceneRow'), '標籤群組：人物、政黨等'),
+      }),
     }),
   },
   {

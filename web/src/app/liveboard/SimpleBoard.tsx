@@ -7,7 +7,9 @@ import Wordmark from '@/components/Wordmark';
 import type { RankingEntry } from '@/lib/api';
 import { type CloudSizes, type PlacedWord, pictureBox } from '@/lib/word-cloud.mts';
 import { layoutCloud } from './cloud-layout';
-import { type Lens, type LiveboardSettings, pickLenses } from './settings';
+import SceneView from './SceneView';
+import { EVENT_FRAMES, type LiveScenes, type SceneEvent, type SceneRow, stayOf } from './scenes';
+import { type CloudLens, type Lens, type LiveboardSettings, pickLenses } from './settings';
 import styles from './simple.module.css';
 
 // The simple liveboard: the whole screen is the home page's cloud, the lens's
@@ -17,6 +19,8 @@ import styles from './simple.module.css';
 // each word that stays drifts slowly as it grows or shrinks, staying near its
 // place; words that drop out shrink away and new ones grow in. Then the next
 // lens cross-fades in over the last. Tapping a word opens its tag page.
+// Other lenses are scenes (SceneView): the top events one a frame, or a
+// leaderboard of the day's topics, from /api/v1/liveboard/scenes.
 // ← / → (or PageUp / PageDown, as a presenter remote sends), a swipe, or the
 // ‹ › beside the time line step to the previous or next hour, and past either
 // end to the neighbouring lens; tapping an hour goes straight to it.
@@ -32,29 +36,35 @@ const STALE = 2 * 60 * SECOND;
 const LEAVE = 3200;
 /** Words are drawn at this size and scaled, so a change of size animates with the move. */
 const BASE = 40;
+/** How long a scene's frame takes to fade in (keep in step with scenes.module.css). */
+const SCENE_FADE = 1000;
 
 export type Pictures = Record<string, { image?: string; emoji?: string; aspect?: number }>;
 interface Term {
   tag: string;
   weight: number;
 }
-/** One hourly snapshot of a lens. */
+/** One hourly snapshot of a cloud lens, or one frame of a scene (its terms empty). */
 interface Frame {
   id: number;
   computedAt: string;
   terms: Term[];
   /** Hours before now it was asked for (0 is the present); set when a lens's frames are gathered. */
   back?: number;
+  /** An event lens's event… */
+  event?: SceneEvent;
+  /** …or a leaderboard's rows. */
+  rows?: SceneRow[];
 }
 interface RankingResponse {
   snapshot: { id: number; computedAt: string };
   entries: RankingEntry[];
 }
 
-const rankingUrl = (lens: Lens, at?: Date) =>
+const rankingUrl = (lens: CloudLens, at?: Date) =>
   `/api/v1/ranking?category=${lens.category}&order=${lens.order}&limit=${WORDS + 8}${lens.order === 'growth' ? '&gate=all' : ''}${at ? `&at=${encodeURIComponent(at.toISOString())}` : ''}`;
 
-function frameOf(lens: Lens, ranking: RankingResponse): Frame {
+function frameOf(lens: CloudLens, ranking: RankingResponse): Frame {
   const weight = (e: RankingEntry) =>
     lens.order === 'growth' ? (e.signals?.growth ?? 0) : lens.order === 'burst' ? (e.burst ?? 0) : e.normalized;
   const terms = ranking.entries
@@ -293,12 +303,14 @@ export default function SimpleBoard({
   const [playing, setPlaying] = useState<Playing | null>(null);
   const [words, setWords] = useState<Shown[]>([]);
   const cache = useRef(new Map<string, { at: number; frame: Frame | null }>());
+  /** The event and topic scenes' data, shared by their lenses and fetched again once stale. */
+  const scenes = useRef<{ at: number; data: Promise<LiveScenes | null> } | null>(null);
   /** Skips to the next (1) or previous (-1) frame, or to one frame of the lens; set by the player. */
   const skip = useRef<{ step: (by: number) => void; to: (frame: number) => void }>({ step: () => {}, to: () => {} });
   const seeded = useRef(false);
   if (!seeded.current) {
     seeded.current = true;
-    const lens = lenses.find((l) => l.key === initial?.lens);
+    const lens = lenses.find((l): l is CloudLens => l.key === initial?.lens && l.scene === 'cloud');
     if (lens && initial?.ranking.entries.length)
       cache.current.set(`${lens.key}@now`, { at: Date.now(), frame: frameOf(lens, initial.ranking) });
   }
@@ -353,7 +365,7 @@ export default function SimpleBoard({
         if (frame !== here.frame || wanted) go({ lens: here.lens, frame });
       },
     };
-    const snapshot = async (lens: Lens, hoursBack: number, now: number) => {
+    const snapshot = async (lens: CloudLens, hoursBack: number, now: number) => {
       // Past snapshots are filed under their hour, so a later turn reuses them.
       const key = hoursBack ? `${lens.key}@${Math.floor((now - hoursBack * HOUR) / HOUR)}` : `${lens.key}@now`;
       const hit = cache.current.get(key);
@@ -363,7 +375,27 @@ export default function SimpleBoard({
       if (got || !hit) cache.current.set(key, { at: Date.now(), frame: got });
       return got ?? hit?.frame ?? null;
     };
-    const framesOf = async (lens: Lens) => {
+    const sceneData = () => {
+      if (!scenes.current || Date.now() - scenes.current.at > STALE / 2) {
+        const data = getJson<LiveScenes>('/api/v1/liveboard/scenes');
+        scenes.current = { at: Date.now(), data };
+        // A failed fetch is tried again on the next turn.
+        data.then((d) => {
+          if (!d && scenes.current?.data === data) scenes.current = null;
+        });
+      }
+      return scenes.current.data;
+    };
+    const framesOf = async (lens: Lens): Promise<Frame[]> => {
+      if (lens.scene !== 'cloud') {
+        const data = await sceneData();
+        if (!data) return [];
+        const at = data.generatedAt;
+        if (lens.scene === 'events')
+          return data.events.slice(0, EVENT_FRAMES).map((event, i) => ({ id: i, computedAt: at, terms: [], event }));
+        const rows = data.boards[lens.board];
+        return rows.length ? [{ id: 0, computedAt: at, terms: [], rows }] : [];
+      }
       const now = Date.now();
       const all = await Promise.all(
         Array.from({ length: settings.history + 1 }, async (_, i): Promise<Frame | null> => {
@@ -455,7 +487,7 @@ export default function SimpleBoard({
           if (f !== shown) continue;
           const last = f === frames.length - 1;
           if (last) next = framesOf(lenses[after]);
-          await sleep((last ? settings.hold : settings.step) * SECOND);
+          await sleep(stayOf(lens.scene, last, settings) * SECOND);
           if (cancelled) return;
           if (skipped()) break;
           if (f !== shown) continue;
@@ -536,14 +568,29 @@ export default function SimpleBoard({
   };
 
   // Each frame is the snapshot that stood that many hours ago (the hour's last one).
+  // An event lens's frames are its events, by rank.
   const hourLabels = useMemo(
-    () => (playing?.frames ?? []).map((f, i, all) => (i === all.length - 1 || !f.back ? '現在' : ago(f.back))),
+    () =>
+      (playing?.frames ?? []).map((f, i, all) => (f.event ? String(f.event.rank) : i === all.length - 1 || !f.back ? '現在' : ago(f.back))),
     [playing?.frames],
   );
   const centre = useMemo(
-    () => (canvas && playing ? centreOf(playing.lens, hourLabels, canvas.title, canvas.width) : null),
+    () => (canvas && playing?.lens.scene === 'cloud' ? centreOf(playing.lens, hourLabels, canvas.title, canvas.width) : null),
     [canvas, playing?.lens, hourLabels],
   );
+
+  // A scene has no words: the cloud's fade out where they are, and the scene's
+  // frame counts as settled once it has faded in.
+  useEffect(() => {
+    if (!playing || playing.lens.scene === 'cloud') return;
+    laidRun.current = playing.run;
+    setWords((ws) =>
+      ws.some((w) => w.phase !== 'exit')
+        ? ws.flatMap((w): Shown[] => (w.phase === 'enter' ? [] : [{ ...w, phase: 'exit', fade: true }]))
+        : ws,
+    );
+    settleAfter(`${playing.run}:${playing.visit}`, SCENE_FADE);
+  }, [playing]);
 
   // Lays the frame out around the centre and hands out phases. A new hour of
   // the same lens keeps each word near where it was: words still there move
@@ -585,7 +632,7 @@ export default function SimpleBoard({
         badge: badges.get(w.label),
       });
       const frameKey = `${playing.run}:${playing.visit}`;
-      if (fresh) {
+      if (fresh && !newLens) {
         setWords(placed.map((w) => shown(w, 'live')));
         settleAfter(frameKey, settleMs([], true));
       } else if (newLens) {
@@ -693,6 +740,21 @@ export default function SimpleBoard({
         }}
         onClickCapture={onClickCapture}
       >
+        {playing && playing.lens.scene !== 'cloud' && (
+          <SceneView
+            key={playing.run}
+            lens={playing.lens}
+            colour={tint(playing.lens)}
+            event={playing.frames[playing.frame]?.event}
+            rows={playing.frames[playing.frame]?.rows}
+            frame={playing.frame}
+            labels={hourLabels}
+            settled={settledFrame === `${playing.run}:${playing.visit}`}
+            stay={stayOf(playing.lens.scene, playing.frame === playing.frames.length - 1, settings)}
+            onStep={(by) => skip.current.step(by)}
+            onTo={(i) => skip.current.to(i)}
+          />
+        )}
         {canvas && (
           <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} className={styles.cloud} aria-label={`${lens?.title ?? ''}文字雲`}>
             {playing && centre && (

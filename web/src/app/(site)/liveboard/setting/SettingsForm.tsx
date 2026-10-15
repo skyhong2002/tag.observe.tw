@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { button, field, note, primary } from '@/app/(site)/my/ReaderGate';
+import { EVENT_FRAMES, stayOf } from '@/app/liveboard/scenes';
 import { DEFAULTS, INTERVALS, LENSES, LIMITS, type LiveboardSettings, settingsQuery } from '@/app/liveboard/settings';
 import { saveSettings, useSavedSettings } from '@/app/liveboard/useSettings';
 import { loginHref, useSession } from '@/lib/session';
@@ -60,8 +61,14 @@ export default function SettingsForm() {
     }
   };
   const off = LENSES.filter((l) => !draft.lenses.includes(l.key));
-  // About 1.5 s to fade a lens in and 4 s for each hour's animation, plus the stays.
+  // A cloud: about 1.5 s to fade in and 4 s for each hour's animation, plus the stays.
+  // A scene: a second to fade each frame in, plus its stay; events show EVENT_FRAMES of them.
   const perLens = Math.round(1.5 + draft.history * (4 + draft.step) + draft.hold);
+  const perScene = (scene: 'events' | 'board') => (scene === 'events' ? EVENT_FRAMES : 1) * (1 + stayOf(scene, true, draft));
+  const round = draft.lenses.reduce((n, key) => {
+    const lens = lensOf(key);
+    return n + (!lens ? 0 : lens.scene === 'cloud' ? perLens : perScene(lens.scene));
+  }, 0);
   const user = session?.user;
   const dirty = JSON.stringify(draft) !== JSON.stringify(stored);
 
@@ -272,7 +279,9 @@ export default function SettingsForm() {
             </label>
 
             <p className={note}>
-              每個鏡頭約 {perLens} 秒，{draft.lenses.length} 個鏡頭一輪約 {Math.round((perLens * draft.lenses.length) / 6) / 10} 分鐘。
+              每個關鍵字鏡頭約 {perLens} 秒，事件約 {Math.round(perScene('events'))} 秒（{EVENT_FRAMES} 個事件），每張排行約{' '}
+              {Math.round(perScene('board'))} 秒；{draft.lenses.length} 個鏡頭一輪約 {Math.round(round / 6) / 10} 分鐘。按 ← →
+              或左右滑動可以跳過。
             </p>
           </>
         )}
