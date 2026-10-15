@@ -37,7 +37,10 @@ export default function AdminPanel() {
   );
 }
 
-type SubmissionSummary = { relation: { approved: number; revoked: number }; picture: { approved: number; revoked: number } };
+type SubmissionSummary = {
+  relation: { pending: number; approved: number; revoked: number };
+  picture: { approved: number; revoked: number };
+};
 
 function TagManagement() {
   const [summary, setSummary] = useState<SubmissionSummary | null>(null);
@@ -51,15 +54,16 @@ function TagManagement() {
       <p className={note}>管理人物、機構、地點、事件與概念的分類、上下層、圖像及文章關係。</p>
       {summary && (
         <p className={note}>
-          近 7 天讀者投稿（不需審核，可撤下）：
+          近 7 天讀者投稿（由讀者投票決定，管理員可撤下）：
           <Link href="/admin/tags/?view=pictures" className={linkClass}>
             配圖 {summary.picture.approved} 張
           </Link>
           {summary.picture.revoked > 0 && `（已撤下 ${summary.picture.revoked}）`}、
           <Link href="/admin/tags/?view=submissions" className={linkClass}>
-            關係 {summary.relation.approved} 筆
+            關係 {summary.relation.pending + summary.relation.approved + summary.relation.revoked} 筆
           </Link>
-          {summary.relation.revoked > 0 && `（已撤下 ${summary.relation.revoked}）`}。
+          （投票中 {summary.relation.pending}、已成立 {summary.relation.approved}
+          {summary.relation.revoked > 0 && `、已撤下 ${summary.relation.revoked}`}）。
         </p>
       )}
       <Link

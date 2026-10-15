@@ -291,6 +291,8 @@ export interface TagRelations {
   tag: string;
   tagId: string;
   relations: TagRelation[];
+  /** Candidates readers can vote on at /tag/<tag>/relations/. */
+  voting?: number;
   pictures: unknown[];
   truncated?: boolean;
 }

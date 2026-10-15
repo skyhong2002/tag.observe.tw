@@ -6,9 +6,24 @@ import { loginHref, useSession } from '@/lib/session';
 
 const field = 'mt-1 min-h-11 w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700';
 
-export default function TagRelationSubmission({ tag }: { tag: string }) {
+const NAMES: Record<TagRelationType, string> = { 'is-a': '分類', related: '相關詞', alias: '別名' };
+
+/**
+ * Propose a relation; it joins the vote on /tag/<tag>/relations/. That page
+ * passes the type its tabs chose (fixedType) and reloads after a proposal.
+ */
+export default function TagRelationSubmission({
+  tag,
+  fixedType,
+  onDone,
+}: {
+  tag: string;
+  fixedType?: TagRelationType;
+  onDone?: () => void;
+}) {
   const session = useSession();
-  const [type, setType] = useState<TagRelationType>('related');
+  const [chosenType, setType] = useState<TagRelationType>('related');
+  const type = fixedType ?? chosenType;
   const [target, setTarget] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,15 +63,18 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
       if (!live.current) return;
       setMessage(
         body.status === 'revoked'
-          ? '這筆關係先前已被管理員撤下，這次沒有新增投稿。'
+          ? '這筆關係先前已被管理員撤下，這次沒有新增。'
           : body.status === 'rejected'
-            ? '這筆關係先前未被採納，這次沒有新增投稿。'
-            : body.duplicate
-              ? '這筆關係已經公開，毋須重複投稿。'
-              : '已公開。管理員如發現不正確會撤下。',
+            ? '這筆關係管理員已決定不成立，這次沒有新增。'
+            : body.status === 'approved'
+              ? '這筆關係已經成立。'
+              : body.duplicate
+                ? '這筆關係已經在投票中。'
+                : '已加入投票。其他讀者同意後就會成立。',
       );
       setTarget('');
       setReason('');
+      onDone?.();
     } catch (err) {
       if (live.current) setError((err as Error).message);
     } finally {
@@ -65,8 +83,8 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
     }
   };
   return (
-    <details className="mt-4 border-t border-zinc-200 pt-2 text-sm dark:border-zinc-800">
-      <summary className="min-h-11 cursor-pointer py-3 font-medium">提出關鍵字關係</summary>
+    <section className="mt-6 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-800">
+      <h2 className="font-semibold">提出一個{NAMES[type]}</h2>
       {!session ? (
         <p role="status">正在確認登入狀態…</p>
       ) : !session.enabled ? (
@@ -74,25 +92,29 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
       ) : !session.user ? (
         <p className="pb-2 text-zinc-600 dark:text-zinc-400">
           <a
-            href={loginHref(`/tag/${encodeURIComponent(tag)}/#tag-relations`)}
+            href={loginHref(`/tag/${encodeURIComponent(tag)}/relations/`)}
             className="inline-flex min-h-11 items-center text-brand-700 underline dark:text-brand-400"
           >
             登入
           </a>
-          後可以提出相關詞、上位分類或別名。送出後立即公開，管理員可撤下不正確的關係。
+          後可以投票，或提出新的分類、相關詞或別名。
         </p>
       ) : (
         <form aria-busy={busy} onSubmit={submit} className="space-y-3 pb-2">
-          <p className="text-zinc-600 dark:text-zinc-400">請說明關聯與可查證的來源。一起出現在新聞中，不一定代表有分類或同義關係。</p>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            送出後成為候選，其他讀者同意就會成立。一起出現在新聞中，不一定代表有分類或同義關係。
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label>
-              關係類型
-              <select value={type} onChange={(e) => setType(e.target.value as TagRelationType)} className={field} disabled={busy}>
-                <option value="related">相關詞</option>
-                <option value="is-a">上位分類（此標籤屬於…）</option>
-                <option value="alias">同義或別名</option>
-              </select>
-            </label>
+            {!fixedType && (
+              <label>
+                關係類型
+                <select value={type} onChange={(e) => setType(e.target.value as TagRelationType)} className={field} disabled={busy}>
+                  <option value="related">相關詞</option>
+                  <option value="is-a">上位分類（此標籤屬於…）</option>
+                  <option value="alias">同義或別名</option>
+                </select>
+              </label>
+            )}
             <label>
               關鍵字
               <input
@@ -124,7 +146,7 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
             disabled={busy || !target.trim() || !reason.trim()}
             className="min-h-11 rounded-full bg-brand-700 px-4 text-white disabled:opacity-50"
           >
-            {busy ? '送出中…' : '送出並公開'}
+            {busy ? '送出中…' : '加入投票'}
           </button>
           {message && (
             <p role="status" className="text-zinc-700 dark:text-zinc-300">
@@ -138,6 +160,6 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
           )}
         </form>
       )}
-    </details>
+    </section>
   );
 }

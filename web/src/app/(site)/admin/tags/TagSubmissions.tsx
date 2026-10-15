@@ -22,8 +22,12 @@ type Submission = {
 };
 type Result = { items: Submission[]; next: number | string | null };
 const STATUS: Record<Status, string> = { pending: '待審核', approved: '已公開', revoked: '已撤下', rejected: '未採納' };
-// Submissions are public on arrival (2026-10-15); pending only exists for older rows.
-const TABS: Status[] = ['approved', 'revoked', 'rejected'];
+// Relations are decided by readers' votes; pictures are public candidates on arrival (2026-10-15).
+const RELATION_STATUS: Record<Status, string> = { pending: '投票中', approved: '已成立', revoked: '已撤下', rejected: '鎖定不成立' };
+const TABS: Record<Kind, Status[]> = {
+  relation: ['pending', 'approved', 'rejected', 'revoked'],
+  picture: ['approved', 'revoked', 'rejected'],
+};
 const TYPES = { 'is-a': '上位分類', related: '相關詞', alias: '同義或別名' };
 const button =
   'inline-flex min-h-11 items-center rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 disabled:opacity-50 dark:border-zinc-700';
@@ -37,7 +41,8 @@ export default function TagSubmissions({ kind, next }: { kind: Kind; next: strin
 }
 
 function Queue({ kind }: { kind: Kind }) {
-  const [status, setStatus] = useState<Status>('approved');
+  const [status, setStatus] = useState<Status>(kind === 'relation' ? 'pending' : 'approved');
+  const labels = kind === 'relation' ? RELATION_STATUS : STATUS;
   const [before, setBefore] = useState<Result['next']>(null);
   const [revision, setRevision] = useState(0);
   const [data, setData] = useState<Result | null>(null);
@@ -69,11 +74,11 @@ function Queue({ kind }: { kind: Kind }) {
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
         {kind === 'picture'
           ? '讀者上傳的圖不需審核，送出後立即成為投票候選；顯示哪一張由其他讀者投票決定（上傳者不能投自己的圖）。不適合或授權有疑慮的圖，填寫理由後撤下，標籤會回到原本的配圖。'
-          : '讀者提出的關係送出後立即公開。不正確的關係填寫理由後撤下，它新增的分類成員會一併還原。'}
+          : '讀者提出的關係（含系統建議與常一起出現的詞）由投票決定：至少 1 位其他讀者同意、且同意比不同意多就成立。管理員可以鎖定成立或不成立，或撤下已成立的關係（它新增的分類成員會一併還原）。'}
       </p>
       <fieldset className="mt-3 flex flex-wrap gap-2">
         <legend className="sr-only">投稿狀態</legend>
-        {TABS.map((value) => (
+        {TABS[kind].map((value) => (
           <button
             key={value}
             type="button"
@@ -84,7 +89,7 @@ function Queue({ kind }: { kind: Kind }) {
             }}
             className={`${button} ${value === status ? 'border-brand-600 bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200' : ''}`}
           >
-            {STATUS[value]}
+            {labels[value]}
           </button>
         ))}
       </fieldset>
@@ -108,7 +113,7 @@ function Queue({ kind }: { kind: Kind }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">沒有{STATUS[status]}的投稿。</p>
+        <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">沒有{labels[status]}的投稿。</p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         {data?.next != null && (
@@ -187,7 +192,7 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
       {item.status === 'pending' ? (
         <div className="space-y-2">
           <label className="block">
-            審核理由
+            {item.kind === 'relation' ? '鎖定理由' : '審核理由'}
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -205,10 +210,10 @@ function Row({ item, onDone }: { item: Submission; onDone: () => void }) {
               disabled={busy || !reason.trim() || (item.kind === 'picture' && !item.rightsConfirmed)}
               onClick={() => review('approved')}
             >
-              {busy ? '處理中…' : '通過並公開'}
+              {busy ? '處理中…' : item.kind === 'relation' ? '鎖定成立' : '通過並公開'}
             </button>
             <button type="button" className={button} disabled={busy || !reason.trim()} onClick={() => review('rejected')}>
-              不採納
+              {item.kind === 'relation' ? '鎖定不成立' : '不採納'}
             </button>
           </div>
         </div>

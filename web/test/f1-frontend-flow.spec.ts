@@ -70,7 +70,7 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
     const harness = load('../src/components/reader/TagRelationSubmission.tsx', [], session(null));
     const tree = harness.component({ tag: '台灣 & A' });
     expect(nodes(tree, 'a')[0].props.href).toBe(
-      `/auth/google?next=${encodeURIComponent(`/tag/${encodeURIComponent('台灣 & A')}/#tag-relations`)}`,
+      `/auth/google?next=${encodeURIComponent(`/tag/${encodeURIComponent('台灣 & A')}/relations/`)}`,
     );
     expect(nodes(tree, 'form')).toHaveLength(0);
   });
@@ -97,9 +97,9 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
       target: '分類',
       reason: '查證',
     });
-    resolve({ ok: true, json: async () => ({ status: 'approved', duplicate: false }) });
+    resolve({ ok: true, json: async () => ({ status: 'pending', duplicate: false }) });
     await first;
-    expect(harness.setters[4]).toHaveBeenCalledWith('已公開。管理員如發現不正確會撤下。');
+    expect(harness.setters[4]).toHaveBeenCalledWith('已加入投票。其他讀者同意後就會成立。');
   });
   it('rejects self relation before network and leaves form values intact', async () => {
     const harness = load(
@@ -150,7 +150,7 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
     );
     expect(html).toContain('別名');
     expect(html).not.toContain('PRIVATE');
-    expect(html).toContain('尚未收錄');
+    expect(html).toContain('/tag/%E5%8F%B0%E7%81%A3/relations/');
   });
   it('requires review reason and rights confirmation for approval, keeps rejection available', async () => {
     const request = vi.fn(async () => ({}));
@@ -171,7 +171,7 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
         '../AdminGate': { default: () => null, adminFetch: request },
       },
     );
-    const queue = children(harness.component({}))[0];
+    const queue = children(harness.component({ kind: 'picture', next: '/admin/tags/?view=pictures' }))[0];
     const queueTree = render(queue);
     const row = children(nodes(queueTree, 'ul')[0])[0];
     const rowTree = render(row);
@@ -253,7 +253,7 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
         '../AdminGate': { default: () => null, adminFetch: request },
       },
     );
-    const queue = children(harness.component({}))[0];
+    const queue = children(harness.component({ kind: 'picture', next: '/admin/tags/?view=pictures' }))[0];
     const row = children(nodes(render(queue), 'ul')[0])[0];
     const tree = render(row);
     const cleanup = harness.effects[1]() as () => void;
