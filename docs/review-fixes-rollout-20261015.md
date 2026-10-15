@@ -56,3 +56,8 @@ bash /home/deck/tag-analysis-private/f1-release/web-fixes-f3c943ae-20261015/roll
   remaining backlog items. Loopback candidate pair (API 18340 + web 18338) 200 everywhere, no residue rows in daily stats,
   `/eve/1775/` lists 80 of 400 headlines. Gaps web 6.8 s / API 2.3 s / gateway 1.8 s; 14 GETs 200; 0 error logs.
   Rollback: `bash /home/deck/tag-analysis-private/f1-release/web-fixes-b95ee4d7-20261015/rollback.sh`.
+- 15:32 UTC `1271a2dd` / `mi9698z-68SukiRB5sRXS` (web + API overlay + **worker** overlay of `db/schema.ts`,
+  `pictures/{routes,submissions}.ts`, `tag-groups/submissions.ts`, worker also `crawl/text.ts`): submissions need no review;
+  pictures are decided by other readers' votes (no self-vote), relations public on submit; admins revoke; merged 標籤配圖 admin view.
+  Loopback candidates 200; worker modules load. Gaps web 11.9 s / API 4.3 s / gateway 2.1 s / worker ~3 s; 14 GETs 200; 0 error logs.
+  Rollback: `bash /home/deck/tag-analysis-private/f1-release/web-fixes-1271a2dd-20261015/rollback.sh`.
