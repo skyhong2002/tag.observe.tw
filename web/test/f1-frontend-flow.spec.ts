@@ -136,21 +136,30 @@ describe('F1 isolated frontend state and markup contracts (not browser UI approv
     expect(harness.setters[1]).not.toHaveBeenCalled();
   });
   it('public relation markup excludes submission reasons and pending details', () => {
-    const harness = load('../src/components/TagRelationsPanel.tsx', [], {
+    const harness = load('../src/components/TagGroupChips.tsx', [], {
       'next/link': { default: ({ prefetch: _, ...props }: Record<string, unknown>) => React.createElement('a', props) },
-      './reader/TagRelationSubmission': { default: () => null },
     });
     const html = renderToStaticMarkup(
       React.createElement(harness.component, {
-        tag: '台灣',
-        data: {
-          relations: [{ id: '1', type: 'alias', target: { label: '別名', href: '/tag/alias/' }, reason: 'PRIVATE' }],
-        },
+        groups: [{ id: 1, label: '政治人物', kind: 'group', parentId: null, source: 'legacy' }],
+        relations: [
+          { id: 'g', type: 'is-a', target: { id: 'group:1', label: '政治人物', href: '/group/1/' } },
+          { id: '1', type: 'alias', target: { id: 'tag:x', label: '別名', href: '/tag/alias/' }, reason: 'PRIVATE' },
+        ],
       }),
     );
     expect(html).toContain('別名');
     expect(html).not.toContain('PRIVATE');
+    // A relation to a group the chips already show is not listed twice.
+    expect(html.match(/政治人物/g)).toHaveLength(1);
+  });
+  it('「改關係」 links to the vote page for signed-in readers only', () => {
+    const signedIn = load('../src/components/RelationLink.tsx', [], session({ role: 'reader' }));
+    const html = renderToStaticMarkup(React.createElement(signedIn.component, { tag: '台灣', voting: 5 }));
     expect(html).toContain('/tag/%E5%8F%B0%E7%81%A3/relations/');
+    expect(html).toContain('5 筆投票中');
+    const anonymous = load('../src/components/RelationLink.tsx', [], session(null));
+    expect(anonymous.component({ tag: '台灣', voting: 5 })).toBeNull();
   });
   it('requires review reason and rights confirmation for approval, keeps rejection available', async () => {
     const request = vi.fn(async () => ({}));

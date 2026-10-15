@@ -30,7 +30,7 @@ F4 對齊應包含共用的 header/footer、method notes、表格 loading／empt
 | 表格排序、篩選與捲動 | `web/src/lib/table-styles.ts`、`web/src/components/TableScroller.tsx` | 直接使用 `table.cell`、`table.num`、`table.row`、`table.lead`、`table.leadHead`、`table.leadBox`、`table.leadExtra`、`table.stack`；寬表橫向捲動、首欄固定，窄文字表搭配 `data-label` 堆疊。各頁排序與篩選須保留可見狀態。 |
 | 文章列、卡片 | `web/src/components/ArticleListItem.tsx`、`web/src/components/ArticleResults.tsx`、`web/src/components/EventCard.tsx`、`web/src/components/TopicCard.tsx` | 標題為主要連結，媒體、刊登時間與原文來源另列；整列避免互相嵌套的連結。 |
 | 標籤摘要、排行 | `web/src/components/TagSummaryCard.tsx`、`web/src/app/(site)/ranking/` 下元件、`web/src/components/RankingBasisNote.tsx` | 排名、篇數、分數分開標示；數字使用 `tabular-nums`；缺值保留為缺值，不能把資料不可用寫成 0。排行必須附時間窗口及基準媒體。 |
-| 標籤分類與關係 | `web/src/components/TagGroupChips.tsx`、`web/src/components/TagRelationsPanel.tsx` | 分開顯示上位分類（is-a）、相關詞（related）、同義或別名（alias）。父分類可多個、可有上層；共現只屬統計。 |
+| 標籤分類與關係 | `web/src/components/TagGroupChips.tsx`、`web/src/components/RelationLink.tsx` | 標籤名下一排：分類、主題，再接讀者成立的相關詞（related）、別名（alias）與非分類的上位標籤（is-a），最後是登入讀者看得到的「改關係」。父分類可多個、可有上層；共現只屬統計。 |
 | 圖片與頭像 | `web/src/components/ArticleThumbnail.tsx`、`web/src/components/SafeImage.tsx`、`web/src/components/TagPerson.tsx`、`web/src/components/TagVisual.tsx` | 使用既有處理後的圖片 URL、正確尺寸；原作者、來源連結與授權不可省略。人物素描和標誌不要當新聞現場照片。畫面外圖片延遲載入。 |
 | 本頁資料來源與計算方式 | `web/src/components/MethodNotes.tsx`、`web/src/components/method/`、`web/src/app/(site)/@notes/` | 使用平行 `@notes` slot 對應本頁，將定義、來源、計算範圍與限制放在固定頁尾；不要每站另創同義指標。 |
 | 管理表格、審核 | `web/src/app/(site)/admin/AdminGate.tsx`、`web/src/app/(site)/admin/Reports.tsx`、`web/src/app/(site)/admin/tags/TagSubmissions.tsx`、`web/src/app/(site)/admin/tag-groups/TagGroupEditor.tsx` | 登入與 admin 權限沿用 gateway；待審、已通過、未採納必須明示，留來源與審核理由；圖片核准須確認授權，待審圖片使用同源受權限保護的審核端點；只在成功回應後更新畫面。 |

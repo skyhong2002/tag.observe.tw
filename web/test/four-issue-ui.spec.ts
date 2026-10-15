@@ -50,7 +50,7 @@ function component(path: string, imports: Record<string, unknown> = {}, states?:
   });
   return exports.default;
 }
-const panel = component('../src/components/TagRelationsPanel.tsx', { './reader/TagRelationSubmission': { default: noop } });
+const chips = component('../src/components/TagGroupChips.tsx');
 const table = component('../src/components/MediaCrawlersTable.tsx', {
   'next/image': { default: noop },
   '@/components/FilterSuggestInput': { default: noop },
@@ -109,15 +109,18 @@ describe('four UI issue regressions (mocked SSR; no pixel validation)', () => {
     const label = 'VeryLongUnbrokenRelationLabel'.repeat(12);
     const $ = load(
       renderToStaticMarkup(
-        h(panel, { tag: '測試', data: { relations: [{ id: 1, type: 'is-a', inherited: true, target: { label, href: '/tag/long/' } }] } }),
+        h(chips, {
+          groups: [],
+          relations: [{ id: 1, type: 'is-a', inherited: true, target: { id: 'tag:long', label, href: '/tag/long/' } }],
+        }),
       ),
     );
     const chip = $('a[href="/tag/long/"]');
-    expect(chip.text()).toBe(`${label}（上層）`);
-    expect(chip.find('span').first().attr('class')).toContain('min-w-0 break-words');
+    expect(chip.text()).toBe(`屬於${label}（上層）`);
+    expect(chip.find('span').eq(1).attr('class')).toContain('min-w-0 break-words');
     expect(chip.find('span').last().attr('class')).toContain('shrink-0');
     expect(chip.parent('li').attr('class')).toContain('max-w-full');
-    expect(chip.closest('dl > div').attr('class')).toContain('min-w-0');
+    expect(chip.closest('ul').attr('class')).toContain('min-w-0');
   });
 
   it.each<[Session, string]>([

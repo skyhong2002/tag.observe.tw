@@ -3,13 +3,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
 import PictureLink from '@/components/PictureLink';
+import RelationLink from '@/components/RelationLink';
 import FollowButton from '@/components/reader/FollowButton';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
 import TagGroupChips from '@/components/TagGroupChips';
 import TagKeywordHistory from '@/components/TagKeywordHistory';
 import TagPerson from '@/components/TagPerson';
-import TagRelationsPanel from '@/components/TagRelationsPanel';
 import TagStatusPanel from '@/components/TagStatusPanel';
 import TagVisual from '@/components/TagVisual';
 import {
@@ -141,16 +141,23 @@ export default async function TagPage({ params, searchParams }: { params: Promis
             {tag}
           </h1>
           <FollowButton kind="tag" target={tag} />
-          {/* A sketch first; a place or logo before a namesake's bare line (「高雄」 is also an actor). */}
-          {person?.avatar ? (
-            <TagPerson person={person} />
-          ) : visual ? (
-            <TagVisual visual={visual} />
-          ) : (
-            person && <TagPerson person={person} />
-          )}
-          <PictureLink tag={tag} has={!!(person?.avatar ?? visual)} />
-          <TagGroupChips groups={groups} />
+          {/* The picture and its 換圖 stay on one line; the text beside a sketch wraps instead. */}
+          <div className="flex min-w-0 items-center gap-3">
+            {/* A sketch first; a place or logo before a namesake's bare line (「高雄」 is also an actor). */}
+            {person?.avatar ? (
+              <TagPerson person={person} />
+            ) : visual ? (
+              <TagVisual visual={visual} />
+            ) : (
+              person && <TagPerson person={person} />
+            )}
+            <PictureLink tag={tag} has={!!(person?.avatar ?? visual)} />
+          </div>
+          <TagGroupChips
+            groups={groups}
+            relations={relations?.relations}
+            after={<RelationLink tag={tag} voting={relations?.voting ?? 0} />}
+          />
         </div>
         <div className="flex gap-1 text-sm">
           {[24, 72, 168].map((h) => (
@@ -179,7 +186,6 @@ export default async function TagPage({ params, searchParams }: { params: Promis
           </a>
         </div>
       </div>
-      <TagRelationsPanel key={tag} tag={tag} data={relations} />
       {status && <TagStatusPanel status={status} />}
       <section
         id="report-trend"
@@ -215,7 +221,9 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </section>
       )}
       {!page ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">報導列表暫時無法使用，請稍後再試。</p>
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">
+          報導列表暫時無法使用，請稍後再試。
+        </p>
       ) : (
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <aside className="space-y-4 lg:order-2">
