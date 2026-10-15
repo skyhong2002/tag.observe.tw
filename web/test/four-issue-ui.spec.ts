@@ -123,7 +123,7 @@ describe('four UI issue regressions (mocked SSR; no pixel validation)', () => {
   it.each<[Session, string]>([
     [null, '載入中…'],
     [{ enabled: false }, '登入功能尚未開放。'],
-    [{ enabled: true, user: null }, '請先登入。'],
+    [{ enabled: true, user: null }, '這個頁面只開放給管理員，請先以管理員帳號登入。'],
     [{ enabled: true, user: { role: 'reader' } }, '這個頁面只開放給管理員。'],
   ])('020 shows one shared permission message for session %j', async (session, message) => {
     const Page = adminPage(session);

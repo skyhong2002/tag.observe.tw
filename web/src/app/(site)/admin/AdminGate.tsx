@@ -15,8 +15,8 @@ export default function AdminGate({ next, children }: { next: string; children: 
   if (!session.user)
     return (
       <p className={note}>
-        請先
-        <a href={loginHref(next)} className="mx-1 text-brand-700 underline dark:text-brand-400">
+        這個頁面只開放給管理員，請先以管理員帳號
+        <a href={loginHref(next)} className="text-brand-700 underline dark:text-brand-400">
           登入
         </a>
         。

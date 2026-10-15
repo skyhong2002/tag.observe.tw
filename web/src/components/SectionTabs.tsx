@@ -12,7 +12,7 @@ export default function SectionTabs({
   return (
     <nav
       aria-label={label}
-      className={`inline-flex max-w-full gap-1 overflow-x-auto rounded-lg bg-zinc-100 p-1 text-sm dark:bg-zinc-900 ${className}`}
+      className={`inline-flex max-w-full flex-wrap gap-1 rounded-lg bg-zinc-100 p-1 text-sm dark:bg-zinc-900 ${className}`}
     >
       {tabs.map((tab) => (
         <Link

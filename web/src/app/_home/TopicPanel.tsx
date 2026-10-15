@@ -50,11 +50,19 @@ export default function TopicPanel({
                   {t.title}
                 </Link>
               </h3>
+              {/* Each piece wraps as a whole: the icon stays with its outlet and no count splits mid-word. */}
               <p>
-                <MediaIcon media={t.media} title={t.mediaTitle} size={12} />
-                {t.mediaTitle}
-                {updated && ` · 最後更新 ${taipeiDate(updated)}`}
-                {t.coverage && ` · 近 3 天 ${t.coverage.count}${t.coverage.capped ? '+' : ''} 篇相關`}
+                <span className={styles.topicMetaItem}>
+                  <MediaIcon media={t.media} title={t.mediaTitle} size={12} />
+                  {t.mediaTitle}
+                </span>
+                {updated && <span className={styles.topicMetaItem}>· 最後更新 {taipeiDate(updated)}</span>}
+                {t.coverage && (
+                  <span className={styles.topicMetaItem}>
+                    · 近 3 天 {t.coverage.count}
+                    {t.coverage.capped ? '+' : ''} 篇相關
+                  </span>
+                )}
               </p>
             </div>
           </li>
