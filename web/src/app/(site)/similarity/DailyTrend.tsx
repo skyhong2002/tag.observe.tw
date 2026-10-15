@@ -279,17 +279,28 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
 export default function DailyTrend({ threshold }: { threshold: number }) {
   const [range, setRange] = useState<(typeof RANGES)[number]>(30);
   const [state, setState] = useState<{ key: string; data: SimilarityDaily | null; error: boolean } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const to = taipeiToday(),
     from = shiftDay(to, 1 - range);
-  const key = `${from}/${to}/${threshold}`;
+  const key = `${from}/${to}/${threshold}/${attempt}`;
   useEffect(() => {
     const controller = new AbortController();
+    // A stalled API would otherwise leave the loading text up for good.
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 30_000);
     fetchDaily(from, to, threshold, controller.signal)
       .then((data) => setState({ key, data, error: false }))
       .catch(() => {
-        if (!controller.signal.aborted) setState({ key, data: null, error: true });
-      });
-    return () => controller.abort();
+        if (timedOut || !controller.signal.aborted) setState({ key, data: null, error: true });
+      })
+      .finally(() => clearTimeout(timer));
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [from, to, threshold, key]);
   const current = state?.key === key ? state : null;
   const data = current?.data ?? null;
@@ -337,7 +348,14 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
         </p>
       ) : !data ? (
         <p role="alert" className="py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
-          暫時無法取得每日統計，請稍後重新整理。
+          暫時無法取得每日統計。
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="ml-2 rounded-full border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            重試
+          </button>
         </p>
       ) : (
         <>

@@ -1,5 +1,6 @@
 import { connection } from 'next/server';
 import ApiTabs from '@/components/ApiTabs';
+import PathBreaks from '@/components/PathBreaks';
 import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
@@ -96,8 +97,8 @@ export default async function ApiStatusPage() {
                     <td className={`${cellClass} font-mono text-xs`} data-label="方法">
                       {endpoint.method}
                     </td>
-                    <td className={`${cellClass} font-mono break-all`} data-label="端點">
-                      {endpoint.path}
+                    <td className={`${cellClass} font-mono break-words`} data-label="端點">
+                      <PathBreaks path={endpoint.path} />
                     </td>
                     <td className={cellClass} data-label="用途">
                       {endpoint.description}

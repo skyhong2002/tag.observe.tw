@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import ApiTabs from '@/components/ApiTabs';
 import PageOutline, { type OutlineEntry } from '@/components/PageOutline';
+import PathBreaks from '@/components/PathBreaks';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -77,8 +78,8 @@ function Prose({ text }: { text: string }) {
     <>
       {text.split(/(`[^`]+`)/).map((part, i) =>
         part.startsWith('`') && part.endsWith('`') ? (
-          <code key={i} className="break-all whitespace-normal rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800">
-            {part.slice(1, -1)}
+          <code key={i} className="break-words whitespace-normal rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800">
+            <PathBreaks path={part.slice(1, -1)} />
           </code>
         ) : (
           part
@@ -131,7 +132,9 @@ function Endpoint({
         <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
           {method}
         </span>
-        <span className="break-all font-semibold">{path}</span>
+        <span className="break-words font-semibold">
+          <PathBreaks path={path} />
+        </span>
       </h3>
       <p className="mt-1 font-medium">{op.summary}</p>
       {op.description && (
@@ -327,11 +330,11 @@ export default async function ApiDocsPage() {
           </h2>
           <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {ops.map(({ path, method, op }) => (
-              <li key={`${method}:${path}`} className="flex min-w-0 gap-2">
-                <a href={`#${endpointAnchor(method, path)}`} className={`truncate font-mono ${linkClass}`}>
-                  {method} {path}
+              <li key={`${method}:${path}`} className="min-w-0 break-words">
+                <a href={`#${endpointAnchor(method, path)}`} className={`font-mono ${linkClass}`}>
+                  {method} <PathBreaks path={path} />
                 </a>
-                <span className="shrink-0 text-zinc-600 dark:text-zinc-400">{op.summary}</span>
+                <span className="ml-2 text-zinc-600 dark:text-zinc-400">{op.summary}</span>
               </li>
             ))}
           </ul>

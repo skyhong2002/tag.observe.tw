@@ -147,11 +147,11 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
           結束日期（含當日）
           <input type="date" name="to" defaultValue={sp.to} className={input} />
         </label>
-        <div className="flex items-center gap-4 sm:col-span-2 lg:col-span-3">
-          <button type="submit" className="min-h-10 rounded-lg bg-brand-700 px-5 text-sm font-medium text-white">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:col-span-2 lg:col-span-3">
+          <button type="submit" className="min-h-10 shrink-0 whitespace-nowrap rounded-lg bg-brand-700 px-5 text-sm font-medium text-white">
             查詢文章
           </button>
-          <Link href="/article/query/" className="text-sm text-brand-700 hover:underline dark:text-brand-400">
+          <Link href="/article/query/" className="shrink-0 whitespace-nowrap text-sm text-brand-700 hover:underline dark:text-brand-400">
             清除條件
           </Link>
           <span className="text-xs text-zinc-500 dark:text-zinc-400">指定日期時取代最近期間，最多 31 天。</span>
