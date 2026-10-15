@@ -345,7 +345,7 @@ export default function TrafficComparison({
                   </td>
                   <td className={`${table.num} py-1.5 whitespace-nowrap`} title={shared ?? taiwanTitle}>
                     {tw && 'override' in tw && tw.override && (
-                      <span className="mr-1 rounded bg-amber-100 px-1 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                      <span className="mr-1 rounded bg-amber-100 px-1 text-[11px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                         人工
                       </span>
                     )}

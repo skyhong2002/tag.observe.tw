@@ -66,9 +66,7 @@ export function HourTimeline({
               aria-current={here ? 'page' : undefined}
               title={s ? `第 1 名爆發力 ${s.top.toFixed(1)} · ${s.count} 件事` : undefined}
               className={`flex w-11 flex-col items-center gap-1 rounded px-1 pt-1 pb-0.5 text-xs tabular-nums ${
-                here
-                  ? 'bg-brand-700 text-white dark:bg-brand-600'
-                  : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                here ? 'bg-brand-700 text-white' : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
               }`}
             >
               <span className="flex h-6 w-full items-end justify-center" aria-hidden>

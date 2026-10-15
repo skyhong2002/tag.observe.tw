@@ -130,7 +130,7 @@ export default function SettingsForm() {
                       type="button"
                       onClick={() => move(key, -1)}
                       disabled={i === 0}
-                      className="px-1 text-zinc-500 hover:text-brand-700 disabled:opacity-30 dark:hover:text-brand-400"
+                      className="px-1 text-zinc-500 hover:text-brand-700 disabled:opacity-30 dark:text-zinc-400 dark:hover:text-brand-400"
                       aria-label="往前"
                     >
                       ↑
@@ -139,7 +139,7 @@ export default function SettingsForm() {
                       type="button"
                       onClick={() => move(key, 1)}
                       disabled={i === draft.lenses.length - 1}
-                      className="px-1 text-zinc-500 hover:text-brand-700 disabled:opacity-30 dark:hover:text-brand-400"
+                      className="px-1 text-zinc-500 hover:text-brand-700 disabled:opacity-30 dark:text-zinc-400 dark:hover:text-brand-400"
                       aria-label="往後"
                     >
                       ↓
@@ -148,7 +148,7 @@ export default function SettingsForm() {
                 );
               })}
               {off.map((lens) => (
-                <li key={lens.key} className="flex items-center gap-3 px-3 py-2 text-zinc-400 dark:text-zinc-400">
+                <li key={lens.key} className="flex items-center gap-3 px-3 py-2 text-zinc-500 dark:text-zinc-400">
                   <input type="checkbox" checked={false} onChange={() => toggle(lens.key)} aria-label={`播放「${lens.title}」`} />
                   <span className="w-1.5 self-stretch rounded-full bg-zinc-200 dark:bg-zinc-700" aria-hidden />
                   <span className="min-w-0 flex-1">

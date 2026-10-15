@@ -61,7 +61,7 @@ export default function TopicCard({
           {topic.sponsored && (
             <span
               title="媒體標示為廣告或品牌合作"
-              className="ml-1.5 inline-block rounded border border-zinc-300 px-1 align-[0.1em] text-[10px] font-normal leading-4 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
+              className="ml-1.5 inline-block rounded border border-zinc-300 px-1 align-[0.1em] text-[11px] font-normal leading-4 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
             >
               合作
             </span>

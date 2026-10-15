@@ -37,7 +37,7 @@ function cover(e: EventItem): EventNews | null {
 /** Movement since the previous snapshot and how long the thread has run. */
 export function Movement({ e, className = '' }: { e: EventItem; className?: string }) {
   const parts: Array<{ text: string; tone: string; label: string }> = [];
-  if (e.prevRank === null) parts.push({ text: '新上榜', tone: 'bg-brand-700 text-white dark:bg-brand-500', label: '本小時新上榜' });
+  if (e.prevRank === null) parts.push({ text: '新上榜', tone: 'bg-brand-700 text-white', label: '本小時新上榜' });
   else if (typeof e.prevRank === 'number' && e.prevRank !== e.rank) {
     const up = e.prevRank > e.rank;
     const n = Math.abs(e.prevRank - e.rank);

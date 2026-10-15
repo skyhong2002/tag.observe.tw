@@ -198,7 +198,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               className={`whitespace-nowrap rounded-full px-3 py-1 ${c.key === category ? 'bg-brand-700 text-white' : note ? 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
             >
               {c.label}
-              {note && <span className="ml-1.5 text-[10px]">{note}</span>}
+              {note && <span className="ml-1.5 text-[11px]">{note}</span>}
             </Link>
           );
         })}
@@ -300,9 +300,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {delta === null ? (
                         <span className="text-zinc-500 dark:text-zinc-400">—</span>
                       ) : delta > 0 ? (
-                        <span className="text-rose-600">▲{delta}</span>
+                        <span className="text-rose-600 dark:text-rose-400">▲{delta}</span>
                       ) : delta < 0 ? (
-                        <span className="text-sky-600">▼{-delta}</span>
+                        <span className="text-sky-600 dark:text-sky-400">▼{-delta}</span>
                       ) : (
                         <span className="text-zinc-500 dark:text-zinc-400">＝</span>
                       )}

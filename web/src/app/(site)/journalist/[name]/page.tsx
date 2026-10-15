@@ -240,7 +240,7 @@ export default async function JournalistPage({
               <dt className="text-[11px] text-zinc-500 dark:text-zinc-400">{item.label}</dt>
               <dd className="mt-0.5 text-xl font-semibold tabular-nums">
                 {item.value}
-                {item.unit && <span className="ml-1 text-[10px] font-normal text-zinc-500 dark:text-zinc-400">{item.unit}</span>}
+                {item.unit && <span className="ml-1 text-[11px] font-normal text-zinc-500 dark:text-zinc-400">{item.unit}</span>}
               </dd>
             </div>
           ))}

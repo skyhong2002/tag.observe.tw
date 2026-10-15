@@ -65,7 +65,9 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
         <Link href={base} className="hover:underline">
           {kind === 'feature' ? '專題' : '議題表'}
         </Link>
-        <span className="mx-2 text-zinc-300">/</span>
+        <span aria-hidden="true" className="mx-2 text-zinc-400 dark:text-zinc-500">
+          /
+        </span>
         {data.title}
       </nav>
       <div>

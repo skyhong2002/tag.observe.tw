@@ -61,7 +61,7 @@
 .hero .source { margin: 8px 0 12px; }
 .bar { display: flex; height: 22px; width: 100%; overflow: hidden; gap: 1px; background: var(--panel); border-radius: 4px; }
 .bar > span { flex-basis: 0; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
-.bar > span > span { font-size: 10px; font-weight: 500; white-space: nowrap; }
+.bar > span > span { font-size: 11px; font-weight: 500; white-space: nowrap; }
 .green { background: var(--color-emerald-700); color: #fff; }
 .other { background: var(--color-zinc-200); color: var(--color-zinc-800); }
 .blue { background: var(--color-blue-700); color: #fff; }
@@ -111,7 +111,7 @@
 .headlineCard h3 { font-size: 13px; font-weight: 600; line-height: 1.8; padding: 12px 14px; border-bottom: 1px solid var(--line); }
 .headlineSource { padding: 14px; }
 .headlineSource + .headlineSource { border-top: 1px solid var(--soft-line); }
-.headlineByline { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.headlineByline { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; color: var(--muted); font-size: 11px; line-height: 1.7; }
 .headlineByline > span { display: flex; align-items: center; gap: 5px; font-size: 11px; }
 .headlineByline i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .comparedTitle { font-size: 15px; line-height: 1.9; font-weight: 500; overflow-wrap: anywhere; }
@@ -157,11 +157,11 @@
   .right { order: 2; width: 100%; }
   .heroContent { padding: 16px; }
   .hero h3 { font-size: 21px; }
-  .legend { font-size: 10px; gap: 10px; }
+  .legend { font-size: 11px; gap: 10px; }
   .story { gap: 12px; padding: 16px 14px; }
   .story h3 { font-size: 15px; }
   .thumbnail { width: 28%; aspect-ratio: 1; margin-top: 22px; }
-  .compactDistribution { font-size: 10px; }
+  .compactDistribution { font-size: 11px; }
   .compactDistribution .bar { width: 52px; }
 }
 
@@ -186,7 +186,7 @@
 /* Ranking rows: change since yesterday and a 48h trend line. */
 .rankTrend { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; flex-shrink: 0; }
 .rankTrend .burst { margin-left: 0; }
-.rankNew, .rankUp, .rankDown, .rankSame { font-size: 10px; font-weight: 400; margin-left: 2px; font-variant-numeric: tabular-nums; }
+.rankNew, .rankUp, .rankDown, .rankSame { font-size: 11px; font-weight: 400; margin-left: 2px; font-variant-numeric: tabular-nums; }
 .rankNew { color: var(--color-red-700); font-weight: 600; }
 .rankUp { color: var(--color-emerald-700); }
 .rankDown { color: var(--muted); }
@@ -212,9 +212,9 @@
 .journalists a:hover { background: var(--tint); }
 .journalistName { font-size: 14px; font-weight: 500; color: var(--accent); }
 .journalistOutlets { grid-row: 2; display: flex; align-items: center; gap: 3px; }
-.journalistOutlets small { font-size: 10px; color: var(--muted); margin-left: 2px; }
+.journalistOutlets small { font-size: 11px; color: var(--muted); margin-left: 2px; }
 .journalistCount { grid-row: 1 / span 2; grid-column: 2; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.journalistCount small { font-size: 10px; color: var(--muted); }
+.journalistCount small { font-size: 11px; color: var(--muted); }
 .panelNote { font-size: 11px; line-height: 1.7; color: var(--muted); }
 
 /* Bottom band: graph summary and new topics. */
@@ -253,7 +253,7 @@
   .graphBody { grid-template-columns: minmax(0, 1fr); }
 }
 .shareRow { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-.pairNames > small { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.pairNames > small { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .shareTrack { display: block; height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; }
 .shareTrack > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
 /* After the base rules above so these win at equal specificity. */

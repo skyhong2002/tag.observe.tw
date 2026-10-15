@@ -49,7 +49,7 @@ const section = 'mt-8';
 const heading = 'text-lg font-semibold';
 const button =
   'min-h-9 rounded-full border border-zinc-300 bg-white px-4 text-sm hover:border-brand-600 hover:text-brand-700 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-brand-400 dark:hover:text-brand-400';
-const primary = 'min-h-9 rounded-full bg-brand-700 px-4 text-sm font-medium text-white disabled:opacity-50 dark:bg-brand-600';
+const primary = 'min-h-9 rounded-full bg-brand-700 px-4 text-sm font-medium text-white disabled:opacity-50';
 const STATUS: Record<string, string> = {
   ok: '有標籤',
   title: '從標題補標籤',

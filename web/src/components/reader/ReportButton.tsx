@@ -135,11 +135,7 @@ export default function ReportButton({ articleId, tags }: { articleId: number; t
               <button type="button" className={button} onClick={() => dialog.current?.close()}>
                 取消
               </button>
-              <button
-                type="submit"
-                disabled={!valid || state === 'sending'}
-                className={`${button} bg-brand-700 text-white dark:bg-brand-600`}
-              >
+              <button type="submit" disabled={!valid || state === 'sending'} className={`${button} bg-brand-700 text-white`}>
                 {state === 'sending' ? '送出中…' : '送出'}
               </button>
             </div>

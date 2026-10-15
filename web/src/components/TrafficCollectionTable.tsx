@@ -98,7 +98,7 @@ export default function TrafficCollectionTable({ rows }: { rows: CollectionRow[]
                 >
                   <button type="button" onClick={() => choose(column.key)} className="min-h-8 text-left font-medium whitespace-nowrap">
                     {column.label} <SortIndicator active={sort === column.key} descending={descending} />
-                    <span className="block text-[10px] font-normal">{column.sub}</span>
+                    <span className="block text-[11px] font-normal">{column.sub}</span>
                   </button>
                 </th>
               ))}
@@ -111,7 +111,9 @@ export default function TrafficCollectionTable({ rows }: { rows: CollectionRow[]
                   {row.media && <MediaIcon media={row.media} title={row.name} size={20} />}
                   <span className="min-w-0">
                     <span className={`${table.leadText} block font-medium`}>{row.name}</span>
-                    <span className={`${table.leadExtra} ${table.leadText} block text-[10px] text-zinc-500 dark:text-zinc-400`}>{row.domain}</span>
+                    <span className={`${table.leadExtra} ${table.leadText} block text-[11px] text-zinc-500 dark:text-zinc-400`}>
+                      {row.domain}
+                    </span>
                   </span>
                 </>
               );

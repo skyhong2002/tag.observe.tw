@@ -79,7 +79,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
               {tw.override && (
                 <span
                   title={overrideTitle(tw)}
-                  className="ml-1 rounded bg-amber-100 px-1 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                  className="ml-1 rounded bg-amber-100 px-1 text-[11px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
                 >
                   人工修正
                 </span>

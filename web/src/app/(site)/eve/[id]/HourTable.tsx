@@ -170,7 +170,7 @@ export default function HourTable({
                       <td className={`${table.cell} !py-1.5`}>
                         <span className="flex gap-1">
                           {h.major.map((m) => (
-                            <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white dark:bg-brand-600`}>
+                            <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white`}>
                               {m}
                             </Link>
                           ))}
@@ -260,7 +260,7 @@ function DayRows({ days, maxScore, onOpen }: { days: ThreadDay[]; maxScore: numb
               <td className={`${table.cell} !py-1.5`}>
                 <span className="flex gap-1">
                   {d.major.map((m) => (
-                    <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white dark:bg-brand-600`}>
+                    <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white`}>
                       {m}
                     </Link>
                   ))}

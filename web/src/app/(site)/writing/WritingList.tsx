@@ -51,7 +51,7 @@ export default function WritingList({ articles, evidence = true }: { articles: W
             </div>
             {evidence && a.evidence && (
               <p className="mt-1 break-words text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                <span className="text-zinc-400 dark:text-zinc-400">判斷依據</span>「{a.evidence}」
+                <span className="text-zinc-500 dark:text-zinc-400">判斷依據</span>「{a.evidence}」
               </p>
             )}
           </li>

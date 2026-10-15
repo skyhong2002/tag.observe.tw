@@ -92,7 +92,7 @@ function Bookmarklet() {
           ref={link}
           href="/admin/media/"
           onClick={(event) => event.preventDefault()}
-          className="inline-flex min-h-9 cursor-grab items-center rounded-full bg-brand-700 px-4 text-sm font-medium text-white shadow-sm dark:bg-brand-600"
+          className="inline-flex min-h-9 cursor-grab items-center rounded-full bg-brand-700 px-4 text-sm font-medium text-white shadow-sm"
         >
           設定這家媒體
         </a>

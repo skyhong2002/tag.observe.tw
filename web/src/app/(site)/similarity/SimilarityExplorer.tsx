@@ -158,7 +158,9 @@ function OriginEvidence({ origin }: { origin: StoryOrigin }) {
     <article className="min-w-0 space-y-2 py-4" data-testid="story-origin" data-source-id={source.id} data-article-id={article.id}>
       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
         {sentence}
-        {directPair && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · 相似度 {(directPair.score * 100).toFixed(1)}%</span>}
+        {directPair && (
+          <span className="font-normal text-zinc-500 dark:text-zinc-400"> · 相似度 {(directPair.score * 100).toFixed(1)}%</span>
+        )}
       </p>
       <VersionCompare
         heads={[
@@ -301,7 +303,10 @@ function PeriodControls({ data }: { data: SimilarityData }) {
           <button type="submit" disabled={!!rangeError} className="rounded-lg bg-brand-700 px-3 py-1.5 text-white disabled:opacity-40">
             套用
           </button>
-          <span className={rangeError ? 'text-red-600 dark:text-red-400' : 'text-zinc-500 dark:text-zinc-400'} role={rangeError ? 'alert' : undefined}>
+          <span
+            className={rangeError ? 'text-red-600 dark:text-red-400' : 'text-zinc-500 dark:text-zinc-400'}
+            role={rangeError ? 'alert' : undefined}
+          >
             {rangeError || `台北時間整日，共 ${rangeDays(from, to)} 天`}
           </span>
         </form>
@@ -718,7 +723,7 @@ export default function SimilarityExplorer({
                     type="button"
                     aria-pressed={mode === value}
                     onClick={() => updateMode(value)}
-                    className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
+                    className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-600 dark:text-zinc-400'}`}
                   >
                     {label}
                   </button>
@@ -733,7 +738,11 @@ export default function SimilarityExplorer({
                 >
                   {showAll ? '回到主要連線' : '顯示全部連線'}
                 </button>
-                <button type="button" onClick={openBrowser} className="rounded-md px-2 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-brand-700">
+                <button
+                  type="button"
+                  onClick={openBrowser}
+                  className="rounded-md px-2 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-brand-700"
+                >
                   媒體比較 ↓
                 </button>
               </div>
@@ -807,7 +816,7 @@ export default function SimilarityExplorer({
                 type="button"
                 aria-pressed={view === value}
                 onClick={() => setView(value)}
-                className={`rounded-md px-3 py-2 ${view === value ? 'bg-white font-medium shadow-sm dark:bg-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}
+                className={`rounded-md px-3 py-2 ${view === value ? 'bg-white font-medium shadow-sm dark:bg-zinc-600' : 'text-zinc-600 dark:text-zinc-400'}`}
               >
                 {label}
               </button>
@@ -947,7 +956,11 @@ export default function SimilarityExplorer({
                   )}
                 </p>
               )}
-              <p role="status" aria-live="polite" className={`text-xs leading-6 text-zinc-500 dark:text-zinc-400 ${evidenceError ? 'sr-only' : ''}`}>
+              <p
+                role="status"
+                aria-live="polite"
+                className={`text-xs leading-6 text-zinc-500 dark:text-zinc-400 ${evidenceError ? 'sr-only' : ''}`}
+              >
                 {evidenceError
                   ? '新聞對照資料載入失敗'
                   : evidenceLoading && !evidence
@@ -983,9 +996,7 @@ export default function SimilarityExplorer({
                 </p>
               )}
               {evidenceList.length > 0 && (evidenceLoading || evidenceError) && (
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  以下保留先前載入的對照結果；最新資料目前尚未載入。
-                </p>
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">以下保留先前載入的對照結果；最新資料目前尚未載入。</p>
               )}
               <div
                 className="divide-y divide-zinc-200 dark:divide-zinc-800"

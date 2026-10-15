@@ -135,7 +135,7 @@ export default function TaiwanShareEditor({
             <button
               type="submit"
               disabled={!valid || saving}
-              className="min-h-9 rounded-full bg-brand-700 px-4 text-sm font-medium text-white disabled:opacity-50 dark:bg-brand-600"
+              className="min-h-9 rounded-full bg-brand-700 px-4 text-sm font-medium text-white disabled:opacity-50"
             >
               {saving ? '儲存中…' : '儲存'}
             </button>

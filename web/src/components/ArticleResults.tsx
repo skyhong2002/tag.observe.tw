@@ -166,7 +166,9 @@ export function ArticleFacets({
             </li>
           ))}
         </ol>
-        {facets.media.length > OUTLETS && <p className="text-xs text-zinc-500 dark:text-zinc-400">另有 {facets.media.length - OUTLETS} 家</p>}
+        {facets.media.length > OUTLETS && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">另有 {facets.media.length - OUTLETS} 家</p>
+        )}
       </div>
     </section>
   );
@@ -183,7 +185,7 @@ function ArticleRow({ a, q, thread }: { a: Hit; q: string; thread: PeriodThread 
             {a.mediaTitle}
           </MediaHoverLink>
           {badge?.badge && (
-            <span className={`rounded px-1 text-[10px] font-medium ring-1 ring-inset ${badge.badge}`}>
+            <span className={`rounded px-1 text-[11px] font-medium ring-1 ring-inset ${badge.badge}`}>
               {a.camp === 'blue' ? '偏藍' : '偏綠'}
             </span>
           )}

@@ -190,7 +190,7 @@ export default function MediaCrawlersTable({ media, initialQuery, asOf }: { medi
                           ) : (
                             <span
                               aria-hidden="true"
-                              className="inline-flex size-4 items-center justify-center rounded bg-zinc-200 text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
+                              className="inline-flex size-4 items-center justify-center rounded bg-zinc-200 text-[11px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
                             >
                               {row.title.slice(0, 1)}
                             </span>

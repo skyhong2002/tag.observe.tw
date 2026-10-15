@@ -120,7 +120,7 @@ export default function TagRelationSubmission({ tag }: { tag: string }) {
           <button
             type="submit"
             disabled={busy || !target.trim() || !reason.trim()}
-            className="min-h-11 rounded-full bg-brand-700 px-4 text-white disabled:opacity-50 dark:bg-brand-600"
+            className="min-h-11 rounded-full bg-brand-700 px-4 text-white disabled:opacity-50"
           >
             {busy ? '送出中…' : '送交審核'}
           </button>
