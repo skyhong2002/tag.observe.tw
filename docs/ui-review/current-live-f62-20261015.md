@@ -139,3 +139,9 @@ Network recomputed: `{"requests": 1168, "requestDNT1": 1168, "requestGoogleURL":
 - `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch003/036-390-dark-full.png` — `f92aa0c36730ec9d081b563475b0c9a35886c701b648ad280082f163977b62b7`
 
 Actual fresh nine-row retry UTC00:43:45 all200/exit0, medians tag0.086/blog2.820/YT0.068, load3.66, /home48.74GiB, MemAvailable3.76GiB. Batch005 resumed only after this recovery; previous500 raw remains retained, cause unknown.
+
+## Batch005 runtime gate exception
+
+Admission fresh9all200 at00:43:45 passed, but monitor ended00:45:28 with blog median6.267938s >6.17s (all200; load6.05). Owner delayed acting until00:46:34; capture had already ended 2026-10-15T00:46:23.317Z with32PNG, so no browser PID was actually stopped. No all-runtime-gates PASS claim, no further capture started. Raw monitor and manual-stop receipts retained in current private root; finished DNT/Google/network/image facts may be reviewed separately from this resource-protocol exception. Next manual monitor probes will be awaited immediately rather than left pending while other work proceeds.
+
+Offline capture pacing adjustment: scroll discovery90→350ms per650px, leaving transport, nativeDNT, GET/HEAD and version checks unchanged. This reduces discovery bursts and gives lazy images more time; it does not prove a cause for blog500/latency or certify resource completeness. No new screenshot yet; next batch still requires fresh gates.

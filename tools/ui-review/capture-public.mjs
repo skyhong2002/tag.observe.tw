@@ -107,7 +107,8 @@ try {
         if (!html.includes(input.buildId)) throw Error('Different BUILD_ID on ' + route.id);
         // Scroll in measured steps to load images, then return to the first fold.
         const height = await page.evaluate(() => document.documentElement.scrollHeight);
-        for (let y = 0; y < height; y += 650) { await page.evaluate((n) => scrollTo(0, n), y); await page.waitForTimeout(90); }
+        // Pace lazy image discovery; avoid a burst of image requests on shared production CPU.
+        for (let y = 0; y < height; y += 650) { await page.evaluate((n) => scrollTo(0, n), y); await page.waitForTimeout(350); }
         await page.waitForTimeout(1000); await page.evaluate(() => scrollTo(0, 0));
         for (const theme of ['light', 'dark']) {
           await page.emulateMedia({ colorScheme: theme }); await page.waitForTimeout(250);
