@@ -283,3 +283,49 @@ Network recomputed: `{"requests": 1318, "dnt": {"1": 1318}, "googleBrowserReques
 Batch006 actual formal review recorded: event1775/headlines normal bounded presentation; `/cat/news/` redirects 308 to ranking category and `/event/archive/` redirects 308 to `/event/`, so those are not independent templates. Missing interaction/auth/loading/error/full-list states remain pending. Reviewer report retained with actual 32-image hashes and raw network.
 
 Batch008 partial capture: capture-public exited nonzero at screenshot font wait timeout after 9 shots/5 pages; `batch008-partial-receipt.json` and raw manifest remain. It is not submitted for review or counted as route PASS; no retry started.
+
+## batch007 — actual independent production review
+
+/root/unfreeze_independent_review, GPT-6.1 Sol, UTC2026-10-15T01:06:31.367515+00:00. `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007-independent-ui-review.json` SHA256 `c58ea52598c5895da45de9cf737bec20f2b42d85f9ce41e5b1b32f191046ce58`, same-nameTXT has actual image/view timestamps. Verdict: PASS（四頁所見狀態範圍）.
+
+- 032: PASS（feature list） — 三立新聞網專題頁34筆，來源／更新／圖片／摘要與相關媒體可讀，手機自然單欄。 Pending: 點擊、搜尋、空錯誤、更多互動
+- 033: PASS（feature article） — 股市瘋AI熱文章含摘要、主圖、未取得正文提示及8篇專題相關新聞，所見暗色可讀。 Pending: 正文原文、收藏回報、互動
+- 062: PASS（topic list） — Newtalk近期84筆議題，來源、更新、標籤、圖片與摘要正常，手機換行。 Pending: 搜尋、空錯誤、詳情互動
+- 063: PASS（topic article list） — Newtalk議題19有100篇議題新聞，圖片、日期、標籤與摘要可讀。 Pending: 摘要展開、搜尋、空錯誤、詳情互動
+
+Network recomputed: `{"requests": 1037, "requestDNT1": 1037, "requestGoogleURL": 0, "HAR": 1037, "harDNT1": 1037, "harGoogleURL": 0, "status": {"200": 1004, "-1": 27, "504": 5, "500": 1}, "transport": {"denied-http": 2, "denied-connect": 81, "admitted-connect": 6}, "googleDenied": 71}`. Original shots:
+
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-1280-light-viewport.png` — `c2a6662f793b9f6eb723a2c215026d795e91f1924281a8b27841d554564de2f8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-1280-light-full.png` — `274b870d6d8f8da3e9de4f9f6030f8dacc21ce11cfdef4e3a086172141d4c46d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-1280-dark-viewport.png` — `e943382b8d6376937eaf8f8cdff4b0a4477e107756083c59939ba0ff63aedb99`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-1280-dark-full.png` — `5eebb850a7019ecf3114bade242a057b2dbfa9422b6b3fd9ee1517774978fcee`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-1280-light-viewport.png` — `38fa39eb4c580d98ef42e1c7b6b112e3af2dbb009173f3c4d5b19ab1e77d1d8b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-1280-light-full.png` — `a0c1e3a91de2c9ea8b2989e06f4c4c0150d3ba367bca3b802c28e619d38f9a02`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-1280-dark-viewport.png` — `3476ed5f3456fb7ea9ff32bcbc288e5080a3e68cb6a3f81cf70c72faeabe612c`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-1280-dark-full.png` — `f76dbba6bc6cba1853e58abe1ae2837e2e5b0e248f28570de1ca332cefb214a5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-1280-light-viewport.png` — `0e4a90d26c32bb23941682558ef9ccf0f642ea2850a8cc844178855340c76b07`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-1280-light-full.png` — `277b0b0bca3fcc46d85a22c31ea364d28d60de00860de975f4871fd975a712a3`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-1280-dark-viewport.png` — `fd154477b7667b260b366036f0b8783476ef588cf8b2999b9f9f54770ed49725`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-1280-dark-full.png` — `9599c71e33acfe73fa856b1fc54970fe596c1b4f6c9e2b4c9e41fab125be2b56`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-1280-light-viewport.png` — `9dc8252ce6578d149468b095dd24adb711ce04961e89fe29ecf7c7dbd03825be`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-1280-light-full.png` — `0a29f8196b2fb96a5de3ff800ed02f1ab582023e8b630e60ce44b24b6b930dd7`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-1280-dark-viewport.png` — `8df702eeb5f00f2e94fc4ad176598f751e18948ed62a8036ed5cec70c9c3d69f`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-1280-dark-full.png` — `c1a595bf71c6e2d1ad751d54e1e0cec37febd3aa50b7043e54878e0a3eb5338d`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-390-light-viewport.png` — `92df0ab213510b7541d0aef06b4b240c0a188d14627cefcd5ad4094bad466331`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-390-light-full.png` — `e9cd51cff24989011050d95d317395e4a4c0a155e6c008f6d77193049b0f324a`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-390-dark-viewport.png` — `fdcfedaa308382e038d646c17e4d30ef94f901e64aa9263ce22938cde976d023`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/032-390-dark-full.png` — `a32d0a6051e1f5d84d6a01e7183a3d00c9c0dc82fb217ce35f7d79b0b89e7d2b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-390-light-viewport.png` — `f2f4b1366f6edbf38dbc3f7f4b288ec2fd5b1563e52e54c579cbdb49239337de`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-390-light-full.png` — `6d90692027d8755db8bf7af343a87a12ac22ae6f2814ae437f9c1ce43b0efcd8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-390-dark-viewport.png` — `a1a8bc7c377a506f3ff87c560367acf55a66b8d7e941012409d54c6b53fbf10c`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/033-390-dark-full.png` — `c05889ca9ad1b218bb039f0306ac70a15d62daa81c9cb680334e4c4533513995`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-390-light-viewport.png` — `d05529ff7a4ee0f43828c31464fe3b1415eee0444d334a3106c5d6a08c1a66c5`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-390-light-full.png` — `387d7d205abf3d4df04c9a7f81cff643df590e32f2ffb0ea20abd176c722b04e`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-390-dark-viewport.png` — `01d85d8a124da585806d84f54a82a5d516364d07c9d35f51c3a67433d118afe1`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/062-390-dark-full.png` — `24e6de454de6ef989da94227481cb5e07b8b6df0562e27a7af14a8af55aa38b8`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-390-light-viewport.png` — `6447b4ba92731275ae47e6f4bab75bf766c6457cc804287236a34213ff07106b`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-390-light-full.png` — `97e03d8e5541783308195f20f4bf5f8a11c183f0eedea894ca1832cab9cc07c9`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-390-dark-viewport.png` — `e84c955d1c8894941396096298d05314e3bff458d10b938d1002ac5fe52d0a43`
+- `/home/deck/tag-analysis-private/ui-review/current-live-f62-20261015/batch007/063-390-dark-full.png` — `84a956b2d424ec822054db45db67ad39b6176b13abec84a781bc5158b0c947fc`
+
+Batch007 actual formal review recorded: SETN routes032/033 and Newtalk062/063 have normal observed presentation PASS, no layout blocker; search/details/empty/error/interaction pending. Reviewer retained HAR with 5x504 and 1x500 resources despite successful page captures; this does not establish route-wide failure or a root cause.
