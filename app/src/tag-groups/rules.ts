@@ -47,7 +47,7 @@ export const DATED_GROUPS = new Set([2, 3, 18, 19, 28]);
  * (owner's decision, 2026-10-16). Their labels name the year a term began,
  * e.g. 「2024 立委」; a new term gets a new group.
  */
-export const CURATED_GROUPS = new Set([2, 3, 14, 18, 19, 28]);
+export const CURATED_GROUPS = new Set([2, 3, 14, 18, 19, 28, 1008]);
 
 // Legacy catalogue 1–10 (11–15 were editors' work queues, not topics).
 export const TOPICS: GroupDef[] = ['政治', '體育', '娛樂', '社會', '國際', '生活', '科技', '動物', '健康醫療', '產業金融'].map(
