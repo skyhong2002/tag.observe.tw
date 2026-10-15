@@ -173,7 +173,8 @@ function Share({ row, metric }: { row: Row; metric: Metric }) {
 function OutletTable({ data }: { data: SimilarityDaily }) {
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
-  const rows = useMemo(() => {
+  const [showEmpty, setShowEmpty] = useState(false);
+  const sorted = useMemo(() => {
     const list: Row[] = data.media.map((m) => ({
       media: m.media,
       name: m.name,
@@ -196,6 +197,10 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
       return (descending ? -order : order) || b.articles - a.articles || a.media.localeCompare(b.media);
     });
   }, [data, sort, descending]);
+  // Outlets with nothing in the period made the table a long tail of zeros.
+  const active = (row: Row) => row.articles + row.copied + row.copying + row.citing + row.cited > 0;
+  const empty = sorted.filter((row) => !active(row)).length;
+  const rows = showEmpty ? sorted : sorted.filter(active);
   const sortBy = (key: SortKey) => {
     if (sort === key) setDescending(!descending);
     else {
@@ -206,7 +211,20 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
   const cell = table.num;
   const muted = (value: number) => (value ? '' : 'text-zinc-600 dark:text-zinc-400');
   return (
-    <TableScroller label="各媒體每日比對表格，可左右捲動">
+    <TableScroller
+      label="各媒體每日比對表格，可左右捲動"
+      footer={
+        empty > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowEmpty(!showEmpty)}
+            className="px-3 py-2 text-xs text-brand-700 hover:underline dark:text-brand-400"
+          >
+            {showEmpty ? `收起 ${empty} 家沒有資料的媒體` : `另有 ${empty} 家這段期間沒有資料，顯示`}
+          </button>
+        )
+      }
+    >
       <table className="w-full min-w-[40rem] border-collapse text-sm">
         <caption className="sr-only">期間內各媒體的比對篇數、較早與較晚刊登的篇數、引用與被採用／引用</caption>
         <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">

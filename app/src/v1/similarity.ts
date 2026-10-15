@@ -219,6 +219,7 @@ export function dailyRelationCounts(pairs: StoredPair[], known: Map<number, Simi
   return [...counts.values()].map(({ ids, ...row }) => ({ ...row, count: ids.size }));
 }
 
+export const CITATION_RESIDUE = /[•・：:‧]|以上言論|作者|撰文|製作組|工作者|\s\p{Script=Han}{2,3}$/u;
 type RelationRow = ReturnType<typeof dailyRelationCounts>[number];
 // A day's relation counts need every paired article's byline and citations:
 // ~130k rows of the 20 GB article table for 30 days (30–50 s). Pairs for a
@@ -383,7 +384,9 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
     if (i === undefined) continue;
     totals.citations[i] += Number(row.n);
     media(row.media).citing[i] += Number(row.n);
-    media(row.source).cited[i] += Number(row.n);
+    // Citation sources are parsed text; leftovers such as 「•以上言論由東森…」,
+    // 「作者：財訊雙週刊」 or 「民視新聞 徐婉寧」 are not outlets and get no row.
+    if (!CITATION_RESIDUE.test(row.source)) media(row.source).cited[i] += Number(row.n);
   }
   const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
   return {

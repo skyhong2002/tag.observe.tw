@@ -26,3 +26,19 @@ describe('settled daily relation counts', () => {
     vi.unstubAllEnvs();
   });
 });
+
+describe('citation sources in the daily table', () => {
+  it('skips parsing leftovers but keeps outlets', async () => {
+    const { CITATION_RESIDUE } = await import('./similarity.ts');
+    for (const junk of [
+      '•以上言論由東森健康授權轉載，不代表東森新聞立場。',
+      '作者：財訊雙週刊',
+      '撰文‧今周刊編輯團隊',
+      '民視新聞 徐婉寧',
+      '《新聞直擊》製作組',
+    ])
+      expect(CITATION_RESIDUE.test(junk), junk).toBe(true);
+    for (const outlet of ['焦點時報', '中天電視台', 'people_daily', 'EBC 東森新聞', '敏迪選讀Mindi World News'])
+      expect(CITATION_RESIDUE.test(outlet), outlet).toBe(false);
+  });
+});
