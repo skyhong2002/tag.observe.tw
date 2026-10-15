@@ -2995,7 +2995,7 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 
 **即時看板的事件與議題鏡頭**
 
-給精簡版 /liveboard/ 的事件鏡頭與議題排行。events 是最新一小時事件快照的前 10 名，附上一份快照的名次與分數，以及近一小時收錄、帶有該事件兩個主要標籤的文章。boards 是今天有文章的議題排行（依今天發布的文章數，最多各 10 個）：media 為各媒體自己的議題／專題頁（成員是頁面上列出的文章；專題頁每幾小時才重讀一次，近一小時的數字會晚到），threads 為今天出現過的跨媒體事件串，categories 與 groups 為標籤群組（分類，以及人物、政黨等群組，含子群組的標籤）。counts.today 依發布時間；hour 與 previous 依收錄時間，是到現在為止的一小時與再前一小時，因為許多文章發布後才收錄，依發布時間算的最近一小時永遠不完整。
+給精簡版 /liveboard/ 的事件鏡頭與議題排行。events 是最新一小時事件快照的前 10 名，附上一份快照的名次與分數，以及帶有該事件兩個主要標籤的文章（近一小時收錄的在前，再接今天稍早的）。boards 是今天有文章的議題排行（依今天發布的文章數，最多各 10 個）：media 為各媒體自己的議題／專題頁（每家最多 2 個；成員是頁面上列出的文章；專題頁每幾小時才重讀一次，近一小時的數字會晚到），threads 為今天出現過的跨媒體事件串，categories 與 groups 為標籤群組（分類，以及人物、政黨等群組，含子群組的標籤）。counts.today 依發布時間；hour 與 previous 依收錄時間，是到現在為止的一小時與再前一小時，因為許多文章發布後才收錄，依發布時間算的最近一小時永遠不完整。
 
 範例：
 
@@ -3019,21 +3019,25 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `events[].score` | number |  |
 | `events[].prevScore` | number \| null | 上一份快照的分數 |
 | `events[].major` | string[] | 主要標籤 |
-| `events[].news` | object[] | 事件的代表標題（最多 6 則），用來選出主標題 |
+| `events[].news` | object[] | 事件的代表標題（最多 6 則），用來選出主標題與封面 |
 | `events[].news[].title` | string |  |
 | `events[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].image` | string \| null |  |
 | `events[].href` | string \| null | 事件串頁 |
 | `events[].counts` | object | 不重複的本站爬取文章數 |
 | `events[].counts.today` | integer | 今天（台北時間）發布的文章數 |
 | `events[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `events[].counts.previous` | integer | 再前一小時收錄的文章數 |
-| `events[].articles` | object[] | 近一小時收錄的文章，依發布時間新的在前，最多 5 篇 |
+| `events[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+| `events[].articles` | object[] | 近一小時收錄的文章，再接今天稍早的，各依發布時間新的在前，最多 8 篇 |
 | `events[].articles[].id` | integer |  |
 | `events[].articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
 | `events[].articles[].mediaTitle` | string |  |
 | `events[].articles[].title` | string |  |
 | `events[].articles[].url` | string |  |
+| `events[].articles[].image` | string \| null |  |
 | `events[].articles[].publishedAt` | string (ISO 時間) |  |
+| `events[].articles[].recent` | boolean | 近一小時收錄；false 為今天稍早 |
 | `boards` | object |  |
 | `boards.media` | object[] | 各媒體的議題／專題 |
 | `boards.media[].key` | string | topic:、thread: 或 group: 加上 id |
@@ -3044,11 +3048,13 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.media[].news` | object[] | 事件串的代表標題，用來選出主標題 |
 | `boards.media[].news[].title` | string |  |
 | `boards.media[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.media[].news[].image` | string \| null |  |
 | `boards.media[].major` | string[] | 事件串的主要標籤 |
 | `boards.media[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.media[].counts.today` | integer | 今天（台北時間）發布的文章數 |
 | `boards.media[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `boards.media[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.media[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
 | `boards.threads` | object[] | 跨媒體事件串 |
 | `boards.threads[].key` | string | topic:、thread: 或 group: 加上 id |
 | `boards.threads[].title` | string | 議題名稱；事件串為主要標籤 |
@@ -3058,11 +3064,13 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.threads[].news` | object[] | 事件串的代表標題，用來選出主標題 |
 | `boards.threads[].news[].title` | string |  |
 | `boards.threads[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.threads[].news[].image` | string \| null |  |
 | `boards.threads[].major` | string[] | 事件串的主要標籤 |
 | `boards.threads[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.threads[].counts.today` | integer | 今天（台北時間）發布的文章數 |
 | `boards.threads[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `boards.threads[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.threads[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
 | `boards.categories` | object[] | 標籤群組：分類 |
 | `boards.categories[].key` | string | topic:、thread: 或 group: 加上 id |
 | `boards.categories[].title` | string | 議題名稱；事件串為主要標籤 |
@@ -3072,11 +3080,13 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.categories[].news` | object[] | 事件串的代表標題，用來選出主標題 |
 | `boards.categories[].news[].title` | string |  |
 | `boards.categories[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.categories[].news[].image` | string \| null |  |
 | `boards.categories[].major` | string[] | 事件串的主要標籤 |
 | `boards.categories[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.categories[].counts.today` | integer | 今天（台北時間）發布的文章數 |
 | `boards.categories[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `boards.categories[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.categories[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
 | `boards.groups` | object[] | 標籤群組：人物、政黨等 |
 | `boards.groups[].key` | string | topic:、thread: 或 group: 加上 id |
 | `boards.groups[].title` | string | 議題名稱；事件串為主要標籤 |
@@ -3086,11 +3096,13 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.groups[].news` | object[] | 事件串的代表標題，用來選出主標題 |
 | `boards.groups[].news[].title` | string |  |
 | `boards.groups[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.groups[].news[].image` | string \| null |  |
 | `boards.groups[].major` | string[] | 事件串的主要標籤 |
 | `boards.groups[].counts` | object | 不重複的本站爬取文章數 |
 | `boards.groups[].counts.today` | integer | 今天（台北時間）發布的文章數 |
 | `boards.groups[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `boards.groups[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.groups[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
 
 快取：60 秒。
 

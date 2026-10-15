@@ -11,10 +11,13 @@ export interface SceneCounts {
   hour: number;
   /** …and in the hour before it. */
   previous: number;
+  /** Collected in each of the last 12 hours, oldest first. */
+  hours: number[];
 }
 export interface SceneNews {
   title: string;
   media: string;
+  image: string | null;
 }
 export interface SceneArticle {
   id: number;
@@ -22,7 +25,10 @@ export interface SceneArticle {
   mediaTitle: string;
   title: string;
   url: string;
+  image: string | null;
   publishedAt: string;
+  /** Collected in the last hour (else earlier today). */
+  recent: boolean;
 }
 export interface SceneEvent {
   rank: number;

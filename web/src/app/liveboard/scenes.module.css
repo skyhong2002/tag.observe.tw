@@ -8,7 +8,7 @@
   gap: calc(clamp(10px, 2.2vh, 24px) * var(--ui, 1));
   padding: calc(clamp(6px, 1.5vh, 18px) * var(--ui, 1)) 0;
   color: #27272a;
-  font-size: calc(clamp(14px, min(2.4vh, 1.7vw), 24px) * var(--ui, 1));
+  font-size: calc(clamp(14px, min(2.5vh, 1.45vw), 34px) * var(--ui, 1));
   animation: fade 1s ease both;
   overflow: hidden;
 }
@@ -41,26 +41,52 @@
   to { transform: scaleX(1); }
 }
 
-.body { width: min(100%, 64em); min-height: 0; flex: 1; animation: fade 0.8s ease both; }
+.body { width: min(100% - 2em, 76em); min-height: 0; flex: 1; animation: fade 0.8s ease both; }
 
-/* An event. */
-.event { display: flex; flex-direction: column; gap: 0.7em; height: 100%; min-height: 0; }
+/* An event: the story and its figures on the left, its reports on the right. */
+.event { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 2.4em; height: 100%; min-height: 0; }
+.lead { display: flex; flex-direction: column; gap: 0.65em; min-height: 0; overflow: hidden; }
+/* The cover gives way first; the headline, tags and figures keep their room. */
+.lead > * { flex-shrink: 0; }
+.lead > .cover { flex: 0 1 auto; min-height: 0; max-height: 38%; aspect-ratio: 16 / 9; border-radius: 0.5em; overflow: hidden; background: #e4e4e7; }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rank { margin: 0; display: flex; align-items: baseline; gap: 0.6em; color: #52525b; }
 .rank b { font-size: 1.5em; color: var(--tint); font-variant-numeric: tabular-nums; }
-.headline { margin: 0; font-size: 1.9em; line-height: 1.3; font-weight: 700; }
-.tags { margin: 0; display: flex; flex-wrap: wrap; gap: 0.4em; font-size: 0.9em; }
+.headline { margin: 0; font-size: 1.65em; line-height: 1.3; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tags { margin: 0; display: flex; flex-wrap: wrap; gap: 0.4em; font-size: 0.85em; }
 .tags a { padding: 0.1em 0.6em; border-radius: 1em; background: color-mix(in srgb, var(--tint) 12%, transparent); color: var(--tint); }
-.figures { margin: 0.2em 0 0; display: grid; grid-template-columns: repeat(3, auto); justify-content: start; column-gap: 3em; row-gap: 0.4em; }
+.figures { margin: 0.2em 0 0; display: grid; grid-template-columns: repeat(3, auto); justify-content: start; column-gap: 2.4em; row-gap: 0.4em; }
 .figures dt { color: #71717a; font-size: 0.85em; }
 .figures dd { margin: 0.1em 0 0; display: flex; align-items: baseline; gap: 0.4em; font-variant-numeric: tabular-nums; }
 .figures dd b { font-size: 1.7em; font-weight: 700; }
-.figures .sub { color: #71717a; font-size: 0.8em; }
-.articles { margin: 0.3em 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.45em; min-height: 0; overflow: hidden; }
-.articles li { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) auto; align-items: baseline; gap: 0.8em; padding-top: 0.45em; border-top: 1px solid #e4e4e7; }
-.articleTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub { color: #71717a; font-size: 0.8em; }
+.trailBox { display: flex; flex-direction: column; gap: 0.3em; margin-top: auto; }
+.trailBox .trail { height: 3.2em; gap: 0.3em; }
+.trailEnds { display: flex; justify-content: space-between; color: #a1a1aa; font-size: 0.7em; }
+.trail { display: flex; align-items: flex-end; gap: 0.15em; height: 1.4em; }
+.trail i { flex: 1; min-width: 2px; border-radius: 0.15em 0.15em 0 0; background: color-mix(in srgb, var(--tint) 35%, transparent); }
+.trail i[data-now] { background: var(--tint); }
+
+.reports {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  /* A list longer than the screen fades out rather than ending in half a row. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 3em), transparent);
+}
+.section { margin: 0 0 0.4em; font-size: 0.8em; font-weight: 600; color: #71717a; }
+.section:not(:first-child) { margin-top: 0.9em; }
+.articles { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.55em; }
+.articles li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr); align-items: center; gap: 0.8em; }
+.thumb { display: flex; align-items: center; justify-content: center; width: 4.6em; aspect-ratio: 16 / 9; border-radius: 0.3em; overflow: hidden; background: #f4f4f5; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.articleText { display: flex; flex-direction: column; gap: 0.15em; min-width: 0; }
+.articleTitle { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+.byline { display: flex; align-items: center; gap: 0.4em; color: #71717a; font-size: 0.75em; }
 .media { color: #71717a; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.time { color: #a1a1aa; font-size: 0.85em; font-variant-numeric: tabular-nums; }
-.empty { margin: 0.3em 0 0; color: #a1a1aa; }
+.time { color: #a1a1aa; font-variant-numeric: tabular-nums; }
+.empty { margin: 0 0 0.3em; color: #a1a1aa; }
 
 /* A change: up in the lens's colour, down in grey. */
 .change {
@@ -77,22 +103,31 @@
 .change[data-down] { color: #71717a; background: #f4f4f5; }
 .change[data-flat] { color: #a1a1aa; background: none; font-weight: 400; }
 
-/* A leaderboard. */
-.board { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; table-layout: fixed; }
-.board th { font-weight: 400; font-size: 0.8em; color: #71717a; text-align: right; padding: 0 0.6em 0.4em; width: 6.5em; }
+/* A leaderboard: its rows share out the height. */
+.board { width: 100%; height: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; table-layout: fixed; }
+.board thead tr { height: 1.8em; }
+.board th { font-weight: 400; font-size: 0.8em; color: #71717a; text-align: right; padding: 0 0.6em 0.3em; width: 6.5em; vertical-align: bottom; }
 .board th:first-child { width: 2.2em; }
 .board th.name { text-align: left; width: auto; }
-.board td { padding: 0.32em 0.6em; border-top: 1px solid #e4e4e7; white-space: nowrap; }
+.board th.trailHead { width: 9em; text-align: center; }
+.board td { padding: 0.2em 0.6em; border-top: 1px solid #e4e4e7; white-space: nowrap; }
 .board td.name { overflow: hidden; text-overflow: ellipsis; }
-.board td.name .media { margin-right: 0.6em; }
+.nameCell { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
+.nameCell a { overflow: hidden; text-overflow: ellipsis; }
+.nameCell .media { flex-shrink: 0; }
+.trailCell .trail { height: 1.6em; }
 .place { color: var(--tint); font-weight: 700; text-align: center; }
 .count { text-align: right; }
 
-@media (max-width: 640px) {
-  .figures { grid-template-columns: repeat(2, auto); column-gap: 1.6em; }
-  .articles li { grid-template-columns: minmax(0, 1fr) auto; }
-  .articles .media { grid-column: 1 / -1; }
-  .board th { width: 4.6em; }
+/* Portrait: the reports go under the story, and the board drops its trail. */
+@media (max-aspect-ratio: 1 / 1) {
+  .event { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 1em; }
+  .cover { display: none; }
+  .trailBox { margin-top: 0.3em; }
+  .figures { grid-template-columns: repeat(3, auto); column-gap: 1.2em; }
+  .board th { width: 4.4em; }
+  .board th.trailHead, .board td.trailCell { display: none; }
+  .nameCell .media { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .scene, .body { animation: none; }
@@ -101,7 +136,6 @@
 [data-theme="dark"] .scene { color: #e4e4e7; }
 [data-theme="dark"] .note,
 [data-theme="dark"] .figures dt,
-[data-theme="dark"] .figures .sub,
 [data-theme="dark"] .media,
 [data-theme="dark"] .board th,
 [data-theme="dark"] .rank,
@@ -111,6 +145,10 @@
 [data-theme="dark"] .arrow:hover,
 [data-theme="dark"] .arrow:focus-visible { color: #d4d4d8; }
 [data-theme="dark"] .track { background: #3f3f46; }
-[data-theme="dark"] .articles li,
 [data-theme="dark"] .board td { border-color: #27272a; }
+[data-theme="dark"] .section,
+[data-theme="dark"] .sub,
+[data-theme="dark"] .byline { color: #a1a1aa; }
+[data-theme="dark"] .thumb,
+[data-theme="dark"] .cover { background: #27272a; }
 [data-theme="dark"] .change[data-down] { color: #a1a1aa; background: #27272a; }

@@ -30,7 +30,10 @@ describe('countSeen', () => {
       ],
       w,
     );
-    expect(counts).toEqual({ today: 2, hour: 2, previous: 1 });
+    expect(counts).toMatchObject({ today: 2, hour: 2, previous: 1 });
+    // The trail by collection hour, oldest first: three hours ago, 90 minutes ago, and twice in the last hour.
+    expect(counts.hours.slice(-4)).toEqual([0, 1, 1, 2]);
+    expect(counts.hours).toHaveLength(12);
   });
 });
 
@@ -49,7 +52,7 @@ describe('TagIndex', () => {
     expect(index.carrying(['台積電', 'tsmc']).sort()).toEqual([1, 2, 3]);
   });
   it('counts each article once however many of the tags it carries', () => {
-    expect(countSeen(index.seen(index.carrying(['台積電', '魏哲家', 'TSMC'])), w)).toEqual({ today: 3, hour: 1, previous: 1 });
+    expect(countSeen(index.seen(index.carrying(['台積電', '魏哲家', 'TSMC'])), w)).toMatchObject({ today: 3, hour: 1, previous: 1 });
   });
   it('asks two major tags of a story, or all of them when it has fewer', () => {
     expect(storyNeed(['台積電', '魏哲家', '法說會'])).toBe(2);
@@ -58,17 +61,21 @@ describe('TagIndex', () => {
 });
 
 describe('rankBoard', () => {
-  const row = (title: string, today: number, hour: number): SceneRow => ({
+  const row = (title: string, today: number, hour: number, media: string | null = null): SceneRow => ({
     key: title,
     title,
     href: '/',
-    media: null,
-    mediaTitle: null,
-    counts: { today, hour, previous: 0 },
+    media,
+    mediaTitle: media,
+    counts: { today, hour, previous: 0, hours: [] },
   });
   it('keeps rows with articles today, most first, then the busiest hour', () => {
-    const ranked = rankBoard([row('甲', 5, 0), row('乙', 0, 0), row('丙', 9, 1), row('丁', 5, 3)], 3);
+    const ranked = rankBoard([row('甲', 5, 0), row('乙', 0, 0), row('丙', 9, 1), row('丁', 5, 3)], { limit: 3 });
     expect(ranked.map((r) => r.title)).toEqual(['丙', '丁', '甲']);
+  });
+  it('keeps at most `perMedia` of one outlet', () => {
+    const rows = [row('快訊一', 9, 0, 'pchome'), row('快訊二', 8, 0, 'pchome'), row('快訊三', 7, 0, 'pchome'), row('選舉', 6, 0, 'ltn')];
+    expect(rankBoard(rows, { perMedia: 2 }).map((r) => r.title)).toEqual(['快訊一', '快訊二', '選舉']);
   });
 });
 

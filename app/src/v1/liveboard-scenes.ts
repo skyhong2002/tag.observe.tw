@@ -28,9 +28,14 @@ const mediaInfo = catalog as unknown as Record<string, { title: string | null }>
 const HOUR = 3600e3;
 /** Articles collected in the last two hours were published at most this long before (a few stragglers aside). */
 const LATE = 8 * HOUR;
+/** Hours of collection counts behind each event and row, for its trail. */
+const TRAIL = 12;
 const EVENTS = 10;
-const EVENT_ARTICLES = 5;
+/** An event's articles: the last hour's, then today's earlier ones. */
+const EVENT_ARTICLES = 8;
 const BOARD = 10;
+/** Topics of one outlet on its leaderboard (some outlets keep a page per section). */
+const PER_MEDIA = 2;
 const CACHE_MS = 60e3;
 
 export interface SceneCounts {
@@ -39,6 +44,8 @@ export interface SceneCounts {
   hour: number;
   /** …and the hour before it. */
   previous: number;
+  /** Collected in each of the last TRAIL hours, oldest first (the last one is `hour`). */
+  hours: number[];
 }
 export interface SceneArticle {
   id: number;
@@ -46,11 +53,15 @@ export interface SceneArticle {
   mediaTitle: string;
   title: string;
   url: string;
+  image: string | null;
   publishedAt: string;
+  /** Collected in the last hour (else earlier today). */
+  recent: boolean;
 }
 export interface SceneNews {
   title: string;
   media: string;
+  image: string | null;
 }
 export interface SceneEvent {
   rank: number;
@@ -63,7 +74,7 @@ export interface SceneEvent {
   news: SceneNews[];
   href: string | null;
   counts: SceneCounts;
-  /** The articles collected in the last hour, the latest published first. */
+  /** The articles collected in the last hour, then today's earlier ones, each the latest published first. */
   articles: SceneArticle[];
 }
 export interface SceneRow {
@@ -93,9 +104,11 @@ export interface Windows {
   today: number;
   hour: number;
   previous: number;
+  /** Start of the trail's first hour. */
+  trail: number;
 }
 export function windowsAt(now: number): Windows {
-  return { now, today: taipeiMidnight(now).getTime(), hour: now - HOUR, previous: now - 2 * HOUR };
+  return { now, today: taipeiMidnight(now).getTime(), hour: now - HOUR, previous: now - 2 * HOUR, trail: now - TRAIL * HOUR };
 }
 
 /** When an article was published (null while its page has not been read for the date) and collected. */
@@ -103,14 +116,15 @@ export interface Seen {
   published: number | null;
   crawled: number;
 }
-/** Distinct articles published today, and collected in the last hour and in the hour before. */
+/** Distinct articles published today, and collected in the last hour, the hour before and each hour of the trail. */
 export function countSeen(seen: Iterable<Seen>, w: Windows): SceneCounts {
-  const out = { today: 0, hour: 0, previous: 0 };
+  const out = { today: 0, hour: 0, previous: 0, hours: new Array<number>(TRAIL).fill(0) };
   for (const t of seen) {
     if (t.published !== null && t.published >= w.today && t.published <= w.now) out.today++;
     if (t.crawled > w.now) continue;
     if (t.crawled >= w.hour) out.hour++;
     else if (t.crawled >= w.previous) out.previous++;
+    if (t.crawled >= w.trail) out.hours[Math.min(TRAIL - 1, Math.floor((t.crawled - w.trail) / HOUR))]++;
   }
   return out;
 }
@@ -151,25 +165,34 @@ export class TagIndex {
 /** An event or thread: two of its major tags (all of them when it has fewer). */
 export const storyNeed = (major: readonly string[]) => Math.min(2, major.length);
 
-/** The day's leaderboard: rows with articles today, most first, then the busiest last hour. */
-export function rankBoard(rows: SceneRow[], limit = BOARD): SceneRow[] {
+/** The day's leaderboard: rows with articles today, most first, then the busiest last hour;
+ *  with `perMedia`, no more than that many of one outlet. */
+export function rankBoard(rows: SceneRow[], { limit = BOARD, perMedia = Infinity } = {}): SceneRow[] {
+  const taken = new Map<string, number>();
   return rows
     .filter((r) => r.counts.today > 0)
     .sort((a, b) => b.counts.today - a.counts.today || b.counts.hour - a.counts.hour || a.title.localeCompare(b.title))
+    .filter((r) => {
+      if (!r.media) return true;
+      const n = taken.get(r.media) ?? 0;
+      taken.set(r.media, n + 1);
+      return n < perMedia;
+    })
     .slice(0, limit);
 }
 
 /** Its publish time is a placeholder until its page is read. */
 const pending = sql<number>`(${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`;
-/** Own articles published today, or late enough to have been collected in the last two hours. */
+/** Own articles published today, or late enough to have been collected in the trail's hours. */
 const inWindow = (w: Windows) =>
   and(
     eq(articles.source, 'own'),
-    gte(articles.publishedAt, new Date(Math.min(w.today, w.previous - LATE))),
+    gte(articles.publishedAt, new Date(Math.min(w.today, w.trail - LATE))),
     lte(articles.publishedAt, new Date(w.now)),
   );
-const newsOf = (e: { news: Array<{ title: string; media: string }>; majorNews: Array<{ title: string; media: string }> }) =>
-  (e.majorNews.length ? e.majorNews : e.news).slice(0, 6).map((n) => ({ title: n.title, media: n.media }));
+type Stored = { title: string; media: string; image: string | null };
+const newsOf = (e: { news: Stored[]; majorNews: Stored[] }): SceneNews[] =>
+  (e.majorNews.length ? e.majorNews : e.news).slice(0, 6).map((n) => ({ title: n.title, media: n.media, image: n.image ?? null }));
 const mediaTitle = (media: string) => mediaInfo[media]?.title ?? media;
 
 async function loadIndex(db: Db, w: Windows): Promise<TagIndex> {
@@ -192,23 +215,45 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
     .limit(1);
   const prev = await eventsAt(db, 'news', prevHour?.h ?? null);
   const members = latest.events.map((e) => index.carrying(e.major, storyNeed(e.major)));
-  // The last hour's articles of every event, newest first, fetched together.
-  // An article whose date is not read yet sorts by when it was collected.
+  // Every event's articles, fetched together: the last hour's, then today's
+  // earlier ones, each newest first. One whose date is not read yet sorts by
+  // when it was collected.
   const dateOf = (id: number) => {
     const t = index.at.get(id);
     return t ? (t.published ?? t.crawled) : 0;
   };
-  const recent = members.map((ids) =>
-    ids.filter((id) => (index.at.get(id)?.crawled ?? 0) >= w.hour).sort((a, b) => dateOf(b) - dateOf(a) || b - a),
-  );
-  const wanted = [...new Set(recent.flatMap((ids) => ids.slice(0, EVENT_ARTICLES)))];
+  const isRecent = (id: number) => (index.at.get(id)?.crawled ?? 0) >= w.hour;
+  const picked = members.map((ids) => {
+    const byDate = [...ids].sort((a, b) => dateOf(b) - dateOf(a) || b - a);
+    const earlier = byDate.filter((id) => !isRecent(id) && dateOf(id) >= w.today);
+    return [...byDate.filter(isRecent), ...earlier].slice(0, EVENT_ARTICLES + 4);
+  });
+  const wanted = [...new Set(picked.flat())];
   const found = wanted.length
     ? await db
-        .select({ id: articles.id, media: articles.media, title: articles.title, url: articles.url, publishedAt: articles.publishedAt })
+        .select({
+          id: articles.id,
+          media: articles.media,
+          title: articles.title,
+          url: articles.url,
+          image: articles.image,
+          publishedAt: articles.publishedAt,
+        })
         .from(articles)
         .where(inArray(articles.id, wanted))
     : [];
   const byId = new Map(found.map((a) => [a.id, a]));
+  // An outlet sometimes files one report under two addresses: list it once.
+  const once = (ids: number[]) => {
+    const seen = new Set<string>();
+    return ids.filter((id) => {
+      const a = byId.get(id);
+      const key = a ? `${a.media}|${a.title.replace(/\s+/g, '')}` : '';
+      if (!a || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
   const list = latest.events.map((e, i): SceneEvent => {
     const before = matchPrev(e, prev);
     return {
@@ -220,12 +265,25 @@ async function loadEvents(db: Db, index: TagIndex, w: Windows) {
       news: newsOf(e),
       href: e.threadId ? `/eve/${e.threadId}/` : null,
       counts: countSeen(index.seen(members[i]), w),
-      articles: recent[i].slice(0, EVENT_ARTICLES).flatMap((id) => {
-        const a = byId.get(id);
-        return a
-          ? [{ id, media: a.media, mediaTitle: mediaTitle(a.media), title: a.title, url: a.url, publishedAt: a.publishedAt.toISOString() }]
-          : [];
-      }),
+      articles: once(picked[i])
+        .slice(0, EVENT_ARTICLES)
+        .flatMap((id) => {
+          const a = byId.get(id);
+          return a
+            ? [
+                {
+                  id,
+                  media: a.media,
+                  mediaTitle: mediaTitle(a.media),
+                  title: a.title,
+                  url: a.url,
+                  image: a.image,
+                  publishedAt: a.publishedAt.toISOString(),
+                  recent: isRecent(id),
+                },
+              ]
+            : [];
+        }),
     };
   });
   return { hour: latest.snapshot.hourStart.toISOString(), events: list, latest: latest.events };
@@ -323,6 +381,7 @@ async function mediaBoard(db: Db, w: Windows) {
         ),
       };
     }),
+    { perMedia: PER_MEDIA },
   );
 }
 

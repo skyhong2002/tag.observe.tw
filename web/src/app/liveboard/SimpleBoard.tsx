@@ -21,9 +21,10 @@ import styles from './simple.module.css';
 // lens cross-fades in over the last. Tapping a word opens its tag page.
 // Other lenses are scenes (SceneView): the top events one a frame, or a
 // leaderboard of the day's topics, from /api/v1/liveboard/scenes.
-// ← / → (or PageUp / PageDown, as a presenter remote sends), a swipe, or the
-// ‹ › beside the time line step to the previous or next hour, and past either
-// end to the neighbouring lens; tapping an hour goes straight to it.
+// ↑ / ↓ (or PageUp / PageDown, as a presenter remote sends), a swipe up or
+// down, or the ‹ › beside the time line step to the previous or next hour,
+// and past either end to the neighbouring lens; ← / → or a sideways swipe go
+// straight to the previous or next lens; tapping an hour goes to it.
 // Settings: settings.ts, /liveboard/setting/.
 
 const SECOND = 1000;
@@ -212,7 +213,7 @@ function settleMs(words: Shown[], first = false) {
 }
 /** A word that would travel further than this share of the canvas width fades out and in instead. */
 const FAR = 0.25;
-/** A horizontal drag at least this long (px), and mostly sideways, is a swipe to the next or previous hour. */
+/** A drag at least this long (px), and mostly along one axis, is a swipe (see onPointerUp). */
 const SWIPE = 50;
 /** What is on screen: a lens, its frames, and which frame is showing. `run` changes with every lens. */
 interface Playing {
@@ -223,6 +224,12 @@ interface Playing {
   /** Changes with every frame shown, a frame skipped back to included: its animation settles under `run:visit`. */
   visit: number;
 }
+interface Skip {
+  step: (by: number) => void;
+  to: (frame: number) => void;
+  lens: (by: number) => void;
+}
+const STILL: Skip = { step: () => {}, to: () => {}, lens: () => {} };
 /** A place a skip goes to: a lens and its frame (`last` is its present, however many frames it turns out to have). */
 interface Spot {
   lens: number;
@@ -305,8 +312,8 @@ export default function SimpleBoard({
   const cache = useRef(new Map<string, { at: number; frame: Frame | null }>());
   /** The event and topic scenes' data, shared by their lenses and fetched again once stale. */
   const scenes = useRef<{ at: number; data: Promise<LiveScenes | null> } | null>(null);
-  /** Skips to the next (1) or previous (-1) frame, or to one frame of the lens; set by the player. */
-  const skip = useRef<{ step: (by: number) => void; to: (frame: number) => void }>({ step: () => {}, to: () => {} });
+  /** Skips to the next (1) or previous (-1) frame or lens, or to one frame of the lens; set by the player. */
+  const skip = useRef<Skip>(STILL);
   const seeded = useRef(false);
   if (!seeded.current) {
     seeded.current = true;
@@ -363,6 +370,9 @@ export default function SimpleBoard({
       },
       to: (frame) => {
         if (frame !== here.frame || wanted) go({ lens: here.lens, frame });
+      },
+      lens: (by) => {
+        if (lenses.length) go({ lens: wrap((wanted ?? here).lens + by), frame: 0 });
       },
     };
     const snapshot = async (lens: CloudLens, hoursBack: number, now: number) => {
@@ -502,25 +512,30 @@ export default function SimpleBoard({
     if (lenses.length) play();
     return () => {
       cancelled = true;
-      skip.current = { step: () => {}, to: () => {} };
+      skip.current = STILL;
       wake();
     };
   }, [lenses, settings.history, settings.interval, settings.step, settings.hold]);
 
-  // The keys a keyboard or a presenter remote skips with.
+  // The keys: ↑ ↓ step through the hours (an event lens's events), on past
+  // either end; ← → go to the previous or next lens. A presenter remote's two
+  // keys (PageUp / PageDown) step, so they still reach every lens.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      const by = e.key === 'ArrowRight' || e.key === 'PageDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'PageUp' ? -1 : 0;
-      if (!by) return;
+      const step = e.key === 'ArrowDown' || e.key === 'PageDown' ? 1 : e.key === 'ArrowUp' || e.key === 'PageUp' ? -1 : 0;
+      const lens = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!step && !lens) return;
       e.preventDefault();
-      skip.current.step(by);
+      if (step) skip.current.step(step);
+      else skip.current.lens(lens);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-  // A swipe across the cloud: right to left for the next hour, left to right for the previous.
-  // The click that ends a swipe over a word must not open it.
+  // A swipe as the keys: sideways for the next lens (right to left) or the previous,
+  // up or down for the next hour (bottom to top) or the previous. The click that
+  // ends a swipe over a word must not open it.
   const swipe = useRef<{ x: number; y: number; id: number } | null>(null);
   const swiped = useRef(false);
   const onPointerDown = (e: React.PointerEvent) => {
@@ -533,9 +548,10 @@ export default function SimpleBoard({
     if (!start || start.id !== e.pointerId) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
-    if (Math.abs(dx) < SWIPE || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+    if (Math.abs(dx) >= SWIPE && Math.abs(dx) >= 1.5 * Math.abs(dy)) skip.current.lens(dx < 0 ? 1 : -1);
+    else if (Math.abs(dy) >= SWIPE && Math.abs(dy) >= 1.5 * Math.abs(dx)) skip.current.step(dy < 0 ? 1 : -1);
+    else return;
     swiped.current = true;
-    skip.current.step(dx < 0 ? 1 : -1);
   };
   const onClickCapture = (e: React.MouseEvent) => {
     if (!swiped.current) return;
@@ -756,7 +772,12 @@ export default function SimpleBoard({
           />
         )}
         {canvas && (
-          <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} className={styles.cloud} aria-label={`${lens?.title ?? ''}文字雲`}>
+          <svg
+            viewBox={`0 0 ${canvas.width} ${canvas.height}`}
+            className={styles.cloud}
+            aria-label={lens?.scene === 'cloud' ? `${lens.title}文字雲` : undefined}
+            aria-hidden={lens?.scene === 'cloud' ? undefined : true}
+          >
             {playing && centre && (
               <g
                 key={`centre-${playing.run}`}
