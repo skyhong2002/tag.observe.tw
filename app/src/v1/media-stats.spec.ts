@@ -57,6 +57,40 @@ describe('media stats', () => {
       await app.close();
     }
   });
+  it('warms up at startup and serves the last snapshot while a newer one loads', async () => {
+    let release: () => void = () => {};
+    let slow = false;
+    const chain = {
+      innerJoin: () => chain,
+      where: () => chain,
+      orderBy: () => chain,
+      limit: async () => [],
+      groupBy: async () => {
+        if (slow) await new Promise<void>((resolve) => (release = resolve));
+        return [];
+      },
+    };
+    const select = vi.fn(() => ({ from: () => chain }));
+    const app = Fastify();
+    registerMediaStats(app, { select } as unknown as Db);
+    try {
+      await app.ready();
+      await vi.waitFor(() => expect(select).toHaveBeenCalled());
+      const first = (await app.inject('/api/v1/media-stats')).json();
+      const warmed = select.mock.calls.length;
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 121_000);
+      slow = true;
+      const stale = await app.inject('/api/v1/media-stats');
+      expect(stale.statusCode).toBe(200);
+      expect(stale.json().generatedAt).toBe(first.generatedAt);
+      expect(select.mock.calls.length).toBeGreaterThan(warmed);
+      release();
+    } finally {
+      vi.useRealTimers();
+      await app.close();
+    }
+  });
   it('computes the start of the Taipei day', () => {
     expect(taipeiMidnight(now).toISOString()).toBe('2026-09-28T16:00:00.000Z');
     expect(taipeiMidnight(Date.parse('2026-09-28T16:30:00Z')).toISOString()).toBe('2026-09-28T16:00:00.000Z');

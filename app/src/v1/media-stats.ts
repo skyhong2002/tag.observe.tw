@@ -350,19 +350,31 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
   };
   // The public response already advertises a two-minute cache. Share it on
   // the server too, so concurrent directory readers do not repeat DB scans.
+  // The 7-day aggregate still reads recent rows (seconds, longer when the disk
+  // is busy): compute it at startup and keep serving the last snapshot while
+  // a newer one loads, so readers never wait for it after the first one.
   let cached: Awaited<ReturnType<typeof load>> | null = null;
   let expires = 0;
   let pending: ReturnType<typeof load> | null = null;
+  const refresh = () =>
+    (pending ??= load()
+      .then((value) => {
+        cached = value;
+        expires = Date.now() + 120_000;
+        return value;
+      })
+      .finally(() => {
+        pending = null;
+      }));
+  app.addHook('onReady', async () => {
+    refresh().catch((error) => app.log.warn({ err: error }, 'media-stats warm-up failed'));
+  });
   app.get('/api/v1/media-stats', async (_request, reply) => {
     reply.header('cache-control', 'public, max-age=120');
     if (cached && Date.now() < expires) return cached;
-    const request = (pending ??= load());
-    try {
-      cached = await request;
-      expires = Date.now() + 120_000;
-      return cached;
-    } finally {
-      if (pending === request) pending = null;
-    }
+    const request = refresh();
+    if (!cached) return request;
+    request.catch((error) => app.log.warn({ err: error }, 'media-stats refresh failed'));
+    return cached;
   });
 }
