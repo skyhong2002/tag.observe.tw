@@ -28,3 +28,7 @@ bash /home/deck/tag-analysis-private/topics-api-deploy-20261015T1045/rollback.sh
 - Post-deploy three-site gate UTC `2026-10-15T02:59:47Z`: medians tag/blog/YouTube `0.077/3.050/0.079s`, load1 `2.82`, `/home` `46.31 GiB`, MemAvailable `3.13 GiB`; all requests were HTTP 200/curl exit 0.
 
 The observation shows the deployed service remained healthy during this window. It does not claim that unrelated historical queue saturation elsewhere in the shared process has been eliminated.
+
+## Follow-up observation
+
+At UTC 2026-10-15T05:33:21Z, ten additional sequential DNT=1 public topic requests all returned HTTP 200/curl exit 0; the last was 0.187s. The final journal slice from the switch through this observation still contains zero `Queue limit reached` and zero error/exception/failed-query lines. Homepage and `/tag/柯文哲/` also returned HTTP 200 (0.876s and 3.203s). Final topic receipt SHA256 `3c2d95a3cc703a5cda936d280877b762d66313af8a2ffb2adaaf05a5ce61d52c`; final journal SHA256 remains `00d74875bbdfb8bbe5ac9ba2ce9afbb7bf7c4396f77a752dd020a20e0d7e36d3`.
