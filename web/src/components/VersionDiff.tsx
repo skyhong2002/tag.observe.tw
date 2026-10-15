@@ -28,7 +28,7 @@ function Changed({ value }: { value: string }) {
   const total = Number(/…（共 (\d+) 字）$/.exec(value)?.[1] ?? chars.length);
   return (
     <>
-      {chars.slice(0, 24).join('')}…<span className="text-xs opacity-80">（整段 {number(total)} 字）</span>
+      {chars.slice(0, 24).join('')}…<span className="whitespace-nowrap text-xs opacity-80">（整段 {number(total)} 字）</span>
     </>
   );
 }

@@ -147,7 +147,7 @@ function SimilarSection({ data, all, allHref }: { data: JournalistDetail; all: b
       {shown.length < ordered.length && (
         <p className="mt-3 text-sm">
           <Link href={allHref} className={linkStyle}>
-            顯示全部 {number(ordered.length)} 篇的相近文章
+            顯示其餘 {number(ordered.length - shown.length)} 篇的相近文章
           </Link>
           <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">目前列出最新 {number(shown.length)} 篇</span>
         </p>
@@ -363,7 +363,7 @@ export default async function JournalistPage({
             {articles.length < data.articles.length && (
               <p className="mt-3 text-sm">
                 <Link href={allHref('articles-heading')} className={linkStyle}>
-                  顯示全部 {number(data.articles.length)} 篇署名文章
+                  顯示其餘 {number(data.articles.length - articles.length)} 篇署名文章
                 </Link>
                 <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">目前列出最新 {number(articles.length)} 篇</span>
               </p>

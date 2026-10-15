@@ -91,7 +91,7 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
       legend: { top: 0, left: 0, textStyle: { color: ink }, inactiveColor: ink, data: [...SERIES.map((s) => s.name), '比對篇數'] },
       grid: [
         { left: 48, right: 24, top: narrow ? 104 : 64, height: narrow ? '40%' : '46%' },
-        { left: 48, right: 24, top: '72%', bottom: 26 },
+        { left: 48, right: 24, top: narrow ? '78%' : '72%', bottom: 26 },
       ],
       xAxis: [axis(0), axis(1)],
       yAxis: [yAxis(0, '配對／篇'), yAxis(1, '比對篇數')],

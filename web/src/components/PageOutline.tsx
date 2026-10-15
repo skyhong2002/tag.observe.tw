@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import PathBreaks from '@/components/PathBreaks';
 
 export type OutlineEntry = { id: string; title: string; hint?: string; mono?: boolean; children?: OutlineEntry[] };
 
@@ -65,14 +66,14 @@ export default function PageOutline({ entries }: { entries: OutlineEntry[] }) {
   }, [active]);
 
   const item = (entry: OutlineEntry, nested: boolean) =>
-    `-ml-px block border-l py-1 ${nested ? 'pl-6 text-[13px]' : 'pl-3'} ${entry.mono ? 'break-all font-mono text-xs' : ''} ${
+    `-ml-px block border-l py-1 ${nested ? 'pl-6 text-[13px]' : 'pl-3'} ${entry.mono ? 'break-words font-mono text-xs' : ''} ${
       active === entry.id
         ? 'border-brand-600 font-medium text-brand-700 dark:border-brand-400 dark:text-brand-400'
         : 'border-transparent text-zinc-600 hover:border-zinc-400 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100'
     }`;
   const link = (entry: OutlineEntry, nested: boolean) => (
     <a href={`#${entry.id}`} title={entry.hint} className={item(entry, nested)} aria-current={active === entry.id ? 'location' : undefined}>
-      {entry.title}
+      {entry.mono ? <PathBreaks path={entry.title} /> : entry.title}
     </a>
   );
 

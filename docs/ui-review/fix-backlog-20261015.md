@@ -27,3 +27,9 @@ Status: open / fixed@<sha> / wontfix (reason).
 | 20 | 049–053 `/my/*` | minor | 390px: the last tab 「設定」 touches the container edge, no scroll cue; anonymous sub-tabs reuse the generic login text. | fixed in source 3e73f344 (SectionTabs wrap) |
 | 21 | 014/015 `/admin/*` | minor | Anonymous message is only 「請先 登入 。」 (stray spaces) and does not say admin rights are needed. No admin data leaked. | fixed in source 3e73f344 |
 | 22 | 060 `/similarity/reposts/` | blocking | Root cause of #17: `/api/v1/similarity/daily` (30 days) takes 30–53 s. | fixed in source 5b01afdb (settled days cached; 3.9 s after restart, identical output) |
+| 23 | 037 `/journalist/方承業/` | minor | (f3c verify) 390px: 「（整段 150 字）」 still wraps between number and 字 inside diff hunks. | open |
+| 24 | 037 `/journalist/方承業/` | minor | (f3c verify) Heading says 「505 篇有相近文章」 while the link says 「顯示全部 462 篇的相近文章」 — stats count vs. groups present in the returned pairs. | open |
+| 25 | 021 `/api/` | minor | (f3c verify) Right-hand outline still broke mono titles mid-word (「snapsho／ts/current」). | fixed in source (PathBreaks in PageOutline) |
+| 26 | 022 `/api/status/` | minor | (f3c verify) 390px stacked card: wrapped path lines fell back under the 「端點」 label. | fixed in source (inline-block path) |
+| 27 | 023 `/article/query/` | minor | (f3c verify) One 鉅亨網 summary shows 「&amp;#10;」: the source double-encodes the entity and the crawler decodes once. | open (crawler/data) |
+| 28 | 060 `/similarity/reposts/` | minor | (f3c verify) 390px: the lower chart's axis title sits on the upper chart's zero line. | fixed in source (lower grid lower on phones) |

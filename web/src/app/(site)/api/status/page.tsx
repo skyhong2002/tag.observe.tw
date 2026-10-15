@@ -98,7 +98,10 @@ export default async function ApiStatusPage() {
                       {endpoint.method}
                     </td>
                     <td className={`${cellClass} font-mono break-words`} data-label="端點">
-                      <PathBreaks path={endpoint.path} />
+                      {/* inline-block keeps wrapped lines beside the stacked 端點 label on phones */}
+                      <span className="inline-block max-w-full align-top">
+                        <PathBreaks path={endpoint.path} />
+                      </span>
                     </td>
                     <td className={cellClass} data-label="用途">
                       {endpoint.description}
