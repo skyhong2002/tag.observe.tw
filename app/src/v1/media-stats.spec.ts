@@ -1,5 +1,8 @@
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import Fastify from 'fastify';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
 import { buildApp } from '../app.js';
@@ -21,6 +24,12 @@ vi.mock('../crawl/registry.ts', async (importOriginal) => ({
 const now = Date.parse('2026-09-29T07:00:00Z'); // 15:00 Taipei
 const h = (x: number) => new Date(now - x * 3600e3);
 describe('media stats', () => {
+  let firstCrawlFile = '';
+  beforeEach(() => {
+    firstCrawlFile = join(mkdtempSync(join(tmpdir(), 'media-first-crawl-')), 'first.json');
+    vi.stubEnv('TAG_MEDIA_FIRST_CRAWL_FILE', firstCrawlFile);
+    return () => vi.unstubAllEnvs();
+  });
   it('shares concurrent reads and reuses the advertised short-lived snapshot', async () => {
     const chain = {
       innerJoin: () => chain,
@@ -141,7 +150,8 @@ describe('media stats', () => {
     };
     const batches = [
       [{ media: 'cna', ...counts }],
-      [{ media: 'cna', first: recent, totalCollected: 100 }],
+      [{ media: 'cna', totalCollected: 100 }],
+      [{ media: 'cna', first: recent }],
       [{ media: 'google_news', ...counts, first: recent, totalCollected: 50 }],
       [],
     ];
@@ -184,6 +194,53 @@ describe('media stats', () => {
         withSummary: 1,
         sources: ['meta:description'],
         exampleId: 9,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('remembers first crawl dates and only looks up outlets it has not seen', async () => {
+    writeFileSync(firstCrawlFile, JSON.stringify({ cna: '2026-01-02T03:04:05.000Z' }));
+    const batches: Record<string, unknown[]> = {
+      totals: [
+        { media: 'cna', totalCollected: 100 },
+        { media: 'ctitv', totalCollected: 7 },
+      ],
+      firsts: [{ media: 'ctitv', first: '2026-05-06 07:08:09' }],
+    };
+    const lookups: string[] = [];
+    let query = 0;
+    const db = {
+      select: (fields: Record<string, unknown> = {}) => {
+        const kind = query++ === 1 ? 'totals' : 'first' in fields && !('totalCollected' in fields) ? 'firsts' : 'other';
+        if (kind === 'firsts') lookups.push(kind);
+        const chain = {
+          innerJoin: () => chain,
+          where: () => chain,
+          orderBy: () => chain,
+          limit: async () => [],
+          groupBy: async () => batches[kind] ?? [],
+        };
+        return { from: () => chain };
+      },
+    } as unknown as Db;
+    const app = Fastify();
+    registerMediaStats(app, db);
+    try {
+      const result = (await app.inject('/api/v1/media-stats')).json();
+      expect(result.media.find((row: { media: string }) => row.media === 'cna')).toMatchObject({
+        totalCollected: 100,
+        collectingSince: '2026-01-02T03:04:05.000Z',
+      });
+      expect(result.media.find((row: { media: string }) => row.media === 'ctitv')).toMatchObject({
+        totalCollected: 7,
+        collectingSince: '2026-05-06T07:08:09.000Z',
+      });
+      expect(lookups).toEqual(['firsts']);
+      expect(JSON.parse(readFileSync(firstCrawlFile, 'utf8'))).toEqual({
+        cna: '2026-01-02T03:04:05.000Z',
+        ctitv: '2026-05-06T07:08:09.000Z',
       });
     } finally {
       await app.close();

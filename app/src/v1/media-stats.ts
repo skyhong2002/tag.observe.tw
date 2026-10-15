@@ -16,6 +16,7 @@ import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
 import { iconUrl } from './icons.ts';
+import { firstCrawls, ownTotals } from './media-first-crawl.ts';
 
 // Per-media article counts and crawl health for the public /media/ dashboard.
 const info = favicons as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -170,19 +171,16 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     stageStart = performance.now();
     // When our own crawler first stored an article for each media: the 7-day
     // column only covers that much until a full week has passed.
-    const firsts = await db
-      .select({
-        media: articles.media,
-        first: sql<Date | string | null>`MIN(${articles.crawledAt})`,
-        totalCollected: sql<number>`COUNT(*)`,
-      })
-      .from(articles)
-      .where(sql`${articles.source} = 'own'`)
-      .groupBy(articles.media);
+    const totals = await ownTotals(db);
+    const known = await firstCrawls(
+      db,
+      totals.map((t) => t.media),
+      (error) => app.log.warn({ err: error }, 'media first-crawl cache not saved'),
+    );
     durations.historicalArticles = Math.round(performance.now() - stageStart);
     stageStart = performance.now();
-    const firstBy = new Map(firsts.map((f) => [f.media, f.first]));
-    const totalBy = new Map(firsts.map((f) => [f.media, Number(f.totalCollected)]));
+    const firstBy = new Map<string, Date | string | null>(totals.map((t) => [t.media, known[t.media] ?? null]));
+    const totalBy = new Map(totals.map((t) => [t.media, Number(t.totalCollected)]));
     // Aggregators expose discoveries under the original article identity. Their
     // row counts are useful, but must never inflate site-wide publication totals.
     const discoveries = await db

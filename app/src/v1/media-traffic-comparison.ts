@@ -12,6 +12,7 @@ import { readOutput } from '../media-traffic/output.ts';
 import { readRadar } from '../media-traffic/radar.ts';
 import { loadTaiwanShares } from '../media-traffic/taiwan-share.ts';
 import { isDiscoverySource } from './article-content.ts';
+import { firstCrawls, ownTotals } from './media-first-crawl.ts';
 import { listedMediaSources } from './media-stats.ts';
 
 export interface MediaTrafficComparison {
@@ -101,11 +102,14 @@ export async function loadMediaTrafficComparison(db: Db, now = new Date()): Prom
   const month = publicationMonthSql();
   const [publisherMonths, publisherFirsts, discoveryMonths, discoveryFirsts] = await Promise.all([
     db.select({ media: articles.media, month, count: sql<number>`COUNT(*)` }).from(articles).where(filter).groupBy(articles.media, month),
-    db
-      .select({ media: articles.media, first: sql<Date | string | null>`MIN(${articles.crawledAt})` })
-      .from(articles)
-      .where(and(eq(articles.source, 'own'), lte(articles.crawledAt, now)))
-      .groupBy(articles.media),
+    // Shared with /api/v1/media-stats: never rescans every article row.
+    ownTotals(db).then(async (rows) => {
+      const known = await firstCrawls(
+        db,
+        rows.map((row) => row.media),
+      );
+      return Object.entries(known).map(([media, first]) => ({ media, first }));
+    }),
     db
       .select({ media: articleDiscoveries.media, month, count: sql<number>`COUNT(DISTINCT ${articles.id})` })
       .from(articleDiscoveries)
