@@ -52,3 +52,7 @@ bash /home/deck/tag-analysis-private/f1-release/web-fixes-f3c943ae-20261015/roll
 - 12:32 UTC `bb024f18` / `lkf-h1scTTyzw6QcXDm8Y` (web only): relations capped at 12 s plus all cc543603 changes. Cold media page
   8.2 s complete on the loopback candidate; web gap 2.7 s with `TimeoutStopSec=10`; 14 GETs 200. Rollback:
   `bash /home/deck/tag-analysis-private/f1-release/web-fixes-bb024f18-20261015/rollback.sh`.
+- 14:37 UTC `b95ee4d7` / `SIYK3gyiEBOasF2Mhedn1` (web + API overlay `similarity.ts`, `crawl/text.ts` on f3c943ae-api): all
+  remaining backlog items. Loopback candidate pair (API 18340 + web 18338) 200 everywhere, no residue rows in daily stats,
+  `/eve/1775/` lists 80 of 400 headlines. Gaps web 6.8 s / API 2.3 s / gateway 1.8 s; 14 GETs 200; 0 error logs.
+  Rollback: `bash /home/deck/tag-analysis-private/f1-release/web-fixes-b95ee4d7-20261015/rollback.sh`.
