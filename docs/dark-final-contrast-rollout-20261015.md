@@ -26,6 +26,8 @@ Private execution/backup/rollback root `/home/deck/tag-analysis-private/f1-relea
 
 Post9curls HTTP200/exit0; median tag `0.082s`, blog `2.479s`, YT `0.153s`; load `3.42`, /home `49.02GiB`. Full HTML total includes origin+edge+network. Existing gates tag2/blog6.17/YT2, /home40→30, load12 unchanged.
 
+Post-deploy actual five API requests all200: anonymous `public, max-age=60`; Cookie/Authorization/X-Service-Token/X-Api-Key each `private, no-store`. Private raw `postdeploy-api-cache-boundary.json`; backend was not changed.
+
 Immediate rollback restores8cf/Qyaa drop-in and restarts only the web:
 
 ```sh
