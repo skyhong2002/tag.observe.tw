@@ -658,8 +658,14 @@ export async function firstRunPerMedia(db: Db) {
 /** Latest attempt and last fully successful check are separate: failures must
  * not silently look fresh merely because old topics are still in storage. */
 export async function topicSourceChecks(db: Db, now = new Date()) {
+  // This endpoint is also used by the homepage.  Running every outlet's
+  // three status queries at once can fill the shared mysql2 queue while the
+  // crawler is refreshing sources, turning an otherwise recoverable capacity
+  // blip into a 500.  Keep the per-outlet sequence intact, but bound the
+  // number of outlets that can hold a database slot at once.
+  const gate = pLimit(2);
   const entries = await Promise.all(
-    TOPIC_RULES.map(async (rule) => {
+    TOPIC_RULES.map((rule) => gate(async () => {
       const [latest] = await db
         .select()
         .from(crawlRuns)
@@ -702,7 +708,7 @@ export async function topicSourceChecks(db: Db, now = new Date()) {
           ...(detail.error ? { error: detail.error } : {}),
         },
       ] as const;
-    }),
+    })),
   );
   return Object.fromEntries(entries);
 }
