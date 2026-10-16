@@ -18,9 +18,10 @@ export const topicMediaHref = (media: string, kind: TopicKind = 'topic') =>
 export const topicHref = (media: string, id: string, kind: TopicKind = 'topic') =>
   `${topicMediaHref(media, kind)}${encodeURIComponent(id)}/`;
 
-/** One outlet topic. Cover only when the outlet gave one: a logo in its place
- *  makes rows look broken, so those topics render as a compact text row. The
- *  card is the anchor target from the feed, highlighted via :target. */
+/** One outlet topic. Cover only when the outlet gave one (a logo in its place
+ *  makes rows look broken); otherwise blank space holds the column so every
+ *  row's text lines up. The card is the anchor target from the feed,
+ *  highlighted via :target. */
 export default function TopicCard({
   topic,
   media,
