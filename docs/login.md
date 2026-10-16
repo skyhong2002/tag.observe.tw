@@ -113,7 +113,7 @@ cd infra && docker compose up -d --no-deps adminer       # 讓 Adminer 讀到新
 
 ### 稽核紀錄
 
-MariaDB 的 `server_audit` plugin 記下 `tag_observe`（應用程式）與 `healthcheck` 以外所有帳號的連線與 SQL（`infra/mariadb/audit.cnf`），寫在資料目錄的 `server_audit.log`（`infra/data/mariadb/`，100 MB 輪替、保留 10 份）。plugin 以 `INSTALL SONAME 'server_audit'` 安裝一次（存在 `mysql.plugin`），設定檔在 tag-db 下次重建時生效；在那之前用 `SET GLOBAL server_audit_*` 套用同樣的值。
+MariaDB 的 `server_audit` plugin 記下 `tag_observe`、`blog_observe`（應用程式）與 `healthcheck` 以外所有帳號的連線與 SQL（`infra/mariadb/audit.cnf`），寫在資料目錄的 `server_audit.log`（`infra/data/mariadb/`，100 MB 輪替、保留 10 份）。plugin 以 `INSTALL SONAME 'server_audit'` 安裝一次（存在 `mysql.plugin`），設定檔在 tag-db 下次重建時生效；在那之前用 `SET GLOBAL server_audit_*` 套用同樣的值。
 
 ```sh
 docker exec tag-db tail -f /var/lib/mysql/server_audit.log   # 時間,主機,帳號,來源,連線,查詢編號,動作,資料庫,SQL,結果
