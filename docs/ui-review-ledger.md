@@ -4,7 +4,14 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-16 03:50 Taipei)
+## Current deployed status (2026-10-16 19:39 Taipei)
+
+- **Web `a0694d91` / BUILD_ID `GxQFhnZGT4i8_qy2oRRG-` (UTC 2026-10-16T11:39:42Z, web only)**: on /topic/ and /feature/ (TopicCard), a topic without a cover — none given, or the image failed to load — keeps a blank space as wide as the cover (`w-28`), so every row's title starts at the same column; before, coverless rows started at the left edge and read like headings for the covered rows below. Owner picked an invisible spacer over a grey box or filler image. Also on origin/main as a7da4846. API/gateway `7c1c21c7-api-liveboard-scenes` and worker `16402500-worker-rosters` unchanged.
+- Checks: gate load1 5.6, tag 0.09 s, blog 2.03 s; web first 200 12.6 s. Loopback 18338 against the live API: 8 GETs 200 (first try `/tag/柯文哲/` 500 from the known DB pool `Queue limit reached` on a cold web; page checks now retry 3×). 16 local/public GETs 200 incl. `/topic/`, `/topic/cna/`, `/feature/`; public home has the new BUILD_ID; public `/topic/` at 1280/390: all titles at one x (205/141), 0 page errors. Only web errors after the switch: yimg.jp image 404s.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/topic-align-a0694d91-20261016/rollback.sh` (web → 7c1c21c7). Script: `~/.cache/tag-review/package-and-deploy-a069.py`.
+- Retention now: web a0694d91 + 7c1c21c7; API 7c1c21c7-api + 16402500-api; worker 16402500-worker + 1271a2dd-worker; aff5 (18230/18232); 0dd38b6 (`current`); dc7b814e. Deleted: c124aa68-web.
+
+### Earlier (2026-10-16 03:50 Taipei)
 
 - **Web `7c1c21c7` / BUILD_ID `iQO9WZtApDrxtUm1jZpz-` + API/gateway `7c1c21c7-api-liveboard-scenes` (UTC 2026-10-15T19:49:40–19:50:03Z); worker unchanged on `16402500-worker-rosters`**: the simple /liveboard/ (14 commits from session tag-analysis-tw-01, cherry-picked onto 193a5550).
   - ↑ ↓ (and PageUp / PageDown, swipes up/down, the ‹ › and tappable time points) step through the hours; ← → and sideways swipes change lens.
