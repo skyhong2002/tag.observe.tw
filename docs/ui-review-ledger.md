@@ -4,7 +4,14 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-16 19:39 Taipei)
+## Current deployed status (2026-10-16 22:55 Taipei)
+
+- **Web `d8cb18d4` / BUILD_ID `4P1DOswEBnfnB34GW2xhA` (UTC 2026-10-16T14:55:42Z, web only)**: owner's navigation rework. The header has eight sections in two groups (看新聞: 文章 事件 議題 關鍵字｜看媒體: 媒體 媒體關係 署名 寫法); 流量 is a 媒體 tab, 專題 a 議題 tab (議題表｜專題 on /topic/ and /feature/), 本站流量 (/observe/) moved to the footer. `web/src/lib/site-nav.ts` holds both levels and one `SectionTabs here=… query=…` replaces seven per-section tab components. Every switch of page, mode or view (熱門排行／正在發酵, 每日／每小時, 署名類型, graph/traffic views, event headline views) is a grey tab row (`TabRow`, `TabButtons`); narrowing values (period, category, 跨媒體門檻) are round `FilterChips`. Tab rows keep this branch's wrap-on-phones. Also on origin/main as 33388bf7. API/gateway `7c1c21c7-api-liveboard-scenes` and worker `16402500-worker-rosters` unchanged.
+- Checks: gate load1 3.3, tag 1.26 s, blog 2.26 s; web first 200 1.9 s. Loopback 18338 against the live API: 10 GETs 200 with each page's tab-row marker. 20 local/public GETs 200; public home has the new BUILD_ID; public browser round at 1280/390 (`/`, `/feature/`, `/ranking/`, `/byline/`, `/similarity/`, `/media/traffic/`, `/eve/914/`): header one row (59/57 px), right section lit, 0 page errors.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/nav-two-level-d8cb18d4-20261016/rollback.sh` (web → a0694d91). Script: `~/.cache/tag-review/package-and-deploy-d8cb.py`.
+- Retention now: web d8cb18d4 + a0694d91; API 7c1c21c7-api + 16402500-api; worker 16402500-worker + 1271a2dd-worker; aff5 (18230/18232); 0dd38b6 (`current`); dc7b814e. Deleted: 7c1c21c7-web.
+
+### Earlier (2026-10-16 19:39 Taipei)
 
 - **Web `a0694d91` / BUILD_ID `GxQFhnZGT4i8_qy2oRRG-` (UTC 2026-10-16T11:39:42Z, web only)**: on /topic/ and /feature/ (TopicCard), a topic without a cover — none given, or the image failed to load — keeps a blank space as wide as the cover (`w-28`), so every row's title starts at the same column; before, coverless rows started at the left edge and read like headings for the covered rows below. Owner picked an invisible spacer over a grey box or filler image. Also on origin/main as a7da4846. API/gateway `7c1c21c7-api-liveboard-scenes` and worker `16402500-worker-rosters` unchanged.
 - Checks: gate load1 5.6, tag 0.09 s, blog 2.03 s; web first 200 12.6 s. Loopback 18338 against the live API: 8 GETs 200 (first try `/tag/柯文哲/` 500 from the known DB pool `Queue limit reached` on a cold web; page checks now retry 3×). 16 local/public GETs 200 incl. `/topic/`, `/topic/cna/`, `/feature/`; public home has the new BUILD_ID; public `/topic/` at 1280/390: all titles at one x (205/141), 0 page errors. Only web errors after the switch: yimg.jp image 404s.
