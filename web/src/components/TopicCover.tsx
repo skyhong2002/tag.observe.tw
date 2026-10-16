@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { isAllowedImage } from '@/lib/images';
 
-/** A topic's cover, or nothing: outlets list covers their CDN later refuses
- *  (403 to anything but a browser, 404 on a retired microsite), and a broken
- *  image reads worse than a text row. */
+/** A topic's cover, or blank space as wide: outlets list covers their CDN
+ *  later refuses (403 to anything but a browser, 404 on a retired microsite),
+ *  and a broken image reads worse than a blank. The space keeps every row's
+ *  text starting at the same column, so a coverless topic does not look like
+ *  a heading for the rows below it. */
 export default function TopicCover({ src, href }: { src: string | null; href: string }) {
   const [failed, setFailed] = useState(false);
   const box = useRef<HTMLSpanElement>(null);
@@ -28,7 +30,9 @@ export default function TopicCover({ src, href }: { src: string | null; href: st
       img.removeEventListener('load', check);
     };
   }, []);
-  if (!isAllowedImage(src) || failed) return null;
+  if (!isAllowedImage(src) || failed) {
+    return <span aria-hidden className="w-28 shrink-0" />;
+  }
   return (
     <span ref={box} className="aspect-video w-28 shrink-0 self-start overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800">
       <Link href={href} tabIndex={-1} aria-hidden className="block h-full w-full">
