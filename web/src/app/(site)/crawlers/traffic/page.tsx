@@ -1,5 +1,5 @@
-import CrawlerTabs from '@/components/CrawlerTabs';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import TrafficCollectionTable, { type CollectionRow, type CollectionState } from '@/components/TrafficCollectionTable';
 import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -91,7 +91,7 @@ export default async function TrafficCollectionPage() {
     ) as Record<CollectionState, number>;
   return (
     <div className="space-y-5">
-      <CrawlerTabs current="traffic" />
+      <SectionTabs here="/crawlers/traffic/" />
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">流量資料</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">

@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import { pageMetadata } from '@/lib/seo.mts';
 import { fetchWritingArticles, fetchWritingOverview, share, TITLE_TAG_LABEL, TITLE_TAGS, type TitleTag } from '@/lib/writing';
+import { DayPicker, daysQuery, writingDays } from '../DayPicker';
 import OutletTable from '../OutletTable';
 import WritingList from '../WritingList';
-import WritingTabs, { DayPicker, writingDays } from '../WritingTabs';
 
 export const revalidate = 300;
 export const metadata = pageMetadata(
@@ -34,16 +35,16 @@ export default async function WritingTitlesPage({ searchParams }: { searchParams
   return (
     <div className="space-y-8">
       <header className="space-y-4">
-        <WritingTabs current="titles" days={days} />
+        <SectionTabs here="/writing/titles/" query={daysQuery(days)} />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">標題用詞</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
             標題裡固定的幾類用詞：不說重點的懸念詞、強調情緒反應的詞、攻擊性動詞。依詞表比對，一篇可以同時屬於幾類；不判斷內容是否誇大。
           </p>
-          <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
             <DayPicker days={days} path="/writing/titles/" params={{ tag: tag === '懸念' ? undefined : tag, media }} />
             <MethodLink />
-          </p>
+          </div>
         </div>
       </header>
 

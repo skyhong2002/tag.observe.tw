@@ -5,6 +5,7 @@ import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/co
 import PictureLink from '@/components/PictureLink';
 import RelationLink from '@/components/RelationLink';
 import FollowButton from '@/components/reader/FollowButton';
+import { TabRow } from '@/components/SectionTabs';
 import StructuredData from '@/components/StructuredData';
 import TagChart from '@/components/TagChart';
 import TagGroupChips from '@/components/TagGroupChips';
@@ -198,24 +199,16 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         <section id="keyword-flow" className="scroll-mt-20 space-y-2">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="text-lg font-semibold tracking-tight">關鍵字變化</h2>
-            <nav className="inline-flex rounded-md bg-zinc-100 p-0.5 text-xs dark:bg-zinc-800" aria-label="關鍵字變化的單位">
-              {(
+            <TabRow
+              label="關鍵字變化的單位"
+              scroll={false}
+              tabs={(
                 [
                   ['day', '每日'],
                   ['hour', '每小時'],
                 ] as const
-              ).map(([v, name]) => (
-                <Link
-                  key={v}
-                  href={flowHref(v)}
-                  scroll={false}
-                  aria-current={v === flowSpan ? 'page' : undefined}
-                  className={`rounded px-2.5 py-0.5 ${v === flowSpan ? 'bg-white font-medium shadow-sm dark:bg-zinc-700' : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'}`}
-                >
-                  {name}
-                </Link>
-              ))}
-            </nav>
+              ).map(([v, name]) => ({ href: flowHref(v), label: name, current: v === flowSpan }))}
+            />
           </div>
           <TagKeywordHistory key={`${tag}:${flowSpan}:${hours}`} initial={flowData} />
         </section>

@@ -8,10 +8,13 @@ import NavPending from './NavPending';
 
 export default function SiteNavigation() {
   const pathname = usePathname();
-  // Nested sections (/media/traffic/ under /media/) light only the deepest match.
-  const section = NAV_GROUPS.flatMap((group) => group.links.map((link) => link.href))
-    .filter((href) => `${pathname}/`.startsWith(href))
-    .sort((a, b) => b.length - a.length)[0];
+  // A section lights for its own pages, its tabs and its `also` paths; the deepest match wins.
+  const section = NAV_GROUPS.flatMap((group) => group.links)
+    .flatMap((link) =>
+      [link.href, ...(link.tabs ?? []).map((tab) => tab.href), ...(link.also ?? [])].map((path) => ({ path, href: link.href })),
+    )
+    .filter(({ path }) => `${pathname}/`.startsWith(path))
+    .sort((a, b) => b.path.length - a.path.length)[0]?.href;
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -78,7 +81,7 @@ export default function SiteNavigation() {
             <div className="flex flex-wrap gap-1">
               {group.links.map(({ href, short }) => {
                 const exact = pathname === href || `${pathname}/` === href;
-                const current = exact || href === section || (href === '/byline/' && pathname.startsWith('/journalist/'));
+                const current = exact || href === section;
                 return (
                   <Link
                     prefetch={false}

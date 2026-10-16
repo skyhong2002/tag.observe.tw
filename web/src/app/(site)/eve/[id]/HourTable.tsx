@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import SortIndicator from '@/components/SortIndicator';
+import TabButtons from '@/components/TabButtons';
 import TableScroller from '@/components/TableScroller';
 import { hourWindow } from '@/lib/event-hour-window.mts';
 import { dayKey, type ThreadDay, type ThreadHour, threadDays } from '@/lib/event-thread.mts';
@@ -102,29 +103,15 @@ export default function HourTable({
             {mode === 'day' ? `${days.length} 天 · 共 ${hours.length} 個上榜小時` : `顯示 ${rows.length} / ${hours.length} 筆`}
           </span>
         </h3>
-        <fieldset className="inline-flex rounded-md bg-zinc-100 p-0.5 text-xs dark:bg-zinc-800">
-          <legend className="sr-only">表格單位</legend>
-          {(
-            [
-              ['day', '每日'],
-              ['hour', '每小時'],
-            ] as const
-          ).map(([m, label]) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={mode === m}
-              onClick={() => setMode(m)}
-              className={`rounded px-2.5 py-0.5 ${
-                mode === m
-                  ? 'bg-white font-medium shadow-sm dark:bg-zinc-700'
-                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </fieldset>
+        <TabButtons
+          label="表格單位"
+          options={[
+            ['day', '每日'],
+            ['hour', '每小時'],
+          ]}
+          value={mode}
+          onChange={setMode}
+        />
       </div>
       {mode === 'day' ? (
         <div className="px-3 pb-3">

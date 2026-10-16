@@ -2,6 +2,7 @@ import Link from 'next/link';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { relationshipQuery } from '@/lib/relationship-query.mts';
@@ -10,7 +11,6 @@ import { fetchSimilarity, periodQuery, type SimilarityData } from '@/lib/similar
 import { table } from '@/lib/table-styles';
 import { number, periodLabel, taipei } from '../format';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../query';
-import SimilarityTabs from '../SimilarityTabs';
 
 export const metadata = pageMetadata(
   '/similarity/about/',
@@ -33,7 +33,7 @@ export default async function SimilarityAboutPage({
   return (
     <div className="space-y-6">
       <header className="space-y-4">
-        <SimilarityTabs current="about" query={params} />
+        <SectionTabs here="/similarity/about/" query={params} />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">擷取狀態</h1>
           {data ? (

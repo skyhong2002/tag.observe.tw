@@ -1,7 +1,8 @@
-import SectionTabs from '@/components/SectionTabs';
+import { TabRow } from '@/components/SectionTabs';
 import { CREDIT_KINDS, CREDIT_LABELS, type CreditKind } from '@/lib/bylines';
 
-export default function BylineTabs({
+/** 記者／編輯部／… on /byline/: which kind of byline the list shows. */
+export default function BylineKinds({
   current,
   hours = 48,
   q,
@@ -15,7 +16,7 @@ export default function BylineTabs({
   const href = (kind: CreditKind | 'all') =>
     `/byline/?${new URLSearchParams({ hours: String(kind === 'person' ? Math.min(hours, 168) : hours), ...(kind !== 'person' ? { kind } : {}), ...(q ? { q } : {}), ...(media ? { media } : {}) })}`;
   return (
-    <SectionTabs
+    <TabRow
       label="署名類型"
       tabs={[
         ...CREDIT_KINDS.map((kind) => ({

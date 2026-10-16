@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import Sparkline from '@/components/Sparkline';
 import { pageMetadata } from '@/lib/seo.mts';
 import { fetchWritingArticles, fetchWritingOverview, PLATFORM_LABEL, ROLE_LABEL, ROLES, type Role, share } from '@/lib/writing';
+import { DayPicker, daysQuery, writingDays } from './DayPicker';
 import OutletTable from './OutletTable';
 import WritingList from './WritingList';
-import WritingTabs, { DayPicker, writingDays } from './WritingTabs';
 
 export const revalidate = 300;
 export const metadata = pageMetadata(
@@ -44,17 +45,17 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-8">
       <header className="space-y-4">
-        <WritingTabs current="social" days={days} />
+        <SectionTabs here="/writing/" query={daysQuery(days)} />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">轉述社群貼文</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
             內文開頭寫明「某人在臉書、Threads、X
             或節目上發文／表示」的報導，以及發言者的角色或背景標籤。這是描述寫法，不評斷報導好壞：轉述官員發文本來就是常見的新聞來源。
           </p>
-          <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
             <DayPicker days={days} path="/writing/" params={{ ...filters, platform: filters.platform }} />
             <MethodLink />
-          </p>
+          </div>
         </div>
       </header>
 

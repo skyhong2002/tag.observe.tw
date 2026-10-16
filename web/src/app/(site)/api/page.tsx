@@ -1,7 +1,7 @@
 import { connection } from 'next/server';
-import ApiTabs from '@/components/ApiTabs';
 import PageOutline, { type OutlineEntry } from '@/components/PageOutline';
 import PathBreaks from '@/components/PathBreaks';
+import SectionTabs from '@/components/SectionTabs';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -233,7 +233,7 @@ export default async function ApiDocsPage() {
   if (!data)
     return (
       <div className="space-y-3">
-        <ApiTabs current="docs" />
+        <SectionTabs here="/api/" />
         <h1 className="text-2xl font-semibold tracking-tight">新文易數 API</h1>
         <p className="text-zinc-600 dark:text-zinc-400">
           文件暫時無法載入。規格檔：
@@ -276,7 +276,7 @@ export default async function ApiDocsPage() {
   return (
     <div className="space-y-6 lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-x-12 lg:gap-y-6 lg:space-y-0">
       <div className="lg:col-span-2">
-        <ApiTabs current="docs" />
+        <SectionTabs here="/api/" />
       </div>
       <div className="min-w-0 space-y-8">
         <header className="space-y-2">

@@ -1,6 +1,6 @@
-import CrawlerTabs from '@/components/CrawlerTabs';
 import MediaCrawlersTable from '@/components/MediaCrawlersTable';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaCrawler } from '@/lib/media-crawlers.mts';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -25,7 +25,7 @@ export default async function CrawlersPage({ searchParams }: { searchParams: Pro
   const withSummary = observed.filter((row) => (row.summary?.withSummary ?? 0) > 0).length;
   return (
     <div className="space-y-5">
-      <CrawlerTabs current="news" />
+      <SectionTabs here="/crawlers/" />
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">新聞爬蟲</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">

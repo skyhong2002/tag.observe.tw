@@ -4,6 +4,7 @@ import MediaIcon from '@/components/MediaIcon';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
 import { TopicMethod } from '@/components/MethodNotes';
+import SectionTabs from '@/components/SectionTabs';
 import TopicCard, { kindNoun, topicHref, topicMediaHref } from '@/components/TopicCard';
 import TopicCheckStatus from '@/components/TopicCheckStatus';
 import {
@@ -55,18 +56,12 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
   const tagHref = (t: string) => `${base}?${new URLSearchParams({ tag: t })}`;
   return (
     <div className="space-y-5">
+      {/* A keyword filter stays within its kind, so the tabs drop it. */}
+      <SectionTabs here={kind === 'topic' ? '/topic/' : '/feature/'} />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{kind === 'feature' ? '專題' : '議題表'}</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           {kind === 'feature' ? '彙整各家媒體針對特定主題持續製作與更新的系列報導。' : '彙整各家媒體關於同一議題的相關新聞報導。'}
-          {' 另見'}
-          <Link
-            prefetch={false}
-            href={kind === 'feature' ? '/topic/' : '/feature/'}
-            className="text-brand-700 underline underline-offset-2 dark:text-brand-400"
-          >
-            {kind === 'feature' ? '議題表' : '專題'}
-          </Link>
           <MethodLink className="ml-3 text-xs" />
         </p>
       </div>

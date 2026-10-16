@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import DraftEvidence from '@/components/DraftEvidence';
+import FilterChips from '@/components/FilterChips';
 import MediaIcons from '@/components/MediaIcons';
 import MethodLink from '@/components/MethodLink';
 import PendingLabel from '@/components/PendingLabel';
 import RankingWordCloud from '@/components/RankingWordCloud';
+import { TabRow } from '@/components/SectionTabs';
 import SortIndicator from '@/components/SortIndicator';
 import Sparkline from '@/components/Sparkline';
 import TableScroller from '@/components/TableScroller';
@@ -142,49 +144,31 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         </div>
         <MethodLink className="text-sm" />
       </div>
-      <nav aria-label="排行模式" className="flex flex-wrap gap-2">
-        {(
+      <TabRow
+        label="排行模式"
+        scroll={false}
+        tabs={(
           [
             { label: '熱門排行', value: 'burst' },
             { label: '正在發酵', value: 'growth' },
           ] as const
-        ).map((mode) => (
-          <Link
-            key={mode.value}
-            scroll={false}
-            aria-current={(mode.value === 'growth') === emerging ? 'page' : undefined}
-            href={link({
-              order: mode.value,
-              sort: undefined,
-              dir: undefined,
-              limit: undefined,
-            })}
-            className={`rounded-lg px-4 py-2 text-sm font-medium ${(mode.value === 'growth') === emerging ? 'bg-brand-700 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`}
-          >
-            {mode.label}
-          </Link>
-        ))}
-      </nav>
-      <nav aria-label="跨媒體門檻" className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="mr-1 text-xs text-zinc-500 dark:text-zinc-400">跨媒體門檻</span>
-        {(
+        ).map((mode) => ({
+          href: link({ order: mode.value, sort: undefined, dir: undefined, limit: undefined }),
+          label: mode.label,
+          current: (mode.value === 'growth') === emerging,
+        }))}
+      />
+      <FilterChips
+        label="跨媒體門檻"
+        showLabel
+        items={(
           [
             { value: 'all', label: '不限媒體' },
             { value: 'early', label: '早期線索' },
             { value: 'broad', label: '多家跟進' },
           ] as const
-        ).map((item) => (
-          <Link
-            key={item.value}
-            scroll={false}
-            aria-current={gate === item.value ? 'page' : undefined}
-            href={link({ gate: item.value, limit: undefined })}
-            className={`rounded-full border px-3 py-1 ${gate === item.value ? 'border-brand-700 bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-300' : 'border-zinc-300 text-zinc-600 hover:border-brand-700 dark:border-zinc-700 dark:text-zinc-400'}`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+        ).map((item) => ({ href: link({ gate: item.value, limit: undefined }), label: item.label, current: gate === item.value }))}
+      />
       <nav className="-mx-1 flex gap-1 overflow-x-auto pb-1 text-sm" aria-label="媒體分類">
         {categoryRankings.map((c) => {
           const note = rankingCategoryNote(c.ranking);

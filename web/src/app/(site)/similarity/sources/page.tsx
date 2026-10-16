@@ -1,12 +1,13 @@
 import Link from 'next/link';
+import FilterChips from '@/components/FilterChips';
 import FormSuggestInput from '@/components/FormSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
+import SectionTabs from '@/components/SectionTabs';
 import { relationshipQuery } from '@/lib/relationship-query.mts';
 import { pageMetadata } from '@/lib/seo.mts';
 import { fetchSimilarity, periodQuery } from '@/lib/similarity';
 import { sourceRanking } from '@/lib/source-ranking.mts';
 import { similarityPeriod, similarityThreshold } from '../query';
-import SimilarityTabs from '../SimilarityTabs';
 
 export const revalidate = 60;
 export const metadata = pageMetadata(
@@ -33,20 +34,16 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
   detailQuery.set('direction', 'incoming');
   return (
     <div className="space-y-5 pb-8">
-      <SimilarityTabs current="sources" query={params.toString()} />
+      <SectionTabs here="/similarity/sources/" query={params.toString()} />
 
-      <nav aria-label="來源排行期間" className="flex flex-wrap gap-2 text-xs">
-        {[24, 48, 72, 168].map((hours) => (
-          <Link
-            key={hours}
-            href={`/similarity/sources/?${new URLSearchParams({ ...Object.fromEntries(params), from: '', to: '', hours: String(hours), ...(sp.sourceQ ? { sourceQ: sp.sourceQ } : {}), ...(sp.country ? { country: sp.country } : {}) })}`}
-            aria-current={data?.hours === hours ? 'page' : undefined}
-            className="rounded-full border border-zinc-300 px-3 py-1.5 dark:border-zinc-700"
-          >
-            {hours < 48 ? `${hours} 小時` : `${hours / 24} 天`}
-          </Link>
-        ))}
-      </nav>
+      <FilterChips
+        label="來源排行期間"
+        items={[24, 48, 72, 168].map((hours) => ({
+          href: `/similarity/sources/?${new URLSearchParams({ ...Object.fromEntries(params), from: '', to: '', hours: String(hours), ...(sp.sourceQ ? { sourceQ: sp.sourceQ } : {}), ...(sp.country ? { country: sp.country } : {}) })}`,
+          label: hours < 48 ? `${hours} 小時` : `${hours / 24} 天`,
+          current: data?.hours === hours,
+        }))}
+      />
       <form
         action="/similarity/sources/"
         className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"

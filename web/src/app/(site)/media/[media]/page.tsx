@@ -12,7 +12,7 @@ import MediaWordCloud from '@/components/MediaWordCloud';
 import MediaWritingCard from '@/components/MediaWritingCard';
 import MethodLink from '@/components/MethodLink';
 import FollowButton from '@/components/reader/FollowButton';
-import SectionTabs from '@/components/SectionTabs';
+import { TabRow } from '@/components/SectionTabs';
 import SourceLink from '@/components/SourceLink';
 import SourceProfile from '@/components/SourceProfile';
 import StructuredData from '@/components/StructuredData';
@@ -186,7 +186,7 @@ export default async function MediaPage({
       </header>
       {!discovery && (
         <div className="mb-5">
-          <SectionTabs
+          <TabRow
             label="機構資料"
             tabs={[
               { href: `${base}?hours=${cloudHours}`, label: '收錄文章', current: true },
