@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import BylineTabs from '@/components/BylineTabs';
+import BylineKinds from '@/components/BylineKinds';
+import FilterChips from '@/components/FilterChips';
 import MediaIcon from '@/components/MediaIcon';
 import TableScroller from '@/components/TableScroller';
 import { taipei } from '@/lib/api';
@@ -24,7 +25,7 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
   if (kind === 'person')
     return (
       <div className="space-y-4 pb-4">
-        <BylineTabs current="person" hours={hours} q={sp.q} media={sp.media} />
+        <BylineKinds current="person" hours={hours} q={sp.q} media={sp.media} />
         <JournalistOverview hours={hours} initialQuery={sp.q?.trim().slice(0, 120)} initialMedia={sp.media} />
       </div>
     );
@@ -45,19 +46,12 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
   };
   return (
     <div className="space-y-5 pb-8">
-      <BylineTabs current={kind ?? 'all'} hours={hours} q={query.q} media={query.media} />
-      <nav aria-label="署名統計期間" className="flex flex-wrap gap-2 text-xs">
-        {BYLINE_HOURS.map((value) => (
-          <Link
-            key={value}
-            href={href({ hours: String(value) })}
-            aria-current={value === hours ? 'page' : undefined}
-            className={`rounded-full border px-3 py-1.5 ${value === hours ? 'border-brand-600 bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-300' : 'border-zinc-300 dark:border-zinc-700'}`}
-          >
-            {periodLabel(value)}
-          </Link>
-        ))}
-      </nav>
+      <BylineKinds current={kind ?? 'all'} hours={hours} q={query.q} media={query.media} />
+      <FilterChips
+        label="期間"
+        showLabel
+        items={BYLINE_HOURS.map((value) => ({ href: href({ hours: String(value) }), label: periodLabel(value), current: value === hours }))}
+      />
       <BylineFilters
         key={`${hours}:${query.kind}:${query.q ?? ''}:${query.media ?? ''}`}
         hours={hours}

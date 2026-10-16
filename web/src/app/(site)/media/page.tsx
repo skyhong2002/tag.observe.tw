@@ -2,8 +2,8 @@ import Link from 'next/link';
 import CountryFlag from '@/components/CountryFlag';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
-import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { API_ORIGIN, taipei } from '@/lib/api';
@@ -192,7 +192,7 @@ export default async function MediaStatsPage({
   if (!res?.ok)
     return (
       <>
-        <MediaTabs current="media" />
+        <SectionTabs here="/media/" />
         <p className="text-zinc-600">媒體統計目前無法取得。</p>
       </>
     );
@@ -261,7 +261,7 @@ export default async function MediaStatsPage({
 
   return (
     <div className="space-y-5">
-      <MediaTabs current="media" />
+      <SectionTabs here="/media/" />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">媒體與文章數</h1>
         <p className="mt-1 text-sm text-zinc-600">

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { periodLabel } from '@/app/(site)/similarity/format';
 import { similarityPeriod, similarityThreshold } from '@/app/(site)/similarity/query';
 import AuthorCredits from '@/components/AuthorCredits';
-import SectionTabs from '@/components/SectionTabs';
+import { TabRow } from '@/components/SectionTabs';
 import SourceLink from '@/components/SourceLink';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import { attributionRole } from '@/lib/author-display.mts';
@@ -69,7 +69,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
           {data && ` · ${periodLabel(data)}`}
         </p>
       </header>
-      <SectionTabs
+      <TabRow
         label="機構資料"
         tabs={[
           ...(!node?.external
@@ -100,22 +100,14 @@ export default async function SourceProfile({ media, query }: { media: string; q
               </div>
             ))}
           </dl>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link
-              href={href('incoming')}
-              aria-current={direction === 'incoming' ? 'page' : undefined}
-              className={`rounded-lg border px-4 py-2 ${direction === 'incoming' ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-zinc-300 dark:border-zinc-700'}`}
-            >
-              哪些文章註明{name}
-            </Link>
-            <Link
-              href={href('outgoing')}
-              aria-current={direction === 'outgoing' ? 'page' : undefined}
-              className={`rounded-lg border px-4 py-2 ${direction === 'outgoing' ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-zinc-300 dark:border-zinc-700'}`}
-            >
-              {name}註明誰
-            </Link>
-          </div>
+          <TabRow
+            label="註明方向"
+            scroll={false}
+            tabs={[
+              { href: href('incoming'), label: `哪些文章註明${name}`, current: direction === 'incoming' },
+              { href: href('outgoing'), label: `${name}註明誰`, current: direction === 'outgoing' },
+            ]}
+          />
           {partners.length > 0 && (
             <section className="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-900">
               <h2 className="mb-2 text-sm font-medium">{direction === 'incoming' ? '註明這個來源的媒體' : '明示來源或引用'}</h2>

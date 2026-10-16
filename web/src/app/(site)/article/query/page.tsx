@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { ArticleList } from '@/components/ArticleResults';
-import ArticleTabs from '@/components/ArticleTabs';
 import FormSuggestInput from '@/components/FormSuggestInput';
 import { FormOutletPicker } from '@/components/OutletPicker';
+import SectionTabs from '@/components/SectionTabs';
 import { fetchMedia } from '@/lib/api';
 import { rangeDays, searchArticles, validCursor } from '@/lib/article-search';
 import { fetchSimilarity } from '@/lib/similarity';
@@ -55,7 +55,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
     `/article/query/?${new URLSearchParams(Object.entries({ ...sp, cursor: nextCursor }).filter((entry): entry is [string, string] => !!entry[1]))}`;
   return (
     <div className="space-y-5 pb-8">
-      <ArticleTabs current="query" />
+      <SectionTabs here="/article/query/" />
 
       <form
         action="/article/query/"

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import FilterChips from '@/components/FilterChips';
 import { taipei } from '@/lib/api';
 import { fetchJournalists, INDEX_HOURS } from '@/lib/journalists';
 import JournalistTable from './JournalistTable';
@@ -20,23 +20,16 @@ export default async function JournalistOverview({
   return (
     <div className="space-y-4 pb-4">
       <header className="mb-4 border-b border-zinc-300 pb-4 dark:border-zinc-700">
-        <nav aria-label="期間" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-zinc-500 dark:text-zinc-400">期間</span>
-          {INDEX_HOURS.map((value) => (
-            <Link
-              key={value}
-              href={`/byline/?${new URLSearchParams({ hours: String(value), ...(initialQuery ? { q: initialQuery } : {}), ...(initialMedia ? { media: initialMedia } : {}) })}`}
-              aria-current={value === hours ? 'page' : undefined}
-              className={`rounded-full border px-3 py-1 ${
-                value === hours
-                  ? 'border-brand-600 bg-brand-50 font-medium text-brand-800 dark:bg-brand-950 dark:text-brand-300'
-                  : 'border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900'
-              }`}
-            >
-              {periodLabel(value)}
-            </Link>
-          ))}
-        </nav>
+        <FilterChips
+          label="期間"
+          showLabel
+          className="mt-3"
+          items={INDEX_HOURS.map((value) => ({
+            href: `/byline/?${new URLSearchParams({ hours: String(value), ...(initialQuery ? { q: initialQuery } : {}), ...(initialMedia ? { media: initialMedia } : {}) })}`,
+            label: periodLabel(value),
+            current: value === hours,
+          }))}
+        />
       </header>
       {data ? (
         <>

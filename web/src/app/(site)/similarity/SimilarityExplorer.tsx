@@ -10,7 +10,9 @@ import MediaGraphLoading from '@/components/MediaGraphLoading';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import OutletPicker from '@/components/OutletPicker';
+import SectionTabs from '@/components/SectionTabs';
 import SourceLink from '@/components/SourceLink';
+import TabButtons from '@/components/TabButtons';
 import { VersionCompare } from '@/components/VersionDiff';
 import { ATTRIBUTION_RELATION_LABEL, attributionRole } from '@/lib/author-display.mts';
 import { edgeHasArrow } from '@/lib/graph-edge-style.mts';
@@ -35,7 +37,6 @@ import type { TaiwanReaders } from '@/lib/traffic-comparison.mts';
 import EvidenceMoreFilters, { clearMoreFilters, moreFilterCount } from './EvidenceMoreFilters';
 import { hoursLabel, number, periodLabel, taipei } from './format';
 import MediaComparison from './MediaComparison';
-import SimilarityTabs from './SimilarityTabs';
 
 const views = [
   ['media', '媒體總覽'],
@@ -624,8 +625,8 @@ export default function SimilarityExplorer({
       <div className={`flex min-h-[420px] flex-col gap-3 ${fullscreen ? 'h-full' : 'h-[calc(100svh-112px)]'}`}>
         {!fullscreen && (
           <header className="shrink-0 space-y-3">
-            <SimilarityTabs
-              current="graph"
+            <SectionTabs
+              here="/similarity/"
               query={relationshipQuery({
                 ...Object.fromEntries(searchParams),
                 ...Object.fromEntries(periodQuery(data.days ?? { hours: data.hours ?? 48 }, data.threshold)),
@@ -705,25 +706,16 @@ export default function SimilarityExplorer({
           )}
           {!fullscreen && (
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
-              <fieldset className="flex gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800" aria-label="關係顯示">
-                {(
-                  [
-                    ['all', '全部關係'],
-                    ['similarity', '內文相似'],
-                    ['citation', ATTRIBUTION_RELATION_LABEL],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={mode === value}
-                    onClick={() => updateMode(value)}
-                    className={`rounded-md px-3 py-1.5 ${mode === value ? 'bg-white font-medium text-zinc-950 shadow-sm dark:bg-zinc-600 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </fieldset>
+              <TabButtons
+                label="關係顯示"
+                options={[
+                  ['all', '全部關係'],
+                  ['similarity', '內文相似'],
+                  ['citation', ATTRIBUTION_RELATION_LABEL],
+                ]}
+                value={mode}
+                onChange={updateMode}
+              />
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -797,22 +789,7 @@ export default function SimilarityExplorer({
               媒體比較
             </h2>
           </div>
-          <fieldset
-            aria-label="瀏覽內容"
-            className="grid w-full grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-1 text-sm dark:bg-zinc-800 sm:flex sm:w-auto"
-          >
-            {views.map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={view === value}
-                onClick={() => setView(value)}
-                className={`rounded-md px-3 py-2 ${view === value ? 'bg-white font-medium shadow-sm dark:bg-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </fieldset>
+          <TabButtons label="瀏覽內容" options={views} value={view} onChange={setView} />
         </header>
         <div className="space-y-5 p-4 sm:p-6">
           {view === 'media' && (

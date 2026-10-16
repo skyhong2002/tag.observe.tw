@@ -10,6 +10,7 @@ import MethodLink from '@/components/MethodLink';
 import FollowButton from '@/components/reader/FollowButton';
 import SaveButton from '@/components/reader/SaveButton';
 import SafeImage from '@/components/SafeImage';
+import { TabRow } from '@/components/SectionTabs';
 import SourceLink from '@/components/SourceLink';
 import StructuredData from '@/components/StructuredData';
 import { taipei, taipeiHour } from '@/lib/api';
@@ -405,24 +406,20 @@ export default async function EventThreadPage({
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <SectionTitle id="trend">時間變化</SectionTitle>
-          <nav className="inline-flex rounded-md bg-zinc-100 p-0.5 text-xs dark:bg-zinc-800" aria-label="時間變化的單位">
-            {(
+          <TabRow
+            label="時間變化的單位"
+            scroll={false}
+            tabs={(
               [
                 ['day', '每日'],
                 ['hour', '每小時'],
               ] as const
-            ).map(([v, name]) => (
-              <Link
-                key={v}
-                href={href({ trend: v === 'day' ? (sp.at ? 'day' : undefined) : 'hour' }, 'trend')}
-                scroll={false}
-                aria-current={v === trend ? 'page' : undefined}
-                className={`rounded px-2.5 py-0.5 ${v === trend ? 'bg-white font-medium shadow-sm dark:bg-zinc-700' : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'}`}
-              >
-                {name}
-              </Link>
-            ))}
-          </nav>
+            ).map(([v, name]) => ({
+              href: href({ trend: v === 'day' ? (sp.at ? 'day' : undefined) : 'hour' }, 'trend'),
+              label: name,
+              current: v === trend,
+            }))}
+          />
         </div>
         {chart && chart.points.length > 1 && (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
@@ -520,54 +517,47 @@ export default async function EventThreadPage({
             標題對照{coreCount > 0 ? `（${coreCount} 篇）` : news.length ? `（${news.length} 篇）` : ''}
           </SectionTitle>
           {coreCount > 0 && (
-            <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="標題排列方式">
-              {(
-                [
-                  ['desc', '最新在前'],
-                  ['asc', '最舊在前'],
-                ] as const
-              ).map(([o, name]) => (
-                <Link
-                  key={o}
-                  href={href({ order: o === 'desc' ? undefined : o }, 'headlines')}
+            <div className="flex flex-wrap items-center gap-2">
+              <TabRow
+                label="標題檢視方式"
+                scroll={false}
+                tabs={VIEWS.map(([v, name]) => ({
+                  href: href({ view: v === 'timeline' ? undefined : v }, 'headlines'),
+                  label: name,
+                  current: v === view,
+                }))}
+              />
+              {view !== 'outlets' && (
+                <TabRow
+                  label="標題分組單位"
                   scroll={false}
-                  aria-current={o === order ? 'page' : undefined}
-                  className={`rounded-md px-3 py-1 ${o === order ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
-                >
-                  {name}
-                </Link>
-              ))}
-              <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />
-              {view !== 'outlets' &&
-                (
+                  tabs={(
+                    [
+                      ['day', '每日'],
+                      ['hour', '每小時'],
+                    ] as const
+                  ).map(([g, name]) => ({
+                    href: href({ group: g === 'day' ? undefined : g }, 'headlines'),
+                    label: name,
+                    current: g === span,
+                  }))}
+                />
+              )}
+              <TabRow
+                label="標題排列方式"
+                scroll={false}
+                tabs={(
                   [
-                    ['day', '每日'],
-                    ['hour', '每小時'],
+                    ['desc', '最新在前'],
+                    ['asc', '最舊在前'],
                   ] as const
-                ).map(([g, name]) => (
-                  <Link
-                    key={g}
-                    href={href({ group: g === 'day' ? undefined : g }, 'headlines')}
-                    scroll={false}
-                    aria-current={g === span ? 'page' : undefined}
-                    className={`rounded-md px-3 py-1 ${g === span ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
-                  >
-                    {name}
-                  </Link>
-                ))}
-              {view !== 'outlets' && <span className="mx-1 h-4 w-px bg-zinc-300 dark:bg-zinc-700" aria-hidden />}
-              {VIEWS.map(([v, name]) => (
-                <Link
-                  key={v}
-                  href={href({ view: v === 'timeline' ? undefined : v }, 'headlines')}
-                  scroll={false}
-                  aria-current={v === view ? 'page' : undefined}
-                  className={`rounded-md px-3 py-1 ${v === view ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
-                >
-                  {name}
-                </Link>
-              ))}
-            </nav>
+                ).map(([o, name]) => ({
+                  href: href({ order: o === 'desc' ? undefined : o }, 'headlines'),
+                  label: name,
+                  current: o === order,
+                }))}
+              />
+            </div>
           )}
         </div>
         {coreCount > 0 ? (

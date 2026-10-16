@@ -5,6 +5,7 @@ import FilterSuggestInput from '@/components/FilterSuggestInput';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SortIndicator from '@/components/SortIndicator';
+import TabButtons from '@/components/TabButtons';
 import TableScroller from '@/components/TableScroller';
 import TaiwanShareEditor from '@/components/TaiwanShareEditor';
 import TrafficSparkline from '@/components/TrafficSparkline';
@@ -189,27 +190,15 @@ export default function TrafficComparison({
           placeholder="搜尋媒體或網域"
           className={`${control} w-44 max-w-full`}
         />
-        <fieldset className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <legend className="sr-only">流量顯示方式</legend>
-          <span className="inline-flex overflow-hidden rounded-md border border-zinc-300 dark:border-zinc-700">
-            {(
-              [
-                ['change', '月變化'],
-                ['value', '數值'],
-              ] as const
-            ).map(([value, text]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={view === value}
-                onClick={() => setView(value)}
-                className={`min-h-9 px-3 text-sm ${view === value ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : ''}`}
-              >
-                {text}
-              </button>
-            ))}
-          </span>
-        </fieldset>
+        <TabButtons
+          label="流量顯示方式"
+          options={[
+            ['change', '月變化'],
+            ['value', '數值'],
+          ]}
+          value={view}
+          onChange={setView}
+        />
         <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
           月份
           <select

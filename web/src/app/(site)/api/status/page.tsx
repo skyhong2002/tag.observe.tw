@@ -1,5 +1,5 @@
 import { connection } from 'next/server';
-import ApiTabs from '@/components/ApiTabs';
+import SectionTabs from '@/components/SectionTabs';
 import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
@@ -34,7 +34,7 @@ export default async function ApiStatusPage() {
   const data = await loadStatus();
   return (
     <div className="space-y-6">
-      <ApiTabs current="status" />
+      <SectionTabs here="/api/status/" />
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">API 狀態</h1>
         <p className="text-zinc-700 dark:text-zinc-300">{data?.description ?? '查看公開 API 與 Nearline 的可用狀態及各端點用途。'}</p>

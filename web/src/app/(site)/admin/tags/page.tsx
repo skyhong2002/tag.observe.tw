@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { TabRow } from '@/components/SectionTabs';
 import AvatarReview from '../avatars/AvatarReview';
 import TagGroupEditor from '../tag-groups/TagGroupEditor';
 import TagVisualReview from '../tag-visuals/TagVisualReview';
@@ -27,18 +28,15 @@ export default async function TagsPage({ searchParams }: { searchParams: Promise
       <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
         統一管理人物、機構、地點、事件與概念的分類、圖像，以及它們和文章的關係。一個標籤可屬於多個分類，分類也可以有上下層。
       </p>
-      <nav aria-label="標籤管理功能" className="mt-4 flex flex-wrap gap-2">
-        {VIEWS.map(([key, label]) => (
-          <Link
-            key={key}
-            href={`/admin/tags/?${new URLSearchParams({ view: key, ...(tag ? { tag } : {}) })}`}
-            aria-current={view === key ? 'page' : undefined}
-            className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm ${view === key ? 'border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300' : 'border-zinc-300 dark:border-zinc-700'}`}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
+      <TabRow
+        label="標籤管理功能"
+        className="mt-4"
+        tabs={VIEWS.map(([key, label]) => ({
+          href: `/admin/tags/?${new URLSearchParams({ view: key, ...(tag ? { tag } : {}) })}`,
+          label,
+          current: view === key,
+        }))}
+      />
       {view === 'groups' && <TagGroupEditor key={tag} initialTag={tag} />}
       {view === 'relations' && (
         <>

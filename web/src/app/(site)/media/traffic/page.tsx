@@ -1,5 +1,5 @@
-import MediaTabs from '@/components/MediaTabs';
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import TrafficComparison from '@/components/TrafficComparison';
 import { pageMetadata } from '@/lib/seo.mts';
 import { loadComparison, loadOutput, loadWeekly } from './load';
@@ -19,8 +19,8 @@ export default async function MediaSourcesPage({ searchParams }: { searchParams:
   );
   return (
     <div className="space-y-5">
+      <SectionTabs here="/media/traffic/" />
       <header>
-        <MediaTabs current="traffic" />
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">媒體流量與排名</h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           Similarweb 估算月造訪量與 Cloudflare Radar 排名 <MethodLink />

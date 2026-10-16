@@ -8,6 +8,7 @@ import MethodLink from '@/components/MethodLink';
 import OutletPicker from '@/components/OutletPicker';
 import SortIndicator from '@/components/SortIndicator';
 import SuggestInput from '@/components/SuggestInput';
+import TabButtons from '@/components/TabButtons';
 import TableScroller from '@/components/TableScroller';
 import { type Metric, matchesFilters, metricCount, metricShare, metrics, type SortKey, sortValue } from '@/lib/journalist-table.mts';
 import { type JournalistSummary, journalistHref } from '@/lib/journalists';
@@ -190,35 +191,25 @@ export default function JournalistTable({
         <p role="status" className="py-2 text-zinc-500 dark:text-zinc-400">
           符合 {number(filtered.length)} 人
         </p>
-        <fieldset className="flex items-center gap-1 py-1" aria-label="排序依據">
+        <span className="flex items-center gap-1">
           <span className="mr-1 text-zinc-500">排序</span>
-          <button
-            type="button"
-            className={chip(sortMode === 'count')}
-            aria-pressed={sortMode === 'count'}
-            onClick={() => {
-              setSortMode('count');
-              setShown(PAGE);
-            }}
-          >
-            篇數
-          </button>
-          <button
-            type="button"
-            className={chip(sortMode === 'share')}
-            aria-pressed={sortMode === 'share'}
-            onClick={() => {
-              setSortMode('share');
-              if (sort === 'articles' || sort === 'name' || sort === 'media') {
+          <TabButtons
+            label="排序依據"
+            options={[
+              ['count', '篇數'],
+              ['share', '百分比 %'],
+            ]}
+            value={sortMode}
+            onChange={(next) => {
+              setSortMode(next);
+              if (next === 'share' && (sort === 'articles' || sort === 'name' || sort === 'media')) {
                 setSort('firstSeen');
                 setDescending(true);
               }
               setShown(PAGE);
             }}
-          >
-            百分比 %
-          </button>
-        </fieldset>
+          />
+        </span>
         <label className="inline-flex items-center gap-1.5 py-2">
           <input
             type="checkbox"

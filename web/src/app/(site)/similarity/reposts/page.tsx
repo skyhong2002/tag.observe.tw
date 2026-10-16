@@ -1,10 +1,10 @@
 import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import { relationshipQuery } from '@/lib/relationship-query.mts';
 import { pageMetadata } from '@/lib/seo.mts';
 import { periodQuery } from '@/lib/similarity';
 import DailyTrend from '../DailyTrend';
 import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../query';
-import SimilarityTabs from '../SimilarityTabs';
 
 export const metadata = pageMetadata(
   '/similarity/reposts/',
@@ -18,8 +18,8 @@ export default async function SimilarityRepostsPage({ searchParams }: { searchPa
   return (
     <div className="space-y-5">
       <header className="space-y-4">
-        <SimilarityTabs
-          current="reposts"
+        <SectionTabs
+          here="/similarity/reposts/"
           query={relationshipQuery({ ...query, ...Object.fromEntries(periodQuery(similarityPeriod(query), threshold)) }).toString()}
         />
         <div>

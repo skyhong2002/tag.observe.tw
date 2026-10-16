@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CampBadge } from '@/components/CampBar';
 import { eventAnchor, eventHeadline } from '@/components/EventCard';
 import MethodLink from '@/components/MethodLink';
+import { TabRow } from '@/components/SectionTabs';
 import { taipeiHour } from '@/lib/api';
 import type { EventItem } from '@/lib/pages';
 
@@ -13,24 +14,14 @@ const hh = (iso: string) => taipeiHour(iso).slice(-5);
 
 /** Switch between the whole day (the default) and one hour of the table. */
 export function ViewSwitch({ view, hourHref, dayHref }: { view: 'hour' | 'day'; hourHref: string; dayHref: string }) {
-  const tab = (key: 'hour' | 'day', href: string, label: string) => (
-    <Link
-      href={href}
-      aria-current={view === key ? 'page' : undefined}
-      className={`rounded px-3 py-1 ${
-        view === key
-          ? 'bg-white font-medium shadow-sm dark:bg-zinc-700'
-          : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-      }`}
-    >
-      {label}
-    </Link>
-  );
   return (
-    <nav aria-label="事件表範圍" className="inline-flex rounded-md bg-zinc-100 p-0.5 text-sm dark:bg-zinc-800">
-      {tab('day', dayHref, '每日')}
-      {tab('hour', hourHref, '每小時')}
-    </nav>
+    <TabRow
+      label="事件表範圍"
+      tabs={[
+        { href: dayHref, label: '每日', current: view === 'day' },
+        { href: hourHref, label: '每小時', current: view === 'hour' },
+      ]}
+    />
   );
 }
 
