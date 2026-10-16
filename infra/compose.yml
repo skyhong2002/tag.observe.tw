@@ -9,9 +9,12 @@ services:
       MARIADB_DATABASE: tag_observe
       MARIADB_USER: tag_observe
       MARIADB_PASSWORD: ${TAG_DB_PASSWORD}
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--innodb-buffer-pool-size=1G", "--max-allowed-packet=64M"]
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--max-allowed-packet=64M"]
+    # No swap: InnoDB's buffer pool is only useful while resident (see mariadb/performance.cnf).
+    mem_limit: 4608m
+    memswap_limit: 4608m
     ports: ["127.0.0.1:13306:3306"]
-    volumes: ["./data/mariadb:/var/lib/mysql", "./db:/docker-entrypoint-initdb.d:ro", "./mariadb/audit.cnf:/etc/mysql/conf.d/zz-audit.cnf:ro"]
+    volumes: ["./data/mariadb:/var/lib/mysql", "./db:/docker-entrypoint-initdb.d:ro", "./mariadb/audit.cnf:/etc/mysql/conf.d/zz-audit.cnf:ro", "./mariadb/performance.cnf:/etc/mysql/conf.d/zz-performance.cnf:ro"]
     healthcheck: { test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"], interval: 10s, timeout: 5s, retries: 10 }
   # Web UI for the DB; local port only. Admins reach it at /admin/db/ through
   # the gateway, signed in as their own DB account (adminer/tag-gateway.php);
