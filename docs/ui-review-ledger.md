@@ -4,7 +4,36 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-17 21:05 Taipei)
+## Current deployed status (2026-10-17 21:19 Taipei)
+
+- **Web + API `523194a8` / BUILD_ID `KGJ6IaiYZsEV1K7TLabN1` (UTC 2026-10-17T13:19Z)**: owner asked the 帳號 tab to show how much each account interacts and contributes.
+  - /admin/accounts/ is a sortable table built from TableScroller and SortIndicator:
+    - 身分 (`管理員＊` = TAG_ADMIN_EMAILS)
+    - Totals 互動 and 貢獻
+    - 閱讀, 追蹤, 收藏
+    - 回報, 投票 (picture + relation), 投稿, 管理修改 (itemised in the cell title)
+    - 最近活動, 最近登入, and the role button
+  - New `GET /auth/admin/user-activity` (`app/src/admin/user-activity.ts`):
+    - Reader tables are counted by user id, and admin logs by email.
+    - On this branch it also counts `tag_relation_votes`, `tag_submissions.created_by` (投稿) and `tag_submissions.reviewed_by` (審核投稿).
+  - No migration.
+  - Also on origin/main as 1d711372 (without the branch-only tables).
+- API overlay on `e3eeb731-api`: `admin/routes.ts`, checked equal to `523194a8~1` in the live release, plus the new `admin/user-activity.ts`. Worker `16402500-worker-rosters` unchanged.
+- Checks:
+  - Gate: load1 10.8 (under 12).
+  - Activity counts run read-only against production matched hand SQL (e.g. Sky: 閱讀 12, 投票 8, 投稿 1, 管理修改 106).
+  - Loopback (API 18340 + web 18338): 5 pages 200, and the activity route answers 401 without a session.
+  - Deploy: API and gateway first 200 in 5.0 s and 15.0 s, web in 17.0 s; gateway and public checks passed.
+  - Public browser round at 1280 and 390 with mocked /auth: the table renders and sorts by 貢獻. No error-level logs.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/accounts-activity-523194a8-20261017/rollback.sh` (web → bae72899, API + gateway → e3eeb731-api). Script: `~/.cache/tag-review/package-and-deploy-5231.py`.
+- Retention now:
+  - Web: 523194a8 + bae72899.
+  - API: 523194a8-api + e3eeb731-api.
+  - Worker: 16402500-worker + 1271a2dd-worker.
+  - Also kept: aff5 (18230/18232), 0dd38b6 (`current`), dc7b814e.
+  - Deleted: e3eeb731-web, 7c1c21c7-api.
+
+### Earlier (2026-10-17 21:05 Taipei)
 
 - **Web `bae72899` / BUILD_ID `KAur9-eC0u_yKPuOOgaBQ` (UTC 2026-10-17T13:05:42Z, web only)**: owner asked for /admin/ to use the same second-level tabs as other pages.
   - `site-nav.ts` has a 管理後台 section, and every admin page starts with `SectionTabs`: 讀者回報 (`/admin/`), 媒體設定 (`/admin/media/`), 標籤管理 (`/admin/tags/`), 帳號 (`/admin/accounts/`) and 資料庫 (`/admin/database/`).
