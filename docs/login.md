@@ -21,6 +21,7 @@
 | `POST /auth/logout` | 需本站 `Origin`；刪除 session。 |
 | `GET /auth/me` | `{ enabled, user: { id, email, name, picture, role } \| null }`，`role` 為 `admin` 或 `reader`。 |
 | `GET /auth/users` | 管理員限定：登入過的帳號清單（`/admin/accounts/` 頁使用），含 `id`、`role`、`adminSource`（`config` = `TAG_ADMIN_EMAILS`、`granted` = 在 `/admin/accounts/` 指派、`null`）與 `grantedBy`。 |
+| `GET /auth/admin/user-activity` | 管理員限定：每個帳號的活動次數與最後時間（`/admin/accounts/` 使用，`app/src/admin/user-activity.ts`）。`metrics` 列出各項與分組：`use`（互動：閱讀紀錄、追蹤、收藏）、`contribute`（貢獻：回報、投票（配圖與關係）、投稿）、`admin`（管理修改：媒體設定、文章標籤與署名、標籤分類、標籤圖像、寫法人物、處理回報、帳號權限依各修改紀錄的 Email 對到帳號，審核投稿依 `tag_submissions.reviewed_by`）；`users[id]` 為 `{ counts, lastActiveAt }`。 |
 | `PUT /auth/users/:id/role` | 管理員限定、需本站 `Origin`：`{ role: 'admin' \| 'reader' }` 指派或取消管理員，寫入 `user_role_log`。不能改自己（400），`TAG_ADMIN_EMAILS` 裡的人不能改（409）。 |
 | `GET /auth/admin/lookup?url=` | 管理員限定：新聞網址屬於哪家媒體（已收錄的文章優先，其次比對各媒體已知網域，含子網域），並回傳本站收錄的這篇文章。 |
 | `GET /auth/admin/media`、`GET /auth/admin/media/:media` | 管理員限定：所有媒體與標籤；單一媒體的標籤、爬蟲排程、最近幾次 crawl_runs 與修改紀錄。 |
@@ -89,7 +90,7 @@
 
 ## 管理後台（`/admin/`）
 
-帳號選單的「管理後台」開到 `/admin/`。各頁上方是同一排分頁（`web/src/lib/site-nav.ts` 的「管理後台」區）：讀者回報（`/admin/`）、媒體設定（`/admin/media/`）、標籤管理（`/admin/tags/`，底下再分分類與群組、關係投稿、文章關係、標籤配圖，頁首是近 7 天讀者投稿摘要）、帳號（`/admin/accounts/`）、資料庫（`/admin/database/`，說明並連到 `/admin/db/`）。
+帳號選單的「管理後台」開到 `/admin/`。各頁上方是同一排分頁（`web/src/lib/site-nav.ts` 的「管理後台」區）：讀者回報（`/admin/`）、媒體設定（`/admin/media/`）、標籤管理（`/admin/tags/`，底下再分分類與群組、關係投稿、文章關係、標籤配圖，頁首是近 7 天讀者投稿摘要）、帳號（`/admin/accounts/`，可排序的帳號表：身分、互動與貢獻次數、最近活動與登入）、資料庫（`/admin/database/`，說明並連到 `/admin/db/`）。
 
 ## 指派管理員
 

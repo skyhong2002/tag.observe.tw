@@ -20,6 +20,7 @@ import {
   mediaCategoryDefs,
   mediaCategoryLog,
   mediaRoles,
+  users,
 } from '../src/db/schema.ts';
 import { mediaScope } from '../src/media-scope.ts';
 import { campOf } from '../src/v1/coverage.ts';
@@ -385,5 +386,22 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json().result).toMatchObject({ failed: 1, errors: [expect.stringContaining('timeout')] });
     expect(vi.mocked(fetchText)).toHaveBeenCalledWith(page, expect.objectContaining({ timeout: REFETCH_MS, retries: 0 }));
+  });
+
+  it('counts each account’s activity, admin edits matched by email', async () => {
+    const at = new Date();
+    await db
+      .insert(users)
+      .values({ googleSub: 'activity-spec-admin', email: 'Admin@Example.com', name: 'admin', createdAt: at, lastLoginAt: at })
+      .onDuplicateKeyUpdate({ set: { email: 'Admin@Example.com' } });
+    const [{ id }] = await db.select({ id: users.id }).from(users).where(eq(users.googleSub, 'activity-spec-admin'));
+    expect((await app.inject({ url: '/auth/admin/user-activity', headers: as('reader', false) })).statusCode).toBe(403);
+    const body = (await app.inject({ url: '/auth/admin/user-activity', headers: as('admin', false) })).json();
+    expect(body.metrics.map((m: { key: string }) => m.key)).toEqual(expect.arrayContaining(['reads', 'votes', 'media', 'articles']));
+    // The label and role edits above were logged as admin@example.com.
+    expect(body.users[id].counts.media).toBeGreaterThan(0);
+    expect(body.users[id].counts.articles).toBeGreaterThan(0);
+    expect(Date.parse(body.users[id].lastActiveAt)).toBeGreaterThan(Date.now() - 3600e3);
+    await db.delete(users).where(eq(users.googleSub, 'activity-spec-admin'));
   });
 });

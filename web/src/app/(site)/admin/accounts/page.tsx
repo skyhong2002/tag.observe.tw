@@ -12,8 +12,8 @@ export default function AdminAccountsPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">帳號</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          登入過的帳號。對方先用 Google 登入一次，就能在這裡設為管理員；下一次載入頁面即生效。標「設定檔」的管理員寫在伺服器的
-          TAG_ADMIN_EMAILS，這裡不能取消。
+          登入過的帳號，以及各自在站上的互動與貢獻。對方先用 Google
+          登入一次，就能在這裡設為管理員；下一次載入頁面即生效。標「管理員＊」的寫在伺服器的 TAG_ADMIN_EMAILS，這裡不能取消。
         </p>
       </header>
       <AdminGate next="/admin/accounts/">
