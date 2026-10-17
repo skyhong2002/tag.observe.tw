@@ -49,15 +49,19 @@ export async function runCrawlRulesJob(
   let calls = today.reduce((sum, a) => sum + a.modelCalls, 0);
   const room = Math.min(allowed, DAILY_TARGETS - today.length);
   if (room <= 0 || calls >= DAILY_MODEL_CALLS) return { ...summary, allowed: 0 };
-  const targets = await pickTargets(db, { now: started, attempts, limit: room, only });
-  summary.picked = targets.length;
+  // Outlets whose pages cannot be read cost no model call and take no slot:
+  // pick spares and stop once `room` outlets reached the model.
+  const targets = await pickTargets(db, { now: started, attempts, limit: only ? room : room * 3, only });
+  let handled = 0;
   for (const target of targets) {
-    if (signal?.aborted || now().getTime() - started.getTime() > budgetMs) break;
+    if (handled >= room || signal?.aborted || now().getTime() - started.getTime() > budgetMs) break;
+    summary.picked++;
     const result = await generate(target, {
       signal,
       mayCall: async () => calls < DAILY_MODEL_CALLS && quotaAllows(await readQuota()),
     });
     calls += result.modelCalls;
+    if (result.modelCalls) handled++;
     let status: 'activated' | 'failed' | 'dry-run' = result.ok ? (dryRun ? 'dry-run' : 'activated') : 'failed';
     if (result.ok && result.rules && !dryRun) {
       try {

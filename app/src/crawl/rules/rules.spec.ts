@@ -12,7 +12,7 @@ import { applyRules, compileRules, type RawHostRule, type RawRules } from './con
 import { generateRules } from './generate.ts';
 import { generatedRulesOf, refreshGeneratedRules, withGeneratedRules } from './state.ts';
 import { activateRules, activeRevision, readAttempts, readRuleFile, recordAttempt, rejectActiveRules } from './store.ts';
-import { ownHosts } from './targets.ts';
+import { articleNumber, ownHosts } from './targets.ts';
 import { type RuleTarget, tagProblem, validateRules } from './validate.ts';
 
 const now = new Date('2026-10-17T06:00:00Z');
@@ -23,10 +23,10 @@ const article = (n: number, title = `交通改善計畫第${n}波上路`) =>
   <header><h2 class="site">測試新聞網</h2></header>
   <div class="x7q"><h1 class="headline">${title}</h1><span class="when">2026-10-17 1${n}:00</span>
   <div class="story-zone">${text(n)}<br>${text(n + 1)}</div><div class="kw"><a>交通</a><a>公車</a><a>第${n}波</a></div></div></body></html>`;
-const listing = `<html><body><ul>${[1, 2, 3, 4].map((n) => `<li><a href="https://news.example.tw/story/${1000 + n}">交通改善計畫第${n}波上路</a></li>`).join('')}</ul></body></html>`;
+const listing = `<html><body><ul>${[1, 2, 3, 4].map((n) => `<li><a href="https://news.example.tw/story/${10000 + n}">交通改善計畫第${n}波上路</a></li>`).join('')}</ul></body></html>`;
 const pages: Record<string, string> = {
   'https://news.example.tw/': listing,
-  ...Object.fromEntries([1, 2, 3, 4].map((n) => [`https://news.example.tw/story/${1000 + n}`, article(n)])),
+  ...Object.fromEntries([1, 2, 3, 4].map((n) => [`https://news.example.tw/story/${10000 + n}`, article(n)])),
 };
 const fetchFake = async (url: string): Promise<FetchResult> => ({
   url,
@@ -73,7 +73,9 @@ const target = (extra: Partial<RuleTarget> = {}): RuleTarget => ({
   spec,
   owned: ['example.tw', 'news.example.tw'],
   listingHosts: ['example.tw', 'news.example.tw'],
-  failing: [1, 2, 3].map((n) => ({ url: `https://news.example.tw/story/${1000 + n}`, publishedAt: hour(n) })),
+  examples: [],
+  collected: async () => new Map(),
+  failing: [1, 2, 3].map((n) => ({ url: `https://news.example.tw/story/${10000 + n}`, publishedAt: hour(n) })),
   working: [],
   reason: 'test',
   ...extra,
@@ -126,6 +128,17 @@ describe('compileRules', () => {
   });
 });
 
+describe('articleNumber', () => {
+  it('finds the article number whatever the URL shape', () => {
+    expect(articleNumber('https://my-formosa.com.tw/DOC_230068.htm')).toBe('230068');
+    expect(articleNumber('https://my-formosa.com.tw/KM/News.asp?Did=230068')).toBe('230068');
+    expect(articleNumber('https://example.tw/2026/10/17/slug')).toBeNull();
+    expect(articleNumber('https://example.tw/news/20261017/')).toBeNull();
+    expect(articleNumber('https://www.mnews.tw/story/20261017sot1921001')).toBe('1921001');
+    expect(articleNumber('https://example.tw/about/')).toBeNull();
+  });
+});
+
 describe('ownHosts', () => {
   it('leaves out shared platforms and hosts configured for another source', () => {
     const owners = new Map([
@@ -141,7 +154,7 @@ describe('ownHosts', () => {
 describe('generated site rules', () => {
   it('win over a source selector, are labelled, and stay inside their trial', async () => {
     const [site] = compileRules(raw(), ['example.tw']).sites;
-    const url = 'https://news.example.tw/story/1001';
+    const url = 'https://news.example.tw/story/10001';
     const html = article(1);
     expect(newsSiteRules(url)).toBeUndefined();
     const tried = withTrialSiteRules([site], () => extractArticle(html, url, { bodySelector: '.missing' }));
@@ -173,6 +186,23 @@ describe('validateRules', () => {
     const report = await validateRules(target({ trigger: 'listing', failing: [] }), rules, { fetch: fetchFake, now });
     expect(report.listed).toBe(4);
     expect(report.passed).toBe(true);
+    // The same listing over articles already collected repairs nothing.
+    const again = await validateRules(
+      target({ trigger: 'listing', failing: [], collected: async (urls) => new Map(urls.map((u) => [u, 'same' as const])) }),
+      rules,
+      {
+        fetch: fetchFake,
+        now,
+      },
+    );
+    expect(again.problems).toContain('listing reaches only articles already collected');
+    // The same articles under another URL shape would be stored twice.
+    const twice = await validateRules(
+      target({ trigger: 'listing', failing: [], collected: async (urls) => new Map([[urls[0], 'shape' as const]]) }),
+      rules,
+      { fetch: fetchFake, now },
+    );
+    expect(twice.problems[0]).toMatch(/another URL shape/);
   });
   it('wants article keywords from a tagSelector, not menus or sentences', async () => {
     const rules = compileRules(raw({ hostRules: [hostRule({ tagSelector: '.kw a' })] }), ['example.tw']);
@@ -202,6 +232,23 @@ describe('generateRules', () => {
     expect(result).toMatchObject({ ok: true, rounds: 2, modelCalls: 2, model: 'gpt-test' });
     expect(prompts[1]).toContain('lastRound');
     expect(prompts[0]).toContain('story-zone');
+  });
+  it('leaves a quiet outlet alone when its listing page links only to collected articles', async () => {
+    let calls = 0;
+    const result = await generateRules(
+      target({ trigger: 'listing', failing: [], collected: async (urls) => new Map(urls.map((u) => [u, 'same' as const])) }),
+      {
+        config: { baseUrl: 'http://gw', apiKey: 'k', model: 'sky-quality' },
+        fetch: fetchFake,
+        render: false,
+        chat: async () => {
+          calls++;
+          return { content: '{}', model: 'x', finishReason: 'stop' };
+        },
+      },
+    );
+    expect(calls).toBe(0);
+    expect(result).toMatchObject({ ok: false, modelCalls: 0, reason: 'quiet: all 4 articles its listing page links to are collected' });
   });
   it('stops when the model returns no rules', async () => {
     let calls = 0;
