@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type { CheerioAPI } from 'cheerio';
 import { GOVERNMENT_NEWS_SITES } from './government-sites.ts';
 import { BLOCKED_NEWS_SITES } from './news-blocked-sites.ts';
@@ -37,9 +38,11 @@ export interface NewsSiteRules {
   plainTextBody?: boolean;
   /** The verified container is the whole report even below the 200-character threshold. */
   preferShortBody?: boolean;
+  /** For pages without keyword meta: the elements whose text are the article's tags. */
+  tagSelector?: string;
 }
 
-type Site = NewsSiteRules & { host: string; path: RegExp };
+export type Site = NewsSiteRules & { host: string; path: RegExp };
 const matsuFirstPost = '.table.detail > .row:has(> .forumlist > a[name="1"])';
 
 // Verified against article HTML on 2026-10-03. Every fallback is restricted to
@@ -602,11 +605,33 @@ const SITES: Site[] = [
   },
 ];
 
+// Validated generated rules (docs/generated-crawl-rules.md) come before the
+// hand-written ones: they exist because the hand-written rule for that page
+// stopped working. A trial set applies only inside its own async context, so
+// rules still being validated never reach a concurrent crawl.
+let generatedSites: Site[] = [];
+const generatedSet = new WeakSet<NewsSiteRules>();
+const trialSites = new AsyncLocalStorage<Site[]>();
+export function setGeneratedSiteRules(sites: Site[]) {
+  for (const site of sites) generatedSet.add(site);
+  generatedSites = sites;
+}
+export function withTrialSiteRules<T>(sites: Site[], run: () => T): T {
+  for (const site of sites) generatedSet.add(site);
+  return trialSites.run(sites, run);
+}
+export const isGeneratedSite = (rules: NewsSiteRules | undefined): boolean => !!rules && generatedSet.has(rules);
+
 export function newsSiteRules(value: string): NewsSiteRules | undefined {
   try {
     const url = new URL(value);
     const host = url.hostname.toLowerCase().replace(/^www\./, '');
-    return SITES.find((site) => site.host === host && site.path.test(url.pathname + url.search));
+    const target = url.pathname + url.search;
+    const matches = (site: Site) => site.host === host && site.path.test(target);
+    // A trial replaces the generated rules of its own hosts only.
+    const trial = trialSites.getStore();
+    const replaced = (site: Site) => !!trial?.some((t) => t.host === site.host);
+    return trial?.find(matches) ?? generatedSites.find((site) => matches(site) && !replaced(site)) ?? SITES.find(matches);
   } catch {
     return undefined;
   }

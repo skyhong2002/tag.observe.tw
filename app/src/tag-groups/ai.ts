@@ -1,4 +1,5 @@
 import { and, desc, eq, gte, inArray } from 'drizzle-orm';
+import { type AiConfig, chatCompletion } from '../ai/chat.ts';
 import type { Db } from '../db/client.ts';
 import { articles, articleTags, type TagGroupKind, tagGroupMembers, tagWikidata } from '../db/schema.ts';
 import { CURATED_GROUPS } from './rules.ts';
@@ -11,14 +12,7 @@ import { activeGroups } from './tree.ts';
 // suggestions only ever land as review, so nothing it says is public until
 // an admin confirms it.
 
-export type AiConfig = { baseUrl: string; apiKey: string; model: string };
-
-export function aiConfig(env: Record<string, string | undefined> = process.env): AiConfig | null {
-  const baseUrl = env.TAG_AI_BASE_URL?.replace(/\/+$/, '');
-  const apiKey = env.TAG_AI_API_KEY;
-  if (!baseUrl || !apiKey) return null;
-  return { baseUrl, apiKey, model: env.TAG_AI_MODEL || 'sky-fast' };
-}
+export { type AiConfig, aiConfig } from '../ai/chat.ts';
 
 type Group = { id: number; label: string; kind: TagGroupKind };
 export type Item = { tag: string; titles: string[] };
@@ -71,34 +65,19 @@ export function parseReply(content: string, tags: string[], groupIds: Set<number
 }
 
 export async function suggest(config: AiConfig, groups: Group[], items: Item[], fetchImpl: typeof fetch = fetch) {
-  for (let attempt = 1; ; attempt++) {
-    const res = await fetchImpl(`${config.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${config.apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: config.model,
-        reasoning_effort: 'low',
-        response_format: { type: 'json_object' },
-        messages: prompt(groups, items),
-      }),
-      signal: AbortSignal.timeout(180_000),
-    });
-    const busy = res.status === 429 || res.status >= 500;
-    if (busy && attempt < 4) {
-      await new Promise((r) => setTimeout(r, 5000 * attempt));
-      continue;
-    }
-    if (!res.ok) throw Error(`ai-gateway: HTTP ${res.status}`);
-    const body = (await res.json()) as { model?: string; choices?: { message?: { content?: string } }[] };
-    return {
-      model: body.model ?? config.model,
-      groups: parseReply(
-        body.choices?.[0]?.message?.content ?? '',
-        items.map((i) => i.tag),
-        new Set(groups.map((g) => g.id)),
-      ),
-    };
-  }
+  const reply = await chatCompletion(
+    config,
+    { reasoning_effort: 'low', response_format: { type: 'json_object' }, messages: prompt(groups, items) },
+    { fetchImpl },
+  );
+  return {
+    model: reply.model,
+    groups: parseReply(
+      reply.content,
+      items.map((i) => i.tag),
+      new Set(groups.map((g) => g.id)),
+    ),
+  };
 }
 
 /** Asks about the `tags` that still lack an identity group or a topic and

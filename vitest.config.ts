@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 // Specs that truncate and count tables in the shared TEST_DB_URL database
@@ -17,6 +19,8 @@ const sharedDb = [
 export default defineConfig({
   test: {
     environment: 'node',
+    // Never read the live generated crawl rules (crawl/rules/store.ts) in tests.
+    env: { TAG_GENERATED_RULES_DIR: join(tmpdir(), `tag-generated-rules-test-${process.pid}`) },
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],
     outputFile: { junit: 'artifacts/vitest-junit.xml' },
     coverage: { provider: 'v8', include: ['app/src/**'], reportsDirectory: 'artifacts/coverage' },

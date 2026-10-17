@@ -11,6 +11,7 @@ import { fetchText, fetchViaCurl } from './fetch.ts';
 import { discoverLinks, parseMarkerList } from './html-list.ts';
 import { discoverNews } from './news-discovery.ts';
 import { voicettankCategoryRepair, voicettankFeedCreator } from './news-voicettank.ts';
+import { renderingFetch } from './render.ts';
 import type { SourceSpec } from './sources.ts';
 import { headlineFromPage, normalizeTag, stripTitleSuffix, TRACKING, urlKey } from './text.ts';
 import { type TitleVocab, tagsFromTitle } from './title-tags.ts';
@@ -141,6 +142,7 @@ export async function runIndex(
   } = {},
 ): Promise<{ items: number; inserted: number; errors: string[] }> {
   if (spec.discovery) return runDiscoveryIndex(db, spec, { fetch, log, now });
+  if (spec.render) fetch = renderingFetch(fetch);
   const started = now();
   const [run] = await db
     .insert(crawlRuns)
@@ -392,6 +394,7 @@ export async function runArticles(
   } = {},
 ) {
   if (spec.discovery) return { fetched: 0, updated: 0, failed: 0, rejected: 0 };
+  if (spec.render) fetch = renderingFetch(fetch);
   const started = now();
   // Every article needs body extraction, including previously tagged feeds.
   // Recent items go first, then the retained 90-day backlog is filled gradually.

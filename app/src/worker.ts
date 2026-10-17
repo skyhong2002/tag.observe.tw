@@ -3,10 +3,12 @@ import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import pino from 'pino';
 import { googleConfigFromEnv } from './analytics/google.ts';
+import { keepGeneratedRulesFresh } from './crawl/rules/state.ts';
 import { createDb } from './db/client.ts';
 import { runAnalyticsJob, runRealtimeJob } from './jobs/analytics-job.ts';
 import { runCrawlHealthJob } from './jobs/crawl-health-job.ts';
 import { crawlArticles, crawlGroup, crawlMedia } from './jobs/crawl-job.ts';
+import { runCrawlRulesJob } from './jobs/crawl-rules-job.ts';
 import { runEventsJob } from './jobs/events-job.ts';
 import { runMediaOutputJob } from './jobs/media-output-job.ts';
 import { runMediaRadarJob } from './jobs/media-radar-job.ts';
@@ -14,6 +16,7 @@ import { runMediaTrafficJob } from './jobs/media-traffic-job.ts';
 import { runProbeJob } from './jobs/probe-job.ts';
 import { runRankingJob } from './jobs/ranking-job.ts';
 import { runRetentionJob } from './jobs/retention-job.ts';
+import { runRobotsJob } from './jobs/robots-job.ts';
 import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagAvatarsInChild } from './jobs/tag-avatars-job.ts';
 import { runTagGroupsJob } from './jobs/tag-groups-job.ts';
@@ -35,6 +38,12 @@ const queue = new Queue('tag-jobs', { connection });
 // Admins edit media labels at /admin/media/; ranking, events and tag stats read them.
 const labels = keepMediaCategoriesFresh(db, { warn: (err) => log.warn({ err: (err as Error).message }, 'media labels refresh failed') });
 await labels.ready;
+// Generated crawl rules live in files (crawl/rules/store.ts); every crawl reads the active ones.
+const generatedRules = keepGeneratedRulesFresh({
+  warn: (err) =>
+    log.warn({ err: (err as Error).message, media: (err as { media?: string }).media }, 'generated crawl rules refresh failed'),
+});
+await generatedRules.ready;
 const intervalMinutes = Number(process.env.RANKING_INTERVAL_MINUTES || 10);
 await queue.upsertJobScheduler(
   'ranking-every',
@@ -164,11 +173,28 @@ await queue.upsertJobScheduler(
   { pattern: process.env.TAG_VISUALS_CRON || '10 5 * * *' },
   { name: 'tag-visuals', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
+// Each outlet's robots.txt, recorded for /admin/media/ (not obeyed).
+await queue.upsertJobScheduler(
+  'robots-daily',
+  { pattern: process.env.ROBOTS_CRON || '40 4 * * *' },
+  { name: 'robots', data: {}, opts: { removeOnComplete: 10, removeOnFail: 10 } },
+);
 await queue.upsertJobScheduler(
   'source-probe-weekly',
   { pattern: process.env.PROBE_CRON || '30 5 * * 1' },
   { name: 'source-probe', data: {}, opts: { removeOnComplete: 10, removeOnFail: 10 } },
 );
+
+// Generated crawl rules (docs/generated-crawl-rules.md) on their own queue:
+// one generation can take many minutes and must not hold a crawl slot.
+const aiQueue = new Queue('tag-ai-jobs', { connection });
+if (process.env.TAG_AI_RULES_ENABLED === '1')
+  await aiQueue.upsertJobScheduler(
+    'crawl-rules-every',
+    { every: Number(process.env.TAG_AI_RULES_MINUTES || 30) * 60e3 },
+    { name: 'crawl-rules', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
+  );
+else await aiQueue.removeJobScheduler('crawl-rules-every');
 
 // GA4 / Search Console aggregates for /observe/ hourly, GA Realtime every few
 // minutes; skipped where the read-only service account is not configured (docs/analytics.md).
@@ -198,6 +224,7 @@ for (const job of [
   'tag-groups',
   'tag-visuals',
   'source-probe',
+  'robots',
   'analytics',
   'analytics-live',
   'crawl-health',
@@ -212,6 +239,7 @@ for (const job of [
   'crawl-index',
   'crawl-articles',
   'crawl-media',
+  'crawl-rules',
 ])
   for (const status of ['ok', 'failed']) jobRunsMetric.inc({ job, status }, 0);
 
@@ -332,6 +360,12 @@ const worker = new Worker(
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }
+      if (job.name === 'robots') {
+        const r = await runRobotsJob(db, { log: (o, m) => log.warn(o, m), signal: shutdown.signal });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        log.info({ job: job.name, ...r }, 'robots job finished');
+        return r;
+      }
       if (job.name === 'crawl-index') {
         const r = await crawlGroup(db, job.data.group, { log, signal: shutdown.signal });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
@@ -362,6 +396,26 @@ const worker = new Worker(
   { connection, concurrency: 2, lockDuration: 900e3 },
 );
 worker.on('ready', () => log.info({ redis: redisUrl, intervalMinutes }, 'worker ready'));
+const aiWorker = new Worker(
+  'tag-ai-jobs',
+  async (job) => {
+    const end = jobDuration.startTimer({ job: job.name });
+    try {
+      if (job.name !== 'crawl-rules') throw Error('Unknown job ' + job.name);
+      const r = await runCrawlRulesJob(db, { log: (o, m) => log.info(o, m), signal: shutdown.signal });
+      jobRunsMetric.inc({ job: job.name, status: 'ok' });
+      log.info({ job: job.name, ...r }, 'crawl rules job finished');
+      return r;
+    } catch (error) {
+      jobRunsMetric.inc({ job: job.name, status: 'failed' });
+      log.error({ job: job.name, err: (error as Error).message }, 'job failed');
+      throw error;
+    } finally {
+      end();
+    }
+  },
+  { connection, concurrency: 1, lockDuration: 1800e3 },
+);
 
 const metricsPort = Number(process.env.WORKER_METRICS_PORT || 18133);
 const server = createServer(async (req, res) => {
@@ -390,9 +444,11 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const)
       log.error('worker shutdown deadline reached; exiting with active jobs');
       process.exit(1);
     }, 40000).unref();
-    await worker.close();
+    await Promise.all([worker.close(), aiWorker.close()]);
     labels.stop();
+    generatedRules.stop();
     await queue.close();
+    await aiQueue.close();
     await connection.quit();
 
     await closeDb();

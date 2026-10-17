@@ -245,6 +245,19 @@ export const crawlRuns = mysqlTable(
   (t) => [index('crawl_runs_media').on(t.media, t.startedAt)],
 );
 
+// Each outlet host's robots.txt as last read (jobs/robots-job.ts). Shown on
+// /admin/media/; the crawler does not obey it.
+export const robotsObservations = mysqlTable('robots_observations', {
+  host: varchar('host', { length: 253 }).primaryKey(),
+  status: varchar('status', { length: 16 }).notNull(),
+  httpStatus: int('http_status'),
+  googleOnly: boolean('google_only').notNull().default(false),
+  disallow: json('disallow').$type<string[]>().notNull(),
+  error: varchar('error', { length: 255 }),
+  checkedAt: datetime('checked_at').notNull(),
+  lastOkAt: datetime('last_ok_at'),
+});
+
 // Event clustering (port of legacy maint/events.php + events_history.php + equal3.php).
 export const eventSnapshots = mysqlTable(
   'event_snapshots',

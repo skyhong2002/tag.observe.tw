@@ -5,6 +5,9 @@ import type { SessionUser } from '../auth/google-login.ts';
 import { fetchText } from '../crawl/fetch.ts';
 import { runArticles, runIndex } from '../crawl/pipeline.ts';
 import { allSources, disabled, excludedMedia, sourceByMedia } from '../crawl/registry.ts';
+import { generatedRulesOf, refreshGeneratedRules } from '../crawl/rules/state.ts';
+import { activeRevision, readAttempts, readRuleFile, rejectActiveRules } from '../crawl/rules/store.ts';
+import { configuredHosts } from '../crawl/rules/targets.ts';
 import { urlKey } from '../crawl/text.ts';
 import type { Db } from '../db/client.ts';
 import {
@@ -19,6 +22,7 @@ import {
   mediaCategoryDefs,
   mediaCategoryLog,
   mediaRoles,
+  robotsObservations,
 } from '../db/schema.ts';
 import { categoriesOf, categoryDefs, refreshMediaCategories } from '../media-categories.ts';
 import { refreshMediaRoles, roleDefs, rolesOf } from '../media-scope.ts';
@@ -102,14 +106,25 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       if (seen) seen.count++;
       else edits.set(media, { count: 1, lastAt: at, lastBy: email });
     }
-    return {
-      media: knownMedia().map((media) => ({
+    // robots.txt of each outlet's main host (jobs/robots-job.ts), and whether generated crawl rules are live.
+    const robots = new Map((await db.select().from(robotsObservations)).map((r) => [r.host, r]));
+    const media = knownMedia().map((media) => {
+      const spec = sourceByMedia(media);
+      const host = spec ? configuredHosts(spec)[0] : undefined;
+      const seen = host ? robots.get(host) : undefined;
+      const active = generatedRulesOf(media);
+      return {
         ...outletSummary(media),
         icon: iconUrl(media),
         categories: categoriesOf(media),
         roles: rolesOf(media),
         edits: edits.get(media) ?? null,
-      })),
+        robots: seen ? { host: seen.host, status: seen.status, googleOnly: seen.googleOnly, checkedAt: seen.checkedAt } : null,
+        generatedRules: active ? { revision: active.revision, trigger: active.trigger } : null,
+      };
+    });
+    return {
+      media,
       categories: categoryDefs(),
       roles: roleDefs(),
     };
@@ -144,6 +159,12 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
         .orderBy(desc(crawlRuns.startedAt))
         .limit(6),
     ]);
+    const hosts = spec ? configuredHosts(spec) : [];
+    const [robots, rules, attempts] = await Promise.all([
+      hosts.length ? db.select().from(robotsObservations).where(inArray(robotsObservations.host, hosts)) : [],
+      readRuleFile(media),
+      readAttempts(new Date(Date.now() - 60 * 86400e3)),
+    ]);
     return {
       ...outletSummary(media),
       icon: iconUrl(media),
@@ -154,7 +175,36 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       crawler: spec ? { group: spec.group, disabled: disabled().has(media), aggregator: Boolean(spec.discovery) } : null,
       runs,
       log,
+      robots: hosts.map((host) => robots.find((r) => r.host === host) ?? { host, status: null }),
+      generatedRules: {
+        active: activeRevision(rules),
+        history: rules.revisions.map(({ revision, status, trigger, createdAt, rejectedAt, rejectedBy }) => ({
+          revision,
+          status,
+          trigger,
+          createdAt,
+          rejectedAt: rejectedAt ?? null,
+          rejectedBy: rejectedBy ?? null,
+        })),
+        attempts: attempts
+          .filter((a) => a.media === media)
+          .slice(-10)
+          .reverse(),
+      },
     };
+  });
+
+  // 停用 AI 規則: the outlet goes back to its hand-written rules within a minute
+  // (the worker re-reads the rule files); the next broken stretch may generate new ones.
+  app.post<{ Params: { media: string } }>('/auth/admin/media/:media/generated-rules/reject', async (request, reply) => {
+    const user = await admin(request, reply, true);
+    if (!user) return reply;
+    const { media } = request.params;
+    if (!known(media)) return reply.code(404).send({ error: 'unknown media' });
+    const rejected = await rejectActiveRules(media, user.email);
+    if (!rejected) return reply.code(404).send({ error: 'no active generated rules' });
+    await refreshGeneratedRules(undefined, true);
+    return { media, rejected: true };
   });
 
   app.put<{ Params: { media: string }; Body: { categories?: unknown } }>('/auth/admin/media/:media/categories', async (request, reply) => {

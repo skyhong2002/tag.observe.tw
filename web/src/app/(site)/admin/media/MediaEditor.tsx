@@ -4,7 +4,18 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import AdminGate, { adminFetch, note } from '../AdminGate';
-import { type Definition, LabelToggle, type Outlet, OutletIcon, type RoleDefinition } from './labels';
+import {
+  type Definition,
+  LabelToggle,
+  type Outlet,
+  OutletIcon,
+  ROBOTS,
+  type RobotsStatus,
+  type RoleDefinition,
+  type RuleTrigger,
+  robotsLabel,
+  TRIGGERS,
+} from './labels';
 import { Bookmarklet, Outlets } from './Outlets';
 
 type Article = {
@@ -41,6 +52,28 @@ type Detail = Outlet & {
   crawler: { group: string; disabled: boolean; aggregator: boolean } | null;
   runs: Run[];
   log: Array<{ id: number; category: string; action: 'add' | 'remove'; email: string; at: string }>;
+  robots: Array<{
+    host: string;
+    status: RobotsStatus | null;
+    googleOnly?: boolean;
+    httpStatus?: number | null;
+    disallow?: string[];
+    error?: string | null;
+    checkedAt?: string;
+    lastOkAt?: string | null;
+  }>;
+  generatedRules: {
+    active: { revision: number; trigger: RuleTrigger; createdAt: string; model: string; rules: unknown; validation: unknown } | null;
+    history: Array<{
+      revision: number;
+      status: 'active' | 'superseded' | 'rejected';
+      trigger: RuleTrigger;
+      createdAt: string;
+      rejectedAt: string | null;
+      rejectedBy: string | null;
+    }>;
+    attempts: Array<{ at: string; trigger: RuleTrigger; status: string; rounds: number; reason: string | null }>;
+  };
 };
 type Job = { state: string; result: Record<string, unknown> | null; error: string | null };
 
@@ -234,6 +267,8 @@ function Editor({ media, url, report, article }: { media: string; url: string; r
         />
       )}
       <Crawl detail={detail} onDone={load} />
+      <GeneratedRules detail={detail} onChanged={load} />
+      <Robots detail={detail} />
       <ChangeLog detail={detail} />
     </>
   );
@@ -898,6 +933,112 @@ function Crawl({ detail, onDone }: { detail: Detail; onDone: () => void }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+const ATTEMPT: Record<string, string> = { activated: '通過並上線', failed: '沒通過', 'dry-run': '試跑通過（未上線）' };
+const REVISION: Record<string, string> = { active: '使用中', superseded: '已被新版取代', rejected: '已停用' };
+
+// Crawl rules written by the gateway's model when this outlet's own rules
+// stopped working (docs/generated-crawl-rules.md). They are data, kept in
+// files outside the database; turning them off restores the hand-written rules.
+function GeneratedRules({ detail, onChanged }: { detail: Detail; onChanged: () => void }) {
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const { active, history, attempts } = detail.generatedRules;
+  if (!active && !history.length && !attempts.length) return null;
+  async function reject() {
+    setBusy(true);
+    setError('');
+    try {
+      await adminFetch(`/auth/admin/media/${detail.media}/generated-rules/reject`, { method: 'POST', body: {} });
+      onChanged();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className={section}>
+      <h3 className={heading}>AI 爬取規則</h3>
+      {active ? (
+        <>
+          <p className={note}>
+            第 {active.revision} 版使用中（{TRIGGERS[active.trigger]}，{when(active.createdAt)}，{active.model}
+            ）。這份規則已用真實頁面驗證過；停用後一分鐘內會回到原本的規則。
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button type="button" className={button} disabled={busy} onClick={reject}>
+              停用 AI 規則
+            </button>
+            {error && <span className="text-sm text-red-700 dark:text-red-400">{error}</span>}
+          </div>
+          <details className="mt-3 text-sm">
+            <summary className="cursor-pointer text-zinc-600 dark:text-zinc-400">規則內容與驗證結果</summary>
+            <pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-zinc-100 p-3 text-xs dark:bg-zinc-900">
+              {JSON.stringify({ rules: active.rules, validation: active.validation }, null, 2)}
+            </pre>
+          </details>
+        </>
+      ) : (
+        <p className={note}>目前沒有使用中的 AI 規則。</p>
+      )}
+      {history.length > 0 && (
+        <ul className="mt-3 space-y-1 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
+          {history.map((r) => (
+            <li key={r.revision}>
+              第 {r.revision} 版 · {TRIGGERS[r.trigger]} · {when(r.createdAt)} · {REVISION[r.status]}
+              {r.rejectedBy && `（${r.rejectedBy}，${when(r.rejectedAt)}）`}
+            </li>
+          ))}
+        </ul>
+      )}
+      {attempts.length > 0 && (
+        <>
+          <h4 className="mt-4 text-sm font-medium">最近的產生紀錄</h4>
+          <ul className="mt-1 space-y-1 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
+            {attempts.map((a) => (
+              <li key={a.at}>
+                {when(a.at)} · {TRIGGERS[a.trigger]} · {ATTEMPT[a.status] ?? a.status} · {a.rounds} 輪{a.reason && ` · ${a.reason}`}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
+// robots.txt as last read each day. Recorded and shown only: the crawler does not obey it.
+function Robots({ detail }: { detail: Detail }) {
+  if (!detail.robots.length) return null;
+  return (
+    <section className={section}>
+      <h3 className={heading}>robots.txt</h3>
+      <p className={note}>每天讀一次，只記錄、顯示，爬蟲不會照它停下。</p>
+      <ul className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+        {detail.robots.map((r) => (
+          <li key={r.host}>
+            <a href={`https://${r.host}/robots.txt`} className="underline" target="_blank" rel="noreferrer">
+              {r.host}
+            </a>
+            ：
+            {r.status ? (
+              <span className={ROBOTS[r.status].className}>
+                {robotsLabel({ status: r.status, googleOnly: !!r.googleOnly })}
+                {r.status === 'unreachable' && r.error && `（${r.error}）`}
+              </span>
+            ) : (
+              '尚未讀取'
+            )}
+            {r.disallow && r.disallow.length > 0 && <span className="text-zinc-500">　擋：{r.disallow.join('、')}</span>}
+            {r.checkedAt && <span className="tabular-nums">　{when(r.checkedAt)} 讀取</span>}
+            {r.status === 'unreachable' && <span className="tabular-nums">　上次讀到：{when(r.lastOkAt ?? null)}</span>}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

@@ -8,6 +8,29 @@ export type Outlet = {
   roles: string[];
   /** Label and role edits (GET /auth/admin/media only). */
   edits?: { count: number; lastAt: string; lastBy: string } | null;
+  /** The main host's robots.txt as last read (GET /auth/admin/media only). */
+  robots?: { host: string; status: RobotsStatus; googleOnly: boolean; checkedAt: string } | null;
+  /** Live generated crawl rules (GET /auth/admin/media only). */
+  generatedRules?: { revision: number; trigger: RuleTrigger } | null;
+};
+export type RobotsStatus = 'allowed' | 'missing' | 'partial' | 'disallowed' | 'unreachable';
+export type RuleTrigger = 'listing' | 'body' | 'tags' | 'new-source';
+
+// robots.txt is recorded and shown, not obeyed (jobs/robots-job.ts).
+export const ROBOTS: Record<RobotsStatus, { label: string; className: string; sort: number }> = {
+  allowed: { label: '允許', className: '', sort: 0 },
+  missing: { label: '無檔案（視為允許）', className: '', sort: 1 },
+  partial: { label: '部分路徑限制', className: '', sort: 2 },
+  unreachable: { label: '讀不到', className: 'text-amber-700 dark:text-amber-400', sort: 3 },
+  disallowed: { label: '禁止', className: 'text-red-700 dark:text-red-400', sort: 4 },
+};
+export const robotsLabel = (r: { status: RobotsStatus; googleOnly: boolean }) =>
+  r.status === 'disallowed' && r.googleOnly ? '只允許 Google' : ROBOTS[r.status].label;
+export const TRIGGERS: Record<RuleTrigger, string> = {
+  listing: '列表失效',
+  body: '內文抽不到',
+  tags: '缺標籤',
+  'new-source': '新來源',
 };
 
 // Camp labels keep the site's blue/green; every other label is neutral.
