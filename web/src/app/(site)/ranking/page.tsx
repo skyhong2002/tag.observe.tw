@@ -169,24 +169,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           ] as const
         ).map((item) => ({ href: link({ gate: item.value, limit: undefined }), label: item.label, current: gate === item.value }))}
       />
-      <nav className="-mx-1 flex gap-1 overflow-x-auto pb-1 text-sm" aria-label="媒體分類">
-        {categoryRankings.map((c) => {
-          const note = rankingCategoryNote(c.ranking);
-          return (
-            <Link
-              key={c.key}
-              href={link({ category: c.key, limit: undefined })}
-              scroll={false}
-              aria-label={note ? `${c.label}，${note}` : c.label}
-              aria-current={c.key === category ? 'page' : undefined}
-              className={`whitespace-nowrap rounded-full px-3 py-1 ${c.key === category ? 'bg-brand-700 text-white' : note ? 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
-            >
-              {c.label}
-              {note && <span className="ml-1.5 text-[11px]">{note}</span>}
-            </Link>
-          );
-        })}
-      </nav>
+      <FilterChips
+        label="媒體分類"
+        items={categoryRankings.map((c) => ({
+          href: link({ category: c.key, limit: undefined }),
+          label: c.label,
+          current: c.key === category,
+          note: rankingCategoryNote(c.ranking) ?? undefined,
+        }))}
+      />
       {cloud && (
         <RankingWordCloud
           mode={emerging ? 'growth' : 'score'}

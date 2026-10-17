@@ -8,7 +8,7 @@ import { type SimilarityQuery, similarityPeriod, similarityThreshold } from '../
 
 export const metadata = pageMetadata(
   '/similarity/reposts/',
-  '轉載統計 · 新聞關係圖',
+  '轉載統計 · 媒體關係圖',
   '逐日查看新聞比對篇數、相似配對與來源／引用，對照各媒體先刊、後續相似報導的篇數與比例。',
 );
 

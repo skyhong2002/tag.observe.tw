@@ -5,7 +5,7 @@
 - [architecture.md](architecture.md)：系統架構、排程、演算法、資料保留、開發、部署與回退
 - [api.md](api.md)：公開 API（由 `app/src/v1/openapi.ts` 產生，請勿手改；網站版 <https://tag.observe.tw/api/>）
 - [crawlers.md](crawlers.md)：爬蟲引擎、來源規格、成功條件與處理紀錄
-- [analytics.md](analytics.md)：GA4、Search Console、Web Vitals、網站觀測與匿名讀者回報
+- [analytics.md](analytics.md)：GA4、Search Console、Web Vitals、本站流量與匿名讀者回報
 - [security.md](security.md)：來源、圖片、API 與服務安全規則
 - [history.md](history.md)：從 tag.analysis.tw 遷移至本站的決定與里程碑
 

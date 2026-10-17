@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { filterChipClass } from '@/components/FilterChips';
 import FormSuggestInput from '@/components/FormSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
 import MediaSidebar from '@/components/MediaSidebar';
@@ -112,13 +113,6 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
   );
 }
 
-const chipClass = (on: boolean) =>
-  `inline-flex items-baseline gap-1 rounded-full border px-2.5 py-1 ${
-    on
-      ? 'border-brand-500 bg-brand-50 text-brand-800 dark:border-brand-600 dark:bg-brand-950 dark:text-brand-200'
-      : 'border-zinc-200 hover:border-brand-400 hover:text-brand-700 dark:border-zinc-700 dark:hover:text-brand-400'
-  }`;
-
 const SHOWN_TAGS = 18;
 /** Keywords and title search for the current kind. */
 function KeywordBar({
@@ -151,10 +145,12 @@ function KeywordBar({
           href={on ? base : tagHref(t.tag)}
           aria-current={on ? 'page' : undefined}
           title={t.media != null ? `${t.media} 家媒體：${t[kind]} 個${kindNoun(kind)}` : undefined}
-          className={chipClass(on)}
+          className={`inline-flex items-baseline gap-1 ${filterChipClass(on)}`}
         >
           {t.tag}
-          {t.media != null && <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{t.media} 家</span>}
+          {t.media != null && (
+            <span className={`text-[11px] ${on ? 'text-white/80' : 'text-zinc-500 dark:text-zinc-400'}`}>{t.media} 家</span>
+          )}
         </Link>
       </li>
     );

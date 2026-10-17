@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CountryFlag from '@/components/CountryFlag';
+import FilterChips from '@/components/FilterChips';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
@@ -256,8 +257,6 @@ export default async function MediaStatsPage({
       </Link>
     </th>
   );
-  const chip = (active: boolean) =>
-    `whitespace-nowrap rounded-full px-3 py-1 ${active ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`;
 
   return (
     <div className="space-y-5">
@@ -282,42 +281,47 @@ export default async function MediaStatsPage({
         />
         <Tile label="有標籤的文章" value={pct(t.taggedShare24h)} note="24 小時內" />
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 text-sm">
-        <Link href={link({ status: null })} scroll={false} className={chip(!status)}>
-          全部狀態
-        </Link>
-        {(Object.keys(STATUS) as Status[]).map((s) => (
-          <Link key={s} href={link({ status: s })} scroll={false} className={chip(status === s)}>
-            {STATUS[s].label} {t.statusCounts[s] ?? 0}
-          </Link>
-        ))}
-        <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-        <Link href={link({ category: null })} scroll={false} className={chip(!category)}>
-          全部分類
-        </Link>
-        {categories.map(([key, label]) => (
-          <Link key={key} href={link({ category: key })} scroll={false} className={chip(category === key)}>
-            {label}
-          </Link>
-        ))}
-        <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-        <Link href={link({ camp: null })} scroll={false} className={chip(!camp)}>
-          全部傾向
-        </Link>
-        {(Object.keys(CAMPS) as Array<keyof typeof CAMPS>).map((c) => (
-          <Link key={c} href={link({ camp: c })} scroll={false} className={chip(camp === c)}>
-            {CAMPS[c].label} {data.media.filter((m) => m.camp === c).length}
-          </Link>
-        ))}
-        <span className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-        <Link href={link({ scope: null })} scroll={false} className={chip(!scope)}>
-          全部範圍
-        </Link>
-        {scopes.map(([key, label]) => (
-          <Link key={key} href={link({ scope: key })} scroll={false} className={chip(scope === key)}>
-            {label} {data.media.filter((m) => m.scope?.scope === key).length}
-          </Link>
-        ))}
+      <div className="space-y-2">
+        <FilterChips
+          label="收錄狀態"
+          items={[
+            { href: link({ status: null }), label: '全部狀態', current: !status },
+            ...(Object.keys(STATUS) as Status[]).map((s) => ({
+              href: link({ status: s }),
+              label: `${STATUS[s].label} ${t.statusCounts[s] ?? 0}`,
+              current: status === s,
+            })),
+          ]}
+        />
+        <FilterChips
+          label="媒體分類"
+          items={[
+            { href: link({ category: null }), label: '全部分類', current: !category },
+            ...categories.map(([key, label]) => ({ href: link({ category: key }), label: label ?? key, current: category === key })),
+          ]}
+        />
+        <FilterChips
+          label="媒體傾向"
+          items={[
+            { href: link({ camp: null }), label: '全部傾向', current: !camp },
+            ...(Object.keys(CAMPS) as Array<keyof typeof CAMPS>).map((c) => ({
+              href: link({ camp: c }),
+              label: `${CAMPS[c].label} ${data.media.filter((m) => m.camp === c).length}`,
+              current: camp === c,
+            })),
+          ]}
+        />
+        <FilterChips
+          label="報導範圍"
+          items={[
+            { href: link({ scope: null }), label: '全部範圍', current: !scope },
+            ...scopes.map(([key, label]) => ({
+              href: link({ scope: key }),
+              label: `${label} ${data.media.filter((m) => m.scope?.scope === key).length}`,
+              current: scope === key,
+            })),
+          ]}
+        />
       </div>
       <TableScroller card label="媒體與文章數表格，可左右捲動">
         <table className="w-full min-w-[60rem] text-sm">

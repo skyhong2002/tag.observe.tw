@@ -1,5 +1,5 @@
 // Pull GA4 and Search Console aggregates into site_metrics for the public
-// 網站觀測 page (/observe/) and the home page's 讀者關注 panel. Each hourly run
+// 本站流量 page (/observe/) and the home page's 讀者關注 panel. Each hourly run
 // re-reads a trailing window (GA keeps processing for ~3 days, GSC lags 2–3
 // days) and replaces those days, so late data and vanished keys settle.
 // runRealtimeJob adds the last 30 minutes from GA's Realtime API every few minutes.

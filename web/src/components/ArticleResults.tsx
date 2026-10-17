@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ArticleThumbnail from '@/components/ArticleThumbnail';
+import FilterChips from '@/components/FilterChips';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import PendingLabel from '@/components/PendingLabel';
@@ -17,9 +18,6 @@ import { articleHref } from '@/lib/reading.mts';
 // of articles in time sections, and the cursor pager.
 
 export type ListingLink = (patch: Partial<Record<'days' | 'camp' | 'cursor', string | null>>) => string;
-
-const chip = (on: boolean) =>
-  `whitespace-nowrap rounded-full px-3 py-1 ${on ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`;
 
 function Highlight({ text, q }: { text: string; q: string }) {
   if (!q) return text;
@@ -44,28 +42,21 @@ export function RangeChips({
   days,
   defaultDays,
   link,
-  children,
 }: {
   days: number;
   /** The range the page shows without a `days` parameter. */
   defaultDays: number;
   link: ListingLink;
-  children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-1.5 text-sm">
-      {RANGES.map((r) => (
-        <Link
-          key={r.days}
-          href={link({ days: r.days === defaultDays ? null : String(r.days), cursor: null })}
-          scroll={false}
-          className={chip(r.days === days)}
-        >
-          {r.label}
-        </Link>
-      ))}
-      {children}
-    </div>
+    <FilterChips
+      label="刊登期間"
+      items={RANGES.map((r) => ({
+        href: link({ days: r.days === defaultDays ? null : String(r.days), cursor: null }),
+        label: r.label,
+        current: r.days === days,
+      }))}
+    />
   );
 }
 

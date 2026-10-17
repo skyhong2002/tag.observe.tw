@@ -8,18 +8,18 @@
 
 ## 網站功能
 
-- **首頁**：焦點事件、關鍵字升溫榜、藍綠媒體標題對照、記者動態、新聞關係圖與最近更新的議題。
+- **首頁**：焦點事件、關鍵字升溫榜、藍綠媒體標題對照、記者動態、媒體關係圖與最近更新的議題。
 - **最新文章**（[`/article/`](https://tag.observe.tw/article/)）：依發布時間瀏覽近期收錄文章，也可以搜尋標題與標籤。
 - **關鍵字排行**（[`/ranking/`](https://tag.observe.tw/ranking/)）：以過去 24 小時的收錄資料計算分數與爆發力，可依新聞、財經、科技及媒體分類篩選；頁面也提供升溫、首次收錄與相似稿比對等訊號。
 - **事件表**（[`/event/`](https://tag.observe.tw/event/)）：將同時爆發的標籤分成事件，每小時保存快照。單一事件頁可看趨勢、報導時間線、各家標題與事件前後的延續關係。
 - **議題與專題**（[`/topic/`](https://tag.observe.tw/topic/)、[`/feature/`](https://tag.observe.tw/feature/)）：整理媒體官方的議題頁、專題頁與新聞包，並連到本站已收錄的相關報導。
 - **媒體來源**（[`/media/`](https://tag.observe.tw/media/)）：查看各家媒體的文章、標籤、收錄量、爬蟲狀態、流量比較與來源範圍。
-- **新聞關係圖**（[`/similarity/`](https://tag.observe.tw/similarity/)）：比較跨媒體內文相似、共同署名與明示引用，呈現媒體及來源國家的關係圖、文章證據與每日統計。
+- **媒體關係圖**（[`/similarity/`](https://tag.observe.tw/similarity/)）：比較跨媒體內文相似、共同署名與明示引用，呈現媒體及來源國家的關係圖、文章證據與每日統計。
 - **記者**（[`/journalist/`](https://tag.observe.tw/journalist/)）：從公開署名整理人名與筆名，列出刊登媒體、文章數、常寫主題，以及同期間的跨媒體相似報導。
 - **站內閱讀**：[`/media/<media>/`](https://tag.observe.tw/media/) 統一瀏覽媒體報導，[`/article/<id>/`](https://tag.observe.tw/article/) 閱讀仍在公開期限內的擷取正文；標示 ↗ 的連結才會離開本站回到原站。
 - **即時看板**（[`/liveboard/`](https://tag.observe.tw/liveboard/)）：適合常駐螢幕，輪播新進文章、事件、各家標題對照、相似報導組與近期發稿量，亦可安裝成獨立 Web App。
 - **讀者帳號**（[`/my/`](https://tag.observe.tw/my/)）：以 Google 帳號登入後，可以追蹤標籤、媒體、記者與事件，在「我的動態」或私人 RSS 閱讀；收藏文章與事件並加註記；跨裝置同步深淺色與統計設定；自願開啟閱讀報告；申請個人 API 金鑰；回報標籤、署名或媒體歸屬的錯誤。說明見 [docs/login.md](docs/login.md#讀者功能my)。
-- **網站觀測**（[`/observe/`](https://tag.observe.tw/observe/)）：公開每日瀏覽、來源管道、搜尋表現、熱門內容與近期使用體驗；頁面提供讓目前瀏覽器退出統計的選項。
+- **本站流量**（[`/observe/`](https://tag.observe.tw/observe/)）：公開每日瀏覽、來源管道、搜尋表現、熱門內容與近期使用體驗；頁面提供讓目前瀏覽器退出統計的選項。
 
 ## 資料取用
 
@@ -53,7 +53,7 @@ curl -s "https://tag.observe.tw/api/v1/events/threads/$id/coverage"
 
 相似度表示兩篇可取得正文的直接文字比對結果；引用關係只在文章明確提及來源時建立。相似、刊登先後、共同署名或引用都不能單獨證明原始稿源、轉載授權或抄襲。文章正文公開閱讀期限為發布後 7 天，標題、日期、標籤、來源連結與統計資料另依各自保留規則保存。
 
-網站觀測只使用彙整資料；「本站線上讀者」是同源 gateway 近期匿名回報的瀏覽器數，不保存使用者識別資料或歷史軌跡。可在 [`/observe/opt-out/`](https://tag.observe.tw/observe/opt-out/) 讓目前瀏覽器不送出 Google Analytics 與線上讀者回報。
+本站流量只使用彙整資料；「本站線上讀者」是同源 gateway 近期匿名回報的瀏覽器數，不保存使用者識別資料或歷史軌跡。可在 [`/observe/opt-out/`](https://tag.observe.tw/observe/opt-out/) 讓目前瀏覽器不送出 Google Analytics 與線上讀者回報。
 
 ## 架構
 
@@ -105,7 +105,7 @@ npm run lint
 - [公開 API](docs/api.md)：端點、參數、快取與資料定義
 - [爬蟲](docs/crawlers.md)：探索引擎、來源規格、成功條件與處理紀錄
 - [相似度](docs/similarity.md)：正文保存、比對、引用證據、記者統計與媒體關係圖
-- [網站觀測](docs/analytics.md)：GA4、Search Console、匿名讀者回報與退出統計
+- [本站流量](docs/analytics.md)：GA4、Search Console、匿名讀者回報與退出統計
 - [安全](docs/security.md)：來源、圖片、API 與服務安全規則
 - [沿革](docs/history.md)：從 tag.analysis.tw 遷移至本站的決定與里程碑
 - [文件索引](docs/README.md)：其他維運、來源稽核與資料保留文件

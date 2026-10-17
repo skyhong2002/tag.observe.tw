@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CampBasis } from './events';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
-// 新聞關係圖 (/similarity/), 轉載統計 (/similarity/reposts/) and 擷取狀態
+// 媒體關係圖 (/similarity/), 轉載統計 (/similarity/reposts/) and 擷取狀態
 // (/similarity/about/). Comparison rules: app/src/similarity/compute.ts
 // (200 characters, 100 shared 5-character shingles, a consecutive passage,
 // 7-day window, thresholds 0.5–1); the default 0.65 is in app/src/v1/similarity.ts;
@@ -20,10 +20,10 @@ export function SimilarityMethod({ page, camp = true }: { page?: SimilarityMetho
   const all = !page;
   return (
     <>
-      <h3 className={methodHeading}>新聞關係圖</h3>
+      <h3 className={methodHeading}>媒體關係圖</h3>
       <p>
         <Link href="/similarity/" className={inlineLink}>
-          新聞關係圖
+          媒體關係圖
         </Link>
         比對不同媒體文章的內文：每篇可用內文都與前後 7 天內其他媒體的全部文章比對，期間內的相似配對只計入兩篇都在期間內刊登的組合。索引每 10
         分鐘處理新抓到的正文，配對永久保存；標為「內容」的聯播來源（如蕃新聞）不列入比對。

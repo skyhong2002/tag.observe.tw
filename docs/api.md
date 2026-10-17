@@ -73,7 +73,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/reader-presence`](#api-v1-reader-presence) | 本站最近 90 秒的線上讀者估計 |
 | [`GET /api/v1/bylines`](#api-v1-bylines) | 所有新聞署名：個人、團隊、機構與待辨識 |
 | [`GET /api/v1/bylines/{key}`](#api-v1-bylines-key) | 單一署名的文章與原文角色 |
-| [`GET /api/v1/site-observation`](#api-v1-site-observation) | 網站觀測：GA4 與 Search Console 每日彙整 |
+| [`GET /api/v1/site-observation`](#api-v1-site-observation) | 本站流量：GA4 與 Search Console 每日彙整 |
 | [`GET /api/v1/similarity`](#api-v1-similarity) | 內文相似與明確引用關係 |
 | [`GET /api/v1/similarity/evidence`](#api-v1-similarity-evidence) | 相似與引用證據（分頁） |
 | [`GET /api/v1/similarity/daily`](#api-v1-similarity-daily) | 每日相似配對與引用統計 |
@@ -416,7 +416,7 @@ curl -s 'https://tag.observe.tw/api/v1/reader-presence'
 
 ### `GET /api/v1/site-observation`
 
-**網站觀測：GA4 與 Search Console 每日彙整**
+**本站流量：GA4 與 Search Console 每日彙整**
 
 worker 每小時自 GA4（台灣時間）與 Search Console（美國太平洋時間，含尚未定案的近日資料）讀取彙整數字，近幾天每次重抓覆蓋；live 為 GA Realtime 最近 30 分鐘，約每 2 分鐘更新，超過 15 分鐘未更新則為 null。只含 tag.observe.tw 的流量；不含搜尋字詞、站內搜尋內容或使用者識別資料。traffic／search 在尚無資料時為 null；traffic.daily 從開始追蹤日補零。content 為讀者造訪的內容頁（事件、標籤、議題、專題、文章、記者、媒體），pages 含首頁與索引頁。vitals 需 GA4 已登錄 metric_name／metric_rating 自訂維度，否則為 null。
 

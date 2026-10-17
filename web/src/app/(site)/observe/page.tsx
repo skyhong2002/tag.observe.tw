@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FilterChips from '@/components/FilterChips';
 import MethodLink from '@/components/MethodLink';
 import Sparkline from '@/components/Sparkline';
 import { taipei } from '@/lib/api';
@@ -23,7 +24,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const days = daysOf(await searchParams);
   return pageMetadata(
     canonicalQuery('/observe/', { days: days === 28 ? undefined : String(days) }),
-    '網站觀測',
+    '本站流量',
     '新文易數的公開流量：每日瀏覽、讀者關注的事件與議題、來源管道、Google 搜尋表現與真實使用體驗。',
     true,
   );
@@ -212,7 +213,7 @@ export default async function ObservePage({ searchParams }: { searchParams: Prom
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">網站觀測</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">本站流量</h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             本站的讀者從哪裡來、看了什麼
             {data?.updatedAt && ` · 更新於 ${taipei(data.updatedAt)}`}
@@ -221,19 +222,14 @@ export default async function ObservePage({ searchParams }: { searchParams: Prom
         </div>
         <MethodLink className="text-sm" />
       </div>
-      <nav className="flex gap-1 text-sm" aria-label="期間">
-        {OBSERVATION_DAYS.map((d) => (
-          <Link
-            key={d}
-            href={d === 28 ? '/observe/' : `/observe/?days=${d}`}
-            scroll={false}
-            aria-current={d === days ? 'page' : undefined}
-            className={`whitespace-nowrap rounded-full px-3 py-1 ${d === days ? 'bg-brand-700 text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
-          >
-            近 {d} 天
-          </Link>
-        ))}
-      </nav>
+      <FilterChips
+        label="期間"
+        items={OBSERVATION_DAYS.map((d) => ({
+          href: d === 28 ? '/observe/' : `/observe/?days=${d}`,
+          label: `近 ${d} 天`,
+          current: d === days,
+        }))}
+      />
 
       {!data ? (
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">

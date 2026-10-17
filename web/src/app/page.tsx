@@ -406,9 +406,9 @@ export default async function HomePage() {
         </div>
 
         <div className={styles.band}>
-          <section className={styles.panel} aria-label="新聞關係圖摘要">
+          <section className={styles.panel} aria-label="媒體關係圖摘要">
             <div className={styles.sectionHeading}>
-              <h2>新聞關係圖</h2>
+              <h2>媒體關係圖</h2>
               <Link prefetch={false} href="/similarity/">
                 看整張圖 <Arrow />
               </Link>

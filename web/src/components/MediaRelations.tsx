@@ -124,7 +124,7 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
         href={graphHref}
         className="mt-3 block border-t border-zinc-200 pt-2.5 text-brand-700 hover:underline dark:border-zinc-800 dark:text-brand-400"
       >
-        在新聞關係圖查看 →
+        在媒體關係圖查看 →
       </Link>
     </section>
   );
