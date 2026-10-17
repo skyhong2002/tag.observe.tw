@@ -99,6 +99,16 @@ const OTHER_SECTIONS: Array<{ label: string; tabs: NavTab[] }> = [
       { href: '/my/settings/', label: '設定' },
     ],
   },
+  {
+    label: '管理後台',
+    tabs: [
+      { href: '/admin/', label: '讀者回報' },
+      { href: '/admin/media/', label: '媒體設定' },
+      { href: '/admin/tags/', label: '標籤管理' },
+      { href: '/admin/accounts/', label: '帳號' },
+      { href: '/admin/database/', label: '資料庫' },
+    ],
+  },
 ];
 
 /** The section whose tabs include `href`, named as in the header. */

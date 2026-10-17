@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 import { type Definition, LabelToggle, type Outlet, OutletIcon, type RoleDefinition } from './labels';
+import { Bookmarklet, Outlets } from './Outlets';
 
 type Article = {
   id: number;
@@ -80,7 +81,8 @@ export default function MediaEditor() {
   );
 }
 
-// Works out the outlet from ?media= or the bookmarklet's ?url=.
+// Works out the outlet from ?media= or the bookmarklet's ?url=; with
+// neither, lists every outlet and offers the bookmarklet.
 function Resolver({ url, media, report }: { url: string; media: string; report: number | null }) {
   const router = useRouter();
   const [lookup, setLookup] = useState<Lookup | null>(null);
@@ -95,6 +97,13 @@ function Resolver({ url, media, report }: { url: string; media: string; report: 
   const choose = (next: string) =>
     router.replace(`/admin/media/?media=${next}${url ? `&url=${encodeURIComponent(url)}` : ''}${report ? `&report=${report}` : ''}`);
   const chosen = media || lookup?.article?.media || lookup?.candidates[0]?.media || '';
+  if (!url && !media)
+    return (
+      <>
+        <Outlets />
+        <Bookmarklet />
+      </>
+    );
   if (error) return <p className={note}>{error}</p>;
   if (url && !lookup && !media) return <p className={note}>正在辨認這是哪家媒體…</p>;
   return (
@@ -603,7 +612,7 @@ function ReportPanel({ id, article, onTagsApplied }: { id: number; article: Arti
             改回待處理
           </button>
         )}
-        <Link href="/admin/#reports" className="text-brand-700 underline dark:text-brand-400">
+        <Link href="/admin/" className="text-brand-700 underline dark:text-brand-400">
           回到回報列表
         </Link>
       </div>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import FilterButtons from '@/components/FilterButtons';
 import SourceLink from '@/components/SourceLink';
 import { adminFetch, note } from './AdminGate';
 
@@ -39,21 +40,13 @@ export default function Reports() {
     load(status);
   }, [status]);
   return (
-    <section id="reports" className="mt-8 scroll-mt-20">
-      <h2 className="text-lg font-semibold">讀者回報{data ? `（待處理 ${data.open}）` : ''}</h2>
-      <div className="mt-2 flex gap-1 text-sm">
-        {(Object.keys(STATUS) as Status[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            aria-pressed={s === status}
-            onClick={() => setStatus(s)}
-            className={`rounded-md px-3 py-1 ${s === status ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 dark:bg-zinc-800'}`}
-          >
-            {STATUS[s]}
-          </button>
-        ))}
-      </div>
+    <section>
+      <FilterButtons
+        label="處理狀態"
+        options={(Object.keys(STATUS) as Status[]).map((s) => [s, s === 'open' && data ? `${STATUS[s]} ${data.open}` : STATUS[s]] as const)}
+        value={status}
+        onChange={setStatus}
+      />
       {error ? (
         <p className={note}>{error}</p>
       ) : !data ? (

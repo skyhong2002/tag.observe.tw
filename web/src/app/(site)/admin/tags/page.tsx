@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { TabRow } from '@/components/SectionTabs';
+import SectionTabs, { TabRow } from '@/components/SectionTabs';
 import AdminGate from '../AdminGate';
 import AvatarReview from '../avatars/AvatarReview';
 import TagGroupEditor from '../tag-groups/TagGroupEditor';
 import TagVisualReview from '../tag-visuals/TagVisualReview';
 import WritingPeople from '../writing/WritingPeople';
+import SubmissionSummary from './SubmissionSummary';
 import TagArticles from './TagArticles';
 import TagSubmissions from './TagSubmissions';
 
@@ -26,14 +26,13 @@ export default async function TagsPage({ searchParams }: { searchParams: Promise
   const view = VIEWS.some(([key]) => key === requested) ? requested : 'groups';
   const tag = query.tag?.trim().slice(0, 60) ?? '';
   return (
-    <div className="min-w-0 py-4">
-      <Link href="/admin/" className="text-sm text-brand-700 underline dark:text-brand-400">
-        管理後台
-      </Link>
-      <h1 className="mt-1 text-2xl font-bold">標籤管理</h1>
-      <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+    <div className="min-w-0">
+      <SectionTabs here="/admin/tags/" />
+      <h1 className="mt-5 text-2xl font-semibold tracking-tight">標籤管理</h1>
+      <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
         統一管理人物、機構、地點、事件與概念的分類、圖像，以及它們和文章的關係。一個標籤可屬於多個分類，分類也可以有上下層。
       </p>
+      <SubmissionSummary />
       <TabRow
         label="標籤管理功能"
         className="mt-4"

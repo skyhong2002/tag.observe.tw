@@ -10,7 +10,7 @@
 | --- | --- |
 | `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET` | Google Cloud 的 Web application OAuth client。兩者都不設就關閉登入（`/auth/me` 回 `enabled: false`，header 不顯示登入）。 |
 | `TAG_PUBLIC_ORIGIN` | 預設 `https://tag.observe.tw`。callback 為 `$TAG_PUBLIC_ORIGIN/auth/google/callback`，必須登錄在 OAuth client 的「已授權的重新導向 URI」。 |
-| `TAG_ADMIN_EMAILS` | 逗號分隔的基本管理員 Email（不分大小寫），每次請求依此名單判斷，改名單後重啟 gateway 即生效。這些人在 `/admin/` 不能被取消管理員。其他管理員由管理員在 `/admin/` 指派（見下方「指派管理員」）。 |
+| `TAG_ADMIN_EMAILS` | 逗號分隔的基本管理員 Email（不分大小寫），每次請求依此名單判斷，改名單後重啟 gateway 即生效。這些人在 `/admin/accounts/` 不能被取消管理員。其他管理員由管理員在 `/admin/accounts/` 指派（見下方「指派管理員」）。 |
 
 ## 端點
 
@@ -20,11 +20,12 @@
 | `GET /auth/google/callback` | 換 token、檢查 ID token（iss、aud、exp、nonce、`email_verified`），建立 30 天 session 後導回 `next`；失敗導到 `/login/?error=…`。 |
 | `POST /auth/logout` | 需本站 `Origin`；刪除 session。 |
 | `GET /auth/me` | `{ enabled, user: { id, email, name, picture, role } \| null }`，`role` 為 `admin` 或 `reader`。 |
-| `GET /auth/users` | 管理員限定：登入過的帳號清單（`/admin/` 頁使用），含 `id`、`role`、`adminSource`（`config` = `TAG_ADMIN_EMAILS`、`granted` = 在 `/admin/` 指派、`null`）與 `grantedBy`。 |
+| `GET /auth/users` | 管理員限定：登入過的帳號清單（`/admin/accounts/` 頁使用），含 `id`、`role`、`adminSource`（`config` = `TAG_ADMIN_EMAILS`、`granted` = 在 `/admin/accounts/` 指派、`null`）與 `grantedBy`。 |
 | `PUT /auth/users/:id/role` | 管理員限定、需本站 `Origin`：`{ role: 'admin' \| 'reader' }` 指派或取消管理員，寫入 `user_role_log`。不能改自己（400），`TAG_ADMIN_EMAILS` 裡的人不能改（409）。 |
 | `GET /auth/admin/lookup?url=` | 管理員限定：新聞網址屬於哪家媒體（已收錄的文章優先，其次比對各媒體已知網域，含子網域），並回傳本站收錄的這篇文章。 |
 | `GET /auth/admin/media`、`GET /auth/admin/media/:media` | 管理員限定：所有媒體與標籤；單一媒體的標籤、爬蟲排程、最近幾次 crawl_runs 與修改紀錄。 |
 | `PUT /auth/admin/media/:media/categories` | 管理員限定、需本站 `Origin`：`{ categories: [...] }` 整組取代這家媒體的標籤，寫入 `media_category_log`。 |
+| `PUT /auth/admin/media/:media/roles` | 管理員限定、需本站 `Origin`：`{ roles: [...] }` 整組取代這家媒體的性質（只能用 `app/data/media-scope.json` 定義的角色），寫入 `media_roles`，並以 `role:<key>` 記在 `media_category_log`。 |
 | `POST /auth/admin/categories` | 管理員限定、需本站 `Origin`：`{ label, key? }` 新增標籤（中文名稱沒給代碼時自動編成 `tagN`）。 |
 | `POST /auth/admin/media/:media/refetch` | 管理員限定、需本站 `Origin`：`{ url }` 立刻抓這一篇（沒收錄就先收錄），並以新抓到的標籤取代舊的。 |
 | `POST /auth/admin/media/:media/crawl` | 管理員限定、需本站 `Origin`：`{ stage: 'index' \| 'articles' }` 排一個 worker 的 `crawl-media` 工作；同媒體同階段已在排隊就沿用。 |
@@ -63,7 +64,7 @@
 ## 資料
 
 - `users`：Google `sub`、Email、名字、大頭貼網址、首次與最近登入時間；`admin_granted_by`／`admin_granted_at` 記錄誰在何時把他設為管理員（取消時清空）。
-- `user_role_log`：每次在 `/admin/` 指派或取消管理員的紀錄（對象、新角色、操作的管理員 Email、時間）。
+- `user_role_log`：每次在 `/admin/accounts/` 指派或取消管理員的紀錄（對象、新角色、操作的管理員 Email、時間）。
 - `user_sessions`：只存 session cookie（`tag_session`，HttpOnly、SameSite=Lax、HTTPS 時 Secure）的 SHA-256；過期列在下次有人登入時清掉。
 
 ## 讀者功能（`/my/`）
@@ -82,23 +83,27 @@
 - **偏好同步**：右上角深淺色切換與 `/observe/opt-out/` 的統計退出，登入時存進 `user_prefs`。主題以帳號已有值為準；統計退出採隱私優先，帳號的 `false` 不會清除本機退出設定，較晚回來的舊偏好不覆蓋使用者的新選擇。第一次則把這個瀏覽器的設定存上去（`web/src/components/reader/PrefsSync.tsx`）。只有使用者明確操作才能恢復本機設定；DNT／GPC 等 guard 仍然有效。
 - **閱讀報告**（`/my/reading/`）：預設關閉。開啟後，登入時打開本站文章頁（`/article/<id>/`）才會記錄，到原站閱讀不會；報告列出近 30 天的媒體、藍綠陣營（依媒體標籤，兩個都勾算藍營）、來源國家與常見標籤。關閉時刪除所有紀錄。
 - **API 金鑰**：只存 SHA-256（`user_api_keys`）。gateway 的 rate limit 遇到有效的 `x-api-key` 時改用 `key:<id>` 計數，每分鐘 1000 次（沒帶金鑰時每個 IP 60 次）；查詢結果快取 60 秒，所以撤銷最晚 1 分鐘後在其他程序生效（同一個程序立即生效），`last_used_at` 每 10 分鐘最多更新一次（`app/src/reader/api-keys.ts`）。
-- **回報錯誤**：文章頁「回報錯誤」可選標籤（附建議的完整標籤）、署名、媒體歸屬或其他。`/admin/` 最上方的「讀者回報」列出待處理項目，標籤回報會標示建議新增與移除的標籤；讀者在 `/my/settings/` 看得到處理結果與管理員的說明。
+- **回報錯誤**：文章頁「回報錯誤」可選標籤（附建議的完整標籤）、署名、媒體歸屬或其他。`/admin/`（管理後台第一個分頁「讀者回報」）列出待處理項目，標籤回報會標示建議新增與移除的標籤；讀者在 `/my/settings/` 看得到處理結果與管理員的說明。
 
 資料表（migration `0025_reader-accounts`）：`user_follows`、`user_saves`、`user_prefs`、`user_feed_tokens`、`user_api_keys`、`reader_history`、`reader_reports`，全部以 `user_id` 對應 `users.id`。
 
+## 管理後台（`/admin/`）
+
+帳號選單的「管理後台」開到 `/admin/`。各頁上方是同一排分頁（`web/src/lib/site-nav.ts` 的「管理後台」區）：讀者回報（`/admin/`）、媒體設定（`/admin/media/`）、標籤管理（`/admin/tags/`，底下再分分類與群組、文章關係、人物頭像、其他標籤圖像）、帳號（`/admin/accounts/`）、資料庫（`/admin/database/`，說明並連到 `/admin/db/`）。
+
 ## 指派管理員
 
-對方先用 Google 登入一次，`/admin/` 的「登入過的帳號」就會列出他，按「設為管理員」即可（「取消管理員」反之）。角色每次請求都重新判斷，所以對方重新載入頁面就生效，不用重新登入。資料庫主控台（`/admin/db/`）另外需要一個 DB 帳號（見下方 `scripts/adminer-account.sh`），沒有帳號的管理員開啟會得到 403。
+對方先用 Google 登入一次，`/admin/accounts/`（「帳號」分頁）就會列出他，按「設為管理員」即可（「取消管理員」反之）。角色每次請求都重新判斷，所以對方重新載入頁面就生效，不用重新登入。資料庫主控台（`/admin/db/`）另外需要一個 DB 帳號（見下方 `scripts/adminer-account.sh`），沒有帳號的管理員開啟會得到 403。
 
 ## 媒體設定（`/admin/media/`）
 
-`/admin/` 提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇；管理員在文章頁看到的「編輯這篇」（取代「回報錯誤」）也會開到這裡。從 `/admin/` 的讀者回報按「打開編輯」會帶 `&report=<id>`，頁面在「這篇文章」上方顯示回報內容，可套用建議標籤並直接採納或不採納。「重抓這一篇」只試一次、最多等 15 秒，失敗時顯示原因。沒登入時會先導去登入，登入後回到同一個網址。
+`/admin/media/` 沒帶參數時列出所有媒體（含標籤與性質），並提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、勾選性質（通訊社、平台代刊、新聞合作…）、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇；管理員在文章頁看到的「編輯這篇」（取代「回報錯誤」）也會開到這裡。從 `/admin/` 的讀者回報按「打開編輯」會帶 `&report=<id>`，頁面在「這篇文章」上方顯示回報內容，可套用建議標籤並直接採納或不採納。「重抓這一篇」只試一次、最多等 15 秒，失敗時顯示原因。沒登入時會先導去登入，登入後回到同一個網址。
 
 媒體標籤存在 `media_category_defs`（代碼、名稱、順序）與 `media_categories`（媒體 × 標籤）。資料表是空的時候，gateway 或 worker 啟動時會從 `app/data/media-catalog.json` 匯入一次，之後以資料庫為準。兩個程序每分鐘重新讀取一次，管理員存檔後 gateway 也會立刻重讀（`app/src/media-categories.ts`）。`blue`／`green` 決定陣營，兩個都勾時算藍營。新增的標籤沒有固定排行名單（`ranking-baseline.json`），所以不會出現在 `/ranking/`。
 
 ## 資料庫（`/admin/db/`）
 
-`/admin/db/` 是 Adminer（`infra/compose.yml` 的 `tag-adminer`），由 gateway（`app/src/admin/db-console.ts`）轉送：沒登入導去登入，非管理員回 403，POST 需本站 `Origin`。轉送時只帶 `adminer_*` cookie（`tag_session` 不會送給 Adminer），並加上 `X-Tag-Admin-Email` 與共用密鑰 `X-Tag-Adminer-Secret`；Adminer 的 plugin（`infra/adminer/tag-gateway.php`）核對密鑰後，以這位管理員自己的 MariaDB 帳號登入。網址上改成別的帳號也一樣會用本人帳號連線；名單上沒有帳號的 Email 回 403。不帶密鑰的請求（tailnet 的 `:11443`）維持原本的 Adminer 登入表單。gateway log 記下每次開啟的頁面（`db console`，含管理員 Email）。
+「資料庫」分頁（`/admin/database/`）只有說明和開啟按鈕；`/admin/db/` 是 Adminer（`infra/compose.yml` 的 `tag-adminer`），由 gateway（`app/src/admin/db-console.ts`）轉送：沒登入導去登入，非管理員回 403，POST 需本站 `Origin`。轉送時只帶 `adminer_*` cookie（`tag_session` 不會送給 Adminer），並加上 `X-Tag-Admin-Email` 與共用密鑰 `X-Tag-Adminer-Secret`；Adminer 的 plugin（`infra/adminer/tag-gateway.php`）核對密鑰後，以這位管理員自己的 MariaDB 帳號登入。網址上改成別的帳號也一樣會用本人帳號連線；名單上沒有帳號的 Email 回 403。不帶密鑰的請求（tailnet 的 `:11443`）維持原本的 Adminer 登入表單。gateway log 記下每次開啟的頁面（`db console`，含管理員 Email）。
 
 每位管理員一個 DB 帳號（`adm_<Email 帳號名>`），密碼只存在 `infra/.env` 的 `TAG_ADMINER_ACCOUNTS`（`email=帳號:密碼`，逗號分隔），管理員不用輸入：
 
@@ -125,4 +130,4 @@ docker exec tag-db tail -f /var/lib/mysql/server_audit.log   # 時間,主機,帳
 
 ## 之後加管理功能
 
-新的管理端點在 handler 開頭呼叫 `registerLogin()` 回傳的 `requireAdmin(request, reply)`：未登入回 401、非管理員回 403，通過時回傳目前使用者。管理頁面放在 `web/src/app/(site)/admin/`。
+新的管理端點在 handler 開頭呼叫 `registerLogin()` 回傳的 `requireAdmin(request, reply)`：未登入回 401、非管理員回 403，通過時回傳目前使用者。管理頁面放在 `web/src/app/(site)/admin/`；新的一頁在 `site-nav.ts` 的「管理後台」加一個分頁，頁面最上方放 `<SectionTabs here="/admin/…/" />`。
