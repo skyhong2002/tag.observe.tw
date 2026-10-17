@@ -24,6 +24,7 @@ import { categoriesOf, categoryDefs, refreshMediaCategories } from '../media-cat
 import { refreshMediaRoles, roleDefs, rolesOf } from '../media-scope.ts';
 import { iconUrl } from '../v1/icons.ts';
 import { articleDetail, hostOf, lookupUrl, outletSummary } from './lookup.ts';
+import { userActivity } from './user-activity.ts';
 
 // Admin tools behind /admin/media/ (docs/login.md): edit an outlet's labels
 // and roles, and crawl it on demand. Everything sits under /auth/admin/, outside the
@@ -98,6 +99,12 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       categories: categoryDefs(),
       roles: roleDefs(),
     };
+  });
+
+  // 帳號 tab: what each signed-in account has read, followed, reported and edited.
+  app.get('/auth/admin/user-activity', async (request, reply) => {
+    if (!(await admin(request, reply))) return reply;
+    return userActivity(db);
   });
 
   app.get<{ Params: { media: string } }>('/auth/admin/media/:media', async (request, reply) => {
