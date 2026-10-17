@@ -4,7 +4,27 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-17 21:34 Taipei)
+## Current deployed status (2026-10-17 21:35 Taipei)
+
+- **API only: `app/src/v1/openapi.ts` from this branch (UTC 2026-10-17T13:35Z)**: the `/api/v1/site-observation` summary now reads 本站流量 instead of 網站觀測, finishing the 75a48570 rename (origin/main 0b939d8f). Web stays `965b778a` / BUILD_ID `fTU4M0DVoA039aaGiWgjZ`; worker unchanged.
+- API release `965b778a-api-openapi-name-20261017-001` is a copy of `965b778a-api-admin-media-table` with only that file replaced; the live copy was checked to equal the branch file except for the summary line.
+- Checks:
+  - Gate: load1 3.0.
+  - Loopback API 18340: new summary in openapi.json, media-stats roles, admin routes 401.
+  - Deploy: API and gateway first 200 in 4.4 s and 6.9 s; same checks on both, then public.
+  - Public `/`, `/observe/`, `/api/` 200. No error-level logs.
+- First attempt (13:32Z) rolled back by itself: Cloudflare caches public `/api/` GETs for their max-age (openapi.json is 3600 s, `cf-cache-status: HIT`), so the public check read the old document. The public check now adds a query string.
+  - The plain public URL refreshes within the hour, and the web `/api/` page refetches after its own `revalidate = 3600`.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/openapi-name-20261017/rollback.sh` (API + gateway → 965b778a-api-admin-media-table). Script: `~/.cache/tag-review/deploy-api-openapi-name.py`.
+  - 965b778a's own rollback.sh now only reverts web, because its API sed expects the replaced release. Run this rollback first.
+- Retention now:
+  - Web: 965b778a + 523194a8.
+  - API: 965b778a-api-openapi-name + 965b778a-api-admin-media-table.
+  - Worker: 16402500-worker + 1271a2dd-worker.
+  - Also kept: aff5, 0dd38b6 (`current`), dc7b814e.
+  - Deleted: 523194a8-api.
+
+### Earlier (2026-10-17 21:34 Taipei)
 
 - **Web + API `965b778a` / BUILD_ID `fTU4M0DVoA039aaGiWgjZ` (UTC 2026-10-17T13:34Z)**: owner asked /admin/media/ to get the same treatment as the 帳號 tab.
   - With no outlet chosen, /admin/media/ lists every outlet in a sortable TableScroller table. Columns:
