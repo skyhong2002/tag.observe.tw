@@ -4,7 +4,32 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-17 21:19 Taipei)
+## Current deployed status (2026-10-17 21:34 Taipei)
+
+- **Web + API `965b778a` / BUILD_ID `fTU4M0DVoA039aaGiWgjZ` (UTC 2026-10-17T13:34Z)**: owner asked /admin/media/ to get the same treatment as the 帳號 tab.
+  - With no outlet chosen, /admin/media/ lists every outlet in a sortable TableScroller table. Columns:
+    - Labels and roles
+    - Crawl status, 7 天文章, 標籤率 and 最新文章, from the public /api/v1/media-stats; outlets it does not list read 未收錄
+    - 修改: label and role edits, from `media_category_log`
+    - 最近修改, with the editor's name
+  - FilterButtons narrow by 標籤 (with 未加標籤), 性質 (with 無) and 收錄狀態. Each count reflects what the other filters leave.
+  - `GET /auth/admin/media` returns `edits` per outlet.
+  - No migration. Also on origin/main as 66d76690.
+- API overlay on `523194a8-api`: only `admin/routes.ts`, checked equal to `965b778a~1` in the live release. Worker unchanged.
+- Checks:
+  - Gate: waited for load1 to fall below 10 (it had been 13.4 while the warm-up and the NAS backup ran); it was 6.9 at the switch.
+  - Loopback (API 18340 + web 18338): 6 pages 200, and `/auth/admin/media` and `/auth/admin/user-activity` answer 401 without a session.
+  - Deploy: API and gateway first 200 in 4.7 s and 3.1 s, web in 8.4 s; gateway and public checks passed.
+  - Public browser round at 1280 and 390 with mocked /auth and real media-stats: filters work (未加標籤, 新聞合作 8) and 0 page errors. No error-level logs.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/admin-media-table-965b778a-20261017/rollback.sh` (web → 523194a8, API + gateway → 523194a8-api). Script: `~/.cache/tag-review/package-and-deploy-965b.py`.
+- Retention now:
+  - Web: 965b778a + 523194a8.
+  - API: 965b778a-api + 523194a8-api.
+  - Worker: 16402500-worker + 1271a2dd-worker.
+  - Also kept: aff5 (18230/18232), 0dd38b6 (`current`), dc7b814e.
+  - Deleted: bae72899-web, e3eeb731-api.
+
+### Earlier (2026-10-17 21:19 Taipei)
 
 - **Web + API `523194a8` / BUILD_ID `KGJ6IaiYZsEV1K7TLabN1` (UTC 2026-10-17T13:19Z)**: owner asked the 帳號 tab to show how much each account interacts and contributes.
   - /admin/accounts/ is a sortable table built from TableScroller and SortIndicator:
