@@ -4,7 +4,27 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-16 22:55 Taipei)
+## Current deployed status (2026-10-17 19:29 Taipei)
+
+- **Web `75a48570` / BUILD_ID `4cMOwxdZVjL4A5iMJXklH` (UTC 2026-10-17T11:29:20Z, web only)**: two owner requests.
+  - Page names: 新聞關係圖 → 媒體關係圖 (/similarity/ and its tabs, home block, method notes) and 網站觀測 → 本站流量 (/observe/, footer, readers). The OpenAPI summary for the observe endpoint was renamed too; it ships with the next API deploy.
+  - One chip style: 13 period/filter rows on 10 pages use `FilterChips` (links) or the new `FilterButtons` (client state): /observe/, /ranking/ categories (now wrap instead of scrolling sideways; 無近期報導 greyed), /similarity/reposts/, /media/ (four stacked rows), /media/<id>/, /journalist/<name>/, /journalist/ 關係篩選, /byline/<key>/ 期間 and 刊登媒體, /article/ and search, /topic/ keywords. This branch keeps `dark:text-zinc-400` muted chips and 11 px notes.
+  - 轉載統計 (/similarity/reposts/): the chart draws each line as a share of the day's compared articles by default (axis 「÷ 比對篇數」, from 資料自 on; 相似配對 can pass 100%), with a 比例／篇數 switch; tooltips give share and count. Each outlet row has a checkbox (header ticks all). Nothing ticked keeps the site-wide lines; ticked outlets are summed into the same chart with per-outlet counts (較早／較晚刊登, 同署名跨站, 採用／引用他媒) that add up without double counting, and are listed above the chart as logo chips (× unticks, 看全站 clears). This branch keeps its phone legend room, short lower panel, hidden empty outlets, timeout and retry.
+  - Also on origin/main as 0b939d8f and 87583d2a.
+- API/gateway `7c1c21c7-api-liveboard-scenes` and worker `16402500-worker-rosters` unchanged.
+- Checks:
+  - Gate: load1 4.1, tag 0.07 s, blog 1.37 s. Web first 200 in 1.8 s.
+  - Loopback 18338 against the live API: 8 GETs 200, each with its marker.
+  - Public site: 7 GETs 200 with the new BUILD_ID and titles, and the new chunk is served. A browser round on public /similarity/reposts/ at 1280 and 390 (tick 3 outlets, × on a chip, 看全站, switch 比例／篇數) had 0 page errors. No error-level web logs after the switch.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/reposts-share-75a48570-20261017/rollback.sh` (web → d8cb18d4). Script: `~/.cache/tag-review/package-and-deploy-75a4.py`.
+- Retention now:
+  - Web: 75a48570 + d8cb18d4.
+  - API: 7c1c21c7-api + 16402500-api.
+  - Worker: 16402500-worker + 1271a2dd-worker.
+  - Also kept: aff5 (18230/18232), 0dd38b6 (`current`), dc7b814e.
+  - Deleted: a0694d91-web.
+
+### Earlier (2026-10-16 22:55 Taipei)
 
 - **Web `d8cb18d4` / BUILD_ID `4P1DOswEBnfnB34GW2xhA` (UTC 2026-10-16T14:55:42Z, web only)**: owner's navigation rework. The header has eight sections in two groups (看新聞: 文章 事件 議題 關鍵字｜看媒體: 媒體 媒體關係 署名 寫法); 流量 is a 媒體 tab, 專題 a 議題 tab (議題表｜專題 on /topic/ and /feature/), 本站流量 (/observe/) moved to the footer. `web/src/lib/site-nav.ts` holds both levels and one `SectionTabs here=… query=…` replaces seven per-section tab components. Every switch of page, mode or view (熱門排行／正在發酵, 每日／每小時, 署名類型, graph/traffic views, event headline views) is a grey tab row (`TabRow`, `TabButtons`); narrowing values (period, category, 跨媒體門檻) are round `FilterChips`. Tab rows keep this branch's wrap-on-phones. Also on origin/main as 33388bf7. API/gateway `7c1c21c7-api-liveboard-scenes` and worker `16402500-worker-rosters` unchanged.
 - Checks: gate load1 3.3, tag 1.26 s, blog 2.26 s; web first 200 1.9 s. Loopback 18338 against the live API: 10 GETs 200 with each page's tab-row marker. 20 local/public GETs 200; public home has the new BUILD_ID; public browser round at 1280/390 (`/`, `/feature/`, `/ranking/`, `/byline/`, `/similarity/`, `/media/traffic/`, `/eve/914/`): header one row (59/57 px), right section lit, 0 page errors.
