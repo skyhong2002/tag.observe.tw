@@ -479,6 +479,18 @@ export const mediaCategoryLog = mysqlTable(
   (t) => [index('media_category_log_media').on(t.media, t.at)],
 );
 
+// Outlet roles (通訊社、平台代刊、新聞合作…), editable from /admin/media/. The
+// role names live in app/data/media-scope.json, which also seeds this table;
+// changes are logged in media_category_log as category `role:<key>`.
+export const mediaRoles = mysqlTable(
+  'media_roles',
+  {
+    media: varchar('media', { length: 32 }).notNull(),
+    role: varchar('role', { length: 24 }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.media, t.role] })],
+);
+
 // Similarweb and Cloudflare Radar history (app/src/media-traffic/history.ts).
 // The JSON snapshots under ~/.local/share only hold the latest batch; these
 // tables keep every month and every Radar period ever seen, so the record

@@ -2465,7 +2465,12 @@ export const ENDPOINTS: Endpoint[] = [
               scopeLabel: str(),
               language: str('收錄版本的文字', { enum: ['zh-Hant', 'zh-Hans', 'en', 'ja'] }),
               languageLabel: str(),
-              roles: arr(obj({ role: str(undefined, { enum: ['wire', 'platform', 'discovery', 'corporate'] }), label: str() })),
+              roles: arr(
+                obj({
+                  role: str(undefined, { enum: ['wire', 'platform', 'discovery', 'corporate', 'government', 'partner'] }),
+                  label: str(),
+                }),
+              ),
               coverage: nullable(str('實際收錄範圍與歷史差異，例如只收某個頻道或版本')),
             }),
           ),

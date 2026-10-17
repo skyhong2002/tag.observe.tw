@@ -267,6 +267,13 @@
       "when": 1791820185850,
       "tag": "0037_unified-tag-management",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1792239709826,
+      "tag": "0038_media-roles",
+      "breakpoints": true
     }
   ]
 }

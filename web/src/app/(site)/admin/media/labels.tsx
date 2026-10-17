@@ -1,5 +1,6 @@
 export type Definition = { key: string; label: string; sort: number };
-export type Outlet = { media: string; title: string; icon: string | null; categories: string[] };
+export type RoleDefinition = { key: string; label: string };
+export type Outlet = { media: string; title: string; icon: string | null; categories: string[]; roles: string[] };
 
 // Camp labels keep the site's blue/green; every other label is neutral.
 const tone: Record<string, string> = {
@@ -13,7 +14,7 @@ export function LabelChip({ keyName, label }: { keyName: string; label: string }
 }
 
 /** Toggle chip: filled while selected. */
-export function LabelToggle({ def, on, onToggle }: { def: Definition; on: boolean; onToggle: () => void }) {
+export function LabelToggle({ def, on, onToggle }: { def: Pick<Definition, 'key' | 'label'>; on: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
