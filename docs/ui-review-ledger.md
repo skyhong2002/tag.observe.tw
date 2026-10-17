@@ -4,7 +4,29 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-17 19:29 Taipei)
+## Current deployed status (2026-10-17 20:30 Taipei)
+
+- **Web + API `e3eeb731` / BUILD_ID `if8PPqM-183iQDnILtfDj` (UTC 2026-10-17T12:30Z; API and gateway at 12:29:58 and 12:30:02, web at 12:30:08)**: admins tick outlet roles (性質) at /admin/media/.
+  - Why: an admin labelling outlets could not find 平台代刊, because roles lived only in `app/data/media-scope.json`. They rebuilt it as two media labels, 新聞集合 and 新聞合作.
+  - Who has which role now lives in `media_roles`. It was seeded from media-scope.json, which still holds the role names. The new role 新聞合作 (`partner`) covers sites that run press releases and partner copy. /admin/media/ has a 性質 section and the /admin/ outlet list shows role chips. Changes are logged in `media_category_log` as `role:<key>`.
+  - Migration: 0040 here, 0038 on main, with the same `when`. It was applied to production before the deploy.
+  - Data move after the deploy (logged as `system:labels-to-roles`): 新聞集合's 4 outlets already had 平台代刊. 新聞合作's 8 outlets became the role 新聞合作. Both labels were then deleted.
+  - Also on origin/main as 5fab7730.
+- API overlay on `7c1c21c7-api`: the commit's 5 runtime files, each checked equal to `e3eeb731~1` in the live release. `openapi.ts` was patched instead (the live copy carries the undeployed 本站流量 summary rename, which ships with this overlay). Worker `16402500-worker-rosters` unchanged.
+- Checks:
+  - Gate: load1 4.2.
+  - Loopback (API 18340 + web 18338): 5 pages 200. /media/ shows 平台代刊. The roles PUT route answers 401 without a session.
+  - Deploy: API and gateway first 200 in 3.8 s, web in 5.7 s. Gateway and public checks passed: media-stats roles (Yahoo `platform`, Reuters `wire`), roles route 401, 5 pages 200 with the new BUILD_ID.
+  - After the data move: public media-stats lists 平台代刊 ×10 and 新聞合作 ×8, /api/v1/categories no longer has tag16/tag17, and public /media/ shows 新聞合作. No error-level logs.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/media-roles-e3eeb731-20261017/rollback.sh` (web → 75a48570, API + gateway → 7c1c21c7-api). The `media_roles` table is harmless to old code; old code only shows the JSON roles, so it would lose 新聞合作. Script: `~/.cache/tag-review/package-and-deploy-e3ee.py`.
+- Retention now:
+  - Web: e3eeb731 + 75a48570.
+  - API: e3eeb731-api + 7c1c21c7-api.
+  - Worker: 16402500-worker + 1271a2dd-worker.
+  - Also kept: aff5 (18230/18232), 0dd38b6 (`current`), dc7b814e.
+  - Deleted: d8cb18d4-web, 16402500-api.
+
+### Earlier (2026-10-17 19:29 Taipei)
 
 - **Web `75a48570` / BUILD_ID `4cMOwxdZVjL4A5iMJXklH` (UTC 2026-10-17T11:29:20Z, web only)**: two owner requests.
   - Page names: 新聞關係圖 → 媒體關係圖 (/similarity/ and its tabs, home block, method notes) and 網站觀測 → 本站流量 (/observe/, footer, readers). The OpenAPI summary for the observe endpoint was renamed too; it ships with the next API deploy.
