@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Avatar from '@/components/Avatar';
 import { useSession } from '@/lib/session';
 import AdminGate, { adminFetch, note } from './AdminGate';
-import { type Definition, LabelChip, type Outlet, OutletIcon } from './media/labels';
+import { type Definition, LabelChip, type Outlet, OutletIcon, type RoleDefinition } from './media/labels';
 import Reports from './Reports';
 
 type Account = {
@@ -142,18 +142,24 @@ function Bookmarklet() {
 }
 
 function Outlets() {
-  const [data, setData] = useState<{ media: Outlet[]; categories: Definition[] } | null>(null);
+  const [data, setData] = useState<{ media: Outlet[]; categories: Definition[]; roles: RoleDefinition[] } | null>(null);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   useEffect(() => {
-    adminFetch<{ media: Outlet[]; categories: Definition[] }>('/auth/admin/media')
+    adminFetch<{ media: Outlet[]; categories: Definition[]; roles: RoleDefinition[] }>('/auth/admin/media')
       .then(setData)
       .catch((e: Error) => setError(e.message));
   }, []);
   const labels = useMemo(() => new Map(data?.categories.map((d) => [d.key, d.label])), [data]);
+  const roles = useMemo(() => new Map(data?.roles.map((d) => [d.key, d.label])), [data]);
   const q = query.trim().toLowerCase();
   const shown = (data?.media ?? []).filter(
-    (o) => !q || o.media.includes(q) || o.title.toLowerCase().includes(q) || o.categories.some((c) => labels.get(c)?.includes(q)),
+    (o) =>
+      !q ||
+      o.media.includes(q) ||
+      o.title.toLowerCase().includes(q) ||
+      o.categories.some((c) => labels.get(c)?.includes(q)) ||
+      o.roles.some((r) => roles.get(r)?.includes(q)),
   );
   return (
     <section className="mt-8">
@@ -168,7 +174,7 @@ function Outlets() {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜尋媒體名稱、代碼或標籤"
+            placeholder="搜尋媒體名稱、代碼、標籤或性質"
             className="mt-3 w-full max-w-sm rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
           <ul className={`${card} max-h-[28rem] divide-y divide-zinc-200 overflow-y-auto dark:divide-zinc-800`}>
@@ -184,6 +190,9 @@ function Outlets() {
                   <span className="ml-auto flex flex-wrap gap-1">
                     {o.categories.map((c) => (
                       <LabelChip key={c} keyName={c} label={labels.get(c) ?? c} />
+                    ))}
+                    {o.roles.map((r) => (
+                      <LabelChip key={`role:${r}`} keyName={`role:${r}`} label={`性質：${roles.get(r) ?? r}`} />
                     ))}
                   </span>
                 </Link>

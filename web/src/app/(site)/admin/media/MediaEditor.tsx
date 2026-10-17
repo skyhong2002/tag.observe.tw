@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import AdminGate, { adminFetch, note } from '../AdminGate';
-import { type Definition, LabelToggle, type Outlet, OutletIcon } from './labels';
+import { type Definition, LabelToggle, type Outlet, OutletIcon, type RoleDefinition } from './labels';
 
 type Article = {
   id: number;
@@ -23,7 +23,7 @@ type Article = {
   bylineEditedBy: string | null;
   bylineLog: Array<{ id: number; before: string[]; after: string[]; email: string; at: string }>;
 };
-type Lookup = { url: string; candidates: Array<Omit<Outlet, 'categories'>>; article: Article | null };
+type Lookup = { url: string; candidates: Array<Omit<Outlet, 'categories' | 'roles'>>; article: Article | null };
 type Run = {
   stage: string;
   status: string;
@@ -34,9 +34,9 @@ type Run = {
   updated: number | null;
   failed: number | null;
 };
-type Detail = Omit<Outlet, 'categories'> & {
-  categories: string[];
+type Detail = Outlet & {
   definitions: Definition[];
+  roleDefinitions: RoleDefinition[];
   crawler: { group: string; disabled: boolean; aggregator: boolean } | null;
   runs: Run[];
   log: Array<{ id: number; category: string; action: 'add' | 'remove'; email: string; at: string }>;
@@ -122,7 +122,7 @@ function OutletPicker({
   onPick,
 }: {
   current: string;
-  others: Array<Omit<Outlet, 'categories'>>;
+  others: Array<Omit<Outlet, 'categories' | 'roles'>>;
   onPick: (media: string) => void;
 }) {
   const [all, setAll] = useState<Outlet[] | null>(null);
@@ -214,6 +214,7 @@ function Editor({ media, url, report, article }: { media: string; url: string; r
         </Link>
       </div>
       <Labels detail={detail} onSaved={load} />
+      <Roles detail={detail} onSaved={load} />
       {url && (
         <ThisArticle
           media={media}
@@ -307,6 +308,66 @@ function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
             新增標籤
           </button>
         </form>
+      </div>
+      {status && (
+        <p role="status" className={note}>
+          {status}
+        </p>
+      )}
+    </section>
+  );
+}
+
+// 性質 (通訊社、平台代刊、新聞合作…): shown on /media/ and the outlet's page.
+// The list is fixed in app/data/media-scope.json; here they are only ticked.
+function Roles({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
+  const [selected, setSelected] = useState(() => new Set(detail.roles));
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+  const dirty = selected.size !== detail.roles.length || detail.roles.some((r) => !selected.has(r));
+  const toggle = (key: string) =>
+    setSelected((now) => {
+      const next = new Set(now);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  async function save() {
+    setBusy(true);
+    setStatus('');
+    try {
+      await adminFetch(`/auth/admin/media/${detail.media}/roles`, { method: 'PUT', body: { roles: [...selected] } });
+      setStatus('已儲存，收錄概況的「性質」欄幾分鐘內會更新。');
+      onSaved();
+    } catch (e) {
+      setStatus(`儲存失敗：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className={section}>
+      <h3 className={heading}>性質</h3>
+      <p className={note}>
+        這家媒體在收錄上的角色，顯示在
+        <Link href="/media/" className="underline">
+          收錄概況
+        </Link>
+        的「性質」欄。平台代刊是轉載其他媒體新聞的平台（Yahoo 新聞、LINE TODAY）；新聞合作是刊登公關稿、合作稿的網站。
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {detail.roleDefinitions.map((def) => (
+          <LabelToggle key={def.key} def={def} on={selected.has(def.key)} onToggle={() => toggle(def.key)} />
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button type="button" className={primary} disabled={!dirty || busy} onClick={save}>
+          儲存性質
+        </button>
+        {dirty && (
+          <button type="button" className={button} disabled={busy} onClick={() => setSelected(new Set(detail.roles))}>
+            還原
+          </button>
+        )}
       </div>
       {status && (
         <p role="status" className={note}>
@@ -834,7 +895,10 @@ function Crawl({ detail, onDone }: { detail: Detail; onDone: () => void }) {
 
 function ChangeLog({ detail }: { detail: Detail }) {
   if (!detail.log.length) return null;
-  const label = new Map(detail.definitions.map((d) => [d.key, d.label]));
+  const label = new Map([
+    ...detail.definitions.map((d) => [d.key, d.label] as const),
+    ...detail.roleDefinitions.map((d) => [`role:${d.key}`, `性質：${d.label}`] as const),
+  ]);
   return (
     <section className={section}>
       <h3 className={heading}>修改紀錄</h3>

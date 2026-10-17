@@ -19,7 +19,9 @@ import {
   mediaCategories,
   mediaCategoryDefs,
   mediaCategoryLog,
+  mediaRoles,
 } from '../src/db/schema.ts';
+import { mediaScope } from '../src/media-scope.ts';
 import { campOf } from '../src/v1/coverage.ts';
 
 vi.mock('../src/crawl/fetch.ts', async (original) => ({
@@ -42,6 +44,7 @@ const TABLES = [
   'media_categories',
   'media_category_defs',
   'media_category_log',
+  'media_roles',
   'articles',
   'article_tags',
   'crawl_runs',
@@ -194,6 +197,43 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
       payload: { categories: ['nope'] },
     });
     expect(bad.statusCode).toBe(400);
+  });
+
+  it('seeds outlet roles from media-scope.json and lets admins tick them', async () => {
+    expect(await db.select().from(mediaRoles).where(eq(mediaRoles.media, 'news_yahoo'))).toEqual([
+      { media: 'news_yahoo', role: 'platform' },
+    ]);
+    const detail = (await app.inject({ url: '/auth/admin/media/life', headers: as('admin', false) })).json();
+    expect(detail.roles).toEqual([]);
+    expect(detail.roleDefinitions).toContainEqual({ key: 'partner', label: '新聞合作' });
+    const put = await app.inject({
+      method: 'PUT',
+      url: '/auth/admin/media/life/roles',
+      headers: as('admin'),
+      payload: { roles: ['partner'] },
+    });
+    expect(put.json()).toMatchObject({ roles: ['partner'], added: ['partner'], removed: [] });
+    expect(mediaScope('life')?.roles).toEqual([{ role: 'partner', label: '新聞合作' }]);
+    const list = (await app.inject({ url: '/auth/admin/media', headers: as('admin', false) })).json();
+    expect(list.media.find((o: { media: string }) => o.media === 'life').roles).toEqual(['partner']);
+    const log = await db.select().from(mediaCategoryLog).where(eq(mediaCategoryLog.media, 'life'));
+    expect(log.map((l) => [l.category, l.action])).toEqual([['role:partner', 'add']]);
+    await app.inject({ method: 'PUT', url: '/auth/admin/media/life/roles', headers: as('admin'), payload: { roles: [] } });
+    expect(mediaScope('life')?.roles).toEqual([]);
+    const bad = await app.inject({
+      method: 'PUT',
+      url: '/auth/admin/media/life/roles',
+      headers: as('admin'),
+      payload: { roles: ['nope'] },
+    });
+    expect(bad.statusCode).toBe(400);
+    const foreign = await app.inject({
+      method: 'PUT',
+      url: '/auth/admin/media/life/roles',
+      headers: { cookie: 'tag_session=admin', origin: 'https://evil.example' },
+      payload: { roles: ['partner'] },
+    });
+    expect(foreign.statusCode).toBe(403);
   });
 
   it('re-fetches one article now and replaces its tags', async () => {

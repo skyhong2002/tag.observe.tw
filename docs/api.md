@@ -3849,7 +3849,7 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].scope.language` | "zh-Hant" \| "zh-Hans" \| "en" \| "ja" | 收錄版本的文字 |
 | `media[].scope.languageLabel` | string |  |
 | `media[].scope.roles` | object[] |  |
-| `media[].scope.roles[].role` | "wire" \| "platform" \| "discovery" \| "corporate" |  |
+| `media[].scope.roles[].role` | "wire" \| "platform" \| "discovery" \| "corporate" \| "government" \| "partner" |  |
 | `media[].scope.roles[].label` | string |  |
 | `media[].scope.coverage` | string \| null | 實際收錄範圍與歷史差異，例如只收某個頻道或版本 |
 | `media[].crawler` | object |  |

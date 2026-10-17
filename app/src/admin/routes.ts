@@ -18,13 +18,15 @@ import {
   mediaCategories,
   mediaCategoryDefs,
   mediaCategoryLog,
+  mediaRoles,
 } from '../db/schema.ts';
 import { categoriesOf, categoryDefs, refreshMediaCategories } from '../media-categories.ts';
+import { refreshMediaRoles, roleDefs, rolesOf } from '../media-scope.ts';
 import { iconUrl } from '../v1/icons.ts';
 import { articleDetail, hostOf, lookupUrl, outletSummary } from './lookup.ts';
 
 // Admin tools behind /admin/media/ (docs/login.md): edit an outlet's labels
-// and crawl it on demand. Everything sits under /auth/admin/, outside the
+// and roles, and crawl it on demand. Everything sits under /auth/admin/, outside the
 // public /api/ (CORS *, GET only); every write must come from the site itself.
 
 /** The slice of a BullMQ queue these routes use (the worker's 'tag-jobs'). */
@@ -87,8 +89,14 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
   app.get('/auth/admin/media', async (request, reply) => {
     if (!(await admin(request, reply))) return reply;
     return {
-      media: knownMedia().map((media) => ({ ...outletSummary(media), icon: iconUrl(media), categories: categoriesOf(media) })),
+      media: knownMedia().map((media) => ({
+        ...outletSummary(media),
+        icon: iconUrl(media),
+        categories: categoriesOf(media),
+        roles: rolesOf(media),
+      })),
       categories: categoryDefs(),
+      roles: roleDefs(),
     };
   });
 
@@ -120,6 +128,8 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       icon: iconUrl(media),
       categories: categoriesOf(media),
       definitions: categoryDefs(),
+      roles: rolesOf(media),
+      roleDefinitions: roleDefs(),
       crawler: spec ? { group: spec.group, disabled: disabled().has(media), aggregator: Boolean(spec.discovery) } : null,
       runs,
       log,
@@ -155,6 +165,38 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     if (changes.length) await db.insert(mediaCategoryLog).values(changes.map((c) => ({ ...c, media, email: user.email, at })));
     await refreshMediaCategories(db);
     return { media, categories: categoriesOf(media), added, removed };
+  });
+
+  // 性質 (通訊社、平台代刊…): a fixed list from media-scope.json, so admins
+  // tick roles but cannot create them. Logged as category `role:<key>`.
+  app.put<{ Params: { media: string }; Body: { roles?: unknown } }>('/auth/admin/media/:media/roles', async (request, reply) => {
+    const user = await admin(request, reply, true);
+    if (!user) return reply;
+    const { media } = request.params;
+    if (!known(media)) return reply.code(404).send({ error: 'unknown media' });
+    const wanted = request.body?.roles;
+    const defined = new Set(roleDefs().map((d) => d.key));
+    if (!Array.isArray(wanted) || !wanted.every((k) => typeof k === 'string' && defined.has(k)))
+      return reply.code(400).send({ error: 'roles must be a list of defined role keys' });
+    await refreshMediaRoles(db);
+    const before = new Set(rolesOf(media));
+    const after = new Set(wanted as string[]);
+    const added = [...after].filter((k) => !before.has(k));
+    const removed = [...before].filter((k) => !after.has(k));
+    const at = new Date();
+    if (added.length)
+      await db
+        .insert(mediaRoles)
+        .ignore()
+        .values(added.map((role) => ({ media, role })));
+    if (removed.length) await db.delete(mediaRoles).where(and(eq(mediaRoles.media, media), inArray(mediaRoles.role, removed)));
+    const changes = [
+      ...added.map((role) => ({ category: `role:${role}`, action: 'add' as const })),
+      ...removed.map((role) => ({ category: `role:${role}`, action: 'remove' as const })),
+    ];
+    if (changes.length) await db.insert(mediaCategoryLog).values(changes.map((c) => ({ ...c, media, email: user.email, at })));
+    await refreshMediaRoles(db);
+    return { media, roles: rolesOf(media), added, removed };
   });
 
   app.post<{ Body: { label?: unknown; key?: unknown } }>('/auth/admin/categories', async (request, reply) => {

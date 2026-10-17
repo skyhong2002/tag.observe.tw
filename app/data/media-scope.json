@@ -1,6 +1,6 @@
 {
   "reviewedAt": "2026-10-06",
-  "policy": "收錄範圍描述本站實際收的版本，不是媒體品牌的全部，也不評價立場或可信度。scope 是主要服務的讀者與比較範圍，language 是收錄版本的文字，roles 標示通訊社、平台代刊等角色，coverage 說明實際收錄範圍與歷史差異。未列出的台灣媒體預設為台灣媒體、繁體中文；其他國家或地區的媒體必須明列。依據見 docs/media-inclusion-research-2026-10-06.md。",
+  "policy": "收錄範圍描述本站實際收的版本，不是媒體品牌的全部，也不評價立場或可信度。scope 是主要服務的讀者與比較範圍，language 是收錄版本的文字，roles 標示通訊社、平台代刊、新聞合作等角色（角色名稱在這裡定義；哪些媒體有哪些角色由管理員在 /admin/media/ 勾選，存在資料庫，這裡各媒體的 roles 只在資料庫空白時當初始值），coverage 說明實際收錄範圍與歷史差異。未列出的台灣媒體預設為台灣媒體、繁體中文；其他國家或地區的媒體必須明列。依據見 docs/media-inclusion-research-2026-10-06.md。",
   "scopes": {
     "tw": "台灣媒體",
     "tw-foreign": "台灣外語",
@@ -24,7 +24,8 @@
     "platform": "平台代刊",
     "discovery": "發現來源",
     "corporate": "企業內容",
-    "government": "政府機關"
+    "government": "政府機關",
+    "partner": "新聞合作"
   },
   "media": {
     "1111": {
