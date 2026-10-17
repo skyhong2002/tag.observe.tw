@@ -1,0 +1,42 @@
+# Candidate only; no notification routing or delivery changes.
+groups:
+  - name: reporter-health
+    interval: 60s
+    rules:
+      - record: host_observer:reporter_observation_valid
+        expr: max by (job, instance) (host_observer_source_fresh{job="host-observer",source="reporter"} == 1) and on(job, instance) (host_observer_reporter_probe_success{job="host-observer"} == 1) and on(job, instance) (host_observer_sample_age_seconds{job="host-observer"} < 150)
+      - alert: ReporterHealthObservationUnavailable
+        expr: max by (job, instance) ((host_observer_source_fresh{job="host-observer",source="reporter"} == 0) or (host_observer_reporter_probe_success{job="host-observer"} == 0)) and on(job, instance) (host_observer_sample_age_seconds{job="host-observer"} < 150)
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Reporter health probe failed or its saved observation is missing or stale
+      - alert: ReporterReportingMetadataUnknown
+        expr: ((host_observer_reporter_reporting_known{job="host-observer"} == 0) or (host_observer_reporter_collection_known{job="host-observer"} == 0)) and on(job, instance) host_observer:reporter_observation_valid
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Reporter has no validated reporting completion or collection health metadata
+      - alert: ReporterReportingStale
+        expr: ((time() - host_observer_reporter_last_finished_timestamp_seconds{job="host-observer"}) > 14400) and on(job, instance) host_observer:reporter_observation_valid
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Reporter last successful reporting completion is over four hours old
+      - alert: ReporterCollectionUnhealthy
+        expr: (host_observer_reporter_collection_healthy{job="host-observer"} == 0) and on(job, instance) host_observer:reporter_observation_valid
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Reporter explicitly reports unhealthy source collection
+      - alert: ReporterEngineNotReady
+        expr: ((host_observer_reporter_engine_ready{job="host-observer"} == 0) or (host_observer_reporter_scheduler_enabled{job="host-observer"} == 0)) and on(job, instance) host_observer:reporter_observation_valid
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Reporter engine is not ready or its reviewed scheduler is disabled
