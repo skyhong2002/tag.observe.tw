@@ -232,6 +232,12 @@ export async function generateRules(target: RuleTarget, deps: GenerationDeps = {
     result.report = report;
     if (report?.passed) return { ...result, ok: true, reason: null };
     result.reason = error ?? report?.problems.join('; ').slice(0, 500) ?? 'validation failed';
+    // No rules at all is the model declining: asking again only spends quota.
+    if (!raw.hostRules.length && !raw.listing) {
+      const why = raw.notes || (raw.noArticles ? 'no articles' : 'no rules');
+      result.reason = `${raw.unfixable || raw.noArticles ? 'unfixable' : 'declined'}: ${why}`.slice(0, 500);
+      break;
+    }
     // An outlet with nothing to list, or pages without what was asked, is not worth more rounds.
     if (raw.noArticles && report?.listed === 0 && (render || !canRender)) break;
     if (raw.unfixable && (render || !canRender || !scriptShellSeen)) {

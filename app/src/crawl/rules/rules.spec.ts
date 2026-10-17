@@ -203,6 +203,20 @@ describe('generateRules', () => {
     expect(prompts[1]).toContain('lastRound');
     expect(prompts[0]).toContain('story-zone');
   });
+  it('stops when the model returns no rules', async () => {
+    let calls = 0;
+    const result = await generateRules(target(), {
+      config: { baseUrl: 'http://gw', apiKey: 'k', model: 'sky-quality' },
+      fetch: fetchFake,
+      render: false,
+      chat: async () => {
+        calls++;
+        return { content: JSON.stringify(raw({ hostRules: [], noArticles: true, notes: '網站已停刊' })), model: 'x', finishReason: 'stop' };
+      },
+    });
+    expect(calls).toBe(1);
+    expect(result).toMatchObject({ ok: false, rounds: 1, reason: 'unfixable: 網站已停刊' });
+  });
   it('makes no call when the quota says no', async () => {
     let calls = 0;
     const result = await generateRules(target(), {
