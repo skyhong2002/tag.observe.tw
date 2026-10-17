@@ -390,7 +390,7 @@ describe.skipIf(!url)('tag group writer and routes (MariaDB)', () => {
 
   it("ranks a group's tags by recent reports, subgroups included", async () => {
     const day = 86_400_000;
-    await db.delete(articleTags).where(sql`${articleTags.articleId} BETWEEN 9900001 AND 9900010`);
+    await db.delete(articleTags).where(sql`${articleTags.tag} = '川普'`);
     await db.delete(tagStats).where(sql`${tagStats.tag} = '川普'`);
     const now = new Date();
     await db.insert(tagStats).values({
