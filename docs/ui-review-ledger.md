@@ -4,7 +4,19 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-18 00:38 Taipei)
+## Current deployed status (2026-10-18 04:00 Taipei)
+
+- **API + gateway + web `fa2c7790` (UTC 2026-10-17T19:52Z), then web-only `c007cdb9` / BUILD_ID `Z3Map3GPnPnzSHnhaiq7X` (19:59Z)**: outlet roles (性質) folded into the media labels, on origin/main as a4bb7412 + 2e44fbf7.
+  - Owner's request: 「性質請幫我直接合併進去標籤就好」.
+  - 通訊社、平台代刊、發現來源、企業內容、政府機關、新聞合作 are labels with the old role keys, sorted after the existing 15. The ranking job skips them (no frozen roster).
+  - Migration: main's 0040_roles-to-labels became **0042** on F1, with the same journal `when`. It was applied before packaging; it only inserts (defs + 34 memberships, none missing). `media_roles` stays because the worker still reads it.
+  - /api/v1/media-stats drops `scope.roles` and adds `labels`. /media/ has one 標籤 column and a 媒體標籤 filter on any label. The outlet page shows 本站標籤. /admin/media/ lost the 性質 column, filter and section; old `role:<key>` log entries display as the label.
+  - API: overlay of 8 runtime files on `68e582d7-api-crawl-rules`, each checked equal to `fa2c7790~1`. Loopback and post-switch checks passed (media-stats labels, 401 on admin routes, page markers on 18130 and public). No warnings in the logs.
+  - Admin UI checked on the public site with a mocked admin session and real admin JSON from the new code: 新聞合作 filter 8 rows, no page errors.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/admin-intro-c007cdb9-20261018/rollback.sh` (web + API + gateway → 68e582d7). The merged labels stay in the DB. Scripts: `~/.cache/tag-review/package-and-deploy-fa2c.py`, `-c007.py`.
+- Retention: web c007 + 68e5; API fa2c + 68e5. 965b778a web/API and fa2c-web were deleted, so 68e582d7's own rollback.sh no longer has a target.
+
+### Earlier (2026-10-18 00:38 Taipei)
 
 - **Worker-only `bd90c35f` (UTC 2026-10-17T16:37Z)**, on origin/main as 2e428b48. Targeting changes after the first live runs:
   - Order: a quiet listing, then bodies, then tags, then listings whose every run failed. The first 6 targets were all of that last kind and none was fixable.
