@@ -217,6 +217,8 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     expect(mediaScope('life')?.roles).toEqual([{ role: 'partner', label: '新聞合作' }]);
     const list = (await app.inject({ url: '/auth/admin/media', headers: as('admin', false) })).json();
     expect(list.media.find((o: { media: string }) => o.media === 'life').roles).toEqual(['partner']);
+    expect(list.media.find((o: { media: string }) => o.media === 'life').edits).toMatchObject({ count: 1, lastBy: 'admin@example.com' });
+    expect(list.media.find((o: { media: string }) => o.media === 'ftv').edits).toBeNull();
     const log = await db.select().from(mediaCategoryLog).where(eq(mediaCategoryLog.media, 'life'));
     expect(log.map((l) => [l.category, l.action])).toEqual([['role:partner', 'add']]);
     await app.inject({ method: 'PUT', url: '/auth/admin/media/life/roles', headers: as('admin'), payload: { roles: [] } });
