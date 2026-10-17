@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import Avatar from '@/components/Avatar';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
@@ -60,16 +60,19 @@ export default function Accounts() {
   const [error, setError] = useState('');
   const [sort, setSort] = useState<SortKey>('lastActiveAt');
   const [descending, setDescending] = useState(true);
-  const load = () =>
-    adminFetch<{ users: Account[] }>('/auth/users')
-      .then((body) => setAccounts(body.users))
-      .catch(() => setAccounts([]));
+  const load = useCallback(
+    () =>
+      adminFetch<{ users: Account[] }>('/auth/users')
+        .then((body) => setAccounts(body.users))
+        .catch(() => setAccounts([])),
+    [],
+  );
   useEffect(() => {
     load();
     adminFetch<Activity>('/auth/admin/user-activity')
       .then(setActivity)
       .catch(() => setActivity({ metrics: [], users: {} }));
-  }, []);
+  }, [load]);
   async function setRole(account: Account, role: Account['role']) {
     const who = account.name ?? account.email;
     if (!confirm(role === 'admin' ? `把 ${who} 設為管理員？` : `取消 ${who} 的管理員權限？`)) return;

@@ -16,8 +16,7 @@ async function main() {
   const id = Number(decimalId(entry.selector.articleId, true));
   if (!Number.isSafeInteger(id)) throw new Error('Unsupported article ID');
   const artifact = entry.artifacts.find((item) => item.role === 'content');
-  if (!artifact || entry.artifacts.length !== 1 || artifact.remote !== store.remote)
-    throw new Error('Unexpected archive storage');
+  if (!artifact || entry.artifacts.length !== 1 || artifact.remote !== store.remote) throw new Error('Unexpected archive storage');
   const data = await store.getVerified(artifact.key, artifact.sha256);
   const article = decodeContent(data, id, entry.selector.contentHash);
   const temporary = `${values.out}.partial`;

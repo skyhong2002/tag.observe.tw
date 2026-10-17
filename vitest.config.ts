@@ -10,6 +10,9 @@ const sharedDb = [
   'app/test/taiwan-share.spec.ts',
   'app/test/reader.spec.ts',
   'app/test/tag-avatars.spec.ts',
+  'app/test/tag-visuals.spec.ts',
+  'app/test/tag-groups.spec.ts',
+  'app/test/similarweb-external.spec.ts',
   'app/test/picture-kind.spec.ts',
   'app/test/writing.spec.ts',
 ];

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CAMP_FILL, CAMP_LABEL } from '@/components/CampBar';
 import { prefs, readerFetch, savePrefs, when } from '@/lib/reader';
 import { button, card, note, primary } from '../ReaderGate';
@@ -28,13 +28,16 @@ export default function Reading() {
   const [report, setReport] = useState<Report | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const load = () =>
-    readerFetch<Report>('/auth/me/history/report')
-      .then(setReport)
-      .catch((e: Error) => setError(e.message));
+  const load = useCallback(
+    () =>
+      readerFetch<Report>('/auth/me/history/report')
+        .then(setReport)
+        .catch((e: Error) => setError(e.message)),
+    [],
+  );
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
   const toggle = async (on: boolean) => {
     if (!on && !confirm('關閉後會刪除目前所有閱讀紀錄，確定嗎？')) return;
     setBusy(true);

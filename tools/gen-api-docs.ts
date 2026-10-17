@@ -45,8 +45,8 @@ export function renderApiMarkdown() {
     for (const e of list) {
       out.push(`<a id="${anchor(e.path)}"></a>`, '', `### \`${e.method ?? 'GET'} ${e.path}\``, '', `**${e.summary}**`, '');
       if (e.description) out.push(e.description, '');
-      if(e.authorized) out.push('授權：`Authorization: Bearer <管理端 token>`。', '');
-      if(e.requestBody) out.push('JSON request body：', '', '```json', JSON.stringify(e.requestBody,null,2), '```', '');
+      if (e.authorized) out.push('授權：`Authorization: Bearer <管理端 token>`。', '');
+      if (e.requestBody) out.push('JSON request body：', '', '```json', JSON.stringify(e.requestBody, null, 2), '```', '');
       if (e.params?.length)
         out.push(
           table(
@@ -66,7 +66,14 @@ export function renderApiMarkdown() {
           ),
           '',
         );
-      out.push('範例：', '', '```sh', `curl -s${e.method === 'POST' ? " -X POST -H 'Content-Type: application/json' --data '{}'" : ''}${e.authorized ? " -H 'Authorization: Bearer <管理端 token>'" : ''} '${ORIGIN}${examplePath(e)}'`, '```', '');
+      out.push(
+        '範例：',
+        '',
+        '```sh',
+        `curl -s${e.method === 'POST' ? " -X POST -H 'Content-Type: application/json' --data '{}'" : ''}${e.authorized ? " -H 'Authorization: Bearer <管理端 token>'" : ''} '${ORIGIN}${examplePath(e)}'`,
+        '```',
+        '',
+      );
       const variants = e.response.oneOf ? (e.response.oneOf as Schema[]) : [e.response as Schema];
       for (const v of variants) {
         const rows = fieldRows(v);

@@ -34,6 +34,7 @@ export default function AccountMenu() {
       document.removeEventListener('keydown', close);
     };
   }, [open]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: A pathname change intentionally closes the menu.
   useEffect(() => setOpen(false), [path]);
 
   if (!session?.enabled) return null;

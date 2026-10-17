@@ -1,6 +1,7 @@
 // Read-only DB adapters for the unified nearline metadata index.
-import { mkdir, open, rename, rm } from 'node:fs/promises';
+
 import { realpathSync } from 'node:fs';
+import { mkdir, open, rename, rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReaderPresence } from '@/components/ReaderPresence';
 import Wordmark from '@/components/Wordmark';
 import type { RankingEntry } from '@/lib/api';
@@ -392,7 +392,7 @@ export default function SimpleBoard({
   const settledFrames = useRef(new Set<string>());
   const settleWaiters = useRef(new Map<string, () => void>());
   const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const settleAfter = (key: string, ms: number) => {
+  const settleAfter = useCallback((key: string, ms: number) => {
     clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => {
       if (settledFrames.current.size > 50) settledFrames.current.clear();
@@ -401,16 +401,17 @@ export default function SimpleBoard({
       settleWaiters.current.get(key)?.();
       settleWaiters.current.delete(key);
     }, ms);
-  };
+  }, []);
 
   // Each frame is the snapshot that stood that many hours ago (the hour's last one).
   const hourLabels = useMemo(
     () => (playing?.frames ?? []).map((f, i, all) => (i === all.length - 1 || !f.back ? '現在' : ago(f.back))),
     [playing?.frames],
   );
+  const playingLens = playing?.lens;
   const centre = useMemo(
-    () => (canvas && playing ? centreOf(playing.lens, hourLabels, canvas.title, canvas.width) : null),
-    [canvas, playing?.lens, hourLabels],
+    () => (canvas && playingLens ? centreOf(playingLens, hourLabels, canvas.title, canvas.width) : null),
+    [canvas, playingLens, hourLabels],
   );
 
   // Lays the frame out around the centre and hands out phases. A new hour of
@@ -499,7 +500,7 @@ export default function SimpleBoard({
     return () => {
       live = false;
     };
-  }, [canvas, playing, pictures, centre, settings.words, settings.change]);
+  }, [canvas, playing, pictures, centre, settings.words, settings.change, settleAfter]);
 
   // Newcomers mount small and clear, then turn live on the next frames so they
   // grow in; the leavers are dropped once they have shrunk away.
@@ -600,7 +601,7 @@ export default function SimpleBoard({
                           {now && settledFrame === `${playing.run}:${i}` && (
                             // Fills over the time this hour (or the present) stays, once its animation is over.
                             <rect
-                              key={`${playing.run}-${i}`}
+                              key={`${playing.run}-${slot.label}`}
                               {...bar}
                               rx={bar.height / 2}
                               fill={tint(playing.lens)}
