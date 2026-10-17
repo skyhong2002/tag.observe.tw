@@ -3317,6 +3317,9 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].sourceKind` | "discovery" \| "publisher" | discovery 為文章發現來源，篇數透過關聯計算；publisher 為刊登媒體，全站文章總數不重複計入發現來源 |
 | `media[].category` | string \| null |  |
 | `media[].categoryLabel` | string \| null |  |
+| `media[].labels` | object[] | 媒體的全部標籤（含通訊社、平台代刊等），依標籤順序；藍綠傾向另見 camp |
+| `media[].labels[].key` | string |  |
+| `media[].labels[].label` | string |  |
 | `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `media[].schedule` | string | 爬取頻率；hourly 或 every N min；未啟用時為 off |
 | `media[].crawlSchedule` | object |  |
@@ -3337,9 +3340,6 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].scope.scopeLabel` | string |  |
 | `media[].scope.language` | "zh-Hant" \| "zh-Hans" \| "en" \| "ja" | 收錄版本的文字 |
 | `media[].scope.languageLabel` | string |  |
-| `media[].scope.roles` | object[] |  |
-| `media[].scope.roles[].role` | "wire" \| "platform" \| "discovery" \| "corporate" \| "government" \| "partner" |  |
-| `media[].scope.roles[].label` | string |  |
 | `media[].scope.coverage` | string \| null | 實際收錄範圍與歷史差異，例如只收某個頻道或版本 |
 | `media[].crawler` | object |  |
 | `media[].crawler.methods` | string[] |  |

@@ -492,9 +492,9 @@ export const mediaCategoryLog = mysqlTable(
   (t) => [index('media_category_log_media').on(t.media, t.at)],
 );
 
-// Outlet roles (通訊社、平台代刊、新聞合作…), editable from /admin/media/. The
-// role names live in app/data/media-scope.json, which also seeds this table;
-// changes are logged in media_category_log as category `role:<key>`.
+// Retired: outlet roles (通訊社、平台代刊…) became media labels with the same
+// keys (migration roles-to-labels). Older releases still read this table, so it
+// stays until none runs; its edits remain in media_category_log as `role:<key>`.
 export const mediaRoles = mysqlTable(
   'media_roles',
   {

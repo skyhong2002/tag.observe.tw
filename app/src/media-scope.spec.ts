@@ -16,26 +16,23 @@ describe('media scope labels', () => {
     expect(mediaScope('unknown-outlet')).toBeNull();
   });
 
-  it('uses only the declared scopes, languages and roles', () => {
-    for (const [media, entry] of Object.entries(registry.media as Record<string, { scope: string; language: string; roles?: string[] }>)) {
+  it('uses only the declared scopes and languages', () => {
+    for (const [media, entry] of Object.entries(registry.media as Record<string, { scope: string; language: string }>)) {
       expect(Object.keys(registry.scopes), media).toContain(entry.scope);
       expect(Object.keys(registry.languages), media).toContain(entry.language);
-      for (const role of entry.roles ?? []) expect(Object.keys(registry.roles), media).toContain(role);
     }
   });
 
-  it('keeps wire agencies as wires and says which edition is collected', () => {
-    expect(mediaScope('reuters')).toMatchObject({ scope: 'intl-zh', language: 'zh-Hant', roles: [{ role: 'wire', label: '通訊社' }] });
+  it('says which edition is collected', () => {
+    expect(mediaScope('reuters')).toMatchObject({ scope: 'intl-zh', language: 'zh-Hant' });
     expect(mediaScope('reuters')?.coverage).toContain('LINE TODAY');
-    expect(mediaScope('afp')).toMatchObject({ language: 'en', roles: [{ role: 'wire' }] });
+    expect(mediaScope('afp')).toMatchObject({ language: 'en' });
     expect(mediaScope('afp')?.coverage).toContain('Fact Check');
-    expect(mediaScope('xinhua')?.roles.map((r) => r.role)).toEqual(['wire']);
     expect(mediaScope('ltn')).toEqual({
       scope: 'tw',
       scopeLabel: '台灣媒體',
       language: 'zh-Hant',
       languageLabel: '繁體中文',
-      roles: [],
       coverage: null,
     });
     expect(mediaScope('taipeitimes')).toMatchObject({ scope: 'tw-foreign', language: 'en' });

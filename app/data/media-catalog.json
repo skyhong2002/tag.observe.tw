@@ -365,7 +365,44 @@
       "mnews",
       "cts",
       "rti"
-    ]
+    ],
+    "wire": [
+      "afp",
+      "ap",
+      "reuters",
+      "xinhua"
+    ],
+    "platform": [
+      "miin",
+      "msn",
+      "news_163",
+      "news_pchome",
+      "news_qq",
+      "news_sina",
+      "news_yahoo",
+      "pnn",
+      "today_line_me",
+      "yam"
+    ],
+    "discovery": [
+      "dongtaiwang",
+      "google_news"
+    ],
+    "corporate": [
+      "1111"
+    ],
+    "government": [
+      "president",
+      "mohw",
+      "mol",
+      "taipei_gov",
+      "ntpc_gov",
+      "moi",
+      "moa",
+      "mofa",
+      "mnd"
+    ],
+    "partner": []
   },
   "defaultMedia": [
     "ettoday",

@@ -205,7 +205,7 @@ export default async function MediaPage({
                 <>
                   <dt className="text-zinc-500 dark:text-zinc-400">收錄範圍</dt>
                   <dd>
-                    {[profile.scope.scopeLabel, profile.scope.languageLabel, ...profile.scope.roles.map((role) => role.label)].join(' · ')}
+                    {profile.scope.scopeLabel} · {profile.scope.languageLabel}
                   </dd>
                 </>
               )}
@@ -217,9 +217,9 @@ export default async function MediaPage({
               )}
               {!discovery && profile && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">本站分類</dt>
+                  <dt className="text-zinc-500 dark:text-zinc-400">本站標籤</dt>
                   <dd>
-                    {profile.categoryLabel ?? '未分類'} · {profileCamp[profile.camp]}
+                    {profile.labels.length ? profile.labels.map((l) => l.label).join('、') : '未分類'} · {profileCamp[profile.camp]}
                   </dd>
                 </>
               )}

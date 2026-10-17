@@ -10,12 +10,13 @@ export interface MediaProfile {
   title: string;
   icon: string | null;
   categoryLabel: string | null;
+  /** Every label but the camp ones (通訊社、平台代刊… included). */
+  labels: Array<{ key: string; label: string }>;
   camp: 'blue' | 'green' | 'other';
-  /** Edition the site collects, whom it serves and the outlet's role. */
+  /** Edition the site collects and whom it serves. */
   scope: {
     scopeLabel: string;
     languageLabel: string;
-    roles: Array<{ role: string; label: string }>;
     coverage: string | null;
   } | null;
   today: number;

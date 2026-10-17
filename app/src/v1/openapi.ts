@@ -2440,6 +2440,7 @@ export const ENDPOINTS: Endpoint[] = [
           }),
           category: nullable(str()),
           categoryLabel: nullable(str()),
+          labels: arr(obj({ key: str(), label: str() }), '媒體的全部標籤（含通訊社、平台代刊等），依標籤順序；藍綠傾向另見 camp'),
           camp,
           schedule: str('爬取頻率；hourly 或 every N min；未啟用時為 off'),
           crawlSchedule: obj({
@@ -2465,12 +2466,6 @@ export const ENDPOINTS: Endpoint[] = [
               scopeLabel: str(),
               language: str('收錄版本的文字', { enum: ['zh-Hant', 'zh-Hans', 'en', 'ja'] }),
               languageLabel: str(),
-              roles: arr(
-                obj({
-                  role: str(undefined, { enum: ['wire', 'platform', 'discovery', 'corporate', 'government', 'partner'] }),
-                  label: str(),
-                }),
-              ),
               coverage: nullable(str('實際收錄範圍與歷史差異，例如只收某個頻道或版本')),
             }),
           ),
