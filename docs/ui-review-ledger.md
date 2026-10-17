@@ -4,7 +4,29 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-17 21:35 Taipei)
+## Current deployed status (2026-10-17 22:57 Taipei)
+
+- **Web + API + worker `68e582d7` / BUILD_ID `VNlkO60dNTDUwxUpWEck_` (UTC 2026-10-17T14:52Z), then worker-only `2dac386c` (14:57Z)**: AI-written crawl rules for outlets whose hand-written rules broke (docs/generated-crawl-rules.md), on origin/main as e0b1f157 + 4f429f6c.
+  - The owner's rule is "no AI in data": rules live in files under `~/.local/share/tag-analysis/generated-rules/`, never in the DB.
+  - The worker runs `crawl-rules` every 30 min on its own queue (`TAG_AI_RULES_ENABLED=1`, set in the worker drop-in). The Codex quota decides how many outlets each run takes.
+  - `robots` runs daily at 04:40 into `robots_observations`. Display only; the crawler does not obey robots.txt. It was run once by hand at deploy time: 381 hosts.
+  - /admin/media/ gained robots.txt and AI 規則 columns and an AI 爬取規則 section with 停用.
+  - Migration: main's 0039_robots-observations became **0041** on F1, with the same journal `when`. It was applied before the switch.
+- Releases:
+  - The API overlays 26 files on `965b778a-api-openapi-name`; each base was checked equal to `68e582d7~1`.
+  - The worker overlays only this commit's files on `16402500-worker-rosters`. That release lags F1 in other sessions' files, so they were left alone. `schema.ts` got the diff applied; `admin/routes.ts` and `app.js` were skipped because the worker does not load them.
+- Checks:
+  - Gate: load1 10.6.
+  - Loopback API 18340 / web 18338: pages 200; the new reject route answers 403 (old code 405); the worker release imports its new modules.
+  - Deploy: API, gateway, web, then worker. The worker metrics now carry `job="crawl-rules"`.
+- First attempt (14:50Z) rolled back by itself: a bodyless public POST gets 415 before reaching the gateway. The check now sends a JSON body.
+- 2dac386c: the model's first live run returned empty rules three times for hypesphere. Generation now stops at the first empty reply.
+- Rollback:
+  - Worker → 68e5: `bash /home/deck/tag-analysis-private/f1-release/ai-crawl-rules-2dac386c-20261017/rollback.sh`
+  - Everything → 965b778a / 16402500: `bash /home/deck/tag-analysis-private/f1-release/ai-crawl-rules-68e582d7-20261017/rollback.sh`. It restores the backed-up drop-ins, so `TAG_AI_RULES_ENABLED` goes too.
+  - Scripts: `~/.cache/tag-review/package-and-deploy-68e5.py` (web + API + worker template) and `deploy-worker-2dac.py` (worker-only template).
+
+### Earlier (2026-10-17 21:35 Taipei)
 
 - **API only: `app/src/v1/openapi.ts` from this branch (UTC 2026-10-17T13:35Z)**: the `/api/v1/site-observation` summary now reads 本站流量 instead of 網站觀測, finishing the 75a48570 rename (origin/main 0b939d8f). Web stays `965b778a` / BUILD_ID `fTU4M0DVoA039aaGiWgjZ`; worker unchanged.
 - API release `965b778a-api-openapi-name-20261017-001` is a copy of `965b778a-api-admin-media-table` with only that file replaced; the live copy was checked to equal the branch file except for the summary line.
