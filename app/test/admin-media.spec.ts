@@ -19,7 +19,6 @@ import {
   mediaCategories,
   mediaCategoryDefs,
   mediaCategoryLog,
-  mediaRoles,
   users,
 } from '../src/db/schema.ts';
 import { mediaScope } from '../src/media-scope.ts';
@@ -200,43 +199,29 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     expect(bad.statusCode).toBe(400);
   });
 
-  it('seeds outlet roles from media-scope.json and lets admins tick them', async () => {
-    expect(await db.select().from(mediaRoles).where(eq(mediaRoles.media, 'news_yahoo'))).toEqual([
-      { media: 'news_yahoo', role: 'platform' },
-    ]);
+  it('carries the former roles (性質) as plain labels', async () => {
+    expect(await db.select().from(mediaCategories).where(eq(mediaCategories.media, 'news_yahoo'))).toContainEqual({
+      media: 'news_yahoo',
+      category: 'platform',
+    });
     const detail = (await app.inject({ url: '/auth/admin/media/life', headers: as('admin', false) })).json();
-    expect(detail.roles).toEqual([]);
-    expect(detail.roleDefinitions).toContainEqual({ key: 'partner', label: '新聞合作' });
+    expect(detail.definitions).toContainEqual(expect.objectContaining({ key: 'partner', label: '新聞合作' }));
+    expect(detail).not.toHaveProperty('roles');
     const put = await app.inject({
       method: 'PUT',
-      url: '/auth/admin/media/life/roles',
+      url: '/auth/admin/media/life/categories',
       headers: as('admin'),
-      payload: { roles: ['partner'] },
+      payload: { categories: [...detail.categories, 'partner'] },
     });
-    expect(put.json()).toMatchObject({ roles: ['partner'], added: ['partner'], removed: [] });
-    expect(mediaScope('life')?.roles).toEqual([{ role: 'partner', label: '新聞合作' }]);
+    expect(put.json()).toMatchObject({ added: ['partner'], removed: [] });
+    expect(mediaScope('life')).not.toHaveProperty('roles');
     const list = (await app.inject({ url: '/auth/admin/media', headers: as('admin', false) })).json();
-    expect(list.media.find((o: { media: string }) => o.media === 'life').roles).toEqual(['partner']);
+    expect(list.media.find((o: { media: string }) => o.media === 'life').categories).toContain('partner');
     expect(list.media.find((o: { media: string }) => o.media === 'life').edits).toMatchObject({ count: 1, lastBy: 'admin@example.com' });
     expect(list.media.find((o: { media: string }) => o.media === 'ftv').edits).toBeNull();
-    const log = await db.select().from(mediaCategoryLog).where(eq(mediaCategoryLog.media, 'life'));
-    expect(log.map((l) => [l.category, l.action])).toEqual([['role:partner', 'add']]);
-    await app.inject({ method: 'PUT', url: '/auth/admin/media/life/roles', headers: as('admin'), payload: { roles: [] } });
-    expect(mediaScope('life')?.roles).toEqual([]);
-    const bad = await app.inject({
-      method: 'PUT',
-      url: '/auth/admin/media/life/roles',
-      headers: as('admin'),
-      payload: { roles: ['nope'] },
-    });
-    expect(bad.statusCode).toBe(400);
-    const foreign = await app.inject({
-      method: 'PUT',
-      url: '/auth/admin/media/life/roles',
-      headers: { cookie: 'tag_session=admin', origin: 'https://evil.example' },
-      payload: { roles: ['partner'] },
-    });
-    expect(foreign.statusCode).toBe(403);
+    expect(list).not.toHaveProperty('roles');
+    const gone = await app.inject({ method: 'PUT', url: '/auth/admin/media/life/roles', headers: as('admin'), payload: { roles: [] } });
+    expect(gone.statusCode).not.toBe(200);
   });
 
   it('re-fetches one article now and replaces its tags', async () => {
@@ -400,7 +385,7 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     expect((await app.inject({ url: '/auth/admin/user-activity', headers: as('reader', false) })).statusCode).toBe(403);
     const body = (await app.inject({ url: '/auth/admin/user-activity', headers: as('admin', false) })).json();
     expect(body.metrics.map((m: { key: string }) => m.key)).toEqual(expect.arrayContaining(['reads', 'votes', 'media', 'articles']));
-    // The label and role edits above were logged as admin@example.com.
+    // The label edits above were logged as admin@example.com.
     expect(body.users[id].counts.media).toBeGreaterThan(0);
     expect(body.users[id].counts.articles).toBeGreaterThan(0);
     expect(Date.parse(body.users[id].lastActiveAt)).toBeGreaterThan(Date.now() - 3600e3);

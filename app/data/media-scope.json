@@ -1,6 +1,6 @@
 {
   "reviewedAt": "2026-10-06",
-  "policy": "收錄範圍描述本站實際收的版本，不是媒體品牌的全部，也不評價立場或可信度。scope 是主要服務的讀者與比較範圍，language 是收錄版本的文字，roles 標示通訊社、平台代刊、新聞合作等角色（角色名稱在這裡定義；哪些媒體有哪些角色由管理員在 /admin/media/ 勾選，存在資料庫，這裡各媒體的 roles 只在資料庫空白時當初始值），coverage 說明實際收錄範圍與歷史差異。未列出的台灣媒體預設為台灣媒體、繁體中文；其他國家或地區的媒體必須明列。依據見 docs/media-inclusion-research-2026-10-06.md。",
+  "policy": "收錄範圍描述本站實際收的版本，不是媒體品牌的全部，也不評價立場或可信度。scope 是主要服務的讀者與比較範圍，language 是收錄版本的文字，coverage 說明實際收錄範圍與歷史差異。未列出的台灣媒體預設為台灣媒體、繁體中文；其他國家或地區的媒體必須明列。依據見 docs/media-inclusion-research-2026-10-06.md。",
   "scopes": {
     "tw": "台灣媒體",
     "tw-foreign": "台灣外語",
@@ -19,21 +19,10 @@
     "en": "英文",
     "ja": "日文"
   },
-  "roles": {
-    "wire": "通訊社",
-    "platform": "平台代刊",
-    "discovery": "發現來源",
-    "corporate": "企業內容",
-    "government": "政府機關",
-    "partner": "新聞合作"
-  },
   "media": {
     "1111": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "corporate"
-      ]
+      "language": "zh-Hant"
     },
     "aboluowang": {
       "scope": "overseas-zh",
@@ -46,17 +35,11 @@
     "afp": {
       "scope": "foreign",
       "language": "en",
-      "roles": [
-        "wire"
-      ],
       "coverage": "AFP Fact Check 英文事實查核，不是完整的法新社新聞線；中文報導經中央社等刊登者收錄，以引用關係連到法新社。"
     },
     "ap": {
       "scope": "foreign",
       "language": "en",
-      "roles": [
-        "wire"
-      ],
       "coverage": "AP 官網 News Highlights 精選，不是完整的美聯社新聞線；中文報導經中央社等刊登者收錄，以引用關係連到美聯社。"
     },
     "bannedbook": {
@@ -96,10 +79,7 @@
     },
     "dongtaiwang": {
       "scope": "overseas-zh",
-      "language": "zh-Hant",
-      "roles": [
-        "discovery"
-      ]
+      "language": "zh-Hant"
     },
     "dw": {
       "scope": "intl-zh",
@@ -120,10 +100,7 @@
     },
     "google_news": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "discovery"
-      ]
+      "language": "zh-Hant"
     },
     "guancha": {
       "scope": "cn",
@@ -163,10 +140,7 @@
     },
     "miin": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hant"
     },
     "mingpao": {
       "scope": "hkmo",
@@ -174,10 +148,7 @@
     },
     "msn": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hant"
     },
     "newmobilelife": {
       "scope": "zh-special",
@@ -185,38 +156,23 @@
     },
     "news_163": {
       "scope": "cn",
-      "language": "zh-Hans",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hans"
     },
     "news_pchome": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hant"
     },
     "news_qq": {
       "scope": "cn",
-      "language": "zh-Hans",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hans"
     },
     "news_sina": {
       "scope": "cn",
-      "language": "zh-Hans",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hans"
     },
     "news_yahoo": {
       "scope": "foreign",
-      "language": "ja",
-      "roles": [
-        "platform"
-      ]
+      "language": "ja"
     },
     "nhk": {
       "scope": "intl-zh",
@@ -242,17 +198,11 @@
     },
     "pnn": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hant"
     },
     "reuters": {
       "scope": "intl-zh",
       "language": "zh-Hant",
-      "roles": [
-        "wire"
-      ],
       "coverage": "LINE TODAY 路透社頻道的繁體供稿（中央社翻譯／編譯），只收正文電頭為路透的稿件；2026-10-06 前收的是 Reuters Graphics 英文圖解。"
     },
     "rfa": {
@@ -333,10 +283,7 @@
     },
     "today_line_me": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hant"
     },
     "voachinese": {
       "scope": "intl-zh",
@@ -354,9 +301,6 @@
     "xinhua": {
       "scope": "cn",
       "language": "zh-Hant",
-      "roles": [
-        "wire"
-      ],
       "coverage": "新抓取文字以 OpenCC cn → tw 轉為繁體；保留原文網址與發布日期，先前收錄的簡體資料尚未回填。"
     },
     "xinhuanet": {
@@ -371,10 +315,7 @@
     },
     "yam": {
       "scope": "tw",
-      "language": "zh-Hant",
-      "roles": [
-        "platform"
-      ]
+      "language": "zh-Hant"
     },
     "yonhap": {
       "scope": "intl-zh",
@@ -388,73 +329,46 @@
     "president": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "mohw": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "mol": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "taipei_gov": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "ntpc_gov": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "moi": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "moa": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "mofa": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     },
     "mnd": {
       "scope": "tw-gov",
       "language": "zh-Hant",
-      "roles": [
-        "government"
-      ],
       "coverage": "官方新聞稿及機關消息；保留原發布機關，不視為獨立媒體採訪報導。"
     }
   }

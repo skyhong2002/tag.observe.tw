@@ -27,6 +27,7 @@ describe('official government news registration', () => {
     expect(catalog.categories.news).toContain(id);
     expect(catalog.categories.blue).not.toContain(id);
     expect(catalog.categories.green).not.toContain(id);
-    expect(mediaScope(id)).toMatchObject({ scope: 'tw-gov', scopeLabel: '台灣政府', roles: [{ role: 'government', label: '政府機關' }] });
+    expect(catalog.categories.government).toContain(id);
+    expect(mediaScope(id)).toMatchObject({ scope: 'tw-gov', scopeLabel: '台灣政府' });
   });
 });

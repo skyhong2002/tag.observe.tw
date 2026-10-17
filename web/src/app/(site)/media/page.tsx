@@ -44,7 +44,6 @@ interface MediaScope {
   scopeLabel: string;
   language: string;
   languageLabel: string;
-  roles: Array<{ role: string; label: string }>;
   coverage: string | null;
 }
 const discoveryBadge =
@@ -61,6 +60,8 @@ interface MediaRow {
   icon: string | null;
   category: string | null;
   categoryLabel: string | null;
+  /** Every label but the camp ones, 通訊社、平台代刊… included. */
+  labels: Array<{ key: string; label: string }>;
   camp: Camp;
   schedule: string;
   today: number;
@@ -116,14 +117,13 @@ const SORTS = {
   scope: (r: MediaRow) => (r.scope ? SCOPE_ORDER.indexOf(r.scope.scope) : SCOPE_ORDER.length) * 1000 + (r.countryCode.codePointAt(0) ?? 0),
   language: (r: MediaRow) => r.scope?.languageLabel ?? '\uffff',
   camp: (r: MediaRow) => CAMP_ORDER.indexOf(r.camp),
-  category: (r: MediaRow) => r.categoryLabel ?? '\uffff',
-  roles: (r: MediaRow) => roleLabels(r) || '\uffff',
+  category: (r: MediaRow) => labelText(r) || '\uffff',
   schedule: (r: MediaRow) => scheduleMinutes(r.schedule),
 } satisfies Record<string, (r: MediaRow) => number | string>;
 type SortKey = keyof typeof SORTS;
-const ASC_FIRST = new Set<SortKey>(['name', 'status', 'scope', 'language', 'camp', 'category', 'roles', 'schedule']);
+const ASC_FIRST = new Set<SortKey>(['name', 'status', 'scope', 'language', 'camp', 'category', 'schedule']);
 const CAMP_ORDER: Camp[] = ['blue', 'green', 'other'];
-const roleLabels = (r: MediaRow) => r.scope?.roles.map(({ label }) => label).join('、') ?? '';
+const labelText = (r: MediaRow) => r.labels.map(({ label }) => label).join('、');
 /** `off`, `hourly` or `every N min` (app/src/crawl schedules); off sorts last. */
 function scheduleMinutes(schedule: string) {
   if (schedule === 'hourly') return 60;
@@ -207,15 +207,16 @@ export default async function MediaStatsPage({
     ([a], [b]) => SCOPE_ORDER.indexOf(a) - SCOPE_ORDER.indexOf(b),
   );
   const scope = scopes.some(([key]) => key === sp.scope) ? (sp.scope as string) : null;
-  const categories = [
-    ...new Map(data.media.filter((m) => m.category).map((m) => [m.category as string, m.categoryLabel ?? m.category])).entries(),
-  ];
+  // Any label filters, most-carried first.
+  const carried = new Map<string, { label: string; n: number }>();
+  for (const { key, label } of data.media.flatMap((m) => m.labels)) carried.set(key, { label, n: (carried.get(key)?.n ?? 0) + 1 });
+  const categories = [...carried].sort(([, a], [, b]) => b.n - a.n).map(([key, { label }]) => [key, label] as const);
   let rows = data.media
     .map((m) => ({ ...m, readers: readers[m.media] }))
     .filter(
       (m) =>
         (!status || m.status === status) &&
-        (!category || m.category === category) &&
+        (!category || m.labels.some((l) => l.key === category)) &&
         (!camp || m.camp === camp) &&
         (!scope || m.scope?.scope === scope),
     );
@@ -294,9 +295,9 @@ export default async function MediaStatsPage({
           ]}
         />
         <FilterChips
-          label="媒體分類"
+          label="媒體標籤"
           items={[
-            { href: link({ category: null }), label: '全部分類', current: !category },
+            { href: link({ category: null }), label: '全部標籤', current: !category },
             ...categories.map(([key, label]) => ({ href: link({ category: key }), label: label ?? key, current: category === key })),
           ]}
         />
@@ -345,9 +346,8 @@ export default async function MediaStatsPage({
                 className="text-right"
                 title="台灣月造訪 ÷ 當月發稿量（news sitemap 與本站收錄取大者）；含首頁與舊文，是指數不是讀者數"
               />
-              <Th col="category" label="分類" />
+              <Th col="category" label="標籤" />
               <Th col="language" label="語言" />
-              <Th col="roles" label="性質" />
               <Th col="tagged" label="標籤率" className="text-right" />
               <Th col="latest" label="最新文章" />
               <Th col="schedule" label="抓取" />
@@ -417,13 +417,11 @@ export default async function MediaStatsPage({
                 >
                   {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
                 </td>
-                <td className={`${table.cell} whitespace-nowrap`}>{r.categoryLabel ?? '—'}</td>
-                <td className={`${table.cell} whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
                 <td className={`${table.cell} whitespace-nowrap`}>
-                  {r.scope?.roles.length ? (
+                  {r.labels.length ? (
                     <span className="flex gap-1">
-                      {r.scope.roles.map(({ role, label }) => (
-                        <span key={role} className={role === 'discovery' ? discoveryBadge : scopeBadge}>
+                      {r.labels.map(({ key, label }) => (
+                        <span key={key} className={key === 'discovery' ? discoveryBadge : scopeBadge}>
                           {label}
                         </span>
                       ))}
@@ -432,6 +430,7 @@ export default async function MediaStatsPage({
                     <span className="text-zinc-500 dark:text-zinc-400">—</span>
                   )}
                 </td>
+                <td className={`${table.cell} whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
                 <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{pct(r.taggedShare24h)}</td>
                 <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400`}>
                   {r.lastArticle ? taipei(r.lastArticle) : '—'}

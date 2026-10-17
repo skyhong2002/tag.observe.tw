@@ -7,7 +7,7 @@ import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { table } from '@/lib/table-styles';
 import { adminFetch, note } from '../AdminGate';
-import { type Definition, LabelChip, type Outlet, OutletIcon, ROBOTS, type RoleDefinition, robotsLabel, TRIGGERS } from './labels';
+import { type Definition, LabelChip, type Outlet, OutletIcon, ROBOTS, robotsLabel, TRIGGERS } from './labels';
 
 // A bookmark that opens /admin/media/ for whatever news page is showing.
 export function Bookmarklet() {
@@ -108,21 +108,19 @@ function StatusBadge({ status }: { status: Status | 'none' }) {
   );
 }
 
-// Every outlet an admin can label, as a table: its labels and roles, how the
-// crawler is doing, and who last changed it. Filters narrow by label, role and
-// crawl status (「未加標籤」 finds the ones still to do); the name opens the editor.
+// Every outlet an admin can label, as a table: its labels, how the crawler is
+// doing, and who last changed it. Filters narrow by label and crawl status (「未加標籤」 finds the ones still to do); the name opens the editor.
 export function Outlets() {
-  const [data, setData] = useState<{ media: Outlet[]; categories: Definition[]; roles: RoleDefinition[] } | null>(null);
+  const [data, setData] = useState<{ media: Outlet[]; categories: Definition[] } | null>(null);
   const [stats, setStats] = useState<Map<string, Stats> | null>(null);
   const [query, setQuery] = useState('');
   const [label, setLabel] = useState('all');
-  const [role, setRole] = useState('all');
   const [status, setStatus] = useState('all');
   const [sort, setSort] = useState<SortKey>('last7d');
   const [descending, setDescending] = useState(true);
   const [error, setError] = useState('');
   useEffect(() => {
-    adminFetch<{ media: Outlet[]; categories: Definition[]; roles: RoleDefinition[] }>('/auth/admin/media')
+    adminFetch<{ media: Outlet[]; categories: Definition[] }>('/auth/admin/media')
       .then(setData)
       .catch((e: Error) => setError(e.message));
     fetch('/api/v1/media-stats')
@@ -131,25 +129,22 @@ export function Outlets() {
       .catch(() => setStats(new Map()));
   }, []);
   const labels = useMemo(() => new Map(data?.categories.map((d) => [d.key, d.label])), [data]);
-  const roles = useMemo(() => new Map(data?.roles.map((d) => [d.key, d.label])), [data]);
   if (error) return <p className={note}>{error}</p>;
   if (!data) return <p className={note}>載入中…</p>;
 
   const rows: Row[] = data.media.map((o) => ({ ...o, stats: stats?.get(o.media) ?? null }));
   const statusOf = (r: Row) => r.stats?.status ?? 'none';
   const q = query.trim().toLowerCase();
-  const matches = (r: Row, skip?: 'label' | 'role' | 'status') =>
+  const matches = (r: Row, skip?: 'label' | 'status') =>
     (!q ||
       r.media.includes(q) ||
       r.title.toLowerCase().includes(q) ||
-      r.categories.some((c) => labels.get(c)?.toLowerCase().includes(q)) ||
-      r.roles.some((x) => roles.get(x)?.includes(q))) &&
+      r.categories.some((c) => labels.get(c)?.toLowerCase().includes(q))) &&
     (skip === 'label' || label === 'all' || (label === 'none' ? !r.categories.length : r.categories.includes(label))) &&
-    (skip === 'role' || role === 'all' || (role === 'none' ? !r.roles.length : r.roles.includes(role))) &&
     (skip === 'status' || status === 'all' || statusOf(r) === status);
   // Each filter row counts what the other filters leave, so the numbers add up.
-  const tally = (skip: 'label' | 'role' | 'status', test: (r: Row) => boolean) => rows.filter((r) => matches(r, skip) && test(r)).length;
-  const option = (key: string, text: string, skip: 'label' | 'role' | 'status', test: (r: Row) => boolean) =>
+  const tally = (skip: 'label' | 'status', test: (r: Row) => boolean) => rows.filter((r) => matches(r, skip) && test(r)).length;
+  const option = (key: string, text: string, skip: 'label' | 'status', test: (r: Row) => boolean) =>
     [key, `${text} ${tally(skip, test)}`] as const;
   const value = (r: Row): number | string => {
     if (sort === 'title') return r.title;
@@ -205,7 +200,7 @@ export function Outlets() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="搜尋媒體名稱、代碼、標籤或性質"
+          placeholder="搜尋媒體名稱、代碼或標籤"
           className="w-full max-w-sm rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>
@@ -218,17 +213,6 @@ export function Outlets() {
           option('all', '全部', 'label', () => true),
           option('none', '未加標籤', 'label', (r) => !r.categories.length),
           ...data.categories.map((d) => option(d.key, d.label, 'label', (r) => r.categories.includes(d.key))),
-        ]}
-      />
-      <FilterButtons
-        label="性質"
-        showLabel
-        value={role}
-        onChange={setRole}
-        options={[
-          option('all', '全部', 'role', () => true),
-          option('none', '無', 'role', (r) => !r.roles.length),
-          ...data.roles.map((d) => option(d.key, d.label, 'role', (r) => r.roles.includes(d.key))),
         ]}
       />
       <FilterButtons
@@ -250,14 +234,13 @@ export function Outlets() {
             <tr className="bg-(--table-head-bg)">
               {th('title', '媒體', table.leadHead)}
               {plain('標籤')}
-              {plain('性質')}
               {th('status', '收錄狀態', table.cell)}
               {th('last7d', '7 天文章', table.num)}
               {th('tagged', '標籤率', table.num, '近 24 小時有標籤的文章比例')}
               {th('lastArticle', '最新文章', table.cell)}
               {th('robots', 'robots.txt', table.cell, '主網域 robots.txt 最近一次讀到的內容；只記錄，爬蟲不遵守')}
               {th('rules', 'AI 規則', table.cell, '驗證通過、正在使用的 AI 產生爬取規則')}
-              {th('edits', '修改', table.num, '標籤與性質的修改次數')}
+              {th('edits', '修改', table.num, '標籤的修改次數')}
               {th('lastEdit', '最近修改', table.cell)}
             </tr>
           </thead>
@@ -276,15 +259,6 @@ export function Outlets() {
                       r.categories.map((c) => <LabelChip key={c} keyName={c} label={labels.get(c) ?? c} />)
                     ) : (
                       <span className={`text-xs ${muted}`}>未加標籤</span>
-                    )}
-                  </span>
-                </td>
-                <td className={`${table.cell} !py-1.5`}>
-                  <span className="flex gap-1">
-                    {r.roles.length ? (
-                      r.roles.map((x) => <LabelChip key={x} keyName={`role:${x}`} label={roles.get(x) ?? x} />)
-                    ) : (
-                      <span className={muted}>—</span>
                     )}
                   </span>
                 </td>

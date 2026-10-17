@@ -9,7 +9,7 @@ import { TOPIC_RULES } from '../crawl/topics.ts';
 import type { Db } from '../db/client.ts';
 import { articleDiscoveries, articles, crawlRuns, topics } from '../db/schema.ts';
 import { articleMediaOf, topicCountPerMedia, topicSourceChecks } from '../jobs/topics-job.ts';
-import { categoryLabel, mediaCategories } from '../media-categories.ts';
+import { categoriesOf, categoryLabel, mediaCategories } from '../media-categories.ts';
 import { mediaScope } from '../media-scope.ts';
 import { mediaStatsQueryDuration } from '../metrics.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
@@ -21,6 +21,7 @@ import { firstCrawls, ownTotals } from './media-first-crawl.ts';
 // Per-media article counts and crawl health for the public /media/ dashboard.
 const info = favicons as unknown as Record<string, { icon: string | null; title: string | null }>;
 const SKIP_CATEGORY = new Set(['blue', 'green', 'adct']); // overlays, not a media's home category
+const CAMP_LABELS = new Set(['blue', 'green']); // shown as camp instead
 const categoryOf = (m: string) =>
   Object.entries(mediaCategories()).find(([c, list]) => !SKIP_CATEGORY.has(c) && list.includes(m))?.[0] ?? null;
 const HOUR = 3600e3;
@@ -270,7 +271,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           title: info[s.media]?.title ?? s.media,
           country: outletIdentity(s.media).country,
           countryCode: outletIdentity(s.media).countryCode,
-          // Collected edition, readership and role; see data/media-scope.json.
+          // Collected edition and readership; see data/media-scope.json.
           scope: mediaScope(s.media),
           crawler: crawlerInfo(
             s.media,
@@ -287,6 +288,9 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           icon: iconUrl(s.media),
           category,
           categoryLabel: category ? categoryLabel(category) : null,
+          labels: categoriesOf(s.media)
+            .filter((key) => !CAMP_LABELS.has(key))
+            .map((key) => ({ key, label: categoryLabel(key) })),
           camp: campOf(s.media),
           schedule: base.disabled ? 'off' : scheduling.minutes === 60 ? 'hourly' : `every ${scheduling.minutes} min`,
           crawlSchedule: {

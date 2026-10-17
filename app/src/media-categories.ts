@@ -2,7 +2,6 @@ import { asc, count } from 'drizzle-orm';
 import catalog from '../data/media-catalog.json' with { type: 'json' };
 import type { Db } from './db/client.ts';
 import { mediaCategoryDefs, mediaCategories as memberTable } from './db/schema.ts';
-import { refreshMediaRoles } from './media-scope.ts';
 
 // Media labels (藍營、綠營、新聞、非主流…). Admins edit them at /admin/media/
 // (app/src/admin/routes.ts), so they live in the DB; media-catalog.json only
@@ -10,6 +9,7 @@ import { refreshMediaRoles } from './media-scope.ts';
 // worker) keeps a snapshot here and refreshes it from the DB every minute and
 // after every admin write. Until the first refresh the snapshot is the seed.
 
+// The last six were outlet roles (性質) until they merged into the labels.
 export const SEED_LABELS: Record<string, string> = {
   news: '新聞媒體',
   '3c': '科技與 3C',
@@ -26,6 +26,12 @@ export const SEED_LABELS: Record<string, string> = {
   adct: '專題',
   blue: '藍營傾向媒體',
   green: '綠營傾向媒體',
+  wire: '通訊社',
+  platform: '平台代刊',
+  discovery: '發現來源',
+  corporate: '企業內容',
+  government: '政府機關',
+  partner: '新聞合作',
 };
 const ALL_LABEL = '所有媒體';
 
@@ -58,7 +64,7 @@ export function rankingCategories(): Record<string, { media: string[] }> {
 }
 
 /** Seeds empty tables from media-catalog.json (INSERT IGNORE, so the gateway
- *  and worker can race), then reloads the snapshot, outlet roles included. */
+ *  and worker can race), then reloads the snapshot. */
 export async function refreshMediaCategories(db: Db) {
   const [{ n }] = await db.select({ n: count() }).from(mediaCategoryDefs);
   if (!n) {
@@ -82,7 +88,6 @@ export async function refreshMediaCategories(db: Db) {
     db.select({ media: memberTable.media, category: memberTable.category }).from(memberTable).orderBy(asc(memberTable.media)),
   ]);
   snapshot = snapshotOf(defs, pairs);
-  await refreshMediaRoles(db);
 }
 
 /** Refresh now and then every `everyMs`; failures keep the last snapshot. */

@@ -1,12 +1,10 @@
 export type Definition = { key: string; label: string; sort: number };
-export type RoleDefinition = { key: string; label: string };
 export type Outlet = {
   media: string;
   title: string;
   icon: string | null;
   categories: string[];
-  roles: string[];
-  /** Label and role edits (GET /auth/admin/media only). */
+  /** Label edits (GET /auth/admin/media only). */
   edits?: { count: number; lastAt: string; lastBy: string } | null;
   /** The main host's robots.txt as last read (GET /auth/admin/media only). */
   robots?: { host: string; status: RobotsStatus; googleOnly: boolean; checkedAt: string } | null;
