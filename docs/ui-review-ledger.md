@@ -4,7 +4,22 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-17 22:57 Taipei)
+## Current deployed status (2026-10-18 00:38 Taipei)
+
+- **Worker-only `bd90c35f` (UTC 2026-10-17T16:37Z)**, on origin/main as 2e428b48. Targeting changes after the first live runs:
+  - Order: a quiet listing, then bodies, then tags, then listings whose every run failed. The first 6 targets were all of that last kind and none was fixable.
+  - Quiet is measured on crawled_at, not published_at.
+  - An unreadable outlet takes no slot in the run.
+  - A quiet outlet whose listing page links only to collected articles is skipped with no model call.
+  - A listing that reaches collected articles under another URL shape (matched by article number) is refused, and so is one that reaches only collected articles.
+- The 00:23 run on the old code activated rules for anntw and ap. Checked:
+  - anntw stored 42 new rows, same URL shape, no title shared with older rows: articles the old listing had missed.
+  - ap stored none.
+  - Both rules stay.
+- Release: overlay of four files on `2dac386c-worker`, each checked equal to `bd90c35f~1`. Rollback: `bash /home/deck/tag-analysis-private/f1-release/ai-crawl-rules-bd90c35f-20261018/rollback.sh` (→ 2dac386c). Script: `~/.cache/tag-review/deploy-worker-bd90.py`.
+- Retention: worker bd90 + 2dac + 16402500. 68e5-worker was deleted.
+
+### Earlier (2026-10-17 22:57 Taipei)
 
 - **Web + API + worker `68e582d7` / BUILD_ID `VNlkO60dNTDUwxUpWEck_` (UTC 2026-10-17T14:52Z), then worker-only `2dac386c` (14:57Z)**: AI-written crawl rules for outlets whose hand-written rules broke (docs/generated-crawl-rules.md), on origin/main as e0b1f157 + 4f429f6c.
   - The owner's rule is "no AI in data": rules live in files under `~/.local/share/tag-analysis/generated-rules/`, never in the DB.
