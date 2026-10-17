@@ -22,9 +22,9 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm ci --prefix web --ignore-scripts
+      - run: npx tsc --noEmit -p web/tsconfig.tests.json
       - run: npx biome ci .
       - run: npx tsc -p tsconfig.json
-      - run: npx tsc --noEmit -p web/tsconfig.tests.json
       - run: npx vitest run
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
