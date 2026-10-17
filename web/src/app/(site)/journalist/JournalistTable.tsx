@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useId, useMemo, useState } from 'react';
+import FilterButtons from '@/components/FilterButtons';
 import MediaIcon from '@/components/MediaIcon';
 import MethodLink from '@/components/MethodLink';
 import OutletPicker from '@/components/OutletPicker';
@@ -21,8 +22,6 @@ const allColumns: Array<{ key: SortKey; label: string; title?: string; numeric: 
   ...metrics.map((metric) => ({ ...metric, numeric: true })),
 ];
 const control = 'rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950';
-const chip = (active: boolean) =>
-  `rounded-full px-3 py-1 ${active ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'}`;
 const percent = (value: number | null) => (value === null ? '—' : `${(value * 100).toFixed(1)}%`);
 function MetricCell({ row, metric }: { row: JournalistSummary; metric: Metric }) {
   const count = metricCount(row, metric);
@@ -234,35 +233,19 @@ export default function JournalistTable({
             ? `（${[Boolean(relation), minArticles > 0, minCoverage > 0, minShare !== '', maxShare !== ''].filter(Boolean).length} 項已套用）`
             : ''}
         </summary>
-        <section className="mt-2 mb-3 flex flex-wrap gap-2 text-xs" aria-label="關係篩選">
-          <button
-            type="button"
-            className={chip(!relation)}
-            aria-pressed={!relation}
-            onClick={() => {
-              setRelation('');
-              setShown(PAGE);
-            }}
-          >
-            全部關係
-          </button>
-          {metrics
-            .filter(({ key }) => key !== 'compared')
-            .map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                className={chip(relation === key)}
-                aria-pressed={relation === key}
-                onClick={() => {
-                  setRelation(relation === key ? '' : key);
-                  setShown(PAGE);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-        </section>
+        <FilterButtons
+          label="關係篩選"
+          className="mt-2 mb-3"
+          options={[
+            ['', '全部關係'] as const,
+            ...metrics.filter(({ key }) => key !== 'compared').map(({ key, label }) => [key, label] as const),
+          ]}
+          value={relation}
+          onChange={(key) => {
+            setRelation(relation === key ? '' : key);
+            setShown(PAGE);
+          }}
+        />
         <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
           <label className="flex flex-col gap-1">
             最低篇數

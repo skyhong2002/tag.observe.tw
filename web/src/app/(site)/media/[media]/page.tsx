@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
+import FilterChips from '@/components/FilterChips';
 import FormSuggestInput from '@/components/FormSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
 import MediaRelations from '@/components/MediaRelations';
@@ -313,23 +314,15 @@ export default async function MediaPage({
           <section aria-label="文章列表" className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
               <h2 className="text-sm font-semibold">{cursor ? '較早收錄' : '最新收錄'}</h2>
-              <nav aria-label="刊登時間範圍" className="flex flex-wrap gap-1 text-xs">
-                {[
+              <FilterChips
+                label="刊登時間範圍"
+                items={[
                   { value: null, label: '全部' },
                   { value: '24', label: '1 天' },
                   { value: '72', label: '3 天' },
                   { value: '168', label: '7 天' },
-                ].map(({ value, label }) => (
-                  <Link
-                    key={label}
-                    href={periodHref(value)}
-                    aria-current={hours === value ? 'page' : undefined}
-                    className={`rounded px-2.5 py-1.5 ${hours === value ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </nav>
+                ].map(({ value, label }) => ({ href: periodHref(value), label, current: hours === value }))}
+              />
             </div>
             <form action={base} className="mb-1 flex gap-2">
               {hours && <input type="hidden" name="hours" value={hours} />}

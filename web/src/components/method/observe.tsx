@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { inlineLink, methodHeading, methodList, methodTerm } from './styles';
 
-// 網站觀測 (/observe/), over /api/v1/site-observation (app/src/v1/site-observation.ts),
+// 本站流量 (/observe/), over /api/v1/site-observation (app/src/v1/site-observation.ts),
 // which reads the daily GA4 / Search Console pull (app/src/jobs/analytics-job.ts).
 
 export function ObserveMethod() {
   return (
     <>
-      <h3 className={methodHeading}>網站觀測</h3>
+      <h3 className={methodHeading}>本站流量</h3>
       <p>
         本站每小時從 Google Analytics 4 與 Google Search Console 讀取彙整數字，近幾天的資料每次重抓，晚到的資料會補上；GA4
         處理需要時間，今天的數字通常落後一小時左右。只計 tag.observe.tw 的造訪；阻擋追蹤或停用 JavaScript 的讀者不會被計入。2026 年 10 月 5

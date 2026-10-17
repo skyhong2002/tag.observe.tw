@@ -14,7 +14,7 @@ export default async function ReadersPanel() {
       <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
         <h2>讀者關注</h2>
         <Link href="/observe/#readers">
-          網站觀測 <span aria-hidden="true">→</span>
+          本站流量 <span aria-hidden="true">→</span>
         </Link>
       </div>
       <ol className={styles.ranking}>

@@ -4,6 +4,7 @@ import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/compon
 import * as echarts from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import FilterButtons from '@/components/FilterButtons';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
 import SortIndicator from '@/components/SortIndicator';
@@ -310,27 +311,17 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
     : [];
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-zinc-500 dark:text-zinc-400">期間</span>
-        {RANGES.map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={value === range}
-            onClick={() => setRange(value)}
-            className={`rounded-full border px-3 py-1 ${
-              value === range
-                ? 'border-brand-600 bg-brand-50 font-medium text-brand-800 dark:bg-brand-950 dark:text-brand-300'
-                : 'border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900'
-            }`}
-          >
-            最近 {value} 天
-          </button>
-        ))}
-        <span className="text-zinc-500 dark:text-zinc-400">
+      <FilterButtons
+        label="期間"
+        showLabel
+        options={RANGES.map((value) => [value, `最近 ${value} 天`] as const)}
+        value={range}
+        onChange={setRange}
+      >
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
           {from} 至 {to}（台北時間），門檻 {Math.round(threshold * 100)}%
         </span>
-      </div>
+      </FilterButtons>
       {!current ? (
         <p role="status" className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
           載入每日統計中…

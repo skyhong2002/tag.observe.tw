@@ -60,11 +60,11 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     ),
   },
   { id: 'search', title: '搜尋', body: <SearchMethod camp={false} /> },
-  { id: 'observe', title: '網站觀測', pages: [['/observe/', '網站觀測']], body: <ObserveMethod /> },
+  { id: 'observe', title: '本站流量', pages: [['/observe/', '本站流量']], body: <ObserveMethod /> },
   { id: 'article', title: '單篇文章', body: <ArticleMethod /> },
   {
     id: 'similarity',
-    title: '新聞關係圖',
+    title: '媒體關係圖',
     pages: [
       ['/similarity/', '關係圖'],
       ['/similarity/reposts/', '轉載統計'],

@@ -1,6 +1,6 @@
 import { Bars, CARD_SIZE, cardJson, Figure, pageCard, taipeiDay } from '@/lib/page-card';
 
-export const alt = '新文易數：新聞關係圖';
+export const alt = '新文易數：媒體關係圖';
 export const size = CARD_SIZE;
 export const contentType = 'image/png';
 // Drawn per request (crawlers ask rarely); the API reads are cached by fetch.
@@ -20,7 +20,7 @@ export default async function Image() {
     .slice(0, 6);
   return pageCard({
     path: '/similarity/',
-    title: '新聞關係圖',
+    title: '媒體關係圖',
     description: '媒體之間的內文相似與引用：誰先刊登、誰的稿子被最多家採用（昨天至今）。',
     children: (
       <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>

@@ -34,7 +34,7 @@ export function JournalistMethod() {
       <p>
         內文相近取自
         <Link href="/similarity/" className={inlineLink}>
-          新聞關係圖
+          媒體關係圖
         </Link>
         的相似度索引：每篇有正文的文章（正規化後至少 200 字元）與前後 7 天內其他媒體的文章逐篇比對，以不重複的五字片段計算 Dice
         係數，記者頁列出索引中相似度 65% 以上的全部配對。索引每 10 分鐘處理新抓到的正文；標為「內容」的轉載站不列入比對。

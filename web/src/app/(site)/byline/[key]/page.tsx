@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AuthorCredits from '@/components/AuthorCredits';
+import FilterChips from '@/components/FilterChips';
 import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import { BYLINE_HOURS, type BylineDetail, bylineHours, bylineHref, CREDIT_LABELS, fetchBylines, periodLabel } from '@/lib/bylines';
@@ -53,18 +54,10 @@ export default async function BylinePage({ params, searchParams }: Props) {
           {byline.roles.length > 0 && ` · 原文角色：${byline.roles.join('、')}`}
         </p>
 
-        <nav aria-label="署名統計期間" className="flex flex-wrap gap-2 text-xs">
-          {BYLINE_HOURS.map((value) => (
-            <Link
-              key={value}
-              href={bylineHref(key, value)}
-              aria-current={value === hours ? 'page' : undefined}
-              className={`rounded-full border px-3 py-1.5 ${value === hours ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-zinc-300 dark:border-zinc-700'}`}
-            >
-              {periodLabel(value)}
-            </Link>
-          ))}
-        </nav>
+        <FilterChips
+          label="署名統計期間"
+          items={BYLINE_HOURS.map((value) => ({ href: bylineHref(key, value), label: periodLabel(value), current: value === hours }))}
+        />
         {byline.organization && (
           <div className="flex flex-wrap gap-4 text-sm">
             <Link
@@ -91,25 +84,17 @@ export default async function BylinePage({ params, searchParams }: Props) {
             </Link>
           )}
       </header>
-      <nav aria-label="刊登媒體篩選" className="flex flex-wrap gap-2 text-xs">
-        <Link
-          href={href(0, '')}
-          aria-current={!sp.media ? 'page' : undefined}
-          className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-        >
-          全部媒體
-        </Link>
-        {byline.outlets.map((outlet) => (
-          <Link
-            key={outlet.media}
-            href={href(0, outlet.media)}
-            aria-current={sp.media === outlet.media ? 'page' : undefined}
-            className={`rounded border px-3 py-2 ${sp.media === outlet.media ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-zinc-300 dark:border-zinc-700'}`}
-          >
-            {outlet.name} {outlet.count}
-          </Link>
-        ))}
-      </nav>
+      <FilterChips
+        label="刊登媒體篩選"
+        items={[
+          { href: href(0, ''), label: '全部媒體', current: !sp.media },
+          ...byline.outlets.map((outlet) => ({
+            href: href(0, outlet.media),
+            label: `${outlet.name} ${outlet.count}`,
+            current: sp.media === outlet.media,
+          })),
+        ]}
+      />
       <p role="status" className="text-xs text-zinc-500">
         符合 {data.total.toLocaleString('zh-TW')} 篇 · 依刊登時間排序
       </p>

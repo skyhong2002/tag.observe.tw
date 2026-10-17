@@ -633,7 +633,7 @@ export default function SimilarityExplorer({
               }).toString()}
             />
             <div>
-              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">新聞關係圖</h1>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">媒體關係圖</h1>
               <p className="mt-1 text-xs text-zinc-500">
                 {periodLabel(data)} · {nodes.length}／{graph.available} 家媒體 · {number(data.index.analyzed)} 篇全部比對
               </p>

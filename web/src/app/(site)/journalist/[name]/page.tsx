@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AuthorCredits from '@/components/AuthorCredits';
+import FilterChips from '@/components/FilterChips';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaSidebar from '@/components/MediaSidebar';
 import MethodLink from '@/components/MethodLink';
@@ -198,23 +199,12 @@ export default async function JournalistPage({
               </li>
             ))}
           </ul>
-          <nav aria-label="期間" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-zinc-500 dark:text-zinc-400">期間</span>
-            {DETAIL_HOURS.map((value) => (
-              <Link
-                key={value}
-                href={periodHref(value)}
-                aria-current={value === hours ? 'page' : undefined}
-                className={`rounded-full border px-3 py-1 ${
-                  value === hours
-                    ? 'border-brand-600 bg-brand-50 font-medium text-brand-800 dark:bg-brand-950 dark:text-brand-300'
-                    : 'border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900'
-                }`}
-              >
-                {periodLabel(value)}
-              </Link>
-            ))}
-          </nav>
+          <FilterChips
+            label="期間"
+            showLabel
+            className="mt-3"
+            items={DETAIL_HOURS.map((value) => ({ href: periodHref(value), label: periodLabel(value), current: value === hours }))}
+          />
         </div>
         <dl className="flex flex-wrap gap-x-6 gap-y-2 text-right">
           {summary.map((item) => (
