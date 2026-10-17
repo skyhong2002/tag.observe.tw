@@ -20,6 +20,8 @@ vi.mock('../crawl/rules/targets.ts', () => ({
         spec: { media, group: 'hourly', list: { urls: [] }, article: { enabled: true, batch: 1, delayMs: 0 } },
         owned: [`${media}.tw`],
         listingHosts: [`${media}.tw`],
+        examples: [],
+        collected: async () => new Map(),
         failing: [],
         working: [],
         reason: 'test',
@@ -74,18 +76,26 @@ describe('runCrawlRulesJob', () => {
   it('scales with the quota, activates passing rules and logs every attempt', async () => {
     const results: Record<string, GenerationResult> = {
       alpha: { ok: true, rules, report: null, rounds: 1, modelCalls: 1, model: 'gpt-test', reason: null },
-      beta: { ok: false, rules: null, report: null, rounds: 3, modelCalls: 3, model: 'gpt-test', reason: 'body short' },
+      // An unreadable outlet costs no model call, so it takes no slot.
+      beta: { ok: false, rules: null, report: null, rounds: 0, modelCalls: 0, model: null, reason: 'no page of the outlet could be read' },
+      gamma: { ok: false, rules: null, report: null, rounds: 3, modelCalls: 3, model: 'gpt-test', reason: 'body short' },
     };
+    const seen: string[] = [];
     const r = await runCrawlRulesJob(db, {
       readQuota: async () => quota(60),
-      generate: async (target) => results[target.media],
+      generate: async (target) => {
+        seen.push(target.media);
+        return results[target.media];
+      },
     });
-    expect(picked.at(-1)).toEqual({ limit: 2 });
-    expect(r).toMatchObject({ quota: 60, allowed: 2, picked: 2, activated: ['alpha'], failed: ['beta'] });
+    expect(picked.at(-1)).toEqual({ limit: 6 });
+    expect(seen).toEqual(['alpha', 'beta', 'gamma']);
+    expect(r).toMatchObject({ quota: 60, allowed: 2, picked: 3, activated: ['alpha'], failed: ['beta', 'gamma'] });
     expect(activeRevision(await readRuleFile('alpha'))).toMatchObject({ revision: 1, trigger: 'body', owned: ['alpha.tw'] });
     expect((await readAttempts()).map((a) => [a.media, a.status, a.modelCalls])).toEqual([
       ['alpha', 'activated', 1],
-      ['beta', 'failed', 3],
+      ['beta', 'failed', 0],
+      ['gamma', 'failed', 3],
     ]);
   });
 
@@ -101,7 +111,7 @@ describe('runCrawlRulesJob', () => {
         return { ok: false, rules: null, report: null, rounds: 0, modelCalls: 0, model: null, reason: 'stopped' };
       },
     });
-    expect(picked.at(-1)).toEqual({ limit: 4 });
+    expect(picked.at(-1)).toEqual({ limit: 12 });
     expect(answers).toEqual([true, false, false, false]);
   });
 });

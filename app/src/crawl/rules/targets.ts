@@ -1,11 +1,12 @@
-import { and, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNotNull, like, or, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.ts';
 import { articles, crawlRuns } from '../../db/schema.ts';
 import { allSources, disabled, excludedMedia } from '../registry.ts';
 import { crawlTimestamp } from '../schedule.ts';
 import type { SourceSpec } from '../sources.ts';
+import { urlKey } from '../text.ts';
 import { type Attempt, activeRevision, type RuleTrigger, readRuleFile } from './store.ts';
-import type { ArticleRef, RuleTarget } from './validate.ts';
+import type { ArticleRef, Collected, RuleTarget } from './validate.ts';
 
 // Which outlets need generated crawl rules (docs/generated-crawl-rules.md).
 // Plain code over crawl statistics: the model never sees the database.
@@ -16,24 +17,30 @@ const HOUR = 3600e3;
 export const COOLDOWN_DAYS: Record<RuleTrigger, number> = { listing: 14, body: 14, tags: 30, 'new-source': 30 };
 /** The model found the pages plainly lack what was asked (video stories, no printed tags). */
 export const UNFIXABLE_DAYS = 60;
+/** The hand-written listing still worked; the outlet had only gone quiet. */
+export const QUIET_DAYS = 2;
 /** Fresh rules get this long to show up in the statistics before they count as broken. */
 const SETTLE_MS = 4 * DAY;
-const ORDER: RuleTrigger[] = ['listing', 'body', 'tags', 'new-source'];
+// A quiet listing, missing bodies and missing tags come before listings whose
+// every run failed: those are mostly outlets that block us or are down, which
+// no rule fixes (the first live day: 6 of 6 such targets failed).
+const ORDER = ['listing', 'body', 'tags', 'listing-failing', 'new-source'] as const;
 
-export type Signal = { media: string; trigger: RuleTrigger; reason: string };
-const real = sql`NOT (${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`;
+export type Signal = { media: string; trigger: RuleTrigger; reason: string; failing?: boolean };
 
-/** Listings that went quiet for five typical gaps (at least two days), or whose index runs all failed for 12 hours. */
+/** Listings that brought no new article for five typical gaps (at least two days), or whose index runs all failed
+ * for 12 hours. Measured on crawled_at, when the crawler first stored an article: outlets that print only a date
+ * keep their publication times at midnight and would look quiet by published_at. */
 export async function listingSignals(db: Db, now: Date): Promise<Signal[]> {
   const [quiet, failing] = await Promise.all([
     db
       .select({
         media: articles.media,
-        prior: sql<number>`SUM(${articles.publishedAt} < ${new Date(now.getTime() - 2 * DAY)})`,
-        last: sql<Date | string | null>`MAX(${articles.publishedAt})`,
+        prior: sql<number>`SUM(${articles.crawledAt} < ${new Date(now.getTime() - 2 * DAY)})`,
+        last: sql<Date | string | null>`MAX(${articles.crawledAt})`,
       })
       .from(articles)
-      .where(and(eq(articles.source, 'own'), gte(articles.publishedAt, new Date(now.getTime() - 30 * DAY)), real))
+      .where(and(eq(articles.source, 'own'), gte(articles.crawledAt, new Date(now.getTime() - 30 * DAY))))
       .groupBy(articles.media),
     db
       .select({ media: crawlRuns.media, runs: sql<number>`COUNT(*)`, failed: sql<number>`SUM(${crawlRuns.status} = 'failed')` })
@@ -44,7 +51,7 @@ export async function listingSignals(db: Db, now: Date): Promise<Signal[]> {
   const out: Signal[] = [];
   for (const row of failing)
     if (Number(row.runs) >= 3 && Number(row.failed) === Number(row.runs))
-      out.push({ media: row.media, trigger: 'listing', reason: `近 12 小時 ${row.runs} 次列表抓取全部失敗` });
+      out.push({ media: row.media, trigger: 'listing', failing: true, reason: `近 12 小時 ${row.runs} 次列表抓取全部失敗` });
   for (const row of quiet) {
     const prior = Number(row.prior);
     const last = crawlTimestamp(row.last);
@@ -55,7 +62,7 @@ export async function listingSignals(db: Db, now: Date): Promise<Signal[]> {
       out.push({
         media: row.media,
         trigger: 'listing',
-        reason: `過去 28 天有 ${prior} 篇，但已經 ${Math.round(silent / HOUR)} 小時沒有新文章`,
+        reason: `過去 28 天收錄 ${prior} 篇，但已經 ${Math.round(silent / HOUR)} 小時沒有收錄新文章`,
       });
   }
   return out;
@@ -151,6 +158,55 @@ export function configuredHosts(spec: SourceSpec): string[] {
   return [...new Set(urls.map((u) => (u ? hostOf(u) : null)).filter((h): h is string => !!h))];
 }
 
+// Years and YYYYMMDD dates are shared by every article of a day, not numbers of one.
+const DATE_LIKE = /^(?:(?:19|20)\d{2}|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))$/;
+/** The article number in a URL: its longest run of four or more digits that is not a year or a date. */
+export const articleNumber = (url: string) => {
+  try {
+    const u = new URL(url);
+    const runs = ((u.pathname + u.search).match(/\d{4,}/g) ?? []).filter((run) => !DATE_LIKE.test(run));
+    return runs.sort((a, b) => b.length - a.length)[0] ?? null;
+  } catch {
+    return null;
+  }
+};
+/** For each given URL the outlet already has: 'same' when stored under the same url_key (as the crawler dedupes),
+ * 'shape' when an article with the same number is stored under another URL shape. New URLs are absent. */
+export async function collectedUrls(db: Db, spec: SourceSpec, urls: string[]): Promise<Map<string, Collected>> {
+  const out = new Map<string, Collected>();
+  if (!urls.length) return out;
+  const keyOf = new Map(urls.map((url) => [url, urlKey(url, spec.list.articleId)]));
+  const exact = new Set(
+    (
+      await db
+        .select({ urlKey: articles.urlKey })
+        .from(articles)
+        .where(and(eq(articles.media, spec.media), inArray(articles.urlKey, [...new Set(keyOf.values())])))
+    ).map((r) => r.urlKey),
+  );
+  for (const url of urls) if (exact.has(keyOf.get(url) ?? '')) out.set(url, 'same');
+  const numbers = [
+    ...new Set(
+      urls
+        .filter((u) => !out.has(u))
+        .map(articleNumber)
+        .filter((n): n is string => !!n),
+    ),
+  ];
+  if (!numbers.length) return out;
+  const stored = await db
+    .select({ urlKey: articles.urlKey })
+    .from(articles)
+    .where(and(eq(articles.media, spec.media), or(...numbers.map((n) => like(articles.urlKey, `%${n}%`)))))
+    .limit(500);
+  const storedNumbers = new Set(stored.flatMap((r) => ((r.urlKey ?? '').match(/\d{4,}/g) ?? []).filter((run) => !DATE_LIKE.test(run))));
+  for (const url of urls) {
+    const n = articleNumber(url);
+    if (!out.has(url) && n && storedNumbers.has(n)) out.set(url, 'shape');
+  }
+  return out;
+}
+
 async function articleRefs(db: Db, media: string, where: ReturnType<typeof sql>, now: Date, limit: number): Promise<ArticleRef[]> {
   const rows = await db
     .select({ url: articles.url, publishedAt: articles.publishedAt })
@@ -197,6 +253,8 @@ export async function buildTarget(db: Db, spec: SourceSpec, signal: Signal, now 
     spec,
     owned,
     listingHosts,
+    examples: recent.slice(0, 5).map((r) => r.url),
+    collected: (urls) => collectedUrls(db, spec, urls),
     failing,
     working,
     reason: signal.reason,
@@ -224,7 +282,7 @@ export async function pickTargets(
   // Outlets whose generated rules broke come first, then by trigger.
   const regenerating = new Set<string>();
   for (const signal of signals) if (activeRevision(await readRuleFile(signal.media))) regenerating.add(signal.media);
-  const rank = (s: Signal) => (regenerating.has(s.media) ? -1 : ORDER.indexOf(s.trigger));
+  const rank = (s: Signal) => (regenerating.has(s.media) ? -1 : ORDER.indexOf(s.failing ? 'listing-failing' : s.trigger));
   for (const signal of signals.sort((a, b) => rank(a) - rank(b))) {
     if (picked.length >= limit) break;
     if (seen.has(signal.media) || (only && !only.includes(signal.media))) continue;
@@ -235,7 +293,11 @@ export async function pickTargets(
     const active = activeRevision(await readRuleFile(spec.media));
     if (active && now.getTime() - Date.parse(active.createdAt) < SETTLE_MS) continue;
     const last = lastTry.get(spec.media);
-    const cooldown = last?.reason?.startsWith('unfixable') ? UNFIXABLE_DAYS : COOLDOWN_DAYS[signal.trigger];
+    const cooldown = last?.reason?.startsWith('unfixable')
+      ? UNFIXABLE_DAYS
+      : last?.reason?.startsWith('quiet')
+        ? QUIET_DAYS
+        : COOLDOWN_DAYS[signal.trigger];
     if (!only && last && now.getTime() - Date.parse(last.at) < cooldown * DAY) continue;
     const built = await buildTarget(db, spec, signal, now, owners);
     if (usable(built)) picked.push(built);

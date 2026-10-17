@@ -14,6 +14,7 @@ import type { RuleTrigger } from './store.ts';
 // validation's async context (withTrialSiteRules), never to a parallel crawl.
 
 export type ArticleRef = { url: string; publishedAt: Date | null };
+export type Collected = 'same' | 'shape';
 export type RuleTarget = {
   media: string;
   trigger: RuleTrigger;
@@ -27,6 +28,10 @@ export type RuleTarget = {
   failing: ArticleRef[];
   /** Recent articles the current rules read fine: new rules must not break them. */
   working: ArticleRef[];
+  /** A few article URLs as the crawler stores them: a new listing must keep their shape. */
+  examples: string[];
+  /** Which of these article URLs the outlet already has: under the same url_key, or under another URL shape. */
+  collected: (urls: string[]) => Promise<Map<string, Collected>>;
   /** Why the target was picked, in words, for the model and the log. */
   reason: string;
   previous?: { rules: RawRules; reason: string };
@@ -144,6 +149,16 @@ export async function validateRules(
       if (recent.length < SAMPLES)
         report.problems.push(`listing found ${recent.length} recent articles (${listing.errors.slice(0, 3).join('; ') || 'no errors'})`);
       refs = recent.map((item) => ({ url: item.url, publishedAt: item.publishedAt ?? null }));
+      // A listing that only reaches articles already collected fixes nothing.
+      // One reaching collected articles under another URL shape would store them all again.
+      if (recent.length) {
+        const collected = await target.collected(recent.map((item) => item.url));
+        const shape = recent.find((item) => collected.get(item.url) === 'shape');
+        if (shape)
+          report.problems.push(`listing reaches collected articles under another URL shape (${shape.url}); they would be stored twice`);
+        else if (listingTrigger(target.trigger) && recent.every((item) => collected.has(item.url)))
+          report.problems.push('listing reaches only articles already collected');
+      }
     }
     const fromDb = !refs.length;
     if (fromDb) refs = target.failing;

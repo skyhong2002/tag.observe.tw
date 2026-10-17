@@ -32,6 +32,8 @@ listing: only when asked for one (or when the current listing is broken): urls a
 RSS/Atom feeds or news sitemaps (newest articles first); discoverPattern is a regex for article paths found as links
 on HTML listing pages (null for feeds); include filters listed URLs by path; discoverTitleSelector picks the headline
 inside a link card when the link wraps more than the headline. Otherwise listing is null.
+A listing must reach articles under the same URL shape as storedArticleUrls (many sites answer one article under
+several URLs; another shape would store every article twice): pick pages and patterns that link that way.
 render: true only when articles or bodies appear after JavaScript runs (pages marked rendered:true were read that way).
 noArticles: true only when the site plainly publishes no articles. unfixable: true only when the pages plainly lack
 what the task asks for (video stories with a one-line caption, no tags printed anywhere), so no rule can pass.
@@ -135,6 +137,7 @@ function prompt(
     why: target.reason,
     ownedHosts: target.owned,
     listingHosts: target.listingHosts,
+    storedArticleUrls: target.examples,
     current: currentRules(target, pages.find((p) => p.role !== 'listing')?.url ?? null),
     previous: target.previous ?? null,
     lastRound: last && { rules: last.rules, problems: last.error ? [last.error] : last.report?.problems, samples: last.report?.samples },
@@ -184,6 +187,16 @@ export async function generateRules(target: RuleTarget, deps: GenerationDeps = {
   };
   await collect();
   if (!pages.length) return { ...result, reason: 'no page of the outlet could be read' };
+  // A listing that went quiet may just be an outlet that published nothing (a
+  // weekend): when every article its listing page links to is already
+  // collected, there is nothing to repair.
+  if (target.trigger === 'listing' && !target.previous) {
+    const listing = pages.find((p) => p.role === 'listing');
+    const linked = listing ? likelyArticles(listing.html, listing.url, target.listingHosts, 20) : [];
+    const collected = await target.collected(linked);
+    if (linked.length && linked.every((url) => collected.has(url)))
+      return { ...result, reason: `quiet: all ${linked.length} articles its listing page links to are collected` };
+  }
   const scriptShellSeen = pages.some((p) => scriptShell(p.html, p.url));
   if (canRender && pages.some((p) => p.role === 'listing' && scriptShell(p.html, p.url))) {
     render = true;
@@ -215,6 +228,7 @@ export async function generateRules(target: RuleTarget, deps: GenerationDeps = {
       result.model = reply.model;
       if (reply.finishReason && reply.finishReason !== 'stop') throw Error(`model reply incomplete (${reply.finishReason})`);
       raw = JSON.parse(reply.content) as RawRules;
+      if (!Array.isArray(raw?.hostRules)) throw Error('reply without hostRules');
     } catch (error) {
       result.reason = `model: ${(error as Error).message.slice(0, 200)}`;
       continue;
