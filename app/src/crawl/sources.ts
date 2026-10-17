@@ -19,6 +19,8 @@ export interface SourceSpec {
   /** Aggregators discover original publishers; they never own article rows. */
   discovery?: 'google_news' | 'dongtaiwang';
   group: 'news' | 'hourly' | 'off';
+  /** Pages are read after a headless browser ran their scripts (generated rules, crawl/render.ts). */
+  render?: boolean;
   list: {
     urls: Array<{ cat: string; url: string }>;
     // New reference sites share feed/sitemap/HTML discovery; only pages whose

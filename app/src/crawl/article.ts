@@ -14,7 +14,7 @@ import { pansciArticle } from './news-pansci.ts';
 import { peopleCredits } from './news-people-credits.ts';
 import { publicArticleHtml } from './news-public-html.ts';
 import { sinaDeclaredProvider } from './news-sina-provider.ts';
-import { correctPublicationClock, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
+import { correctPublicationClock, isGeneratedSite, type NewsSiteRules, newsSiteEvidence, newsSiteRules } from './news-site-rules.ts';
 import { taipeiTimesCredits } from './news-taipeitimes-credits.ts';
 import { thePaperCredits } from './news-thepaper-credits.ts';
 import { tpNewsArticle } from './news-tpnews.ts';
@@ -76,21 +76,25 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
   const $ = cheerio.load(html);
   const site = newsSiteRules(url);
   const siteEvidence = newsSiteEvidence($, url);
-  rules = {
-    ...(site
-      ? {
-          bodySelector: site.bodySelector,
-          authorSelector: site.authorSelector,
-          authorPattern: site.authorPattern,
-          bodyHtmlSelector: site.bodyHtmlSelector,
-          bodyExcludeSelector: site.bodyExcludeSelector,
-          trustContainer: site.trustContainer,
-          plainTextBody: site.plainTextBody,
-          preferShortBody: site.preferShortBody,
-        }
-      : {}),
-    ...rules,
-  };
+  const siteRules: ArticleRules & Pick<NewsSiteRules, 'trustContainer' | 'plainTextBody' | 'preferShortBody'> = site
+    ? {
+        bodySelector: site.bodySelector,
+        authorSelector: site.authorSelector,
+        authorPattern: site.authorPattern,
+        bodyHtmlSelector: site.bodyHtmlSelector,
+        bodyExcludeSelector: site.bodyExcludeSelector,
+        trustContainer: site.trustContainer,
+        plainTextBody: site.plainTextBody,
+        preferShortBody: site.preferShortBody,
+        tagSelector: site.tagSelector,
+      }
+    : {};
+  // A generated rule replaced a source's own selectors that stopped working,
+  // so it wins over them; a hand-written site rule is only a fallback.
+  const generated = isGeneratedSite(site);
+  if (generated)
+    for (const key of Object.keys(siteRules) as (keyof typeof siteRules)[]) if (siteRules[key] === undefined) delete siteRules[key];
+  rules = generated ? { ...rules, ...siteRules } : { ...siteRules, ...rules };
   const meta = (sel: string) => $(sel).first().attr('content')?.trim() || null;
   let tags: string[] = [];
   let keywordSource = 'none';
@@ -219,6 +223,7 @@ export function extractArticle(html: string, url: string, rules: ArticleRules = 
     ownArticleAuthors($, url) ??
     ownReporterAuthors($, url);
   const content = extractArticleContent($, url, rules);
+  if (generated && content.bodySource === 'selector') content.bodySource = 'selector:gen';
   return {
     ...summary,
     tags: [...new Set(tags)].slice(0, 100),

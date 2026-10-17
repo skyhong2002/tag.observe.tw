@@ -1,3 +1,4 @@
+import { type CodexQuota, quotaAllows, readCodexQuota } from '../ai/quota.ts';
 import type { Db } from '../db/client.ts';
 import { aiConfig, fileAi } from '../tag-groups/ai.ts';
 import { filePeople, fileSections, fileWikidata, rankedTags, seedGroupDefs } from '../tag-groups/run.ts';
@@ -19,7 +20,15 @@ export async function runTagGroupsJob(
     limit = 500,
     budgetMs = 10 * 60e3,
     env = process.env,
-  }: { log?: Log; signal?: AbortSignal; limit?: number; budgetMs?: number; env?: Record<string, string | undefined> } = {},
+    readQuota = readCodexQuota,
+  }: {
+    log?: Log;
+    signal?: AbortSignal;
+    limit?: number;
+    budgetMs?: number;
+    env?: Record<string, string | undefined>;
+    readQuota?: () => Promise<CodexQuota | null>;
+  } = {},
 ) {
   const deadline = Date.now() + budgetMs;
   const stop = () => !!signal?.aborted || Date.now() > deadline;
@@ -33,7 +42,10 @@ export async function runTagGroupsJob(
   if (!stop()) result.section = await fileSections(db, tags, { stop });
   if (!stop()) result.wikidata = await fileWikidata(db, tags, { stop, log: warn });
   const ai = aiConfig(env);
+  // The AI step only runs while the Codex quota is comfortably above its floor.
+  const quota = ai && !stop() ? await readQuota() : null;
   if (!ai) result.ai = 'skipped: no TAG_AI_API_KEY';
+  else if (!stop() && !quotaAllows(quota)) result.ai = `skipped: Codex quota ${quota ? `${quota.remainingPercent}%` : 'unknown'}`;
   else if (!stop()) result.ai = await fileAi(db, tags, ai, { stop, log: warn });
   result.stopped = stop();
   return result;

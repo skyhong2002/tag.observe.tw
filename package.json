@@ -26,7 +26,8 @@
     "crawl:news-once": "node --env-file=.env tools/crawl-news-once.ts",
     "similarity:audit": "node tools/similarity-audit.ts",
     "similarity:backfill": "node --env-file=.env tools/similarity-backfill.ts",
-    "events:once": "node --env-file=.env tools/events-once.ts"
+    "events:once": "node --env-file=.env tools/events-once.ts",
+    "rules:once": "node --env-file=.env tools/crawl-rules-once.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^11.2.0",

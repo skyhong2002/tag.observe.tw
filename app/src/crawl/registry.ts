@@ -1,6 +1,7 @@
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import groups from '../../data/crawl-groups.json' with { type: 'json' };
 import { addNewsSources } from './news-sources.ts';
+import { withGeneratedRules } from './rules/state.ts';
 import { sourceDispatchGroup } from './schedule.ts';
 import { overrides } from './sources/overrides.ts';
 import { loadSources, type SourceSpec } from './sources.ts';
@@ -13,11 +14,16 @@ export function allSources(): SourceSpec[] {
   }));
   return cached;
 }
+// Generated crawl rules (crawl/rules/) change at runtime, so they are applied
+// on every lookup rather than in the cached list.
 export function sourcesInGroup(group: 'news' | 'hourly'): SourceSpec[] {
-  return allSources().filter((s) => s.group === group && !disabled().has(s.media));
+  return allSources()
+    .map(withGeneratedRules)
+    .filter((s) => s.group === group && !disabled().has(s.media));
 }
 export function sourceByMedia(media: string): SourceSpec | undefined {
-  return allSources().find((s) => s.media === media);
+  const spec = allSources().find((s) => s.media === media);
+  return spec && withGeneratedRules(spec);
 }
 // Sources listed in crawl-disabled.json are off; CRAWL_DISABLED=media1,media2
 // turns further sources off without a deploy.

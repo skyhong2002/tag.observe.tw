@@ -7,7 +7,7 @@ import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
 import { table } from '@/lib/table-styles';
 import { adminFetch, note } from '../AdminGate';
-import { type Definition, LabelChip, type Outlet, OutletIcon, type RoleDefinition } from './labels';
+import { type Definition, LabelChip, type Outlet, OutletIcon, ROBOTS, type RoleDefinition, robotsLabel, TRIGGERS } from './labels';
 
 // A bookmark that opens /admin/media/ for whatever news page is showing.
 export function Bookmarklet() {
@@ -62,7 +62,7 @@ export function Bookmarklet() {
 type Status = 'ok' | 'stale' | 'failing' | 'disabled';
 type Stats = { status: Status; last7d: number; taggedShare24h: number | null; lastArticle: string | null };
 type Row = Outlet & { stats: Stats | null };
-type SortKey = 'title' | 'status' | 'last7d' | 'tagged' | 'lastArticle' | 'edits' | 'lastEdit';
+type SortKey = 'title' | 'status' | 'last7d' | 'tagged' | 'lastArticle' | 'robots' | 'rules' | 'edits' | 'lastEdit';
 
 const STATUS: Record<Status | 'none', { label: string; color: string; path: string }> = {
   ok: { label: '正常', color: '#0ca30c', path: 'M5 10.5l3 3 7-7' },
@@ -157,6 +157,8 @@ export function Outlets() {
     if (sort === 'last7d') return r.stats?.last7d ?? -1;
     if (sort === 'tagged') return r.stats?.taggedShare24h ?? -1;
     if (sort === 'lastArticle') return r.stats?.lastArticle ? Date.parse(r.stats.lastArticle) : 0;
+    if (sort === 'robots') return r.robots ? ROBOTS[r.robots.status].sort : -1;
+    if (sort === 'rules') return r.generatedRules?.revision ?? 0;
     if (sort === 'edits') return r.edits?.count ?? 0;
     return r.edits ? Date.parse(r.edits.lastAt) : 0;
   };
@@ -172,7 +174,7 @@ export function Outlets() {
     if (sort === key) setDescending(!descending);
     else {
       setSort(key);
-      setDescending(key !== 'title' && key !== 'status');
+      setDescending(key !== 'title' && key !== 'status' && key !== 'robots');
     }
   };
   const th = (key: SortKey, text: string, className: string, title?: string) => (
@@ -253,6 +255,8 @@ export function Outlets() {
               {th('last7d', '7 天文章', table.num)}
               {th('tagged', '標籤率', table.num, '近 24 小時有標籤的文章比例')}
               {th('lastArticle', '最新文章', table.cell)}
+              {th('robots', 'robots.txt', table.cell, '主網域 robots.txt 最近一次讀到的內容；只記錄，爬蟲不遵守')}
+              {th('rules', 'AI 規則', table.cell, '驗證通過、正在使用的 AI 產生爬取規則')}
               {th('edits', '修改', table.num, '標籤與性質的修改次數')}
               {th('lastEdit', '最近修改', table.cell)}
             </tr>
@@ -295,6 +299,15 @@ export function Outlets() {
                 </td>
                 <td className={`${table.cell} !py-1.5 tabular-nums ${r.stats?.lastArticle ? '' : muted}`}>
                   {when(r.stats?.lastArticle ?? null)}
+                </td>
+                <td
+                  className={`${table.cell} !py-1.5 ${r.robots ? ROBOTS[r.robots.status].className : muted}`}
+                  title={r.robots ? `${r.robots.host} · ${when(r.robots.checkedAt)} 讀取` : '尚未讀取'}
+                >
+                  {r.robots ? robotsLabel(r.robots) : '—'}
+                </td>
+                <td className={`${table.cell} !py-1.5 ${r.generatedRules ? '' : muted}`}>
+                  {r.generatedRules ? `第 ${r.generatedRules.revision} 版 · ${TRIGGERS[r.generatedRules.trigger]}` : '—'}
                 </td>
                 <td className={`${table.num} !py-1.5 ${r.edits ? '' : muted}`}>{r.edits?.count ?? '—'}</td>
                 <td className={`${table.cell} !py-1.5 tabular-nums ${r.edits ? '' : muted}`} title={r.edits?.lastBy}>

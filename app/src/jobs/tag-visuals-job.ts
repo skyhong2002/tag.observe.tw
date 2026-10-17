@@ -1,3 +1,4 @@
+import { type CodexQuota, quotaAllows, readCodexQuota } from '../ai/quota.ts';
 import { risingTags } from '../avatars/run.ts';
 import type { Db } from '../db/client.ts';
 import { aiConfig } from '../tag-groups/ai.ts';
@@ -21,6 +22,7 @@ export async function runTagVisualsJob(
     budgetMs = 8 * 60e3,
     env = process.env,
     risingOnly = false,
+    readQuota = readCodexQuota,
   }: {
     log?: Log;
     signal?: AbortSignal;
@@ -28,14 +30,19 @@ export async function runTagVisualsJob(
     budgetMs?: number;
     env?: Record<string, string | undefined>;
     risingOnly?: boolean;
+    readQuota?: () => Promise<CodexQuota | null>;
   } = {},
 ) {
   const deadline = Date.now() + budgetMs;
   const stop = () => !!signal?.aborted || Date.now() > deadline;
   const rising = await risingTags(db);
   const tags = risingOnly ? rising : [...new Set([...rising, ...(await rankedTags(db, { limit }))])];
+  // AI picks only while the Codex quota is comfortably above its floor; the
+  // Wikidata, flag and logo steps run either way.
+  const config = aiConfig(env);
+  const ai = config && quotaAllows(await readQuota()) ? config : null;
   const tally = await processTags(db, tags, {
-    ai: aiConfig(env),
+    ai,
     stop,
     log: (o) => {
       if ('error' in o) log(o, 'tag visual failed');

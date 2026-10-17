@@ -7,6 +7,7 @@ import { registerAdminRoutes } from './admin/routes.ts';
 import { registerLogin } from './auth/google-login.ts';
 import { dbLoginStore } from './auth/store.ts';
 import { registerAvatarAdmin } from './avatars/admin.ts';
+import { keepGeneratedRulesFresh } from './crawl/rules/state.ts';
 import { createDb } from './db/client.ts';
 import { registerFeeds } from './feeds.ts';
 import { isShareImage, legacyRoute } from './legacy-redirects.js';
@@ -173,6 +174,11 @@ export async function buildApp(
   const own = db ? { db, close: async () => {} } : config.tagDbUrl ? createDb(config.tagDbUrl) : null;
   const labels = own ? keepMediaCategoriesFresh(own.db, { warn: (err) => app.log.warn({ err }, 'media labels refresh failed') }) : null;
   await labels?.ready;
+  // Admin refetch crawls in this process too, so it reads the generated crawl rules (crawl/rules/state.ts).
+  const generatedRules = own
+    ? keepGeneratedRulesFresh({ warn: (err) => app.log.warn({ err }, 'generated crawl rules refresh failed') })
+    : null;
+  await generatedRules?.ready;
   if (own) {
     await registerV1Routes(app, own.db);
     registerPageApis(app, own.db);
@@ -244,6 +250,7 @@ export async function buildApp(
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {
     labels?.stop();
+    generatedRules?.stop();
     if (jobs) {
       await jobs.queue.close();
       await jobs.redis.quit();

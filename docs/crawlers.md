@@ -16,6 +16,8 @@
 | `registry.ts` | 啟用來源；停用清單 `app/data/crawl-disabled.json`（附原因）＋ `CRAWL_DISABLED` |
 | `pipeline.ts` | `runIndex`（列表 → upsert，feed 自帶標籤立即寫入）、`runArticles`（抓未抓過的文章，429 時停止該批） |
 | `topics.ts`、`topic-page.ts` | 議題表：各媒體專題頁 |
+| `rules/`、`render.ts` | 手寫規則失效時，由 AI 產生並驗證的宣告式規則（存在檔案，不進 DB）與無頭瀏覽器渲染，見 [generated-crawl-rules.md](generated-crawl-rules.md) |
+| `robots.ts` | 每天記錄各媒體 robots.txt 的狀態（只顯示，不遵守） |
 
 來源規格常用欄位：`list.include`（網址路徑過濾）、`list.articleId`（同一篇多網址時的文章身分）、`list.titleInclude`、`titleSuffix`（去掉標題後的站名）、`article.provider`（聚合站只收自製內容，其餘記在 `rejected_urls`）、`article.jsonTags`、`tagSelector`、`skipMeta`。新增或替換來源時，到 `/admin/media/` 設定它的標籤（`app/data/media-catalog.json` 只用來初始化空的資料庫，見 [login.md](login.md#媒體設定adminmedia)）。
 
