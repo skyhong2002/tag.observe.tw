@@ -89,7 +89,7 @@
 
 ## 管理後台（`/admin/`）
 
-帳號選單的「管理後台」開到 `/admin/`。各頁上方是同一排分頁（`web/src/lib/site-nav.ts` 的「管理後台」區）：讀者回報（`/admin/`）、媒體設定（`/admin/media/`）、標籤管理（`/admin/tags/`，底下再分分類與群組、文章關係、人物頭像、其他標籤圖像）、帳號（`/admin/accounts/`）、資料庫（`/admin/database/`，說明並連到 `/admin/db/`）。
+帳號選單的「管理後台」開到 `/admin/`。各頁上方是同一排分頁（`web/src/lib/site-nav.ts` 的「管理後台」區）：讀者回報（`/admin/`）、媒體設定（`/admin/media/`）、標籤管理（`/admin/tags/`，底下再分分類與群組、關係投稿、文章關係、標籤配圖，頁首是近 7 天讀者投稿摘要）、帳號（`/admin/accounts/`）、資料庫（`/admin/database/`，說明並連到 `/admin/db/`）。
 
 ## 指派管理員
 

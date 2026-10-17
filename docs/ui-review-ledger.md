@@ -4,7 +4,30 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-17 20:30 Taipei)
+## Current deployed status (2026-10-17 21:05 Taipei)
+
+- **Web `bae72899` / BUILD_ID `KAur9-eC0u_yKPuOOgaBQ` (UTC 2026-10-17T13:05:42Z, web only)**: owner asked for /admin/ to use the same second-level tabs as other pages.
+  - `site-nav.ts` has a 管理後台 section, and every admin page starts with `SectionTabs`: 讀者回報 (`/admin/`), 媒體設定 (`/admin/media/`), 標籤管理 (`/admin/tags/`), 帳號 (`/admin/accounts/`) and 資料庫 (`/admin/database/`).
+    - 讀者回報: status filter as `FilterButtons`.
+    - 媒體設定: with no outlet chosen it lists every outlet with labels and roles, plus the bookmarklet.
+    - 資料庫: explains and links to `/admin/db/`.
+  - This branch's 近 7 天讀者投稿 summary moved from the old /admin/ page into the 標籤管理 page header (`tags/SubmissionSummary.tsx`). Solid buttons keep this branch's no-`dark:bg-brand-600`.
+  - Also on origin/main as fcb39ede.
+- API/gateway `e3eeb731-api-media-roles` and worker `16402500-worker-rosters` unchanged.
+- Checks:
+  - Gate: load1 4.3. Web first 200 in 2.3 s.
+  - Loopback 18338 against the live API: 8 GETs 200 with markers (the 管理後台 tab row on all five admin pages).
+  - Gateway and public: same 8 GETs 200 with the new BUILD_ID.
+  - Public browser round at 1280 and 390, with /auth/me and /auth/admin/* mocked through Playwright: each admin page has its own tab lit and h1, and 0 page errors. On phones the tab row wraps to two lines.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/admin-tabs-bae72899-20261017/rollback.sh` (web → e3eeb731). Script: `~/.cache/tag-review/package-and-deploy-bae7.py`.
+- Retention now:
+  - Web: bae72899 + e3eeb731.
+  - API: e3eeb731-api + 7c1c21c7-api.
+  - Worker: 16402500-worker + 1271a2dd-worker.
+  - Also kept: aff5 (18230/18232), 0dd38b6 (`current`), dc7b814e.
+  - Deleted: 75a48570-web.
+
+### Earlier (2026-10-17 20:30 Taipei)
 
 - **Web + API `e3eeb731` / BUILD_ID `if8PPqM-183iQDnILtfDj` (UTC 2026-10-17T12:30Z; API and gateway at 12:29:58 and 12:30:02, web at 12:30:08)**: admins tick outlet roles (性質) at /admin/media/.
   - Why: an admin labelling outlets could not find 平台代刊, because roles lived only in `app/data/media-scope.json`. They rebuilt it as two media labels, 新聞集合 and 新聞合作.
