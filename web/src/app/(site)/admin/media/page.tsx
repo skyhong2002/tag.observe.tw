@@ -13,7 +13,7 @@ export default function AdminMediaPage() {
       <SectionTabs here="/admin/media/" />
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">媒體設定</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">每家媒體的標籤與性質、單篇文章的標籤和署名，以及手動跑爬蟲。</p>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">每家媒體的標籤、單篇文章的標籤和署名，以及手動跑爬蟲。</p>
       </header>
       <Suspense fallback={<p className="text-sm text-zinc-600 dark:text-zinc-400">載入中…</p>}>
         <MediaEditor />
