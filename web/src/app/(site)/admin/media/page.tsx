@@ -1,22 +1,21 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Suspense } from 'react';
+import SectionTabs from '@/components/SectionTabs';
 import MediaEditor from './MediaEditor';
 
 export const metadata: Metadata = { title: '媒體設定 · 管理後台', robots: { index: false } };
 
-// Landing page of the 「設定這家媒體」 bookmarklet (/admin/media/?url=…), or
-// /admin/media/?media=… from the outlet list on /admin/.
+// Every outlet with its labels; /admin/media/?media=… edits one, and the
+// 「設定這家媒體」 bookmarklet lands on /admin/media/?url=….
 export default function AdminMediaPage() {
   return (
-    <div className="py-4">
-      <p className="text-sm">
-        <Link href="/admin/" className="text-brand-700 underline dark:text-brand-400">
-          管理後台
-        </Link>
-      </p>
-      <h1 className="mt-1 text-2xl font-bold">媒體設定</h1>
-      <Suspense fallback={<p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">載入中…</p>}>
+    <div className="space-y-5">
+      <SectionTabs here="/admin/media/" />
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">媒體設定</h1>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">每家媒體的標籤與性質、單篇文章的標籤和署名，以及手動跑爬蟲。</p>
+      </header>
+      <Suspense fallback={<p className="text-sm text-zinc-600 dark:text-zinc-400">載入中…</p>}>
         <MediaEditor />
       </Suspense>
     </div>
