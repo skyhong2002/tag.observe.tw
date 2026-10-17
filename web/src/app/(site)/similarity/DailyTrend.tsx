@@ -6,8 +6,9 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FilterButtons from '@/components/FilterButtons';
 import MediaHoverLink from '@/components/MediaHoverLink';
-import MethodLink from '@/components/MethodLink';
+import MediaIcon from '@/components/MediaIcon';
 import SortIndicator from '@/components/SortIndicator';
+import TabButtons from '@/components/TabButtons';
 import TableScroller from '@/components/TableScroller';
 import { fetchDaily, type SimilarityDaily } from '@/lib/similarity';
 import { table } from '@/lib/table-styles';
@@ -25,6 +26,16 @@ const SERIES = [
   { key: 'identical', name: '內文相同', color: '#0d9488', dashed: true },
   { key: 'citations', name: '來源／引用', color: '#8b5cf6', dashed: false },
 ] as const;
+// Per-outlet counts, colored as on the graph: orange earlier → later, teal shared bylines, violet citations.
+// Each is counted on the outlet's own articles or citations, so several outlets add up without double counting.
+const OUTLET_SERIES = [
+  { key: 'copied', name: '較早刊登', color: '#ea580c', dashed: false },
+  { key: 'copying', name: '較晚刊登', color: '#ea580c', dashed: true },
+  { key: 'sameByline', name: '同署名跨站', color: '#0d9488', dashed: false },
+  { key: 'citing', name: '採用／引用他媒', color: '#8b5cf6', dashed: false },
+] as const;
+/** Ticked outlets named above the chart; the rest are counted. */
+const SHOWN = 12;
 
 /** Today's date in Asia/Taipei as YYYY-MM-DD. */
 const taipeiToday = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
@@ -44,17 +55,37 @@ function useDark() {
   return dark;
 }
 
-function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
+type Line = { name: string; color: string; dashed: boolean; values: number[] };
+type Scale = 'share' | 'count';
+type Outlet = SimilarityDaily['media'][number];
+
+/** Lines on top, compared articles as bars below; `share` draws each line as a percent of that day's compared articles. */
+function TrendChart({
+  days,
+  lines,
+  bars,
+  label,
+  unit,
+  scale,
+}: {
+  days: string[];
+  lines: Line[];
+  bars: number[];
+  label: string;
+  /** Name of the lines' axis in counts. */
+  unit: string;
+  scale: Scale;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const dark = useDark();
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
+    // The legend wraps to two rows on phones; push the plot down so it clears the axis name.
+    const top = ref.current.clientWidth < 560 ? 84 : 64;
     const ink = dark ? '#a1a1aa' : '#71717a',
       grid = dark ? '#27272a' : '#f4f4f5',
       surface = dark ? '#18181b' : '#ffffff';
-    const days = data.days.slice(start);
-    const pick = (values: number[]) => values.slice(start);
     const axis = (i: number) => ({
       type: 'category',
       gridIndex: i,
@@ -68,10 +99,10 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
       type: 'value',
       gridIndex: i,
       min: 0,
-      minInterval: 1,
+      ...(i === 0 && scale === 'share' ? {} : { minInterval: 1 }),
       name,
       nameTextStyle: { color: ink, align: 'left' },
-      axisLabel: { color: ink },
+      axisLabel: { color: ink, ...(i === 0 && scale === 'share' ? { formatter: '{value}%' } : {}) },
       splitLine: { lineStyle: { color: grid } },
     });
     chart.setOption({
@@ -79,21 +110,32 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
       axisPointer: { link: [{ xAxisIndex: 'all' }] },
       tooltip: {
         trigger: 'axis',
+        confine: true,
         backgroundColor: surface,
         borderColor: grid,
         textStyle: { color: dark ? '#e4e4e7' : '#27272a' },
-        formatter: (items: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) =>
-          [days[items[0]?.dataIndex ?? 0], ...items.map((it) => `${it.marker}${it.seriesName}　${number(Number(it.value))}`)].join('<br/>'),
+        formatter: (items: Array<{ seriesName: string; seriesIndex: number; marker: string; dataIndex: number }>) => {
+          const day = items[0]?.dataIndex ?? 0;
+          return [
+            days[day],
+            ...items.map((it) => {
+              const line = lines[it.seriesIndex];
+              if (!line) return `${it.marker}${it.seriesName}　${number(bars[day] ?? 0)}`;
+              const count = line.values[day] ?? 0;
+              return `${it.marker}${it.seriesName}　${bars[day] ? `${Math.round((count / bars[day]) * 100)}%（${number(count)}）` : number(count)}`;
+            }),
+          ].join('<br/>');
+        },
       },
-      legend: { top: 0, left: 0, textStyle: { color: ink }, data: [...SERIES.map((s) => s.name), '比對篇數'] },
+      legend: { top: 0, left: 0, textStyle: { color: ink }, data: [...lines.map((s) => s.name), '比對篇數'] },
       grid: [
-        { left: 48, right: 24, top: 64, height: '46%' },
+        { left: 48, right: 24, top, height: '46%' },
         { left: 48, right: 24, top: '72%', bottom: 26 },
       ],
       xAxis: [axis(0), axis(1)],
-      yAxis: [yAxis(0, '配對／篇'), yAxis(1, '比對篇數')],
+      yAxis: [yAxis(0, scale === 'share' ? '÷ 比對篇數' : unit), yAxis(1, '比對篇數')],
       series: [
-        ...SERIES.map((s) => ({
+        ...lines.map((s) => ({
           name: s.name,
           type: 'line',
           xAxisIndex: 0,
@@ -102,7 +144,8 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
           color: s.color,
           lineStyle: { width: 2, type: s.dashed ? 'dashed' : 'solid' },
           emphasis: { focus: 'series' },
-          data: pick(data.totals[s.key]),
+          // A day without compared articles has no share; leave a gap rather than a false zero.
+          data: scale === 'share' ? s.values.map((n, i) => (bars[i] ? Math.round((n / bars[i]) * 1000) / 10 : null)) : s.values,
         })),
         {
           name: '比對篇數',
@@ -112,7 +155,7 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
           barMaxWidth: 14,
           color: dark ? '#71717a' : '#a1a1aa',
           itemStyle: { borderRadius: [4, 4, 0, 0] },
-          data: pick(data.totals.articles),
+          data: bars,
         },
       ],
     });
@@ -122,8 +165,8 @@ function TrendChart({ data, start }: { data: SimilarityDaily; start: number }) {
       window.removeEventListener('resize', onResize);
       chart.dispose();
     };
-  }, [data, start, dark]);
-  return <div ref={ref} className="h-96 w-full" role="img" aria-label="每日相似配對、內文相同、來源／引用與比對篇數" />;
+  }, [days, lines, bars, unit, scale, dark]);
+  return <div ref={ref} className="h-96 w-full" role="img" aria-label={label} />;
 }
 
 type Metric = 'sameByline' | 'attributed' | 'unattributed' | 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
@@ -167,11 +210,12 @@ function Share({ row, metric }: { row: Row; metric: Metric }) {
   );
 }
 
-function OutletTable({ data }: { data: SimilarityDaily }) {
+/** Table rows totalled over the period, in the table's sort order; the outlet charts follow it too. */
+function useOutletRows(data: SimilarityDaily | null) {
   const [sort, setSort] = useState<SortKey>('articles');
   const [descending, setDescending] = useState(true);
   const rows = useMemo(() => {
-    const list: Row[] = data.media.map((m) => ({
+    const list: Row[] = (data?.media ?? []).map((m) => ({
       media: m.media,
       name: m.name,
       articles: sum(m.articles),
@@ -200,6 +244,26 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
       setDescending(key !== 'name');
     }
   };
+  return { rows, sort, descending, sortBy };
+}
+
+const checkbox = 'size-4 shrink-0 accent-brand-700 dark:accent-brand-500';
+
+function OutletTable({
+  rows,
+  sort,
+  descending,
+  sortBy,
+  picked,
+  ticked,
+  onTick,
+  onTickAll,
+}: ReturnType<typeof useOutletRows> & {
+  picked: 'all' | 'some' | 'none';
+  ticked: (media: string) => boolean;
+  onTick: (media: string) => void;
+  onTickAll: () => void;
+}) {
   const cell = table.num;
   const muted = (value: number) => (value ? '' : 'text-zinc-300 dark:text-zinc-700');
   return (
@@ -220,6 +284,19 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
                   className={`${numeric ? cell : table.leadHead} font-medium`}
                 >
                   <span className={`inline-flex items-center gap-1 whitespace-nowrap ${numeric ? 'w-full justify-end' : ''}`}>
+                    {!numeric && (
+                      <input
+                        type="checkbox"
+                        aria-label="全選媒體"
+                        title={picked === 'all' ? '取消全部勾選' : '全部勾選'}
+                        checked={picked === 'all'}
+                        ref={(el) => {
+                          if (el) el.indeterminate = picked === 'some';
+                        }}
+                        onChange={onTickAll}
+                        className={`${checkbox} mr-1.5`}
+                      />
+                    )}
                     <button
                       type="button"
                       title={column.share ? '依篇數排序' : undefined}
@@ -255,8 +332,15 @@ function OutletTable({ data }: { data: SimilarityDaily }) {
           {rows.map((row) => (
             <tr key={row.media} className={table.row}>
               <th scope="row" className={`${table.lead} text-left font-normal`}>
-                <div className={table.leadBox}>
-                  <MediaHoverLink media={row.media} title={row.name} className={`${linkStyle} flex items-center gap-1.5`}>
+                <div className={`${table.leadBox} flex items-center gap-2.5`}>
+                  <input
+                    type="checkbox"
+                    aria-label={`畫出${row.name}`}
+                    checked={ticked(row.media)}
+                    onChange={() => onTick(row.media)}
+                    className={checkbox}
+                  />
+                  <MediaHoverLink media={row.media} title={row.name} className={`${linkStyle} flex min-w-0 items-center gap-1.5`}>
                     <span className={table.leadText}>{row.name}</span>
                   </MediaHoverLink>
                 </div>
@@ -301,14 +385,47 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
   const peak = data ? Math.max(0, ...data.totals.articles) : 0;
   const since = data && peak > 0 ? data.days[data.totals.articles.findIndex((n) => n >= peak / 10)] : null;
   const sparse = data && since ? data.totals.articles.some((n, i) => n > 0 && data.days[i] < since) : false;
-  const totals = data
-    ? [
-        { label: '比對篇數', value: sum(data.totals.articles) },
-        { label: '相似配對', value: sum(data.totals.pairs) },
-        { label: '內文相同', value: sum(data.totals.identical) },
-        { label: '來源／引用', value: sum(data.totals.citations) },
-      ]
-    : [];
+  const outlets = useOutletRows(data);
+  // Nothing ticked shows the site-wide total; ticked outlets kept across periods are added up.
+  const [picks, setPicks] = useState<ReadonlySet<string>>(new Set());
+  const chosen = useMemo(() => (data ? data.media.filter((m) => picks.has(m.media)) : []), [data, picks]);
+  const picked = !chosen.length ? 'none' : chosen.length === data?.media.length ? 'all' : 'some';
+  const tick = (media: string) => {
+    const next = new Set(picks);
+    if (next.has(media)) next.delete(media);
+    else next.add(media);
+    setPicks(next);
+  };
+  const tickAll = () => setPicks(picked === 'all' ? new Set() : new Set(data?.media.map((m) => m.media)));
+  const [scale, setScale] = useState<Scale>('share');
+  // Shares of the sparse early days swing wildly, so the share chart starts at 資料自.
+  const first = scale === 'share' && data && since ? data.days.indexOf(since) : start;
+  const days = useMemo(() => (data && first >= 0 ? data.days.slice(first) : []), [data, first]);
+  const chart = useMemo(() => {
+    if (!data || first < 0) return null;
+    if (!chosen.length)
+      return {
+        lines: SERIES.map((s) => ({ ...s, values: data.totals[s.key].slice(first) })),
+        bars: data.totals.articles.slice(first),
+      };
+    const addUp = (pick: (m: Outlet) => number[] | undefined) =>
+      days.map((_, i) => chosen.reduce((n, m) => n + (pick(m)?.[first + i] ?? 0), 0));
+    return { lines: OUTLET_SERIES.map((s) => ({ ...s, values: addUp((m) => m[s.key]) })), bars: addUp((m) => m.articles) };
+  }, [data, first, days, chosen]);
+  const totals = !data
+    ? []
+    : !chosen.length
+      ? [
+          { label: '比對篇數', value: sum(data.totals.articles) },
+          { label: '相似配對', value: sum(data.totals.pairs) },
+          { label: '內文相同', value: sum(data.totals.identical) },
+          { label: '來源／引用', value: sum(data.totals.citations) },
+        ]
+      : [
+          { label: '比對篇數', value: sum(chosen.map((m) => sum(m.articles))) },
+          ...OUTLET_SERIES.map((s) => ({ label: s.name, value: sum(chosen.map((m) => sum(m[s.key] ?? []))) })),
+        ];
+  const articles = totals[0]?.value ?? 0;
   return (
     <div className="space-y-4">
       <FilterButtons
@@ -336,20 +453,73 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
             {totals.map((item) => (
               <div key={item.label}>
                 <dt>{item.label}</dt>
-                <dd className="mt-0.5 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{number(item.value)}</dd>
+                <dd className="mt-0.5 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+                  {number(item.value)}
+                  {scale === 'share' && item !== totals[0] && articles > 0 && (
+                    <span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                      {Math.round((item.value / articles) * 100)}%
+                    </span>
+                  )}
+                </dd>
               </div>
             ))}
           </dl>
+          <div className="flex flex-wrap items-center gap-2">
+            <TabButtons
+              label="圖的單位"
+              options={[
+                ['share', '比例'],
+                ['count', '篇數'],
+              ]}
+              value={scale}
+              onChange={setScale}
+            />
+            {chosen.slice(0, SHOWN).map((m) => (
+              <button
+                key={m.media}
+                type="button"
+                onClick={() => tick(m.media)}
+                aria-label={`取消勾選${m.name}`}
+                title="取消勾選"
+                className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 py-1 pr-2.5 pl-1.5 text-xs text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                <MediaIcon media={m.media} title={m.name} size={16} />
+                {m.name}
+                <span aria-hidden="true" className="text-zinc-400">
+                  ×
+                </span>
+              </button>
+            ))}
+            {chosen.length > SHOWN && <span className="text-xs text-zinc-500 dark:text-zinc-400">等 {chosen.length} 家</span>}
+            {picked !== 'none' && (
+              <button type="button" onClick={() => setPicks(new Set())} className={`${linkStyle} text-xs`}>
+                看全站
+              </button>
+            )}
+          </div>
+          {chart && (
+            <TrendChart
+              days={days}
+              lines={chart.lines}
+              bars={chart.bars}
+              scale={scale}
+              unit={chosen.length ? '篇／次' : '配對／篇'}
+              label={
+                chosen.length
+                  ? `已勾選 ${chosen.length} 家媒體每日較早刊登、較晚刊登、同署名跨站、採用／引用他媒與比對篇數`
+                  : '每日相似配對、內文相同、來源／引用與比對篇數'
+              }
+            />
+          )}
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            {since ? `資料自 ${since} 起${sparse ? '（更早只有少數媒體的零星文章）' : ''}` : '這段期間還沒有比對資料'} · <MethodLink />
+            {since ? `資料自 ${since} 起${sparse ? '（更早只有少數媒體的零星文章）' : ''}` : '這段期間還沒有比對資料'}
           </p>
-          {start >= 0 && <TrendChart data={data} start={start} />}
           <section aria-labelledby="daily-outlets-heading">
             <h3 id="daily-outlets-heading" className="mb-1 text-sm font-semibold">
               各媒體
             </h3>
-            <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">期間合計。點欄名依篇數排序、點 % 依比例排序。</p>
-            <OutletTable data={data} />
+            <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">期間合計。勾選媒體，上方的圖就只算這幾家。</p>
+            <OutletTable {...outlets} picked={picked} ticked={(media) => picks.has(media)} onTick={tick} onTickAll={tickAll} />
           </section>
         </>
       )}
