@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import favicons from '../../data/favicon-catalog.json' with { type: 'json' };
 import type { SessionUser } from '../auth/google-login.ts';
@@ -89,12 +89,26 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
 
   app.get('/auth/admin/media', async (request, reply) => {
     if (!(await admin(request, reply))) return reply;
+    // Label and role edits per outlet, newest first: how many, and the last one.
+    // The log grows by hand edits only, so reading it whole stays small.
+    const edits = new Map<string, { count: number; lastAt: Date; lastBy: string }>();
+    const log = await db
+      .select({ media: mediaCategoryLog.media, email: mediaCategoryLog.email, at: mediaCategoryLog.at })
+      .from(mediaCategoryLog)
+      .where(ne(mediaCategoryLog.media, ''))
+      .orderBy(desc(mediaCategoryLog.id));
+    for (const { media, email, at } of log) {
+      const seen = edits.get(media);
+      if (seen) seen.count++;
+      else edits.set(media, { count: 1, lastAt: at, lastBy: email });
+    }
     return {
       media: knownMedia().map((media) => ({
         ...outletSummary(media),
         icon: iconUrl(media),
         categories: categoriesOf(media),
         roles: rolesOf(media),
+        edits: edits.get(media) ?? null,
       })),
       categories: categoryDefs(),
       roles: roleDefs(),

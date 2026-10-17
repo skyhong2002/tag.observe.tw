@@ -24,7 +24,7 @@
 | `GET /auth/admin/user-activity` | 管理員限定：每個帳號的活動次數與最後時間（`/admin/accounts/` 使用，`app/src/admin/user-activity.ts`）。`metrics` 列出各項與分組：`use`（互動：閱讀紀錄、追蹤、收藏）、`contribute`（貢獻：回報、投票）、`admin`（管理修改：媒體設定、文章標籤與署名、標籤分類、標籤圖像、寫法人物、處理回報、帳號權限，依各修改紀錄的 Email 對到帳號）；`users[id]` 為 `{ counts, lastActiveAt }`。 |
 | `PUT /auth/users/:id/role` | 管理員限定、需本站 `Origin`：`{ role: 'admin' \| 'reader' }` 指派或取消管理員，寫入 `user_role_log`。不能改自己（400），`TAG_ADMIN_EMAILS` 裡的人不能改（409）。 |
 | `GET /auth/admin/lookup?url=` | 管理員限定：新聞網址屬於哪家媒體（已收錄的文章優先，其次比對各媒體已知網域，含子網域），並回傳本站收錄的這篇文章。 |
-| `GET /auth/admin/media`、`GET /auth/admin/media/:media` | 管理員限定：所有媒體與標籤；單一媒體的標籤、爬蟲排程、最近幾次 crawl_runs 與修改紀錄。 |
+| `GET /auth/admin/media`、`GET /auth/admin/media/:media` | 管理員限定：所有媒體與標籤（含各媒體標籤與性質的修改次數、最近修改時間與修改者 `edits`）；單一媒體的標籤、爬蟲排程、最近幾次 crawl_runs 與修改紀錄。 |
 | `PUT /auth/admin/media/:media/categories` | 管理員限定、需本站 `Origin`：`{ categories: [...] }` 整組取代這家媒體的標籤，寫入 `media_category_log`。 |
 | `PUT /auth/admin/media/:media/roles` | 管理員限定、需本站 `Origin`：`{ roles: [...] }` 整組取代這家媒體的性質（只能用 `app/data/media-scope.json` 定義的角色），寫入 `media_roles`，並以 `role:<key>` 記在 `media_category_log`。 |
 | `POST /auth/admin/categories` | 管理員限定、需本站 `Origin`：`{ label, key? }` 新增標籤（中文名稱沒給代碼時自動編成 `tagN`）。 |
@@ -98,7 +98,7 @@
 
 ## 媒體設定（`/admin/media/`）
 
-`/admin/media/` 沒帶參數時列出所有媒體（含標籤與性質），並提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、勾選性質（通訊社、平台代刊、新聞合作…）、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇；管理員在文章頁看到的「編輯這篇」（取代「回報錯誤」）也會開到這裡。從 `/admin/` 的讀者回報按「打開編輯」會帶 `&report=<id>`，頁面在「這篇文章」上方顯示回報內容，可套用建議標籤並直接採納或不採納。「重抓這一篇」只試一次、最多等 15 秒，失敗時顯示原因。沒登入時會先導去登入，登入後回到同一個網址。
+`/admin/media/` 沒帶參數時是所有媒體的可排序表（標籤、性質、收錄狀態、7 天文章、標籤率、最新文章、標籤與性質的修改次數與最近修改者），可依標籤（含「未加標籤」）、性質與收錄狀態篩選，並提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤、新增標籤、勾選性質（通訊社、平台代刊、新聞合作…）、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇；管理員在文章頁看到的「編輯這篇」（取代「回報錯誤」）也會開到這裡。從 `/admin/` 的讀者回報按「打開編輯」會帶 `&report=<id>`，頁面在「這篇文章」上方顯示回報內容，可套用建議標籤並直接採納或不採納。「重抓這一篇」只試一次、最多等 15 秒，失敗時顯示原因。沒登入時會先導去登入，登入後回到同一個網址。
 
 媒體標籤存在 `media_category_defs`（代碼、名稱、順序）與 `media_categories`（媒體 × 標籤）。資料表是空的時候，gateway 或 worker 啟動時會從 `app/data/media-catalog.json` 匯入一次，之後以資料庫為準。兩個程序每分鐘重新讀取一次，管理員存檔後 gateway 也會立刻重讀（`app/src/media-categories.ts`）。`blue`／`green` 決定陣營，兩個都勾時算藍營。新增的標籤沒有固定排行名單（`ranking-baseline.json`），所以不會出現在 `/ranking/`。
 
