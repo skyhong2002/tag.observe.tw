@@ -22,6 +22,7 @@ export interface OutletColumn {
   filter?: Record<string, string>;
 }
 
+const whole = (row: OutletRow, column: OutletColumn) => (column.of ? row.values[column.of] : row.articles);
 const pct = (part: number, whole: number) => (whole ? part / whole : -1);
 
 /** Outlets with shares per column, sortable; a column's link filters the list below. */
@@ -43,7 +44,6 @@ export default function OutletTable({
     `${path}?${new URLSearchParams({ ...query, ...filter, media })}#articles`;
   const [sort, setSort] = useState<string>(columns[0].key);
   const [descending, setDescending] = useState(true);
-  const whole = (row: OutletRow, column: OutletColumn) => (column.of ? row.values[column.of] : row.articles);
   const sorted = useMemo(() => {
     const value = (row: OutletRow) => {
       if (sort === 'articles') return row.articles;

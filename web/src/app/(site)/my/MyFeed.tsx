@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import SaveButton from '@/components/reader/SaveButton';
 import SourceLink from '@/components/SourceLink';
 import { type Follow, followHref, prefs, readerFetch, savePrefs, when } from '@/lib/reader';
@@ -47,13 +47,16 @@ export default function MyFeed() {
   const suggestions = useSuggestions();
   const saved = prefs.useValue();
   const hidden = new Set(saved?.hiddenMedia ?? []);
-  const load = () =>
-    readerFetch<Feed>('/auth/me/feed')
-      .then(setFeed)
-      .catch((e: Error) => setError(e.message));
+  const load = useCallback(
+    () =>
+      readerFetch<Feed>('/auth/me/feed')
+        .then(setFeed)
+        .catch((e: Error) => setError(e.message)),
+    [],
+  );
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
   if (error) return <p className={note}>{error}</p>;
   if (!feed) return <p className={note}>載入中…</p>;
   if (!feed.follows.length)

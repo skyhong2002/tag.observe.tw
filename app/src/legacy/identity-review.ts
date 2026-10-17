@@ -26,7 +26,13 @@ export function reviewIdentityGroups(rows: LegacyCandidate[], groups: number[][]
   const conflicts = new Set<number>();
   const equivalent = new Map<number, number>();
   const key = (row: LegacyCandidate) =>
-    JSON.stringify(Object.fromEntries(Object.entries(row.article).filter(([name]) => name !== 'crawledAt').sort(([a], [b]) => a.localeCompare(b))));
+    JSON.stringify(
+      Object.fromEntries(
+        Object.entries(row.article)
+          .filter(([name]) => name !== 'crawledAt')
+          .sort(([a], [b]) => a.localeCompare(b)),
+      ),
+    );
   for (const group of sets.values()) {
     if (group.length < 2) continue;
     if (new Set(group.map((i) => key(rows[i]))).size === 1) {

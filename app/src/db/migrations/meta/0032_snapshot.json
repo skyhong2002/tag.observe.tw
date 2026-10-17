@@ -60,9 +60,7 @@
       "indexes": {
         "article_archives_verified": {
           "name": "article_archives_verified",
-          "columns": [
-            "verified_at"
-          ],
+          "columns": ["verified_at"],
           "isUnique": false
         }
       },
@@ -70,10 +68,7 @@
       "compositePrimaryKeys": {
         "article_archives_article_id_content_hash_pk": {
           "name": "article_archives_article_id_content_hash_pk",
-          "columns": [
-            "article_id",
-            "content_hash"
-          ]
+          "columns": ["article_id", "content_hash"]
         }
       },
       "uniqueConstraints": {},
@@ -109,9 +104,7 @@
       "compositePrimaryKeys": {
         "article_author_edits_article_id": {
           "name": "article_author_edits_article_id",
-          "columns": [
-            "article_id"
-          ]
+          "columns": ["article_id"]
         }
       },
       "uniqueConstraints": {},
@@ -166,10 +159,7 @@
       "indexes": {
         "article_author_log_article": {
           "name": "article_author_log_article",
-          "columns": [
-            "article_id",
-            "at"
-          ],
+          "columns": ["article_id", "at"],
           "isUnique": false
         }
       },
@@ -177,9 +167,7 @@
       "compositePrimaryKeys": {
         "article_author_log_id": {
           "name": "article_author_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -227,17 +215,12 @@
       "indexes": {
         "citations_published": {
           "name": "citations_published",
-          "columns": [
-            "published_at"
-          ],
+          "columns": ["published_at"],
           "isUnique": false
         },
         "citations_day": {
           "name": "citations_day",
-          "columns": [
-            "day",
-            "media"
-          ],
+          "columns": ["day", "media"],
           "isUnique": false
         }
       },
@@ -245,10 +228,7 @@
       "compositePrimaryKeys": {
         "article_citations_pk": {
           "name": "article_citations_pk",
-          "columns": [
-            "article_id",
-            "source"
-          ]
+          "columns": ["article_id", "source"]
         }
       },
       "uniqueConstraints": {},
@@ -296,18 +276,12 @@
       "indexes": {
         "discovery_article_media": {
           "name": "discovery_article_media",
-          "columns": [
-            "article_id",
-            "media"
-          ],
+          "columns": ["article_id", "media"],
           "isUnique": true
         },
         "discovery_media_article": {
           "name": "discovery_media_article",
-          "columns": [
-            "media",
-            "article_id"
-          ],
+          "columns": ["media", "article_id"],
           "isUnique": false
         }
       },
@@ -315,9 +289,7 @@
       "compositePrimaryKeys": {
         "article_discoveries_id": {
           "name": "article_discoveries_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -379,9 +351,7 @@
       "indexes": {
         "article_origins_article": {
           "name": "article_origins_article",
-          "columns": [
-            "article_id"
-          ],
+          "columns": ["article_id"],
           "isUnique": false
         }
       },
@@ -389,10 +359,7 @@
       "compositePrimaryKeys": {
         "article_origins_source_key_raw_hash_pk": {
           "name": "article_origins_source_key_raw_hash_pk",
-          "columns": [
-            "source_key",
-            "raw_hash"
-          ]
+          "columns": ["source_key", "raw_hash"]
         }
       },
       "uniqueConstraints": {},
@@ -440,9 +407,7 @@
       "indexes": {
         "sketches_published": {
           "name": "sketches_published",
-          "columns": [
-            "published_at"
-          ],
+          "columns": ["published_at"],
           "isUnique": false
         }
       },
@@ -450,9 +415,7 @@
       "compositePrimaryKeys": {
         "article_sketches_article_id": {
           "name": "article_sketches_article_id",
-          "columns": [
-            "article_id"
-          ]
+          "columns": ["article_id"]
         }
       },
       "uniqueConstraints": {},
@@ -488,9 +451,7 @@
       "compositePrimaryKeys": {
         "article_tag_edits_article_id": {
           "name": "article_tag_edits_article_id",
-          "columns": [
-            "article_id"
-          ]
+          "columns": ["article_id"]
         }
       },
       "uniqueConstraints": {},
@@ -545,10 +506,7 @@
       "indexes": {
         "article_tag_log_article": {
           "name": "article_tag_log_article",
-          "columns": [
-            "article_id",
-            "at"
-          ],
+          "columns": ["article_id", "at"],
           "isUnique": false
         }
       },
@@ -556,9 +514,7 @@
       "compositePrimaryKeys": {
         "article_tag_log_id": {
           "name": "article_tag_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -592,18 +548,12 @@
       "indexes": {
         "article_tag": {
           "name": "article_tag",
-          "columns": [
-            "article_id",
-            "tag"
-          ],
+          "columns": ["article_id", "tag"],
           "isUnique": true
         },
         "tag_published": {
           "name": "tag_published",
-          "columns": [
-            "tag",
-            "published_at"
-          ],
+          "columns": ["tag", "published_at"],
           "isUnique": false
         }
       },
@@ -703,33 +653,22 @@
       "indexes": {
         "article_writing_day": {
           "name": "article_writing_day",
-          "columns": [
-            "day",
-            "media"
-          ],
+          "columns": ["day", "media"],
           "isUnique": false
         },
         "article_writing_media": {
           "name": "article_writing_media",
-          "columns": [
-            "media",
-            "day"
-          ],
+          "columns": ["media", "day"],
           "isUnique": false
         },
         "article_writing_poster": {
           "name": "article_writing_poster",
-          "columns": [
-            "poster"
-          ],
+          "columns": ["poster"],
           "isUnique": false
         },
         "article_writing_version": {
           "name": "article_writing_version",
-          "columns": [
-            "version",
-            "published_at"
-          ],
+          "columns": ["version", "published_at"],
           "isUnique": false
         }
       },
@@ -737,9 +676,7 @@
       "compositePrimaryKeys": {
         "article_writing_article_id": {
           "name": "article_writing_article_id",
-          "columns": [
-            "article_id"
-          ]
+          "columns": ["article_id"]
         }
       },
       "uniqueConstraints": {},
@@ -957,75 +894,47 @@
       "indexes": {
         "articles_media_url": {
           "name": "articles_media_url",
-          "columns": [
-            "media",
-            "url"
-          ],
+          "columns": ["media", "url"],
           "isUnique": true
         },
         "articles_media_url_key": {
           "name": "articles_media_url_key",
-          "columns": [
-            "media",
-            "url_key"
-          ],
+          "columns": ["media", "url_key"],
           "isUnique": true
         },
         "articles_media_id": {
           "name": "articles_media_id",
-          "columns": [
-            "media",
-            "media_id"
-          ],
+          "columns": ["media", "media_id"],
           "isUnique": false
         },
         "articles_published": {
           "name": "articles_published",
-          "columns": [
-            "published_at"
-          ],
+          "columns": ["published_at"],
           "isUnique": false
         },
         "articles_media_published": {
           "name": "articles_media_published",
-          "columns": [
-            "media",
-            "published_at"
-          ],
+          "columns": ["media", "published_at"],
           "isUnique": false
         },
         "articles_source_media_published": {
           "name": "articles_source_media_published",
-          "columns": [
-            "source",
-            "media",
-            "published_at"
-          ],
+          "columns": ["source", "media", "published_at"],
           "isUnique": false
         },
         "articles_media_fetch": {
           "name": "articles_media_fetch",
-          "columns": [
-            "media",
-            "fetched_at"
-          ],
+          "columns": ["media", "fetched_at"],
           "isUnique": false
         },
         "articles_media_content": {
           "name": "articles_media_content",
-          "columns": [
-            "media",
-            "id"
-          ],
+          "columns": ["media", "id"],
           "isUnique": false
         },
         "articles_similarity": {
           "name": "articles_similarity",
-          "columns": [
-            "similarity_at",
-            "body_status",
-            "published_at"
-          ],
+          "columns": ["similarity_at", "body_status", "published_at"],
           "isUnique": false
         }
       },
@@ -1033,9 +942,7 @@
       "compositePrimaryKeys": {
         "articles_id": {
           "name": "articles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1129,10 +1036,7 @@
       "indexes": {
         "crawl_runs_media": {
           "name": "crawl_runs_media",
-          "columns": [
-            "media",
-            "started_at"
-          ],
+          "columns": ["media", "started_at"],
           "isUnique": false
         }
       },
@@ -1140,9 +1044,7 @@
       "compositePrimaryKeys": {
         "crawl_runs_id": {
           "name": "crawl_runs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1211,10 +1113,7 @@
       "indexes": {
         "event_snapshot_hour": {
           "name": "event_snapshot_hour",
-          "columns": [
-            "category",
-            "hour_start"
-          ],
+          "columns": ["category", "hour_start"],
           "isUnique": true
         }
       },
@@ -1222,9 +1121,7 @@
       "compositePrimaryKeys": {
         "event_snapshots_id": {
           "name": "event_snapshots_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1343,18 +1240,12 @@
       "indexes": {
         "threads_last": {
           "name": "threads_last",
-          "columns": [
-            "category",
-            "last_time"
-          ],
+          "columns": ["category", "last_time"],
           "isUnique": false
         },
         "threads_first": {
           "name": "threads_first",
-          "columns": [
-            "category",
-            "first_time"
-          ],
+          "columns": ["category", "first_time"],
           "isUnique": false
         }
       },
@@ -1362,9 +1253,7 @@
       "compositePrimaryKeys": {
         "event_threads_id": {
           "name": "event_threads_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1440,17 +1329,12 @@
       "indexes": {
         "events_snapshot": {
           "name": "events_snapshot",
-          "columns": [
-            "snapshot_id",
-            "rank"
-          ],
+          "columns": ["snapshot_id", "rank"],
           "isUnique": false
         },
         "events_thread": {
           "name": "events_thread",
-          "columns": [
-            "thread_id"
-          ],
+          "columns": ["thread_id"],
           "isUnique": false
         }
       },
@@ -1458,9 +1342,7 @@
       "compositePrimaryKeys": {
         "events_id": {
           "name": "events_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1515,10 +1397,7 @@
       "indexes": {
         "job_runs_name": {
           "name": "job_runs_name",
-          "columns": [
-            "name",
-            "started_at"
-          ],
+          "columns": ["name", "started_at"],
           "isUnique": false
         }
       },
@@ -1526,9 +1405,7 @@
       "compositePrimaryKeys": {
         "job_runs_id": {
           "name": "job_runs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1555,9 +1432,7 @@
       "indexes": {
         "media_categories_category": {
           "name": "media_categories_category",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         }
       },
@@ -1565,10 +1440,7 @@
       "compositePrimaryKeys": {
         "media_categories_media_category_pk": {
           "name": "media_categories_media_category_pk",
-          "columns": [
-            "media",
-            "category"
-          ]
+          "columns": ["media", "category"]
         }
       },
       "uniqueConstraints": {},
@@ -1612,9 +1484,7 @@
       "compositePrimaryKeys": {
         "media_category_defs_key": {
           "name": "media_category_defs_key",
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "uniqueConstraints": {},
@@ -1669,10 +1539,7 @@
       "indexes": {
         "media_category_log_media": {
           "name": "media_category_log_media",
-          "columns": [
-            "media",
-            "at"
-          ],
+          "columns": ["media", "at"],
           "isUnique": false
         }
       },
@@ -1680,9 +1547,7 @@
       "compositePrimaryKeys": {
         "media_category_log_id": {
           "name": "media_category_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1751,9 +1616,7 @@
       "indexes": {
         "media_radar_ranks_date": {
           "name": "media_radar_ranks_date",
-          "columns": [
-            "date_end"
-          ],
+          "columns": ["date_end"],
           "isUnique": false
         }
       },
@@ -1761,10 +1624,7 @@
       "compositePrimaryKeys": {
         "media_radar_ranks_domain_date_end_pk": {
           "name": "media_radar_ranks_domain_date_end_pk",
-          "columns": [
-            "domain",
-            "date_end"
-          ]
+          "columns": ["domain", "date_end"]
         }
       },
       "uniqueConstraints": {},
@@ -1826,10 +1686,7 @@
       "indexes": {
         "media_taiwan_share_log_media": {
           "name": "media_taiwan_share_log_media",
-          "columns": [
-            "media",
-            "at"
-          ],
+          "columns": ["media", "at"],
           "isUnique": false
         }
       },
@@ -1837,9 +1694,7 @@
       "compositePrimaryKeys": {
         "media_taiwan_share_log_id": {
           "name": "media_taiwan_share_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1889,9 +1744,7 @@
       "compositePrimaryKeys": {
         "media_taiwan_shares_media": {
           "name": "media_taiwan_shares_media",
-          "columns": [
-            "media"
-          ]
+          "columns": ["media"]
         }
       },
       "uniqueConstraints": {},
@@ -1947,9 +1800,7 @@
       "indexes": {
         "media_traffic_months_month": {
           "name": "media_traffic_months_month",
-          "columns": [
-            "month"
-          ],
+          "columns": ["month"],
           "isUnique": false
         }
       },
@@ -1957,10 +1808,7 @@
       "compositePrimaryKeys": {
         "media_traffic_months_domain_month_pk": {
           "name": "media_traffic_months_domain_month_pk",
-          "columns": [
-            "domain",
-            "month"
-          ]
+          "columns": ["domain", "month"]
         }
       },
       "uniqueConstraints": {},
@@ -2010,10 +1858,7 @@
       "compositePrimaryKeys": {
         "media_traffic_profiles_domain_month_pk": {
           "name": "media_traffic_profiles_domain_month_pk",
-          "columns": [
-            "domain",
-            "month"
-          ]
+          "columns": ["domain", "month"]
         }
       },
       "uniqueConstraints": {},
@@ -2075,18 +1920,12 @@
       "indexes": {
         "entries_snapshot": {
           "name": "entries_snapshot",
-          "columns": [
-            "snapshot_id",
-            "rank"
-          ],
+          "columns": ["snapshot_id", "rank"],
           "isUnique": false
         },
         "entries_tag": {
           "name": "entries_tag",
-          "columns": [
-            "tag",
-            "snapshot_id"
-          ],
+          "columns": ["tag", "snapshot_id"],
           "isUnique": false
         }
       },
@@ -2094,9 +1933,7 @@
       "compositePrimaryKeys": {
         "ranking_entries_id": {
           "name": "ranking_entries_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -2179,17 +2016,12 @@
       "indexes": {
         "ranking_category_hour": {
           "name": "ranking_category_hour",
-          "columns": [
-            "category",
-            "hour_start"
-          ],
+          "columns": ["category", "hour_start"],
           "isUnique": true
         },
         "ranking_hour": {
           "name": "ranking_hour",
-          "columns": [
-            "hour_start"
-          ],
+          "columns": ["hour_start"],
           "isUnique": false
         }
       },
@@ -2197,9 +2029,7 @@
       "compositePrimaryKeys": {
         "ranking_snapshots_id": {
           "name": "ranking_snapshots_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -2233,10 +2063,7 @@
       "indexes": {
         "reader_history_user_read": {
           "name": "reader_history_user_read",
-          "columns": [
-            "user_id",
-            "read_at"
-          ],
+          "columns": ["user_id", "read_at"],
           "isUnique": false
         }
       },
@@ -2244,10 +2071,7 @@
       "compositePrimaryKeys": {
         "reader_history_user_id_article_id_pk": {
           "name": "reader_history_user_id_article_id_pk",
-          "columns": [
-            "user_id",
-            "article_id"
-          ]
+          "columns": ["user_id", "article_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2338,18 +2162,12 @@
       "indexes": {
         "reader_reports_status": {
           "name": "reader_reports_status",
-          "columns": [
-            "status",
-            "created_at"
-          ],
+          "columns": ["status", "created_at"],
           "isUnique": false
         },
         "reader_reports_user": {
           "name": "reader_reports_user",
-          "columns": [
-            "user_id",
-            "created_at"
-          ],
+          "columns": ["user_id", "created_at"],
           "isUnique": false
         }
       },
@@ -2357,9 +2175,7 @@
       "compositePrimaryKeys": {
         "reader_reports_id": {
           "name": "reader_reports_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -2400,17 +2216,12 @@
       "indexes": {
         "rejected_media_key": {
           "name": "rejected_media_key",
-          "columns": [
-            "media",
-            "url_key"
-          ],
+          "columns": ["media", "url_key"],
           "isUnique": true
         },
         "rejected_created": {
           "name": "rejected_created",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -2531,25 +2342,17 @@
       "indexes": {
         "pairs_b": {
           "name": "pairs_b",
-          "columns": [
-            "b_id"
-          ],
+          "columns": ["b_id"],
           "isUnique": false
         },
         "pairs_last": {
           "name": "pairs_last",
-          "columns": [
-            "last_published",
-            "first_published"
-          ],
+          "columns": ["last_published", "first_published"],
           "isUnique": false
         },
         "pairs_day": {
           "name": "pairs_day",
-          "columns": [
-            "day",
-            "score"
-          ],
+          "columns": ["day", "score"],
           "isUnique": false
         }
       },
@@ -2557,10 +2360,7 @@
       "compositePrimaryKeys": {
         "similarity_pairs_pk": {
           "name": "similarity_pairs_pk",
-          "columns": [
-            "a_id",
-            "b_id"
-          ]
+          "columns": ["a_id", "b_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2616,11 +2416,7 @@
       "indexes": {
         "site_metrics_metric_day": {
           "name": "site_metrics_metric_day",
-          "columns": [
-            "source",
-            "metric",
-            "day"
-          ],
+          "columns": ["source", "metric", "day"],
           "isUnique": false
         }
       },
@@ -2628,12 +2424,7 @@
       "compositePrimaryKeys": {
         "site_metrics_day_source_metric_key_pk": {
           "name": "site_metrics_day_source_metric_key_pk",
-          "columns": [
-            "day",
-            "source",
-            "metric",
-            "key"
-          ]
+          "columns": ["day", "source", "metric", "key"]
         }
       },
       "uniqueConstraints": {},
@@ -2696,10 +2487,7 @@
       "indexes": {
         "source_probes_media": {
           "name": "source_probes_media",
-          "columns": [
-            "media",
-            "checked_at"
-          ],
+          "columns": ["media", "checked_at"],
           "isUnique": false
         }
       },
@@ -2707,9 +2495,7 @@
       "compositePrimaryKeys": {
         "source_probes_id": {
           "name": "source_probes_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -2801,10 +2587,7 @@
       "compositePrimaryKeys": {
         "tag_avatar_candidates_tag_rank_pk": {
           "name": "tag_avatar_candidates_tag_rank_pk",
-          "columns": [
-            "tag",
-            "rank"
-          ]
+          "columns": ["tag", "rank"]
         }
       },
       "uniqueConstraints": {},
@@ -2859,10 +2642,7 @@
       "indexes": {
         "tag_group_def_log_group": {
           "name": "tag_group_def_log_group",
-          "columns": [
-            "group_id",
-            "at"
-          ],
+          "columns": ["group_id", "at"],
           "isUnique": false
         }
       },
@@ -2870,9 +2650,7 @@
       "compositePrimaryKeys": {
         "tag_group_def_log_id": {
           "name": "tag_group_def_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -2937,9 +2715,7 @@
       "compositePrimaryKeys": {
         "tag_group_defs_id": {
           "name": "tag_group_defs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -3001,10 +2777,7 @@
       "indexes": {
         "tag_group_member_log_tag": {
           "name": "tag_group_member_log_tag",
-          "columns": [
-            "tag",
-            "at"
-          ],
+          "columns": ["tag", "at"],
           "isUnique": false
         }
       },
@@ -3012,9 +2785,7 @@
       "compositePrimaryKeys": {
         "tag_group_member_log_id": {
           "name": "tag_group_member_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -3090,10 +2861,7 @@
       "indexes": {
         "tag_group_members_group": {
           "name": "tag_group_members_group",
-          "columns": [
-            "group_id",
-            "status"
-          ],
+          "columns": ["group_id", "status"],
           "isUnique": false
         }
       },
@@ -3101,10 +2869,7 @@
       "compositePrimaryKeys": {
         "tag_group_members_tag_group_id_pk": {
           "name": "tag_group_members_tag_group_id_pk",
-          "columns": [
-            "tag",
-            "group_id"
-          ]
+          "columns": ["tag", "group_id"]
         }
       },
       "uniqueConstraints": {},
@@ -3194,17 +2959,12 @@
       "indexes": {
         "tag_people_status": {
           "name": "tag_people_status",
-          "columns": [
-            "status",
-            "checked_at"
-          ],
+          "columns": ["status", "checked_at"],
           "isUnique": false
         },
         "tag_people_wikidata": {
           "name": "tag_people_wikidata",
-          "columns": [
-            "wikidata_id"
-          ],
+          "columns": ["wikidata_id"],
           "isUnique": false
         }
       },
@@ -3212,9 +2972,7 @@
       "compositePrimaryKeys": {
         "tag_people_tag": {
           "name": "tag_people_tag",
-          "columns": [
-            "tag"
-          ]
+          "columns": ["tag"]
         }
       },
       "uniqueConstraints": {},
@@ -3276,10 +3034,7 @@
       "indexes": {
         "tag_people_log_tag": {
           "name": "tag_people_log_tag",
-          "columns": [
-            "tag",
-            "at"
-          ],
+          "columns": ["tag", "at"],
           "isUnique": false
         }
       },
@@ -3287,9 +3042,7 @@
       "compositePrimaryKeys": {
         "tag_people_log_id": {
           "name": "tag_people_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -3372,20 +3125,12 @@
       "indexes": {
         "tag_stats_key": {
           "name": "tag_stats_key",
-          "columns": [
-            "tag",
-            "category",
-            "level"
-          ],
+          "columns": ["tag", "category", "level"],
           "isUnique": true
         },
         "tag_stats_last": {
           "name": "tag_stats_last",
-          "columns": [
-            "category",
-            "level",
-            "last_hour"
-          ],
+          "columns": ["category", "level", "last_hour"],
           "isUnique": false
         }
       },
@@ -3393,9 +3138,7 @@
       "compositePrimaryKeys": {
         "tag_stats_id": {
           "name": "tag_stats_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -3450,10 +3193,7 @@
       "indexes": {
         "tag_visual_log_tag": {
           "name": "tag_visual_log_tag",
-          "columns": [
-            "tag",
-            "at"
-          ],
+          "columns": ["tag", "at"],
           "isUnique": false
         }
       },
@@ -3461,9 +3201,7 @@
       "compositePrimaryKeys": {
         "tag_visual_log_id": {
           "name": "tag_visual_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -3588,10 +3326,7 @@
       "indexes": {
         "tag_visuals_status": {
           "name": "tag_visuals_status",
-          "columns": [
-            "status",
-            "checked_at"
-          ],
+          "columns": ["status", "checked_at"],
           "isUnique": false
         }
       },
@@ -3599,9 +3334,7 @@
       "compositePrimaryKeys": {
         "tag_visuals_tag": {
           "name": "tag_visuals_tag",
-          "columns": [
-            "tag"
-          ]
+          "columns": ["tag"]
         }
       },
       "uniqueConstraints": {},
@@ -3665,9 +3398,7 @@
       "compositePrimaryKeys": {
         "tag_wikidata_tag": {
           "name": "tag_wikidata_tag",
-          "columns": [
-            "tag"
-          ]
+          "columns": ["tag"]
         }
       },
       "uniqueConstraints": {},
@@ -3816,27 +3547,17 @@
       "indexes": {
         "topics_media_url": {
           "name": "topics_media_url",
-          "columns": [
-            "media",
-            "url"
-          ],
+          "columns": ["media", "url"],
           "isUnique": true
         },
         "topics_media_seen": {
           "name": "topics_media_seen",
-          "columns": [
-            "media",
-            "first_seen"
-          ],
+          "columns": ["media", "first_seen"],
           "isUnique": false
         },
         "topics_kind_media_seen": {
           "name": "topics_kind_media_seen",
-          "columns": [
-            "kind",
-            "media",
-            "first_seen"
-          ],
+          "columns": ["kind", "media", "first_seen"],
           "isUnique": false
         }
       },
@@ -3844,9 +3565,7 @@
       "compositePrimaryKeys": {
         "topics_id": {
           "name": "topics_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -3915,16 +3634,12 @@
       "indexes": {
         "user_api_keys_hash": {
           "name": "user_api_keys_hash",
-          "columns": [
-            "key_hash"
-          ],
+          "columns": ["key_hash"],
           "isUnique": true
         },
         "user_api_keys_user": {
           "name": "user_api_keys_user",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -3932,9 +3647,7 @@
       "compositePrimaryKeys": {
         "user_api_keys_id": {
           "name": "user_api_keys_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -3968,9 +3681,7 @@
       "indexes": {
         "user_feed_tokens_token": {
           "name": "user_feed_tokens_token",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         }
       },
@@ -3978,9 +3689,7 @@
       "compositePrimaryKeys": {
         "user_feed_tokens_user_id": {
           "name": "user_feed_tokens_user_id",
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -4023,11 +3732,7 @@
       "compositePrimaryKeys": {
         "user_follows_user_id_kind_target_pk": {
           "name": "user_follows_user_id_kind_target_pk",
-          "columns": [
-            "user_id",
-            "kind",
-            "target"
-          ]
+          "columns": ["user_id", "kind", "target"]
         }
       },
       "uniqueConstraints": {},
@@ -4063,9 +3768,7 @@
       "compositePrimaryKeys": {
         "user_prefs_user_id": {
           "name": "user_prefs_user_id",
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -4113,10 +3816,7 @@
       "indexes": {
         "user_role_log_user": {
           "name": "user_role_log_user",
-          "columns": [
-            "user_id",
-            "at"
-          ],
+          "columns": ["user_id", "at"],
           "isUnique": false
         }
       },
@@ -4124,9 +3824,7 @@
       "compositePrimaryKeys": {
         "user_role_log_id": {
           "name": "user_role_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -4174,10 +3872,7 @@
       "indexes": {
         "user_saves_user_created": {
           "name": "user_saves_user_created",
-          "columns": [
-            "user_id",
-            "created_at"
-          ],
+          "columns": ["user_id", "created_at"],
           "isUnique": false
         }
       },
@@ -4185,11 +3880,7 @@
       "compositePrimaryKeys": {
         "user_saves_user_id_kind_target_id_pk": {
           "name": "user_saves_user_id_kind_target_id_pk",
-          "columns": [
-            "user_id",
-            "kind",
-            "target_id"
-          ]
+          "columns": ["user_id", "kind", "target_id"]
         }
       },
       "uniqueConstraints": {},
@@ -4230,16 +3921,12 @@
       "indexes": {
         "user_sessions_user": {
           "name": "user_sessions_user",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "user_sessions_expires": {
           "name": "user_sessions_expires",
-          "columns": [
-            "expires_at"
-          ],
+          "columns": ["expires_at"],
           "isUnique": false
         }
       },
@@ -4247,9 +3934,7 @@
       "compositePrimaryKeys": {
         "user_sessions_token_hash": {
           "name": "user_sessions_token_hash",
-          "columns": [
-            "token_hash"
-          ]
+          "columns": ["token_hash"]
         }
       },
       "uniqueConstraints": {},
@@ -4325,16 +4010,12 @@
       "indexes": {
         "users_google_sub": {
           "name": "users_google_sub",
-          "columns": [
-            "google_sub"
-          ],
+          "columns": ["google_sub"],
           "isUnique": true
         },
         "users_email": {
           "name": "users_email",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": false
         }
       },
@@ -4342,9 +4023,7 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -4417,9 +4096,7 @@
       "compositePrimaryKeys": {
         "writing_people_name": {
           "name": "writing_people_name",
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "uniqueConstraints": {},
@@ -4481,10 +4158,7 @@
       "indexes": {
         "writing_people_log_name": {
           "name": "writing_people_log_name",
-          "columns": [
-            "name",
-            "at"
-          ],
+          "columns": ["name", "at"],
           "isUnique": false
         }
       },
@@ -4492,9 +4166,7 @@
       "compositePrimaryKeys": {
         "writing_people_log_id": {
           "name": "writing_people_log_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

@@ -1,6 +1,6 @@
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import type { normalizeLegacyArticle } from './normalize.ts';
 import { reviewIdentityGroups } from './identity-review.ts';
+import type { normalizeLegacyArticle } from './normalize.ts';
 
 export type LegacyCandidate = ReturnType<typeof normalizeLegacyArticle>;
 export type ImportOutcome = { sourceKey: string; rawHash: string; action: string; reason?: string; articleId?: string };
@@ -96,9 +96,14 @@ export async function importCandidates(
     await c.query('ALTER TABLE legacy_dup_urls ADD group_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, ADD INDEX dup_url(media,url)');
     await c.query('ALTER TABLE legacy_dup_keys ADD group_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, ADD INDEX dup_key(media,url_key)');
     const groups: number[][] = [];
-    for (const [table, field] of [['legacy_dup_urls', 'url'], ['legacy_dup_keys', 'url_key']]) {
+    for (const [table, field] of [
+      ['legacy_dup_urls', 'url'],
+      ['legacy_dup_keys', 'url_key'],
+    ]) {
       const grouped = new Map<number, number[]>();
-      for (const row of await query(`SELECT i.seq,d.group_id FROM legacy_input i JOIN ${table} d ON i.media=d.media AND i.${field}=d.${field}`)) {
+      for (const row of await query(
+        `SELECT i.seq,d.group_id FROM legacy_input i JOIN ${table} d ON i.media=d.media AND i.${field}=d.${field}`,
+      )) {
         const group = Number(row.group_id);
         grouped.set(group, [...(grouped.get(group) ?? []), Number(row.seq)]);
       }
@@ -107,9 +112,19 @@ export async function importCandidates(
     const { conflicts: duplicates, equivalent } = reviewIdentityGroups(rows, groups);
     const resolvedDuplicateArticles = new Map<number, string>();
     if (options.identityReviewOnly) {
-      const reviewed: ImportOutcome[] = rows.map((row, i) => ({ sourceKey: row.lineage.sourceKey, rawHash: row.lineage.rawSha256,
-        action: importIssue(row, options.now, options.allowRecent) || duplicates.has(i) ? 'quarantine' : equivalent.has(i) ? 'equivalent_duplicate_reviewed' : 'review_candidate',
-        ...(importIssue(row, options.now, options.allowRecent) || duplicates.has(i) ? { reason: importIssue(row, options.now, options.allowRecent) ?? 'input_identity_collision' } : {}) }));
+      const reviewed: ImportOutcome[] = rows.map((row, i) => ({
+        sourceKey: row.lineage.sourceKey,
+        rawHash: row.lineage.rawSha256,
+        action:
+          importIssue(row, options.now, options.allowRecent) || duplicates.has(i)
+            ? 'quarantine'
+            : equivalent.has(i)
+              ? 'equivalent_duplicate_reviewed'
+              : 'review_candidate',
+        ...(importIssue(row, options.now, options.allowRecent) || duplicates.has(i)
+          ? { reason: importIssue(row, options.now, options.allowRecent) ?? 'input_identity_collision' }
+          : {}),
+      }));
       options.onBatch?.(reviewed);
       return reviewed;
     }
@@ -181,7 +196,13 @@ export async function importCandidates(
           const byKey = keysBySeq.get(i) ?? [];
           const matches = [...new Map([...byUrl, ...byKey].map((r) => [String(r.id), r])).values()];
           const priorIds = [...new Set(origins.map((r) => String(r.article_id)))];
-          if (origins.length && (priorIds.length !== 1 || origins.some((r) => r.target_id == null) || matches.length !== 1 || String(matches[0].id) !== priorIds[0])) {
+          if (
+            origins.length &&
+            (priorIds.length !== 1 ||
+              origins.some((r) => r.target_id == null) ||
+              matches.length !== 1 ||
+              String(matches[0].id) !== priorIds[0])
+          ) {
             batch.push({ ...base, action: 'quarantine', reason: 'source_version_conflict' });
             continue;
           }

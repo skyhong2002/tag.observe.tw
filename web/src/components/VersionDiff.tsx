@@ -33,18 +33,30 @@ function Changed({ value }: { value: string }) {
   );
 }
 
+// Repeated passages need distinct keys; their content and occurrence stay
+// stable when another passage is inserted before them.
+function withKeys<T>(items: T[]) {
+  const seen = new Map<string, number>();
+  return items.map((item) => {
+    const content = JSON.stringify(item);
+    const occurrence = seen.get(content) ?? 0;
+    seen.set(content, occurrence + 1);
+    return { item, key: `${content}:${occurrence}` };
+  });
+}
+
 /** Text with removals struck through in red and additions on green; kept text plain. */
 export function DiffText({ segments }: { segments: DiffSegment[] }) {
-  return segments.map(([op, value], index) =>
+  return withKeys(segments).map(({ item: [op, value], key }) =>
     op === 0 ? (
-      <span key={index}>{value}</span>
+      <span key={key}>{value}</span>
     ) : op < 0 ? (
-      <del key={index} className={removedStyle}>
+      <del key={key} className={removedStyle}>
         <span className="sr-only">刪除：</span>
         <Changed value={value} />
       </del>
     ) : (
-      <ins key={index} className={addedStyle}>
+      <ins key={key} className={addedStyle}>
         <span className="sr-only">新增：</span>
         <Changed value={value} />
       </ins>
@@ -81,8 +93,8 @@ export function BodyChanges({
         </span>
       </p>
       <ol className="space-y-1 text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-        {diff.hunks.map((hunk, index) => (
-          <li key={index} className="break-words">
+        {withKeys(diff.hunks).map(({ item: hunk, key }) => (
+          <li key={key} className="break-words">
             <DiffText segments={hunk} />
           </li>
         ))}
@@ -166,8 +178,8 @@ export function VersionCompare({
               {added} {number(body.added)} 字
             </span>
           </p>
-          {body.hunks.map((hunk, index) => (
-            <div key={index} className="contents text-sm leading-7 text-zinc-600 dark:text-zinc-400">
+          {withKeys(body.hunks).map(({ item: hunk, key }) => (
+            <div key={key} className="contents text-sm leading-7 text-zinc-600 dark:text-zinc-400">
               <p className={`${cell} hidden border-t border-zinc-100 pt-1 sm:block dark:border-zinc-800`}>
                 <DiffText segments={keep(hunk, -1)} />
               </p>
