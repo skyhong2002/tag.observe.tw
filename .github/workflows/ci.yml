@@ -30,14 +30,33 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
   web:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions: { contents: read }
     defaults: { run: { working-directory: web } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json }
+        with: { node-version: '24.15.0', cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: Test artifact boundaries
+        working-directory: .
+        run: python3 -m unittest discover -s tools/ci -p 'test_*.py' -v
       - run: npm ci
       - run: npx tsc --noEmit -p tsconfig.json
       # Pages must build with the API unreachable (data is fetched at request time).
       - run: npx next build
         env: { TAG_API_ORIGIN: 'http://127.0.0.1:1', NEXT_TELEMETRY_DISABLED: '1' }
+      - name: Package and verify standalone candidate
+        working-directory: .
+        run: python3 tools/ci/package_web.py
+      # PR merge-ref builds exercise the packager, but are never published as candidates.
+      - name: Retain exact main push candidate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tag-web-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/web-candidate/web-standalone.tar.gz
+            artifacts/web-candidate/manifest.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
