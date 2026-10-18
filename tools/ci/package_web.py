@@ -71,8 +71,19 @@ def inventory(root):
     return sorted(entries, key=lambda e: e['path'])
 
 
-def copy_entry(source, target):
-    """Merge by identity, never overwrite a different standalone file."""
+def validate_source(root, source, prefixes=None, names=()):
+    resolved = source.resolve(strict=True)
+    require(source.is_relative_to(root) and resolved.is_relative_to(root), f'input resolves outside checkout: {source}')
+    for identity in (source.relative_to(root).as_posix(), resolved.relative_to(root).as_posix()):
+        safe_name(identity)
+        if prefixes is not None:
+            require(identity.startswith(prefixes) or identity in names, f'unapproved input source: {identity}')
+    return resolved
+
+
+def copy_entry(source, target, source_root):
+    """Validate every source before reading; merge by identity without overwriting."""
+    validate_source(source_root, source)
     require(not any(p.is_symlink() for p in target.parents), f'link parent: {target}')
     target.parent.mkdir(parents=True, exist_ok=True)
     if source.is_symlink():
@@ -87,7 +98,7 @@ def copy_entry(source, target):
         require(not target.is_symlink(), f'link directory: {target}')
         target.mkdir(exist_ok=True)
         for child in sorted(source.iterdir()):
-            copy_entry(child, target / child.name)
+            copy_entry(child, target / child.name, source_root)
         shutil.copymode(source, target)
     else:
         require(source.is_file(), f'missing/special input: {source}')
@@ -105,12 +116,13 @@ def external_inputs(root, tracked):
     Only tracked app/data and app/src relative imports are admitted.
     """
     pattern = re.compile(r'''(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s*)['"](\.[^'"\n]+)['"]''')
-    pending = sorted((root / 'web/src').rglob('*'))
+    pending = [root / name for name in sorted(tracked) if name.startswith('web/src/')]
     seen, external = set(), set()
     while pending:
         file = pending.pop()
         if file in seen or not file.is_file() or file.suffix not in ('.ts', '.tsx', '.mts', '.js', '.mjs'):
             continue
+        validate_source(root, file)
         seen.add(file)
         for spec in pattern.findall(file.read_text()):
             base = Path(os.path.abspath(file.parent / spec))
@@ -124,7 +136,8 @@ def external_inputs(root, tracked):
             resolved = next((p for p in choices if p.is_file()), None)
             require(resolved is not None and resolved.is_relative_to(root), f'unresolved external import: {file}: {spec}')
             name = resolved.relative_to(root).as_posix()
-            safe_name(name)
+            actual = validate_source(root, resolved, prefixes=('app/data/', 'app/src/'))
+            require(actual.relative_to(root).as_posix() in tracked, f'untracked resolved external input: {name}')
             require(name in tracked and name.startswith(('app/data/', 'app/src/')),
                     f'unapproved external input: {name}')
             external.add(name)
@@ -136,22 +149,24 @@ def assemble(root, stage, tracked):
     build = root / 'web/.next'
     runtime = stage / 'runtime'
     standalone = build / 'standalone'
+    validate_source(root, standalone)
     inventory(standalone)
-    copy_entry(standalone, runtime)
+    copy_entry(standalone, runtime, root)
     # Deliberately assert this repository's monorepo layout; never silently flatten it.
     require((runtime / 'web/server.js').is_file(), 'expected standalone/web/server.js')
-    copy_entry(build / 'static', runtime / 'web/.next/static')
-    copy_entry(root / 'web/public', runtime / 'web/public')
+    copy_entry(build / 'static', runtime / 'web/.next/static', root)
+    copy_entry(root / 'web/public', runtime / 'web/public', root)
     external = external_inputs(root, tracked)
     for name in external + ['web/assets/NotoSansTC-Share.woff']:
         require(name in tracked, f'untracked input: {name}')
-        copy_entry(root / name, runtime / name)
+        copy_entry(root / name, runtime / name, root)
     evidence = stage / 'evidence'
     evidence.mkdir()
     traces = sorted(p for p in build.rglob('*.nft.json') if not p.is_relative_to(standalone))
     require(traces and build / 'next-server.js.nft.json' in traces, 'missing server NFT evidence')
     mappings = []
     for trace in traces:
+        validate_source(root, trace, prefixes=('web/.next/',))
         data = json.loads(trace.read_text())
         require(data.get('version') == 1 and isinstance(data.get('files'), list), f'invalid NFT: {trace}')
         for name in data['files']:
@@ -159,37 +174,36 @@ def assemble(root, stage, tracked):
             source = Path(os.path.abspath(trace.parent / name))
             require(source.is_relative_to(root), f'NFT outside checkout: {name}')
             rel = source.relative_to(root).as_posix()
-            resolved = source.resolve(strict=True)
-            require(resolved.is_relative_to(root), f'NFT resolves outside checkout: {rel}')
             # Next may already have dereferenced directory links while copying standalone.
-            # Validate both identities before reading bytes, not merely the archived alias.
-            for identity in (rel, resolved.relative_to(root).as_posix()):
-                safe_name(identity)
-                require(identity.startswith(('web/node_modules/', 'node_modules/', 'web/.next/', 'web/assets/')) or
-                        identity in external or identity in ('package.json', 'web/package.json'),
-                        f'unapproved NFT source: {identity}')
-                require('/standalone/' not in identity, 'recursive standalone trace')
-            copy_entry(source, runtime / rel)
+            # Validate both source identities, not merely the archived alias.
+            resolved = validate_source(root, source,
+                            prefixes=('web/node_modules/', 'node_modules/', 'web/.next/', 'web/assets/'),
+                            names=external + ['package.json', 'web/package.json'])
+            require('/standalone/' not in rel and '/standalone/' not in resolved.relative_to(root).as_posix(),
+                    'recursive standalone trace')
+            copy_entry(source, runtime / rel, root)
             require(digest(source.resolve()) == digest((runtime / rel).resolve()), f'NFT bytes differ: {rel}')
             mappings.append({'trace': trace.relative_to(root).as_posix(), 'input': name, 'runtime': rel,
                              'sha256': digest(source.resolve())})
+    validate_source(root, build / 'required-server-files.json', prefixes=('web/.next/',))
     required = json.loads((build / 'required-server-files.json').read_text())
     require(required.get('version') == 1, 'unsupported required-server-files')
     for name in required['files']:
         safe_name(name)
         require(name.startswith('.next/'), f'unapproved required file: {name}')
-        copy_entry(root / 'web' / name, runtime / 'web' / name)
+        validate_source(root, root / 'web' / name, prefixes=('web/.next/',))
+        copy_entry(root / 'web' / name, runtime / 'web' / name, root)
     # Keep every build manifest/NFT, but no cache, prerender data, or dependencies in evidence.
     for source in sorted(build.rglob('*')):
         rel = source.relative_to(build)
         if rel.parts[0] in ('standalone', 'cache', 'static'):
             continue
         if source.is_file() and (source.name.endswith('.nft.json') or 'manifest' in source.name or source.name == 'required-server-files.json'):
-            copy_entry(source, evidence / 'build' / rel)
+            copy_entry(source, evidence / 'build' / rel, root)
     source_names = ['package.json', 'package-lock.json', 'web/package.json', 'web/package-lock.json',
                     'web/next.config.ts', '.github/workflows/ci.yml', 'tools/ci/package_web.py']
     for name in source_names:
-        copy_entry(root / name, evidence / 'source' / name)
+        copy_entry(root / name, evidence / 'source' / name, root)
     (evidence / 'nft-mappings.json').write_text(json.dumps(mappings, indent=2) + '\n')
     inputs = [{'path': name, 'sha256': digest(root / name),
                'delivery': 'conservative source closure; may also be compiled into chunks'} for name in external]
@@ -202,6 +216,7 @@ def assemble(root, stage, tracked):
         require(name.startswith(('node_modules/', 'web/node_modules/', 'web/.next/', 'web/public/')) or
                 name in external or name in ('package.json', 'web/package.json', 'web/server.js',
                                             'web/assets/NotoSansTC-Share.woff'), f'unexpected runtime source: {name}')
+    validate_source(root, build / 'BUILD_ID', prefixes=('web/.next/',))
     return {'nftFiles': len(traces), 'nftReferences': len(mappings), 'externalInputs': inputs,
             'buildId': (build / 'BUILD_ID').read_text().strip(), 'server': 'runtime/web/server.js',
             'cwd': 'runtime/web'}

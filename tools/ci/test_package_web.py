@@ -128,9 +128,24 @@ class PackageTests(unittest.TestCase):
                     self.assemble()
                 dependency.unlink()
 
+    def test_required_directory_links_cannot_hide_private_or_outside_bytes(self):
+        required = 'web/.next/required-server-files.json'
+        self.put(required, json.dumps({'version': 1, 'files': ['.next/required-alias/payload.js']}))
+        alias = self.root / 'web/.next/required-alias'
+        for location in (self.root / '.env.credentials', self.base / 'outside'):
+            with self.subTest(location=location):
+                shutil.rmtree(self.stage)
+                self.stage.mkdir()
+                location.mkdir()
+                (location / 'payload.js').write_text('private bytes')
+                alias.symlink_to(os.path.relpath(location, alias.parent))
+                with self.assertRaisesRegex(ValueError, 'private path|resolves outside'):
+                    self.assemble()
+                alias.unlink()
+
     def test_untracked_external_input(self):
         self.tracked.remove('app/data/label.json')
-        with self.assertRaisesRegex(ValueError, 'unapproved external'):
+        with self.assertRaisesRegex(ValueError, 'unapproved external|untracked resolved external'):
             self.assemble()
 
     def test_reject_malicious_tar_before_extraction(self):
