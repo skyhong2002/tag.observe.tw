@@ -33,7 +33,7 @@ def safe_name(name):
     require(name and not p.is_absolute() and str(p) == name and
             all(part not in ('', '.', '..') for part in p.parts) and
             '\\' not in name and not any(ord(c) < 32 for c in name), f'unsafe path: {name!r}')
-    require(not any(part in ('.git', '.npmrc', '.netrc', '.ssh', 'private', 'secrets') or
+    require(not any(part in ('.git', '.npmrc', '.netrc', '.ssh', '.cache', '__pycache__', '.npm', 'private', 'secrets') or
                     part.startswith('.env') for part in p.parts), f'private path: {name}')
     require('/.next/cache' not in '/' + name and
             not name.endswith(('.pem', '.key', '.p12', '.sqlite', '.db', '.log')), f'non-release path: {name}')
@@ -159,10 +159,16 @@ def assemble(root, stage, tracked):
             source = Path(os.path.abspath(trace.parent / name))
             require(source.is_relative_to(root), f'NFT outside checkout: {name}')
             rel = source.relative_to(root).as_posix()
-            safe_name(rel)
-            require(rel.startswith(('web/node_modules/', 'node_modules/', 'web/.next/', 'web/assets/')) or
-                    rel in external or rel in ('package.json', 'web/package.json'), f'unapproved NFT source: {rel}')
-            require('/standalone/' not in rel, 'recursive standalone trace')
+            resolved = source.resolve(strict=True)
+            require(resolved.is_relative_to(root), f'NFT resolves outside checkout: {rel}')
+            # Next may already have dereferenced directory links while copying standalone.
+            # Validate both identities before reading bytes, not merely the archived alias.
+            for identity in (rel, resolved.relative_to(root).as_posix()):
+                safe_name(identity)
+                require(identity.startswith(('web/node_modules/', 'node_modules/', 'web/.next/', 'web/assets/')) or
+                        identity in external or identity in ('package.json', 'web/package.json'),
+                        f'unapproved NFT source: {identity}')
+                require('/standalone/' not in identity, 'recursive standalone trace')
             copy_entry(source, runtime / rel)
             require(digest(source.resolve()) == digest((runtime / rel).resolve()), f'NFT bytes differ: {rel}')
             mappings.append({'trace': trace.relative_to(root).as_posix(), 'input': name, 'runtime': rel,
@@ -173,12 +179,12 @@ def assemble(root, stage, tracked):
         safe_name(name)
         require(name.startswith('.next/'), f'unapproved required file: {name}')
         copy_entry(root / 'web' / name, runtime / 'web' / name)
-    # Keep every build JSON manifest/NFT, but no cache, prerender data, or dependencies in evidence.
-    for source in sorted(build.rglob('*.json')):
+    # Keep every build manifest/NFT, but no cache, prerender data, or dependencies in evidence.
+    for source in sorted(build.rglob('*')):
         rel = source.relative_to(build)
         if rel.parts[0] in ('standalone', 'cache', 'static'):
             continue
-        if source.name.endswith('.nft.json') or 'manifest' in source.name or source.name == 'required-server-files.json':
+        if source.is_file() and (source.name.endswith('.nft.json') or 'manifest' in source.name or source.name == 'required-server-files.json'):
             copy_entry(source, evidence / 'build' / rel)
     source_names = ['package.json', 'package-lock.json', 'web/package.json', 'web/package-lock.json',
                     'web/next.config.ts', '.github/workflows/ci.yml', 'tools/ci/package_web.py']

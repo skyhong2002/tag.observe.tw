@@ -35,6 +35,7 @@ class PackageTests(unittest.TestCase):
         self.put('web/.next/standalone/web/.next/BUILD_ID', 'build-id')
         self.put('web/.next/BUILD_ID', 'build-id')
         self.put('web/.next/routes-manifest.json', '{}')
+        self.put('web/.next/server/middleware-build-manifest.js', '// manifest')
         self.put('web/.next/required-server-files.json', json.dumps({'version': 1, 'files': ['.next/routes-manifest.json']}))
         self.put('web/.next/next-server.js.nft.json', json.dumps({'version': 1, 'files': ['../node_modules/dep/index.js']}))
         self.put('web/.next/static/chunk.js', '// chunk')
@@ -62,7 +63,8 @@ class PackageTests(unittest.TestCase):
         for name in ('runtime/node_modules/shared/index.js', 'runtime/app/src/label.ts',
                      'runtime/app/data/label.json', 'runtime/web/assets/NotoSansTC-Share.woff',
                      'runtime/web/public/favicons/icon.png', 'runtime/web/.next/static/chunk.js',
-                     'evidence/build/required-server-files.json', 'evidence/build/next-server.js.nft.json'):
+                     'evidence/build/required-server-files.json', 'evidence/build/next-server.js.nft.json',
+                     'evidence/build/server/middleware-build-manifest.js'):
             self.assertTrue((self.stage / name).is_file(), name)
         self.assertFalse((self.stage / 'runtime/web/public/public').exists())
         self.assertFalse((self.stage / 'runtime/web/.next/cache').exists())
@@ -109,6 +111,22 @@ class PackageTests(unittest.TestCase):
                 cache = self.root / 'web/.next/standalone/web/.next/cache'
                 if cache.exists():
                     cache.rmdir()
+
+    def test_nft_directory_links_cannot_hide_private_or_outside_bytes(self):
+        dependency = self.root / 'web/node_modules/dep'
+        shutil.rmtree(dependency)
+        for location in (self.root / '.env.credentials', self.base / 'outside'):
+            with self.subTest(location=location):
+                shutil.rmtree(self.stage)
+                self.stage.mkdir()
+                location.mkdir()
+                (location / 'index.js').write_text('// dep')
+                dependency.symlink_to(os.path.relpath(location, dependency.parent))
+                # The standalone alias already contains identical bytes: only source
+                # identity validation can detect what Next dereferenced during build.
+                with self.assertRaisesRegex(ValueError, 'private path|resolves outside'):
+                    self.assemble()
+                dependency.unlink()
 
     def test_untracked_external_input(self):
         self.tracked.remove('app/data/label.json')

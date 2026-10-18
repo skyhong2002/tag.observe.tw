@@ -13,7 +13,7 @@ a successful upload alone does **not** mean the whole CI run passed.
   share font, NFT inputs, and the conservative tracked external import closure
   under `app/data` and `app/src`. The latter includes type imports for source
   evidence; it does not claim each source file is loaded at runtime.
-- `evidence/`: every build NFT and JSON manifest outside cache/static/standalone,
+- `evidence/`: every build NFT and manifest outside cache/static/standalone,
   required-server-files, source configuration/locks, explicit NFT-to-runtime byte
   mappings, and external input hashes.
 
