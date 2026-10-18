@@ -1,0 +1,68 @@
+# Review thresholds against normal workloads; no alert delivery is configured here.
+groups:
+  - name: host-observer
+    interval: 60s
+    rules:
+      - alert: HostObserverDown
+        expr: up{job="host-observer"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host observer scrape is unavailable
+      - alert: HostObserverDataUnavailable
+        expr: host_observer_healthy{job="host-observer"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host observer has missing, invalid, stale or unpersisted data
+      - alert: HostObserverSourceUnavailable
+        expr: host_observer_source_fresh{job="host-observer"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Host observation source unavailable: {{ $labels.source }}'
+      - alert: HostPressureHigh
+        expr: (host_observer_psi_stall_ratio{job="host-observer",resource=~"memory|io",scope="full",window="60"} > 0.10) and on(job, instance) (host_observer_sample_age_seconds{job="host-observer"} < 150)
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Memory or IO full stall exceeds ten percent
+      - alert: HostHomeSpaceLow
+        expr: ((host_observer_filesystem_bytes{job="host-observer",mount="/home",field="available"} / ignoring(field) host_observer_filesystem_bytes{job="host-observer",mount="/home",field="size"}) < 0.15) and on(job, instance) (host_observer_sample_age_seconds{job="host-observer"} < 150)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Home has less than fifteen percent available space
+      - alert: HostBackupNotSuccessful
+        expr: host_observer_backup_status{job="host-observer",kind=~"run|check-local",status=~"failed|skipped"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Latest backup receipt reports failure or skip
+      - alert: HostUserServiceFailed
+        expr: host_observer_unit_active_state{job="host-observer",state="failed"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Allowlisted user unit failed: {{ $labels.unit }}'
+      - alert: MyZillaProbeFailed
+        expr: host_observer_myzilla_healthy{job="host-observer"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Fresh saved MyZilla probe reports failure
+      - alert: HostSystemReportDegraded
+        expr: host_observer_system_health_ok{job="host-observer"} == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Fresh system health report is degraded
