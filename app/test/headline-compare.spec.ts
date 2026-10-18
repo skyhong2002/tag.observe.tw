@@ -109,6 +109,74 @@ describe('headline comparisons', () => {
     expect(politicsPriority(seed)).toBe(2);
     expect(politicsPriority({ ...seed, major: ['選手'], tags: [], news: [{ title: '選手奪冠' }] })).toBe(0);
   });
+  it('keeps literal focus context distinct for titles with the same normalized text', () => {
+    const event = { ...seed, major: ['AB'], tags: [], news: [{ title: 'ABxyz' }] };
+    for (const reverse of [false, true]) {
+      const blue = [article(1, 'ABxA-Byz'), article(2, 'ABxAByz')];
+      if (reverse) blue.reverse();
+      for (const mode of ['camps', 'outlets'] as const) {
+        const result = makeComparison(event, coverage(blue, [article(3, 'ABxyz')]), mode);
+        expect(result?.articles.some((a) => a.id === 2)).toBe(true);
+        expect(result?.articles.some((a) => a.id === 1)).toBe(false);
+        if (mode === 'camps') expect(result?.pair).toEqual([2, 3]);
+      }
+    }
+  });
+  it('recomputes context after input changes and does not retain mutations to returned articles', () => {
+    const event = { ...seed, major: ['AB'], tags: [], news: [{ title: 'ABxyz' }] };
+    const cov = coverage([article(1, 'ABxA-Byz'), article(2, 'ABxAByz')], [article(3, 'ABxyz')]);
+    const snapshot = structuredClone({ event, cov });
+    const first = makeComparison(event, cov)!;
+    expect(first.pair).toEqual([2, 3]);
+    first.focusTags.push('output-only');
+    first.articles[0].title = 'output-only';
+    first.articles.reverse();
+    expect({ event, cov }).toEqual(snapshot);
+    event.major = [];
+    expect(makeComparison(event, cov)?.pair).toEqual([1, 3]);
+    event.major = ['AB'];
+    expect(makeComparison(event, cov)?.pair).toEqual([2, 3]);
+    expect(makeComparison(event, cov)?.focusTags).toEqual(['AB']);
+  });
+  it('keeps the inclusive twelve-hour boundary at millisecond precision', () => {
+    const start = Date.parse('2026-09-30T06:00:00Z');
+    for (const delta of [-1, 0, 1]) {
+      const result = makeComparison(
+        seed,
+        coverage([article(1, seed.news[0].title)], [article(2, seed.news[0].title, new Date(start + 12 * 3600e3 + delta).toISOString())]),
+      );
+      expect(result?.pair).toEqual(delta <= 0 ? [1, 2] : null);
+    }
+  });
+  it('preserves the candidate and pair similarity thresholds', () => {
+    const title = Array.from({ length: 101 }, (_, i) => String.fromCodePoint(0x6000 + i)).join('');
+    const event = { ...seed, major: [], tags: [], news: [{ title }] };
+    for (const sharedBigrams of [17, 18, 19, 23, 24, 25]) {
+      const other =
+        title.slice(0, sharedBigrams + 1) +
+        Array.from({ length: 100 - sharedBigrams }, (_, i) => String.fromCodePoint(0x6800 + i)).join('');
+      const result = makeComparison(event, coverage([article(1, title)], [article(2, other)]));
+      expect(result?.articles.some((a) => a.id === 2)).toBe(sharedBigrams >= 18);
+      expect(result?.pair).toEqual(sharedBigrams >= 24 ? [1, 2] : null);
+    }
+  });
+  it('keeps the newer left tie-break and the first eligible right on equal scores', () => {
+    const cov = coverage([article(10, seed.news[0].title)], [article(30, seed.news[0].title)]);
+    cov.byOutlet.splice(1, 0, {
+      media: 'newer-blue',
+      title: '新甲報',
+      camp: 'blue',
+      articles: [article(20, seed.news[0].title, '2026-09-30T06:00:00.001Z')],
+    });
+    cov.byOutlet.push({ media: 'later-green', title: '新乙報', camp: 'green', articles: [article(40, seed.news[0].title)] });
+    expect(makeComparison(seed, cov)?.pair).toEqual([20, 30]);
+  });
+  it('searches past rejected rows without reserving their deduplication keys', () => {
+    const rejected = Array.from({ length: 64 }, (_, i) => ({ ...article(i + 10, seed.news[0].title), url: 'invalid' }));
+    const cov = coverage([...rejected, article(1, seed.news[0].title)], [article(2, seed.news[0].title)]);
+    expect(makeComparison(seed, cov)?.pair).toEqual([1, 2]);
+    expect(makeComparison(seed, cov)?.articles.map((a) => a.id)).toEqual([1, 2]);
+  });
 });
 
 describe('literal headline differences', () => {
