@@ -71,10 +71,39 @@ export function makeComparison(
   const focusTags = [...new Set([...event.major, ...event.tags.map((t) => t.tag)])].filter((t) => seedTitle.includes(t)).slice(0, 4);
   // Shared people/topic tags alone cannot establish that two headlines describe
   // the same development. Also require overlap in their surrounding wording.
-  const context = (title: string) => bigrams(focusTags.reduce((text, tag) => text.split(tag).join(' '), title));
+  // Reuse title features only within this comparison; never retain coverage
+  // across requests or cache the quadratic set of candidate pairs.
+  const titles = new Map<string, { normalized: string; grams: Set<string>; context: Set<string>; seedScore?: number }>();
+  const prepare = (title: string) => {
+    let value = titles.get(title);
+    if (!value) {
+      value = {
+        normalized: normalized(title),
+        grams: bigrams(title),
+        context: bigrams(focusTags.reduce((text, tag) => text.split(tag).join(' '), title)),
+      };
+      titles.set(title, value);
+    }
+    return value;
+  };
+  const overlapCount = (left: Set<string>, right: Set<string>) => {
+    let count = 0;
+    for (const part of left) if (right.has(part)) count++;
+    return count;
+  };
+  const similarity = (a: string, b: string) => {
+    const x = prepare(a).grams;
+    const y = prepare(b).grams;
+    if (!x.size || !y.size) return 0;
+    return (2 * overlapCount(x, y)) / (x.size + y.size);
+  };
+  const similarityToSeed = (title: string) => {
+    const value = prepare(title);
+    value.seedScore ??= similarity(title, seedTitle);
+    return value.seedScore;
+  };
   const contextOverlap = (a: string, b: string) => {
-    const right = context(b);
-    return [...context(a)].filter((part) => right.has(part)).length;
+    return overlapCount(prepare(a).context, prepare(b).context);
   };
   const seen = new Set<string>();
   const candidates = coverage.byOutlet
@@ -84,37 +113,40 @@ export function makeComparison(
       // The existing coverage endpoint matches ANY lifetime thread tag. Narrow
       // that broad pool against the current event's actual lead headline.
       const hits = focusTags.filter((t) => a.title.includes(t)).length;
-      const similarity = headlineSimilarity(a.title, seedTitle);
-      if (similarity < 0.18 || (focusTags.length && hits === 0) || contextOverlap(a.title, seedTitle) < 2) return false;
-      const key = `${a.media}:${normalized(a.title)}`;
+      const seedSimilarity = similarityToSeed(a.title);
+      if (seedSimilarity < 0.18 || (focusTags.length && hits === 0) || contextOverlap(a.title, seedTitle) < 2) return false;
+      const key = `${a.media}:${prepare(a.title).normalized}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
   let pair: [CompareArticle, CompareArticle] | null = null;
   let best = -1;
-  for (const left of candidates.filter((a) => pairBy === 'outlets' || a.camp === 'blue')) {
-    for (const right of candidates.filter((a) => pairBy === 'outlets' || a.camp === 'green')) {
+  const leftCandidates = candidates.filter((a) => pairBy === 'outlets' || a.camp === 'blue');
+  const rightCandidates = candidates.filter((a) => pairBy === 'outlets' || a.camp === 'green');
+  for (const left of leftCandidates) {
+    for (const right of rightCandidates) {
       if (left.media === right.media || hoursApart(left, right) > 12) continue;
       if (
         pairBy === 'outlets' &&
-        (normalized(left.title).includes(normalized(right.title)) || normalized(right.title).includes(normalized(left.title)))
+        (prepare(left.title).normalized.includes(prepare(right.title).normalized) ||
+          prepare(right.title).normalized.includes(prepare(left.title).normalized))
       )
         continue;
-      const overlap = headlineSimilarity(left.title, right.title);
+      const overlap = similarity(left.title, right.title);
       if (overlap < 0.24 || contextOverlap(left.title, right.title) < 2) continue;
       // Prefer topical proximity to the seed, not politically divergent wording.
-      const score = overlap + headlineSimilarity(left.title, seedTitle) + headlineSimilarity(right.title, seedTitle);
+      const score = overlap + similarityToSeed(left.title) + similarityToSeed(right.title);
       if (score > best || (score === best && timestamp(left) > timestamp(pair![0]))) {
         best = score;
         pair = [left, right];
       }
     }
   }
-  const anchor = pair?.[0] ?? candidates.sort((a, b) => headlineSimilarity(b.title, seedTitle) - headlineSimilarity(a.title, seedTitle))[0];
+  const anchor = pair?.[0] ?? candidates.sort((a, b) => similarityToSeed(b.title) - similarityToSeed(a.title))[0];
   if (!anchor) return null;
   const articles = candidates
-    .filter((a) => hoursApart(a, anchor) <= 12 && headlineSimilarity(a.title, anchor.title) >= 0.18)
+    .filter((a) => hoursApart(a, anchor) <= 12 && similarity(a.title, anchor.title) >= 0.18)
     .sort((a, b) => timestamp(b) - timestamp(a) || a.id - b.id);
   // Always retain both members of an accepted pair.
   if (pair) for (const a of pair) if (!articles.some((n) => n.id === a.id)) articles.push(a);
