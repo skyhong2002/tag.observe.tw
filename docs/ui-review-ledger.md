@@ -4,7 +4,15 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-18 04:00 Taipei)
+## Current deployed status (2026-10-19 20:08 Taipei)
+
+- **Web-only `da020b57` / BUILD_ID `FWjDLb1GTUIAB3MCcaErq` (UTC 2026-10-19T12:08Z)**: 即時看板 added at the end of the site navigation as its own group 看即時 (mobile menu row label); on origin/main as f4925552.
+  - Owner's request (relaying feedback): put the liveboard link in the menubar after the other pages, like them. Before this it was only in the footer.
+  - Checked at 1024 px (still one header row), 1440 px, and the 390 px menu before deploying. Loopback, 18130 and public checks passed (看即時 on /, /event/, /media/, /tag/柯文哲/).
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/nav-liveboard-da020b57-20261019/rollback.sh` (web → c007cdb9). Script: `~/.cache/tag-review/package-and-deploy-da02.py`.
+- Retention: web da02 + c007; API fa2c + 68e5 (unchanged).
+
+### Earlier (2026-10-18 04:00 Taipei)
 
 - **API + gateway + web `fa2c7790` (UTC 2026-10-17T19:52Z), then web-only `c007cdb9` / BUILD_ID `Z3Map3GPnPnzSHnhaiq7X` (19:59Z)**: outlet roles (性質) folded into the media labels, on origin/main as a4bb7412 + 2e44fbf7.
   - Owner's request: 「性質請幫我直接合併進去標籤就好」.
