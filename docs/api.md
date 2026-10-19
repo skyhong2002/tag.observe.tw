@@ -128,6 +128,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media-output`](#api-v1-media-output) | 各媒體在流量網域上的發稿量 |
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
 | [`GET /api/v1/liveboard/scenes`](#api-v1-liveboard-scenes) | 即時看板的事件與議題鏡頭 |
+| [`GET /api/v1/liveboard/videos`](#api-v1-liveboard-videos) | 即時看板的 YouTube 影片鏡頭 |
 | [`GET /api/v1/writing`](#api-v1-writing) | 寫法總覽：轉述社群貼文與標題用詞 |
 | [`GET /api/v1/writing/articles`](#api-v1-writing-articles) | 寫法：符合條件的文章 |
 | [`GET /api/v1/media/{media}/writing`](#api-v1-media-media-writing) | 單一媒體的寫法統計與逐日趨勢 |
@@ -3293,6 +3294,87 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
 | `boards.groups[].counts.hour` | integer | 近一小時收錄的文章數 |
 | `boards.groups[].counts.previous` | integer | 再前一小時收錄的文章數 |
 | `boards.groups[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+
+快取：60 秒。
+
+<a id="api-v1-liveboard-videos"></a>
+
+### `GET /api/v1/liveboard/videos`
+
+**即時看板的 YouTube 影片鏡頭**
+
+給精簡版 /liveboard/ 的影片鏡頭，影片資料來自有影儀表板（youtube.observe.tw）的公開 API，本站只決定歸屬。events 是 /api/v1/liveboard/scenes 前 6 名事件，各附最多 8 支近 24 小時發布、標題或說明逐字含有該事件兩個主要標籤（主要標籤少於兩個時全部）的影片，含標籤多的在前，再依觀看數。day 是近 24 小時發布、觀看數最多的影片；live 是此刻觀看人數最多的直播；兩者若含某個前幾名事件的主要標籤，event 會指出該事件。同一節目由不同頻道上傳只留一支，每個頻道先各取一支、最多兩支。觀看數（views）是有影最後看到的累計數，不是期間增量；觀看人數（live.viewers）是直播當下的同時觀看數；兩者都不與文章數混算。有影暫時無法回應時沿用上一份清單，partial 表示仍有清單缺漏。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/liveboard/videos'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `source` | string | 影片資料來源 |
+| `window` | object | 影片發布時間的範圍（近 24 小時） |
+| `window.since` | string (ISO 時間) |  |
+| `window.until` | string (ISO 時間) |  |
+| `partial` | boolean | 有清單取不到，也沒有上一份可沿用 |
+| `events` | object[] | 前 6 名事件與其影片 |
+| `events[].href` | string \| null | 事件串頁面 |
+| `events[].major` | string[] | 主要標籤 |
+| `events[].videos` | object[] |  |
+| `events[].videos[].id` | string | YouTube 影片 ID |
+| `events[].videos[].title` | string |  |
+| `events[].videos[].url` | string | YouTube 網址 |
+| `events[].videos[].thumbnail` | string \| null |  |
+| `events[].videos[].channel` | string | 頻道名稱 |
+| `events[].videos[].publishedAt` | string (ISO 時間) |  |
+| `events[].videos[].views` | integer \| null | 累計觀看數 |
+| `events[].videos[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
+| `events[].videos[].event` | object \| null | day 與 live：所屬的前幾名事件 |
+| `events[].videos[].event.href` | string \| null | 事件串頁面 |
+| `events[].videos[].event.major` | string[] | 主要標籤 |
+| `events[].videos[].live` | object | 直播才有 |
+| `events[].videos[].live.viewers` | integer | 此刻同時觀看數 |
+| `events[].videos[].live.peak` | integer \| null | 今日最高同時觀看數 |
+| `events[].videos[].live.startedAt` | string (ISO 時間) \| null | 開播時間 |
+| `events[].videos[].live.trend` | integer[] | 最近幾次取樣的同時觀看數，舊的在前 |
+| `day` | object[] | 近 24 小時發布、觀看數最多的影片，最多 8 支 |
+| `day[].id` | string | YouTube 影片 ID |
+| `day[].title` | string |  |
+| `day[].url` | string | YouTube 網址 |
+| `day[].thumbnail` | string \| null |  |
+| `day[].channel` | string | 頻道名稱 |
+| `day[].publishedAt` | string (ISO 時間) |  |
+| `day[].views` | integer \| null | 累計觀看數 |
+| `day[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
+| `day[].event` | object \| null | day 與 live：所屬的前幾名事件 |
+| `day[].event.href` | string \| null | 事件串頁面 |
+| `day[].event.major` | string[] | 主要標籤 |
+| `day[].live` | object | 直播才有 |
+| `day[].live.viewers` | integer | 此刻同時觀看數 |
+| `day[].live.peak` | integer \| null | 今日最高同時觀看數 |
+| `day[].live.startedAt` | string (ISO 時間) \| null | 開播時間 |
+| `day[].live.trend` | integer[] | 最近幾次取樣的同時觀看數，舊的在前 |
+| `live` | object[] | 此刻觀看人數最多的直播，最多 8 場 |
+| `live[].id` | string | YouTube 影片 ID |
+| `live[].title` | string |  |
+| `live[].url` | string | YouTube 網址 |
+| `live[].thumbnail` | string \| null |  |
+| `live[].channel` | string | 頻道名稱 |
+| `live[].publishedAt` | string (ISO 時間) |  |
+| `live[].views` | integer \| null | 累計觀看數 |
+| `live[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
+| `live[].event` | object \| null | day 與 live：所屬的前幾名事件 |
+| `live[].event.href` | string \| null | 事件串頁面 |
+| `live[].event.major` | string[] | 主要標籤 |
+| `live[].live` | object | 直播才有 |
+| `live[].live.viewers` | integer | 此刻同時觀看數 |
+| `live[].live.peak` | integer \| null | 今日最高同時觀看數 |
+| `live[].live.startedAt` | string (ISO 時間) \| null | 開播時間 |
+| `live[].live.trend` | integer[] | 最近幾次取樣的同時觀看數，舊的在前 |
 
 快取：60 秒。
 

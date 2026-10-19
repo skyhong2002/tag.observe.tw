@@ -227,6 +227,30 @@ const schemas: Record<string, Schema> = {
     },
     '不重複的本站爬取文章數',
   ),
+  LiveboardVideo: obj(
+    {
+      id: str('YouTube 影片 ID'),
+      title: str(),
+      url: str('YouTube 網址'),
+      thumbnail: nullable(str()),
+      channel: str('頻道名稱'),
+      publishedAt: time(),
+      views: nullable(int('累計觀看數')),
+      matched: arr(str(), '影片含有的事件主要標籤（day 與 live 為其所屬事件的）'),
+      event: nullable(obj({ href: nullable(str('事件串頁面')), major: arr(str(), '主要標籤') }, 'day 與 live：所屬的前幾名事件')),
+      live: obj(
+        {
+          viewers: int('此刻同時觀看數'),
+          peak: nullable(int('今日最高同時觀看數')),
+          startedAt: nullable(time('開播時間')),
+          trend: arr(int(), '最近幾次取樣的同時觀看數，舊的在前'),
+        },
+        '直播才有',
+      ),
+    },
+    undefined,
+    ['event', 'live'],
+  ),
   LiveSceneBrief: obj(
     {
       id: int(),
@@ -3008,6 +3032,26 @@ export const ENDPOINTS: Endpoint[] = [
         categories: arr(ref('LiveSceneRow'), '標籤群組：分類'),
         groups: arr(ref('LiveSceneRow'), '標籤群組：人物、政黨等'),
       }),
+    }),
+  },
+  {
+    path: '/api/v1/liveboard/videos',
+    tag: 'events',
+    summary: '即時看板的 YouTube 影片鏡頭',
+    description:
+      '給精簡版 /liveboard/ 的影片鏡頭，影片資料來自有影儀表板（youtube.observe.tw）的公開 API，本站只決定歸屬。events 是 /api/v1/liveboard/scenes 前 6 名事件，各附最多 8 支近 24 小時發布、標題或說明逐字含有該事件兩個主要標籤（主要標籤少於兩個時全部）的影片，含標籤多的在前，再依觀看數。day 是近 24 小時發布、觀看數最多的影片；live 是此刻觀看人數最多的直播；兩者若含某個前幾名事件的主要標籤，event 會指出該事件。同一節目由不同頻道上傳只留一支，每個頻道先各取一支、最多兩支。觀看數（views）是有影最後看到的累計數，不是期間增量；觀看人數（live.viewers）是直播當下的同時觀看數；兩者都不與文章數混算。有影暫時無法回應時沿用上一份清單，partial 表示仍有清單缺漏。',
+    cache: '60 秒',
+    response: obj({
+      generatedAt: time(),
+      source: str('影片資料來源'),
+      window: obj({ since: time(), until: time() }, '影片發布時間的範圍（近 24 小時）'),
+      partial: bool('有清單取不到，也沒有上一份可沿用'),
+      events: arr(
+        obj({ href: nullable(str('事件串頁面')), major: arr(str(), '主要標籤'), videos: arr(ref('LiveboardVideo')) }),
+        '前 6 名事件與其影片',
+      ),
+      day: arr(ref('LiveboardVideo'), '近 24 小時發布、觀看數最多的影片，最多 8 支'),
+      live: arr(ref('LiveboardVideo'), '此刻觀看人數最多的直播，最多 8 場'),
     }),
   },
   {

@@ -15,18 +15,21 @@ import {
   type SceneBrief,
   type SceneEvent,
   type SceneRow,
+  type SceneVideo,
   signed,
   since,
   storyHeadline,
   storyLead,
 } from './scenes';
 import styles from './scenes.module.css';
-import type { BoardLens, EventLens } from './settings';
+import type { BoardLens, EventLens, VideoLens } from './settings';
 
 // The simple board's scenes other than the keyword cloud (SimpleBoard plays
 // them): an event a frame, with its score against the previous hour's
 // snapshot and the articles collected for it in the last hour; or a
-// leaderboard of the day's topics. Both put the lens's name in a slim row on
+// leaderboard of the day's topics; or an event with YouTube videos about it,
+// or a board of the day's most viewed videos or of the streams live now.
+// All put the lens's name in a slim row on
 // top with the ‹ › that step through the frames (and on to the next lens),
 // and a bar that fills over the time the frame stays. Trends over the hours
 // are lines, as the site's other sparklines. Links do not prefetch: a wall
@@ -36,6 +39,7 @@ export default function SceneView({
   lens,
   colour,
   event,
+  videos,
   rows,
   frame,
   labels,
@@ -44,9 +48,11 @@ export default function SceneView({
   onStep,
   onTo,
 }: {
-  lens: EventLens | BoardLens;
+  lens: EventLens | VideoLens | BoardLens;
   colour: string;
   event?: SceneEvent;
+  /** On a video lens, the event's videos. */
+  videos?: SceneVideo[];
   rows?: SceneRow[];
   /** The frame showing, and a label for each of the lens's frames (one for a leaderboard). */
   frame: number;
@@ -96,7 +102,8 @@ export default function SceneView({
         <Arrow by={1} onStep={onStep} />
       </header>
       <div key={`${lens.key}-${frame}`} className={styles.body}>
-        {event && <EventFrame event={event} colour={colour} />}
+        {event && (videos ? <VideoFrame event={event} videos={videos} colour={colour} /> : <EventFrame event={event} colour={colour} />)}
+        {!event && videos && <VideoGrid videos={videos} colour={colour} board />}
         {rows && <Board rows={rows} lens={lens} colour={colour} />}
       </div>
     </div>
@@ -283,6 +290,111 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   );
 }
 
+/** Views as a screen says them: 8,412 / 8.4 萬 / 1.2 億. */
+const views = (n: number) =>
+  n >= 1e8 ? `${(n / 1e8).toFixed(1)} 億` : n >= 1e4 ? `${(n / 1e4).toFixed(n >= 1e5 ? 0 : 1)} 萬` : n.toLocaleString();
+/** The 16:9 picture of a YouTube thumbnail: hqdefault is 4:3 with the video letterboxed in its middle. */
+const thumbnailOf = (v: SceneVideo) => `https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/hqdefault.jpg`;
+
+/** An event as on the event lens, in one row over its videos: the most viewed of those holding its major tags. */
+function VideoFrame({ event, videos, colour }: { event: SceneEvent; videos: SceneVideo[]; colour: string }) {
+  const headline = storyHeadline(event.news, event.major);
+  return (
+    <article className={styles.videoEvent}>
+      <div className={styles.videoStory}>
+        <p className={styles.rank}>
+          第 <b>{event.rank}</b> 名
+        </p>
+        <h3 className={styles.videoHeadline}>
+          {event.href ? (
+            <Link prefetch={false} href={event.href}>
+              {headline}
+            </Link>
+          ) : (
+            headline
+          )}
+        </h3>
+        <p className={styles.keywords}>
+          {event.major.map((tag) => (
+            <Link prefetch={false} key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-major>
+              {tag}
+            </Link>
+          ))}
+        </p>
+        <span className={styles.sub}>
+          24 小時 {event.counts.day} 篇報導 · {event.coverage.outlets.length} 家媒體
+        </span>
+      </div>
+      <VideoGrid videos={videos} colour={colour} />
+    </article>
+  );
+}
+
+/** Videos in a grid that shares out the height: thumbnail, title, channel and views (a live stream's
+ *  viewers now, today's peak and its line), and the event's tags it holds. On the day's and live
+ *  boards (`board`) each also names the top event it belongs to. Every card keeps the same rows,
+ *  empty or not, so the thumbnails of a row line up at one size; nothing is drawn over a picture. */
+function VideoGrid({ videos, colour, board = false }: { videos: SceneVideo[]; colour: string; board?: boolean }) {
+  const live = videos.some((v) => v.live);
+  return (
+    <ul className={styles.videos} data-few={videos.length <= 4 || undefined} data-board={board || undefined} data-live={live || undefined}>
+      {videos.map((v) => (
+        <li key={v.id}>
+          <a href={v.url} target="_blank" rel="noopener noreferrer" className={styles.thumbBox} tabIndex={-1} aria-label={v.title}>
+            <SafeImage src={thumbnailOf(v)} alt="" width={480} height={360} />
+          </a>
+          <a href={v.url} target="_blank" rel="noopener noreferrer" className={styles.videoTitle}>
+            {v.title}
+          </a>
+          <span className={styles.byline}>
+            <span className={styles.outlet}>{v.channel}</span>
+            {v.live ? (
+              v.live.startedAt && <time className={styles.time}>{since(v.live.startedAt)}開播</time>
+            ) : (
+              <>
+                {v.views !== null && <span className={styles.views}>觀看 {views(v.views)}</span>}
+                <time className={styles.time} data-recent={Date.now() - Date.parse(v.publishedAt) < 3600e3 || undefined}>
+                  {since(v.publishedAt)}
+                </time>
+              </>
+            )}
+          </span>
+          {live && (
+            // A live stream's viewers now in the lens's colour, today's peak, and its line.
+            <span className={styles.liveLine}>
+              {v.live && (
+                <>
+                  <span className={styles.liveCount}>LIVE {v.live.viewers.toLocaleString()} 人在看</span>
+                  {v.live.peak !== null && v.live.peak > v.live.viewers && (
+                    <span className={styles.views}>今日最高 {views(v.live.peak)}</span>
+                  )}
+                  {v.live.trend.length >= 2 && <Sparkline values={v.live.trend} color={colour} className={styles.liveSpark} />}
+                </>
+              )}
+            </span>
+          )}
+          <span className={styles.reportTags}>
+            {board
+              ? v.event &&
+                (v.event.href ? (
+                  <Link prefetch={false} href={v.event.href} data-event>
+                    {v.event.major.join('、')}
+                  </Link>
+                ) : (
+                  <span data-event>{v.event.major.join('、')}</span>
+                ))
+              : v.matched.map((tag) => (
+                  <span key={tag} data-event>
+                    #{tag}
+                  </span>
+                ))}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** A report's line under its headline, as on every news row: outlet, its reporters and the
  *  outlets it names as source or cites (authorCreditParts, as the full board), and when — how
  *  long ago, in the lens's colour, for the last hour's arrivals. */
@@ -368,7 +480,7 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
   );
 }
 
-function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | BoardLens; colour: string }) {
+function Board({ rows, lens, colour }: { rows: SceneRow[]; lens: EventLens | VideoLens | BoardLens; colour: string }) {
   const board = lens.scene === 'board' ? lens.board : null;
   const thread = board === 'threads';
   return (

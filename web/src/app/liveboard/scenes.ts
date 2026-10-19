@@ -3,7 +3,7 @@
 
 import { cleanEventHeadline, clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import type { EventCoverage } from '@/lib/pages';
-import type { LiveboardSettings } from './settings';
+import type { Lens, LiveboardSettings } from './settings';
 
 export interface SceneCounts {
   /** Articles published in the last 24 hours… */
@@ -84,6 +84,36 @@ export interface LiveScenes {
   boards: { media: SceneRow[]; threads: SceneRow[]; categories: SceneRow[]; groups: SceneRow[] };
 }
 
+/** A YouTube video about an event, as /api/v1/liveboard/videos sends it (app/src/v1/liveboard-videos.ts). */
+export interface SceneVideo {
+  id: string;
+  title: string;
+  url: string;
+  thumbnail: string | null;
+  channel: string;
+  publishedAt: string;
+  /** Cumulative views as 有影 last saw them. */
+  views: number | null;
+  /** The event's major tags it holds (on the day's and live boards, those of its event). */
+  matched: string[];
+  /** On the day's and live boards: the top event it belongs to, if any. */
+  event?: { href: string | null; major: string[] } | null;
+  /** A live stream: viewers now, today's peak, when it started, viewers over its last samples. */
+  live?: { viewers: number; peak: number | null; startedAt: string | null; trend: number[] };
+}
+export interface LiveVideos {
+  generatedAt: string;
+  source: string;
+  window: { since: string; until: string };
+  partial: boolean;
+  events: Array<{ href: string | null; major: string[]; videos: SceneVideo[] }>;
+  /** The most viewed videos of the last 24 hours, and the streams live now. */
+  day: SceneVideo[];
+  live: SceneVideo[];
+}
+/** Which event a list of videos is for: its thread page, else its major tags. */
+export const eventKey = (e: { href: string | null; major: readonly string[] }) => e.href ?? e.major.join('、');
+
 /** Events the event lens steps through, one a frame. */
 export const EVENT_FRAMES = 6;
 
@@ -103,12 +133,19 @@ export const signed = (n: number, digits = 0) => {
 };
 
 /** How long a frame stays once it has faded in: a keyword cloud's past hour `step` and its present `hold`;
- *  an event `hold`, since its articles are read; a leaderboard half as long again, for its ten rows. */
-export function stayOf(scene: 'cloud' | 'compare' | 'events' | 'board', last: boolean, s: Pick<LiveboardSettings, 'step' | 'hold'>) {
+ *  an event (with or without its videos) `hold`, since its articles are read; a leaderboard half as long again, for its ten rows. */
+export function stayOf(
+  scene: 'cloud' | 'compare' | 'events' | 'videos' | 'board',
+  last: boolean,
+  s: Pick<LiveboardSettings, 'step' | 'hold'>,
+) {
   if (scene === 'board') return Math.round(s.hold * 1.5);
-  if (scene === 'events') return s.hold;
+  if (scene === 'events' || scene === 'videos') return s.hold;
   return last ? s.hold : s.step;
 }
+
+/** The scene a lens plays, for its timing: the day's and live video boards stay as a leaderboard does. */
+export const sceneOf = (lens: Lens) => (lens.scene === 'videos' && lens.feed !== 'events' ? 'board' : lens.scene);
 
 /** hh:mm in Taipei. */
 export const clock = (iso: string) =>

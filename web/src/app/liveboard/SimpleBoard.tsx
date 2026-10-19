@@ -9,7 +9,17 @@ import { type CloudSizes, type PlacedWord, pictureBox } from '@/lib/word-cloud.m
 import { layoutCloud } from './cloud-layout';
 import { campColour, type Spread, spreadCamps, spreadX } from './compare.mts';
 import SceneView from './SceneView';
-import { EVENT_FRAMES, type LiveScenes, type SceneEvent, type SceneRow, stayOf } from './scenes';
+import {
+  EVENT_FRAMES,
+  eventKey,
+  type LiveScenes,
+  type LiveVideos,
+  type SceneEvent,
+  type SceneRow,
+  type SceneVideo,
+  sceneOf,
+  stayOf,
+} from './scenes';
 import { type CloudLens, cloudLens, type Lens, type LiveboardSettings, pickLenses } from './settings';
 import styles from './simple.module.css';
 
@@ -24,7 +34,8 @@ import styles from './simple.module.css';
 // word sits left (green) or right (blue) by how much more that camp writes
 // it, its colour drifting from green through ink to blue the same way.
 // Other lenses are scenes (SceneView): the top events one a frame, or a
-// leaderboard of the day's topics, from /api/v1/liveboard/scenes.
+// leaderboard of the day's topics, from /api/v1/liveboard/scenes; or the top
+// events with YouTube videos about them (/api/v1/liveboard/videos).
 // ↑ / ↓ (or PageUp / PageDown, as a presenter remote sends), a swipe up or
 // down, or the ‹ › beside the time line step to the previous or next hour,
 // and past either end to the neighbouring lens; ← / → or a sideways swipe go
@@ -60,8 +71,9 @@ interface Frame {
   back?: number;
   /** A compare lens's words on the spectrum (compare.mts)… */
   camps?: Spread[];
-  /** …an event lens's event… */
+  /** …an event lens's event (with its videos on a video lens)… */
   event?: SceneEvent;
+  videos?: SceneVideo[];
   /** …or a leaderboard's rows. */
   rows?: SceneRow[];
 }
@@ -350,6 +362,8 @@ export default function SimpleBoard({
   const cache = useRef(new Map<string, { at: number; frame: Frame | null }>());
   /** The event and topic scenes' data, shared by their lenses and fetched again once stale. */
   const scenes = useRef<{ at: number; data: Promise<LiveScenes | null> } | null>(null);
+  /** The video lens's videos, the same way. */
+  const videos = useRef<{ at: number; data: Promise<LiveVideos | null> } | null>(null);
   /** Skips to the next (1) or previous (-1) frame or lens, or to one frame of the lens; set by the player. */
   const skip = useRef<Skip>(STILL);
   const seeded = useRef(false);
@@ -434,6 +448,16 @@ export default function SimpleBoard({
       }
       return scenes.current.data;
     };
+    const videoData = () => {
+      if (!videos.current || Date.now() - videos.current.at > STALE / 2) {
+        const data = getJson<LiveVideos>('/api/v1/liveboard/videos');
+        videos.current = { at: Date.now(), data };
+        data.then((d) => {
+          if (!d && videos.current?.data === data) videos.current = null;
+        });
+      }
+      return videos.current.data;
+    };
     const framesOf = async (lens: Lens): Promise<Frame[]> => {
       if (lens.scene === 'compare') return compareFrames(lens.sides);
       if (lens.scene !== 'cloud') {
@@ -442,6 +466,19 @@ export default function SimpleBoard({
         const at = data.generatedAt;
         if (lens.scene === 'events')
           return data.events.slice(0, EVENT_FRAMES).map((event, i) => ({ id: i, computedAt: at, terms: [], event }));
+        if (lens.scene === 'videos' && lens.feed !== 'events') {
+          const list = (await videoData())?.[lens.feed] ?? [];
+          return list.length ? [{ id: 0, computedAt: at, terms: [], videos: list }] : [];
+        }
+        if (lens.scene === 'videos') {
+          // Only the events with videos: one without has nothing to show here.
+          const found = await videoData();
+          const byEvent = new Map((found?.events ?? []).map((e) => [eventKey(e), e.videos]));
+          return data.events.slice(0, EVENT_FRAMES).flatMap((event, i) => {
+            const list = byEvent.get(eventKey(event));
+            return list?.length ? [{ id: i, computedAt: at, terms: [], event, videos: list }] : [];
+          });
+        }
         const rows = data.boards[lens.board];
         return rows.length ? [{ id: 0, computedAt: at, terms: [], rows }] : [];
       }
@@ -892,17 +929,18 @@ export default function SimpleBoard({
         }}
         onClickCapture={onClickCapture}
       >
-        {playing && (playing.lens.scene === 'events' || playing.lens.scene === 'board') && (
+        {playing && (playing.lens.scene === 'events' || playing.lens.scene === 'videos' || playing.lens.scene === 'board') && (
           <SceneView
             key={playing.run}
             lens={playing.lens}
             colour={tint(playing.lens)}
             event={playing.frames[playing.frame]?.event}
+            videos={playing.frames[playing.frame]?.videos}
             rows={playing.frames[playing.frame]?.rows}
             frame={playing.frame}
             labels={hourLabels}
             settled={settledFrame === `${playing.run}:${playing.visit}`}
-            stay={stayOf(playing.lens.scene, playing.frame === playing.frames.length - 1, settings)}
+            stay={stayOf(sceneOf(playing.lens), playing.frame === playing.frames.length - 1, settings)}
             onStep={(by) => skip.current.step(by)}
             onTo={(i) => skip.current.to(i)}
           />

@@ -4,8 +4,8 @@
 // localStorage, so a wall tablet opens on its own board without signing in.
 // Query parameters override both for one visit: ?mode=simple (or the older
 // ?simple=1), ?lens=growth,blue, ?pictures=0, ?history=3, ?interval=6, ?step=5, ?hold=10, ?words=48, ?scale=80, ?change=rank.
-// A lens is a keyword cloud, two camps' clouds side by side, the top events, or a leaderboard of the day's
-// topics (/api/v1/liveboard/scenes); each is one of SimpleBoard's scenes.
+// A lens is a keyword cloud, two camps' clouds side by side, the top events (alone, or with YouTube videos
+// about them), or a leaderboard of the day's topics (/api/v1/liveboard/scenes); each is one of SimpleBoard's scenes.
 // Plain data, so the server page can read it too.
 
 interface LensBase {
@@ -33,6 +33,12 @@ export interface CompareLens extends LensBase {
 export interface EventLens extends LensBase {
   scene: 'events';
 }
+/** YouTube videos (/api/v1/liveboard/videos): the top events again, one at a time, with videos about
+ *  each; or one board of the day's most viewed videos, or of the streams live now. */
+export interface VideoLens extends LensBase {
+  scene: 'videos';
+  feed: 'events' | 'day' | 'live';
+}
 /** Which of /api/v1/liveboard/scenes' leaderboards a board lens shows. */
 export type BoardKey = 'media' | 'threads' | 'categories' | 'groups';
 /** A leaderboard of the day's topics: articles over the last 24 hours, in the last hour, and the change from the hour before. */
@@ -40,7 +46,7 @@ export interface BoardLens extends LensBase {
   scene: 'board';
   board: BoardKey;
 }
-export type Lens = CloudLens | CompareLens | EventLens | BoardLens;
+export type Lens = CloudLens | CompareLens | EventLens | VideoLens | BoardLens;
 const cloud = (lens: Omit<CloudLens, 'scene'>): CloudLens => ({ scene: 'cloud', ...lens });
 export const LENSES: Lens[] = [
   // All outlets together, in plain ink (white on the dark theme).
@@ -128,6 +134,33 @@ export const LENSES: Lens[] = [
     dark: '#f4f4f5',
   },
   { key: 'events', scene: 'events', title: '此刻焦點', note: '這一小時突然被大量報導的事', accent: '#b91c1c', dark: '#f87171' },
+  {
+    key: 'videos',
+    scene: 'videos',
+    feed: 'events',
+    title: '事件影片',
+    note: '有影儀表板找到的 YouTube 影片',
+    accent: '#c2410c',
+    dark: '#fb923c',
+  },
+  {
+    key: 'videos-day',
+    scene: 'videos',
+    feed: 'day',
+    title: '今日影片',
+    note: '近 24 小時發布、觀看最多的 YouTube 影片',
+    accent: '#a16207',
+    dark: '#facc15',
+  },
+  {
+    key: 'videos-live',
+    scene: 'videos',
+    feed: 'live',
+    title: '正在直播',
+    note: '此刻觀看人數最多的 YouTube 直播',
+    accent: '#a21caf',
+    dark: '#e879f9',
+  },
   {
     key: 'threads',
     scene: 'board',

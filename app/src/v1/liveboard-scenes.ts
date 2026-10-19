@@ -735,16 +735,20 @@ export async function loadScenes(db: Db, now = Date.now()): Promise<LiveScenes> 
 }
 
 let cache: { at: number; value: Promise<LiveScenes> } | null = null;
+/** The scenes as last loaded, loaded again once a minute old (shared with liveboard-videos.ts). */
+export function currentScenes(db: Db): Promise<LiveScenes> {
+  if (!cache || Date.now() - cache.at > CACHE_MS) {
+    const value = loadScenes(db);
+    cache = { at: Date.now(), value };
+    value.catch(() => {
+      cache = null;
+    });
+  }
+  return cache.value;
+}
 export function registerLiveboardScenes(app: FastifyInstance, db: Db) {
   app.get('/api/v1/liveboard/scenes', async (_request, reply) => {
-    if (!cache || Date.now() - cache.at > CACHE_MS) {
-      const value = loadScenes(db);
-      cache = { at: Date.now(), value };
-      value.catch(() => {
-        cache = null;
-      });
-    }
     reply.header('cache-control', 'public, max-age=60');
-    return cache.value;
+    return currentScenes(db);
   });
 }

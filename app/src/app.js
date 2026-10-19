@@ -30,6 +30,7 @@ import { registerBylines } from './v1/bylines.ts';
 import { registerJournalists } from './v1/journalists.ts';
 import { registerLiveboard } from './v1/liveboard.ts';
 import { registerLiveboardScenes } from './v1/liveboard-scenes.ts';
+import { registerLiveboardVideos } from './v1/liveboard-videos.ts';
 import { registerMediaKeywords } from './v1/media-keywords.ts';
 import { registerMediaStats } from './v1/media-stats.ts';
 import { registerMediaTrafficComparison } from './v1/media-traffic-comparison.ts';
@@ -200,6 +201,7 @@ export async function buildApp(
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
     registerLiveboardScenes(app, own.db);
+    registerLiveboardVideos(app, own.db);
     registerTagPerson(app, own.db);
     registerTagVisual(app, own.db);
     // Similarweb lookups for other services on this machine: loopback and a service token only.
