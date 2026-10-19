@@ -4,7 +4,18 @@
 <!-- 2026-10-14 warm diagnosis: formal0dd38b6 unchanged. Private curl timing/source/mock evidence only; not UI review. See docs/f1-warm-diagnostic-20261014.md. Full65-route scope still pending. -->
 # F1 UI 逐頁審查 ledger
 
-## Current deployed status (2026-10-19 20:08 Taipei)
+## Current deployed status (2026-10-19 21:36 Taipei)
+
+- **API + gateway + web `385efba1` / BUILD_ID `Hn0JW1_RYohgaiZQC11zb` (UTC 2026-10-19T13:35Z)**: YouTube video lenses on the liveboard, F1 only (the liveboard scenes are not on main).
+  - Feedback relayed by the owner: tag's events/topics are the stronger classification, so start from them and bring YouTube in; a first version of daily videos and live streams.
+  - New read-only `GET /api/v1/liveboard/videos` (app/src/v1/liveboard-videos.ts, cached 60 s, no migration). It calls 有影儀表板's public API (youtube.observe.tw `/api/v1/videos`, `/api/v1/live/current`); our events decide membership (two major tags, word for word in title or description). Lists are cached per tick (10 min, live 2 min) with a last-good fallback; one upload per broadcast, one per channel first, at most two.
+  - New lenses, not in the default rotation: 事件影片 (`videos`), 今日影片 (`videos-day`), 正在直播 (`videos-live`). Video cards keep fixed rows so a row's 16:9 thumbnails line up; nothing over the pictures (owner's review of the preview).
+  - API: overlay of app.js, liveboard-scenes.ts, openapi.ts (each equal to `385efba1~1` in the live release) plus the new liveboard-videos.ts on `fa2c7790-api-labels-merge`. docs/api.md regenerated.
+  - Checks: gate load1 6.70, tag 1.32 s. Loopback (API 18340, web 18338), 18330, 18130 and public: videos route (6 events with videos, day 8, live 8, partial false), scenes, openapi lists the route; pages /, /liveboard/, /liveboard/setting/, /event/. Public browser screenshots of the three lenses at 1920×1080. No error-level logs after the switch.
+- Rollback: `bash /home/deck/tag-analysis-private/f1-release/liveboard-videos-385efba1-20261019/rollback.sh` (web → da020b57, API + gateway → fa2c7790). Script: `~/.cache/tag-review/package-and-deploy-385e.py`.
+- Retention: web 385e + da02; API 385e + fa2c. c007cdb9 web was deleted, so da020b57's rollback.sh no longer has a target.
+
+### Earlier (2026-10-19 20:08 Taipei)
 
 - **Web-only `da020b57` / BUILD_ID `FWjDLb1GTUIAB3MCcaErq` (UTC 2026-10-19T12:08Z)**: 即時看板 added at the end of the site navigation as its own group 看即時 (mobile menu row label); on origin/main as f4925552.
   - Owner's request (relaying feedback): put the liveboard link in the menubar after the other pages, like them. Before this it was only in the footer.
