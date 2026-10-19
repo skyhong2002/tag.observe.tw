@@ -9,7 +9,8 @@ export type NavLink = { href: string; label: string; short: string; tabs?: NavTa
 
 // Grouped by what a reader looks at: the news (three groupings of the same
 // articles, finest first, then the words in them), then the outlets: who they
-// are, how they relate, who signs and how they write.
+// are, how they relate, who signs and how they write; last the full-screen
+// board for a wall screen (/liveboard/, outside the site's layout).
 export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
   {
     label: '看新聞',
@@ -70,6 +71,10 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
         ],
       },
     ],
+  },
+  {
+    label: '看即時',
+    links: [{ href: '/liveboard/', label: '即時看板', short: '即時看板' }],
   },
 ];
 
