@@ -13,6 +13,7 @@ import {
 } from '../media-traffic/external.ts';
 import { saveTrafficHistory } from '../media-traffic/history.ts';
 import { readLiveTraffic, refreshTraffic, trafficDomain, writeLiveTraffic } from '../media-traffic/live.ts';
+import { syncFromService, type TrafficService, trafficService } from '../media-traffic/service.ts';
 
 /**
  * Publisher domains for Similarweb and Radar: the GeneHong-mapped catalog plus
@@ -40,6 +41,8 @@ export const publisherDomains = () => {
  * is left of the run's request budget goes to other services' lookups
  * (external.ts, docs/similarweb-requests.md); none while tag's run was
  * refused, still has outlets due, or a refusal is less than six hours old.
+ * With traffic.observe.tw configured (service.ts) tag sends nothing to
+ * Similarweb: it registers its outlets there and mirrors the result.
  */
 export async function runMediaTrafficJob(
   domains = publisherDomains(),
@@ -48,8 +51,15 @@ export async function runMediaTrafficJob(
     request = fetch,
     budget = externalBudget(),
     pauseMs = 3000,
-  }: { request?: typeof fetch; budget?: ExternalBudget; pauseMs?: number } = {},
+    service = trafficService(),
+  }: { request?: typeof fetch; budget?: ExternalBudget; pauseMs?: number; service?: TrafficService | null } = {},
 ) {
+  if (service) {
+    const { updated, ...result } = await syncFromService(domains, await readLiveTraffic(), service, { request });
+    await writeLiveTraffic(result);
+    if (db) await saveTrafficHistory(db, result.domains);
+    return { via: 'traffic.observe.tw', domains: result.domains.length, updated, status: result.status, checkedAt: result.checkedAt };
+  }
   const { updated, remaining, attempted, ...result } = await refreshTraffic(domains, await readLiveTraffic(), { request, pauseMs });
   await writeLiveTraffic(result);
   let external: Awaited<ReturnType<typeof runExternalRequests>> | { skipped: string } = { skipped: 'no database' };

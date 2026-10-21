@@ -1,5 +1,7 @@
 # 其他服務的 Similarweb 查詢
 
+> **搬遷中（2026-10-21）**：Similarweb 抓取改由獨立服務 traffic.observe.tw（`~/Projects/traffic.observe.tw`，見該 repo `docs/README.md`）負責。tag 的 `.env` 設定 `TAG_TRAFFIC_SERVICE_URL`（`http://127.0.0.1:18150`）與 `TAG_TRAFFIC_SERVICE_TOKEN` 後，`media-traffic` job 不再送任何 Similarweb 請求，改成把媒體網域登記到該服務並鏡像回 `media-traffic-live.json` 與流量歷史表（`app/src/media-traffic/service.ts`）；下面的 `/internal/similarweb/*` 也原封轉送過去（blog 的 token 兩邊相同），blog 不用改。未設定時維持下面描述的舊行為。
+
 這台主機只有一個對外 IP，Similarweb 大約連續 20 次就會開始拒絕（403）。所以本機所有對 `data.similarweb.com` 的請求都只由 tag worker 的 `media-traffic` 工作發出（每小時 :35，`MEDIA_TRAFFIC_CRON`）。其他服務（目前是 blog.observe.tw）把網域交給 tag，再讀結果，自己不打 Similarweb。程式：`app/src/media-traffic/external.ts`、`external-routes.ts`；資料表 `traffic_external_requests`（migration 0035）。
 
 ## 預算
