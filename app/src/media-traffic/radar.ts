@@ -22,13 +22,15 @@ export interface RadarSnapshot {
   domains: RadarDomain[];
 }
 export const radarToken = () => process.env.CLOUDFLARE_RADAR_API_TOKEN?.trim();
+/** Radar is available from tag's own token or, once configured, from traffic.observe.tw (service.ts), which holds the token. */
+export const radarConfigured = () => Boolean(radarToken() || process.env.TAG_TRAFFIC_SERVICE_URL?.trim());
 export const radarFile = () => process.env.TAG_MEDIA_RADAR_FILE || join(homedir(), '.local/share/tag-analysis/media-radar.json');
 export const emptyRadar = (): RadarSnapshot => ({
   version: 1,
   source: 'cloudflare-radar',
   scope: 'global',
   checkedAt: null,
-  status: radarToken() ? 'pending' : 'unconfigured',
+  status: radarConfigured() ? 'pending' : 'unconfigured',
   error: null,
   domains: [],
 });
@@ -59,7 +61,7 @@ export async function readRadar(file = radarFile()): Promise<RadarSnapshot> {
     )
       throw Error('Invalid Radar snapshot');
     // Configuration reflects this process, while successful previous values survive.
-    if (!radarToken()) return { ...data, status: 'unconfigured' };
+    if (!radarConfigured()) return { ...data, status: 'unconfigured' };
     if (data.status === 'unconfigured') return { ...data, status: 'pending' };
     return data;
   } catch (error) {

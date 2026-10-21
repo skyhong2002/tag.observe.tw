@@ -2,7 +2,8 @@ import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
 import { registerExternalTraffic } from './external-routes.ts';
 import { emptyTraffic } from './live.ts';
-import { syncFromService, trafficService } from './service.ts';
+import { emptyRadar } from './radar.ts';
+import { syncFromService, syncRadarFromService, trafficService } from './service.ts';
 
 const service = { url: 'http://127.0.0.1:18150', token: 'x'.repeat(40) };
 
@@ -52,6 +53,63 @@ describe('syncFromService', () => {
       failedAt: { 'x.com': '2026-10-20T00:00:00.000Z' },
     });
     expect(result.domains.map((d) => d.domain)).toEqual(['udn.com']);
+  });
+});
+
+describe('syncRadarFromService', () => {
+  it('mirrors the latest Radar period per outlet and keeps outlets the service lacks', async () => {
+    const paths: string[] = [];
+    const request = (async (url: string) => {
+      paths.push(new URL(url).pathname);
+      return Response.json({
+        lastRun: {
+          startedAt: '2026-10-21T19:35:00.000Z',
+          finishedAt: '2026-10-21T19:55:00.000Z',
+          ok: 900,
+          failed: 0,
+          blocked: false,
+          note: null,
+        },
+        domains: {
+          'udn.com': [
+            {
+              domain: 'udn.com',
+              fetchedAt: '2026-10-14T19:40:00.000Z',
+              dateStart: '2026-10-12T00:00:00.000Z',
+              dateEnd: '2026-10-12T00:00:00.000Z',
+              rank: null,
+              bucket: 50000,
+              bucketLowerBound: null,
+            },
+            {
+              domain: 'udn.com',
+              fetchedAt: '2026-10-21T19:40:00.000Z',
+              dateStart: '2026-10-19T00:00:00.000Z',
+              dateEnd: '2026-10-19T00:00:00.000Z',
+              rank: null,
+              bucket: 20000,
+              bucketLowerBound: null,
+            },
+          ],
+        },
+      });
+    }) as unknown as typeof fetch;
+    const old = {
+      domain: 'x.com.tw',
+      fetchedAt: '2026-10-01T00:00:00.000Z',
+      dateStart: '2026-09-28T00:00:00.000Z',
+      dateEnd: '2026-09-28T00:00:00.000Z',
+      rank: null,
+      bucket: null,
+      bucketLowerBound: 200000,
+    };
+    const result = await syncRadarFromService(['udn.com', 'x.com.tw'], { ...emptyRadar(), domains: [old] }, service, { request });
+    expect(paths).toEqual(['/internal/v1/radar']);
+    expect(result).toMatchObject({ status: 'ok', checkedAt: '2026-10-21T19:35:00.000Z', error: null });
+    expect(result.domains).toEqual([
+      old,
+      expect.objectContaining({ domain: 'udn.com', bucket: 20000, dateEnd: '2026-10-19T00:00:00.000Z' }),
+    ]);
   });
 });
 
