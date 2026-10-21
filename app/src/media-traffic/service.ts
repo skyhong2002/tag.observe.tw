@@ -1,4 +1,5 @@
 import type { DomainTraffic, LiveTraffic } from './live.ts';
+import type { RadarDomain, RadarSnapshot } from './radar.ts';
 
 // traffic.observe.tw (its own repo and database, docs/similarweb-requests.md)
 // takes over every data.similarweb.com request on this machine once
@@ -62,5 +63,39 @@ export async function syncFromService(
     domains: data.domains,
     failedAt,
     updated: data.domains.filter((row) => (before.get(row.domain) ?? '') < row.fetchedAt).length,
+  };
+}
+
+interface ServiceRadar {
+  lastRun: { startedAt: string; finishedAt: string | null; ok: number; failed: number; blocked: boolean; note: string | null } | null;
+  domains: Record<string, Array<RadarDomain & { bucketLowerBound: number | null }>>;
+}
+
+/**
+ * The latest Radar period per outlet from the service (it fetches daily for
+ * every watched domain); the snapshot keeps outlets the service has nothing for yet.
+ */
+export async function syncRadarFromService(
+  domains: string[],
+  previous: RadarSnapshot,
+  service: TrafficService,
+  { request = fetch, now = new Date() }: { request?: typeof fetch; now?: Date } = {},
+): Promise<RadarSnapshot> {
+  const data = await call<ServiceRadar>(service, 'POST', '/internal/v1/radar', { domains }, request);
+  const rows = new Map(previous.domains.map((row) => [row.domain, row]));
+  for (const periods of Object.values(data.domains)) {
+    const latest = periods.at(-1);
+    if (latest) {
+      const { domain, fetchedAt, dateStart, dateEnd, rank, bucket, bucketLowerBound } = latest;
+      rows.set(domain, { domain, fetchedAt, dateStart, dateEnd, rank, bucket, bucketLowerBound });
+    }
+  }
+  const run = data.lastRun;
+  return {
+    ...previous,
+    checkedAt: run?.startedAt ?? now.toISOString(),
+    status: run?.blocked ? 'blocked' : rows.size ? (run?.failed ? 'partial' : 'ok') : 'failed',
+    error: run?.blocked || run?.failed ? (run.note ?? null) : null,
+    domains: [...rows.values()],
   };
 }

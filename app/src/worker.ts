@@ -26,7 +26,7 @@ import { runTopicsJob } from './jobs/topics-job.ts';
 import { runWritingJob, runWritingPeopleJob } from './jobs/writing-job.ts';
 import { LEGACY_OWNERSHIP_POLICY } from './legacy/ownership-policy.ts';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
-import { radarToken } from './media-traffic/radar.ts';
+import { radarConfigured } from './media-traffic/radar.ts';
 import { jobDuration, jobRuns as jobRunsMetric, metricsContentType, metricsText, snapshotAge, snapshotArticles } from './metrics.ts';
 import { archiveStoreFromEnv } from './nearline/store.ts';
 
@@ -130,10 +130,11 @@ await queue.upsertJobScheduler(
   { pattern: process.env.MEDIA_OUTPUT_CRON || '50 */6 * * *' },
   { name: 'media-output', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
 );
-if (radarToken()) {
+if (radarConfigured()) {
   await queue.upsertJobScheduler(
     'media-radar-daily',
-    { pattern: process.env.MEDIA_RADAR_CRON || '45 3 * * *' },
+    // traffic.observe.tw runs Radar from 03:35 (Taipei) for ~1000 domains, so mirror after it is done.
+    { pattern: process.env.MEDIA_RADAR_CRON || (process.env.TAG_TRAFFIC_SERVICE_URL ? '15 5 * * *' : '45 3 * * *') },
     { name: 'media-radar', data: {}, opts: { removeOnComplete: 20, removeOnFail: 20 } },
   );
 } else await queue.removeJobScheduler('media-radar-daily');

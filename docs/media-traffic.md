@@ -87,6 +87,8 @@ Similarweb 每次只回最近三個月與一份最新一期的國家／導流資
 
 ### Cloudflare Radar 官方 API
 
+2026-10-21 起 Radar 也交給 traffic.observe.tw：它持有 token，每天 03:35 為所有追蹤中的網域抓排名並保存每一期。設定 `TAG_TRAFFIC_SERVICE_URL` 後，tag 的 `media-radar` job 改在 05:15 從 `POST /internal/v1/radar` 鏡像各媒體的最新一期，不再呼叫 Cloudflare API，`CLOUDFLARE_RADAR_API_TOKEN` 也可以從 tag 的 `.env` 移除。以下是 tag 自己抓取時的說明。
+
 - [授權文件](https://developers.cloudflare.com/radar/get-started/first-request/)要求 Custom API Token 權限 **Account → Radar → Read**。設定伺服器端 `CLOUDFLARE_RADAR_API_TOKEN`，勿使用 `NEXT_PUBLIC_*` 或提交 Token。Gateway 與 worker 都須載入同一設定。未設定時 API 明確回 `unconfigured`；worker 不排程，頁面不偽造排名。
 - 端點是 `GET https://api.cloudflare.com/client/v4/radar/ranking/domain/{domain}?rankingType=POPULAR&format=JSON`，使用 Bearer Token。與 2026-10-10 官方 OpenAPI schema 核對 `result.details_0.rank`、`bucket` 與 `result.meta.dateRange[0]`。前 100 名以名次顯示，其餘 bucket 以「前 N 名」顯示；實測 `>200000` 另存為 `bucketLowerBound=200000`，顯示「未入前 200,000 名」，不能反轉成前 200,000 名。沒有排名與級距時留白。
 - [來源方法](https://developers.cloudflare.com/radar/investigate/domain-ranking-datasets/)主要基於 1.1.1.1 DNS 查詢。精確前 100 排名包含最近 24 小時、每日更新；全球級距資料包含最近七天、每週更新。本站每日檢查不代表上游資料即時，也不產生三個月造訪量。
