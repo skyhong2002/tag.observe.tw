@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Db } from '../db/client.ts';
 import { externalResults, publicDomain, submitExternal } from './external.ts';
+import { type TrafficService, trafficService } from './service.ts';
 
 // The Similarweb request API for other observe services on this machine
 // (docs/similarweb-requests.md). Never public: only a direct loopback
@@ -35,18 +36,39 @@ export function requesterOf(request: FastifyRequest, tokens: Map<string, Buffer>
   return null;
 }
 
-export function registerExternalTraffic(app: FastifyInstance, db: Db, { tokens = serviceTokens() }: { tokens?: Map<string, Buffer> } = {}) {
+export function registerExternalTraffic(
+  app: FastifyInstance,
+  db: Db,
+  { tokens = serviceTokens(), service = trafficService() }: { tokens?: Map<string, Buffer>; service?: TrafficService | null } = {},
+) {
   const auth = (request: FastifyRequest, reply: FastifyReply) => {
     reply.header('cache-control', 'no-store');
     const requester = tokens.size ? requesterOf(request, tokens) : null;
     if (!requester) reply.code(404).send({ error: 'not found' });
     return requester;
   };
+  // With traffic.observe.tw configured, the same calls go there unchanged (it knows the same
+  // requester tokens), so blog keeps its address while the service owns the queue.
+  const forward = async (request: FastifyRequest, reply: FastifyReply, svc: TrafficService) => {
+    const response = await fetch(`${svc.url}${request.url}`, {
+      method: request.method,
+      headers: { authorization: request.headers.authorization as string, 'content-type': 'application/json' },
+      body: request.method === 'POST' ? JSON.stringify(request.body ?? {}) : undefined,
+      signal: AbortSignal.timeout(15_000),
+      redirect: 'error',
+    }).catch(() => null);
+    if (!response) return reply.code(502).send({ error: 'traffic_service_unavailable' });
+    return reply
+      .code(response.status)
+      .type('application/json')
+      .send(await response.text());
+  };
 
   // { domain, kind: 'traffic' | 'similar_sites' } → queued (202) or already known (200).
   app.post<{ Body: { domain?: unknown; kind?: unknown } }>(`${PREFIX}/requests`, async (request, reply) => {
     const requester = auth(request, reply);
     if (!requester) return reply;
+    if (service) return forward(request, reply, service);
     const r = await submitExternal(db, requester, request.body?.domain, request.body?.kind ?? 'similar_sites');
     if ('error' in r) return reply.code(r.error === 'daily_limit' ? 429 : 400).send({ error: r.error });
     return reply.code(r.created ? 202 : 200).send(r);
@@ -56,6 +78,7 @@ export function registerExternalTraffic(app: FastifyInstance, db: Db, { tokens =
   app.get<{ Querystring: { domain?: string } }>(`${PREFIX}/results`, async (request, reply) => {
     const requester = auth(request, reply);
     if (!requester) return reply;
+    if (service) return forward(request, reply, service);
     const domain = publicDomain(request.query.domain);
     if (!domain) return reply.code(400).send({ error: 'invalid_domain' });
     const result = await externalResults(db, requester, domain);
