@@ -1,5 +1,5 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { and, asc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm';
 import { BODY_RETENTION_MS, PUBLIC_BODY_WINDOW_MS } from '../article-retention.ts';
 import type { Db } from '../db/client.ts';
 import { articleArchives, articles } from '../db/schema.ts';
@@ -52,14 +52,23 @@ export function cacheAgeForSpace(freeBytes: number | undefined, reserveBytes = 2
   return freeBytes !== undefined && freeBytes < reserveBytes ? PUBLIC_BODY_WINDOW_MS : BODY_RETENTION_MS;
 }
 
-export async function archiveColdContent(db: Db, store: ArchiveStore | undefined, now: Date, batch = 25, maxAgeMs = BODY_RETENTION_MS) {
-  if (!store) return { archived: 0, evicted: 0, archiveDisabled: 1 };
+export async function archiveColdContent(
+  db: Db,
+  store: ArchiveStore | undefined,
+  now: Date,
+  batch = 25,
+  maxAgeMs = BODY_RETENTION_MS,
+  afterId = 0,
+) {
+  if (!Number.isSafeInteger(afterId) || afterId < 0) throw new Error('Invalid content archive cursor');
+  if (!store) return { archived: 0, evicted: 0, archiveDisabled: 1, nextAfterId: afterId };
   const cutoff = new Date(now.getTime() - Math.max(PUBLIC_BODY_WINDOW_MS, maxAgeMs));
   const rows = await db
     .select()
     .from(articles)
     .where(
       and(
+        afterId > 0 ? gt(articles.id, afterId) : undefined,
         lt(cacheClock(), cutoff),
         lt(articles.publishedAt, new Date(now.getTime() - PUBLIC_BODY_WINDOW_MS)),
         or(sql`${articles.body} IS NOT NULL`, sql`${articles.description} IS NOT NULL`, sql`${articles.summary} IS NOT NULL`),
@@ -67,7 +76,9 @@ export async function archiveColdContent(db: Db, store: ArchiveStore | undefined
     )
     .orderBy(asc(articles.id))
     .limit(batch);
-  if (!rows.length) return { archived: 0, evicted: 0, archiveDisabled: 0 };
+  if (!rows.length) return { archived: 0, evicted: 0, archiveDisabled: 0, nextAfterId: afterId };
+  const nextAfterId = rows.at(-1)!.id;
+  if (!Number.isSafeInteger(nextAfterId) || nextAfterId <= afterId) throw new Error('Invalid content archive cursor progress');
   const pack = encodeContent(rows);
   const receipt = await store.putVerified(pack.data);
   const verifiedAt = new Date();
@@ -114,7 +125,7 @@ export async function archiveColdContent(db: Db, store: ArchiveStore | undefined
       );
     evicted += (result as unknown as [{ affectedRows: number }])[0].affectedRows;
   }
-  return { archived: rows.length, evicted, archiveDisabled: 0 };
+  return { archived: rows.length, evicted, archiveDisabled: 0, nextAfterId };
 }
 
 /** Internal/admin use only. Does not extend the public seven-day body window. */
