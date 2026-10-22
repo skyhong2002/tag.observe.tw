@@ -181,6 +181,21 @@ function Keywords({ tags, major }: { tags: SceneEvent['tags']; major: string[] }
   );
 }
 
+/** Where an event's headline goes: its event page, else the lead report (a thread-less event has no page). */
+function headlineHref(event: SceneEvent, lead: ReturnType<typeof storyLead>) {
+  return event.href ?? (lead?.brief ? articleHref(lead.brief) : null);
+}
+
+/** A picture that opens what its text opens; the text link beside it is the one a keyboard reaches. */
+function Picture({ href, className, children }: { href: string | null; className: string; children: React.ReactNode }) {
+  if (!href) return <div className={className}>{children}</div>;
+  return (
+    <Link prefetch={false} href={href} className={className} tabIndex={-1} aria-hidden="true">
+      {children}
+    </Link>
+  );
+}
+
 function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   const moved = event.prevRank === null ? null : event.prevRank - event.rank;
   const headline = storyHeadline(event.news, event.major);
@@ -189,13 +204,14 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
   const keywords = new Set(tags.map((t) => t.tag));
   const trail = (event.rankTrail ?? []).filter((r): r is number => r !== null);
   const lead = storyLead(event.news, event.major);
+  const href = headlineHref(event, lead);
   return (
     <article className={styles.event}>
       <div className={styles.story}>
         {cover?.image && (
-          <div className={styles.cover}>
+          <Picture href={href} className={styles.cover}>
             <SafeImage src={cover.image} alt="" width={960} height={540} />
-          </div>
+          </Picture>
         )}
         <p className={styles.rank}>
           第 <b>{event.rank}</b> 名
@@ -215,8 +231,8 @@ function EventFrame({ event, colour }: { event: SceneEvent; colour: string }) {
           )}
         </p>
         <h3 className={styles.headline}>
-          {event.href ? (
-            <Link prefetch={false} href={event.href}>
+          {href ? (
+            <Link prefetch={false} href={href}>
               {headline}
             </Link>
           ) : (
@@ -299,6 +315,7 @@ const thumbnailOf = (v: SceneVideo) => `https://i.ytimg.com/vi/${encodeURICompon
 /** An event as on the event lens, in one row over its videos: the most viewed of those holding its major tags. */
 function VideoFrame({ event, videos, colour }: { event: SceneEvent; videos: SceneVideo[]; colour: string }) {
   const headline = storyHeadline(event.news, event.major);
+  const href = headlineHref(event, storyLead(event.news, event.major));
   return (
     <article className={styles.videoEvent}>
       <div className={styles.videoStory}>
@@ -306,8 +323,8 @@ function VideoFrame({ event, videos, colour }: { event: SceneEvent; videos: Scen
           第 <b>{event.rank}</b> 名
         </p>
         <h3 className={styles.videoHeadline}>
-          {event.href ? (
-            <Link prefetch={false} href={event.href}>
+          {href ? (
+            <Link prefetch={false} href={href}>
               {headline}
             </Link>
           ) : (
@@ -457,13 +474,13 @@ function Articles({ list, keywords }: { list: SceneArticle[]; keywords: Readonly
       {list.map((a) => {
         return (
           <li key={a.id}>
-            <span className={styles.thumb}>
+            <Picture href={articleHref(a)} className={styles.thumb}>
               {isAllowedImage(a.image) ? (
                 <SafeImage src={a.image} alt="" width={192} height={108} />
               ) : (
                 <MediaIcon media={a.media} size={28} />
               )}
-            </span>
+            </Picture>
             <span className={styles.articleText}>
               <Link prefetch={false} href={articleHref(a)} className={styles.articleTitle}>
                 {a.title}
