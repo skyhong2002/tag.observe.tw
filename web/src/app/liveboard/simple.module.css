@@ -44,6 +44,9 @@
 .arrow text { fill: #a1a1aa; transition: fill 0.2s; }
 .arrow:hover text, .arrow:focus-visible text { fill: #52525b; }
 .cloud { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* A scene lens (events, videos, boards) has no words: this layer comes after the scene in the frame
+ * and would otherwise sit over every link in it. Cloud and compare lenses are not aria-hidden. */
+.cloud[aria-hidden="true"] { pointer-events: none; }
 .word {
   transform-box: view-box;
   transform-origin: 0 0;
