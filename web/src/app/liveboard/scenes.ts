@@ -91,6 +91,8 @@ export interface SceneVideo {
   url: string;
   thumbnail: string | null;
   channel: string;
+  /** The channel's YouTube page (absent from an API older than this field). */
+  channelUrl?: string | null;
   publishedAt: string;
   /** Cumulative views as 有影 last saw them. */
   views: number | null;

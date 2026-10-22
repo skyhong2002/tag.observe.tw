@@ -234,6 +234,7 @@ const schemas: Record<string, Schema> = {
       url: str('YouTube 網址'),
       thumbnail: nullable(str()),
       channel: str('頻道名稱'),
+      channelUrl: nullable(str('頻道的 YouTube 頁面')),
       publishedAt: time(),
       views: nullable(int('累計觀看數')),
       matched: arr(str(), '影片含有的事件主要標籤（day 與 live 為其所屬事件的）'),

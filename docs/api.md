@@ -3330,6 +3330,7 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/videos'
 | `events[].videos[].url` | string | YouTube 網址 |
 | `events[].videos[].thumbnail` | string \| null |  |
 | `events[].videos[].channel` | string | 頻道名稱 |
+| `events[].videos[].channelUrl` | string \| null | 頻道的 YouTube 頁面 |
 | `events[].videos[].publishedAt` | string (ISO 時間) |  |
 | `events[].videos[].views` | integer \| null | 累計觀看數 |
 | `events[].videos[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
@@ -3347,6 +3348,7 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/videos'
 | `day[].url` | string | YouTube 網址 |
 | `day[].thumbnail` | string \| null |  |
 | `day[].channel` | string | 頻道名稱 |
+| `day[].channelUrl` | string \| null | 頻道的 YouTube 頁面 |
 | `day[].publishedAt` | string (ISO 時間) |  |
 | `day[].views` | integer \| null | 累計觀看數 |
 | `day[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
@@ -3364,6 +3366,7 @@ curl -s 'https://tag.observe.tw/api/v1/liveboard/videos'
 | `live[].url` | string | YouTube 網址 |
 | `live[].thumbnail` | string \| null |  |
 | `live[].channel` | string | 頻道名稱 |
+| `live[].channelUrl` | string \| null | 頻道的 YouTube 頁面 |
 | `live[].publishedAt` | string (ISO 時間) |  |
 | `live[].views` | integer \| null | 累計觀看數 |
 | `live[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |

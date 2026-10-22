@@ -45,6 +45,8 @@ export interface SceneVideo {
   url: string;
   thumbnail: string | null;
   channel: string;
+  /** The channel's YouTube page, so the name can be opened (null when 有影 sends no channel id). */
+  channelUrl: string | null;
   publishedAt: string;
   /** Cumulative views as 有影 last saw them (null when it has none). */
   views: number | null;
@@ -79,6 +81,7 @@ export interface YoutubeVideo {
   title: string;
   description?: string | null;
   channelTitle?: string | null;
+  youtubeChannelId?: string | null;
   thumbnail?: string | null;
   publishedAt: string;
   views?: number | null;
@@ -102,6 +105,7 @@ const sceneVideo = (video: YoutubeVideo, matched: string[]): SceneVideo => ({
   url: video.youtubeUrl ?? `https://www.youtube.com/watch?v=${encodeURIComponent(video.id)}`,
   thumbnail: video.thumbnail ?? null,
   channel: video.channelTitle ?? '',
+  channelUrl: video.youtubeChannelId ? `https://www.youtube.com/channel/${encodeURIComponent(video.youtubeChannelId)}` : null,
   publishedAt: video.publishedAt,
   views: video.views ?? null,
   matched,

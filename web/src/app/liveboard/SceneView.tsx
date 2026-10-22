@@ -364,7 +364,13 @@ function VideoGrid({ videos, colour, board = false }: { videos: SceneVideo[]; co
             {v.title}
           </a>
           <span className={styles.byline}>
-            <span className={styles.outlet}>{v.channel}</span>
+            {v.channelUrl ? (
+              <a href={v.channelUrl} target="_blank" rel="noopener noreferrer" className={styles.outlet}>
+                {v.channel}
+              </a>
+            ) : (
+              <span className={styles.outlet}>{v.channel}</span>
+            )}
             {v.live ? (
               v.live.startedAt && <time className={styles.time}>{since(v.live.startedAt)}開播</time>
             ) : (
@@ -398,12 +404,16 @@ function VideoGrid({ videos, colour, board = false }: { videos: SceneVideo[]; co
                     {v.event.major.join('、')}
                   </Link>
                 ) : (
-                  <span data-event>{v.event.major.join('、')}</span>
+                  v.event.major.map((tag) => (
+                    <Link prefetch={false} key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-event>
+                      {tag}
+                    </Link>
+                  ))
                 ))
               : v.matched.map((tag) => (
-                  <span key={tag} data-event>
+                  <Link prefetch={false} key={tag} href={`/tag/${encodeURIComponent(tag)}/`} data-event>
                     #{tag}
-                  </span>
+                  </Link>
                 ))}
           </span>
         </li>
