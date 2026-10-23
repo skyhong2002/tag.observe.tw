@@ -52,3 +52,53 @@ GSC 可針對首頁、排行榜、事件及標籤重做 URL 檢查。麵包屑�
 - 文章及專題共用的正文、metadata、收錄資格，都以公開期限再檢查 API 快取內容。期限已到即捨棄節錄，改用仍公開的來源摘要；無摘要時使用標題，沒有相關事件／跨媒體對照時 noindex。搜尋描述採用畫面相同的 readingExcerpt 規則。
 - 標籤摘要採用目前選定的報導期間，與正文共用相同請求，不再固定引用另一個 72 小時視窗。
 - 測試以過期但 status 仍為 ok 的快取 API 回應驗證：節錄標記不出現在 HTML 或 metadata、公開摘要仍顯示、robots 為 noindex。Google 已建立的索引及第三方分享快取須等待重新抓取，無法由本站強制刪除。
+
+## 舊站 tag.analysis.tw 整併（GSC-20261023）
+
+GSC 回報：新站 0 已索引、5,019 個「已發現－尚未檢索」；舊站約 132 萬已索引、83.7 萬「重複、未選取 canonical」、7.1 萬 5xx、6.8 萬 404。新站首頁 10/12 抓取成功、允許索引、自指 canonical，不是 robots 封鎖。以下為 2026-10-23 實測。
+
+### 根因
+
+- **舊站沒有任何 canonical**。同一頁經 `https://tag.analysis.tw`、`http://tag.analysis.tw`、`seokpi.analysis.tw`、`api2.analysis.tw`（後兩者直連 origin、只有 HTTP）都回 200；`api.analysis.tw` 由 Apache 301 到 `http://tag.analysis.tw/tag.php?tag=…`，又是另一個 200 變體。
+- **臉書頁是無界爬蟲陷阱**。每個標籤頁的分頁列都連到 `/tag/X/fb/`，fb 頁再對每個標籤輸出 4 種排序 × 5 種期間（含隨時間變動的 `today`、`thisweek`），舊站約 6.9 萬個標籤乘上去即為陷阱。每次請求都對各媒體表做前置萬用字元 LIKE 掃描；資料來源 `facebook_now` 最後更新於 2024-03-07，頁面早已沒有近期內容。沒有 Apache log 可對照，與 5xx／主機問題的關聯是推論。
+- **舊站對任何字串都回 200**。`/tag/{nt_id:123}/`（舊站程式與標籤表都沒有此字串，屬外部殘留網址）及沒有近期資料的標籤，都輸出約 4.7 KB 的空殼頁（`var data = [];` 加空表格）。舊站 `tags` 表內的標籤也會是空殼（例：洪篤昌、2020立委），因此以輸出內容而非資料表判斷。
+- **新站本身沒有參數陷阱**：canonical 去除排序、期間等參數，camp／cursor 變體 noindex，未知標籤 404＋noindex，舊路徑 `/tag/X/fb/…` 在新站 301 到 `/tag/X/`。
+- **新站容量**：10/23 約 17:00 起本機 load 50–60、zram 全滿另用 10 GB swapfile、tag-db CPU 100%；閘道一小時記錄 1,053 次 `ui origin unavailable`（Headers Timeout）。抽樣 12 個標籤頁只有 2 個 200，其餘 500／503／逾時；sitemap 產生需 13.8 秒。Google 依伺服器健康度調整抓取量，這是「已發現－尚未檢索」持續的直接風險，須先解決主機容量。
+
+### 舊站 guard
+
+舊站 Apache 為 `AllowOverride None`，沒有 root 權限，也不能用 `.htaccess` 或 `auto_prepend_file`。`infra/legacy-tag/seo_guard.php` 由各入口 PHP 第二行引入，只決定狀態碼、轉址與 canonical／robots 標記，不查資料庫、不改頁面內容，命令列執行（cron）時不動作。`/api/*.php` 不經 guard。
+
+| 舊網址 | 處理 | 依據 |
+| --- | --- | --- |
+| `/`、`/?order=…` | canonical `https://tag.observe.tw/`，舊首頁照常顯示 | 同品牌首頁，新站為遷移後的正式站 |
+| `/tag/T/`、`/cat/C/tag/T/`、`/tag/T/<參數>` | T 在新站 `tag_stats`：canonical `https://tag.observe.tw/tag/T/`；否則 canonical `https://tag.analysis.tw/tag/T/`，空殼頁再加 `noindex, follow` | `tag_stats` 只 upsert 不刪除，新站對其中標籤回 200 自指 canonical；清單由 `tools/legacy-seo-tags.ts` 產生（10/23 為 9,979 個） |
+| `/tag.php?tag=T` | 301 `https://tag.analysis.tw/tag/T/` | 同一頁的查詢字串形式 |
+| `/tag/T/{series,cloud,view,hour,ai}/…` | canonical 為自身、去除參數 | 新站沒有一對一頁面 |
+| `/tag/T/fb/…`、`news_fb.php` | 410，不查資料庫 | 資料停在 2024-03-07 |
+| 標籤含 `{}<>"\`、控制字元、空白或非 UTF-8 | 404 | 不可能是標籤 |
+| `http://tag.analysis.tw/…`、`seokpi`／`api`／`api2.analysis.tw`、IP | 301 `https://tag.analysis.tw` 同路徑 | 重複主機與協定；其他 Host 不轉 |
+| `/news/<媒體>/<newsid>/`、`/event/…`、`/rank/…`、`/cat/C/` | canonical 為自身、去除 query | 舊文章 newsid、事件 ID 與新站 ID 無對應，不轉址 |
+
+刻意不在 robots.txt 封鎖 fb：封鎖後 Google 看不到 410，已收錄網址反而留在索引。舊站分頁列的「讚享評」連結改為註解，與該檔其他已停用分頁相同寫法。
+
+保留的舊站行為：舊站持續獨立運作、頁面內容與資料庫不變；新站頁尾「母站」連結保留；`/api/*.php` 在各主機名稱照舊；`urtubeapi.analysis.tw` 在另一台主機，不受影響；新站 `legacyRoute()` 對舊網址形狀的轉址不變。
+
+測試：`php infra/legacy-tag/seo_guard_test.php`，以舊站同版 PHP 5.4 CLI 執行，含 6 個實際舊站頁面的空殼判斷。部署：`infra/legacy-tag/deploy.sh <observe-tags.txt>`，原檔只在第一次備份到主機的 `~/legacy-seo-backup/`（docroot 外），每個檔案 `php -l` 後才換上，可重複執行；`--tags` 只更新標籤清單，`--rollback` 還原。新站執行期不連線舊站，標籤清單由操作者定期執行上述指令更新。
+
+### Sitemap 與 robots
+
+- 有效 sitemap 只有 `https://tag.observe.tw/sitemap.xml`：10/23 17:15 實測 7,633 個 URL（tag 5,000、eve 2,242、media 296、feature 47、topic 36、其他 12），全部 https、無 query、無重複；每小時變動。`https://tag.observe.tw/robots.txt` 已宣告。
+- `tag.analysis.tw` 沒有 sitemap（`/sitemap.xml` 404）；robots.txt 只有 Cloudflare 的 content-signal 註解，沒有 Disallow。
+
+### 狀態（2026-10-23）
+
+guard 尚未部署到舊站。10:05–10:14 BST 之間舊站 Apache 停止（Cloudflare 521），當時舊站管理者正登入主機；部署須等 Apache 恢復並與管理者確認。正式驗證網址（部署後）：
+
+- `https://tag.analysis.tw/` → 200，canonical `https://tag.observe.tw/`
+- `https://tag.analysis.tw/tag/%E9%A2%B1%E9%A2%A8/` → 200，canonical `https://tag.observe.tw/tag/%E9%A2%B1%E9%A2%A8/`
+- `https://tag.analysis.tw/tag/%E6%B4%AA%E7%AF%A4%E6%98%8C/` → 200，自指 canonical＋noindex（空殼）
+- `https://tag.analysis.tw/tag/%E6%8E%A1%E6%AA%A2%E7%B5%90%E6%9E%9C/fb/sort=comment&hours=24` → 410
+- `https://tag.analysis.tw/tag/%7Bnt_id:123%7D/` → 404
+- `http://tag.analysis.tw/`、`http://seokpi.analysis.tw/` → 301 `https://tag.analysis.tw/`
+- `http://api.analysis.tw/tag/x/` → Apache 301 `http://tag.analysis.tw/tag.php?tag=x` → 301 `https://tag.analysis.tw/tag/x/`
