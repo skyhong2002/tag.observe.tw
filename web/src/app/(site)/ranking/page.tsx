@@ -53,7 +53,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const [categories, media, ranking, cloud] = await Promise.all([
     fetchCategories().then(rankedCategories),
     fetchMedia(),
-    fetchRanking(category, order, limit, true, true, { gate, signals: true, archive: true }).catch(() => null),
+    // 首次出現／單日高峰 sort every matching keyword on the server, not just the rows shown.
+    fetchRanking(category, order, limit, true, true, {
+      gate,
+      signals: true,
+      archive: true,
+      ...(sort === 'first' || sort === 'peak' ? { sort, dir } : {}),
+    }).catch(() => null),
     fetchRanking(category, emerging ? 'growth' : 'score', CLOUD_WORDS, false, false, { gate }).catch(() => null),
   ]);
   const current = categories.find((c) => c.key === category);
