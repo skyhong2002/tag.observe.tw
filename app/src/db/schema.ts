@@ -375,7 +375,10 @@ export const tagStats = mysqlTable(
 
 // A keyword's whole archive (jobs/tag-history-job.ts): first article ever and
 // the Taipei day with the most articles. Labels are exact, like article_tags
-// compared with utf8mb4_bin, so case variants keep their own rows.
+// compared with utf8mb4_bin, so case variants keep their own rows. Keywords
+// first seen in the last 90 days are copied in from the vocabulary aggregate
+// (first/last article and count) before their days are counted, so the peak
+// and computed_at stay null until the first recount.
 const exactTag = customType<{ data: string; driverData: string }>({
   dataType: () => 'varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin',
 });
@@ -384,13 +387,17 @@ export const tagHistory = mysqlTable(
   {
     tag: exactTag('tag').primaryKey(),
     firstAt: datetime('first_at').notNull(),
-    peakDay: date('peak_day', { mode: 'string' }).notNull(),
-    peakCount: int('peak_count').notNull(),
+    /** Latest article; only kept for keywords copied from the vocabulary aggregate. */
+    lastAt: datetime('last_at'),
+    /** Articles carrying the label, as of the last copy or recount. */
+    articleCount: int('article_count'),
+    peakDay: date('peak_day', { mode: 'string' }),
+    peakCount: int('peak_count'),
     /** Last full recount of every day; between recounts only the latest days are added. */
-    computedAt: datetime('computed_at').notNull(),
+    computedAt: datetime('computed_at'),
     updatedAt: datetime('updated_at').notNull(),
   },
-  (t) => [index('tag_history_computed').on(t.computedAt)],
+  (t) => [index('tag_history_computed').on(t.computedAt), index('tag_history_first').on(t.firstAt)],
 );
 
 // Weekly re-probe of disabled crawl sources (candidate feeds/listings found).

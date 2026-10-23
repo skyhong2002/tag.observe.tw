@@ -1,13 +1,14 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { tagHistory, tagStats } from '../db/schema.ts';
 
 /** The whole archive (tag_history): first article ever and busiest Taipei day. */
 export interface TagArchive {
   firstAt: Date;
-  peakDay: string;
-  peakCount: number;
-  computedAt: Date;
+  /** Null until the keyword's days have been counted (new keywords copied from the vocabulary). */
+  peakDay: string | null;
+  peakCount: number | null;
+  computedAt: Date | null;
 }
 /** Hourly chart record (tag_stats, kept since 2026-09-28): first charted hour and busiest 24 hours. */
 export interface TagChartHistory {
@@ -53,4 +54,58 @@ export async function loadTagHistories(db: Db, tags: string[], category: string)
     if (key) charted.set(key, row);
   }
   return { archive, charted };
+}
+
+export type NewKeywordSort = 'first' | 'count' | 'peak' | 'last';
+const NEW_KEYWORD_ORDER = {
+  first: tagHistory.firstAt,
+  count: tagHistory.articleCount,
+  peak: tagHistory.peakDay,
+  last: tagHistory.lastAt,
+} as const;
+
+/**
+ * Keywords whose first article is at most `days` old, from tag_history
+ * (jobs/tag-history-job.ts copies them hourly from the vocabulary aggregate).
+ * Ranking tags counted by a recount carry the same fields, so they show up
+ * here too once they are new enough.
+ */
+export async function loadNewKeywords(
+  db: Db,
+  {
+    days,
+    minArticles,
+    sort,
+    dir,
+    limit,
+    now = new Date(),
+  }: { days: number; minArticles: number; sort: NewKeywordSort; dir: 'asc' | 'desc'; limit: number; now?: Date },
+) {
+  const where = and(
+    gte(tagHistory.firstAt, new Date(now.getTime() - days * 86_400_000)),
+    isNotNull(tagHistory.articleCount),
+    gte(tagHistory.articleCount, minArticles),
+  );
+  const column = NEW_KEYWORD_ORDER[sort];
+  const [rows, [total]] = await Promise.all([
+    db
+      .select({
+        tag: tagHistory.tag,
+        firstAt: tagHistory.firstAt,
+        lastAt: tagHistory.lastAt,
+        articleCount: tagHistory.articleCount,
+        peakDay: tagHistory.peakDay,
+        peakCount: tagHistory.peakCount,
+      })
+      .from(tagHistory)
+      .where(where)
+      // Unknown values (no peak yet) go last in either direction.
+      .orderBy(sql`${column} IS NULL`, dir === 'asc' ? column : desc(column), desc(tagHistory.firstAt))
+      .limit(limit),
+    db
+      .select({ n: sql<number>`COUNT(*)`.mapWith(Number) })
+      .from(tagHistory)
+      .where(where),
+  ]);
+  return { total: total?.n ?? 0, keywords: rows };
 }

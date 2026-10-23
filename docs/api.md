@@ -109,6 +109,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tag-groups/{id}/ranking`](#api-v1-tag-groups-id-ranking) | 群組標籤的報導量比較 |
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
+| [`GET /api/v1/keywords/new`](#api-v1-keywords-new) | 新出現的關鍵字 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
 | [`GET /api/v1/events/threads/suggest`](#api-v1-events-threads-suggest) | 輸入時的事件串建議 |
 | [`GET /api/v1/events/threads`](#api-v1-events-threads) | 某一天的所有事件串 |
@@ -806,9 +807,9 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].drafts.threshold` | number | 內文相似度門檻，目前為 0.85 |
 | `entries[].archive` | object \| null | archive=1 時回傳：首次出現與全部歷史的單日高峰；尚未計算為 null |
 | `entries[].archive.firstAt` | string (ISO 時間) | 現存收錄中第一篇帶這個標籤的報導刊登時間（全部媒體、含歷史匯入；標籤字串完全相同才算） |
-| `entries[].archive.peakDay` | string | 全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算） |
-| `entries[].archive.peakCount` | integer | 那一天的報導篇數 |
-| `entries[].archive.computedAt` | string (ISO 時間) | 最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天 |
+| `entries[].archive.peakDay` | string \| null | 全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算）；尚未逐日計算為 null |
+| `entries[].archive.peakCount` | integer \| null | 那一天的報導篇數 |
+| `entries[].archive.computedAt` | string (ISO 時間) \| null | 最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天 |
 | `entries[].charted` | object \| null | archive=1 時回傳：這個分類 2026-09-28 起的上榜紀錄；未曾上榜為 null |
 | `entries[].charted.firstHour` | string (ISO 時間) | 首次達到上榜門檻的小時（2026-09-28 起才有紀錄） |
 | `entries[].charted.maxHour` | string (ISO 時間) | 24 小時篇數最多的上榜小時 |
@@ -2552,9 +2553,9 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/status'
 | `history.maxCount` | integer | 該小時文章數 |
 | `archive` | object \| null | 關鍵字的全部歷史；每小時背景工作逐步計算，尚未算到的標籤為 null |
 | `archive.firstAt` | string (ISO 時間) | 現存收錄中第一篇帶這個標籤的報導刊登時間（全部媒體、含歷史匯入；標籤字串完全相同才算） |
-| `archive.peakDay` | string | 全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算） |
-| `archive.peakCount` | integer | 那一天的報導篇數 |
-| `archive.computedAt` | string (ISO 時間) | 最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天 |
+| `archive.peakDay` | string \| null | 全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算）；尚未逐日計算為 null |
+| `archive.peakCount` | integer \| null | 那一天的報導篇數 |
+| `archive.computedAt` | string (ISO 時間) \| null | 最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天 |
 | `firstCollection` | object \| null |  |
 | `firstCollection.at` | string (ISO 時間) | 帶此標籤的現存文章紀錄最早收錄時間；不限分類、包含歷史匯入，不代表網路首次出現或精確取得標籤的時間 |
 | `firstCollection.firstPublishedAt` | string (ISO 時間) | 現存已收錄報導的最早刊登時間 |
@@ -2597,6 +2598,45 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/stats'
 | `stats[].hoursCount` | integer | 上榜小時數（2026-10-24 修正以前一律停在 1，之後才逐小時累計） |
 | `stats[].maxHour` | string (ISO 時間) | 文章數最多的小時 |
 | `stats[].maxCount` | integer | 該小時文章數 |
+
+<a id="api-v1-keywords-new"></a>
+
+### `GET /api/v1/keywords/new`
+
+**新出現的關鍵字**
+
+第一篇帶這個關鍵字的報導在最近 days 天內刊登、且累計篇數達 min 的關鍵字。來源是全部收錄報導的標籤（含歷史匯入），字串完全相同才算同一個詞，噪音詞與單字詞不列。名單與篇數每小時從共用詞庫彙總更新一次，單日高峰由背景工作逐步計算，尚未算出時為 null。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `days` | query | "7" \| "30" \| "90" | 首次出現在最近幾天內：7、30 或 90（預設 30），例：`7` |
+| `min` | query | string | 至少幾篇（3–1000，預設 3），例：`10` |
+| `sort` | query | "first" \| "count" \| "peak" \| "last" | 排序：first 首次出現（預設）、count 篇數、peak 單日高峰日期、last 最近出現 |
+| `dir` | query | "asc" \| "desc" | 方向，預設 desc |
+| `limit` | query | string | 最多幾筆（1–1000，預設 100） |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/keywords/new?days=7&min=10'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `days` | integer |  |
+| `minArticles` | integer |  |
+| `sort` | string |  |
+| `dir` | string |  |
+| `total` | integer | 符合條件的關鍵字數 |
+| `keywords` | object[] |  |
+| `keywords[].tag` | string |  |
+| `keywords[].firstAt` | string (ISO 時間) | 第一篇報導刊登時間 |
+| `keywords[].lastAt` | string (ISO 時間) \| null | 最近一篇報導刊登時間 |
+| `keywords[].articleCount` | integer | 累計篇數 |
+| `keywords[].peakDay` | string \| null | 報導最多的一天（台北日期） |
+| `keywords[].peakCount` | integer \| null | 那一天的篇數 |
 
 ## 事件（同一件事，各家怎麼說）
 

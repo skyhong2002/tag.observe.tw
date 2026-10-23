@@ -22,7 +22,7 @@ import {
 } from './ranking-discovery.ts';
 import { loadBurstTrails } from './ranking-history.ts';
 import { registerTagFlow } from './tag-flow.ts';
-import { loadTagHistories } from './tag-history.ts';
+import { loadNewKeywords, loadTagHistories, type NewKeywordSort } from './tag-history.ts';
 import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyTrends, registerTagSeries } from './tag-series.ts';
 import { loadTagStatus } from './tag-status.ts';
@@ -145,7 +145,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       const value = (tag: string) => {
         const a = histories.archive.get(tag);
         if (sortBy === 'first') return a ? a.firstAt.getTime() : null;
-        return a ? Date.parse(a.peakDay) : (histories.charted.get(tag)?.maxHour.getTime() ?? null);
+        return a?.peakDay ? Date.parse(a.peakDay) : (histories.charted.get(tag)?.maxHour.getTime() ?? null);
       };
       const sign = request.query.dir === 'asc' ? 1 : -1;
       entries.sort((x, y) => {
@@ -242,6 +242,24 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
   );
   registerTagSeries(app, db);
   registerTagSuggest(app, db);
+  // Keywords first seen recently (/ranking/new/): tag_history, filled hourly by jobs/tag-history-job.ts.
+  app.get<{ Querystring: { days?: string; min?: string; sort?: string; dir?: string; limit?: string } }>(
+    '/api/v1/keywords/new',
+    async (request, reply) => {
+      const days = Number(request.query.days ?? 30);
+      const min = Number(request.query.min ?? 3);
+      const sort = request.query.sort ?? 'first';
+      const dir = request.query.dir ?? 'desc';
+      if (![7, 30, 90].includes(days)) return reply.code(400).send({ error: 'days must be 7, 30 or 90' });
+      if (!Number.isInteger(min) || min < 3 || min > 1000) return reply.code(400).send({ error: 'min must be 3–1000' });
+      if (!['first', 'count', 'peak', 'last'].includes(sort)) return reply.code(400).send({ error: 'bad sort' });
+      if (dir !== 'asc' && dir !== 'desc') return reply.code(400).send({ error: 'bad dir' });
+      const limit = Math.min(1000, Math.max(1, Math.floor(Number(request.query.limit) || 100)));
+      const result = await loadNewKeywords(db, { days, minArticles: min, sort: sort as NewKeywordSort, dir, limit });
+      reply.header('cache-control', 'public, max-age=300');
+      return { days, minArticles: min, sort, dir, ...result };
+    },
+  );
   registerEventSuggest(app, db);
 
   // Which other keywords rode along with this one, hour by hour.
