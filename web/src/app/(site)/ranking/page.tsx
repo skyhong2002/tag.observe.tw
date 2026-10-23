@@ -10,7 +10,17 @@ import SortIndicator from '@/components/SortIndicator';
 import Sparkline from '@/components/Sparkline';
 import TableScroller from '@/components/TableScroller';
 import TagDiscoveryBadges from '@/components/TagDiscoveryBadges';
-import { type Category, fetchCategories, fetchMedia, fetchRanking, type RankingEntry, taipei, taipeiDate, taipeiHour } from '@/lib/api';
+import {
+  type Category,
+  fetchCategories,
+  fetchMedia,
+  fetchRanking,
+  type RankingEntry,
+  taipei,
+  taipeiClock,
+  taipeiDate,
+  taipeiHour,
+} from '@/lib/api';
 import { rankingCategoryNote, rankingNotice } from '@/lib/ranking-notice.mts';
 import { type RankingSearch, rankingHref, rankingQuery } from '@/lib/ranking-query.mts';
 import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
@@ -105,7 +115,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         ? e.trend.at(-1)!.average24h! - e.trend[0].average24h
         : -Infinity,
     first: (e) => (e.archive ? Date.parse(e.archive.firstAt) : -Infinity),
-    peak: (e) => (e.archive ? Date.parse(e.archive.peakDay) : e.charted ? Date.parse(e.charted.maxHour) : -Infinity),
+    peak: (e) => (e.archive?.peakDay ? Date.parse(e.archive.peakDay) : e.charted ? Date.parse(e.charted.maxHour) : -Infinity),
     media: (e) => Object.keys(e.media).length,
   };
   const rows = ranking
@@ -155,16 +165,19 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <TabRow
         label="排行模式"
         scroll={false}
-        tabs={(
-          [
-            { label: '熱門排行', value: 'burst' },
-            { label: '正在發酵', value: 'growth' },
-          ] as const
-        ).map((mode) => ({
-          href: link({ order: mode.value, sort: undefined, dir: undefined, limit: undefined }),
-          label: mode.label,
-          current: (mode.value === 'growth') === emerging,
-        }))}
+        tabs={[
+          ...(
+            [
+              { label: '熱門排行', value: 'burst' },
+              { label: '正在發酵', value: 'growth' },
+            ] as const
+          ).map((mode) => ({
+            href: link({ order: mode.value, sort: undefined, dir: undefined, limit: undefined }),
+            label: mode.label,
+            current: (mode.value === 'growth') === emerging,
+          })),
+          { href: '/ranking/new/', label: '新出現' },
+        ]}
       />
       <FilterChips
         label="跨媒體門檻"
@@ -371,29 +384,29 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
  * job has counted a keyword, the peak falls back to this category's chart
  * record, which only goes back to 2026-09-28, and says so.
  */
-const clock = (iso: string) =>
-  new Date(iso).toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false, hour: '2-digit', minute: '2-digit' });
 function ArchiveCells({ entry: e }: { entry: RankingEntry }) {
   const a = e.archive;
   return (
     <>
       <td
         className={`whitespace-nowrap tabular-nums ${table.cell}`}
-        title={a ? `現存收錄中第一篇帶這個關鍵字的報導刊登於 ${taipeiDate(a.firstAt)} ${clock(a.firstAt)}（台北時間）` : '尚未算出全部歷史'}
+        title={
+          a ? `現存收錄中第一篇帶這個關鍵字的報導刊登於 ${taipeiDate(a.firstAt)} ${taipeiClock(a.firstAt)}（台北時間）` : '尚未算出全部歷史'
+        }
       >
         {a ? taipeiDate(a.firstAt) : <span className="text-zinc-400">—</span>}
       </td>
       <td
         className={`whitespace-nowrap tabular-nums ${table.cell}`}
         title={
-          a
+          a?.peakDay
             ? `全部歷史中報導最多的一天（台北時間）：${a.peakDay}，${a.peakCount} 篇`
             : e.charted
               ? `全部歷史尚未算好。這是 2026-09-28 起本分類 24 小時篇數最多的時段：${taipeiHour(e.charted.maxHour)}，${e.charted.maxCount} 篇`
               : '尚未算出全部歷史'
         }
       >
-        {a ? (
+        {a?.peakDay ? (
           <>
             {a.peakDay}
             <span className="ml-1.5 text-xs text-zinc-500">{a.peakCount} 篇</span>

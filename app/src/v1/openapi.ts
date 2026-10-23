@@ -64,11 +64,13 @@ const firstCollectionSchema = obj({
 const tagArchiveSchema = obj(
   {
     firstAt: time('現存收錄中第一篇帶這個標籤的報導刊登時間（全部媒體、含歷史匯入；標籤字串完全相同才算）'),
-    peakDay: str('全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算）', {
-      format: 'date',
-    }),
-    peakCount: int('那一天的報導篇數'),
-    computedAt: time('最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天'),
+    peakDay: nullable(
+      str('全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算）；尚未逐日計算為 null', {
+        format: 'date',
+      }),
+    ),
+    peakCount: nullable(int('那一天的報導篇數')),
+    computedAt: nullable(time('最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天')),
   },
   '關鍵字的全部歷史；每小時背景工作逐步計算，尚未算到的標籤為 null',
 );
@@ -2042,6 +2044,42 @@ export const ENDPOINTS: Endpoint[] = [
       ),
     }),
     example: '/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/stats',
+  },
+  {
+    path: '/api/v1/keywords/new',
+    tag: 'tags',
+    summary: '新出現的關鍵字',
+    description:
+      '第一篇帶這個關鍵字的報導在最近 days 天內刊登、且累計篇數達 min 的關鍵字。來源是全部收錄報導的標籤（含歷史匯入），字串完全相同才算同一個詞，噪音詞與單字詞不列。名單與篇數每小時從共用詞庫彙總更新一次，單日高峰由背景工作逐步計算，尚未算出時為 null。',
+    params: [
+      q('days', '首次出現在最近幾天內：7、30 或 90（預設 30）', str('', { enum: ['7', '30', '90'] }), '7'),
+      q('min', '至少幾篇（3–1000，預設 3）', str(), '10'),
+      q(
+        'sort',
+        '排序：first 首次出現（預設）、count 篇數、peak 單日高峰日期、last 最近出現',
+        str('', { enum: ['first', 'count', 'peak', 'last'] }),
+      ),
+      q('dir', '方向，預設 desc', str('', { enum: ['asc', 'desc'] })),
+      q('limit', '最多幾筆（1–1000，預設 100）', str()),
+    ],
+    response: obj({
+      days: int(),
+      minArticles: int(),
+      sort: str(),
+      dir: str(),
+      total: int('符合條件的關鍵字數'),
+      keywords: arr(
+        obj({
+          tag: str(),
+          firstAt: time('第一篇報導刊登時間'),
+          lastAt: nullable(time('最近一篇報導刊登時間')),
+          articleCount: int('累計篇數'),
+          peakDay: nullable(str('報導最多的一天（台北日期）', { format: 'date' })),
+          peakCount: nullable(int('那一天的篇數')),
+        }),
+      ),
+    }),
+    example: '/api/v1/keywords/new?days=7&min=10',
   },
   {
     path: '/api/v1/events',

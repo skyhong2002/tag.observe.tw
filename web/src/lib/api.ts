@@ -43,10 +43,25 @@ export interface DraftEvidence {
 /** A keyword's whole archive: first article ever and busiest Taipei day (archive=1). */
 export interface TagArchive {
   firstAt: string;
-  peakDay: string;
-  peakCount: number;
-  computedAt: string;
+  /** Null until the keyword's days have been counted. */
+  peakDay: string | null;
+  peakCount: number | null;
+  computedAt: string | null;
 }
+/** A keyword first seen recently (/api/v1/keywords/new). */
+export interface NewKeyword {
+  tag: string;
+  firstAt: string;
+  lastAt: string | null;
+  articleCount: number;
+  peakDay: string | null;
+  peakCount: number | null;
+}
+export type NewKeywordSort = 'first' | 'count' | 'peak' | 'last';
+export const fetchNewKeywords = (days: number, min: number, sort: NewKeywordSort, dir: 'asc' | 'desc', limit: number) =>
+  get<{ days: number; minArticles: number; total: number; keywords: NewKeyword[] }>(
+    `/api/v1/keywords/new?days=${days}&min=${min}&sort=${sort}&dir=${dir}&limit=${limit}`,
+  );
 /** The category's hourly chart record, kept since 2026-09-28 (archive=1). */
 export interface TagChartHistory {
   firstHour: string;
@@ -287,3 +302,6 @@ export const taipei = (iso: string) =>
 export const taipeiHour = (iso: string) => taipei(iso).replace(/:\d\d$/, ':00');
 /** Taipei calendar date with the year, YYYY-MM-DD. */
 export const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
+/** Taipei time of day, HH:MM. */
+export const taipeiClock = (iso: string) =>
+  new Date(iso).toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false, hour: '2-digit', minute: '2-digit' });

@@ -16,6 +16,7 @@ export class VocabularyAggregate {
  CREATE TABLE IF NOT EXISTS terms(label TEXT COLLATE BINARY PRIMARY KEY,group_key TEXT NOT NULL,n INTEGER NOT NULL,first_at TEXT NOT NULL,last_at TEXT NOT NULL) WITHOUT ROWID;
  CREATE INDEX IF NOT EXISTS terms_group ON terms(group_key);
  CREATE INDEX IF NOT EXISTS terms_last ON terms(last_at);
+ CREATE INDEX IF NOT EXISTS terms_first ON terms(first_at,n,last_at);
  CREATE TABLE IF NOT EXISTS pending(group_key TEXT PRIMARY KEY,tag TEXT NOT NULL,priority INTEGER NOT NULL DEFAULT 0);
  CREATE INDEX IF NOT EXISTS pending_priority ON pending(priority DESC);
  CREATE TABLE IF NOT EXISTS seen(article_id INTEGER NOT NULL,tag TEXT COLLATE BINARY NOT NULL,at TEXT NOT NULL,PRIMARY KEY(article_id,tag)) WITHOUT ROWID;

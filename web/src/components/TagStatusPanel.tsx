@@ -68,7 +68,8 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
       )}
       {status.archive && (
         <p className="text-xs text-zinc-500" title="全部收錄報導中，這個關鍵字字串完全相同的第一篇，以及報導最多的一天（台北時間）">
-          首次出現：{taipeiDate(status.archive.firstAt)} · 全部歷史單日高峰：{status.archive.peakDay}（{status.archive.peakCount} 篇）
+          首次出現：{taipeiDate(status.archive.firstAt)}
+          {status.archive.peakDay && ` · 全部歷史單日高峰：${status.archive.peakDay}（${status.archive.peakCount} 篇）`}
         </p>
       )}
       {status.firstCollection && (
