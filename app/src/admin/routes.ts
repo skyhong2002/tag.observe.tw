@@ -19,11 +19,11 @@ import {
   articleTags,
   crawlRuns,
   mediaCategories,
-  mediaCategoryDefs,
   mediaCategoryLog,
   robotsObservations,
 } from '../db/schema.ts';
-import { categoriesOf, categoryDefs, refreshMediaCategories } from '../media-categories.ts';
+import { CAMP_KEYS, categoriesOf, categoryDefs, refreshMediaCategories } from '../media-categories.ts';
+import { mediaTagDomains, mediaTags, TRAFFIC_SITE } from '../media-traffic/site-tags.ts';
 import { iconUrl } from '../v1/icons.ts';
 import { articleDetail, hostOf, lookupUrl, outletSummary } from './lookup.ts';
 import { userActivity } from './user-activity.ts';
@@ -59,8 +59,6 @@ type Options = {
 };
 
 const info = favicons as unknown as Record<string, { icon: string | null; title: string | null }>;
-const KEY = /^[a-z0-9][a-z0-9_-]{0,31}$/;
-const LABEL_MAX = 64;
 const TAG_MAX = 60;
 const TAGS_MAX = 40;
 export const REFETCH_MS = 15_000;
@@ -80,6 +78,12 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     return requireAdmin(request, reply);
   };
   const known = (media: string) => media.length <= 32 && knownMedia().includes(media);
+  // Only the camp labels are edited here; every other tag is managed on
+  // traffic.observe.tw (media-traffic/site-tags.ts) and shown read-only.
+  const camps = new Set<string>(CAMP_KEYS);
+  const campsOf = (media: string) => categoriesOf(media).filter((key) => camps.has(key));
+  const campDefs = () => categoryDefs().filter((d) => camps.has(d.key));
+  const tagsOf = (media: string) => ({ tags: mediaTags(media), tagDomains: mediaTagDomains(media) });
 
   app.get<{ Querystring: { url?: string } }>('/auth/admin/lookup', async (request, reply) => {
     if (!(await admin(request, reply))) return reply;
@@ -114,7 +118,8 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
       return {
         ...outletSummary(media),
         icon: iconUrl(media),
-        categories: categoriesOf(media),
+        categories: campsOf(media),
+        ...tagsOf(media),
         edits: edits.get(media) ?? null,
         robots: seen ? { host: seen.host, status: seen.status, googleOnly: seen.googleOnly, checkedAt: seen.checkedAt } : null,
         generatedRules: active ? { revision: active.revision, trigger: active.trigger } : null,
@@ -122,7 +127,8 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     });
     return {
       media,
-      categories: categoryDefs(),
+      categories: campDefs(),
+      trafficSite: TRAFFIC_SITE,
     };
   });
 
@@ -164,8 +170,11 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     return {
       ...outletSummary(media),
       icon: iconUrl(media),
-      categories: categoriesOf(media),
-      definitions: categoryDefs(),
+      categories: campsOf(media),
+      definitions: campDefs(),
+      logLabels: Object.fromEntries(categoryDefs().map((d) => [d.key, d.label])),
+      ...tagsOf(media),
+      trafficSite: TRAFFIC_SITE,
       crawler: spec ? { group: spec.group, disabled: disabled().has(media), aggregator: Boolean(spec.discovery) } : null,
       runs,
       log,
@@ -207,11 +216,11 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     const { media } = request.params;
     if (!known(media)) return reply.code(404).send({ error: 'unknown media' });
     const wanted = request.body?.categories;
-    const defined = new Set(categoryDefs().map((d) => d.key));
-    if (!Array.isArray(wanted) || !wanted.every((k) => typeof k === 'string' && defined.has(k)))
-      return reply.code(400).send({ error: 'categories must be a list of defined label keys' });
+    if (!Array.isArray(wanted) || !wanted.every((k) => typeof k === 'string' && camps.has(k)))
+      return reply.code(400).send({ error: '這裡只能設定政治傾向（blue、green）；其他標籤請到 traffic.observe.tw 管理' });
     await refreshMediaCategories(db);
-    const before = new Set(categoriesOf(media));
+    // The other groups stay untouched (analysis cohorts and the rollback copy).
+    const before = new Set(campsOf(media));
     const after = new Set(wanted as string[]);
     const added = [...after].filter((k) => !before.has(k));
     const removed = [...before].filter((k) => !after.has(k));
@@ -229,40 +238,13 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     ];
     if (changes.length) await db.insert(mediaCategoryLog).values(changes.map((c) => ({ ...c, media, email: user.email, at })));
     await refreshMediaCategories(db);
-    return { media, categories: categoriesOf(media), added, removed };
+    return { media, categories: campsOf(media), added, removed };
   });
 
-  app.post<{ Body: { label?: unknown; key?: unknown } }>('/auth/admin/categories', async (request, reply) => {
-    const user = await admin(request, reply, true);
-    if (!user) return reply;
-    const label = typeof request.body?.label === 'string' ? request.body.label.trim() : '';
-    if (!label || label.length > LABEL_MAX) return reply.code(400).send({ error: `標籤名稱需 1–${LABEL_MAX} 字` });
-    await refreshMediaCategories(db);
-    const defs = categoryDefs();
-    if (defs.some((d) => d.label === label)) return reply.code(409).send({ error: '已經有這個標籤' });
-    const given = typeof request.body?.key === 'string' ? request.body.key.trim().toLowerCase() : '';
-    // Only an all-ASCII label makes a readable key; Chinese ones are numbered.
-    const slug = /^[\x20-\x7e]+$/.test(label)
-      ? label
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 32)
-      : '';
-    let key = given || slug;
-    if (!given && (!KEY.test(key) || key === 'all' || defs.some((d) => d.key === key))) {
-      let n = defs.length + 1;
-      while (defs.some((d) => d.key === `tag${n}`)) n++;
-      key = `tag${n}`;
-    }
-    if (!KEY.test(key) || key === 'all') return reply.code(400).send({ error: '代碼只能用小寫英數字、- 和 _' });
-    if (defs.some((d) => d.key === key)) return reply.code(409).send({ error: '已經有這個代碼' });
-    const at = new Date();
-    const sort = Math.max(0, ...defs.map((d) => d.sort)) + 1;
-    await db.insert(mediaCategoryDefs).values({ key, label, sort, createdAt: at });
-    await db.insert(mediaCategoryLog).values({ media: '', category: key, action: 'create', email: user.email, at });
-    await refreshMediaCategories(db);
-    return reply.code(201).send({ key, label, sort });
+  // New tags are created on traffic.observe.tw now (media-traffic/site-tags.ts).
+  app.post('/auth/admin/categories', async (request, reply) => {
+    if (!(await admin(request, reply, true))) return reply;
+    return reply.code(410).send({ error: '媒體標籤改到 traffic.observe.tw 管理', manage: `${TRAFFIC_SITE}/sites/` });
   });
 
   // 「重抓這一篇」: fetch the page now, inline, and report the stored result.

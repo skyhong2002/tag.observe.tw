@@ -133,7 +133,9 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     const ok = await app.inject({ url: '/auth/admin/media/cna', headers: as('admin', false) });
     expect(ok.statusCode).toBe(200);
     expect(ok.headers['cache-control']).toBe('no-store');
-    expect(ok.json()).toMatchObject({ media: 'cna', categories: expect.arrayContaining(['green', 'news']) });
+    // Only the camp is edited here; tags come from traffic.observe.tw (unset in tests).
+    expect(ok.json()).toMatchObject({ media: 'cna', categories: ['green'], tags: [], tagDomains: expect.arrayContaining(['cna.com.tw']) });
+    expect(ok.json().definitions.map((d: { key: string }) => d.key)).toEqual(['blue', 'green']);
     const foreign = await app.inject({
       method: 'PUT',
       url: '/auth/admin/media/cna/categories',
@@ -150,73 +152,72 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     expect((await lookup('ftp://x')).statusCode).toBe(400);
   });
 
-  it('edits an outlet’s labels, logs who did it and updates the public API at once', async () => {
-    const created = await app.inject({ method: 'POST', url: '/auth/admin/categories', headers: as('admin'), payload: { label: '泛紅' } });
-    expect(created.statusCode).toBe(201);
-    const key = created.json().key;
-    expect(key).toMatch(/^tag\d+$/);
-    const ascii = await app.inject({
-      method: 'POST',
-      url: '/auth/admin/categories',
-      headers: as('admin'),
-      payload: { label: 'Pro China 2' },
-    });
-    expect(ascii.json().key).toBe('pro-china-2');
-    const digits = await app.inject({ method: 'POST', url: '/auth/admin/categories', headers: as('admin'), payload: { label: '泛紅2' } });
-    expect(digits.json().key).toMatch(/^tag\d+$/);
+  it('edits an outlet’s camp, logs who did it and leaves the other groups alone', async () => {
     const put = await app.inject({
       method: 'PUT',
       url: '/auth/admin/media/cna/categories',
       headers: as('admin'),
-      payload: { categories: ['news', 'blue', 'green', key] },
+      payload: { categories: ['blue', 'green'] },
     });
-    expect(put.json()).toMatchObject({ added: ['blue', key], removed: [] });
+    expect(put.json()).toMatchObject({ categories: ['blue', 'green'], added: ['blue'], removed: [] });
     // Both camps: blue wins, as before.
     expect(campOf('cna')).toBe('blue');
-    const categories = (await app.inject('/api/v1/categories')).json();
-    expect(categories.find((c: { key: string }) => c.key === key)).toMatchObject({ label: '泛紅', members: ['cna'], ranked: false });
     const log = await db.select().from(mediaCategoryLog).where(eq(mediaCategoryLog.media, 'cna'));
-    expect(log.map((l) => [l.category, l.action, l.email])).toEqual(
-      expect.arrayContaining([
-        ['blue', 'add', 'admin@example.com'],
-        [key, 'add', 'admin@example.com'],
-      ]),
-    );
+    expect(log.map((l) => [l.category, l.action, l.email])).toContainEqual(['blue', 'add', 'admin@example.com']);
     const undo = await app.inject({
       method: 'PUT',
       url: '/auth/admin/media/cna/categories',
       headers: as('admin'),
-      payload: { categories: ['news', 'green'] },
+      payload: { categories: ['green'] },
     });
-    expect(undo.json()).toMatchObject({ removed: expect.arrayContaining(['blue', key]) });
+    expect(undo.json()).toMatchObject({ removed: ['blue'] });
     expect(campOf('cna')).toBe('green');
-    const bad = await app.inject({
-      method: 'PUT',
-      url: '/auth/admin/media/cna/categories',
-      headers: as('admin'),
-      payload: { categories: ['nope'] },
-    });
-    expect(bad.statusCode).toBe(400);
+    // The analysis groups (news…) stay: rankings and events still read them.
+    const groups = await db.select().from(mediaCategories).where(eq(mediaCategories.media, 'cna'));
+    expect(groups.map((g) => g.category)).toEqual(expect.arrayContaining(['news', 'green']));
+    for (const categories of [['nope'], ['news', 'green']]) {
+      const bad = await app.inject({
+        method: 'PUT',
+        url: '/auth/admin/media/cna/categories',
+        headers: as('admin'),
+        payload: { categories },
+      });
+      expect(bad.statusCode).toBe(400);
+    }
+    // New tags are made on traffic.observe.tw.
+    const created = await app.inject({ method: 'POST', url: '/auth/admin/categories', headers: as('admin'), payload: { label: '泛紅' } });
+    expect(created.statusCode).toBe(410);
+    expect(created.json().manage).toBe('https://traffic.observe.tw/sites/');
   });
 
-  it('carries the former roles (性質) as plain labels', async () => {
+  it('keeps the former labels (性質 included) in the DB, shown only in the change log', async () => {
     expect(await db.select().from(mediaCategories).where(eq(mediaCategories.media, 'news_yahoo'))).toContainEqual({
       media: 'news_yahoo',
       category: 'platform',
     });
+    await db
+      .insert(mediaCategoryLog)
+      .values({ media: 'life', category: 'role:partner', action: 'add', email: 'admin@example.com', at: new Date() });
     const detail = (await app.inject({ url: '/auth/admin/media/life', headers: as('admin', false) })).json();
-    expect(detail.definitions).toContainEqual(expect.objectContaining({ key: 'partner', label: '新聞合作' }));
+    expect(detail.definitions).not.toContainEqual(expect.objectContaining({ key: 'partner' }));
+    expect(detail.logLabels).toMatchObject({ partner: '新聞合作', news: '新聞媒體' });
     expect(detail).not.toHaveProperty('roles');
     const put = await app.inject({
       method: 'PUT',
-      url: '/auth/admin/media/life/categories',
+      url: '/auth/admin/media/news_yahoo/categories',
       headers: as('admin'),
-      payload: { categories: [...detail.categories, 'partner'] },
+      payload: { categories: ['blue'] },
     });
-    expect(put.json()).toMatchObject({ added: ['partner'], removed: [] });
+    expect(put.json()).toMatchObject({ categories: ['blue'], added: ['blue'], removed: [] });
+    expect(await db.select().from(mediaCategories).where(eq(mediaCategories.media, 'news_yahoo'))).toContainEqual({
+      media: 'news_yahoo',
+      category: 'platform',
+    });
     expect(mediaScope('life')).not.toHaveProperty('roles');
     const list = (await app.inject({ url: '/auth/admin/media', headers: as('admin', false) })).json();
-    expect(list.media.find((o: { media: string }) => o.media === 'life').categories).toContain('partner');
+    expect(list.categories.map((d: { key: string }) => d.key)).toEqual(['blue', 'green']);
+    expect(list.trafficSite).toBe('https://traffic.observe.tw');
+    expect(list.media.find((o: { media: string }) => o.media === 'news_yahoo').categories).toEqual(['blue']);
     expect(list.media.find((o: { media: string }) => o.media === 'life').edits).toMatchObject({ count: 1, lastBy: 'admin@example.com' });
     expect(list.media.find((o: { media: string }) => o.media === 'ftv').edits).toBeNull();
     expect(list).not.toHaveProperty('roles');

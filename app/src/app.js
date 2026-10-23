@@ -13,6 +13,7 @@ import { registerFeeds } from './feeds.ts';
 import { isShareImage, legacyRoute } from './legacy-redirects.js';
 import { keepMediaCategoriesFresh } from './media-categories.ts';
 import { registerExternalTraffic } from './media-traffic/external-routes.ts';
+import { keepMediaTagsFresh } from './media-traffic/site-tags.ts';
 import { registerTaiwanShares } from './media-traffic/taiwan-share.ts';
 import { httpDuration, httpRequests, metricsContentType, metricsText, serviceRequests } from './metrics.ts';
 import { registerPictureRoutes } from './pictures/routes.ts';
@@ -180,6 +181,9 @@ export async function buildApp(
   const own = db ? { db, close: async () => {} } : config.tagDbUrl ? createDb(config.tagDbUrl) : null;
   const labels = own ? keepMediaCategoriesFresh(own.db, { warn: (err) => app.log.warn({ err }, 'media labels refresh failed') }) : null;
   await labels?.ready;
+  // Non-political media tags from traffic.observe.tw (media-traffic/site-tags.ts); startup only waits for the saved copy.
+  const tags = own ? keepMediaTagsFresh({ warn: (err) => app.log.warn({ err }, 'media tags refresh failed') }) : null;
+  await tags?.restored;
   // Admin refetch crawls in this process too, so it reads the generated crawl rules (crawl/rules/state.ts).
   const generatedRules = own
     ? keepGeneratedRulesFresh({ warn: (err) => app.log.warn({ err }, 'generated crawl rules refresh failed') })
@@ -267,6 +271,7 @@ export async function buildApp(
   registerFeeds(app, own?.db ?? null);
   app.addHook('onClose', async () => {
     labels?.stop();
+    tags?.stop();
     generatedRules?.stop();
     if (jobs) {
       await jobs.queue.close();

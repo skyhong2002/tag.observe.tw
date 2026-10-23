@@ -20,9 +20,10 @@ import { syncFromService, type TrafficService, trafficService } from '../media-t
  * every reviewed outlet in media-names.json, so outlets the sheet never listed
  * (經濟日報 on money.udn.com, 科技新報…) are fetched too, as are the article hosts
  * in media-traffic-hosts.json. Discovery sources, removed outlets and retired
- * domains are left out.
+ * domains are left out. Per outlet, since one outlet can publish on several
+ * domains (traffic.observe.tw's site tags are keyed by domain, site-tags.ts).
  */
-export const publisherDomains = () => {
+export const publisherDomainsByMedia = () => {
   const skip = (media: string) => excludedMedia.has(media) || ['google_news', 'dongtaiwang'].includes(media);
   // An outlet measured on a parent domain (tvbs.com.tw) does not also list its own news.* subdomain.
   const overrides: Record<string, { host: string }> = trafficHosts.hosts;
@@ -31,22 +32,27 @@ export const publisherDomains = () => {
     const domain = url && trafficDomain(url);
     return Boolean(parent && domain && domain.endsWith(`.${parent}`));
   };
-  const urls = [
+  const urls: Array<[string, string | undefined]> = [
     ...catalog.sources
-      .filter((source) => !skip(source.media) && !under(source.media, source.websiteUrl))
-      .map((source) => source.websiteUrl),
+      .filter((source) => !under(source.media, source.websiteUrl))
+      .map((source) => [source.media, source.websiteUrl] as [string, string | undefined]),
     ...Object.entries(names.media)
       .filter(
-        ([media, entry]) =>
-          !skip(media) && ['verified', 'retained'].includes(entry.status) && !under(media, (entry as { sourceUrl?: string }).sourceUrl),
+        ([media, entry]) => ['verified', 'retained'].includes(entry.status) && !under(media, (entry as { sourceUrl?: string }).sourceUrl),
       )
-      .map(([, entry]) => (entry as { sourceUrl?: string }).sourceUrl),
-    ...Object.entries(trafficHosts.hosts)
-      .filter(([media]) => !skip(media))
-      .map(([, entry]) => entry.host),
+      .map(([media, entry]) => [media, (entry as { sourceUrl?: string }).sourceUrl] as [string, string | undefined]),
+    ...Object.entries(trafficHosts.hosts).map(([media, entry]) => [media, entry.host] as [string, string | undefined]),
   ];
-  return [...new Set(urls.flatMap((url) => (url && trafficDomain(url)) || []))];
+  const out = new Map<string, string[]>();
+  for (const [media, url] of urls) {
+    const domain = url && trafficDomain(url);
+    if (skip(media) || !domain) continue;
+    const list = out.get(media) ?? [];
+    if (!list.includes(domain)) out.set(media, [...list, domain]);
+  }
+  return out;
 };
+export const publisherDomains = () => [...new Set([...publisherDomainsByMedia().values()].flat())];
 /**
  * `db` records every month and profile in the snapshot (history.ts), so
  * nothing Similarweb stops returning is lost. After tag's own outlets, what

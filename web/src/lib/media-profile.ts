@@ -10,8 +10,10 @@ export interface MediaProfile {
   title: string;
   icon: string | null;
   categoryLabel: string | null;
-  /** Every label but the camp ones (通訊社、平台代刊… included). */
+  /** Tags from traffic.observe.tw (the outlet's domains together); the camp is separate. */
   labels: Array<{ key: string; label: string }>;
+  /** Domains the tags come from; vote at traffic.observe.tw/site/<domain>/#tags. */
+  tagDomains?: string[];
   camp: 'blue' | 'green' | 'other';
   /** Edition the site collects and whom it serves. */
   scope: {

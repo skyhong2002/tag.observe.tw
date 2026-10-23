@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import CountryFlag from '@/components/CountryFlag';
 import FilterChips from '@/components/FilterChips';
 import MediaHoverLink from '@/components/MediaHoverLink';
@@ -60,8 +61,9 @@ interface MediaRow {
   icon: string | null;
   category: string | null;
   categoryLabel: string | null;
-  /** Every label but the camp ones, 通訊社、平台代刊… included. */
+  /** Tags from traffic.observe.tw (the outlet's domains together); the camp is separate. */
   labels: Array<{ key: string; label: string }>;
+  tagDomains?: string[];
   camp: Camp;
   schedule: string;
   today: number;
@@ -123,6 +125,21 @@ const SORTS = {
 type SortKey = keyof typeof SORTS;
 const ASC_FIRST = new Set<SortKey>(['name', 'status', 'scope', 'language', 'camp', 'category', 'schedule']);
 const CAMP_ORDER: Camp[] = ['blue', 'green', 'other'];
+// Before 2026-10-24 the tags were tag's own labels, filtered with ?category=<key>.
+// Old links land on the traffic.observe.tw tag of the same meaning when the
+// directory has it, on the camp filter for 藍營／綠營, else on every outlet.
+const LEGACY_TAGS: Record<string, string> = {
+  news: '新聞',
+  '3c': '科技',
+  women: '女性',
+  finance: '財經',
+  health: '健康',
+  travel: '旅遊',
+  game: '遊戲',
+  sports: '運動',
+  movie: '娛樂',
+  government: '公家',
+};
 const labelText = (r: MediaRow) => r.labels.map(({ label }) => label).join('、');
 /** `off`, `hourly` or `every N min` (app/src/crawl schedules); off sorts last. */
 function scheduleMinutes(schedule: string) {
@@ -183,7 +200,7 @@ function Tile({ label, value, note }: { label: string; value: string; note?: str
 export default async function MediaStatsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; dir?: string; status?: string; category?: string; camp?: string; scope?: string }>;
+  searchParams: Promise<{ sort?: string; dir?: string; status?: string; tag?: string; category?: string; camp?: string; scope?: string }>;
 }) {
   const sp = await searchParams;
   const [res, readers] = await Promise.all([
@@ -201,22 +218,22 @@ export default async function MediaStatsPage({
   const sort: SortKey = (sp.sort && sp.sort in SORTS ? sp.sort : 'last24h') as SortKey;
   const dir = sp.dir === 'asc' || sp.dir === 'desc' ? sp.dir : ASC_FIRST.has(sort) ? 'asc' : 'desc';
   const status = sp.status && sp.status in STATUS ? (sp.status as Status) : null;
-  const category = sp.category ?? null;
   const camp = sp.camp && sp.camp in CAMPS ? (sp.camp as keyof typeof CAMPS) : null;
   const scopes = [...new Map(data.media.flatMap((m) => (m.scope ? [[m.scope.scope, m.scope.scopeLabel] as const] : []))).entries()].sort(
     ([a], [b]) => SCOPE_ORDER.indexOf(a) - SCOPE_ORDER.indexOf(b),
   );
   const scope = scopes.some(([key]) => key === sp.scope) ? (sp.scope as string) : null;
-  // Any label filters, most-carried first.
+  // Any tag filters, most-carried first; a tag nobody carries (any more) shows every outlet.
   const carried = new Map<string, { label: string; n: number }>();
   for (const { key, label } of data.media.flatMap((m) => m.labels)) carried.set(key, { label, n: (carried.get(key)?.n ?? 0) + 1 });
-  const categories = [...carried].sort(([, a], [, b]) => b.n - a.n).map(([key, { label }]) => [key, label] as const);
+  const tags = [...carried].sort(([a, x], [b, y]) => y.n - x.n || collator.compare(a, b));
+  const tag = sp.tag && carried.has(sp.tag) ? sp.tag : null;
   let rows = data.media
     .map((m) => ({ ...m, readers: readers[m.media] }))
     .filter(
       (m) =>
         (!status || m.status === status) &&
-        (!category || m.labels.some((l) => l.key === category)) &&
+        (!tag || m.labels.some((l) => l.key === tag)) &&
         (!camp || m.camp === camp) &&
         (!scope || m.scope?.scope === scope),
     );
@@ -229,12 +246,17 @@ export default async function MediaStatsPage({
   const max = Math.max(1, ...rows.map((r) => r.last24h));
   const link = (patch: Record<string, string | null>) => {
     const q = new URLSearchParams();
-    const next = { sort, dir, status, category, camp, scope, ...patch };
+    const next = { sort, dir, status, tag, camp, scope, ...patch };
     const isDefault = next.sort === 'last24h' && next.dir === 'desc';
     for (const [k, v] of Object.entries(next)) if (v && !(isDefault && (k === 'sort' || k === 'dir'))) q.set(k, v);
     const s = q.toString();
     return s ? `/media/?${s}` : '/media/';
   };
+  if (sp.category) {
+    if (sp.category === 'blue' || sp.category === 'green') redirect(link({ camp: sp.category }));
+    const legacy = carried.has(sp.category) ? sp.category : LEGACY_TAGS[sp.category];
+    redirect(link({ tag: tag ?? (legacy && carried.has(legacy) ? legacy : null) }));
+  }
   const t = data.totals;
   const readersMonth = Object.values(readers)[0]?.month;
   const weekAgo = new Date(data.generatedAt).getTime() - 7 * 86400e3;
@@ -297,8 +319,8 @@ export default async function MediaStatsPage({
         <FilterChips
           label="媒體標籤"
           items={[
-            { href: link({ category: null }), label: '全部標籤', current: !category },
-            ...categories.map(([key, label]) => ({ href: link({ category: key }), label: label ?? key, current: category === key })),
+            { href: link({ tag: null }), label: '全部標籤', current: !tag },
+            ...tags.map(([key, { label, n }]) => ({ href: link({ tag: key }), label: `${label} ${n}`, current: tag === key })),
           ]}
         />
         <FilterChips
@@ -418,10 +440,11 @@ export default async function MediaStatsPage({
                   {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
                 </td>
                 <td className={`${table.cell} whitespace-nowrap`}>
-                  {r.labels.length ? (
+                  {r.labels.length || r.sourceKind === 'discovery' ? (
                     <span className="flex gap-1">
+                      {r.sourceKind === 'discovery' && <span className={discoveryBadge}>發現來源</span>}
                       {r.labels.map(({ key, label }) => (
-                        <span key={key} className={key === 'discovery' ? discoveryBadge : scopeBadge}>
+                        <span key={key} className={scopeBadge}>
                           {label}
                         </span>
                       ))}

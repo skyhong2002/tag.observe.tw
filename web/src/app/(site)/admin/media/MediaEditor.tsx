@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import AdminGate, { adminFetch, note } from '../AdminGate';
 import {
   type Definition,
+  LabelChip,
   LabelToggle,
   type Outlet,
   OutletIcon,
@@ -47,6 +48,9 @@ type Run = {
 };
 type Detail = Outlet & {
   definitions: Definition[];
+  /** Names of every old label key, for the change log. */
+  logLabels?: Record<string, string>;
+  trafficSite?: string;
   crawler: { group: string; disabled: boolean; aggregator: boolean } | null;
   runs: Run[];
   log: Array<{ id: number; category: string; action: 'add' | 'remove'; email: string; at: string }>;
@@ -271,13 +275,14 @@ function Editor({ media, url, report, article }: { media: string; url: string; r
   );
 }
 
+// Tags come from traffic.observe.tw and are only shown here, with links to
+// manage them there; the camp (藍營／綠營) stays in tag and is edited here.
 function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
   const [selected, setSelected] = useState(() => new Set(detail.categories));
-  const [definitions, setDefinitions] = useState(detail.definitions);
-  const [name, setName] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const dirty = selected.size !== detail.categories.length || detail.categories.some((c) => !selected.has(c));
+  const site = detail.trafficSite ?? 'https://traffic.observe.tw';
   const toggle = (key: string) =>
     setSelected((now) => {
       const next = new Set(now);
@@ -297,31 +302,40 @@ function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
       setBusy(false);
     }
   }
-  async function create() {
-    const label = name.trim();
-    if (!label) return;
-    setBusy(true);
-    try {
-      const def = await adminFetch<Definition>('/auth/admin/categories', { method: 'POST', body: { label } });
-      setDefinitions((list) => [...list, def]);
-      setSelected((now) => new Set(now).add(def.key));
-      setName('');
-      setStatus(`已新增「${def.label}」並勾選，記得按儲存。`);
-    } catch (e) {
-      setStatus(`新增失敗：${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
     <section className={section}>
       <h3 className={heading}>標籤</h3>
       <p className={note}>
-        點一下切換。可以複選；同時勾了藍營和綠營時，陣營分析會算成藍營。通訊社、平台代刊、新聞合作這類也是標籤：平台代刊是轉載其他媒體新聞的平台（Yahoo
-        新聞、LINE TODAY），新聞合作是刊登公關稿、合作稿的網站。
+        標籤來自 traffic.observe.tw，以網域為單位，這裡只顯示。要修改請到網站頁投票或用管理員覆寫，或到{' '}
+        <a href={`${site}/sites/`} className="underline underline-offset-2">
+          網站管理
+        </a>
+        批次修改；本站約一分鐘內同步。
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {definitions.map((def) => (
+        {detail.tags?.length ? (
+          detail.tags.map((t) => <LabelChip key={t} keyName={`t:${t}`} label={t} />)
+        ) : (
+          <span className={note}>traffic.observe.tw 目前沒有這家媒體的標籤。</span>
+        )}
+      </div>
+      {!!detail.tagDomains?.length && (
+        <p className={`${note} mt-2`}>
+          管理：
+          {detail.tagDomains.map((domain, i) => (
+            <Fragment key={domain}>
+              {i > 0 && '、'}
+              <a href={`${site}/site/${encodeURIComponent(domain)}/#tags`} className="underline underline-offset-2">
+                {domain}
+              </a>
+            </Fragment>
+          ))}
+        </p>
+      )}
+      <h4 className="mt-4 text-sm font-medium">政治傾向</h4>
+      <p className={note}>只在本站設定，不會送到 traffic.observe.tw。同時勾了藍營和綠營時，陣營分析會算成藍營。</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {detail.definitions.map((def) => (
           <LabelToggle key={def.key} def={def} on={selected.has(def.key)} onToggle={() => toggle(def.key)} />
         ))}
       </div>
@@ -334,24 +348,6 @@ function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
             還原
           </button>
         )}
-        <form
-          className="flex items-center gap-2 sm:ml-auto"
-          onSubmit={(event) => {
-            event.preventDefault();
-            create();
-          }}
-        >
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            maxLength={64}
-            placeholder="新標籤名稱"
-            className="w-36 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <button type="submit" className={button} disabled={busy || !name.trim()}>
-            新增標籤
-          </button>
-        </form>
       </div>
       {status && (
         <p role="status" className={note}>
@@ -986,7 +982,8 @@ function Robots({ detail }: { detail: Detail }) {
 function ChangeLog({ detail }: { detail: Detail }) {
   if (!detail.log.length) return null;
   // Edits from before 性質 merged into the labels are logged as `role:<key>`.
-  const label = new Map(detail.definitions.flatMap((d) => [[d.key, d.label] as const, [`role:${d.key}`, d.label] as const]));
+  const names = Object.entries(detail.logLabels ?? Object.fromEntries(detail.definitions.map((d) => [d.key, d.label])));
+  const label = new Map(names.flatMap(([key, name]) => [[key, name] as const, [`role:${key}`, name] as const]));
   return (
     <section className={section}>
       <h3 className={heading}>修改紀錄</h3>
