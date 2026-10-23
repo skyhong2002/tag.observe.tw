@@ -9,3 +9,9 @@ scrape_configs:
     metrics_path: /metrics
   - job_name: prometheus
     static_configs: [{ targets: ["127.0.0.1:19090"] }]
+
+  - job_name: host-observer
+    scrape_interval: 60s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ["127.0.0.1:19120"]

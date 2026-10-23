@@ -1,0 +1,43 @@
+# Candidate addition to the current /etc/prometheus/rules/*.yml pipeline only.
+# No scrape, notification routing, receiver, or product configuration changes.
+groups:
+  - name: infovore-health
+    interval: 60s
+    rules:
+      - record: host_observer:infovore_observation_valid
+        expr: max by (job, instance) (host_observer_source_fresh{job="host-observer",source="infovore"} == 1) and on(job, instance) (host_observer_infovore_probe_success{job="host-observer"} == 1) and on(job, instance) (host_observer_infovore_health_known{job="host-observer"} == 1) and on(job, instance) (host_observer_sample_age_seconds{job="host-observer"} < 150)
+      - alert: InfovoreHealthObservationUnavailable
+        expr: max by (job, instance) ((host_observer_source_fresh{job="host-observer",source="infovore"} == 0) or (host_observer_infovore_probe_success{job="host-observer"} == 0)) and on(job, instance) (host_observer_sample_age_seconds{job="host-observer"} < 150)
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Infovore health probe failed or its saved observation is missing or stale
+      - alert: InfovoreSourceFreshnessUnknown
+        expr: (host_observer_infovore_source_success_known{job="host-observer"} == 0) and on(job, instance) host_observer:infovore_observation_valid
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Infovore source has no validated last success age
+      - alert: InfovoreSourceStale
+        expr: ((time() - host_observer_infovore_source_last_success_timestamp_seconds{job="host-observer"}) > on(job, instance) group_left host_observer_infovore_max_source_age_seconds{job="host-observer"}) and on(job, instance) host_observer:infovore_observation_valid
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Infovore source last success exceeds the product freshness threshold
+      - alert: InfovoreSourceErrorPresent
+        expr: (host_observer_infovore_source_error_present{job="host-observer"} == 1) and on(job, instance) host_observer:infovore_observation_valid
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Infovore source reports an error flag
+      - alert: InfovoreProductDegraded
+        expr: (host_observer_infovore_health_ok{job="host-observer"} == 0) and on(job, instance) host_observer:infovore_observation_valid
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Infovore explicitly reports degraded or unhealthy product state

@@ -266,4 +266,29 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     });
     expect(own.json()).toMatchObject({ candidates: [{ media: 'cna' }], article: { id, url: page } });
   });
+
+  it('shows admins the whole stored body, past the public window too', async () => {
+    const page = 'https://www.cna.com.tw/news/aipl/202610100004.aspx';
+    const first = await app.inject({ method: 'POST', url: '/auth/admin/media/cna/refetch', headers: as('admin'), payload: { url: page } });
+    const id = first.json().article.id;
+    const body = (who: string | null) => app.inject({ url: `/auth/admin/articles/${id}/body`, headers: as(who, false) });
+    expect((await body(null)).statusCode).toBe(401);
+    expect((await body('reader')).statusCode).toBe(403);
+    expect((await app.inject({ url: '/auth/admin/articles/0/body', headers: as('admin', false) })).statusCode).toBe(404);
+
+    await db
+      .update(articles)
+      .set({ publishedAt: new Date(Date.now() - 30 * 86400e3) })
+      .where(eq(articles.id, id));
+    expect((await app.inject(`/api/v1/articles/${id}/content`)).json().content).toMatchObject({ status: 'expired', body: null });
+    const full = await body('admin');
+    expect(full.headers['cache-control']).toBe('no-store');
+    expect(full.json()).toMatchObject({ id, body: '內文。'.repeat(80), chars: 240, status: 'ok', archived: false });
+
+    await db
+      .update(articles)
+      .set({ body: null, contentArchiveHash: 'a'.repeat(64) })
+      .where(eq(articles.id, id));
+    expect((await body('admin')).json()).toMatchObject({ body: null, chars: 0, archived: true });
+  });
 });

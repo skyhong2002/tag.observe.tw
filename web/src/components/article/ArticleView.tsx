@@ -15,6 +15,7 @@ import { readingTitle } from '@/lib/reading.mts';
 import type { ArticleRelated as Related } from '@/lib/related';
 import { publicArticleContent } from '@/lib/seo.mts';
 import type { ArticleSimilarity } from '@/lib/similarity';
+import AdminFullText from './AdminFullText';
 import ArticleRelated from './ArticleRelated';
 import ArticleSimilar from './ArticleSimilar';
 import ArticleTags from './ArticleTags';
@@ -151,6 +152,7 @@ export default function ArticleView({
           </div>
         </section>
       )}
+      <AdminFullText id={article.id} />
       <footer className="mt-12 space-y-7 border-t border-zinc-200 pt-7 dark:border-zinc-800">
         {extra}
         {content.attributions.length > 0 && (
