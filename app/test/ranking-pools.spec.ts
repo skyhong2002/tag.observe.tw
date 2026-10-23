@@ -294,3 +294,89 @@ it('rejects a manifest growing after fstat instead of reading beyond its observe
     await app.close();
   }
 });
+describe('capped store keeps only live generations', () => {
+  async function capped(cap: number) {
+    const clock = { at: now.getTime() },
+      dir = fs.mkdtempSync(path.join(tmpdir(), 'tag-ranking-pool-test-')),
+      store = new PoolStore(dir, () => clock.at, cap),
+      logs: { reason?: string; status?: number; windowHours?: number; msg?: string }[] = [];
+    const roster = rankingBasis('news');
+    const [a, b] = roster.media;
+    const labels = Array.from({ length: 600 }, (_, i) => '事件詞' + i);
+    const read = vi.fn(async () => ({
+      ...(await collectPool(rows([source(1, a, labels), source(2, a, labels), source(3, b, labels), source(4, b, labels)]), query, roster)),
+      asOf: now.toISOString(),
+    }));
+    const logger = { level: 'warn', stream: { write: (line: string) => logs.push(JSON.parse(line)) } };
+    const app = await buildApp(
+      { uiOrigin: 'http://127.0.0.1:1' },
+      { logger: logger as never, db: {} as never, rankingPools: { store, read, now: () => new Date(clock.at) } },
+    );
+    // The window the clock currently allows, shifted by whole days.
+    const at = (days: number) =>
+      '/api/v1/ranking-pools?' +
+      new URLSearchParams({
+        ...query,
+        since: new Date(Date.parse(query.since) + days * 864e5).toISOString(),
+        until: new Date(Date.parse(query.until) + days * 864e5).toISOString(),
+      });
+    return { app, store, dir, clock, logs, at };
+  }
+  it('moves expired generations and stale indexes out instead of failing at the cap', async () => {
+    const probe = await capped(512 * 1024 ** 2);
+    const size = (await probe.app.inject(probe.at(0))).statusCode === 200 ? fs.readdirSync(probe.dir).length : 0;
+    await probe.app.close();
+    expect(size).toBe(2);
+    const bytes = (d: string): number =>
+      fs
+        .readdirSync(d, { withFileTypes: true })
+        .reduce((n, e) => n + (e.isDirectory() ? bytes(path.join(d, e.name)) : fs.statSync(path.join(d, e.name)).size), 0);
+    const one = bytes(probe.dir);
+    // Room for one generation only.
+    const { app, store, dir, clock, logs, at } = await capped(Math.floor(one * 1.5));
+    try {
+      const first = (await app.inject(at(0))).json();
+      clock.at += 864e5 + 1;
+      const second = await app.inject(at(1));
+      expect(second.statusCode).toBe(200);
+      expect(fs.readdirSync(dir)).toEqual(
+        expect.arrayContaining([second.json().snapshotId, expect.stringMatching(/^query-[a-f0-9]{64}\.json$/)]),
+      );
+      expect(fs.readdirSync(dir)).toHaveLength(2);
+      expect(fs.readdirSync(store.expiredRoot).length).toBe(2);
+      expect(fs.existsSync(path.join(store.expiredRoot, first.snapshotId, 'manifest.json'))).toBe(true);
+      // An expired generation that moved out still answers expired, not missing.
+      expect((await app.inject(`/api/v1/ranking-pools/${first.snapshotId}`)).statusCode).toBe(409);
+      expect((await app.inject('/api/v1/ranking-pools/' + 'e'.repeat(64))).statusCode).toBe(404);
+      // A live generation still counts: a new window is refused at the cap, and the reason is logged.
+      clock.at += 60_000;
+      const full = await app.inject(
+        at(1).replace(
+          /until=[^&]+/,
+          'until=' + encodeURIComponent(new Date(clock.at - 30_000).toISOString().replace(/\.\d{3}Z$/, '.000Z')),
+        ),
+      );
+      expect(full.statusCode).toBe(503);
+      expect(full.json().incompleteReason).toBe('snapshot-store-cap');
+      expect(logs).toContainEqual(expect.objectContaining({ msg: 'ranking pool unavailable', reason: 'snapshot-store-cap', status: 503 }));
+      expect(JSON.stringify(logs)).not.toMatch(/cf-connecting-ip|x-service-token/);
+    } finally {
+      await app.close();
+    }
+  });
+  it('logs a busy producer once a minute with its reason', async () => {
+    const { app, logs, at } = await capped(512 * 1024 ** 2);
+    try {
+      const [a, b, c] = await Promise.all([
+        app.inject(at(0)),
+        app.inject(at(0).replace('gate=early', 'gate=broad')),
+        app.inject(at(0).replace('gate=early', 'gate=all')),
+      ]);
+      expect([a.statusCode, b.statusCode, c.statusCode].sort()).toEqual([200, 429, 429]);
+      expect(logs.filter((l) => l.reason === 'producer-busy')).toHaveLength(1);
+      expect(logs.find((l) => l.reason === 'producer-busy')).toMatchObject({ status: 429, windowHours: 20 });
+    } finally {
+      await app.close();
+    }
+  });
+});

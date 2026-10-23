@@ -48,6 +48,23 @@ export function registerRankingPools(
   const pending = new Map<string, Promise<ReturnType<PoolStore['get']>>>();
   let startedAt = 0,
     startedCount = 0;
+  // Unavailable answers name their reason only in the body: log each reason once a minute.
+  const noted = new Map<string, number>();
+  const note = (req: FastifyRequest, reply: FastifyReply, reason: string, query?: WindowQuery, cause?: unknown) => {
+    const minute = Math.floor(now().getTime() / 60_000);
+    if (noted.get(reason) === minute) return;
+    noted.set(reason, minute);
+    req.log.warn(
+      {
+        status: reply.statusCode,
+        reason,
+        windowHours: query ? (Date.parse(query.until) - Date.parse(query.since)) / 36e5 : undefined,
+        elapsedMs: Math.round(reply.elapsedTime),
+        cause: (cause as { code?: unknown } | undefined)?.code,
+      },
+      'ranking pool unavailable',
+    );
+  };
   app.get<{ Querystring: Record<string, unknown> }>('/api/v1/ranking-pools', async (req, reply) => {
     let query: WindowQuery;
     try {
@@ -65,8 +82,10 @@ export function registerRankingPools(
     const key = fingerprint({ query, basis, noiseFilterVersion, policy: policyVersion });
     const cached = store.cached(key);
     if (cached) return send(req, reply.header('cache-control', 'public, max-age=30'), cached);
-    if (Date.parse(query.since) < Date.parse(basis.coverageFrom))
-      return reply.code(503).send({
+    if (Date.parse(query.since) < Date.parse(basis.coverageFrom)) {
+      reply.code(503);
+      note(req, reply, 'window-before-cohort-coverage', query);
+      return reply.send({
         error: 'ranking pool unavailable',
         available: false,
         incompleteReason: 'window-before-cohort-coverage',
@@ -76,23 +95,28 @@ export function registerRankingPools(
         truncated: false,
         checksum: null,
       });
+    }
     let job = pending.get(key);
     if (!job) {
-      if (pending.size)
+      if (pending.size) {
+        reply.code(429);
+        note(req, reply, 'producer-busy', query);
         return reply
-          .code(429)
           .header('retry-after', '30')
           .send({ error: 'ranking pool producer busy', available: false, incompleteReason: 'producer-busy' });
+      }
       const at = now().getTime();
       if (at - startedAt >= 60_000) {
         startedAt = at;
         startedCount = 0;
       }
-      if (startedCount >= 2)
+      if (startedCount >= 2) {
+        reply.code(429);
+        note(req, reply, 'producer-budget', query);
         return reply
-          .code(429)
           .header('retry-after', '60')
           .send({ error: 'ranking pool producer budget', available: false, incompleteReason: 'producer-budget' });
+      }
       startedCount++;
       job = (async () => {
         const result = await read(db, query, basis),
@@ -139,10 +163,13 @@ export function registerRankingPools(
     try {
       return send(req, reply.header('cache-control', 'public, max-age=30'), await job);
     } catch (e) {
-      return reply.code(503).send({
+      const reason = e instanceof PoolUnavailable ? e.reason : 'snapshot-source-unavailable';
+      reply.code(503);
+      note(req, reply, reason, query, e instanceof PoolUnavailable ? e.cause : e);
+      return reply.send({
         error: 'ranking pool unavailable',
         available: false,
-        incompleteReason: e instanceof PoolUnavailable ? e.reason : 'snapshot-source-unavailable',
+        incompleteReason: reason,
         window: query,
         basis,
         eligibleTotal: null,
@@ -165,6 +192,8 @@ export function registerRankingPools(
       try {
         m = store.get(req.params.snapshotId);
       } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT' && store.retired(req.params.snapshotId))
+          return reply.code(409).send({ error: 'snapshot expired; request new pool' });
         return reply.code((e as NodeJS.ErrnoException).code === 'ENOENT' ? 404 : 400).send({ error: 'snapshot missing or invalid' });
       }
       if (Date.parse(m.expiresAt) <= now().getTime()) return reply.code(409).send({ error: 'snapshot expired; request new pool' });
@@ -206,9 +235,9 @@ export function registerRankingPools(
             next < m.eligibleTotal ? Buffer.from(JSON.stringify({ snapshotId: m.snapshotId, offset: next })).toString('base64url') : null,
         });
       } catch {
-        return reply
-          .code(503)
-          .send({ error: 'ranking pool page unreadable', available: false, incompleteReason: 'snapshot-page-unreadable' });
+        reply.code(503);
+        note(req, reply, 'snapshot-page-unreadable');
+        return reply.send({ error: 'ranking pool page unreadable', available: false, incompleteReason: 'snapshot-page-unreadable' });
       }
     },
   );

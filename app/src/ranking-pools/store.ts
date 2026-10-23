@@ -78,9 +78,11 @@ function readSafe(file: string, cap: number): Buffer {
 export class PoolStore {
   root: string;
   now: () => number;
-  constructor(root: string, now = Date.now) {
+  cap: number;
+  constructor(root: string, now = Date.now, cap = STORE_CAP) {
     this.root = root;
     this.now = now;
+    this.cap = cap;
   }
   dir(id: string) {
     if (!/^[a-f0-9]{64}$/.test(id)) throw Error('invalid snapshot id');
@@ -95,6 +97,47 @@ export class PoolStore {
     if (snapshotId !== id || fingerprint(content) !== id || manifest.schemaVersion !== 'ranking-pool-1')
       throw Error('invalid snapshot metadata');
     return manifest;
+  }
+  get expiredRoot() {
+    return this.root + '-expired';
+  }
+  /** A generation that expired and was moved out of the live store. */
+  retired(id: string) {
+    return fs.existsSync(path.join(this.expiredRoot, path.basename(this.dir(id))));
+  }
+  /** Moves an expired generation or a stale query index out of the store; false when it is still live. */
+  private retire(item: fs.Dirent, p: string) {
+    if (item.isDirectory()) {
+      if (!/^[a-f0-9]{64}$/.test(item.name)) return false;
+      let m: PoolManifest;
+      try {
+        m = JSON.parse(readSafe(path.join(p, 'manifest.json'), 1024 ** 2).toString());
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT' && !fs.existsSync(p)) throw e;
+        return false;
+      }
+      if (!(Date.parse(m.expiresAt) <= this.now())) return false;
+    } else {
+      if (!item.isFile() || !/^query-[a-f0-9]{64}\.json$/.test(item.name)) return false;
+      let saved: { at: number };
+      try {
+        saved = JSON.parse(readSafe(p, 4096).toString());
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT') throw e;
+        return false;
+      }
+      // cached() ignores an index this old.
+      if (!(this.now() - saved.at > 600_000)) return false;
+    }
+    fs.mkdirSync(this.expiredRoot, { recursive: true, mode: 0o700 });
+    directory(this.expiredRoot);
+    try {
+      fs.renameSync(p, path.join(this.expiredRoot, item.name));
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT') throw e;
+      return false;
+    }
+    return true;
   }
   cached(key: string): PoolManifest | null {
     try {
@@ -125,24 +168,31 @@ export class PoolStore {
     if (!/^[a-f0-9]{64}$/.test(key)) throw new PoolUnavailable('snapshot-store-invalid');
     fs.mkdirSync(this.root, { recursive: true, mode: 0o700 });
     directory(this.root);
-    // Bounded initial cache. Expiry rejects reads; no unrelated or existing file
-    // is deleted to recover capacity. Operators can retain/audit old generations.
+    // Bounded cache of live generations. Expired generations and stale query
+    // indexes, which reads already reject, move to `<root>-expired/` and stop
+    // counting; nothing is deleted. Operators can audit or prune that directory.
     let bytes = 0;
     for (const item of fs.readdirSync(this.root, { withFileTypes: true })) {
       if (item.isSymbolicLink()) throw new PoolUnavailable('snapshot-store-invalid');
       const p = path.join(this.root, item.name);
-      if (item.isDirectory()) {
-        for (const f of fs.readdirSync(p)) {
-          const stat = fs.lstatSync(path.join(p, f));
-          if (!stat.isFile() || stat.isSymbolicLink()) throw new PoolUnavailable('snapshot-store-invalid');
-          bytes += stat.size;
+      try {
+        if (this.retire(item, p)) continue;
+        if (item.isDirectory()) {
+          for (const f of fs.readdirSync(p)) {
+            const stat = fs.lstatSync(path.join(p, f));
+            if (!stat.isFile() || stat.isSymbolicLink()) throw new PoolUnavailable('snapshot-store-invalid');
+            bytes += stat.size;
+          }
+        } else {
+          if (!item.isFile()) throw new PoolUnavailable('snapshot-store-invalid');
+          bytes += fs.lstatSync(p).size;
         }
-      } else {
-        if (!item.isFile()) throw new PoolUnavailable('snapshot-store-invalid');
-        bytes += fs.lstatSync(p).size;
+      } catch (e) {
+        // Another process sharing the store retired it meanwhile.
+        if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
       }
     }
-    if (bytes > STORE_CAP) throw new PoolUnavailable('snapshot-store-cap');
+    if (bytes > this.cap) throw new PoolUnavailable('snapshot-store-cap');
     const checksum = createHash('sha256');
     for (const entry of entries) checksum.update(entryLine(entry));
     const parts: Buffer[] = [];
@@ -166,7 +216,7 @@ export class PoolStore {
     if (
       Buffer.byteLength(manifestBody) > 1024 ** 2 ||
       parts.some((p) => p.length > PAGE_CAP) ||
-      bytes + parts.reduce((n, p) => n + p.length, 0) + Buffer.byteLength(manifestBody) + Buffer.byteLength(indexBody) > STORE_CAP
+      bytes + parts.reduce((n, p) => n + p.length, 0) + Buffer.byteLength(manifestBody) + Buffer.byteLength(indexBody) > this.cap
     )
       throw new PoolUnavailable('snapshot-store-cap');
     const stage = path.join(this.root, 'staging-' + randomUUID());
@@ -175,7 +225,7 @@ export class PoolStore {
     for (let offset = 0; offset < entries.length; offset += 500) {
       const body = parts[offset / 500];
       added += body.length;
-      if (bytes + added > STORE_CAP) throw new PoolUnavailable('snapshot-store-cap');
+      if (bytes + added > this.cap) throw new PoolUnavailable('snapshot-store-cap');
       fs.writeFileSync(path.join(stage, 'page-' + offset / 500 + '.json.gz'), body, { flag: 'wx', mode: 0o600 });
     }
     fs.writeFileSync(path.join(stage, 'manifest.json'), manifestBody, { flag: 'wx', mode: 0o600 });
