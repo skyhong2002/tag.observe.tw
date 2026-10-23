@@ -2408,12 +2408,13 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/stats'
 | `min` | query | string | 至少幾篇（3–1000，預設 3），例：`10` |
 | `sort` | query | "first" \| "count" \| "peak" \| "last" | 排序：first 首次出現（預設）、count 篇數、peak 單日高峰日期、last 最近出現 |
 | `dir` | query | "asc" \| "desc" | 方向，預設 desc |
-| `limit` | query | string | 最多幾筆（1–1000，預設 100） |
+| `limit` | query | string | 最多幾筆（1–1000，預設 100；media=1 時最多 500） |
+| `media` | query | "0" \| "1" | 1 表示附上各媒體的篇數（本站收錄的所有媒體，不限排行榜基準），例：`1` |
 
 範例：
 
 ```sh
-curl -s 'https://tag.observe.tw/api/v1/keywords/new?days=7&min=10'
+curl -s 'https://tag.observe.tw/api/v1/keywords/new?days=7&min=10&media=1'
 ```
 
 回應欄位：
@@ -2432,6 +2433,7 @@ curl -s 'https://tag.observe.tw/api/v1/keywords/new?days=7&min=10'
 | `keywords[].articleCount` | integer | 累計篇數 |
 | `keywords[].peakDay` | string \| null | 報導最多的一天（台北日期） |
 | `keywords[].peakCount` | integer \| null | 那一天的篇數 |
+| `keywords[].media` | {鍵: integer} | media=1 時回傳：各媒體帶這個關鍵字的篇數，多的在前 |
 
 ## 事件（同一件事，各家怎麼說）
 

@@ -56,11 +56,13 @@ export interface NewKeyword {
   articleCount: number;
   peakDay: string | null;
   peakCount: number | null;
+  /** Articles per outlet, busiest first (media=1). */
+  media?: Record<string, number>;
 }
 export type NewKeywordSort = 'first' | 'count' | 'peak' | 'last';
-export const fetchNewKeywords = (days: number, min: number, sort: NewKeywordSort, dir: 'asc' | 'desc', limit: number) =>
+export const fetchNewKeywords = (days: number, min: number, sort: NewKeywordSort, dir: 'asc' | 'desc', limit: number, media = false) =>
   get<{ days: number; minArticles: number; total: number; keywords: NewKeyword[] }>(
-    `/api/v1/keywords/new?days=${days}&min=${min}&sort=${sort}&dir=${dir}&limit=${limit}`,
+    `/api/v1/keywords/new?days=${days}&min=${min}&sort=${sort}&dir=${dir}&limit=${limit}${media ? '&media=1' : ''}`,
   );
 /** The category's hourly chart record, kept since 2026-09-28 (archive=1). */
 export interface TagChartHistory {
