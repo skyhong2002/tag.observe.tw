@@ -1,8 +1,9 @@
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { eventThreads, tagStats } from '../db/schema.ts';
+import { eventThreads, tagHistory, tagStats } from '../db/schema.ts';
 import type { BurstEntry } from '../jobs/ranking-compute.ts';
 import { type DiscoverySignals, type DraftEvidence, type FirstCollection, loadDiscoveryEvidence } from './ranking-discovery.ts';
+import type { TagArchive } from './tag-history.ts';
 import { loadRelatedTags, type RelatedTag } from './tag-related.ts';
 
 const HOUR = 3600e3;
@@ -44,6 +45,8 @@ export interface TagStatus {
   related: RelatedTag[];
   threads: TagThread[];
   history: TagHistory | null;
+  /** First article ever and busiest Taipei day, once jobs/tag-history-job.ts has counted the tag. */
+  archive: TagArchive | null;
   firstCollection: FirstCollection | null;
   drafts: DraftEvidence | null;
 }
@@ -64,7 +67,7 @@ export async function loadTagStatus(db: Db, tag: string, ranking: RankingResult,
   const entry = index >= 0 ? ranking!.entries[index] : null;
   const basisMedia = ranking?.snapshot.basis.media ?? [];
   const windowEnd = ranking ? new Date(ranking.snapshot.computedAt) : now;
-  const [related, threads, stats, evidence] = await Promise.all([
+  const [related, threads, stats, evidence, archived] = await Promise.all([
     basisMedia.length
       ? loadRelatedTags(db, [tag], basisMedia, new Date(windowEnd.getTime() - 24 * HOUR), windowEnd, 8)
       : new Map<string, RelatedTag[]>(),
@@ -95,6 +98,16 @@ export async function loadTagStatus(db: Db, tag: string, ranking: RankingResult,
       .orderBy(desc(tagStats.level))
       .limit(1),
     loadDiscoveryEvidence(db, [tag], basisMedia, new Date(windowEnd.getTime() - 24 * HOUR), windowEnd),
+    db
+      .select({
+        firstAt: tagHistory.firstAt,
+        peakDay: tagHistory.peakDay,
+        peakCount: tagHistory.peakCount,
+        computedAt: tagHistory.computedAt,
+      })
+      .from(tagHistory)
+      .where(eq(tagHistory.tag, tag))
+      .limit(1),
   ]);
   const history = stats[0];
   return {
@@ -128,6 +141,7 @@ export async function loadTagStatus(db: Db, tag: string, ranking: RankingResult,
           maxCount: history.maxCount,
         }
       : null,
+    archive: archived[0] ?? null,
     firstCollection: evidence.get(tag)?.firstCollection ?? null,
     drafts: evidence.get(tag)?.drafts ?? null,
   };

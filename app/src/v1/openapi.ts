@@ -61,6 +61,26 @@ const firstCollectionSchema = obj({
   recent: bool('收錄時間與最早刊登時間都在快照以前 24 小時內；補收舊報導不標成新題'),
 });
 
+const tagArchiveSchema = obj(
+  {
+    firstAt: time('現存收錄中第一篇帶這個標籤的報導刊登時間（全部媒體、含歷史匯入；標籤字串完全相同才算）'),
+    peakDay: str('全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算）', {
+      format: 'date',
+    }),
+    peakCount: int('那一天的報導篇數'),
+    computedAt: time('最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天'),
+  },
+  '關鍵字的全部歷史；每小時背景工作逐步計算，尚未算到的標籤為 null',
+);
+const tagChartHistorySchema = obj(
+  {
+    firstHour: time('首次達到上榜門檻的小時（2026-09-28 起才有紀錄）'),
+    maxHour: time('24 小時篇數最多的上榜小時'),
+    maxCount: int('該小時往前 24 小時的篇數'),
+  },
+  '該分類每小時上榜紀錄（tag_stats，2026-09-28 起）',
+);
+
 const schemas: Record<string, Schema> = {
   RankingPoolEntry: obj({
     tag: str('原始完整 Unicode 標籤，不做別名猜測或子字串比對'),
@@ -330,6 +350,8 @@ const schemas: Record<string, Schema> = {
     broadJump: nullable(bool('24 小時前未達多家跟進門檻、現在達標；無法確認歷史時為 null')),
   }),
   FirstCollection: firstCollectionSchema,
+  TagArchive: tagArchiveSchema,
+  TagChartHistory: tagChartHistorySchema,
   DraftEvidence: obj({
     articles: int('同一視窗與基準媒體中、帶此標籤且已收錄的文章數'),
     analyzed: int('截至快照時間已完成相似度比對的篇數'),
@@ -360,6 +382,8 @@ const schemas: Record<string, Schema> = {
         description: 'signals=1 時回傳：近期首次見到的標籤收錄紀錄；已有舊報導或無法確認時為 null',
       }),
       drafts: ref('DraftEvidence', 'signals=1 時回傳：快照以前已完成的相似稿比對覆蓋'),
+      archive: nullable({ ...tagArchiveSchema, description: 'archive=1 時回傳：首次出現與全部歷史的單日高峰；尚未計算為 null' }),
+      charted: nullable({ ...tagChartHistorySchema, description: 'archive=1 時回傳：這個分類 2026-09-28 起的上榜紀錄；未曾上榜為 null' }),
       related: arr(
         obj({
           tag: str('一起出現的標籤'),
@@ -387,7 +411,7 @@ const schemas: Record<string, Schema> = {
       ),
     },
     undefined,
-    ['trend', 'related', 'rankTrail', 'firstCollection', 'drafts'],
+    ['trend', 'related', 'rankTrail', 'firstCollection', 'drafts', 'archive', 'charted'],
   ),
   CoverageArticle: obj({
     id: int(),
@@ -1603,6 +1627,7 @@ export const ENDPOINTS: Endpoint[] = [
         str('', { enum: ['0', '1'] }),
         '1',
       ),
+      q('archive', '1 表示附上首次出現、全部歷史的單日高峰，以及這個分類的上榜紀錄', str('', { enum: ['0', '1'] }), '1'),
     ],
     response: obj({
       snapshot: obj({
@@ -2166,13 +2191,14 @@ export const ENDPOINTS: Endpoint[] = [
             level: int('2 或 3；優先回傳 3'),
             firstHour: time('首次上榜小時'),
             lastHour: time('最近上榜小時'),
-            hoursCount: int('上榜小時數'),
+            hoursCount: int('上榜小時數（2026-10-24 修正以前一律停在 1，之後才逐小時累計）'),
             maxHour: time('文章數最多的小時'),
             maxCount: int('該小時文章數'),
           },
           'news 分類的長期統計',
         ),
       ),
+      archive: nullable(ref('TagArchive')),
       firstCollection: nullable(ref('FirstCollection')),
       drafts: nullable(ref('DraftEvidence')),
     }),
@@ -2193,7 +2219,7 @@ export const ENDPOINTS: Endpoint[] = [
           level: int(undefined),
           firstHour: time(),
           lastHour: time(),
-          hoursCount: int('上榜小時數'),
+          hoursCount: int('上榜小時數（2026-10-24 修正以前一律停在 1，之後才逐小時累計）'),
           maxHour: time('文章數最多的小時'),
           maxCount: int('該小時文章數'),
         }),

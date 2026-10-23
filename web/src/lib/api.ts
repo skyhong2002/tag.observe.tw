@@ -41,6 +41,19 @@ export interface DraftEvidence {
   groups: number;
   threshold: number;
 }
+/** A keyword's whole archive: first article ever and busiest Taipei day (archive=1). */
+export interface TagArchive {
+  firstAt: string;
+  peakDay: string;
+  peakCount: number;
+  computedAt: string;
+}
+/** The category's hourly chart record, kept since 2026-09-28 (archive=1). */
+export interface TagChartHistory {
+  firstHour: string;
+  maxHour: string;
+  maxCount: number;
+}
 export interface RankingEntry {
   rank: number;
   position: number;
@@ -60,6 +73,8 @@ export interface RankingEntry {
   related?: Array<{ tag: string; count: number; share: number }>;
   /** Burst position per snapshot hour, oldest first (ranks=1). */
   rankTrail?: Array<{ t: string; position: number | null }>;
+  archive?: TagArchive | null;
+  charted?: TagChartHistory | null;
 }
 export interface Ranking {
   snapshot: {
@@ -120,6 +135,7 @@ export interface TagStatus {
     maxScore: number;
   }>;
   history: { level: number; firstHour: string; lastHour: string; hoursCount: number; maxHour: string; maxCount: number } | null;
+  archive?: TagArchive | null;
   firstCollection?: FirstCollection | null;
   drafts?: DraftEvidence | null;
 }
@@ -154,11 +170,11 @@ export const fetchRanking = (
   limit = 50,
   trend = false,
   related = false,
-  options: { gate?: RankingGate; signals?: boolean; ranks?: boolean } | boolean = {},
+  options: { gate?: RankingGate; signals?: boolean; ranks?: boolean; archive?: boolean } | boolean = {},
 ) => {
   const params = typeof options === 'boolean' ? { ranks: options } : options;
   return get<Ranking>(
-    `/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}${trend ? '&trend=1' : ''}${related ? '&related=1' : ''}${params.gate ? `&gate=${params.gate}` : ''}${params.signals ? '&signals=1' : ''}${params.ranks ? '&ranks=1' : ''}`,
+    `/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}${trend ? '&trend=1' : ''}${related ? '&related=1' : ''}${params.gate ? `&gate=${params.gate}` : ''}${params.signals ? '&signals=1' : ''}${params.ranks ? '&ranks=1' : ''}${params.archive ? '&archive=1' : ''}`,
   );
 };
 export const fetchTagArticles = (tag: string, hours = 48) =>
@@ -297,3 +313,5 @@ export interface TagRelations {
   truncated?: boolean;
 }
 export const fetchTagRelations = (tag: string) => get<TagRelations>(`/api/v1/tags/${encodeURIComponent(tag)}/relations`, 60);
+/** Taipei calendar date with the year, YYYY-MM-DD. */
+export const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });

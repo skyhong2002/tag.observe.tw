@@ -14,6 +14,7 @@ const sharedDb = [
   'app/test/picture-submissions.spec.ts',
   'app/test/tag-semantic.spec.ts',
   'app/test/writing.spec.ts',
+  'app/test/tag-history.spec.ts',
 ];
 
 export default defineConfig({

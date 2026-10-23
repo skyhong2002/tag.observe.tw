@@ -22,6 +22,7 @@ import {
 } from './ranking-discovery.ts';
 import { loadBurstTrails } from './ranking-history.ts';
 import { registerTagFlow } from './tag-flow.ts';
+import { loadTagHistories } from './tag-history.ts';
 import { loadRelatedTags } from './tag-related.ts';
 import { completedHourWindow, loadHourlyTrends, registerTagSeries } from './tag-series.ts';
 import { loadTagStatus } from './tag-status.ts';
@@ -109,6 +110,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       related?: string;
       signals?: string;
       ranks?: string;
+      archive?: string;
     };
   }>('/api/v1/ranking', async (request, reply) => {
     const category = request.query.category ?? 'all';
@@ -125,7 +127,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     const entries = selectDiscoveryEntries(result.entries, order as RankingOrder, gate as RankingGate);
     const selected = entries.slice(0, limit);
     const window = completedHourWindow(new Date(result.snapshot.computedAt), 49);
-    const [trends, related, evidence] = await Promise.all([
+    const [trends, related, evidence, histories] = await Promise.all([
       request.query.trend === '1'
         ? loadHourlyTrends(
             db,
@@ -154,6 +156,13 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
             result.snapshot.computedAt,
           )
         : null,
+      request.query.archive === '1'
+        ? loadTagHistories(
+            db,
+            selected.map((e) => e.tag),
+            category,
+          )
+        : null,
     ]);
     // Existing liveboard trails use the unrestricted burst order.
     const trails =
@@ -179,6 +188,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
         ...(related ? { related: related.get(e.tag) ?? [] } : {}),
         ...(evidence?.get(e.tag) ?? {}),
         ...(trails ? { rankTrail: trails.get(e.tag) ?? [] } : {}),
+        ...(histories ? { archive: histories.archive.get(e.tag) ?? null, charted: histories.charted.get(e.tag) ?? null } : {}),
       })),
     };
   });

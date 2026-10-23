@@ -83,9 +83,15 @@ export async function runTagStatsJob(
                 updatedAt: started,
               })),
             )
+            // Drizzle writes SET in column order (first_hour … updated_at), and
+            // MariaDB lets later expressions see earlier new values: last_hour is
+            // already this hour when hours_count is computed, so compare the old
+            // updated_at (the previous run's start) instead. A rerun within the
+            // same hour does not count twice. max_hour still sees the old
+            // max_count because it comes first.
             .onDuplicateKeyUpdate({
               set: {
-                hoursCount: sql`IF(last_hour < VALUES(last_hour), hours_count + 1, hours_count)`,
+                hoursCount: sql`IF(updated_at < VALUES(last_hour), hours_count + 1, hours_count)`,
                 maxHour: sql`IF(VALUES(max_count) > max_count, VALUES(max_hour), max_hour)`,
                 maxCount: sql`GREATEST(max_count, VALUES(max_count))`,
                 lastHour: sql`GREATEST(last_hour, VALUES(last_hour))`,

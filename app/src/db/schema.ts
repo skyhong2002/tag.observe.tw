@@ -373,6 +373,26 @@ export const tagStats = mysqlTable(
   (t) => [uniqueIndex('tag_stats_key').on(t.tag, t.category, t.level), index('tag_stats_last').on(t.category, t.level, t.lastHour)],
 );
 
+// A keyword's whole archive (jobs/tag-history-job.ts): first article ever and
+// the Taipei day with the most articles. Labels are exact, like article_tags
+// compared with utf8mb4_bin, so case variants keep their own rows.
+const exactTag = customType<{ data: string; driverData: string }>({
+  dataType: () => 'varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin',
+});
+export const tagHistory = mysqlTable(
+  'tag_history',
+  {
+    tag: exactTag('tag').primaryKey(),
+    firstAt: datetime('first_at').notNull(),
+    peakDay: date('peak_day', { mode: 'string' }).notNull(),
+    peakCount: int('peak_count').notNull(),
+    /** Last full recount of every day; between recounts only the latest days are added. */
+    computedAt: datetime('computed_at').notNull(),
+    updatedAt: datetime('updated_at').notNull(),
+  },
+  (t) => [index('tag_history_computed').on(t.computedAt)],
+);
+
 // Weekly re-probe of disabled crawl sources (candidate feeds/listings found).
 export const sourceProbes = mysqlTable(
   'source_probes',
