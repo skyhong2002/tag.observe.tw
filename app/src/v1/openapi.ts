@@ -2250,7 +2250,8 @@ export const ENDPOINTS: Endpoint[] = [
         str('', { enum: ['first', 'count', 'peak', 'last'] }),
       ),
       q('dir', '方向，預設 desc', str('', { enum: ['asc', 'desc'] })),
-      q('limit', '最多幾筆（1–1000，預設 100）', str()),
+      q('limit', '最多幾筆（1–1000，預設 100；media=1 時最多 500）', str()),
+      q('media', '1 表示附上各媒體的篇數（本站收錄的所有媒體，不限排行榜基準）', str('', { enum: ['0', '1'] }), '1'),
     ],
     response: obj({
       days: int(),
@@ -2259,17 +2260,22 @@ export const ENDPOINTS: Endpoint[] = [
       dir: str(),
       total: int('符合條件的關鍵字數'),
       keywords: arr(
-        obj({
-          tag: str(),
-          firstAt: time('第一篇報導刊登時間'),
-          lastAt: nullable(time('最近一篇報導刊登時間')),
-          articleCount: int('累計篇數'),
-          peakDay: nullable(str('報導最多的一天（台北日期）', { format: 'date' })),
-          peakCount: nullable(int('那一天的篇數')),
-        }),
+        obj(
+          {
+            tag: str(),
+            firstAt: time('第一篇報導刊登時間'),
+            lastAt: nullable(time('最近一篇報導刊登時間')),
+            articleCount: int('累計篇數'),
+            peakDay: nullable(str('報導最多的一天（台北日期）', { format: 'date' })),
+            peakCount: nullable(int('那一天的篇數')),
+            media: map(int(), 'media=1 時回傳：各媒體帶這個關鍵字的篇數，多的在前'),
+          },
+          undefined,
+          ['media'],
+        ),
       ),
     }),
-    example: '/api/v1/keywords/new?days=7&min=10',
+    example: '/api/v1/keywords/new?days=7&min=10&media=1',
   },
   {
     path: '/api/v1/events',

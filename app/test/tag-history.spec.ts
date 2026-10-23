@@ -43,7 +43,7 @@ describe.skipIf(!url)('tag history (MariaDB)', () => {
   const cleanup = async () => {
     await db.delete(articleTags).where(inArray(articleTags.articleId, IDS));
     await db.delete(articles).where(inArray(articles.id, IDS));
-    await db.delete(tagHistory).where(inArray(tagHistory.tag, [TAG, TAG.toUpperCase(), 'History測試', 'HISTORY測試', ...NEW]));
+    await db.delete(tagHistory).where(inArray(tagHistory.tag, [TAG, TAG.toUpperCase(), 'History測試', 'HISTORY測試', 'Media測試', ...NEW]));
     await db.delete(tagStats).where(eq(tagStats.tag, TAG));
   };
   beforeAll(async () => {
@@ -163,6 +163,23 @@ describe.skipIf(!url)('tag history (MariaDB)', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('lists the outlets of new keywords, exact label only', async () => {
+    await db.delete(articleTags).where(inArray(articleTags.articleId, IDS));
+    await db.delete(articles).where(inArray(articles.id, IDS));
+    await seed([
+      { id: IDS[0], tag: 'Media測試', at: '2036-02-08T02:00:00Z', media: 'udn' },
+      { id: IDS[1], tag: 'Media測試', at: '2036-02-08T03:00:00Z', media: 'ltn' },
+      { id: IDS[2], tag: 'Media測試', at: '2036-02-09T03:00:00Z', media: 'ltn' },
+      { id: IDS[3], tag: 'MEDIA測試', at: '2036-02-09T04:00:00Z', media: 'cna' },
+    ]);
+    const now = new Date('2036-02-10T00:00:00Z');
+    await recountTag(db, 'Media測試', now);
+    const { keywords } = await loadNewKeywords(db, { days: 7, minArticles: 3, sort: 'first', dir: 'desc', limit: 10, media: true, now });
+    const row = keywords.find((k) => k.tag === 'Media測試');
+    expect(row && 'media' in row ? row.media : null).toEqual({ ltn: 2, udn: 1 });
+    expect(Object.keys((row as { media: Record<string, number> }).media)).toEqual(['ltn', 'udn']);
   });
 
   it('counts each charted hour once in tag_stats.hours_count', async () => {

@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import FilterChips from '@/components/FilterChips';
+import MediaIcons from '@/components/MediaIcons';
 import MethodLink from '@/components/MethodLink';
+import NewKeywordCloud from '@/components/NewKeywordCloud';
 import PendingLabel from '@/components/PendingLabel';
 import { TabRow } from '@/components/SectionTabs';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
-import { fetchNewKeywords, type NewKeywordSort, taipeiClock, taipeiDate } from '@/lib/api';
+import { fetchMedia, fetchNewKeywords, type NewKeywordSort, taipeiClock, taipeiDate } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 import { table } from '@/lib/table-styles';
 
@@ -16,13 +18,16 @@ const DAYS = [7, 30, 90] as const;
 const MINS = [3, 10, 30] as const;
 const SORTS: NewKeywordSort[] = ['first', 'count', 'peak', 'last'];
 const PAGE = 100;
+/** Words in the cloud: the period's keywords with the most articles. */
+const CLOUD_WORDS = 300;
+const MAX_ROWS = 500;
 
 function query(sp: Search) {
   const days = DAYS.find((d) => String(d) === sp.days) ?? 30;
   const min = MINS.find((m) => String(m) === sp.min) ?? 3;
   const sort = SORTS.find((s) => s === sp.sort) ?? 'first';
   const dir: 'asc' | 'desc' = sp.dir === 'asc' ? 'asc' : 'desc';
-  const limit = Math.min(1000, Math.max(PAGE, Math.floor(Number(sp.limit) / PAGE) * PAGE || PAGE));
+  const limit = Math.min(MAX_ROWS, Math.max(PAGE, Math.floor(Number(sp.limit) / PAGE) * PAGE || PAGE));
   return { days, min, sort, dir, limit };
 }
 
@@ -32,7 +37,13 @@ export async function generateMetadata() {
 
 export default async function NewKeywords({ searchParams }: { searchParams: Promise<Search> }) {
   const { days, min, sort, dir, limit } = query(await searchParams);
-  const data = await fetchNewKeywords(days, min, sort, dir, limit).catch(() => null);
+  const [data, cloud, media] = await Promise.all([
+    fetchNewKeywords(days, min, sort, dir, limit, true).catch(() => null),
+    fetchNewKeywords(days, min, 'count', 'desc', CLOUD_WORDS, true).catch(() => null),
+    fetchMedia(),
+  ]);
+  // Rendered at most every 5 minutes (revalidate); "still reported" is judged against that time.
+  const renderedAt = Date.now();
   const href = (patch: Partial<Record<keyof Search, string | number | undefined>>) => {
     const next = { days, min, sort, dir, limit: undefined as number | undefined, ...patch };
     const params = new URLSearchParams();
@@ -89,6 +100,7 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
         showLabel
         items={MINS.map((m) => ({ href: href({ min: m }), label: `${m} 篇以上`, current: m === min }))}
       />
+      {cloud && <NewKeywordCloud keywords={cloud.keywords} now={renderedAt} />}
       {!data ? (
         <p role="status" className="text-sm text-zinc-600">
           資料暫時無法讀取，請稍後再試。
@@ -104,7 +116,7 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
               label="新出現的關鍵字表格，可左右捲動"
               footer={
                 data.total > data.keywords.length &&
-                limit < 1000 && (
+                limit < MAX_ROWS && (
                   <div className="border-t border-zinc-300 p-3 text-center text-sm dark:border-zinc-800">
                     <Link
                       href={href({ limit: limit + PAGE })}
@@ -117,7 +129,7 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
                 )
               }
             >
-              <table className="w-full min-w-[44rem] text-sm">
+              <table className="w-full min-w-[68rem] text-sm">
                 <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950">
                   <tr>
                     <th className={`hidden w-12 text-right sm:table-cell ${table.cell}`}>#</th>
@@ -126,6 +138,7 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
                     <Th col="count" label="累計篇數" className="w-24 text-right" />
                     <Th col="peak" label="單日高峰" className="w-40" />
                     <Th col="last" label="最近出現" className="w-32" />
+                    <th className={`w-[22rem] whitespace-nowrap ${table.cell}`}>媒體</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -162,6 +175,9 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
                       </td>
                       <td className={`whitespace-nowrap tabular-nums text-zinc-600 ${table.cell}`}>
                         {k.lastAt ? taipeiDate(k.lastAt) : <span className="text-zinc-400">—</span>}
+                      </td>
+                      <td className={`max-w-0 ${table.cell}`}>
+                        <MediaIcons media={k.media ?? {}} info={media} />
                       </td>
                     </tr>
                   ))}

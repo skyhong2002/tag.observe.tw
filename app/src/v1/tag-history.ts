@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { tagHistory, tagStats } from '../db/schema.ts';
+import { articles, articleTags, tagHistory, tagStats } from '../db/schema.ts';
 
 /** The whole archive (tag_history): first article ever and busiest Taipei day. */
 export interface TagArchive {
@@ -78,14 +78,12 @@ export async function loadNewKeywords(
     sort,
     dir,
     limit,
+    media = false,
     now = new Date(),
-  }: { days: number; minArticles: number; sort: NewKeywordSort; dir: 'asc' | 'desc'; limit: number; now?: Date },
+  }: { days: number; minArticles: number; sort: NewKeywordSort; dir: 'asc' | 'desc'; limit: number; media?: boolean; now?: Date },
 ) {
-  const where = and(
-    gte(tagHistory.firstAt, new Date(now.getTime() - days * 86_400_000)),
-    isNotNull(tagHistory.articleCount),
-    gte(tagHistory.articleCount, minArticles),
-  );
+  const since = new Date(now.getTime() - days * 86_400_000);
+  const where = and(gte(tagHistory.firstAt, since), isNotNull(tagHistory.articleCount), gte(tagHistory.articleCount, minArticles));
   const column = NEW_KEYWORD_ORDER[sort];
   const [rows, [total]] = await Promise.all([
     db
@@ -107,5 +105,36 @@ export async function loadNewKeywords(
       .from(tagHistory)
       .where(where),
   ]);
-  return { total: total?.n ?? 0, keywords: rows };
+  if (!media) return { total: total?.n ?? 0, keywords: rows };
+  const byTag = await mediaCounts(
+    db,
+    rows.map((r) => r.tag),
+    since,
+  );
+  return { total: total?.n ?? 0, keywords: rows.map((r) => ({ ...r, media: byTag.get(r.tag) ?? {} })) };
+}
+
+/**
+ * Articles per outlet for keywords first seen after `since`: every article
+ * carrying them is newer than that, so tag_published bounds the read to the
+ * window. Every crawled outlet counts, not only a ranking's basis.
+ */
+async function mediaCounts(db: Db, tags: string[], since: Date) {
+  const out = new Map<string, Record<string, number>>();
+  if (!tags.length) return out;
+  const exact = new Set(tags);
+  const exactTag = sql<string>`${articleTags.tag} COLLATE utf8mb4_bin`;
+  const rows = await db
+    .select({ tag: exactTag, media: articles.media, n: sql<number>`COUNT(*)`.mapWith(Number) })
+    .from(articleTags)
+    .innerJoin(articles, eq(articles.id, articleTags.articleId))
+    .where(and(inArray(articleTags.tag, tags), gte(articleTags.publishedAt, since)))
+    .groupBy(exactTag, articles.media);
+  for (const r of rows.sort((a, b) => b.n - a.n)) {
+    if (!exact.has(r.tag)) continue;
+    const m = out.get(r.tag) ?? {};
+    m[r.media] = r.n;
+    out.set(r.tag, m);
+  }
+  return out;
 }

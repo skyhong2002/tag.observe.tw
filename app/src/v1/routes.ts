@@ -243,7 +243,7 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
   registerTagSeries(app, db);
   registerTagSuggest(app, db);
   // Keywords first seen recently (/ranking/new/): tag_history, filled hourly by jobs/tag-history-job.ts.
-  app.get<{ Querystring: { days?: string; min?: string; sort?: string; dir?: string; limit?: string } }>(
+  app.get<{ Querystring: { days?: string; min?: string; sort?: string; dir?: string; limit?: string; media?: string } }>(
     '/api/v1/keywords/new',
     async (request, reply) => {
       const days = Number(request.query.days ?? 30);
@@ -254,8 +254,10 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       if (!Number.isInteger(min) || min < 3 || min > 1000) return reply.code(400).send({ error: 'min must be 3–1000' });
       if (!['first', 'count', 'peak', 'last'].includes(sort)) return reply.code(400).send({ error: 'bad sort' });
       if (dir !== 'asc' && dir !== 'desc') return reply.code(400).send({ error: 'bad dir' });
-      const limit = Math.min(1000, Math.max(1, Math.floor(Number(request.query.limit) || 100)));
-      const result = await loadNewKeywords(db, { days, minArticles: min, sort: sort as NewKeywordSort, dir, limit });
+      const media = request.query.media === '1';
+      // Outlet counts read every article of each listed keyword, so fewer rows are allowed with them.
+      const limit = Math.min(media ? 500 : 1000, Math.max(1, Math.floor(Number(request.query.limit) || 100)));
+      const result = await loadNewKeywords(db, { days, minArticles: min, sort: sort as NewKeywordSort, dir, limit, media });
       reply.header('cache-control', 'public, max-age=300');
       return { days, minArticles: min, sort, dir, ...result };
     },
