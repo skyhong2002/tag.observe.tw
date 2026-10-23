@@ -1,7 +1,9 @@
 # tag-db tuning for the 16 GB Steam Machine (2026-10-16). tag_observe (~70 GB) and blog_observe
 # (~14 GB) share this server; with a 1 GB pool it read ~40 MB/s from disk around the clock.
-# compose.yml caps the container at 5 GB with no swap, so the pool stays in RAM instead of being
-# paged out (a swapped-out "hit" costs more than a disk read). Keep the pool well under that cap.
+# compose.yml caps the container at 7 GB with no swap, so the pool stays in RAM instead of being
+# paged out (a swapped-out "hit" costs more than a disk read). Keep the pool well under that cap:
+# beyond the pool the server used about 2 GB more after a day (table cache, per-connection
+# buffers), and at the earlier 5 GB cap it was OOM-killed on 2026-10-24.
 [mariadb]
 innodb_buffer_pool_size = 3G
 # Larger redo log: fewer forced checkpoints for the crawler's steady writes.
