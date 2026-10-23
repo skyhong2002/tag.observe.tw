@@ -178,8 +178,10 @@ describe.skipIf(!url)('tag history (MariaDB)', () => {
     await recountTag(db, 'Media測試', now);
     const { keywords } = await loadNewKeywords(db, { days: 7, minArticles: 3, sort: 'first', dir: 'desc', limit: 10, media: true, now });
     const row = keywords.find((k) => k.tag === 'Media測試');
-    expect(row && 'media' in row ? row.media : null).toEqual({ ltn: 2, udn: 1 });
-    expect(Object.keys((row as { media: Record<string, number> }).media)).toEqual(['ltn', 'udn']);
+    const media = row && 'media' in row ? row.media : null;
+    expect(media).toEqual({ ltn: 2, udn: 1 });
+    // Busiest outlet first.
+    expect(Object.keys(media ?? {})).toEqual(['ltn', 'udn']);
   });
 
   it('counts each charted hour once in tag_stats.hours_count', async () => {
