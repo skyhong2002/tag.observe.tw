@@ -16,6 +16,9 @@ export const revalidate = 300;
 type Search = { days?: string; min?: string; sort?: string; dir?: string; limit?: string };
 const DAYS = [7, 30, 90] as const;
 const MINS = [3, 10, 30] as const;
+/** Without a query: this week's keywords that at least ten reports carried. */
+const DEFAULT_DAYS = 7;
+const DEFAULT_MIN = 10;
 const SORTS: NewKeywordSort[] = ['first', 'count', 'peak', 'last'];
 const PAGE = 100;
 /** Words in the cloud: the period's keywords with the most articles. */
@@ -23,8 +26,8 @@ const CLOUD_WORDS = 300;
 const MAX_ROWS = 500;
 
 function query(sp: Search) {
-  const days = DAYS.find((d) => String(d) === sp.days) ?? 30;
-  const min = MINS.find((m) => String(m) === sp.min) ?? 3;
+  const days = DAYS.find((d) => String(d) === sp.days) ?? DEFAULT_DAYS;
+  const min = MINS.find((m) => String(m) === sp.min) ?? DEFAULT_MIN;
   const sort = SORTS.find((s) => s === sp.sort) ?? 'first';
   const dir: 'asc' | 'desc' = sp.dir === 'asc' ? 'asc' : 'desc';
   const limit = Math.min(MAX_ROWS, Math.max(PAGE, Math.floor(Number(sp.limit) / PAGE) * PAGE || PAGE));
@@ -39,7 +42,8 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
   const { days, min, sort, dir, limit } = query(await searchParams);
   const [data, cloud, media] = await Promise.all([
     fetchNewKeywords(days, min, sort, dir, limit, true).catch(() => null),
-    fetchNewKeywords(days, min, 'count', 'desc', CLOUD_WORDS, true).catch(() => null),
+    // Without outlet counts: the cloud only needs tag_history, so it never waits on a cold join.
+    fetchNewKeywords(days, min, 'count', 'desc', CLOUD_WORDS).catch(() => null),
     fetchMedia(),
   ]);
   // Rendered at most every 5 minutes (revalidate); "still reported" is judged against that time.
@@ -47,8 +51,8 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
   const href = (patch: Partial<Record<keyof Search, string | number | undefined>>) => {
     const next = { days, min, sort, dir, limit: undefined as number | undefined, ...patch };
     const params = new URLSearchParams();
-    if (next.days !== 30) params.set('days', String(next.days));
-    if (next.min !== 3) params.set('min', String(next.min));
+    if (next.days !== DEFAULT_DAYS) params.set('days', String(next.days));
+    if (next.min !== DEFAULT_MIN) params.set('min', String(next.min));
     if (next.sort !== 'first' || next.dir !== 'desc') {
       params.set('sort', String(next.sort));
       params.set('dir', String(next.dir));

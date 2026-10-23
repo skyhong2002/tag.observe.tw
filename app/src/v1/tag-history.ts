@@ -106,12 +106,42 @@ export async function loadNewKeywords(
       .where(where),
   ]);
   if (!media) return { total: total?.n ?? 0, keywords: rows };
-  const byTag = await mediaCounts(
+  const byTag = await cachedMediaCounts(
     db,
     rows.map((r) => r.tag),
     since,
+    now,
   );
   return { total: total?.n ?? 0, keywords: rows.map((r) => ({ ...r, media: byTag.get(r.tag) ?? {} })) };
+}
+
+// Outlet counts join every article of each listed keyword: milliseconds on a
+// warm buffer pool, several seconds on a cold one (2026-10-24, when the page
+// timed out and was cached without its cloud). Keep results ten minutes per
+// tag, keyed by the day the window starts, so each listing reads them once.
+const MEDIA_TTL = 10 * 60_000;
+const mediaCache = new WeakMap<Db, Map<string, { until: number; media: Record<string, number> }>>();
+async function cachedMediaCounts(db: Db, tags: string[], since: Date, now: Date) {
+  let saved = mediaCache.get(db);
+  if (!saved) mediaCache.set(db, (saved = new Map()));
+  const day = since.toISOString().slice(0, 10);
+  const out = new Map<string, Record<string, number>>();
+  const missing: string[] = [];
+  for (const tag of tags) {
+    const hit = saved.get(`${day}\n${tag}`);
+    if (hit && hit.until > now.getTime()) out.set(tag, hit.media);
+    else missing.push(tag);
+  }
+  if (!missing.length) return out;
+  // The window starts at the beginning of its day so cached counts stay valid all day.
+  const fresh = await mediaCounts(db, missing, new Date(`${day}T00:00:00Z`));
+  if (saved.size > 20_000) saved.clear();
+  for (const tag of missing) {
+    const media = fresh.get(tag) ?? {};
+    saved.set(`${day}\n${tag}`, { until: now.getTime() + MEDIA_TTL, media });
+    out.set(tag, media);
+  }
+  return out;
 }
 
 /**

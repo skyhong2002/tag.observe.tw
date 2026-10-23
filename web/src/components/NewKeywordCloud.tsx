@@ -3,7 +3,7 @@ import { type NewKeyword, taipeiDate } from '@/lib/api';
 
 // Keywords first seen recently (/ranking/new/), sized by their articles so far.
 // Ones still reported in the last 24 hours take the site's accent; hovering or
-// focusing a word opens a card with its dates and outlets, clicking goes to the tag page.
+// focusing a word opens a card with its dates (and outlets when given), clicking goes to the tag page.
 export default function NewKeywordCloud({ keywords, now }: { keywords: NewKeyword[]; now: number }) {
   if (!keywords.length) return null;
   const fill = Math.min(1, keywords.length / 250);
@@ -24,10 +24,10 @@ export default function NewKeywordCloud({ keywords, now }: { keywords: NewKeywor
       label="新出現的關鍵字文字雲"
       title="新出現的關鍵字文字雲"
       words={keywords.map((k) => {
-        const outlets = Object.keys(k.media ?? {}).length;
+        const outlets = k.media ? `，${Object.keys(k.media).length} 家媒體` : '';
         const rows: Array<[string, string]> = [
           ['首次出現', taipeiDate(k.firstAt)],
-          ['篇數', `${k.articleCount} 篇 · ${outlets} 家媒體`],
+          ['篇數', `${k.articleCount} 篇${outlets.replace('，', ' · ')}`],
           ['單日高峰', k.peakDay ? `${k.peakDay}（${k.peakCount} 篇）` : '計算中'],
           ['最近出現', k.lastAt ? taipeiDate(k.lastAt) : '—'],
         ];
@@ -35,7 +35,7 @@ export default function NewKeywordCloud({ keywords, now }: { keywords: NewKeywor
           label: k.tag,
           count: k.articleCount,
           href: `/tag/${encodeURIComponent(k.tag)}`,
-          ariaLabel: `${k.tag}，首次出現 ${taipeiDate(k.firstAt)}，${k.articleCount} 篇，${outlets} 家媒體`,
+          ariaLabel: `${k.tag}，首次出現 ${taipeiDate(k.firstAt)}，${k.articleCount} 篇${outlets}`,
           tone: live(k) ? ('brand' as const) : ('strong' as const),
           card: { rows },
         };
