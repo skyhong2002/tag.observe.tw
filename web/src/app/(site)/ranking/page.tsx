@@ -10,7 +10,7 @@ import SortIndicator from '@/components/SortIndicator';
 import Sparkline from '@/components/Sparkline';
 import TableScroller from '@/components/TableScroller';
 import TagDiscoveryBadges from '@/components/TagDiscoveryBadges';
-import { type Category, fetchCategories, fetchMedia, fetchRanking, taipei, taipeiHour } from '@/lib/api';
+import { type Category, fetchCategories, fetchMedia, fetchRanking, type RankingEntry, taipei, taipeiDate, taipeiHour } from '@/lib/api';
 import { rankingCategoryNote, rankingNotice } from '@/lib/ranking-notice.mts';
 import { type RankingSearch, rankingHref, rankingQuery } from '@/lib/ranking-query.mts';
 import { canonicalQuery, pageMetadata } from '@/lib/seo.mts';
@@ -36,8 +36,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   );
 }
 type Search = RankingSearch;
-type Col = 'tag' | 'change' | 'burst' | 'growth' | 'score' | 'count' | 'trend' | 'media';
-const COLS: Col[] = ['tag', 'burst', 'growth', 'change', 'score', 'count', 'trend', 'media'];
+type Col = 'tag' | 'change' | 'burst' | 'growth' | 'score' | 'count' | 'trend' | 'first' | 'peak' | 'media';
+const COLS: Col[] = ['tag', 'burst', 'growth', 'change', 'score', 'count', 'trend', 'first', 'peak', 'media'];
 const RELATED_SHOWN = 5;
 const CLOUD_WORDS = 500;
 
@@ -53,7 +53,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const [categories, media, ranking, cloud] = await Promise.all([
     fetchCategories().then(rankedCategories),
     fetchMedia(),
-    fetchRanking(category, order, limit, true, true, { gate, signals: true }).catch(() => null),
+    fetchRanking(category, order, limit, true, true, { gate, signals: true, archive: true }).catch(() => null),
     fetchRanking(category, emerging ? 'growth' : 'score', CLOUD_WORDS, false, false, { gate }).catch(() => null),
   ]);
   const current = categories.find((c) => c.key === category);
@@ -98,6 +98,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       e.trend?.at(-1)?.average24h != null && e.trend[0]?.average24h != null
         ? e.trend.at(-1)!.average24h! - e.trend[0].average24h
         : -Infinity,
+    first: (e) => (e.archive ? Date.parse(e.archive.firstAt) : -Infinity),
+    peak: (e) => (e.archive ? Date.parse(e.archive.peakDay) : e.charted ? Date.parse(e.charted.maxHour) : -Infinity),
     media: (e) => Object.keys(e.media).length,
   };
   const rows = ranking
@@ -217,7 +219,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
             )
           }
         >
-          <table className="w-full min-w-[80rem] text-sm">
+          <table className="w-full min-w-[94rem] text-sm">
             <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950">
               <tr>
                 {/* On phones the rank moves into the sticky keyword cell. */}
@@ -228,6 +230,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <Th col="score" label="分數" className="w-20 text-right" />
                 <Th col="count" label="篇數" className="w-16 text-right" />
                 <Th col="trend" label="趨勢" className="w-28" />
+                <Th col="first" label="首次出現" className="w-28" />
+                <Th col="peak" label="單日高峰" className="w-36" />
                 <th className={`w-[17rem] whitespace-nowrap ${table.cell}`}>一起出現</th>
                 <Th col="media" label="媒體" className="w-[22rem]" />
                 <th className={`whitespace-nowrap ${table.cell}`}>相似稿</th>
@@ -285,6 +289,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     <td className="px-2 py-1 sm:px-3">
                       <Sparkline values={trend.map((p) => p.average24h)} />
                     </td>
+                    <ArchiveCells entry={e} />
                     <td
                       className={`max-w-0 truncate whitespace-nowrap text-xs ${table.cell}`}
                       title={
@@ -352,5 +357,50 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * 首次出現 and 單日高峰 from the whole archive (tag_history). Until the hourly
+ * job has counted a keyword, the peak falls back to this category's chart
+ * record, which only goes back to 2026-09-28, and says so.
+ */
+const clock = (iso: string) =>
+  new Date(iso).toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false, hour: '2-digit', minute: '2-digit' });
+function ArchiveCells({ entry: e }: { entry: RankingEntry }) {
+  const a = e.archive;
+  return (
+    <>
+      <td
+        className={`whitespace-nowrap tabular-nums ${table.cell}`}
+        title={a ? `現存收錄中第一篇帶這個關鍵字的報導刊登於 ${taipeiDate(a.firstAt)} ${clock(a.firstAt)}（台北時間）` : '尚未算出全部歷史'}
+      >
+        {a ? taipeiDate(a.firstAt) : <span className="text-zinc-400">—</span>}
+      </td>
+      <td
+        className={`whitespace-nowrap tabular-nums ${table.cell}`}
+        title={
+          a
+            ? `全部歷史中報導最多的一天（台北時間）：${a.peakDay}，${a.peakCount} 篇`
+            : e.charted
+              ? `全部歷史尚未算好。這是 2026-09-28 起本分類 24 小時篇數最多的時段：${taipeiHour(e.charted.maxHour)}，${e.charted.maxCount} 篇`
+              : '尚未算出全部歷史'
+        }
+      >
+        {a ? (
+          <>
+            {a.peakDay}
+            <span className="ml-1.5 text-xs text-zinc-500">{a.peakCount} 篇</span>
+          </>
+        ) : e.charted ? (
+          <span className="text-zinc-500">
+            {taipeiDate(e.charted.maxHour)}
+            <span className="ml-1.5 text-xs">9/28 起</span>
+          </span>
+        ) : (
+          <span className="text-zinc-400">—</span>
+        )}
+      </td>
+    </>
   );
 }

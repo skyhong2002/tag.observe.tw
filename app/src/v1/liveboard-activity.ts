@@ -33,6 +33,7 @@ export function jobSchedules(env: Record<string, string | undefined> = process.e
     { job: 'events', label: '事件分群', cron: env.EVENTS_CRON || '4,34 * * * *' },
     { job: 'topics', label: '議題專題巡查', cron: env.TOPICS_CRON || '50 * * * *' },
     { job: 'tag-stats', label: '標籤統計', cron: env.TAG_STATS_CRON || '53 * * * *' },
+    { job: 'tag-history', label: '關鍵字首見與高峰', cron: env.TAG_HISTORY_CRON || '57 * * * *' },
     { job: 'similarity', label: '轉載比對', every: minutes('SIMILARITY_INDEX_MINUTES', 10) },
     { job: 'crawl-health', label: '爬蟲健康檢查', every: 15 * MINUTE },
     { job: 'retention', label: '資料保留整理', cron: env.RETENTION_CRON || '15 4 * * *' },

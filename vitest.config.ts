@@ -15,6 +15,7 @@ const sharedDb = [
   'app/test/similarweb-external.spec.ts',
   'app/test/picture-kind.spec.ts',
   'app/test/writing.spec.ts',
+  'app/test/tag-history.spec.ts',
 ];
 
 export default defineConfig({

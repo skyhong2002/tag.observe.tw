@@ -20,6 +20,7 @@ import { runRobotsJob } from './jobs/robots-job.ts';
 import { runSimilarityJob } from './jobs/similarity-job.ts';
 import { runTagAvatarsInChild } from './jobs/tag-avatars-job.ts';
 import { runTagGroupsJob } from './jobs/tag-groups-job.ts';
+import { runTagHistoryJob } from './jobs/tag-history-job.ts';
 import { runTagStatsJob } from './jobs/tag-stats-job.ts';
 import { runTagVisualsJob } from './jobs/tag-visuals-job.ts';
 import { runTopicsJob } from './jobs/topics-job.ts';
@@ -95,6 +96,12 @@ await queue.upsertJobScheduler(
   'tag-stats-hourly',
   { pattern: process.env.TAG_STATS_CRON || '53 * * * *' },
   { name: 'tag-stats', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
+);
+// Each ranking keyword's first article and busiest day (jobs/tag-history-job.ts).
+await queue.upsertJobScheduler(
+  'tag-history-hourly',
+  { pattern: process.env.TAG_HISTORY_CRON || '57 * * * *' },
+  { name: 'tag-history', data: {}, opts: { removeOnComplete: 50, removeOnFail: 50 } },
 );
 // Compare newly fetched bodies with every other outlet's articles (jobs/similarity-job.ts).
 await queue.upsertJobScheduler(
@@ -234,6 +241,7 @@ for (const job of [
   'media-output',
   'topics',
   'tag-stats',
+  'tag-history',
   'similarity',
   'writing',
   'writing-people',
@@ -343,6 +351,11 @@ const worker = new Worker(
       }
       if (job.name === 'tag-stats') {
         const r = await runTagStatsJob(db, { log: (o, m) => log.info(o, m) });
+        jobRunsMetric.inc({ job: job.name, status: 'ok' });
+        return r;
+      }
+      if (job.name === 'tag-history') {
+        const r = await runTagHistoryJob(db, { log: (o, m) => log.info(o, m) });
         jobRunsMetric.inc({ job: job.name, status: 'ok' });
         return r;
       }

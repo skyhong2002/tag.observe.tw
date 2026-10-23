@@ -583,6 +583,7 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `related` | query | "0" \| "1" | 1 表示附上每個標籤最常一起出現的標籤，例：`1` |
 | `signals` | query | "0" \| "1" | 1 表示附上近期首次收錄與相似稿比對證據，例：`1` |
 | `ranks` | query | "0" \| "1" | 1 表示附上每個標籤最近 24 小時的爆發力名次（由每小時快照重算，只在 order=burst 時提供），例：`1` |
+| `archive` | query | "0" \| "1" | 1 表示附上首次出現、全部歷史的單日高峰，以及這個分類的上榜紀錄，例：`1` |
 
 範例：
 
@@ -641,6 +642,15 @@ curl -s 'https://tag.observe.tw/api/v1/ranking?category=news&limit=20'
 | `entries[].drafts.similarArticles` | integer | 具有同標籤、同視窗、同基準媒體高度相似配對的去重篇數 |
 | `entries[].drafts.groups` | integer | 高度相似配對連通群數；不推定獨立稿源、轉載或抄襲 |
 | `entries[].drafts.threshold` | number | 內文相似度門檻，目前為 0.85 |
+| `entries[].archive` | object \| null | archive=1 時回傳：首次出現與全部歷史的單日高峰；尚未計算為 null |
+| `entries[].archive.firstAt` | string (ISO 時間) | 現存收錄中第一篇帶這個標籤的報導刊登時間（全部媒體、含歷史匯入；標籤字串完全相同才算） |
+| `entries[].archive.peakDay` | string | 全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算） |
+| `entries[].archive.peakCount` | integer | 那一天的報導篇數 |
+| `entries[].archive.computedAt` | string (ISO 時間) | 最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天 |
+| `entries[].charted` | object \| null | archive=1 時回傳：這個分類 2026-09-28 起的上榜紀錄；未曾上榜為 null |
+| `entries[].charted.firstHour` | string (ISO 時間) | 首次達到上榜門檻的小時（2026-09-28 起才有紀錄） |
+| `entries[].charted.maxHour` | string (ISO 時間) | 24 小時篇數最多的上榜小時 |
+| `entries[].charted.maxCount` | integer | 該小時往前 24 小時的篇數 |
 | `entries[].related` | object[] | related=1 時回傳：同一視窗、同一基準媒體中最常與這個標籤同時出現的標籤，最多 5 個，依共同文章數排序 |
 | `entries[].related[].tag` | string | 一起出現的標籤 |
 | `entries[].related[].count` | integer | 視窗內同時帶兩個標籤的文章數 |
@@ -2330,9 +2340,14 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/status'
 | `history.level` | integer | 2 或 3；優先回傳 3 |
 | `history.firstHour` | string (ISO 時間) | 首次上榜小時 |
 | `history.lastHour` | string (ISO 時間) | 最近上榜小時 |
-| `history.hoursCount` | integer | 上榜小時數 |
+| `history.hoursCount` | integer | 上榜小時數（2026-10-24 修正以前一律停在 1，之後才逐小時累計） |
 | `history.maxHour` | string (ISO 時間) | 文章數最多的小時 |
 | `history.maxCount` | integer | 該小時文章數 |
+| `archive` | object \| null | 關鍵字的全部歷史；每小時背景工作逐步計算，尚未算到的標籤為 null |
+| `archive.firstAt` | string (ISO 時間) | 現存收錄中第一篇帶這個標籤的報導刊登時間（全部媒體、含歷史匯入；標籤字串完全相同才算） |
+| `archive.peakDay` | string | 全部歷史中帶這個標籤的報導最多的一天（台北日期 YYYY-MM-DD；同篇數取較早的一天，今天未過完也算） |
+| `archive.peakCount` | integer | 那一天的報導篇數 |
+| `archive.computedAt` | string (ISO 時間) | 最近一次逐日重算全部歷史的時間；之間每小時只補算最近兩天 |
 | `firstCollection` | object \| null |  |
 | `firstCollection.at` | string (ISO 時間) | 帶此標籤的現存文章紀錄最早收錄時間；不限分類、包含歷史匯入，不代表網路首次出現或精確取得標籤的時間 |
 | `firstCollection.firstPublishedAt` | string (ISO 時間) | 現存已收錄報導的最早刊登時間 |
@@ -2372,7 +2387,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/stats'
 | `stats[].level` | integer |  |
 | `stats[].firstHour` | string (ISO 時間) |  |
 | `stats[].lastHour` | string (ISO 時間) |  |
-| `stats[].hoursCount` | integer | 上榜小時數 |
+| `stats[].hoursCount` | integer | 上榜小時數（2026-10-24 修正以前一律停在 1，之後才逐小時累計） |
 | `stats[].maxHour` | string (ISO 時間) | 文章數最多的小時 |
 | `stats[].maxCount` | integer | 該小時文章數 |
 
