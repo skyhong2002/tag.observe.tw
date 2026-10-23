@@ -3,7 +3,9 @@
 // all of a tag's article_tags rows by day along tag_published; most tags take
 // milliseconds, the biggest (美國, about 500,000 rows) several seconds on a
 // cold buffer pool. So recounts run one tag at a time with a rest between
-// them and stop at the budget. Every hour the tags on the latest rankings
+// them and stop at the budget. tag-db runs close to its 5 GB container cap
+// (it was OOM-killed during the first backfill on 2026-10-24), so keep the
+// hourly share small. Every hour the tags on the latest rankings
 // that already have a row only recount their last two days (one batched
 // query), new ranking tags are counted first, then tags that ever charted
 // (tag_stats) are backfilled. Each row is fully recounted weekly to pick up
@@ -136,8 +138,8 @@ export async function runTagHistoryJob(
   {
     now = () => new Date(),
     log = (_o: object, _m: string) => {},
-    budgetMs = 150_000,
-    restMs = 200,
+    budgetMs = 60_000,
+    restMs = 500,
     timeoutSeconds = 30,
     backfill = 200,
   }: {

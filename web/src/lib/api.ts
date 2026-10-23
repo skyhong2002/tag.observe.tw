@@ -169,11 +169,13 @@ export const fetchRanking = (
   limit = 50,
   trend = false,
   related = false,
-  options: { gate?: RankingGate; signals?: boolean; ranks?: boolean; archive?: boolean } | boolean = {},
+  options:
+    | { gate?: RankingGate; signals?: boolean; ranks?: boolean; archive?: boolean; sort?: 'first' | 'peak'; dir?: 'asc' | 'desc' }
+    | boolean = {},
 ) => {
   const params = typeof options === 'boolean' ? { ranks: options } : options;
   return get<Ranking>(
-    `/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}${trend ? '&trend=1' : ''}${related ? '&related=1' : ''}${params.gate ? `&gate=${params.gate}` : ''}${params.signals ? '&signals=1' : ''}${params.ranks ? '&ranks=1' : ''}${params.archive ? '&archive=1' : ''}`,
+    `/api/v1/ranking?category=${encodeURIComponent(category)}&order=${order}&limit=${limit}${trend ? '&trend=1' : ''}${related ? '&related=1' : ''}${params.gate ? `&gate=${params.gate}` : ''}${params.signals ? '&signals=1' : ''}${params.ranks ? '&ranks=1' : ''}${params.archive ? '&archive=1' : ''}${params.sort ? `&sort=${params.sort}&dir=${params.dir ?? 'desc'}` : ''}`,
   );
 };
 export const fetchTagArticles = (tag: string, hours = 48) =>

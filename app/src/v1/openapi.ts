@@ -1468,6 +1468,12 @@ export const ENDPOINTS: Endpoint[] = [
         '1',
       ),
       q('archive', '1 表示附上首次出現、全部歷史的單日高峰，以及這個分類的上榜紀錄', str('', { enum: ['0', '1'] }), '1'),
+      q(
+        'sort',
+        'first 依首次出現、peak 依單日高峰日期，在全部符合條件的詞中排序後再取 limit；尚未算出的詞排最後。position 仍是依 order 的名次',
+        str('', { enum: ['first', 'peak'] }),
+      ),
+      q('dir', 'sort 的方向，預設 desc（新的在前）', str('', { enum: ['asc', 'desc'] })),
     ],
     response: obj({
       snapshot: obj({

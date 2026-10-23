@@ -584,6 +584,8 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `signals` | query | "0" \| "1" | 1 表示附上近期首次收錄與相似稿比對證據，例：`1` |
 | `ranks` | query | "0" \| "1" | 1 表示附上每個標籤最近 24 小時的爆發力名次（由每小時快照重算，只在 order=burst 時提供），例：`1` |
 | `archive` | query | "0" \| "1" | 1 表示附上首次出現、全部歷史的單日高峰，以及這個分類的上榜紀錄，例：`1` |
+| `sort` | query | "first" \| "peak" | first 依首次出現、peak 依單日高峰日期，在全部符合條件的詞中排序後再取 limit；尚未算出的詞排最後。position 仍是依 order 的名次 |
+| `dir` | query | "asc" \| "desc" | sort 的方向，預設 desc（新的在前） |
 
 範例：
 

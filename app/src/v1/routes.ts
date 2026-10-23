@@ -111,6 +111,8 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       signals?: string;
       ranks?: string;
       archive?: string;
+      sort?: string;
+      dir?: string;
     };
   }>('/api/v1/ranking', async (request, reply) => {
     const category = request.query.category ?? 'all';
@@ -124,10 +126,38 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
     if (at && Number.isNaN(at.getTime())) return reply.code(400).send({ error: 'bad at' });
     const result = await loadRanking(db, category, { at });
     if (!result) return reply.code(404).send({ error: 'no snapshot' });
-    const entries = selectDiscoveryEntries(result.entries, order as RankingOrder, gate as RankingGate);
+    // position stays the place in `order`; sort=first|peak only changes which
+    // rows make the limit, ordered by the whole archive (tag_history).
+    const entries = selectDiscoveryEntries(result.entries, order as RankingOrder, gate as RankingGate).map((e, i) => ({
+      ...e,
+      position: i + 1,
+    }));
+    const sortBy = request.query.sort === 'first' || request.query.sort === 'peak' ? request.query.sort : null;
+    const histories =
+      request.query.archive === '1' || sortBy
+        ? await loadTagHistories(
+            db,
+            entries.map((e) => e.tag),
+            category,
+          )
+        : null;
+    if (sortBy && histories) {
+      const value = (tag: string) => {
+        const a = histories.archive.get(tag);
+        if (sortBy === 'first') return a ? a.firstAt.getTime() : null;
+        return a ? Date.parse(a.peakDay) : (histories.charted.get(tag)?.maxHour.getTime() ?? null);
+      };
+      const sign = request.query.dir === 'asc' ? 1 : -1;
+      entries.sort((x, y) => {
+        const a = value(x.tag),
+          b = value(y.tag);
+        if (a === null || b === null) return a === b ? x.position - y.position : a === null ? 1 : -1;
+        return sign * (a - b) || x.position - y.position;
+      });
+    }
     const selected = entries.slice(0, limit);
     const window = completedHourWindow(new Date(result.snapshot.computedAt), 49);
-    const [trends, related, evidence, histories] = await Promise.all([
+    const [trends, related, evidence] = await Promise.all([
       request.query.trend === '1'
         ? loadHourlyTrends(
             db,
@@ -156,13 +186,6 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
             result.snapshot.computedAt,
           )
         : null,
-      request.query.archive === '1'
-        ? loadTagHistories(
-            db,
-            selected.map((e) => e.tag),
-            category,
-          )
-        : null,
     ]);
     // Existing liveboard trails use the unrestricted burst order.
     const trails =
@@ -181,9 +204,8 @@ export async function registerV1Routes(app: FastifyInstance, db: Db) {
       unknownGrowthCount: result.entries.filter(
         (e) => e.signals.growth === null && (gate === 'all' || e.signals[gate as 'early' | 'broad']),
       ).length,
-      entries: selected.map((e, i) => ({
+      entries: selected.map((e) => ({
         ...e,
-        position: i + 1,
         ...(trends ? { trend: trends.get(e.tag) } : {}),
         ...(related ? { related: related.get(e.tag) ?? [] } : {}),
         ...(evidence?.get(e.tag) ?? {}),
