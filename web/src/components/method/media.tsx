@@ -25,6 +25,15 @@ export function MediaOverviewMethod({ camp = true }: { camp?: boolean }) {
       <dl className={methodList}>
         <dt className={methodTerm}>國家／地區</dt>
         <dd>依媒體營運或在地發行版本標示，不是新聞發生地或母公司國籍；跨國團隊與待確認項目另行標示。</dd>
+        <dt className={methodTerm}>標籤</dt>
+        <dd>
+          媒體標籤來自{' '}
+          <a href="https://traffic.observe.tw/" className={inlineLink}>
+            traffic.observe.tw
+          </a>
+          ，以網域為單位；同一家媒體有好幾個網域時，合併各網域目前顯示的標籤。標籤可在 traffic.observe.tw
+          的網站頁登入投票或提議新增。政治傾向不是標籤，見下方「藍綠」。
+        </dd>
         <dt className={methodTerm}>發現來源</dt>
         <dd>「發現來源」的篇數是經該平台發現的原媒體文章；上方全站文章總數、有發稿的媒體與有標籤的文章只按原媒體計算，不重複加總。</dd>
         <dt className={methodTerm}>24 小時</dt>
@@ -54,7 +63,10 @@ export function MediaOverviewMethod({ camp = true }: { camp?: boolean }) {
           小時的抓取全部失敗；未啟用＝尚未啟用定期抓取、已停用或僅作為引用來源。各媒體頁標頭的狀態依同一規則，寫作持續收錄、近期無新文章、暫時無法更新、已停止收錄。
         </dd>
         <dt className={methodTerm}>藍綠</dt>
-        <dd>「偏藍」「偏綠」標示與「藍營傾向」「綠營傾向」篩選，和首頁新聞量、事件頁的藍綠對照用同一份分類。</dd>
+        <dd>
+          「偏藍」「偏綠」標示與「藍營傾向」「綠營傾向」篩選，和首頁新聞量、事件頁的藍綠對照用同一份名單，由本站維護，不屬於
+          traffic.observe.tw 的標籤。
+        </dd>
       </dl>
       {camp && <CampBasis />}
     </>

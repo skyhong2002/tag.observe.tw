@@ -108,10 +108,12 @@ function StatusBadge({ status }: { status: Status | 'none' }) {
   );
 }
 
-// Every outlet an admin can label, as a table: its labels, how the crawler is
-// doing, and who last changed it. Filters narrow by label and crawl status (「未加標籤」 finds the ones still to do); the name opens the editor.
+// Every outlet as a table: its tags, how the crawler is doing, and who last
+// changed its camp. Tags come from traffic.observe.tw and are managed there;
+// only the camp (藍營／綠營) is edited here. Filters narrow by tag and crawl
+// status; the name opens the editor.
 export function Outlets() {
-  const [data, setData] = useState<{ media: Outlet[]; categories: Definition[] } | null>(null);
+  const [data, setData] = useState<{ media: Outlet[]; categories: Definition[]; trafficSite?: string } | null>(null);
   const [stats, setStats] = useState<Map<string, Stats> | null>(null);
   const [query, setQuery] = useState('');
   const [label, setLabel] = useState('all');
@@ -120,7 +122,7 @@ export function Outlets() {
   const [descending, setDescending] = useState(true);
   const [error, setError] = useState('');
   useEffect(() => {
-    adminFetch<{ media: Outlet[]; categories: Definition[] }>('/auth/admin/media')
+    adminFetch<{ media: Outlet[]; categories: Definition[]; trafficSite?: string }>('/auth/admin/media')
       .then(setData)
       .catch((e: Error) => setError(e.message));
     fetch('/api/v1/media-stats')
@@ -134,13 +136,19 @@ export function Outlets() {
 
   const rows: Row[] = data.media.map((o) => ({ ...o, stats: stats?.get(o.media) ?? null }));
   const statusOf = (r: Row) => r.stats?.status ?? 'none';
+  // Camp keys filter as they are, traffic.observe.tw tags as `t:<tag>`.
+  const keysOf = (r: Row) => [...r.categories, ...(r.tags ?? []).map((t) => `t:${t}`)];
+  const tagCounts = new Map<string, number>();
+  for (const t of rows.flatMap((r) => r.tags ?? [])) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  const tagList = [...tagCounts].sort(([a, x], [b, y]) => y - x || a.localeCompare(b, 'zh-Hant')).map(([t]) => t);
   const q = query.trim().toLowerCase();
   const matches = (r: Row, skip?: 'label' | 'status') =>
     (!q ||
       r.media.includes(q) ||
       r.title.toLowerCase().includes(q) ||
-      r.categories.some((c) => labels.get(c)?.toLowerCase().includes(q))) &&
-    (skip === 'label' || label === 'all' || (label === 'none' ? !r.categories.length : r.categories.includes(label))) &&
+      r.categories.some((c) => labels.get(c)?.toLowerCase().includes(q)) ||
+      r.tags?.some((t) => t.toLowerCase().includes(q))) &&
+    (skip === 'label' || label === 'all' || (label === 'none' ? !keysOf(r).length : keysOf(r).includes(label))) &&
     (skip === 'status' || status === 'all' || statusOf(r) === status);
   // Each filter row counts what the other filters leave, so the numbers add up.
   const tally = (skip: 'label' | 'status', test: (r: Row) => boolean) => rows.filter((r) => matches(r, skip) && test(r)).length;
@@ -204,6 +212,14 @@ export function Outlets() {
           className="w-full max-w-sm rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>
+      <p className={note}>
+        政治傾向（藍營、綠營）在這裡設定。其他標籤來自 traffic.observe.tw，這裡只顯示；要修改請到該媒體網域的 traffic.observe.tw
+        網站頁投票或覆寫，或到{' '}
+        <a href={`${data.trafficSite ?? 'https://traffic.observe.tw'}/sites/`} className="underline underline-offset-2">
+          traffic.observe.tw 網站管理
+        </a>
+        批次修改。
+      </p>
       <FilterButtons
         label="標籤"
         showLabel
@@ -211,8 +227,9 @@ export function Outlets() {
         onChange={setLabel}
         options={[
           option('all', '全部', 'label', () => true),
-          option('none', '未加標籤', 'label', (r) => !r.categories.length),
+          option('none', '沒有標籤', 'label', (r) => !keysOf(r).length),
           ...data.categories.map((d) => option(d.key, d.label, 'label', (r) => r.categories.includes(d.key))),
+          ...tagList.map((t) => option(`t:${t}`, t, 'label', (r) => !!r.tags?.includes(t))),
         ]}
       />
       <FilterButtons
@@ -240,7 +257,7 @@ export function Outlets() {
               {th('lastArticle', '最新文章', table.cell)}
               {th('robots', 'robots.txt', table.cell, '主網域 robots.txt 最近一次讀到的內容；只記錄，爬蟲不遵守')}
               {th('rules', 'AI 規則', table.cell, '驗證通過、正在使用的 AI 產生爬取規則')}
-              {th('edits', '修改', table.num, '標籤的修改次數')}
+              {th('edits', '修改', table.num, '本站標籤的修改次數：政治傾向，以及 2026-10-24 改用 traffic.observe.tw 之前的舊標籤')}
               {th('lastEdit', '最近修改', table.cell)}
             </tr>
           </thead>
@@ -255,11 +272,13 @@ export function Outlets() {
                 </th>
                 <td className={`${table.cell} !py-1.5`}>
                   <span className="flex gap-1">
-                    {r.categories.length ? (
-                      r.categories.map((c) => <LabelChip key={c} keyName={c} label={labels.get(c) ?? c} />)
-                    ) : (
-                      <span className={`text-xs ${muted}`}>未加標籤</span>
-                    )}
+                    {r.categories.map((c) => (
+                      <LabelChip key={c} keyName={c} label={labels.get(c) ?? c} />
+                    ))}
+                    {r.tags?.map((t) => (
+                      <LabelChip key={`t:${t}`} keyName={`t:${t}`} label={t} />
+                    ))}
+                    {!keysOf(r).length && <span className={`text-xs ${muted}`}>—</span>}
                   </span>
                 </td>
                 <td className={`${table.cell} !py-1.5`}>

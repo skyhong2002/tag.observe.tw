@@ -22,7 +22,13 @@ export default defineConfig({
   test: {
     environment: 'node',
     // Never read the live generated crawl rules (crawl/rules/store.ts) in tests.
-    env: { TAG_GENERATED_RULES_DIR: join(tmpdir(), `tag-generated-rules-test-${process.pid}`) },
+    // Nor the saved traffic.observe.tw media tags, nor the service itself (media-traffic/site-tags.ts).
+    env: {
+      TAG_GENERATED_RULES_DIR: join(tmpdir(), `tag-generated-rules-test-${process.pid}`),
+      TAG_MEDIA_TAGS_FILE: join(tmpdir(), `tag-media-tags-test-${process.pid}.json`),
+      TAG_TRAFFIC_SERVICE_URL: '',
+      TAG_TRAFFIC_SERVICE_TOKEN: '',
+    },
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],
     outputFile: { junit: 'artifacts/vitest-junit.xml' },
     coverage: { provider: 'v8', include: ['app/src/**'], reportsDirectory: 'artifacts/coverage' },

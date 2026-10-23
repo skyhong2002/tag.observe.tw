@@ -14,6 +14,7 @@ vi.mock('../crawl/registry.ts', () => ({
     { media: 'social.php', group: 'off' },
   ],
   disabled: () => new Set(['cti']),
+  excludedMedia: new Set(),
 }));
 
 const now = Date.parse('2026-09-29T07:00:00Z'); // 15:00 Taipei

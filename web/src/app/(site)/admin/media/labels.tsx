@@ -3,7 +3,12 @@ export type Outlet = {
   media: string;
   title: string;
   icon: string | null;
+  /** Camp keys (blue/green), the only labels edited in tag. */
   categories: string[];
+  /** Tags from traffic.observe.tw, read-only here (GET /auth/admin/media*). */
+  tags?: string[];
+  /** Domains those tags come from. */
+  tagDomains?: string[];
   /** Label edits (GET /auth/admin/media only). */
   edits?: { count: number; lastAt: string; lastBy: string } | null;
   /** The main host's robots.txt as last read (GET /auth/admin/media only). */

@@ -24,9 +24,9 @@
 | `GET /auth/admin/user-activity` | 管理員限定：每個帳號的活動次數與最後時間（`/admin/accounts/` 使用，`app/src/admin/user-activity.ts`）。`metrics` 列出各項與分組：`use`（互動：閱讀紀錄、追蹤、收藏）、`contribute`（貢獻：回報、投票）、`admin`（管理修改：媒體設定、文章標籤與署名、標籤分類、標籤圖像、寫法人物、處理回報、帳號權限，依各修改紀錄的 Email 對到帳號）；`users[id]` 為 `{ counts, lastActiveAt }`。 |
 | `PUT /auth/users/:id/role` | 管理員限定、需本站 `Origin`：`{ role: 'admin' \| 'reader' }` 指派或取消管理員，寫入 `user_role_log`。不能改自己（400），`TAG_ADMIN_EMAILS` 裡的人不能改（409）。 |
 | `GET /auth/admin/lookup?url=` | 管理員限定：新聞網址屬於哪家媒體（已收錄的文章優先，其次比對各媒體已知網域，含子網域），並回傳本站收錄的這篇文章。 |
-| `GET /auth/admin/media`、`GET /auth/admin/media/:media` | 管理員限定：所有媒體與標籤（含各媒體標籤的修改次數、最近修改時間與修改者 `edits`）；單一媒體的標籤、爬蟲排程、最近幾次 crawl_runs 與修改紀錄。 |
-| `PUT /auth/admin/media/:media/categories` | 管理員限定、需本站 `Origin`：`{ categories: [...] }` 整組取代這家媒體的標籤，寫入 `media_category_log`。 |
-| `POST /auth/admin/categories` | 管理員限定、需本站 `Origin`：`{ label, key? }` 新增標籤（中文名稱沒給代碼時自動編成 `tagN`）。 |
+| `GET /auth/admin/media`、`GET /auth/admin/media/:media` | 管理員限定：所有媒體的政治傾向 `categories`（只有 blue／green）、traffic.observe.tw 的標籤 `tags` 與其網域 `tagDomains`（唯讀），以及本站標籤的修改次數、最近修改時間與修改者 `edits`；單一媒體另有爬蟲排程、最近幾次 crawl_runs 與修改紀錄。 |
+| `PUT /auth/admin/media/:media/categories` | 管理員限定、需本站 `Origin`：`{ categories: [...] }` 整組取代這家媒體的政治傾向（只接受 `blue`、`green`，其他回 400），寫入 `media_category_log`。其他群組不受影響。 |
+| `POST /auth/admin/categories` | 2026-10-24 起停用，回 410：新標籤到 traffic.observe.tw 建立。 |
 | `POST /auth/admin/media/:media/refetch` | 管理員限定、需本站 `Origin`：`{ url }` 立刻抓這一篇（沒收錄就先收錄），並以新抓到的標籤取代舊的。 |
 | `POST /auth/admin/media/:media/crawl` | 管理員限定、需本站 `Origin`：`{ stage: 'index' \| 'articles' }` 排一個 worker 的 `crawl-media` 工作；同媒體同階段已在排隊就沿用。 |
 | `GET /auth/admin/jobs/:id` | 管理員限定：`crawl-media` 工作的狀態與結果。 |
@@ -97,9 +97,11 @@
 
 ## 媒體設定（`/admin/media/`）
 
-`/admin/media/` 沒帶參數時是所有媒體的可排序表（標籤、收錄狀態、7 天文章、標籤率、最新文章、標籤的修改次數與最近修改者），可依標籤（含「未加標籤」）與收錄狀態篩選，並提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：勾選或取消標籤（通訊社、平台代刊、新聞合作等原本的「性質」也是標籤；2026-10-18 併入，舊的修改紀錄記為 `role:<key>`）、新增標籤、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇；管理員在文章頁看到的「編輯這篇」（取代「回報錯誤」）也會開到這裡。從 `/admin/` 的讀者回報按「打開編輯」會帶 `&report=<id>`，頁面在「這篇文章」上方顯示回報內容，可套用建議標籤並直接採納或不採納。「重抓這一篇」只試一次、最多等 15 秒，失敗時顯示原因。沒登入時會先導去登入，登入後回到同一個網址。
+`/admin/media/` 沒帶參數時是所有媒體的可排序表（標籤、收錄狀態、7 天文章、標籤率、最新文章、本站標籤的修改次數與最近修改者），可依標籤（含「沒有標籤」）與收錄狀態篩選，並提供「設定這家媒體」書籤（`javascript:` 書籤把目前網址帶到 `/admin/media/?url=…`）。在任何新聞頁按下去，會辨認媒體並開啟設定頁：查看這家媒體在 traffic.observe.tw 的標籤（附各網域的管理連結）、設定政治傾向、增減這一篇的標籤、重抓這一篇、跑這家媒體的 index 或內文抓取。在本站的 `/article/<id>/` 頁按書籤也可以，會直接對應到那一篇；管理員在文章頁看到的「編輯這篇」（取代「回報錯誤」）也會開到這裡。從 `/admin/` 的讀者回報按「打開編輯」會帶 `&report=<id>`，頁面在「這篇文章」上方顯示回報內容，可套用建議標籤並直接採納或不採納。「重抓這一篇」只試一次、最多等 15 秒，失敗時顯示原因。沒登入時會先導去登入，登入後回到同一個網址。
 
-媒體標籤存在 `media_category_defs`（代碼、名稱、順序）與 `media_categories`（媒體 × 標籤）。資料表是空的時候，gateway 或 worker 啟動時會從 `app/data/media-catalog.json` 匯入一次，之後以資料庫為準。兩個程序每分鐘重新讀取一次，管理員存檔後 gateway 也會立刻重讀（`app/src/media-categories.ts`）。`blue`／`green` 決定陣營，兩個都勾時算藍營。新增的標籤沒有固定排行名單（`ranking-baseline.json`），所以不會出現在 `/ranking/`。
+2026-10-24 起，讀者看到的媒體標籤（`/media/`、各媒體頁、本頁）來自 traffic.observe.tw（`app/src/media-traffic/site-tags.ts`）：gateway 每分鐘以 `POST /internal/v1/tags` 讀取各媒體所有網域（`publisherDomainsByMedia()`，與登記到 traffic 的網域相同）目前顯示的標籤，取聯集，去掉 traffic 的「藍」「綠」。讀取失敗時沿用上一次成功的結果，並存一份在 `~/.local/share/tag-analysis/media-tags.json`（`TAG_MEDIA_TAGS_FILE`），重啟後仍可使用；從沒成功過時媒體只顯示政治傾向。標籤的投票、新增與覆寫都在 `https://traffic.observe.tw/site/<網域>/#tags`，批次管理在 `/sites/`。
+
+政治傾向不屬於 traffic 的標籤，仍存在 `media_category_defs`（代碼、名稱、順序）與 `media_categories`（媒體 × 群組），在這裡設定。`blue`／`green` 決定陣營，兩個都勾時算藍營。同兩張表的其他群組（news、3c、women…）2026-10-24 起不再編輯：排行、事件、報導關鍵字的同類媒體仍用它們當分析群組，也是改用 traffic 標籤前的回滾依據。資料表是空的時候，gateway 或 worker 啟動時會從 `app/data/media-catalog.json` 匯入一次，之後以資料庫為準。兩個程序每分鐘重新讀取一次，管理員存檔後 gateway 也會立刻重讀（`app/src/media-categories.ts`）。
 
 ## 資料庫（`/admin/db/`）
 

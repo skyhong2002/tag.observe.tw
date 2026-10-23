@@ -8,7 +8,7 @@ export interface Category {
   key: string;
   label: string;
   media: number;
-  /** Member outlets; labels are edited by admins at /admin/media/. */
+  /** Member outlets of the analysis group (media-categories.ts). */
   members: string[];
   /** Has a frozen ranking roster, so /ranking/ can show it. */
   ranked: boolean;

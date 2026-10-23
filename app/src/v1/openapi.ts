@@ -1427,7 +1427,7 @@ export const ENDPOINTS: Endpoint[] = [
     tag: 'ranking',
     summary: '排行分類',
     description:
-      '媒體標籤（由管理員維護），可用於 `category` 參數，含 blue／green 兩個政治傾向分類。只列至少有一家媒體的標籤；`ranked` 為 false 的標籤沒有固定排行名單，/api/v1/ranking 不會有快照。',
+      '排行與分析用的媒體群組，可用於 `category` 參數，含 blue／green 兩個政治傾向群組。只列至少有一家媒體的群組；`ranked` 為 false 的群組沒有固定排行名單，/api/v1/ranking 不會有快照。讀者看到的媒體標籤來自 traffic.observe.tw，見 /api/v1/media-stats 的 labels。',
     response: arr(
       obj({
         key: str('分類代碼'),
@@ -2514,9 +2514,13 @@ export const ENDPOINTS: Endpoint[] = [
           sourceKind: str('discovery 為文章發現來源，篇數透過關聯計算；publisher 為刊登媒體，全站文章總數不重複計入發現來源', {
             enum: ['discovery', 'publisher'],
           }),
-          category: nullable(str()),
-          categoryLabel: nullable(str()),
-          labels: arr(obj({ key: str(), label: str() }), '媒體的全部標籤（含通訊社、平台代刊等），依標籤順序；藍綠傾向另見 camp'),
+          category: nullable(str('排行與報導關鍵字比較用的分析群組代碼（例如 news、3c），不是媒體標籤')),
+          categoryLabel: nullable(str('分析群組名稱')),
+          labels: arr(
+            obj({ key: str('標籤名稱，也是 /media/?tag= 的值'), label: str() }),
+            '媒體標籤，來自 traffic.observe.tw（媒體各網域目前顯示的標籤聯集，不含政治傾向）；藍綠傾向另見 camp',
+          ),
+          tagDomains: arr(str(), '標籤所依據的網域；到 https://traffic.observe.tw/site/<網域>/#tags 投票或管理'),
           camp,
           schedule: str('爬取頻率；hourly 或 every N min；未啟用時為 off'),
           crawlSchedule: obj({

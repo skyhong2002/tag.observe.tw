@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Fragment } from 'react';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
 import FilterChips from '@/components/FilterChips';
@@ -137,12 +138,17 @@ export default async function MediaPage({
           </div>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
             <span>{discovery ? '文章發現來源' : data.publisher?.country}</span>
-            {!discovery && profile?.categoryLabel && (
+            {!discovery && profile?.labels.length ? (
               <>
                 <span>·</span>
-                <span>{profile.categoryLabel}</span>
+                <span>
+                  {profile.labels
+                    .slice(0, 3)
+                    .map((l) => l.label)
+                    .join('、')}
+                </span>
               </>
-            )}
+            ) : null}
             {!discovery && profile && (
               <>
                 <span>·</span>
@@ -217,9 +223,34 @@ export default async function MediaPage({
               )}
               {!discovery && profile && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">本站標籤</dt>
+                  <dt className="text-zinc-500 dark:text-zinc-400">標籤</dt>
                   <dd>
-                    {profile.labels.length ? profile.labels.map((l) => l.label).join('、') : '未分類'} · {profileCamp[profile.camp]}
+                    {profile.labels.length
+                      ? profile.labels.map((l, i) => (
+                          <Fragment key={l.key}>
+                            {i > 0 && '、'}
+                            <Link
+                              href={`/media/?tag=${encodeURIComponent(l.key)}`}
+                              className="hover:text-brand-700 dark:hover:text-brand-400"
+                            >
+                              {l.label}
+                            </Link>
+                          </Fragment>
+                        ))
+                      : '—'}{' '}
+                    · {profileCamp[profile.camp]}
+                    {profile.tagDomains?.[0] && (
+                      <>
+                        {' '}
+                        ·{' '}
+                        <a
+                          href={`https://traffic.observe.tw/site/${encodeURIComponent(profile.tagDomains[0])}/#tags`}
+                          className="text-zinc-500 underline decoration-zinc-300 underline-offset-2 hover:text-brand-700 dark:text-zinc-400 dark:decoration-zinc-600"
+                        >
+                          到 traffic.observe.tw 投票
+                        </a>
+                      </>
+                    )}
                   </dd>
                 </>
               )}

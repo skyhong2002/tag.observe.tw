@@ -3,11 +3,15 @@ import catalog from '../data/media-catalog.json' with { type: 'json' };
 import type { Db } from './db/client.ts';
 import { mediaCategoryDefs, mediaCategories as memberTable } from './db/schema.ts';
 
-// Media labels (藍營、綠營、新聞、非主流…). Admins edit them at /admin/media/
-// (app/src/admin/routes.ts), so they live in the DB; media-catalog.json only
-// seeds an empty DB. Readers are synchronous, so each process (gateway,
-// worker) keeps a snapshot here and refreshes it from the DB every minute and
-// after every admin write. Until the first refresh the snapshot is the seed.
+// Media groups in the DB (藍營、綠營、新聞、科技與 3C…); media-catalog.json
+// only seeds an empty DB. Since 2026-10-24 the tags readers see come from
+// traffic.observe.tw (media-traffic/site-tags.ts) and only the camp groups are edited at
+// /admin/media/ (app/src/admin/routes.ts). The other groups are kept as they
+// were: the rankings, events and keyword peers still use them as analysis
+// cohorts (news, 3c…), and they are the rollback copy of the old tags.
+// Readers are synchronous, so each process (gateway, worker) keeps a snapshot
+// here and refreshes it from the DB every minute and after every admin write.
+// Until the first refresh the snapshot is the seed.
 
 // The last six were outlet roles (性質) until they merged into the labels.
 export const SEED_LABELS: Record<string, string> = {
@@ -34,6 +38,8 @@ export const SEED_LABELS: Record<string, string> = {
   partner: '新聞合作',
 };
 const ALL_LABEL = '所有媒體';
+/** Political lean: the only groups still edited in tag, never sent to traffic.observe.tw. */
+export const CAMP_KEYS = ['blue', 'green'] as const;
 
 export type CategoryDef = { key: string; label: string; sort: number };
 type Snapshot = { defs: CategoryDef[]; members: Record<string, string[]>; labels: Map<string, string> };
