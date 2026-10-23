@@ -124,3 +124,102 @@ npm test && npm run typecheck && npm run lint
 其他 session 有未提交修改時，可在同一個 repository 建立乾淨的 detached worktree，從該 worktree 執行部署腳本。仍需先掃描並 push 該 commit，且部署版本必須等於 `origin/main`。腳本會檢查 standalone 目錄內每個媒體 PNG 是否與 manifest 的版本相符；切換失敗時會將網頁、爬蟲與 API 一起切回前一版本。
 
 回退：重新部署前一個 commit（release 目錄保留）；`systemctl --user stop tag-worker.service` 停止所有排程，既有資料仍可讀。
+
+## Monitoring host (2026-10-24)
+
+Grafana 12.1.1 and Prometheus 3.5.0 run on Mint under the dedicated 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+╭──────────── Hermes Agent v0.19.1 (2026.7.30) · upstream 54809183 ────────────╮
+│                                    Available Tools                           │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   bfl: bfl_flux3_get_result, ...            │
+│   ⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀   browser: browser_back, browser_click,     │
+│   ⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀   ...                                       │
+│   ⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀   clarify: clarify                          │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   code_execution: execute_code              │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   computer_use: computer_use                │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   cronjob: cronjob                          │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   delegation: delegate_task                 │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   file: patch, read_file, search_files,     │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   write_file                                │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   (and 10 more toolsets...)                 │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀                                             │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   Available Skills                          │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   apple: apple-notes, +5 more               │
+│   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   autonomous-ai-agents: claude-code, +4     │
+│                                    more                                      │
+│    gpt-5.6-sol · Nous Research     creative: architecture-diagram, +15 more  │
+│  /Users/sky/Projects/Hermes Agent  data-science: jupyter-live-kernel         │
+│  Session: 20261024_024432_9a16cf   devops: kanban-orchestrator, +1 more      │
+│                                    email: himalaya                           │
+│                                    general: hermes-desktop-plugins, +3 more  │
+│                                    github: codebase-inspection, +5 more      │
+│                                    media: gif-search, heartmula, +2 more     │
+│                                    mlops: audiocraft-audio-generation, +7    │
+│                                    more                                      │
+│                                    note-taking: obsidian                     │
+│                                    productivity: airtable, docx, +11 more    │
+│                                    red-teaming: godmode                      │
+│                                    research: arxiv, blogwatcher, +3 more     │
+│                                    smart-home: openhue                       │
+│                                    social-media: xurl                        │
+│                                    software-development: dogfood, +10 more   │
+│                                                                              │
+│                                    26 tools · 86 skills · /help for          │
+│                                    commands                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Welcome to Hermes Agent! Type your message or /help for commands.
+✦ Tip: hermes config check scans for missing or stale configuration options.
+
+[?12l[?25h[?2004h[?1l[?25l[0m[?7l[0m[J[0;38;5;250;48;5;234m ⚕ [0;38;5;220;48;5;234;1mgpt-5.6-sol[0;38;5;101;48;5;234m │ ctx -- │ [░░░░░░░░░░] -- │ 3s │ ⏲ 0s[0;38;5;250;48;5;234m [0m
+[0;38;5;173m───────────────────────────────────────────────────────────────────────────────
+[79C─[0m
+[0;38;5;230m❯ [0m
+[0;38;5;173m───────────────────────────────────────────────────────────────────────────────
+[79C─
+[A[2C[?7h[0m[?12l[?25h[2 q[2D[2A[J[0m[?7h[?2004l[0 q[2;3mShutting down… (finalizing session)[0m
+
+Goodbye! ⚕
+account, in , as  and
+. Use  for administration.
+Grafana is tailnet-only at <https://mint-mbp.tailf76d1d.ts.net:8443/>.
+The dashboard, Grafana state, Prometheus history and recording/alert rules were
+migrated. The original source volumes and protected migration archives remain
+available for rollback. Notifications go to the private Hermes server's .
+
+The app, worker, host observer, Loki and Alloy remain on SM. The user service
+ forwards their loopback endpoints to Mint,
+using a new source-only key restricted to those four reverse forwards. Existing
+ and  labels are unchanged. Keep this tunnel enabled.
+
+The old Compose Grafana/Prometheus services are stopped, have restart disabled,
+and require the  profile. Do not run them alongside Mint.
+Normal Compose deployment should omit that profile.
+
+For an emergency rollback, first stop both Mint monitoring services, then run
+ on SM. The retained source volumes
+reflect cutover time; samples collected only on Mint after cutover are not
+included. Preserve Mint's data before any reconciliation. The full runbook is
+in the Hermes control repository, .

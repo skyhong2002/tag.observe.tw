@@ -38,6 +38,8 @@ services:
     ports: ["127.0.0.1:16379:6379"]
     volumes: ["./data/redis:/data"]
   prometheus:
+    # Central monitoring moved to HermesMint; opt in only for an explicit rollback.
+    profiles: [legacy-monitoring]
     image: prom/prometheus:v3.5.0
     container_name: tag-prometheus
     restart: unless-stopped
@@ -60,6 +62,8 @@ services:
     volumes: ["./alloy/config.alloy:/etc/alloy/config.alloy:ro", "/var/log/journal:/var/log/journal:ro", "/run/log/journal:/run/log/journal:ro", "/etc/machine-id:/etc/machine-id:ro", "./data/alloy:/var/lib/alloy/data"]
     depends_on: [loki]
   grafana:
+    # Central monitoring moved to HermesMint; opt in only for an explicit rollback.
+    profiles: [legacy-monitoring]
     image: grafana/grafana:12.1.1
     container_name: tag-grafana
     restart: unless-stopped
