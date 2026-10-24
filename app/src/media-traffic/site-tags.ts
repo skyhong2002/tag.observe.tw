@@ -1,16 +1,20 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import names from '../../data/media-names.json' with { type: 'json' };
 import { publisherDomainsByMedia } from '../jobs/media-traffic-job.ts';
+import { trafficDomain } from './live.ts';
 import { type TrafficService, trafficService } from './service.ts';
 
 // Media tags (新聞、科技、財經…) come from traffic.observe.tw, where every
 // observe site's site tags are kept, voted on and managed
 // (https://traffic.observe.tw/site/<domain>/#tags, editors also at /sites/).
-// Tags are keyed by domain, so an outlet carries the visible tags of every
-// domain it publishes on. Political lean is not a traffic tag: 藍營／綠營 stay
-// in tag's own tables (../media-categories.ts, edited at /admin/media/), and
-// traffic's 藍／綠 tags are left out here so the two never disagree on screen.
+// Tags are keyed by domain, so an outlet carries the visible tags of its own
+// domains (tagDomainsByMedia: not the platforms or other outlets it is read
+// from). Political lean is not a traffic tag: 藍營／綠營 stay in tag's own
+// tables (../media-categories.ts, edited at /admin/media/). traffic reserves
+// those words since 2026-10-24; any 藍／綠 tag is still left out here so the
+// two never disagree on screen.
 //
 // Readers are synchronous, so the gateway keeps a snapshot, refreshed every
 // minute. A failed refresh keeps the last good snapshot, which is also saved to
@@ -33,8 +37,48 @@ export interface TagSnapshot {
 
 let snapshot: TagSnapshot | null = null;
 let byMedia = new Map<string, string[]>();
+/**
+ * Platforms that carry other outlets' articles. tag still registers them with
+ * traffic.observe.tw for the outlets it reads there (their traffic is measured
+ * on them), but their tags describe the platform, so only the platform's own
+ * entry (or none) carries them.
+ */
+export const PLATFORM_DOMAINS: Record<string, { media: string | null; why: string }> = {
+  'today.line.me': { media: 'today_line_me', why: 'LINE TODAY 新聞聚合，路透等媒體的文章從這裡收錄' },
+  'page.line.me': { media: null, why: 'LINE 官方帳號頁，宜蘭新聞網的收錄入口' },
+  'k.sina.cn': { media: null, why: '新浪手機版自媒體帳號頁，中國台灣網的收錄入口' },
+  'n.yam.com': { media: 'yam', why: '蕃新聞聚合，三星傳媒的收錄入口' },
+  'tw.news.yahoo.com': { media: 'yahoo', why: 'Yahoo 新聞聚合' },
+  'msn.com': { media: 'msn', why: 'MSN 新聞聚合' },
+};
+
+/**
+ * The domains whose tags describe each outlet: its registered domains without
+ * platforms (above) and without another outlet's reviewed own domain
+ * (media-names.json), e.g. 美洲台灣日報 read from vigormedia.tw or 菱傳媒 from
+ * ftvnews.com.tw. Outlets sharing one reviewed domain (BBC, 中天) both keep it.
+ */
+export function tagDomainsByMedia(registered = publisherDomainsByMedia()) {
+  const owners = new Map<string, Set<string>>();
+  for (const [media, entry] of Object.entries(names.media) as Array<[string, { status?: string; sourceUrl?: string }]>) {
+    const domain = ['verified', 'retained'].includes(entry.status ?? '') && entry.sourceUrl ? trafficDomain(entry.sourceUrl) : null;
+    if (domain) owners.set(domain, (owners.get(domain) ?? new Set()).add(media));
+  }
+  return new Map(
+    [...registered].map(([media, domains]) => [
+      media,
+      domains.filter((domain) => {
+        const platform = PLATFORM_DOMAINS[domain];
+        if (platform) return platform.media === media;
+        const owned = owners.get(domain);
+        return !owned || owned.has(media);
+      }),
+    ]),
+  );
+}
+
 let domainMap: Map<string, string[]> | null = null;
-const domainsByMedia = () => (domainMap ??= publisherDomainsByMedia());
+const domainsByMedia = () => (domainMap ??= tagDomainsByMedia());
 
 export const mediaTagsFile = () => process.env.TAG_MEDIA_TAGS_FILE || join(homedir(), '.local/share/tag-analysis/media-tags.json');
 
