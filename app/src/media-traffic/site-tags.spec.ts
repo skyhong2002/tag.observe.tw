@@ -2,7 +2,14 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { keepMediaTagsFresh, mediaTags, mediaTagsFetchedAt, setMediaTagsForTest, tagsFromResponse } from './site-tags.ts';
+import {
+  keepMediaTagsFresh,
+  mediaTags,
+  mediaTagsFetchedAt,
+  setMediaTagsForTest,
+  tagDomainsByMedia,
+  tagsFromResponse,
+} from './site-tags.ts';
 
 const service = { url: 'http://127.0.0.1:18150', token: 'x'.repeat(40) };
 const item = (tag: string, visible = true) => ({ tag, source: 'editor', visible, agrees: 0, disagrees: 0, adminOverride: null });
@@ -103,5 +110,25 @@ describe('keepMediaTagsFresh', () => {
     await fresh.ready;
     expect(calls).toHaveLength(0);
     expect(mediaTags('ltn')).toEqual([]);
+  });
+});
+
+describe('tagDomainsByMedia', () => {
+  it('keeps each outlet to its own domains, not the platforms or other outlets it is read from', () => {
+    const own = tagDomainsByMedia();
+    expect(own.get('reuters')).toEqual(['reuters.com']);
+    expect(own.get('travelnews')).toEqual(['fearless.cool']);
+    expect(own.get('taiwan')).toEqual(['taiwan.cn']);
+    expect(own.get('tristarnews')).toEqual(['tristarnews.com.tw']);
+    expect(own.get('taiwandaily')).toEqual(['taiwandaily.net']);
+    expect(own.get('enn')).toEqual(['enn.tw']);
+    expect(own.get('rwnews')).toEqual(['rwnews.tw']);
+    // Platforms keep their own tags; outlets sharing a reviewed domain both keep it.
+    expect(own.get('today_line_me')).toEqual(['today.line.me']);
+    expect(own.get('yam')).toEqual(['n.yam.com']);
+    expect(own.get('ftv')).toEqual(['ftvnews.com.tw']);
+    expect(own.get('bbc')).toEqual(['bbc.com']);
+    expect(own.get('bbc_global')).toEqual(['bbc.com']);
+    expect(own.get('ltn')).toContain('ltn.com.tw');
   });
 });
