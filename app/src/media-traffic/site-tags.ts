@@ -57,6 +57,7 @@ export const PLATFORM_DOMAINS: Record<string, { media: string | null; why: strin
  * platforms (above) and without another outlet's reviewed own domain
  * (media-names.json), e.g. 美洲台灣日報 read from vigormedia.tw or 菱傳媒 from
  * ftvnews.com.tw. Outlets sharing one reviewed domain (BBC, 中天) both keep it.
+ * The reviewed domain comes first: it is the one pages link to.
  */
 export function tagDomainsByMedia(registered = publisherDomainsByMedia()) {
   const owners = new Map<string, Set<string>>();
@@ -67,12 +68,15 @@ export function tagDomainsByMedia(registered = publisherDomainsByMedia()) {
   return new Map(
     [...registered].map(([media, domains]) => [
       media,
-      domains.filter((domain) => {
-        const platform = PLATFORM_DOMAINS[domain];
-        if (platform) return platform.media === media;
-        const owned = owners.get(domain);
-        return !owned || owned.has(media);
-      }),
+      domains
+        .filter((domain) => {
+          const platform = PLATFORM_DOMAINS[domain];
+          if (platform) return platform.media === media;
+          const owned = owners.get(domain);
+          return !owned || owned.has(media);
+        })
+        // The main domain (the reviewed one) first: /media/<media>/ links there.
+        .sort((a, b) => Number(!!owners.get(b)?.has(media)) - Number(!!owners.get(a)?.has(media))),
     ]),
   );
 }

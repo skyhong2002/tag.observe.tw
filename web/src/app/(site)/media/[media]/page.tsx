@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Fragment, Suspense } from 'react';
+import { Suspense } from 'react';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
 import FilterChips from '@/components/FilterChips';
@@ -8,6 +8,7 @@ import FormSuggestInput from '@/components/FormSuggestInput';
 import MediaIcon from '@/components/MediaIcon';
 import MediaRelations from '@/components/MediaRelations';
 import MediaSidebar from '@/components/MediaSidebar';
+import MediaTagChips from '@/components/MediaTagChips';
 import MediaTrafficProfile from '@/components/MediaTrafficProfile';
 import MediaWordCloud from '@/components/MediaWordCloud';
 import MediaWritingCard from '@/components/MediaWritingCard';
@@ -21,7 +22,7 @@ import TrafficSparkline from '@/components/TrafficSparkline';
 import { API_ORIGIN, taipei } from '@/lib/api';
 import type { MediaContent } from '@/lib/article-content';
 import { mediaNames } from '@/lib/media-names.mts';
-import { loadMediaKeywords, loadMediaProfile, mediaReference, profileCamp, profileStatus } from '@/lib/media-profile';
+import { loadMediaKeywords, loadMediaProfile, mediaReference, profileStatus } from '@/lib/media-profile';
 import { trafficNumber } from '@/lib/media-traffic.mts';
 import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
@@ -152,17 +153,6 @@ export default async function MediaPage({
           </div>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
             <span>{discovery ? '文章發現來源' : data.publisher?.country}</span>
-            {!discovery && profile?.labels.length ? (
-              <>
-                <span>·</span>
-                <span>
-                  {profile.labels
-                    .slice(0, 3)
-                    .map((l) => l.label)
-                    .join('、')}
-                </span>
-              </>
-            ) : null}
             {!discovery && profile && (
               <>
                 <span>·</span>
@@ -170,6 +160,7 @@ export default async function MediaPage({
               </>
             )}
           </p>
+          {!discovery && profile && <MediaTagChips camp={profile.camp} labels={profile.labels} domains={profile.tagDomains} />}
         </div>
         <dl className="flex gap-5 text-right sm:gap-7">
           {(discovery
@@ -233,39 +224,6 @@ export default async function MediaPage({
                 <>
                   <dt className="text-zinc-500 dark:text-zinc-400">收錄說明</dt>
                   <dd>{profile.scope.coverage}</dd>
-                </>
-              )}
-              {!discovery && profile && (
-                <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">標籤</dt>
-                  <dd>
-                    {profile.labels.length
-                      ? profile.labels.map((l, i) => (
-                          <Fragment key={l.key}>
-                            {i > 0 && '、'}
-                            <Link
-                              href={`/media/?tag=${encodeURIComponent(l.key)}`}
-                              className="hover:text-brand-700 dark:hover:text-brand-400"
-                            >
-                              {l.label}
-                            </Link>
-                          </Fragment>
-                        ))
-                      : '—'}{' '}
-                    · {profileCamp[profile.camp]}
-                    {profile.tagDomains?.[0] && (
-                      <>
-                        {' '}
-                        ·{' '}
-                        <a
-                          href={`https://traffic.observe.tw/site/${encodeURIComponent(profile.tagDomains[0])}/#tags`}
-                          className="text-zinc-500 underline decoration-zinc-300 underline-offset-2 hover:text-brand-700 dark:text-zinc-400 dark:decoration-zinc-600"
-                        >
-                          到 traffic.observe.tw 投票
-                        </a>
-                      </>
-                    )}
-                  </dd>
                 </>
               )}
               {reference && (
