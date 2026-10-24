@@ -1,8 +1,9 @@
 import Link from 'next/link';
 
 // One outlet's tags as chips: the camp (kept in tag) first, then the tags from
-// traffic.observe.tw, each linking to that filter on /media/. The same chip
-// styles are used in the /media/ table.
+// traffic.observe.tw, each linking to that filter on /media/, then a link to
+// edit them on traffic.observe.tw (the domains are in its tooltip). The same
+// chip styles are used in the /media/ table.
 
 const chip = 'shrink-0 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset';
 export const tagChip = `${chip} bg-zinc-100 text-zinc-700 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700`;
@@ -40,16 +41,13 @@ export default function MediaTagChips({
       ))}
       {camp === 'other' && !labels.length && <span className="text-xs text-zinc-500 dark:text-zinc-400">尚無標籤</span>}
       {main && (
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-          <a
-            href={`https://traffic.observe.tw/site/${encodeURIComponent(main)}/#tags`}
-            title={from}
-            className="ml-1 whitespace-nowrap text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800 dark:text-brand-400 dark:decoration-brand-700"
-          >
-            在 traffic.observe.tw 編輯標籤
-          </a>
-          {domains.length > 1 && <span className="ml-1.5">（來自 {domains.join('、')}）</span>}
-        </span>
+        <a
+          href={`https://traffic.observe.tw/site/${encodeURIComponent(main)}/#tags`}
+          title={from}
+          className="ml-1 whitespace-nowrap text-xs text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800 dark:text-brand-400 dark:decoration-brand-700"
+        >
+          編輯標籤
+        </a>
       )}
     </div>
   );
