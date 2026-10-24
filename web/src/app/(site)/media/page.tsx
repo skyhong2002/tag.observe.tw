@@ -4,6 +4,7 @@ import CountryFlag from '@/components/CountryFlag';
 import FilterChips from '@/components/FilterChips';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
+import { campChip, tagChip } from '@/components/MediaTagChips';
 import MethodLink from '@/components/MethodLink';
 import SectionTabs from '@/components/SectionTabs';
 import SortIndicator from '@/components/SortIndicator';
@@ -25,16 +26,14 @@ export const metadata = pageMetadata(
 
 type Status = 'ok' | 'stale' | 'failing' | 'disabled';
 type Camp = 'blue' | 'green' | 'other';
-const CAMPS: Record<Exclude<Camp, 'other'>, { label: string; short: string; badge: string }> = {
+const CAMPS: Record<Exclude<Camp, 'other'>, { label: string; short: string }> = {
   blue: {
     label: '藍營傾向',
     short: '偏藍',
-    badge: 'bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:ring-blue-800',
   },
   green: {
     label: '綠營傾向',
     short: '偏綠',
-    badge: 'bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800',
   },
 };
 // Readership of the collected edition (app/data/media-scope.json), in the
@@ -49,8 +48,6 @@ interface MediaScope {
 }
 const discoveryBadge =
   'shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800';
-const scopeBadge =
-  'shrink-0 whitespace-nowrap rounded bg-zinc-100 px-1.5 py-px text-[11px] font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700';
 interface MediaRow {
   media: string;
   sourceKind?: 'discovery' | 'publisher';
@@ -400,11 +397,7 @@ export default async function MediaStatsPage({
                 </td>
                 <td className={`${table.cell} whitespace-nowrap`}>
                   {campBadge(r) ? (
-                    <span
-                      className={`whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset ${campBadge(r)?.badge}`}
-                    >
-                      {campBadge(r)?.short}
-                    </span>
+                    <span className={campChip[r.camp as keyof typeof campChip]}>{campBadge(r)?.short}</span>
                   ) : (
                     <span className="text-zinc-400">—</span>
                   )}
@@ -441,7 +434,7 @@ export default async function MediaStatsPage({
                     <span className="flex gap-1">
                       {r.sourceKind === 'discovery' && <span className={discoveryBadge}>發現來源</span>}
                       {r.labels.map(({ key, label }) => (
-                        <span key={key} className={scopeBadge}>
+                        <span key={key} className={tagChip}>
                           {label}
                         </span>
                       ))}

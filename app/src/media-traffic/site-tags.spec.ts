@@ -130,5 +130,7 @@ describe('tagDomainsByMedia', () => {
     expect(own.get('bbc')).toEqual(['bbc.com']);
     expect(own.get('bbc_global')).toEqual(['bbc.com']);
     expect(own.get('ltn')).toContain('ltn.com.tw');
+    // The reviewed domain leads.
+    expect(own.get('nextapple')).toEqual(['news.nextapple.com', 'tw.nextapple.com']);
   });
 });
