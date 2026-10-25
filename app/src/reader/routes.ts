@@ -12,7 +12,6 @@ import {
   userApiKeys,
   userFeedTokens,
   userFollows,
-  userPrefs,
   userSaves,
   users,
 } from '../db/schema.ts';
@@ -21,6 +20,8 @@ import { categoriesOf } from '../media-categories.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { API_KEYS_PER_USER, type ApiKeyLookup, newApiKey } from './api-keys.ts';
 import { feedRssItems, loadFollows, mediaTitle, readerFeed } from './feed.ts';
+import { registerLiveObserve } from './live-observe.ts';
+import { dashboardPrefsStore, readAccountPrefs, updateAccountPrefs } from './prefs-store.ts';
 import { loadSuggestions } from './suggestions.ts';
 import {
   FOLLOWS_MAX,
@@ -64,8 +65,7 @@ const camp = (media: string) => {
 const labelled = (follows: Follow[]) => follows.map((f) => (f.kind === 'media' ? { ...f, label: mediaTitle(f.target) } : f));
 
 export async function loadPrefs(db: Db, userId: number): Promise<Prefs> {
-  const [row] = await db.select({ prefs: userPrefs.prefs }).from(userPrefs).where(eq(userPrefs.userId, userId));
-  return (row?.prefs ?? {}) as Prefs;
+  return readAccountPrefs(db, userId);
 }
 
 export function registerReaderRoutes(app: FastifyInstance, db: Db, { currentUser, requireAdmin, origin, apiKeys }: Options) {
@@ -80,6 +80,8 @@ export function registerReaderRoutes(app: FastifyInstance, db: Db, { currentUser
     if (!user) reply.code(401).send({ error: 'sign in first' });
     return user;
   };
+
+  registerLiveObserve(app, dashboardPrefsStore(db), currentUser, origin);
 
   // ── Follows and 我的動態 ────────────────────────────────────────────────
   app.get('/auth/me/follows', async (request, reply) => {
@@ -258,14 +260,9 @@ export function registerReaderRoutes(app: FastifyInstance, db: Db, { currentUser
     if (!user) return reply;
     const change = parsePrefs(request.body, known);
     if (typeof change === 'string') return reply.code(400).send({ error: change });
-    const prefs = { ...(await loadPrefs(db, user.id)), ...change };
+    const prefs = await updateAccountPrefs(db, user.id, (current) => ({ ...current, ...change }));
     // Turning the history off forgets it.
     if (change.history === false) await db.delete(readerHistory).where(eq(readerHistory.userId, user.id));
-    const at = new Date();
-    await db
-      .insert(userPrefs)
-      .values({ userId: user.id, prefs, updatedAt: at })
-      .onDuplicateKeyUpdate({ set: { prefs, updatedAt: at } });
     return { prefs };
   });
 

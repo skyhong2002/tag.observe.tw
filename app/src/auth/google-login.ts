@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { dashboardReturn, LIVE_OBSERVE_ORIGIN, registerAccountCors } from './account-cors.ts';
 
 // Google sign-in for readers and admins (docs/login.md). The gateway owns the
 // whole flow, so the Next.js app only reads /auth/me from the browser and
@@ -59,8 +60,10 @@ export function readCookie(request: FastifyRequest, name: string) {
   return null;
 }
 
-/** Only same-site paths survive the round trip, so the login can't be used as an open redirect. */
+/** Return to original-site paths or the explicitly allowlisted dashboard pages. */
 export function safeNext(value: unknown) {
+  const dashboard = dashboardReturn(value);
+  if (dashboard) return dashboard;
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return '/';
   if (value.startsWith('/auth/') || value.length > 512 || /[\u0000-\u001f]/.test(value)) return '/';
   return value;
@@ -114,6 +117,7 @@ export function verifiedIdentity(
 export type LoginOptions = { exchange?: CodeExchange; now?: () => number };
 
 export function registerLogin(app: FastifyInstance, store: LoginStore | null, config: LoginConfig | null, options: LoginOptions = {}) {
+  registerAccountCors(app);
   const now = options.now ?? Date.now;
   const enabled = Boolean(store && config);
   const secure = config?.origin.startsWith('https:') ? '; Secure' : '';
@@ -201,10 +205,12 @@ export function registerLogin(app: FastifyInstance, store: LoginStore | null, co
 
   app.post('/auth/logout', async (request, reply) => {
     reply.header('cache-control', 'no-store');
-    if (request.headers.origin !== config.origin) return reply.code(403).send({ error: 'same-origin requests only' });
+    if (![config.origin, LIVE_OBSERVE_ORIGIN].includes(String(request.headers.origin)))
+      return reply.code(403).send({ error: 'same-origin requests only' });
     const value = readCookie(request, SESSION_COOKIE);
     if (value && value.length <= 64) await store.deleteSession(hashToken(value));
-    return reply.header('set-cookie', cookie(SESSION_COOKIE, '', 0)).redirect('/', 303);
+    reply.header('set-cookie', cookie(SESSION_COOKIE, '', 0));
+    return request.headers.origin === LIVE_OBSERVE_ORIGIN ? { user: null } : reply.redirect('/', 303);
   });
 
   app.get('/auth/users', async (request, reply) => {

@@ -1,4 +1,5 @@
 import { journalistName } from '../v1/journalists.ts';
+import type { DashboardDocument } from './live-observe.ts';
 
 // Request parsing for the reader routes (routes.ts). Each parser returns the
 // clean value, or a string saying what is wrong.
@@ -8,6 +9,8 @@ export type Follow = { kind: FollowKind; target: string };
 export type SaveKind = 'article' | 'event';
 export type ReportKind = 'tags' | 'byline' | 'media' | 'other';
 export type Prefs = {
+  /** Namespaced multi-source dashboard; written only through its revision API. */
+  liveObserve?: DashboardDocument | null;
   /** null follows the browser. */
   theme?: 'light' | 'dark' | null;
   analyticsOptOut?: boolean;

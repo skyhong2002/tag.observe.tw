@@ -201,3 +201,23 @@ describe('login helpers', () => {
     expect([...(parsed?.admins ?? [])]).toEqual(['a@b.com', 'c@d.com']);
   });
 });
+
+describe('dashboard account login', () => {
+  it('returns to the trusted live settings page and logs out through credentialed CORS', async () => {
+    const { app, signIn, sessionCookie } = await setup();
+    const next = 'https://live.observe.tw/liveboard/setting/';
+    const callback = await signIn(next);
+    expect(callback.statusCode).toBe(303);
+    expect(callback.headers.location).toBe(next);
+    const cookie = sessionCookie(callback);
+    const me = await app.inject({ url: '/auth/me', headers: { origin: 'https://live.observe.tw', cookie } });
+    expect(me.json().user.email).toBe('admin@example.com');
+    expect(me.headers['access-control-allow-origin']).toBe('https://live.observe.tw');
+    expect(me.headers['access-control-allow-credentials']).toBe('true');
+    const logout = await app.inject({ method: 'POST', url: '/auth/logout', headers: { origin: 'https://live.observe.tw', cookie } });
+    expect(logout.statusCode).toBe(200);
+    expect(logout.json().user).toBe(null);
+    expect((await app.inject({ url: '/auth/me', headers: { cookie } })).json().user).toBe(null);
+    await app.close();
+  });
+});
