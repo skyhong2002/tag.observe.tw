@@ -1,0 +1,5 @@
+56a85d0443c09f1ebddf307682284155f4ee137ec05562bb4a7bde46247b8ebe  app/src/auth/google-login.ts
+68772f467f8f397df0e1f35536f0c2c041d4ef33b044d29770ea04be601f117e  app/src/reader/routes.ts
+f61e07efcef5c07b934c1a62b06588ffa23e2df36b1d0fa01e9b448f6eb5ac18  app/src/reader/validate.ts
+0fa987c9b121d93cc36a7c805ec44432c9980d0403769b77ec2de339492208ae  package.json
+825d4e425bbb9aad8e363abace94f9a1db3359236b3801d1b7aa7a6408e6252e  package-lock.json

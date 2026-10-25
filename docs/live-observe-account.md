@@ -32,6 +32,6 @@
 - live：15 項同步測試，涵蓋雙裝置、完整設定、離線恢復、衝突、晚到回應、帳號切換與登出；全套 180 項（179 通過，1 opt-in 外網測試略過）。
 - 原站：登入/API/CORS/DB 並行 14 項通過；既有 reader 真實 DB 回歸 13 項通過，TypeScript、限定變更檔案 Biome 檢查通過。使用獨立 MariaDB 10.11.14 測試資料庫。
 - 瀏覽器：實際設定頁配模擬帳號服務，修改 scale 後儲存，再以獨立 incognito profile 讀到同一版本。這不等於正式 Google 帳號已驗證。
-- 原站程式位於 `/home/sky/Projects/tag-live-account-integration`，分支 `live/account-sync-20261025`。原站部署尚待 `deck@skyhong-sm` 的 Tailscale SSH 額外驗證；此狀態下正式帳號同步尚未開通。
+- 原站程式位於 `/home/sky/Projects/tag-live-account-integration`，分支 `live/account-sync-20261025`。原站 API 已於 2026-10-25 18:42 部署，正式 credentialed CORS、登入入口與未登入／不受信任 Origin 保護通過。正式個人帳號完整 OAuth 與跨實體裝置讀回仍待使用者實測；部署記錄見 [live-account/README.md](deploy/live-account/README.md)。
 
 部署順序：先部署原站 backend，再驗證正式 OPTIONS/CORS、登入返回與帳號 API，最後驗證 live 的真實登入與跨裝置同步。原站部署應使用隔離 release，保留既有 Next UI、worker、環境與回滾路徑；不要重設共享 checkout。
