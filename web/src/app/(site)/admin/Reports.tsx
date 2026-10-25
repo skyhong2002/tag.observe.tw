@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import FilterButtons from '@/components/FilterButtons';
 import SourceLink from '@/components/SourceLink';
 import { adminFetch, note } from './AdminGate';
@@ -32,13 +32,16 @@ export default function Reports() {
   const [status, setStatus] = useState<Status>('open');
   const [data, setData] = useState<{ open: number; reports: Report[] } | null>(null);
   const [error, setError] = useState('');
-  const load = (s: Status) =>
-    adminFetch<{ open: number; reports: Report[] }>(`/auth/admin/reports?status=${s}`)
-      .then(setData)
-      .catch((e: Error) => setError(e.message));
+  const load = useCallback(
+    (s: Status) =>
+      adminFetch<{ open: number; reports: Report[] }>(`/auth/admin/reports?status=${s}`)
+        .then(setData)
+        .catch((e: Error) => setError(e.message)),
+    [],
+  );
   useEffect(() => {
     load(status);
-  }, [status]);
+  }, [status, load]);
   return (
     <section>
       <FilterButtons

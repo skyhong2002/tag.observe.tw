@@ -74,17 +74,22 @@ async function load(): Promise<{ spec: OpenApi; examples: Record<string, string>
 
 // `code` spans in the spec's prose become <code>.
 function Prose({ text }: { text: string }) {
+  const seen = new Map<string, number>();
   return (
     <>
-      {text.split(/(`[^`]+`)/).map((part, i) =>
-        part.startsWith('`') && part.endsWith('`') ? (
-          <code key={i} className="break-words whitespace-normal rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800">
+      {text.split(/(`[^`]+`)/).map((part) => {
+        if (!part.startsWith('`') || !part.endsWith('`')) return part;
+        const occurrence = seen.get(part) ?? 0;
+        seen.set(part, occurrence + 1);
+        return (
+          <code
+            key={`${part}:${occurrence}`}
+            className="break-words whitespace-normal rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800"
+          >
             <PathBreaks path={part.slice(1, -1)} />
           </code>
-        ) : (
-          part
-        ),
-      )}
+        );
+      })}
     </>
   );
 }

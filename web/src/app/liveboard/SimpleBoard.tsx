@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReaderPresence } from '@/components/ReaderPresence';
 import Wordmark from '@/components/Wordmark';
 import type { RankingEntry } from '@/lib/api';
@@ -596,7 +596,7 @@ export default function SimpleBoard({
           if (f !== shown) continue;
           const last = f === frames.length - 1;
           if (last) next = framesOf(lenses[after]);
-          await sleep(stayOf(lens.scene, last, settings) * SECOND);
+          await sleep(stayOf(lens.scene, last, { step: settings.step, hold: settings.hold }) * SECOND);
           if (cancelled) return;
           if (skipped()) break;
           if (f !== shown) continue;
@@ -671,7 +671,7 @@ export default function SimpleBoard({
   const settledFrames = useRef(new Set<string>());
   const settleWaiters = useRef(new Map<string, () => void>());
   const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const settleAfter = (key: string, ms: number) => {
+  const settleAfter = useCallback((key: string, ms: number) => {
     clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => {
       if (settledFrames.current.size > 50) settledFrames.current.clear();
@@ -680,7 +680,7 @@ export default function SimpleBoard({
       settleWaiters.current.get(key)?.();
       settleWaiters.current.delete(key);
     }, ms);
-  };
+  }, []);
 
   // Each frame is the snapshot that stood that many hours ago (the hour's last one).
   // An event lens's frames are its events, by rank.
@@ -689,19 +689,15 @@ export default function SimpleBoard({
       (playing?.frames ?? []).map((f, i, all) => (f.event ? String(f.event.rank) : i === all.length - 1 || !f.back ? '現在' : ago(f.back))),
     [playing?.frames],
   );
-  const cloudy = playing?.lens.scene === 'cloud' || playing?.lens.scene === 'compare';
+  const playingLens = playing?.lens;
+  const cloudy = playingLens?.scene === 'cloud' || playingLens?.scene === 'compare';
   const centre = useMemo(
     () =>
-      canvas && playing && cloudy
+      canvas && playingLens && cloudy
         ? // A compare lens's centre is a band over the spectrum: smaller, so the words get the height.
-          centreOf(
-            playing.lens,
-            hourLabels,
-            playing.lens.scene === 'compare' ? Math.round(canvas.title * 0.62) : canvas.title,
-            canvas.width,
-          )
+          centreOf(playingLens, hourLabels, playingLens.scene === 'compare' ? Math.round(canvas.title * 0.62) : canvas.title, canvas.width)
         : null,
-    [canvas, playing?.lens, cloudy, hourLabels],
+    [canvas, playingLens, cloudy, hourLabels],
   );
   const spectrum = playing ? spectrumOf(playing.lens) : null;
   // A compare lens puts its centre in a band on top, the spectrum under it and its axis at the foot.
@@ -723,7 +719,7 @@ export default function SimpleBoard({
         : ws,
     );
     settleAfter(`${playing.run}:${playing.visit}`, SCENE_FADE);
-  }, [playing]);
+  }, [playing, settleAfter]);
 
   // Lays the frame out around the centre and hands out phases. A new hour of
   // the same lens keeps each word near where it was: words still there move
@@ -867,7 +863,7 @@ export default function SimpleBoard({
     return () => {
       live = false;
     };
-  }, [canvas, playing, pictures, centre, band, settings.words, settings.change]);
+  }, [canvas, playing, pictures, centre, band, settings.words, settings.change, settleAfter]);
 
   // Newcomers mount small and clear, then turn live on the next frames so they
   // grow in; the leavers are dropped once they have shrunk away.
@@ -1004,7 +1000,7 @@ export default function SimpleBoard({
                           {now && settledFrame === `${playing.run}:${playing.visit}` && (
                             // Fills over the time this hour (or the present) stays, once its animation is over.
                             <rect
-                              key={`${playing.run}-${i}`}
+                              key={`${playing.run}-${slot.label}`}
                               {...bar}
                               rx={bar.height / 2}
                               fill={tint(playing.lens)}
