@@ -10,6 +10,8 @@ ExecStart=/home/deck/.local/bin/node app/src/server.js
 Environment=NODE_ENV=production
 Environment=PORT=18130
 Environment=UI_ORIGIN=http://127.0.0.1:18132
+# One pool serves the public API and the SSR frontend (tag-web calls 18130).
+Environment=TAG_DB_POOL_SIZE=8
 EnvironmentFile=-/home/deck/Projects/tag.analysis.tw/.env
 Restart=always
 RestartSec=3

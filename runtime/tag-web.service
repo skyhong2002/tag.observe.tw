@@ -11,6 +11,14 @@ Environment=NODE_ENV=production
 Environment=PORT=18132
 Environment=HOSTNAME=127.0.0.1
 Environment=TAG_API_ORIGIN=http://127.0.0.1:18130
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=UV_THREADPOOL_SIZE=2
+Environment=VIPS_CONCURRENCY=1
+# The image optimizer (sharp/libvips) fragments glibc malloc arenas: on 2026-10-25
+# the V8 heap was 0.7 GB of a 3.8 GB process. Cap the arenas; keep a heap ceiling.
+Environment=MALLOC_ARENA_MAX=2
+Environment=NODE_OPTIONS=--max-old-space-size=1536
+TimeoutStopSec=10
 Restart=always
 RestartSec=3
 PrivateTmp=yes

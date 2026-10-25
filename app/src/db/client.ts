@@ -17,7 +17,9 @@ export function parseDbUrl(url: string | undefined) {
   };
 }
 
-export function createDb(url = process.env.TAG_DB_URL, { poolSize = 4 } = {}) {
+// The gateway serves both the public API and the SSR frontend from one pool,
+// so its unit raises TAG_DB_POOL_SIZE; callers queue beyond it (queueLimit).
+export function createDb(url = process.env.TAG_DB_URL, { poolSize = Number(process.env.TAG_DB_POOL_SIZE) || 4 } = {}) {
   const pool = mysql.createPool({
     ...parseDbUrl(url),
     charset: 'utf8mb4',
