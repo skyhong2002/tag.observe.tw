@@ -152,7 +152,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{emerging ? '正在發酵的新聞關鍵字' : '新聞關鍵字排行榜'}</h1>
           {ranking && (
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
               {taipeiHour(ranking.snapshot.hourStart)} 時段 · {current?.label}{' '}
               {ranking.snapshot.mediaCount ? `${ranking.snapshot.mediaCount} 家媒體 · ` : ''}
               {ranking.snapshot.articleCount !== null ? `${ranking.snapshot.articleCount.toLocaleString()} 篇 · ` : ''}更新於{' '}
@@ -214,7 +214,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         />
       )}
       {ranking?.snapshot.available && (
-        <p role="status" className="text-sm text-zinc-600">
+        <p role="status" className="text-sm text-zinc-600 dark:text-zinc-400">
           符合條件 {ranking.matchedCount ?? ranking.entries.length} 個關鍵字
           {emerging && !!ranking.unknownGrowthCount && ` · ${ranking.unknownGrowthCount} 個因歷史不足，暫不列入升溫榜`}
         </p>
@@ -239,7 +239,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           }
         >
           <table className="w-full min-w-[94rem] text-sm">
-            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950">
+            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
               <tr>
                 {/* On phones the rank moves into the sticky keyword cell. */}
                 <th className={`hidden w-10 text-right sm:table-cell ${table.cell}`}>#</th>
@@ -263,11 +263,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 const related = (e.related ?? []).slice(0, RELATED_SHOWN);
                 return (
                   <tr key={e.tag} className={table.row}>
-                    <td className={`hidden text-zinc-500 sm:table-cell ${table.num}`}>{e.position}</td>
+                    <td className={`hidden text-zinc-500 dark:text-zinc-400 sm:table-cell ${table.num}`}>{e.position}</td>
                     <td className={table.lead}>
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <div className={`${table.leadBox} flex items-center gap-2`}>
-                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 sm:hidden">{e.position}</span>
+                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 sm:hidden">
+                            {e.position}
+                          </span>
                           <Link
                             href={`/tag/${encodeURIComponent(e.tag)}`}
                             className={`${table.leadText} font-medium text-brand-700 hover:underline dark:text-brand-400`}
@@ -285,7 +287,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       </div>
                     </td>
                     <td
-                      className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'font-medium text-brand-700 dark:text-brand-400' : 'text-zinc-600'}`}
+                      className={`${table.num} ${e.burst !== null && e.burst > e.normalized ? 'font-medium text-brand-700 dark:text-brand-400' : 'text-zinc-600 dark:text-zinc-400'}`}
                     >
                       {emerging ? `+${e.signals?.growth?.toFixed(1) ?? '—'}` : (e.burst?.toFixed(1) ?? '—')}
                     </td>
@@ -294,17 +296,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       title={delta === null || e.new ? undefined : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`}
                     >
                       {delta === null ? (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
                       ) : delta > 0 ? (
-                        <span className="text-rose-600">▲{delta}</span>
+                        <span className="text-rose-600 dark:text-rose-400">▲{delta}</span>
                       ) : delta < 0 ? (
-                        <span className="text-sky-600">▼{-delta}</span>
+                        <span className="text-sky-600 dark:text-sky-400">▼{-delta}</span>
                       ) : (
-                        <span className="text-zinc-400">＝</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">＝</span>
                       )}
                     </td>
                     <td className={table.num}>{e.normalized.toFixed(1)}</td>
-                    <td className={`${table.num} text-zinc-600`}>{e.count}</td>
+                    <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{e.count}</td>
                     <td className="px-2 py-1 sm:px-3">
                       <Sparkline values={trend.map((p) => p.average24h)} />
                     </td>
@@ -320,7 +322,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {related.length ? (
                         related.map((r, i) => (
                           <span key={r.tag}>
-                            {i > 0 && <span className="text-zinc-400">、</span>}
+                            {i > 0 && <span className="text-zinc-500 dark:text-zinc-400">、</span>}
                             <Link
                               href={`/tag/${encodeURIComponent(r.tag)}`}
                               className="text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
@@ -330,7 +332,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                           </span>
                         ))
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
                       )}
                     </td>
                     <td className={`max-w-0 ${table.cell}`}>
@@ -340,7 +342,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {e.drafts?.articles ? (
                         <DraftEvidence data={e.drafts} singleLine />
                       ) : (
-                        <span className="text-xs text-zinc-400">暫無比對資料</span>
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">暫無比對資料</span>
                       )}
                     </td>
                   </tr>

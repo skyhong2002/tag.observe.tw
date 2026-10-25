@@ -17,14 +17,15 @@ import {
 import { recolourLogo } from '../tag-visuals/recolour.ts';
 import { visualMime } from '../v1/tag-visual.ts';
 import { refreshPages } from './refresh.ts';
-import { addVisualUpload, applyVotes, castVote, type PictureKind, pictureKind, tally, uploadsToday } from './votes.ts';
+import { submitPicture } from './submissions.ts';
+import { applyVotes, castVote, type PictureKind, pictureKind, tally, uploadsToday } from './votes.ts';
 
 // /tag/{tag}/picture/: any signed-in reader votes for a tag's picture or
 // uploads one (docs/tag-pictures.md). A person tag's photo is sketched by the
 // worker (the face models stay out of the gateway); any other tag's picture
-// is cut out, trimmed and recoloured here. An upload counts as its
-// uploader's vote; the most-voted candidate is shown unless an admin chose
-// or hid one, and admins can lock a candidate or let the votes decide again.
+// is cut out, trimmed and recoloured here. Uploads wait for administrator
+// approval before becoming candidates or counting as the uploader's vote.
+// The most-voted candidate is shown unless an admin chose or hid one.
 
 type Options = {
   currentUser: (request: FastifyRequest) => Promise<SessionUser | null>;
@@ -231,10 +232,12 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     if (rank !== null) {
       const table = kind === 'avatar' ? tagAvatarCandidates : tagVisualCandidates;
       const [c] = await db
-        .select({ rank: table.rank })
+        .select({ rank: table.rank, uploadedBy: table.uploadedBy })
         .from(table)
         .where(and(eq(table.tag, tag), eq(table.rank, rank)));
       if (!c) return reply.code(404).send({ error: 'no such candidate' });
+      // Others decide whether a reader's upload is shown; nobody puts up their own picture.
+      if (c.uploadedBy === user.id) return reply.code(403).send({ error: '不能投自己上傳的圖，請讓其他讀者決定' });
     }
     const shownRank = await castVote(db, tag, kind, user.id, rank);
     refreshPages(uiOrigin, tag);
@@ -272,9 +275,9 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
           return reply.code(202).send({ kind, jobId: job.id });
         }
         const image = await recolourLogo(raw);
-        const added = await addVisualUpload(db, tag, image, user.id);
-        refreshPages(uiOrigin, tag);
-        return { kind, ...added };
+        const added = await submitPicture(db, { tag, pictureKind: kind, image, userId: user.id });
+        if (added.status === 'approved') refreshPages(uiOrigin, tag);
+        return reply.code(201).send({ kind, ...added });
       } catch (err) {
         return reply.code(400).send({ error: `讀不了這張圖：${(err as Error).message}` });
       }
@@ -289,10 +292,10 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     const job = await queue().getJob(request.params.id);
     if (!job || (user.role !== 'admin' && (job.data as { userId?: number }).userId !== user.id))
       return reply.code(404).send({ error: 'no such job' });
-    const result = (job.returnvalue ?? null) as { tag?: string; error?: string } | null;
+    const result = (job.returnvalue ?? null) as { tag?: string; error?: string; status?: string } | null;
     const state = await job.getState();
-    // The sketch is in: rebuild the pages (once is enough, but polling twice does no harm).
-    if (state === 'completed' && result?.tag && !result.error) refreshPages(uiOrigin, result.tag);
+    // A finished photo job has published the sketch; refresh the tag's pages once the reader sees it.
+    if (state === 'completed' && result?.status === 'approved' && result.tag) refreshPages(uiOrigin, result.tag);
     return { id: job.id, state, result, error: job.failedReason ?? result?.error ?? null };
   });
 

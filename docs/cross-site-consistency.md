@@ -1,24 +1,44 @@
 # 三站呈現一致性參考（T-ref）
 
-以新文易數既有元件為基準；blog 與 YouTube 應盡可能直接沿用實作與外觀。只有功能目標不同時才偏離，並在各站的 `docs/ui-review-ledger.md` 逐頁寫明理由。同一資料的名稱、來源、時間範圍與狀態應有相同含義。以下未寫前綴的元件檔名位於 `web/src/components/`；`app/`、`components/` 短路徑位於 `web/src/`。
+以新文易數既有元件為基準；blog 與 YouTube 應盡可能直接沿用實作與外觀。只有功能目標不同時才偏離，並在各站的 `docs/ui-review-ledger.md` 逐頁寫明理由。同一資料的名稱、來源、時間範圍與狀態應有相同含義。元件與樣式參考均列出相對儲存庫根目錄的完整路徑。此文件描述沿用約定，並非宣告 F1 已完成瀏覽器驗收或部署。
+
+## 目前可對齊的正式基準（2026-10-15 台北）
+
+- 正式 web：`f62abfb5a99f3f8d9700ed4914faef8823349c55`，BUILD_ID `08ItzUxu99m4XSoNcfGsu`；API：`dc7b814e220606202a408d21e73b1d6e7c61fe16`。此文件後續 commit 是文件或截圖工具更新，不代表重建了前端。
+- 範例：[首頁](https://tag.observe.tw/)、[標籤與關係](https://tag.observe.tw/tag/柯文哲/)、[排行](https://tag.observe.tw/ranking/)、[事件表](https://tag.observe.tw/event/)。事件頁 canonical 是 `/event/`，不是 `/events/`。
+- 正式與 candidate 審查分開；實際版本、圖片路徑、raw network 和非作者看圖 transcript 放在 `docs/ui-review-ledger.md`。舊 APP677 的截圖只供歷史參考，不用來驗現在的 UI。全站65 route 的各狀態尚未全部完成。
+- 原始碼可直接從上述 web commit 複製元件；一起帶它的相對 import 依賴。資料取得、路由和同源 auth 接上各站自己的 API，不能把 tag 的私有 SSR origin、服務 token 或帳號設定複製進 browser bundle。
+- 深色次要文字：`58cdab2d`／`72491ab8` 與看圖發現的共用區塊遺漏已收斂於正式 `9eb73370`。候選八頁指定文字實圖取樣對比6.75–7.59:1；正式逐頁 review 獨立記錄，不代表所有頁或狀態都通過。沿 `dark:text-zinc-300/400`，不要複製歷史低對比；資料載入失敗不等於合法空集合。
+
+## 首頁可複用元件與 CSS module
+
+| 實作路徑 | 可沿用的 class／元件／token | 使用與偏離約定 |
+| --- | --- | --- |
+| `web/src/app/_home/home.module.css` | `.home`：`--paper`、`--panel`、`--line`、`--soft-line`、`--ink`、`--muted`、`--accent`、`--tint`、`--chip`；亮／暗值在同一檔內 | 以這些 semantic token 套用卡片、邊框與文字；不要只複製亮色值或更換各站近似色。首頁使用品牌橘，藍／綠專指資料中的媒體陣營。 |
+| `web/src/app/_home/home.module.css` | `.main`、`.columns`、`.left`、`.center`、`.right`、`.sectionHeading`、`.brief`、`.ranking`、`.rankBody`、`.notice` | 最大寬1152px、內距16px、欄間20px；手機堆疊和中尺寸雙欄沿檔末 media rules。若 blog／YT 沒有第三個資料欄，可以減欄，需在該頁 ledger 說明其功能差異。 |
+| `web/src/app/_home/TopicPanel.tsx`、`web/src/app/_home/HomeTopicsRecovery.tsx`、`web/src/lib/home-topics.mts` | `.topicPanel`、`.topicList`、`.topicCover`、`.topicBody`、`.topicRecoveryNotice` | 有代表圖就顯示原議題圖片；載入、空資料和失敗分開。只有 SSR 缺資料才做一次 public recovery；失敗 notice 不保留320px空白。下游複用呈現時換成自己的資料型別，不硬套 tag 的篇數。 |
+| `web/src/app/_home/NewsImage.tsx`、`web/src/lib/home-images.mts`、`web/src/components/SafeImage.tsx`、`web/src/lib/images.ts`、`web/src/lib/image-hosts.json` | `.picture`、`.pictureFallback`、`.pictureMark`、`.photo`；`homeImageSizes.hero/story/topic` | 圖片位置／sizes 和 CSS 尺寸一起複製；既有 topic72px、縮圖 quality65、Next WebP、lazy/low，LCP hero eager/high。無圖或載入失敗才 fallback，不能換成無關圖片；每站的圖片 host allowlist 由自己的 gateway 同步驗證。 |
+| `web/src/app/_home/home.module.css` | `.campOutletLink`、`.campOutletsMore` | 正式媒體格26×26，符合24px最低觸控目標；展開按鈕44px。這是密集媒體索引的既有設計，不要再用 coarse-pointer rule 把每格放大為44px。一般操作按鈕仍以44px為預設。 |
+
+F4 對齊應包含共用的 header/footer、method notes、表格 loading／empty／error 和兩種寬度、亮暗色。只複製首頁的一張截圖不等於逐頁對齊；資料不可用時不能顯示成0，也不能省略本頁的資料來源與計算方式。
 
 ## 元件與可直接沿用的樣式
 
 | 場景 | 實作參考 | 呈現約定 |
 | --- | --- | --- |
-| 導航與版面 | `web/src/components/SiteHeader.tsx`、`SiteNavigation.tsx`、`NavPending.tsx`、`web/src/app/(site)/layout.tsx` | 沿用桌機／行動導航、當前頁標示和導覽載入狀態，不另造首頁以外的導航模式。 |
+| 導航與版面 | `web/src/components/SiteHeader.tsx`、`web/src/components/SiteNavigation.tsx`、`web/src/components/NavPending.tsx`、`web/src/app/(site)/layout.tsx` | 沿用桌機／行動導航、當前頁標示和導覽載入狀態，不另造首頁以外的導航模式。 |
 | 表格排序、篩選與捲動 | `web/src/lib/table-styles.ts`、`web/src/components/TableScroller.tsx` | 直接使用 `table.cell`、`table.num`、`table.row`、`table.lead`、`table.leadHead`、`table.leadBox`、`table.leadExtra`、`table.stack`；寬表橫向捲動、首欄固定，窄文字表搭配 `data-label` 堆疊。各頁排序與篩選須保留可見狀態。 |
-| 文章列、卡片 | `web/src/components/ArticleListItem.tsx`、`ArticleResults.tsx`、`EventCard.tsx`、`TopicCard.tsx` | 標題為主要連結，媒體、刊登時間與原文來源另列；整列避免互相嵌套的連結。 |
-| 標籤摘要、排行 | `TagSummaryCard.tsx`、`web/src/app/(site)/ranking/` 下元件、`RankingBasisNote.tsx` | 排名、篇數、分數分開標示；數字使用 `tabular-nums`；缺值保留為缺值，不能把資料不可用寫成 0。排行必須附時間窗口及基準媒體。 |
-| 標籤分類與關係 | `TagGroupChips.tsx`、`TagRelationsPanel.tsx` | 分開顯示上位分類（is-a）、相關詞（related）、同義或別名（alias）。父分類可多個、可有上層；共現只屬統計。 |
-| 圖片與頭像 | `ArticleThumbnail.tsx`、`SafeImage.tsx`、`TagPerson.tsx`、`TagVisual.tsx` | 使用既有處理後的圖片 URL、正確尺寸；原作者、來源連結與授權不可省略。人物素描和標誌不要當新聞現場照片。畫面外圖片延遲載入。 |
-| 本頁資料來源與計算方式 | `MethodNotes.tsx`、`components/method/`、`app/(site)/@notes/` | 使用平行 `@notes` slot 對應本頁，將定義、來源、計算範圍與限制放在固定頁尾；不要每站另創同義指標。 |
-| 管理表格、審核 | `app/(site)/admin/AdminGate.tsx`、`Reports.tsx`、`tags/TagSubmissions.tsx`、`tag-groups/TagGroupEditor.tsx` | 登入與 admin 權限沿用 gateway；待審、已通過、未採納必須明示，留來源與審核理由；只在成功回應後更新畫面。 |
-| 使用者投稿 | `components/reader/TagRelationSubmission.tsx`、`app/(site)/tag/[tag]/picture/PictureVote.tsx` | 未登入提供登入返回路徑；成功提示「送交審核」，不暗示立即公開；驗證錯誤保留使用者輸入。 |
+| 文章列、卡片 | `web/src/components/ArticleListItem.tsx`、`web/src/components/ArticleResults.tsx`、`web/src/components/EventCard.tsx`、`web/src/components/TopicCard.tsx` | 標題為主要連結，媒體、刊登時間與原文來源另列；整列避免互相嵌套的連結。 |
+| 標籤摘要、排行 | `web/src/components/TagSummaryCard.tsx`、`web/src/app/(site)/ranking/` 下元件、`web/src/components/RankingBasisNote.tsx` | 排名、篇數、分數分開標示；數字使用 `tabular-nums`；缺值保留為缺值，不能把資料不可用寫成 0。排行必須附時間窗口及基準媒體。 |
+| 標籤分類與關係 | `web/src/components/TagGroupChips.tsx`、`web/src/components/RelationLink.tsx` | 標籤名下一排：分類、主題，再接讀者成立的相關詞（related）、別名（alias）與非分類的上位標籤（is-a），最後是登入讀者看得到的「改關係」。父分類可多個、可有上層；共現只屬統計。 |
+| 圖片與頭像 | `web/src/components/ArticleThumbnail.tsx`、`web/src/components/SafeImage.tsx`、`web/src/components/TagPerson.tsx`、`web/src/components/TagVisual.tsx` | 使用既有處理後的圖片 URL、正確尺寸；原作者、來源連結與授權不可省略。人物素描和標誌不要當新聞現場照片。畫面外圖片延遲載入。 |
+| 本頁資料來源與計算方式 | `web/src/components/MethodNotes.tsx`、`web/src/components/method/`、`web/src/app/(site)/@notes/` | 使用平行 `@notes` slot 對應本頁，將定義、來源、計算範圍與限制放在固定頁尾；不要每站另創同義指標。 |
+| 管理表格、審核 | `web/src/app/(site)/admin/AdminGate.tsx`、`web/src/app/(site)/admin/Reports.tsx`、`web/src/app/(site)/admin/tags/TagSubmissions.tsx`、`web/src/app/(site)/admin/tag-groups/TagGroupEditor.tsx` | 登入與 admin 權限沿用 gateway；待審、已通過、未採納必須明示，留來源與審核理由；圖片核准須確認授權，待審圖片使用同源受權限保護的審核端點；只在成功回應後更新畫面。 |
+| 使用者投稿 | `web/src/components/reader/TagRelationSubmission.tsx`、`web/src/app/(site)/tag/[tag]/picture/PictureVote.tsx` | 未登入提供登入返回路徑；依回傳的 pending／approved／rejected 顯示審核或重複投稿結果，不暗示 pending 已公開；驗證錯誤保留使用者輸入。 |
 
 可沿用的 Tailwind 組合（色票由 `web/src/app/globals.css` 的 theme 定義；不要自行選近似橘色）：
 
-- CSS token：`--background`、`--foreground`、`--color-background`、`--color-foreground`；品牌完整色階 `--color-brand-50`、`100`、`200`、`300`、`400`、`500`、`600`、`700`、`800`、`900`、`950`（各自映射同階 `--color-orange-*`）。
+- CSS token：`--background`、`--foreground`、`--color-background`、`--color-foreground`；品牌完整色階 `--color-brand-50`、`--color-brand-100`、`--color-brand-200`、`--color-brand-300`、`--color-brand-400`、`--color-brand-500`、`--color-brand-600`、`--color-brand-700`、`--color-brand-800`、`--color-brand-900`、`--color-brand-950`（各自映射同階 `--color-orange-*`）。
 - 字型：`--font-sans`，依序 `PingFang TC`、`Noto Sans TC`、`Noto Sans CJK TC`、`Microsoft JhengHei`、`system-ui`、`sans-serif`；不要載入不同字型造成跨站行高漂移。
 - 深色沿 `[data-theme="dark"]` 與 `dark:` variant；表格沿 `.table-frame`／`.table-card` 的 `--table-bg`、`--table-head-bg`、`--table-hover-bg`，勿把 sticky 欄背景寫死。
 
@@ -41,9 +61,12 @@
 
 ## 快取與載入
 
+- 導覽、頁尾、字雲與大量重複的文章／事件／媒體連結使用 `prefetch={false}`，避免只瀏覽一頁就替多個目的頁發起 RSC 查詢。保留點擊時的 Next Link 導覽；若個別頁要預取少數連結，需說明預算並量測實際請求數。候選修正與原始請求盤點見 `docs/rsc-prefetch-audit-20261013.md`。
 - 公開資料 SSR 平行取得，互動部分才使用 client component；`web/src/lib/api.ts` 的匿名 GET 有短期 revalidate 與失敗重試。不要讓使用者 Cookie/token 進入共用 SSR fetch。
 - 所有 `/api/v1` 請求若帶 Cookie、Authorization、X-Service-Token 或 X-Api-Key，回應為 `private, no-store`；錯誤與限流回應 `no-store`。只有匿名成功回應能公開快取。下游遵守實際回應標頭，不另猜 TTL。
 - `/auth/*`、管理與投稿一律 `cache: 'no-store'`、同源 credentials；寫入要求同源 Origin 與後端權限。前端 `AdminGate` 僅控制呈現，不能代替授權。
 - loading 顯示「載入中…」；空集合說明「尚未收錄」或「沒有待審投稿」；失敗顯示獨立錯誤且可重試。切換篩選／分頁要忽略過期請求，不把舊頁誤畫到新狀態。
 - 圖片審核通過後才可進公開候選與投票；重用既有轉檔、授權確認、上傳額度和重新驗證頁面機制。
 - GA 的 DNT、GPC、自動化、bot 與 opt-out guards 全部保留；管理、搜尋與私人頁不送事件。開發、測試與跨站驗收不得送合成 GA 事件。
+
+最新f62次要深色字沿zinc400，mobile `.table-stack td[data-label]::before` 明確dark override。liveboard timeline只淡化軌道，不淡化刻度；候選刻度實像素4.58:1，正式新圖另驗。選取項目以外框/字重表達，未選數字保留可讀性；pulse只作用在圖形，不讓數字變淡。T-ref不宣稱每頁或每狀態UI已通過。主要candidate與正式review分開記錄。

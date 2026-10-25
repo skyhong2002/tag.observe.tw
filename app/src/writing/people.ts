@@ -3,6 +3,7 @@
 // role of the person groups the tag is filed in (tag-groups). Only tags known
 // to be people qualify — in a person group or matched to a Wikidata human —
 // which keeps tags like 「深夜」「學生」 out.
+import { LEGACY_GROUPS } from '../tag-groups/rules.ts';
 import { nameCandidates, type Role, roleOf } from './rules.ts';
 
 export const MIN_HITS = 3;
@@ -38,7 +39,9 @@ export interface Resolved {
   note?: string;
 }
 
-// Legacy identity groups (tag_group_defs ids 1–28) that name a person's role.
+// Legacy identity groups (tag_group_defs ids 1–28, named here by their seed
+// labels) that name a person's role. A group counts by its id or by its seed
+// label, so an admin renaming one (「現任立委」 → 「2024 立委」) keeps its role.
 // 社會新聞人物 says nothing about the role, and the rest are not people.
 export const GROUP_ROLES: Record<string, Exclude<Role, '未知'>> = {
   政治人物: '公職政治',
@@ -64,11 +67,16 @@ export const GROUP_ROLES: Record<string, Exclude<Role, '未知'>> = {
   網紅: '藝人網紅',
   商場經理人: '專家企業',
 };
+const SEED_LABEL = new Map(LEGACY_GROUPS.map((g) => [g.id, g.label]));
 export const PERSON_GROUPS = [...Object.keys(GROUP_ROLES), '社會新聞人物'];
+/** Ids of the same groups, whatever they are called now. */
+export const PERSON_GROUP_IDS = LEGACY_GROUPS.filter((g) => PERSON_GROUPS.includes(g.label)).map((g) => g.id);
 
 /** One role from a tag's groups: commentary groups win, then the most specific. */
-export function groupRole(groups: string[]): Exclude<Role, '未知'> | null {
-  const roles = groups.map((g) => GROUP_ROLES[g]).filter((r): r is Exclude<Role, '未知'> => !!r);
+export function groupRole(groups: { id: number; label: string }[]): Exclude<Role, '未知'> | null {
+  const roles = groups
+    .map((g) => GROUP_ROLES[SEED_LABEL.get(g.id) ?? ''] ?? GROUP_ROLES[g.label])
+    .filter((r): r is Exclude<Role, '未知'> => !!r);
   for (const r of ['評論名嘴', '藝人網紅', '專家企業', '公職政治'] as const) if (roles.includes(r)) return r;
   return null;
 }

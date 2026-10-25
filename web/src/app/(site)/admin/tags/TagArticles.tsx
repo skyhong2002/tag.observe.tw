@@ -86,7 +86,7 @@ function Browser({ tag }: { tag: string }) {
             <Link className="font-medium hover:underline" href={`/article/${a.id}/`}>
               {a.title}
             </Link>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
               {a.mediaName} · {taipei(a.publishedAt)} ·{' '}
               <a href={a.url} target="_blank" rel="noopener noreferrer" className="underline">
                 原文
@@ -96,7 +96,7 @@ function Browser({ tag }: { tag: string }) {
               {a.relations.map((r) => (
                 <li key={r.kind}>
                   <span className="mr-2 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs dark:bg-zinc-800">{r.label}</span>
-                  {r.platform && <span className="mr-2 text-xs text-zinc-500">{r.platform}</span>}
+                  {r.platform && <span className="mr-2 text-xs text-zinc-500 dark:text-zinc-400">{r.platform}</span>}
                   <span className="break-words text-zinc-600 dark:text-zinc-400">{r.evidence ?? '未保留判斷句'}</span>
                 </li>
               ))}

@@ -12,10 +12,12 @@ import { articleMediaOf, topicCountPerMedia, topicSourceChecks } from '../jobs/t
 import { categoryLabel, mediaCategories } from '../media-categories.ts';
 import { mediaScope } from '../media-scope.ts';
 import { mediaTagDomains, mediaTags } from '../media-traffic/site-tags.ts';
+import { mediaStatsQueryDuration } from '../metrics.ts';
 import { outletIdentity } from '../similarity/attribution.ts';
 import { isDiscoverySource } from './article-content.ts';
 import { campOf } from './coverage.ts';
 import { iconUrl } from './icons.ts';
+import { firstCrawls, ownTotals } from './media-first-crawl.ts';
 
 // Per-media article counts and crawl health for the public /media/ dashboard.
 const info = favicons as unknown as Record<string, { icon: string | null; title: string | null }>;
@@ -57,6 +59,68 @@ export function statusFor(
 export const taipeiMidnight = (now: number) => new Date(Math.floor((now + 8 * HOUR) / (24 * HOUR)) * 24 * HOUR - 8 * HOUR);
 
 export function registerMediaStats(app: FastifyInstance, db: Db) {
+  // A backend-only rollout may share the retained public stats producer. Do
+  // not launch another historical full scan just to warm an identical UI.
+  const shared = process.env.TAG_MEDIA_STATS_SHARED_ORIGIN;
+  if (shared) {
+    const origin = new URL(shared);
+    if (
+      origin.protocol !== 'http:' ||
+      origin.hostname !== '127.0.0.1' ||
+      origin.username ||
+      origin.password ||
+      origin.pathname !== '/' ||
+      origin.search ||
+      origin.hash ||
+      origin.port !== '18230' ||
+      origin.port === process.env.PORT
+    )
+      throw Error('invalid loopback media-stats origin');
+    let pending: Promise<unknown> | null = null;
+    app.get('/api/v1/media-stats', async (_request, reply) => {
+      reply.header('cache-control', 'public, max-age=120');
+      const request = (pending ??= (async () => {
+        // No Cookie, Authorization, API/service token or caller URL is forwarded.
+        const res = await fetch(origin.origin + '/api/v1/media-stats', {
+          headers: { DNT: '1' },
+          redirect: 'error',
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (res.status !== 200) {
+          await res.body?.cancel();
+          throw Error('shared media stats unavailable');
+        }
+        const reader = res.body?.getReader();
+        if (!reader) throw Error('shared media stats empty');
+        const parts: Uint8Array[] = [];
+        let bytes = 0;
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            bytes += value.byteLength;
+            if (bytes > 2 * 1024 ** 2) throw Error('shared media stats oversized');
+            parts.push(value);
+          }
+        } finally {
+          await reader.cancel();
+        }
+        const text = Buffer.concat(parts).toString();
+        const value = JSON.parse(text);
+        if (!value || typeof value.generatedAt !== 'string' || !Array.isArray(value.media) || !value.totals)
+          throw Error('invalid shared media stats');
+        return value;
+      })());
+      try {
+        return await request;
+      } catch {
+        return reply.code(503).header('cache-control', 'no-store').send({ error: 'shared media stats unavailable' });
+      } finally {
+        if (pending === request) pending = null;
+      }
+    });
+    return;
+  }
   const load = async () => {
     const now = Date.now();
     const today = taipeiMidnight(now),
@@ -66,6 +130,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
     const dated = sql`NOT (${articles.fetchedAt} IS NULL AND ${articles.publishedAt} = ${articles.crawledAt})`;
     const summaryEligible = sql`${dated} AND ${articles.publishedAt} <= ${new Date(now)}`;
     const hasSummary = sql`${articles.summary} IS NOT NULL AND CHAR_LENGTH(TRIM(${articles.summary})) > 0`;
+    const durations: Record<string, number> = {};
+    let stageStart = performance.now();
     const counts = await db
       .select({
         media: articles.media,
@@ -102,19 +168,20 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
         ),
       )
       .groupBy(articles.media);
+    durations.recentArticles = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
     // When our own crawler first stored an article for each media: the 7-day
     // column only covers that much until a full week has passed.
-    const firsts = await db
-      .select({
-        media: articles.media,
-        first: sql<Date | string | null>`MIN(${articles.crawledAt})`,
-        totalCollected: sql<number>`COUNT(*)`,
-      })
-      .from(articles)
-      .where(sql`${articles.source} = 'own'`)
-      .groupBy(articles.media);
-    const firstBy = new Map(firsts.map((f) => [f.media, f.first]));
-    const totalBy = new Map(firsts.map((f) => [f.media, Number(f.totalCollected)]));
+    const totals = await ownTotals(db);
+    const known = await firstCrawls(
+      db,
+      totals.map((t) => t.media),
+      (error) => app.log.warn({ err: error }, 'media first-crawl cache not saved'),
+    );
+    durations.historicalArticles = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
+    const firstBy = new Map<string, Date | string | null>(totals.map((t) => [t.media, known[t.media] ?? null]));
+    const totalBy = new Map(totals.map((t) => [t.media, Number(t.totalCollected)]));
     // Aggregators expose discoveries under the original article identity. Their
     // row counts are useful, but must never inflate site-wide publication totals.
     const discoveries = await db
@@ -133,6 +200,8 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .innerJoin(articles, eq(articles.id, articleDiscoveries.articleId))
       .where(lte(articles.publishedAt, future))
       .groupBy(articleDiscoveries.media);
+    durations.discoveries = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
     for (const row of discoveries) {
       firstBy.set(row.media, row.first);
       totalBy.set(row.media, Number(row.totalCollected));
@@ -158,7 +227,12 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
       .from(crawlRuns)
       .where(sql`${crawlRuns.stage} IN ('index', 'article')`)
       .groupBy(crawlRuns.media);
+    durations.crawlRuns = Math.round(performance.now() - stageStart);
+    stageStart = performance.now();
     const [topicChecks, topicCounts] = await Promise.all([topicSourceChecks(db, new Date(now)), topicCountPerMedia(db)]);
+    durations.topics = Math.round(performance.now() - stageStart);
+    for (const [stage, ms] of Object.entries(durations)) mediaStatsQueryDuration.observe({ stage }, ms / 1000);
+    app.log.info({ durationsMs: durations }, 'media-stats query timings');
     const byCount = new Map([...counts, ...discoveries].map((c) => [c.media, c]));
     const bySummary = new Map(counts.map((c) => [c.media, c]));
     const byRun = new Map(runs.map((r) => [r.media, r]));
@@ -280,19 +354,31 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
   };
   // The public response already advertises a two-minute cache. Share it on
   // the server too, so concurrent directory readers do not repeat DB scans.
+  // The 7-day aggregate still reads recent rows (seconds, longer when the disk
+  // is busy): compute it at startup and keep serving the last snapshot while
+  // a newer one loads, so readers never wait for it after the first one.
   let cached: Awaited<ReturnType<typeof load>> | null = null;
   let expires = 0;
   let pending: ReturnType<typeof load> | null = null;
+  const refresh = () =>
+    (pending ??= load()
+      .then((value) => {
+        cached = value;
+        expires = Date.now() + 120_000;
+        return value;
+      })
+      .finally(() => {
+        pending = null;
+      }));
+  app.addHook('onReady', async () => {
+    refresh().catch((error) => app.log.warn({ err: error }, 'media-stats warm-up failed'));
+  });
   app.get('/api/v1/media-stats', async (_request, reply) => {
     reply.header('cache-control', 'public, max-age=120');
     if (cached && Date.now() < expires) return cached;
-    const request = (pending ??= load());
-    try {
-      cached = await request;
-      expires = Date.now() + 120_000;
-      return cached;
-    } finally {
-      if (pending === request) pending = null;
-    }
+    const request = refresh();
+    if (!cached) return request;
+    request.catch((error) => app.log.warn({ err: error }, 'media-stats refresh failed'));
+    return cached;
   });
 }

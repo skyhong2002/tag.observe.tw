@@ -16,7 +16,7 @@ export default async function ContinuationLinks({ ids, label }: { ids: number[];
   return (
     <details className="rounded-xl border border-zinc-200 dark:border-zinc-800">
       <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
-        {label} <span className="ml-2 text-xs font-normal text-zinc-500">{ids.length} 件</span>
+        {label} <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{ids.length} 件</span>
       </summary>
       <ul className="divide-y divide-zinc-100 px-4 pb-2 dark:divide-zinc-800">
         {rows.map(({ id, data }) => (
@@ -25,7 +25,7 @@ export default async function ContinuationLinks({ ids, label }: { ids: number[];
               #{id} · {data ? eventThreadHeadline(data) : '查看事件'} →
             </Link>
             {data && (
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                 {taipeiHour(data.thread.firstTime)} 至 {taipeiHour(data.thread.lastTime)}
               </p>
             )}

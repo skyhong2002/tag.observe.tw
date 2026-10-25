@@ -81,8 +81,8 @@ function TrendChart({
   useEffect(() => {
     if (!ref.current) return;
     const chart = echarts.init(ref.current);
-    // The legend wraps to two rows on phones; push the plot down so it clears the axis name.
-    const top = ref.current.clientWidth < 560 ? 84 : 64;
+    // On phones the legend wraps to three lines; leave room so it does not cover the axis title.
+    const narrow = ref.current.clientWidth < 520;
     const ink = dark ? '#a1a1aa' : '#71717a',
       grid = dark ? '#27272a' : '#f4f4f5',
       surface = dark ? '#18181b' : '#ffffff';
@@ -100,6 +100,8 @@ function TrendChart({
       gridIndex: i,
       min: 0,
       ...(i === 0 && scale === 'share' ? {} : { minInterval: 1 }),
+      // The lower panel is short: two intervals keep its labels apart.
+      splitNumber: i === 1 ? 2 : narrow ? 3 : 5,
       name,
       nameTextStyle: { color: ink, align: 'left' },
       axisLabel: { color: ink, ...(i === 0 && scale === 'share' ? { formatter: '{value}%' } : {}) },
@@ -127,10 +129,10 @@ function TrendChart({
           ].join('<br/>');
         },
       },
-      legend: { top: 0, left: 0, textStyle: { color: ink }, data: [...lines.map((s) => s.name), '比對篇數'] },
+      legend: { top: 0, left: 0, textStyle: { color: ink }, inactiveColor: ink, data: [...lines.map((s) => s.name), '比對篇數'] },
       grid: [
-        { left: 48, right: 24, top, height: '46%' },
-        { left: 48, right: 24, top: '72%', bottom: 26 },
+        { left: 48, right: 24, top: narrow ? 104 : 64, height: narrow ? '40%' : '46%' },
+        { left: 48, right: 24, top: narrow ? '78%' : '72%', bottom: 26 },
       ],
       xAxis: [axis(0), axis(1)],
       yAxis: [yAxis(0, scale === 'share' ? '÷ 比對篇數' : unit), yAxis(1, '比對篇數')],
@@ -201,7 +203,7 @@ const share = (row: Row, key: Metric) => (row.articles > 0 ? row[key] / row.arti
 function Share({ row, metric }: { row: Row; metric: Metric }) {
   const value = row[metric],
     ratio = share(row, metric);
-  if (!value) return <span className="text-zinc-300 dark:text-zinc-700">0</span>;
+  if (!value) return <span className="text-zinc-600 dark:text-zinc-400">0</span>;
   return (
     <>
       {number(value)}
@@ -250,7 +252,7 @@ function useOutletRows(data: SimilarityDaily | null) {
 const checkbox = 'size-4 shrink-0 accent-brand-700 dark:accent-brand-500';
 
 function OutletTable({
-  rows,
+  rows: sorted,
   sort,
   descending,
   sortBy,
@@ -264,10 +266,28 @@ function OutletTable({
   onTick: (media: string) => void;
   onTickAll: () => void;
 }) {
+  const [showEmpty, setShowEmpty] = useState(false);
+  // Outlets with nothing in the period made the table a long tail of zeros.
+  const active = (row: Row) => row.articles + row.copied + row.copying + row.citing + row.cited > 0;
+  const empty = sorted.filter((row) => !active(row)).length;
+  const rows = showEmpty ? sorted : sorted.filter(active);
   const cell = table.num;
-  const muted = (value: number) => (value ? '' : 'text-zinc-300 dark:text-zinc-700');
+  const muted = (value: number) => (value ? '' : 'text-zinc-600 dark:text-zinc-400');
   return (
-    <TableScroller label="各媒體每日比對表格，可左右捲動">
+    <TableScroller
+      label="各媒體每日比對表格，可左右捲動"
+      footer={
+        empty > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowEmpty(!showEmpty)}
+            className="px-3 py-2 text-xs text-brand-700 hover:underline dark:text-brand-400"
+          >
+            {showEmpty ? `收起 ${empty} 家沒有資料的媒體` : `另有 ${empty} 家這段期間沒有資料，顯示`}
+          </button>
+        )
+      }
+    >
       <table className="w-full min-w-[40rem] border-collapse text-sm">
         <caption className="sr-only">期間內各媒體的比對篇數、較早與較晚刊登的篇數、引用與被採用／引用</caption>
         <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
@@ -315,7 +335,7 @@ function OutletTable({
                         aria-label={`${column.label}比例排序`}
                         onClick={() => sortBy(shareKey)}
                         className={`inline-flex items-center gap-0.5 rounded px-1 hover:text-brand-700 dark:hover:text-brand-400 ${
-                          sort === shareKey ? 'text-brand-800 dark:text-brand-300' : 'text-zinc-400 dark:text-zinc-500'
+                          sort === shareKey ? 'text-brand-800 dark:text-brand-300' : 'text-zinc-400 dark:text-zinc-400'
                         }`}
                       >
                         %
@@ -356,7 +376,7 @@ function OutletTable({
           ))}
         </tbody>
       </table>
-      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500">這段期間沒有媒體資料。</p>}
+      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">這段期間沒有媒體資料。</p>}
     </TableScroller>
   );
 }
@@ -364,17 +384,28 @@ function OutletTable({
 export default function DailyTrend({ threshold }: { threshold: number }) {
   const [range, setRange] = useState<(typeof RANGES)[number]>(30);
   const [state, setState] = useState<{ key: string; data: SimilarityDaily | null; error: boolean } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const to = taipeiToday(),
     from = shiftDay(to, 1 - range);
-  const key = `${from}/${to}/${threshold}`;
+  const key = `${from}/${to}/${threshold}/${attempt}`;
   useEffect(() => {
     const controller = new AbortController();
+    // A stalled API would otherwise leave the loading text up for good.
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 30_000);
     fetchDaily(from, to, threshold, controller.signal)
       .then((data) => setState({ key, data, error: false }))
       .catch(() => {
-        if (!controller.signal.aborted) setState({ key, data: null, error: true });
-      });
-    return () => controller.abort();
+        if (timedOut || !controller.signal.aborted) setState({ key, data: null, error: true });
+      })
+      .finally(() => clearTimeout(timer));
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [from, to, threshold, key]);
   const current = state?.key === key ? state : null;
   const data = current?.data ?? null;
@@ -445,7 +476,14 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
         </p>
       ) : !data ? (
         <p role="alert" className="py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
-          暫時無法取得每日統計，請稍後重新整理。
+          暫時無法取得每日統計。
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="ml-2 rounded-full border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            重試
+          </button>
         </p>
       ) : (
         <>

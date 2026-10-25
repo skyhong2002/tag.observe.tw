@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
 import PictureLink from '@/components/PictureLink';
+import RelationLink from '@/components/RelationLink';
 import FollowButton from '@/components/reader/FollowButton';
 import { TabRow } from '@/components/SectionTabs';
 import StructuredData from '@/components/StructuredData';
@@ -18,6 +19,7 @@ import {
   fetchTagFlow,
   fetchTagGroups,
   fetchTagPerson,
+  fetchTagRelations,
   fetchTagSeries,
   fetchTagStatus,
   fetchTagVisual,
@@ -82,7 +84,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   };
   // Keywords riding along: by day over two weeks unless the reader asks for hours.
   const flowSpan: 'day' | 'hour' = sp.flow === 'hour' ? 'hour' : 'day';
-  const [series, { page, facets }, media, status, mentions, flowData, person, groups, visual] = await Promise.all([
+  const [series, { page, facets }, media, status, mentions, flowData, person, groups, visual, relations] = await Promise.all([
     fetchTagSeries(tag, 'all', hours),
     // The list and its camp split use the chart's window and every tagged article in it.
     fetchArticleListing({ tag, hours, camp, cursor }),
@@ -95,6 +97,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     fetchTagGroups(tag).catch(() => []),
     // Older gateways lack the route: no picture rather than an error.
     fetchTagVisual(tag).catch(() => null),
+    fetchTagRelations(tag).catch(() => null),
   ]);
   const flowHref = (v: 'day' | 'hour') => {
     const q = new URLSearchParams(
@@ -112,6 +115,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   // A tag the site has never recorded: no articles, no counts, no ranking, history or events.
   if (
     status &&
+    !relations?.relations.length &&
     !status.ranking &&
     !status.history &&
     status.threads.length === 0 &&
@@ -138,16 +142,23 @@ export default async function TagPage({ params, searchParams }: { params: Promis
             {tag}
           </h1>
           <FollowButton kind="tag" target={tag} />
-          {/* A sketch first; a place or logo before a namesake's bare line (「高雄」 is also an actor). */}
-          {person?.avatar ? (
-            <TagPerson person={person} />
-          ) : visual ? (
-            <TagVisual visual={visual} />
-          ) : (
-            person && <TagPerson person={person} />
-          )}
-          <PictureLink tag={tag} has={!!(person?.avatar ?? visual)} />
-          <TagGroupChips groups={groups} />
+          {/* The picture and its 換圖 stay on one line; the text beside a sketch wraps instead. */}
+          <div className="flex min-w-0 items-center gap-3">
+            {/* A sketch first; a place or logo before a namesake's bare line (「高雄」 is also an actor). */}
+            {person?.avatar ? (
+              <TagPerson person={person} />
+            ) : visual ? (
+              <TagVisual visual={visual} />
+            ) : (
+              person && <TagPerson person={person} />
+            )}
+            <PictureLink tag={tag} has={!!(person?.avatar ?? visual)} />
+          </div>
+          <TagGroupChips
+            groups={groups}
+            relations={relations?.relations}
+            after={<RelationLink tag={tag} voting={relations?.voting ?? 0} />}
+          />
         </div>
         <div className="flex gap-1 text-sm">
           {[24, 72, 168].map((h) => (
@@ -181,7 +192,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         id="report-trend"
         className="scroll-mt-20 rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
       >
-        <h2 className="mb-2 text-sm font-medium text-zinc-600">報導趨勢</h2>
+        <h2 className="mb-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">報導趨勢</h2>
         <TagChart key={`${tag}:${hours}`} initial={series} />
       </section>
       {flowData && (
@@ -203,27 +214,29 @@ export default async function TagPage({ params, searchParams }: { params: Promis
         </section>
       )}
       {!page ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600">報導列表暫時無法使用，請稍後再試。</p>
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">
+          報導列表暫時無法使用，請稍後再試。
+        </p>
       ) : (
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <aside className="space-y-4 lg:order-2">
             {facets && <ArticleFacets facets={facets} subject={`#${tag} `} span={span} camp={camp} link={link} media={media} />}
             {status && status.threads.length > 0 && (
               <div className="space-y-2">
-                <h2 className="text-sm font-medium text-zinc-600">相關事件</h2>
+                <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">相關事件</h2>
                 <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white text-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                   {status.threads.map((t) => (
                     <li key={t.id} className="px-3 py-2">
                       <Link href={`/eve/${t.id}/`} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
                         {t.maxTag ?? t.majorTags[0] ?? `事件 ${t.id}`}
                       </Link>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
+                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
                         {t.majorTags
                           .filter((x) => x !== t.maxTag)
                           .slice(0, 4)
                           .join('、')}
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
                         {taipei(t.firstTime)} 起 · 在榜 {t.hours} 小時
                       </p>
                     </li>

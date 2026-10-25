@@ -57,9 +57,7 @@ export function HourTimeline({
               aria-current={here ? 'page' : undefined}
               title={s ? `第 1 名爆發力 ${s.top.toFixed(1)} · ${s.count} 件事` : undefined}
               className={`flex w-11 flex-col items-center gap-1 rounded px-1 pt-1 pb-0.5 text-xs tabular-nums ${
-                here
-                  ? 'bg-brand-700 text-white dark:bg-brand-600'
-                  : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                here ? 'bg-brand-700 text-white' : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
               }`}
             >
               <span className="flex h-6 w-full items-end justify-center" aria-hidden>
@@ -120,17 +118,17 @@ export function CampGap({ events, scope = '本小時' }: { events: EventItem[]; 
               {col.title}
             </h3>
             {col.items.length === 0 ? (
-              <p className="text-xs text-zinc-500">{scope}沒有。</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">{scope}沒有。</p>
             ) : (
               <ol className="space-y-2">
                 {col.items.map((e) => (
                   <li key={e.rank} className="flex items-start gap-2">
-                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500">{e.rank}</span>
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>
                     <div className="min-w-0 flex-1">
                       <a href={`#${eventAnchor(e.rank)}`} className="line-clamp-1 hover:underline">
                         {eventHeadline(e)}
                       </a>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                         {e.coverage && <CampBadge c={e.coverage} />}
                       </p>
                     </div>
@@ -158,7 +156,7 @@ export function EventIndex({ events, scope = '本小時' }: { events: EventItem[
               href={`#${eventAnchor(e.rank)}`}
               className="flex items-baseline gap-2 rounded px-1 py-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
-              <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500">{e.rank}</span>
+              <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>
               <span className="line-clamp-1 min-w-0 text-xs text-zinc-700 dark:text-zinc-300">{eventHeadline(e)}</span>
             </a>
           </li>

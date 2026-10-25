@@ -28,7 +28,7 @@ function Changed({ value }: { value: string }) {
   const total = Number(/…（共 (\d+) 字）$/.exec(value)?.[1] ?? chars.length);
   return (
     <>
-      {chars.slice(0, 24).join('')}…<span className="text-xs opacity-80">（整段 {number(total)} 字）</span>
+      {chars.slice(0, 24).join('')}…<span className="whitespace-nowrap text-xs opacity-80">（整段 {number(total)} 字）</span>
     </>
   );
 }
@@ -80,15 +80,15 @@ export function BodyChanges({
   return (
     <div className="space-y-1 border-l-2 border-zinc-200 pl-3 dark:border-zinc-700" data-testid="body-changes">
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+        <span className="whitespace-nowrap font-medium text-zinc-700 dark:text-zinc-300">
           {label} {number(diff.hunks.length + diff.more)} 處
         </span>
         <span className="mx-1.5">·</span>
-        <span className="text-rose-700 dark:text-rose-400">
+        <span className="whitespace-nowrap text-rose-700 dark:text-rose-400">
           {removed} {number(diff.removed)} 字
         </span>
         <span className="mx-1.5">·</span>
-        <span className="text-emerald-700 dark:text-emerald-400">
+        <span className="whitespace-nowrap text-emerald-700 dark:text-emerald-400">
           {added} {number(diff.added)} 字
         </span>
       </p>
@@ -99,7 +99,7 @@ export function BodyChanges({
           </li>
         ))}
       </ol>
-      {diff.more > 0 && <p className="text-xs text-zinc-500">另有 {number(diff.more)} 處未列出</p>}
+      {diff.more > 0 && <p className="text-xs text-zinc-500 dark:text-zinc-400">另有 {number(diff.more)} 處未列出</p>}
     </div>
   );
 }
@@ -166,15 +166,15 @@ export function VersionCompare({
           data-testid="body-changes"
         >
           <p className="text-xs text-zinc-500 sm:col-span-2 dark:text-zinc-400">
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="whitespace-nowrap font-medium text-zinc-700 dark:text-zinc-300">
               {label} {number(body.hunks.length + body.more)} 處
             </span>
             <span className="mx-1.5">·</span>
-            <span className="text-rose-700 dark:text-rose-400">
+            <span className="whitespace-nowrap text-rose-700 dark:text-rose-400">
               {removed} {number(body.removed)} 字
             </span>
             <span className="mx-1.5">·</span>
-            <span className="text-emerald-700 dark:text-emerald-400">
+            <span className="whitespace-nowrap text-emerald-700 dark:text-emerald-400">
               {added} {number(body.added)} 字
             </span>
           </p>
@@ -191,7 +191,7 @@ export function VersionCompare({
               </p>
             </div>
           ))}
-          {body.more > 0 && <p className="text-xs text-zinc-500 sm:col-span-2">另有 {number(body.more)} 處未列出</p>}
+          {body.more > 0 && <p className="text-xs text-zinc-500 dark:text-zinc-400 sm:col-span-2">另有 {number(body.more)} 處未列出</p>}
         </div>
       )}
     </div>

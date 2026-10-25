@@ -27,7 +27,7 @@ export default function AuthorCredits({
           {index > 0 && ' · '}
           {part.label && `${part.label} `}
           {part.media ? (
-            <Link href={`/media/${encodeURIComponent(part.media)}/references/?hours=${hours}`} className={linkClass}>
+            <Link prefetch={false} href={`/media/${encodeURIComponent(part.media)}/references/?hours=${hours}`} className={linkClass}>
               {part.text}
             </Link>
           ) : (
@@ -39,7 +39,7 @@ export default function AuthorCredits({
                 <span key={name}>
                   {nameIndex > 0 && '、'}
                   {href ? (
-                    <Link href={href} className={linkClass}>
+                    <Link prefetch={false} href={href} className={linkClass}>
                       {name}
                     </Link>
                   ) : (

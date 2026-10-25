@@ -94,6 +94,11 @@ function Live({ live }: { live: NonNullable<Observation['live']> }) {
         <Sparkline values={live.perMinute} className="h-8 w-40 max-w-full" />
         <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">每分鐘瀏覽 · {time}</span>
       </div>
+      {live.activeUsers === 0 && live.views > 0 && (
+        <p className="w-full text-xs text-zinc-600 dark:text-zinc-400">
+          人數與瀏覽都取自 Google Analytics 即時報表；量很少時兩者可能對不上（例如讀者已離開但瀏覽還在 30 分鐘內）。
+        </p>
+      )}
     </section>
   );
 }
@@ -138,7 +143,7 @@ function PageList({ pages, value }: { pages: Array<Omit<ObservedPage, 'views'>>;
     <ol className="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
       {pages.map((p, i) => (
         <li key={p.path} className="flex items-baseline gap-3 py-2">
-          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500">{i + 1}</span>
+          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</span>
           <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
             {KIND_LABELS[p.kind]}
           </span>
@@ -152,7 +157,9 @@ function PageList({ pages, value }: { pages: Array<Omit<ObservedPage, 'views'>>;
   );
 }
 
-const Empty = ({ children }: { children: React.ReactNode }) => <p className="py-6 text-center text-sm text-zinc-500">{children}</p>;
+const Empty = ({ children }: { children: React.ReactNode }) => (
+  <p className="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">{children}</p>
+);
 
 /** Every day of the period; days before tracking began have no bar. */
 function series(data: Observation, pick: (d: NonNullable<Observation['traffic']>['daily'][number]) => number) {
@@ -225,7 +232,7 @@ export default async function ObservePage({ searchParams }: { searchParams: Prom
       />
 
       {!data ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:border-zinc-700">
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
           觀測資料暫時無法取得，請稍後再試。
         </p>
       ) : (
@@ -297,6 +304,11 @@ export default async function ObservePage({ searchParams }: { searchParams: Prom
           </div>
 
           <Section title="Google 搜尋" aside={search ? '美國太平洋時間，近 2–3 天可能仍會修正' : undefined}>
+            {search && search.clicks === 0 && search.impressions === 0 && (
+              <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+                Google Search Console 這段期間沒有回報點擊或曝光。上方「從哪裡來」是 Google Analytics 依來源分類的瀏覽，兩邊各自統計。
+              </p>
+            )}
             {search ? (
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                 <div className="min-w-0">

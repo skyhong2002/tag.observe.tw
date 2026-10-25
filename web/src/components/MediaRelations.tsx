@@ -26,7 +26,7 @@ function PartnerRow({ partner, max }: { partner: MediaPartner; max: number }) {
         </MediaHoverLink>
         <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-400">
           {number(partner.total)}
-          <span className="ml-0.5 text-[10px] text-zinc-500">筆關係</span>
+          <span className="ml-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">筆關係</span>
         </span>
       </div>
       <div
@@ -103,7 +103,7 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
                   </ul>
                 </details>
               )}
-              <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] leading-4 text-zinc-500 dark:text-zinc-400">
+              <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] leading-4 text-zinc-500 dark:text-zinc-400">
                 {segments.map(({ key, label, className }) => (
                   <span key={key} className="inline-flex items-center gap-1">
                     <i aria-hidden="true" className={`inline-block h-1.5 w-2.5 rounded-sm ${className}`} />

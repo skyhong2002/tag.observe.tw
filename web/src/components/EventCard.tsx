@@ -37,17 +37,18 @@ function cover(e: EventItem): EventNews | null {
 /** Movement since the previous snapshot and how long the thread has run. */
 export function Movement({ e, className = '' }: { e: EventItem; className?: string }) {
   const parts: Array<{ text: string; tone: string; label: string }> = [];
-  if (e.prevRank === null) parts.push({ text: '新上榜', tone: 'bg-brand-700 text-white dark:bg-brand-500', label: '本小時新上榜' });
+  if (e.prevRank === null) parts.push({ text: '新上榜', tone: 'bg-brand-700 text-white', label: '本小時新上榜' });
   else if (typeof e.prevRank === 'number' && e.prevRank !== e.rank) {
     const up = e.prevRank > e.rank;
     const n = Math.abs(e.prevRank - e.rank);
     parts.push({
       text: `${up ? '↑' : '↓'}${n}`,
-      tone: up ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500',
+      tone: up ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400',
       label: `較前一小時${up ? '上升' : '下降'} ${n} 名`,
     });
   }
-  if (e.hours && e.hours >= 2) parts.push({ text: `上榜 ${e.hours} 小時`, tone: 'text-zinc-500', label: `累計上榜 ${e.hours} 小時` });
+  if (e.hours && e.hours >= 2)
+    parts.push({ text: `上榜 ${e.hours} 小時`, tone: 'text-zinc-500 dark:text-zinc-400', label: `累計上榜 ${e.hours} 小時` });
   if (parts.length === 0) return null;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs tabular-nums ${className}`}>
@@ -135,12 +136,18 @@ function Tags({ e, limit, size = 'text-xs' }: { e: EventItem; limit: number; siz
   return (
     <div className={`flex flex-wrap gap-1 ${size}`}>
       {e.major.map((t) => (
-        <Link key={t} href={`/tag/${encodeURIComponent(t)}`} className="rounded-full bg-brand-700 px-2 py-0.5 font-medium text-white">
+        <Link
+          prefetch={false}
+          key={t}
+          href={`/tag/${encodeURIComponent(t)}`}
+          className="rounded-full bg-brand-700 px-2 py-0.5 font-medium text-white"
+        >
           {t}
         </Link>
       ))}
       {others.map((t) => (
         <Link
+          prefetch={false}
           key={t.tag}
           href={`/tag/${encodeURIComponent(t.tag)}`}
           className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
@@ -176,7 +183,7 @@ function Headlines({
             <span className="sr-only">{media[n.media]?.title ?? n.media}</span>
           </MediaHoverLink>
           <div className="min-w-0 flex-1">
-            <Link href={articleHref(n)} className="line-clamp-1 hover:underline">
+            <Link prefetch={false} href={articleHref(n)} className="line-clamp-1 hover:underline">
               {n.title}
             </Link>
             <SourceLink url={n.url} showUrl className="!min-h-5" />
@@ -206,14 +213,14 @@ function CampHeadlines({ pair: { blue, green }, media }: { pair: { blue: EventNe
   const [b, g] = headlineDiff(blue.title, green.title);
   const side = (n: EventNews, parts: typeof b, camp: Camp) => (
     <div className="min-w-0 space-y-0.5">
-      <p className="flex items-center gap-1 text-[11px] text-zinc-500">
+      <p className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
         <span className={`h-1.5 w-1.5 rounded-full ${CAMP_FILL[camp]}`} aria-hidden />
         {CAMP_LABEL[camp]}
         <MediaHoverLink media={n.media} icon={12} className="hover:underline">
           {media[n.media]?.title ?? n.media}
         </MediaHoverLink>
       </p>
-      <Link href={articleHref(n)} className="block text-sm leading-snug hover:underline">
+      <Link prefetch={false} href={articleHref(n)} className="block text-sm leading-snug hover:underline">
         {parts.map((part, i) => (
           <span key={String(i)} className={part.different ? 'underline decoration-zinc-400 decoration-1 underline-offset-4' : undefined}>
             {part.text}
@@ -246,7 +253,7 @@ function Title({ e, className, at }: { e: EventItem; className: string; at?: str
   return (
     <h2 className={className}>
       {href ? (
-        <Link href={at ? `${href}?at=${encodeURIComponent(at)}` : href} className="hover:underline">
+        <Link prefetch={false} href={at ? `${href}?at=${encodeURIComponent(at)}` : href} className="hover:underline">
           {text}
         </Link>
       ) : (
@@ -281,11 +288,11 @@ export default function EventCard({
 }) {
   const img = cover(e);
   const pair = tier === 'hero' ? campPair(e) : null;
-  const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500">{e.rank}</span>;
+  const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>;
   if (tier === 'row') {
     return (
       <li id={eventAnchor(e.rank)} className="grid scroll-mt-20 grid-cols-[2rem_minmax(0,1fr)] gap-x-2 gap-y-1 py-2.5">
-        <span className="text-base font-semibold tabular-nums text-zinc-500">{e.rank}</span>
+        <span className="text-base font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <Title e={e} at={at} className="font-medium leading-snug" />
@@ -311,6 +318,7 @@ export default function EventCard({
       >
         {img && (
           <Link
+            prefetch={false}
             href={articleHref(img)}
             tabIndex={-1}
             aria-hidden
@@ -361,6 +369,7 @@ export default function EventCard({
       <div className="flex gap-3">
         {img && (
           <Link
+            prefetch={false}
             href={articleHref(img)}
             tabIndex={-1}
             aria-hidden

@@ -15,6 +15,7 @@ import {
   groupRole,
   lookupPerson,
   nameMatcher,
+  PERSON_GROUP_IDS,
   PERSON_GROUPS,
   type Person,
   resolveTally,
@@ -184,9 +185,9 @@ export async function runWritingPeopleJob(db: Db, { now = () => new Date(), log 
       const { persons, groups } = await knownPeople(db, runs.flatMap(nameCandidates));
       const resolved = resolveTally(tally, persons);
       // People the text does not settle still get the role of their person groups.
-      for (const [name, labels] of groups) {
-        const role = resolved.has(name) ? null : groupRole(labels);
-        if (role) resolved.set(name, { name, role, hits: 0, total: 0, note: `分組：${labels.join('、')}` });
+      for (const [name, filed] of groups) {
+        const role = resolved.has(name) ? null : groupRole(filed);
+        if (role) resolved.set(name, { name, role, hits: 0, total: 0, note: `分組：${filed.map((g) => g.label).join('、')}` });
       }
       const people = await loadPeople(db);
       const updatedAt = now();
@@ -223,10 +224,13 @@ export async function runWritingPeopleJob(db: Db, { now = () => new Date(), log 
           AND NOT EXISTS (SELECT 1 FROM tag_people t WHERE t.tag = p.name AND t.wikidata_id IS NOT NULL)
           AND NOT EXISTS (SELECT 1 FROM tag_group_members m JOIN tag_group_defs d ON d.id = m.group_id
             WHERE m.tag = p.name AND m.status IN ('auto', 'confirmed') AND d.deleted_at IS NULL
-              AND d.label IN (${sql.join(
+              AND (d.id IN (${sql.join(
+                PERSON_GROUP_IDS.map((g) => sql`${g}`),
+                sql`, `,
+              )}) OR d.label IN (${sql.join(
                 PERSON_GROUPS.map((g) => sql`${g}`),
                 sql`, `,
-              )}))`);
+              )})))`);
       for (const r of fresh) people.set(r.name, { role: r.role, source: 'auto' });
       const relabelled = await relabel(db, open as Array<{ articleId: number; poster: string }>, people);
       return { names: runs.length, resolved: fresh.length, relabelled, skipped: false };
@@ -240,12 +244,12 @@ export async function runWritingPeopleJob(db: Db, { now = () => new Date(), log 
  */
 export async function knownPeople(db: Db, names: string[]) {
   const persons = new Set<string>();
-  const groups = new Map<string, string[]>();
+  const groups = new Map<string, { id: number; label: string }[]>();
   const list = [...new Set(names)];
   for (let i = 0; i < list.length; i += CHUNK) {
     const chunk = list.slice(i, i + CHUNK);
     const filed = await db
-      .select({ tag: tagGroupMembers.tag, label: tagGroupDefs.label })
+      .select({ tag: tagGroupMembers.tag, id: tagGroupDefs.id, label: tagGroupDefs.label })
       .from(tagGroupMembers)
       .innerJoin(tagGroupDefs, eq(tagGroupDefs.id, tagGroupMembers.groupId))
       .where(
@@ -253,12 +257,12 @@ export async function knownPeople(db: Db, names: string[]) {
           inArray(tagGroupMembers.tag, chunk),
           inArray(tagGroupMembers.status, ['auto', 'confirmed']),
           isNull(tagGroupDefs.deletedAt),
-          inArray(tagGroupDefs.label, PERSON_GROUPS),
+          or(inArray(tagGroupDefs.id, PERSON_GROUP_IDS), inArray(tagGroupDefs.label, PERSON_GROUPS)),
         ),
       );
     for (const r of filed) {
       persons.add(r.tag);
-      groups.set(r.tag, [...(groups.get(r.tag) ?? []), r.label]);
+      groups.set(r.tag, [...(groups.get(r.tag) ?? []), { id: r.id, label: r.label }]);
     }
     const humans = await db
       .select({ tag: tagPeople.tag })

@@ -150,14 +150,16 @@ describe('monthly crawler and traffic comparison', () => {
     expect(response).not.toHaveProperty('totals');
   });
   it('loads bounded aggregate data for all catalog sources without per-media queries', async () => {
+    vi.stubEnv('TAG_MEDIA_FIRST_CRAWL_FILE', join(await mkdtemp(join(tmpdir(), 'first-crawl-')), 'first.json'));
     const { db, select, chains } = fakeDb([
       [{ media: 'udn', month: '202610', count: 3 }],
-      [{ media: 'udn', first: started }],
+      [{ media: 'udn', totalCollected: 11 }],
       [{ media: 'google_news', month: '202610', count: 2 }],
       [{ media: 'google_news', first: now }],
+      [{ media: 'udn', first: started }],
     ]);
     const result = await loadMediaTrafficComparison(db, now);
-    expect(select).toHaveBeenCalledTimes(4);
+    expect(select).toHaveBeenCalledTimes(5);
     // Outlets removed on request stay out; every other catalog source is listed.
     const excluded = new Set(disabledSpec.excludedMedia);
     for (const source of catalog.sources)
@@ -166,11 +168,19 @@ describe('monthly crawler and traffic comparison', () => {
         source.media,
       ).toBe(!excluded.has(source.media));
     expect(result.media.find((r) => r.media === 'google_news')?.monthly.at(-1)?.articles).toBe(2);
+    expect(result.media.find((r) => r.media === 'udn')?.firstAcquiredAt).toBe(started.toISOString());
     expect(chains[2].innerJoin).toHaveBeenCalledOnce();
-    const firstQuery = new MySqlDialect().sqlToQuery(chains[1].where.mock.calls[0][0]);
+    // First-crawl times come from the shared cache: only unknown outlets are looked up.
+    const firstQuery = new MySqlDialect().sqlToQuery(chains[4].where.mock.calls[0][0]);
     expect(firstQuery.sql).not.toContain('published_at');
-    expect(firstQuery.params).toEqual(['own', '2026-10-03 16:30:00.000']);
+    expect(firstQuery.params).toEqual(['udn']);
     for (const [selection] of select.mock.calls) expect(selection).not.toHaveProperty('body');
+    const again = fakeDb([[], [{ media: 'udn', totalCollected: 11 }], [], []]);
+    expect((await loadMediaTrafficComparison(again.db, now)).media.find((r) => r.media === 'udn')?.firstAcquiredAt).toBe(
+      started.toISOString(),
+    );
+    expect(again.select).toHaveBeenCalledTimes(4);
+    vi.unstubAllEnvs();
   });
   it('caches successful aggregates for five minutes, coalesces concurrent loads and retries failures', async () => {
     let clock = 0;

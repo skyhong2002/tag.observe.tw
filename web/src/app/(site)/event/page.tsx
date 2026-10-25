@@ -110,14 +110,14 @@ async function HourView({ sp }: { sp: Search }) {
                 ← 前一小時
               </Link>
             ) : (
-              <span className="rounded-md px-3 py-1 text-zinc-500">← 前一小時</span>
+              <span className="rounded-md px-3 py-1 text-zinc-500 dark:text-zinc-400">← 前一小時</span>
             )}
             {data.next ? (
               <Link href={atLink(data.next)} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
                 後一小時 →
               </Link>
             ) : (
-              <span className="rounded-md px-3 py-1 text-zinc-500">後一小時 →</span>
+              <span className="rounded-md px-3 py-1 text-zinc-500 dark:text-zinc-400">後一小時 →</span>
             )}
             {archived && (
               <Link href={hourHref()} className="rounded-md bg-zinc-900 px-3 py-1 text-white dark:bg-zinc-100 dark:text-zinc-900">
@@ -159,7 +159,7 @@ async function HourView({ sp }: { sp: Search }) {
                     className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
                   >
                     其他事件
-                    <span className="text-xs font-normal text-zinc-500">
+                    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
                       第 {items[0].rank} 到 {items[items.length - 1].rank} 名
                     </span>
                   </h2>

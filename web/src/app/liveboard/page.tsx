@@ -6,7 +6,7 @@ import { pageMetadata } from '@/lib/seo.mts';
 import BoardSwitch from './BoardSwitch';
 import type { MediaTotals } from './LiveBoard';
 import type { Pictures } from './SimpleBoard';
-import { DEFAULTS, LENSES, QUERY_KEYS, settingsFromQuery } from './settings';
+import { DEFAULTS, firstCloud, QUERY_KEYS, settingsFromQuery } from './settings';
 
 // A chrome-less, always-on screen (a wall tablet): it renders the current
 // snapshot here, then LiveBoard polls /api/v1/liveboard and friends. The
@@ -38,7 +38,7 @@ async function mediaTotals() {
 /** The simple board's first lens, the pictures it draws tags as, and the day's article count. */
 async function simpleData() {
   // The lens a new device opens on.
-  const first = LENSES.find((l) => l.key === DEFAULTS.lenses[0]) ?? LENSES[0];
+  const first = firstCloud(DEFAULTS.lenses);
   const [ranking, avatars, visuals, totals] = await Promise.all([
     optional(() => fetchRanking(first.category, first.order, 88, false, false, first.order === 'growth' ? { gate: 'all' } : {})),
     optional(fetchTagAvatars),

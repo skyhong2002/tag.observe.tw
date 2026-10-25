@@ -1,0 +1,171 @@
+// Fixed read-only /proc observations. No transport executes on import.
+import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import { transportArgs } from '../mint-f1-sm-adapter.js';
+import { hash } from './capture-policy.mjs';
+export const procScript = `import os,json,time
+from pathlib import Path
+builds=[]; browsers=[]
+for p in Path('/proc').iterdir():
+ if not p.name.isdigit(): continue
+ try:
+  args=(p/'cmdline').read_bytes().decode(errors='replace').split('\\0');names=[os.path.basename(a) for a in args]
+  if any(n.startswith('next-build') for n in names) or (any(n in ('npm','npm-cli.js') for n in names) and 'run' in args and 'build' in args) or (any(n in ('next','next.js') for n in names) and 'build' in args) or (any(n in ('docker','buildctl','buildkitd') for n in names) and any(a in ('build','buildx','buildkitd') for a in args)):builds.append(int(p.name))
+  if names and names[0] in ('chrome','chromium','chromium-browser','headless_shell','chrome-headless-shell') and not any(a.startswith('--type=') for a in args):browsers.append(int(p.name))
+ except (FileNotFoundError,ProcessLookupError):pass
+print(json.dumps(dict(machineId=Path('/etc/machine-id').read_text().strip(),observedAtMs=int(time.time()*1000),load1=os.getloadavg()[0],buildPids=builds,browserRootPids=browsers)))`;
+export const smScript = `import os,sys,json,subprocess,hashlib,stat,time
+from pathlib import Path
+assert Path('/etc/machine-id').read_text().strip()=='302c2528bd464ad0953cf5fa743b6171'
+for name,sha in [('/home/deck/.ssh/config','907a334e4460e1eb28fce6ba08b8dbe89719b96c8dfb208d22ad552cf6e64850'),('/home/deck/.ssh/known_hosts','5fc350d140908ca2db72087dd9dbbad6d2e1a9a16d20c392608b7f6560bded59')]:
+ p=Path(name);s=p.lstat();assert stat.S_ISREG(s.st_mode) and s.st_uid==os.getuid() and s.st_mode&0o077==0 and s.st_size<=262144 and hashlib.sha256(p.read_bytes()).hexdigest()==sha
+script=${JSON.stringify(procScript)}
+a=subprocess.run(['/usr/bin/python3','-c',script],capture_output=True,timeout=3);assert a.returncode==0
+start=int(time.time()*1000)
+r=subprocess.run(['/usr/bin/ssh','-F','/home/deck/.ssh/config','-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','-o','UserKnownHostsFile=/home/deck/.ssh/known_hosts','-o','GlobalKnownHostsFile=/dev/null','-o','ControlMaster=no','-o','ControlPath=none','-o','ControlPersist=no','-o','PermitLocalCommand=no','-o','ForwardAgent=no','-o','ConnectTimeout=5','-o','ConnectionAttempts=1','skyhong-blog','python3 -c '+__import__('shlex').quote(script)],capture_output=True,timeout=8)
+end=int(time.time()*1000)
+print(json.dumps(dict(smRaw=a.stdout.decode(),ytRaw=r.stdout.decode(),ytError=r.stderr.decode(),ytStatus=r.returncode,ytStartedAtMs=start,ytEndedAtMs=end)))`;
+export function validateCounts(raw, { startedAtMs, finishedAtMs, mint, sessionId, controlOpsSha }) {
+  if (
+    finishedAtMs - startedAtMs < 0 ||
+    finishedAtMs - startedAtMs > 15000 ||
+    raw.ytStatus !== 0 ||
+    raw.ytEndedAtMs - raw.ytStartedAtMs < 0 ||
+    raw.ytEndedAtMs - raw.ytStartedAtMs > 10000
+  )
+    throw Error('Bounded actual count transports required');
+  const observations = [
+    ['Mint', mint, 'f80413057e6d4a179e248e5f8c08cac6'],
+    ['SM', JSON.parse(raw.smRaw), '302c2528bd464ad0953cf5fa743b6171'],
+    ['YT', JSON.parse(raw.ytRaw), '35ead342bacc44dea3633ccd2cc3f309'],
+  ];
+  return {
+    schema: 'actual-three-host-capture-counts-v1',
+    source: 'actual-readonly-proc-observation',
+    sessionId,
+    controlOpsSha,
+    startedAtMs,
+    finishedAtMs,
+    hosts: observations.map(([host, o, id]) => {
+      if (
+        o.machineId !== id ||
+        !Number.isFinite(o.observedAtMs) ||
+        !Number.isFinite(o.load1) ||
+        o.load1 < 0 ||
+        o.load1 > 12 ||
+        !Array.isArray(o.buildPids) ||
+        !Array.isArray(o.browserRootPids) ||
+        [...o.buildPids, ...o.browserRootPids].some((p) => !Number.isInteger(p) || p < 1)
+      )
+        throw Error('Real host proc count shape/identity');
+      return {
+        host,
+        machineId: id,
+        remoteObservedAtMs: o.observedAtMs,
+        finishedAtMs,
+        browserRoots: o.browserRootPids.length,
+        buildCount: o.buildPids.length,
+        load1: o.load1,
+      };
+    }),
+  };
+}
+export function observeGlobalCounts(receipt, { sessionId, controlOpsSha, rawPath, run = spawnSync, now = Date.now } = {}) {
+  const known = fs.lstatSync(receipt.knownHostsPath);
+  if (
+    !known.isFile() ||
+    known.isSymbolicLink() ||
+    known.uid !== process.getuid() ||
+    known.mode & 0o077 ||
+    hash(fs.readFileSync(receipt.knownHostsPath)) !== receipt.knownHostsSha256
+  )
+    throw Error('Pinned strictSM known hosts changed');
+  const startedAtMs = now(),
+    quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
+  const sm = run('/usr/bin/ssh', [...transportArgs(receipt).slice(0, -1), 'python3 -c ' + quote(smScript)], {
+    encoding: null,
+    timeout: 12000,
+    maxBuffer: 262144,
+    env: { PATH: '/usr/bin:/bin', LANG: 'C' },
+  });
+  const mint = run('/usr/bin/python3', ['-c', procScript], {
+    encoding: null,
+    timeout: 3000,
+    maxBuffer: 65536,
+    env: { PATH: '/usr/bin:/bin', LANG: 'C' },
+  });
+  const finishedAtMs = now();
+  fs.writeFileSync(
+    rawPath,
+    JSON.stringify({
+      startedAtMs,
+      finishedAtMs,
+      sourceSha256: hash(smScript),
+      sm: {
+        status: sm.status,
+        signal: sm.signal,
+        error: sm.error?.code || null,
+        stdoutBase64: Buffer.from(sm.stdout || '').toString('base64'),
+        stderrBase64: Buffer.from(sm.stderr || '').toString('base64'),
+      },
+      mint: {
+        status: mint.status,
+        signal: mint.signal,
+        error: mint.error?.code || null,
+        stdoutBase64: Buffer.from(mint.stdout || '').toString('base64'),
+        stderrBase64: Buffer.from(mint.stderr || '').toString('base64'),
+      },
+    }) + '\n',
+    { flag: 'wx', mode: 0o600 },
+  );
+  if (sm.status !== 0 || sm.error || mint.status !== 0 || mint.error) throw Error('Actual global count probe failed; raw retained');
+  return validateCounts(JSON.parse(sm.stdout), { startedAtMs, finishedAtMs, mint: JSON.parse(mint.stdout), sessionId, controlOpsSha });
+}
+export async function observeGlobalCountsAsync(
+  receipt,
+  { sessionId, controlOpsSha, rawPath, signal, executeCommand, now = Date.now } = {},
+) {
+  const { execFile } = await import('node:child_process'),
+    { promisify } = await import('node:util');
+  const execute = executeCommand || promisify(execFile);
+  const s = fs.lstatSync(receipt.knownHostsPath);
+  if (
+    !s.isFile() ||
+    s.isSymbolicLink() ||
+    s.uid !== process.getuid() ||
+    s.mode & 0o077 ||
+    hash(fs.readFileSync(receipt.knownHostsPath)) !== receipt.knownHostsSha256
+  )
+    throw Error('Pinned actual SM channel');
+  const startedAtMs = now(),
+    quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
+  const invoke = async (bin, args, timeout) => {
+    try {
+      return {
+        ...(await execute(bin, args, { encoding: null, timeout, signal, maxBuffer: 262144, env: { PATH: '/usr/bin:/bin', LANG: 'C' } })),
+        status: 0,
+      };
+    } catch (error) {
+      return { ...error, error, status: typeof error.code === 'number' ? error.code : null };
+    }
+  };
+  const [sm, mint] = await Promise.all([
+    invoke('/usr/bin/ssh', [...transportArgs(receipt).slice(0, -1), 'python3 -c ' + quote(smScript)], 12000),
+    invoke('/usr/bin/python3', ['-c', procScript], 3000),
+  ]);
+  const finishedAtMs = now();
+  const encode = (r) => ({
+    status: r.status,
+    signal: r.signal || null,
+    error: r.error?.code || null,
+    stdoutBase64: Buffer.from(r.stdout || '').toString('base64'),
+    stderrBase64: Buffer.from(r.stderr || '').toString('base64'),
+  });
+  fs.writeFileSync(
+    rawPath,
+    JSON.stringify({ startedAtMs, finishedAtMs, sourceSha256: hash(smScript), sm: encode(sm), mint: encode(mint) }) + '\n',
+    { flag: 'wx', mode: 0o600 },
+  );
+  if (sm.status !== 0 || mint.status !== 0 || sm.error || mint.error) throw Error('Actual async global observation failed; raw retained');
+  return validateCounts(JSON.parse(sm.stdout), { startedAtMs, finishedAtMs, mint: JSON.parse(mint.stdout), sessionId, controlOpsSha });
+}

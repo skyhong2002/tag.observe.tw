@@ -193,7 +193,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
           >
             {loading ? '載入中…' : error ? '重試載入' : data.hasMore ? '← 更早' : '已到最早'}
           </button>
-          <span className="whitespace-nowrap text-xs tabular-nums text-zinc-500" title={`${startDate} — ${endDate}`}>
+          <span className="whitespace-nowrap text-xs tabular-nums text-zinc-500 dark:text-zinc-400" title={`${startDate} — ${endDate}`}>
             {startDate?.replaceAll('-', '/')} — {rangeEnd?.replaceAll('-', '/')}
           </span>
         </div>
@@ -239,7 +239,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
             ))}
             {renderEnd < columns.length && <col style={{ width: (columns.length - renderEnd) * cellWidth }} />}
           </colgroup>
-          <thead className="sticky top-0 z-20 h-10 bg-zinc-50 text-zinc-500 dark:bg-zinc-900">
+          <thead className="sticky top-0 z-20 h-10 bg-zinc-50 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
             <tr>
               <th scope="col" className="sticky left-0 z-20 bg-zinc-50 px-3 text-left font-normal dark:bg-zinc-900">
                 關鍵字
@@ -306,14 +306,14 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
           </tbody>
         </table>
         {!visibleRelatedTerms.length && (
-          <div role="status" className="sticky left-0 flex h-96 items-center justify-center text-sm text-zinc-500">
+          <div role="status" className="sticky left-0 flex h-96 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
             {search ? '找不到符合的相關關鍵字' : '這段期間沒有共同關鍵字'}
           </div>
         )}
       </section>
       <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 border-t border-zinc-200 px-3 text-xs dark:border-zinc-800">
         <div className="flex items-center gap-3">
-          <span className="tabular-nums text-zinc-500">
+          <span className="tabular-nums text-zinc-500 dark:text-zinc-400">
             相關詞 {visibleRelatedTerms.length} / {terms.length}
           </span>
           {added.length > 0 && (
@@ -331,7 +331,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
                 setAdded([]);
                 if (scroller.current) scroller.current.scrollTop = 0;
               }}
-              className="min-h-9 rounded px-3 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="min-h-9 rounded px-3 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
             >
               收合
             </button>

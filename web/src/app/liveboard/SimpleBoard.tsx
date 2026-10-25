@@ -1,13 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReaderPresence } from '@/components/ReaderPresence';
 import Wordmark from '@/components/Wordmark';
 import type { RankingEntry } from '@/lib/api';
 import { type CloudSizes, type PlacedWord, pictureBox } from '@/lib/word-cloud.mts';
 import { layoutCloud } from './cloud-layout';
-import { type Lens, type LiveboardSettings, pickLenses } from './settings';
+import { campColour, type Spread, spreadCamps, spreadX } from './compare.mts';
+import SceneView from './SceneView';
+import {
+  EVENT_FRAMES,
+  eventKey,
+  type LiveScenes,
+  type LiveVideos,
+  type SceneEvent,
+  type SceneRow,
+  type SceneVideo,
+  sceneOf,
+  stayOf,
+} from './scenes';
+import { type CloudLens, cloudLens, type Lens, type LiveboardSettings, pickLenses } from './settings';
 import styles from './simple.module.css';
 
 // The simple liveboard: the whole screen is the home page's cloud, the lens's
@@ -17,6 +30,16 @@ import styles from './simple.module.css';
 // each word that stays drifts slowly as it grows or shrinks, staying near its
 // place; words that drop out shrink away and new ones grow in. Then the next
 // lens cross-fades in over the last. Tapping a word opens its tag page.
+// 藍綠對照 plays two camps' rankings on one spectrum under the centre: each
+// word sits left (green) or right (blue) by how much more that camp writes
+// it, its colour drifting from green through ink to blue the same way.
+// Other lenses are scenes (SceneView): the top events one a frame, or a
+// leaderboard of the day's topics, from /api/v1/liveboard/scenes; or the top
+// events with YouTube videos about them (/api/v1/liveboard/videos).
+// ↑ / ↓ (or PageUp / PageDown, as a presenter remote sends), a swipe up or
+// down, or the ‹ › beside the time line step to the previous or next hour,
+// and past either end to the neighbouring lens; ← / → or a sideways swipe go
+// straight to the previous or next lens; tapping an hour goes to it.
 // Settings: settings.ts, /liveboard/setting/.
 
 const SECOND = 1000;
@@ -29,33 +52,44 @@ const STALE = 2 * 60 * SECOND;
 const LEAVE = 3200;
 /** Words are drawn at this size and scaled, so a change of size animates with the move. */
 const BASE = 40;
+/** How long a scene's frame takes to fade in (keep in step with scenes.module.css). */
+const SCENE_FADE = 1000;
 
 export type Pictures = Record<string, { image?: string; emoji?: string; aspect?: number }>;
 interface Term {
   tag: string;
   weight: number;
+  /** Its articles in the ranking's window, for 藍綠對照's share of voice. */
+  count?: number;
 }
-/** One hourly snapshot of a lens. */
+/** One hourly snapshot of a cloud lens, or one frame of a scene (its terms empty). */
 interface Frame {
   id: number;
   computedAt: string;
   terms: Term[];
   /** Hours before now it was asked for (0 is the present); set when a lens's frames are gathered. */
   back?: number;
+  /** A compare lens's words on the spectrum (compare.mts)… */
+  camps?: Spread[];
+  /** …an event lens's event (with its videos on a video lens)… */
+  event?: SceneEvent;
+  videos?: SceneVideo[];
+  /** …or a leaderboard's rows. */
+  rows?: SceneRow[];
 }
 interface RankingResponse {
   snapshot: { id: number; computedAt: string };
   entries: RankingEntry[];
 }
 
-const rankingUrl = (lens: Lens, at?: Date) =>
+const rankingUrl = (lens: CloudLens, at?: Date) =>
   `/api/v1/ranking?category=${lens.category}&order=${lens.order}&limit=${WORDS + 8}${lens.order === 'growth' ? '&gate=all' : ''}${at ? `&at=${encodeURIComponent(at.toISOString())}` : ''}`;
 
-function frameOf(lens: Lens, ranking: RankingResponse): Frame {
+function frameOf(lens: CloudLens, ranking: RankingResponse): Frame {
   const weight = (e: RankingEntry) =>
     lens.order === 'growth' ? (e.signals?.growth ?? 0) : lens.order === 'burst' ? (e.burst ?? 0) : e.normalized;
   const terms = ranking.entries
-    .map((e) => ({ tag: e.tag, weight: weight(e) }))
+    .map((e) => ({ tag: e.tag, weight: weight(e), count: e.count }))
     .filter((t) => t.weight > 0)
     .slice(0, WORDS);
   return { id: ranking.snapshot.id, computedAt: ranking.snapshot.computedAt, terms };
@@ -110,9 +144,18 @@ function centreOf(lens: Lens, hours: string[], title: number, room: number) {
   });
   const line = x;
   for (const slot of slots) slot.x -= line / 2;
-  const width = Math.max(ems(lens.title) * title * 1.04, ems(lens.note) * note, line) + title * 0.6;
-  const height = title * 1.3 + note * 1.7 + (hours.length > 1 ? hour * 2.9 : 0);
-  return { title, note, hour, slots, width, height, clear: [{ x: -width / 2, y: -height / 2, width, height }] };
+  // The ‹ › that skip a frame flank the time line, or the name when there is only the present.
+  const timeline = hours.length > 1;
+  // No smaller than a fingertip on a phone, where the hour labels shrink to fit across.
+  const arrow = timeline ? Math.max(hour * 1.6, title * 0.6) : title * 0.7;
+  const arrows = {
+    size: arrow,
+    x: (timeline ? line / 2 : (ems(lens.title) * title * 1.04) / 2) + arrow * 0.9,
+    y: timeline ? title * 1.3 + note * 1.7 + hour * 0.85 : title * 0.62,
+  };
+  const width = Math.max(ems(lens.title) * title * 1.04, ems(lens.note) * note, 2 * arrows.x + arrow * 1.2) + title * 0.6;
+  const height = title * 1.3 + note * 1.7 + (timeline ? hour * 2.9 : 0);
+  return { title, note, hour, slots, arrows, width, height, clear: [{ x: -width / 2, y: -height / 2, width, height }] };
 }
 
 interface Badge {
@@ -161,6 +204,8 @@ interface Shown extends PlacedWord {
   moved?: number;
   /** Its change since the previous step, drawn beside it once the step has settled. */
   badge?: Badge;
+  /** On a compare lens, blue's share of it (0 only green, 1 only blue), for its colour. */
+  blue?: number;
 }
 /** When a newcomer starts appearing, in seconds after the change: on a new lens soon and close
  *  together; on a new hour once the words that stay have mostly moved. Word and settleMs share it. */
@@ -188,14 +233,46 @@ function settleMs(words: Shown[], first = false) {
   });
   return end * SECOND;
 }
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+/** A cloud to lay out in `rect`; on a compare lens, each word held to its place on the spectrum. */
+interface Job {
+  spread?: Map<string, number>;
+  lens: Lens;
+  terms: Term[];
+  badges: Map<string, Badge>;
+  rect: Rect;
+  clear?: Array<{ x: number; y: number; width: number; height: number }>;
+  words: number;
+}
+type Laid = PlacedWord & { job: Job };
 /** A word that would travel further than this share of the canvas width fades out and in instead. */
 const FAR = 0.25;
+/** A drag at least this long (px), and mostly along one axis, is a swipe (see onPointerUp). */
+const SWIPE = 50;
 /** What is on screen: a lens, its frames, and which frame is showing. `run` changes with every lens. */
 interface Playing {
   run: number;
   lens: Lens;
   frames: Frame[];
   frame: number;
+  /** Changes with every frame shown, a frame skipped back to included: its animation settles under `run:visit`. */
+  visit: number;
+}
+interface Skip {
+  step: (by: number) => void;
+  to: (frame: number) => void;
+  lens: (by: number) => void;
+}
+const STILL: Skip = { step: () => {}, to: () => {}, lens: () => {} };
+/** A place a skip goes to: a lens and its frame (`last` is its present, however many frames it turns out to have). */
+interface Spot {
+  lens: number;
+  frame: number | 'last';
 }
 
 /** Whether the site's dark theme is on: <html data-theme>, set by the root layout and ThemeSync. */
@@ -266,16 +343,33 @@ export default function SimpleBoard({
   const lenses = useMemo(() => pickLenses(settings.lenses), [settings.lenses]);
   const dark = useDarkTheme();
   const tint = (lens: Lens) => (dark ? lens.dark : lens.accent);
+  /** A compare lens's three anchor colours: its green side, its ink for the even middle, its blue side. */
+  const spectrumOf = (lens: Lens) => {
+    if (lens.scene !== 'compare') return null;
+    const [g, b] = lens.sides.map(cloudLens);
+    return g && b ? { green: tint(g), ink: tint(lens), blue: tint(b) } : null;
+  };
+  /** A word's colour: its lens's, or on a compare lens its place between the two camps'. */
+  const colourOf = (w: Shown) => {
+    const sp = w.blue === undefined ? null : spectrumOf(w.lens);
+    return sp && w.blue !== undefined ? campColour(w.blue, sp.green, sp.ink, sp.blue) : tint(w.lens);
+  };
   const pictures = settings.pictures ? allPictures : NO_PICTURES;
   const frame = useRef<HTMLDivElement>(null);
   const [px, setPx] = useState<{ width: number; height: number } | null>(null);
   const [playing, setPlaying] = useState<Playing | null>(null);
   const [words, setWords] = useState<Shown[]>([]);
   const cache = useRef(new Map<string, { at: number; frame: Frame | null }>());
+  /** The event and topic scenes' data, shared by their lenses and fetched again once stale. */
+  const scenes = useRef<{ at: number; data: Promise<LiveScenes | null> } | null>(null);
+  /** The video lens's videos, the same way. */
+  const videos = useRef<{ at: number; data: Promise<LiveVideos | null> } | null>(null);
+  /** Skips to the next (1) or previous (-1) frame or lens, or to one frame of the lens; set by the player. */
+  const skip = useRef<Skip>(STILL);
   const seeded = useRef(false);
   if (!seeded.current) {
     seeded.current = true;
-    const lens = lenses.find((l) => l.key === initial?.lens);
+    const lens = lenses.find((l): l is CloudLens => l.key === initial?.lens && l.scene === 'cloud');
     if (lens && initial?.ranking.entries.length)
       cache.current.set(`${lens.key}@now`, { at: Date.now(), frame: frameOf(lens, initial.ranking) });
   }
@@ -293,19 +387,47 @@ export default function SimpleBoard({
 
   // Plays the lenses in turn: fetch a lens's frames (the next one is fetched
   // while the present one holds), cross-fade to the oldest frame, step forward
-  // to now, hold, and go on.
+  // to now, hold, and go on. A skip cuts whatever it is waiting on short: a
+  // step goes to the neighbouring frame, past either end to the neighbouring
+  // lens (its oldest frame going forward, its present going back).
   useEffect(() => {
     let cancelled = false;
+    /** Where a skip asked to go, until the player takes it up. */
+    let wanted: Spot | null = null;
+    /** Where the board is: the lens on screen (or being fetched), its frame and how many it has. */
+    let here = { lens: 0, frame: 0, frames: 0 };
+    let index = 0;
+    let next: Promise<Frame[]>;
     let wake: () => void = () => {};
-    const sleep = (ms: number) =>
-      new Promise<void>((resolve) => {
-        const id = setTimeout(resolve, ms);
-        wake = () => {
-          clearTimeout(id);
-          resolve();
-        };
-      });
-    const snapshot = async (lens: Lens, hoursBack: number, now: number) => {
+    /** Waits for `promise`, or less should the board be skipped or closed meanwhile. */
+    const until = <T,>(promise: Promise<T>) =>
+      Promise.race([promise, new Promise<undefined>((resolve) => (wake = () => resolve(undefined)))]);
+    const sleep = (ms: number) => {
+      let id: ReturnType<typeof setTimeout> | undefined;
+      return until(new Promise<void>((resolve) => (id = setTimeout(resolve, ms)))).finally(() => clearTimeout(id));
+    };
+    const wrap = (lens: number) => ((lens % lenses.length) + lenses.length) % lenses.length;
+    const go = (spot: Spot) => {
+      wanted = spot;
+      wake();
+    };
+    skip.current = {
+      step: (by) => {
+        if (!lenses.length) return;
+        // From a lens still being fetched (or not yet played) a step goes on to the next lens.
+        const from = wanted ?? here;
+        const frame = from.lens === here.lens && from.frame !== 'last' ? from.frame + by : by > 0 ? Infinity : -1;
+        if (from.lens === here.lens && frame >= 0 && frame < here.frames) go({ lens: here.lens, frame });
+        else go(by > 0 ? { lens: wrap(from.lens + 1), frame: 0 } : { lens: wrap(from.lens - 1), frame: 'last' });
+      },
+      to: (frame) => {
+        if (frame !== here.frame || wanted) go({ lens: here.lens, frame });
+      },
+      lens: (by) => {
+        if (lenses.length) go({ lens: wrap((wanted ?? here).lens + by), frame: 0 });
+      },
+    };
+    const snapshot = async (lens: CloudLens, hoursBack: number, now: number) => {
       // Past snapshots are filed under their hour, so a later turn reuses them.
       const key = hoursBack ? `${lens.key}@${Math.floor((now - hoursBack * HOUR) / HOUR)}` : `${lens.key}@now`;
       const hit = cache.current.get(key);
@@ -315,7 +437,51 @@ export default function SimpleBoard({
       if (got || !hit) cache.current.set(key, { at: Date.now(), frame: got });
       return got ?? hit?.frame ?? null;
     };
-    const framesOf = async (lens: Lens) => {
+    const sceneData = () => {
+      if (!scenes.current || Date.now() - scenes.current.at > STALE / 2) {
+        const data = getJson<LiveScenes>('/api/v1/liveboard/scenes');
+        scenes.current = { at: Date.now(), data };
+        // A failed fetch is tried again on the next turn.
+        data.then((d) => {
+          if (!d && scenes.current?.data === data) scenes.current = null;
+        });
+      }
+      return scenes.current.data;
+    };
+    const videoData = () => {
+      if (!videos.current || Date.now() - videos.current.at > STALE / 2) {
+        const data = getJson<LiveVideos>('/api/v1/liveboard/videos');
+        videos.current = { at: Date.now(), data };
+        data.then((d) => {
+          if (!d && videos.current?.data === data) videos.current = null;
+        });
+      }
+      return videos.current.data;
+    };
+    const framesOf = async (lens: Lens): Promise<Frame[]> => {
+      if (lens.scene === 'compare') return compareFrames(lens.sides);
+      if (lens.scene !== 'cloud') {
+        const data = await sceneData();
+        if (!data) return [];
+        const at = data.generatedAt;
+        if (lens.scene === 'events')
+          return data.events.slice(0, EVENT_FRAMES).map((event, i) => ({ id: i, computedAt: at, terms: [], event }));
+        if (lens.scene === 'videos' && lens.feed !== 'events') {
+          const list = (await videoData())?.[lens.feed] ?? [];
+          return list.length ? [{ id: 0, computedAt: at, terms: [], videos: list }] : [];
+        }
+        if (lens.scene === 'videos') {
+          // Only the events with videos: one without has nothing to show here.
+          const found = await videoData();
+          const byEvent = new Map((found?.events ?? []).map((e) => [eventKey(e), e.videos]));
+          return data.events.slice(0, EVENT_FRAMES).flatMap((event, i) => {
+            const list = byEvent.get(eventKey(event));
+            return list?.length ? [{ id: i, computedAt: at, terms: [], event, videos: list }] : [];
+          });
+        }
+        const rows = data.boards[lens.board];
+        return rows.length ? [{ id: 0, computedAt: at, terms: [], rows }] : [];
+      }
       const now = Date.now();
       const all = await Promise.all(
         Array.from({ length: settings.history + 1 }, async (_, i): Promise<Frame | null> => {
@@ -325,6 +491,29 @@ export default function SimpleBoard({
         }),
       );
       // Oldest first, one per snapshot, words only.
+      return all.filter((f, i): f is Frame => !!f?.terms.length && all.findIndex((g) => g?.id === f.id) === i);
+    };
+    // Both camps' snapshots for each step, on one spectrum (compare.mts).
+    const compareFrames = async ([leftKey, rightKey]: [string, string]): Promise<Frame[]> => {
+      const left = cloudLens(leftKey);
+      const right = cloudLens(rightKey);
+      if (!left || !right) return [];
+      const now = Date.now();
+      const all = await Promise.all(
+        Array.from({ length: settings.history + 1 }, async (_, i): Promise<Frame | null> => {
+          const back = (settings.history - i) * settings.interval;
+          const [a, b] = await Promise.all([snapshot(left, back, now), snapshot(right, back, now)]);
+          if (!a?.terms.length || !b?.terms.length) return null;
+          const spread = spreadCamps(a.terms, b.terms, settings.words);
+          return {
+            id: a.id * 1_000_003 + b.id,
+            computedAt: a.computedAt > b.computedAt ? a.computedAt : b.computedAt,
+            terms: spread.map(({ tag, weight }) => ({ tag, weight })),
+            back,
+            camps: spread,
+          };
+        }),
+      );
       return all.filter((f, i): f is Frame => !!f?.terms.length && all.findIndex((g) => g?.id === f.id) === i);
     };
     // Resolves once a frame's animation is over (or after 15 s, should its layout never come).
@@ -338,47 +527,137 @@ export default function SimpleBoard({
               resolve();
             });
           });
+    /** Takes up a skip to another lens: it is the one to fetch and play next, from the frame asked for. */
+    let start: Spot['frame'] = 0;
+    const toLens = () => {
+      if (!wanted) return;
+      index = here.lens = wanted.lens;
+      start = wanted.frame;
+      wanted = null;
+      next = framesOf(lenses[index]);
+    };
     const play = async () => {
       let run = 0;
-      let index = 0;
-      let next = framesOf(lenses[0]);
+      let visit = 0;
+      next = framesOf(lenses[0]);
       let empty = 0;
       while (!cancelled) {
         const lens = lenses[index];
-        const frames = await next;
+        here = { lens: index, frame: 0, frames: 0 };
+        const frames = await until(next);
         if (cancelled) return;
+        if (wanted && wanted.lens === index) {
+          start = wanted.frame;
+          wanted = null;
+        }
+        if (wanted || !frames) {
+          toLens();
+          continue;
+        }
         const after = (index + 1) % lenses.length;
         if (!frames.length) {
           // Nothing for this lens (or the API is down): try the next, resting after a full round.
           index = after;
+          start = 0;
           next = framesOf(lenses[index]);
           if (++empty >= lenses.length) {
             empty = 0;
             await sleep(30 * SECOND);
+            if (cancelled) return;
+            toLens();
           }
           continue;
         }
         empty = 0;
         run += 1;
-        setPlaying({ run, lens, frames, frame: 0 });
+        let f = start === 'last' ? frames.length - 1 : Math.min(start, frames.length - 1);
+        start = 0;
+        visit += 1;
+        setPlaying({ run, lens, frames, frame: f, visit });
+        const show = (frame: number) => {
+          const v = ++visit;
+          setPlaying((p) => (p && p.run === run ? { ...p, frame, visit: v } : p));
+        };
         // Each frame: let the animation finish, then stay `step` seconds (`hold` for the present).
-        for (let f = 0; f < frames.length; f++) {
-          if (f) setPlaying((p) => (p && p.run === run ? { ...p, frame: f } : p));
-          await settled(`${run}:${f}`);
+        // A skip within the lens goes to the frame asked for; one to another lens ends the turn.
+        const skipped = () => {
+          if (!wanted || wanted.lens !== index) return !!wanted;
+          f = wanted.frame === 'last' ? frames.length - 1 : wanted.frame;
+          wanted = null;
+          show(f);
+          return false;
+        };
+        for (;;) {
+          here = { lens: index, frame: f, frames: frames.length };
+          const shown = f;
+          await until(settled(`${run}:${visit}`));
           if (cancelled) return;
-          if (f === frames.length - 1) next = framesOf(lenses[after]);
-          await sleep((f === frames.length - 1 ? settings.hold : settings.step) * SECOND);
+          if (skipped()) break;
+          if (f !== shown) continue;
+          const last = f === frames.length - 1;
+          if (last) next = framesOf(lenses[after]);
+          await sleep(stayOf(lens.scene, last, settings) * SECOND);
           if (cancelled) return;
+          if (skipped()) break;
+          if (f !== shown) continue;
+          if (last) break;
+          f += 1;
+          show(f);
         }
-        index = after;
+        if (wanted) toLens();
+        else index = after;
       }
     };
     if (lenses.length) play();
     return () => {
       cancelled = true;
+      skip.current = STILL;
       wake();
     };
-  }, [lenses, settings.history, settings.interval, settings.step, settings.hold]);
+  }, [lenses, settings.history, settings.interval, settings.step, settings.hold, settings.words]);
+
+  // The keys: ↑ ↓ step through the hours (an event lens's events), on past
+  // either end; ← → go to the previous or next lens. A presenter remote's two
+  // keys (PageUp / PageDown) step, so they still reach every lens.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const step = e.key === 'ArrowDown' || e.key === 'PageDown' ? 1 : e.key === 'ArrowUp' || e.key === 'PageUp' ? -1 : 0;
+      const lens = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!step && !lens) return;
+      e.preventDefault();
+      if (step) skip.current.step(step);
+      else skip.current.lens(lens);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  // A swipe as the keys: sideways for the next lens (right to left) or the previous,
+  // up or down for the next hour (bottom to top) or the previous. The click that
+  // ends a swipe over a word must not open it.
+  const swipe = useRef<{ x: number; y: number; id: number } | null>(null);
+  const swiped = useRef(false);
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.isPrimary) swipe.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    swiped.current = false;
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const start = swipe.current;
+    swipe.current = null;
+    if (!start || start.id !== e.pointerId) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) >= SWIPE && Math.abs(dx) >= 1.5 * Math.abs(dy)) skip.current.lens(dx < 0 ? 1 : -1);
+    else if (Math.abs(dy) >= SWIPE && Math.abs(dy) >= 1.5 * Math.abs(dx)) skip.current.step(dy < 0 ? 1 : -1);
+    else return;
+    swiped.current = true;
+  };
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (!swiped.current) return;
+    swiped.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   const canvas = useMemo(() => (px ? canvasFor(px, settings.scale) : null), [px, settings.scale]);
   const shownWords = useRef(words);
@@ -392,7 +671,7 @@ export default function SimpleBoard({
   const settledFrames = useRef(new Set<string>());
   const settleWaiters = useRef(new Map<string, () => void>());
   const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const settleAfter = useCallback((key: string, ms: number) => {
+  const settleAfter = (key: string, ms: number) => {
     clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => {
       if (settledFrames.current.size > 50) settledFrames.current.clear();
@@ -401,18 +680,50 @@ export default function SimpleBoard({
       settleWaiters.current.get(key)?.();
       settleWaiters.current.delete(key);
     }, ms);
-  }, []);
+  };
 
   // Each frame is the snapshot that stood that many hours ago (the hour's last one).
+  // An event lens's frames are its events, by rank.
   const hourLabels = useMemo(
-    () => (playing?.frames ?? []).map((f, i, all) => (i === all.length - 1 || !f.back ? '現在' : ago(f.back))),
+    () =>
+      (playing?.frames ?? []).map((f, i, all) => (f.event ? String(f.event.rank) : i === all.length - 1 || !f.back ? '現在' : ago(f.back))),
     [playing?.frames],
   );
-  const playingLens = playing?.lens;
+  const cloudy = playing?.lens.scene === 'cloud' || playing?.lens.scene === 'compare';
   const centre = useMemo(
-    () => (canvas && playingLens ? centreOf(playingLens, hourLabels, canvas.title, canvas.width) : null),
-    [canvas, playingLens, hourLabels],
+    () =>
+      canvas && playing && cloudy
+        ? // A compare lens's centre is a band over the spectrum: smaller, so the words get the height.
+          centreOf(
+            playing.lens,
+            hourLabels,
+            playing.lens.scene === 'compare' ? Math.round(canvas.title * 0.62) : canvas.title,
+            canvas.width,
+          )
+        : null,
+    [canvas, playing?.lens, cloudy, hourLabels],
   );
+  const spectrum = playing ? spectrumOf(playing.lens) : null;
+  // A compare lens puts its centre in a band on top, the spectrum under it and its axis at the foot.
+  const band = useMemo(() => {
+    if (!canvas || !centre || playing?.lens.scene !== 'compare') return null;
+    const top = centre.height + canvas.title * 0.5;
+    const axis = canvas.title * 0.9;
+    return { x: 0, y: top, width: canvas.width, height: Math.max(0, canvas.height - top - axis), axis };
+  }, [canvas, centre, playing?.lens]);
+
+  // A scene has no words: the cloud's fade out where they are, and the scene's
+  // frame counts as settled once it has faded in.
+  useEffect(() => {
+    if (!playing || playing.lens.scene === 'cloud' || playing.lens.scene === 'compare') return;
+    laidRun.current = playing.run;
+    setWords((ws) =>
+      ws.some((w) => w.phase !== 'exit')
+        ? ws.flatMap((w): Shown[] => (w.phase === 'enter' ? [] : [{ ...w, phase: 'exit', fade: true }]))
+        : ws,
+    );
+    settleAfter(`${playing.run}:${playing.visit}`, SCENE_FADE);
+  }, [playing]);
 
   // Lays the frame out around the centre and hands out phases. A new hour of
   // the same lens keeps each word near where it was: words still there move
@@ -424,83 +735,139 @@ export default function SimpleBoard({
   // make it jump.
   useEffect(() => {
     if (!canvas || !playing || !centre) return;
-    const { terms } = playing.frames[playing.frame];
-    const badges = badgesFor(settings.change, terms, playing.frames[playing.frame - 1]?.terms);
+    const frame = playing.frames[playing.frame];
+    const previous = playing.frames[playing.frame - 1];
     const room = settings.change === 'off' ? 0 : BADGE_ROOM;
     const newLens = laidRun.current !== 0 && laidRun.current !== playing.run;
     const before = shownWords.current.filter((w) => w.phase !== 'exit');
-    const anchors =
-      before.length && !newLens ? new Map(before.map((w) => [w.label, { x: w.x + w.width / 2, y: w.y + w.height / 2 }])) : undefined;
+    // What to lay out where: the whole canvas round the centre, or a compare
+    // lens's spectrum under it, each word held to its blue share across.
+    const lens = playing.lens;
+    const camps = frame.camps;
+    const job: Job =
+      lens.scene === 'compare' && camps && band
+        ? {
+            spread: new Map(camps.map((t) => [t.tag, t.blue])),
+            lens,
+            terms: frame.terms,
+            badges: badgesFor(settings.change, frame.terms, previous?.terms),
+            rect: band,
+            words: settings.words,
+          }
+        : {
+            lens,
+            terms: frame.terms,
+            badges: badgesFor(settings.change, frame.terms, previous?.terms),
+            rect: { x: 0, y: 0, width: canvas.width, height: canvas.height },
+            clear: centre.clear,
+            words: settings.words,
+          };
+    const jobs = [job];
     let live = true;
-    layoutCloud(
-      terms.slice(0, settings.words).map((t) => {
-        const p = pictures[t.tag];
-        return { label: t.tag, count: t.weight, square: !!(p?.image || p?.emoji), aspect: p?.image ? p.aspect : undefined, extra: room };
+    Promise.all(
+      jobs.map((job) => {
+        // On the spectrum a word's x is its blue share, found up or down from the middle line
+        // (a step sideways costs as much as `stretch` up or down), and left out rather than
+        // placed where its x would be wrong; elsewhere it stays near where it was.
+        const reach = job.rect.width * 0.1;
+        const anchors = job.spread
+          ? new Map(
+              [...job.spread].map(([label, blue]) => [
+                label,
+                { x: spreadX(blue, job.rect.width, job.rect.width * 0.07), y: job.rect.height / 2 },
+              ]),
+            )
+          : before.length && !newLens
+            ? new Map(before.map((w) => [w.label, { x: w.x + w.width / 2 - job.rect.x, y: w.y + w.height / 2 - job.rect.y }]))
+            : undefined;
+        return layoutCloud(
+          job.terms.slice(0, job.words).map((t) => {
+            const p = pictures[t.tag];
+            return {
+              label: t.tag,
+              count: t.weight,
+              square: !!(p?.image || p?.emoji),
+              aspect: p?.image ? p.aspect : undefined,
+              extra: room,
+            };
+          }),
+          job.rect.width,
+          job.rect.height,
+          {
+            ...canvas.sizes,
+            // The spectrum is shorter than the whole canvas.
+            max: job.spread ? Math.round(canvas.sizes.max * 0.85) : canvas.sizes.max,
+            words: job.words,
+            clear: job.clear,
+            anchors,
+            ...(job.spread ? { anchorOnly: true, anchorReach: reach, anchorStretch: job.rect.height / 2 / reach } : {}),
+          },
+        ).then((placed) => placed.map((w): Laid => ({ ...w, x: w.x + job.rect.x, y: w.y + job.rect.y, job })));
       }),
-      canvas.width,
-      canvas.height,
-      { ...canvas.sizes, words: settings.words, clear: centre.clear, anchors },
-    ).then((placed) => {
-      if (!live || !placed.length) return;
-      laidRun.current = playing.run;
-      const old = shownWords.current;
-      const kept = old.filter((w) => w.phase !== 'exit');
-      const fresh = !kept.length;
-      const shown = (w: PlacedWord, phase: Phase, key = `${w.label}~${++serial.current}`): Shown => ({
-        ...w,
-        key,
-        lens: playing.lens,
-        phase,
-        badge: badges.get(w.label),
-      });
-      const frameKey = `${playing.run}:${playing.frame}`;
-      if (fresh) {
-        setWords(placed.map((w) => shown(w, 'live')));
-        settleAfter(frameKey, settleMs([], true));
-      } else if (newLens) {
-        const leaving = old.flatMap((w): Shown[] => (w.phase === 'enter' ? [] : [{ ...w, phase: 'exit', fade: true }]));
-        const all = [...leaving, ...placed.map((w) => ({ ...shown(w, 'enter'), fade: true }))];
-        setWords(all);
-        settleAfter(frameKey, settleMs(all));
-      } else {
-        const at = new Map(placed.map((w) => [w.label, w]));
-        const showing = new Set(kept.map((w) => w.label));
-        const done = new Set<string>();
-        const far = canvas.width * FAR;
-        const arrivals: Shown[] = [];
-        const next = old.flatMap((w): Shown[] => {
-          const now = at.get(w.label);
-          if (w.phase === 'exit') {
-            // A word coming back grows in where it now belongs (it is invisible on the way).
-            if (!now || showing.has(w.label) || done.has(w.label)) return [w];
-            done.add(w.label);
-            return [shown(now, 'enter', w.key)];
-          }
-          if (!now) return w.phase === 'live' ? [{ ...w, phase: 'exit', fade: false }] : [];
-          done.add(w.label);
-          const distance = Math.hypot(now.x + now.width / 2 - (w.x + w.width / 2), now.y + now.height / 2 - (w.y + w.height / 2));
-          if (distance > far) {
-            arrivals.push(shown(now, 'enter'));
-            return [{ ...w, phase: 'exit', fade: false }];
-          }
-          const moved = Math.max(
-            Math.abs(now.x - w.x),
-            Math.abs(now.y - w.y),
-            Math.abs(now.width - w.width),
-            Math.abs(now.height - w.height),
-          );
-          return [{ ...shown(now, w.phase, w.key), moved }];
+    )
+      .then((laid) => laid.flat())
+      .then((placed) => {
+        if (!live || !placed.length) return;
+        laidRun.current = playing.run;
+        const old = shownWords.current;
+        const kept = old.filter((w) => w.phase !== 'exit');
+        const fresh = !kept.length;
+        const shown = ({ job, ...w }: Laid, phase: Phase, key = `${w.label}~${++serial.current}`): Shown => ({
+          ...w,
+          key,
+          lens: job.lens,
+          blue: job.spread?.get(w.label),
+          phase,
+          badge: job.badges.get(w.label),
         });
-        // Newcomers go at the end so no element already drawn moves in the DOM.
-        const all = [...next, ...arrivals, ...placed.filter((w) => !done.has(w.label)).map((w) => shown(w, 'enter'))];
-        setWords(all);
-        settleAfter(frameKey, settleMs(all));
-      }
-    });
+        const frameKey = `${playing.run}:${playing.visit}`;
+        if (fresh && !newLens) {
+          setWords(placed.map((w) => shown(w, 'live')));
+          settleAfter(frameKey, settleMs([], true));
+        } else if (newLens) {
+          const leaving = old.flatMap((w): Shown[] => (w.phase === 'enter' ? [] : [{ ...w, phase: 'exit', fade: true }]));
+          const all = [...leaving, ...placed.map((w) => ({ ...shown(w, 'enter'), fade: true }))];
+          setWords(all);
+          settleAfter(frameKey, settleMs(all));
+        } else {
+          const at = new Map(placed.map((w) => [w.label, w]));
+          const showing = new Set(kept.map((w) => w.label));
+          const done = new Set<string>();
+          const far = canvas.width * FAR;
+          const arrivals: Shown[] = [];
+          const next = old.flatMap((w): Shown[] => {
+            const now = at.get(w.label);
+            if (w.phase === 'exit') {
+              // A word coming back grows in where it now belongs (it is invisible on the way).
+              if (!now || showing.has(w.label) || done.has(w.label)) return [w];
+              done.add(w.label);
+              return [shown(now, 'enter', w.key)];
+            }
+            if (!now) return w.phase === 'live' ? [{ ...w, phase: 'exit', fade: false }] : [];
+            done.add(w.label);
+            const distance = Math.hypot(now.x + now.width / 2 - (w.x + w.width / 2), now.y + now.height / 2 - (w.y + w.height / 2));
+            if (distance > far) {
+              arrivals.push(shown(now, 'enter'));
+              return [{ ...w, phase: 'exit', fade: false }];
+            }
+            const moved = Math.max(
+              Math.abs(now.x - w.x),
+              Math.abs(now.y - w.y),
+              Math.abs(now.width - w.width),
+              Math.abs(now.height - w.height),
+            );
+            return [{ ...shown(now, w.phase, w.key), moved }];
+          });
+          // Newcomers go at the end so no element already drawn moves in the DOM.
+          const all = [...next, ...arrivals, ...placed.filter((w) => !done.has(w.label)).map((w) => shown(w, 'enter'))];
+          setWords(all);
+          settleAfter(frameKey, settleMs(all));
+        }
+      });
     return () => {
       live = false;
     };
-  }, [canvas, playing, pictures, centre, settings.words, settings.change, settleAfter]);
+  }, [canvas, playing, pictures, centre, band, settings.words, settings.change]);
 
   // Newcomers mount small and clear, then turn live on the next frames so they
   // grow in; the leavers are dropped once they have shrunk away.
@@ -524,7 +891,7 @@ export default function SimpleBoard({
     <main className={styles.board} style={{ '--ui': settings.scale / 100 } as React.CSSProperties}>
       <header className={styles.header}>
         {/* The wordmark leads to the board's settings. */}
-        <Link href="/liveboard/setting/" className={styles.brand} aria-label="即時看板設定">
+        <Link prefetch={false} href="/liveboard/setting/" className={styles.brand} aria-label="即時看板設定">
           <Wordmark className={styles.wordmark} />
           <span>同一件事，各家怎麼說</span>
         </Link>
@@ -552,14 +919,45 @@ export default function SimpleBoard({
           </div>
         </div>
       </header>
-      <div ref={frame} className={styles.frame}>
+      <div
+        ref={frame}
+        className={styles.frame}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => {
+          swipe.current = null;
+        }}
+        onClickCapture={onClickCapture}
+      >
+        {playing && (playing.lens.scene === 'events' || playing.lens.scene === 'videos' || playing.lens.scene === 'board') && (
+          <SceneView
+            key={playing.run}
+            lens={playing.lens}
+            colour={tint(playing.lens)}
+            event={playing.frames[playing.frame]?.event}
+            videos={playing.frames[playing.frame]?.videos}
+            rows={playing.frames[playing.frame]?.rows}
+            frame={playing.frame}
+            labels={hourLabels}
+            settled={settledFrame === `${playing.run}:${playing.visit}`}
+            stay={stayOf(sceneOf(playing.lens), playing.frame === playing.frames.length - 1, settings)}
+            onStep={(by) => skip.current.step(by)}
+            onTo={(i) => skip.current.to(i)}
+          />
+        )}
         {canvas && (
-          <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} className={styles.cloud} aria-label={`${lens?.title ?? ''}文字雲`}>
+          <svg
+            viewBox={`0 0 ${canvas.width} ${canvas.height}`}
+            className={styles.cloud}
+            aria-label={lens?.scene === 'cloud' || lens?.scene === 'compare' ? `${lens.title}文字雲` : undefined}
+            aria-hidden={lens?.scene === 'cloud' || lens?.scene === 'compare' ? undefined : true}
+          >
             {playing && centre && (
               <g
                 key={`centre-${playing.run}`}
                 className={styles.fadeIn}
-                transform={`translate(${canvas.width / 2} ${canvas.height / 2 - centre.height / 2})`}
+                // A compare lens's centre heads its band on top; a cloud's sits in its middle.
+                transform={`translate(${canvas.width / 2} ${band ? canvas.title * 0.25 : canvas.height / 2 - centre.height / 2})`}
               >
                 <text
                   y={centre.title * 1.0}
@@ -585,7 +983,12 @@ export default function SimpleBoard({
                         height: centre.hour * 0.22,
                       };
                       return (
-                        <g key={slot.label} opacity={i > playing.frame ? 0.45 : 1}>
+                        <Hit
+                          key={slot.label}
+                          label={`跳到${slot.label}`}
+                          onHit={() => skip.current.to(i)}
+                          box={{ x: slot.x, y: 0, width: slot.width, height: centre.hour * 2.6 }}
+                        >
                           <text
                             x={slot.x + slot.width / 2}
                             y={centre.hour * 1.3}
@@ -596,12 +999,12 @@ export default function SimpleBoard({
                           >
                             {slot.label}
                           </text>
-                          <rect {...bar} rx={bar.height / 2} className={styles.track} />
+                          <rect {...bar} rx={bar.height / 2} className={styles.track} opacity={i > playing.frame ? 0.45 : 1} />
                           {i < playing.frame && <rect {...bar} rx={bar.height / 2} fill={tint(playing.lens)} opacity={0.35} />}
-                          {now && settledFrame === `${playing.run}:${i}` && (
+                          {now && settledFrame === `${playing.run}:${playing.visit}` && (
                             // Fills over the time this hour (or the present) stays, once its animation is over.
                             <rect
-                              key={`${playing.run}-${slot.label}`}
+                              key={`${playing.run}-${i}`}
                               {...bar}
                               rx={bar.height / 2}
                               fill={tint(playing.lens)}
@@ -609,16 +1012,78 @@ export default function SimpleBoard({
                               style={{ animationDuration: `${i === centre.slots.length - 1 ? settings.hold : settings.step}s` }}
                             />
                           )}
-                        </g>
+                        </Hit>
                       );
                     })}
                   </g>
                 )}
+                {(lenses.length > 1 || centre.slots.length > 1) &&
+                  ([-1, 1] as const).map((by) => (
+                    <Hit
+                      key={by}
+                      label={by > 0 ? '下一個時間點' : '上一個時間點'}
+                      onHit={() => skip.current.step(by)}
+                      className={styles.arrow}
+                      box={{
+                        x: by * centre.arrows.x - centre.arrows.size * 0.8,
+                        y: centre.arrows.y - centre.arrows.size * 0.9,
+                        width: centre.arrows.size * 1.6,
+                        height: centre.arrows.size * 1.8,
+                      }}
+                    >
+                      <text
+                        x={by * centre.arrows.x}
+                        y={centre.arrows.y + centre.arrows.size * 0.36}
+                        fontSize={centre.arrows.size}
+                        textAnchor="middle"
+                      >
+                        {by > 0 ? '›' : '‹'}
+                      </text>
+                    </Hit>
+                  ))}
+              </g>
+            )}
+            {playing?.lens.scene === 'compare' && band && spectrum && (
+              // The spectrum's axis at the foot: green to blue through the ink, as the words are coloured.
+              <g key={`axis-${playing.run}`} className={styles.fadeIn}>
+                <defs>
+                  <linearGradient id="camp-axis" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0" stopColor={spectrum.green} />
+                    <stop offset="0.5" stopColor={spectrum.ink} />
+                    <stop offset="1" stopColor={spectrum.blue} />
+                  </linearGradient>
+                </defs>
+                {(() => {
+                  const pad = band.width * 0.07;
+                  const y = band.y + band.height + band.axis * 0.3;
+                  const size = canvas.title * 0.36;
+                  return (
+                    <>
+                      <rect
+                        x={pad}
+                        y={y}
+                        width={band.width - 2 * pad}
+                        height={Math.max(2, size * 0.18)}
+                        rx={size * 0.09}
+                        fill="url(#camp-axis)"
+                      />
+                      <text x={pad} y={y + size * 1.35} fontSize={size} fontWeight={700} fill={spectrum.green}>
+                        ← 綠營媒體提得多
+                      </text>
+                      <text x={band.width / 2} y={y + size * 1.35} fontSize={size} textAnchor="middle" className={styles.note}>
+                        兩邊差不多
+                      </text>
+                      <text x={band.width - pad} y={y + size * 1.35} fontSize={size} fontWeight={700} textAnchor="end" fill={spectrum.blue}>
+                        藍營媒體提得多 →
+                      </text>
+                    </>
+                  );
+                })()}
               </g>
             )}
             <g className={styles.fadeIn}>
               {words.map((w, i) => (
-                <Word key={w.key} word={w} picture={pictures[w.label]} colour={tint(w.lens)} index={i} />
+                <Word key={w.key} word={w} picture={pictures[w.label]} colour={colourOf(w)} index={i} />
               ))}
             </g>
           </svg>
@@ -628,6 +1093,43 @@ export default function SimpleBoard({
   );
 }
 const NO_PICTURES: Pictures = {};
+
+/** A tappable part of the centre (a time point, a ‹ ›): a clear box over it takes the tap, and Enter or Space works too. */
+function Hit({
+  label,
+  onHit,
+  box,
+  className,
+  opacity,
+  children,
+}: {
+  label: string;
+  onHit: () => void;
+  box: { x: number; y: number; width: number; height: number };
+  className?: string;
+  opacity?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: SVG has no <button>; this is one in role and keys.
+    <g
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      className={`${styles.hit} ${className ?? ''}`}
+      opacity={opacity}
+      onClick={onHit}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        onHit();
+      }}
+    >
+      <rect {...box} fill="transparent" />
+      {children}
+    </g>
+  );
+}
 
 function Word({ word, picture, colour, index }: { word: Shown; picture?: Pictures[string]; colour?: string; index: number }) {
   const k = word.fontSize / BASE;
@@ -670,7 +1172,7 @@ function Word({ word, picture, colour, index }: { word: Shown; picture?: Picture
   const badgeWidth = word.badge ? gap + badgeText + 2 * pad : 0;
   const shift = box ? -badgeWidth / 2 : Math.max(0, ((word.extra ?? 0) * BASE - badgeWidth) / 2);
   const label = box ? (
-    <text y={box.pictureHeight + caption * 1.05} fontSize={caption} textAnchor="middle" fill={colour ?? 'currentColor'}>
+    <text y={box.pictureHeight + caption * 1.05} fontSize={caption} textAnchor="middle" fill="currentColor">
       {word.label}
     </text>
   ) : (
@@ -694,7 +1196,7 @@ function Word({ word, picture, colour, index }: { word: Shown; picture?: Picture
   );
 
   return (
-    <Link href={href} aria-label={word.label} className={styles.link} tabIndex={word.phase === 'exit' ? -1 : undefined}>
+    <Link prefetch={false} href={href} aria-label={word.label} className={styles.link} tabIndex={word.phase === 'exit' ? -1 : undefined}>
       <g className={styles.word} style={style}>
         <rect x={image ? -word.width / 2 / k : -2 / k} width={word.width / k} height={word.height / k} fill="transparent" />
         {box && <Picture box={box} picture={picture} />}

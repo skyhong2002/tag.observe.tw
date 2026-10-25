@@ -64,7 +64,7 @@ function Angles({ t, media }: { t: PeriodThread; media: MediaInfo }) {
     <ul className="mt-1 space-y-1 border-t border-zinc-200 pt-2 text-sm dark:border-zinc-800">
       {picked.slice(0, 3).map((n) => (
         <li key={n.url} className="flex min-w-0 items-baseline gap-2">
-          <span className={`shrink-0 text-xs font-medium ${n.camp ? CAMP_TEXT[n.camp] : 'text-zinc-500'}`}>
+          <span className={`shrink-0 text-xs font-medium ${n.camp ? CAMP_TEXT[n.camp] : 'text-zinc-500 dark:text-zinc-400'}`}>
             {media[n.media]?.title ?? n.media}
           </span>
           <span className="truncate text-zinc-700 dark:text-zinc-300">{clipHeadline(cleanEventHeadline(n.title))}</span>
@@ -96,6 +96,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
       <ol className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         <li className="md:col-span-2 lg:col-span-3">
           <Link
+            prefetch={false}
             href={threadHref(lead)}
             className="group grid grid-cols-1 overflow-hidden rounded-xl border border-zinc-300 bg-white hover:border-brand-700 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-500"
           >
@@ -103,7 +104,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
             <span className="flex min-w-0 flex-col justify-center gap-2 p-4">
               <span className="text-xs font-medium text-brand-700 dark:text-brand-400">最受關注</span>
               <span className="text-xl font-semibold leading-snug group-hover:underline">{threadHeadline(lead)}</span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
                 {lead.majorTags
                   .slice(0, 5)
                   .map((tag) => `#${tag}`)
@@ -119,6 +120,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
           // Phones get the lead and three more, so the stream is not six screens down.
           <li key={t.id} className={i >= 3 ? 'hidden md:block' : undefined}>
             <Link
+              prefetch={false}
               href={threadHref(t)}
               className="group flex h-full gap-3 rounded-xl border border-zinc-300 bg-white p-3 hover:border-brand-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-500"
             >

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
 import FilterChips from '@/components/FilterChips';
@@ -49,6 +50,30 @@ export async function generateMetadata({
   };
 }
 
+// The relations come from the whole news graph (/similarity, ~2 MB for 7 days,
+// several seconds to build when the API cache is cold). Stream them in rather
+// than holding the page. The gateway drops a response that sends nothing for
+// 15 s (app/src/ui-proxy.js bodyTimeout), so give up before that.
+async function Relations({ media, hours }: { media: string; hours: number }) {
+  const data = await fetch(`${API_ORIGIN}/api/v1/similarity?${new URLSearchParams({ hours: String(hours), threshold: '0.65' })}`, {
+    next: { revalidate },
+    headers: { accept: 'application/json' },
+    signal: AbortSignal.timeout(12_000),
+  })
+    .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
+    .catch(() => null);
+  return <MediaRelations data={data} media={media} hours={hours} />;
+}
+
+function RelationsLoading() {
+  return (
+    <section aria-label="與其他媒體的關係" aria-busy="true" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
+      <h2 className="text-sm font-semibold">媒體關係</h2>
+      <p className="py-6 leading-6 text-zinc-500 dark:text-zinc-400">比對結果載入中…</p>
+    </section>
+  );
+}
+
 export default async function MediaPage({
   params,
   searchParams,
@@ -66,23 +91,13 @@ export default async function MediaPage({
     keyword = query.get('q');
   const cloudHours = Number(hours ?? 168);
   const discoverySource = media === 'google_news' || media === 'dongtaiwang';
-  const [res, profile, keywords, similarity, comparison, writing] = await Promise.all([
+  const [res, profile, keywords, comparison, writing] = await Promise.all([
     fetch(`${API_ORIGIN}/api/v1/media/${encodeURIComponent(media)}/content?${apiQuery}`, {
       next: { revalidate },
       signal: AbortSignal.timeout(6000),
     }).catch(() => null),
     loadMediaProfile(media),
     discoverySource ? null : loadMediaKeywords(media, cloudHours),
-    // The same index as the news graph (/similarity); the API caches it per period.
-    discoverySource
-      ? null
-      : fetch(`${API_ORIGIN}/api/v1/similarity?${new URLSearchParams({ hours: String(cloudHours), threshold: '0.65' })}`, {
-          next: { revalidate },
-          headers: { accept: 'application/json' },
-          signal: AbortSignal.timeout(8000),
-        })
-          .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
-          .catch(() => null),
     // Similarweb visits and Radar rank, from the same load as /media/traffic/.
     discoverySource ? null : loadComparison().catch(() => null),
     discoverySource ? null : fetchMediaWriting(media),
@@ -160,7 +175,7 @@ export default async function MediaPage({
               <dt className="text-[11px] text-zinc-500 dark:text-zinc-400">{item.label}</dt>
               <dd className="mt-0.5 text-xl font-semibold tabular-nums">
                 {item.value?.toLocaleString('zh-TW') ?? '—'}
-                <span className="ml-1 text-[10px] font-normal text-zinc-500">篇</span>
+                <span className="ml-1 text-[11px] font-normal text-zinc-500 dark:text-zinc-400">篇</span>
               </dd>
             </div>
           ))}
@@ -233,7 +248,7 @@ export default async function MediaPage({
                   <dd className="flex items-center justify-between gap-2" title="Similarweb 全網域估算月造訪次數，非 page views">
                     <span className="tabular-nums">
                       {trafficNumber(visits.traffic)}
-                      <span className="ml-1 text-zinc-500">{shortMonth(visits.month)}</span>
+                      <span className="ml-1 text-zinc-500 dark:text-zinc-400">{shortMonth(visits.month)}</span>
                     </span>
                     <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月造訪量" ends />
                   </dd>
@@ -295,7 +310,11 @@ export default async function MediaPage({
           </section>
           {!discovery && <MediaWritingCard data={writing} />}
           {!discovery && outlet && <MediaTrafficProfile outlet={outlet} />}
-          {!discovery && <MediaRelations data={similarity} media={media} hours={cloudHours} />}
+          {!discovery && (
+            <Suspense fallback={<RelationsLoading />}>
+              <Relations media={media} hours={cloudHours} />
+            </Suspense>
+          )}
         </MediaSidebar>
         <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1">
           {!discovery && <MediaWordCloud data={keywords} media={media} hours={cloudHours} layout="wide" />}

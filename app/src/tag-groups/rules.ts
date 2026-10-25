@@ -40,6 +40,15 @@ export const LEGACY_GROUPS: GroupDef[] = [
 
 export const DATED_GROUPS = new Set([2, 3, 18, 19, 28]);
 
+/**
+ * Rosters for a term (legislators, mayors, councillors, the cabinet, the
+ * Taipei city government, mayoral candidates): kept from official lists by
+ * the site, so no rule files a tag into them and readers do not vote on them
+ * (owner's decision, 2026-10-16). Their labels name the year a term began,
+ * e.g. 「2024 立委」; a new term gets a new group.
+ */
+export const CURATED_GROUPS = new Set([2, 3, 14, 18, 19, 28, 1008]);
+
 // Legacy catalogue 1–10 (11–15 were editors' work queues, not topics).
 export const TOPICS: GroupDef[] = ['政治', '體育', '娛樂', '社會', '國際', '生活', '科技', '動物', '健康醫療', '產業金融'].map(
   (label, i) => ({ id: 101 + i, label, kind: 'topic' }),
@@ -60,8 +69,6 @@ const ATHLETE = /運動員|球員|選手|投手|捕手|打者|教練/;
 const CREATOR = /YouTuber|網紅|網路紅人|部落客|實況主|直播主/i;
 const BUSINESS = /企業家|執行長|商人|董事長|創辦人|企業大亨/;
 const PARTIES: Record<string, string> = { 民主進步黨: '民進黨', 中國國民黨: '國民黨', 時代力量: '時代力量', 親民黨: '親民黨' };
-// 行政院長、各部會首長、政務委員。
-const CABINET = /^(行政院(院長|副院長|政務委員|秘書長)|.+部(部長|長)|.+委員會主任委員|.+署署長)$/;
 
 /** Identity groups for a person tag, from its Wikidata facts (tag_people). */
 export function personGroups(facts: TagPersonFacts): Pick[] {
@@ -73,19 +80,11 @@ export function personGroups(facts: TagPersonFacts): Pick[] {
   const local = TAIWAN.test(citizenship);
   const chinaHk = !local && CHINA_HK.test(citizenship);
   const jobs = facts.occupations.join('、');
-  const current = facts.positions.filter((p) => p.current).map((p) => p.label);
   const politician = POLITICIAN.test(jobs) || facts.positions.length > 0;
 
   if (politician) add(local ? '政治人物' : '外國政治人物', local ? '台灣政治人物' : `${facts.citizenship[0] ?? '外國'}政治人物`);
-  if (local) {
-    for (const post of current) {
-      if (/立法委員/.test(post)) add('現任立委', `現任${post}`);
-      else if (/[市縣]長$/.test(post) && !/副/.test(post)) add('現任縣市長', `現任${post}`);
-      else if (/議員$/.test(post)) add('縣市議員', `現任${post}`);
-      if (CABINET.test(post)) add('內閣', `現任${post}`);
-    }
-    for (const party of facts.parties) if (PARTIES[party]) add(PARTIES[party], `${party}黨員`);
-  }
+  // Office holders (立委、縣市長、議員、內閣) are curated rosters, not filed here.
+  if (local) for (const party of facts.parties) if (PARTIES[party]) add(PARTIES[party], `${party}黨員`);
   // Wikidata lists 川普 as an actor and 高金素梅 as one: for a politician
   // the news means the politician, so the entertainment groups stay out.
   const performer = politician ? undefined : facts.occupations.find((j) => PERFORMER.test(j));

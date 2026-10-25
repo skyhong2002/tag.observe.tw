@@ -18,7 +18,7 @@ const groupId = (label: string) => SEED_GROUPS.find((g) => g.label === label)?.i
 const labels = (picks: { groupId: number }[]) => picks.map((p) => SEED_GROUPS.find((g) => g.id === p.groupId)?.label);
 
 describe('person rules', () => {
-  it('files a sitting legislator under 政治人物, 現任立委 and the party', () => {
+  it('files a sitting legislator under 政治人物 and the party; office rosters are curated', () => {
     const picks = personGroups({
       citizenship: ['中華民國'],
       occupations: ['政治人物'],
@@ -29,7 +29,7 @@ describe('person rules', () => {
         { label: '臺北市議員', current: false },
       ],
     });
-    expect(labels(picks)).toEqual(['政治人物', '現任立委', '國民黨']);
+    expect(labels(picks)).toEqual(['政治人物', '國民黨']);
   });
 
   it('keeps past posts out and foreign people in the foreign groups', () => {
@@ -60,14 +60,14 @@ describe('person rules', () => {
         { label: '臺北市副市長', current: false },
       ],
     });
-    expect(labels(mayor)).toEqual(['政治人物', '現任縣市長']);
+    expect(labels(mayor)).toEqual(['政治人物']);
     const premier = personGroups({
       citizenship: ['中華民國'],
       occupations: [],
       parties: [],
       positions: [{ label: '行政院院長', current: true }],
     });
-    expect(labels(premier)).toEqual(['政治人物', '內閣']);
+    expect(labels(premier)).toEqual(['政治人物']);
   });
 });
 

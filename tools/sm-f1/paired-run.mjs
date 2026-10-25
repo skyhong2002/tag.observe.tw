@@ -1,0 +1,1005 @@
+// Pure on import. Only separately admitted --execute may perform IO or spawn.
+
+import { execFileSync, spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs';
+import { getPriority } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+export const ROOT = '/home/deck/tag-analysis-private/f1-release';
+export const SESSION = 'sm-batch-012';
+export const NODE = '/home/deck/.local/bin/node';
+export const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+export const PATHS = Object.freeze({
+  pairJob: ROOT + '/paired-' + SESSION,
+  candidateJob: ROOT + '/simple-web-aff5c028-001/local-candidate-' + SESSION,
+  captureJob: ROOT + '/sm-capture-' + SESSION,
+});
+export const PINS = Object.freeze({
+  app: 'aff5c0289c4863fedb37368b4942884ccc068d77',
+  artifactOps: '2d71092132bcb4433c1041c01563132e4a31c7c1',
+  build: 'd1LVsC3sk6p04uOyWUx5T',
+  inventory: '103b9e671f66c6fe8af530db40fb9e0e9f5b8a38c0822af30404b398e26ac9fc',
+  manifest: 'f50f8fcd1a25fc775c9261c41ecdc08cc4d973b42d92bca4ff46718a0b091914',
+});
+export const ROUTES = Object.freeze(['/', '/tag/柯文哲/', '/tag/柯文哲/picture/', '/ranking/']);
+export const SOURCE_NAMES = Object.freeze([
+  'tools/sm-f1/paired-run.mjs',
+  'tools/sm-f1/capture.mjs',
+  'tools/sm-f1/probe.mjs',
+  'tools/sm-f1/proxy.cjs',
+  'tools/mint-capture/browser-owner.mjs',
+  'tools/mint-capture/evidence.mjs',
+  'tools/mint-capture/evidence-lifecycle.mjs',
+  'tools/sm-local-candidate/core.mjs',
+  'tools/sm-local-candidate/runner.mjs',
+  'tools/sm-local-candidate/api.mjs',
+  'tools/sm-local-candidate/frontdoor.mjs',
+  'tools/guard-next-build.js',
+  'tools/shared-host-baseline.cjs',
+  'tools/homepage-median-probe.mjs',
+  'tools/mint-f1-artifact.js',
+  'tools/native-elf-proof.js',
+  'tools/mint-f1-candidate-plan.js',
+  'package.json',
+]);
+export const CANDIDATE_NAMES = Object.freeze([
+  'tools/sm-local-candidate/core.mjs',
+  'tools/sm-local-candidate/runner.mjs',
+  'tools/sm-local-candidate/api.mjs',
+  'tools/sm-local-candidate/frontdoor.mjs',
+  'tools/guard-next-build.js',
+  'tools/shared-host-baseline.cjs',
+  'tools/homepage-median-probe.mjs',
+  'tools/mint-f1-artifact.js',
+  'tools/native-elf-proof.js',
+  'tools/mint-f1-candidate-plan.js',
+  'package.json',
+]);
+export const ENV = Object.freeze({
+  PATH: '/usr/bin:/bin',
+  HOME: '/nonexistent',
+  LANG: 'C',
+  DNT: '1',
+  NEXT_TELEMETRY_DISABLED: '1',
+  UV_THREADPOOL_SIZE: '2',
+  VIPS_CONCURRENCY: '1',
+});
+const LOG_CAP = 1024 ** 2,
+  hex = (x) => typeof x === 'string' && /^[a-f0-9]{64}$/.test(x),
+  same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+export const sha = (x) => createHash('sha256').update(x).digest('hex');
+function only(q, keys) {
+  if (!q || typeof q !== 'object' || Array.isArray(q) || Object.keys(q).some((k) => !keys.includes(k)))
+    throw Error('Unknown paired input fields');
+}
+export function validateProposalPaths(pairPath, candidatePath) {
+  const match =
+    /^\/tmp\/babysit\/mint-queue\/tag-sm-paired-012-admission-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\/paired-input\.json$/.exec(
+      pairPath || '',
+    );
+  if (!match) throw Error('Exclusive approved proposal namespace required');
+  const [year, month, day, hour, minute, second] = match.slice(1).map(Number),
+    stamp = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (
+    stamp.getUTCFullYear() !== year ||
+    stamp.getUTCMonth() !== month - 1 ||
+    stamp.getUTCDate() !== day ||
+    stamp.getUTCHours() !== hour ||
+    stamp.getUTCMinutes() !== minute ||
+    stamp.getUTCSeconds() !== second ||
+    candidatePath !== join(dirname(pairPath), 'candidate-input.json')
+  )
+    throw Error('Same canonical proposal directory and fixed basenames required');
+  return true;
+}
+export function validatePair(q, now = Date.now()) {
+  only(q, [
+    'schema',
+    'reviewed',
+    'executionPermission',
+    'globalSlotAcknowledged',
+    'sessionId',
+    'controlOpsSha',
+    'expiresAtMs',
+    'nodePath',
+    'nodeSha256',
+    'runtimePins',
+    'sourceHashes',
+    'pairInputPath',
+    'candidateInputPath',
+    'candidateInputSha256',
+    'captureTemplate',
+  ]);
+  if (
+    q.schema !== 'sm-f1-paired-input-v1' ||
+    q.reviewed !== true ||
+    q.executionPermission !== true ||
+    q.globalSlotAcknowledged !== true ||
+    q.sessionId !== SESSION ||
+    !/^[a-f0-9]{40}$/.test(q.controlOpsSha || '') ||
+    q.nodePath !== NODE ||
+    !hex(q.nodeSha256) ||
+    !same(q.runtimePins, PINS) ||
+    !Number.isFinite(q.expiresAtMs) ||
+    q.expiresAtMs <= now ||
+    q.expiresAtMs - now > 900000 ||
+    !hex(q.candidateInputSha256)
+  )
+    throw Error('Separate exact paired admission required');
+  validateProposalPaths(q.pairInputPath, q.candidateInputPath);
+  if (!q.sourceHashes || Object.keys(q.sourceHashes).length !== SOURCE_NAMES.length || SOURCE_NAMES.some((n) => !hex(q.sourceHashes[n])))
+    throw Error('Complete fixed executable source closure required');
+  const c = q.captureTemplate;
+  only(c, [
+    'schema',
+    'actor',
+    'origin',
+    'routes',
+    'shots',
+    'nativeDnt',
+    'foreignProxyRequired',
+    'maxBytes',
+    'additionalBuilds',
+    'additionalBrowsers',
+  ]);
+  if (
+    c.schema !== 'sm-f1-paired-capture-template-v1' ||
+    c.actor !== 'anonymous' ||
+    c.origin !== 'http://127.0.0.1:18199' ||
+    !same(c.routes, ROUTES) ||
+    c.shots !== 16 ||
+    c.nativeDnt !== true ||
+    c.foreignProxyRequired !== true ||
+    c.maxBytes !== 96 * 1024 ** 2 ||
+    c.additionalBuilds !== 0 ||
+    c.additionalBrowsers !== 0
+  )
+    throw Error('Fixed approved anonymous capture template required');
+  return q;
+}
+export function validateCandidateInput(candidate, pair, bytesHash, now = Date.now()) {
+  if (
+    bytesHash !== pair.candidateInputSha256 ||
+    candidate.schema !== 'sm-local-anonymous-candidate-v1' ||
+    candidate.sessionId !== SESSION ||
+    candidate.controlOpsSha !== pair.controlOpsSha ||
+    candidate.nodePath !== NODE ||
+    candidate.nodeSha256 !== pair.nodeSha256 ||
+    candidate.reviewed !== true ||
+    candidate.executionPermission !== true ||
+    candidate.globalSlotAcknowledged !== true ||
+    candidate.expiresAtMs !== pair.expiresAtMs ||
+    !same(candidate.runtimePins, PINS) ||
+    candidate.expiresAtMs - now < 450000
+  )
+    throw Error('Approved candidate input/hash/window differs');
+  if (
+    !candidate.sourceHashes ||
+    Object.keys(candidate.sourceHashes).length !== CANDIDATE_NAMES.length ||
+    CANDIDATE_NAMES.some((name) => candidate.sourceHashes[name] !== pair.sourceHashes[name])
+  )
+    throw Error('Candidate source differs from complete paired closure');
+  return candidate;
+}
+export function validateStarted(r, pair, candidate, parentPid) {
+  if (
+    r?.schema !== 'sm-f1-candidate-started-v1' ||
+    r.sessionId !== SESSION ||
+    r.controlOpsSha !== pair.controlOpsSha ||
+    r.inputSha256 !== pair.candidateInputSha256 ||
+    r.appSha !== PINS.app ||
+    r.buildId !== PINS.build ||
+    r.inventorySha256 !== PINS.inventory ||
+    r.manifestSha256 !== PINS.manifest ||
+    r.actor !== 'anonymous' ||
+    r.productionDatabase !== false ||
+    r.origin !== 'http://127.0.0.1:18199' ||
+    !same(r.database, { host: '127.0.0.1', port: 18306, name: 'tag_f1_semantic_test' }) ||
+    r.expiresAtMs !== candidate.expiresAtMs ||
+    r.plannedStopAtMs !== candidate.expiresAtMs - 120000 ||
+    !Number.isInteger(r.owner?.pid) ||
+    !/^\d+$/.test(String(r.owner.startTicks)) ||
+    !Array.isArray(r.children) ||
+    r.children.length !== 3
+  )
+    throw Error('Actual started artifact/input/session binding differs');
+  for (const [name, port] of [
+    ['api', 18197],
+    ['next', 18198],
+    ['frontdoor', 18199],
+  ]) {
+    const rows = r.children.filter((c) => c.name === name);
+    if (
+      rows.length !== 1 ||
+      !Number.isInteger(rows[0].pid) ||
+      !/^\d+$/.test(String(rows[0].startTicks)) ||
+      rows[0].host !== '127.0.0.1' ||
+      rows[0].port !== port
+    )
+      throw Error('Actual started endpoints differ');
+  }
+  if (!Number.isInteger(parentPid) || parentPid < 1) throw Error('Actual spawned candidate parent required');
+  return r;
+}
+export function deriveCapture(pair, candidate, startedBytes, now = Date.now(), parentPid) {
+  const r = JSON.parse(startedBytes);
+  validateStarted(r, pair, candidate, parentPid);
+  const expiresAtMs = Math.min(now + 540000, r.plannedStopAtMs - 60000);
+  if (expiresAtMs - now < 180000) throw Error('Insufficient actual capture window; no extension');
+  return {
+    schema: 'sm-f1-capture-input-v1',
+    reviewed: true,
+    executionPermission: true,
+    globalSlotAcknowledged: true,
+    controlOpsSha: pair.controlOpsSha,
+    actor: 'anonymous',
+    origin: pair.captureTemplate.origin,
+    routes: [...ROUTES],
+    sessionId: SESSION,
+    job: PATHS.captureJob,
+    startedReceiptPath: PATHS.candidateJob + '/candidate-started.json',
+    startedReceiptSha256: sha(startedBytes),
+    expiresAtMs,
+    additionalBuilds: 0,
+    additionalBrowsers: 0,
+    sourceHashes: Object.fromEntries(Object.entries(pair.sourceHashes).filter(([n]) => n !== 'package.json')),
+  };
+}
+function validCandidatePath(path) {
+  try {
+    return validateProposalPaths(join(dirname(path), 'paired-input.json'), path);
+  } catch {
+    return false;
+  }
+}
+export function command(stage, inputPath, inputSha) {
+  if (
+    !hex(inputSha) ||
+    !['candidate', 'capture'].includes(stage) ||
+    (stage === 'candidate' ? !validCandidatePath(inputPath) : inputPath !== PATHS.pairJob + '/capture-input.json')
+  )
+    throw Error('Exact two-stage command required');
+  return {
+    bin: NODE,
+    args: [
+      join(SOURCE_ROOT, stage === 'candidate' ? 'tools/sm-local-candidate/runner.mjs' : 'tools/sm-f1/capture.mjs'),
+      '--execute',
+      inputPath,
+      inputSha,
+    ],
+  };
+}
+export function sameSpawn(owner, actual) {
+  if (
+    !owner ||
+    !actual ||
+    !Number.isInteger(owner.pid) ||
+    owner.pid < 1 ||
+    !/^[0-9]+$/.test(owner.startTicks || '') ||
+    !Number.isInteger(owner.uid) ||
+    owner.uid < 0 ||
+    !Number.isInteger(owner.parentPid) ||
+    owner.parentPid < 1 ||
+    typeof owner.exe !== 'string' ||
+    !owner.exe.startsWith('/') ||
+    typeof owner.cwd !== 'string' ||
+    !owner.cwd.startsWith('/') ||
+    !hex(owner.cmdlineSha256)
+  )
+    return false;
+  return (
+    owner.pid === actual.pid &&
+    owner.startTicks === actual.startTicks &&
+    owner.uid === actual.uid &&
+    owner.parentPid === actual.parentPid &&
+    owner.exe === actual.exe &&
+    owner.cwd === actual.cwd &&
+    owner.cmdlineSha256 === actual.cmdlineSha256
+  );
+}
+export function logBudget(current, chunk) {
+  if (!Number.isInteger(current) || current < 0 || current + chunk.length > LOG_CAP)
+    throw Error('Private stage stdout/stderr cap exceeded');
+  return current + chunk.length;
+}
+export async function orchestrate(pair, candidate, ops) {
+  validatePair(pair, ops.now());
+  validateCandidateInput(candidate, pair, pair.candidateInputSha256, ops.now());
+  let candidateChild,
+    captureChild,
+    started,
+    captureInput,
+    captureHash,
+    forcedCapture = false;
+  const failures = [];
+  try {
+    await ops.verifyCurrent();
+    candidateChild = await ops.spawn('candidate', command('candidate', pair.candidateInputPath, pair.candidateInputSha256), (child) => {
+      candidateChild = child;
+    });
+    const startupDeadline = Math.min(pair.expiresAtMs - 20000, ops.now() + 90000);
+    while (ops.now() < startupDeadline) {
+      ops.assertLive(candidateChild);
+      await ops.assertApproval();
+      const actual = await ops.readStarted(candidateChild);
+      if (actual) {
+        started = actual;
+        break;
+      }
+      await ops.sleep(100);
+    }
+    if (!started) throw Error('Actual candidate startup deadline');
+    validateStarted(started.value, pair, candidate, candidateChild.pid);
+    captureInput = deriveCapture(pair, candidate, started.bytes, ops.now(), candidateChild.pid);
+    await ops.verifyCandidate(captureInput, candidateChild);
+    await ops.verifyCurrent();
+    const derived = await ops.writeCapture(captureInput);
+    captureHash = derived.sha256;
+    captureChild = await ops.spawn('capture', command('capture', derived.path, captureHash), (child) => {
+      captureChild = child;
+    });
+    await ops.wait(captureChild, captureInput.expiresAtMs + 60000);
+    if (captureChild.exitCode !== 0 || captureChild.signalCode) throw Error('Capture stage failed');
+    const manifest = await ops.captureManifest(captureHash);
+    if (manifest.status !== 'captured-pending-review') throw Error('Partial capture evidence retained');
+  } catch (error) {
+    failures.push(error);
+  } finally {
+    if (captureChild && ops.isLive(captureChild)) {
+      forcedCapture = true;
+      try {
+        await ops.stopCapture(captureChild, pair.expiresAtMs - 20000);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    if (candidateChild) {
+      try {
+        await ops.stopCandidate(candidateChild, started?.value, pair.expiresAtMs - 20000);
+        await ops.wait(candidateChild, pair.expiresAtMs, { cleanup: true });
+        if (candidateChild.exitCode !== 0 || candidateChild.signalCode) throw Error('Candidate did not end0');
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+  }
+  if (forcedCapture) failures.push(Error('Forced capture parent termination; browser cleanup unconfirmed'));
+  if (failures.length) throw combinedFailure(failures);
+  await ops.verifyCurrent();
+  await ops.verifyCandidateEnded();
+  return {
+    schema: 'sm-f1-paired-result-v1',
+    status: 'stages-ended-pending-review',
+    sessionId: SESSION,
+    controlOpsSha: pair.controlOpsSha,
+    candidateInputSha256: pair.candidateInputSha256,
+    captureInputSha256: captureHash,
+    candidateExitCode: 0,
+    captureExitCode: 0,
+    deployEligible: false,
+    uiReview: 'not reviewed by paired runner',
+  };
+}
+export async function completeSpawn(child, { register, ready, verify, record }) {
+  register(child);
+  await ready(child);
+  await verify(child);
+  await record(child);
+  return child;
+}
+export function closeIndependently(items, close) {
+  const errors = [];
+  for (const item of items) {
+    try {
+      close(item);
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  return errors;
+}
+export function combinedFailure(errors) {
+  if (errors.length === 1) return errors[0];
+  return new AggregateError(
+    errors,
+    String(errors[0]?.message || 'Primary stage failure') + '; secondary cleanup/evidence errors retained',
+    { cause: errors[0] },
+  );
+}
+export async function completeExecution({ run, finalize, recordFailure }) {
+  const errors = [];
+  let result;
+  try {
+    result = await run();
+  } catch (error) {
+    errors.push(error);
+  }
+  try {
+    await finalize();
+  } catch (error) {
+    errors.push(error);
+  }
+  if (errors.length) {
+    try {
+      await recordFailure(errors);
+    } catch (error) {
+      errors.push(error);
+    }
+    throw combinedFailure(errors);
+  }
+  return result;
+}
+export async function gracefulCandidateStop(child, { requestStop, wait, signal, record, now = Date.now, until, expiry }) {
+  const errors = [];
+  try {
+    requestStop(child);
+  } catch (error) {
+    errors.push(error);
+    try {
+      record({ scope: 'request unconfirmed; fallback only verified own parent', observedAtMs: now() });
+    } catch (auditError) {
+      errors.push(auditError);
+    }
+  }
+  try {
+    try {
+      await wait(child, Math.min(until, now() + 45000), { cleanup: true });
+    } catch {
+      signal(child, 'SIGTERM');
+      await wait(child, Math.min(expiry, now() + 15000), { cleanup: true });
+    }
+  } catch (error) {
+    errors.push(error);
+  }
+  if (errors.length) throw combinedFailure(errors);
+}
+export function requireCaptureManifest(m, { inputSha256, controlOpsSha }) {
+  if (
+    m?.schema !== 'sm-f1-capture-manifest-v1' ||
+    m.status !== 'captured-pending-review' ||
+    m.inputSha256 !== inputSha256 ||
+    m.sessionId !== SESSION ||
+    m.controlOpsSha !== controlOpsSha ||
+    m.appSha !== PINS.app ||
+    m.buildId !== PINS.build ||
+    m.inventorySha256 !== PINS.inventory ||
+    m.manifestSha256 !== PINS.manifest ||
+    m.deployEligible !== false ||
+    m.shots?.length !== 16 ||
+    m.errors?.length !== 0 ||
+    m.actor !== 'anonymous' ||
+    m.origin !== 'http://127.0.0.1:18199' ||
+    m.zeroGoogleOutgoing !== true ||
+    m.proxyStats?.googleOutgoing !== 0 ||
+    !m.network ||
+    ['harGoogleRequests', 'recordedGoogleRequests', 'blockedGoogleRequests'].some(
+      (k) => !Number.isInteger(m.network[k]) || m.network[k] < 0,
+    ) ||
+    m.uiReview !== 'pending independent image review'
+  )
+    throw Error('Actual capture manifest partial or mismatched');
+  return m;
+}
+export function requireLaunchBinding(launch, child, pair) {
+  if (
+    launch?.inputSha256 !== pair.candidateInputSha256 ||
+    launch.controlOpsSha !== pair.controlOpsSha ||
+    launch.parentPid !== child.pid ||
+    String(launch.parentStartTicks) !== child.owner?.startTicks ||
+    launch.parentCmdlineSha256 !== child.owner?.cmdlineSha256
+  )
+    throw Error('Started belongs to another candidate parent');
+  return true;
+}
+export async function waitStage(child, { until, expiry, cleanup = false, now = Date.now, sleep, checkOwn, failure = () => null }) {
+  const deadline = Math.min(until, expiry);
+  if (!Number.isFinite(deadline)) throw Error('Original bounded stage deadline required');
+  const active = () => child.exitCode === null && child.signalCode === null;
+  const requireSuccessfulExit = () => {
+    if (!cleanup && ((typeof child.exitCode === 'number' && child.exitCode !== 0) || child.signalCode != null))
+      throw Error('Owned stage failed before stdio close');
+  };
+  requireSuccessfulExit();
+  while ((active() || child.logsClosed === false) && now() < deadline) {
+    requireSuccessfulExit();
+    const error = failure();
+    if (!cleanup && error) throw error;
+    if (active()) checkOwn(child);
+    await sleep(Math.min(100, Math.max(1, deadline - now())));
+  }
+  requireSuccessfulExit();
+  if (!cleanup && failure()) throw failure();
+  if (active() || child.logsClosed === false) throw Error('Own stage exit or bounded stdio drain unconfirmed');
+}
+function privateBytes(path, max = 1024 ** 2) {
+  const s = fs.lstatSync(path);
+  if (
+    !s.isFile() ||
+    s.isSymbolicLink() ||
+    s.uid !== process.getuid() ||
+    (s.mode & 0o777) !== 0o600 ||
+    s.size > max ||
+    fs.realpathSync(path) !== resolve(path)
+  )
+    throw Error('Private bounded canonical paired input required');
+  return fs.readFileSync(path);
+}
+function sourceBytes(path) {
+  const s = fs.lstatSync(path);
+  if (
+    !s.isFile() ||
+    s.isSymbolicLink() ||
+    s.uid !== process.getuid() ||
+    s.mode & 0o022 ||
+    s.size > 1024 ** 2 ||
+    fs.realpathSync(path) !== path
+  )
+    throw Error('Canonical control source required');
+  return fs.readFileSync(path);
+}
+export function verifySources(
+  pair,
+  {
+    git = (args) =>
+      execFileSync('/usr/bin/git', args, {
+        cwd: SOURCE_ROOT,
+        env: { PATH: '/usr/bin:/bin', LANG: 'C' },
+        timeout: 5000,
+        maxBuffer: 1024 ** 2,
+      }),
+    read = sourceBytes,
+  } = {},
+) {
+  if (
+    Buffer.from(git(['rev-parse', 'HEAD']))
+      .toString()
+      .trim() !== pair.controlOpsSha ||
+    Buffer.from(git(['status', '--porcelain', '--untracked-files=all']))
+      .toString()
+      .trim()
+  )
+    throw Error('Exact fully clean paired control commit required');
+  for (const name of SOURCE_NAMES)
+    if (
+      sha(read(join(SOURCE_ROOT, name))) !== pair.sourceHashes[name] ||
+      sha(git(['show', pair.controlOpsSha + ':' + name])) !== pair.sourceHashes[name]
+    )
+      throw Error('Paired source/blob bytes differ');
+  return true;
+}
+function snapshot(pid) {
+  const raw = fs.readFileSync('/proc/' + pid + '/stat', 'utf8'),
+    fields = raw
+      .slice(raw.lastIndexOf(')') + 1)
+      .trim()
+      .split(/\s+/),
+    uid = fs.readFileSync('/proc/' + pid + '/status', 'utf8').match(/^Uid:\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/m);
+  if (!uid || !uid.slice(1).every((n) => Number(n) === process.getuid())) throw Error('Own Node UID required');
+  return {
+    pid,
+    startTicks: fields[19],
+    uid: Number(uid[1]),
+    parentPid: Number(fields[1]),
+    state: fields[0],
+    exe: fs.realpathSync('/proc/' + pid + '/exe'),
+    cwd: fs.realpathSync('/proc/' + pid + '/cwd'),
+    cmdlineSha256: sha(fs.readFileSync('/proc/' + pid + '/cmdline')),
+  };
+}
+function live(child) {
+  return child.exitCode === null && child.signalCode === null;
+}
+export async function execute(inputPath, inputSha) {
+  if (
+    !validCandidatePath(join(dirname(inputPath), 'candidate-input.json')) ||
+    inputPath !== join(dirname(inputPath), 'paired-input.json') ||
+    !hex(inputSha)
+  )
+    throw Error('Exact private paired input command required');
+  const pairBytes = privateBytes(inputPath),
+    pair = validatePair(JSON.parse(pairBytes));
+  const proposalDir = dirname(inputPath),
+    proposalStat = fs.lstatSync(proposalDir);
+  if (
+    !proposalStat.isDirectory() ||
+    proposalStat.isSymbolicLink() ||
+    proposalStat.uid !== process.getuid() ||
+    (proposalStat.mode & 0o777) !== 0o700 ||
+    fs.realpathSync(proposalDir) !== proposalDir
+  )
+    throw Error('Private canonical proposal directory required');
+  if (inputPath !== pair.pairInputPath || sha(pairBytes) !== inputSha) throw Error('Reviewed paired input SHA differs');
+  if (
+    fs.realpathSync(SOURCE_ROOT) !== SOURCE_ROOT ||
+    fs.realpathSync(process.execPath) !== fs.realpathSync(NODE) ||
+    sha(fs.readFileSync(NODE)) !== pair.nodeSha256 ||
+    getPriority(0) !== 19 ||
+    !/^idle(?:\s|$)/.test(
+      execFileSync('/usr/bin/ionice', ['-p', String(process.pid)], {
+        env: { PATH: '/usr/bin:/bin', LANG: 'C' },
+        timeout: 3000,
+        maxBuffer: 128,
+      })
+        .toString()
+        .trim(),
+    )
+  )
+    throw Error('Actual pinned low-priority SM Node required');
+  verifySources(pair);
+  const candidateBytes = privateBytes(pair.candidateInputPath),
+    candidate = validateCandidateInput(JSON.parse(candidateBytes), pair, sha(candidateBytes));
+  const candidateCore = await import(pathToFileURL(join(SOURCE_ROOT, 'tools/sm-local-candidate/core.mjs')).href),
+    captureModule = await import(pathToFileURL(join(SOURCE_ROOT, 'tools/sm-f1/capture.mjs')).href);
+  candidateCore.validateInput(candidate);
+  for (const name of candidateCore.sourceNames)
+    if (candidate.sourceHashes[name] !== pair.sourceHashes[name]) throw Error('Complete candidate pin closure differs');
+  if (fs.readFileSync('/etc/machine-id', 'utf8').trim() !== '302c2528bd464ad0953cf5fa743b6171' || process.platform !== 'linux')
+    throw Error('Actual SM machine required');
+  for (const path of [PATHS.pairJob, PATHS.candidateJob, PATHS.captureJob])
+    if (fs.existsSync(path)) throw Error('Existing pair/candidate/capture artifacts retained; no rerun');
+  if (fs.realpathSync(ROOT) !== ROOT) throw Error('Canonical existing private root required');
+  fs.mkdirSync(PATHS.pairJob, { mode: 0o700 });
+  let fatal,
+    stopping = false;
+  const children = [];
+  const fatalSignal = () => {
+    stopping = true;
+    fatal ??= Error('Paired owner interrupted');
+  };
+  process.once('SIGTERM', fatalSignal);
+  process.once('SIGINT', fatalSignal);
+  const write = (name, value) => fs.writeFileSync(join(PATHS.pairJob, name), JSON.stringify(value) + '\n', { flag: 'wx', mode: 0o600 });
+  const current = () => {
+    if (stopping || fatal || Date.now() >= pair.expiresAtMs) throw fatal || Error('Original paired deadline expired');
+    if (sha(privateBytes(inputPath)) !== inputSha || sha(privateBytes(pair.candidateInputPath)) !== pair.candidateInputSha256)
+      throw Error('Approved paired/candidate input changed');
+    validatePair(pair);
+    verifySources(pair);
+    if (sha(fs.readFileSync(NODE)) !== pair.nodeSha256) throw Error('Pinned SM Node changed');
+    if (fatal || stopping || Date.now() >= pair.expiresAtMs) throw fatal || Error('Original approval expired while checking source');
+  };
+  const certify = (child) => {
+    const actual = snapshot(child.pid);
+    if (
+      actual.uid !== process.getuid() ||
+      actual.parentPid !== process.pid ||
+      actual.exe !== fs.realpathSync(NODE) ||
+      actual.cwd !== SOURCE_ROOT ||
+      actual.cmdlineSha256 !== child.expectedCmdlineSha256
+    )
+      throw Error('Actual spawned Node binding differs');
+    child.owner = actual;
+  };
+  const assertOwn = (child) => {
+    if (!child.owner) {
+      if (!live(child)) throw Error('Unknown exited spawn ownership');
+      certify(child);
+    }
+    if (!sameSpawn(child.owner, snapshot(child.pid))) throw Error('Spawned own Node identity differs; no signal');
+  };
+  const ownSignal = (child, kind) => {
+    if (!live(child)) return;
+    assertOwn(child);
+    child.kill(kind);
+  };
+  const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+  const wait = (child, until, { cleanup = false } = {}) =>
+    waitStage(child, {
+      until,
+      expiry: pair.expiresAtMs,
+      cleanup,
+      now: Date.now,
+      sleep,
+      checkOwn: assertOwn,
+      failure: () => fatal || (stopping ? Error('Paired owner interrupted') : null),
+    });
+  const readActual = (child) => {
+    assertOwn(child);
+    let bytes;
+    try {
+      bytes = privateBytes(PATHS.candidateJob + '/candidate-started.json');
+    } catch (e) {
+      if (e.code === 'ENOENT') return null;
+      throw e;
+    }
+    const value = validateStarted(JSON.parse(bytes), pair, candidate, child.pid),
+      launch = JSON.parse(privateBytes(PATHS.candidateJob + '/owner-launch.json'));
+    requireLaunchBinding(launch, child, pair);
+    return { bytes, value };
+  };
+  const requestStop = (child) => {
+    if (!live(child)) return;
+    const actual = readActual(child);
+    if (!actual) return;
+    let owner;
+    try {
+      owner = snapshot(actual.value.owner.pid);
+    } catch (e) {
+      if (['ENOENT', 'ESRCH'].includes(e.code)) return;
+      throw e;
+    }
+    if (owner.uid !== process.getuid() || owner.startTicks !== String(actual.value.owner.startTicks) || owner.parentPid !== child.pid)
+      throw Error('Actual own candidate worker differs');
+    const request = captureModule.ownStopRequest(actual.value);
+    const path = PATHS.candidateJob + '/own-stop-request.json';
+    if (fs.existsSync(path)) {
+      const previous = JSON.parse(privateBytes(path));
+      for (const key of ['schema', 'inputSha256', 'sessionId', 'ownerPid', 'ownerStartTicks'])
+        if (previous[key] !== request[key]) throw Error('Existing stop request differs; retained');
+      return;
+    }
+    fs.writeFileSync(path, JSON.stringify(request) + '\n', { flag: 'wx', mode: 0o600 });
+  };
+  const spawnStage = async (stage, cmd, onChild) => {
+    current();
+    if (cmd.bin !== NODE) throw Error('Only pinned SM Node may spawn');
+    const stdout = fs.openSync(join(PATHS.pairJob, stage + '.stdout.log'), 'wx', 0o600),
+      stderr = fs.openSync(join(PATHS.pairJob, stage + '.stderr.log'), 'wx', 0o600);
+    let total = 0,
+      observedBytes = 0,
+      logCapExceeded = false,
+      closed = false;
+    const hashes = { stdout: createHash('sha256'), stderr: createHash('sha256') };
+    const child = spawn(cmd.bin, cmd.args, { cwd: SOURCE_ROOT, env: { ...ENV }, stdio: ['ignore', 'pipe', 'pipe'] });
+    children.push(child);
+    onChild(child);
+    child.expectedCmdlineSha256 = sha(Buffer.from([NODE, ...cmd.args].join('\0') + '\0'));
+    child.stage = stage;
+    child.logsClosed = false;
+    for (const stream of [child.stdout, child.stderr])
+      stream.on('error', () => {
+        fatal ??= Error('Private stage log stream failed');
+      });
+    child.once('error', () => {
+      fatal ??= Error('Owned Node spawn failed');
+    });
+    const retain = (name, fd) => (data) => {
+      try {
+        observedBytes += data.length;
+        const available = LOG_CAP - total;
+        if (data.length > available) {
+          logCapExceeded = true;
+          if (available > 0) {
+            const prefix = data.subarray(0, available);
+            fs.writeSync(fd, prefix);
+            hashes[name].update(prefix);
+            total += prefix.length;
+          }
+          fatal ??= Error('Private stage log cap exceeded');
+          return;
+        }
+        total = logBudget(total, data);
+        fs.writeSync(fd, data);
+        hashes[name].update(data);
+      } catch {
+        fatal ??= Error('Private stage logging failed');
+      }
+    };
+    child.stdout.on('data', retain('stdout', stdout));
+    child.stderr.on('data', retain('stderr', stderr));
+    const closeLogs = () => {
+      if (closed) return;
+      closed = true;
+      child.logsClosed = true;
+      child.stdout.removeAllListeners('data');
+      child.stderr.removeAllListeners('data');
+      const errors = closeIndependently([stdout, stderr], (fd) => fs.closeSync(fd));
+      if (errors.length) fatal ??= Error('Private stage log close failed');
+    };
+    child.closeLogs = closeLogs;
+    child.once('close', (code, signal) => {
+      try {
+        closeLogs();
+        write(stage + '-ended.json', {
+          stage,
+          pid: child.pid,
+          exitCode: code,
+          signal,
+          logBytes: total,
+          observedBytes,
+          logCapExceeded,
+          stdoutSha256: hashes.stdout.digest('hex'),
+          stderrSha256: hashes.stderr.digest('hex'),
+          observedAtMs: Date.now(),
+        });
+      } catch {
+        fatal ??= Error('Private stage end receipt failed');
+      }
+    });
+    return completeSpawn(child, {
+      register: () => {},
+      ready: () =>
+        new Promise((done, fail) => {
+          child.once('spawn', done);
+          child.once('error', fail);
+        }),
+      verify: certify,
+      record: () =>
+        write(stage + '-started.json', { stage, command: cmd, inputSha256: cmd.args.at(-1), owner: child.owner, startedAtMs: Date.now() }),
+    });
+  };
+  const ops = {
+    now: Date.now,
+    sleep,
+    verifyCurrent: current,
+    assertApproval: () => {
+      if (fatal || stopping || Date.now() >= pair.expiresAtMs) throw fatal || Error('Original paired approval expired/interrupted');
+      if (sha(privateBytes(inputPath)) !== inputSha || sha(privateBytes(pair.candidateInputPath)) !== pair.candidateInputSha256)
+        throw Error('Approved inputs changed');
+    },
+    spawn: spawnStage,
+    isLive: live,
+    assertLive: (child) => {
+      if (fatal) throw fatal;
+      if (!live(child)) throw Error('Candidate exited before started');
+      assertOwn(child);
+    },
+    readStarted: readActual,
+    verifyCandidate: (q) => {
+      captureModule.validateInput(q);
+      const actual = captureModule.requireCandidate(q);
+      if (actual.inputSha256 !== pair.candidateInputSha256) throw Error('Actual candidate approval differs');
+      return actual;
+    },
+    writeCapture: (q) => {
+      current();
+      captureModule.validateInput(q);
+      captureModule.requireCandidate(q);
+      const bytes = Buffer.from(JSON.stringify(q) + '\n'),
+        path = PATHS.pairJob + '/capture-input.json';
+      fs.writeFileSync(path, bytes, { flag: 'wx', mode: 0o600 });
+      write('capture-derived.json', {
+        startedReceiptSha256: q.startedReceiptSha256,
+        inputSha256: sha(bytes),
+        expiresAtMs: q.expiresAtMs,
+        windowDerivedAtMs: Date.now(),
+      });
+      return { path, sha256: sha(bytes) };
+    },
+    wait,
+    captureManifest: (hash) => {
+      const bytes = privateBytes(PATHS.captureJob + '/manifest.json');
+      const m = JSON.parse(bytes);
+      requireCaptureManifest(m, { inputSha256: hash, controlOpsSha: pair.controlOpsSha });
+      write('capture-manifest-proof.json', { path: PATHS.captureJob + '/manifest.json', sha256: sha(bytes), status: m.status });
+      return m;
+    },
+    stopCapture: async (child, until) => {
+      try {
+        write('capture-stop-fallback.json', {
+          pid: child.pid,
+          scope: 'own capture Node only; profile/browser cleanup unconfirmed',
+          observedAtMs: Date.now(),
+          deployEligible: false,
+        });
+      } catch {
+        fatal ??= Error('Capture fallback audit failed');
+      }
+      ownSignal(child, 'SIGTERM');
+      try {
+        await wait(child, Math.min(until, Date.now() + 5000), { cleanup: true });
+      } catch {
+        ownSignal(child, 'SIGKILL');
+        await wait(child, Math.min(until, Date.now() + 2000), { cleanup: true });
+      }
+    },
+    stopCandidate: async (child, _r, until) => {
+      if (!live(child)) return;
+      await gracefulCandidateStop(child, {
+        requestStop,
+        wait,
+        signal: ownSignal,
+        now: Date.now,
+        until,
+        expiry: pair.expiresAtMs,
+        record: (row) => write('candidate-stop-request-unconfirmed.json', row),
+      });
+    },
+    verifyCandidateEnded: () => {
+      const bytes = privateBytes(PATHS.candidateJob + '/owner-session-ended.json'),
+        r = JSON.parse(bytes);
+      if (
+        r.schema !== 'sm-f1-candidate-owner-ended-v1' ||
+        r.inputSha256 !== pair.candidateInputSha256 ||
+        r.controlOpsSha !== pair.controlOpsSha ||
+        r.sessionId !== SESSION ||
+        r.wholeRuntimeUnchanged !== true ||
+        r.deployEligible !== false
+      )
+        throw Error('Actual candidate ended receipt differs');
+      write('candidate-ended-proof.json', { path: PATHS.candidateJob + '/owner-session-ended.json', sha256: sha(bytes) });
+    },
+  };
+  const result = await completeExecution({
+    run: async () => {
+      const r = await orchestrate(pair, candidate, ops);
+      current();
+      return r;
+    },
+    recordFailure: (errors) =>
+      write('paired-failed.json', {
+        schema: 'sm-f1-paired-failed-v1',
+        observedAtMs: Date.now(),
+        sessionId: SESSION,
+        controlOpsSha: pair.controlOpsSha,
+        inputSha256: inputSha,
+        reason: 'stage-or-cleanup-unconfirmed',
+        failureCount: errors.length,
+        children: children.map((c) => ({
+          stage: c.stage,
+          pid: c.pid,
+          exitCode: c.exitCode,
+          signalCode: c.signalCode,
+          ownershipVerified: !!c.owner,
+          cleanupConfirmed: c.exitCode !== null && c.logsClosed === true,
+        })),
+        deployEligible: false,
+        uiReview: 'not reviewed',
+      }),
+    finalize: () => {
+      const errors = closeIndependently(
+        [
+          () => process.removeListener('SIGTERM', fatalSignal),
+          () => process.removeListener('SIGINT', fatalSignal),
+          ...children.map((child) => () => {
+            const perChild = closeIndependently(
+              [() => child.closeLogs?.(), () => child.unref(), () => child.stdout?.destroy(), () => child.stderr?.destroy()],
+              (fn) => fn(),
+            );
+            if (perChild.length) throw combinedFailure(perChild);
+          }),
+        ],
+        (fn) => fn(),
+      );
+      if (errors.length) throw combinedFailure(errors);
+      if (fatal) throw fatal;
+    },
+  });
+  current();
+  write('paired-result.json', result);
+  return result;
+}
+export function template() {
+  return {
+    schema: 'sm-f1-paired-input-v1',
+    reviewed: false,
+    executionPermission: false,
+    globalSlotAcknowledged: false,
+    sessionId: SESSION,
+    controlOpsSha: null,
+    expiresAtMs: null,
+    nodePath: NODE,
+    nodeSha256: null,
+    runtimePins: PINS,
+    sourceHashes: Object.fromEntries(SOURCE_NAMES.map((n) => [n, null])),
+    pairInputPath: null,
+    candidateInputPath: null,
+    candidateInputSha256: null,
+    captureTemplate: {
+      schema: 'sm-f1-paired-capture-template-v1',
+      actor: 'anonymous',
+      origin: 'http://127.0.0.1:18199',
+      routes: [...ROUTES],
+      shots: 16,
+      nativeDnt: true,
+      foreignProxyRequired: true,
+      maxBytes: 96 * 1024 ** 2,
+      additionalBuilds: 0,
+      additionalBrowsers: 0,
+    },
+  };
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const argv = process.argv.slice(2);
+  if (argv.length === 1 && argv[0] === '--template') process.stdout.write(JSON.stringify(template(), null, 2) + '\n');
+  else if (argv.length === 3 && argv[0] === '--execute')
+    execute(resolve(argv[1]), argv[2]).catch(() => {
+      process.stderr.write('Paired stages failed or cleanup unconfirmed; private originals retained.\n');
+      process.exitCode = 1;
+    });
+  else {
+    process.stderr.write('Usage: paired-run.mjs --template | --execute PRIVATE_PAIR_INPUT SHA256\n');
+    process.exitCode = 1;
+  }
+}

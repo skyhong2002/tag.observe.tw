@@ -99,7 +99,7 @@ export default function HourTable({
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <h3 className="text-sm font-medium">
           {mode === 'day' ? '每日' : '每小時'}名次與標籤{' '}
-          <span className="ml-2 text-xs font-normal text-zinc-500">
+          <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
             {mode === 'day' ? `${days.length} 天 · 共 ${hours.length} 個上榜小時` : `顯示 ${rows.length} / ${hours.length} 筆`}
           </span>
         </h3>
@@ -157,7 +157,7 @@ export default function HourTable({
                       <td className={`${table.cell} !py-1.5`}>
                         <span className="flex gap-1">
                           {h.major.map((m) => (
-                            <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white dark:bg-brand-600`}>
+                            <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white`}>
                               {m}
                             </Link>
                           ))}
@@ -173,7 +173,7 @@ export default function HourTable({
                               title={`分數 ${s.toFixed(1)}`}
                             >
                               {t}
-                              <span className="ml-1 tabular-nums text-zinc-500">{s.toFixed(0)}</span>
+                              <span className="ml-1 tabular-nums text-zinc-500 dark:text-zinc-400">{s.toFixed(0)}</span>
                             </Link>
                           ))}
                         </span>
@@ -247,7 +247,7 @@ function DayRows({ days, maxScore, onOpen }: { days: ThreadDay[]; maxScore: numb
               <td className={`${table.cell} !py-1.5`}>
                 <span className="flex gap-1">
                   {d.major.map((m) => (
-                    <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white dark:bg-brand-600`}>
+                    <Link key={m} href={tagHref(m)} className={`${chip} bg-brand-700 font-medium text-white`}>
                       {m}
                     </Link>
                   ))}
@@ -263,7 +263,7 @@ function DayRows({ days, maxScore, onOpen }: { days: ThreadDay[]; maxScore: numb
                       title={`當天最高分 ${v.toFixed(1)}`}
                     >
                       {t}
-                      <span className="ml-1 tabular-nums text-zinc-500">{v.toFixed(0)}</span>
+                      <span className="ml-1 tabular-nums text-zinc-500 dark:text-zinc-400">{v.toFixed(0)}</span>
                     </Link>
                   ))}
                 </span>

@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import { hash, pins } from './capture-policy.mjs';
+export function verifyPreviousNative(aBytes, rBytes, reviewBytes) {
+  assert.equal(hash(aBytes), '4ee826957aa8b62904c8f529fddf319cb4328a9588f2ef97bd582842b210f985');
+  assert.equal(hash(rBytes), '09fee64d014c65c47c7ffd8548d1c2b4aa0aaa3e63ae337f1eaa393c45b68a75');
+  assert.equal(hash(reviewBytes), 'e9ba6d3f3638f298d12e41dbacae08eb4ca5b0ef8f3ae50c126682a9f863ea9f');
+  const a = JSON.parse(aBytes),
+    r = JSON.parse(rBytes);
+  assert.equal(a.resultSha256, hash(rBytes));
+  assert.equal(r.postInventorySha256, pins.inventory);
+  assert.equal(r.manifestSha256, pins.manifest);
+  assert.equal(a.eligibility.nativeEligible, true);
+  assert.equal(a.deployEligible, false);
+  return r;
+}
+export function verifyPreviousMint(aBytes, rBytes) {
+  assert.equal(hash(aBytes), '87b65aae655487ab780bcd3a486872eb482035bc8885e9bc36e159307e818edd');
+  assert.equal(hash(rBytes), 'acc0841d5498b7ab2946d42365ce0e2466ab2d9569b93b727ebe5db67ef8f299');
+  const a = JSON.parse(aBytes),
+    r = JSON.parse(rBytes);
+  assert.equal(a.resultSha256, hash(rBytes));
+  assert.equal(r.artifactInventorySha256, pins.inventory);
+  assert.equal(r.manifestSha256, pins.manifest);
+  assert.equal(r.executed, true);
+  assert.equal(r.status, 'passed');
+  assert.equal(r.loadedNativeFiles.length, 8);
+  return r;
+}

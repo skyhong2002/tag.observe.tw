@@ -1,0 +1,656 @@
+// Explicit --execute only. --template performs no host checks or launch.
+import { execFileSync, spawn } from 'node:child_process';
+import * as fs from 'node:fs';
+import { getPriority } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { guardedBuild } from '../guard-next-build.js';
+import {
+  assertListener,
+  assertLock,
+  checkPorts,
+  cleanupAll,
+  createHealthCache,
+  dbPath,
+  endpoints,
+  jobFor,
+  lockPath,
+  ownIdentity,
+  pins,
+  privateBytes,
+  repo,
+  runtime,
+  sample,
+  sha,
+  sourceNames,
+  stableChildIdentity,
+  ticks,
+  validateHealthCache,
+  validateInput,
+  verifyControl,
+  verifyRuntime,
+} from './core.mjs';
+
+const modulePath = join(repo, 'tools/sm-local-candidate/runner.mjs');
+const audit = (job, event) =>
+  fs.appendFileSync(
+    join(job, 'candidate-events.jsonl'),
+    JSON.stringify({ observedAtMs: Date.now(), utc: new Date().toISOString(), ...event }) + '\n',
+    { mode: 0o600 },
+  );
+const nap = (ms) => new Promise((done) => setTimeout(done, ms));
+export function validateStop(request, { q, inputSha, ownerPid, ownerStartTicks, now = Date.now() }) {
+  if (
+    request?.schema !== 'sm-f1-candidate-stop-v1' ||
+    request.inputSha256 !== inputSha ||
+    request.sessionId !== q.sessionId ||
+    request.ownerPid !== ownerPid ||
+    request.ownerStartTicks !== ownerStartTicks ||
+    !Number.isFinite(request.requestedAtMs) ||
+    request.requestedAtMs > now ||
+    now - request.requestedAtMs > 15000
+  )
+    throw Error('Fresh own input/session stop request required');
+  return true;
+}
+function readInput(p, expected) {
+  const bytes = privateBytes(p);
+  if (sha(bytes) !== expected) throw Error('Admitted input bytes differ');
+  return validateInput(JSON.parse(bytes));
+}
+function localIdentity(q) {
+  if (
+    getPriority(0) !== 19 ||
+    !/^idle(?:\s|$)/.test(
+      execFileSync('/usr/bin/ionice', ['-p', String(process.pid)], {
+        env: { PATH: '/usr/bin:/bin', LANG: 'C' },
+        timeout: 3000,
+        maxBuffer: 128,
+      })
+        .toString()
+        .trim(),
+    )
+  )
+    throw Error('Entire owner process must already be nice19/ionice3');
+  if (
+    fs.realpathSync(process.execPath) !== fs.realpathSync(q.nodePath) ||
+    sha(fs.readFileSync(q.nodePath)) !== q.nodeSha256 ||
+    process.platform !== 'linux' ||
+    process.arch !== 'x64' ||
+    process.versions.node !== '24.15.0' ||
+    process.versions.modules !== '137' ||
+    process.report.getReport().header.glibcVersionRuntime !== '2.41' ||
+    fs.readFileSync('/etc/machine-id', 'utf8').trim() !== '302c2528bd464ad0953cf5fa743b6171'
+  )
+    throw Error('Actual pinned SM runtime identity required');
+}
+function check(p, hash) {
+  const q = readInput(p, hash);
+  localIdentity(q);
+  verifyControl(q);
+  if (sha(privateBytes(dbPath)) !== q.dbConfigSha256) throw Error('Private fixture configuration changed');
+  return q;
+}
+async function acquire(q) {
+  const meta = fs.lstatSync(lockPath);
+  if (!meta.isFile() || meta.isSymbolicLink()) throw Error('Existing regular lock required');
+  const child = spawn(
+    '/usr/bin/flock',
+    ['-n', '-F', '--', lockPath, q.nodePath, '-e', "process.stdout.write('LOCKED\\n');process.stdin.resume()"],
+    { env: { PATH: '/usr/bin:/bin', LANG: 'C' }, stdio: ['pipe', 'pipe', 'pipe'] },
+  );
+  let bytes = 0;
+  child.stderr.on('data', (data) => {
+    bytes += data.length;
+    if (bytes > 4096) child.kill('SIGTERM');
+  });
+  try {
+    await new Promise((done, fail) => {
+      const timer = setTimeout(() => {
+        child.kill('SIGTERM');
+        fail(Error('Nonblocking lock handshake timeout'));
+      }, 5000);
+      child.once('error', (e) => {
+        clearTimeout(timer);
+        fail(e);
+      });
+      child.once('close', () => {
+        clearTimeout(timer);
+        fail(Error('Candidate common lock unavailable'));
+      });
+      child.stdout.once('data', (data) => {
+        clearTimeout(timer);
+        if (data.toString() !== 'LOCKED\n') fail(Error('Invalid own lock acknowledgment'));
+        else done();
+      });
+    });
+    assertLock(child.pid);
+  } catch (error) {
+    child.stdin.destroy();
+    if (child.pid && child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+    await nap(100);
+    if (child.pid && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    throw error;
+  }
+  const ownStartTicks = ticks(child.pid);
+  return {
+    pid: child.pid,
+    release: async () => {
+      if (child.exitCode !== null || child.signalCode !== null) return;
+      child.stdin.end();
+      const end = Date.now() + 2000;
+      while (child.exitCode === null && child.signalCode === null && Date.now() < end) await nap(25);
+      if (child.exitCode === null && child.signalCode === null && ticks(child.pid) === ownStartTicks) child.kill('SIGTERM');
+      const tail = Date.now() + 1000;
+      while (child.exitCode === null && child.signalCode === null && Date.now() < tail) await nap(25);
+      if (child.exitCode === null && child.signalCode === null && ticks(child.pid) === ownStartTicks) child.kill('SIGKILL');
+      const last = Date.now() + 1000;
+      while (child.exitCode === null && child.signalCode === null && Date.now() < last) await nap(25);
+      if (child.exitCode === null && child.signalCode === null) throw Error('Own lock holder exit unconfirmed');
+    },
+  };
+}
+export async function readReadiness({ fetcher = fetch, writeRaw, now = Date.now } = {}) {
+  const startedAtMs = now();
+  let response,
+    error,
+    bytes = 0;
+  const chunks = [];
+  try {
+    response = await fetcher('http://127.0.0.1:18197/internal/sm-fixture-readiness', {
+      redirect: 'error',
+      headers: { DNT: '1' },
+      signal: AbortSignal.timeout(3000),
+    });
+    for await (const chunk of response.body) {
+      bytes += chunk.length;
+      if (bytes > 65536) throw Error('readiness-cap');
+      chunks.push(Buffer.from(chunk));
+    }
+  } catch (e) {
+    error = e;
+  }
+  const raw = Buffer.concat(chunks),
+    receipt = {
+      startedAtMs,
+      observedAtMs: now(),
+      status: response?.status ?? null,
+      error: error ? 'transport-or-body-failed' : null,
+      stdoutBase64: raw.toString('base64'),
+      sha256: sha(raw),
+    };
+  const written = writeRaw(receipt);
+  if (written === false || written?.then) throw Error('Synchronous private readiness receipt required');
+  if (error || response.status !== 200) throw Error('Actual API readiness failed; raw retained');
+  return JSON.parse(raw);
+}
+export async function workerHealthSample({ starting, job, group, readHealth, sampleHealth = sample }) {
+  return sampleHealth(job, { starting, group, ...(starting ? {} : { health: readHealth() }) });
+}
+export async function worker(p, inputSha, job, lockPid) {
+  const q = check(p, inputSha);
+  if (job !== jobFor(q.sessionId)) throw Error('Exclusive fixed job required');
+  assertLock(lockPid);
+  const launchBinding = JSON.parse(privateBytes(join(job, 'owner-launch.json')));
+  const verifyParent = () => {
+    if (
+      launchBinding.inputSha256 !== inputSha ||
+      launchBinding.controlOpsSha !== q.controlOpsSha ||
+      launchBinding.parentPid !== process.ppid ||
+      launchBinding.lockPid !== lockPid ||
+      ticks(launchBinding.parentPid) !== launchBinding.parentStartTicks ||
+      sha(fs.readFileSync('/proc/' + launchBinding.parentPid + '/cmdline')) !== launchBinding.parentCmdlineSha256 ||
+      ticks(lockPid) !== launchBinding.lockStartTicks
+    )
+      throw Error('Exact current guarded parent and own lock holder required');
+  };
+  verifyParent();
+  const proof = verifyRuntime(),
+    children = [];
+  let stopping = false,
+    failure = null,
+    stopPromise;
+  const ownerStartTicks = ticks(process.pid);
+  const plannedStopAtMs = q.expiresAtMs - 120000;
+  const current = async (starting = false) => {
+    check(p, inputSha);
+    verifyParent();
+    assertLock(lockPid);
+    return workerHealthSample({
+      starting,
+      job,
+      group: process.pid,
+      readHealth: () =>
+        validateHealthCache(JSON.parse(privateBytes(join(job, 'health-cache.json'))), {
+          inputSha256: inputSha,
+          parentPid: launchBinding.parentPid,
+          parentStartTicks: launchBinding.parentStartTicks,
+        }),
+    });
+  };
+  const signal = (child, kind) => {
+    if (child.exitCode !== null || child.signalCode !== null) return;
+    if (!stableChildIdentity(child)) throw Error('Own candidate child identity changed');
+    if (!child.kill(kind)) throw Error('Own signal not sent');
+  };
+  const stop = () =>
+    (stopPromise ??= (async () => {
+      stopping = true;
+      audit(job, { event: 'cleanup-start', inputSha256: inputSha, plannedStopAtMs });
+      await cleanupAll(children, {
+        signal,
+        record: (r) => audit(job, r),
+        wait: async (ms) => {
+          const end = Date.now() + ms;
+          while (children.some((c) => c.exitCode === null && c.signalCode === null) && Date.now() < end) await nap(25);
+        },
+      });
+    })());
+  process.once('SIGTERM', () => {
+    stop().catch((e) => {
+      failure = e;
+    });
+  });
+  process.once('SIGINT', () => {
+    stop().catch((e) => {
+      failure = e;
+    });
+  });
+  const timer = setTimeout(
+    () => {
+      stop().catch((e) => {
+        failure = e;
+      });
+    },
+    Math.max(1, plannedStopAtMs - Date.now()),
+  );
+  const launch = (name, args, cwd, port, extra = {}) => {
+    alive();
+    const child = spawn(q.nodePath, args, {
+      cwd,
+      env: {
+        PATH: '/usr/bin:/bin',
+        HOME: '/nonexistent',
+        LANG: 'C',
+        NODE_ENV: 'production',
+        DNT: '1',
+        NEXT_TELEMETRY_DISABLED: '1',
+        UV_THREADPOOL_SIZE: '2',
+        VIPS_CONCURRENCY: '1',
+        NODE_OPTIONS: '--max-old-space-size=256',
+        ...extra,
+      },
+      stdio: 'inherit',
+    });
+    children.push(child);
+    child.name = name;
+    child.port = port;
+    if (child.pid) {
+      child.startTicks = ticks(child.pid);
+      child.uid = process.getuid();
+      child.parentPid = process.pid;
+      child.processGroup = process.pid;
+      child.exe = fs.realpathSync(q.nodePath);
+      child.cwd = fs.realpathSync(cwd);
+      child.expectedArgs = [q.nodePath, ...args];
+    }
+    child.once('error', (e) => {
+      failure = e;
+    });
+    child.once('exit', (code, signal) => {
+      try {
+        audit(job, { event: 'own-exit', name, pid: child.pid, startTicks: child.startTicks, code, signal });
+      } catch (e) {
+        failure = e;
+      }
+      if (!stopping) failure = Error('Own child exited');
+    });
+    return child;
+  };
+  const alive = () => {
+    if (failure) throw failure;
+    if (stopping) throw Error('Candidate stop requested during startup/action');
+  };
+  const waitListener = async (child) => {
+    const end = Math.min(plannedStopAtMs, Date.now() + 20000);
+    while (Date.now() < end) {
+      alive();
+      try {
+        if (!ownIdentity(child)) throw Error('Own child argv/title or stable identity not verified');
+        return assertListener(child, { host: '127.0.0.1', port: child.port });
+      } catch (e) {
+        if (child.exitCode !== null || child.signalCode !== null) throw e;
+      }
+      await nap(100);
+    }
+    throw Error('Bounded own listener startup failed');
+  };
+  try {
+    await current(true);
+    await checkPorts();
+    const frontdoorConfig = {
+      bindIp: '127.0.0.1',
+      port: 18199,
+      nextOrigin: 'http://127.0.0.1:18198',
+      apiOrigin: 'http://127.0.0.1:18197',
+      actor: 'anonymous',
+      allowMutations: false,
+      expiresAt: q.expiresAtMs,
+    };
+    fs.writeFileSync(join(job, 'frontdoor.json'), JSON.stringify(frontdoorConfig), { flag: 'wx', mode: 0o600 });
+    const api = launch('api', [join(repo, 'tools/sm-local-candidate/api.mjs'), p, inputSha, job], repo, 18197);
+    await waitListener(api);
+    await current();
+    // Raw readiness is preserved before parsing/gating.
+    const body = await readReadiness({
+      writeRaw: (raw) => fs.writeFileSync(join(job, 'api-readiness.raw.json'), JSON.stringify(raw) + '\n', { flag: 'wx', mode: 0o600 }),
+    });
+    if (
+      body.scope !== 'sm-real-isolated-fixture-anonymous' ||
+      body.appSha !== pins.app ||
+      body.inventorySha256 !== pins.inventory ||
+      body.productionFallback !== false ||
+      body.apiOrigin !== 'http://127.0.0.1:18197'
+    )
+      throw Error('Actual isolated APP/fixture readiness required');
+    alive();
+    const cwd = join(runtime, 'web/.next/standalone/web');
+    const next = launch('next', [join(cwd, 'server.js')], cwd, 18198, {
+      TAG_API_ORIGIN: 'http://127.0.0.1:18197',
+      HOSTNAME: '127.0.0.1',
+      PORT: '18198',
+      NODE_OPTIONS: '--max-old-space-size=384',
+    });
+    await waitListener(next);
+    await current();
+    alive();
+    const frontdoor = launch('frontdoor', [join(repo, 'tools/sm-local-candidate/frontdoor.mjs'), join(job, 'frontdoor.json')], repo, 18199);
+    await waitListener(frontdoor);
+    await current();
+    alive();
+    for (const c of children) assertListener(c, { host: '127.0.0.1', port: c.port });
+    check(p, inputSha);
+    assertLock(lockPid);
+    const started = {
+      schema: 'sm-f1-candidate-started-v1',
+      sessionId: q.sessionId,
+      appSha: pins.app,
+      buildId: pins.build,
+      inventorySha256: pins.inventory,
+      manifestSha256: pins.manifest,
+      controlOpsSha: q.controlOpsSha,
+      inputSha256: inputSha,
+      actor: 'anonymous',
+      productionDatabase: false,
+      database: { host: '127.0.0.1', port: 18306, name: 'tag_f1_semantic_test' },
+      origin: 'http://127.0.0.1:18199',
+      owner: { pid: process.pid, startTicks: ownerStartTicks },
+      children: children.map((c) => ({ name: c.name, pid: c.pid, startTicks: c.startTicks, host: '127.0.0.1', port: c.port })),
+      expiresAtMs: q.expiresAtMs,
+      plannedStopAtMs,
+      sourceProof: proof,
+      deployEligible: false,
+      uiReview: 'not reviewed',
+    };
+    fs.writeFileSync(join(job, 'candidate-started.json'), JSON.stringify(started) + '\n', { flag: 'wx', mode: 0o600 });
+    while (!stopping && Date.now() < plannedStopAtMs) {
+      let requested;
+      try {
+        requested = JSON.parse(privateBytes(join(job, 'own-stop-request.json')));
+      } catch (e) {
+        if (e.code !== 'ENOENT') throw e;
+      }
+      if (requested) {
+        validateStop(requested, { q, inputSha, ownerPid: process.pid, ownerStartTicks });
+        break;
+      }
+      await current();
+      if (!stopping) {
+        for (const c of children) assertListener(c, { host: '127.0.0.1', port: c.port });
+        await nap(1000);
+      }
+    }
+  } finally {
+    clearTimeout(timer);
+    await stop();
+    if (failure) throw failure;
+  }
+  const after = verifyRuntime();
+  check(p, inputSha);
+  assertLock(lockPid);
+  await current();
+  fs.writeFileSync(
+    join(job, 'candidate-stopped.json'),
+    JSON.stringify({
+      schema: 'sm-f1-candidate-stopped-v1',
+      inputSha256: inputSha,
+      controlOpsSha: q.controlOpsSha,
+      sessionId: q.sessionId,
+      observedAtMs: Date.now(),
+      wholeRuntimeUnchanged: true,
+      sourceProof: after,
+      deployEligible: false,
+      uiReview: 'not reviewed',
+    }) + '\n',
+    { flag: 'wx', mode: 0o600 },
+  );
+}
+export async function execute(p, expected) {
+  const q = check(p, expected);
+  if (q.expiresAtMs - Date.now() < 180000) throw Error('Insufficient initial session window');
+  const job = jobFor(q.sessionId);
+  if (fs.existsSync(job)) throw Error('Existing candidate artifacts retained; choose new admitted session');
+  const pre = verifyRuntime();
+  let lock,
+    active = false,
+    fatal = null,
+    group = 0,
+    timer,
+    logBytes = 0;
+  try {
+    lock = await acquire(q);
+    fs.mkdirSync(job, { mode: 0o700 });
+    fs.writeFileSync(join(job, 'runtime-before.json'), JSON.stringify(pre), { flag: 'wx', mode: 0o600 });
+    fs.writeFileSync(
+      join(job, 'owner-launch.json'),
+      JSON.stringify({
+        inputSha256: expected,
+        controlOpsSha: q.controlOpsSha,
+        parentPid: process.pid,
+        parentStartTicks: ticks(process.pid),
+        parentCmdlineSha256: sha(fs.readFileSync('/proc/' + process.pid + '/cmdline')),
+        lockPid: lock.pid,
+        lockStartTicks: ticks(lock.pid),
+      }),
+      { flag: 'wx', mode: 0o600 },
+    );
+    const terminate = (e) => {
+      fatal = e;
+      if (active) process.emit('SIGTERM');
+    };
+    timer = setTimeout(() => terminate(Error('Hard admitted deadline')), Math.max(1, q.expiresAtMs - Date.now()));
+    let healthSequence = 0;
+    const parentStartTicks = ticks(process.pid);
+    // One bounded parent producer.15s refresh target leaves room for12s curls; runtime age>180s rejects; initial probe remains fresh.
+    const healthCache = createHealthCache({
+      identity: { inputSha256: expected, parentPid: process.pid, parentStartTicks },
+      sampleFresh: () => sample(job, { starting: group === 0, group }),
+      sampleResources: (health) => sample(job, { starting: group === 0, group, health }),
+      publish: (h) => {
+        const raw = JSON.stringify(h) + '\n';
+        fs.writeFileSync(join(job, 'health-generation-' + ++healthSequence + '.json'), raw, { flag: 'wx', mode: 0o600 });
+        const pending = join(job, 'health-cache.pending.json');
+        fs.writeFileSync(pending, raw, { flag: 'wx', mode: 0o600 });
+        fs.renameSync(pending, join(job, 'health-cache.json'));
+      },
+    });
+    const parentSample = (force) => healthCache.get(force);
+    const probe = async () => {
+      try {
+        check(p, expected);
+        assertLock(lock.pid);
+        return await parentSample();
+      } catch (e) {
+        audit(job, { event: 'guard-error', reason: 'source-lock-health-or-resource-failed' });
+        terminate(e);
+        return { sites: [], probeError: 'Candidate gate failed' };
+      }
+    };
+    const record = (r) => {
+      if (r.event === 'started') group = r.processGroup;
+      audit(job, r);
+    };
+    active = true;
+    const fd = fs.openSync(join(job, 'worker-stage.log'), 'wx', 0o600);
+    let code;
+    try {
+      code = await guardedBuild({
+        command: q.nodePath,
+        args: [modulePath, '--worker', p, expected, job, String(lock.pid)],
+        cwd: repo,
+        record,
+        probe,
+        intervalMs: 5000,
+        estimatedUsageGiB: 0.25,
+        spawnBuild: (bin, args, options) => {
+          if (bin !== 'ionice' || JSON.stringify(args.slice(0, 5)) !== JSON.stringify(['-c', '3', 'nice', '-n', '19']))
+            throw Error('Required low-priority group launch');
+          const child = spawn(bin, args, {
+            ...options,
+            env: { PATH: '/usr/bin:/bin', HOME: '/nonexistent', LANG: 'C', DNT: '1' },
+            stdio: ['ignore', 'pipe', 'pipe'],
+          });
+          const retain = (data) => {
+            logBytes += data.length;
+            if (logBytes > 1024 ** 2) {
+              terminate(Error('Private worker log cap'));
+              return;
+            }
+            fs.writeSync(fd, data);
+          };
+          child.stdout.on('data', retain);
+          child.stderr.on('data', retain);
+          observeWorkerExit(child, terminate);
+          return child;
+        },
+      });
+    } finally {
+      active = false;
+      fs.closeSync(fd);
+    }
+    if (fatal || code !== 0) throw fatal || Error('Candidate worker failed; all evidence retained');
+    check(p, expected);
+    assertLock(lock.pid);
+    const post = verifyRuntime();
+    await parentSample(true);
+    check(p, expected);
+    assertLock(lock.pid);
+    fs.writeFileSync(
+      join(job, 'owner-session-ended.json'),
+      JSON.stringify({
+        schema: 'sm-f1-candidate-owner-ended-v1',
+        inputSha256: expected,
+        controlOpsSha: q.controlOpsSha,
+        sessionId: q.sessionId,
+        wholeRuntimeUnchanged: true,
+        before: pre,
+        after: post,
+        deployEligible: false,
+        uiReview: 'not reviewed',
+      }),
+      { flag: 'wx', mode: 0o600 },
+    );
+  } finally {
+    clearTimeout(timer);
+    if (lock) await lock.release();
+  }
+}
+// 'exit' arrives before 'close' even when descendants retain inherited stdout/stderr pipes.
+export function observeWorkerExit(child, terminate) {
+  child.once('exit', (code, signal) => {
+    if (code !== 0 || signal !== null) terminate(Error('Own guarded worker failed; stop its dedicated group'));
+  });
+}
+export function finishWorkerFailure({ record, exit }) {
+  try {
+    record();
+  } finally {
+    exit(1);
+  }
+}
+export function template() {
+  return {
+    schema: 'sm-local-anonymous-candidate-v1',
+    reviewed: false,
+    executionPermission: false,
+    globalSlotAcknowledged: false,
+    sessionId: 'sm-batch-001',
+    controlOpsSha: null,
+    expiresAtMs: null,
+    runtimePins: pins,
+    sourceHashes: Object.fromEntries(sourceNames.map((n) => [n, null])),
+    dbConfigSha256: null,
+    nodePath: '/home/deck/.local/bin/node',
+    nodeSha256: null,
+    memoryBudgetBytes: 1024 ** 3,
+    diskEstimateGiB: 0.25,
+  };
+}
+export async function main(argv = process.argv.slice(2)) {
+  if (argv.length === 0 || argv[0] === '--template') {
+    process.stdout.write(JSON.stringify(template(), null, 2) + '\n');
+    return;
+  }
+  if (argv[0] === '--execute' && argv.length === 3) return execute(resolve(argv[1]), argv[2]);
+  if (argv[0] === '--worker' && argv.length === 5) return worker(resolve(argv[1]), argv[2], argv[3], Number(argv[4]));
+  throw Error('Usage: runner.mjs --template | --execute PRIVATE_INPUT INPUT_SHA256');
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
+  main().catch(() => {
+    if (process.argv[2] === '--worker')
+      finishWorkerFailure({
+        record: () => {
+          process.stderr.write('SM candidate failed; private raw evidence retained.\n');
+          const args = process.argv.slice(2),
+            p = args[1],
+            hash = args[2],
+            job = args[3];
+          const bytes = privateBytes(p);
+          if (sha(bytes) !== hash) throw Error('Failure input differs');
+          const q = JSON.parse(bytes);
+          if (job !== jobFor(q.sessionId)) throw Error('Failure namespace differs');
+          const launch = JSON.parse(privateBytes(join(job, 'owner-launch.json')));
+          if (
+            launch.inputSha256 !== hash ||
+            launch.controlOpsSha !== q.controlOpsSha ||
+            launch.parentPid !== process.ppid ||
+            ticks(launch.parentPid) !== launch.parentStartTicks ||
+            sha(fs.readFileSync('/proc/' + launch.parentPid + '/cmdline')) !== launch.parentCmdlineSha256
+          )
+            throw Error('Failure owner differs');
+          fs.writeFileSync(
+            join(job, 'worker-failed.json'),
+            JSON.stringify({
+              schema: 'sm-f1-worker-failed-v1',
+              inputSha256: hash,
+              controlOpsSha: q.controlOpsSha,
+              sessionId: q.sessionId,
+              workerPid: process.pid,
+              workerStartTicks: ticks(process.pid),
+              observedAtMs: Date.now(),
+              reason: 'startup-or-cleanup-failed',
+              deployEligible: false,
+            }) + '\n',
+            { flag: 'wx', mode: 0o600 },
+          );
+        },
+        exit: (code) => process.exit(code),
+      });
+    else {
+      process.stderr.write('SM candidate failed; private raw evidence retained.\n');
+      process.exitCode = 1;
+    }
+  });
+
+// Expose the unchanged reviewed nonblocking lock lifecycle to API-only scope.
+export { acquire as acquireCandidateLock };

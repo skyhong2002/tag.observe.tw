@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import Avatar from '@/components/Avatar';
 import SortIndicator from '@/components/SortIndicator';
 import TableScroller from '@/components/TableScroller';
@@ -60,19 +60,16 @@ export default function Accounts() {
   const [error, setError] = useState('');
   const [sort, setSort] = useState<SortKey>('lastActiveAt');
   const [descending, setDescending] = useState(true);
-  const load = useCallback(
-    () =>
-      adminFetch<{ users: Account[] }>('/auth/users')
-        .then((body) => setAccounts(body.users))
-        .catch(() => setAccounts([])),
-    [],
-  );
+  const load = () =>
+    adminFetch<{ users: Account[] }>('/auth/users')
+      .then((body) => setAccounts(body.users))
+      .catch(() => setAccounts([]));
   useEffect(() => {
     load();
     adminFetch<Activity>('/auth/admin/user-activity')
       .then(setActivity)
       .catch(() => setActivity({ metrics: [], users: {} }));
-  }, [load]);
+  }, []);
   async function setRole(account: Account, role: Account['role']) {
     const who = account.name ?? account.email;
     if (!confirm(role === 'admin' ? `把 ${who} 設為管理員？` : `取消 ${who} 的管理員權限？`)) return;
@@ -176,7 +173,7 @@ export default function Accounts() {
                 </th>
               )}
               {metrics.length > 0 && (
-                <th colSpan={of('contribute').length + 1} className={groupHead} title="回報、投票與管理修改">
+                <th colSpan={of('contribute').length + 1} className={groupHead} title="回報、投票、投稿與管理修改">
                   貢獻
                 </th>
               )}
@@ -189,7 +186,7 @@ export default function Accounts() {
             </tr>
             <tr className="bg-(--table-head-bg)">
               {th('use', '互動', table.num, '閱讀、追蹤、收藏的次數')}
-              {th('contribute', '貢獻', table.num, '回報、投票與管理修改的次數')}
+              {th('contribute', '貢獻', table.num, '回報、投票、投稿與管理修改的次數')}
               {of('use').map((m) =>
                 th(`m:${m.key}`, m.label, table.num, m.key === 'reads' ? '讀者開啟閱讀紀錄才會記，清除後歸零' : undefined),
               )}
@@ -261,7 +258,7 @@ export default function Accounts() {
         </table>
       </TableScroller>
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        互動是讀者自己的使用（閱讀紀錄只在讀者開啟時才記）；貢獻是回報錯誤、投票與管理修改。管理修改依各項修改紀錄計算，游標移到（手機點一下）數字上可看細項。最近活動是以上任一項的最後時間；游標移到名字上可看
+        互動是讀者自己的使用（閱讀紀錄只在讀者開啟時才記）；貢獻是回報錯誤、投票、投稿與管理修改。管理修改依各項修改紀錄計算，游標移到（手機點一下）數字上可看細項。最近活動是以上任一項的最後時間；游標移到名字上可看
         Email 和加入時間。
       </p>
     </section>

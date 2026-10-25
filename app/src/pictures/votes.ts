@@ -1,6 +1,6 @@
-import { and, eq, gte, isNotNull, max, sql } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, isNull, max, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
-import { tagAvatarCandidates, tagPeople, tagPictureVotes, tagVisualCandidates, tagVisuals } from '../db/schema.ts';
+import { tagAvatarCandidates, tagPeople, tagPictureVotes, tagSubmissions, tagVisualCandidates, tagVisuals } from '../db/schema.ts';
 
 // Readers' votes on a tag's picture (docs/tag-pictures.md). Every tag has
 // candidates: a person tag's sketches (tag_avatar_candidates), any other
@@ -49,10 +49,22 @@ export async function applyVotes(db: Db, tag: string, kind: PictureKind) {
     if (!row || row.status === 'chosen' || row.status === 'hidden' || row.status === 'nonhuman') return row?.shownRank ?? null;
     const rank = leader(votes, row.shownRank);
     if (rank === null) return row.shownRank;
-    await db
+    const [updated] = await db
       .update(tagPeople)
       .set({ status: 'voted', shownRank: rank, note: null })
-      .where(and(eq(tagPeople.tag, tag), sql`${tagPeople.status} <> 'nonhuman'`));
+      .where(
+        and(
+          eq(tagPeople.tag, tag),
+          eq(tagPeople.status, row.status),
+          row.shownRank === null ? isNull(tagPeople.shownRank) : eq(tagPeople.shownRank, row.shownRank),
+        ),
+      );
+    // A reviewer may have chosen/hidden a picture after the read above.
+    // Compare-and-set must preserve that decision; return the current display.
+    if (!updated.affectedRows) {
+      const [current] = await db.select({ shownRank: tagPeople.shownRank }).from(tagPeople).where(eq(tagPeople.tag, tag));
+      return current?.shownRank ?? null;
+    }
     return rank;
   }
   const [row] = await db
@@ -70,10 +82,20 @@ export async function applyVotes(db: Db, tag: string, kind: PictureKind) {
   const { tag: _, rank: __, uploadedBy: ___, uploadedAt: ____, ...picture } = c;
   if (rank === row.shownRank && row.status === 'voted') return rank;
   // checkedAt moves the image URL's version, so browsers fetch the new picture.
-  await db
+  const [updated] = await db
     .update(tagVisuals)
     .set({ ...picture, status: 'voted', shownRank: rank, checkedAt: new Date() })
-    .where(eq(tagVisuals.tag, tag));
+    .where(
+      and(
+        eq(tagVisuals.tag, tag),
+        eq(tagVisuals.status, row.status),
+        row.shownRank === null ? isNull(tagVisuals.shownRank) : eq(tagVisuals.shownRank, row.shownRank),
+      ),
+    );
+  if (!updated.affectedRows) {
+    const [current] = await db.select({ shownRank: tagVisuals.shownRank }).from(tagVisuals).where(eq(tagVisuals.tag, tag));
+    return current?.shownRank ?? null;
+  }
   return rank;
 }
 
@@ -100,25 +122,6 @@ export async function nextRank(db: Db, tag: string, kind: PictureKind) {
   return (top ?? 0) + 1;
 }
 
-/**
- * A reader's picture for a non-person tag, already recoloured (recolourLogo):
- * the next candidate, voted for by the uploader, so it is shown at once
- * unless more readers voted for another or an admin chose one.
- */
-export async function addVisualUpload(db: Db, tag: string, image: Buffer, userId: number) {
-  const at = new Date();
-  const rank = await nextRank(db, tag, 'visual');
-  await db.insert(tagVisualCandidates).values({ tag, rank, kind: 'logo', note: '讀者上傳', image, uploadedBy: userId, uploadedAt: at });
-  // A tag nothing was found for has no row yet.
-  await db.insert(tagVisuals).ignore().values({ tag, status: 'voted', checkedAt: at });
-  await db
-    .update(tagVisuals)
-    .set({ status: 'voted' })
-    .where(and(eq(tagVisuals.tag, tag), sql`${tagVisuals.status} NOT IN ('chosen', 'hidden')`));
-  await castVote(db, tag, 'visual', userId, rank);
-  return { tag, rank };
-}
-
 /** Uploads by `userId` over the last day, both kinds. */
 export async function uploadsToday(db: Db, userId: number) {
   const since = new Date(Date.now() - 86_400_000);
@@ -128,8 +131,22 @@ export async function uploadsToday(db: Db, userId: number) {
         await db
           .select({ n: sql<number>`COUNT(*)` })
           .from(table)
-          .where(and(eq(table.uploadedBy, userId), gte(table.uploadedAt, since)))
+          .where(
+            and(
+              eq(table.uploadedBy, userId),
+              gte(table.uploadedAt, since),
+              sql`NOT EXISTS (
+            SELECT 1 FROM ${tagSubmissions} WHERE ${tagSubmissions.kind} = 'picture'
+              AND ${tagSubmissions.tag} = ${table.tag} AND ${tagSubmissions.candidateRank} = ${table.rank}
+              AND ${tagSubmissions.pictureKind} = ${table === tagAvatarCandidates ? 'avatar' : 'visual'}
+          )`,
+            ),
+          )
       )[0]?.n ?? 0,
     );
-  return (await count(tagAvatarCandidates)) + (await count(tagVisualCandidates));
+  const [submissions] = await db
+    .select({ n: sql<number>`COUNT(*)` })
+    .from(tagSubmissions)
+    .where(and(eq(tagSubmissions.kind, 'picture'), eq(tagSubmissions.createdBy, userId), gte(tagSubmissions.createdAt, since)));
+  return Number(submissions?.n ?? 0) + (await count(tagAvatarCandidates)) + (await count(tagVisualCandidates));
 }

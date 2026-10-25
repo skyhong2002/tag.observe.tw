@@ -34,7 +34,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
   return (
     <div className="space-y-6 py-4">
       <div>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
           <Link href="/group/" className="hover:underline">
             標籤群組
           </Link>
@@ -82,7 +82,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
       {group.ranking.length ? (
         <GroupRankingTable rows={group.ranking} days={days} subgroupLabel={subgroupLabel} />
       ) : (
-        <p className="text-sm text-zinc-500">最近 {days} 天沒有這個群組的標籤上新聞排行。</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">最近 {days} 天沒有這個群組的標籤上新聞排行。</p>
       )}
     </div>
   );

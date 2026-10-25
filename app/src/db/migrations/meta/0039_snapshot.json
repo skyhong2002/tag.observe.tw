@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "9e3d491b-7539-483d-a37c-f4c8b56c6ce2",
-  "prevId": "4bd1337f-d786-490f-8877-8e3b09b2fbb6",
+  "id": "c1d318f6-2a34-40eb-864d-f691564b337f",
+  "prevId": "9fc0e73a-3b50-48cd-9644-fb840f1f8230",
   "tables": {
     "article_archives": {
       "name": "article_archives",
@@ -1637,35 +1637,6 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "media_roles": {
-      "name": "media_roles",
-      "columns": {
-        "media": {
-          "name": "media",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "role": {
-          "name": "role",
-          "type": "varchar(24)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "media_roles_media_role_pk": {
-          "name": "media_roles_media_role_pk",
-          "columns": ["media", "role"]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
     "media_taiwan_share_log": {
       "name": "media_taiwan_share_log",
       "columns": {
@@ -2263,78 +2234,6 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "robots_observations": {
-      "name": "robots_observations",
-      "columns": {
-        "host": {
-          "name": "host",
-          "type": "varchar(253)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(16)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "http_status": {
-          "name": "http_status",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "google_only": {
-          "name": "google_only",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "disallow": {
-          "name": "disallow",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "error": {
-          "name": "error",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "checked_at": {
-          "name": "checked_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "last_ok_at": {
-          "name": "last_ok_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "robots_observations_host": {
-          "name": "robots_observations_host",
-          "columns": ["host"]
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -3233,6 +3132,84 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "tag_relation_lock": {
+      "name": "tag_relation_lock",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "tag_relation_lock_id": {
+          "name": "tag_relation_lock_id",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "tag_relation_votes": {
+      "name": "tag_relation_votes",
+      "columns": {
+        "relation_key": {
+          "name": "relation_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tag": {
+          "name": "tag",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "at": {
+          "name": "at",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "tag_relation_votes_tag": {
+          "name": "tag_relation_votes_tag",
+          "columns": ["tag"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "tag_relation_votes_relation_key_user_id_pk": {
+          "name": "tag_relation_votes_relation_key_user_id_pk",
+          "columns": ["relation_key", "user_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "tag_stats": {
       "name": "tag_stats",
       "columns": {
@@ -3323,6 +3300,251 @@
       "compositePrimaryKeys": {
         "tag_stats_id": {
           "name": "tag_stats_id",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "tag_submission_log": {
+      "name": "tag_submission_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "submission_id": {
+          "name": "submission_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "at": {
+          "name": "at",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "tag_submission_history": {
+          "name": "tag_submission_history",
+          "columns": ["submission_id", "id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "tag_submission_log_id": {
+          "name": "tag_submission_log_id",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "tag_submissions": {
+      "name": "tag_submissions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tag": {
+          "name": "tag",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "relation_type": {
+          "name": "relation_type",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "target": {
+          "name": "target",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "target_group_id": {
+          "name": "target_group_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reviewed_by": {
+          "name": "reviewed_by",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "review_reason": {
+          "name": "review_reason",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dedupe_key": {
+          "name": "dedupe_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "picture_kind": {
+          "name": "picture_kind",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "image": {
+          "name": "image",
+          "type": "mediumblob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "picture_meta": {
+          "name": "picture_meta",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rights_confirmed": {
+          "name": "rights_confirmed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "candidate_rank": {
+          "name": "candidate_rank",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "tag_submission_dedupe": {
+          "name": "tag_submission_dedupe",
+          "columns": ["dedupe_key"],
+          "isUnique": true
+        },
+        "tag_submission_queue": {
+          "name": "tag_submission_queue",
+          "columns": ["status", "id"],
+          "isUnique": false
+        },
+        "tag_submission_outgoing": {
+          "name": "tag_submission_outgoing",
+          "columns": ["tag", "kind", "status"],
+          "isUnique": false
+        },
+        "tag_submission_incoming": {
+          "name": "tag_submission_incoming",
+          "columns": ["target", "kind", "status"],
+          "isUnique": false
+        },
+        "tag_submission_author": {
+          "name": "tag_submission_author",
+          "columns": ["created_by", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "tag_submissions_id": {
+          "name": "tag_submissions_id",
           "columns": ["id"]
         }
       },

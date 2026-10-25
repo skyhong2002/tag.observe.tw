@@ -17,12 +17,12 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
     : r.new
       ? { text: '新上榜', tone: rising }
       : delta === null
-        ? { text: '—', tone: 'text-zinc-400' }
+        ? { text: '—', tone: 'text-zinc-500 dark:text-zinc-400' }
         : delta > 0
-          ? { text: `▲${delta}`, tone: 'text-rose-600', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
+          ? { text: `▲${delta}`, tone: 'text-rose-600 dark:text-rose-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
           : delta < 0
-            ? { text: `▼${-delta}`, tone: 'text-sky-600', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
-            : { text: '＝', tone: 'text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
+            ? { text: `▼${-delta}`, tone: 'text-sky-600 dark:text-sky-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
+            : { text: '＝', tone: 'text-zinc-500 dark:text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
   const tiles: Array<{ label: string; value: string; tone?: string; title?: string }> = r
     ? [
         { label: '名次', value: `#${r.position}` },
@@ -42,45 +42,48 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         <dl className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           {tiles.map((t) => (
             <div key={t.label} title={t.title}>
-              <dt className="text-xs text-zinc-500">{t.label}</dt>
+              <dt className="text-xs text-zinc-500 dark:text-zinc-400">{t.label}</dt>
               <dd className={`text-lg font-semibold tabular-nums ${t.tone ?? ''}`}>{t.value}</dd>
             </div>
           ))}
         </dl>
       ) : (
-        <p className="text-zinc-600">目前不在新聞媒體排行榜上。</p>
+        <p className="text-zinc-600 dark:text-zinc-300">目前不在新聞媒體排行榜上。</p>
       )}
       {r && (
         <div className="flex flex-wrap items-center gap-3">
           <TagDiscoveryBadges isNew={r.new} signals={r.signals} firstCollection={status.firstCollection} />
           {r.signals?.growth != null && (
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
               升溫量 {r.signals.growth > 0 ? '+' : ''}
               {r.signals.growth.toFixed(1)}
             </span>
           )}
           {r.signals && (
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
               {r.signals.broad ? '已達多家跟進門檻' : r.signals.early ? '已達早期線索門檻' : '尚未達跨媒體門檻'}
             </span>
           )}
         </div>
       )}
       {status.archive && (
-        <p className="text-xs text-zinc-500" title="全部收錄報導中，這個關鍵字字串完全相同的第一篇，以及報導最多的一天（台北時間）">
+        <p
+          className="text-xs text-zinc-500 dark:text-zinc-400"
+          title="全部收錄報導中，這個關鍵字字串完全相同的第一篇，以及報導最多的一天（台北時間）"
+        >
           首次出現：{taipeiDate(status.archive.firstAt)}
           {status.archive.peakDay && ` · 全部歷史單日高峰：${status.archive.peakDay}（${status.archive.peakCount} 篇）`}
         </p>
       )}
       {status.firstCollection && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           現存收錄紀錄首次見到：{taipei(status.firstCollection.at)} · 最早已收錄報導：{taipei(status.firstCollection.firstPublishedAt)}
         </p>
       )}
       <DraftEvidence data={status.drafts} />
       {status.related.length > 0 && (
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-xs text-zinc-500">一起出現</span>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">一起出現</span>
           {status.related.map((x) => (
             <Link
               key={x.tag}
@@ -89,12 +92,12 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
               className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-zinc-800 hover:bg-brand-50 hover:text-brand-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:text-brand-400"
             >
               {x.tag}
-              <span className="ml-1 text-xs text-zinc-500">{x.count}</span>
+              <span className="ml-1 text-xs text-zinc-600 dark:text-zinc-400">{x.count}</span>
             </Link>
           ))}
         </p>
       )}
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">
         {r && `${taipeiHour(r.hourStart)} 時段的新聞媒體排行榜`}
         {r && status.history && ' · '}
         {status.history &&

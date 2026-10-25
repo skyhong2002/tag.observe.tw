@@ -14,6 +14,8 @@ const sharedDb = [
   'app/test/tag-groups.spec.ts',
   'app/test/similarweb-external.spec.ts',
   'app/test/picture-kind.spec.ts',
+  'app/test/picture-submissions.spec.ts',
+  'app/test/tag-semantic.spec.ts',
   'app/test/writing.spec.ts',
   'app/test/tag-history.spec.ts',
 ];

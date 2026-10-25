@@ -1,5 +1,6 @@
 import { connection } from 'next/server';
 import PageOutline, { type OutlineEntry } from '@/components/PageOutline';
+import PathBreaks from '@/components/PathBreaks';
 import SectionTabs from '@/components/SectionTabs';
 import { API_ORIGIN } from '@/lib/api';
 import { type Schema, schemaTools } from '@/lib/openapi-fields.mts';
@@ -73,22 +74,17 @@ async function load(): Promise<{ spec: OpenApi; examples: Record<string, string>
 
 // `code` spans in the spec's prose become <code>.
 function Prose({ text }: { text: string }) {
-  const seen = new Map<string, number>();
   return (
     <>
-      {text.split(/(`[^`]+`)/).map((part) => {
-        if (!part.startsWith('`') || !part.endsWith('`')) return part;
-        const occurrence = seen.get(part) ?? 0;
-        seen.set(part, occurrence + 1);
-        return (
-          <code
-            key={`${part}:${occurrence}`}
-            className="break-all whitespace-normal rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800"
-          >
-            {part.slice(1, -1)}
+      {text.split(/(`[^`]+`)/).map((part, i) =>
+        part.startsWith('`') && part.endsWith('`') ? (
+          <code key={i} className="break-words whitespace-normal rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800">
+            <PathBreaks path={part.slice(1, -1)} />
           </code>
-        );
-      })}
+        ) : (
+          part
+        ),
+      )}
     </>
   );
 }
@@ -136,7 +132,9 @@ function Endpoint({
         <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
           {method}
         </span>
-        <span className="break-all font-semibold">{path}</span>
+        <span className="break-words font-semibold">
+          <PathBreaks path={path} />
+        </span>
       </h3>
       <p className="mt-1 font-medium">{op.summary}</p>
       {op.description && (
@@ -161,7 +159,7 @@ function Endpoint({
                   <tr key={`${p.in}:${p.name}`}>
                     <td className={`${cellClass} whitespace-nowrap font-mono`} data-label="參數">
                       {p.name}
-                      {p.in === 'path' && <span className="ml-1 font-sans text-xs text-zinc-500">（路徑）</span>}
+                      {p.in === 'path' && <span className="ml-1 font-sans text-xs text-zinc-500 dark:text-zinc-400">（路徑）</span>}
                     </td>
                     <td className={`${cellClass} font-mono text-xs text-zinc-600 dark:text-zinc-400`} data-label="型別">
                       {tools.typeLabel(s)}
@@ -196,7 +194,7 @@ function Endpoint({
           <details key={label} className="mt-3 rounded-md border border-zinc-300 dark:border-zinc-800">
             <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
               {label}
-              <span className="ml-2 text-xs font-normal text-zinc-500">{rows.length} 個</span>
+              <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{rows.length} 個</span>
             </summary>
             <div className="overflow-x-auto px-3 pb-3">
               <table className={`w-full text-left text-sm sm:min-w-[36rem] ${table.stack}`}>
@@ -237,7 +235,7 @@ export default async function ApiDocsPage() {
       <div className="space-y-3">
         <SectionTabs here="/api/" />
         <h1 className="text-2xl font-semibold tracking-tight">新文易數 API</h1>
-        <p className="text-zinc-600">
+        <p className="text-zinc-600 dark:text-zinc-400">
           文件暫時無法載入。規格檔：
           <a href="/api/v1/openapi.json" className={linkClass}>
             /api/v1/openapi.json
@@ -332,11 +330,11 @@ export default async function ApiDocsPage() {
           </h2>
           <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {ops.map(({ path, method, op }) => (
-              <li key={`${method}:${path}`} className="flex min-w-0 gap-2">
-                <a href={`#${endpointAnchor(method, path)}`} className={`truncate font-mono ${linkClass}`}>
-                  {method} {path}
+              <li key={`${method}:${path}`} className="min-w-0 break-words">
+                <a href={`#${endpointAnchor(method, path)}`} className={`font-mono ${linkClass}`}>
+                  {method} <PathBreaks path={path} />
                 </a>
-                <span className="shrink-0 text-zinc-600 dark:text-zinc-400">{op.summary}</span>
+                <span className="ml-2 text-zinc-600 dark:text-zinc-400">{op.summary}</span>
               </li>
             ))}
           </ul>

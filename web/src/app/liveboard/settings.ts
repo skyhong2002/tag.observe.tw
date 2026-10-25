@@ -4,24 +4,63 @@
 // localStorage, so a wall tablet opens on its own board without signing in.
 // Query parameters override both for one visit: ?mode=simple (or the older
 // ?simple=1), ?lens=growth,blue, ?pictures=0, ?history=3, ?interval=6, ?step=5, ?hold=10, ?words=48, ?scale=80, ?change=rank.
+// A lens is a keyword cloud, two camps' clouds side by side, the top events (alone, or with YouTube videos
+// about them), or a leaderboard of the day's topics (/api/v1/liveboard/scenes); each is one of SimpleBoard's scenes.
 // Plain data, so the server page can read it too.
 
-export interface Lens {
+interface LensBase {
   key: string;
   title: string;
   note: string;
-  category: string;
-  order: 'growth' | 'burst' | 'score';
   /** Every word of the lens takes this colour (pictures keep their own)… */
   accent: string;
   /** …or this lighter one on the dark theme. */
   dark: string;
 }
+/** A keyword cloud: a tag ranking, played from its past hours to now. */
+export interface CloudLens extends LensBase {
+  scene: 'cloud';
+  category: string;
+  order: 'growth' | 'burst' | 'score';
+}
+/** Two camps' keywords on one spectrum: each word left or right by which camp writes it more (compare.mts). */
+export interface CompareLens extends LensBase {
+  scene: 'compare';
+  /** The cloud lenses on the left and on the right. */
+  sides: [string, string];
+}
+/** The top events, one at a time: score against the previous hour, and the last hour's articles. */
+export interface EventLens extends LensBase {
+  scene: 'events';
+}
+/** YouTube videos (/api/v1/liveboard/videos): the top events again, one at a time, with videos about
+ *  each; or one board of the day's most viewed videos, or of the streams live now. */
+export interface VideoLens extends LensBase {
+  scene: 'videos';
+  feed: 'events' | 'day' | 'live';
+}
+/** Which of /api/v1/liveboard/scenes' leaderboards a board lens shows. */
+export type BoardKey = 'media' | 'threads' | 'categories' | 'groups';
+/** A leaderboard of the day's topics: articles over the last 24 hours, in the last hour, and the change from the hour before. */
+export interface BoardLens extends LensBase {
+  scene: 'board';
+  board: BoardKey;
+}
+export type Lens = CloudLens | CompareLens | EventLens | VideoLens | BoardLens;
+const cloud = (lens: Omit<CloudLens, 'scene'>): CloudLens => ({ scene: 'cloud', ...lens });
 export const LENSES: Lens[] = [
   // All outlets together, in plain ink (white on the dark theme).
-  { key: 'all', title: '綜合', note: '所有媒體最常寫的關鍵字', category: 'all', order: 'score', accent: '#27272a', dark: '#f4f4f5' },
-  { key: 'growth', title: '正在發酵', note: '升溫最快的關鍵字', category: 'all', order: 'growth', accent: '#c2410c', dark: '#fb923c' },
-  {
+  cloud({ key: 'all', title: '綜合', note: '所有媒體最常寫的關鍵字', category: 'all', order: 'score', accent: '#27272a', dark: '#f4f4f5' }),
+  cloud({
+    key: 'growth',
+    title: '正在發酵',
+    note: '升溫最快的關鍵字',
+    category: 'all',
+    order: 'growth',
+    accent: '#c2410c',
+    dark: '#fb923c',
+  }),
+  cloud({
     key: 'blue',
     title: '藍營媒體在講',
     note: '藍營傾向媒體的關鍵字',
@@ -29,9 +68,17 @@ export const LENSES: Lens[] = [
     order: 'score',
     accent: '#1d4ed8',
     dark: '#60a5fa',
-  },
-  { key: 'day', title: '新聞熱詞', note: '新聞媒體最常寫的關鍵字', category: 'news', order: 'score', accent: '#c2410c', dark: '#fb923c' },
-  {
+  }),
+  cloud({
+    key: 'day',
+    title: '新聞熱詞',
+    note: '新聞媒體最常寫的關鍵字',
+    category: 'news',
+    order: 'score',
+    accent: '#c2410c',
+    dark: '#fb923c',
+  }),
+  cloud({
     key: 'green',
     title: '綠營媒體在講',
     note: '綠營傾向媒體的關鍵字',
@@ -39,11 +86,35 @@ export const LENSES: Lens[] = [
     order: 'score',
     accent: '#15803d',
     dark: '#4ade80',
-  },
-  { key: 'burst', title: '突然爆量', note: '突然被大量報導的關鍵字', category: 'all', order: 'burst', accent: '#c2410c', dark: '#fb923c' },
-  { key: 'alt', title: '非主流媒體在講', note: '非主流媒體的關鍵字', category: 'alt', order: 'score', accent: '#7e22ce', dark: '#c084fc' },
-  { key: 'tech', title: '科技圈在講', note: '科技與 3C 媒體的關鍵字', category: '3c', order: 'score', accent: '#0e7490', dark: '#22d3ee' },
-  {
+  }),
+  cloud({
+    key: 'burst',
+    title: '突然爆量',
+    note: '突然被大量報導的關鍵字',
+    category: 'all',
+    order: 'burst',
+    accent: '#c2410c',
+    dark: '#fb923c',
+  }),
+  cloud({
+    key: 'alt',
+    title: '非主流媒體在講',
+    note: '非主流媒體的關鍵字',
+    category: 'alt',
+    order: 'score',
+    accent: '#7e22ce',
+    dark: '#c084fc',
+  }),
+  cloud({
+    key: 'tech',
+    title: '科技圈在講',
+    note: '科技與 3C 媒體的關鍵字',
+    category: '3c',
+    order: 'score',
+    accent: '#0e7490',
+    dark: '#22d3ee',
+  }),
+  cloud({
     key: 'finance',
     title: '財經圈在講',
     note: '財經媒體的關鍵字',
@@ -51,6 +122,80 @@ export const LENSES: Lens[] = [
     order: 'score',
     accent: '#a16207',
     dark: '#fbbf24',
+  }),
+  {
+    key: 'camps',
+    scene: 'compare',
+    // Green on the left and blue on the right, as the site's camp bars run.
+    sides: ['green', 'blue'],
+    title: '藍綠對照',
+    note: '越靠左綠營媒體提得越多，越靠右藍營媒體提得越多',
+    accent: '#27272a',
+    dark: '#f4f4f5',
+  },
+  { key: 'events', scene: 'events', title: '此刻焦點', note: '這一小時突然被大量報導的事', accent: '#b91c1c', dark: '#f87171' },
+  {
+    key: 'videos',
+    scene: 'videos',
+    feed: 'events',
+    title: '事件影片',
+    note: '有影儀表板找到的 YouTube 影片',
+    accent: '#c2410c',
+    dark: '#fb923c',
+  },
+  {
+    key: 'videos-day',
+    scene: 'videos',
+    feed: 'day',
+    title: '今日影片',
+    note: '近 24 小時發布、觀看最多的 YouTube 影片',
+    accent: '#a16207',
+    dark: '#facc15',
+  },
+  {
+    key: 'videos-live',
+    scene: 'videos',
+    feed: 'live',
+    title: '正在直播',
+    note: '此刻觀看人數最多的 YouTube 直播',
+    accent: '#a21caf',
+    dark: '#e879f9',
+  },
+  {
+    key: 'threads',
+    scene: 'board',
+    board: 'threads',
+    title: '24 小時最多報導',
+    note: '近 24 小時報導量最多的事件',
+    accent: '#be123c',
+    dark: '#fb7185',
+  },
+  {
+    key: 'media',
+    scene: 'board',
+    board: 'media',
+    title: '媒體議題',
+    note: '各家媒體自己的議題與專題',
+    accent: '#0f766e',
+    dark: '#2dd4bf',
+  },
+  {
+    key: 'categories',
+    scene: 'board',
+    board: 'categories',
+    title: '分類',
+    note: '政治、生活、國際等分類的報導量',
+    accent: '#4d7c0f',
+    dark: '#a3e635',
+  },
+  {
+    key: 'groups',
+    scene: 'board',
+    board: 'groups',
+    title: '人物與政黨',
+    note: '政黨、政治人物等群組的報導量',
+    accent: '#be185d',
+    dark: '#f472b6',
   },
 ];
 
@@ -78,7 +223,11 @@ export interface LiveboardSettings {
 /** What a device that has never saved settings shows: the last day in 6-hour steps, with each word's change in place. */
 export const DEFAULTS: LiveboardSettings = {
   mode: 'simple',
-  lenses: ['all', 'day', 'growth', 'blue', 'green', 'burst', 'alt', 'tech', 'finance'],
+  // Overview, then what happened, the two camps at once (藍綠對照), the day's
+  // threads, what is rising, and the outlets outside the camps. The rest (each
+  // camp alone, 新聞熱詞 repeats 綜合, 突然爆量 is close to 正在發酵, the topic and
+  // category boards, the trade lenses) are one tick away in the settings.
+  lenses: ['all', 'events', 'camps', 'threads', 'growth', 'alt'],
   pictures: true,
   history: 4,
   interval: 6,
@@ -152,3 +301,8 @@ export function settingsQuery(s: LiveboardSettings) {
 export const QUERY_KEYS = ['mode', 'simple', 'lens', 'pictures', 'history', 'interval', 'step', 'hold', 'words', 'scale', 'change'];
 
 export const pickLenses = (keys: string[]) => keys.map((key) => LENSES.find((l) => l.key === key)).filter((l) => l !== undefined);
+/** The first keyword cloud of these lenses (the page fetches its present ranking with the page). */
+/** A cloud lens by key, for a compare lens's sides. */
+export const cloudLens = (key: string) => LENSES.find((l): l is CloudLens => l.key === key && l.scene === 'cloud');
+export const firstCloud = (keys: string[]) =>
+  pickLenses(keys).find((l): l is CloudLens => l.scene === 'cloud') ?? (LENSES.find((l) => l.scene === 'cloud') as CloudLens);

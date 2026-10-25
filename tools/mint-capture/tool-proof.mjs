@@ -1,0 +1,48 @@
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs';
+import { join, resolve } from 'node:path';
+
+const digest = (b) => createHash('sha256').update(b).digest('hex');
+// Hash all installed Playwright and Playwright-core code; entry-only pin is insufficient.
+export function playwrightTree(root, { io = fs, maxBytes = 64 * 1024 ** 2 } = {}) {
+  if (root !== '/home/sky/observe-worker/browser-tools/node_modules' || io.realpathSync(root) !== root)
+    throw Error('Exact installed tool root');
+  let bytes = 0;
+  const entries = [];
+  for (const pkg of ['playwright', 'playwright-core']) {
+    const base = join(root, pkg);
+    if (JSON.parse(io.readFileSync(join(base, 'package.json'))).version !== '1.63.0') throw Error('Exact installed package versions');
+    const walk = (rel) => {
+      for (const name of io.readdirSync(join(base, rel)).sort()) {
+        if (!name || name.includes('/') || name.includes('\\') || /[\x00-\x1f]/.test(name)) throw Error('Unsafe tool entry');
+        const path = join(rel, name),
+          full = join(base, path),
+          s = io.lstatSync(full);
+        if (s.uid !== process.getuid() || s.mode & 0o022 || s.isSymbolicLink() || io.realpathSync(full) !== resolve(full))
+          throw Error('Canonical owner tool tree');
+        if (s.isDirectory()) walk(path);
+        else if (s.isFile()) {
+          bytes += s.size;
+          if (bytes > maxBytes) throw Error('Installed tool tree budget');
+          entries.push({ path: pkg + '/' + path, bytes: s.size, sha256: digest(io.readFileSync(full)) });
+        } else throw Error('Unsupported tool file');
+      }
+    };
+    walk('');
+  }
+  return {
+    schema: 'installed-playwright-code-proof-v1',
+    packages: ['playwright@1.63.0', 'playwright-core@1.63.0'],
+    bytes,
+    entries,
+    sha256: digest(JSON.stringify(entries)),
+  };
+}
+export const observedTools = Object.freeze({
+  playwrightEntry: '/home/sky/observe-worker/browser-tools/node_modules/playwright/index.mjs',
+  playwrightEntrySha256: 'a0f5715ea22354f922791a9c53dc012d5d5c067ff9cc4cd35ffb7cd272071a9f',
+  playwrightPackagePath: '/home/sky/observe-worker/browser-tools/node_modules/playwright/package.json',
+  browserExecutable: '/home/sky/observe-worker/browsers/chromium-1243/chrome-linux64/chrome',
+  browserSha256: '8c599d43aec53f2460a31ae2f4af6bd863f8258b34ff519564bc5d4726bfaa1e',
+  playwrightTreeSha256: 'f524d41953b19c8dc26f1c3a668db6e6fc33b6f2579baa2c855068ea927e0215',
+});

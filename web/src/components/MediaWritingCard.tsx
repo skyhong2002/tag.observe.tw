@@ -22,7 +22,7 @@ export default function MediaWritingCard({ data }: { data: MediaWriting | null }
         <dd className="flex items-center justify-between gap-2">
           <span className="tabular-nums" title={`${totals.social.toLocaleString()}／${totals.articles.toLocaleString()} 篇`}>
             {share(totals.social, totals.articles)}
-            <span className="ml-1 text-zinc-500">{totals.social.toLocaleString()} 篇</span>
+            <span className="ml-1 text-zinc-500 dark:text-zinc-400">{totals.social.toLocaleString()} 篇</span>
           </span>
           <Sparkline values={daily} className="h-6 w-20" />
         </dd>
@@ -36,7 +36,8 @@ export default function MediaWritingCard({ data }: { data: MediaWriting | null }
                   href={`${href}&role=${encodeURIComponent(r)}`}
                   className="mr-2 inline-block whitespace-nowrap hover:underline"
                 >
-                  {ROLE_LABEL[r]} <span className="tabular-nums text-zinc-500">{share(totals.roles[r], totals.social)}</span>
+                  {ROLE_LABEL[r]}{' '}
+                  <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(totals.roles[r], totals.social)}</span>
                 </Link>
               ))}
             </dd>
@@ -46,7 +47,7 @@ export default function MediaWritingCard({ data }: { data: MediaWriting | null }
         <dd>
           {TITLE_TAGS.map((t) => (
             <span key={t} className="mr-2 inline-block whitespace-nowrap" title={TITLE_TAG_LABEL[t].hint}>
-              {t} <span className="tabular-nums text-zinc-500">{share(totals.titleTags[t], totals.articles)}</span>
+              {t} <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(totals.titleTags[t], totals.articles)}</span>
             </span>
           ))}
         </dd>

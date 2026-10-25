@@ -67,7 +67,7 @@ export default function CrawlMarquee({ crawls }: { crawls: LiveActivity['crawls'
       {c.running && <span className={`h-1.5 w-1.5 rounded-full bg-emerald-400 ${styles.pulse}`} aria-hidden />}
       <MediaIcon rem media={c.media} title={c.mediaTitle} size={14} />
       <span className={c.failed ? 'text-rose-400' : 'text-zinc-300'}>{c.mediaTitle}</span>
-      <span className="text-zinc-500">{STAGE_LABEL[c.stage] ?? c.stage}</span>
+      <span className="text-zinc-400">{STAGE_LABEL[c.stage] ?? c.stage}</span>
       {c.failed ? <span className="text-rose-400">失敗</span> : c.inserted > 0 && <span className="text-brand-400">+{c.inserted}</span>}
     </span>
   ));

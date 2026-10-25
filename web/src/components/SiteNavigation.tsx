@@ -84,6 +84,7 @@ export default function SiteNavigation() {
                 const current = exact || href === section;
                 return (
                   <Link
+                    prefetch={false}
                     key={href}
                     href={href}
                     onClick={() => setOpen(false)}

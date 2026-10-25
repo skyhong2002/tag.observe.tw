@@ -1,0 +1,480 @@
+import { execFile, execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs';
+import { createServer } from 'node:net';
+import { loadavg } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { collectHomepageTrials, requireHomepageMedian } from '../homepage-median-probe.mjs';
+import { inventory } from '../mint-f1-artifact.js';
+export const repo = fs.realpathSync(resolve(dirname(fileURLToPath(import.meta.url)), '../..'));
+export const runtime = '/home/deck/tag-analysis-private/f1-release/simple-web-aff5c028-001/artifact';
+export const pins = Object.freeze({
+  app: 'aff5c0289c4863fedb37368b4942884ccc068d77',
+  artifactOps: '2d71092132bcb4433c1041c01563132e4a31c7c1',
+  build: 'd1LVsC3sk6p04uOyWUx5T',
+  inventory: '103b9e671f66c6fe8af530db40fb9e0e9f5b8a38c0822af30404b398e26ac9fc',
+  manifest: 'f50f8fcd1a25fc775c9261c41ecdc08cc4d973b42d92bca4ff46718a0b091914',
+});
+export const manifestPath = '/home/deck/tag-analysis-private/f1-release/simple-web-aff5c028-001/logs/prepared-artifact.json';
+export function validateRuntimeManifest(m) {
+  if (
+    m?.schema !== 'sm-direct-next-prepared-artifact-v1' ||
+    m.appSha !== pins.app ||
+    m.controlOpsSha !== pins.artifactOps ||
+    m.buildId !== pins.build ||
+    m.inventoryCanonicalSha256 !== pins.inventory ||
+    m.artifactRoot !== runtime ||
+    m.standaloneWeb !== runtime + '/web/.next/standalone/web' ||
+    m.deployEligible !== false
+  )
+    throw Error('Pinned prepared manifest identity differs');
+  return m;
+}
+export const endpoints = Object.freeze([
+  { host: '127.0.0.1', port: 18197 },
+  { host: '127.0.0.1', port: 18198 },
+  { host: '127.0.0.1', port: 18199 },
+]);
+export const budgets = Object.freeze({ 'https://tag.observe.tw/': 2, 'https://blog.observe.tw/': 6.17, 'https://youtube.observe.tw/': 2 });
+export const lockPath = '/home/deck/.local/share/tag-analysis/deploy.lock',
+  dbPath = '/home/deck/tag-analysis-private/f1-release/candidate-fixtures/db.env.json';
+export const sha = (x) => createHash('sha256').update(x).digest('hex');
+export function privateBytes(p, max = 65536) {
+  const s = fs.lstatSync(p);
+  if (
+    !s.isFile() ||
+    s.isSymbolicLink() ||
+    s.uid !== process.getuid() ||
+    s.mode & 0o077 ||
+    s.size > max ||
+    fs.realpathSync(p) !== resolve(p)
+  )
+    throw Error('Private bounded canonical input required');
+  return fs.readFileSync(p);
+}
+export function jobFor(id) {
+  if (!/^sm-batch-(?!000)[0-9]{3}$/.test(id || '')) throw Error('Fixed exclusive session namespace required');
+  return dirname(runtime) + '/local-candidate-' + id;
+}
+export const sourceNames = Object.freeze([
+  'tools/sm-local-candidate/core.mjs',
+  'tools/sm-local-candidate/runner.mjs',
+  'tools/sm-local-candidate/api.mjs',
+  'tools/sm-local-candidate/frontdoor.mjs',
+  'tools/guard-next-build.js',
+  'tools/shared-host-baseline.cjs',
+  'tools/homepage-median-probe.mjs',
+  'tools/mint-f1-artifact.js',
+  'tools/native-elf-proof.js',
+  'tools/mint-f1-candidate-plan.js',
+  'package.json',
+]);
+export function validateInput(q, now = Date.now()) {
+  const keys = [
+    'schema',
+    'reviewed',
+    'executionPermission',
+    'globalSlotAcknowledged',
+    'sessionId',
+    'controlOpsSha',
+    'expiresAtMs',
+    'runtimePins',
+    'sourceHashes',
+    'dbConfigSha256',
+    'nodePath',
+    'nodeSha256',
+    'memoryBudgetBytes',
+    'diskEstimateGiB',
+  ];
+  if (
+    !q ||
+    Object.keys(q).some((k) => !keys.includes(k)) ||
+    q.schema !== 'sm-local-anonymous-candidate-v1' ||
+    q.reviewed !== true ||
+    q.executionPermission !== true ||
+    q.globalSlotAcknowledged !== true ||
+    !/^[a-f0-9]{40}$/.test(q.controlOpsSha || '') ||
+    !Number.isFinite(q.expiresAtMs) ||
+    q.expiresAtMs - now <= 0 ||
+    q.expiresAtMs - now > 900000 ||
+    JSON.stringify(q.runtimePins) !== JSON.stringify(pins) ||
+    q.nodePath !== '/home/deck/.local/bin/node' ||
+    q.memoryBudgetBytes !== 1024 ** 3 ||
+    q.diskEstimateGiB !== 0.25 ||
+    !/^[a-f0-9]{64}$/.test(q.dbConfigSha256 || '') ||
+    !/^[a-f0-9]{64}$/.test(q.nodeSha256 || '') ||
+    !q.sourceHashes ||
+    Object.keys(q.sourceHashes).length !== sourceNames.length ||
+    sourceNames.some((n) => !/^[a-f0-9]{64}$/.test(q.sourceHashes[n] || ''))
+  )
+    throw Error('Separately reviewed fixed SM candidate admission required');
+  jobFor(q.sessionId);
+  return q;
+}
+export function verifyControl(
+  q,
+  run = (args) =>
+    execFileSync('/usr/bin/git', args, { cwd: repo, env: { PATH: '/usr/bin:/bin', LANG: 'C' }, timeout: 5000, maxBuffer: 1048576 }),
+  read = (p) => fs.readFileSync(p),
+) {
+  if (
+    Buffer.from(run(['rev-parse', 'HEAD']))
+      .toString()
+      .trim() !== q.controlOpsSha ||
+    Buffer.from(run(['status', '--porcelain', '--untracked-files=all']))
+      .toString()
+      .trim()
+  )
+    throw Error('Exact fully clean control commit required');
+  for (const n of sourceNames) {
+    const p = join(repo, n);
+    if (
+      fs.realpathSync(p) !== p ||
+      sha(read(p)) !== q.sourceHashes[n] ||
+      sha(run(['show', q.controlOpsSha + ':' + n])) !== q.sourceHashes[n]
+    )
+      throw Error('Fixed source Git blob differs');
+  }
+  return true;
+}
+export function verifyRuntime() {
+  if (fs.realpathSync(runtime) !== runtime) throw Error('Canonical runtime required');
+  const raw = privateBytes(manifestPath, 16 * 1024 ** 2);
+  if (sha(raw) !== pins.manifest || sha(JSON.stringify(inventory(runtime))) !== pins.inventory)
+    throw Error('Whole runtime original inventory differs');
+  const m = JSON.parse(raw);
+  validateRuntimeManifest(m);
+  const commit = fs.readFileSync(join(runtime, 'COMMIT'), 'utf8').trim();
+  if (commit !== pins.app) throw Error('Physical COMMIT differs');
+  if (JSON.parse(fs.readFileSync(join(runtime, 'web/.next/standalone/web/node_modules/next/package.json'), 'utf8')).version !== '16.3.6')
+    throw Error('Pinned actual Next version differs');
+  const build = fs.readFileSync(join(runtime, 'web/.next/BUILD_ID'), 'utf8').trim();
+  if (build !== pins.build || fs.readFileSync(join(runtime, 'web/.next/standalone/web/.next/BUILD_ID'), 'utf8').trim() !== pins.build)
+    throw Error('Physical BUILD_ID differs');
+  return {
+    manifestSha256: sha(raw),
+    inventorySha256: pins.inventory,
+    physicalBuildId: build,
+    physicalCommitSha256: sha(fs.readFileSync(join(runtime, 'COMMIT'))),
+  };
+}
+export function ticks(pid) {
+  const raw = fs.readFileSync('/proc/' + pid + '/stat', 'utf8');
+  return raw
+    .slice(raw.lastIndexOf(')') + 1)
+    .trim()
+    .split(/\s+/)[19];
+}
+export const nextTitle = 'next-server (v16.3.6)';
+export function readChildIdentity(pid, io = fs) {
+  const folder = '/proc/' + pid;
+  const stat = io.readFileSync(folder + '/stat', 'utf8');
+  const split = (raw) => {
+    const end = raw.lastIndexOf(')'),
+      fields = raw
+        .slice(end + 1)
+        .trim()
+        .split(/\s+/);
+    return {
+      pid: Number(raw.slice(0, raw.indexOf('(')).trim()),
+      startTicks: fields[19],
+      parentPid: Number(fields[1]),
+      processGroup: Number(fields[2]),
+    };
+  };
+  const first = split(stat),
+    uid = io.readFileSync(folder + '/status', 'utf8').match(/^Uid:\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/m);
+  if (!uid) throw Error('Actual child UID metadata required');
+  const observed = {
+    ...first,
+    uids: uid.slice(1).map(Number),
+    exe: io.realpathSync(folder + '/exe'),
+    cwd: io.realpathSync(folder + '/cwd'),
+    argv: io
+      .readFileSync(folder + '/cmdline')
+      .toString()
+      .split('\0')
+      .filter(Boolean),
+  };
+  const last = split(io.readFileSync(folder + '/stat', 'utf8'));
+  if (Object.keys(first).some((key) => first[key] !== last[key])) throw Error('Child changed while reading stable identity');
+  return observed;
+}
+export function stableChildIdentity(owner, observed = readChildIdentity(owner.pid)) {
+  return (
+    Number.isInteger(owner.pid) &&
+    owner.pid > 0 &&
+    observed.pid === owner.pid &&
+    typeof owner.startTicks === 'string' &&
+    observed.startTicks === owner.startTicks &&
+    Number.isInteger(owner.uid) &&
+    observed.uids?.length === 4 &&
+    observed.uids.every((uid) => uid === owner.uid) &&
+    Number.isInteger(owner.parentPid) &&
+    owner.parentPid > 0 &&
+    observed.parentPid === owner.parentPid &&
+    Number.isInteger(owner.processGroup) &&
+    owner.processGroup > 0 &&
+    observed.processGroup === owner.processGroup &&
+    typeof owner.exe === 'string' &&
+    owner.exe.startsWith('/') &&
+    observed.exe === owner.exe &&
+    typeof owner.cwd === 'string' &&
+    owner.cwd.startsWith('/') &&
+    observed.cwd === owner.cwd
+  );
+}
+export function ownIdentity(owner, observed = readChildIdentity(owner.pid)) {
+  if (!stableChildIdentity(owner, observed) || !Array.isArray(owner.expectedArgs) || !owner.expectedArgs.length) return false;
+  const exactArgv = JSON.stringify(observed.argv) === JSON.stringify(owner.expectedArgs);
+  const exactNextTitle =
+    owner.name === 'next' &&
+    owner.cwd === join(runtime, 'web/.next/standalone/web') &&
+    owner.expectedArgs.length === 2 &&
+    owner.expectedArgs[1] === join(owner.cwd, 'server.js') &&
+    observed.argv?.length === 1 &&
+    observed.argv[0] === nextTitle;
+  return exactArgv || exactNextTitle;
+}
+export function assertLock(pid) {
+  const s = fs.lstatSync(lockPath);
+  if (!s.isFile() || s.isSymbolicLink()) throw Error('Provisioned lock required');
+  const dev = BigInt(s.dev),
+    major = Number(((dev >> 8n) & 0xfffn) | ((dev >> 32n) & ~0xfffn)),
+    minor = Number((dev & 0xffn) | ((dev >> 12n) & ~0xffn));
+  if (
+    !fs
+      .readFileSync('/proc/locks', 'utf8')
+      .split('\n')
+      .some((l) => {
+        const f = l.trim().split(/\s+/),
+          d = f[5]?.split(':');
+        return (
+          f[1] === 'FLOCK' &&
+          f[3] === 'WRITE' &&
+          f[4] === String(pid) &&
+          d?.length === 3 &&
+          parseInt(d[0], 16) === major &&
+          parseInt(d[1], 16) === minor &&
+          d[2] === String(s.ino)
+        );
+      })
+  )
+    throw Error('Actual own kernel FLOCK required');
+}
+export async function checkPorts(create = createServer) {
+  for (const e of endpoints)
+    await new Promise((done, fail) => {
+      const s = create();
+      s.once('error', fail);
+      s.listen(e.port, e.host, () => s.close((x) => (x ? fail(x) : done())));
+    });
+}
+export function assertListener(owner, e) {
+  if (!ownIdentity(owner)) throw Error('Own PID identity changed');
+  const links = fs.readdirSync('/proc/' + owner.pid + '/fd').map((n) => {
+    try {
+      return fs.readlinkSync('/proc/' + owner.pid + '/fd/' + n);
+    } catch (x) {
+      if (['ENOENT', 'ESRCH'].includes(x.code)) return '';
+      throw x;
+    }
+  });
+  const exact = '0100007F:' + e.port.toString(16).toUpperCase();
+  const row = fs
+    .readFileSync('/proc/net/tcp', 'utf8')
+    .split('\n')
+    .find((l) => {
+      const f = l.trim().split(/\s+/);
+      return f[1] === exact && f[3] === '0A' && Number(f[7]) === process.getuid() && links.includes('socket:[' + f[9] + ']');
+    });
+  if (!row) throw Error('Exact own loopback listener required');
+  return row.trim().split(/\s+/)[9];
+}
+export function countLocal(group = 0) {
+  let builds = 0,
+    browsers = 0,
+    rss = 0;
+  for (const name of fs.readdirSync('/proc')) {
+    if (!/^\d+$/.test(name)) continue;
+    try {
+      const args = fs.readFileSync('/proc/' + name + '/cmdline', 'utf8').split('\0'),
+        names = args.map((x) => x.split('/').pop());
+      const stat = fs
+        .readFileSync('/proc/' + name + '/stat', 'utf8')
+        .split(')')
+        .slice(1)
+        .join(')')
+        .trim()
+        .split(/\s+/);
+      if (Number(stat[2]) === group) {
+        const text = fs.readFileSync('/proc/' + name + '/status', 'utf8');
+        rss += Number(text.match(/^VmRSS:\s+(\d+)/m)?.[1] || 0) * 1024;
+      }
+      if (
+        (names.some((n) => ['next', 'next.js', 'npm', 'npm-cli.js'].includes(n)) && args.includes('build')) ||
+        (names.some((n) => ['docker', 'buildctl', 'buildkitd'].includes(n)) &&
+          args.some((a) => ['build', 'buildx', 'buildkitd'].includes(a)))
+      )
+        builds++;
+      if (
+        ['chrome', 'chromium', 'chromium-browser', 'headless_shell', 'chrome-headless-shell'].includes(names[0]) &&
+        !args.some((a) => a.startsWith('--type='))
+      )
+        browsers++;
+    } catch (e) {
+      if (!['ENOENT', 'ESRCH'].includes(e.code)) throw e;
+    }
+  }
+  return { builds, browsers, rss };
+}
+export function validateGate(s, { starting = false } = {}) {
+  if (!Array.isArray(s?.sites) || s.sites.length !== 3 || new Set(s.sites.map((r) => r.url)).size !== 3)
+    throw Error('Exact three actual site observations required');
+  if (
+    s.load1 > 12 ||
+    s.load1 < 0 ||
+    !Number.isFinite(s.load1) ||
+    !Number.isFinite(s.homeAvailableBytes) ||
+    s.homeAvailableBytes < (starting ? 40 : 30) * 1024 ** 3 ||
+    !Number.isFinite(s.memAvailableBytes) ||
+    s.memAvailableBytes < (starting ? 2 : 1) * 1024 ** 3 ||
+    !Number.isInteger(s.counts.builds) ||
+    s.counts.builds < 0 ||
+    s.counts.builds > 1 ||
+    !Number.isInteger(s.counts.browsers) ||
+    s.counts.browsers < 0 ||
+    s.counts.browsers > 2 ||
+    !Number.isFinite(s.counts.rss) ||
+    s.counts.rss < 0 ||
+    s.counts.rss > 1024 ** 3
+  )
+    throw Error('Actual local resource budget failed');
+  for (const [url, cap] of Object.entries(budgets)) {
+    const row = s.sites.find((r) => r.url === url);
+    requireHomepageMedian(row, cap, { startedAtMs: s.healthStartedAtMs, endedAtMs: s.healthFinishedAtMs });
+  }
+  return s;
+}
+const execute = promisify(execFile);
+let seq = 0;
+export async function sample(job, { starting = false, group = 0, executeProbe = execute, health, now = Date.now } = {}) {
+  const healthStartedAtMs = health?.startedAtMs ?? now();
+  const sites = health
+    ? health.sites
+    : await collectHomepageTrials({
+        urls: Object.keys(budgets),
+        executeCommand: executeProbe,
+        now,
+        record: (entry) =>
+          fs.writeFileSync(
+            join(job, 'site-' + process.pid + '-' + ++seq + '.' + (entry.type === 'homepage-trial-raw' ? 'raw' : 'decoded') + '.json'),
+            JSON.stringify(entry) + '\n',
+            { flag: 'wx', mode: 0o600 },
+          ),
+      });
+  const disk = fs.statfsSync('/home'),
+    mem = fs.readFileSync('/proc/meminfo', 'utf8').match(/^MemAvailable:\s+(\d+)\s+kB$/m);
+  const s = {
+    healthStartedAtMs,
+    healthFinishedAtMs: health?.finishedAtMs ?? now(),
+    observedAtMs: now(),
+    load1: loadavg()[0],
+    homeAvailableBytes: Number(disk.bavail) * Number(disk.bsize),
+    memAvailableBytes: mem ? Number(mem[1]) * 1024 : NaN,
+    counts: countLocal(group),
+    sites,
+  };
+  return validateGate(s, { starting });
+}
+export function validateHealthCache(h, { inputSha256, parentPid, parentStartTicks, now = Date.now() } = {}) {
+  if (
+    h?.schema !== 'sm-f1-health-cache-v1' ||
+    h.inputSha256 !== inputSha256 ||
+    h.parentPid !== parentPid ||
+    h.parentStartTicks !== parentStartTicks ||
+    !Number.isFinite(h.startedAtMs) ||
+    !Number.isFinite(h.finishedAtMs) ||
+    h.startedAtMs > h.finishedAtMs ||
+    h.finishedAtMs > now ||
+    now - h.startedAtMs > 180000 ||
+    !Array.isArray(h.sites) ||
+    h.sites.length !== 3 ||
+    new Set(h.sites.map((s) => s.url)).size !== 3
+  )
+    throw Error('Actual bound health cache stale/mismatched');
+  for (const [url, cap] of Object.entries(budgets)) {
+    const row = h.sites.find((r) => r.url === url);
+    requireHomepageMedian(row, cap, { startedAtMs: h.startedAtMs, endedAtMs: h.finishedAtMs });
+  }
+  return h;
+}
+export function createHealthCache({ identity, sampleFresh, sampleResources, publish, now = Date.now }) {
+  let cached, pending;
+  return {
+    async get(force = false) {
+      if (pending) return pending;
+      if (force || !cached || now() - cached.startedAtMs >= 15000) {
+        pending = (async () => {
+          const actual = await sampleFresh();
+          const h = {
+            schema: 'sm-f1-health-cache-v1',
+            ...identity,
+            startedAtMs: actual.healthStartedAtMs,
+            finishedAtMs: actual.healthFinishedAtMs,
+            sites: actual.sites,
+          };
+          validateHealthCache(h, { ...identity, now: now() });
+          if (Buffer.byteLength(JSON.stringify(h) + '\n') > 65536) throw Error('Bounded private health cache exceeded');
+          const result = publish(h);
+          if (result === false || result?.then) throw Error('Synchronous private health publication required');
+          cached = h;
+          validateHealthCache(h, { ...identity, now: now() });
+          return actual;
+        })();
+        try {
+          return await pending;
+        } finally {
+          pending = undefined;
+        }
+      }
+      validateHealthCache(cached, { ...identity, now: now() });
+      const actual = await sampleResources(cached);
+      validateHealthCache(cached, { ...identity, now: now() });
+      return actual;
+    },
+  };
+}
+export async function cleanupAll(children, { signal, wait, record }) {
+  const errors = [];
+  const alive = (c) => c.exitCode === null && c.signalCode === null;
+  const log = (r) => {
+    try {
+      record(r);
+    } catch (e) {
+      errors.push(e);
+    }
+  };
+  for (const kind of ['SIGTERM', 'SIGKILL']) {
+    for (const child of children) {
+      if (!alive(child)) continue;
+      try {
+        signal(child, kind);
+        log({ event: 'own-signal', pid: child.pid, signal: kind });
+      } catch (e) {
+        errors.push(e);
+        log({ event: 'own-signal-error', pid: child.pid, error: 'identity-or-signal-failed' });
+      }
+    }
+    try {
+      await wait(kind === 'SIGTERM' ? 3000 : 2000);
+    } catch (e) {
+      errors.push(e);
+    }
+  }
+  if (children.some(alive)) errors.push(Error('Own exits unconfirmed'));
+  log({ event: 'cleanup-done', allExited: !children.some(alive) });
+  if (errors.length) throw new AggregateError(errors, 'Own candidate cleanup failed');
+}

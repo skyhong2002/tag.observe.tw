@@ -25,10 +25,21 @@ import { syncFromService, type TrafficService, trafficService } from '../media-t
  */
 export const publisherDomainsByMedia = () => {
   const skip = (media: string) => excludedMedia.has(media) || ['google_news', 'dongtaiwang'].includes(media);
+  // An outlet measured on a parent domain (tvbs.com.tw) does not also list its own news.* subdomain.
+  const overrides: Record<string, { host: string }> = trafficHosts.hosts;
+  const under = (media: string, url?: string) => {
+    const parent = overrides[media]?.host;
+    const domain = url && trafficDomain(url);
+    return Boolean(parent && domain && domain.endsWith(`.${parent}`));
+  };
   const urls: Array<[string, string | undefined]> = [
-    ...catalog.sources.map((source) => [source.media, source.websiteUrl] as [string, string | undefined]),
+    ...catalog.sources
+      .filter((source) => !under(source.media, source.websiteUrl))
+      .map((source) => [source.media, source.websiteUrl] as [string, string | undefined]),
     ...Object.entries(names.media)
-      .filter(([, entry]) => ['verified', 'retained'].includes(entry.status))
+      .filter(
+        ([media, entry]) => ['verified', 'retained'].includes(entry.status) && !under(media, (entry as { sourceUrl?: string }).sourceUrl),
+      )
       .map(([media, entry]) => [media, (entry as { sourceUrl?: string }).sourceUrl] as [string, string | undefined]),
     ...Object.entries(trafficHosts.hosts).map(([media, entry]) => [media, entry.host] as [string, string | undefined]),
   ];

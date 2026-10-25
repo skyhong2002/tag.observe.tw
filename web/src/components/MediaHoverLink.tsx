@@ -145,6 +145,7 @@ export default function MediaHoverLink({
   return (
     <>
       <Link
+        prefetch={false}
         ref={anchor}
         href={href}
         className={icon === false || /\bflex\b/.test(className ?? '') ? className : `inline-flex items-center gap-1 ${className ?? ''}`}
@@ -244,7 +245,7 @@ export default function MediaHoverLink({
               </div>
             )}
             {tapped && (
-              <Link href={href} className={styles.go} onClick={() => setOpen(false)}>
+              <Link prefetch={false} href={href} className={styles.go} onClick={() => setOpen(false)}>
                 前往{profile?.title ?? label}媒體頁 →
               </Link>
             )}

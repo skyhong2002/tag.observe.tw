@@ -15,6 +15,13 @@ export const httpDuration = new Histogram({
   buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 4, 8],
   registers: [registry],
 });
+export const mediaStatsQueryDuration = new Histogram({
+  name: 'tag_media_stats_query_seconds',
+  help: 'Successful media stats query stage duration; fixed stage labels only',
+  labelNames: ['stage'] as const,
+  buckets: [0.1, 1, 5, 15, 30, 60],
+  registers: [registry],
+});
 export const serviceRequests = new Counter({
   name: 'tag_service_requests_total',
   help: 'Requests from allowlisted observe services (app/src/service-clients.ts)',

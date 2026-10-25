@@ -32,7 +32,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
     try {
       const response = await fetch(`${API_ORIGIN}/api/v1/similarity/evidence?${evidenceQuery}`, {
         next: { revalidate: 60 },
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(13_000),
       });
       if (response.ok) evidence = (await response.json()) as SimilarityEvidence;
     } catch {
@@ -54,7 +54,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
   const hours = data?.hours ?? 168;
   return (
     <div className="space-y-5 pb-8">
-      <nav aria-label="麵包屑" className="text-xs text-zinc-500">
+      <nav aria-label="麵包屑" className="text-xs text-zinc-500 dark:text-zinc-400">
         <Link href={`/similarity/sources/?${params}`} className="hover:underline">
           關係圖 · 來源排行
         </Link>
@@ -63,7 +63,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
       </nav>
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">{name}</h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
           {node?.country ?? outletIdentity(media).country} ·{' '}
           {node?.external ? '本期僅有來源／引用資料，未收錄可比對內文' : '刊登媒體與新聞來源'}
           {data && ` · ${periodLabel(data)}`}
@@ -82,7 +82,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
         ]}
       />
       {!data ? (
-        <p role="status" className="py-8 text-zinc-500">
+        <p role="status" className="py-8 text-zinc-500 dark:text-zinc-400">
           暫時無法取得來源／引用關係，請稍後重新整理。
         </p>
       ) : (
@@ -93,9 +93,9 @@ export default async function SourceProfile({ media, query }: { media: string; q
               { label: '註明其他來源／引用', value: node?.outgoing ?? 0 },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                <dt className="text-xs text-zinc-500">{item.label}</dt>
+                <dt className="text-xs text-zinc-500 dark:text-zinc-400">{item.label}</dt>
                 <dd className="mt-2 text-2xl font-semibold tabular-nums">
-                  {item.value.toLocaleString('zh-TW')} <span className="text-xs font-normal text-zinc-500">篇</span>
+                  {item.value.toLocaleString('zh-TW')} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">篇</span>
                 </dd>
               </div>
             ))}
@@ -119,7 +119,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
                     className="text-brand-700 hover:underline dark:text-brand-400"
                   >
                     {data.nodes.find((entry) => entry.id === partner.id)?.name ?? partner.id}{' '}
-                    <span className="text-zinc-500">{partner.count} 篇</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">{partner.count} 篇</span>
                   </Link>
                 ))}
               </div>
@@ -132,12 +132,12 @@ export default async function SourceProfile({ media, query }: { media: string; q
             在關係圖查看同一期間與來源／引用方向 →
           </Link>
           {node && !evidence ? (
-            <p role="status" className="py-8 text-zinc-500">
+            <p role="status" className="py-8 text-zinc-500 dark:text-zinc-400">
               來源／引用文章暫時無法取得，請稍後重新整理。
             </p>
           ) : (
             <>
-              <p role="status" className="text-xs text-zinc-500">
+              <p role="status" className="text-xs text-zinc-500 dark:text-zinc-400">
                 {evidence?.total.toLocaleString('zh-TW') ?? 0} 則來源／引用 · 依文章刊登時間排序
               </p>
               <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -149,7 +149,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
                     if (!article) return null;
                     return (
                       <li key={item.key} className="space-y-2 py-4">
-                        <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
+                        <div className="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                           <Link
                             href={`/media/${encodeURIComponent(article.media)}/?hours=${hours}`}
                             className="text-brand-700 hover:underline dark:text-brand-400"
@@ -180,7 +180,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
                     );
                   })}
               </ul>
-              {!evidence?.items.length && <p className="py-8 text-zinc-500">這段期間沒有此方向的來源／引用。</p>}
+              {!evidence?.items.length && <p className="py-8 text-zinc-500 dark:text-zinc-400">這段期間沒有此方向的來源／引用。</p>}
               {evidence && (
                 <nav aria-label="來源／引用文章分頁" className="flex justify-between text-sm">
                   {page > 0 ? (
@@ -190,7 +190,7 @@ export default async function SourceProfile({ media, query }: { media: string; q
                   ) : (
                     <span />
                   )}
-                  <span className="py-2 text-zinc-500">第 {page + 1} 頁</span>
+                  <span className="py-2 text-zinc-500 dark:text-zinc-400">第 {page + 1} 頁</span>
                   {(page + 1) * evidence.pageSize < evidence.total ? (
                     <Link href={href(direction, page + 1)} className="py-2 text-brand-700 dark:text-brand-400">
                       下一頁 →

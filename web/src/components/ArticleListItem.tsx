@@ -7,6 +7,7 @@ import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import type { DiscoverySource } from '@/lib/article-content';
 import { clipHeadline } from '@/lib/event-presentation.mts';
+import { leftoverEntities } from '@/lib/plain-spaces';
 import { readingTitle } from '@/lib/reading.mts';
 
 interface ListArticle {
@@ -47,7 +48,7 @@ export default function ArticleListItem({
         <div className="min-w-0 flex-1">
           <h3 className="text-[15px] font-medium leading-6">
             {href ? (
-              <Link href={href} className="hover:text-brand-700 dark:hover:text-brand-400">
+              <Link prefetch={false} href={href} className="hover:text-brand-700 dark:hover:text-brand-400">
                 {title}
               </Link>
             ) : (
@@ -56,7 +57,7 @@ export default function ArticleListItem({
           </h3>
           {article.description && (
             <p className="mt-1 hidden text-xs leading-5 text-zinc-500 group-data-[summaries=true]/list:line-clamp-2 dark:text-zinc-400">
-              {article.description}
+              {leftoverEntities(article.description)}
             </p>
           )}
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
@@ -78,6 +79,7 @@ export default function ArticleListItem({
               {article.tags.slice(0, 6).map((tag) => (
                 <li key={tag}>
                   <Link
+                    prefetch={false}
                     href={`/tag/${encodeURIComponent(tag)}/`}
                     className="text-zinc-500 hover:text-brand-700 hover:underline dark:text-zinc-400 dark:hover:text-brand-400"
                   >

@@ -47,7 +47,12 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
   }
   const [media, similarity, result] = await Promise.all([
     fetchMedia().catch(() => ({})),
-    fetchSimilarity({ hours: 168 }, 0.65).catch(() => null),
+    // Only the source list needs the week's graph (2.4 MB, above Next's cache
+    // limit, so refetched); the gateway gives up on headers after 15 s.
+    Promise.race([
+      fetchSimilarity({ hours: 168 }, 0.65).catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10_000)),
+    ]),
     error ? null : searchArticles({ ...filters, limit: '30', facets: '1', ...(cursor ? { cursor } : {}) }),
   ]);
   const sources = similarity ? sourceRanking(similarity) : [];
@@ -61,7 +66,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
         action="/article/query/"
         className="grid grid-cols-1 gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-3"
       >
-        <label htmlFor="query-q" className="text-xs text-zinc-500">
+        <label htmlFor="query-q" className="text-xs text-zinc-500 dark:text-zinc-400">
           標題、摘要或標籤
           <FormSuggestInput
             id="query-q"
@@ -74,7 +79,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
             className={input}
           />
         </label>
-        <label htmlFor="query-credit" className="text-xs text-zinc-500">
+        <label htmlFor="query-credit" className="text-xs text-zinc-500 dark:text-zinc-400">
           原文署名包含
           <FormSuggestInput
             id="query-credit"
@@ -87,7 +92,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
             className={input}
           />
         </label>
-        <label htmlFor="query-media" className="text-xs text-zinc-500">
+        <label htmlFor="query-media" className="text-xs text-zinc-500 dark:text-zinc-400">
           刊登媒體
           <FormOutletPicker
             id="query-media"
@@ -99,7 +104,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
             className={input}
           />
         </label>
-        <label htmlFor="query-source" className="text-xs text-zinc-500">
+        <label htmlFor="query-source" className="text-xs text-zinc-500 dark:text-zinc-400">
           明示來源／引用
           <FormSuggestInput
             id="query-source"
@@ -112,7 +117,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
             className={input}
           />
         </label>
-        <label htmlFor="query-tag" className="text-xs text-zinc-500">
+        <label htmlFor="query-tag" className="text-xs text-zinc-500 dark:text-zinc-400">
           完整標籤
           <FormSuggestInput
             id="query-tag"
@@ -125,11 +130,11 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
             className={input}
           />
         </label>
-        <label className="text-xs text-zinc-500">
+        <label className="text-xs text-zinc-500 dark:text-zinc-400">
           原站分類（完整名稱）
           <input name="section" defaultValue={sp.section} maxLength={64} placeholder="例如：政治" className={input} />
         </label>
-        <label className="text-xs text-zinc-500">
+        <label className="text-xs text-zinc-500 dark:text-zinc-400">
           最近期間
           <select name="days" defaultValue={String(days)} className={input}>
             {[1, 3, 7, 31].map((value) => (
@@ -139,22 +144,22 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
             ))}
           </select>
         </label>
-        <label className="text-xs text-zinc-500">
+        <label className="text-xs text-zinc-500 dark:text-zinc-400">
           開始日期（台北時間）
           <input type="date" name="from" defaultValue={sp.from} className={input} />
         </label>
-        <label className="text-xs text-zinc-500">
+        <label className="text-xs text-zinc-500 dark:text-zinc-400">
           結束日期（含當日）
           <input type="date" name="to" defaultValue={sp.to} className={input} />
         </label>
-        <div className="flex items-center gap-4 sm:col-span-2 lg:col-span-3">
-          <button type="submit" className="min-h-10 rounded-lg bg-brand-700 px-5 text-sm font-medium text-white">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:col-span-2 lg:col-span-3">
+          <button type="submit" className="min-h-10 shrink-0 whitespace-nowrap rounded-lg bg-brand-700 px-5 text-sm font-medium text-white">
             查詢文章
           </button>
-          <Link href="/article/query/" className="text-sm text-brand-700 hover:underline dark:text-brand-400">
+          <Link href="/article/query/" className="shrink-0 whitespace-nowrap text-sm text-brand-700 hover:underline dark:text-brand-400">
             清除條件
           </Link>
-          <span className="text-xs text-zinc-500">指定日期時取代最近期間，最多 31 天。</span>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">指定日期時取代最近期間，最多 31 天。</span>
         </div>
       </form>
       {error ? (
@@ -162,12 +167,12 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
           {error}
         </p>
       ) : !result ? (
-        <p role="status" className="py-8 text-zinc-500">
+        <p role="status" className="py-8 text-zinc-500 dark:text-zinc-400">
           暫時無法取得查詢結果，請確認來源代碼、媒體與日期範圍後再試。
         </p>
       ) : (
         <>
-          <p role="status" className="text-sm text-zinc-500">
+          <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400">
             符合 {result.facets?.total.toLocaleString('zh-TW') ?? '—'} 篇文章 · 依刊登時間排序
           </p>
           <ArticleList page={result} empty="沒有符合這組條件的文章。" />

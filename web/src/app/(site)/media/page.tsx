@@ -175,7 +175,7 @@ function SevenDayCell({ value, since, partial }: { value: number; since: string 
     : null;
   return (
     <td
-      className={`${table.num} whitespace-nowrap ${partial ? 'text-zinc-500 dark:text-zinc-500' : 'text-zinc-600'}`}
+      className={`${table.num} whitespace-nowrap ${partial ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-600 dark:text-zinc-300'}`}
       title={partial && md ? `新系統 ${md} 才開始抓這家媒體，還不滿 7 天` : undefined}
     >
       {value.toLocaleString()}
@@ -187,9 +187,9 @@ function SevenDayCell({ value, since, partial }: { value: number; since: string 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-xs text-zinc-600">{label}</div>
+      <div className="text-xs text-zinc-600 dark:text-zinc-400">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
-      {note && <div className="mt-1 text-xs text-zinc-600">{note}</div>}
+      {note && <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{note}</div>}
     </div>
   );
 }
@@ -208,7 +208,7 @@ export default async function MediaStatsPage({
     return (
       <>
         <SectionTabs here="/media/" />
-        <p className="text-zinc-600">媒體統計目前無法取得。</p>
+        <p className="text-zinc-600 dark:text-zinc-400">媒體統計目前無法取得。</p>
       </>
     );
   const data = (await res.json()) as Stats;
@@ -283,7 +283,7 @@ export default async function MediaStatsPage({
       <SectionTabs here="/media/" />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">媒體與文章數</h1>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           更新於 {taipei(data.generatedAt)} · <MethodLink />
         </p>
       </div>
@@ -345,7 +345,7 @@ export default async function MediaStatsPage({
       </div>
       <TableScroller card label="媒體與文章數表格，可左右捲動">
         <table className="w-full min-w-[60rem] text-sm">
-          <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950">
+          <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
             <tr>
               <Th col="name" label="媒體" className={table.leadHead} />
               <Th col="scope" label="範圍" />
@@ -399,7 +399,7 @@ export default async function MediaStatsPage({
                   {campBadge(r) ? (
                     <span className={campChip[r.camp as keyof typeof campChip]}>{campBadge(r)?.short}</span>
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
                   )}
                 </td>
                 <td className={table.num}>{r.today.toLocaleString()}</td>
@@ -420,11 +420,14 @@ export default async function MediaStatsPage({
                   </div>
                 </td>
                 <SevenDayCell value={r.last7d} since={r.collectingSince} partial={partialWeek(r)} />
-                <td className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500' : ''}`} title={r.readers?.title}>
+                <td
+                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                  title={r.readers?.title}
+                >
                   {r.readers ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.visits)}` : '—'}
                 </td>
                 <td
-                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500' : ''}`}
+                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
                   title={r.readers?.perArticle?.title ?? r.readers?.perArticleNote}
                 >
                   {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
@@ -440,13 +443,15 @@ export default async function MediaStatsPage({
                       ))}
                     </span>
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
                   )}
                 </td>
                 <td className={`${table.cell} whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
-                <td className={`${table.num} text-zinc-600`}>{pct(r.taggedShare24h)}</td>
-                <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600`}>{r.lastArticle ? taipei(r.lastArticle) : '—'}</td>
-                <td className={`${table.cell} whitespace-nowrap text-zinc-600`}>{scheduleLabel(r.schedule)}</td>
+                <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{pct(r.taggedShare24h)}</td>
+                <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400`}>
+                  {r.lastArticle ? taipei(r.lastArticle) : '—'}
+                </td>
+                <td className={`${table.cell} whitespace-nowrap text-zinc-600 dark:text-zinc-400`}>{scheduleLabel(r.schedule)}</td>
                 <td className={table.cell}>
                   <StatusBadge status={r.status} />
                 </td>

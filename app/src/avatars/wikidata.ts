@@ -87,7 +87,7 @@ export async function findPerson(tag: string): Promise<Person | null> {
   const hits = search.search.filter((h) => h.match.text === tag);
   if (!hits.length) return null;
   const top = search.search[0].id;
-  const found = await entities([...new Set([top, ...hits.map((h) => h.id)])], 'labels|descriptions|claims|sitelinks');
+  const found = await entities([...new Set([top, ...hits.map((h) => h.id)])], 'labels|descriptions|aliases|claims|sitelinks');
   const links = (q: Entity) => Object.keys(q.sitelinks ?? {}).length;
   const items = hits.map((h) => found[h.id]).filter(Boolean);
   const isHuman = (q: Entity) => ids(q.claims?.P31).includes(HUMAN);
@@ -128,6 +128,12 @@ export async function findPerson(tag: string): Promise<Person | null> {
         .sort((a, b) => Number(b.current) - Number(a.current) || b.start.localeCompare(a.start))
         .filter((p) => !seen.has(p.id) && seen.add(p.id))
         .map((p) => ({ label: name(p.id), current: p.current })),
+      // Chinese names other than the tag (柯P for 柯文哲): candidates for an alias.
+      aliases: [
+        ...new Set(
+          ['zh-tw', 'zh-hant', 'zh'].flatMap((l) => (e.aliases?.[l] ?? []).map((a) => a.value.trim())).filter((a) => a && a !== tag),
+        ),
+      ].slice(0, 12),
     },
     photos: strings(c.P18),
     categories: strings(c.P373),

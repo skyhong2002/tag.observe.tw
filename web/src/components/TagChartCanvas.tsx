@@ -205,6 +205,19 @@ export default function TagChart({ initial }: { initial: TagSeries }) {
         },
       ],
     });
+    const applyLabelColour = () => {
+      if (!ref.current) return;
+      const color = getComputedStyle(ref.current).color;
+      chart.setOption({
+        legend: { textStyle: { color }, inactiveColor: color, pageTextStyle: { color } },
+        xAxis: { axisLabel: { color }, nameTextStyle: { color } },
+        yAxis: [0, 1, 2].map(() => ({ axisLabel: { color }, nameTextStyle: { color } })),
+      });
+    };
+    applyLabelColour();
+    const themeObserver = new MutationObserver(applyLabelColour);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => themeObserver.disconnect();
   }, [data]);
 
   const label = (index: number) => {
@@ -245,7 +258,7 @@ export default function TagChart({ initial }: { initial: TagSeries }) {
           >
             {loading ? '載入中…' : error ? '重試載入' : data.hasMore || range.start > 0 ? '← 更早' : '已到資料起點'}
           </button>
-          <span className="whitespace-nowrap tabular-nums text-zinc-500">
+          <span className="whitespace-nowrap tabular-nums text-zinc-500 dark:text-zinc-400">
             {label(range.start)} — {label(range.end)}
           </span>
         </div>
@@ -263,7 +276,7 @@ export default function TagChart({ initial }: { initial: TagSeries }) {
           歷史資料載入失敗，請點「重試載入」。
         </p>
       )}
-      <div ref={ref} className="h-80 w-full" role="img" aria-label="每小時新聞篇數與 24 小時移動平均" />
+      <div ref={ref} className="tag-trend-chart h-80 w-full" role="img" aria-label="每小時新聞篇數與 24 小時移動平均" />
     </section>
   );
 }

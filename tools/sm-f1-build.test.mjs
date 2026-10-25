@@ -1,0 +1,451 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import test from 'node:test';
+import baseline from './shared-host-baseline.cjs';
+import {
+  buildSample,
+  commandPlan,
+  compareCopiedDependencies,
+  deriveBuildAdmission,
+  environment,
+  nodePath,
+  paths,
+  prepare,
+  preserveCopiedDirectoryModes,
+  requireReadiness,
+  runStages,
+  sourceNames,
+  sourceRoot,
+  stagePhase,
+  template,
+  validateAdmission,
+  verifyOwner,
+  verifySources,
+} from './sm-f1-build.mjs';
+import { pins } from './sm-local-candidate/core.mjs';
+import { homepageSiteFixture } from './test-fixtures/homepage-probe.mjs';
+
+const NOW = 1000000,
+  GiB = 1024 ** 3,
+  hash = (x) => createHash('sha256').update(x).digest('hex');
+function input() {
+  const q = {
+    ...template(),
+    reviewed: true,
+    executionPermission: true,
+    globalBuildSlotAcknowledged: true,
+    sharedApiOwnerApproved: true,
+    authorizationReference: 'e'.repeat(64),
+    authorizedAtMs: NOW - 1000,
+    expiresAtMs: NOW + 600000,
+    appSha: 'a'.repeat(40),
+    controlOpsSha: 'b'.repeat(40),
+    originMainSha: 'c'.repeat(40),
+    appTreeSha: 'd'.repeat(40),
+    nodeSha256: 'f'.repeat(64),
+    sessionId: 'aa-aaaaaaaa-005',
+    estimatedDiskGiB: 6,
+    sourceHashes: Object.fromEntries(sourceNames.map((n) => [n, hash(n)])),
+    apiOwner: {
+      sessionId: 'api-only-aa-aaaaaaaa-005',
+      controlOpsSha: 'b'.repeat(40),
+      startedReceiptPath: '/home/deck/tag-analysis-private/f1-release/api-only-aa-aaaaaaaa-005/api-started.json',
+      startedReceiptSha256: '2'.repeat(64),
+      inputSha256: '3'.repeat(64),
+      parentPid: 11,
+      parentStartTicks: '111',
+      parentCmdlineSha256: '4'.repeat(64),
+      lockPid: 12,
+      lockStartTicks: '122',
+      lockDev: '5',
+      lockIno: '6',
+    },
+  };
+  return q;
+}
+function health(q) {
+  return {
+    schema: 'sm-f1-health-cache-v1',
+    inputSha256: q.apiOwner.inputSha256,
+    parentPid: 11,
+    parentStartTicks: '111',
+    startedAtMs: NOW,
+    finishedAtMs: NOW,
+    sites: Object.keys(baseline.siteBudgetsSeconds).map((u) => homepageSiteFixture(u, [0.2, 0.2, 0.2], { startedAtMs: NOW })),
+  };
+}
+function mapping(q) {
+  return { loadedApiAppSha: pins.app, newWebAppSha: q.appSha, appTreeSha: q.appTreeSha };
+}
+function readiness() {
+  return {
+    scope: 'sm-real-isolated-fixture-anonymous',
+    appSha: pins.app,
+    inventorySha256: pins.inventory,
+    productionFallback: false,
+    queueEnabled: false,
+    apiOrigin: 'http://127.0.0.1:18197',
+    databaseName: 'tag_f1_semantic_test',
+    serverVersion: '11.4.5-MariaDB',
+    actors: [701, 702, 703],
+  };
+}
+function resources() {
+  return {
+    resourceObservedAtMs: NOW,
+    load1: 2,
+    availableBytes: 50 * GiB,
+    memoryAvailableBytes: 4 * GiB,
+    localBuildRoots: 0,
+    localBrowserRoots: 0,
+    ownRssBytes: 0,
+  };
+}
+function ownerFixture(q) {
+  return {
+    receipt: {
+      inputSha256: q.apiOwner.inputSha256,
+      controlOpsSha: q.apiOwner.controlOpsSha,
+      sessionId: q.apiOwner.sessionId,
+      plannedStopAtMs: q.expiresAtMs + 60000,
+    },
+    launch: {
+      parentPid: 11,
+      parentStartTicks: '111',
+      parentCmdlineSha256: q.apiOwner.parentCmdlineSha256,
+      lockPid: 12,
+      lockStartTicks: '122',
+      inputSha256: q.apiOwner.inputSha256,
+    },
+    lease: health(q),
+    lock: { dev: 5, ino: 6, uid: process.getuid() },
+    now: NOW,
+  };
+}
+test('new permission scope is explicit and cannot reuse historical admission or arbitrary source/path', () => {
+  const q = input();
+  validateAdmission(q, NOW);
+  assert.throws(() => validateAdmission(template(), NOW));
+  for (const patch of [
+    { sharedApiOwnerApproved: false },
+    { globalBuildSlotAcknowledged: false },
+    { authorizationReference: null },
+    { expiresAtMs: NOW },
+    { appSha: pins.app },
+    { sourceHashes: {} },
+    { sessionId: '../../old' },
+  ])
+    assert.throws(() => validateAdmission({ ...q, ...patch }, NOW));
+  assert.throws(() => validateAdmission({ ...q, apiOwner: { ...q.apiOwner, startedReceiptPath: '/formal' } }, NOW));
+});
+test('specific owner lock/dev/inode/input/lease/deadline changes fail without adopting another holder', () => {
+  const q = input(),
+    proof = ownerFixture(q);
+  verifyOwner(q, proof);
+  for (const patch of [
+    { launch: { ...proof.launch, lockPid: 999 } },
+    { lock: { ...proof.lock, ino: 9 } },
+    { launch: { ...proof.launch, parentStartTicks: '222' } },
+    { receipt: { ...proof.receipt, plannedStopAtMs: q.expiresAtMs + 59999 } },
+    { lease: { ...proof.lease, inputSha256: '0'.repeat(64) } },
+    { now: NOW + 30001 },
+  ])
+    assert.throws(() => verifyOwner(q, { ...proof, ...patch }));
+});
+test('mapped loaded APP677 readiness is mandatory and never relabeled as new APP', () => {
+  requireReadiness(readiness());
+  for (const patch of [
+    { appSha: input().appSha },
+    { apiOrigin: 'https://tag.observe.tw' },
+    { databaseName: 'tag-db' },
+    { productionFallback: true },
+    { queueEnabled: true },
+  ])
+    assert.throws(() => requireReadiness({ ...readiness(), ...patch }));
+});
+test('whole stage plan uses sibling HOME/private logs and copies dependency trees instead of npm', () => {
+  const q = input(),
+    p = paths(q),
+    env = environment(q),
+    commands = commandPlan(q);
+  assert.equal(env.HOME, p.home);
+  assert.ok(!env.HOME.startsWith(p.artifact + '/'));
+  assert.equal(env.TAG_API_ORIGIN, 'http://127.0.0.1:18197');
+  assert.deepEqual(
+    commands.map((c) => c[0]),
+    ['/usr/bin/git', '/usr/bin/tar', 'copy-dependencies', nodePath],
+  );
+  assert.equal(commands[0][1][3], q.appSha);
+  assert.deepEqual(commands[2][1], ['node_modules', 'web/node_modules']);
+});
+test('copied native/dependency bindings include bytes/modes/relative symlink targets; mutation rejects', () => {
+  const rows = [
+    { path: 'node_modules', type: 'directory', mode: 448 },
+    { path: 'node_modules/a.node', type: 'file', sha256: 'a', mode: 420 },
+    { path: 'web/node_modules/.bin/x', type: 'symlink', target: '../x', targetSha256: 'b' },
+    { path: 'web/src/page', type: 'file', sha256: 'irrelevant' },
+  ];
+  compareCopiedDependencies(rows, rows);
+  for (const changed of [
+    { ...rows[1], sha256: 'bad' },
+    { ...rows[1], mode: 511 },
+    { ...rows[2], target: '../../old' },
+  ]) {
+    const after = rows.map((r) => (r.path === changed.path ? changed : r));
+    assert.throws(() => compareCopiedDependencies(rows, after));
+  }
+});
+test('memory/RSS/disk/load/slots/median errors remain failclosed while original API health is fresh', () => {
+  const q = input(),
+    h = health(q);
+  assert.equal(buildSample(q, h, resources(), { starting: true, now: NOW }).probeError, undefined);
+  for (const r of [
+    { memoryAvailableBytes: 2 * GiB },
+    { availableBytes: 39 * GiB },
+    { load1: 13 },
+    { localBuildRoots: 1 },
+    { localBrowserRoots: 3 },
+    { localBuildRoots: undefined },
+  ])
+    assert.ok(buildSample(q, h, { ...resources(), ...r }, { starting: true, now: NOW }).probeError);
+  assert.ok(buildSample(q, h, resources(), { now: NOW, ownRssBytes: 2 * GiB + 1 }).probeError);
+  assert.throws(() => buildSample(q, { ...h, startedAtMs: NOW - 30001 }, resources(), { now: NOW }));
+  const u = Object.keys(baseline.siteBudgetsSeconds)[0];
+  assert.throws(() =>
+    buildSample(
+      q,
+      {
+        ...h,
+        sites: h.sites.map((x) =>
+          x.url === u ? homepageSiteFixture(u, [0.2, 0.2, 0.2], { startedAtMs: NOW, patches: [{ status: 500 }] }) : x,
+        ),
+      },
+      resources(),
+      { now: NOW },
+    ),
+  );
+});
+test('actual commit/blob/app-tree/dependency/config mapping refuses dirty, ahead origin or unequal loaded API', () => {
+  const q = input();
+  const run = (args) => {
+    if (args[0] === 'merge-base') return '';
+    if (args[0] === 'status') return '';
+    if (args[0] === 'rev-parse') return args[1] === 'HEAD' ? q.controlOpsSha : args[1] === 'origin/main' ? q.originMainSha : q.appTreeSha;
+    const name = args[1].split(':').slice(1).join(':');
+    if (name === 'web/next.config.ts') return 'cpus: 2, staticGenerationMaxConcurrency: 1,';
+    return sourceNames.includes(name) ? name : 'identical-package';
+  };
+  const read = (p) => p.slice(sourceRoot.length + 1);
+  assert.deepEqual(verifySources(q, { run, read }).loadedApiAppSha, pins.app);
+  for (const kind of ['dirty', 'head', 'origin', 'blob', 'tree', 'package', 'config']) {
+    const bad = (args) => {
+      if (kind === 'dirty' && args[0] === 'status') return ' M changed';
+      if (kind === 'head' && args[1] === 'HEAD') return 'bad';
+      if (kind === 'origin' && args[1] === 'origin/main') return 'bad';
+      if (kind === 'blob' && args[0] === 'show' && args[1].endsWith(':tools/sm-f1-build.mjs')) return 'bad';
+      if (kind === 'tree' && args[1] === pins.app + ':app') return 'bad';
+      if (kind === 'package' && args[1] === pins.app + ':web/package-lock.json') return 'bad';
+      if (kind === 'config' && args[1].endsWith(':web/next.config.ts')) return 'cpus: 8,';
+      return run(args);
+    };
+    assert.throws(() => verifySources(q, { run: bad, read }));
+  }
+});
+test('copy/archive/build sequential mock failure never reaches stage finalization', async () => {
+  const q = input(),
+    events = [];
+  await runStages(q, {
+    checkpoint: async () => events.push('gate'),
+    command: async (bin) => events.push(bin),
+    copy: async (args) => events.push(args),
+    finalize: () => events.push('prepared'),
+  });
+  assert.equal(events.at(-1), 'prepared');
+  assert.equal(events.filter((x) => x === 'gate').length, 5);
+  for (const stop of ['copy', 'command']) {
+    let final = false;
+    await assert.rejects(
+      runStages(q, {
+        checkpoint: async () => {},
+        command: async () => {
+          if (stop === 'command') throw Error('mock command failed');
+        },
+        copy: async () => {
+          throw Error('mock copy failed');
+        },
+        finalize: () => {
+          final = true;
+        },
+      }),
+    );
+    assert.equal(final, false);
+  }
+});
+test('full injected guarded parent cannot publish after owner/API/expiry/guard failures or asynchronous sync proof', async () => {
+  const q = input();
+  for (const kind of ['success', 'owner', 'api', 'guard', 'async-source', 'async-reject-source', 'false-source', 'expired']) {
+    let published = 0,
+      clock = NOW;
+    const opts = {
+      now: () => clock,
+      inputPath: '/private/input',
+      inputHash: 'a'.repeat(64),
+      verifySource: () => mapping(q),
+      verifyApi: async () => readiness(),
+      owner: () => ({ lease: health(q) }),
+      resources,
+      record: () => {},
+      guard: async (g) => {
+        if (kind === 'expired') clock = q.expiresAtMs;
+        await g.probe();
+        g.record({ event: 'started', processGroup: 123 });
+        return kind === 'guard' ? 1 : 0;
+      },
+      publish: async (m) => {
+        published++;
+        return { status: 'prepared-native-pending', mapping: m, deployEligible: false };
+      },
+    };
+    if (kind === 'owner')
+      opts.owner = () => {
+        throw Error('lost owner');
+      };
+    if (kind === 'api') opts.verifyApi = async () => ({ ...readiness(), productionFallback: true });
+    if (kind === 'async-source') opts.verifySource = async () => mapping(q);
+    if (kind === 'async-reject-source') opts.verifySource = () => Promise.reject(Error('mock asynchronous source refusal'));
+    if (kind === 'false-source') opts.verifySource = () => false;
+    if (kind === 'success') {
+      const r = await prepare(q, opts);
+      assert.equal(r.deployEligible, false);
+      assert.equal(published, 1);
+    } else {
+      await assert.rejects(prepare(q, opts));
+      assert.equal(published, 0);
+    }
+  }
+});
+
+test('proposal derives only actual started/launch SHA PID and bounded deadline; no fake bindings', () => {
+  const q = input(),
+    c = q.apiOwner,
+    proposal = { ...q, schema: 'sm-f1-api-only-build-proposal-v1', apiOwner: { ...c } };
+  for (const key of [
+    'startedReceiptSha256',
+    'parentPid',
+    'parentStartTicks',
+    'parentCmdlineSha256',
+    'lockPid',
+    'lockStartTicks',
+    'lockDev',
+    'lockIno',
+  ])
+    proposal.apiOwner[key] = null;
+  const proof = ownerFixture(q),
+    r = {
+      ...proof.receipt,
+      schema: 'sm-f1-api-only-started-v1',
+      actor: 'anonymous',
+      productionDatabase: false,
+      newWebAppSha: q.appSha,
+      appTreeSha: q.appTreeSha,
+      appSha: pins.app,
+      buildId: pins.build,
+      inventorySha256: pins.inventory,
+      manifestSha256: pins.manifest,
+      plannedStopAtMs: NOW + 550000,
+      expiresAtMs: NOW + 670000,
+      origin: 'http://127.0.0.1:18197',
+      database: { host: '127.0.0.1', port: 18306, name: 'tag_f1_semantic_test' },
+      owner: { pid: 11, startTicks: '111', uid: process.getuid() },
+      api: { name: 'api', pid: 13, startTicks: '133', uid: process.getuid(), argvSha256: 'a'.repeat(64), host: '127.0.0.1', port: 18197 },
+      deployEligible: false,
+    },
+    l = { ...proof.launch, controlOpsSha: q.controlOpsSha };
+  const raw = Buffer.from(JSON.stringify(r)),
+    launch = Buffer.from(JSON.stringify(l)),
+    derived = deriveBuildAdmission(proposal, raw, launch, proof.lock, NOW);
+  assert.equal(derived.apiOwner.startedReceiptSha256, hash(raw));
+  assert.equal(derived.apiOwner.parentPid, l.parentPid);
+  assert.equal(derived.expiresAtMs, r.plannedStopAtMs - 60000);
+  assert.ok(derived.expiresAtMs <= q.expiresAtMs);
+  assert.throws(() =>
+    deriveBuildAdmission({ ...proposal, apiOwner: { ...proposal.apiOwner, parentPid: 1 } }, raw, launch, proof.lock, NOW),
+  );
+  assert.throws(() =>
+    deriveBuildAdmission(proposal, Buffer.from(JSON.stringify({ ...r, inputSha256: '0'.repeat(64) })), launch, proof.lock, NOW),
+  );
+  assert.throws(() => deriveBuildAdmission({ ...proposal, executionPermission: false }, raw, launch, proof.lock, NOW));
+  for (const patch of [
+    { newWebAppSha: 'f'.repeat(40) },
+    { appTreeSha: 'e'.repeat(40) },
+    { owner: { ...r.owner, pid: 0 } },
+    { api: { ...r.api, startTicks: 'bad' } },
+    { api: { ...r.api, uid: -1 } },
+    { owner: { ...r.owner, pid: 99 } },
+  ])
+    assert.throws(() => deriveBuildAdmission(proposal, Buffer.from(JSON.stringify({ ...r, ...patch })), launch, proof.lock, NOW));
+  assert.equal(environment(q).RAYON_NUM_THREADS, '2');
+});
+
+test('directory mode preservation only changes verified owned new directories, never source/files', () => {
+  const before = [
+      { path: 'node_modules', type: 'directory', mode: 0o775 },
+      { path: 'node_modules/a', type: 'file', mode: 0o644, sha256: 'x' },
+    ],
+    after = before.map((r) => (r.type === 'directory' ? { ...r, mode: 0o755 } : r)),
+    events = [];
+  let mode = 0o755;
+  const st = () => ({ dev: 1, ino: 2, uid: process.getuid(), mode, isDirectory: () => true, isSymbolicLink: () => false });
+  const io = {
+    realpathSync: (p) => p,
+    lstatSync: st,
+    openSync: (p) => {
+      events.push(p);
+      return 7;
+    },
+    fstatSync: st,
+    fchmodSync: (fd, m) => {
+      events.push(m);
+      mode = m;
+    },
+    closeSync: () => events.push('close'),
+  };
+  preserveCopiedDirectoryModes(before, after, '/new', { io });
+  assert.deepEqual(events, ['/new/node_modules', 0o775, 'close']);
+  assert.throws(() => preserveCopiedDirectoryModes(before, [after[0], { ...after[1], sha256: 'bad' }], '/new', { io }));
+  assert.throws(() =>
+    preserveCopiedDirectoryModes(before, after, '/new', {
+      io: { ...io, realpathSync: (p) => (p.endsWith('node_modules') ? '/foreign' : p) },
+    }),
+  );
+  assert.throws(() => preserveCopiedDirectoryModes(before, after, '/new', { io: { ...io, lstatSync: () => ({ ...st(), uid: -1 }) } }));
+});
+test('stage fixed phase errno saved before throwing and audit errors preserve primary', async () => {
+  const primary = Object.assign(Error('secret SQL'), { code: 'ENOSPC' }),
+    rows = [];
+  await assert.rejects(
+    stagePhase(
+      'copy-dependencies',
+      () => {
+        throw primary;
+      },
+      (r) => rows.push(r),
+    ),
+    (e) => e === primary,
+  );
+  assert.equal(rows[0].phase, 'copy-dependencies');
+  assert.equal(rows[0].errno, 'ENOSPC');
+  assert.equal(JSON.stringify(rows).includes('secret'), false);
+  await assert.rejects(
+    stagePhase(
+      'next-build',
+      () => {
+        throw primary;
+      },
+      () => {
+        throw Error('sink');
+      },
+    ),
+    (e) => e.cause === primary,
+  );
+});

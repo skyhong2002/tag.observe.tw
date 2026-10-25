@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeArticle } from './analyze.ts';
-import { nameMatcher, type Person, resolveTally, type Tally, tallyMentions } from './people.ts';
+import { groupRole, nameMatcher, type Person, resolveTally, type Tally, tallyMentions } from './people.ts';
 import { posterName, socialPost, stripTitle, titleTags } from './rules.ts';
 
 const pad = (lead: string) => `${lead}${'其餘內文。'.repeat(60)}`;
@@ -84,6 +84,20 @@ describe('names', () => {
     const resolved = resolveTally(tally, new Set(['邱九十']));
     expect(resolved.get('邱九十')).toMatchObject({ role: '前任公職', hits: 3, total: 4 });
     expect(resolved.has('隨後')).toBe(false);
+  });
+});
+
+describe('groupRole', () => {
+  it('keeps the role of a renamed legacy group and still reads seed labels', () => {
+    expect(groupRole([{ id: 2, label: '2024 立委' }])).toBe('公職政治');
+    expect(groupRole([{ id: 9901, label: '名嘴' }])).toBe('評論名嘴');
+    expect(
+      groupRole([
+        { id: 2, label: '2024 立委' },
+        { id: 10, label: '名嘴' },
+      ]),
+    ).toBe('評論名嘴');
+    expect(groupRole([{ id: 15, label: '議題' }])).toBeNull();
   });
 });
 

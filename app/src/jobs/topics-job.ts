@@ -658,51 +658,59 @@ export async function firstRunPerMedia(db: Db) {
 /** Latest attempt and last fully successful check are separate: failures must
  * not silently look fresh merely because old topics are still in storage. */
 export async function topicSourceChecks(db: Db, now = new Date()) {
+  // This endpoint is also used by the homepage.  Running every outlet's
+  // three status queries at once can fill the shared mysql2 queue while the
+  // crawler is refreshing sources, turning an otherwise recoverable capacity
+  // blip into a 500.  Keep the per-outlet sequence intact, but bound the
+  // number of outlets that can hold a database slot at once.
+  const gate = pLimit(2);
   const entries = await Promise.all(
-    TOPIC_RULES.map(async (rule) => {
-      const [latest] = await db
-        .select()
-        .from(crawlRuns)
-        .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic')))
-        .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
-        .limit(1);
-      // The run in progress has no per-source detail yet.
-      const [finished] =
-        latest && !latest.finishedAt
-          ? await db
-              .select()
-              .from(crawlRuns)
-              .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic'), sql`${crawlRuns.finishedAt} IS NOT NULL`))
-              .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
-              .limit(1)
-          : [latest];
-      const detail = parseTopicDetail(finished?.detail ?? null);
-      const [success] = await db
-        .select({ at: crawlRuns.finishedAt })
-        .from(crawlRuns)
-        .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic'), eq(crawlRuns.status, 'ok')))
-        .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
-        .limit(1);
-      return [
-        rule.media,
-        {
-          checkedAt: latest?.finishedAt?.toISOString() ?? null,
-          lastSuccessAt: success?.at?.toISOString() ?? null,
-          status: latest?.status ?? 'pending',
-          fetched: latest?.fetched ?? 0,
-          stale: !success?.at || +now - +success.at > 3 * 3600e3,
-          sources: detail.sources.map((s) => ({
-            url: s.url,
-            // Runs before kinds existed: the listing's current declaration.
-            kind: s.kind ?? topicListings(rule).find((l) => l.url === s.url)?.kind ?? 'auto',
-            items: s.items,
-            ...(s.pages ? { pages: s.pages } : {}),
-            ...(s.error ? { error: s.error } : {}),
-          })),
-          ...(detail.error ? { error: detail.error } : {}),
-        },
-      ] as const;
-    }),
+    TOPIC_RULES.map((rule) =>
+      gate(async () => {
+        const [latest] = await db
+          .select()
+          .from(crawlRuns)
+          .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic')))
+          .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
+          .limit(1);
+        // The run in progress has no per-source detail yet.
+        const [finished] =
+          latest && !latest.finishedAt
+            ? await db
+                .select()
+                .from(crawlRuns)
+                .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic'), sql`${crawlRuns.finishedAt} IS NOT NULL`))
+                .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
+                .limit(1)
+            : [latest];
+        const detail = parseTopicDetail(finished?.detail ?? null);
+        const [success] = await db
+          .select({ at: crawlRuns.finishedAt })
+          .from(crawlRuns)
+          .where(and(eq(crawlRuns.media, rule.media), eq(crawlRuns.stage, 'topic'), eq(crawlRuns.status, 'ok')))
+          .orderBy(desc(crawlRuns.startedAt), desc(crawlRuns.id))
+          .limit(1);
+        return [
+          rule.media,
+          {
+            checkedAt: latest?.finishedAt?.toISOString() ?? null,
+            lastSuccessAt: success?.at?.toISOString() ?? null,
+            status: latest?.status ?? 'pending',
+            fetched: latest?.fetched ?? 0,
+            stale: !success?.at || +now - +success.at > 3 * 3600e3,
+            sources: detail.sources.map((s) => ({
+              url: s.url,
+              // Runs before kinds existed: the listing's current declaration.
+              kind: s.kind ?? topicListings(rule).find((l) => l.url === s.url)?.kind ?? 'auto',
+              items: s.items,
+              ...(s.pages ? { pages: s.pages } : {}),
+              ...(s.error ? { error: s.error } : {}),
+            })),
+            ...(detail.error ? { error: detail.error } : {}),
+          },
+        ] as const;
+      }),
+    ),
   );
   return Object.fromEntries(entries);
 }

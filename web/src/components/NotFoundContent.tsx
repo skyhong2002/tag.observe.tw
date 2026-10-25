@@ -15,7 +15,7 @@ export default function NotFoundContent() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-6">
       <div className="space-y-2">
-        <p className="text-sm font-medium text-zinc-500">404</p>
+        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">404</p>
         <h1 className="text-2xl font-semibold tracking-tight">找不到這個頁面</h1>
         <p className="text-zinc-600 dark:text-zinc-400">網址可能打錯了，或這個頁面已經不存在。可以搜尋新聞，或從下面的入口繼續瀏覽。</p>
       </div>

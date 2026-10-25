@@ -17,6 +17,14 @@
       "host": "ltn.com.tw",
       "reason": "文章 61% 在 news.ltn.com.tw，其餘在 ec、ent、sports 等子網域；改量整個 ltn.com.tw（含所有子網域）"
     },
+    "tvbs": {
+      "host": "tvbs.com.tw",
+      "reason": "吉進 2026-10-22：新聞台量整個 tvbs.com.tw，與 UDN、天下、自由時報同；扣掉 www 的差距不到 10%，不刻意區分（health、woman、supertaste 另列）"
+    },
+    "ebc": {
+      "host": "ebc.net.tw",
+      "reason": "吉進 2026-10-22：東森新聞量整個 ebc.net.tw，news.ebc.net.tw 不單獨列；東森財經獨立在財經類"
+    },
     "news_sina": {
       "host": "news.sina.cn",
       "reason": "文章 81% 在 news.sina.cn；原量 news.sina.com.cn"

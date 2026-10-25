@@ -1,0 +1,340 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import baseline from './shared-host-baseline.cjs';
+import {
+  apiSourceNames,
+  apiTemplate,
+  boundedRecorder,
+  deferredApiCloser,
+  failureCause,
+  finishOwned,
+  requireApiReceipt,
+  resourceReasons,
+  validateApiInput,
+  validateApiMapping,
+  validateOwnerLease,
+} from './sm-f1-api-only.mjs';
+import { pins } from './sm-local-candidate/core.mjs';
+import { homepageSiteFixture } from './test-fixtures/homepage-probe.mjs';
+
+const NOW = 1000000,
+  GiB = 1024 ** 3;
+const input = () => ({
+  ...apiTemplate(),
+  reviewed: true,
+  executionPermission: true,
+  globalBuildSlotAcknowledged: true,
+  authorizationReference: 'a'.repeat(64),
+  authorizedAtMs: NOW - 1000,
+  expiresAtMs: NOW + 900000,
+  newWebAppSha: 'b'.repeat(40),
+  appTreeSha: 'c'.repeat(40),
+  controlOpsSha: 'd'.repeat(40),
+  nodeSha256: 'e'.repeat(64),
+  dbConfigSha256: 'f'.repeat(64),
+  sessionId: 'api-only-aa-bbbbbbbb-005',
+  sourceHashes: Object.fromEntries(apiSourceNames.map((n) => [n, '1'.repeat(64)])),
+});
+function receipt() {
+  return {
+    schema: 'sm-f1-api-only-started-v1',
+    sessionId: input().sessionId,
+    newWebAppSha: input().newWebAppSha,
+    appTreeSha: input().appTreeSha,
+    controlOpsSha: input().controlOpsSha,
+    inputSha256: '2'.repeat(64),
+    appSha: pins.app,
+    buildId: pins.build,
+    inventorySha256: pins.inventory,
+    manifestSha256: pins.manifest,
+    actor: 'anonymous',
+    productionDatabase: false,
+    origin: 'http://127.0.0.1:18197',
+    database: { host: '127.0.0.1', port: 18306, name: 'tag_f1_semantic_test' },
+    owner: { pid: 1, startTicks: '11', uid: process.getuid() },
+    api: { name: 'api', pid: 2, startTicks: '22', uid: process.getuid(), argvSha256: '3'.repeat(64), host: '127.0.0.1', port: 18197 },
+    expiresAtMs: NOW + 900000,
+    plannedStopAtMs: NOW + 780000,
+    deployEligible: false,
+  };
+}
+function lease() {
+  return {
+    schema: 'sm-f1-health-cache-v1',
+    inputSha256: '2'.repeat(64),
+    parentPid: 1,
+    parentStartTicks: '11',
+    decision: 'run',
+    startedAtMs: NOW,
+    finishedAtMs: NOW,
+    sites: Object.keys(baseline.siteBudgetsSeconds).map((u) => homepageSiteFixture(u, [0.2, 0.2, 0.2], { startedAtMs: NOW })),
+  };
+}
+test('API-only permission/job003 schema cannot reuse three-listener approval or extend original expiry', () => {
+  const q = input();
+  validateApiInput(q, NOW);
+  assert.throws(() => validateApiInput(apiTemplate(), NOW));
+  for (const patch of [
+    { schema: 'sm-local-anonymous-candidate-v1' },
+    { sessionId: 'sm-batch-008' },
+    { sessionId: 'api-only-aa-bbbbbbbb-001' },
+    { globalBuildSlotAcknowledged: false },
+    { expiresAtMs: NOW + 900001 },
+    { newWebAppSha: pins.app },
+  ])
+    assert.throws(() => validateApiInput({ ...q, ...patch }, NOW));
+  validateApiInput({ ...q, expiresAtMs: NOW + 1000 }, NOW, { starting: false });
+  assert.throws(() => validateApiInput({ ...q, expiresAtMs: NOW }, NOW, { starting: false }));
+});
+test('sole API receipt requires exact one listener and rejects old scope/source/database/deadline', () => {
+  const r = receipt(),
+    ctx = {
+      sessionId: r.sessionId,
+      controlOpsSha: r.controlOpsSha,
+      inputSha256: r.inputSha256,
+      newWebAppSha: r.newWebAppSha,
+      appTreeSha: r.appTreeSha,
+      now: NOW,
+      buildExpiresAtMs: NOW + 720000,
+    };
+  requireApiReceipt(r, ctx);
+  for (const patch of [
+    { schema: 'sm-f1-candidate-started-v1' },
+    { children: [] },
+    { origin: 'http://127.0.0.1:18199' },
+    { api: { ...r.api, port: 18198 } },
+    { database: { ...r.database, name: 'tag-db' } },
+    { actor: 'admin' },
+    { inputSha256: 'bad' },
+  ])
+    assert.throws(() => requireApiReceipt({ ...r, ...patch }, ctx));
+  assert.throws(() => requireApiReceipt(r, { ...ctx, buildExpiresAtMs: NOW + 720001 }));
+  assert.throws(() => requireApiReceipt(r, { ...ctx, newWebAppSha: undefined }));
+  assert.throws(() => requireApiReceipt(r, { ...ctx, appTreeSha: undefined }));
+});
+test('parent owns transient pause/resume; fresh paused lease never asserts health/ready and stale or wrong binding fails', () => {
+  const h = lease(),
+    ctx = { inputSha256: h.inputSha256, parentPid: 1, parentStartTicks: '11', now: NOW };
+  validateOwnerLease(h, ctx);
+  const paused = { ...h, decision: 'pause' };
+  validateOwnerLease(paused, ctx);
+  validateOwnerLease(
+    {
+      ...paused,
+      sites: h.sites.map((s, i) =>
+        i === 0 ? homepageSiteFixture(s.url, [0.2, 0.2, 0.2], { startedAtMs: NOW, patches: [{ status: 500 }] }) : s,
+      ),
+    },
+    ctx,
+  );
+  assert.throws(() =>
+    validateOwnerLease(
+      {
+        ...h,
+        decision: 'run',
+        sites: h.sites.map((s, i) =>
+          i === 0 ? homepageSiteFixture(s.url, [0.2, 0.2, 0.2], { startedAtMs: NOW, patches: [{ status: 500 }] }) : s,
+        ),
+      },
+      ctx,
+    ),
+  );
+  assert.throws(() => validateOwnerLease(paused, { ...ctx, now: NOW + 30001 }));
+  assert.throws(() => validateOwnerLease({ ...paused, parentPid: 99 }, ctx));
+});
+test('resource raw reasons include exact unchanged memory/RSS/load/disk/count limits and sink failures reject', () => {
+  const r = {
+    load1: 2,
+    availableBytes: 50 * GiB,
+    memoryAvailableBytes: 4 * GiB,
+    resourceObservedAtMs: NOW,
+    localBuildRoots: 0,
+    localBrowserRoots: 0,
+  };
+  assert.deepEqual(resourceReasons(r, { starting: true, now: NOW }), []);
+  assert.ok(resourceReasons({ ...r, memoryAvailableBytes: 2.9 * GiB }, { starting: true, now: NOW }).includes('memory'));
+  assert.ok(resourceReasons(r, { ownRssBytes: 2 * GiB + 1, now: NOW }).includes('own-rss'));
+  assert.ok(resourceReasons({ ...r, localBuildRoots: NaN }, { now: NOW }).includes('invalid-resource'));
+  const rows = [],
+    sink = boundedRecorder((n, raw) => rows.push({ n, raw }), { now: () => NOW, maxBytes: 1024 });
+  sink({ event: 'raw', resource: r });
+  assert.equal(rows.length, 1);
+  assert.throws(() => boundedRecorder(() => false)({ event: 'failed' }), /sink/);
+  assert.throws(() => boundedRecorder(() => {}, { maxBytes: 1 })({ event: 'cap' }), /cap/);
+});
+test('failure summaries keep fixed cause classes without message/SQL/env', () => {
+  assert.equal(failureCause(Error('specific owner binding failed')), 'owner-binding');
+  assert.equal(failureCause(Error('API-only original deadline')), 'deadline');
+  assert.equal(failureCause(Error('resource gate memory')), 'resource');
+  assert.equal(failureCause(Error('SELECT secret password')), 'operation');
+});
+
+test('finalization attempts all owned steps and preserves primary cause', async () => {
+  const primary = Error('primary'),
+    events = [];
+  await assert.rejects(
+    finishOwned(primary, [
+      () => {
+        events.push('close');
+        throw Error('close');
+      },
+      () => events.push('release'),
+    ]),
+    (e) => e.cause === primary && e.errors[0] === primary,
+  );
+  assert.deepEqual(events, ['close', 'release']);
+});
+test('API input mapping rejects another product/tree/control/input source pin', () => {
+  const a = input(),
+    r = receipt(),
+    q = {
+      appSha: a.newWebAppSha,
+      appTreeSha: a.appTreeSha,
+      controlOpsSha: a.controlOpsSha,
+      nodeSha256: a.nodeSha256,
+      authorizationReference: a.authorizationReference,
+      apiOwner: { sessionId: a.sessionId },
+      sourceHashes: a.sourceHashes,
+    };
+  validateApiMapping(a, q, r, NOW);
+  for (const patch of [
+    { newWebAppSha: '9'.repeat(40) },
+    { appTreeSha: '8'.repeat(40) },
+    { controlOpsSha: '7'.repeat(40) },
+    { sourceHashes: { ...a.sourceHashes, [apiSourceNames[0]]: '6'.repeat(64) } },
+  ])
+    assert.throws(() => validateApiMapping({ ...a, ...patch }, q, r, NOW));
+});
+
+test('stop before deferred API startup still closes the later acquired API exactly once', async () => {
+  let api,
+    stopped = false,
+    count = 0;
+  const close = deferredApiCloser(
+    () => api,
+    () => {
+      stopped = true;
+    },
+  );
+  await close();
+  assert.equal(stopped, true);
+  api = {
+    close: async () => {
+      count++;
+    },
+  };
+  await close();
+  await close();
+  assert.equal(count, 1);
+});
+
+test('fixture cleanup attempts every owned phase despite failures and startup retains primary', async () => {
+  const { closeFixtureOwned, rethrowFixtureStartup } = await import('./sm-local-candidate/api.mjs');
+  const names = ['scheduler-abort', 'server-connections', 'server-close', 'app-close', 'scheduler-drain', 'database-close'];
+  for (const failed of names) {
+    const events = [],
+      run = (name) => {
+        events.push(name);
+        if (name === failed) throw Error(name);
+      };
+    const resources = {
+      scheduler: { abort: () => run(names[0]), close: () => run(names[4]) },
+      server: {
+        listening: true,
+        closeAllConnections: () => run(names[1]),
+        close: (cb) => {
+          run(names[2]);
+          cb();
+        },
+      },
+      app: { close: () => run(names[3]) },
+      db: { close: () => run(names[5]) },
+    };
+    await assert.rejects(closeFixtureOwned(resources), (e) => e.cleanupPhases.includes(failed));
+    assert.deepEqual(events, names);
+  }
+  const primary = Error('startup primary'),
+    cleanup = Error('cleanup');
+  await assert.rejects(
+    rethrowFixtureStartup(primary, async () => {
+      throw cleanup;
+    }),
+    (e) => e.cause === primary && e.errors[0] === primary && e.errors[1] === cleanup,
+  );
+});
+test('RSS filters unrelated PGID before identity and refuses all own member errors/races', async () => {
+  const { ownRss, failureDiagnostic } = await import('./sm-f1-api-only.mjs');
+  const stat = (pid, group, t = '11', state = 'S') => pid + ' (node) ' + [state, '9', String(group), ...Array(16).fill('0'), t].join(' ');
+  for (const kind of [
+    'ok',
+    'identity-error',
+    'pid',
+    'group',
+    'ticks',
+    'uid',
+    'rss',
+    'gone',
+    'zombie',
+    'live-transition',
+    'terminal-transition',
+    'unknown',
+    'injected-state',
+  ]) {
+    let reads = 0,
+      touched = [],
+      ownReads = 0;
+    const io = {
+      readdirSync: () => ['1', '20', '30'],
+      readFileSync: (path) => {
+        reads++;
+        if (path === '/proc/1/stat') return stat(1, 1);
+        if (path === '/proc/30/stat') throw Object.assign(Error('gone'), { code: 'ENOENT' });
+        if (path === '/proc/20/stat') {
+          ownReads++;
+          if (kind === 'gone' && ownReads > 1) throw Object.assign(Error('gone'), { code: 'ENOENT' });
+          return stat(
+            20,
+            kind === 'group' && ownReads > 1 ? 99 : 20,
+            kind === 'ticks' && ownReads > 1 ? '12' : '11',
+            kind === 'zombie'
+              ? 'Z'
+              : kind === 'unknown'
+                ? 'Q'
+                : kind === 'injected-state'
+                  ? 'S;'
+                  : kind === 'terminal-transition' && ownReads > 1
+                    ? 'Z'
+                    : kind === 'live-transition' && ownReads > 1
+                      ? 'R'
+                      : 'S',
+          );
+        }
+        if (path === '/proc/20/status')
+          return (
+            'Uid:\t' +
+            Array(4)
+              .fill(kind === 'uid' ? 999 : process.getuid())
+              .join('\t') +
+            '\nVmRSS:\t' +
+            (kind === 'rss' ? '999999999999999999999' : '8') +
+            ' kB\n'
+          );
+        assert.fail('unrelated metadata touched');
+      },
+    };
+    const identity = (pid) => {
+      touched.push(pid);
+      if (kind === 'identity-error') throw Object.assign(Error('secret'), { code: 'EACCES', path: '/proc/20/exe' });
+      return { pid: kind === 'pid' ? 21 : 20, processGroup: 20, startTicks: '11', uids: Array(4).fill(process.getuid()) };
+    };
+    if (kind === 'ok' || kind === 'zombie' || kind === 'live-transition') {
+      assert.equal(ownRss(20, { io, identity }), kind === 'zombie' ? 0 : 8192);
+      assert.deepEqual(touched, kind === 'zombie' ? [] : [20]);
+    } else assert.throws(() => ownRss(20, { io, identity }));
+    assert.ok(reads < 10);
+  }
+  const d = failureDiagnostic(Object.assign(Error('secret SQL'), { code: 'EACCES', path: '/proc/1/exe' }), 'guard-probe');
+  assert.equal(d.errno, 'EACCES');
+  assert.equal(d.procClass, 'proc');
+  assert.equal(JSON.stringify(d).includes('secret'), false);
+});

@@ -157,7 +157,7 @@ export default function MastheadCloud({ edition }: { edition: string }) {
           </h1>
           <p className={styles.mastheadTagline}>同一件事，各家怎麼說</p>
           <p className={styles.edition}>{edition}</p>
-          <Link href={HOME_CLOUD_HREF} className={styles.mastheadCloudLink}>
+          <Link prefetch={false} href={HOME_CLOUD_HREF} className={styles.mastheadCloudLink}>
             升溫排行 →
           </Link>
         </div>

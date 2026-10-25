@@ -110,7 +110,7 @@ export default function ArticleView({
               const ofKind = collections.filter((c) => c.kind === kind);
               return ofKind.length ? (
                 <div key={kind} className="flex gap-3">
-                  <span className="shrink-0 text-zinc-500">{kindNoun(kind)}</span>
+                  <span className="shrink-0 text-zinc-500 dark:text-zinc-400">{kindNoun(kind)}</span>
                   <ul className="flex flex-wrap gap-x-4 gap-y-2">
                     {ofKind.map((collection) => (
                       <li key={collection.id}>

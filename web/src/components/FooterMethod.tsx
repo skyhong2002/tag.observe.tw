@@ -180,7 +180,7 @@ export default function FooterMethod({ notes }: { notes?: React.ReactNode }) {
         {sectionsFor(pathname)}
         {notes}
         <p>
-          <Link href={METHOD_HREF} className={inlineLink}>
+          <Link prefetch={false} href={METHOD_HREF} className={inlineLink}>
             完整的資料來源與計算方式 →
           </Link>
         </p>

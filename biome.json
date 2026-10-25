@@ -21,6 +21,11 @@
       "!docs",
       "!artifacts",
       "!package-lock.json",
+      "!tools/f1-privacy",
+      "!tools/mint-capture",
+      "!tools/mint-f1-execution.js",
+      "!tools/sm-f1",
+      "!tools/sm-local-candidate",
       "!**/*.css"
     ],
     "ignoreUnknown": true

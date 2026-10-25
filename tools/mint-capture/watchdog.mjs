@@ -1,0 +1,87 @@
+// Separate watchdog process: survives a blocked/failed Playwright launch.
+import * as fs from 'node:fs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { ownedRoots, ownershipRegistry, stopProfile } from './browser-owner.mjs';
+import { validatedAttemptSuffix } from './capture-policy.mjs';
+export async function watchOwnedBrowser({
+  profile,
+  leasePath,
+  deadlineMs,
+  parentPid,
+  assertKernel,
+  assertGate = async () => {},
+  record,
+  io = fs,
+  stop = stopProfile,
+  sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+  now = Date.now,
+}) {
+  let failure;
+  const registry = ownershipRegistry(profile, { io });
+  try {
+    while (now() < deadlineMs) {
+      assertKernel();
+      await assertGate();
+      const s = io.lstatSync(leasePath);
+      if (!s.isFile() || s.isSymbolicLink() || s.uid !== process.getuid() || s.mode & 0o077 || s.size > 65536)
+        throw Error('Private capture lease required');
+      const lease = JSON.parse(io.readFileSync(leasePath));
+      if (
+        lease.captureParentPid !== parentPid ||
+        lease.profile !== profile ||
+        lease.decision !== 'run' ||
+        now() - lease.observedAtMs < 0 ||
+        now() - lease.observedAtMs > 10000
+      )
+        throw Error('Actual capture lease paused/stale');
+      registry.snapshot();
+      record({ event: 'owned-browser-watch', roots: ownedRoots(profile, { io }), observedAtMs: now() });
+      await sleep(500);
+    }
+    throw Error('Capture watchdog deadline');
+  } catch (e) {
+    failure = e;
+  } finally {
+    await stop(profile, { records: registry.records, io });
+    record({ event: 'owned-browser-stopped', error: failure?.message });
+  }
+  if (failure) throw failure;
+}
+// Owner adapter is pinned by launcher before this process is spawned; watchdog repeats it.
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const [configPath] = process.argv.slice(2);
+  const run = async () => {
+    const s = fs.lstatSync(configPath);
+    if (!s.isFile() || s.isSymbolicLink() || s.uid !== process.getuid() || s.mode & 0o077 || s.size > 65536)
+      throw Error('Private watchdog config');
+    const c = JSON.parse(fs.readFileSync(configPath));
+    if (
+      !/^batch-(?!000)[0-9]{3}$/.test(c.input.newCandidateSessionId) ||
+      c.profile !==
+        '/var/lib/observe-worker/tag/candidate-sm-c70425b0-' +
+          c.input.newCandidateSessionId +
+          validatedAttemptSuffix(c.input.attemptSuffix) +
+          '/capture/profile' ||
+      configPath !== resolve(c.profile, '../watchdog-config.json') ||
+      c.logPath !== resolve(c.profile, '../browser-watchdog.jsonl')
+    )
+      throw Error('Exact batch browser ownership namespace');
+    const { hash, validateInput, validateGate } = await import('./capture-policy.mjs');
+    validateInput(c.input);
+    if (hash(fs.readFileSync(c.adapterPath)) !== c.adapterSha256) throw Error('Watchdog adapter pin');
+    const adapter = await import(pathToFileURL(c.adapterPath).href);
+    await watchOwnedBrowser({
+      ...c,
+      assertKernel: () => adapter.assertCaptureKernel(c.input),
+      assertGate: async () => {
+        validateInput(c.input);
+        validateGate(await adapter.actualCaptureSample(c.input, c.inputSha256), c.input, c.inputSha256);
+      },
+      record: (e) => fs.appendFileSync(c.logPath, JSON.stringify({ utc: new Date().toISOString(), ...e }) + '\n', { mode: 0o600 }),
+    });
+  };
+  run().catch(() => {
+    process.exitCode = 1;
+  });
+}

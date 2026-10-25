@@ -18,10 +18,7 @@ export default function AdminDatabasePage() {
         </p>
       </header>
       <AdminGate next="/admin/database/">
-        <a
-          href="/admin/db/"
-          className="inline-flex min-h-9 items-center rounded-full bg-brand-700 px-4 text-sm font-medium text-white dark:bg-brand-600"
-        >
+        <a href="/admin/db/" className="inline-flex min-h-9 items-center rounded-full bg-brand-700 px-4 text-sm font-medium text-white">
           開啟資料庫
         </a>
       </AdminGate>

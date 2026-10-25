@@ -44,13 +44,13 @@ function Batch({
       <p className="mt-1">
         {status ? sourceStatusLabels[status] : '尚未抓取'}
         {code && `（${code}）`}
-        {checkedAt && <span className="text-zinc-500"> · 最近檢查 {taipei(checkedAt, true)}</span>}
+        {checkedAt && <span className="text-zinc-500 dark:text-zinc-400"> · 最近檢查 {taipei(checkedAt, true)}</span>}
       </p>
       <p className="mt-1 tabular-nums">
         已取得 {counts.ok}／{total} 個網域
         {counts.nodata > 0 && ` · 無資料 ${counts.nodata}`}
         {counts.waiting > 0 && ` · 等待抓取 ${counts.waiting}`}
-        {counts.shared > 0 && <span className="text-zinc-500"> · 共用網域 {counts.shared}</span>}
+        {counts.shared > 0 && <span className="text-zinc-500 dark:text-zinc-400"> · 共用網域 {counts.shared}</span>}
       </p>
     </section>
   );

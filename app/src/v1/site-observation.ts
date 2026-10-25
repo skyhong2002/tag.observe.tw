@@ -3,7 +3,7 @@
 import { and, between, eq, inArray, min, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client.ts';
-import { siteMetrics } from '../db/schema.ts';
+import { articles, siteMetrics } from '../db/schema.ts';
 import { lastAnalyticsRun } from '../jobs/analytics-job.ts';
 
 export const OBSERVATION_DAYS = [7, 28, 90] as const;
@@ -18,6 +18,37 @@ const KINDS: Record<string, string> = {
   journalist: 'journalist',
   media: 'media',
 };
+
+// Since the 10/12 privacy fix GA only receives the site name (or 即時看板) as
+// page_title, so stored labels say nothing about the page. Name such pages
+// from their path instead.
+const GENERIC_TITLES = ['新文易數', '即時看板'];
+const PAGE_TITLES: Record<string, string> = {
+  '/': '新文易數',
+  '/article/': '最新文章',
+  '/ranking/': '新聞關鍵字排行榜',
+  '/event/': '事件表',
+  '/media/': '媒體與文章數',
+  '/media/traffic/': '媒體流量與排名',
+  '/topic/': '議題表',
+  '/feature/': '專題',
+  '/similarity/': '新聞關係圖',
+  '/byline/': '新聞署名',
+  '/journalist/': '記者',
+  '/liveboard/': '即時看板',
+  '/liveboard/setting/': '即時看板設定',
+  '/api/': '新文易數 API',
+  '/method/': '方法說明',
+};
+export function fallbackTitle(path: string, articleTitles: Map<number, string> = new Map()) {
+  if (PAGE_TITLES[path]) return PAGE_TITLES[path];
+  const [, kind, name] = path.split('/');
+  if (kind === 'tag' && name) return `${name}新聞與趨勢`;
+  if (kind === 'journalist' && name) return `${name} 的報導`;
+  if (kind === 'article' && articleTitles.has(Number(name))) return articleTitles.get(Number(name))!;
+  if (kind === 'eve' && name) return `事件 #${name}`;
+  return path;
+}
 
 export function pageKind(path: string) {
   return CONTENT.test(path) ? (KINDS[path.split('/')[1]] ?? 'page') : 'page';
@@ -92,9 +123,10 @@ export async function siteObservation(db: Db, days: number, now = new Date()) {
       .select({
         path: siteMetrics.key,
         value: sql<number>`SUM(${siteMetrics.value})`,
-        title: sql<
-          string | null
-        >`SUBSTRING_INDEX(GROUP_CONCAT(${siteMetrics.label} ORDER BY ${siteMetrics.day} DESC SEPARATOR '\n'), '\n', 1)`,
+        title: sql<string | null>`SUBSTRING_INDEX(GROUP_CONCAT(IF(${siteMetrics.label} IN (${sql.join(
+          GENERIC_TITLES.map((t) => sql`${t}`),
+          sql`, `,
+        )}), NULL, ${siteMetrics.label}) ORDER BY ${siteMetrics.day} DESC SEPARATOR '\n'), '\n', 1)`,
       })
       .from(siteMetrics)
       .where(
@@ -108,13 +140,23 @@ export async function siteObservation(db: Db, days: number, now = new Date()) {
       .groupBy(siteMetrics.key)
       .orderBy(sql`2 DESC`, siteMetrics.key)
       .limit(limit);
-  const titled = (rows: Awaited<ReturnType<typeof topPages>>) =>
-    rows.map((r) => ({
+  const titled = async (rows: Awaited<ReturnType<typeof topPages>>) => {
+    const ids = rows.flatMap((r) => (!r.title && /^\/article\/\d+\/$/.test(r.path) ? [Number(r.path.split('/')[2])] : []));
+    const articleTitles = new Map(
+      ids.length
+        ? (await db.select({ id: articles.id, title: articles.title }).from(articles).where(inArray(articles.id, ids))).map((a) => [
+            a.id,
+            a.title,
+          ])
+        : [],
+    );
+    return rows.map((r) => ({
       path: r.path,
       kind: pageKind(r.path),
-      title: r.title || (r.path.startsWith('/tag/') ? r.path.slice(5, -1) : r.path),
+      title: r.title || fallbackTitle(r.path, articleTitles),
       views: Number(r.value),
     }));
+  };
 
   let traffic = null;
   if (first.ga && first.ga <= end) {
@@ -172,7 +214,7 @@ export async function siteObservation(db: Db, days: number, now = new Date()) {
       impressions,
       // Impression-weighted, as GSC's own overview computes it.
       position: impressions ? round(daily.reduce((n, d) => n + d.position * d.impressions, 0) / impressions, 1) : null,
-      pages: titled(pages).map(({ views, ...p }) => ({ ...p, clicks: views, impressions: impressionsByPage.get(p.path) ?? 0 })),
+      pages: (await titled(pages)).map(({ views, ...p }) => ({ ...p, clicks: views, impressions: impressionsByPage.get(p.path) ?? 0 })),
     };
   }
 
@@ -193,8 +235,8 @@ export async function siteObservation(db: Db, days: number, now = new Date()) {
     end,
     trackingSince: first.ga,
     traffic,
-    pages: titled(pages),
-    content: titled(content),
+    pages: await titled(pages),
+    content: await titled(content),
     search,
     vitals,
   };

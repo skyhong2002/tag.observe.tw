@@ -43,7 +43,7 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
             <ArticleBody body={content.article.description} sourceUrl={data.url} label="文章摘要" />
           ) : (
             <div>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {content ? CONTENT_STATUS[content.content.status].detail : '專題內文尚待擷取，可先前往原站閱讀。'}
               </p>
               <SourceLink url={data.url} label={`原站${noun}`} showUrl className="mt-3" />
@@ -54,7 +54,7 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
       {(data.stories.length > 0 || kind === 'topic') && (
         <div className="space-y-1 border-t border-zinc-200 pt-5 dark:border-zinc-800">
           <h2 className="font-semibold">{kind === 'feature' ? '專題相關新聞' : '議題新聞'}</h2>
-          <p className="text-sm text-zinc-500">原站清單中已發現 {data.total} 篇，依報導日期由新到舊排列。</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">原站清單中已發現 {data.total} 篇，依報導日期由新到舊排列。</p>
         </div>
       )}
       {data.stories.length ? (
@@ -73,7 +73,9 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
         <p className="text-sm text-zinc-600 dark:text-zinc-400">尚未取得這個{noun}的新聞清單，可先前往原站查看。</p>
       ) : null}
       {data.checkedAt && (
-        <p className="text-xs text-zinc-500">最近檢查：{new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          最近檢查：{new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。
+        </p>
       )}
     </div>
   );

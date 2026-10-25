@@ -1,11 +1,16 @@
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import Fastify from 'fastify';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import disabledSpec from '../../data/crawl-disabled.json' with { type: 'json' };
 import catalog from '../../data/favicon-catalog.json' with { type: 'json' };
+import { buildApp } from '../app.js';
 import type { Db } from '../db/client.ts';
 import { listedMediaSources, registerMediaStats, statusFor, taipeiMidnight } from './media-stats.ts';
 
-vi.mock('../crawl/registry.ts', () => ({
+vi.mock('../crawl/registry.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../crawl/registry.ts')>()),
   allSources: () => [
     { media: 'cna', group: 'news' },
     { media: 'bigmedia', group: 'off' },
@@ -20,6 +25,12 @@ vi.mock('../crawl/registry.ts', () => ({
 const now = Date.parse('2026-09-29T07:00:00Z'); // 15:00 Taipei
 const h = (x: number) => new Date(now - x * 3600e3);
 describe('media stats', () => {
+  let firstCrawlFile = '';
+  beforeEach(() => {
+    firstCrawlFile = join(mkdtempSync(join(tmpdir(), 'media-first-crawl-')), 'first.json');
+    vi.stubEnv('TAG_MEDIA_FIRST_CRAWL_FILE', firstCrawlFile);
+    return () => vi.unstubAllEnvs();
+  });
   it('shares concurrent reads and reuses the advertised short-lived snapshot', async () => {
     const chain = {
       innerJoin: () => chain,
@@ -44,6 +55,40 @@ describe('media stats', () => {
       expect((await app.inject('/api/v1/media-stats')).json()).toEqual(first.json());
       expect(select.mock.calls.length).toBe(calls);
     } finally {
+      await app.close();
+    }
+  });
+  it('warms up at startup and serves the last snapshot while a newer one loads', async () => {
+    let release: () => void = () => {};
+    let slow = false;
+    const chain = {
+      innerJoin: () => chain,
+      where: () => chain,
+      orderBy: () => chain,
+      limit: async () => [],
+      groupBy: async () => {
+        if (slow) await new Promise<void>((resolve) => (release = resolve));
+        return [];
+      },
+    };
+    const select = vi.fn(() => ({ from: () => chain }));
+    const app = Fastify();
+    registerMediaStats(app, { select } as unknown as Db);
+    try {
+      await app.ready();
+      await vi.waitFor(() => expect(select).toHaveBeenCalled());
+      const first = (await app.inject('/api/v1/media-stats')).json();
+      const warmed = select.mock.calls.length;
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 121_000);
+      slow = true;
+      const stale = await app.inject('/api/v1/media-stats');
+      expect(stale.statusCode).toBe(200);
+      expect(stale.json().generatedAt).toBe(first.generatedAt);
+      expect(select.mock.calls.length).toBeGreaterThan(warmed);
+      release();
+    } finally {
+      vi.useRealTimers();
       await app.close();
     }
   });
@@ -140,7 +185,8 @@ describe('media stats', () => {
     };
     const batches = [
       [{ media: 'cna', ...counts }],
-      [{ media: 'cna', first: recent, totalCollected: 100 }],
+      [{ media: 'cna', totalCollected: 100 }],
+      [{ media: 'cna', first: recent }],
       [{ media: 'google_news', ...counts, first: recent, totalCollected: 50 }],
       [],
     ];
@@ -183,6 +229,53 @@ describe('media stats', () => {
         withSummary: 1,
         sources: ['meta:description'],
         exampleId: 9,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('remembers first crawl dates and only looks up outlets it has not seen', async () => {
+    writeFileSync(firstCrawlFile, JSON.stringify({ cna: '2026-01-02T03:04:05.000Z' }));
+    const batches: Record<string, unknown[]> = {
+      totals: [
+        { media: 'cna', totalCollected: 100 },
+        { media: 'ctitv', totalCollected: 7 },
+      ],
+      firsts: [{ media: 'ctitv', first: '2026-05-06 07:08:09' }],
+    };
+    const lookups: string[] = [];
+    let query = 0;
+    const db = {
+      select: (fields: Record<string, unknown> = {}) => {
+        const kind = query++ === 1 ? 'totals' : 'first' in fields && !('totalCollected' in fields) ? 'firsts' : 'other';
+        if (kind === 'firsts') lookups.push(kind);
+        const chain = {
+          innerJoin: () => chain,
+          where: () => chain,
+          orderBy: () => chain,
+          limit: async () => [],
+          groupBy: async () => batches[kind] ?? [],
+        };
+        return { from: () => chain };
+      },
+    } as unknown as Db;
+    const app = Fastify();
+    registerMediaStats(app, db);
+    try {
+      const result = (await app.inject('/api/v1/media-stats')).json();
+      expect(result.media.find((row: { media: string }) => row.media === 'cna')).toMatchObject({
+        totalCollected: 100,
+        collectingSince: '2026-01-02T03:04:05.000Z',
+      });
+      expect(result.media.find((row: { media: string }) => row.media === 'ctitv')).toMatchObject({
+        totalCollected: 7,
+        collectingSince: '2026-05-06T07:08:09.000Z',
+      });
+      expect(lookups).toEqual(['firsts']);
+      expect(JSON.parse(readFileSync(firstCrawlFile, 'utf8'))).toEqual({
+        cna: '2026-01-02T03:04:05.000Z',
+        ctitv: '2026-05-06T07:08:09.000Z',
       });
     } finally {
       await app.close();
@@ -243,5 +336,77 @@ describe('media stats', () => {
     } finally {
       await app.close();
     }
+  });
+});
+
+describe('retained public statistics producer', () => {
+  it('shares concurrent reads, forwards only DNT, retains credential no-store and does not scan DB', async () => {
+    vi.stubEnv('TAG_MEDIA_STATS_SHARED_ORIGIN', 'http://127.0.0.1:18230');
+    const body = { generatedAt: new Date().toISOString(), totals: { today: 1 }, media: [] };
+    const fetching = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+      return new Response(JSON.stringify(body));
+    });
+    const db = {
+      select: vi.fn(() => {
+        throw Error('unexpected historical scan');
+      }),
+    };
+    const app = await buildApp({ uiOrigin: 'http://127.0.0.1:9' }, { db: db as never });
+    await app.ready();
+    await new Promise((resolve) => setImmediate(resolve));
+    const bootstrapCalls = db.select.mock.calls.length;
+    try {
+      const r = await Promise.all(
+        ['cookie', 'authorization', 'x-service-token', 'x-api-key'].map((h) =>
+          app.inject({ url: '/api/v1/media-stats', headers: { [h]: 'private-canary' } }),
+        ),
+      );
+      expect(fetching).toHaveBeenCalledOnce();
+      for (const reply of r) {
+        expect(reply.statusCode).toBe(200);
+        expect(reply.json()).toEqual(body);
+        expect(reply.headers['cache-control']).toBe('private, no-store');
+      }
+      expect(fetching.mock.calls[0][0]).toBe('http://127.0.0.1:18230/api/v1/media-stats');
+      expect(fetching.mock.calls[0][1]?.headers).toEqual({ DNT: '1' });
+      expect(fetching.mock.calls[0][1]?.redirect).toBe('error');
+      expect(db.select.mock.calls.length).toBe(bootstrapCalls);
+      const anonymous = await app.inject('/api/v1/media-stats');
+      expect(anonymous.headers['cache-control']).toBe('public, max-age=120');
+    } finally {
+      await app.close();
+      fetching.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+  it('rejects a failed or oversized upstream without falling back to another DB scan', async () => {
+    vi.stubEnv('TAG_MEDIA_STATS_SHARED_ORIGIN', 'http://127.0.0.1:18230');
+    const fetching = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 500 }));
+    const app = Fastify();
+    registerMediaStats(app, {} as Db);
+    try {
+      expect((await app.inject('/api/v1/media-stats')).statusCode).toBe(503);
+      fetching.mockResolvedValue(new Response(' '.repeat(2 * 1024 ** 2 + 1)));
+      const reply = await app.inject('/api/v1/media-stats');
+      expect(reply.statusCode).toBe(503);
+      expect(reply.headers['cache-control']).toBe('no-store');
+    } finally {
+      await app.close();
+      fetching.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+  it('rejects external/private-service origins and cycles', () => {
+    for (const origin of [
+      'https://example.com',
+      'http://127.0.0.1:13306',
+      'http://127.0.0.1:18230/admin',
+      'http://secret@127.0.0.1:18230',
+    ]) {
+      vi.stubEnv('TAG_MEDIA_STATS_SHARED_ORIGIN', origin);
+      expect(() => registerMediaStats(Fastify(), {} as Db)).toThrow('invalid loopback');
+    }
+    vi.unstubAllEnvs();
   });
 });

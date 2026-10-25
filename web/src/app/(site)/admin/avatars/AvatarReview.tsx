@@ -46,7 +46,7 @@ const SCORE_LABEL: Record<string, string> = { size: '臉大小', front: '正面'
 
 export default function AvatarReview() {
   return (
-    <AdminGate next="/admin/tags/?view=avatars">
+    <AdminGate next="/admin/tags/?view=pictures">
       <p className={note}>點一張候選就改用並鎖定；沒有可用照片的人可以上傳照片。做法見頁尾「本頁的資料來源與計算方式」。</p>
       <Review />
     </AdminGate>
@@ -157,13 +157,13 @@ function PersonRow({
         <a href={`/tag/${encodeURIComponent(p.tag)}/`} className="font-medium underline">
           {p.tag}
         </a>
-        <a href={`/tag/${encodeURIComponent(p.tag)}/picture/`} className="text-xs text-zinc-500 underline">
+        <a href={`/tag/${encodeURIComponent(p.tag)}/picture/`} className="text-xs text-zinc-500 dark:text-zinc-400 underline">
           票數
         </a>
         {p.wikidataId && (
           <a
             href={`https://www.wikidata.org/wiki/${p.wikidataId}`}
-            className="text-xs text-zinc-500 underline"
+            className="text-xs text-zinc-500 dark:text-zinc-400 underline"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -174,7 +174,7 @@ function PersonRow({
         {p.note && (
           <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">{p.note}</span>
         )}
-        {p.reviewedBy && <span className="text-xs text-zinc-500">{p.reviewedBy}</span>}
+        {p.reviewedBy && <span className="text-xs text-zinc-500 dark:text-zinc-400">{p.reviewedBy}</span>}
       </div>
       {p.candidates.length > 0 && (
         <div className="mt-2 flex flex-wrap items-start gap-3">
@@ -198,7 +198,7 @@ function PersonRow({
               {c.pageUrl ? (
                 <a
                   href={c.pageUrl}
-                  className="block truncate text-zinc-500 underline"
+                  className="block truncate text-zinc-500 dark:text-zinc-400 underline"
                   rel="noopener noreferrer"
                   target="_blank"
                   onClick={(e) => e.stopPropagation()}
@@ -207,7 +207,7 @@ function PersonRow({
                   {c.artist ? ` · ${c.artist}` : ''}
                 </a>
               ) : (
-                <span className="block truncate text-zinc-500">{c.file}</span>
+                <span className="block truncate text-zinc-500 dark:text-zinc-400">{c.file}</span>
               )}
             </button>
           ))}

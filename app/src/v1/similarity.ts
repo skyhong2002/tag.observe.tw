@@ -1,3 +1,6 @@
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { and, between, eq, gte, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import baseline from '../../data/traffic-baseline.json' with { type: 'json' };
@@ -216,9 +219,61 @@ export function dailyRelationCounts(pairs: StoredPair[], known: Map<number, Simi
   return [...counts.values()].map(({ ids, ...row }) => ({ ...row, count: ids.size }));
 }
 
+export const CITATION_RESIDUE = /[•・：:‧]|以上言論|作者|撰文|製作組|工作者|\s\p{Script=Han}{2,3}$/u;
+type RelationRow = ReturnType<typeof dailyRelationCounts>[number];
+// A day's relation counts need every paired article's byline and citations:
+// ~130k rows of the 20 GB article table for 30 days (30–50 s). Pairs for a
+// publication day are settled a few days later, so keep settled days in a file
+// and only hydrate the recent ones. Delete the file to recompute everything.
+const SETTLED_AFTER_DAYS = 3;
+export const dailyRelationsFile = () =>
+  process.env.TAG_SIMILARITY_DAILY_FILE || join(homedir(), '.local/share/tag-analysis/similarity-daily-relations.json');
+let settledDays: Map<string, RelationRow[]> | null = null;
+async function readSettled() {
+  if (!settledDays) {
+    try {
+      settledDays = new Map(Object.entries(JSON.parse(await readFile(dailyRelationsFile(), 'utf8'))));
+    } catch {
+      settledDays = new Map();
+    }
+  }
+  return settledDays;
+}
+async function writeSettled(value: Map<string, RelationRow[]>) {
+  const file = dailyRelationsFile();
+  await mkdir(dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  await writeFile(tmp, JSON.stringify(Object.fromEntries(value)), { mode: 0o600 });
+  await rename(tmp, file);
+}
+const shiftDay = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
+
+/** Per-day relation counts; settled days come from the file, the rest are hydrated. */
+export async function loadDailyRelations(db: Db, first: string, last: string, threshold: number, now = new Date()) {
+  const settled = await readSettled();
+  const key = (day: string) => `${threshold}|${day}`;
+  const days: string[] = [];
+  for (let day = first; day <= last; day = shiftDay(day, 1)) days.push(day);
+  const missing = days.filter((day) => !settled.has(key(day)));
+  if (!missing.length) return days.flatMap((day) => settled.get(key(day)) ?? []);
+  const computed = await hydrateDailyRelations(db, missing[0], missing.at(-1)!, threshold);
+  const cutoff = shiftDay(taipeiDay(now), -SETTLED_AFTER_DAYS);
+  let changed = false;
+  for (const day of missing)
+    if (day < cutoff) {
+      settled.set(
+        key(day),
+        computed.filter((row) => row.day === day),
+      );
+      changed = true;
+    }
+  if (changed) await writeSettled(settled).catch(() => {});
+  return days.flatMap((day) => settled.get(key(day)) ?? computed.filter((row) => row.day === day));
+}
+
 /** Bound hydration to 31-day slices even for a full year; each own publication day belongs to one slice. */
-async function loadDailyRelations(db: Db, first: string, last: string, threshold: number) {
-  const result: ReturnType<typeof dailyRelationCounts> = [];
+async function hydrateDailyRelations(db: Db, first: string, last: string, threshold: number) {
+  const result: RelationRow[] = [];
   for (let start = dayStart(first).getTime(); start <= dayEnd(last).getTime(); start += 31 * DAY) {
     const from = taipeiDay(new Date(start));
     const to = taipeiDay(new Date(Math.min(start + 31 * DAY - 1000, dayEnd(last).getTime())));
@@ -329,7 +384,9 @@ export async function loadDaily(db: Db, from: string, to: string, threshold: num
     if (i === undefined) continue;
     totals.citations[i] += Number(row.n);
     media(row.media).citing[i] += Number(row.n);
-    media(row.source).cited[i] += Number(row.n);
+    // Citation sources are parsed text; leftovers such as 「•以上言論由東森…」,
+    // 「作者：財訊雙週刊」 or 「民視新聞 徐婉寧」 are not outlets and get no row.
+    if (!CITATION_RESIDUE.test(row.source)) media(row.source).cited[i] += Number(row.n);
   }
   const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
   return {

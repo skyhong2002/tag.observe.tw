@@ -51,7 +51,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
         {[...params].map(([key, value]) => (
           <input key={key} type="hidden" name={key} value={value} />
         ))}
-        <label htmlFor="sources-q" className="text-xs text-zinc-500">
+        <label htmlFor="sources-q" className="text-xs text-zinc-500 dark:text-zinc-400">
           搜尋來源
           <FormSuggestInput
             id="sources-q"
@@ -72,7 +72,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
             className="block rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
           />
         </label>
-        <label className="text-xs text-zinc-500">
+        <label className="text-xs text-zinc-500 dark:text-zinc-400">
           來源所屬地區
           <select
             name="country"
@@ -92,17 +92,17 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
         </button>
       </form>
       {!data ? (
-        <p role="status" className="py-8 text-zinc-500">
+        <p role="status" className="py-8 text-zinc-500 dark:text-zinc-400">
           暫時無法取得來源／引用資料，請稍後重新整理。
         </p>
       ) : (
         <>
-          <p role="status" className="text-xs text-zinc-500">
+          <p role="status" className="text-xs text-zinc-500 dark:text-zinc-400">
             符合 {rows.length} 個來源 · 依被註明篇數排序
           </p>
           <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
             <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
+              <thead className="bg-zinc-50 text-xs text-zinc-500 dark:text-zinc-400 dark:bg-zinc-900">
                 <tr>
                   {['來源', '所屬地區', '被註明篇數', '註明來源的媒體數', '查看'].map((label) => (
                     <th key={label} className="px-4 py-3">
@@ -137,7 +137,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
                           <MediaIcon media={node.id} size={16} />
                           {node.name}
                         </Link>
-                        {node.external && <p className="mt-1 text-xs text-zinc-500">本期僅有來源／引用資料</p>}
+                        {node.external && <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">本期僅有來源／引用資料</p>}
                       </td>
                       <td className="px-4 py-3">{node.country}</td>
                       <td className="px-4 py-3 tabular-nums">{node.incoming.toLocaleString('zh-TW')}</td>
@@ -152,7 +152,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
                 })}
               </tbody>
             </table>
-            {!rows.length && <p className="p-8 text-center text-zinc-500">這段期間沒有符合篩選的明示來源或引用。</p>}
+            {!rows.length && <p className="p-8 text-center text-zinc-500 dark:text-zinc-400">這段期間沒有符合篩選的明示來源或引用。</p>}
           </div>
         </>
       )}

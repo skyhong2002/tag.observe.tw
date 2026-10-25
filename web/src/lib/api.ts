@@ -1,3 +1,4 @@
+import { plainSpaces } from './plain-spaces';
 import type { TagFlow } from './tag-flow-history.mts';
 
 export type { TagFlow } from './tag-flow-history.mts';
@@ -291,17 +292,46 @@ export const fetchTagSeries = (tag: string, category = 'all', hours = 72) =>
 export const fetchTagFlow = (tag: string, hours = 336, span: 'day' | 'hour' = 'hour') =>
   get<TagFlow>(`/api/v1/tags/${encodeURIComponent(tag)}/flow?hours=${hours}&span=${span}`, 300);
 
-export const taipei = (iso: string) =>
-  new Date(iso).toLocaleString('zh-TW', {
-    timeZone: 'Asia/Taipei',
-    hour12: false,
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const taipeiYear = (date: Date) => new Date(date.getTime() + 8 * 3600e3).getUTCFullYear();
+// Month/day alone reads as this year: an old article from 2017 dated "10/27"
+// looked like a future date. Show the year whenever it is not this year.
+export const taipei = (iso: string) => {
+  const date = new Date(iso);
+  return plainSpaces(
+    date.toLocaleString('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      hour12: false,
+      ...(taipeiYear(date) !== taipeiYear(new Date()) && { year: 'numeric' }),
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  );
+};
 // Without minutes, zh-TW renders the hour as "18時"; format with minutes instead.
 export const taipeiHour = (iso: string) => taipei(iso).replace(/:\d\d$/, ':00');
+
+export type TagRelationType = 'is-a' | 'related' | 'alias';
+export interface TagRelation {
+  id: string;
+  type: TagRelationType;
+  target: { id: string; label: string; href: string };
+  source: string;
+  createdAt: string | null;
+  status: 'approved';
+  inherited?: boolean;
+}
+export interface TagRelations {
+  tag: string;
+  tagId: string;
+  relations: TagRelation[];
+  /** Candidates readers can vote on at /tag/<tag>/relations/. */
+  voting?: number | null;
+  pictures: unknown[];
+  truncated?: boolean;
+}
+export const fetchTagRelations = (tag: string) => get<TagRelations>(`/api/v1/tags/${encodeURIComponent(tag)}/relations`, 60);
 /** Taipei calendar date with the year, YYYY-MM-DD. */
 export const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
 /** Taipei time of day, HH:MM. */

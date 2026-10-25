@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { plainSpaces } from './plain-spaces';
 import { loadSession } from './session';
 
 // A signed-in reader's own data, from the gateway's /auth/me/* routes
@@ -115,14 +116,16 @@ export async function savePrefs(change: Prefs) {
 }
 
 export const when = (iso: string) =>
-  new Date(iso).toLocaleString('zh-TW', {
-    timeZone: 'Asia/Taipei',
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  plainSpaces(
+    new Date(iso).toLocaleString('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }),
+  );
 
 export const followHref = (f: Follow) =>
   f.kind === 'tag'

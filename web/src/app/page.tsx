@@ -21,20 +21,20 @@ import {
   loadHomeTopics,
 } from '@/lib/demo';
 import { homeRankingRows, rankingReady } from '@/lib/home-ranking.mts';
-import { isAllowedImage } from '@/lib/images';
 import { journalistHref } from '@/lib/journalists';
-import type { EventCoverage, FeedTopic } from '@/lib/pages';
+import type { EventCoverage } from '@/lib/pages';
 import { pageMetadata } from '@/lib/seo.mts';
-import { updatedAtOf } from '@/lib/topic-update.mts';
 import CampOutletDirectory from './_home/CampOutletDirectory';
 import CampShareSummary from './_home/CampShareSummary';
 import EventRecovery from './_home/EventRecovery';
 import HeadlineSidebar from './_home/HeadlineSidebar';
 import HomeRanking from './_home/HomeRanking';
+import HomeTopicsRecovery from './_home/HomeTopicsRecovery';
 import styles from './_home/home.module.css';
 import MastheadCloud from './_home/MastheadCloud';
 import NewsImage from './_home/NewsImage';
 import ReadersPanel from './_home/ReadersPanel';
+import TopicPanel from './_home/TopicPanel';
 
 export const revalidate = 120;
 // Stay ISR even when an API call fails while rendering: the fresh retry in
@@ -101,7 +101,9 @@ function CampGaps({ gaps }: { gaps: CampGap[] }) {
                 const href = eventHref(e) ?? `/event/#event-${e.rank}`;
                 return (
                   <li key={e.rank}>
-                    <Link href={href}>{eventHeadline(e)}</Link>
+                    <Link prefetch={false} href={href}>
+                      {eventHeadline(e)}
+                    </Link>
                     <p>{e.coverage && <CampBadge c={e.coverage} />}</p>
                   </li>
                 );
@@ -120,7 +122,7 @@ function JournalistPanel({ brief }: { brief: JournalistBrief | null }) {
     <ol className={styles.journalists}>
       {brief.top.map((j) => (
         <li key={j.name}>
-          <Link href={journalistHref(j.name)}>
+          <Link prefetch={false} href={journalistHref(j.name)}>
             <span className={styles.journalistName}>{j.name}</span>
             <span className={styles.journalistOutlets} title={j.media.map((m) => `${m.name} ${m.count} 篇`).join('、')}>
               {j.media.slice(0, 3).map((m) => (
@@ -199,7 +201,8 @@ async function DeferredGraph({ data }: { data: ReturnType<typeof loadHomeGraph> 
 }
 
 async function DeferredTopics({ data }: { data: ReturnType<typeof loadHomeTopics> }) {
-  return <TopicPanel topics={await data} />;
+  const topics = await data;
+  return topics ? <TopicPanel topics={topics} /> : <HomeTopicsRecovery />;
 }
 
 async function DeferredHomeMethod({
@@ -215,46 +218,21 @@ async function DeferredHomeMethod({
   return <HomeMethod basisCount={basisCount} journalistHours={j?.hours} graphHours={g?.hours} />;
 }
 
+async function DeferredCampShare({ data }: { data: Awaited<ReturnType<typeof loadDemo>>['campShare'] }) {
+  return (
+    <CampShareSummary initialShare={await data}>
+      <Suspense fallback={<PanelLoading />}>
+        <CampOutletDirectory />
+      </Suspense>
+    </CampShareSummary>
+  );
+}
+
 function PanelLoading() {
   return (
     <p className={styles.notice} role="status">
       資料載入中…
     </p>
-  );
-}
-
-// Story dates can be old: date with the year, no time (as on TopicCard).
-const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-
-function TopicPanel({ topics }: { topics: { outlets: number; today: number; latest: FeedTopic[] } | null }) {
-  if (!topics) return <p className={styles.notice}>議題資料整理中。</p>;
-  if (topics.latest.length === 0) return <p className={styles.notice}>最近沒有更新的議題。</p>;
-  return (
-    <ul className={styles.topicList}>
-      {topics.latest.map((t) => {
-        const image = isAllowedImage(t.image) ? t.image : null;
-        const href = `/topic/${encodeURIComponent(t.media)}/#topic-${t.id}`;
-        const updated = updatedAtOf(t);
-        return (
-          <li key={`${t.media}-${t.id}`}>
-            <Link href={href} className={styles.topicCover} tabIndex={-1} aria-hidden="true">
-              <NewsImage src={image} />
-            </Link>
-            <div className={styles.topicBody}>
-              <h3>
-                <Link href={href}>{t.title}</Link>
-              </h3>
-              <p>
-                <MediaIcon media={t.media} title={t.mediaTitle} size={12} />
-                {t.mediaTitle}
-                {updated && ` · 最後更新 ${taipeiDate(updated)}`}
-                {t.coverage && ` · 近 3 天 ${t.coverage.count}${t.coverage.capped ? '+' : ''} 篇相關`}
-              </p>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
   );
 }
 
@@ -300,7 +278,7 @@ export default async function HomePage() {
           <aside className={styles.left} aria-label="關鍵字排行、記者與讀者關注">
             <div className={styles.sectionHeading}>
               <h2>熱門關鍵字</h2>
-              <Link href="/ranking/?category=news">
+              <Link prefetch={false} href="/ranking/?category=news">
                 完整排行 <Arrow />
               </Link>
             </div>
@@ -308,7 +286,7 @@ export default async function HomePage() {
 
             <div className={`${styles.sectionHeading} ${styles.sectionHeadingLater}`}>
               <h2>記者動態</h2>
-              <Link href="/journalist/">
+              <Link prefetch={false} href="/journalist/">
                 全部記者 <Arrow />
               </Link>
             </div>
@@ -327,14 +305,14 @@ export default async function HomePage() {
           <section className={styles.center} aria-label="焦點事件">
             <div className={styles.sectionHeading}>
               <h2>焦點事件</h2>
-              <Link href="/event/">
+              <Link prefetch={false} href="/event/">
                 {data.focus.daily ? '今天' : '本小時'}全部 {data.focus.count || ''} 件 <Arrow />
               </Link>
             </div>
             {lead ? (
               <>
                 <article className={styles.hero} data-vital-region="home-hero">
-                  <Link href={lead.href} className={styles.heroImage} tabIndex={-1} aria-hidden="true">
+                  <Link prefetch={false} href={lead.href} className={styles.heroImage} tabIndex={-1} aria-hidden="true">
                     <NewsImage src={lead.image} priority />
                   </Link>
                   <div className={styles.heroContent}>
@@ -342,7 +320,7 @@ export default async function HomePage() {
                       焦點 01 {lead.tags.length > 0 && <span>／ {lead.tags.slice(0, 2).join(' · ')}</span>}
                     </span>
                     <h3>
-                      <Link href={lead.href} className={styles.heroLink}>
+                      <Link prefetch={false} href={lead.href} className={styles.heroLink}>
                         {lead.title}
                       </Link>
                     </h3>
@@ -356,7 +334,7 @@ export default async function HomePage() {
                     )}
                     <div className={styles.heroFoot}>
                       <span>{!lead.coverage && `精選報導來自 ${lead.sampleOutlets} 家媒體`}</span>
-                      <Link href={lead.href}>
+                      <Link prefetch={false} href={lead.href}>
                         比較各家標題 <Arrow />
                       </Link>
                     </div>
@@ -380,17 +358,19 @@ export default async function HomePage() {
                           {s.tags.slice(0, 3).join(' / ')}
                         </p>
                         <h3>
-                          <Link href={s.href}>{s.title}</Link>
+                          <Link prefetch={false} href={s.href}>
+                            {s.title}
+                          </Link>
                         </h3>
                         <StoryMeta story={s} />
                         <Distribution coverage={s.coverage} compact />
                       </div>
-                      <Link href={s.href} className={styles.thumbnail} aria-label={`查看事件：${s.title}`} tabIndex={-1}>
+                      <Link prefetch={false} href={s.href} className={styles.thumbnail} aria-label={`查看事件：${s.title}`} tabIndex={-1}>
                         <NewsImage src={s.image} />
                       </Link>
                     </article>
                   ))}
-                  <Link href="/event/" className={styles.more}>
+                  <Link prefetch={false} href="/event/" className={styles.more}>
                     探索更多事件 <Arrow />
                   </Link>
                 </div>
@@ -400,7 +380,7 @@ export default async function HomePage() {
                 <span aria-hidden="true">◎</span>
                 <h2>焦點事件載入中</h2>
                 <EventRecovery />
-                <Link href="/event/">
+                <Link prefetch={false} href="/event/">
                   前往事件表 <Arrow />
                 </Link>
               </div>
@@ -410,7 +390,7 @@ export default async function HomePage() {
           <aside className={styles.right} aria-label="藍綠溫差與標題對照">
             <div className={styles.sectionHeading}>
               <h2>藍綠溫差</h2>
-              <Link href="/event/">
+              <Link prefetch={false} href="/event/">
                 今天全部事件 <Arrow />
               </Link>
             </div>
@@ -429,7 +409,7 @@ export default async function HomePage() {
           <section className={styles.panel} aria-label="媒體關係圖摘要">
             <div className={styles.sectionHeading}>
               <h2>媒體關係圖</h2>
-              <Link href="/similarity/">
+              <Link prefetch={false} href="/similarity/">
                 看整張圖 <Arrow />
               </Link>
             </div>
@@ -442,11 +422,11 @@ export default async function HomePage() {
           <section className={styles.panel} aria-label="最近更新的議題">
             <div className={styles.sectionHeading}>
               <h2>最近更新的議題</h2>
-              <Link href="/topic/">
+              <Link prefetch={false} href="/topic/">
                 議題表 <Arrow />
               </Link>
             </div>
-            <div className="min-h-80" data-vital-region="home-topics">
+            <div className={styles.topicPanel} data-vital-region="home-topics">
               <Suspense fallback={<PanelLoading />}>
                 <DeferredTopics data={topics} />
               </Suspense>
@@ -454,17 +434,15 @@ export default async function HomePage() {
           </section>
         </div>
 
-        <CampShareSummary initialShare={data.campShare}>
-          <Suspense
-            fallback={
-              <p className={styles.notice} role="status">
-                媒體清單載入中…
-              </p>
-            }
-          >
-            <CampOutletDirectory />
-          </Suspense>
-        </CampShareSummary>
+        <Suspense
+          fallback={
+            <section className={`${styles.campShare} min-h-64 max-sm:min-h-[34rem]`} aria-label="過去 24 小時新聞量藍綠分布">
+              <p role="status">新聞量分布載入中…</p>
+            </section>
+          }
+        >
+          <DeferredCampShare data={data.campShare} />
+        </Suspense>
 
         <SiteFooter
           notes={

@@ -1,0 +1,237 @@
+/* The simple liveboard's event and leaderboard scenes (SceneView), on the board's paper. */
+.scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(clamp(10px, 2.2vh, 24px) * var(--ui, 1));
+  padding: calc(clamp(6px, 1.5vh, 18px) * var(--ui, 1)) 0;
+  color: #27272a;
+  font-size: calc(clamp(14px, min(2.5vh, 1.45vw), 34px) * var(--ui, 1));
+  animation: fade 1s ease both;
+  overflow: hidden;
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.scene a { color: inherit; }
+.scene a:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+
+/* One slim row: ‹ the lens's name and note, its frames › — the room goes to the frame. */
+.head { display: flex; align-items: center; justify-content: center; gap: 1.4em; flex-shrink: 0; width: min(100% - 2em, 76em); }
+.label { display: flex; align-items: baseline; gap: 0.8em; min-width: 0; }
+.title { margin: 0; font-size: 1.7em; line-height: 1.2; font-weight: 700; letter-spacing: 0.04em; color: var(--tint); white-space: nowrap; }
+.note { margin: 0; color: #71717a; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arrow { font-size: 1.8em; line-height: 1; padding: 0.05em 0.35em; color: #a1a1aa; transition: color 0.2s; }
+.arrow:hover, .arrow:focus-visible { color: #52525b; }
+
+.slots { display: flex; gap: 0.4em; font-variant-numeric: tabular-nums; }
+.slot { display: flex; flex-direction: column; align-items: center; gap: 0.35em; padding: 0 0.15em; color: #52525b; }
+.slot[data-now] { color: var(--tint); font-weight: 700; }
+.slot[data-later] { opacity: 0.45; }
+.single { display: block; width: 8em; }
+.track { position: relative; display: block; width: 2.6em; height: 0.22em; border-radius: 1em; background: #e4e4e7; overflow: hidden; }
+.single .track { width: 100%; }
+.track i { position: absolute; inset: 0; border-radius: inherit; background: var(--tint); }
+.done { opacity: 0.35; }
+.fill { transform-origin: 0 50%; animation: grow linear both; }
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.body { width: min(100% - 2em, 76em); min-height: 0; flex: 1; animation: fade 0.8s ease both; }
+
+/* An event: the story (cover, headline, keywords) on the left; its figures,
+   trend and reports on the right. */
+.event { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 2.4em; height: 100%; min-height: 0; }
+.story { display: flex; flex-direction: column; gap: 0.6em; min-height: 0; overflow: hidden; }
+.story > * { flex-shrink: 0; }
+/* The whole picture, never a cropped strip: as wide as the column (16:9, as news photos
+   are) until the column runs short of height, then smaller, at its own shape. */
+.story > .cover { flex-shrink: 1; min-height: 6em; width: 100%; aspect-ratio: 16 / 9; max-height: 52%; display: flex; }
+.cover img { width: auto; height: 100%; max-width: 100%; object-fit: contain; object-position: left center; border-radius: 0.5em; display: block; }
+.rank { margin: 0.2em 0 0; display: flex; align-items: baseline; gap: 0.6em; color: #52525b; }
+.rank b { font-size: 1.5em; color: var(--tint); font-variant-numeric: tabular-nums; }
+.headline { margin: 0; font-size: 1.6em; line-height: 1.3; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* The event's keyword set, sized by burst as the cloud is; the major ones as filled pills. */
+.keywords { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25em 0.75em; line-height: 1.5; overflow: hidden; flex-shrink: 1 !important; min-height: 0; }
+.keywords a { color: var(--tint); font-weight: 600; }
+.keywords a[data-major] { padding: 0 0.5em; border-radius: 1em; background: color-mix(in srgb, var(--tint) 14%, transparent); }
+
+.numbers { display: flex; flex-direction: column; gap: 0.9em; min-height: 0; }
+.numbers > * { flex-shrink: 0; }
+.figures { margin: 0; display: grid; grid-template-columns: repeat(3, auto); justify-content: start; column-gap: 2.4em; row-gap: 0.4em; }
+.figures dt { color: #71717a; font-size: 0.85em; }
+.figures dd { margin: 0.1em 0 0; display: flex; align-items: baseline; gap: 0.4em; font-variant-numeric: tabular-nums; }
+.figures dd b { font-size: 1.7em; font-weight: 700; }
+.sub { color: #71717a; font-size: 0.8em; }
+.trend { margin: 0; display: flex; flex-direction: column; gap: 0.25em; }
+.trend figcaption { display: flex; justify-content: space-between; gap: 1em; white-space: nowrap; }
+.trendStats { overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.trendStats b { color: inherit; font-weight: 700; }
+.trendStats b:first-child { color: var(--tint); }
+.rankTrail { display: inline-flex; align-items: center; gap: 0.4em; }
+.rankLine { display: block; width: 5em; height: 1.4em; }
+/* The events page's camp bar and badge (CampBar), sized up from its card scale. */
+.camps { display: flex; align-items: center; gap: 0.8em; }
+.camps > div { flex: 1; height: 1.5em; font-size: 0.7em; border-radius: 0.4em; }
+.camps > span { font-size: 0.7em; padding: 0.15em 0.6em; flex-shrink: 0; }
+.trendLine { display: block; width: 100%; height: 3.6em; }
+.trendEnds { display: flex; justify-content: space-between; color: #a1a1aa; font-size: 0.75em; }
+.trendEnds b { color: var(--tint); font-variant-numeric: tabular-nums; }
+
+.reports {
+  /* Fills what is left of the column, so the fade sits at the screen's foot and only
+     touches a list that runs that far. */
+  flex: 1 1 0 !important;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  /* A list longer than the screen fades out rather than ending in half a row. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 3em), transparent);
+}
+.articles { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.6em; }
+.articles li { display: grid; grid-template-columns: 7em minmax(0, 1fr); align-items: center; gap: 0.9em; }
+.thumb { display: flex; align-items: center; justify-content: center; width: 7em; aspect-ratio: 16 / 9; border-radius: 0.35em; overflow: hidden; background: #f4f4f5; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.articleText { display: flex; flex-direction: column; gap: 0.2em; min-width: 0; }
+.articleTitle { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+.byline { display: flex; align-items: center; gap: 0.45em; min-width: 0; color: #71717a; font-size: 0.75em; white-space: nowrap; }
+.outlet { flex-shrink: 0; }
+/* Reporters, then the outlets it names as source or cites, as on the full board. */
+.credits { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #52525b; }
+.credits > span + span::before { content: ' · '; color: #a1a1aa; }
+.credits > span[data-source] { color: var(--tint); }
+.copies { display: inline-flex; align-items: center; gap: 0.25em; flex-shrink: 0; padding: 0 0.45em; border-radius: 1em; background: #f4f4f5; }
+.reportTags { display: flex; gap: 0.7em; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 0.75em; color: #a1a1aa; }
+.reportTags a[data-event] { color: var(--tint); font-weight: 600; }
+.media { color: #71717a; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.time { color: #a1a1aa; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.time[data-recent] { color: var(--tint); font-weight: 600; }
+
+/* A change: up in the lens's colour, down in grey. */
+.change {
+  display: inline-block;
+  padding: 0.05em 0.5em;
+  border-radius: 1em;
+  font-size: 0.8em;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--tint);
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+}
+.change[data-down] { color: #71717a; background: #f4f4f5; }
+.change[data-flat] { color: #a1a1aa; background: none; font-weight: 400; }
+
+/* A leaderboard: its rows share out the height. */
+.board { width: 100%; height: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; table-layout: fixed; }
+.board thead tr { height: 1.8em; }
+.board th { font-weight: 400; font-size: 0.8em; color: #71717a; text-align: right; padding: 0 0.6em 0.3em; width: 6.5em; vertical-align: bottom; }
+.board th:first-child { width: 2.2em; }
+.board th.name { text-align: left; width: auto; }
+.board th.trailHead { width: 9em; text-align: center; }
+.board td { padding: 0.2em 0.6em; border-top: 1px solid #e4e4e7; white-space: nowrap; }
+.board td.name { overflow: hidden; text-overflow: ellipsis; }
+.nameCell { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
+.nameCell a { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nameCell .media { flex-shrink: 0; }
+.rowLine { display: block; width: 100%; height: 1.7em; }
+/* The row's second line: a thread's lead report, a group's busiest tags and newest report. */
+.rowDetail { display: flex; align-items: baseline; gap: 1.2em; min-width: 0; margin-top: 0.25em; overflow: hidden; white-space: nowrap; }
+.rowDetail .byline, .rowDetail .reportTags { flex-shrink: 0; }
+.latest { display: flex; align-items: baseline; gap: 0.5em; min-width: 0; font-size: 0.85em; }
+.latestLabel { flex-shrink: 0; color: #a1a1aa; font-size: 0.85em; }
+.latestTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #52525b; }
+.latest .byline { font-size: 0.85em; }
+/* The event's lead report, named as any news row is: who else ran it and where it probably came from. */
+.leadMeta { display: flex; flex-direction: column; gap: 0.3em; margin-top: -0.2em; }
+.source { display: flex; align-items: center; gap: 0.4em; min-width: 0; color: #71717a; font-size: 0.75em; white-space: nowrap; }
+.source time { color: #a1a1aa; font-variant-numeric: tabular-nums; }
+.sourceTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #52525b; }
+.rowTags { flex-shrink: 0; color: #a1a1aa; font-size: 0.75em; }
+.place { color: var(--tint); font-weight: 700; text-align: center; }
+.count { text-align: right; }
+
+/* An event with its videos: the story in one band, the videos in a grid that shares out the rest. */
+.videoEvent { display: flex; flex-direction: column; gap: 1em; height: 100%; min-height: 0; }
+.videoStory { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3em 1em; flex-shrink: 0; }
+.videoStory .rank { margin: 0; }
+.videoHeadline { margin: 0; font-size: 1.5em; line-height: 1.3; font-weight: 700; min-width: 0; flex-basis: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; order: 2; }
+.videoStory .keywords { order: 3; }
+.videoStory .sub { order: 4; }
+.videos { margin: 0; padding: 0; list-style: none; flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 1em 1.2em; }
+.videos[data-few] { grid-template-rows: minmax(0, 1fr); }
+/* A board of videos has the whole frame, no story above it. */
+.videos[data-board] { height: 100%; }
+/* Each card, centred in its cell: its picture, then rows of a fixed height (title two lines, byline, a live stream's
+   line, the tags or the event), kept even when empty; the picture is the largest 16:9 the rest
+   leaves (--text), so a row's pictures share one size and line up. */
+.videos { --text: 5.9em; }
+.videos[data-live] { --text: 7.6em; }
+.videos li { display: flex; flex-direction: column; justify-content: center; gap: 0.3em; min-height: 0; min-width: 0; container-type: size; }
+.videos li > * { flex-shrink: 0; }
+.thumbBox { display: block; width: min(100cqw, (100cqh - var(--text)) * 16 / 9); aspect-ratio: 16 / 9; border-radius: 0.4em; overflow: hidden; background: #f4f4f5; }
+.thumbBox img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.videoTitle { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.9em; line-height: 1.35; height: 2.7em; }
+.videos .byline { height: 1.5em; overflow: hidden; }
+.videos .reportTags { height: 1.5em; line-height: 1.5; }
+/* A live stream's viewers now, a pill in the lens's colour, on its line's row. */
+.liveCount { flex-shrink: 0; padding: 0 0.5em; border-radius: 1em; font-size: 0.8em; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--tint); background: color-mix(in srgb, var(--tint) 14%, transparent); }
+.liveLine { display: flex; align-items: center; gap: 0.6em; height: 1.4em; min-width: 0; overflow: hidden; white-space: nowrap; }
+.liveLine .views { font-size: 0.75em; }
+.liveSpark { display: block; flex: 1; min-width: 2em; height: 100%; }
+.views { flex-shrink: 0; font-variant-numeric: tabular-nums; color: #52525b; }
+.videos .outlet { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
+.reportTags span[data-event] { color: var(--tint); font-weight: 600; }
+
+/* Portrait: the reports go under the story, and the board drops its trail. */
+@media (max-aspect-ratio: 1 / 1) {
+  .event { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 1em; }
+  .story > .cover { display: none; }
+  /* The frames go on a line of their own under the name. */
+  .head { gap: 0.3em 0.6em; flex-wrap: wrap; }
+  .slots { order: 3; flex-basis: 100%; justify-content: center; }
+  .note { display: none; }
+  .figures { grid-template-columns: repeat(3, auto); column-gap: 1.2em; }
+  .board th { width: 4.4em; }
+  .board th.trailHead, .board td.trailCell { display: none; }
+  .nameCell .media, .rowTags, .latest { display: none; }
+  .thumb { width: 5em; }
+  .articles li { grid-template-columns: 5em minmax(0, 1fr); }
+  .videos, .videos[data-few] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene, .body { animation: none; }
+}
+
+[data-theme="dark"] .scene { color: #e4e4e7; }
+[data-theme="dark"] .note,
+[data-theme="dark"] .figures dt,
+[data-theme="dark"] .media,
+[data-theme="dark"] .board th,
+[data-theme="dark"] .rank,
+[data-theme="dark"] .slot { color: #a1a1aa; }
+[data-theme="dark"] .slot[data-now] { color: var(--tint); }
+[data-theme="dark"] .arrow { color: #71717a; }
+[data-theme="dark"] .arrow:hover,
+[data-theme="dark"] .arrow:focus-visible { color: #d4d4d8; }
+[data-theme="dark"] .track { background: #3f3f46; }
+[data-theme="dark"] .board td { border-color: #27272a; }
+[data-theme="dark"] .sub,
+[data-theme="dark"] .byline { color: #a1a1aa; }
+[data-theme="dark"] .thumb { background: #27272a; }
+[data-theme="dark"] .credits { color: #d4d4d8; }
+[data-theme="dark"] .copies { background: #27272a; }
+[data-theme="dark"] .reportTags { color: #71717a; }
+[data-theme="dark"] .latestTitle { color: #d4d4d8; }
+[data-theme="dark"] .latestLabel { color: #71717a; }
+[data-theme="dark"] .source { color: #a1a1aa; }
+[data-theme="dark"] .sourceTitle { color: #d4d4d8; }
+[data-theme="dark"] .change[data-down] { color: #a1a1aa; background: #27272a; }
+[data-theme="dark"] .views { color: #d4d4d8; }
+[data-theme="dark"] .thumbBox { background: #27272a; }

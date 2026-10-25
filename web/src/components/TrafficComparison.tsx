@@ -56,7 +56,7 @@ function Change({ value }: { value: number | null }) {
     <span
       className={
         value == null
-          ? 'text-zinc-500'
+          ? 'text-zinc-500 dark:text-zinc-400'
           : value > 0
             ? 'text-emerald-700 dark:text-emerald-400'
             : value < 0
@@ -277,7 +277,7 @@ export default function TrafficComparison({
                   )}
                   <span className="flex min-w-0 items-baseline gap-2 whitespace-nowrap">
                     <span className={`${table.leadText} font-medium`}>{outlet.name}</span>
-                    <span className={`${table.leadExtra} ${table.leadText} shrink-[3] text-[11px] text-zinc-500`}>
+                    <span className={`${table.leadExtra} ${table.leadText} shrink-[3] text-[11px] text-zinc-500 dark:text-zinc-400`}>
                       {outlet.domain ??
                         (outlet.media && mediaNames[outlet.media]?.status === 'historical' ? '歷史來源・原網域已停用' : '網域待確認')}
                       {outlet.sourceKind === 'discovery' && ' · 文章發現來源'}
@@ -307,7 +307,7 @@ export default function TrafficComparison({
                   </td>
                   <td className={`${table.num} py-1.5`}>{count == null ? '—' : count.toLocaleString('zh-TW')}</td>
                   <td
-                    className={`${table.num} py-1.5 ${week && !week.full ? 'text-zinc-500' : ''}`}
+                    className={`${table.num} py-1.5 ${week && !week.full ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
                     title={week && !week.full ? '開始收錄還不滿 7 天，數字只涵蓋那幾天' : undefined}
                   >
                     {week ? week.last7d.toLocaleString('zh-TW') : '—'}
@@ -334,7 +334,7 @@ export default function TrafficComparison({
                   </td>
                   <td className={`${table.num} py-1.5 whitespace-nowrap`} title={shared ?? taiwanTitle}>
                     {tw && 'override' in tw && tw.override && (
-                      <span className="mr-1 rounded bg-amber-100 px-1 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                      <span className="mr-1 rounded bg-amber-100 px-1 text-[11px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                         人工
                       </span>
                     )}
@@ -362,7 +362,7 @@ export default function TrafficComparison({
                     {readers == null ? '—' : `${readers.below ? '< ' : ''}${trafficNumber(readers.visits)}`}
                   </td>
                   <td
-                    className={`${table.num} py-1.5 whitespace-nowrap ${readers?.below ? 'text-zinc-500' : ''}`}
+                    className={`${table.num} py-1.5 whitespace-nowrap ${readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
                     title={shared ?? perArticle?.title ?? shareOut?.perArticleNote}
                   >
                     {perArticle ? `${readers?.below ? '< ' : ''}${trafficNumber(perArticle.visits)}` : '—'}
@@ -403,7 +403,7 @@ export default function TrafficComparison({
             })}
           </tbody>
         </table>
-        {!filtered.length && <p className="p-8 text-center text-sm text-zinc-500">沒有符合條件的媒體。</p>}
+        {!filtered.length && <p className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合條件的媒體。</p>}
       </TableScroller>
     </section>
   );

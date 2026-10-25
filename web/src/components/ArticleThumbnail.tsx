@@ -10,6 +10,7 @@ export default function ArticleThumbnail({ src, href, title }: { src: string | n
   if (!isAllowedImage(src)) return null;
   return (
     <Link
+      prefetch={false}
       data-vital-region="article-thumbnail"
       href={href}
       tabIndex={-1}

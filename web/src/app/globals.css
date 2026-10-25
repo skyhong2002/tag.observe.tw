@@ -150,6 +150,9 @@ select:not([multiple]):not([size]) {
     font-family: var(--font-sans);
     color: var(--color-zinc-500);
   }
+  [data-theme="dark"] .table-stack td[data-label]::before {
+    color: var(--color-zinc-400);
+  }
 }
 
 /* Header loading bar shown by NavPending while a header link is navigating. */
@@ -169,4 +172,13 @@ select:not([multiple]):not([size]) {
     width: 100%;
     animation: none;
   }
+}
+
+/* ECharts reads this computed colour for every trend label, including inactive legends. */
+.tag-trend-chart {
+  --tag-chart-label: var(--color-zinc-600);
+  color: var(--tag-chart-label);
+}
+[data-theme="dark"] .tag-trend-chart {
+  --tag-chart-label: var(--color-zinc-300);
 }

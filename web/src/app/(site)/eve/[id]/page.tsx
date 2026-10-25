@@ -98,6 +98,7 @@ interface Coverage {
 }
 type ThreadData = { thread: Thread; related: number[]; hours: Hour[] };
 type View = 'timeline' | 'camps' | 'outlets';
+const HEADLINES_SHOWN = 80;
 const VIEWS: Array<[View, string]> = [
   ['timeline', '依時間'],
   ['camps', '藍綠對照'],
@@ -148,7 +149,16 @@ export default async function EventThreadPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ view?: string; sort?: string; dir?: string; order?: string; at?: string; group?: string; trend?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    sort?: string;
+    dir?: string;
+    order?: string;
+    at?: string;
+    group?: string;
+    trend?: string;
+    all?: string;
+  }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -202,7 +212,11 @@ export default async function EventThreadPage({
     ? splitByRelevance(cov.byOutlet, relevanceFloor(cov.byOutlet, cov.majorTags.length))
     : { core: [], fringe: [] };
   const coreCount = core.reduce((n, o) => n + o.articles.length, 0);
-  const groups = (span === 'hour' ? groupByHour : groupByDay)(flattenArticles(core, order));
+  // A big story has hundreds of headlines (66,000px on a phone); list the first ones.
+  const all = sp.all === '1';
+  const timed = flattenArticles(core, order);
+  const shownTimed = all ? timed : timed.slice(0, HEADLINES_SHOWN);
+  const groups = (span === 'hour' ? groupByHour : groupByDay)(shownTimed);
   const loose = flattenArticles(fringe, order);
   // The headline's own report already sits at the top of the page.
   const leads = leadStories(core.map((o) => ({ ...o, articles: o.articles.filter((a) => a.id !== lead?.id) })));
@@ -218,6 +232,7 @@ export default async function EventThreadPage({
       order: order === 'desc' ? undefined : order,
       group: span === 'day' ? undefined : span,
       trend: sp.trend,
+      all: all ? '1' : undefined,
       sort: sort === 'articles' ? undefined : sort,
       dir: sort === 'articles' && dir === 'desc' ? undefined : dir,
       ...q,
@@ -305,7 +320,7 @@ export default async function EventThreadPage({
               <Link
                 key={tag}
                 href={`/tag/${encodeURIComponent(tag)}/`}
-                className="rounded-full bg-brand-700 px-2 py-0.5 text-xs font-medium text-white dark:bg-brand-600"
+                className="rounded-full bg-brand-700 px-2 py-0.5 text-xs font-medium text-white"
               >
                 {tag}
               </Link>
@@ -484,7 +499,7 @@ export default async function EventThreadPage({
                       <p className={`flex items-center gap-1.5 text-xs ${CAMP_TEXT[f.camp]}`}>
                         <CampDot camp={f.camp} />
                         {f.outlet.title}
-                        <span className="tabular-nums text-zinc-500">{taipei(f.article.publishedAt)}</span>
+                        <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{taipei(f.article.publishedAt)}</span>
                       </p>
                       <Link href={articleHref(f.article)} className="line-clamp-2 leading-snug hover:underline">
                         {f.article.title}
@@ -568,7 +583,23 @@ export default async function EventThreadPage({
           ) : (
             <ByOutlet byOutlet={core} order={order} />
           )
-        ) : (
+        ) : null}
+        {coreCount > 0 && view !== 'outlets' && shownTimed.length < timed.length && (
+          <p className="text-sm">
+            <Link
+              prefetch={false}
+              href={href({ all: '1' }, 'headlines')}
+              scroll={false}
+              className="text-brand-700 hover:underline dark:text-brand-400"
+            >
+              顯示其餘 {timed.length - shownTimed.length} 篇標題
+            </Link>
+            <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+              目前列出{order === 'desc' ? '最新' : '最早'} {shownTimed.length} 篇
+            </span>
+          </p>
+        )}
+        {coreCount > 0 ? null : (
           <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
             {news.map((n) => (
               <li key={n.url} className="flex gap-3 p-3">

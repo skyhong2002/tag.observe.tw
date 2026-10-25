@@ -1,0 +1,37 @@
+# F1 解凍後部署與回滾計畫（離線，尚未执行）
+
+> 2026-10-14 SM007 實際進度：APP677／BUILD Pmj 的四個匿名主要頁面16張實圖已由非作者逐張review；深色標籤空狀態有兩個AA blocker，proxy audit亦為partial。兩處對比source修正已提交推送 `aff5c028`；截圖收尾source修正為 `5f5870ff`。新APP目前**沒有BUILD_ID／新artifact／UI pass**，不能部署舊artifact冒充修正完成。舊runtime及所有證據保留。實際結果見 [007](sm-paired-007-review-20261014.md)，source與後續界線見 [對比修正](tag-empty-copy-dark-contrast-20261014.md)。B0／SSR／RSC與no-store回歸仍需真正執行，不由本批source測試取代。
+
+> Latest user decision, 2026-10-13: the deployment prerequisite is now same-artifact technical checks (native loader, privacy/no-store regression including SSR/RSC barriers), fresh three-site/global resource gates, and independent actual candidate image review of the homepage and main new feature pages with no blocking findings. Full remaining route review continues after deployment and stays pending in the ledger. Every actual deploy still requires babysit to review exact deployment/rollback commands and a fresh probe. No rebuild at deploy, interruption of service, synthetic GA, Cloudflare/WAF change, deletion of retained data, or schema rollback is authorized by this change. The older full-route-before-switch requirement below is historical. The fixed current candidate is APP `677a0c793eeda0c4d850c81ac574c95508d08e0a`, BUILD_ID `PmjYScQDDoJKBr43SLkhd`, inventory `f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7`; control OPS is separate. A read-only host observation during the 2026-10-13 evening continuation (exact observation UTC was not recorded) still resolved `current` to release `0dd38b629621e27ccb40260a27b27cf2d7202519`, BUILD_ID `lUh5SHWkCvh3PG7eyAm20`. This is a host-side identity check, not new production browser acceptance.
+
+> 2026-10-13 使用者已明確解凍。執行門檻與建置交接以 [unfreeze-gates-20261013.md](unfreeze-gates-20261013.md) 為準；下列舊容量/load門檻已被取代。Worker順序及回滾限制仍適用。尚未執行新部署。
+
+盤點基準 `b8d030c747f87c997800371e33e1ab2d168ad257`。此文件只讀既有 source／artifact；未 build、capture、probe、備份、部署或清理。既有正式版本依 release 記錄為 `0dd38b629621e27ccb40260a27b27cf2d7202519`，不是本次重新查驗。最初遠端基底為 `430cc019b41f769f361b4759f4a4651068aad328`，後合併 `a89908a`；解凍後必須重新 fetch、比較遠端 default branch，使用隔離 worktree，不能 reset 共用 checkout。
+
+## 按順序解除 gate
+
+1. **Source freeze**：主協調者整合所有已授權小修及文件後，記錄唯一完整 SHA、tracked clean 狀態、dependency lock hash、worker/API/UI source 身分與測試輸出。完成純 mock／unit、型別及獨立 source review；不得把 `dba9325` 舊 artifact 的 UI pass 搬到最新 SHA。`6479276` suggestions 修補及四項 UI regression、F1 公開投影/cache/privacy 契約的既有離線測試只證明測試涵蓋範圍。T-ref scope/path 盤點屬依賴，不能代替畫面驗收。若 source blocking 尚存，不先 build。
+2. **使用者明確解除完整 freeze**後，才重新量主機容量／load／build/browser 數及授權服務可用性。先確認原有 release、備份保留、沒有競爭 build；不得為騰空間刪除它們。installer 的 10 GiB 是最低拒絕線，不是完整 build/capture 容量承諾；先估 dependency、standalone、cache 和後續證據預算並留正式服務餘裕。capture 既有計畫採 >113 GiB 空間、load≤12、批次≤16、預估≤96 MiB，必須依使用者當次核准預算重新確認，不能沿用歷史數字當現況。
+3. **低資源 build**：先fetch並驗remote default ancestor、唯一APP/OPS SHA與乾淨來源，exact命令及fresh probe交babysit核對；新建置名額尚未核准，不能沿用007的candidate/capture許可。Next `cpus:2`、`staticGenerationMaxConcurrency:1`，`nice19`／`ionicec3`；SM全站最多1build（含YT遠端）、2browser。三站各量3次HTML取time_total中位數，tag2.0／blog6.17／YT2.0秒；任何一次HTTP非200／curl錯誤或load>12即不開始，執行中停自己的build process group。磁碟開始≥40GiB、執行中低於30GiB暫停；預算與MemAvailable／全組RSS保護也須明列。正式baseline UTC2026-10-13T05:47Z，blog3.085秒包括origin、edge與網路，不是精確origin渲染時間。API須真實綁定既有隔離DB/readiness；若沿用APP677 API供新web build，必須核對新APP整個app subtree與677相同、清楚記兩個source身分，不偽造loaded新APP或用正式API代替。exclusive candidate目錄、sibling HOME、私有串流log、原截止及同owner鎖綁定須經獨審。兩workers不限制單handler查詢fan-out；保留原pool2/queue64及已審SELECT scheduler。記錄所有trial、pause／resume／exit／UTC；失敗不刪檔或盲重試。
+4. **同 SHA 候選**：一次 build 成功後才 release smoke、確認 COMMIT/BUILD_ID/API source PID cwd 和 fixture 身分，保留舊 immutable chunks。candidate 使用隔離入口、fixture caches 不得進 runtime。重新依 65 主 route 加適用狀態矩陣，在1280／390驗 loaded、少筆、empty、error、loading、角色、互動及頁尾；新 relation／private image／pending approval／suggestions、長標籤繼承badge、單一 admin gate、crawler empty 都須真圖。既有9 notes implementations及新狀態不是額外 route。每小批先 gate，原證據保留；證據截斷／超預算／來源SHA不符不得算完整。
+5. **獨立畫面 review**：非產品作者逐圖核對同 SHA，更新各 route 狀態及 blocking，不能用 HTTP200、DOM、source review 代替。若必須改產品 source，重新 freeze SHA，停止沿用前版候選通過證據；「一次 build」是 source 已準備完的目標，不能以此跳過失敗驗證。babysit 完成候選實際畫面與操作驗收後，才排正式切換。
+
+## Worker 與連續服務切換
+
+0038 已於 UTC 2026-10-12 20:07:12.438–20:07:13.599 applied；journal 38→39，新增 `tag_submissions`、`tag_submission_log`、`tag_relation_lock` 及 indexes/singleton，沒有 ALTER、trigger 或 crawler write change。不得重跑此 migration。既有選表備份及隔離還原成功事實／hash在 [release 記錄](f1-release-20261013.md)，保留原檔；本工作沒有新備份。
+
+**新 pending-image worker 必須先於任何新投稿 API admission**。切換前仍由舊 gateway 服務閱讀，保持新投稿入口不可到達；drain/停止舊 worker 領新 job，等待 active jobs 收束，核對 queue 類型、worker source SHA、job handler 私有候選／pending 政策和公開 visual 未自動發布，再啟動新 worker。不可只改 frontend symlink；也不可先開API再賭舊 worker 尚未取到新 job。若不能證明沒有舊 worker consumer，就不開投稿。prepared API 曾運行不等同公開已開放。
+
+既有 `scripts/install-service.sh` 會變 current symlink 並 restart 固定埠 web/worker/gateway，會有連線拒絕；**它不是無中斷切換控制器，不直接以此完成此要求**。routing owner 需交接：可持續服務的前門／upstream ownership與操作權、兩組不同埠 frontend+gateway 的確切目標、候選與舊版健康/identity檢查、選定的小批流量比例與session/credential路由、每階段觀察窗與錯誤/latency中止線、連線 drain、立即原路回切操作及負責人。固定 upstream 無法分批时，須先提供有權限的本機前門方案；未具備就保持舊公開站、新投稿關閉並標 blocked。此工作不改 Cloudflare／WAF。
+
+在 owner 已核准並演練回切後，先保留完整舊 pool，再切少量流量到同 SHA 新 gateway+web，驗匿名與憑證 cache、HSTS、404/error、reader opt-out、relations與圖片待審政策；觀察窗通過才增加。以既有授權小樣本驗證正式畫面，不重跑全站 capture。實際UTC、版本、routing與驗收結果要事後如實記錄；babysit 最後確認公開畫面。
+
+## 回滾
+
+保留 `0dd38b6` 舊 runtime、所有原 release／備份與新審核資料，不 DROP 0038 tables，不覆蓋 journal，不以舊 dump還原正式DB。additive schema允許舊 application忽略新表；這是 source相容性，不代表新feature在舊版等價可用。
+
+先關新投稿 admission並阻止新 avatar job產生，drain新 worker；將公開閱讀流量切回健康舊 gateway+web，同時保留新 pending-image worker或暫停 avatar consumer。**不得在含新投稿job的queue直接恢復舊worker**：舊發布政策可能直接 publish。確定所有待審job及候選仍私有、隔離/處置方案已審核後，才允許舊 consumer處理相容工作；否則保持該consumer停用，明示功能降級。回切後驗舊SHA、服務可用、cache/privacy與新資料保留，記錄失敗原因及下一次重新freeze所需項目。
+
+提交狀態：本分工未 commit／未 push，由主協調者整合。部署狀態：未部署；這是解凍後計畫，沒有新runtime／browser／正式驗證。
+
+後續 PSI 離線批已整合至產品 source `e68987fb2e5adaf92c07a92931b04ebb089710a6`（未建置）。目前候選目標以此版為準；若解凍後整合新的遠端修改，再重新鎖定唯一 SHA。逐頁兩寬／亮暗色及條件狀態以 `docs/ui-review/f1-recapture-matrix.csv` 為準，仍為 pending；容量配置與條件限制見主 ledger，不能拿 source review 當作縮減頁面驗收的依據。PSI 只在解凍後同 SHA candidate 跑3次，原始設定及指標要求见 `docs/psi-mobile-offline-20261013.md`。

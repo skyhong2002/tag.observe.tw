@@ -57,6 +57,8 @@ export default function CampShareSummary({ initialShare, children }: { initialSh
       <p className={styles.campShareLabel}>
         過去 24 小時新聞量
         <span>{share ? `${share.articles.toLocaleString()} 篇` : '待更新'}</span>
+        {/* Other pages count every collected outlet; say which outlets this one counts. */}
+        <small className={styles.campShareScope}>「新聞媒體」類別</small>
       </p>
       <div className={styles.campShareChart}>
         {share ? (

@@ -12,6 +12,8 @@ import {
   tagGroupMemberLog,
   tagPeopleLog,
   tagPictureVotes,
+  tagRelationVotes,
+  tagSubmissions,
   tagVisualLog,
   userFollows,
   userRoleLog,
@@ -37,7 +39,22 @@ export const METRICS: Metric[] = [
   { key: 'follows', label: '追蹤', group: 'use', sources: [byId(userFollows, userFollows.userId, userFollows.createdAt)] },
   { key: 'saves', label: '收藏', group: 'use', sources: [byId(userSaves, userSaves.userId, userSaves.createdAt)] },
   { key: 'reports', label: '回報', group: 'contribute', sources: [byId(readerReports, readerReports.userId, readerReports.createdAt)] },
-  { key: 'votes', label: '投票', group: 'contribute', sources: [byId(tagPictureVotes, tagPictureVotes.userId, tagPictureVotes.at)] },
+  {
+    key: 'votes',
+    label: '投票',
+    group: 'contribute',
+    sources: [
+      byId(tagPictureVotes, tagPictureVotes.userId, tagPictureVotes.at),
+      byId(tagRelationVotes, tagRelationVotes.userId, tagRelationVotes.at),
+    ],
+  },
+  // Pictures and relations readers proposed (/tag/X/picture/, relation submissions).
+  {
+    key: 'submissions',
+    label: '投稿',
+    group: 'contribute',
+    sources: [byId(tagSubmissions, tagSubmissions.createdBy, tagSubmissions.createdAt)],
+  },
   {
     key: 'media',
     label: '媒體設定',
@@ -79,6 +96,13 @@ export const METRICS: Metric[] = [
     sources: [byEmail(readerReports, readerReports.resolvedBy, readerReports.resolvedAt)],
   },
   { key: 'accounts', label: '帳號權限', group: 'admin', sources: [byEmail(userRoleLog, userRoleLog.email, userRoleLog.at)] },
+  // reviewed_by is null when the votes decided; a user id when an admin approved or revoked.
+  {
+    key: 'reviewed',
+    label: '審核投稿',
+    group: 'admin',
+    sources: [byId(tagSubmissions, tagSubmissions.reviewedBy, tagSubmissions.reviewedAt)],
+  },
 ];
 
 export interface UserActivity {

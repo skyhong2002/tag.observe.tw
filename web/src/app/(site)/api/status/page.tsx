@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import PathBreaks from '@/components/PathBreaks';
 import SectionTabs from '@/components/SectionTabs';
 import { API_ORIGIN } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
@@ -96,8 +97,11 @@ export default async function ApiStatusPage() {
                     <td className={`${cellClass} font-mono text-xs`} data-label="方法">
                       {endpoint.method}
                     </td>
-                    <td className={`${cellClass} font-mono break-all`} data-label="端點">
-                      {endpoint.path}
+                    <td className={`${cellClass} font-mono break-words`} data-label="端點">
+                      {/* inline-block keeps wrapped lines beside the stacked 端點 label on phones */}
+                      <span className="inline-block max-w-full align-top">
+                        <PathBreaks path={endpoint.path} />
+                      </span>
                     </td>
                     <td className={cellClass} data-label="用途">
                       {endpoint.description}

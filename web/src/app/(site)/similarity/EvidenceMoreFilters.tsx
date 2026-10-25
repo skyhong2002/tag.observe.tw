@@ -128,7 +128,7 @@ export default function EvidenceMoreFilters({
         />
         %
         <span
-          className="cursor-help text-zinc-400"
+          className="cursor-help text-zinc-500 dark:text-zinc-400"
           title={`相似度、時間差與篇數只適用內文相似的配對，套用時不列明示來源／引用。索引只收相似度 ${floor}% 以上的配對。`}
         >
           ⓘ

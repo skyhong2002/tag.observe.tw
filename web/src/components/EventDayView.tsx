@@ -43,17 +43,16 @@ function DayRun({ e, t, day }: { e: EventItem; t: ArchivedThread; day: string })
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs tabular-nums">
       <Link
+        prefetch={false}
         href={hourHref(hourOf(day, bestAt))}
         className={
-          best === 1
-            ? 'rounded bg-brand-700 px-1 py-px text-white hover:underline dark:bg-brand-500'
-            : 'text-zinc-600 hover:underline dark:text-zinc-400'
+          best === 1 ? 'rounded bg-brand-700 px-1 py-px text-white hover:underline' : 'text-zinc-600 hover:underline dark:text-zinc-400'
         }
         title={`${pad(bestAt)}:00 的事件表`}
       >
         {best === 1 ? '登上第 1 名' : `最高第 ${best} 名`}
       </Link>
-      <span className="text-zinc-500" title="這一天出現在每小時事件表上的小時數與時段">
+      <span className="text-zinc-500 dark:text-zinc-400" title="這一天出現在每小時事件表上的小時數與時段">
         上榜 {on.length} 小時 · {pad(first)}:00{last > first ? `–${pad(last + 1)}:00` : ''}
       </span>
     </span>
@@ -74,10 +73,10 @@ function Folded({ threads }: { threads: ArchivedThread[] }) {
         {threads.map((t) => (
           <li key={t.id} className="flex min-w-0 items-baseline gap-1.5">
             <span aria-hidden>↳</span>
-            <Link href={`/eve/${t.id}/`} className="line-clamp-1 text-zinc-700 hover:underline dark:text-zinc-300">
+            <Link prefetch={false} href={`/eve/${t.id}/`} className="line-clamp-1 text-zinc-700 hover:underline dark:text-zinc-300">
               {headline(t)}
             </Link>
-            {t.hoursOnDay ? <span className="shrink-0 tabular-nums text-zinc-500">{t.hoursOnDay} 小時</span> : null}
+            {t.hoursOnDay ? <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">{t.hoursOnDay} 小時</span> : null}
           </li>
         ))}
       </ul>
@@ -194,7 +193,7 @@ export default function EventDayView({ data, media, today }: { data: EventDay; m
                     className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
                   >
                     其他事件
-                    <span className="text-xs font-normal text-zinc-500">
+                    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
                       第 {items[0].rank} 到 {items[items.length - 1].rank} 名
                     </span>
                   </h2>

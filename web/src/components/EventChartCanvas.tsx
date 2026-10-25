@@ -138,7 +138,7 @@ export default function EventChart({
           return [fmt(p.t), ...lines].join('<br/>');
         },
       },
-      legend: { type: 'scroll', top: 0, textStyle: { color: ink }, pageTextStyle: { color: ink } },
+      legend: { type: 'scroll', top: 0, textStyle: { color: ink }, inactiveColor: ink, pageTextStyle: { color: ink } },
       grid: [
         { left: 44, right: right, top: 52, height: '42%' },
         { left: 44, right: right, top: '66%', bottom: 28 },

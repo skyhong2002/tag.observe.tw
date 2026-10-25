@@ -78,13 +78,58 @@ export interface FeedTopic extends Topic {
 }
 async function get<T>(path: string, revalidate: number): Promise<T | null> {
   // null on any failure (API down during a build, 503 before the first snapshot).
+  const topicsRequest = path.startsWith('/api/v1/topics?');
+  const started = performance.now();
+  let status: number | undefined;
+  let firstFailure: string | undefined;
   try {
-    let res = await fetch(API_ORIGIN + path, { next: { revalidate } });
+    let res: Response | undefined;
+    try {
+      res = await fetch(API_ORIGIN + path, { next: { revalidate } });
+    } catch (error) {
+      // Topic panels also recover from one interrupted connection. Keep the
+      // other page fetchers' transport-failure behaviour unchanged.
+      if (!topicsRequest) throw error;
+      firstFailure = 'transport';
+    }
     // A 502/503 caught while the API restarts (every deploy) would otherwise be
     // served from the data cache for the whole revalidate window.
-    if (!res.ok) res = await fetch(API_ORIGIN + path, { cache: 'no-store' });
-    return res.ok ? ((await res.json()) as T) : null;
-  } catch {
+    if (!res?.ok) {
+      if (res) {
+        firstFailure = `http-${res.status}`;
+        status = res.status;
+      }
+      // Next memoizes identical GETs even when only `cache` changes. A signal
+      // makes this topics retry reach the origin instead of replaying the
+      // failed response. Do not await cancel on Next's tee-cloned error body:
+      // its retained memoization branch can keep that promise pending.
+      res = await fetch(API_ORIGIN + path, {
+        cache: 'no-store',
+        ...(topicsRequest ? { signal: AbortSignal.timeout(10000) } : {}),
+      });
+    }
+    status = res.status;
+    const data = res.ok ? ((await res.json()) as T) : null;
+    if (topicsRequest) {
+      const diagnostic = {
+        outcome: res.ok ? (firstFailure ? 'recovered' : 'ok') : 'unavailable',
+        firstFailure,
+        status,
+        elapsedMs: Math.round(performance.now() - started),
+      };
+      if (!res.ok || firstFailure) console.warn('topics SSR request', diagnostic);
+      else console.info('topics SSR request', diagnostic);
+    }
+    return data;
+  } catch (error) {
+    if (topicsRequest)
+      console.warn('topics SSR request', {
+        outcome: 'unavailable',
+        firstFailure,
+        status,
+        failure: error instanceof SyntaxError ? 'invalid-json' : 'transport',
+        elapsedMs: Math.round(performance.now() - started),
+      });
     return null;
   }
 }

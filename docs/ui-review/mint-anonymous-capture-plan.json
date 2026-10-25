@@ -1,0 +1,1473 @@
+{
+  "schema": "tag-ledger-anonymous-capture-plan-v1",
+  "appSha": "677a0c793eeda0c4d850c81ac574c95508d08e0a",
+  "artifactOpsSha": "c70425b007bdac9fdbef62b935811ee0d7f30d18",
+  "buildId": "PmjYScQDDoJKBr43SLkhd",
+  "inventorySha256": "f1660cad5f25347416054a7f21bacfb1b3583e442bdad292e18008170f7b1ad7",
+  "manifestSha256": "76142c7930cbd2e471f02cf68130fa01acbfb54d2c6a4309fc8198185987e7e0",
+  "ledgerPrimaryRoutes": 65,
+  "anonymousRoutes": 53,
+  "deferredAuthRoutes": 12,
+  "screenshotsPlanned": 212,
+  "batchCountEstimate": 14,
+  "estimatedScreenshotMiB": 106.0,
+  "worstCaseBatchMiB": 96,
+  "worstCaseTotalMiB": 1344,
+  "baseline": {
+    "utc": "2026-10-13T05:47Z",
+    "method": "five DNT1 homepage HTML curl time_total median; includes origin+edge+network",
+    "tag": 0.256,
+    "blog": 3.085,
+    "youtube": 0.289
+  },
+  "gates": {
+    "totalSeconds": {
+      "tag": 2,
+      "blog": 6.17,
+      "youtube": 2
+    },
+    "load1Max": 12,
+    "startFreeGiB": 40,
+    "pauseBelowGiB": 30,
+    "globalBuildMax": 1,
+    "globalBrowserMax": 2
+  },
+  "routes": [
+    {
+      "ledgerId": "001",
+      "route": "/",
+      "page": "web/src/app/page.tsx",
+      "examplePath": "/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "002",
+      "route": "/tag/[tag]/",
+      "page": "web/src/app/(site)/tag/[tag]/page.tsx",
+      "examplePath": "/tag/柯文哲/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "003",
+      "route": "/tag/[tag]/picture/",
+      "page": "web/src/app/(site)/tag/[tag]/picture/page.tsx",
+      "examplePath": "/tag/柯文哲/picture/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Anonymous login-required notice only; authenticated vote/upload pipeline remains pending"
+    },
+    {
+      "ledgerId": "004",
+      "route": "/ranking/",
+      "page": "web/src/app/(site)/ranking/page.tsx",
+      "examplePath": "/ranking/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "005",
+      "route": "/event/",
+      "page": "web/src/app/(site)/event/page.tsx",
+      "examplePath": "/event/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "006",
+      "route": "/eve/[id]/",
+      "page": "web/src/app/(site)/eve/[id]/page.tsx",
+      "examplePath": "/eve/1608/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "007",
+      "route": "/eve/[id]/headlines/",
+      "page": "web/src/app/(site)/eve/[id]/headlines/page.tsx",
+      "examplePath": "/eve/1608/headlines/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "008",
+      "route": "/article/[id]/",
+      "page": "web/src/app/(site)/article/[id]/page.tsx",
+      "examplePath": "/article/53018528/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "009",
+      "route": "/search/",
+      "page": "web/src/app/(site)/search/page.tsx",
+      "examplePath": "/search/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "010",
+      "route": "/media/",
+      "page": "web/src/app/(site)/media/page.tsx",
+      "examplePath": "/media/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "011",
+      "route": "/article/",
+      "page": "web/src/app/(site)/article/page.tsx",
+      "examplePath": "/article/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "012",
+      "route": "/topic/",
+      "page": "web/src/app/(site)/topic/page.tsx",
+      "examplePath": "/topic/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "013",
+      "route": "/feature/",
+      "page": "web/src/app/(site)/feature/page.tsx",
+      "examplePath": "/feature/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "014",
+      "route": "/admin/tags/",
+      "page": "web/src/app/(site)/admin/tags/page.tsx",
+      "examplePath": "/admin/tags/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "015",
+      "route": "/admin/",
+      "page": "web/src/app/(site)/admin/page.tsx",
+      "examplePath": "/admin/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "016",
+      "route": "/admin/avatars/",
+      "page": "web/src/app/(site)/admin/avatars/page.tsx",
+      "examplePath": "/admin/avatars/?tag=柯文哲",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "017",
+      "route": "/admin/media/",
+      "page": "web/src/app/(site)/admin/media/page.tsx",
+      "examplePath": "/admin/media/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "018",
+      "route": "/admin/tag-groups/",
+      "page": "web/src/app/(site)/admin/tag-groups/page.tsx",
+      "examplePath": "/admin/tag-groups/?tag=柯文哲",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "019",
+      "route": "/admin/tag-visuals/",
+      "page": "web/src/app/(site)/admin/tag-visuals/page.tsx",
+      "examplePath": "/admin/tag-visuals/?tag=柯文哲",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "020",
+      "route": "/admin/writing/",
+      "page": "web/src/app/(site)/admin/writing/page.tsx",
+      "examplePath": "/admin/writing/?tag=柯文哲",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "021",
+      "route": "/api/",
+      "page": "web/src/app/(site)/api/page.tsx",
+      "examplePath": "/api/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "022",
+      "route": "/api/status/",
+      "page": "web/src/app/(site)/api/status/page.tsx",
+      "examplePath": "/api/status/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "023",
+      "route": "/article/query/",
+      "page": "web/src/app/(site)/article/query/page.tsx",
+      "examplePath": "/article/query/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "024",
+      "route": "/byline/",
+      "page": "web/src/app/(site)/byline/page.tsx",
+      "examplePath": "/byline/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "025",
+      "route": "/byline/[key]/",
+      "page": "web/src/app/(site)/byline/[key]/page.tsx",
+      "examplePath": "/byline/organization:民間全民電視公司/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "026",
+      "route": "/cat/[type]/",
+      "page": "web/src/app/(site)/cat/[type]/page.tsx",
+      "examplePath": "/cat/news/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "027",
+      "route": "/crawlers/",
+      "page": "web/src/app/(site)/crawlers/page.tsx",
+      "examplePath": "/crawlers/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "028",
+      "route": "/crawlers/traffic/",
+      "page": "web/src/app/(site)/crawlers/traffic/page.tsx",
+      "examplePath": "/crawlers/traffic/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "029",
+      "route": "/demo/",
+      "page": "web/src/app/demo/page.tsx",
+      "examplePath": "/demo/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "030",
+      "route": "/demo/compare/",
+      "page": "web/src/app/demo/compare/page.tsx",
+      "examplePath": "/demo/compare/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "031",
+      "route": "/event/archive/",
+      "page": "web/src/app/(site)/event/archive/page.tsx",
+      "examplePath": "/event/archive/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "032",
+      "route": "/feature/[media]/",
+      "page": "web/src/app/(site)/feature/[media]/page.tsx",
+      "examplePath": "/feature/setn/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "033",
+      "route": "/feature/[media]/[id]/",
+      "page": "web/src/app/(site)/feature/[media]/[id]/page.tsx",
+      "examplePath": "/feature/setn/50/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "034",
+      "route": "/group/",
+      "page": "web/src/app/(site)/group/page.tsx",
+      "examplePath": "/group/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "035",
+      "route": "/group/[id]/",
+      "page": "web/src/app/(site)/group/[id]/page.tsx",
+      "examplePath": "/group/1/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "036",
+      "route": "/journalist/",
+      "page": "web/src/app/(site)/journalist/page.tsx",
+      "examplePath": "/journalist/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "037",
+      "route": "/journalist/[name]/",
+      "page": "web/src/app/(site)/journalist/[name]/page.tsx",
+      "examplePath": "/journalist/方承業/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "038",
+      "route": "/liveboard/",
+      "page": "web/src/app/liveboard/page.tsx",
+      "examplePath": "/liveboard/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "039",
+      "route": "/liveboard/setting/",
+      "page": "web/src/app/(site)/liveboard/setting/page.tsx",
+      "examplePath": "/liveboard/setting/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "040",
+      "route": "/liveboard/settings/",
+      "page": "web/src/app/liveboard/settings/page.tsx",
+      "examplePath": "/liveboard/settings/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "041",
+      "route": "/login/",
+      "page": "web/src/app/(site)/login/page.tsx",
+      "examplePath": "/login/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "042",
+      "route": "/media/[media]/",
+      "page": "web/src/app/(site)/media/[media]/page.tsx",
+      "examplePath": "/media/cnews/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "043",
+      "route": "/media/[media]/articles/",
+      "page": "web/src/app/(site)/media/[media]/articles/page.tsx",
+      "examplePath": "/media/cnews/articles/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "044",
+      "route": "/media/[media]/references/",
+      "page": "web/src/app/(site)/media/[media]/references/page.tsx",
+      "examplePath": "/media/cnews/references/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "045",
+      "route": "/media/crawlers/",
+      "page": "web/src/app/(site)/media/crawlers/page.tsx",
+      "examplePath": "/media/crawlers/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "046",
+      "route": "/media/sources/",
+      "page": "web/src/app/(site)/media/sources/page.tsx",
+      "examplePath": "/media/sources/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "047",
+      "route": "/media/traffic/",
+      "page": "web/src/app/(site)/media/traffic/page.tsx",
+      "examplePath": "/media/traffic/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "048",
+      "route": "/method/",
+      "page": "web/src/app/(site)/method/page.tsx",
+      "examplePath": "/method/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "049",
+      "route": "/my/",
+      "page": "web/src/app/(site)/my/page.tsx",
+      "examplePath": "/my/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "050",
+      "route": "/my/following/",
+      "page": "web/src/app/(site)/my/following/page.tsx",
+      "examplePath": "/my/following/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "051",
+      "route": "/my/reading/",
+      "page": "web/src/app/(site)/my/reading/page.tsx",
+      "examplePath": "/my/reading/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "052",
+      "route": "/my/saved/",
+      "page": "web/src/app/(site)/my/saved/page.tsx",
+      "examplePath": "/my/saved/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "053",
+      "route": "/my/settings/",
+      "page": "web/src/app/(site)/my/settings/page.tsx",
+      "examplePath": "/my/settings/",
+      "anonymousCapture": false,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false,
+      "deferredReason": "admin or ReaderGate requires existing authorized login; anonymous batch must not enter"
+    },
+    {
+      "ledgerId": "054",
+      "route": "/observe/",
+      "page": "web/src/app/(site)/observe/page.tsx",
+      "examplePath": "/observe/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "055",
+      "route": "/observe/opt-out/",
+      "page": "web/src/app/(site)/observe/opt-out/page.tsx",
+      "examplePath": "/observe/opt-out/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "056",
+      "route": "/readers/",
+      "page": "web/src/app/(site)/readers/page.tsx",
+      "examplePath": "/readers/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "057",
+      "route": "/similarity/",
+      "page": "web/src/app/(site)/similarity/page.tsx",
+      "examplePath": "/similarity/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "058",
+      "route": "/similarity/about/",
+      "page": "web/src/app/(site)/similarity/about/page.tsx",
+      "examplePath": "/similarity/about/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "059",
+      "route": "/similarity/daily/",
+      "page": "web/src/app/(site)/similarity/daily/page.tsx",
+      "examplePath": "/similarity/daily/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": true,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "060",
+      "route": "/similarity/reposts/",
+      "page": "web/src/app/(site)/similarity/reposts/page.tsx",
+      "examplePath": "/similarity/reposts/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "061",
+      "route": "/similarity/sources/",
+      "page": "web/src/app/(site)/similarity/sources/page.tsx",
+      "examplePath": "/similarity/sources/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "062",
+      "route": "/topic/[media]/",
+      "page": "web/src/app/(site)/topic/[media]/page.tsx",
+      "examplePath": "/topic/newtalk/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "063",
+      "route": "/topic/[media]/[id]/",
+      "page": "web/src/app/(site)/topic/[media]/[id]/page.tsx",
+      "examplePath": "/topic/newtalk/2473/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": true,
+      "scopeLimit": "Existing fixture may lack this example; actual 404 cannot pass normal/many/sparse page. Record response and keep missing data states pending."
+    },
+    {
+      "ledgerId": "064",
+      "route": "/writing/",
+      "page": "web/src/app/(site)/writing/page.tsx",
+      "examplePath": "/writing/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    },
+    {
+      "ledgerId": "065",
+      "route": "/writing/titles/",
+      "page": "web/src/app/(site)/writing/titles/page.tsx",
+      "examplePath": "/writing/titles/",
+      "anonymousCapture": true,
+      "ledgerStatus": "pending",
+      "dataScope": "real-isolated-fixture; not production data",
+      "states": [
+        "1280-light",
+        "1280-dark",
+        "390-light",
+        "390-dark"
+      ],
+      "redirect": false,
+      "dynamicTemplate": false
+    }
+  ],
+  "batches": [
+    {
+      "sessionId": "batch-001",
+      "paths": [
+        "/",
+        "/tag/柯文哲/",
+        "/tag/柯文哲/picture/",
+        "/ranking/"
+      ],
+      "ledgerIds": [
+        "001",
+        "002",
+        "003",
+        "004"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-002",
+      "paths": [
+        "/event/",
+        "/eve/1608/",
+        "/eve/1608/headlines/",
+        "/article/53018528/"
+      ],
+      "ledgerIds": [
+        "005",
+        "006",
+        "007",
+        "008"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-003",
+      "paths": [
+        "/search/",
+        "/media/",
+        "/article/",
+        "/topic/"
+      ],
+      "ledgerIds": [
+        "009",
+        "010",
+        "011",
+        "012"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-004",
+      "paths": [
+        "/feature/",
+        "/api/",
+        "/api/status/",
+        "/article/query/"
+      ],
+      "ledgerIds": [
+        "013",
+        "021",
+        "022",
+        "023"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-005",
+      "paths": [
+        "/byline/",
+        "/byline/organization:民間全民電視公司/",
+        "/cat/news/",
+        "/crawlers/"
+      ],
+      "ledgerIds": [
+        "024",
+        "025",
+        "026",
+        "027"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-006",
+      "paths": [
+        "/crawlers/traffic/",
+        "/demo/",
+        "/demo/compare/",
+        "/event/archive/"
+      ],
+      "ledgerIds": [
+        "028",
+        "029",
+        "030",
+        "031"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-007",
+      "paths": [
+        "/feature/setn/",
+        "/feature/setn/50/",
+        "/group/",
+        "/group/1/"
+      ],
+      "ledgerIds": [
+        "032",
+        "033",
+        "034",
+        "035"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-008",
+      "paths": [
+        "/journalist/",
+        "/journalist/方承業/",
+        "/liveboard/",
+        "/liveboard/setting/"
+      ],
+      "ledgerIds": [
+        "036",
+        "037",
+        "038",
+        "039"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-009",
+      "paths": [
+        "/liveboard/settings/",
+        "/login/",
+        "/media/cnews/",
+        "/media/cnews/articles/"
+      ],
+      "ledgerIds": [
+        "040",
+        "041",
+        "042",
+        "043"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-010",
+      "paths": [
+        "/media/cnews/references/",
+        "/media/crawlers/",
+        "/media/sources/",
+        "/media/traffic/"
+      ],
+      "ledgerIds": [
+        "044",
+        "045",
+        "046",
+        "047"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-011",
+      "paths": [
+        "/method/",
+        "/observe/",
+        "/observe/opt-out/",
+        "/readers/"
+      ],
+      "ledgerIds": [
+        "048",
+        "054",
+        "055",
+        "056"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-012",
+      "paths": [
+        "/similarity/",
+        "/similarity/about/",
+        "/similarity/daily/",
+        "/similarity/reposts/"
+      ],
+      "ledgerIds": [
+        "057",
+        "058",
+        "059",
+        "060"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-013",
+      "paths": [
+        "/similarity/sources/",
+        "/topic/newtalk/",
+        "/topic/newtalk/2473/",
+        "/writing/"
+      ],
+      "ledgerIds": [
+        "061",
+        "062",
+        "063",
+        "064"
+      ],
+      "shotCount": 16,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    },
+    {
+      "sessionId": "batch-014",
+      "paths": [
+        "/writing/titles/"
+      ],
+      "ledgerIds": [
+        "065"
+      ],
+      "shotCount": 4,
+      "captureSecondsMax": 540,
+      "candidateSecondsMax": 900,
+      "cleanupReserveSeconds": 120,
+      "batchBudgetMiB": 96,
+      "status": "planned-not-admitted"
+    }
+  ],
+  "scopeLimits": [
+    "No admin/ReaderGate authenticated pages; those 12 primary rows stay pending",
+    "003 captures anonymous notice; full authenticated functionality stays pending",
+    "Each dynamic template requires further many/sparse/empty/error/permission evidence; fixture missing examples remain missing not pass",
+    "Redirects keep requested and final URL; actual screenshot is target UI, not independent alias page",
+    "No live-page layout comparison from different SHA is a pass",
+    "No browser/candidate admitted or run by this plan"
+  ],
+  "estimatedAdditionalNetworkProfileMiB": [
+    100,
+    400
+  ],
+  "sourceCheckoutEstimateMiBPerHost": 27
+}

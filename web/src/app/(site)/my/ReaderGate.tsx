@@ -8,7 +8,7 @@ export const card = 'rounded-lg border border-zinc-200 bg-white text-sm dark:bor
 export const button =
   'inline-flex min-h-9 items-center rounded-full border border-zinc-300 px-3 text-sm hover:border-brand-600 disabled:opacity-50 dark:border-zinc-700';
 export const primary =
-  'inline-flex min-h-9 items-center rounded-full bg-brand-700 px-4 text-sm font-medium text-white hover:bg-brand-800 disabled:opacity-50 dark:bg-brand-600';
+  'inline-flex min-h-9 items-center rounded-full bg-brand-700 px-4 text-sm font-medium text-white hover:bg-brand-800 disabled:opacity-50';
 export const field = 'rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 // The /my/ pages need a signed-in reader; the gateway enforces it (/auth/me/*),

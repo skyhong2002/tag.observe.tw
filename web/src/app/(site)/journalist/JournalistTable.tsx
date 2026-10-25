@@ -29,7 +29,7 @@ function MetricCell({ row, metric }: { row: JournalistSummary; metric: Metric })
   return (
     <td className={`${table.num} min-w-28`} title={`${count === null ? '未知' : `${count} 篇`} / 全部 ${row.articles} 篇`}>
       <div className="relative flex items-baseline justify-end gap-2 whitespace-nowrap">
-        <span className={count === 0 ? 'text-zinc-400' : ''}>{count === null ? '—' : number(count)}</span>
+        <span className={count === 0 ? 'text-zinc-500 dark:text-zinc-400' : ''}>{count === null ? '—' : number(count)}</span>
         <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{percent(share)}</span>
         <span className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
           <span
@@ -143,10 +143,10 @@ export default function JournalistTable({
             <li key={outlet.media} className="flex min-w-0 items-center gap-1 whitespace-nowrap">
               <MediaIcon media={outlet.media} title={outlet.name} size={14} />
               <span className="truncate">{outlet.name}</span>
-              <span className="tabular-nums text-zinc-400">{outlet.count}</span>
+              <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{outlet.count}</span>
             </li>
           ))}
-          {row.media.length > 2 && <li className="shrink-0 text-zinc-400">+{row.media.length - 2}</li>}
+          {row.media.length > 2 && <li className="shrink-0 text-zinc-500 dark:text-zinc-400">+{row.media.length - 2}</li>}
         </ul>
       </td>
       <td className={cell}>{number(row.articles)}</td>
@@ -191,7 +191,7 @@ export default function JournalistTable({
           符合 {number(filtered.length)} 人
         </p>
         <span className="flex items-center gap-1">
-          <span className="mr-1 text-zinc-500">排序</span>
+          <span className="mr-1 text-zinc-500 dark:text-zinc-400">排序</span>
           <TabButtons
             label="排序依據"
             options={[
@@ -372,7 +372,7 @@ export default function JournalistTable({
           </button>
         </div>
       )}
-      {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500">沒有符合的記者。</p>}
+      {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合的記者。</p>}
     </div>
   );
 }

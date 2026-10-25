@@ -51,7 +51,7 @@ const tones: Record<CloudTone, string> = {
   stone: 'fill-stone-600 dark:fill-stone-400',
 };
 const badges = {
-  brand: 'bg-brand-700 text-white dark:bg-brand-600',
+  brand: 'bg-brand-700 text-white',
   soft: 'bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-300',
   muted: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
 };
@@ -125,6 +125,7 @@ function Canvas({
           if (!w) return null;
           return (
             <Link
+              prefetch={false}
               key={word.label}
               href={w.href}
               aria-label={w.ariaLabel}
@@ -201,6 +202,7 @@ function Canvas({
           </dl>
           {tapped && (
             <Link
+              prefetch={false}
               href={info[active.label].href}
               className="mt-2 block rounded-md bg-zinc-100 px-3 py-2 text-center text-sm font-semibold text-brand-700 active:bg-zinc-200 dark:bg-zinc-800 dark:text-brand-400 dark:active:bg-zinc-700"
               onClick={() => show(null)}
@@ -223,10 +225,21 @@ function Canvas({
 function Sketch({ url, emoji, aspect, word, tone }: { url?: string; emoji?: string; aspect?: number; word: PlacedBox; tone: string }) {
   const { side, pictureWidth, pictureHeight, caption } = pictureBox(word.label, word.fontSize, aspect);
   const x = word.x + (word.width - pictureWidth) / 2;
+  // A failed picture would show the browser's broken-image mark; keep just the name.
+  const [failed, setFailed] = useState(false);
   return (
     <>
       {url ? (
-        <image href={`${url}${url.includes('?') ? '&' : '?'}layer=color`} x={x} y={word.y} width={pictureWidth} height={pictureHeight} />
+        !failed && (
+          <image
+            href={`${url}${url.includes('?') ? '&' : '?'}layer=color`}
+            x={x}
+            y={word.y}
+            width={pictureWidth}
+            height={pictureHeight}
+            onError={() => setFailed(true)}
+          />
+        )
       ) : (
         <text x={x + side / 2} y={word.y + side * 0.82} fontSize={side * 0.82} textAnchor="middle">
           {emoji}

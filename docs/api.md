@@ -87,6 +87,8 @@ for a in r.json()["articles"]:
 | [`GET /api/v1`](#api-v1) | API 索引 |
 | [`GET /api/v1/openapi.json`](#api-v1-openapi-json) | OpenAPI 3.1 規格 |
 | [`GET /api/v1/categories`](#api-v1-categories) | 排行分類 |
+| [`GET /api/v1/ranking-pools`](#api-v1-ranking-pools) | 指定刊登時間窗的完整合格詞池快照 |
+| [`GET /api/v1/ranking-pools/{snapshotId}`](#api-v1-ranking-pools-snapshotId) | 讀取不可變時間窗詞池的完整分頁 |
 | [`GET /api/v1/ranking`](#api-v1-ranking) | 標籤排行（每 10 分鐘更新） |
 | [`GET /api/v1/articles`](#api-v1-articles) | 文章搜尋 |
 | [`GET /api/v1/tags/suggest`](#api-v1-tags-suggest) | 輸入時的關鍵字建議 |
@@ -99,6 +101,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tag-visuals`](#api-v1-tag-visuals) | 所有有小圖的非人物標籤 |
 | [`GET /api/v1/tags/{tag}/visual`](#api-v1-tags-tag-visual) | 非人物標籤的小圖 |
 | [`GET /api/v1/tags/{tag}/visual-image`](#api-v1-tags-tag-visual-image) | 非人物標籤的小圖圖檔 |
+| [`GET /api/v1/tags/{tag}/relations`](#api-v1-tags-tag-relations) | 經審核的標籤語義關係與既有上位分類 |
 | [`GET /api/v1/tags/{tag}/groups`](#api-v1-tags-tag-groups) | 標籤所屬的群組與主題大類 |
 | [`GET /api/v1/tag-groups`](#api-v1-tag-groups) | 標籤群組與主題大類一覽 |
 | [`GET /api/v1/tag-groups/{id}`](#api-v1-tag-groups-id) | 群組裡的標籤 |
@@ -125,6 +128,8 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/media-taiwan-shares`](#api-v1-media-taiwan-shares) | 台灣占比的人工修正 |
 | [`GET /api/v1/media-output`](#api-v1-media-output) | 各媒體在流量網域上的發稿量 |
 | [`GET /api/v1/liveboard`](#api-v1-liveboard) | 即時看板輪詢：新文章、相似報導組與發稿量 |
+| [`GET /api/v1/liveboard/scenes`](#api-v1-liveboard-scenes) | 即時看板的事件與議題鏡頭 |
+| [`GET /api/v1/liveboard/videos`](#api-v1-liveboard-videos) | 即時看板的 YouTube 影片鏡頭 |
 | [`GET /api/v1/writing`](#api-v1-writing) | 寫法總覽：轉述社群貼文與標題用詞 |
 | [`GET /api/v1/writing/articles`](#api-v1-writing-articles) | 寫法：符合條件的文章 |
 | [`GET /api/v1/media/{media}/writing`](#api-v1-media-media-writing) | 單一媒體的寫法統計與逐日趨勢 |
@@ -564,6 +569,161 @@ curl -s 'https://tag.observe.tw/api/v1/categories'
 | `[].media` | integer | 分類內媒體數 |
 | `[].members` | string[] | 分類內的媒體代碼 |
 | `[].ranked` | boolean | 是否有標籤排行 |
+
+<a id="api-v1-ranking-pools"></a>
+
+### `GET /api/v1/ranking-pools`
+
+**指定刊登時間窗的完整合格詞池快照**
+
+嚴格半開 UTC [since,until)，最多7天且until不得在未來。沿用固定媒體基準、noise/媒體自名排除、跨媒體資格及分數公式；先依文章去重、資格篩選後才排名，沒有500詞截斷。唯讀一致性快照，依媒體時間索引分批；完整空池available=true，缺覆盖/來源失敗/安全上限回503 unavailable。相同條件重用10分鐘；每程序最多一個生成中、每分鐘2份新快照，超限429。私有持久gzip頁檔，24小時過期；512MiB初期容量上限回503，保留舊檔不自動刪除。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `category` | query | string | 固定排行分類，預設news，見 /api/v1/categories，預設 `news`，例：`news` |
+| `since` | query | string (ISO 時間) | 含起點，嚴格UTC ISO8601，例：`2026-10-13T16:00:00Z` |
+| `until` | query | string (ISO 時間) | 不含終點，兩站共用相同cutoff，例：`2026-10-14T12:00:00Z` |
+| `gate` | query | "all" \| "early" \| "broad" | all／early 至少2家各2篇／broad 至少3家、2家各2篇、1家3篇，預設 `early`，例：`early` |
+| `order` | query | "score" | 目前score；burst/growth拒絕，不替換成24h結果，預設 `score`，例：`score` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/ranking-pools?category=news&since=2026-10-13T16%3A00%3A00Z&until=2026-10-14T12%3A00%3A00Z&gate=early&order=score'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshotId` | string |  |
+| `schemaVersion` | string |  |
+| `policyVersion` | string |  |
+| `available` | boolean |  |
+| `incompleteReason` | string \| null |  |
+| `window` | object |  |
+| `window.since` | string (ISO 時間) |  |
+| `window.until` | string (ISO 時間) |  |
+| `window.basis` | string | published_at |
+| `window.timezone` | string | UTC |
+| `category` | string |  |
+| `order` | string | 目前僅支援 score |
+| `gate` | string |  |
+| `computedAt` | string (ISO 時間) |  |
+| `asOf` | string (ISO 時間) | 唯讀一致性資料快照開始時間 |
+| `expiresAt` | string (ISO 時間) | 24 小時後過期，讀取回409 |
+| `basis` | object |  |
+| `basis.id` | string | 固定媒體名單版本 |
+| `basis.media` | string[] |  |
+| `basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
+| `basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
+| `upstreamVocabularyId` | string \| null | 此資料直接來自文章標籤，未依詞庫快照截斷 |
+| `noiseFilterVersion` | string | noise/media-tag/qualification 原始碼指紋 |
+| `qualification` | object |  |
+| `qualification.gate` | string |  |
+| `qualification.distinctArticles` | boolean |  |
+| `qualification.minTwiceMedia` | integer |  |
+| `qualification.minMedia` | integer |  |
+| `qualification.minArticlesAtOneMedia` | integer |  |
+| `sourceCoverage` | object |  |
+| `sourceCoverage.kind` | string |  |
+| `sourceCoverage.collectionCoverageFrom` | string (ISO 時間) |  |
+| `sourceCoverage.sourceArticleCount` | integer |  |
+| `sourceCoverage.firstPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.lastPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.candidateTotal` | integer |  |
+| `sourceCoverage.elapsedMs` | integer |  |
+| `pageChecksums` | string[] |  |
+| `eligibleTotal` | integer |  |
+| `truncated` | boolean | 成功快照一定false；觸發安全上限回503/unavailable，不發布截斷快照 |
+| `defaultPageSize` | integer |  |
+| `totalPages` | integer |  |
+| `checksum` | object |  |
+| `checksum.algorithm` | string | sha256 |
+| `checksum.serialization` | string | canonical-entry-jsonl-v1 |
+| `checksum.value` | string | 完整詞池校驗碼，不是單頁校驗碼 |
+
+<a id="api-v1-ranking-pools-snapshotId"></a>
+
+### `GET /api/v1/ranking-pools/{snapshotId}`
+
+**讀取不可變時間窗詞池的完整分頁**
+
+所有頁綁同一snapshot/window/basis。cursor為opaque，跨快照409、錯誤400、過期409、不存在404。limit1..5000，gzip。checksum為依rank逐筆canonical JSON加\n的UTF-8 SHA256；property順序tag,tagId,rank,score,articleCount,mediaCount,media，media keys按UTF-8字節排序，最後一筆仍有換行，空池校驗空字串。完整掃到nextCursor=null再驗總數與checksum。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `snapshotId` | 路徑 | string | 快照SHA256 ID，例：`0000000000000000000000000000000000000000000000000000000000000000` |
+| `cursor` | query | string | 上一頁nextCursor |
+| `limit` | query | integer | 每頁筆數，1–5000，預設 `500`，例：`500` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/ranking-pools/0000000000000000000000000000000000000000000000000000000000000000'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `snapshotId` | string |  |
+| `schemaVersion` | string |  |
+| `policyVersion` | string |  |
+| `available` | boolean |  |
+| `incompleteReason` | string \| null |  |
+| `window` | object |  |
+| `window.since` | string (ISO 時間) |  |
+| `window.until` | string (ISO 時間) |  |
+| `window.basis` | string | published_at |
+| `window.timezone` | string | UTC |
+| `category` | string |  |
+| `order` | string | 目前僅支援 score |
+| `gate` | string |  |
+| `computedAt` | string (ISO 時間) |  |
+| `asOf` | string (ISO 時間) | 唯讀一致性資料快照開始時間 |
+| `expiresAt` | string (ISO 時間) | 24 小時後過期，讀取回409 |
+| `basis` | object |  |
+| `basis.id` | string | 固定媒體名單版本 |
+| `basis.media` | string[] |  |
+| `basis.coverageFrom` | string (ISO 時間) | 所有基準來源開始收錄後的第一個完整小時 |
+| `basis.validFrom` | string (ISO 時間) | 收錄開始後滿 24 小時；更早的移動平均及分數為 null |
+| `upstreamVocabularyId` | string \| null | 此資料直接來自文章標籤，未依詞庫快照截斷 |
+| `noiseFilterVersion` | string | noise/media-tag/qualification 原始碼指紋 |
+| `qualification` | object |  |
+| `qualification.gate` | string |  |
+| `qualification.distinctArticles` | boolean |  |
+| `qualification.minTwiceMedia` | integer |  |
+| `qualification.minMedia` | integer |  |
+| `qualification.minArticlesAtOneMedia` | integer |  |
+| `sourceCoverage` | object |  |
+| `sourceCoverage.kind` | string |  |
+| `sourceCoverage.collectionCoverageFrom` | string (ISO 時間) |  |
+| `sourceCoverage.sourceArticleCount` | integer |  |
+| `sourceCoverage.firstPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.lastPublishedAt` | string (ISO 時間) \| null |  |
+| `sourceCoverage.candidateTotal` | integer |  |
+| `sourceCoverage.elapsedMs` | integer |  |
+| `pageChecksums` | string[] |  |
+| `eligibleTotal` | integer |  |
+| `truncated` | boolean | 成功快照一定false；觸發安全上限回503/unavailable，不發布截斷快照 |
+| `defaultPageSize` | integer |  |
+| `totalPages` | integer |  |
+| `checksum` | object |  |
+| `checksum.algorithm` | string | sha256 |
+| `checksum.serialization` | string | canonical-entry-jsonl-v1 |
+| `checksum.value` | string | 完整詞池校驗碼，不是單頁校驗碼 |
+| `offset` | integer |  |
+| `limit` | integer |  |
+| `entries` | object[] |  |
+| `entries[].tag` | string | 原始完整 Unicode 標籤，不做別名猜測或子字串比對 |
+| `entries[].tagId` | string | 原標籤 UTF-8 SHA256 |
+| `entries[].rank` | integer | 完整合格詞池內名次 |
+| `entries[].score` | number | 沿用各媒體 2×(1−0.5^篇數) 加總 |
+| `entries[].articleCount` | integer | 不同文章數；同篇重複標籤只計一次 |
+| `entries[].mediaCount` | integer | 不同媒體數 |
+| `entries[].media` | {鍵: integer} |  |
+| `nextCursor` | string \| null |  |
 
 <a id="api-v1-ranking"></a>
 
@@ -2091,6 +2251,50 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E5%8F%B0%E5%8C%97/visual-image'
 
 快取：1 天。
 
+<a id="api-v1-tags-tag-relations"></a>
+
+### `GET /api/v1/tags/{tag}/relations`
+
+**經審核的標籤語義關係與既有上位分類**
+
+is-a 是有方向、可多重的上位分類；related 和 alias 是對稱關係，別名不會合併或改寫標籤 ID。只公開已核准的投稿，以及既有公開群組分類（含祖先）；不把共現統計當成語義關係。tagId 是原始 UTF-8 字串的 SHA-256，與完整詞庫一致；群組沿用 group:<既有ID>。投稿者與審核者的帳號、說明只在有權限的後台提供。舊分類沒有建立時間，createdAt 如實為 null。單頁最多200筆關係（合計既有分類、分類祖先與投稿關係），祖先深度最多8層；truncated 表示筆數、查詢界限或深度限制使結果未完整列出。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `tag` | 路徑 | string | 標籤（URL 編碼），例：`柯文哲` |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/tags/%E6%9F%AF%E6%96%87%E5%93%B2/relations'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `tag` | string |  |
+| `tagId` | string |  |
+| `truncated` | boolean |  |
+| `voting` | integer \| null | 在 /tag/{標籤}/relations/ 等讀者回答的候選數；暫時算不出來時為 null |
+| `relations` | object[] |  |
+| `relations[].id` | string | 穩定關係 ID |
+| `relations[].type` | "is-a" \| "related" \| "alias" | 關係型別 |
+| `relations[].target` | object |  |
+| `relations[].target.id` | string |  |
+| `relations[].target.label` | string |  |
+| `relations[].target.href` | string | 本站相對路徑 |
+| `relations[].source` | string | manual、rule 或 submission |
+| `relations[].sourceDetail` | string | 既有分類保留原來源 |
+| `relations[].createdAt` | string (ISO 時間) \| null |  |
+| `relations[].status` | string | 僅公開核准結果 |
+| `relations[].inherited` | boolean | 既有分類祖先 |
+| `relations[].depth` | integer | 直接分類為1，祖先逐層遞增 |
+
+錯誤：`400` 標籤格式不正確。
+
+快取：1 分鐘；帶 Cookie、Authorization、X-Service-Token 或 X-Api-Key 一律 private, no-store。
+
 <a id="api-v1-tags-tag-groups"></a>
 
 ### `GET /api/v1/tags/{tag}/groups`
@@ -2116,7 +2320,7 @@ curl -s 'https://tag.observe.tw/api/v1/tags/%E8%B3%B4%E6%B8%85%E5%BE%B7/groups'
 | `tag` | string |  |
 | `groups` | object[] |  |
 | `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編 |
-| `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
+| `groups[].label` | string | 名稱，例如 政治人物、2024 立委、政治、體育 |
 | `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
 | `groups[].parentId` | integer \| null | 上層群組 ID；最上層為 null |
 | `groups[].source` | "legacy" \| "admin" \| "person" \| "wikidata" \| "section" \| "ai" \| "parent" | 判斷來源 |
@@ -2145,10 +2349,11 @@ curl -s 'https://tag.observe.tw/api/v1/tag-groups'
 | --- | --- | --- |
 | `groups` | object[] |  |
 | `groups[].id` | integer | 群組 ID；1–28 沿用舊站群組編號，101–110 是主題大類，之後新增的接著編 |
-| `groups[].label` | string | 名稱，例如 政治人物、現任立委、政治、體育 |
+| `groups[].label` | string | 名稱，例如 政治人物、2024 立委、政治、體育 |
 | `groups[].kind` | "group" \| "topic" | group 是身分／類型群組，topic 是主題大類 |
 | `groups[].parentId` | integer \| null | 上層群組 ID；最上層為 null |
 | `groups[].tags` | integer | 標籤數（含子群組） |
+| `groups[].curated` | boolean | 依官方名單維護的任期名冊（立委、縣市長…），不開放讀者投票 |
 
 快取：5 分鐘。
 
@@ -2843,6 +3048,397 @@ curl -s 'https://tag.observe.tw/api/v1/events/threads/365/coverage'
 | `byOutlet[].articles[].description` | string \| null | 媒體提供的摘要，最多 160 字；沒有或與標題重複時為 null |
 
 錯誤：`400` id 格式錯誤；`404` 找不到。
+
+<a id="api-v1-liveboard-scenes"></a>
+
+### `GET /api/v1/liveboard/scenes`
+
+**即時看板的事件與議題鏡頭**
+
+給精簡版 /liveboard/ 的事件鏡頭與議題排行。events 是最新一小時事件快照的前 10 名，附上一份快照的名次與分數，以及帶有該事件兩個主要標籤的文章（近一小時收錄的在前，再接近 24 小時內稍早的）。boards 是近 24 小時有文章的議題排行（依近 24 小時發布的文章數，最多各 10 個）：media 為各媒體自己的議題／專題頁（每家最多 2 個；成員是頁面上列出的文章；專題頁每幾小時才重讀一次，近一小時的數字會晚到），threads 為近 24 小時出現過的跨媒體事件串，categories 與 groups 為標籤群組（分類，以及人物、政黨等群組，含子群組的標籤）。counts.day 依發布時間（近 24 小時，而不是從午夜算起，免得剛過午夜時全是 0）；hour 與 previous 依收錄時間，是到現在為止的一小時與再前一小時，因為許多文章發布後才收錄，依發布時間算的最近一小時永遠不完整。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/liveboard/scenes'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `windows` | object |  |
+| `windows.day` | string (ISO 時間) | 近 24 小時的起點 |
+| `windows.hour` | string (ISO 時間) | 近一小時的起點 |
+| `windows.previous` | string (ISO 時間) | 再前一小時的起點 |
+| `eventHour` | string (ISO 時間) \| null | 事件快照的小時 |
+| `events` | object[] | 最多 10 個 |
+| `events[].rank` | integer |  |
+| `events[].prevRank` | integer \| null | 上一份快照的名次，null 表示新上榜 |
+| `events[].score` | number |  |
+| `events[].prevScore` | number \| null | 上一份快照的分數 |
+| `events[].major` | string[] | 主要標籤 |
+| `events[].tags` | object[] | 事件聚集的關鍵字，強的在前，最多 14 個 |
+| `events[].tags[].tag` | string |  |
+| `events[].tags[].burst` | number | 爆發力 |
+| `events[].news` | object[] | 事件的代表標題（最多 6 則），用來選出主標題與封面；brief 是報導本身 |
+| `events[].news[].id` | integer \| null |  |
+| `events[].news[].title` | string |  |
+| `events[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].image` | string \| null |  |
+| `events[].news[].brief` | object \| null | 報導本身：媒體、時間、署名、來源與引用、標籤 |
+| `events[].news[].brief.id` | integer |  |
+| `events[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].brief.mediaTitle` | string |  |
+| `events[].news[].brief.title` | string |  |
+| `events[].news[].brief.url` | string |  |
+| `events[].news[].brief.image` | string \| null |  |
+| `events[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `events[].news[].brief.tags` | string[] |  |
+| `events[].news[].brief.authors` | string[] |  |
+| `events[].news[].brief.attributions` | object[] |  |
+| `events[].news[].brief.attributions[].media` | string |  |
+| `events[].news[].brief.attributions[].name` | string |  |
+| `events[].news[].brief.attributions[].country` | string |  |
+| `events[].news[].brief.attributions[].countryCode` | string |  |
+| `events[].news[].brief.attributions[].evidence` | string |  |
+| `events[].news[].brief.attributions[].kind` | "explicit" |  |
+| `events[].news[].copies` | object[] | 刊出同一篇的其他媒體 |
+| `events[].news[].copies[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].copies[].mediaTitle` | string |  |
+| `events[].news[].source` | object \| null | 比這篇早 15 分鐘以上刊出同一篇的媒體，可能的來源 |
+| `events[].news[].source.id` | integer |  |
+| `events[].news[].source.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].news[].source.mediaTitle` | string |  |
+| `events[].news[].source.title` | string |  |
+| `events[].news[].source.publishedAt` | string (ISO 時間) |  |
+| `events[].href` | string \| null | 事件串頁 |
+| `events[].counts` | object | 不重複的本站爬取文章數 |
+| `events[].counts.day` | integer | 近 24 小時發布的文章數 |
+| `events[].counts.hour` | integer | 近一小時收錄的文章數 |
+| `events[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `events[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+| `events[].newest` | string (ISO 時間) \| null | 最新一篇報導的收錄時間 |
+| `events[].hours` | integer \| null | 事件串累計上榜小時數 |
+| `events[].rankTrail` | integer \| null[] \| null | 最近 24 份快照的名次，舊的在前，null 為不在榜上 |
+| `events[].coverage` | object | 24 小時內報導的媒體與陣營，同 /api/v1/events 的 coverage |
+| `events[].articles` | object[] | 近一小時收錄的文章，再接 24 小時內稍早的，各依發布時間新的在前；同一篇的轉載併在最早的一篇下，每家媒體先列兩篇，最多 8 篇 |
+| `events[].articles[].id` | integer |  |
+| `events[].articles[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].articles[].mediaTitle` | string |  |
+| `events[].articles[].title` | string |  |
+| `events[].articles[].url` | string |  |
+| `events[].articles[].image` | string \| null |  |
+| `events[].articles[].publishedAt` | string (ISO 時間) |  |
+| `events[].articles[].recent` | boolean | 近一小時收錄；false 為 24 小時內稍早 |
+| `events[].articles[].tags` | string[] | 前 8 個標籤 |
+| `events[].articles[].authors` | string[] | 原始作者署名（包含具名作者與機構） |
+| `events[].articles[].attributions` | object[] | 原文明示的內容提供者或引用媒體及證據 |
+| `events[].articles[].attributions[].media` | string |  |
+| `events[].articles[].attributions[].name` | string |  |
+| `events[].articles[].attributions[].country` | string |  |
+| `events[].articles[].attributions[].countryCode` | string |  |
+| `events[].articles[].attributions[].evidence` | string |  |
+| `events[].articles[].attributions[].kind` | "explicit" |  |
+| `events[].articles[].copies` | object[] | 刊出同一篇（正文相似或標題幾乎相同）的其他媒體 |
+| `events[].articles[].copies[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `events[].articles[].copies[].mediaTitle` | string |  |
+| `boards` | object |  |
+| `boards.media` | object[] | 各媒體的議題／專題 |
+| `boards.media[].key` | string | topic:、thread: 或 group: 加上 id |
+| `boards.media[].title` | string | 議題名稱；事件串為主要標籤 |
+| `boards.media[].href` | string | 本站頁面 |
+| `boards.media[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
+| `boards.media[].mediaTitle` | string \| null |  |
+| `boards.media[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.media[].news[].id` | integer \| null |  |
+| `boards.media[].news[].title` | string |  |
+| `boards.media[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.media[].news[].image` | string \| null |  |
+| `boards.media[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.media[].news[].brief.id` | integer |  |
+| `boards.media[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.media[].news[].brief.mediaTitle` | string |  |
+| `boards.media[].news[].brief.title` | string |  |
+| `boards.media[].news[].brief.url` | string |  |
+| `boards.media[].news[].brief.image` | string \| null |  |
+| `boards.media[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.media[].news[].brief.tags` | string[] |  |
+| `boards.media[].news[].brief.authors` | string[] |  |
+| `boards.media[].news[].brief.attributions` | object[] |  |
+| `boards.media[].news[].brief.attributions[].media` | string |  |
+| `boards.media[].news[].brief.attributions[].name` | string |  |
+| `boards.media[].news[].brief.attributions[].country` | string |  |
+| `boards.media[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.media[].news[].brief.attributions[].evidence` | string |  |
+| `boards.media[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.media[].keywords` | string[] | 標籤群組近 24 小時報導最多的標籤 |
+| `boards.media[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.media[].latest.id` | integer |  |
+| `boards.media[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.media[].latest.mediaTitle` | string |  |
+| `boards.media[].latest.title` | string |  |
+| `boards.media[].latest.url` | string |  |
+| `boards.media[].latest.image` | string \| null |  |
+| `boards.media[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.media[].latest.tags` | string[] |  |
+| `boards.media[].latest.authors` | string[] |  |
+| `boards.media[].latest.attributions` | object[] |  |
+| `boards.media[].latest.attributions[].media` | string |  |
+| `boards.media[].latest.attributions[].name` | string |  |
+| `boards.media[].latest.attributions[].country` | string |  |
+| `boards.media[].latest.attributions[].countryCode` | string |  |
+| `boards.media[].latest.attributions[].evidence` | string |  |
+| `boards.media[].latest.attributions[].kind` | "explicit" |  |
+| `boards.media[].major` | string[] | 事件串的主要標籤 |
+| `boards.media[].counts` | object | 不重複的本站爬取文章數 |
+| `boards.media[].counts.day` | integer | 近 24 小時發布的文章數 |
+| `boards.media[].counts.hour` | integer | 近一小時收錄的文章數 |
+| `boards.media[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.media[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+| `boards.threads` | object[] | 跨媒體事件串 |
+| `boards.threads[].key` | string | topic:、thread: 或 group: 加上 id |
+| `boards.threads[].title` | string | 議題名稱；事件串為主要標籤 |
+| `boards.threads[].href` | string | 本站頁面 |
+| `boards.threads[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
+| `boards.threads[].mediaTitle` | string \| null |  |
+| `boards.threads[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.threads[].news[].id` | integer \| null |  |
+| `boards.threads[].news[].title` | string |  |
+| `boards.threads[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.threads[].news[].image` | string \| null |  |
+| `boards.threads[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.threads[].news[].brief.id` | integer |  |
+| `boards.threads[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.threads[].news[].brief.mediaTitle` | string |  |
+| `boards.threads[].news[].brief.title` | string |  |
+| `boards.threads[].news[].brief.url` | string |  |
+| `boards.threads[].news[].brief.image` | string \| null |  |
+| `boards.threads[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.threads[].news[].brief.tags` | string[] |  |
+| `boards.threads[].news[].brief.authors` | string[] |  |
+| `boards.threads[].news[].brief.attributions` | object[] |  |
+| `boards.threads[].news[].brief.attributions[].media` | string |  |
+| `boards.threads[].news[].brief.attributions[].name` | string |  |
+| `boards.threads[].news[].brief.attributions[].country` | string |  |
+| `boards.threads[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.threads[].news[].brief.attributions[].evidence` | string |  |
+| `boards.threads[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.threads[].keywords` | string[] | 標籤群組近 24 小時報導最多的標籤 |
+| `boards.threads[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.threads[].latest.id` | integer |  |
+| `boards.threads[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.threads[].latest.mediaTitle` | string |  |
+| `boards.threads[].latest.title` | string |  |
+| `boards.threads[].latest.url` | string |  |
+| `boards.threads[].latest.image` | string \| null |  |
+| `boards.threads[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.threads[].latest.tags` | string[] |  |
+| `boards.threads[].latest.authors` | string[] |  |
+| `boards.threads[].latest.attributions` | object[] |  |
+| `boards.threads[].latest.attributions[].media` | string |  |
+| `boards.threads[].latest.attributions[].name` | string |  |
+| `boards.threads[].latest.attributions[].country` | string |  |
+| `boards.threads[].latest.attributions[].countryCode` | string |  |
+| `boards.threads[].latest.attributions[].evidence` | string |  |
+| `boards.threads[].latest.attributions[].kind` | "explicit" |  |
+| `boards.threads[].major` | string[] | 事件串的主要標籤 |
+| `boards.threads[].counts` | object | 不重複的本站爬取文章數 |
+| `boards.threads[].counts.day` | integer | 近 24 小時發布的文章數 |
+| `boards.threads[].counts.hour` | integer | 近一小時收錄的文章數 |
+| `boards.threads[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.threads[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+| `boards.categories` | object[] | 標籤群組：分類 |
+| `boards.categories[].key` | string | topic:、thread: 或 group: 加上 id |
+| `boards.categories[].title` | string | 議題名稱；事件串為主要標籤 |
+| `boards.categories[].href` | string | 本站頁面 |
+| `boards.categories[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
+| `boards.categories[].mediaTitle` | string \| null |  |
+| `boards.categories[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.categories[].news[].id` | integer \| null |  |
+| `boards.categories[].news[].title` | string |  |
+| `boards.categories[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.categories[].news[].image` | string \| null |  |
+| `boards.categories[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.categories[].news[].brief.id` | integer |  |
+| `boards.categories[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.categories[].news[].brief.mediaTitle` | string |  |
+| `boards.categories[].news[].brief.title` | string |  |
+| `boards.categories[].news[].brief.url` | string |  |
+| `boards.categories[].news[].brief.image` | string \| null |  |
+| `boards.categories[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.categories[].news[].brief.tags` | string[] |  |
+| `boards.categories[].news[].brief.authors` | string[] |  |
+| `boards.categories[].news[].brief.attributions` | object[] |  |
+| `boards.categories[].news[].brief.attributions[].media` | string |  |
+| `boards.categories[].news[].brief.attributions[].name` | string |  |
+| `boards.categories[].news[].brief.attributions[].country` | string |  |
+| `boards.categories[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.categories[].news[].brief.attributions[].evidence` | string |  |
+| `boards.categories[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.categories[].keywords` | string[] | 標籤群組近 24 小時報導最多的標籤 |
+| `boards.categories[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.categories[].latest.id` | integer |  |
+| `boards.categories[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.categories[].latest.mediaTitle` | string |  |
+| `boards.categories[].latest.title` | string |  |
+| `boards.categories[].latest.url` | string |  |
+| `boards.categories[].latest.image` | string \| null |  |
+| `boards.categories[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.categories[].latest.tags` | string[] |  |
+| `boards.categories[].latest.authors` | string[] |  |
+| `boards.categories[].latest.attributions` | object[] |  |
+| `boards.categories[].latest.attributions[].media` | string |  |
+| `boards.categories[].latest.attributions[].name` | string |  |
+| `boards.categories[].latest.attributions[].country` | string |  |
+| `boards.categories[].latest.attributions[].countryCode` | string |  |
+| `boards.categories[].latest.attributions[].evidence` | string |  |
+| `boards.categories[].latest.attributions[].kind` | "explicit" |  |
+| `boards.categories[].major` | string[] | 事件串的主要標籤 |
+| `boards.categories[].counts` | object | 不重複的本站爬取文章數 |
+| `boards.categories[].counts.day` | integer | 近 24 小時發布的文章數 |
+| `boards.categories[].counts.hour` | integer | 近一小時收錄的文章數 |
+| `boards.categories[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.categories[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+| `boards.groups` | object[] | 標籤群組：人物、政黨等 |
+| `boards.groups[].key` | string | topic:、thread: 或 group: 加上 id |
+| `boards.groups[].title` | string | 議題名稱；事件串為主要標籤 |
+| `boards.groups[].href` | string | 本站頁面 |
+| `boards.groups[].media` | string \| null | 媒體代碼，媒體自己的議題才有 |
+| `boards.groups[].mediaTitle` | string \| null |  |
+| `boards.groups[].news` | object[] | 事件串的代表標題，用來選出主標題 |
+| `boards.groups[].news[].id` | integer \| null |  |
+| `boards.groups[].news[].title` | string |  |
+| `boards.groups[].news[].media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.groups[].news[].image` | string \| null |  |
+| `boards.groups[].news[].brief` | object | 報導本身，找不到時為 null |
+| `boards.groups[].news[].brief.id` | integer |  |
+| `boards.groups[].news[].brief.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.groups[].news[].brief.mediaTitle` | string |  |
+| `boards.groups[].news[].brief.title` | string |  |
+| `boards.groups[].news[].brief.url` | string |  |
+| `boards.groups[].news[].brief.image` | string \| null |  |
+| `boards.groups[].news[].brief.publishedAt` | string (ISO 時間) |  |
+| `boards.groups[].news[].brief.tags` | string[] |  |
+| `boards.groups[].news[].brief.authors` | string[] |  |
+| `boards.groups[].news[].brief.attributions` | object[] |  |
+| `boards.groups[].news[].brief.attributions[].media` | string |  |
+| `boards.groups[].news[].brief.attributions[].name` | string |  |
+| `boards.groups[].news[].brief.attributions[].country` | string |  |
+| `boards.groups[].news[].brief.attributions[].countryCode` | string |  |
+| `boards.groups[].news[].brief.attributions[].evidence` | string |  |
+| `boards.groups[].news[].brief.attributions[].kind` | "explicit" |  |
+| `boards.groups[].keywords` | string[] | 標籤群組近 24 小時報導最多的標籤 |
+| `boards.groups[].latest` | object | 標籤群組或媒體議題最新的一篇報導，沒有時為 null |
+| `boards.groups[].latest.id` | integer |  |
+| `boards.groups[].latest.media` | string | 媒體代碼，例如 cna、ltn、udn；完整清單見 /api/v1/media |
+| `boards.groups[].latest.mediaTitle` | string |  |
+| `boards.groups[].latest.title` | string |  |
+| `boards.groups[].latest.url` | string |  |
+| `boards.groups[].latest.image` | string \| null |  |
+| `boards.groups[].latest.publishedAt` | string (ISO 時間) |  |
+| `boards.groups[].latest.tags` | string[] |  |
+| `boards.groups[].latest.authors` | string[] |  |
+| `boards.groups[].latest.attributions` | object[] |  |
+| `boards.groups[].latest.attributions[].media` | string |  |
+| `boards.groups[].latest.attributions[].name` | string |  |
+| `boards.groups[].latest.attributions[].country` | string |  |
+| `boards.groups[].latest.attributions[].countryCode` | string |  |
+| `boards.groups[].latest.attributions[].evidence` | string |  |
+| `boards.groups[].latest.attributions[].kind` | "explicit" |  |
+| `boards.groups[].major` | string[] | 事件串的主要標籤 |
+| `boards.groups[].counts` | object | 不重複的本站爬取文章數 |
+| `boards.groups[].counts.day` | integer | 近 24 小時發布的文章數 |
+| `boards.groups[].counts.hour` | integer | 近一小時收錄的文章數 |
+| `boards.groups[].counts.previous` | integer | 再前一小時收錄的文章數 |
+| `boards.groups[].counts.hours` | integer[] | 近 12 小時每小時收錄的文章數，舊的在前，最後一格即 hour |
+
+快取：60 秒。
+
+<a id="api-v1-liveboard-videos"></a>
+
+### `GET /api/v1/liveboard/videos`
+
+**即時看板的 YouTube 影片鏡頭**
+
+給精簡版 /liveboard/ 的影片鏡頭，影片資料來自有影儀表板（youtube.observe.tw）的公開 API，本站只決定歸屬。events 是 /api/v1/liveboard/scenes 前 6 名事件，各附最多 8 支近 24 小時發布、標題或說明逐字含有該事件兩個主要標籤（主要標籤少於兩個時全部）的影片，含標籤多的在前，再依觀看數。day 是近 24 小時發布、觀看數最多的影片；live 是此刻觀看人數最多的直播；兩者若含某個前幾名事件的主要標籤，event 會指出該事件。同一節目由不同頻道上傳只留一支，每個頻道先各取一支、最多兩支。觀看數（views）是有影最後看到的累計數，不是期間增量；觀看人數（live.viewers）是直播當下的同時觀看數；兩者都不與文章數混算。有影暫時無法回應時沿用上一份清單，partial 表示仍有清單缺漏。
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/liveboard/videos'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `generatedAt` | string (ISO 時間) |  |
+| `source` | string | 影片資料來源 |
+| `window` | object | 影片發布時間的範圍（近 24 小時） |
+| `window.since` | string (ISO 時間) |  |
+| `window.until` | string (ISO 時間) |  |
+| `partial` | boolean | 有清單取不到，也沒有上一份可沿用 |
+| `events` | object[] | 前 6 名事件與其影片 |
+| `events[].href` | string \| null | 事件串頁面 |
+| `events[].major` | string[] | 主要標籤 |
+| `events[].videos` | object[] |  |
+| `events[].videos[].id` | string | YouTube 影片 ID |
+| `events[].videos[].title` | string |  |
+| `events[].videos[].url` | string | YouTube 網址 |
+| `events[].videos[].thumbnail` | string \| null |  |
+| `events[].videos[].channel` | string | 頻道名稱 |
+| `events[].videos[].channelUrl` | string \| null | 頻道的 YouTube 頁面 |
+| `events[].videos[].publishedAt` | string (ISO 時間) |  |
+| `events[].videos[].views` | integer \| null | 累計觀看數 |
+| `events[].videos[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
+| `events[].videos[].event` | object \| null | day 與 live：所屬的前幾名事件 |
+| `events[].videos[].event.href` | string \| null | 事件串頁面 |
+| `events[].videos[].event.major` | string[] | 主要標籤 |
+| `events[].videos[].live` | object | 直播才有 |
+| `events[].videos[].live.viewers` | integer | 此刻同時觀看數 |
+| `events[].videos[].live.peak` | integer \| null | 今日最高同時觀看數 |
+| `events[].videos[].live.startedAt` | string (ISO 時間) \| null | 開播時間 |
+| `events[].videos[].live.trend` | integer[] | 最近幾次取樣的同時觀看數，舊的在前 |
+| `day` | object[] | 近 24 小時發布、觀看數最多的影片，最多 8 支 |
+| `day[].id` | string | YouTube 影片 ID |
+| `day[].title` | string |  |
+| `day[].url` | string | YouTube 網址 |
+| `day[].thumbnail` | string \| null |  |
+| `day[].channel` | string | 頻道名稱 |
+| `day[].channelUrl` | string \| null | 頻道的 YouTube 頁面 |
+| `day[].publishedAt` | string (ISO 時間) |  |
+| `day[].views` | integer \| null | 累計觀看數 |
+| `day[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
+| `day[].event` | object \| null | day 與 live：所屬的前幾名事件 |
+| `day[].event.href` | string \| null | 事件串頁面 |
+| `day[].event.major` | string[] | 主要標籤 |
+| `day[].live` | object | 直播才有 |
+| `day[].live.viewers` | integer | 此刻同時觀看數 |
+| `day[].live.peak` | integer \| null | 今日最高同時觀看數 |
+| `day[].live.startedAt` | string (ISO 時間) \| null | 開播時間 |
+| `day[].live.trend` | integer[] | 最近幾次取樣的同時觀看數，舊的在前 |
+| `live` | object[] | 此刻觀看人數最多的直播，最多 8 場 |
+| `live[].id` | string | YouTube 影片 ID |
+| `live[].title` | string |  |
+| `live[].url` | string | YouTube 網址 |
+| `live[].thumbnail` | string \| null |  |
+| `live[].channel` | string | 頻道名稱 |
+| `live[].channelUrl` | string \| null | 頻道的 YouTube 頁面 |
+| `live[].publishedAt` | string (ISO 時間) |  |
+| `live[].views` | integer \| null | 累計觀看數 |
+| `live[].matched` | string[] | 影片含有的事件主要標籤（day 與 live 為其所屬事件的） |
+| `live[].event` | object \| null | day 與 live：所屬的前幾名事件 |
+| `live[].event.href` | string \| null | 事件串頁面 |
+| `live[].event.major` | string[] | 主要標籤 |
+| `live[].live` | object | 直播才有 |
+| `live[].live.viewers` | integer | 此刻同時觀看數 |
+| `live[].live.peak` | integer \| null | 今日最高同時觀看數 |
+| `live[].live.startedAt` | string (ISO 時間) \| null | 開播時間 |
+| `live[].live.trend` | integer[] | 最近幾次取樣的同時觀看數，舊的在前 |
+
+快取：60 秒。
 
 ## 各媒體的議題／專題
 

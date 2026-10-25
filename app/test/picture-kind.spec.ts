@@ -7,9 +7,17 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { registerAvatarAdmin } from '../src/avatars/admin.ts';
 import { addPhoto, processTag } from '../src/avatars/run.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { tagAvatarCandidates, tagGroupMembers, tagPeople, tagPeopleLog, tagPictureVotes, tagWikidata } from '../src/db/schema.ts';
+import {
+  tagAvatarCandidates,
+  tagGroupMembers,
+  tagPeople,
+  tagPeopleLog,
+  tagPictureVotes,
+  tagSubmissions,
+  tagWikidata,
+} from '../src/db/schema.ts';
 import { registerPictureRoutes } from '../src/pictures/routes.ts';
-import { applyVotes } from '../src/pictures/votes.ts';
+import { applyVotes, castVote } from '../src/pictures/votes.ts';
 import { fileWikidata } from '../src/tag-groups/run.ts';
 import { processTags } from '../src/tag-visuals/run.ts';
 import { registerTagPerson } from '../src/v1/tag-person.ts';
@@ -50,6 +58,8 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
     ({ db, close } = createDb(url));
     await migrate(db, { migrationsFolder: 'app/src/db/migrations' });
     for (const table of [
+      'tag_submissions',
+      'tag_submission_log',
       'tag_people',
       'tag_people_log',
       'tag_avatar_candidates',
@@ -115,7 +125,7 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
     expect(await db.select().from(tagPeopleLog)).toMatchObject([{ action: 'nonhuman', email: admin.email }]);
     expect(await db.select().from(tagPeopleLog)).toHaveLength(1);
   });
-  it('accepts a logo without a face, votes for it, and serves it as the public picture', async () => {
+  it('accepts a logo without a face as a candidate and serves it once another reader votes for it', async () => {
     const image = await sharp(Buffer.from('<svg width="80" height="80"><path fill="red" d="M10 10h60v20H50v40H30V30H10z"/></svg>'))
       .png()
       .toBuffer();
@@ -125,11 +135,13 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
       headers,
       payload: { image: image.toString('base64'), agree: true },
     });
-    expect(uploaded.statusCode).toBe(200);
-    expect(uploaded.json()).toMatchObject({ kind: 'visual', rank: 1 });
+    expect(uploaded.statusCode).toBe(201);
+    expect(uploaded.json()).toMatchObject({ kind: 'visual', status: 'approved' });
     expect(queued).not.toHaveBeenCalled();
+    expect((await app.inject({ url: path, headers })).json()).toMatchObject({ kind: 'visual', shownRank: null, myVote: null });
+    await castVote(db, tag, 'visual', 9999, 1);
     const state = (await app.inject({ url: path, headers })).json();
-    expect(state).toMatchObject({ kind: 'visual', shownRank: 1, myVote: 1, candidates: [{ kind: 'logo', votes: 1 }] });
+    expect(state).toMatchObject({ kind: 'visual', shownRank: 1, candidates: [{ kind: 'logo', votes: 1 }] });
     expect(state.candidates[0].image).toContain('kind=visual');
     expect((await app.inject({ url: state.candidates[0].image, headers })).headers['content-type']).toBe('image/webp');
     const visual = (await app.inject({ url: `/api/v1/tags/${encodeURIComponent(tag)}/visual` })).json().visual;
@@ -168,6 +180,28 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
     finish({ verdict: 'ok', main: {}, aligned: {} });
     expect(await pending).toMatchObject({ error: expect.stringContaining('非人物') });
     expect(await db.select().from(tagAvatarCandidates)).toHaveLength(1);
+  });
+  it('publishes a successfully processed reader portrait at once', async () => {
+    await seed();
+    stubs.inspect.mockResolvedValueOnce({ verdict: 'ok', main: {}, aligned: {} });
+    const result = await addPhoto(db, tag, Buffer.from('reader upload'), admin.email, 1);
+    expect(result).toMatchObject({ tag, status: 'approved' });
+    expect(await db.select().from(tagAvatarCandidates)).toHaveLength(2);
+    // A candidate now, shown only when other readers vote for it.
+    const [person] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
+    expect(person.shownRank).toBe(1);
+    const [submission] = await db
+      .select()
+      .from(tagSubmissions)
+      .where(eq(tagSubmissions.id, (result as { submissionId: number }).submissionId));
+    expect(submission).toMatchObject({
+      kind: 'picture',
+      pictureKind: 'avatar',
+      rightsConfirmed: true,
+      status: 'approved',
+      candidateRank: 2,
+      pictureMeta: { score: 1, verdict: 'ok', previous: { shownRank: 1 } },
+    });
   });
   it('honors a correction made during an automatic identity lookup', async () => {
     await seed();

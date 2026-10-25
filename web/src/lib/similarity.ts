@@ -27,11 +27,14 @@ export function periodQuery(period: SimilarityPeriod, threshold: number): URLSea
   return params;
 }
 
+// Pages render after this resolves, and the gateway answers 503 when a page
+// sends no headers for 15 s (app/src/ui-proxy.js); fail inside that budget so
+// the page can show its own unavailable state.
 export async function fetchSimilarity(period: SimilarityPeriod, threshold: number): Promise<SimilarityData> {
   const response = await fetch(`${API_ORIGIN}/api/v1/similarity?${periodQuery(period, threshold)}`, {
     next: { revalidate: 60 },
     headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(13_000),
   });
   if (!response.ok) throw new Error(`similarity: ${response.status}`);
   return response.json() as Promise<SimilarityData>;

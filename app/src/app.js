@@ -21,6 +21,7 @@ import { API_KEY_MAX_PER_MINUTE, API_MAX_PER_MINUTE, apiKeyLookup } from './read
 import { registerReaderRoutes } from './reader/routes.ts';
 import { serviceClients } from './service-clients.ts';
 import { registerTagGroupAdmin } from './tag-groups/admin.ts';
+import { registerTagSubmissions } from './tag-groups/submissions.ts';
 import { registerTagVisualAdmin } from './tag-visuals/admin.ts';
 import { createUiProxy } from './ui-proxy.js';
 import { registerArticleContent } from './v1/article-content.ts';
@@ -29,18 +30,22 @@ import { registerArticleSearch } from './v1/articles.ts';
 import { registerBylines } from './v1/bylines.ts';
 import { registerJournalists } from './v1/journalists.ts';
 import { registerLiveboard } from './v1/liveboard.ts';
+import { registerLiveboardScenes } from './v1/liveboard-scenes.ts';
+import { registerLiveboardVideos } from './v1/liveboard-videos.ts';
 import { registerMediaKeywords } from './v1/media-keywords.ts';
 import { registerMediaStats } from './v1/media-stats.ts';
 import { registerMediaTrafficComparison } from './v1/media-traffic-comparison.ts';
 import { registerNearline } from './v1/nearline.ts';
 import { registerApiMeta } from './v1/openapi.ts';
 import { registerPageApis } from './v1/pages.ts';
+import { registerRankingPools } from './v1/ranking-pools.ts';
 import { registerReaderPresence } from './v1/reader-presence.ts';
 import { registerV1Routes } from './v1/routes.ts';
 import { registerSimilarity } from './v1/similarity.ts';
 import { registerSiteObservation } from './v1/site-observation.ts';
 import { registerTagGroups } from './v1/tag-groups.ts';
 import { registerTagPerson } from './v1/tag-person.ts';
+import { registerSemanticRelations } from './v1/tag-relations.ts';
 import { registerTagVisual } from './v1/tag-visual.ts';
 import { registerVocabulary } from './v1/vocabulary.ts';
 import { registerWriting } from './v1/writing.ts';
@@ -50,6 +55,7 @@ export async function buildApp(
   config,
   {
     logger = false,
+    rankingPools = /** @type {Parameters<typeof registerRankingPools>[2]} */ (undefined),
     db = /** @type {import('./db/client.ts').Db | null} */ (null),
     loginStore = /** @type {import('./auth/google-login.ts').LoginStore | null} */ (null),
     jobQueue = /** @type {(() => import('./admin/routes.ts').JobQueue) | null} */ (null),
@@ -185,6 +191,7 @@ export async function buildApp(
   await generatedRules?.ready;
   if (own) {
     await registerV1Routes(app, own.db);
+    registerRankingPools(app, own.db, rankingPools);
     registerPageApis(app, own.db);
     registerMediaStats(app, own.db);
     registerMediaTrafficComparison(app, own.db);
@@ -197,12 +204,15 @@ export async function buildApp(
     registerArticleRelated(app, own.db);
     registerSiteObservation(app, own.db);
     registerLiveboard(app, own.db);
+    registerLiveboardScenes(app, own.db);
+    registerLiveboardVideos(app, own.db);
     registerTagPerson(app, own.db);
     registerTagVisual(app, own.db);
     // Similarweb lookups for other services on this machine: loopback and a service token only.
     registerExternalTraffic(app, own.db, externalTokens ? { tokens: externalTokens } : {});
     registerWriting(app, own.db);
     registerTagGroups(app, own.db);
+    registerSemanticRelations(app, own.db);
   }
   const login = registerLogin(app, loginStore ?? (own ? dbLoginStore(own.db) : null), config.login ?? null);
   // The worker's queue, opened on the first crawl an admin asks for.
@@ -227,6 +237,13 @@ export async function buildApp(
     });
   if (own && config.login) registerWritingAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
   if (own && config.login) registerTagGroupAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin });
+  if (own && config.login)
+    registerTagSubmissions(app, own.db, {
+      currentUser: login.currentUser,
+      requireAdmin: login.requireAdmin,
+      origin: config.login.origin,
+      uiOrigin: config.uiOrigin,
+    });
   if (own && config.login)
     registerTagVisualAdmin(app, own.db, { requireAdmin: login.requireAdmin, origin: config.login.origin, uiOrigin: config.uiOrigin });
   if (own && config.login)

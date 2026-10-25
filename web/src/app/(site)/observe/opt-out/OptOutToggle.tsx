@@ -89,10 +89,13 @@ export default function OptOutToggle() {
             onClick={() => set(true)}
             className="rounded-full bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
           >
-            這個瀏覽器不計入統計
+            關閉這個瀏覽器的統計
           </button>
         )}
       </div>
+      {!state.optedOut && state.block && (
+        <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">目前已因上述原因不計入；按下後，即使這個原因消失也會維持不計入。</p>
+      )}
       {changed && !state.optedOut && !state.block && (
         <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">已恢復設定，重新載入頁面後確認追蹤連線並開始計入。</p>
       )}

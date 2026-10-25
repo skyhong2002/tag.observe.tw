@@ -106,7 +106,7 @@ export default function OutletTable({
                 const n = row.values[c.key] ?? 0;
                 const share = pct(n, whole(row, c));
                 return (
-                  <td key={c.key} className={`${table.num} ${n ? '' : 'text-zinc-300 dark:text-zinc-700'}`}>
+                  <td key={c.key} className={`${table.num} ${n ? '' : 'text-zinc-600 dark:text-zinc-400'}`}>
                     {n ? (
                       <Link href={hrefFor(row.media, c.filter)} className="hover:underline" title={`${n.toLocaleString('zh-TW')} 篇`}>
                         {(100 * share).toFixed(1)}%
@@ -121,7 +121,7 @@ export default function OutletTable({
           ))}
         </tbody>
       </table>
-      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500">這段期間還沒有足夠的分析資料。</p>}
+      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">這段期間還沒有足夠的分析資料。</p>}
     </TableScroller>
   );
 }
