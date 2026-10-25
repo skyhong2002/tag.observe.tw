@@ -43,6 +43,14 @@ const nextConfig: NextConfig = {
     cpus: 2,
     staticGenerationMaxConcurrency: 1,
   },
+  async redirects() {
+    return [
+      { source: '/liveboard/manifest.webmanifest', destination: 'https://live.observe.tw/manifest.webmanifest', permanent: true },
+      { source: '/liveboard/setting', destination: 'https://live.observe.tw/liveboard/setting/', permanent: true },
+      { source: '/liveboard/settings', destination: 'https://live.observe.tw/liveboard/setting/', permanent: true },
+      { source: '/liveboard/:path*', destination: 'https://live.observe.tw/', permanent: true },
+    ];
+  },
   async rewrites() {
     if (process.env.NODE_ENV !== 'development') return [];
     const origin = process.env.TAG_API_ORIGIN ?? 'http://127.0.0.1:18130';

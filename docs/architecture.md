@@ -31,7 +31,7 @@ Cloudflare Tunnel → tag.observe.tw
 | `app/src/jobs/` | 排程工作：爬蟲、排行、事件分群、議題、標籤統計、相似度、分析、健康檢查、資料保留、來源探測 |
 | `app/src/db/` | Drizzle schema 與 migrations（`app/src/db/migrations`） |
 | `app/data/` | 媒體規格、分析群組與政治傾向的初始值（`media-catalog.json`，上線後在資料庫維護；讀者看到的媒體標籤來自 traffic.observe.tw）、停用清單、favicon |
-| `web/` | Next.js UI（SSR，ECharts）；`web/src/app/liveboard/` 是獨立的常駐看板入口 |
+| `web/` | Next.js UI（SSR，ECharts）；即時看板由 `live.observe.tw` 獨立提供，舊 `/liveboard/` 入口轉址 |
 | `tools/` | 一次性工具與產生器（`gen-api-docs.ts`、`check-openapi.ts`、`gen-image-hosts.ts`、`gen-pwa-icons.py`、`brand-assets.py`…） |
 
 ## 排程（`app/src/worker.ts`）

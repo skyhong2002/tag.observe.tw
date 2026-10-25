@@ -128,7 +128,7 @@ PATH=/home/deck/.local/bin:$PATH node --env-file=.env tools/analytics-once.ts
 目前由單一 Fastify gateway 在記憶體保存 UUID 與最後回報時間，每 90 秒清理，不寫資料庫或歷史紀錄；
 服務重啟後會在下一輪心跳重建，若未來擴充多個 gateway，需先改為共用 TTL 儲存。
 API 回應 `no-store`，GET/HEAD 不會建立讀者；POST 僅接受正式站 Origin 的 JSON 小型請求，沿用 API 限流。
-它不是身分驗證或反作弊統計。舊 liveboard feed 的 `visitors` 仍保留 GA 資料相容性，但看板不再把它當線上人數。
+它不是身分驗證或反作弊統計。供 live.observe.tw 使用的 liveboard feed，其 `visitors` 仍保留 GA 資料相容性；此欄位不是線上人數。tag 站已移除舊看板專用的 `liveboard_activity` 心跳。
 
 
 ### 看板綠點與防追蹤

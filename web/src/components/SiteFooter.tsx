@@ -22,7 +22,7 @@ const COLUMNS: Array<{ label: string; links: FooterLink[] }> = [
     label: '資料與透明度',
     links: [
       // The always-on wall-screen board; not in the header since it is not a reading page.
-      { href: '/liveboard/', label: '即時看板' },
+      { href: 'https://live.observe.tw/', label: '即時看板', external: true },
       { href: '/crawlers/', label: '資料蒐集' },
       // This site's own readers: about the site, not the news.
       { href: '/observe/', label: '本站流量' },

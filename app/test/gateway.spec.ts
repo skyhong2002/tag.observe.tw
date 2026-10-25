@@ -170,6 +170,27 @@ describe('gateway', () => {
     expect(g.json().error).toBe('gone');
     expect(hits).toHaveLength(0);
   });
+  it('moves old board URLs directly to the independent board without calling Next', async () => {
+    hits = [];
+    for (const method of ['GET', 'HEAD'] as const) {
+      for (const path of ['/liveboard', '/liveboard/', '/liveboard/advanced', '/liveboard/advanced/', '/liveboard/opengraph-image-abc']) {
+        const response = await app.inject({ method, url: `${path}?mode=full&query=%E5%8F%B0%E7%81%A3` });
+        expect(response.statusCode).toBe(301);
+        expect(response.headers.location).toBe('https://live.observe.tw/?mode=full&query=%E5%8F%B0%E7%81%A3');
+        expect(response.body).toBe('');
+      }
+    }
+    for (const path of ['/liveboard/manifest.webmanifest', '/liveboard/manifest.webmanifest/']) {
+      expect((await app.inject(path)).headers.location).toBe('https://live.observe.tw/manifest.webmanifest');
+    }
+    for (const path of ['/liveboard/setting', '/liveboard/setting/', '/liveboard/settings/']) {
+      expect((await app.inject(path + '?mode=full')).headers.location).toBe('https://live.observe.tw/liveboard/setting/?mode=full');
+    }
+    expect(hits).toEqual([]);
+    for (const path of ['/liveboards/', '/liveboard-other/', '/api/v1/liveboard', '/api/v1/events']) {
+      expect(legacyRoute(path)).toBeNull();
+    }
+  });
   it('proxies article archive pages and pagination to the UI without legacy redirects', async () => {
     hits = [];
     const paths = ['/media/rti/', '/media/rti/articles', '/media/rti/articles/', '/media/rti/articles/?cursor=123', '/article/123/'];

@@ -78,8 +78,8 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
     id: 'liveboard',
     title: '即時看板',
     pages: [
-      ['/liveboard/', '即時看板'],
-      ['/liveboard/setting/', '看板設定'],
+      ['https://live.observe.tw/', '即時看板'],
+      ['https://live.observe.tw/liveboard/setting/', '看板設定'],
     ],
     body: <LiveboardMethod />,
   },

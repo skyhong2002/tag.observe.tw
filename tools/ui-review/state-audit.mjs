@@ -31,7 +31,6 @@ const EMPTY = [
 // Client-side API failure: every /api/v1 request from the browser answers 503.
 const ERROR = [
   { id: 'X01', path: '/' },
-  { id: 'X02', path: '/liveboard/' },
   { id: 'X03', path: '/similarity/' },
   { id: 'X04', path: '/tag/柯文哲/' },
   { id: 'X05', path: '/media/traffic/' },
@@ -46,7 +45,6 @@ const INTERACT = [
   { id: 'I05', path: '/article/', selector: 'nav a:not([aria-current]), button[aria-pressed="false"]' },
   { id: 'I06', path: '/journalist/方承業/', selector: 'nav[aria-label="期間"] a:not([aria-current])' },
   { id: 'I07', path: '/topic/', selector: 'summary' },
-  { id: 'I08', path: '/liveboard/setting/', selector: 'input[type="checkbox"], input[type="radio"]:not(:checked)' },
 ];
 
 // Smallest text, low contrast and overflow, measured in the page.

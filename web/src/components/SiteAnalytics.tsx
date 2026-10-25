@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { analyticsBlock, GA_ID, readOptOut, shouldReportLiveboardActivity } from '@/lib/analytics-consent.mts';
-import { installAnalytics, sendAnalyticsEvent } from '@/lib/analytics-runtime.mts';
+import { analyticsBlock, GA_ID, readOptOut } from '@/lib/analytics-consent.mts';
+import { installAnalytics } from '@/lib/analytics-runtime.mts';
 import WebVitals from './WebVitals';
 
 const safeStorage = () => {
@@ -44,13 +44,7 @@ export default function SiteAnalytics() {
         document.head.appendChild(script);
       },
     });
-    const heartbeat = setInterval(() => {
-      if (shouldReportLiveboardActivity(location.pathname, document.visibilityState, readOptOut(safeStorage()))) {
-        sendAnalyticsEvent('liveboard_activity');
-      }
-    }, 60_000);
     return () => {
-      clearInterval(heartbeat);
       cleanup();
     };
   }, []);

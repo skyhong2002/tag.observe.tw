@@ -25,7 +25,7 @@ export type Prefs = {
   analyticsOptOut?: boolean;
   hiddenMedia?: string[];
   history?: boolean;
-  /** /liveboard/'s settings (app/liveboard/settings.ts). */
+  /** Legacy board preferences retained for existing accounts. */
   liveboard?: Record<string, unknown> | null;
 };
 

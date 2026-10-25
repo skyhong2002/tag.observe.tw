@@ -9,7 +9,6 @@ import {
   EventMethod,
   GroupMethod,
   JournalistMethod,
-  LiveboardMethod,
   MediaCardMethod,
   MediaMethod,
   MediaOverviewMethod,
@@ -41,7 +40,6 @@ function sectionsFor(pathname: string) {
   // One keyword's page: @notes/tag/[tag] renders its blocks with the chart's basis.
   if (/^\/tag(\/|$)/.test(pathname)) return null;
   if (/^\/group(\/|$)/.test(pathname)) return <GroupMethod />;
-  if (/^\/liveboard(\/|$)/.test(pathname)) return <LiveboardMethod />;
   if (/^\/admin\/(avatars|tag-visuals)(\/|$)/.test(pathname)) return <PictureMethod />;
   if (/^\/observe(\/|$)/.test(pathname)) return <ObserveMethod />;
   if (/^\/search(\/|$)/.test(pathname)) {

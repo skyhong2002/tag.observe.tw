@@ -57,6 +57,15 @@ export function legacyRoute(rawUrl) {
   const q = rawUrl.indexOf('?');
   const path = q < 0 ? rawUrl : rawUrl.slice(0, q);
   const params = new URLSearchParams(q < 0 ? '' : rawUrl.slice(q + 1));
+  // The independent live board consumes our public APIs; only its old UI moves.
+  if (path === '/liveboard' || path.startsWith('/liveboard/')) {
+    const destination = /^\/liveboard\/manifest\.webmanifest\/?$/.test(path)
+      ? 'manifest.webmanifest'
+      : /^\/liveboard\/settings?\/?$/.test(path)
+        ? 'liveboard/setting/'
+        : '';
+    return { status: 301, location: `https://live.observe.tw/${destination}${q < 0 ? '' : rawUrl.slice(q)}` };
+  }
   // Next's generated share images are current routes, not old tag subpages.
   // Route groups add a hash suffix; the query string is only a cache version.
   if (isShareImage(path)) return null;

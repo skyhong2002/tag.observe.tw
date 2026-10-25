@@ -18,7 +18,7 @@ export type Prefs = {
   hiddenMedia?: string[];
   /** Opt-in reading history for /my/reading/. */
   history?: boolean;
-  /** /liveboard/'s settings (web/src/app/liveboard/settings.ts); null forgets them. */
+  /** Legacy board preferences retained for existing accounts; null forgets them. */
   liveboard?: LiveboardPrefs | null;
 };
 export type LiveboardPrefs = {

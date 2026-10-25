@@ -66,20 +66,6 @@ it('applies CSS theme colour to legend, inactive legend, axes and names; updates
   expect(chart).toContain('tabular-nums text-zinc-500 dark:text-zinc-400');
 });
 
-it('keeps informational timeline labels readable before their frame is played', () => {
-  const board = read('../src/app/liveboard/SimpleBoard.tsx');
-  const css = read('../src/app/liveboard/simple.module.css');
-  // Dimming the entire SVG group also dims text to about 1.8:1 in dark mode.
-  // Only the future progress track is muted; its time label remains readable.
-  // Each time point is a tappable Hit (a <g> with a clear box), never dimmed as a whole.
-  const slot = board.match(/<Hit\s+key=\{slot\.label\}[^>]*>/)?.[0] ?? '';
-  expect(slot).not.toBe('');
-  expect(slot).not.toContain('opacity=');
-  expect(board).toContain('className={styles.track} opacity={i > playing.frame ? 0.45 : 1}');
-  expect(css).toContain('[data-theme="dark"] .hours { fill: #a1a1aa; }');
-  expect((luminance('zinc-400') + 0.05) / (luminance('zinc-950') + 0.05)).toBeGreaterThanOrEqual(4.5);
-});
-
 it('keeps zero values and selectable evidence readable while preserving stale-result and selection cues', () => {
   for (const source of [
     '../src/app/(site)/similarity/DailyTrend.tsx',
