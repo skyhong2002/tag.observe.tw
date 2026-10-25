@@ -257,7 +257,16 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     if (/\/tag_observe$/.test(url ?? '')) throw Error('TEST_DB_URL points at the production database');
     ({ db, close } = createDb(url));
     await migrate(db, { migrationsFolder: 'app/src/db/migrations' });
-    for (const t of ['tag_visuals', 'tag_visual_candidates', 'tag_visual_log', 'tag_people', 'tag_wikidata', 'tag_picture_votes'])
+    for (const t of [
+      'tag_visuals',
+      'tag_visual_candidates',
+      'tag_visual_log',
+      'tag_people',
+      'tag_wikidata',
+      'tag_picture_votes',
+      'tag_submissions',
+      'tag_submission_log',
+    ])
       await db.execute(sql.raw(`TRUNCATE TABLE \`${t}\``));
     const at = new Date('2026-10-11T00:00:00Z');
     await db.insert(tagPeople).values({ tag: '賴清德', wikidataId: 'Q3847080', status: 'auto', checkedAt: at });
@@ -429,26 +438,37 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     const png = await sharp({ create: { width: 30, height: 10, channels: 4, background: { r: 200, g: 0, b: 0, alpha: 1 } } })
       .png()
       .toBuffer();
+    // Uploads are deduplicated by image (after the one-colour logo pass), so the admin sends another shape.
+    const other = await sharp({ create: { width: 12, height: 30, channels: 4, background: { r: 0, g: 0, b: 200, alpha: 1 } } })
+      .png()
+      .toBuffer();
     const upload = (tag: string, who: string, agree = true) =>
-      app.inject({ method: 'POST', url: path(tag, '/upload'), headers: as(who), payload: { image: png.toString('base64'), agree } });
+      app.inject({
+        method: 'POST',
+        url: path(tag, '/upload'),
+        headers: as(who),
+        payload: { image: (who === 'admin' ? other : png).toString('base64'), agree },
+      });
     expect((await app.inject({ url: path('台股') })).statusCode).toBe(401);
     expect((await upload('台股', 'reader', false)).statusCode).toBe(400);
-    // A tag with no picture at all: the reader's upload is its vote, so it shows at once.
+    // A tag with no picture at all: an upload is a public candidate at once, but uploaders
+    // cannot vote for their own picture, so other readers decide whether it shows.
     const up = await upload('台股', 'reader');
-    expect(up.statusCode).toBe(200);
-    expect(up.json()).toMatchObject({ kind: 'visual', rank: 1 });
-    expect(await visual('台股')).toMatchObject({ kind: 'logo' });
+    expect(up.statusCode).toBe(201);
+    expect(up.json()).toMatchObject({ kind: 'visual', status: 'approved' });
+    expect(await visual('台股')).toBeNull();
     let s = await state('台股');
-    expect(s).toMatchObject({ kind: 'visual', shownRank: 1, myVote: 1, locked: false, uploadsLeft: 19 });
-    expect(s.candidates[0]).toMatchObject({ rank: 1, votes: 1, uploaded: true, mine: true });
-    // A second upload by the admin as a reader, then the vote moves with the majority; a tie keeps what is shown.
-    expect((await upload('台股', 'admin')).json().rank).toBe(2);
-    s = await state('台股');
-    expect(s.shownRank).toBe(1);
+    expect(s).toMatchObject({ kind: 'visual', shownRank: null, myVote: null, locked: false, uploadsLeft: 19 });
+    expect(s.candidates[0]).toMatchObject({ rank: 1, votes: 0, uploaded: true, mine: true });
+    // A second upload by the admin as a reader; each can vote only for the other's picture.
+    expect((await upload('台股', 'admin')).statusCode).toBe(201);
     const vote = (who: string, rank: number | null) =>
       app.inject({ method: 'PUT', url: path('台股', '/vote'), headers: as(who), payload: { rank } });
+    expect((await vote('reader', 1)).statusCode).toBe(403);
     expect((await vote('reader', 2)).json().shownRank).toBe(2);
     expect((await vote('reader', 9)).statusCode).toBe(404);
+    // A tie keeps what is shown.
+    expect((await vote('admin', 1)).json().shownRank).toBe(2);
     // Admin lock: votes still count, the picture stays; unlock goes back to the votes.
     const lock = (rank: number | null, who = 'admin') =>
       app.inject({ method: 'PUT', url: path('台股', '/lock'), headers: as(who), payload: { rank } });
@@ -456,11 +476,13 @@ describe.skipIf(!url)('tag visual run and routes (MariaDB)', () => {
     expect((await lock(1)).statusCode).toBe(200);
     expect((await vote('reader', 2)).json().shownRank).toBe(1);
     expect(await state('台股')).toMatchObject({ locked: true, shownRank: 1 });
-    expect((await lock(null)).json().shownRank).toBe(2);
+    // Unlocked, the 1–1 tie keeps what is shown.
+    expect((await lock(null)).json().shownRank).toBe(1);
     const votes = await db.select().from(tagPictureVotes).where(eq(tagPictureVotes.tag, '台股'));
-    expect(votes.map((v) => v.rank).sort()).toEqual([2, 2]);
+    expect(votes.map((v) => v.rank).sort()).toEqual([1, 2]);
     // Re-runs leave a voted tag alone.
     expect(await processTags(db, ['台股'], { findImpl: async () => null, looseImpl: async () => [] })).toEqual({});
+    s = await state('台股');
     // Candidate images for signed-in readers only.
     expect((await app.inject({ url: s.candidates[0].image, headers: as('reader', false) })).headers['content-type']).toBe('image/webp');
     expect((await app.inject({ url: s.candidates[0].image })).statusCode).toBe(401);

@@ -92,9 +92,10 @@ describe.skipIf(!url)('tag semantic submission boundaries (MariaDB)', () => {
     return id;
   };
   beforeAll(async () => {
+    // It truncates tables: refuse anything but a loopback *_test database (CI's tag_test, a local tag_observe_test).
     const fixture = new URL(url!);
-    if (fixture.hostname !== '127.0.0.1' || fixture.port !== '18306' || fixture.pathname !== '/tag_f1_semantic_test')
-      throw Error('This suite requires the isolated tag_f1_semantic_test database on 127.0.0.1:18306');
+    if (fixture.hostname !== '127.0.0.1' || !fixture.pathname.endsWith('_test'))
+      throw Error('This suite truncates tables; TEST_DB_URL must name a loopback *_test database');
     ({ db, close } = createDb(url));
     await migrate(db, { migrationsFolder: 'app/src/db/migrations' });
     for (const table of ['users', 'tag_group_defs', 'tag_group_members']) await db.execute(sql.raw(`TRUNCATE TABLE ${table}`));
