@@ -28,7 +28,7 @@ cleanup() {
  exit "$rc"
 }
 trap cleanup ERR
-for url in https://tag.observe.tw/ https://blog.observe.tw/ https://youtube.observe.tw/; do
+for url in https://tag.observe.tw/ https://weblog.tw/ https://youtube.observe.tw/; do
  [[ $(curl -sS --max-time 20 -H 'DNT: 1' -o /dev/null -w '%{http_code}' "$url") == 200 ]]
 done
 ! ps -eo args | awk '/[n]ext build|[d]ocker build|[b]uildx build/ && !/awk/ { found=1 } END { exit !found }'

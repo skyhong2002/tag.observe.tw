@@ -142,7 +142,7 @@ export function validateGate(sample, input, inputSha, { starting = false, bytes 
     throw Error('Capture browser/resource/batch gate failed');
   for (const [url, cap] of [
     ['https://tag.observe.tw/', 2],
-    ['https://blog.observe.tw/', 6.17],
+    ['https://weblog.tw/', 6.17],
     ['https://youtube.observe.tw/', 2],
   ]) {
     const rows = sample.sites?.filter((x) => x.url === url);

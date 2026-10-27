@@ -3,7 +3,7 @@ import test from 'node:test';
 import { collectHomepageTrials, median3, parseHomepageTrial, requireHomepageMedian } from './homepage-median-probe.mjs';
 import { curlStdoutFixture, homepageSiteFixture } from './test-fixtures/homepage-probe.mjs';
 
-const urls = ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'];
+const urls = ['https://tag.observe.tw/', 'https://weblog.tw/', 'https://youtube.observe.tw/'];
 test('a single slow response does not reject; median above cap rejects', () => {
   assert.equal(median3([3, 8, 3]), 3);
   requireHomepageMedian(homepageSiteFixture(urls[1], [3, 8, 3]), 6.17);

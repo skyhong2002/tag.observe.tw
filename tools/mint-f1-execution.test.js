@@ -100,7 +100,7 @@ const sample = () => ({
   load1: 2,
   homeAvailableBytes: 45 * 1024 ** 3,
   localSmBuildCount: 0,
-  sites: ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'].map((url) => ({
+  sites: ['https://tag.observe.tw/', 'https://weblog.tw/', 'https://youtube.observe.tw/'].map((url) => ({
     url,
     exitCode: 0,
     status: 200,

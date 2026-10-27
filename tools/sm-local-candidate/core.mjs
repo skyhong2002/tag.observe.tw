@@ -37,7 +37,7 @@ export const endpoints = Object.freeze([
   { host: '127.0.0.1', port: 18198 },
   { host: '127.0.0.1', port: 18199 },
 ]);
-export const budgets = Object.freeze({ 'https://tag.observe.tw/': 2, 'https://blog.observe.tw/': 6.17, 'https://youtube.observe.tw/': 2 });
+export const budgets = Object.freeze({ 'https://tag.observe.tw/': 2, 'https://weblog.tw/': 6.17, 'https://youtube.observe.tw/': 2 });
 export const lockPath = '/home/deck/.local/share/tag-analysis/deploy.lock',
   dbPath = '/home/deck/tag-analysis-private/f1-release/candidate-fixtures/db.env.json';
 export const sha = (x) => createHash('sha256').update(x).digest('hex');

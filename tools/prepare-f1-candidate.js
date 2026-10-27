@@ -31,7 +31,7 @@ export function validateOptions(options) {
     api.search ||
     api.hash ||
     !api.port ||
-    ['tag.observe.tw', 'blog.observe.tw', 'youtube.observe.tw'].includes(api.hostname)
+    ['tag.observe.tw', 'blog.observe.tw', 'weblog.tw', 'youtube.observe.tw'].includes(api.hostname)
   )
     throw new Error('TAG_API_ORIGIN must explicitly identify an isolated HTTP candidate API with a port');
   return options;

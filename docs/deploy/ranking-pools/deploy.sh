@@ -40,7 +40,7 @@ cleanup() {
 }
 trap cleanup ERR
 # Three homepages must return200 immediately before creating the new release.
-for url in https://tag.observe.tw/ https://blog.observe.tw/ https://youtube.observe.tw/; do
+for url in https://tag.observe.tw/ https://weblog.tw/ https://youtube.observe.tw/; do
  status=$(curl -sS --max-time 20 -H 'DNT: 1' -o /dev/null -w '%{http_code}' "$url")
  [[ $status == 200 ]]
 done

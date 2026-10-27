@@ -43,7 +43,7 @@ test('load, disk and time boundaries; resume requires healthy probes, load <10, 
     assert.equal(buildDecision(sample({ load1, homeAvailableBytes: disk * GiB }), true), decision);
   }
   for (const url of sites) {
-    const budget = url === 'https://blog.observe.tw/' ? 6.17 : 2;
+    const budget = url === 'https://weblog.tw/' ? 6.17 : 2;
     assert.equal(siteBudgetsSeconds[url], budget);
     for (const [patch, decision] of [
       [{ total: budget }, 'run'],
@@ -320,19 +320,19 @@ test('blog may take up to 6.17 seconds while tag and YouTube retain two seconds'
     const s = sample(),
       i = s.sites.findIndex((r) => r.url === url);
     s.sites[i] = homepageSiteFixture(url, [3, 3, 3]);
-    assert.equal(buildDecision(s, false), url === 'https://blog.observe.tw/' ? 'run' : 'pause');
+    assert.equal(buildDecision(s, false), url === 'https://weblog.tw/' ? 'run' : 'pause');
   }
 });
 
 test('approved baseline receipt is pinned and computes exact relative limits without rebasing', () => {
   assert.deepEqual(siteBaselinesSeconds, {
     'https://tag.observe.tw/': 0.256,
-    'https://blog.observe.tw/': 3.085,
+    'https://weblog.tw/': 3.085,
     'https://youtube.observe.tw/': 0.289,
   });
   assert.deepEqual(siteBudgetsSeconds, {
     'https://tag.observe.tw/': 2,
-    'https://blog.observe.tw/': 6.17,
+    'https://weblog.tw/': 6.17,
     'https://youtube.observe.tw/': 2,
   });
   assert.equal(baselineMeasurement.startedUTC, '2026-10-13T05:47:30Z');

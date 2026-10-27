@@ -350,7 +350,7 @@ test('SM homepage envelope retains original offset clock and uses cumulative Min
       localSmBuildCount: 0,
       load1: 1,
       homeAvailableBytes: 50 * 1024 ** 3,
-      sites: ['https://tag.observe.tw/', 'https://blog.observe.tw/', 'https://youtube.observe.tw/'].map((url) => ({
+      sites: ['https://tag.observe.tw/', 'https://weblog.tw/', 'https://youtube.observe.tw/'].map((url) => ({
         url,
         status: 200,
         exitCode: 0,

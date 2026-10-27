@@ -529,7 +529,7 @@ test('same request cannot publish caught SQL error as a successful APP fallback'
 });
 
 test('median3 permits one slow200 but rejects slow median and any non200/curl error or legacy scalar', () => {
-  const url = 'https://blog.observe.tw/';
+  const url = 'https://weblog.tw/';
   const good = gate();
   good.sites[1] = homepage(url, [3, 8, 3]);
   good.healthFinishedAtMs = 20000;

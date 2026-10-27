@@ -1,7 +1,8 @@
+// Blog endpoint migrated to weblog.tw; retain the original measured threshold and receipt.
 // User-approved baseline: no automatic rebasing when a homepage becomes slower.
 const siteBaselinesSeconds = Object.freeze({
   'https://tag.observe.tw/': 0.256,
-  'https://blog.observe.tw/': 3.085,
+  'https://weblog.tw/': 3.085,
   'https://youtube.observe.tw/': 0.289,
 });
 const siteBudgetsSeconds = Object.freeze(

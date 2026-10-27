@@ -342,7 +342,7 @@ test('SM raw bytes/status precede JSON and service rejection, including stderr',
     homeAvailableBytes: 50 * 1024 ** 3,
     sites: [
       ['https://tag.observe.tw/', 2],
-      ['https://blog.observe.tw/', 6.17],
+      ['https://weblog.tw/', 6.17],
       ['https://youtube.observe.tw/', 2],
     ].map(([url]) => ({ url, exitCode: 0, status: 200, total: 1 })),
   };

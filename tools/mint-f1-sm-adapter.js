@@ -12,7 +12,7 @@ const nonempty = (v) => typeof v === 'string' && v.trim().length > 0;
 // Fixed script; no operator-supplied code, DB requests, credentials or shell interpolation.
 export const remoteScript = `import json,os,time,subprocess
 from pathlib import Path
-urls=('https://tag.observe.tw/','https://blog.observe.tw/','https://youtube.observe.tw/')
+urls=('https://tag.observe.tw/','https://weblog.tw/','https://youtube.observe.tw/')
 started=int(time.time()*1000)
 rows=[]
 for url in urls:
