@@ -10,9 +10,9 @@ export interface MediaProfile {
   title: string;
   icon: string | null;
   categoryLabel: string | null;
-  /** Tags from traffic.observe.tw (the outlet's domains together); the camp is separate. */
+  /** Tags from site.observe.tw (the outlet's domains together); the camp is separate. */
   labels: Array<{ key: string; label: string }>;
-  /** Domains the tags come from; vote at traffic.observe.tw/site/<domain>/#tags. */
+  /** Domains the tags come from; vote at site.observe.tw/site/<domain>/#tags. */
   tagDomains?: string[];
   camp: 'blue' | 'green' | 'other';
   /** Edition the site collects and whom it serves. */

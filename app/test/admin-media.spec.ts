@@ -133,7 +133,7 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     const ok = await app.inject({ url: '/auth/admin/media/cna', headers: as('admin', false) });
     expect(ok.statusCode).toBe(200);
     expect(ok.headers['cache-control']).toBe('no-store');
-    // Only the camp is edited here; tags come from traffic.observe.tw (unset in tests).
+    // Only the camp is edited here; tags come from site.observe.tw (unset in tests).
     expect(ok.json()).toMatchObject({ media: 'cna', categories: ['green'], tags: [], tagDomains: expect.arrayContaining(['cna.com.tw']) });
     expect(ok.json().definitions.map((d: { key: string }) => d.key)).toEqual(['blue', 'green']);
     const foreign = await app.inject({
@@ -184,10 +184,10 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
       });
       expect(bad.statusCode).toBe(400);
     }
-    // New tags are made on traffic.observe.tw.
+    // New tags are made on site.observe.tw.
     const created = await app.inject({ method: 'POST', url: '/auth/admin/categories', headers: as('admin'), payload: { label: '泛紅' } });
     expect(created.statusCode).toBe(410);
-    expect(created.json().manage).toBe('https://traffic.observe.tw/sites/');
+    expect(created.json().manage).toBe('https://site.observe.tw/sites/');
   });
 
   it('keeps the former labels (性質 included) in the DB, shown only in the change log', async () => {
@@ -216,7 +216,7 @@ describe.skipIf(!url)('admin media labels (MariaDB)', () => {
     expect(mediaScope('life')).not.toHaveProperty('roles');
     const list = (await app.inject({ url: '/auth/admin/media', headers: as('admin', false) })).json();
     expect(list.categories.map((d: { key: string }) => d.key)).toEqual(['blue', 'green']);
-    expect(list.trafficSite).toBe('https://traffic.observe.tw');
+    expect(list.trafficSite).toBe('https://site.observe.tw');
     expect(list.media.find((o: { media: string }) => o.media === 'news_yahoo').categories).toEqual(['blue']);
     expect(list.media.find((o: { media: string }) => o.media === 'life').edits).toMatchObject({ count: 1, lastBy: 'admin@example.com' });
     expect(list.media.find((o: { media: string }) => o.media === 'ftv').edits).toBeNull();

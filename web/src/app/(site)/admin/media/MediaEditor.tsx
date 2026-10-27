@@ -275,14 +275,14 @@ function Editor({ media, url, report, article }: { media: string; url: string; r
   );
 }
 
-// Tags come from traffic.observe.tw and are only shown here, with links to
+// Tags come from site.observe.tw and are only shown here, with links to
 // manage them there; the camp (藍營／綠營) stays in tag and is edited here.
 function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
   const [selected, setSelected] = useState(() => new Set(detail.categories));
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const dirty = selected.size !== detail.categories.length || detail.categories.some((c) => !selected.has(c));
-  const site = detail.trafficSite ?? 'https://traffic.observe.tw';
+  const site = detail.trafficSite ?? 'https://site.observe.tw';
   const toggle = (key: string) =>
     setSelected((now) => {
       const next = new Set(now);
@@ -306,7 +306,7 @@ function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
     <section className={section}>
       <h3 className={heading}>標籤</h3>
       <p className={note}>
-        標籤來自 traffic.observe.tw，以網域為單位，這裡只顯示。要修改請到網站頁投票或用管理員覆寫，或到{' '}
+        標籤來自網站雷達，以網域為單位，這裡只顯示。要修改請到網站頁投票或用管理員覆寫，或到{' '}
         <a href={`${site}/sites/`} className="underline underline-offset-2">
           網站管理
         </a>
@@ -316,7 +316,7 @@ function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
         {detail.tags?.length ? (
           detail.tags.map((t) => <LabelChip key={t} keyName={`t:${t}`} label={t} />)
         ) : (
-          <span className={note}>traffic.observe.tw 目前沒有這家媒體的標籤。</span>
+          <span className={note}>網站雷達目前沒有這家媒體的標籤。</span>
         )}
       </div>
       {!!detail.tagDomains?.length && (
@@ -333,7 +333,7 @@ function Labels({ detail, onSaved }: { detail: Detail; onSaved: () => void }) {
         </p>
       )}
       <h4 className="mt-4 text-sm font-medium">政治傾向</h4>
-      <p className={note}>只在本站設定，不會送到 traffic.observe.tw。同時勾了藍營和綠營時，陣營分析會算成藍營。</p>
+      <p className={note}>只在本站設定，不會送到網站雷達。同時勾了藍營和綠營時，陣營分析會算成藍營。</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {detail.definitions.map((def) => (
           <LabelToggle key={def.key} def={def} on={selected.has(def.key)} onToggle={() => toggle(def.key)} />

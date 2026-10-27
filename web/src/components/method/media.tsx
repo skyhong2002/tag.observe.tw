@@ -28,10 +28,10 @@ export function MediaOverviewMethod({ camp = true }: { camp?: boolean }) {
         <dt className={methodTerm}>標籤</dt>
         <dd>
           媒體標籤來自{' '}
-          <a href="https://traffic.observe.tw/" className={inlineLink}>
-            traffic.observe.tw
+          <a href="https://site.observe.tw/" className={inlineLink}>
+            網站雷達
           </a>
-          ，以網域為單位；同一家媒體有好幾個網域時，合併各網域目前顯示的標籤。標籤可在 traffic.observe.tw
+          ，以網域為單位；同一家媒體有好幾個網域時，合併各網域目前顯示的標籤。標籤可在網站雷達
           的網站頁登入投票或提議新增。政治傾向不是標籤，見下方「藍綠」。
         </dd>
         <dt className={methodTerm}>發現來源</dt>
@@ -65,7 +65,7 @@ export function MediaOverviewMethod({ camp = true }: { camp?: boolean }) {
         <dt className={methodTerm}>藍綠</dt>
         <dd>
           「偏藍」「偏綠」標示與「藍營傾向」「綠營傾向」篩選，和首頁新聞量、事件頁的藍綠對照用同一份名單，由本站維護，不屬於
-          traffic.observe.tw 的標籤。
+          網站雷達的標籤。
         </dd>
       </dl>
       {camp && <CampBasis />}

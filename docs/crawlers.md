@@ -19,7 +19,7 @@
 | `rules/`、`render.ts` | 手寫規則失效時，由 AI 產生並驗證的宣告式規則（存在檔案，不進 DB）與無頭瀏覽器渲染，見 [generated-crawl-rules.md](generated-crawl-rules.md) |
 | `robots.ts` | 每天記錄各媒體 robots.txt 的狀態（只顯示，不遵守） |
 
-來源規格常用欄位：`list.include`（網址路徑過濾）、`list.articleId`（同一篇多網址時的文章身分）、`list.titleInclude`、`titleSuffix`（去掉標題後的站名）、`article.provider`（聚合站只收自製內容，其餘記在 `rejected_urls`）、`article.jsonTags`、`tagSelector`、`skipMeta`。新增或替換來源時，到 `/admin/media/` 設定它的政治傾向；其他標籤在 traffic.observe.tw 的網站頁管理（見 [login.md](login.md#媒體設定adminmedia)）。
+來源規格常用欄位：`list.include`（網址路徑過濾）、`list.articleId`（同一篇多網址時的文章身分）、`list.titleInclude`、`titleSuffix`（去掉標題後的站名）、`article.provider`（聚合站只收自製內容，其餘記在 `rejected_urls`）、`article.jsonTags`、`tagSelector`、`skipMeta`。新增或替換來源時，到 `/admin/media/` 設定它的政治傾向；其他標籤在網站雷達的網站頁管理（見 [login.md](login.md#媒體設定adminmedia)）。
 
 ## 繁體收錄
 

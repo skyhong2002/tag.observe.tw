@@ -552,7 +552,7 @@ curl -s 'https://tag.observe.tw/api/v1/openapi.json'
 
 **排行分類**
 
-排行與分析用的媒體群組，可用於 `category` 參數，含 blue／green 兩個政治傾向群組。只列至少有一家媒體的群組；`ranked` 為 false 的群組沒有固定排行名單，/api/v1/ranking 不會有快照。讀者看到的媒體標籤來自 traffic.observe.tw，見 /api/v1/media-stats 的 labels。
+排行與分析用的媒體群組，可用於 `category` 參數，含 blue／green 兩個政治傾向群組。只列至少有一家媒體的群組；`ranked` 為 false 的群組沒有固定排行名單，/api/v1/ranking 不會有快照。讀者看到的媒體標籤來自網站雷達，見 /api/v1/media-stats 的 labels。
 
 範例：
 
@@ -3972,10 +3972,10 @@ curl -s 'https://tag.observe.tw/api/v1/media-stats'
 | `media[].sourceKind` | "discovery" \| "publisher" | discovery 為文章發現來源，篇數透過關聯計算；publisher 為刊登媒體，全站文章總數不重複計入發現來源 |
 | `media[].category` | string \| null | 排行與報導關鍵字比較用的分析群組代碼（例如 news、3c），不是媒體標籤 |
 | `media[].categoryLabel` | string \| null | 分析群組名稱 |
-| `media[].labels` | object[] | 媒體標籤，來自 traffic.observe.tw（媒體各網域目前顯示的標籤聯集，不含政治傾向）；藍綠傾向另見 camp |
+| `media[].labels` | object[] | 媒體標籤，來自網站雷達（媒體各網域目前顯示的標籤聯集，不含政治傾向）；藍綠傾向另見 camp |
 | `media[].labels[].key` | string | 標籤名稱，也是 /media/?tag= 的值 |
 | `media[].labels[].label` | string |  |
-| `media[].tagDomains` | string[] | 標籤所依據的網域；到 https://traffic.observe.tw/site/<網域>/#tags 投票或管理 |
+| `media[].tagDomains` | string[] | 標籤所依據的網域；到 https://site.observe.tw/site/<網域>/#tags 投票或管理 |
 | `media[].camp` | "blue" \| "green" \| "other" | 政治傾向分組：blue 藍營傾向、green 綠營傾向、other 其他（依管理員維護的媒體標籤，兩者都有時算藍營） |
 | `media[].schedule` | string | 爬取頻率；hourly 或 every N min；未啟用時為 off |
 | `media[].crawlSchedule` | object |  |

@@ -58,7 +58,7 @@ interface MediaRow {
   icon: string | null;
   category: string | null;
   categoryLabel: string | null;
-  /** Tags from traffic.observe.tw (the outlet's domains together); the camp is separate. */
+  /** Tags from site.observe.tw (the outlet's domains together); the camp is separate. */
   labels: Array<{ key: string; label: string }>;
   tagDomains?: string[];
   camp: Camp;
@@ -123,7 +123,7 @@ type SortKey = keyof typeof SORTS;
 const ASC_FIRST = new Set<SortKey>(['name', 'status', 'scope', 'language', 'camp', 'category', 'schedule']);
 const CAMP_ORDER: Camp[] = ['blue', 'green', 'other'];
 // Before 2026-10-24 the tags were tag's own labels, filtered with ?category=<key>.
-// Old links land on the traffic.observe.tw tag of the same meaning when the
+// Old links land on the site.observe.tw tag of the same meaning when the
 // directory has it, on the camp filter for 藍營／綠營, else on every outlet.
 const LEGACY_TAGS: Record<string, string> = {
   news: '新聞',

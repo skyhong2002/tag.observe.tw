@@ -5,7 +5,7 @@ export type Outlet = {
   icon: string | null;
   /** Camp keys (blue/green), the only labels edited in tag. */
   categories: string[];
-  /** Tags from traffic.observe.tw, read-only here (GET /auth/admin/media*). */
+  /** Tags from site.observe.tw, read-only here (GET /auth/admin/media*). */
   tags?: string[];
   /** Domains those tags come from. */
   tagDomains?: string[];

@@ -7,8 +7,10 @@ import {
   mediaTags,
   mediaTagsFetchedAt,
   setMediaTagsForTest,
+  TRAFFIC_SITE,
   tagDomainsByMedia,
   tagsFromResponse,
+  trafficSiteUrl,
 } from './site-tags.ts';
 
 const service = { url: 'http://127.0.0.1:18150', token: 'x'.repeat(40) };
@@ -132,5 +134,13 @@ describe('tagDomainsByMedia', () => {
     expect(own.get('ltn')).toContain('ltn.com.tw');
     // The reviewed domain leads.
     expect(own.get('nextapple')).toEqual(['news.nextapple.com', 'tw.nextapple.com']);
+  });
+});
+
+describe('public site links', () => {
+  it('links directly to the renamed site and preserves the tag path and fragment', () => {
+    expect(TRAFFIC_SITE).toBe('https://site.observe.tw');
+    expect(trafficSiteUrl('news.ltn.com.tw')).toBe('https://site.observe.tw/site/news.ltn.com.tw/#tags');
+    expect(trafficSiteUrl('example.com/a?b')).toBe('https://site.observe.tw/site/example.com%2Fa%3Fb/#tags');
   });
 });

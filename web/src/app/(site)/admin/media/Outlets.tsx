@@ -109,7 +109,7 @@ function StatusBadge({ status }: { status: Status | 'none' }) {
 }
 
 // Every outlet as a table: its tags, how the crawler is doing, and who last
-// changed its camp. Tags come from traffic.observe.tw and are managed there;
+// changed its camp. Tags come from site.observe.tw and are managed there;
 // only the camp (藍營／綠營) is edited here. Filters narrow by tag and crawl
 // status; the name opens the editor.
 export function Outlets() {
@@ -136,7 +136,7 @@ export function Outlets() {
 
   const rows: Row[] = data.media.map((o) => ({ ...o, stats: stats?.get(o.media) ?? null }));
   const statusOf = (r: Row) => r.stats?.status ?? 'none';
-  // Camp keys filter as they are, traffic.observe.tw tags as `t:<tag>`.
+  // Camp keys filter as they are, site.observe.tw tags as `t:<tag>`.
   const keysOf = (r: Row) => [...r.categories, ...(r.tags ?? []).map((t) => `t:${t}`)];
   const tagCounts = new Map<string, number>();
   for (const t of rows.flatMap((r) => r.tags ?? [])) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
@@ -213,10 +213,9 @@ export function Outlets() {
         />
       </div>
       <p className={note}>
-        政治傾向（藍營、綠營）在這裡設定。其他標籤來自 traffic.observe.tw，這裡只顯示；要修改請到該媒體網域的 traffic.observe.tw
-        網站頁投票或覆寫，或到{' '}
-        <a href={`${data.trafficSite ?? 'https://traffic.observe.tw'}/sites/`} className="underline underline-offset-2">
-          traffic.observe.tw 網站管理
+        政治傾向（藍營、綠營）在這裡設定。其他標籤來自網站雷達，這裡只顯示；要修改請到網站雷達上該媒體網域的網站頁投票或覆寫，或到{' '}
+        <a href={`${data.trafficSite ?? 'https://site.observe.tw'}/sites/`} className="underline underline-offset-2">
+          網站雷達管理頁
         </a>
         批次修改。
       </p>
@@ -257,7 +256,7 @@ export function Outlets() {
               {th('lastArticle', '最新文章', table.cell)}
               {th('robots', 'robots.txt', table.cell, '主網域 robots.txt 最近一次讀到的內容；只記錄，爬蟲不遵守')}
               {th('rules', 'AI 規則', table.cell, '驗證通過、正在使用的 AI 產生爬取規則')}
-              {th('edits', '修改', table.num, '本站標籤的修改次數：政治傾向，以及 2026-10-24 改用 traffic.observe.tw 之前的舊標籤')}
+              {th('edits', '修改', table.num, '本站標籤的修改次數：政治傾向，以及 2026-10-24 改用網站雷達之前的舊標籤')}
               {th('lastEdit', '最近修改', table.cell)}
             </tr>
           </thead>

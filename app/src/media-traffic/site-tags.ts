@@ -6,9 +6,9 @@ import { publisherDomainsByMedia } from '../jobs/media-traffic-job.ts';
 import { trafficDomain } from './live.ts';
 import { type TrafficService, trafficService } from './service.ts';
 
-// Media tags (新聞、科技、財經…) come from traffic.observe.tw, where every
+// Media tags (新聞、科技、財經…) come from site.observe.tw, where every
 // observe site's site tags are kept, voted on and managed
-// (https://traffic.observe.tw/site/<domain>/#tags, editors also at /sites/).
+// (https://site.observe.tw/site/<domain>/#tags, editors also at /sites/).
 // Tags are keyed by domain, so an outlet carries the visible tags of its own
 // domains (tagDomainsByMedia: not the platforms or other outlets it is read
 // from). Political lean is not a traffic tag: 藍營／綠營 stay in tag's own
@@ -21,7 +21,7 @@ import { type TrafficService, trafficService } from './service.ts';
 // a file so a restart while traffic is down still has it; with neither, media
 // simply show no tags (the camp labels and every outlet still show).
 
-export const TRAFFIC_SITE = 'https://traffic.observe.tw';
+export const TRAFFIC_SITE = 'https://site.observe.tw';
 export const trafficSiteUrl = (domain: string) => `${TRAFFIC_SITE}/site/${encodeURIComponent(domain)}/#tags`;
 const POLITICAL_TAGS = new Set(['藍', '綠', '藍營', '綠營', '藍營傾向', '綠營傾向', '藍營傾向媒體', '綠營傾向媒體']);
 
@@ -39,7 +39,7 @@ let snapshot: TagSnapshot | null = null;
 let byMedia = new Map<string, string[]>();
 /**
  * Platforms that carry other outlets' articles. tag still registers them with
- * traffic.observe.tw for the outlets it reads there (their traffic is measured
+ * site.observe.tw for the outlets it reads there (their traffic is measured
  * on them), but their tags describe the platform, so only the platform's own
  * entry (or none) carries them.
  */
@@ -95,7 +95,7 @@ function useSnapshot(next: TagSnapshot | null, domainsOf = domainsByMedia()) {
 
 /** The outlet's tags: the union over its domains, without political ones. */
 export const mediaTags = (media: string): string[] => byMedia.get(media) ?? [];
-/** Domains whose tags the outlet carries, for links to traffic.observe.tw. */
+/** Domains whose tags the outlet carries, for links to site.observe.tw. */
 export const mediaTagDomains = (media: string): string[] => domainsByMedia().get(media) ?? [];
 /** When the snapshot in use was fetched; null before the first success. */
 export const mediaTagsFetchedAt = () => snapshot?.fetchedAt ?? null;

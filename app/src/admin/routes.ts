@@ -79,7 +79,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
   };
   const known = (media: string) => media.length <= 32 && knownMedia().includes(media);
   // Only the camp labels are edited here; every other tag is managed on
-  // traffic.observe.tw (media-traffic/site-tags.ts) and shown read-only.
+  // site.observe.tw (media-traffic/site-tags.ts) and shown read-only.
   const camps = new Set<string>(CAMP_KEYS);
   const campsOf = (media: string) => categoriesOf(media).filter((key) => camps.has(key));
   const campDefs = () => categoryDefs().filter((d) => camps.has(d.key));
@@ -217,7 +217,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     if (!known(media)) return reply.code(404).send({ error: 'unknown media' });
     const wanted = request.body?.categories;
     if (!Array.isArray(wanted) || !wanted.every((k) => typeof k === 'string' && camps.has(k)))
-      return reply.code(400).send({ error: '這裡只能設定政治傾向（blue、green）；其他標籤請到 traffic.observe.tw 管理' });
+      return reply.code(400).send({ error: '這裡只能設定政治傾向（blue、green）；其他標籤請到網站雷達管理' });
     await refreshMediaCategories(db);
     // The other groups stay untouched (analysis cohorts and the rollback copy).
     const before = new Set(campsOf(media));
@@ -241,10 +241,10 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db, { requireAdmin
     return { media, categories: campsOf(media), added, removed };
   });
 
-  // New tags are created on traffic.observe.tw now (media-traffic/site-tags.ts).
+  // New tags are created on site.observe.tw now (media-traffic/site-tags.ts).
   app.post('/auth/admin/categories', async (request, reply) => {
     if (!(await admin(request, reply, true))) return reply;
-    return reply.code(410).send({ error: '媒體標籤改到 traffic.observe.tw 管理', manage: `${TRAFFIC_SITE}/sites/` });
+    return reply.code(410).send({ error: '媒體標籤改到網站雷達管理', manage: `${TRAFFIC_SITE}/sites/` });
   });
 
   // 「重抓這一篇」: fetch the page now, inline, and report the stored result.

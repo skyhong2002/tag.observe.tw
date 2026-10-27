@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 // One outlet's tags as chips: the camp (kept in tag) first, then the tags from
-// traffic.observe.tw, each linking to that filter on /media/, then a link to
-// edit them on traffic.observe.tw (the domains are in its tooltip). The same
+// site.observe.tw, each linking to that filter on /media/, then a link to
+// edit them on site.observe.tw (the domains are in its tooltip). The same
 // chip styles are used in the /media/ table.
 
 const chip = 'shrink-0 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset';
@@ -25,7 +25,7 @@ export default function MediaTagChips({
   domains?: string[];
 }) {
   const main = domains[0];
-  const from = `標籤來自 traffic.observe.tw 上的 ${domains.join('、')}`;
+  const from = `標籤來自網站雷達上的的 ${domains.join('、')}`;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
       <span className="text-xs text-zinc-500 dark:text-zinc-400">標籤</span>
@@ -42,7 +42,7 @@ export default function MediaTagChips({
       {camp === 'other' && !labels.length && <span className="text-xs text-zinc-500 dark:text-zinc-400">尚無標籤</span>}
       {main && (
         <a
-          href={`https://traffic.observe.tw/site/${encodeURIComponent(main)}/#tags`}
+          href={`https://site.observe.tw/site/${encodeURIComponent(main)}/#tags`}
           title={from}
           className="ml-1 whitespace-nowrap text-xs text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800 dark:text-brand-400 dark:decoration-brand-700"
         >

@@ -288,7 +288,7 @@ export function registerMediaStats(app: FastifyInstance, db: Db) {
           icon: iconUrl(s.media),
           category,
           categoryLabel: category ? categoryLabel(category) : null,
-          // Tags from traffic.observe.tw (media-traffic/site-tags.ts); the camp is separate.
+          // Tags from site.observe.tw (media-traffic/site-tags.ts); the camp is separate.
           labels: mediaTags(s.media).map((tag) => ({ key: tag, label: tag })),
           tagDomains: mediaTagDomains(s.media),
           camp: campOf(s.media),
