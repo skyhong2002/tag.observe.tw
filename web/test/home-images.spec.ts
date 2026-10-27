@@ -10,11 +10,12 @@ const requireWeb = createRequire(new URL('../package.json', import.meta.url));
 const React = requireWeb('react');
 const { renderToStaticMarkup } = requireWeb('react-dom/server');
 const { getImgProps } = requireWeb('next/dist/shared/lib/get-img-props');
-const { imageConfigDefault } = requireWeb('next/dist/shared/lib/image-config');
+const { imageConfigDefault, prepareImageConfig } = requireWeb('next/dist/shared/lib/image-config');
 const defaultLoader = requireWeb('next/dist/shared/lib/image-loader').default;
 const imageProps = (props: Record<string, unknown>) =>
   getImgProps(props, {
-    imgConf: { ...imageConfigDefault, ...config.images },
+    // Next 16.4 sorts sizes and derives allSizes before getImgProps, as next/image does.
+    imgConf: prepareImageConfig({ ...imageConfigDefault, ...config.images }),
     defaultLoader,
   }).props;
 
