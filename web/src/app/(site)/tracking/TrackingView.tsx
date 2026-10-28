@@ -1,8 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import ArticleListItem from '@/components/ArticleListItem';
+import { SectionTitle, StatTiles } from '@/components/DataSections';
+import DeferredChart from '@/components/DeferredChart';
+import { filterChipClass } from '@/components/FilterChips';
+import MediaHoverLink from '@/components/MediaHoverLink';
+import MethodLink from '@/components/MethodLink';
+import { pill, pillOff, pillOn } from '@/components/reader/FollowButton';
+import TabButtons from '@/components/TabButtons';
+import TableScroller from '@/components/TableScroller';
 import { taipei, taipeiDate } from '@/lib/api';
+import { formInput, formLabel, formSubmit } from '@/lib/form-styles';
+import { table } from '@/lib/table-styles';
 import {
   type Observation,
   type ObservationScope,
@@ -10,11 +22,14 @@ import {
   observationQuery,
   observationScope,
 } from '../../../../../app/src/observation-scope.ts';
-import styles from './tracking.module.css';
 
+const TrendChart = lazy(() => import('@/components/TrendChart'));
 type Saved = { anchor: string; any: string[]; version: 1 };
 const STORE = 'tag-observe:observations:v1';
 const format = (n: number) => n.toLocaleString('zh-TW');
+const note = 'text-xs text-zinc-500 dark:text-zinc-400';
+const link = 'text-brand-700 hover:underline dark:text-brand-400';
+const card = 'space-y-3 rounded-xl border border-zinc-300 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900';
 export function SavedObservations({ scope }: { scope?: ObservationScope }) {
   const [saved, setSaved] = useState<Saved[]>([]);
   const [message, setMessage] = useState('');
@@ -46,14 +61,15 @@ export function SavedObservations({ scope }: { scope?: ObservationScope }) {
   }
   const exists = scope && saved.some((s) => observationHref(s) === observationHref(scope));
   return (
-    <section className={styles.saved} aria-label="此瀏覽器的觀察清單">
-      <div className={styles.formRow}>
-        <strong>
-          我的觀察 <small>此瀏覽器</small>
-        </strong>
+    <section className="space-y-2" aria-label="此瀏覽器的觀察清單">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="text-sm font-medium">
+          我的觀察 <span className={`${note} font-normal`}>此瀏覽器</span>
+        </h2>
         {scope && (
           <button
             type="button"
+            className={`${pill} ${exists ? pillOn : pillOff}`}
             disabled={!exists && saved.length >= 30}
             onClick={() => {
               update(
@@ -68,15 +84,16 @@ export function SavedObservations({ scope }: { scope?: ObservationScope }) {
         )}
       </div>
       {saved.length ? (
-        <ul className={styles.savedList}>
+        <ul className="flex flex-wrap gap-2">
           {saved.map((s) => (
-            <li key={observationHref(s)}>
-              <Link href={observationHref(s)}>
+            <li key={observationHref(s)} className="flex items-center gap-1">
+              <Link href={observationHref(s)} className={`${filterChipClass(false)} text-sm`}>
                 {s.anchor}
                 {s.any.length ? ` × (${s.any.join(' / ')})` : ''}
               </Link>
               <button
                 type="button"
+                className="px-1 text-sm text-zinc-500 hover:text-brand-700 dark:text-zinc-400 dark:hover:text-brand-400"
                 aria-label={`移除 ${s.anchor} 的觀察`}
                 onClick={() => update(saved.filter((item) => observationHref(item) !== observationHref(s)))}
               >
@@ -86,32 +103,37 @@ export function SavedObservations({ scope }: { scope?: ObservationScope }) {
           ))}
         </ul>
       ) : (
-        <p className={styles.note}>儲存後可從這裡重開，持續取得最新資料。也可以直接收藏或分享網址。</p>
+        <p className={note}>儲存後可從這裡重開，持續取得最新資料。也可以直接收藏或分享網址。</p>
       )}
-      <p role="status" className={styles.note}>
-        {message}
-      </p>
+      {message && (
+        <p role="status" className={note}>
+          {message}
+        </p>
+      )}
     </section>
   );
 }
 
 type Bin = { from: string; to: string; total: number | null };
 export default function TrackingView({ data }: { data: Observation }) {
+  const router = useRouter();
   const [span, setSpan] = useState<'day' | 'week' | 'month'>('week');
   const [cutoff, setCutoff] = useState(data.window.at);
   const [share, setShare] = useState('');
-  const bins: Bin[] = [];
-  for (const day of data.days) {
-    const week = new Date(`${day.day}T00:00:00Z`);
-    week.setUTCDate(week.getUTCDate() - ((week.getUTCDay() + 6) % 7));
-    const key = span === 'day' ? day.day : span === 'month' ? day.day.slice(0, 7) : week.toISOString().slice(0, 10);
-    const last = bins[bins.length - 1];
-    if (last && (span === 'month' ? last.from.slice(0, 7) === key : span === 'week' ? last.from >= key : false)) {
-      last.to = day.day;
-      if (day.articles !== null) last.total = (last.total ?? 0) + day.articles;
-    } else bins.push({ from: day.day, to: day.day, total: day.articles });
-  }
-  const max = Math.max(1, ...bins.map((b) => b.total ?? 0));
+  const bins = useMemo(() => {
+    const result: Bin[] = [];
+    for (const day of data.days) {
+      const week = new Date(`${day.day}T00:00:00Z`);
+      week.setUTCDate(week.getUTCDate() - ((week.getUTCDay() + 6) % 7));
+      const key = span === 'day' ? day.day : span === 'month' ? day.day.slice(0, 7) : week.toISOString().slice(0, 10);
+      const last = result[result.length - 1];
+      if (last && (span === 'month' ? last.from.slice(0, 7) === key : span === 'week' ? last.from >= key : false)) {
+        last.to = day.day;
+        if (day.articles !== null) last.total = (last.total ?? 0) + day.articles;
+      } else result.push({ from: day.day, to: day.day, total: day.articles });
+    }
+    return result;
+  }, [data.days, span]);
   const scopeInputs = (
     <>
       <input type="hidden" name="v" value="1" />
@@ -119,32 +141,38 @@ export default function TrackingView({ data }: { data: Observation }) {
       {data.scope.any.length > 0 && <input type="hidden" name="with" value={data.scope.any.join(',')} />}
     </>
   );
-  function href(at?: string) {
-    const q = observationQuery(data.scope);
-    q.set('from', data.window.from);
-    q.set('to', data.window.to);
-    if (at) q.set('at', at);
-    return `/tracking/?${q}`;
-  }
+  const href = useCallback(
+    (at?: string) => {
+      const q = observationQuery(data.scope);
+      q.set('from', data.window.from);
+      q.set('to', data.window.to);
+      if (at) q.set('at', at);
+      return `/tracking/?${q}`;
+    },
+    [data.scope, data.window.from, data.window.to],
+  );
+  const selectBin = useCallback(
+    (index: number) => {
+      const bin = bins[index];
+      if (bin && bin.total !== null) router.push(href(bin.to > data.window.at ? data.window.at : bin.to), { scroll: false });
+    },
+    [bins, data.window.at, href, router],
+  );
+  const chartDays = useMemo(() => bins.map((b) => b.from), [bins]);
+  const chartBars = useMemo(() => bins.map((b) => b.total), [bins]);
+  const lines = useMemo(() => [], []);
   const months = [...new Set(data.days.map((d) => d.day.slice(0, 7)))];
   return (
     <>
-      <section className={styles.panel}>
-        <div className={styles.formRow}>
-          <div className={styles.grow}>
-            <p className={styles.eyebrow}>固定條件 · 自動納入新資料</p>
-            <h2>
-              {data.scope.anchor}
-              {data.scope.any.length > 0 && (
-                <>
-                  {' '}
-                  × <span>（{data.scope.any.join(' 或 ')}）</span>
-                </>
-              )}
-            </h2>
-          </div>
+      <section className={card}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">
+            {data.scope.anchor}
+            {data.scope.any.length > 0 && <> ×（{data.scope.any.join(' 或 ')}）</>}
+          </h2>
           <button
             type="button"
+            className={`${pill} ${pillOff}`}
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(new URL(href(data.window.at), window.location.origin).href);
@@ -157,16 +185,18 @@ export default function TrackingView({ data }: { data: Observation }) {
             分享這個畫面
           </button>
         </div>
-        <p role="status" className={styles.note}>
-          {share}
-        </p>
-        <form action="/tracking/" className={styles.formRow}>
+        {share && (
+          <p role="status" className={note}>
+            {share}
+          </p>
+        )}
+        <form action="/tracking/" className="flex flex-wrap items-end gap-3">
           {scopeInputs}
-          <label>
+          <label className={formLabel}>
             開始日期
-            <input type="date" name="from" defaultValue={data.window.from} max={data.window.to} required />
+            <input type="date" name="from" defaultValue={data.window.from} max={data.window.to} required className={formInput} />
           </label>
-          <label>
+          <label className={formLabel}>
             結束日期
             <input
               type="date"
@@ -174,194 +204,225 @@ export default function TrackingView({ data }: { data: Observation }) {
               defaultValue={data.window.to}
               max={new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)}
               required
+              className={formInput}
             />
           </label>
-          <button type="submit">更新範圍</button>
-          <span className={styles.note}>最多 366 天 · 日期皆為台北時間</span>
+          <button type="submit" className={formSubmit}>
+            更新範圍
+          </button>
+          <span className={note}>最多 366 天 · 日期皆為台北時間</span>
         </form>
-      </section>
-      <section className={styles.replay}>
-        <div className={styles.formRow}>
-          <div className={styles.grow}>
-            <h2>{data.window.at < data.window.to ? '回看當時的報導' : '目前觀察範圍'}</h2>
-            <p>
-              統計與事件只顯示至 <strong>{data.window.at}</strong>
-              {data.window.at === new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10) ? ' 目前' : ' 當日結束'}。
-            </p>
-          </div>
-          {data.window.at < data.window.to && <Link href={href()}>回到範圍末日 →</Link>}
-        </div>
-        <form action="/tracking/" className={styles.formRow}>
-          {scopeInputs}
-          <input type="hidden" name="from" value={data.window.from} />
-          <input type="hidden" name="to" value={data.window.to} />
-          <label>
-            回看日期
-            <input
-              type="date"
-              name="at"
-              value={cutoff}
-              onChange={(e) => setCutoff(e.target.value)}
-              min={data.window.from}
-              max={data.window.to}
-              required
-            />
-          </label>
-          <button type="submit">回看到這一天</button>
-        </form>
-      </section>
-      <div className={styles.stats}>
-        {[
-          [data.totals.articles, '篇符合條件的報導'],
-          [data.totals.media, '個收錄來源'],
-          [data.totals.events, '段獨立事件'],
-        ].map(([value, label]) => (
-          <div key={label}>
-            <strong>{format(value as number)}</strong>
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-      <section className={styles.panel}>
-        <div className={styles.formRow}>
-          <div className={styles.grow}>
-            <h2>關注何時升起，又何時沉寂？</h2>
-            <p className={styles.note}>各期符合條件的報導篇數；點選柱狀圖回看到該期末日。</p>
-          </div>
-          <fieldset className={styles.switcher} aria-label="圖表時間單位">
-            {(
-              [
-                ['day', '日'],
-                ['week', '週'],
-                ['month', '月'],
-              ] as const
-            ).map(([key, label]) => (
-              <button type="button" key={key} aria-pressed={span === key} onClick={() => setSpan(key)}>
-                {label}
-              </button>
-            ))}
-          </fieldset>
-        </div>
-        <div className={styles.chartScroll}>
-          <div className={styles.chart} style={{ minWidth: span === 'day' ? Math.max(480, bins.length * 12) : 0 }}>
-            {bins.map((b) => (
-              <Link
-                className={styles.barColumn}
-                prefetch={false}
-                key={b.from}
-                href={href(b.to > data.window.at ? data.window.at : b.to)}
-                title={`${b.from} 至 ${b.to}：${b.total === null ? '尚未回看' : `${format(b.total)} 篇`}`}
-                aria-label={`${b.from} 至 ${b.to}，${b.total === null ? '尚未回看' : `${b.total} 篇，回看到期末`}`}
-              >
-                <span
-                  className={styles.bar}
-                  style={{
-                    height: b.total === null ? '100%' : `${Math.max(b.total ? 2 : 0.6, (b.total / max) * 100)}%`,
-                    opacity: b.total === null ? 0.12 : b.total ? 1 : 0.25,
-                  }}
-                />
-                {(bins.length < 15 || bins.indexOf(b) % Math.ceil(bins.length / 9) === 0) && (
-                  <small>{span === 'month' ? b.from.slice(0, 7) : b.from.slice(5)}</small>
-                )}
+        <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
+          <h3 className="text-sm font-medium">{data.window.at < data.window.to ? '回看當時的報導' : '目前觀察範圍'}</h3>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            統計與事件只顯示至 <strong>{data.window.at}</strong>
+            {data.window.at === new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10) ? ' 目前' : ' 當日結束'}。
+          </p>
+          <form action="/tracking/" className="mt-3 flex flex-wrap items-end gap-3">
+            {scopeInputs}
+            <input type="hidden" name="from" value={data.window.from} />
+            <input type="hidden" name="to" value={data.window.to} />
+            <label className={formLabel}>
+              回看日期
+              <input
+                type="date"
+                name="at"
+                value={cutoff}
+                onChange={(e) => setCutoff(e.target.value)}
+                min={data.window.from}
+                max={data.window.to}
+                required
+                className={formInput}
+              />
+            </label>
+            <button type="submit" className={formSubmit}>
+              回看到這一天
+            </button>
+            {data.window.at < data.window.to && (
+              <Link href={href()} className={`${link} py-2 text-sm`}>
+                回到範圍末日 →
               </Link>
-            ))}
-          </div>
+            )}
+          </form>
         </div>
-        <p className={styles.note}>
-          {data.window.from} — {data.window.to} · 最高 {format(max === 1 && !data.totals.articles ? 0 : max)} 篇／
-          {span === 'day' ? '日' : span === 'week' ? '週' : '月'} · 淡色區域尚未回看
-        </p>
-        {!data.totals.articles && <p>這個範圍尚無符合條件的收錄報導。可減少搭配詞或調整日期。</p>}
+      </section>
+      <StatTiles
+        tiles={[
+          { label: '符合條件的報導', value: `${format(data.totals.articles)} 篇` },
+          { label: '收錄來源', value: `${format(data.totals.media)} 個` },
+          { label: '獨立事件', value: `${format(data.totals.events)} 段` },
+          { label: '有報導的日期', value: `${format(data.days.filter((d) => (d.articles ?? 0) > 0).length)} 天` },
+        ]}
+      />
+      <section className="space-y-3">
+        <SectionTitle id="trend" note="各期符合條件的報導篇數；點選長條回看到該期末日。回看日以後留空。">
+          報導量變化
+        </SectionTitle>
+        <TabButtons
+          label="圖表時間單位"
+          options={[
+            ['day', '日'],
+            ['week', '週'],
+            ['month', '月'],
+          ]}
+          value={span}
+          onChange={setSpan}
+        />
+        <div className={card}>
+          <DeferredChart className="h-96 w-full" label="符合條件的報導篇數趨勢">
+            <TrendChart
+              days={chartDays}
+              lines={lines}
+              bars={chartBars}
+              label="符合條件的報導篇數趨勢"
+              unit="報導篇數"
+              scale="count"
+              barLabel="符合條件的報導"
+              onSelect={selectBin}
+            />
+          </DeferredChart>
+          <p className={note}>
+            {data.window.from} — {data.window.to} · 截至 {data.window.at}
+          </p>
+        </div>
+        {!data.totals.articles && (
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">這個範圍尚無符合條件的收錄報導。可減少搭配詞或調整日期。</p>
+        )}
         <details>
-          <summary>查看逐日數字</summary>
-          <div className={styles.tableScroll}>
-            <table>
-              <thead>
+          <summary className="cursor-pointer text-sm text-zinc-600 dark:text-zinc-400">查看各期數字與回看</summary>
+          <TableScroller card label="各期報導篇數與回看日期" className="mt-3">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
                 <tr>
-                  <th>日期</th>
-                  <th>報導篇數</th>
-                  <th>來源數</th>
+                  <th className={table.cell}>日期</th>
+                  <th className={table.num}>報導篇數</th>
+                  <th className={table.cell}>回看</th>
                 </tr>
               </thead>
-              <tbody>
-                {data.days.map((day) => (
-                  <tr key={day.day}>
-                    <th>{day.day}</th>
-                    <td>{day.articles ?? '尚未回看'}</td>
-                    <td>{day.media ?? '—'}</td>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {bins.map((bin) => (
+                  <tr key={bin.from} className={table.row}>
+                    <th scope="row" className={`${table.cell} text-left font-normal`}>
+                      {bin.from}
+                      {bin.to !== bin.from && <> — {bin.to}</>}
+                    </th>
+                    <td className={table.num}>{bin.total === null ? '尚未回看' : format(bin.total)}</td>
+                    <td className={table.cell}>
+                      {bin.total !== null && (
+                        <Link href={href(bin.to > data.window.at ? data.window.at : bin.to)} scroll={false} className={link}>
+                          回看到期末
+                        </Link>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroller>
         </details>
       </section>
-      <section className={styles.panel}>
-        <h2>同一觀察裡的不同事件</h2>
-        <p className={styles.note}>每段保留原有事件編號；須有同一小時的主要標籤符合條件才列入，不會把整段事件的所有文章算進上方篇數。</p>
-        {!data.events.length && <p>此範圍沒有符合條件的事件快照。仍可由逐日統計與下方報導觀察。</p>}
-        <ol className={styles.timeline}>
-          {data.events.map((event, index) => {
-            const older = data.events[index + 1];
-            const gap = older ? Math.floor((Date.parse(event.firstAt) - Date.parse(older.lastAt)) / 86400000) : 0;
-            return (
-              <li key={event.id}>
-                <p className={styles.note}>
-                  {taipeiDate(event.firstAt)} — {taipeiDate(event.lastAt)} · {event.matchedHours} 個符合小時 · 事件 #{event.id}
-                </p>
-                <h3>
-                  <Link href={`/eve/${event.id}/`}>{event.headline?.title ?? event.tags.join('、')} →</Link>
-                </h3>
-                <p className={styles.tags}>
-                  {event.tags.map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </p>
-                <p className={styles.note}>
-                  <Link href={href(taipeiDate(event.lastAt))}>回看到這段事件</Link> · 開啟事件頁會顯示該事件的完整歷程
-                </p>
-                {gap > 3 && <p className={styles.gap}>與前段相隔 {gap} 天，仍由相同條件持續觀察</p>}
-              </li>
-            );
-          })}
-        </ol>
-      </section>
-      <section className={styles.panel}>
-        <h2>哪些來源持續報導？</h2>
-        <p className={styles.note}>
-          各月份符合條件的篇數。顯示篇數最多的 20 個來源；下載資料包含全部來源。零筆代表收錄中沒有命中，不代表該媒體沒有報導。
+      <section className="space-y-3" aria-label="不同日期的獨立事件">
+        <SectionTitle id="events" note="保留原有事件編號；須有同一小時的主要標籤符合條件才列入，不將整段事件的文章算進上方篇數。">
+          同一觀察裡的不同事件
+        </SectionTitle>
+        {!data.events.length ? (
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">此範圍沒有符合條件的事件快照。仍可由逐日統計與下方報導觀察。</p>
+        ) : (
+          <TableScroller card label="不同事件的日期與標題，可左右捲動">
+            <table className="w-full min-w-[36rem] text-sm">
+              <thead className="bg-zinc-50 text-left text-xs text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
+                <tr>
+                  <th className={table.leadHead}>符合日期</th>
+                  <th className={table.cell}>事件</th>
+                  <th className={table.num}>符合小時</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {data.events.map((event, index) => {
+                  const older = data.events[index + 1];
+                  const gap = older ? Math.floor((Date.parse(event.firstAt) - Date.parse(older.lastAt)) / 86400000) : 0;
+                  return (
+                    <tr key={event.id} className={table.row} data-observation-event={event.id}>
+                      <th scope="row" className={`${table.lead} text-left font-normal`}>
+                        <div className={table.leadBox}>
+                          <p className="whitespace-nowrap tabular-nums">{taipeiDate(event.firstAt)}</p>
+                          <p className={note}>至 {taipeiDate(event.lastAt)}</p>
+                          <Link href={href(taipeiDate(event.lastAt))} scroll={false} className={`${link} whitespace-nowrap text-xs`}>
+                            回看到這段事件
+                          </Link>
+                        </div>
+                      </th>
+                      <td className={table.cell}>
+                        <h3 className="font-medium">
+                          <Link prefetch={false} href={`/eve/${event.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
+                            {event.headline?.title ?? event.tags.join('、')}
+                          </Link>
+                        </h3>
+                        <p className={`mt-1 ${note}`}>
+                          事件 #{event.id}
+                          {gap > 3 && <> · 與前段相隔 {gap} 天</>}
+                        </p>
+                        <ul aria-label="事件標籤" className="mt-1 flex flex-wrap gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
+                          {event.tags.map((tag) => (
+                            <li key={tag}>
+                              <Link
+                                prefetch={false}
+                                href={`/tag/${encodeURIComponent(tag)}/`}
+                                className="hover:text-brand-700 dark:hover:text-brand-400"
+                              >
+                                #{tag}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className={table.num}>{event.matchedHours}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </TableScroller>
+        )}
+        <p className={note}>
+          事件頁會顯示該事件的完整歷程。事件快照起於 {data.eventHistoryFrom ? taipeiDate(data.eventHistoryFrom) : '尚無資料'}。
         </p>
-        <div className={styles.tableScroll}>
-          <table>
-            <thead>
+      </section>
+      <section className="space-y-3">
+        <SectionTitle id="outlets" note="顯示篇數最多的 20 個來源；JSON 含全部來源。零筆表示收錄中沒有命中，不代表該媒體沒有報導。">
+          哪些來源持續報導？
+        </SectionTitle>
+        <TableScroller card label="各來源逐月報導篇數，可左右捲動">
+          <table className="w-full text-sm">
+            <thead className="bg-zinc-50 text-right text-xs text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
               <tr>
-                <th>收錄來源</th>
-                <th>合計</th>
+                <th className={`${table.leadHead} text-left`}>收錄來源</th>
+                <th className={table.num}>合計</th>
                 {months.map((month) => (
-                  <th key={month}>{month}</th>
+                  <th className={table.num} key={month}>
+                    {month}
+                  </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {data.outlets.slice(0, 20).map((outlet) => (
-                <tr key={outlet.media}>
-                  <th>
-                    <Link href={`/media/${encodeURIComponent(outlet.media)}/`}>{outlet.title}</Link>
+                <tr key={outlet.media} className={table.row}>
+                  <th scope="row" className={`${table.lead} text-left font-normal`}>
+                    <div className={table.leadBox}>
+                      <MediaHoverLink media={outlet.media} className={`${link} ${table.leadText}`}>
+                        {outlet.title}
+                      </MediaHoverLink>
+                    </div>
                   </th>
-                  <td>{format(outlet.articles)}</td>
+                  <td className={table.num}>{format(outlet.articles)}</td>
                   {months.map((month) => {
                     const future = `${month}-01` > data.window.at;
                     const count = Object.entries(outlet.days)
                       .filter(([day]) => day.startsWith(month))
                       .reduce((n, [, count]) => n + count, 0);
                     return (
-                      <td
-                        key={month}
-                        style={{
-                          background:
-                            future || !count ? undefined : `rgba(14, 165, 160, ${Math.min(0.5, 0.06 + Math.log2(count + 1) / 20)})`,
-                        }}
-                      >
+                      <td key={month} className={table.num}>
                         {future ? '—' : format(count)}
                       </td>
                     );
@@ -370,44 +431,39 @@ export default function TrackingView({ data }: { data: Observation }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroller>
       </section>
-      <section className={styles.panel}>
-        <h2>截至回看日的最新報導</h2>
-        <p className={styles.note}>最多列出 60 篇，依刊登時間排序；同一文章編號只計一次，轉載稿仍各自計數。</p>
-        <ul className={styles.articles}>
+      <section className="space-y-3">
+        <SectionTitle id="articles" note="依刊登時間排序，最多列出 60 篇。同一文章編號只計一次，轉載稿仍各自計數。">
+          截至回看日的最新報導
+        </SectionTitle>
+        <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
           {data.recent.map((a) => (
-            <li key={a.id}>
-              <span>
-                {taipei(a.publishedAt)} · {data.outlets.find((o) => o.media === a.media)?.title ?? a.media}
-              </span>
-              <Link href={`/article/${a.id}/`}>{a.title}</Link>
-            </li>
+            <ArticleListItem
+              key={a.id}
+              showMedia
+              href={`/article/${a.id}/`}
+              article={{
+                ...a,
+                mediaTitle: data.outlets.find((o) => o.media === a.media)?.title ?? a.media,
+                image: null,
+                url: null,
+                authors: [],
+              }}
+            />
           ))}
         </ul>
       </section>
-      <footer className={styles.panel}>
-        <h2>這份觀察如何產生</h2>
-        <p>
-          以現存文章標籤逐字比對，包含歷史匯入資料。標籤有遺漏或不同寫法時，可能漏掉相關報導；這是一組可重複的觀察條件，不代表完整的議題範圍。
-        </p>
-        <p>
-          事件快照始於 {data.eventHistoryFrom ? taipeiDate(data.eventHistoryFrom) : '尚無資料'}
-          ；較早的報導可能只有篇數、沒有事件段落。空白期也可能來自收錄不足。
-        </p>
-        <p>
-          回看依刊登日期及現存標籤、事件快照重建，並非當天實際已收錄內容的完整還原。條件保存在網址，觀察清單保存在此瀏覽器；重新開啟儲存的觀察會顯示最近
-          180 天。
-        </p>
-        <p className={styles.note}>
-          資料更新：{taipei(data.generatedAt)} · 快取最長 60 秒 ·{' '}
-          <a
-            href={`/api/v1/observations?${new URLSearchParams({ ...Object.fromEntries(observationQuery(data.scope)), from: data.window.from, to: data.window.to, at: data.window.at })}`}
-          >
-            下載本次 JSON 資料
-          </a>
-        </p>
-      </footer>
+      <p className={note}>
+        資料更新：{taipei(data.generatedAt)} ·{' '}
+        <a
+          className={link}
+          href={`/api/v1/observations?${new URLSearchParams({ ...Object.fromEntries(observationQuery(data.scope)), from: data.window.from, to: data.window.to, at: data.window.at })}`}
+        >
+          下載本次 JSON 資料
+        </a>{' '}
+        · <MethodLink />
+      </p>
     </>
   );
 }

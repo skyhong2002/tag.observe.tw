@@ -5,6 +5,7 @@ import { FormOutletPicker } from '@/components/OutletPicker';
 import SectionTabs from '@/components/SectionTabs';
 import { fetchMedia } from '@/lib/api';
 import { rangeDays, searchArticles, validCursor } from '@/lib/article-search';
+import { formSubmit, formInput as input } from '@/lib/form-styles';
 import { fetchSimilarity } from '@/lib/similarity';
 import { sourceRanking } from '@/lib/source-ranking.mts';
 
@@ -22,8 +23,6 @@ type Query = {
   to?: string;
   cursor?: string;
 };
-const input =
-  'mt-1 block w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:text-zinc-100';
 const validDay = (value: string) =>
   /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().startsWith(value);
 export default async function ArticleQueryPage({ searchParams }: { searchParams: Promise<Query> }) {
@@ -153,7 +152,7 @@ export default async function ArticleQueryPage({ searchParams }: { searchParams:
           <input type="date" name="to" defaultValue={sp.to} className={input} />
         </label>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:col-span-2 lg:col-span-3">
-          <button type="submit" className="min-h-10 shrink-0 whitespace-nowrap rounded-lg bg-brand-700 px-5 text-sm font-medium text-white">
+          <button type="submit" className={formSubmit}>
             查詢文章
           </button>
           <Link href="/article/query/" className="shrink-0 whitespace-nowrap text-sm text-brand-700 hover:underline dark:text-brand-400">

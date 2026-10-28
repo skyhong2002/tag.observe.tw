@@ -1,10 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import FormSuggestInput from '@/components/FormSuggestInput';
+import MethodLink from '@/components/MethodLink';
+import SectionTabs from '@/components/SectionTabs';
 import { API_ORIGIN } from '@/lib/api';
+import { formInput, formLabel, formSubmit } from '@/lib/form-styles';
 import type { Observation } from '../../../../../app/src/observation-scope.ts';
 import { observationHref, observationQuery } from '../../../../../app/src/observation-scope.ts';
 import TrackingView, { SavedObservations } from './TrackingView';
-import styles from './tracking.module.css';
 
 export const metadata = { title: '長期觀察 · 新文易數', robots: { index: false, follow: true } };
 type Search = Record<string, string | string[] | undefined>;
@@ -34,96 +37,113 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
     redirect(`/tracking/?${canonical}`);
   }
   return (
-    <div className={styles.root}>
-      <header className={styles.header}>
+    <div className="space-y-5">
+      <SectionTabs here="/tracking/" />
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className={styles.eyebrow}>事件之間，持續觀察</p>
-          <h1>長期觀察</h1>
-          <p>保存一組標籤條件，把分散在不同日期的報導與事件放在一起看。</p>
+          <h1 className="text-2xl font-semibold tracking-tight">長期觀察</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">保存標籤條件，持續查看不同日期的報導與獨立事件。</p>
         </div>
-        <Link href="/event/">← 事件表</Link>
+        <MethodLink className="text-sm" />
       </header>
-      <details className={styles.panel} open={!data || !!error}>
-        <summary>{data ? '修改觀察條件' : '建立觀察'}</summary>
-        <form key={data?.scope.id ?? query.get('anchor') ?? 'new'} action="/tracking/">
-          <h2>觀察什麼？</h2>
-          <div className={styles.formRow}>
-            <input type="hidden" name="v" value="1" />
-            <label>
-              主標籤
-              <input
-                name="anchor"
-                required
-                maxLength={120}
-                placeholder="例如：台積電"
-                defaultValue={data?.scope.anchor ?? query.get('anchor') ?? ''}
-              />
-            </label>
-            <label className={styles.grow}>
-              同篇另須包含任一標籤（選填）
-              <input name="with" placeholder="例如：台股,美股" defaultValue={data?.scope.any.join(',') ?? query.get('with') ?? ''} />
-            </label>
-            <button type="submit">開始觀察</button>
+      <details open={!data || !!error} className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <summary className="cursor-pointer text-sm font-medium">{data ? '修改觀察條件' : '建立觀察'}</summary>
+        <form key={data?.scope.id ?? query.get('anchor') ?? 'new'} action="/tracking/" className="mt-4 grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="v" value="1" />
+          <label htmlFor="observation-anchor" className={formLabel}>
+            主標籤
+            <FormSuggestInput
+              id="observation-anchor"
+              source={{ kind: 'tags' }}
+              submitOnPick={false}
+              name="anchor"
+              required
+              maxLength={120}
+              placeholder="例如：台積電"
+              defaultValue={data?.scope.anchor ?? query.get('anchor') ?? ''}
+              className={formInput}
+            />
+          </label>
+          <label className={formLabel}>
+            同篇另須包含任一標籤（選填）
+            <input
+              name="with"
+              placeholder="例如：台股,美股"
+              defaultValue={data?.scope.any.join(',') ?? query.get('with') ?? ''}
+              className={formInput}
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+            <button type="submit" className={formSubmit}>
+              開始觀察
+            </button>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">逐字比對標籤，搭配詞以逗號分隔，最多 5 個。</p>
           </div>
-          <p className={styles.note}>標籤完全相符才納入；逗號分隔最多 5 個搭配詞。條件會固定在網址中，不會隨事件名稱改變。</p>
         </form>
       </details>
       <SavedObservations scope={data?.scope} />
       {error && (
-        <div role="alert" className={styles.panel}>
-          <h2>這次查詢無法完成</h2>
-          <p>{error}</p>
-          <p>請調整上方條件，或縮短下方日期範圍後重試。</p>
+        <section role="alert" className="space-y-3">
+          <h2 className="text-base font-semibold">這次查詢無法完成</h2>
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">請調整上方條件，或縮短下方日期範圍後重試。</p>
           {query.has('anchor') && (
-            <form action="/tracking/" className={styles.formRow}>
+            <form action="/tracking/" className="flex flex-wrap items-end gap-3">
               <input type="hidden" name="v" value="1" />
               <input type="hidden" name="anchor" value={query.get('anchor')!} />
               {query.has('with') && <input type="hidden" name="with" value={query.get('with')!} />}
-              <label>
+              <label className={formLabel}>
                 開始日期
                 <input
                   type="date"
                   name="from"
                   required
+                  className={formInput}
                   defaultValue={query.get('from') ?? new Date(Date.now() - 29 * 86400000 + 8 * 3600000).toISOString().slice(0, 10)}
                 />
               </label>
-              <label>
+              <label className={formLabel}>
                 結束日期
                 <input
                   type="date"
                   name="to"
                   required
+                  className={formInput}
                   defaultValue={query.get('to') ?? new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)}
                 />
               </label>
-              <button type="submit">調整範圍重試</button>
+              <button type="submit" className={formSubmit}>
+                調整範圍重試
+              </button>
             </form>
           )}
-        </div>
+        </section>
       )}
       {data ? (
         <TrackingView key={`${data.scope.id}:${data.window.from}:${data.window.to}:${data.window.at}`} data={data} />
       ) : (
         !error && (
-          <section className={styles.panel}>
-            <h2>從一個觀察開始</h2>
-            <p>存下條件後，再次開啟就能看到新增報導，不需要每天歸類事件。</p>
-            <div className={styles.examples}>
-              {[
-                ['台積電', ['台股']],
-                ['Anthropic', ['IPO']],
-                ['黃金', ['金價']],
-              ].map(([anchor, any]) => {
-                const scope = { version: 1 as const, anchor: anchor as string, any: any as string[] };
-                return (
-                  <Link key={scope.anchor} href={observationHref(scope)}>
-                    {scope.anchor} × {scope.any.join(' / ')} →
+          <section className="space-y-3">
+            <h2 className="text-base font-semibold">從一個觀察開始</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">存下條件後，再次開啟就能看到新增報導。也可以從事件頁帶入標籤。</p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              {(
+                [
+                  ['台積電', ['台股']],
+                  ['Anthropic', ['IPO']],
+                  ['黃金', ['金價']],
+                ] as const
+              ).map(([anchor, any]) => (
+                <li key={anchor}>
+                  <Link
+                    href={observationHref({ version: 1, anchor, any: [...any] })}
+                    className="text-brand-700 hover:underline dark:text-brand-400"
+                  >
+                    {anchor} × {any.join(' / ')} →
                   </Link>
-                );
-              })}
-            </div>
-            <p className={styles.note}>或從任一事件頁按「長期觀察」，帶入該事件的標籤，再調整範圍。</p>
+                </li>
+              ))}
+            </ul>
           </section>
         )
       )}

@@ -1,19 +1,14 @@
 'use client';
-import { BarChart, LineChart } from 'echarts/charts';
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
-import * as echarts from 'echarts/core';
-import { CanvasRenderer } from 'echarts/renderers';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import FilterButtons from '@/components/FilterButtons';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MediaIcon from '@/components/MediaIcon';
 import SortIndicator from '@/components/SortIndicator';
 import TabButtons from '@/components/TabButtons';
 import TableScroller from '@/components/TableScroller';
+import TrendChart, { type TrendScale } from '@/components/TrendChart';
 import { fetchDaily, type SimilarityDaily } from '@/lib/similarity';
 import { table } from '@/lib/table-styles';
-
-echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
 
 const RANGES = [30, 90, 365] as const;
 const DAY = 24 * 3600e3;
@@ -40,136 +35,8 @@ const SHOWN = 12;
 /** Today's date in Asia/Taipei as YYYY-MM-DD. */
 const taipeiToday = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
 const shiftDay = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY).toISOString().slice(0, 10);
-const shortDay = (day: string) => `${Number(day.slice(5, 7))}/${Number(day.slice(8, 10))}`;
 
-function useDark() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const el = document.documentElement;
-    const read = () => setDark(el.dataset.theme === 'dark');
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
-  return dark;
-}
-
-type Line = { name: string; color: string; dashed: boolean; values: number[] };
-type Scale = 'share' | 'count';
 type Outlet = SimilarityDaily['media'][number];
-
-/** Lines on top, compared articles as bars below; `share` draws each line as a percent of that day's compared articles. */
-function TrendChart({
-  days,
-  lines,
-  bars,
-  label,
-  unit,
-  scale,
-}: {
-  days: string[];
-  lines: Line[];
-  bars: number[];
-  label: string;
-  /** Name of the lines' axis in counts. */
-  unit: string;
-  scale: Scale;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const dark = useDark();
-  useEffect(() => {
-    if (!ref.current) return;
-    const chart = echarts.init(ref.current);
-    // On phones the legend wraps to three lines; leave room so it does not cover the axis title.
-    const narrow = ref.current.clientWidth < 520;
-    const ink = dark ? '#a1a1aa' : '#71717a',
-      grid = dark ? '#27272a' : '#f4f4f5',
-      surface = dark ? '#18181b' : '#ffffff';
-    const axis = (i: number) => ({
-      type: 'category',
-      gridIndex: i,
-      data: days.map(shortDay),
-      boundaryGap: true,
-      axisLine: { lineStyle: { color: grid } },
-      axisTick: { show: false },
-      axisLabel: { show: i === 1, color: ink, hideOverlap: true },
-    });
-    const yAxis = (i: number, name: string) => ({
-      type: 'value',
-      gridIndex: i,
-      min: 0,
-      ...(i === 0 && scale === 'share' ? {} : { minInterval: 1 }),
-      // The lower panel is short: two intervals keep its labels apart.
-      splitNumber: i === 1 ? 2 : narrow ? 3 : 5,
-      name,
-      nameTextStyle: { color: ink, align: 'left' },
-      axisLabel: { color: ink, ...(i === 0 && scale === 'share' ? { formatter: '{value}%' } : {}) },
-      splitLine: { lineStyle: { color: grid } },
-    });
-    chart.setOption({
-      animation: false,
-      axisPointer: { link: [{ xAxisIndex: 'all' }] },
-      tooltip: {
-        trigger: 'axis',
-        confine: true,
-        backgroundColor: surface,
-        borderColor: grid,
-        textStyle: { color: dark ? '#e4e4e7' : '#27272a' },
-        formatter: (items: Array<{ seriesName: string; seriesIndex: number; marker: string; dataIndex: number }>) => {
-          const day = items[0]?.dataIndex ?? 0;
-          return [
-            days[day],
-            ...items.map((it) => {
-              const line = lines[it.seriesIndex];
-              if (!line) return `${it.marker}${it.seriesName}　${number(bars[day] ?? 0)}`;
-              const count = line.values[day] ?? 0;
-              return `${it.marker}${it.seriesName}　${bars[day] ? `${Math.round((count / bars[day]) * 100)}%（${number(count)}）` : number(count)}`;
-            }),
-          ].join('<br/>');
-        },
-      },
-      legend: { top: 0, left: 0, textStyle: { color: ink }, inactiveColor: ink, data: [...lines.map((s) => s.name), '比對篇數'] },
-      grid: [
-        { left: 48, right: 24, top: narrow ? 104 : 64, height: narrow ? '40%' : '46%' },
-        { left: 48, right: 24, top: narrow ? '78%' : '72%', bottom: 26 },
-      ],
-      xAxis: [axis(0), axis(1)],
-      yAxis: [yAxis(0, scale === 'share' ? '÷ 比對篇數' : unit), yAxis(1, '比對篇數')],
-      series: [
-        ...lines.map((s) => ({
-          name: s.name,
-          type: 'line',
-          xAxisIndex: 0,
-          yAxisIndex: 0,
-          symbol: 'none',
-          color: s.color,
-          lineStyle: { width: 2, type: s.dashed ? 'dashed' : 'solid' },
-          emphasis: { focus: 'series' },
-          // A day without compared articles has no share; leave a gap rather than a false zero.
-          data: scale === 'share' ? s.values.map((n, i) => (bars[i] ? Math.round((n / bars[i]) * 1000) / 10 : null)) : s.values,
-        })),
-        {
-          name: '比對篇數',
-          type: 'bar',
-          xAxisIndex: 1,
-          yAxisIndex: 1,
-          barMaxWidth: 14,
-          color: dark ? '#71717a' : '#a1a1aa',
-          itemStyle: { borderRadius: [4, 4, 0, 0] },
-          data: bars,
-        },
-      ],
-    });
-    const onResize = () => chart.resize();
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      chart.dispose();
-    };
-  }, [days, lines, bars, unit, scale, dark]);
-  return <div ref={ref} className="h-96 w-full" role="img" aria-label={label} />;
-}
 
 type Metric = 'sameByline' | 'attributed' | 'unattributed' | 'articles' | 'copied' | 'copying' | 'citing' | 'cited';
 type SortKey = 'name' | Metric | `${Metric}Share`;
@@ -428,7 +295,7 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
     setPicks(next);
   };
   const tickAll = () => setPicks(picked === 'all' ? new Set() : new Set(data?.media.map((m) => m.media)));
-  const [scale, setScale] = useState<Scale>('share');
+  const [scale, setScale] = useState<TrendScale>('share');
   // Shares of the sparse early days swing wildly, so the share chart starts at 資料自.
   const first = scale === 'share' && data && since ? data.days.indexOf(since) : start;
   const days = useMemo(() => (data && first >= 0 ? data.days.slice(first) : []), [data, first]);
