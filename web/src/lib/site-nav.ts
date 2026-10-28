@@ -24,7 +24,15 @@ export const NAV_GROUPS: Array<{ label: string; links: NavLink[] }> = [
           { href: '/article/query/', label: '進階查詢' },
         ],
       },
-      { href: '/event/', label: '事件表', short: '事件' },
+      {
+        href: '/event/',
+        label: '事件表',
+        short: '事件',
+        tabs: [
+          { href: '/event/', label: '事件表' },
+          { href: '/tracking/', label: '長期觀察' },
+        ],
+      },
       {
         href: '/topic/',
         label: '議題表',
