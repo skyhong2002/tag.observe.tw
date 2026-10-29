@@ -12,6 +12,7 @@ export { HomeMethod } from './method/home';
 export { JournalistMethod } from './method/journalists';
 export { LiveboardMethod } from './method/liveboard';
 export { CrawlerMethod, MediaMethod, MediaOverviewMethod, MediaSourcesMethod, TrafficCollectionMethod } from './method/media';
+export { ObservationMethod } from './method/observations';
 export { ObserveMethod } from './method/observe';
 export { PictureMethod } from './method/pictures';
 export { RankingMethod, TagMethod } from './method/ranking';

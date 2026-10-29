@@ -22,6 +22,7 @@ import {
   TrafficCollectionMethod,
   WritingMethod,
 } from './MethodNotes';
+import { ObservationMethod } from './method/observations';
 
 const inlineLink = 'text-brand-700 underline underline-offset-2 dark:text-brand-400';
 
@@ -41,6 +42,13 @@ function sectionsFor(pathname: string) {
   if (/^\/tag(\/|$)/.test(pathname)) return null;
   if (/^\/group(\/|$)/.test(pathname)) return <GroupMethod />;
   if (/^\/admin\/(avatars|tag-visuals)(\/|$)/.test(pathname)) return <PictureMethod />;
+  if (/^\/tracking(\/|$)/.test(pathname))
+    return (
+      <>
+        <ObservationMethod />
+        <MediaCardMethod />
+      </>
+    );
   if (/^\/observe(\/|$)/.test(pathname)) return <ObserveMethod />;
   if (/^\/search(\/|$)/.test(pathname)) {
     return (
