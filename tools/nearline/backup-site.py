@@ -23,6 +23,26 @@ def run(args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
 
+def restore_root(dest):
+    """Directory whose filesystem holds the isolated restore: Docker's data root.
+
+    The restore drill runs in a throwaway MariaDB container, so its data is
+    written under Docker's root, not the backup directory. On hosts where both
+    share one filesystem this is the same check as before. If Docker cannot be
+    asked, fall back to the backup directory (the previous behaviour).
+    """
+    try:
+        root = run([DOCKER, 'info', '--format', '{{.DockerRootDir}}'],
+                   capture_output=True, text=True, timeout=30).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return dest
+    return Path(root) if root and Path(root).is_dir() else dest
+
+
+def same_filesystem(a, b):
+    return os.stat(a).st_dev == os.stat(b).st_dev
+
+
 def digest(path):
     h = hashlib.sha256()
     with path.open('rb') as stream:
@@ -245,7 +265,7 @@ def resume_backup(dest, report_path, nas, *, trim_docker=False, reclaim_verified
                         or digest(path) != report.get('sha256')):
                     raise RuntimeError('A verified export receipt is required before resuming restore')
                 required = restore_required(report['source_storage_bytes'])
-                if shutil.disk_usage(dest).free < required:
+                if shutil.disk_usage(restore_root(dest)).free < required:
                     raise RuntimeError('Insufficient local space for isolated restore; exported backup preserved')
                 report.update(status='restoring', restore_started_at=dt.datetime.now(dt.timezone.utc).isoformat())
                 atomic_json(report_path, report)
@@ -341,7 +361,8 @@ def finish_capacity(dest, nas, report, *, trim_docker=False, reclaim_verified=Fa
     try:
         if trim_docker:
             maintenance['docker_trim'] = trim_docker_storage()
-        required = restore_required(report.get('source_storage_bytes', 0)) + (report['bytes'] * 5 + 3) // 4
+        restore = restore_required(report.get('source_storage_bytes', 0))
+        required = (restore if same_filesystem(restore_root(dest), dest) else RESERVE) + (report['bytes'] * 5 + 3) // 4
         maintenance['required_for_next_backup'] = required
         if reclaim_verified and report.get('source_storage_bytes'):
             reclaim_for_capacity(dest, nas, required, path, maintenance)
@@ -391,11 +412,12 @@ def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
                           tables=tables, export_status='passed', status='exported')
             atomic_json(report_path, report)
             required = restore_required(storage)
-            if trim_docker and shutil.disk_usage(dest).free < required:
+            scratch = restore_root(dest)
+            if trim_docker and shutil.disk_usage(scratch).free < required:
                 report['docker_trim_before_restore'] = trim_docker_storage()
-            if reclaim_verified and shutil.disk_usage(dest).free < required:
+            if reclaim_verified and shutil.disk_usage(scratch).free < required and same_filesystem(scratch, dest):
                 reclaim_for_capacity(dest, nas, required, report_path, report)
-            report['free_bytes_before_restore'] = shutil.disk_usage(dest).free
+            report['free_bytes_before_restore'] = shutil.disk_usage(scratch).free
             if report['free_bytes_before_restore'] < required:
                 raise RuntimeError('Insufficient local space for isolated restore; exported backup preserved')
             report.update(status='restoring', restore_started_at=dt.datetime.now(dt.timezone.utc).isoformat())

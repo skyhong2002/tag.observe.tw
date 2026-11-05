@@ -187,6 +187,37 @@ class PhaseCapacityTests(unittest.TestCase):
                 restore.assert_called_once()
                 export.assert_not_called()
 
+    def test_restore_capacity_is_checked_on_docker_filesystem(self):
+        # sky-server: backups on /srv (85 GiB free), Docker on its own volume (174 GiB free).
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as docker_root:
+            root, docker_root, nas = Path(tmp), Path(docker_root), Mock(remote='nas:test')
+            nas.command.return_value = Mock(stdout=json.dumps({'free': 200*module.GIB}))
+            nas.publish.side_effect = lambda p, relative: 'nas:test/' + relative
+            free = lambda path: Mock(free=(174 if Path(path) == docker_root else 85)*module.GIB)
+            with patch.object(module, 'source_sql', side_effect=['1000', '']), patch.object(module, 'source_storage_bytes', return_value=76*module.GIB), patch.object(module, 'schema_signature', return_value=(['articles'], 'schema')), patch.object(module.shutil, 'disk_usage', side_effect=free), patch.object(module, 'export_database', side_effect=lambda p: p.write_bytes(b'archive')), patch.object(module, 'restore_root', return_value=docker_root), patch.object(module, 'same_filesystem', return_value=False), patch.object(module, 'reclaim_for_capacity') as reclaim, patch.object(module, 'restore_drill', return_value={'status': 'passed'}) as restore:
+                result = module.backup(root, nas, reclaim_verified=True)
+            self.assertEqual(result['status'], 'verified')
+            restore.assert_called_once()
+            # Only post-backup maintenance runs, and it no longer charges the restore to /srv.
+            reclaim.assert_called_once()
+            self.assertLess(reclaim.call_args.args[2], module.RESERVE + module.GIB)
+
+    def test_resume_checks_restore_capacity_on_docker_filesystem(self):
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as docker_root:
+            root, docker_root, nas = Path(tmp), Path(docker_root), Mock(remote='nas:test')
+            nas.command.return_value = Mock(stdout=json.dumps({'free': 200*module.GIB}))
+            nas.publish.side_effect = lambda p, relative: 'nas:test/' + relative
+            with patch.object(module, 'source_sql', side_effect=['1000', '']), patch.object(module, 'source_storage_bytes', return_value=76*module.GIB), patch.object(module, 'schema_signature', return_value=(['articles'], 'schema')), patch.object(module.shutil, 'disk_usage', return_value=Mock(free=85*module.GIB)), patch.object(module, 'export_database', side_effect=lambda p: p.write_bytes(b'archive')), patch.object(module, 'restore_root', return_value=root), patch.object(module, 'restore_drill') as restore:
+                with self.assertRaisesRegex(RuntimeError, 'isolated restore'):
+                    module.backup(root, nas)
+                restore.assert_not_called()
+            receipt = next(root.glob('*.manifest.json'))
+            free = lambda path: Mock(free=(174 if Path(path) == docker_root else 85)*module.GIB)
+            with patch.object(module.shutil, 'disk_usage', side_effect=free), patch.object(module, 'restore_root', return_value=docker_root), patch.object(module, 'same_filesystem', return_value=False), patch.object(module, 'restore_drill', return_value={'status': 'passed'}) as restore:
+                result = module.resume_backup(root, receipt, nas)
+            self.assertEqual(result['status'], 'verified')
+            restore.assert_called_once()
+
     def test_space_loss_stops_stream_processes(self):
         process=Mock(); process.poll.return_value=None
         with patch.object(module.shutil,'disk_usage',return_value=Mock(free=module.RESERVE-1)):
