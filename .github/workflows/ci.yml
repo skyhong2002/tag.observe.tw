@@ -40,6 +40,9 @@ jobs:
       - name: Test artifact boundaries
         working-directory: .
         run: python3 -m unittest discover -s tools/ci -p 'test_*.py' -v
+      - name: Test availability monitor
+        working-directory: .
+        run: python3 -I -B -m unittest discover -s tools/availability-monitor -p 'test_*.py' -v
       - run: npm ci
       - run: npx tsc --noEmit -p tsconfig.json
       # Pages must build with the API unreachable (data is fetched at request time).
