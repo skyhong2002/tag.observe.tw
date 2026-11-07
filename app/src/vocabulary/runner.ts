@@ -287,7 +287,14 @@ export async function runVocabulary(db: Connection, options: RunOptions) {
     return result;
   } catch (e) {
     if (e instanceof VocabularyPaused) {
-      const result = { status: 'paused', reason: e.message, elapsedMs: Date.now() - started, terms: aggregate.count(), ...metrics };
+      const result = {
+        status: 'paused',
+        reason: e.message,
+        elapsedMs: Date.now() - started,
+        terms: aggregate.count(),
+        lastFullReconcileAt: aggregate.get('lastFullReconcileAt'),
+        ...metrics,
+      };
       log(result);
       return result;
     }

@@ -1,3 +1,4 @@
+import { vocabularyOutcome, writeVocabularyOutcome } from '../app/src/vocabulary/outcome.ts';
 import { probeHome, runVocabulary } from '../app/src/vocabulary/runner.ts';
 import { aggregateRange, upperTag, withVocabularySource } from '../app/src/vocabulary/source.ts';
 
@@ -7,6 +8,16 @@ if (process.argv.slice(2).some((arg) => !['--execute', '--fast', '--reconcile'].
   throw Error('Only --execute, --fast and --reconcile are supported.');
 if (execute && (process.env.TAG_VOCABULARY_EXPORT_ENABLED !== 'true' || !process.env.TAG_VOCABULARY_EXPORT_DIR))
   throw Error('Vocabulary export is not enabled.');
+const mode = process.argv.includes('--fast') ? 'fast' : process.argv.includes('--reconcile') ? 'reconcile' : 'daily';
+// Monitoring reads outcome-<mode>.json: exit 0 alone does not distinguish published from paused.
+async function recordOutcome(result: Record<string, unknown> | 'failed') {
+  try {
+    await writeVocabularyOutcome(process.env.TAG_VOCABULARY_EXPORT_DIR!, vocabularyOutcome(mode, result));
+  } catch (error) {
+    console.error(JSON.stringify({ status: 'outcome-write-failed', code: (error as { code?: string }).code }));
+    process.exitCode = 1;
+  }
+}
 const signal = AbortSignal.any(
   ['SIGINT', 'SIGTERM'].map((event) => {
     const c = new AbortController();
@@ -41,7 +52,6 @@ try {
       );
       return;
     }
-    const mode = process.argv.includes('--fast') ? 'fast' : process.argv.includes('--reconcile') ? 'reconcile' : 'daily';
     const result = await runVocabulary(db, {
       directory: process.env.TAG_VOCABULARY_EXPORT_DIR!,
       signal,
@@ -53,6 +63,7 @@ try {
       maxDurationMs: process.env.TAG_VOCABULARY_MAX_DURATION_MS ? Number(process.env.TAG_VOCABULARY_MAX_DURATION_MS) : undefined,
       log: (value) => console.log(JSON.stringify(value)),
     });
+    await recordOutcome(result);
     if (result.status === 'busy') {
       console.log(JSON.stringify(result));
       process.exitCode = 75;
@@ -69,4 +80,5 @@ try {
     }),
   );
   process.exitCode = 1;
+  if (execute) await recordOutcome('failed');
 }
