@@ -41,10 +41,15 @@ try {
       );
       return;
     }
+    const mode = process.argv.includes('--fast') ? 'fast' : process.argv.includes('--reconcile') ? 'reconcile' : 'daily';
     const result = await runVocabulary(db, {
       directory: process.env.TAG_VOCABULARY_EXPORT_DIR!,
       signal,
-      mode: process.argv.includes('--fast') ? 'fast' : process.argv.includes('--reconcile') ? 'reconcile' : 'daily',
+      mode,
+      // The 10-minute fast run (<=180 s) can hold the writer lock when the daily
+      // reconcile/export timers fire; wait it out instead of exiting busy. Fast runs
+      // still fail fast and simply retry on their next tick.
+      lockWaitMs: mode === 'fast' ? 0 : 185000,
       maxDurationMs: process.env.TAG_VOCABULARY_MAX_DURATION_MS ? Number(process.env.TAG_VOCABULARY_MAX_DURATION_MS) : undefined,
       log: (value) => console.log(JSON.stringify(value)),
     });

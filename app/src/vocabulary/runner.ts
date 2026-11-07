@@ -16,6 +16,8 @@ export interface RunOptions {
   batchSize?: number;
   restMs?: number;
   maxDurationMs?: number;
+  /** Bounded wait for another run's writer lock; counts toward maxDurationMs. Default 0 (fail fast). */
+  lockWaitMs?: number;
   probe?: () => Promise<{ status: number; ttfbMs: number }>;
   log?: (value: unknown) => void;
   signal?: AbortSignal;
@@ -23,16 +25,32 @@ export interface RunOptions {
 export async function runVocabulary(db: Connection, options: RunOptions) {
   const { directory } = options;
   await mkdir(directory, { recursive: true, mode: 0o700 });
+  const started = Date.now();
   const lock = new DatabaseSync(join(directory, 'runner-lock.sqlite'));
-  lock.exec('CREATE TABLE IF NOT EXISTS lock(id INTEGER PRIMARY KEY)');
+  const lockDeadline = started + Math.max(0, options.lockWaitMs ?? 0);
   try {
-    lock.exec('BEGIN IMMEDIATE');
-  } catch {
-    lock.close();
-    return { status: 'busy' };
+    lock.exec('CREATE TABLE IF NOT EXISTS lock(id INTEGER PRIMARY KEY)');
+    for (;;) {
+      try {
+        lock.exec('BEGIN IMMEDIATE');
+        break;
+      } catch (e) {
+        // Only SQLite BUSY means another run owns the writer; anything else stays a visible failure.
+        if ((e as { errcode?: number }).errcode !== 5) throw e;
+        const remaining = lockDeadline - Date.now();
+        if (remaining <= 0 || options.signal?.aborted) {
+          lock.close();
+          return { status: 'busy' };
+        }
+        // Poll asynchronously so abort signals and timers keep working while we wait.
+        await delay(Math.min(1000, remaining));
+      }
+    }
+  } catch (e) {
+    if (lock.isOpen) lock.close();
+    throw e;
   }
   const aggregate = new VocabularyAggregate(join(directory, 'aggregate.sqlite'));
-  const started = Date.now();
   const countedAt = new Date();
   let size = options.batchSize ?? 1000;
   const rest = options.restMs ?? 100,
