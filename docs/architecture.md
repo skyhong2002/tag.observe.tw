@@ -125,9 +125,11 @@ npm test && npm run typecheck && npm run lint
 3. push 到 `origin/main`。
 4. `scripts/install-service.sh`：工作目錄必須乾淨且等於 `origin/main`；以 commit 建立固定 release（`~/.local/share/tag-analysis/releases/<commit>`）、建置 Next、切換並重啟服務。
 
+執行主機是 **sky-server**（2026-11 起）。腳本只在 hostname 為 `sky-server`、Node 為 `/home/sky/.local/node-24.15.0/bin/node`（v24.15.0）時執行，並會安裝 `runtime/` 中的 tag-analysis／web／worker／backup unit；這些 unit 與正式機一致，改 unit 時要同步更新 repo。`/home/deck` 在 sky-server 是指向 `/home/sky` 的 symlink：unit 仍用 `/home/deck/.local/share/tag-analysis/current`，但 release 一律在真實路徑 `/home/sky/.local/share/tag-analysis` 建置（經由 `/home/deck` 執行 `npm ci` 會因 lock 檔不符而失敗）。需要先估計建置空間：`TAG_BUILD_ESTIMATE_GIB=4 scripts/install-service.sh`。
+
 其他 session 有未提交修改時，可在同一個 repository 建立乾淨的 detached worktree，從該 worktree 執行部署腳本。仍需先掃描並 push 該 commit，且部署版本必須等於 `origin/main`。腳本會檢查 standalone 目錄內每個媒體 PNG 是否與 manifest 的版本相符；切換失敗時會將網頁、爬蟲與 API 一起切回前一版本。
 
-回退：重新部署前一個 commit（release 目錄保留）；`systemctl --user stop tag-worker.service` 停止所有排程，既有資料仍可讀。
+回退：腳本只接受等於 `origin/main` 的 commit，所以回退前一版要手動切換：先建立指向 `releases/<前一個 commit>` 的暫存 symlink，`mv -Tf` 取代 `current`，再 `systemctl --user restart tag-web.service tag-worker.service tag-analysis.service`，最後用 `node tools/wait-preview-ready.js <release 目錄>` 確認（release 目錄保留）；`systemctl --user stop tag-worker.service` 停止所有排程，既有資料仍可讀。
 
 ## Monitoring host (2026-10-24)
 

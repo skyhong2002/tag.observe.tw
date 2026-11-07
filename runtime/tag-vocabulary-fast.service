@@ -10,7 +10,7 @@ WorkingDirectory=/home/deck/.local/share/tag-analysis/current
 EnvironmentFile=/home/deck/Projects/tag.analysis.tw/.env
 EnvironmentFile=/home/deck/.config/tag-vocabulary-export.env
 Environment=TAG_VOCABULARY_MAX_DURATION_MS=175000
-ExecStart=/home/deck/.local/bin/node tools/vocabulary-export.ts --execute --fast
+ExecStart=/home/sky/.local/node-24.15.0/bin/node tools/vocabulary-export.ts --execute --fast
 Restart=on-failure
 RestartSec=30
 UMask=0077
