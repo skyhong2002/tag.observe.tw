@@ -97,3 +97,11 @@ class LockContentionTest(unittest.TestCase):
             start = time.monotonic()
             self.assertFalse(module.wait_for_lock(other, 0.2))
             self.assertLess(time.monotonic() - start, 2)
+
+
+class DeferredExitUnitTest(unittest.TestCase):
+    def test_both_units_treat_a_deferred_run_as_success(self):
+        runtime = Path(__file__).resolve().parents[2] / 'runtime'
+        for name in ('tag-legacy-continuous.service', 'tag-legacy-quarantine.service'):
+            lines = (runtime / name).read_text().splitlines()
+            self.assertIn('SuccessExitStatus=' + str(module.DEFERRED_EXIT), lines, name)

@@ -8,3 +8,5 @@ Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
 Nice=15
 TimeoutStartSec=1h
 UMask=0077
+# A run that cannot get the shared lock exits 75 after writing a deferred receipt (#24).
+SuccessExitStatus=75
