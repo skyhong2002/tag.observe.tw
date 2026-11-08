@@ -4,6 +4,7 @@
 import { desc, sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { type RestoreCandidate, restoreOriginArticles } from '../../tools/nearline/restore-origin-articles.ts';
 import { buildApp } from '../src/app.js';
 import type { FetchResult } from '../src/crawl/fetch.ts';
 import { runArticles, runIndex } from '../src/crawl/pipeline.ts';
@@ -62,9 +63,10 @@ const iso = (hoursAgo: number) => new Date(now.getTime() - hoursAgo * 3600e3).to
 describe.skipIf(!url)('integration (MariaDB)', () => {
   let db: Db;
   let close: () => Promise<void>;
+  let pool: ReturnType<typeof createDb>['pool'];
   beforeAll(async () => {
     if (/\/tag_observe$/.test(url ?? '')) throw Error('TEST_DB_URL points at the production database');
-    ({ db, close } = createDb(url));
+    ({ db, close, pool } = createDb(url));
     await migrate(db, { migrationsFolder: 'app/src/db/migrations' });
     for (const t of TABLES) await db.execute(sql.raw(`TRUNCATE TABLE \`${t}\``));
   });
@@ -380,6 +382,96 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     await db.delete(articleOrigins).where(sql`1=1`);
     await db.delete(articleArchives).where(sql`1=1`);
     await db.delete(articles).where(sql`${articles.media} = 'yahoo'`);
+  });
+
+  it('restores deleted legacy articles under their origin IDs without overwriting anything (#30)', async () => {
+    const origin = (sourceKey: string, articleId: number) => ({
+      sourceKey,
+      rawHash: sourceKey.slice(-1).repeat(64),
+      articleId,
+      generation: 'g',
+      sourceObject: 'o',
+      adapterVersion: 'legacy-article-import-v4',
+      linkedAt: now,
+    });
+    await db
+      .insert(articleOrigins)
+      .values([origin('tag/yahoo/1', 36495779), origin('tag/yahoo/2', 36495790), origin('tag/yahoo/3', 36495791)]);
+    const taken = { media: 'yahoo', publishedAt: now, crawledAt: now, title: '已存在', tags: [], source: 'legacy' };
+    await db.insert(articles).values([
+      {
+        ...taken,
+        id: 36495790,
+        url: 'https://tw.news.yahoo.com/present-010000050.html',
+        urlKey: 'tw.news.yahoo.com/present-010000050.html',
+      },
+      // The 2017 story that took the old nine-digit key after the deletion.
+      { ...taken, id: 95790865, url: 'https://tw.news.yahoo.com/other-010000049.html', urlKey: 'tw.news.yahoo.com#010000049' },
+      {
+        ...taken,
+        id: 95790866,
+        url: 'https://tw.news.yahoo.com/same-url-010000051.html',
+        urlKey: 'tw.news.yahoo.com/same-url-010000051.html',
+      },
+    ]);
+    const article = (url: string): RestoreCandidate['article'] => ({
+      media: 'yahoo',
+      publishedAt: '2016-08-21T01:00:00.000Z',
+      crawledAt: '2016-08-21T01:12:02.000Z',
+      url,
+      title: '2歲還不講話',
+      image: null,
+      category: null,
+      creator: null,
+      tags: ['幼兒', '治療'],
+      description: '摘要',
+    });
+    const cand = (n: number, articleId: string, url: string): RestoreCandidate => ({
+      sourceKey: `tag/yahoo/${n}`,
+      rawHash: String(n).repeat(64),
+      articleId,
+      article: article(url),
+    });
+    const candidates = [
+      cand(1, '36495779', 'https://tw.news.yahoo.com/2歲還不講話-情緒障礙是主因-010000049.html'),
+      cand(2, '36495790', 'https://tw.news.yahoo.com/present-010000050.html'),
+      cand(3, '36495791', 'https://tw.news.yahoo.com/same-url-010000051.html'),
+      cand(4, '36495792', 'https://tw.news.yahoo.com/no-origin-010000052.html'),
+    ];
+    const c = await pool.getConnection();
+    try {
+      const dry = await restoreOriginArticles(c, candidates, { now });
+      expect(dry.map((r) => [r.articleId, r.action, r.reason ?? null])).toEqual([
+        ['36495779', 'would_restore', null],
+        ['36495790', 'skipped', 'article_present'],
+        ['36495791', 'skipped', 'url_or_key_taken'],
+        ['36495792', 'skipped', 'origin_mismatch'],
+      ]);
+      expect((await db.select({ id: articles.id }).from(articles).where(sql`${articles.id} = 36495779`)).length).toBe(0);
+      const applied = await restoreOriginArticles(c, candidates, { apply: true, now });
+      expect(applied.filter((r) => r.action === 'restored').map((r) => r.articleId)).toEqual(['36495779']);
+      expect(applied[2]).toMatchObject({ conflictId: '95790866' });
+      const [row] = await db
+        .select({ source: articles.source, urlKey: articles.urlKey, title: articles.title })
+        .from(articles)
+        .where(sql`${articles.id} = 36495779`);
+      expect(row).toEqual({
+        source: 'legacy',
+        urlKey: `tw.news.yahoo.com${new URL('https://tw.news.yahoo.com/2歲還不講話-情緒障礙是主因-010000049.html').pathname}`,
+        title: '2歲還不講話',
+      });
+      expect(await db.select({ tag: articleTags.tag }).from(articleTags).where(sql`${articleTags.articleId} = 36495779`)).toHaveLength(2);
+      // Re-running is a no-op.
+      expect((await restoreOriginArticles(c, candidates, { apply: true, now }))[0]).toMatchObject({
+        action: 'skipped',
+        reason: 'article_present',
+      });
+    } finally {
+      c.release();
+      await db.delete(articleTags).where(sql`${articleTags.articleId} = 36495779`);
+      await db.delete(articleOrigins).where(sql`1=1`);
+      await db.delete(articles).where(sql`${articles.media} = 'yahoo'`);
+    }
   });
 
   it('counts only collected, titled, dated, recent articles toward traffic coverage', async () => {
