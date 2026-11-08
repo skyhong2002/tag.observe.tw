@@ -11,7 +11,18 @@ import type { SourceSpec } from '../src/crawl/sources.ts';
 import { loadTitleVocab } from '../src/crawl/title-tags.ts';
 import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
-import { articles, articleTags, crawlRuns, jobRuns, rankingEntries, rankingSnapshots, siteMetrics, topics } from '../src/db/schema.ts';
+import {
+  articleArchives,
+  articleOrigins,
+  articles,
+  articleTags,
+  crawlRuns,
+  jobRuns,
+  rankingEntries,
+  rankingSnapshots,
+  siteMetrics,
+  topics,
+} from '../src/db/schema.ts';
 import { runAnalyticsJob, runRealtimeJob } from '../src/jobs/analytics-job.ts';
 import { lastIndexRuns, orderDueSources } from '../src/jobs/crawl-job.ts';
 import { dateFeatureArticles } from '../src/jobs/feature-article.ts';
@@ -293,6 +304,81 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     const rows = await db.select({ url: articles.url }).from(articles).where(sql`${articles.media} = 'yahoo'`);
     expect(rows.map((x) => x.url)).toEqual(['https://tw.news.yahoo.com/own-story-111111111.html']);
     await db.delete(articleTags).where(sql`${articleTags.articleId} IN (SELECT id FROM articles WHERE media = 'yahoo')`);
+    await db.delete(articles).where(sql`${articles.media} = 'yahoo'`);
+  });
+
+  it('keeps imported and archived rows whose shared url_key leads to a partner story (#30)', async () => {
+    const yahoo: SourceSpec = {
+      media: 'yahoo',
+      group: 'hourly',
+      list: {
+        urls: [{ cat: 'reporter', url: 'https://tw.news.yahoo.com/yahoo-reporter/' }],
+        discover: { pattern: String.raw`-\d{9}\.html$` },
+        articleId: String.raw`-(\d{9})\.html$`,
+      },
+      article: { enabled: true, batch: 20, delayMs: 0, provider: 'Yahoo' },
+    };
+    const old = new Date('2016-08-21T01:00:00Z');
+    const legacy = { media: 'yahoo', publishedAt: old, crawledAt: old, title: '舊文', tags: [], source: 'legacy' };
+    await db.insert(articles).values([
+      { ...legacy, url: 'https://tw.news.yahoo.com/old-imported-010000049.html', urlKey: 'tw.news.yahoo.com#010000049' },
+      { ...legacy, url: 'https://tw.news.yahoo.com/old-archived-010000050.html', urlKey: 'tw.news.yahoo.com#010000050', source: 'own' },
+    ]);
+    const ids = Object.fromEntries(
+      (await db.select({ id: articles.id, urlKey: articles.urlKey }).from(articles).where(sql`${articles.media} = 'yahoo'`)).map((r) => [
+        r.urlKey,
+        r.id,
+      ]),
+    );
+    const imported = ids['tw.news.yahoo.com#010000049'];
+    const archived = ids['tw.news.yahoo.com#010000050'];
+    await db.insert(articleOrigins).values({
+      sourceKey: 'tag-analysis/tag/tag_yahoo/750074',
+      rawHash: 'a'.repeat(64),
+      articleId: imported,
+      generation: 'g',
+      sourceObject: 'o',
+      adapterVersion: 'legacy-article-import-v4',
+      linkedAt: now,
+    });
+    await db.insert(articleArchives).values({
+      articleId: archived,
+      contentHash: 'b'.repeat(64),
+      objectKey: 'k',
+      objectHash: 'c'.repeat(64),
+      archiveRemote: 'r',
+      archivedAt: now,
+      verifiedAt: now,
+    });
+    // Today's partner stories happen to end in the same nine digits as the old rows.
+    const section =
+      '<a href="/partner-new-010000049.html">合作媒體的今日報導</a><a href="/partner-other-010000050.html">另一則合作媒體報導</a>';
+    const page = `<meta property="article:published_time" content="${now.toISOString()}"><script>{\\"provider\\":{\\"name\\":\\"優活健康網\\"}}</script>`;
+    const fetch = async (u: string) => res(u, u.endsWith('yahoo-reporter/') ? section : page);
+    await runIndex(db, yahoo, { fetch });
+    const adopted = await db.select({ id: articles.id, source: articles.source }).from(articles).where(sql`${articles.id} = ${imported}`);
+    expect(adopted).toEqual([{ id: imported, source: 'own' }]);
+    // The archived own row is only re-fetched on an admin request.
+    expect(await runArticles(db, yahoo, { fetch })).toMatchObject({ rejected: 1 });
+    expect(await runArticles(db, yahoo, { fetch, only: [archived] })).toMatchObject({ rejected: 1 });
+    const kept = await db
+      .select({ id: articles.id, source: articles.source, fetchedAt: articles.fetchedAt, attempts: articles.contentAttempts })
+      .from(articles)
+      .where(sql`${articles.media} = 'yahoo'`)
+      .orderBy(articles.id);
+    expect(kept.map((r) => [r.id, r.source])).toEqual([
+      [imported, 'legacy'],
+      [archived, 'own'],
+    ]);
+    expect(kept[0].fetchedAt).toBeNull();
+    expect(kept[1]).toMatchObject({ attempts: 3 });
+    expect(kept[1].fetchedAt).not.toBeNull();
+    // Rejected keys are not adopted again, and nothing left for the article stage.
+    await runIndex(db, yahoo, { fetch });
+    expect((await db.select({ source: articles.source }).from(articles).where(sql`${articles.id} = ${imported}`))[0].source).toBe('legacy');
+    expect(await runArticles(db, yahoo, { fetch })).toEqual({ fetched: 0, updated: 0, failed: 0, rejected: 0 });
+    await db.delete(articleOrigins).where(sql`1=1`);
+    await db.delete(articleArchives).where(sql`1=1`);
     await db.delete(articles).where(sql`${articles.media} = 'yahoo'`);
   });
 

@@ -1,7 +1,16 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import pLimit from 'p-limit';
 import type { Db } from '../db/client.ts';
-import { articleAuthorEdits, articles, articleTagEdits, articleTags, crawlRuns, rejectedUrls } from '../db/schema.ts';
+import {
+  articleArchives,
+  articleAuthorEdits,
+  articleOrigins,
+  articles,
+  articleTagEdits,
+  articleTags,
+  crawlRuns,
+  rejectedUrls,
+} from '../db/schema.ts';
 import { isOwnMediaTag } from '../media-tags.ts';
 import { extractAttributions } from '../similarity/attribution.ts';
 import { runDiscoveryIndex } from './discovery-index.ts';
@@ -501,9 +510,37 @@ export async function runArticles(
                 reason: (providerMismatch ? `provider:${extracted.provider ?? 'none'}` : 'provider-body').slice(0, 64),
                 createdAt: now(),
               });
+            rejected++;
+            // A url_key can be shared by unrelated pages (Yahoo's nine-digit suffix), so the
+            // index may have adopted an imported row for someone else's story. Rows with an
+            // import origin or a verified archive are provenance records: never delete them
+            // here (#30). An imported row goes back to legacy, out of live jobs; an archived
+            // own row only stops being re-fetched.
+            const [origin] = await db
+              .select({ id: articleOrigins.articleId })
+              .from(articleOrigins)
+              .where(eq(articleOrigins.articleId, row.id))
+              .limit(1);
+            const [archive] = origin
+              ? [undefined]
+              : await db
+                  .select({ id: articleArchives.articleId })
+                  .from(articleArchives)
+                  .where(eq(articleArchives.articleId, row.id))
+                  .limit(1);
+            if (origin) {
+              await db.update(articles).set({ source: 'legacy' }).where(eq(articles.id, row.id));
+              return;
+            }
+            if (archive) {
+              await db
+                .update(articles)
+                .set({ fetchedAt: now(), fetchStatus: 'failed', contentFetchedAt: now(), contentAttempts: 3 })
+                .where(eq(articles.id, row.id));
+              return;
+            }
             await db.delete(articleTags).where(eq(articleTags.articleId, row.id));
             await db.delete(articles).where(eq(articles.id, row.id));
-            rejected++;
             return;
           }
           const pageTitle = detail.title ? stripTitleSuffix(detail.title, spec.titleSuffix) : null;
