@@ -454,8 +454,9 @@ export const overrides: Record<string, SourceOverride> = {
         { cat: 'explains', url: 'https://tw.news.yahoo.com/topic/explains/' },
         { cat: 'finance', url: 'https://tw.stock.yahoo.com/reporter' },
       ],
+      // The nine digits before .html are a time-like code shared by unrelated stories,
+      // not an article ID, so the url_key is the full path (#30).
       discover: { pattern: String.raw`-\d{9}\.html$` },
-      articleId: String.raw`-(\d{9})\.html$`,
     },
     article: { enabled: true, batch: 60, delayMs: 2000, userAgent: undefined, provider: 'Yahoo' },
   },
