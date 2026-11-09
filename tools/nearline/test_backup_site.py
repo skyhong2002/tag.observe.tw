@@ -92,9 +92,17 @@ class BackupTests(unittest.TestCase):
                 self.reclaim(root, nas)
             self.assertTrue(old.exists())
 
-    def test_trim_rejects_unexpected_docker_storage(self):
-        with patch.object(module, 'run', return_value=Mock(stdout='/different')), patch.object(module.os.path, 'ismount', return_value=True), self.assertRaisesRegex(RuntimeError, 'expected mounted'):
-            module.trim_docker_storage()
+    def test_trim_rejects_unmounted_or_root_docker_storage(self):
+        for root, mounted in (('/var/lib/docker', False), ('/', True), ('', True), ('relative', True)):
+            with self.subTest(root=root), patch.object(module, 'run', return_value=Mock(stdout=root + '\n')) as run, patch.object(module.os.path, 'ismount', return_value=mounted), self.assertRaisesRegex(RuntimeError, 'mounted Docker data directory'):
+                module.trim_docker_storage()
+            self.assertEqual(run.call_count, 1)
+
+    def test_trim_uses_docker_reported_data_root(self):
+        with patch.object(module, 'run', return_value=Mock(stdout='/var/lib/docker\n')) as run, patch.object(module.os.path, 'ismount', return_value=True):
+            result = module.trim_docker_storage()
+        self.assertEqual(result['target'], '/var/lib/docker')
+        self.assertIn('type=bind,src=/var/lib/docker,dst=/trim', run.call_args_list[1].args[0])
 
     def test_insufficient_capacity_after_trim_and_reclaim_never_exports(self):
         with tempfile.TemporaryDirectory() as tmp:

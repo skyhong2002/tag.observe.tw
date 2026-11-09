@@ -281,11 +281,15 @@ def resume_backup(dest, report_path, nas, *, trim_docker=False, reclaim_verified
 
 
 def trim_docker_storage():
-    """Trim only this host's mounted Docker filesystem, using existing Docker access."""
-    target = '/home/.docker-data'
-    actual = run([DOCKER, 'info', '--format', '{{.DockerRootDir}}'], capture_output=True, text=True).stdout.strip()
-    if actual != target or not os.path.ismount(target):
-        raise RuntimeError('Docker trim requires the expected mounted Docker data directory')
+    """Trim only this host's mounted Docker filesystem, using existing Docker access.
+
+    The target is whatever Docker reports as its data root (/home/.docker-data on
+    the old host, /var/lib/docker on sky-server). It must be a dedicated mount so
+    the trim never touches the root filesystem by accident.
+    """
+    target = run([DOCKER, 'info', '--format', '{{.DockerRootDir}}'], capture_output=True, text=True).stdout.strip()
+    if not os.path.isabs(target) or target == '/' or not os.path.ismount(target):
+        raise RuntimeError('Docker trim requires a mounted Docker data directory, got ' + repr(target))
     result = run([DOCKER, 'run', '--rm', '--network', 'none', '--cap-drop', 'ALL',
                   '--cap-add', 'SYS_ADMIN', '--mount', 'type=bind,src=' + target + ',dst=/trim',
                   '--entrypoint', '/usr/sbin/fstrim', 'mariadb:11.4', '-v', '/trim'],
@@ -437,7 +441,7 @@ def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--resume', help='Resume publication of an already restored backup receipt')
-    parser.add_argument('--trim-docker-data', action='store_true', help='On space pressure, trim the mounted /home/.docker-data filesystem')
+    parser.add_argument('--trim-docker-data', action='store_true', help="On space pressure, trim Docker's data root (must be its own mount)")
     parser.add_argument('--reclaim-verified-on-pressure', action='store_true', help='Reverify and expire older local NAS duplicates under space pressure; retain newest verified dump')
     parser.add_argument('--dest', default='/home/deck/tag-analysis-private/backups')
     parser.add_argument('--remote', default='nas:Archive/tag.analysis.tw/site-db-v1')
