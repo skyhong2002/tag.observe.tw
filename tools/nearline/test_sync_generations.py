@@ -99,6 +99,66 @@ class LockContentionTest(unittest.TestCase):
             self.assertLess(time.monotonic() - start, 2)
 
 
+class ReconcileBacklogTest(unittest.TestCase):
+    """#31: integration finished but reconciliation lagged; keep reconciling instead of reporting caught_up."""
+
+    def setUp(self):
+        import hashlib
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        repo = Path(__file__).resolve().parents[2]
+        mapping = hashlib.sha256((repo / 'app/data/legacy-media-mapping.json').read_bytes()).hexdigest()
+        baseline = {'generation': '20261001T000000Z-aaaaaaaa', 'mappingSha256': mapping,
+                    'tables': [{'table': 'tag_a', 'action': 'import_articles'}]}
+        (root / 'baseline.json').write_text(json.dumps(baseline))
+        (root / 'backup.json').write_text('{}')
+        self.config = {'sync_state_dir': str(root / 'sync'), 'baseline_plan': str(root / 'baseline.json'),
+                       'backup_config': str(root / 'backup.json'), 'env_file': '/dev/null', 'lock_wait_seconds': 0}
+        self.gen = root / 'sync' / 'generations' / '20261102T000000Z-bbbbbbbb'
+        self.gen.mkdir(parents=True)
+        done = {'audit': 'nas:a', 'counts': {'already_imported': 1}, 'quarantine_reasons': {}, 'mapping_sha256': mapping,
+                'allow_recent': True, 'identity_policy': 'binary-equivalent-v1', 'table': 'tag_a'}
+        (self.gen / 'state.json').write_text(json.dumps({'completed': {'tag_a/h1': done, 'tag_a/h2': done | {'audit': 'nas:b'}}}))
+        (self.gen / 'reconciliation.json').write_text(json.dumps({'chunks': {'tag_a/h1': {'audit': 'nas:a'}}}))
+        pipeline = mock.MagicMock()
+        pipeline.rclone.return_value = subprocess.CompletedProcess([], 0, stdout=b'20261102T000000Z-bbbbbbbb/\n')
+        pipeline.load_manifest.return_value = {'tables': {'tag_a': {'status': 'complete', 'chunks': [{'sha256': 'h1'}, {'sha256': 'h2'}]}}}
+        self.patches = [mock.patch.object(module, 'Pipeline', return_value=pipeline),
+                        mock.patch.object(module.shutil, 'disk_usage', return_value=mock.Mock(free=2**50)),
+                        mock.patch.object(module, 'catalog', return_value={'summary': {}})]
+        for p in self.patches:
+            p.start()
+        self.reconciles = 0
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+        self.tmp.cleanup()
+
+    def run_cmd(self, args, **_):
+        if args[0] == 'systemctl':
+            return subprocess.CompletedProcess(args, 0, stdout='inactive\n')
+        self.assertTrue(args[1].endswith('tools/nearline/reconcile.py'))
+        self.reconciles += 1
+        (self.gen / 'reconciliation.json').write_text(json.dumps({'chunks': {'tag_a/h1': {'audit': 'nas:a'}, 'tag_a/h2': {'audit': 'nas:b'}}}))
+        return subprocess.CompletedProcess(args, 0)
+
+    def test_reconciles_backlog_after_integration_then_reports_caught_up(self):
+        with mock.patch.object(module.subprocess, 'run', side_effect=self.run_cmd), mock.patch.object(module, 'integrate') as integrate:
+            first = module.synchronize(self.config, 'sync')
+            second = module.synchronize(self.config, 'sync')
+        integrate.assert_not_called()
+        self.assertEqual(self.reconciles, 1)
+        self.assertEqual(first['status'], 'reconcile_batch_complete')
+        self.assertEqual((first['remaining_chunks'], first['unreconciled_chunks']), (0, 0))
+        self.assertEqual(second['status'], 'caught_up')
+
+    def test_unreconciled_chunks_compares_the_current_audit(self):
+        state = {'completed': {'t/a': {'audit': 'x'}, 't/b': {'audit': 'y'}, 't/c': {'audit': 'new'}}}
+        (self.gen / 'reconciliation.json').write_text(json.dumps({'chunks': {'t/a': {'audit': 'x'}, 't/c': {'audit': 'old'}}}))
+        self.assertEqual(module.unreconciled_chunks(state, self.gen), ['t/b', 't/c'])
+
+
 class DeferredExitUnitTest(unittest.TestCase):
     def test_both_units_treat_a_deferred_run_as_success(self):
         runtime = Path(__file__).resolve().parents[2] / 'runtime'

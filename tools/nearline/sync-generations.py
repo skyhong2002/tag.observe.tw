@@ -23,6 +23,14 @@ def pending_chunks(plan, state, manifest, policy):
             if needs_processing(state.get('completed', {}).get(item['table'] + '/' + chunk['sha256']), True, plan['mappingSha256'], policy)]
 
 
+def unreconciled_chunks(state, directory):
+    """Completed chunks whose current audit has not passed live-origin reconciliation."""
+    path = Path(directory) / 'reconciliation.json'
+    checked = json.loads(path.read_text()).get('chunks', {}) if path.exists() else {}
+    return [key for key, item in state.get('completed', {}).items()
+            if key not in checked or checked[key].get('audit') != item.get('audit')]
+
+
 DEFERRED_EXIT = 75  # EX_TEMPFAIL: work was not done this invocation and stays visible as a failed unit.
 
 
@@ -103,7 +111,10 @@ def _synchronize_locked(config, mode, root, status_path):
             state_path = directory / 'state.json'
             state = json.loads(state_path.read_text()) if state_path.exists() else {'completed': {}}
             pending = pending_chunks(plan, state, manifest, policy)
-            if not pending:
+            # Reconciliation advances one batch per run behind integration. If it fell behind
+            # (e.g. while failing), keep reconciling after integration is done instead of
+            # reporting caught_up with unverified chunks (#31).
+            if not pending and not unreconciled_chunks(state, directory):
                 continue
             if mode == 'replay':
                 plan['tables'].sort(key=lambda item: (item['table'] != 'tag_news_2024', -sum(v.get('quarantine_reasons',{}).get('input_identity_collision',0) for v in state['completed'].values() if v['table']==item['table'])))
@@ -115,7 +126,8 @@ def _synchronize_locked(config, mode, root, status_path):
             cfg_path = directory / ('continuous-' + mode + '.json')
             write_json(cfg_path, cfg)
             before = sum(v['counts'].get('quarantine',0) for v in state['completed'].values())
-            integrate(cfg)
+            if pending:
+                integrate(cfg)
             subprocess.run(['python3', str(repo / 'tools/nearline/reconcile.py'), '--config', str(cfg_path), '--max-chunks', str(config.get('max_chunks',1))], check=True, timeout=1800, cwd=repo)
             after_state = json.loads(state_path.read_text())
             reconciliation = json.loads((directory / 'reconciliation.json').read_text())
@@ -123,8 +135,9 @@ def _synchronize_locked(config, mode, root, status_path):
             catalog_path = directory / 'continuous-catalog.json'
             write_json(catalog_path, result)
             after = sum(v['counts'].get('quarantine',0) for v in after_state['completed'].values())
-            status.update(status='batch_complete', generation=generation, updated_at=now(),
+            status.update(status='batch_complete' if pending else 'reconcile_batch_complete', generation=generation, updated_at=now(),
                           remaining_chunks=len(pending_chunks(plan,after_state,manifest,policy)),
+                          unreconciled_chunks=len(unreconciled_chunks(after_state, directory)),
                           quarantine_before=before, quarantine_after=after,
                           catalog=str(catalog_path), current_summary=result['summary'])
             write_json(status_path,status)
