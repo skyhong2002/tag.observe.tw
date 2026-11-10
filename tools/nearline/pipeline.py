@@ -110,6 +110,11 @@ def plan_tables(inventory, cfg):
     return tables
 
 
+# Documented rclone exit codes; logged as a bounded error class next to rclone's own stderr.
+RCLONE_EXIT_CLASSES = {1: 'syntax_or_usage', 2: 'uncategorized', 3: 'directory_not_found', 4: 'file_not_found',
+                       5: 'temporary', 6: 'less_serious', 7: 'fatal', 8: 'transfer_limit', 9: 'no_files_transferred',
+                       10: 'duration_limit'}
+
 class Pipeline:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -127,7 +132,17 @@ class Pipeline:
             raise RuntimeError('State belongs to another source or archive destination')
 
     def rclone(self, *args, **kwargs):
-        return subprocess.run(self.rc + list(args), check=True, timeout=kwargs.pop('timeout', 900), **kwargs)
+        # capture_output would also swallow rclone's stderr, and CalledProcessError never prints
+        # it, so a failed manifest read left no cause in the journal (#27). Capture stdout only;
+        # rclone's own diagnostics go to the unit journal like every non-capturing call already does.
+        if kwargs.pop('capture_output', False):
+            kwargs.setdefault('stdout', subprocess.PIPE)
+        try:
+            return subprocess.run(self.rc + list(args), check=True, timeout=kwargs.pop('timeout', 900), **kwargs)
+        except subprocess.CalledProcessError as error:
+            kind = RCLONE_EXIT_CLASSES.get(error.returncode, 'unclassified')
+            print(f'rclone {args[0] if args else "?"} failed: exit {error.returncode} ({kind})', file=sys.stderr, flush=True)
+            raise
 
     def remote_path(self, relative):
         return self.cfg['remote'].rstrip('/') + '/' + relative

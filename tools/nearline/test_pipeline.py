@@ -130,3 +130,32 @@ class ChunkPolicyTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RcloneDiagnosticsTests(unittest.TestCase):
+    """#27: a failed capturing call (manifest cat) must leave rclone's stderr and an error class in the log."""
+
+    def run_fake(self, exit_code):
+        import subprocess, sys
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / 'rclone'
+            fake.write_text(f'#!/bin/sh\necho "{{}}"\necho "ERROR : manifest.json: object not found" >&2\nexit {exit_code}\n')
+            fake.chmod(0o700)
+            child = (
+                'import sys; sys.path.insert(0, sys.argv[1]); from pipeline import Pipeline\n'
+                'p = Pipeline.__new__(Pipeline); p.rc = [sys.argv[2]]\n'
+                'print(p.rclone("cat", "nas:x/manifest.json", capture_output=True).stdout.decode().strip())\n'
+            )
+            return subprocess.run([sys.executable, '-I', '-c', child, str(Path(__file__).parent), str(fake)], capture_output=True, text=True)
+
+    def test_failed_capturing_call_keeps_stderr_and_class(self):
+        result = self.run_fake(3)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('ERROR : manifest.json: object not found', result.stderr)
+        self.assertIn('rclone cat failed: exit 3 (directory_not_found)', result.stderr)
+        self.assertIn('CalledProcessError', result.stderr)
+
+    def test_successful_capturing_call_still_returns_stdout(self):
+        result = self.run_fake(0)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), '{}')
