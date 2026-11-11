@@ -139,6 +139,9 @@ test('stage refuses Next when another external build appeared during npm install
 // Both public domains must remain forbidden as isolated build candidates.
 test('rejects old and new public blog hosts even with an HTTP port', () => {
   for (const host of ['blog.observe.tw', 'weblog.tw']) {
-    assert.throws(() => validateOptions({ evidence: '/tmp/evidence', candidate: '/tmp/candidate', estimate: 1, api: `http://${host}:18170/` }), /isolated HTTP candidate/);
+    assert.throws(
+      () => validateOptions({ evidence: '/tmp/evidence', candidate: '/tmp/candidate', estimate: 1, api: `http://${host}:18170/` }),
+      /isolated HTTP candidate/,
+    );
   }
 });

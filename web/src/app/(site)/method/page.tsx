@@ -10,6 +10,7 @@ import {
   MediaMethod,
   MediaOverviewMethod,
   MediaSourcesMethod,
+  ObservationMethod,
   ObserveMethod,
   PictureMethod,
   RankingMethod,
@@ -59,6 +60,7 @@ const GROUPS: Array<{ id: string; title: string; pages?: Array<[string, string]>
       </>
     ),
   },
+  { id: 'tracking', title: '長期觀察', pages: [['/tracking/', '長期觀察']], body: <ObservationMethod /> },
   { id: 'search', title: '搜尋', body: <SearchMethod camp={false} /> },
   { id: 'observe', title: '本站流量', pages: [['/observe/', '本站流量']], body: <ObserveMethod /> },
   { id: 'article', title: '單篇文章', body: <ArticleMethod /> },

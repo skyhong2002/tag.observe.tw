@@ -110,6 +110,7 @@ for a in r.json()["articles"]:
 | [`GET /api/v1/tags/{tag}/status`](#api-v1-tags-tag-status) | 標籤目前狀態 |
 | [`GET /api/v1/tags/{tag}/stats`](#api-v1-tags-tag-stats) | 標籤長期統計 |
 | [`GET /api/v1/keywords/new`](#api-v1-keywords-new) | 新出現的關鍵字 |
+| [`GET /api/v1/observations`](#api-v1-observations) | 固定標籤條件的長期觀察與日期回看 |
 | [`GET /api/v1/events`](#api-v1-events) | 目前的事件排行（每小時） |
 | [`GET /api/v1/events/threads/suggest`](#api-v1-events-threads-suggest) | 輸入時的事件串建議 |
 | [`GET /api/v1/events/threads`](#api-v1-events-threads) | 某一天的所有事件串 |
@@ -2641,6 +2642,78 @@ curl -s 'https://tag.observe.tw/api/v1/keywords/new?days=7&min=10&media=1'
 | `keywords[].media` | {鍵: integer} | media=1 時回傳：各媒體帶這個關鍵字的篇數，多的在前 |
 
 ## 事件（同一件事，各家怎麼說）
+
+<a id="api-v1-observations"></a>
+
+### `GET /api/v1/observations`
+
+**固定標籤條件的長期觀察與日期回看**
+
+主標籤 AND 任一搭配標籤，逐字比對現存文章，包含歷史匯入。預設最近180個台北日期，最多366天。事件必須在同一小時主要標籤符合條件；各事件維持獨立編號，不把整個事件的文章併入總數。at 僅依刊登時間重建，並非當時收錄狀態。零篇不保證媒體未報導。超過25000篇、20000個候選串、1000個符合串或任一查詢超過5秒回503，不回傳截斷統計。快取60秒。
+
+| 參數 | 位置 | 型別 | 說明 |
+| --- | --- | --- | --- |
+| `v` | query | string | 條件版本，目前僅1 |
+| `anchor` | query | string | 必須包含的完整標籤，1–60字；與seed擇一，例：`台積電` |
+| `with` | query | string | 同篇另須有任一搭配標籤，逗號分隔最多5個；省略表示只比對主標籤，例：`台股` |
+| `seed` | query | string | 事件串id，帶入當前前兩個主要標籤；請保存回傳scope的固定條件，勿將seed當持久定義 |
+| `from` | query | string | 開始日期（含），YYYY-MM-DD |
+| `to` | query | string | 結束日期（含），預設今天，不可超過今天 |
+| `at` | query | string | 回看到當日結束（含），限from至to；今天截至查詢時間。預設to |
+
+範例：
+
+```sh
+curl -s 'https://tag.observe.tw/api/v1/observations?v=1&anchor=%E5%8F%B0%E7%A9%8D%E9%9B%BB&with=%E5%8F%B0%E8%82%A1'
+```
+
+回應欄位：
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| `scope` | object |  |
+| `scope.id` | string | 固定條件的SHA256前24位 |
+| `scope.version` | integer |  |
+| `scope.anchor` | string |  |
+| `scope.any` | string[] |  |
+| `window` | object |  |
+| `window.from` | string |  |
+| `window.to` | string |  |
+| `window.at` | string |  |
+| `window.end` | string (ISO 時間) | 實際查詢截止，不含 |
+| `generatedAt` | string (ISO 時間) |  |
+| `totals` | object |  |
+| `totals.articles` | integer | 不同文章id數；轉載仍分別計數 |
+| `totals.media` | integer | 不同來源數 |
+| `totals.events` | integer | 符合的獨立事件串數 |
+| `days` | object[] |  |
+| `days[].day` | string |  |
+| `days[].articles` | integer \| null | 回看日之後為null |
+| `days[].media` | integer \| null |  |
+| `outlets` | object[] |  |
+| `outlets[].media` | string |  |
+| `outlets[].title` | string |  |
+| `outlets[].articles` | integer |  |
+| `outlets[].days` | {鍵: integer} |  |
+| `events` | object[] |  |
+| `events[].id` | integer |  |
+| `events[].firstAt` | string (ISO 時間) | 窗口內首次符合小時 |
+| `events[].lastAt` | string (ISO 時間) | 窗口內最後符合小時 |
+| `events[].matchedHours` | integer |  |
+| `events[].tags` | string[] |  |
+| `events[].headline` | object \| null |  |
+| `events[].headline.id` | integer \| null |  |
+| `events[].headline.title` | string |  |
+| `events[].headline.media` | string |  |
+| `recent` | object[] | 最新60篇符合條件報導 |
+| `recent[].id` | integer |  |
+| `recent[].title` | string |  |
+| `recent[].media` | string |  |
+| `recent[].publishedAt` | string (ISO 時間) |  |
+| `recent[].tags` | string[] |  |
+| `eventHistoryFrom` | string (ISO 時間) \| null | 現存新聞事件串最早起始時間 |
+
+錯誤：`400` 條件、版本或日期不合法；`404` seed事件不存在；`503` 超過查詢上限、查詢忙碌或資料暫時無法取得。
 
 <a id="api-v1-events"></a>
 

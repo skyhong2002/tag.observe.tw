@@ -13,6 +13,7 @@ import { campOf, loadThreadCoverage } from './coverage.ts';
 import { PERIOD_DAYS, taipeiDay, threadSeries, threadsInPeriod, threadsOnDay } from './event-archive.ts';
 import { registerEventSuggest } from './event-suggest.ts';
 import { iconUrl } from './icons.ts';
+import { registerObservations } from './observations.ts';
 import {
   discoverySignals,
   loadDiscoveryEvidence,
@@ -83,6 +84,7 @@ export async function loadRanking(db: Db, category: string, { at }: { at?: Date 
 }
 
 export async function registerV1Routes(app: FastifyInstance, db: Db) {
+  registerObservations(app, db);
   app.get('/api/v1/categories', async () =>
     Object.entries(rankingCategories()).map(([key, { media }]) => ({
       key,

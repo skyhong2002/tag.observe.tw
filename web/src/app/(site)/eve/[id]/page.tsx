@@ -288,6 +288,9 @@ export default async function EventThreadPage({
           <div className="flex flex-wrap gap-2">
             <FollowButton kind="event" target={String(t.id)} />
             <SaveButton kind="event" id={t.id} />
+            <Link href={`/tracking/?seed=${t.id}`} className="rounded-md border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700">
+              長期觀察 →
+            </Link>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {lead ? (
