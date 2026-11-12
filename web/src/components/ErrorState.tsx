@@ -32,6 +32,9 @@ export default function ErrorState({
   }, [error]);
   return (
     <div role="alert" className="mx-auto max-w-2xl space-y-5 py-6">
+      {/* Under a loading.tsx the response has already started as 200, so this is
+          what keeps a transient failure out of the index (React hoists it to head). */}
+      <meta name="robots" content="noindex" />
       <div className="space-y-2">
         <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">暫時無法取得資料</p>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
