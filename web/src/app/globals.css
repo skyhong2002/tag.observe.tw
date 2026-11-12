@@ -39,6 +39,17 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Even out the lines of a heading that wraps, instead of leaving one orphaned
+   character on the last line. In the base layer so a text-wrap utility still wins. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+}
+
 /* Native select arrows hug the right edge; pull the chevron in so it sits inside the padding. */
 select:not([multiple]):not([size]) {
   appearance: none;

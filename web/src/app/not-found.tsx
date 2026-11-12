@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SourceMethod } from '@/components/MethodNotes';
 import NotFoundContent from '@/components/NotFoundContent';
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
@@ -16,7 +17,7 @@ export default function NotFound() {
         <NotFoundContent />
       </main>
       <div className="mx-auto w-full max-w-6xl px-4">
-        <SiteFooter />
+        <SiteFooter notes={<SourceMethod />} />
       </div>
     </div>
   );
