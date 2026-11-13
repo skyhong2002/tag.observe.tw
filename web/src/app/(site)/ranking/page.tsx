@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import DraftEvidence from '@/components/DraftEvidence';
-import FilterChips from '@/components/FilterChips';
+import FilterChips, { filterChipClass } from '@/components/FilterChips';
 import MediaIcons from '@/components/MediaIcons';
 import MethodLink from '@/components/MethodLink';
 import PendingLabel from '@/components/PendingLabel';
@@ -259,6 +259,32 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
             </div>
           </dl>
         </div>
+      )}
+      {ranking?.snapshot.available && rows.length > 0 && (
+        // Phones sort the cards with the table's own sort links; the current one flips direction.
+        <nav aria-label="排序" className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 text-sm [scrollbar-width:none] sm:hidden">
+          <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">排序</span>
+          {(
+            [
+              [emerging ? 'growth' : 'burst', emerging ? '升溫量' : '爆發力'],
+              ['change', '變動'],
+              ['score', '分數'],
+              ['count', '篇數'],
+              ['media', '媒體家數'],
+            ] as const
+          ).map(([col, label]) => (
+            <Link
+              key={col}
+              href={sortLink(col)}
+              scroll={false}
+              aria-current={sort === col ? 'true' : undefined}
+              className={`${filterChipClass(sort === col)} shrink-0`}
+            >
+              {label}
+              {sort === col && (dir === 'asc' ? ' ↑' : ' ↓')}
+            </Link>
+          ))}
+        </nav>
       )}
       {ranking?.snapshot.available && rows.length > 0 && <RankingCards rows={rows} emerging={emerging} gate={gate} footer={showMore} />}
       {ranking?.snapshot.available && rows.length > 0 && (

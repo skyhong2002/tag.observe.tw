@@ -378,7 +378,7 @@ export default function JournalistTable({
                 {row.media.length > 2 && <span className="shrink-0">+{row.media.length - 2} 家</span>}
               </p>
               <dl className="mt-1.5 grid grid-cols-3 gap-2 text-xs">
-                {displayMetrics.slice(0, 3).map(({ key, label }) => {
+                {displayMetrics.map(({ key, label }) => {
                   const count = metricCount(row, key);
                   return (
                     <div key={key}>

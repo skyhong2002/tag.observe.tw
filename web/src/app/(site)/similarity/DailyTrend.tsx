@@ -286,20 +286,37 @@ function OutletTable({
     <>
       {/* Phones: a card per outlet with every figure, so no column hides behind a sideways scroll. */}
       <div className="sm:hidden">
-        <label className="mb-2 flex items-center justify-end gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-          排序
-          <select
-            value={sort}
-            onChange={(event) => sortBy(event.target.value as SortKey)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+        {/* Every sort the table offers, share columns included, and the direction as its own button. */}
+        <div className="mb-2 flex items-center justify-end gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+          <label className="flex items-center gap-2">
+            排序
+            <select
+              value={sort}
+              onChange={(event) => sortBy(event.target.value as SortKey)}
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            >
+              {columns.flatMap((column) => [
+                <option key={column.key} value={column.key}>
+                  {column.key === 'name' ? '媒體名稱' : `${column.label}（篇數）`}
+                </option>,
+                ...(column.share
+                  ? [
+                      <option key={`${column.key}Share`} value={`${column.key}Share`}>
+                        {column.label}（比例）
+                      </option>,
+                    ]
+                  : []),
+              ])}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => sortBy(sort)}
+            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
           >
-            {columns.map((column) => (
-              <option key={column.key} value={column.key}>
-                {column.key === 'name' ? '媒體名稱' : column.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            {descending ? '由大到小 ↓' : '由小到大 ↑'}
+          </button>
+        </div>
         <ol className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
           {rows.map((row) => (
             <li key={row.media} className="px-3 py-2">
@@ -330,7 +347,16 @@ function OutletTable({
                 ))}
               </dl>
               <p className="mt-0.5 pl-6.5 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
-                同署名跨站 {number(row.sameByline)}・已註明來源 {number(row.attributed)}・被採用／引用 {number(row.cited)}
+                {(['sameByline', 'attributed', 'unattributed'] as const).map((metric) => {
+                  const ratio = share(row, metric);
+                  return (
+                    <span key={metric}>
+                      {columns.find((c) => c.key === metric)?.label} {number(row[metric])}
+                      {ratio !== null && row[metric] > 0 && ` (${Math.round(ratio * 100)}%)`}・
+                    </span>
+                  );
+                })}
+                被採用／引用 {number(row.cited)}
               </p>
             </li>
           ))}
