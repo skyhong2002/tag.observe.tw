@@ -97,6 +97,15 @@ export const articles = mysqlTable(
   ],
 );
 
+// Last public read of an article's cached content. Kept out of `articles` so a
+// read touches one narrow row instead of rewriting the wide article row: the
+// nightly dump then stays deduplicable. articles.content_accessed_at is the
+// frozen pre-split value and still counts as a floor in cacheClock().
+export const articleContentAccess = mysqlTable('article_content_access', {
+  articleId: bigint('article_id', { mode: 'number' }).primaryKey(),
+  accessedAt: datetime('accessed_at').notNull(),
+});
+
 // Permanent content-version index; deliberately no cascading FK to articles.
 export const articleArchives = mysqlTable(
   'article_archives',

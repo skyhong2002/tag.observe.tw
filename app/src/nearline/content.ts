@@ -2,7 +2,7 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { and, asc, eq, isNull, lt, or, sql } from 'drizzle-orm';
 import { BODY_RETENTION_MS, PUBLIC_BODY_WINDOW_MS } from '../article-retention.ts';
 import type { Db } from '../db/client.ts';
-import { articleArchives, articles } from '../db/schema.ts';
+import { articleArchives, articleContentAccess, articles } from '../db/schema.ts';
 import { type ArchiveStore, digest } from './store.ts';
 
 export type ContentRow = typeof articles.$inferSelect;
@@ -15,8 +15,12 @@ type StoredRow = Record<string, unknown> & {
   summary?: string | null;
   summarySource?: string | null;
 };
+// Reads are recorded in article_content_access; articles.content_accessed_at holds
+// the value from before that split (and restores) and remains a floor.
+const lastRead = () =>
+  sql`(SELECT ${articleContentAccess.accessedAt} FROM ${articleContentAccess} WHERE ${articleContentAccess.articleId} = ${articles.id})`;
 export const cacheClock = () =>
-  sql`GREATEST(COALESCE(${articles.contentAccessedAt}, ${articles.crawledAt}), COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt}))`;
+  sql`GREATEST(COALESCE(${lastRead()}, ${articles.crawledAt}), COALESCE(${articles.contentAccessedAt}, ${articles.crawledAt}), COALESCE(${articles.contentFetchedAt}, ${articles.crawledAt}))`;
 
 export function encodeContent(rows: ContentRow[]) {
   const entries = rows.map((row) => {
@@ -157,16 +161,19 @@ export async function restoreArticleContent(db: Db, store: ArchiveStore, id: num
   return { id, contentHash: index.contentHash, restoredAt: now };
 }
 
-/** A daily-resolution touch bounds write volume while protecting actively used caches. */
+/**
+ * A daily-resolution touch bounds write volume while protecting actively used caches.
+ * It writes the narrow access table, never the article row, so reads do not churn
+ * `articles` (which made every nightly dump chunk unique; see #33).
+ */
 export async function touchArticleContent(db: Db, id: number, now = new Date()) {
-  await db
-    .update(articles)
-    .set({ contentAccessedAt: now })
-    .where(
-      and(
-        eq(articles.id, id),
-        or(sql`${articles.body} IS NOT NULL`, sql`${articles.description} IS NOT NULL`, sql`${articles.summary} IS NOT NULL`),
-        or(isNull(articles.contentAccessedAt), lt(articles.contentAccessedAt, new Date(now.getTime() - 86400_000))),
-      ),
-    );
+  const stale = new Date(now.getTime() - 86400_000);
+  await db.execute(sql`
+    INSERT INTO ${articleContentAccess} (article_id, accessed_at)
+    SELECT ${articles.id}, ${now} FROM ${articles}
+    WHERE ${and(
+      eq(articles.id, id),
+      or(sql`${articles.body} IS NOT NULL`, sql`${articles.description} IS NOT NULL`, sql`${articles.summary} IS NOT NULL`),
+    )}
+    ON DUPLICATE KEY UPDATE accessed_at = IF(accessed_at < ${stale}, VALUES(accessed_at), accessed_at)`);
 }

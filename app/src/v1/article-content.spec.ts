@@ -45,9 +45,10 @@ function fakeDb(rows: unknown[], discoveries: unknown[] = [], collections: unkno
   const discoveryChain = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue(discoveries) };
   const collectionChain = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue(collections) };
   const select = vi.fn().mockReturnValueOnce(chain).mockReturnValueOnce(discoveryChain).mockReturnValue(collectionChain);
-  const touchWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
-  const update = vi.fn(() => ({ set: () => ({ where: touchWhere }) }));
-  return { db: { select, update } as unknown as Db, select, chain, discoveryChain, update, touchWhere };
+  // Reads touch the narrow access table via a raw upsert, never `articles` (#33).
+  const execute = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
+  const update = vi.fn();
+  return { db: { select, update, execute } as unknown as Db, select, chain, discoveryChain, update, execute };
 }
 describe('stored article content', () => {
   const soon = new Date('2026-10-05T00:00:00Z');
@@ -245,7 +246,7 @@ describe('stored article content', () => {
     expect(result?.article.tags).toEqual(row.tags);
   });
   it('serves preserved text with no source request and reports not found or invalid inputs', async () => {
-    const { db, select } = fakeDb([row]);
+    const { db, select, update, execute } = fakeDb([row]);
     const app = Fastify();
     registerArticleContent(app, db);
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('upstream is gone'));
@@ -256,6 +257,8 @@ describe('stored article content', () => {
       expect(response.statusCode).toBe(200);
       expect(response.json().content.body).toBe(row.body);
       expect(fetchSpy).not.toHaveBeenCalled();
+      expect(execute).toHaveBeenCalledTimes(1);
+      expect(update).not.toHaveBeenCalled();
       for (const path of [
         '/api/v1/articles/0/content',
         '/api/v1/media/cna/content?cursor=1.5',

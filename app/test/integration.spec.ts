@@ -14,6 +14,7 @@ import { measureTrafficCoverage } from '../src/crawl/traffic-coverage.ts';
 import { createDb, type Db } from '../src/db/client.ts';
 import {
   articleArchives,
+  articleContentAccess,
   articleOrigins,
   articles,
   articleTags,
@@ -30,6 +31,7 @@ import { dateFeatureArticles } from '../src/jobs/feature-article.ts';
 import { runRankingJob } from '../src/jobs/ranking-job.ts';
 import { runRetentionJob } from '../src/jobs/retention-job.ts';
 import { runSimilarityJob } from '../src/jobs/similarity-job.ts';
+import { archiveColdContent, touchArticleContent } from '../src/nearline/content.ts';
 import { loadEvidence } from '../src/similarity/store.ts';
 import { loadThreadCoverage } from '../src/v1/coverage.ts';
 import { cachedIndexView, loadSimilarity, similarityParams } from '../src/v1/similarity.ts';
@@ -37,6 +39,7 @@ import { cachedIndexView, loadSimilarity, similarityParams } from '../src/v1/sim
 const url = process.env.TEST_DB_URL;
 const TABLES = [
   'article_archives',
+  'article_content_access',
   'article_origins',
   'article_tags',
   'articles',
@@ -535,6 +538,57 @@ describe.skipIf(!url)('integration (MariaDB)', () => {
     expect(preserved).toEqual({ body: '過期內文', description: '保留標題與標籤' });
     const [{ n }] = await db.select({ n: sql<number>`COUNT(*)` }).from(articles);
     expect(Number(n)).toBe(6);
+  });
+  it('records content reads in the access table without rewriting the article row (#33)', async () => {
+    const day = 86400e3;
+    const media = 'access_clock_test';
+    const t0 = new Date(Math.floor(now.getTime() / 1000) * 1000);
+    const base = { media, publishedAt: new Date(t0.getTime() - 100 * day), crawledAt: new Date(t0.getTime() - 100 * day), tags: [] };
+    await db.insert(articles).values([
+      { ...base, url: 'https://x.test/read', urlKey: 'x.test/read', title: '有內文', body: '內文', bodyStatus: 'ok' },
+      { ...base, url: 'https://x.test/cold', urlKey: 'x.test/cold', title: '冷門', body: '冷門內文', bodyStatus: 'ok' },
+      { ...base, url: 'https://x.test/empty', urlKey: 'x.test/empty', title: '無內文' },
+    ]);
+    const ids = Object.fromEntries(
+      (await db.select({ id: articles.id, url: articles.url }).from(articles).where(sql`${articles.media} = ${media}`)).map((r) => [
+        r.url.split('/').at(-1)!,
+        r.id,
+      ]),
+    );
+    const snapshot = () => db.select().from(articles).where(sql`${articles.media} = ${media}`).orderBy(articles.id);
+    const before = await snapshot();
+    const access = async (id: number) =>
+      (await db.select().from(articleContentAccess).where(sql`${articleContentAccess.articleId} = ${id}`))[0]?.accessedAt;
+    try {
+      await touchArticleContent(db, ids.read, t0);
+      await touchArticleContent(db, ids.read, new Date(t0.getTime() + 3600e3));
+      expect(await access(ids.read)).toEqual(t0); // daily resolution
+      await touchArticleContent(db, ids.read, new Date(t0.getTime() + day + 1000));
+      expect(await access(ids.read)).toEqual(new Date(t0.getTime() + day + 1000));
+      await touchArticleContent(db, ids.empty, t0);
+      expect(await access(ids.empty)).toBeUndefined();
+      expect(await snapshot()).toEqual(before);
+
+      const store = {
+        remote: 'test:archive',
+        putVerified: async () => ({ key: 'k', hash: 'h' }),
+        getVerified: async () => Buffer.alloc(0),
+      };
+      const out = await archiveColdContent(db, store, t0, 25);
+      expect(out).toMatchObject({ archived: 1, evicted: 1 });
+      const after = await snapshot();
+      expect(after.find((r) => r.id === ids.cold)?.body).toBeNull();
+      expect(after.find((r) => r.id === ids.read)?.body).toBe('內文');
+    } finally {
+      await db.execute(
+        sql`DELETE FROM ${articleContentAccess} WHERE article_id IN (${sql.join(
+          Object.values(ids).map((id) => sql`${id}`),
+          sql`,`,
+        )})`,
+      );
+      await db.execute(sql`DELETE FROM ${articleArchives} WHERE archive_remote = 'test:archive'`);
+      await db.execute(sql`DELETE FROM ${articles} WHERE ${articles.media} = ${media}`);
+    }
   });
   it('reserves backlog capacity and retries missing bodies on a bounded schedule', async () => {
     const media = 'content_queue_test';

@@ -121,12 +121,16 @@ describe('verified content cache', () => {
   it('bases expiry on use/acquisition including old publications restored today', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('CREATE TABLE articles(id INTEGER,content_accessed_at TEXT,content_fetched_at TEXT,crawled_at TEXT)');
+    db.exec('CREATE TABLE article_content_access(article_id INTEGER PRIMARY KEY,accessed_at TEXT)');
     db.function('GREATEST', { varargs: true }, (...values) => values.map(String).sort().at(-1)!);
     const insert = db.prepare('INSERT INTO articles VALUES (?,?,?,?)');
     insert.run(1, null, '2026-01-01', '2026-01-01');
     insert.run(2, '2026-10-04', '2026-01-01', '2026-01-01');
     insert.run(3, '2026-01-01', '2026-10-04', '2026-01-01');
     insert.run(4, null, null, '2026-10-04');
+    // Read after the access-table split (#33): only the narrow table moves.
+    insert.run(5, '2026-01-01', '2026-01-01', '2026-01-01');
+    db.prepare('INSERT INTO article_content_access VALUES (?,?)').run(5, '2026-10-04');
     try {
       const query = new MySqlDialect().sqlToQuery(cacheClock());
       expect(
