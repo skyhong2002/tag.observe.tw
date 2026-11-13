@@ -8,7 +8,8 @@ export default function MyLayout({ children }: { children: React.ReactNode }) {
     <div className="py-4">
       <h1 className="text-2xl font-semibold tracking-tight">我的新文易數</h1>
       <MyTabs />
-      <div className="mt-6">{children}</div>
+      {/* Lists of follows and saves read best at a column width, with their buttons near the names. */}
+      <div className="mt-6 max-w-3xl">{children}</div>
     </div>
   );
 }

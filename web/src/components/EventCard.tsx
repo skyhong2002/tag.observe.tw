@@ -136,8 +136,8 @@ export function OutletStrip({
             key={o.media}
             media={o.media}
             title={media[o.media]?.title ?? o.media}
-            icon={compact ? 12 : 14}
-            className="inline-flex min-h-6 min-w-6 items-center justify-center rounded p-0.5 hover:bg-zinc-100 pointer-coarse:min-h-11 pointer-coarse:min-w-11 dark:hover:bg-zinc-800"
+            icon={compact ? 14 : 16}
+            className="inline-flex min-h-7 min-w-7 items-center justify-center rounded p-0.5 hover:bg-zinc-100 pointer-coarse:min-h-11 pointer-coarse:min-w-11 dark:hover:bg-zinc-800"
           >
             <span className="sr-only">{media[o.media]?.title ?? o.media}</span>
           </MediaHoverLink>

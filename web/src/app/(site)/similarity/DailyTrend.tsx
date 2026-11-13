@@ -302,7 +302,7 @@ function OutletTable({
         </label>
         <ol className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
           {rows.map((row) => (
-            <li key={row.media} className="px-3 py-2.5">
+            <li key={row.media} className="px-3 py-2">
               <div className="flex items-center gap-2.5">
                 <input
                   type="checkbox"
@@ -318,8 +318,9 @@ function OutletTable({
                   {number(row.articles)} <span className="text-xs text-zinc-600 dark:text-zinc-400">篇比對</span>
                 </span>
               </div>
-              <dl className="mt-1.5 grid grid-cols-3 gap-x-2 gap-y-1 pl-6.5 text-xs">
-                {(['copied', 'copying', 'citing', 'sameByline', 'attributed'] as const).map((metric) => (
+              {/* Three ratios a reader compares across outlets; the other counts on one line under them. */}
+              <dl className="mt-1 grid grid-cols-3 gap-x-2 pl-6.5 text-xs">
+                {(['copied', 'copying', 'citing'] as const).map((metric) => (
                   <div key={metric}>
                     <dt className="text-zinc-600 dark:text-zinc-400">{columns.find((c) => c.key === metric)?.label}</dt>
                     <dd className="tabular-nums">
@@ -327,11 +328,10 @@ function OutletTable({
                     </dd>
                   </div>
                 ))}
-                <div>
-                  <dt className="text-zinc-600 dark:text-zinc-400">被採用／引用</dt>
-                  <dd className={`tabular-nums ${muted(row.cited)}`}>{number(row.cited)}</dd>
-                </div>
               </dl>
+              <p className="mt-0.5 pl-6.5 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
+                同署名跨站 {number(row.sameByline)}・已註明來源 {number(row.attributed)}・被採用／引用 {number(row.cited)}
+              </p>
             </li>
           ))}
         </ol>

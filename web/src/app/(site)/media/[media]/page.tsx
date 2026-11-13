@@ -324,7 +324,7 @@ export default async function MediaPage({
               <FilterChips
                 label="刊登時間範圍"
                 items={[
-                  { value: null, label: '全部' },
+                  { value: null, label: '不限期間' },
                   { value: '24', label: '24 小時' },
                   { value: '72', label: '3 天' },
                   { value: '168', label: '7 天' },

@@ -31,7 +31,7 @@ export default function ErrorState({
     console.error(error);
   }, [error]);
   return (
-    <div role="alert" className="mx-auto max-w-2xl space-y-5 py-6">
+    <div role="alert" className="max-w-2xl space-y-5 py-6">
       {/* Under a loading.tsx the response has already started as 200, so this is
           what keeps a transient failure out of the index (React hoists it to head). */}
       <meta name="robots" content="noindex" />
