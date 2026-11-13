@@ -176,6 +176,113 @@ class BackupTests(unittest.TestCase):
             nas.publish.assert_not_called()
 
 
+class ResticStoreTests(unittest.TestCase):
+    """#33: nightly dumps go to a deduplicating restic repository on the NAS."""
+
+    def fake_restic(self, verify=None):
+        restic = Mock(repository='rclone:nas:test-restic')
+        restic.object_name.side_effect = lambda snap: 'restic:rclone:nas:test-restic#' + snap
+        restic.backup.return_value = {'snapshot': 'a' * 64, 'sql_sha256': 'b' * 64, 'data_added_packed': 1}
+        if verify:
+            restic.verify.side_effect = verify
+        return restic
+
+    def exercise(self, root, nas, restic):
+        with patch.object(module, 'source_sql', side_effect=['1000', '']), \
+                patch.object(module, 'source_storage_bytes', return_value=1000), \
+                patch.object(module, 'schema_signature', return_value=(['articles'], 'schema')), \
+                patch.object(module.shutil, 'disk_usage', return_value=Mock(free=100 * module.GIB)), \
+                patch.object(module, 'export_database', side_effect=lambda p: p.write_bytes(b'archive')), \
+                patch.object(module, 'restore_drill', Mock(return_value={'status': 'passed'})):
+            return module.backup(root, nas, restic=restic)
+
+    def nas(self):
+        nas = Mock(remote='nas:test')
+        nas.command.return_value = Mock(stdout=json.dumps({'free': 200 * module.GIB}))
+        nas.publish.side_effect = lambda p, relative: 'nas:test/' + relative
+        return nas
+
+    def test_dump_is_one_row_per_insert(self):
+        self.assertIn('--skip-extended-insert', module.DUMP_OPTIONS)
+        self.assertIn('--no-autocommit', module.DUMP_OPTIONS)
+        self.assertIn('--single-transaction', module.DUMP_OPTIONS)
+
+    def test_success_stores_snapshot_verifies_it_then_publishes_manifest_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, nas, restic = Path(tmp), self.nas(), self.fake_restic()
+            report = self.exercise(root, nas, restic)
+            self.assertEqual(report['status'], 'verified')
+            self.assertEqual(report['object'], 'restic:rclone:nas:test-restic#' + 'a' * 64)
+            self.assertEqual(report['restic']['sql_sha256'], 'b' * 64)
+            restic.verify.assert_called_once_with('a' * 64, 'b' * 64)
+            self.assertEqual([c.args[1].split('/')[0] for c in nas.publish.call_args_list], ['manifests'])
+
+    def test_failed_readback_is_not_success_and_preserves_local_dump(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, nas = Path(tmp), self.nas()
+            restic = self.fake_restic(verify=RuntimeError('NAS restic readback checksum mismatch'))
+            with self.assertRaisesRegex(RuntimeError, 'readback'):
+                self.exercise(root, nas, restic)
+            self.assertEqual(json.loads(next(root.glob('*.manifest.json')).read_text())['status'], 'failed')
+            self.assertEqual(len(list(root.glob('*.sql.zst'))), 1)
+            nas.publish.assert_not_called()
+
+    def stored(self, root, day, restic):
+        backup_id = '202611' + day + 'T000000Z-12345678'
+        path = root / ('tag_observe-' + backup_id + '.sql.zst')
+        path.write_bytes(('archive-' + day).encode())
+        snap = day * 32
+        module.atomic_json(path.with_suffix('.manifest.json'), {
+            'backup_id': backup_id, 'file': path.name, 'status': 'verified', 'bytes': path.stat().st_size,
+            'sha256': module.digest(path), 'restore': {'status': 'passed'},
+            'restic': {'snapshot': snap, 'sql_sha256': 'c' * 64}, 'object': restic.object_name(snap)})
+        return path
+
+    def test_pressure_reclaims_restic_backed_dump_only_after_snapshot_readback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, nas, restic = Path(tmp), Mock(remote='nas:test'), self.fake_restic()
+            old = self.stored(root, '01', restic)
+            latest = self.stored(root, '02', restic)
+            nas.command.return_value.stdout = old.with_suffix('.manifest.json').read_bytes()
+            restic.verify.side_effect = lambda *args: self.assertTrue(old.exists())
+            with patch.object(module.shutil, 'disk_usage', return_value=Mock(free=0)):
+                module.reclaim_for_capacity(root, nas, 100, root / 'current.json', {}, restic)
+            self.assertFalse(old.exists())
+            self.assertTrue(latest.exists())
+            restic.verify.assert_called_once_with('01' * 32, 'c' * 64)
+            nas.verify.assert_not_called()
+
+    def test_restic_receipt_is_never_reclaimed_without_a_store_to_check_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, nas, restic = Path(tmp), Mock(remote='nas:test'), self.fake_restic()
+            old = self.stored(root, '01', restic)
+            self.stored(root, '02', restic)
+            with patch.object(module.shutil, 'disk_usage', return_value=Mock(free=0)):
+                module.reclaim_for_capacity(root, nas, 100, root / 'current.json', {})
+            self.assertTrue(old.exists())
+
+    @unittest.skipUnless(Path(module.RESTIC).is_file() and module.shutil.which('zstd'), 'restic and zstd required')
+    def test_real_restic_round_trip_and_dedup(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'pw').write_text('test-password')
+            repo = root / 'repo'
+            restic = module.Restic(str(repo), root / 'pw', root / 'rclone.conf')
+            subprocess.run([*restic.base, 'init', '-q'], env=restic.env, check=True)
+            rows = [b"INSERT INTO `t` VALUES (%d,'%s');\n" % (i, b'x' * (i % 97)) for i in range(60000)]
+            first, second = root / 'a.sql.zst', root / 'b.sql.zst'
+            for path, body in ((first, b''.join(rows)), (second, b''.join(rows) + b"INSERT INTO `t` VALUES (60000,'new');\n")):
+                subprocess.run(['zstd', '-q', '-o', str(path)], input=body, check=True)
+            one = restic.backup(first, '20261113T000000Z-00000001')
+            two = restic.backup(second, '20261113T000000Z-00000002')
+            restic.verify(one['snapshot'], one['sql_sha256'])
+            restic.verify(two['snapshot'], two['sql_sha256'])
+            self.assertLess(two['data_added_packed'], one['data_added_packed'] / 2)
+            with self.assertRaisesRegex(RuntimeError, 'readback'):
+                restic.verify(two['snapshot'], one['sql_sha256'])
+
+
 class PhaseCapacityTests(unittest.TestCase):
     def test_export_success_without_restore_capacity_preserves_dump_and_can_resume(self):
         with tempfile.TemporaryDirectory() as tmp:

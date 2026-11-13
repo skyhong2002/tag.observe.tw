@@ -15,6 +15,13 @@ import uuid
 
 DOCKER = '/home/deck/.local/bin/docker'
 RCLONE = '/home/deck/.local/bin/rclone'
+RESTIC = '/usr/bin/restic'
+HEX64 = re.compile(r'[0-9a-f]{64}')
+# One row per INSERT keeps unchanged rows byte-identical between nights, so the
+# deduplicating NAS store only adds what changed (#33). With extended inserts a
+# single row changing length shifts every later statement boundary.
+DUMP_OPTIONS = ['--single-transaction', '--quick', '--routines', '--events', '--hex-blob',
+                '--skip-extended-insert', '--no-autocommit']
 GIB = 1024 ** 3
 RESERVE = 25 * GIB
 
@@ -122,7 +129,7 @@ def export_database(path):
     env = dict(os.environ, MYSQL_PWD=os.environ['TAG_DB_PASSWORD'])
     with partial.open('xb') as output:
         dump = subprocess.Popen([DOCKER, 'exec', '-e', 'MYSQL_PWD', 'tag-db', 'mariadb-dump', '-utag_observe',
-                                 '--single-transaction', '--quick', '--routines', '--events', '--hex-blob', 'tag_observe'],
+                                 *DUMP_OPTIONS, 'tag_observe'],
                                 env=env, stdout=subprocess.PIPE)
         try:
             compressed = subprocess.Popen(['zstd', '-T2', '-q'], stdin=dump.stdout, stdout=output)
@@ -203,7 +210,70 @@ class Nas:
         return remote
 
 
-def publish_restored(path, report_path, report, nas):
+class Restic:
+    """Deduplicating NAS store: each verified dump is one snapshot of its SQL text."""
+
+    def __init__(self, repository, password_file, rclone_config):
+        self.repository = repository
+        self.env = dict(os.environ, RESTIC_REPOSITORY=repository, RESTIC_PASSWORD_FILE=str(password_file))
+        self.base = [RESTIC, '-o', 'rclone.program=' + RCLONE,
+                     '-o', 'rclone.args=serve restic --stdio --config ' + str(rclone_config) + ' --bwlimit 8M']
+
+    def object_name(self, snapshot):
+        return 'restic:' + self.repository + '#' + snapshot
+
+    def backup(self, path, backup_id):
+        decompress = subprocess.Popen(['zstd', '-dc', str(path)], stdout=subprocess.PIPE)
+        store = subprocess.Popen([*self.base, 'backup', '--stdin', '--stdin-filename', 'tag_observe.sql',
+                                  '--host', 'tag-observe-site', '--tag', backup_id, '--json', '--quiet'],
+                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=self.env)
+        h = hashlib.sha256()
+        try:
+            for chunk in iter(lambda: decompress.stdout.read(1024 * 1024), b''):
+                h.update(chunk)
+                store.stdin.write(chunk)
+            store.stdin.close()
+            output = store.stdout.read()
+        finally:
+            stop_process(decompress)
+            if store.poll() is None:
+                store.wait(timeout=12 * 3600)
+        if decompress.returncode != 0 or store.returncode != 0:
+            raise RuntimeError('Restic backup failed; local backup preserved')
+        summary = next((json.loads(line) for line in output.splitlines()
+                        if line.strip().startswith(b'{') and json.loads(line).get('message_type') == 'summary'), {})
+        snapshot = summary.get('snapshot_id', '')
+        if not HEX64.fullmatch(snapshot):
+            raise RuntimeError('Restic did not report a snapshot; local backup preserved')
+        return {'snapshot': snapshot, 'sql_sha256': h.hexdigest(),
+                'data_added_packed': summary.get('data_added_packed')}
+
+    def verify(self, snapshot, sql_sha256):
+        if not HEX64.fullmatch(snapshot):
+            raise ValueError('Invalid restic snapshot ID')
+        process = subprocess.Popen([*self.base, 'dump', snapshot, '/tag_observe.sql'], stdout=subprocess.PIPE, env=self.env)
+        h = hashlib.sha256()
+        for chunk in iter(lambda: process.stdout.read(1024 * 1024), b''):
+            h.update(chunk)
+        process.stdout.close()
+        if process.wait() != 0 or h.hexdigest() != sql_sha256:
+            raise RuntimeError('NAS restic readback checksum mismatch')
+
+
+def remote_copy_check(old, nas, restic=None):
+    """Return a callable proving the NAS copy behind a receipt, or None if unprovable."""
+    sha, obj = old.get('sha256', ''), old.get('object', '')
+    if isinstance(sha, str) and HEX64.fullmatch(sha) and obj == nas.remote + '/objects/' + sha + '.sql.zst':
+        return lambda: nas.verify(obj, sha)
+    proof = old.get('restic') if isinstance(old.get('restic'), dict) else {}
+    snapshot, sql_sha = proof.get('snapshot', ''), proof.get('sql_sha256', '')
+    if (restic is not None and isinstance(snapshot, str) and HEX64.fullmatch(snapshot)
+            and isinstance(sql_sha, str) and HEX64.fullmatch(sql_sha) and obj == restic.object_name(snapshot)):
+        return lambda: restic.verify(snapshot, sql_sha)
+    return None
+
+
+def publish_restored(path, report_path, report, nas, restic=None):
     if report.get('restore', {}).get('status') != 'passed':
         raise RuntimeError('A successful full restore receipt is required')
     if path.stat().st_size != report['bytes'] or digest(path) != report['sha256']:
@@ -218,7 +288,12 @@ def publish_restored(path, report_path, report, nas):
         raise RuntimeError('NAS share capacity unavailable; local backup preserved')
     if capacity['free'] < report['bytes'] + 100 * GIB:
         raise RuntimeError('NAS reserve below 100 GiB; local backup preserved')
-    report['object'] = nas.publish(path, 'objects/' + report['sha256'] + '.sql.zst')
+    if restic is None:
+        report['object'] = nas.publish(path, 'objects/' + report['sha256'] + '.sql.zst')
+    else:
+        proof = restic.backup(path, report['backup_id'])
+        restic.verify(proof['snapshot'], proof['sql_sha256'])
+        report.update(restic=proof, object=restic.object_name(proof['snapshot']))
     report.update(status='verified', finished_at=dt.datetime.now(dt.timezone.utc).isoformat())
     atomic_json(report_path, report)
     nas.publish(report_path, 'manifests/' + report['backup_id'] + '.json')
@@ -230,15 +305,16 @@ def publish_restored(path, report_path, report, nas):
         if not receipt.exists():
             continue
         old = json.loads(receipt.read_text())
-        if old.get('status') != 'verified' or not old.get('object', '').startswith(nas.remote + '/objects/'):
+        check = remote_copy_check(old, nas, restic) if old.get('status') == 'verified' else None
+        if check is None:
             continue
-        nas.verify(old['object'], old['sha256'])
+        check()
         previous.unlink()
     print(json.dumps(report), flush=True)
     return report
 
 
-def resume_backup(dest, report_path, nas, *, trim_docker=False, reclaim_verified=False):
+def resume_backup(dest, report_path, nas, *, trim_docker=False, reclaim_verified=False, restic=None):
     dest, report_path = dest.resolve(), report_path.resolve()
     if report_path.parent != dest:
         raise ValueError('Resume receipt must be in the configured backup directory')
@@ -271,8 +347,8 @@ def resume_backup(dest, report_path, nas, *, trim_docker=False, reclaim_verified
                 atomic_json(report_path, report)
                 report['restore'] = restore_drill(path, report['tables'])
                 atomic_json(report_path, report)
-            result = publish_restored(path, report_path, report, nas)
-            finish_capacity(dest, nas, result, trim_docker=trim_docker, reclaim_verified=reclaim_verified)
+            result = publish_restored(path, report_path, report, nas, restic)
+            finish_capacity(dest, nas, result, trim_docker=trim_docker, reclaim_verified=reclaim_verified, restic=restic)
             return result
         except Exception as error:
             report.update(status='failed', error=str(error))
@@ -297,7 +373,7 @@ def trim_docker_storage():
     return {'target': target, 'output': result.stdout.strip()}
 
 
-def reclaim_for_capacity(dest, nas, required, report_path, report):
+def reclaim_for_capacity(dest, nas, required, report_path, report, restic=None):
     """Under the backup lock, expire verified duplicates only; retain the newest verified dump."""
     dumps = sorted(p for p in dest.glob('tag_observe-*.sql.zst') if p.is_file() and not p.is_symlink())
     verified = []
@@ -319,19 +395,21 @@ def reclaim_for_capacity(dest, nas, required, report_path, report):
                 or not isinstance(backup_id, str) or not re.fullmatch(r'\d{8}T\d{6}Z-[0-9a-f]{8}', backup_id)
                 or not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)
                 or path.name != 'tag_observe-' + backup_id + '.sql.zst'
-                or old.get('file') != path.name
-                or old.get('object') != nas.remote + '/objects/' + sha + '.sql.zst'):
+                or old.get('file') != path.name):
             continue
-        verified.append((path, receipt, raw, old))
+        check = remote_copy_check(old, nas, restic)
+        if check is None:
+            continue
+        verified.append((path, receipt, raw, old, check))
     # Also protect the newest dump even if its receipt is incomplete or failed.
     protected = {dumps[-1]} if dumps else set()
     if verified:
         protected.add(verified[-1][0])
     if any(path not in protected for path, *_ in verified):
-        latest, _, _, proof = verified[-1]
+        latest, _, _, proof, _ = verified[-1]
         if latest.stat().st_size != proof.get('bytes') or digest(latest) != proof['sha256']:
             raise RuntimeError('Newest verified local backup is damaged; preserve older copies')
-    for path, receipt, raw, old in verified:
+    for path, receipt, raw, old, check in verified:
         if shutil.disk_usage(dest).free >= required:
             break
         if path in protected:
@@ -343,7 +421,7 @@ def reclaim_for_capacity(dest, nas, required, report_path, report):
         remote = nas.command('cat', remote_receipt, capture_output=True).stdout
         if remote != raw:
             raise RuntimeError('NAS reclaim receipt differs from the local receipt')
-        nas.verify(old['object'], old['sha256'])
+        check()
         after = path.lstat()
         identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
         if path.is_symlink() or identity(after) != identity(before) or receipt.read_bytes() != raw:
@@ -357,7 +435,7 @@ def reclaim_for_capacity(dest, nas, required, report_path, report):
         atomic_json(report_path, report)
 
 
-def finish_capacity(dest, nas, report, *, trim_docker=False, reclaim_verified=False):
+def finish_capacity(dest, nas, report, *, trim_docker=False, reclaim_verified=False, restic=None):
     # Keep the published backup receipt immutable. A separate maintenance
     # receipt records local expiry, so future remote receipt equality holds.
     path = dest / ('capacity-after-' + report['backup_id'] + '.json')
@@ -369,7 +447,7 @@ def finish_capacity(dest, nas, report, *, trim_docker=False, reclaim_verified=Fa
         required = (restore if same_filesystem(restore_root(dest), dest) else RESERVE) + (report['bytes'] * 5 + 3) // 4
         maintenance['required_for_next_backup'] = required
         if reclaim_verified and report.get('source_storage_bytes'):
-            reclaim_for_capacity(dest, nas, required, path, maintenance)
+            reclaim_for_capacity(dest, nas, required, path, maintenance, restic)
         maintenance.update(status='complete', free_bytes=shutil.disk_usage(dest).free)
     except Exception:
         # The full backup remains valid; expose failed maintenance separately.
@@ -379,7 +457,7 @@ def finish_capacity(dest, nas, report, *, trim_docker=False, reclaim_verified=Fa
     print(json.dumps({'capacity_maintenance': maintenance}), flush=True)
 
 
-def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
+def backup(dest, nas, *, trim_docker=False, reclaim_verified=False, restic=None):
     dest.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (dest / '.backup.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -400,7 +478,7 @@ def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
                 report['docker_trim'] = trim_docker_storage()
                 atomic_json(report_path, report)
             if reclaim_verified and shutil.disk_usage(dest).free < required:
-                reclaim_for_capacity(dest, nas, required, report_path, report)
+                reclaim_for_capacity(dest, nas, required, report_path, report, restic)
             report['free_bytes_before_export'] = shutil.disk_usage(dest).free
             atomic_json(report_path, report)
             if report['free_bytes_before_export'] < required:
@@ -420,7 +498,7 @@ def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
             if trim_docker and shutil.disk_usage(scratch).free < required:
                 report['docker_trim_before_restore'] = trim_docker_storage()
             if reclaim_verified and shutil.disk_usage(scratch).free < required and same_filesystem(scratch, dest):
-                reclaim_for_capacity(dest, nas, required, report_path, report)
+                reclaim_for_capacity(dest, nas, required, report_path, report, restic)
             report['free_bytes_before_restore'] = shutil.disk_usage(scratch).free
             if report['free_bytes_before_restore'] < required:
                 raise RuntimeError('Insufficient local space for isolated restore; exported backup preserved')
@@ -428,8 +506,8 @@ def backup(dest, nas, *, trim_docker=False, reclaim_verified=False):
             atomic_json(report_path, report)
             report['restore'] = restore_drill(path, tables)
             atomic_json(report_path, report)
-            result = publish_restored(path, report_path, report, nas)
-            finish_capacity(dest, nas, result, trim_docker=trim_docker, reclaim_verified=reclaim_verified)
+            result = publish_restored(path, report_path, report, nas, restic)
+            finish_capacity(dest, nas, result, trim_docker=trim_docker, reclaim_verified=reclaim_verified, restic=restic)
             return result
         except Exception as error:
             report.update(status='failed', error=str(error))
@@ -446,18 +524,24 @@ def main():
     parser.add_argument('--dest', default='/home/deck/tag-analysis-private/backups')
     parser.add_argument('--remote', default='nas:Archive/tag.analysis.tw/site-db-v1')
     parser.add_argument('--rclone-config', default='/home/deck/.config/nas-backup/rclone.conf')
+    parser.add_argument('--restic-repository', default='rclone:nas:Archive/tag.analysis.tw/site-db-restic',
+                        help='Deduplicating store for new dumps; receipts and manifests stay under --remote')
+    parser.add_argument('--restic-password-file', default='/home/deck/.config/nas-backup/restic-password')
     args = parser.parse_args()
-    if not Path(DOCKER).is_file() or not Path(RCLONE).is_file() or not shutil.which('zstd'):
-        raise RuntimeError('docker, rclone and zstd must be installed before starting a backup')
+    if not Path(DOCKER).is_file() or not Path(RCLONE).is_file() or not Path(RESTIC).is_file() or not shutil.which('zstd'):
+        raise RuntimeError('docker, rclone, restic and zstd must be installed before starting a backup')
+    if not Path(args.restic_password_file).is_file():
+        raise RuntimeError('Restic password file missing; refusing to back up without the NAS store')
     dest, nas = Path(args.dest), Nas(args.remote, args.rclone_config)
+    restic = Restic(args.restic_repository, args.restic_password_file, args.rclone_config)
     if args.resume:
-        resume_backup(dest, Path(args.resume), nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure)
+        resume_backup(dest, Path(args.resume), nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure, restic=restic)
     else:
         for receipt in sorted(dest.glob('tag_observe-*.manifest.json')):
             old = json.loads(receipt.read_text())
             if old.get('status') in ('failed', 'publishing', 'exported', 'restoring') and (old.get('restore', {}).get('status') == 'passed' or old.get('export_status') == 'passed'):
-                resume_backup(dest, receipt, nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure)
-        backup(dest, nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure)
+                resume_backup(dest, receipt, nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure, restic=restic)
+        backup(dest, nas, trim_docker=args.trim_docker_data, reclaim_verified=args.reclaim_verified_on_pressure, restic=restic)
 
 
 if __name__ == '__main__':
