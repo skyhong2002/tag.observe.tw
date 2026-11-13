@@ -38,6 +38,23 @@ const indexFile = join(SNAPSHOT, 'index.json');
 const index = existsSync(indexFile) ? JSON.parse(readFileSync(indexFile, 'utf8')) : {};
 const reader = existsSync(join(SNAPSHOT, 'reader.json')) ? JSON.parse(readFileSync(join(SNAPSHOT, 'reader.json'), 'utf8')) : {};
 const state = { data: 'normal', session: 'out' };
+// snapshot-aliases.json: keys missing from the recording, answered from other recorded bodies (see its _note).
+const aliasFile = new URL('./snapshot-aliases.json', import.meta.url);
+let aliasMap;
+const aliases = () => (aliasMap ??= new Map(
+  Object.entries(existsSync(aliasFile) ? JSON.parse(readFileSync(aliasFile, 'utf8')) : {})
+    .filter(([key]) => key.startsWith('/'))
+    .map(([key, rule]) => [keyOf(key), { ...rule, from: keyOf(rule.from), facetsFrom: rule.facetsFrom && keyOf(rule.facetsFrom) }]),
+));
+function fromAlias(key) {
+  const rule = aliases().get(key);
+  if (!rule || !index[rule.from]) return null;
+  let body = JSON.parse(readFileSync(fileOf(rule.from), 'utf8'));
+  if (rule.facetsFrom && index[rule.facetsFrom]) body.facets = JSON.parse(readFileSync(fileOf(rule.facetsFrom), 'utf8')).facets;
+  // An article search with no match: no rows, no cursor, every facet zero.
+  if (rule.empty) body = { ...body, count: 0, articles: [], nextCursor: null, facets: { total: 0, camps: { blue: 0, green: 0, other: 0 }, media: [] } };
+  return { status: 200, type: 'application/json', body: Buffer.from(JSON.stringify(body)) };
+}
 const counts = new Map();
 const misses = new Set();
 const KEEP_IN_EMPTY = /^\/api\/v1\/(media|categories|tag-avatars|tag-visuals|tags\/[^/]+\/(visual|avatar|person))$/;
@@ -108,7 +125,7 @@ async function apiRoute(req, res) {
   if (req.method !== 'GET') return send(res, 405, { error: 'read-only fixture' });
   if (state.data === 'error') return send(res, 500, { error: 'Internal Server Error' });
   if (state.data === 'loading') await new Promise((r) => setTimeout(r, 25000));
-  let entry = index[key] && { ...index[key], body: readFileSync(fileOf(key)) };
+  let entry = (index[key] && { ...index[key], body: readFileSync(fileOf(key)) }) || fromAlias(key);
   if (!entry) {
     if (!RECORD) {
       misses.add(key);

@@ -96,7 +96,18 @@ async function walk(page, maxHeight) {
   await page.waitForTimeout(700);
 }
 
-async function shoot(page, file, size, { viewportOnly } = {}) {
+async function shoot(page, file, size, options = {}) {
+  // Chromium now and then refuses a capture while a navigation is still pending (the loading states); retry once.
+  try {
+    return await shootOnce(page, file, size, options);
+  } catch (error) {
+    if (!/captureScreenshot|Unable to capture/i.test(error.message)) throw error;
+    await page.waitForTimeout(1000);
+    return shootOnce(page, file, size, options);
+  }
+}
+
+async function shootOnce(page, file, size, { viewportOnly } = {}) {
   if (viewportOnly) return page.screenshot({ path: file });
   const full = await page.evaluate(() => document.documentElement.scrollHeight);
   const height = Math.max(size.height, Math.min(full, size.maxHeight));
