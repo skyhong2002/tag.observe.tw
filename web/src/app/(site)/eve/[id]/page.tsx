@@ -284,7 +284,9 @@ export default async function EventThreadPage({
             <Link href="/event/" className="hover:underline">
               事件表
             </Link>{' '}
-            / 事件 #{t.id}
+            {/* The page is named by its keywords; the number stays as a small reference. */}/{' '}
+            {t.majorTags.slice(0, 3).join('、') || `事件 #${t.id}`}
+            {t.majorTags.length > 0 && <span className="ml-2 text-xs">#{t.id}</span>}
           </p>
           <div className="flex flex-wrap gap-2">
             <FollowButton kind="event" target={String(t.id)} />

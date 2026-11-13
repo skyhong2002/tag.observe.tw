@@ -157,7 +157,7 @@ export default function ArticleView({
               {content.status !== 'ok' && (
                 <p className="mb-6 border-l-2 border-amber-500 pl-4 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
               )}
-              <ArticleBody body={content.body} sourceUrl={article.url} />
+              <ArticleBody body={content.body} sourceUrl={article.url} repeats={summary} />
             </>
           ) : !summary && article.description ? (
             <ArticleBody body={article.description} sourceUrl={article.url} label="文章摘要" />

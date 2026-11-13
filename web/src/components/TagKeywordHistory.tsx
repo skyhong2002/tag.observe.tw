@@ -263,11 +263,11 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
               <tr
                 key={tag}
                 data-added={added.includes(tag) || undefined}
-                className={`group h-8 transition-colors duration-500 ${added.includes(tag) ? 'bg-sky-50 dark:bg-sky-950/50' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}
+                className={`group h-8 transition-colors duration-500 ${added.includes(tag) ? 'bg-brand-50 dark:bg-brand-950/50' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}
               >
                 <th
                   scope="row"
-                  className={`sticky left-0 z-10 px-3 text-left font-normal ${added.includes(tag) ? 'bg-sky-50 dark:bg-sky-950' : 'bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800'}`}
+                  className={`sticky left-0 z-10 px-3 text-left font-normal ${added.includes(tag) ? 'bg-brand-50 dark:bg-brand-950' : 'bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800'}`}
                 >
                   <Link
                     href={`/tag/${encodeURIComponent(tag)}/`}
@@ -289,7 +289,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
                     <td key={column.key} className="px-0" title={count ? `${tag} · ${column.title} · ${count} 篇` : undefined}>
                       {count && (
                         <span
-                          className={`relative block h-3 ${left ? '' : 'ml-0.5 rounded-l-full'} ${right ? '' : 'mr-0.5 rounded-r-full'} ${tag === data.tag ? 'bg-brand-600 dark:bg-brand-500' : 'bg-sky-600 dark:bg-sky-500'}`}
+                          className={`relative block h-3 ${left ? '' : 'ml-0.5 rounded-l-full'} ${right ? '' : 'mr-0.5 rounded-r-full'} ${tag === data.tag ? 'bg-brand-600 dark:bg-brand-500' : 'bg-zinc-500 dark:bg-zinc-400'}`}
                           style={{ opacity: Math.max(0.14, Math.min(1, Math.sqrt(count / peak))) }}
                         >
                           {index === first.get(tag) && index > 0 && (
@@ -317,7 +317,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
             相關詞 {visibleRelatedTerms.length} / {terms.length}
           </span>
           {added.length > 0 && (
-            <span role="status" className="text-sky-700 dark:text-sky-400">
+            <span role="status" className="text-brand-700 dark:text-brand-400">
               新增 {added.length} 個
             </span>
           )}

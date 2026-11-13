@@ -130,8 +130,9 @@ export function OutletStrip({
   if (!c || c.outlets.length === 0) return null;
   return (
     <div className="flex w-full min-w-0 items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-      <FitRow label="報導媒體">
-        {c.outlets.slice(0, max).map((o) => (
+      {/* "+N" counts every outlet not shown, so icons and the count beside them agree. */}
+      <FitRow label="報導媒體" max={max}>
+        {c.outlets.map((o) => (
           <MediaHoverLink
             key={o.media}
             media={o.media}

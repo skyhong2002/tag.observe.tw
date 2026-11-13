@@ -403,7 +403,8 @@ function OutletTable({
             {rows.map((row) => (
               <tr key={row.media} className={table.row}>
                 <th scope="row" className={`${table.lead} text-left font-normal`}>
-                  <div className={`${table.leadBox} flex items-center gap-2.5`}>
+                  {/* Capped on desktop too so the table fits the column at 1440; long names truncate. */}
+                  <div className={`${table.leadBox} flex items-center gap-2.5 sm:max-w-48`}>
                     <input
                       type="checkbox"
                       aria-label={`畫出${row.name}`}

@@ -82,7 +82,7 @@ export default function KeywordFlow({
                   <td key={col.key} className="px-0 py-0.5" title={`${r.tag} · ${col.title} · ${unit} ${raw.toFixed(raw >= 10 ? 0 : 1)}`}>
                     <span
                       className={`relative block h-3.5 ${joinLeft ? '' : 'ml-0.5 rounded-l-full'} ${joinRight ? '' : 'mr-0.5 rounded-r-full'} ${
-                        r.major ? 'bg-brand-600 dark:bg-brand-500' : 'bg-sky-600 dark:bg-sky-500'
+                        r.major ? 'bg-brand-600 dark:bg-brand-500' : 'bg-zinc-500 dark:bg-zinc-400'
                       }`}
                       style={{ opacity: v }}
                     >
@@ -116,8 +116,8 @@ export function KeywordFlowLegend({ children, major = true }: { children?: React
         </span>
       )}
       <span className="inline-flex items-center gap-1">
-        <span className="h-2.5 w-6 rounded-full bg-sky-600 opacity-40 dark:bg-sky-500" aria-hidden />
-        <span className="h-2.5 w-6 rounded-full bg-sky-600 dark:bg-sky-500" aria-hidden />
+        <span className="h-2.5 w-6 rounded-full bg-zinc-500 opacity-40 dark:bg-zinc-400" aria-hidden />
+        <span className="h-2.5 w-6 rounded-full bg-zinc-500 dark:bg-zinc-400" aria-hidden />
         顏色越深越熱
       </span>
       {children}

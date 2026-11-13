@@ -191,8 +191,8 @@ export default function TagChart({ initial }: { initial: TagSeries }) {
           symbolSize: 4,
           connectNulls: false,
           data: points.map((p) => p.rank),
-          lineStyle: { color: '#0369a1', width: 1.5 },
-          itemStyle: { color: '#0369a1' },
+          lineStyle: { color: '#6d28d9', width: 1.5 },
+          itemStyle: { color: '#6d28d9' },
           tooltip: { valueFormatter: (v: unknown) => (v == null ? '未入榜' : `#${v}`) },
         },
         {

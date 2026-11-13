@@ -263,7 +263,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       {ranking?.snapshot.available && rows.length > 0 && <RankingCards rows={rows} emerging={emerging} gate={gate} footer={showMore} />}
       {ranking?.snapshot.available && rows.length > 0 && (
         <TableScroller card className="hidden sm:block" label="關鍵字排行榜表格，可左右捲動" footer={showMore}>
-          <table className="w-full min-w-[94rem] text-sm">
+          {/* At 1440 the table fits the 1280 px column: 首次出現 and 相似稿 show from 1536 px up. */}
+          <table className="w-full min-w-[76rem] text-sm 2xl:min-w-[94rem]">
             <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
               <tr>
                 {/* On phones the rank moves into the sticky keyword cell. */}
@@ -274,11 +275,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <Th col="score" label="分數" className="w-20 text-right" />
                 <Th col="count" label="篇數" className="w-16 text-right" />
                 <Th col="trend" label="趨勢" className="w-28" />
-                <Th col="first" label="首次出現" className="w-28" />
+                <Th col="first" label="首次出現" className="w-28 hidden 2xl:table-cell" />
                 <Th col="peak" label="單日高峰" className="w-36" />
                 <th className={`w-[17rem] whitespace-nowrap ${table.cell}`}>一起出現</th>
                 <Th col="media" label="媒體" className="w-[22rem]" />
-                <th className={`whitespace-nowrap ${table.cell}`}>相似稿</th>
+                <th className={`hidden 2xl:table-cell whitespace-nowrap ${table.cell}`}>相似稿</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -355,7 +356,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     <td className={`max-w-0 ${table.cell}`}>
                       <MediaIcons media={e.media} info={media} />
                     </td>
-                    <td className={`whitespace-nowrap ${table.cell}`}>
+                    <td className={`hidden 2xl:table-cell whitespace-nowrap ${table.cell}`}>
                       {e.drafts?.articles ? (
                         <DraftEvidence data={e.drafts} singleLine />
                       ) : (
@@ -478,7 +479,7 @@ function ArchiveCells({ entry: e }: { entry: RankingEntry }) {
   return (
     <>
       <td
-        className={`whitespace-nowrap tabular-nums ${table.cell}`}
+        className={`hidden 2xl:table-cell whitespace-nowrap tabular-nums ${table.cell}`}
         title={
           a ? `現存收錄中第一篇帶這個關鍵字的報導刊登於 ${taipeiDate(a.firstAt)} ${taipeiClock(a.firstAt)}（台北時間）` : '尚未算出全部歷史'
         }

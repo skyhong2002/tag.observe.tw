@@ -83,7 +83,8 @@ export default function EventChart({
     const labels = points.map((p) => fmt(p.t));
     const rankData = ranks ?? points.map(() => null);
     const hasRank = rankData.some((r) => r !== null);
-    const rankColor = dark ? '#38bdf8' : '#0369a1';
+    // Violet, not sky: blue means the blue camp on this site.
+    const rankColor = dark ? '#a78bfa' : '#6d28d9';
     // The axis stops at the last complete hour, so a thread still on the table
     // ends past it; ECharts misplaces an area whose edge is not a category.
     // Clamp both edges onto the axis, and drop the band if it falls outside.
