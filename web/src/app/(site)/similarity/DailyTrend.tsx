@@ -207,7 +207,7 @@ function Share({ row, metric }: { row: Row; metric: Metric }) {
   return (
     <>
       {number(value)}
-      {ratio !== null && <span className="ml-1.5 text-xs text-zinc-600 dark:text-zinc-400">{Math.round(ratio * 100)}%</span>}
+      {ratio !== null && <span className="ml-1.5 text-[13px] text-zinc-700 dark:text-zinc-300">{Math.round(ratio * 100)}%</span>}
     </>
   );
 }

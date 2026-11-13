@@ -57,11 +57,19 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
             <span className="text-xs text-zinc-600 dark:text-zinc-400">
               升溫量 {r.signals.growth > 0 ? '+' : ''}
               {r.signals.growth.toFixed(1)}
+              {/* The figure in words: the sign is what a reader needs. */}
+              <span className="ml-1">
+                （{r.signals.growth > 0 ? '比前幾天升溫' : r.signals.growth < 0 ? '比前幾天降溫' : '和前幾天持平'}）
+              </span>
             </span>
           )}
           {r.signals && (
             <span className="text-xs text-zinc-600 dark:text-zinc-400">
-              {r.signals.broad ? '已達多家跟進門檻' : r.signals.early ? '已達早期線索門檻' : '尚未達跨媒體門檻'}
+              {r.signals.broad
+                ? '至少 3 家媒體跟進（多家跟進）'
+                : r.signals.early
+                  ? '至少 2 家媒體各報 2 篇以上（早期線索）'
+                  : '還沒有兩家媒體各報 2 篇以上'}
             </span>
           )}
         </div>

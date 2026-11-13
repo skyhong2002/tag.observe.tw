@@ -329,7 +329,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     </td>
                     <ArchiveCells entry={e} />
                     <td
-                      className={`max-w-0 truncate whitespace-nowrap text-xs ${table.cell}`}
+                      className={`max-w-0 truncate whitespace-nowrap text-[13px] ${table.cell}`}
                       title={
                         related.length
                           ? related.map((r) => `${r.tag} ${r.count} 篇（${Math.round(r.share * 100)}%）`).join('\n')

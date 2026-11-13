@@ -30,7 +30,7 @@ function MetricCell({ row, metric }: { row: JournalistSummary; metric: Metric })
     <td className={`${table.num} min-w-28`} title={`${count === null ? '未知' : `${count} 篇`} / 全部 ${row.articles} 篇`}>
       <div className="relative flex items-baseline justify-end gap-2 whitespace-nowrap">
         <span className={count === 0 ? 'text-zinc-600 dark:text-zinc-400' : ''}>{count === null ? '—' : number(count)}</span>
-        <span className="text-xs text-zinc-600 dark:text-zinc-400">{percent(share)}</span>
+        <span className="text-[13px] text-zinc-700 dark:text-zinc-300">{percent(share)}</span>
         <span className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
           <span
             className="block h-px bg-zinc-400 dark:bg-zinc-500"

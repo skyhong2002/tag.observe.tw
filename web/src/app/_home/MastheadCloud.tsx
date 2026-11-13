@@ -51,7 +51,8 @@ const CANVASES: Canvas[] = [
   {
     key: 'wide',
     width: 1120,
-    height: 280,
+    // Shorter than the medium canvas: on a desktop the day's events should start inside the first screen.
+    height: 240,
     max: 1120,
     logo: 128,
     tagline: 14,
