@@ -115,12 +115,23 @@ export function ScoreBar({
 }
 
 /** Who is on the story: as many outlet marks as fit on one line, then counts. */
-export function OutletStrip({ c, media, compact = false }: { c: EventCoverage; media: MediaInfo; compact?: boolean }) {
+export function OutletStrip({
+  c,
+  media,
+  compact = false,
+  max,
+}: {
+  c: EventCoverage;
+  media: MediaInfo;
+  compact?: boolean;
+  /** At most this many icons; the count beside them still covers every outlet. */
+  max?: number;
+}) {
   if (!c || c.outlets.length === 0) return null;
   return (
     <div className="flex w-full min-w-0 items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
       <FitRow label="報導媒體">
-        {c.outlets.map((o) => (
+        {c.outlets.slice(0, max).map((o) => (
           <MediaHoverLink
             key={o.media}
             media={o.media}
@@ -343,19 +354,21 @@ export default function EventCard({
             {meta}
             <RankTrail e={e} className="h-7 w-24" span={trailSpan} />
           </div>
-          <Title e={e} at={at} className="text-xl font-semibold leading-snug" />
-          <Tags e={e} limit={7} />
+          {/* The lead story: the headline leads, then the split and the two camps' headlines; fewer
+              keywords, icons and extra links than before so the title is not lost among them. */}
+          <Title e={e} at={at} className="text-xl font-semibold leading-snug md:text-2xl md:leading-snug" />
+          <Tags e={e} limit={5} />
           {e.coverage && (
             <div className="space-y-1.5">
               <FullBar c={e.coverage} />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                 <CampBadge c={e.coverage} />
-                <OutletStrip c={e.coverage} media={media} />
+                <OutletStrip c={e.coverage} media={media} max={10} />
               </div>
             </div>
           )}
           {pair && <CampHeadlines pair={pair} media={media} />}
-          <Headlines e={e} media={media} limit={3} skip={[img, pair?.blue, pair?.green]} />
+          <Headlines e={e} media={media} limit={2} skip={[img, pair?.blue, pair?.green]} />
           {footer}
           <Compare e={e} className="self-end" />
         </div>

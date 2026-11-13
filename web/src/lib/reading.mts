@@ -49,7 +49,9 @@ export function readingExcerpt(body: string, maxChars = 150): string {
   const text = readingParagraphs(body)
     .join('\n')
     .replace(/[ \t]+/g, ' ')
-    .trim();
+    .trim()
+    // Some outlets open the text with their own count (本文共827字); next to ours it reads as a contradiction.
+    .replace(/^本文共\s*[\d,，]+\s*字\s*/u, '');
   const characters = Array.from(text);
   if (characters.length <= maxChars) return text ? `${text}...` : '';
   const head = characters.slice(0, maxChars).join('');

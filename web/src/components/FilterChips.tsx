@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import RowScrollHint from './RowScrollHint';
 
 /** One filter chip; `muted` greys out a choice that has little or no data. */
 export const filterChipClass = (current: boolean, muted = false) =>
@@ -32,8 +33,8 @@ export default function FilterChips({
   const phoneRow = scrollOnPhone
     ? 'max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:pb-1 max-sm:[mask-image:linear-gradient(to_right,black_calc(100%-3.5rem),transparent_calc(100%-0.5rem))] [scrollbar-width:none]'
     : '';
-  return (
-    <nav aria-label={label} className={`${filterRowClass} ${phoneRow} ${className}`}>
+  const row = (
+    <nav aria-label={label} className={`${filterRowClass} ${phoneRow} ${scrollOnPhone ? '' : className}`}>
       {showLabel && <span className={`${filterLabelClass} shrink-0 sm:min-w-14`}>{label}</span>}
       {items.map((item) => (
         <Link
@@ -49,4 +50,7 @@ export default function FilterChips({
       ))}
     </nav>
   );
+  if (!scrollOnPhone) return row;
+  // On a phone the faded edge alone did not read as "more to the right": an arrow sits over it while it does.
+  return <RowScrollHint className={className}>{row}</RowScrollHint>;
 }

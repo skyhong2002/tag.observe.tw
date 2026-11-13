@@ -29,7 +29,7 @@ export default function SourceLink({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${label}（另開視窗）`}
-      className={`inline-flex max-w-full min-h-8 items-center gap-1 whitespace-nowrap text-xs text-zinc-600 hover:text-brand-700 dark:text-zinc-400 dark:hover:text-brand-400 ${className}`}
+      className={`inline-flex max-w-full min-h-8 items-center gap-1 whitespace-nowrap ${/(^| )text-(xs|sm|\[)/.test(className) ? '' : 'text-[13px]'} text-zinc-600 hover:text-brand-700 dark:text-zinc-400 dark:hover:text-brand-400 ${className}`}
     >
       {showUrl ? <span className="min-w-0 whitespace-normal break-all">{displayUrl(url)}</span> : !iconOnly && label}
       <svg
