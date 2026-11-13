@@ -6,7 +6,7 @@
 // and resumes at 10 or below. Only loopback, plus image files for article
 // thumbnails and logos, leaves the browser; GA/GTM and every other request are aborted.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATA_ORDER, REFERENCES, SIZES, STATES } from './states.mjs';
@@ -53,6 +53,19 @@ async function newContext(size, { theme = 'light', locale = 'zh-TW', allowAll = 
 }
 
 async function settle(page, maxHeight) {
+  // A client-side redirect or router replace can swap the document mid-walk; wait and walk the new one.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await walk(page, maxHeight);
+    } catch (error) {
+      if (attempt >= 2 || !/context was destroyed|navigation/i.test(error.message)) throw error;
+      await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(800);
+    }
+  }
+}
+
+async function walk(page, maxHeight) {
   const height = Math.min(await page.evaluate(() => document.documentElement.scrollHeight), maxHeight + 900);
   for (let y = 0; y < height; y += 600) {
     await page.evaluate((top) => window.scrollTo(0, top), y);
@@ -89,6 +102,8 @@ if (mode === 'site') {
     await fixture({ data });
     for (const [sizeName, size] of Object.entries(SIZES)) {
       for (const state of group) {
+        const file = `${out}/${state.id}_${sizeName}.png`;
+        if (!process.env.RESHOOT && existsSync(file)) continue; // resume: keep shots already taken
         await hostCheck();
         await fixture({ session: state.session ?? 'out' });
         const context = await newContext(size, { theme: state.theme ?? 'light' });
@@ -115,7 +130,6 @@ if (mode === 'site') {
           }
           await settle(page, size.maxHeight);
         }
-        const file = `${out}/${state.id}_${sizeName}.png`;
         await shoot(page, file, size, state);
         console.log(JSON.stringify({ file, status, load1: load1() }));
         await context.close();
