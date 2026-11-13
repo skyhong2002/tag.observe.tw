@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { filterChipClass } from '@/components/FilterChips';
 import { fetchTagGroupOverview, type TagGroupSummary } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 
@@ -90,11 +91,7 @@ export default async function GroupIndexPage({ searchParams }: { searchParams: P
         </p>
         <div className="mt-4 flex gap-1 text-sm">
           {DAYS.map((d) => (
-            <Link
-              key={d}
-              href={d === 7 ? '/group/' : `/group/?days=${d}`}
-              className={`rounded-md px-3 py-1 ${d === days ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
-            >
+            <Link key={d} href={d === 7 ? '/group/' : `/group/?days=${d}`} className={filterChipClass(d === days)}>
               {d} 天
             </Link>
           ))}

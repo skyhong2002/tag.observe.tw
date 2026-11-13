@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleFacets, ArticleList, ArticlePager, type ListingLink } from '@/components/ArticleResults';
+import { filterChipClass, filterRowClass } from '@/components/FilterChips';
 import PictureLink from '@/components/PictureLink';
 import RelationLink from '@/components/RelationLink';
 import FollowButton from '@/components/reader/FollowButton';
@@ -160,19 +161,20 @@ export default async function TagPage({ params, searchParams }: { params: Promis
             after={<RelationLink tag={tag} voting={relations?.voting ?? 0} />}
           />
         </div>
-        <div className="flex gap-1 text-sm">
+        <div className={filterRowClass}>
           {[24, 72, 168].map((h) => (
             <Link
               key={h}
               href={`/tag/${encodeURIComponent(tag)}?hours=${h}`}
-              className={`rounded-md px-3 py-1 ${h === hours ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
+              aria-current={h === hours ? 'page' : undefined}
+              className={filterChipClass(h === hours)}
             >
-              {h / 24} 天
+              {h === 24 ? '24 小時' : `${h / 24} 天`}
             </Link>
           ))}
           <a
             href={`https://www.google.com/search?tbm=nws&q=${encodeURIComponent(tag)}`}
-            className="rounded-md bg-zinc-100 px-3 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            className="whitespace-nowrap rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             rel="noopener noreferrer"
             target="_blank"
           >

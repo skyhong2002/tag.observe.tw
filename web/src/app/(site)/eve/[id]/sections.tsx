@@ -165,7 +165,10 @@ function HourHeading({ g, rankAt, span }: { g: HourGroup; rankAt: Map<number, Th
         ))}
       </span>
       {h ? (
-        <Link href={`/event/?at=${encodeURIComponent(iso)}`} className="text-xs font-normal text-sky-700 hover:underline dark:text-sky-400">
+        <Link
+          href={`/event/?at=${encodeURIComponent(iso)}`}
+          className="text-xs font-normal text-brand-700 hover:underline dark:text-brand-400"
+        >
           事件表第 {h.rank} 名 →
         </Link>
       ) : (
@@ -193,7 +196,7 @@ function DayHeading({ g, rankAt }: { g: HourGroup; rankAt: Map<number, ThreadHou
         ))}
       </span>
       {best ? (
-        <Link href={`/event/?day=${day}`} className="text-xs font-normal text-sky-700 hover:underline dark:text-sky-400">
+        <Link href={`/event/?day=${day}`} className="text-xs font-normal text-brand-700 hover:underline dark:text-brand-400">
           當天最高第 {best} 名 · 上榜 {ranks.length} 小時 →
         </Link>
       ) : (

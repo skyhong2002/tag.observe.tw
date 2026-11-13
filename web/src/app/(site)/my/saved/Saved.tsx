@@ -4,13 +4,27 @@ import Link from 'next/link';
 import { useState } from 'react';
 import SourceLink from '@/components/SourceLink';
 import { type Save, saves, setSave, when } from '@/lib/reader';
-import { button, card, field, note } from '../ReaderGate';
+import { button, card, field, note, primary } from '../ReaderGate';
 
 // Saved articles and events, newest first, each with the reader's own note.
 export default function Saved() {
   const list = saves.useValue();
   if (list === undefined) return <p className={note}>載入中…</p>;
-  if (!list?.length) return <p className={note}>還沒有收藏。在文章或事件頁按「收藏」，之後就能在這裡找到並加上註記。</p>;
+  if (!list?.length)
+    return (
+      <div className={`${card} p-5 text-zinc-600 dark:text-zinc-400`}>
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">還沒有收藏</h2>
+        <p className="mt-1">在文章或事件頁按「收藏」，之後就能在這裡找到，並加上自己的註記。</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/event/" className={primary}>
+            看今天的事件
+          </Link>
+          <Link href="/article/" className={button}>
+            看最新文章
+          </Link>
+        </div>
+      </div>
+    );
   return (
     <ul className={`${card} divide-y divide-zinc-200 dark:divide-zinc-800`}>
       {list.map((s) => (

@@ -11,6 +11,7 @@ import { matchThread, sectionByTime, taipeiClock } from '@/lib/article-listing.m
 import { CAMPS, type Camp, type Facets, type Hit, RANGES, type SearchResult } from '@/lib/article-search';
 import { clipHeadline } from '@/lib/event-presentation.mts';
 import type { PeriodThread } from '@/lib/pages';
+import { leftoverEntities } from '@/lib/plain-spaces';
 import { articleHref } from '@/lib/reading.mts';
 
 // The article listing shared by 搜尋新聞 and 最新文章: range chips, the camp and
@@ -195,7 +196,7 @@ function ArticleRow({ a, q, thread }: { a: Hit; q: string; thread: PeriodThread 
         </h3>
         {a.description && (
           <p className="mt-0.5 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <Highlight text={a.description} q={q} />
+            <Highlight text={leftoverEntities(a.description)} q={q} />
           </p>
         )}
         {(thread || a.tags.length > 0) && (
@@ -237,12 +238,19 @@ export function ArticleList({
 }: {
   page: SearchResult;
   q?: string;
-  empty: string;
+  /** A sentence, or a whole block with next steps. */
+  empty: React.ReactNode;
   byHour?: boolean;
   threads?: PeriodThread[];
 }) {
   if (page.articles.length === 0)
-    return <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:text-zinc-400">{empty}</p>;
+    return typeof empty === 'string' ? (
+      <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+        {empty}
+      </p>
+    ) : (
+      empty
+    );
   return (
     <div className="space-y-4">
       {sectionByTime(page.articles, byHour).map((s) => (

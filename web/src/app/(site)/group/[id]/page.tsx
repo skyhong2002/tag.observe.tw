@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { filterChipClass } from '@/components/FilterChips';
 import { fetchTagGroupRanking } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 import GroupRankingTable from './GroupRankingTable';
@@ -70,11 +71,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
       </div>
       <div className="flex gap-1 text-sm">
         {DAYS.map((d) => (
-          <Link
-            key={d}
-            href={`/group/${group.id}/${d === 7 ? '' : `?days=${d}`}`}
-            className={`rounded-md px-3 py-1 ${d === days ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
-          >
+          <Link key={d} href={`/group/${group.id}/${d === 7 ? '' : `?days=${d}`}`} className={filterChipClass(d === days)}>
             {d} 天
           </Link>
         ))}

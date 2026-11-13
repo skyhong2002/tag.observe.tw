@@ -90,6 +90,7 @@ export default function TableScroller({
       head.style.transform = '';
     };
   }, []);
+  const more = scroll === 'start' || scroll === 'middle';
   return (
     <div
       className={`table-frame relative ${card ? 'table-card overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900' : ''} ${className}`}
@@ -107,8 +108,20 @@ export default function TableScroller({
       </section>
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-(--table-bg) transition-opacity ${scroll === 'start' || scroll === 'middle' ? 'opacity-100' : 'opacity-0'}`}
+        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-(--table-bg) transition-opacity ${more ? 'opacity-100' : 'opacity-0'}`}
       />
+      {/* While columns are hidden to the right, say so: a tap or click scrolls one screen on. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={() => ref.current?.scrollBy({ left: ref.current.clientWidth * 0.8, behavior: 'smooth' })}
+        className={`absolute top-1.5 right-1.5 z-30 inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800 shadow-sm transition-opacity hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200 dark:hover:bg-brand-900 ${more ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+      >
+        <span className="sm:hidden">左右滑動看更多欄</span>
+        <span className="hidden sm:inline">更多欄位</span>
+        <span aria-hidden="true">→</span>
+      </button>
       {footer}
     </div>
   );

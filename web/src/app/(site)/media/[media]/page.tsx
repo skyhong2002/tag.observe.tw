@@ -325,7 +325,7 @@ export default async function MediaPage({
                 label="刊登時間範圍"
                 items={[
                   { value: null, label: '全部' },
-                  { value: '24', label: '1 天' },
+                  { value: '24', label: '24 小時' },
                   { value: '72', label: '3 天' },
                   { value: '168', label: '7 天' },
                 ].map(({ value, label }) => ({ href: periodHref(value), label, current: hours === value }))}

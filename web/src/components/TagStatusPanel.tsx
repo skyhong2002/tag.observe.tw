@@ -7,7 +7,7 @@ import TagDiscoveryBadges from './TagDiscoveryBadges';
 // The ranking row for this tag, expanded: what the 關鍵字 table shows in one
 // line, plus co-occurring tags and long-term history. Rendered above the chart.
 // Colours follow the ranking table: 新 and 爆發力 above 分數 in the brand
-// orange, ▲ rose, ▼ sky. What the numbers mean is in the footer (TagMethod).
+// orange, ▲ rose, ▼ grey (blue means a camp here). What the numbers mean is in the footer (TagMethod).
 const rising = 'text-brand-700 dark:text-brand-400';
 export default function TagStatusPanel({ status }: { status: TagStatus }) {
   const r = status.ranking;
@@ -21,7 +21,7 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         : delta > 0
           ? { text: `▲${delta}`, tone: 'text-rose-600 dark:text-rose-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
           : delta < 0
-            ? { text: `▼${-delta}`, tone: 'text-sky-600 dark:text-sky-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
+            ? { text: `▼${-delta}`, tone: 'text-zinc-600 dark:text-zinc-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
             : { text: '＝', tone: 'text-zinc-500 dark:text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
   const tiles: Array<{ label: string; value: string; tone?: string; title?: string }> = r
     ? [

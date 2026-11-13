@@ -303,6 +303,8 @@ export default async function MediaStatsPage({
       </div>
       <div className="space-y-2">
         <FilterChips
+          scrollOnPhone
+          showLabel
           label="收錄狀態"
           items={[
             { href: link({ status: null }), label: '全部狀態', current: !status },
@@ -314,6 +316,8 @@ export default async function MediaStatsPage({
           ]}
         />
         <FilterChips
+          scrollOnPhone
+          showLabel
           label="媒體標籤"
           items={[
             { href: link({ tag: null }), label: '全部標籤', current: !tag },
@@ -321,6 +325,8 @@ export default async function MediaStatsPage({
           ]}
         />
         <FilterChips
+          scrollOnPhone
+          showLabel
           label="媒體傾向"
           items={[
             { href: link({ camp: null }), label: '全部傾向', current: !camp },
@@ -332,6 +338,8 @@ export default async function MediaStatsPage({
           ]}
         />
         <FilterChips
+          scrollOnPhone
+          showLabel
           label="報導範圍"
           items={[
             { href: link({ scope: null }), label: '全部範圍', current: !scope },

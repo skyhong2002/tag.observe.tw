@@ -24,11 +24,14 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
         <Link href={`/${kind}/`} className="hover:underline">
           {noun}
         </Link>
-        <span>/</span>
+        <span aria-hidden>/</span>
         <Link href={topicMediaHref(media, kind)} className="hover:underline">
           {data.mediaTitle}
         </Link>
-        <span>/ {noun}</span>
+        <span aria-hidden>/</span>
+        <span aria-current="page" className="max-w-[16rem] truncate text-zinc-900 dark:text-zinc-100">
+          {data.title}
+        </span>
       </nav>
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">{data.title}</h1>
@@ -54,7 +57,10 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
       {(data.stories.length > 0 || kind === 'topic') && (
         <div className="space-y-1 border-t border-zinc-200 pt-5 dark:border-zinc-800">
           <h2 className="font-semibold">{kind === 'feature' ? '專題相關新聞' : '議題新聞'}</h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">原站清單中已發現 {data.total} 篇，依報導日期由新到舊排列。</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            {data.mediaTitle}的{noun}頁列出的報導，本站已發現 {data.total} 篇，依報導日期由新到舊排列。哪些新聞放進這一頁由{data.mediaTitle}
+            決定，可能包含原站一併列出的其他新聞。
+          </p>
         </div>
       )}
       {data.stories.length ? (

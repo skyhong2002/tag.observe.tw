@@ -19,23 +19,29 @@ export default function FilterChips({
   label,
   items,
   showLabel = false,
+  scrollOnPhone = false,
   className = '',
 }: {
   label: string;
   items: FilterChip[];
   showLabel?: boolean;
+  /** Phones keep the row on one line that scrolls sideways (with a faded edge) instead of wrapping into many lines. */
+  scrollOnPhone?: boolean;
   className?: string;
 }) {
+  const phoneRow = scrollOnPhone
+    ? 'max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:pb-1 max-sm:[mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none]'
+    : '';
   return (
-    <nav aria-label={label} className={`${filterRowClass} ${className}`}>
-      {showLabel && <span className={filterLabelClass}>{label}</span>}
+    <nav aria-label={label} className={`${filterRowClass} ${phoneRow} ${className}`}>
+      {showLabel && <span className={`${filterLabelClass} shrink-0`}>{label}</span>}
       {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
           scroll={false}
           aria-current={item.current ? 'page' : undefined}
-          className={filterChipClass(Boolean(item.current), Boolean(item.note))}
+          className={`${filterChipClass(Boolean(item.current), Boolean(item.note))} shrink-0`}
         >
           {item.label}
           {item.note && <span className="ml-1.5 text-[11px]">{item.note}</span>}

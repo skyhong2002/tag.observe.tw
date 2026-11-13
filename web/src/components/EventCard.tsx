@@ -43,12 +43,18 @@ export function Movement({ e, className = '' }: { e: EventItem; className?: stri
     const n = Math.abs(e.prevRank - e.rank);
     parts.push({
       text: `${up ? '↑' : '↓'}${n}`,
-      tone: up ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400',
+      // Green and blue mean the camps on this site; a rise takes the brand colour.
+      tone: up ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-500 dark:text-zinc-400',
       label: `較前一小時${up ? '上升' : '下降'} ${n} 名`,
     });
   }
   if (e.hours && e.hours >= 2)
-    parts.push({ text: `上榜 ${e.hours} 小時`, tone: 'text-zinc-500 dark:text-zinc-400', label: `累計上榜 ${e.hours} 小時` });
+    parts.push({
+      // Long-running threads read better in days than in hundreds of hours.
+      text: e.hours >= 48 ? `累計上榜約 ${Math.round(e.hours / 24)} 天` : `上榜 ${e.hours} 小時`,
+      tone: 'text-zinc-500 dark:text-zinc-400',
+      label: `累計上榜 ${e.hours} 小時`,
+    });
   if (parts.length === 0) return null;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs tabular-nums ${className}`}>
@@ -62,21 +68,22 @@ export function Movement({ e, className = '' }: { e: EventItem; className?: stri
 }
 
 /** The thread's rank over the last 24 snapshot hours (or whatever `span` the
- *  trail covers), #1 at the top. Only worth drawing once there are two hours
- *  to connect. */
+ *  trail covers), #1 at the top. Only worth drawing once a few hours are on it:
+ *  two or three points at the left of a day-wide box read as a broken chart.
+ *  Drawn in the neutral ink, not sky blue, which means the blue camp here. */
 export function RankTrail({ e, className = 'h-6 w-20', span = '最近 24 小時' }: { e: EventItem; className?: string; span?: string }) {
   const trail = e.rankTrail ?? [];
   const seen = trail.filter((r): r is number => r !== null);
-  if (seen.length < 2) return null;
+  if (seen.length < 4) return null;
   const best = Math.min(...seen);
   return (
     <span
       role="img"
-      className="inline-flex items-center rounded bg-zinc-100 px-0.5 dark:bg-zinc-800"
+      className="inline-flex items-center border-b border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
       title={`${span}名次：${trail.map((r) => (r === null ? '－' : r)).join(' ')}；最高第 ${best} 名`}
       aria-label={`${span}名次走勢，最高第 ${best} 名`}
     >
-      <Sparkline values={trail} rank color="#0284c7" className={className} />
+      <Sparkline values={trail} rank color="currentColor" className={className} />
     </span>
   );
 }

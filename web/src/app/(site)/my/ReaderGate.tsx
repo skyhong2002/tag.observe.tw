@@ -19,14 +19,9 @@ export default function ReaderGate({ next, children }: { next: string; children:
   if (!session.enabled) return <p className={note}>登入功能尚未開放。</p>;
   if (!session.user)
     return (
-      <div className={note}>
-        <p>
-          用 Google 帳號
-          <a href={loginHref(next)} className="mx-1 text-brand-700 underline dark:text-brand-400">
-            登入
-          </a>
-          後，可以：
-        </p>
+      <div className={`${card} mt-4 max-w-2xl p-5 text-zinc-600 dark:text-zinc-400`}>
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">登入後才能使用這一頁</h2>
+        <p className="mt-1">免費，用 Google 帳號就能登入。登入後可以：</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>追蹤標籤、媒體、記者與事件，集中在「我的動態」，也能用私人 RSS 訂閱</li>
           <li>收藏文章與事件，加上自己的註記</li>
@@ -35,6 +30,9 @@ export default function ReaderGate({ next, children }: { next: string; children:
           <li>申請個人 API 金鑰，取得較高的請求額度</li>
           <li>回報標籤、署名或媒體歸屬的錯誤</li>
         </ul>
+        <a href={loginHref(next)} className={`${primary} mt-4`}>
+          用 Google 帳號登入
+        </a>
       </div>
     );
   return children;

@@ -84,6 +84,32 @@ function Folded({ threads }: { threads: ArchivedThread[] }) {
   );
 }
 
+const previousDay = (day: string) => new Date(Date.parse(`${day}T00:00:00Z`) - 24 * HOUR).toISOString().slice(0, 10);
+
+/** No story on the table: say why that happens and offer the nearest places that have some. */
+function EmptyDay({ day, prev, today }: { day: string; prev: string; today: boolean }) {
+  return (
+    <section className="rounded-xl border border-dashed border-zinc-300 px-5 py-8 text-center dark:border-zinc-700">
+      <h2 className="text-lg font-semibold">{today ? '今天還沒有整理出事件' : `${mmdd(day)} 沒有整理出事件`}</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
+        事件是每小時把同時升溫的標籤聚在一起算出來的。
+        {today ? '剛過午夜或新聞量少的時段，可能要等一兩個小時才會出現。' : '這一天可能沒有收錄資料，或事件還沒整理完成。'}
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        <Link href={dayHref(prev)} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800">
+          看前一天（{mmdd(prev)}）的事件
+        </Link>
+        <Link
+          href="/ranking/"
+          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          看關鍵字排行
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export default function EventDayView({ data, media, today }: { data: EventDay; media: MediaInfo; today: boolean }) {
   const stories = dayStories(data.threads);
   const events = stories.map((s, n) => dayStoryAsEvent(s, n + 1));
@@ -135,30 +161,38 @@ export default function EventDayView({ data, media, today }: { data: EventDay; m
           </a>
         </div>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          {data.day}（{weekday(data.day)}）{today ? '今天到目前為止' : '整天'}的 {stories.length} 件事
+          {data.day}（{weekday(data.day)}）
+          {stories.length === 0
+            ? today
+              ? '今天到目前為止還沒有事件'
+              : '這一天沒有事件'
+            : `${today ? '今天到目前為止' : '整天'}的 ${stories.length} 件事`}
           {daily && '，依全天熱度排序，同一件事的多條事件串併在一起'}
           <MethodLink className="ml-2 text-xs" />
         </p>
-        {data.baseline && (
+        {/* The camp baseline only describes the day's events; with none it would contradict the empty table. */}
+        {data.baseline && events.length > 0 && (
           <div className="mt-2">
             <BaselineBar b={data.baseline} label={`${today ? '過去 24 小時' : '當天'}整體`} />
           </div>
         )}
       </div>
-      <EventDayNav
-        day={data.day}
-        days={data.days}
-        today={todayIso}
-        hourCount={data.dayHours?.length ?? 0}
-        hours={
-          <div className="space-y-2">
-            <KeywordFlowLegend major={false}>
-              <span>每欄是一個小時，列出當時前 8 名事件的關鍵字；點時間看那一小時的事件表。</span>
-            </KeywordFlowLegend>
-            <KeywordFlow {...flow} unit="名次分" label={`${data.day} 各小時的事件關鍵字`} />
-          </div>
-        }
-      />
+      {data.days.length > 0 && (
+        <EventDayNav
+          day={data.day}
+          days={data.days}
+          today={todayIso}
+          hourCount={data.dayHours?.length ?? 0}
+          hours={
+            <div className="space-y-2">
+              <KeywordFlowLegend major={false}>
+                <span>每欄是一個小時，列出當時前 8 名事件的關鍵字；點時間看那一小時的事件表。</span>
+              </KeywordFlowLegend>
+              <KeywordFlow {...flow} unit="名次分" label={`${data.day} 各小時的事件關鍵字`} />
+            </div>
+          }
+        />
+      )}
       {today && (data.dayHours?.length ?? 0) < 6 && prev && (
         <p className="rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
           今天才過了 {data.dayHours?.length ?? 0} 個小時，事件還在累積。
@@ -168,7 +202,7 @@ export default function EventDayView({ data, media, today }: { data: EventDay; m
         </p>
       )}
       {events.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">{scope}沒有事件資料。</p>
+        <EmptyDay day={data.day} prev={prev ?? previousDay(data.day)} today={today} />
       ) : (
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:gap-8">
           <MediaSidebar label={`事件索引（${events.length} 件）`}>

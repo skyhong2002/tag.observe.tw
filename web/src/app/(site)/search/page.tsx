@@ -101,7 +101,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           )}
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            {facets && (
+            {facets && facets.total > 0 && (
               <aside className="lg:order-2">
                 <div className="lg:sticky lg:top-20">
                   <ArticleFacets facets={facets} subject={`「${q}」`} span={`過去 ${days} 天`} camp={camp} link={link} media={media} />
@@ -109,12 +109,57 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               </aside>
             )}
             <div className="min-w-0 space-y-4">
-              <ArticleList page={page} q={q} empty={`過去 ${days} 天沒有符合「${q}」的文章${camp ? '（目前只看單一傾向）' : ''}。`} />
+              <ArticleList page={page} q={q} empty={<NoResults q={q} days={days} camp={!!camp} link={link} />} />
               <ArticlePager page={page} cursor={cursor} link={link} />
             </div>
           </div>
         </>
       )}
     </div>
+  );
+}
+
+/** Nothing matched: what was searched, why that can happen, and where to go instead. */
+function NoResults({ q, days, camp, link }: { q: string; days: number; camp: boolean; link: ListingLink }) {
+  const secondary =
+    'rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800';
+  return (
+    <section className="rounded-xl border border-dashed border-zinc-300 px-5 py-8 dark:border-zinc-700">
+      <h2 className="text-lg font-semibold">
+        {days === 31 ? '近一個月' : days === 1 ? '過去 24 小時' : `過去 ${days} 天`}沒有符合「{q}」的報導{camp && '（目前只看單一傾向）'}
+      </h2>
+      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
+        <li>搜尋比對標題、摘要與標籤，不搜內文；試試較短或較常見的說法，例如人名只打姓名。</li>
+        <li>確認有沒有錯字，或改用中文全名、英文縮寫的另一種寫法。</li>
+        {days < 31 && <li>放寬期間，可能找到較早的報導。</li>}
+      </ul>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {days < 31 ? (
+          <Link
+            href={link({ days: null, cursor: null })}
+            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+          >
+            改搜近一個月
+          </Link>
+        ) : camp ? (
+          <Link
+            href={link({ camp: null, cursor: null })}
+            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+          >
+            不限傾向再搜一次
+          </Link>
+        ) : (
+          <Link href="/ranking/" className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800">
+            看現在的熱門關鍵字
+          </Link>
+        )}
+        <Link href="/article/query/" className={secondary}>
+          進階查詢
+        </Link>
+        <Link href="/event/" className={secondary}>
+          看今天的事件
+        </Link>
+      </div>
+    </section>
   );
 }

@@ -120,11 +120,11 @@ async function HourView({ sp }: { sp: Search }) {
               <span className="rounded-md px-3 py-1 text-zinc-500 dark:text-zinc-400">後一小時 →</span>
             )}
             {archived && (
-              <Link href={hourHref()} className="rounded-md bg-zinc-900 px-3 py-1 text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <Link href={hourHref()} className="rounded-md bg-brand-700 px-3 py-1 text-white hover:bg-brand-800">
                 回到最新
               </Link>
             )}
-            <Link href={dayHref(taipeiDay(data.hour))} className="ml-auto text-sky-700 hover:underline dark:text-sky-400">
+            <Link href={dayHref(taipeiDay(data.hour))} className="ml-auto text-brand-700 hover:underline dark:text-brand-400">
               看 {taipeiDay(data.hour)} 整天的事件 →
             </Link>
           </div>

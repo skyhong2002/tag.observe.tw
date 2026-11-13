@@ -52,10 +52,7 @@ export default function TagSummaryCard({
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">過去 3 天每小時篇數</p>
         </div>
       )}
-      <Link
-        href={href}
-        className="ml-auto rounded-lg bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-      >
+      <Link href={href} className="ml-auto rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-800">
         看 #{tag} 的趨勢 →
       </Link>
     </section>
