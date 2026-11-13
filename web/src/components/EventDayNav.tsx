@@ -77,7 +77,10 @@ export default function EventDayNav({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-center">
           <Arrow day={prev} dir="prev" />
-          <ol ref={strip} className="relative flex min-w-0 gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
+          <ol
+            ref={strip}
+            className="relative flex min-w-0 gap-1 overflow-x-auto px-1 [scrollbar-width:none] max-sm:[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]"
+          >
             {week.map((d) => {
               const here = d === day;
               return (

@@ -51,6 +51,8 @@ type Col = 'tag' | 'change' | 'burst' | 'growth' | 'score' | 'count' | 'trend' |
 const COLS: Col[] = ['tag', 'burst', 'growth', 'change', 'score', 'count', 'trend', 'first', 'peak', 'media'];
 const RELATED_SHOWN = 5;
 const CLOUD_WORDS = 500;
+/** Category chips that lead the row, last first (indexOf -1 keeps the API's order for the rest). */
+const FRONT = ['green', 'blue', 'all'];
 // The cloud draws the top of that list: enough to show the shape of the day; more only shrank the type below reading size.
 const CLOUD_SHOWN = 120;
 
@@ -204,12 +206,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <FilterChips
         scrollOnPhone
         label="媒體分類"
-        items={categoryRankings.map((c) => ({
-          href: link({ category: c.key, limit: undefined }),
-          label: c.label,
-          current: c.key === category,
-          note: rankingCategoryNote(c.ranking) ?? undefined,
-        }))}
+        // The two camp lists right after 所有媒體: on a phone the row scrolls, and they are what most readers compare.
+        items={[...categoryRankings]
+          .sort((a, b) => FRONT.indexOf(b.key) - FRONT.indexOf(a.key))
+          .map((c) => ({
+            href: link({ category: c.key, limit: undefined }),
+            label: c.label,
+            current: c.key === category,
+            note: rankingCategoryNote(c.ranking) ?? undefined,
+          }))}
       />
       {cloud && (
         <RankingWordCloud

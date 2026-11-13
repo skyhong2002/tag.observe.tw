@@ -30,11 +30,11 @@ export default function FilterChips({
   className?: string;
 }) {
   const phoneRow = scrollOnPhone
-    ? 'max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:pb-1 max-sm:[mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none]'
+    ? 'max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:pb-1 max-sm:[mask-image:linear-gradient(to_right,black_calc(100%-3.5rem),transparent_calc(100%-0.5rem))] [scrollbar-width:none]'
     : '';
   return (
     <nav aria-label={label} className={`${filterRowClass} ${phoneRow} ${className}`}>
-      {showLabel && <span className={`${filterLabelClass} shrink-0`}>{label}</span>}
+      {showLabel && <span className={`${filterLabelClass} shrink-0 sm:min-w-14`}>{label}</span>}
       {items.map((item) => (
         <Link
           key={item.href}

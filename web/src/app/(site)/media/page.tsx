@@ -225,6 +225,9 @@ export default async function MediaStatsPage({
   for (const { key, label } of data.media.flatMap((m) => m.labels)) carried.set(key, { label, n: (carried.get(key)?.n ?? 0) + 1 });
   const tags = [...carried].sort(([a, x], [b, y]) => y.n - x.n || collator.compare(a, b));
   const tag = sp.tag && carried.has(sp.tag) ? sp.tag : null;
+  // Labels on five or more outlets show as chips; the long tail folds under 其他 N 個標籤.
+  const commonTags = tags.filter(([, { n }]) => n >= 5);
+  const rareTags = tags.filter(([, { n }]) => n < 5);
   let rows = data.media
     .map((m) => ({ ...m, readers: readers[m.media] }))
     .filter(
@@ -301,29 +304,8 @@ export default async function MediaStatsPage({
         />
         <Tile label="有標籤的文章" value={pct(t.taggedShare24h)} note="24 小時內" />
       </div>
+      {/* Camp and scope first: what most readers narrow by. Labels that only a few outlets carry fold away. */}
       <div className="space-y-2">
-        <FilterChips
-          scrollOnPhone
-          showLabel
-          label="收錄狀態"
-          items={[
-            { href: link({ status: null }), label: '全部狀態', current: !status },
-            ...(Object.keys(STATUS) as Status[]).map((s) => ({
-              href: link({ status: s }),
-              label: `${STATUS[s].label} ${t.statusCounts[s] ?? 0}`,
-              current: status === s,
-            })),
-          ]}
-        />
-        <FilterChips
-          scrollOnPhone
-          showLabel
-          label="媒體標籤"
-          items={[
-            { href: link({ tag: null }), label: '全部標籤', current: !tag },
-            ...tags.map(([key, { label, n }]) => ({ href: link({ tag: key }), label: `${label} ${n}`, current: tag === key })),
-          ]}
-        />
         <FilterChips
           scrollOnPhone
           showLabel
@@ -350,6 +332,44 @@ export default async function MediaStatsPage({
             })),
           ]}
         />
+        <FilterChips
+          scrollOnPhone
+          showLabel
+          label="收錄狀態"
+          items={[
+            { href: link({ status: null }), label: '全部狀態', current: !status },
+            ...(Object.keys(STATUS) as Status[]).map((s) => ({
+              href: link({ status: s }),
+              label: `${STATUS[s].label} ${t.statusCounts[s] ?? 0}`,
+              current: status === s,
+            })),
+          ]}
+        />
+        <FilterChips
+          scrollOnPhone
+          showLabel
+          label="媒體標籤"
+          items={[
+            { href: link({ tag: null }), label: '全部標籤', current: !tag },
+            ...commonTags.map(([key, { label, n }]) => ({ href: link({ tag: key }), label: `${label} ${n}`, current: tag === key })),
+          ]}
+        />
+        {rareTags.length > 0 && (
+          // Labels few outlets carry stay one click away instead of filling the screen above the table.
+          <details open={rareTags.some(([key]) => key === tag)} className="group text-sm">
+            <summary className="ml-[4.125rem] inline-flex cursor-pointer list-none items-center gap-1 rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-100 max-sm:ml-0 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 [&::-webkit-details-marker]:hidden">
+              其他 {rareTags.length} 個標籤
+              <span aria-hidden="true" className="transition-transform group-open:rotate-180">
+                ▾
+              </span>
+            </summary>
+            <FilterChips
+              className="mt-2 sm:ml-[4.125rem]"
+              label="其他媒體標籤"
+              items={rareTags.map(([key, { label, n }]) => ({ href: link({ tag: key }), label: `${label} ${n}`, current: tag === key }))}
+            />
+          </details>
+        )}
       </div>
       <TableScroller card label="媒體與文章數表格，可左右捲動">
         <table className="w-full min-w-[60rem] text-sm">
