@@ -69,7 +69,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
     <section aria-label="網站流量來源" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
       <h2 className="mb-3 flex items-baseline justify-between gap-2 text-sm font-semibold">
         網站流量來源
-        <span className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">Similarweb · {shortMonth(profile.month)}</span>
+        <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">Similarweb · {shortMonth(profile.month)}</span>
       </h2>
       {tw && (
         <p className="mb-3 leading-5">
@@ -79,7 +79,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
               {tw.override && (
                 <span
                   title={overrideTitle(tw)}
-                  className="ml-1 rounded bg-amber-100 px-1 text-[11px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                  className="ml-1 rounded bg-amber-100 px-1 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
                 >
                   人工修正
                 </span>
@@ -97,13 +97,13 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
       )}
       {profile.countries.length > 0 && (
         <>
-          <h3 className="mb-1.5 text-zinc-500 dark:text-zinc-400">來源國家（前五）</h3>
+          <h3 className="mb-1.5 text-zinc-600 dark:text-zinc-400">來源國家（前五）</h3>
           <Bars rows={profile.countries.map((c) => ({ label: countryName(c.code), share: c.share, strong: c.code === 'TW' }))} />
         </>
       )}
       {channels.length > 0 && (
         <>
-          <h3 className="mt-3 mb-1.5 text-zinc-500 dark:text-zinc-400">導流來源</h3>
+          <h3 className="mt-3 mb-1.5 text-zinc-600 dark:text-zinc-400">導流來源</h3>
           <Bars rows={channels.map(([channel, share]) => ({ label: channelLabels[channel], share }))} />
         </>
       )}
@@ -111,7 +111,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
         <dl className="mt-3 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-y-1.5 border-t border-zinc-200 pt-3 leading-5 dark:border-zinc-800">
           {[...ranks, ...engagement].map(([term, value, hint]) => (
             <div key={term} className="contents">
-              <dt className="text-zinc-500 dark:text-zinc-400">{term}</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">{term}</dt>
               <dd className="tabular-nums" title={hint}>
                 {value}
               </dd>
@@ -119,7 +119,7 @@ export default function MediaTrafficProfile({ outlet }: { outlet: ComparisonOutl
           ))}
         </dl>
       )}
-      <p className="mt-3 text-[11px] leading-4 text-zinc-500 dark:text-zinc-400">整個網域的估算值，比例以造訪次數計，非精確 page views。</p>
+      <p className="mt-3 text-xs leading-4 text-zinc-600 dark:text-zinc-400">整個網域的估算值，比例以造訪次數計，非精確 page views。</p>
     </section>
   );
 }

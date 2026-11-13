@@ -99,7 +99,7 @@ export default function ArticleView({
         <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">
           <Phrases text={headline.title} />
         </h1>
-        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-600 dark:text-zinc-400">
           <AuthorCredits credits={article.authors} media={article.media} attributions={content.attributions} />
           <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>
           {content.body && <span className="text-xs">全文約 {content.chars.toLocaleString('zh-TW')} 字</span>}
@@ -113,7 +113,7 @@ export default function ArticleView({
               const ofKind = collections.filter((c) => c.kind === kind);
               return ofKind.length ? (
                 <div key={kind} className="flex gap-3">
-                  <span className="shrink-0 text-zinc-500 dark:text-zinc-400">{kindNoun(kind)}</span>
+                  <span className="shrink-0 text-zinc-600 dark:text-zinc-400">{kindNoun(kind)}</span>
                   <ul className="flex flex-wrap gap-x-4 gap-y-2">
                     {ofKind.map((collection) => (
                       <li key={collection.id}>
@@ -137,7 +137,7 @@ export default function ArticleView({
         <section aria-label="文章摘要" className="mb-7 border-l-2 border-brand-200 pl-4 dark:border-brand-700">
           <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h2 className="text-sm font-medium">文章摘要</h2>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs text-zinc-600 dark:text-zinc-400">
               {article.mediaTitle} · {summarySourceLabels[article.summarySource ?? ''] ?? '媒體提供的摘要'}
             </span>
           </div>
@@ -180,7 +180,7 @@ export default function ArticleView({
                     >
                       {attributionRole(source)} {source.name}
                     </Link>
-                    <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{source.country}</span>
+                    <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-400">{source.country}</span>
                   </p>
                   <p className="mt-1 break-words leading-7 text-zinc-600 dark:text-zinc-400">{source.evidence}</p>
                 </li>

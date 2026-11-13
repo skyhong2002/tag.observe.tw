@@ -6,7 +6,7 @@ import MethodLink from '@/components/MethodLink';
 import SectionTabs from '@/components/SectionTabs';
 import TagSummaryCard from '@/components/TagSummaryCard';
 import { fetchMedia, fetchTagSeries, fetchTagStatus, type MediaInfo } from '@/lib/api';
-import { countArticles, fetchArticleListing, isCamp, rangeDays, validCursor } from '@/lib/article-search';
+import { countArticles, fetchArticleListing, isCamp, periodLabel, rangeDays, validCursor } from '@/lib/article-search';
 import { clipHeadline, selectEventLead } from '@/lib/event-presentation.mts';
 import { fetchEvents } from '@/lib/pages';
 
@@ -75,7 +75,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           <RangeChips days={days} defaultDays={31} link={link} />
 
           {tagged ? (
-            <TagSummaryCard tag={q} tagged={tagged} span={`過去 ${days} 天`} status={status} points={series?.points ?? null} />
+            <TagSummaryCard tag={q} tagged={tagged} span={periodLabel(days)} status={status} points={series?.points ?? null} />
           ) : null}
 
           {relatedEvents.length > 0 && (
@@ -90,7 +90,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         href={`/eve/${e.relatedEventPk}/`}
                         className="block h-full rounded-xl border border-zinc-300 bg-white p-3 text-sm hover:border-brand-700 dark:border-zinc-800 dark:bg-zinc-900"
                       >
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">{e.major.slice(0, 3).join(' · ')}</span>
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">{e.major.slice(0, 3).join(' · ')}</span>
                         <span className="mt-1 line-clamp-2 block font-medium">{lead ? clipHeadline(lead.title) : e.major.join('、')}</span>
                       </Link>
                     </li>
@@ -104,7 +104,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             {facets && facets.total > 0 && (
               <aside className="lg:order-2">
                 <div className="lg:sticky lg:top-20">
-                  <ArticleFacets facets={facets} subject={`「${q}」`} span={`過去 ${days} 天`} camp={camp} link={link} media={media} />
+                  <ArticleFacets facets={facets} subject={`「${q}」`} span={periodLabel(days)} camp={camp} link={link} media={media} />
                 </div>
               </aside>
             )}

@@ -41,7 +41,7 @@ export default async function SimilarityAboutPage({
               {periodLabel(data)} · 更新於 {taipei(data.generatedAt)}（台北） · <MethodLink />
             </p>
           ) : (
-            <p role="status" className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <p role="status" className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
               暫時無法取得本期統計，請稍後
               <Link href={`/similarity/about/?${params}`} className={linkStyle}>
                 重新載入
@@ -132,7 +132,7 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
               const value = share(row);
               const low = value >= 0 && value < 0.8;
               return (
-                <tr key={row.media} className={`${table.row} ${row.excludedFromStatistics ? 'text-zinc-500 dark:text-zinc-400' : ''}`}>
+                <tr key={row.media} className={`${table.row} ${row.excludedFromStatistics ? 'text-zinc-600 dark:text-zinc-400' : ''}`}>
                   <td className={table.lead}>
                     <MediaHoverLink
                       media={row.media}
@@ -146,7 +146,7 @@ function CoverageTable({ rows, params, sort: rawSort, dir: rawDir }: { rows: Cov
                       </span>
                       {row.excludedFromStatistics && (
                         <span
-                          className={`${table.leadExtra} shrink-0 whitespace-nowrap rounded bg-zinc-100 px-1.5 py-px text-[11px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700`}
+                          className={`${table.leadExtra} shrink-0 whitespace-nowrap rounded bg-zinc-100 px-1.5 py-px text-xs font-medium text-zinc-600 ring-1 ring-inset ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700`}
                         >
                           排除統計
                         </span>

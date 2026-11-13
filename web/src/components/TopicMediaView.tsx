@@ -91,12 +91,12 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
         <p className="mt-1 text-xs">
           <TopicCheckStatus check={data.check} />
           {count != null && (
-            <span className="text-zinc-500 dark:text-zinc-400">
+            <span className="text-zinc-600 dark:text-zinc-400">
               {' '}
               · 累計追蹤 {count} 個{noun}
             </span>
           )}
-          <span className="text-zinc-500 dark:text-zinc-400"> · {covered} 個對應到站內標籤</span>
+          <span className="text-zinc-600 dark:text-zinc-400"> · {covered} 個對應到站內標籤</span>
         </p>
       </div>
       {sections.map((s) => (
@@ -106,7 +106,7 @@ export default async function TopicMediaView({ media, kind }: { media: string; k
             className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
           >
             {s.label}
-            <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{s.items.length} 個</span>
+            <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">{s.items.length} 個</span>
           </h2>
           <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">{s.items.map(card)}</ul>
         </section>

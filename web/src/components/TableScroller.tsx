@@ -95,14 +95,23 @@ export default function TableScroller({
     <div
       className={`table-frame relative ${card ? 'table-card overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900' : ''} ${className}`}
     >
-      {/* Phones: a row of its own above the header, so the hint never covers a column name. It
-          renders until the table is measured: on a phone almost every wide table overflows. */}
+      {/* A row of its own above the header says when columns are hidden to the right, so the hint
+          never covers a column name. Phones show it until the table is measured (almost every wide
+          table overflows there); larger screens only once it is known to. The button scrolls on. */}
       <div
         aria-hidden="true"
-        className={`${scroll === undefined || more ? 'flex' : 'hidden'} h-7 items-center justify-end gap-1 border-b border-zinc-200 bg-(--table-head-bg) px-3 text-xs text-brand-800 sm:hidden dark:border-zinc-800 dark:text-brand-300`}
+        className={`${more ? 'flex' : scroll === undefined ? 'flex sm:hidden' : 'hidden'} h-8 items-center justify-end gap-2 border-b border-zinc-200 bg-(--table-head-bg) px-2 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400`}
       >
-        {scroll === 'middle' ? '還有更多欄，繼續往左滑' : '左右滑動看更多欄'}
-        <span aria-hidden="true">→</span>
+        <span className="sm:hidden">{scroll === 'middle' ? '還有更多欄，繼續滑動' : '這張表可以左右滑動'}</span>
+        <span className="hidden sm:inline">表格比畫面寬，右邊還有欄位</span>
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => ref.current?.scrollBy({ left: ref.current.clientWidth * 0.8, behavior: 'smooth' })}
+          className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 font-medium text-brand-800 hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200 dark:hover:bg-brand-900"
+        >
+          看更多欄 <span aria-hidden="true">→</span>
+        </button>
       </div>
       {/* Keyboard users can focus the region to scroll it sideways. */}
       <section
@@ -119,17 +128,6 @@ export default function TableScroller({
         aria-hidden="true"
         className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-(--table-bg) transition-opacity ${more ? 'opacity-100' : 'opacity-0'}`}
       />
-      {/* While columns are hidden to the right, say so: a tap or click scrolls one screen on. */}
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-hidden="true"
-        onClick={() => ref.current?.scrollBy({ left: ref.current.clientWidth * 0.8, behavior: 'smooth' })}
-        className={`absolute top-1.5 right-1.5 z-30 hidden items-center gap-1 rounded-full sm:inline-flex border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800 shadow-sm transition-opacity hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200 dark:hover:bg-brand-900 ${more ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-      >
-        更多欄位
-        <span aria-hidden="true">→</span>
-      </button>
       {footer}
     </div>
   );

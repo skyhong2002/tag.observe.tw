@@ -94,7 +94,7 @@ export default function EventDayNav({
                         : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
                     }`}
                   >
-                    <span className={`text-[11px] ${here ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                    <span className={`text-xs ${here ? 'text-white' : 'text-zinc-600 dark:text-zinc-400'}`}>
                       {d === today ? '今天' : `週${weekday(d)}`}
                     </span>
                     <span className="font-medium">{mmdd(d)}</span>

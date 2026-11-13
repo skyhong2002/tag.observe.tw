@@ -26,6 +26,8 @@ export const RANGES = [
   { days: 31, label: '近一個月' },
 ];
 export const PAGE = 30;
+/** A period as the page words it, matching the range chips: 過去 24 小時, 過去 3 天, 近一個月. */
+export const periodLabel = (days: number) => (days === 1 ? '過去 24 小時' : days === 31 ? '近一個月' : `過去 ${days} 天`);
 
 export interface Hit {
   id: number;

@@ -69,7 +69,7 @@ function RelationsLoading() {
   return (
     <section aria-label="與其他媒體的關係" aria-busy="true" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
       <h2 className="text-sm font-semibold">媒體關係</h2>
-      <p className="py-6 leading-6 text-zinc-500 dark:text-zinc-400">比對結果載入中…</p>
+      <p className="py-6 leading-6 text-zinc-600 dark:text-zinc-400">比對結果載入中…</p>
     </section>
   );
 }
@@ -135,7 +135,7 @@ export default async function MediaPage({
   return (
     <div className="pb-4">
       <StructuredData data={pageSchema(canonicalQuery(base, { cursor: cursor ?? undefined }), data.title, [['/media/', '媒體']])} />
-      <nav aria-label="麵包屑" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+      <nav aria-label="麵包屑" className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
         <Link href="/media/" className="hover:text-brand-700 dark:hover:text-brand-400">
           媒體
         </Link>
@@ -151,7 +151,7 @@ export default async function MediaPage({
             <h1 className="text-2xl font-semibold tracking-tight">{data.title}</h1>
             {!discovery && <FollowButton kind="media" target={data.media} className="ml-1" />}
           </div>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
             <span>{discovery ? '文章發現來源' : data.publisher?.country}</span>
             {!discovery && profile && (
               <>
@@ -172,10 +172,10 @@ export default async function MediaPage({
               ]
           ).map((item) => (
             <div key={item.label}>
-              <dt className="text-[11px] text-zinc-500 dark:text-zinc-400">{item.label}</dt>
+              <dt className="text-xs text-zinc-600 dark:text-zinc-400">{item.label}</dt>
               <dd className="mt-0.5 text-xl font-semibold tabular-nums">
                 {item.value?.toLocaleString('zh-TW') ?? '—'}
-                <span className="ml-1 text-[11px] font-normal text-zinc-500 dark:text-zinc-400">篇</span>
+                <span className="ml-1 text-xs font-normal text-zinc-600 dark:text-zinc-400">篇</span>
               </dd>
             </div>
           ))}
@@ -204,17 +204,17 @@ export default async function MediaPage({
               {discovery && <MethodLink className="text-xs font-normal" />}
             </h2>
             <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-y-2.5 leading-5">
-              <dt className="text-zinc-500 dark:text-zinc-400">{discovery ? '發現來源' : '刊登媒體'}</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">{discovery ? '發現來源' : '刊登媒體'}</dt>
               <dd>{discovery ? data.title : data.publisher?.name}</dd>
               {data.publisher && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">所屬地區</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">所屬地區</dt>
                   <dd>{data.publisher.country}</dd>
                 </>
               )}
               {profile?.scope && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">收錄範圍</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">收錄範圍</dt>
                   <dd>
                     {profile.scope.scopeLabel} · {profile.scope.languageLabel}
                   </dd>
@@ -222,13 +222,13 @@ export default async function MediaPage({
               )}
               {profile?.scope?.coverage && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">收錄說明</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">收錄說明</dt>
                   <dd>{profile.scope.coverage}</dd>
                 </>
               )}
               {reference && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">來源網站</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">來源網站</dt>
                   <dd>
                     <SourceLink
                       url={
@@ -244,11 +244,11 @@ export default async function MediaPage({
               )}
               {visits && outlet && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">月造訪量</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">月造訪量</dt>
                   <dd className="flex items-center justify-between gap-2" title="Similarweb 全網域估算月造訪次數，非 page views">
                     <span className="tabular-nums">
                       {trafficNumber(visits.traffic)}
-                      <span className="ml-1 text-zinc-500 dark:text-zinc-400">{shortMonth(visits.month)}</span>
+                      <span className="ml-1 text-zinc-600 dark:text-zinc-400">{shortMonth(visits.month)}</span>
                     </span>
                     <TrafficSparkline traffic={outlet.traffic} months={trafficMonths} label="Similarweb 估算月造訪量" ends />
                   </dd>
@@ -256,7 +256,7 @@ export default async function MediaPage({
               )}
               {outlet?.sharedWith && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">網站流量</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">網站流量</dt>
                   <dd>
                     與{outlet.sharedWith}共用 {outlet.domain}，整個網域的數字列在{outlet.sharedWith}
                   </dd>
@@ -264,15 +264,15 @@ export default async function MediaPage({
               )}
               {outlet?.radar && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">Radar 全球</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">Radar 全球</dt>
                   <dd title={`Cloudflare Radar 全球熱門網域，資料期末 ${outlet.radar.dateEnd.slice(0, 10)}`}>{radarText(outlet.radar)}</dd>
                 </>
               )}
               {!discovery && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">開始收錄</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">開始收錄</dt>
                   <dd>{since ?? '暫無資料'}</dd>
-                  <dt className="text-zinc-500 dark:text-zinc-400">最新報導</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">最新報導</dt>
                   <dd>
                     {profile?.lastArticle
                       ? new Date(profile.lastArticle).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' })
@@ -280,7 +280,7 @@ export default async function MediaPage({
                   </dd>
                 </>
               )}
-              <dt className="text-zinc-500 dark:text-zinc-400">最近更新</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">最近更新</dt>
               <dd>
                 <Link href={`/crawlers/?${new URLSearchParams({ q: data.media })}`} className="hover:underline">
                   {profile?.lastCrawlOk ? taipei(profile.lastCrawlOk) : '暫無資料'}
@@ -288,7 +288,7 @@ export default async function MediaPage({
               </dd>
               {!discovery && outlet?.domain && (
                 <>
-                  <dt className="text-zinc-500 dark:text-zinc-400">流量資料</dt>
+                  <dt className="text-zinc-600 dark:text-zinc-400">流量資料</dt>
                   <dd>
                     <Link href="/crawlers/traffic/" className="hover:underline">
                       {outlet.trafficFetchedAt
@@ -400,7 +400,7 @@ export default async function MediaPage({
                   ← 回到最新收錄
                 </Link>
               ) : (
-                <span className="text-zinc-500 dark:text-zinc-400">每頁最多 60 篇</span>
+                <span className="text-zinc-600 dark:text-zinc-400">每頁最多 60 篇</span>
               )}
               {data.nextCursor && (
                 <Link

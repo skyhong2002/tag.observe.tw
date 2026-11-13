@@ -40,7 +40,7 @@ export default function ArticleWriting({ data }: { data: Data | null }) {
           </li>
         )}
       </ul>
-      <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
         只描述文字本身，不評斷報導好壞。 <MethodLink />
       </p>
     </section>

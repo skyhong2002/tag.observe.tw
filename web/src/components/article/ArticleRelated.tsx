@@ -17,7 +17,7 @@ function RelatedList({ id, title, items }: { id: string; title: string; items: R
       <ul className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">
         {items.map((item) => (
           <li key={item.id} className="py-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
               <MediaHoverLink media={item.media} className={`${linkStyle} font-medium`}>
                 {item.mediaTitle}
               </MediaHoverLink>
@@ -28,7 +28,7 @@ function RelatedList({ id, title, items }: { id: string; title: string; items: R
                 {readingTitle(item.title).title}
               </Link>
             </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">共同關鍵字：{item.sharedTags.map((tag) => `#${tag}`).join(' ')}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400">共同關鍵字：{item.sharedTags.map((tag) => `#${tag}`).join(' ')}</p>
           </li>
         ))}
       </ul>
@@ -71,7 +71,7 @@ export default function ArticleRelated({
                 <Link href={`/eve/${event.id}/`} className={`${linkStyle} leading-7`}>
                   {readingTitle(event.title).title}
                 </Link>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
                   {taipei(event.firstTime)} – {taipei(event.lastTime)} · 共同關鍵字 {event.sharedTags.map((tag) => `#${tag}`).join(' ')}
                 </p>
               </li>

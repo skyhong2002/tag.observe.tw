@@ -13,7 +13,7 @@ export default function CompactArticleList({
   const [summaries, setSummaries] = useState(false);
   return (
     <div data-summaries={summaries} className="group/list">
-      <div className="flex items-center justify-between border-b border-zinc-200 py-1.5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+      <div className="flex items-center justify-between border-b border-zinc-200 py-1.5 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
         <span>
           本頁 {count} 篇 · {order}
         </span>

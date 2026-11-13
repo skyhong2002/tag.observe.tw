@@ -3,6 +3,7 @@ import ArticleThumbnail from '@/components/ArticleThumbnail';
 import AuthorCredits from '@/components/AuthorCredits';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import Phrases from '@/components/Phrases';
 import SourceLink from '@/components/SourceLink';
 import { taipei } from '@/lib/api';
 import type { DiscoverySource } from '@/lib/article-content';
@@ -39,7 +40,7 @@ export default function ArticleListItem({
   const title = (
     <>
       {headline.section && <span className="mr-1.5 text-xs font-normal text-brand-700 dark:text-brand-400">{headline.section}</span>}
-      {clipHeadline(headline.title)}
+      <Phrases text={clipHeadline(headline.title)} />
     </>
   );
   return (
@@ -56,11 +57,11 @@ export default function ArticleListItem({
             )}
           </h3>
           {article.description && (
-            <p className="mt-1 hidden text-xs leading-5 text-zinc-500 group-data-[summaries=true]/list:line-clamp-2 dark:text-zinc-400">
+            <p className="mt-1 hidden text-xs leading-5 text-zinc-600 group-data-[summaries=true]/list:line-clamp-2 dark:text-zinc-400">
               {leftoverEntities(article.description)}
             </p>
           )}
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
             {showMedia && article.media && (
               <MediaHoverLink media={article.media} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
                 {article.mediaTitle}
@@ -72,16 +73,16 @@ export default function ArticleListItem({
               <span>報導日期不明</span>
             )}
             <AuthorCredits credits={article.authors} media={article.media} className="max-w-40 truncate" />
-            <SourceLink url={article.url} showUrl className="!min-h-5 !text-[11px]" />
+            <SourceLink url={article.url} showUrl className="!min-h-5 !text-xs" />
           </div>
           {article.tags.length > 0 && (
-            <ul aria-label="關鍵字" className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-5">
+            <ul aria-label="關鍵字" className="mt-0.5 flex flex-wrap gap-x-2 text-xs leading-5">
               {article.tags.slice(0, 6).map((tag) => (
                 <li key={tag}>
                   <Link
                     prefetch={false}
                     href={`/tag/${encodeURIComponent(tag)}/`}
-                    className="text-zinc-500 hover:text-brand-700 hover:underline dark:text-zinc-400 dark:hover:text-brand-400"
+                    className="text-zinc-600 hover:text-brand-700 hover:underline dark:text-zinc-400 dark:hover:text-brand-400"
                   >
                     #{tag}
                   </Link>

@@ -96,10 +96,10 @@ export function ArticleFacets({
           {facets.total.toLocaleString()} 篇
         </strong>
         來自 {facets.media.length} 家媒體
-        <span className="block text-xs text-zinc-500 dark:text-zinc-400">本站收錄的全部媒體，首頁新聞量只算「新聞媒體」類別</span>
+        <span className="block text-xs text-zinc-600 dark:text-zinc-400">本站收錄的全部媒體，首頁新聞量只算「新聞媒體」類別</span>
       </p>
       <div className="space-y-1.5">
-        <div className="flex items-baseline justify-between text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="flex items-baseline justify-between text-xs text-zinc-600 dark:text-zinc-400">
           <span>藍綠分布（點選只看一邊）</span>
           {camp && (
             <Link href={link({ camp: null, cursor: null })} scroll={false} className="text-brand-700 hover:underline dark:text-brand-400">
@@ -107,7 +107,7 @@ export function ArticleFacets({
             </Link>
           )}
         </div>
-        <div className="flex h-7 w-full gap-px overflow-hidden rounded text-[11px] font-medium">
+        <div className="flex h-7 w-full gap-px overflow-hidden rounded text-xs font-medium">
           {CAMPS.filter((c) => facets.camps[c.key] > 0).map((c) => {
             const n = facets.camps[c.key];
             const pct = Math.round((n / facets.total) * 100);
@@ -141,7 +141,7 @@ export function ArticleFacets({
         </ul>
       </div>
       <div className="space-y-1.5">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">發稿最多的媒體</p>
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">發稿最多的媒體</p>
         <ol className="space-y-1 text-xs">
           {facets.media.slice(0, OUTLETS).map((m, i) => (
             // Above the list on phones, so only the first five there.
@@ -155,12 +155,12 @@ export function ArticleFacets({
               <Link href={`/media/${encodeURIComponent(m.media)}/`} className="relative min-w-0 flex-1 truncate hover:underline">
                 {media[m.media]?.title ?? m.media}
               </Link>
-              <span className="relative tabular-nums text-zinc-500 dark:text-zinc-400">{m.count.toLocaleString()}</span>
+              <span className="relative tabular-nums text-zinc-600 dark:text-zinc-400">{m.count.toLocaleString()}</span>
             </li>
           ))}
         </ol>
         {facets.media.length > OUTLETS && (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">另有 {facets.media.length - OUTLETS} 家</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">另有 {facets.media.length - OUTLETS} 家</p>
         )}
       </div>
     </section>
@@ -178,7 +178,7 @@ function ArticleRow({ a, q, thread }: { a: Hit; q: string; thread: PeriodThread 
             {a.mediaTitle}
           </MediaHoverLink>
           {badge?.badge && (
-            <span className={`rounded px-1 text-[11px] font-medium ring-1 ring-inset ${badge.badge}`}>
+            <span className={`rounded px-1 text-xs font-medium ring-1 ring-inset ${badge.badge}`}>
               {a.camp === 'blue' ? '偏藍' : '偏綠'}
             </span>
           )}
@@ -200,7 +200,7 @@ function ArticleRow({ a, q, thread }: { a: Hit; q: string; thread: PeriodThread 
           </p>
         )}
         {(thread || a.tags.length > 0) && (
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
             {thread && (
               <Link
                 href={threadHref(thread)}
@@ -255,7 +255,7 @@ export function ArticleList({
     <div className="space-y-4">
       {sectionByTime(page.articles, byHour).map((s) => (
         <section key={s.key} aria-label={s.label}>
-          <h2 className="sticky top-14 z-10 flex items-center gap-2 bg-zinc-50/95 py-1.5 text-xs font-medium text-zinc-500 backdrop-blur dark:bg-zinc-950/95 dark:text-zinc-400">
+          <h2 className="sticky top-14 z-10 flex items-center gap-2 bg-zinc-50/95 py-1.5 text-xs font-medium text-zinc-600 backdrop-blur dark:bg-zinc-950/95 dark:text-zinc-400">
             <span className="tabular-nums text-zinc-900 dark:text-zinc-100">{s.label}</span>
             <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" aria-hidden />
           </h2>

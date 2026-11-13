@@ -45,7 +45,7 @@ export default function HeadlineRowView({
 }) {
   return (
     <li className={`flex gap-2 ${showOutlet && !compact ? 'py-2' : 'py-1.5'}`}>
-      {time && <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{clock(a.publishedAt)}</span>}
+      {time && <span className="w-11 flex-none pt-0.5 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{clock(a.publishedAt)}</span>}
       {!compact && <Thumb a={a} />}
       <div className="min-w-0 flex-1">
         <Link href={articleHref(a)} className={`leading-snug hover:underline ${compact ? '' : 'font-medium'}`}>
@@ -64,7 +64,7 @@ export default function HeadlineRowView({
               {!time && <span className="tabular-nums">{clock(a.publishedAt)}</span>}
             </span>
           )}
-          <SourceLink url={a.url} showUrl className="!min-h-5 !text-[11px]" />
+          <SourceLink url={a.url} showUrl className="!min-h-5 !text-xs" />
         </div>
       </div>
     </li>

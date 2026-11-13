@@ -52,7 +52,7 @@ function DayRun({ e, t, day }: { e: EventItem; t: ArchivedThread; day: string })
       >
         {best === 1 ? '登上第 1 名' : `最高第 ${best} 名`}
       </Link>
-      <span className="text-zinc-500 dark:text-zinc-400" title="這一天出現在每小時事件表上的小時數與時段">
+      <span className="text-zinc-600 dark:text-zinc-400" title="這一天出現在每小時事件表上的小時數與時段">
         上榜 {on.length} 小時 · {pad(first)}:00{last > first ? `–${pad(last + 1)}:00` : ''}
       </span>
     </span>
@@ -76,7 +76,7 @@ function Folded({ threads }: { threads: ArchivedThread[] }) {
             <Link prefetch={false} href={`/eve/${t.id}/`} className="line-clamp-1 text-zinc-700 hover:underline dark:text-zinc-300">
               {headline(t)}
             </Link>
-            {t.hoursOnDay ? <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">{t.hoursOnDay} 小時</span> : null}
+            {t.hoursOnDay ? <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-400">{t.hoursOnDay} 小時</span> : null}
           </li>
         ))}
       </ul>
@@ -227,7 +227,7 @@ export default function EventDayView({ data, media, today }: { data: EventDay; m
                     className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
                   >
                     其他事件
-                    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                    <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">
                       第 {items[0].rank} 到 {items[items.length - 1].rank} 名
                     </span>
                   </h2>

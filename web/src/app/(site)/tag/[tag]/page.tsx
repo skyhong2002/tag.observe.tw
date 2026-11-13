@@ -139,7 +139,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">
-            <span className="text-zinc-500">#</span>
+            <span className="text-zinc-600 dark:text-zinc-400">#</span>
             {tag}
           </h1>
           <FollowButton kind="tag" target={tag} />
@@ -172,21 +172,23 @@ export default async function TagPage({ params, searchParams }: { params: Promis
               {h === 24 ? '24 小時' : `${h / 24} 天`}
             </Link>
           ))}
-          <a
-            href={`https://www.google.com/search?tbm=nws&q=${encodeURIComponent(tag)}`}
-            className="whitespace-nowrap rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Google 新聞 ↗
-          </a>
-          <a
-            href={`/feeds/tag/${encodeURIComponent(tag)}.xml`}
-            className="rounded-md bg-zinc-100 px-3 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-            title="用 RSS 閱讀器訂閱"
-          >
-            RSS
-          </a>
+          <span className="flex gap-1.5 max-sm:basis-full sm:ml-2">
+            <a
+              href={`https://www.google.com/search?tbm=nws&q=${encodeURIComponent(tag)}`}
+              className="whitespace-nowrap rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Google 新聞 ↗
+            </a>
+            <a
+              href={`/feeds/tag/${encodeURIComponent(tag)}.xml`}
+              className="whitespace-nowrap rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              title="用 RSS 閱讀器訂閱"
+            >
+              RSS 訂閱
+            </a>
+          </span>
         </div>
       </div>
       {status && <TagStatusPanel status={status} />}
@@ -232,13 +234,13 @@ export default async function TagPage({ params, searchParams }: { params: Promis
                       <Link href={`/eve/${t.id}/`} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
                         {t.maxTag ?? t.majorTags[0] ?? `事件 ${t.id}`}
                       </Link>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-600 dark:text-zinc-400">
                         {t.majorTags
                           .filter((x) => x !== t.maxTag)
                           .slice(0, 4)
                           .join('、')}
                       </p>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      <p className="text-xs text-zinc-600 dark:text-zinc-400">
                         {taipei(t.firstTime)} 起 · 在榜 {t.hours} 小時
                       </p>
                     </li>

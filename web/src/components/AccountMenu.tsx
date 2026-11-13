@@ -75,8 +75,8 @@ export default function AccountMenu() {
             <Avatar src={user.picture} label={label} size={40} />
             <div className="min-w-0">
               <p className="truncate font-medium">{label}</p>
-              {user.name && <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{user.email}</p>}
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{user.role === 'admin' ? '管理員' : '讀者'}</p>
+              {user.name && <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{user.email}</p>}
+              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{user.role === 'admin' ? '管理員' : '讀者'}</p>
             </div>
           </div>
           {READER_LINKS.map(([href, label]) => (

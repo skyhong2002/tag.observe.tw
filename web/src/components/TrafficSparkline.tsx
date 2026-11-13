@@ -81,7 +81,7 @@ export default function TrafficSparkline({
         )}
       </svg>
       {ends && (
-        <span aria-hidden="true" className="flex justify-between text-[9px] leading-3 text-zinc-500 dark:text-zinc-400">
+        <span aria-hidden="true" className="flex justify-between text-[9px] leading-3 text-zinc-600 dark:text-zinc-400">
           <span>{monthLabel(months[0])}</span>
           <span>{monthLabel(months.at(-1) as string)}</span>
         </span>
@@ -89,7 +89,7 @@ export default function TrafficSparkline({
       {active !== null && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-full z-20 mr-1.5 -translate-y-1/2 whitespace-nowrap rounded bg-zinc-900 px-1.5 py-0.5 text-[11px] text-white shadow dark:bg-zinc-100 dark:text-zinc-900"
+          className="pointer-events-none absolute top-1/2 right-full z-20 mr-1.5 -translate-y-1/2 whitespace-nowrap rounded bg-zinc-900 px-1.5 py-0.5 text-xs text-white shadow dark:bg-zinc-100 dark:text-zinc-900"
         >
           {text(active)}
         </span>

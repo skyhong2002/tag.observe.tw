@@ -79,7 +79,7 @@ export function BodyChanges({
   if (!diff || diff.identical) return null;
   return (
     <div className="space-y-1 border-l-2 border-zinc-200 pl-3 dark:border-zinc-700" data-testid="body-changes">
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">
         <span className="whitespace-nowrap font-medium text-zinc-700 dark:text-zinc-300">
           {label} {number(diff.hunks.length + diff.more)} 處
         </span>
@@ -99,7 +99,7 @@ export function BodyChanges({
           </li>
         ))}
       </ol>
-      {diff.more > 0 && <p className="text-xs text-zinc-500 dark:text-zinc-400">另有 {number(diff.more)} 處未列出</p>}
+      {diff.more > 0 && <p className="text-xs text-zinc-600 dark:text-zinc-400">另有 {number(diff.more)} 處未列出</p>}
     </div>
   );
 }
@@ -165,7 +165,7 @@ export function VersionCompare({
           className="order-5 mt-1 grid grid-cols-subgrid gap-y-1 border-zinc-200 max-sm:border-l-2 max-sm:pl-3 sm:col-span-2 dark:border-zinc-700"
           data-testid="body-changes"
         >
-          <p className="text-xs text-zinc-500 sm:col-span-2 dark:text-zinc-400">
+          <p className="text-xs text-zinc-600 sm:col-span-2 dark:text-zinc-400">
             <span className="whitespace-nowrap font-medium text-zinc-700 dark:text-zinc-300">
               {label} {number(body.hunks.length + body.more)} 處
             </span>
@@ -191,7 +191,7 @@ export function VersionCompare({
               </p>
             </div>
           ))}
-          {body.more > 0 && <p className="text-xs text-zinc-500 dark:text-zinc-400 sm:col-span-2">另有 {number(body.more)} 處未列出</p>}
+          {body.more > 0 && <p className="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-2">另有 {number(body.more)} 處未列出</p>}
         </div>
       )}
     </div>

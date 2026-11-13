@@ -288,11 +288,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 const related = (e.related ?? []).slice(0, RELATED_SHOWN);
                 return (
                   <tr key={e.tag} className={table.row}>
-                    <td className={`hidden text-zinc-500 dark:text-zinc-400 sm:table-cell ${table.num}`}>{e.position}</td>
+                    <td className={`hidden text-zinc-600 dark:text-zinc-400 sm:table-cell ${table.num}`}>{e.position}</td>
                     <td className={table.lead}>
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <div className={`${table.leadBox} flex items-center gap-2`}>
-                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 sm:hidden">
+                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-600 dark:text-zinc-400 sm:hidden">
                             {e.position}
                           </span>
                           <Link
@@ -339,7 +339,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {related.length ? (
                         related.map((r, i) => (
                           <span key={r.tag}>
-                            {i > 0 && <span className="text-zinc-500 dark:text-zinc-400">、</span>}
+                            {i > 0 && <span className="text-zinc-600 dark:text-zinc-400">、</span>}
                             <Link
                               href={`/tag/${encodeURIComponent(r.tag)}`}
                               className="text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
@@ -349,7 +349,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                           </span>
                         ))
                       ) : (
-                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
+                        <span className="text-zinc-600 dark:text-zinc-400">—</span>
                       )}
                     </td>
                     <td className={`max-w-0 ${table.cell}`}>
@@ -359,7 +359,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {e.drafts?.articles ? (
                         <DraftEvidence data={e.drafts} singleLine />
                       ) : (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">暫無比對資料</span>
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">暫無比對資料</span>
                       )}
                     </td>
                   </tr>
@@ -401,10 +401,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 /** ▲ / ▼ / ＝ against the full list 24 hours earlier. */
 function RankChange({ entry: e }: { entry: RankingEntry }) {
   const delta = e.rank24h === null ? null : e.rank24h - e.rank;
-  if (delta === null) return <span className="text-zinc-500 dark:text-zinc-400">—</span>;
+  if (delta === null) return <span className="text-zinc-600 dark:text-zinc-400">—</span>;
   if (delta > 0) return <span className="text-rose-700 dark:text-rose-300">▲{delta}</span>;
   if (delta < 0) return <span className="text-zinc-600 dark:text-zinc-400">▼{-delta}</span>;
-  return <span className="text-zinc-500 dark:text-zinc-400">＝</span>;
+  return <span className="text-zinc-600 dark:text-zinc-400">＝</span>;
 }
 
 /**
@@ -435,7 +435,7 @@ function RankingCards({
           const hot = e.burst !== null && e.burst > e.normalized;
           return (
             <li key={e.tag} className="flex items-center gap-3 px-3 py-2.5">
-              <span className="w-6 shrink-0 text-right text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{e.position}</span>
+              <span className="w-6 shrink-0 text-right text-sm tabular-nums text-zinc-600 dark:text-zinc-400">{e.position}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <Link
@@ -498,10 +498,10 @@ function ArchiveCells({ entry: e }: { entry: RankingEntry }) {
         {a?.peakDay ? (
           <>
             {a.peakDay}
-            <span className="ml-1.5 text-xs text-zinc-500">{a.peakCount} 篇</span>
+            <span className="ml-1.5 text-xs text-zinc-600 dark:text-zinc-400">{a.peakCount} 篇</span>
           </>
         ) : e.charted ? (
-          <span className="text-zinc-500">
+          <span className="text-zinc-600 dark:text-zinc-400">
             {taipeiDate(e.charted.maxHour)}
             <span className="ml-1.5 text-xs">9/28 起</span>
           </span>

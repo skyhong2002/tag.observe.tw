@@ -5,7 +5,7 @@ import SourceLink from './SourceLink';
 export default function DiscoverySources({ sources }: { sources?: DiscoverySource[] }) {
   if (!sources?.length) return null;
   return (
-    <nav aria-label="文章發現來源" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+    <nav aria-label="文章發現來源" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
       {sources.map((source) => (
         <span key={source.media} className="inline-flex items-center gap-1">
           由{' '}

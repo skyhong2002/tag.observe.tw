@@ -258,7 +258,7 @@ export default function TagChart({ initial }: { initial: TagSeries }) {
           >
             {loading ? '載入中…' : error ? '重試載入' : data.hasMore || range.start > 0 ? '← 更早' : '已到資料起點'}
           </button>
-          <span className="whitespace-nowrap tabular-nums text-zinc-500 dark:text-zinc-400">
+          <span className="whitespace-nowrap tabular-nums text-zinc-600 dark:text-zinc-400">
             {label(range.start)} — {label(range.end)}
           </span>
         </div>

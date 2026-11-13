@@ -184,7 +184,7 @@ export default function Following() {
           <section key={kind}>
             <h2 className="font-semibold">
               {FOLLOW_NOUN[kind]}
-              <span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">{ofKind.length}</span>
+              <span className="ml-2 text-sm font-normal text-zinc-600 dark:text-zinc-400">{ofKind.length}</span>
             </h2>
             <ul className={`${card} mt-2 divide-y divide-zinc-200 dark:divide-zinc-800`}>
               {ofKind.map((f) => (
@@ -197,7 +197,7 @@ export default function Following() {
                       f.label ? (
                         <>
                           {f.label}
-                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">事件 #{f.target}</span>
+                          <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-400">事件 #{f.target}</span>
                         </>
                       ) : (
                         `事件 #${f.target}`

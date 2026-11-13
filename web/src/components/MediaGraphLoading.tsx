@@ -88,7 +88,7 @@ export default function MediaGraphLoading() {
             </svg>
           </div>
           <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">正在整理媒體關係</p>
-          <p className="mt-1.5 text-xs leading-5 text-zinc-500 dark:text-zinc-400">準備媒體圖示與新聞連線</p>
+          <p className="mt-1.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">準備媒體圖示與新聞連線</p>
           <div aria-hidden="true" className="mt-3 flex justify-center gap-1.5">
             {[0, 1, 2].map((i) => (
               <span

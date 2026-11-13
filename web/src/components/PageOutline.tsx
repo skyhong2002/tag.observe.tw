@@ -84,7 +84,7 @@ export default function PageOutline({ entries }: { entries: OutlineEntry[] }) {
         aria-label="本頁大綱"
         className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain pb-6 text-sm leading-snug"
       >
-        <h2 className="mb-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">本頁大綱</h2>
+        <h2 className="mb-3 text-xs font-medium text-zinc-600 dark:text-zinc-400">本頁大綱</h2>
         <ol className="border-l border-zinc-200 dark:border-zinc-800">
           {entries.map((entry) => (
             <li key={entry.id}>

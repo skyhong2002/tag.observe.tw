@@ -5,7 +5,7 @@ import Link from 'next/link';
 // edit them on site.observe.tw (the domains are in its tooltip). The same
 // chip styles are used in the /media/ table.
 
-const chip = 'shrink-0 whitespace-nowrap rounded px-1.5 py-px text-[11px] font-medium ring-1 ring-inset';
+const chip = 'shrink-0 whitespace-nowrap rounded px-1.5 py-px text-xs font-medium ring-1 ring-inset';
 export const tagChip = `${chip} bg-zinc-100 text-zinc-700 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700`;
 export const campChip = {
   blue: `${chip} bg-blue-50 text-blue-800 ring-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:ring-blue-800`,
@@ -28,7 +28,7 @@ export default function MediaTagChips({
   const from = `標籤來自網站雷達上的 ${domains.join('、')}`;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
-      <span className="text-xs text-zinc-500 dark:text-zinc-400">標籤</span>
+      <span className="text-xs text-zinc-600 dark:text-zinc-400">標籤</span>
       {camp !== 'other' && (
         <Link href={`/media/?camp=${camp}`} className={`${campChip[camp]} ${linkHover}`}>
           {CAMP_LABELS[camp]}
@@ -39,7 +39,7 @@ export default function MediaTagChips({
           {l.label}
         </Link>
       ))}
-      {camp === 'other' && !labels.length && <span className="text-xs text-zinc-500 dark:text-zinc-400">尚無標籤</span>}
+      {camp === 'other' && !labels.length && <span className="text-xs text-zinc-600 dark:text-zinc-400">尚無標籤</span>}
       {main && (
         <a
           href={`https://site.observe.tw/site/${encodeURIComponent(main)}/#tags`}

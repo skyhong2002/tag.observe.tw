@@ -51,7 +51,7 @@ function SavedRow({ save }: { save: Save }) {
   const e = save.event;
   return (
     <li className="px-3 py-3">
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">
         {save.kind === 'article'
           ? a
             ? `${a.mediaTitle} · ${when(a.publishedAt)}`
@@ -67,17 +67,17 @@ function SavedRow({ save }: { save: Save }) {
             <Link href={`/article/${a.id}/`} className="mt-1 block font-medium hover:underline">
               {a.title}
             </Link>
-            <SourceLink url={a.url} showUrl className="!min-h-5 !text-[11px]" />
+            <SourceLink url={a.url} showUrl className="!min-h-5 !text-xs" />
           </>
         ) : (
-          <p className="mt-1 text-zinc-500 dark:text-zinc-400">這篇文章已不在本站。</p>
+          <p className="mt-1 text-zinc-600 dark:text-zinc-400">這篇文章已不在本站。</p>
         )
       ) : e ? (
         <Link href={`/eve/${e.id}/`} className="mt-1 block font-medium hover:underline">
           {e.tags.join('、') || `事件 #${e.id}`}
         </Link>
       ) : (
-        <p className="mt-1 text-zinc-500 dark:text-zinc-400">這個事件已不在本站。</p>
+        <p className="mt-1 text-zinc-600 dark:text-zinc-400">這個事件已不在本站。</p>
       )}
       {editing ? (
         <form

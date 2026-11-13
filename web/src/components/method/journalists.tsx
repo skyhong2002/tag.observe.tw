@@ -18,7 +18,7 @@ export function JournalistMethod() {
       <p>
         記者頁從文章署名整理出人名與筆名，不含媒體、部門、通訊社、職稱與責任編輯；可看每個人在哪些媒體刊登、寫了幾篇，以及文章與其他媒體內文相近時的刊登先後。較晚刊登只是閱讀線索，不是抄襲判定。
       </p>
-      <p className="mt-2 max-w-3xl text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+      <p className="mt-2 max-w-3xl text-xs leading-5 text-zinc-600 dark:text-zinc-400">
         這些頁面由公開署名自動整理，不是本人建立的檔案。本人不希望出現在記者頁，可在
         <a
           href={`${REPOSITORY_URL}/issues/new?title=${encodeURIComponent('記者頁移除請求')}`}

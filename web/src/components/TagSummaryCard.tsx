@@ -30,9 +30,9 @@ export default function TagSummaryCard({
     >
       <div className="min-w-0 space-y-0.5">
         <p className="text-lg font-semibold">
-          <span className="text-zinc-500">#</span>
+          <span className="text-zinc-600 dark:text-zinc-400">#</span>
           {tag}
-          <span className="ml-2 align-middle text-xs font-normal text-zinc-500 dark:text-zinc-400">也是一個關鍵字標籤</span>
+          <span className="ml-2 align-middle text-xs font-normal text-zinc-600 dark:text-zinc-400">也是一個關鍵字標籤</span>
         </p>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           {span}有 <strong className="tabular-nums text-zinc-900 dark:text-zinc-100">{tagged.toLocaleString()}</strong> 篇標成這個標籤 ·{' '}
@@ -49,7 +49,7 @@ export default function TagSummaryCard({
       {values.some((v) => v) && (
         <div className="space-y-0.5">
           <Sparkline values={values} className="h-10 w-40" />
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">過去 3 天每小時篇數</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">過去 3 天每小時篇數</p>
         </div>
       )}
       <Link href={href} className="ml-auto rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-800">

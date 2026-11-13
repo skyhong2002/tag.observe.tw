@@ -31,8 +31,8 @@ const stateText: Record<CollectionState, string> = { ok: '已取得', nodata: '�
 const stateTone: Record<CollectionState, string> = {
   ok: 'text-emerald-700 dark:text-emerald-400',
   nodata: 'text-amber-700 dark:text-amber-400',
-  waiting: 'text-zinc-500 dark:text-zinc-400',
-  shared: 'text-zinc-500 dark:text-zinc-400',
+  waiting: 'text-zinc-600 dark:text-zinc-400',
+  shared: 'text-zinc-600 dark:text-zinc-400',
 };
 const stateOrder: Record<CollectionState, number> = { waiting: 0, nodata: 1, ok: 2, shared: 3 };
 type Sort = 'name' | 'similarweb' | 'radar';
@@ -41,7 +41,7 @@ function State({ state, sharedWith, at }: { state: CollectionState; sharedWith: 
   return (
     <span className={stateTone[state]} title={state === 'shared' && sharedWith ? `整個網域的數字列在${sharedWith}` : undefined}>
       {stateText[state]}
-      {at && <span className="ml-1.5 text-zinc-500 dark:text-zinc-400">{at}</span>}
+      {at && <span className="ml-1.5 text-zinc-600 dark:text-zinc-400">{at}</span>}
     </span>
   );
 }
@@ -87,7 +87,7 @@ export default function TrafficCollectionTable({ rows }: { rows: CollectionRow[]
       />
       <TableScroller card label="流量資料抓取狀態表格，可左右捲動">
         <table className="w-full min-w-[40rem] text-sm">
-          <thead className="text-xs text-zinc-500 dark:text-zinc-400">
+          <thead className="text-xs text-zinc-600 dark:text-zinc-400">
             <tr>
               {columns.map((column) => (
                 <th
@@ -98,7 +98,7 @@ export default function TrafficCollectionTable({ rows }: { rows: CollectionRow[]
                 >
                   <button type="button" onClick={() => choose(column.key)} className="min-h-8 text-left font-medium whitespace-nowrap">
                     {column.label} <SortIndicator active={sort === column.key} descending={descending} />
-                    <span className="block text-[11px] font-normal">{column.sub}</span>
+                    <span className="block text-xs font-normal">{column.sub}</span>
                   </button>
                 </th>
               ))}
@@ -111,7 +111,7 @@ export default function TrafficCollectionTable({ rows }: { rows: CollectionRow[]
                   {row.media && <MediaIcon media={row.media} title={row.name} size={20} />}
                   <span className="min-w-0">
                     <span className={`${table.leadText} block font-medium`}>{row.name}</span>
-                    <span className={`${table.leadExtra} ${table.leadText} block text-[11px] text-zinc-500 dark:text-zinc-400`}>
+                    <span className={`${table.leadExtra} ${table.leadText} block text-xs text-zinc-600 dark:text-zinc-400`}>
                       {row.domain}
                     </span>
                   </span>
@@ -132,18 +132,18 @@ export default function TrafficCollectionTable({ rows }: { rows: CollectionRow[]
                   </td>
                   <td className={`${table.cell} py-1.5 whitespace-nowrap`}>
                     <State state={row.similarweb} sharedWith={row.sharedWith} at={row.similarwebLabel} />
-                    {row.profileMonth && <span className="ml-1.5 text-zinc-500 dark:text-zinc-400">· {row.profileMonth}</span>}
+                    {row.profileMonth && <span className="ml-1.5 text-zinc-600 dark:text-zinc-400">· {row.profileMonth}</span>}
                   </td>
                   <td className={`${table.cell} py-1.5 whitespace-nowrap`}>
                     <State state={row.radar} sharedWith={row.sharedWith} at={row.radarLabel} />
-                    {row.radarPeriod && <span className="ml-1.5 text-zinc-500 dark:text-zinc-400">· {row.radarPeriod}</span>}
+                    {row.radarPeriod && <span className="ml-1.5 text-zinc-600 dark:text-zinc-400">· {row.radarPeriod}</span>}
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-        {!shown.length && <p className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合條件的網域。</p>}
+        {!shown.length && <p className="p-8 text-center text-sm text-zinc-600 dark:text-zinc-400">沒有符合條件的網域。</p>}
       </TableScroller>
     </section>
   );

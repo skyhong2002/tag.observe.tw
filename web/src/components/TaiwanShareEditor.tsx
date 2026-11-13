@@ -65,7 +65,7 @@ export default function TaiwanShareEditor({
         onClick={open}
         aria-label={`修正${name}的台灣占比`}
         title="修正台灣占比"
-        className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 hover:text-brand-700 dark:hover:bg-zinc-800 dark:hover:text-brand-400"
+        className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 hover:text-brand-700 dark:hover:bg-zinc-800 dark:hover:text-brand-400"
       >
         <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M11 2.5l2.5 2.5L6 12.5H3.5V10z" strokeLinejoin="round" />
@@ -83,7 +83,7 @@ export default function TaiwanShareEditor({
           }}
         >
           <h2 className="text-base font-semibold">{name}的台灣占比</h2>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
             Similarweb：
             {similarweb == null
               ? '無資料'

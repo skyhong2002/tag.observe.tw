@@ -47,7 +47,7 @@ interface MediaScope {
   coverage: string | null;
 }
 const discoveryBadge =
-  'shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800';
+  'shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800';
 interface MediaRow {
   media: string;
   sourceKind?: 'discovery' | 'publisher';
@@ -175,11 +175,11 @@ function SevenDayCell({ value, since, partial }: { value: number; since: string 
     : null;
   return (
     <td
-      className={`${table.num} whitespace-nowrap ${partial ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-600 dark:text-zinc-300'}`}
+      className={`${table.num} whitespace-nowrap ${partial ? 'text-zinc-600 dark:text-zinc-400' : 'text-zinc-600 dark:text-zinc-300'}`}
       title={partial && md ? `新系統 ${md} 才開始抓這家媒體，還不滿 7 天` : undefined}
     >
       {value.toLocaleString()}
-      {partial && md && <span className="ml-1 text-[11px]">（{md} 起）</span>}
+      {partial && md && <span className="ml-1 text-xs">（{md} 起）</span>}
     </td>
   );
 }
@@ -427,7 +427,7 @@ export default async function MediaStatsPage({
                   {campBadge(r) ? (
                     <span className={campChip[r.camp as keyof typeof campChip]}>{campBadge(r)?.short}</span>
                   ) : (
-                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
+                    <span className="text-zinc-600 dark:text-zinc-400">—</span>
                   )}
                 </td>
                 <td className={table.num}>{r.today.toLocaleString()}</td>
@@ -449,13 +449,13 @@ export default async function MediaStatsPage({
                 </td>
                 <SevenDayCell value={r.last7d} since={r.collectingSince} partial={partialWeek(r)} />
                 <td
-                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
                   title={r.readers?.title}
                 >
                   {r.readers ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.visits)}` : '—'}
                 </td>
                 <td
-                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
                   title={r.readers?.perArticle?.title ?? r.readers?.perArticleNote}
                 >
                   {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
@@ -471,7 +471,7 @@ export default async function MediaStatsPage({
                       ))}
                     </span>
                   ) : (
-                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
+                    <span className="text-zinc-600 dark:text-zinc-400">—</span>
                   )}
                 </td>
                 <td className={`${table.cell} whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>

@@ -98,7 +98,7 @@ export default function Reading() {
 
           <section>
             <h2 className="text-lg font-semibold">陣營分布</h2>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">依本站的媒體標籤（藍營／綠營），其餘算「其他」。</p>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">依本站的媒體標籤（藍營／綠營），其餘算「其他」。</p>
             <div
               className="mt-3 flex h-3 gap-0.5 overflow-hidden rounded"
               role="img"
@@ -154,7 +154,7 @@ export default function Reading() {
                       className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 hover:text-brand-700 dark:bg-zinc-800"
                     >
                       #{t.tag}
-                      <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{t.count}</span>
+                      <span className="text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{t.count}</span>
                     </Link>
                   </li>
                 ))}
@@ -171,7 +171,7 @@ export default function Reading() {
             <ul className={`${card} mt-3 divide-y divide-zinc-200 dark:divide-zinc-800`}>
               {report.recent.map((r) => (
                 <li key={r.id} className="px-3 py-2">
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
                     {r.mediaTitle} · {when(r.readAt)} 讀
                   </p>
                   <Link href={`/article/${r.id}/`} className="font-medium hover:underline">

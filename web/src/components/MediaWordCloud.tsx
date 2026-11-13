@@ -69,12 +69,12 @@ export default function MediaWordCloud({
     <section aria-label="報導文字雲">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold">報導關鍵字</h2>
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">近 {hours % 24 === 0 ? `${hours / 24} 天` : `${hours} 小時`}</span>
+        <span className="text-xs text-zinc-600 dark:text-zinc-400">近 {hours % 24 === 0 ? `${hours / 24} 天` : `${hours} 小時`}</span>
       </div>
       {cloud ? (
         <div className="my-1">{cloud}</div>
       ) : (
-        <p className="py-6 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
+        <p className="py-6 text-xs leading-6 text-zinc-600 dark:text-zinc-400">
           {data ? '這段時間尚無足夠的關鍵字。' : '關鍵字暫時無法取得，文章仍可正常瀏覽。'}
         </p>
       )}

@@ -148,7 +148,7 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                   {data.keywords.map((k, i) => (
                     <tr key={k.tag} className={table.row}>
-                      <td className={`hidden text-zinc-500 sm:table-cell ${table.num}`}>{i + 1}</td>
+                      <td className={`hidden text-zinc-600 dark:text-zinc-400 sm:table-cell ${table.num}`}>{i + 1}</td>
                       <td className={table.lead}>
                         <div className={`${table.leadBox} whitespace-nowrap`}>
                           <Link
@@ -161,7 +161,7 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
                       </td>
                       <td className={`whitespace-nowrap tabular-nums ${table.cell}`}>
                         {taipeiDate(k.firstAt)}
-                        <span className="ml-1.5 text-xs text-zinc-500">{taipeiClock(k.firstAt)}</span>
+                        <span className="ml-1.5 text-xs text-zinc-600 dark:text-zinc-400">{taipeiClock(k.firstAt)}</span>
                       </td>
                       <td className={table.num}>{k.articleCount.toLocaleString()}</td>
                       <td
@@ -171,7 +171,7 @@ export default async function NewKeywords({ searchParams }: { searchParams: Prom
                         {k.peakDay ? (
                           <>
                             {k.peakDay}
-                            <span className="ml-1.5 text-xs text-zinc-500">{k.peakCount} 篇</span>
+                            <span className="ml-1.5 text-xs text-zinc-600 dark:text-zinc-400">{k.peakCount} 篇</span>
                           </>
                         ) : (
                           <span className="text-zinc-400">計算中</span>

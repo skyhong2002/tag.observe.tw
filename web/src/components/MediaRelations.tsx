@@ -26,7 +26,7 @@ function PartnerRow({ partner, max }: { partner: MediaPartner; max: number }) {
         </MediaHoverLink>
         <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-400">
           {number(partner.total)}
-          <span className="ml-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">筆關係</span>
+          <span className="ml-0.5 text-xs text-zinc-600 dark:text-zinc-400">筆關係</span>
         </span>
       </div>
       <div
@@ -62,26 +62,26 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
     <section aria-label="與其他媒體的關係" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold">媒體關係</h2>
-        <span className="text-zinc-500 dark:text-zinc-400">近 {period}</span>
+        <span className="text-zinc-600 dark:text-zinc-400">近 {period}</span>
       </div>
       {!data ? (
-        <p className="py-6 leading-6 text-zinc-500 dark:text-zinc-400">媒體關係暫時無法取得，文章仍可正常瀏覽。</p>
+        <p className="py-6 leading-6 text-zinc-600 dark:text-zinc-400">媒體關係暫時無法取得，文章仍可正常瀏覽。</p>
       ) : (
         <>
-          <p className="mt-1 leading-5 text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 leading-5 text-zinc-600 dark:text-zinc-400">
             {node ? `已比對 ${number(node.articles)} 篇內文` : '這段時間沒有已比對的內文'}
           </p>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-center">
             {stats.map((item) => (
               <div key={item.label} className="rounded-md bg-zinc-50 px-2 py-2 dark:bg-zinc-950">
                 <dd className="text-lg font-semibold tabular-nums">{number(item.value)}</dd>
-                <dt className="text-[11px] text-zinc-500 dark:text-zinc-400">{item.label}</dt>
+                <dt className="text-xs text-zinc-600 dark:text-zinc-400">{item.label}</dt>
               </div>
             ))}
           </dl>
           {partners.length ? (
             <>
-              <h3 className="mt-4 flex items-baseline justify-between text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              <h3 className="mt-4 flex items-baseline justify-between text-xs font-medium text-zinc-600 dark:text-zinc-400">
                 <span>主要關係對象</span>
                 <span className="font-normal">{partners.length} 家</span>
               </h3>
@@ -103,7 +103,7 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
                   </ul>
                 </details>
               )}
-              <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] leading-4 text-zinc-500 dark:text-zinc-400">
+              <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-xs leading-4 text-zinc-600 dark:text-zinc-400">
                 {segments.map(({ key, label, className }) => (
                   <span key={key} className="inline-flex items-center gap-1">
                     <i aria-hidden="true" className={`inline-block h-1.5 w-2.5 rounded-sm ${className}`} />
@@ -113,7 +113,7 @@ export default function MediaRelations({ data, media, hours }: { data: Similarit
               </p>
             </>
           ) : (
-            <p className="mt-3 leading-5 text-zinc-500 dark:text-zinc-400">
+            <p className="mt-3 leading-5 text-zinc-600 dark:text-zinc-400">
               這段時間沒有與其他媒體內文相近或互相引用的報導。
               <MethodLink />
             </p>

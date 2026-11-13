@@ -143,8 +143,8 @@ function PageList({ pages, value }: { pages: Array<Omit<ObservedPage, 'views'>>;
     <ol className="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
       {pages.map((p, i) => (
         <li key={p.path} className="flex items-baseline gap-3 py-2">
-          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</span>
-          <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{i + 1}</span>
+          <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
             {KIND_LABELS[p.kind]}
           </span>
           <Link href={pageHref(p.path)} className={`min-w-0 flex-1 truncate ${link}`} title={p.title}>
@@ -158,7 +158,7 @@ function PageList({ pages, value }: { pages: Array<Omit<ObservedPage, 'views'>>;
 }
 
 const Empty = ({ children }: { children: React.ReactNode }) => (
-  <p className="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">{children}</p>
+  <p className="py-6 text-center text-sm text-zinc-600 dark:text-zinc-400">{children}</p>
 );
 
 /** Every day of the period; days before tracking began have no bar. */

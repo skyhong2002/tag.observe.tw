@@ -87,7 +87,7 @@ export default async function TopicIndex({ kind, searchParams }: { kind: TopicKi
                       className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
                     >
                       {g.label}
-                      <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{g.items.length} 個</span>
+                      <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">{g.items.length} 個</span>
                     </h2>
                     <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
                       {g.items.map((t) => (
@@ -148,9 +148,7 @@ function KeywordBar({
           className={`inline-flex items-baseline gap-1 ${filterChipClass(on)}`}
         >
           {t.tag}
-          {t.media != null && (
-            <span className={`text-[11px] ${on ? 'text-white/80' : 'text-zinc-500 dark:text-zinc-400'}`}>{t.media} 家</span>
-          )}
+          {t.media != null && <span className={`text-xs ${on ? 'text-white/80' : 'text-zinc-600 dark:text-zinc-400'}`}>{t.media} 家</span>}
         </Link>
       </li>
     );
@@ -242,7 +240,7 @@ function SearchResults({ found, tag, q, kind }: { found: TopicSearch | null; tag
             <h3 className="flex items-center gap-1.5 border-b border-zinc-300 pb-1 text-sm font-semibold dark:border-zinc-800">
               <MediaIcon media={o.media} title={o.title} />
               {o.title}
-              <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{o.items.length} 個</span>
+              <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">{o.items.length} 個</span>
             </h3>
             <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
               {o.items.map((t) => {
@@ -250,12 +248,12 @@ function SearchResults({ found, tag, q, kind }: { found: TopicSearch | null; tag
                 const updated = updatedAtOf(t);
                 return (
                   <li key={t.id} className="flex items-baseline gap-2 py-1.5">
-                    <span className={`shrink-0 rounded border px-1 text-[11px] leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
+                    <span className={`shrink-0 rounded border px-1 text-xs leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
                     <span className="min-w-0 flex-1">
                       <Link prefetch={false} href={topicHref(t.media, t.id, k)} className="hover:underline">
                         {t.title}
                       </Link>
-                      <span className="ml-2 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400">
+                      <span className="ml-2 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">
                         {updated ? `最後更新 ${taipeiDate(updated)}` : '更新時間不明（追蹤前已上架）'}
                         {t.status === 'ended' && ' · 已停更'}
                       </span>
@@ -274,7 +272,7 @@ function SearchResults({ found, tag, q, kind }: { found: TopicSearch | null; tag
 const taipeiDate = (iso: string) => new Date(iso).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
 const STATUS_BADGE = {
   active: 'border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300',
-  ended: 'border-zinc-300 text-zinc-500 dark:border-zinc-700 dark:text-zinc-400',
+  ended: 'border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400',
 };
 
 /** A keyword across outlets: who opened a 議題/專題 for it first, which kind
@@ -310,7 +308,7 @@ function TagRace({ topics }: { topics: FeedTopic[] }) {
               return (
                 <li key={o.media} className="py-2.5">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400" aria-hidden>
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-600 dark:text-zinc-400" aria-hidden>
                       {o.start ? i + 1 : ''}
                     </span>
                     <Link
@@ -349,15 +347,15 @@ function TagRace({ topics }: { topics: FeedTopic[] }) {
                       const updated = updatedAtOf(t);
                       return (
                         <li key={t.id} className="flex items-baseline gap-2">
-                          <span className={`shrink-0 rounded border px-1 text-[11px] leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
+                          <span className={`shrink-0 rounded border px-1 text-xs leading-4 ${KIND_BADGE[k]}`}>{kindNoun(k)}</span>
                           <span className="min-w-0 flex-1">
                             <Link prefetch={false} href={topicHref(t.media, t.id, k)} className="hover:underline">
                               {t.title}
                             </Link>
-                            <span className="ml-2 inline-flex flex-wrap items-baseline gap-x-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                            <span className="ml-2 inline-flex flex-wrap items-baseline gap-x-1.5 text-xs text-zinc-600 dark:text-zinc-400">
                               {o.items.length > 1 && t.start && <span>{taipeiDate(t.start)} 開始</span>}
                               {k === 'topic' && (
-                                <span className={`rounded border px-1 text-[11px] leading-4 ${STATUS_BADGE[st]}`}>
+                                <span className={`rounded border px-1 text-xs leading-4 ${STATUS_BADGE[st]}`}>
                                   {st === 'ended' ? '已停更' : '進行中'}
                                 </span>
                               )}
@@ -391,7 +389,7 @@ function MediaList({ media, kind }: { media: TopicMedia[]; kind: TopicKind }) {
               <Link prefetch={false} href={topicMediaHref(m.media, kind)} className="flex items-center gap-2 py-1.5 hover:underline">
                 <MediaIcon media={m.media} title={m.title} />
                 <span className="min-w-0 flex-1 truncate">{m.title}</span>
-                {count != null && <span className="text-xs text-zinc-500 dark:text-zinc-400">{count}</span>}
+                {count != null && <span className="text-xs text-zinc-600 dark:text-zinc-400">{count}</span>}
                 <span
                   className={`h-2 w-2 shrink-0 rounded-full ${problem ? 'bg-amber-500' : 'bg-emerald-500'}`}
                   role="img"
@@ -402,7 +400,7 @@ function MediaList({ media, kind }: { media: TopicMedia[]; kind: TopicKind }) {
           );
         })}
       </ul>
-      <details className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <details className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
         <summary className="cursor-pointer">更新狀態詳情</summary>
         <ul className="mt-2 space-y-1">
           {media.map((m) => (

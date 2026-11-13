@@ -15,20 +15,20 @@ export default function MediaWritingCard({ data }: { data: MediaWriting | null }
     <section aria-label="寫法" className="rounded-lg border border-zinc-200 p-3 text-xs dark:border-zinc-800">
       <h2 className="mb-3 flex items-baseline justify-between gap-2 text-sm font-semibold">
         寫法
-        <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">近 {data.days} 天</span>
+        <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">近 {data.days} 天</span>
       </h2>
       <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-y-2.5 leading-5">
-        <dt className="text-zinc-500 dark:text-zinc-400">轉述貼文</dt>
+        <dt className="text-zinc-600 dark:text-zinc-400">轉述貼文</dt>
         <dd className="flex items-center justify-between gap-2">
           <span className="tabular-nums" title={`${totals.social.toLocaleString()}／${totals.articles.toLocaleString()} 篇`}>
             {share(totals.social, totals.articles)}
-            <span className="ml-1 text-zinc-500 dark:text-zinc-400">{totals.social.toLocaleString()} 篇</span>
+            <span className="ml-1 text-zinc-600 dark:text-zinc-400">{totals.social.toLocaleString()} 篇</span>
           </span>
           <Sparkline values={daily} className="h-6 w-20" />
         </dd>
         {roles.length > 0 && (
           <>
-            <dt className="text-zinc-500 dark:text-zinc-400">發言者</dt>
+            <dt className="text-zinc-600 dark:text-zinc-400">發言者</dt>
             <dd>
               {roles.slice(0, 4).map((r) => (
                 <Link
@@ -37,17 +37,17 @@ export default function MediaWritingCard({ data }: { data: MediaWriting | null }
                   className="mr-2 inline-block whitespace-nowrap hover:underline"
                 >
                   {ROLE_LABEL[r]}{' '}
-                  <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(totals.roles[r], totals.social)}</span>
+                  <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{share(totals.roles[r], totals.social)}</span>
                 </Link>
               ))}
             </dd>
           </>
         )}
-        <dt className="text-zinc-500 dark:text-zinc-400">標題用詞</dt>
+        <dt className="text-zinc-600 dark:text-zinc-400">標題用詞</dt>
         <dd>
           {TITLE_TAGS.map((t) => (
             <span key={t} className="mr-2 inline-block whitespace-nowrap" title={TITLE_TAG_LABEL[t].hint}>
-              {t} <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(totals.titleTags[t], totals.articles)}</span>
+              {t} <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{share(totals.titleTags[t], totals.articles)}</span>
             </span>
           ))}
         </dd>

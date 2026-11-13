@@ -49,7 +49,7 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
             <ArticleBody body={content.article.description} sourceUrl={data.url} label="文章摘要" />
           ) : (
             <div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
                 {content ? CONTENT_STATUS[content.content.status].detail : '專題內文尚待擷取，可先前往原站閱讀。'}
               </p>
               <SourceLink url={data.url} label={`原站${noun}`} showUrl className="mt-3" />
@@ -82,7 +82,7 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
         <p className="text-sm text-zinc-600 dark:text-zinc-400">尚未取得這個{noun}的新聞清單，可先前往原站查看。</p>
       ) : null}
       {data.checkedAt && (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">
           最近檢查：{new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。
         </p>
       )}
