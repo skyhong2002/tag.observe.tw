@@ -11,6 +11,7 @@ const dayHref = (day: string) => `/event/?day=${day}`;
 const weekday = (day: string) => '日一二三四五六'[new Date(`${day}T00:00:00Z`).getUTCDay()];
 const mmdd = (day: string) => day.slice(5).replace('-', '/');
 const WEEK = 7;
+const PHONE_DAYS = 4;
 
 function Arrow({ day, dir }: { day?: string; dir: 'prev' | 'next' }) {
   const label = dir === 'prev' ? '前一天' : '後一天';
@@ -72,19 +73,19 @@ export default function EventDayNav({
   // A week with the shown day in it, leaning towards the latest days.
   const end = Math.min(days.length, Math.max(i, 0) + 1 + Math.floor(WEEK / 2));
   const week = days.slice(Math.max(0, end - WEEK), end);
+  const phoneStart = Math.max(0, Math.min(week.indexOf(day) - 2, week.length - PHONE_DAYS));
   return (
     <nav aria-label="選擇日期" className="rounded-xl border border-zinc-200 bg-white p-2 text-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-center">
           <Arrow day={prev} dir="prev" />
-          <ol
-            ref={strip}
-            className="relative flex min-w-0 gap-1 overflow-x-auto px-1 [scrollbar-width:none] max-sm:[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]"
-          >
-            {week.map((d) => {
+          <ol ref={strip} className="relative flex min-w-0 gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
+            {week.map((d, j) => {
               const here = d === day;
+              // A phone has room for four whole days: the shown day and its neighbours, never half a day at an edge.
+              const onPhone = j >= phoneStart && j < phoneStart + PHONE_DAYS;
               return (
-                <li key={d}>
+                <li key={d} className={onPhone ? '' : 'max-sm:hidden'}>
                   <Link
                     href={dayHref(d)}
                     aria-current={here ? 'page' : undefined}

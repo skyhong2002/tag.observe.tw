@@ -7,31 +7,43 @@ import type { ArticleRelated as Related, RelatedArticle } from '@/lib/related';
 
 const linkStyle = 'text-brand-700 hover:underline dark:text-brand-400';
 
+/** Reports shown before the rest fold under 再看 N 篇, so the side column stays about as long as the article. */
+const SHOWN = 5;
+
 function RelatedList({ id, title, items }: { id: string; title: string; items: RelatedArticle[] }) {
   if (!items.length) return null;
+  const row = (item: RelatedArticle) => (
+    <li key={item.id} className="py-3">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-zinc-600 dark:text-zinc-400">
+        <MediaHoverLink media={item.media} className={`${linkStyle} font-medium`}>
+          {item.mediaTitle}
+        </MediaHoverLink>
+        <time dateTime={item.publishedAt}>{taipei(item.publishedAt)}</time>
+      </div>
+      <p className="mt-1 break-words text-[15px] leading-7">
+        <Link href={`/article/${item.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
+          {readingTitle(item.title).title}
+        </Link>
+      </p>
+      <p className="text-[13px] text-zinc-600 dark:text-zinc-400">共同關鍵字：{item.sharedTags.map((tag) => `#${tag}`).join(' ')}</p>
+    </li>
+  );
   return (
     <section aria-labelledby={id}>
       <h3 id={id} className="text-sm font-medium">
         {title}
+        <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-400">{items.length} 篇</span>
       </h3>
-      <ul className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">
-        {items.map((item) => (
-          <li key={item.id} className="py-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-              <MediaHoverLink media={item.media} className={`${linkStyle} font-medium`}>
-                {item.mediaTitle}
-              </MediaHoverLink>
-              <time dateTime={item.publishedAt}>{taipei(item.publishedAt)}</time>
-            </div>
-            <p className="mt-1 break-words text-[15px] leading-7">
-              <Link href={`/article/${item.id}/`} className="hover:text-brand-700 dark:hover:text-brand-400">
-                {readingTitle(item.title).title}
-              </Link>
-            </p>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">共同關鍵字：{item.sharedTags.map((tag) => `#${tag}`).join(' ')}</p>
-          </li>
-        ))}
-      </ul>
+      <ul className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">{items.slice(0, SHOWN).map(row)}</ul>
+      {items.length > SHOWN && (
+        <details className="group">
+          <summary className="cursor-pointer list-none py-2 text-sm text-brand-700 hover:underline dark:text-brand-400 [&::-webkit-details-marker]:hidden">
+            <span className="group-open:hidden">再看 {items.length - SHOWN} 篇 ▾</span>
+            <span className="hidden group-open:inline">收起 ▴</span>
+          </summary>
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">{items.slice(SHOWN).map(row)}</ul>
+        </details>
+      )}
     </section>
   );
 }
@@ -71,7 +83,7 @@ export default function ArticleRelated({
                 <Link href={`/eve/${event.id}/`} className={`${linkStyle} leading-7`}>
                   {readingTitle(event.title).title}
                 </Link>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                <p className="text-[13px] text-zinc-600 dark:text-zinc-400">
                   {taipei(event.firstTime)} – {taipei(event.lastTime)} · 共同關鍵字 {event.sharedTags.map((tag) => `#${tag}`).join(' ')}
                 </p>
               </li>

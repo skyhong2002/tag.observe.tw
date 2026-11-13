@@ -390,14 +390,15 @@ export default async function MediaStatsPage({
               <Th
                 col="perArticle"
                 label="每篇分攤造訪"
-                className="text-right"
+                // Shown from 1536 px up, with 語言 and 抓取: at 1440 the table then fits the column without a sideways scroll.
+                className="hidden text-right 2xl:table-cell"
                 title="台灣月造訪 ÷ 當月發稿量（news sitemap 與本站收錄取大者）；含首頁與舊文，是指數不是讀者數"
               />
               <Th col="category" label="標籤" />
-              <Th col="language" label="語言" />
+              <Th col="language" label="語言" className="hidden 2xl:table-cell" />
               <Th col="tagged" label="標籤率" className="text-right" />
               <Th col="latest" label="最新文章" />
-              <Th col="schedule" label="抓取" />
+              <Th col="schedule" label="抓取" className="hidden 2xl:table-cell" />
               <Th col="status" label="狀態" />
             </tr>
           </thead>
@@ -405,7 +406,8 @@ export default async function MediaStatsPage({
             {rows.map((r) => (
               <tr key={r.media} className={table.row}>
                 <td className={table.lead}>
-                  <div className={table.leadBox}>
+                  {/* Capped on desktop too, so the table fits the 1280 px column at 1440; long names truncate (full name in title). */}
+                  <div className={`${table.leadBox} sm:max-w-44`}>
                     <MediaHoverLink
                       media={r.media}
                       icon={false}
@@ -455,7 +457,7 @@ export default async function MediaStatsPage({
                   {r.readers ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.visits)}` : '—'}
                 </td>
                 <td
-                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
+                  className={`${table.num} hidden 2xl:table-cell whitespace-nowrap ${r.readers?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
                   title={r.readers?.perArticle?.title ?? r.readers?.perArticleNote}
                 >
                   {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
@@ -474,12 +476,14 @@ export default async function MediaStatsPage({
                     <span className="text-zinc-600 dark:text-zinc-400">—</span>
                   )}
                 </td>
-                <td className={`${table.cell} whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
+                <td className={`${table.cell} hidden 2xl:table-cell whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
                 <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{pct(r.taggedShare24h)}</td>
                 <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400`}>
                   {r.lastArticle ? taipei(r.lastArticle) : '—'}
                 </td>
-                <td className={`${table.cell} whitespace-nowrap text-zinc-600 dark:text-zinc-400`}>{scheduleLabel(r.schedule)}</td>
+                <td className={`${table.cell} hidden 2xl:table-cell whitespace-nowrap text-zinc-600 dark:text-zinc-400`}>
+                  {scheduleLabel(r.schedule)}
+                </td>
                 <td className={table.cell}>
                   <StatusBadge status={r.status} />
                 </td>
