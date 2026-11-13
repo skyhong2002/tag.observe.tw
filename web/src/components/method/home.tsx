@@ -23,6 +23,13 @@ export function HomeMethod({
   return (
     <>
       <h3 className={methodHeading}>新聞總覽</h3>
+      {/* What the site is, for a first visit; it sits here, folded with the rest of the page's notes, not on the first screen. */}
+      <p>
+        首頁最上方的文字雲是今天正在升溫的關鍵字。新文易數收集台灣與部分國際新聞媒體的公開報導，把同一件事放在一起，比較各家標題、藍綠分布與誰先報。
+        <Link prefetch={false} href="/event/" className={`${inlineLink} ml-1`}>
+          看今天的事件 →
+        </Link>
+      </p>
       <p>
         頁首的新聞量分布為過去 24
         小時新聞類媒體有標籤的文章數，依媒體所屬陣營加總，並非逐篇判斷立場。展開後列出各段包含的媒體，淡色表示該媒體過去 24 小時沒有文章。

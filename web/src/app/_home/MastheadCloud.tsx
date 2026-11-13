@@ -163,18 +163,6 @@ export default function MastheadCloud({ edition }: { edition: string }) {
           </Link>
         </div>
       </div>
-      {/* What the site is, in one sentence, for a first visit: the cloud around the mark is today's rising keywords. */}
-      <p className={styles.mastheadIntro}>
-        四周是今天正在升溫的關鍵字。新文易數收集台灣與部分國際新聞媒體的公開報導，把同一件事放在一起，比較各家標題、藍綠分布與誰先報。
-        <span className={styles.mastheadIntroLinks}>
-          <Link prefetch={false} href="/event/">
-            看今天的事件 →
-          </Link>
-          <Link prefetch={false} href="/method/">
-            資料怎麼來
-          </Link>
-        </span>
-      </p>
     </div>
   );
 }
