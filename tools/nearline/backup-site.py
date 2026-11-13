@@ -10,12 +10,14 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import time
 import uuid
 
 DOCKER = '/home/deck/.local/bin/docker'
 RCLONE = '/home/deck/.local/bin/rclone'
 RESTIC = '/usr/bin/restic'
+REBATCH = Path(__file__).with_name('rebatch-inserts.py')
 HEX64 = re.compile(r'[0-9a-f]{64}')
 # One row per INSERT keeps unchanged rows byte-identical between nights, so the
 # deduplicating NAS store only adds what changed (#33). With extended inserts a
@@ -168,14 +170,19 @@ def restore_drill(path, expected_tables):
         if not ready:
             raise RuntimeError('Isolated restore database did not initialize')
         decompress = subprocess.Popen(['zstd', '-dc', str(path)], stdout=subprocess.PIPE)
+        batches = None
         try:
-            restore = subprocess.Popen([DOCKER, 'exec', '-i', name, 'mariadb', '-uroot', '--binary-mode', 'restore_check'], stdin=decompress.stdout)
+            # One-row INSERTs replay ~4x slower; regroup them for the drill (#33).
+            batches = subprocess.Popen([sys.executable, '-I', '-B', str(REBATCH)], stdin=decompress.stdout, stdout=subprocess.PIPE)
             decompress.stdout.close()
-            wait_pipeline([restore, decompress], path.parent)
+            restore = subprocess.Popen([DOCKER, 'exec', '-i', name, 'mariadb', '-uroot', '--binary-mode', 'restore_check'], stdin=batches.stdout)
+            batches.stdout.close()
+            wait_pipeline([restore, batches, decompress], path.parent)
         finally:
-            if decompress.poll() is None:
-                decompress.terminate()
-                decompress.wait(timeout=30)
+            for process in (batches, decompress):
+                if process is not None and process.poll() is None:
+                    process.terminate()
+                    process.wait(timeout=30)
         tables = run([DOCKER, 'exec', name, 'mariadb', '-uroot', '-N', '-B', 'restore_check', '-e',
                       'SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE() ORDER BY TABLE_NAME'],
                      capture_output=True, text=True).stdout.splitlines()

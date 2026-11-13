@@ -283,6 +283,48 @@ class ResticStoreTests(unittest.TestCase):
                 restic.verify(two['snapshot'], one['sql_sha256'])
 
 
+class RebatchTests(unittest.TestCase):
+    """#33: restores regroup one-row INSERTs so the drill stays as fast as before."""
+
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location('rebatch_inserts', Path(__file__).with_name('rebatch-inserts.py'))
+        self.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.mod)
+
+    def test_merges_consecutive_rows_per_table_and_keeps_other_lines_in_order(self):
+        lines = [b'LOCK TABLES `a` WRITE;\n', b'set autocommit=0;\n',
+                 b"INSERT INTO `a` VALUES (1,'x');\n", b"INSERT INTO `a` VALUES (2,'y VALUES (z);');\n",
+                 b"INSERT INTO `b` VALUES (3,NULL);\n", b'commit;\n', b'UNLOCK TABLES;\n']
+        self.assertEqual(list(self.mod.rebatch(lines)), [
+            b'LOCK TABLES `a` WRITE;\n', b'set autocommit=0;\n',
+            b"INSERT INTO `a` VALUES (1,'x'),(2,'y VALUES (z);');\n",
+            b"INSERT INTO `b` VALUES (3,NULL);\n", b'commit;\n', b'UNLOCK TABLES;\n'])
+
+    def test_splits_batches_at_the_size_limit(self):
+        lines = [b"INSERT INTO `a` VALUES (%d,'%s');\n" % (i, b'x' * 10) for i in range(10)]
+        out = list(self.mod.rebatch(lines, limit=40))
+        self.assertGreater(len(out), 1)
+        self.assertTrue(all(len(o) < 80 for o in out))
+        self.assertEqual(b''.join(out).count(b'),('), 10 - len(out))
+
+    def test_restore_drill_pipes_dump_through_rebatch(self):
+        calls = []
+
+        def popen(args, **kwargs):
+            calls.append(args)
+            return Mock(stdout=Mock(), poll=Mock(return_value=0))
+
+        with patch.object(module.subprocess, 'Popen', side_effect=popen), \
+                patch.object(module, 'run', return_value=Mock(stdout='mariadbd' + '\n')), \
+                patch.object(module.subprocess, 'run', return_value=Mock(returncode=0)), \
+                patch.object(module, 'wait_pipeline'), \
+                self.assertRaisesRegex(RuntimeError, 'inventory'):
+            module.restore_drill(Path('/tmp/x.sql.zst'), ['articles'])
+        self.assertEqual(calls[0][:2], ['zstd', '-dc'])
+        self.assertEqual(calls[1][-1], str(module.REBATCH))
+        self.assertIn('mariadb', calls[2])
+
+
 class PhaseCapacityTests(unittest.TestCase):
     def test_export_success_without_restore_capacity_preserves_dump_and_can_resume(self):
         with tempfile.TemporaryDirectory() as tmp:
