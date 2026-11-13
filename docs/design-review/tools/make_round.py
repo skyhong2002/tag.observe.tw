@@ -5,19 +5,20 @@
 
 Copies the review states (`review: true` in states.mjs) from the fixed
 baseline set and this round's new set, plus the fixed reference set, into
-/tmp/tag-hc/rounds/rROUND/{A,B,C} in random order, with a byte-identical copy
+$TAG_HC_ROOT/rounds/rROUND/{A,B,C} in random order, with a byte-identical copy
 of brief.md. The A/B/C mapping is written outside the review folder, to
 /tmp/tag-hc/private/rROUND.json.
 """
 import hashlib
 import json
+import os
 import random
 import re
 import shutil
 import sys
 from pathlib import Path
 
-ROOT = Path('/tmp/tag-hc')
+ROOT = Path(os.environ.get('TAG_HC_ROOT', Path.home() / '.cache/tag-hc'))
 DOCS = Path(__file__).resolve().parents[1]
 
 

@@ -98,6 +98,12 @@
 
 主機負載有明文規定（`docs/unfreeze-gates-20261013.md`）：全站同時最多一個建置、兩個截圖瀏覽器，load1 超過 12 就停。閘門與工作分成兩步，閘門不通過就等。
 
+**換機器（2026-11-13）**：sky-server 長時間 load >10，閘門一直不放行，基準只拍到 27/110，所以整輪（基準、新版、對手）改在開發機 skyhong-SM（12 核、16 GB）從頭重拍，分數只在同一台機器拍的截圖之間比較。正式站仍在 sky-server，這台不是正式主機。
+
+- 閘門門檻依核心數：16 核以上沿用 sky-server 的 10／12；其餘放行 0.75 × 核心數、停在 1 × 核心數（skyhong-SM：9／12）。可用 `GATE_LOAD_OK`、`GATE_LOAD_STOP` 覆寫。一個建置、兩個瀏覽器的上限不變。
+- 工作資料夾 `TAG_HC_ROOT`，預設 `~/.cache/tag-hc`（skyhong-SM 的 `/tmp` 是記憶體 tmpfs）：快照、截圖組 `sets/`、盲測 `rounds/`、對應表 `private/`、伺服器記錄 `logs/`。
+- Playwright 預設 `~/.cache/tag-hc/pw`（`npm i playwright@1.63.0` 後 `npx playwright install chromium`），或用 `PLAYWRIGHT_MODULE` 指定。
+
 ```bash
 T=docs/design-review/tools
 export SNAPSHOT_T0=2026-11-12T18:24:00Z
@@ -109,5 +115,5 @@ $T/gate.sh build && $T/web.sh build /path/to/checkout/web
 $T/gate.sh capture && node $T/capture.mjs site /path/to/checkout/web OUT_DIR
 $T/gate.sh capture && node $T/capture.mjs references OUT_DIR
 # 4. 組一輪盲測
-python3 $T/make_round.py 1 BASELINE_DIR NEW_DIR REFERENCE_DIR
+python3 $T/make_round.py 1 ~/.cache/tag-hc/sets/baseline NEW_DIR ~/.cache/tag-hc/sets/reference
 ```

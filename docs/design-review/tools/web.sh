@@ -6,6 +6,8 @@
 #   SNAPSHOT_T0   the snapshot's time (ISO); the server starts at T0, a build
 #                 30 minutes earlier so its prerendered pages count as stale
 #   NEXT_PORT     default 18562
+#   TAG_HC_ROOT   work folder (default ~/.cache/tag-hc; /tmp is a RAM tmpfs on
+#                 skyhong-SM), server logs under logs/
 set -eu
 cmd=$1
 port=${NEXT_PORT:-18562}
@@ -30,9 +32,10 @@ case $cmd in
     stop
     rm -rf "$dir/.next/cache/fetch-cache"
     cd "$dir"
+    mkdir -p "${TAG_HC_ROOT:-$HOME/.cache/tag-hc}/logs"
     (TAG_API_ORIGIN=http://127.0.0.1:18560 NEXT_TELEMETRY_DISABLED=1 FAKE_NOW=$t0 \
       NODE_OPTIONS="--require $tools/fake-now.cjs" setsid nohup nice -n 10 node_modules/.bin/next start -H 127.0.0.1 -p "$port" \
-      >> "${WEB_LOG:-/tmp/tag-hc/next-$port.log}" 2>&1 &)
+      >> "${WEB_LOG:-${TAG_HC_ROOT:-$HOME/.cache/tag-hc}/logs/next-$port.log}" 2>&1 &)
     until curl -s -o /dev/null "http://127.0.0.1:$port/icon.svg"; do sleep 0.3; done
     ;;
   stop) stop ;;

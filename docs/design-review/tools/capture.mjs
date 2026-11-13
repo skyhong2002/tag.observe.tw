@@ -2,16 +2,19 @@
 //   node capture.mjs site WEB_DIR OUT_DIR [id-filter]
 //   node capture.mjs references OUT_DIR
 // Needs fixture-api.mjs on :18560/:18561 and web.sh (SNAPSHOT_T0 set). Run
-// `gate.sh capture` first. One browser; it pauses whenever load1 goes over 12
-// and resumes at 10 or below. Only loopback, plus image files for article
+// `gate.sh capture` first. One browser; it pauses whenever load1 goes over
+// GATE_LOAD_STOP and resumes at GATE_LOAD_OK or below (same defaults as gate.sh).
+// Playwright: PLAYWRIGHT_MODULE, default ~/.cache/tag-hc/pw (npm i playwright@1.63.0
+// there, then npx playwright install chromium). Only loopback, plus image files for article
 // thumbnails and logos, leaves the browser; GA/GTM and every other request are aborted.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { cpus, homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATA_ORDER, REFERENCES, SIZES, STATES } from './states.mjs';
 
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? '/home/sky/.t3/worktrees/tag.analysis.tw/perf-frontend-20261112-b4f45cea8e951905/node_modules/playwright/index.mjs');
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? join(homedir(), '.cache/tag-hc/pw/node_modules/playwright/index.mjs'));
 const tools = dirname(fileURLToPath(import.meta.url));
 const FRONT = 'http://127.0.0.1:18561';
 const API = 'http://127.0.0.1:18560';
@@ -19,11 +22,14 @@ const T0 = Date.parse(process.env.SNAPSHOT_T0 ?? '');
 const startedAt = Date.now();
 const [mode, ...rest] = process.argv.slice(2);
 
+const CORES = cpus().length;
+const LOAD_STOP = Number(process.env.GATE_LOAD_STOP ?? (CORES >= 16 ? 12 : CORES));
+const LOAD_OK = Number(process.env.GATE_LOAD_OK ?? (CORES >= 16 ? 10 : CORES * 0.75));
 const load1 = () => Number(readFileSync('/proc/loadavg', 'utf8').split(' ')[0]);
 async function hostCheck() {
-  if (load1() <= 12) return;
-  console.log(`[pause] load1 ${load1()} > 12`);
-  while (load1() > 10) await new Promise((r) => setTimeout(r, 20000));
+  if (load1() <= LOAD_STOP) return;
+  console.log(`[pause] load1 ${load1()} > ${LOAD_STOP}`);
+  while (load1() > LOAD_OK) await new Promise((r) => setTimeout(r, 20000));
   console.log(`[resume] load1 ${load1()}`);
 }
 
