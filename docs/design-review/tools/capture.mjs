@@ -35,8 +35,19 @@ async function hostCheck() {
 
 const browser = await chromium.launch({ args: ['--disable-quic', '--disable-gpu', '--disable-dev-shm-usage'] });
 
-async function newContext(size, { theme = 'light', locale = 'zh-TW', allowAll = false } = {}) {
+// Reference sites only: Ground News' CDN refuses the "HeadlessChrome" token, so
+// reference pages see the same browser's version as plain Chrome. Our own site
+// keeps the unmodified headless identity.
+const plainUserAgent = async () => {
+  const context = await browser.newContext();
+  const ua = await (await context.newPage()).evaluate(() => navigator.userAgent);
+  await context.close();
+  return ua.replace('HeadlessChrome', 'Chrome');
+};
+
+async function newContext(size, { theme = 'light', locale = 'zh-TW', allowAll = false, userAgent } = {}) {
   const context = await browser.newContext({
+    userAgent,
     viewport: { width: size.width, height: size.height },
     deviceScaleFactor: size.deviceScaleFactor,
     isMobile: !!size.isMobile,
@@ -148,16 +159,24 @@ if (mode === 'site') {
 } else if (mode === 'references') {
   const [out, filter] = rest;
   mkdirSync(out, { recursive: true });
+  const userAgent = await plainUserAgent();
   for (const [sizeName, size] of Object.entries(SIZES)) {
     for (const ref of REFERENCES.filter((r) => !filter || r.id.includes(filter))) {
       await hostCheck();
-      const context = await newContext(size, { locale: ref.locale ?? 'en-US', allowAll: true });
+      const context = await newContext(size, { locale: ref.locale ?? 'en-US', allowAll: true, userAgent });
       const page = await context.newPage();
       await page.goto(ref.url, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
       await page.waitForTimeout(7000);
       for (const name of ['Reject All', 'Reject all', 'Accept All', 'Accept all', 'Accept', 'Got it', '全部拒絕', '拒絕全部']) {
         const button = page.getByRole('button', { name, exact: true });
         if (await button.count().catch(() => 0)) { await button.first().click({ timeout: 2000 }).catch(() => {}); break; }
+      }
+      for (const name of ref.dismiss ?? []) {
+        const buttons = page.getByRole('button', { name });
+        for (let i = 0; i < (await buttons.count().catch(() => 0)); i++) {
+          if (await buttons.nth(i).isVisible().catch(() => false)) await buttons.nth(i).click({ timeout: 2000 }).catch(() => {});
+        }
+        await page.waitForTimeout(500);
       }
       await settle(page, size.maxHeight);
       const file = `${out}/${ref.id}_${sizeName}.png`;

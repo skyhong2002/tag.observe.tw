@@ -89,10 +89,13 @@ export const STATES = [
 ];
 
 // Reference sites: photographed once and reused in every round (same sizes).
+// dismiss: accessible names of buttons that close a first-visit promo or dialog.
+const GROUND_DISMISS = ['Ground News homepage', 'Close this dialog', 'Close promotional banner'];
 export const REFERENCES = [
-  { id: 'ground-news-home', url: 'https://ground.news/' },
-  { id: 'ground-news-story', url: 'https://ground.news/interest/nvidia' },
-  { id: 'allsides-home', url: 'https://www.allsides.com/unbiased-balanced-news' },
+  { id: 'ground-news-home', url: 'https://ground.news/', dismiss: GROUND_DISMISS },
+  { id: 'ground-news-story', url: 'https://ground.news/interest/nvidia', dismiss: GROUND_DISMISS },
+  // allsides.com answers a Cloudflare human check to any automated browser; Verity is the same kind of bias-comparison site.
+  { id: 'verity-home', url: 'https://www.improvethenews.org/', dismiss: ['Close'] },
   { id: 'google-news-tw', url: 'https://news.google.com/home?hl=zh-TW&gl=TW&ceid=TW:zh-Hant', locale: 'zh-TW' },
 ];
 

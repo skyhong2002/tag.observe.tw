@@ -85,13 +85,13 @@
 
 ## 參考對手
 
-第一輪截一次，之後每輪重用同一組檔案（`tools/capture.mjs references`）：
+第一輪截一次，之後每輪重用同一組檔案（`tools/capture.mjs references`）。Ground News 的 CDN 會擋 UA 含 `HeadlessChrome` 的請求，所以只有對手組用同版本的一般 `Chrome` UA，每頁只讀一次；AllSides 對任何自動化瀏覽器都要求 Cloudflare 真人驗證，改用同類的偏向比較站 Verity。
 
 | ID | 網址 | 對應的我方頁面 |
 |---|---|---|
 | `ground-news-home` | https://ground.news/ | 首頁、事件 |
 | `ground-news-story` | https://ground.news/interest/nvidia | 標籤、單一事件 |
-| `allsides-home` | https://www.allsides.com/unbiased-balanced-news | 陣營對照 |
+| `verity-home` | https://www.improvethenews.org/ | 陣營對照（原訂 AllSides，見下） |
 | `google-news-tw` | https://news.google.com/home?hl=zh-TW&gl=TW&ceid=TW:zh-Hant | 首頁、搜尋 |
 
 ## 重現
