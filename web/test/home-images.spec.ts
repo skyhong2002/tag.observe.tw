@@ -58,10 +58,10 @@ const centerWidth = (viewport: number) =>
     ? viewport - 32
     : viewport <= 1000
       ? Math.min(((viewport - 52) * 1.9) / 2.9, viewport - 272)
-      : ((Math.min(viewport, 1152) - 72) * 2) / 3.85;
+      : ((Math.min(viewport, 1280) - 72) * 2) / 3.85;
 
 describe('home image delivery (offline SSR, not visual quality)', () => {
-  it.each([320, 390, 412, 640, 641, 690, 768, 1000, 1001, 1152, 1280])('matches CSS slots within one pixel at %i', (viewport) => {
+  it.each([320, 390, 412, 640, 641, 690, 768, 1000, 1001, 1152, 1280, 1440])('matches CSS slots within one pixel at %i', (viewport) => {
     const center = centerWidth(viewport);
     const slots = { hero: center - 2, story: (center - (viewport <= 640 ? 30 : 34)) * (viewport <= 640 ? 0.28 : 0.27), topic: 72 };
     for (const kind of ['hero', 'story', 'topic'] as const) {

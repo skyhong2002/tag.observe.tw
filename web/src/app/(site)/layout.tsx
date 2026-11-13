@@ -8,8 +8,8 @@ export default function SiteLayout({ children, notes }: { children: React.ReactN
     <div className="flex min-h-dvh flex-col">
       <ScrollReset />
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
-      <div className="mx-auto w-full max-w-6xl px-4">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
+      <div className="mx-auto w-full max-w-7xl px-4">
         <SiteFooter notes={notes} />
       </div>
     </div>

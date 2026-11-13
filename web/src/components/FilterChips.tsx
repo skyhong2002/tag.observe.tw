@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 /** One filter chip; `muted` greys out a choice that has little or no data. */
 export const filterChipClass = (current: boolean, muted = false) =>
-  `whitespace-nowrap rounded-full px-3 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+  `inline-flex min-h-8 items-center whitespace-nowrap rounded-full px-3 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
     current
       ? 'bg-brand-700 text-white'
       : `bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 ${muted ? 'text-zinc-600 dark:text-zinc-400' : 'text-zinc-700 dark:text-zinc-300'}`

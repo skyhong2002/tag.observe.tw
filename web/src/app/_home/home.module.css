@@ -18,7 +18,7 @@
 .home a:focus-visible, .home button:focus-visible, .main input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .skip { position: fixed; top: -80px; left: 16px; padding: 12px 20px; border-radius: 8px; background: var(--panel); color: var(--accent); z-index: 50; }
 .skip:focus { top: 12px; }
-.main { max-width: 1152px; margin: auto; padding: 24px 16px 0; }
+.main { max-width: 1280px; margin: auto; padding: 24px 16px 0; }
 .edition { font-size: 12px; line-height: 1.7; margin-top: 6px; color: var(--muted); }
 .mastheadTagline { font-size: 14px; line-height: 1.6; color: var(--ink); letter-spacing: .04em; }
 .columns { display: grid; grid-template-columns: minmax(180px, .85fr) minmax(0, 2fr) minmax(210px, 1fr); align-items: start; gap: 20px; }
