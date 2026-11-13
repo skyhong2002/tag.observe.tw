@@ -5,4 +5,4 @@ Type=oneshot
 ExecStart=/home/deck/Projects/tag.analysis.tw/scripts/backup-db.sh
 Nice=15
 IOSchedulingClass=idle
-Environment=PATH=/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/home/sky/.local/node-24.15.0/bin:/home/deck/.local/bin:/usr/local/bin:/usr/bin:/bin

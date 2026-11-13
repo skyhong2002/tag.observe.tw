@@ -2,13 +2,15 @@
 set -euo pipefail
 umask 077
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-node_binary=$(command -v node)
-repository_dir=$(git -C "$project_dir" rev-parse --path-format=absolute --git-common-dir)
-if [[ "$repository_dir" != /home/deck/Projects/tag.analysis.tw/.git || "$node_binary" != /home/deck/.local/bin/node ]]; then
-  echo 'This service unit targets skyhong-SM. Adjust the runtime paths for another host.' >&2
+# sky-server runtime: the units in runtime/ pin this exact Node build.
+node_dir=/home/sky/.local/node-24.15.0/bin
+export PATH="$node_dir:/usr/local/bin:/usr/bin:/bin"
+if [[ $(hostname) != sky-server || $(command -v node) != "$node_dir/node" || $(node --version) != v24.15.0 ]]; then
+  echo 'This release script targets sky-server with Node 24.15.0. Adjust runtime/ and this script for another host.' >&2
   exit 1
 fi
 cd "$project_dir"
+git fetch --quiet origin main
 if [[ -n $(git status --porcelain --untracked-files=no) ]]; then
   echo 'Commit and verify tracked changes before deployment; the running release will not be changed.' >&2
   exit 1
@@ -18,7 +20,14 @@ if [[ "$commit_id" != "$(git rev-parse origin/main)" ]]; then
   echo 'Push the scanned checkpoint to origin/main before deployment.' >&2
   exit 1
 fi
-release_root=/home/deck/.local/share/tag-analysis
+# Units address /home/deck/.local/share/tag-analysis/current; /home/deck is a
+# symlink to /home/sky on sky-server. Build under the real path: npm ci fails
+# to match the lock file when the install directory is reached via the alias.
+release_root=/home/sky/.local/share/tag-analysis
+if [[ $(readlink -f /home/deck/.local/share/tag-analysis) != "$release_root" ]]; then
+  echo "Units' /home/deck release root does not resolve to $release_root." >&2
+  exit 1
+fi
 release_dir="$release_root/releases/$commit_id"
 available_bytes=$(node -e "const s=require('node:fs').statfsSync('/home');process.stdout.write(String(s.bavail*s.bsize))")
 if (( available_bytes < 40 * 1024 * 1024 * 1024 )); then
@@ -42,9 +51,9 @@ JS
   staging_dir=$(mktemp -d "$release_root/releases/.staging-$commit_id-XXXXXX")
   trap 'if [[ -n ${staging_dir:-} && -d "$staging_dir" ]]; then chmod -R u+w "$staging_dir"; rm -rf -- "$staging_dir"; fi' EXIT
   git archive "$commit_id" app/src app/data tools/vocabulary-export.ts package.json package-lock.json web | tar -x -C "$staging_dir"
-  npm ci --prefix "$staging_dir" --omit=dev --ignore-scripts --no-audit --no-fund
+  (cd "$staging_dir" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
   # SSR frontend: build once per release, then run the standalone server.
-  npm ci --prefix "$staging_dir/web" --ignore-scripts --no-audit --no-fund
+  (cd "$staging_dir/web" && npm ci --ignore-scripts --no-audit --no-fund)
   build_guard_log="$release_root/build-logs/$commit_id-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
   node "$project_dir/tools/guard-next-build.js" "$staging_dir/web" "$build_guard_log" "$TAG_BUILD_ESTIMATE_GIB"
   cp -r "$staging_dir/web/.next/static" "$staging_dir/web/.next/standalone/web/.next/static"
