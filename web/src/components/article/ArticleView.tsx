@@ -5,6 +5,7 @@ import AuthorCredits from '@/components/AuthorCredits';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
+import Phrases from '@/components/Phrases';
 import ReadingRecorder from '@/components/reader/ReadingRecorder';
 import ReportButton from '@/components/reader/ReportButton';
 import SaveButton from '@/components/reader/SaveButton';
@@ -95,7 +96,9 @@ export default function ArticleView({
             </>
           )}
         </p>
-        <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">{headline.title}</h1>
+        <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">
+          <Phrases text={headline.title} />
+        </h1>
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
           <AuthorCredits credits={article.authors} media={article.media} attributions={content.attributions} />
           <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>

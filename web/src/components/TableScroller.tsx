@@ -95,6 +95,15 @@ export default function TableScroller({
     <div
       className={`table-frame relative ${card ? 'table-card overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900' : ''} ${className}`}
     >
+      {/* Phones: a row of its own above the header, so the hint never covers a column name. It
+          renders until the table is measured: on a phone almost every wide table overflows. */}
+      <div
+        aria-hidden="true"
+        className={`${scroll === undefined || more ? 'flex' : 'hidden'} h-7 items-center justify-end gap-1 border-b border-zinc-200 bg-(--table-head-bg) px-3 text-xs text-brand-800 sm:hidden dark:border-zinc-800 dark:text-brand-300`}
+      >
+        {scroll === 'middle' ? '還有更多欄，繼續往左滑' : '左右滑動看更多欄'}
+        <span aria-hidden="true">→</span>
+      </div>
       {/* Keyboard users can focus the region to scroll it sideways. */}
       <section
         ref={ref}
@@ -116,10 +125,9 @@ export default function TableScroller({
         tabIndex={-1}
         aria-hidden="true"
         onClick={() => ref.current?.scrollBy({ left: ref.current.clientWidth * 0.8, behavior: 'smooth' })}
-        className={`absolute top-1.5 right-1.5 z-30 inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800 shadow-sm transition-opacity hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200 dark:hover:bg-brand-900 ${more ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        className={`absolute top-1.5 right-1.5 z-30 hidden items-center gap-1 rounded-full sm:inline-flex border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800 shadow-sm transition-opacity hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200 dark:hover:bg-brand-900 ${more ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       >
-        <span className="sm:hidden">左右滑動看更多欄</span>
-        <span className="hidden sm:inline">更多欄位</span>
+        更多欄位
         <span aria-hidden="true">→</span>
       </button>
       {footer}

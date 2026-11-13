@@ -51,6 +51,8 @@ type Col = 'tag' | 'change' | 'burst' | 'growth' | 'score' | 'count' | 'trend' |
 const COLS: Col[] = ['tag', 'burst', 'growth', 'change', 'score', 'count', 'trend', 'first', 'peak', 'media'];
 const RELATED_SHOWN = 5;
 const CLOUD_WORDS = 500;
+// The cloud draws the top of that list: enough to show the shape of the day; more only shrank the type below reading size.
+const CLOUD_SHOWN = 120;
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
@@ -212,7 +214,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       {cloud && (
         <RankingWordCloud
           mode={emerging ? 'growth' : 'score'}
-          terms={cloud.entries.map((e) => ({
+          terms={cloud.entries.slice(0, CLOUD_SHOWN).map((e) => ({
             tag: e.tag,
             score: e.normalized,
             burst: e.burst,

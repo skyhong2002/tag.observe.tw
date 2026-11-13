@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar } from '@/components/CampBar';
 import FitRow from '@/components/FitRow';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import Phrases from '@/components/Phrases';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import Sparkline from '@/components/Sparkline';
@@ -261,10 +262,10 @@ function Title({ e, className, at }: { e: EventItem; className: string; at?: str
     <h2 className={className}>
       {href ? (
         <Link prefetch={false} href={at ? `${href}?at=${encodeURIComponent(at)}` : href} className="hover:underline">
-          {text}
+          <Phrases text={text} />
         </Link>
       ) : (
-        text
+        <Phrases text={text} />
       )}
     </h2>
   );

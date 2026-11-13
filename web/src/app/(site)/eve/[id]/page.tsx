@@ -7,6 +7,7 @@ import EventTagCloud from '@/components/EventTagCloud';
 import KeywordFlow, { KeywordFlowLegend } from '@/components/KeywordFlow';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
+import Phrases from '@/components/Phrases';
 import FollowButton from '@/components/reader/FollowButton';
 import SaveButton from '@/components/reader/SaveButton';
 import SafeImage from '@/components/SafeImage';
@@ -292,10 +293,10 @@ export default async function EventThreadPage({
           <h1 className="text-2xl font-semibold tracking-tight">
             {lead ? (
               <Link href={articleHref(lead)} className="hover:underline">
-                {headline}
+                <Phrases text={headline} />
               </Link>
             ) : (
-              headline
+              <Phrases text={headline} />
             )}
           </h1>
           {lead && (

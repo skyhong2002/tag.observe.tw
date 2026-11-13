@@ -4,6 +4,7 @@ import ArticleBody from '@/components/ArticleBody';
 import ArticleImage from '@/components/ArticleImage';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
+import Phrases from '@/components/Phrases';
 import SourceLink from '@/components/SourceLink';
 import { kindNoun, topicHref, topicMediaHref } from '@/components/TopicCard';
 import { CONTENT_STATUS } from '@/lib/article-content';
@@ -34,7 +35,9 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
         </span>
       </nav>
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">{data.title}</h1>
+        <h1 className="text-2xl font-semibold">
+          <Phrases text={data.title} />
+        </h1>
         {kind === 'topic' && <SourceLink url={data.url} label={`原站${noun}`} showUrl />}
       </div>
       {kind === 'feature' && (

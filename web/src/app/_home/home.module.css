@@ -323,6 +323,10 @@
   position: relative; container-type: inline-size; margin: 0 auto; max-width: var(--wide-max); aspect-ratio: var(--cw) / var(--ch);
 }
 .mastheadCloudCompact, .mastheadCloudMedium { display: none; }
+.mastheadIntro { max-width: 46rem; margin: 6px auto 0; padding: 0 8px; font-size: 15px; line-height: 1.75; color: var(--ink); text-wrap: pretty; }
+.mastheadIntroLinks { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; margin-left: 8px; }
+.mastheadIntroLinks > a { display: inline-flex; align-items: center; min-height: 32px; color: var(--accent); font-weight: 500; }
+.mastheadIntroLinks > a + a { color: var(--muted); font-weight: 400; text-decoration: underline; text-underline-offset: 3px; }
 .mastheadCloudCentre { --u: calc(100cqw / var(--cw)); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .mastheadCloudCentre h1 { line-height: 0; }
 .mastheadCloudMark { display: block; width: calc(var(--logo) * var(--u)); height: calc(var(--logo) * var(--u)); color: var(--ink); }
