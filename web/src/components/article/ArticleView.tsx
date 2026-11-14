@@ -5,6 +5,7 @@ import AuthorCredits from '@/components/AuthorCredits';
 import DiscoverySources from '@/components/DiscoverySources';
 import MediaHoverLink from '@/components/MediaHoverLink';
 import MethodLink from '@/components/MethodLink';
+import Phrases from '@/components/Phrases';
 import ReadingRecorder from '@/components/reader/ReadingRecorder';
 import ReportButton from '@/components/reader/ReportButton';
 import SaveButton from '@/components/reader/SaveButton';
@@ -69,100 +70,109 @@ export default function ArticleView({
   const sectionLabel = section ?? headline.section;
   const collections = (article.collections ?? []).filter((c) => !(self && c.kind === self.kind && c.id === self.id));
   return (
-    <article className="mx-auto max-w-[44rem] pb-10 pt-1 sm:pt-4">
-      <nav aria-label="文章導覽" className="mb-8 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <Link
-          href={back.href}
-          className="inline-flex min-h-9 items-center text-zinc-600 hover:text-brand-700 dark:text-zinc-400 dark:hover:text-brand-400"
-        >
-          ← {back.label}
-        </Link>
-        <div className="flex flex-wrap gap-2">
-          <SaveButton kind="article" id={article.id} />
-          <ReportButton articleId={article.id} tags={article.tags ?? []} />
-        </div>
-        <ReadingRecorder articleId={article.id} />
-      </nav>
-      <header className="mb-7">
-        <p className="mb-4 flex flex-wrap items-center gap-3 text-xs font-medium tracking-wide text-brand-700 dark:text-brand-400">
-          <MediaHoverLink media={article.media} className="hover:underline">
-            {article.mediaTitle}
-          </MediaHoverLink>
-          {sectionLabel && (
-            <>
-              <span aria-hidden="true">/</span>
-              <span>{sectionLabel}</span>
-            </>
-          )}
-        </p>
-        <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">{headline.title}</h1>
-        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-          <AuthorCredits credits={article.authors} media={article.media} attributions={content.attributions} />
-          <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>
-          {content.body && <span className="text-xs">全文約 {content.chars.toLocaleString('zh-TW')} 字</span>}
-        </div>
-        <div className="mt-3">
-          <DiscoverySources sources={article.discoverySources} />
-        </div>
-        {collections.length > 0 && (
-          <nav aria-label="所屬議題與專題" className="mt-5 space-y-2 text-sm">
-            {(['topic', 'feature'] as const).map((kind) => {
-              const ofKind = collections.filter((c) => c.kind === kind);
-              return ofKind.length ? (
-                <div key={kind} className="flex gap-3">
-                  <span className="shrink-0 text-zinc-500 dark:text-zinc-400">{kindNoun(kind)}</span>
-                  <ul className="flex flex-wrap gap-x-4 gap-y-2">
-                    {ofKind.map((collection) => (
-                      <li key={collection.id}>
-                        <Link
-                          href={topicHref(collection.media, collection.id, kind)}
-                          className="text-brand-700 hover:underline dark:text-brand-300"
-                        >
-                          {collection.title}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null;
-            })}
-          </nav>
-        )}
-        <ArticleTags data={related} tags={article.tags} />
-      </header>
-      {summary && (
-        <section aria-label="文章摘要" className="mb-7 border-l-2 border-brand-200 pl-4 dark:border-brand-700">
-          <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h2 className="text-sm font-medium">文章摘要</h2>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              {article.mediaTitle} · {summarySourceLabels[article.summarySource ?? ''] ?? '媒體提供的摘要'}
-            </span>
+    // Wide screens: the article keeps its reading measure and 延伸閱讀 moves into a column beside it.
+    <div className="mx-auto max-w-[44rem] pb-10 pt-1 sm:pt-4 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,44rem)_22rem] xl:items-start xl:justify-center xl:gap-x-12">
+      <article className="min-w-0">
+        <nav aria-label="文章導覽" className="mb-8 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <Link
+            href={back.href}
+            className="inline-flex min-h-9 items-center text-zinc-600 hover:text-brand-700 dark:text-zinc-400 dark:hover:text-brand-400"
+          >
+            ← {back.label}
+          </Link>
+          <div className="flex flex-wrap gap-2">
+            <SaveButton kind="article" id={article.id} />
+            <ReportButton articleId={article.id} tags={article.tags ?? []} />
           </div>
-          <p className="whitespace-pre-wrap break-words text-base leading-8 text-zinc-700 dark:text-zinc-300">{summary}</p>
-        </section>
-      )}
-      <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} />
-      <AdminFullText id={article.id} sourceUrl={article.url}>
-        {content.body ? (
-          <>
-            {content.status !== 'ok' && (
-              <p className="mb-6 border-l-2 border-amber-500 pl-4 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
+          <ReadingRecorder articleId={article.id} />
+        </nav>
+        <header className="mb-7">
+          <p className="mb-4 flex flex-wrap items-center gap-3 text-xs font-medium tracking-wide text-brand-700 dark:text-brand-400">
+            <MediaHoverLink media={article.media} className="hover:underline">
+              {article.mediaTitle}
+            </MediaHoverLink>
+            {sectionLabel && (
+              <>
+                <span aria-hidden="true">/</span>
+                <span>{sectionLabel}</span>
+              </>
             )}
-            <ArticleBody body={content.body} sourceUrl={article.url} />
-          </>
-        ) : !summary && article.description ? (
-          <ArticleBody body={article.description} sourceUrl={article.url} label="文章摘要" />
-        ) : (
-          <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
-            <h2 className="font-medium">{state.label}</h2>
-            <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
-            <div className="mt-4">
-              <SourceLink url={article.url} label="原站文章" showUrl />
+          </p>
+          <h1 className="break-words text-[1.75rem] font-semibold leading-[1.5] tracking-tight sm:text-[2.25rem]">
+            <Phrases text={headline.title} />
+          </h1>
+          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <AuthorCredits credits={article.authors} media={article.media} attributions={content.attributions} />
+            <time dateTime={article.publishedDate ?? article.publishedAt}>{article.publishedDate ?? taipei(article.publishedAt)}</time>
+            {content.body && (
+              <span className="text-xs" title="本站擷取的全文字數，標點符號也算；原站標示的字數可能不計標點，所以會有差距。">
+                全文約 {content.chars.toLocaleString('zh-TW')} 字（含標點）
+              </span>
+            )}
+          </div>
+          <div className="mt-3">
+            <DiscoverySources sources={article.discoverySources} />
+          </div>
+          {collections.length > 0 && (
+            <nav aria-label="所屬議題與專題" className="mt-5 space-y-2 text-sm">
+              {(['topic', 'feature'] as const).map((kind) => {
+                const ofKind = collections.filter((c) => c.kind === kind);
+                return ofKind.length ? (
+                  <div key={kind} className="flex gap-3">
+                    <span className="shrink-0 text-zinc-600 dark:text-zinc-400">{kindNoun(kind)}</span>
+                    <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                      {ofKind.map((collection) => (
+                        <li key={collection.id}>
+                          <Link
+                            href={topicHref(collection.media, collection.id, kind)}
+                            className="text-brand-700 hover:underline dark:text-brand-300"
+                          >
+                            {collection.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null;
+              })}
+            </nav>
+          )}
+          <ArticleTags data={related} tags={article.tags} />
+        </header>
+        {summary && (
+          <section aria-label="文章摘要" className="mb-7 border-l-2 border-brand-200 pl-4 dark:border-brand-700">
+            <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h2 className="text-sm font-medium">文章摘要</h2>
+              <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                {article.mediaTitle} · {summarySourceLabels[article.summarySource ?? ''] ?? '媒體提供的摘要'}
+              </span>
             </div>
+            <p className="whitespace-pre-wrap break-words text-base leading-8 text-zinc-700 dark:text-zinc-300">{summary}</p>
           </section>
         )}
-      </AdminFullText>
-      <footer className="mt-12 space-y-7 border-t border-zinc-200 pt-7 dark:border-zinc-800">
+        <ArticleImage src={article.image} title={headline.title} mediaTitle={article.mediaTitle} />
+        <AdminFullText id={article.id} sourceUrl={article.url}>
+          {content.body ? (
+            <>
+              {content.status !== 'ok' && (
+                <p className="mb-6 border-l-2 border-amber-500 pl-4 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
+              )}
+              <ArticleBody body={content.body} sourceUrl={article.url} repeats={summary} />
+            </>
+          ) : !summary && article.description ? (
+            <ArticleBody body={article.description} sourceUrl={article.url} label="文章摘要" />
+          ) : (
+            <section className="my-8 rounded-lg bg-zinc-50 p-6 dark:bg-zinc-900" aria-label="內文狀態">
+              <h2 className="font-medium">{state.label}</h2>
+              <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{state.detail}</p>
+              <div className="mt-4">
+                <SourceLink url={article.url} label="原站文章" showUrl />
+              </div>
+            </section>
+          )}
+        </AdminFullText>
+      </article>
+      <footer className="mt-12 min-w-0 space-y-7 border-t border-zinc-200 pt-7 xl:mt-0 xl:border-t-0 xl:border-l xl:pt-1 xl:pl-8 dark:border-zinc-800">
         {extra}
         {content.attributions.length > 0 && (
           <section>
@@ -177,7 +187,7 @@ export default function ArticleView({
                     >
                       {attributionRole(source)} {source.name}
                     </Link>
-                    <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{source.country}</span>
+                    <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-400">{source.country}</span>
                   </p>
                   <p className="mt-1 break-words leading-7 text-zinc-600 dark:text-zinc-400">{source.evidence}</p>
                 </li>
@@ -194,6 +204,6 @@ export default function ArticleView({
           similar={<ArticleSimilar data={similar} publishedAt={article.publishedAt} />}
         />
       </footer>
-    </article>
+    </div>
   );
 }

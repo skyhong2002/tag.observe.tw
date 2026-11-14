@@ -137,7 +137,7 @@ export default function MethodPage() {
         <h1 className="text-2xl font-semibold tracking-tight">資料來源與計算方式</h1>
         {/* Narrow screens: the groups up top. Wide screens use the side outline instead. */}
         <nav aria-label="目錄" className="mt-5 rounded-lg border border-zinc-200 p-4 text-sm lg:hidden dark:border-zinc-800">
-          <h2 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">目錄</h2>
+          <h2 className="text-xs font-medium text-zinc-600 dark:text-zinc-400">目錄</h2>
           <ol className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
             {GROUPS.map((group) => (
               <li key={group.id}>

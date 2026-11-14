@@ -3,7 +3,7 @@ import { ArticleFacets, ArticleList, ArticlePager, type ListingLink, RangeChips 
 import PeriodEvents from '@/components/PeriodEvents';
 import SectionTabs from '@/components/SectionTabs';
 import { fetchMedia, type MediaInfo } from '@/lib/api';
-import { fetchArticleListing, isCamp, rangeDays, validCursor } from '@/lib/article-search';
+import { fetchArticleListing, isCamp, periodLabel, rangeDays, validCursor } from '@/lib/article-search';
 import { fetchEventPeriod } from '@/lib/pages';
 import { pageMetadata } from '@/lib/seo.mts';
 
@@ -59,7 +59,7 @@ export default async function ArticleIndexPage({ searchParams }: { searchParams:
           {facets && (
             <aside className="lg:order-2">
               <div className="lg:sticky lg:top-20">
-                <ArticleFacets facets={facets} subject="全站" span={`過去 ${days} 天`} camp={camp} link={link} media={media} />
+                <ArticleFacets facets={facets} subject="全站" span={periodLabel(days)} camp={camp} link={link} media={media} />
               </div>
             </aside>
           )}

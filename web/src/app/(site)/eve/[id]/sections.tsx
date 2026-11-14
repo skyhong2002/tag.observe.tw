@@ -134,7 +134,7 @@ export function LooseReports({ items }: { items: TimedArticle[] }) {
     <details className={`${card} px-3 py-2 text-sm`}>
       <summary className="cursor-pointer select-none py-1 text-zinc-700 dark:text-zinc-300">
         只帶到一個主要標籤的報導（{items.length} 篇）
-        <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">多半是同一標籤下的其他新聞</span>
+        <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-400">多半是同一標籤下的其他新聞</span>
       </summary>
       <ul className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">
         {items.map((a) => (
@@ -165,11 +165,14 @@ function HourHeading({ g, rankAt, span }: { g: HourGroup; rankAt: Map<number, Th
         ))}
       </span>
       {h ? (
-        <Link href={`/event/?at=${encodeURIComponent(iso)}`} className="text-xs font-normal text-sky-700 hover:underline dark:text-sky-400">
+        <Link
+          href={`/event/?at=${encodeURIComponent(iso)}`}
+          className="text-xs font-normal text-brand-700 hover:underline dark:text-brand-400"
+        >
           事件表第 {h.rank} 名 →
         </Link>
       ) : (
-        <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">未上榜</span>
+        <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">未上榜</span>
       )}
     </h3>
   );
@@ -193,11 +196,11 @@ function DayHeading({ g, rankAt }: { g: HourGroup; rankAt: Map<number, ThreadHou
         ))}
       </span>
       {best ? (
-        <Link href={`/event/?day=${day}`} className="text-xs font-normal text-sky-700 hover:underline dark:text-sky-400">
+        <Link href={`/event/?day=${day}`} className="text-xs font-normal text-brand-700 hover:underline dark:text-brand-400">
           當天最高第 {best} 名 · 上榜 {ranks.length} 小時 →
         </Link>
       ) : (
-        <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">當天未上榜</span>
+        <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">當天未上榜</span>
       )}
     </h3>
   );
@@ -228,7 +231,7 @@ export function CampColumns({ groups, rankAt, span }: { groups: HourGroup[]; ran
     <p className={`mb-1 flex items-center gap-1.5 text-xs font-medium ${CAMP_TEXT[c]}`}>
       <CampDot camp={c} />
       {CAMP_LONG[c]}
-      <span className="font-normal text-zinc-500 dark:text-zinc-400">{n ? `${n} 篇` : '沒有報導'}</span>
+      <span className="font-normal text-zinc-600 dark:text-zinc-400">{n ? `${n} 篇` : '沒有報導'}</span>
     </p>
   );
   return (

@@ -29,8 +29,8 @@ function MetricCell({ row, metric }: { row: JournalistSummary; metric: Metric })
   return (
     <td className={`${table.num} min-w-28`} title={`${count === null ? '未知' : `${count} 篇`} / 全部 ${row.articles} 篇`}>
       <div className="relative flex items-baseline justify-end gap-2 whitespace-nowrap">
-        <span className={count === 0 ? 'text-zinc-500 dark:text-zinc-400' : ''}>{count === null ? '—' : number(count)}</span>
-        <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{percent(share)}</span>
+        <span className={count === 0 ? 'text-zinc-600 dark:text-zinc-400' : ''}>{count === null ? '—' : number(count)}</span>
+        <span className="text-[13px] text-zinc-700 dark:text-zinc-300">{percent(share)}</span>
         <span className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
           <span
             className="block h-px bg-zinc-400 dark:bg-zinc-500"
@@ -143,10 +143,10 @@ export default function JournalistTable({
             <li key={outlet.media} className="flex min-w-0 items-center gap-1 whitespace-nowrap">
               <MediaIcon media={outlet.media} title={outlet.name} size={14} />
               <span className="truncate">{outlet.name}</span>
-              <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{outlet.count}</span>
+              <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{outlet.count}</span>
             </li>
           ))}
-          {row.media.length > 2 && <li className="shrink-0 text-zinc-500 dark:text-zinc-400">+{row.media.length - 2}</li>}
+          {row.media.length > 2 && <li className="shrink-0 text-zinc-600 dark:text-zinc-400">+{row.media.length - 2}</li>}
         </ul>
       </td>
       <td className={cell}>{number(row.articles)}</td>
@@ -159,7 +159,7 @@ export default function JournalistTable({
     <div>
       <div className="mb-3 flex flex-wrap items-end gap-3 text-xs">
         <label htmlFor={`${id}-q`} className="flex flex-col gap-1">
-          <span className="text-zinc-500 dark:text-zinc-400">搜尋名字</span>
+          <span className="text-zinc-600 dark:text-zinc-400">搜尋名字</span>
           <SuggestInput
             id={`${id}-q`}
             type="search"
@@ -175,7 +175,7 @@ export default function JournalistTable({
           />
         </label>
         <label htmlFor={`${id}-media`} className="flex flex-col gap-1">
-          <span className="text-zinc-500 dark:text-zinc-400">媒體</span>
+          <span className="text-zinc-600 dark:text-zinc-400">媒體</span>
           <OutletPicker
             id={`${id}-media`}
             outlets={outlets}
@@ -187,11 +187,11 @@ export default function JournalistTable({
             className="w-44 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
           />
         </label>
-        <p role="status" className="py-2 text-zinc-500 dark:text-zinc-400">
+        <p role="status" className="py-2 text-zinc-600 dark:text-zinc-400">
           符合 {number(filtered.length)} 人
         </p>
         <span className="flex items-center gap-1">
-          <span className="mr-1 text-zinc-500 dark:text-zinc-400">排序</span>
+          <span className="mr-1 text-zinc-600 dark:text-zinc-400">排序</span>
           <TabButtons
             label="排序依據"
             options={[
@@ -227,7 +227,7 @@ export default function JournalistTable({
         <MethodLink className="py-2" />
       </div>
       <details className="mb-3 text-xs">
-        <summary className="w-fit cursor-pointer py-1 text-zinc-500 dark:text-zinc-400">
+        <summary className="w-fit cursor-pointer py-1 text-zinc-600 dark:text-zinc-400">
           進階篩選
           {[Boolean(relation), minArticles > 0, minCoverage > 0, minShare !== '', maxShare !== ''].filter(Boolean).length > 0
             ? `（${[Boolean(relation), minArticles > 0, minCoverage > 0, minShare !== '', maxShare !== ''].filter(Boolean).length} 項已套用）`
@@ -332,9 +332,72 @@ export default function JournalistTable({
           </button>
         </div>
       </details>
-      <TableScroller label="記者表格，可左右捲動">
+      {/* Phones: one card per journalist with the three headline figures, sorted by the same control as the table. */}
+      <div className="sm:hidden">
+        <label className="mb-2 flex items-center justify-end gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+          排序
+          <select
+            value={`${sort}:${descending ? 'desc' : 'asc'}`}
+            onChange={(event) => {
+              const [key, dir] = event.target.value.split(':') as [SortKey, string];
+              setSort(key);
+              setDescending(dir === 'desc');
+              setShown(PAGE);
+            }}
+            className={`${control} py-1.5`}
+          >
+            {columns.map((column) => (
+              <option key={column.key} value={`${column.key}:${column.key === 'name' ? 'asc' : 'desc'}`}>
+                {column.key === 'name' ? '記者姓名' : `${column.label}最多`}
+              </option>
+            ))}
+          </select>
+        </label>
+        <ol className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+          {visible.map((row) => (
+            <li key={row.name} className="px-3 py-2.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <Link
+                  href={journalistHref(row.name)}
+                  className="min-w-0 truncate text-base font-medium hover:text-brand-700 hover:underline"
+                >
+                  {row.name}
+                </Link>
+                <span className="shrink-0 text-sm tabular-nums">
+                  {number(row.articles)} <span className="text-xs text-zinc-600 dark:text-zinc-400">篇</span>
+                </span>
+              </div>
+              <p className="mt-1 flex min-w-0 items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                {row.media.slice(0, 2).map((outlet) => (
+                  <span key={outlet.media} className="flex min-w-0 items-center gap-1">
+                    <MediaIcon media={outlet.media} title={outlet.name} size={14} />
+                    <span className="truncate">{outlet.name}</span>
+                    <span className="tabular-nums">{outlet.count}</span>
+                  </span>
+                ))}
+                {row.media.length > 2 && <span className="shrink-0">+{row.media.length - 2} 家</span>}
+              </p>
+              <dl className="mt-1.5 grid grid-cols-3 gap-2 text-xs">
+                {displayMetrics.map(({ key, label }) => {
+                  const count = metricCount(row, key);
+                  return (
+                    <div key={key}>
+                      <dt className="text-zinc-600 dark:text-zinc-400">{label}</dt>
+                      <dd className="tabular-nums">
+                        {count === null ? '—' : number(count)}
+                        <span className="ml-1 text-zinc-600 dark:text-zinc-400">{percent(metricShare(row, key))}</span>
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <TableScroller className="hidden sm:block" label="記者表格，可左右捲動">
         <table className={`w-full ${detailed ? 'min-w-[80rem]' : 'min-w-[44rem]'} border-collapse text-sm [&_td]:py-1 [&_th]:py-1`}>
-          <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
+          <thead className="text-left text-xs text-zinc-600 dark:text-zinc-400">
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
               {columns.map((column) => (
                 <th
@@ -372,7 +435,7 @@ export default function JournalistTable({
           </button>
         </div>
       )}
-      {!filtered.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合的記者。</p>}
+      {!filtered.length && <p className="py-8 text-center text-sm text-zinc-600 dark:text-zinc-400">沒有符合的記者。</p>}
     </div>
   );
 }

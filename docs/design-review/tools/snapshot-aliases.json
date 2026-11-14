@@ -1,0 +1,7 @@
+{
+  "_note": "Snapshot keys this checkout asks for but the 2026-11-12 18:24 UTC recording does not hold. The recording was made with a 72-hour search; web/ now searches 31 days (hours=744). The answers below are built from real snapshot bodies, never from the live API: from = body to serve, facetsFrom = body whose facets replace it, empty = an article search with no match (no rows, no cursor, zero facets). Both baseline and candidate see the same answers.",
+  "/api/v1/articles?facets=1&hours=744&limit=30&q=黃仁勳": { "from": "/api/v1/articles?facets=1&hours=72&limit=30&tag=黃仁勳", "facetsFrom": "/api/v1/articles?facets=1&hours=72&limit=1&q=黃仁勳" },
+  "/api/v1/articles?facets=1&hours=744&limit=1&tag=黃仁勳": { "from": "/api/v1/articles?facets=1&hours=72&limit=1&tag=黃仁勳" },
+  "/api/v1/articles?facets=1&hours=744&limit=30&q=zzqxv": { "from": "/api/v1/articles?facets=1&hours=72&limit=30&tag=黃仁勳", "empty": true },
+  "/api/v1/articles?facets=1&hours=744&limit=1&tag=zzqxv": { "from": "/api/v1/articles?facets=1&hours=72&limit=1&tag=黃仁勳", "empty": true }
+}

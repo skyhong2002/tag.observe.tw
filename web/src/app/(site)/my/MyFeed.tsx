@@ -82,7 +82,7 @@ export default function MyFeed() {
           <ul className="mt-3 grid gap-3 md:grid-cols-2">
             {feed.events.map((e) => (
               <li key={e.id} className={`${card} p-3`}>
-                <p className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
                   <span className={`h-2 w-2 rounded-full ${e.active ? 'bg-emerald-500' : 'bg-zinc-400'}`} aria-hidden="true" />
                   {e.active ? '進行中' : '已沉寂'} · 最近更新 {when(e.lastTime)}
                 </p>
@@ -103,7 +103,7 @@ export default function MyFeed() {
       )}
       <section>
         <h2 className="text-lg font-semibold">
-          近 {feed.days} 天的報導<span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">{articles.length} 篇</span>
+          近 {feed.days} 天的報導<span className="ml-2 text-sm font-normal text-zinc-600 dark:text-zinc-400">{articles.length} 篇</span>
         </h2>
         {!articles.length ? (
           <p className={note}>這段期間沒有符合追蹤條件的報導。</p>
@@ -111,7 +111,7 @@ export default function MyFeed() {
           <ul className={`${card} mt-3 divide-y divide-zinc-200 dark:divide-zinc-800`}>
             {articles.map((a) => (
               <li key={a.id} className="px-3 py-2.5">
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                   <Link href={`/media/${encodeURIComponent(a.media)}/`} className="font-medium hover:underline">
                     {a.mediaTitle}
                   </Link>
@@ -134,13 +134,13 @@ export default function MyFeed() {
                       type="button"
                       onClick={() => hide(a.media)}
                       title={`我的動態與私人 RSS 不再顯示${a.mediaTitle}（可在設定取消）`}
-                      className="min-h-7 rounded-full px-2 text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                      className="min-h-7 rounded-full px-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                     >
                       隱藏這家
                     </button>
                   </div>
                 </div>
-                <SourceLink url={a.url} showUrl className="!min-h-5 !text-[11px]" />
+                <SourceLink url={a.url} showUrl className="!min-h-5 !text-xs" />
               </li>
             ))}
           </ul>

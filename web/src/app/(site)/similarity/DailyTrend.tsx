@@ -207,7 +207,7 @@ function Share({ row, metric }: { row: Row; metric: Metric }) {
   return (
     <>
       {number(value)}
-      {ratio !== null && <span className="ml-1.5 text-xs text-zinc-500 dark:text-zinc-400">{Math.round(ratio * 100)}%</span>}
+      {ratio !== null && <span className="ml-1.5 text-[13px] text-zinc-700 dark:text-zinc-300">{Math.round(ratio * 100)}%</span>}
     </>
   );
 }
@@ -273,111 +273,190 @@ function OutletTable({
   const rows = showEmpty ? sorted : sorted.filter(active);
   const cell = table.num;
   const muted = (value: number) => (value ? '' : 'text-zinc-600 dark:text-zinc-400');
+  const toggleEmpty = empty > 0 && (
+    <button
+      type="button"
+      onClick={() => setShowEmpty(!showEmpty)}
+      className="px-3 py-2 text-xs text-brand-700 hover:underline dark:text-brand-400"
+    >
+      {showEmpty ? `收起 ${empty} 家沒有資料的媒體` : `另有 ${empty} 家這段期間沒有資料，顯示`}
+    </button>
+  );
   return (
-    <TableScroller
-      label="各媒體每日比對表格，可左右捲動"
-      footer={
-        empty > 0 && (
+    <>
+      {/* Phones: a card per outlet with every figure, so no column hides behind a sideways scroll. */}
+      <div className="sm:hidden">
+        {/* Every sort the table offers, share columns included, and the direction as its own button. */}
+        <div className="mb-2 flex items-center justify-end gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+          <label className="flex items-center gap-2">
+            排序
+            <select
+              value={sort}
+              onChange={(event) => sortBy(event.target.value as SortKey)}
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            >
+              {columns.flatMap((column) => [
+                <option key={column.key} value={column.key}>
+                  {column.key === 'name' ? '媒體名稱' : `${column.label}（篇數）`}
+                </option>,
+                ...(column.share
+                  ? [
+                      <option key={`${column.key}Share`} value={`${column.key}Share`}>
+                        {column.label}（比例）
+                      </option>,
+                    ]
+                  : []),
+              ])}
+            </select>
+          </label>
           <button
             type="button"
-            onClick={() => setShowEmpty(!showEmpty)}
-            className="px-3 py-2 text-xs text-brand-700 hover:underline dark:text-brand-400"
+            onClick={() => sortBy(sort)}
+            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
           >
-            {showEmpty ? `收起 ${empty} 家沒有資料的媒體` : `另有 ${empty} 家這段期間沒有資料，顯示`}
+            {descending ? '由大到小 ↓' : '由小到大 ↑'}
           </button>
-        )
-      }
-    >
-      <table className="w-full min-w-[40rem] border-collapse text-sm">
-        <caption className="sr-only">期間內各媒體的比對篇數、較早與較晚刊登的篇數、引用與被採用／引用</caption>
-        <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
-          <tr className="border-b border-zinc-200 dark:border-zinc-800">
-            {columns.map((column) => {
-              const shareKey = `${column.key}Share` as SortKey;
-              const active = sort === column.key || (column.share && sort === shareKey);
-              const numeric = column.key !== 'name';
-              return (
-                <th
-                  key={column.key}
-                  scope="col"
-                  aria-sort={active ? (descending ? 'descending' : 'ascending') : 'none'}
-                  className={`${numeric ? cell : table.leadHead} font-medium`}
-                >
-                  <span className={`inline-flex items-center gap-1 whitespace-nowrap ${numeric ? 'w-full justify-end' : ''}`}>
-                    {!numeric && (
-                      <input
-                        type="checkbox"
-                        aria-label="全選媒體"
-                        title={picked === 'all' ? '取消全部勾選' : '全部勾選'}
-                        checked={picked === 'all'}
-                        ref={(el) => {
-                          if (el) el.indeterminate = picked === 'some';
-                        }}
-                        onChange={onTickAll}
-                        className={`${checkbox} mr-1.5`}
-                      />
-                    )}
-                    <button
-                      type="button"
-                      title={column.share ? '依篇數排序' : undefined}
-                      onClick={() => sortBy(column.key)}
-                      className={`inline-flex items-center gap-1 hover:text-brand-700 dark:hover:text-brand-400 ${
-                        sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''
-                      }`}
-                    >
-                      {column.label}
-                      <SortIndicator active={sort === column.key} descending={descending} />
-                    </button>
-                    {column.share && (
+        </div>
+        <ol className="divide-y divide-zinc-200 rounded-xl border border-zinc-300 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+          {rows.map((row) => (
+            <li key={row.media} className="px-3 py-2">
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  aria-label={`畫出${row.name}`}
+                  checked={ticked(row.media)}
+                  onChange={() => onTick(row.media)}
+                  className={checkbox}
+                />
+                <MediaHoverLink media={row.media} title={row.name} className={`${linkStyle} flex min-w-0 flex-1 items-center gap-1.5`}>
+                  <span className="truncate font-medium">{row.name}</span>
+                </MediaHoverLink>
+                <span className={`shrink-0 text-sm tabular-nums ${muted(row.articles)}`}>
+                  {number(row.articles)} <span className="text-xs text-zinc-600 dark:text-zinc-400">篇比對</span>
+                </span>
+              </div>
+              {/* Three ratios a reader compares across outlets; the other counts on one line under them. */}
+              <dl className="mt-1 grid grid-cols-3 gap-x-2 pl-6.5 text-xs">
+                {(['copied', 'copying', 'citing'] as const).map((metric) => (
+                  <div key={metric}>
+                    <dt className="text-zinc-600 dark:text-zinc-400">{columns.find((c) => c.key === metric)?.label}</dt>
+                    <dd className="tabular-nums">
+                      <Share row={row} metric={metric} />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-0.5 pl-6.5 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
+                {(['sameByline', 'attributed', 'unattributed'] as const).map((metric) => {
+                  const ratio = share(row, metric);
+                  return (
+                    <span key={metric}>
+                      {columns.find((c) => c.key === metric)?.label} {number(row[metric])}
+                      {ratio !== null && row[metric] > 0 && ` (${Math.round(ratio * 100)}%)`}・
+                    </span>
+                  );
+                })}
+                被採用／引用 {number(row.cited)}
+              </p>
+            </li>
+          ))}
+        </ol>
+        {toggleEmpty}
+        {!rows.length && <p className="py-8 text-center text-sm text-zinc-600 dark:text-zinc-400">這段期間沒有媒體資料。</p>}
+      </div>
+      <TableScroller className="hidden sm:block" label="各媒體每日比對表格，可左右捲動" footer={toggleEmpty}>
+        <table className="w-full min-w-[40rem] border-collapse text-sm">
+          <caption className="sr-only">期間內各媒體的比對篇數、較早與較晚刊登的篇數、引用與被採用／引用</caption>
+          <thead className="text-left text-xs text-zinc-600 dark:text-zinc-400">
+            <tr className="border-b border-zinc-200 dark:border-zinc-800">
+              {columns.map((column) => {
+                const shareKey = `${column.key}Share` as SortKey;
+                const active = sort === column.key || (column.share && sort === shareKey);
+                const numeric = column.key !== 'name';
+                return (
+                  <th
+                    key={column.key}
+                    scope="col"
+                    aria-sort={active ? (descending ? 'descending' : 'ascending') : 'none'}
+                    className={`${numeric ? cell : table.leadHead} font-medium`}
+                  >
+                    <span className={`inline-flex items-center gap-1 whitespace-nowrap ${numeric ? 'w-full justify-end' : ''}`}>
+                      {!numeric && (
+                        <input
+                          type="checkbox"
+                          aria-label="全選媒體"
+                          title={picked === 'all' ? '取消全部勾選' : '全部勾選'}
+                          checked={picked === 'all'}
+                          ref={(el) => {
+                            if (el) el.indeterminate = picked === 'some';
+                          }}
+                          onChange={onTickAll}
+                          className={`${checkbox} mr-1.5`}
+                        />
+                      )}
                       <button
                         type="button"
-                        title="依比例排序"
-                        aria-label={`${column.label}比例排序`}
-                        onClick={() => sortBy(shareKey)}
-                        className={`inline-flex items-center gap-0.5 rounded px-1 hover:text-brand-700 dark:hover:text-brand-400 ${
-                          sort === shareKey ? 'text-brand-800 dark:text-brand-300' : 'text-zinc-400 dark:text-zinc-400'
+                        title={column.share ? '依篇數排序' : undefined}
+                        onClick={() => sortBy(column.key)}
+                        className={`inline-flex items-center gap-1 hover:text-brand-700 dark:hover:text-brand-400 ${
+                          sort === column.key ? 'text-brand-800 dark:text-brand-300' : ''
                         }`}
                       >
-                        %
-                        <SortIndicator active={sort === shareKey} descending={descending} />
+                        {column.label}
+                        <SortIndicator active={sort === column.key} descending={descending} />
                       </button>
-                    )}
-                  </span>
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-          {rows.map((row) => (
-            <tr key={row.media} className={table.row}>
-              <th scope="row" className={`${table.lead} text-left font-normal`}>
-                <div className={`${table.leadBox} flex items-center gap-2.5`}>
-                  <input
-                    type="checkbox"
-                    aria-label={`畫出${row.name}`}
-                    checked={ticked(row.media)}
-                    onChange={() => onTick(row.media)}
-                    className={checkbox}
-                  />
-                  <MediaHoverLink media={row.media} title={row.name} className={`${linkStyle} flex min-w-0 items-center gap-1.5`}>
-                    <span className={table.leadText}>{row.name}</span>
-                  </MediaHoverLink>
-                </div>
-              </th>
-              <td className={`${cell} ${muted(row.articles)}`}>{number(row.articles)}</td>
-              {(['sameByline', 'attributed', 'unattributed', 'copied', 'copying', 'citing'] as const).map((metric) => (
-                <td key={metric} className={cell}>
-                  <Share row={row} metric={metric} />
-                </td>
-              ))}
-              <td className={`${cell} ${muted(row.cited)}`}>{number(row.cited)}</td>
+                      {column.share && (
+                        <button
+                          type="button"
+                          title="依比例排序"
+                          aria-label={`${column.label}比例排序`}
+                          onClick={() => sortBy(shareKey)}
+                          className={`inline-flex items-center gap-0.5 rounded px-1 hover:text-brand-700 dark:hover:text-brand-400 ${
+                            sort === shareKey ? 'text-brand-800 dark:text-brand-300' : 'text-zinc-400 dark:text-zinc-400'
+                          }`}
+                        >
+                          %
+                          <SortIndicator active={sort === shareKey} descending={descending} />
+                        </button>
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
-      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">這段期間沒有媒體資料。</p>}
-    </TableScroller>
+          </thead>
+          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+            {rows.map((row) => (
+              <tr key={row.media} className={table.row}>
+                <th scope="row" className={`${table.lead} text-left font-normal`}>
+                  {/* Capped on desktop too so the table fits the column at 1440; long names truncate. */}
+                  <div className={`${table.leadBox} flex items-center gap-2.5 sm:max-w-48`}>
+                    <input
+                      type="checkbox"
+                      aria-label={`畫出${row.name}`}
+                      checked={ticked(row.media)}
+                      onChange={() => onTick(row.media)}
+                      className={checkbox}
+                    />
+                    <MediaHoverLink media={row.media} title={row.name} className={`${linkStyle} flex min-w-0 items-center gap-1.5`}>
+                      <span className={table.leadText}>{row.name}</span>
+                    </MediaHoverLink>
+                  </div>
+                </th>
+                <td className={`${cell} ${muted(row.articles)}`}>{number(row.articles)}</td>
+                {(['sameByline', 'attributed', 'unattributed', 'copied', 'copying', 'citing'] as const).map((metric) => (
+                  <td key={metric} className={cell}>
+                    <Share row={row} metric={metric} />
+                  </td>
+                ))}
+                <td className={`${cell} ${muted(row.cited)}`}>{number(row.cited)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!rows.length && <p className="py-8 text-center text-sm text-zinc-600 dark:text-zinc-400">這段期間沒有媒體資料。</p>}
+      </TableScroller>
+    </>
   );
 }
 
@@ -466,12 +545,12 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
         value={range}
         onChange={setRange}
       >
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="text-xs text-zinc-600 dark:text-zinc-400">
           {from} 至 {to}（台北時間），門檻 {Math.round(threshold * 100)}%
         </span>
       </FilterButtons>
       {!current ? (
-        <p role="status" className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <p role="status" className="py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
           載入每日統計中…
         </p>
       ) : !data ? (
@@ -487,14 +566,14 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
         </p>
       ) : (
         <>
-          <dl className="flex flex-wrap gap-x-7 gap-y-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <dl className="flex flex-wrap gap-x-7 gap-y-3 text-xs text-zinc-600 dark:text-zinc-400">
             {totals.map((item) => (
               <div key={item.label}>
                 <dt>{item.label}</dt>
                 <dd className="mt-0.5 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
                   {number(item.value)}
                   {scale === 'share' && item !== totals[0] && articles > 0 && (
-                    <span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                    <span className="ml-1 text-xs font-normal text-zinc-600 dark:text-zinc-400">
                       {Math.round((item.value / articles) * 100)}%
                     </span>
                   )}
@@ -528,7 +607,7 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
                 </span>
               </button>
             ))}
-            {chosen.length > SHOWN && <span className="text-xs text-zinc-500 dark:text-zinc-400">等 {chosen.length} 家</span>}
+            {chosen.length > SHOWN && <span className="text-xs text-zinc-600 dark:text-zinc-400">等 {chosen.length} 家</span>}
             {picked !== 'none' && (
               <button type="button" onClick={() => setPicks(new Set())} className={`${linkStyle} text-xs`}>
                 看全站
@@ -549,14 +628,14 @@ export default function DailyTrend({ threshold }: { threshold: number }) {
               }
             />
           )}
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">
             {since ? `資料自 ${since} 起${sparse ? '（更早只有少數媒體的零星文章）' : ''}` : '這段期間還沒有比對資料'}
           </p>
           <section aria-labelledby="daily-outlets-heading">
             <h3 id="daily-outlets-heading" className="mb-1 text-sm font-semibold">
               各媒體
             </h3>
-            <p className="mb-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">期間合計。勾選媒體，上方的圖就只算這幾家。</p>
+            <p className="mb-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">期間合計。勾選媒體，上方的圖就只算這幾家。</p>
             <OutletTable {...outlets} picked={picked} ticked={(media) => picks.has(media)} onTick={tick} onTickAll={tickAll} />
           </section>
         </>

@@ -77,7 +77,7 @@ export default function SiteNavigation() {
             key={group.label}
             className="flex items-start gap-2 lg:items-center lg:gap-0 lg:border-l lg:border-zinc-200 lg:pl-1 lg:not-first:ml-1 lg:first:border-l-0 lg:first:pl-0 dark:lg:border-zinc-800"
           >
-            <p className="w-12 shrink-0 pt-2.5 text-xs leading-5 text-zinc-500 lg:hidden dark:text-zinc-400">{group.label}</p>
+            <p className="w-12 shrink-0 pt-2.5 text-xs leading-5 text-zinc-600 lg:hidden dark:text-zinc-400">{group.label}</p>
             <div className="flex flex-wrap gap-1">
               {group.links.map(({ href, short }) => {
                 const exact = pathname === href || `${pathname}/` === href;

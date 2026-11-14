@@ -15,7 +15,7 @@ export default function NotFoundContent() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-6">
       <div className="space-y-2">
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">404</p>
+        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">404</p>
         <h1 className="text-2xl font-semibold tracking-tight">找不到這個頁面</h1>
         <p className="text-zinc-600 dark:text-zinc-400">網址可能打錯了，或這個頁面已經不存在。可以搜尋新聞，或從下面的入口繼續瀏覽。</p>
       </div>
@@ -29,7 +29,7 @@ export default function NotFoundContent() {
           wrapperClassName="min-w-0 flex-1"
           className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-700 dark:border-zinc-700 dark:bg-zinc-900"
         />
-        <button type="submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900">
+        <button type="submit" className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800">
           搜尋
         </button>
       </form>

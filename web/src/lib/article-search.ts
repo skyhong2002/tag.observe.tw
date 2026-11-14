@@ -20,12 +20,14 @@ export const CAMPS: Array<{ key: Camp; label: string; bar: string; badge: string
   },
 ];
 export const RANGES = [
-  { days: 1, label: '1 天' },
+  { days: 1, label: '24 小時' },
   { days: 3, label: '3 天' },
   { days: 7, label: '7 天' },
-  { days: 31, label: '31 天' },
+  { days: 31, label: '近一個月' },
 ];
 export const PAGE = 30;
+/** A period as the page words it, matching the range chips: 過去 24 小時, 過去 3 天, 近一個月. */
+export const periodLabel = (days: number) => (days === 1 ? '過去 24 小時' : days === 31 ? '近一個月' : `過去 ${days} 天`);
 
 export interface Hit {
   id: number;

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import DraftEvidence from '@/components/DraftEvidence';
-import FilterChips from '@/components/FilterChips';
+import FilterChips, { filterChipClass } from '@/components/FilterChips';
 import MediaIcons from '@/components/MediaIcons';
 import MethodLink from '@/components/MethodLink';
 import PendingLabel from '@/components/PendingLabel';
@@ -16,6 +16,7 @@ import {
   fetchMedia,
   fetchRanking,
   type RankingEntry,
+  type RankingGate,
   taipei,
   taipeiClock,
   taipeiDate,
@@ -50,6 +51,10 @@ type Col = 'tag' | 'change' | 'burst' | 'growth' | 'score' | 'count' | 'trend' |
 const COLS: Col[] = ['tag', 'burst', 'growth', 'change', 'score', 'count', 'trend', 'first', 'peak', 'media'];
 const RELATED_SHOWN = 5;
 const CLOUD_WORDS = 500;
+/** Category chips that lead the row, last first (indexOf -1 keeps the API's order for the rest). */
+const FRONT = ['green', 'blue', 'all'];
+// The cloud draws the top of that list: enough to show the shape of the day; more only shrank the type below reading size.
+const CLOUD_SHOWN = 120;
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
@@ -146,6 +151,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     </th>
   );
 
+  const showMore = ranking && limit < 200 && (ranking.matchedCount ?? ranking.entries.length) > ranking.entries.length && (
+    <div className="border-t border-zinc-300 p-3 text-center text-sm dark:border-zinc-800">
+      <Link href={link({ limit: String(limit + 50) })} scroll={false} className="text-brand-700 hover:underline dark:text-brand-400">
+        <PendingLabel>顯示更多</PendingLabel>
+      </Link>
+    </div>
+  );
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -191,18 +204,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         ).map((item) => ({ href: link({ gate: item.value, limit: undefined }), label: item.label, current: gate === item.value }))}
       />
       <FilterChips
+        scrollOnPhone
         label="媒體分類"
-        items={categoryRankings.map((c) => ({
-          href: link({ category: c.key, limit: undefined }),
-          label: c.label,
-          current: c.key === category,
-          note: rankingCategoryNote(c.ranking) ?? undefined,
-        }))}
+        // The two camp lists right after 所有媒體: on a phone the row scrolls, and they are what most readers compare.
+        items={[...categoryRankings]
+          .sort((a, b) => FRONT.indexOf(b.key) - FRONT.indexOf(a.key))
+          .map((c) => ({
+            href: link({ category: c.key, limit: undefined }),
+            label: c.label,
+            current: c.key === category,
+            note: rankingCategoryNote(c.ranking) ?? undefined,
+          }))}
       />
       {cloud && (
         <RankingWordCloud
           mode={emerging ? 'growth' : 'score'}
-          terms={cloud.entries.map((e) => ({
+          terms={cloud.entries.slice(0, CLOUD_SHOWN).map((e) => ({
             tag: e.tag,
             score: e.normalized,
             burst: e.burst,
@@ -214,31 +231,66 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         />
       )}
       {ranking?.snapshot.available && (
-        <p role="status" className="text-sm text-zinc-600 dark:text-zinc-400">
-          符合條件 {ranking.matchedCount ?? ranking.entries.length} 個關鍵字
-          {emerging && !!ranking.unknownGrowthCount && ` · ${ranking.unknownGrowthCount} 個因歷史不足，暫不列入升溫榜`}
-        </p>
+        <div className="space-y-1">
+          <p role="status" className="text-sm text-zinc-600 dark:text-zinc-400">
+            符合條件 {ranking.matchedCount ?? ranking.entries.length} 個關鍵字
+            {emerging && !!ranking.unknownGrowthCount && ` · ${ranking.unknownGrowthCount} 個因歷史不足，暫不列入升溫榜`}
+          </p>
+          {/* The figures in plain words, next to the table; the full definitions stay in 資料來源與計算方式. */}
+          <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+            {emerging ? (
+              <div className="flex gap-1">
+                <dt className="font-medium text-zinc-800 dark:text-zinc-200">升溫量</dt>
+                <dd>比 3–48 小時前多出的分數，愈大升得愈快</dd>
+              </div>
+            ) : (
+              <div className="flex gap-1">
+                <dt className="font-medium text-zinc-800 dark:text-zinc-200">爆發力</dt>
+                <dd>分數加上近 48 小時的升幅；橘字表示正在升溫</dd>
+              </div>
+            )}
+            <div className="flex gap-1">
+              <dt className="font-medium text-zinc-800 dark:text-zinc-200">分數</dt>
+              <dd>每家媒體都報一篇約 50 分，同一家多報分數遞減</dd>
+            </div>
+            <div className="flex gap-1">
+              <dt className="font-medium text-zinc-800 dark:text-zinc-200">變動</dt>
+              <dd>名次和 24 小時前相比</dd>
+            </div>
+          </dl>
+        </div>
       )}
       {ranking?.snapshot.available && rows.length > 0 && (
-        <TableScroller
-          card
-          label="關鍵字排行榜表格，可左右捲動"
-          footer={
-            limit < 200 &&
-            (ranking.matchedCount ?? ranking.entries.length) > ranking.entries.length && (
-              <div className="border-t border-zinc-300 p-3 text-center text-sm dark:border-zinc-800">
-                <Link
-                  href={link({ limit: String(limit + 50) })}
-                  scroll={false}
-                  className="text-brand-700 hover:underline dark:text-brand-400"
-                >
-                  <PendingLabel>顯示更多</PendingLabel>
-                </Link>
-              </div>
-            )
-          }
-        >
-          <table className="w-full min-w-[94rem] text-sm">
+        // Phones sort the cards with the table's own sort links; the current one flips direction.
+        <nav aria-label="排序" className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 text-sm [scrollbar-width:none] sm:hidden">
+          <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">排序</span>
+          {(
+            [
+              [emerging ? 'growth' : 'burst', emerging ? '升溫量' : '爆發力'],
+              ['change', '變動'],
+              ['score', '分數'],
+              ['count', '篇數'],
+              ['media', '媒體家數'],
+            ] as const
+          ).map(([col, label]) => (
+            <Link
+              key={col}
+              href={sortLink(col)}
+              scroll={false}
+              aria-current={sort === col ? 'true' : undefined}
+              className={`${filterChipClass(sort === col)} shrink-0`}
+            >
+              {label}
+              {sort === col && (dir === 'asc' ? ' ↑' : ' ↓')}
+            </Link>
+          ))}
+        </nav>
+      )}
+      {ranking?.snapshot.available && rows.length > 0 && <RankingCards rows={rows} emerging={emerging} gate={gate} footer={showMore} />}
+      {ranking?.snapshot.available && rows.length > 0 && (
+        <TableScroller card className="hidden sm:block" label="關鍵字排行榜表格，可左右捲動" footer={showMore}>
+          {/* At 1440 the table fits the 1280 px column: 首次出現 and 相似稿 show from 1536 px up. */}
+          <table className="w-full min-w-[76rem] text-sm 2xl:min-w-[94rem]">
             <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
               <tr>
                 {/* On phones the rank moves into the sticky keyword cell. */}
@@ -249,11 +301,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <Th col="score" label="分數" className="w-20 text-right" />
                 <Th col="count" label="篇數" className="w-16 text-right" />
                 <Th col="trend" label="趨勢" className="w-28" />
-                <Th col="first" label="首次出現" className="w-28" />
+                <Th col="first" label="首次出現" className="w-28 hidden 2xl:table-cell" />
                 <Th col="peak" label="單日高峰" className="w-36" />
                 <th className={`w-[17rem] whitespace-nowrap ${table.cell}`}>一起出現</th>
                 <Th col="media" label="媒體" className="w-[22rem]" />
-                <th className={`whitespace-nowrap ${table.cell}`}>相似稿</th>
+                <th className={`hidden 2xl:table-cell whitespace-nowrap ${table.cell}`}>相似稿</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -263,11 +315,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 const related = (e.related ?? []).slice(0, RELATED_SHOWN);
                 return (
                   <tr key={e.tag} className={table.row}>
-                    <td className={`hidden text-zinc-500 dark:text-zinc-400 sm:table-cell ${table.num}`}>{e.position}</td>
+                    <td className={`hidden text-zinc-600 dark:text-zinc-400 sm:table-cell ${table.num}`}>{e.position}</td>
                     <td className={table.lead}>
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <div className={`${table.leadBox} flex items-center gap-2`}>
-                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 sm:hidden">
+                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-600 dark:text-zinc-400 sm:hidden">
                             {e.position}
                           </span>
                           <Link
@@ -295,15 +347,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       className={`${table.num} text-xs`}
                       title={delta === null || e.new ? undefined : `分數名次 ${e.rank}，24 小時前第 ${e.rank24h} 名`}
                     >
-                      {delta === null ? (
-                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
-                      ) : delta > 0 ? (
-                        <span className="text-rose-600 dark:text-rose-400">▲{delta}</span>
-                      ) : delta < 0 ? (
-                        <span className="text-sky-600 dark:text-sky-400">▼{-delta}</span>
-                      ) : (
-                        <span className="text-zinc-500 dark:text-zinc-400">＝</span>
-                      )}
+                      <RankChange entry={e} />
                     </td>
                     <td className={table.num}>{e.normalized.toFixed(1)}</td>
                     <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{e.count}</td>
@@ -312,7 +356,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     </td>
                     <ArchiveCells entry={e} />
                     <td
-                      className={`max-w-0 truncate whitespace-nowrap text-xs ${table.cell}`}
+                      className={`max-w-0 truncate whitespace-nowrap text-[13px] ${table.cell}`}
                       title={
                         related.length
                           ? related.map((r) => `${r.tag} ${r.count} 篇（${Math.round(r.share * 100)}%）`).join('\n')
@@ -322,7 +366,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {related.length ? (
                         related.map((r, i) => (
                           <span key={r.tag}>
-                            {i > 0 && <span className="text-zinc-500 dark:text-zinc-400">、</span>}
+                            {i > 0 && <span className="text-zinc-600 dark:text-zinc-400">、</span>}
                             <Link
                               href={`/tag/${encodeURIComponent(r.tag)}`}
                               className="text-zinc-700 hover:text-brand-700 hover:underline dark:text-zinc-300 dark:hover:text-brand-400"
@@ -332,17 +376,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                           </span>
                         ))
                       ) : (
-                        <span className="text-zinc-500 dark:text-zinc-400">—</span>
+                        <span className="text-zinc-600 dark:text-zinc-400">—</span>
                       )}
                     </td>
                     <td className={`max-w-0 ${table.cell}`}>
                       <MediaIcons media={e.media} info={media} />
                     </td>
-                    <td className={`whitespace-nowrap ${table.cell}`}>
+                    <td className={`hidden 2xl:table-cell whitespace-nowrap ${table.cell}`}>
                       {e.drafts?.articles ? (
                         <DraftEvidence data={e.drafts} singleLine />
                       ) : (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">暫無比對資料</span>
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">暫無比對資料</span>
                       )}
                     </td>
                   </tr>
@@ -381,6 +425,76 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   );
 }
 
+/** ▲ / ▼ / ＝ against the full list 24 hours earlier. */
+function RankChange({ entry: e }: { entry: RankingEntry }) {
+  const delta = e.rank24h === null ? null : e.rank24h - e.rank;
+  if (delta === null) return <span className="text-zinc-600 dark:text-zinc-400">—</span>;
+  if (delta > 0) return <span className="text-rose-700 dark:text-rose-300">▲{delta}</span>;
+  if (delta < 0) return <span className="text-zinc-600 dark:text-zinc-400">▼{-delta}</span>;
+  return <span className="text-zinc-600 dark:text-zinc-400">＝</span>;
+}
+
+/**
+ * Phones get one card per keyword instead of the wide table: rank, keyword and
+ * its badges, the ranking figure with its 24-hour change, then score, article
+ * count, outlets and the trend line, so nothing needs a sideways scroll.
+ */
+function RankingCards({
+  rows,
+  emerging,
+  gate,
+  footer,
+}: {
+  rows: RankingEntry[];
+  emerging: boolean;
+  gate: RankingGate;
+  footer: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-zinc-300 bg-white sm:hidden dark:border-zinc-800 dark:bg-zinc-900">
+      <p className="flex justify-between border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+        <span>名次・關鍵字（分數・篇數・媒體家數）</span>
+        <span>{emerging ? '升溫量' : '爆發力'}・24 小時變動</span>
+      </p>
+      <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
+        {rows.map((e) => {
+          const figure = emerging ? `+${e.signals?.growth?.toFixed(1) ?? '—'}` : (e.burst?.toFixed(1) ?? '—');
+          const hot = e.burst !== null && e.burst > e.normalized;
+          return (
+            <li key={e.tag} className="flex items-center gap-3 px-3 py-2.5">
+              <span className="w-6 shrink-0 text-right text-sm tabular-nums text-zinc-600 dark:text-zinc-400">{e.position}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <Link
+                    href={`/tag/${encodeURIComponent(e.tag)}`}
+                    className="min-w-0 truncate text-base font-medium text-brand-700 hover:underline dark:text-brand-400"
+                  >
+                    {e.tag}
+                  </Link>
+                  <TagDiscoveryBadges isNew={e.new} signals={e.signals} firstCollection={e.firstCollection} gate={gate} />
+                </div>
+                <p className="mt-0.5 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
+                  分數 {e.normalized.toFixed(1)}・{e.count} 篇・{Object.keys(e.media).length} 家
+                </p>
+              </div>
+              <Sparkline values={(e.trend ?? []).map((p) => p.average24h)} className="h-7 w-14 shrink-0" />
+              <div className="w-14 shrink-0 text-right tabular-nums">
+                <p className={`text-base ${hot ? 'font-semibold text-brand-700 dark:text-brand-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                  {figure}
+                </p>
+                <p className="text-xs">
+                  <RankChange entry={e} />
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      {footer}
+    </div>
+  );
+}
+
 /**
  * 首次出現 and 單日高峰 from the whole archive (tag_history). Until the hourly
  * job has counted a keyword, the peak falls back to this category's chart
@@ -391,7 +505,7 @@ function ArchiveCells({ entry: e }: { entry: RankingEntry }) {
   return (
     <>
       <td
-        className={`whitespace-nowrap tabular-nums ${table.cell}`}
+        className={`hidden 2xl:table-cell whitespace-nowrap tabular-nums ${table.cell}`}
         title={
           a ? `現存收錄中第一篇帶這個關鍵字的報導刊登於 ${taipeiDate(a.firstAt)} ${taipeiClock(a.firstAt)}（台北時間）` : '尚未算出全部歷史'
         }
@@ -411,10 +525,10 @@ function ArchiveCells({ entry: e }: { entry: RankingEntry }) {
         {a?.peakDay ? (
           <>
             {a.peakDay}
-            <span className="ml-1.5 text-xs text-zinc-500">{a.peakCount} 篇</span>
+            <span className="ml-1.5 text-xs text-zinc-600 dark:text-zinc-400">{a.peakCount} 篇</span>
           </>
         ) : e.charted ? (
-          <span className="text-zinc-500">
+          <span className="text-zinc-600 dark:text-zinc-400">
             {taipeiDate(e.charted.maxHour)}
             <span className="ml-1.5 text-xs">9/28 起</span>
           </span>

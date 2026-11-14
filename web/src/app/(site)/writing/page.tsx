@@ -73,7 +73,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
               {values.length > 1 && (
                 <div className="mt-3">
                   <Sparkline values={trend} className="h-16 w-full" />
-                  <p className="flex justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <p className="flex justify-between text-xs text-zinc-600 dark:text-zinc-400">
                     <span>{overview.from}</span>
                     <span>
                       每日 {(100 * Math.min(...values)).toFixed(1)}%–{(100 * Math.max(...values)).toFixed(1)}%
@@ -88,7 +88,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
                   .map(([p, n]) => (
                     <Link key={p} href={filterHref({ platform: p })} className="hover:underline">
                       {PLATFORM_LABEL[p] ?? p}{' '}
-                      <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{share(n, totals.social)}</span>
+                      <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{share(n, totals.social)}</span>
                     </Link>
                   ))}
               </p>
@@ -117,7 +117,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
                   );
                 })}
               </ul>
-              <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              <p className="mt-3 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
                 「尚未標記」表示目前無法辨識角色或背景。同一位發言者可有多個標籤，各標籤篇數與比例可能重疊，不可直接相加。
               </p>
             </div>
@@ -155,7 +155,7 @@ export default async function WritingPage({ searchParams }: { searchParams: Prom
               <ol className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 {overview.posters.map((p, i) => (
                   <li key={p.name} className="flex flex-wrap items-baseline gap-2">
-                    <span className="w-6 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</span>
+                    <span className="w-6 text-right text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{i + 1}</span>
                     <Link href={filterHref({ poster: p.name })} className="font-medium hover:underline">
                       {p.name}
                     </Link>

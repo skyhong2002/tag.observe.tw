@@ -47,7 +47,7 @@ it('uses AA text tokens against dark trend, event/status panels and related-tag 
   // Every secondary label must have a readable dark override, including counts on zinc-800 chips.
   expect(status.match(/text-zinc-500(?! dark:text-zinc-400)/g)).toBeNull();
   expect(status).toContain('text-zinc-600 dark:text-zinc-300');
-  expect(evidence).toContain('text-zinc-500 dark:text-zinc-400');
+  expect(evidence).toContain('text-zinc-600 dark:text-zinc-400');
   expect(read('../src/app/(site)/tag/[tag]/page.tsx')).toContain('text-sm font-medium text-zinc-600 dark:text-zinc-300');
 });
 
@@ -63,7 +63,7 @@ it('applies CSS theme colour to legend, inactive legend, axes and names; updates
   expect(chart).toContain('yAxis: [0, 1, 2].map(() => ({ axisLabel: { color }, nameTextStyle: { color } }))');
   expect(chart).toContain("attributeFilter: ['data-theme']");
   expect(chart).toContain('return () => themeObserver.disconnect()');
-  expect(chart).toContain('tabular-nums text-zinc-500 dark:text-zinc-400');
+  expect(chart).toContain('tabular-nums text-zinc-600 dark:text-zinc-400');
 });
 
 it('keeps zero values and selectable evidence readable while preserving stale-result and selection cues', () => {

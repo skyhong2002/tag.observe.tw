@@ -184,13 +184,27 @@ export default function Following() {
           <section key={kind}>
             <h2 className="font-semibold">
               {FOLLOW_NOUN[kind]}
-              <span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">{ofKind.length}</span>
+              <span className="ml-2 text-sm font-normal text-zinc-600 dark:text-zinc-400">{ofKind.length}</span>
             </h2>
             <ul className={`${card} mt-2 divide-y divide-zinc-200 dark:divide-zinc-800`}>
               {ofKind.map((f) => (
                 <li key={f.target} className="flex items-center justify-between gap-3 px-3 py-2">
-                  <Link href={followHref(f)} className="hover:underline">
-                    {kind === 'tag' ? `#${f.target}` : kind === 'event' ? `事件 #${f.target}` : (f.label ?? f.target)}
+                  <Link href={followHref(f)} className="min-w-0 hover:underline">
+                    {kind === 'tag' ? (
+                      `#${f.target}`
+                    ) : kind === 'event' ? (
+                      // An event is named by its keywords when the follow kept them; the number is only a fallback.
+                      f.label ? (
+                        <>
+                          {f.label}
+                          <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-400">事件 #{f.target}</span>
+                        </>
+                      ) : (
+                        `事件 #${f.target}`
+                      )
+                    ) : (
+                      (f.label ?? f.target)
+                    )}
                   </Link>
                   <button type="button" className={button} onClick={() => run(f, false)}>
                     取消追蹤

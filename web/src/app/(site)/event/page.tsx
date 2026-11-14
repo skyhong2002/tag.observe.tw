@@ -110,21 +110,21 @@ async function HourView({ sp }: { sp: Search }) {
                 ← 前一小時
               </Link>
             ) : (
-              <span className="rounded-md px-3 py-1 text-zinc-500 dark:text-zinc-400">← 前一小時</span>
+              <span className="rounded-md px-3 py-1 text-zinc-600 dark:text-zinc-400">← 前一小時</span>
             )}
             {data.next ? (
               <Link href={atLink(data.next)} className="rounded-md bg-zinc-100 px-3 py-1 dark:bg-zinc-800">
                 後一小時 →
               </Link>
             ) : (
-              <span className="rounded-md px-3 py-1 text-zinc-500 dark:text-zinc-400">後一小時 →</span>
+              <span className="rounded-md px-3 py-1 text-zinc-600 dark:text-zinc-400">後一小時 →</span>
             )}
             {archived && (
-              <Link href={hourHref()} className="rounded-md bg-zinc-900 px-3 py-1 text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <Link href={hourHref()} className="rounded-md bg-brand-700 px-3 py-1 text-white hover:bg-brand-800">
                 回到最新
               </Link>
             )}
-            <Link href={dayHref(taipeiDay(data.hour))} className="ml-auto text-sky-700 hover:underline dark:text-sky-400">
+            <Link href={dayHref(taipeiDay(data.hour))} className="ml-auto text-brand-700 hover:underline dark:text-brand-400">
               看 {taipeiDay(data.hour)} 整天的事件 →
             </Link>
           </div>
@@ -159,7 +159,7 @@ async function HourView({ sp }: { sp: Search }) {
                     className="flex items-baseline gap-2 border-b border-zinc-300 pb-1 font-semibold dark:border-zinc-800"
                   >
                     其他事件
-                    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                    <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">
                       第 {items[0].rank} 到 {items[items.length - 1].rank} 名
                     </span>
                   </h2>

@@ -10,7 +10,7 @@ export default function RootError(props: ErrorProps) {
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <ErrorState {...props} />
       </main>
     </div>

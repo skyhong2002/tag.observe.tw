@@ -33,7 +33,7 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
       <h3 id="similar-heading" className="mb-1 text-sm font-medium">
         他站相似報導
         {data && data.matches.length > 0 && (
-          <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{data.matches.length} 篇</span>
+          <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-400">{data.matches.length} 篇</span>
         )}
       </h3>
       {/* The window, threshold and full caveat are in the footer's 資料來源與計算方式 (ArticleMethod). */}
@@ -51,7 +51,7 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
             const headline = readingTitle(other.title);
             return (
               <li key={other.id} className="py-3">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                   <MediaHoverLink media={other.media} className={`${linkStyle} font-medium`}>
                     {other.mediaTitle}
                   </MediaHoverLink>
@@ -70,7 +70,7 @@ export default function ArticleSimilar({ data, publishedAt }: { data: ArticleSim
                 </p>
                 {match.evidence && (
                   <details className="mt-0.5 text-xs">
-                    <summary className="cursor-pointer py-1 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
+                    <summary className="cursor-pointer py-1 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
                       共同片段
                     </summary>
                     <p className="break-words border-l-2 border-zinc-200 pl-3 leading-6 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">

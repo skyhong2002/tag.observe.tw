@@ -191,8 +191,8 @@ export default function TagChart({ initial }: { initial: TagSeries }) {
           symbolSize: 4,
           connectNulls: false,
           data: points.map((p) => p.rank),
-          lineStyle: { color: '#0369a1', width: 1.5 },
-          itemStyle: { color: '#0369a1' },
+          lineStyle: { color: '#6d28d9', width: 1.5 },
+          itemStyle: { color: '#6d28d9' },
           tooltip: { valueFormatter: (v: unknown) => (v == null ? '未入榜' : `#${v}`) },
         },
         {
@@ -258,7 +258,7 @@ export default function TagChart({ initial }: { initial: TagSeries }) {
           >
             {loading ? '載入中…' : error ? '重試載入' : data.hasMore || range.start > 0 ? '← 更早' : '已到資料起點'}
           </button>
-          <span className="whitespace-nowrap tabular-nums text-zinc-500 dark:text-zinc-400">
+          <span className="whitespace-nowrap tabular-nums text-zinc-600 dark:text-zinc-400">
             {label(range.start)} — {label(range.end)}
           </span>
         </div>

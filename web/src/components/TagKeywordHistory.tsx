@@ -193,7 +193,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
           >
             {loading ? '載入中…' : error ? '重試載入' : data.hasMore ? '← 更早' : '已到最早'}
           </button>
-          <span className="whitespace-nowrap text-xs tabular-nums text-zinc-500 dark:text-zinc-400" title={`${startDate} — ${endDate}`}>
+          <span className="whitespace-nowrap text-xs tabular-nums text-zinc-600 dark:text-zinc-400" title={`${startDate} — ${endDate}`}>
             {startDate?.replaceAll('-', '/')} — {rangeEnd?.replaceAll('-', '/')}
           </span>
         </div>
@@ -239,7 +239,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
             ))}
             {renderEnd < columns.length && <col style={{ width: (columns.length - renderEnd) * cellWidth }} />}
           </colgroup>
-          <thead className="sticky top-0 z-20 h-10 bg-zinc-50 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+          <thead className="sticky top-0 z-20 h-10 bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
             <tr>
               <th scope="col" className="sticky left-0 z-20 bg-zinc-50 px-3 text-left font-normal dark:bg-zinc-900">
                 關鍵字
@@ -263,11 +263,11 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
               <tr
                 key={tag}
                 data-added={added.includes(tag) || undefined}
-                className={`group h-8 transition-colors duration-500 ${added.includes(tag) ? 'bg-sky-50 dark:bg-sky-950/50' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}
+                className={`group h-8 transition-colors duration-500 ${added.includes(tag) ? 'bg-brand-50 dark:bg-brand-950/50' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}
               >
                 <th
                   scope="row"
-                  className={`sticky left-0 z-10 px-3 text-left font-normal ${added.includes(tag) ? 'bg-sky-50 dark:bg-sky-950' : 'bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800'}`}
+                  className={`sticky left-0 z-10 px-3 text-left font-normal ${added.includes(tag) ? 'bg-brand-50 dark:bg-brand-950' : 'bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800'}`}
                 >
                   <Link
                     href={`/tag/${encodeURIComponent(tag)}/`}
@@ -289,7 +289,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
                     <td key={column.key} className="px-0" title={count ? `${tag} · ${column.title} · ${count} 篇` : undefined}>
                       {count && (
                         <span
-                          className={`relative block h-3 ${left ? '' : 'ml-0.5 rounded-l-full'} ${right ? '' : 'mr-0.5 rounded-r-full'} ${tag === data.tag ? 'bg-brand-600 dark:bg-brand-500' : 'bg-sky-600 dark:bg-sky-500'}`}
+                          className={`relative block h-3 ${left ? '' : 'ml-0.5 rounded-l-full'} ${right ? '' : 'mr-0.5 rounded-r-full'} ${tag === data.tag ? 'bg-brand-600 dark:bg-brand-500' : 'bg-zinc-500 dark:bg-zinc-400'}`}
                           style={{ opacity: Math.max(0.14, Math.min(1, Math.sqrt(count / peak))) }}
                         >
                           {index === first.get(tag) && index > 0 && (
@@ -306,18 +306,18 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
           </tbody>
         </table>
         {!visibleRelatedTerms.length && (
-          <div role="status" className="sticky left-0 flex h-96 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
+          <div role="status" className="sticky left-0 flex h-96 items-center justify-center text-sm text-zinc-600 dark:text-zinc-400">
             {search ? '找不到符合的相關關鍵字' : '這段期間沒有共同關鍵字'}
           </div>
         )}
       </section>
       <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 border-t border-zinc-200 px-3 text-xs dark:border-zinc-800">
         <div className="flex items-center gap-3">
-          <span className="tabular-nums text-zinc-500 dark:text-zinc-400">
+          <span className="tabular-nums text-zinc-600 dark:text-zinc-400">
             相關詞 {visibleRelatedTerms.length} / {terms.length}
           </span>
           {added.length > 0 && (
-            <span role="status" className="text-sky-700 dark:text-sky-400">
+            <span role="status" className="text-brand-700 dark:text-brand-400">
               新增 {added.length} 個
             </span>
           )}
@@ -331,7 +331,7 @@ export default function TagKeywordHistory({ initial }: { initial: TagFlow }) {
                 setAdded([]);
                 if (scroller.current) scroller.current.scrollTop = 0;
               }}
-              className="min-h-9 rounded px-3 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              className="min-h-9 rounded px-3 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
             >
               收合
             </button>

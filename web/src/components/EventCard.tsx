@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { CAMP_FILL, CAMP_LABEL, CampBadge, CampLine, FullBar } from '@/components/CampBar';
 import FitRow from '@/components/FitRow';
 import MediaHoverLink from '@/components/MediaHoverLink';
+import Phrases from '@/components/Phrases';
 import SafeImage from '@/components/SafeImage';
 import SourceLink from '@/components/SourceLink';
 import Sparkline from '@/components/Sparkline';
@@ -43,12 +44,18 @@ export function Movement({ e, className = '' }: { e: EventItem; className?: stri
     const n = Math.abs(e.prevRank - e.rank);
     parts.push({
       text: `${up ? '↑' : '↓'}${n}`,
-      tone: up ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400',
+      // Green and blue mean the camps on this site; a rise takes the brand colour.
+      tone: up ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-600 dark:text-zinc-400',
       label: `較前一小時${up ? '上升' : '下降'} ${n} 名`,
     });
   }
   if (e.hours && e.hours >= 2)
-    parts.push({ text: `上榜 ${e.hours} 小時`, tone: 'text-zinc-500 dark:text-zinc-400', label: `累計上榜 ${e.hours} 小時` });
+    parts.push({
+      // Long-running threads read better in days than in hundreds of hours.
+      text: e.hours >= 48 ? `累計上榜約 ${Math.round(e.hours / 24)} 天` : `上榜 ${e.hours} 小時`,
+      tone: 'text-zinc-600 dark:text-zinc-400',
+      label: `累計上榜 ${e.hours} 小時`,
+    });
   if (parts.length === 0) return null;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs tabular-nums ${className}`}>
@@ -62,21 +69,22 @@ export function Movement({ e, className = '' }: { e: EventItem; className?: stri
 }
 
 /** The thread's rank over the last 24 snapshot hours (or whatever `span` the
- *  trail covers), #1 at the top. Only worth drawing once there are two hours
- *  to connect. */
+ *  trail covers), #1 at the top. Only worth drawing once a few hours are on it:
+ *  two or three points at the left of a day-wide box read as a broken chart.
+ *  Drawn in the neutral ink, not sky blue, which means the blue camp here. */
 export function RankTrail({ e, className = 'h-6 w-20', span = '最近 24 小時' }: { e: EventItem; className?: string; span?: string }) {
   const trail = e.rankTrail ?? [];
   const seen = trail.filter((r): r is number => r !== null);
-  if (seen.length < 2) return null;
+  if (seen.length < 4) return null;
   const best = Math.min(...seen);
   return (
     <span
       role="img"
-      className="inline-flex items-center rounded bg-zinc-100 px-0.5 dark:bg-zinc-800"
+      className="inline-flex items-center border-b border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
       title={`${span}名次：${trail.map((r) => (r === null ? '－' : r)).join(' ')}；最高第 ${best} 名`}
       aria-label={`${span}名次走勢，最高第 ${best} 名`}
     >
-      <Sparkline values={trail} rank color="#0284c7" className={className} />
+      <Sparkline values={trail} rank color="currentColor" className={className} />
     </span>
   );
 }
@@ -107,18 +115,30 @@ export function ScoreBar({
 }
 
 /** Who is on the story: as many outlet marks as fit on one line, then counts. */
-export function OutletStrip({ c, media, compact = false }: { c: EventCoverage; media: MediaInfo; compact?: boolean }) {
+export function OutletStrip({
+  c,
+  media,
+  compact = false,
+  max,
+}: {
+  c: EventCoverage;
+  media: MediaInfo;
+  compact?: boolean;
+  /** At most this many icons; the count beside them still covers every outlet. */
+  max?: number;
+}) {
   if (!c || c.outlets.length === 0) return null;
   return (
     <div className="flex w-full min-w-0 items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-      <FitRow label="報導媒體">
+      {/* "+N" counts every outlet not shown, so icons and the count beside them agree. */}
+      <FitRow label="報導媒體" max={max}>
         {c.outlets.map((o) => (
           <MediaHoverLink
             key={o.media}
             media={o.media}
             title={media[o.media]?.title ?? o.media}
-            icon={compact ? 12 : 14}
-            className="inline-flex min-h-6 min-w-6 items-center justify-center rounded p-0.5 hover:bg-zinc-100 pointer-coarse:min-h-11 pointer-coarse:min-w-11 dark:hover:bg-zinc-800"
+            icon={compact ? 14 : 16}
+            className="inline-flex min-h-7 min-w-7 items-center justify-center rounded p-0.5 hover:bg-zinc-100 pointer-coarse:min-h-11 pointer-coarse:min-w-11 dark:hover:bg-zinc-800"
           >
             <span className="sr-only">{media[o.media]?.title ?? o.media}</span>
           </MediaHoverLink>
@@ -213,7 +233,7 @@ function CampHeadlines({ pair: { blue, green }, media }: { pair: { blue: EventNe
   const [b, g] = headlineDiff(blue.title, green.title);
   const side = (n: EventNews, parts: typeof b, camp: Camp) => (
     <div className="min-w-0 space-y-0.5">
-      <p className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+      <p className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
         <span className={`h-1.5 w-1.5 rounded-full ${CAMP_FILL[camp]}`} aria-hidden />
         {CAMP_LABEL[camp]}
         <MediaHoverLink media={n.media} icon={12} className="hover:underline">
@@ -254,10 +274,10 @@ function Title({ e, className, at }: { e: EventItem; className: string; at?: str
     <h2 className={className}>
       {href ? (
         <Link prefetch={false} href={at ? `${href}?at=${encodeURIComponent(at)}` : href} className="hover:underline">
-          {text}
+          <Phrases text={text} />
         </Link>
       ) : (
-        text
+        <Phrases text={text} />
       )}
     </h2>
   );
@@ -288,11 +308,11 @@ export default function EventCard({
 }) {
   const img = cover(e);
   const pair = tier === 'hero' ? campPair(e) : null;
-  const rank = <span className="text-lg font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>;
+  const rank = <span className="text-lg font-semibold tabular-nums text-zinc-600 dark:text-zinc-400">{e.rank}</span>;
   if (tier === 'row') {
     return (
       <li id={eventAnchor(e.rank)} className="grid scroll-mt-20 grid-cols-[2rem_minmax(0,1fr)] gap-x-2 gap-y-1 py-2.5">
-        <span className="text-base font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">{e.rank}</span>
+        <span className="text-base font-semibold tabular-nums text-zinc-600 dark:text-zinc-400">{e.rank}</span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <Title e={e} at={at} className="font-medium leading-snug" />
@@ -302,7 +322,7 @@ export default function EventCard({
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <ScoreBar score={e.score} max={max} width="w-12" label={scoreLabel} />
-            <Tags e={e} limit={3} size="text-[11px]" />
+            <Tags e={e} limit={3} size="text-xs" />
             {e.coverage && <CampLine c={e.coverage} compact />}
           </div>
           {footer}
@@ -335,19 +355,21 @@ export default function EventCard({
             {meta}
             <RankTrail e={e} className="h-7 w-24" span={trailSpan} />
           </div>
-          <Title e={e} at={at} className="text-xl font-semibold leading-snug" />
-          <Tags e={e} limit={7} />
+          {/* The lead story: the headline leads, then the split and the two camps' headlines; fewer
+              keywords, icons and extra links than before so the title is not lost among them. */}
+          <Title e={e} at={at} className="text-xl font-semibold leading-snug md:text-2xl md:leading-snug" />
+          <Tags e={e} limit={5} />
           {e.coverage && (
             <div className="space-y-1.5">
               <FullBar c={e.coverage} />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                 <CampBadge c={e.coverage} />
-                <OutletStrip c={e.coverage} media={media} />
+                <OutletStrip c={e.coverage} media={media} max={10} />
               </div>
             </div>
           )}
           {pair && <CampHeadlines pair={pair} media={media} />}
-          <Headlines e={e} media={media} limit={3} skip={[img, pair?.blue, pair?.green]} />
+          <Headlines e={e} media={media} limit={2} skip={[img, pair?.blue, pair?.green]} />
           {footer}
           <Compare e={e} className="self-end" />
         </div>

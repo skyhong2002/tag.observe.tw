@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { filterChipClass } from '@/components/FilterChips';
 import { fetchTagGroupOverview, type TagGroupSummary } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 
@@ -16,11 +17,11 @@ const tagHref = (tag: string) => `/tag/${encodeURIComponent(tag)}/`;
 /** Change against the period before, worded so it reads without colour too. */
 function Change({ recent, previous }: { recent: number; previous: number }) {
   const d = recent - previous;
-  if (!previous) return <span className="text-zinc-500 dark:text-zinc-400">新</span>;
+  if (!previous) return <span className="text-zinc-600 dark:text-zinc-400">新</span>;
   return (
     <span
       className={
-        d > 0 ? 'text-red-700 dark:text-red-400' : d < 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'
+        d > 0 ? 'text-red-700 dark:text-red-400' : d < 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-600 dark:text-zinc-400'
       }
     >
       {d > 0 ? '▲' : d < 0 ? '▼' : '–'}
@@ -35,7 +36,7 @@ function GroupCard({ group, parents, days }: { group: TagGroupSummary; parents: 
   const max = group.top[0]?.recent ?? 1;
   return (
     <li className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-      {parents.length > 0 && <p className="text-xs text-zinc-500 dark:text-zinc-400">{parents.join(' › ')} ›</p>}
+      {parents.length > 0 && <p className="text-xs text-zinc-600 dark:text-zinc-400">{parents.join(' › ')} ›</p>}
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="font-semibold">
           <Link href={`/group/${group.id}/${days === 7 ? '' : `?days=${days}`}`} className="hover:underline">
@@ -46,7 +47,7 @@ function GroupCard({ group, parents, days }: { group: TagGroupSummary; parents: 
           {n(group.recent)} 篇 <Change recent={group.recent} previous={group.previous} />
         </span>
       </div>
-      <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
         {n(group.active)} 個標籤上新聞 · 共 {n(group.tags)} 個
       </p>
       <ol className="mt-3 space-y-1.5 text-sm">
@@ -90,11 +91,7 @@ export default async function GroupIndexPage({ searchParams }: { searchParams: P
         </p>
         <div className="mt-4 flex gap-1 text-sm">
           {DAYS.map((d) => (
-            <Link
-              key={d}
-              href={d === 7 ? '/group/' : `/group/?days=${d}`}
-              className={`rounded-md px-3 py-1 ${d === days ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
-            >
+            <Link key={d} href={d === 7 ? '/group/' : `/group/?days=${d}`} className={filterChipClass(d === days)}>
               {d} 天
             </Link>
           ))}
@@ -119,7 +116,7 @@ export default async function GroupIndexPage({ searchParams }: { searchParams: P
               ))}
             </ul>
             {quiet.length > 0 && (
-              <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
                 最近 {days} 天沒有標籤上新聞：
                 {quiet.map((g, i) => (
                   <span key={g.id}>

@@ -90,10 +90,29 @@ export default function TableScroller({
       head.style.transform = '';
     };
   }, []);
+  const more = scroll === 'start' || scroll === 'middle';
   return (
     <div
       className={`table-frame relative ${card ? 'table-card overflow-hidden rounded-xl border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-900' : ''} ${className}`}
     >
+      {/* A row of its own above the header says when columns are hidden to the right, so the hint
+          never covers a column name. Phones show it until the table is measured (almost every wide
+          table overflows there); larger screens only once it is known to. The button scrolls on. */}
+      <div
+        aria-hidden="true"
+        className={`${more ? 'flex' : scroll === undefined ? 'flex sm:hidden' : 'hidden'} h-8 items-center justify-end gap-2 border-b border-zinc-200 bg-(--table-head-bg) px-2 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400`}
+      >
+        <span className="sm:hidden">{scroll === 'middle' ? '還有更多欄，繼續滑動' : '這張表可以左右滑動'}</span>
+        <span className="hidden sm:inline">表格比畫面寬，右邊還有欄位</span>
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => ref.current?.scrollBy({ left: ref.current.clientWidth * 0.8, behavior: 'smooth' })}
+          className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 font-medium text-brand-800 hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200 dark:hover:bg-brand-900"
+        >
+          看更多欄 <span aria-hidden="true">→</span>
+        </button>
+      </div>
       {/* Keyboard users can focus the region to scroll it sideways. */}
       <section
         ref={ref}
@@ -107,7 +126,7 @@ export default function TableScroller({
       </section>
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-(--table-bg) transition-opacity ${scroll === 'start' || scroll === 'middle' ? 'opacity-100' : 'opacity-0'}`}
+        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-(--table-bg) transition-opacity ${more ? 'opacity-100' : 'opacity-0'}`}
       />
       {footer}
     </div>

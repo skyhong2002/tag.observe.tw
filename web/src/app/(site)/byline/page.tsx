@@ -62,18 +62,18 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
         clearHref={href({ q: undefined, media: undefined })}
       />
       {!data ? (
-        <p role="status" className="py-8 text-zinc-500 dark:text-zinc-400">
+        <p role="status" className="py-8 text-zinc-600 dark:text-zinc-400">
           暫時無法取得署名資料，請稍後重新整理。
         </p>
       ) : (
         <>
-          <p role="status" className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p role="status" className="text-xs text-zinc-600 dark:text-zinc-400">
             符合 {data.total.toLocaleString('zh-TW')} 個署名 · 本期 {data.credited.toLocaleString('zh-TW')} 篇可辨識署名文章 ·{' '}
             {taipei(data.generatedAt)} 更新
           </p>
           <TableScroller label="署名表格，可左右捲動">
             <table className="w-full min-w-[32rem] border-collapse text-left text-sm [&_td]:py-1 [&_th]:py-1">
-              <thead className="text-xs text-zinc-500 dark:text-zinc-400">
+              <thead className="text-xs text-zinc-600 dark:text-zinc-400">
                 <tr className="border-b border-zinc-200 dark:border-zinc-800">
                   {['署名', '刊登媒體', '篇數'].map((label) => (
                     <th
@@ -106,11 +106,11 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
                           className="mr-3 inline-flex items-center gap-1 whitespace-nowrap text-xs text-zinc-600 hover:underline dark:text-zinc-400"
                         >
                           <MediaIcon media={outlet.media} title={outlet.name} size={14} />
-                          {outlet.name} <span className="text-zinc-500 dark:text-zinc-400">{outlet.count}</span>
+                          {outlet.name} <span className="text-zinc-600 dark:text-zinc-400">{outlet.count}</span>
                         </Link>
                       ))}
                       {entry.outlets.length > 2 && (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">另 {entry.outlets.length - 2} 家</span>
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">另 {entry.outlets.length - 2} 家</span>
                       )}
                     </td>
                     <td className={table.num}>{entry.articles.toLocaleString('zh-TW')}</td>
@@ -118,7 +118,7 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
                 ))}
               </tbody>
             </table>
-            {!data.bylines.length && <p className="p-8 text-center text-zinc-500 dark:text-zinc-400">這段期間沒有符合篩選的署名。</p>}
+            {!data.bylines.length && <p className="p-8 text-center text-zinc-600 dark:text-zinc-400">這段期間沒有符合篩選的署名。</p>}
           </TableScroller>
           <nav aria-label="署名分頁" className="flex justify-between text-sm">
             {data.page > 0 ? (
@@ -128,7 +128,7 @@ export default async function BylineIndexPage({ searchParams }: { searchParams: 
             ) : (
               <span />
             )}
-            <span className="py-2 text-zinc-500 dark:text-zinc-400">第 {data.page + 1} 頁</span>
+            <span className="py-2 text-zinc-600 dark:text-zinc-400">第 {data.page + 1} 頁</span>
             {(data.page + 1) * data.pageSize < data.total ? (
               <Link href={href({ page: String(data.page + 1) })} className="py-2 text-brand-700 dark:text-brand-400">
                 下一頁 →

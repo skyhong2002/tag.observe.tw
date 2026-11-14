@@ -7,11 +7,20 @@ import { Children, type ReactNode, useEffect, useLayoutEffect, useRef, useState 
 
 const MORE = 44; // same as the button's minimum width, including on touch screens
 
-export default function FitRow({ children, label }: { children: ReactNode; label: string }) {
+export default function FitRow({
+  children,
+  label,
+  max = Infinity,
+}: {
+  children: ReactNode;
+  label: string /** Show at most this many before "+N". */;
+  max?: number;
+}) {
   const items = Children.toArray(children);
   const row = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState(items.length);
+  const cap = Math.min(items.length, max);
+  const [fit, setFit] = useState(cap);
   const [open, setOpen] = useState(false);
 
   useLayoutEffect(() => {
@@ -22,14 +31,14 @@ export default function FitRow({ children, label }: { children: ReactNode; label
       const width = el.parentElement?.clientWidth ?? 0;
       if (!first || !width) return;
       const each = first.offsetWidth;
-      if (each * items.length <= width) setFit(items.length);
-      else setFit(Math.max(1, Math.floor((width - MORE) / each)));
+      if (each * cap <= width && cap === items.length) setFit(items.length);
+      else setFit(Math.max(1, Math.min(cap, Math.floor((width - MORE) / each))));
     };
     measure();
     const observer = new ResizeObserver(measure);
     if (el.parentElement) observer.observe(el.parentElement);
     return () => observer.disconnect();
-  }, [items.length]);
+  }, [items.length, cap]);
 
   useEffect(() => {
     if (!open) return;

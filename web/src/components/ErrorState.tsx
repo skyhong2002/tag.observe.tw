@@ -10,7 +10,7 @@ export interface ErrorProps {
 }
 
 const button =
-  'inline-flex min-h-10 items-center rounded-lg bg-zinc-900 px-4 text-sm text-white disabled:cursor-wait disabled:opacity-80 dark:bg-zinc-100 dark:text-zinc-900';
+  'inline-flex min-h-10 items-center rounded-lg bg-brand-700 px-4 text-sm font-medium text-white hover:bg-brand-800 disabled:cursor-wait disabled:opacity-80';
 const secondary =
   'inline-flex min-h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm text-zinc-900 hover:border-brand-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-brand-400';
 
@@ -31,7 +31,7 @@ export default function ErrorState({
     console.error(error);
   }, [error]);
   return (
-    <div role="alert" className="mx-auto max-w-2xl space-y-5 py-6">
+    <div role="alert" className="max-w-2xl space-y-5 py-6">
       {/* Under a loading.tsx the response has already started as 200, so this is
           what keeps a transient failure out of the index (React hoists it to head). */}
       <meta name="robots" content="noindex" />
@@ -49,8 +49,9 @@ export default function ErrorState({
         </Link>
       </div>
       {error.digest && (
-        <p className="text-xs text-zinc-600 dark:text-zinc-400">
-          錯誤代碼 <code className="font-mono tabular-nums">{error.digest}</code>
+        <p className="border-t border-zinc-200 pt-3 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+          一直無法載入的話，歡迎到頁尾的「聯絡與移除請求」告訴我們，附上這串編號能更快找到原因：
+          <code className="ml-1 font-mono tabular-nums">{error.digest}</code>
         </p>
       )}
     </div>

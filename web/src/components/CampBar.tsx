@@ -61,20 +61,31 @@ export function CampBadge({ c, className = '' }: { c: EventCoverage; className?:
   return null;
 }
 
-/** Mini three-segment bar (綠、其他、藍) by outlet count, same order as FullBar. */
-export function SplitBar({ c, width = 'w-20' }: { c: EventCoverage; width?: string }) {
+/** Mini three-segment bar (綠、其他、藍) by outlet count, same order as FullBar,
+ *  followed by the two camps' shares in words so the split never rests on colour alone. */
+export function SplitBar({ c, width = 'w-20', labelled = true }: { c: EventCoverage; width?: string; labelled?: boolean }) {
   const order: Camp[] = ['green', 'other', 'blue'];
   const total = order.reduce((n, k) => n + c.camps[k], 0);
   if (!total) return null;
   const text = order.map((k) => `${CAMP_LABEL[k]} ${c.camps[k]} 家`).join('、');
+  const pct = (k: Camp) => Math.round((c.camps[k] / total) * 100);
   return (
-    <span className={`inline-flex h-2 ${width} shrink-0 overflow-hidden rounded-full`} title={text}>
+    <span className="inline-flex shrink-0 items-center gap-1.5" title={text}>
       <span className="sr-only">{text}</span>
-      {order
-        .filter((k) => c.camps[k] > 0)
-        .map((k) => (
-          <span key={k} className={CAMP_FILL[k]} style={{ flexGrow: c.camps[k] }} aria-hidden />
-        ))}
+      <span className={`inline-flex h-2 ${width} shrink-0 overflow-hidden rounded-full`} aria-hidden>
+        {order
+          .filter((k) => c.camps[k] > 0)
+          .map((k) => (
+            <span key={k} className={CAMP_FILL[k]} style={{ flexGrow: c.camps[k] }} />
+          ))}
+      </span>
+      {labelled && (
+        <span className="whitespace-nowrap text-xs tabular-nums leading-none" aria-hidden>
+          <span className={CAMP_TEXT.green}>綠 {pct('green')}%</span>
+          <span className="text-zinc-400 dark:text-zinc-500">・</span>
+          <span className={CAMP_TEXT.blue}>藍 {pct('blue')}%</span>
+        </span>
+      )}
     </span>
   );
 }
@@ -97,7 +108,10 @@ export function FullBar({ c }: { c: EventCoverage }) {
   const total = order.reduce((n, k) => n + c.camps[k], 0);
   if (!total) return null;
   const text = order.map((k) => `${CAMP_LABEL[k]} ${c.camps[k]} 家`).join('、');
-  return (
+  const pct = (k: Camp) => Math.round((c.camps[k] / total) * 100);
+  // A segment too narrow for its label still gets its share in words, below the bar.
+  const unlabelled = order.some((k) => c.camps[k] > 0 && c.camps[k] / total < 0.18);
+  const bar = (
     <div className="flex h-5 w-full overflow-hidden rounded text-[11px] font-medium text-white" title={text}>
       <span className="sr-only">{text}</span>
       {order
@@ -109,9 +123,22 @@ export function FullBar({ c }: { c: EventCoverage }) {
             style={{ flexGrow: c.camps[k] }}
             aria-hidden
           >
-            {c.camps[k] / total >= 0.18 && `${CAMP_LABEL[k]} ${Math.round((c.camps[k] / total) * 100)}%`}
+            {c.camps[k] / total >= 0.18 && `${CAMP_LABEL[k]} ${pct(k)}%`}
           </span>
         ))}
+    </div>
+  );
+  if (!unlabelled) return bar;
+  return (
+    <div className="space-y-1">
+      {bar}
+      <p className="flex flex-wrap gap-x-3 text-xs tabular-nums" aria-hidden>
+        {order.map((k) => (
+          <span key={k} className={CAMP_TEXT[k]}>
+            {CAMP_LABEL[k]} {pct(k)}%
+          </span>
+        ))}
+      </p>
     </div>
   );
 }

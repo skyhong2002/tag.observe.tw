@@ -84,7 +84,7 @@ export default function OutletTable({
     <TableScroller label={`${caption}，可左右捲動`}>
       <table className="w-full min-w-[40rem] border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
-        <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
+        <thead className="text-left text-xs text-zinc-600 dark:text-zinc-400">
           <tr className="border-b border-zinc-200 dark:border-zinc-800">
             {head('name', '媒體', undefined, false)}
             {head('articles', '分析篇數', '有取得內文、已分析的文章')}
@@ -121,7 +121,7 @@ export default function OutletTable({
           ))}
         </tbody>
       </table>
-      {!rows.length && <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">這段期間還沒有足夠的分析資料。</p>}
+      {!rows.length && <p className="py-8 text-center text-sm text-zinc-600 dark:text-zinc-400">這段期間還沒有足夠的分析資料。</p>}
     </TableScroller>
   );
 }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CampBadge, FullBar, SplitBar } from '@/components/CampBar';
 import SafeImage from '@/components/SafeImage';
 import type { MediaInfo } from '@/lib/api';
+import { periodLabel } from '@/lib/article-search';
 import { cleanEventHeadline, clipHeadline, selectEventCover, selectEventLead } from '@/lib/event-presentation.mts';
 import { isAllowedImage } from '@/lib/images';
 import type { EventNews, PeriodThread } from '@/lib/pages';
@@ -64,7 +65,7 @@ function Angles({ t, media }: { t: PeriodThread; media: MediaInfo }) {
     <ul className="mt-1 space-y-1 border-t border-zinc-200 pt-2 text-sm dark:border-zinc-800">
       {picked.slice(0, 3).map((n) => (
         <li key={n.url} className="flex min-w-0 items-baseline gap-2">
-          <span className={`shrink-0 text-xs font-medium ${n.camp ? CAMP_TEXT[n.camp] : 'text-zinc-500 dark:text-zinc-400'}`}>
+          <span className={`shrink-0 text-xs font-medium ${n.camp ? CAMP_TEXT[n.camp] : 'text-zinc-600 dark:text-zinc-400'}`}>
             {media[n.media]?.title ?? n.media}
           </span>
           <span className="truncate text-zinc-700 dark:text-zinc-300">{clipHeadline(cleanEventHeadline(n.title))}</span>
@@ -77,7 +78,7 @@ function Angles({ t, media }: { t: PeriodThread; media: MediaInfo }) {
 const CAMP_TEXT = {
   blue: 'text-blue-700 dark:text-blue-300',
   green: 'text-emerald-700 dark:text-emerald-300',
-  other: 'text-zinc-500 dark:text-zinc-400',
+  other: 'text-zinc-600 dark:text-zinc-400',
 } as const;
 
 export default function PeriodEvents({ threads, days, media }: { threads: PeriodThread[]; days: number; media: MediaInfo }) {
@@ -87,7 +88,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
     <section className="space-y-3" aria-labelledby="period-events">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="period-events" className="text-lg font-semibold tracking-tight">
-          過去 {days} 天的主要事件
+          {periodLabel(days)}的主要事件
         </h2>
         <Link href="/event/" className="text-sm text-brand-700 hover:underline dark:text-brand-400">
           {days === 1 ? '今天的事件排行' : '每日事件表'} →
@@ -104,7 +105,7 @@ export default function PeriodEvents({ threads, days, media }: { threads: Period
             <span className="flex min-w-0 flex-col justify-center gap-2 p-4">
               <span className="text-xs font-medium text-brand-700 dark:text-brand-400">最受關注</span>
               <span className="text-xl font-semibold leading-snug group-hover:underline">{threadHeadline(lead)}</span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="text-xs text-zinc-600 dark:text-zinc-400">
                 {lead.majorTags
                   .slice(0, 5)
                   .map((tag) => `#${tag}`)

@@ -4,6 +4,7 @@ import ArticleBody from '@/components/ArticleBody';
 import ArticleImage from '@/components/ArticleImage';
 import ArticleListItem from '@/components/ArticleListItem';
 import CompactArticleList from '@/components/CompactArticleList';
+import Phrases from '@/components/Phrases';
 import SourceLink from '@/components/SourceLink';
 import { kindNoun, topicHref, topicMediaHref } from '@/components/TopicCard';
 import { CONTENT_STATUS } from '@/lib/article-content';
@@ -24,14 +25,19 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
         <Link href={`/${kind}/`} className="hover:underline">
           {noun}
         </Link>
-        <span>/</span>
+        <span aria-hidden>/</span>
         <Link href={topicMediaHref(media, kind)} className="hover:underline">
           {data.mediaTitle}
         </Link>
-        <span>/ {noun}</span>
+        <span aria-hidden>/</span>
+        <span aria-current="page" className="max-w-[16rem] truncate text-zinc-900 dark:text-zinc-100">
+          {data.title}
+        </span>
       </nav>
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">{data.title}</h1>
+        <h1 className="text-2xl font-semibold">
+          <Phrases text={data.title} />
+        </h1>
         {kind === 'topic' && <SourceLink url={data.url} label={`原站${noun}`} showUrl />}
       </div>
       {kind === 'feature' && (
@@ -43,7 +49,7 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
             <ArticleBody body={content.article.description} sourceUrl={data.url} label="文章摘要" />
           ) : (
             <div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
                 {content ? CONTENT_STATUS[content.content.status].detail : '專題內文尚待擷取，可先前往原站閱讀。'}
               </p>
               <SourceLink url={data.url} label={`原站${noun}`} showUrl className="mt-3" />
@@ -54,7 +60,10 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
       {(data.stories.length > 0 || kind === 'topic') && (
         <div className="space-y-1 border-t border-zinc-200 pt-5 dark:border-zinc-800">
           <h2 className="font-semibold">{kind === 'feature' ? '專題相關新聞' : '議題新聞'}</h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">原站清單中已發現 {data.total} 篇，依報導日期由新到舊排列。</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            {data.mediaTitle}的{noun}頁列出的報導，本站已發現 {data.total} 篇，依報導日期由新到舊排列。哪些新聞放進這一頁由{data.mediaTitle}
+            決定，可能包含原站一併列出的其他新聞。
+          </p>
         </div>
       )}
       {data.stories.length ? (
@@ -73,7 +82,7 @@ export default async function TopicStoriesView({ media, id, kind }: { media: str
         <p className="text-sm text-zinc-600 dark:text-zinc-400">尚未取得這個{noun}的新聞清單，可先前往原站查看。</p>
       ) : null}
       {data.checkedAt && (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">
           最近檢查：{new Date(data.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}。
         </p>
       )}

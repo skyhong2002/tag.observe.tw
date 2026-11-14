@@ -47,7 +47,7 @@ interface MediaScope {
   coverage: string | null;
 }
 const discoveryBadge =
-  'shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800';
+  'shrink-0 whitespace-nowrap rounded bg-amber-50 px-1.5 py-px text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800';
 interface MediaRow {
   media: string;
   sourceKind?: 'discovery' | 'publisher';
@@ -175,11 +175,11 @@ function SevenDayCell({ value, since, partial }: { value: number; since: string 
     : null;
   return (
     <td
-      className={`${table.num} whitespace-nowrap ${partial ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-600 dark:text-zinc-300'}`}
+      className={`${table.num} whitespace-nowrap ${partial ? 'text-zinc-600 dark:text-zinc-400' : 'text-zinc-600 dark:text-zinc-300'}`}
       title={partial && md ? `新系統 ${md} 才開始抓這家媒體，還不滿 7 天` : undefined}
     >
       {value.toLocaleString()}
-      {partial && md && <span className="ml-1 text-[11px]">（{md} 起）</span>}
+      {partial && md && <span className="ml-1 text-xs">（{md} 起）</span>}
     </td>
   );
 }
@@ -225,6 +225,9 @@ export default async function MediaStatsPage({
   for (const { key, label } of data.media.flatMap((m) => m.labels)) carried.set(key, { label, n: (carried.get(key)?.n ?? 0) + 1 });
   const tags = [...carried].sort(([a, x], [b, y]) => y.n - x.n || collator.compare(a, b));
   const tag = sp.tag && carried.has(sp.tag) ? sp.tag : null;
+  // Labels on five or more outlets show as chips; the long tail folds under 其他 N 個標籤.
+  const commonTags = tags.filter(([, { n }]) => n >= 5);
+  const rareTags = tags.filter(([, { n }]) => n < 5);
   let rows = data.media
     .map((m) => ({ ...m, readers: readers[m.media] }))
     .filter(
@@ -301,26 +304,11 @@ export default async function MediaStatsPage({
         />
         <Tile label="有標籤的文章" value={pct(t.taggedShare24h)} note="24 小時內" />
       </div>
+      {/* Camp and scope first: what most readers narrow by. Labels that only a few outlets carry fold away. */}
       <div className="space-y-2">
         <FilterChips
-          label="收錄狀態"
-          items={[
-            { href: link({ status: null }), label: '全部狀態', current: !status },
-            ...(Object.keys(STATUS) as Status[]).map((s) => ({
-              href: link({ status: s }),
-              label: `${STATUS[s].label} ${t.statusCounts[s] ?? 0}`,
-              current: status === s,
-            })),
-          ]}
-        />
-        <FilterChips
-          label="媒體標籤"
-          items={[
-            { href: link({ tag: null }), label: '全部標籤', current: !tag },
-            ...tags.map(([key, { label, n }]) => ({ href: link({ tag: key }), label: `${label} ${n}`, current: tag === key })),
-          ]}
-        />
-        <FilterChips
+          scrollOnPhone
+          showLabel
           label="媒體傾向"
           items={[
             { href: link({ camp: null }), label: '全部傾向', current: !camp },
@@ -332,6 +320,8 @@ export default async function MediaStatsPage({
           ]}
         />
         <FilterChips
+          scrollOnPhone
+          showLabel
           label="報導範圍"
           items={[
             { href: link({ scope: null }), label: '全部範圍', current: !scope },
@@ -342,6 +332,44 @@ export default async function MediaStatsPage({
             })),
           ]}
         />
+        <FilterChips
+          scrollOnPhone
+          showLabel
+          label="收錄狀態"
+          items={[
+            { href: link({ status: null }), label: '全部狀態', current: !status },
+            ...(Object.keys(STATUS) as Status[]).map((s) => ({
+              href: link({ status: s }),
+              label: `${STATUS[s].label} ${t.statusCounts[s] ?? 0}`,
+              current: status === s,
+            })),
+          ]}
+        />
+        <FilterChips
+          scrollOnPhone
+          showLabel
+          label="媒體標籤"
+          items={[
+            { href: link({ tag: null }), label: '全部標籤', current: !tag },
+            ...commonTags.map(([key, { label, n }]) => ({ href: link({ tag: key }), label: `${label} ${n}`, current: tag === key })),
+          ]}
+        />
+        {rareTags.length > 0 && (
+          // Labels few outlets carry stay one click away instead of filling the screen above the table.
+          <details open={rareTags.some(([key]) => key === tag)} className="group text-sm">
+            <summary className="ml-[4.125rem] inline-flex cursor-pointer list-none items-center gap-1 rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-100 max-sm:ml-0 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 [&::-webkit-details-marker]:hidden">
+              其他 {rareTags.length} 個標籤
+              <span aria-hidden="true" className="transition-transform group-open:rotate-180">
+                ▾
+              </span>
+            </summary>
+            <FilterChips
+              className="mt-2 sm:ml-[4.125rem]"
+              label="其他媒體標籤"
+              items={rareTags.map(([key, { label, n }]) => ({ href: link({ tag: key }), label: `${label} ${n}`, current: tag === key }))}
+            />
+          </details>
+        )}
       </div>
       <TableScroller card label="媒體與文章數表格，可左右捲動">
         <table className="w-full min-w-[60rem] text-sm">
@@ -362,14 +390,15 @@ export default async function MediaStatsPage({
               <Th
                 col="perArticle"
                 label="每篇分攤造訪"
-                className="text-right"
+                // Shown from 1536 px up, with 語言 and 抓取: at 1440 the table then fits the column without a sideways scroll.
+                className="hidden text-right 2xl:table-cell"
                 title="台灣月造訪 ÷ 當月發稿量（news sitemap 與本站收錄取大者）；含首頁與舊文，是指數不是讀者數"
               />
               <Th col="category" label="標籤" />
-              <Th col="language" label="語言" />
+              <Th col="language" label="語言" className="hidden 2xl:table-cell" />
               <Th col="tagged" label="標籤率" className="text-right" />
               <Th col="latest" label="最新文章" />
-              <Th col="schedule" label="抓取" />
+              <Th col="schedule" label="抓取" className="hidden 2xl:table-cell" />
               <Th col="status" label="狀態" />
             </tr>
           </thead>
@@ -377,7 +406,8 @@ export default async function MediaStatsPage({
             {rows.map((r) => (
               <tr key={r.media} className={table.row}>
                 <td className={table.lead}>
-                  <div className={table.leadBox}>
+                  {/* Capped on desktop too, so the table fits the 1280 px column at 1440; long names truncate (full name in title). */}
+                  <div className={`${table.leadBox} sm:max-w-44`}>
                     <MediaHoverLink
                       media={r.media}
                       icon={false}
@@ -399,7 +429,7 @@ export default async function MediaStatsPage({
                   {campBadge(r) ? (
                     <span className={campChip[r.camp as keyof typeof campChip]}>{campBadge(r)?.short}</span>
                   ) : (
-                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
+                    <span className="text-zinc-600 dark:text-zinc-400">—</span>
                   )}
                 </td>
                 <td className={table.num}>{r.today.toLocaleString()}</td>
@@ -421,13 +451,13 @@ export default async function MediaStatsPage({
                 </td>
                 <SevenDayCell value={r.last7d} since={r.collectingSince} partial={partialWeek(r)} />
                 <td
-                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
                   title={r.readers?.title}
                 >
                   {r.readers ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.visits)}` : '—'}
                 </td>
                 <td
-                  className={`${table.num} whitespace-nowrap ${r.readers?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                  className={`${table.num} hidden 2xl:table-cell whitespace-nowrap ${r.readers?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
                   title={r.readers?.perArticle?.title ?? r.readers?.perArticleNote}
                 >
                   {r.readers?.perArticle ? `${r.readers.below ? '< ' : ''}${trafficNumber(r.readers.perArticle.visits)}` : '—'}
@@ -443,15 +473,17 @@ export default async function MediaStatsPage({
                       ))}
                     </span>
                   ) : (
-                    <span className="text-zinc-500 dark:text-zinc-400">—</span>
+                    <span className="text-zinc-600 dark:text-zinc-400">—</span>
                   )}
                 </td>
-                <td className={`${table.cell} whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
+                <td className={`${table.cell} hidden 2xl:table-cell whitespace-nowrap`}>{r.scope?.languageLabel ?? '—'}</td>
                 <td className={`${table.num} text-zinc-600 dark:text-zinc-400`}>{pct(r.taggedShare24h)}</td>
                 <td className={`${table.cell} whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400`}>
                   {r.lastArticle ? taipei(r.lastArticle) : '—'}
                 </td>
-                <td className={`${table.cell} whitespace-nowrap text-zinc-600 dark:text-zinc-400`}>{scheduleLabel(r.schedule)}</td>
+                <td className={`${table.cell} hidden 2xl:table-cell whitespace-nowrap text-zinc-600 dark:text-zinc-400`}>
+                  {scheduleLabel(r.schedule)}
+                </td>
                 <td className={table.cell}>
                   <StatusBadge status={r.status} />
                 </td>

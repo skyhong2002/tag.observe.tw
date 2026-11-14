@@ -71,7 +71,7 @@ function Row({ title, list }: { title: string; list: Suggestion[] }) {
   if (!list.length) return null;
   return (
     <div>
-      <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{title}</h3>
+      <h3 className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{title}</h3>
       <ul className="mt-1.5 flex flex-wrap gap-2">
         {list.map((s) => (
           <Pill key={`${s.kind}:${s.target}`} s={s} />
@@ -117,7 +117,7 @@ export function OtherSideReports({ other }: { other: OtherSide }) {
       <ul className={`${card} mt-3 divide-y divide-zinc-200 dark:divide-zinc-800`}>
         {other.articles.map((a) => (
           <li key={a.id} className="px-3 py-2.5">
-            <p className="flex flex-wrap items-center gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="flex flex-wrap items-center gap-x-2 text-xs text-zinc-600 dark:text-zinc-400">
               <span className="font-medium">{a.mediaTitle}</span>
               <time dateTime={a.publishedAt}>{when(a.publishedAt)}</time>
               <Link href={`/tag/${encodeURIComponent(a.tag)}/`} className="hover:text-brand-700">
@@ -130,7 +130,7 @@ export function OtherSideReports({ other }: { other: OtherSide }) {
               </Link>
               <SaveButton kind="article" id={a.id} className="shrink-0 !min-h-7 !px-2 !text-xs" />
             </div>
-            <SourceLink url={a.url} showUrl className="!min-h-5 !text-[11px]" />
+            <SourceLink url={a.url} showUrl className="!min-h-5 !text-xs" />
           </li>
         ))}
       </ul>

@@ -7,7 +7,7 @@ import TagDiscoveryBadges from './TagDiscoveryBadges';
 // The ranking row for this tag, expanded: what the 關鍵字 table shows in one
 // line, plus co-occurring tags and long-term history. Rendered above the chart.
 // Colours follow the ranking table: 新 and 爆發力 above 分數 in the brand
-// orange, ▲ rose, ▼ sky. What the numbers mean is in the footer (TagMethod).
+// orange, ▲ rose, ▼ grey (blue means a camp here). What the numbers mean is in the footer (TagMethod).
 const rising = 'text-brand-700 dark:text-brand-400';
 export default function TagStatusPanel({ status }: { status: TagStatus }) {
   const r = status.ranking;
@@ -17,12 +17,12 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
     : r.new
       ? { text: '新上榜', tone: rising }
       : delta === null
-        ? { text: '—', tone: 'text-zinc-500 dark:text-zinc-400' }
+        ? { text: '—', tone: 'text-zinc-600 dark:text-zinc-400' }
         : delta > 0
           ? { text: `▲${delta}`, tone: 'text-rose-600 dark:text-rose-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
           : delta < 0
-            ? { text: `▼${-delta}`, tone: 'text-sky-600 dark:text-sky-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
-            : { text: '＝', tone: 'text-zinc-500 dark:text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
+            ? { text: `▼${-delta}`, tone: 'text-zinc-600 dark:text-zinc-400', title: `分數名次 ${r.rank}，24 小時前第 ${r.rank24h} 名` }
+            : { text: '＝', tone: 'text-zinc-600 dark:text-zinc-400', title: `分數名次 ${r.rank}，與 24 小時前相同` };
   const tiles: Array<{ label: string; value: string; tone?: string; title?: string }> = r
     ? [
         { label: '名次', value: `#${r.position}` },
@@ -42,7 +42,7 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         <dl className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           {tiles.map((t) => (
             <div key={t.label} title={t.title}>
-              <dt className="text-xs text-zinc-500 dark:text-zinc-400">{t.label}</dt>
+              <dt className="text-xs text-zinc-600 dark:text-zinc-400">{t.label}</dt>
               <dd className={`text-lg font-semibold tabular-nums ${t.tone ?? ''}`}>{t.value}</dd>
             </div>
           ))}
@@ -54,21 +54,29 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         <div className="flex flex-wrap items-center gap-3">
           <TagDiscoveryBadges isNew={r.new} signals={r.signals} firstCollection={status.firstCollection} />
           {r.signals?.growth != null && (
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs text-zinc-600 dark:text-zinc-400">
               升溫量 {r.signals.growth > 0 ? '+' : ''}
               {r.signals.growth.toFixed(1)}
+              {/* The figure in words: the sign is what a reader needs. */}
+              <span className="ml-1">
+                （{r.signals.growth > 0 ? '比前幾天升溫' : r.signals.growth < 0 ? '比前幾天降溫' : '和前幾天持平'}）
+              </span>
             </span>
           )}
           {r.signals && (
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              {r.signals.broad ? '已達多家跟進門檻' : r.signals.early ? '已達早期線索門檻' : '尚未達跨媒體門檻'}
+            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+              {r.signals.broad
+                ? '至少 3 家媒體跟進（多家跟進）'
+                : r.signals.early
+                  ? '至少 2 家媒體各報 2 篇以上（早期線索）'
+                  : '還沒有兩家媒體各報 2 篇以上'}
             </span>
           )}
         </div>
       )}
       {status.archive && (
         <p
-          className="text-xs text-zinc-500 dark:text-zinc-400"
+          className="text-xs text-zinc-600 dark:text-zinc-400"
           title="全部收錄報導中，這個關鍵字字串完全相同的第一篇，以及報導最多的一天（台北時間）"
         >
           首次出現：{taipeiDate(status.archive.firstAt)}
@@ -76,14 +84,14 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
         </p>
       )}
       {status.firstCollection && (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">
           現存收錄紀錄首次見到：{taipei(status.firstCollection.at)} · 最早已收錄報導：{taipei(status.firstCollection.firstPublishedAt)}
         </p>
       )}
       <DraftEvidence data={status.drafts} />
       {status.related.length > 0 && (
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">一起出現</span>
+          <span className="text-xs text-zinc-600 dark:text-zinc-400">一起出現</span>
           {status.related.map((x) => (
             <Link
               key={x.tag}
@@ -97,7 +105,7 @@ export default function TagStatusPanel({ status }: { status: TagStatus }) {
           ))}
         </p>
       )}
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">
         {r && `${taipeiHour(r.hourStart)} 時段的新聞媒體排行榜`}
         {r && status.history && ' · '}
         {status.history &&

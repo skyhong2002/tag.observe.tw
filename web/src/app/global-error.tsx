@@ -18,7 +18,7 @@ export default function GlobalError(props: ErrorProps) {
     <html lang="zh-Hant">
       <body className="min-h-dvh bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         <title>暫時無法載入 · 新文易數</title>
-        <main className="mx-auto w-full max-w-6xl px-4 py-6">
+        <main className="mx-auto w-full max-w-7xl px-4 py-6">
           <ErrorState {...props} />
         </main>
       </body>

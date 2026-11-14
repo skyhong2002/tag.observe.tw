@@ -64,7 +64,7 @@ function PairRow({ pair }: { pair: JournalistPair }) {
   ].filter(Boolean);
   return (
     <li id={`pair-${pair.own.id}-${pair.other.id}`} className="scroll-mt-20 space-y-1 py-3">
-      <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-zinc-600 dark:text-zinc-400">
         <MediaHoverLink media={pair.other.media} className={`${linkStyle} text-sm font-medium`}>
           {pair.other.mediaTitle}
         </MediaHoverLink>
@@ -87,7 +87,7 @@ function PairRow({ pair }: { pair: JournalistPair }) {
         pair.evidence &&
         !sameBody && (
           <details className="text-xs">
-            <summary className="cursor-pointer py-1 text-zinc-500 dark:text-zinc-400">共同片段</summary>
+            <summary className="cursor-pointer py-1 text-zinc-600 dark:text-zinc-400">共同片段</summary>
             <p className="break-words leading-6 text-zinc-600 dark:text-zinc-400">{pair.evidence}</p>
           </details>
         )
@@ -106,25 +106,25 @@ function SimilarSection({ data, all, allHref }: { data: JournalistDetail; all: b
     <section aria-labelledby="similar-heading" className="mb-6">
       <h2 id="similar-heading" className="text-base font-semibold">
         與其他媒體內文相近的文章
-        <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+        <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-400">
           <span className="whitespace-nowrap">{number(data.stats.similar.articles)} 篇有相近文章，</span>
           <span className="whitespace-nowrap">共 {number(data.stats.similar.pairs)} 組</span>
         </span>
       </h2>
       <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
         {data.index.pending > 0 && (
-          <span className="mr-3 text-zinc-500 dark:text-zinc-400">另有 {number(data.index.pending)} 篇尚待比對</span>
+          <span className="mr-3 text-zinc-600 dark:text-zinc-400">另有 {number(data.index.pending)} 篇尚待比對</span>
         )}
         <MethodLink>相似不等於抄襲</MethodLink>
       </p>
-      {!ordered.length && <p className="py-6 text-sm text-zinc-500 dark:text-zinc-400">這段期間內沒有找到與他站內文相近的文章。</p>}
+      {!ordered.length && <p className="py-6 text-sm text-zinc-600 dark:text-zinc-400">這段期間內沒有找到與他站內文相近的文章。</p>}
       <ul className="mt-3 space-y-4">
         {shown.map((pairs) => {
           const own = pairs[0].own;
           const headline = readingTitle(own.title);
           return (
             <li key={own.id} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-              <p className="flex flex-wrap items-center gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="flex flex-wrap items-center gap-x-2 text-xs text-zinc-600 dark:text-zinc-400">
                 <MediaHoverLink media={own.media} className={`${linkStyle} font-medium`}>
                   {own.mediaTitle}
                 </MediaHoverLink>
@@ -150,7 +150,7 @@ function SimilarSection({ data, all, allHref }: { data: JournalistDetail; all: b
           <Link href={allHref} className={linkStyle}>
             顯示其餘 {number(ordered.length - shown.length)} 篇的相近文章
           </Link>
-          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">目前列出最新 {number(shown.length)} 篇</span>
+          <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-400">目前列出最新 {number(shown.length)} 篇</span>
         </p>
       )}
     </section>
@@ -186,7 +186,7 @@ export default async function JournalistPage({
   ];
   return (
     <div className="pb-4">
-      <nav aria-label="麵包屑" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+      <nav aria-label="麵包屑" className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
         <Link href="/byline/?kind=person" className="hover:text-brand-700 dark:hover:text-brand-400">
           署名
         </Link>
@@ -213,7 +213,7 @@ export default async function JournalistPage({
                 <MediaHoverLink media={outlet.media} className={linkStyle}>
                   {outlet.name}
                 </MediaHoverLink>
-                <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{number(outlet.count)} 篇</span>
+                <span className="text-xs tabular-nums text-zinc-600 dark:text-zinc-400">{number(outlet.count)} 篇</span>
               </li>
             ))}
           </ul>
@@ -227,10 +227,10 @@ export default async function JournalistPage({
         <dl className="flex flex-wrap gap-x-6 gap-y-2 text-right">
           {summary.map((item) => (
             <div key={item.label}>
-              <dt className="text-[11px] text-zinc-500 dark:text-zinc-400">{item.label}</dt>
+              <dt className="text-xs text-zinc-600 dark:text-zinc-400">{item.label}</dt>
               <dd className="mt-0.5 text-xl font-semibold tabular-nums">
                 {item.value}
-                {item.unit && <span className="ml-1 text-[11px] font-normal text-zinc-500 dark:text-zinc-400">{item.unit}</span>}
+                {item.unit && <span className="ml-1 text-xs font-normal text-zinc-600 dark:text-zinc-400">{item.unit}</span>}
               </dd>
             </div>
           ))}
@@ -249,27 +249,27 @@ export default async function JournalistPage({
                       className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 hover:bg-brand-50 hover:text-brand-800 dark:bg-zinc-800 dark:hover:bg-brand-950 dark:hover:text-brand-300"
                     >
                       {item.tag}
-                      <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{item.count}</span>
+                      <span className="tabular-nums text-zinc-600 dark:text-zinc-400">{item.count}</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-zinc-500 dark:text-zinc-400">這段期間的文章沒有標籤。</p>
+              <p className="text-zinc-600 dark:text-zinc-400">這段期間的文章沒有標籤。</p>
             )}
           </section>
           <section aria-label="比對篇數" className="rounded-lg border border-zinc-200 p-3 text-xs leading-5 dark:border-zinc-800">
             <h2 className="mb-2 text-sm font-semibold">比對篇數</h2>
             <dl className="grid grid-cols-[6rem_minmax(0,1fr)] gap-y-1.5">
-              <dt className="text-zinc-500 dark:text-zinc-400">已比對</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">已比對</dt>
               <dd>{number(data.index.compared)} 篇</dd>
-              <dt className="text-zinc-500 dark:text-zinc-400">未見相近</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">未見相近</dt>
               <dd title="已比對但未發現達門檻的相近文章，不代表已確認原創">{number(data.index.unmatched)} 篇</dd>
-              <dt className="text-zinc-500 dark:text-zinc-400">尚待比對</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">尚待比對</dt>
               <dd>{number(data.index.pending)} 篇</dd>
-              <dt className="text-zinc-500 dark:text-zinc-400">同署名跨站</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">同署名跨站</dt>
               <dd>{number(stats.similar.sameAuthor)} 篇</dd>
-              <dt className="text-zinc-500 dark:text-zinc-400">已註明來源</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">已註明來源</dt>
               <dd>{number(stats.similar.attributed ?? 0)} 篇</dd>
             </dl>
             <p className="mt-2">
@@ -278,7 +278,7 @@ export default async function JournalistPage({
           </section>
           <section aria-label="關於這一頁" className="rounded-lg border border-zinc-200 p-3 text-xs leading-5 dark:border-zinc-800">
             <h2 className="mb-2 text-sm font-semibold">關於這一頁</h2>
-            <p className="text-zinc-500 dark:text-zinc-400">
+            <p className="text-zinc-600 dark:text-zinc-400">
               這一頁由各媒體公開刊出的署名自動整理，不是本人建立或認可的個人檔案。若您是本人，不希望出現在記者頁，請
               <a href={removalRequestHref(data.name)} target="_blank" rel="noopener noreferrer" className={linkStyle}>
                 提出移除請求
@@ -293,7 +293,7 @@ export default async function JournalistPage({
           <section aria-labelledby="articles-heading">
             <h2 id="articles-heading" className="border-b border-zinc-200 pb-1.5 text-base font-semibold dark:border-zinc-800">
               署名文章
-              <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{number(data.articles.length)} 篇，最新在前</span>
+              <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-400">{number(data.articles.length)} 篇，最新在前</span>
             </h2>
             <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {articles.map((article) => {
@@ -309,7 +309,7 @@ export default async function JournalistPage({
                         {clipHeadline(headline.title)}
                       </Link>
                     </h3>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
                       <MediaHoverLink media={article.media} className={`${linkStyle} font-medium`}>
                         {article.mediaTitle}
                       </MediaHoverLink>
@@ -344,7 +344,7 @@ export default async function JournalistPage({
                         </a>
                       )}
                       {!article.compared && readable && <span>未納入比對</span>}
-                      <SourceLink url={article.url} className="!min-h-5 !text-[11px]" />
+                      <SourceLink url={article.url} className="!min-h-5 !text-xs" />
                     </div>
                   </li>
                 );
@@ -355,7 +355,7 @@ export default async function JournalistPage({
                 <Link href={allHref('articles-heading')} className={linkStyle}>
                   顯示其餘 {number(data.articles.length - articles.length)} 篇署名文章
                 </Link>
-                <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">目前列出最新 {number(articles.length)} 篇</span>
+                <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-400">目前列出最新 {number(articles.length)} 篇</span>
               </p>
             )}
           </section>

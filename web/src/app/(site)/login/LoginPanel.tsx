@@ -5,8 +5,8 @@ import { loginHref, useSession } from '@/lib/session';
 
 export default function LoginPanel({ next }: { next?: string }) {
   const session = useSession();
-  if (!session) return <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-400">載入中…</p>;
-  if (!session.enabled) return <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-400">登入功能尚未開放。</p>;
+  if (!session) return <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">載入中…</p>;
+  if (!session.enabled) return <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">登入功能尚未開放。</p>;
   if (session.user)
     return (
       <p className="mt-6 text-sm">

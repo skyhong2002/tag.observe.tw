@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { filterChipClass } from '@/components/FilterChips';
 import { fetchTagGroupRanking } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo.mts';
 import GroupRankingTable from './GroupRankingTable';
@@ -34,7 +35,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
   return (
     <div className="space-y-6 py-4">
       <div>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
           <Link href="/group/" className="hover:underline">
             標籤群組
           </Link>
@@ -70,11 +71,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
       </div>
       <div className="flex gap-1 text-sm">
         {DAYS.map((d) => (
-          <Link
-            key={d}
-            href={`/group/${group.id}/${d === 7 ? '' : `?days=${d}`}`}
-            className={`rounded-md px-3 py-1 ${d === days ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
-          >
+          <Link key={d} href={`/group/${group.id}/${d === 7 ? '' : `?days=${d}`}`} className={filterChipClass(d === days)}>
             {d} 天
           </Link>
         ))}
@@ -82,7 +79,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
       {group.ranking.length ? (
         <GroupRankingTable rows={group.ranking} days={days} subgroupLabel={subgroupLabel} />
       ) : (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">最近 {days} 天沒有這個群組的標籤上新聞排行。</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">最近 {days} 天沒有這個群組的標籤上新聞排行。</p>
       )}
     </div>
   );

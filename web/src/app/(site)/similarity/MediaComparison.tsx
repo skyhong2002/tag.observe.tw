@@ -118,9 +118,9 @@ export default function MediaComparison({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 className="font-semibold">各家媒體，怎麼報、採用或引用誰？</h3>
-          <p className="mt-1 text-xs leading-6 text-zinc-500 dark:text-zinc-400">點欄位排序，點數字查看報導，點關係對象比較兩家媒體。</p>
+          <p className="mt-1 text-xs leading-6 text-zinc-600 dark:text-zinc-400">點欄位排序，點數字查看報導，點關係對象比較兩家媒體。</p>
         </div>
-        <label htmlFor="media-comparison-q" className="text-xs text-zinc-500 dark:text-zinc-400">
+        <label htmlFor="media-comparison-q" className="text-xs text-zinc-600 dark:text-zinc-400">
           搜尋媒體
           <FilterSuggestInput
             id="media-comparison-q"
@@ -134,12 +134,12 @@ export default function MediaComparison({
           />
         </label>
       </div>
-      <p role="status" className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p role="status" className="text-xs text-zinc-600 dark:text-zinc-400">
         符合 {filtered.length} 家 · 沿用圖上媒體篩選 · <MethodLink />
       </p>
       <TableScroller card label="各家媒體關係表格，可左右捲動">
         <table className="w-full min-w-[1040px] border-collapse text-sm">
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-500 dark:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-600 dark:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950">
             <tr>
               {columns.map((column) => (
                 <th
@@ -193,7 +193,7 @@ export default function MediaComparison({
                         <span className={`${table.leadText} font-medium`}>{row.name}</span>
                       </span>
                       {row.external && (
-                        <span className={`${table.leadExtra} whitespace-nowrap text-[11px] text-zinc-500 dark:text-zinc-400`}>
+                        <span className={`${table.leadExtra} whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400`}>
                           僅來源／引用對象
                         </span>
                       )}
@@ -205,7 +205,7 @@ export default function MediaComparison({
                     return (
                       <td key={key} className={`${table.num} py-2.5`}>
                         {!row[key] ? (
-                          <span className="text-zinc-500 dark:text-zinc-400">0</span>
+                          <span className="text-zinc-600 dark:text-zinc-400">0</span>
                         ) : similar ? (
                           <span className={relationshipFilters[key].className}>{number(row[key])}</span>
                         ) : (
@@ -222,13 +222,13 @@ export default function MediaComparison({
                     );
                   })}
                   <td
-                    className={`${table.num} whitespace-nowrap py-2.5 ${row.reach?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                    className={`${table.num} whitespace-nowrap py-2.5 ${row.reach?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
                     title={row.reach?.title}
                   >
                     {row.reach ? `${row.reach.below ? '< ' : ''}${trafficNumber(row.reach.visits)}` : '—'}
                   </td>
                   <td
-                    className={`${table.num} whitespace-nowrap py-2.5 ${row.reach?.below ? 'text-zinc-500 dark:text-zinc-400' : ''}`}
+                    className={`${table.num} whitespace-nowrap py-2.5 ${row.reach?.below ? 'text-zinc-600 dark:text-zinc-400' : ''}`}
                     title={row.reach?.perArticle?.title ?? row.reach?.perArticleNote}
                   >
                     {row.reach?.perArticle ? `${row.reach.below ? '< ' : ''}${trafficNumber(row.reach.perArticle.visits)}` : '—'}
@@ -247,7 +247,7 @@ export default function MediaComparison({
                             title={`${name} · ${label} ${number(edge.count)} 篇`}
                             aria-label={`${row.name}與${name}：${label} ${number(edge.count)} 篇，比較兩家媒體`}
                             onClick={() => onSelect({ edge }, edge.kind, 'all')}
-                            className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] ${edgeCategory(edge) === 'same-byline' ? 'bg-teal-50 text-teal-800 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300' : edgeCategory(edge) === 'attributed' ? 'bg-violet-50 text-violet-800 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'}`}
+                            className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs ${edgeCategory(edge) === 'same-byline' ? 'bg-teal-50 text-teal-800 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300' : edgeCategory(edge) === 'attributed' ? 'bg-violet-50 text-violet-800 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'}`}
                           >
                             <span aria-hidden="true">{edgeHasArrow(edge) ? (outgoing ? '←' : '→') : '↔'}</span>
                             <MediaIcon media={other} title={name} size={14} />
@@ -257,7 +257,7 @@ export default function MediaComparison({
                         );
                       })}
                       {!relationships.length && (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">{focus ? '目前篩選無此類關係' : '目前篩選無關係'}</span>
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">{focus ? '目前篩選無此類關係' : '目前篩選無關係'}</span>
                       )}
                     </div>
                   </td>
@@ -268,7 +268,7 @@ export default function MediaComparison({
         </table>
       </TableScroller>
       {!filtered.length && (
-        <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>
+        <p className="py-8 text-center text-sm text-zinc-600 dark:text-zinc-400">沒有符合的媒體，試試其他名稱或調整圖上篩選。</p>
       )}
     </div>
   );

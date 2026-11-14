@@ -8,7 +8,7 @@ import { PLATFORM_LABEL, ROLE_LABEL, TITLE_TAG_LABEL, type WritingArticle } from
 
 /** Articles with the clause the label came from; every row prints the original URL. */
 export default function WritingList({ articles, evidence = true }: { articles: WritingArticle[]; evidence?: boolean }) {
-  if (!articles.length) return <p className="py-6 text-sm text-zinc-500 dark:text-zinc-400">這段期間沒有符合條件的報導。</p>;
+  if (!articles.length) return <p className="py-6 text-sm text-zinc-600 dark:text-zinc-400">這段期間沒有符合條件的報導。</p>;
   return (
     <ol className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
       {articles.map((a) => {
@@ -20,7 +20,7 @@ export default function WritingList({ articles, evidence = true }: { articles: W
                 {clipHeadline(headline.title)}
               </Link>
             </h3>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
               <MediaHoverLink media={a.media} className="font-medium text-brand-700 hover:underline dark:text-brand-400">
                 {a.name}
               </MediaHoverLink>
@@ -47,11 +47,11 @@ export default function WritingList({ articles, evidence = true }: { articles: W
                 </span>
               )}
               {!evidence && a.titleTags.map((t) => <span key={t}>{TITLE_TAG_LABEL[t].label}</span>)}
-              <SourceLink url={a.url} showUrl className="!min-h-5 !text-[11px]" />
+              <SourceLink url={a.url} showUrl className="!min-h-5 !text-xs" />
             </div>
             {evidence && a.evidence && (
               <p className="mt-1 break-words text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                <span className="text-zinc-500 dark:text-zinc-400">判斷依據</span>「{a.evidence}」
+                <span className="text-zinc-600 dark:text-zinc-400">判斷依據</span>「{a.evidence}」
               </p>
             )}
           </li>

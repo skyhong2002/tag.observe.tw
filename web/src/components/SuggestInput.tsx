@@ -156,7 +156,7 @@ export default function SuggestInput({
               <span className="min-w-0 flex-1 truncate text-zinc-900 dark:text-zinc-100">
                 <Highlight label={item.label} text={text} />
               </span>
-              {item.hint && <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">{item.hint}</span>}
+              {item.hint && <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">{item.hint}</span>}
             </div>
           ))}
         </div>
