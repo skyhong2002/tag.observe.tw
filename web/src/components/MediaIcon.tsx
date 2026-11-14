@@ -27,7 +27,13 @@ export default function MediaIcon({
     const { props } = getImageProps({ src, alt: '', width: size, height: size, loading: 'lazy', fetchPriority: 'low' });
     return (
       // biome-ignore lint/performance/noImgElement: getImageProps applies the Next image optimizer without a stateful Image component
-      <img {...props} alt="" style={box} className={`shrink-0 rounded-sm object-contain ${mediaIconClass(media)} ${className}`} />
+      <img
+        {...props}
+        alt=""
+        decoding="async"
+        style={box}
+        className={`shrink-0 rounded-sm object-contain ${mediaIconClass(media)} ${className}`}
+      />
     );
   }
   return (

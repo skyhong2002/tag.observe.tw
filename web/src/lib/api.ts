@@ -157,26 +157,85 @@ export interface TagStatus {
   drafts?: DraftEvidence | null;
 }
 
-async function get<T>(path: string, revalidate = 60): Promise<T> {
-  // Recover from a transient cached response or transport failure within the
-  // same server render, rather than leaving the page with a frozen placeholder.
-  try {
-    const res = await fetch(API_ORIGIN + path, {
-      next: { revalidate },
-      headers: { accept: 'application/json' },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (res.ok) return (await res.json()) as T;
-  } catch {
-    // The fresh attempt below also covers network errors and invalid JSON.
+/** A failed API read. `status` is the HTTP status, or null for a timeout or transport failure. */
+export class ApiError extends Error {
+  constructor(
+    readonly path: string,
+    readonly status: number | null,
+    readonly failure: ApiFailure,
+  ) {
+    super(`${path} -> ${status ?? failure}`);
+    this.name = 'ApiError';
   }
-  const res = await fetch(API_ORIGIN + path, {
-    cache: 'no-store',
-    headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(6000),
+}
+type ApiFailure = 'timeout' | 'transport' | 'invalid-json' | `http-${number}`;
+
+// One attempt may take 6 s; both attempts together stay within 8 s.
+const ATTEMPT_MS = 6000;
+const BUDGET_MS = 8000;
+const RETRY_DELAY_MS = 250;
+// Only failures that look like the API restarting (every deploy) get a second,
+// uncached attempt: the gateway's 502/503, a refused or reset connection, or a
+// body cut off mid-read. A timeout or a 500/504 means the API is slow or broken,
+// and asking again would only double its load, so those fail at once.
+const RETRY_STATUS = new Set([502, 503]);
+
+function classify(error: unknown): ApiFailure {
+  if (error instanceof SyntaxError) return 'invalid-json';
+  if (error instanceof DOMException && (error.name === 'TimeoutError' || error.name === 'AbortError')) return 'timeout';
+  return 'transport';
+}
+const retryable = (failure: ApiFailure) =>
+  failure === 'transport' || failure === 'invalid-json' || RETRY_STATUS.has(Number(failure.slice(5)));
+
+async function attempt<T>(
+  path: string,
+  init: RequestInit,
+  ms: number,
+): Promise<{ data: T } | { failure: ApiFailure; status: number | null }> {
+  try {
+    const res = await fetch(API_ORIGIN + path, { ...init, headers: { accept: 'application/json' }, signal: AbortSignal.timeout(ms) });
+    // Leave an error body alone: Next tee-clones it for request memoization (lib/pages.ts).
+    if (!res.ok) return { failure: `http-${res.status}`, status: res.status };
+    return { data: (await res.json()) as T };
+  } catch (error) {
+    return { failure: classify(error), status: null };
+  }
+}
+
+async function get<T>(path: string, revalidate = 60): Promise<T> {
+  const started = performance.now();
+  const first = await attempt<T>(path, { next: { revalidate } }, ATTEMPT_MS);
+  if ('data' in first) return first.data;
+  const remaining = BUDGET_MS - (performance.now() - started) - RETRY_DELAY_MS;
+  let last = first;
+  let retried = false;
+  if (retryable(first.failure) && remaining >= 1000) {
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    retried = true;
+    // no-store so a failure the data cache kept is not replayed. The timeout
+    // signal also keeps Next's request memoization from returning the first try.
+    const second = await attempt<T>(path, { cache: 'no-store' }, Math.min(ATTEMPT_MS, remaining));
+    if ('data' in second) {
+      console.warn('api request', {
+        path,
+        outcome: 'recovered',
+        firstFailure: first.failure,
+        elapsedMs: Math.round(performance.now() - started),
+      });
+      return second.data;
+    }
+    last = second;
+  }
+  console.warn('api request', {
+    path,
+    outcome: 'failed',
+    firstFailure: first.failure,
+    failure: last.failure,
+    retried,
+    elapsedMs: Math.round(performance.now() - started),
   });
-  if (!res.ok) throw new Error(`${path} -> ${res.status}`);
-  return res.json() as Promise<T>;
+  throw new ApiError(path, last.status, last.failure);
 }
 // Ten minutes, so label edits at /admin/media/ show up soon.
 export const fetchCategories = () => get<Category[]>('/api/v1/categories', 600);

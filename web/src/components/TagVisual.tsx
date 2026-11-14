@@ -16,10 +16,23 @@ export function VisualPicture({ visual: v, size = 56 }: { visual: Visual; size?:
     );
   const src = v.kind === 'place' ? (v.large ?? v.image) : v.image;
   if (!src) return null;
-  // Wordmarks are wide: let them run to 3.5× the height rather than shrink to a sliver.
-  if (v.kind === 'logo' || v.kind === 'flag')
-    return <img src={src} alt="" aria-hidden="true" className="h-auto w-auto shrink-0" style={{ maxHeight: size, maxWidth: size * 3.5 }} />;
-  return <img src={src} alt="" aria-hidden="true" width={size} height={size} className="shrink-0 object-contain" />;
+  // Every picture gets a fixed box before it loads, so the text beside it does not
+  // jump. The single-tag API sends no aspect ratio: flags get a 3:2 box (most
+  // flags), and wordmarks may run to 3.5× the height rather than shrink to a sliver.
+  const width = v.kind === 'logo' ? size * 3.5 : v.kind === 'flag' ? size * 1.5 : size;
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      width={width}
+      height={size}
+      loading="lazy"
+      decoding="async"
+      style={{ width, height: size }}
+      className={`shrink-0 object-contain ${v.kind === 'logo' ? 'object-left' : ''}`}
+    />
+  );
 }
 
 export default function TagVisual({ visual: v }: { visual: Visual }) {
