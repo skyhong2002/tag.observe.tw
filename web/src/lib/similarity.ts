@@ -1,4 +1,5 @@
 import { API_ORIGIN } from './api';
+import { sharedFetch } from './shared-fetch.mts';
 
 export type {
   ArticleSimilarity,
@@ -30,14 +31,19 @@ export function periodQuery(period: SimilarityPeriod, threshold: number): URLSea
 // Pages render after this resolves, and the gateway answers 503 when a page
 // sends no headers for 15 s (app/src/ui-proxy.js); fail inside that budget so
 // the page can show its own unavailable state.
-export async function fetchSimilarity(period: SimilarityPeriod, threshold: number): Promise<SimilarityData> {
-  const response = await fetch(`${API_ORIGIN}/api/v1/similarity?${periodQuery(period, threshold)}`, {
-    next: { revalidate: 60 },
-    headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(13_000),
+// The response is over 2 MB, so Next's data cache cannot keep it; renders share
+// one parsed copy instead (lib/shared-fetch.mts). Treat it as read-only.
+export function fetchSimilarity(period: SimilarityPeriod, threshold: number): Promise<SimilarityData> {
+  const url = `${API_ORIGIN}/api/v1/similarity?${periodQuery(period, threshold)}`;
+  return sharedFetch(url, 60_000, async () => {
+    const response = await fetch(url, {
+      next: { revalidate: 60 },
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(13_000),
+    });
+    if (!response.ok) throw new Error(`similarity: ${response.status}`);
+    return (await response.json()) as SimilarityData;
   });
-  if (!response.ok) throw new Error(`similarity: ${response.status}`);
-  return response.json() as Promise<SimilarityData>;
 }
 
 export interface EvidenceQuery {
