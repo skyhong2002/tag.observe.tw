@@ -50,15 +50,24 @@ export async function runRetentionJob(
   out.contentEvicted = 0;
   out.archiveDisabled = archiveStore ? 0 : 1;
   out.cachePressurePages = 0;
+  // Walk the PK once per run instead of revisiting the cleared prefix after
+  // every 25-row archive. A new run starts at zero so restored/changed rows
+  // behind this cursor are reconsidered. All eviction conflict checks remain.
+  let afterId = 0;
+  let previousAge: number | undefined;
   for (let remaining = contentBatch; remaining > 0 && archiveStore; ) {
     const free = await archiveStore.localFreeBytes?.();
     const age = cacheAgeForSpace(free);
+    // A changed pressure policy makes earlier rows newly eligible again.
+    if (previousAge !== undefined && age !== previousAge) afterId = 0;
+    previousAge = age;
     if (free !== undefined && free < 20 * 2 ** 30) out.cachePressurePages++;
-    const content = await archiveColdContent(db, archiveStore, new Date(t), Math.min(remaining, 25), age);
+    const content = await archiveColdContent(db, archiveStore, new Date(t), Math.min(remaining, 25), age, afterId);
     out.contentArchived += content.archived;
     out.contentEvicted += content.evicted;
     remaining -= content.archived;
     if (!content.archived || !content.evicted) break;
+    afterId = content.nextAfterId;
   }
   // The sketch row stays as the record that the article was compared.
   out.sketchesCleared = affected(
