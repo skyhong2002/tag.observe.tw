@@ -1,8 +1,8 @@
 import { API_ORIGIN } from './api';
-import { sharedFetch } from './shared-fetch.mts';
 import type { StoredContent } from './article-content';
 import { fetchEventSnapshot } from './event-snapshot';
 import type { Camp, CampBaseline, EventCoverage, EventItem, EventNews } from './event-types.mts';
+import { sharedFetch } from './shared-fetch.mts';
 
 export type { Camp, CampBaseline, EventCoverage, EventItem, EventNews };
 export interface Topic {
