@@ -2,6 +2,7 @@ import { API_ORIGIN } from './api';
 import type { StoredContent } from './article-content';
 import { fetchEventSnapshot } from './event-snapshot';
 import type { Camp, CampBaseline, EventCoverage, EventItem, EventNews } from './event-types.mts';
+import { sharedFetch } from './shared-fetch.mts';
 
 export type { Camp, CampBaseline, EventCoverage, EventItem, EventNews };
 export interface Topic {
@@ -324,6 +325,15 @@ export interface TopicStoryIndex {
     authors: string[];
   }>;
 }
-export const fetchTopicStories = (id: string) => get<TopicStoryIndex>(`/api/v1/topics/${encodeURIComponent(id)}/stories`, 300);
+// Can exceed Next's 2 MB data-cache limit; renders share one parsed copy instead
+// (lib/shared-fetch.mts), so treat it as read-only. A failure (null) is not kept.
+export const fetchTopicStories = (id: string) => {
+  const path = `/api/v1/topics/${encodeURIComponent(id)}/stories`;
+  return sharedFetch(path, 300_000, async () => {
+    const index = await get<TopicStoryIndex>(path, 300);
+    if (index === null) throw new Error(`${path} failed`);
+    return index;
+  }).catch(() => null);
+};
 
 export const fetchFeatureContent = (id: number) => get<StoredContent>(`/api/v1/articles/${id}/content`, 60);

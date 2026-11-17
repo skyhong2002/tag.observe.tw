@@ -29,10 +29,7 @@ interface Group {
 export function describe(url: string): { path: string; keys: string; group: string } {
   const query = url.indexOf('?');
   const path = query < 0 ? url : url.slice(0, query);
-  const keys =
-    query < 0
-      ? ''
-      : [...new Set(new URLSearchParams(url.slice(query + 1)).keys())].sort().join(',');
+  const keys = query < 0 ? '' : [...new Set(new URLSearchParams(url.slice(query + 1)).keys())].sort().join(',');
   const [first = '', second] = path.split('/').filter(Boolean);
   const group = first === '' ? '/' : first === '_next' ? `/_next/${second ?? ''}` : second ? `/${first}/*` : `/${first}/`;
   return { path, keys, group };
