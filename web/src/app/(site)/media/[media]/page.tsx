@@ -26,7 +26,7 @@ import { loadMediaKeywords, loadMediaProfile, mediaReference, profileStatus } fr
 import { trafficNumber } from '@/lib/media-traffic.mts';
 import { type ReadingParams, readingQuery, withReadingQuery } from '@/lib/reading.mts';
 import { canonicalQuery, pageMetadata, pageSchema } from '@/lib/seo.mts';
-import type { SimilarityData } from '@/lib/similarity';
+import { fetchSimilarity } from '@/lib/similarity';
 import { radarText, shortMonth } from '@/lib/traffic-comparison.mts';
 import { fetchMediaWriting } from '@/lib/writing';
 import { outletIdentity } from '../../../../../../app/src/similarity/attribution';
@@ -53,15 +53,10 @@ export async function generateMetadata({
 // The relations come from the whole news graph (/similarity, ~2 MB for 7 days,
 // several seconds to build when the API cache is cold). Stream them in rather
 // than holding the page. The gateway drops a response that sends nothing for
-// 15 s (app/src/ui-proxy.js bodyTimeout), so give up before that.
+// 15 s (app/src/ui-proxy.js bodyTimeout); fetchSimilarity gives up at 13 s and
+// shares one parsed copy with every other page that needs the same graph.
 async function Relations({ media, hours }: { media: string; hours: number }) {
-  const data = await fetch(`${API_ORIGIN}/api/v1/similarity?${new URLSearchParams({ hours: String(hours), threshold: '0.65' })}`, {
-    next: { revalidate },
-    headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(12_000),
-  })
-    .then((response) => (response.ok ? (response.json() as Promise<SimilarityData>) : null))
-    .catch(() => null);
+  const data = await fetchSimilarity({ hours }, 0.65).catch(() => null);
   return <MediaRelations data={data} media={media} hours={hours} />;
 }
 
