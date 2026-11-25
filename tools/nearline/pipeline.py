@@ -115,6 +115,17 @@ RCLONE_EXIT_CLASSES = {1: 'syntax_or_usage', 2: 'uncategorized', 3: 'directory_n
                        5: 'temporary', 6: 'less_serious', 7: 'fatal', 8: 'transfer_limit', 9: 'no_files_transferred',
                        10: 'duration_limit'}
 
+# Exit status of `ssh host 'sudo -n /bin/su -'` running `timeout N python -`, for failures that end
+# without an error frame. Stderr alone is not enough: a remote timeout kill leaves nothing there but
+# whatever ssh itself printed (#39).
+def source_exit_class(code):
+    if code < 0:
+        return f'local_signal_{-code}'
+    if code > 128 and code != 255:
+        return f'remote_signal_{code - 128}'
+    return {1: 'remote_failure', 124: 'remote_timeout', 125: 'timeout_failed', 126: 'not_executable',
+            127: 'command_not_found', 255: 'ssh_failed'}.get(code, 'unclassified')
+
 class Pipeline:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -181,7 +192,10 @@ class Pipeline:
                         failure = item['message']
             if failure or p.returncode:
                 errors.seek(0)
-                raise RuntimeError(failure or ('SSH/export failed: ' + errors.read().decode(errors='replace')[-1500:]))
+                if failure:
+                    raise RuntimeError(failure)
+                raise RuntimeError(f'SSH/export failed: exit {p.returncode} ({source_exit_class(p.returncode)}): '
+                                   + errors.read().decode(errors='replace')[-1500:])
             if output:
                 if not end or sha256(output) != end['sha256'] or validate_gzip(output) != end['raw_bytes']:
                     raise RuntimeError('Incomplete or corrupt source stream')

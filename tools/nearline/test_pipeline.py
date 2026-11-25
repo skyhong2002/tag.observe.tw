@@ -159,3 +159,44 @@ class RcloneDiagnosticsTests(unittest.TestCase):
         result = self.run_fake(0)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout.strip(), '{}')
+
+
+class SourceExitTests(unittest.TestCase):
+    """#39: an export that ends without an error frame must keep the SSH exit status and its class."""
+
+    def run_fake(self, exit_code, frames=''):
+        import os
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / 'ssh'
+            fake.write_text('#!/bin/sh\ncat >/dev/null\n' + frames +
+                            'echo "** WARNING: connection is not using a post-quantum key exchange algorithm." >&2\n'
+                            f'exit {exit_code}\n')
+            fake.chmod(0o700)
+            cfg = json.loads(Path(__file__).with_name('config.example.json').read_text())
+            cfg['state_dir'] = tmp
+            with patch.dict(os.environ, PATH=tmp + os.pathsep + os.environ['PATH']):
+                return Pipeline(cfg).source('bounds', table='items', pk='id')
+
+    def test_remote_timeout_is_named_next_to_ssh_stderr(self):
+        with self.assertRaises(RuntimeError) as caught:
+            self.run_fake(124)
+        message = str(caught.exception)
+        self.assertIn('SSH/export failed: exit 124 (remote_timeout): ', message)
+        self.assertIn('post-quantum key exchange', message)
+
+    def test_transport_and_signal_exits_are_classified(self):
+        for code, kind in ((255, 'ssh_failed'), (137, 'remote_signal_9'), (2, 'unclassified')):
+            with self.subTest(code=code), self.assertRaises(RuntimeError) as caught:
+                self.run_fake(code)
+            self.assertIn(f'exit {code} ({kind})', str(caught.exception))
+
+    def test_error_frame_message_is_kept_as_is(self):
+        frame = 'echo \'NEARLINE1:{"type": "error", "message": "mysqldump: Got error: 1040: Too many connections"}\'\n'
+        with self.assertRaises(RuntimeError) as caught:
+            self.run_fake(1, frame)
+        self.assertEqual(str(caught.exception), 'mysqldump: Got error: 1040: Too many connections')
+
+    def test_framed_result_still_returns(self):
+        frame = 'echo \'NEARLINE1:{"type": "result", "maximum": 7}\'\n'
+        self.assertEqual(self.run_fake(0, frame)['maximum'], 7)
