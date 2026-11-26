@@ -1,3 +1,4 @@
+import { setImmediate as yieldToLoop } from 'node:timers/promises';
 import { and, desc, gte, inArray, lt, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client.ts';
@@ -10,10 +11,14 @@ export type { BylineSummary } from '../journalists/credit-entities.ts';
 
 type CreditRow = { id: number; media: string; publishedAt: Date; authors: string[] | null; creator: string | null };
 
-export function aggregateCredits(rows: CreditRow[]) {
+// A 720-hour window is a few hundred thousand credited rows, about 10 s of
+// parsing in one go. Run on the gateway's event loop, that stalled every API
+// and page request behind it (#40), so hand the loop back between slices.
+export async function aggregateCredits(rows: CreditRow[], { sliceRows = 500 } = {}) {
   const entries = new Map<string, { entity: CreditEntity; ids: number[]; outlets: Map<string, number>; latest: Date }>();
   let credited = 0;
-  for (const row of rows) {
+  for (const [index, row] of rows.entries()) {
+    if (index > 0 && index % sliceRows === 0) await yieldToLoop();
     const entities = creditsOf(row);
     if (entities.length) credited++;
     for (const entity of entities) {
@@ -50,7 +55,7 @@ export function bylineParams(query: { hours?: string; page?: string; kind?: stri
 
 /** Read-only derivation from stored credits; no migration or crawler writes. */
 export function registerBylines(app: FastifyInstance, db: Db) {
-  const cache = new Map<number, { at: number; value: Promise<ReturnType<typeof aggregateCredits> & { generatedAt: string }> }>();
+  const cache = new Map<number, { at: number; value: Promise<Awaited<ReturnType<typeof aggregateCredits>> & { generatedAt: string }> }>();
   const load = (hours: number) => {
     let entry = cache.get(hours);
     if (!entry || Date.now() - entry.at > 120000) {
@@ -73,7 +78,7 @@ export function registerBylines(app: FastifyInstance, db: Db) {
           ),
         )
         .orderBy(desc(articles.publishedAt), desc(articles.id))
-        .then((rows) => ({ ...aggregateCredits(rows), generatedAt: now.toISOString() }));
+        .then(async (rows) => ({ ...(await aggregateCredits(rows)), generatedAt: now.toISOString() }));
       entry = { at: Date.now(), value };
       cache.set(hours, entry);
       value.catch(() => {
