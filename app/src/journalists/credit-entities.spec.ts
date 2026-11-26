@@ -30,9 +30,9 @@ describe('structured news credits', () => {
     expect(creditEntities(['AI觀點2026'], 'udn')[0]).toMatchObject({ kind: 'unknown', roles: [], key: 'unknown:udn:AI觀點2026' });
     expect(creditEntities(['王小明'], 'udn')[0].roles).toEqual([]);
   });
-  it('counts a shared article once per entity, with separate publication outlets', () => {
+  it('counts a shared article once per entity, with separate publication outlets', async () => {
     const date = new Date('2026-10-07T00:00:00Z');
-    const data = aggregateCredits([
+    const data = await aggregateCredits([
       { id: 1, media: 'udn', publishedAt: date, authors: ['王小明', '王小明', '政治中心'], creator: null },
       { id: 2, media: 'ltn', publishedAt: date, authors: ['王小明', '政治中心'], creator: null },
     ]);
@@ -41,6 +41,22 @@ describe('structured news credits', () => {
     expect(person?.outlets).toHaveLength(2);
     expect(data.summaries.filter((entry) => entry.kind === 'desk')).toHaveLength(2);
     expect(data.credited).toBe(2);
+  });
+  it('yields to the event loop between slices of a long window and keeps the same result (#40)', async () => {
+    const rows = Array.from({ length: 1200 }, (_, id) => ({
+      id,
+      media: id % 2 ? 'udn' : 'ltn',
+      publishedAt: new Date(Date.UTC(2026, 9, 7, 0, 0, id)),
+      authors: [`記者${['王小明', '陳大文', '林美玲'][id % 3]}／台北報導`, '政治中心'],
+      creator: null,
+    }));
+    let turns = 0;
+    const ticker = setInterval(() => turns++, 0);
+    const sliced = await aggregateCredits(rows, { sliceRows: 100 });
+    clearInterval(ticker);
+    expect(turns).toBeGreaterThan(0);
+    expect(sliced).toEqual(await aggregateCredits(rows, { sliceRows: rows.length + 1 }));
+    expect(sliced.summaries.find((entry) => entry.name === '王小明')?.articles).toBe(400);
   });
   it('rejects unbounded windows and invalid filters', () => {
     expect(bylineParams({ hours: '721' })).toBeNull();
