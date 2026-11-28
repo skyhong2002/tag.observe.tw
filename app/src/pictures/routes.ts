@@ -1,9 +1,10 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 import type { JobQueue } from '../admin/routes.ts';
 import type { SessionUser } from '../auth/google-login.ts';
 import { inkImage } from '../avatars/ink.ts';
+import { findPerson } from '../avatars/wikidata.ts';
 import type { Db } from '../db/client.ts';
 import {
   tagAvatarCandidates,
@@ -124,10 +125,16 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
             uploadedBy: c.uploadedBy,
           }));
     const status = state?.status ?? null;
+    const restorable =
+      user.role === 'admin' && kind === 'visual'
+        ? !!formerPerson((await db.select().from(tagPeople).where(eq(tagPeople.tag, tag)))[0])
+        : false;
     return {
       tag,
       kind,
       status,
+      // An admin's 「這不是人物」 correction can be undone (the original match is in its note).
+      restorable,
       // An admin chose (or hid) the picture: votes still count, but do not change it.
       locked: status === 'chosen' || status === 'hidden',
       hidden: status === 'hidden',
@@ -187,7 +194,13 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     if (user.role !== 'admin') return reply.code(403).send({ error: '只有管理員可以更正標籤種類' });
     const { tag } = request.params;
     if (tag.length > 60) return reply.code(400).send({ error: 'tag too long' });
-    if (request.body?.kind !== 'visual') return reply.code(400).send({ error: 'kind must be visual' });
+    if (request.body?.kind === 'avatar') {
+      const restored = await restorePerson(db, tag, user.email);
+      if (!restored) return reply.code(409).send({ error: '這個標籤沒有可以復原的人物比對' });
+      refreshPages(uiOrigin, tag);
+      return { tag, kind: 'avatar' };
+    }
+    if (request.body?.kind !== 'visual') return reply.code(400).send({ error: 'kind must be visual or avatar' });
     const changed = await db.transaction(async (tx) => {
       const [person] = await tx.select().from(tagPeople).where(eq(tagPeople.tag, tag)).for('update');
       if (person?.status === 'nonhuman') return true;
@@ -346,5 +359,66 @@ export function registerPictureRoutes(app: FastifyInstance, db: Db, { currentUse
     }
     refreshPages(uiOrigin, tag);
     return { tag, shownRank: rank };
+  });
+}
+
+// The 「這不是人物」 correction keeps the original match only in its note
+// (「管理員更正為非人物；原比對：Q123 名字」), not in wikidata_id.
+const CORRECTED = /原比對：(Q\d+)\s*(.*)$/;
+
+export function formerPerson(person: typeof tagPeople.$inferSelect | undefined) {
+  if (person?.status !== 'nonhuman') return null;
+  const match = person.note?.match(CORRECTED);
+  return match ? { qid: match[1], label: match[2].trim() || null } : null;
+}
+
+/**
+ * Undoes an admin's 「這不是人物」: the tag gets its original Wikidata person
+ * back and shows the portrait it showed before (or the best one kept), locked
+ * as an admin choice. Description and facts are refetched from Wikidata when
+ * the lookup still finds the same person. False when there is nothing to undo.
+ */
+export async function restorePerson(db: Db, tag: string, email: string, lookup = findPerson) {
+  const [before] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
+  if (before?.status !== 'nonhuman') return !!before?.wikidataId;
+  const former = formerPerson(before);
+  if (!former) return false;
+  const found = await lookup(tag).catch(() => null);
+  const details = found?.qid === former.qid ? found : null;
+  return db.transaction(async (tx) => {
+    const [person] = await tx.select().from(tagPeople).where(eq(tagPeople.tag, tag)).for('update');
+    if (person?.status !== 'nonhuman') return !!person?.wikidataId;
+    if (formerPerson(person)?.qid !== former.qid) return false;
+    const ranks = (
+      await tx
+        .select({ rank: tagAvatarCandidates.rank })
+        .from(tagAvatarCandidates)
+        .where(eq(tagAvatarCandidates.tag, tag))
+        .orderBy(asc(tagAvatarCandidates.rank))
+    ).map((c) => c.rank);
+    const [corrected] = await tx
+      .select({ fromRank: tagPeopleLog.fromRank })
+      .from(tagPeopleLog)
+      .where(and(eq(tagPeopleLog.tag, tag), eq(tagPeopleLog.action, 'nonhuman')))
+      .orderBy(desc(tagPeopleLog.id))
+      .limit(1);
+    const rank = corrected?.fromRank != null && ranks.includes(corrected.fromRank) ? corrected.fromRank : (ranks[0] ?? null);
+    const at = new Date();
+    await tx
+      .update(tagPeople)
+      .set({
+        wikidataId: former.qid,
+        label: (details?.label ?? former.label)?.slice(0, 120) ?? null,
+        description: details?.description?.slice(0, 255) ?? null,
+        facts: details?.facts ?? null,
+        status: rank === null ? 'nophoto' : 'chosen',
+        shownRank: rank,
+        note: null,
+        reviewedBy: email,
+        reviewedAt: at,
+      })
+      .where(eq(tagPeople.tag, tag));
+    await tx.insert(tagPeopleLog).values({ tag, action: 'person', fromRank: null, toRank: rank, email, at });
+    return true;
   });
 }

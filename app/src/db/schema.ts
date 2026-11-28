@@ -893,7 +893,7 @@ export const tagPeopleLog = mysqlTable(
   {
     id: int('id').autoincrement().primaryKey(),
     tag: varchar('tag', { length: 60 }).notNull(),
-    action: varchar('action', { length: 8 }).$type<'show' | 'hide' | 'nonhuman'>().notNull(),
+    action: varchar('action', { length: 8 }).$type<'show' | 'hide' | 'nonhuman' | 'person'>().notNull(),
     fromRank: int('from_rank'),
     toRank: int('to_rank'),
     email: varchar('email', { length: 255 }).notNull(),

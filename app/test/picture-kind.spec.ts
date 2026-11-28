@@ -230,4 +230,29 @@ describe.skipIf(!url)('correct a brand mistaken for a person (MariaDB)', () => {
     expect(loose).toHaveBeenCalledWith(tag);
     expect(item).not.toHaveBeenCalledWith('Q9036');
   });
+  it('lets an administrator undo the correction, restoring the original person and portrait', async () => {
+    const restore = (customHeaders = headers, t = tag) =>
+      app.inject({
+        method: 'PUT',
+        url: `/auth/pictures/${encodeURIComponent(t)}/kind`,
+        headers: customHeaders,
+        payload: { kind: 'avatar' },
+      });
+    expect((await app.inject({ url: path, headers })).json()).toMatchObject({ kind: 'visual', restorable: true });
+    expect((await app.inject({ url: path, headers: { origin, 'x-user': 'reader' } })).json().restorable).toBe(false);
+    expect((await restore({ origin, 'x-user': 'reader' })).statusCode).toBe(403);
+    expect((await restore(headers, '沒有比對')).statusCode).toBe(409);
+    const facts = { citizenship: ['奧地利帝國'], occupations: ['發明家'], parties: [], positions: [] };
+    stubs.findPerson.mockResolvedValueOnce({ qid: 'Q9036', label: '尼科拉·特斯拉', description: '發明家', facts });
+    expect((await restore()).statusCode).toBe(200);
+    const [person] = await db.select().from(tagPeople).where(eq(tagPeople.tag, tag));
+    expect(person).toMatchObject({ wikidataId: 'Q9036', status: 'chosen', shownRank: 1, description: '發明家', facts, note: null });
+    expect((await app.inject({ url: path, headers })).json()).toMatchObject({ kind: 'avatar', shownRank: 1, restorable: false });
+    expect((await app.inject({ url: `/api/v1/tags/${encodeURIComponent(tag)}/avatar` })).statusCode).toBe(200);
+    expect((await db.select().from(tagPeopleLog)).at(-1)).toMatchObject({ action: 'person', toRank: 1, email: admin.email });
+    // Repeating the undo changes nothing; a later rerun keeps the admin's pick.
+    expect((await restore()).statusCode).toBe(200);
+    expect((await db.select().from(tagPeopleLog)).filter((l) => l.action === 'person')).toHaveLength(1);
+    expect(await processTag(db, tag)).toMatchObject({ status: 'chosen', skipped: true });
+  });
 });
