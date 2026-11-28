@@ -27,6 +27,8 @@ type State = {
   shownRank: number | null;
   myVote: number | null;
   admin: boolean;
+  /** An admin's 「這不是人物」 correction that can be undone. */
+  restorable?: boolean;
   uploadsLeft: number;
   candidates: Candidate[];
 };
@@ -146,6 +148,19 @@ function Board({ tag }: { tag: string }) {
             onClick={() => act(() => call(`${path}/kind`, { method: 'PUT', body: { kind: 'visual' } }))}
           >
             這不是人物，改用一般圖片
+          </button>
+        </div>
+      )}
+      {state.admin && state.kind === 'visual' && state.restorable && (
+        <div className={note}>
+          <p>這個標籤曾被更正為非人物。如果更正錯了，可以改回原本比對的人物，恢復原來的頭像。</p>
+          <button
+            type="button"
+            disabled={busy}
+            className={`${button} mt-2`}
+            onClick={() => act(() => call(`${path}/kind`, { method: 'PUT', body: { kind: 'avatar' } }))}
+          >
+            這是人物，改回人物頭像
           </button>
         </div>
       )}
